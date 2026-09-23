@@ -1,10 +1,13 @@
 import { strict as assert } from 'node:assert';
 import {
+  FORM_SECTION_TYPE_DIRECTED_RENDERER,
+  PROFESSIONAL_COMPONENT_RENDERERS,
   professionalComponentRegistrations,
   resolveContractProfessionalComponent,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
   type ProfessionalComponentRegistration,
+  type ProfessionalComponentRenderer,
 } from '../src/app/presentation/professionalComponentRegistry';
 import {
   detailAmountBindingConfig,
@@ -205,4 +208,45 @@ for (const componentKey of [
 }
 
 assert.equal(professionalComponentRegistrations.length, 26);
-console.log('[professional_component_registry_test] PASS cases=43');
+const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
+const everyFieldType = [
+  'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',
+  'selection', 'binary', 'many2one', 'one2many', 'many2many', 'action', 'reference',
+];
+let sweepCases = 0;
+for (const entry of professionalComponentRegistrations) {
+  assert.ok(
+    registeredRenderers.has(entry.renderer),
+    `registration ${entry.componentKey} declares an unregistered renderer ${entry.renderer}`,
+  );
+  sweepCases += 1;
+  for (const [fieldType, fieldTypeRenderer] of Object.entries(entry.rendererByFieldType)) {
+    assert.ok(
+      registeredRenderers.has(fieldTypeRenderer),
+      `registration ${entry.componentKey} maps ${fieldType} to an unregistered renderer ${fieldTypeRenderer}`,
+    );
+    sweepCases += 1;
+  }
+  if (entry.readiness === 'fail_closed') continue;
+  const fieldTypes = entry.supportedFieldTypes.includes('*') ? everyFieldType : entry.supportedFieldTypes;
+  for (const fieldType of fieldTypes) {
+    const resolved: ProfessionalComponentRenderer = resolveProfessionalComponent({
+      componentKey: entry.componentKey, fieldType, presentationMode: 'task', renderProfile: 'edit',
+    }).renderer;
+    assert.ok(
+      registeredRenderers.has(resolved),
+      `resolution produced an unregistered renderer ${entry.componentKey}:${fieldType}:${resolved}`,
+    );
+    sweepCases += 1;
+  }
+}
+assert.equal(FORM_SECTION_TYPE_DIRECTED_RENDERER, 'FormSectionField');
+assert.equal(
+  resolveProfessionalComponent({
+    componentKey: 'sc.display.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  }).renderer,
+  FORM_SECTION_TYPE_DIRECTED_RENDERER,
+  'the default display registration keeps routing to the type-directed control',
+);
+sweepCases += 2;
+console.log(`[professional_component_registry_test] PASS cases=${43 + sweepCases}`);

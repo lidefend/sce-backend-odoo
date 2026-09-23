@@ -91,8 +91,14 @@
               <ScIcon :name="field.favoriteToggle.active ? 'star' : 'star-outline'" :size="16" />
             </ScIconButton>
             <div class="field-control-main">
+              <div
+                v-if="declaresUnknownComponentRenderer(field)"
+                class="field-fail-closed"
+                role="alert"
+                :data-field-fail-closed="String(field.componentRenderer || '')"
+              >{{ failClosedRendererText(field) }}</div>
               <ScRadioGroup
-                v-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
+                v-else-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
                 :model-value="String(field.inputValue ?? '')"
                 :options="field.selectionOptions || []"
@@ -343,6 +349,7 @@ import {
   ScTaskActionResolverKey,
   type ScTaskActionDescriptor,
 } from './taskActionResolver';
+import { PROFESSIONAL_COMPONENT_RENDERERS } from '../../app/presentation/professionalComponentRegistry';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -437,6 +444,17 @@ const slots = useSlots();
 const toneClass = computed(() => (props.tone === 'advanced' ? 'template-form-section--advanced' : 'template-form-section--core'));
 const showHead = computed(() => Boolean(props.title || slots.action));
 const allFieldsReadonly = computed(() => props.fields.length > 0 && props.fields.every((field) => field.readonly));
+const knownComponentRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
+
+function declaresUnknownComponentRenderer(field: FormSectionFieldSchema) {
+  const renderer = field.componentRenderer;
+  return Boolean(renderer) && !knownComponentRenderers.has(renderer);
+}
+
+function failClosedRendererText(field: FormSectionFieldSchema) {
+  return `字段渲染器未注册：${String(field.componentRenderer || '')}`;
+}
+
 function isLegacyComplexField(field: FormSectionFieldSchema) {
   return ['many2one', 'binary', 'monetary'].includes(String(field.type || '').trim().toLowerCase())
     || isDateRangeWidget(field);
@@ -903,6 +921,15 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-error-text {
+  color: var(--sc-app-danger-text);
+}
+
+.field-fail-closed {
+  padding: 6px 8px;
+  border: 1px solid var(--sc-app-danger-text);
+  border-radius: var(--sc-radius-sm, 4px);
+  font-size: var(--sc-product-text-sm);
+  line-height: 1.45;
   color: var(--sc-app-danger-text);
 }
 

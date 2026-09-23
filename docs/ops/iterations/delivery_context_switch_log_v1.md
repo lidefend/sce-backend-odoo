@@ -10344,3 +10344,1801 @@ USER_DISPOSITION_AUTHORIZED_AFTER_READ_ONLY_AUDIT=true
   ④**已登记未收口清单**：`professionalBusinessValueModel`／`boqImportPreview`／`professionalCollaborationModel`／
   `professionalAuditModel`／`formSection.mapper`（带币种）／`HierarchicalWorksheet` 等，作为下一批候选登记。
   该修订产生新 HEAD，L1／L2／L5 与两轮独立只读复核按新冻结候选重跑与重绑；口径范围、契约例外与残限登记已同步更正。
+
+## 2026-09-22 — 自定义前端页头入口权威统一（P0 表达收口第二刀）
+
+- 分支 `feature/frontend-page-header-entry-authority-v1`，基线 `origin/main@de9a230d3faab18dd60a219f445f932a8af9d7f5`
+  （自定义前端字段语义单一权威 PR #521 的 squash 合入点）。Formal Product Layer 为 **P0**（平台通用表达机制），
+  入口契约测试、守卫与批次记录属 **P4**；Layer Target 为 `frontend/apps/web` 的页头入口面。
+- 触发：字段语义面收口后，用户认可的下一刀是「页头／壳层入口统一」。只读侦察确认 `ProductPageHeader` 已是唯一实现，
+  但**入口**（谁可以进来、进来后哪些正式轴被转发）没有任何权威，只有一条子串守卫。由此确认四类缺陷：
+  ①`KanbanPage.vue` 向 `components/page/PageHeader.vue` 传 `status`／`status-label`／`loading`／`on-reload`／
+  `mode-label`／`record-count` 六个属性，而该入口只声明 `title`／`subtitle`——Vue 属性穿透把它们落成根元素上的
+  无意义 DOM 属性，作者以为已接线的错误态页头事实**从未被消费**；②三个薄入口能力面不一致且无声明（`template`
+  转发 9 属性＋3 槽，`design-system` 3 属性＋1 槽，`page` 仅 2 属性）；③`page` 与 `design-system` 各自硬编码
+  `presentation-mode="collection"`，固定档位无单一事实来源；④权威新增正式轴时没有任何机制要求入口作出决策。
+- 实现：新增唯一权威 `frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts` —— 15 条正式轴 ＋
+  四个入口（`page`／`template`／`design-system`／`contract-form`）对**每条轴**的显式处置（`forwarded`／`fixed`＋理由／
+  `not_exposed`＋理由）＋ `ProductPageHeader` 的三个直接消费页面登记；两个薄入口的固定档位改为
+  `resolveProductPageHeaderFixedMode('<id>')`；`ContractFormProductHeader` 的 365 行领域内容登记为**受管例外**
+  （必须继续委托权威渲染）。唯一运行期变化是 `KanbanPage` 移除六个无消费方属性（连带删除只服务于该绑定的
+  `modeLabelText` 与 `pageModeLabel` 导入）：无视觉变化、无业务语义变化。
+- 门禁：新增 `frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts`（接入
+  `verify.frontend.product_page_header.unit`），把「权威正式面 ≡ 登记轴」「入口必须委托权威且不得自建 `header`／`h1`」
+  「声明转发必须真实转发」「固定轴不得留字面量」「薄入口声明面 ⊆ 登记面」「**调用方传参 ⊆ 入口声明面**」
+  「直接消费权威的文件集合 ≡ 登记表」「轴决策完整、id 唯一、例外必须给理由」八类断言变为可执行。
+  Python 守卫同步升级：固定档位单一来源 ＋ 不得硬编码 ＋ 登记表必须包含全部入口路径 ＋ 入口契约测试必须存在且
+  仍接在门禁上（防静默摘除）。
+- 验证：入口契约 `entries=4 axes=15 call_sites=6 direct_consumers=3` PASS；`verify.frontend.product_page_header.unit`
+  PASS（守卫单测 **69 例**）；取值呈现守卫 `sources=686 consumers=18` PASS；`lint:src` 0 error／39 条既有 warning；
+  `typecheck:strict` PASS；全量 `vue-tsc --noEmit` 仍为 32 条既有类型债、文件集合与 base 一致。
+  **门禁非空洞实证**：在 `/tmp` 影子副本上注入 **139 项矩阵（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS），全部符合预期**
+  （该块按本轮冻结口径刷新：矩阵沿革 95 → 112 → 119 → 132 → 139 项，守卫单测 14 → 20 → 27 → 34 → 40 → 45 → 51 → 55 → 63 → 69 例——
+  单测数为逐冻结候选实测的 `def test_` 计数），工作树文件未被修改。除首批形态之外，
+  第二轮独立只读复核点名的盲区（kebab 标签、barrel 具名导入、`<component :is>`、`v-bind` 对象展开、
+  契约测试接线被注释掉、固定轴绑定字面量、固定轴常量解析错入口 id、只留 `import` 丢掉模板渲染、`$attrs` 兜底转发）
+  都已纳入同一批注入并被抓到；第三轮复核点名的**诱饵类**形态（单引号 `<component :is='X'>`、字符串注释符
+  `{{ '/*' }}…{{ '*/' }}`、默认槽／动态槽名／单引号槽名、改名默认导入、动态 `import()`、行尾 `//` 与
+  双引号／模板字面量常量诱饵、字符串里的假模板委托、`@echo <整条命令行>`／`@node --version # <文件名>`）
+  同样全部被抓到。
+- **复核后的修订（首轮 → 第四轮）**（复核对产品代码无异议，问题全在门禁强度与文档数字）：F 覆盖 kebab 标签与具名／barrel
+  导入并把调用点集合钉死（现 6 个，含 `ContractFormPage` 这一受管例外调用点）；B 从「源码含标识符」改为「模板中真实
+  渲染上游」；D 要求固定轴绑定值必须引用 `resolveProductPageHeaderFixedMode('<本入口 id>')` 的返回值；权威与薄入口
+  禁止 `$attrs`；`<component :is>`／对象展开改为硬失败并要求显式登记；Python 守卫改为按 Makefile 结构解析
+  **未被注释**的 recipe 行；属性扫描改为引号感知；文档「10 条属性」订正为「9 条属性」、「4 属性＋1 槽」订正为
+  「3 属性＋1 槽」。随后 round B′ 又指出两处 S2 绕过（`<Component :is>` 大写 C 与 Vue 官方同名、`v-bind:prop`／
+  `v-model` 因 `v-` 前缀被跳过），已一并修掉：动态组件扫描改为大小写不敏感、属性名统一归一
+  （`:x` ≡ `v-bind:x`，`v-model` → `modelValue`，`.modifier` 不改变 prop 名）、模块说明符解析补上 `@/` 别名，
+  守卫另要求接线目标**只定义一次**且 esbuild 行必须是真实调用（`@echo esbuild …` 不算）；
+  随后 round A′ 又指出 F 的标签块正则会被属性值里的 `>` 截断（S2）、薄入口槽位无 ⊆ 约束、
+  未登记别名导入形态对 F／G 隐身、注释诱饵可满足委托与常量解析断言、以及 unit 目标被从 `quick.gate` 前置摘除
+  仍全绿（S3），已一并修掉：标签属性块改为**引号感知**扫描、入口源码分析前**剥离注释**、槽位纳入登记表约束、
+  解析不到的入口同名导入硬失败、守卫增加「必须仍是 `quick.gate`／`release.unit` 前置」断言；
+  守卫单测 27 例，影子副本注入矩阵扩到 39 项，全部 CAUGHT。随后 round A″／B″（head `d93bb013`，均
+  REQUEST_CHANGES、**无 S0／S1**）又点名六处**诱饵类**绕过並经我逐条实证：①两个门禁的注释剥离都不是字面量感知，
+  `{{ '/*' }}v-bind="$attrs"{{ '*/' }}` 可把真实代码从门禁眼里夹掉；②改名默认导入（`import Foo from '…/ScPageHeader.vue'`）
+  与动态 `import()` 入口让调用点整体隐身；③行尾 `//`／双引号／模板字面量三种常量诱饵可满足固定轴断言；
+  ④`@node --version # <文件名>`／`@echo <整条命令行>` 是伪命令却满足接线断言；⑤默认槽／动态槽名无约束；
+  ⑥单引号 `<component :is='ScPageHeader'>` 绕过动态组件硬失败。已全部修掉：注释剥离与掩码视图都改为
+  **引号感知**的逐字扫描器（掩码视图与原文等长，只认它判断「实现是否存在」，字面量真实值按对齐下标回原文取回）、
+  说明符末段纳入入口命中判据并新增「改名导入必须显式登记」与「动态 `import()` 硬失败」、
+  槽位只接受**静态具名槽**（默认槽／动态槽名硬失败，权威侧同钉）、动态组件绑定改为**引号不敏感**、
+  接线判定改为「首个 token 就是该程序」并剔除 `#` 注释；守卫单测 **27 → 34 例**，影子副本注入矩阵
+  **39 → 59 项**且全部 CAUGHT。
+  随后 round A‴／B‴（head `2f5b2c94`，均 REQUEST_CHANGES、**无 S0／S1**）又点名七处，已经我逐条实证并修掉：
+  ①`useAttrs()`／`attrs` 与 `$attrs` 等效，薄入口可用它绕过「不得兜底转发未登记轴」，而薄入口又不在
+  `v-bind="obj"` 扫描面内——A3 升级为三者等效硬失败（覆盖权威与全部登记入口），并新增 F4 钉住**权威标签自身**
+  的对象展开；②recipe 判定可被 `;`／`&&` 链式诱饵绕过（`@node --version; echo <文件名>`、`@node <real> || true`），
+  与文档 §6⑦ 自述矛盾——`_is_real_command` 改写为 `_matches_recipe`：按 `;`／`&&`／`||`／`|`／`&` 切段后要求
+  「某段首 token 就是该程序 ＋ 紧随参数逐个相等同序」；③F3 只认单引号动态说明符——改为引号不敏感并覆盖 `require()`；
+  ④F1 的 `:is` 不容忍 `=` 两侧空白、且不认静态 `is="X"`——已补齐；⑤`declaredPropsOf` 只解析 `defineProps<{…}>`，
+  同文件并存 Options API `props: {…}` 或 `defineProps<T>()` 可静默新增未登记输入——改为只承认**恰好一处**字面量声明，
+  其余形态硬失败；⑥F1 走原文使模板注释里的 `<component :is>` **假失败**——F 循环改走 `stripComments`；
+  ⑦槽断言硬编码 `name="` 使合法的单引号具名槽**假失败**——改为引号不敏感。复核者点名的 D 断言过严（`resolve…(\`page\`)`
+  等误判）**接受为安全方向、不改**。守卫单测 **34 → 40 例**，影子副本注入矩阵 **59 → 80 项**且全部 CAUGHT，
+  另锁定 4 项**假失败防线**必须 STILL-PASS（模板注释里的动态绑定、单引号具名槽、真实步骤尾部的 `|| true`／`2>/dev/null`）。
+  第四轮修订产生新 HEAD，L1／exact-head L5 与第五轮复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁗／B⁗（复核 head `cc36a37a`，均 REQUEST_CHANGES、**无 S0／S1**）再点名六类：
+  ①**A⁗ S2-1／S3-1** recipe 形状判定只要求「存在某一段匹配」，于是 `false && <步骤>`／`true || <步骤>` 让步骤
+  **永不执行**、`<步骤> || true`／`<步骤> ; true` 让**失败不传播**，两类都能让门禁形同虚设；
+  ②**B⁗ S2-1** F1 漏掉**无引号**取值 `:is=ScPageHeader` 与 `:is.camel`／`:is.prop`／`:is.attr` 修饰符
+  （Vue 对它们全按动态组件渲染，而 `vue/html-quotes` 只是 warn、修饰符无任何 lint 信号）；
+  ③**B⁗ S4-1／S4-2** F1 误判 `data-is="X"`（普通静态属性）、模板正文裸撇号（`<p>owner's</p>`）
+  打乱引号状态致其后的模板注释被当成实现，两者都是**假失败**；
+  ④**A⁗ S4-1／B⁗ S4-3** `/\battrs\b/` 误伤普通字符串（`'no attrs here'`）与无关命名；
+  ⑤**A⁗ S4-2／B⁗ S4-3** `!\|\bprops\s*:\s*\{/` 误伤 TS 类型字面量（`type M = { props: { … } }`），
+  `defineProps<\n{` 也被当成非字面量；
+  ⑥**A⁗ S4-3／B⁗ S4-4** §6「对象展开一律硬失败」比实现宽（`v-bind="obj"` 变量形态并未硬失败）、
+  §5／§6 的注入口径（80／80）自相冲突。已逐条修掉：recipe 判定收紧为「先摘掉 shell 重定向，再切段后
+  **恰好只剩一段**」（上一轮 4 项防线中的 `|| true` 一项按失败关闭**转为必须抓到**，`2>&1`／`2>/dev/null`
+  仍被接受为真实步骤）；F1 改为**属性级**解析（覆盖四种取值形态与 `.camel`／`.prop`／`.attr` 修饰符，
+  `data-is` 天然排除）；注释扫描器改为**模式感知**（模板正文／标签内部／`<script>`・`<style>` 原始段／
+  `{{ }}` 插值）；`attrs` 判据拆成「具名符号看**字面量已掩码**视图、`v-bind="…attrs…"` 看未掩码视图」
+  两个视图；Options API 判定限定为「所在 `<script>` 段同时声明 `export default`」。守卫单测 **40 → 45 例**，
+  影子副本矩阵 **80 → 95 项（84 项 CAUGHT ＋ 11 项假失败防线锁定 STILL-PASS）**。第五轮修订产生新 HEAD，
+  L1／exact-head L5 与第六轮复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁵／B⁵（复核 head `a4b5c094`，均 REQUEST_CHANGES、**无 S0／S1**）再点名五类：
+  ①**A⁵ S2-1** recipe 形状判定仍可被三种形态绕过——重定向**紧贴**分隔符（`>/dev/null|| true`）时剥离重定向
+  会连分隔符一起吞掉；尾随 `&` 后台化（`<步骤> &`）后 shell 立刻以 0 退出；Make 的 `\` 续行把 `… \` ＋ `|| true`
+  拼成一条命令而判定只看物理行；同轮的**挂点**发现：把 unit 目标从门禁前置里删掉、只留成行尾 `#` 注释，
+  **子串**判定仍 PASS；②**B⁵ S2-G1** `v-bind.prop=`／`v-bind.camel=`／`v-bind.attr=` 是 `v-bind="obj"` 的
+  等价形态（编译器同为 `_guardReactiveProps` ＋ FULL_PROPS），两个门禁都看不见；③**B⁵ S2-G2**
+  `<textarea><!--`／`<title><!--`（RCDATA 里的 `<!--` 是**文本**）会把其后**真实渲染**的整段模板吞成注释，
+  真实调用点对门禁隐身；④**A⁵ S4-1／S4-2、B⁵ S4-G4** 三处假失败／两门禁不一致——Options API 判定走未掩码视图
+  （一句普通字符串即硬失败）、`defineProps<{…}>` 字面量体被平铺扫键（嵌套键被当顶层 prop）、D 断言只认单引号
+  而守卫认单双引号；⑤**B⁵ S4-G5**（说明性）`attrs` 判据不覆盖 `:x="$attrs"` 这类**取值位**，不应写成
+  「任何 `$attrs` 出现即失败」。已逐条修掉：重定向剥离改为不吞分隔符且**不丢弃空段**（尾随 `&` 即两段），
+  `_active_recipe_lines` 先按 Make 规则拼**逻辑行**；门禁挂点改为按**前置 token**（先截掉 `#` 注释）比对；
+  对象展开判据改按**基名**；扫描器新增 **RCDATA** 模式（`textarea`／`title` 内不识别 `<!--`）；
+  Options API 判定改用**整文件掩码视图**的 `<script>` 段；新增 `declaredPropNames` 只在**括号深度为 0** 取顶层键；
+  D 断言同步接受 `['"]`。守卫单测 **45 → 51 例**，影子副本矩阵 **95 → 112 项（96 项 CAUGHT ＋ 16 项假失败
+  防线锁定 STILL-PASS）**。第六轮修订产生新 HEAD，L1／exact-head L5 与第七轮复核按新冻结候选重跑与重绑。
+  详见迭代文档 §8。
+  随后 round A⁶／B⁶（复核 head `4ea84a5b`，均 REQUEST_CHANGES、**无 S0／S1**）点名**两类 Make 级失败通道**＋据实性：
+  ①**A⁶ S2-1** 守卫只解析 `make/frontend.mk`——把 `verify.frontend.product_page_header.unit` 在被 `include` 的片段里
+  重定义，Make 取**最后一份** recipe（只给一条 warning），断言里的 recipe 被整条替换而原文件一字未动；
+  ②**A⁶ S3-1** Make 的**失败忽略**通道此前完全没查——recipe 行的 `-` 前缀（`@-esbuild …`／`-@/usr/bin/node …`）、
+  `.IGNORE:` 特殊目标、`MAKEFLAGS += -i` 都让步骤「执行但失败不传播」，且完全不改 shell 形状；
+  ③**A⁶ S3-2／B⁶ S2-1** 复核时刻冻结候选上尚无 exact-head L5 回执（复核者只能只读，无法代跑）；
+  ④**B⁶ S4-1／A⁶ O-1** 切换日志计数与迭代文档 §6④ 口径。已逐条修掉：守卫改为按 `include`／`-include` 展开
+  **Makefile 链**（跳过 `$(…)` 动态 token），要求被守卫目标在链上**只定义一次**，门禁挂点前置也改为在整条链上
+  收集（并与 `make/runtime_ops.mk` 的可累加前置合并）；`_matches_recipe` 的前缀字符集含 `-` 即判失败，新增
+  `_ignore_error_forms` 拒绝 `.IGNORE:` 与 `MAKEFLAGS` 的 `-i`／`--ignore-errors`；L5 回执已在 `4ea84a5b`
+  （tree `96faa246`）上重跑并 **VERIFIED**。守卫单测 **51 → 55 例**，影子副本矩阵 **112 → 119 项
+  （101 项 CAUGHT ＋ 18 项假失败防线锁定 STILL-PASS）**。第七轮修订产生新 HEAD，L1／exact-head L5 与
+  A⁷／B⁷ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁷／B⁷（复核 head `86b48ac3`；**A⁷ REQUEST_CHANGES、B⁷ APPROVE**，均**无 S0／S1**）——A⁷ 指出
+  ①**S2-1** `include` 的**静态**同义／拼写形态被逐物理行的 `^\s*-?include` 漏掉：`sinclude`（`-include` 的正式同义词）、
+  以 `\` 续行承载的 include、带引号路径、`$(VAR):` 变量目标名，四者都能把被守卫 recipe 静默替换而守卫仍 PASS，
+  而文档却宣称「凡能静态解析的 include 链都扫」；②**S3-1** `SHELL := /bin/true` 与 `.ONESHELL:` ＋尾部 no-op
+  同样不改 recipe 字面内容就让失败不传播；③**S4-1** `override`／`export` 前缀与续行承载的 `MAKEFLAGS += -i`
+  未被匹配；④**S4-2** §5／§6 仍以上一轮的 112 项（96＋16）充当当前矩阵数。已逐条修掉：`_include_tokens` 改在
+  **逻辑行**上匹配 `(?:-|s)?include`、去引号、支持一行多路径；新增 `_non_literal_targets`（链上任何 `$(…)` 目标名
+  一律硬失败，本仓库当前为零）与 `_failure_propagation_overrides`（`.ONESHELL:` 出现即失败；`SHELL`／`.SHELLFLAGS`
+  跨链最多定义一次，重定义即失败）；`_ignore_error_forms` 补上前缀并改按逻辑行判定。守卫单测 **55 → 63 例**，
+  影子副本矩阵 **119 → 132 项（110 项 CAUGHT ＋ 22 项假失败防线锁定 STILL-PASS）**，矩阵数字口径统一。
+  第八轮修订产生新 HEAD，L1／exact-head L5 与 A⁸／B⁸ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁸／B⁸（复核 head `23beb55c`；**A⁸ POST_MERGE_FOLLOWUP、B⁸ REQUEST_CHANGES（仅文档残留）**，
+  均**无 S0／S1／S2**）——A⁸ ①**S3-1** 指出把 make 级指令藏进行首匹配之外仍能失败不传播：`$(eval SHELL := /bin/true)`、
+  `$(eval MAKEFLAGS += -i)`、`define SHELL … endef`、`MAKEFLAGS += $(IGN)`（变量值间接），而 §6④ 用了「一律硬失败」
+  的过宽措辞；②**S4-1** 指出扫逻辑行时未排除 **recipe 行**，`\tSHELL=/bin/bash cmd` 会被误判成 make 级重定义（假失败）；
+  ③**S4-2／B⁸** 指出迭代文档「修订后重跑」段仍写「守卫单测 55 例」、§8 历史括注只到「112／119 项」。
+  已逐条修掉：新增 `_dynamic_directive_wrappers`（`$(eval …)` 内的 `SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 赋值或
+  `.…:` 特殊目标、`define SHELL`／`.SHELLFLAGS`／`MAKEFLAGS` 即失败），`MAKEFLAGS`／`SHELL` 赋值**值带变量**即失败，
+  两个扫描器显式跳过 tab 开头的 recipe 行，§6④ 措辞收窄并登记 `$(call …)` 一类多层拼装残限。守卫单测 **63 → 69 例**，
+  影子副本矩阵 **132 → 139 项（114 项 CAUGHT ＋ 25 项假失败防线锁定 STILL-PASS）**，矩阵数字与历史括注口径统一。
+  第九轮修订产生新 HEAD，L1／exact-head L5 与 A⁹／B⁹ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A⁹／B⁹（复核 head `fe9e153d`；**A⁹ APPROVE（判定合并就绪）、B⁹ REQUEST_CHANGES（仅文档）**，均**无 S0–S3**）——
+  A⁹ 确认 A⁸ 三项全部真实关闭，另记两条 **S4 级 fail-closed 潜在假失败**（`$(eval …)` 内任意 `\.[A-Z]+:` 含良性 `.PHONY`
+  也失败；`define … endef` 宏体被当作生效指令），本仓当前零影响，登记为**下一批候选**；B⁹ 指出切换日志本批条目的
+  「验证」bullet 是**活口径块**（曾被 `20526ff0` 原地刷新）却仍写「守卫单测 **51 例**」「注入 **112 项矩阵（96＋16）**」，
+  与同条目「口径统一」自述冲突。已订正：该 bullet 刷新为 **69 例**／**139 项（114＋25）** 并补沿革括注，
+  迭代文档 §3 的「14 → 51 例」补箭头链到 69。第十轮修订（纯文档）产生新 HEAD，L1／exact-head L5 与
+  A¹⁰／B¹⁰ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+  随后 round A¹⁰／B¹⁰（复核 head `b7ed7131`；**均 REQUEST_CHANGES（仅文档）**，无 S0–S3，且**代码在 `fe9e153d` 后零改动**）——
+  两轮独立复核都只指出同一处：第十轮为订正旧数字而**新写入**的「沿革」括注里，守卫单测链写成
+  `14 → 27 → 31 → 37 → …`，而逐冻结候选实测为 `14 → 20 → 27 → 34 → 40 → 45 → 51 → 55 → 63 → 69` 例（31／37 从未在任何提交存在，
+  且漏掉 20、把 34／40 写成 31／37）；矩阵沿革 `95 → 112 → 119 → 132 → 139` 经核对正确。已订正两处括注
+  （切换日志末条与迭代文档 §8），并注明单测数取自逐候选 `def test_` 实测。第十一轮修订（纯文档）产生新 HEAD，
+  L1／exact-head L5 与 A¹¹／B¹¹ 复核按新冻结候选重跑与重绑。详见迭代文档 §8。
+- 上一批复核 A′／B′ 点名的**登记完整性**在本批一并补上：`productMyWorkPresentation`／`ApiKeyManagementView`／
+  `PaymentSettlementIntroduceDialog`／`BoqImportPreviewPanel`／`RelationSearchDialog` 的本地回退与格式化事实，
+  在 `frontend_localized_display_contract_test.ts` 中以**正锁**（缺一即失败）登记，任何漂移都必须重新决策。
+- 残限（如实登记）：薄入口仍不暴露的轴是**显式决策**而非遗漏；`breadcrumb`／`variant` 目前无任何入口转发；
+  `ContractFormProductHeader` 的领域内容不在本批收口；门禁 F／G 用属性名与标签解析而非 AST，
+  `<component :is>`（含静态 `is=`、`:is =` 空白变体、**无引号** `:is=X` 与 `:is.camel`／`:is.prop`／`:is.attr`
+  修饰符）／**字面量** `v-bind="obj"`（含权威标签自身与 `v-bind.prop|.camel|.attr` 修饰符形态；
+  变量形态需数据流分析，另行登记）／
+  `$attrs`・`useAttrs()`・`attrs` 三类静态不可枚举形态被设计为**硬失败**（要求显式登记），
+  非字面量 `defineProps` 与 Options API `props`（仅当所在 `<script>` 段声明 `export default`）同样硬失败；
+  `textarea`／`title`（RCDATA）内的 `<!--` 按**文本**处理，不得再把其后模板吞成注释；
+  recipe 形状判定要求「切段后**恰好只剩一段**」，故 `$(ESBUILD)`／`sh -c`／参数换序／
+  `cd <子目录>` 后改用相对路径／真实步骤尾部的 `<步骤> || true`・`<步骤> ; true`・`<步骤> &`、
+  以及紧贴分隔符的 `>/dev/null|| true` 会**假失败**（安全方向，需显式登记；
+  `2>&1`／`2>/dev/null` 等真实重定向仍被接受，`\` 续行按 Make 规则拼成逻辑行后判定），
+  门禁挂点按**前置 token** 比对（行尾 `#` 注释里的目标名不算依赖），
+  Make 级的失败忽略通道（recipe 行 `-` 前缀、`.IGNORE:`、`MAKEFLAGS` 的 `-i`／`--ignore-errors`，含
+  `override`／`export` 前缀与续行形态）、`SHELL`／`.SHELLFLAGS` 在 `include` 链上的**重定义**与**值带变量**的赋值、
+  `.ONESHELL:`、`$(eval …)` 包裹的指令、`define SHELL`／`define MAKEFLAGS` 多行体、链上的**变量目标名**（`$(VAR):`）
+  与「被守卫目标在 `include` 链上被重定义」一律**硬失败**（安全方向；recipe 行里的 `\tSHELL=… cmd` 是给单条命令
+  设环境变量，显式排除）；
+  `include` 的静态拼写（`include`／`-include`／`sinclude`，含续行、引号路径、一行多路径）逐个展开，
+  `include $(VAR)` 这类**动态 include** 与条件 include 无法静态展开，属如实登记的残限；
+  受管例外入口的领域属性面不在「属性 ⊆ 登记轴」约束内；无 `local.dev` 运行态抽验。`scene_component_bridge`／`style_system`（`ContractFormPage`
+  1905>1900）／`release_navigation_policy`（菜单投影）三项在本批之前即为失败，本批不修、不掩盖。
+- Next Step：冻结本批 HEAD → L1 → exact-head `make ci.local.quick` 回执 → 独立只读复核（十一轮共 22 次；本轮修订后再由
+  A¹¹／B¹¹ 验证＝24 次）→ 显式合并授权 →
+  `make pr.push`／`pr.create`／`pr.ready`／`pr.merge` → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
+
+## 2026-09-22 — 前端门禁基线对齐（P4 门禁 ＋ P2 最小抽取）
+
+- 分支 `feature/frontend-stability-gate-baseline-v1`，基线 `main@de9a230d3faab18dd60a219f445f932a8af9d7f5`
+  （PR #521「自定义前端字段语义单一权威」的 squash 合入点）。Formal Product Layer 为 **P4**（门禁、生成物、
+  批次记录）；`ContractFormPage.vue` 的抽取属既有 **P2** 前端表达模块的责任下沉。Layer Target 为
+  `frontend/apps/web/src/pages/ContractFormPage.vue` ＋ `pages/contractForm/contractRuntimeVm.ts`、
+  `scripts/verify/frontend_scene_component_bridge_guard.py`、`config/frontend/authoritative_navigation.json`。
+- 触发：用户指令「先不合并，继续迭代，目标是前端代码稳定」。只读侦察确认**三条门禁在干净基线 `main@de9a230d`
+  上即为红**：`verify.frontend.style_system.guard`（`ContractFormPage.vue exceeds 1900 lines: 1905`）、
+  `verify.frontend.scene_component_bridge.guard`（协作区断言整串字面量已因既有 `suppressCollaboration` 加固而失效）、
+  `verify.frontend.release_navigation_policy.guard`（finance／project_a_member 投影差异）。故把「既有红灯归零」
+  作为稳定第一刀。
+- 实现（源码 3）：`ContractFormPage.vue` **1905 → 1894**，删两处就地派生改消费权威、移除不再使用的
+  `collectRuntimeCapabilities`／`resolveContractV2FormStructureContract` 导入；`contractRuntimeVm.ts` **169 → 227**，
+  新增 4 个具名权威 `resolveRuntimeRoleCode`／`resolveRuntimeRoleCodes`／`buildContractFormPolicyContext`／
+  `resolveNativeStructureAuthority`（纯函数下沉，**同输入同输出、零行为变更**）；
+  `frontend_scene_component_bridge_guard.py` 协作区断言由整串字面量改为**结构化断言**——`hasCollaboration` 必须仍是
+  `computed`，其体（压缩空白后）必须含 `Boolean(props.showCollaborationPanel)`、`hasCollaborationNode.value`、`||`，
+  并额外要求 `v-if="hasCollaboration"` 与 `:show-collaboration-panel="showNativeCollaborationPanel"` 仍被消费。
+- 统一口径：①**行数棘轮以真实抽取满足，未上调**——`complexity_baseline_lock.json` 的 `max_lines` 未改（限制型，
+  不随下降刷新），`p4_p0_03_contract_form_split_evidence.md` 行数锁按注册目标刷新为 1894；②**协作区可见性唯一口径**
+  ＝运行时能力 **或** 下属节点权威，且该标志必须被宿主模板消费（任一权威缺失或 `||`→`&&` 均失败）；③**角色发布面口径**
+  ＝后端 `ROLE_SURFACE_OVERRIDES` 发布集合必须逐个出现在前端清单且 `expected_count` 相等。
+- 声明与生成物（7）：`config/frontend/authoritative_navigation.json` 补 3 个**后端已在 PR #497（`cefeff1f`，2026-09-19）
+  发布、前端从未登记**的叶子（菜单定义自 PR #171／`6f86a983` 起即存在）——`menu_sc_product_current_account_v1`
+  (`sc.current.account.workspace`)、`menu_sc_product_company_project_refund_v1`
+  (`sc.company.project.refund.workspace`) → finance（43 → **45**）；`menu_sc_product_team_loan_deduction_v1`
+  (`sc.team.loan.deduction.workspace`) → project_a_member（9 → **10**），发布身份总数 82 → **85**。其来源 `groups`
+  分别为 `…group_sc_cap_finance_user`／`finance_manager` 与 `…group_sc_cap_project_user`／`project_manager`，与所属
+  角色能力面一致，故按「后端权威正确、前端清单滞后」登记，**不反向改后端**。生成物按注册目标刷新：
+  `complexity_budget_report.md`（1905 → 1894）、`split_plan_queue.md`、`p4_p0_03_contract_form_split_evidence.md`、
+  `component-driver-takeover-inventory-v1.json`（inputDigest）、`component-professionalization-inventory-v1.json`、
+  `visual-projection-inventory-v1.json`。
+- 验证证据：`verify.frontend.quick.gate` **PASS**（同一命令在基线 FAIL）；`frontend_style_system_guard.py` **PASS**
+  （`hardcoded_color_refs_max=0`，`phase0_variable_classification=131`）；`frontend_scene_component_bridge_guard.py`
+  **PASS** `checks=63` ＋ **负例自检 6/6 正确**（基线 True；删 `hasCollaborationNode.value`／只留能力／`||`→`&&`／
+  标志改名 均 False；等价重排 True）；`frontend_release_navigation_policy_guard.py` **PASS**
+  `roles=4 released_leaf_identities=85` ＋ 单测 5 例 OK；清单消费方回归
+  （`product_finance_center_wave1_guard`／`frontend_product_page_header_guard` `adapters=3`）PASS，
+  `PYTHONPATH=scripts/verify unittest test_frontend_release_audit test_frontend_release_evidence_bundle
+  test_frontend_release_navigation_policy_guard` **Ran 20 OK**；L1 `make ci.delivery.freeze.prepare` **PASS**
+  且 `ci.generated_evidence.preflight` **PASS**；`typecheck:strict`（门禁口径）**PASS**；`vue-tsc --noEmit`
+  （非门禁口径）本分支与基线**同为 32 条**、错误文件集合一致（唯一差异 `ContractFormPage.vue` 三条错误行号
+  `1165 → 1167`，由上方导入块净增 2 行）；`lint:src` **0 error / 39 warning**。
+- 排除项与残限：①`scripts/verify/frontend_release_audit.py` 在基线与本分支**均 FAIL**（缺
+  `artifacts/frontend-release-audit/report.json`，需受管运行态产出），本批**不修、不掩盖**；②
+  `verify.frontend.rendering_detail_state.unit` 在基线即为红（`internalVendorSelectorGapCount: 1` ＋ inventory stale），
+  本批源码改动使指纹绑定生成物必须按注册目标 `refresh.frontend.rendering_detail.inventory` 刷新后三项 PASS；其中
+  **非本批**内容漂移（某组件 `stateTypes` 补 `empty`、visual-projection 12 项 digest 变化）系**既往提交遗留的陈旧
+  生成物**被按注册流程重建，已如实登记，不声称由本批源码改动产生；③既有类型债 32 条 / 15 文件仍为本批之前既有，
+  未挪用为本批范围。
+- 发布阻断（外部）：GitHub 账号 `lidefend`（仓库 owner／PR 作者）被平台封禁——`git ls-remote origin` 返回
+  `remote: Your account is suspended.`（HTTP 403），全部认证 API 同为
+  `403 {"message":"Sorry. Your account was suspended"}`。故本批**未推送、未建 PR**；上一批
+  `feature/frontend-page-header-entry-authority-v1`（PR #522，A¹¹／B¹¹ 双 APPROVE、exact-head L5 VERIFIED）
+  继续冻结待合并。镜像 `gitee-mirror` 仍可读但不承载 PR／四门。
+- 批次记录：`docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md`。
+- Next Step：冻结本批 HEAD → exact-head `make ci.local.quick` 回执 → 两轮独立只读复核 → 恢复远端后
+  `make pr.push`／`pr.create`／`pr.ready`／`pr.merge`（合并需用户另行显式授权，且需用户决定其与 PR #522 的合并顺序）
+  → 主仓库 `make main.sync` → `make branch.cleanup.feature`。
+- 后续待办（下一批候选，按价值排序）：①类型债 32 条 / 15 文件收敛（`SceneContractBlockGridView.vue` 6、
+  `one2manyRelationQuery.ts` 4、`nativeSectionNavigation.ts` 3、`ContractFormPage.vue` 3、`canonicalFormRenderer.ts` 2）；
+  ②`app/pageContract.ts:106` 仍自行解析 `roleSurface.role_codes`，应与本轮下沉的 `resolveRuntimeRoleCode(s)` 并为单一权威；
+  ③`scripts/release/release_readiness_report.py:74` 硬编码 `authoritative_navigation_leaf_count: 70`（实际 85），应改为从
+  清单派生；④新登记 3 菜单需一次受管运行态浏览器清单复核（并同步 `source.source_sha`，现仍
+  `0ac5173be801861ea621dd0e5048c9fc18548049`）；⑤`frontend_release_audit.py` 的证据运行尚未建立。
+- 复核后修订（绑定提交 `23928265`；被复核的冻结候选为 `2437519d49535a457063f79f2ed2310579216253`）：两轮独立只读复核
+  判 Round A **APPROVE**（S3×3／S4×2）、Round B **REQUEST_CHANGES**（S2×1／S3×2／S4×1），
+  两轮均确认抽取零行为变更（机械复算 18＋11 组输入零差异）、行数棘轮未上调、导航清单登记的是后端事实、清单不改运行态、
+  冻结回执 VERIFIED、封禁说法属实。逐条处置：①**协作区断言从「令牌子串存在」改为「绑定操作数」**——先屏蔽注释与
+  字符串字面量、用括号平衡扫描读 `computed` 实参、要求恰为「运行时能力 `||` 节点权威」两个操作数（可带
+  `!props.suppressCollaboration` 抑制条件），`!!`／顺序／冗余括号／单行写法改为接受；修订前保留三令牌而破坏语义的写法
+  （`&& false`、`=== undefined && true`、能力被 `&&` 降级、节点权威只在注释／字符串里）全部被漏检，修订后全部 FAIL。
+  ②**13 例自检矩阵内建进守卫**，每次运行都执行（回退到初版断言即自检失败），取代原先未入库的「6/6」临时实验。
+  ③**§6 两处据实性订正**：`frontend_release_audit.py` 的失败**不是**缺 `report.json`（该文件是守卫自身输出），
+  真实阻塞是 7 个 `EVIDENCE_SHA_MISMATCH:*`（上游分节运行态证据未按本 head 重建）；基线 `rendering_detail_state.unit` 的
+  签名改为可复现的两步 `--check` 陈旧，原先记录的 `internalVendorSelectorGapCount: 1` 在基线与中间提交均不可复现，**已撤回**。
+  ④**删除抽取遗留的死变量** `runtimeRoleCodes`（`ContractFormPage.vue` 1894 → **1892**），生成物按注册目标重刷。
+  ⑤表注澄清 `verify.frontend.quick.gate` 只覆盖桥接守卫一条；两把行数锁（守卫 `1900` 与 baseline lock `5947`）分别说明。
+  ⑥新登记待办：`pageContract.ts` 的角色归并须**同时**决定两侧大小写归一（该处只 `trim()` 不 `toLowerCase()`）；
+  `frontend_release_audit.py` 每次运行会覆写自身输出，应加 `--check` 恢复「守卫只读」语义。
+  修订产生新冻结候选，L1／L5 与第二轮独立只读复核按新候选重跑与重绑；批次文档 §8 为修订映射全表。
+- 第二轮复核后修订（绑定提交 `50faccf5`；被复核的第二个冻结候选为
+  `a55253170c9f4c6792aa0d1f2eca015856aeae3e`）：Round A² 与 Round B² 均判 **REQUEST_CHANGES**，且**独立指出同一类缺口**——
+  上一轮只把断言从「令牌子串」收到「标志表达式体」，**没有约束它 OR 的那个节点权威的定义与其消费接线**，于是
+  「标志体一字不动、把 `hasCollaborationNode` 换成 `computed(() => false)`／读空字面量／`.some` 改 `.every`／类型清单删项」
+  或「`:has-collaboration` 改传字面 `false` 或改传原始能力」都能让门禁 **PASS** 而协作区权威已经死亡——即
+  `A || B` 在 `B ≡ false` 时是**空断言**。逐条处置：①断言从**一个位点扩到四个位点**——标志表达式（两操作数由一个顶层
+  `||` 连接）＋ 节点权威派生（须仍读 `props.renderModel?.zones.subordinate`、保留 `.some(`、向协作类型谓词提问）
+  ＋ 协作类型声明（`collaborationKind` 须仍声明 `chatter` 与 `activity`，可增不可减）＋ 消费接线
+  （`:has-collaboration="hasCollaboration"` 与 `v-if="hasCollaboration"`）；内建自检矩阵由 13 例扩到 **22 例**
+  （7 接受 ＋ 15 拒绝），跨「表达式体」与「权威定义」两个域。②**位点注入实测**：14 个攻击向量全部 FAIL
+  （标志表达式 4 ＋ 能力未布尔化 1 ＋ 权威派生 5 ＋ 接线 4），5 个等价拼写全部 PASS；回退成旧写法即自检失败。
+  ③**据实性订正**：§5 的「8 个应拒绝形状」按矩阵实际改为逐项列举；§6 的守卫边界段改为按位点枚举「接受面／拒绝面」
+  （含 `=== true`、`Boolean(node)`、`!!node`、`node !== false`、同文件 helper 抽取等**会被拒**的等价写法），
+  并登记 `checks=63` 是历史硬编码字面量；上游旧件日期由 `2025-09-11` 更正为 **2026-09-11**；
+  被撤回的旧签名 `internalVendorSelectorGapCount: 1` 的来源注明为**单测负例合成场景**（非基线门禁输出）。
+  ④**本段取代正文相应数字**：本条目正文里的 `1894`、`1167`、「负例自检 6/6」、
+  「缺 `artifacts/frontend-release-audit/report.json`」、「`internalVendorSelectorGapCount: 1`」均以本段与
+  批次文档 `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）。
+
+- 第三轮复核后重构（第三轮收口，绑定提交见批次文档 §3；被复核的第三个冻结候选为
+  `ce9450edbde7242a006a8d7fb3e322d6b0cf0ab6`）：Round A³ 与 Round B³ **均判 REQUEST_CHANGES**（各 S2×2），
+  并**独立收敛到同一根因**——**文本形状门禁无法证明语义**：「令牌齐全但语义被破坏」在每一位点都会重现。
+  具体缺口：①④ 消费接线是对**未剥 HTML 注释**的**整份文件**做子串检查，故 `:has-collaboration="false"`
+  ＋ 别处一句 `<!-- :has-collaboration="hasCollaboration" -->` 即可 PASS（正是上一轮声称已关闭的向量）；
+  ②③ 仍是子串存在性，谓词取反／清单惰性化／读错 zone／`.some`→`.every` 仍 PASS；22 例自检矩阵对「位置／诱饵」
+  **零鉴别力**；`checks=63` 是硬编码字面量（运行时实为 124）。
+  处置（R15–R21，批次文档 §8 为修订映射全表）：
+  ①**语义下沉为单一权威**——`contractRuntimeVm.ts` 新增 4 个导出（`COLLABORATION_SURFACE_KINDS`、
+  `isCollaborationSurfaceKind`、`hasCollaborationNode`、`resolveCollaborationVisibility`），宿主删除本地
+  `hasCollaborationNode` computed 与 `collaborationKind`，改为 `computed` 调用单一权威（净行数 383 → 383），
+  模板接线不变。②**新增可执行真值表**——`frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts`
+  （120 行）导入**真实模块**跑 **46 例**（类型谓词 13／节点权威 9／可见性 20 ＋ 4 条承重断言），
+  是唯一声称「语义正确」的一层；变异实测 13 个真实变异**全部报错**。③**证明接线**——`make/frontend.mk`
+  新增 `verify.frontend.contract_form_collaboration_authority.unit` 并把它加入 `verify.frontend.scene_component_bridge.unit`
+  前置项（因而进入 `verify.frontend.quick.gate`／`release.unit`）；守卫新增「证明接线」断言防止其被摘出。
+  ④**守卫退化为只绑接线**——五个职责分离断言（委派／规则形状／类型清单被消费／消费接线／证明接线）；
+  读模板前先屏蔽 **HTML 注释与 `<style>` 块**（保偏移），再用「真实起始标签」判定，故注释诱饵与
+  「令牌停放 `<style>`」两类向量关闭；`checks` 改为**运行时统计**，实测 `PASS checks=124 collaboration_self_check=26`。
+  ⑤**自检矩阵 22 例 → 26 例（4 接受 ＋ 22 拒绝）**，改为 5 元组 `(name, host, module, makefile, expected)`；
+  其**单独**位置鉴别力仍为零，鉴别力显式来自真实宿主断言，已在 §6 如实登记。⑥**对抗性回归**：17 个攻击向量
+  **16 个被拒**；**唯一仍 PASS 的是 `watchEffect` 覆写 `hasCollaboration.value`**，按 §6 登记为已知**运行态旁路**，
+  不声称已覆盖。⑦**据实性订正**：§3 提交链按实测更正为 **8 个**（此前漏记 `66fbf1bb`／`9a26b257` 两个功能提交）；
+  自检矩阵增量算术按实测写明；`frontend_release_audit.py` 的 `--output` 无法重定向到仓库外（内部
+  `relative_to(ROOT)` 对 `/tmp/…` 抛 `ValueError`）一并登记。
+  ⑧**本段取代正文相应数字**：本条目正文（含上一段）里的 `1894`、`1167`、`checks=63`、「负例自检 6/6」、
+  「**13 例**自检矩阵」、「**22 例**」、`22 例 = 7 接受 ＋ 15 拒绝`、「提交链 5 个／7 个」、
+  `contractRuntimeVm.ts 169 → 227`、「协作区断言＝运行时能力 `||` 节点权威两个操作数」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：`contractRuntimeVm.ts` **169 → 262**、守卫 `checks=124`、自检 **26 例**、提交链 **8 个**、
+  协作区判定**已下沉为单一权威并由可执行真值表证明**。发布仍受外部封禁阻塞，本批**未推送、未建 PR**。
+
+- 第四轮复核后收口（**本轮**，被复核的第四个冻结候选为 `9a671cc8961bfbff31c976cac68a0f5ec4601139`）：
+  Round A⁴ 与 Round B⁴ **均判 REQUEST_CHANGES**，并再次**独立收敛到同一类缺口**——上一轮只把守卫从「令牌存在性」
+  收到「表达式形状」，但**宿主接线的语义仍然无人证明**：令牌齐全而语义被破坏的写法在**委派位点**原样重现。
+  具体缺口与处置（R22–R26，批次文档 §8 为修订映射全表）：
+  ①（R22，S2）委派仍只做令牌级检查——用 `()`／`!`／逗号丢弃结果／尾随 `|| false`／`? :` 常量化，或宿主自行再声明
+  一个同名权威，都能让接线失效而守卫 PASS。处置：升级为**委派等值**（只做确定性脱糖：冗余括号／`(): T =>` 返回
+  类型标注／仅含 `return` 的块体），归约后**必须恰好等于**指向单一权威的委派式；并新增「宿主**不得自行声明**该权威」
+  与「**必须从 VM 导入**」两条。同时把可执行证明的断言全部改为 `strictEqual` 并补 5 例可见性边界（46 → **51 例**）。
+  ②（R23，S3）插槽只断言 `v-if` 存在、不约束它挂在哪。处置：新增 `_start_tag_spans()`／`_element_spans()`
+  （深度计数求元素区间），要求 `#collaboration` 起始标签**落在承载标志的 `ObjectTaskPage` 元素区间之内**。
+  ③（R24，S2／S3）证明接线只绑路径不绑执行（换 `@echo`、删 `node` 行仍 PASS），且证明文件可被静默改写。
+  处置：解析该 `make` 目标的**配方块**，要求同时含 `esbuild … --bundle --platform=node --outfile=<x>` 行与
+  `node <x>` 执行行；另加 **sha256 内容绑定**（负例实测：摘要改错即 FAIL
+  `the executable collaboration authority proof changed`）。
+  ④（R25，S3）④读的是**整份文件**（含 `<script setup>`），绑定改字面 `false` ＋ 脚本内 JS 注释／字符串诱饵即可复位；
+  且 §6 旧「接受／拒绝面」清单按旧口径写成。处置：读模板前**再丢弃 `<script setup>` 段**（在屏蔽 HTML 注释与
+  `<style>` 之后，保偏移）；自检矩阵 **26 例 → 36 例（4 接受 ＋ 32 拒绝）**；§6 的接受／拒绝面按真守卫**逐项实测**
+  重写（本轮复算 17 个形状 16/16 与清单一致）。
+  ⑤（R26，S4）上一段把 A³-V9（`watchEffect` 覆写）登记为「已知运行态旁路」，与实测不符。处置：独立复算更正——
+  `hasCollaboration` 是只读 `computed`，覆写触发 `Write operation failed: computed value is readonly` 且**值不变**，
+  V9 **不是**旁路；§5／§6／§7 措辞按实测更正。并复算 `source/inventory/审计脚本` 面无回归
+  （`git status --untracked-files=all` 无未跟踪文件）。
+  ⑥**本轮新发现并更正的据实性问题**：上一段称「去掉 `_blank_html_comments` 后矩阵立即报出
+  `region slot renamed with a comment decoy`」**不可复现**——该用例的诱饵在元素**外**，被父子绑定规则先一步拒掉，
+  故矩阵对注释屏蔽**零**鉴别力；本轮把诱饵挪到元素**内**，矩阵遂对注释屏蔽**真有**鉴别力（复算：换成恒等函数后
+  矩阵立刻只报出该用例）。同时如实登记：`_blank_style_blocks` 与 `<script>` 截断是**纵深防御**，矩阵对它们
+  **无**鉴别力（同法复算 36 个判定全部不变）。
+  ⑦**本轮自查发现的据实性缺口（R27）**：上一段（及批次文档 §5）声称 `verify.frontend.quick.gate` **PASS**，但按本批 head 复跑**为红**——`c28a03c6` 把协作区判定移出宿主 `.vue` 之后，该族两个**指纹绑定生成物**（`component-professionalization-inventory-v1.json`、`visual-projection-inventory-v1.json`）没有按注册目标重刷（最后一次刷新停在 `23928265`），卡在 `verify.frontend.rendering_detail_state.unit`。处置：按注册刷新目标
+  `refresh.frontend.rendering_detail.inventory` **二次刷新**两件，复核 `git diff` 为**仅** `inputDigest`／`sourceIdentity` 变化、`surfaces` 逐条不变（无内容漂移），复跑 `verify.frontend.quick.gate` **PASS**；批次文档 §3 的生成物清单由 **2 件更正为 4 件**。
+  ⑧**本轮实测**（均在 `/tmp` 完整影子内，用 `git archive 9a671cc8` ＋ 覆写工作树版本重建）：
+  接线攻击 **16/16 被拒**（基线 PASS）；真值表**11 个真实变异全部被拒**、1 次语义等价改写
+  （`!Number(input.suppressed)`）正确通过；§6 接受／拒绝面 **17 个形状 16/16 与清单一致**；
+  守卫 `PASS checks=126 collaboration_self_check=36`；证明 `PASS cases=51`。
+  ⑨**本段取代正文相应数字**：本条目正文（含上两段）里的 `checks=124`、自检 **26 例**、真值表 **46 例**、
+  「17 个攻击向量中 **16 个**被拒」、`120 行`、`可见性 20 例`、「V9 为已知运行态旁路」、「`verify.frontend.quick.gate` 在本批 head 为 PASS」与「生成物 2 件」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=126`、自检 **36 例（4 接受 ＋ 32 拒绝）**、真值表 **51 例**（全部 `strictEqual`）、
+  证明文件 **128 行**、可见性 **25 例**、接线攻击 **16/16 被拒**、**V9 不是旁路**、
+  协作区判定**已下沉为单一权威并由可执行真值表证明、守卫只绑接线＋内容摘要**。
+  发布仍受外部封禁阻塞（`git ls-remote origin` → `remote: Your account is suspended.`），本批**未推送、未建 PR**。
+- 第五轮复核后收口（**本轮**，被复核的第五个冻结候选为 `7416004169fd2fdafac01e6fe8ae085840449ae1`）：
+  Round A⁵ 与 Round B⁵ **均判 REQUEST_CHANGES**，且再次**独立收敛到同一类缺口**——上一轮把断言从令牌抬到「整表达式
+  等值／元素区间／配方块」，但那些判定本身**仍可被同形输入骗过**，且**页面侧那一步完全没有门禁**。
+  本轮逐条收窄（R28–R34，批次文档 §8 为修订映射全表，§6 为加固后的覆盖／不覆盖登记）：
+  ①（R28，**S1，真 bug**）`_normalize_flag_argument` 把块体的 `return` 设为**可选**：`computed(() => { <委派>; })`
+  （箭头返回 `undefined`）与正确委派**归约相等**（复算实测 `True`）→ 守卫 PASS、标志恒假、协作区永不渲染。
+  处置：块体必须真含 `return`；矩阵加 2 例，真实树向量 V21 实测被拒。
+  ②（R29，S1／S2）⑤用**子串**匹配证明路径（同前缀兄弟 `…test.ts.decoy.ts` 可顶替）；`re.search` 只取**首个**目标
+  定义（第二条 recipe `@true` 不被看见）；执行行正则只要求令牌**以 node 结尾**（`/tmp/b5/fakenode` 可假 PASS）。
+  处置：目标**唯一定义**、`esbuild` 输入须是**字面量令牌**、`esbuild`／`node` 按 **basename** 锚定、执行行只允许
+  恰好 `node <outfile>`；矩阵加 4 例，V08／V09／V13 实测被拒。
+  ③（R30，S1）①只查「导入了同名符号」，不绑 `from '<模块>'` 的 specifier——`from './collaborationVisibilityShim'`
+  的恒 false 权威可两层同绿。处置：新增 `_import_specifiers_for()` 绑定字面 specifier，并加**模块同一性**断言
+  （宿主与证明的 specifier 解析后必须落在同一个真实模块文件）；矩阵加 1 例，V23 实测被拒。
+  ④（R31，S2）⑥只绑证明**源码**，不绑 make **实际执行物**——在 `@node <outfile>` 前插 `@cp /tmp/evil.mjs <outfile>`
+  或再加一条写同一 outfile 的 bundling 即可绕过；上一轮「运行中的证明＝被复核的证明可机器核对」为**过度声称**。
+  处置：⑤新增 **outfile 独占**（该 outfile 只允许出现在唯一 bundling 行与唯一执行行两处，执行在其后），
+  措辞改为「源码层⑥ ＋ 配方层⑤」并登记残余面（`$(VAR)` 展开、同名别名、手工执行）；矩阵加 2 例，S2-F1／S2-F1b 被拒。
+  ⑤（R32，S2）③只要求谓词体**出现**常量名与 `.includes(`（`void <常量>;` ＋ ghost 清单可两层同绿）；三个权威体
+  只做**令牌存在性**，`if (typeof window !== 'undefined') return false;` 之类**运行期环境开关**（node 下证明看不见）
+  可带全部令牌通过；上一轮「已封堵清单惰性化」为**不实**。处置：三个权威体改为**单一 `return` 表达式**判定并在
+  该表达式**内**做令牌检查，且**禁止环境探针**（13 种）；矩阵加 5 例，S2-F2／V01／V02 被拒。
+  ⑥（R33，S2／S3 ＋ 本轮自查）④只判「槽落在 `ObjectTaskPage` **区间内**」——插槽嵌进该元素的子组件（真实宿主同区
+  就有 `<CanonicalActionBar>`）编译 0 error、协作区不渲染、而守卫绿；元素区间用**原始正则**计深度，属性字符串里的
+  同名标签可扰动（V06）；本轮自查又发现**未闭合子元素**会让父级结束标签**静默丢弃**其区间，把外移的槽重新「收进」。
+  处置：改为**直接子元素**判定（最近严格包含元素必须就是承载标志的元素）；区间改由**引号感知标签扫描**一次算出；
+  未闭合元素在父级结束处**逐个收尾**；矩阵加 3 例，S3-F3／V06 被拒，并同步更正 §5／§6 的「区间内」措辞。
+  ⑦（R34，S2／S4）页面→宿主的 `:suppress-collaboration` **完全无门禁**（改 `false` 即失控开放）；  `:show-collaboration-panel`
+  只做**文件级子串**校验，可被**旧画布**的同名绑定冒充。处置：新增**页面侧元素级断言**（起始标签必须同时带两个
+  动态绑定，模板里**每一处**同类写法都必须绑同一页面权威，另绑两处页面侧权威派生）；V03b／V03c／V04a／V04b 实测被拒。
+  同时更正两处**据实性**：`assert.ok` 改为 `strictEqual`（证明 51 例不变）；R27「`surfaces` 逐条不变」实为
+  「条目集合与结构不变，仅 `digest`／`currentInputDigest` 等指纹字段变化」（实测宿主条目 `e8f831bb…`→`67354386…`）。
+  ⑧**本轮实测**（`/tmp/r28` 影子＝`git archive 74160041` ＋ 覆写本轮守卫与证明，跑**真实守卫**）：
+  **18/18 按预期**＝基线 PASS ＋ 1 个形状接受（块体仅含 `return`）＋ 16 个攻击被拒；
+  历史驱动回归 `/tmp/r24_drive` **17/17**、`/tmp/r24_shapes_drive` **16/16**、`/tmp/r24_truth_drive` **ALL AS EXPECTED**；
+  守卫 `PASS checks=127 collaboration_self_check=54`；证明 `PASS cases=51`；`verify.frontend.quick.gate` **PASS**；
+  `typecheck.strict` PASS、`lint:src` 0 error／39 warning、style guard PASS、nav guard PASS `roles=4 released_leaf_identities=85`。
+  另如实登记：类型谓词后追加**不可达** `return false;` 与 `!Number(input.suppressed)` 两个变异，证明 **PASS**（语义未变）
+  而守卫按形状 **REJECT**——证明断言语义、守卫断言形状，两侧口径不同。
+  ⑨**本段取代正文相应数字**：本条目正文（含上段）里的自检 **36 例（4 接受 ＋ 32 拒绝）**、`checks=126`、
+  「§6 接受／拒绝面 **17 个形状 16/16**」与「接线攻击 **16/16 被拒**」以本段与批次文档为准（正文保留为当时记录，
+  不作就地改写）；当前口径为：守卫 `checks=127`、自检 **54 例（6 接受 ＋ 48 拒绝）**、真值表 **51 例**、
+  接线攻击 **18/18 按预期**、页面侧两属性**已纳入门禁**、权威体须为**单一 `return` 表达式且无环境探针**、
+  插槽须为承载标志元素的**直接子元素**。**据实登记**：守卫 1420 → **1940 行**，越过行数阈值并被机器生成物登记为
+  `split_plan_queue.md` 的 P2 项（未上调任何锁），回收方案见批次文档 §7 第 7 项。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+
+- 第六轮复核后收口（**本轮**，被复核的第六个冻结候选为 `f2a94f614fc5be4b41903d3c44557202d2e68588`）：
+  第六轮 A⁶ 判 **APPROVE**（S3×3／S4×2，无 S0–S2），B⁶ 判 **REQUEST_CHANGES**（S1×1 直指环境探针黑名单
+  **整族可绕**）。七项发现的处置（R35–R41，绑定提交 `45466b62`）：
+  ①（R35，**S1**）三个权威体的「运行期环境探针」用**黑名单**（13 种拼写）实现，B⁶ 用等价拼写整族绕过——
+  `globalThis['window']`、`typeof(self)`、`typeof(window)`、`('window' in globalThis)`、
+  `Function('return typeof window')()`；两层同绿而浏览器里协作区恒灭。处置：**删除黑名单**，三个权威体改判
+  **整表达式等值**（`_COLLABORATION_CANONICAL_KIND_PREDICATE`／`_COLLABORATION_CANONICAL_NODE_AUTHORITY`／
+  `_COLLABORATION_CANONICAL_VISIBILITY_RULE` ＋ `_expression_failures()`），探针族**结构性**被拒。
+  同时按 A⁶ 修掉反向的过严面：`_HTML_VOID_ELEMENTS`（14 个 void 元素视为自闭合）与 `_scan_tags` 的 `{{ … }}` 跳过。
+  ②（R36，**S1**）三个权威体先用 `_blank_comments` 定位函数体、再**从原文读回**——把合规 body 写进**字符串字面量**、
+  真 body 换成 `typeof window` 门控即可两层同绿。处置：新增 `_blank_comments_and_strings`／`_function_body_span`／
+  `_authority_body`／`_declared_kinds`，先「注释＋字符串都屏蔽」定位、再从**原文**读回。
+  ③（R37，**S1**）模板里 `{{ '' /* '</CanonicalActionBar>' */ }}` 被标签扫描当成**假闭合**，插槽被重新「收进」
+  `ObjectTaskPage` 区间。处置：`_scan_tags` 跳过插值段（Vue 把插值读成表达式，不是标记）。
+  ④（R38，**S1**）`import { X as _rcv }` 别名与 `const { X } = _shim` 命名空间解构让「同一本地名」绑定落空；
+  `$(VAR)` **变量名目标**可二次定义证明目标（后 include 的 `make/*.mk` 亦可）；`cp … $(VAR)` 覆盖 outfile。
+  处置：`_authority_named_imports` 要求 `local == imported` 并否决解构；⑤的扫描面扩到 `Makefile` ＋
+  `make/*.mk`（除 `frontend.mk`），新增 `_MAKE_DIRECTIVES`／`_rule_name_part`／`_variable_named_rule_lines`，
+  拒绝**变量名目标**与任何含 `$(`／`${` 的配方行。
+  ⑤（R39，**S1**）页面侧只做整文件子串／双引号正则：`v-bind` 之前先写**单引号**字面量 ＋ 双引号 decoy、
+  `v-bind="attrs"` 对象展开都能让守卫绿而 Vue 取字面量。处置：新增 `_HTML_ENTITIES`／`_decode_entities`／
+  `_tag_attributes`／`_bound_dynamic_values`，按**属性表**判定、拒绝宿主标签上的**任何 `v-bind`**；新增
+  `_COLLABORATION_PAGE_SELF_CHECK`（**10 例**，2 接受 ＋ 8 拒绝）＋ `_collaboration_page()` 夹具——页面层此前**无矩阵**。
+  自检矩阵 54 例 → **77 例（10 接受 ＋ 67 拒绝）**＝宿主／模块 67（8 接受 ＋ 59 拒绝）＋ 页面 10。
+  ⑥（R40，S3×3）A⁶ 指出三处**据实性**：§6 称「矩阵对 HTML 注释屏蔽**有**鉴别力」不可复现、引号感知的鉴别力描述
+  不精确、接受面枚举比标题多 1 项。处置：按 **77 例**复算——恒等化 `_blank_html_comments`／`_blank_style_blocks`
+  后**零翻转**（撤回该声明，改登记为纵深防御）；引号感知换「第一个 `>` 即结束」的朴素读法**零翻转**
+  （改登记为「该向量**整例**仍有鉴别力〔第四轮守卫 `74160041` 实测 PASS 它〕、但单项不再被矩阵看见」）；
+  接受面按实测重写为 **8 项**。
+  ⑦（R41，S4×2 ＋ 据实性）§6 的「权威体里**任何**非单一 `return` 写法」措辞过宽（实测**跨行**写单一 `return`
+  仍被接受）；本日志第四轮段**重复**编号 ⑦。处置：措辞收窄为「按归一化后的**整表达式等值**判」；把两条**真正
+  新增**的过严项登记在案（权威体**冗余外括号**——第五轮该写法被接受、第六轮被拒；配方行含任何 `$(`／`${`），
+  另登记「宿主层仍按**双引号正则**读模板属性、与页面层已支持两种引号不一致」；本日志该段重编号为 ⑦／⑧／⑨。
+  ⑧**本轮实测**（`/tmp/r35_verify.py`／`/tmp/r35_verify2.py`：用**守卫自身的函数**在内存里做变异，不落任何文件）：
+  修复前 **LEAK**、修复后 **REJECT** 的向量 13 个（M01–M04 探针族、M06 字符串 decoy、M11 插值假闭合、M19 `as` 别名、
+  M20 页面单引号 ＋ decoy、M22a／M22b `v-bind`、M26／M29／M31 `$(VAR)` 目标／outfile／配方行、M34 仅提及 outfile）；
+  **两个过严面翻转**（修复前被拒、修复后**接受**）：M14（合法 `{{ 1<b }}` 插值）与 M35／M35b（`<br>`／`<br />`）。
+  证明真值表 51 例 → **102 例**（同一张表在 `node` 域与**浏览器域**各跑一遍，装／卸 `window`／`document`／
+  `navigator`／`self` 并断言全局被恢复；`/tmp/r35c1` 影子实测：canonical `rc=0`，`typeof window` 与
+  `globalThis['window']` 门控各 `rc=1`）。守卫 `PASS checks=127 collaboration_self_check=77`。
+  **据实登记一处与复核报告不一致**：B⁶ 的 V18（命名空间导入 ＋ 解构）按报告是 LEAK，实测**修复前就已被**
+  「宿主不得自声明该权威」拒绝，故它不是本轮修复项。
+  ⑨**本段取代正文相应数字**：本条目正文（含上段）里的自检 **54 例（6 接受 ＋ 48 拒绝）**、证明 **51 例**、
+  「`--outfile=$(VAR)` 不在判据内」、「矩阵对 HTML 注释屏蔽**有**鉴别力」、「页面侧不在矩阵内」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=127`、自检 **77 例（10 接受 ＋ 67 拒绝）**、证明 **102 例**（node 域 ＋ 浏览器域各 51）、
+  三个权威体**逐字等于规范式**、⑤扫描 `Makefile` ＋ `make/*.mk` 且拒变量名目标与含 `$(`／`${` 的配方行、
+  页面侧按**属性表**判定且**有**自己的矩阵、运行态**仍无**门禁（两域复跑跑的是纯函数，不等于组件级覆盖）。
+  **据实登记**：守卫 1940 → **2528 行**，仍在 `split_plan_queue.md` 的 P2 项（未上调任何锁），回收方案见批次文档 §7 第 7 项。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+
+- 第七轮复核后收口（**本轮**，被复核的第七个冻结候选为 `5e3120dc`，第六轮收口提交）：
+  第七轮 A⁷ 与 B⁷ **均判 REQUEST_CHANGES**（A⁷ 报 F1 错位读窗／F2 模块级加载期环境门控／F3 载体—插槽—面板死门族；
+  B⁷ 另以 Vue 编译器探针证实「后声明插槽胜出」与插槽内面板 `v-if` 的真实行为）。八项发现的处置（R42–R49，
+  绑定提交为本次收口提交）：
+  ①（R42，**S1**）「**错位读窗**」：`_blank_comments_and_strings` 内部夹着会**改变文本长度**的括号属性归一化
+  （`x['m']`→`x.m`），「在屏蔽文本上定位 span、再从原文读回」**定位错位**——被判的不是真 body；构造式假接受
+  实测 `window == decoy: True`（把合规 body 写进诱饵位即可两层同绿）。处置：`_blank_comments_and_strings` 改
+  **保长**（变长变换拆出）；新增 `_body_window(source, name)` 并**自证对齐**（定位后断言
+  `_blank_comments_and_strings(source[span]) == blanked[span]`，否则报 `has a misaligned read window`）；顶层新增
+  `form_host`／`contract_form_vm`／`contract_form_page`／`frontend_makefile`／偏移样本的**保长 require**。
+  真实树 `contractRuntimeVm.ts` 复测 shift=0，故 HEAD 未触发——属**潜在不健全**，非已利用。
+  ②（R43，**S1**）**模块级加载期环境门控**两层都不覆盖：`if (typeof window …)`、`Array.prototype.includes` 投毒、
+  `import.meta` 等在模块**加载**（import 求值）时就生效，而守卫此前只读三个权威体的**调用期**表达式。处置：新增
+  `collaboration_module_scope_failures(module)` 并纳入 `collaboration_authority_failures`——整模块禁**运行环境全局**
+  （含 `import.meta`）、顶层语句须属声明白名单、拒副作用 `import`／`export * from`／`export default`。
+  ③（R44，F3a／F3b2 ＋ 编译器探针）`#collaboration` **二次声明**：正确插槽之后再写一个（空）插槽，Vue 取**后**
+  声明者，协作区实际不渲染而守卫 GREEN；插槽内面板 `v-if="false"`／`v-show="false"` 同理整块不渲染。处置：
+  `#collaboration` 必须**恰出现 1 次**、插槽内须有 `<NativeCollaborationPanel` 起始标签且该标签不得带**字面死门**。
+  ④（R45，F3c／F3d／A2 ＋ 编译器探针）承载标志的元素**被字面死门关掉**（`v-if="false"`／`v-show="false"`），或它
+  的**任一祖先**被关掉——插槽仍在元素区间内而协作区恒灭。处置：新增 `_tag_dynamic_values`／`_LITERAL_FALSY_GATES`／
+  `_dead_gate_failures`／`_ancestor_dead_gate_failures`，载体**及其所有祖先**逐个做字面死门检查；页面侧对
+  `ContractFormDriverHost`（含祖先）同判——实测 R45a／R45b／R45c 全部 OLD=GREEN → NEW=REJECT。
+  ⑤（R46，过严面）宿主 `:has-collaboration` 按**双引号正则**读，合法的单引号写法被**误拒**。处置：改经
+  `_tag_dynamic_values`／`_tag_attributes` 按**属性表**读（与页面层口径一致），单引号写法转为**接受面**并补 3 例回归。
+  ⑥（R47，据实性）§3 旧写「1420 → 2528 行」与真守卫不符；§6 旧写「任何**运行期**环境探针不再可能两层同绿」为
+  **全称过宽**（只覆盖三个权威体的**调用期**）。处置：更正为 **445 → 3136 行**；全称表述收窄为「三个权威体
+  **调用期**内的环境探针不再可能两层同绿，**加载期**门控由第二层⑨覆盖」并登记残余面。
+  ⑦（R48，本轮自查 F2 残余）顶层**绑定**带**加载期初始式**仍 GREEN：`export const degraded = typeof screen !== 'undefined'
+  && (KINDS as …).splice(0);`（`screen` 不在环境全局黑名单、形状又是「声明」）。处置：顶层绑定形状**白名单**——
+  顶层 `const`／`let`／`var` 直接拒，`export` 绑定唯一起见只放行**由字符串字面量组成的 kind 清单**
+  （`_COLLABORATION_STRING_LITERAL`／`_COLLABORATION_MODULE_BINDING`／`_COLLABORATION_MODULE_KINDS_DECLARATION`），
+  并把 `enum`／`namespace`／`using` 移出白名单（成员同样在加载期求值）。实测：去掉该规则矩阵翻 4 例、
+  放回 enum/namespace/using 翻 2 例。
+  ⑧（R49，残余面登记）`import` 链上**第三方模块**加载期不可见；fail-closed 过严面（`v-bind` 对象展开、同文件
+  helper、`computed<T>()`、权威体冗余外括号、页面 `:suppress-collaboration` 等价包装、顶层声明形状白名单）；
+  守卫体量越过 3000 行阈值，`split_plan_queue.md` 项由 **P2 升为 P1**。均如实登记为下一轮候选，**不声称覆盖**。
+  ⑨**本轮实测**（`/tmp/r42/probe.py`／`probe2.py`／`f1_exploit.py`、`/tmp/r47/measure2.py`：用**守卫自身的函数**
+  在内存里做变异，不落任何文件）：`f1_exploit.py` 构造式假接受 `window == decoy: True`（OLD=GREEN／NEW=REJECT）；
+  F2 的 V22／V23／V23b／V24 与 F3 族、A2 由 OLD=GREEN → NEW=REJECT；`probe2.py` `mismatches: 0`（27 例）。
+  `measure2.py` 鉴别力复测：去掉 void 元素集合 1 例、去掉插值跳过 1 例、去掉顶层绑定规则 **4** 例、
+  enum/namespace/using 放回白名单 **2** 例；引号感知朴素化／`_blank_html_comments`／`_blank_style_blocks` 恒等化／
+  撤掉保长 `require`／撤掉读窗对齐断言**均 0 翻转**（＝纵深防御／前提条件，其价值由 F1 的构造式实测确立）。
+  守卫 `PASS checks=128 collaboration_self_check=99`（宿主／模块 86 ＝ 10 接受 ＋ 76 拒绝；页面 13 ＝ 2 接受 ＋ 11 拒绝）。
+  ⑩**本段取代正文相应数字**：本条目正文（含上段）里的自检 **77 例（10 接受 ＋ 67 拒绝）**、`checks=127`、
+  「宿主层仍按**双引号正则**读模板属性」与「守卫 **2528 行**／P2 项」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=128`、自检 **99 例（12 接受 ＋ 87 拒绝）**、证明 **102 例**（node 域 ＋ 浏览器域各 51）、
+  三个权威体**逐字等于规范式**且**读窗自证对齐**、模块级**加载期**门控由第二层⑨覆盖、宿主侧按**属性表**判定
+  （两种引号均接受）、运行态**仍无**门禁。**据实登记**：守卫 2528 → **3136 行**，越过 `lines >= 3000` 阈值，由
+  `split_plan_queue.md` 的 P2 升为 **P1**（未上调任何锁），回收方案见批次文档 §7 第 7 项。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+
+- 第八轮复核后收口（**本轮**，被复核的第八个冻结候选为 `4e9e2fc8`，第七轮收口提交）：
+  第八轮 A⁸ 与 B⁸ **均判 REQUEST_CHANGES**（A⁸ 报 S1-1 导出加载期声明未扫描／S2-1 面板祖先死门未覆盖／
+  S2-2 括号属性访问被误拒〔据实性〕／S3-1 矩阵用例名实不符／S4-1 计数不符；B⁸ 另以 Vue 编译器 ＋ `createSlots`
+  探针证实 `v-slot:` 二次声明可顶掉已接线插槽，并报注释屏蔽不识别字符串、具名 import 与副作用 import 不等价）。
+  发现的处置（R50–R56，绑定提交为本次收口提交）：
+  ①（R50，**S1**）**导出前缀的加载期声明未被扫描**：`_COLLABORATION_EXPORT_DECLARATION` 仍含 `enum`／`class`／
+  `namespace`／`declare`／`abstract`，顶层语句白名单也仍放行 `declare`／`abstract`／`async`，于是
+  `export class Degraded { static x = <加载期表达式> }`／`export enum`／`export namespace`／`export abstract class`／
+  裸 `abstract class` 的成员与静态初始式都在**加载期**求值，而语句游走从不进入声明体——门禁 GREEN。处置：
+  收窄 `_COLLABORATION_EXPORT_DECLARATION`，新增 `_COLLABORATION_EXPORT_LOAD_TIME_DECLARATION` 在**白名单之前**拒，
+  `declare`／`abstract`／`async` 移出顶层语句白名单；矩阵 +3；真实树向量 A8-1…A8-5 全部 OLD=GREEN → NEW=REJECT。
+  ②（R51，**S4**：据实性 ＋ 过严回归）第七轮把括号属性归一化移出 `collaboration_flag_failures` 后，
+  `props['showCollaborationPanel']` 由**接受**变**误拒**，而 §6 仍写「仍接受」（同文档两处互相矛盾）。处置：
+  归一化**前置**（`_normalize_bracket_property_access` 在屏蔽之前跑，屏蔽仍保长），恢复为**接受面**并进矩阵；
+  实测 A8-8 OLD=REJECT → NEW=GREEN。
+  ③（R52，**S1**）插槽计数按**字面 `#collaboration` 文本**：`v-slot:collaboration` 是**同一个插槽**的另一种拼写，
+  写成第二次声明时可顶掉已接线那个（B⁸ 用 Vue 编译器 ＋ `createSlots` 实测 `slots.collaboration() = []`）而守卫
+  仍报「恰出现 1 次」。处置：新增 `_slot_names()`（`#x` ≡ `v-slot:x` ≡ 无参 `v-slot`），改按**元素级插槽名**计数，
+  协作区模板由 `slot_declarations` 派生；矩阵 +2。实测 B8-V30 GREEN → REJECT、单声明写法 REJECT → GREEN。
+  ④（R53，**S1**）插槽内面板只查**自身标签**的字面死门，其**祖先**未查（载体／宿主侧第七轮已查祖先，唯独面板漏了）。
+  处置：面板区间改从**元素表**取（以 `tag_end`／`end` 边界过滤）并对面板追加 `_ancestor_dead_gate_failures`；
+  矩阵 +1；去掉该检查共翻 **3** 例（载体祖先／面板祖先／宿主祖先）。
+  ⑤（R54，**S4**：过严面）模板**文本**里的 `{{ '#collaboration' }}` 插值被字面计数当成「第二次声明」而**误拒**——
+  Vue 里它根本不是插槽声明。处置：同 ③ 的元素级插槽计数顺带关闭，转为**接受面**并进矩阵（+1 例接受）。
+  ⑥（R55，S2，登记不修）字面死门按**有限枚举表**判（`_LITERAL_FALSY_GATES` 共 11 条拼写：`false`／`0`／`null`／
+  `undefined`／`void0`／`!true`／`!1`／`!!false`／`!!0`／`''`／`""`，另在工具层去空白／去外层括号／小写化），
+  表外等价写法（实测 `!!''`／`!''`／`0.0`／`NaN`／`Boolean(0)`／`1>2` 均判为**真实谓词**即不被拒）不在判据内；
+  `v-bind:[动态属性名]` 不会被属性表收集。均如实登记为下一轮候选，**不声称覆盖**。
+  ⑦（R56，**S1**）①`_blank_comments` **不识别字符串**——`export type T = "a//b";` 里的 `//` 打开行注释、吞掉同行
+  其后的顶层门控，`'x/*y'` 打开一个**永不闭合**的块注释、吞掉文件其余部分，两层都看不见那些语句；②
+  `import { x } from './y'` 与副作用 `import './y'` 执行的是**同一段**第三方加载期代码，判据却只拒后者。处置：
+  ①`_blank_comments` 增**引号不透明**处理（`'`／`"`／反引号整段跳过，含 `\` 转义）；②新增
+  `_COLLABORATION_MODULE_IMPORT_SPECIFIERS`（真实 VM 的两个运行时 import），`import` 分支从**原文**读回 specifier，
+  `import type` 豁免、其余不在清单内即拒；矩阵 +3。
+  ⑧**本轮实测**（`/tmp/r50/vectors.py`：双进程影子 ＝ `git archive 4e9e2fc8` vs 候选工作树；`/tmp/r50/measure*.py`：
+  用守卫自身的函数做**内存变异**，不落任何文件）：**13 例翻转 ＝ 10 例 OLD=GREEN → NEW=REJECT ＋ 3 例
+  OLD=REJECT → NEW=GREEN**（后者＝恢复括号属性访问、`v-slot:` 单声明、`{{ '#collaboration' }}` 插值）。鉴别力复测：
+  注释字符串感知 **2** 例、把 `./collaborationPoison` 加入已复核清单 **1** 例、导出加载期规则**两模式同时停用** **2** 例
+  （单独替换旧模式**零翻转**）、裸 `abstract class` 白名单 **1** 例、插槽名归一化 **2** 例、面板／载体祖先死门 **3** 例、
+  括号归一化 **1** 例；顶层绑定形状规则单点复算 **3** 例（R48 记的 4 例含「非导出顶层绑定」，由**裸声明**分支另拒）；
+  基线 **0** 翻转。另用打包层实测确证「同名 `export function` 两次」不可部署（由 esbuild 兜底拒绝）。
+  ⑨守卫 `PASS checks=128 collaboration_self_check=111`（宿主／模块 98 ＝ 13 接受 ＋ 85 拒绝；页面 13 ＝ 2 接受 ＋
+  11 拒绝）；`python3 -B -m unittest scripts.verify.test_form_structure_authority_unification` **OK（189 tests）**。
+  ⑩**本段取代正文相应数字**：本条目正文（含上段）里的自检 **99 例（12 接受 ＋ 87 拒绝）**、守卫 **3136 行**、
+  接受面 **10 项**与「宿主插槽按字面 `#collaboration` 计数」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=128`、自检 **111 例（15 接受 ＋ 96 拒绝）**、接受面 **13 项**、⑨除模块纯净性外还拒
+  **导出加载期声明**并复核**运行时 import 的 specifier**、注释屏蔽**字符串感知**、面板**祖先**死门纳入、
+  证明 **102 例**（node 域 ＋ 浏览器域各 51）、三个权威体**逐字等于规范式**且**读窗自证对齐**、宿主侧按**属性表**
+  判定（两种引号均接受）、运行态**仍无**门禁。**据实登记**：守卫 3136 → **3379 行**，仍在 `split_plan_queue.md`
+  的 **P1**（未上调任何锁），回收方案见批次文档 §7 第 7 项。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+
+- 第九轮复核后收口（**本轮**，被复核的第九个冻结候选为 `0faf569a`，第八轮收口提交）：
+  第九轮 A⁹ 与 B⁹ **均判 REQUEST_CHANGES**（A⁹ 报 S1 import specifier 取到含注释的最后一个字符串、S1
+  **正则字面量／未闭合 span** 让「读窗其实不存在」却被当作存在、S2 未闭合块注释吞掉其下语句、S4 §6 的
+  `declare const …`「仍接受」与 R50 自相矛盾；B⁹ 另用真 `@vue/compiler-sfc@3.5.27` ＋ SSR 三次实测：
+  注释诱饵令新模块在**浏览器域加载期**改 `Array.prototype.includes` 而门禁恒绿、正则引号令 `region present = false`、
+  计算插槽名二次声明令协作区空渲染；B⁹ 还报**面板自身 `v-if` 从未绑定任何权威**）。发现的处置
+  （R57–R60，绑定提交为本次收口提交）：
+  ①（A⁹-S2／B⁹-S1b，**S1**）`_blank_comments` 不识别**正则字面量**——`return /[']/g` 在字符类里的引号开启一个
+  **幻影字符串**、闭合在下方某处，把中间的**顶层门控**整段吞掉。处置：新增 `_js_opaque_spans()`，把注释／字符串／
+  模板／**正则**统一为 `(start, end, kind, terminated)` 四元组（正则由**前置字符表** ＋ 14 个前置关键字判定，
+  **同一行闭合**才算、否则**回滚**，故模板里的 `v-else />` 不被误判），`_blank_comments`／
+  `_blank_string_literals` 由它派生；`collaboration_module_scope_failures` 开头对**未闭合 span 直接失败**，
+  而不是继续读一个并不存在的窗口。矩阵 **+3**。
+  ②（A⁹-S1／B⁹-S2，**S1**）import 的 specifier 取**读窗内最后一个字符串字面量**（在**原文**上取，故含注释里的引号）：
+  `import { x } from './collaborationPoison' /* './valueUtils' */` 靠注释过闸，而 TS 丢弃注释、**真正加载**的是前者。
+  处置：新增 `_collaboration_import_failure()`，在**注释屏蔽后**的语句文本上按 `\bfrom\b` 子句读 specifier；
+  specifier 之后**还有非空文本即拒**、无 `from` 的副作用 import 拒、`import type` 豁免。矩阵 **+3**。
+  ③（B⁹-S1，**S1**）**计算插槽名二次声明顶掉已接线插槽**：`#[collaborationRegionSlot]`（值为 `'collaboration'`）
+  编译器**取后者**，协作区空渲染，而守卫仍报「恰出现一次」。处置：`_slot_names()` 对 `#[…]`／`v-slot:[…]` 报哨兵
+  `_SLOT_NAME_DYNAMIC`；消费侧增循环——计算名元素若其**最内层元素**落在已接线区间内即拒。矩阵 **+2**。
+  ④（B⁹-S2，**S2**）**面板自身 `v-if` 从未绑定任何权威**：`v-if="!hasCollaboration"`／`v-if="NaN"` 均 ACCEPT——
+  插槽已接线而面板恒不渲染（此前只测**字面假值**表）。处置：新增 `_COLLABORATION_PANEL_GATE`，面板 `v-if` 须
+  **恰好等于** `["showCollaborationPanel"]`（`=` 两侧空白仍接受）。矩阵 **+2**。
+  ⑤（A⁹-S4，据实性）§6 把 `declare const …` 列为「仍接受」**与实测不符**（自 R50 起即为**拒绝**）。处置：
+  更正登记，并把第九轮**新增过严面**逐条写进 §6——裸 `async function …`、空 `export class {}`、
+  空 `export namespace {}`、面板 `v-if="(showCollaborationPanel)"`、面板 `v-show` 不在判据内、
+  import specifier 后有非空文本即拒。
+  ⑥（A⁹ 据实性）A⁹ 指出第八轮账本里「**13 例翻转**」是**向量账本**的计数（`/tmp/r50/vectors.py`，18 条），
+  与**矩阵用例数**不是同一口径。本轮复算该账本，确认 **13 例 ＝ 10 例 OLD=GREEN → NEW=REJECT ＋
+  3 例 OLD=REJECT → NEW=GREEN** 可复现；下文按「矩阵 +N 例」与「向量 OLD/NEW 判定」两个口径分别登记，不混用。
+  ⑦（登记不修）第九轮新登记候选：正则字面量族**未穷举**（`/` 是否开正则是**启发式**）、`_statement_text` 在原文
+  首个 `;` 截断、**语句切分空洞**（以 `(`／`{` 开头的顶层语句不进 `_module_statements`；紧跟顶层 `}` 的 `while`
+  落在 `_COLLABORATION_STATEMENT_CONTINUATIONS` 里）、动态插槽名只扫**最内层元素**、面板等值规则的其他等价拼写、
+  Vue 插槽名**大小写**未实测。均如实登记为下一轮候选，**不声称覆盖**。
+  ⑧**本轮实测**（`/tmp/r59/vectors.py`：双进程影子 ＝ `git archive 0faf569a` vs 候选工作树；`/tmp/r59/measure9.py`：
+  用守卫自身的函数与**源码级变异**做**内存变异**，不落任何文件）：**8 例翻转 ＝ 8 例 OLD=GREEN → NEW=REJECT ＋
+  0 例 OLD=REJECT → NEW=GREEN**（R57-1 正则引号藏门控、R57-2 `/[//]/`、R57-3 未闭合块注释、R58-1 import 注释诱饵、
+  R59-1／R59-2 计算插槽名、R60-1／R60-2 面板门控）。鉴别力复测：停用**未闭合 span 拒绝** **1** 例、import 规则换回
+  第八轮形状 **1** 例、还原旧 `_slot_names` **2** 例、停用**面板 `v-if` 等值规则** **2** 例；**停用正则字面量识别在
+  矩阵上 0 例**（矩阵用例均**同一行**闭合，该条由向量 R57-1／R57-2 在**真守卫**上证明），故如实登记为
+  「**向量有鉴别力、矩阵 0 例**」。对照组（R58-3 镜像、R58-4 类型导入、基线模块）两侧均 GREEN，**0 例回归**。
+  ⑨守卫 `PASS checks=128 collaboration_self_check=120`（宿主／模块 **107 ＝ 14 接受 ＋ 93 拒绝**；页面 13 ＝
+  2 接受 ＋ 11 拒绝）；`python3 -B -m unittest scripts.verify.test_form_structure_authority_unification`
+  **OK（189 tests）**。
+  ⑩**本段取代正文相应数字**：本条目正文（含上段）里的自检 **111 例（15 接受 ＋ 96 拒绝）**、守卫 **3379 行**、
+  接受面 **13 项**与「`declare const …` 仍接受」均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=128`、自检 **120 例（16 接受 ＋ 104 拒绝）**、接受面 **14 项**、⑨除模块纯净性外还拒
+  **导出加载期声明**、specifier 改读**运行时 import 的 `from` 子句**并拒**尾随文本**、**未闭合 span 即拒**、
+  **正则字面量**为不透明 span，另新增**计算插槽名**与**面板 `v-if` 等值**两条判据；证明 **102 例**（node 域 ＋
+  浏览器域各 51）、宿主侧按**属性表**判定（两种引号均接受）、运行态**仍无**门禁。**据实登记**：守卫 3379 →
+  **3629 行**，仍在 `split_plan_queue.md` 的 **P1**（未上调任何锁），回收方案见批次文档 §7 第 7 项。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+- 第十轮复核后收口（**本轮**，被复核的第十个冻结候选为 `47b9a631`，第九轮收口提交）：
+  第十轮 A¹⁰ 与 B¹⁰ **均判 REQUEST_CHANGES**（A¹⁰ 报 S2-1 `_module_statements` 对 `(`／`{` 开头的顶层语句
+  **整体失明**〔fail-open〕，并另报 6 条据实性问题：「14 个前置关键字」实测为 **13**、R57「矩阵 +3」多算一例
+  **应为 +2**、§6 鉴别力 (i) 的**归因不成立**、§8 悬空引用「§5 向量 R57-1／R57-2」、§7 第 12 项 ⑥ 可关闭未关闭、
+  R59 存在**域差异**；B¹⁰ 用真 `@vue/compiler-sfc@3.5.27` ＋ `@vue/server-renderer` ＋ TS 5.9.3 ＋ esbuild 0.21.5 ＋
+  prettier 3.8.1 另报三处**第九轮同一面墙未关的门**〔均为**第八轮即已存在**的旧洞，非 `db734ea5` 引入的回归〕：
+  ①**语句切分三类盲点**〔顶层裸块／IIFE／ASI 语句头；追到真实文件末尾后浏览器域规则真死且**可部署**〕、
+  ②**已复核 import 的内容从不被读取**〔把环境探针放进 `valueUtils.ts` 即可一字不改绕过〕、③**载体／祖先只按
+  字面假值判**〔`v-if="hasCollaboration && false"` 的祖先或载体使 `panel=ABSENT` 而 GREEN〕，另报一条**假 REJECT**
+  〔模板撇号〕与两条无害项〔计算插槽名嵌套容器**不可部署**、`#Collaboration` **不同槽位**〕）。发现的处置
+  （R61–R64，绑定提交为本次收口提交）：
+  ①（A¹⁰-S2-1／B¹⁰-S1-1，**S1**）`_module_statements` 对 `(`／`[`／`{` 开头的顶层语句**整体失明**：开括号只被压栈、
+  从不被报出——顶层裸块 `{ poison() }`、顶层 IIFE、顶层括号赋值都是**加载期**代码却看不见，门禁 GREEN 且载荷可
+  部署。处置：重写 `_module_statements()`——同层无栈时 `(`／`[`／`{` 若处「待起语句」位置即**照报 token**；新增
+  **ASI 语句头**判定（行首标识符若前一有效字符可结束语句即视为新语句，豁免 `as`／`satisfies`／`extends`／
+  `implements`／`from`／`is`）；顶层 `}` 之后改按**后随字符**判定是否续句。顺带修掉
+  `export type X = Record<string, { … }>;` 的**假 REJECT**（store.ts 46 → 45 条）。矩阵 **+4**。
+  ②（B¹⁰-S1-2，**S1**）**「已复核 import」是承诺而不是检查**：`_COLLABORATION_MODULE_IMPORT_SPECIFIERS` 只把 specifier
+  **字符串**与清单比对，**从不打开被导入文件**。处置：新增 `collaboration_import_closure_failures()` ＋
+  `_resolve_local_module()`，按 specifier **解析 → 读文件 → 走完整运行时 import 闭包**（`import type` 擦除故跳过），
+  闭包内每个模块须**可读**、**可切分**（未闭合 span 即拒）且**不得出现任何环境全局或 `import.meta`**；规模上限
+  40 文件／深度 8，触顶 fail-closed。实测闭包 **4** 文件（`store.ts`／`valueUtils.ts`／`x2manyCommands.ts`／
+  `fieldUtils.ts`）全部环境纯净；`checks` **+1**，自检 **+6**（含传递依赖、不可读、未闭合、类型导入四个反向用例）。
+  ③（B¹⁰-S1-3，**S1**）**载体／祖先死门只按「字面量假值」判**：`v-if="hasCollaboration && false"`（祖先）与
+  `v-if="!preserveAuthoritativeBusinessSections && false"`（载体）都是**真实谓词但恒假**，不在字面表内、也不被任何
+  判据看见（B¹⁰ 用真 `compileTemplate` ＋ SSR 实测 `panel=ABSENT`，`v-show="hasCollaboration && false"` 输出
+  `style="display:none"`）。处置：`_dead_gate_failures()` 改为**登记式等值清单**——载体／其**全部祖先**／面板的
+  `v-if`／`v-else-if` 只允许等于**已登记**表达式（宿主 4 条／页面 2 条，`_condense` 归一化），`v-show` 在整条路径上
+  **一概**拒绝，`v-else` 只允许出现在**已登记元素**上（`section`／`ScCard`）。矩阵 **+11**（含 4 例接受面）。**副作用
+  据实登记**：新规则**包含**第九轮的面板等值规则，故「停用面板等值」现在翻 **0 例**（二者构成纵深防御）。
+  ④（B¹⁰-S2-1，**S2**，**假 REJECT**）`.vue` 模板文案里的撇号（`<span>don't</span>`）让 JS 词法器错配引号、开启
+  跨行**幻影字符串**，`<script setup>` 里的 `hasCollaboration` 与权威 import 被读成缺失。处置：新增 `_script_text()`
+  ——**先取出 `<script>` 区域**再做 JS 级屏蔽（含「宿主不得自声明权威」与具名 import），无 `<script` 块时原样返回，
+  偏移照旧保长。矩阵 **+1**（该形状转为**接受**）。
+  ⑤（A¹⁰ 据实性）四处更正：前置关键字「14」→ **13**（前置字符表 18 个）；R57「矩阵 +3」→ **+2**（A¹⁰-S4-2：
+  98→107 的 9 条 ＝ R57 2 ＋ R58 3 ＋ R59 2 ＋ R60 2）；§6 鉴别力 (i)「停用正则识别」在矩阵上 **0 例**的**归因**改为
+  「**同轮新增的未闭合 span 拒绝**顶住了它」（并非矩阵正则用例均同一行闭合），并把悬空的「§5 向量」改为**第十轮向量**；
+  R57-1／R57-2 由**第十轮真守卫**实测 OLD=GREEN → NEW=REJECT。
+  ⑥（A¹⁰ 据实性）关闭 §7 第 12 项 ⑥：`#Collaboration`（大写）与 `#collaboration` **不是**同一槽位，一律 REJECT，
+  方向安全。登记 R59 **域差异**：客户端编译把计算名放静态 slots、字面槽放动态数组，`createSlots` 先套静态后覆盖动态
+  ⇒ 客户端**不顶掉**；SSR 同数组后者胜 ⇒ 空渲染；矩阵用例在客户端域偏严，方向 fail-closed。
+  ⑦（登记不修）第十轮新登记候选：`_JS_STATEMENT_INVISIBLE_HEADS` 是**启发式**（隐式续接写法未穷举）、import 闭包的
+  被导入文件**不套用**声明白名单（其环境无关载荷由 `node` 域证明兜底，**该分工应在下一轮由证明侧显式断言**）、闭包
+  **规模／深度上限**触顶**无用例**、**re-export 链**不在闭包遍历内、登记式清单**逐字比较**（等价外括号等被拒）、
+  页面侧 `v-else`／`v-else-if` **兄弟链可达性**未断言。均如实登记为下一轮候选，**不声称覆盖**。
+  ⑧**本轮实测**（`/tmp/r510`：`git archive HEAD` 影子树 ＋ 新守卫；`/tmp/r59/measure9.py` 复跑）：真文件影子逐个注入
+  R61／R62／R63 的三类载荷**全部 FAIL**、还原即 PASS；目录内 5 个相关文件的非声明语句数**均为 0**；闭包 4 文件
+  环境纯净、无未闭合 span。鉴别力复测：停用**未闭合 span 拒绝** **1** 例、import 规则换回第八轮形状 **1** 例、
+  计算插槽名不再报哨兵 **2** 例、**停用正则识别 0 例**（归因＝同轮未闭合拒绝）、**停用面板 `v-if` 等值规则 0 例**
+  （已被 R63 登记清单**包含**，属纵深防御）。对照组全部 GREEN，**0 例回归**。
+  ⑨守卫 `PASS checks=129 collaboration_self_check=142`（宿主／模块 **118 ＝ 新增 11**；页面 **18 ＝ 新增 5**；
+  **import 闭包 6** 为新矩阵）；`make ci.delivery.freeze.prepare` **PASS**、`make ci.local.quick` **PASS**
+  （Node 语法检查 349 文件）。
+  ⑩**本段取代正文相应数字**：本条目正文（含上段）里的自检 **120 例**、守卫 **3629 行**、`checks=128` 均以本段与批次
+  文档 `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=129`、自检 **142 例（宿主／模块 118 ＋ 页面 18 ＋ import 闭包 6）**、守卫 **4212 行**
+  （按 `git ls-files` 代码类扩展名口径为全仓第 5 大代码文件、Python 源码第 4，仍在 `split_plan_queue.md` 的 **P1**，未上调任何锁）、⑨除既有规则外还拒**语句切分三类空洞**、
+  对**已复核 import** 真读文件并校验**环境纯净闭包**、死门改为**登记式等值清单**；`v-show` **一概**拒绝；
+  另新增 `_script_text()` 使**模板撇号**不再造成**假 REJECT**。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+- 第十一轮复核后收口（**本轮**，被复核的第十一个冻结候选为 `305245f9`，第十轮收口提交）：
+  第十一轮 A¹¹ 与 B¹¹ **均判 REQUEST_CHANGES**。A¹¹ 独立复算全部聚合数字 **对上**（矩阵 142／118／18／6、
+  `checks=129`＝96 `require` ＋ 33 循环、守卫 4212 行、前置关键字 13、前置字符 18、R57「矩阵 +2」、翻转面
+  1／1／2／0／0、闭包 4 文件），另报 1 条 **S1 门禁强度缺口**：**语句位的模板字面量**被整段
+  **抹平**（反引号 span 把**起始反引号**一并吞掉，语句切分视其为空白 ⇒ **fail-open**）、1 条 **S3** 文档自相
+  矛盾（仍在**现在时**用第九轮口径 `120 例`／`107／13`）与 3 条 **S4** 据实性（R61 举例的「非整式括号
+  赋值」旧版即 REJECT、R63「4 例接受面」口径、「全仓第 4 大文件」不成立）。B¹¹（真 `@vue/compiler-sfc@3.5.27` ＋
+  `@vue/server-renderer` ＋ TS 5.9.3 ＋ esbuild 0.21.5 ＋ prettier 3.8.1）另报 **4 条 S1**：①`_JS_STATEMENT_TAIL_CHARS` 把**不能续接表达式**的字符
+  （`!`／`~`／`@`／`#`）也算成续句，`function gate() {…}` 后跟一行 `!gate()` 时**整文件无语句**——
+  **OLD(`47b9a631`)=REJECT → 第十轮=GREEN**，即**第十轮引入的回归**；②闭包模块**不适用**「本层只能是声明」，
+  顶层环境探针无人读；③闭包只跟**静态 `import`** 边，**re-export** 与**动态 `import('…')`** 到达的模块从不被打开；
+  ④登记式死门清单**不含空 `v-for`**（`v-for="n in 0"` 与 `v-if="false"` 等价）；另有 2 条 S2／S3 与 2 条
+  **S3 假 REJECT**（`</SCRIPT>` 大小写、`<!-- <script> -->` 顶掉模板）。发现的处置（R65–R70，绑定提交为本次收口提交）：
+  ①（B¹¹-S1-1，**S1**，**回归闭合**）续句表 `_JS_STATEMENT_TAIL_CHARS` 由 `")]},;.>?:=+-*/%&|^!~<@#"` 收为
+  `")]},;.>?:=+-*/%&|^<"`——只留**中缀运算符**与闭合符，把**不能接续表达式**的 `!`／`~`／`@`／`#` 移出。实测
+  `!gate()`／`~f()` 两形状由**第十轮 GREEN** 转 **REJECT**，与 OLD(`47b9a631`)=REJECT 对齐。
+  ②（B¹¹-S1-2／B¹¹-S1-3，**S1**×2）闭包重写（R68）：新增 `run_failures()`——闭包模块**本层语句必须为声明**
+  （复用 `_COLLABORATION_MODULE_DECLARATIONS` ＝ `import`／`export`／`type`／`interface`／`const`／`let`／`var`／`function`）；
+  新增 `relative_edges()`——边遍历扩到**静态 `import`**、**`export … from`／`export *`**、**动态 `import('…')`**；**深度触顶**由静默
+  改为**报 failure**。实测闭包仍为 **4 文件**（`store.ts`／`valueUtils.ts`／`x2manyCommands.ts`／`fieldUtils.ts`）
+  全部本层为声明，收紧后守卫仍 PASS。
+  ③（B¹¹-S1-4，**S1**）`_dead_gate_failures()` 新增 `allowed_v_for: frozenset` 参数与 **`v-for` 分支**：登记清单
+  为空即**任何 `v-for` 一律拒绝**（`v-for="n in 0"` 与 `v-if="false"` 等价），`v-show` 同向 fail-closed；
+  `_ancestor_dead_gate_failures` 复用同一函数，故**载体／祖先／面板／页面**一次覆盖。真实 `ContractFormDriverHost.vue`
+  与 `ContractFormPage.vue` **均无 `v-for`**，收紧后仍 PASS。
+  ④（A¹¹-S1-1，**S1**）`_blank_spans` 对 `template` span **保留起始反引号**（`kind == "template" and position == start`
+  时跳过），使**语句位的模板字面量**不再是空白、被切成**真语句**而拒。
+  ⑤（B¹¹-S2-1，**S2**）`_module_statements` 的 `line_break` 改为对 `"\n"` ＋ `U+2028` ＋ `U+2029` **三者**置位
+  （ASI 行终止符族）。
+  ⑥（B¹¹-S3-2／S3-3，**S3**×2，**假 REJECT**）`_script_text()` 闭合分隔符改用作用域内联标志
+  `(?i:</script\s*>)`（起始标签仍大小写敏感，因 Vue 本身不接受 `<SCRIPT>`）；
+  `native_surface_bridge_errors()` 改为**先屏蔽 HTML 注释再按 `<script` 切分**，`<!-- <script> -->` 不再顶掉模板。
+  ⑦**本轮矩阵扩围**（全部为**防回归夹具**，非新增判据）：宿主／模块 **118 → 124（18 接受 ＋ 106 拒绝）**，
+  新增 `</SCRIPT>` 接受、载体 `v-for` 拒绝、祖先 `v-for` 拒绝、`module_tail` 的 `!gate()` 语句拒绝、
+  语句位模板字面量拒绝、`U+2028` 语句拒绝；页面 **18 → 19（5 接受 ＋ 14 拒绝）**，`v-for="n in 0"` 加在
+  `<ContractFormDriverHost>` 后；**import 闭包 6 → 11（3 接受 ＋ 8 拒绝）**，新增「仅声明接受」「顶层语句拒绝」
+  「re-export 边拒绝」「动态 `import()` 边拒绝」「深度触顶拒绝」（深链 `./m0`…`./m8`）。合计 **154 ＝ 26 接受
+  ＋ 128 拒绝**。
+  ⑧（A¹¹ 据实性，**S3**＋**S4**×3）四处文档更正：①现在时用第九轮口径的 4 处**就地刷新**
+  并补出接受／拒绝拆分；②R61 举例改用**整式括号** `((Array.prototype as any).includes = () => true);` 与
+  **逗号表达式** `((X.length = 0, 0));`，并标注「**非整式**括号赋值旧版即 REJECT」；③R63 写作
+  「**4 类接受形状／5 条矩阵条目**」；④「全仓第 4 大文件」→「**全仓代码文件第 5 大（Python 源码第 4）**」（**第十二轮再更正，见下段**：该口径对 4433 行不成立，实为全仓第 4 大／Python 第 3）。
+  ⑨**本轮实测**（`/tmp/r511`：`git archive HEAD` **影子树** ＋ 新守卫；`/tmp/r511/guard_t10.py` ＝ `84724fbd` 旧守卫在
+  `/tmp/r511/t10` 实跑）：真文件注入 B11-1／B11-2／A11-1（VM）、B11-3／B11-4（`valueUtils.ts`）、B11-5（宿主）
+  → **全部 FAIL**；`</SCRIPT>` 与 `<!-- <script> -->` → **PASS**；还原即 PASS。**旧守卫对照**：B11-5 载体 `v-for`
+  与页面 host `v-for` 均 **GREEN**、`</SCRIPT>` 与 `<!-- <script> -->` 均 **FAIL**。闭包实为 **4 文件**
+  （`x2manyCommands.ts` 路径在 `frontend/apps/web/src/app/`，**不在** pages/contractForm），4 文件顶层语句全为声明。
+  ⑩守卫 `PASS checks=129 collaboration_self_check=154`；`make ci.delivery.freeze.prepare` **PASS**、
+  `make ci.local.quick` **PASS**（Node 语法检查 349 文件）；
+  `python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  ⑪**本段取代正文相应数字**：本条目正文（含上段）里的自检 **120 例**、守卫 **3629 行**／**4212 行**、
+  `checks=128` 与第九／第十轮口径均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=129`、自检 **154 例（宿主／模块 124 ＋ 页面 19 ＋ import 闭包 11）**、
+  守卫 **4433 行**（**第十二轮再更正**：按同一口径为全仓第 4 大代码文件、Python 源码第 3，仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**）。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+- 第十二轮复核后收口（**本轮**，被复核的第十二个冻结候选为 `956dbcbd`，第十一轮收口提交）：
+  第十二轮 A¹² 与 B¹² **均判 REQUEST_CHANGES**。A¹² 报 S1-1 闭包**声明初始化式**藏环境探针
+  （`export const dead = typeof screen !== 'undefined'`）、S1-2 `}` 后续句表仍留 `+`／`-`／`/`、S2-1 **深度触顶模块
+  不被读**、S3-1 文档 6 处仍在现在时用第十轮口径（`142`／`4212 行`）、S3-2「全仓第 5 大」不成立（实测第 4 大、
+  Python 第 3）、S3-3 R61 的「据实更正」本身不实（把**已修版** `305245f9` 当旧版）、S3-4 闭包形状阶梯缺
+  `class` 等合法声明（**假 REJECT**）、S3-5 非字面量动态 `import()` 不跟边、S4-1 文档引用不存在的
+  `_closure_relative_specifiers`、S4-2 §7⑨ 机制描述错（真开口是**声明初始化式**而非模板插值）、S4-3 `_script_text()`
+  不先屏蔽 HTML 注释。B¹²（真 `@vue/compiler-sfc@3.5.27` ＋ `@vue/server-renderer` ＋ TS 5.9.3 ＋ esbuild 0.21.5 ＋
+  prettier 3.8.1）以 **SSR 实证浏览器域失效**，另报 S1-1 同 A¹²-S1-2（`+`／`-`／`/`／`as`／`from`／`satisfies` 首词）、
+  S1-2 闭包层用**非字符串感知**屏蔽（`export const OPEN = '{'` 令其下整文件隐形）、S1-3 闭包层只判首 token
+  （`export default <表达式>` 加载期执行）、S2-1 闭包对**含插值的模板字面量**假 REJECT、S2-2 `data-note="<script"`
+  属性值假 REJECT、S3-1 非相对 specifier、S3-2 环境清单不含 `screen`；并**独立确认** B11-1 的回归声明成立
+  （`47b9a631`=REJECT／`305245f9`=GREEN／`956dbcbd`=REJECT）。处置（R72–R78，绑定提交为本次收口提交）：
+  ①（B¹²-S1-2／A¹²-S2-1，**S1**×2，R72）闭包读取抽出 `read_module(path, text)`——**未闭合 span 即拒 ＋ 语句检查**，
+  `walk` 与**深度边界**分支**都**调用它（边界模块**先读、再报 deeper**）；语句切分改用 `_blank_comments_and_strings`。
+  实测 `export const OPEN_BRACE_HINT = '{'` 载荷 **REJECT**、`` `p-${1}` `` **ACCEPT**、边界 `m7` 语句 **REJECT**。
+  ②（B¹²-S1-1／A¹²-S1-2，**S1**×2，R73）`+`／`-`／`/` 移出 `_JS_STATEMENT_TAIL_CHARS`（现值
+  `")]},;.>?:=*%&|^<"`）；新增 `_JS_CLOSED_DECLARATION_HEADS`（function／class／interface／enum／namespace／declare／
+  abstract）＋ `_closed_declaration_head()`：**声明体的 `}` 就是语句终点**，除非后随 `else`／`catch`／`finally`／`while`
+  或 `>`／`|`／`&`。实测 `+gate()`／`-gate()`／`/^collect-/.test('')`／`from('x')`／`as('x')`／`satisfies('x')` 六形状
+  追加到真实模块后**全部 REJECT**；`Record<string, { a: string }>`／`as const`／三元对象／联合交叉／`export default class`
+  ＋下一条／`if`-`else`／`do`-`while`／`try`-`catch`-`finally` **零回归**。
+  ③（A¹²-S1-1／A¹²-S3-4／B¹²-S1-3／B¹²-S3-2，**S1**×3＋**S3**，R74）环境全局清单扩入 `screen`／`frames`／
+  `devicePixelRatio`／`isSecureContext`／`crossOriginIsolated`／`visualViewport`／`speechSynthesis`／`crypto`／
+  `queueMicrotask`／`structuredClone`／`atob`／`btoa`／`HTMLElement`／`CustomEvent`／`IntersectionObserver`／
+  `PerformanceObserver`／`Notification`／`WebSocket`／`EventSource`／`Deno`／`Bun`／`Buffer`（**刻意排除** `fetch`
+  ——真实 `fieldUtils.ts` 命中它，也排除 `top`／`parent`／`name`／`status`／`origin`，理由写在守卫注释里）；
+  闭包出口新增形状阶梯（拒 `export default <表达式>`，放行 `export default class|function|interface`，
+  `export class`／`enum` 静态初始式按 `_COLLABORATION_EXPORT_LOAD_TIME_DECLARATION` 拒）。实测
+  `export default (Object.assign(Array.prototype, …))` **REJECT**、`export class P { static x = (Array.prototype as any) }`
+  **REJECT**、`export default class Probe { }` **ACCEPT**、`export const dead = typeof screen !== 'undefined'` **REJECT**。
+  ④（A¹²-S3-5，**S3**，R77）`read_module()` 增判定：动态 `import(` 的**首个实参必须是单一字符串字面量**
+  （`\s*(['"])([^'"]*)\1\s*(?:,|\))`），否则 fail-closed。实测 `import('./' + 'deepModule')`／`import(p)`／
+  `` import(`./deepModule`) `` **REJECT**、`import('./deepModule')` **ACCEPT**。
+  ⑤（A¹²-S4-3／B¹²-S2-2，**S3**＋**S2**，**假 REJECT**，R78）`_scan_tags()` ＋ `_HTML_VOID_ELEMENTS` 上移到文件头；
+  `_script_text()` 改按 `_scan_tags()` 定位 script 块（跳过 HTML 注释、起始标签**引号感知**、闭合分隔符
+  `</script\s*>` 仍大小写不敏感）；新增 `_template_before_script()` 并替换**全部三处**裸 `<script` 切分
+  （`native_surface_bridge_errors()` ＋ 本轮新收口的 `collaboration_consumption_failures()`／
+  `collaboration_page_wiring_failures()`）。实测真宿主 ＋ `data-note="<script"` **ACCEPT**、真宿主 ＋
+  `<!-- <script> -->` **ACCEPT**、`</SCRIPT>` **PASS**、`_script_text()` 两形状均保留 `hasCollaboration`；
+  旧树对**引号属性值**两例误拒。
+  ⑥（A¹²-S3-3，**S3**，R75）R61 行「第十一轮据实更正」**撤回并改写**：旧版（`47b9a631`）对**单层整式括号**
+  `(COLLABORATION_SURFACE_KINDS.includes = () => true);` 同样**不可见**（ACCEPT），只报**完全不带括号**的裸赋值；
+  不可见面是**整式括号（单层／双层）＋ 逗号表达式**三类。同口径更正批次文档 R61／R71-② 与 `:730`（**第十三轮订正交叉引用**：本行原文误写 R71-④，见 R80）。
+  ⑦（A¹²-S4-1／S4-2，**S4**×2，R76）§7 第 13 项 ⑦ 的符号名 `_closure_relative_specifiers` → **`relative_edges()`**；
+  ⑨ 改写为「**声明初始化式**里的自由环境引用由**枚举式**环境全局清单负责，清单漏项即整体失守」，并按同源补登
+  ⑩（`fetch` 类未枚举全局）／⑪（`v-once`／`v-memo` 未登记）／⑫（`require()`／`import.meta.resolve()` 等不可跟的边）。
+  ⑧**本轮矩阵扩围**（全部为**防回归夹具**，非新增判据）：宿主／模块 **124 → 133（21 接受 ＋ 112 拒绝）**，
+  新增闭包外的六条「声明 `}` 后续句」拒绝、`typeof screen` 初始化式拒绝、宿主侧引号属性值／HTML 注释接受、
+  类型字面量续接接受；页面 **19 → 21（7 接受 ＋ 14 拒绝）**，新增引号属性值／HTML 注释接受；**import 闭包
+  11 → 20（6 接受 ＋ 14 拒绝）**，新增字符串含 `{` 拒绝、模板插值接受、边界语句拒绝、边界仅声明接受、
+  `export default` 表达式拒绝、类默认导出接受、类静态初始式拒绝、非字面量 `import()` 拒绝、`typeof screen`
+  初始化式拒绝。合计 **174 ＝ 34 接受 ＋ 140 拒绝**。
+  ⑨**本轮实测**（`/tmp/r512`：`probe.py`／`probe2.py` 逐例探针、`diff_all.py` 全量差分；旧树 ＝ `git archive 956dbcbd`）：
+  14 例翻转 ＝ **11** 例 OLD=GREEN → NEW=REJECT ＋ **3** 例 OLD=REJECT → NEW=GREEN（假 REJECT 收口），
+  其余 **159** 例**逐条不变**；三棵树对照（`47b9a631`／`305245f9`／`956dbcbd`）复现整式括号三类形状的
+  REJECT/ACCEPT 归属。
+  ⑩守卫 `PASS checks=129 collaboration_self_check=174`；`make ci.delivery.freeze.prepare` **PASS**、
+  `make ci.local.quick` **PASS**（Node 语法检查 349 文件）；
+  `python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  ⑪**本段取代正文相应数字**：本条目正文（含上段）里的自检 **154 例**、守卫 **4433 行**／**4212 行**、
+  `checks=128` 与第九～第十一轮口径均以本段与批次文档
+  `docs/ops/iterations/frontend_gate_baseline_alignment_20260922.md` 为准（正文保留为当时记录，不作就地改写）；
+  当前口径为：守卫 `checks=129`、自检 **174 例（宿主／模块 133 ＋ 页面 21 ＋ import 闭包 20）**、
+  守卫 **4849 行**（按 `git ls-files` 代码类扩展名口径为全仓第 3 大代码文件、Python 源码第 2，仍在
+  `split_plan_queue.md` 的 **P1**，**未上调任何锁**）。
+  ⑫**第十二轮据实更正**：上段 ⑧-④ 与 ⑪ 里的「全仓代码文件第 5 大（Python 源码第 4）」对 4433 行不成立
+  （实测全仓第 4 大／Python 第 3），本批正文与两文档已就地更正；第十轮段 ⑩ 的「第 4 大」对 4212 行同样不成立
+  （实测第 5 大／Python 第 4）。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**）。
+
+- 第十三轮复核后收口（**本轮**，被复核的第十三个冻结候选为 `379163ec`，第十二轮收口提交）：
+  第十三轮 A¹³ 与 B¹³ **均判 REQUEST_CHANGES**。A¹³ 报 S1 闭包出口的**声明白名单本身是开口**——①非导出**模块级绑定**的
+  初始化式在加载期求值，环境名不在枚举清单内即漏网（`customElements`／`URL`／`Element` 均未枚举）；②`export default class`
+  的**静态初始式**（`static x = (((Array.prototype as any).includes = () => true), 1)`）在加载期污染原型，权威在每个域都答
+  `true` 而守卫全绿；③类**表达式**的静态初始式同理。A¹³ 另报 S3 据实性（第十二轮差分数 11＋3＋159 ＝ 173 ≠ 174）、
+  S4×2（R71-② 未挂更正标记且 R75 交叉引用写「R71-④」、体量排名口径未钉死）与一条**不成立**的 S2
+  （`<SCRIPT>` 大小写「假 REJECT」——真编译器复算为**正确拒绝**）。B¹³ 除同源 S1-1／S1-2／S1-3 外另报
+  S1-4 动态 `import(literal, { with: {} })` **fail-open**、S2-1 新增假 REJECT `export enum`、S2-2 枚举族无界、
+  S3-1 同 A¹³ 的差分数、S4-1 `export =` 放行（实测 ESM 下不可部署）；并**据实登记**其复核期间候选工作树被本轮修复
+  **并发写入**，故其结论绑定 `git archive 379163ec` 的提交树而非当时磁盘状态。处置（R79–R84，绑定提交为本次收口提交）：
+  ①（A¹³-S1／B¹³-S1-1／S1-2／S1-3，**S1**×3，R83）**以形状规则取代闭包出口的声明白名单**：`run_failures()` 阶梯重写——
+  非声明 token 拒；`const`／`let`／`var` 模块级绑定拒；`import` 仅在运行时导入且非 `import type`／非相对 specifier 时拒；
+  `export` 侧 `export const|let|var`、加载期声明、**任意 `export default`**（含 `export default class`／`abstract class`）、
+  `export =` 一律拒（新增常量 `_COLLABORATION_EXPORT_BINDING`／`_COLLABORATION_MODULE_BINDING_TOKENS`／
+  `_COLLABORATION_EXPORT_DEFAULT`／`_COLLABORATION_EXPORT_DEFAULT_DECLARATION`／`_COLLABORATION_EXPORT_ASSIGNMENT`）；
+  枚举式环境清单**降级为函数体内运行期探针的补充**，`collaboration_import_closure_failures()` docstring 与清单前注释同步改写。
+  **权威体自身豁免**（`read_module(..., imported=True)`／`walk(..., imported=True)`）：源模块由
+  `collaboration_module_scope_failures()` 的更严判定收口，实测对源模块套用闭包规则会误拒真实树。
+  实测（`/tmp/r13` 影子树，载荷逐个追加到真实 `valueUtils.ts`）：`typeof customElements` 绑定／`export default class`
+  静态初始式／类表达式静态初始式**全部 FAIL**，还原即 **PASS**。
+  ②（B¹³-S1-4，**S1**，R84）动态 `import()` 的 fail-closed 模式由「字面量 ＋ 逗号或 `)`」收紧为**「字面量后紧跟 `)`」**
+  （`\s*(['"])([^'"]*)\1\s*\)`），`import('./x', { with: {} })` 由 fail-open 转为 **REJECT**。
+  ③（B¹³-S2-1，**S2**）`export enum` 的处置为**方向 fail-closed、据实登记不改规则**：`esbuild 0.21.5` 实测 `export enum` 产出
+  加载期 IIFE（**第十四轮据实更正**：这是**真阳性**而非「假 REJECT」，仅「合法 TypeScript 语法却被拒」这层属**过严面**），
+  真实闭包 4 文件无 `enum`，与 A¹³-S2-1 同源。
+  ④（A¹³-F3／B¹³-S3-1，**S3**×2，R79）第十二轮差分数**就地更正**为 **15** 例翻转 ＝ **12** 例 OLD=GREEN → NEW=REJECT ＋
+  **3** 例 OLD=REJECT → NEW=GREEN，其余 **159** 例逐条不变（12＋3＋159 ＝ 174）。
+  ⑤（A¹³-F4，**S4**，R80）R71 行加 **（第十三轮据实更正）** 标记；R75 行交叉引用 `R71-④` → **`R71-②`**
+  （本切换日志第十一轮条目同族误写亦一并订正）。
+  ⑥（A¹³-F5，**S4**，R81）体量排名口径**钉死**为 `scripts/ci/generate_complexity_budget_report.py` 的 `SCAN_ROOTS`
+  ＋ 其 `BUDGETS` 扩展名，**排除 `docs/` 与 `frontend/pnpm-lock.yaml` 一类 lockfile**；本口径下守卫 5018 行为
+  **全仓第 1 大代码文件（Python 源码亦第 1）**。
+  ⑦（A¹³-F6，**S2**，**主张不成立**，R82）`<SCRIPT>` 大小写：真 `@vue/compiler-sfc@3.5.27` 复算——`<SCRIPT setup lang="ts">`
+  作真实块 → `errors=["Element is missing end tag."]`、`script=null`；大写闭合 `</SCRIPT>` → `errors=[]`、`script` 正常；
+  故**起始标签大小写敏感是正确的**，守卫不改。
+  ⑧**本轮矩阵扩围**：import 闭包 **20 → 26（6 接受 ＋ 20 拒绝）**——新增 **6** 条夹具（`export default class` 声明／
+  带静态初始式／带静态块、`export =` 赋值导出、非类型包导入、动态 `import()` 带第二实参；另有 **1** 条**只为类型**的包导入为接受面），
+  并改写 **2** 条同名夹具（`default-exports a class` → `default-exports a class declaration`，判定 ACCEPT → REJECT；
+  `whose declaration initializer reads the environment` → `whose module-level binding reads the environment`，仍 REJECT）——
+  **第十四轮据实更正**：上一轮写的「新增 7 条 ＋ 改写 1 条」实测是「新增 6 ＋ 改写 2」（净 +6）；宿主／模块
+  **133（21 接受 ＋ 112 拒绝）**、页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **180 ＝ 34 接受 ＋ 146 拒绝**。
+  ⑨**本轮实测**（`/tmp/r13`：`probe.py` 逐例探针、`diff.py` 全量差分、`vuecheck.mjs` 真编译器复算；旧树 ＝
+  `git archive 379163ec`）：**7** 例翻转，**全部**是**新增夹具名**的 OLD=ACCEPT → NEW=REJECT，**0** 例
+  OLD=REJECT → NEW=ACCEPT，其余 **173** 例**逐条不变**。
+  ⑩守卫 `PASS checks=129 collaboration_self_check=180`；`make ci.delivery.freeze.prepare` **PASS**、
+  `make ci.local.quick` **PASS**；`python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>`
+  **VERIFIED**，工作树干净。
+  ⑪**本段取代正文相应数字**：当前口径为守卫 `checks=129`、自检 **180 例（宿主／模块 133 ＋ 页面 21 ＋ import 闭包 26）**、
+  守卫 **5018 行**（按 ⑥ 钉死口径为全仓第 1 大代码文件、Python 源码第 1，仍在 `split_plan_queue.md` 的 **P1**，
+  **未上调任何锁**）；生成物 `docs/engineering_convergence/complexity_budget_report.md` 已随本轮同批重刷。
+
+- 第十四轮复核后收口（**本轮**，被复核的第十四个冻结候选为 `379829c4`，第十三轮收口提交）：
+  第十四轮 A¹⁴ 与 B¹⁴ **均判 REQUEST_CHANGES**。A¹⁴ 报 S1 闭包成员层的**非相对 `export … from` 再导出**既不跟边也不拒绝，
+  并用**真实别名** `@/`（`frontend/apps/web/tsconfig.json` 的 `"@/*": ["src/*"]`）端到端复现：守卫 GREEN、`esbuild` 把探针
+  打进产物、协作权威在**每个域**都答 `true`；A¹⁴ 另报两条非阻断据实性（上一轮把 `export enum` 标为「假 REJECT」而实测是
+  **真阳性**；闭包夹具账目「新增 7 ＋ 改写 1」实测应为「新增 6 ＋ 改写 2」）。B¹⁴（真 `@vue/compiler-sfc@3.5.27` ＋
+  `@vue/server-renderer` ＋ `esbuild@0.21.5` ＋ 真 Chromium ＋ TS 5.9.3 ＋ prettier 3.8.1）独立复现同一条再导出缺口，
+  并另报 S1 **`type`／`interface` 上下文关键字**：`type(typeof customElements !== 'undefined' &&
+  (Array.prototype.includes = () => false));` 的首 token 在声明白名单上，被读成类型别名而放行（对照把 `type` 换成
+  `probe` 即 REJECT），`vue-tsc`／`eslint` 均通过 ⇒ 可部署；同时**确认**上一轮 B¹³ 的四条载荷在新 head 上全部 REJECT、
+  上一轮 A¹³-F6 的 `<SCRIPT>` 驳回成立。处置（R85–R87，绑定提交为本次收口提交）：
+  ①（B¹⁴-S1-1，**S1**，R85）**声明白名单改为形状规则**：新增 `_COLLABORATION_DECLARATION_SHAPES`（`type X …=`／
+  `interface X`／`function f(`），**权威体层**（`collaboration_module_scope_failures`）与**闭包成员层**（`run_failures`）
+  同时生效——`type`／`interface` 是上下文关键字，只能靠形状分辨「声明」与「调用」。
+  实测：两处真文件注入后守卫 FAIL、还原即 PASS；停用该规则时自检立刻点名两条对应夹具。
+  ②（A¹⁴-S1／B¹⁴-S1-2，**S1**×2，R86）**打不开的再导出与打不开的 import 同规拒绝**：`export` 阶梯末尾补再导出判定，
+  语句匹配 `_COLLABORATION_RE_EXPORT` 且 specifier 不以 `.` 开头即拒。实测五条载荷（含 `@/` 别名与裸包两条路径）全部 FAIL。
+  （**第十五轮据实更正**：该「全部 FAIL」只对**有空白**拼写成立——`export*from'./x'` 一类无空白拼写当时仍放行，已由 R88 收口。）
+  ③（A¹⁴-P1／P2／B¹⁴-S4，**S3**／**S4**，R87）上一轮 `export enum` 的「假 REJECT」用词在**两处文档**改写为
+  「真阳性／过严面」；闭包夹具账目改写为「新增 6 ＋ 改写 2」，并**新登记**两条非阻断面：闭包顶层 `declare const` 的
+  **既有假 REJECT**、闭包模块级绑定（含 `export const … as const`）一律拒的**刻意取舍**。
+  ④**本轮矩阵扩围**：宿主／模块 **133 → 135（22 接受 ＋ 113 拒绝）**、import 闭包 **26 → 32（8 接受 ＋ 24 拒绝）**，
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **188 ＝ 37 接受 ＋ 151 拒绝**。
+  ⑤**本轮实测**（`/tmp/r14`：整树影子 ＋ 真守卫逐载荷注入；旧树 ＝ `git archive 379829c4`，差分脚本 `/tmp/r14/diff.py`）：
+  **5** 例翻转，**全部**是**新增夹具名**的 OLD=ACCEPT → NEW=REJECT，**0** 例 OLD=REJECT → NEW=ACCEPT，其余 **183** 例**逐条不变**。
+  ⑥守卫 `PASS checks=129 collaboration_self_check=188`；`make ci.delivery.freeze.prepare` **PASS**、
+  `make ci.local.quick` **PASS**；`python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>`
+  **VERIFIED**，工作树干净。
+  ⑦**本段取代正文相应数字**：当前口径为守卫 `checks=129`、自检 **188 例（宿主／模块 135 ＋ 页面 21 ＋ import 闭包 32）**、
+  守卫 **5167 行**（按 ⑥ 钉死口径仍为全仓第 1 大代码文件、Python 源码第 1，仍在 `split_plan_queue.md` 的 **P1**，
+  **未上调任何锁**）；生成物 `docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md`
+  已随本轮同批重刷。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户本轮指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+
+- 第十五轮复核后收口（**本轮**，被复核的第十五个冻结候选为 `0692078d`，第十四轮收口提交）：
+  第十五轮 A¹⁵ 与 B¹⁵ **均判 REQUEST_CHANGES**。A¹⁵ 报 S1-1 **无空白再导出租**（`export*from'./x'`／`export{a}from'./x'`／
+  `export*as ns from'pkg'`）既不跟边也不拒——把相对再导出注入真闭包文件后守卫 GREEN，而真浏览器域读到 `ruleAlive=false`；
+  报 S1-2 **读取窗口先截断后折叠空白**（`export` ＋ 410 空格即把语句读成 `export `，出口阶梯每一级失配），可绕过刚收口的
+  三条拒绝面；报 S2 新增形状规则对**嵌套泛型**（`type Wrapped<T extends Box<number>> = T;`）假 REJECT；
+  报 S3 `import'./x'` 无空白副作用导入的**既有假 REJECT**（且消息把可读的相对 specifier 说成「打不开」）。B¹⁵
+  （真 `@vue/compiler-sfc@3.5.27` ＋ `esbuild@0.21.5` ＋ 真 Chromium ＋ TS 5.9.3 ＋ playwright 1.59.1）独立复现同一 S1
+  （含真 `@/` 别名：`vue-tsc`／`eslint` 通过、探针真进浏览器 bundle）与同一 S2，另报 S4 据实性：R86 行「五条载荷全部 FAIL」
+  **只对有空白拼写成立**。处置（R88–R90）：
+  ①（A¹⁵-F1／B¹⁵-S1，**S1**×2，R88）**再导出族按 `\s*` 收口**：`_COLLABORATION_RE_EXPORT` 的 `export` 后与 `from` 前改为 `\s*`
+  （`relative_edges()` 复用同一常量 ⇒ 跟边同时恢复），并在**闭包出口阶梯末尾补默认拒绝**——未被「声明形状」或「本地具名导出」
+  读到的 `export` 一律拒（权威体层早有同构兜底，闭包层此前是**沉默放行**）。
+  ②（A¹⁵-F2，**S1**，R89）**读取窗口按折叠后的字符计数**：`_statement_text` 改为空白随读随折（只有文本能填窗口），
+  `_statement_excerpt` 读同一份语句文本 ⇒ 拒绝消息不再引用填充空白。
+  ③（A¹⁵-F3／A¹⁵-F4 ＝ B¹⁵-S2／B¹⁵-S3，**S2**／**S3**，R90）形状正则的泛型段改为 `[^;]*`（以语句自身的 `;` 为界，组外补回 `\s*`）、
+  闭包 import 分支 `import\s+` → `import\s*`、R86 行就地补注「收口为部分」。
+  ④**本轮矩阵扩围**：宿主／模块 **135 → 137（23 接受 ＋ 114 拒绝）**、import 闭包 **32 → 42（12 接受 ＋ 30 拒绝）**，
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **200 ＝ 42 接受 ＋ 158 拒绝**；夹具**新增 12 条、删除 0 条、无改名**。
+  ⑤**本轮实测**（`/tmp/r15`：整树影子 ＋ 真守卫逐载荷注入；旧树 ＝ `git archive 0692078d`，矩阵脚本 `/tmp/r15/matrix.py`）：
+  载荷矩阵（12 行，含基线）→ **A 相对再导出／B·C·D 无空白包再导出／E·F 垫空白载荷／K `export @sealed class`** 六类由
+  OLD=ACCEPT 变 NEW=REJECT，**I 无空白副作用导入／J 嵌套泛型**由 OLD=REJECT 变 NEW=ACCEPT，G（有空白相对再导出）与
+  H（`type(...)` 调用）两树同拒，基线两树同绿、还原后两树同绿；**夹具交叉求值**（新 200 例 × 旧守卫）→ **6** 例
+  OLD=ACCEPT → NEW=REJECT、**3** 例 OLD=REJECT → NEW=ACCEPT（宿主层嵌套泛型、闭包层嵌套泛型、闭包层无空白副作用导入各一条）、
+  其余 **191** 例**逐条不变**。变异实测：停用 `\s*` → 点名无空白相对再导出夹具；停用兜底 → 点名 `export @sealed class` 夹具；
+  停用读取窗口修复 → 点名垫空白接受夹具；退回 `[^>]*` → 点名两条嵌套泛型夹具。
+  ⑥守卫 `PASS checks=129 collaboration_self_check=200`；`make ci.delivery.freeze.prepare` **PASS**、`make ci.local.quick` **PASS**；
+  `python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  ⑦**本段取代正文相应数字（含第十四轮段 ⑦）**：当前口径为守卫 `checks=129`、自检 **200 例（宿主／模块 137 ＋ 页面 21 ＋
+  import 闭包 42）**、守卫 **5358 行**（按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1，仍在 `split_plan_queue.md` 的 **P1**，
+  **未上调任何锁**）；`docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+- 第十六轮复核后收口（**本轮**，被复核的第十六个冻结候选为 `9e5402c3`，第十五轮收口提交）：
+  第十六轮 A¹⁶ 与 B¹⁶ **均判 REQUEST_CHANGES**。A¹⁶ 报 S1 **语句切分器的「续句首词」把下一条语句胶到上一条**：
+  `type` 别名刻意不在「`}` 即语句终点」的声明头清单里（类型表达式确实会把 `}` 带到 `>`／`|`／`&`），而续句词表
+  `as`／`satisfies`／`is`／`extends`／`implements`／`from` 是**无条件**表——`type gN3 = { a: number }` 后接一行
+  `from: { (Array.prototype as any).includes = () => true }`（**语句标签**）被读成**一条**类型别名，形状规则匹配别名头即放行，
+  标签块在加载期真跑：门禁自身的 `node` 域不执行、浏览器域执行 ⇒ 守卫 GREEN 而浏览器域规则真死；A¹⁶ 用真 `esbuild@0.21.5`
+  复算产物逐字含 `Array.prototype.includes = () => true;`，同族 `export type` ＋ `from:`／`type X = 1 | 2` ＋ 标签／
+  `from((Array.prototype as any).includes = () => true)` 全部放行，**权威体层与闭包层同时中招**，且经 `0692078d`
+  复测确认是**既有缺口**（非第十五轮引入）。A¹⁶ 另报 S3×3 据实性：§6 仍用第十五轮前的 `154` 口径（与本文件内 200 自相矛盾）、
+  引用守卫里**不存在**的 `_closure_relative_specifiers`、称大写 `<SCRIPT` 起始标签**被拒**而实测**不被拒**（`_script_text()`
+  以字面量小写 `<script` 早退、块体不被剥离；真 `@vue/compiler-sfc@3.5.27` 自身拒绝大写起始标签 ⇒ 不可利用）。
+  B¹⁶ 报 S1 **400 字符读窗被长具名列表击穿**：`export { exportedName000, …, exportedName059 } from './b16poison'`
+  把 `from` 子句顶到窗口之外 ⇒ 再导出正则失配、落进「`export {` 且窗口内找不到 `from`」的放行支、`relative_edges()` 也看不到边
+  ⇒ 目标模块的加载期代码在门禁眼皮下进包（真 `vite build` ＋ 真 Chromium：产物含
+  `customElements<"u"){const e=Array.prototype;e.includes=()=>!1}`、`browserDomain.ruleAlive=false`，`eslint` 0 error、
+  `vue-tsc` 与 pristine 错误集完全一致 ⇒ **可部署**）；含无空白版、多行 prettier 版、45 组 `as alias` 版、包名版；
+  B¹⁶-S2 指出既有夹具只证明「400 空格不再填满窗口」而未覆盖长文本这一成因面；B¹⁶-S3 另登记四条**既有**过严面
+  （跨行动态 `import(…)`、`import fs = require('fs')`、闭包顶层 `declare const`、`export const K = [...] as const`）
+  建议 POST_MERGE_FOLLOWUP。处置（R91–R94）：
+  ①（A¹⁶-S1，**S1**，R91）**续句词改为按语句头判定**：新增 `_JS_CONTINUATION_HEADS`（`as`／`satisfies` 只接
+  `const|let|var`、`is` 接 `function|const|let|var`、`extends` 接 `class|interface|type|abstract|declare|default`、
+  `implements` 接 `class|abstract|declare|default`），`from` 只接 `import`／`export` 的**模块子句**（新增 `_JS_MODULE_CLAUSE`）；
+  删除两张无条件的续句表（`_COLLABORATION_STATEMENT_CONTINUATIONS`／`_JS_STATEMENT_INVISIBLE_HEADS`）。
+  ②（A¹⁶-S1 同族，**S1**，R91）**新增 `_statement_labels()`**：**后随冒号**的词是**语句标签**而不是续句词——
+  单靠 ① 挡不住 `extends:`（`extends` 确实能续 `type` 头），而 `type gA3 = { a: number }` 后接 `extends: { … }`
+  与 `from:` 一样会胶成一条；真实语言里没有任何续句词后随冒号（`T extends U`／`x satisfies T`／`import … from './x'`
+  之后都接名字），故判定安全。
+  ③（B¹⁶-S1／S2，**S1**／**S2**，R92）**读窗改为 `_statement_window()` 并返回是否耗尽**：窗口按**语句真实终点**结束
+  （顶层 `;`，或后随 token 不能续接的换行——本仓**全无分号**，旧「读到下一个 `;`」永远读不到终点，长签名会被一律读成截断）；
+  `export {` 打头的语句**只有读到终点**才允许走「本地具名导出」放行支，读不完则落到新增的专用拒绝（权威体层与闭包层各一条）；
+  窗口上限 400 → **2000** 个**折叠后**字符（60 个导出名约 1.1k **仍可读并被跟边**，400 个约 7.2k 被拒——上限是**有限性**约束，
+  不是内容约束）。
+  ④（A¹⁶-S3，**S3**×3，R93）**据实性就地更正**：§6 该处改为当前口径 `210 ＝ 143 ＋ 21 ＋ 46（45 接受 ＋ 165 拒绝）`，
+  §1／§3／§4／§5／§6／§7 第 7 项的现在时数字一并刷新（自检 **210**、守卫 **5643 行**）；`_closure_relative_specifiers`
+  → `relative_edges()` 并注明「原写符号在守卫里不存在、此处漏改」；R82 行补「据实更正」写明大写 `<SCRIPT` 起始标签
+  **既不识别也不拒绝**、因真编译器同样拒绝而不可利用。
+  ⑤（B¹⁶-S3，**S3**，R94）四条既有过严面在 `9e5402c3` 与本轮树上复测**同样被拒**（与第十五轮一致，本轮未收口），
+  按建议登记为 **POST_MERGE_FOLLOWUP**（写入 §6 第 13 项 ⑯／⑰）。
+  ⑥**本轮矩阵扩围**：宿主／模块 **137 → 143（24 接受 ＋ 119 拒绝）**、import 闭包 **42 → 46（14 接受 ＋ 32 拒绝）**，
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **210 ＝ 45 接受 ＋ 165 拒绝**；夹具**新增 10 条、删除 0 条、无改名**。
+  ⑦**本轮实测**（`/tmp/r16`：整树影子 ＋ 真守卫逐载荷注入；旧树 ＝ `git archive 9e5402c3`，矩阵脚本 `/tmp/a16/{count_matrix,diff_all}.py`
+  复用 ＋ `/tmp/r16/{probe,mutate,strictness}.py`）：载荷矩阵（20 行）→ **11 例**由 OLD=ACCEPT 变 NEW=REJECT
+  （A¹⁶-S1 闭包层／权威体层／`export type` 变体／联合类型变体／`satisfies:` 标签／`extends:` 标签 ＋ B¹⁶-S1 四种拼写 ＋ 超窗 400 名列表），
+  1 例（`from(…)` 裸调用）两树同拒，**全部对照两树一致 ACCEPT**（干净树、干净目标的长列表 60 名、可读长列表被跟边、
+  `export interface gShape` 换行 `extends`、条件类型换行 `extends`）；**夹具交叉求值**（新 210 例 × 旧守卫）→ **7** 例
+  OLD=ACCEPT → NEW=REJECT（全部是新增夹具名）、**0** 例 OLD=REJECT → NEW=ACCEPT、其余 **203** 例**逐条不变**。
+  变异实测（逐条停用本轮机制）：停用权威体层「耗尽即拒绝」→ 点名 1 例；停用闭包层同规则 → 1 例；`_statement_labels()` 恒假 → 1 例；
+  `from` 恢复无条件续接 → 1 例；`extends` 从 `type` 头移除 → 1 例；读窗回退 400 → 1 例（六处均**恰好**点名对应夹具）。
+  另用真 `esbuild@0.21.5` 独立复算：A¹⁶ 载荷产物含 `Array.prototype.includes = () => true;`、B¹⁶ 载荷产物含目标模块的
+  `proto.includes = () => false;` —— 即两处缺口在旧树上**确为可部署的真死**，而本轮守卫对两者均 REJECT。
+  ⑧守卫 `PASS checks=129 collaboration_self_check=210`；`make ci.delivery.freeze.prepare` **PASS**、`make ci.local.quick` **PASS**；
+  `python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  ⑨**本段取代正文相应数字（含第十五轮段 ⑦）**：当前口径为守卫 `checks=129`、自检 **210 例（宿主／模块 143 ＋ 页面 21 ＋
+  import 闭包 46）**、守卫 **5643 行**（按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1，仍在 `split_plan_queue.md` 的 **P1**，
+  **未上调任何锁**）；`docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+- 第十七轮复核后收口（**本轮**，被复核的第十七个冻结候选为 `0137b95b`，第十六轮收口提交）：
+  第十七轮 A¹⁷ 与 B¹⁷ **均判 REQUEST_CHANGES**，且 A¹⁷-F1 与 B¹⁷-S1 指向**同一个根因**。
+  ①（A¹⁷-F1／B¹⁷-S1，**S1**，R95）**标签判定用定长十六字符看窗**：`_statement_labels()` 原写
+  `re.match(r"\s*:", source[end:end+16])`——只看得见**判定点之后**的 16 个字符。垫 ≥16 个空白（空格／制表／不换行空格
+  U+00A0／零宽空格 U+200B／字节序标记 U+FEFF）或一条长注释（注释先被抹平）即可把冒号顶出窗口 ⇒ 判成「不是标签」⇒
+  落到**续句词路径**（`as`／`extends` 确实能续类型头）⇒ `type` 别名与标签块胶成**一条**语句 ⇒ 出口阶梯只匹配语句头 ⇒
+  放行，而标签块在加载期真跑（门禁自身的 `node` 域不执行、浏览器域执行）⇒ 守卫 GREEN 而浏览器域规则真死。
+  这与第十六轮 R91 的标签判定是**同一个根因**（第十六轮只修了「冒号后是否紧跟」，没修「看得见多远」）。
+  B¹⁷ 独立复现为**可部署**：真 `esbuild@0.21.5 --bundle --platform=browser` 产物逐字含
+  `from: { Array.prototype.includes = () => true; }`。**权威体层与闭包层同时**中招。处置：①`_statement_labels()`
+  改为**跳过任意长度**的空白后判 `source[index:index+1] == ':'`；空白集合 ＝ `.isspace()` ∪ 新增的 `_JS_INVISIBLE_CHARACTERS`
+  （`\u200b`／`\u200c`／`\u200d`／`\ufeff`／`\u2060`），经新增的 `_js_is_blank()` 统一判定，定长窗口整个删除；
+  ②`_blank_spans()` 在**被擦字面量的末字符**写 `"0"`（只对 `string`／`template` span），使被擦掉的字面量**仍然能结束语句**；
+  ③矩阵 **+6**（五拒 ＋ 一对照）。实测：五种垫法在**两层面**均由 OLD=ACCEPT 变 NEW=REJECT。
+  ②（A¹⁷-F2，**S1**，R96）**语句吸收通道**：`_can_end_statement()` 对 `'`／`"`／`` ` ``／`>` 返回 False，且**走查跑在字符串已抹的文本上**
+  ⇒ `export type A = 'x'`（抹后行尾是空白）与 `export type A = Record<string, number>`（行尾 `>`）都**不能结束语句**
+  ⇒ 下一行被**无条件吸收**进上一条语句 ⇒ **标签判定与续句词表根本不参与**，形状阶梯只看语句头 ⇒ 放行。
+  十个形状实测 ACCEPT。同族第二处：`_module_statements()` 的「非姓名」分支只报告词元，**行首的正则／模板／数字／`{` 一律不报告**。
+  处置：①`_can_end_statement()` 改为 `character.isalnum() or character in "_$)]}>'\"`"`；②块语句（`{` 开头且**不是**
+  已闭合声明头）与行首非姓名语句纳入语句报告；③矩阵 **+5**。实测：X／L 族 **13** 例 ACCEPT → REJECT、**0** 例反向，
+  `export function f<T extends` 换行两版一致 REJECT（**既有缺口，本轮未修**）。
+  ③（A¹⁷-F3，**S2**，**假 REJECT**，R97）**模块子句跨行被拒**：TypeScript 在 `import`／`export` 头与它的子句之间不设边界，
+  `import\n  { read } from './peer'`、`export\n  { g }` 都是合法写法，而新版把行尾当语句终点 ⇒ 切成 `import` ＋ `{ read } …`
+  两条 ⇒ 合法导入被判成「无法读取」而 REJECT（旧版 PASS，**本轮新引入的回归**）。处置：①新增 `_JS_MODULE_CLAUSE_TOKENS`
+  （`{`／`*`／`type`）与 `_statement_awaits_module_clause()`（`re.sub(r"\s+", " ", source[offset:index])` 匹配
+  `(?:import|export)\s*(?:type\s*)?$`），在**标签判定之前**判「仍是语句头 ＋ 下一词是模块子句令牌」⇒ 续接；
+  ②`_module_statements()` 的括号分支把 `{` 限定为「闭合头之后的声明体」才算续接，否则 `import\n{` 的 `{` 会被误报成独立语句；
+  ③矩阵 **+4**。实测：两层面的 `import\n{…}`／`export\n{…}` 由 OLD=REJECT 变 NEW=ACCEPT，`import\n* as`／`import type\n{` 两版一致 ACCEPT。
+  ④（本轮自查，R95／R96 的镜像，§6 第 13 项 ⑱）**新登记三条过严面**：F2 的修复让 `>` 与三个闭引号也能结束语句，
+  代价是**跨行续写的类型**被切成两条——`export type X = Foo<Bar>` 换行 `[]`（数组类型）、`export type X = Foo<'k'>` 换行 `['k']`
+  （索引访问）、类型别名后接**合法语句标签**（`postfix: 1;`）三者都是合法 TypeScript，现在一律被拒。三条已作为
+  **对照夹具**钉进矩阵（名字后缀 `(registered over-strictness)`），方向 fail-closed，真实树 0 failures，**本轮不收口**：
+  让 `[` 继续上一条语句正是本轮刚关掉的吸收通道。另登记两条**取**：`_blank_spans` 的末字符 `"0"`（收紧）、
+  标签判定跳过任意长度空白（fail-closed）。
+  ⑤（A¹⁷-F4，**S3**，据实性，R98）§1 表与 §5 仍写「内建自检 **200/200**」／`collaboration_self_check=200`（第十六轮 R93
+  只刷到 210，后又随本轮增长失效）。处置：按**本轮实跑**把 §1（`:8`／`:18`）、§3（`:60`／`:91`／`:97`）、§4（`:163`）、
+  §5（`:186`／`:215`）、§6（`:371`／`:518`）、§7 第 7 项（`:561`／`:564`）与 §8 归属段一并刷新为「自检 **230**、守卫 **6065 行**」，
+  R93 行就地补「第十七轮据实更正」交叉引用。
+  ⑥（A¹⁷-F5，**S3**，随仓交付，R99）第十六轮段 ⑦ 引用的「**载荷矩阵（20 行）**」**从未随仓交付**——复核者只能读结论、无法复算。
+  处置：本轮把载荷矩阵**逐条随仓交付**（见本段 ⑩），并写明第十六轮段 ⑦ 的 20 行清单以**本轮清单 ＋ 矩阵内的具名夹具**取代。
+  ⑦**本轮矩阵扩围**：宿主／模块 **143 → 159（26 接受 ＋ 133 拒绝）**、import 闭包 **46 → 50（16 接受 ＋ 34 拒绝）**，
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **230 ＝ 49 接受 ＋ 181 拒绝**；夹具**新增 20 条、删除 0 条、无改名**。
+  ⑧**本轮实测**（`/tmp/p17/`：整树影子 ＋ 真守卫逐载荷注入；旧版由 `git show HEAD:scripts/verify/frontend_scene_component_bridge_guard.py`
+  的源码加载后 `exec`）：载荷矩阵（⑩，20 行）→ **14 行**由 OLD=ACCEPT 变 NEW=REJECT（F1 八行：16／100 空格、制表、不换行空格、
+  零宽空格、字节序标记、200／16 字符注释；F2 三行；三条登记的过严面），**2 行**由 OLD=REJECT 变 NEW=ACCEPT（F3 的 `import`／`export` 子句跨行），
+  其余 **4 行**为对照且两版判定一致；F1／F2／过严面在**两个层面**上各自复算（A ＝ 权威体／模块、C ＝ import 闭包），F3 同；
+  **夹具交叉求值**（新 230 例 × 旧守卫）→ **14** 例 OLD=ACCEPT → NEW=REJECT、**3** 例 OLD=REJECT → NEW=ACCEPT、
+  既有 **210** 例**逐条不变（0 翻转）**；**真实树**（宿主／权威体 VM／页面／四个已复核闭包文件）两版均 **0 failures**（不误报）。
+  另用真 `esbuild@0.21.5 --bundle --platform=browser` 独立复算 F1 载荷：产物逐字含 `from: { Array.prototype.includes = () => true; }`，
+  即该缺口在旧版守卫下**确为可部署的真死**，而本轮对其 REJECT。
+  ⑨**本段取代正文相应数字（含第十六轮段 ⑨）**：当前口径为守卫 `checks=129`、自检 **230 例（宿主／模块 159 ＋ 页面 21 ＋
+  import 闭包 50；接受 49 ＋ 拒绝 181）**、守卫 **6065 行**（按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1，
+  仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**）；`docs/engineering_convergence/complexity_budget_report.md` 与
+  `split_plan_queue.md` 已随本轮同批重刷。守卫 `PASS checks=129 collaboration_self_check=230`；`make ci.delivery.freeze.prepare`
+  与 `make ci.local.quick` 在本轮 HEAD 上执行（本轮为 **PASS**），`python3 scripts/ops/local_quick_evidence.py verify
+  --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  ⑩**本轮载荷矩阵（随仓交付，20 行）**——记法：`⏎` ＝ 换行，`␣×n` ＝ n 个 U+0020，`LPT` ＝ 守卫里的
+  `_COLLABORATION_LABEL_PAYLOAD_TAIL`（逐字：`{ if (typeof customElements !== 'undefined') { const e = Array.prototype as unknown as { includes: (v: unknown) => boolean }; e.includes = () => false; } break as; }`）；
+  层面列 `A` ＝ 权威体／模块（`collaboration_module_scope_failures`）、`C` ＝ import 闭包（`collaboration_import_closure_failures`）：
+
+```text
+id      判据  形状（逐字，LPT 见上）                                                      层面   old    -> new
+P17-01  F1    export {}⏎as␣×16:  LPT                                                     A/C    ACCEPT -> REJECT
+P17-02  F1    export {}⏎as␣×100:  LPT                                                    A/C    ACCEPT -> REJECT
+P17-03  F1    export {}⏎as␣×16（制表 U+0009）:  LPT                                       A/C    ACCEPT -> REJECT
+P17-04  F1    export {}⏎as␣×16（不换行空格 U+00A0）:  LPT                                  A/C    ACCEPT -> REJECT
+P17-05  F1    export {}⏎as␣×16（零宽空格 U+200B）:  LPT                                    A/C    ACCEPT -> REJECT
+P17-06  F1    export {}⏎as␣×16（字节序标记 U+FEFF）:  LPT                                  A/C    ACCEPT -> REJECT
+P17-07  F1    export {}⏎as＋200 字符注释＋:  LPT                                           A/C    ACCEPT -> REJECT
+P17-08  F1    export {}⏎as＋16 字符注释＋:  LPT                                            A/C    ACCEPT -> REJECT
+P17-09  F1    export {}⏎as␣×15:  LPT（对照）                                               A/C    REJECT -> REJECT
+P17-10  F2    export type gS7 = 'x'⏎(Array.prototype as any).includes = () => true        A/C    ACCEPT -> REJECT
+P17-11  F2    export type gS7 = 'x'⏎/^collect-/.test(String(1)) && 1                      A/C    ACCEPT -> REJECT
+P17-12  F2    export type gS8 = Record<string, number>⏎{ (…includes = () => true) }       A/C    ACCEPT -> REJECT
+P17-13  F2    export type gS4 = 'x';⏎(Array.prototype as any).includes = () => true（对照） A/C   REJECT -> REJECT
+P17-14  F3    import⏎  { read } from './peer'                                             A/C    REJECT -> ACCEPT
+P17-15  F3    export⏎  { g }                                                              A/C    REJECT -> ACCEPT
+P17-16  F3    import⏎  * as ns from './peer'（对照）                                      A/C    ACCEPT -> ACCEPT
+P17-17  F3    import type⏎  { T } from './peer'（对照）                                   A/C    ACCEPT -> ACCEPT
+P17-18  OS    export type X = Foo<Bar>⏎  [];（登记的过严面）                               A/C    ACCEPT -> REJECT
+P17-19  OS    export type X = Foo<'k'>⏎  ['k'];（登记的过严面）                             A/C    ACCEPT -> REJECT
+P17-20  OS    export type X = Foo<Bar>⏎  postfix: 1;（登记的过严面）                        A/C    ACCEPT -> REJECT
+```
+
+  复算方式：`/tmp/p17/probe_layers.py`（P17-01…P17-17）、`/tmp/p17/xl_probe.py`（P17-10…P17-20 的 C 面）、
+  `/tmp/p17/newfix20.py`（新增夹具逐条 old/new/期望三方对照）、`/tmp/p17/diff_all.py`（矩阵交叉求值）、
+  `/tmp/p17/decomp.py`（矩阵分解）、`/tmp/p17/real_tree.py`（真实树 0 failures）。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+- 第十八轮复核后收口（**本轮**，被复核的第十八个冻结候选为 `f944b313c0f62ae375861914b340e1a94b9b669f`，第十七轮收口提交）：
+  第十八轮 A¹⁸ 与 B¹⁸ **均判 REQUEST_CHANGES**（A¹⁸：**S1×2 ＋ S3×2**；B¹⁸：**S1×1**）。
+  ①（A¹⁸-S1-1，**S1**，R100）**组合记号逃避标识符判定**：`_statement_labels()` 只判「跳过空白后是否 `:`」，
+  而标识符正则用 Python `\w`（**不含** Mn／Mc 组合记号）⇒ `extends\u0301:` 被读成「续句词 `extends` ＋ 非空白」
+  ⇒ 标签块胶进上一条 `export type`、守卫 **GREEN** 而浏览器域规则**真死**；同族字符 U+0300／U+0301／U+093F／
+  U+0E31／U+3099／U+FE20／U+00B7／U+0387／U+200C／U+200D。处置：①新增 `unicodedata` 导入 ＋
+  `_JS_IDENTIFIER_MARK_CHARACTERS`（`·`／`·`）／`_JS_IDENTIFIER_JOINERS`（ZWNJ／ZWJ）＋ `_js_identifier_continue()`／
+  `_js_identifier_start()`（**ASCII 起首**，避免把非 ASCII 起句的载荷吞进标识符）／`_js_identifier_at()`／
+  `_js_identifier_words()`／`_js_word_may_extend()`／`_js_preceding_word()`／`_js_next_token()`；
+  `_module_statements`／`_closed_declaration_head`／`_statement_carries`／`_statement_continues` 全部改用它们；
+  ②`_statement_labels()` 加 **fail-closed 兜底**（跳过空白后既非 `:` 且当前字符 `_js_word_may_extend` ⇒ 判标签）；
+  ③矩阵 **+1**（组合记号标签一拒）。**第十九轮据实更正**：原写 +2（把一条并非本轮增量的「对照一接」计入）。
+  ②（A¹⁸-S1-2，**S1**，R101）**`<` 被无条件当续句字符**：`_JS_STATEMENT_TAIL_CHARS` 含 `<` ⇒ 合法旧式类型断言
+  `<unknown>(expr)();` 的起句被胶进上一条语句、隐形（守卫 PASS）。处置：①`<` 移出无条件续句表；
+  ②新增 `_JS_TYPE_PARAMETER_HEADS` ＋ `_statement_awaits_type_parameters(source, offset, index)`——`<` 只在
+  「语句头仍只剩类型形参表」时续接（末词 `function`，或倒数第二词 ∈ `{function,class,interface,type,enum,namespace,abstract,declare}`），
+  否则按**新语句** fail-closed；③矩阵 **+6**（**第十九轮据实更正**：原写 +5 且枚举为「两接」，实测新增为 6 条）。真 `tsc 5.9.3`／`esbuild 0.21.5` 实测五种拼写均续接、两种「完成类型」按新语句。
+  ③（B¹⁸-S1，**S1**，R102）**正则语境启发式漏 `=>` 与控制头 `)`** ⇒ `/` 被当除法、其后 `'` 开启**幻影字符串**、
+  整段置空 ⇒ 加载期语句隐形；真 Chromium 实测 `nodeDomain.ruleAlive=true / browserDomain.ruleAlive=false /
+  prototypeIncludesIsStub=true`，同时 `eslint` 0 error、`vue-tsc` 32（无新增）、`vite build` exit 0 ⇒ **可部署**。
+  处置：①`_JS_REGEX_PRECEDING_WORDS` 增 `throw`；②新增 `_JS_REGEX_PRECEDING_BLOCK_KEYWORDS = {if,for,while,switch,catch}`
+  ＋ `_js_opaque_spans()` 内 `paren_heads` 栈（`(` 记「前一词是否控制关键字」，`)` 弹栈得 `regex_preceding`）；
+  ③`=>` 识别（`char == ">" and previous == "="` ⇒ `regex_preceding=True`）；④`_js_opaque_spans()` 改为 **5 元组**
+  （新增 `crossed`：`'`／`"` 字面量只在**原始换行之下**才闭合），新增 `_js_unsegmentable_spans()`，
+  `collaboration_module_scope_failures()` 与 `collaboration_import_closure_failures()` 的「不能切分」判定改用它
+  （未闭合／跨原始换行两种理由分别报错）；⑤矩阵 **+6**（宿主两接 ＋ 一接 ＋ 闭包两拒 ＋ 闭包「只有箭头体正则」对照一接；**第十九轮据实更正**：原写 +4 而枚举已有 5 项）。
+  真树零误判：`valueUtils.ts`／`fieldUtils.ts`／`contractRuntimeVm.ts` 正则 span 数与旧版逐条相同（2／1／1）。
+  ④（A¹⁸-S3-1，**S3**，据实性，R103）§5 `:184` 仍写 `collaboration_self_check=200`。处置：按本轮实跑刷新为
+  「自检 **243 例**、守卫 **6531 行**」，§1／§3／§4／§5／§6／§7 第 7 项与 §8 归属段一并改为
+  **243 例（56 接受 ＋ 187 拒绝）＝ 宿主／模块 169（32／137）＋ 页面 21（7／14）＋ import 闭包 53（17／36）**；
+  R93／R98 行就地补「第十八轮据实更正」交叉引用。
+  ⑤（A¹⁸-S3-2，**S3**，据实性，R104）三条「过严面」的**机制描述错**——真 `tsc`／`esbuild` 实测把
+  `export type X = Foo<Bar>` 换行 `[];` 的第二行解析为**独立语句**（`[];` 真跑到产物），不是「被切开的数组类型」。
+  处置：§6 第 13 项 ⑱ 行就地更正定性，并把本轮新登记的过严面／开口面（`<` 收窄为「语句头仍只剩类型形参表」、
+  `crossed` 引号 span fail-closed）记入新增 ⑲。
+  ⑥**本轮矩阵扩围**：宿主／模块 **159 → 169（32 接受 ＋ 137 拒绝）**、import 闭包 **50 → 53（17 接受 ＋ 36 拒绝）**、
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **243 ＝ 56 接受 ＋ 187 拒绝**；夹具**新增 13 条、删除 0 条、无改名**。
+  ⑦**本轮实测**（`/tmp/p18/`：整树影子 ＋ 真守卫逐载荷注入；旧版由 `git show HEAD:…` 的守卫源码加载后 `exec`）：
+  **夹具交叉求值**（新增 **13** 条夹具 × `f944b313`）→ **6** 条 A→R ＋ **3** 条 R→A ＋ **4** 条两版一致 ACCEPT；
+  **载荷矩阵**（⑨，13 行）逐行清点为 **4** 行 A→R（P18-01..04）＋ **3** 行 R→A（P18-08／09／13）
+  ＋ **4** 行 A→A（P18-05／06／07／10）＋ **2** 行 R→R（P18-11／12）。**第十九轮据实更正**：⑨ 表逐行 OLD 列有
+  **8 行**标注错（P18-05／06／07／08／09／11／12／13），已按 `/tmp/p19r/cross18truth.py`
+  （`f944b313` × `e4435c77` 逐行求值）就地更正（A¹⁹ 报 6 行，本轮逐行复算为 8 行）。**第二十轮据实更正**：
+  ①原句把上面那组**夹具层**聚合数（6／3／4）写成「**载荷矩阵（⑨，13 行）** → 6 行／3 行／其余 4 行」，与 ⑨ 表
+  自身的行数互斥（4＋3＋4＝11≠13，且 ⑨ 表另有两行 R→R），两个计数已按上列**分开**写明；②同段末句原写
+  「**1** 例新增闭包夹具两版一致 ACCEPT」，与 ⑨ 表 P18-13（`REJECT -> ACCEPT`）互斥——逐条复算 13 条新增夹具
+  × `f944b313`（`/tmp/p20/r18fixtures.py`）为「**4** 例新增**宿主**夹具两版一致 ACCEPT（function 头／interface 头／
+  type-alias 头／除法对照），**闭包层无 A→A 夹具**」，已更正。**夹具交叉求值**（新 243 例 × 旧守卫 `e4435c77`）→ **9** 例翻转
+  （4 例新增夹具 A→R ＋ 3 例新增夹具 R→A ＋ 2 例新增闭包夹具 A→R），**4** 例新增宿主夹具两版一致 ACCEPT，
+  既有 **230** 例**逐条不变（0 翻转）**；**真实树**（宿主／权威体 VM／页面／四个已复核闭包文件）两版均 **0 failures**。
+  另用**端到端影子树**（`/tmp/p18/e2e.sh`／`e2e_a.sh`）独立复算：**旧守卫 rc=0 PASS / 新守卫 rc=1 FAIL**——
+  B¹⁸-S1 两拼写与 A¹⁸-S1-1／S1-2 四类载荷全部由隐形变点名，即该缺口在旧版守卫下确为真死、本轮对其 REJECT。
+  ⑧**本段取代正文相应数字（含第十七轮段 ⑨／⑩ 中与本轮不符处）**：当前口径为守卫 `checks=129`、
+  自检 **243 例（宿主／模块 169 ＋ 页面 21 ＋ import 闭包 53；接受 56 ＋ 拒绝 187）**、守卫 **6531 行**
+  （按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1），仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**；
+  `docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  守卫 `PASS checks=129 collaboration_self_check=243`；`make ci.delivery.freeze.prepare` 与 `make ci.local.quick`
+  在本轮 HEAD 上执行，`python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  第十七轮段 ⑨ 的「自检 230／守卫 6065」与段 ⑩ 的 20 行清单，以本段 ⑧／⑨ 的 243／6531 与 13 行清单取代
+  （第十六轮段 ⑦ 的 20 行清单此前已由第十七轮段 ⑩ 取代，本轮不再重述）。
+  ⑨**本轮载荷矩阵（随仓交付，13 行）**——记法：`⏎` ＝ 换行，`U+0301` ＝ 组合尖音符（Mn），层面列 `A` ＝ 权威体／模块
+  （`collaboration_module_scope_failures`）、`C` ＝ import 闭包（`collaboration_import_closure_failures`）；
+  闭包两拒行的载荷是「合法正则 ＋ 同文件一处 `if (typeof Element !== 'undefined') { …includes = () => false }` 加载期门控」，
+  只有把引号 span 读对（`crossed`）才能看见那条门控并拒绝。
+
+```text
+ID      族  载荷                                                                   层  OLD -> NEW
+P18-01  A1  export type gL1 = (x: number) => void⏎extends+U+0301: { …includes = () => false; }   A  ACCEPT -> REJECT
+P18-02  A2  export type gL2 = number⏎<unknown>(() => { …includes = () => false; })();             A  ACCEPT -> REJECT
+P18-03  A2  export type gL10 = B⏎<C>[];                                                           A  ACCEPT -> REJECT
+P18-04  A2  export type gL11 = Record⏎  <string, number>;                                         A  ACCEPT -> REJECT
+P18-05  A2  export function gL6⏎<T>(value: T): T { return value; }                                A  ACCEPT -> ACCEPT
+P18-06  A2  export interface gL8⏎<T> { value: T; }                                                A  ACCEPT -> ACCEPT
+P18-07  A2  export type gL9⏎<T> = T;                                                              A  ACCEPT -> ACCEPT
+P18-08  B1  const matches = (text: string): boolean => /[']/.test(text);（箭头体正则）            A  REJECT -> ACCEPT
+P18-09  B1  for (const item of list) /[']/.test(item) && (total += 1);（循环头正则）              A  REJECT -> ACCEPT
+P18-10  B1  return Math.round(value) / 2;（调用后除法）                                           A  ACCEPT -> ACCEPT
+P18-11  B1  箭头体正则 ＋ 加载期门控（闭包成员 pages/valueUtils.ts）                               C  REJECT -> REJECT
+P18-12  B1  循环头正则 ＋ 加载期门控（闭包成员 pages/valueUtils.ts）                               C  REJECT -> REJECT
+P18-13  B1  只有箭头体正则、无门控（对照）                                                        C  REJECT -> ACCEPT
+```
+
+  复算方式：`/tmp/p18/cross18.py`（新 243 例 × 旧守卫交叉求值，第 (c) 段含全仓幻影扫描 1156 文件）、
+  `/tmp/p18/verdict.py`、`/tmp/p18/e2e.sh`＋`pay.py`（B¹⁸-S1 两拼写端到端）、`/tmp/p18/e2e_a.sh`＋`pay_a.py`
+  （A¹⁸-S1-1／S1-2 四类载荷端到端）、`/tmp/p18/lt/`（真 `tsc 5.9.3`／`esbuild 0.21.5` 判定五种类型形参拼写与两种「完成类型」）、
+  `/tmp/p18/probe3.py`。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+- 第十九轮复核后收口（**本轮**，被复核的第十九个冻结候选为 `e4435c776cafc121dd1712fd5dfe51d9d41dad74`，第十八轮收口提交）：
+  第十九轮 A¹⁹ 与 B¹⁹ **均判 REQUEST_CHANGES**（A¹⁹：**S1×3 ＋ S3×4 ＋ S4×1**；B¹⁹：**S1×1**，与 A¹⁹-S1-1 同根因）。
+  ①（A¹⁹-S1-1／B¹⁹-S1，**S1**，R105）**类型形参判定被「名字与关键字撞名」击穿**：`_statement_awaits_type_parameters()`
+  只取语句头的**最后两个词**，于是 `export type type = number` 换行 `<unknown>…();`、`export type abstract = number`、
+  `export type A = { type: () => void }`／`{ namespace: string }`／`{ enum: string }`／`{ class: string }` 全部被读成
+  「仍在等类型形参」⇒ 幻影行的加载期投毒语句隐形而守卫 **PASS**。真 `tsc 5.9.3`／`esbuild 0.21.5` 证明这些拼写均可部署；
+  B¹⁹ 把 `{ type: string }` 撞名载荷追加进真闭包成员 `valueUtils.ts` 后，真 `eslint` 0 error、`vue-tsc` 与基线**逐字节相同**、
+  真 `vite build` exit 0、真 Chromium 实测 `ruleAlive=false`。处置：新增 `_JS_HEAD_MODIFIERS`／
+  `_JS_TYPE_PARAMETER_HEAD_KEYWORDS`／`_JS_HEAD_EXPRESSION_KEYWORDS`／`_JS_HEAD_SINGLE_CHARACTER_TOKENS` ＋
+  `_js_head_tokens()`，`_statement_awaits_type_parameters()` 改为**读语句头形状**（在注释／字符串屏蔽后的文本上切词）：
+  修饰词之后，①声明关键字 ＋ 至多一个名字（仅 `default` ＋ function／class 允许匿名），或②`名字 =`（可带 `async`）
+  ＋ 恰一个 function／class。矩阵 **+3**（宿主两拒 ＋ 闭包一拒）。
+  ②（A¹⁹-S1-2，**S1**，R106）**9 个 Unicode `Pc` 连接符漏出标识符判定**：`_js_identifier_continue()` 只认
+  `isalnum` ＋ `Mn`／`Mc` ＋ 两个 `Other_ID_Continue` 记号，而 `U+203F U+2040 U+2054 U+FE33 U+FE34 U+FE4D U+FE4E
+  U+FE4F U+FF3F` 既非字母数字也非组合记号 ⇒ `extends‿:` 一族把标签胶进上一条 `export type`（与第十八轮同族复活）。
+  处置：新增 `_JS_IDENTIFIER_CONNECTORS`（九个 `Pc`）与 `_JS_IDENTIFIER_CONTINUE_SYMBOLS`（`U+30FB`／`U+FF65`／
+  `U+2118`／`U+212E`／`U+309B`／`U+309C`），`_js_identifier_continue()` 增加 `Pc` 类、`Mn`／`Mc` 与
+  「`>U+007F` 且 `unicodedata.category == 'Cn'`（未分配）」的 fail-closed 兜底，`_js_word_may_extend()` 复用同一集合。
+  矩阵 **+2**（宿主两拒）。实测 Pc／符号记号 **15** 条载荷（9 个 `Pc` ＋ 6 个符号记号）全部 OLD=ACCEPT → NEW=REJECT。
+  ③（A¹⁹-S1-3，**S1**，R107）**正则前置字符表缺 `>`**：`_JS_REGEX_PRECEDING_CHARS` 不含 `>`，`_js_opaque_spans()`
+  只对 `=>` 特判 ⇒ `export function pad(n) { return (n as any) > /[']/.test(String(n)); } ; (Array.prototype as any)
+  .includes = () => false; // '` **同一行**内，字符类里的 `'` 开启一个到行尾注释里才闭合的**幻影字符串**
+  （不跨原始换行，第十八轮的 `crossed` 规则看不见），整段投毒语句被擦除、守卫 PASS；同族还能把 `screen`／`window`
+  环境引用一并藏掉（击穿「环境盲」）。处置：①`<` 并入 `_JS_REGEX_PRECEDING_CHARS`（`<` 在任何读法下都不能结束
+  表达式，`/` 必为正则）；②新增 `_JS_REGEX_AMBIGUOUS_PRECEDING_CHARS = {'>'}`——`>` 既可能是比较符也可能是
+  类型实参收尾，两种读法隐藏**不同**语句，故 `_js_opaque_spans()` 对紧跟 `>`（且非 `=>`）的 `/` 追加一个
+  `ambiguous` span（`terminated=False`），`collaboration_module_scope_failures()` 与闭包层的「不能切分」格式化器
+  各加一条具名理由，**拒绝而不猜**。矩阵 **+5**（三条 A→R ＋ 一对照接 ＋ 一条 `(registered over-strictness)`：
+  `export function* gen` 换行 `<T>(): Iterable<T> {}` 真 `tsc`／`esbuild` 均 rc=0 但仍被拒）。
+  ④（A¹⁹-S3-2／S3-3／S3-4／S3-5 ＋ A¹⁹-S4-1，**S3**×4 ＋ **S4**，据实性，R108）：①第十八轮那 13 行**载荷矩阵**
+  的 OLD 列**错了 8 行**（P18-05／06／07／08／09／11／12／13），已按 `/tmp/p19r/cross18truth.py` 就地更正
+  （A¹⁹ 报 6 行，本轮逐行复算为 8 行；聚合数 6／3／4 本身正确）；②R100／R101／R102 的每规则夹具增量写成
+  2／5／4＝11，实测为 **1／6／6＝13**；③3 例 R→A 的指名错（实为「箭头体正则／循环头正则／闭包『只有箭头体正则』」，
+  不是「三处类型形参续接」）；④⑲① 把**不编译**的 `export type A = Record` 换行 `<string, number>;`
+  （真 `tsc` TS1005／TS1109）称作「跨行续写的真类型实参」；⑤§3 提交链仍是首批 10 笔的口径（实测
+  `de9a230d..e4435c77` 共 **46 笔**）。均已在 `frontend_gate_baseline_alignment_20260922.md` 就地更正。
+  ⑤**本轮矩阵扩围**：宿主／模块 **169 → 178（33 接受 ＋ 145 拒绝）**、import 闭包 **53 → 54（17 接受 ＋ 37 拒绝）**、
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **253 ＝ 57 接受 ＋ 196 拒绝**；夹具**新增 10 条、删除 0 条、无改名**。
+  ⑥**本轮实测**（`/tmp/p19r/`：两版守卫逐载荷求值 ＋ 整树影子 `/tmp/p19/tree3`）：
+  载荷矩阵（⑧，12 行）→ **10 行**由 OLD=ACCEPT 变 NEW=REJECT、**0 行**反向、**2 行**为对照（两版均 ACCEPT）；
+  **夹具交叉求值**（新 253 例 × 旧守卫 `e4435c77`）→ **9** 例翻转（8 例新增宿主夹具 ＋ 1 例新增闭包夹具，
+  全部 A→R）、**1** 例新增夹具两版一致 ACCEPT，既有 **243** 例**逐条不变（0 翻转）**；**真实树**（宿主／权威体 VM／
+  页面／四个已复核闭包文件）新守卫 **0 failures**、守卫 `PASS checks=129 collaboration_self_check=253`。
+  另用**端到端影子树**独立复算：A¹⁹ 三条载荷（`/tmp/a19/eq2.ts`／`eq3.ts`／`eq5.ts`）与 B¹⁹ 载荷在**旧守卫 rc=0**、
+  在**新守卫 rc=1**，即该缺口在旧版守卫下确为真死、本轮对其 REJECT。
+  ⑦**真工具链交叉验证**（`/tmp/p19r/lt/`）：`tsc 5.9.3`／`esbuild 0.21.5` 实测五种类型形参拼写**均续接**
+  （`export function read`⏎`<T>(…)`／`export class Box`⏎`<T> {…}`／`export interface I`⏎`<T>`／`export type A`⏎`<T> = T`／
+  `const f = function`⏎`<T>(x)`），`export type A = Array`／`= Record` 换行 `<…>;` **报错**（TS1109／TS1005，即
+  ⑲① 原文举例并非合法跨行类型实参），`export function* gen` 换行 `<T>(): Iterable<T> {}` **两工具 rc=0**（本轮仍拒，
+  已登记为 `(registered over-strictness)` 夹具）。
+  ⑧**本轮载荷矩阵（随仓交付，12 行）**——层面列 `A` ＝ 权威体／模块（`collaboration_module_scope_failures`）、
+  `C` ＝ import 闭包（`collaboration_import_closure_failures`）；`OLD` ＝ `e4435c77`、`NEW` ＝ 本轮工作树守卫；
+  `⏎` ＝ 换行，`U+203F` ＝ `Pc` 连接符，`U+30FB` ＝ 符号记号（`Other_ID_Continue`）。
+
+```text
+ID      族  载荷                                                                   层  OLD -> NEW
+P19-01  S1-1  export type type = number⏎<unknown>(() => { …includes = () => false; })();      A  ACCEPT -> REJECT
+P19-02  S1-1  export type abstract = number⏎<unknown>(…)();                                   A  ACCEPT -> REJECT
+P19-03  S1-1  export type gA = { type: () => void }⏎<unknown>(…)();                           A  ACCEPT -> REJECT
+P19-04  S1-2  export type gPC = (x: number) => void⏎extends+U+203F: { …includes = …; }         A  ACCEPT -> REJECT
+P19-05  S1-2  export type gPC2 = (x: number) => void⏎extends+U+30FB: { …includes = …; }        A  ACCEPT -> REJECT
+P19-06  S1-3  export function padEq(n) { return (n as any) > /[']/.test(String(n)); } ; … // ' A  ACCEPT -> REJECT
+P19-07  S1-3  同上 ＋ /[']/.test(String(screen)) ＋ typeof window !== 'undefined'（藏环境）     A  ACCEPT -> REJECT
+P19-08  S1-3  export function padLt(n) { return (n as any) < /[']/.test(String(n)); } ; … // ' A  ACCEPT -> REJECT
+P19-09  S1-1  别名体属性撞关键字（闭包成员 pages/valueUtils.ts，B¹⁹ 载荷）                        C  ACCEPT -> REJECT
+P19-10  S1-3  单行正则幻影串（闭包成员 pages/valueUtils.ts）                                     C  ACCEPT -> REJECT
+P19-11  对照  export function halfRounded(value, factor) { return Math.round(value) / factor; } A  ACCEPT -> ACCEPT
+P19-12  对照  export function rc(text) { return text.length > 0 && /[']/.test(text); }         A  ACCEPT -> ACCEPT
+```
+
+  复算方式：`/tmp/p19r/payloadmatrix19.py`、`/tmp/p19r/fixtureflips.py`、`/tmp/p19r/cross18truth.py`、
+  `/tmp/p19/tree3/`（整树影子 ＋ 逐载荷注入真守卫）、`/tmp/p19/probe2.py`、
+  `/tmp/p19r/lt/`（真 `tsc 5.9.3`／`esbuild 0.21.5`）。
+  ⑨**本段取代正文相应数字（含第十八轮段 ⑦／⑧ 中与本轮不符处）**：当前口径为守卫 `checks=129`、
+  自检 **253 例（宿主／模块 178 ＋ 页面 21 ＋ import 闭包 54；接受 57 ＋ 拒绝 196）**、守卫 **6794 行**
+  （按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1），仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**；
+  `docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  守卫 `PASS checks=129 collaboration_self_check=253`；`make ci.delivery.freeze.prepare` 与 `make ci.local.quick`
+  在本轮 HEAD 上执行，`python3 scripts/ops/local_quick_evidence.py verify --expected-head <本轮 HEAD>` **VERIFIED**，工作树干净。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+**第二十轮**（A²⁰ 判 **REQUEST_CHANGES**：**S2×2 ＋ S3×2 ＋ S4×1**；A²⁰ 同时**撤回**它自己先前提出的 S2-1 修法——
+字符级 `<`／`>` 配对会被模块里**其它**内容左右（`a < b` 是比较、`=>` 是单箭头、`Record<a,b>` 是配平的），
+同一条载荷在不同模块文本下时而拒绝、时而放行，比「一律拒绝」更糟）。同轮独立复核 **B²⁰**（真工具链／对抗线）对同一冻结候选亦判 **REQUEST_CHANGES**（三条未登记假 REJECT ＝ 本轮的 R110＋R109＋R109，另两条实测观察见 ⑨），主控线对冻结候选 `309cec59…` 的发现逐条收窄（R109–R112）：
+  ①**R109（A²⁰-S2-2，本轮的假 REJECT）**：`_statement_awaits_type_parameters()` 的 tail 判定把生成器记号 `*`
+  当单字符 token 计入（`function`＋`*`＋`name` 的 tail 长度是 2 而不是 1），`_js_identifier_start()` 的 ASCII-only 取值
+  又使非 ASCII 名字读不出 token（tail 变空）⇒ `export function* gen`⏎`<T>…`／`export async function* gen`⏎`<T>…`／
+  局部 `function* gen`⏎`<T>…`／`export function 名`⏎`<T>…` 四类拼写被读成「下一行是独立语句」而拒绝
+  （真 `tsc 5.9.3`／`esbuild 0.21.5` 四类**全部 rc=0**；第十九轮只登记了其中一类）。处置：新增
+  `_js_identifier_start_non_ascii()`（**只在 head 形状判定里读**：字母／`Nl`／两个 `Other_ID_Start` 符号／未分配 `Cn` 兜底；
+  ASCII-only 的 `_js_identifier_start()` **不动**，以免 R100 的「非 ASCII 起句仍按首字符报告」漂移）
+  ＋ `_js_head_token_is_name()` ＋ `_js_head_declared_tail()`（**跳过** `*` 而非计作第二个名字），两处 tail 判定改用它们，
+  `_js_head_tokens()` 读非 ASCII 名字串。
+  ②**R110（A²⁰-S2-1，保留并登记）**：`>` 后紧跟 `/` 一律拒绝，合法比较 `(a as any) > /x/.test(b)`（rc=0）被一并拒掉。
+  处置：**保留拒绝、登记而不收窄**——按窗口判据不能落地（投毒载荷 `(n as any) > /[']/…` 与合法的
+  `(a as any) > /[']/.test(b)` **共用同一个窗口** `/[']/`，按窗口判二者同判）；而把 `>` 后的 `/` 一律读作字面量
+  正是 R107 要堵的那条读法。新增一条 `(registered over-strictness)` 夹具（宿主 ＋ 闭包各一条）钉住本过严面；
+  `a < b > /x/.test('y')` 由同一条规则拒绝且**两工具均不编译**（TS1109／esbuild 报错），那部分零成本。
+  ③**R111（A²⁰-S3-1／S3-2，据实性）**：第十八轮段 ⑦ 的两处更正（**夹具层**聚合数 vs **载荷矩阵**行数；
+  闭包对照项的真值）已在上段就地更正。
+  ④**R112（A²⁰-S4，据实性）**：第十九轮段 §8 归因括号「（R105 三条 ＋ R106 两条 ＋ R107 三条 ＋ 闭包一条）」
+  多算一条，实为「**R105 两拒 ＋ R106 两拒 ＋ R107 三拒 ＋ 生成器头一拒 ＋ 闭包一拒**」，已就地更正（主文档 §7 R112 行）。
+  ⑤**本轮矩阵扩围**：宿主／模块 **178 → 182（37 接受 ＋ 145 拒绝）**、import 闭包 **54 → 57（19 接受 ＋ 38 拒绝）**、
+  页面 **21（7 接受 ＋ 14 拒绝）** 不变。合计 **260 ＝ 63 接受 ＋ 197 拒绝**；夹具**新增 8 个名字（4 宿主 ＋ 3 闭包 ＋ 1 条宿主改名）、
+  删除 0 条**，净增 **7** 条（原 `(registered over-strictness)` 的生成器头**转为接受**）。`checks` 仍 **129**。
+  ⑥**本轮载荷矩阵（随仓交付，17 行）**——记法同第十八轮：层面 `A` ＝ 权威体／模块、`C` ＝ import 闭包；
+  `OLD` ＝ `e4435c77`（第十八轮）、`R19` ＝ `309cec59`、`NEW` ＝ 本轮工作树。
+
+```text
+ID      层  载荷（简写）                                                       OLD      R19      NEW
+P20-01  A  (a as any) > /x/.test(b)  合法比较，tsc/esbuild rc=0               ACCEPT   REJECT   REJECT   ← 本轮登记过严面
+P20-02  A  (n as any) > /[']/.test(…) ; (Array.prototype as any).includes=… ; // '   ACCEPT   REJECT   REJECT   ← R107 投毒载荷
+P20-03  A  (a as any) > /[']/.test(b)  字符类含引号，tsc/esbuild rc=0         REJECT   REJECT   REJECT
+P20-04  A  values.length / scale  类型实参收尾后的除法                       ACCEPT   ACCEPT   ACCEPT
+P20-05  A  Math.round(v) / factor  除法对照                                  ACCEPT   ACCEPT   ACCEPT
+P20-06  A  a > b  纯比较对照                                                ACCEPT   ACCEPT   ACCEPT
+P20-07  A  export function* gen⏎<T>(): Iterable<T> {}                       ACCEPT   REJECT   ACCEPT
+P20-08  A  export async function* stream⏎<T>(values: readonly T[]): AsyncGenerator<T> {…}   ACCEPT   REJECT   ACCEPT
+P20-09  A  function* walk⏎<T>(values: readonly T[]): Generator<T> {…}         ACCEPT   REJECT   ACCEPT
+P20-10  A  export function 名⏎<T>(value: T): T { return value; }              ACCEPT   REJECT   ACCEPT
+P20-11  A  export type CollaborationKindName = { type: string }⏎<unknown>Object.defineProperty(…)   ACCEPT   REJECT   REJECT   ← R105 撞名载荷
+P20-12  A  a < b > /x/.test('y')  交叉角括号，两工具均不编译                 ACCEPT   REJECT   REJECT
+P20-13  C  (a as any) > /x/.test(b)  闭包成员 pages/valueUtils.ts             ACCEPT   REJECT   REJECT   ← 登记过严面（闭包层）
+P20-14  C  export function* walk⏎<T>(…)                                      ACCEPT   REJECT   ACCEPT
+P20-15  C  export function 名⏎<T>(value: T): T { return value; }              ACCEPT   REJECT   ACCEPT
+P20-16  C  values.length / scale                                          ACCEPT   ACCEPT   ACCEPT
+P20-17  C  Math.round(v) / factor                                         ACCEPT   ACCEPT   ACCEPT
+```
+
+  ⑦**复算方式**：`/tmp/p20/spec.json` ＋ `/tmp/p20/mprobe.py`（17 行逐条在**三版**守卫上求值）、
+  `/tmp/p20/fixtureflips.py`（**260** 例 × `e4435c77` → **10** 例 A→R（8 宿主 ＋ 2 闭包）、0 例 R→A；
+  × `309cec59` → **6** 例 R→A（4 宿主 ＋ 2 闭包）、0 例 A→R）、`/tmp/p20/r18fixtures.py`（第十八轮 13 条新增夹具 × `f944b313`，
+  得 6／3／4）、`/tmp/p20/mutate.py`（三项**变异鉴别**：停用「跳过生成器记号」→ 自检点名 **4** 条生成器夹具；
+  停用非 ASCII 名字判定 → 点名 **2** 条；停用 `>` 歧义拒绝 → 点名 **1** 条过严面夹具 ＋ **2** 条既有 `>` 载荷夹具，
+  且投毒载荷 P20-02 由 REJECT 翻 **ACCEPT** ⇒ 该规则**承重**）、`/tmp/p20/lt/`（真 `tsc 5.9.3`／`esbuild 0.21.5`：
+  P20-01／03／04／07／08／09／10／11／13／16 逐个 rc=0；P20-12 两工具均报错）。
+  另：权威体 VM 与四个真实闭包文件中 `>`＋可选空白＋`/` 的出现次数为 **0**（`/tmp/p20/` 正则扫描），
+  故本轮的登记过严面**不触及任何被复核模块**；真实树两版均 **0 failures**。
+  ⑧**本段取代第十九轮段 ⑧ 的「当前口径」（含第十八轮段 ⑦／⑧ 中与本轮不符处）**：当前口径为守卫 `checks=129`、
+  自检 **260 例（宿主／模块 182 ＋ 页面 21 ＋ import 闭包 57；接受 63 ＋ 拒绝 197）**、守卫 **6969 行**
+  （按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1），仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**；
+  `docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  守卫 `PASS checks=129 collaboration_self_check=260`。
+  ⑨**B²⁰（真工具链／对抗线）独立只读复核**：同为 **REQUEST_CHANGES**，但**未找到任何 S0／S1 绕过**——报告原文「**未找到**任何『守卫 GREEN 而浏览器域规则真死』的载荷」，真 Chromium 探针 PRISTINE `ruleAlive=True`／POISON `ruleAlive=False, stub=True`（机制真实存在），11 行「尝试过但被正确拒绝」的攻击清单逐条 REJECT。
+  三条**未登记假 REJECT**：B20-FR-1（`>` 后接 `/` 的歧义拒绝误伤合法比较 `count > /^\d+$/.source.length`，权威体层＋闭包层**同时**，＝ A²⁰ 的 S2-1／本轮 R110）、B20-FR-2（`export async function* gen`⏎`<T>` 生成器头跨行类型形参，＝ R109）、B20-FR-3（`export function 名`⏎`<T>` 非 ASCII 声明名头，＝ R109）。处置：**FR-1 保留拒绝并登记为过严面**（宿主／闭包两层各一条具名夹具，`expected=False`；B²⁰ 自陈的最小修法即含「只在确无法判定时才拒绝，并把本条补进 `(registered over-strictness)` 夹具」，与 A²⁰ 撤回自身修法后的结论一致）；**FR-2／FR-3 判放行（修好）**——生成器记号跳过、非 ASCII 名字读作 head 的一个名字，并各自补入宿主／闭包两层接受夹具。
+  B²⁰ 另两条观察按其实测据实登记：①**两个抽取路径严格度不对称**——语句切分与 `>`／`<` 歧义拒绝只作用于权威体模块正文（`_js_unsegmentable_spans()` 的 `:2354` 调用点；第二十轮记为 `:2348`，第二十一轮修法使其下移 6 行）与**被复核闭包成员文件**（`:2771`，`read_module()`），宿主 `.vue` 文本只走声明／消费检查，故同载荷注入 `ContractFormDriverHost.vue` 两版均 **ACCEPT**、注入 `contractRuntimeVm.ts` 即 **REJECT**（本轮实测复现；B²⁰ 判「设计使然」，建议显式记入边界，已记）；②**两条既存拒绝非本轮回归**——`export const f = function*<T>() {…}` 与 `export default function<T>() {…}` 在 `e4435c77` 与 `309cec59` **两版均 REJECT**（「模块级值在加载期求值且被权威体链接」／「被复核闭包成员不得默认导出」两条既存 fail-closed 规则），B²⁰ 据真 `tsc 5.9.3`／`esbuild 0.21.5` 复核并明示其「非本轮回归，可只在文档据实登记」，本轮据此**只登记、不改写**。
+  B²⁰ 的独立复算与主控线一致：冻结树守卫自跑 `PASS checks=129 collaboration_self_check=253`；证明文件 sha256 **MATCH**；两个生成器（无 `--write`）均 `[OK] … is current`；矩阵 `253 = 178（33／145）＋ 21（7／14）＋ 54（17／37）`；新增 10 条夹具交叉求值 **9 例 A→R（8 宿主 ＋ 1 闭包）、0 例 R→A、1 例同 ACCEPT**、既有 243 例 **0 翻转**；12 行载荷矩阵 P19-01…P19-12 逐行方向全对；回执 `…/evidence/ci.local.quick/309cec59….json` 的 `head`／`tree` 与 `HEAD`／`HEAD^{tree}` **逐字节一致**（B²⁰ 明示**未**运行 `verify`，故该回执的「通过」在其报告里为**未观测**项，与本轮主控线 `local_quick_evidence.py verify` 的结论互不替代）。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+**第二十一轮**（A²¹ 判 **REQUEST_CHANGES**：**S1×1 ＋ S4×2**；同一冻结候选上 **B²¹（真工具链／对抗线）判 APPROVE**）对冻结候选 `77d23382…` 的发现逐条收窄（R113–R115）：
+  ①**S1（等价绕过，本轮唯一阻断项）**：`>` 后接 `/` 的歧义拒绝（第十九轮 R107 规则／第二十轮 R110 的登记面）可被**一个 `U+FEFF`** 绕过。
+  `_js_opaque_spans()` 的空白判定用本解释器的 `str.isspace()`（对 `U+FEFF` 为 **False**），而 TypeScript 词法把 `U+FEFF` 读作空白 ⇒
+  `previous` 被该字符顶掉、`ambiguous` span **不产生** ⇒ `/` 被读成除号、紧随的 `'` 开启一个**同行闭合**的幻影字符串（`crossed=False`）⇒
+  整段加载期投毒语句被擦除、守卫 **真 GREEN**。同一个 `U+FEFF` 也能把权威体层的「环境盲」探针一并藏进被擦区间。
+  守卫原文（注入真实闭包成员 `pages/valueUtils.ts`，整树影子）：`[verify.frontend.scene_component_bridge.guard] PASS checks=129 collaboration_self_check=260`／`EXIT=0`；
+  同载荷**去掉垫字**逐字节对照：`FAIL … cannot be segmented: the '/' at offset … follows a '>' …`／`EXIT=1`。
+  真工具链（主控线复跑）：`esbuild --bundle --platform=node` **rc=0**、`node -e 'require(...); [1,2].includes(1)'` → **false**（原生 `includes` 已被加载期覆盖）⇒ **投毒真跑**，非纸面推演。
+  同族垫字 `U+200B`／`U+200C`／`U+200D`／`U+2060` **同样绕过**；权威体层与 import 闭包层**同时**中招。
+  ②**修法**：`_js_opaque_spans()` 的空白判定改用文件内**既有**的 `_js_is_blank()`（＝ `str.isspace()` ＋ `_JS_INVISIBLE_CHARACTERS`＝`U+200B`／`U+200C`／`U+200D`／`U+FEFF`／`U+2060`），
+  与语句走查 `_module_statements()` 的读法**统一**（该表本就是为「标签不得被不可见字符垫开」而建）；宿主层与闭包层各补一条**具名夹具**（`expected=False`）。
+  实测：四种垫字 ＋ `U+FEFF` 在**两层**均由 `ACCEPT` 变 `REJECT`，无垫字对照两版皆 `REJECT`；真实树仍 `PASS`。
+  ③**本轮载荷矩阵（12 行）**——层面 `A` ＝ 权威体／模块、`C` ＝ import 闭包；`R20` ＝ 上一冻结候选 `77d23382`、`NEW` ＝ 本轮工作树：
+```text
+ID      层  垫字（`>` 与 `/` 之间）      R20      NEW
+P21-01  A  U+FEFF                      ACCEPT   REJECT   ← S1 绕过，本轮闭合
+P21-02  A  U+200B 零宽空格             ACCEPT   REJECT
+P21-03  A  U+200C 零宽不连字           ACCEPT   REJECT
+P21-04  A  U+200D 零宽连字             ACCEPT   REJECT
+P21-05  A  U+2060 词连接符             ACCEPT   REJECT
+P21-06  A  无垫字（对照）               REJECT   REJECT
+P21-07  C  U+FEFF                      ACCEPT   REJECT   ← 闭包层同族
+P21-08  C  U+200B                      ACCEPT   REJECT
+P21-09  C  U+200C                      ACCEPT   REJECT
+P21-10  C  U+200D                      ACCEPT   REJECT
+P21-11  C  U+2060                      ACCEPT   REJECT
+P21-12  C  无垫字（对照）               REJECT   REJECT
+```
+  ④**S4-1（据实性／措辞）**：R112 行括号「生成器那条属 R107 的登记面」不准——R107 是**正则前置字符表**，与该例无关；按 A²¹ 判定改写为
+  「不属 R105／R106／R107 **三者**的加固面；它是第十九轮把 `_statement_awaits_type_parameters()` 由『最后两个词』改为『读语句头形状』（R105 的改写）时**新引入**的过严面，本轮 R109 已判放行」。
+  ⑤**S4-2（据实性，非阻断）**：`_js_head_declared_tail()` 无条件删掉 tail 里**所有** `*`，「删掉 `*` 后恰剩一个名字」因此比「合法生成器头」宽：
+  `export function 名*`⏎`<T>()`／`export function * *`⏎`<T>()`／`export function*`⏎`<T>()`／`export function *`⏎`<T>()`／`export type gen*`⏎`<T> = T;`
+  五形在**两层均 ACCEPT**，而真 `tsc 5.9.3`（`TS1003`／`TS1005`）与 `esbuild 0.21.5` **全部 rc≠0** ⇒ 不可编译 ⇒ **无加载期执行面（惰性）**。
+  处置：**只据实登记，本轮不改规则**——并**实测否证**了「收紧为『只跳过紧邻关键字的一个 `*`』即可关闭」：影子树里该收紧对五形**逐一无影响**（仍 ACCEPT），
+  说明五形由**另一条路径**放行，不是该 helper 的宽度问题；留作后续轮次的定向项。
+  ⑥**复算方式**：`/tmp/p20b/m21.py`（12 行逐条在**两版**守卫上求值）、`/tmp/p20b/flips21.py`（**262** 例 × `e4435c77`／`309cec59`／`77d23382` 三次交叉求值：
+  对上一候选**恰 2 例翻转**（＝两条新增夹具）、对第十九轮候选 **8** 例、对第十八轮基线 **12** 例）、`/tmp/p20b/s1check.py`（S1 闭合前后对照）、
+  `/tmp/p20b/battery.py`（合法拼法 `export function* gen`⏎`<T>`／`export async function* gen`⏎`<T>`／局部 `function* gen`⏎`<T>`／非 ASCII 名**仍 ACCEPT**；五形「宽头部」**不变**）、
+  真 `esbuild 0.21.5` ＋ `node`（投毒真加载：`native includes(1) = false`）。另：`U+200B`／`U+200C`／`U+200D`／`U+2060` **本身不是 ES 空白**（真工具链报 `TS1127`／`esbuild Unexpected`），
+  本轮把它们一并读作空白是**取更严的一侧**；实测既有 **260** 例夹具 **0 翻转**、真实树仍 PASS ⇒ 该并入**只收紧、不放宽**。
+  ⑦**B²¹ 的独立复核（判 APPROVE）**：B²⁰ 的三条发现逐条收口（FR-1 保留拒绝并具名登记、FR-2／FR-3 判放行修回），**11 条骑乘新接受面的投毒载荷全部 REJECT**，
+  全仓 `src/`＋`addons/` 的 `ambiguous` span 计数为 **0**（过严面不触及任何被复核模块），守卫自跑 `PASS checks=129 collaboration_self_check=260`（上一候选）。
+  ⑧**本段取代第二十轮段 ⑧ 的「当前口径」**：当前口径为守卫 `checks=129`、自检 **262 例（宿主／模块 183 ＝ 37 接受 ＋ 146 拒绝、页面 21 ＝ 7 ＋ 14、import 闭包 58 ＝ 19 ＋ 39；合计接受 63 ＋ 拒绝 199）**、
+  守卫 **7007 行**（按钉死口径仍为全仓第 1 大代码文件、Python 源码第 1），仍在 `split_plan_queue.md` 的 **P1**，**未上调任何锁**；
+  `docs/engineering_convergence/complexity_budget_report.md` 与 `split_plan_queue.md` 已随本轮同批重刷。
+  守卫 `PASS checks=129 collaboration_self_check=262`。
+  发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
+
+## 2026-09-23 — 前端专业组件注册表渲染器契约闭合（P0 表达收口）
+
+- 分支 `feature/frontend-stability-gate-baseline-v1`，基线 `main@de9a230d3faab18dd60a219f445f932a8af9d7f5`。
+  Formal Product Layer 为 **P0**（专业组件注册表／表达契约）；Layer Target 为
+  `frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts` 与其消费方
+  `components/template/FormSection.vue`、`components/template/formSection.types.ts`、
+  `components/template/formSection.mapper.ts`，门禁归属
+  `scripts/verify/frontend_professional_component_registry_guard.py`。
+- 触发：第二十一轮（门禁基线）收口并冻结后，按批次计划启动「渲染器契约」项。只读侦察确认
+  `.agent/workflows/frontend-professionalization.yaml` 的 phase_6 `forbid` 虽已列出 `silent_fallback`
+  与 `renderer_model_branch`，但**没有任何门禁在执行它们**。
+- 只读侦察（主控线）：`registration()` 的默认 renderer 是**裸字符串** `'FormSectionField'`，`renderer` 与
+  `rendererByFieldType` 都只是 `string`；注册表把基础字段类型表**内联复制**了一份（与
+  `professionalBaseFieldModel.PROFESSIONAL_BASE_FIELD_TYPES` 重复）；`FormSection.vue` 的模板链**没有任何
+  分支命名该哨兵**，只靠「其它分支全部不匹配」落到末位 `<ScInput>`。
+  全量枚举（`/tmp/p22/probe.ts`，esbuild 打包后 node 求值；共 **52** 组 `componentKey × supportedFieldTypes`）：
+  **24** 组 renderer 为 `'FormSectionField'`（`sc.display.text` × 全部字段类型，以及 `sc.input.binary`／
+  `sc.table.data`／`sc.tree.data`／`sc.button.action`／`sc.auth.support_action`／`sc.input.number` × 各自非基础类型），
+  **26** 组落在具名专业 renderer，**2** 组抛 `PROFESSIONAL_COMPONENT_UNREGISTERED`（`fail_closed` 注册）
+  ⇒ 该哨兵与「任何漂移出来的未知 renderer」在模板里**不可区分**，正是 phase_6 禁止的 silent fallback。
+  溯源（`git log -S`）：哨兵本身是**有意**的（`e60fc2ea` 建立注册表时即断言 `line_ids` 解析为
+  `'FormSectionField'`），缺陷不在哨兵值，而在**它是无界字符串且无具名分支**。
+- 实现（源码 4）：①注册表导出**闭合联合** `PROFESSIONAL_COMPONENT_RENDERERS`（6 个具名 renderer，含哨兵）
+  与 `ProfessionalComponentRenderer`，`renderer`／`rendererByFieldType`／`FormSectionFieldSchema.componentRenderer`
+  全部由该联合定型 ⇒ 拼错的 renderer **不再编译**；②哨兵升为具名常量 `FORM_SECTION_TYPE_DIRECTED_RENDERER`
+  并在类型注释里写明「无专业组件认领、由本节类型导向控件渲染」；③注册表改为
+  `import { PROFESSIONAL_BASE_FIELD_TYPES }`，删掉内联复制的基础类型表；④`FormSection.vue` 在模板链**链首**
+  加 fail-closed 分支：声明了未知 renderer 的字段渲染可见、**不可编辑**的告警（`data-field-fail-closed`），
+  而不是静默变成可编辑输入。链首而非末位是刻意的——末位之前的 `SceneFieldControl` 等分支按字段类型选择控件、
+  与 renderer 无关，会把违规吸收掉。
+- 统一口径：①**可渲染的 renderer 集合唯一** ＝ `PROFESSIONAL_COMPONENT_RENDERERS`；②**哨兵语义唯一**＝
+  「本节类型导向控件」，且是联合里**唯一**不需要模板分支具名的成员（门禁按「差集恰为哨兵」判定）；
+  ③**本批零行为变更**：对**全部** `componentKey × supportedFieldTypes`（共 **52** 组）的解析结果逐条比对，
+  `'FormSectionField'`（哨兵）**24** 组 ／ 具名专业 renderer 合计 **26** 组（`ProfessionalBaseFieldControl` **14**
+  ＋ `ProfessionalBusinessValueControl` **7** ＋ `ProfessionalRelationFieldControl` **3**
+  ＋ `ProfessionalDetailCollectionControl` **1** ＋ `PaymentSettlementDetailCollectionControl` **1**）
+  ／ 抛错 **2** 组（`sc.auth.one_time_secret` 注册为 `fail_closed`，抛 `PROFESSIONAL_COMPONENT_UNREGISTERED`），
+  **与基线逐字节相同**；新增的 fail-closed 分支在首方代码里**不可达**（解析结果必属联合）。
+- 门禁与单测：`frontend_professional_component_registry_guard.py` 新增判据——联合存在且非空、`renderer` 与
+  `rendererByFieldType` 被联合定型、联合中**除哨兵外每个名字都必须被某条渲染分支「派发」**、`data-field-fail-closed`
+  存在且**与未注册判定绑定**、且该判定由闭合联合构造；其单测 3 → 11 → **18 例**。
+  派发判定按**比较式**匹配（`componentRenderer === '<名字>'`）并**先剔除注释与 HTML 注释**——裸子串检查会被
+  一行注释或一个普通字符串满足（见下 A²³-S2-1），故不采用具名面白名单而改用 `components/template/*.vue` ＋
+  `components/professional-fields/*.ts` 的 glob（新模型文件自动纳入，消除 A²³-S2-3 的假拒绝面）。
+  `professional_component_registry_test.ts` 新增**全量扫掠**：26 个注册 × 每个受支持字段类型（`'*'` 展开为
+  16 个 Odoo 字段类型）解析出的 renderer 必须 ∈ 联合，并固定哨兵值与其默认注册的走向，**43 → 137 例**。
+- 验证证据：`verify.frontend.professional_component_registry.unit` **PASS**（`cases=137` ＋ 单测 `Ran 11 OK` ＋
+  `frontend_professional_component_registry_guard` PASS）；`frontend_scene_component_bridge_guard.py` **PASS**
+  `checks=129 collaboration_self_check=262`（第二十一轮口径未变，本轮未改该守卫）；
+  `vue-tsc --noEmit`（非门禁口径）本分支与基线**同为 32 条**、错误集合 `comm` 差集为空；
+  `eslint`（4 个改动源码 ＋ 1 个单测脚本）**0 error**（1 条既有 `vue/no-v-html` warning，行号随模板位移，硬化后为 `176`）；
+  `typecheck:strict`（门禁口径）**PASS**。
+- 残限：`vue-tsc` 的**门禁口径** `tsconfig.strict.json` 只 include `src/contracts/**`、
+  `src/api/scene.ts`、`src/views/SceneHealthView.vue`，**不覆盖**本批改动文件；本轮的类型等价结论取自非门禁口径的
+  全量 `vue-tsc --noEmit` 对比。已登记为待定向项，不在本批改门禁范围。
+- 复核与据实更正（A²³ 判 REQUEST_CHANGES，3×S2 ＋ 3×S3；B²³ 判 APPROVE_WITH_NOTES，无 S0–S2、3×S3 ＋ 1×S4）：
+  **S2-1** 原判据 `f"'{name}'" not in branch_sources`
+  是**裸子串检查**，一行注释即可满足（实攻：把幽灵 renderer 加进联合、只在注释里提到它 ⇒ 守卫 PASS、single-test
+  PASS、而该字段落回静默降级）；**S2-2** 部分删除不可见、`v-if="false"` 保留 marker 文本仍 PASS；**S2-3** 假拒绝
+  （把比较改为对导入常量比较、或新模型文件不在白名单）。处置：判据改为**剔除注释后按比较式派发匹配**，具名面改
+  glob，fail-closed 追加**绑定判定**，并补 5 条负例夹具（注释提及／普通字符串／幽灵名只出现在散文／marker 未绑定／
+  导入常量派发＝**已登记的过严面**）。**据实更正**：③ 原写 `ProfessionalBaseFieldControl` **26** 组 → 实为 **14** 组
+  （26 是**非哨兵合计**）；原写「类型不匹配（用例刻意构造）**2** 组」→ 实为 **2** 组 `fail_closed` 注册抛
+  `PROFESSIONAL_COMPONENT_UNREGISTERED`；侦察段原写「**26** 组解析成功中 24 组为哨兵」→ 全量枚举实为 **52** 组
+  （此前把 `probe.ts` 打印的 `ok=26` 误读成「成功 26」）。
+  **S4-1**（B²³ 新增）：fail-closed 判定对取值 `String(field.componentRenderer || '').trim()`，而 `usesProfessionalBaseField`
+  读**未 trim** 的原值 ⇒ `'   '`／`' FormSectionField '` 既不进 fail-closed 分支也不进基础字段分支，**静默落 tail**；
+  其唯一生产者 `canonicalFormRenderer.ts` 恒属联合，故**不可利用**，但两处读数不一致。处置：判定改用**原值**，与生产者对齐。
+- 硬化后复跑（提交 ①`fe21b22c`／②`1cbc16bb`，主控线独立执行）：`verify.frontend.professional_component_registry.unit` **PASS**
+  （`cases=137` ＋ 单测 `Ran 11 OK` ＋ 守卫 PASS）；`frontend_scene_component_bridge_guard.py` **PASS**
+  `checks=129 collaboration_self_check=262`；`vue-tsc --noEmit`（非门禁口径）**仍 32 条**、与基线 `comm` 差集为空；
+  `eslint` **0 error**（1 条既有 warning，本批行号 `176`）；S4-1 对照（`/tmp/p22/failclosed.mjs`）：`'   '` 由 `false` → **`true`**、
+  `' FormSectionField '` 由 `false` → **`true`**，`undefined`／`''`／哨兵／5 个专业 renderer 仍 `false`。
+  `ci.delivery.freeze.prepare` **PASS**：`complexity_budget_report.md` 的 `FormSection.vue` 1380 → **1381**、
+  `component-driver-takeover-inventory-v1.json` 的 `inputDigest` 随之刷新（`42b07257…` → `79d3e30f…`）。
+- 第二轮复核（A²⁴ 判 REQUEST_CHANGES，2×S2 ＋ 2×S3；B²⁴ 判 POST_MERGE_FOLLOWUP，无 S0–S2、3×S3 ＋ 2×S4）：
+  两线**独立命中同一缺陷**——`without_comments()` 只剔注释、**不剔字符串字面量**，故把完整比较式写进字符串／模板字面量或
+  `<template>` 正文即算一次派发（A²⁴ 探针 A/B/S/V 皆 `rc=0 PASS`：幽灵 renderer 进联合后守卫仍绿、字段静默落 tail，
+  与守卫自述及本文档「普通字符串不能充当分支」**直接矛盾**）。A²⁴ 另判「谓词由闭合联合构造」是**恒真死检查**
+  （整文件子串被 `FormSection.vue` 的 `import` 行满足，谓词改硬编码集合仍 PASS），其 `FAIL_CLOSED_BINDING` 精确字面量对
+  `v-if = "…"`（加空格）与形参改名**假拒绝**；B²⁴ 另判谓词集合可与联合**静默分离**（`new Set([...UNION, 'GhostRenderer'])` PASS）、
+  `.trim()` 回归**无门禁钉住**、marker 移成脚本注释仍 PASS。
+  处置（第三笔硬化，仅守卫与单测）：①新增 `string_literals()` 与 `dispatched_renderers()`——**先剔注释、再算字面量跨度**，
+  命中若其操作数落在某个外围字面量之内则**不计**；②新增 `renderer_surface()`——`.vue` 只取 `<script>` 区（模板正文不是代码）；
+  ③fail-closed 侧：`FAIL_CLOSED_MARKER_BINDING` 要求 `:data-field-fail-closed=` **属性绑定**，`FAIL_CLOSED_BINDING` 改按**形状**
+  匹配（容忍空白与形参改名），谓词体按 `!X.has(` 析出集合名并要求其**声明式**为 `new Set(…)` 且该参数**只**引用闭合联合
+  （参数内出现字面量即 FAIL，闭合 B²⁴-S4-1 的内联扩宽），谓词体内出现 `.trim()` 即 FAIL（钉住 S4-1 修复）。
+  单测 11 → **18 例**。自证（`/tmp/p22/attacks24.py`，13 例，含 A²⁴ 的 A/B/S/V 与 B²⁴ 的 S4-1/S3-2 变体）：全部与预期一致，
+  真实树仍 PASS。
+- **仍登记的过严面**（语义等价改写会被拒，属已知取舍而非缺陷）：派发按**名字字面量**匹配（导入常量式派发 FAIL）；
+  谓词集合的参数内不得出现任何字面量；`.vue` 的派发只在 `<script>` 区被承认。**仍未闭合的残限**（两线一致，非阻断）：
+  判据为**文本/形状**匹配，**不证明可达性**（死分支或不可达 `v-if` 仍可满足）；`without_comments()` 对字符串内的 `//`
+  过度剔除（已在第三轮由单趟扫描闭合，见下）；glob 仅覆盖两个目录且**非递归**（`template/` 的孙目录不在面内，当前树实测 0 处）。
+- 第三轮复核（A²⁵ 判 REQUEST_CHANGES：谓词溯源仍可绕 ＋ **正则字面量触发假拒绝**；B²⁵ 判 REQUEST_CHANGES：
+  **1×S1 正则字面量冒充渲染分支** ＋ 2×S2）。两条 S1/S2 的成因同一：判据只排除「操作数**严格落在**外围字面量内部」的命中，
+  而 `without_comments()` 只认注释、`string_literals()` 不认正则，故 ① 正则内的 `'Name'` **自身开启跨度**，一条
+  `export const P = /componentRenderer === 'B25GhostControl'/;` 即被计为派发（B²⁵ 实测：守卫 PASS、`Ran 18 OK`、
+  `cases=137`、桥守卫、eslint、`vue-tsc` **全绿**，真注册表解析出该名字且 `declaresUnknown=false` ⇒ 静默落 tail 复活）；
+  ② 反过来，脚本里一个含引号的**合法正则**会让跨度错配、**吞掉其后真实派发区**，4 个真实 renderer 被判「未派发」= **假拒绝**。
+  另 B²⁵ 判六个语义 DOM 标记（`data-component-*`／`data-contract-*`）仍按**原始文本**匹配（fail-closed 标记上一轮已改 `renderer_code`，
+  这里漏改）：删掉真实属性、把名字写进注释仍 PASS。
+  处置（第四笔硬化，仅守卫与单测）：①注释与字面量改为**单趟左到右扫描** `scan_spans()`——注释**就地抹白**（保留全部偏移与换行），
+  字符串／模板／**正则**字面量记跨度；正则识别用 `regex_can_start()` 上下文启发（前一有效字符属 `(,=:[!&|?{};+-*%<>~^`
+  或为 `return/typeof/case/in/of/…` 等关键字，否则视为除法），使「字符串内 `//`／正则内引号」都不可能错配；②谓词集合判据收紧为
+  **参数必须恰为**联合标识符或 `[...UNION]`（由此同时闭合 B²⁵ 的 `UNION.concat(EXTRA)` 与 A²⁵ 的
+  `[...UNION, ...EXTRA_RENDERERS]`），并要求**声明为 `const`**、全文件**无同名重赋值**（闭合 A²⁵ 的 `let` ＋ 事后重绑）；
+  ③六个语义标记改在 `renderer_code`（剔注释后文本）上匹配。单测 18 → **25 例**（新增：正则字面量派发／marker 移入注释／
+  `concat` 扩宽／`[...UNION, ...EXTRA]` ／`let` 重绑 各 FAIL，外加「字符串内 `//` 与 `/*` 不吞分支」与「正则内含引号不假拒绝」两条 PASS 夹具）。
+  自证（`/tmp/p22/harness_next.py`，13 例；`/tmp/p22/attacks24.py`、`/tmp/p22/order24.py` 回归）：全部与预期一致，真实树仍 PASS。
+- **新增登记的过严面**（同族语义等价改写会被拒）：谓词判定须用 `!X.has(…)` 形状——`X.has(x) === false`、`x in X`、
+  `X?.has(x)`、模板字面量操作数、操作数反序 皆 FAIL（B²⁵ 实测 5 类，当前树 0 处）；容忍面登记为 `[...UNION]` 与
+  `v-if = "predicate(node)"`（空白／形参改名）。**仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，
+  **不证明可达性**（死分支／孤儿模型文件／第二个 `<script>` 仍可满足）；glob 仅覆盖两个目录且**非递归**。
+- 第四轮复核（A²⁶＝1×S1＋1×S2＋1×S3；B²⁶＝1×S1＋2×S2，两线均判 REQUEST_CHANGES）：三条同根——判据**只认形状**，
+  换一种拼写即复活。①**S1 正则/除法启发式漏 `)`**：`REGEX_START_AFTER` 不含 `)`，故 `if (_s) /componentRenderer === 'GhostRx'/.test(_s);`
+  处 `/` 被判为除法 ⇒ 正则不记跨度 ⇒ 其内 `'GhostRx'` 的引号**自身开跨度**、跨度起点恰等于操作数起点（判据是**严格内部**）⇒ 计为派发；
+  两线均端到端实测：幽灵进联合、真注册表解析出该名字、`declaresUnknown=false`、`Ran 25 OK`／`cases=137`／桥守卫／eslint／`vue-tsc`
+  **全绿**而字段静默落 tail。反向同因：`if (x) /'/.test(x)` 等**合法可构建**正则被误判 ⇒ 4 个真实 renderer 报「未派发」= **假拒绝**。
+  ②**S2/S3 标记与绑定可被脚本字符串满足**：六个语义标记与 fail-closed 标记虽已改在**剔注释**文本上匹配，但**未剔字符串**——
+  `const _fake = "data-component-key";` 或 `const _fm = ":data-field-fail-closed=";` 即可冒充属性。
+  ③**S2 谓词集合可在运行期扩宽**：`(knownComponentRenderers as Set<string>).add('Ghost')` 既非重赋值也非字面量 ⇒ PASS。
+  处置（第五笔硬化，仅守卫与单测）：①`regex_can_start()` 增 `)` 分支——回溯到配对的 `(`，若其前词属
+  `{if,while,for,with,switch,catch}` 则视为正则（闭合两个方向）；②新增 `outside_literals()`／`search_code()`——
+  **所有**标记、绑定、谓词签名、集合声明与变更判定一律只在**字面量之外**的代码上命中（剔除注释＋排除字符串/模板/正则跨度）；
+  ③集合判据合并为单条正则（`const` ＋ `new Set(…)` ＋ `fullmatch` 联合或 `[...联合]`），并新增 `.add/.delete/.clear` 变更判据。
+  单测 25 → **30 例**。自证（`/tmp/p22/harness_next3.py`，18 例；`attacks24`／`order24`／`harness_next`／`harness_next2` 全量回归）：全部一致，真实树仍 PASS。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：集合声明的等价拼写 `[...UNION] as const`、`[...UNION,]`（尾逗号）、
+  `UNION.slice()`／`UNION.map(…)`、多行且带尾逗号的 `new Set(\n [...UNION],\n)`；以及「名字与某个 `.add(` 同行」的误拒面。
+  **仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，**不证明可达性**（死分支／孤儿模型文件／第二个 `<script>`）；
+  glob 仅覆盖两个目录且**非递归**。**已闭合**：第三轮登记的「字符串内 `//` 过度剔除」由单趟扫描闭合（B²⁶ 复测「正则为除法」语料全 PASS）。
+- 第五轮复核（A²⁷＝1×S1＋3×S2；B²⁷＝1×S1＋2×S2，两线均判 REQUEST_CHANGES）：
+  ①**S1 空白判定再次成为绕过点**——`regex_can_start()` 用 Python `str.isspace()` 跳空白，而 JS 词法把它当空白的
+  **U+FEFF（ZWNBSP）** 被 Python 判 False（与第二十一轮同族缺陷）：`if (s)<U+FEFF>/componentRenderer === 'GZ'/.test(s);`
+  即被判为除法 ⇒ 正则不记跨度 ⇒ 幽灵名进联合而守卫 GREEN（A²⁷ 实测 `esbuild`／`node` 均可执行）。处置：改 `is_blank()`
+  = `isspace() or char == U+FEFF`。B²⁷ 另找 `for await (…)` —— `(` 前词是 `await` 而非控制词，同因绕过；处置：`await`
+  再回退一词，并加「词前为 `.`／`?.` 则是方法调用（除法）」与「`++`／`--` 后是除法」两条排除。
+  ②**S2 上一轮新引入的假拒绝（两线同时命中）**——模板正文一个撇号（`don't`）会开启幻影跨度，使标记/绑定判据集体失效
+  （10 条伪报错）。处置：**按 SFC 分区**——`<template>` 区只剔 HTML 注释、属性值**原样保留**（故 `v-if="…"` 与
+  `:data-…=` 可被真实匹配，散文撇号不再有害）；`<script>` 区则**连字面量一并抹白**，于是「把属性名/绑定写进脚本字符串」
+  直接消失。六个语义标记与 `:data-field-fail-closed=` 改为要求**绑定前缀 `:`**（CSS 选择器 `[data-field-fail-closed="x"]` 不再冒充）。
+  ③**S2 集合运行期扩宽仍有 4 种拼写存活**（多行 `.add`、`['add'](…)`、`Reflect.apply(Set.prototype.add, X, …)`、
+  `Set.prototype.add.call(X, …)`）。处置：改为**结构性判据**——谓词集合名在 `<script>` 区内**只允许出现 2 次**
+  （声明 ＋ 成员测试），任何第三次引用即 FAIL；同时保留 `.add/.delete/.clear` 与 `Object.assign` 判据。
+  单测 30 → **38 例**。自证（`/tmp/p22/harness_next4.py`、`harness_next5` 系共 19＋15 例，`attacks24`／`order24`／
+  `harness_next`／`harness_next2` 全量回归）：全部一致，真实树仍 PASS。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：谓词集合名**不得**出现第三次引用（含日志/断言等无害引用会被拒）；
+  `{`／`}` 作为前一有效字符时被视为正则起始（`{} / 2` 类误拒）；`function_body()` 的花括号配对**不辨字面量**（谓词体内
+  出现含 `}` 的字符串时会提前截断）；`catch` 作为方法名（`.catch(h) / n`）已专门排除，但同一族拼写仍需逐轮观测。
+  **仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，**不证明可达性**（死分支／孤儿模型文件／第二个 `<script>`）；
+  glob 仅覆盖两个目录且**非递归**；文档中「control statement」表述过宽（`for await` 需单独回退，已在代码内处理）。
+- 第六轮复核（A²⁸＝1×S1＋2×S2＋1×S3；B²⁸＝1×S1＋1×S4，两线均判 REQUEST_CHANGES）：两条线再次命中**同一根因的两种拼写**——
+  判据仍读**整份原文的形状**，而不是**分区与契约**。①**S1（A）模板半边可被脚本字符串伪造**：`renderer_template_code` 用
+  `SFC_TEMPLATE.findall(全文)` 取值，非贪婪 `<template …>(.*?)</template>` 既**漏读**根块尾部（真实根块 1–300 行，扫描只覆盖
+  1–11／14–131／153–155／171–189／190–273／277–290），又**误收**脚本字面量里的 `<template>`——删掉真实 fail-closed 分支、
+  在脚本里写一行 `'<template>x v-if="declaresUnknownComponentRenderer(y)" :data-field-fail-closed="z"</template>'` 即可 GREEN
+  而字段静默落 tail。②**S1（B）注册点从未被判**：联合闭包只查**接口声明文本**，`'GhostControl' as unknown as ProfessionalComponentRenderer`
+  一次转型即让注册项绕开所有派发判据；配套 `(Set.prototype as unknown as {has:()=>boolean}).has = () => true` 把谓词整体致盲
+  （B²⁸ 实测 `unionHasGhost=false`、`resolvedRenderer='B28GhostControl'`、`failClosedAlertWouldRender=false`，且 eslint 与
+  `vue-tsc` 基线差集为空 ⇒ 可构建可部署）。③**S2（A）`++`／`--` 排除是死代码**：`REGEX_START_AFTER` 本就含 `+`／`-`，
+  该分支先被短路，故 `hits++ / 2` 仍判正则（反向假拒绝面）。④**S2（A）根块截断**（同①前半，命中行 12–13 的标记即假拒绝）。
+  ⑤**S4（B）标记存在性可被惰性属性值满足**：`:title="':data-component-key='"` 通过（属残限，B²⁸ 未证现实可利用，登记为后续项，
+  本轮顺带闭合）。处置（第六笔硬化，仅守卫与单测）：①**按位置分区**——`script_block_spans()` 定位 `<script …>…</script>`，
+  `root_template_span()` 以**嵌套深度**取根块（脚本跨度内的 `<template>` 不计），标记区只取根块且**剔除落在属性值内的命中**
+  （`attribute_value_spans()` ＋ `search_outside()`），脚本区改为**脚本跨度拼接**后再抹白字面量；
+  ②**注册点纳入闭联合**——`REGISTRATIONS` 块内每次 `registration(…)` 的第 5 实参必须是**裸联合成员字面量**（变量、转型、拼接一律 FAIL），
+  块外出现 `registration(` 调用即 FAIL，工厂内 `[fieldType, '…']` 映射字面量同样必须在联合内，并禁用 `as unknown as` 洗白；
+  ③**内建原型可达即 FAIL**（`.prototype`／`__proto__`／`setPrototypeOf`）；④`regex_can_start()` 把**双写运算符**判据提前到
+  `REGEX_START_AFTER` 之前（`++`／`--`／`**` 后为除法）。单测 38 → **48 例**（新增 10 例，其中 9 例在第五版为红）。
+  自证：`/tmp/p23` 十五例双向量测全 OK；A²⁷ 探针（`heur.py` 23 例启发式 + `a27/a27b/a27c.py` 全组）在第六版上全部符合预期
+  （含 `DIV_after_incr` 由 MISMATCH 转 OK）；`/tmp/p22` 旧载荷（`attacks24`／`order24`／`harness_next`×2／`harness_next4`）全量回归一致。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：属性值内出现 `=`＋引号（如正文 `x = "y"`）会把其后文本视为值内容；
+  双写 `+`／`-`／`*` 之后的 `/` 一律判除法（`a + +b / c` 这类含空格的写法仍按运算符处理）；`registration(` 调用总数必须等于
+  **闭列表内条数 ＋ 1**（工厂声明），任何新入口都会 FAIL 直到登记。**仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**
+  匹配，**不证明可达性**（死分支／孤儿模型文件）；glob 仅覆盖两个目录且**非递归**；`function_body()` 花括号配对**不辨字面量**；
+  `RESIDUAL`：运行期改写**不经原型**的其他致盲方式（如 `Object.defineProperty(instance,…)`）未逐一枚举。
+- 第七轮复核（A²⁹＝1×S1＋1×S2＋1×S3；B²⁹＝1×S1＋1×S2＋1×S4，两线均判 REQUEST_CHANGES）：第六版把分区改成了**按位置**，
+  但**位置化的排除集不全**，于是「同一根因换个拼写」再次复活。①**S1（A）根区可被 HTML 注释劫持**：`root_template_span()` 只排除
+  **script** 跨度、不排除注释，故首个 `<template>` 若写在注释里就被当成根块，真实模板整块不再被读——A²⁹ 实测「删掉真实
+  `:data-contract-adapter=`」与「真实 `v-if="false"` ＋ 解绑 fail-closed 标记」两种载荷均 GREEN，且经 `vue/compiler-sfc`
+  验证为**合法可编译 SFC**（浏览器域未注册 renderer 不再渲染告警）。②**S2（A）模板注释里的 `<script>` 字样**：`script_block_spans()`
+  在未闭合时取 `end=len(text)`，该跨度把根 `</template>` 一并排除 ⇒ 根区取空 ⇒ 9 条**假拒绝**；同根还有「`<script` 出现在属性值内」
+  （`renderer_surface()` 仍用旧的最短匹配 `<script[^>]*>(.*?)</script>`，导致真实分支被吞 ⇒ 5+2 条假拒绝）。③**S3（A）注释夹在
+  callee 与 `(` 之间**：`registration /*pad*/ (…)` 同时绕过 `call_arguments()` 与计数式（TS 形参类型仍挡该例，非直接可利用）。
+  ④**S1（B）`.prototype` 字面拦截被反射绕过**：`Object.getPrototypeOf(new Set()).has = () => true;` 守卫 GREEN，`eslint` rc=0、
+  `vue-tsc` 32 条与基线逐行 same ⇒ **可部署**；`Reflect.set`／`Object.defineProperty`／`getPrototypeOf` 别名同族可部署。
+  ⑤**S2（B）派发判据是跨 glob 的全局文本**：在 `components/template/PageHeader.vue` 放一行**永不调用**的
+  `componentRenderer === 'B29Naked2'` ＋ 联合加名 ＋ 裸字面量注册 ⇒ 守卫 PASS 而 `FormSection.vue` 无该分支（静默落 tail）。
+  ⑥**S4（B）标记仍只判存在**：属性值内写法已被拒，但正文**裸文本** `:data-component-key=` 仍 PASS（未证可利用，登记）。
+  处置（第七笔硬化，仅守卫与单测）：①新增 `comment_spans()`（`<!--…-->` 与 `/*…*/`），与 `attribute_value_spans()` 一起构成
+  **定位期排除集**——`<script`／`<template` 若落在注释或属性值内一律不算块，且**未闭合的 `<script` 不再算块**；
+  ②`renderer_surface()` 改用同一位置化读取（删除旧 `SCRIPT_BLOCK` 最短匹配正则）；③新增 `tag_spans()` ＋ `search_in_tag()`——
+  六个语义标记与 fail-closed 标记/绑定必须落在**标签内**且**不在属性值内**（正文裸文本、字符串、CSS 选择器均不再冒充）；
+  ④注册判据改在**剔注释文本**上运行（`registration /*…*/ (` 失效）；⑤原型族改为语义族（`getPrototypeOf`／`Reflect.set`／
+  `Object.defineProperty` 等一并拒绝）；⑥**派发可达性收窄**——`imported_module_paths()` 解析区块自身的 import，分支仅在
+  「区块本体 ＋ 其直接导入模块」内计数。单测 48 → **56 例**（新增 8 例，其中 7 例在第六版为红）。
+  自证：`/tmp/p23` 双向量测（A²⁹ 六例 ＋ B²⁹ 四例 ＋ 五项容忍例）全 OK；A²⁷ 探针 `heur.py` 23 例启发式全 OK、
+  `a27b.py` 零 NEW mismatch、`a27.py` 仅余 5 条 `expect None`（信息性，现均 FAIL＝期望的闭合态）、`a27c.py` 联合形状 U1–U4 PASS／U5–U9 FAIL；
+  `/tmp/p22` 旧载荷（`attacks24`／`order24`／`harness_next`×2／`harness_next4`）全量回归一致；桥守卫 `checks=129 collaboration_self_check=262` PASS。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：正文出现 `<`…`>` 包围的片段会被当作标签（裸 `a < b > c` 仍可能容纳标记）；
+  区块的 import 解析只支持相对路径（`@/…` 别名导入的模块不计入可达集，会 FAIL 直到登记）；`Object.defineProperty` 等族
+  **整体禁用**（未来若真需要须走评审）。**仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，**不证明可达性**
+  （死分支在**同一文件**内仍可满足）；glob 仅覆盖两个目录且**非递归**；`function_body()` 花括号配对**不辨字面量**。
+- 第八轮复核（A³⁰＝1×S1＋2×S2＋1×S3；B³⁰＝2×S1，两线均判 REQUEST_CHANGES）：第七版把「分区」做对了，但**判据仍是文本/形状**，
+  且第七版新加的「可达性收窄」只按**文件**收窄、不按**调用链**收窄，于是三种拼写再次复活。①**S1（B）全局重绑定致盲**：
+  `(globalThis as unknown as {Boolean:unknown}).Boolean = () => false;` 一行即让谓词恒假（`eslint` rc=0、`vue-tsc` 32 条＝基线 ⇒ 可部署）。
+  ②**S1（B）死函数满足派发**：脚本里 `const __audit = (componentRenderer: string) => componentRenderer === 'B30G2'; void __audit;`
+  —— 一行**永不调用**的箭头即满足「已被派发」（第七版只按文件收窄，不判调用链）。③**S2（A）import 在原文上解析**：
+  `<!-- from "./PageHeader.vue" -->` 一行 HTML 注释即可伪造「可达模块」，把死分支抬成可达。④**S2（A）注册计数跑在未抹字符串的文本上**：
+  `const _doc = "throws when registration( is";` 触发**假拒绝**（反向：合法树被拒）。⑤**S3（A）`<1 …>` 被 `vue/compiler-sfc`
+  编译为**纯文本**，而 `tag_spans()` 认它为标签 ⇒ **fail-open**——第七轮把它登记成「过严面」，方向记反了，本轮改判并闭合。
+  处置（第八笔硬化，仅守卫与单测）：①新增 `rebound_globals()` 取代旧 `GLOBAL_REBIND` 正则——**读族不读拼写**：命中 `globalThis`／`window`／
+  `self`／`global`，或 `const/let/var/class/function` **声明**了引擎全局名，或裸赋值同名，或 `import { … }` 绑定了同名，或 `eval(`／`Function(`，
+  一律 FAIL（已闭合①，并顺带覆盖 `class Set`／`import { Boolean }` 同族）；②**派发可达链**——`reachable_branch_names()` 取模板分支属性内
+  标识符（called）＋ 这些函数体内的标识符（reached），派发只在**可达函数体的位置跨度内**计数（已闭合②）；③import 解析改在**代码区**并
+  **剔注释**后运行且保留字面量跨度排除（已闭合③），同时修掉第九版初稿引入的一处**自伤**：改判据时把模块路径写成「去扩展名」形式，而 glob 文件路径带 `.ts`，
+  两者对不上 ⇒ **`.ts` 分支模块一度全部漏扫**（第七版本身能扫到，故此条**不是**旧版遗留 bug，A³¹ 已证伪先前口径）；并让 `import { X as Y }` 的**别名**在模块内按导出名查找；④注册计数改在 `blank_literals` 后的文本上运行（已闭合④）；⑤`TAG_OPEN = re.compile(r"<[/A-Za-z]")`，
+  `<` 后不是 `[/A-Za-z]` 即不算标签（已闭合⑤）。⑥另修第九版初稿自身的一处**自伤**：把字面量抹白后派发读取会把 `=== 'X'` 的**名字一起抹掉**
+  （真实树曾 5 个名字 FAIL）——故派发读取用**保留字面量**的代码视图、**函数体跨度**用**抹白字面量**的代码视图，二者**等长且偏移对齐**。
+  单测 56 → **68 例**（新增 12 例；第七版守卫下**实测：本版 68 例中 9 例为红、第九版 73 例中 14 例为红**——口径由 A³¹／A³² 复算纠正，先前按「6 例为红」的估算不准）。
+  自证：`attacks24`／`order24`／`a27c`（U1–U4 PASS、U5–U9 FAIL）／`heur.py`（23 例启发式全 OK）／`a27b.py`（零 NEW mismatch；
+  `R8_P1b_reassign_later` 系**探针夹具自身缺陷**：先改名再按原名注入，与守卫行为无关）／桥守卫 `checks=129 collaboration_self_check=262`；
+  新增 `/tmp/g24/probe.py` 11 例（7 反例 ＋ 4 容忍/信息）全 OK。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：分支助手若写成**箭头常量**（`const usesX = (f) => f.componentRenderer === 'X'`）
+  不被认可（真实树全部用 `function` 声明，已由 `test_arrow_declared_branch_helper_fails` 钉住）；**默认导入**（无花括号）的模块不贡献函数名，
+  故该模块内的分支不计可达；同一名字的函数体按**首个** `function NAME(` 取值。**仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，
+  **不证明可达性**——把派发放进一个**被可达函数提及**的函数体里仍可满足（属**篡改仓库**才成立的注入面，非现网可利用）；glob 仅覆盖两个目录且**非递归**；
+  函数体跨度与派发读取必须**同视图对齐**（这是新的实现约束，改动任一侧都要同步）。另：第七轮登记的「`<`…`>` 包围片段会当标签」**方向记反**
+  （实为 fail-open），已随⑤改判并闭合，后人勿再按过严面理解。
+- 第九轮复核（A³¹＝1×S2＋3×S3＋2×S4；B³¹＝1×S1＋2×S2，两线均判 REQUEST_CHANGES）：**上轮 5 项闭合 A 线复核 5/5 成立、B 线两项 S1 复核成立**，
+  但第八版新写的 `rebound_globals()`／可达链／同一标签绑定各自留了新口子。①**S1（B）间接 eval 绕过**：`(0, eval)('globalThis.Boolean = () => false');`
+  —— `eval)` 后接 `(` 不匹配 `\beval\s*\(`，串内 `globalThis` 又被抹白 ⇒ 守卫 PASS、`eslint` rc=0、`vue-tsc` 32 条＝基线（可部署）、`node` 实测谓词由真转假。
+  ②**S2（A）标记未绑定到「那个会渲染告警的元素」**：把真实告警 `v-if` 改 `false`、另加一个 `<q … :data-field-fail-closed=…>`，六标记与三件套仍散落各标签，
+  守卫 GREEN 而字段静默落 tail（A 实测可部署）。③**S2（A+B，两线独立命中）单引号分支属性假拒绝**：`v-else-if='usesProfessionalBusinessValue(field)'`
+  语义不变却 FAIL，而 `eslint`/`vue-tsc` 干净 ⇒ **合法可部署代码被拒**。④**S2（B）派发可达链仍按形状判定**：在**被 `v-else-if` 调用**的函数体
+  （`isLegacyComplexField`）里插一行死比较 ＋ 裸注册 ⇒ 守卫 GREEN 而模板**没有任何**元素渲染该 renderer。⑤S3/S4：`window.setTimeout` 这类**读取**被判「重绑定」
+  且文案误报成 `globalThis`；`<1 …>` 一条的「已闭合」表述被读成整类闭合；单测红例计数与 `.ts` 口径不准（见上两处更正）。
+  处置（第九笔硬化，仅守卫与单测）：①`eval`／`Function` 改为**标识符出现即拒**（不再按调用形状），并回报**实际命中的宿主名**（`window` 不再误报成 `globalThis`）；
+  ②**派发锚定到渲染元素**——`template_branches()` 取出每个 `v-if`/`v-else-if` 标签的**元素名**与条件（**单/双引号都认**），
+  只有「该元素名是脚本**导入绑定**」且「该 renderer 的比较出现在其可达函数体内」才计入 `dispatched`（闭合④；②当时只做到「三件套落在同一标签」，**未要求该标签真被渲染**——第十轮才闭合；**第十一轮更正**：此处的「活」当时只等于「非字面 `false`/`0`」，字符串键当时只认引号拼写，两处均按**族**重判于第十一轮，见下）；
+  ③**同元素绑定**——六个语义标记必须同处**带 `v-for` 的字段迭代元素**；fail-closed 的**谓词调用 ＋ `:data-field-fail-closed=` ＋ `role="alert"` 必须落在同一标签**
+  （②当时只做到「同一标签」，未做到「活的标签」——第十轮闭合）；④单引号分支属性放行（已闭合③）；⑤默认导入（`import X from '…'`）纳入导入绑定表。单测 68 → **73 例**。
+  自证：`/tmp/g24/probe.py` 11 例、`attacks24`／`order24` 全量、`a27b/a27c/heur` 全量、桥守卫 `checks=129 collaboration_self_check=262`。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处；全仓 `frontend/apps/web/src` 210 处／60 文件不在此判据范围）：`window`／`self`／`global` 的**只读访问**（如 `window.setTimeout`）会被判 FAIL；
+  `eval`／`Function` **任何出现**都会被拒；分支属性只认 `v-if`／`v-else-if`（`v-show`／`<component :is>` 不构成分支）；六个语义标记必须留在带 `v-for` 的迭代元素上。
+  **仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，**不证明语义可达**——把比较写进「被分支元素可达的函数体」内的**死分支**（如 `if (false)`）仍会命中；
+  同一 renderer 名的多个比较只要有一个落在正确元素下即算通过；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十轮复核（A³²＝4×S2＋2×S3＋1×S4；B³²＝1×S1＋1×S2，两线均判 REQUEST_CHANGES）：**第九轮的「元素锚定」只锚到了「标签名」，没锚到「真被渲染的元素」**，致盲面也另开了两条新路。
+  ①**S2-1（A）三件套可由死标签承载**：真实告警 `div` 的 `v-if` 改 `false`，三件套挂到 `<template v-if="false">` 内的 `<q …>` ⇒ 守卫 GREEN（`eslint` 0 errors、`vue-tsc -p tsconfig.strict.json` rc=0 ⇒ 可部署），A³¹-S2-1 实际**未闭合**；
+  ②**S2-2（A）派发不要求元素真渲染**：真实渲染元素换成同条件 `<div class="dead-slot">`、死块里放同名死副本 ⇒ GREEN；③**S2-3（A）六标记可搬离字段迭代元素**：真实 `v-for` 元素剩 0/6 标记、改挂到死块里的 `<span v-for="(entry, idx) in []">` ⇒ GREEN；
+  ④**S1（B）加载期致盲**：`(({}).toString as …).constructor` 取到编译器后 `revive('globalThis.Boolean = () => false')()`，以及 `document.defaultView['Boolean'] = () => false` —— 两者都让谓词在加载期被换掉（`node` 实测谓词由真转假、`eslint`／`vue-tsc` 与基线一致 ⇒ 可部署）；
+  ⑤**S2（A+B，两线独立命中）kebab-case 假拒绝**：`<professional-business-value-control>` 是合法 Vue（`@vue/compiler-sfc` 仍编译为同一组件）却 FAIL；⑥S3/S4：第九轮文档「已闭合②」等表述与实测不符、第八轮段红例计数 14/9 张冠李戴、「当前树 0 处」范围易读成全仓（实为 `FormSection.vue` 内 0 处，全仓 210 处／60 文件）。
+  处置（第十笔硬化，仅守卫与单测）：①`element_nesting()` 把模板读成**元素树**（开/闭标签配对、自闭合与 void 元素、闭标签按名回溯），`dead_tags()` 标出**常量假条件子树**（`v-if="false"`／`v-if="0"` 及其整个元素跨度）；
+  ②三件套与六标记改判在 `tags_carrying_indexes()` ＋「**活的**且在**字段迭代元素子树内**」，字段迭代元素＝同处六标记＋`v-for` 且**迭代源含标识符**（空的 `[]` 不算字段列表）的**活**元素；③派发同样要求「活的、且在字段迭代元素内」才计入 `dispatched`，并修掉 kebab-case 假拒绝——`vue_component_name()` 按 Vue 的 camelize+capitalize 归一（闭合⑤）；
+  ④新增 `global_reach()`：`.constructor`、`document.defaultView`、动态 `import(...)`、以及**字符串键**形式的全局名（`['Boolean']` 等，读**保留字面量**视图）一律 FAIL（闭合④）。单测 73 → **84 例**（新增 11 例；把新版单测跑在第九版守卫上**实测 11 例为红**）。
+  自证：A 线原载荷 `r1.py` 的 R1/R2/R3 由 PASS 转 FAIL、R4 由 FAIL 转 PASS；B 线原载荷 `ctor_blind`／`doc_blind`／`doc_blind_q` 由 PASS 转 FAIL，`clean`／`quote_single`／`rename_end_to_end`／`import_multiline`／`import_type_only` 仍 PASS；
+  桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`；守卫在真实树 PASS。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：`.constructor` 在**脚本内任何位置**出现即拒；动态 `import(...)` 任意出现即拒；全局名／宿主名以**字符串键**形式出现即拒（**第十一轮更正**：第十版实现的引号集合不含反引号、亦不认拼接，实际判据以第十一轮为准）；
+  六标记必须落在**带 `v-for` 且迭代源非空字面量**的元素上（`v-for="x in []"` 这类占位写法会 FAIL）。**仍未闭合的残限**（两线一致，非阻断）：判据为**文本/形状**匹配，**不证明语义可达**——
+  把三件套或派发放进**活的条件**（如 `<template v-if="field.readonly">`）里的诱饵标签仍可满足；同一 renderer 名有多个元素时只要一个落在正确元素内即通过；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十一轮复核（A³³＝1×S1＋5×S2（含 1 条假拒绝）＋2×S3＋1×S4；B³³＝1×S1＋1×S3，两线均判 REQUEST_CHANGES）：第十笔的判据**本身成立且有效**（死标签三件套、派发诱饵、kebab 假拒绝、`.constructor`／`document.defaultView` 均已闭合），但新判据**仍按拼写判**，于是同族拼写立刻复活。
+  ①**S1（两线）字符串键只认引号拼写**：`frames[\`Boolean\`]`、`['Boole'+'an']`、`['default'+'View']`、`['fil'+'ter']['con'+'structor']`（B 线另有 `atob` 组合载荷）全部漏网，`eslint` rc=0＋`vue-tsc` 32＝基线 ⇒ 可部署，`node` 实测谓词由真转假；
+  ②**S2-1a 死子树只认字面 `false`/`0`**：`v-if="!true"`／`1 === 2`／`(false)`／`Boolean(false)`／`undefined`／`v-show="false"` 全部漏网；③**S2-1b 三件套元素被隐藏**：加 `v-show="false"`／`hidden`／`style="display: none"` 使告警永不显示而守卫 GREEN（本轮最廉价的 fail-open）；
+  ④**S2-2 派发诱饵放在「计算常量假」的 template 内**同样可满足；⑤**S2-3 六标记搬到祖先 `v-for` 包装元素**（`<div v-for="once in onceList">`）后真实字段迭代元素 0/6 仍 GREEN；⑥**S2-4（假拒绝）** `v-for="(field, index) of displayFields"`（Vue 官方别名）被拒——合法可部署代码；⑦S3/S4：本文档第十轮段「常量假子树」「字符串键形式出现即拒」「迭代源**非空字面量**」三处措辞强于实现（已随本轮更正）。
+  处置（第十一笔硬化，仅守卫与单测）——判据由「枚举常量的拼写」改为「**读族**」：①`condition_is_live()`：`v-if`／`v-else-if`／`v-show` 的条件若**除常量名外不含任何标识符**（`CONSTANT_CONDITION_NAMES`：`true/false/null/undefined/NaN/Infinity` ＋ `Boolean/Number/String/Object/Array/JSON/Math/BigInt/Symbol/Promise/Reflect` 及宿主名）即判**不可达**，`unreachable_tags()` 沿**祖先链**累积（闭合②，顺带覆盖 `v-show`）；
+  ②`shows_nothing()`：三件套元素带 `hidden`／`v-show`／`display:none`|`visibility:hidden`|`opacity:0` 的 `style` 一律不认（闭合③）；③`enclosing_vfors()`＋`loops_over_the_field_list()`：三件套与派发必须**只**落在「承载六标记、`v-for` 源含标识符、且不被常量条件隐藏」的那**唯一**一层循环下（闭合④⑤，祖先包装不再算字段列表）；④`computed_string_keys()`：**任何带字符串字面量的计算键**（引号／模板串／拼接）都算，并把「把字符串交给定时器」与 `import(...)` 同族（闭合①）；⑤`vfor_source()` 同时接受 `in` 与 `of`（闭合⑥）。单测 84 → **93 例**（新增 9 例；把新版单测跑在第十版守卫上**实测 9 例为红**）。
+  自证（**四轮**载荷回归矩阵）：A³² 的 R1/R2/R3 FAIL、R4 PASS；B³² 十条载荷全部符合预期（`clean`／`quote_single`／`rename_end_to_end`／`import_multiline`／`import_type_only` PASS，`eval_indirect`／`ghost`／`ctor_blind`／`doc_blind`／`doc_blind_q` FAIL）；A³³ 的 a1–a10（8 种常量写法／6 种包装／7 种键拼写／3 种隐藏写法／祖先 `v-for`／`<component :is>` 诱饵）**全部 rc=1**，其合法变体（kebab／`of`／`?? []`）rc=0；B³³ 的 21 条载荷中 12 条攻击全部 rc=1、9 条合法或信息性全部 rc=0。桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`；守卫在真实树 PASS。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：任何**带字符串字面量的计算键**（含 `obj['key']` 这类合法写法）出现即拒；`setTimeout`／`setInterval` **被调用**即拒（裸引用不拒）；三件套与派发必须落在**唯一**一层 `v-for` 下（未来若在嵌套循环里渲染字段控件会 FAIL）；`v-show`／`hidden`／隐藏 `style` 不得出现在三件套元素上。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**——「活条件」只保证**名字**存在（写成 `v-if="field.flag"` 的诱饵仍可满足）；**不校验锚点循环迭代的确实是字段列表**（只要求是「有名字的活循环」）；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十二轮复核（A³⁴＝1×S1＋1×S2＋2×S4；B³⁴＝1×S1＋1×S2＋1×S3，两线均判 REQUEST_CHANGES）：第十一笔的判据在真实树上 0 误报、93 例单测全绿，但**「读族」只读到族名的一部分**，两线各命中一处 fail-open。
+  ①**S1（A³⁴）宿主族只认 4 个拼写**：`Object.assign(frames|parent|top, { Boolean: () => false })` 与 `Object.assign(gl\u006FbalThis, …)` 三条让守卫 **rc=0 PASS**（同族的 `Object.assign(globalThis|self, …)`／`Object.defineProperties(frames, …)`／`frames.constructor` 都已被拒），缺口恰是**宿主别名／转义拼写 ＋ `Object.assign` 写形状**；`eslint` rc=0、`vue-tsc` 32＝基线，`node` 实测谓词由真转假。
+  ②**S1（B³⁴）计算键只认「引号紧贴 `[`」**：键经**变量间接**（`[dKey]`／`[fKey][cKey]`）即整族漏网，`[cKey]`＝`'constructor'`、`[bKey]`＝`'Boolean'`，两条守卫均 rc=0 PASS；`eslint` rc=0、`vue-tsc` 32＝基线，实测 `engine_boolean_intact=false`。
+  ③**S2（A³⁴）第三笔的「闭合③」不成立**：`:style="{ display: 'none' }"`（对象拼写）与 `style="Display: none"`（大小写）让三件套永不显示而守卫 rc=0（同轮 `visibility: 'hidden'`／`opacity: 0` 的字符串拼写确已被拒）。
+  ④**S2（B³⁴）**：`probeMap['a-b']`（合法 lint-clean 计算键）与合法 `setTimeout(fn, 0)` 被拒——属已登记过严面，不阻断。
+  ⑤S3／S4：`v-if="legacyPanelVisible"` 诱饵包装仍可绕过（已登记残限）；`setTimeout` 实为**被调用**即拒（裸引用 `const x = setTimeout;` rc=0），本文档第十一轮段「任意出现即拒」措辞强于实现（本轮已更正）；`condition_is_live("true")` 把**真渲染**的 `v-if="true"` 判为不可达——过严且未登记。
+  处置（第十二笔硬化，仅守卫与单测）——把三处判据从「拼写」改到**来源**：①`HIDDEN_BINDINGS` 换成 `HIDDEN_ATTRIBUTE`／`V_SHOW_BINDING`／`STYLE_BINDING`＋`HIDING_DECLARATION`，`style` 读**绑定值**（`re.I`），对象拼写与大小写同判（闭合③）；
+  ②`GLOBAL_HOSTS` 增收浏览器别名 `frames`／`parent`／`top`／`opener`，宿主匹配改 `(?<![\w$.])`（`rect.top` 是值不是 window，由 `test_property_named_like_a_host_is_not_a_host_passes` 钉住），新增 `decoded_spellings()` 解析 `\uXXXX`／`\u{…}`／`\xXX` 后参与**以名字作答**的两处读取（`gl\u006FbalThis` 即 `globalThis`），`GLOBAL_REACH_CODE` 增 `Object.assign` 写形状（闭合①）；
+  ③`computed_string_keys()` 增 `string_key_bindings()`／`string_expression_value()`／`top_level_sum_terms()`／`string_literal_value()`：把「脚本绑到字符串上的名字」做成**不动点**（字面量、`+` 拼接、指向已知字符串名的链、字符串列表取值），计算键改按**键的名字**判定——解析到全局族名（`constructor`／`defaultView`／`Boolean`…）**或**是未展开的字符串即 FAIL，族外字面量（如 `'labels'`）不拒；`COMPUTED_KEY_NAME` 的闭括号用前瞻而非消费，`value[first][second]` 的**每个**键都被读到（闭合②）；
+  ④`condition_is_live()` 改为**求值**：新增 `ConditionReader`，只读常量文法（字面量／`!`／`&&`／`||`／`===` 系列／括号／`Boolean(x)`），含族外标识符即活、可求值则按其真值、不可求值按「死」——`true`／`1`／`'x'`／`true === true` 判活，`false`／`0`／`''`／`!true`／`1 === 2`／`Boolean(false)`／`null`／`undefined`／`NaN` 仍判死（闭合⑤的过严面）。
+  单测 93 → **105 例**（新增 12 例）。
+  自证：`/tmp/g35/replay.py` 的 12 条攻击载荷（4× `Object.assign` 宿主／转义、1× 转义宿主读、3× 名字承载键＋键链＋列表取值、4× `style` 对象／大小写／visibility／opacity）**全部 rc=1**，5 条合法变体（`of` 别名、族外字符串键、同名属性 `rect.top`、`display: 'flex'`、`opacity: 1`）**全部 rc=0**；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`；两份生成物本轮复算后 is current。
+- **本轮新增登记的过严面**（fail-closed 方向）：`Object.assign` 在 `FormSection.vue` **脚本内任意出现**即拒；脚本内**任何绑到字符串上的名字**被用作计算键即拒（含 `obj[key]` 合法写法，解析到族外字面量不拒）；宿主词 `frames`／`parent`／`top`／`opener` 以**整词标识符**出现即拒（属性名 `x.top` 不拒）；三件套元素不得带 `v-show`／`hidden`／隐藏 `style`（含对象拼写与任意大小写）。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`string_key_bindings()` 只跟**同文件内的简单绑定**（跨模块、函数返回值等间接来源不在内，`parts[0]` 这类取值只保证「是字符串」而不展开内容）；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；「活条件」仍只保证**名字**存在（`v-if="field.flag"` 诱饵可满足）；**不校验锚点循环迭代的确实是字段列表**；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十三轮复核（A³⁵＝2×S1＋1×S2（另 2 条 S3/S4 登记）；B³⁵＝4×S1，两线均判 REQUEST_CHANGES）：第十二笔把「按键的**来源**读」立了起来（A³⁴ 四条真闭合），但新口径有三处退化为「按拼写／按最后一次文本读」，且键的**读法**仍少两种合法形状。
+  ①**S1（A³⁵）`?.[key]` 不被读**：`maker?.[cKey]` 的 `[` 前是 `.`，`COMPUTED_KEY_NAME` 两个分支都不匹配 ⇒ 整条漏网；对照 `maker?.['constructor']` 有字面量族表兜底，**只有变量形式无人兜**；`eslint` rc=0、`vue-tsc` 32＝基线、`node` 实测谓词真→假。
+  ②**S1（A³⁵）最后一次文本赋值胜出**：`let cKey='constructor'; …maker[cKey](…); cKey='unused';` ⇒ rc=0（删末行即 rc=1）——`string_key_bindings()` 用 `dict` 覆盖，与访问点无关。
+  ③**S1（B³⁵）**四条：括号包裹 `const gk = ('Boolean')`；跨行拼接 `const gk = 'Bool' +\n  'ean'`；`let gk='Bool'; gk += 'ean';`；键后带断言 `v[gk as keyof typeof v]`（另有 `([])?.['fil'+'ter']?.[cKey]` 同属可选链）——全部 rc=0，而单行同内容 rc=1。
+  ④**S2（A³⁵）无引号 `style=display:none` 隐藏三件套**而守卫 rc=0；真工具链证据：`@vue/compiler-sfc@3.5.27` 下无引号与带引号编译产物**逐字相同**（`style: {"display":"none"}`）。
+  处置（第十三笔硬化，仅守卫与单测）：
+  ①`COMPUTED_KEY_NAME` 左侧允许 `?.`、右侧允许 `as …` 断言（闭合①及 B③ 的断言形状）；
+  ②`string_key_bindings()` 由「名字→单个字符串」改为「名字→**全部绑定值**列表」，逐赋值点求值，任一次命中族名**或**为未展开字符串即 FAIL（闭合②）；新增 `statement_initializer()`：初始化器按语句终止（首行末尾为运算符则续行），跨行 `+` 因此被读全；新增 `+=` 来源：表达式中含字符串字面量的 `name += …` 记「可能是未展开字符串」（闭合 B③ 的 `+=`；**第十四轮据实更正**：本笔只覆盖 `+=` 这一种赋值形状，同族的 `||=`／`&&=`／`??=` 与**解构绑定**当时既未读也未登记，见下轮）；新增 `strip_outer_parens()` 并让 `string_expression_value()` 递归处理括号与各项（闭合 B③ 的括号与跨行）；
+  ③`STYLE_BINDING` 增收**无引号**取值分支，`shows_nothing()` 读同一 `HIDING_DECLARATION`（闭合④）。
+  单测 105 → **113 例**（新增 8 例；把新版单测跑在第十二版守卫上**实测 8 例为红**）。
+  自证：`/tmp/g36/replay.py` 9 条攻击（可选链键、末次赋值、无引号 `style`×2、括号键、跨行拼接、`+=`、断言键、可选链包裹）**全部 rc=1**，6 条合法变体（族外字符串键、类名键 `el[cls]`、数值累加键 `row[total]`、参数键 `units[spanClass]`、`style=color:red`、`rect?.top`）**全部 rc=0**；`/tmp/g35/replay.py` 的 12＋5 条矩阵复跑 0 mismatch；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：方括号内的字符串字面量只要**拼出**全局或宿主名即拒，**即使它只是数组字面量的元素**（`const xs = ['Boolean'];` rc=1）；`Object.assign` 在脚本内**任意出现**即拒；脚本内**任何绑到字符串上的名字**被用作计算键即拒（含 `obj[key]` 合法写法，解析到族外字面量不拒）；宿主词 `frames`／`parent`／`top`／`opener` 以**整词标识符**出现即拒（`x.top` 不拒，但形参名／对象键 `{ top: 1 }` 会拒）；三件套元素不得带 `v-show`／`hidden`／隐藏 `style`（含对象拼写、任意大小写与无引号取值）。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`string_key_bindings()` 只跟**同文件内的简单绑定**（跨模块、函数返回值等间接来源不在内，`parts[0]` 这类取值只保证「是字符串」而不展开内容）；`+=`／`||=`／`&&=`／`??=` 与解构绑定只按「可能是未展开字符串」处理，不合成结果（**第十四轮据实更正**：本行原文只写 `+=`）；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`（值为标识符）的隐藏样式**不判**；「活条件」仍只保证**名字**存在（`v-if="field.flag"` 诱饵可满足）；**不校验锚点循环迭代的确实是字段列表**；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十四轮复核（A³⁶＝1×S1＋3×S2；B³⁶＝3×S1＋1×S2-1＋1×S2-2，两线均判 REQUEST_CHANGES）：第十三笔把「按键的**来源**读」立得比上一版更实（A³⁵ 的 2×S1＋1×S2 与 B³⁵ 的 4×S1＋可选链包裹**两线各自复算、全部真闭合**），但**读法仍只认一种拼写**，且本轮**新引入两处假拒绝**（B³⁶-S2-2）。
+  ①**S1-1（A³⁶）键位包裹不被读**：`maker[(cKey)]`、`maker[cKey!]`、`maker[cKey satisfies string]` 三种写法**完全不被读**（`COMPUTED_KEY_NAME` 要求 `[` 后直接是裸标识符），而同值的 `maker[cKey]`／`maker[cKey as T]` 均 rc=1；`eslint` rc=0、`vue-tsc` 32＝基线、`node` 实测谓词由真转假 ⇒ **可部署致盲**。
+  ②**S1（B³⁶ S1-2）初始化器 `as const`**：`const gk = 'Boolean' as const;`、`('Boolean' as const)` ⇒ rc=0——`string_literal_value()` 要求首尾同引号，`'Boolean' as const` 首 `'` 尾 `t` 被判「不是字符串」，该名字整个落入死角（极常见 TS 写法）。
+  ③**S1（B³⁶ S1-3）键位非空断言**：`v[gk!] = …` ⇒ rc=0（合法 TS 写目标）。
+  ④**S1-4（B³⁶）／S2-1（A³⁶）逻辑赋值族**：`gk ||= 'Boolean'`、`gk ??= 'Boolean'` ⇒ rc=0；第十三笔只补了 `+=`，同族的 `||=`／`&&=`／`??=` 既不被命中、也不在残限登记里。
+  ⑤**S2（A³⁶ S2-2）续行只认「运算符在行尾」**：`const k = 'con'`⏎`  + 'structor';`（行首 `+`）被截为 `'con'` ⇒ rc=0，而「行尾 `+`」同式 rc=1——同一表达式的两种合法排版。
+  ⑥**S2（A³⁶ S2-3）绑定式 `style` 的引号／方括号属性名**：`:style="{ 'display': 'none' }"`、`:style="{ ['display']: 'none' }"`、`:style='{ "display": "none" }'`、`:style="{ 'opacity': 0 }"` 四种 ⇒ rc=0（`HIDING_DECLARATION` 要求属性键裸写）；`@vue/compiler-sfc@3.5.27` 实测三种键写法编译为**同一对象**（`{ style: { 'display': 'none' } }`／`{ style: { ['display']: 'none' } }`），隐藏语义等价。A³⁶ 另登记 S3-3：注册表文档的等价拼写枚举**漏了引号键**这一维（本轮订正）。
+  ⑦**S2-1（B³⁶）解构绑定**：`const { hk, gk } = { hk: 'defaultView', gk: 'Boolean' }` ⇒ rc=0——**同文件声明**却三条来源正则都不覆盖，属登记之外的缺口。
+  ⑧**S2-2（B³⁶，本轮新引入的假拒绝）**：`:title="'style=display:none'"` 与 :aria-description="\`style=visibility:hidden\`" ⇒ rc=1——`STYLE_BINDING` 的**无引号**分支读的是标签原始 markup，`style=` 写在**另一个属性的值内部**也会命中，合法可部署模板被拒（同载荷在上一版 rc=0）。
+  处置（第十四笔硬化，仅守卫与单测）：
+  ①`COMPUTED_KEY_NAME` 键位两侧允许**括号／空白包裹**（前缀 `[()\s]`、后缀 `[()\s!]`），后缀断言由「只认 `as …`」放宽为「`as`／`satisfies` 皆认」并可带 `!`（闭合①③；**第十五轮据实更正**：该修法只覆盖「括号／空白本身」，括号**内的运算符**（如 `(first ?? second)`）、字面量拼接与尖括号断言仍漏读，见下轮）；
+  ②新增 `strip_type_assertion()`（仅在字面量之外剥尾随 `as`／`satisfies` 断言），`string_expression_value()` 的单名分支与多项分支各剥一次（闭合②；**第十五轮据实更正**：该实现恒取**原串**前缀，多重断言只剥一层，`'Boolean' as unknown as string` 仍漏读，见下轮）；
+  ③`STRING_BINDING_SOURCES` 只留 `const/let/var =` 与裸 `=` 两条；新增 `STRING_APPEND_SOURCES`：赋值运算符族 `+=`／`||=`／`&&=`／`??=`（表达式含字符串字面量即记「可能是未展开字符串」）（**第十五轮据实更正**：原文误写 `|=`）＋ `const { … } = <含字符串字面量的表达式>`（**第十五轮据实更正**：此处原文写「每个解构名各记一条」，实测记的是**源键名**——`{ k: gk }` 记 `k` 而非 `gk`，且 `{ gk: other }` 会把 `gk` 误记，见下轮）（闭合④⑦）；
+  ④`string_key_bindings()` 的迭代域由 `sources` 扩为 **`sources ∪ appended`**——只被追加／解构命中的名字同样进 `bindings`（此前 `let gk;` 求值为非字符串即被删名、解构名根本不在域内，两处缺口由这一处同时修复）（闭合④⑦）；
+  ⑤`statement_initializer()` 的续行判据由「上一行以运算符结尾」改为「**或**下一行以运算符／`as`／`satisfies` 开头」（闭合⑤）；
+  ⑥`HIDING_DECLARATION` 的属性名两侧允许**引号或方括号**（`(?:\[\s*)?["']?display["']?(?:\s*\])?\s*:`，`visibility`／`opacity` 同）（闭合⑥）；
+  ⑦新增 `attribute_text_spans()`（**引号值在前、裸值在后**，取每个属性值的文本跨度）＋ `matches_outside()`，`shows_nothing()` 三条判据（`hidden`／`v-show=`／`style=`）**一律只读属性值之外的文本**（闭合⑧，并顺带收掉**同一族的四处过严面**：`:title="'hidden'"`、`title="hidden"`、`:title="'v-show=false'"`、`title="style=display:none"`——末例是原「严格在跨度内」判据漏掉的**值首字符**边界，现与既有 `search_outside()` 的闭区间口径一致）。
+  单测 113 → **126 例**（新增 13 例＝11 条新判据 ＋ 2 条属性值惰性；把新版单测跑在第十三版守卫 `790983b6` 上**实测 21 例为红**＝ 15 条真闭合 ＋ 6 条过严面转正）。
+  自证：`/tmp/g37/replay.py` **28 条**载荷（13 条攻击：括号键、`as const`×2、`!` 键、`satisfies` 键、`||=`、`??=`、行首 `+` 续行、引号／方括号／双引号 `display`、引号 `opacity`、解构绑定 ⇒ **全部 rc=1**；11 条合法：`:title`／`aria-description` 值内的 `style=` 文本 ×2、`style=color:red`、无字符串的解构、族外 `!` 键、数值累加键、`{ 'color': 'red' }`、值内 `hidden`／`v-show=`／`style=` 文本 ×4 ⇒ **全部 rc=0**；4 条真隐藏声明：`hidden`、`:v-show="false"`、`style=display:none`、`style="visibility:hidden"` ⇒ **全部 rc=1**）**0 mismatch**，另有 `/tmp/g37/probe_extra.py` 8 例独立复算；`/tmp/g36/replay.py`（9＋6）与 `/tmp/g35/replay.py`（12＋5）复跑 **0 mismatch**；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：键名解析到族外字面量不拒，但**凡名字被 `+=`／`||=`／`&&=`／`??=` 追加过**、或**从含字符串字面量的值里解构出来**，该名字作计算键即拒（不合成结果，一律按「未展开字符串」）；键位两侧的**任意**括号／空白包裹都算同一个键；`style` 的属性名两侧可有**任意**引号与方括号（`{ 'display': 'none' }` 即拒）。
+  **本轮收掉的过严面**（B³⁶-S2-2 及其同族 4 处）：属性**值内部**的 `style=`／`hidden`／`v-show=` 一律不再是声明（引号值与裸值同等对待）。**第十五轮据实更正**：本笔只把值内文本改为惰性，`hidden` 自身的读法仍不完整——**大小写**（`HIDDEN`／`Hidden`）与**绑定式**（`:hidden="true"`／`v-bind:hidden="true"`）都漏判，见下轮。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`string_key_bindings()` 只跟**同文件内的简单绑定**（跨模块、函数返回值、`String('constructor')` 这类**调用式**来源不在内；解构只记「是字符串」而不展开内容——**第十四轮更正**：解构名已纳入读取域）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`（值为标识符）的隐藏样式**不判**；「活条件」仍只保证**名字**存在（`v-if="field.flag"` 诱饵可满足）；**不校验锚点循环迭代的确实是字段列表**；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十五轮复核（A³⁷＝4×S2＋3×S3＋2×S4；B³⁷＝2×S1＋1×S2，两线均判 REQUEST_CHANGES）：第十四笔把「属性值惰性」立住了（B³⁶-S2-2 两线复算**真闭合**，值内文本不再误拒），但**键读法与属性读法各自仍少几种拼写**。
+  ①**S1-1（B³⁷）键内容里的运算符**：`v[(g1 ?? 'x')]`（`g1='Boolean'`）、`v[(g2 ?? g2)]` ⇒ rc=0——第十四笔只把**括号／空白**包进去，括号内的 `??` 表达式整条不被读；`eslint` rc=0、`vue-tsc` 32＝基线、真 `node`＋真 Chromium 谓词 true→false ⇒ 可部署致盲。
+  ②**S1-2（B³⁷）多重 `as` 只剥一层**：`const gk = 'Boolean' as unknown as string;`（及 `as unknown as any`）⇒ rc=0——`strip_type_assertion()` 恒以**原串**取前缀，剥后剩 `'Boolean' as unknown` ⇒ 首尾不同引号 ⇒ 判「非字符串」⇒ 名字落死角。
+  ③**S2（B³⁷）`hidden` 大小写**：`HIDDEN`／`Hidden`（含 `HIDDEN="hidden"`）⇒ rc=0——`HIDDEN_ATTRIBUTE` 无 `re.I`；真 Chromium 实测 `hasAttr`／`hidden` 属性／`display:none` 三真，`@vue/compiler-sfc@3.5.27` 生成普通 prop ⇒ 真隐藏。（对照：`V-SHOW` 大写**不是指令**，SFC 编译为普通属性，不算缺陷。）
+  ④**S2-1（A³⁷）绑定式 `hidden`**：`:hidden="true"`、`v-bind:hidden="true"` ⇒ rc=0——`hidden` 是布尔属性（`@vue/shared` `isBooleanAttr("hidden")=true`），`patchProp` 写 `{hidden:"true"}`；全仓该写法 0 处，修法成本极低。
+  ⑤**S2-2（A³⁷）改名解构**：`const { k: gk } = { k: 'constructor' }` ⇒ rc=0，而简写 `{ gk }` rc=1——实现取的是**源键名**；同一误取的**反面**是假阳性：`const { gk: other } = { gk: 'Boolean' }; v[gk]` 反被 rc=1。文档「每个解构名各记一条」**强于实现**。
+  ⑥**S2-3（A³⁷）括号包裹的字面量键**：`v[('con' + 'structor')]` ⇒ rc=0，而 `v['con'+'structor']` rc=1——第十四笔只补了**名字**那一半。
+  ⑦**S2-4（A³⁷）旧式尖括号断言键**：`v[<string>gk]` ⇒ rc=0（`as`／`satisfies`／`!` 已读）。
+  ⑧S3/S4（登记，不阻断）：**S3-1** CSS 转义 `style="display:no\6e e"` 守卫 rc=0（真 Chromium 实测 `display:none`）；**S3-2** 仅有类型标注、无初值的 `let a: string | undefined` ⇒ `v[(a ?? b) as string]` 不读；**S3-3** `catch (gk)` 绑定与形参默认值不读；**S4-1** 第十四轮段把赋值族误写为 `+=`／`|=`／`&&=`／`??=`（代码是 `||=`）；**S4-2** 解构措辞（同⑤）。
+  处置（第十五笔硬化，仅守卫与单测）：
+  ①`HIDDEN_ATTRIBUTE` 加 `re.I`；新增 `HIDDEN_BINDING`（`:hidden=`／`v-bind:hidden=`）并以 `condition_is_live()` 判值——`:hidden="false"` 是**显示**，`:hidden="true"`／不可求值的绑定按**隐藏**记（闭合③④）；
+  ②`strip_type_assertion()` 改为**迭代左截**（每轮取最左断言前缀、剥到不动点），多重断言可剥净（闭合②）；
+  ③新增 `destructured_names()`：按**绑定名**记（`{ k: gk }` 记 `gk`，`{ gk: other }` 记 `other`，`{ a = 'x' }` 记 `a`，`...rest` 不记——rest 绑的是对象不是字符串）（闭合⑤，并收掉 `{ gk: other }` 的假阳性）；
+  ④键读法改为**按括号内容读**：`COMPUTED_KEY_ACCESS`（**闭括号留给下一次读**，故 `value[first][second]`、`value?.[first]?.[second]` 链上每个键各读一次）＋ `strip_key_wrappers()`（迭代去外层括号与 `as`／`satisfies`／**尖括号**断言）＋ `key_identifiers()`（内容里读到的**每个名字**都查绑定表，成员读的尾名与字面量内部不查）；内容以字符串字面量起头（含括号包裹的拼接）仍按「带字符串字面量的计算键」记（闭合①⑥⑦）。
+  单测 126 → **138 例**（新增 12 例；把新版单测跑在第十四版守卫 `b41a49f1` 上**实测 13 例为红**＝ 12 条新判据 ＋ 1 条假阳性转正）。
+  自证：`/tmp/g38/replay.py` **27 条**载荷（13 条攻击：`:hidden`×3、`HIDDEN`／`Hidden`×2、改名解构、括号字面量键、尖括号断言键、`??` 键×2、多重断言×2、数组解构 ⇒ **全部 rc=1**；8 条合法：改名解构的**源键不在作用域**、仅有类型标注的 `??` 键、无名解构、`...rest`、`:hidden="false"`、`style=color:red`、值内 `style=`／`hidden` 文本 ⇒ **全部 rc=0**；6 条真隐藏声明：`hidden`、`hidden="hidden"`、`:v-show="false"`、`style=display:none`、`style="visibility:hidden"`、`:style="{ 'display': 'none' }"` ⇒ **全部 rc=1**）**0 mismatch**；`/tmp/g37/replay.py`（28）、`/tmp/g36/replay.py`（15）、`/tmp/g35/replay.py`（17）复跑 **0 mismatch**；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：键内容里**任意位置**读到**绑定的字符串名**即拒，判定仍以「该名字的绑定落在全局族、或是一条文本未展开的字符串」为准（`v[prefix + key]`、`v[(a ?? key)]` 同样拒，不判该名字是否真是索引；名字若只绑到族外字面量则不拒）；`:hidden=` 的绑定值只要**不可求值**即按隐藏记。
+  **本轮收掉的过严面**：`const { gk: other } = { gk: 'Boolean' }` 不再把**源键名** `gk` 当成绑定（第十四笔的读法会误拒）。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；绑定表只跟**同文件内的简单绑定**——跨模块来源不在内；**表达式式**调用来源（`const gk = String('constructor')`）不读，但**解构 RHS** 里的调用会命中（`const { visible } = f('Boolean')` **判**；**第十六轮据实更正**：本行原文写「函数返回值／调用式来源不在内」，强于实际）；仅有**类型标注**而无初值的 `let a: string | undefined` 不算字符串来源；`catch (…)` 绑定、形参默认值、**嵌套解构**（`{ a: { b } }`）与**默认值 RHS** 不读；`hidden`／`style` 值里的 **CSS 转义**（`display:no\6e e`）不判；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`（值为标识符）的隐藏样式**不判**；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十六轮复核（A³⁸＝1×S2＋3×S3＋1×S4（REQUEST_CHANGES）；B³⁸＝**APPROVE**（仅 1×S3＋1×S4），被评第十五笔）：B³⁷ 的三条 findings **两线各自复算、全部真闭合**（`??` 键、多重 `as`、`hidden` 大小写；`v[(g1 ?? 'x')]`／`as unknown as string`／`HIDDEN` 均 0→1，真 `node`＋真 Chromium 致盲＋工具链逐行同一），且「新版单测 × 上一版守卫 ＝ 13 例为红」两线复算一致。A³⁸ 另找到**同族的第四种拼写**。
+  ①**S2-1（A³⁸）`v-bind` 对象式／动态实参可注入隐藏**：`v-bind="{ hidden: true }"`、`v-bind="attrs"`（`attrs = { hidden: true }`）、`v-bind:[k]="true"`（`k='hidden'`）、`v-bind="{ [k]: true }"` ⇒ 三件套元素在真 Chromium `display:none, invisible:true`，而守卫 **rc=0**、`eslint` **0 error**、`vue-tsc` **32＝基线** ⇒ **可部署 fail-open**；第十五笔的「绑定式 `hidden`」只覆盖 `:hidden=`／`v-bind:hidden=` 两种**静态实参**拼写（`9924507f` 上同样 rc=0，属**非回归**的既有缺口）。
+  ②**S3-1（A³⁸）** 解构的其余形状不读：嵌套 `{ a: { b } }`、数组 `[x, y] = ['con','structor']`、默认值 RHS `= {} as any` ⇒ rc=0（登记）。
+  ③**S3-2（A³⁸）** **任意**字符串字面量计算键即拒：`v[obj['display']]` ⇒ rc=1（实测 `bag['amount'] = 1` 亦 rc=1）——属**过严面**，且报错文案「reaches the global object at load time through a computed key」对族外字面量**误导**（登记，并据实收窄第十三轮「只要**拼出**全局或宿主名即拒」的措辞）。
+  ④**S3-3（A³⁸）** `const { visible } = f('Boolean'); v[visible]` ⇒ **rc=1**，与第十五轮残限文案「调用式来源不在内」**相反**（解构分支按「值里出现字符串字面量」判定，故调用式 RHS 同命中）（已据实更正）。
+  ⑤**S4-1（A³⁸）／S4（B³⁸）** registry 契约段未枚举 `v-bind` 对象式／动态实参这类隐藏拼写；第十五轮「过严面」措辞漏了「该绑定须落在全局族或为未展开字符串」这一限定（均已订正）。
+  处置（第十六笔硬化，仅守卫与单测）：
+  ①新增 `V_BIND_OPEN`（`v-bind=` **无静态实参**的对象式、`v-bind:[…]` 与简写 `:[…]` 的动态实参），`shows_nothing()` 在既有三条判据之前先判它——三件套元素只要把属性集交给**模板未写明**的绑定，即按「可能被隐藏」记（闭合①）；
+  ②静态实参形式不受影响（`v-bind:title=`／`:class=`／`:data-field-fail-closed=` 三条配对复算 rc=0）。
+  单测 138 → **140 例**（新增 2 例＝5 条攻击子例 ＋ 3 条合法子例；把新版单测跑在第十五版守卫 `8aee4b57` 上**实测 5 例为红**）。
+  自证：`/tmp/g39/replay.py` **35 条**载荷（18 条攻击：前两轮 13 条 ＋ `v-bind` 对象式／对象名／动态实参／简写动态实参／对象式 `style` 5 条 ⇒ **全部 rc=1**；11 条合法：静态实参 `v-bind:title`／`:class`／`:data-*` 3 条 ＋ 前轮 8 条 ⇒ **全部 rc=0**；6 条真隐藏声明 ⇒ **全部 rc=1**）**0 mismatch**；`/tmp/g38`（27）、`/tmp/g37`（28）、`/tmp/g36`（15）、`/tmp/g35`（17）复跑 **0 mismatch**；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 内 0 处）：三件套元素不得使用**无静态实参**的 `v-bind`（对象式 `v-bind="…"`、动态实参 `v-bind:[k]`／`:[k]`），即使它只注入无害属性；**任意**字符串字面量计算键（含族外，如 `bag['amount']`）继续按到达全局记（文案例外，见上轮与 `R80` 一族）。
+  **本轮据实更正**：①第十三轮「方括号内的字符串字面量只要**拼出**全局或宿主名即拒」——实测**任意**字面量键即拒（口径回到第十轮写法）；②第十五轮残限「函数返回值／调用式来源不在内」——**表达式式**调用（`String('constructor')`）不读属实，但**解构 RHS** 里的调用会命中（`const { visible } = f('Boolean')` 判）；③新增残限：**嵌套解构**、**数组解构**与**默认值 RHS** 不读。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；`String('constructor')` 这类表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`（值为标识符）的隐藏样式**不判**；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；**被 import 模块的加载期副作用**不在判据内；glob 仅覆盖两个目录且**非递归**；函数体跨度与派发读取必须**同视图对齐**。
+- 第十七轮复核（A³⁹＝1×S2（REQUEST_CHANGES）；B³⁹＝1×S2（REQUEST_CHANGES），两线被评第十六笔）：第十六笔的旧 S2-1（`v-bind` 对象式／动态实参）**两线各自复算、全部真闭合**（`v-bind="x"`／`v-bind="{ ...$attrs }"`／`v-bind:[k]="v"`／`:[k]="v"`／`v-bind = "x"`／`V-BIND`／`: [k]` 共 8 条 OLD=0→NEW=1，真 Chromium 证明这些形态确把三件套隐藏；「新版单测 × 上一版守卫 `8aee4b57` ＝ 5 例为红」两线一致；`eslint 0 error`、`vue-tsc 32＝基线`、`title="hidden"`／`xv-bind=`／属性值内 `v-bind=` 等 10＋条合法拼写不误拒），但各自拖出一条**新的可部署 fail-open**：
+  ①**S2-1（A³⁹）Vue 绑定修饰符拼写**：`:hidden.prop="true"`／`:hidden.attr="true"`／`:hidden.camel="true"`／`:hidden.attr="false"`／`v-bind:hidden.attr="true"`／`v-bind.prop="{ hidden: true }"` ⇒ 三件套元素在真 Chromium `display:none, invisible:true`，而守卫 **rc=0**（第十六笔的 `V_BIND_OPEN` 要求 `v-bind` 后紧跟 `=`，`HIDDEN_BINDING` 要求 `:hidden` 后紧跟 `=`）。
+  ②**S2-1（B³⁹）祖先隐藏未判**：把 `hidden`／`:hidden="true"`／`:style="{ display: 'none' }"`／`style="display:none"`／`v-bind="{ hidden: true }"` 注入三件套元素的**祖先**（字段行 `v-for` 容器，或仅包裹分派链的 `<div class="field-control-main">`）⇒ 守卫 **rc=0**（`shows_nothing()` 只读本标签的标签体），真 Chromium 下 `offsetParent=null`、字段静默落 tail、`eslint 0 error`、`vue-tsc 32` ⇒ **可部署 fail-open**。
+  处置（第十七笔硬化，仅守卫与单测）：
+  ①新增 `BINDING_MODIFIERS`（`(?:\.[\w-]+)*`）：`V_BIND_OPEN` 容忍 `v-bind` 与 `=`／`:[` 之间的修饰符；`HIDDEN_BINDING` 与 `STYLE_BINDING` 均带 `modifiers` 命名组，值改用显式命名组读取；`HIDDEN_BINDING` 命中 `.attr`／`.camel` 时**不看常量值**——属性存在即隐藏（真 Chromium 实测 `:hidden.attr="false"` 亦 `display:none`），`.prop` 仍按属性/布尔语义读值（`:hidden.prop="false"` 实测可见 ⇒ 不报）。
+  ②`STYLE_BINDING` 在命中 `.prop`／`.attr` 且值为**对象／数组字面量**时不判（实测 `:style.prop="{ display: 'none' }"`／`:style.attr="{ display: 'none' }"` 被强制转成 `[object Object]` 或空 `style`，**元素可见**），字符串拼写 `:style.prop="'display:none'"`／`:style.attr="'display:none'"` 与 `.camel` 的对象式照旧判。
+  ③新增 `shows_nothing_with_ancestors()`：沿 `unreachable_tags` 的**同一条祖先链**累积 `shows_nothing()`，失败面改由它判定（祖先上的 `hidden`／`v-bind`／`:hidden`／`:style` 一律按隐藏记）。
+  单测 140 → **144 例**（新增 4 例＝9 条修饰符攻击子例 ＋ 4 条「实测不隐藏」合法子例 ＋ 14 条祖先攻击子例 ＋ 2 条祖先合法子例）；把新版单测跑在**上一版守卫 `52cc64e7`** 上**实测 21 例为红**、跑在第十五版 `8aee4b57` 上 **26 例为红**。
+  自证：`/tmp/g40/replay.py` **46 条**载荷（31 条攻击 ⇒ 全部 rc=1；15 条合法 ⇒ 全部 rc=0）**0 mismatch**，其中 **21 条**在 `52cc64e7` 上 rc=0、**24 条**在 `8aee4b57` 上 rc=0 ＝本轮新闭；`/tmp/g40/agreement.py` 把**同一份用例**两侧共用（`/tmp/g40/cases.json`），**真 Vue 3.5.27 ＋ 真 Chromium**（`offsetParent === null`）与守卫判定逐条对齐 **30 条 0 disagreement**；`/tmp/g39`（35）、`/tmp/g38`（27）、`/tmp/g37`（28）、`/tmp/g36`（15）、`/tmp/g35`（17）复跑 **0 mismatch**；真实树守卫 PASS；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`；`eslint 0 errors`、`vue-tsc` 32＝基线；两个生成物 `--check` is current。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 与设计系统组件内 0 处）：三件套元素**及其祖先链**上不得出现 `v-show`、裸 `hidden`、`:hidden=…`（含修饰符）或属性集未写明的 `v-bind`（对象式／动态实参／带修饰符），也不得出现能隐藏的 `style`；祖先链**故意取到组件根**，因此将来给 `<ScCard>` 根加 `v-bind="$attrs"` 一类也会被拒（`design-system/*.vue` 现有的 `v-bind="semanticPrimitiveIdentity('ScX')"`／`v-bind="{ ...$attrs }"` 落在其他元素上，不受影响）。`:hidden.prop="false"` 与对象式 `:style.prop=`／`:style.attr=` 因**实测不隐藏**而不拒。
+  **本轮据实更正**：第十六轮「`v-bind` 三条拼写」口径扩为「含修饰符的 `v-bind` ＋ `.attr`／`.camel` 的 `hidden`」；`STYLE_BINDING` 补登 `.prop`／`.attr` 的**对象强制转换**语义（此前未登记，实测对象式不生效）。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`（值为标识符）的隐藏样式**不判**；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；被 import 模块的加载期副作用不在判据内；glob 仅覆盖两个目录且**非递归**；**本轮新增残限**：祖先链只判**声明式隐藏**，不判**由 class 或外部样式表造成**的隐藏；`:style` 走 `.prop`／`.attr` 时只判**字符串字面量**里的声明，指向变量（如 `:style.attr="cssText"`）不判。
+- 第十八轮复核（A⁴⁰＝REQUEST_CHANGES（1×S2＋1×S3＋1×S4）；B⁴⁰＝REQUEST_CHANGES（1×S2＋1×S3＋2×S4），两线被评第十七笔）：第十七笔的两条旧 S2 **两线各自复算、全部真闭合**（A³⁹ 修饰符族 9/9 `52cc64e7`=0→HEAD=1；B³⁹ 祖先族 `main`／字段行／组件根三处全翻转；`:hidden.prop.attr`／`:HIDDEN.ATTR`／多重叠加无绕过；真 Chromium 证明这些形态确把三件套隐藏；红例「新版单测 × `52cc64e7` ＝ 21 例、× `8aee4b57` ＝ 26 例」两线一致；`eslint 0 errors`／`vue-tsc 32＝基线`；桥守卫 `checks=129 collaboration_self_check=262`；注册表单测 `cases=137`；两个生成物 is current），但两线一致指出第十七笔自己**新引入**的问题：
+  ①**S2-1（A⁴⁰ 与 B⁴⁰ 同一条）`.prop`／`.attr` 样式值的「对象／数组字面量」豁免漏判数组**：`:style.prop="['display:none']"`／`:style.attr="['display:none']"`（元素或祖先任一处）⇒ 守卫 rc=0，而数组经 `ToString()` 后是合法 cssText，真 Vue 3.5.27＋真 Chromium `display:none, visible:false`；`{ toString() { return 'display:none' } }` 同理 ⇒ **可部署 fail-open**。
+  ②**S3-1（B⁴⁰）`.camel` 被并进「属性存在即隐藏」组**：`:hidden.camel="false"`／`="0"` 守卫 rc=1，实测**可见**（`.camel` 只改属性名写法，仍走 DOM 属性）⇒ **假拒绝**。
+  ③**S3-2（A⁴⁰）／S3-1（B⁴⁰）文案误测**：registry 契约段与上一轮 switch log 称「数组字面量 → 空 style、元素可见」，与实测相反（数组会 join 成合法 cssText）。
+  ④**S4**：`declared is None` 两处**死分支**（三选一必有一组参与，不可达）；`/tmp/g40/*` 自证脚本在评审环境不可得 ⇒ 未采信（本轮起把用例表与注入锚点写进派发说明，便于重建）。
+  处置（第十八笔硬化，仅守卫与单测）：
+  ①新增 `binding_value(match)`：显式命名组三选一后 `strip()`，空值即「该绑定什么也不声明」——`:hidden=""`／`:hidden.attr=""` 实测**可见**，故不判（同时拆掉两处死分支）。
+  ②`.attr` 单独成组：**属性存在即隐藏**，但常量 `null`／`undefined` 例外（Vue 会移除属性，实测可见）；`.camel` 回到与 `.prop`／裸绑定同组的**布尔语义**（按值真假判），于是 `:hidden.camel="false"`／`="0"` 不再误拒。
+  ③`STYLE_BINDING` 的豁免收窄为：仅 `.prop`／`.attr` ＋ 值以 `{` 开头 **且不含 `toString`** 的对象字面量不判；**数组一律判**，含 `toString` 的对象一律判（实测两者都进样式表）。
+  单测 144 例（4 例内子例 9 → 12 条修饰符攻击、4 → 7 条「实测不隐藏」合法）；把新版单测跑在**上一版守卫 `f66276cb`** 上**实测 5 例为红**、跑在 `52cc64e7` 上 **24 例为红**。
+  自证：`/tmp/g41/replay.py` **58 条**载荷（37 条攻击 ⇒ 全部 rc=1；21 条合法 ⇒ 全部 rc=0）**0 mismatch**，其中 **5 条**在 `f66276cb` 上 rc=0（本轮新闭）、**27 条**在 `52cc64e7` 上 rc=0，另有 **5 条**在 `f66276cb` 上被判隐藏而 HEAD 已**按实收回**（`.camel="false"`／`="0"`、`.attr="null"`／`="undefined"`、`.attr=""`）；`/tmp/g41/agreement.py`＋`/tmp/g41/cases.json`＋`/tmp/g41/blindness3.js` 把**守卫判定**与**真 Vue 3.5.27 ＋ 真 Chromium**（`offsetParent === null`）逐条对齐 **41 条 0 disagreement**；`/tmp/g40`（30 条一致）、`/tmp/g39`（35）、`/tmp/g38`（27）、`/tmp/g37`（28）、`/tmp/g36`（15）、`/tmp/g35`（17）复跑 **0 mismatch**；真实树守卫 PASS；`eslint 0 errors`、`vue-tsc` 32＝基线。
+  实测档（真 Chromium，可证伪）：`:hidden.attr="false"`／`="''"` 隐藏，`="null"`／`="undefined"`／`=""` 可见；`:hidden.camel="true"`／`="'false'"` 隐藏，`="false"`／`="0"` 可见；`:style.prop="{ display: 'none' }"`／`.attr` 同款可见；`:style.prop="['display:none']"`／`.attr` 同款、`{ toString… }` 均隐藏；`{ valueOf… }` 可见；带空格修饰符（`v-bind .prop=`、`:hidden .attr=`）在 Vue 下**不生效**且守卫判 0（两侧一致）。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 与设计系统组件内 0 处）：三件套元素**及其祖先链**上不得出现 `v-show`、裸 `hidden`、`:hidden=…`（含修饰符）或属性集未写明的 `v-bind`（对象式／动态实参／带修饰符），也不得出现能隐藏的 `style`；祖先链**故意取到组件根**（给 `<ScCard>` 根加 `v-bind="$attrs"` 会被拒）。**对象式** `:style.prop=`／`:style.attr=`（值不含 `toString`）因实测不生效而不拒，代价是「`.attr` ＋ 空字符串字面量」（`=""`，实测 Vue 不落属性）仍按隐藏记 —— 已知假阳，登记不修。
+  **本轮据实更正**：①`.camel` 归回布尔语义（上一轮把它与 `.attr` 并组是误判）；②「数组字面量 → 空 style」为误测，实测 join 成合法 cssText（真隐藏）；③`.attr` 的 `null`／`undefined` 与空表达式语义首次登记。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`／`:style.prop="cssText"`（值为标识符）的隐藏样式**不判**；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；被 import 模块的加载期副作用不在判据内；glob 仅覆盖两个目录且**非递归**；祖先链只判**声明式隐藏**，不判**由 class 或外部样式表造成**的隐藏。**（就地订正：本条所述「对象字面量里 `toString` 的返回值文本不解析」已随第十九笔删除 `toString` 子串判据而失效——交给强制样式的字面量现在一律照文面读；`valueOf` 覆盖不参与 `ToString` 的实测结论不变。）**
+- 第十九轮复核（A⁴¹＝REQUEST_CHANGES（1×S2＋2×S3＋1×S4）；B⁴¹＝REQUEST_CHANGES（1×S2＋2×S3），两线被评第十八笔）：第十八笔的三条旧 S2 判定里，**空串／模板字面量**与 **`toString` 子串判据**两条未闭合，另新增两条过严面：
+  ①**S2-1（A⁴¹）空串绑定在布尔属性上按「假」记**：`:hidden.camel="''"`、`` :hidden.camel=`false` ``、`:hidden.prop="''"` ⇒ 守卫 rc=0，而真 Vue 把**空串**写到布尔属性上按**存在**记（`includeBooleanAttr('') === true`）、模板字面量是**真值字符串**，真 Chromium 实测 `display:none`／`visible:false`；祖先位同样失守。根因是把「值不是活条件」直接当成「不隐藏」。
+  ②**S2-1（B⁴¹）同一条的裸绑定形式**：`` :hidden=`false` ``（模板字面量）⇒ 三个版本（`52cc64e7`／`f66276cb`／`98920808`）**均** rc=0，真 Chromium 隐藏。
+  ③**S3-F2（A⁴¹）`toString` 判据是子串判据**：`STYLE_BINDING` 的豁免用 `"toString" not in declared`，`{ ['toStr'+'ing']: 'display:none' }` 因此被整条跳过（真 Chromium 隐藏，仅因 `vue-tsc` TS2345 未升级）；同族的 `(null)`／`(undefined)`／`void 0` 不在 `.attr` 的裸字面量例外内 ⇒ 守卫判隐藏而浏览器可见。
+  ④**S3（B⁴¹）**：`:hidden.attr="(null)"`／`:hidden.prop.attr="false"` 守卫 rc=1 而实测**可见**——`.prop` 与 `.attr` **同现**时写的是**属性**，属性语义该让位给布尔语义。
+  ⑤**S4（A⁴¹）文案**：上一轮 switch log 的「`.attr` ＋ 空串字面量（`=""`）仍按隐藏记 —— 已知假阳」**两侧都写反了**：`=""` 是**空绑定**（什么也不声明、实测可见、守卫判 0），空**字符串字面量** `="''"` 是**真隐藏**（守卫判 1），二者都不构成假阳。
+  处置（第十九笔硬化，仅守卫与单测）：
+  ①新增 `strip_parentheses()`（迭代剥掉成对圆括号）；`HIDDEN_BINDING` 分支重写：空表达式仍不判；`"attr" in modifiers and "prop" not in modifiers` ⇒ **属性语义**（剥括号后的值不在 `{null, undefined}` 即隐藏）；其余（`.prop`／`.camel`／裸绑定）⇒ **布尔语义**——值**以字符串字面量开头**（单引号／双引号／模板字面量，空串也算）**或**是活条件即隐藏（闭合①②④）。
+  ②`STYLE_BINDING` **删除**「`.prop`／`.attr` ＋ 以 `{` 开头且不含 `toString`」的整体豁免：交给强制样式转换的字面量一律**照文面读** ⇒ `:style.prop="{ display: 'none' }"`／`.attr` 同款由 rc=0 **变 rc=1**（浏览器实测可见 ⇒ 方向安全的**新假阳**，登记不修），换来的是 `toString` **子串**判据整体消失、`['toStr'+'ing']` 计算键不再旁路（闭合③前半）。
+  单测 144 → **145 例**（修饰符攻击子例 12 → 16，含 `.camel` 空串／`.camel` 模板字面量／裸模板字面量／`.prop` 空串；「实测不隐藏」子例改为 `.prop.attr="false"`／`.attr="(null)"`；新增 1 例对象式强制样式期待被拒）；把新版单测跑在**上一版守卫 `98920808`** 上**实测 8 例为红**、跑在 `f66276cb` 上 **11 例为红**。
+  自证：`/tmp/g42/replay.py` **66 条**载荷（45 条攻击 ⇒ 全部 rc=1；21 条合法 ⇒ 全部 rc=0）**0 mismatch**，其中 **8 条**在 `f66276cb` 上 rc=0、**9 条**在 `52cc64e7` 上 rc=0（本轮新闭），**2 条**在 `f66276cb` 上被判隐藏而 HEAD 按实测**收回**（`.attr="(null)"`、`.prop.attr="false"`）；`/tmp/g42/agreement.py`＋`cases.json`＋`blindness3.js` 把**守卫判定**与**真 Vue 3.5.27 ＋ 真 Chromium**（`offsetParent === null`）逐条对齐：**49 条中 47 条一致**，另 **2 条为已登记的守卫过严**（两个对象式强制样式：守卫判隐藏、浏览器可见）；复跑 `/tmp/g41`（58 条）、`/tmp/g40`（46 条）各 **2 条预期差异**（即上述两个登记项，四列 `f66276cb`／`52cc64e7`／HEAD／实测 = `0/0/1/0`），`/tmp/g39`（35）、`/tmp/g38`（27）、`/tmp/g37`（28）、`/tmp/g36`（15）、`/tmp/g35`（17）**0 mismatch**；真实树守卫 PASS。
+  实测档新增（真 Chromium，可证伪）：`:hidden.camel="''"`／`` :hidden.camel=`false` ``／`:hidden.prop="''"`／`` :hidden=`false` `` 隐藏；`:hidden.prop.attr="false"`、`:hidden.attr="(null)"` 可见；`:style.prop="{ display: 'none' }"`／`.attr` 可见；`:style.prop="{ ['toStr'+'ing']: 'display:none' }"` 隐藏；`:style.prop="{ valueOf… }"` 可见。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 与设计系统组件内 0 处）：交给**强制样式**转换的字面量一律照文面读 ⇒ `:style.prop="{ … }"`／`:style.attr="{ … }"` 只要文本里出现 `display:none`／`visibility:hidden` 一类声明即拒，即使浏览器把它变成 `[object Object]`、元素可见。**本轮收掉的过严面**：`.attr` 的 `null`／`undefined` 例外现在也认**括号包裹**的常量（`:hidden.attr="(null)"` 不再误拒）、`.prop.attr` 回到布尔语义（`:hidden.prop.attr="false"` 不再误拒）。
+  **本轮据实更正**：上一轮把「`.attr` ＋ 空串字面量」写成假阳（见上⑤），实际空绑定不判、空字符串字面量判得对。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`void 0`／`(void 0)` 这类**计算出来的** `undefined` 不解析（仍按隐藏记，实测可见）；布尔语义下**任意**字符串字面量（含空串、模板字面量）即判隐藏，不判其运行时取值；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`／`:style.prop="cssText"`（值为标识符）的隐藏样式**不判**；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；被 import 模块的加载期副作用不在判据内；glob 仅覆盖两个目录且**非递归**；祖先链只判**声明式隐藏**，不判**由 class 或外部样式表造成**的隐藏。
+- 第二十轮复核（A⁴²＝REQUEST_CHANGES（1×S2＋1×S3＋3×S4）；B⁴²＝REQUEST_CHANGES（1×S2＋1×S3＋2×S4），两线被评第十九笔）：第十九笔自身声称闭合的四条旧 S2/S3 **两线各自复算成立**，但两线各查出一条**可部署致盲**：
+  ①**S2-F1（A⁴²）括号包裹的字符串常量在布尔绑定上漏判**：`:hidden="('')"`、`:hidden.prop="('')"`、`:hidden.camel="(`false`)"`、`:hidden="(`false`)"`（含 wrapper／row 祖先位）⇒ 守卫 rc=0，真 Vue 3.5.27 ＋ 真 Chromium 实测**真隐藏**（`offsetParent === null`／`display:none`）；`eslint 0 errors`、`vue-tsc 32＝基线（归一化逐行同一）`⇒ **可部署 fail-open**。根因：第十九笔只把 `strip_parentheses()` 接在 `.attr` 分支，布尔分支仍按 `declared[:1]` 取引号。
+  ②**S2-1（B⁴²）强制样式的「字面量拼接族」旁路**：`:style.prop="['display' + ':none']"`、`:style="'display' + ':none'"`、`` :style.prop="`display:${'none'}`" ``、`:style.prop="['display','none'].join(':')"`、`:style.prop="['visibility:hid' + 'den']"`、`:style.attr="'dis' + 'play:none'"` ⇒ 守卫 rc=0（与「值为标识符不判」同族），真 Chromium 元素 `display:none`／`visibility:hidden`，且 `eslint`／`vue-tsc` 无感 ⇒ **可部署致盲**。
+  ③**S3-1（B⁴²）**：`:hidden.prop.attr.camel="true"`／`:hidden.attr.prop="true"` 守卫判隐藏而浏览器可见（`.attr` 与 `.prop` 同现时该绑定实际无效）——未登记的过严变体。
+  ④**S4（两线）**：第十八轮残限行仍描述第十九笔已删除的 `toString` 子串机制（B⁴² S4）；第十九轮「49 条 0 disagreement」措辞偏软（A⁴² S4-F5，实为 47 条一致 ＋ 2 条已登记过严）；`{ valueOf… }`／嵌套对象／计算键对象／`void 0` 属已登记过严族的**拼写未列**（A⁴² S4-F4/F6）。
+  处置（第二十笔硬化，仅守卫与单测）：
+  ①布尔语义分支改为先 `strip_parentheses(declared)` 再判「以字符串字面量开头或活条件」，与 `.attr` 分支同一读法（闭合①）。
+  ②新增常量 `STYLE_COMPOSITION = ("+", "`", ".join(")`：`STYLE_BINDING` 的值里**既有字面量又含组合算子**（拼接／模板字面量／`join`）时 fail-closed 判隐藏——文本由自己的字面量拼出来的情形一律**宁拒不信**，`['display','none'].join(':')` 这类「没有单一片段拼得出」的形态也被覆盖（闭合②）。
+  单测 145 → **146 例**（修饰符攻击子例 16 → 20，含括号包裹的空串／模板字面量；「实测不隐藏」子例 ＋4（`:hidden="(false)"`／`.prop="(false)"`／`="(0)"`／`:style="'color: red'"`）；祖先攻击子例 ＋2 形态（`('')` 与 `` (`false`) `` 各走 wrapper 与 field-row）；新增 1 例 `test_style_text_built_from_literals_fails_closed`（6 条拼接子例））；把新版单测跑在**上一版守卫 `41a04d2f`** 上**实测 14 例为红**、跑在 `98920808` 上 **22 例为红**、跑在 `f66276cb` 上 **22 例为红**。
+  自证：`/tmp/g43/replay.py` **70 条**载荷（四列 `41a04d2f`／`98920808`／`f66276cb`／HEAD，末列判定取自**真 Chromium**）**HEAD 对浏览器 0 fail-open**；其中 **14 条**在 `41a04d2f` 上 rc=0（本笔新闭）、**20 条**在 `98920808` 上 rc=0、**19 条**在 `f66276cb` 上 rc=0，且 `41a04d2f` 的判定**一条未被放松**；`/tmp/g43/agreement.py`＋`cases.json`＋`blindness3.js` 把**守卫判定**与**真 Vue 3.5.27 ＋ 真 Chromium**逐条对齐：**70 条中 65 条一致**，另 **5 条为已登记的守卫过严**（两个对象式强制样式 ＋ 拼接但合法的 `:style="'color:' + 'red'"` ＋ 两个 `.attr`＋`.prop` 同现变体）；复跑 `/tmp/g42`（49 条）**0 mismatch**、`/tmp/g41`（58 条）与 `/tmp/g40`（46 条）各 **2 条预期差异**（即第十九笔登记的两个对象式），`/tmp/g39`（35）、`/tmp/g38`（27）、`/tmp/g37`（28）、`/tmp/g36`（15）、`/tmp/g35`（17）**0 mismatch**；真实树守卫 PASS。
+  实测档新增（真 Chromium，可证伪）：`:hidden="('')"`／`.prop="('')"`／`` .camel="(`false`)" ``／`` =`(`false`)" `` 隐藏（含祖先位）；`:hidden="(false)"`／`.prop="(false)"`／`="(0)"` 可见；`:style.prop="['display' + ':none']"`／`:style="'display' + ':none'"`／`` :style.prop="`display:${'none'}`" ``／`:style.prop="['display','none'].join(':')"`／`:style.attr="'dis' + 'play:none'"` 隐藏；`:style.prop="['visibility:hid' + 'den']"` **隐藏但 `offsetParent` 非空**（`visibility:hidden` 不脱流）；`:style="'color:' + 'red'"` 可见；`:hidden.prop.attr.camel="true"`／`:hidden.attr.prop="true"` 可见。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 与设计系统组件内 0 处）：`style` 绑定值**同时含字面量与组合算子**（`+`／模板字面量／`join(`）即拒，即使它拼不出隐藏声明（`:style="'color:' + 'red'"`）；`.attr` 与 `.prop` **同现**（`:hidden.attr.prop="true"`、`:hidden.prop.attr.camel="true"`）按布尔语义判隐藏，而浏览器下该绑定实际无效、元素可见。**本轮收掉的过严面**：无（第十九笔的判定一条未被放松）。
+  **本轮据实更正**：①第十八轮残限行里「对象字面量里 `toString` 的返回值文本不解析」已随第十九笔删除 `toString` 子串判据而失效（该行已就地订正）；②第十九轮「49 条 0 disagreement」改为「49 条中 47 条一致 ＋ 2 条已登记过严」；③自证档的可见性判据由 `offsetParent === null` 扩为「或 `getComputedStyle().visibility === 'hidden'`」，因为 `visibility:hidden` 的元素不脱流（本笔因此新增 1 条实测档）。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`void 0`／`(void 0)` 这类**计算出来的** `undefined` 不解析（仍按隐藏记，实测可见）；布尔语义下**任意**字符串字面量（含空串、模板字面量）即判隐藏，不判其运行时取值；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`／`:style.prop="cssText"`（值为标识符）的隐藏样式**不判**（组合算子只在**同时含字面量**时触发，纯变量拼接仍不判）；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；被 import 模块的加载期副作用不在判据内；glob 仅覆盖两个目录且**非递归**；祖先链只判**声明式隐藏**，不判**由 class 或外部样式表造成**的隐藏。
+- 第二十一轮复核（A⁴³＝REQUEST_CHANGES（1×S2＋1×S3）；B⁴³＝REQUEST_CHANGES（1×S2＋1×S3＋1×S4），两线被评第二十笔）：第二十笔声称闭合的两条**两线各自复算成立**（14 条逐条 visible→HIDDEN、`41a04d2f` 列无一处放松），但两线指出**同一根因**：`STYLE_COMPOSITION` 是**算子白名单**，同族其余拼法整体旁路。
+  ①**S2-1（B⁴³）／S2-F1（A⁴³）强制样式的调用族旁路**：`:style.prop="'display'.concat(':none')"`、`:style.attr="'visibility'.concat(':hidden')"`、`:style.prop="'display:no'.concat('ne')"`、`:style.prop="'display:nnone'.replace('nn','n')"`、`:style.prop="String.fromCharCode(100,105,…)"`、`:style.attr="'displqy:none'.replace('q','a')"` ⇒ 守卫 rc=0 PASS，真 Vue 3.5.27 ＋ 真 Chromium `style="display: none;"`／`visibility:hidden`，`eslint 0 errors`、`vue-tsc 32＝基线` ⇒ **可部署 fail-open**（`atob()` 同族但 `vue-tsc` 变 33 行 ⇒ 暂不可部署，一并闭合）。
+  ②**S3-1（B⁴³）JS 转义族**：`'display:\u006eone'`／`'visibility:\u0068idden'` 等 7 条守卫 rc=0 而真隐藏；且守卫**已经**为全局名读标识符转义（`gl\u006FbalThis`），口径自相矛盾。
+  ③**S3-F2（A⁴³）／S4-1（B⁴³）契约段命题强于实现**：registry 段写「Text a value builds out of its own literals is read as that text」，实现只覆盖三个记号。
+  处置（第二十一笔硬化，仅守卫与单测）：
+  ①`STYLE_COMPOSITION` 由**记号元组**改为**结构判据** `re.compile(r"[+`]|\w\s*\(")`，并对**字面量内容已抹白**的残文（`blank_literals(declared, scan_spans(declared)[1])`）求值，另单独认**模板字面量**（`scan_spans` 的 span 连同定界符一起抹白，故改按起始定界符判）；于是「任何调用或 `+`／模板字面量」皆拒，而「字符串里的 `calc(`／`url(`」不误伤（闭合①）。
+  ②`STYLE_BINDING` 补 `(?P<directive>(?:v-bind)?:)?`：判定改为**只对绑定**求值后，`:style=`（无修饰符的简写）必须有该组才继续算绑定。**据实更正**：`ac218ee6` 没有绑定门，`:style="'display' + ':none'"` 站在该版即为 rc=1（两版实测），故「此前简写未被认作绑定」不成立——真实情况是本笔新增的门**若不补该组**会把简写整体放行（A⁴⁴-S4-2／B⁴⁴-S4-2）。
+  ③结构判据**只对绑定**求值：静态 `style=…` 是标记文本。**据实更正**：`style="width: calc(100% - 4px)"` 与 `style="background: url(a.png)"` 站在 `ac218ee6` 即为 rc=0（两版实测同为 rc=0），它们**不是**本笔收回的过严面（A⁴⁴-S4-1）。
+  ④绑定值读取前先 `decoded_spellings()`：字面量里的 `\u`／`\x` 转义按编译器读法展开（`'display:\u006eone'` 即 `display:none`），与全局名的转义口径一致（闭合②）。
+  单测 146 → **147 例**（拼接族攻击子例 6 → 12，含 `concat`／`replace`／`String.fromCharCode`／转义／纯变量拼接；新增 1 例 `test_style_text_that_declares_nothing_still_shows_the_branch_passes`（8 条合法：标识符、成员读、静态 `calc()`／`url()`、对象字面量里的 `calc()`、字符串里的反引号））；把新版单测跑在**上一版守卫 `ac218ee6`** 上**实测 8 例为红**、`41a04d2f` **21 例**、`98920808` **29 例**、`f66276cb` **29 例**。
+  自证：`/tmp/g44/replay.py` **82 条**载荷（五列 `ac218ee6`／`41a04d2f`／`98920808`／`f66276cb`／HEAD，末列取自**真 Chromium**）**HEAD 对浏览器 0 fail-open**；**据实更正**：对真浏览器仍 **fail-open** 的条数按版本为 `ac218ee6` **6 条**（本笔新闭）、`41a04d2f` **20 条**、`98920808` **26 条**（原文误记为 20，20 是 `41a04d2f` 的数）、`f66276cb` **25 条**、HEAD **0 条**，并有 **1 条**在 `ac218ee6` 上被判隐藏而 HEAD 按实测**收回**（`` :style="'a`b'" ``：字符串里的反引号不是模板字面量）；`/tmp/g44/agreement.py`＋`cases.json`＋`blindness3.js` 把**守卫判定**与**真 Vue 3.5.27 ＋ 真 Chromium**逐条对齐：**82 条中 76 条一致**，另 **6 条为已登记的守卫过严**（两个对象式强制样式、`:style="'color:' + 'red'"`、`:style="a + b"`、两个 `.attr`＋`.prop` 同现变体）；复跑 `/tmp/g43`（70 条）**0 mismatch**、`/tmp/g42`（49 条）**0 mismatch**、`/tmp/g41`（58 条）与 `/tmp/g40`（46 条）各 **2 条预期差异**（第十九笔登记的两个对象式）；真实树守卫 PASS。
+  实测档新增（真 Chromium，可证伪）：`:style.prop="'display'.concat(':none')"`、`:style.prop="'display:nnone'.replace('nn','n')"`、`:style.prop="String.fromCharCode(…)"`、`:style.prop="'display:\u006eone'"` 均 `display:none`，`:style.attr="'visibility'.concat(':hidden')"` 与 `:style="'visibility:\u0068idden'"` 为 `visibility:hidden`（隐藏）；`:style="a + b"`／`:style="rowStyle"`／`:style="scope.row.cssText"`／`:style="{ width: 'calc(100% - 4px)' }"`／`style="width: calc(100% - 4px)"`／`style="background: url(a.png)"`／`` :style="'a`b'" `` 可见；另记 `:hidden.attr="\u006eull"` 在真 Vue 下是**编译期语法错误**（`Keyword must not contain escaped characters`）⇒ 该拼写不构成可部署面，未入矩阵。
+- **本轮新增登记的过严面**（fail-closed 方向，`FormSection.vue` 与设计系统组件内 0 处）：**绑定**的 `style` 值只要含 `+`、模板字面量或任何调用形状即拒，与是否含字面量无关——`:style="a + b"`（纯变量拼接，第二十笔还是残限，本笔起按隐藏记）与 `:style="'color:' + 'red'"` 属此类；`.attr` 与 `.prop` 同现仍按布尔语义判隐藏（浏览器下该绑定实际无效）。**本轮收掉的过严面**：`` :style="'a`b'" ``（字符串里的反引号曾被当成模板字面量而拒；`ac218ee6` rc=1 → HEAD rc=0，按实测放行）；静态 `style=…` 里的 `calc()`／`url()` **两版皆 rc=0**，本就未参与组合判据。
+  **本轮据实更正**：第二十轮残限行的「组合算子只在同时含字面量时触发，纯变量拼接仍不判」不再成立（本笔起按隐藏记）；第二十轮契约段「A value that carries no literal of its own is left to the reading above」收窄为「只有读作名字或名字成员的值留给上面的读法」。
+  **仍未闭合的残限**（两线一致，非阻断）：判据仍是**文本/形状**匹配，**不证明语义可达**；`void 0`／`(void 0)` 这类**计算出来的** `undefined` 不解析（仍按隐藏记，实测可见）；布尔语义下**任意**字符串字面量（含空串、模板字面量）即判隐藏，不判其运行时取值；绑定表只跟**同文件内的简单绑定**（跨模块来源不在内；表达式式调用不读；`catch (…)` 绑定、形参默认值、嵌套解构、数组解构与默认值 RHS 不读）；赋值运算符族只按「可能是未展开字符串」处理，不合成结果；`ConditionReader` 不建模 `??`／三元／算术，未知形状按「死」；`:style="变量"`／`:style.prop="cssText"`（**读作名字**的值）的隐藏样式**不判**（结构判据不覆盖纯名字读）；`hidden`／`style` 值里的 **CSS 转义**不判；「活条件」仍只保证**名字**存在；**不校验锚点循环迭代的确实是字段列表**；被 import 模块的加载期副作用不在判据内；glob 仅覆盖两个目录且**非递归**；祖先链只判**声明式隐藏**，不判**由 class 或外部样式表造成**的隐藏。
+- 第二十二轮复核（A⁴⁴＝REQUEST_CHANGES（1×S2＋1×S3＋2×S4）；B⁴⁴＝REQUEST_CHANGES（1×S2＋2×S4），两线被评第二十一笔）：第二十一笔声称闭合的两族**两线各自复算成立**（B⁴⁴ 逐条 16 条 visible→HIDDEN，`ac218ee6` 列 0/16；A⁴⁴ 另测调用族 6 条 ＋ 转义族 2 条同判），但两线指出**同一根因**：新结构判据的「调用」仍要求**词字符紧邻 `(`**。
+  ①**S2-1（A⁴⁴／B⁴⁴）计算成员调用与注释隔断旁路**：`:style="'display'['concat'](':none')"`、`:style="['display',':none']['join']('')"`、`:style="String['fromCharCode'](100,105,115,112,108,97,121,58,110,111,110,101)"`、`:style="'display:nnone'['replace']('nn','n')"`（方法名本身落在被抹白的字面量里，残文只剩 `[](`）与**被调方与 `(` 之间夹注释**的 `:style="['display',':none']/*c*/.join/*c*/('')"`、`:style="'display'/*a*/.concat/*b*/(':none')"`（`\w\s*\(` 不容注释）⇒ 守卫 rc=0 PASS，真 Vue 3.5.27 ＋ 真 Chromium `style="display: none;"`（祖先位／字段行同款），`eslint 0 errors`、`vue-tsc 32＝基线` ⇒ **可部署 fail-open**。
+  ②**S3-F2（A⁴⁴）／S4-1（B⁴⁴）契约段改词后仍强于实现**：registry 段「structural rather than a list of the operators seen so far」在调用形状只按紧邻词形识别时不成立。
+  ③**S4（A⁴⁴×2）第二十一轮段两处措辞与历史不符**：静态 `calc()`／`url()` 被写成「本轮收掉的过严面」，实测 `ac218ee6` 本就 rc=0；「此前 `:style=` 简写未被认作绑定」，实测 `ac218ee6` 对 `:style="'display' + ':none'"` 判 rc=1。
+  处置（第二十二笔硬化，仅守卫与单测）：
+  ①**调用改为形状无关的结构判据**：`STYLE_COMPOSITION` 由 `[+`]|\w\s*\(` 收紧为 `[+`(]`——抹白后的残文里**任何 `(`** 即调用，不论被调方怎么拼（`obj['m'](…)`、`obj?.()`、`obj/*c*/.m(…)`、`new String(…)`、`Reflect.get(…)`）（闭合①）。
+  ②**先抹注释、再抹字面量**：判据改在 `scan_spans()` 返回的**已抹注释**视图上求值（此前只取它的 span，注释原样留在残文里），故注释既不能藏算子也不能拆散调用形状；模板字面量定界符同样从该视图读（闭合①的注释族）。
+  ③**文档据实更正**：registry 契约段收窄为「comments blanked ＋ literal contents blanked 于其上，call 即任何 `(`」，并登记调用式过严面；第二十一轮段三处与历史不符的措辞就地更正（闭合②③）。
+  单测 147 例（失败面新增 7 条：计算成员调用 4 条、注释隔断 2 条、可选调用 1 条；合法面新增 1 条 `:style="rowStyle /* the row decides */"`）；把新版单测跑在旧版守卫上**实测 15／28／36／36 例为红**（`ac218ee6`／`41a04d2f`／`98920808`／`f66276cb`，`ran=147`）。
+  自证：`/tmp/g45` **92 条**载荷（82 条旧 ＋ 10 条新）五列对照 **HEAD 0 fail-open**；上一版 `ac218ee6` 在该集上 **14 条** fail-open（本轮新闭 8 条 ＋ 第二十一笔 6 条），`41a04d2f` **28 条**、`98920808` **34 条**、`f66276cb` **33 条**（同一批按旧 82 条计为 6／20／26／25，与上一段据实更正后的数字一致）；`/tmp/g45/agreement.py` 把守卫判定与**真 Vue 3.5.27 ＋ 真 Chromium**逐条对齐：**92 条中 85 条一致 ＋ 7 条已登记过严、0 disagreement**；复跑 `/tmp/g43`（70 条）与 `/tmp/g42`（49 条）**0 disagreement**、`/tmp/g41`（41 条）／`/tmp/g40`（30 条）各 **2 条预期差异**（第十九笔登记的两个对象式）；真实树守卫 PASS。
+  实测档新增（真 Chromium）：`:style="'display'['concat'](':none')"`、`:style="['display',':none']['join']('')"`、`:style="String['fromCharCode'](…)"`、`:style="'display:nnone'['replace']('nn','n')"`、`:style="['display',':none']/*c*/.join/*c*/('')"`、`:style="'display'/*a*/.concat/*b*/(':none')"` 均 `display:none`（含祖先位／字段行同款）；`:style="rowStyle?.()"` 与 `:style="rowStyle /* the row decides */"` 可见。
+  **本轮新增登记的过严面**：调用式 `style` 绑定即拒——`:style="rowStyle?.()"` 实测可见仍被拒（属 fail-closed 方向，已登记）；扫描面外惯用法 `:style="tagColorStyle(option.color)"`（`components/professional-fields/*.vue`，不在 glob 内）属同类，扫描面若扩到该目录需一并登记。
+  **仍未闭合的残限**：与第二十一轮同（判据仍是文本/形状匹配、不证明语义可达、纯名字读的隐藏样式不判、CSS 转义不判、祖先链只判声明式隐藏等）；**据实更正（第二十三轮）**：本笔新增说明「任何 `(` 一律按调用拒（含合法调用），故新增缺口只会在**过严**方向」**不成立**——同一条 `style` 通路在本笔之后仍有**可部署 fail-open**（字面量未按编译器／CSS 读法解析：字符引用、`\t` 类转义、CSS 注释、`opacity` 的其它零写法、`visibility:collapse`），已在第二十三笔闭合（A⁴⁵-S2-1／B⁴⁵-F1／F2／F4）；本笔另新引入两条过严面（`:style="(rowStyle)"`、`:style="/display:none/"`），已在第二十三轮登记。
+- 第二十三轮复核（A⁴⁵＝REQUEST_CHANGES（1×S2＋1×S3＋2×S4）；B⁴⁵＝REQUEST_CHANGES（1×S2＋1×S3＋2×S4），两线被评第二十二笔）：第二十二笔声称闭合的两族**两线各自复算成立**（B⁴⁵：13 条及祖先位／字段行／组件根变体 21st→22nd 全部 visible→HIDDEN，92 条集 fail-open 8→0；A⁴⁵：计算成员调用与注释隔断在 `cd47e9ef`=0、被评 `01f43fd6`=1 且真 Chromium 隐藏），自报数字亦逐条可复算；但两线指出**同一根因**：`style` 绑定值里的**字面量本身**没有被按「编译器读法 ＋ CSS 读法」解析。
+  ①**S2-1（A⁴⁵）字符引用族**：`:style="'display&#58;none'"`、`:style="'visibility&#58;hidden'"`、`:style="'&#100;isplay:none'"`、`:style="'display&#x3A;none'"`（另 `&#110;`／`&#100;` 等）在元素位与祖先位 8/8 ⇒ 守卫 rc=0 PASS，真 Vue 3.5.27 ＋ 真 Chromium `display:none`／`visibility:hidden`；`@vue/compiler-sfc` 实测编译为 `style: 'display:none'`，`eslint 0 errors`、`vue-tsc 32＝基线` ⇒ **可部署 fail-open**。
+  ②**F1（B⁴⁵）三族**：备选常量拼写 `'opacity:.0'`／`'opacity:00'`／`'visibility:collapse'`（真 Chromium `opacity:0`／`visibility:collapse`）、CSS 注释 `'display:/*x*/none'`（浏览器规范化为 `display: none;`）、JS 简单转义 `'display:\tnone'`（`decoded_spellings()` 只解 `\u`／`\x`）⇒ 守卫 rc=0、真隐藏、`eslint`／`vue-tsc` 无感 ⇒ **可部署 fail-open**。
+  ③**F2（B⁴⁵）**：B⁴³ 转义族只闭了数值转义，`\t\n\r\f` 与行续接同族仍 rc=0。
+  ④**S3／S4**：契约段「read the way the template compiler reads it」在实体引用上强于实现（A⁴⁵-S3-1）；残限台账只列「CSS 转义」而未列字符引用族（A⁴⁵-S4-1／B⁴⁵-F4）；`(rowStyle)`／`(a, b)`（括号非调用，B⁴⁵-F3）与 `:style="/display:none/"`（正则字面量，A⁴⁵-S4-2）为第二十二笔新引入的**未登记过严面**。
+  处置（第二十三笔硬化，仅守卫与单测）：
+  ①**编译器读法**：`decoded_spellings()` 先解**字符引用**（`&#58;`／`&#x3A;` 数字引用**带与不带分号**都解，因为解析器就是这么读的；命名引用按「能拼出本判据会遇到的字符」的表解，浏览器会留作文本的名字这里也留作文本），再解**转义**（`\u{…}`／`\uXXXX`／`\xXX` ＋ `\t\n\r\f\v\b\0` ＋ 行续接），三条分支（`.attr`／布尔／样式）同读（闭合①③）。
+  ②**CSS 读法**：新增 `css_declaration_text()`（去掉注释、折叠空白），`HIDING_DECLARATION` 扩充为 `display:none`／`visibility:hidden|collapse`／`opacity:` ＋ CSS 零值写法 `[-+]?(?:0+(?:\.0*)?|\.0+)(?:[eE][-+]?[0-9]+)?%?`（闭合②）。
+  ③文档据实更正：契约段改写为「编译器读引用与转义、样式表读声明（注释不成声明、`opacity` 的零写法、`visibility:collapse`）」，并显式登记新过严面与**仍未解析的 CSS 反斜杠转义族**；第二十二轮段「新增缺口只会在过严方向」的结论据实更正（闭合④）。
+  单测 147 例（失败面 +10：字符引用 5（`&#58;`／`&#x3A;`／`&#100;`／无分号／`visibility`）＋ `opacity:.0`＋`opacity:00`＋`visibility:collapse`＋CSS 注释＋`\t`；合法面 +3：`'opacity: 0.5'`／`'color: &#58;'`／`'&unknownref;'`）；把新版单测跑在旧版守卫上**实测 25／38／46／46 例为红**（`ac218ee6`／`41a04d2f`／`98920808`／`f66276cb`，`ran=147`）。
+  自证：`/tmp/g48` **109 条**载荷（92 条旧 ＋ 17 条新）七列对照（`ac218ee6`／`41a04d2f`／`98920808`／`f66276cb`／`cd47e9ef`／`01f43fd6`／HEAD）：**HEAD 0 fail-open**，新族 10 条 fail-open 在 `cd47e9ef` 与 `01f43fd6` 上仍在、HEAD 全闭；`/tmp/g48/agreement.py`：**109 条中 99 条一致 ＋ 10 条已登记过严、0 disagreement**（过严面：两个对象式强制样式、`:style="'color:' + 'red'"`、`:style="a + b"`、两个 `.attr`＋`.prop` 同现、`:style="rowStyle?.()"`、`(rowStyle)`、`(a, b)`、`/display:none/`）；真值读法本轮扩为「`offsetParent === null` **或** `visibility ∈ {hidden, collapse}` **或** 计算 `opacity === '0'`」（B⁴⁵ 的 `opacity` 族据此判定）；复跑 `/tmp/g45`（92 条）／`/tmp/g43`（70 条）／`/tmp/g42`（49 条）**0 disagreement**、`/tmp/g41`（41 条）与 `/tmp/g40`（30 条）各 **2 条**（第十九笔登记的两个对象式）；真实树守卫 PASS。
+  实测档新增（真 Chromium）：`'display&#58;none'`／`'display&#x3A;none'`／`'&#100;isplay:none'`／`'display&#58none'` 均 `display:none`；`'visibility&#58;hidden'` 为 `visibility:hidden`；`'display:/*x*/none'` 与 `'display:\tnone'` 为 `display:none`；`'opacity:.0'`／`'opacity:00'` 计算 `opacity: 0`；`'visibility:collapse'` 计算 `visibility:collapse`；合法面 `'opacity: 0.5'`／`'color: &#58;'`／`'&unknownref;'` 均可见。
+  **本轮新增登记的过严面**：`:style="(rowStyle)"`、`:style="(a, b)"`（括号分组非调用）、`:style="/display:none/"`（正则字面量）——三者真浏览器可见而守卫拒；其中前两条由第二十二笔的 `[+`(]` 引入，第三条由「按原文读声明」引入。
+  **仍未闭合的残限**：与上一轮同，并据实**新增两类**：①**CSS 反斜杠转义**族不解析（`:style="'display:\6e one'"` 之类，两线一致按已登记残限记）；②命名引用**无分号**的历史拼写（`&colon` 等）不解析（浏览器仅在受限的旧式集合上才这么做，该集合拼不出声明）。另：判据仍不证明语义可达、纯名字读不判、祖先链只判声明式隐藏。
+- 发布仍受外部封禁阻塞，本批**未推送、未建 PR**（用户指令：**先不合并，继续迭代**，目标是前端代码稳定）。
