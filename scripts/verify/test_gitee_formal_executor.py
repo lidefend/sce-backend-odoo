@@ -48,6 +48,10 @@ class FormalTests(unittest.TestCase):
     def test_real_sandbox_credentials_network_and_counts(self):
         script = """import os,pathlib,socket
 assert 'PRIVATE_TEST_TOKEN' not in os.environ
+assert os.environ['GOMEMLIMIT'] == '256MiB'
+assert os.environ['GOMAXPROCS'] == '2'
+assert os.environ['MAKEFLAGS'] == '-j1'
+assert os.environ['NODE_OPTIONS'] == '--max-old-space-size=512'
 assert not pathlib.Path('/etc/gitee-ci').exists()
 assert not pathlib.Path('/var/run/docker.sock').exists()
 try: socket.create_connection(('1.1.1.1',443),timeout=.1)
@@ -56,7 +60,9 @@ else: raise AssertionError('network escaped')
 print('Ran 2 tests in 0.001s')
 print('OK')
 """
-        with patch.dict(os.environ, PRIVATE_TEST_TOKEN='synthetic-private-token'):
+        with patch.dict(os.environ, PRIVATE_TEST_TOKEN='synthetic-private-token',
+                        GOMEMLIMIT='off', GOMAXPROCS='64', MAKEFLAGS='-j64',
+                        NODE_OPTIONS='--max-old-space-size=8192'):
             result = self.run_case(script)
         self.assertEqual(result['status'],'success')
         self.assertEqual([x['tests'] for x in result['checks']],[2]*4)
