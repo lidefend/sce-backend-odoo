@@ -391,3 +391,13 @@ a newly created token. L1 iteration and L2 updater18+reporter18 passed. Installa
 is the next L3; business database/frontend L4 is out of scope. A clean installation
 source commit is needed by the existing updater, not a frozen publication claim.
 Final Quick/push remain pending until online readback.
+
+- Online source: `7bffa8381f5fef2b51f41a503001e392729301e5`. Evidence: checks-install-plan.json,
+  checks-install-result.log and checks-platform-readback.json in the existing artifact directory.
+- Installation succeeded; backup `/var/lib/gitee-ci/update-backups/incremental-p3wfmpm7`;
+  original SSH credentials unchanged. Check26931460 is completed/success for prior real-Push
+  SHA `77c5efe111fb30b857bbb2b1c2a098b2f559630e`; worker state bound with no error.
+  This reports the previous42-test run; it is not a rerun or acceptance of a new candidate.
+- Implementation independent review passed. Recovery preserves reporter queue markers;
+  restoring files does not undo remote checks. Full gate equivalence, branch rules and
+  exact-head integration remain separate pending items; no business deployment.

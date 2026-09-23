@@ -21,14 +21,11 @@ goal:
   ci_chain_executor: existing_worker
   ci_chain_acceptance: real_push_exact_sha_verified_77c5efe1_42_tests
   ci_blockers:
-    - check_run_reporting_online_not_verified
     - full_required_gate_equivalence_not_verified
     - protected_exact_head_merge_not_available
   repository_visibility: public_user_confirmed
   primary_objective: real_gitee_push_acceptance_on_existing_worker
   resume:
-    - implement_and_validate_opt_in_trusted_check_run_reporter
-    - user_creates_repo_scoped_api_credential_for_existing_worker
-    - extend_reviewed_incremental_installer_and_verify_platform_readback
+    - freeze_and_publish_reporter_candidate_for_fresh_push_verification
     - select_required_gate_mapping_before_formal_product_integration
     - handle_formal_merge_as_independent_blocker

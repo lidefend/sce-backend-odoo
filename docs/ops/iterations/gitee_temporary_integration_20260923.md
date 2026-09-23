@@ -576,3 +576,11 @@ P4 仅新增公开历史扫描与受管增量更新能力。3dd58b82 原检查�
   计划不输出正文，失败恢复原文件/原配置，无原文件时清除新文件。
 - L1 local iteration通过，L2 updater18+reporter18通过；安装为后续L3，业务数据库/前端L4不适用。
 - 先形成干净安装源提交以满足既有入口，不冒称冻结发布候选；在线检查回读完成前不跑最终Quick或推送。
+
+- 线上安装源 `7bffa8381f5fef2b51f41a503001e392729301e5`；精确计划、安装回执和API回读分别见
+  `checks-install-plan.json`、`checks-install-result.log`、`checks-platform-readback.json`。
+- 安装成功，备份 `/var/lib/gitee-ci/update-backups/incremental-p3wfmpm7`，原SSH凭据未变。
+- Gitee检查项26931460绑定既有真实Push SHA `77c5efe111fb30b857bbb2b1c2a098b2f559630e`，
+  completed/success；worker记录bound且无error。它回传此前42项测试结果，不是重跑或新候选验收。
+- 实现独立审查通过；恢复不回滚reporter队列，已产生的远端检查项不会随文件恢复自动撤销。
+- 本次仅完成CI-only回传链路，完整门禁等效、保护规则与精确合入仍独立待验收；无业务部署。
