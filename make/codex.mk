@@ -804,3 +804,7 @@ gitee.ci.pr.inspect: guard.prod.forbid
 .PHONY: verify.gitee.formal_executor.unit
 verify.gitee.formal_executor.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_formal_executor
+
+.PHONY: verify.gitee.formal_queue.unit
+verify.gitee.formal_queue.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_queue

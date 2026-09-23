@@ -1,0 +1,126 @@
+import copy
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import Mock
+from scripts.ci.gitee_formal_queue import FormalQueue, FormalReporter, execute_once, job_key, IDENTITY_KEYS, CHECKS
+from scripts.ci.gitee_gate_plan import plan, digest
+from scripts.verify.test_gitee_ci_checks import FakeAPI
+
+
+def candidate(base='b'*40,pr=1,observed=100):
+    p=plan(head='a'*40,base=base,source_branch='fix/unit',pr_number=pr,paths=['docs/unit.md'])
+    p['platform_snapshot']={**{k:p[k] for k in IDENTITY_KEYS},'pr_id':123+pr,
+        'pr_identity_verified':True,'remote_refs_verified':True,'observed_finished_at':observed}
+    p.pop('plan_sha256');p['plan_sha256']=digest(p)
+    return p
+
+
+def receipt(p):
+    return {**{k:p[k] for k in IDENTITY_KEYS},'plan_sha256':p['plan_sha256'],
+        'status':'success','integration_eligible':False,
+        'checks':[{'name':x['name'],'mode':x['mode'],'status':'success','tests':2} for x in p['checks']]}
+
+
+class FormalQueueTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.q=FormalQueue(Path(self.tmp.name)/'q.sqlite');self.p=candidate()
+        self.key,_=self.q.enqueue(self.p,'1');self.api=FakeAPI();self.now=100
+        self.refresh=lambda p:p['platform_snapshot']
+        self.reporter=FormalReporter(self.q,self.api,lambda p:self.refresh(p),clock=lambda:self.now)
+
+    def publish_all(self):
+        for _ in range(4):self.reporter.sync_once()
+
+    def terminal(self):
+        self.q.claim();self.q.finish(self.key,receipt(self.p))
+
+    def test_dedupe_ignores_observation_timestamp(self):
+        key,inserted=self.q.enqueue(candidate(observed=200),'2')
+        self.assertEqual(key,self.key);self.assertFalse(inserted)
+
+    def test_base_and_pr_are_distinct_jobs(self):
+        for p in [candidate(base='c'*40),candidate(pr=2)]:self.assertNotEqual(job_key(p),self.key)
+
+    def test_delivery_replay_rejected(self):
+        with self.assertRaises(ValueError):self.q.enqueue(candidate(base='c'*40),'1')
+
+    def test_claim_serializes(self):
+        self.q.enqueue(candidate(base='c'*40),'2')
+        self.assertIsNotNone(self.q.claim());self.assertIsNone(self.q.claim())
+
+    def test_restart_does_not_requeue_running(self):
+        self.q.claim();FormalQueue(self.q.path,recover_running=True)
+        with self.q.connect() as db:self.assertEqual(db.execute('SELECT status FROM formal_jobs').fetchone()[0],'environment_error')
+
+    def test_cancel_race_cannot_succeed(self):
+        self.q.claim();self.q.cancel(self.key);self.q.finish(self.key,receipt(self.p));self.publish_all()
+        self.assertTrue(all(x['conclusion']=='cancelled' for x in self.api.rows.values()))
+
+    def test_invalid_success_receipts_rejected(self):
+        self.q.claim()
+        variants=[]
+        for key,value in [('base_sha','c'*40),('plan_sha256','bad'),('integration_eligible',True),('checks',[])]:
+            r=receipt(self.p);r[key]=value;variants.append(r)
+        r=receipt(self.p);r['checks'][2]['tests']=0;variants.append(r)
+        r=receipt(self.p);r['checks'][2]['tests']=True;variants.append(r)
+        for r in variants:
+            with self.subTest(r=r),self.assertRaises(ValueError):self.q.finish(self.key,r)
+
+    def test_four_independent_checks_bound_to_pr_and_base(self):
+        self.terminal();self.publish_all()
+        self.assertEqual({x['name'] for x in self.api.rows.values()},set(CHECKS))
+        for x in self.api.rows.values():
+            self.assertEqual(x['conclusion'],'success');self.assertEqual(x['pull_request_id'],124)
+            self.assertIn(self.p['base_sha'],x['output']['summary'])
+
+    def test_main_drift_revokes_previous_success(self):
+        self.terminal();self.publish_all();self.now+=31
+        self.refresh=lambda p:{**p['platform_snapshot'],'base_sha':'c'*40}
+        self.publish_all()
+        self.assertTrue(all(x['conclusion']=='action_required' for x in self.api.rows.values()))
+
+    def test_unknown_snapshot_never_success(self):
+        self.terminal();self.refresh=lambda p:{};self.publish_all()
+        self.assertTrue(all(x['conclusion']=='action_required' for x in self.api.rows.values()))
+
+    def test_lost_create_no_duplicate_post(self):
+        self.api.lose_create=True;self.reporter.sync_once();self.now+=31
+        self.publish_all()
+        first_posts=[x for x in self.api.calls if x[0]=='POST' and x[2]['name']==CHECKS[0]]
+        self.assertEqual(len(first_posts),1)
+
+    def test_unknown_create_not_reposted(self):
+        self.api.fail_create=True;self.reporter.sync_once();self.now+=31;self.api.fail_create=False
+        self.reporter.sync_once()
+        self.assertEqual(sum(x[0]=='POST' for x in self.api.calls),1)
+
+    def test_wrong_pr_readback_is_not_delivered(self):
+        self.reporter.sync_once();self.api.rows[1]['pull_request_id']=999
+        self.terminal();self.now+=31;self.api.reject_patch=True;self.reporter.sync_once()
+        with self.q.connect() as db:
+            row=db.execute('SELECT error FROM formal_reports WHERE name=?',(CHECKS[0],)).fetchone()
+        self.assertEqual(row[0],'readback_mismatch')
+
+    def test_worker_exception_is_terminal(self):
+        worker=Mock();worker.execute_plan.side_effect=RuntimeError('private detail')
+        self.assertTrue(execute_once(self.q,worker,self.refresh));self.publish_all()
+        self.assertTrue(all(x['conclusion']=='action_required' for x in self.api.rows.values()))
+        self.assertNotIn('private detail',json.dumps(self.api.calls))
+
+    def test_malformed_result_does_not_strand_running_job(self):
+        worker=Mock();worker.execute_plan.return_value={'status':'success'}
+        execute_once(self.q,worker,self.refresh)
+        with self.q.connect() as db:
+            self.assertEqual(db.execute('SELECT status FROM formal_jobs').fetchone()[0],'environment_error')
+
+    def test_worker_to_reporter_lifecycle(self):
+        worker=Mock();worker.execute_plan.return_value=receipt(self.p)
+        self.assertTrue(execute_once(self.q,worker,self.refresh));self.assertFalse(execute_once(self.q,worker,self.refresh))
+        self.publish_all();self.assertEqual(len(self.api.rows),4)
+        self.assertTrue(all(x['conclusion']=='success' for x in self.api.rows.values()))
+
+
+if __name__=='__main__':unittest.main()
