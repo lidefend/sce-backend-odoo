@@ -30,3 +30,7 @@ verify.production_blocker.runtime_assets: guard.prod.forbid
 
 verify.production_blocker.image: guard.prod.forbid
 	@BLOCKER_RUNTIME_IMAGE="$(BLOCKER_RUNTIME_IMAGE)" bash scripts/verify/production_blocker_image.sh
+
+.PHONY: verify.legacy_ledger_preallocation.unit
+verify.legacy_ledger_preallocation.unit:
+	python3 scripts/verify/test_legacy_ledger_preallocation_migration.py
