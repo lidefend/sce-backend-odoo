@@ -740,40 +740,109 @@ async function verifyMany2manyTagSelect(page, report, beforeFacts) {
   if (!keyboardSelect) throw new Error(`m2m_keyboard_select_not_proven:${JSON.stringify({ hovered, chipsAfterKeyboard })}`);
   await closePanel();
 
-  // 6b. Recorded upstream gap: with a non-empty keyword the installed official
-  //     version cannot commit with Enter (TagInput turns Enter into a tag append
-  //     and the Select removeTag stops the keydown before the official Enter
-  //     branch runs). The control must stay inert here rather than grow a second
-  //     keyboard loop: chips, relation ids, keyword, panel and network unchanged.
-  const gapKeyword = keyboardTarget.slice(-5);
+  // 6b. Keyboard selection with a live search keyword: Enter must commit the
+  //     option the official panel highlights. The keyword is a search term, not
+  //     a tag, so the control suppresses TagInput's tag append through the
+  //     official `tagInputProps.max` channel (see the component note
+  //     official-enter-keyword); without it the append stops the keydown before
+  //     the official keyboard handler. The target is the one batch candidate the
+  //     previous step did not check, because the official multiple path answers
+  //     Enter with check|uncheck (es/select/hooks/useKeyboardControl.mjs Enter ->
+  //     getNewMultipleValue). Only the draft may change here.
+  const keywordTarget = expectedNames.find((name) => name.endsWith('-ALPHA'));
+  const keywordSearchTerm = 'ALPHA';
   await openPanel();
-  await searchFor(gapKeyword);
-  await waitForVisibleLabel(gapKeyword);
+  const keywordQuery = await searchFor(keywordSearchTerm);
+  await waitForVisibleLabel(keywordSearchTerm);
   const chipsBeforeGap = (await selectedChips().allInnerTexts()).map(normalize);
   const tagIdsBeforeGap = await readProjectTagIds(page);
+  if (chipsBeforeGap.includes(normalize(keywordTarget))) {
+    throw new Error(`m2m_keyword_enter_target_already_checked:${JSON.stringify(chipsBeforeGap)}`);
+  }
   await input.press('ArrowDown');
   await page.waitForTimeout(200);
+  const hoveredWithKeyword = await hoveredRowLabel();
   await input.press('Enter');
-  await page.waitForTimeout(700);
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), hoveredWithKeyword, { timeout: 15000 });
   const chipsAfterGap = (await selectedChips().allInnerTexts()).map(normalize);
   const tagIdsAfterGap = await readProjectTagIds(page);
+  const keywordNotATag = !chipsAfterGap.includes(keywordSearchTerm);
+  // The relation value is draft-only until save, so the authoritative tag_ids
+  // must stay exactly as read before the keyboard commit.
   const relationIdsUnchanged = JSON.stringify(tagIdsAfterGap) === JSON.stringify(tagIdsBeforeGap);
-  const gapInert = JSON.stringify(chipsAfterGap) === JSON.stringify(chipsBeforeGap)
+  const keyboardEnterWithKeyword = keywordQuery.search_term === keywordSearchTerm
+    && hoveredWithKeyword === normalize(keywordTarget)
+    && chipsAfterGap.length === chipsBeforeGap.length + 1
+    && chipsAfterGap.includes(normalize(keywordTarget))
     && relationIdsUnchanged
+    && keywordNotATag
+    && normalize(await input.inputValue()) === ''
+    && await draftDirty()
     && mutations.length === 0;
   report.scenarios.push({
-    name: 'm2m_keyboard_enter_with_keyword_is_an_upstream_gap',
-    status: gapInert ? 'PASS' : 'FAIL',
+    name: 'm2m_keyboard_enter_with_keyword_selects_highlighted',
+    status: keyboardEnterWithKeyword ? 'PASS' : 'FAIL',
+    keyword: keywordSearchTerm,
+    search_term: keywordQuery.search_term,
+    hovered_option: hoveredWithKeyword,
+    expected_option: normalize(keywordTarget),
     chips_before: chipsBeforeGap,
     chips_after: chipsAfterGap,
-    keyword_after_enter: normalize(await input.inputValue()),
-    panel_still_open: (await panel.count()) > 0,
+    relation_ids_before: tagIdsBeforeGap,
+    relation_ids_after: tagIdsAfterGap,
     relation_ids_unchanged: relationIdsUnchanged,
-    upstream_gap: 'tdesign-vue-next 1.20.5 stops the Enter keydown before the official Enter branch while a keyword is present',
-    upstream_evidence: 'es/tag-input/hooks/useTagList.mjs onInnerEnter; es/select/select.mjs removeTag; es/select/hooks/useKeyboardControl.mjs',
+    keyword_after_enter: normalize(await input.inputValue()),
+    keyword_became_a_tag: !keywordNotATag,
+    official_channel: 'tagInputProps.max suppresses the TagInput tag append so the official Enter branch commits the highlighted option',
     mutation_requests: mutations.length,
   });
-  if (!gapInert) throw new Error(`m2m_keyword_enter_changed_state:${JSON.stringify({ chipsBeforeGap, chipsAfterGap, tagIdsBeforeGap, tagIdsAfterGap })}`);
+  if (!keyboardEnterWithKeyword) {
+    throw new Error(`m2m_keyword_enter_did_not_select:${JSON.stringify({ hoveredWithKeyword, expected: normalize(keywordTarget), chipsBeforeGap, chipsAfterGap, tagIdsBeforeGap, tagIdsAfterGap })}`);
+  }
+  await closePanel();
+
+  // 6c. Duplicate selection: the same record must never appear twice. Repeating
+  //     the checked option through the official multiple path resolves to
+  //     "uncheck", so the chips stay unique; whichever way it resolves, no write
+  //     is sent before saving.
+  await openPanel();
+  const duplicateQuery = await searchFor(keywordSearchTerm);
+  await waitForVisibleLabel(keywordSearchTerm);
+  const chipsBeforeDuplicate = (await selectedChips().allInnerTexts()).map(normalize);
+  await input.press('ArrowDown');
+  await page.waitForTimeout(200);
+  const duplicateHovered = await hoveredRowLabel();
+  await input.press('Enter');
+  await page.waitForTimeout(700);
+  const chipsAfterDuplicate = (await selectedChips().allInnerTexts()).map(normalize);
+  const labelCounts = new Map();
+  chipsAfterDuplicate.forEach((label) => labelCounts.set(label, (labelCounts.get(label) || 0) + 1));
+  const noDuplicateChip = [...labelCounts.values()].every((count) => count === 1);
+  const duplicateTarget = normalize(keywordTarget);
+  const keptChecked = chipsAfterDuplicate.length === chipsBeforeDuplicate.length
+    && chipsAfterDuplicate.includes(duplicateTarget);
+  const toggledOff = chipsAfterDuplicate.length === chipsBeforeDuplicate.length - 1
+    && !chipsAfterDuplicate.includes(duplicateTarget);
+  const duplicateSelection = duplicateQuery.search_term === keywordSearchTerm
+    && duplicateHovered === duplicateTarget
+    && noDuplicateChip
+    && (keptChecked || toggledOff)
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_duplicate_selection_never_duplicates_a_record',
+    status: duplicateSelection ? 'PASS' : 'FAIL',
+    keyword: keywordSearchTerm,
+    search_term: duplicateQuery.search_term,
+    hovered_option: duplicateHovered,
+    chips_before: chipsBeforeDuplicate,
+    chips_after: chipsAfterDuplicate,
+    official_resolution: toggledOff ? 'unchecked-on-repeat' : 'kept-checked',
+    official_evidence: 'es/select/hooks/useKeyboardControl.mjs Enter -> getNewMultipleValue -> check|uncheck',
+    mutation_requests: mutations.length,
+  });
+  if (!duplicateSelection) {
+    throw new Error(`m2m_duplicate_selection_failed:${JSON.stringify({ duplicateHovered, chipsBeforeDuplicate, chipsAfterDuplicate })}`);
+  }
   await page.screenshot({ path: path.join(OUT, 'm2m-keyboard-enter-with-keyword.png'), fullPage: true });
   await closePanel();
   while (await selectedChips().count()) {

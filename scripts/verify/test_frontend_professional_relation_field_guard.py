@@ -296,18 +296,40 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("many2many state channel is incomplete" in item for item in validate(read_text)))
 
-    def test_many2many_must_keep_the_recorded_upstream_keyboard_gap(self):
+    def test_many2many_must_keep_the_official_keyboard_commit_channel(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalManyToManySelect.vue"):
-                return value.replace("// upstream-gap: m2m-enter-with-keyword", "").replace(
-                    "// upstream-gap-exit:", ""
+                return value.replace(':tag-input-props="tagInputProps"', "").replace(
+                    "const tagInputProps = { max: -1 };", ""
                 )
             return value
 
         failures = validate(read_text)
-        self.assertTrue(any("upstream keyboard gap note is incomplete: upstream-gap: m2m-enter-with-keyword" in item for item in failures))
-        self.assertTrue(any("upstream keyboard gap note is incomplete: upstream-gap-exit:" in item for item in failures))
+        self.assertTrue(any("official keyboard commit channel is incomplete: :tag-input-props=\"tagInputProps\"" in item for item in failures))
+        self.assertTrue(any("official keyboard commit channel is incomplete: const tagInputProps = { max: -1 }" in item for item in failures))
+
+    def test_many2many_must_keep_the_official_channel_rationale_and_exit(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace("// official-enter-keyword:", "// ").replace(
+                    "// official-enter-keyword-exit:", "// "
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("official keyboard commit channel is incomplete: official-enter-keyword:" in item for item in failures))
+        self.assertTrue(any("official keyboard commit channel is incomplete: official-enter-keyword-exit:" in item for item in failures))
+
+    def test_many2many_must_not_return_to_the_recorded_gap_note(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace("// official-enter-keyword:", "// upstream-gap: m2m-enter-with-keyword", 1)
+            return value
+
+        self.assertTrue(any("records a retired keyboard gap note" in item for item in validate(read_text)))
 
     def test_many2many_must_not_hand_roll_a_second_keyboard_loop(self):
         def read_text(path):

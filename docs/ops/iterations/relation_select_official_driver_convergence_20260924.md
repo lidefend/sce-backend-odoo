@@ -359,6 +359,32 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
   关键字与 `onBlur` + `setTimeout(200)` 的失焦时序，属 many2many 控件；本批只收敛 many2one 通用关系控件，
   按“不扩大成组件重构”原则留作后续专题。
 
+## R3b many2many「搜索词存在时回车提交」收口（`fix/m2m-official-interaction`）
+
+上一批把该行为登记为上游缺口并按“不新增第二套键盘逻辑”保留；本专题在**不改动冻结候选**的前提下
+收口为官方配置，记录三问：
+
+1. **具体产品需求**：多选关系控件里输入的字符是**查询词**，不是该字段的新标签；输入查询词后
+   方向键高亮，Enter 应提交高亮的候选项。这是客户/记录选择的直接依赖，不是可选增强。
+2. **当前版本官方能力为什么不足以原样满足**：`tdesign-vue-next@1.20.5` 的官方 Enter 分支
+   （`es/select/hooks/useKeyboardControl.mjs`，挂在输入容器上）在**输入框非空**时收不到 Enter：
+   `es/tag-input/hooks/useTagList.mjs` 的 `onInnerEnter` 先把输入文本追加为一个标签，
+   `es/select/select.mjs` 的 `removeTag` 随即对同一 keydown 调用 `e.stopPropagation()`。
+   **最小官方复现**（`/tmp/td-repro`，纯官方 `Select`，无本控件代码）：`multiple+filterable` 输入
+   `GAMMA` 后 ArrowDown 高亮首行、Enter 不改值、面板不关（`change{trigger:'enter'}` 但值不变）；
+   手工清空查询词后 ArrowDown+Enter **可以**选中（`change{trigger:'check'}`）；单选取值正常。
+   在浏览器中给输入容器的官方 `onkeydown` 挂计数探针可复现：ArrowDown 到达容器，
+   Enter 在有词时**不到达**。上游 `develop` 与 1.20.6–1.20.8 changelog 均无该场景修复，
+   故不改用版本升级。
+3. **增强放在哪一层、如何验证、何时退出**：只放在 many2many 适配层，且只用官方扩展位——
+   `:tag-input-props="{ max: -1 }"`（TagInput 自身 `max` 的“不再新增标签”语义），使追加不再发生、
+   keydown 继续冒泡进入官方键盘处理；**没有**恢复自写方向键索引、失焦定时器或合成 DOM 事件，
+   候选浮层/高亮/选择/开关仍全部由官方组件负责。退出条件写在组件注释
+   `official-enter-keyword-exit`：一旦所钉版本在有查询词时把 Enter 交给官方键盘处理，即删除该属性；
+   版本变更时重跑 many2many 键盘场景。守卫（`frontend_professional_relation_field_guard.py`）
+   要求该配置与注释同时存在，并继续禁止 `setTimeout`/`@blur=`/`handleKeydown` 等自写交互
+   以及旧的 `upstream-gap` 记录方式。
+
 ## R6 清理与专用对象回收
 
 - 本批未新增第二套实现；生成的清单/守卫与来源同批提交（`ci.delivery.freeze.prepare` PASS）。

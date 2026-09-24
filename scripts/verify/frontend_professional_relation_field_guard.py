@@ -104,9 +104,21 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     # The official multi-select also owns keyboard selection, so this control must
     # not grow a second keyboard loop. The one official Enter gap it does hit has
     # to stay recorded in place together with its exit condition.
-    for marker in ("upstream-gap: m2m-enter-with-keyword", "upstream-gap-exit:"):
+    # Keyboard commit under a live keyword is restored through the official
+    # TagInput `max` channel, so the control must keep that configuration and the
+    # note that records why it exists and when it can go away. A hand-written
+    # keyboard loop, a delayed blur or a synthesised event must never come back.
+    for marker in (
+        ':tag-input-props="tagInputProps"',
+        "const tagInputProps = { max: -1 }",
+        "official-enter-keyword:",
+        "official-enter-keyword-exit:",
+    ):
         if marker not in many2many:
-            failures.append(f"many2many upstream keyboard gap note is incomplete: {marker}")
+            failures.append(f"many2many official keyboard commit channel is incomplete: {marker}")
+    for retired in ("upstream-gap: m2m-enter-with-keyword",):
+        if retired in many2many:
+            failures.append(f"many2many records a retired keyboard gap note: {retired}")
     if "resolveProfessionalMany2oneDisplayValue(props.field)" not in many2one or "resolveProfessionalMany2oneDisplayValue" not in model:
         failures.append("many2one input does not consume the authoritative projected display value")
     if "resolveProfessionalMany2oneQueryKeyword(props.field)" not in many2one or "resolveProfessionalMany2oneQueryKeyword" not in model:

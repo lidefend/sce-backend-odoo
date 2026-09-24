@@ -35,6 +35,7 @@
       size="medium"
       class="m2m-select"
       :popup-props="popupProps"
+      :tag-input-props="tagInputProps"
       @search="onSearch"
       @change="onChange"
       @popup-visible-change="onPopupVisibleChange"
@@ -106,6 +107,25 @@ const canInlineCreate = computed(() =>
 // the official width calculation stays in charge and only gains a ceiling.
 const popupProps = { overlayInnerStyle: { maxWidth: 'calc(100vw - 16px)' } };
 
+// official-enter-keyword: the text typed here is a search keyword, never a new
+// tag for this field. In the installed official Select (tdesign-vue-next
+// 1.20.5) Enter is delivered through TagInput, and with a non-empty input
+// TagInput first appends that text as a tag (`es/tag-input/hooks/useTagList.mjs`,
+// onInnerEnter). The Select then answers with `removeTag`, which calls
+// `e.stopPropagation()` on the same keydown (`es/select/select.mjs`), so the
+// event never reaches the official keyboard handler that owns the highlight
+// (`es/select/hooks/useKeyboardControl.mjs`, bound on the input wrap) and the
+// highlighted option could not be committed with Enter. The official channel for
+// this is TagInput's own `max`: once its limit is reached TagInput skips the
+// append, the keydown keeps propagating and the official Enter branch commits
+// the highlighted option. `max: -1` therefore means "this input never creates
+// tags"; selection, panel, highlight and keyboard stay with the official
+// component, and neither the candidate list nor the field value changes.
+// official-enter-keyword-exit: remove this prop once the pinned version routes
+// Enter to its keyboard handler while a keyword is present; re-run the many2many
+// keyboard scenarios on every version change.
+const tagInputProps = { max: -1 };
+
 const createOption = computed<SelectOption | null>(() => {
   if (!canInlineCreate.value) return null;
   const keyword = props.adapter.relationKeyword(props.field.name)?.trim();
@@ -135,22 +155,10 @@ const selectOptions = computed<SelectOption[]>(() => {
 });
 
 // ===== 事件处理 =====
-// upstream-gap: m2m-enter-with-keyword
-// Keyboard, focus and the popup stay with the official Select; this control only
-// mirrors the official close/check signals into the runtime keyword.
-// tdesign-vue-next 1.20.5 cannot select the highlighted option with Enter while
-// the control holds a non-empty search keyword: TagInput reads Enter as "append
-// the input text as a tag" (`es/tag-input/hooks/useTagList.mjs`, onInnerEnter),
-// the Select receives that as a tag change and its removeTag calls
-// `e.stopPropagation()` (`es/select/select.mjs`, removeTag), so the keydown never
-// bubbles to the element carrying the official select key handler and the
-// official Enter branch (`es/select/hooks/useKeyboardControl.mjs`) never runs.
-// With an empty keyword the same keys select the highlighted option.
-// Reproduced in the governed browser carrier; recorded instead of growing a
-// second keyboard loop in this control.
-// upstream-gap-exit: re-run the m2m keyboard scenarios when the pinned
-// tdesign-vue-next version changes, and delete this note once Enter selects the
-// highlighted option under a keyword.
+// The official Select owns input, highlight, selection and the popup; this
+// control only mirrors the official search/check/close signals into the runtime
+// keyword (see the official-enter-keyword note above for the one TagInput
+// configuration this control has to set).
 function onSearch(keyword: string) {
   props.adapter.setRelationKeyword(props.field.name, keyword || '');
 }
