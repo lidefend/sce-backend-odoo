@@ -896,7 +896,10 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             "hierarchical_worksheet": {
                 "navigation_mode": "sheet_groups",
                 "sheet_domain": [["active", "=", True]],
-                "sheet_domain_tabs": [{"key": "draft", "domain": [["state", "=", "draft"]]}],
+                "sheet_domain_tabs": [
+                    {"key": "draft", "domain": [["state", "=", "draft"]]},
+                    {"key": "editing", "domain": [["version_id.state", "in", ["draft", "validated"]]]},
+                ],
                 "navigation_groups": [
                     {"field": "single_name", "label": "Single"},
                     {"field": "unit_name", "label": "Unit"},
@@ -916,7 +919,14 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(config["sheet"]["binding_field"], "")
         self.assertIn("single_name", config["sheet"]["fields"])
         self.assertEqual(config["sheet"]["domain"], data["domain"] + [["active", "=", True]])
-        self.assertEqual(config["sheet"]["domain_tabs"][0]["domain"], data["domain"] + [["state", "=", "draft"]])
+        # A tab is a complete alternative scope: it replaces sheet.domain on the client and
+        # must keep exactly its declared domain (BOQ "编制中版本" steps outside the action scope).
+        self.assertEqual(config["sheet"]["domain_tabs"][0]["domain"], [["state", "=", "draft"]])
+        self.assertEqual(
+            config["sheet"]["domain_tabs"][1]["domain"],
+            [["version_id.state", "in", ["draft", "validated"]]],
+        )
+        self.assertNotIn(data["domain"][0], config["sheet"]["domain_tabs"][1]["domain"])
         self.assertEqual(config["sheet"]["context"], context)
         config["sheet"]["context"]["allowed_company_ids"].append(2)
         self.assertEqual(context["allowed_company_ids"], [1])
