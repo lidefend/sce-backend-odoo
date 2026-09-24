@@ -1263,7 +1263,7 @@ const writableFieldCount = computed(() =>
   layoutNodes.value.filter((node) => node.kind === 'field' && !node.readonly).length,
 );
 const changedFieldCount = computed(() =>
-  Object.keys(formData).filter((key) => isFieldWritable(key) && ((pendingInlineCreateFields.value.includes(key) && !formData[key]) || comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key]))).length
+  Object.keys(formData).filter((key) => isFieldWritable(key) && (pendingInlineCreateFields.value.includes(key) || comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key]))).length
     + (hasOne2manyDraftChanges() ? 1 : 0),
 );
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());

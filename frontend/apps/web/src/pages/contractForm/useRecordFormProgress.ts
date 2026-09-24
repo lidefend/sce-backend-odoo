@@ -30,8 +30,9 @@ export function useRecordFormProgress(params: {
   comparableFieldValue: (name: string, value: unknown) => unknown;
 }) {
   function hasPendingInlineRelationChange() {
-    return (params.pendingInlineCreateFields?.value || []).some((name) =>
-      params.isFieldWritable(name) && !params.formData[name]);
+    // The staged intent is itself the change: it is never expressed by clearing
+    // the relation value, so it must not be detected from `formData`.
+    return (params.pendingInlineCreateFields?.value || []).some((name) => params.isFieldWritable(name));
   }
 
   function hasPendingMany2manyTagCreate() {

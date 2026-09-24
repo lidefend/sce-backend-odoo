@@ -59,9 +59,14 @@ export function useRecordFormState(context: {
     if(keyword&&context.invalidatedRelationKeywords[name]===keyword&&!context.formData[name]){context.relationKeywords[name]='';return;}if(keyword&&context.invalidatedRelationKeywords[name]&&context.invalidatedRelationKeywords[name]!==keyword)delete context.invalidatedRelationKeywords[name];context.relationKeywords[name]=keyword;if(!keyword){void context.queryRelationOptions(name,'');return;}context.setRelationKeyword(name,keyword);};
   // A search keyword is never a create request. Only the explicit create
   // action stages an intent, bound to this record and reset by the authoritative draft lifecycle.
+  // A staged create intent records the keyword to create and the relation value
+  // it was staged from. It never rewrites the relation value: pretending the
+  // relation was cleared would fire an empty-association onchange and would
+  // make the search keyword look like a saved field value.
   const pendingInlineCreates = new Map<string, {
-    keyword: string; recordKey: string;
+    keyword: string; recordKey: string; stagedValue: string;
   }>();
+  const relationValueSnapshot = (name: string) => String(context.formData[name] ?? '');
   const syncPendingInlineCreateFields = () => {
     if (context.pendingInlineCreateFields) context.pendingInlineCreateFields.value = [...pendingInlineCreates.keys()];
   };
@@ -79,17 +84,20 @@ export function useRecordFormState(context: {
     const keyword = String(value || '').trim();
     const inline = relationInlineCreate(descriptor);
     if (!keyword || !inline.enabled || !inline.createOnNoMatch || relationEntry(descriptor)?.canCreate !== true) return;
-    pendingInlineCreates.set(name, { keyword, recordKey: relationRecordKey() });
+    pendingInlineCreates.set(name, { keyword, recordKey: relationRecordKey(), stagedValue: relationValueSnapshot(name) });
     syncPendingInlineCreateFields();
-    context.formData[name] = false;
     context.relationKeywords[name] = keyword;
     markFieldChanged(name);
   };
   const resolvePendingInlineRelationCreates = async () => {
     const issues: string[] = [];
     for (const [name, pending] of pendingInlineCreates) {
+      // The intent is bound to one record and one starting relation value. Any
+      // other relation write (select, clear, lifecycle navigation, reload)
+      // invalidates it instead of being read as "the relation is empty".
       if (pending.recordKey !== relationRecordKey()
-        || Number(context.formData[name] || 0) > 0 || !context.dirtyFieldSet.has(name)) {
+        || pending.stagedValue !== relationValueSnapshot(name)
+        || !context.dirtyFieldSet.has(name)) {
         forgetPendingInlineCreate(name);
         continue;
       }
