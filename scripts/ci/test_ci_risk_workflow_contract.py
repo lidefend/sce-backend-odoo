@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import unittest
 from pathlib import Path
 
@@ -9,6 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
+# The remote gate invokes this file directly, without PYTHONPATH.
+sys.path.insert(0, str(ROOT))
 
 
 class CIRiskWorkflowContractTests(unittest.TestCase):
