@@ -4,7 +4,7 @@
         <!-- Retired order owners: exact P1 declarations apply on install and upgrade. -->
         <function model="ui.business.config.contract" name="write">
             <value eval="[ref('smart_construction_core.business_config_contract_payment_request_form_structure_generated'), ref('smart_construction_core.business_config_contract_tender_bid_form_structure_generated'), ref('smart_construction_core.business_config_contract_construction_contract_expense_form_structure_generated'), ref('smart_construction_core.business_config_contract_sc_settlement_order_form_structure_generated')]"/>
-            <value eval="{'active': False}"/>
+            <value eval="{'active': False, 'status': 'draft'}"/>
         </function>
         <!-- U-C4 G12: 项目立项 (724 / menu 379 / view 1503
              project.project.form.sc.create) 退役入口级结构声明。
@@ -33,7 +33,7 @@
              `title` 保留入口标题。回滚：`git revert`（纯声明，无数据迁移）。 -->
         <function model="ui.business.config.contract" name="write">
             <value eval="[ref('smart_construction_core.business_config_contract_project_project_form_structure_generated')]"/>
-            <value eval="{'active': False}"/>
+            <value eval="{'active': False, 'status': 'draft'}"/>
         </function>
         <record id="business_config_contract_project_project_form_structure_v1" model="ui.business.config.contract">
             <field name="name">project_project_form_structure_v1</field>
