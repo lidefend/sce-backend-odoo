@@ -463,3 +463,12 @@ This is a development increment; final runtime/freeze/online receipts remain in 
   yields four `action_required` checks where the old behaviour left four permanent waits.
 - Status: implementation and targeted verification pass locally. Online installation (new trusted package
   and `GITEE_FORMAL_ROOT` re-pin) belongs to the integration lane; no online fix is claimed before deployment.
+
+### 2026-09-25 Published candidate synchronization
+
+P4 extends the existing integration workflow with `workspace.branch.sync-gitee-published`.
+It appends exact main without rewriting published history, verifies remote/local identities
+and a recovery bundle, and aborts on conflicts. Seven real temporary Git tests passed.
+Publication remains on pr.push.gitee with fresh required CI for source and target.
+BOQ !11 merged as e5b9852a; relation !12 was synchronized from 63b860a9 to 0ebcc675.
+CI visibility !14 inherits relation work and must follow !12.
