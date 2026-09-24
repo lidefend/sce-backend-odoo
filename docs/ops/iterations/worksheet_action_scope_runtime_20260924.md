@@ -51,7 +51,7 @@
 
 | 维度 | `20e2956d`（已部署） | `e0df4111`（本地） | 取舍 |
 |---|---|---|---|
-| `sheet.domain` 动作域 | `action_domain + sheet_domain`（Odoo 隐式 AND） | 声明了 `sheet_domain` 就替换，否则等于 `action_domain` | **等价**，取 `20e2956d` 形式 |
+| `sheet.domain` 动作域 | `action_domain + sheet_domain`（Odoo 隐式 AND） | 声明了 `sheet_domain` 就替换，否则等于 `action_domain` | 取 `20e2956d` 形式；两者**不是普遍等价**，条件见下节 |
 | domain tab | `action_domain + tab_domain` | 未改动 | **取未改动**：`20e2956d` 使 BOQ「编制中版本」由 3 行变 0 行 |
 | `sheet.context` | 新增 `deepcopy(effective_context)` + 数据源透传 | 无 | 保留 `20e2956d` |
 | 虚拟滚动 | ScTable `virtualScroll`/`height`，移除失效的 `scroll.x` | 无 | 保留 `20e2956d` |
@@ -59,6 +59,16 @@
 
 合并后的候选以已发布提交为基线，仅追加两个提交：`272b05be`（tab 作用域纠正）、
 `54b8fcd4`（P1 投影断言）。已发布历史未改写，`20e2956d` 保持原样。
+
+### 等价条件与范围反例（2026-09-24 追加，纠正上一版措辞）
+
+上一版把两种写法记为"等价"，这不成立。准确的适用条件是：
+
+> `action_domain + sheet_domain` 与"声明了 `sheet_domain` 就替换"结果相同的**充要条件是
+> 被合成的域已经蕴含动作域**。一旦被合成的域刻意走出动作域，两种写法必然分叉。
+
+两个方向各有一个实测例子：满足蕴含条件的「已发布版本」tab，以及刻意走出动作域的「编制中版本」tab，
+行数对比见下节证据表。
 
 ### tab 与动作域冲突的证据
 
@@ -73,6 +83,28 @@
 前端 `applyWorksheetDomainTab` 是**替换** `sheet.domain`（key 无效时返回原对象），
 所以 tab 是完整备选作用域而非默认查询的补充；把动作域拼进 tab 只会窄化那些刻意走出动作域的 tab。
 tab 是否有权走出动作域属产品问题，本批只恢复已发布行为，不代替产品裁决。
+
+### 范围没有随页签切换丢失（反例）
+
+按工作表动作逐一核对"必须保留的范围"来自哪一层（受管 dev 实测）：
+
+| 工作表动作 | 动作域 | 公司/项目范围来源 |
+|---|---|---|
+| 534 工程量清单（`project.boq.line`） | `[('version_id.state','=','published')]` | `project.boq.line` **无** `ir.rule`；`project.boq.version` 有 462/463（463 为 `[(1,'=',1)]`） |
+| 781/782 收入/支出结算（`sc.settlement.order`） | `[('business_category_id.code','=','settlement.income'|'expense'), ('contract_source_kind','!=','general_contract')]` | `ir.rule` 400/401/402：`company_id in company_ids` + 项目可读规则；422 为 `[(1,'=',1)]` |
+| 837 付款执行（`sc.payment.execution`） | `[('source_kind','=', 'actual_outflow')]` | `ir.rule` 261–264：`company_id in company_ids`（+ 项目可读规则） |
+
+结论分两条，不合并成一句：
+
+1. **结算与付款执行**：公司隔离与项目可读范围由 `ir.rule` 承担，规则对**每一次查询**生效，与当前
+   `sheet.domain` 是默认域还是某个 tab 域无关，因此切换页签不会丢失公司/项目范围。
+   实测动作域本身也不含公司或项目条件——把动作域拼进 tab 从来没有提供过这两类范围。
+2. **工程量清单**：`project.boq.line` 上不存在承载公司范围的 `ir.rule`，因此**默认查询与任何 tab 都没有
+   公司范围可丢**：这不构成"页签切换导致丢失"的证据，而是另一个独立缺口——清单行的工作表查询本身
+   没有规则层的公司边界。该缺口不在本批修复范围，登记为待核验项，不以动作域拼接掩盖。
+
+据此明确本批边界：**动作默认筛选是业务默认范围，权限边界是 `ir.rule`，两者不互相替代。** 本批不主张
+tab 必须重述动作域，也不以"拼接动作域"充当权限控制；页签若要收窄范围，应在 tab 声明或规则层表达。
 
 ### 投影断言
 
