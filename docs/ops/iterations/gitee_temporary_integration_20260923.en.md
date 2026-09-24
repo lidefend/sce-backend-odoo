@@ -456,7 +456,9 @@ This is a development increment; final runtime/freeze/online receipts remain in 
   still re-checks ancestry and refuses a zero-change-set plan). A preparation failure can never be executed,
   skipped or successful; reason codes are a whitelist so candidate text never reaches a check report; when
   platform identity itself is unresolvable nothing can be attributed, and only the inbox state plus
-  `reported=false error=<exception class>` is logged.
+  `reported=false error=<exception class>` is logged. The inbox status follows the reporting result:
+  `prepared` when the failure was bound to a terminal job, `environment_error` when no job could be
+  reported. Neither outcome leaves the checks waiting.
 - Targeted: 67 plan/queue/worker/executor tests pass; recomputing with PR !10's real head/base identity
   yields four `action_required` checks where the old behaviour left four permanent waits.
 - Status: implementation and targeted verification pass locally. Online installation (new trusted package

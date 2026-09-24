@@ -648,7 +648,8 @@ main规则2770794已在用户授权的登录网页保存四个必须通过项，
 - 边界：祖先门禁不变（`changed_paths` 仍以 `check=True` 抛 `CalledProcessError`，执行器仍复核祖先并
   拒绝执行零变更集计划）；失败任务不可执行、不可为 success/skip/cancelled；原因码为白名单，
   候选文本不进入检查回传；平台身份本身不可解析时无法绑定，只记投递箱状态并打印
-  `reported=false error=<异常类名>`。
+  `reported=false error=<异常类名>`。投递箱状态随回传结果变化：可绑定时记 `prepared`
+  （已有终态任务），无法绑定时记 `environment_error`（无任务可回传），两种结果都不再是永久等待。
 - 定向：plan/queue/worker/executor 67 项通过；以 PR !10 的真实 head/base 身份复算得到四项
   `action_required`，原行为是四项永久等待。
 - 状态：本地实现与定向验证通过；线上安装（新的受信包与 `GITEE_FORMAL_ROOT` 重钉）由集成车道执行，
