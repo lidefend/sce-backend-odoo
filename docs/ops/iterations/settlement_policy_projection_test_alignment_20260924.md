@@ -158,8 +158,7 @@ lane 的 `common`。该自检无容器依赖，覆盖通过、零测试、无可
 | 触发范围 | `recipes("public_guard","required", main)` | 含 `["bash","scripts/ci/orm_result_guard.sh","--self-test"]` |
 | 静态 | `python3 scripts/ci/python_syntax_check.py scripts/ci`、`node_syntax_check`、`github_actions_security_guard.py`、`git diff --check` | 通过 |
 
-**未执行**：隔离环境下的“测试失败”和“超时”两个端到端变体（各需一次完整隔离运行）。二者目前由
-共享守卫的 7 项自检逐分支覆盖，并由接线契约固定；本轮不把它们记为已端到端验证。
+**未执行（截至上一轮）**：隔离环境下的“测试失败”和“超时”两个端到端变体。两者已在下一节实际执行。
 
 ## 状态（补充）
 
@@ -167,3 +166,54 @@ lane 的 `common`。该自检无容器依赖，覆盖通过、零测试、无可
   **接线已入库**，不是**线上已执行**；线上执行以受控副本刷新为准（见上节只读实测）。
 - 批次验收完成：是（断言对齐 + 门禁接线，定向与隔离库均已跑通）。
 - 主线集成完成：否。版本发布完成：否。产品交付完成：否。
+
+## 守卫加固与真实端到端（本轮补）
+
+上一轮把共享守卫的判定逐分支写进了容器无关自检，但**自检通过不等于真实运行会被正确判定**。
+本轮做了三件可验证的事。
+
+### 1. 修掉一个会把“好运行”判死的计数缺陷
+
+原实现用 `grep -c 'Starting '` 统计收集到的测试。真实日志里 Odoo 还会输出生命周期行
+`odoo.service.server: Starting post tests`，因此在一次**真实**的 7 项运行日志中该计数是 **8**：
+
+| 统计方式 | 同一份真实日志 |
+|---|---|
+| `grep -c 'Starting '`（原） | 8 → 与钉住的 7 不符，干净运行会被判 `exit 6` |
+| 模块限定测试启动行（现） | 7 |
+
+现在收集数与身份只认模块限定的测试启动行
+（`odoo.addons.<module>.tests.<file>: Starting <Class>.<method>`），并且钉住的身份必须**出现在启动行上**，
+仅出现在模块清单、traceback 或标签声明里的字符串不算证据。自检同时加入生命周期诱饵行与
+“身份只出现在加载行”的反例。
+
+### 2. 三个真实端到端变体（同一隔离运行器，非模拟）
+
+| 变体 | 命令 | 结果 |
+|---|---|---|
+| 真实超时 | `SC_AUTHORIZATION_ORM_TIMEOUT_SECONDS=45 make test.payment-settlement.component-profile.orm` | `exit 7`，`[orm-guard][FATAL] ORM test exceeded 45s`；清理回执：容器/网络/卷/库 before=after 摘要一致，`TEMP_DATABASE_REMOVED=true`、`TEMP_RESOURCES_REMOVED=true`、`CLEANUP_OK=true` |
+| 真实失败 | 在测试文件里注入一条必然失败的断言后跑完整隔离运行 | Odoo `1 failed, 0 error(s) of 7 tests` → `exit 1`（守卫按进程状态透传拒绝）；清理回执同样全部为真 |
+| 真实通过 | `make test.payment-settlement.component-profile.orm`（工作区干净） | `[orm-guard] ORM_RESULT_GUARD=PASS tests=7 expected=7 identity=test_payment_settlement_component_profile`，`REAL_ORM_TEST_RESULT=PASS`，`CLEANUP_OK=true` |
+
+注入的失败断言只存在于一次性的临时分支（从未推送），验证后已删除；当前分支的测试文件未被修改。
+超时变体同时证明了**超时后的清理**：不只是客户端进程退出，而是临时库与临时容器/网络/卷均已回收，
+且四项清单摘要回到运行前状态。
+
+### 3. 自检与接线契约
+
+- `bash scripts/ci/orm_result_guard.sh --self-test` → `ORM_RESULT_GUARD_SELFTEST=PASS checks=25`
+  （上一轮为 7 项；现覆盖超时预算取值、收集数与身份、零测试、无可解析报告、成功摘要后出现失败摘要、
+  日志自相矛盾、真实进程失败与超时透传等）。
+- `python3 -m unittest scripts.ci.test_ci_risk_workflow_contract` → 13 项通过；断言改为钉住
+  “只按模块限定启动行统计、身份必须在启动行上、且不再存在裸 `Starting ` 计数”。
+
+### 4. 本轮对“Gitee 是否实际执行 7 项 ORM 测试”的回答仍然是否
+
+守卫更严格、真实运行已被正确判定，但**运行能力**仍未落到 Gitee 执行器上：沙箱没有数据库、没有
+Docker socket、没有一般网络。把执行能力交给沙箱等于放宽现有沙箱保证，本轮不做；
+替代实现是受限执行通道（`feature/gitee-orm-restricted-channel` 与
+`docs/ops/iterations/gitee_orm_restricted_channel_20260924.md`）：沙箱只能按精确 SHA 请求固定 lane
+并读回绑定回执，真正的容器执行留在受信任侧。该通道的部署与平台必需检查接线属于集成车道。
+
+因此**结算门禁在真实 ORM 于线上执行之前，一律记为环境验收未完成**，不因为守卫自检或本地隔离运行通过
+而升级为“已接通”。
