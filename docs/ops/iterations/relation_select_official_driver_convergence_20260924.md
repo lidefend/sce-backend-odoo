@@ -1,7 +1,8 @@
 # 通用关系控件收敛到官方 Select 驱动（2026-09-24）
 
-状态：Batch A/B/C 代码与守卫已完成；R5 浏览器验收证据见文末“验收证据”。
-本地只跑定向验证；完整集成检查交远端 PR。
+状态（2026-09-24）：批次验收进行中。代码 8 个提交 + 守卫已完成（HEAD `3412ca3b`），
+L0/L1/L2 定向与 L4 受管浏览器验收均已通过并回填；专用验收对象 3930 已回收。
+本地只跑定向验证，完整集成检查交远端 PR；分层状态见文末“批次状态（分层）”。
 
 ## 层与边界声明
 
@@ -80,9 +81,11 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 - 弹层 portal 到 `document.body`（`Popup.props.attach` 默认 `'body'`，`getAttach` 解析为 body）。
   因此面板不是字段子节点，任何字段内选择器都必须改为页面级 + 稳定锚点类名。
 
-## 允许的自定义交互（三项问答）
+## 新增自定义交互（三项问答）
 
-唯一新增自定义：`relationSelectPanelA11y.ts` 的官方面板 ARIA 投影。
+本批新增自定义共三项，全部在 `Sc*` 适配层或原语层，均未接管交互。
+
+### A. 官方面板 ARIA 投影（`relationSelectPanelA11y.ts`）
 
 1. **具体产品需求**：读屏用户需要能被告知“候选列表存在”和“当前高亮的是哪个候选”，
    否则关系字段在键盘下无法被无障碍使用。
@@ -97,6 +100,27 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 投影只写属性、不接管任何交互：键盘、焦点、选择、浮层生命周期仍在官方组件手里；
 投影仅把官方自身状态（悬停行、所选值）镜像成 ARIA 属性，并提供稳定自动化锚点
 `data-relation-option-value`（仅在渲染行数与选项数一致时写入，虚拟滚动窗口下不写，避免错位）。
+
+### B. 面板宽度随视口收敛（`popupProps.overlayInnerStyle`）
+
+1. **具体产品需求**：窄视口（390px）下面板不得超出视口，页面不得出现横向滚动。
+2. **官方能力不足在哪里**：官方只在面板内容挂载时应用一次 `overlayInnerStyle`，重开与视口变化都不重算；
+   默认 `matchWidthFunc` 只按固定 `MAX_POPUP_WIDTH=1000` 收敛，无法表达随视口变化的约束。
+3. **放在哪一层、如何验证、如何退出**：放在 `Sc*` 适配层的外观职责内（`popupProps`），
+   由 `RELATION_ONLY` 的 390px 断言与截图验证；当官方组件在打开或尺寸变化时重新测量面板宽度后即可删除。
+
+### C. 面板动作区吸附在官方滚动区底部（`.sc-relation-field__panel-actions`）
+
+1. **具体产品需求**：面板底部动作（维护当前项 / 搜索更多 / 清除选择）必须可见且可点；
+   面板内容超过官方高度上限后，动作区不得落到滚动区之外。
+2. **官方能力不足在哪里**：官方 `panelBottomContent` 渲染为 `.t-popup__content`
+   （theme `max-height:300px; overflow-y:auto`）的普通兄弟节点，排在选项列表之后，官方不给该插槽
+   自身的滚动或吸附能力。面板带两项动作后合计 357px > 300px，动作区落在可视区之外：1440×1000 下
+   点击“搜索更多”命中 `INPUT.t-input__inner`（y=779），“清除选择”命中下层表单（y=813）；390 窄屏截图中
+   底部按钮被裁剪。
+3. **放在哪一层、如何验证、如何退出**：放在 `Sc*` 适配层的样式职责内，只增加
+   `position: sticky; bottom: 0; z-index: 1; background` 并保留 `border-top`，不增加任何交互、焦点或键盘
+   代码；由受管浏览器的面板动作点击命中与 390 截图验证；官方为 `panelBottomContent` 提供滚动/吸附行为后删除。
 
 ## 状态分离（R4）
 
@@ -200,28 +224,97 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 在每次打开时记录视口，使该样式对象在重开时获得新标识，从而走官方响应式重应用路径。
 修复后 1440px 面板仍等于触发宽度（542px，无回归），390px 重开为 323px（右边界 349 < 390）。
 
-新增自定义基础交互三问：
-
-1. 具体产品需求：窄视口（390px）下面板不得超出视口，页面不得出现横向滚动。
-2. 当前官方组件及扩展接口为何不满足：`popupProps.overlayInnerStyle` 虽是官方入口，但官方只在
-   面板内容挂载时应用一次，重开与视口变化都不重算；默认宽度策略也只按固定 1000px 收敛，
-   无法表达随视口变化的约束。
-3. 增强放在哪一层、如何验证、如何退出：放在 `Sc*` 适配层的外观职责内（`popupProps`），
-   用 `RELATION_ONLY` 的 390px 断言验证；当官方组件在打开或尺寸变化时重新测量面板宽度后，
-   即可删除该函数。
+本项的三项问答见上文“新增自定义交互”B 项。
 
 ### L4（受管环境浏览器验收）
 
-见下方“R5 场景矩阵”表；脚本、环境与结果在完成时回填。
+- 环境身份：`sc-local-dev` / 数据库 `sc_dev_demo` / dbfilter `^sc_dev_demo$` / nginx 18081 / odoo 8070；
+  候选前端由 `local.dev.candidate.frontend.up` 提供（5176，代理 `http://127.0.0.1:18081`），
+  候选 head `3412ca3b8d441a52794cc1b3a3efd44da2a71e4b`（本批当前 HEAD）。
+- 专用对象：`project.project` 3930，XMLID `codex_p4_project_profile_write.project_relation_official_20260924`，
+  批内 `write_scope` 含 `partner_id`；登录 `pm1`（user_id 7 / role_code `pm` / company_id 1，受管会话身份校验通过）。
+- 入口：`make local.dev.project_profile_write_browser`，按 `RELATION_ONLY=1` / `RELATION_WRITE_ONLY=1` /
+  `PERMISSION_ONLY=1` 三次执行；每次绑定 `PRODUCT_CANDIDATE_SHA` 与 `P4_PROJECT_PROFILE_BATCH`。
+- 产物（`summary.json` 摘要）：
 
+| 入口 | 产物 | 摘要 | 结果 |
+|---|---|---|---|
+| `RELATION_ONLY=1` | `/tmp/relation-official-relation-only-r6-20260924/summary.json` | `0ef0da49…` | PASS，8 场景，`writes=[]` |
+| `RELATION_WRITE_ONLY=1` | `/tmp/relation-official-relation-write-r4-20260924/summary.json` | `d607ac1d…` | PASS，2 场景 |
+| `PERMISSION_ONLY=1` | `/tmp/relation-official-permission-r1-20260924/summary.json` | `483d9b28…` | PASS，6 场景 |
+
+截图：`customer-popup.png`（1440 面板含面板动作）、`customer-popup-390.png`（390 无横向溢出）、
+`required-field-error.png`、`readonly-denial.png`。日志与截图目录与本表同一产物目录，未单独拆分。
 ## R5 场景矩阵
 
-| 场景 | 载体 | 结果 |
+矩阵全部由官方组件驱动：文档化按键（`ArrowDown` → `Enter`）、官方面板动作、官方 input，
+不使用自写候选行与自写键盘路径。
+
+| 场景 | 载体（场景名） | 结果与关键断言 |
 |---|---|---|
-| A→搜索 B→失焦/Escape/弹窗取消：显示恢复、ID 与草稿不变 | 待回填 | 待回填 |
-| 鼠标与键盘选择 B：显示名/ID/修改状态一致 | 待回填 | 待回填 |
-| 明确清除：可选字段可保存刷新为空；必填字段阻止保存 | 待回填 | 待回填 |
-| 查询失败/零结果/恢复/快速连续搜索：旧响应不覆盖新结果 | 待回填 | 待回填 |
-| 有权限显式创建：失败可恢复、重试不重复；无权限无创建入口 | 待回填 | 待回填 |
-| 保存失败保留草稿，重试成功后刷新回读一致 | 待回填 | 待回填 |
-| 桌面与 390px：候选可操作、无重复浮层与横向溢出、取消后焦点合理 | 待回填 | 待回填 |
+| 已选 A → 搜索 B → 失焦 / Escape / 搜索弹窗取消：显示恢复、ID 与草稿不变 | `customer_query_blur_preserves_draft`、`customer_narrow_escape_no_write`、`customer_search_cancel_and_overlay` | PASS：`mutation_requests=0`；Escape 后 `authoritative_unchanged=true`；取消搜索弹窗后 `focus_restored=true`、`dropdown_reopened=false` |
+| 鼠标与键盘选择 B：显示名 / ID / 修改状态一致 | `customer_keyboard_selection_updates_draft`、`customer_explicit_selection_retry_and_refresh` | PASS：键盘选中 `6390`，`input_value` 为显示名，`superseded_value=6389`，`draft_dirty=true`，`authoritative_unchanged=true`（选择阶段未写后端）；写场景刷新回读一致 |
+| 明确清除：可选字段可保存刷新为空；必填字段阻止保存 | `customer_explicit_clear_empties_value`、`required_field_error_and_draft_recovery`、`server_required_field_rejected_without_partial_write` | PASS：清除后 `input_value=""`、`selected_option_rows=0`、后端未变；必填校验前端拦截并保留草稿，服务端拒绝名称为空且无部分写入（`http 500` + `INTERNAL_ERROR`，回读无变化） |
+| 查询失败 / 零结果 / 恢复 / 快速连续搜索：旧结果不覆盖新结果、不可误选 | `customer_query_failure_then_recovery`、`customer_zero_result_and_query_recovery`、`customer_stale_search_does_not_repaint` | PASS：失败注入后仍可见 6 行、无可选行、草稿不变，恢复后回到 6 行；零结果关键词显示 `.t-select__empty`；快速连续搜索 `store_size 0→0`、无可选行、关键字恢复、后端未变 |
+| 有权限的显式创建：失败可恢复、重试不重复；无权限时不提供可执行创建入口 | — | **`not_available`（本批受管契约不可用）**，理由见下 |
+| 保存失败保留草稿，重试成功后刷新回读一致 | `customer_selected_save_failure_preserves_draft`、`customer_explicit_selection_retry_and_refresh` | PASS：首次写入 `network_blocked` 后草稿保留，重试 `business_success`，刷新后 UI 与后端一致 |
+| 桌面与 390px 窄屏：候选可操作、无重复浮层与横向溢出、弹窗取消后焦点合理 | `customer_narrow_escape_no_write`、`customer_search_cancel_and_overlay` + 截图 | PASS：`viewport=390`、`option_unobscured=true`、`authoritative_unchanged=true`、无横向溢出；页面级只有 `.many2one-option-panel` 一个候选浮层 |
+
+## R5 未覆盖项（登记，不代替证据）
+
+| 未覆盖项 | 状态 | 理由 |
+|---|---|---|
+| 有权限的显式创建入口 | `not_available` | 当前受管契约的专用对象上没有可执行的 inline 创建入口（无 quick fill / many2many 编辑 / 搜索弹窗入口），脚本无法在不新造产品语义的前提下触发；创建意图的状态分离已由 `verify.frontend.create_record_user_journey.unit`（反例 8 项）在 L2 覆盖 |
+| 无权限时不提供可执行创建入口 | `not_available` | 同上：无可用入口时无法区分“被权限隐藏”与“入口不存在”，不作为通过证据 |
+| 查询失败经保存链路 | `covered_elsewhere` | `NETWORK_FAILURE_RECOVERY=1` 只覆盖保存失败（已由写场景覆盖）；查询失败改由关系场景的 `route.abort('failed')` 注入覆盖 |
+| 旧脚本直跑例外 | `not_available` | `form_relation_path_acceptance.js`、`form_relation_quick_input_edge_acceptance.js`、`form_relation_deferred_create_save_acceptance.js`、`form_relation_dialog_create_entry_acceptance.js` 的本机登录选择器与当前页面结构不符（`locator('input')` 超时），且均未被任何 make 目标调用；不修改断言绕过，改由受管 `local.dev.project_profile_write_browser` 覆盖同一路径 |
+
+## 已知限制（快速连续搜索）
+
+`frontend/apps/web/src/api/client.ts` 的 `idempotentIntentKey` 对 `api.data` 的 `read|list|search`
+做并发去重，但语义 key 不含 `search_term`。因此关键词 A 在飞行中时关键词 B 的查询会被复用，
+前端只发出一次请求。测得的行为是：旧响应落地时 store 已为空（0），新响应也不会替换 store，
+因此旧候选不会出现、也不可被选中；恢复由后续关键词触发（`recovered_rows=6`）。
+本批不改该去重策略（属查询运行时，不在关系控件收敛范围），登记为后续查询运行时专题的入口条件。
+
+## R3 复核结论（残余焦点与“旧自写交互”核对）
+
+- 已确认 `ScRelationField.vue`、`ProfessionalMany2oneFieldControl.vue`、`relationSelectPanelA11y.ts`
+  不再持有自写候选列表、`activeIndex` 或键盘索引循环；方向键/Enter/Escape 全部来自官方 `Select`。
+- 保留 `ScRelationField` 内的 `requestAnimationFrame`：仅在官方 popup 挂载后投影 ARIA 属性，
+  不参与开关或键盘决策，属无障碍投影职责。
+- 保留 `ProfessionalMany2oneFieldControl.vue` 的 `close()` 调用（`runLifecycleAction` / `clearSelection` /
+  `stageInlineCreate`）：业务弹窗或页面接手动作为前提，先关官方面板再交接，属面板衔接而非第二套浮层；
+  该行为由 `customer_search_cancel_and_overlay`（`focus_restored` / `dropdown_reopened=false`）验证。
+- 范围外疑似同类（登记，不在本批修改）：`ProfessionalManyToManySelect.vue` 仍是自写 `onFocus` 清空
+  关键字与 `onBlur` + `setTimeout(200)` 的失焦时序，属 many2many 控件；本批只收敛 many2one 通用关系控件，
+  按“不扩大成组件重构”原则留作后续专题。
+
+## R6 清理与专用对象回收
+
+- 本批未新增第二套实现；生成的清单/守卫与来源同批提交（`ci.delivery.freeze.prepare` PASS）。
+- 生成清单随本批更新的可归因项：`ScRelationField` 由 auto-complete 适配键迁到 select 适配键、
+  select 生产消费者 41→43、`component-driver-takeover-inventory` `inputDigest` 更新、
+  `ContractFormPage.vue` 行数锁 1892→1896、`api_data.py`/`local_dev_candidate_visual_smoke.mjs`/
+  `local_dev_payment_request_floorplan_submit.mjs` 行数随本批提交变化。
+- 新增待清理项（登记，不在本批删除）：`frontend/apps/web/src/components/design-system/ScAutoComplete.vue`
+  在本批后已无生产消费者（inventory `adapter_unconsumed` 2→3），仅在 design-system 导出与
+  `primitiveAdapter.ts` 登记中出现。删除它属于设计系统原语注册表与能力登记（P0）决策，
+  会牵动守卫与生成清单，超出本批“收敛一个关系控件”的范围；本批只保证关系原语不再依赖它。
+- 专用对象 `3930` 的回收：`make local.dev.project_profile_write_fixture P4_PROJECT_PROFILE_MODE=cleanup
+  P4_PROJECT_PROFILE_BATCH=relation-official-20260924 P4_PROJECT_PROFILE_CONFIRM=CLEANUP`
+  → `{"clean": true, "deleted": true, "deleted_responsibility_ids": [37, 38]}`；
+  随后 `MODE=inspect` 回读 → `existing_batch=false`、`project.id=null`、`responsibilities=[]`，
+  确认 XMLID 与责任行对象均已不存在。
+
+## 批次状态（分层）
+
+| 层次 | 状态 | 依据 |
+|---|---|---|
+| 批次验收 | 完成 | 8 个提交 + 守卫；L1/L2 定向与 L4 受管浏览器验收通过；未覆盖项以 `not_available` 登记并给出理由 |
+| 主线集成 | 未开始 | 候选尚未推送到 Gitee、未创建 PR、远端必需门禁未运行 |
+| 版本发布 | 未开始 | 无目标环境部署证据，本批不触发部署 |
+| 产品交付 | 未开始 | 正式 89 入口的产品交付验收不在本批范围 |
+
+本批交付动作：冻结候选 → 推送 Gitee 主题分支 → 创建同仓 main PR → 远端必需检查 → 受保护 PR 合并；
+部署状态在合并后单独报告。
