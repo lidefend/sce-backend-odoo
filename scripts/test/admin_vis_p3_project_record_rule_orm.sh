@@ -8,6 +8,11 @@ export ROOT_DIR
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
 guard_prod_forbid
 
+# The rejection rules live in a shared guard so the executor lanes that cannot
+# host a database container can still exercise them via `--self-test`.
+# shellcheck source=../ci/orm_result_guard.sh
+source "$ROOT_DIR/scripts/ci/orm_result_guard.sh"
+
 if [[ "$#" -ne 0 ]]; then
   echo "[admin-vis-p3-orm][FATAL] this entrypoint accepts no database override or positional argument" >&2
   exit 2
@@ -15,11 +20,17 @@ fi
 
 authorization_test_tags="${SC_AUTHORIZATION_ORM_TEST_TAGS:-admin_vis_p3_project_record_rule_orm}"
 case "$authorization_test_tags" in
-  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm) ;;
+  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm|payment_settlement_component_profile) ;;
   *)
     echo "[admin-vis-p3-orm][FATAL] unsupported fixed authorization test tag" >&2
     exit 2
     ;;
+esac
+
+# Fail closed on a wedged run: the caller may tighten the budget, never drop it.
+orm_timeout_seconds="${SC_AUTHORIZATION_ORM_TIMEOUT_SECONDS:-3600}"
+case "$orm_timeout_seconds" in
+  (*[!0-9]*|'') echo "[admin-vis-p3-orm][FATAL] invalid ORM timeout" >&2; exit 2 ;;
 esac
 
 case "${ENV:-dev}" in
@@ -293,7 +304,8 @@ odoo_common=(
   --log-level=info
 
 set +e
-"${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
+timeout --signal=TERM --kill-after=30 "${orm_timeout_seconds}" \
+  "${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
   "${odoo_common[@]:1}" \
   -u smart_core \
   --test-enable \
@@ -301,13 +313,7 @@ set +e
   --log-level=test 2>&1 | tee "$test_log"
 test_status="${PIPESTATUS[0]}"
 set -e
-if [[ "$test_status" -ne 0 ]]; then
-  echo "[admin-vis-p3-orm][FATAL] real ORM test process failed with ${test_status}" >&2
-  exit "$test_status"
-fi
-if ! grep -Eq "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests" "$test_log"; then
-  echo "[admin-vis-p3-orm][FATAL] Odoo did not report any executed ORM test" >&2
-  exit 4
-fi
+# Reject a failure, a timeout and an absent/zero test report alike.
+evaluate_orm_outcome "$test_status" "$test_log"
 
 echo "[admin-vis-p3-orm] REAL_ORM_TEST_RESULT=PASS"
