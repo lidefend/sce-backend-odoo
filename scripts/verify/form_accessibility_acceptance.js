@@ -82,7 +82,18 @@ async function collectButtonNames(page) {
 }
 
 async function exerciseNamedControls(page) {
+  // The relation business actions live in the official Select popup panel, so
+  // the named-control inventory must include the opened panel.
+  const relationInput = page.locator('.many2one-combobox input:visible').first();
+  const relationOpened = await relationInput.count().then(async (count) => {
+    if (!count) return false;
+    await relationInput.click();
+    return page.locator('.many2one-option-panel:visible')
+      .getByRole('button', { name: /搜索更多/ }).first()
+      .waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+  }).catch(() => false);
   const controls = await collectButtonNames(page);
+  if (relationOpened) await relationInput.press('Escape').catch(() => {});
   const missingName = controls.filter((control) => {
     if (control.class_name.includes('native-attachment-upload')) return false;
     if (control.type === 'file') return false;
@@ -125,7 +136,17 @@ async function exerciseKeyboardFocus(page) {
   }
   const hasStatusbar = focusSamples.some((row) => row.class_name.includes('native-statusbar-step'));
   const hasChatter = focusSamples.some((row) => ['发送消息', '活动'].includes(row.text));
-  const hasSearchMore = focusSamples.some((row) => row.text.includes('搜索更多'));
+  // The relation entry is keyboard-reachable through the official Select: focus
+  // the combobox input and open the panel with ArrowDown.
+  const combobox = page.locator('.many2one-combobox input:visible').first();
+  let hasSearchMore = false;
+  if (await combobox.count()) {
+    await combobox.focus();
+    await combobox.press('ArrowDown');
+    hasSearchMore = await page.locator('.many2one-option-panel:visible')
+      .getByRole('button', { name: /搜索更多/ }).count().then((count) => count > 0).catch(() => false);
+    await combobox.press('Escape').catch(() => {});
+  }
   return {
     path_id: 'P27',
     level: 'L4',
@@ -137,8 +158,13 @@ async function exerciseKeyboardFocus(page) {
 }
 
 async function openSearchMore(page) {
-  const button = page.locator('.many2one-combobox button').filter({ hasText: '搜索更多' }).first();
-  await button.click();
+  // Business actions live in the official Select popup panel, which mounts
+  // outside the field wrapper; open it from the combobox input first.
+  const input = page.locator('.many2one-combobox input:visible').first();
+  await input.click();
+  const panel = page.locator('.many2one-option-panel:visible');
+  await panel.waitFor({ state: 'visible', timeout: 15000 });
+  await panel.getByRole('button', { name: /搜索更多/ }).first().click();
   await page.locator('.relation-dialog').waitFor({ timeout: 10000 });
 }
 

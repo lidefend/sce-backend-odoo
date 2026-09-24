@@ -134,12 +134,19 @@ async function exerciseListCreateEntry(page) {
 
 async function exerciseRelationCreateEntry(page) {
   await openProjectForm(page);
-  let customerField = page.locator('.field').filter({ has: page.locator('.label', { hasText: /^客户\*?$/ }) }).first();
-  let maintainButton = customerField.locator('.many2one-combobox button').filter({ hasText: '新建并维护' }).first();
+  // Business actions live in the official Select popup panel, so open the
+  // relation field before reading its create entry.
+  const findMaintainButton = async () => {
+    const input = page.locator('.many2one-combobox input:visible').first();
+    await input.click();
+    const panel = page.locator('.many2one-option-panel:visible');
+    await panel.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined);
+    return panel.getByRole('button', { name: /新建并维护/ }).first();
+  };
+  let maintainButton = await findMaintainButton();
   if (!await maintainButton.count()) {
     await openProjectCreateForm(page);
-    customerField = page.locator('.field').filter({ has: page.locator('.label', { hasText: /^客户\*?$/ }) }).first();
-    maintainButton = customerField.locator('.many2one-combobox button').filter({ hasText: '新建并维护' }).first();
+    maintainButton = await findMaintainButton();
   }
   await maintainButton.click();
   await page.waitForURL((url) => url.pathname === '/f/res.partner/new', { timeout: 15000 });

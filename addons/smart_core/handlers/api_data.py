@@ -1493,6 +1493,15 @@ class ApiDataHandler(BaseIntentHandler):
             field = env_model._fields.get(field_name)
             if not field:
                 continue
+            # A native search view may contain virtual filters with dedicated
+            # operators or input constraints. Merely appearing in that view
+            # does not opt such a filter into every free-text OR query.
+            if (field_name in search_view_fields
+                    and field_name not in fields_safe
+                    and field_name not in extension_fields
+                    and field_name != rec_name
+                    and not bool(getattr(field, "store", False))):
+                continue
             field_type = str(getattr(field, "type", "") or "")
             if not bool(getattr(field, "store", False)) and not getattr(field, "search", None):
                 continue

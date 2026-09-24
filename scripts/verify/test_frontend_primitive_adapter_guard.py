@@ -76,7 +76,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 "ScInputGroup": '<TDesignInputAdornment data-primitive-driver="tdesign" />',
                 "ScTextarea": '<TDesignTextarea v-native-control-projection :data-loading="loading || undefined" :aria-busy="loading || undefined" :aria-describedby="describedBy" :aria-invalid="invalid" /><!-- id: props.id \'aria-label\': props.ariaLabel -->',
                 "ScSelect": '<TDesignSelect v-native-control-projection :input-props="{ inputClass: \'sc-select__control\' }" :options="tdesignOptions" :data-readonly="readonly || undefined" :aria-readonly="readonly || undefined" /><!-- id: props.id \'aria-describedby\': props.describedBy \'aria-invalid\': props.invalid \'aria-label\': props.ariaLabel -->',
-                "ScRelationField": '<TDesignAutoComplete v-native-control-projection="nativeProjection" /><!-- id: props.id \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy \'aria-label\': props.ariaLabel -->',
+                "ScRelationField": '<TDesignSelect v-native-control-projection="nativeProjection" :options="tdesignOptions" :input-value="inputValue" :popup-visible="popupOpen"><!-- panelBottomContent id: props.id \'aria-required\': props.required || undefined \'aria-invalid\': props.invalid || undefined \'aria-describedby\': props.describedBy \'aria-label\': props.ariaLabel --></TDesignSelect>',
                 "ScTabs": "<TDesignTabs :list=\"items.length ? tdesignItems : undefined\" />\nlabel: tabLabel(item)\nreturn (render: typeof h) => render('span', {}, item.label)",
                 "ScStatusBadge": "<div :data-semantic-status=\"semantic\" />\n<style>.sc-status-badge[data-semantic-status='info'] { color: var(--sc-app-info-text); background-color: var(--sc-app-info-bg); }</style>",
                 "ScLoading": '<div data-state="loading" aria-busy="true" />',
@@ -93,7 +93,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
                 encoding="utf-8",
             )
         (design / "ScRelationField.vue").write_text(
-            '<template><TDesignAutoComplete v-native-control-projection="nativeProjection" /></template>\n'
+            '<template><TDesignSelect v-native-control-projection="nativeProjection" :options="tdesignOptions" :input-value="inputValue" :popup-visible="popupOpen" /><!-- panelBottomContent --></template>\n'
             "<script>const nativeProjection = { selector: 'input' as const, attributes: { "
             "'aria-required': props.required || undefined, 'aria-invalid': props.invalid || undefined, "
             "'aria-describedby': props.describedBy, id: props.id, 'aria-label': props.ariaLabel } };</script>\n",

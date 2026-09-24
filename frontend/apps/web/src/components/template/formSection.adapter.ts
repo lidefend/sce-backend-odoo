@@ -23,6 +23,7 @@ export type CreateFormSectionFieldSchemaBuilderContext = {
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => ReturnType<typeof buildFormSectionFieldSchemas>[number]['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
+  resolveRelationQueryKeyword: (fieldName: string) => string;
   resolveCanOpenRelationRecord: (fieldName: string, descriptor?: FieldDescriptor) => boolean;
   resolveRelationRecordOpenLabel: (fieldName: string, descriptor?: FieldDescriptor) => string;
   resolveRelationSearchLabel: (fieldName: string, descriptor?: FieldDescriptor) => string;
@@ -56,6 +57,7 @@ export function createFormSectionFieldSchemaBuilder(context: CreateFormSectionFi
     resolveRelationCreateMode: context.resolveRelationCreateMode,
     resolveRelationInlineCreate: context.resolveRelationInlineCreate,
     resolveRelationTextValue: context.resolveRelationTextValue,
+    resolveRelationQueryKeyword: context.resolveRelationQueryKeyword,
     resolveCanOpenRelationRecord: context.resolveCanOpenRelationRecord,
     resolveRelationRecordOpenLabel: context.resolveRelationRecordOpenLabel,
     resolveRelationSearchLabel: context.resolveRelationSearchLabel,
