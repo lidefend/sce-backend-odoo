@@ -799,9 +799,11 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   // the next keyword is typed. Each keyword owns its request now, so the later
   // keyword must answer for itself, and the late earlier response must neither
   // repaint the panel nor become selectable. No third input may be required.
-  // The held-open first search may legitimately match nothing, so only the
-  // latest keyword must have an authoritative non-empty reference.
-  const lateKeyword = 'UM-P3';
+  // The held-open first keyword resolves to a single partner through the
+  // record-id search branch; the latest keyword resolves to the whole match
+  // set. Different result sets are what make "the earlier response did not
+  // repaint the panel" observable rather than vacuous.
+  const lateKeyword = '6390';
   const latestKeyword = 'UM';
   const sameIdSet = (left, right) => Array.isArray(left) && Array.isArray(right)
     && left.length === right.length && [...left].sort().join('|') === [...right].sort().join('|');
@@ -814,8 +816,11 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   // concurrency assertions compare against the server's own answer.
   const referenceLateIds = await referenceIdsFor(lateKeyword);
   const referenceLatestIds = await referenceIdsFor(latestKeyword);
-  if (!referenceLatestIds?.length) {
+  if (!referenceLatestIds?.length || !referenceLateIds?.length) {
     throw new Error(`customer_stale_reference_missing:${JSON.stringify({ referenceLateIds, referenceLatestIds })}`);
+  }
+  if (sameIdSet(referenceLateIds, referenceLatestIds)) {
+    throw new Error(`customer_stale_keywords_not_distinguishable:${JSON.stringify({ referenceLateIds, referenceLatestIds })}`);
   }
   let relationSearches = 0;
   const relationSearchTerms = [];
@@ -833,10 +838,14 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
     let body; try { body = route.request().postDataJSON(); } catch { body = null; }
     const isRelationList = body?.intent === 'api.data' && body.params?.model === 'res.partner' && body.params?.op === 'list';
     if (!isRelationList) return route.continue().catch(() => {});
-    relationSearches += 1;
+    const requestIndex = (relationSearches += 1);
     relationSearchTerms.push(String(body.params.search_term ?? ''));
-    if (relationSearches === 1) await new Promise((resolve) => setTimeout(resolve, 2500));
-    if (relationSearches === 1) staleForwardedAt = elapsed();
+    if (requestIndex === 1) {
+      // Hold the first keyword open long enough for the next keyword to issue,
+      // settle and be observed before this response is allowed to land.
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      staleForwardedAt = elapsed();
+    }
     return route.continue().catch(() => {});
   };
   const headerBeforeStale = await headerState();
@@ -862,6 +871,7 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
     && secondKeywordAt > 0 && latestSettled
     && stateAfterSecondKeyword.ids.length > 0 && sameIdSet(stateAfterSecondKeyword.ids, referenceLatestIds)
     && waited && sameIdSet(stateAfterStaleResponse.ids, referenceLatestIds)
+    && !sameIdSet(stateAfterStaleResponse.ids, referenceLateIds)
     && staleSelectedRows === 0
     && headerAfterStale === headerBeforeStale && sameJson(beforeFacts, staleFacts) && !mutations.length;
   report.scenarios.push({
