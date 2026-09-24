@@ -576,13 +576,15 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
   const draftClean = () => page.getByText('尚未修改', { exact: true }).isVisible();
   const draftDirty = async () => !(await draftClean());
   const dirtyIndicatorShown = async () => (await page.getByText('有未保存修改', { exact: true }).count()) > 0;
-  // A control that already holds chips keeps the official TagInput input
-  // collapsed until it is focused, so every interaction starts the way a user
-  // starts it: click the control itself, then type. Clicking the plain input
-  // only works while the field is empty.
-  const relationControl = fieldRoot.locator('.t-tag-input').first();
+  // A control that already holds chips collapses the official TagInput input to
+  // a sliver until it is focused, so a freshly loaded control has no clickable
+  // input box and the interaction has to start from the control itself. The
+  // official arrow (``.t-input__suffix``, always the dropdown icon and never a
+  // clear affordance) is that control's own toggle, so it opens the panel from
+  // any state; clicking the wrapper instead can land on a chip's close icon.
+  const relationToggle = fieldRoot.locator('.t-input__suffix').first();
   const focusControl = async () => {
-    if (await relationControl.count()) await relationControl.click();
+    if (await relationToggle.count()) await relationToggle.click();
     else await input.click();
     await input.waitFor({ state: 'visible', timeout: 15000 });
   };
