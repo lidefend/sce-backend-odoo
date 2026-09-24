@@ -2936,6 +2936,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_boq_import_batch_allowed_company" model="ir.rule">
+            <field name="name">BOQ import batch: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_import_batch"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+        </record>
 
         <record id="rule_sc_boq_analysis_project_scope" model="ir.rule">
             <field name="name">BOQ analysis: project member scope</field>
@@ -2949,6 +2954,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_boq_analysis_allowed_company" model="ir.rule">
+            <field name="name">BOQ analysis: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_analysis"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+        </record>
         <record id="rule_sc_boq_analysis_norm_project_scope" model="ir.rule">
             <field name="name">BOQ analysis norm: project member scope</field>
             <field name="model_id" ref="model_project_boq_analysis_norm_line"/>
@@ -2960,6 +2970,11 @@
             <field name="model_id" ref="model_project_boq_analysis_norm_line"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        </record>
+        <record id="rule_sc_boq_analysis_norm_allowed_company" model="ir.rule">
+            <field name="name">BOQ analysis norm: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_analysis_norm_line"/>
+            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="rule_sc_boq_analysis_resource_project_scope" model="ir.rule">
             <field name="name">BOQ analysis resource: project member scope</field>
@@ -2973,6 +2988,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_boq_analysis_resource_allowed_company" model="ir.rule">
+            <field name="name">BOQ analysis resource: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_analysis_resource_line"/>
+            <field name="domain_force">['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]</field>
+        </record>
         <record id="rule_sc_boq_summary_component_project_scope" model="ir.rule">
             <field name="name">BOQ summary component: project member scope</field>
             <field name="model_id" ref="model_project_boq_summary_component"/>
@@ -2984,6 +3004,11 @@
             <field name="model_id" ref="model_project_boq_summary_component"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        </record>
+        <record id="rule_sc_boq_summary_component_allowed_company" model="ir.rule">
+            <field name="name">BOQ summary component: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_summary_component"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="rule_sc_cost_plan_project_scope" model="ir.rule">
             <field name="name">Cost plan: project member scope</field>
@@ -2997,6 +3022,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_cost_plan_allowed_company" model="ir.rule">
+            <field name="name">Cost plan: allowed companies</field>
+            <field name="model_id" ref="model_project_cost_plan"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+        </record>
         <record id="rule_sc_cost_plan_line_project_scope" model="ir.rule">
             <field name="name">Cost plan line: project member scope</field>
             <field name="model_id" ref="model_project_cost_plan_line"/>
@@ -3009,6 +3039,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_cost_plan_line_allowed_company" model="ir.rule">
+            <field name="name">Cost plan line: allowed companies</field>
+            <field name="model_id" ref="model_project_cost_plan_line"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+        </record>
         <record id="rule_sc_cost_plan_node_project_scope" model="ir.rule">
             <field name="name">Cost plan node: project member scope</field>
             <field name="model_id" ref="model_project_cost_plan_node"/>
@@ -3020,6 +3055,11 @@
             <field name="model_id" ref="model_project_cost_plan_node"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        </record>
+        <record id="rule_sc_cost_plan_node_allowed_company" model="ir.rule">
+            <field name="name">Cost plan node: allowed companies</field>
+            <field name="model_id" ref="model_project_cost_plan_node"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
         </record>
 
         <record id="rule_sc_tender_opportunity_company" model="ir.rule">

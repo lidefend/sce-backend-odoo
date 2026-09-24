@@ -64,7 +64,8 @@
 ## 定向验证
 
 - `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core`：PASS，`local.dev.ready` / `local.dev.demo.authority` 均通过。
-- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=rr_gate`：**`0 failed, 0 error(s) of 8 tests`**（原 5 项 + 新增 3 项）。
+- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=rr_gate`：**`0 failed, 0 error(s) of 9 tests`**
+  （原 5 项 + 清单行/版本 3 项 + 同族 1 项；同族一节的非空性反例另见下节）。
   - 日志出现 `Access Denied by record rules for operation: read on record ids: [1337], uid: 2497, model: project.boq.line`，即拒绝路径被真实执行，不是仅断言通过。
 - 新增用例：
   - `test_boq_line_project_scope`：成本岗可读本项目行；列表读取不含他项目行；按 ID `read()` 抛 `AccessError`（证明是规则拒绝而非列表过滤）；经理保持全量。
@@ -136,16 +137,98 @@
   未实测的组合逐条列在下方，不得把本结论外推为“所有角色、所有读取入口都已收敛”。
 - **公司维度已实测并修复**：见上节。原先“公司维度未实测”的原因不是模型不可验证，而是当时没有构造跨公司夹具；
   沿真实关联（`project_id.company_id`）即可测。修复前实测到两处真实跨公司读取，修复后同一探针复测为拒绝。
-- **同族模型仍未收敛（已登记，未在本批修复）**：`project.boq.import.batch`、`project.boq.analysis`、
-  `project.boq.analysis.norm.line`、`project.boq.analysis.resource.line`、`project.boq.summary.component`、
-  `project.cost.plan` 等使用与清单行修复前完全相同的“项目成员范围 + 经理全量”形状，且都没有公司条件。
-  已实测其中 `project.boq.import.batch`：主公司成本经理对二级公司批次 `search=1 / read_ok`，
-  而其有效读域为 `[(1,'=',1)]`，同一记录下 `project.project` 对其拒绝。这是既有暴露，本批未修，单独登记。
+- **同族模型已收敛（本轮补，见下节）**：`project.boq.import.batch`、`project.boq.analysis`、
+  `project.boq.analysis.norm.line`、`project.boq.analysis.resource.line`、`project.boq.summary.component`
+  以及同缺陷类的 `project.cost.plan`/`.line`/`.node` 原先与清单行修复前同形（“项目成员范围 + 经理全量”，
+  都没有公司条件）。本轮实测到既有数据上的真实暴露（仅属 B 公司的经理可读全部 360 条 A 公司成本树节点）
+  并已修复；同一探针复测全部拒绝，本公司读取与授权多公司访问不受影响。
 - `项目中心只读(82)` 只有该组、没有 100/101 的用户在清单行与版本上都不受限。这是父模型既有语义，本批**不改变**，属于待产品确认的独立问题，不计入本次修复。
 - 未验证列表菜单可达性；动作 534（工程量清单）只授予 100/101/102，82 无法从菜单进入清单列表，残余暴露仅为直接 RPC 读取。
 - 本轮不纳入结算 ORM 门禁接线、附件 404、报表投影与显式创建。
 
+## 同族模型收口（本轮补）
+
+上节登记的暴露已在本轮实测并修复，仍在同一分支、同一文件、同一形状内收敛，未拆分专题。
+
+### 实测（修复前，`sc_dev_demo`，事务内回滚，无残留）
+
+夹具：主公司 `A`、二级公司 `B`；`A_op`（仅 A 公司成本经办）、`A_mgr`（仅 A 公司成本经理）、
+`B_op`/`B_mgr`（仅 B 公司）、`multiAB`（`company_ids=[A,B]` 成本经办）。`BF` = 项目属 B 公司、
+但负责人是仅属 A 公司的 `A_op`。
+
+| 模型 | `A_op` 读自有 A 行 | `A_op` 读 `BF` 行 | `A_mgr` 读 `BF` 行 |
+|---|---|---|---|
+| `project.boq.line` / `project.boq.version` | 可读 | 拒绝 | 拒绝 |
+| `project.boq.import.batch` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+| `project.boq.analysis` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+| `project.boq.analysis.norm.line` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+| `project.boq.analysis.resource.line` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+| `project.boq.summary.component` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+| `project.cost.plan` / `.line` | 可读 | **可读（泄漏）** | **可读（泄漏）** |
+
+同一探针上按全表计数（`search_count([])`）：修复前，仅属 B 公司的成本经理可读**全部 360 条
+`project.cost.plan.node`**（该模型全部既有行属 A 公司）、123 条 `.line`、27 条 `.plan`、4 条
+`import.batch`。这不是夹具制造的规模问题，而是既有数据上的既成暴露。
+
+泄漏来源与清单行同形，是两件事叠加：项目成员范围可经“负责人身份”越过公司边界；经理例外
+`[(1,'=',1)]` 完全没有公司维度。
+
+### 修复
+
+在 `security/sc_record_rules.xml` 为 8 个模型各加一条**全局**（无组）允许公司规则，沿每个模型到项目的
+真实关联表达：
+
+- `project.boq.import.batch`、`project.boq.analysis`、`project.boq.summary.component`、
+  `project.cost.plan`、`project.cost.plan.line`、`project.cost.plan.node`：
+  `['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]`
+- `project.boq.analysis.norm.line`、`project.boq.analysis.resource.line`：
+  `['|', ('analysis_id.project_id.company_id', '=', False), ('analysis_id.project_id.company_id', 'in', company_ids)]`
+
+全局规则与组规则取**与**，因此“项目成员范围”和“经理全量”都留在公司边界内。无项目归属的行按既有
+约定视为公司中立（与仓库内既有 `company_id = False` 规则一致）。
+
+ACL 已一并核对：这 8 个模型的 `ir.model.access` 只授予 `成控中心审批/经办/只读` 能力组，没有宽口径组，
+因此边界只可能来自记录规则。
+
+### 实测（修复后，同一探针复测）
+
+- 上表所有“泄漏”单元格变为 `AccessError`，按 ID `read()` 同样拒绝，`search_count` 为 0。
+- 仅属 B 公司的经理读到的 `project.cost.plan.node` 由 **360 → 0**；其余模型只剩本公司行。
+- 仅属 A 公司的经理仍读 360 条 A 公司节点、122 条行、26 个计划：**成立范围未被过度收紧**。
+- 自有公司、自有项目行读取正常。
+- `multiAB`（`company_ids=[A,B]`，在两公司各有一个自己负责的项目）在两家公司各 9/9 模型可读：
+  授权多公司用户未被新规则误伤。
+
+### 非空性反例
+
+将新增规则 520–527 置为 `active=false` 后复跑同一测试：`8 failed, 0 error(s) of 9 tests`，失败点正是
+新测试的 8 个子用例；授权恢复 `active=true` 后 `0 failed, 0 error(s) of 9 tests`。恢复后回读，全库仅剩
+标准门户规则 151 为非激活。
+
+### 规则身份（受管库回读）
+
+| 规则 id | 模型 |
+|---|---|
+| 518 / 519 | `project.boq.version` / `project.boq.line`（上一轮） |
+| 520 | `project.boq.import.batch` |
+| 521 | `project.boq.analysis` |
+| 522 | `project.boq.analysis.norm.line` |
+| 523 | `project.boq.analysis.resource.line` |
+| 524 | `project.boq.summary.component` |
+| 525 / 526 / 527 | `project.cost.plan` / `.line` / `.node` |
+
+`project.cost.plan*` 不属 BOQ 家族，实测为同一缺陷类（同形规则、同样无公司条件），故在同一分支按同一
+形状一并修复，未新开专题；差异在此显式登记，便于独立取舍。
+
+### 本轮边界（同族）
+
+- 未验证写入路径（`write`/`create`/`unlink`）的跨公司边界；本轮只收敛读取可见性与按 ID 读取。
+- `project.cost.plan.node` 由成本事实投影生成，测试夹具经模型自有的 `cost_tree_projection_write`
+  上下文写入，仅用于在指定公司放置一行；未改动生成逻辑。
+- 仅持 `项目中心只读(82)` 的宽权限问题仍未处理，保持待产品确认。
+
 ## 状态
 
-- 批次验收完成：是（BOQ 清单行范围修复 + 跨公司边界修复，定向 8/8；含非空性反例与有效读域实测）。
+- 批次验收完成：是（BOQ 清单行/版本范围与跨公司边界 + 同族 8 模型公司边界，定向 9/9；含非空性反例、
+  跨公司读取实测与授权多公司访问对照）。
 - 主线集成完成：否。版本发布完成：否。产品交付完成：否。
