@@ -633,3 +633,23 @@ main规则2770794已在用户授权的登录网页保存四个必须通过项，
 普通professional_frontend同步补齐；full/candidate、数据库、浏览器验收仍未开放，不宣称全量GitHub门禁等效。
 
 当前为开发增量，最终运行/冻结/线上回执在既有外部批次证据目录补记；旧630e89b8线上通过只对其原输入有效。
+
+## 准备失败必须可见回传（2026-09-25，P4 增量）
+
+- 现象：候选 `02a63d5b`（PR !10）在 `git merge-base --is-ancestor` 处准备失败（base 不是候选祖先），
+  `formal_inbox` 记为 `environment_error` 并打印 `preparation_failed`，但四项必需检查停留在“等待状态上传”，
+  对 PR 作者不可见。
+- 根因：准备失败只写了投递箱状态，没有把失败绑定到 PR／源 SHA，也没有生成可信队列任务；
+  reporter 只遍历 `formal_jobs`，因此没有任何检查可回传。
+- 修复（`scripts/ci`，P4 交付工具）：计划构造拆分为“先解析平台身份、再检出”；失败时用受信任的
+  有限原因码构造零变更集计划并入队，由 `FormalQueue.fail` 直接终态化为 `environment_error`；
+  reporter 照常回传四项 `completed/action_required`，绑定真实 PR ID 与 head SHA，
+  summary 含 `preparation_failure=<原因码>`。
+- 边界：祖先门禁不变（`changed_paths` 仍以 `check=True` 抛 `CalledProcessError`，执行器仍复核祖先并
+  拒绝执行零变更集计划）；失败任务不可执行、不可为 success/skip/cancelled；原因码为白名单，
+  候选文本不进入检查回传；平台身份本身不可解析时无法绑定，只记投递箱状态并打印
+  `reported=false error=<异常类名>`。
+- 定向：plan/queue/worker/executor 67 项通过；以 PR !10 的真实 head/base 身份复算得到四项
+  `action_required`，原行为是四项永久等待。
+- 状态：本地实现与定向验证通过；线上安装（新的受信包与 `GITEE_FORMAL_ROOT` 重钉）由集成车道执行，
+  未部署前不称线上已修复。

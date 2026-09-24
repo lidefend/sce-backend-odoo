@@ -38,6 +38,19 @@ def receipt(p):
         'checks':[{'name':x['name'],'mode':x['mode'],'status':'success','tests':2} for x in p['checks']]}
 
 
+def failure_candidate(reason='baseline_not_ancestor',base='b'*40,pr=1,observed=100):
+    p=plan(head='a'*40,base=base,source_branch='fix/unit',pr_number=pr,paths=(),preparation_failure=reason)
+    p['platform_snapshot']={**{k:p[k] for k in IDENTITY_KEYS},'pr_id':123+pr,
+        'pr_identity_verified':True,'remote_refs_verified':True,'observed_finished_at':observed}
+    p.pop('plan_sha256');p['plan_sha256']=digest(p)
+    return p
+
+
+def failure_receipt(p):
+    return {**{k:p[k] for k in IDENTITY_KEYS},'plan_sha256':p['plan_sha256'],
+        'status':'environment_error','checks':[],'integration_eligible':False}
+
+
 class FormalQueueTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
@@ -168,6 +181,43 @@ class FormalQueueTests(unittest.TestCase):
         execute_once(self.q,worker,self.refresh)
         with self.q.connect() as db:
             self.assertEqual(db.execute('SELECT status FROM formal_jobs').fetchone()[0],'environment_error')
+
+    def isolated(self):
+        self.counter=getattr(self,'counter',0)+1
+        queue=FormalQueue(Path(self.tmp.name)/('isolated-'+str(self.counter)+'.sqlite'))
+        api=FormalFakeAPI()
+        return queue,api,FormalReporter(queue,api,lambda p:p['platform_snapshot'],clock=lambda:self.now)
+
+    def test_preparation_failure_is_reported_red_and_never_executed(self):
+        queue,api,reporter=self.isolated();p=failure_candidate()
+        key,inserted=queue.enqueue(p,'9');self.assertTrue(inserted);queue.fail(key,failure_receipt(p))
+        worker=Mock();self.assertFalse(execute_once(queue,worker,self.refresh));worker.execute_plan.assert_not_called()
+        for _ in range(4):reporter.sync_once()
+        self.assertEqual({x['name'] for x in api.rows.values()},set(CHECKS))
+        for x in api.rows.values():
+            self.assertEqual((x['status'],x['conclusion']),('completed','action_required'))
+            self.assertEqual(x['head_sha'],'a'*40);self.assertEqual(x['pull_request_id'],124)
+            self.assertIn('preparation_failure=baseline_not_ancestor',x['output']['summary'])
+        with queue.connect() as db:
+            self.assertEqual(db.execute('SELECT status FROM formal_jobs').fetchone()[0],'environment_error')
+
+    def test_preparation_failure_cannot_be_success_skip_or_foreign(self):
+        queue,api,reporter=self.isolated();p=failure_candidate();key,_=queue.enqueue(p,'9')
+        for name,value in [('status','success'),('status','cancelled'),('integration_eligible',True),
+                           ('base_sha','c'*40),('head_sha','c'*40),('plan_sha256','bad'),('plan_sha256',None)]:
+            with self.subTest(field=(name,value)),self.assertRaises(ValueError):
+                receipt=failure_receipt(p);receipt[name]=value;queue.fail(key,receipt)
+        queue.fail(key,failure_receipt(p))
+        for _ in range(4):reporter.sync_once()
+        self.assertTrue(all(x['conclusion']=='action_required' for x in api.rows.values()))
+
+    def test_fail_refuses_runnable_and_already_claimed_jobs(self):
+        queue,api,reporter=self.isolated()
+        with self.assertRaises(ValueError):queue.fail(self.key,failure_receipt(self.p))
+        p=failure_candidate();key,_=queue.enqueue(p,'9')
+        with self.assertRaises(ValueError):queue.fail(key,failure_receipt(self.p))
+        queue.claim()
+        with self.assertRaises(ValueError):queue.fail(key,failure_receipt(p))
 
     def test_final_readback_rejects_malformed_and_wrong_identity(self):
         self.terminal();self.reporter.sync_once()

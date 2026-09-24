@@ -439,3 +439,25 @@ Cache installation appends opaque archives under content-key directories, never 
 Professional standard_frontend is included. Full/candidate database/browser acceptance remains unsupported; no full GitHub gate equivalence claimed.
 
 This is a development increment; final runtime/freeze/online receipts remain in the existing external batch evidence directory. Prior630e89b8 online evidence applies only to unchanged inputs.
+
+## Preparation failures must be visible (2026-09-25, P4 increment)
+
+- Symptom: candidate `02a63d5b` (PR !10) failed preparation at `git merge-base --is-ancestor` because its
+  base was not an ancestor. `formal_inbox` recorded `environment_error` and logged `preparation_failed`,
+  yet the four required checks stayed in "waiting for status upload" and were invisible to the author.
+- Cause: a preparation failure only wrote an inbox state. It bound nothing to the PR/source SHA and created
+  no trusted queue job, while the reporter walks `formal_jobs` only, so no check could be published.
+- Fix (`scripts/ci`, P4 delivery tooling): plan construction now resolves platform identity before checkout.
+  A failure builds a zero-change-set plan from a bounded trusted reason code, enqueues it, and
+  `FormalQueue.fail` terminalizes it as `environment_error`. The reporter publishes the usual four
+  `completed/action_required` checks bound to the real PR ID and head SHA, with
+  `preparation_failure=<code>` in the summary.
+- Boundaries: the ancestor gate is unchanged (`changed_paths` still raises `CalledProcessError`; the executor
+  still re-checks ancestry and refuses a zero-change-set plan). A preparation failure can never be executed,
+  skipped or successful; reason codes are a whitelist so candidate text never reaches a check report; when
+  platform identity itself is unresolvable nothing can be attributed, and only the inbox state plus
+  `reported=false error=<exception class>` is logged.
+- Targeted: 67 plan/queue/worker/executor tests pass; recomputing with PR !10's real head/base identity
+  yields four `action_required` checks where the old behaviour left four permanent waits.
+- Status: implementation and targeted verification pass locally. Online installation (new trusted package
+  and `GITEE_FORMAL_ROOT` re-pin) belongs to the integration lane; no online fix is claimed before deployment.
