@@ -95,6 +95,56 @@ assert.deepEqual(pendingCreateFields.value, []);
 console.log('[create-record-user-journey] PASS relation-intent-counterexamples=9');
 }
 
+// A staged create intent is its own state: it must not clear the relation value
+// (which would look like a removed association to onchange and to the draft),
+// and it must be invalidated by an explicit relation write instead.
+{
+const relationDescriptor = { type: 'many2one', relation: 'x.related', relation_entry: {
+  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+} };
+const stagedDraft: Record<string, unknown> = { owner_id: 17 };
+const stagedKeywords: Record<string, string> = {};
+const stagedDirty = new Set<string>();
+const stagedPending = ref<string[]>([]);
+const stagedCreateCalls: string[] = [];
+const stagedState = useRecordFormState({
+  pendingInlineCreateFields: stagedPending,
+  formFields: ref({ owner_id: relationDescriptor }), model: ref('x.main'), recordId: ref(501),
+  formData: stagedDraft, originalValues: ref<Record<string, unknown>>({ owner_id: 17 }),
+  relationKeywords: stagedKeywords, invalidatedRelationKeywords: {}, clearedDynamicRelationFields: {},
+  relationOptions: ref({ owner_id: [{ id: 17, label: 'Selected' }] }),
+  validationFieldErrors: ref({}), validationErrors: ref([]), applyingOnchangePatch: ref(false),
+  dirtyFieldSet: stagedDirty, changedFieldSet: new Set<string>(),
+  contractV2ActionRules: ref([]), canonicalFieldWritable: () => true,
+  layoutNodes: ref([{ kind: 'field', name: 'owner_id', descriptor: relationDescriptor, readonly: false }]),
+  getOnchangeTimer: () => null, setOnchangeTimer: () => {},
+  relationKeyword: (name: string) => stagedKeywords[name] || '',
+  setRelationKeyword: (name: string, keyword: string) => { stagedKeywords[name] = keyword; },
+  clearDynamicRelationDependents: () => {},
+  relationOptionsForField: () => [{ id: 17, label: 'Selected' }, { id: 31, label: 'Replacement' }],
+  switchFormByRelationOption: async () => undefined,
+  queryRelationOptions: async () => [],
+  quickCreateRelation: async (_name: string, _descriptor: unknown, label: string) => {
+    stagedCreateCalls.push(label); stagedDraft.owner_id = 28;
+  },
+  relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+} as never);
+await stagedState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Brand new');
+assert.equal(stagedDraft.owner_id, 17, 'staging a create intent never clears the relation value');
+assert.deepEqual(stagedPending.value, ['owner_id']);
+await stagedState.resolvePendingInlineRelationCreates();
+assert.deepEqual(stagedCreateCalls, ['Brand new'], 'a staged intent creates the requested record');
+assert.equal(stagedDraft.owner_id, 28, 'a successful create binds the new record id to the relation');
+await stagedState.resolvePendingInlineRelationCreates();
+assert.equal(stagedCreateCalls.length, 1, 'a completed intent is never replayed');
+await stagedState.commitMany2oneInline('owner_id', relationDescriptor as never, 'Staged then replaced');
+stagedState.setMany2oneField('owner_id', relationDescriptor as never, '31');
+await stagedState.resolvePendingInlineRelationCreates();
+assert.equal(stagedCreateCalls.length, 1, 'an explicit relation write cancels the staged create');
+assert.deepEqual(stagedPending.value, []);
+console.log('[create-record-user-journey] PASS relation-create-intent-counterexamples=8');
+}
+
 {
   const draft = reactive<Record<string, unknown>>({ owner_id: false });
   const keywords = reactive({ owner_id: '' });

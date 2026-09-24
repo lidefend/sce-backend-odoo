@@ -666,10 +666,16 @@ async function verifyCustomerRelationWrite(page, report, beforeFacts) {
   const input = field(page, 'partner_id').locator('input').first();
   await input.fill('');
   await input.click();
-  const option = page.locator('.many2one-option-panel:visible .many2one-option-row').first();
+  // The candidate panel now belongs to the official Select popup: option rows
+  // carry the projected option identity instead of a self-built row dataset.
+  const optionPanel = page.locator('.many2one-option-panel:visible');
+  await optionPanel.waitFor();
+  const option = optionPanel.locator('li.t-select-option[data-relation-option-value]').first();
   await option.waitFor();
-  const selectedId = Number(await option.getAttribute('data-record-id'));
-  if (!Number.isSafeInteger(selectedId) || selectedId <= 0) throw new Error('customer_option_has_no_record_identity');
+  await page.waitForFunction(() => [...document.querySelectorAll('.many2one-option-panel li.t-select-option[data-relation-option-value]')]
+    .some((node) => Number(node.getAttribute('data-relation-option-value')) > 0), null, { timeout: 15000 });
+  const selectedId = Number(await option.getAttribute('data-relation-option-value'));
+  if (!Number.isSafeInteger(selectedId) || selectedId <= 0) throw new Error('customer_option_has_no_option_identity');
   const label = normalize(await option.innerText());
   let blocked = false;
   await page.route('**/api/v1/intent*', async route => {
@@ -715,7 +721,7 @@ async function verifyCustomerRelationWrite(page, report, beforeFacts) {
   const passed = onlyExpectedWrites && refreshedLabel === label && writes.length === 2 && retry.outcome === 'business_success'
     && sameJson(writes[0].body.params.vals, writes[1].body.params.vals)
     && sameJson(expected, after) && sameJson(after, refreshed);
-  report.scenarios.push({ name: 'customer_explicit_selection_retry_and_refresh', status: passed ? 'PASS' : 'FAIL', selected_id: selectedId, selected_id_source: 'clicked_option.data-record-id', mutation_requests: mutations.length, only_expected_project_writes: onlyExpectedWrites, refreshed_ui_matches_selection: refreshedLabel === label, backend_successful_submissions: writes.filter(row => row.outcome === 'business_success').length, authoritative_after: after, refreshed });
+  report.scenarios.push({ name: 'customer_explicit_selection_retry_and_refresh', status: passed ? 'PASS' : 'FAIL', selected_id: selectedId, selected_id_source: 'clicked_option.data-relation-option-value', mutation_requests: mutations.length, only_expected_project_writes: onlyExpectedWrites, refreshed_ui_matches_selection: refreshedLabel === label, backend_successful_submissions: writes.filter(row => row.outcome === 'business_success').length, authoritative_after: after, refreshed });
   if (!passed) throw new Error('customer_selection_readback_not_proven');
 }
 

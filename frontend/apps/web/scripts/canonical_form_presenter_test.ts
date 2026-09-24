@@ -1955,7 +1955,10 @@ const relationMappedField = canonicalFieldToFormSection({
   relationOpenLabel: () => '维护当前项',
   relationSearchLabel: () => '搜索更多',
 });
-assert.equal(relationMappedField.many2oneTextValue, '演示项目');
+assert.equal(relationMappedField.many2oneTextValue, undefined,
+  'a transient search keyword is never projected as the selected relation display text');
+assert.equal(relationMappedField.relationQueryKeyword, '演示项目',
+  'the search keyword keeps its own projection channel');
 assert.deepEqual(relationMappedField.relationOptions, [{ value: 7, label: '演示项目' }]);
 assert.equal(relationMappedField.required, true, 'required many2one authority must survive canonical projection');
 assert.equal(relationMappedField.relationCreateMode, 'page');
