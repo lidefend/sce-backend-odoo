@@ -1267,6 +1267,10 @@ class PageAssembler:
                 action_row["route"] = "/a/%s?menu_id=%s" % (target_action_id, int(target_menu.id))
 
         head = data.get("head") if isinstance(data.get("head"), dict) else {}
+        # Every worksheet query, including a domain tab, retains its action scope.
+        # Adjacent Odoo domain expressions are implicitly ANDed by normalize_domain.
+        action_domain = data.get("domain") if isinstance(data.get("domain"), list) else []
+        query_context = deepcopy(effective_context)
         labels = raw.get("labels") if isinstance(raw.get("labels"), dict) else {}
         try:
             variance_tolerance = max(0.0, float(raw.get("variance_tolerance") or 0.0))
@@ -1310,12 +1314,13 @@ class PageAssembler:
                         for kind, fields in (raw.get("blank_fields_by_kind") or {}).items()
                         if isinstance(fields, (list, tuple))
                     } if isinstance(raw.get("blank_fields_by_kind"), dict) else {},
-                    "domain": raw.get("sheet_domain") if isinstance(raw.get("sheet_domain"), list) else [],
+                    "domain": deepcopy(action_domain + (raw.get("sheet_domain") if isinstance(raw.get("sheet_domain"), list) else [])),
+                    "context": query_context,
                     "domain_tabs": [
                         {
                             "key": str(tab.get("key") or "").strip(),
                             "label": str(tab.get("label") or tab.get("key") or "").strip(),
-                            "domain": tab.get("domain") if isinstance(tab.get("domain"), list) else [],
+                            "domain": deepcopy(action_domain + (tab.get("domain") if isinstance(tab.get("domain"), list) else [])),
                         }
                         for tab in (raw.get("sheet_domain_tabs") or [])
                         if isinstance(tab, dict) and str(tab.get("key") or "").strip()

@@ -874,6 +874,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assembler.env = Env()
         data = {
             "head": {"title": "Source worksheet", "model": "source.line"},
+            "domain": ["|", ["scope", "=", "a"], ["scope", "=", "b"]],
             "fields": {
                 "name": {"type": "char", "string": "Name"},
                 "single_name": {"type": "char", "string": "Single"},
@@ -890,8 +891,12 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             },
         }
         context = {
+            "allowed_company_ids": [1],
+            "lang": "en_US",
             "hierarchical_worksheet": {
                 "navigation_mode": "sheet_groups",
+                "sheet_domain": [["active", "=", True]],
+                "sheet_domain_tabs": [{"key": "draft", "domain": [["state", "=", "draft"]]}],
                 "navigation_groups": [
                     {"field": "single_name", "label": "Single"},
                     {"field": "unit_name", "label": "Unit"},
@@ -910,6 +915,12 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual([row["field"] for row in config["hierarchy"]["navigation_groups"]], ["single_name", "unit_name"])
         self.assertEqual(config["sheet"]["binding_field"], "")
         self.assertIn("single_name", config["sheet"]["fields"])
+        self.assertEqual(config["sheet"]["domain"], data["domain"] + [["active", "=", True]])
+        self.assertEqual(config["sheet"]["domain_tabs"][0]["domain"], data["domain"] + [["state", "=", "draft"]])
+        self.assertEqual(config["sheet"]["context"], context)
+        config["sheet"]["context"]["allowed_company_ids"].append(2)
+        self.assertEqual(context["allowed_company_ids"], [1])
+        self.assertEqual(config["hierarchy"]["domain"], [])
 
 
 if __name__ == "__main__":
