@@ -633,3 +633,45 @@ main规则2770794已在用户授权的登录网页保存四个必须通过项，
 普通professional_frontend同步补齐；full/candidate、数据库、浏览器验收仍未开放，不宣称全量GitHub门禁等效。
 
 当前为开发增量，最终运行/冻结/线上回执在既有外部批次证据目录补记；旧630e89b8线上通过只对其原输入有效。
+
+## 准备失败必须可见回传（2026-09-25，P4 增量）
+
+- 现象：候选 `02a63d5b`（PR !10）在 `git merge-base --is-ancestor` 处准备失败（base 不是候选祖先），
+  `formal_inbox` 记为 `environment_error` 并打印 `preparation_failed`，但四项必需检查停留在“等待状态上传”，
+  对 PR 作者不可见。
+- 根因：准备失败只写了投递箱状态，没有把失败绑定到 PR／源 SHA，也没有生成可信队列任务；
+  reporter 只遍历 `formal_jobs`，因此没有任何检查可回传。
+- 修复（`scripts/ci`，P4 交付工具）：计划构造拆分为“先解析平台身份、再检出”；失败时用受信任的
+  有限原因码构造零变更集计划并入队，由 `FormalQueue.fail` 直接终态化为 `environment_error`；
+  reporter 照常回传四项 `completed/action_required`，绑定真实 PR ID 与 head SHA，
+  summary 含 `preparation_failure=<原因码>`。
+- 边界：祖先门禁不变（`changed_paths` 仍以 `check=True` 抛 `CalledProcessError`，执行器仍复核祖先并
+  拒绝执行零变更集计划）；失败任务不可执行、不可为 success/skip/cancelled；原因码为白名单，
+  候选文本不进入检查回传；平台身份本身不可解析时无法绑定，只记投递箱状态并打印
+  `reported=false error=<异常类名>`。投递箱状态随回传结果变化：可绑定时记 `prepared`
+  （已有终态任务），无法绑定时记 `environment_error`（无任务可回传），两种结果都不再是永久等待。
+- 定向：plan/queue/worker/executor 67 项通过；以 PR !10 的真实 head/base 身份复算得到四项
+  `action_required`，原行为是四项永久等待。
+- 状态：本地实现与定向验证通过；线上安装（新的受信包与 `GITEE_FORMAL_ROOT` 重钉）由集成车道执行，
+  未部署前不称线上已修复。
+
+### 2026-09-25 已发布候选同步收口
+
+P4 / scripts/ops / 既有集成入口扩展：已发布候选在 main 前进后不能使用未发布 rebase
+入口，因此新增只追加合并提交的 `workspace.branch.sync-gitee-published`。绑定本地与
+远端精确身份、验证恢复 bundle，冲突回到原 HEAD，无强推、无门禁放宽。7 个临时真实
+Git 仓库用例通过（含冲突恢复、远端漂移、dirty 拒绝、预演、未发布追加和禁止隐式确认）。
+发布仍走原 pr.push.gitee，远端四项检查必须重新绑定新头与当前 main。
+BOQ !11 已合入 e5b9852a；关系 !12 的 63b860a9 已受管同步到 0ebcc675 并快进发布。
+!14 继承关系候选，必须在 !12 后集成；不能声称只有 CI 差异。
+
+### 2026-09-25 受信 CI 包自举更新
+
+关系 !12 已合入 a32b38b6，!14 在此基线上仅剩 P4 CI 增量。旧受信包
+54aa8c63 对候选 queue/worker/gate_plan 的源码摘要要求与自身相同，导致
+f5b80a49 在任何检查执行前 environment_error；不能通过先合并再安装解除此自举环。
+按所有者直接收口授权，用既有增量安装器发布已定向验证的精确 f5b80a49 包，
+保留祖先、源码摘要、沙箱及四项合并门禁。安装回执 installed、credentials_unchanged=true；
+队列备份 incremental-jcg2zwsq，MemoryHigh 已恢复 896M，Max=1152M、SwapMax=2G。
+本提交只补记录，以新 SHA 取得检查，避免沿用先前失败项；不把安装成功当作 CI 通过。
+后续结算若改变受信策略输入，同样须先经精确包预演/安装再验候选，不能移除摘要检查。
