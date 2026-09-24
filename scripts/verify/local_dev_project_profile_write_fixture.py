@@ -111,6 +111,78 @@ def _project_identity(batch):
     }
 
 
+def _tag_identity(batch):
+    """Minimal governed candidates for the project ``tag_ids`` relation.
+
+    ``project.tags`` has no company column, so the governed company scope
+    derives ``project_ids.company_id``: a tag is only offered to the relation
+    control while some company project already carries it.  The batch therefore
+    owns a second minimal project that holds the three candidate tags, while the
+    acceptance target project keeps an empty relation.  Both rows stay inside the
+    same batch ownership boundary: markers derive from the batch and the XMLID
+    bindings are what cleanup trusts.
+    """
+    suffix = batch.replace("-", "_")
+    marker = "CODEX-P4-%s-TAG" % batch.upper()
+    return {
+        "marker": marker,
+        "carrier_xmlid": "project_%s_tag_carrier" % suffix,
+        "carrier_name": "Codex P4 标签载体 %s" % batch,
+        "carrier_code": "CODEX-P4-%s-TAG-CARRIER" % batch.upper(),
+        "rows": [
+            ("tag_%s_alpha" % suffix, "%s-ALPHA" % marker),
+            ("tag_%s_beta" % suffix, "%s-BETA" % marker),
+            ("tag_%s_gamma" % suffix, "%s-GAMMA" % marker),
+        ],
+    }
+
+
+def _carrier_project(env, identity):
+    """The batch-owned project that keeps the tag candidates visible."""
+    carrier = _xmlid(env, identity["carrier_xmlid"])
+    if not carrier:
+        return None
+    if carrier._name != "project.project":
+        raise RuntimeError("fixture tag carrier XMLID is not owned by this batch")
+    marker = getattr(carrier, "project_code", False) or carrier.code
+    if marker != identity["carrier_code"]:
+        raise RuntimeError("fixture tag carrier XMLID is not owned by this batch")
+    return carrier.sudo()
+
+
+def _carrier_summary(env, identity):
+    carrier = _carrier_project(env, identity)
+    if not carrier:
+        return None
+    return {
+        "xmlid": "%s.%s" % (MODULE, identity["carrier_xmlid"]),
+        "id": carrier.id,
+        "name": carrier.name,
+        "ownership_marker": identity["carrier_code"],
+        "company_id": carrier.company_id.id,
+        "tag_ids": sorted(carrier.tag_ids.ids),
+        "purpose": "keeps the batch-owned tag candidates inside the governed company scope",
+    }
+
+
+def _owned_tags(env, identity):
+    rows = []
+    for name, _label in identity["rows"]:
+        row = _xmlid(env, name)
+        if not row:
+            continue
+        if row._name != "project.tags":
+            raise RuntimeError("fixture tag XMLID is not owned by this batch: %s.%s" % (MODULE, name))
+        if not _text(row.name).startswith(identity["marker"]):
+            raise RuntimeError("fixture tag name lost its batch marker: %s.%s" % (MODULE, name))
+        rows.append({
+            "xmlid": "%s.%s" % (MODULE, name),
+            "id": row.id,
+            "name": _text(row.name),
+        })
+    return rows
+
+
 def _owned_project(env, identity):
     project = _xmlid(env, identity["xmlid"])
     if not project:
@@ -190,9 +262,11 @@ def _summary(env, sha, batch, mode, project=None):
             "responsibility_ids": project.responsibility_ids.ids if project else [],
         },
         "responsibilities": responsibilities,
+        "tags": _owned_tags(env, _tag_identity(batch)) if project else [],
+        "candidate_carrier": _carrier_summary(env, _tag_identity(batch)),
         "role_candidates": candidates,
         "write_scope": ["name", "date_start", "date", "description", "responsibility_ids", "partner_id"],
-        "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project and its responsibility rows",
+        "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project, its responsibility rows, its tag carrier and its batch-owned tag candidates",
     }
     if project:
         effective = {}
@@ -272,26 +346,84 @@ def prepare(env, sha, batch, mode):
         _bind(env, xmlid, row)
     project.message_subscribe(partner_ids=[env["res.users"].sudo().browse(user["id"]).partner_id.id])
     project.message_subscribe(partner_ids=[env["res.users"].sudo().browse(pm["id"]).partner_id.id])
+    tags = _tag_identity(batch)
+    Tag = env["project.tags"].sudo()
+    created_tags = []
+    for xmlid, label in tags["rows"]:
+        row = Tag.create({"name": label})
+        _bind(env, xmlid, row)
+        created_tags.append(row)
+    carrier = Project.create({
+        "name": tags["carrier_name"],
+        "code": tags["carrier_code"],
+        "company_id": pm["company_id"],
+        "user_id": user["id"],
+        "manager_id": pm["id"],
+        "privacy_visibility": "followers",
+        "active": True,
+        "tag_ids": [(6, 0, [row.id for row in created_tags])],
+    })
+    if "project_code" in Project._fields and carrier.project_code != tags["carrier_code"]:
+        carrier.write({"project_code": tags["carrier_code"]})
+    if carrier.code != tags["carrier_code"] and "project_code" not in Project._fields:
+        carrier.write({"code": tags["carrier_code"]})
+    _bind(env, tags["carrier_xmlid"], carrier)
     env.cr.commit()
     return _summary(env, sha, batch, mode, project)
 
 
 def cleanup(env, sha, batch, mode):
     identity = _project_identity(batch)
+    tag_identity = _tag_identity(batch)
+    tags = _owned_tags(env, tag_identity)
+    carrier = _carrier_project(env, tag_identity)
     project = _owned_project(env, identity)
+    deleted_tag_ids = sorted(row["id"] for row in tags)
+    deleted_carrier_id = None
+    if carrier:
+        refs = _external_references(env, carrier.id)
+        if refs:
+            raise RuntimeError("cleanup stopped: external tag-carrier references exist: %s" % json.dumps(refs, ensure_ascii=False))
+        deleted_carrier_id = carrier.id
+        carrier.unlink()
+        if _carrier_project(env, tag_identity):
+            raise RuntimeError("cleanup failed: batch-owned tag carrier still exists")
+    if deleted_tag_ids:
+        env["project.tags"].sudo().browse(deleted_tag_ids).unlink()
+        if _owned_tags(env, tag_identity):
+            raise RuntimeError("cleanup failed: batch-owned tag candidates still exist")
     if not project:
-        return {"mode": mode, "database": env.cr.dbname, "candidate_sha": sha, "batch": batch, "clean": True, "deleted": False}
+        env.cr.commit()
+        return {
+            "mode": mode,
+            "database": env.cr.dbname,
+            "candidate_sha": sha,
+            "batch": batch,
+            "clean": True,
+            "deleted": False,
+            "deleted_carrier_id": deleted_carrier_id,
+            "deleted_tag_ids": deleted_tag_ids,
+        }
     refs = _external_references(env, project.id)
     if refs:
         raise RuntimeError("cleanup stopped: external project references exist: %s" % json.dumps(refs, ensure_ascii=False))
     responsibility_ids = set(project.responsibility_ids.ids)
     env["project.responsibility"].sudo().browse(list(responsibility_ids)).unlink()
     project.sudo().unlink()
-    leftovers = _owned_project(env, identity)
-    if leftovers:
+    if _owned_project(env, identity):
         raise RuntimeError("cleanup failed: owned project still exists")
     env.cr.commit()
-    return {"mode": mode, "database": env.cr.dbname, "candidate_sha": sha, "batch": batch, "clean": True, "deleted": True, "deleted_responsibility_ids": sorted(responsibility_ids)}
+    return {
+        "mode": mode,
+        "database": env.cr.dbname,
+        "candidate_sha": sha,
+        "batch": batch,
+        "clean": True,
+        "deleted": True,
+        "deleted_responsibility_ids": sorted(responsibility_ids),
+        "deleted_carrier_id": deleted_carrier_id,
+        "deleted_tag_ids": deleted_tag_ids,
+    }
 
 
 sha, batch = _guard(env)

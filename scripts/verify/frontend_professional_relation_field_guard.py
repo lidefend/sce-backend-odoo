@@ -8,6 +8,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     failures: list[str] = []
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalRelationFieldControl.vue")
     many2one = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue")
+    many2many = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts")
     relation_field = read_text("frontend/apps/web/src/components/design-system/ScRelationField.vue")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
@@ -72,6 +73,40 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if retired in many2one:
             failures.append(f"many2one reimplements official select interaction: {retired}")
+    # The many2many control delegates selection, keyboard handling and the popup to
+    # the official multi-select. The installed Select (1.20.5) resets its own
+    # keyword on a check selection and on a hidden popup without emitting `search`,
+    # so the runtime keyword follows those two official signals instead of a
+    # hand-written focus/blur timer.
+    for marker in (
+        '@search="onSearch"',
+        '@change="onChange"',
+        '@popup-visible-change="onPopupVisibleChange"',
+        'function resetKeyword()',
+        ':popup-props="popupProps"',
+        "overlayInnerStyle: { maxWidth:",
+    ):
+        if marker not in many2many:
+            failures.append(f"many2many state channel is incomplete: {marker}")
+    for retired in (
+        "setTimeout",
+        "focused",
+        "@blur=",
+        "@focus=",
+        "activeIndex",
+        'role="listbox"',
+        'role="option"',
+        "blur()",
+        "handleKeydown",
+    ):
+        if retired in many2many:
+            failures.append(f"many2many reimplements official select interaction: {retired}")
+    # The official multi-select also owns keyboard selection, so this control must
+    # not grow a second keyboard loop. The one official Enter gap it does hit has
+    # to stay recorded in place together with its exit condition.
+    for marker in ("upstream-gap: m2m-enter-with-keyword", "upstream-gap-exit:"):
+        if marker not in many2many:
+            failures.append(f"many2many upstream keyboard gap note is incomplete: {marker}")
     if "resolveProfessionalMany2oneDisplayValue(props.field)" not in many2one or "resolveProfessionalMany2oneDisplayValue" not in model:
         failures.append("many2one input does not consume the authoritative projected display value")
     if "resolveProfessionalMany2oneQueryKeyword(props.field)" not in many2one or "resolveProfessionalMany2oneQueryKeyword" not in model:

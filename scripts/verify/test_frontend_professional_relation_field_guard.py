@@ -270,6 +270,63 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
 
         self.assertTrue(any("create handler" in item for item in validate(read_text)))
 
+    def test_many2many_cannot_reintroduce_a_blur_timer(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace(
+                    '      @popup-visible-change="onPopupVisibleChange"\n',
+                    '      @popup-visible-change="onPopupVisibleChange"\n      @blur="onBlur"\n',
+                ).replace(
+                    "function onPopupVisibleChange(visible: boolean) {",
+                    "function onBlur() {\n  setTimeout(() => resetKeyword(), 200);\n}\n\nfunction onPopupVisibleChange(visible: boolean) {",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("many2many reimplements official select interaction: setTimeout" in item for item in failures))
+        self.assertTrue(any("many2many reimplements official select interaction: @blur=" in item for item in failures))
+
+    def test_many2many_must_follow_the_official_close_signal(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace('@popup-visible-change="onPopupVisibleChange"', "")
+            return value
+
+        self.assertTrue(any("many2many state channel is incomplete" in item for item in validate(read_text)))
+
+    def test_many2many_must_keep_the_recorded_upstream_keyboard_gap(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace("// upstream-gap: m2m-enter-with-keyword", "").replace(
+                    "// upstream-gap-exit:", ""
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("upstream keyboard gap note is incomplete: upstream-gap: m2m-enter-with-keyword" in item for item in failures))
+        self.assertTrue(any("upstream keyboard gap note is incomplete: upstream-gap-exit:" in item for item in failures))
+
+    def test_many2many_must_not_hand_roll_a_second_keyboard_loop(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return f"{value}\nfunction handleKeydown(event: KeyboardEvent) {{}}\n"
+            return value
+
+        self.assertTrue(any("many2many reimplements official select interaction: handleKeydown" in item for item in validate(read_text)))
+
+    def test_many2many_must_keep_the_official_panel_width_ceiling(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalManyToManySelect.vue"):
+                return value.replace(":popup-props=\"popupProps\"", "")
+            return value
+
+        self.assertTrue(any(":popup-props=\"popupProps\"" in item for item in validate(read_text)))
+
 
 if __name__ == "__main__":
     unittest.main()

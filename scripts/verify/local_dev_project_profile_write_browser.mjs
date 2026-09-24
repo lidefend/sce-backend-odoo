@@ -21,6 +21,7 @@ const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PERMISSION_ONLY = process.env.PERMISSION_ONLY === '1';
 const RELATION_ONLY = process.env.RELATION_ONLY === '1';
 const RELATION_WRITE_ONLY = process.env.RELATION_WRITE_ONLY === '1';
+const M2M_ONLY = process.env.M2M_ONLY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
@@ -147,9 +148,42 @@ function loadWriteAuthority(projectId) {
   if (responsibilities.some((row) => Number(row?.project_id) !== projectId)) deny('authority responsibility belongs to another project');
   const xmlids = responsibilities.map((row) => String(row?.xmlid || '')).sort();
   if (JSON.stringify(xmlids) !== JSON.stringify(expectedResponsibilityXmlids(batch))) deny('authority responsibility XMLID mismatch');
+  const tags = Array.isArray(authority.tags) ? authority.tags : [];
+  if (M2M_ONLY) {
+    const marker = `CODEX-P4-${batch.toUpperCase()}-TAG-`;
+    if (tags.length !== 3) deny('authority must resolve the three batch-owned many2many tag candidates');
+    const tagNames = tags.map((row) => String(row?.name || '')).sort();
+    if (new Set(tagNames).size !== 3 || tagNames.some((name) => !name.startsWith(marker))) {
+      deny('authority many2many tag candidates lost their batch marker');
+    }
+    if (tags.some((row) => !Number.isSafeInteger(Number(row?.id)) || Number(row?.id) <= 0)) {
+      deny('authority many2many tag candidate identity is invalid');
+    }
+    // ``project.tags`` carries no company column, so the governed company scope
+    // derives ``project_ids.company_id``. The candidates are therefore only
+    // offered while a batch-owned carrier project holds them, and the carrier
+    // must be a different record from the acceptance target.
+    const carrier = authority.candidate_carrier || null;
+    if (!carrier) deny('authority must resolve the batch-owned many2many tag carrier');
+    const expectedCarrierXmlid = `${FIXTURE_NAMESPACE}.project_${batch.replaceAll('-', '_')}_tag_carrier`;
+    if (String(carrier.xmlid || '') !== expectedCarrierXmlid) deny('authority many2many tag carrier XMLID mismatch');
+    if (String(carrier.ownership_marker || '') !== `CODEX-P4-${batch.toUpperCase()}-TAG-CARRIER`) {
+      deny('authority many2many tag carrier marker mismatch');
+    }
+    const carrierId = Number(carrier.id);
+    if (!Number.isSafeInteger(carrierId) || carrierId <= 0) deny('authority many2many tag carrier identity is invalid');
+    if (carrierId === projectId) deny('authority many2many tag carrier must not be the acceptance target');
+    const carrierTagIds = positiveIds(carrier.tag_ids, 'authority many2many tag carrier tag_ids');
+    const tagIds = positiveIds(tags.map((row) => row?.id), 'authority many2many tag rows');
+    if (JSON.stringify(carrierTagIds) !== JSON.stringify(tagIds)) {
+      deny('authority many2many tag carrier does not hold the batch candidates');
+    }
+  }
   return {
     ...authority,
     batch,
+    tags,
+    carrier: authority.candidate_carrier || null,
     project: { ...project, company_id: projectCompanyId, responsibility_ids: responsibilityIds },
     writer: {
       id: Number(writer.id),
@@ -179,6 +213,9 @@ const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
 if (PERMISSION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY)) deny('permission checks require dedicated write authority and no recovery injection');
 if (RELATION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation checks require dedicated authority and an exclusive mode');
 if (RELATION_WRITE_ONLY && (!WRITE_MODE || RELATION_ONLY || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation write checks require dedicated authority and an exclusive mode');
+if (M2M_ONLY && (!WRITE_MODE || RELATION_ONLY || RELATION_WRITE_ONLY || PERMISSION_ONLY || NETWORK_FAILURE_RECOVERY)) {
+  deny('many2many checks require dedicated authority and an exclusive mode');
+}
 const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
 if (RELATION_WRITE_ONLY && !WRITE_AUTHORITY?.write_scope?.includes('partner_id')) deny('relation write scope must explicitly include partner_id');
 const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
@@ -449,6 +486,341 @@ async function waitForWriteOutcome(page, writes, index, timeout = 20000) {
   }
   throw new Error(`write_outcome_timeout:${index}`);
 }
+// The many2many check below never writes: it drives the official relation control
+// through mouse, keyboard, blur, Escape, clear, consecutive searches and a narrow
+// viewport, while recording mutation requests and the authoritative relation queries.
+function recordMutationRequests(page) {
+  const mutations = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
+    const op = String(body?.params?.op || '');
+    const isDataWrite = body?.intent === 'api.data' && ['write', 'create', 'unlink'].includes(op);
+    if (!isDataWrite && body?.intent !== 'api.data.write') return;
+    mutations.push({ intent: body?.intent, model: body?.params?.model || null, op: op || null, fields: Object.keys(body?.params?.vals || {}).sort() });
+  });
+  return mutations;
+}
+function recordRelationQueries(page, model) {
+  const entries = [];
+  const byRequest = new Map();
+  const waiters = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
+    if (body?.intent !== 'api.data' || body?.params?.op !== 'list' || body?.params?.model !== model) return;
+    const entry = { search_term: body?.params?.search_term ?? null, limit: body?.params?.limit ?? null, status: null };
+    entries.push(entry);
+    byRequest.set(request, entry);
+    waiters.splice(0).forEach((resolve) => resolve(entry));
+  });
+  page.on('response', (response) => {
+    const entry = byRequest.get(response.request());
+    if (!entry) return;
+    entry.status = response.status();
+    entry.ok = response.ok();
+    byRequest.delete(response.request());
+  });
+  return {
+    entries,
+    next(timeoutMs = 20000) {
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), timeoutMs);
+        waiters.push((entry) => { clearTimeout(timer); resolve(entry); });
+      });
+    },
+  };
+}
+async function readRelationCandidates(page, model, searchTerm) {
+  const result = await intent(page, 'api.data', {
+    op: 'list', model, fields: ['name'], limit: 80,
+    search_term: searchTerm || undefined, context: {},
+  });
+  return (result.data.records || []).map((row) => normalize(row.name));
+}
+async function readProjectTagIds(page) {
+  const result = await intent(page, 'api.data', {
+    op: 'read', model: 'project.project', ids: [PROJECT_ID], fields: ['id', 'tag_ids'], context: {},
+  });
+  const raw = result.data.records?.[0]?.tag_ids;
+  if (!raw || raw === false) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map(Number).filter(Number.isFinite).sort((left, right) => left - right);
+}
+async function verifyMany2manyTagSelect(page, report, beforeFacts) {
+  const expectedTags = WRITE_AUTHORITY.tags || [];
+  const expectedNames = expectedTags.map((row) => normalize(row.name)).sort();
+  const mutations = recordMutationRequests(page);
+  const relationQueries = recordRelationQueries(page, 'project.tags');
+  const carrier = WRITE_AUTHORITY?.carrier;
+  if (!carrier || Number(carrier.id) === PROJECT_ID) throw new Error('m2m_carrier_precondition_failed');
+  const beforeTagIds = await readProjectTagIds(page);
+  if (beforeTagIds.length) throw new Error(`m2m_precondition_failed:${JSON.stringify(beforeTagIds)}`);
+
+  const fieldRoot = page.locator('[data-field-name="tag_ids"]').first();
+  await fieldRoot.waitFor({ timeout: 30000 });
+  const input = fieldRoot.locator('input').first();
+  await input.waitFor({ timeout: 30000 });
+  const panel = page.locator('.t-select__dropdown:visible');
+  const optionRows = panel.locator('li.t-select-option');
+  const selectedChips = () => fieldRoot.locator('.t-tag');
+  const optionLabels = async () => (await optionRows.allInnerTexts()).map(normalize).filter(Boolean);
+  const selectableLabels = async () => (await optionLabels()).filter((label) => !label.startsWith('创建'));
+  const draftClean = () => page.getByText('尚未修改', { exact: true }).isVisible();
+  const draftDirty = async () => !(await draftClean());
+  const dirtyIndicatorShown = async () => (await page.getByText('有未保存修改', { exact: true }).count()) > 0;
+  const openPanel = async () => {
+    if (!(await panel.count())) await input.click();
+    await panel.waitFor({ state: 'visible', timeout: 15000 });
+  };
+  const closePanel = async () => {
+    await input.press('Escape');
+    await panel.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+  };
+  // The official panel is portalled outside the field root, so every panel
+  // assertion has to look at the visible dropdown, not at the field subtree.
+  const waitForCandidates = (total) => page.waitForFunction(
+    (expected) => document.querySelectorAll('.t-select__dropdown .t-select-option').length >= expected,
+    total, { timeout: 20000 },
+  );
+  const waitForVisibleLabel = async (label) => {
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      const labels = await optionLabels();
+      if (labels.some((value) => value.includes(label))) return;
+      await page.waitForTimeout(100);
+    }
+    throw new Error(`m2m_option_label_not_visible:${label}`);
+  };
+  const searchFor = async (keyword) => {
+    const pending = relationQueries.next();
+    await input.fill(keyword);
+    const entry = await pending;
+    if (!entry) throw new Error(`m2m_relation_query_missing:${keyword}`);
+    await page.waitForTimeout(250);
+    return entry;
+  };
+
+  // 1. The panel offers every batch-owned candidate without any keyword, and
+  //    opening it changes neither the draft nor the backend.
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const unfiltered = await selectableLabels();
+  const candidatesLoaded = JSON.stringify(unfiltered.slice().sort()) === JSON.stringify(expectedNames)
+    && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_candidates_loaded_without_keyword', status: candidatesLoaded ? 'PASS' : 'FAIL', candidates: unfiltered, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!candidatesLoaded) throw new Error(`m2m_candidates_not_authoritative:${JSON.stringify({ unfiltered, expectedNames })}`);
+
+  // 1b. Searching is not a field change: while a keyword is typed and no
+  //     option has been picked, the relation value stays empty and no write is
+  //     sent. The header dirty indicator is recorded next to it because a
+  //     search-only keyword currently still raises it (recorded deviation).
+  await searchFor('BETA');
+  const searchOnlyTagIds = await readProjectTagIds(page);
+  const searchOnlyChips = await selectedChips().count();
+  const searchOnlyKeptValue = JSON.stringify(searchOnlyTagIds) === JSON.stringify(beforeTagIds)
+    && searchOnlyChips === 0
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_search_only_keeps_the_relation_value',
+    status: searchOnlyKeptValue ? 'PASS' : 'FAIL',
+    chips: searchOnlyChips,
+    relation_ids: searchOnlyTagIds,
+    keyword_dirty_indicator: await dirtyIndicatorShown(),
+    recorded_deviation: 'the form header reports unsaved changes while only a search keyword is present',
+    mutation_requests: mutations.length,
+  });
+  if (!searchOnlyKeptValue) {
+    throw new Error(`m2m_search_modified_the_relation:${JSON.stringify({ searchOnlyTagIds, searchOnlyChips })}`);
+  }
+
+  // 2. A blur closes the official panel, and the runtime keyword follows the
+  //    official close: reopening shows the unfiltered candidates again.
+  const emptyQuery = await searchFor('zzz-no-such-tag');
+  await page.locator('[data-field-name="name"] input').first().click();
+  await panel.waitFor({ state: 'hidden', timeout: 15000 });
+  const blurredDraftClean = await draftClean();
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const afterBlurLabels = await selectableLabels();
+  const blurReset = blurredDraftClean
+    && JSON.stringify(afterBlurLabels.slice().sort()) === JSON.stringify(expectedNames)
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_blur_resets_keyword_and_draft', status: blurReset ? 'PASS' : 'FAIL', query: emptyQuery.search_term, candidates_after_blur: afterBlurLabels, draft_clean: blurredDraftClean, mutation_requests: mutations.length });
+  if (!blurReset) throw new Error(`m2m_blur_left_a_stale_keyword:${JSON.stringify({ afterBlurLabels })}`);
+
+  // 3. Escape closes the official panel; the visible input is empty and the
+  //    reopened candidates are the unfiltered set, not the abandoned keyword.
+  await searchFor('zzz-no-such-tag');
+  await closePanel();
+  const inputTextAfterEscape = normalize(await input.inputValue());
+  const escapeDraftClean = await draftClean();
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const afterEscapeLabels = await selectableLabels();
+  const escapeReset = inputTextAfterEscape === ''
+    && escapeDraftClean
+    && JSON.stringify(afterEscapeLabels.slice().sort()) === JSON.stringify(expectedNames)
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_escape_resets_keyword_and_draft', status: escapeReset ? 'PASS' : 'FAIL', input_after_escape: inputTextAfterEscape, candidates_after_escape: afterEscapeLabels, draft_clean: escapeDraftClean, mutation_requests: mutations.length });
+  if (!escapeReset) throw new Error(`m2m_escape_left_a_stale_keyword:${JSON.stringify({ inputTextAfterEscape, afterEscapeLabels })}`);
+  await closePanel();
+
+  // 4. Consecutive searches: each keyword is requested on its own and the list
+  //    that stays visible is the authoritative answer for the last keyword.
+  const alphaName = expectedNames.find((name) => name.endsWith('-ALPHA'));
+  const alphaKeyword = 'ALPHA';
+  const alphaQuery = await searchFor(alphaKeyword);
+  const alphaAuthority = (await readRelationCandidates(page, 'project.tags', alphaKeyword)).map(normalize).sort();
+  const alphaVisible = (await selectableLabels()).slice().sort();
+  const betaName = expectedNames.find((name) => name.endsWith('-BETA'));
+  const betaKeyword = 'BETA';
+  const betaQuery = await searchFor(betaKeyword);
+  const betaAuthority = (await readRelationCandidates(page, 'project.tags', betaKeyword)).map(normalize).sort();
+  await waitForVisibleLabel(betaKeyword);
+  const betaVisible = (await selectableLabels()).slice().sort();
+  const sequentialSearches = alphaQuery.search_term === alphaKeyword
+    && betaQuery.search_term === betaKeyword
+    && JSON.stringify(alphaVisible) === JSON.stringify(alphaAuthority)
+    && JSON.stringify(betaVisible) === JSON.stringify(betaAuthority)
+    && betaAuthority.length === 1 && betaAuthority[0] === betaName
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_consecutive_searches_last_is_authoritative',
+    status: sequentialSearches ? 'PASS' : 'FAIL',
+    queries: relationQueries.entries.map((entry) => entry.search_term),
+    alpha: { keyword: alphaKeyword, authority: alphaAuthority, visible: alphaVisible },
+    beta: { keyword: betaKeyword, authority: betaAuthority, visible: betaVisible },
+    mutation_requests: mutations.length,
+  });
+  if (!sequentialSearches) throw new Error(`m2m_consecutive_search_not_authoritative:${JSON.stringify({ alphaAuthority, alphaVisible, betaAuthority, betaVisible })}`);
+
+  // 5. Mouse selection: the official check clears the search state (the panel
+  //    returns to the full candidate list) and only the draft changes.
+  await optionRows.filter({ hasText: betaKeyword }).first().click();
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), betaKeyword, { timeout: 15000 });
+  await waitForCandidates(expectedTags.length);
+  const afterMouseSelect = (await selectableLabels()).slice().sort();
+  const chipsAfterMouseSelect = (await selectedChips().allInnerTexts()).map(normalize);
+  const mouseSelect = chipsAfterMouseSelect.some((label) => label.includes(betaKeyword))
+    && JSON.stringify(afterMouseSelect) === JSON.stringify(expectedNames)
+    && await draftDirty()
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_mouse_select_draft_only', status: mouseSelect ? 'PASS' : 'FAIL', chips: chipsAfterMouseSelect, candidates_after_check: afterMouseSelect, draft_dirty: await draftDirty(), mutation_requests: mutations.length });
+  if (!mouseSelect) throw new Error(`m2m_mouse_select_not_proven:${JSON.stringify({ chipsAfterMouseSelect, afterMouseSelect })}`);
+  await closePanel();
+
+  // 6. Keyboard selection stays with the official list: Arrow + Enter commits the
+  //    row the official panel highlights, and only the draft changes.
+  const keyboardTarget = expectedNames.find((name) => name.endsWith('-GAMMA'));
+  const hoveredRowLabel = async () => normalize(await page.evaluate(() => {
+    const row = [...document.querySelectorAll('.t-select__dropdown .t-select-option')]
+      .find((node) => String(node.className).includes('hover'));
+    return row ? row.textContent : '';
+  }));
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  let hovered = '';
+  for (let press = 0; press <= expectedTags.length; press += 1) {
+    hovered = await hoveredRowLabel();
+    if (hovered.includes(keyboardTarget)) break;
+    await input.press('ArrowDown');
+    await page.waitForTimeout(150);
+  }
+  hovered = await hoveredRowLabel();
+  await input.press('Enter');
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), keyboardTarget, { timeout: 15000 });
+  const chipsAfterKeyboard = (await selectedChips().allInnerTexts()).map(normalize);
+  const keyboardSelect = hovered.includes(keyboardTarget)
+    && chipsAfterKeyboard.some((label) => normalize(label) === hovered)
+    && await draftDirty()
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_keyboard_select_draft_only', status: keyboardSelect ? 'PASS' : 'FAIL', hovered_option: hovered, chips: chipsAfterKeyboard, draft_dirty: await draftDirty(), mutation_requests: mutations.length });
+  if (!keyboardSelect) throw new Error(`m2m_keyboard_select_not_proven:${JSON.stringify({ hovered, chipsAfterKeyboard })}`);
+  await closePanel();
+
+  // 6b. Recorded upstream gap: with a non-empty keyword the installed official
+  //     version cannot commit with Enter (TagInput turns Enter into a tag append
+  //     and the Select removeTag stops the keydown before the official Enter
+  //     branch runs). The control must stay inert here rather than grow a second
+  //     keyboard loop: chips, relation ids, keyword, panel and network unchanged.
+  const gapKeyword = keyboardTarget.slice(-5);
+  await openPanel();
+  await searchFor(gapKeyword);
+  await waitForVisibleLabel(gapKeyword);
+  const chipsBeforeGap = (await selectedChips().allInnerTexts()).map(normalize);
+  const tagIdsBeforeGap = await readProjectTagIds(page);
+  await input.press('ArrowDown');
+  await page.waitForTimeout(200);
+  await input.press('Enter');
+  await page.waitForTimeout(700);
+  const chipsAfterGap = (await selectedChips().allInnerTexts()).map(normalize);
+  const tagIdsAfterGap = await readProjectTagIds(page);
+  const relationIdsUnchanged = JSON.stringify(tagIdsAfterGap) === JSON.stringify(tagIdsBeforeGap);
+  const gapInert = JSON.stringify(chipsAfterGap) === JSON.stringify(chipsBeforeGap)
+    && relationIdsUnchanged
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_keyboard_enter_with_keyword_is_an_upstream_gap',
+    status: gapInert ? 'PASS' : 'FAIL',
+    chips_before: chipsBeforeGap,
+    chips_after: chipsAfterGap,
+    keyword_after_enter: normalize(await input.inputValue()),
+    panel_still_open: (await panel.count()) > 0,
+    relation_ids_unchanged: relationIdsUnchanged,
+    upstream_gap: 'tdesign-vue-next 1.20.5 stops the Enter keydown before the official Enter branch while a keyword is present',
+    upstream_evidence: 'es/tag-input/hooks/useTagList.mjs onInnerEnter; es/select/select.mjs removeTag; es/select/hooks/useKeyboardControl.mjs',
+    mutation_requests: mutations.length,
+  });
+  if (!gapInert) throw new Error(`m2m_keyword_enter_changed_state:${JSON.stringify({ chipsBeforeGap, chipsAfterGap, tagIdsBeforeGap, tagIdsAfterGap })}`);
+  await page.screenshot({ path: path.join(OUT, 'm2m-keyboard-enter-with-keyword.png'), fullPage: true });
+  await closePanel();
+  while (await selectedChips().count()) {
+    const before = await selectedChips().count();
+    await selectedChips().first().locator('.t-icon-close, .t-tag__icon-close').first().click();
+    await page.waitForFunction((remaining) => document.querySelectorAll('[data-field-name="tag_ids"] .t-tag').length < remaining, before, { timeout: 15000 }).catch(() => {});
+    if (await selectedChips().count() >= before) break;
+  }
+  const chipsAfterClear = await selectedChips().count();
+  const clearProven = chipsAfterClear === 0 && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_explicit_clear_restores_clean_draft', status: clearProven ? 'PASS' : 'FAIL', chips_after_clear: chipsAfterClear, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!clearProven) throw new Error(`m2m_clear_not_proven:${JSON.stringify({ chipsAfterClear, draftClean: await draftClean() })}`);
+
+  // 7. Narrow viewport: one panel, operable options, no horizontal overflow.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPanel();
+  await page.waitForFunction((total) => {
+    const options = [...document.querySelectorAll('.t-select__dropdown .t-select-option')];
+    if (options.length < total) return false;
+    return document.documentElement.scrollWidth <= window.innerWidth;
+  }, expectedTags.length, { timeout: 20000 });
+  const narrow = await page.evaluate(() => {
+    const panels = [...document.querySelectorAll('.t-select__dropdown')].filter((node) => node.getBoundingClientRect().width > 0);
+    const option = panels[0]?.querySelector('li.t-select-option');
+    if (!option) return { panels: panels.length, operable: false, overflow: true };
+    const box = option.getBoundingClientRect();
+    return {
+      panels: panels.length,
+      operable: option.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)),
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+  await page.screenshot({ path: path.join(OUT, 'm2m-narrow-390.png'), fullPage: true });
+  await closePanel();
+  const narrowPassed = narrow.panels === 1 && narrow.operable && !narrow.overflow && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_narrow_viewport_single_panel', status: narrowPassed ? 'PASS' : 'FAIL', viewport: 390, panels: narrow.panels, option_operable: narrow.operable, horizontal_overflow: narrow.overflow, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!narrowPassed) throw new Error(`m2m_narrow_viewport_not_proven:${JSON.stringify(narrow)}`);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  // 8. The whole journey stayed client-side: no mutation request reached the
+  //    backend and the authoritative project facts are unchanged.
+  const afterTagIds = await readProjectTagIds(page);
+  const backendUnchanged = sameJson(beforeFacts, await readProjectFacts(page)) && sameJson(beforeTagIds, afterTagIds);
+  report.scenarios.push({ name: 'm2m_journey_stayed_draft_only', status: backendUnchanged && mutations.length === 0 ? 'PASS' : 'FAIL', mutation_requests: mutations.length, authoritative_unchanged: backendUnchanged, relation_queries: relationQueries.entries });
+  if (!backendUnchanged || mutations.length) throw new Error(`m2m_journey_wrote_state:${JSON.stringify({ mutations, beforeTagIds, afterTagIds })}`);
+}
+
 async function openProject(page) {
   // Reuse the verified formal navigation chain; do not hand-splice a form route.
   await page.goto(`${FRONTEND_URL}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -1094,6 +1466,10 @@ async function main() {
     }
     if (RELATION_ONLY) {
       await verifyCustomerRelation(page, report, beforeFacts);
+      return;
+    }
+    if (M2M_ONLY) {
+      await verifyMany2manyTagSelect(page, report, beforeFacts);
       return;
     }
     if (PERMISSION_ONLY) {

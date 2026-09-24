@@ -73,6 +73,27 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
     }
 
 
+def _m2m_authority():
+    authority = _authority()
+    suffix = TEST_BATCH.replace("-", "_")
+    authority["candidate_carrier"] = {
+        "xmlid": "codex_p4_project_profile_write.project_%s_tag_carrier" % suffix,
+        "id": TEST_PROJECT_ID + 1,
+        "ownership_marker": "CODEX-P4-%s-TAG-CARRIER" % TEST_BATCH.upper(),
+        "company_id": 1,
+        "tag_ids": [2, 3, 4],
+    }
+    authority["tags"] = [
+        {
+            "xmlid": "codex_p4_project_profile_write.tag_%s_%s" % (suffix, name),
+            "id": value,
+            "name": "CODEX-P4-%s-TAG-%s" % (TEST_BATCH.upper(), name.upper()),
+        }
+        for name, value in (("alpha", 2), ("beta", 3), ("gamma", 4))
+    ]
+    return authority
+
+
 def _facts(project_id=TEST_PROJECT_ID, responsibility_ids=None):
     ids = list(responsibility_ids or [24, 25])
     return {
@@ -99,6 +120,7 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "PERMISSION_ONLY",
             "RELATION_ONLY",
             "RELATION_WRITE_ONLY",
+            "M2M_ONLY",
             "P4_PROJECT_PROFILE_BATCH",
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
@@ -437,6 +459,76 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("retryWrite.outcome === 'business_success'", BROWSER_MJS)
         self.assertIn("refreshConsistent = sameJson(afterRetry, refreshed)", BROWSER_MJS)
         self.assertIn("responsibility_operations_applied", BROWSER_MJS)
+
+
+class TestMany2manyCarrier(unittest.TestCase):
+    def _runner(self, overrides):
+        return TestLocalDevProjectProfileWriteFixture()._direct_runner(overrides)
+
+    def test_fixture_tag_carrier_is_batch_owned_and_bounded(self):
+        self.assertIn('"carrier_xmlid": "project_%s_tag_carrier" % suffix', PY)
+        self.assertIn('"carrier_code": "CODEX-P4-%s-TAG-CARRIER" % batch.upper()', PY)
+        self.assertIn("fixture tag carrier XMLID is not owned by this batch", PY)
+        self.assertIn("external tag-carrier references exist", PY)
+        self.assertIn("batch-owned tag carrier still exists", PY)
+
+    def test_many2many_mode_requires_a_bounded_carrier(self):
+        authority = _m2m_authority()
+        authority.pop("candidate_carrier")
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("authority must resolve the batch-owned many2many tag carrier", result.stderr)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_rejects_a_carrier_that_does_not_hold_the_candidates(self):
+        authority = _m2m_authority()
+        authority["candidate_carrier"]["tag_ids"] = [2, 3]
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertTrue(
+            "authority many2many tag carrier does not hold the batch candidates" in result.stderr
+            or "authority must resolve the three batch-owned many2many tag candidates" in result.stderr
+            or "authority many2many tag candidate identity is invalid" in result.stderr,
+            result.stderr,
+        )
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_rejects_the_acceptance_target_as_carrier(self):
+        authority = _m2m_authority()
+        authority["candidate_carrier"]["id"] = TEST_PROJECT_ID
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("authority many2many tag carrier must not be the acceptance target", result.stderr)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_accepts_the_bounded_carrier(self):
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(_m2m_authority()),
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("GUARD_VALIDATION_ONLY", result.stdout)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_stays_exclusive(self):
+        for conflicting in ("RELATION_ONLY", "RELATION_WRITE_ONLY", "PERMISSION_ONLY", "NETWORK_FAILURE_RECOVERY"):
+            with self.subTest(conflicting=conflicting):
+                result, _ = self._runner({
+                    "M2M_ONLY": "1",
+                    conflicting: "1",
+                    "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(_m2m_authority()),
+                })
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertTrue("exclusive mode" in result.stderr, result.stderr)
 
 
 if __name__ == "__main__":
