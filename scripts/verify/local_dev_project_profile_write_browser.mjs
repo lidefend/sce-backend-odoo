@@ -653,6 +653,213 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   const unchanged = sameJson(beforeFacts, await readProjectFacts(page));
   if (!unchanged) throw new Error('customer_relation_probe_changed_backend');
   report.scenarios.push({ name: 'customer_narrow_escape_no_write', status: 'PASS', viewport: 390, option_unobscured: true, authoritative_unchanged: true, mutation_requests: mutations.length });
+
+  // The remaining relation paths run through the official component only: the
+  // documented keys, the panel's own actions and the official input. No business
+  // state is written, so every assertion below binds the draft and the backend.
+  const panelOptionIds = () => page.evaluate(() => [...document.querySelectorAll('.many2one-option-panel li.t-select-option[data-relation-option-value]')]
+    .map((node) => node.getAttribute('data-relation-option-value')));
+  const optionRowsOf = (scope) => scope.locator('li.t-select-option[data-relation-option-value]');
+  const panelRowCount = () => optionRowsOf(popup).count();
+  const headerState = async () => normalize(await page.locator('.record-header-context:visible').innerText().catch(() => ''));
+  const waitUntil = async (predicate, timeoutMs = 15000) => {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      if (await predicate()) return true;
+      if (Date.now() > deadline) return false;
+      await page.waitForTimeout(120);
+    }
+  };
+  const waitForPanelRows = (minimum, timeoutMs = 20000) => waitUntil(async () => (await panelRowCount()) >= minimum, timeoutMs);
+
+  // Keyboard selection: press ArrowDown onto an option that is not the current
+  // value and commit it with Enter. The official component owns navigation.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await input.click();
+  await popup.waitFor({ state: 'visible' });
+  if (!(await waitForPanelRows(1))) throw new Error('customer_keyboard_panel_empty');
+  const selectedRowValue = async () => {
+    const selected = popup.locator('li.t-select-option[aria-selected="true"]').first();
+    return (await selected.count()) ? String(await selected.getAttribute('data-relation-option-value')) : '';
+  };
+  const valueBeforeKeyboard = await selectedRowValue();
+  const rowTotal = await panelRowCount();
+  let targetIndex = -1;
+  for (let index = 0; index < rowTotal; index += 1) {
+    const candidate = String(await optionRowsOf(popup).nth(index).getAttribute('data-relation-option-value'));
+    if (candidate && candidate !== valueBeforeKeyboard) { targetIndex = index; break; }
+  }
+  if (targetIndex < 0) throw new Error(`customer_keyboard_target_missing:${JSON.stringify({ valueBeforeKeyboard, rowTotal })}`);
+  const keyboardId = Number(await optionRowsOf(popup).nth(targetIndex).getAttribute('data-relation-option-value'));
+  const keyboardLabel = normalize(await optionRowsOf(popup).nth(targetIndex).innerText());
+  for (let index = 0; index <= targetIndex; index += 1) await input.press('ArrowDown');
+  await input.press('Enter');
+  await popup.waitFor({ state: 'hidden' });
+  const keyboardDirty = await waitUntil(() => dirty(page), 6000);
+  const keyboardValue = normalize(await input.inputValue());
+  const keyboardFacts = await readProjectFacts(page);
+  const keyboardUnchanged = sameJson(beforeFacts, keyboardFacts);
+  const keyboardPassed = Number.isSafeInteger(keyboardId) && keyboardId > 0 && keyboardLabel.length > 0
+    && keyboardValue === keyboardLabel && keyboardDirty && keyboardUnchanged && !mutations.length;
+  report.scenarios.push({
+    name: 'customer_keyboard_selection_updates_draft', status: keyboardPassed ? 'PASS' : 'FAIL',
+    selected_id: keyboardId, selected_label: keyboardLabel, input_value: keyboardValue,
+    superseded_value: valueBeforeKeyboard, draft_dirty: keyboardDirty,
+    authoritative_unchanged: keyboardUnchanged, mutation_requests: mutations.length,
+  });
+  if (!keyboardPassed) throw new Error(`customer_keyboard_selection_not_in_draft:${JSON.stringify({ keyboardId, keyboardLabel, keyboardValue, keyboardDirty, keyboardUnchanged })}`);
+
+  // Explicit clear through the panel action: the value must actually empty, and
+  // clearing must not reach the backend until the form is submitted.
+  await input.click();
+  await popup.waitFor({ state: 'visible' });
+  await popup.getByRole('button', { name: /清除选择/ }).first().click();
+  await popup.waitFor({ state: 'hidden' });
+  const clearedValue = normalize(await input.inputValue());
+  await input.click();
+  await popup.waitFor({ state: 'visible' });
+  const clearedSelectedRows = await popup.locator('li.t-select-option[aria-selected="true"]').count();
+  const clearedFacts = await readProjectFacts(page);
+  const clearedUnchanged = sameJson(beforeFacts, clearedFacts);
+  const clearedPassed = clearedValue === '' && clearedSelectedRows === 0 && clearedUnchanged && !mutations.length;
+  report.scenarios.push({
+    name: 'customer_explicit_clear_empties_value', status: clearedPassed ? 'PASS' : 'FAIL',
+    input_value: clearedValue, selected_option_rows: clearedSelectedRows,
+    authoritative_unchanged: clearedUnchanged, mutation_requests: mutations.length,
+  });
+  if (!clearedPassed) throw new Error(`customer_clear_not_applied:${JSON.stringify({ clearedValue, clearedSelectedRows, clearedUnchanged })}`);
+
+  // Zero-result search and recovery: a keyword without matches must show no
+  // candidate, must not touch the draft or the backend, and must recover.
+  const zeroKeyword = 'zzz-no-such-customer-9f3d1';
+  const headerBeforeQuery = await headerState();
+  await input.fill(zeroKeyword);
+  await page.waitForTimeout(1200);
+  const zeroRows = await panelRowCount();
+  const zeroSelectedRows = await popup.locator('li.t-select-option[aria-selected="true"]').count();
+  const zeroEmptyState = await popup.locator('.t-select__empty').isVisible().catch(() => false);
+  await input.fill('UM');
+  if (!(await waitForPanelRows(1))) throw new Error('customer_query_recovery_failed');
+  const recoveredRows = await panelRowCount();
+  const headerAfterQuery = await headerState();
+  const recoveredFacts = await readProjectFacts(page);
+  const recoveryPassed = zeroRows === 0 && zeroSelectedRows === 0 && zeroEmptyState && recoveredRows > 0
+    && headerBeforeQuery === headerAfterQuery && sameJson(beforeFacts, recoveredFacts) && !mutations.length;
+  report.scenarios.push({
+    name: 'customer_zero_result_and_query_recovery', status: recoveryPassed ? 'PASS' : 'FAIL',
+    keyword: zeroKeyword, zero_result_rows: zeroRows, zero_result_selected_rows: zeroSelectedRows,
+    empty_state_visible: zeroEmptyState, draft_state_unchanged_by_search: headerBeforeQuery === headerAfterQuery,
+    recovered_rows: recoveredRows, authoritative_unchanged: sameJson(beforeFacts, recoveredFacts), mutation_requests: mutations.length,
+  });
+  if (!recoveryPassed) throw new Error(`customer_zero_result_or_recovery_failed:${JSON.stringify({ zeroRows, zeroSelectedRows, zeroEmptyState, recoveredRows, headerBeforeQuery, headerAfterQuery })}`);
+
+  // Leaving the search must not promote the typed keyword into the field value:
+  // Escape closes the panel and the control falls back to the committed value.
+  await input.press('Escape');
+  await popup.waitFor({ state: 'hidden' });
+  const valueAfterSearchEscape = normalize(await input.inputValue());
+  if (valueAfterSearchEscape !== '') throw new Error(`customer_search_keyword_became_value:${JSON.stringify({ valueAfterSearchEscape })}`);
+
+  // Query failure: a failed candidate search must stay contained. Nothing is
+  // written, the draft is untouched, and the next search recovers.
+  let failedSearches = 0;
+  const failRelationList = async (route) => {
+    let body; try { body = route.request().postDataJSON(); } catch { body = null; }
+    const isRelationList = body?.intent === 'api.data' && body.params?.model === 'res.partner' && body.params?.op === 'list';
+    if (!isRelationList) return route.continue().catch(() => {});
+    failedSearches += 1;
+    return route.abort('failed').catch(() => {});
+  };
+  await page.route('**/api/v1/intent*', failRelationList);
+  await input.click();
+  await popup.waitFor({ state: 'visible' });
+  const headerBeforeFailure = await headerState();
+  await input.fill('UM-P3');
+  await page.waitForTimeout(1400);
+  const rowsDuringFailure = await panelRowCount();
+  const selectedDuringFailure = await popup.locator('li.t-select-option[aria-selected="true"]').count();
+  await page.unroute('**/api/v1/intent*');
+  const headerAfterFailure = await headerState();
+  await input.fill('UM');
+  if (!(await waitForPanelRows(1))) throw new Error('customer_query_failure_recovery_failed');
+  const recoveredAfterFailure = await panelRowCount();
+  const failureFacts = await readProjectFacts(page);
+  const failurePassed = failedSearches > 0 && selectedDuringFailure === 0
+    && headerBeforeFailure === headerAfterFailure && recoveredAfterFailure > 0
+    && sameJson(beforeFacts, failureFacts) && !mutations.length;
+  report.scenarios.push({
+    name: 'customer_query_failure_then_recovery', status: failurePassed ? 'PASS' : 'FAIL',
+    failed_relation_searches: failedSearches, rows_during_failure: rowsDuringFailure,
+    selected_rows_during_failure: selectedDuringFailure, draft_state_unchanged: headerBeforeFailure === headerAfterFailure,
+    recovered_rows: recoveredAfterFailure, authoritative_unchanged: sameJson(beforeFacts, failureFacts), mutation_requests: mutations.length,
+  });
+  if (!failurePassed) throw new Error(`customer_query_failure_not_contained:${JSON.stringify({ failedSearches, rowsDuringFailure, selectedDuringFailure, recoveredAfterFailure, headerBeforeFailure, headerAfterFailure })}`);
+
+  // Rapid consecutive searches: the earlier candidate search is held open while
+  // the next keyword is typed. Its response is genuinely stale by the time it is
+  // delivered, so it must not be repainted and must not become selectable.
+  let relationSearches = 0;
+  let staleForwardedAt = 0;
+  const searchStart = Date.now();
+  const elapsed = () => Date.now() - searchStart;
+  const optionState = async () => ({
+    store_size: Number(await page.locator('.many2one-widget-shell .sc-relation-field').first()
+      .getAttribute('data-option-count').catch(() => '0')) || 0,
+    rows: await panelRowCount(),
+    ids: await panelOptionIds(),
+    empty_visible: await popup.locator('.t-select__empty').isVisible().catch(() => false),
+  });
+  const delayFirstRelationSearch = async (route) => {
+    let body; try { body = route.request().postDataJSON(); } catch { body = null; }
+    const isRelationList = body?.intent === 'api.data' && body.params?.model === 'res.partner' && body.params?.op === 'list';
+    if (!isRelationList) return route.continue().catch(() => {});
+    relationSearches += 1;
+    if (relationSearches === 1) await new Promise((resolve) => setTimeout(resolve, 2500));
+    if (relationSearches === 1) staleForwardedAt = elapsed();
+    return route.continue().catch(() => {});
+  };
+  const headerBeforeStale = await headerState();
+  await page.route('**/api/v1/intent*', delayFirstRelationSearch);
+  await input.fill('UM-P3');
+  const slowSearchIssued = await waitUntil(() => relationSearches >= 1, 8000);
+  const secondKeywordAt = elapsed();
+  await input.fill('P1');
+  await page.waitForTimeout(600);
+  const stateAfterSecondKeyword = await optionState();
+  const waited = await waitUntil(() => staleForwardedAt > 0 && elapsed() > staleForwardedAt + 1500, 12000);
+  const stateAfterStaleResponse = await optionState();
+  const staleSettledAt = elapsed();
+  const staleSelectedRows = await popup.locator('li.t-select-option[aria-selected="true"]').count();
+  await page.unroute('**/api/v1/intent*');
+  // The panel must still serve the owned keyword afterwards: the discard is a
+  // per-response decision, not a broken candidate path.
+  await input.fill('UM-P3');
+  const recoveredAfterStale = await waitUntil(() => panelRowCount().then((count) => count > 0), 20000);
+  const staleRecoveredRows = await panelRowCount();
+  const headerAfterStale = await headerState();
+  const staleFacts = await readProjectFacts(page);
+  const stalePassed = slowSearchIssued && staleForwardedAt > secondKeywordAt && waited
+    && stateAfterSecondKeyword.store_size === 0 && stateAfterSecondKeyword.ids.length === 0
+    && stateAfterStaleResponse.store_size === 0 && stateAfterStaleResponse.ids.length === 0
+    && staleSelectedRows === 0 && recoveredAfterStale && staleRecoveredRows > 0
+    && headerAfterStale === headerBeforeStale && sameJson(beforeFacts, staleFacts) && !mutations.length;
+  report.scenarios.push({
+    name: 'customer_stale_search_does_not_repaint', status: stalePassed ? 'PASS' : 'FAIL',
+    slow_search_issued: slowSearchIssued, relation_searches: relationSearches,
+    second_keyword_at_ms: secondKeywordAt, stale_response_forwarded_at_ms: staleForwardedAt,
+    stale_response_settled_at_ms: staleSettledAt, waited_past_stale_response: waited,
+    state_after_second_keyword: stateAfterSecondKeyword, state_after_stale_response: stateAfterStaleResponse,
+    selected_rows_after_stale_response: staleSelectedRows, keyword_recovered: recoveredAfterStale,
+    draft_state_unchanged: headerAfterStale === headerBeforeStale,
+    recovered_rows: staleRecoveredRows, authoritative_unchanged: sameJson(beforeFacts, staleFacts),
+    mutation_requests: mutations.length,
+  });
+  if (!stalePassed) throw new Error(`customer_stale_search_overwrote_result:${JSON.stringify({ relationSearches, secondKeywordAt, staleForwardedAt, waited, stateAfterSecondKeyword, stateAfterStaleResponse, staleSelectedRows, recoveredAfterStale, staleRecoveredRows })}`);
+
+  await input.press('Escape');
+  await popup.waitFor({ state: 'hidden' });
+  const finalValue = normalize(await input.inputValue());
+  if (finalValue !== '') throw new Error(`customer_probe_left_value_dirty:${JSON.stringify({ finalValue })}`);
 }
 
 async function verifyCustomerRelationWrite(page, report, beforeFacts) {
