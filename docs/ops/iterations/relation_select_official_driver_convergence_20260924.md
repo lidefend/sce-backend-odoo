@@ -172,6 +172,44 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 | L1 | `make verify.frontend.lint.src` | PASS（0 error） |
 | L1 | `pnpm run typecheck:strict` | PASS（干净） |
 
+上表在批次 B 面板宽度修复后已重跑：`ci.local.iteration` PASS（16 tests）、
+`professional_relation_field.unit` PASS（28 tests）、`primitive_adapter.unit` PASS（31 tests）、
+`lint.src` PASS（0 error，39 warning）、`typecheck:strict` PASS。
+
+### 批次 B 修复：窄视口面板宽度（R5-7 反例）
+
+`make local.dev.project_profile_write_browser … RELATION_ONLY=1`（专用对象 3930）首次运行：
+`customer_query_blur_preserves_draft`、`customer_search_cancel_and_overlay` PASS，
+`customer_narrow_escape_no_write` FAIL。原因是 1440px 打开面板后缩到 390px 再打开，面板仍为
+`542px`，`document.documentElement.scrollWidth (542) > innerWidth (390)`，页面产生横向溢出。
+
+官方核对（已安装 TDesign Vue Next 1.20.5）：
+
+- `esm/select-input/hooks/useOverlayInnerStyle.js`：默认 `matchWidthFunc` 取
+  `max(triggerWidth, popupElement.offsetWidth)`，只夹到固定 `MAX_POPUP_WIDTH = 1000`，不按视口收敛；
+  上一次的内联宽度会回灌进 `max`，因此面板只增不减。
+- `esm/popup/popup.js`：`updateOverlayInnerStyle()` 只在
+  `watch([overlayStyle, overlayInnerStyle, overlayEl])` 与 `Container` 首次 `contentMounted` 时执行；
+  `esm/popup/container.js` 的内容节点首次可见后不会卸载。实测（诊断脚本，未入库）：关闭后清空
+  `.t-popup__content` 的内联 `width`，重开仍为空，证明官方不会在重开或视口变化时重新计算。
+- `esm/select/select.js`：`popupProps` 中除 `overlayClassName` 外的键经 `useEventForward`
+  透传给 `SelectInput`，因此 `popupProps.overlayInnerStyle` 是可达的官方覆盖入口。
+
+修复（仅使用官方接口，未新增交互代码）：`ScRelationField.vue` 的 `popupProps` 提供
+`overlayInnerStyle(trigger)`，按“打开时视口宽度 − 16px”夹取触发宽度；`panelViewportWidth`
+在每次打开时记录视口，使该样式对象在重开时获得新标识，从而走官方响应式重应用路径。
+修复后 1440px 面板仍等于触发宽度（542px，无回归），390px 重开为 323px（右边界 349 < 390）。
+
+新增自定义基础交互三问：
+
+1. 具体产品需求：窄视口（390px）下面板不得超出视口，页面不得出现横向滚动。
+2. 当前官方组件及扩展接口为何不满足：`popupProps.overlayInnerStyle` 虽是官方入口，但官方只在
+   面板内容挂载时应用一次，重开与视口变化都不重算；默认宽度策略也只按固定 1000px 收敛，
+   无法表达随视口变化的约束。
+3. 增强放在哪一层、如何验证、如何退出：放在 `Sc*` 适配层的外观职责内（`popupProps`），
+   用 `RELATION_ONLY` 的 390px 断言验证；当官方组件在打开或尺寸变化时重新测量面板宽度后，
+   即可删除该函数。
+
 ### L4（受管环境浏览器验收）
 
 见下方“R5 场景矩阵”表；脚本、环境与结果在完成时回填。

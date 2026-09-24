@@ -109,6 +109,13 @@ const instanceId = nextRelationSelectPanelInstanceId();
 
 const selectRef = ref<{ $el?: HTMLElement } | null>(null);
 const popupOpen = ref(false);
+// The official popup resolves the panel width when the panel content mounts, so
+// it can only be refreshed by handing it a new style value. Record the viewport
+// in force at each open to decide the panel width limit for that open.
+const panelViewportWidth = ref(0);
+watch(popupOpen, (visible) => {
+  if (visible && typeof window !== 'undefined') panelViewportWidth.value = window.innerWidth;
+});
 const vNativeControlProjection = nativeControlProjection;
 const resolvedPanelId = computed(() => props.panelId || `${instanceId}-panel`);
 const tdesignOptions = computed(() => (props.options || []).map((option) => ({
@@ -117,11 +124,31 @@ const tdesignOptions = computed(() => (props.options || []).map((option) => ({
   disabled: Boolean(option.disabled),
 })));
 const inputValue = computed(() => String(props.queryValue ?? ''));
-const popupProps = computed(() => ({
-  // Official public extension point: the popup owns its DOM, so the panel needs
-  // a stable hook for accessibility projection and acceptance selectors.
-  overlayClassName: [instanceId, props.panelClass].filter(Boolean).join(' '),
-}));
+const PANEL_VIEWPORT_GUTTER_PX = 16;
+
+// Official gap (TDesign Vue Next 1.20.5): `useOverlayInnerStyle` sizes the panel
+// as `max(triggerWidth, currentPanelWidth)` and only clamps to a fixed 1000px,
+// and `Popup` applies `overlayInnerStyle` when the panel content mounts rather
+// than on every open. A panel first opened on a wide viewport therefore keeps
+// that width after the viewport narrows and overflows it. `popupProps.overlayInnerStyle`
+// is the official override point for the panel width, so the clamp lives here
+// instead of in extra interaction code. Remove it once the component re-measures
+// the panel on open or on viewport change.
+function resolvePanelInnerStyle(trigger: HTMLElement | null, viewportWidth: number) {
+  const triggerWidth = trigger?.offsetWidth || 0;
+  const limit = viewportWidth > 0 ? viewportWidth - PANEL_VIEWPORT_GUTTER_PX : triggerWidth;
+  return { width: `${Math.max(Math.min(triggerWidth, limit), 0)}px` };
+}
+
+const popupProps = computed(() => {
+  const viewportWidth = panelViewportWidth.value;
+  return {
+    // Official public extension point: the popup owns its DOM, so the panel needs
+    // a stable hook for accessibility projection and acceptance selectors.
+    overlayClassName: [instanceId, props.panelClass].filter(Boolean).join(' '),
+    overlayInnerStyle: (trigger: HTMLElement) => resolvePanelInnerStyle(trigger, viewportWidth),
+  };
+});
 const nativeProjection = computed(() => ({
   selector: 'input' as const,
   attributes: {
