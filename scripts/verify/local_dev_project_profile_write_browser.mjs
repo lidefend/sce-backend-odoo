@@ -576,8 +576,18 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
   const draftClean = () => page.getByText('尚未修改', { exact: true }).isVisible();
   const draftDirty = async () => !(await draftClean());
   const dirtyIndicatorShown = async () => (await page.getByText('有未保存修改', { exact: true }).count()) > 0;
+  // A control that already holds chips keeps the official TagInput input
+  // collapsed until it is focused, so every interaction starts the way a user
+  // starts it: click the control itself, then type. Clicking the plain input
+  // only works while the field is empty.
+  const relationControl = fieldRoot.locator('.t-tag-input').first();
+  const focusControl = async () => {
+    if (await relationControl.count()) await relationControl.click();
+    else await input.click();
+    await input.waitFor({ state: 'visible', timeout: 15000 });
+  };
   const openPanel = async () => {
-    if (!(await panel.count())) await input.click();
+    if (!(await panel.count())) await focusControl();
     await panel.waitFor({ state: 'visible', timeout: 15000 });
   };
   const closePanel = async () => {
@@ -926,8 +936,8 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
     return [...next].sort((left, right) => left - right);
   };
   const clickOptionWithLabel = async (label) => {
-    await input.fill('');
     await openPanel();
+    await input.fill('');
     await waitForCandidates(expectedTags.length);
     const labels = await optionLabels();
     const index = labels.findIndex((value) => value === label);
