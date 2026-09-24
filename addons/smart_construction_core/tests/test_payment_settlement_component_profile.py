@@ -229,6 +229,16 @@ class TestPaymentSettlementComponentProfile(TransactionCase):
                 self.assertEqual(presentation["semantic"], "hierarchical_worksheet")
                 self.assertTrue(presentation["enabled"], presentation)
                 config = presentation["config"]
+                declared_domain = safe_eval(action.get("domain") or "[]", {"context": {}})
+                self.assertTrue(
+                    declared_domain,
+                    "the worksheet scope guard only proves anything with a non-empty action domain",
+                )
+                self.assertEqual(
+                    config["sheet"]["domain"][:len(declared_domain)],
+                    declared_domain,
+                    "the worksheet must not widen past the record set its action defines",
+                )
                 self.assertEqual(config["hierarchy"]["navigation_mode"], "sheet_groups")
                 self.assertEqual(config["hierarchy"]["tree_column"], case["tree_column"])
                 self.assertEqual(
