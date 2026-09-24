@@ -5,73 +5,28 @@
   >
     <div :class="['many2one-widget-shell', { 'many2one-widget-shell--avatar': isAvatarMany2oneWidget }]">
       <span v-if="isAvatarMany2oneWidget" class="many2one-avatar" aria-hidden="true">
-        {{ avatarText(many2oneTextValue) }}
+        {{ avatarText(displayName) }}
       </span>
       <div class="many2one-combobox">
-        <ScPopover
-          :visible="isOpen"
-          :destroy-on-close="false"
-          placement="bottom-left"
-          trigger="focus"
-          :overlay-style="{ maxWidth: 'calc(100vw - 24px)' }"
-        >
-        <template #trigger>
         <ScRelationField
-          :popup-props="{ visible: false }"
           :id="controlId"
+          ref="relationFieldRef"
           class="input"
           appearance="form-field"
+          panel-class="many2one-option-panel"
+          :panel-id="panelId"
           :required="field.required"
           :invalid="field.invalid"
           :described-by="describedBy"
-          :model-value="many2oneTextValue"
+          :model-value="relationValue"
+          :query-value="queryKeyword"
+          :options="primitiveOptions"
+          :clearable="canClear"
           :placeholder="placeholder"
-          role="combobox"
-          aria-autocomplete="list"
-          :aria-expanded="isOpen"
-          :aria-controls="listboxId"
-          :aria-activedescendant="activeDescendant"
-          @update:model-value="emitQuery"
-          @focus="focusField"
-          @pointerdown="openFromPointer"
-          @keydown="handleKeydown"
-          @blur="blurField"
-        />
-        </template>
-        <div v-if="isOpen" :id="listboxId" class="many2one-option-panel" role="listbox">
-          <div v-if="visibleOptions.length" class="many2one-option-list" role="presentation">
-            <div
-              v-for="(option, optionIndex) in visibleOptions"
-              :id="optionId(optionIndex)"
-              :key="`${field.name}-option-${option.value}`"
-              :data-record-id="option.value"
-              class="many2one-option-row"
-              :data-active="activeIndex === optionIndex || undefined"
-              role="option"
-              :aria-selected="activeIndex === optionIndex"
-              @mousedown.prevent
-              @click="emitSelect(option.value, $event)"
-            >
-              <ScButton
-                type="button"
-                appearance="menu-item"
-                size="small"
-                variant="ghost"
-                @mousedown.prevent
-              >
-                {{ option.label }}
-              </ScButton>
-            </div>
-          </div>
-          <div class="many2one-actions">
-            <ScButton
-              v-if="field.inputValue"
-              type="button"
-              appearance="menu-item"
-              variant="ghost"
-              @mousedown.prevent
-              @click="emitSelect('', $event)"
-            >清除选择</ScButton>
+          @update:model-value="onValueChange"
+          @update:query-value="onQueryValueChange"
+        >
+          <template #panel-actions>
             <ScButton
               v-if="field.many2oneOpenToken"
               type="button"
@@ -80,7 +35,7 @@
               size="small"
               variant="ghost"
               @mousedown.prevent
-              @click="emitSelect(field.many2oneOpenToken || '', $event)"
+              @click="runLifecycleAction(field.many2oneOpenToken)"
             >
               {{ field.many2oneOpenLabel || '维护当前项' }}
             </ScButton>
@@ -92,37 +47,48 @@
               size="small"
               variant="ghost"
               @mousedown.prevent
-              @click="emitSelect(field.many2oneSearchToken || '', $event)"
+              @click="runLifecycleAction(field.many2oneSearchToken)"
             >
               {{ field.many2oneSearchLabel }}
             </ScButton>
             <ScButton
-              v-if="['page', 'dialog'].includes(field.relationCreateMode || '') && field.many2oneCreateToken"
+              v-if="createEntryVisible"
               type="button"
               class="many2one-action"
               appearance="menu-item"
               size="small"
               variant="ghost"
               @mousedown.prevent
-              @click="emitSelect(field.many2oneCreateToken || '', $event)"
+              @click="runLifecycleAction(field.many2oneCreateToken || '')"
             >
               {{ field.many2oneCreateLabel }}
             </ScButton>
             <ScButton
-              v-if="showInlineCreate"
+              v-if="canClear"
               type="button"
-              class="many2one-action"
+              class="many2one-action many2one-action--clear"
               appearance="menu-item"
               size="small"
               variant="ghost"
               @mousedown.prevent
-              @click="emitInlineCreate($event)"
+              @click="clearSelection"
+            >
+              {{ clearSelectionLabel }}
+            </ScButton>
+            <ScButton
+              v-if="showInlineCreate"
+              type="button"
+              class="many2one-action many2one-inline-create"
+              appearance="menu-item"
+              size="small"
+              variant="ghost"
+              @mousedown.prevent
+              @click="stageInlineCreate"
             >
               {{ field.many2oneInlineCreateLabel }}
             </ScButton>
-          </div>
-        </div>
-        </ScPopover>
+          </template>
+        </ScRelationField>
       </div>
     </div>
   </ProfessionalRelationFieldControl>
@@ -131,11 +97,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
-import ScPopover from '../design-system/ScPopover.vue';
 import ScRelationField from '../design-system/ScRelationField.vue';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import ProfessionalRelationFieldControl from './ProfessionalRelationFieldControl.vue';
-import { resolveProfessionalMany2oneTextValue } from './professionalRelationFieldModel';
+import {
+  resolveProfessionalMany2oneDisplayValue,
+  resolveProfessionalMany2oneQueryKeyword,
+  resolveProfessionalMany2oneRecordValue,
+} from './professionalRelationFieldModel';
 
 const props = defineProps<{
   field: FormSectionFieldSchema;
@@ -150,119 +119,76 @@ const emit = defineEmits<{
   commit: [value: string];
 }>();
 
-const focused = ref(false);
-const activeIndex = ref(-1);
-let suppressRestoredFocus = false;
+// This control owns no candidate list, no keyboard navigation, no popup state
+// and no search keyword of its own: the official Select drives all of that and
+// the relation runtime owns the keyword and the selected value.
+const relationFieldRef = ref<{ close: () => void; focus: () => void } | null>(null);
 
 const normalizedWidget = computed(() => String(props.field.widget || '').trim().toLowerCase());
-const visibleOptions = computed(() => (props.field.relationOptions || []).filter(Boolean).slice(0, 8));
-const many2oneTextValue = computed(() => resolveProfessionalMany2oneTextValue(props.field));
-const showInlineCreate = computed(() => {
-  const text = many2oneTextValue.value;
-  if (!text || !props.field.relationInlineCreate?.enabled || !props.field.relationInlineCreate.createOnNoMatch) return false;
-  const normalized = text.trim().toLowerCase();
-  return !visibleOptions.value.some((item) => String(item.label || '').trim().toLowerCase() === normalized);
-});
-const hasDropdown = computed(() => Boolean(
-  visibleOptions.value.length
-  || props.field.many2oneOpenToken
-  || props.field.many2oneSearchToken
-  || (['page', 'dialog'].includes(props.field.relationCreateMode || '') && props.field.many2oneCreateToken)
-  || showInlineCreate.value
-));
-const isOpen = computed(() => focused.value && hasDropdown.value);
-const listboxId = computed(() => `${String(props.controlId || '').replace(/[^A-Za-z0-9_-]/g, '-')}-many2one-options`);
-const activeDescendant = computed(() => activeIndex.value >= 0 ? optionId(activeIndex.value) : undefined);
+const relationValue = computed(() => resolveProfessionalMany2oneRecordValue(props.field));
+const queryKeyword = computed(() => resolveProfessionalMany2oneQueryKeyword(props.field));
+const displayName = computed(() => resolveProfessionalMany2oneDisplayValue(props.field));
+const panelId = computed(() => `${String(props.controlId || '').replace(/[^A-Za-z0-9_-]/g, '-')}-many2one-options`);
 const isAvatarMany2oneWidget = computed(() => ['many2one_avatar_user', 'many2one_avatar_employee'].includes(normalizedWidget.value));
-
-function optionId(index: number): string {
-  return `${listboxId.value}-${index}`;
-}
+const clearSelectionLabel = computed(() => '清除选择');
+const canClear = computed(() => Boolean(relationValue.value));
+const createEntryVisible = computed(() => (
+  ['page', 'dialog'].includes(String(props.field.relationCreateMode || ''))
+  && Boolean(props.field.many2oneCreateToken)
+));
+// The selected record keeps one option row even when the running query filtered
+// it out, so the official Select can always resolve a label for the value.
+const primitiveOptions = computed(() => {
+  const rows = (props.field.relationOptions || [])
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((option) => ({ value: String(option.value), label: String(option.label || '') }));
+  const value = relationValue.value;
+  if (value && !rows.some((option) => option.value === value)) {
+    rows.unshift({ value, label: displayName.value || `#${value}` });
+  }
+  return rows;
+});
+const showInlineCreate = computed(() => {
+  const text = queryKeyword.value;
+  if (!text || !props.field.relationInlineCreate?.enabled || !props.field.relationInlineCreate.createOnNoMatch) return false;
+  const normalized = text.toLowerCase();
+  return !primitiveOptions.value.some((option) => option.label.trim().toLowerCase() === normalized);
+});
 
 function avatarText(label: string): string {
   const text = String(label || '').trim();
   return text ? text.slice(0, 1).toUpperCase() : '';
 }
 
-function collapseDropdown(event: Event) {
-  const target = event.currentTarget;
-  const targetElement = target as unknown as { closest?: (selector: string) => { querySelector?: (selector: string) => HTMLInputElement | null } | null };
-  const closest = target && typeof targetElement.closest === 'function'
-    ? targetElement.closest.bind(target)
-    : null;
-  const input = closest?.('.many2one-combobox')?.querySelector?.('input') || null;
-  window.setTimeout(() => input?.blur(), 0);
-}
-
-function emitSelect(value: string | number | boolean | null, event: Event) {
-  focused.value = false;
-  activeIndex.value = -1;
-  suppressRestoredFocus = [props.field.many2oneSearchToken, props.field.many2oneCreateToken, props.field.many2oneOpenToken].includes(String(value));
+function onValueChange(value: string) {
   emit('select', value);
-  collapseDropdown(event);
 }
 
-function emitQuery(value: string) {
-  activeIndex.value = -1;
-  focused.value = true;
-  emit('query', value);
+// The official Select emits the query-keyword channel on every input change;
+// the relation runtime owns the keyword and debounces the actual request, so
+// the primitive's debounced `query` event is intentionally not duplicated here.
+function onQueryValueChange(value: string) {
+  emit('query', String(value || ''));
 }
 
-function emitCommit(value: string) {
-  if (!focused.value) return;
-  emit('commit', value);
+function runLifecycleAction(token: string) {
+  // Business dialog hand-off only: close the official panel before the page or
+  // dialog that owns the action takes focus.
+  relationFieldRef.value?.close();
+  emit('select', token);
 }
 
-function focusField() {
-  if (suppressRestoredFocus) {
-    suppressRestoredFocus = false;
-    return;
-  }
-  focused.value = true;
-  activeIndex.value = -1;
-  if (!visibleOptions.value.length) emitQuery(many2oneTextValue.value);
+function clearSelection() {
+  relationFieldRef.value?.close();
+  emit('select', '');
 }
 
-function openFromPointer() {
-  suppressRestoredFocus = false;
-  focusField();
-}
-
-function blurField() {
-  focused.value = false;
-  activeIndex.value = -1;
-}
-
-function handleKeydown(event: KeyboardEvent) {
-  if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && visibleOptions.value.length) {
-    event.preventDefault();
-    focused.value = true;
-    const delta = event.key === 'ArrowDown' ? 1 : -1;
-    activeIndex.value = (activeIndex.value + delta + visibleOptions.value.length) % visibleOptions.value.length;
-    return;
-  }
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const option = activeIndex.value >= 0 ? visibleOptions.value[activeIndex.value] : undefined;
-    const inputEl = event.target instanceof HTMLInputElement ? event.target : null;
-    if (option) emit('select', option.value);
-    focused.value = false;
-    activeIndex.value = -1;
-    inputEl?.blur();
-    return;
-  }
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    focused.value = false;
-    activeIndex.value = -1;
-  }
-}
-
-function emitInlineCreate(event: Event) {
-  emitCommit(many2oneTextValue.value);
-  focused.value = false;
-  activeIndex.value = -1;
-  collapseDropdown(event);
+function stageInlineCreate() {
+  const text = queryKeyword.value.trim();
+  if (!text) return;
+  relationFieldRef.value?.close();
+  emit('commit', text);
 }
 </script>
 
@@ -296,29 +222,7 @@ function emitInlineCreate(event: Event) {
   position: relative;
   min-width: 0;
 }
-
-.many2one-option-panel {
-  min-width: min(280px, calc(100vw - 40px));
-  max-width: min(480px, calc(100vw - 40px));
-  max-height: min(360px, 60vh);
-  overflow-y: auto;
-  display: grid;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 10px;
-  background: var(--sc-app-surface-elevated);
-  box-shadow: var(--sc-component-relation-dropdown-shadow, var(--sc-app-shadow-popover));
-}
-
-.many2one-option-list,
-.many2one-actions {
-  display: grid;
-  gap: 4px;
-}
-
-.many2one-option-row[data-active='true'] {
-  background: var(--sc-app-hover-bg);
-  border-radius: 10px;
+.many2one-combobox :deep(.t-select__wrap) {
+  width: 100%;
 }
 </style>

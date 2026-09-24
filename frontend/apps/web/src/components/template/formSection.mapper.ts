@@ -36,6 +36,7 @@ export type BuildFormSectionFieldSchemasOptions = {
   resolveRelationCreateMode: (fieldName: string, descriptor?: FieldDescriptor) => 'none' | 'quick' | 'page' | 'dialog';
   resolveRelationInlineCreate: (fieldName: string, descriptor?: FieldDescriptor) => FormSectionFieldSchema['relationInlineCreate'];
   resolveRelationTextValue: (fieldName: string) => string;
+  resolveRelationQueryKeyword: (fieldName: string) => string;
   resolveCanOpenRelationRecord: (fieldName: string, descriptor?: FieldDescriptor) => boolean;
   resolveRelationRecordOpenLabel: (fieldName: string, descriptor?: FieldDescriptor) => string;
   resolveRelationSearchLabel: (fieldName: string, descriptor?: FieldDescriptor) => string;
@@ -192,6 +193,16 @@ export function buildFormSectionFieldSchemas(
     const helpText = options.resolveHelpText?.(field) || '';
     const errorText = options.resolveErrorText?.(field) || '';
     const relationTextValue = type === 'many2one' ? options.resolveRelationTextValue(field.name) : '';
+    const relationQueryKeyword = type === 'many2one' ? options.resolveRelationQueryKeyword(field.name) : '';
+    const relationOptions = options.resolveRelationOptions(field.name);
+    const relationDisplayValue = type === 'many2one'
+      ? String(options.resolveInputValue(field.name, type) ?? '').trim()
+      : '';
+    // Projected display text of the selected record. It never borrows the
+    // transient search keyword, which owns the separate keyword channel.
+    const relationDisplayText = relationDisplayValue && relationDisplayValue !== 'false'
+      ? String(relationOptions.find((item) => String(item.value) === relationDisplayValue)?.label || '').trim()
+      : '';
     const relationModel = String(descriptor.relation || '').trim();
     const isAttachmentRelation = relationModel.toLowerCase() === 'ir.attachment';
     const isMany2manyTagField = type === 'many2many' && !isAttachmentRelation;
@@ -244,10 +255,11 @@ export function buildFormSectionFieldSchemas(
       dateRangeEndInputValue: dateRangeEndField ? options.resolveInputValue(dateRangeEndField, type) : undefined,
       inputPlaceholder: options.resolveInputPlaceholder(field.label),
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
-      relationOptions: options.resolveRelationOptions(field.name),
+      relationOptions,
       ...many2oneCapabilities,
       ...many2manyCapabilities,
-      many2oneTextValue: relationTextValue || undefined,
+      many2oneTextValue: relationDisplayText || undefined,
+      relationQueryKeyword: relationQueryKeyword || undefined,
       descriptor: field.descriptor,
     };
   });

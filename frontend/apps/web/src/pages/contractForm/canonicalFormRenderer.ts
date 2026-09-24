@@ -196,7 +196,10 @@ export function canonicalFieldToFormSection(
     dateRangeEndInputValue: dateRangeEnd
       ? inputValue(dateRangeEnd.value)
       : dateRangeEndField ? inputValue(config.dateRangeEndValue) : undefined,
-    many2oneTextValue: relationKeyword || relation?.displayName || selectedRelation?.label || undefined,
+    // Display text of the selected record only. The transient search keyword is
+    // projected on its own channel so it can never be presented as the value.
+    many2oneTextValue: relation?.displayName || selectedRelation?.label || undefined,
+    relationQueryKeyword: relationKeyword || undefined,
     selectionOptions: selectionOptions(config.selection),
     relationOptions: runtimeRelationOptions.length
       ? runtimeRelationOptions

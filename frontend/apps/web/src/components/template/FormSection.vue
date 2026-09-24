@@ -215,8 +215,10 @@
                   :invalid="field.invalid"
                   :described-by="fieldDescribedBy(field)"
                   :model-value="String(field.inputValue ?? '')"
+                  :query-value="field.relationQueryKeyword || ''"
                   :placeholder="selectPlaceholderText(field)"
-                  @update:model-value="emitMany2oneQuery(field, $event)"
+                  @update:model-value="emitMany2oneCommit(field, $event)"
+                  @update:query-value="emitMany2oneQuery(field, $event)"
                 />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <div class="native-date-range__control">
