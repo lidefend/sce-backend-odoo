@@ -62,11 +62,25 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             "rr_settlement_user",
             ["smart_construction_core.group_sc_cap_settlement_user"],
         )
+        cls.user_cost_user = _create_user(
+            "rr_cost_user",
+            ["smart_construction_core.group_sc_cap_cost_user"],
+        )
+        cls.user_cost_manager = _create_user(
+            "rr_cost_manager",
+            ["smart_construction_core.group_sc_cap_cost_manager"],
+        )
 
         project_vals = {
             "privacy_visibility": "followers",
             "company_id": company.id,
         }
+        cls.project_cost_user = _ctx("project.project").create(
+            dict(project_vals, name="RR Project Cost User", user_id=cls.user_cost_user.id)
+        )
+        cls.project_cost_other = _ctx("project.project").create(
+            dict(project_vals, name="RR Project Cost Other", user_id=cls.user_cost_manager.id)
+        )
         cls.project_read = _ctx("project.project").create(
             dict(project_vals, name="RR Project Read", user_id=cls.user_project_read.id)
         )
@@ -201,10 +215,35 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             cls.user_settlement_read.partner_id.id,
             cls.user_settlement_user.partner_id.id,
         ]
+        cls.project_cost_other.message_unsubscribe(partner_ids=partners)
         cls.project_other.message_unsubscribe(partner_ids=partners)
         cls.task_other.message_unsubscribe(partner_ids=partners)
         cls.payment_req_other.project_id.message_unsubscribe(partner_ids=partners)
         cls.settlement_other.project_id.message_unsubscribe(partner_ids=partners)
+
+        uom = cls.env.ref("uom.product_uom_unit")
+
+        def _create_boq(project, code):
+            version = _ctx("project.boq.version").create(
+                {"name": code, "code": code, "project_id": project.id}
+            )
+            line = _ctx("project.boq.line").create(
+                {
+                    "project_id": project.id,
+                    "version_id": version.id,
+                    "code": code,
+                    "name": code,
+                    "uom_id": uom.id,
+                }
+            )
+            return version, line
+
+        cls.boq_version_user, cls.boq_line_user = _create_boq(
+            cls.project_cost_user, "RRBOQ-USER"
+        )
+        cls.boq_version_other, cls.boq_line_other = _create_boq(
+            cls.project_cost_other, "RRBOQ-OTHER"
+        )
 
     def _can_read(self, user, record):
         Model = self.env[record._name].with_user(user)
@@ -302,4 +341,33 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                     "settlement_type": "out",
                     "line_ids": [(0, 0, {"name": "RR Invalid Direction", "amount": 1.0})],
                 }
+            )
+
+    def test_boq_line_project_scope(self):
+        """project.boq.line must not expose other projects' rows to a cost operator."""
+        model = self.env["project.boq.line"]
+
+        # Cost capability user: only the project it owns is readable.
+        self.assertTrue(self._can_read(self.user_cost_user, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_line_other))
+
+        # A list read must not leak the foreign project either.
+        visible = model.with_user(self.user_cost_user).search([]).ids
+        self.assertIn(self.boq_line_user.id, visible)
+        self.assertNotIn(self.boq_line_other.id, visible)
+
+        # Read-by-id is denied, not merely filtered out of the list.
+        with self.assertRaises(AccessError):
+            self.boq_line_other.with_user(self.user_cost_user).read(["name"])
+
+        # Cost manager keeps the all-records scope.
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_other))
+
+    def test_boq_line_scope_matches_parent_version_scope(self):
+        """The BOQ line scope must not silently diverge from project.boq.version."""
+        for user in (self.user_cost_user, self.user_cost_manager):
+            self.assertEqual(
+                self._can_read(user, self.boq_line_other),
+                self._can_read(user, self.boq_version_other),
+                "project.boq.line scope diverged from project.boq.version for %s" % user.login,
             )
