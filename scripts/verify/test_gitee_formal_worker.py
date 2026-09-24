@@ -1,8 +1,10 @@
+import json
 import tempfile
 from pathlib import Path
 import subprocess
 import unittest
 from unittest.mock import Mock, patch
+from scripts.ci.gitee_formal_queue import FormalQueue
 from scripts.ci.gitee_formal_worker import Inbox, PreparationFailed, Worker
 
 class InboxTests(unittest.TestCase):
@@ -70,6 +72,33 @@ class WorkerTests(unittest.TestCase):
         w.prepare=Mock(side_effect=RuntimeError('private diagnostic'))
         w.prepare_delivery('123',{'pr_number':5})
         self.assertEqual(w.failure_plan.call_args[0][1],'preparation_incomplete')
+
+    def duplicate_worker(self):
+        w=self.worker()
+        temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
+        path=Path(temp.name)/'inbox.sqlite3'
+        w.inbox=Inbox(path);w.queue=FormalQueue(path)
+        w.prepare=Mock(side_effect=PreparationFailed('baseline_not_ancestor'))
+        w.identity=Mock(return_value=('fix/unit','b'*40,False,{
+            'repository':'leegege/sce-product-odoo','source_branch':'fix/unit','target_branch':'main',
+            'head_sha':'a'*40,'base_sha':'b'*40,'pr_number':5,'pr_id':124,
+            'pr_identity_verified':True,'remote_refs_verified':True}))
+        return w
+
+    @patch('scripts.ci.gitee_formal_worker.execute_once',return_value=False)
+    def test_repeated_event_never_creates_a_conflicting_terminal_state(self,execute):
+        w=self.duplicate_worker()
+        event={'hook_name':'merge_request_hooks','repository':'leegege/sce-product-odoo','pr_number':5,'sha':'a'*40}
+        w.inbox.enqueue(event,'111');self.assertTrue(w.tick())
+        w.inbox.enqueue(event,'222');self.assertTrue(w.tick())
+        with w.queue.connect() as db:
+            rows=db.execute('SELECT status,receipt FROM formal_jobs').fetchall()
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0][0],'environment_error')
+        self.assertEqual(json.loads(rows[0][1])['status'],'environment_error')
+        with w.inbox.connect() as db:
+            self.assertEqual([x[0] for x in db.execute('SELECT status FROM formal_inbox ORDER BY rowid')],
+                             ['prepared','environment_error'])
 
     def test_preparation_failure_reason_must_be_trusted(self):
         with self.assertRaises(ValueError): PreparationFailed('candidate supplied text')

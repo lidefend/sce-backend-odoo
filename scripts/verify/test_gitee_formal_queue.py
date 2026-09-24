@@ -38,8 +38,8 @@ def receipt(p):
         'checks':[{'name':x['name'],'mode':x['mode'],'status':'success','tests':2} for x in p['checks']]}
 
 
-def failure_candidate(reason='baseline_not_ancestor',base='b'*40,pr=1,observed=100):
-    p=plan(head='a'*40,base=base,source_branch='fix/unit',pr_number=pr,paths=(),preparation_failure=reason)
+def failure_candidate(reason='baseline_not_ancestor',base='b'*40,pr=1,observed=100,head='a'*40):
+    p=plan(head=head,base=base,source_branch='fix/unit',pr_number=pr,paths=(),preparation_failure=reason)
     p['platform_snapshot']={**{k:p[k] for k in IDENTITY_KEYS},'pr_id':123+pr,
         'pr_identity_verified':True,'remote_refs_verified':True,'observed_finished_at':observed}
     p.pop('plan_sha256');p['plan_sha256']=digest(p)
@@ -210,6 +210,28 @@ class FormalQueueTests(unittest.TestCase):
         queue.fail(key,failure_receipt(p))
         for _ in range(4):reporter.sync_once()
         self.assertTrue(all(x['conclusion']=='action_required' for x in api.rows.values()))
+
+    def test_old_head_failure_cannot_overwrite_new_head_success(self):
+        queue,api,reporter=self.isolated()
+        new=candidate()                                    # head a*40, the current PR head
+        old=failure_candidate(head='c'*40)                 # same PR and base, superseded head
+        self.assertEqual(new['platform_snapshot']['pr_id'],old['platform_snapshot']['pr_id'])
+        key,_=queue.enqueue(new,'1');queue.claim();queue.finish(key,receipt(new))
+        for _ in range(4):reporter.sync_once()
+        settled={x['id']:(x['head_sha'],x['conclusion']) for x in api.rows.values()}
+        failure_key,_=queue.enqueue(old,'2');queue.fail(failure_key,failure_receipt(old))
+        for _ in range(4):reporter.sync_once()
+        # The superseded head gets its own red checks; the current head keeps green ones.
+        for identifier,(head,conclusion) in settled.items():
+            self.assertEqual((api.rows[identifier]['head_sha'],api.rows[identifier]['conclusion']),(head,conclusion))
+        self.assertEqual(len(api.rows),8)
+        by_head={}
+        for row in api.rows.values():by_head.setdefault(row['head_sha'],set()).add(row['conclusion'])
+        self.assertEqual(by_head,{'a'*40:{'success'},'c'*40:{'action_required'}})
+        # No check was ever created or patched against the wrong commit.
+        for method,path,payload in api.calls:
+            sha=(payload or {}).get('head_sha') or (path.split('/')[2] if path.startswith('/commits/') else None)
+            if sha:self.assertIn(sha,('a'*40,'c'*40))
 
     def test_fail_refuses_runnable_and_already_claimed_jobs(self):
         queue,api,reporter=self.isolated()
