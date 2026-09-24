@@ -312,9 +312,32 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 | 层次 | 状态 | 依据 |
 |---|---|---|
 | 批次验收 | 完成 | 8 个提交 + 守卫；L1/L2 定向与 L4 受管浏览器验收通过；未覆盖项以 `not_available` 登记并给出理由 |
-| 主线集成 | 未开始 | 候选尚未推送到 Gitee、未创建 PR、远端必需门禁未运行 |
+| 主线集成 | 阻塞（候选已发布） | 候选分支已推送到 Gitee 并回读一致（见下），但 PR 创建被凭据范围阻塞，远端必需门禁未运行 |
 | 版本发布 | 未开始 | 无目标环境部署证据，本批不触发部署 |
 | 产品交付 | 未开始 | 正式 89 入口的产品交付验收不在本批范围 |
 
 本批交付动作：冻结候选 → 推送 Gitee 主题分支 → 创建同仓 main PR → 远端必需检查 → 受保护 PR 合并；
 部署状态在合并后单独报告。
+
+### 候选发布与 PR 创建（进行中）
+
+- 发布（已执行）：`make pr.push.gitee EXPECTED_HEAD=df40930bd015000b4ad9ef0853ec315178c0d055
+  GITEE_EXPECTED_MAIN=61b8d7121b28d1e1f9126e7c03ab01bce57cee62 APPLY=1
+  GITEE_INTEGRATION_CONFIRM=PUBLISH_EXACT_GITEE_CANDIDATE`
+  → `{"applied": true, "branch": "refactor/relation-select-official-driver",
+  "head": "df40930b…", "gitee_main": "61b8d712…", "writes": 1}`（内部先跑 `ci.local.iteration`，推送后回读一致）。
+  候选分支为新建；Gitee main 在 push 前后均为 `61b8d712…`，本地候选领先 22 个提交。
+- PR 创建（阻塞）：`make gitee.ci.pr.create … APPLY=1` 失败关闭。直接核验平台响应为
+  `HTTP 401 {"message":"401 Unauthorized: no 'pull_requests' scope"}`。
+  本机两个候选令牌（`.secure/controlled-main-cutover/gitee-admin.token` 与
+  `.git/codex/private/gitee-checks.token`）均缺少 `pull_requests` 范围；
+  登记的主力令牌 `/etc/gitee-ci/checks.token` 属 CI 主机（`root@1.95.2.123`，gitee-ci 0600），
+  本地不存在，把在线 CI 凭据复制到本机超出本批授权范围，因此停止而不绕过。
+- 另需登记：`make gitee.ci.pr.create` 的注册用途是“当前 Gitee 集成专题的 main PR”，
+  对普通产品专题属于入口用途扩展，需要所有者确认后使用。
+- 恢复动作：移除本分支的未决 create ledger
+  `<git-dir>/codex/gitee-formal-pr-create-7147194a….json`（已先确认远端 open PR 列表为空、
+  两次 POST 均返回 401 未创建，故无重复风险）。
+- 结论：**主线集成未完成**；候选分支已保存，等 PR 创建凭据或所有者在平台创建 PR 后，
+  再运行远端必需门禁（`public_guard` / `merge_policy_gate` / `professional_quality_gate` /
+  `frontend_release_gate`）并按所有者规则合并。部署状态在合并后单独报告。
