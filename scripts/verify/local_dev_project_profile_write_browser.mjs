@@ -796,9 +796,29 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
   if (!failurePassed) throw new Error(`customer_query_failure_not_contained:${JSON.stringify({ failedSearches, rowsDuringFailure, selectedDuringFailure, recoveredAfterFailure, headerBeforeFailure, headerAfterFailure })}`);
 
   // Rapid consecutive searches: the earlier candidate search is held open while
-  // the next keyword is typed. Its response is genuinely stale by the time it is
-  // delivered, so it must not be repainted and must not become selectable.
+  // the next keyword is typed. Each keyword owns its request now, so the later
+  // keyword must answer for itself, and the late earlier response must neither
+  // repaint the panel nor become selectable. No third input may be required.
+  // The held-open first search may legitimately match nothing, so only the
+  // latest keyword must have an authoritative non-empty reference.
+  const lateKeyword = 'UM-P3';
+  const latestKeyword = 'UM';
+  const sameIdSet = (left, right) => Array.isArray(left) && Array.isArray(right)
+    && left.length === right.length && [...left].sort().join('|') === [...right].sort().join('|');
+  const referenceIdsFor = async (keyword) => {
+    await input.fill(keyword);
+    if (!(await waitUntil(() => panelRowCount().then((count) => count > 0), 20000))) return null;
+    return panelOptionIds();
+  };
+  // Each keyword's authoritative rows, captured with no route installed, so the
+  // concurrency assertions compare against the server's own answer.
+  const referenceLateIds = await referenceIdsFor(lateKeyword);
+  const referenceLatestIds = await referenceIdsFor(latestKeyword);
+  if (!referenceLatestIds?.length) {
+    throw new Error(`customer_stale_reference_missing:${JSON.stringify({ referenceLateIds, referenceLatestIds })}`);
+  }
   let relationSearches = 0;
+  const relationSearchTerms = [];
   let staleForwardedAt = 0;
   const searchStart = Date.now();
   const elapsed = () => Date.now() - searchStart;
@@ -814,47 +834,50 @@ async function verifyCustomerRelation(page, report, beforeFacts) {
     const isRelationList = body?.intent === 'api.data' && body.params?.model === 'res.partner' && body.params?.op === 'list';
     if (!isRelationList) return route.continue().catch(() => {});
     relationSearches += 1;
+    relationSearchTerms.push(String(body.params.search_term ?? ''));
     if (relationSearches === 1) await new Promise((resolve) => setTimeout(resolve, 2500));
     if (relationSearches === 1) staleForwardedAt = elapsed();
     return route.continue().catch(() => {});
   };
   const headerBeforeStale = await headerState();
   await page.route('**/api/v1/intent*', delayFirstRelationSearch);
-  await input.fill('UM-P3');
+  await input.fill(lateKeyword);
   const slowSearchIssued = await waitUntil(() => relationSearches >= 1, 8000);
   const secondKeywordAt = elapsed();
-  await input.fill('P1');
-  await page.waitForTimeout(600);
+  await input.fill(latestKeyword);
+  // The newer keyword must settle with its own authoritative rows, with no
+  // further input, even while the earlier request is still in flight.
+  const latestSettled = await waitUntil(async () => sameIdSet(await panelOptionIds(), referenceLatestIds), 20000);
   const stateAfterSecondKeyword = await optionState();
-  const waited = await waitUntil(() => staleForwardedAt > 0 && elapsed() > staleForwardedAt + 1500, 12000);
+  // The late earlier response must leave the newer keyword's rows in place.
+  const waited = await waitUntil(() => staleForwardedAt > 0 && elapsed() > staleForwardedAt + 1500, 20000);
   const stateAfterStaleResponse = await optionState();
   const staleSettledAt = elapsed();
   const staleSelectedRows = await popup.locator('li.t-select-option[aria-selected="true"]').count();
   await page.unroute('**/api/v1/intent*');
-  // The panel must still serve the owned keyword afterwards: the discard is a
-  // per-response decision, not a broken candidate path.
-  await input.fill('UM-P3');
-  const recoveredAfterStale = await waitUntil(() => panelRowCount().then((count) => count > 0), 20000);
-  const staleRecoveredRows = await panelRowCount();
   const headerAfterStale = await headerState();
   const staleFacts = await readProjectFacts(page);
-  const stalePassed = slowSearchIssued && staleForwardedAt > secondKeywordAt && waited
-    && stateAfterSecondKeyword.store_size === 0 && stateAfterSecondKeyword.ids.length === 0
-    && stateAfterStaleResponse.store_size === 0 && stateAfterStaleResponse.ids.length === 0
-    && staleSelectedRows === 0 && recoveredAfterStale && staleRecoveredRows > 0
+  const stalePassed = slowSearchIssued && relationSearches === 2
+    && relationSearchTerms[0] === lateKeyword && relationSearchTerms[1] === latestKeyword
+    && secondKeywordAt > 0 && latestSettled
+    && stateAfterSecondKeyword.ids.length > 0 && sameIdSet(stateAfterSecondKeyword.ids, referenceLatestIds)
+    && waited && sameIdSet(stateAfterStaleResponse.ids, referenceLatestIds)
+    && staleSelectedRows === 0
     && headerAfterStale === headerBeforeStale && sameJson(beforeFacts, staleFacts) && !mutations.length;
   report.scenarios.push({
     name: 'customer_stale_search_does_not_repaint', status: stalePassed ? 'PASS' : 'FAIL',
     slow_search_issued: slowSearchIssued, relation_searches: relationSearches,
+    relation_search_terms: relationSearchTerms, third_input_required: false,
+    reference_late_ids: referenceLateIds, reference_latest_ids: referenceLatestIds,
     second_keyword_at_ms: secondKeywordAt, stale_response_forwarded_at_ms: staleForwardedAt,
     stale_response_settled_at_ms: staleSettledAt, waited_past_stale_response: waited,
+    latest_keyword_settled_without_extra_input: latestSettled,
     state_after_second_keyword: stateAfterSecondKeyword, state_after_stale_response: stateAfterStaleResponse,
-    selected_rows_after_stale_response: staleSelectedRows, keyword_recovered: recoveredAfterStale,
+    selected_rows_after_stale_response: staleSelectedRows,
     draft_state_unchanged: headerAfterStale === headerBeforeStale,
-    recovered_rows: staleRecoveredRows, authoritative_unchanged: sameJson(beforeFacts, staleFacts),
-    mutation_requests: mutations.length,
+    authoritative_unchanged: sameJson(beforeFacts, staleFacts), mutation_requests: mutations.length,
   });
-  if (!stalePassed) throw new Error(`customer_stale_search_overwrote_result:${JSON.stringify({ relationSearches, secondKeywordAt, staleForwardedAt, waited, stateAfterSecondKeyword, stateAfterStaleResponse, staleSelectedRows, recoveredAfterStale, staleRecoveredRows })}`);
+  if (!stalePassed) throw new Error(`customer_stale_search_overwrote_result:${JSON.stringify({ relationSearches, relationSearchTerms, secondKeywordAt, staleForwardedAt, waited, latestSettled, stateAfterSecondKeyword, stateAfterStaleResponse, referenceLateIds, referenceLatestIds, staleSelectedRows })}`);
 
   await input.press('Escape');
   await popup.waitFor({ state: 'hidden' });

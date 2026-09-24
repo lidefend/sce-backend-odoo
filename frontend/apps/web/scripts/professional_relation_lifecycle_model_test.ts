@@ -89,3 +89,51 @@ assert.equal(runtime.relationSearchDialog.fieldName, 'new_id');
 assert.equal(runtime.relationSearchDialog.columns[0]?.name, 'name');
 assert.equal(staleSearches, 0);
 console.log('[professional_relation_lifecycle_model_test] PASS delayed-columns-cancel-reopen=1');
+
+// Candidate search ordering: different keywords are independent requests now,
+// so a late response for an earlier keyword must not repaint the panel.
+{
+  const guarded = useRelationRuntime();
+  const pendingRows: Array<(rows: Array<{ id: number; label: string }>) => void> = [];
+  const fetchOptions = () => new Promise<Array<{ id: number; label: string }>>((resolve) => { pendingRows.push(resolve); });
+  const query = (keyword: string) => guarded.queryRelationOptions({
+    fieldName: 'partner_id', keyword, relation: 'res.partner', canRead: true,
+    hasDynamicFallback: false, currentValue: null, fetchOptions, isDeniedError: () => false,
+  });
+  const earlierKeyword = query('UM-P3');
+  const laterKeyword = query('P1');
+  assert.equal(pendingRows.length, 2, 'each keyword must reach the request layer');
+  pendingRows[1]([{ id: 2, label: 'P1 record' }]);
+  assert.deepEqual(await laterKeyword, [{ id: 2, label: 'P1 record' }]);
+  assert.deepEqual(guarded.relationOptions.value.partner_id, [{ id: 2, label: 'P1 record' }], 'the newest keyword owns the panel');
+  pendingRows[0]([{ id: 1, label: 'UM-P3 record' }]);
+  assert.deepEqual(await earlierKeyword, [{ id: 1, label: 'UM-P3 record' }], 'the late caller still receives its own rows');
+  assert.deepEqual(guarded.relationOptions.value.partner_id, [{ id: 2, label: 'P1 record' }], 'the late response must not repaint the panel');
+  console.log('[professional_relation_lifecycle_model_test] PASS stale-candidate-search-guard=1');
+}
+
+// A superseded search must not fall back to the unfiltered query either.
+{
+  const superseded = useRelationRuntime();
+  const keywords: string[] = [];
+  const pendingRows: Array<(rows: Array<{ id: number; label: string }>) => void> = [];
+  const query = (keyword: string, hasDynamicFallback: boolean) => superseded.queryRelationOptions({
+    fieldName: 'partner_id', keyword, relation: 'res.partner', canRead: true,
+    hasDynamicFallback, currentValue: null,
+    fetchOptions: (search: string) => {
+      keywords.push(search);
+      return new Promise<Array<{ id: number; label: string }>>((resolve) => { pendingRows.push(resolve); });
+    },
+    isDeniedError: () => false,
+  });
+  const noMatch = query('zzz-no-match', true);
+  const emptyKeyword = query('', false);
+  assert.deepEqual(keywords, ['zzz-no-match', '']);
+  pendingRows[1]([{ id: 5, label: 'Unfiltered record' }]);
+  await emptyKeyword;
+  pendingRows[0]([]);
+  await noMatch;
+  assert.deepEqual(keywords, ['zzz-no-match', ''], 'a superseded search must not issue the dynamic fallback query');
+  assert.deepEqual(superseded.relationOptions.value.partner_id, [{ id: 5, label: 'Unfiltered record' }]);
+  console.log('[professional_relation_lifecycle_model_test] PASS superseded-dynamic-fallback=1');
+}

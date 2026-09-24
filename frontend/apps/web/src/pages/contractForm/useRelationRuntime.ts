@@ -200,6 +200,10 @@ export function useRelationRuntime() {
     await params.openCreateForm(fieldName, descriptor);
   }
 
+  // Latest-issued query token per field; see queryRelationOptions.
+  const relationQueryTokens: Record<string, number> = {};
+  let relationQueryTokenSeq = 0;
+
   async function queryRelationOptions(params: {
     fieldName: string;
     keyword: string;
@@ -222,8 +226,15 @@ export function useRelationRuntime() {
       search = '';
       relationKeywords[params.fieldName] = '';
     }
+    // Only the newest candidate query per field may publish its rows. Search
+    // responses can settle out of order, and different keywords are separate
+    // requests now, so a late response for an earlier keyword must neither
+    // repaint the panel nor become selectable.
+    const queryToken = (relationQueryTokenSeq += 1);
+    relationQueryTokens[params.fieldName] = queryToken;
     try {
       const mapped = await params.fetchOptions(search, search ? 40 : 80);
+      if (relationQueryTokens[params.fieldName] !== queryToken) return mapped;
       if (search && !mapped.length && params.hasDynamicFallback) {
         return queryRelationOptions({ ...params, keyword: '' });
       }
