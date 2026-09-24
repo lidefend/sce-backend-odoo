@@ -1,7 +1,10 @@
 # 通用关系控件收敛到官方 Select 驱动（2026-09-24）
 
-状态（2026-09-24）：批次验收进行中。代码 8 个提交 + 守卫已完成（HEAD `3412ca3b`），
-L0/L1/L2 定向与 L4 受管浏览器验收均已通过并回填；专用验收对象 3930 已回收。
+状态（2026-09-24）：**控件交互子范围通过，客户查询闭环待修复 → 已修复**（见“查询去重身份”）。
+关系控件收敛 8 个提交 + 守卫，加查询去重身份修复 2 个提交与验收工具重写 1 个提交，
+L4 证据绑定候选 `f357193e`（`fecb6f72` 起仅有验收脚本与文档差异）；L0/L1/L2 定向与
+L4 受管浏览器验收均已通过并回填；
+专用验收对象 3930、3931 均已回收。
 本地只跑定向验证，完整集成检查交远端 PR；分层状态见文末“批次状态（分层）”。
 
 ## 层与边界声明
@@ -162,7 +165,8 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 
 - 不升级 `tdesign-vue-next@1.20.5`，不使用私有 `lib/cjs` 入口。
 - 不新建 Compose project、数据库、端口、卷、凭据或 fixture。
-- 不改后端契约、权限模型、菜单、路由与业务模型语义。
+- 本批主题不改后端契约、权限模型、菜单、路由与业务模型语义。
+  （注意：PR 相对 main 还继承了早前批次的改动，其中含后端行为，见「PR 范围与描述」。）
 - 本批不做会计与收款专题修复。
 
 ## R6 清理结论
@@ -199,6 +203,24 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 上表在批次 B 面板宽度修复后已重跑：`ci.local.iteration` PASS（16 tests）、
 `professional_relation_field.unit` PASS（28 tests）、`primitive_adapter.unit` PASS（31 tests）、
 `lint.src` PASS（0 error，39 warning）、`typecheck:strict` PASS。
+
+查询去重身份修复后（候选 `f357193e`）再次定向运行，全部 PASS：
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS（`change_state=dirty scope=unclassified_by_design coverage=L1_only`） |
+| L2 | `make verify.frontend.intent_request_identity.unit` | PASS（cases=28） |
+| L2 | `make verify.frontend.intent_request_coalescing.unit` | PASS（`coalesced=1 distinct_keys=3 paging=2 ordering=1 retry_after_failure=1`） |
+| L2 | `make verify.frontend.professional_relation_lifecycle.unit` | PASS（cases=12，新增 2 场景） |
+| L2 | `make verify.frontend.professional_relation_field.unit` | PASS（28 tests） |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS（`components=46`，31 tests） |
+| L2 | `make verify.frontend.create_record_user_journey.unit` | PASS（创建意图反例 8 项、关系反例 9 项） |
+| L2 | `make verify.frontend.canonical_form_presenter.unit` | PASS（cases=177） |
+| L2 | `make verify.frontend.product_page_pattern.unit` | PASS（`patterns=4`，5 tests） |
+| L2 | `make verify.frontend.page_pattern_reference_parity.unit` | PASS（`surfaces=15`，13 tests） |
+| L1 | `make verify.frontend.lint.src` | PASS（0 error，39 warning） |
+| L1 | `pnpm run typecheck:strict` | PASS（干净） |
+| L1 | `git diff --check` | PASS |
 
 ### 批次 B 修复：窄视口面板宽度（R5-7 反例）
 
@@ -245,6 +267,28 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 
 截图：`customer-popup.png`（1440 面板含面板动作）、`customer-popup-390.png`（390 无横向溢出）、
 `required-field-error.png`、`readonly-denial.png`。日志与截图目录与本表同一产物目录，未单独拆分。
+
+### L4 复验：查询去重身份（候选 `f357193e`）
+
+- 环境身份同上；候选前端由 `local.dev.candidate.frontend.up` 提供，pidfile head
+  `f357193edc99e7c615a2296f9f1968680af31c97`（与 `PRODUCT_CANDIDATE_SHA` 一致，工具 SHA 同为该 clean HEAD）。
+- 专用对象：`project.project` 3931，XMLID `codex_p4_project_profile_write.project_relation_official_20260924`，
+  责任行 39/40，`write_scope` 含 `partner_id`；登录 `pm1`（受管身份校验通过）。
+- 三个入口按同一批对象重跑；产物与摘要：
+
+| 入口 | 产物 | 摘要（sha256 前缀） | 结果 |
+|---|---|---|---|
+| `RELATION_ONLY=1` | `/tmp/relation-official-query-dedup-r7-20260924/summary.json` | `0e6b4d0a54521b75` | PASS，8 场景，`writes=[]` |
+| `RELATION_WRITE_ONLY=1` | `/tmp/relation-official-query-dedup-r7-write-20260924/summary.json` | `fd84a4f1bd1bab14` | PASS，2 场景 |
+| `PERMISSION_ONLY=1` | `/tmp/relation-official-query-dedup-r7-permission-20260924/summary.json` | `82c899347181091d` | PASS，6 场景 |
+
+- 回收：`MODE=cleanup … CLEANUP` → `{"clean": true, "deleted": true, "deleted_responsibility_ids": [39, 40]}`；
+  随后 `MODE=inspect` 回读 → `existing_batch=false`、`project.id=null`、`responsibilities=[]`。
+- 候选前端已 `local.dev.candidate.frontend.down`（`PASS stopped sha=f357193e… current_sha=fecb6f72…`），
+  pidfile 已移除。
+- 证据边界：`f357193e` 之后仅新增验收脚本（`scripts/verify/local_dev_project_profile_write_browser.mjs`）
+  与文档提交，`frontend/apps/web` 源码无差异，故被服务的产品构建与该证据仍然一致。
+
 ## R5 场景矩阵
 
 矩阵全部由官方组件驱动：文档化按键（`ArrowDown` → `Enter`）、官方面板动作、官方 input，
@@ -255,7 +299,7 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 | 已选 A → 搜索 B → 失焦 / Escape / 搜索弹窗取消：显示恢复、ID 与草稿不变 | `customer_query_blur_preserves_draft`、`customer_narrow_escape_no_write`、`customer_search_cancel_and_overlay` | PASS：`mutation_requests=0`；Escape 后 `authoritative_unchanged=true`；取消搜索弹窗后 `focus_restored=true`、`dropdown_reopened=false` |
 | 鼠标与键盘选择 B：显示名 / ID / 修改状态一致 | `customer_keyboard_selection_updates_draft`、`customer_explicit_selection_retry_and_refresh` | PASS：键盘选中 `6390`，`input_value` 为显示名，`superseded_value=6389`，`draft_dirty=true`，`authoritative_unchanged=true`（选择阶段未写后端）；写场景刷新回读一致 |
 | 明确清除：可选字段可保存刷新为空；必填字段阻止保存 | `customer_explicit_clear_empties_value`、`required_field_error_and_draft_recovery`、`server_required_field_rejected_without_partial_write` | PASS：清除后 `input_value=""`、`selected_option_rows=0`、后端未变；必填校验前端拦截并保留草稿，服务端拒绝名称为空且无部分写入（`http 500` + `INTERNAL_ERROR`，回读无变化） |
-| 查询失败 / 零结果 / 恢复 / 快速连续搜索：旧结果不覆盖新结果、不可误选 | `customer_query_failure_then_recovery`、`customer_zero_result_and_query_recovery`、`customer_stale_search_does_not_repaint` | PASS：失败注入后仍可见 6 行、无可选行、草稿不变，恢复后回到 6 行；零结果关键词显示 `.t-select__empty`；快速连续搜索 `store_size 0→0`、无可选行、关键字恢复、后端未变 |
+| 查询失败 / 零结果 / 恢复 / 快速连续搜索：旧结果不覆盖新结果、不可误选 | `customer_query_failure_then_recovery`、`customer_zero_result_and_query_recovery`、`customer_stale_search_does_not_repaint` | PASS：失败注入后仍可见 6 行、无可选行、草稿不变，恢复后回到 6 行；零结果关键词显示 `.t-select__empty`；快速连续搜索发出 **2 次独立请求**（`["6390","UM"]`），最新关键词无需第三次输入即取得 6 行权威结果，旧响应（1 行）落地后仍为这 6 行、无可选行、后端未变 |
 | 有权限的显式创建：失败可恢复、重试不重复；无权限时不提供可执行创建入口 | — | **`not_available`（本批受管契约不可用）**，理由见下 |
 | 保存失败保留草稿，重试成功后刷新回读一致 | `customer_selected_save_failure_preserves_draft`、`customer_explicit_selection_retry_and_refresh` | PASS：首次写入 `network_blocked` 后草稿保留，重试 `business_success`，刷新后 UI 与后端一致 |
 | 桌面与 390px 窄屏：候选可操作、无重复浮层与横向溢出、弹窗取消后焦点合理 | `customer_narrow_escape_no_write`、`customer_search_cancel_and_overlay` + 截图 | PASS：`viewport=390`、`option_unobscured=true`、`authoritative_unchanged=true`、无横向溢出；页面级只有 `.many2one-option-panel` 一个候选浮层 |
@@ -269,13 +313,35 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 | 查询失败经保存链路 | `covered_elsewhere` | `NETWORK_FAILURE_RECOVERY=1` 只覆盖保存失败（已由写场景覆盖）；查询失败改由关系场景的 `route.abort('failed')` 注入覆盖 |
 | 旧脚本直跑例外 | `not_available` | `form_relation_path_acceptance.js`、`form_relation_quick_input_edge_acceptance.js`、`form_relation_deferred_create_save_acceptance.js`、`form_relation_dialog_create_entry_acceptance.js` 的本机登录选择器与当前页面结构不符（`locator('input')` 超时），且均未被任何 make 目标调用；不修改断言绕过，改由受管 `local.dev.project_profile_write_browser` 覆盖同一路径 |
 
-## 已知限制（快速连续搜索）
+## 查询去重身份（R3 补充：客户查询闭环）
 
-`frontend/apps/web/src/api/client.ts` 的 `idempotentIntentKey` 对 `api.data` 的 `read|list|search`
-做并发去重，但语义 key 不含 `search_term`。因此关键词 A 在飞行中时关键词 B 的查询会被复用，
-前端只发出一次请求。测得的行为是：旧响应落地时 store 已为空（0），新响应也不会替换 store，
-因此旧候选不会出现、也不可被选中；恢复由后续关键词触发（`recovered_rows=6`）。
-本批不改该去重策略（属查询运行时，不在关系控件收敛范围），登记为后续查询运行时专题的入口条件。
+上一轮把“快速连续搜索”登记为范围外限制；本轮修正。问题不在控件，而在 API 请求层的并发去重身份：
+
+- `frontend/apps/web/src/api/client.ts` 的 `idempotentIntentKey` 用一个**参数白名单**构造去重键，
+  漏掉 `search_term`、`offset`、`order`、分组参数与 `domain_raw`。关键词 A 在飞行中时，关键词 B
+  的查询命中同一个 key，被合并到 A 的 promise，B 从未发出独立请求，必须再输入一次才能恢复。
+- 修复：去重身份改为**整份规范化 payload**（新增 `frontend/apps/web/src/api/intentRequestIdentity.ts`）。
+  递归排序对象键、丢弃 `undefined`（JSON 序列化本就不发送）、保留数组顺序（`domain` 有序），
+  于是分页、排序、分组以及未来任何 op 专属参数都按构造正确，同时真正相同的并发读仍合并为一次请求。
+  失败不缓存、结算即删除的语义保持不变。
+- 补充修复：`useRelationRuntime.ts` 为每个字段记录最近一次发起的查询令牌，被取代的旧响应
+  既不能重绘候选，也不能触发“空结果 → 无过滤动态回退”的二次查询。
+
+定向验证（新增受管目标）：
+
+| 目标 | 结果 |
+|---|---|
+| `make verify.frontend.intent_request_identity.unit` | PASS（28 例：`search_term` 含清空、`offset`、`limit`、`order`、`group_by/offset/limit/page_size/sample_limit`、`domain_raw`、`domain`、`need_total`、`need_aggregates`、`context`、`op` 均改变身份；键序无关；domain 元组顺序敏感；`undefined` 等同缺省而 `null` 不同） |
+| `make verify.frontend.intent_request_coalescing.unit` | PASS（相同查询合并为 1 次请求；不同关键词 2 次请求且乱序结算各自拿到自己的行；`offset`/`order` 各为独立请求；失败读不缓存，重试为一次新请求） |
+| `make verify.frontend.professional_relation_lifecycle.unit` | PASS（新增 `stale-candidate-search-guard=1`、`superseded-dynamic-fallback=1`） |
+
+两个新目标同时加入 `verify.frontend.quick.gate`、`verify.frontend.pr.unit` 与
+`verify.frontend.release.unit`，因此远端标准/发布前端门禁会执行它们。
+
+受管浏览器复验（同一候选 `f357193e`，专用对象 3931）见下方 L4；“快速连续搜索”一行由
+`customer_stale_search_does_not_repaint` 承担，实测 `relation_searches=2`、
+`relation_search_terms=["6390","UM"]`、最新关键词无需第三次输入即取得权威行，
+旧响应（1 行）落地后桌面仍为 6 行且不可选中，草稿与后端未变。
 
 ## R3 复核结论（残余焦点与“旧自写交互”核对）
 
@@ -301,6 +367,12 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
   在本批后已无生产消费者（inventory `adapter_unconsumed` 2→3），仅在 design-system 导出与
   `primitiveAdapter.ts` 登记中出现。删除它属于设计系统原语注册表与能力登记（P0）决策，
   会牵动守卫与生成清单，超出本批“收敛一个关系控件”的范围；本批只保证关系原语不再依赖它。
+- 专用对象 `3931`（查询去重身份复验）的回收：`MODE=cleanup … CLEANUP`
+  → `{"clean": true, "deleted": true, "deleted_responsibility_ids": [39, 40]}`；
+  `MODE=inspect` 回读 → `existing_batch=false`、`project.id=null`、`responsibilities=[]`。
+- 两项边界继续保留、不扩大本批：显式创建入口在受管契约下不可用，仍登记为 `not_available`，
+  不计入“完整创建闭环通过”；`ProfessionalManyToManySelect.vue` 的失焦时序与无消费者的
+  `ScAutoComplete.vue` 仍留作后续专题。
 - 专用对象 `3930` 的回收：`make local.dev.project_profile_write_fixture P4_PROJECT_PROFILE_MODE=cleanup
   P4_PROJECT_PROFILE_BATCH=relation-official-20260924 P4_PROJECT_PROFILE_CONFIRM=CLEANUP`
   → `{"clean": true, "deleted": true, "deleted_responsibility_ids": [37, 38]}`；
@@ -311,15 +383,19 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 
 | 层次 | 状态 | 依据 |
 |---|---|---|
-| 批次验收 | 完成 | 8 个提交 + 守卫；L1/L2 定向与 L4 受管浏览器验收通过；未覆盖项以 `not_available` 登记并给出理由 |
-| 主线集成 | 阻塞（候选已发布） | 候选分支已推送到 Gitee 并回读一致（见下），但 PR 创建被凭据范围阻塞，远端必需门禁未运行 |
+| 批次验收 | 完成 | 关系控件收敛 8 个提交 + 查询去重身份修复 2 个提交 + 验收工具重写 1 个提交；L1/L2 定向与 L4 受管浏览器验收（含 r7 复验）通过；未覆盖项以 `not_available` 登记并给出理由 |
+| 主线集成 | 待发布（凭据不再是阻塞） | 候选分支已推送并回读一致；远端 PR 由所有者在 Gitee 页面创建（无需新增令牌），创建后运行四项必需门禁 |
 | 版本发布 | 未开始 | 无目标环境部署证据，本批不触发部署 |
 | 产品交付 | 未开始 | 正式 89 入口的产品交付验收不在本批范围 |
 
-本批交付动作：冻结候选 → 推送 Gitee 主题分支 → 创建同仓 main PR → 远端必需检查 → 受保护 PR 合并；
-部署状态在合并后单独报告。
+本批交付动作：冻结候选 → 推送 Gitee 主题分支 → 由所有者在 Gitee 页面创建同仓 main PR →
+远端必需检查 → 受保护 PR 合并；部署状态在合并后单独报告。
 
-### 候选发布与 PR 创建（进行中）
+### 候选发布与 PR 创建
+
+**凭据不再作为阻塞项**：所有者确认 Gitee 浏览器登录会话仍有效，PR 由所有者在页面创建，
+不需要新增令牌，也不需要把线上 CI 凭据复制到本机；本机两个候选令牌缺 `pull_requests` 范围的事实
+仅作为“不采用脚本创建”的原因登记。
 
 - 发布（已执行）：`make pr.push.gitee EXPECTED_HEAD=df40930bd015000b4ad9ef0853ec315178c0d055
   GITEE_EXPECTED_MAIN=61b8d7121b28d1e1f9126e7c03ab01bce57cee62 APPLY=1
@@ -338,6 +414,116 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 - 恢复动作：移除本分支的未决 create ledger
   `<git-dir>/codex/gitee-formal-pr-create-7147194a….json`（已先确认远端 open PR 列表为空、
   两次 POST 均返回 401 未创建，故无重复风险）。
-- 结论：**主线集成未完成**；候选分支已保存，等 PR 创建凭据或所有者在平台创建 PR 后，
-  再运行远端必需门禁（`public_guard` / `merge_policy_gate` / `professional_quality_gate` /
-  `frontend_release_gate`）并按所有者规则合并。部署状态在合并后单独报告。
+- 再次发布（本次收口）：`make pr.push.gitee EXPECTED_HEAD=<本文件所在冻结 HEAD>
+  GITEE_EXPECTED_MAIN=61b8d7121b28d1e1f9126e7c03ab01bce57cee62 APPLY=1
+  GITEE_INTEGRATION_CONFIRM=PUBLISH_EXACT_GITEE_CANDIDATE`（快进推送，内部先跑 `ci.local.iteration`）。
+  推送后的回读结果、PR 链接与四项远端门禁结论属于冻结后回执，按既定约定写入 PR 文本与未跟踪证据，
+  不回写本文件。
+- 结论：**主线集成未完成**；候选分支已保存，由所有者在平台创建 PR，随后运行远端必需门禁
+  （`public_guard` / `merge_policy_gate` / `professional_quality_gate` / `frontend_release_gate`）
+  并按所有者规则合并。合并不触发部署；部署状态在合并后单独报告。
+
+## PR 范围与描述（相对 main `61b8d712`）
+
+### 范围事实
+
+- 差异：**66 个文件**（`+2905 / -420`），**25 个提交**；其中关系控件收敛专题 17 个，
+  早前批次继承 8 个（并非只有 Select 替换）。
+- 分组：
+  - `frontend/`（29）：`ScRelationField.vue` 官方 Select 驱动、`relationSelectPanelA11y.ts`、
+    `ProfessionalMany2oneFieldControl.vue`、`professionalRelationFieldModel.ts`、`FormSection*`、
+    `pages/contractForm/*`（关系运行时、创建意图、保存联动、必填校验）、
+    `api/client.ts` + `api/intentRequestIdentity.ts`（并发查询去重身份）、契约表单 presenter。
+  - `addons/`（4）：`smart_core/handlers/api_data.py` 与列表参数边界测试（关系查询参数）、
+    `smart_construction_core/models/core/project_core.py` 与状态流转测试（写入前拒绝空资料名）。
+  - `scripts/`（23）：关系/表单验收脚本与守卫、受管项目资料写入 runner 与 fixture、
+    交付 PR 元数据工具与其测试。
+  - `make/`（2）：`frontend.mk`（新增查询去重身份单元目标并接入 quick/pr/release 车道）、
+    `codex.mk`（交付 PR 元数据入口）。
+  - `docs/`（8）：本批次记录、`frontend_business_entry_acceptance_v1.csv`、生成清单
+    （`complexity_budget_report.md`、`split_plan_queue.md`、`p4_p0_03_contract_form_split_evidence.md`、
+    `component-driver-takeover-inventory-v1.json`）。
+- 结论：**不能声称“不涉及后端”**；正确表述是“本批主题聚焦 P0 通用关系控件与查询运行时，
+  PR 同时包含继承的前端保存校验、项目资料写入校验与交付工具改动”。
+
+### PR 标题（替换旧稿）
+
+```text
+refactor(frontend): 通用关系控件收敛到官方 Select 驱动 + 并发查询去重身份修复（含继承的后端校验/保存/发布改动）
+```
+
+### PR 正文（替换旧稿，可整段复制）
+
+```markdown
+## 目标
+
+1. 把通用 many2one 关系选择控件从“AutoComplete + 外层自写选择器”收敛到官方 `Select` 驱动，
+   并修正同一链路暴露的状态设计问题（搜索词与业务值混用、创建意图伪装成清空关联）。
+2. 修复并发查询去重身份：关键词 A 在飞行中时关键词 B 曾被合并进 A 的请求，B 从未真正发出，
+   客户快速搜索必须再输入一次才能恢复（客户查询闭环阻塞项）。
+
+## 变更内容（相对 main 全量）
+
+### A. 关系控件收敛到官方 Select
+
+- `ScRelationField.vue` 改为官方 `Select` 驱动：`value` = 记录 ID、`inputValue` = 查询词、
+  `options` = 候选；候选浮层、方向键、Enter/Escape、定位与开关全部交回官方实现。
+- 删除外层自写候选列表、键盘索引、焦点抑制、延时 `blur()` 与伪造 DOM `Event`；
+  事件改为显式语义：`select`（选中记录）/ `query`（查询变化）/ `clear` / `popup-visible-change`。
+- “搜索更多 / 维护当前项 / 新建 / 清除选择”放入官方 `panelBottomContent` 扩展位（`#panel-actions`）。
+- 分离业务状态：所选 ID／显示名、查询词、待创建意图三者独立；搜索与取消不修改字段值，
+  待创建不再以 `false` 触发空关联 onchange，取得真实 ID 后正常联动。
+- 新增自定义仅三项，均未接管交互，并逐项回答三个问题（产品需求／官方能力缺口／放在哪层如何验证与退出）：
+  官方面板 ARIA 投影、面板宽度随视口收敛（`popupProps.overlayInnerStyle`）、
+  面板动作区吸附在官方滚动区底部。
+
+### B. 并发查询去重身份（客户查询闭环）
+
+- `api/client.ts` 的并发去重键原先只覆盖参数白名单，漏掉 `search_term`、`offset`、`order`、
+  分组参数与 `domain_raw`，导致不同关键词被合并为一次请求。
+- 改为整份规范化 payload 作为身份（新增 `api/intentRequestIdentity.ts`）：递归排序对象键、
+  丢弃 `undefined`、保留数组顺序；分页/排序/分组与未来参数按构造正确，真正相同的并发读仍合并。
+- `useRelationRuntime.ts` 增加每字段“最近发起的查询令牌”，被取代的旧响应不能重绘候选，
+  也不能触发“空结果 → 无过滤动态回退”的二次查询。
+- 单元与浏览器反例见“验证”。
+
+### C. 本 PR 同时继承的早前批次改动（非本主题）
+
+- 前端保存校验：编辑态提交前校验必填字段（`saveRecordHelpers.ts`、`valueUtils.ts`）；
+  编辑时省略未变更的 many2many 值。
+- 后端项目资料写入校验：写入前拒绝空资料名（`smart_construction_core/.../project_core.py` 及其测试）。
+- 后端关系查询参数边界（`smart_core/handlers/api_data.py` 及其测试）。
+- 交付工具：受审业务专题 PR 元数据发布（`scripts/ops/gitee_formal_pr.py`、`make/codex.mk` 及其测试）。
+- 验收工具与生成清单：受管项目资料写入 runner/fixture、关系与表单验收脚本、生成清单刷新。
+
+## 架构影响
+
+Architecture Impact: P0 平台通用产品（通用关系字段渲染 + 通用查询去重身份），
+另含 P4 验收/交付工具与生成清单，以及继承的 P1/P0 后端校验小改动。
+
+Layer Target: `frontend/apps/web/src/components/design-system/ScRelationField.vue`、
+`relationSelectPanelA11y.ts`、`components/professional-fields/ProfessionalMany2oneFieldControl.vue`、
+`pages/contractForm/*`、`api/client.ts` 与 `api/intentRequestIdentity.ts`。
+
+## 验证（相对 main 的验证范围）
+
+本地定向（均在候选 `f357193e` 上通过）：`ci.local.iteration`、
+`verify.frontend.intent_request_identity.unit`（28 例）、`verify.frontend.intent_request_coalescing.unit`、
+`verify.frontend.professional_relation_lifecycle.unit`、`verify.frontend.professional_relation_field.unit`、
+`verify.frontend.primitive_adapter.unit`、`verify.frontend.create_record_user_journey.unit`、
+`verify.frontend.canonical_form_presenter.unit`、`verify.frontend.product_page_pattern.unit`、
+`verify.frontend.page_pattern_reference_parity.unit`、`verify.frontend.lint.src`（0 error）、
+`typecheck:strict`、`git diff --check`。
+
+受管环境浏览器（`sc-local-dev` / `sc_dev_demo`，专用对象 3931，已回收；候选前端 5176）：
+关系场景 8 项、写入场景 2 项、权限场景 6 项全部 PASS。其中快速连续搜索实测发出 2 次独立请求
+（`search_term` 依次为 `6390`、`UM`），最新关键词无需第三次输入即取得 6 行权威结果，
+旧响应（1 行）落地后仍保持这 6 行、不可选中、草稿与后端未变。
+
+未覆盖项（登记为 `not_available` 并给出理由）：显式创建入口在当前受管契约不可用，
+不计入“完整创建闭环通过”；`many2many` 失焦时序与无消费者的 `ScAutoComplete.vue` 留作后续专题。
+
+## 状态
+
+批次验收完成；主线集成、版本发布、产品交付状态分开报告；本 PR 不触发部署。
+```
