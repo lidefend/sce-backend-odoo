@@ -11,6 +11,12 @@
 # presence of any success summary: a log that reports success and then reports a
 # failure (or a truncated/late report) must not pass.
 #
+# Collection and identity are proven from module-qualified test start lines
+# (`odoo.addons.<module>.tests.<file>: Starting <Class>.<method>`). A bare
+# `Starting ` match is not usable evidence: Odoo also logs lifecycle lines such
+# as `odoo.service.server: Starting post tests`, which inflate the count and
+# would reject a clean run whose count is pinned.
+#
 # Exit codes returned by evaluate_orm_outcome:
 #   0  the run reported the expected identity/count and ended without failure
 #   2  invalid caller configuration (timeout budget or expected count)
@@ -26,7 +32,10 @@ orm_timeout_max_seconds="${ORM_TIMEOUT_MAX_SECONDS:-7200}"
 # Empty means "not pinned": the count is then checked against the number of
 # tests actually observed to start.
 orm_expect_count="${orm_expect_count:-}"
-# Space separated substrings that must appear in the log (test module identity).
+# Space separated substrings that must appear on a module-qualified test start
+# line (test module identity). A token that only shows up somewhere else in the
+# log - a module listing, a traceback, a tag declaration - is not proof that the
+# test executed.
 orm_expect_identity="${orm_expect_identity:-}"
 
 validate_orm_timeout() {
@@ -68,6 +77,16 @@ validate_orm_expect_count() {
 orm_summaries() {
   local log="$1"
   grep -Eo '[0-9]+ failed, [0-9]+ error\(s\) of [0-9]+ tests' "${log}" || true
+}
+
+# Odoo logs one start line per collected test case:
+#   INFO db odoo.addons.<module>.tests.<file>: Starting <Class>.<method> ...
+# Only that shape proves a test case was collected and executed.
+orm_test_start_pattern='odoo\.addons\.[[:alnum:]_.]+: Starting [[:alpha:]_][[:alnum:]_]*\.'
+
+orm_test_starts() {
+  local log="$1"
+  grep -E -- "${orm_test_start_pattern}" "${log}" || true
 }
 
 evaluate_orm_outcome() {
@@ -117,7 +136,8 @@ evaluate_orm_outcome() {
 
   # Collected count: pinned expectation when provided, otherwise the number of
   # tests the log itself shows starting.
-  started="$(grep -c 'Starting ' "${log}" || true)"
+  starts="$(orm_test_starts "${log}")"
+  started="$(printf '%s\n' "${starts}" | grep -c . || true)"
   observed="${started}"
   if [[ -n "${orm_expect_count}" ]]; then
     expected="${orm_expect_count}"
@@ -140,15 +160,16 @@ evaluate_orm_outcome() {
     fi
   fi
 
-  # Identity: the expected test module(s) must have actually run.
+  # Identity: the expected test module(s) must appear on a test start line, so
+  # a token that merely occurs somewhere in the log cannot satisfy the pin.
+  if [[ -z "${starts}" ]]; then
+    echo "[orm-guard][FATAL] no module-qualified test start line; collection is unproven" >&2
+    return 8
+  fi
   local token
   for token in ${orm_expect_identity}; do
-    if ! grep -q -- "${token}" "${log}"; then
-      echo "[orm-guard][FATAL] expected test identity absent from the log: ${token}" >&2
-      return 5
-    fi
-    if [[ "$(grep -c -- "${token}" "${log}" || true)" -lt 1 ]]; then
-      echo "[orm-guard][FATAL] expected test identity never started: ${token}" >&2
+    if ! printf '%s\n' "${starts}" | grep -qF -- "${token}"; then
+      echo "[orm-guard][FATAL] expected test identity never started in the log: ${token}" >&2
       return 5
     fi
   done
@@ -164,9 +185,15 @@ if [[ "${1:-}" == "--self-test" ]]; then
   identity_token="test_payment_settlement_component_profile"
   starting_line="2026-09-24 00:00:00,000 1 INFO db odoo.addons.smart_construction_core.tests.${identity_token}: Starting TestPaymentSettlementComponentProfile.test_case ..."
 
+  # A real log carries server lifecycle lines that also contain "Starting "
+  # (`odoo.service.server: Starting post tests`). They must not be counted as
+  # collected tests, so every fixture log below carries one.
+  lifecycle_decoy="2026-09-24 00:00:00,000 1 INFO db odoo.service.server: Starting post tests "
+
   write_log() { # $1=file $2=count $3=summary
     local i
     : >"$1"
+    printf '%s\n' "${lifecycle_decoy}" >>"$1"
     for ((i = 0; i < $2; i++)); do printf '%s\n' "${starting_line}" >>"$1"; done
     printf '%s\n' "$3" >>"$1"
   }
@@ -185,6 +212,17 @@ if [[ "${1:-}" == "--self-test" ]]; then
   printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" >"${selftest_dir}/foreign.log"
   for ((i = 1; i < 7; i++)); do printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" >>"${selftest_dir}/foreign.log"; done
   printf '0 failed, 0 error(s) of 7 tests\n' >>"${selftest_dir}/foreign.log"
+  # Identity text that never reaches a test start line (module listing only)
+  # must not satisfy the identity pin: the executed tests come from another
+  # suite while the pinned token only shows up in a loading line.
+  write_log "${selftest_dir}/identity_offline.log" 0 '0 failed, 0 error(s) of 7 tests'
+  for ((i = 0; i < 7; i++)); do
+    printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" \
+      >>"${selftest_dir}/identity_offline.log"
+  done
+  printf '%s\n' \
+    "2026-09-24 00:00:00,000 1 INFO db odoo.modules.loading: loading ${identity_token}/tests/x.xml" \
+    >>"${selftest_dir}/identity_offline.log"
 
   checks=0
   expect_code() { # $1=expected $2=count_pin $3=identity $4=status $5=log
@@ -226,6 +264,8 @@ if [[ "${1:-}" == "--self-test" ]]; then
   expect_code 8 7 "${identity_token}" 0 "${selftest_dir}/failed.log"
   expect_code 8 7 "${identity_token}" 0 "${selftest_dir}/error.log"
   expect_code 5 7 "${identity_token}" 0 "${selftest_dir}/foreign.log"
+  expect_code 5 7 "${identity_token}" 0 "${selftest_dir}/identity_offline.log"
+  expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/identity_offline.log"
   # unpinned: the count must still agree with the executions the log shows
   expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/pass.log"
   expect_code 6 "" "${identity_token}" 0 "${selftest_dir}/mismatch.log"

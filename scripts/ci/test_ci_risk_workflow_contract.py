@@ -285,7 +285,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("validate_orm_timeout", guard)
         self.assertIn("validate_orm_expect_count", guard)
         self.assertIn("orm_expect_identity", guard)
-        self.assertIn("grep -c 'Starting '", guard)
+        # Collection is proven from module-qualified test start lines only. A
+        # bare `Starting ` count also matches Odoo lifecycle lines such as
+        # `odoo.service.server: Starting post tests`, so it would both inflate
+        # the count and satisfy the identity pin without the test running.
+        self.assertIn("odoo\\.addons\\.[[:alnum:]_.]+: Starting ", guard)
+        self.assertNotIn("grep -c 'Starting '", guard)
+        self.assertIn('grep -qF -- "${token}"', guard)
+        self.assertIn("odoo.service.server: Starting post tests", guard)
         self.assertIn("return 4", guard)
         self.assertIn("return 5", guard)
         self.assertIn("return 6", guard)
