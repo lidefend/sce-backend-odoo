@@ -245,6 +245,62 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             cls.project_cost_other, "RRBOQ-OTHER"
         )
 
+        # --- cross-company fixture -------------------------------------------
+        # Neither project.boq.line nor project.boq.version has a company_id, so
+        # the company boundary can only travel project_id -> project.project.
+        # It has to be measured on real reads: seeing the rule definition (or
+        # an ACL) is not proof that a role cannot cross the boundary.
+        cls.company_secondary = _ctx("res.company").create({"name": "RR Secondary Company"})
+
+        def _create_company_user(login, group_xmlids, company):
+            groups = [(6, 0, [cls.env.ref(x).id for x in group_xmlids])]
+            return cls.env["res.users"].with_context(no_reset_password=True).create(
+                {
+                    "name": login,
+                    "login": login,
+                    "email": f"{login}@example.com",
+                    "company_id": company.id,
+                    "company_ids": [(6, 0, [company.id])],
+                    "groups_id": groups,
+                }
+            )
+
+        cls.user_cost_user_secondary = _create_company_user(
+            "rr_cost_user_secondary",
+            ["smart_construction_core.group_sc_cap_cost_user"],
+            cls.company_secondary,
+        )
+        cls.user_cost_manager_secondary = _create_company_user(
+            "rr_cost_manager_secondary",
+            ["smart_construction_core.group_sc_cap_cost_manager"],
+            cls.company_secondary,
+        )
+        cls.project_cost_secondary = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Secondary",
+                company_id=cls.company_secondary.id,
+                user_id=cls.user_cost_user_secondary.id,
+            )
+        )
+        cls.boq_version_secondary, cls.boq_line_secondary = _create_boq(
+            cls.project_cost_secondary, "RRBOQ-SECONDARY"
+        )
+        # A secondary-company project whose responsible user belongs to the
+        # primary company only. Project membership alone would hand that user a
+        # line whose project it cannot even read.
+        cls.project_cost_secondary_foreign = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Secondary Foreign",
+                company_id=cls.company_secondary.id,
+                user_id=cls.user_cost_user.id,
+            )
+        )
+        cls.boq_version_secondary_foreign, cls.boq_line_secondary_foreign = _create_boq(
+            cls.project_cost_secondary_foreign, "RRBOQ-SECONDARY-FOREIGN"
+        )
+
     def _can_read(self, user, record):
         Model = self.env[record._name].with_user(user)
         return bool(Model.search_count([("id", "=", record.id)]))
@@ -371,3 +427,64 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                 self._can_read(user, self.boq_version_other),
                 "project.boq.line scope diverged from project.boq.version for %s" % user.login,
             )
+
+    def test_boq_line_cross_company_scope(self):
+        """Cross-company boundary of the BOQ line and version rules.
+
+        Measuring this boundary (rather than reading the rule text) exposed two
+        real cross-company reads before the allowed-companies rule was added -
+        a primary-company operator could read a secondary-company line merely by
+        being that project's responsible user, and the cost-manager exception
+        had no company dimension at all. See
+        docs/ops/iterations/boq_line_record_rule_scope_20260924.md.
+        """
+        line_model = self.env["project.boq.line"]
+
+        # The foreign company's line is denied on both read paths.
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_line_secondary))
+        self.assertEqual(
+            line_model.with_user(self.user_cost_user).search_count(
+                [("id", "=", self.boq_line_secondary.id)]
+            ),
+            0,
+        )
+        with self.assertRaises(AccessError):
+            line_model.with_user(self.user_cost_user).browse(
+                self.boq_line_secondary.id
+            ).read(["name"])
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_version_secondary))
+
+        # Symmetric: the secondary-company operator cannot reach primary rows.
+        self.assertFalse(self._can_read(self.user_cost_user_secondary, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_user_secondary, self.boq_version_user))
+
+        # Project membership is not a company bypass, and the denied line is not
+        # simply a side effect of the project being denied.
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.project_cost_secondary_foreign)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.boq_line_secondary_foreign)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.boq_version_secondary_foreign)
+        )
+
+        # The cost-manager exception means "all projects of the allowed
+        # companies": it still covers every primary-company line, including one
+        # owned by another user, and it stops at the company boundary.
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_other))
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_manager, self.boq_line_secondary))
+        self.assertFalse(self._can_read(self.user_cost_manager, self.boq_version_secondary))
+
+        # Inside its own company the exception keeps working.
+        self.assertTrue(
+            self._can_read(self.user_cost_manager_secondary, self.boq_line_secondary)
+        )
+        self.assertTrue(
+            self._can_read(self.user_cost_manager_secondary, self.boq_version_secondary)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_manager_secondary, self.boq_line_user)
+        )

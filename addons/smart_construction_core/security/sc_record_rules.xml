@@ -2902,6 +2902,11 @@
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
         </record>
+        <record id="rule_sc_boq_version_allowed_company" model="ir.rule">
+            <field name="name">BOQ version: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_version"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
+        </record>
         <record id="rule_sc_boq_line_project_scope" model="ir.rule">
             <field name="name">BOQ line: project member scope</field>
             <field name="model_id" ref="model_project_boq_line"/>
@@ -2913,6 +2918,11 @@
             <field name="model_id" ref="model_project_boq_line"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_cost_manager'))]"/>
+        </record>
+        <record id="rule_sc_boq_line_allowed_company" model="ir.rule">
+            <field name="name">BOQ line: allowed companies</field>
+            <field name="model_id" ref="model_project_boq_line"/>
+            <field name="domain_force">['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="rule_sc_boq_import_batch_project_scope" model="ir.rule">
             <field name="name">BOQ import batch: project member scope</field>

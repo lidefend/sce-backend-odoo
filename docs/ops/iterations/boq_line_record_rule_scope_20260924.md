@@ -64,12 +64,69 @@
 ## 定向验证
 
 - `make local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core`：PASS，`local.dev.ready` / `local.dev.demo.authority` 均通过。
-- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=rr_gate`：**`0 failed, 0 error(s) of 7 tests`**（原 5 项 + 新增 2 项）。
+- `make local.dev.test MODULE=smart_construction_core TEST_TAGS=rr_gate`：**`0 failed, 0 error(s) of 8 tests`**（原 5 项 + 新增 3 项）。
   - 日志出现 `Access Denied by record rules for operation: read on record ids: [1337], uid: 2497, model: project.boq.line`，即拒绝路径被真实执行，不是仅断言通过。
 - 新增用例：
   - `test_boq_line_project_scope`：成本岗可读本项目行；列表读取不含他项目行；按 ID `read()` 抛 `AccessError`（证明是规则拒绝而非列表过滤）；经理保持全量。
   - `test_boq_line_scope_matches_parent_version_scope`：清单行范围必须与 `project.boq.version` 一致，防止再次偏离。
+  - `test_boq_line_cross_company_scope`：跨公司反例与经理例外的实际范围，见下节。
 - 非空验证：修复前同一环境的实测为 40 行且 `read()` 成功，修复后为 0 行且 `AccessError`；新增断言在修复前必然失败。
+- 跨公司断言的**非空性实测**：把本轮新增的两条全局公司规则（`ir_rule` id 518/519）置为 `active=false` 后重跑同一套件，
+  得到 `1 failed, 0 error(s) of 8 tests`，失败点为 `test_boq_line_cross_company_scope`（`AssertionError: True is not false`）；
+  随后按权威回读确认两条规则恢复为 `active=true`（`select id,name,active,global`），且未连带改动其它规则
+  （`select count(*) from ir_rule where active=false` = 1，为既有的标准门户规则 id 151）。
+  即：新增断言在缺少本轮修复时确实失败，不是恒真断言。
+
+## 跨公司维度（本轮补测，并据此修复）
+
+`project.boq.line` 与 `project.boq.version` 都没有 `company_id`，公司边界只能经 `project_id -> project.project.company_id` 表达。
+本轮在受管开发库（`sc_dev_demo`）用**事务内创建 + `rollback`** 的探针构造了第二个公司、
+一个二级公司项目、以及一个“二级公司项目但负责人是主公司用户”的项目，实测各角色的列表读取与按 ID 读取。
+无残留：探针创建的 `res_company` / `zz*` 用户 / `ZZ*` 清单行在回读中均为 0，`ROLLED_BACK=true`。
+
+**修复前实测**
+
+| 角色 | 主公司行 | 二级公司行 | 二级公司行（负责人=主公司用户） | 二级公司版本 |
+|---|---|---|---|---|
+| 主公司成本经办 | 可读 | 不可读（列表 0 / 按 ID `AccessError`） | **可读** | 不可读 |
+| 主公司成本经理 | 可读 | **可读** | **可读** | **可读** |
+| 二级公司成本经办 | 不可读 | 可读 | 不可读 | 不可读 |
+
+即修复前存在两个真实跨公司读取口子：
+
+1. **项目成员命中即放行**：主公司成本经办是二级公司某项目的负责人，该项目本身对其返回
+   `AccessError`，但其清单行可读、版本可读（项目不可见而清单行可见）。
+2. **经理例外没有公司维度**：`[(1,'=',1)]` 与分组规则都是“无公司条件”，主公司成本经理可读二级公司的
+   清单行与版本，而同一记录下 `project.project` 对该用户是拒绝的。
+
+**修复**
+
+在 `project.boq.version`、`project.boq.line` 上各补一条**全局**（不带 `groups`）公司规则，与既有的
+`rule_sc_tender_opportunity_company` 同型：
+
+```
+['|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', company_ids)]
+```
+
+全局规则与分组规则是 **AND** 关系，因此成员范围规则与经理例外都在公司边界之内生效，而不是替换其中任何一个。
+这一点不是由规则文本推断，而是由有效读域实测确认：
+
+| 角色 | 有效读域 |
+|---|---|
+| 主公司成本经办 | `&`（公司规则）`|`（项目负责人 / 项目关注者） |
+| 主公司成本经理 | 仅公司规则（原为 `[(1,'=',1)]`） |
+
+**修复后实测**
+
+| 角色 | 主公司行 | 二级公司行 | 二级公司行（负责人=主公司用户） | 二级公司版本 |
+|---|---|---|---|---|
+| 主公司成本经办 | 可读 | 不可读 | **不可读** | 不可读 |
+| 主公司成本经理 | 可读（含他人项目） | 不可读 | 不可读 | 不可读 |
+| 二级公司成本经办 | 不可读 | 可读 | 不可读 | 可读 |
+| 二级公司成本经理 | 不可读 | 可读 | 可读（仍在二级公司内） | 可读 |
+
+二级公司经理仍能读到“负责人是主公司用户但项目属于二级公司”的行，这与修复前的 `project.boq.version`
+语义一致（经理例外在该公司范围内覆盖全部项目），属既有语义，本批不改。
 
 ## 明确未覆盖与边界
 
@@ -77,12 +134,18 @@
   组配置都不能单独证明某角色不可越权；这里的判断依据是受管库上的**实际读取结果**（`ir.rule._compute_domain(model,'read')`
   的有效读域 + `with_user` 下的 `search_count` + 按 ID `read()` 抛 `AccessError`）与**具体角色/组组合**。
   未实测的组合逐条列在下方，不得把本结论外推为“所有角色、所有读取入口都已收敛”。
-- **公司维度未实测**：`project.boq.line` 无 `company_id`，且 `Demo Secondary Company` 无任何项目/清单数据，因此“两个公司的清单行读取”无法在现有受管夹具上构造。修复沿用父模型语义：范围完全由项目成员关系承载，与 `project.boq.version` 完全相同。
+- **公司维度已实测并修复**：见上节。原先“公司维度未实测”的原因不是模型不可验证，而是当时没有构造跨公司夹具；
+  沿真实关联（`project_id.company_id`）即可测。修复前实测到两处真实跨公司读取，修复后同一探针复测为拒绝。
+- **同族模型仍未收敛（已登记，未在本批修复）**：`project.boq.import.batch`、`project.boq.analysis`、
+  `project.boq.analysis.norm.line`、`project.boq.analysis.resource.line`、`project.boq.summary.component`、
+  `project.cost.plan` 等使用与清单行修复前完全相同的“项目成员范围 + 经理全量”形状，且都没有公司条件。
+  已实测其中 `project.boq.import.batch`：主公司成本经理对二级公司批次 `search=1 / read_ok`，
+  而其有效读域为 `[(1,'=',1)]`，同一记录下 `project.project` 对其拒绝。这是既有暴露，本批未修，单独登记。
 - `项目中心只读(82)` 只有该组、没有 100/101 的用户在清单行与版本上都不受限。这是父模型既有语义，本批**不改变**，属于待产品确认的独立问题，不计入本次修复。
 - 未验证列表菜单可达性；动作 534（工程量清单）只授予 100/101/102，82 无法从菜单进入清单列表，残余暴露仅为直接 RPC 读取。
 - 本轮不纳入结算 ORM 门禁接线、附件 404、报表投影与显式创建。
 
 ## 状态
 
-- 批次验收完成：是（BOQ 清单行范围修复，定向 7/7）。
+- 批次验收完成：是（BOQ 清单行范围修复 + 跨公司边界修复，定向 8/8；含非空性反例与有效读域实测）。
 - 主线集成完成：否。版本发布完成：否。产品交付完成：否。
