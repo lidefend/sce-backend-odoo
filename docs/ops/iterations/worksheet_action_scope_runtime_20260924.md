@@ -43,3 +43,38 @@
 - 开发服务为 main 加本批限定覆盖，不是新的主线发布版本。
 - 不将本批读取证据扩展为全部公司、角色、创建/保存/审批通过。客户配置迁移及历史附件覆盖沿用私有客户批次记录，不复制客户资产到公共仓库。
 - 官方虚拟滚动只优化 DOM；全量加载、长文本导致的高行、用户手工清空输入后的提交等后续交互场景未在本批全部验收。
+
+## 合并两份修复（2026-09-24 追加）
+
+同一问题出现过两份独立实现：本记录对应 `20e2956d`（已发布到开发服务），以及
+`e0df4111`（本地 `fix/settlement-worksheet-action-scope`）。逐项核对后只保留一份，不并行维护两套：
+
+| 维度 | `20e2956d`（已部署） | `e0df4111`（本地） | 取舍 |
+|---|---|---|---|
+| `sheet.domain` 动作域 | `action_domain + sheet_domain`（Odoo 隐式 AND） | 声明了 `sheet_domain` 就替换，否则等于 `action_domain` | **等价**，取 `20e2956d` 形式 |
+| domain tab | `action_domain + tab_domain` | 未改动 | **取未改动**：`20e2956d` 使 BOQ「编制中版本」由 3 行变 0 行 |
+| `sheet.context` | 新增 `deepcopy(effective_context)` + 数据源透传 | 无 | 保留 `20e2956d` |
+| 虚拟滚动 | ScTable `virtualScroll`/`height`，移除失效的 `scroll.x` | 无 | 保留 `20e2956d` |
+| 守卫测试 | 平台单测 +11（含把 tab 回归固化为期望的一条） | 平台单测 +85、P1 三例投影断言 | 合并：保留 P1 三例，修正 tab 期望 |
+
+合并后的候选以已发布提交为基线，仅追加两个提交：`272b05be`（tab 作用域纠正）、
+`54b8fcd4`（P1 投影断言）。已发布历史未改写，`20e2956d` 保持原样。
+
+### tab 与动作域冲突的证据
+
+受管 dev（`sc_dev_demo`）实测 `project.boq.line`：动作域 `[('version_id.state','=','published')]`，
+全模型 40 行、动作域 37 行；`sheet_domain` 与动作域合成为 37 行（两版等价）。
+
+| 已发布 tab | 声明域（未改动） | `action_domain + tab_domain`（`20e2956d`） |
+|---|---|---|
+| 「已发布版本」 | 37 行 | 37 行 |
+| 「编制中版本」 | **3 行** | **0 行** |
+
+前端 `applyWorksheetDomainTab` 是**替换** `sheet.domain`（key 无效时返回原对象），
+所以 tab 是完整备选作用域而非默认查询的补充；把动作域拼进 tab 只会窄化那些刻意走出动作域的 tab。
+tab 是否有权走出动作域属产品问题，本批只恢复已发布行为，不代替产品裁决。
+
+### 投影断言
+
+`test_payment_settlement_component_profile.py` 断言三个已发布 worksheet 投影的
+`sheet.domain` 以动作域为前缀。只回退该合成时三例全部失败（`[] != [动作域]`），已确认非永真。
