@@ -27,11 +27,31 @@ case "$authorization_test_tags" in
     ;;
 esac
 
-# Fail closed on a wedged run: the caller may tighten the budget, never drop it.
+# Fail closed on a wedged run: the caller may tighten the budget within the
+# ceiling, never disable it (a 0 timeout would switch the watchdog off).
 orm_timeout_seconds="${SC_AUTHORIZATION_ORM_TIMEOUT_SECONDS:-3600}"
-case "$orm_timeout_seconds" in
-  (*[!0-9]*|'') echo "[admin-vis-p3-orm][FATAL] invalid ORM timeout" >&2; exit 2 ;;
+orm_timeout_max_seconds="${SC_AUTHORIZATION_ORM_TIMEOUT_MAX_SECONDS:-7200}"
+export ORM_TIMEOUT_MAX_SECONDS="$orm_timeout_max_seconds"
+validate_orm_timeout "$orm_timeout_seconds" || exit 2
+
+# Identity and collected count are pinned per fixed tag; the shared guard rejects
+# a run whose log does not show these tests actually executing.
+orm_expect_count=""
+orm_expect_identity=""
+case "$authorization_test_tags" in
+  payment_settlement_component_profile)
+    orm_expect_count=7
+    orm_expect_identity="test_payment_settlement_component_profile"
+    ;;
+  chatter_timeline_authorization_orm)
+    orm_expect_identity="test_chatter_timeline_authorization_orm"
+    ;;
+  admin_vis_p3_project_record_rule_orm)
+    orm_expect_identity="test_admin_vis_p3_project_record_rule_orm"
+    ;;
 esac
+validate_orm_expect_count "$orm_expect_count" || exit 2
+export orm_expect_count orm_expect_identity
 
 case "${ENV:-dev}" in
   dev|test) ;;
@@ -229,6 +249,10 @@ cleanup() {
   printf 'ADMIN_VIS_P3_VOLUMES_AFTER_SHA256=%s\n' "$volumes_after_digest"
   printf 'ADMIN_VIS_P3_TEMP_DATABASE_REMOVED=%s\n' "$database_removed"
   printf 'ADMIN_VIS_P3_TEMP_RESOURCES_REMOVED=%s\n' "$resources_removed"
+  printf 'ADMIN_VIS_P3_TIMEOUT_SECONDS=%s\n' "$orm_timeout_seconds"
+  printf 'ADMIN_VIS_P3_EXPECTED_TESTS=%s\n' "${orm_expect_count:-unpinned}"
+  printf 'ADMIN_VIS_P3_EXPECTED_IDENTITY=%s\n' "${orm_expect_identity:-unpinned}"
+  printf 'ADMIN_VIS_P3_CLEANUP_OK=%s\n' "$([[ "$cleanup_result" -eq 0 ]] && echo true || echo false)"
 
   if [[ "$cleanup_result" -ne 0 ]]; then
     echo "[admin-vis-p3-orm][FATAL] exact cleanup or baseline restoration failed" >&2
@@ -250,6 +274,8 @@ echo "[admin-vis-p3-orm] database_role=isolated_test_rehearsal"
 echo "[admin-vis-p3-orm] tenant_id=synthetic_admin_vis_p3"
 echo "[admin-vis-p3-orm] environment_id=${owner_id}"
 echo "[admin-vis-p3-orm] exact_db_filter=${ODOO_DBFILTER}"
+echo "[admin-vis-p3-orm] timeout_seconds=${orm_timeout_seconds} ceiling=${orm_timeout_max_seconds}"
+echo "[admin-vis-p3-orm] expected_tests=${orm_expect_count:-unpinned} expected_identity=${orm_expect_identity:-unpinned}"
 
 "${compose[@]}" up -d db
 database_container="$("${compose[@]}" ps -q db)"

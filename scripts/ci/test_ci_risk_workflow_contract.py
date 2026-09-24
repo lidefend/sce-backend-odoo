@@ -270,13 +270,27 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("timeout --signal=TERM --kill-after=30", runner)
         self.assertIn('source "$ROOT_DIR/scripts/ci/orm_result_guard.sh"', runner)
         self.assertIn("evaluate_orm_outcome", runner)
+        # A 0 timeout would disable the watchdog and an unbounded one would let a
+        # wedged run outlive every gate, so the runner validates the budget and
+        # pins the identity/count of the fixed tag it launches.
+        self.assertIn('validate_orm_timeout "$orm_timeout_seconds" || exit 2', runner)
+        self.assertIn("orm_expect_count=7", runner)
+        self.assertIn('orm_expect_identity="test_payment_settlement_component_profile"', runner)
+        self.assertIn("validate_orm_expect_count", runner)
+        self.assertIn("ADMIN_VIS_P3_CLEANUP_OK=", runner)
 
         # The rejection rules are container-free on purpose: this is the part of
         # the settlement ORM lane the docker-less Gitee executor can execute.
         guard = (ROOT / "scripts/ci/orm_result_guard.sh").read_text(encoding="utf-8")
-        self.assertIn("[1-9][0-9]* tests", guard)
+        self.assertIn("validate_orm_timeout", guard)
+        self.assertIn("validate_orm_expect_count", guard)
+        self.assertIn("orm_expect_identity", guard)
+        self.assertIn("grep -c 'Starting '", guard)
         self.assertIn("return 4", guard)
+        self.assertIn("return 5", guard)
+        self.assertIn("return 6", guard)
         self.assertIn("return 7", guard)
+        self.assertIn("return 8", guard)
         self.assertIn('"${1:-}" == "--self-test"', guard)
 
         executor = (ROOT / "scripts/ci/gitee_formal_executor.py").read_text(encoding="utf-8")
