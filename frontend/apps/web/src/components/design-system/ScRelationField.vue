@@ -256,11 +256,29 @@ defineExpose({
   min-width: 0;
 }
 
+/*
+ * Official-capability gap (TDesign Vue Next 1.20.5): `Select` exposes
+ * `panelBottomContent` for panel actions, but renders it as an ordinary sibling
+ * of the option list inside `.t-popup__content`, which the theme caps at
+ * `max-height: 300px; overflow-y: auto`. A panel whose actions are taller than
+ * the leftover space therefore pushes them below the scrollport, so the primary
+ * actions cannot be clicked without scrolling the candidate list first. The
+ * official API has no bottom-anchored action area and the popup has no footer
+ * slot, so the anchor is presentation, applied through the official slot:
+ * `position: sticky` keeps the block inside the official container and pins it
+ * to the scrollport bottom only while the content overflows. Remove this once
+ * the official Select provides a footer slot or excludes `panelBottomContent`
+ * from the scrolling region.
+ */
 .sc-relation-field__panel-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: grid;
   gap: 4px;
   padding: 4px 0 0;
   border-top: 1px solid var(--sc-app-border);
   margin-top: 4px;
+  background: var(--sc-app-panel);
 }
 </style>
