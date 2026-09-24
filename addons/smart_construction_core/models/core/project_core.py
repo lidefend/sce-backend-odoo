@@ -1828,6 +1828,10 @@ class ProjectProject(models.Model):
         return True
 
     def write(self, vals):
+        # Reject before any write or related-field side effect: callers may
+        # catch ValidationError and continue the surrounding transaction.
+        if "name" in vals and (not isinstance(vals["name"], str) or not vals["name"].strip()):
+            raise ValidationError("项目名称不能为空。")
         if self.env.context.get("sc_autosave") and all(
             project.lifecycle_state == "draft" for project in self
         ):

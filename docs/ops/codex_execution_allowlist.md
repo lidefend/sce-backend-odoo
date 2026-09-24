@@ -740,3 +740,17 @@ artifacts/codex/<branch>/<timestamp>/
 
 ```
 ```
+
+## Published Gitee candidate synchronization (2026-09-25)
+
+For the owner-authorized integration closeout, `make workspace.branch.sync-gitee-published`
+appends exact live main to an already published candidate without rewriting its history.
+It binds `SYNC_ROOT`, `EXPECTED_BRANCH`, full `EXPECTED_HEAD`, `GITEE_EXPECTED_MAIN`,
+and optional `GITEE_EXPECTED_SOURCE` when unpublished local append commits exist.
+Default is read-only (fetch only). Apply requires
+`GITEE_SYNC_CONFIRM=APPEND_EXACT_MAIN_TO_PUBLISHED_CANDIDATE`.
+The entry verifies a clean root, canonical Gitee remote, live branch/main SHA, published
+ancestry and a verified recovery bundle. Conflicts abort to the original candidate.
+It never pushes or merges main; publication still uses `pr.push.gitee`, and all required
+CI must pass on the new source and current target. Raw merge/rebase/cherry-pick remain
+prohibited outside governed tools.

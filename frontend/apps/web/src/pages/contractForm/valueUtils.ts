@@ -30,6 +30,7 @@ export function parseNumeric(text: unknown) {
 
 export function isRequiredFieldEmptyByType(value: unknown, fieldType: string) {
   const ttype = String(fieldType || '').trim().toLowerCase();
+  if (ttype === 'boolean') return value !== true && value !== false;
   if (Array.isArray(value)) return value.length === 0;
   if (ttype === 'many2one') return !Number(value || 0);
   if (ttype === 'many2many' || ttype === 'one2many') return !Array.isArray(value) || value.length === 0;

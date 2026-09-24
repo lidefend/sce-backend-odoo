@@ -27,7 +27,7 @@
         </ScButton>
       </div>
       <p v-if="dialog.error" class="validation-error" role="alert">{{ dialog.error }}</p>
-      <div class="relation-dialog-table-wrap">
+      <div v-if="!dialog.error" class="relation-dialog-table-wrap">
         <ScLoading class="relation-dialog-loading" :loading="dialog.loading" :label="dialog.labels.loading || '正在加载关系记录'">
         <ScTable class="relation-dialog-table" appearance="flush" :aria-busy="dialog.loading || undefined"
           :label="dialog.title" :data="relationTableRows" :columns="relationTableColumns" row-key="id" size="small"
@@ -37,7 +37,7 @@
         </ScLoading>
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
-      <div class="relation-dialog-mobile-results" role="listbox" :aria-label="dialog.title" :aria-busy="dialog.loading || undefined">
+      <div v-if="!dialog.error" class="relation-dialog-mobile-results" role="listbox" :aria-label="dialog.title" :aria-busy="dialog.loading || undefined">
         <label
           v-for="row in dialog.rows"
           :key="`rel-card-${row.id}`"
@@ -77,7 +77,7 @@
         <ScEmptyState v-if="!dialog.loading && !dialog.rows.length" :title="dialog.labels.empty || '未找到匹配记录'" />
       </div>
       <footer class="relation-dialog-footer">
-        <span class="relation-dialog-count">{{ recordCountLabel }}</span>
+        <span v-if="!dialog.error" class="relation-dialog-count">{{ recordCountLabel }}</span>
         <span class="relation-dialog-footer-spacer"></span>
         <span class="relation-dialog-footer-actions">
           <ScButton variant="ghost" :disabled="busy" @click="$emit('close')">
@@ -93,7 +93,7 @@
           </ScButton>
           <ScButton
             variant="primary"
-            :disabled="busy || dialog.loading || !dialog.selectedId"
+            :disabled="busy || dialog.loading || Boolean(dialog.error) || !dialog.selectedId"
             @click="$emit('confirm')"
           >
             {{ dialog.labels.select || '选择' }}

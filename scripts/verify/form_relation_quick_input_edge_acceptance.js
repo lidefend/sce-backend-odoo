@@ -139,7 +139,23 @@ function relationBox(page, index) {
 }
 
 async function relationValue(page, index) {
-  return relationBox(page, index).locator('input').inputValue();
+  return relationBox(page, index).locator('input').first().inputValue();
+}
+
+// The candidate panel belongs to the official Select popup, which mounts outside
+// the field wrapper. Open it through the projected combobox input and address the
+// panel at page scope; the official component clears the keyword on open, so the
+// runtime reloads the default candidate list.
+async function openRelationPanel(page, index) {
+  const input = relationBox(page, index).locator('input').first();
+  const controls = await input.getAttribute('aria-controls').catch(() => null);
+  const alreadyOpen = controls
+    ? await page.locator(`.many2one-option-panel#${controls}`).count().catch(() => 0)
+    : 0;
+  if (!alreadyOpen) await input.click();
+  const panel = page.locator('.many2one-option-panel:visible');
+  await panel.waitFor({ state: 'visible', timeout: 15000 });
+  return panel;
 }
 
 async function dialogSnapshot(page) {
@@ -176,15 +192,20 @@ async function exerciseAmbiguousQuickInput(page) {
     };
   }
   await openProject(page);
-  const input = relationBox(page, 0).locator('input');
+  const input = relationBox(page, 0).locator('input').first();
+  const beforeDisplay = await relationValue(page, 0);
+  // The search-more entry is a business action of the official panel; the bare
+  // Enter auto-commit was self-written interaction and is no longer supported.
+  const panel = await openRelationPanel(page, 0);
   await input.fill(match.keyword);
-  await input.press('Enter');
+  await panel.getByRole('button', { name: /搜索更多/ }).first().click();
   await page.locator('.relation-dialog').waitFor({ timeout: 15000 });
   await page.locator('.relation-dialog tbody tr').first().waitFor({ timeout: 15000 });
   const snapshot = await dialogSnapshot(page);
   await page.locator('.relation-dialog-footer button').filter({ hasText: '取消' }).click();
   await page.locator('.relation-dialog').waitFor({ state: 'detached', timeout: 10000 });
   const afterCancel = await relationValue(page, 0);
+  const panelClosedAfterCancel = await page.locator('.many2one-option-panel:visible').count() === 0;
   await discardIfPresent(page);
   return {
     path_id: 'P07',
@@ -194,14 +215,18 @@ async function exerciseAmbiguousQuickInput(page) {
       && snapshot.keyword === match.keyword
       && snapshot.rows.length > 1
       && snapshot.select_disabled
-      && afterCancel === match.keyword
+      && afterCancel === beforeDisplay
+      && panelClosedAfterCancel
       ? 'pass'
       : 'fail',
     keyword: match.keyword,
     api_match_count: match.rows.length,
     api_sample: match.rows.map((row) => normalize(row.display_name || row.name || `#${row.id}`)).slice(0, 5),
     snapshot,
+    before_display: beforeDisplay,
     after_cancel_input: afterCancel,
+    display_restored_after_cancel: afterCancel === beforeDisplay,
+    panel_closed_after_cancel: panelClosedAfterCancel,
     attempts: match.attempts,
   };
 }
@@ -210,9 +235,10 @@ async function exerciseClearWithoutSave(page) {
   const beforeProject = await readProject(page);
   await openProject(page);
   const beforeValue = await relationValue(page, 1);
-  const input = relationBox(page, 1).locator('input');
-  await input.fill('');
-  await input.blur();
+  // Explicit clear is a business action of the official panel; clearing the
+  // search keyword alone must never change the relation value.
+  const panel = await openRelationPanel(page, 1);
+  await panel.getByRole('button', { name: /清除选择/ }).first().click();
   await page.waitForTimeout(500);
   const afterClearInput = await relationValue(page, 1);
   const buttonsAfterClear = await page.locator('.template-page-header-actions button').evaluateAll((nodes) => nodes.map((node) => ({

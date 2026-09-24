@@ -174,6 +174,9 @@ def _summary(env, sha, batch, mode, project=None):
         "environment": os.environ.get("SC_ENVIRONMENT"),
         "dbfilter": os.environ.get("ODOO_DBFILTER"),
         "candidate_sha": sha,
+        "installed_modules": env["ir.module.module"].sudo().search([
+            ("name", "in", ["smart_core", "smart_construction_core"]),
+        ], order="name").read(["name", "state", "latest_version"]),
         "batch": batch,
         "namespace": MODULE,
         "project": {
@@ -188,7 +191,7 @@ def _summary(env, sha, batch, mode, project=None):
         },
         "responsibilities": responsibilities,
         "role_candidates": candidates,
-        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids"],
+        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids", "partner_id"],
         "recovery": "cleanup verifies XMLID/code ownership, scans external many2one references, removes only this project and its responsibility rows",
     }
     if project:

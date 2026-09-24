@@ -1,4 +1,5 @@
 import { config } from '../config';
+import { buildIdempotentIntentIdentity } from './intentRequestIdentity';
 import { useSessionStore } from '../stores/session';
 import { resolveConfiguredDb, resolveLoginRoutingDb } from '../services/dbContext';
 import { currentContextEpoch, currentContextSignal } from '../app/contextEpoch';
@@ -327,7 +328,11 @@ const idempotentRequests = new Map<string, Promise<{ body: unknown; traceId?: st
 function idempotentIntentKey(path: string, options: RequestInit): string {
   if (!String(path || '').startsWith('/api/v1/intent') || options.method !== 'POST' || typeof options.body !== 'string') return '';
   try {
-    const payload = JSON.parse(options.body) as { intent?: string; params?: Record<string, unknown> };
+    const payload = JSON.parse(options.body) as {
+      intent?: string;
+      params?: Record<string, unknown>;
+      context?: unknown;
+    };
     const intent = String(payload.intent || '').trim();
     const op = String(payload.params?.op || '').trim();
     const idempotent = intent === 'ui.contract.v2'
@@ -335,27 +340,11 @@ function idempotentIntentKey(path: string, options: RequestInit): string {
       || (intent === 'api.data' && ['read', 'list', 'search'].includes(op));
     if (!idempotent) return '';
     const session = useSessionStore();
-    const params = payload.params || {};
-    const context = (params.context && typeof params.context === 'object' && !Array.isArray(params.context))
-      ? params.context as Record<string, unknown>
-      : {};
-    const semanticRequest = {
-      intent,
-      op,
-      model: params.model,
-      ids: params.ids,
-      fields: params.fields,
-      domain: params.domain,
-      action_id: params.action_id,
-      menu_id: params.menu_id,
-      record_id: params.record_id,
-      render_profile: params.render_profile,
-      surface: params.surface,
-      res_id: params.res_id,
-      limit: params.limit,
-      context,
-    };
-    return `${session.sessionDb}|${session.token || ''}|${currentContextEpoch()}|${JSON.stringify(semanticRequest)}`;
+    // Result identity is the whole normalized payload: keyword, paging,
+    // ordering, grouping and any future op-specific key all change the
+    // response, so an allowlist is not a safe basis for coalescing.
+    const identity = buildIdempotentIntentIdentity(payload);
+    return `${session.sessionDb}|${session.token || ''}|${currentContextEpoch()}|${identity}`;
   } catch {
     return '';
   }
