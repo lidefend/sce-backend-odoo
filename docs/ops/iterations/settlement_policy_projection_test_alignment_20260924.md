@@ -121,8 +121,31 @@ lane 的 `common`。该自检无容器依赖，覆盖通过、零测试、无可
 不在本 PR 内解决。
 
 另外，Gitee worker 运行的是 `/opt/gitee-ci/sce-product-odoo` 下的受控副本，由
-`deploy/gitee-ci/install.sh`（root）部署；**仓库内的接线要在控制器副本刷新后才会生效**，
-这一点由部署车道确认，本 PR 不宣称已生效。
+`deploy/gitee-ci/install.sh`（root）部署；**仓库内的接线要在控制器副本刷新后才会生效**。
+
+### 受控副本实测：线上当前连守卫自检都还没执行（2026-09-24）
+
+对 CI 节点 `1.95.2.123` 做只读核对（未写入、未部署、未重启服务）：
+
+| 核对项 | 实测 |
+|---|---|
+| `/opt/gitee-ci/sce-product-odoo/scripts/ci/gitee_formal_executor.py` 是否含 `orm_result_guard` | **否**（无匹配） |
+| `/opt/gitee-ci/sce-product-odoo/scripts/ci/orm_result_guard.sh` | **不存在**（`MISSING`） |
+| 节点是否有容器运行时 | 有：`/usr/bin/docker`、`/var/run/docker.sock` |
+| 服务状态 | `gitee-webhook-ci.service`、`gitee-ci-worker.service` 均 active |
+
+结论分两层，不合并：
+
+1. **仓库内的接线尚未生效**：受控副本里既没有 `orm_result_guard.sh`，执行器也没有引用它，因此
+   当前线上 Gitee 执行器连容器无关的 7 项拒绝语义自检都还没有跑。让它生效需要经部署车道执行
+   受管入口 `scripts/ops/gitee_ci_incremental_update.py`（`make gitee.ci.sandbox.probe` 只读探测 /
+   `make gitee.ci.server.update` 应用）。本 PR 只改仓库，不宣称线上已执行。
+2. **即便刷新副本，ORM 本体仍无法在 Gitee 执行**：节点虽装有 docker，但执行器的
+   `bwrap --unshare-all` 沙箱不挂载 `/var/run/docker.sock`、也没有网络，`TransactionCase` 无法收集。
+   要改变这一点等于把容器运行时授给 CI 沙箱（削弱现有“无网络/无凭据”沙箱保证），属于 P4/环境
+   责任层决策，本轮不做，也不把 ORM 命令塞进该 lane 冒充接通。
+
+因此本轮对“Gitee 是否实际收集 7 项测试”的回答是**否**，并给出上述必要条件，而不是记为已接通。
 
 ### 定向验证
 
@@ -140,5 +163,7 @@ lane 的 `common`。该自检无容器依赖，覆盖通过、零测试、无可
 
 ## 状态（补充）
 
+- 本 PR 提交信息中的 “Run the container-free `--self-test` of the same guard on Gitee” 应读作
+  **接线已入库**，不是**线上已执行**；线上执行以受控副本刷新为准（见上节只读实测）。
 - 批次验收完成：是（断言对齐 + 门禁接线，定向与隔离库均已跑通）。
 - 主线集成完成：否。版本发布完成：否。产品交付完成：否。
