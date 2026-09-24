@@ -40,3 +40,10 @@ ORM 填充 normalized 默认值后，allocation.init 回填缺失身份的历史
 - 精确修复该XML的两处退役声明：active=False,status=draft。沿用现有非发布生命周期，保留payload及版本历史；不降低有效契约发布校验。
 - 第二次独立增量复核通过；第7例仅验证声明，运行态以第三轮克隆为准。
 - 第三轮日志 clone-upgrade-fix169-r3.log；升级后额外检查台账NULL分类、分摊标准身份完整性与资金子项隔离计数。
+
+## PR !9 CI 首轮修复
+
+- 精确头7b6a4d13：public_guard与merge_policy_gate成功；frontend_release_gate按范围skip；professional_quality_gate第3步因生成测试清单过期失败。
+- 补齐测试清单、摘要、模块版本依赖表与复杂度报告；清单大段diff来自新增条目后的顺序编号位移。
+- make ci.generated_reports.guard：完整通过。产品代码与测试代码未变，复用7项定向验证与服务器完整升级PASS（clone-upgrade-fix169-r4.log），三项异常计数均0。
+- 平台四项全红来自现有reporter将作业总失败状态映射给每项检查，不代表四项命令分别失败。该可观测性问题不混入本次数据库兼容修复。
