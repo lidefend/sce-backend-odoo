@@ -50,9 +50,18 @@ def recipes(check, mode, base):
     common = [py("scripts/ci/test_ci_risk_classifier.py"),
               py("scripts/verify/test_github_actions_security_guard.py"),
               static("python3", "scripts/verify/github_actions_security_guard.py"),
-              static("make", "verify.product.release.version"), static("git", "diff", "--check")]
+              static("make", "verify.product.release.version"),
+              # Container-free rejection rules of the settlement ORM lane. This
+              # sandbox hosts no database, so the lane itself stays GitHub-only.
+              static("bash", "scripts/ci/orm_result_guard.sh", "--self-test"),
+              static("git", "diff", "--check")]
     if check == "public_guard" and mode == "required":
         return [static("python3", "-m", "py_compile", *PUBLIC_COMPILE)] + [py(p) for p in PUBLIC_TESTS] + [
+            # Candidate PRs on Gitee resolve to this lane, and the sandbox hosts
+            # no database: execute the container-free rejection rules here so the
+            # settlement ORM lane cannot silently lose its zero-test, failure and
+            # timeout guards.
+            static("bash", "scripts/ci/orm_result_guard.sh", "--self-test"),
             static("python3", "scripts/ci/frontend_professional_extension_guard.py"),
             static("python3", "scripts/verify/repository_clean_history_guard.py", "--trusted-base", base),
             static("python3", "scripts/verify/clean_product_release_scan.py", "--report", "/tmp/clean-product.json"),
