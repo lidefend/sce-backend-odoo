@@ -126,6 +126,24 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             "sc.input.number",
         )
 
+    def test_json_field_declares_readable_display_instead_of_a_text_input(self):
+        # A JSON value has no client editor.  The contract must declare the
+        # readable display whether the widget is explicit, absent, or carries a
+        # producer default that cannot transport an object value.
+        for descriptor in (
+            {"type": "json"},
+            {"type": "json", "widget": "json"},
+            {"type": "json", "widget": "input"},
+            {"ttype": "json"},
+        ):
+            with self.subTest(descriptor=descriptor):
+                widget = self.assembler._field_widget(
+                    {"name": "quick_encoding_vals", "string": "快速编码值", **descriptor},
+                    layout_type="form",
+                )
+                self.assertEqual(widget["widgetType"], "display")
+                self.assertEqual(widget["componentKey"], "sc.display.text")
+
     def test_date_range_widget_preserves_native_semantics_for_public_component_consumers(self):
         widget = self.assembler._field_widget(
             {

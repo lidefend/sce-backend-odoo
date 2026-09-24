@@ -10,6 +10,7 @@ import {
   formatTemporalFieldValue,
   isEmptyFieldValue,
   isBooleanFieldType,
+  isJsonFieldType,
   isNumericFieldType,
   isScalarRelationFieldType,
   isSelectionFieldType,
@@ -193,6 +194,22 @@ export function parseAttachmentReferenceLinks(value: unknown): Array<{ name: str
   return links;
 }
 
+/**
+ * JSON 字段没有编辑控件，只读展示必须反映契约里的真实值：对象与数组输出其 JSON
+ * 文本，空对象、空数组与空值走既有空值口径。它必须早于本地化归一，否则对象会被
+ * 当成多语言映射而退化为空文本。
+ */
+function formatJsonDisplayValue(value: unknown, emptyText: string): string {
+  if (value === null || value === undefined || value === false) return emptyText;
+  if (typeof value === 'string') return value.trim() ? value : emptyText;
+  if (Array.isArray(value)) return value.length ? JSON.stringify(value) : emptyText;
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return Object.keys(record).length ? JSON.stringify(record) : emptyText;
+  }
+  return String(value);
+}
+
 export function formatDisplayValue(
   value: unknown,
   field?: Pick<FieldDescriptor, 'ttype' | 'type' | 'selection'>,
@@ -200,6 +217,9 @@ export function formatDisplayValue(
 ): string {
   const normalized = normalizeOptions(options);
   const fieldType = normalizeFieldType(field);
+  if (isJsonFieldType(fieldType)) {
+    return formatJsonDisplayValue(value, normalized.emptyText);
+  }
   value = resolveLocalizedDisplayValue(value, normalized);
 
   if (isEmptyFieldValue(value)) {
