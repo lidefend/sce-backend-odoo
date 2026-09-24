@@ -2,7 +2,8 @@
 
 状态（2026-09-24）：**控件交互子范围通过，客户查询闭环待修复 → 已修复**（见“查询去重身份”）。
 本批增量 13 个提交：关系控件收敛 8 个 + 查询去重身份修复 2 个 + 验收/发布记录 3 个；
-分支相对 main 共 26 个提交 / 66 个文件，其中 22 个属关系控件谱系，4 个继承自早前批次。
+分支相对 main 共 28 个提交 / 65 个文件（其中 22 个属关系控件谱系，4 个继承自早前批次，
+2 个为本记录的修正与去残留提交）；核对于 `89b7891a` 时为 26 个提交 / 66 个文件。
 L4 证据绑定候选 `f357193e`（`fecb6f72` 起仅有验收脚本与文档差异）；L0/L1/L2 定向与
 L4 受管浏览器验收均已通过并回填；
 专用验收对象 3930、3931 均已回收。
@@ -429,13 +430,13 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 
 ### 范围事实
 
-- 差异（核对于 `89b7891a`，未推送前可复核）：**66 个文件**、`+3091 / -420`、**26 个提交**
-  （线性，无合并提交）；其中关系控件谱系 **22 个**（`b73c5a75…89b7891a`），早前批次继承
-  **4 个**（`92885722`、`78367373`、`9b3d65d2`、`fd6fb975`）—— 并非只有 Select 替换。
-- 自该锚点起的修正提交只改动本文件，因此文件总数仍为 66；提交总数按当前分支回读为准
-  （`git rev-list --count 61b8d712..HEAD`），不要沿用被替换的旧稿数字（25 个提交 / `+2905`）。
+- 差异（终态，以 `git diff --shortstat 61b8d712..HEAD` 与 `git rev-list --count 61b8d712..HEAD`
+  回读为准）：**65 个文件**、`+3109 / -419`、**28 个提交**（线性，无合并提交）；其中关系控件
+  谱系 **22 个**（`b73c5a75…89b7891a`），早前批次继承 **4 个**（`92885722`、`78367373`、
+  `9b3d65d2`、`fd6fb975`），本记录修正与去残留 **2 个** —— 并非只有 Select 替换。
+- 不要沿用被替换的旧稿数字（25 个提交 / `+2905` / 66 个文件）。
 - 分组：
-  - `frontend/`（29）：`ScRelationField.vue` 官方 Select 驱动、`relationSelectPanelA11y.ts`、
+  - `frontend/`（28）：`ScRelationField.vue` 官方 Select 驱动、`relationSelectPanelA11y.ts`、
     `ProfessionalMany2oneFieldControl.vue`、`professionalRelationFieldModel.ts`、`FormSection*`、
     `pages/contractForm/*`（关系运行时、创建意图、保存联动、必填校验）、
     `api/client.ts` + `api/intentRequestIdentity.ts`（并发查询去重身份）、契约表单 presenter。
@@ -481,6 +482,8 @@ refactor(frontend): 通用关系控件收敛到官方 Select 驱动 + 并发查�
 - 新增自定义仅三项，均未接管交互，并逐项回答三个问题（产品需求／官方能力缺口／放在哪层如何验证与退出）：
   官方面板 ARIA 投影、面板宽度随视口收敛（`popupProps.overlayInnerStyle`）、
   面板动作区吸附在官方滚动区底部。
+- 去残留：删除旧“外层浮层”方案遗留在 `ScPopover.vue` 的未使用 `destroyOnClose` 属性
+  （无消费者、默认值与旧硬编码一致），该文件相对 main 不再有差异。
 
 ### B. 并发查询去重身份（客户查询闭环）
 
@@ -492,14 +495,27 @@ refactor(frontend): 通用关系控件收敛到官方 Select 驱动 + 并发查�
   也不能触发“空结果 → 无过滤动态回退”的二次查询。
 - 单元与浏览器反例见“验证”。
 
-### C. 本 PR 同时继承的早前批次改动（非本主题）
+### C. 本 PR 同时包含的非本次控件收敛主题改动
 
-- 前端保存校验：编辑态提交前校验必填字段（`saveRecordHelpers.ts`、`valueUtils.ts`，`78367373`）；
-  同一关系谱系早前批次另含“编辑时省略未变更的 many2many 值”（`ac7ace81`）。
-- 后端项目资料写入校验：写入前拒绝空资料名（`smart_construction_core/.../project_core.py` 及其测试）。
-- 后端关系查询参数边界（`smart_core/handlers/api_data.py` 及其测试）。
-- 交付工具：受审业务专题 PR 元数据发布（`scripts/ops/gitee_formal_pr.py`、`make/codex.mk` 及其测试）。
-- 验收工具与生成清单：受管项目资料写入 runner/fixture、关系与表单验收脚本、生成清单刷新。
+属关系控件谱系、但不属本次“控件收敛”主题：
+
+- 后端通用搜索字段准入：自由文本 OR 搜索不再纳入搜索视图中“非存储”的虚拟过滤器字段
+  （`smart_core/handlers/api_data.py` 及其边界测试，提交 `b73c5a75`）—— 平台通用搜索机制，非行业语义。
+- 编辑时省略未变更的 many2many 值（`ac7ace81`）。
+
+继承自早前批次（不属关系控件谱系，共 4 个提交）：
+
+- 前端保存校验：编辑态提交前校验必填字段（`saveRecordHelpers.ts`、`valueUtils.ts`，`78367373`）。
+- 后端项目资料写入校验：写入前拒绝空资料名（`smart_construction_core/.../project_core.py` 及其测试，`92885722`）。
+- 正式入口范围与反例绑定（`9b3d65d2`）。
+- 交付工具：受审业务专题 PR 元数据发布（`scripts/ops/gitee_formal_pr.py`、`make/codex.mk` 及其测试，`fd6fb975`）。
+- 验收工具与生成清单（跨两部分）：受管项目资料写入 runner/fixture、关系与表单验收脚本、生成清单刷新。
+
+### D. 去残留（本记录收口项）
+
+- `ScPopover.vue` 的 `destroyOnClose` 属性由旧“外层浮层”方案（`7f85e700`）引入，改用官方
+  `Select` 后已无任何消费者；本批删除该属性，使该文件相对 main 不再有差异（因此文件总数
+  由 66 变为 65），避免“换了组件却保留旧方案口子”。
 
 ## 架构影响
 
