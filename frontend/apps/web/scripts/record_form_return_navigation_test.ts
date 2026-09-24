@@ -72,6 +72,22 @@ check('record route name is treated as a create form too', () => {
   assert.equal(redirect?.query.activity_page_id, 'ap_record');
 });
 
+check('activity identity injection never carries a navigation mode of its own', () => {
+  // The caller decides push vs replace. The redirect must expose no mode key at
+  // all, so a caller that replaces keeps replacing (no extra history entry) and
+  // a caller that pushes keeps pushing. Asserting the exact key set catches a
+  // future `push`/`replace` flag being reintroduced.
+  const redirect = resolveCreateFormActivityRedirect({
+    routeName: 'model-form',
+    routeParams: { model: 'sc.receipt.income', id: 'new' },
+    query: { menu_id: '338' },
+    hash: '',
+    createActivityInstanceId: () => 'ap_mode',
+  });
+  assert.ok(redirect);
+  assert.deepEqual(Object.keys(redirect as object).sort(), ['hash', 'name', 'params', 'query']);
+});
+
 // --- record form return ----------------------------------------------------
 
 check('in-app history entry is detected from router history state', () => {
