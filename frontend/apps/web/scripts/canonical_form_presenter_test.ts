@@ -791,6 +791,70 @@ const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
 assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
 assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
 
+// A form draft keeps a selected record as a plain id (record hydration stores
+// the bare id and the relation runtime publishes the display name on a separate
+// channel) and `false` once the field is cleared. Selecting a record on a field
+// the record never had must project that draft id instead of discarding it for
+// want of a contract relation to read a display name from.
+function projectRelationDraft(runtimeValues: Record<string, unknown> | undefined, contractPartner?: unknown) {
+  const draft = snapshot();
+  draft.layoutContract.containerTree[0].children.push({
+    containerId: 'field.partner_id', containerType: 'field', type: 'field', name: 'partner_id', title: '', span: 12,
+    children: [], widgetList: [{
+      widgetId: 'field.partner_id', widgetType: 'relation', fieldCode: 'partner_id', label: '客户', span: 12,
+      componentKey: 'sc.relation.many2one', capabilities: [], componentConfig: { fieldType: 'many2one' },
+      fieldDescriptor: { name: 'partner_id', type: 'many2one', relation: 'res.partner' },
+      ownerContainerId: 'field.partner_id',
+    }],
+  });
+  draft.statusContract.widgetStatus.push({
+    widgetId: 'field.partner_id', visible: true, readonly: false, required: false, disabled: false,
+  });
+  if (contractPartner !== undefined) draft.dataContract.mainData.partner_id = contractPartner;
+  const field = collectFields(presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(draft)),
+    'edit',
+    runtimeValues,
+  ).zones.primary).find((candidate) => candidate.fieldCode === 'partner_id');
+  return { field, schema: field ? canonicalFieldToFormSection(field) : undefined };
+}
+const selectedOnEmptyRecord = projectRelationDraft({ partner_id: 6390 });
+assert.deepEqual(
+  selectedOnEmptyRecord.field?.value,
+  { id: 6390, displayName: '', model: 'res.partner' },
+  'a draft record id must project as a selected relation even when the record had none',
+);
+assert.equal(
+  selectedOnEmptyRecord.schema?.inputValue,
+  6390,
+  'the projected relation must reach the field control as the selected value',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: 6390 }, [7, '既有客户']).field?.value,
+  { id: 6390, displayName: '', model: 'res.partner' },
+  'a draft record id must replace the contract relation it supersedes',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: 7 }, [7, '既有客户']).field?.value,
+  { id: 7, displayName: '既有客户', model: 'res.partner' },
+  'a hydrated draft id must keep the contract display name',
+);
+assert.equal(
+  projectRelationDraft({ partner_id: false }, [7, '既有客户']).field?.value,
+  null,
+  'a cleared draft must not fall back to the contract relation it replaced',
+);
+assert.deepEqual(
+  projectRelationDraft(undefined, [7, '既有客户']).field?.value,
+  { id: 7, displayName: '既有客户', model: 'res.partner' },
+  'without a draft key the contract relation stays authoritative',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: [9, '成对客户'] }).field?.value,
+  { id: 9, displayName: '成对客户', model: 'res.partner' },
+  'an Odoo-shaped draft value must keep projecting its own pair',
+);
+
 const dateRangeStartField = {
   ...nativeMonetaryField!,
   widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'date',
@@ -3289,7 +3353,7 @@ assert.deepEqual(normalizeNativeFormStatusbar({
   visible: false, field: 'state', current: '', states: [{ value: 'draft', label: '草稿' }], reachedValues: [], readonly: true,
 }, 'create forms must retain the native statusbar claim without rendering a business status');
 
-console.log('[canonical_form_presenter_test] PASS cases=170');
+console.log('[canonical_form_presenter_test] PASS cases=177');
 
 // Container and navigation consume the same readonly display projection.
 const emptySectionModel = structuredClone(bodyActionModel);
