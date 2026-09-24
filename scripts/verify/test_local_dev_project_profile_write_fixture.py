@@ -519,6 +519,31 @@ class TestMany2manyCarrier(unittest.TestCase):
         self.assertIn("GUARD_VALIDATION_ONLY", result.stdout)
         self.assertFalse(artifact_created)
 
+    def test_many2many_write_closure_is_pinned_by_the_browser_entry(self):
+        # The draft-only scenarios reuse their own evidence; the closure below is
+        # what has to be present for save, cancel, failure recovery and the
+        # read-only counterexample.
+        for marker in (
+            "m2m_selection_stays_draft_until_save",
+            "m2m_selection_saves_and_reads_back",
+            "m2m_cancel_discards_draft_without_a_write",
+            "m2m_save_failure_preserves_draft",
+            "m2m_save_retry_persists_and_matches_ui",
+            "m2m_readonly_principal_cannot_modify",
+            "m2m_write_closure_request_ledger",
+            "applyTagCommands",
+            "chipSetMatches",
+            "recordWriteRequests(page)",
+            "NAVIGATION_AUTHORITY_DENIED",
+        ):
+            self.assertIn(marker, BROWSER_MJS)
+        self.assertIn("verifyMany2manyTagSelect(browser, page, report, beforeFacts)", BROWSER_MJS)
+        self.assertIn("name: '放弃', exact: true", BROWSER_MJS)
+        # The closure must compare the submitted relation commands with the
+        # authoritative readback instead of trusting the rendered chips.
+        self.assertIn("sameJson(submittedTagIds, savedTagIds)", BROWSER_MJS)
+        self.assertIn("sameJson(authoritativeAfterRetry, refreshedAfterRetry)", BROWSER_MJS)
+
     def test_many2many_mode_stays_exclusive(self):
         for conflicting in ("RELATION_ONLY", "RELATION_WRITE_ONLY", "PERMISSION_ONLY", "NETWORK_FAILURE_RECOVERY"):
             with self.subTest(conflicting=conflicting):

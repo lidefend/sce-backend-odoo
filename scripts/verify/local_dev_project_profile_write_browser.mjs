@@ -486,9 +486,13 @@ async function waitForWriteOutcome(page, writes, index, timeout = 20000) {
   }
   throw new Error(`write_outcome_timeout:${index}`);
 }
-// The many2many check below never writes: it drives the official relation control
+// The many2many check starts draft-only: it drives the official relation control
 // through mouse, keyboard, blur, Escape, clear, consecutive searches and a narrow
-// viewport, while recording mutation requests and the authoritative relation queries.
+// viewport while recording mutation requests and the authoritative relation queries.
+// It then closes the business loop on the same governed objects: a form save that
+// commits the relation, a discard that must not write, a failed save that keeps the
+// draft and a retry that has to match an authoritative readback. Only the save
+// scenarios may write, and each one asserts its own request count.
 function recordMutationRequests(page) {
   const mutations = [];
   page.on('request', (request) => {
@@ -548,11 +552,13 @@ async function readProjectTagIds(page) {
   if (!raw || raw === false) return [];
   return (Array.isArray(raw) ? raw : [raw]).map(Number).filter(Number.isFinite).sort((left, right) => left - right);
 }
-async function verifyMany2manyTagSelect(page, report, beforeFacts) {
+async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
   const expectedTags = WRITE_AUTHORITY.tags || [];
   const expectedNames = expectedTags.map((row) => normalize(row.name)).sort();
   const mutations = recordMutationRequests(page);
   const relationQueries = recordRelationQueries(page, 'project.tags');
+  const writes = recordWriteRequests(page);
+  report.writes = writes;
   const carrier = WRITE_AUTHORITY?.carrier;
   if (!carrier || Number(carrier.id) === PROJECT_ID) throw new Error('m2m_carrier_precondition_failed');
   const beforeTagIds = await readProjectTagIds(page);
@@ -888,6 +894,263 @@ async function verifyMany2manyTagSelect(page, report, beforeFacts) {
   const backendUnchanged = sameJson(beforeFacts, await readProjectFacts(page)) && sameJson(beforeTagIds, afterTagIds);
   report.scenarios.push({ name: 'm2m_journey_stayed_draft_only', status: backendUnchanged && mutations.length === 0 ? 'PASS' : 'FAIL', mutation_requests: mutations.length, authoritative_unchanged: backendUnchanged, relation_queries: relationQueries.entries });
   if (!backendUnchanged || mutations.length) throw new Error(`m2m_journey_wrote_state:${JSON.stringify({ mutations, beforeTagIds, afterTagIds })}`);
+
+  // -------------------------------------------------------------------------
+  // Write closure. The scenarios above stay draft-only on purpose; the ones
+  // below close the business loop on the same governed objects. Every
+  // expectation is bound to the authoritative readback, never to the DOM alone:
+  // the control may only claim a saved relation after the backend confirms it.
+  const chipLabels = async () => (await selectedChips().allInnerTexts()).map(normalize);
+  const chipSetMatches = (labels, expected) => labels.length === expected.length
+    && expected.every((label) => labels.some((value) => value === label || value.includes(label)));
+  const alphaTag = expectedTags.find((row) => normalize(row.name).endsWith('-ALPHA'));
+  const betaTag = expectedTags.find((row) => normalize(row.name).endsWith('-BETA'));
+  const gammaTag = expectedTags.find((row) => normalize(row.name).endsWith('-GAMMA'));
+  if (!alphaTag || !betaTag || !gammaTag) throw new Error('m2m_write_candidate_missing');
+  const alphaId = Number(alphaTag.id);
+  const alphaLabel = normalize(alphaTag.name);
+  const betaLabel = normalize(betaTag.name);
+  const gammaLabel = normalize(gammaTag.name);
+  const tagCommandValues = (index) => writes[index]?.body?.params?.vals?.tag_ids ?? null;
+  // Replay the submitted relation commands on top of the authoritative set that
+  // was read before the save. The result must equal what the backend then
+  // reports, whichever command shape the generic relation adapter sends.
+  const applyTagCommands = (current, commands) => {
+    const next = new Set(current);
+    for (const command of commands || []) {
+      const code = Number(command?.[0]);
+      if (code === 6) { next.clear(); (command[2] || []).forEach((id) => next.add(Number(id))); }
+      else if (code === 4) next.add(Number(command[1]));
+      else if (code === 3 || code === 2) next.delete(Number(command[1]));
+    }
+    return [...next].sort((left, right) => left - right);
+  };
+  const clickOptionWithLabel = async (label) => {
+    await input.fill('');
+    await openPanel();
+    await waitForCandidates(expectedTags.length);
+    const labels = await optionLabels();
+    const index = labels.findIndex((value) => value === label);
+    if (index < 0) throw new Error(`m2m_option_label_missing:${label}`);
+    await optionRows.nth(index).click();
+    await page.waitForFunction((expected) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')]
+      .some((node) => (node.textContent || '').includes(expected)), label, { timeout: 15000 });
+  };
+
+  // 9. Selection plus save: the draft commits through one project.project write,
+  //    the authoritative readback equals the submitted commands and the reloaded
+  //    form shows the same relation.
+  const preWriteTagIds = await readProjectTagIds(page);
+  if (preWriteTagIds.length) throw new Error(`m2m_write_precondition_failed:${JSON.stringify(preWriteTagIds)}`);
+  await clickOptionWithLabel(alphaLabel);
+  const chipsBeforeSave = await chipLabels();
+  const draftTagIds = await readProjectTagIds(page);
+  const draftOnly = chipSetMatches(chipsBeforeSave, [alphaLabel]) && !draftTagIds.length
+    && writes.length === 0 && mutations.length === 0 && await dirty(page);
+  report.scenarios.push({ name: 'm2m_selection_stays_draft_until_save', status: draftOnly ? 'PASS' : 'FAIL', chips: chipsBeforeSave, relation_ids: draftTagIds, write_requests: writes.length, mutation_requests: mutations.length });
+  if (!draftOnly) throw new Error(`m2m_write_draft_phase_failed:${JSON.stringify({ chipsBeforeSave, draftTagIds, writes: writes.length })}`);
+  await closePanel();
+  await save(page);
+  const saveWrite = await waitForWriteOutcome(page, writes, 0);
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const cleanAfterSave = await draftClean();
+  const savedTagIds = await readProjectTagIds(page);
+  const savedFacts = await readProjectFacts(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await field(page, 'tag_ids').waitFor({ timeout: 30000 });
+  const refreshedTagIds = await readProjectTagIds(page);
+  const refreshedChips = await chipLabels();
+  const submittedTagIds = applyTagCommands(preWriteTagIds, tagCommandValues(0));
+  const savedPassed = writes.length === 1 && saveWrite.outcome === 'business_success'
+    && Object.prototype.hasOwnProperty.call(writes[0].body.params.vals || {}, 'tag_ids')
+    && sameJson(submittedTagIds, [alphaId])
+    && sameJson(submittedTagIds, savedTagIds)
+    && sameJson(savedTagIds, refreshedTagIds)
+    && chipSetMatches(refreshedChips, [alphaLabel])
+    && cleanAfterSave
+    && sameJson(beforeFacts, savedFacts);
+  report.scenarios.push({
+    name: 'm2m_selection_saves_and_reads_back', status: savedPassed ? 'PASS' : 'FAIL',
+    selected_id: alphaId, selected_label: alphaLabel,
+    write_requests: writes.length, requested_commands: tagCommandValues(0), requested_tag_ids: submittedTagIds,
+    write_response: { outcome: saveWrite.outcome, http_status: saveWrite.http_status, business_ok: saveWrite.business_ok, error: saveWrite.response_error },
+    authoritative_tag_ids: savedTagIds, refreshed_tag_ids: refreshedTagIds, refreshed_chips: refreshedChips,
+    draft_clean_after_save: cleanAfterSave, unrelated_facts_unchanged: sameJson(beforeFacts, savedFacts),
+  });
+  if (!savedPassed) throw new Error(`m2m_save_readback_not_proven:${JSON.stringify({ writeRequests: writes.length, outcome: saveWrite.outcome, submittedTagIds, savedTagIds, refreshedTagIds, refreshedChips, cleanAfterSave })}`);
+
+  // 10. Cancel: the form's own discard action reverts a dirty relation draft and
+  //     must not produce any write.
+  const writesBeforeDiscard = writes.length;
+  const mutationsBeforeDiscard = mutations.length;
+  await clickOptionWithLabel(betaLabel);
+  const chipsBeforeDiscard = await chipLabels();
+  const dirtyBeforeDiscard = await dirty(page);
+  await closePanel();
+  const discardAction = page.getByRole('button', { name: '放弃', exact: true }).first();
+  await discardAction.waitFor({ timeout: 15000 });
+  await discardAction.click();
+  await page.waitForFunction((label) => {
+    const chips = [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].map((node) => (node.textContent || '').trim());
+    return chips.length === 1 && chips[0].includes(label);
+  }, alphaLabel, { timeout: 20000 });
+  const chipsAfterDiscard = await chipLabels();
+  const cleanAfterDiscard = await draftClean();
+  const authoritativeAfterDiscard = await readProjectTagIds(page);
+  const discardPassed = chipSetMatches(chipsBeforeDiscard, [alphaLabel, betaLabel]) && dirtyBeforeDiscard
+    && chipSetMatches(chipsAfterDiscard, [alphaLabel])
+    && cleanAfterDiscard
+    && writes.length === writesBeforeDiscard && mutations.length === mutationsBeforeDiscard
+    && sameJson(authoritativeAfterDiscard, [alphaId]);
+  report.scenarios.push({
+    name: 'm2m_cancel_discards_draft_without_a_write', status: discardPassed ? 'PASS' : 'FAIL',
+    discard_action: '放弃', superseded_chip: betaLabel,
+    chips_before_discard: chipsBeforeDiscard, chips_after_discard: chipsAfterDiscard,
+    draft_dirty_before_discard: dirtyBeforeDiscard, draft_clean_after_discard: cleanAfterDiscard,
+    write_requests: writes.length, mutation_requests: mutations.length,
+    authoritative_tag_ids: authoritativeAfterDiscard,
+  });
+  if (!discardPassed) throw new Error(`m2m_cancel_not_proven:${JSON.stringify({ chipsBeforeDiscard, chipsAfterDiscard, dirtyBeforeDiscard, cleanAfterDiscard, writes: writes.length, authoritativeAfterDiscard })}`);
+
+  // 11. A failed save keeps the draft and changes nothing; the retry sends the
+  //     same commands and the authoritative readback then matches the form.
+  const writesBeforeFailure = writes.length;
+  const mutationsBeforeFailure = mutations.length;
+  await clickOptionWithLabel(gammaLabel);
+  const chipsBeforeFailure = await chipLabels();
+  let blocked = false;
+  await page.route('**/api/v1/intent*', async (route) => {
+    let body = {};
+    try { body = JSON.parse(route.request().postData() || '{}'); } catch { return route.continue(); }
+    const isProjectWrite = body?.intent === 'api.data' && body?.params?.op === 'write'
+      && body?.params?.model === 'project.project' && sameJson(body?.params?.ids, [PROJECT_ID]);
+    const isTagWrite = isProjectWrite && Object.prototype.hasOwnProperty.call(body?.params?.vals || {}, 'tag_ids');
+    if (!isTagWrite) return route.continue();
+    if (!blocked) { blocked = true; return route.abort('failed'); }
+    return route.continue();
+  });
+  await closePanel();
+  const saveButton = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  await saveButton.click();
+  const failedWrite = await waitForWriteOutcome(page, writes, writesBeforeFailure);
+  const errorFeedback = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
+  await errorFeedback.waitFor({ state: 'visible', timeout: 20000 });
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const feedbackText = normalize(await errorFeedback.innerText());
+  const messageVisible = /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(feedbackText);
+  await errorFeedback.screenshot({ path: path.join(OUT, 'm2m-save-failure-feedback.png') });
+  const chipsAfterFailure = await chipLabels();
+  const dirtyAfterFailure = await dirty(page);
+  const saveEnabledAfterFailure = !(await saveButton.isDisabled());
+  const authoritativeAfterFailure = await readProjectTagIds(page);
+  const failurePassed = blocked && failedWrite.outcome === 'network_blocked' && messageVisible
+    && chipSetMatches(chipsAfterFailure, [alphaLabel, gammaLabel])
+    && dirtyAfterFailure && saveEnabledAfterFailure
+    && writes.length === writesBeforeFailure + 1 && mutations.length === mutationsBeforeFailure + 1
+    && sameJson(authoritativeAfterFailure, [alphaId]);
+  report.scenarios.push({
+    name: 'm2m_save_failure_preserves_draft', status: failurePassed ? 'PASS' : 'FAIL',
+    blocked, failed_message: messageVisible, feedback: feedbackText, write_outcome: failedWrite.outcome,
+    chips_after_failure: chipsAfterFailure, draft_dirty: dirtyAfterFailure, save_enabled: saveEnabledAfterFailure,
+    authoritative_tag_ids: authoritativeAfterFailure, write_requests: writes.length, mutation_requests: mutations.length,
+  });
+  if (!failurePassed) throw new Error(`m2m_save_failure_not_proven:${JSON.stringify({ blocked, outcome: failedWrite.outcome, messageVisible, chipsAfterFailure, dirtyAfterFailure, saveEnabledAfterFailure, authoritativeAfterFailure, writes: writes.length })}`);
+  // The injection handler stays installed: after the single blocked attempt it
+  // passes the relation write through, so the retry below is a real submission.
+  await save(page);
+  const retryWrite = await waitForWriteOutcome(page, writes, writesBeforeFailure + 1);
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const samePayloadRetried = sameJson(writes[writesBeforeFailure]?.body?.params?.vals, writes[writesBeforeFailure + 1]?.body?.params?.vals);
+  const authoritativeAfterRetry = await readProjectTagIds(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await field(page, 'tag_ids').waitFor({ timeout: 30000 });
+  const refreshedAfterRetry = await readProjectTagIds(page);
+  const refreshedChipsAfterRetry = await chipLabels();
+  const expectedAfterRetry = applyTagCommands([alphaId], tagCommandValues(writesBeforeFailure + 1));
+  const retryPassed = retryWrite.outcome === 'business_success' && samePayloadRetried
+    && writes.length === writesBeforeFailure + 2
+    && sameJson(expectedAfterRetry, authoritativeAfterRetry)
+    && sameJson(authoritativeAfterRetry, refreshedAfterRetry)
+    && chipSetMatches(refreshedChipsAfterRetry, [alphaLabel, gammaLabel])
+    && sameJson(beforeFacts, await readProjectFacts(page));
+  report.scenarios.push({
+    name: 'm2m_save_retry_persists_and_matches_ui', status: retryPassed ? 'PASS' : 'FAIL',
+    write_attempts: writes.length, backend_successful_submissions: writes.filter((row) => row.outcome === 'business_success').length,
+    retry_response: { outcome: retryWrite.outcome, http_status: retryWrite.http_status, business_ok: retryWrite.business_ok, error: retryWrite.response_error },
+    same_payload_retried: samePayloadRetried, requested_tag_ids: expectedAfterRetry,
+    authoritative_tag_ids: authoritativeAfterRetry, refreshed_tag_ids: refreshedAfterRetry, refreshed_chips: refreshedChipsAfterRetry,
+  });
+  if (!retryPassed) throw new Error(`m2m_save_retry_not_proven:${JSON.stringify({ outcome: retryWrite.outcome, samePayloadRetried, authoritativeAfterRetry, refreshedAfterRetry, refreshedChipsAfterRetry })}`);
+
+  // 12. The governed read-only principal must not be able to modify the
+  //     relation: the direct tag write is denied and the form route itself is
+  //     refused, so that role has no editable relation entry at all.
+  const reader = (WRITE_AUTHORITY.role_candidates?.project_read_only || []).find((row) => row.login === READ_LOGIN);
+  const readerAccess = (WRITE_AUTHORITY.effective_project_access?.project_read_only || []).find((row) => row.login === READ_LOGIN);
+  if (!reader || !readerAccess || readerAccess.acl_write !== false || !readerAccess.record_read) {
+    deny('m2m read-only principal must be a governed reader with denied write ACL');
+  }
+  const readonlyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+  const readonlyPage = await readonlyContext.newPage();
+  report.roles.readonly = { login: READ_LOGIN, diagnostics: recordDiagnostics(readonlyPage) };
+  let readonlyPassed = false;
+  try {
+    const identity = await login(readonlyPage, READ_LOGIN);
+    if (Number(identity.init?.user?.id) !== Number(reader.id)) deny('m2m read-only runtime identity mismatch');
+    const readerProject = await readProject(readonlyPage);
+    if (readerProject?.id !== PROJECT_ID) deny('m2m read-only principal cannot read the dedicated project');
+    const currentTagIds = await readProjectTagIds(page);
+    // Same-value write: if enforcement were broken this would still be a no-op,
+    // so the probe never becomes a business change of its own.
+    const denied = await intent(readonlyPage, 'api.data', {
+      op: 'write', model: 'project.project', ids: [PROJECT_ID], vals: { tag_ids: [[6, 0, currentTagIds]] }, context: {},
+    }, true);
+    const reasonCode = String(denied.error?.code || '');
+    const aclDenied = denied.ok === false && /ACCESS|FORBIDDEN|PERMISSION|DENIED/i.test(reasonCode);
+    const writerReadback = await readProjectTagIds(page);
+    const targetUrl = new URL(page.url());
+    await readonlyPage.goto(targetUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await readonlyPage.waitForURL((url) => url.pathname === '/access-denied'
+      && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED', { timeout: 30000 });
+    const denialTextVisible = await readonlyPage.getByText(/无权限|没有权限|访问受限|权限不足/).first()
+      .isVisible({ timeout: 10000 }).catch(() => false);
+    const enabledRelationEdits = await readonlyPage.evaluate(() => {
+      const root = document.querySelector('[data-field-name="tag_ids"]');
+      if (!root) return 0;
+      return [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), [role="button"]')]
+        .filter((node) => node.getClientRects().length).length;
+    });
+    await readonlyPage.screenshot({ path: path.join(OUT, 'm2m-readonly-denial.png'), fullPage: true });
+    const unchanged = sameJson(writerReadback, currentTagIds);
+    readonlyPassed = aclDenied && unchanged && denialTextVisible && enabledRelationEdits === 0;
+    report.scenarios.push({
+      name: 'm2m_readonly_principal_cannot_modify', status: readonlyPassed ? 'PASS' : 'FAIL',
+      principal_id: reader.id, company_id: reader.company_id, role_code: String(identity.init?.role_surface?.role_code || ''),
+      direct_write: { ok: denied.ok, http_status: denied.status, reason_code: reasonCode },
+      authoritative_unchanged: unchanged, authoritative_tag_ids: writerReadback,
+      navigation_reason: 'NAVIGATION_AUTHORITY_DENIED', denial_text_visible: denialTextVisible,
+      url: readonlyPage.url(), enabled_relation_edits: enabledRelationEdits,
+    });
+  } finally {
+    await readonlyContext.close();
+  }
+  if (!readonlyPassed) throw new Error('m2m_readonly_modification_not_denied');
+
+  // 13. Write ledger for the closure: one committed save, one blocked attempt,
+  //     one committed retry, and no relation write from the cancel or the
+  //     read-only probe. The fixture cleanup then removes the objects and the
+  //     batch is read back empty.
+  const ledger = {
+    write_attempts: writes.length,
+    business_success: writes.filter((row) => row.outcome === 'business_success').length,
+    network_blocked: writes.filter((row) => row.outcome === 'network_blocked').length,
+    outcomes: writes.map((row) => row.outcome),
+    mutation_requests: mutations.length,
+    authoritative_tag_ids: await readProjectTagIds(page),
+  };
+  const ledgerPassed = ledger.write_attempts === 3 && ledger.business_success === 2 && ledger.network_blocked === 1;
+  report.scenarios.push({ name: 'm2m_write_closure_request_ledger', status: ledgerPassed ? 'PASS' : 'FAIL', ...ledger });
+  if (!ledgerPassed) throw new Error(`m2m_write_ledger_unexpected:${JSON.stringify(ledger)}`);
 }
 
 async function openProject(page) {
@@ -1538,7 +1801,7 @@ async function main() {
       return;
     }
     if (M2M_ONLY) {
-      await verifyMany2manyTagSelect(page, report, beforeFacts);
+      await verifyMany2manyTagSelect(browser, page, report, beforeFacts);
       return;
     }
     if (PERMISSION_ONLY) {
