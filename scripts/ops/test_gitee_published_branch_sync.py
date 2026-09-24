@@ -53,6 +53,11 @@ class SyncTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,"conflict"): self.run_sync(apply=True,confirm=CONFIRM)
         self.assertEqual(out(self.root,"rev-parse","HEAD"),self.head)
         self.assertEqual(out(self.root,"status","--porcelain"),"")
+    def test_local_unpublished_append_keeps_remote_identity(self):
+        remote_head=self.head
+        self.head=self.commit("extra", "extra")
+        r=self.run_sync(apply=True,confirm=CONFIRM,remote_head=remote_head)
+        self.assertEqual(out(self.root,"show","-s","--format=%P",r["head"]),self.head+" "+self.main)
     def test_confirmation_required(self):
         with self.assertRaisesRegex(RuntimeError,"confirmation"): self.run_sync(apply=True)
 

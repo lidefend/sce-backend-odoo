@@ -839,4 +839,4 @@ verify.gitee.frontend_cache_install.unit: guard.prod.forbid
 # Published Gitee candidates keep their history: append exact main, never rebase.
 .PHONY: workspace.branch.sync-gitee-published
 workspace.branch.sync-gitee-published: guard.prod.forbid
-	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--remote-head "$(GITEE_EXPECTED_SOURCE)",) $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
