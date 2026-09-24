@@ -472,3 +472,17 @@ and a recovery bundle, and aborts on conflicts. Seven real temporary Git tests p
 Publication remains on pr.push.gitee with fresh required CI for source and target.
 BOQ !11 merged as e5b9852a; relation !12 was synchronized from 63b860a9 to 0ebcc675.
 CI visibility !14 inherits relation work and must follow !12.
+
+### 2026-09-25 Trusted CI bootstrap update
+
+Relation PR !12 merged at a32b38b6; !14 now contains only P4 CI changes.
+The old trusted package 54aa8c63 rejected f5b80a49 before checks because its
+queue/worker/gate-plan fingerprints differed. Waiting for merge before installation
+would deadlock this controller update. Under the owner's direct-closeout authorization,
+the existing incremental installer deployed the exact targeted-tested f5b80a49 package.
+Ancestor, source fingerprint, sandbox and four required merge checks remain enforced.
+Receipt: installed, credentials unchanged; queue backup incremental-jcg2zwsq.
+MemoryHigh restored to 896M, Max 1152M and SwapMax 2G retained. This documentation-only
+commit requests fresh checks; installation is not CI acceptance. Future settlement
+policy changes likewise require reviewed exact-package installation before testing,
+not removal of fingerprint validation.
