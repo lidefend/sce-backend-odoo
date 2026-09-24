@@ -18,7 +18,7 @@ ORM 填充 normalized 默认值后，allocation.init 回填缺失身份的历史
 
 ## 验证与现有证据
 
-- make verify.legacy_ledger_preallocation.unit：6 tests PASS。SQLite 实际执行 DML；仅适配 PostgreSQL 表查询、DDL和锁，不能替代 PostgreSQL 升级验证。
+- make verify.legacy_ledger_preallocation.unit：7 tests PASS。SQLite 实际执行 DML；仅适配 PostgreSQL 表查询、DDL和锁，不能替代 PostgreSQL 升级验证。
 - make ci.local.iteration：PASS（L1）；其增量建议基于旧 origin/main，包含历史差异，不扩展本批测试范围。
 - git diff --check：PASS。
 - 隔离 PostgreSQL 全量恢复升级：进行中，输入为 main + 本批 manifest/169 migration 只读覆盖。
@@ -32,3 +32,11 @@ ORM 填充 normalized 默认值后，allocation.init 回填缺失身份的历史
 批次验证中；未提交、未推送、未合并；未升级原库、未切换服务、未完成公网联调验收。
 
 - 独立只读复核：169及156重放增量通过，无新S0/S1/S2；实际资金子项状态仍需克隆验收，不把调用顺序单元用例当成数据结果。
+
+## 完整升级暴露的退役契约兼容问题
+
+- clone-upgrade-fix169-r2.log 证明169迁移与原allocation建表回填已越过失败点。
+- 后续XML加载失败：旧published契约仅write(active=False)触发replace_and_publish，重新校验已迁出历史字段。
+- 精确修复该XML的两处退役声明：active=False,status=draft。沿用现有非发布生命周期，保留payload及版本历史；不降低有效契约发布校验。
+- 第二次独立增量复核通过；第7例仅验证声明，运行态以第三轮克隆为准。
+- 第三轮日志 clone-upgrade-fix169-r3.log；升级后额外检查台账NULL分类、分摊标准身份完整性与资金子项隔离计数。

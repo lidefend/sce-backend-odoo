@@ -1,6 +1,8 @@
 """Execute migration DML on real relational rows; adapt PostgreSQL DDL only."""
 import importlib.util
 import sqlite3
+import ast
+import xml.etree.ElementTree as ET
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -86,6 +88,22 @@ class MigrationTests(unittest.TestCase):
             self.run_migration()
             self.assertTrue(loader.call_args.args[0].endswith("17.0.0.156/pre-migration.py"))
         self.assertEqual(seen, ["legacy_unresolved_identity"])
+
+    def test_retired_contracts_leave_publication_before_validation(self):
+        path = ROOT / "addons/smart_construction_core/data/view_orchestration_form_section_contract_data.xml"
+        root = ET.parse(path).getroot()
+        retirements = []
+        for function in root.iter("function"):
+            if function.get("model") != "ui.business.config.contract" or function.get("name") != "write":
+                continue
+            values = function.findall("value")
+            if len(values) != 2:
+                continue
+            vals = ast.literal_eval(values[1].get("eval"))
+            if vals.get("active") is False:
+                retirements.append(vals)
+                self.assertEqual(vals, {"active": False, "status": "draft"})
+        self.assertGreaterEqual(len(retirements), 2)
 
     def test_no_parent_table_is_noop(self):
         self.run_migration()
