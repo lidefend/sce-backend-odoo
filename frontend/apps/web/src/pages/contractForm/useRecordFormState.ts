@@ -8,6 +8,7 @@ import { fieldType, normalizeRelationIds, sanitizeUiErrorMessage } from './field
 import { normalizeComparable, normalizeContractFieldValue } from './valueUtils';
 import { buildOnchangeRequestPayload, normalizeOnchangeFieldPatch, normalizeOnchangeResponse } from './onchangeNormalization';
 import { buildFormRequestContext } from './formRequestContext';
+import { buildOnchangeDraftSnapshot, createOnchangeRoundtripTicket, onchangeRecordKey, planOnchangeApplication } from './onchangeRoundtripIdentity';
 import {
   hasAmbiguousRelationMatches, relationEntry, relationInlineCreate, resolveRelationQuickFillOption,
 } from './relationDescriptor';
@@ -129,8 +130,24 @@ export function useRecordFormState(context: {
   const setTextField=(name:string,value:string)=>{if(!isFieldWritable(name))return;context.formData[name]=value;markFieldChanged(name);};
   const setTechnicalCompanionTextField=(name:string,value:string)=>{const descriptor=context.formFields.value[name];if(!descriptor||descriptor.readonly===true)return;context.formData[name]=value;markFieldChanged(name);};
   const buildOnchangeValues=()=>buildOnchangeRequestPayload({fields:context.formFields.value,formData:context.formData,originalValues:context.originalValues.value,recordId:context.recordId.value,buildOne2manyValue:context.buildOne2manyCommandValue});
-  async function runOnchangeRoundtrip(){if(!context.model.value||!context.changedFieldSet.size)return;const changed=Array.from(context.changedFieldSet);context.changedFieldSet.clear();try{const response=await triggerOnchange({model:context.model.value,res_id:context.recordId.value,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);context.onchangeWarnings.value=warnings;context.onchangeLinePatches.value=linePatches;if(Object.keys(modifiersPatch).length)context.onchangeModifiersPatch.value={...context.onchangeModifiersPatch.value,...modifiersPatch};
-      if(Object.keys(patch).length){context.applyingOnchangePatch.value=true;Object.entries(patch).forEach(([name,value])=>{if(!(name in context.formFields.value))return;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);const normalized=normalizeOnchangeFieldPatch({descriptor:context.formFields.value[name],readonly:Boolean(node?.readonly||context.formFields.value[name]?.readonly),value});if(normalized.kind==='x2many'){context.formData[name]=normalized.value;if(normalized.fieldType==='one2many')context.initOne2manyRows(name,context.formData[name]);}else if(normalized.kind==='many2one'){context.upsertRelationOption(name,normalized.option);context.formData[name]=normalized.value;context.relationKeywords[name]=normalized.keyword||'';}else context.formData[name]=normalized.value;});context.applyingOnchangePatch.value=false;}if(linePatches.length){context.applyingOnchangePatch.value=true;context.applyOnchangeLinePatches(linePatches);context.applyingOnchangePatch.value=false;}}catch{/* Onchange preserves current values when the optional roundtrip fails. */}}
+  // Onchange responses are derived data computed from an earlier draft, so every
+  // roundtrip carries its identity: the record it was computed for, its issue
+  // order, and the draft values it was computed from. A response that no longer
+  // matches the draft on screen is dropped instead of being written back.
+  let onchangeSequence=0;
+  async function runOnchangeRoundtrip(){
+    if(!context.model.value||!context.changedFieldSet.size)return;
+    const changed=Array.from(context.changedFieldSet);context.changedFieldSet.clear();
+    const ticket=createOnchangeRoundtripTicket({sequence:onchangeSequence+1,model:context.model.value,recordId:context.recordId.value,snapshot:buildOnchangeDraftSnapshot(Object.keys(context.formFields.value),name=>comparableFieldValue(name,context.formData[name]))});
+    onchangeSequence=ticket.sequence;
+    try{const response=await triggerOnchange({model:context.model.value,res_id:context.recordId.value,values:buildOnchangeValues(),changed_fields:changed,context:buildFormRequestContext(context.route.query)});const {patch:rawPatch,modifiersPatch,linePatches,warnings}=normalizeOnchangeResponse(response);
+      const plan=planOnchangeApplication({ticket,latestSequence:onchangeSequence,currentRecordKey:onchangeRecordKey(context.model.value,context.recordId.value),patch:rawPatch,comparableValue:name=>comparableFieldValue(name,context.formData[name])});
+      // A superseded or foreign response is dropped whole: its patch, row
+      // patches, modifier overlay and warnings all describe an obsolete draft.
+      if(plan.dropped)return;
+      context.onchangeWarnings.value=warnings;context.onchangeLinePatches.value=linePatches;if(Object.keys(modifiersPatch).length)context.onchangeModifiersPatch.value={...context.onchangeModifiersPatch.value,...modifiersPatch};
+      if(Object.keys(plan.patch).length){context.applyingOnchangePatch.value=true;Object.entries(plan.patch).forEach(([name,value])=>{if(!(name in context.formFields.value))return;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);const normalized=normalizeOnchangeFieldPatch({descriptor:context.formFields.value[name],readonly:Boolean(node?.readonly||context.formFields.value[name]?.readonly),value});if(normalized.kind==='x2many'){context.formData[name]=normalized.value;if(normalized.fieldType==='one2many')context.initOne2manyRows(name,context.formData[name]);}else if(normalized.kind==='many2one'){context.upsertRelationOption(name,normalized.option);context.formData[name]=normalized.value;context.relationKeywords[name]=normalized.keyword||'';}else context.formData[name]=normalized.value;});context.applyingOnchangePatch.value=false;}
+      if(linePatches.length){context.applyingOnchangePatch.value=true;context.applyOnchangeLinePatches(linePatches);context.applyingOnchangePatch.value=false;}}catch{/* Onchange preserves current values when the optional roundtrip fails. */}}
   const collectWritableValues=()=>{const values=context.layoutNodes.value.filter(node=>node.kind==='field'&&!node.readonly&&context.isWritableFieldVisible(node.name)).reduce<Record<string,unknown>>((output,node)=>{if(context.recordId.value&&!context.dirtyFieldSet.has(node.name))return output;const value=normalizeFieldValue(node.name,context.formData[node.name]);const type=fieldType(node.descriptor);if((type==='many2many'||type==='one2many')&&Array.isArray(value)&&!value.length)return output;output[node.name]=value;return output;},{});
     // Native forms legitimately use invisible companion fields (for example a
     // Binary field's `filename`) and onchange-updated technical values.  If the
