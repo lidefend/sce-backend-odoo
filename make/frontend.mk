@@ -565,6 +565,7 @@ verify.frontend.modifiers_runtime.guard: guard.prod.forbid
 
 verify.frontend.onchange_roundtrip.guard: guard.prod.forbid
 	@python3 scripts/verify/onchange_roundtrip_guard.py
+	@node frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs
 
 verify.frontend.onchange_contract_schema.guard: guard.prod.forbid
 	@python3 scripts/verify/onchange_contract_schema_guard.py

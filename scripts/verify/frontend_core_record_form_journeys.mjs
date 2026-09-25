@@ -110,7 +110,9 @@ async function j12(page) {
   const edited = `${original} · J12`;
   await contractName.fill(edited);
   await page.getByRole('button', { name: '放弃', exact: true }).waitFor({ timeout: 15000 });
-  const back = page.getByRole('button', { name: '返回列表', exact: true });
+  // The form's own declared exit identity, not its current copy: the header
+  // back action keeps data-form-secondary-action=return-list.
+  const back = page.locator('[data-form-secondary-action="return-list"]:visible').first();
   await back.click();
   const leaveDialog = page.getByRole('dialog');
   await leaveDialog.waitFor({ timeout: 15000 });
@@ -199,16 +201,95 @@ async function j13(page) {
   return { status: 'PASS', required_error_focus: true, conflict_retains_input: true, authoritative_reload: true };
 }
 
+async function interceptFirstContractWrite(page, model) {
+  let intercepted = 0;
+  const handler = async (route) => {
+    let payload = {};
+    try { payload = JSON.parse(route.request().postData() || '{}'); } catch {}
+    const params = payload?.params || {};
+    if (!intercepted && payload?.intent === 'api.data' && params?.op === 'write' && params?.model === model) {
+      intercepted += 1;
+      // Fulfilled locally, so the write never reaches the server: this is a
+      // transport-level save failure, not a server rejection of the payload.
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          code: 500,
+          error: { code: 'SERVER_ERROR', reason_code: 'SERVER_ERROR', message: 'injected save failure', retryable: false },
+        }),
+      });
+      return;
+    }
+    await route.continue();
+  };
+  await page.route('**/api/v1/intent**', handler);
+  return async () => {
+    await page.unroute('**/api/v1/intent**', handler);
+    return intercepted;
+  };
+}
+
+async function j14(page) {
+  const target = TARGETS.general_contract;
+  await page.goto(`${BASE_URL}${formRoute(target)}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await waitForm(page);
+  const nameField = page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first();
+  await nameField.waitFor({ timeout: 30000 });
+  check(await nameField.isEditable(), 'J14 general contract name is not editable for contract operator');
+  const authority = await nameField.inputValue();
+  const edited = `${authority} · J14`;
+  const save = page.getByRole('button', { name: /^保存(?:修改)?$/ }).first();
+
+  // A failed save must surface the failure and keep the user's draft on screen.
+  await nameField.fill(edited);
+  const removeFailure = await interceptFirstContractWrite(page, target.model);
+  await save.click();
+  const failureFeedback = page.locator('.submission-feedback--error:visible').first();
+  await failureFeedback.waitFor({ timeout: 30000 });
+  const failureText = String(await failureFeedback.textContent() || '').replace(/\s+/g, ' ').trim();
+  check(await nameField.inputValue() === edited, 'J14 failed save discarded the current input');
+  const intercepted = await removeFailure();
+  check(intercepted === 1, `J14 expected one injected save failure, got ${intercepted}`);
+
+  // Retrying the same draft, without retyping, must persist and read back.
+  await save.click();
+  await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  await waitForm(page);
+  const retried = page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first();
+  const persisted = await retried.inputValue();
+  check(persisted === edited, `J14 retry reload mismatch: ${persisted}`);
+
+  // Cleanup readback: leave the fixture record at the value it had on entry.
+  await retried.fill(authority);
+  await save.click();
+  await page.getByText(/保存成功|已保存/, { exact: false }).first().waitFor({ timeout: 45000 });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+  await waitForm(page);
+  const restored = await page.locator('[data-field-name="contract_name"] input, [data-field-name="contract_name"] textarea').first().inputValue();
+  check(restored === authority, `J14 cleanup reload mismatch: ${restored}`);
+  return {
+    status: 'PASS',
+    failure_feedback: failureText,
+    failure_retains_draft: true,
+    retry_persists_without_retyping: true,
+    restored_to_authority: true,
+  };
+}
+
 async function main() {
-  check(TARGETS.general_contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13 targets');
+  check(TARGETS.general_contract?.record_id > 0 && TARGETS.settlement?.record_id > 0 && TARGETS.core_form_request?.record_id > 0, 'missing J12/J13/J14 targets');
   const browser = await launchChromium({ headless: true });
-  const report = { schema_version: 'frontend_core_record_form_journeys.v1', database: DB_NAME, j12: {}, j13: {}, runtime: {}, pass: false };
+  const report = { schema_version: 'frontend_core_record_form_journeys.v1', database: DB_NAME, j12: {}, j13: {}, j14: {}, runtime: {}, pass: false };
   let page;
   try {
     let context;
     const j12Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
     const j13Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
-    report.runtime = { j12: j12Runtime, j13: j13Runtime };
+    const j14Runtime = { console: [], pageerror: [], unexpectedHttp: [] };
+    report.runtime = { j12: j12Runtime, j13: j13Runtime, j14: j14Runtime };
     if (JOURNEY === 'ALL' || JOURNEY === 'J12') {
       context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
       page = await context.newPage();
@@ -238,11 +319,30 @@ async function main() {
       await page.screenshot({ path: path.join(OUTPUT, 'j13-recovered-390x844.png'), fullPage: true });
       await context.close();
     }
+    if (JOURNEY === 'ALL' || JOURNEY === 'J14') {
+      context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+      page = await context.newPage();
+      Object.assign(j14Runtime, capture(page));
+      const releasedNavigation = captureReleasedNavigation(page);
+      await login(page, 'fixture_role_contract_operator');
+      applyReleasedNavigationTarget(
+        TARGETS,
+        ['general_contract'],
+        await releasedNavigation.targetByMenuXmlid(TARGETS.general_contract.menu_xmlid),
+      );
+      report.j14 = await j14(page);
+      await context.close();
+    }
     check(!j12Runtime.console.length && !j12Runtime.pageerror.length && !j12Runtime.unexpectedHttp.length, `J12 runtime errors ${JSON.stringify(j12Runtime)}`);
     check(!j13Runtime.console.length && !j13Runtime.pageerror.length && !j13Runtime.unexpectedHttp.length, `J13 runtime errors ${JSON.stringify(j13Runtime)}`);
+    check(!j14Runtime.console.length && !j14Runtime.pageerror.length, `J14 runtime errors ${JSON.stringify(j14Runtime)}`);
+    // J14 injects exactly one transport failure on purpose; observing it is the
+    // point, so the zero-unexpected-HTTP rule applies to J12/J13 only.
+    check(j14Runtime.unexpectedHttp.length === 1 && j14Runtime.unexpectedHttp[0].status === 500,
+      `J14 injected failure was not observed ${JSON.stringify(j14Runtime.unexpectedHttp)}`);
     report.pass = true;
     fs.writeFileSync(path.join(OUTPUT, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-    console.log('[verify.frontend.core_record_form.journeys] PASS J12 J13');
+    console.log('[verify.frontend.core_record_form.journeys] PASS J12 J13 J14');
   } catch (error) {
     const activePage = page;
     const diagnostic = activePage
