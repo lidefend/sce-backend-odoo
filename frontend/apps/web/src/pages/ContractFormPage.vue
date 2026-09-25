@@ -689,6 +689,8 @@ import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
 import {
   executeRecordFormReturn,
+  hasInAppReturnHistory,
+  resolveRecordFormReturnFallbackRoute,
   resolveRelationCreateDialogCancelMessage,
   useCreatedRecordNavigationRuntime,
 } from './contractForm/useCreatedRecordNavigationRuntime';
@@ -1865,6 +1867,9 @@ async function returnToPreviousPage() {
       embedded: window.parent !== window,
       postCancel: (message) => window.parent.postMessage(message, window.location.origin),
       navigateBack: () => router.back(),
+      hasInAppHistoryEntry: () => hasInAppReturnHistory(router.options.history?.state),
+      fallbackRoute: () => resolveRecordFormReturnFallbackRoute(currentRouteAuthority.value?.route),
+      navigateFallback: async (target) => { await router.replace(target as never); },
     });
   });
 }

@@ -33,6 +33,21 @@ assert.equal(resolveLocalizedDisplayValue({}, { locale: 'zh_CN', emptyText: '--'
 assert.equal(formatDisplayValue([7, localized], { type: 'many2one' }, { locale: 'zh_CN' }), '项目甲');
 assert.equal(formatDisplayValue([7, localized], undefined, { locale: 'zh_CN' }), '项目甲');
 assert.equal(formatDisplayValue([1, 2, 3], undefined, { locale: 'zh_CN' }), '1, 2, 3');
+
+// JSON 字段没有客户端编辑控件，只读展示必须给出真实 JSON 文本与空值口径，
+// 不得退化为空文本，也不得把对象字符串化后冒充可编辑输入。
+assert.equal(
+  formatDisplayValue({ seq: 'A-1', level: 2 }, { type: 'json' }),
+  '{"seq":"A-1","level":2}',
+);
+assert.equal(formatDisplayValue({ seq: 'A-1' }, { ttype: 'json' }), '{"seq":"A-1"}');
+assert.equal(formatDisplayValue([1, 2], { type: 'json' }), '[1,2]');
+assert.equal(formatDisplayValue('{"a":1}', { type: 'json' }), '{"a":1}');
+assert.equal(formatDisplayValue({}, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue([], { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue(false, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue(null, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue('   ', { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
 assert.equal(
   stripInternalMigrationMetadata('[migration:general_contract] legacy_record_id=e431f445\n公司综合平台\n业务备注'),
   '公司综合平台\n业务备注',

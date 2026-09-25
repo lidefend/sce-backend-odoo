@@ -27,17 +27,45 @@ export function resolveRelationCreateDialogCancelMessage(params: {
   return buildProfessionalRelationCancelledMessage(params);
 }
 
+export function hasInAppReturnHistory(historyState: unknown): boolean {
+  const state = historyState && typeof historyState === 'object'
+    ? historyState as Record<string, unknown>
+    : null;
+  return typeof state?.back === 'string' && String(state.back).trim() !== '';
+}
+
+export function resolveRecordFormReturnFallbackRoute(authorityRoute: unknown): string {
+  const route = String(authorityRoute ?? '').trim();
+  return route.startsWith('/') ? route : '';
+}
+
+export type RecordFormReturnMode = 'dialog_cancel' | 'history' | 'fallback';
+
 export async function executeRecordFormReturn(params: {
   query: Record<string, unknown>;
   relationModel: string;
   embedded: boolean;
   postCancel: (message: RelationCreateDialogCancelMessage) => void;
   navigateBack: () => void | Promise<void>;
-}): Promise<'dialog_cancel' | 'history'> {
+  hasInAppHistoryEntry?: () => boolean;
+  fallbackRoute?: () => string;
+  navigateFallback?: (route: string) => void | Promise<void>;
+}): Promise<RecordFormReturnMode> {
   const cancelMessage = resolveRelationCreateDialogCancelMessage(params);
   if (cancelMessage && params.embedded) {
     params.postCancel(cancelMessage);
     return 'dialog_cancel';
+  }
+  // A record form opened without a usable in-app predecessor (direct link,
+  // reload) cannot rely on browser history. Fall back to the entry route the
+  // route authority already declares for this form instead of leaving the app.
+  const canNavigateBack = params.hasInAppHistoryEntry ? params.hasInAppHistoryEntry() : true;
+  if (!canNavigateBack && params.navigateFallback) {
+    const fallbackRoute = params.fallbackRoute ? params.fallbackRoute() : '';
+    if (fallbackRoute) {
+      await params.navigateFallback(fallbackRoute);
+      return 'fallback';
+    }
   }
   await params.navigateBack();
   return 'history';

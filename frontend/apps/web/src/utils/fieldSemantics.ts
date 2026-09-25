@@ -23,6 +23,7 @@ export type CanonicalFieldType =
   | 'text'
   | 'html'
   | 'binary'
+  | 'json'
   | 'unknown';
 
 const CANONICAL_FIELD_TYPES: ReadonlySet<string> = new Set([
@@ -40,6 +41,9 @@ const CANONICAL_FIELD_TYPES: ReadonlySet<string> = new Set([
   'text',
   'html',
   'binary',
+  // JSON 字段没有任何客户端编辑控件；类型必须在归一后仍可识别，只读展示才能
+  // 按契约输出真实 JSON 文本，而不是退化成空文本或 `[object Object]`。
+  'json',
 ]);
 
 export const FIELD_VALUE_EMPTY_TEXT = '--';
@@ -105,6 +109,10 @@ export function isSelectionFieldType(type: string): boolean {
 
 export function isScalarRelationFieldType(type: string): boolean {
   return type === 'many2one';
+}
+
+export function isJsonFieldType(type: string): boolean {
+  return type === 'json';
 }
 
 export function isRelationCollectionFieldType(type: string): boolean {

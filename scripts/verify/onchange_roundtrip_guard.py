@@ -60,10 +60,27 @@ def main() -> int:
         'async function runOnchangeRoundtrip()',
         'const response=await triggerOnchange({',
         'const patch = response?.patch && typeof response.patch',
+        # A response is written back only through its roundtrip identity: the
+        # record it was computed for, its issue order, and the draft values it
+        # was computed from. Without these the roundtrip can overwrite a newer
+        # draft, or land on another record (frontend release finding F1-02).
+        "import { buildOnchangeDraftSnapshot, createOnchangeRoundtripTicket, onchangeRecordKey, planOnchangeApplication } from './onchangeRoundtripIdentity';",
+        'const ticket=createOnchangeRoundtripTicket({sequence:onchangeSequence+1',
+        'onchangeSequence=ticket.sequence;',
+        'const plan=planOnchangeApplication({ticket,latestSequence:onchangeSequence',
+        'if(plan.dropped)return;',
+        'Object.entries(plan.patch)',
     ]
+    # The raw response patch must never be applied directly: `plan.patch` is the
+    # superset-filtered set, so applying the response object would reintroduce
+    # the overwrite this guard exists to prevent.
+    forbidden_form_markers = ['Object.entries(patch)']
     for marker in form_markers:
         if marker not in form:
             errors.append(f'form missing marker: {marker}')
+    for marker in forbidden_form_markers:
+        if marker in form:
+            errors.append(f'form applies an unverified response patch: {marker}')
 
     if errors:
         print('[FAIL] onchange_roundtrip_guard')

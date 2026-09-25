@@ -18,6 +18,7 @@ export type WorksheetHierarchyConfig = {
   leaf_values: string[];
   group_field_map: Record<string, string>;
   domain: unknown[];
+  context?: WorksheetDict;
   order: string;
   navigation_depth: number;
 };
@@ -37,6 +38,7 @@ export type WorksheetSheetConfig = {
   /** 可编辑字段（G7.2 内联编辑；后端 config 未注入时前端回退默认写入面） */
   editable_fields?: string[];
   domain: unknown[];
+  context?: WorksheetDict;
   /** 数据域 tab（G7.3；后端 config 未注入时前端无 tab，行为与旧契约一致） */
   domain_tabs?: WorksheetDomainTab[];
   order: string;
@@ -62,11 +64,11 @@ export function relationId(value: unknown): number {
   return Array.isArray(value) ? Number(value[0] || 0) : Number(value || 0);
 }
 
-async function loadAll(model: string, fields: string[], domain: unknown[], order: string): Promise<WorksheetDict[]> {
+async function loadAll(model: string, fields: string[], domain: unknown[], order: string, context?: WorksheetDict): Promise<WorksheetDict[]> {
   const output: WorksheetDict[] = [];
   const limit = 5000;
   for (let offset = 0; ; offset += limit) {
-    const response = await listRecords({ model, fields, domain, order, offset, limit });
+    const response = await listRecords({ model, fields, domain, context, order, offset, limit });
     const batch = records(response);
     output.push(...batch);
     if (batch.length < limit) return output;
@@ -83,10 +85,10 @@ export async function loadHierarchicalWorksheet(
   sourceRows: WorksheetDict[];
   recordCount: number;
 }> {
-  const sheetPromise = loadAll(sheet.model, sheet.fields, sheet.domain, sheet.order);
+  const sheetPromise = loadAll(sheet.model, sheet.fields, sheet.domain, sheet.order, sheet.context);
   const hierarchyPromise = hierarchy.navigation_mode === 'sheet_groups'
     ? Promise.resolve([] as WorksheetDict[])
-    : loadAll(hierarchy.model, hierarchy.fields, hierarchy.domain, hierarchy.order);
+    : loadAll(hierarchy.model, hierarchy.fields, hierarchy.domain, hierarchy.order, hierarchy.context);
   const [hierarchyRows, sheetRows] = await Promise.all([hierarchyPromise, sheetPromise]);
   const nodes = new Map<number, WorksheetNode>();
   hierarchyRows.forEach((row) => {

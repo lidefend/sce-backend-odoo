@@ -270,6 +270,10 @@ export function resolveTemplateInputValue(options: ResolveTemplateInputValueOpti
   if (type === 'many2one') {
     return options.resolveMany2oneValue(options.fieldName);
   }
+  // JSON 字段只读展示：它没有可编辑输入值，也不允许把对象字符串化后充当输入。
+  if (type === 'json') {
+    return '';
+  }
   const raw = options.rawValue;
   if (raw === null || raw === undefined || raw === false) {
     return '';
