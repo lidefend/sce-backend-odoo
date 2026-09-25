@@ -88,6 +88,8 @@
           <div v-else ref="tableScroll" class="worksheet-table-scroll">
             <ScTable
               appearance="worksheet"
+            virtual-scroll
+            height="min(60vh, 640px)"
               :data="worksheetTableData"
               :columns="worksheetTableColumns"
               row-key="key"

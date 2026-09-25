@@ -16,6 +16,7 @@
     :disable-data-page="disableDataPage"
     :table-content-width="tableContentWidth"
     :scroll="tableScroll"
+    :height="height"
     :foot-data="footData"
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
@@ -105,6 +106,8 @@ const props = withDefaults(defineProps<{
   keyboardRowHover?: boolean;
   disableDataPage?: boolean;
   tableContentWidth?: string;
+  height?: string | number;
+  virtualScroll?: boolean;
   footData?: Record<string, unknown>[];
   selectedRowKeys?: Array<string | number>;
   rowSelectionType?: 'single' | 'multiple';
@@ -142,13 +145,10 @@ const scrollProjection = computed(() => ({
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
   ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
   : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
-// 启用水平滚动：当 tableContentWidth 存在时，将其作为 scroll.x
-// tdesign TScroll类型要求type字段，但水平滚动不需要，使用类型断言绕过
-const tableScroll = computed(() => {
-  if (!props.tableContentWidth) return undefined;
-  return { x: props.tableContentWidth };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-}) as any;
+// Horizontal width uses tableContentWidth; scroll is the official vertical driver.
+const tableScroll = computed(() => props.virtualScroll
+  ? { type: 'virtual' as const, rowHeight: 40, bufferSize: 10, threshold: 100, isFixedRowHeight: false }
+  : undefined);
 const emit = defineEmits<{
   rowClick: [context: unknown];
   rowDblclick: [context: unknown];
