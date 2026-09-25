@@ -213,6 +213,13 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("external project references exist", PY)
         self.assertIn("_external_references", PY)
         self.assertIn("project.responsibility", PY)
+        # A tag created through the official create option carries no XMLID, so
+        # the cleanup has to find it by the batch marker and report what it
+        # removed; the browser batch is only clean when that list is read back
+        # empty.
+        self.assertIn("_marker_tags", PY)
+        self.assertIn("deleted_marker_tag_ids", PY)
+        self.assertIn("marker-owned project tags still exist", PY)
 
     def test_make_entry_is_local_dev_only(self):
         block = MK[MK.index("local.dev.project_profile_write_fixture:"):]
@@ -531,6 +538,10 @@ class TestMany2manyCarrier(unittest.TestCase):
             "m2m_save_retry_persists_and_matches_ui",
             "m2m_readonly_principal_cannot_modify",
             "m2m_write_closure_request_ledger",
+            "m2m_create_option_is_offered_for_an_unknown_name",
+            "m2m_create_option_creates_and_selects_the_record",
+            "m2m_created_tag_is_authoritative_in_the_relation_query",
+            "m2m_created_tag_saves_and_reads_back",
             "applyTagCommands",
             "chipSetMatches",
             "recordWriteRequests(page)",

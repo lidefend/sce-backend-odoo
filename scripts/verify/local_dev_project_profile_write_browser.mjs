@@ -1164,6 +1164,101 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
   const ledgerPassed = ledger.write_attempts === 3 && ledger.business_success === 2 && ledger.network_blocked === 1;
   report.scenarios.push({ name: 'm2m_write_closure_request_ledger', status: ledgerPassed ? 'PASS' : 'FAIL', ...ledger });
   if (!ledgerPassed) throw new Error(`m2m_write_ledger_unexpected:${JSON.stringify(ledger)}`);
+
+  // 14. Explicit create: a relation name with no exact match is offered through
+  //     the official create row, and committing it creates the dictionary record
+  //     and selects it. The created tag must then be authoritative in the same
+  //     relation query, because the governed company scope no longer infers a
+  //     company boundary from ``project_ids`` for the shared project dictionaries.
+  //     Before that fix a tag no project carried yet stayed invisible, so this
+  //     panel kept offering 创建「…」 for a name that already existed.
+  const createdTagName = `CODEX-P4-${String(WRITE_AUTHORITY?.batch || '').toUpperCase()}-TAG-UI-${Date.now()}`;
+  const tagIdsBeforeCreate = await readProjectTagIds(page);
+  const writesBeforeCreate = writes.length;
+  const createRequests = [];
+  const onCreateResponse = async (response) => {
+    if (!response.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(response.request().postData() || '{}'); } catch { return; }
+    const params = body?.params || {};
+    if (body?.intent !== 'api.data' || params.op !== 'create' || params.model !== 'project.tags') return;
+    let payload = {};
+    try { payload = await response.json(); } catch { payload = {}; }
+    createRequests.push({
+      vals: params.vals || {},
+      http_status: response.status(),
+      ok: payload?.ok === true,
+      id: Number(payload?.data?.id || payload?.data?.record?.id || 0) || 0,
+      error: payload?.error || undefined,
+    });
+  };
+  page.on('response', onCreateResponse);
+  let createdTagId = 0;
+  try {
+    await openPanel();
+    await input.fill(createdTagName);
+    await waitForCandidates(1);
+    const createRow = optionRows.filter({ hasText: '创建' }).first();
+    const optionsBeforeCreate = await optionLabels();
+    const createRowOffered = (await createRow.count()) === 1
+      && normalize(await createRow.innerText()).includes(createdTagName);
+    report.scenarios.push({ name: 'm2m_create_option_is_offered_for_an_unknown_name', status: createRowOffered ? 'PASS' : 'FAIL', keyword: createdTagName, options: optionsBeforeCreate, mutation_requests: mutations.length });
+    if (!createRowOffered) throw new Error(`m2m_create_option_missing:${JSON.stringify(optionsBeforeCreate)}`);
+    await createRow.click();
+    const createDeadline = Date.now() + 20000;
+    while (Date.now() < createDeadline && !createRequests.length) await page.waitForTimeout(100);
+    const createResponse = createRequests[0] || null;
+    createdTagId = Number(createResponse?.id || 0);
+    await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), createdTagName, { timeout: 20000 });
+    const chipsAfterCreate = await chipLabels();
+    const authoritativeAfterCreate = await readProjectTagIds(page);
+    const createDraftOnly = createResponse?.ok === true && String(createResponse?.vals?.name || '') === createdTagName
+      && createdTagId > 0 && writes.length === writesBeforeCreate
+      && chipSetMatches(chipsAfterCreate, [alphaLabel, gammaLabel, createdTagName])
+      && sameJson(authoritativeAfterCreate, tagIdsBeforeCreate);
+    report.scenarios.push({ name: 'm2m_create_option_creates_and_selects_the_record', status: createDraftOnly ? 'PASS' : 'FAIL', keyword: createdTagName, created_id: createdTagId, create_request: createResponse, chips: chipsAfterCreate, authoritative_tag_ids_before_save: authoritativeAfterCreate, write_requests: writes.length, mutation_requests: mutations.length });
+    if (!createDraftOnly) throw new Error(`m2m_create_option_did_not_create:${JSON.stringify({ createResponse, chipsAfterCreate, authoritativeAfterCreate })}`);
+
+    // The created record is now authoritative for the same governed query: the
+    // official panel returns the tag itself, so it stops offering 创建 for that
+    // name. The option text has to equal the tag name exactly, which the create
+    // row can never satisfy.
+    await input.fill('');
+    await waitForCandidates(expectedTags.length);
+    await input.fill(createdTagName);
+    await page.waitForFunction((name) => [...document.querySelectorAll('.t-select__dropdown .t-select-option')].some((node) => (node.textContent || '').trim() === name), createdTagName, { timeout: 20000 });
+    const optionsAfterCreate = await optionLabels();
+    const createRowsAfterCreate = await optionRows.filter({ hasText: '创建' }).count();
+    const createdTagVisible = optionsAfterCreate.filter((value) => value === createdTagName).length === 1
+      && createRowsAfterCreate === 0;
+    report.scenarios.push({ name: 'm2m_created_tag_is_authoritative_in_the_relation_query', status: createdTagVisible ? 'PASS' : 'FAIL', keyword: createdTagName, options: optionsAfterCreate, create_row_count: createRowsAfterCreate });
+    if (!createdTagVisible) throw new Error(`m2m_created_tag_not_visible:${JSON.stringify({ optionsAfterCreate, createRowsAfterCreate })}`);
+    await page.screenshot({ path: path.join(OUT, 'm2m-created-tag-visible.png'), fullPage: true });
+
+    // Selection, save and reload close the loop for the created record.
+    await optionRows.filter({ hasText: createdTagName }).first().click();
+    await closePanel();
+    const authoritativeBeforeCreatedSave = await readProjectTagIds(page);
+    const writesBeforeCreatedSave = writes.length;
+    await save(page);
+    const createdSave = await waitForWriteOutcome(page, writes, writesBeforeCreatedSave);
+    await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+    const expectedCreatedTagIds = applyTagCommands(authoritativeBeforeCreatedSave, tagCommandValues(writesBeforeCreatedSave));
+    const authoritativeAfterCreatedSave = await readProjectTagIds(page);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await field(page, 'tag_ids').waitFor({ timeout: 30000 });
+    const refreshedCreatedTagIds = await readProjectTagIds(page);
+    const refreshedCreatedChips = await chipLabels();
+    const createdSavePassed = createdSave.outcome === 'business_success'
+      && expectedCreatedTagIds.includes(createdTagId)
+      && sameJson(expectedCreatedTagIds, authoritativeAfterCreatedSave)
+      && sameJson(authoritativeAfterCreatedSave, refreshedCreatedTagIds)
+      && refreshedCreatedChips.some((label) => label.includes(createdTagName));
+    report.scenarios.push({ name: 'm2m_created_tag_saves_and_reads_back', status: createdSavePassed ? 'PASS' : 'FAIL', created_id: createdTagId, created_label: createdTagName, requested_tag_ids: expectedCreatedTagIds, authoritative_tag_ids: authoritativeAfterCreatedSave, refreshed_tag_ids: refreshedCreatedTagIds, refreshed_chips: refreshedCreatedChips, write_response: { outcome: createdSave.outcome, http_status: createdSave.http_status, business_ok: createdSave.business_ok } });
+    if (!createdSavePassed) throw new Error(`m2m_created_tag_save_readback_not_proven:${JSON.stringify({ expectedCreatedTagIds, authoritativeAfterCreatedSave, refreshedCreatedTagIds, refreshedCreatedChips })}`);
+  } finally {
+    page.off('response', onCreateResponse);
+  }
 }
 
 async function openProject(page) {

@@ -184,6 +184,23 @@ def _owned_tags(env, identity):
     return rows
 
 
+def _marker_tags(env, identity):
+    """``project.tags`` rows created through the official create option.
+
+    The browser creates a tag with the batch marker prefix through the relation
+    control, so it carries no XMLID binding; ownership is proven by the marker
+    prefix instead of a binding, and rows bound by XMLID stay with
+    ``_owned_tags``.
+    """
+    prefix = "%s-" % identity["marker"]
+    bound_ids = {row["id"] for row in _owned_tags(env, identity)}
+    rows = env["project.tags"].sudo().search([("name", "=like", "%s%%" % prefix)])
+    return [
+        {"id": row.id, "name": _text(row.name)}
+        for row in rows
+        if row.id not in bound_ids and _text(row.name).startswith(prefix)
+    ]
+
 def _owned_project(env, identity):
     project = _xmlid(env, identity["xmlid"])
     if not project:
@@ -393,6 +410,11 @@ def cleanup(env, sha, batch, mode):
         env["project.tags"].sudo().browse(deleted_tag_ids).unlink()
         if _owned_tags(env, tag_identity):
             raise RuntimeError("cleanup failed: batch-owned tag candidates still exist")
+    marker_tag_ids = sorted(row["id"] for row in _marker_tags(env, tag_identity))
+    if marker_tag_ids:
+        env["project.tags"].sudo().browse(marker_tag_ids).unlink()
+        if _marker_tags(env, tag_identity):
+            raise RuntimeError("cleanup failed: marker-owned project tags still exist")
     if not project:
         env.cr.commit()
         return {
@@ -404,6 +426,7 @@ def cleanup(env, sha, batch, mode):
             "deleted": False,
             "deleted_carrier_id": deleted_carrier_id,
             "deleted_tag_ids": deleted_tag_ids,
+            "deleted_marker_tag_ids": marker_tag_ids,
         }
     refs = _external_references(env, project.id)
     if refs:
@@ -424,6 +447,7 @@ def cleanup(env, sha, batch, mode):
         "deleted_responsibility_ids": sorted(responsibility_ids),
         "deleted_carrier_id": deleted_carrier_id,
         "deleted_tag_ids": deleted_tag_ids,
+        "deleted_marker_tag_ids": marker_tag_ids,
     }
 
 
