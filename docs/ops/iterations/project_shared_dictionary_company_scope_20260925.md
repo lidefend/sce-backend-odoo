@@ -5,9 +5,11 @@
 - 基线 `827fad4bd927c8be22bf940d24937bb2c07f4796`（实时 Gitee main）。本记录随代码提交，非冻结发布候选。
 - Formal Product Layer: P0。Layer Target: `smart_core` 记录上下文/业务范围域（`core/project_context.py` 的 `_company_scope_domain`）。
 - 归属理由：把模型字段误读成公司边界属于平台范围推断错误，不属于前端渲染、动作 domain、工作表域或客户模块配置。
-- Blast Radius：`_company_scope_domain` 的 `project_ids` 分支此前只被 `project.tags`、`project.task.type`、
-  `project.task.type.delete.wizard` 命中（三个模型都无 `company_id`）。改动只取消这一处推断，不触及
-  `company_id`、`project_id.company_id` 分支。
+- Blast Radius：注册表内声明 `project_ids`（→ `project.project`）的模型共 6 个。其中
+  `account.analytic.account`、`res.partner`、`res.users` 都有 `company_id`，在函数中先命中
+  `company_id` 分支，行为不变；只有 `project.tags`、`project.task.type`、
+  `project.task.type.delete.wizard` 无 `company_id`，此前被错误推断公司边界而受影响。
+  改动只取消这一处推断，不触及 `company_id`、`project_id.company_id` 分支。
 - 未新增环境、未新增备份、未重建数据库；本地只跑定向检查，完整 CI 交远端 PR。
 
 ## 根因
