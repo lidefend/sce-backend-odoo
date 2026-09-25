@@ -1,10 +1,39 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
 @tagged("post_install", "-at_install", "sc_gate", "project_state")
 class TestProjectStateTransitionValidation(TransactionCase):
+    def test_profile_name_write_rejects_empty_without_partial_changes(self):
+        project = self.env["project.project"].create({"name": "Profile baseline", "description": "Before"})
+        original_description = project.description
+        for value in ("", "   ", False, None):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    project.write({"name": value, "description": "Must not persist"})
+                project.invalidate_recordset(["name", "description"])
+                self.assertEqual(project.name, "Profile baseline")
+                self.assertEqual(project.description, original_description)
+
+    def test_profile_name_guard_preserves_partial_and_valid_writes(self):
+        project = self.env["project.project"].create({"name": "Profile baseline"})
+        project.write({"description": "Updated notes"})
+        saved_description = project.description
+        self.assertIn("Updated notes", saved_description)
+        self.assertEqual(project.name, "Profile baseline")
+        project.write({"name": "Updated profile"})
+        self.assertEqual(project.name, "Updated profile")
+        self.assertEqual(project.description, saved_description)
+
+    def test_profile_name_guard_rejects_batch_before_any_record_changes(self):
+        projects = self.env["project.project"].create([{"name": "Profile A"}, {"name": "Profile B"}])
+        with self.assertRaises(ValidationError):
+            projects.write({"name": "", "description": "Must not persist"})
+        projects.invalidate_recordset(["name", "description"])
+        self.assertEqual(projects.mapped("name"), ["Profile A", "Profile B"])
+        self.assertFalse(any(projects.mapped("description")))
+
     def setUp(self):
         super().setUp()
         self.env.user.groups_id = [(4, self.env.ref("smart_construction_core.group_sc_cap_project_manager").id)]

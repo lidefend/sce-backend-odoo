@@ -35,6 +35,7 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
         "batch": batch,
         "namespace": "codex_p4_project_profile_write",
         "existing_batch": True,
+        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids", "partner_id"],
         "project": {
             "xmlid": "codex_p4_project_profile_write.project_%s" % suffix,
             "id": project_id,
@@ -95,6 +96,9 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "READ_ONLY",
             "PREFLIGHT_ONLY",
             "NETWORK_FAILURE_RECOVERY",
+            "PERMISSION_ONLY",
+            "RELATION_ONLY",
+            "RELATION_WRITE_ONLY",
             "P4_PROJECT_PROFILE_BATCH",
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
@@ -354,6 +358,58 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
     def test_write_scope_is_explicit(self):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):
             self.assertIn('"%s"' % field, PY)
+
+    def test_permission_probe_requires_owned_write_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"PERMISSION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_permission_probe_cannot_reuse_readonly_or_recovery_modes(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "permission checks require dedicated write authority",
+                    {"PERMISSION_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_probe_requires_owned_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"RELATION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_relation_probe_mode_is_exclusive(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY", "PERMISSION_ONLY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "relation checks require dedicated authority",
+                    {"RELATION_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_write_probe_requires_owned_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"RELATION_WRITE_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_relation_write_probe_mode_is_exclusive(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY", "PERMISSION_ONLY", "RELATION_ONLY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "relation write checks require dedicated authority",
+                    {"RELATION_WRITE_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_write_requires_explicit_partner_scope(self):
+        authority = _authority()
+        authority["write_scope"].remove("partner_id")
+        self._assert_direct_denied(
+            "relation write scope must explicitly include partner_id",
+            {"RELATION_WRITE_ONLY": "1", "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority)},
+        )
+        result, _ = self._direct_runner({"RELATION_WRITE_ONLY": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):
         self.assertIn("if (!NETWORK_FAILURE_RECOVERY)", BROWSER_MJS)

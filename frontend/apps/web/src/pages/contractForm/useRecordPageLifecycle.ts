@@ -312,6 +312,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     onchangeLinePatches.value = [];
     changedFieldSet.clear();
     dirtyFieldSet.clear();
+    dependencies.resetPendingInlineRelationCreates();
     const pendingOnchangeTimer = getOnchangeTimer();
     if (pendingOnchangeTimer) {
       clearTimeout(pendingOnchangeTimer);

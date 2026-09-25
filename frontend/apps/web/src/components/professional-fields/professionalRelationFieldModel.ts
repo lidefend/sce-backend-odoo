@@ -31,15 +31,38 @@ export function relationFieldAuthority(field: FormSectionFieldSchema) {
   });
 }
 
-export function resolveProfessionalMany2oneTextValue(
+/**
+ * Selected-record display text. Derives from the selected option first so a
+ * transient search keyword can never be presented as the selected record.
+ */
+export function resolveProfessionalMany2oneDisplayValue(
   field: Pick<FormSectionFieldSchema, 'many2oneTextValue' | 'inputValue' | 'relationOptions'>,
 ): string {
-  const projected = String(field.many2oneTextValue ?? '').trim();
-  if (projected) return projected;
-  const value = String(field.inputValue ?? '').trim();
-  if (!value) return '';
-  const option = (field.relationOptions || [])
-    .filter(Boolean)
-    .find((item) => String(item.id ?? item.value) === value);
-  return String(option?.label || '').trim();
+  const value = resolveProfessionalMany2oneRecordValue(field);
+  const option = value
+    ? (field.relationOptions || [])
+      .filter(Boolean)
+      .find((item) => String(item.id ?? item.value) === value)
+    : undefined;
+  return String(option?.label || field.many2oneTextValue || '').trim();
+}
+
+/**
+ * Transient search keyword owned by the relation runtime. This is an explicit
+ * state channel; it is never a field value and never a display name.
+ */
+export function resolveProfessionalMany2oneQueryKeyword(
+  field: Pick<FormSectionFieldSchema, 'relationQueryKeyword'>,
+): string {
+  return String(field.relationQueryKeyword ?? '').trim();
+}
+
+/** Selected relation record id projected as a plain string, `''` when unset. */
+export function resolveProfessionalMany2oneRecordValue(
+  field: Pick<FormSectionFieldSchema, 'inputValue'>,
+): string {
+  const raw = field.inputValue;
+  if (raw === null || raw === undefined || raw === false) return '';
+  const value = String(raw).trim();
+  return value === 'false' ? '' : value;
 }

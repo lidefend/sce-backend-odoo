@@ -859,6 +859,23 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertNotIn(("p1_visible_project", "ilike", "绵阳"), domain)
         self.assertNotIn(("restricted_note", "ilike", "绵阳"), domain)
 
+    def test_free_text_does_not_invoke_implicit_virtual_search_filters(self):
+        def field(store=True, search=None):
+            return types.SimpleNamespace(type="char", store=store, search=search)
+        model = types.SimpleNamespace(_rec_name="name", env=types.SimpleNamespace(user=types.SimpleNamespace(has_group=lambda group: False)), _fields={
+            "name": field(), "phone": field(),
+            "virtual_phone_filter": field(False, lambda *args: []),
+        })
+        self.handler._search_view_field_names = lambda model: ["virtual_phone_filter", "phone"]
+        self.handler._extension_search_field_names = lambda model: []
+        domain = self.handler._build_search_term_domain(model, "AB", ["name"])
+        self.assertIn(("name", "ilike", "AB"), domain)
+        self.assertIn(("phone", "ilike", "AB"), domain)
+        self.assertNotIn(("virtual_phone_filter", "ilike", "AB"), domain)
+        self.handler._extension_search_field_names = lambda model: ["virtual_phone_filter"]
+        explicit = self.handler._build_search_term_domain(model, "123", ["name"])
+        self.assertIn(("virtual_phone_filter", "ilike", "123"), explicit)
+
     def test_search_term_domain_includes_extension_projection_source_fields(self):
         field = lambda field_type, store=True, search=None, groups="": types.SimpleNamespace(
             type=field_type,

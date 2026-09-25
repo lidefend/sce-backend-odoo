@@ -373,10 +373,12 @@ async function prepareTargetState(page, target) {
   for (let index = 0; index < await comboboxes.count(); index += 1) {
     const combobox = comboboxes.nth(index);
     const opener = combobox.locator('input:visible').first();
-    await opener.focus();
+    // The candidate panel belongs to the official Select popup, which mounts
+    // outside the field wrapper; open it from the combobox input.
+    await opener.click();
     await page.waitForTimeout(50);
-    const searchMore = combobox.getByRole('button', { name: /搜索更多/ });
-    if (!await searchMore.count()) continue;
+    const searchMore = page.locator('.many2one-option-panel:visible').getByRole('button', { name: /搜索更多/ });
+    if (!await searchMore.count()) { await opener.press('Escape'); continue; }
     searchMoreCount += 1;
     await searchMore.click();
     const dialog = page.locator('[role="dialog"].relation-dialog:visible');

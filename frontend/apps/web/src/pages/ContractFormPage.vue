@@ -913,6 +913,7 @@ const {
 });
 const changedFieldSet = new Set<string>();
 const dirtyFieldSet = new Set<string>();
+const pendingInlineCreateFields = ref<string[]>([]);
 let onchangeTimer: ReturnType<typeof setTimeout> | null = null;
 const applyingOnchangePatch = ref(false);
 const {
@@ -1246,6 +1247,7 @@ const {
   hasChanges, hasOne2manyDraftChanges, intakeRequiredFields, intakeRequiredReadyCount,
   intakeMissingRequiredLabels, intakeRequiredSummary, intakeMissingSummary,
 } = useRecordFormProgress({
+  pendingInlineCreateFields,
   layoutNodes: () => layoutNodes.value,
   canonicalFormFields, formData, originalValues, relationKeywords, fieldType,
   relationInlineCreate, relationKeyword,
@@ -1261,7 +1263,7 @@ const writableFieldCount = computed(() =>
   layoutNodes.value.filter((node) => node.kind === 'field' && !node.readonly).length,
 );
 const changedFieldCount = computed(() =>
-  Object.keys(formData).filter((key) => isFieldWritable(key) && comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key])).length
+  Object.keys(formData).filter((key) => isFieldWritable(key) && (pendingInlineCreateFields.value.includes(key) || comparableFieldValue(key, formData[key]) !== comparableFieldValue(key, originalValues.value[key]))).length
     + (hasOne2manyDraftChanges() ? 1 : 0),
 );
 const one2manyValidation = computed(() => collectOne2manyDraftValidation());
@@ -1738,6 +1740,7 @@ function canonicalFieldWritable(name: string): boolean | undefined {
   return matches.some((field) => !field.readonly && !field.disabled);
 }
 recordFormStateRuntime = useRecordFormState({
+  pendingInlineCreateFields,
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
   validationErrors, validationFieldErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
@@ -1753,7 +1756,7 @@ recordFormStateRuntime = useRecordFormState({
 });
 const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
-  normalizeFieldValue, queryMany2oneInline, quickCreateMany2manyTag, resolvePendingInlineRelationCreates,
+  normalizeFieldValue, queryMany2oneInline, quickCreateMany2manyTag, resetPendingInlineRelationCreates, resolvePendingInlineRelationCreates,
   resolvePendingMany2manyTagCreates, setBooleanField, setMany2oneField, setRelationIds,
   setRelationMultiField, setSelectionField, setTechnicalCompanionTextField, setTextField,
 } = recordFormStateRuntime;
@@ -1761,6 +1764,7 @@ const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,
 } = useRecordPageLifecycle({
+  resetPendingInlineRelationCreates,
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
   ErrorCodes, actionId, advancedExpanded,
   applyIncomingFormFieldValue, applyPageStatusEvent,

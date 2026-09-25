@@ -215,7 +215,12 @@ async function exerciseRelationDialogRoute(page) {
   await openProjectForm(page);
   const box = page.locator('.many2one-combobox').nth(1);
   const beforeValue = await box.locator('input').inputValue();
-  await box.locator('button').filter({ hasText: '搜索更多' }).first().click();
+  // The candidate panel belongs to the official Select popup, so open it from
+  // the projected combobox input before reading its business actions.
+  await box.locator('input').first().click();
+  const relationPanel = page.locator('.many2one-option-panel:visible');
+  await relationPanel.waitFor({ state: 'visible', timeout: 15000 });
+  await relationPanel.getByRole('button', { name: /搜索更多/ }).first().click();
   await page.locator('.relation-dialog').waitFor({ timeout: 10000 });
   await page.locator('.relation-dialog tbody tr').first().waitFor({ timeout: 15000 });
   const dialogBeforeSelect = await page.evaluate(() => ({

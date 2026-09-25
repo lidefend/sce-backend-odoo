@@ -71,6 +71,13 @@ print('OK')
     def test_zero_tests_rejected(self):
         self.assertNotEqual(self.run_case("print('Ran 0 tests in 0.001s')")['status'],'success')
 
+    def test_preparation_failure_plan_is_rejected_before_execution(self):
+        # A red preparation-failure plan must never be replayable as a real gate.
+        p = plan(head='a'*40, base='b'*40, source_branch='fix/unit', pr_number=1,
+                 paths=(), preparation_failure='baseline_not_ancestor')
+        with self.assertRaises(ValueError):
+            FormalExecutor.validate_selection(None, p)
+
     def test_failed_command_not_success(self):
         result = self.run_case("print('Ran 2 tests in 0.001s');raise SystemExit(1)")
         self.assertEqual(result['status'],'failed')

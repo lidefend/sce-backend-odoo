@@ -22,21 +22,21 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return value + "\n// project.project\n" if path.endswith("professionalRelationFieldModel.ts") else value
         self.assertTrue(any("forbidden product special case" in item for item in validate(read_text)))
 
-    def test_many2one_command_cannot_regress_to_private_button(self):
+    def test_many2one_panel_actions_cannot_drop_the_shared_button(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace('<ScButton\n                type="button"', '<button\n                type="button"', 1)
+                return value.replace("<ScButton", "<div", 1)
             return value
         self.assertTrue(any("five shared ScButton" in item for item in validate(read_text)))
 
-    def test_many2one_option_cannot_regress_to_private_button(self):
+    def test_many2one_panel_actions_cannot_regress_to_a_private_button(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace('<ScButton\n                type="button"', '<button\n                type="button"', 1)
+                return value.replace("<ScButton", "<button", 1)
             return value
-        self.assertTrue(any("listbox options" in item for item in validate(read_text)))
+        self.assertTrue(any("private button element" in item for item in validate(read_text)))
 
     def test_many2one_command_cannot_override_primitive_hover(self):
         def read_text(path):
@@ -44,54 +44,95 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
             return f"{value}\n.many2one-action:hover {{ background: red; }}" if path.endswith("ProfessionalMany2oneFieldControl.vue") else value
         self.assertTrue(any("override" in item for item in validate(read_text)))
 
-    def test_many2one_selection_cannot_regress_into_duplicate_blur_commit(self):
+
+    def test_many2one_cannot_rebuild_a_second_keyboard_index(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace("if (!focused.value) return;", "// missing focus guard", 1)
+                return f"{value}\nconst activeIndex = ref(-1);\n"
             return value
 
-        self.assertTrue(any("duplicate blur commit" in item for item in validate(read_text)))
+        self.assertTrue(any("reimplements official select interaction: activeIndex" in item for item in validate(read_text)))
 
-    def test_many2one_option_cannot_blur_before_selection(self):
+    def test_many2one_cannot_rebuild_a_second_popup(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace("@mousedown.prevent", "@mousedown", 1)
+                return f"{value}\n// ScPopover\n"
             return value
 
-        self.assertTrue(any("blur before selection" in item for item in validate(read_text)))
+        self.assertTrue(any("reimplements official select interaction: ScPopover" in item for item in validate(read_text)))
 
-    def test_many2one_query_update_cannot_regress_into_eager_commit(self):
+    def test_many2one_cannot_restore_a_delayed_blur(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace('@focus="focusField"', '@focus="focusField"\n          @change="emitCommit(($event.target as HTMLInputElement).value)"', 1)
+                return f"{value}\nwindow.setTimeout(() => inputEl.blur(), 0);\n"
             return value
 
-        self.assertTrue(any("eager commit" in item for item in validate(read_text)))
+        self.assertTrue(any("reimplements official select interaction: blur()" in item for item in validate(read_text)))
 
-    def test_many2one_role_option_must_own_selection_event(self):
+    def test_many2one_must_keep_the_explicit_query_channel(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
-                return value.replace('@click="emitSelect(option.value, $event)"', "", 1)
+                return value.replace('@update:query-value="onQueryValueChange"', "", 1)
             return value
 
-        self.assertTrue(any("does not own" in item for item in validate(read_text)))
+        self.assertTrue(any("state channel is incomplete" in item for item in validate(read_text)))
+
+    def test_relation_primitive_must_delegate_to_the_official_driver(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("design-system/ScRelationField.vue"):
+                return value.replace("<TDesignSelect", "<TDesignInput", 1)
+            return value
+
+        self.assertTrue(any("delegate to the official select driver" in item for item in validate(read_text)))
+
+    def test_relation_primitive_cannot_keep_the_retired_driver(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("design-system/ScRelationField.vue"):
+                return f"{value}\n// TDesignAutoComplete\n"
+            return value
+
+        self.assertTrue(any("retains a retired hand-written interaction" in item for item in validate(read_text)))
+
+    def test_relation_primitive_cannot_forge_a_dom_event(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("design-system/ScRelationField.vue"):
+                return f"{value}\nemit('change', {{ target: {{}} }} as unknown as Event);\n"
+            return value
+
+        self.assertTrue(any("retains a retired hand-written interaction" in item for item in validate(read_text)))
 
     def test_many2one_must_consume_projected_display_value(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("ProfessionalMany2oneFieldControl.vue"):
                 return value.replace(
-                    "resolveProfessionalMany2oneTextValue(props.field)",
+                    "resolveProfessionalMany2oneDisplayValue(props.field)",
                     "''",
                     1,
                 )
             return value
 
         self.assertTrue(any("projected display value" in item for item in validate(read_text)))
+
+    def test_many2one_must_consume_the_runtime_keyword_channel(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("ProfessionalMany2oneFieldControl.vue"):
+                return value.replace(
+                    "resolveProfessionalMany2oneQueryKeyword(props.field)",
+                    "''",
+                    1,
+                )
+            return value
+
+        self.assertTrue(any("runtime search keyword channel" in item for item in validate(read_text)))
 
     def test_field_label_editor_cannot_regress_to_private_input(self):
         def read_text(path):
