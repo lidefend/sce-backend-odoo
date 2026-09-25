@@ -349,7 +349,11 @@ def validate(root: Path = ROOT) -> list[str]:
 
     relation_text = (design / "ScRelationField.vue").read_text(encoding="utf-8") if (design / "ScRelationField.vue").is_file() else ""
     for marker in (
-        "<TDesignAutoComplete",
+        "<TDesignSelect",
+        ':options="tdesignOptions"',
+        ':input-value="inputValue"',
+        ':popup-visible="popupOpen"',
+        "panelBottomContent",
         'v-native-control-projection="nativeProjection"',
         "'aria-required': props.required || undefined",
         "'aria-invalid': props.invalid || undefined",

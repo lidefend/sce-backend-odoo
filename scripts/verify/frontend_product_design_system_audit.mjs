@@ -240,8 +240,11 @@ async function prepareCase(page, entry) {
   if (entry.mode === 'relation-dialog') {
     const relationInput = page.locator('[data-form-canvas] .many2one-combobox input:visible').first();
     await relationInput.waitFor({ state: 'visible', timeout: 15000 });
-    await relationInput.focus();
-    await page.locator('.many2one-action:visible').filter({ hasText: /搜索更多/ }).first().click();
+    // The candidate panel belongs to the official Select popup, so open it from
+    // the projected combobox input before reading its business actions.
+    await relationInput.click();
+    await page.locator('.many2one-option-panel:visible')
+      .getByRole('button', { name: /搜索更多/ }).first().click();
     await page.locator('.relation-dialog').waitFor({ state: 'visible', timeout: 15000 });
   }
   const expectedHeading = {

@@ -120,6 +120,7 @@ export function useRecordFormFieldSchemas(context: {
     resolveSelectionOptions:mapDescriptorSelectionOptions,resolveRelationOptions:(name)=>mapRelationOptions(context.relationOptionsForField(name)),
     resolveRelationCreateMode:(_name,descriptor)=>context.relationCreateMode(descriptor),
     resolveRelationInlineCreate:(_name,descriptor)=>context.relationInlineCreate(descriptor),resolveRelationTextValue:context.relationKeyword,
+    resolveRelationQueryKeyword:context.relationKeyword,
     resolveCanOpenRelationRecord:context.canOpenRelationRecordForm,
     resolveRelationRecordOpenLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'open_existing','维护当前项'),
     resolveRelationSearchLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'search_more'),

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import unittest
 from pathlib import Path
 
@@ -9,6 +10,8 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
+# The remote gate invokes this file directly, without PYTHONPATH.
+sys.path.insert(0, str(ROOT))
 
 
 class CIRiskWorkflowContractTests(unittest.TestCase):
@@ -239,6 +242,90 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github_actions_security_guard.py", mainline_section)
         self.assertIn("ci.generated_reports.guard", mainline_section)
         self.assertNotIn("ci.professional.backend", mainline_section)
+
+    def test_settlement_component_profile_orm_gate_stays_wired(self) -> None:
+        """Keep the settlement ORM lane wired, and record where it can run.
+
+        The Gitee formal executor runs static lanes inside a docker-less
+        bubblewrap sandbox, so it cannot execute a container-backed Odoo
+        TransactionCase. This contract is therefore only a *wiring* check that
+        the merge path can enforce: it fails when the runtime lane, the make
+        target, the fixed tag whitelist, the zero-test rejection or the timeout
+        guard is removed. Coverage of the settlement assertions comes solely
+        from the isolated ORM execution, never from these names.
+        """
+        workflow = self.text("professional_quality_gate.yml")
+        self.assertIn("- name: Prove settlement component profile with real ORM", workflow)
+        self.assertIn("make test.payment-settlement.component-profile.orm", workflow)
+
+        makefile = (ROOT / "make/dev_test.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            "test.payment-settlement.component-profile.orm: guard.prod.forbid", makefile
+        )
+        self.assertIn(
+            "SC_AUTHORIZATION_ORM_TEST_TAGS=payment_settlement_component_profile", makefile
+        )
+
+        runner = (ROOT / "scripts/test/admin_vis_p3_project_record_rule_orm.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("payment_settlement_component_profile)", runner)
+        self.assertIn("timeout --signal=TERM --kill-after=30", runner)
+        self.assertIn('source "$ROOT_DIR/scripts/ci/orm_result_guard.sh"', runner)
+        self.assertIn("evaluate_orm_outcome", runner)
+        # A 0 timeout would disable the watchdog and an unbounded one would let a
+        # wedged run outlive every gate, so the runner validates the budget and
+        # pins the identity/count of the fixed tag it launches.
+        self.assertIn('validate_orm_timeout "$orm_timeout_seconds" || exit 2', runner)
+        self.assertIn("orm_expect_count=7", runner)
+        self.assertIn('orm_expect_identity="test_payment_settlement_component_profile"', runner)
+        self.assertIn("validate_orm_expect_count", runner)
+        self.assertIn("ADMIN_VIS_P3_CLEANUP_OK=", runner)
+
+        # The rejection rules are container-free on purpose: this is the part of
+        # the settlement ORM lane the docker-less Gitee executor can execute.
+        guard = (ROOT / "scripts/ci/orm_result_guard.sh").read_text(encoding="utf-8")
+        self.assertIn("validate_orm_timeout", guard)
+        self.assertIn("validate_orm_expect_count", guard)
+        self.assertIn("orm_expect_identity", guard)
+        # Collection is proven from module-qualified test start lines only. A
+        # bare `Starting ` count also matches Odoo lifecycle lines such as
+        # `odoo.service.server: Starting post tests`, so it would both inflate
+        # the count and satisfy the identity pin without the test running.
+        self.assertIn("odoo\\.addons\\.[[:alnum:]_.]+: Starting ", guard)
+        self.assertNotIn("grep -c 'Starting '", guard)
+        self.assertIn('grep -qF -- "${token}"', guard)
+        self.assertIn("odoo.service.server: Starting post tests", guard)
+        self.assertIn("return 4", guard)
+        self.assertIn("return 5", guard)
+        self.assertIn("return 6", guard)
+        self.assertIn("return 7", guard)
+        self.assertIn("return 8", guard)
+        self.assertIn('"${1:-}" == "--self-test"', guard)
+
+        executor = (ROOT / "scripts/ci/gitee_formal_executor.py").read_text(encoding="utf-8")
+        self.assertIn("unsupported_lane_requires_runtime_preparation", executor)
+        self.assertIn('static("bash", "scripts/ci/orm_result_guard.sh", "--self-test")', executor)
+
+        # Candidate PRs on Gitee resolve to public_guard/required, so the guard
+        # self-test must be part of that lane's argv, not only of the
+        # professional lanes that are not reachable without a runtime host.
+        from scripts.ci.gitee_formal_executor import recipes
+
+        public_guard_argv = [
+            argv
+            for argv, _ in recipes("public_guard", "required", "39a90e6da4f25c6942fdddb7aa07032dd02da7cc")
+            if "orm_result_guard" in " ".join(argv)
+        ]
+        self.assertEqual(
+            public_guard_argv,
+            [["bash", "scripts/ci/orm_result_guard.sh", "--self-test"]],
+        )
+
+        module = (
+            ROOT / "addons/smart_construction_core/tests/test_payment_settlement_component_profile.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('@tagged("payment_settlement_component_profile"', module)
 
     def test_nightly_candidate_is_separate_from_main_push(self) -> None:
         for workflow in (

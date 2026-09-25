@@ -199,11 +199,21 @@ function presentFieldValue(
   if (fieldType === 'many2one') {
     const runtimeRelation = relationParts(runtimeValue);
     const contractRelation = relationParts(contractValue);
-    const relation = runtimeRelation || contractRelation;
-    if (!relation) return null;
-    const runtimeId = hasRuntimeValue && runtimeValue !== null && typeof runtimeValue !== 'object'
+    // The draft owns a selected record as a plain id: record hydration and the
+    // relation runtime both keep the bare id and publish the display name on a
+    // separate channel. A draft id is therefore a complete selection and must
+    // not be discarded merely because the record carried no prior relation to
+    // read a display name from; the contract value may only supply that name.
+    const draftId = hasRuntimeValue && runtimeValue !== null && runtimeValue !== undefined
+      && runtimeValue !== false && typeof runtimeValue !== 'object' && text(runtimeValue) !== ''
       ? runtimeValue as string | number
-      : relation.id;
+      : undefined;
+    // A draft that holds no record is authoritative: it must project as cleared
+    // instead of falling back to the contract value it replaced.
+    if (hasRuntimeValue && !runtimeRelation && draftId === undefined) return null;
+    const relation = runtimeRelation || contractRelation;
+    if (!relation && draftId === undefined) return null;
+    const runtimeId = draftId !== undefined ? draftId : relation.id;
     const displayName = runtimeRelation?.displayName
       || (String(runtimeId) === String(contractRelation?.id ?? '') ? contractRelation?.displayName : '')
       || '';

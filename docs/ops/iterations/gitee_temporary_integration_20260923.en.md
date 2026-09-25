@@ -439,3 +439,50 @@ Cache installation appends opaque archives under content-key directories, never 
 Professional standard_frontend is included. Full/candidate database/browser acceptance remains unsupported; no full GitHub gate equivalence claimed.
 
 This is a development increment; final runtime/freeze/online receipts remain in the existing external batch evidence directory. Prior630e89b8 online evidence applies only to unchanged inputs.
+
+## Preparation failures must be visible (2026-09-25, P4 increment)
+
+- Symptom: candidate `02a63d5b` (PR !10) failed preparation at `git merge-base --is-ancestor` because its
+  base was not an ancestor. `formal_inbox` recorded `environment_error` and logged `preparation_failed`,
+  yet the four required checks stayed in "waiting for status upload" and were invisible to the author.
+- Cause: a preparation failure only wrote an inbox state. It bound nothing to the PR/source SHA and created
+  no trusted queue job, while the reporter walks `formal_jobs` only, so no check could be published.
+- Fix (`scripts/ci`, P4 delivery tooling): plan construction now resolves platform identity before checkout.
+  A failure builds a zero-change-set plan from a bounded trusted reason code, enqueues it, and
+  `FormalQueue.fail` terminalizes it as `environment_error`. The reporter publishes the usual four
+  `completed/action_required` checks bound to the real PR ID and head SHA, with
+  `preparation_failure=<code>` in the summary.
+- Boundaries: the ancestor gate is unchanged (`changed_paths` still raises `CalledProcessError`; the executor
+  still re-checks ancestry and refuses a zero-change-set plan). A preparation failure can never be executed,
+  skipped or successful; reason codes are a whitelist so candidate text never reaches a check report; when
+  platform identity itself is unresolvable nothing can be attributed, and only the inbox state plus
+  `reported=false error=<exception class>` is logged. The inbox status follows the reporting result:
+  `prepared` when the failure was bound to a terminal job, `environment_error` when no job could be
+  reported. Neither outcome leaves the checks waiting.
+- Targeted: 67 plan/queue/worker/executor tests pass; recomputing with PR !10's real head/base identity
+  yields four `action_required` checks where the old behaviour left four permanent waits.
+- Status: implementation and targeted verification pass locally. Online installation (new trusted package
+  and `GITEE_FORMAL_ROOT` re-pin) belongs to the integration lane; no online fix is claimed before deployment.
+
+### 2026-09-25 Published candidate synchronization
+
+P4 extends the existing integration workflow with `workspace.branch.sync-gitee-published`.
+It appends exact main without rewriting published history, verifies remote/local identities
+and a recovery bundle, and aborts on conflicts. Seven real temporary Git tests passed.
+Publication remains on pr.push.gitee with fresh required CI for source and target.
+BOQ !11 merged as e5b9852a; relation !12 was synchronized from 63b860a9 to 0ebcc675.
+CI visibility !14 inherits relation work and must follow !12.
+
+### 2026-09-25 Trusted CI bootstrap update
+
+Relation PR !12 merged at a32b38b6; !14 now contains only P4 CI changes.
+The old trusted package 54aa8c63 rejected f5b80a49 before checks because its
+queue/worker/gate-plan fingerprints differed. Waiting for merge before installation
+would deadlock this controller update. Under the owner's direct-closeout authorization,
+the existing incremental installer deployed the exact targeted-tested f5b80a49 package.
+Ancestor, source fingerprint, sandbox and four required merge checks remain enforced.
+Receipt: installed, credentials unchanged; queue backup incremental-jcg2zwsq.
+MemoryHigh restored to 896M, Max 1152M and SwapMax 2G retained. This documentation-only
+commit requests fresh checks; installation is not CI acceptance. Future settlement
+policy changes likewise require reviewed exact-package installation before testing,
+not removal of fingerprint validation.

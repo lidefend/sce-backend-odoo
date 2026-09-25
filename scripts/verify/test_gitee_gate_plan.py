@@ -76,6 +76,22 @@ class GatePlanTests(unittest.TestCase):
     def test_unknown_path_fails_closed(self):
         self.assertEqual(self.build(("unknown/source.dat",))["lane"], "HIGH_RISK")
 
+    def test_preparation_failure_is_attributed_and_never_runnable(self):
+        r = self.build(paths=(), preparation_failure="baseline_not_ancestor")
+        self.assertEqual(r["preparation_failure"], "baseline_not_ancestor")
+        self.assertEqual(r["paths"], [])
+        self.assertIn("preparation_failed:baseline_not_ancestor", r["blockers"])
+        self.assertFalse(r["execution_ready"])
+        self.assertFalse(r["integration_eligible"])
+        self.assertTrue(all(x["state"] == "not_run" for x in r["checks"]))
+        self.assertNotEqual(r["plan_sha256"], self.build()["plan_sha256"])
+        self.assertNotEqual(r["plan_sha256"],
+                            self.build(paths=(), preparation_failure="checkout_failed")["plan_sha256"])
+        for kw in [dict(paths=(), preparation_failure="made_up"), dict(paths=(), preparation_failure="BASELINE"),
+                   dict(paths=("docs/example.md",), preparation_failure="baseline_not_ancestor")]:
+            with self.subTest(kw=kw), self.assertRaises(ValueError):
+                self.build(**kw)
+
     def test_real_git_move_and_delete_preserve_risk(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

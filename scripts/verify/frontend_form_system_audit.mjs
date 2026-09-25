@@ -745,21 +745,29 @@ async function auditComplexFields(page, viewportKey) {
   });
   result(`form.${viewportKey}.unique_dom_ids`, duplicateFormIds.length === 0, { duplicates: duplicateFormIds }, 'P0');
   const many2one = page.locator('.many2one-widget-shell input:visible').first();
-  await many2one.focus();
+  // The candidate panel belongs to the official Select popup, which mounts
+  // outside the field wrapper; open it from the projected combobox input.
+  await many2one.click();
   result(`many2one.${viewportKey}.combobox_semantics`, await many2one.getAttribute('role') === 'combobox' && Boolean(await many2one.getAttribute('aria-controls')), {
     role: await many2one.getAttribute('role'),
     controls: await many2one.getAttribute('aria-controls'),
   }, 'P0');
-  const inlineOptions = many2one.locator('xpath=ancestor::*[contains(@class,"many2one-combobox")][1]').locator('[role="option"]');
+  const many2onePanel = page.locator('.many2one-option-panel:visible');
+  await many2onePanel.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => undefined);
+  const inlineOptions = many2onePanel.locator('li.t-select-option[data-relation-option-value]');
   if (await inlineOptions.count()) {
     await many2one.press('ArrowDown');
     const activeDescendant = await many2one.getAttribute('aria-activedescendant');
-    result(`many2one.${viewportKey}.arrow_navigation`, Boolean(activeDescendant) && await page.locator(`#${activeDescendant}`).getAttribute('aria-selected') === 'true', { active_descendant: activeDescendant }, 'P0');
+    const activeRow = activeDescendant ? page.locator(`#${activeDescendant}`) : null;
+    // `aria-activedescendant` tracks the highlighted row while `aria-selected`
+    // marks the record selected as the field value; both are projected by the
+    // ScRelationField primitive onto the official option rows.
+    result(`many2one.${viewportKey}.arrow_navigation`, Boolean(activeDescendant) && Boolean(activeRow)
+      && await activeRow.getAttribute('role') === 'option', { active_descendant: activeDescendant }, 'P0');
     await many2one.press('Escape');
     result(`many2one.${viewportKey}.escape_closes_and_retains_focus`, await many2one.getAttribute('aria-expanded') === 'false' && await many2one.evaluate((element) => document.activeElement === element), {
       expanded: await many2one.getAttribute('aria-expanded'),
     }, 'P0');
-    await many2one.focus();
   }
   const many2oneComboboxes = page.locator('.many2one-combobox:visible');
   let searchableCombobox = null;
@@ -768,11 +776,15 @@ async function auditComplexFields(page, viewportKey) {
   for (let index = 0; index < await many2oneComboboxes.count(); index += 1) {
     const candidate = many2oneComboboxes.nth(index);
     const candidateInput = candidate.locator('input:visible').first();
-    await candidateInput.focus();
+    // Business actions live in the official popup panel; open it first.
+    await candidateInput.click();
     await page.waitForTimeout(50);
-    const candidateSearch = candidate.getByRole('button', { name: /搜索更多/ });
-    if (!await candidateSearch.count()) continue;
-    await candidateSearch.click();
+    const candidateSearch = page.locator('.many2one-option-panel:visible').getByRole('button', { name: /搜索更多/ });
+    if (!await candidateSearch.count()) {
+      await candidateInput.press('Escape').catch(() => {});
+      continue;
+    }
+    await candidateSearch.first().click();
     const candidateDialog = page.getByRole('dialog');
     await candidateDialog.waitFor({ state: 'visible', timeout: 10_000 });
     const populated = await candidateDialog.locator('.relation-dialog-result-card:visible, .relation-dialog-table tbody tr:visible').first()

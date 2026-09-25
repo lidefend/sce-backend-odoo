@@ -190,7 +190,12 @@ async function main() {
     await customerInput(page).fill(label);
     await customerInput(page).blur();
     await page.waitForTimeout(1400);
-    const inlineLabels = await page.locator('.many2one-inline-create').allInnerTexts().catch(() => []);
+    // The inline-create offer lives in the official Select panel, so read it
+    // while that panel is open rather than after the field lost focus.
+    await customerInput(page).click();
+    await page.locator('.many2one-option-panel:visible').waitFor({ state: 'visible', timeout: 15000 });
+    const inlineLabels = await page.locator('.many2one-option-panel:visible .many2one-inline-create').allInnerTexts().catch(() => []);
+    await customerInput(page).press('Escape').catch(() => {});
     const rowsAfterInput = await listPartnerByName(page, label);
     const saveButtonsAfterInput = await page.locator('.template-page-header-actions button').evaluateAll((nodes) => nodes.map((node) => ({
       text: String(node.textContent || '').replace(/\s+/g, ' ').trim(),

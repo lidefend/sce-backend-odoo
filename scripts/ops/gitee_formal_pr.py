@@ -1,6 +1,7 @@
-"""Create or inspect the one reviewed integration PR; never merge or deploy."""
+"""Create or inspect an exact reviewed topic PR; never merge or deploy."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import os
 import tempfile
@@ -35,32 +36,40 @@ class PRAPI(API):
             return json.loads(raw)
         except Exception:raise ReportError('pr_request_uncertain') from None
 
-def select(rows):
+def validate_topic(branch, title, body):
+    if not re.fullmatch(r'(feature|fix|refactor|audit|release|codex)/.+', branch):
+        raise ValueError('allowed_topic_branch_required')
+    subprocess.run(['git','check-ref-format','--branch',branch],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    if not title.strip() or '\n' in title or '\r' in title or not body.strip():
+        raise ValueError('explicit_pr_title_and_body_required')
+
+def select(rows, branch=BRANCH):
     if not isinstance(rows,list) or len(rows)>=100:raise ValueError('pr_list_incomplete')
-    matches=[x for x in rows if x.get('head',{}).get('ref')==BRANCH and x.get('base',{}).get('ref')=='main']
+    matches=[x for x in rows if x.get('head',{}).get('ref')==branch and x.get('base',{}).get('ref')=='main']
     if len(matches)>1:raise ValueError('ambiguous_pr')
     return matches[0] if matches else None
 
-def ensure(api,reader,head,base,ledger,apply=False):
-    source=reader.get('/branches/'+urllib.parse.quote(BRANCH,safe=''))
+def ensure(api,reader,head,base,ledger,apply=False,*,branch=BRANCH,title=TITLE,body=BODY):
+    validate_topic(branch,title,body)
+    source=reader.get('/branches/'+urllib.parse.quote(branch,safe=''))
     target=reader.get('/branches/main')
     if source.get('commit',{}).get('sha')!=head or target.get('commit',{}).get('sha')!=base or target.get('protected') is not True:
         raise ValueError('remote_identity_drift')
-    existing=select(api.call('GET','/pulls?state=open&per_page=100'))
+    existing=select(api.call('GET','/pulls?state=open&per_page=100'),branch)
     if existing:
-        snapshot=observe(reader,number=existing['number'],source=BRANCH,head=head,base=base)
+        snapshot=observe(reader,number=existing['number'],source=branch,head=head,base=base)
         return {'status':'existing','url':'https://gitee.com/leegege/sce-product-odoo/pulls/'+str(existing['number']),'snapshot':snapshot}
-    if not apply:return {'status':'planned','head':head,'base':base,'title':TITLE,'body':BODY,'writes':0}
+    if not apply:return {'status':'planned','branch':branch,'head':head,'base':base,'title':title,'body':body,'writes':0}
     if ledger.exists():raise ValueError('previous_create_unresolved_inspect_before_retry')
     ledger.parent.mkdir(parents=True,exist_ok=True)
     with ledger.open('x') as f:
-        json.dump({'head':head,'base':base,'phase':'creating'},f);f.flush();os.fsync(f.fileno())
+        json.dump({'branch':branch,'head':head,'base':base,'phase':'creating'},f);f.flush();os.fsync(f.fileno())
     directory=os.open(ledger.parent,os.O_RDONLY|os.O_DIRECTORY)
     try:os.fsync(directory)
     finally:os.close(directory)
-    value=api.call('POST','/pulls',{'title':TITLE,'head':BRANCH,'base':'main','body':BODY,'prune_source_branch':'false','draft':'false'})
+    value=api.call('POST','/pulls',{'title':title,'head':branch,'base':'main','body':body,'prune_source_branch':'false','draft':'false'})
     if type(value.get('number')) is not int:raise ValueError('create_response_unresolved')
-    snapshot=observe(reader,number=value['number'],source=BRANCH,head=head,base=base)
+    snapshot=observe(reader,number=value['number'],source=branch,head=head,base=base)
     result={'status':'created','url':'https://gitee.com/leegege/sce-product-odoo/pulls/'+str(value['number']),'snapshot':snapshot}
     with tempfile.NamedTemporaryFile(mode='w',dir=ledger.parent,delete=False) as f:
         json.dump(result,f,sort_keys=True);f.flush();os.fsync(f.fileno());temporary=Path(f.name)
@@ -73,14 +82,17 @@ def ensure(api,reader,head,base,ledger,apply=False):
     return result
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--expected-main',required=True);p.add_argument('--token-file',required=True);p.add_argument('--apply',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--expected-head',required=True);p.add_argument('--expected-main',required=True);p.add_argument('--token-file',required=True);p.add_argument('--source-branch',required=True);p.add_argument('--title',required=True);p.add_argument('--body-file',required=True);p.add_argument('--apply',action='store_true');a=p.parse_args()
     root=Path(__file__).resolve().parents[2]
     def git(*args):return subprocess.check_output(['git',*args],cwd=root,text=True).strip()
     if any(not re.fullmatch('[0-9a-f]{40}',x) for x in (a.expected_head,a.expected_main)):raise ValueError('full_sha_required')
-    if git('branch','--show-current')!=BRANCH or git('rev-parse','HEAD')!=a.expected_head or git('status','--porcelain'):raise ValueError('clean_exact_candidate_required')
+    body=Path(a.body_file).read_text(encoding='utf-8')
+    validate_topic(a.source_branch,a.title,body)
+    if git('branch','--show-current')!=a.source_branch or git('rev-parse','HEAD')!=a.expected_head or git('status','--porcelain'):raise ValueError('clean_exact_candidate_required')
     if a.apply:subprocess.run(['git','diff','--check',a.expected_main,a.expected_head,'--'],cwd=root,check=True,stdout=subprocess.DEVNULL)
-    ledger=Path(git('rev-parse','--absolute-git-dir'))/'codex/gitee-formal-pr-create.json'
-    print(json.dumps(ensure(PRAPI(a.token_file),ReadAPI(a.token_file),a.expected_head,a.expected_main,ledger,a.apply),sort_keys=True))
+    ledger_name='gitee-formal-pr-create.json' if a.source_branch==BRANCH else 'gitee-formal-pr-create-'+hashlib.sha256(a.source_branch.encode()).hexdigest()+'.json'
+    ledger=Path(git('rev-parse','--absolute-git-dir'))/'codex'/ledger_name
+    print(json.dumps(ensure(PRAPI(a.token_file),ReadAPI(a.token_file),a.expected_head,a.expected_main,ledger,a.apply,branch=a.source_branch,title=a.title,body=body),sort_keys=True))
 
 if __name__=='__main__':
     try:main()

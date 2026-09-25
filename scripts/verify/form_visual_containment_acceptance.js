@@ -178,8 +178,18 @@ async function visualProbe(page) {
 }
 
 async function openRelationDialog(page) {
-  const button = page.locator('.many2one-combobox button:visible').filter({ hasText: '搜索更多' }).first();
+  // Business actions live in the official Select popup panel, which mounts
+  // outside the field wrapper; open it from the combobox input first.
+  const input = page.locator('.many2one-combobox input:visible').first();
+  if ((await input.count().catch(() => 0)) === 0) {
+    return false;
+  }
+  await input.click();
+  const panel = page.locator('.many2one-option-panel:visible');
+  await panel.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined);
+  const button = panel.getByRole('button', { name: /搜索更多/ }).first();
   if ((await button.count().catch(() => 0)) === 0) {
+    await input.press('Escape').catch(() => {});
     return false;
   }
   await button.click();

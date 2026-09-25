@@ -8,6 +8,11 @@ export ROOT_DIR
 source "$ROOT_DIR/scripts/common/guard_prod.sh"
 guard_prod_forbid
 
+# The rejection rules live in a shared guard so the executor lanes that cannot
+# host a database container can still exercise them via `--self-test`.
+# shellcheck source=../ci/orm_result_guard.sh
+source "$ROOT_DIR/scripts/ci/orm_result_guard.sh"
+
 if [[ "$#" -ne 0 ]]; then
   echo "[admin-vis-p3-orm][FATAL] this entrypoint accepts no database override or positional argument" >&2
   exit 2
@@ -15,12 +20,38 @@ fi
 
 authorization_test_tags="${SC_AUTHORIZATION_ORM_TEST_TAGS:-admin_vis_p3_project_record_rule_orm}"
 case "$authorization_test_tags" in
-  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm) ;;
+  admin_vis_p3_project_record_rule_orm|chatter_timeline_authorization_orm|payment_settlement_component_profile) ;;
   *)
     echo "[admin-vis-p3-orm][FATAL] unsupported fixed authorization test tag" >&2
     exit 2
     ;;
 esac
+
+# Fail closed on a wedged run: the caller may tighten the budget within the
+# ceiling, never disable it (a 0 timeout would switch the watchdog off).
+orm_timeout_seconds="${SC_AUTHORIZATION_ORM_TIMEOUT_SECONDS:-3600}"
+orm_timeout_max_seconds="${SC_AUTHORIZATION_ORM_TIMEOUT_MAX_SECONDS:-7200}"
+export ORM_TIMEOUT_MAX_SECONDS="$orm_timeout_max_seconds"
+validate_orm_timeout "$orm_timeout_seconds" || exit 2
+
+# Identity and collected count are pinned per fixed tag; the shared guard rejects
+# a run whose log does not show these tests actually executing.
+orm_expect_count=""
+orm_expect_identity=""
+case "$authorization_test_tags" in
+  payment_settlement_component_profile)
+    orm_expect_count=7
+    orm_expect_identity="test_payment_settlement_component_profile"
+    ;;
+  chatter_timeline_authorization_orm)
+    orm_expect_identity="test_chatter_timeline_authorization_orm"
+    ;;
+  admin_vis_p3_project_record_rule_orm)
+    orm_expect_identity="test_admin_vis_p3_project_record_rule_orm"
+    ;;
+esac
+validate_orm_expect_count "$orm_expect_count" || exit 2
+export orm_expect_count orm_expect_identity
 
 case "${ENV:-dev}" in
   dev|test) ;;
@@ -218,6 +249,10 @@ cleanup() {
   printf 'ADMIN_VIS_P3_VOLUMES_AFTER_SHA256=%s\n' "$volumes_after_digest"
   printf 'ADMIN_VIS_P3_TEMP_DATABASE_REMOVED=%s\n' "$database_removed"
   printf 'ADMIN_VIS_P3_TEMP_RESOURCES_REMOVED=%s\n' "$resources_removed"
+  printf 'ADMIN_VIS_P3_TIMEOUT_SECONDS=%s\n' "$orm_timeout_seconds"
+  printf 'ADMIN_VIS_P3_EXPECTED_TESTS=%s\n' "${orm_expect_count:-unpinned}"
+  printf 'ADMIN_VIS_P3_EXPECTED_IDENTITY=%s\n' "${orm_expect_identity:-unpinned}"
+  printf 'ADMIN_VIS_P3_CLEANUP_OK=%s\n' "$([[ "$cleanup_result" -eq 0 ]] && echo true || echo false)"
 
   if [[ "$cleanup_result" -ne 0 ]]; then
     echo "[admin-vis-p3-orm][FATAL] exact cleanup or baseline restoration failed" >&2
@@ -239,6 +274,8 @@ echo "[admin-vis-p3-orm] database_role=isolated_test_rehearsal"
 echo "[admin-vis-p3-orm] tenant_id=synthetic_admin_vis_p3"
 echo "[admin-vis-p3-orm] environment_id=${owner_id}"
 echo "[admin-vis-p3-orm] exact_db_filter=${ODOO_DBFILTER}"
+echo "[admin-vis-p3-orm] timeout_seconds=${orm_timeout_seconds} ceiling=${orm_timeout_max_seconds}"
+echo "[admin-vis-p3-orm] expected_tests=${orm_expect_count:-unpinned} expected_identity=${orm_expect_identity:-unpinned}"
 
 "${compose[@]}" up -d db
 database_container="$("${compose[@]}" ps -q db)"
@@ -293,7 +330,8 @@ odoo_common=(
   --log-level=info
 
 set +e
-"${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
+timeout --signal=TERM --kill-after=30 "${orm_timeout_seconds}" \
+  "${compose[@]}" run --rm --no-deps -T --entrypoint /usr/bin/odoo odoo \
   "${odoo_common[@]:1}" \
   -u smart_core \
   --test-enable \
@@ -301,13 +339,7 @@ set +e
   --log-level=test 2>&1 | tee "$test_log"
 test_status="${PIPESTATUS[0]}"
 set -e
-if [[ "$test_status" -ne 0 ]]; then
-  echo "[admin-vis-p3-orm][FATAL] real ORM test process failed with ${test_status}" >&2
-  exit "$test_status"
-fi
-if ! grep -Eq "0 failed, 0 error\\(s\\) of [1-9][0-9]* tests" "$test_log"; then
-  echo "[admin-vis-p3-orm][FATAL] Odoo did not report any executed ORM test" >&2
-  exit 4
-fi
+# Reject a failure, a timeout and an absent/zero test report alike.
+evaluate_orm_outcome "$test_status" "$test_log"
 
 echo "[admin-vis-p3-orm] REAL_ORM_TEST_RESULT=PASS"

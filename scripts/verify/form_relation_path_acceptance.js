@@ -149,12 +149,48 @@ async function relationValue(page, index) {
   return '';
 }
 
+// The candidate panel belongs to the official Select popup, which mounts
+// outside the field wrapper. Open it through the projected combobox input and
+// address the panel at page scope; the official component clears the keyword on
+// open, which is what makes the runtime reload the default candidate list.
+async function relationInput(page, index) {
+  const legacy = relationBox(page, index).locator('input').first();
+  if (await legacy.count().catch(() => 0)) return legacy;
+  return page.locator('.relation-select-editor .relation-search').nth(index);
+}
+
+async function openRelationPanel(page, index) {
+  const input = await relationInput(page, index);
+  const controls = await input.getAttribute('aria-controls').catch(() => null);
+  const alreadyOpen = controls
+    ? await page.locator(`.many2one-option-panel#${controls}`).count().catch(() => 0)
+    : 0;
+  if (!alreadyOpen) await input.click();
+  const panel = page.locator('.many2one-option-panel:visible');
+  await panel.waitFor({ state: 'visible', timeout: 10000 });
+  return panel;
+}
+
+async function closeRelationPanel(page, index) {
+  const input = await relationInput(page, index);
+  await input.press('Escape').catch(() => {});
+  await page.locator('.many2one-option-panel:visible').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+}
+
 async function openSearchMore(page, index) {
   let triggered = false;
-  const legacyBtn = relationBox(page, index).locator('button').filter({ hasText: '搜索更多' }).first();
-  if (await legacyBtn.count().catch(() => 0)) {
-    await legacyBtn.click();
-    triggered = true;
+  const input = await relationInput(page, index);
+  if (await input.count().catch(() => 0)) {
+    const panel = await openRelationPanel(page, index).catch(() => null);
+    const action = panel
+      ? panel.getByRole('button', { name: /搜索更多/ }).first()
+      : null;
+    if (action && await action.count().catch(() => 0) === 1) {
+      await action.click();
+      triggered = true;
+    } else if (panel) {
+      await closeRelationPanel(page, index);
+    }
   } else {
     const fallbackInput = page.locator('.relation-select-editor .relation-search').nth(index);
     if (await fallbackInput.count().catch(() => 0)) {
@@ -271,18 +307,32 @@ async function exerciseQuickPartialMatch(page) {
       reason: 'relation_quick_fill_entry_not_available_for_current_contract',
     };
   }
+  // Keyboard selection belongs to the official Select: open the panel, type the
+  // keyword, highlight the first candidate with ArrowDown, commit with Enter.
+  // The previous exact/contains auto-commit on bare Enter was self-written.
+  await openRelationPanel(page, 1);
   await input.fill('Project User');
+  const panel = page.locator('.many2one-option-panel:visible');
+  const options = panel.locator('li.t-select-option:visible');
+  await options.first().waitFor({ state: 'visible', timeout: 10000 });
+  const optionCount = await options.count();
+  await input.press('ArrowDown');
+  const activeDescendant = await input.getAttribute('aria-activedescendant');
   await input.press('Enter');
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(600);
   const after = await relationValue(page, 1);
+  const panelClosed = await page.locator('.many2one-option-panel:visible').count() === 0;
   return {
     path_id: 'P07',
     level: 'L4',
     scenario: 'single_contains_or_exact_quick_fill',
-    status: after === 'Demo Project User' ? 'pass' : 'fail',
+    status: after === 'Demo Project User' && panelClosed ? 'pass' : 'fail',
     keyword: 'Project User',
     after,
-    contract_match_mode: 'single_contains_or_exact',
+    option_count: optionCount,
+    active_descendant: activeDescendant,
+    panel_closed_after_select: panelClosed,
+    contract_match_mode: 'official_keyboard_selection',
   };
 }
 
@@ -305,7 +355,9 @@ async function exerciseDeferredNoMatchCreate(page) {
   await input.fill(label);
   await input.blur();
   await page.waitForTimeout(1200);
-  const inlineLabels = await page.locator('.many2one-inline-create').allInnerTexts().catch(() => []);
+  // The inline-create offer lives in the official panel, so read it while open.
+  await openRelationPanel(page, 0);
+  const inlineLabels = await page.locator('.many2one-option-panel:visible .many2one-inline-create').allInnerTexts().catch(() => []);
   const saveEnabled = !(await page.locator('.template-page-header-actions button.primary').first().isDisabled());
   const opened = await openSearchMore(page, 0);
   if (!opened) {

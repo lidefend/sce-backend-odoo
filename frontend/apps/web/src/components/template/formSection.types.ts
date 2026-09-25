@@ -89,6 +89,8 @@ export type FormSectionFieldSchema = {
   many2oneSearchToken?: string;
   many2oneOpenToken?: string;
   many2oneTextValue?: string;
+  // Transient relation search keyword; never a field value nor a display name.
+  relationQueryKeyword?: string;
   many2oneOpenLabel?: string;
   many2oneSearchLabel?: string;
   many2oneCreateLabel?: string;
