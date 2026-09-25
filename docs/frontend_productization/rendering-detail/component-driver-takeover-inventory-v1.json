@@ -135,8 +135,7 @@
     },
     {
       "adapterKeys": [
-        "ScAutoComplete",
-        "ScRelationField"
+        "ScAutoComplete"
       ],
       "adapterSources": [
         {
@@ -144,22 +143,16 @@
             "ScAutoComplete"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue"
-        },
-        {
-          "semanticAdapters": [
-            "ScRelationField"
-          ],
-          "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
         }
       ],
       "bridgeExports": [
         "TDesignAutoComplete"
       ],
       "officialComponent": "auto-complete",
-      "productionConsumerCount": 2,
+      "productionConsumerCount": 0,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_present"
+      "status": "adapter_unconsumed"
     },
     {
       "adapterKeys": [],
@@ -958,9 +951,16 @@
     },
     {
       "adapterKeys": [
+        "ScRelationField",
         "ScSelect"
       ],
       "adapterSources": [
+        {
+          "semanticAdapters": [
+            "ScRelationField"
+          ],
+          "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
+        },
         {
           "semanticAdapters": [
             "ScSelect"
@@ -976,7 +976,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 41,
+      "productionConsumerCount": 43,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,13 +1384,13 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "db41f9694f19439d7dc7b10f4ad878b4773eec1b1a0c8997e16333badaacaf06",
+  "inputDigest": "64a13c33a0ff939f12d89fc68e07481b0c0bb2f177f31fdb982bbe155db43d8c",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 33,
-    "adapter_unconsumed": 2,
+    "adapter_present": 32,
+    "adapter_unconsumed": 3,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
