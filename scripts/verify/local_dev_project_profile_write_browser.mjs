@@ -1196,14 +1196,18 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
   let createdTagId = 0;
   try {
     await openPanel();
-    await input.fill(createdTagName);
-    await waitForCandidates(1);
+    // Drive the keyword through the same path the other scenarios use, so the
+    // official search signal and the governed relation query are both observed
+    // instead of inferred from the rendered options.
+    const createSearch = await searchFor(createdTagName);
     const createRow = optionRows.filter({ hasText: '创建' }).first();
+    const createRowDeadline = Date.now() + 10000;
+    while (Date.now() < createRowDeadline && !(await createRow.count())) await page.waitForTimeout(100);
     const optionsBeforeCreate = await optionLabels();
     const createRowOffered = (await createRow.count()) === 1
       && normalize(await createRow.innerText()).includes(createdTagName);
-    report.scenarios.push({ name: 'm2m_create_option_is_offered_for_an_unknown_name', status: createRowOffered ? 'PASS' : 'FAIL', keyword: createdTagName, options: optionsBeforeCreate, mutation_requests: mutations.length });
-    if (!createRowOffered) throw new Error(`m2m_create_option_missing:${JSON.stringify(optionsBeforeCreate)}`);
+    report.scenarios.push({ name: 'm2m_create_option_is_offered_for_an_unknown_name', status: createRowOffered ? 'PASS' : 'FAIL', keyword: createdTagName, search_term: createSearch?.search_term ?? null, search_status: createSearch?.status ?? null, options: optionsBeforeCreate, mutation_requests: mutations.length });
+    if (!createRowOffered) throw new Error(`m2m_create_option_missing:${JSON.stringify({ search_term: createSearch?.search_term ?? null, optionsBeforeCreate })}`);
     await createRow.click();
     const createDeadline = Date.now() + 20000;
     while (Date.now() < createDeadline && !createRequests.length) await page.waitForTimeout(100);
@@ -1225,19 +1229,24 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
     // row can never satisfy.
     await input.fill('');
     await waitForCandidates(expectedTags.length);
-    await input.fill(createdTagName);
+    const recallSearch = await searchFor(createdTagName);
     await page.waitForFunction((name) => [...document.querySelectorAll('.t-select__dropdown .t-select-option')].some((node) => (node.textContent || '').trim() === name), createdTagName, { timeout: 20000 });
     const optionsAfterCreate = await optionLabels();
     const createRowsAfterCreate = await optionRows.filter({ hasText: '创建' }).count();
     const createdTagVisible = optionsAfterCreate.filter((value) => value === createdTagName).length === 1
       && createRowsAfterCreate === 0;
-    report.scenarios.push({ name: 'm2m_created_tag_is_authoritative_in_the_relation_query', status: createdTagVisible ? 'PASS' : 'FAIL', keyword: createdTagName, options: optionsAfterCreate, create_row_count: createRowsAfterCreate });
+    report.scenarios.push({ name: 'm2m_created_tag_is_authoritative_in_the_relation_query', status: createdTagVisible ? 'PASS' : 'FAIL', keyword: createdTagName, search_term: recallSearch?.search_term ?? null, options: optionsAfterCreate, create_row_count: createRowsAfterCreate });
     if (!createdTagVisible) throw new Error(`m2m_created_tag_not_visible:${JSON.stringify({ optionsAfterCreate, createRowsAfterCreate })}`);
     await page.screenshot({ path: path.join(OUT, 'm2m-created-tag-visible.png'), fullPage: true });
 
-    // Selection, save and reload close the loop for the created record.
-    await optionRows.filter({ hasText: createdTagName }).first().click();
+    // Selection, save and reload close the loop for the created record. The
+    // create step already checked it, and the official multiple path toggles on
+    // a repeat selection (see the duplicate-selection scenario), so the created
+    // record must not be clicked a second time; only the panel is closed and the
+    // draft the create produced is submitted.
+    const dirtyAfterCreate = await dirty(page);
     await closePanel();
+    const chipsBeforeCreatedSave = await chipLabels();
     const authoritativeBeforeCreatedSave = await readProjectTagIds(page);
     const writesBeforeCreatedSave = writes.length;
     await save(page);
@@ -1250,11 +1259,13 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
     const refreshedCreatedTagIds = await readProjectTagIds(page);
     const refreshedCreatedChips = await chipLabels();
     const createdSavePassed = createdSave.outcome === 'business_success'
+      && dirtyAfterCreate
+      && chipSetMatches(chipsBeforeCreatedSave, [alphaLabel, gammaLabel, createdTagName])
       && expectedCreatedTagIds.includes(createdTagId)
       && sameJson(expectedCreatedTagIds, authoritativeAfterCreatedSave)
       && sameJson(authoritativeAfterCreatedSave, refreshedCreatedTagIds)
       && refreshedCreatedChips.some((label) => label.includes(createdTagName));
-    report.scenarios.push({ name: 'm2m_created_tag_saves_and_reads_back', status: createdSavePassed ? 'PASS' : 'FAIL', created_id: createdTagId, created_label: createdTagName, requested_tag_ids: expectedCreatedTagIds, authoritative_tag_ids: authoritativeAfterCreatedSave, refreshed_tag_ids: refreshedCreatedTagIds, refreshed_chips: refreshedCreatedChips, write_response: { outcome: createdSave.outcome, http_status: createdSave.http_status, business_ok: createdSave.business_ok } });
+    report.scenarios.push({ name: 'm2m_created_tag_saves_and_reads_back', status: createdSavePassed ? 'PASS' : 'FAIL', created_id: createdTagId, created_label: createdTagName, draft_dirty_after_create: dirtyAfterCreate, chips_before_created_save: chipsBeforeCreatedSave, requested_tag_ids: expectedCreatedTagIds, authoritative_tag_ids: authoritativeAfterCreatedSave, refreshed_tag_ids: refreshedCreatedTagIds, refreshed_chips: refreshedCreatedChips, write_response: { outcome: createdSave.outcome, http_status: createdSave.http_status, business_ok: createdSave.business_ok } });
     if (!createdSavePassed) throw new Error(`m2m_created_tag_save_readback_not_proven:${JSON.stringify({ expectedCreatedTagIds, authoritativeAfterCreatedSave, refreshedCreatedTagIds, refreshedCreatedChips })}`);
   } finally {
     page.off('response', onCreateResponse);
