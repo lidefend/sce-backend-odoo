@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4443`
+- Scanned files: `4444`
 - Files requiring split plan: `54`
 - Files above warning threshold: `99`
 
@@ -15,8 +15,8 @@ Generated from repository source files. This report is informational during the 
 | 7007 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5001 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4979 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4841 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4274 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4851 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4284 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4122 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3916 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3770 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -84,7 +84,7 @@ Generated from repository source files. This report is informational during the 
 | 1412 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1408 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1382 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1388 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1350 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
@@ -131,8 +131,8 @@ Generated from repository source files. This report is informational during the 
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
+| 937 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 916 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 896 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
@@ -178,8 +178,8 @@ Generated from repository source files. This report is informational during the 
 | 7007 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 5001 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 4979 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4841 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 4274 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4851 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 4284 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4122 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3916 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 3770 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -238,7 +238,7 @@ Generated from repository source files. This report is informational during the 
 | 1412 | warning | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1408 | warning | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1395 | warning | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
-| 1382 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
+| 1388 | warning | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1350 | warning | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1339 | warning | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |

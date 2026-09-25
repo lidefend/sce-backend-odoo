@@ -290,6 +290,11 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
         return "checkbox"
     if ttype == "binary":
         return "binary"
+    if ttype == "json":
+        # No client registers a JSON editor, and no text input can carry an
+        # object value.  Declare the readable display instead of falling
+        # through to an input the resolver must then reject.
+        return "display"
     return "input"
 
 
@@ -323,6 +328,11 @@ NATIVE_WIDGET_TYPE_ALIASES = {
 
 def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
     normalized = _text(native_widget).lower()
+    # The declared field type outranks every widget spelling for JSON: neither
+    # an explicit name nor a producer-filled default may bind an object value
+    # to a control that cannot carry it.
+    if _text(field.get("ttype") or field.get("type")).lower() == "json":
+        return _widget_type_from_field(field)
     if normalized in CANONICAL_WIDGET_TYPES:
         return normalized
     if normalized in NATIVE_WIDGET_TYPE_ALIASES:
