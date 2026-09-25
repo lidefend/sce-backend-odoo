@@ -10,7 +10,7 @@ import sqlite3
 import time
 import uuid
 
-from scripts.ci.gitee_gate_plan import CHECKS, digest
+from scripts.ci.gitee_gate_plan import CHECKS, PREPARATION_FAILURE_REASONS, digest
 from scripts.ci.gitee_formal_executor import IDENTITY_KEYS, verify_snapshot
 from scripts.ci.gitee_ci_checks import ReportError
 
@@ -82,15 +82,40 @@ class FormalQueue:
             row=db.execute('SELECT plan,status,cancel FROM formal_jobs WHERE id=?',(key,)).fetchone()
             if not row or row[1]!='running': raise ValueError('job_not_running')
             p=json.loads(row[0])
-            if (not isinstance(receipt,dict) or receipt.get('status') not in TERMINAL or
-                    any(receipt.get(k)!=p[k] for k in IDENTITY_KEYS) or
-                    receipt.get('plan_sha256')!=p['plan_sha256'] or
-                    receipt.get('integration_eligible') is not False): raise ValueError('receipt_identity')
+            validate_receipt(p,receipt)
             receipt=dict(receipt)
             if row[2]: receipt['status']='cancelled'
             if receipt['status']=='success': validate_success(p,receipt)
             db.execute('UPDATE formal_jobs SET status=?,receipt=? WHERE id=?',
                        (receipt['status'],json.dumps(receipt,sort_keys=True),key))
+
+    def fail(self,key,receipt):
+        """Terminalize a job that was never executed because preparation failed.
+
+        Such a job can only be reported as environment_error: it must never become
+        a pass, a skip, or a silently dropped delivery. Only jobs that carry a
+        trusted preparation marker may be terminalized this way, so this entry
+        cannot be used to shorten a runnable gate.
+        """
+        if not isinstance(receipt,dict) or receipt.get('status')!='environment_error':
+            raise ValueError('preparation_failure_status')
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row=db.execute('SELECT plan,status FROM formal_jobs WHERE id=?',(key,)).fetchone()
+            if not row or row[1]!='pending': raise ValueError('job_not_pending')
+            p=json.loads(row[0])
+            if p.get('preparation_failure') not in PREPARATION_FAILURE_REASONS:
+                raise ValueError('preparation_marker_required')
+            validate_receipt(p,receipt)
+            db.execute('UPDATE formal_jobs SET status=?,receipt=? WHERE id=?',
+                       ('environment_error',json.dumps(receipt,sort_keys=True),key))
+
+
+def validate_receipt(plan,receipt):
+    if (not isinstance(receipt,dict) or receipt.get('status') not in TERMINAL or
+            any(receipt.get(k)!=plan[k] for k in IDENTITY_KEYS) or
+            receipt.get('plan_sha256')!=plan['plan_sha256'] or
+            receipt.get('integration_eligible') is not False): raise ValueError('receipt_identity')
 
 
 def validate_success(plan,receipt):
@@ -109,6 +134,8 @@ def validate_success(plan,receipt):
 
 def payload(plan,status,receipt,name,marker,current):
     summary=marker+'; base='+plan['base_sha']+'; pr='+str(plan['pr_number'])+'; integration_eligible=false'
+    failure=plan.get('preparation_failure')
+    if failure: summary+='; preparation_failure='+failure
     value={'name':name,'head_sha':plan['head_sha'],
            'pull_request_id':plan['platform_snapshot']['pr_id'],
            'output':{'title':'Formal gate: '+name,'summary':summary}}
