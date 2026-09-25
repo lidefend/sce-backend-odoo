@@ -73,6 +73,30 @@
   （UI 新建标签无 XMLID，按批次标记前缀回收）、`deleted_responsibility_ids=[59,60]`；
   二次回读 `clean=true` 且 `existing_batch=false`、`tags=[]`。未操作用户草稿或既有数据。
 
+## 合并后复验：！20 合入 main 后的 many2many 套件（含只读拒绝）
+
+PR !20 已合入实时 main `28e4ddff`。该修复改动共享字典公司域（`project_context.py`），关系查询
+输入随之变化，故在受管环境重跑同一套件，确认合入后未回归：
+
+- 身份：分支 `audit/j13-zero-amount-localization-main`，HEAD `8b557213`，产品代码 = `28e4ddff`
+  （差异仅 `docs/ops/iterations`）；`sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$`，
+  候选前端 5176、API 代理 18081，工具与产品同为该 HEAD。
+- 入口：`M2M_ONLY=1 PROJECT_ID=4067 PM_LOGIN=pm1 READ_LOGIN=demo_role_project_read
+  P4_PROJECT_PROFILE_BATCH=m2m-readonly-20260925 make local.dev.project_profile_write_browser`。
+- 结果：**23/23 PASS**，`summary.json` sha256 `300cc93ea07fe9a5fd4022f4721ca8…`（本次新证据，
+  不替代历史 19/19 与 23/23）。其中此前登记为**未覆盖**的只读拒绝本轮通过：
+  `m2m_readonly_principal_cannot_modify` —— 只读账号（`demo_role_project_read`，user 37，
+  `acl_write=false`）直接 `api.data.write` 返回 HTTP 403 `PERMISSION_DENIED`，权威 `tag_ids`
+  `[34,36]` 保持不变；同一账号打表表单路由落
+  `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`，拒绝文案可见，`tag_ids` 内可编辑控件 **0**。
+- 回收：project 4067、carrier 4068、tags 34/35/36、UI 新建标记标签 37、责任 61/62 全部删除，
+  `clean=true`；inspect 回读 `existing_batch=false`、`project=null`、`tags=[]`、`responsibilities=[]`。
+- 停止：候选前端已 `local.dev.candidate.frontend.down`（`stopped sha=8b557213…`），pidfile 移除、5176 关闭。
+- 分层：本项是**本地候选证据**（产品代码等于已合 main），**不是目标环境证据**；目标环境 `28e4ddff`
+  的只读拒绝仍待部署车道补做。
+- 证据（仓外）：`artifacts/ci/handoff-20260925/target-acceptance-827fad4b/m2m-readonly-20260925/`
+  （`summary.json`、5 张截图、prepare/cleanup/inspect 回执、`identity.json`、`SHA256SUMS.txt`）。
+
 ## 状态分层
 
 - 批次验收完成：是（本专题范围内，本地候选 + 定向测试 + 受管浏览器闭环）。
