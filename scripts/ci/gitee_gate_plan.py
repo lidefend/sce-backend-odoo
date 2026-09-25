@@ -22,6 +22,21 @@ INPUTS = SOURCES + ("config/ci/risk_tiering_v1.json", "scripts/ci/ci_risk_classi
                     "scripts/ci/gitee_gate_plan.py", "scripts/ci/gitee_pr_identity.py",
                     "scripts/ci/gitee_ci_checks.py", "scripts/ci/gitee_formal_executor.py", "scripts/ci/gitee_formal_queue.py", "scripts/ci/gitee_formal_worker.py", "scripts/ops/gitee_frontend_cache.py")
 SHA = re.compile(r"[0-9a-f]{40}")
+# A candidate whose preparation failed must still produce four attributed, red
+# checks instead of four silent waits. Only these bounded, trusted codes may be
+# echoed into a check summary, so no candidate-controlled text reaches the report.
+PREPARATION_FAILURE_REASONS = (
+    "pull_request_unavailable",
+    "invalid_source_branch",
+    "platform_identity_unavailable",
+    "checkout_failed",
+    "checkout_mismatch",
+    "baseline_not_ancestor",
+    "change_set_unavailable",
+    "plan_rejected",
+    "preparation_incomplete",
+)
+BLOCKERS = ("isolated_product_runner_not_accepted", "protected_pr_behavior_not_accepted")
 
 
 def digest(value):
@@ -45,7 +60,7 @@ def select_modes(result, candidate):
     }
 
 
-def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=ROOT):
+def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=ROOT, preparation_failure=None):
     if not isinstance(head, str) or not SHA.fullmatch(head) or not isinstance(base, str) or not SHA.fullmatch(base):
         raise ValueError("full head and base SHA required")
     if head == base or head == "0" * 40 or base == "0" * 40:
@@ -59,12 +74,23 @@ def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=R
             any(x in source_branch for x in ("..", "//", "@{")) or
             source_branch.endswith(("/", ".", ".lock"))):
         raise ValueError("invalid source branch")
+    if preparation_failure is not None and preparation_failure not in PREPARATION_FAILURE_REASONS:
+        raise ValueError("unknown preparation failure reason")
     paths = tuple(paths)
-    if not paths or any(not isinstance(p, str) or not p or p.startswith("/") or
-                        ".." in Path(p).parts or any(c in p for c in ("\\", "\n", "\r", "\0")) for p in paths):
+    if any(not isinstance(p, str) or not p or p.startswith("/") or
+           ".." in Path(p).parts or any(c in p for c in ("\\", "\n", "\r", "\0")) for p in paths):
+        raise ValueError("invalid change set")
+    if not paths and preparation_failure is None:
         raise ValueError("invalid or empty change set")
+    if paths and preparation_failure is not None:
+        # A failed preparation has no trustworthy change set. Accepting paths here
+        # would let an unattributable failure pass itself off as a classified plan.
+        raise ValueError("preparation failure cannot claim a change set")
     result = classify(paths, event_name="pull_request", policy=load_policy(root / "config/ci/risk_tiering_v1.json"))
     modes = select_modes(result, candidate)
+    blockers = list(BLOCKERS)
+    if preparation_failure is not None:
+        blockers.insert(0, "preparation_failed:" + preparation_failure)
     record = {
         "schema_version": "gitee-formal-gate-plan/v1",
         "repository": REPOSITORY, "target_branch": "main", "source_branch": source_branch,
@@ -79,8 +105,10 @@ def plan(*, head, base, source_branch, pr_number, paths, candidate=False, root=R
                       "python310_compatibility_required": candidate and result.professional_mode == "full"},
         "pr_identity_verified": False, "remote_refs_verified": False,
         "execution_ready": False, "integration_eligible": False,
-        "blockers": ["isolated_product_runner_not_accepted", "protected_pr_behavior_not_accepted"],
+        "blockers": blockers,
     }
+    if preparation_failure is not None:
+        record["preparation_failure"] = preparation_failure
     record["plan_sha256"] = digest(record)
     return record
 
