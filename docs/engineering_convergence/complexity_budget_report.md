@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4438`
+- Scanned files: `4443`
 - Files requiring split plan: `54`
-- Files above warning threshold: `98`
+- Files above warning threshold: `99`
 
 ## Split Plan Required
 
@@ -25,7 +25,7 @@ Generated from repository source files. This report is informational during the 
 | 3390 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3367 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3302 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
-| 3193 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3255 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3030 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3021 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3007 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
@@ -160,14 +160,15 @@ Generated from repository source files. This report is informational during the 
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 447 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 423 | Shell script | `scripts/demo/verify.sh` |
+| 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 319 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 331 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
-| 313 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 305 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 302 | Shell script | `scripts/deploy/prod_sim_fresh_replay.sh` |
 | 298 | Shell script | `scripts/ops/git_safe_push.sh` |
+| 289 | Shell script | `scripts/ci/orm_result_guard.sh` |
 | 287 | Shell script | `scripts/common/frontend_release_ci_identity.sh` |
 
 ## Largest Files
@@ -187,7 +188,7 @@ Generated from repository source files. This report is informational during the 
 | 3390 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3367 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3302 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
-| 3193 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
+| 3255 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3030 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 3021 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 3007 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |

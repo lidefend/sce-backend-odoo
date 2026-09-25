@@ -62,11 +62,25 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             "rr_settlement_user",
             ["smart_construction_core.group_sc_cap_settlement_user"],
         )
+        cls.user_cost_user = _create_user(
+            "rr_cost_user",
+            ["smart_construction_core.group_sc_cap_cost_user"],
+        )
+        cls.user_cost_manager = _create_user(
+            "rr_cost_manager",
+            ["smart_construction_core.group_sc_cap_cost_manager"],
+        )
 
         project_vals = {
             "privacy_visibility": "followers",
             "company_id": company.id,
         }
+        cls.project_cost_user = _ctx("project.project").create(
+            dict(project_vals, name="RR Project Cost User", user_id=cls.user_cost_user.id)
+        )
+        cls.project_cost_other = _ctx("project.project").create(
+            dict(project_vals, name="RR Project Cost Other", user_id=cls.user_cost_manager.id)
+        )
         cls.project_read = _ctx("project.project").create(
             dict(project_vals, name="RR Project Read", user_id=cls.user_project_read.id)
         )
@@ -201,10 +215,254 @@ class TestRecordRuleBehaviorGate(TransactionCase):
             cls.user_settlement_read.partner_id.id,
             cls.user_settlement_user.partner_id.id,
         ]
+        cls.project_cost_other.message_unsubscribe(partner_ids=partners)
         cls.project_other.message_unsubscribe(partner_ids=partners)
         cls.task_other.message_unsubscribe(partner_ids=partners)
         cls.payment_req_other.project_id.message_unsubscribe(partner_ids=partners)
         cls.settlement_other.project_id.message_unsubscribe(partner_ids=partners)
+
+        uom = cls.env.ref("uom.product_uom_unit")
+
+        def _create_boq(project, code):
+            version = _ctx("project.boq.version").create(
+                {"name": code, "code": code, "project_id": project.id}
+            )
+            line = _ctx("project.boq.line").create(
+                {
+                    "project_id": project.id,
+                    "version_id": version.id,
+                    "code": code,
+                    "name": code,
+                    "uom_id": uom.id,
+                }
+            )
+            return version, line
+
+        cls.boq_version_user, cls.boq_line_user = _create_boq(
+            cls.project_cost_user, "RRBOQ-USER"
+        )
+        cls.boq_version_other, cls.boq_line_other = _create_boq(
+            cls.project_cost_other, "RRBOQ-OTHER"
+        )
+
+        # --- cross-company fixture -------------------------------------------
+        # Neither project.boq.line nor project.boq.version has a company_id, so
+        # the company boundary can only travel project_id -> project.project.
+        # It has to be measured on real reads: seeing the rule definition (or
+        # an ACL) is not proof that a role cannot cross the boundary.
+        cls.company_secondary = _ctx("res.company").create({"name": "RR Secondary Company"})
+
+        def _create_company_user(login, group_xmlids, company):
+            groups = [(6, 0, [cls.env.ref(x).id for x in group_xmlids])]
+            return cls.env["res.users"].with_context(no_reset_password=True).create(
+                {
+                    "name": login,
+                    "login": login,
+                    "email": f"{login}@example.com",
+                    "company_id": company.id,
+                    "company_ids": [(6, 0, [company.id])],
+                    "groups_id": groups,
+                }
+            )
+
+        cls.user_cost_user_secondary = _create_company_user(
+            "rr_cost_user_secondary",
+            ["smart_construction_core.group_sc_cap_cost_user"],
+            cls.company_secondary,
+        )
+        cls.user_cost_manager_secondary = _create_company_user(
+            "rr_cost_manager_secondary",
+            ["smart_construction_core.group_sc_cap_cost_manager"],
+            cls.company_secondary,
+        )
+        cls.project_cost_secondary = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Secondary",
+                company_id=cls.company_secondary.id,
+                user_id=cls.user_cost_user_secondary.id,
+            )
+        )
+        cls.boq_version_secondary, cls.boq_line_secondary = _create_boq(
+            cls.project_cost_secondary, "RRBOQ-SECONDARY"
+        )
+        # A secondary-company project whose responsible user belongs to the
+        # primary company only. Project membership alone would hand that user a
+        # line whose project it cannot even read.
+        cls.project_cost_secondary_foreign = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Secondary Foreign",
+                company_id=cls.company_secondary.id,
+                user_id=cls.user_cost_user.id,
+            )
+        )
+        cls.boq_version_secondary_foreign, cls.boq_line_secondary_foreign = _create_boq(
+            cls.project_cost_secondary_foreign, "RRBOQ-SECONDARY-FOREIGN"
+        )
+
+        # --- BOQ / cost-plan sibling family ---------------------------------
+        # None of these models carries a company_id either, so the company
+        # boundary can only travel through the project. Measuring them exposed
+        # the same exposure that was fixed on project.boq.line/version: a
+        # company-A-only operator could read a company-B row merely by being
+        # that project's responsible user, and the cost-manager exception had
+        # no company dimension at all (a company-B-only manager could read all
+        # 360 company-A cost-tree nodes in the dev database).
+        def _create_boq_family(project, tag):
+            version = _ctx("project.boq.version").create(
+                {"name": tag, "code": tag, "project_id": project.id}
+            )
+            line = _ctx("project.boq.line").create(
+                {
+                    "project_id": project.id,
+                    "version_id": version.id,
+                    "code": tag,
+                    "name": tag,
+                    "uom_id": uom.id,
+                }
+            )
+            batch = _ctx("project.boq.import.batch").create(
+                {
+                    "name": tag,
+                    "project_id": project.id,
+                    "version_id": version.id,
+                    "filename": "rrfam.csv",
+                    "file_digest": "digest-%s" % tag,
+                    "parser_schema": "v1",
+                    "state": "imported",
+                }
+            )
+            analysis = _ctx("project.boq.analysis").create(
+                {
+                    "name": tag,
+                    "project_id": project.id,
+                    "version_id": version.id,
+                    "boq_line_id": line.id,
+                }
+            )
+            norm = _ctx("project.boq.analysis.norm.line").create(
+                {"analysis_id": analysis.id, "name": tag, "norm_code": "N-%s" % tag}
+            )
+            resource = _ctx("project.boq.analysis.resource.line").create(
+                {"analysis_id": analysis.id, "name": tag, "resource_type": "labor"}
+            )
+            component = _ctx("project.boq.summary.component").create(
+                {
+                    "name": tag,
+                    "version_id": version.id,
+                    "project_id": project.id,
+                    "component_type": "direct",
+                }
+            )
+            plan = _ctx("project.cost.plan").create(
+                {
+                    "name": tag,
+                    "project_id": project.id,
+                    "boq_version_id": version.id,
+                    "state": "draft",
+                    "version_code": tag,
+                    "version_date": "2026-09-24",
+                }
+            )
+            plan_line = _ctx("project.cost.plan.line").create(
+                {
+                    "plan_id": plan.id,
+                    "name": tag,
+                    "project_id": project.id,
+                    "calculation_mode": "amount",
+                    "cost_type": "material",
+                    "line_role": "cost",
+                }
+            )
+            # Cost-tree nodes are projected from cost facts; this is the
+            # model's own sanctioned write path, used here only to place a row
+            # in a given company.
+            node = (
+                cls.env["project.cost.plan.node"]
+                .sudo()
+                .with_context(cost_tree_projection_write=True)
+                .create(
+                    {
+                        "plan_id": plan.id,
+                        "name": tag,
+                        "project_id": project.id,
+                        "cost_type": "material",
+                        "node_type": "dimension",
+                        "line_role": "cost",
+                    }
+                )
+            )
+            return {
+                "project.boq.version": version,
+                "project.boq.line": line,
+                "project.boq.import.batch": batch,
+                "project.boq.analysis": analysis,
+                "project.boq.analysis.norm.line": norm,
+                "project.boq.analysis.resource.line": resource,
+                "project.boq.summary.component": component,
+                "project.cost.plan": plan,
+                "project.cost.plan.line": plan_line,
+                "project.cost.plan.node": node,
+            }
+
+        cls.boq_family_own = _create_boq_family(cls.project_cost_user, "RRFAM-OWN")
+        cls.boq_family_foreign = _create_boq_family(
+            cls.project_cost_secondary_foreign, "RRFAM-FOREIGN"
+        )
+        cls.boq_family_secondary = _create_boq_family(
+            cls.project_cost_secondary, "RRFAM-SECONDARY"
+        )
+
+        # An authorized multi-company user is the control that keeps the new
+        # company rule from becoming an over-restriction: it is a legitimate
+        # member of one project in each company.
+        cls.user_cost_multi_company = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "rr_cost_multi_company",
+                    "login": "rr_cost_multi_company",
+                    "email": "rr_cost_multi_company@example.com",
+                    "company_id": company.id,
+                    "company_ids": [(6, 0, [company.id, cls.company_secondary.id])],
+                    "groups_id": [
+                        (
+                            6,
+                            0,
+                            [
+                                cls.env.ref(
+                                    "smart_construction_core.group_sc_cap_cost_user"
+                                ).id
+                            ],
+                        )
+                    ],
+                }
+            )
+        )
+        cls.project_multi_primary = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Multi Primary",
+                company_id=company.id,
+                user_id=cls.user_cost_multi_company.id,
+            )
+        )
+        cls.project_multi_secondary = _ctx("project.project").create(
+            dict(
+                project_vals,
+                name="RR Project Cost Multi Secondary",
+                company_id=cls.company_secondary.id,
+                user_id=cls.user_cost_multi_company.id,
+            )
+        )
+        cls.boq_family_multi_primary = _create_boq_family(
+            cls.project_multi_primary, "RRFAM-MULTI-PRIMARY"
+        )
+        cls.boq_family_multi_secondary = _create_boq_family(
+            cls.project_multi_secondary, "RRFAM-MULTI-SECONDARY"
+        )
 
     def _can_read(self, user, record):
         Model = self.env[record._name].with_user(user)
@@ -303,3 +561,159 @@ class TestRecordRuleBehaviorGate(TransactionCase):
                     "line_ids": [(0, 0, {"name": "RR Invalid Direction", "amount": 1.0})],
                 }
             )
+
+    def test_boq_line_project_scope(self):
+        """project.boq.line must not expose other projects' rows to a cost operator."""
+        model = self.env["project.boq.line"]
+
+        # Cost capability user: only the project it owns is readable.
+        self.assertTrue(self._can_read(self.user_cost_user, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_line_other))
+
+        # A list read must not leak the foreign project either.
+        visible = model.with_user(self.user_cost_user).search([]).ids
+        self.assertIn(self.boq_line_user.id, visible)
+        self.assertNotIn(self.boq_line_other.id, visible)
+
+        # Read-by-id is denied, not merely filtered out of the list.
+        with self.assertRaises(AccessError):
+            self.boq_line_other.with_user(self.user_cost_user).read(["name"])
+
+        # Cost manager keeps the all-records scope.
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_other))
+
+    def test_boq_line_scope_matches_parent_version_scope(self):
+        """The BOQ line scope must not silently diverge from project.boq.version."""
+        for user in (self.user_cost_user, self.user_cost_manager):
+            self.assertEqual(
+                self._can_read(user, self.boq_line_other),
+                self._can_read(user, self.boq_version_other),
+                "project.boq.line scope diverged from project.boq.version for %s" % user.login,
+            )
+
+    def test_boq_family_cross_company_scope(self):
+        """The same company boundary on every company-scoped BOQ/cost-plan sibling.
+
+        These models have no company_id, so the boundary can only travel
+        project_id -> project.project (or analysis_id.project_id). Measured
+        before the allowed-companies rules were added, a company-A-only cost
+        operator could read a company-B row merely by being that project's
+        responsible user, and the cost-manager exception crossed companies
+        outright: a company-B-only manager could read all 360 company-A
+        cost-tree nodes in the dev database. See
+        docs/ops/iterations/boq_line_record_rule_scope_20260924.md.
+        """
+        own = self.boq_family_own
+        foreign = self.boq_family_foreign
+        secondary = self.boq_family_secondary
+
+        for model, record in foreign.items():
+            with self.subTest(model=model):
+                # Inside its own company the row stays readable.
+                self.assertTrue(self._can_read(self.user_cost_user, own[model]))
+
+                # Project membership is not a company bypass: this user is the
+                # responsible user of the foreign project.
+                self.assertFalse(self._can_read(self.user_cost_user, record))
+                self.assertEqual(
+                    self.env[model]
+                    .with_user(self.user_cost_user)
+                    .search_count([("id", "=", record.id)]),
+                    0,
+                    "%s leaked a foreign-company row through search" % model,
+                )
+                with self.assertRaises(AccessError):
+                    record.with_user(self.user_cost_user).read(["name"])
+
+                # Symmetric: the secondary-company operator cannot reach primary rows.
+                self.assertFalse(
+                    self._can_read(self.user_cost_user_secondary, own[model])
+                )
+
+                # "All records" means every project of the allowed companies:
+                # it still covers the whole own company and stops at the border.
+                self.assertTrue(self._can_read(self.user_cost_manager, own[model]))
+                self.assertFalse(self._can_read(self.user_cost_manager, record))
+                self.assertTrue(
+                    self._can_read(self.user_cost_manager_secondary, secondary[model])
+                )
+                self.assertFalse(
+                    self._can_read(self.user_cost_manager_secondary, own[model])
+                )
+
+        # A legitimately authorized multi-company user is not over-restricted.
+        for model in foreign:
+            with self.subTest(model=model, scope="multi-company"):
+                self.assertTrue(
+                    self._can_read(
+                        self.user_cost_multi_company,
+                        self.boq_family_multi_primary[model],
+                    )
+                )
+                self.assertTrue(
+                    self._can_read(
+                        self.user_cost_multi_company,
+                        self.boq_family_multi_secondary[model],
+                    )
+                )
+
+    def test_boq_line_cross_company_scope(self):
+        """Cross-company boundary of the BOQ line and version rules.
+
+        Measuring this boundary (rather than reading the rule text) exposed two
+        real cross-company reads before the allowed-companies rule was added -
+        a primary-company operator could read a secondary-company line merely by
+        being that project's responsible user, and the cost-manager exception
+        had no company dimension at all. See
+        docs/ops/iterations/boq_line_record_rule_scope_20260924.md.
+        """
+        line_model = self.env["project.boq.line"]
+
+        # The foreign company's line is denied on both read paths.
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_line_secondary))
+        self.assertEqual(
+            line_model.with_user(self.user_cost_user).search_count(
+                [("id", "=", self.boq_line_secondary.id)]
+            ),
+            0,
+        )
+        with self.assertRaises(AccessError):
+            line_model.with_user(self.user_cost_user).browse(
+                self.boq_line_secondary.id
+            ).read(["name"])
+        self.assertFalse(self._can_read(self.user_cost_user, self.boq_version_secondary))
+
+        # Symmetric: the secondary-company operator cannot reach primary rows.
+        self.assertFalse(self._can_read(self.user_cost_user_secondary, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_user_secondary, self.boq_version_user))
+
+        # Project membership is not a company bypass, and the denied line is not
+        # simply a side effect of the project being denied.
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.project_cost_secondary_foreign)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.boq_line_secondary_foreign)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_user, self.boq_version_secondary_foreign)
+        )
+
+        # The cost-manager exception means "all projects of the allowed
+        # companies": it still covers every primary-company line, including one
+        # owned by another user, and it stops at the company boundary.
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_other))
+        self.assertTrue(self._can_read(self.user_cost_manager, self.boq_line_user))
+        self.assertFalse(self._can_read(self.user_cost_manager, self.boq_line_secondary))
+        self.assertFalse(self._can_read(self.user_cost_manager, self.boq_version_secondary))
+
+        # Inside its own company the exception keeps working.
+        self.assertTrue(
+            self._can_read(self.user_cost_manager_secondary, self.boq_line_secondary)
+        )
+        self.assertTrue(
+            self._can_read(self.user_cost_manager_secondary, self.boq_version_secondary)
+        )
+        self.assertFalse(
+            self._can_read(self.user_cost_manager_secondary, self.boq_line_user)
+        )

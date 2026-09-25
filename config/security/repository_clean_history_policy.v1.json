@@ -101,6 +101,20 @@
       "blob_id": "f6ad815c98cd80c540df1ac29ffbc8a2fa70597b",
       "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
       "reason": "Unchanged previously reviewed historical mirror/runner identity lines verified against 630e89b8; only ordinary frontend CI progress appended. Exact immutable documentation; all other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "581c9e9cc778cc93c66628f1eb790443bfd0c881",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Legacy mirror identity lines are byte-identical to merged a32b38b6; only governed branch synchronization and exact trusted package bootstrap evidence appended. Exact immutable documentation exception; all other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "fcbb9d4992df2debeb14995056a5746dbe20e492",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Legacy mirror identity lines are byte-identical to merged a32b38b6; only governed branch synchronization and exact trusted package bootstrap evidence appended. Exact immutable documentation exception; all other content rules remain enforced."
     }
   ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
