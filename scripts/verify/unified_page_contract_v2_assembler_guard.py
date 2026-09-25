@@ -249,6 +249,7 @@ def main() -> int:
         ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "relation": "x.line"}, "table", "sc.relation.table"),
         ({"name": "amount", "type": "monetary", "widget": "monetary"}, "number", "sc.value.money"),
         ({"name": "state", "type": "selection", "widget": "statusbar"}, "display", "sc.display.status"),
+        ({"name": "quick_encoding_vals", "type": "json", "widget": "json"}, "display", "sc.display.text"),
     )
     for field, expected_widget, expected_component in widget_projection_cases:
         projected = target._field_widget(field, layout_type="form")

@@ -35,7 +35,9 @@ function selectionOptions(value: unknown): TemplateSelectOption[] {
   });
 }
 
-function inputValue(value: unknown): string | number | boolean | null {
+function inputValue(value: unknown, fieldType = ''): string | number | boolean | null {
+  // JSON 字段只读展示：它没有可编辑输入值，也不允许把对象字符串化后充当输入。
+  if (fieldType === 'json') return '';
   if (value === null || value === undefined || value === false) return value as null | boolean;
   if (Array.isArray(value)) return value.length > 1 ? String(value[1] ?? '') : String(value[0] ?? '');
   if (['string', 'number', 'boolean'].includes(typeof value)) return value as string | number | boolean;
@@ -191,7 +193,7 @@ export function canonicalFieldToFormSection(
     inputPlaceholder: field.placeholder || undefined,
     spanClass: field.fieldType === 'text' || field.span >= 24 ? 'field--full' : field.span >= 16 ? 'field--wide' : 'field--normal',
     value: relation ? relation.displayName : field.value,
-    inputValue: relation ? relation.id : inputValue(field.value),
+    inputValue: relation ? relation.id : inputValue(field.value, type),
     dateRangeEndField: dateRangeEndField || undefined,
     dateRangeEndInputValue: dateRangeEnd
       ? inputValue(dateRangeEnd.value)

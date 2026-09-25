@@ -168,7 +168,9 @@
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </ProfessionalRelationFieldControl>
-              <template v-else-if="field.readonly">
+              <!-- JSON 字段没有任何客户端编辑控件：契约声明只读可读展示，这里就必须按事实
+                   呈现，而不是把对象值交给可编辑兜底控件。 -->
+              <template v-else-if="field.readonly || isJsonField(field)">
                 <slot name="readonly" :field="field">
                   <div
                     v-if="field.type === 'html'"
@@ -454,6 +456,10 @@ function declaresUnknownComponentRenderer(field: FormSectionFieldSchema) {
 
 function failClosedRendererText(field: FormSectionFieldSchema) {
   return `字段渲染器未注册：${String(field.componentRenderer || '')}`;
+}
+
+function isJsonField(field: FormSectionFieldSchema) {
+  return String(field.type || '').trim().toLowerCase() === 'json';
 }
 
 function isLegacyComplexField(field: FormSectionFieldSchema) {
