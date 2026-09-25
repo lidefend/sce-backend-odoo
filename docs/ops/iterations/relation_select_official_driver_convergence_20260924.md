@@ -163,6 +163,15 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
   - 搜索关键词单独输入不再被视为清空/提交；清空改为面板中的显式“清除选择”动作。
   - 字段内自建选项行（`many2one-option-row`）与自写内联创建行选择器删除。
 
+### Batch D：many2many 有词回车与写入闭环（完成）
+
+- 有词回车缺口按官方通道修掉：`tagInputProps.max = -1` 抑制 TagInput 的追加，使 keydown 继续进入官方
+  键盘处理（详见本批修复提交与 `official-enter-keyword` 注释）。
+- 写入闭环在既有受管入口内补齐：选择→保存→权威回读→刷新一致；取消「放弃」不写入；
+  保存失败保留草稿、重试同载荷成功；只读角色直接写被拒且表单路由被拒。
+- 验收：`scripts.verify.test_local_dev_project_profile_write_fixture`（43 tests OK，含新增写入闭环守卫）、
+  `make local.dev.project_profile_write_browser … M2M_ONLY=1`（19 场景 PASS）与受管对象回收回读。
+
 ## 不做清单
 
 - 不升级 `tdesign-vue-next@1.20.5`，不使用私有 `lib/cjs` 入口。
@@ -359,6 +368,107 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
   关键字与 `onBlur` + `setTimeout(200)` 的失焦时序，属 many2many 控件；本批只收敛 many2one 通用关系控件，
   按“不扩大成组件重构”原则留作后续专题。
 
+## R3b many2many「搜索词存在时回车提交」收口（`fix/m2m-official-interaction`）
+
+上一批把该行为登记为上游缺口并按“不新增第二套键盘逻辑”保留；本专题在**不改动冻结候选**的前提下
+收口为官方配置，记录三问：
+
+1. **具体产品需求**：多选关系控件里输入的字符是**查询词**，不是该字段的新标签；输入查询词后
+   方向键高亮，Enter 应提交高亮的候选项。这是客户/记录选择的直接依赖，不是可选增强。
+2. **当前版本官方能力为什么不足以原样满足**：`tdesign-vue-next@1.20.5` 的官方 Enter 分支
+   （`es/select/hooks/useKeyboardControl.mjs`，挂在输入容器上）在**输入框非空**时收不到 Enter：
+   `es/tag-input/hooks/useTagList.mjs` 的 `onInnerEnter` 先把输入文本追加为一个标签，
+   `es/select/select.mjs` 的 `removeTag` 随即对同一 keydown 调用 `e.stopPropagation()`。
+   **最小官方复现**（`/tmp/td-repro`，纯官方 `Select`，无本控件代码）：`multiple+filterable` 输入
+   `GAMMA` 后 ArrowDown 高亮首行、Enter 不改值、面板不关（`change{trigger:'enter'}` 但值不变）；
+   手工清空查询词后 ArrowDown+Enter **可以**选中（`change{trigger:'check'}`）；单选取值正常。
+   在浏览器中给输入容器的官方 `onkeydown` 挂计数探针可复现：ArrowDown 到达容器，
+   Enter 在有词时**不到达**。上游 `develop` 与 1.20.6–1.20.8 changelog 均无该场景修复，
+   故不改用版本升级。
+3. **增强放在哪一层、如何验证、何时退出**：只放在 many2many 适配层，且只用官方扩展位——
+   `:tag-input-props="{ max: -1 }"`（TagInput 自身 `max` 的“不再新增标签”语义），使追加不再发生、
+   keydown 继续冒泡进入官方键盘处理；**没有**恢复自写方向键索引、失焦定时器或合成 DOM 事件，
+   候选浮层/高亮/选择/开关仍全部由官方组件负责。退出条件写在组件注释
+   `official-enter-keyword-exit`：一旦所钉版本在有查询词时把 Enter 交给官方键盘处理，即删除该属性；
+   版本变更时重跑 many2many 键盘场景。守卫（`frontend_professional_relation_field_guard.py`）
+   要求该配置与注释同时存在，并继续禁止 `setTimeout`/`@blur=`/`handleKeydown` 等自写交互
+   以及旧的 `upstream-gap` 记录方式。
+
+### L4（`fix/m2m-official-interaction`，含「有词回车」子范围）
+
+- 环境身份：`sc-local-dev` / 数据库 `sc_dev_demo` / dbfilter `^sc_dev_demo$` / nginx 18081 / odoo 8070；
+  候选前端由 `local.dev.candidate.frontend.up` 提供（5176，代理 `http://127.0.0.1:18081`），
+  pidfile head 与被服务 SHA 均为 `cce502f896f9759091551d8302c9162cccc4ead9`
+  （= `PRODUCT_CANDIDATE_SHA` = `P4_TOOL_CANDIDATE_SHA`，clean HEAD）。
+- 专用对象：`project.project` 3935（XMLID `codex_p4_project_profile_write.project_m2m_official_enter_20260924`）、
+  标签载体 3936、候选标签 8/9/10（`…-ALPHA` / `…-BETA` / `…-GAMMA`）；登录 `pm1`
+  （user_id 7 / role_code `pm` / company_id 1，受管会话身份校验通过）。
+- 入口：`M2M_ONLY=1 PROJECT_ID=3935 PM_LOGIN=pm1 make local.dev.project_profile_write_browser`。
+- 产物 `/tmp/m2m-enter-official-20260924-r2/`：`summary.json`（sha256
+  `1dfe7e05f6a94b8478840541df4bdec59a744f2af3c00d793d8b3eed7f517833`，`status=PASS`，12 场景，
+  `errors=[]`）、`m2m-keyboard-enter-with-keyword.png`、`m2m-narrow-390.png`。
+- 关键场景：
+  - `m2m_keyboard_enter_with_keyword_selects_highlighted`：查询词 `ALPHA` 下 ArrowDown 高亮
+    `…-ALPHA`，Enter 后 chip 由 2→3 且新增项就是高亮项；`search_term=ALPHA`、
+    `keyword_after_enter=""`、`keyword_became_a_tag=false`、`relation_ids_unchanged=true`、
+    `mutation_requests=0`。
+  - `m2m_duplicate_selection_never_duplicates_a_record`：重复提交同一项被官方解析为
+    `unchecked-on-repeat`，不产生重复 chip。
+  - `m2m_keyboard_select_draft_only` / `m2m_mouse_select_draft_only`：无词键盘与鼠标各选中一项。
+  - `m2m_blur_resets_keyword_and_draft` / `m2m_escape_resets_keyword_and_draft`：失焦与 Escape 不新增选择。
+  - `m2m_consecutive_searches_last_is_authoritative`：连续搜索以最后一次为准。
+  - `m2m_explicit_clear_restores_clean_draft`：清除后草稿回到未修改。
+  - `m2m_narrow_viewport_single_panel`：390px 下 1 个面板、可操作、无横向溢出。
+  - `m2m_journey_stayed_draft_only`：关系查询全部 `200`，`mutation_requests=0`。
+- 回收：`MODE=cleanup … CLEANUP` → `{"clean": true, "deleted": true, "deleted_carrier_id": 3936,
+  "deleted_responsibility_ids": [45, 46], "deleted_tag_ids": [8, 9, 10]}`；`MODE=inspect` 回读 →
+  `existing_batch=false`、`project.id=null`、`responsibilities=[]`、`tags=[]`、`candidate_carrier=null`。
+- 证据边界：本项只验证**控件选择与草稿**；`mutation_requests=0` 只证明未发生写入，
+  不等于表单保存或刷新回读通过。该边界已由下一节的写入闭环补齐；保存链路本身仍引用既有条目。
+
+### L4（many2many 写入闭环，`fix/m2m-official-interaction`）
+
+上一批记录的边界是“控件选择成功、未发生写入”，不是业务闭环。本轮在同一受管入口内把闭环补完：
+控件选择、保存、取消、失败恢复、只读反例与请求台账，全部绑定**权威回读**，不只看渲染结果。
+
+- 环境身份：同上（`sc-local-dev` / `sc_dev_demo` / `^sc_dev_demo$` / 18081 / 8070 / 5176）。
+- 身份分离：产品候选 `f953656f4680dafeecbea30d37aad5c0bc46b62a`（被 5176 服务的构建，
+  `frontend/apps/web` 与本批提交后一致），工具候选 `cf7f0b9260a19e069a79066d7f4f97cb7233d0e3`
+  （运行器工作树 HEAD，本轮只改验收脚本与文档）。二者按受管入口的既有约定分别校验。
+- 专用对象：`project.project` 3939（XMLID `…project_m2m_write_r1`、标记 `CODEX-P4-M2M-WRITE-R1`）、
+  责任行 49/50、标签载体 3940、候选标签 14/15/16（`…-ALPHA` / `…-BETA` / `…-GAMMA`）；
+  写方 `pm1`（user_id 7 / role_code `pm` / company_id 1），只读方 `demo_role_project_read`（user_id 37）。
+- 入口：`M2M_ONLY=1 PROJECT_ID=3939 PM_LOGIN=pm1 make local.dev.project_profile_write_browser`。
+- 产物 `/tmp/m2m-write-closure-20260924-r3/`：`summary.json`
+  （sha256 `056c3081589b827adc263d86f55ede9361e25315ec241c4e0102814af96a790d`，`status=PASS`，19 场景，
+  `errors=[]`）、`m2m-save-failure-feedback.png`（失败反馈）、`m2m-readonly-denial.png`（只读拒绝）、
+  `m2m-keyboard-enter-with-keyword.png`、`m2m-narrow-390.png`。
+- 写入台账（`recordWriteRequests`，仅本项目写请求）：3 次尝试 = `business_success` 2 + `network_blocked` 1；
+  `mutation_requests` 同为 3，取消与只读探针未产生任何写入。
+
+| 场景 | 关键断言 | 结果 |
+|---|---|---|
+| `m2m_selection_stays_draft_until_save` | 选中后 chip=1、权威 `tag_ids` 仍为 `[]`、`write_requests=0` | PASS |
+| `m2m_selection_saves_and_reads_back` | 提交 `[[6,0,[14]]]` → 权威 `[14]` → 刷新 `[14]`、chip 同名、草稿回到未修改、其他字段未变 | PASS |
+| `m2m_cancel_discards_draft_without_a_write` | 草稿 `[ALPHA,BETA]` 经表单自身「放弃」→ 回到 `[ALPHA]`、草稿未修改、写请求数不变、权威 `[14]` | PASS |
+| `m2m_save_failure_preserves_draft` | 人为阻断 → `network_blocked`、错误区可见（“网络异常，请检查连接后重试。”）、草稿 `[ALPHA,GAMMA]` 保留、保存仍可用、权威仍 `[14]` | PASS |
+| `m2m_save_retry_persists_and_matches_ui` | 同一载荷 `[[4,16]]` 重试 → 成功、权威 `[14,16]`、刷新 `[14,16]`、chip 一致 | PASS |
+| `m2m_readonly_principal_cannot_modify` | 直接写 `tag_ids` → `403 PERMISSION_DENIED`、权威未变；表单路由 → `/access-denied?reason=NAVIGATION_AUTHORITY_DENIED`、可编辑关系控件 0 | PASS |
+| `m2m_write_closure_request_ledger` | 台账与场景逐项自洽（3/2/1） | PASS |
+
+- 回收（**写入后的**回收）：`MODE=cleanup … CLEANUP` →
+  `{"clean": true, "deleted": true, "deleted_carrier_id": 3940, "deleted_responsibility_ids": [49, 50],
+  "deleted_tag_ids": [14, 15, 16]}`；随后 `MODE=inspect` 回读 →
+  `existing_batch=false`、`project.id=null`、`responsibilities=[]`、`tags=[]`、`candidate_carrier=null`。
+  首次运行（`…-r1`）写入标签 11 后同样回收成功（`deleted_tag_ids: [11,12,13]`），说明已写入关系的对象
+  仍在受管回收范围内。
+- 验收脚本两处修正（仅驱动层，非产品改动）：①「有 chip 时官方 TagInput 的搜索框会收缩到不可点击」
+  是官方行为，交互必须像用户一样先点控件再输入；②把「点控件」落到官方后缀箭头
+  （`.t-input__suffix`，实测始终是下拉图标、悬停也不切换为清除），而不是包装层——点包装层中心
+  会命中 chip 的关闭图标并误删已选标签。
+- 边界：本项证明**控件选择、关系写入、取消、失败恢复与只读拒绝**；仍不含显式创建闭环
+  （`not_available` 保持未验收），也不等于业务交付。
+
 ## R6 清理与专用对象回收
 
 - 本批未新增第二套实现；生成的清单/守卫与来源同批提交（`ci.delivery.freeze.prepare` PASS）。
@@ -373,8 +483,10 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 - 专用对象 `3931`（查询去重身份复验）的回收：`MODE=cleanup … CLEANUP`
   → `{"clean": true, "deleted": true, "deleted_responsibility_ids": [39, 40]}`；
   `MODE=inspect` 回读 → `existing_batch=false`、`project.id=null`、`responsibilities=[]`。
-- 两项边界继续保留、不扩大本批：显式创建入口在受管契约下不可用，仍登记为 `not_available`，
-  不计入“完整创建闭环通过”；`ProfessionalManyToManySelect.vue` 的失焦时序与无消费者的
+- 边界保留与变化：显式创建入口在受管契约下不可用，仍登记为 `not_available`，不计入
+  “完整创建闭环通过”；`ProfessionalManyToManySelect.vue` 的手写失焦时序已在
+  `29c9ad78` 删除（改由官方 `@popup-visible-change` 与 `change(trigger=check)` 驱动），
+  本次「有词回车」收口后该控件不再保留任何自写键盘/焦点路径；无消费者的
   `ScAutoComplete.vue` 仍留作后续专题。
 - 专用对象 `3930` 的回收：`make local.dev.project_profile_write_fixture P4_PROJECT_PROFILE_MODE=cleanup
   P4_PROJECT_PROFILE_BATCH=relation-official-20260924 P4_PROJECT_PROFILE_CONFIRM=CLEANUP`
@@ -386,7 +498,7 @@ ProfessionalMany2oneFieldControl（业务包装：能力判定 + 面板动作）
 
 | 层次 | 状态 | 依据 |
 |---|---|---|
-| 批次验收 | 完成 | 本批增量 13 个提交（关系控件收敛 8 + 查询去重身份修复 2 + 验收/发布记录 3）；L1/L2 定向与 L4 受管浏览器验收（含 r7 复验）通过；未覆盖项以 `not_available` 登记并给出理由 |
+| 批次验收 | 完成 | 本批增量 15 个提交（关系控件收敛 10 + 查询去重身份修复 2 + 验收/发布记录 3）；L1/L2 定向与 L4 受管浏览器验收（含 r7 复验与 many2many「有词回车」子范围）通过；未覆盖项以 `not_available` 登记并给出理由 |
 | 主线集成 | 待发布（凭据不再是阻塞） | 候选分支已推送并回读一致；远端 PR 由所有者在 Gitee 页面创建（无需新增令牌），创建后运行四项必需门禁 |
 | 版本发布 | 未开始 | 无目标环境部署证据，本批不触发部署 |
 | 产品交付 | 未开始 | 正式 89 入口的产品交付验收不在本批范围 |

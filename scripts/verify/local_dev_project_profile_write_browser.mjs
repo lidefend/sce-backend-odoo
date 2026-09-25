@@ -21,6 +21,7 @@ const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
 const PERMISSION_ONLY = process.env.PERMISSION_ONLY === '1';
 const RELATION_ONLY = process.env.RELATION_ONLY === '1';
 const RELATION_WRITE_ONLY = process.env.RELATION_WRITE_ONLY === '1';
+const M2M_ONLY = process.env.M2M_ONLY === '1';
 const VALIDATE_ONLY = process.env.P4_RUNNER_VALIDATE_ONLY === '1';
 const PM_LOGIN = process.env.PM_LOGIN || 'demo_role_project_manager';
 
@@ -147,9 +148,42 @@ function loadWriteAuthority(projectId) {
   if (responsibilities.some((row) => Number(row?.project_id) !== projectId)) deny('authority responsibility belongs to another project');
   const xmlids = responsibilities.map((row) => String(row?.xmlid || '')).sort();
   if (JSON.stringify(xmlids) !== JSON.stringify(expectedResponsibilityXmlids(batch))) deny('authority responsibility XMLID mismatch');
+  const tags = Array.isArray(authority.tags) ? authority.tags : [];
+  if (M2M_ONLY) {
+    const marker = `CODEX-P4-${batch.toUpperCase()}-TAG-`;
+    if (tags.length !== 3) deny('authority must resolve the three batch-owned many2many tag candidates');
+    const tagNames = tags.map((row) => String(row?.name || '')).sort();
+    if (new Set(tagNames).size !== 3 || tagNames.some((name) => !name.startsWith(marker))) {
+      deny('authority many2many tag candidates lost their batch marker');
+    }
+    if (tags.some((row) => !Number.isSafeInteger(Number(row?.id)) || Number(row?.id) <= 0)) {
+      deny('authority many2many tag candidate identity is invalid');
+    }
+    // ``project.tags`` carries no company column, so the governed company scope
+    // derives ``project_ids.company_id``. The candidates are therefore only
+    // offered while a batch-owned carrier project holds them, and the carrier
+    // must be a different record from the acceptance target.
+    const carrier = authority.candidate_carrier || null;
+    if (!carrier) deny('authority must resolve the batch-owned many2many tag carrier');
+    const expectedCarrierXmlid = `${FIXTURE_NAMESPACE}.project_${batch.replaceAll('-', '_')}_tag_carrier`;
+    if (String(carrier.xmlid || '') !== expectedCarrierXmlid) deny('authority many2many tag carrier XMLID mismatch');
+    if (String(carrier.ownership_marker || '') !== `CODEX-P4-${batch.toUpperCase()}-TAG-CARRIER`) {
+      deny('authority many2many tag carrier marker mismatch');
+    }
+    const carrierId = Number(carrier.id);
+    if (!Number.isSafeInteger(carrierId) || carrierId <= 0) deny('authority many2many tag carrier identity is invalid');
+    if (carrierId === projectId) deny('authority many2many tag carrier must not be the acceptance target');
+    const carrierTagIds = positiveIds(carrier.tag_ids, 'authority many2many tag carrier tag_ids');
+    const tagIds = positiveIds(tags.map((row) => row?.id), 'authority many2many tag rows');
+    if (JSON.stringify(carrierTagIds) !== JSON.stringify(tagIds)) {
+      deny('authority many2many tag carrier does not hold the batch candidates');
+    }
+  }
   return {
     ...authority,
     batch,
+    tags,
+    carrier: authority.candidate_carrier || null,
     project: { ...project, company_id: projectCompanyId, responsibility_ids: responsibilityIds },
     writer: {
       id: Number(writer.id),
@@ -179,6 +213,9 @@ const WRITE_MODE = !READ_ONLY && !PREFLIGHT_ONLY;
 if (PERMISSION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY)) deny('permission checks require dedicated write authority and no recovery injection');
 if (RELATION_ONLY && (!WRITE_MODE || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation checks require dedicated authority and an exclusive mode');
 if (RELATION_WRITE_ONLY && (!WRITE_MODE || RELATION_ONLY || NETWORK_FAILURE_RECOVERY || PERMISSION_ONLY)) deny('relation write checks require dedicated authority and an exclusive mode');
+if (M2M_ONLY && (!WRITE_MODE || RELATION_ONLY || RELATION_WRITE_ONLY || PERMISSION_ONLY || NETWORK_FAILURE_RECOVERY)) {
+  deny('many2many checks require dedicated authority and an exclusive mode');
+}
 const WRITE_AUTHORITY = WRITE_MODE ? loadWriteAuthority(PROJECT_ID) : null;
 if (RELATION_WRITE_ONLY && !WRITE_AUTHORITY?.write_scope?.includes('partner_id')) deny('relation write scope must explicitly include partner_id');
 const configuredProjectName = String(process.env.PROJECT_NAME ?? '').trim();
@@ -449,6 +486,685 @@ async function waitForWriteOutcome(page, writes, index, timeout = 20000) {
   }
   throw new Error(`write_outcome_timeout:${index}`);
 }
+// The many2many check starts draft-only: it drives the official relation control
+// through mouse, keyboard, blur, Escape, clear, consecutive searches and a narrow
+// viewport while recording mutation requests and the authoritative relation queries.
+// It then closes the business loop on the same governed objects: a form save that
+// commits the relation, a discard that must not write, a failed save that keeps the
+// draft and a retry that has to match an authoritative readback. Only the save
+// scenarios may write, and each one asserts its own request count.
+function recordMutationRequests(page) {
+  const mutations = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
+    const op = String(body?.params?.op || '');
+    const isDataWrite = body?.intent === 'api.data' && ['write', 'create', 'unlink'].includes(op);
+    if (!isDataWrite && body?.intent !== 'api.data.write') return;
+    mutations.push({ intent: body?.intent, model: body?.params?.model || null, op: op || null, fields: Object.keys(body?.params?.vals || {}).sort() });
+  });
+  return mutations;
+}
+function recordRelationQueries(page, model) {
+  const entries = [];
+  const byRequest = new Map();
+  const waiters = [];
+  page.on('request', (request) => {
+    if (!request.url().includes('/api/v1/intent')) return;
+    let body = {};
+    try { body = JSON.parse(request.postData() || '{}'); } catch { return; }
+    if (body?.intent !== 'api.data' || body?.params?.op !== 'list' || body?.params?.model !== model) return;
+    const entry = { search_term: body?.params?.search_term ?? null, limit: body?.params?.limit ?? null, status: null };
+    entries.push(entry);
+    byRequest.set(request, entry);
+    waiters.splice(0).forEach((resolve) => resolve(entry));
+  });
+  page.on('response', (response) => {
+    const entry = byRequest.get(response.request());
+    if (!entry) return;
+    entry.status = response.status();
+    entry.ok = response.ok();
+    byRequest.delete(response.request());
+  });
+  return {
+    entries,
+    next(timeoutMs = 20000) {
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), timeoutMs);
+        waiters.push((entry) => { clearTimeout(timer); resolve(entry); });
+      });
+    },
+  };
+}
+async function readRelationCandidates(page, model, searchTerm) {
+  const result = await intent(page, 'api.data', {
+    op: 'list', model, fields: ['name'], limit: 80,
+    search_term: searchTerm || undefined, context: {},
+  });
+  return (result.data.records || []).map((row) => normalize(row.name));
+}
+async function readProjectTagIds(page) {
+  const result = await intent(page, 'api.data', {
+    op: 'read', model: 'project.project', ids: [PROJECT_ID], fields: ['id', 'tag_ids'], context: {},
+  });
+  const raw = result.data.records?.[0]?.tag_ids;
+  if (!raw || raw === false) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map(Number).filter(Number.isFinite).sort((left, right) => left - right);
+}
+async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
+  const expectedTags = WRITE_AUTHORITY.tags || [];
+  const expectedNames = expectedTags.map((row) => normalize(row.name)).sort();
+  const mutations = recordMutationRequests(page);
+  const relationQueries = recordRelationQueries(page, 'project.tags');
+  const writes = recordWriteRequests(page);
+  report.writes = writes;
+  const carrier = WRITE_AUTHORITY?.carrier;
+  if (!carrier || Number(carrier.id) === PROJECT_ID) throw new Error('m2m_carrier_precondition_failed');
+  const beforeTagIds = await readProjectTagIds(page);
+  if (beforeTagIds.length) throw new Error(`m2m_precondition_failed:${JSON.stringify(beforeTagIds)}`);
+
+  const fieldRoot = page.locator('[data-field-name="tag_ids"]').first();
+  await fieldRoot.waitFor({ timeout: 30000 });
+  const input = fieldRoot.locator('input').first();
+  await input.waitFor({ timeout: 30000 });
+  const panel = page.locator('.t-select__dropdown:visible');
+  const optionRows = panel.locator('li.t-select-option');
+  const selectedChips = () => fieldRoot.locator('.t-tag');
+  const optionLabels = async () => (await optionRows.allInnerTexts()).map(normalize).filter(Boolean);
+  const selectableLabels = async () => (await optionLabels()).filter((label) => !label.startsWith('创建'));
+  const draftClean = () => page.getByText('尚未修改', { exact: true }).isVisible();
+  const draftDirty = async () => !(await draftClean());
+  const dirtyIndicatorShown = async () => (await page.getByText('有未保存修改', { exact: true }).count()) > 0;
+  // A control that already holds chips collapses the official TagInput input to
+  // a sliver until it is focused, so a freshly loaded control has no clickable
+  // input box and the interaction has to start from the control itself. The
+  // official arrow (``.t-input__suffix``, always the dropdown icon and never a
+  // clear affordance) is that control's own toggle, so it opens the panel from
+  // any state; clicking the wrapper instead can land on a chip's close icon.
+  const relationToggle = fieldRoot.locator('.t-input__suffix').first();
+  const focusControl = async () => {
+    if (await relationToggle.count()) await relationToggle.click();
+    else await input.click();
+    await input.waitFor({ state: 'visible', timeout: 15000 });
+  };
+  const openPanel = async () => {
+    if (!(await panel.count())) await focusControl();
+    await panel.waitFor({ state: 'visible', timeout: 15000 });
+  };
+  const closePanel = async () => {
+    await input.press('Escape');
+    await panel.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+  };
+  // The official panel is portalled outside the field root, so every panel
+  // assertion has to look at the visible dropdown, not at the field subtree.
+  const waitForCandidates = (total) => page.waitForFunction(
+    (expected) => document.querySelectorAll('.t-select__dropdown .t-select-option').length >= expected,
+    total, { timeout: 20000 },
+  );
+  const waitForVisibleLabel = async (label) => {
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      const labels = await optionLabels();
+      if (labels.some((value) => value.includes(label))) return;
+      await page.waitForTimeout(100);
+    }
+    throw new Error(`m2m_option_label_not_visible:${label}`);
+  };
+  const searchFor = async (keyword) => {
+    const pending = relationQueries.next();
+    await input.fill(keyword);
+    const entry = await pending;
+    if (!entry) throw new Error(`m2m_relation_query_missing:${keyword}`);
+    await page.waitForTimeout(250);
+    return entry;
+  };
+
+  // 1. The panel offers every batch-owned candidate without any keyword, and
+  //    opening it changes neither the draft nor the backend.
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const unfiltered = await selectableLabels();
+  const candidatesLoaded = JSON.stringify(unfiltered.slice().sort()) === JSON.stringify(expectedNames)
+    && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_candidates_loaded_without_keyword', status: candidatesLoaded ? 'PASS' : 'FAIL', candidates: unfiltered, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!candidatesLoaded) throw new Error(`m2m_candidates_not_authoritative:${JSON.stringify({ unfiltered, expectedNames })}`);
+
+  // 1b. Searching is not a field change: while a keyword is typed and no
+  //     option has been picked, the relation value stays empty and no write is
+  //     sent. The header dirty indicator is recorded next to it because a
+  //     search-only keyword currently still raises it (recorded deviation).
+  await searchFor('BETA');
+  const searchOnlyTagIds = await readProjectTagIds(page);
+  const searchOnlyChips = await selectedChips().count();
+  const searchOnlyKeptValue = JSON.stringify(searchOnlyTagIds) === JSON.stringify(beforeTagIds)
+    && searchOnlyChips === 0
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_search_only_keeps_the_relation_value',
+    status: searchOnlyKeptValue ? 'PASS' : 'FAIL',
+    chips: searchOnlyChips,
+    relation_ids: searchOnlyTagIds,
+    keyword_dirty_indicator: await dirtyIndicatorShown(),
+    recorded_deviation: 'the form header reports unsaved changes while only a search keyword is present',
+    mutation_requests: mutations.length,
+  });
+  if (!searchOnlyKeptValue) {
+    throw new Error(`m2m_search_modified_the_relation:${JSON.stringify({ searchOnlyTagIds, searchOnlyChips })}`);
+  }
+
+  // 2. A blur closes the official panel, and the runtime keyword follows the
+  //    official close: reopening shows the unfiltered candidates again.
+  const emptyQuery = await searchFor('zzz-no-such-tag');
+  await page.locator('[data-field-name="name"] input').first().click();
+  await panel.waitFor({ state: 'hidden', timeout: 15000 });
+  const blurredDraftClean = await draftClean();
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const afterBlurLabels = await selectableLabels();
+  const blurReset = blurredDraftClean
+    && JSON.stringify(afterBlurLabels.slice().sort()) === JSON.stringify(expectedNames)
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_blur_resets_keyword_and_draft', status: blurReset ? 'PASS' : 'FAIL', query: emptyQuery.search_term, candidates_after_blur: afterBlurLabels, draft_clean: blurredDraftClean, mutation_requests: mutations.length });
+  if (!blurReset) throw new Error(`m2m_blur_left_a_stale_keyword:${JSON.stringify({ afterBlurLabels })}`);
+
+  // 3. Escape closes the official panel; the visible input is empty and the
+  //    reopened candidates are the unfiltered set, not the abandoned keyword.
+  await searchFor('zzz-no-such-tag');
+  await closePanel();
+  const inputTextAfterEscape = normalize(await input.inputValue());
+  const escapeDraftClean = await draftClean();
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  const afterEscapeLabels = await selectableLabels();
+  const escapeReset = inputTextAfterEscape === ''
+    && escapeDraftClean
+    && JSON.stringify(afterEscapeLabels.slice().sort()) === JSON.stringify(expectedNames)
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_escape_resets_keyword_and_draft', status: escapeReset ? 'PASS' : 'FAIL', input_after_escape: inputTextAfterEscape, candidates_after_escape: afterEscapeLabels, draft_clean: escapeDraftClean, mutation_requests: mutations.length });
+  if (!escapeReset) throw new Error(`m2m_escape_left_a_stale_keyword:${JSON.stringify({ inputTextAfterEscape, afterEscapeLabels })}`);
+  await closePanel();
+
+  // 4. Consecutive searches: each keyword is requested on its own and the list
+  //    that stays visible is the authoritative answer for the last keyword.
+  const alphaName = expectedNames.find((name) => name.endsWith('-ALPHA'));
+  const alphaKeyword = 'ALPHA';
+  const alphaQuery = await searchFor(alphaKeyword);
+  const alphaAuthority = (await readRelationCandidates(page, 'project.tags', alphaKeyword)).map(normalize).sort();
+  const alphaVisible = (await selectableLabels()).slice().sort();
+  const betaName = expectedNames.find((name) => name.endsWith('-BETA'));
+  const betaKeyword = 'BETA';
+  const betaQuery = await searchFor(betaKeyword);
+  const betaAuthority = (await readRelationCandidates(page, 'project.tags', betaKeyword)).map(normalize).sort();
+  await waitForVisibleLabel(betaKeyword);
+  const betaVisible = (await selectableLabels()).slice().sort();
+  const sequentialSearches = alphaQuery.search_term === alphaKeyword
+    && betaQuery.search_term === betaKeyword
+    && JSON.stringify(alphaVisible) === JSON.stringify(alphaAuthority)
+    && JSON.stringify(betaVisible) === JSON.stringify(betaAuthority)
+    && betaAuthority.length === 1 && betaAuthority[0] === betaName
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_consecutive_searches_last_is_authoritative',
+    status: sequentialSearches ? 'PASS' : 'FAIL',
+    queries: relationQueries.entries.map((entry) => entry.search_term),
+    alpha: { keyword: alphaKeyword, authority: alphaAuthority, visible: alphaVisible },
+    beta: { keyword: betaKeyword, authority: betaAuthority, visible: betaVisible },
+    mutation_requests: mutations.length,
+  });
+  if (!sequentialSearches) throw new Error(`m2m_consecutive_search_not_authoritative:${JSON.stringify({ alphaAuthority, alphaVisible, betaAuthority, betaVisible })}`);
+
+  // 5. Mouse selection: the official check clears the search state (the panel
+  //    returns to the full candidate list) and only the draft changes.
+  await optionRows.filter({ hasText: betaKeyword }).first().click();
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), betaKeyword, { timeout: 15000 });
+  await waitForCandidates(expectedTags.length);
+  const afterMouseSelect = (await selectableLabels()).slice().sort();
+  const chipsAfterMouseSelect = (await selectedChips().allInnerTexts()).map(normalize);
+  const mouseSelect = chipsAfterMouseSelect.some((label) => label.includes(betaKeyword))
+    && JSON.stringify(afterMouseSelect) === JSON.stringify(expectedNames)
+    && await draftDirty()
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_mouse_select_draft_only', status: mouseSelect ? 'PASS' : 'FAIL', chips: chipsAfterMouseSelect, candidates_after_check: afterMouseSelect, draft_dirty: await draftDirty(), mutation_requests: mutations.length });
+  if (!mouseSelect) throw new Error(`m2m_mouse_select_not_proven:${JSON.stringify({ chipsAfterMouseSelect, afterMouseSelect })}`);
+  await closePanel();
+
+  // 6. Keyboard selection stays with the official list: Arrow + Enter commits the
+  //    row the official panel highlights, and only the draft changes.
+  const keyboardTarget = expectedNames.find((name) => name.endsWith('-GAMMA'));
+  const hoveredRowLabel = async () => normalize(await page.evaluate(() => {
+    const row = [...document.querySelectorAll('.t-select__dropdown .t-select-option')]
+      .find((node) => String(node.className).includes('hover'));
+    return row ? row.textContent : '';
+  }));
+  await openPanel();
+  await waitForCandidates(expectedTags.length);
+  let hovered = '';
+  for (let press = 0; press <= expectedTags.length; press += 1) {
+    hovered = await hoveredRowLabel();
+    if (hovered.includes(keyboardTarget)) break;
+    await input.press('ArrowDown');
+    await page.waitForTimeout(150);
+  }
+  hovered = await hoveredRowLabel();
+  await input.press('Enter');
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), keyboardTarget, { timeout: 15000 });
+  const chipsAfterKeyboard = (await selectedChips().allInnerTexts()).map(normalize);
+  const keyboardSelect = hovered.includes(keyboardTarget)
+    && chipsAfterKeyboard.some((label) => normalize(label) === hovered)
+    && await draftDirty()
+    && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_keyboard_select_draft_only', status: keyboardSelect ? 'PASS' : 'FAIL', hovered_option: hovered, chips: chipsAfterKeyboard, draft_dirty: await draftDirty(), mutation_requests: mutations.length });
+  if (!keyboardSelect) throw new Error(`m2m_keyboard_select_not_proven:${JSON.stringify({ hovered, chipsAfterKeyboard })}`);
+  await closePanel();
+
+  // 6b. Keyboard selection with a live search keyword: Enter must commit the
+  //     option the official panel highlights. The keyword is a search term, not
+  //     a tag, so the control suppresses TagInput's tag append through the
+  //     official `tagInputProps.max` channel (see the component note
+  //     official-enter-keyword); without it the append stops the keydown before
+  //     the official keyboard handler. The target is the one batch candidate the
+  //     previous step did not check, because the official multiple path answers
+  //     Enter with check|uncheck (es/select/hooks/useKeyboardControl.mjs Enter ->
+  //     getNewMultipleValue). Only the draft may change here.
+  const keywordTarget = expectedNames.find((name) => name.endsWith('-ALPHA'));
+  const keywordSearchTerm = 'ALPHA';
+  await openPanel();
+  const keywordQuery = await searchFor(keywordSearchTerm);
+  await waitForVisibleLabel(keywordSearchTerm);
+  const chipsBeforeGap = (await selectedChips().allInnerTexts()).map(normalize);
+  const tagIdsBeforeGap = await readProjectTagIds(page);
+  if (chipsBeforeGap.includes(normalize(keywordTarget))) {
+    throw new Error(`m2m_keyword_enter_target_already_checked:${JSON.stringify(chipsBeforeGap)}`);
+  }
+  await input.press('ArrowDown');
+  await page.waitForTimeout(200);
+  const hoveredWithKeyword = await hoveredRowLabel();
+  await input.press('Enter');
+  await page.waitForFunction((label) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].some((node) => (node.textContent || '').includes(label)), hoveredWithKeyword, { timeout: 15000 });
+  const chipsAfterGap = (await selectedChips().allInnerTexts()).map(normalize);
+  const tagIdsAfterGap = await readProjectTagIds(page);
+  const keywordNotATag = !chipsAfterGap.includes(keywordSearchTerm);
+  // The relation value is draft-only until save, so the authoritative tag_ids
+  // must stay exactly as read before the keyboard commit.
+  const relationIdsUnchanged = JSON.stringify(tagIdsAfterGap) === JSON.stringify(tagIdsBeforeGap);
+  const keyboardEnterWithKeyword = keywordQuery.search_term === keywordSearchTerm
+    && hoveredWithKeyword === normalize(keywordTarget)
+    && chipsAfterGap.length === chipsBeforeGap.length + 1
+    && chipsAfterGap.includes(normalize(keywordTarget))
+    && relationIdsUnchanged
+    && keywordNotATag
+    && normalize(await input.inputValue()) === ''
+    && await draftDirty()
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_keyboard_enter_with_keyword_selects_highlighted',
+    status: keyboardEnterWithKeyword ? 'PASS' : 'FAIL',
+    keyword: keywordSearchTerm,
+    search_term: keywordQuery.search_term,
+    hovered_option: hoveredWithKeyword,
+    expected_option: normalize(keywordTarget),
+    chips_before: chipsBeforeGap,
+    chips_after: chipsAfterGap,
+    relation_ids_before: tagIdsBeforeGap,
+    relation_ids_after: tagIdsAfterGap,
+    relation_ids_unchanged: relationIdsUnchanged,
+    keyword_after_enter: normalize(await input.inputValue()),
+    keyword_became_a_tag: !keywordNotATag,
+    official_channel: 'tagInputProps.max suppresses the TagInput tag append so the official Enter branch commits the highlighted option',
+    mutation_requests: mutations.length,
+  });
+  if (!keyboardEnterWithKeyword) {
+    throw new Error(`m2m_keyword_enter_did_not_select:${JSON.stringify({ hoveredWithKeyword, expected: normalize(keywordTarget), chipsBeforeGap, chipsAfterGap, tagIdsBeforeGap, tagIdsAfterGap })}`);
+  }
+  await closePanel();
+
+  // 6c. Duplicate selection: the same record must never appear twice. Repeating
+  //     the checked option through the official multiple path resolves to
+  //     "uncheck", so the chips stay unique; whichever way it resolves, no write
+  //     is sent before saving.
+  await openPanel();
+  const duplicateQuery = await searchFor(keywordSearchTerm);
+  await waitForVisibleLabel(keywordSearchTerm);
+  const chipsBeforeDuplicate = (await selectedChips().allInnerTexts()).map(normalize);
+  await input.press('ArrowDown');
+  await page.waitForTimeout(200);
+  const duplicateHovered = await hoveredRowLabel();
+  await input.press('Enter');
+  await page.waitForTimeout(700);
+  const chipsAfterDuplicate = (await selectedChips().allInnerTexts()).map(normalize);
+  const labelCounts = new Map();
+  chipsAfterDuplicate.forEach((label) => labelCounts.set(label, (labelCounts.get(label) || 0) + 1));
+  const noDuplicateChip = [...labelCounts.values()].every((count) => count === 1);
+  const duplicateTarget = normalize(keywordTarget);
+  const keptChecked = chipsAfterDuplicate.length === chipsBeforeDuplicate.length
+    && chipsAfterDuplicate.includes(duplicateTarget);
+  const toggledOff = chipsAfterDuplicate.length === chipsBeforeDuplicate.length - 1
+    && !chipsAfterDuplicate.includes(duplicateTarget);
+  const duplicateSelection = duplicateQuery.search_term === keywordSearchTerm
+    && duplicateHovered === duplicateTarget
+    && noDuplicateChip
+    && (keptChecked || toggledOff)
+    && mutations.length === 0;
+  report.scenarios.push({
+    name: 'm2m_duplicate_selection_never_duplicates_a_record',
+    status: duplicateSelection ? 'PASS' : 'FAIL',
+    keyword: keywordSearchTerm,
+    search_term: duplicateQuery.search_term,
+    hovered_option: duplicateHovered,
+    chips_before: chipsBeforeDuplicate,
+    chips_after: chipsAfterDuplicate,
+    official_resolution: toggledOff ? 'unchecked-on-repeat' : 'kept-checked',
+    official_evidence: 'es/select/hooks/useKeyboardControl.mjs Enter -> getNewMultipleValue -> check|uncheck',
+    mutation_requests: mutations.length,
+  });
+  if (!duplicateSelection) {
+    throw new Error(`m2m_duplicate_selection_failed:${JSON.stringify({ duplicateHovered, chipsBeforeDuplicate, chipsAfterDuplicate })}`);
+  }
+  await page.screenshot({ path: path.join(OUT, 'm2m-keyboard-enter-with-keyword.png'), fullPage: true });
+  await closePanel();
+  while (await selectedChips().count()) {
+    const before = await selectedChips().count();
+    await selectedChips().first().locator('.t-icon-close, .t-tag__icon-close').first().click();
+    await page.waitForFunction((remaining) => document.querySelectorAll('[data-field-name="tag_ids"] .t-tag').length < remaining, before, { timeout: 15000 }).catch(() => {});
+    if (await selectedChips().count() >= before) break;
+  }
+  const chipsAfterClear = await selectedChips().count();
+  const clearProven = chipsAfterClear === 0 && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_explicit_clear_restores_clean_draft', status: clearProven ? 'PASS' : 'FAIL', chips_after_clear: chipsAfterClear, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!clearProven) throw new Error(`m2m_clear_not_proven:${JSON.stringify({ chipsAfterClear, draftClean: await draftClean() })}`);
+
+  // 7. Narrow viewport: one panel, operable options, no horizontal overflow.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPanel();
+  await page.waitForFunction((total) => {
+    const options = [...document.querySelectorAll('.t-select__dropdown .t-select-option')];
+    if (options.length < total) return false;
+    return document.documentElement.scrollWidth <= window.innerWidth;
+  }, expectedTags.length, { timeout: 20000 });
+  const narrow = await page.evaluate(() => {
+    const panels = [...document.querySelectorAll('.t-select__dropdown')].filter((node) => node.getBoundingClientRect().width > 0);
+    const option = panels[0]?.querySelector('li.t-select-option');
+    if (!option) return { panels: panels.length, operable: false, overflow: true };
+    const box = option.getBoundingClientRect();
+    return {
+      panels: panels.length,
+      operable: option.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)),
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+  await page.screenshot({ path: path.join(OUT, 'm2m-narrow-390.png'), fullPage: true });
+  await closePanel();
+  const narrowPassed = narrow.panels === 1 && narrow.operable && !narrow.overflow && await draftClean() && mutations.length === 0;
+  report.scenarios.push({ name: 'm2m_narrow_viewport_single_panel', status: narrowPassed ? 'PASS' : 'FAIL', viewport: 390, panels: narrow.panels, option_operable: narrow.operable, horizontal_overflow: narrow.overflow, draft_clean: await draftClean(), mutation_requests: mutations.length });
+  if (!narrowPassed) throw new Error(`m2m_narrow_viewport_not_proven:${JSON.stringify(narrow)}`);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  // 8. The whole journey stayed client-side: no mutation request reached the
+  //    backend and the authoritative project facts are unchanged.
+  const afterTagIds = await readProjectTagIds(page);
+  const backendUnchanged = sameJson(beforeFacts, await readProjectFacts(page)) && sameJson(beforeTagIds, afterTagIds);
+  report.scenarios.push({ name: 'm2m_journey_stayed_draft_only', status: backendUnchanged && mutations.length === 0 ? 'PASS' : 'FAIL', mutation_requests: mutations.length, authoritative_unchanged: backendUnchanged, relation_queries: relationQueries.entries });
+  if (!backendUnchanged || mutations.length) throw new Error(`m2m_journey_wrote_state:${JSON.stringify({ mutations, beforeTagIds, afterTagIds })}`);
+
+  // -------------------------------------------------------------------------
+  // Write closure. The scenarios above stay draft-only on purpose; the ones
+  // below close the business loop on the same governed objects. Every
+  // expectation is bound to the authoritative readback, never to the DOM alone:
+  // the control may only claim a saved relation after the backend confirms it.
+  const chipLabels = async () => (await selectedChips().allInnerTexts()).map(normalize);
+  const chipSetMatches = (labels, expected) => labels.length === expected.length
+    && expected.every((label) => labels.some((value) => value === label || value.includes(label)));
+  const alphaTag = expectedTags.find((row) => normalize(row.name).endsWith('-ALPHA'));
+  const betaTag = expectedTags.find((row) => normalize(row.name).endsWith('-BETA'));
+  const gammaTag = expectedTags.find((row) => normalize(row.name).endsWith('-GAMMA'));
+  if (!alphaTag || !betaTag || !gammaTag) throw new Error('m2m_write_candidate_missing');
+  const alphaId = Number(alphaTag.id);
+  const alphaLabel = normalize(alphaTag.name);
+  const betaLabel = normalize(betaTag.name);
+  const gammaLabel = normalize(gammaTag.name);
+  const tagCommandValues = (index) => writes[index]?.body?.params?.vals?.tag_ids ?? null;
+  // Replay the submitted relation commands on top of the authoritative set that
+  // was read before the save. The result must equal what the backend then
+  // reports, whichever command shape the generic relation adapter sends.
+  const applyTagCommands = (current, commands) => {
+    const next = new Set(current);
+    for (const command of commands || []) {
+      const code = Number(command?.[0]);
+      if (code === 6) { next.clear(); (command[2] || []).forEach((id) => next.add(Number(id))); }
+      else if (code === 4) next.add(Number(command[1]));
+      else if (code === 3 || code === 2) next.delete(Number(command[1]));
+    }
+    return [...next].sort((left, right) => left - right);
+  };
+  const clickOptionWithLabel = async (label) => {
+    await openPanel();
+    await input.fill('');
+    await waitForCandidates(expectedTags.length);
+    const labels = await optionLabels();
+    const index = labels.findIndex((value) => value === label);
+    if (index < 0) throw new Error(`m2m_option_label_missing:${label}`);
+    await optionRows.nth(index).click();
+    await page.waitForFunction((expected) => [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')]
+      .some((node) => (node.textContent || '').includes(expected)), label, { timeout: 15000 });
+  };
+
+  // 9. Selection plus save: the draft commits through one project.project write,
+  //    the authoritative readback equals the submitted commands and the reloaded
+  //    form shows the same relation.
+  const preWriteTagIds = await readProjectTagIds(page);
+  if (preWriteTagIds.length) throw new Error(`m2m_write_precondition_failed:${JSON.stringify(preWriteTagIds)}`);
+  await clickOptionWithLabel(alphaLabel);
+  const chipsBeforeSave = await chipLabels();
+  const draftTagIds = await readProjectTagIds(page);
+  const draftOnly = chipSetMatches(chipsBeforeSave, [alphaLabel]) && !draftTagIds.length
+    && writes.length === 0 && mutations.length === 0 && await dirty(page);
+  report.scenarios.push({ name: 'm2m_selection_stays_draft_until_save', status: draftOnly ? 'PASS' : 'FAIL', chips: chipsBeforeSave, relation_ids: draftTagIds, write_requests: writes.length, mutation_requests: mutations.length });
+  if (!draftOnly) throw new Error(`m2m_write_draft_phase_failed:${JSON.stringify({ chipsBeforeSave, draftTagIds, writes: writes.length })}`);
+  await closePanel();
+  await save(page);
+  const saveWrite = await waitForWriteOutcome(page, writes, 0);
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const cleanAfterSave = await draftClean();
+  const savedTagIds = await readProjectTagIds(page);
+  const savedFacts = await readProjectFacts(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await field(page, 'tag_ids').waitFor({ timeout: 30000 });
+  const refreshedTagIds = await readProjectTagIds(page);
+  const refreshedChips = await chipLabels();
+  const submittedTagIds = applyTagCommands(preWriteTagIds, tagCommandValues(0));
+  const savedPassed = writes.length === 1 && saveWrite.outcome === 'business_success'
+    && Object.prototype.hasOwnProperty.call(writes[0].body.params.vals || {}, 'tag_ids')
+    && sameJson(submittedTagIds, [alphaId])
+    && sameJson(submittedTagIds, savedTagIds)
+    && sameJson(savedTagIds, refreshedTagIds)
+    && chipSetMatches(refreshedChips, [alphaLabel])
+    && cleanAfterSave
+    && sameJson(beforeFacts, savedFacts);
+  report.scenarios.push({
+    name: 'm2m_selection_saves_and_reads_back', status: savedPassed ? 'PASS' : 'FAIL',
+    selected_id: alphaId, selected_label: alphaLabel,
+    write_requests: writes.length, requested_commands: tagCommandValues(0), requested_tag_ids: submittedTagIds,
+    write_response: { outcome: saveWrite.outcome, http_status: saveWrite.http_status, business_ok: saveWrite.business_ok, error: saveWrite.response_error },
+    authoritative_tag_ids: savedTagIds, refreshed_tag_ids: refreshedTagIds, refreshed_chips: refreshedChips,
+    draft_clean_after_save: cleanAfterSave, unrelated_facts_unchanged: sameJson(beforeFacts, savedFacts),
+  });
+  if (!savedPassed) throw new Error(`m2m_save_readback_not_proven:${JSON.stringify({ writeRequests: writes.length, outcome: saveWrite.outcome, submittedTagIds, savedTagIds, refreshedTagIds, refreshedChips, cleanAfterSave })}`);
+
+  // 10. Cancel: the form's own discard action reverts a dirty relation draft and
+  //     must not produce any write.
+  const writesBeforeDiscard = writes.length;
+  const mutationsBeforeDiscard = mutations.length;
+  await clickOptionWithLabel(betaLabel);
+  const chipsBeforeDiscard = await chipLabels();
+  const dirtyBeforeDiscard = await dirty(page);
+  await closePanel();
+  const discardAction = page.getByRole('button', { name: '放弃', exact: true }).first();
+  await discardAction.waitFor({ timeout: 15000 });
+  await discardAction.click();
+  await page.waitForFunction((label) => {
+    const chips = [...document.querySelectorAll('[data-field-name="tag_ids"] .t-tag')].map((node) => (node.textContent || '').trim());
+    return chips.length === 1 && chips[0].includes(label);
+  }, alphaLabel, { timeout: 20000 });
+  const chipsAfterDiscard = await chipLabels();
+  const cleanAfterDiscard = await draftClean();
+  const authoritativeAfterDiscard = await readProjectTagIds(page);
+  const discardPassed = chipSetMatches(chipsBeforeDiscard, [alphaLabel, betaLabel]) && dirtyBeforeDiscard
+    && chipSetMatches(chipsAfterDiscard, [alphaLabel])
+    && cleanAfterDiscard
+    && writes.length === writesBeforeDiscard && mutations.length === mutationsBeforeDiscard
+    && sameJson(authoritativeAfterDiscard, [alphaId]);
+  report.scenarios.push({
+    name: 'm2m_cancel_discards_draft_without_a_write', status: discardPassed ? 'PASS' : 'FAIL',
+    discard_action: '放弃', superseded_chip: betaLabel,
+    chips_before_discard: chipsBeforeDiscard, chips_after_discard: chipsAfterDiscard,
+    draft_dirty_before_discard: dirtyBeforeDiscard, draft_clean_after_discard: cleanAfterDiscard,
+    write_requests: writes.length, mutation_requests: mutations.length,
+    authoritative_tag_ids: authoritativeAfterDiscard,
+  });
+  if (!discardPassed) throw new Error(`m2m_cancel_not_proven:${JSON.stringify({ chipsBeforeDiscard, chipsAfterDiscard, dirtyBeforeDiscard, cleanAfterDiscard, writes: writes.length, authoritativeAfterDiscard })}`);
+
+  // 11. A failed save keeps the draft and changes nothing; the retry sends the
+  //     same commands and the authoritative readback then matches the form.
+  const writesBeforeFailure = writes.length;
+  const mutationsBeforeFailure = mutations.length;
+  await clickOptionWithLabel(gammaLabel);
+  const chipsBeforeFailure = await chipLabels();
+  let blocked = false;
+  await page.route('**/api/v1/intent*', async (route) => {
+    let body = {};
+    try { body = JSON.parse(route.request().postData() || '{}'); } catch { return route.continue(); }
+    const isProjectWrite = body?.intent === 'api.data' && body?.params?.op === 'write'
+      && body?.params?.model === 'project.project' && sameJson(body?.params?.ids, [PROJECT_ID]);
+    const isTagWrite = isProjectWrite && Object.prototype.hasOwnProperty.call(body?.params?.vals || {}, 'tag_ids');
+    if (!isTagWrite) return route.continue();
+    if (!blocked) { blocked = true; return route.abort('failed'); }
+    return route.continue();
+  });
+  await closePanel();
+  const saveButton = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  await saveButton.click();
+  const failedWrite = await waitForWriteOutcome(page, writes, writesBeforeFailure);
+  const errorFeedback = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
+  await errorFeedback.waitFor({ state: 'visible', timeout: 20000 });
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const feedbackText = normalize(await errorFeedback.innerText());
+  const messageVisible = /保存失败|请求失败|网络异常|操作未完成|请稍后重试/.test(feedbackText);
+  await errorFeedback.screenshot({ path: path.join(OUT, 'm2m-save-failure-feedback.png') });
+  const chipsAfterFailure = await chipLabels();
+  const dirtyAfterFailure = await dirty(page);
+  const saveEnabledAfterFailure = !(await saveButton.isDisabled());
+  const authoritativeAfterFailure = await readProjectTagIds(page);
+  const failurePassed = blocked && failedWrite.outcome === 'network_blocked' && messageVisible
+    && chipSetMatches(chipsAfterFailure, [alphaLabel, gammaLabel])
+    && dirtyAfterFailure && saveEnabledAfterFailure
+    && writes.length === writesBeforeFailure + 1 && mutations.length === mutationsBeforeFailure + 1
+    && sameJson(authoritativeAfterFailure, [alphaId]);
+  report.scenarios.push({
+    name: 'm2m_save_failure_preserves_draft', status: failurePassed ? 'PASS' : 'FAIL',
+    blocked, failed_message: messageVisible, feedback: feedbackText, write_outcome: failedWrite.outcome,
+    chips_after_failure: chipsAfterFailure, draft_dirty: dirtyAfterFailure, save_enabled: saveEnabledAfterFailure,
+    authoritative_tag_ids: authoritativeAfterFailure, write_requests: writes.length, mutation_requests: mutations.length,
+  });
+  if (!failurePassed) throw new Error(`m2m_save_failure_not_proven:${JSON.stringify({ blocked, outcome: failedWrite.outcome, messageVisible, chipsAfterFailure, dirtyAfterFailure, saveEnabledAfterFailure, authoritativeAfterFailure, writes: writes.length })}`);
+  // The injection handler stays installed: after the single blocked attempt it
+  // passes the relation write through, so the retry below is a real submission.
+  await save(page);
+  const retryWrite = await waitForWriteOutcome(page, writes, writesBeforeFailure + 1);
+  await page.waitForFunction(() => !document.body.innerText.includes('正在处理'), null, { timeout: 20000 });
+  const samePayloadRetried = sameJson(writes[writesBeforeFailure]?.body?.params?.vals, writes[writesBeforeFailure + 1]?.body?.params?.vals);
+  const authoritativeAfterRetry = await readProjectTagIds(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await field(page, 'tag_ids').waitFor({ timeout: 30000 });
+  const refreshedAfterRetry = await readProjectTagIds(page);
+  const refreshedChipsAfterRetry = await chipLabels();
+  const expectedAfterRetry = applyTagCommands([alphaId], tagCommandValues(writesBeforeFailure + 1));
+  const retryPassed = retryWrite.outcome === 'business_success' && samePayloadRetried
+    && writes.length === writesBeforeFailure + 2
+    && sameJson(expectedAfterRetry, authoritativeAfterRetry)
+    && sameJson(authoritativeAfterRetry, refreshedAfterRetry)
+    && chipSetMatches(refreshedChipsAfterRetry, [alphaLabel, gammaLabel])
+    && sameJson(beforeFacts, await readProjectFacts(page));
+  report.scenarios.push({
+    name: 'm2m_save_retry_persists_and_matches_ui', status: retryPassed ? 'PASS' : 'FAIL',
+    write_attempts: writes.length, backend_successful_submissions: writes.filter((row) => row.outcome === 'business_success').length,
+    retry_response: { outcome: retryWrite.outcome, http_status: retryWrite.http_status, business_ok: retryWrite.business_ok, error: retryWrite.response_error },
+    same_payload_retried: samePayloadRetried, requested_tag_ids: expectedAfterRetry,
+    authoritative_tag_ids: authoritativeAfterRetry, refreshed_tag_ids: refreshedAfterRetry, refreshed_chips: refreshedChipsAfterRetry,
+  });
+  if (!retryPassed) throw new Error(`m2m_save_retry_not_proven:${JSON.stringify({ outcome: retryWrite.outcome, samePayloadRetried, authoritativeAfterRetry, refreshedAfterRetry, refreshedChipsAfterRetry })}`);
+
+  // 12. The governed read-only principal must not be able to modify the
+  //     relation: the direct tag write is denied and the form route itself is
+  //     refused, so that role has no editable relation entry at all.
+  const reader = (WRITE_AUTHORITY.role_candidates?.project_read_only || []).find((row) => row.login === READ_LOGIN);
+  const readerAccess = (WRITE_AUTHORITY.effective_project_access?.project_read_only || []).find((row) => row.login === READ_LOGIN);
+  if (!reader || !readerAccess || readerAccess.acl_write !== false || !readerAccess.record_read) {
+    deny('m2m read-only principal must be a governed reader with denied write ACL');
+  }
+  const readonlyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+  const readonlyPage = await readonlyContext.newPage();
+  report.roles.readonly = { login: READ_LOGIN, diagnostics: recordDiagnostics(readonlyPage) };
+  let readonlyPassed = false;
+  try {
+    const identity = await login(readonlyPage, READ_LOGIN);
+    if (Number(identity.init?.user?.id) !== Number(reader.id)) deny('m2m read-only runtime identity mismatch');
+    const readerProject = await readProject(readonlyPage);
+    if (readerProject?.id !== PROJECT_ID) deny('m2m read-only principal cannot read the dedicated project');
+    const currentTagIds = await readProjectTagIds(page);
+    // Same-value write: if enforcement were broken this would still be a no-op,
+    // so the probe never becomes a business change of its own.
+    const denied = await intent(readonlyPage, 'api.data', {
+      op: 'write', model: 'project.project', ids: [PROJECT_ID], vals: { tag_ids: [[6, 0, currentTagIds]] }, context: {},
+    }, true);
+    const reasonCode = String(denied.error?.code || '');
+    const aclDenied = denied.ok === false && /ACCESS|FORBIDDEN|PERMISSION|DENIED/i.test(reasonCode);
+    const writerReadback = await readProjectTagIds(page);
+    const targetUrl = new URL(page.url());
+    await readonlyPage.goto(targetUrl.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await readonlyPage.waitForURL((url) => url.pathname === '/access-denied'
+      && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED', { timeout: 30000 });
+    const denialTextVisible = await readonlyPage.getByText(/无权限|没有权限|访问受限|权限不足/).first()
+      .isVisible({ timeout: 10000 }).catch(() => false);
+    const enabledRelationEdits = await readonlyPage.evaluate(() => {
+      const root = document.querySelector('[data-field-name="tag_ids"]');
+      if (!root) return 0;
+      return [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), [role="button"]')]
+        .filter((node) => node.getClientRects().length).length;
+    });
+    await readonlyPage.screenshot({ path: path.join(OUT, 'm2m-readonly-denial.png'), fullPage: true });
+    const unchanged = sameJson(writerReadback, currentTagIds);
+    readonlyPassed = aclDenied && unchanged && denialTextVisible && enabledRelationEdits === 0;
+    report.scenarios.push({
+      name: 'm2m_readonly_principal_cannot_modify', status: readonlyPassed ? 'PASS' : 'FAIL',
+      principal_id: reader.id, company_id: reader.company_id, role_code: String(identity.init?.role_surface?.role_code || ''),
+      direct_write: { ok: denied.ok, http_status: denied.status, reason_code: reasonCode },
+      authoritative_unchanged: unchanged, authoritative_tag_ids: writerReadback,
+      navigation_reason: 'NAVIGATION_AUTHORITY_DENIED', denial_text_visible: denialTextVisible,
+      url: readonlyPage.url(), enabled_relation_edits: enabledRelationEdits,
+    });
+  } finally {
+    await readonlyContext.close();
+  }
+  if (!readonlyPassed) throw new Error('m2m_readonly_modification_not_denied');
+
+  // 13. Write ledger for the closure: one committed save, one blocked attempt,
+  //     one committed retry, and no relation write from the cancel or the
+  //     read-only probe. The fixture cleanup then removes the objects and the
+  //     batch is read back empty.
+  const ledger = {
+    write_attempts: writes.length,
+    business_success: writes.filter((row) => row.outcome === 'business_success').length,
+    network_blocked: writes.filter((row) => row.outcome === 'network_blocked').length,
+    outcomes: writes.map((row) => row.outcome),
+    mutation_requests: mutations.length,
+    authoritative_tag_ids: await readProjectTagIds(page),
+  };
+  const ledgerPassed = ledger.write_attempts === 3 && ledger.business_success === 2 && ledger.network_blocked === 1;
+  report.scenarios.push({ name: 'm2m_write_closure_request_ledger', status: ledgerPassed ? 'PASS' : 'FAIL', ...ledger });
+  if (!ledgerPassed) throw new Error(`m2m_write_ledger_unexpected:${JSON.stringify(ledger)}`);
+}
+
 async function openProject(page) {
   // Reuse the verified formal navigation chain; do not hand-splice a form route.
   await page.goto(`${FRONTEND_URL}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -1094,6 +1810,10 @@ async function main() {
     }
     if (RELATION_ONLY) {
       await verifyCustomerRelation(page, report, beforeFacts);
+      return;
+    }
+    if (M2M_ONLY) {
+      await verifyMany2manyTagSelect(browser, page, report, beforeFacts);
       return;
     }
     if (PERMISSION_ONLY) {
