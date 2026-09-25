@@ -114,13 +114,14 @@ def _project_identity(batch):
 def _tag_identity(batch):
     """Minimal governed candidates for the project ``tag_ids`` relation.
 
-    ``project.tags`` has no company column, so the governed company scope
-    derives ``project_ids.company_id``: a tag is only offered to the relation
-    control while some company project already carries it.  The batch therefore
-    owns a second minimal project that holds the three candidate tags, while the
-    acceptance target project keeps an empty relation.  Both rows stay inside the
-    same batch ownership boundary: markers derive from the batch and the XMLID
-    bindings are what cleanup trusts.
+    The batch owns a second minimal project that holds the three candidate tags,
+    while the acceptance target project keeps an empty relation.  The carrier
+    kept the candidates inside the governed company scope while that scope still
+    inferred a company boundary through ``project_ids.company_id``; the shared
+    project dictionaries are no longer narrowed that way, and the carrier is
+    retained only as the stable batch-owned carrier the browser tool asserts.
+    Both rows stay inside the same batch ownership boundary: markers derive from
+    the batch and the XMLID bindings are what cleanup trusts.
     """
     suffix = batch.replace("-", "_")
     marker = "CODEX-P4-%s-TAG" % batch.upper()
@@ -161,7 +162,7 @@ def _carrier_summary(env, identity):
         "ownership_marker": identity["carrier_code"],
         "company_id": carrier.company_id.id,
         "tag_ids": sorted(carrier.tag_ids.ids),
-        "purpose": "keeps the batch-owned tag candidates inside the governed company scope",
+        "purpose": "stable batch-owned carrier of the many2many tag candidates",
     }
 
 

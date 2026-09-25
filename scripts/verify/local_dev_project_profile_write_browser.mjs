@@ -159,10 +159,11 @@ function loadWriteAuthority(projectId) {
     if (tags.some((row) => !Number.isSafeInteger(Number(row?.id)) || Number(row?.id) <= 0)) {
       deny('authority many2many tag candidate identity is invalid');
     }
-    // ``project.tags`` carries no company column, so the governed company scope
-    // derives ``project_ids.company_id``. The candidates are therefore only
-    // offered while a batch-owned carrier project holds them, and the carrier
-    // must be a different record from the acceptance target.
+    // The candidates are carried by a batch-owned project while the acceptance
+    // target keeps an empty relation. The governed company scope no longer
+    // derives a boundary from ``project_ids.company_id`` for the shared project
+    // dictionaries, so the carrier is now only the stable batch-owned identity
+    // the tool asserts, and it must stay a different record from the target.
     const carrier = authority.candidate_carrier || null;
     if (!carrier) deny('authority must resolve the batch-owned many2many tag carrier');
     const expectedCarrierXmlid = `${FIXTURE_NAMESPACE}.project_${batch.replaceAll('-', '_')}_tag_carrier`;
