@@ -91,7 +91,7 @@ Generated from repository source files. This report is informational during the 
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1299 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1297 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
-| 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
+| 1292 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |
@@ -245,7 +245,7 @@ Generated from repository source files. This report is informational during the 
 | 1320 | warning | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1299 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1297 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
-| 1289 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
+| 1292 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1263 | warning | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1249 | warning | XML data/view | `addons/smart_construction_core/data/view_orchestration_contract_generated_data.xml` |

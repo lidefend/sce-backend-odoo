@@ -7,6 +7,7 @@ import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
 import { isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { fieldType } from './fieldUtils';
 
 type PresentationDependencies = Record<string, any>;
 
@@ -233,6 +234,10 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
       isFieldVisible,
       fieldValue: (field) => formData[field],
       isMissingValue: isMissingRequiredValue,
+      // The precheck must judge with the same type awareness as save-time
+      // required validation, otherwise an unchecked boolean is blocked while an
+      // empty relation slips through. The contract is the only type authority.
+      fieldType: (field) => fieldType(formFields.value[field]),
       errorCode: ErrorCodes.SCENE_VALIDATION_REQUIRED,
     });
   }
