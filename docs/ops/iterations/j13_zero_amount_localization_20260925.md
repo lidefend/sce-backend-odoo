@@ -1,6 +1,6 @@
 # J13 零金额分歧定位（2026-09-25）
 
-状态：定位完成，**未修改任何产品代码**；产品决策未定。
+状态：**已修复并定向/浏览器验收通过**（修复提交 `64c326c4`，第 11 节）。
 **2026-09-27 三态实测已完成裁决**（第 10 节）：清空金额未被前端必填拦截、与 2026-09-24 浏览器
 记录一致；第 3.1 节冲突解除，第 3 节的代码推导（清空应被拦）被实测推翻，第 7 节的 `not_run` 已作废。
 根因确认为通用校验字段表静默退化为「契约字段映射前 16 个」，必填金额不在其中。
@@ -244,7 +244,7 @@ partner_transaction_eligibility`；而 `amount` 位于第 35 位（索引 34）�
 - `j13-readback-before-cleanup-20260927.txt` 与 `j13-cleanup-readback-20260927.txt`
   （回读 `amount=0.0/draft` 后删除 2121/2122，`remaining=[]`、`total_recent_left=0`）。
 
-### 10.4 最小修改路径（P0 通用前端层；未实施）
+### 10.4 最小修改路径（P0 通用前端层；2026-09-27 已实施，见第 11 节）
 
 1. **校验字段表不得静默截断**：无 `visibleFields`、无 `core/advanced` 分组时，不得取
    `slice(0, 16)`。应按契约节点顺序或契约已有分组（`business_*`）生成完整字段表，或直接用原生
@@ -262,3 +262,54 @@ partner_transaction_eligibility`；而 `amount` 位于第 35 位（索引 34）�
 
 `artifacts/ci/handoff-20260925/target-acceptance-827fad4b/j13-zero-amount/`（仓外），
 sha256 清单见同目录 `SHA256SUMS.txt`。
+
+## 11. 2026-09-27 修复实施与验收（`64c326c4`）
+
+分支 `fix/j13-required-value-semantics-and-write-payload`，起点为实时 Gitee main `1051dfe3`
+（含文档提交 `03bdd28e`）。第 10.4 节三项最小路径全部实施，**未新增「金额必须大于 0」业务规则**。
+
+### 11.1 修改文件与责任层（P0 通用前端层）
+
+| 修改 | 文件 | 行为 |
+| --- | --- | --- |
+| 校验/写入字段表不再静默截断 | `nativeLayoutUtils.ts` `buildLegacyLayoutNodes` | 兜底从 `Object.keys(fields).slice(0,16)` 改为完整契约字段表；`amount`（索引 34）重新参与必填校验与写入 |
+| 空数值序列化区分三态 | `valueUtils.ts` `normalizeContractFieldValue` | integer/float/monetary 的未触碰值返回 `null`（原 `false`，被 Odoo 静默收敛为 `0.0`）；显式清空仍走类型化哨兵 `false`；数值 `0` 原样提交 |
+| 写入载荷归属 | `saveRecordHelpers.ts` `shouldWriteFieldValue`（新） | `null` 永不写入；编辑态只写改动字段；创建态跳过未触碰空值，避免空串覆盖 ORM 默认值（默认值仍归 ORM） |
+| 必填判定同源 | `valueUtils.ts` `isMissingRequiredValue`/`isRequiredFieldEmptyByType` | 前者成为唯一实现（数字 `0` 不再算缺失、布尔字段 `false` 不误伤），后者退化为类型化别名；页面预检与保存前校验不会再给出相反结论 |
+
+### 11.2 定向测试（非零）
+
+- 新增 `frontend/apps/web/scripts/j13_required_value_semantics_test.ts`，接入
+  `make verify.frontend.j13_required_value_semantics.unit`（83 例），并纳入
+  `verify.frontend.quick.gate` 与 `verify.frontend.release.unit`，不再是游离测试。
+- 同一探针在旧实现上为 `zero_missing=true`、`untouched_numeric=false`、`table_size=16/has_f34=false`；
+  修复后为 `false` / `null` / `40·true`，证明测试确实约束被测行为。
+- 既有受影响定向：`canonical_form_presenter.unit`（PASS，177 例）、`create_record_user_journey.unit`、
+  `create_default_hydration.unit`（PASS，28 例）、onchange 三守卫、`contract_form_save_payload_builder_guard`、
+  `frontend_professional_base_field_guard`；`vue-tsc --noEmit` 仍为 31 项既有错误、**未新增**（被测文件 0 项）。
+
+### 11.3 浏览器验收（5176，候选 SHA `64c326c4`，`sc_dev_demo`/`demo_full`，入口 `/a/809?menu_id=559`）
+
+| 场景 | 实际操作 | 结果 |
+| --- | --- | --- |
+| 未触碰金额（末尾必填，契约字段第 35 位） | 其余必填合法，不触碰金额后保存 | **零写请求** + 「请检查以下内容 / 申请金额不能为空」（原为 HTTP 500），证明第 17 个及之后的必填不再漏检 |
+| 明确输入 `0` | 输入 `0` 后保存 | 写请求载荷 `…"amount":0`（数值，非 `false`），HTTP 200 → 记录 2124，权威回读 `amount=0.0`、`state=draft` |
+| 明确清空 | 输入 `5` 后清空，保存 | **零写请求** + 金额字段级错误（必填被拦） |
+| 保存失败后重试 | 输入 `0`，首次 create 被模拟 500 | 失败后草稿保留 `0.00`、提示「模拟保存失败」、未创建记录；重试成功 → 记录 2125，回读 `0.0/draft` |
+| 编辑态未触碰 | 打开 2126（金额 `7.50`）直接保存 | **不发写请求**，金额保持 `7.50`；权威回读 `7.5`，未出现 `false`/清空 |
+
+载荷形状：三态成功分支均为 7 个键（`project_id/partner_id/business_category_id/date_request/amount/
+actual_payee_unit/attachment_ids`），**未因字段表变完整而膨胀出空串键**，即创建态空值仍交由 ORM 默认值。
+
+### 11.4 清理回执
+
+专用记录 2124/2125/2126 已删除，`remaining=[]`、`total_recent_left=0`。
+证据：`artifacts/ci/handoff-20260925/target-acceptance-827fad4b/j13-zero-amount/j13-fix-acceptance-20260927.{cjs,json}`、
+`j13-fix-edit-untouched-20260927.{cjs,json}`、`j13-fix-readback-before-cleanup-20260927.txt`、
+`j13-fix-cleanup-readback-20260927.txt`、`j13-fix-edit-cleanup-readback-20260927.txt`。
+
+### 11.5 未覆盖 / 边界
+
+- 未验证：非必填数值「显式清空」的端到端回读（本批契约内 `amount` 为必填，清空被正确拦在保存前）。
+- 未验证：只读角色对 `amount` 的直接写入拒绝（既有后端权限证据继续复用，未在本批重跑）。
+- 未覆盖：报表投影、properties、附件 404（仍为未复现）、显式创建能力状态，均保持独立待办。
