@@ -251,6 +251,14 @@ class _BaseViewParserMixin:
         }
         # many2many 不再默认补 many2many_tags（标签选择器），
         # 走标准多选（relation-select-editor），与表单其他关系字段渲染一致。
+        #
+        # 引用类型（``many2one_reference`` / ``reference``）的值是 (model, id)
+        # 对，上面的别名都无法承载，视图也不会为它们声明 widget。把字段类型当作
+        # widget 名透传，下游会当成显式 widget 声明并绑定该类型不能使用的文本输入
+        # （文本输入组件只接受 char）。这两类保持未声明，由类型定向解析决定呈现。
+        # 其余未映射类型维持原有透传，本次修复不改动无关渲染。
+        if ftype in ("many2one_reference", "reference"):
+            return ""
         return mapping.get(ftype, ftype)
 
     def _field_info_for_layout(self, field_name, fields_info):

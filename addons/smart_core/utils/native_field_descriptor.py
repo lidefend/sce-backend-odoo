@@ -33,6 +33,12 @@ def project_native_field_descriptor(
         out["relation"] = meta.get("relation")
     if meta.get("relation_field"):
         out["relation_field"] = meta.get("relation_field")
+    if field_type == "many2one_reference":
+        model_field = str(meta.get("model_field") or "").strip()
+        if model_field:
+            out["model_field"] = model_field
+        else:
+            out.pop("model_field", None)
     if field_type == "monetary":
         out["currency_field"] = str(meta.get("currency_field") or "currency_id").strip()
         digits = meta.get("digits")

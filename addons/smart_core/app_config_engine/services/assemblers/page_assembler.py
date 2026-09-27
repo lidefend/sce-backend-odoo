@@ -4198,6 +4198,7 @@ class PageAssembler:
                         "string": translated.get("string") or getattr(f, "string", None) or k,
                         "relation": translated.get("relation") or getattr(f, "comodel_name", None),
                         "relation_field": getattr(f, "inverse_name", None),
+                        "model_field": getattr(f, "model_field", None),
                         "readonly": bool(translated.get("readonly", getattr(f, "readonly", False))),
                         "required": bool(translated.get("required", getattr(f, "required", False))),
                         "help": translated.get("help") or getattr(f, "help", None) or "",
@@ -4227,6 +4228,8 @@ class PageAssembler:
                 info["relation"] = meta_info["relation"]
             if meta_info.get("relation_field"):
                 info["relation_field"] = meta_info["relation_field"]
+            if meta_info.get("model_field"):
+                info["model_field"] = meta_info["model_field"]
             domain = meta_info.get("domain")
             if domain not in (None, ""):
                 info["domain"] = domain
