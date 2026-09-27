@@ -24,12 +24,17 @@ NUMBER = 42
 REQUIRED = gitee_pr_bot.REQUIRED_CHECKS
 
 
-def check(name, *, head_sha=HEAD, status="completed", conclusion="success"):
-    return {"name": name, "head_sha": head_sha, "status": status, "conclusion": conclusion}
+def pr_head(ref=SOURCE, sha=HEAD):
+    return {"ref": ref, "sha": sha, "repo": {"full_name": f"{gitee_pr_bot.OWNER}/{gitee_pr_bot.REPO}"}}
+
+
+def check(name, *, head_sha=HEAD, status="completed", conclusion="success", run_id=1):
+    return {"id": run_id, "name": name, "head_sha": head_sha, "status": status,
+            "conclusion": conclusion}
 
 
 def passing_checks():
-    return [check(name) for name in REQUIRED]
+    return [check(name, run_id=index + 1) for index, name in enumerate(REQUIRED)]
 
 
 class FakeAPI:
@@ -37,12 +42,11 @@ class FakeAPI:
 
     def __init__(self, *, checks=None, pr=None, main_sha=MAIN, source_sha=HEAD,
                  merge_state="merged", merged_sha=MERGED, merge_commit_sha=MERGED,
-                 free_main=True, merge_raises=None):
+                 free_main=True, merge_raises=None, put_sha=None, readback_override=None):
         self.checks = passing_checks() if checks is None else checks
         self.pr = pr if pr is not None else {
             "number": NUMBER, "state": "open", "title": "example",
-            "mergeable": True, "head": {"ref": SOURCE, "sha": HEAD,
-                                        "repo": {"full_name": f"{gitee_pr_bot.OWNER}/{gitee_pr_bot.REPO}"}},
+            "mergeable": True, "head": pr_head(),
             "base": {"ref": "main", "sha": MAIN},
         }
         self.main_sha = main_sha
@@ -52,6 +56,11 @@ class FakeAPI:
         self.merge_commit_sha = merge_commit_sha
         self.free_main = free_main
         self.merge_raises = merge_raises
+        self.put_sha = put_sha
+        # Overrides applied to the post-merge readback row only, so a test can
+        # model a platform that reports a different head/source/base than the
+        # pre-flight snapshot without breaking the pre-flight itself.
+        self.readback_override = dict(readback_override or {})
         self.calls = []
 
     def __call__(self, token, method, path, payload=None):
@@ -59,7 +68,7 @@ class FakeAPI:
         if method == "PUT" and path.endswith("/merge"):
             if self.merge_raises:
                 raise self.merge_raises
-            return {"sha": self.merged_sha, "merged": True}
+            return {"sha": self.put_sha or self.merged_sha, "merged": True}
         if method == "GET" and "/check-runs" in path:
             return {"check_runs": list(self.checks)}
         if method == "GET" and "/branches/" in path:
@@ -70,8 +79,10 @@ class FakeAPI:
                 raise AssertionError("unexpected read of the merge endpoint")
             if self.calls.count(("GET", path)) > 1 and self.free_main:
                 # Post-merge readback: the PR is closed and main advanced.
-                return {**self.pr, "state": self.merge_state,
-                        "merge_commit_sha": self.merge_commit_sha}
+                row = {**self.pr, "state": self.merge_state,
+                       "merge_commit_sha": self.merge_commit_sha}
+                row.update(self.readback_override)
+                return row
             return self.pr
         raise AssertionError(f"unexpected call {method} {path}")
 
@@ -104,6 +115,14 @@ class MergeEntryTests(unittest.TestCase):
             self.run_merge(api, wrapper=wrapper, **kwargs)
         self.assertIn(code, str(ctx.exception))
         self.assertEqual(api.merge_calls, [], "a refusal must never call the merge endpoint")
+
+    def refuse_after_merge(self, api, wrapper, code):
+        """A refusal raised from the post-merge readback, not the pre-flight."""
+        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
+            self.run_merge(api, wrapper=wrapper)
+        self.assertIn(code, str(ctx.exception))
+        self.assertEqual(len(api.merge_calls), 1, "the merge request is never submitted twice")
+        return str(ctx.exception)
 
     def test_success_merges_and_reads_back(self):
         api, wrapper = merged_api()
@@ -185,6 +204,34 @@ class MergeEntryTests(unittest.TestCase):
             self.run_merge(api, wrapper=wrapper)
         self.assertIn("merge_readback_mismatch", str(ctx.exception))
 
+    def test_ordinary_closed_without_a_merge_flag_refuses(self):
+        # A closed PR is not a merged one: success needs platform proof, not the
+        # pre-flight snapshot's worth of optimism.
+        api, wrapper = merged_api(merge_state="closed")
+        self.refuse_after_merge(api, wrapper, "merge_state_unexpected")
+
+    def test_ordinary_readback_head_drift_refuses(self):
+        # Reported defect: the platform merged another commit while the receipt
+        # echoed the expected head.  The observed identity must be verified.
+        api, wrapper = merged_api(readback_override={"head": pr_head(sha="d" * 40)})
+        message = self.refuse_after_merge(api, wrapper, "merge_readback_head_mismatch")
+        self.assertIn("observed=" + "d" * 40, message)
+        self.assertIn("expected=" + HEAD, message)
+
+    def test_receipt_reports_the_observed_readback_identity(self):
+        observed = "d" * 40
+        api, wrapper = merged_api(merged_sha=observed, merge_commit_sha=observed,
+                                  put_sha="e" * 40)
+        receipt = self.run_merge(api, wrapper=wrapper)
+        self.assertEqual(receipt["merge_outcome"], "confirmed")
+        self.assertEqual(receipt["state"], "merged")
+        # Sourced from the platform readback, never the PUT response or the
+        # expected values echoed back as if they had been observed.
+        self.assertEqual(receipt["merge_commit"], observed)
+        self.assertEqual(receipt["main_after"], observed)
+        self.assertEqual(receipt["head_sha"], HEAD)
+        self.assertEqual(receipt["source_branch"], SOURCE)
+
     def test_unsupported_merge_method_refused(self):
         api = FakeAPI()
         with self.assertRaises(gitee_pr_bot.Denied) as ctx:
@@ -198,9 +245,35 @@ class MergeEntryTests(unittest.TestCase):
         self.assertEqual(gitee_pr_bot.latest_check_run(runs)["id"], 5)
 
     def test_latest_check_run_falls_back_to_api_order_without_ids(self):
-        runs = [{"name": "g", "status": "completed", "conclusion": "success"},
+        # Reported defect: a queued run carried no id and an older success did,
+        # so the success was selected.  Order is unprovable here, so refuse.
+        runs = [{"name": "g", "status": "queued", "conclusion": None},
+                {"id": 3, "name": "g", "status": "completed", "conclusion": "success"}]
+        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
+            gitee_pr_bot.latest_check_run(runs)
+        self.assertIn("check_run_order_undetermined", str(ctx.exception))
+
+    def test_latest_check_run_refuses_when_no_run_carries_an_id(self):
+        runs = [{"id": None, "name": "g", "status": "completed", "conclusion": "success"},
                 {"name": "g", "status": "queued", "conclusion": None}]
-        self.assertEqual(gitee_pr_bot.latest_check_run(runs)["status"], "queued")
+        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
+            gitee_pr_bot.latest_check_run(runs)
+        self.assertIn("check_run_order_undetermined", str(ctx.exception))
+
+    def test_latest_check_run_refuses_a_repeated_id(self):
+        runs = [{"id": 4, "name": "g", "status": "completed", "conclusion": "success"},
+                {"id": 4, "name": "g", "status": "queued", "conclusion": None}]
+        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
+            gitee_pr_bot.latest_check_run(runs)
+        self.assertIn("check_run_order_undetermined", str(ctx.exception))
+
+    def test_unordered_check_set_refuses_the_merge(self):
+        # The same defect driven end to end: the merge entry must refuse instead
+        # of accepting the older success that a positional pick would choose.
+        checks = passing_checks()
+        no_id = {"name": REQUIRED[0], "head_sha": HEAD, "status": "queued", "conclusion": None}
+        older = {**check(REQUIRED[0]), "id": 3}
+        self.refuse(FakeAPI(checks=[no_id, *checks[1:], older]), "check_run_order_undetermined")
 
     def test_queued_rerun_refuses_even_when_the_older_success_is_listed_last(self):
         # The reported defect: the fresh run was queued, an older success existed,
@@ -261,12 +334,27 @@ class MergeEntryTests(unittest.TestCase):
         self.assertEqual(receipt["main_after"], MERGED)
         self.assertFalse(receipt["atomic_sha_binding"])
 
-    def test_merge_timeout_with_pr_still_open_refuses_without_retry(self):
+    def test_merge_timeout_with_open_readback_refuses_without_retry(self):
+        # Reading ``open`` only proves the merge had not landed *yet*; it does not
+        # prove the timed-out request never executed, so it is never retried.
         api, wrapper = merged_api(merge_raises=TimeoutError("timed out"), merge_state="open")
-        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
-            self.run_merge(api, wrapper=wrapper)
-        self.assertIn("merge_not_applied_after_timeout", str(ctx.exception))
-        self.assertEqual(len(api.merge_calls), 1)
+        self.refuse_after_merge(api, wrapper, "merge_outcome_open_at_readback")
+
+    def test_merge_timeout_readback_with_another_source_refuses(self):
+        # Reported defect: the platform reported a different merged head and the
+        # receipt echoed the expected one.  Identity mismatch is an anomaly.
+        api, wrapper = merged_api(merge_raises=TimeoutError("timed out"),
+                                  readback_override={"head": pr_head(sha="d" * 40)})
+        message = self.refuse_after_merge(api, wrapper, "merge_readback_head_mismatch")
+        self.assertIn("observed=" + "d" * 40, message)
+        self.assertIn("expected=" + HEAD, message)
+
+    def test_merge_timeout_readback_with_another_branch_refuses(self):
+        api, wrapper = merged_api(merge_raises=TimeoutError("timed out"),
+                                  readback_override={"head": pr_head(ref="fix/other-topic")})
+        message = self.refuse_after_merge(api, wrapper, "merge_readback_source_mismatch")
+        self.assertIn("observed=fix/other-topic", message)
+        self.assertIn("expected=" + SOURCE, message)
 
     def test_merge_timeout_with_unreadable_readback_is_uncertain(self):
         api = FakeAPI(merge_raises=TimeoutError("timed out"))
@@ -316,6 +404,12 @@ class MergeEntryTests(unittest.TestCase):
     def test_required_check_set_is_the_four_named_checks(self):
         self.assertEqual(gitee_pr_bot.REQUIRED_CHECKS,
                          ("public_guard", "merge_policy_gate", "professional_quality_gate", "frontend_release_gate"))
+
+    def test_module_docstring_states_the_hardened_boundaries(self):
+        doc = gitee_pr_bot.__doc__ or ""
+        self.assertIn("strictly increasing", doc)
+        self.assertIn("single success authority", doc)
+        self.assertIn("only shows it had not landed", doc)
 
 
 class TokenFileTests(unittest.TestCase):

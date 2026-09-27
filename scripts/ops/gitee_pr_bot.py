@@ -18,11 +18,18 @@ from branch protection plus the post-merge readback, and every receipt therefore
 reports ``atomic_sha_binding=false``.  Three further boundaries are enforced:
 
 * each required check must be the *latest* run for this commit -- a re-run that
-  is still queued is never masked by an older success -- and pagination that did
-  not complete is refused instead of judged;
-* a merge request that times out is read back and classified (merged / not merged
-  / uncertain); it is never retried blindly, because a second ``PUT`` could merge
-  twice;
+  is still queued is never masked by an older success.  Order is proven only by
+  strictly increasing platform ids: a set that is missing ids, or that repeats
+  one, is refused rather than judged by array position.  Pagination that did not
+  complete is refused the same way;
+* the platform readback is the single success authority.  The ordinary path and
+  the timeout-recovery path share it, so both verify the *observed* PR identity,
+  merge commit and post-merge ``main``.  A PR that was merely closed, or a merge
+  that landed another commit, is refused rather than reported as the expected
+  one (the receipt's ``target_sha`` stays the pre-flight target snapshot);
+* a merge request that times out is classified (merged / not merged yet /
+  uncertain) and never retried blindly, because a second ``PUT`` could merge
+  twice.  Reading ``open`` afterwards only shows it had not landed *yet*;
 * ``--require-check`` may only *add* checks to the fixed four, never shrink them.
 """
 from __future__ import annotations
@@ -121,21 +128,20 @@ def _numeric(value):
 
 
 def latest_check_run(runs):
-    """Pick the newest run for a single check name.
+    """Pick the newest run for a single check name, or refuse.
 
-    A re-run always carries a larger ``id``, so the id is the authority; when the
-    platform omits ids we fall back to the API's own ordering (oldest first).
-    Selecting by array position alone is what let an older success mask a queued
-    re-run, so the id must win whenever it is present.
+    A re-run always carries a larger ``id``, so a strictly increasing platform id
+    is the only proof of order.  When any run omits its id -- or two runs share
+    one -- the order cannot be established, and guessing from the response's
+    array position is exactly what let an older success mask a queued re-run.
+    Such a set is refused instead of judged.
     """
     if not runs:
         return None
-    if any(_numeric(run.get("id")) is not None for run in runs):
-        def key(run):
-            ident = _numeric(run.get("id"))
-            return -1 if ident is None else ident
-        return max(runs, key=key)
-    return runs[-1]
+    ids = [_numeric(run.get("id")) for run in runs]
+    if any(ident is None for ident in ids) or len(set(ids)) != len(ids):
+        raise Denied("check_run_order_undetermined")
+    return max(zip(ids, runs), key=lambda pair: pair[0])[1]
 
 
 def check_runs(token, sha, owner=OWNER, repo=REPO):
@@ -210,12 +216,14 @@ def with_required_checks(extra):
     return enforce_required_checks((*REQUIRED_CHECKS, *(extra or ())))
 
 
-def classify_uncertain_merge(token, *, path, number, expected_head, expected_main, source_ref,
-                             merge_method, checks, owner=OWNER, repo=REPO):
-    """Read the platform back after an undecided merge request.
+def verify_merge_readback(token, *, path, expected_head, expected_main, expected_source="",
+                          reported_sha="", uncertain=False, owner=OWNER, repo=REPO):
+    """Prove from the platform what actually landed after a merge request.
 
-    The endpoint has no compare-and-swap, so a blind retry could merge a second
-    time.  Classify as merged / not merged / uncertain, report, and never retry.
+    Shared by the ordinary path and the timeout-recovery path so neither can
+    report success for a merge that did not happen, that merged another commit,
+    or that merely closed the PR.  Every identity in the receipt is the *observed*
+    value: a mismatch is an anomaly, never the expected value echoed back.
     """
     try:
         readback = request(token, "GET", path)
@@ -224,20 +232,30 @@ def classify_uncertain_merge(token, *, path, number, expected_head, expected_mai
     if not isinstance(readback, dict):
         raise Denied("merge_outcome_uncertain readback_unreadable")
     state = str(readback.get("state") or "")
-    if state == "merged":
-        merged_sha = str(readback.get("merge_commit_sha") or "")
-        main_after = branch_sha(token, TARGET, owner, repo)
-        if len(merged_sha) == 40 and main_after == merged_sha:
-            return {"action": "merge", "number": number, "source_branch": source_ref,
-                    "target_branch": TARGET, "head_sha": expected_head, "target_sha": expected_main,
-                    "state": state, "merge_method": merge_method, "merge_commit": merged_sha,
-                    "main_after": main_after, "checks": checks, "branch_protection_preserved": True,
-                    "pushed_main": False, "atomic_sha_binding": False,
-                    "merge_outcome": "merged_after_uncertain_request"}
-        raise Denied("merge_outcome_uncertain state=merged readback_incomplete")
-    if state == "open":
-        raise Denied("merge_not_applied_after_timeout")
-    raise Denied(f"merge_outcome_uncertain state={state or 'unknown'}")
+    merged_flag = readback.get("merged") is True or bool(readback.get("merged_at"))
+    if not (state == "merged" or (state == "closed" and merged_flag)):
+        # ``closed`` alone is a refusal: a closed PR is not a merged one.
+        if uncertain and state == "open":
+            # An open PR at readback time only proves it had not landed *yet*; it
+            # does not prove the timed-out request never executed.  Never retry.
+            raise Denied("merge_outcome_open_at_readback")
+        raise Denied(f"merge_state_unexpected:{state or 'unknown'}")
+    sha, ref, _head = head_data(readback)
+    if sha != expected_head:
+        raise Denied(f"merge_readback_head_mismatch observed={sha or 'none'} expected={expected_head}")
+    if expected_source and ref != expected_source:
+        raise Denied(f"merge_readback_source_mismatch observed={ref or 'none'} expected={expected_source}")
+    if (readback.get("base") or {}).get("ref") != TARGET:
+        raise Denied("merge_readback_target_ref_mismatch")
+    merged_sha = str(readback.get("merge_commit_sha") or reported_sha or "")
+    if len(merged_sha) != 40:
+        raise Denied("merge_outcome_uncertain missing_merge_sha")
+    main_after = branch_sha(token, TARGET, owner, repo)
+    if main_after != merged_sha:
+        # The merge may still have landed; report observations instead of a pass.
+        raise Denied(f"merge_readback_mismatch main={main_after} reported={merged_sha}")
+    return {"state": state, "head_sha": sha, "source_branch": ref,
+            "merge_commit": merged_sha, "main_after": main_after}
 
 
 def merge_pull(token, *, number, expected_head, expected_main, expected_source="", merge_method="squash",
@@ -277,25 +295,20 @@ def merge_pull(token, *, number, expected_head, expected_main, expected_source="
     except (OSError, ValueError):
         # The write may have landed before the connection or body died.  Read the
         # platform back and classify; a retry here could merge a second time.
-        return classify_uncertain_merge(token, path=path, number=number, expected_head=expected_head,
-                                        expected_main=expected_main, source_ref=ref,
-                                        merge_method=merge_method, checks=checks, owner=owner, repo=repo)
-    merged_sha = str(result.get("sha") or "") if isinstance(result, dict) else ""
-    readback = request(token, "GET", path)
-    state = readback.get("state")
-    if state not in {"merged", "closed"}:
-        raise Denied(f"merge_state_unexpected:{state}")
-    if len(merged_sha) != 40:
-        raise Denied("merge_sha_missing")
-    main_after = branch_sha(token, TARGET, owner, repo)
-    if main_after != merged_sha:
-        # The merge may still have landed; report observations instead of a pass.
-        raise Denied(f"merge_readback_mismatch main={main_after} reported={merged_sha}")
-    return {"action": "merge", "number": number, "source_branch": ref, "target_branch": TARGET,
-            "head_sha": expected_head, "target_sha": expected_main, "state": state,
-            "merge_method": merge_method, "merge_commit": merged_sha, "main_after": main_after,
+        observed = verify_merge_readback(token, path=path, expected_head=expected_head,
+                                         expected_main=expected_main, expected_source=ref or "",
+                                         uncertain=True, owner=owner, repo=repo)
+        merge_outcome = "merged_after_uncertain_request"
+    else:
+        observed = verify_merge_readback(
+            token, path=path, expected_head=expected_head, expected_main=expected_main,
+            expected_source=ref or "", reported_sha=str(result.get("sha") or "") if isinstance(result, dict) else "",
+            owner=owner, repo=repo)
+        merge_outcome = "confirmed"
+    return {"action": "merge", "number": number, "target_branch": TARGET,
+            "target_sha": expected_main, "merge_method": merge_method,
             "checks": checks, "branch_protection_preserved": True, "pushed_main": False,
-            "atomic_sha_binding": False}
+            "atomic_sha_binding": False, "merge_outcome": merge_outcome, **observed}
 
 
 def main():
