@@ -3911,6 +3911,68 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 source_type="native_form_projection",
             )
 
+    @staticmethod
+    def _native_form_projection_source():
+        return {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {"layout": [{
+                "type": "field", "name": "name",
+                "native_locator": "form/field[name=name]",
+                "occurrence_index": 1, "source_position": 0,
+            }]}},
+            "nativeFormProjection": {
+                "schemaVersion": "2.0",
+                "model": "x.document",
+                "viewType": "form",
+                "fieldDescriptors": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                "layout": [{
+                    "type": "field", "name": "name",
+                    "native_locator": "form/field[name=name]",
+                    "occurrence_index": 1, "source_position": 0,
+                }],
+                "capabilities": {},
+                "subviews": {},
+                "headerButtons": [],
+                "sourceAuthority": {
+                    "kind": "native_form_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.model.access", "ir.rule"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                    "runtimeCarrier": "app_config_engine.page_assembler.form",
+                },
+            },
+        }
+
+    def test_native_form_projection_rejects_layout_field_without_descriptor(self):
+        """A layout reference without an authoritative field descriptor must fail."""
+        source = self._native_form_projection_source()
+        source["nativeFormProjection"]["layout"][0]["name"] = "ghost"
+        with self.assertRaisesRegex(ValueError, "field descriptor identity mismatch"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="native_form_projection",
+            )
+
+    def test_native_form_projection_rejects_synthesized_field_without_identity(self):
+        """A synthesised occurrence with an empty locator must fail closed.
+
+        This is the 5xx shape: a field overlay rebuilt field nodes from the
+        flat configuration and dropped the native position identity, so the
+        projection carried ``locator=''`` and the whole page was rejected.
+        """
+        source = self._native_form_projection_source()
+        broken = source["nativeFormProjection"]["layout"][0]
+        broken["native_locator"] = ""
+        broken["occurrence_index"] = 0
+        broken.pop("source_position", None)
+        with self.assertRaisesRegex(ValueError, "field occurrence identity is incomplete"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="native_form_projection",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
