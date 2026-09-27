@@ -152,7 +152,7 @@ gitee.pr.bot.merge: guard.prod.forbid
 	@test -n "$(GITEE_PR_NUMBER)" || (echo "GITEE_PR_NUMBER is required"; exit 2)
 	@test -n "$(EXPECTED_HEAD)" || (echo "EXPECTED_HEAD is required"; exit 2)
 	@test -n "$(GITEE_EXPECTED_MAIN)" || (echo "GITEE_EXPECTED_MAIN is required"; exit 2)
-	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--expected-source "$(GITEE_EXPECTED_SOURCE)",) $(if $(GITEE_PR_MERGE_METHOD),--merge-method "$(GITEE_PR_MERGE_METHOD)",) $(if $(GITEE_PR_EVIDENCE_FILE),--evidence "$(GITEE_PR_EVIDENCE_FILE)",)
+	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--expected-source "$(GITEE_EXPECTED_SOURCE)",) $(if $(GITEE_PR_MERGE_METHOD),--merge-method "$(GITEE_PR_MERGE_METHOD)",) $(if $(GITEE_PR_EVIDENCE_FILE),--evidence "$(GITEE_PR_EVIDENCE_FILE)",) $(foreach c,$(GITEE_PR_CHECK_RUNS),--check-run $(c))
 
 .PHONY: verify.gitee.pr_bot.unit
 verify.gitee.pr_bot.unit: guard.prod.forbid

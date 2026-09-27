@@ -31,6 +31,18 @@ reports ``atomic_sha_binding=false``.  Three further boundaries are enforced:
   uncertain) and never retried blindly, because a second ``PUT`` could merge
   twice.  Reading ``open`` afterwards only shows it had not landed *yet*;
 * ``--require-check`` may only *add* checks to the fixed four, never shrink them.
+
+Platform limitation -- check-run *listing*.  ``GET /commits/{sha}/check-runs``
+answers ``total_count=0`` for every commit in this repository, ``main`` included,
+while ``GET /check-runs/{id}`` reads the same runs back correctly.  The latest-run
+proof therefore cannot be taken from the list endpoint here, so a caller that has
+already observed the run ids may pass ``--check-run NAME=ID``.  Each id is then
+read back individually and must carry the expected name, this exact commit and a
+completed ``success``.  That path is reported honestly as
+``check_verification={"source": "explicit_ids", "latest_run_proof": false}``: an id
+cannot prove that no *newer* run was queued after it was observed, so it is never
+presented as the list-endpoint guarantee.  The list endpoint stays the default and
+its stricter proof is used whenever it returns anything.
 """
 from __future__ import annotations
 import argparse, json, os, stat, urllib.error, urllib.parse, urllib.request
@@ -211,6 +223,45 @@ def enforce_required_checks(required):
     return names
 
 
+def check_snapshot_by_id(token, *, head_sha, required, evidence, owner=OWNER, repo=REPO):
+    """Bind every required check to this commit through an explicit check-run id.
+
+    Fallback for the platform limitation documented in the module docstring: the
+    commit check-run list is empty here, so the ids are supplied by the caller and
+    each is read back on its own.  A run must carry the expected name, this exact
+    commit, ``completed`` and ``success``; the set must cover every required check,
+    add nothing unknown, and repeat neither a name nor an id.  This cannot prove
+    the run is the *latest* one, so callers report ``latest_run_proof=false``.
+    """
+    names = [str(name) for name, _ in evidence]
+    missing = [name for name in required if name not in names]
+    if missing:
+        raise Denied("required_checks_missing:" + ",".join(sorted(missing)))
+    unknown = [name for name in names if name not in required]
+    if unknown:
+        raise Denied("check_evidence_unknown:" + ",".join(sorted(set(unknown))))
+    if len(set(names)) != len(names):
+        raise Denied("check_evidence_duplicate_name")
+    if len({ident for _, ident in evidence}) != len(evidence):
+        raise Denied("check_evidence_duplicate_id")
+    snapshot = {}
+    for name, ident in evidence:
+        if not isinstance(ident, int) or isinstance(ident, bool) or ident <= 0:
+            raise Denied("check_evidence_invalid_id:" + name)
+        run = request(token, "GET", f"/repos/{owner}/{repo}/check-runs/{ident}")
+        if str(run.get("name") or "") != name:
+            raise Denied("check_evidence_name_mismatch:" + name)
+        if str(run.get("head_sha") or "") != head_sha:
+            raise Denied("required_checks_stale_sha:" + name)
+        if str(run.get("status") or "") != "completed":
+            raise Denied("required_checks_pending:" + name)
+        if str(run.get("conclusion") or "") != "success":
+            raise Denied("required_checks_not_success:" + name)
+        snapshot[name] = {"head_sha": head_sha, "check_run_id": ident,
+                          "status": "completed", "conclusion": "success"}
+    return snapshot
+
+
 def with_required_checks(extra):
     """``--require-check`` may only add to the fixed four required checks."""
     return enforce_required_checks((*REQUIRED_CHECKS, *(extra or ())))
@@ -259,7 +310,7 @@ def verify_merge_readback(token, *, path, expected_head, expected_main, expected
 
 
 def merge_pull(token, *, number, expected_head, expected_main, expected_source="", merge_method="squash",
-               required=REQUIRED_CHECKS, owner=OWNER, repo=REPO):
+               required=REQUIRED_CHECKS, check_evidence=(), owner=OWNER, repo=REPO):
     """Merge one protected-lane PR only when every identity and check matches."""
     if merge_method not in MERGE_METHODS:
         raise Denied("unsupported_merge_method")
@@ -288,7 +339,14 @@ def merge_pull(token, *, number, expected_head, expected_main, expected_source="
         raise Denied("target_branch_drift")
     if branch_sha(token, ref or "", owner, repo) != expected_head:
         raise Denied("source_branch_drift")
-    checks = required_check_snapshot(token, head_sha=expected_head, required=tuple(required), owner=owner, repo=repo)
+    if check_evidence:
+        checks = check_snapshot_by_id(token, head_sha=expected_head, required=tuple(required),
+                                      evidence=tuple(check_evidence), owner=owner, repo=repo)
+        verification = {"source": "explicit_ids", "latest_run_proof": False}
+    else:
+        checks = required_check_snapshot(token, head_sha=expected_head, required=tuple(required),
+                                         owner=owner, repo=repo)
+        verification = {"source": "commit_list", "latest_run_proof": True}
     try:
         result = request(token, "PUT", f"{path}/merge",
                          {"merge_method": merge_method, "prune_source_branch": False, "title": pr.get("title")})
@@ -307,8 +365,21 @@ def merge_pull(token, *, number, expected_head, expected_main, expected_source="
         merge_outcome = "confirmed"
     return {"action": "merge", "number": number, "target_branch": TARGET,
             "target_sha": expected_main, "merge_method": merge_method,
-            "checks": checks, "branch_protection_preserved": True, "pushed_main": False,
+            "checks": checks, "check_verification": verification,
+            "branch_protection_preserved": True, "pushed_main": False,
             "atomic_sha_binding": False, "merge_outcome": merge_outcome, **observed}
+
+
+def parse_check_evidence(pairs):
+    """``NAME=ID`` pairs from ``--check-run`` into verified-by-id evidence."""
+    evidence = []
+    for raw in pairs or ():
+        name, _, value = str(raw).partition("=")
+        name, value = name.strip(), value.strip()
+        if not name or not value.isdigit():
+            raise SystemExit(f"--check-run must be NAME=<numeric id>, got {raw!r}")
+        evidence.append((name, int(value)))
+    return evidence
 
 
 def main():
@@ -324,6 +395,8 @@ def main():
     # flag can never shrink the set that gates a merge.
     p.add_argument("--require-check", action="append", dest="required",
                    help="extra required checks; the fixed four are always enforced")
+    p.add_argument("--check-run", action="append", default=[], dest="check_run", metavar="NAME=ID",
+                   help="read a required check back by explicit run id instead of the commit list")
     p.add_argument("--evidence", type=Path)
     a = p.parse_args()
     token_stat = a.token_file.stat()
@@ -348,7 +421,8 @@ def main():
         receipt = merge_pull(token, number=a.number, expected_head=a.expected_head,
                              expected_main=a.expected_main, expected_source=a.expected_source or "",
                              merge_method=a.merge_method,
-                             required=with_required_checks(a.required))
+                             required=with_required_checks(a.required),
+                             check_evidence=parse_check_evidence(a.check_run))
         print(json.dumps(receipt, sort_keys=True))
 
 
