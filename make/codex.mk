@@ -823,9 +823,10 @@ verify.gitee.formal_worker.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_formal_worker
 
 .PHONY: gitee.ci.pr.create verify.gitee.formal_pr.unit
-export GITEE_SOURCE_BRANCH GITEE_PR_TITLE GITEE_PR_BODY_FILE
+export GITEE_SOURCE_BRANCH GITEE_PR_TITLE GITEE_PR_BODY_FILE GITEE_PR_TOKEN_FILE
 gitee.ci.pr.create: guard.prod.forbid
-	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_CHECKS_TOKEN_FILE)" --source-branch "$$GITEE_SOURCE_BRANCH" --title "$$GITEE_PR_TITLE" --body-file "$$GITEE_PR_BODY_FILE" $(if $(filter 1,$(APPLY)),--apply,)
+	@test -n "$$GITEE_PR_TOKEN_FILE" || { echo "GITEE_PR_TOKEN_FILE is required (independent owner integration token; no CI token fallback)"; exit 2; }
+	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$$GITEE_PR_TOKEN_FILE" --source-branch "$$GITEE_SOURCE_BRANCH" --title "$$GITEE_PR_TITLE" --body-file "$$GITEE_PR_BODY_FILE" $(if $(filter 1,$(APPLY)),--apply,)
 verify.gitee.formal_pr.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_gitee_formal_pr
 

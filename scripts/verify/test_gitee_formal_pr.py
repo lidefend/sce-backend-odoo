@@ -75,11 +75,26 @@ class PRTests(unittest.TestCase):
         branch='feature/literal"`touch '+str(marker)+'`'
         body='body "quoted" `touch '+str(marker)+'`'
         env={**os.environ,'PATH':str(folder)+os.pathsep+os.environ['PATH']}
-        subprocess.run(['make','--no-print-directory','-f','make/codex.mk','-f',str(guard),'gitee.ci.pr.create','GITEE_PR_TITLE='+title,'GITEE_SOURCE_BRANCH='+branch,'GITEE_PR_BODY_FILE='+body],cwd=root,env=env,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        subprocess.run(['make','--no-print-directory','-f','make/codex.mk','-f',str(guard),'gitee.ci.pr.create','GITEE_PR_TITLE='+title,'GITEE_SOURCE_BRANCH='+branch,'GITEE_PR_BODY_FILE='+body,'GITEE_PR_TOKEN_FILE=/private/owner-token'],cwd=root,env=env,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         args=json.loads(capture.read_text())
         self.assertEqual(args[args.index('--title')+1],title.replace('$$','$'))
         self.assertEqual(args[args.index('--source-branch')+1],branch)
         self.assertEqual(args[args.index('--body-file')+1],body)
+        self.assertFalse(marker.exists())
+        self.assertEqual(args[args.index('--token-file')+1],'/private/owner-token')
+
+    def test_make_rejects_ci_token_fallback_before_python(self):
+        root=Path(__file__).resolve().parents[2]
+        folder=Path(self.tmp.name)
+        marker=folder/'python-called'
+        fake=folder/'python3'
+        fake.write_text('#!'+sys.executable+'\nfrom pathlib import Path\nPath('+repr(str(marker))+').touch()\n')
+        fake.chmod(0o700)
+        guard=folder/'guard.mk';guard.write_text('guard.prod.forbid:\n\t@true\n')
+        env={**os.environ,'PATH':str(folder)+os.pathsep+os.environ['PATH']}
+        result=subprocess.run(['make','--no-print-directory','-f','make/codex.mk','-f',str(guard),'gitee.ci.pr.create','GITEE_PR_TOKEN_FILE=','GITEE_CHECKS_TOKEN_FILE=/private/ci-token'],cwd=root,env=env,capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertIn('GITEE_PR_TOKEN_FILE is required',result.stdout)
         self.assertFalse(marker.exists())
 
 if __name__=='__main__':unittest.main()
