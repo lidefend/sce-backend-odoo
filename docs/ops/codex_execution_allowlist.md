@@ -115,7 +115,7 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   普通与超时路径共用的回读身份核验（head 漂移、源分支不符、`closed` 无合并标志、回执取观测值）、
   必需检查不可缩减、以及回执声明无原子绑定。
 - `make gitee.ci.server.update ... GITEE_FORMAL=1 GITEE_NODE_ARCHIVE=<reviewed archive>`：本会话授权的既有执行器正式静态门禁接入；仍要求精确 clean SHA、预演摘要、备份/恢复与原确认值。只写固定版本目录、固定 Node 22.17.0 二进制及既有服务配置；包白名单和归档/二进制双哈希强制校验。不启用数据库、部署或完整候选车道；本次普通前端车道仅消费已受管安装且匹配候选输入的离线依赖缓存，缺失/漂移拒绝。
-- `make gitee.ci.pr.create EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_CHECKS_TOKEN_FILE=<private path>`：默认只读预演。`APPLY=1` 只为当前 Gitee 集成专题创建或复用同仓 main PR，要求精确远端身份、clean 候选和 Quick 回执；创建前持久化不确定结果标记，不重复 POST、不合并、不部署。
+- `make gitee.ci.pr.create EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_PR_TOKEN_FILE=<owner-only private path> GITEE_SOURCE_BRANCH=<branch> GITEE_PR_TITLE=<title> GITEE_PR_BODY_FILE=<body file>`：默认只读预演；`APPLY=1` 为允许前缀的当前专题创建或复用同仓 main PR，要求 clean 精确候选、远端源/目标身份及受保护 main。使用独立集成令牌，不回退到 CI checks 令牌、不安装到 CI 主机；普通 PR 不要求本地完整 Quick。创建前持久化未决标记，不重复 POST；创建后独立回读，不合并、不部署。
 - `make verify.gitee.formal_queue.unit`：正式任务持久队列、执行器适配与四项检查回传的离线生命周期测试；API 为受控 fake，不写平台。仅显式 formal-static 模式接入；不得将离线生命周期通过称为真实 PR 门禁验收。
 - `make verify.gitee.formal_executor.unit`：普通 PR 静态门禁执行核心的离线测试，使用真实 bubblewrap 验证网络／凭据隔离、非零计数、取消、超时及结果失效。执行核心仅由显式 formal-static 模式接入；本入口不执行真实产品门禁、不安装服务、不新增部署资格。
 - `make verify.gitee.gates.unit`：离线门禁选择和真实临时 Git 删除／重命名测试，无平台或业务数据写入。
