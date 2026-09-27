@@ -8,7 +8,7 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: verify.gitee.webhook.ci gitee.ci.server.install gitee.ci.server.status
 .PHONY: gitee.github.mirror.install gitee.github.mirror.seed gitee.github.mirror.run
 .PHONY: github.mirror.ruleset.configure github.mirror.non_mirror_push.test
-.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge
+.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge verify.gitee.pr_bot.unit
 .PHONY: gitee.pr.bot.professional.run
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
 .PHONY: verify.codex.agent_controller agent.controller.install agent.controller.config.check
@@ -144,11 +144,20 @@ gitee.pr.bot.status: guard.prod.forbid
 	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
 	@python3 scripts/ops/gitee_pr_bot.py status --token-file "$(GITEE_PR_BOT_TOKEN_FILE)"
 
+# Parameterized protected-lane merge: the four required checks are read back from
+# the platform and must belong to EXPECTED_HEAD. The token is only ever read from
+# the private file; main is never pushed.
 gitee.pr.bot.merge: guard.prod.forbid
 	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
 	@test -n "$(GITEE_PR_NUMBER)" || (echo "GITEE_PR_NUMBER is required"; exit 2)
-	@test -n "$(GITEE_PR_EVIDENCE_FILE)" || (echo "GITEE_PR_EVIDENCE_FILE is required"; exit 2)
-	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --evidence "$(GITEE_PR_EVIDENCE_FILE)"
+	@test -n "$(EXPECTED_HEAD)" || (echo "EXPECTED_HEAD is required"; exit 2)
+	@test -n "$(GITEE_EXPECTED_MAIN)" || (echo "GITEE_EXPECTED_MAIN is required"; exit 2)
+	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--expected-source "$(GITEE_EXPECTED_SOURCE)",) $(if $(GITEE_PR_MERGE_METHOD),--merge-method "$(GITEE_PR_MERGE_METHOD)",) $(if $(GITEE_PR_EVIDENCE_FILE),--evidence "$(GITEE_PR_EVIDENCE_FILE)",)
+
+.PHONY: verify.gitee.pr_bot.unit
+verify.gitee.pr_bot.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_pr_bot.py scripts/verify/test_gitee_pr_bot.py
+	@python3 -m unittest scripts.verify.test_gitee_pr_bot
 
 gitee.pr.bot.professional.run: guard.prod.forbid
 	@GITEE_PR_PROFESSIONAL_CONFIRM="$(GITEE_PR_PROFESSIONAL_CONFIRM)" bash scripts/ops/run_gitee_pr_professional_gate.sh
