@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { FieldDescriptor } from '@sc/schema';
 import {
   isMissingRequiredValue,
   isRequiredFieldEmptyByType,
   normalizeContractFieldValue,
 } from '../src/pages/contractForm/valueUtils';
+import { fieldType } from '../src/pages/contractForm/fieldUtils';
 import { collectRequiredFieldValidation, shouldWriteFieldValue } from '../src/pages/contractForm/saveRecordHelpers';
+import { collectSceneValidationPrecheckErrors, type SceneValidationPrecheckInput } from '../src/pages/contractForm/sceneValidation';
+import { dispatchTemplateFieldChange } from '../src/components/template/fieldChange.dispatcher';
 import { buildLegacyLayoutNodes } from '../src/pages/contractForm/nativeLayoutUtils';
 import type { LayoutNode } from '../src/pages/contractForm/types';
 
@@ -88,6 +93,32 @@ check(shouldWriteFieldValue({ recordId: null, dirty: true, value: 0, descriptor:
 check(shouldWriteFieldValue({ recordId: 7, dirty: false, value: 'A', descriptor: descriptor({ type: 'char' }) }), false, 'edit mode keeps untouched values');
 check(shouldWriteFieldValue({ recordId: 7, dirty: true, value: '', descriptor: descriptor({ type: 'char' }) }), true, 'edit mode writes an explicit clear');
 check(shouldWriteFieldValue({ recordId: 7, dirty: true, value: 0, descriptor: monetary }), true, 'edit mode writes an explicit zero');
+// A non-required numeric follows the same three states: untouched is skipped,
+// an explicit clear reaches the payload as the Odoo empty sentinel, and a real
+// zero stays a real zero.
+check(shouldWriteFieldValue({ recordId: 7, dirty: false, value: null, descriptor: monetary }), false, 'edit mode never writes an untouched non-required numeric');
+check(shouldWriteFieldValue({ recordId: 7, dirty: false, value: 0, descriptor: monetary }), false, 'edit mode still skips an untouched stored numeric');
+check(shouldWriteFieldValue({ recordId: 7, dirty: true, value: false, descriptor: monetary }), true, 'edit mode writes an explicit clear of a non-required numeric');
+check(shouldWriteFieldValue({ recordId: null, dirty: true, value: false, descriptor: monetary }), true, 'create mode writes an explicit clear of a non-required numeric');
+
+// --- C2. what a cleared numeric control actually hands the draft ------------
+// The official numeric control is a text input (`type="number"`); clearing it
+// emits an empty string. The dispatcher must never turn that into the `null`
+// that `shouldWriteFieldValue` skips, otherwise the clear intent is lost.
+const draftFromControl = (type: string, value: string | number | boolean | null) => {
+  let observed: string | undefined;
+  dispatchTemplateFieldChange(
+    { name: 'field', type, value },
+    { onBoolean: () => {}, onSelection: () => {}, onMany2one: () => {}, onText: (_name, text) => { observed = text; } },
+  );
+  return observed;
+};
+check(draftFromControl('monetary', ''), '', 'a cleared monetary control hands the draft an empty string');
+check(draftFromControl('float', ''), '', 'a cleared float control hands the draft an empty string');
+check(draftFromControl('integer', ''), '', 'a cleared integer control hands the draft an empty string');
+check(draftFromControl('monetary', null), '', 'a null-emitting control is normalized to an empty string, never treated as untouched');
+check(draftFromControl('monetary', '0'), '0', 'a typed zero reaches the draft as the string it was typed');
+check(normalizeContractFieldValue({ name: 'x', value: draftFromControl('monetary', ''), descriptor: descriptor({ type: 'monetary' }), originalValue: 7.5, buildOne2manyValue: () => [] }), false, 'the cleared draft serializes to the Odoo empty sentinel');
 
 // --- D. the validation field table is never silently truncated --------------
 const fieldNames = Array.from({ length: 40 }, (_, index) => `f${String(index + 1).padStart(2, '0')}`);
@@ -158,4 +189,75 @@ const booleanValidation = collectRequiredFieldValidation({
 });
 check(booleanValidation.messages.length, 0, 'unchecked boolean is not reported as missing');
 
-console.log(`[j13_required_value_semantics] shared required semantics, three-state numeric serialization, payload ownership and field-table completeness: ${cases} cases passed`);
+// --- E. the scene precheck judges with the contract field type --------------
+// The scene precheck is a second save-time gate. It used to call the shared
+// judgement without a type, so a required boolean answered `false` was blocked
+// while an empty relation slipped through. It now resolves the type from the
+// contract descriptor before judging — same wiring as production.
+const sceneDescriptors: Record<string, FieldDescriptor> = {
+  flag: descriptor({ type: 'boolean', string: '标志' }),
+  qty: descriptor({ type: 'integer', string: '数量' }),
+  amount: descriptor({ type: 'monetary', digits: [16, 2], string: '金额' }),
+  relation: descriptor({ type: 'many2one', relation: 'res.partner', string: '往来单位' }),
+  note: descriptor({ type: 'char', string: '备注' }),
+};
+const sceneLabels: Record<string, string> = { flag: '标志', qty: '数量', amount: '金额', relation: '往来单位', note: '备注' };
+const scenePrecheck = (
+  requiredFields: string[],
+  formData: Record<string, unknown>,
+  overrides: Partial<SceneValidationPrecheckInput> = {},
+) => collectSceneValidationPrecheckErrors({
+  requiredFields,
+  fieldLabels: sceneLabels,
+  isFieldVisible: () => true,
+  fieldValue: (field) => formData[field],
+  isMissingValue: isMissingRequiredValue,
+  fieldType: (field) => fieldType(sceneDescriptors[field]),
+  errorCode: 'SCENE_VALIDATION_REQUIRED',
+  ...overrides,
+});
+
+check(scenePrecheck(['flag'], { flag: false }).length, 0, 'an unchecked required boolean passes the scene precheck');
+check(scenePrecheck(['flag'], { flag: true }).length, 0, 'a checked required boolean passes the scene precheck');
+check(scenePrecheck(['flag'], { flag: null }).length, 1, 'an unanswered required boolean is still reported by the scene precheck');
+check(scenePrecheck(['qty'], { qty: 0 }).length, 0, 'numeric zero passes the scene precheck');
+check(scenePrecheck(['amount'], { amount: 0 }).length, 0, 'monetary zero passes the scene precheck');
+check(scenePrecheck(['amount'], { amount: '' }).length, 1, 'a cleared required monetary is still reported by the scene precheck');
+check(scenePrecheck(['relation'], { relation: 12 }).length, 0, 'a chosen relation passes the scene precheck');
+check(scenePrecheck(['relation'], { relation: false }).length, 1, 'an empty relation (`false`) is still reported by the scene precheck');
+check(scenePrecheck(['note'], { note: '   ' }).length, 1, 'blank text is still reported by the scene precheck');
+check(scenePrecheck(['relation', 'flag'], { relation: false, flag: false }).length, 1, 'the scene precheck tells a real boolean false apart from an empty relation');
+
+// The type must actually be forwarded: an "accept every false" shortcut would
+// hide the empty relation above.
+const forwarded: Array<[unknown, unknown]> = [];
+scenePrecheck(['flag', 'relation'], { flag: false, relation: false }, {
+  isMissingValue: (value, type) => { forwarded.push([value, type]); return isMissingRequiredValue(value, type); },
+});
+check(JSON.stringify(forwarded), JSON.stringify([[false, 'boolean'], [false, 'many2one']]), 'the scene precheck forwards each contract field type');
+// No descriptor means no invented type: the legacy type-blind answer stays.
+check(scenePrecheck(['ghost'], { ghost: false }).length, 1, 'an unknown scene field keeps the type-blind answer');
+
+// --- F. call-site wiring guard ---------------------------------------------
+// A behavioural test cannot catch the production call site drifting back to an
+// untyped judgement, which is exactly how the two paths diverged before.
+const locateSource = (relative: string) => {
+  let dir = process.cwd();
+  for (let depth = 0; depth < 4; depth += 1) {
+    const candidate = path.join(dir, relative);
+    if (fs.existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return '';
+};
+const presentationPath = locateSource('frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts');
+check(presentationPath !== '', true, 'the record action presentation source is locatable for the wiring guard');
+const presentationSource = fs.readFileSync(presentationPath, 'utf8');
+const precheckStart = presentationSource.indexOf('collectSceneValidationPrecheckErrorsFromRules({');
+const precheckCall = precheckStart >= 0 ? presentationSource.slice(precheckStart, precheckStart + 900) : '';
+check(precheckStart >= 0, true, 'the wiring guard finds the scene precheck call');
+check(precheckCall.includes('isMissingValue: isMissingRequiredValue'), true, 'the scene precheck still uses the shared judgement');
+check(precheckCall.includes('fieldType:'), true, 'the scene precheck call supplies a field type resolver');
+check(precheckCall.includes('formFields.value['), true, 'the field type resolver reads the contract form fields');
+
+console.log(`[j13_required_value_semantics] shared required semantics, scene-precheck type wiring, three-state numeric serialization incl. non-required clear, payload ownership and field-table completeness: ${cases} cases passed`);

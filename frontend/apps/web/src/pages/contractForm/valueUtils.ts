@@ -5,15 +5,19 @@ import { fieldType, fromDatetimeInputValue, toDateInputValue } from './fieldUtil
 /**
  * Single source of truth for "is this required value missing".
  *
- * Both the scene precheck (`collectSceneValidationPrecheckErrors`, no type
- * available) and the save-time required validation (`collectRequiredFieldValidation`)
- * must answer the same way for the same value; otherwise one path blocks a save
- * the other one allows.
+ * Both the scene precheck (`collectSceneValidationPrecheckErrors`) and the
+ * save-time required validation (`collectRequiredFieldValidation`) must answer
+ * the same way for the same value; otherwise one path blocks a save the other
+ * one allows. The scene precheck resolves the field type from the same contract
+ * descriptors and forwards it here, so neither path may judge without a type.
  *
  * - numeric `0` / `0.0` is a real value, never missing (falsy is not emptiness)
  * - a boolean field's `false` is a real value: an unchecked flag is not "unfilled"
  * - for non-boolean fields, Odoo's `false` empty sentinel is missing
  * - `null` / `undefined` / blank text / empty collection are missing
+ *
+ * Callers that genuinely have no descriptor (no contract field, legacy input)
+ * still get the type-blind answer, where `false` is treated as missing.
  */
 export function isMissingRequiredValue(value: unknown, fieldType?: unknown) {
   const ttype = String(fieldType ?? '').trim().toLowerCase();

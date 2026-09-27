@@ -17,7 +17,14 @@ export type SceneValidationPrecheckInput = {
   fieldLabels: Record<string, string>;
   isFieldVisible: (field: string) => boolean;
   fieldValue: (field: string) => unknown;
-  isMissingValue: (value: unknown) => boolean;
+  isMissingValue: (value: unknown, fieldType?: unknown) => boolean;
+  /**
+   * Resolves the contract field type for one scene-required field. The scene
+   * precheck must answer exactly like save-time required validation, which is
+   * type aware: a boolean `false` is a real answer while an empty relation
+   * (`false`) is still missing. Without the type the two paths drift apart.
+   */
+  fieldType?: (field: string) => unknown;
   errorCode: string;
 };
 
@@ -48,7 +55,8 @@ export function collectSceneValidationPrecheckErrors(input: SceneValidationPrech
   for (const field of input.requiredFields) {
     if (!input.isFieldVisible(field)) continue;
     const value = input.fieldValue(field);
-    if (input.isMissingValue(value)) {
+    const fieldType = input.fieldType ? input.fieldType(field) : undefined;
+    if (input.isMissingValue(value, fieldType)) {
       out.push(`${input.errorCode}: ${input.fieldLabels[field] || field} 为必填项`);
     }
   }
