@@ -537,6 +537,11 @@ HISTORICAL_RETIREMENT_REPORT ?=
 HISTORICAL_RETIREMENT_BUNDLE ?=
 HISTORICAL_RETIREMENT_MANIFEST_SHA256 ?=
 HISTORICAL_RETIREMENT_CONFIRM ?=
+HISTORICAL_RETIREMENT_REMOTE ?= origin
+HISTORICAL_RETIREMENT_EXPECTED_MAIN ?=
+HISTORICAL_RETIREMENT_OPEN_PR_PROVIDER ?= github
+HISTORICAL_RETIREMENT_EMIT_MANIFEST ?=
+HISTORICAL_RETIREMENT_EMIT_INVENTORY ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -571,10 +576,16 @@ branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
 
 branch.retire.historical: guard.prod.forbid
-	@test -n "$(HISTORICAL_RETIREMENT_MANIFEST)" || { echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required"; exit 2; }
+	@if [ -z "$(HISTORICAL_RETIREMENT_MANIFEST)" ] && [ -z "$(HISTORICAL_RETIREMENT_EMIT_MANIFEST)$(HISTORICAL_RETIREMENT_EMIT_INVENTORY)" ]; then echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required (or request a read-only --emit output)"; exit 2; fi
+	@test -n "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" || { echo "❌ HISTORICAL_RETIREMENT_EXPECTED_MAIN is required (full SHA of $(HISTORICAL_RETIREMENT_REMOTE)/main)"; exit 2; }
 	@python3 scripts/ops/retire_historical_branch_refs.py \
-		--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)" \
+		$(if $(HISTORICAL_RETIREMENT_MANIFEST),--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)",) \
+		--remote "$(HISTORICAL_RETIREMENT_REMOTE)" \
+		--expected-main "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" \
+		--open-pr-provider "$(HISTORICAL_RETIREMENT_OPEN_PR_PROVIDER)" \
 		$(if $(HISTORICAL_RETIREMENT_REPORT),--report "$(HISTORICAL_RETIREMENT_REPORT)",) \
+		$(if $(HISTORICAL_RETIREMENT_EMIT_MANIFEST),--emit-manifest "$(HISTORICAL_RETIREMENT_EMIT_MANIFEST)",) \
+		$(if $(HISTORICAL_RETIREMENT_EMIT_INVENTORY),--emit-inventory "$(HISTORICAL_RETIREMENT_EMIT_INVENTORY)",) \
 		$(if $(filter 1,$(PREPARE_BUNDLE)),--prepare-bundle --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)",) \
 		$(if $(filter 1,$(APPLY)),--apply --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)" --approved-manifest-sha256 "$(HISTORICAL_RETIREMENT_MANIFEST_SHA256)" --confirm "$(HISTORICAL_RETIREMENT_CONFIRM)",)
 

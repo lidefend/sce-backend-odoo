@@ -222,16 +222,21 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
             cleanup.cleanup(self.root, path, apply=True, evidence_receipt=receipt)
         self.assertTrue(path.is_dir())
 
-    def test_governed_branch_cleanup_force_uses_explicit_force_delete(self) -> None:
+    def test_governed_branch_cleanup_has_no_force_switch_and_binds_shas(self) -> None:
         source = (
             Path(__file__).resolve().parent / "branch_cleanup_safe.sh"
         ).read_text(encoding="utf-8")
-        self.assertIn('if [[ "${CLEANUP_FORCE:-0}" == "1" ]]', source)
-        self.assertIn('delete_flag="-D"', source)
-        self.assertIn('git branch "${delete_flag}" -- "${branch}"', source)
-        self.assertIn('squash_merge_verified=1', source)
+        # The historical CLEANUP_FORCE bypass is gone: nothing may skip proof.
+        self.assertNotIn("CLEANUP_FORCE", source)
+        self.assertIn('EXPECTED_BRANCH_SHA must be the full reviewed branch SHA', source)
+        self.assertIn("EXPECTED_MAIN_SHA must be the full SHA of", source)
+        self.assertIn("DELETE_EXACT_REVIEWED_BRANCH", source)
+        self.assertIn('--force-with-lease=refs/heads/${branch}:${expected_branch_sha}', source)
+        self.assertIn('git update-ref -d "refs/heads/${branch}" "$expected_branch_sha"', source)
+        self.assertIn("refusing to delete protected branch", source)
+        self.assertIn("cannot read", source)
+        self.assertIn("squash_merge_verified=1", source)
         self.assertIn('--head "$branch" --json headRefOid,number)', source)
-        self.assertIn('jq --arg sha "$branch_sha"', source)
         self.assertIn('select(.headRefOid == $sha)', source)
 
 
@@ -566,6 +571,177 @@ class LegacyRetirementRecordTest(SafeWorktreeCleanupTest):
             git(self.root, "ls-remote", "--heads", "origin", "codex/locked-retirement"), ""
         )
         self.assertTrue(path.is_dir())
+
+
+class GovernedBranchCleanupScriptTest(unittest.TestCase):
+    """Behavioural tests for the governed branch deletion entry.
+
+    The script is driven against an isolated repository through
+    ``CLEAN_BRANCH_ROOT`` so the real rules run without touching this checkout.
+    The remote is named ``gitee-mirror`` so no GitHub provider is ever reached.
+    """
+
+    SCRIPT = Path(__file__).resolve().parent / "branch_cleanup_safe.sh"
+    REMOTE = "gitee-mirror"
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        base = Path(self.temp.name)
+        self.remote = base / "mirror.git"
+        self.root = base / "repo"
+        self.root.mkdir()
+        git(base, "init", "--bare", str(self.remote))
+        git(self.root, "init", "-b", "main")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        git(self.root, "config", "user.name", "Test")
+        (self.root / "README").write_text("base\n", encoding="utf-8")
+        git(self.root, "add", "README")
+        git(self.root, "commit", "-m", "base")
+        git(self.root, "remote", "add", self.REMOTE, str(self.remote))
+        git(self.root, "push", "-u", self.REMOTE, "main")
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def main_sha(self) -> str:
+        return git(self.root, "rev-parse", "refs/heads/main")
+
+    def landed_branch(self, branch: str = "fix/landed-topic") -> str:
+        """A branch whose tip is contained in the remote's main."""
+        git(self.root, "switch", "-c", branch, "main")
+        (self.root / f"{branch.replace('/', '-')}.txt").write_text("x\n", encoding="utf-8")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", branch)
+        git(self.root, "push", self.REMOTE, branch)
+        sha = git(self.root, "rev-parse", "refs/heads/" + branch)
+        git(self.root, "switch", "main")
+        git(self.root, "merge", "--ff-only", branch)
+        git(self.root, "push", self.REMOTE, "main")
+        return sha
+
+    def run_script(self, branch: str, *, sha: str, main: str, **overrides: str):
+        import os
+
+        env = {
+            **os.environ,
+            "CLEAN_BRANCH_ROOT": str(self.root),
+            "CLEAN_BRANCH_REMOTE": self.REMOTE,
+            "EXPECTED_BRANCH_SHA": sha,
+            "EXPECTED_MAIN_SHA": main,
+        }
+        env.update(overrides)
+        return subprocess.run(
+            ["bash", str(self.SCRIPT), branch],
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def remote_ref(self, branch: str) -> str:
+        return git(self.root, "ls-remote", "--heads", self.REMOTE, branch)
+
+    def test_dry_run_reports_without_deleting(self) -> None:
+        sha = self.landed_branch()
+        result = self.run_script("fix/landed-topic", sha=sha, main=self.main_sha())
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("DRY-RUN ok", result.stdout)
+        self.assertIn(sha, self.remote_ref("fix/landed-topic"))
+        self.assertEqual(git(self.root, "rev-parse", "refs/heads/fix/landed-topic"), sha)
+
+    def test_apply_requires_confirmation_before_deleting(self) -> None:
+        sha = self.landed_branch()
+        result = self.run_script(
+            "fix/landed-topic", sha=sha, main=self.main_sha(), APPLY="1"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DELETE_EXACT_REVIEWED_BRANCH", result.stderr)
+        self.assertIn(sha, self.remote_ref("fix/landed-topic"))
+
+    def test_apply_deletes_remote_then_local(self) -> None:
+        sha = self.landed_branch()
+        result = self.run_script(
+            "fix/landed-topic",
+            sha=sha,
+            main=self.main_sha(),
+            APPLY="1",
+            CLEAN_BRANCH_CONFIRM="DELETE_EXACT_REVIEWED_BRANCH",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.remote_ref("fix/landed-topic"), "")
+        self.assertNotEqual(
+            subprocess.run(
+                ["git", "show-ref", "--verify", "--quiet", "refs/heads/fix/landed-topic"],
+                cwd=self.root,
+            ).returncode,
+            0,
+        )
+
+    def test_local_sha_drift_is_refused(self) -> None:
+        self.landed_branch()
+        result = self.run_script("fix/landed-topic", sha="0" * 40, main=self.main_sha())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("local SHA drift", result.stderr)
+
+    def test_remote_sha_drift_is_refused(self) -> None:
+        sha = self.landed_branch()
+        main = self.main_sha()
+        # Move only the remote ref: the local branch keeps the reviewed tip, so
+        # this isolates the remote-drift refusal from the local one.
+        (self.root / "moved.txt").write_text("moved\n", encoding="utf-8")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", "move the remote branch tip")
+        git(self.root, "push", self.REMOTE, "main:refs/heads/fix/landed-topic")
+        result = self.run_script("fix/landed-topic", sha=sha, main=main)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("branch drift", result.stderr)
+        self.assertEqual(git(self.root, "rev-parse", "refs/heads/fix/landed-topic"), sha)
+        self.assertNotEqual(self.remote_ref("fix/landed-topic"), "")
+
+    def test_main_drift_is_refused(self) -> None:
+        sha = self.landed_branch()
+        before = git(self.root, "rev-parse", "refs/heads/main")
+        (self.root / "later.txt").write_text("later\n", encoding="utf-8")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", "advance main")
+        git(self.root, "push", self.REMOTE, "main")
+        result = self.run_script("fix/landed-topic", sha=sha, main=before)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("main drift", result.stderr)
+        self.assertIn(sha, self.remote_ref("fix/landed-topic"))
+
+    def test_unmerged_branch_is_refused(self) -> None:
+        git(self.root, "switch", "-c", "fix/never-landed", "main")
+        (self.root / "unmerged.txt").write_text("n\n", encoding="utf-8")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", "unmerged")
+        git(self.root, "push", self.REMOTE, "fix/never-landed")
+        sha = git(self.root, "rev-parse", "refs/heads/fix/never-landed")
+        git(self.root, "switch", "main")
+        result = self.run_script("fix/never-landed", sha=sha, main=self.main_sha())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not contained in", result.stderr)
+        self.assertIn(sha, self.remote_ref("fix/never-landed"))
+
+    def test_protected_and_occupied_branches_are_refused(self) -> None:
+        sha = self.landed_branch("fix/occupied-topic")
+        result = self.run_script("main", sha=sha, main=self.main_sha())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("outside the canonical governed prefixes", result.stderr)
+
+        release = self.run_script("release/topic", sha=sha, main=self.main_sha())
+        self.assertNotEqual(release.returncode, 0)
+        self.assertIn("refusing to delete protected branch", release.stderr)
+
+        git(self.root, "worktree", "add", str(Path(self.temp.name) / "side"), "fix/occupied-topic")
+        occupied = self.run_script("fix/occupied-topic", sha=sha, main=self.main_sha())
+        self.assertNotEqual(occupied.returncode, 0)
+        self.assertIn("checked out by a worktree", occupied.stderr)
+
+    def test_expected_main_must_be_a_full_sha(self) -> None:
+        sha = self.landed_branch()
+        result = self.run_script("fix/landed-topic", sha=sha, main="HEAD")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("EXPECTED_MAIN_SHA must be the full SHA", result.stderr)
 
 
 if __name__ == "__main__":

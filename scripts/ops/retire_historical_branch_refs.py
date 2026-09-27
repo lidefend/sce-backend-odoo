@@ -5,6 +5,15 @@ The command is a read-only dry-run by default.  Apply mode is bound to the
 SHA-256 of the exact manifest and creates (or verifies) a recovery bundle
 before deleting any reference.  Local and remote identities are checked
 independently and every unsafe entry is skipped rather than broadened.
+
+The remote is selectable so the same governed entry serves both the GitHub
+``origin`` lane and the Gitee mirror.  Every verdict is bound to the *live*
+main of the selected remote: an entry whose tip is not contained in that main
+is skipped as unmerged, a run whose observed main differs from
+``--expected-main`` is refused before any deletion, an unreadable remote is
+never treated as an absent branch, and a branch still referenced by a runtime
+carrier is skipped instead of retired.  There is no force switch: drift,
+unproven ancestry and unreadable state all fail closed.
 """
 
 from __future__ import annotations
@@ -19,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -26,6 +36,11 @@ from typing import Any, Callable, Iterable
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 ALLOWED_BRANCH = re.compile(r"^(feature|fix|refactor|audit|release|codex)/.+$")
 CONFIRMATION = "RETIRE_APPROVED_HISTORICAL_REFERENCES"
+# Runtime carriers: code, configuration and delivery entries that can hold a
+# branch identity.  Iteration prose under docs/ is deliberately excluded -- a
+# historical note naming a branch is not a live reference to it.
+CARRIER_ROOTS = ("scripts", "config", "deploy", "make", ".agent", ".github")
+OPEN_PR_PROVIDERS = ("github", "none")
 
 
 class RetirementError(RuntimeError):
@@ -35,7 +50,10 @@ class RetirementError(RuntimeError):
 @dataclass(frozen=True)
 class RefEntry:
     branch: str
-    local_sha: str
+    # ``local_state`` is "absent" for a Gitee-only historical branch that never
+    # had a local ref in this checkout; such an entry retires the remote ref only.
+    local_state: str
+    local_sha: str | None
     remote_state: str
     remote_sha: str | None
     reason: str
@@ -116,9 +134,23 @@ def load_manifest(path: Path) -> tuple[dict[str, Any], tuple[RefEntry, ...]]:
         remote = raw.get("remote")
         if not isinstance(local, dict) or not isinstance(remote, dict):
             raise RetirementError(f"{label} local and remote must be objects")
-        local_sha = require_text(local.get("sha"), f"{label}.local.sha")
-        if not FULL_SHA.fullmatch(local_sha):
-            raise RetirementError(f"{label}.local.sha must be a full lowercase SHA")
+        # ``sha: null`` (or an explicit ``state: absent``) declares that this
+        # reference has no local ref; anything else must bind a full SHA.
+        local_state = local.get("state")
+        if local_state is None:
+            local_state = "present" if isinstance(local.get("sha"), str) else "absent"
+        if local_state not in {"present", "absent"}:
+            raise RetirementError(f"{label}.local.state must be present or absent")
+        if local_state == "present":
+            local_sha = require_text(local.get("sha"), f"{label}.local.sha")
+            if not FULL_SHA.fullmatch(local_sha):
+                raise RetirementError(f"{label}.local.sha must be a full lowercase SHA")
+        else:
+            if local.get("sha") is not None:
+                raise RetirementError(
+                    f"{label}.local.sha must be null when the local ref is absent"
+                )
+            local_sha = None
         remote_state = require_text(remote.get("state"), f"{label}.remote.state")
         if remote_state not in {"present", "absent"}:
             raise RetirementError(f"{label}.remote.state must be present or absent")
@@ -139,6 +171,7 @@ def load_manifest(path: Path) -> tuple[dict[str, Any], tuple[RefEntry, ...]]:
         entries.append(
             RefEntry(
                 branch=branch,
+                local_state=local_state,
                 local_sha=local_sha,
                 remote_state=remote_state,
                 remote_sha=remote_sha,
@@ -161,18 +194,18 @@ def local_ref_sha(root: Path, branch: str) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def remote_ref_sha(root: Path, branch: str) -> str | None:
+def remote_ref_sha(root: Path, branch: str, remote: str = "origin") -> str | None:
     result = run_git(
         root,
         "ls-remote",
         "--heads",
-        "origin",
+        remote,
         f"refs/heads/{branch}",
         check=False,
     )
     if result.returncode:
         raise RetirementError(
-            f"cannot read origin branch {branch}: {result.stdout.strip()}"
+            f"cannot read {remote} branch {branch}: {result.stdout.strip()}"
         )
     line = result.stdout.strip()
     if not line:
@@ -181,6 +214,51 @@ def remote_ref_sha(root: Path, branch: str) -> str | None:
     if len(fields) != 2 or fields[1] != f"refs/heads/{branch}":
         raise RetirementError(f"unexpected ls-remote result for {branch}: {line}")
     return fields[0]
+
+
+def remote_main_sha(root: Path, remote: str = "origin") -> str:
+    """The live main of the selected remote; unreadable or absent fails closed."""
+    result = run_git(
+        root, "ls-remote", "--heads", remote, "refs/heads/main", check=False
+    )
+    if result.returncode:
+        raise RetirementError(f"cannot read {remote} main: {result.stdout.strip()}")
+    line = result.stdout.strip()
+    if not line:
+        raise RetirementError(
+            f"{remote} exposes no main branch; refusing to judge merge state"
+        )
+    fields = line.split()
+    if len(fields) != 2 or fields[1] != "refs/heads/main" or not FULL_SHA.fullmatch(fields[0]):
+        raise RetirementError(f"unexpected ls-remote main result from {remote}: {line}")
+    return fields[0]
+
+
+def is_ancestor(root: Path, sha: str, main_sha: str) -> bool | None:
+    """True/False when provable, None when the commit is unavailable locally."""
+    if run_git(root, "cat-file", "-e", f"{sha}^{{commit}}", check=False).returncode:
+        return None
+    return (
+        run_git(root, "merge-base", "--is-ancestor", sha, main_sha, check=False).returncode
+        == 0
+    )
+
+
+def carrier_references(root: Path, branch: str) -> tuple[str, ...]:
+    """Runtime-carrier files that still name this branch, or () when none do."""
+    roots = tuple(name for name in CARRIER_ROOTS if (root / name).exists())
+    if not roots:
+        return ()
+    result = run_git(
+        root, "grep", "-l", "-F", "-e", branch, "--", *roots, check=False
+    )
+    if result.returncode not in {0, 1}:
+        raise RetirementError(
+            f"cannot scan runtime carriers for {branch}: {result.stdout.strip()}"
+        )
+    if result.returncode == 1:
+        return ()
+    return tuple(sorted(line.strip() for line in result.stdout.splitlines() if line.strip()))
 
 
 def occupied_branches(root: Path) -> dict[str, str]:
@@ -237,7 +315,10 @@ def assess_entries(
     entries: Iterable[RefEntry],
     *,
     open_branches: set[str],
+    expected_main: str,
+    remote: str = "origin",
     related_work_error: str = "",
+    carrier_scan: bool = True,
 ) -> tuple[EntryAssessment, ...]:
     occupied = occupied_branches(root)
     assessments: list[EntryAssessment] = []
@@ -245,14 +326,20 @@ def assess_entries(
         reasons: list[str] = []
         actual_local = local_ref_sha(root, entry.branch)
         try:
-            actual_remote = remote_ref_sha(root, entry.branch)
+            actual_remote = remote_ref_sha(root, entry.branch, remote)
         except RetirementError as exc:
             actual_remote = None
             reasons.append(str(exc))
         if actual_local != entry.local_sha:
-            reasons.append(
-                f"local SHA drift: expected {entry.local_sha}, actual {actual_local or 'absent'}"
-            )
+            if entry.local_state == "absent":
+                reasons.append(
+                    f"local ref declared absent but exists at {actual_local}"
+                )
+            else:
+                reasons.append(
+                    f"local SHA drift: expected {entry.local_sha}, "
+                    f"actual {actual_local or 'absent'}"
+                )
         expected_remote = entry.remote_sha if entry.remote_state == "present" else None
         if actual_remote != expected_remote:
             reasons.append(
@@ -265,6 +352,23 @@ def assess_entries(
             reasons.append("branch has an open pull request")
         if related_work_error:
             reasons.append(f"related-work evidence unavailable: {related_work_error}")
+        for label, sha in (("local", entry.local_sha), ("remote", expected_remote)):
+            if not sha:
+                continue
+            contained = is_ancestor(root, sha, expected_main)
+            if contained is None:
+                reasons.append(
+                    f"{label} tip {sha} is unavailable locally; "
+                    f"containment in {remote}/main is unproven"
+                )
+            elif not contained:
+                reasons.append(
+                    f"{label} tip {sha} is not contained in {remote}/main {expected_main}"
+                )
+        if carrier_scan:
+            carriers = carrier_references(root, entry.branch)
+            if carriers:
+                reasons.append("referenced by runtime carrier: " + ", ".join(carriers))
         assessments.append(
             EntryAssessment(
                 entry=entry,
@@ -275,14 +379,209 @@ def assess_entries(
     return tuple(assessments)
 
 
+def remote_branch_shas(root: Path, remote: str) -> dict[str, str]:
+    """Every ``refs/heads/*`` the remote exposes; an unreadable remote fails closed."""
+    result = run_git(root, "ls-remote", "--heads", remote, check=False)
+    if result.returncode:
+        raise RetirementError(f"cannot read {remote} branches: {result.stdout.strip()}")
+    branches: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) != 2 or not fields[1].startswith("refs/heads/"):
+            raise RetirementError(f"unexpected ls-remote result from {remote}: {line}")
+        if not FULL_SHA.fullmatch(fields[0]):
+            raise RetirementError(f"unexpected ls-remote object id from {remote}: {line}")
+        branches[fields[1].removeprefix("refs/heads/")] = fields[0]
+    return branches
+
+
+@dataclass(frozen=True)
+class BranchScan:
+    branch: str
+    sha: str
+    local_sha: str | None
+    contained: bool | None
+    worktree: str | None
+    carriers: tuple[str, ...]
+
+    @property
+    def protected(self) -> bool:
+        """Main and the protected release lines are never cleanup candidates."""
+        return self.branch in {"main", "master"} or self.branch.startswith("release/")
+
+
+def scan_branches(
+    root: Path, remote: str, expected_main: str
+) -> tuple[BranchScan, ...]:
+    """Read the live branch population once and bind every verdict to one main."""
+    branches = remote_branch_shas(root, remote)
+    observed_main = branches.get("main")
+    if observed_main is None:
+        raise RetirementError(
+            f"{remote} exposes no main branch; refusing to judge merge state"
+        )
+    if observed_main != expected_main:
+        raise RetirementError(
+            f"main drift on {remote}: expected {expected_main}, actual {observed_main}"
+        )
+    occupied = occupied_branches(root)
+    rows: list[BranchScan] = []
+    for branch, sha in sorted(branches.items()):
+        if branch == "main":
+            continue
+        rows.append(
+            BranchScan(
+                branch=branch,
+                sha=sha,
+                local_sha=local_ref_sha(root, branch),
+                contained=is_ancestor(root, sha, expected_main),
+                worktree=occupied.get(branch),
+                carriers=carrier_references(root, branch),
+            )
+        )
+    return tuple(rows)
+
+
+def build_inventory(
+    root: Path,
+    rows: Iterable[BranchScan],
+    *,
+    remote: str,
+    expected_main: str,
+    pr_query: str = "none",
+) -> dict[str, Any]:
+    """Evidence inventory: every branch with identity, containment and ownership."""
+    tracked_locally = {
+        line.removeprefix("refs/heads/")
+        for line in run_git(
+            root, "for-each-ref", "--format=%(refname)", "refs/heads/"
+        ).stdout.splitlines()
+    }
+    seen: set[str] = set()
+    references: list[dict[str, Any]] = []
+    for row in rows:
+        seen.add(row.branch)
+        if row.protected:
+            status = "protected"
+        elif not ALLOWED_BRANCH.fullmatch(row.branch):
+            status = "outside_governed_prefixes"
+        elif row.contained is None:
+            status = "containment_unproven"
+        elif row.contained:
+            status = "contained"
+        else:
+            status = "unmerged"
+        references.append(
+            {
+                "branch": row.branch,
+                "remote_sha": row.sha,
+                "local_sha": row.local_sha,
+                "contained_in_main": row.contained,
+                "status": status,
+                "worktree": row.worktree,
+                "runtime_carriers": list(row.carriers),
+            }
+        )
+    local_only = sorted(tracked_locally - seen)
+    return {
+        "schema_version": 1,
+        "remote": remote,
+        "expected_main": expected_main,
+        "pull_request_query": {
+            "provider": pr_query,
+            "reason": (
+                "no Gitee pull-request credential is available in this lane; the "
+                "corresponding PR per branch is therefore recorded as not queried"
+                if pr_query == "none"
+                else "queried through the configured provider"
+            ),
+        },
+        "reference_count": len(references),
+        "references": references,
+        "local_only_branches": {
+            "note": (
+                "local refs with no branch on the selected remote; outside this "
+                "remote-branch cleanup and left untouched"
+            ),
+            "branches": local_only,
+        },
+    }
+
+
+def build_manifest_payload(
+    root: Path,
+    rows: Iterable[BranchScan],
+    *,
+    remote: str,
+    expected_main: str,
+) -> dict[str, Any]:
+    """A manifest for exactly the branches this run may retire: contained, governed."""
+    origin_url = run_git(root, "remote", "get-url", remote).stdout.strip()
+    if not origin_url:
+        raise RetirementError(f"cannot read the URL of remote {remote}")
+    entries: list[dict[str, Any]] = []
+    for row in rows:
+        if row.protected or not ALLOWED_BRANCH.fullmatch(row.branch):
+            continue
+        if row.contained is not True:
+            continue
+        evidence = [
+            f"remote tip {row.sha}",
+            f"contained in {remote}/main {expected_main}",
+            f"worktree: {row.worktree or 'none'}",
+            "runtime carriers: " + (", ".join(row.carriers) or "none"),
+        ]
+        entries.append(
+            {
+                "branch": row.branch,
+                "local": {
+                    "state": "present" if row.local_sha else "absent",
+                    "sha": row.local_sha,
+                },
+                "remote": {"state": "present", "sha": row.sha},
+                "reason": (
+                    f"{remote} historical reference contained in main {expected_main}"
+                ),
+                "evidence": evidence,
+            }
+        )
+    if not entries:
+        raise RetirementError(
+            f"no contained {remote} branch is available for retirement"
+        )
+    return {
+        "schema_version": 1,
+        "repository": {"name": root.name, "origin_url": origin_url},
+        "references": entries,
+    }
+
+
+def write_json(document: dict[str, Any], path: Path) -> str:
+    rendered = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    target = path.resolve(strict=False)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(f".{target.name}.tmp")
+    try:
+        temporary.write_text(rendered, encoding="utf-8")
+        temporary.replace(target)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return hashlib.sha256(target.read_bytes()).hexdigest()
+
+
 def recovery_refs(
     digest: str,
     entries: Iterable[RefEntry],
-) -> dict[str, tuple[str, str | None]]:
+) -> dict[str, tuple[str | None, str | None]]:
     prefix = f"refs/codex/historical-retirement/{digest[:16]}"
     return {
         entry.branch: (
-            f"{prefix}/local/{entry.branch}",
+            (
+                f"{prefix}/local/{entry.branch}"
+                if entry.local_state == "present"
+                else None
+            ),
             (
                 f"{prefix}/remote/{entry.branch}"
                 if entry.remote_state == "present"
@@ -293,7 +592,9 @@ def recovery_refs(
     }
 
 
-def ensure_commit_available(root: Path, entry: RefEntry, sha: str) -> None:
+def ensure_commit_available(
+    root: Path, entry: RefEntry, sha: str, remote: str = "origin"
+) -> None:
     if run_git(root, "cat-file", "-e", f"{sha}^{{commit}}", check=False).returncode == 0:
         return
     if entry.remote_sha != sha:
@@ -304,7 +605,7 @@ def ensure_commit_available(root: Path, entry: RefEntry, sha: str) -> None:
         root,
         "fetch",
         "--no-tags",
-        "origin",
+        remote,
         f"refs/heads/{entry.branch}",
         check=False,
     )
@@ -340,9 +641,11 @@ def verify_bundle(
     expected_heads: dict[str, str] = {}
     refs = recovery_refs(digest, entries)
     for entry in entries:
-        expected.add(entry.local_sha)
         local_recovery, remote_recovery = refs[entry.branch]
-        expected_heads[local_recovery] = entry.local_sha
+        if entry.local_sha:
+            expected.add(entry.local_sha)
+            assert local_recovery
+            expected_heads[local_recovery] = entry.local_sha
         if entry.remote_sha:
             expected.add(entry.remote_sha)
             assert remote_recovery
@@ -368,6 +671,7 @@ def create_recovery_bundle(
     bundle: Path,
     digest: str,
     entries: tuple[RefEntry, ...],
+    remote: str = "origin",
 ) -> dict[str, str]:
     if not entries:
         raise RetirementError("no eligible references available for recovery bundle")
@@ -380,12 +684,14 @@ def create_recovery_bundle(
     created: list[tuple[str, str]] = []
     try:
         for entry in entries:
-            ensure_commit_available(root, entry, entry.local_sha)
+            if entry.local_sha:
+                ensure_commit_available(root, entry, entry.local_sha, remote)
             if entry.remote_sha:
-                ensure_commit_available(root, entry, entry.remote_sha)
+                ensure_commit_available(root, entry, entry.remote_sha, remote)
             local_recovery, remote_recovery = refs[entry.branch]
-            run_git(root, "update-ref", local_recovery, entry.local_sha)
-            created.append((local_recovery, entry.local_sha))
+            if local_recovery and entry.local_sha:
+                run_git(root, "update-ref", local_recovery, entry.local_sha)
+                created.append((local_recovery, entry.local_sha))
             if remote_recovery and entry.remote_sha:
                 run_git(root, "update-ref", remote_recovery, entry.remote_sha)
                 created.append((remote_recovery, entry.remote_sha))
@@ -406,15 +712,20 @@ def create_recovery_bundle(
     return verify_bundle(root, bundle, digest, entries)
 
 
-def delete_entry(root: Path, entry: RefEntry) -> tuple[str, tuple[str, ...]]:
+def delete_entry(
+    root: Path, entry: RefEntry, remote: str = "origin"
+) -> tuple[str, tuple[str, ...]]:
     actions: list[str] = []
     if entry.remote_state == "present" and entry.remote_sha:
+        # The lease binds the deletion to the exact reviewed tip: a branch that
+        # moved since the manifest was written makes the push fail instead of
+        # deleting whatever now occupies the name.
         lease = f"--force-with-lease=refs/heads/{entry.branch}:{entry.remote_sha}"
         result = run_git(
             root,
             "push",
             lease,
-            "origin",
+            remote,
             f":refs/heads/{entry.branch}",
             check=False,
         )
@@ -423,6 +734,10 @@ def delete_entry(root: Path, entry: RefEntry) -> tuple[str, tuple[str, ...]]:
         actions.append("remote_deleted")
     else:
         actions.append("remote_absent_confirmed")
+
+    if entry.local_state == "absent":
+        actions.append("local_absent_confirmed")
+        return "retired", tuple(actions)
 
     result = run_git(
         root,
@@ -447,17 +762,26 @@ def build_report(
     bundle: dict[str, str] | None,
     execution: dict[str, dict[str, Any]] | None = None,
     retirement_outcome: str = "assessment_only",
+    remote: str = "origin",
+    expected_main: str = "",
+    open_pr_check: str = "github",
 ) -> dict[str, Any]:
     return {
         "schema_version": 1,
         "mode": mode,
         "manifest": str(manifest.resolve()),
         "manifest_sha256": digest,
+        "remote": remote,
+        "expected_main": expected_main,
+        # Recorded explicitly so a report can never imply a platform open-PR
+        # check that was not performed (for example on the Gitee mirror).
+        "open_pr_check": open_pr_check,
         "bundle": bundle,
         "retirement_outcome": retirement_outcome,
         "references": [
             {
                 "branch": assessment.entry.branch,
+                "local_expected_state": assessment.entry.local_state,
                 "local_expected_sha": assessment.entry.local_sha,
                 "remote_expected_state": assessment.entry.remote_state,
                 "remote_expected_sha": assessment.entry.remote_sha,
@@ -549,17 +873,51 @@ def execute(
     bundle_path: Path | None,
     approved_digest: str,
     confirmation: str,
+    expected_main: str,
+    remote: str = "origin",
+    open_pr_check: str = "github",
     report_path: Path | None = None,
     report_persistor: Callable[[dict[str, Any], Path], None] = persist_report,
-    open_branch_provider: Callable[[Path], set[str]] = github_open_branches,
+    open_branch_provider: Callable[[Path], set[str]] | None = None,
+    carrier_scan: bool = True,
 ) -> dict[str, Any]:
     payload, entries = load_manifest(manifest_path)
     expected_origin = payload["repository"]["origin_url"]
-    actual_origin = run_git(root, "remote", "get-url", "origin").stdout.strip()
+    actual_origin = run_git(root, "remote", "get-url", remote).stdout.strip()
     if actual_origin != expected_origin:
         raise RetirementError(
-            f"origin URL drift: expected {expected_origin}, actual {actual_origin}"
+            f"{remote} URL drift: expected {expected_origin}, actual {actual_origin}"
         )
+    if not FULL_SHA.fullmatch(expected_main or ""):
+        raise RetirementError(
+            "--expected-main must be the full lowercase SHA of the target main"
+        )
+    if open_pr_check not in OPEN_PR_PROVIDERS:
+        raise RetirementError(
+            "open pull-request provider must be one of " + ", ".join(OPEN_PR_PROVIDERS)
+        )
+    if open_pr_check == "github" and remote != "origin":
+        raise RetirementError(
+            f"remote {remote} cannot be checked with the GitHub pull-request provider; "
+            "pass --open-pr-provider none to record the check as not performed"
+        )
+    observed_main = remote_main_sha(root, remote)
+    if observed_main != expected_main:
+        # Bound to the live main: a moved target invalidates every verdict, so
+        # the run stops before any reference is touched.
+        raise RetirementError(
+            f"main drift on {remote}: expected {expected_main}, actual {observed_main}"
+        )
+    if open_branch_provider is None:
+        open_branch_provider = (
+            github_open_branches if open_pr_check == "github" else (lambda _root: set())
+        )
+    render_report = partial(
+        build_report,
+        remote=remote,
+        expected_main=expected_main,
+        open_pr_check=open_pr_check,
+    )
     digest = manifest_digest(manifest_path)
     related_work_error = ""
     try:
@@ -571,7 +929,10 @@ def execute(
         root,
         entries,
         open_branches=open_branches,
+        expected_main=expected_main,
+        remote=remote,
         related_work_error=related_work_error,
+        carrier_scan=carrier_scan,
     )
     eligible = tuple(
         assessment.entry for assessment in assessments if assessment.status == "eligible"
@@ -606,7 +967,7 @@ def execute(
     }
 
     if not eligible and mode in {"prepare-bundle", "apply"}:
-        report = build_report(
+        report = render_report(
             mode=mode,
             manifest=manifest_path,
             digest=digest,
@@ -629,10 +990,12 @@ def execute(
     if mode in {"prepare-bundle", "apply"}:
         if bundle_path is None:
             raise RetirementError(f"{mode} requires --bundle-output")
-        bundle_result = create_recovery_bundle(root, bundle_path, digest, eligible)
+        bundle_result = create_recovery_bundle(
+            root, bundle_path, digest, eligible, remote
+        )
 
     if mode != "apply":
-        return build_report(
+        return render_report(
             mode=mode,
             manifest=manifest_path,
             digest=digest,
@@ -644,7 +1007,7 @@ def execute(
         )
 
     assert report_path is not None
-    report = build_report(
+    report = render_report(
         mode=mode,
         manifest=manifest_path,
         digest=digest,
@@ -670,7 +1033,7 @@ def execute(
                 "deletion started; inspect exact refs if no later durable audit update exists"
             ],
         }
-        report = build_report(
+        report = render_report(
             mode=mode,
             manifest=manifest_path,
             digest=digest,
@@ -685,12 +1048,12 @@ def execute(
             phase=f"write-ahead for {branch}",
             persistor=report_persistor,
         )
-        status, details = delete_entry(root, assessment.entry)
+        status, details = delete_entry(root, assessment.entry, remote)
         execution[branch] = {
             "status": status,
             "details": list(details),
         }
-        report = build_report(
+        report = render_report(
             mode=mode,
             manifest=manifest_path,
             digest=digest,
@@ -706,10 +1069,10 @@ def execute(
             persistor=report_persistor,
         )
 
-    partial = any(item["status"] == "partial" for item in execution.values())
+    has_partial = any(item["status"] == "partial" for item in execution.values())
     skipped = any(item["status"] == "skipped" for item in execution.values())
-    outcome = "partial" if partial else "completed_with_skips" if skipped else "completed"
-    report = build_report(
+    outcome = "partial" if has_partial else "completed_with_skips" if skipped else "completed"
+    report = render_report(
         mode=mode,
         manifest=manifest_path,
         digest=digest,
@@ -729,14 +1092,42 @@ def execute(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--prepare-bundle", action="store_true")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--bundle-output", type=Path)
     parser.add_argument("--approved-manifest-sha256", default="")
     parser.add_argument("--confirm", default="")
+    parser.add_argument(
+        "--remote",
+        default="origin",
+        help="git remote to judge and delete against (origin, gitee-mirror, ...)",
+    )
+    parser.add_argument(
+        "--expected-main",
+        default="",
+        help="full SHA of the selected remote's main every entry must be contained in",
+    )
+    parser.add_argument(
+        "--open-pr-provider",
+        default="github",
+        choices=OPEN_PR_PROVIDERS,
+        help="github verifies open pull requests; none records the check as not performed",
+    )
+    parser.add_argument(
+        "--emit-manifest",
+        type=Path,
+        help="read-only: write the retirement manifest for every contained branch",
+    )
+    parser.add_argument(
+        "--emit-inventory",
+        type=Path,
+        help="read-only: write the full branch inventory with containment and ownership",
+    )
     args = parser.parse_args()
+    if not (args.manifest or args.emit_manifest or args.emit_inventory):
+        parser.error("--manifest is required unless a read-only --emit output is requested")
     if args.prepare_bundle and args.apply:
         print(
             "[historical.branch.retire] DENY choose prepare-bundle or apply",
@@ -751,8 +1142,48 @@ def main() -> int:
                 check=True,
                 text=True,
                 stdout=subprocess.PIPE,
-            ).stdout.strip()
+                ).stdout.strip()
         )
+        if args.emit_manifest is not None or args.emit_inventory is not None:
+            observed_main = remote_main_sha(root, args.remote)
+            if not FULL_SHA.fullmatch(args.expected_main or ""):
+                raise RetirementError(
+                    "--expected-main must be the full lowercase SHA of the target main"
+                )
+            if observed_main != args.expected_main:
+                raise RetirementError(
+                    f"main drift on {args.remote}: expected {args.expected_main}, "
+                    f"actual {observed_main}"
+                )
+            rows = scan_branches(root, args.remote, args.expected_main)
+            if args.emit_manifest is not None:
+                digest = write_json(
+                    build_manifest_payload(
+                        root, rows, remote=args.remote, expected_main=args.expected_main
+                    ),
+                    args.emit_manifest,
+                )
+                print(
+                    f"[historical.branch.retire] manifest={args.emit_manifest} "
+                    f"sha256={digest}"
+                )
+            if args.emit_inventory is not None:
+                inventory = build_inventory(
+                    root,
+                    rows,
+                    remote=args.remote,
+                    expected_main=args.expected_main,
+                    pr_query="none" if args.open_pr_provider == "none" else "github",
+                )
+                write_json(inventory, args.emit_inventory)
+                counts: dict[str, int] = {}
+                for row in inventory["references"]:
+                    counts[row["status"]] = counts.get(row["status"], 0) + 1
+                print(
+                    f"[historical.branch.retire] inventory={args.emit_inventory} "
+                    + " ".join(f"{key}={value}" for key, value in sorted(counts.items()))
+                )
+            return 0
         report = execute(
             root,
             args.manifest,
@@ -760,6 +1191,9 @@ def main() -> int:
             bundle_path=args.bundle_output,
             approved_digest=args.approved_manifest_sha256,
             confirmation=args.confirm,
+            expected_main=args.expected_main,
+            remote=args.remote,
+            open_pr_check=args.open_pr_provider,
             report_path=args.report,
         )
         if mode == "apply" and args.report is not None:
