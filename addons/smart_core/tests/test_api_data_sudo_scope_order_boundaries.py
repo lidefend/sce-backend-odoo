@@ -102,7 +102,12 @@ class TestApiDataSudoScopeOrderBoundaries(unittest.TestCase):
         prepare_source = ast.unparse(_function(self.tree, "_prepare_create_vals"))
 
         self.assertIn("authoritative_context_default_fields(ctx, self.env[model]._fields)", source)
-        self.assertIn("merge_orm_create_defaults(env_model, vals)", prepare_source)
+        self.assertIn(
+            "merge_orm_create_defaults(env_model, vals, skip_fields=skip_fields)",
+            prepare_source,
+        )
+        skip_source = ast.unparse(_function(self.tree, "_create_default_skip_fields"))
+        self.assertIn("smart_core_create_default_skip_fields", skip_source)
 
 
 if __name__ == "__main__":
