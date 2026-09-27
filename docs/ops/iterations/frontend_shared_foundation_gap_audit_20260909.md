@@ -111,7 +111,9 @@
 
 **修复**：新增 `_declared_action_conflicts_with_target_model`——仅当负载**声明的** `res_model` 与该 action 自身的 `res_model` 明确不一致时，判定该 id 不可作为本入口身份：丢弃它，改由声明的记录／新建目标承载（`entry_target.record_entry`），并同步从归一化负载移除，使消费者不会再把外来 action 当作路由身份。判定极窄：负载未声明 `res_model` 时不判定（回退到来源模型属派生默认，不是声明）；action 不存在或读取失败时不判定（存在性与可读性仍归既有路由鉴权）。**未新增授权机制、未放宽鉴权**：action 是否可达仍由既有「可见菜单派生 routeAuthority」裁决。
 
-**非零定向**：`python3 addons/smart_core/tests/test_navigation_entry_target.py` **17/17**（新增 3 条：显式 action 与目标模型冲突时不得成为记录入口身份、未声明目标的冲突 action 被丢弃后按声明模型解析、**一致**的显式 action 身份必须保留——正向对照，锁定判定边界）；`scripts/verify/navigation_contract_boundary_guard.py` PASS；`test_execute_button_server_action_boundaries` 17/17；`test_scene_normalizer_entry_target` 1/1。
+**「action 读不到」的边界（本轮补查）**：action 不存在或读取失败时**不判定冲突**，保留其声明身份（此时无法建立冲突，丢弃或改写等于伪造一个本层不拥有的授权判断）；因此该分支**不产生任何授权结论**——入口中没有 `authorized`／`permission`／`access` 类字段，`record_entry.model_write_authority` 仍是模型级访问事实而非「本 action 可打开」的断言。**最终访问仍由后端／路由鉴权裁决**：不可达或未授权的 action 会在既有 `routeAuthority` 校验处被拒（见本节点浏览器第 2／4 类证据）。
+
+**非零定向**：`python3 addons/smart_core/tests/test_navigation_entry_target.py` **18/18**（新增 4 条：显式 action 与目标模型冲突时不得成为记录入口身份、未声明目标的冲突 action 被丢弃后按声明模型解析、**一致**的显式 action 身份必须保留（正向对照）、**读不到的 action 保留身份且不携带任何授权声明**）；`scripts/verify/navigation_contract_boundary_guard.py` PASS；`test_execute_button_server_action_boundaries` 17/17；`test_scene_normalizer_entry_target` 1/1。
 
 **边界**：`_run_window_action` 等由后端自行读取 action 记录的路径，其 `id` 与 `res_model` 同源，不受影响。本轮为**本地定向通过**；无新增浏览器矩阵（既有五类证据的输入为同一入口路径，冲突分支为纯后端判据），**远端 CI／已合并／已部署／目标环境验收均未发生**。
 
