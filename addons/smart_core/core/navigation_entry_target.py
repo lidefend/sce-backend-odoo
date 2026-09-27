@@ -229,15 +229,23 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     action_target = _text(payload.get("target")).lower()
     view_id = _explicit_form_view_id(payload)
     explicit_action_id = _to_int(payload.get("id") or payload.get("action_id"))
+    explicit_record_id = _to_int(payload.get("res_id"))
+    # A business action that declares its own destination already carries the
+    # authoritative identity of that entry.  Resolving a model-level action id
+    # would attach an action the caller never returned and that the current
+    # user may not be authorized for; a menu-less record/form destination is
+    # expressed by the related-record carrier instead.
+    declared_destination = bool(
+        action_type == "ir.actions.act_window"
+        and model
+        and (explicit_record_id or action_target == "new")
+    )
     action_id = explicit_action_id or (
-        0
-        if action_type == "ir.actions.act_window" and action_target == "new" and view_id
-        else _resolve_action_id_for_model(env, model)
+        0 if declared_destination else _resolve_action_id_for_model(env, model)
     )
     if action_id:
         payload.setdefault("id", action_id)
         payload.setdefault("action_id", action_id)
-    explicit_record_id = _to_int(payload.get("res_id"))
     source_record_matches_target = not action_model or action_model == _text(source_model)
     record_id = explicit_record_id or (
         _to_int(source_record_id)

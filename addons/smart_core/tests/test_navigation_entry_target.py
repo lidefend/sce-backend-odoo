@@ -272,6 +272,67 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(entry_target["compatibility_refs"]["view_id"], 812)
         self.assertNotIn("action_id", entry_target["compatibility_refs"])
 
+    def test_explicit_record_destination_keeps_record_identity_without_guessing_action(self):
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def search(self, *_args, **_kwargs):
+                raise AssertionError("explicit record destination must not guess a menu action")
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "name": "关联单据",
+                "res_model": "project.task",
+                "res_id": 195,
+                "view_mode": "form",
+                "target": "current",
+            },
+            source_model="mail.notification",
+            source_record_id=318,
+        )
+
+        entry_target = action["entry_target"]
+        self.assertNotIn("action_id", action)
+        self.assertNotIn("action_id", entry_target["compatibility_refs"])
+        self.assertEqual(entry_target["compatibility_refs"]["model"], "project.task")
+        self.assertEqual(
+            {
+                key: entry_target["record_entry"][key]
+                for key in ("model", "record_id", "entry_intent")
+            },
+            {"model": "project.task", "record_id": 195, "entry_intent": "open"},
+        )
+        self.assertNotIn("action_id", entry_target["record_entry"])
+        self.assertEqual(entry_target["presentation"]["title"], "关联单据")
+
+    def test_undeclared_destination_still_resolves_the_model_action_identity(self):
+        class _Action:
+            id = 506
+
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def search(self, *_args, **_kwargs):
+                return _Action()
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "res_model": "sc.payment.execution",
+                "view_mode": "tree,form",
+                "target": "current",
+            },
+        )
+
+        entry_target = action["entry_target"]
+        self.assertEqual(entry_target["compatibility_refs"]["action_id"], 506)
+        self.assertNotIn("record_entry", entry_target)
+
     def test_explicit_form_destination_is_not_replaced_by_matching_scene(self):
         original_loader = navigation_entry_target._load_scene_configs
         navigation_entry_target._load_scene_configs = lambda _env: [
