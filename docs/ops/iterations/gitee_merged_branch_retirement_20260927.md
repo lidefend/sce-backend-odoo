@@ -66,8 +66,8 @@
 - 未包含于 main：`feature/gitee-orm-restricted-channel`、`feature/user-identity-activation-p0`、
   `fix/candidate-gate-closure-01`、`fix/clean-repository-ci-governance`、
   `fix/gitee-unpublished-branch-sync`、`fix/product-ten-center-runtime-closure`。
-- 受保护发布分支：`release/tenant-rc-01-product-image`、`release/tenant-rc-baosheng-fuel-v1`、
-  `release/user-auth-rc12`。
+- 受保护发布分支：3 条 `release/*`（行业成品镜像、客户燃料专题、用户认证）。按公开范围
+  规则，本条不落客户品牌标识；完整分支名见未跟踪证据 `artifacts/branch-retirement/20260927/gitee-branch-inventory.json`。
 - 运行载体仍绑定：`fix/gitee-temporary-integration-v1`（清零载体引用后再单独退役）。
 - 本地存在但远端没有的分支（不在本轮远端清单范围，未触碰）：`audit/formal-entry-gap-intake`、
   `feature/frontend-business-entry-closure`、`fix/ci-integrated-closeout-20260925`、

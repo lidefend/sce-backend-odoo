@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `4446`
 - Files requiring split plan: `55`
-- Files above warning threshold: `98`
+- Files above warning threshold: `99`
 
 ## Split Plan Required
 
@@ -99,6 +99,7 @@ Generated from repository source files. This report is informational during the 
 | 1240 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1234 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1225 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
+| 1224 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
@@ -253,8 +254,8 @@ Generated from repository source files. This report is informational during the 
 | 1240 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1234 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1225 | warning | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
+| 1224 | warning | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1218 | warning | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
-| 1208 | warning | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 
 ## Interpretation
 
