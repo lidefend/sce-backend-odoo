@@ -8,7 +8,7 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: verify.gitee.webhook.ci gitee.ci.server.install gitee.ci.server.status
 .PHONY: gitee.github.mirror.install gitee.github.mirror.seed gitee.github.mirror.run
 .PHONY: github.mirror.ruleset.configure github.mirror.non_mirror_push.test
-.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge verify.gitee.pr_bot.unit
+.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge gitee.pr.checks.fetch verify.gitee.pr_bot.unit verify.gitee.check_run_ids.unit
 .PHONY: gitee.pr.bot.professional.run
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
 .PHONY: verify.codex.agent_controller agent.controller.install agent.controller.config.check
@@ -158,6 +158,19 @@ gitee.pr.bot.merge: guard.prod.forbid
 verify.gitee.pr_bot.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/gitee_pr_bot.py scripts/verify/test_gitee_pr_bot.py
 	@python3 -m unittest scripts.verify.test_gitee_pr_bot
+
+# The platform's commit check-run list is empty in this repository, so the merge
+# entry needs the run ids observed by the trusted CI worker.  Read-only: it never
+# merges, and it refuses rather than reporting a partial or stale set.
+gitee.pr.checks.fetch: guard.prod.forbid
+	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
+	@test -n "$(EXPECTED_HEAD)" || (echo "EXPECTED_HEAD is required"; exit 2)
+	@test -n "$(GITEE_EXPECTED_MAIN)" || (echo "GITEE_EXPECTED_MAIN is required"; exit 2)
+	@python3 scripts/ops/gitee_check_run_ids.py --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" $(if $(GITEE_CI_HOST),--host "$(GITEE_CI_HOST)",) $(if $(GITEE_CI_USER),--user "$(GITEE_CI_USER)",) $(if $(GITEE_CI_LEDGER_DB),--db "$(GITEE_CI_LEDGER_DB)",)
+
+verify.gitee.check_run_ids.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_check_run_ids.py scripts/verify/test_gitee_check_run_ids.py
+	@python3 -m unittest scripts.verify.test_gitee_check_run_ids
 
 gitee.pr.bot.professional.run: guard.prod.forbid
 	@GITEE_PR_PROFESSIONAL_CONFIRM="$(GITEE_PR_PROFESSIONAL_CONFIRM)" bash scripts/ops/run_gitee_pr_professional_gate.sh

@@ -133,6 +133,14 @@ GitHub 的情况下使用既有 `gitee-mirror`；本节是下文“GitHub 唯一
   线上服务/包管理调用由受控 fake 替代，不改业务数据。公开范围工具只读候选及已观测远端对象，不推送。
 - 不使用固定历史 SHA 的 `gitee.pr.bot.merge` 处理新候选。Gitee PR 必须绑定源 HEAD／目标
   main，完成所需验证和独立审查后，按上方 CI 通过即合并规则在受保护 PR 流程合入；旧机器人不得用于新候选。
+- `make gitee.pr.checks.fetch EXPECTED_HEAD=<完整 SHA> GITEE_EXPECTED_MAIN=<完整 SHA> GITEE_PR_BOT_TOKEN_FILE=<私有文件>`：
+  **只读**解析一项候选的四项必需检查运行 ID，供 `gitee.pr.bot.merge` 的 `GITEE_PR_CHECK_RUNS` 使用。
+  原因是平台 `GET /commits/{sha}/check-runs` 在本仓库对任何提交（含 `main`）都返回 `total_count=0`，
+  列表端点无法充当“最新运行”证明；本入口改为读取可信 CI worker 自己登记的运行记录（固定远端程序、
+  commit 作为参数传递、数据库只读打开），取每个检查名的**最新** ID，再逐个按 ID 向平台回读核验。
+  运行必须由登记记录绑定到**同一提交**与**同一目标基线**：缺失、等待中、结论非成功、基线不符或
+  记录缺失一律拒绝，不以空集或局部结果充当通过。它不写、不合并、不授予合并资格，也不能放宽
+  合并入口自身的门禁；CI 主机凭据与既有 SSH 访问不变，不新增凭据文件。
 
 操作步骤及恢复 GitHub 的边界见 [临时集成规程](gitee_temporary_integration_v1.md)。
 现有 `pr.push`、`mirror.main.gitee` 和 `candidate.mirror.gitee` 保持原语义。

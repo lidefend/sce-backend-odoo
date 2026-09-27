@@ -32,6 +32,10 @@ reports ``atomic_sha_binding=false``.  Three further boundaries are enforced:
   twice.  Reading ``open`` afterwards only shows it had not landed *yet*;
 * ``--require-check`` may only *add* checks to the fixed four, never shrink them.
 
+``make gitee.pr.checks.fetch`` resolves the ids for that same commit from the
+trusted worker's own record and re-reads each one back by id, so the explicit-id
+path above is a governed step rather than a hand-copied number.
+
 Platform limitation -- check-run *listing*.  ``GET /commits/{sha}/check-runs``
 answers ``total_count=0`` for every commit in this repository, ``main`` included,
 while ``GET /check-runs/{id}`` reads the same runs back correctly.  The latest-run
