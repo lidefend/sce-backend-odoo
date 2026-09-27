@@ -412,6 +412,40 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(action["action_id"], 506)
         self.assertEqual(action["id"], 506)
 
+    def test_unreadable_action_identity_keeps_no_conflict_judgement_and_no_authority_claim(self):
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def browse(self, _action_id):
+                raise AssertionError("unreadable action: no conflict can be established")
+
+            def search(self, *_args, **_kwargs):
+                raise AssertionError("an explicit action identity must not be re-resolved")
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "id": 901,
+                "res_model": "project.task",
+                "res_id": 195,
+                "view_mode": "form",
+                "target": "current",
+            },
+            source_model="mail.notification",
+            source_record_id=318,
+        )
+
+        entry_target = action["entry_target"]
+        self.assertEqual(entry_target["compatibility_refs"]["action_id"], 901)
+        # The identity is kept, but nothing in the entry claims the caller may
+        # open it: authorization is adjudicated downstream, not here.
+        for key in ("authorized", "permission", "access", "may_open"):
+            self.assertNotIn(key, entry_target)
+            self.assertNotIn(key, entry_target["compatibility_refs"])
+            self.assertNotIn(key, entry_target["record_entry"])
+
     def test_matching_explicit_action_identity_is_preserved(self):
         class _Action:
             res_model = "project.task"

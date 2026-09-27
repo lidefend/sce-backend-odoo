@@ -239,6 +239,9 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
         explicit_action_id = 0
         payload.pop("id", None)
         payload.pop("action_id", None)
+    # An unreadable/absent action is deliberately left alone: dropping or
+    # rewriting it would fabricate an authorization judgement this layer does
+    # not own.
     explicit_record_id = _to_int(payload.get("res_id"))
     # A business action that declares its own destination already carries the
     # authoritative identity of that entry.  Resolving a model-level action id
@@ -374,6 +377,12 @@ def _declared_action_conflicts_with_target_model(env, action_id: int, target_mod
     readability and authorization of an action remain with the existing route
     authority; this only refuses to pair a mismatched action identity with the
     declared destination.
+
+    An action that cannot be read keeps its declared identity: no conflict can
+    be established, so nothing is dropped, and **no authorization is implied**
+    either -- this helper never asserts that an entry may be opened.  The
+    final access decision stays with the backend/route authority, which refuses
+    an entry whose action the caller is not entitled to.
     """
     if not action_id or not target_model or env is None:
         return False
