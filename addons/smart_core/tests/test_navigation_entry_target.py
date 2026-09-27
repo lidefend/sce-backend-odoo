@@ -333,6 +333,122 @@ class TestNavigationEntryTarget(unittest.TestCase):
         self.assertEqual(entry_target["compatibility_refs"]["action_id"], 506)
         self.assertNotIn("record_entry", entry_target)
 
+    def test_conflicting_explicit_action_does_not_become_the_record_entry_authority(self):
+        class _ForeignAction:
+            res_model = "mail.notification"
+
+            def exists(self):
+                return True
+
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def browse(self, _action_id):
+                return _ForeignAction()
+
+            def search(self, *_args, **_kwargs):
+                raise AssertionError("a declared destination must not resolve a replacement action")
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "id": 349,
+                "name": "关联单据",
+                "res_model": "project.task",
+                "res_id": 195,
+                "view_mode": "form",
+                "target": "current",
+            },
+            source_model="mail.notification",
+            source_record_id=318,
+        )
+
+        entry_target = action["entry_target"]
+        self.assertNotIn("id", action)
+        self.assertNotIn("action_id", action)
+        self.assertNotIn("action_id", entry_target["compatibility_refs"])
+        self.assertNotEqual(entry_target.get("route"), "/a/349")
+        self.assertEqual(
+            {
+                key: entry_target["record_entry"][key]
+                for key in ("model", "record_id", "entry_intent")
+            },
+            {"model": "project.task", "record_id": 195, "entry_intent": "open"},
+        )
+
+    def test_foreign_action_identity_is_not_kept_for_an_undeclared_destination(self):
+        class _ForeignAction:
+            res_model = "mail.notification"
+
+            def exists(self):
+                return True
+
+        class _OwnAction:
+            id = 506
+
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def browse(self, _action_id):
+                return _ForeignAction()
+
+            def search(self, *_args, **_kwargs):
+                return _OwnAction()
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "id": 349,
+                "res_model": "sc.payment.execution",
+                "view_mode": "tree,form",
+                "target": "current",
+            },
+        )
+
+        self.assertEqual(action["action_id"], 506)
+        self.assertEqual(action["id"], 506)
+
+    def test_matching_explicit_action_identity_is_preserved(self):
+        class _Action:
+            res_model = "project.task"
+
+            def exists(self):
+                return True
+
+        class _ActionModel:
+            def sudo(self):
+                return self
+
+            def browse(self, _action_id):
+                return _Action()
+
+            def search(self, *_args, **_kwargs):
+                raise AssertionError("an explicit action identity must not be re-resolved")
+
+        action = navigation_entry_target.normalize_odoo_action_result(
+            {"ir.actions.act_window": _ActionModel()},
+            {
+                "type": "ir.actions.act_window",
+                "id": 860,
+                "res_model": "project.task",
+                "res_id": 195,
+                "view_mode": "form",
+                "target": "current",
+            },
+            source_model="mail.notification",
+            source_record_id=318,
+        )
+
+        entry_target = action["entry_target"]
+        self.assertEqual(action["id"], 860)
+        self.assertEqual(action["action_id"], 860)
+        self.assertEqual(entry_target["compatibility_refs"]["action_id"], 860)
+        self.assertEqual(entry_target["record_entry"]["action_id"], 860)
+
     def test_explicit_form_destination_is_not_replaced_by_matching_scene(self):
         original_loader = navigation_entry_target._load_scene_configs
         navigation_entry_target._load_scene_configs = lambda _env: [

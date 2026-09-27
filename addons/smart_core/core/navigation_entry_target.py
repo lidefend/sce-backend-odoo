@@ -229,6 +229,16 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     action_target = _text(payload.get("target")).lower()
     view_id = _explicit_form_view_id(payload)
     explicit_action_id = _to_int(payload.get("id") or payload.get("action_id"))
+    if action_model and _declared_action_conflicts_with_target_model(env, explicit_action_id, action_model):
+        # The declared destination wins over a conflicting action identity: an
+        # action owned by another model is not this entry's authority.  Drop it
+        # so no consumer can attach it as the route authority, and keep the
+        # declared record/form destination instead of guessing a replacement.
+        # Whether the remaining entry is reachable stays with the existing
+        # route authority; this check widens no authorization.
+        explicit_action_id = 0
+        payload.pop("id", None)
+        payload.pop("action_id", None)
     explicit_record_id = _to_int(payload.get("res_id"))
     # A business action that declares its own destination already carries the
     # authoritative identity of that entry.  Resolving a model-level action id
@@ -354,6 +364,27 @@ def resolve_scene_key(env, *, menu_id=None, action_id=None, model: str = "", vie
         if normalized_model and target_model == normalized_model and target_view in normalized_view_modes:
             return scene_key
     return ""
+
+
+def _declared_action_conflicts_with_target_model(env, action_id: int, target_model: str) -> bool:
+    """An explicit action identity is authoritative only for its own model.
+
+    A business action that declares a target model but returns an action id
+    owned by a different model is internally inconsistent.  Existence,
+    readability and authorization of an action remain with the existing route
+    authority; this only refuses to pair a mismatched action identity with the
+    declared destination.
+    """
+    if not action_id or not target_model or env is None:
+        return False
+    try:
+        action = env["ir.actions.act_window"].sudo().browse(action_id)
+        if not action.exists():
+            return False
+        action_model = _text(action.res_model)
+    except Exception:
+        return False
+    return bool(action_model) and action_model != target_model
 
 
 def _resolve_action_id_for_model(env, model: str) -> int:
