@@ -1,6 +1,9 @@
 # J13 零金额分歧定位（2026-09-25）
 
-状态：定位完成，**未修改任何产品代码**；产品决策未定，J13 断言在浏览器中为 `not_run`。
+状态：定位完成，**未修改任何产品代码**；产品决策未定。
+**2026-09-27 三态实测已完成裁决**（第 10 节）：清空金额未被前端必填拦截、与 2026-09-24 浏览器
+记录一致；第 3.1 节冲突解除，第 3 节的代码推导（清空应被拦）被实测推翻，第 7 节的 `not_run` 已作废。
+根因确认为通用校验字段表静默退化为「契约字段映射前 16 个」，必填金额不在其中。
 基线：实时 Gitee main `28e4ddffd0f55758382019249249d2f0689d04f7`（含已合入 PR !20），
 分支 `audit/j13-zero-amount-localization-main`。
 ORM/契约探针采集于 `827fad4bd927c8be22bf940d24937bb2c07f4796`（当时 main，为 `28e4ddff`
@@ -58,11 +61,14 @@ ORM/契约探针采集于 `827fad4bd927c8be22bf940d24937bb2c07f4796`（当时 ma
 保存路径使用 `isRequiredFieldEmptyByType`（`saveRecordHelpers.ts:136`，创建态按
 `isWritableFieldVisible` 取全部可写字段，`saveRecordHelpers.ts:87`）。
 
+> 2026-09-27 更新：本段是代码推导，**已被第 10 节实测推翻**——三态保存均未被前端必填段拦截。
+> 保留原文以记录推导过程与错误位置。
+
 按代码推导：**清空与未输入应被前端必填校验拦下**，错误摘要标题确实是「请检查以下内容」
 （`ScErrorSummary.vue:2` 默认 `title`；`ProductFormErrorSummary.vue:6`）；显式 `0` 则前端放行、
 后端接受。**没有任何一层把 0 改写成空值。**
 
-### 3.1 该推导与既有浏览器记录冲突（本轮未裁决）
+### 3.1 该推导与既有浏览器记录冲突（2026-09-27 已裁决：实测支持既有浏览器记录）
 
 `docs/ops/iterations/onchange_draft_identity_roundtrip_20260924.md:81-85` 记录了**实际观察**：
 J13 第一步清空金额后点「保存草稿」，**产品允许该草稿保存**（状态草稿、金额 `0.00`），因此
@@ -128,7 +134,7 @@ J13 第一步清空金额后点「保存草稿」，**产品允许该草稿保�
 最小修改面（第二种情况下）：`valueUtils.ts`（1 处判定定义）＋ 对应定向测试；
 若需要后端约束，再在 P1 策略/模型层补 1 处，不改写契约 schema、不动数据库结构。
 
-## 7. 浏览器执行结果：`not_run`（附实测原因）
+## 7. 浏览器执行结果：`not_run`（2026-09-25；2026-09-27 已在 dist-dev 静态服务上实测，见第 10 节）
 
 本轮**实际尝试过**执行 J13 第 1 步，受环境能力阻断，未取得页面结论：
 
@@ -167,10 +173,90 @@ J13 第一步清空金额后点「保存草稿」，**产品允许该草稿保�
    `saveRecordHelpers.ts:132-137`；矛盾方是 `valueUtils.ts:5-13`。
 3. 正确呈现要求：0、空值、未输入三态在草稿、校验、提交与回读中保持同一含义；货币 0 必须
    要么被契约接受并原样回读，要么被契约拒绝，不能前端拦、后端收。
-4. **未裁决**：清空金额在浏览器中是「被拦」还是「保存成功」。代码推导为被拦，既有浏览器记录
-   （2026-09-24，旁证 `PRQ2600326`）为保存成功；本地受管环境无法渲染该表单，故本轮为 `not_run`。
-5. 最小修改路径：先按第 6 节第 0/1 步裁决并裁定产品语义，再收敛 `valueUtils.ts` 1 处判定定义并
-   补 0/空/未输入三态非零定向测试。
+4. **已裁决（2026-09-27）**：清空金额**未被前端必填拦截**，写入请求发出并落库 `0.00` 草稿；未触碰
+   由后端 `NotNullViolation` 拒绝（HTTP 500）；显式 `0` 原样保存。详见第 10 节。
+5. 最小修改路径（2026-09-27 修订，3 项，均在 P0 通用前端层）：校验字段表不得静默截断为 16 个字段、
+   空数值不得序列化为 `false`、两条必填判定收敛同源；业务「金额>0」如需要则另立 P1 约束。
+   验收为 0/空/未输入三态非零定向测试 + 浏览器回读。详见第 10.4 节。
+
+## 10. 2026-09-27 三态实测裁决与根因确认（本轮）
+
+环境：`sc_dev_demo`（本地受管开发库）、用户 `demo_full`（uid 52、公司 1、具 finance 角色）、
+入口 `/f/payment.request/new?action_id=809&menu_id=559`（菜单 559 → action 809，付款申请）。
+`127.0.0.1:5176` 由 `scripts/release/release_static_server.mjs` 提供**已构建产物**
+（`frontend/apps/web/dist-dev`），不是源码级 dev server：源码探针不会反映到该页面，静态分析必须
+针对 `dist-dev/assets/*.js`。本轮未改产品代码。
+
+### 10.1 三态实测结果（三态均为「其余必填合法，只改金额」）
+
+| 三态 | 草稿显示 | 写请求载荷 `vals` | 请求结果 | 权威回读 |
+| --- | --- | --- | --- | --- |
+| 显式输入 `0` | `0.00`（`field--normal`，无错误） | `…,"date_request":"2026-09-27","amount":0` | HTTP 200，跳转 `/f/payment.request/2121` | `PRQ2600687`，`amount=0.0`，`state=draft` |
+| 输入 `5` 后清空 | 空（`field--empty`），无错误摘要 | `…,"date_request":"2026-09-27","amount":false` | HTTP 200，跳转 `/f/payment.request/2122` | `PRQ2600688`，**`amount=0.0`**，`state=draft` |
+| 从未触碰 | 空（`field--empty`） | `…"date_request":"2026-09-27"`（**无 `amount` 键**） | **HTTP 500** `/api/v1/intent` | 未创建；页面提示「请检查以下内容／创建失败，请检查填写内容后重试。」 |
+
+三态的金额输入框在保存前都保持 `data-field-state="required"`，且**没有任何一次**出现字段级必填
+错误或焦点转移。对照反例：同样必填的 `partner_id` 不选择时，保存**不发出任何写请求**，直接给出
+「往来单位不能为空」。即：必填校验对该表单生效，但**不覆盖 `amount`**。
+
+结论：**清空金额未被前端必填拦截**，因此第 3.1 节的「代码推导 vs 浏览器记录」冲突按浏览器记录裁决；
+`PRQ2600326`（金额 `0.00`）的成因就是这条路径。三态语义现状为「0 保存、清空静默变 0、未触碰 500」，
+三者互不一致。
+
+### 10.2 根因：通用校验字段表静默退化为「契约字段映射前 16 个」
+
+`layoutNodes`（保存前必填校验、字段顺序等共用）来自
+`useRecordFormFieldSchemas.ts:96` → `buildLegacyLayoutNodes`，实际入参为：
+
+- `order: []`（不走布局树遍历）；
+- `visibleFields: contractVisibleFields` = **空**（契约 `dataContract.dataMeta` 只有
+  `fieldCount/sourceContext/businessOperationProfile/fieldGroups`，**没有 `visibleFields`**）;
+- `fallbackFieldNames: [...coreFieldNames, ...advancedFieldNames]` = **空**（语义分组取自
+  `dataMeta.fieldGroups.groups`，组名为 `business_identity/business_object/basis/...`，既不含
+  `core`/`advanced` 分组，widget 的 `componentConfig.surfaceRole` 也全部为空）。
+
+于是 `buildLegacyLayoutNodes` 落入兜底分支 `Object.keys(input.fields).slice(0, 16)`
+（`nativeLayoutUtils.ts:741-744`）：**校验字段表退化为契约字段映射的前 16 个字段码**。
+
+按契约 `containerTree` 的 widget 顺序，前 16 个为
+`validation_status, can_review, payment_execution_ids, has_active_payment_execution, state,
+partner_transaction_eligibility_reason, type, receipt_type, reject_reason, project_id,
+partner_id, business_category_id, date_request, company_id, operation_strategy,
+partner_transaction_eligibility`；而 `amount` 位于第 35 位（索引 34），**不在其中**。
+这与实测完全一致：`project_id`(9)/`partner_id`(10)/`business_category_id`(11)/`date_request`(12)
+被校验并拦截，`amount`(34) 从不被校验。
+
+金额仍进入载荷，是因为 `collectWritableValues` 在布局节点主循环之后还有「脏字段回退」：
+对 `dirtyFieldSet` 里不在结果中的字段，直接按 `formFields[name]` 取值写入
+（`useRecordFormState.ts:151`）。因此**触碰过金额就会写进载荷，从未触碰就不写**——这正是
+「清空（`false`）落 0.00」与「未触碰（缺键）500」两种不同结果的唯一来源。
+
+序列化环节（第 3 节表格已验证）：清空经 `normalizeContractFieldValue`（`valueUtils.ts`）对
+`float/monetary` 在 `parseNumeric` 为 `null` 时返回 `false`；Odoo `Monetary` 把 `false` 收敛为
+`0.0`，满足 NOT NULL，于是**静默落 0.00**，不报错也不提示。
+
+### 10.3 证据（仓外归档，`j13-zero-amount/`）
+
+- `j13-tri-state-20260927.json`（三态原始结果：草稿、载荷、告警、状态码）、
+  `j13-tri-state-20260927.cjs`（实测脚本，拦截 `api.data` 写入并记录完整 `vals`）；
+- `j13-validation-field-list-evidence-20260927.json`（契约字段码顺序、前 16 个生效列表、
+  `amount` 索引、回退分支入参证据）；
+- `j13-readback-before-cleanup-20260927.txt` 与 `j13-cleanup-readback-20260927.txt`
+  （回读 `amount=0.0/draft` 后删除 2121/2122，`remaining=[]`、`total_recent_left=0`）。
+
+### 10.4 最小修改路径（P0 通用前端层；未实施）
+
+1. **校验字段表不得静默截断**：无 `visibleFields`、无 `core/advanced` 分组时，不得取
+   `slice(0, 16)`。应按契约节点顺序或契约已有分组（`business_*`）生成完整字段表，或直接用原生
+   布局树构建 `layoutNodes`；清单确实缺失时应显式失败，而不是静默选取前 16 个字段。
+2. **空数值不得序列化为 `false`**：`normalizeContractFieldValue` 对清空的 `float/monetary`
+   应产出 `null`/省略该键，让 ORM 的 required（NOT NULL）语义裁决；合法的 `0` 仍原样提交。
+3. **两条必填判定收敛同源**：仅 `null/undefined/''/[]` 视为空；数字 `0` 与非布尔的 `false`
+   都不应视为缺失（`valueUtils.ts:8` 的 `v <= 0`）。若产品要求「草稿金额 > 0」，应作为**独立业务
+   约束**在 P1 模型/策略层声明，不复用通用必填判定。
+
+验收：0/空/未输入三态非零定向测试；浏览器验证「显式 `0` 保存并回读为 `0`」「清空与未触碰都不得
+静默产生 `0.00` 草稿，且必须给出字段级反馈」。
 
 ## 9. 证据归档
 
