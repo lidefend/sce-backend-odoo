@@ -697,10 +697,35 @@ Codex 的责任是 **定位 → 修复 → 重试**。
 * `make pr.push`
 * `make codex.sync-main`
 * `make branch.cleanup.feature`
+
+  * 单分支退役入口，`CLEAN_BRANCH_REMOTE` 选择远端（默认 `origin`）。
+  * **没有 force 开关**：`CLEANUP_FORCE` 已删除，任何绕过核验的尝试直接拒绝。
+  * 必须提供 `EXPECTED_BRANCH_SHA`（被审查分支的完整 SHA）与
+    `EXPECTED_MAIN_SHA`（所选远端实时 `main` 的完整 SHA）；`APPLY=1` 还须
+    `CLEAN_BRANCH_CONFIRM=DELETE_EXACT_REVIEWED_BRANCH`。
+  * 拒绝删除 `main`/`master`/`release/*`、被工作树检出的分支、当前检出分支，
+    以及不包含于所选远端 `main` 且（非 `origin` 时）无法用合并 PR 证明的分支。
+  * 远端读取失败一律按拒绝处理，不得当作“分支不存在”；远端删除使用
+    `--force-with-lease` 绑定预期 SHA，本地删除使用 `git update-ref -d <sha>`。
 * `make branch.retire.historical`
 
   * 仅按已审查的精确 JSON manifest 处理历史本地／远端分支引用；本地和远端
     SHA 分开核验，远端不存在必须显式声明。
+  * `HISTORICAL_RETIREMENT_REMOTE` 选择判定与删除所在远端（默认 `origin`，
+    Gitee 镜像用 `gitee-mirror`）；`HISTORICAL_RETIREMENT_EXPECTED_MAIN` 必填，
+    必须等于该远端实时 `main` 的完整 SHA。远端不可读、`main` 漂移、条目 tip
+    本地缺对象导致包含关系无法证明，均在上游或逐项拒绝，绝不按“分支不存在”处理。
+  * 非 `origin` 远端必须显式传 `HISTORICAL_RETIREMENT_OPEN_PR_PROVIDER=none`，
+    报告据此记录 `open_pr_check=none`，不得暗示已完成平台开放 PR 检查。
+  * `HISTORICAL_RETIREMENT_EMIT_MANIFEST` / `HISTORICAL_RETIREMENT_EMIT_INVENTORY`
+    为只读输出：按实时 `main` 生成退役 manifest 与完整分支清单（分支名、远端／
+    本地 SHA、包含关系、工作树占用、运行载体引用），不删除任何引用。
+  * manifest 只接纳 `feature|fix|refactor|audit|codex` 前缀且包含于实时 `main`
+    的分支；`main`、`master`、`release/*` 以及仅存在于本地、未包含于 `main`
+    的分支结构性排除。条目可声明 `local.state=absent`（Gitee 独有引用），
+    此时只退役远端引用。
+  * 载体扫描覆盖 `scripts`、`config`、`deploy`、`make`、`.agent`、`.github`；
+    命中运行载体引用的分支跳过。
   * 默认只读预演；`PREPARE_BUNDLE=1` 仅生成并校验恢复 bundle，不删除引用。
   * 实际退役必须同时提供 manifest 的 SHA-256、精确确认短语
     `RETIRE_APPROVED_HISTORICAL_REFERENCES` 和 `APPLY=1`；SHA 漂移、被工作树检出、
