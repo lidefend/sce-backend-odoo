@@ -1,6 +1,6 @@
 # J13 零金额分歧定位（2026-09-25）
 
-状态：**已修复并定向/浏览器验收通过**（修复提交 `64c326c4`，第 11 节）。
+状态：**已修复并定向/浏览器验收通过**（修复提交 `64c326c4`，第 11 节；收口提交 `5455ca00`，第 12 节）。
 **2026-09-27 三态实测已完成裁决**（第 10 节）：清空金额未被前端必填拦截、与 2026-09-24 浏览器
 记录一致；第 3.1 节冲突解除，第 3 节的代码推导（清空应被拦）被实测推翻，第 7 节的 `not_run` 已作废。
 根因确认为通用校验字段表静默退化为「契约字段映射前 16 个」，必填金额不在其中。
@@ -310,6 +310,84 @@ actual_payee_unit/attachment_ids`），**未因字段表变完整而膨胀出空
 
 ### 11.5 未覆盖 / 边界
 
-- 未验证：非必填数值「显式清空」的端到端回读（本批契约内 `amount` 为必填，清空被正确拦在保存前）。
+- 已补验（第 12 节）：非必填数值「显式清空」的端到端闭环。本批入口内 `amount` 为必填、清空仍被正确拦在保存前；
+  非必填数值改在正式入口「公司收入」实测（写入 → 清空 → 保存 → 回读 → 未触碰对照）。
 - 未验证：只读角色对 `amount` 的直接写入拒绝（既有后端权限证据继续复用，未在本批重跑）。
 - 未覆盖：报表投影、properties、附件 404（仍为未复现）、显式创建能力状态，均保持独立待办。
+
+## 12. 2026-09-27 收口：场景预校验类型接线与非必填数值清空闭环（`5455ca00`）
+
+分支 `fix/j13-required-value-semantics-and-write-payload`，父提交 `1510bafc`。第 11 节把必填判定收敛为
+唯一实现，但场景预校验仍是**无类型调用**，两条链路实际并未一致；同时第 11.5 节登记的非必填数值清空
+尚无实测。本轮只补这两项，不扩大范围，新增提交 `5455ca00`。
+
+### 12.1 根因与修复（P0 通用前端层）
+
+`useRecordActionPresentation.ts` 的包装函数只传值调用 `isMissingRequiredValue`（
+`collectSceneValidationPrecheckErrorsFromRules({ …, isMissingValue: isMissingRequiredValue })`），
+`sceneValidation.ts` 的 `collectSceneValidationPrecheckErrors` 也只按值判断。而统一判定是**类型敏感**的：
+
+| 值 | 无类型 | `boolean` | `many2one` |
+| --- | --- | --- | --- |
+| `false` | 缺失 | 真实答案 | 空关联（缺失） |
+
+因此场景规则要求填写的布尔字段为 `false` 时仍会被拦；反之若靠「无类型时一律接受 `false`」修补，
+空关联又必然漏检。函数实现合并了，**调用方的类型信息没有接齐**。
+
+| 修改 | 文件 | 行为 |
+| --- | --- | --- |
+| 预检输入增加类型解析器 | `sceneValidation.ts` `SceneValidationPrecheckInput.fieldType?` | 逐字段解析契约类型后调用统一判定；无描述符时保持原有类型盲结论 |
+| 生产调用点接契约类型 | `useRecordActionPresentation.ts` `collectSceneValidationPrecheckErrors` | `fieldType: (field) => fieldType(formFields.value[field])`，以契约表单字段表为**唯一类型权威** |
+| 注释同步 | `valueUtils.ts` | 明确两条链路都必须带类型判定，避免再次据此写出「预检没有类型可用」 |
+
+### 12.2 定向测试（83 → 110 例）
+
+仍为 `make verify.frontend.j13_required_value_semantics.unit`（已接入 quick/release 门禁），新增 27 例：
+
+- **真实预检入口**：直接调用导出的 `collectSceneValidationPrecheckErrors`，按生产接线（契约描述符 +
+  `fieldType` + `isMissingRequiredValue`）断言——布尔 `false`/`true` 通过、`null` 驳回；数值 `0` 通过、
+  清空驳回；空关联 `false` 驳回；空白文本驳回；`relation=false` 与 `flag=false` 同批时只报前者。
+- **类型确实转发**：用记录型 `isMissingValue` 断言逐字段收到 `[false,'boolean']`、`[false,'many2one']`；
+  未知字段仍走类型盲结论（证明修的不是「一律接受 `false`」）。
+- **调用点接线守卫**：读取生产源文件，断言预检调用块同时含 `isMissingValue: isMissingRequiredValue`、
+  `fieldType:` 与 `formFields.value[`——行为测试抓不到调用点漂移，这一条专门防它。
+- **非必填数值三态**：编辑态未触碰不写入、显式清空写入类型化哨兵、数值 `0` 原样提交。
+- **控件清空输出**：官方数值控件是文本输入，清空发出**空串**；派发器不得把它变成
+  `shouldWriteFieldValue` 会跳过的 `null`，否则清空意图丢失（`null` 输入也归一为空串）。
+
+`vue-tsc --noEmit` 仍为 31 项既有错误、**未新增**（本轮改动文件 0 项）。
+
+### 12.3 非必填数值清空闭环（浏览器 + ORM 权威回读）
+
+入口：正式「公司收入」`/f/sc.receipt.income/new?action_id=806&menu_id=545`（P1 入口，`demo_full`／
+`sc_dev_demo`，候选 5176 由 `5455ca00` 的 `dist-dev` 构建提供）。
+
+| 场景 | 实测 | 结果 |
+| --- | --- | --- |
+| 创建：触碰两个非必填数值 | `deducted_tax_amount=3`、`settlement_amount=7` | 载荷为**数值** `3`/`7`；未触碰的 `deducted_invoice_amount` **不在载荷**（10 键） |
+| 编辑载入 | — | 回显 `100.00` / `3.00` / `7.00` |
+| 清空非必填数值 + 改备注 | 清空 `settlement_amount` | 控件清空后草稿为**空串**（非 `null`）；写载荷仅 `{"settlement_amount":false,"note":…}`，未触碰的 `deducted_tax_amount` **不在载荷** |
+| 权威回读（清空后） | ORM `read` | `settlement_amount=0.0`（float）、`deducted_tax_amount=3.0` 保留、`state=draft`、`note` 已更新 |
+| 只改备注（两者都未触碰） | 写载荷仅 `{"note":…}` | 回读 `settlement_amount` 仍 `0.0`、`deducted_tax_amount` 仍 `3.0`，与原值一致 |
+
+**必须写清的边界**：`monetary`/`float` 列对 Odoo 空值哨兵 `false` 的类型化收敛就是**数值 `0.0`**。
+因此对这类字段，「显式清空」与「从未写入」在**存储上不可区分**（后者来自列默认值 `0.0`）；
+清空意图的可观测差异只在**写入载荷**（显式 `false` 与省略键）。不得把该 `0.0` 描述为「数据库空值」，
+也不得宣称通用载荷层能表达「已核实的零」与「未填写」的差别——那需要 P1 业务约束。
+
+### 12.4 清理回执
+
+专用探测记录 `257` 已删除，`remaining=[]`、`probe_note_leftover=[]`、`total_probe_left=0`；
+首轮探测记录 `256` 同样已回收，无残留。
+
+证据：`artifacts/ci/handoff-20260925/target-acceptance-827fad4b/j13-zero-amount/`
+`j13-nonrequired-clear-20260927.{cjs,json}`、`j13-nonrequired-readback-20260927.py`、
+`j13-nonrequired-readback-before-cleanup-20260927.txt`、`j13-nonrequired-cleanup-20260927.py`、
+`j13-nonrequired-cleanup-readback-20260927.txt`（已并入 `SHA256SUMS.txt`，44 条全部校验通过）。
+
+### 12.5 未覆盖 / 边界
+
+- 场景所需**布尔字段**：现有可达正式入口没有 scene-required 布尔字段，故该修复只有真实入口单测 +
+  调用点接线守卫，**无对应浏览器场景**；不据此宣称浏览器已验证场景预检。
+- 目标环境只读角色拒绝仍未补验（与第 11.5 节一致，部署后补）。
+- 报表投影、properties、附件 404、显式创建能力状态保持独立待办。
