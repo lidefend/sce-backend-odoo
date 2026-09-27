@@ -764,7 +764,7 @@ verify.frontend.contract_header_action.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
-.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit
+.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.j13_required_value_semantics.unit
 verify.frontend.canonical_form_presenter.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_form_presenter_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/canonical-form-presenter-test.mjs >/dev/null
 	@node /tmp/canonical-form-presenter-test.mjs
@@ -785,6 +785,11 @@ verify.frontend.create_record_user_journey.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_record_user_journey_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/create-record-user-journey-test.mjs >/dev/null
 	@node /tmp/create-record-user-journey-test.mjs
 
+.PHONY: verify.frontend.j13_required_value_semantics.unit
+verify.frontend.j13_required_value_semantics.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/j13_required_value_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/j13-required-value-semantics-test.mjs >/dev/null
+	@node /tmp/j13-required-value-semantics-test.mjs
+
 .PHONY: verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit
 verify.frontend.native_section_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_section_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-section-navigation-test.mjs >/dev/null
@@ -803,7 +808,7 @@ verify.frontend.cross_model_action_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/cross_model_action_navigation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/cross-model-action-navigation-test.mjs >/dev/null
 	@node /tmp/cross-model-action-navigation-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
+verify.frontend.quick.gate: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 

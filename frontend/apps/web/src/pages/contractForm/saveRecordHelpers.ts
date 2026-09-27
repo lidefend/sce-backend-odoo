@@ -1,6 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
 import { fieldType } from './fieldUtils';
-import { isRequiredFieldEmptyByType } from './valueUtils';
+import { isMissingRequiredValue, isRequiredFieldEmptyByType } from './valueUtils';
 import type { LayoutNode, SubmissionFeedback } from './types';
 
 export type SaveRecordValidationResult = {
@@ -147,6 +147,31 @@ export function collectRequiredFieldValidation(params: {
     messages: [message],
     fieldErrors: Object.fromEntries(unique.map((item) => [item.name, `${item.label}不能为空`])),
   };
+}
+
+export type WritableValueDecisionInput = {
+  recordId: number | null;
+  dirty: boolean;
+  value: unknown;
+  descriptor?: FieldDescriptor;
+};
+
+/**
+ * Decides whether one normalized draft value belongs in a write payload.
+ *
+ * - `null` means "untouched numeric": never write it. Serializing an untouched
+ *   number as `false` makes Odoo silently store `0` instead of keeping the
+ *   stored value (or letting the model own its default).
+ * - Edit mode only sends explicitly changed fields.
+ * - Create mode sends every changed field, and skips untouched *empty* values so
+ *   an empty string never overrides a model default. Untouched non-empty values
+ *   (context/onchange hydrated) are still sent.
+ */
+export function shouldWriteFieldValue(input: WritableValueDecisionInput): boolean {
+  if (input.value === null) return false;
+  if (input.recordId) return input.dirty;
+  if (input.dirty) return true;
+  return !isMissingRequiredValue(input.value, fieldType(input.descriptor));
 }
 
 export type SaveRecordPayloadBuildInput = {

@@ -740,8 +740,11 @@ export function buildLegacyLayoutNodes(input: LegacyLayoutNodeInput): LayoutNode
     input.order.forEach((item, index) => walkLayout(item, `root_${index}`));
   }
   if (!nodes.some((node) => node.kind === 'field')) {
+    // Never silently truncate this table: it is the shared field list behind
+    // required validation and the write payload. A cut-off list makes required
+    // fields past the cut pass unvalidated, so fall back to every mapped field.
     const fallback = input.visibleFields.length ? input.visibleFields : input.fallbackFieldNames;
-    const fallbackFields = fallback.length ? fallback : Object.keys(input.fields).slice(0, 16);
+    const fallbackFields = fallback.length ? fallback : Object.keys(input.fields);
     fallbackFields.forEach((name) => pushField(name));
   }
   return nodes;
