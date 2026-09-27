@@ -265,6 +265,39 @@ class FormalQueueTests(unittest.TestCase):
         with self.q.connect() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM formal_jobs').fetchone()[0],130)
 
+    def test_targeted_report_ignores_historical_cursor(self):
+        newer=candidate(pr=2);key,_=self.q.enqueue(newer,'2')
+        self.refresh=Mock(side_effect=lambda p:p['platform_snapshot'])
+        self.reporter.sync_once(job=key)
+        self.assertEqual(self.api.rows[1]['pull_request_id'],125)
+        self.assertEqual(self.refresh.call_count,1)
+        with self.q.connect() as db:
+            self.assertEqual(db.execute('SELECT position FROM formal_report_cursor').fetchone()[0],0)
+
+    def test_history_refresh_has_constant_budget_and_progress(self):
+        self.terminal();self.publish_all()
+        other=candidate(pr=2);self.q.enqueue(other,'2')
+        self.now+=31
+        self.refresh=Mock(side_effect=lambda p:p['platform_snapshot'])
+        self.reporter.sync_once()
+        self.assertEqual(self.refresh.call_count,1)
+        self.reporter.sync_once()
+        self.assertEqual(self.api.rows[5]['pull_request_id'],125)
+
+    def test_completed_job_wakes_reports_without_throttle_delay(self):
+        self.publish_all()
+        self.terminal()
+        self.publish_all()
+        self.assertTrue(all(x['conclusion']=='success' for x in self.api.rows.values()))
+
+    def test_only_verified_merged_success_gets_longer_poll(self):
+        self.terminal()
+        self.refresh=lambda p:{**{k:p[k] for k in IDENTITY_KEYS},'pr_id':124,
+                              'historical_merged':True,'merged_at':'2026-09-23'}
+        self.publish_all()
+        with self.q.connect() as db:
+            self.assertEqual(db.execute('SELECT DISTINCT retry_at FROM formal_reports').fetchall(),[(400.0,)])
+
     def test_worker_to_reporter_lifecycle(self):
         worker=Mock();worker.execute_plan.return_value=receipt(self.p)
         self.assertTrue(execute_once(self.q,worker,self.refresh));self.assertFalse(execute_once(self.q,worker,self.refresh))

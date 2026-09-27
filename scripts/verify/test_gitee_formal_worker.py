@@ -32,7 +32,7 @@ class InboxTests(unittest.TestCase):
 
 class WorkerTests(unittest.TestCase):
     def worker(self):
-        w=Worker.__new__(Worker);w.inbox=Mock();w.queue=Mock();w.executor=Mock();w.reporter=Mock();w.reader=Mock();return w
+        w=Worker.__new__(Worker);w.inbox=Mock();w.queue=Mock();w.executor=Mock();w.reporter=Mock();w.reader=Mock();w.queue.enqueue.return_value=('k',True);return w
     def test_candidate_label_invalidates_previous_ordinary_success(self):
         w=self.worker();w.reader=Mock();w.reader.get.return_value={'labels':[{'name':'ci:candidate'}]}
         with self.assertRaisesRegex(ValueError,'requested_lane_changed'):
@@ -117,5 +117,29 @@ class WorkerTests(unittest.TestCase):
         w=self.worker();w.inbox.claim.return_value=('123',{'pr_number':5});w.prepare=Mock(return_value={'plan':'fixture'})
         self.assertTrue(w.tick());w.queue.enqueue.assert_called_once_with({'plan':'fixture'},'123')
         w.inbox.finish.assert_called_once_with('123','prepared');execute.assert_called_once_with(w.queue,w.executor,w.refresh)
+
+
+
+class SchedulingTests(unittest.TestCase):
+    worker = WorkerTests.worker
+    @patch('scripts.ci.gitee_formal_worker.execute_once',return_value=True)
+    def test_fresh_job_never_waits_for_historical_report(self,execute):
+        w=self.worker(); events=[]
+        w.inbox.claim.side_effect=lambda: (events.append('claim') or ('123',{}))
+        w.prepare_delivery=Mock(side_effect=lambda *args: (events.append('prepare') or 'fresh'))
+        def report(*,job=None):
+            self.assertEqual(job,'fresh')
+            events.append('fresh_report')
+        w.reporter.sync_once.side_effect=report
+        execute.side_effect=lambda *args: (events.append('execute') or True)
+        self.assertTrue(w.tick())
+        self.assertEqual(events[:2],['claim','prepare'])
+        self.assertIn('execute',events)
+
+    @patch('scripts.ci.gitee_formal_worker.execute_once',return_value=False)
+    def test_idle_historical_work_is_one_bounded_call(self,execute):
+        w=self.worker();w.inbox.claim.return_value=None
+        self.assertFalse(w.tick())
+        w.reporter.sync_once.assert_called_once_with(job=None)
 
 if __name__=='__main__':unittest.main()
