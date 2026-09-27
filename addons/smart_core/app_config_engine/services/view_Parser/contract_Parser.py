@@ -187,6 +187,20 @@ class OdooViewParser(_BaseViewParserMixin,
         parser must use fields_get as the model-level source of truth.
         """
         out = {name: dict(meta) if isinstance(meta, dict) else meta for name, meta in (fields_info or {}).items()}
+        # ``many2one_reference`` resolves its target model at runtime through a
+        # sibling pointer field, and ``fields_get()`` never publishes that
+        # pointer.  Read it from the field object so the contract can carry the
+        # declared type *and* the target-model authority instead of degrading to
+        # "some record".
+        for name, meta in out.items():
+            if not isinstance(meta, dict):
+                continue
+            if str(meta.get("type") or meta.get("ttype") or "").strip().lower() != "many2one_reference":
+                continue
+            field = getattr(model, "_fields", {}).get(name)
+            model_field = str(getattr(field, "model_field", "") or "").strip()
+            if model_field:
+                meta["model_field"] = model_field
         missing = []
         if root is not None or arch:
             try:
@@ -216,6 +230,15 @@ class OdooViewParser(_BaseViewParserMixin,
             meta = (model_fields or {}).get(fname)
             if isinstance(meta, dict):
                 out[fname] = meta
+        for fname, meta in out.items():
+            if not isinstance(meta, dict):
+                continue
+            if str(meta.get("type") or meta.get("ttype") or "").strip().lower() != "many2one_reference":
+                continue
+            field = getattr(model, "_fields", {}).get(fname)
+            model_field = str(getattr(field, "model_field", "") or "").strip()
+            if model_field:
+                meta["model_field"] = model_field
         _logger.debug(
             "VIEW_PARSER_DEBUG: enriched fields_info with arch fields=%s",
             [name for name in missing if name in out],

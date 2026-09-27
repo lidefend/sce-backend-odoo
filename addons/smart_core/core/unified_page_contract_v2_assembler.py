@@ -229,11 +229,21 @@ def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
     return "unknown"
 
 
+REFERENCE_FIELD_TYPES = frozenset({"many2one_reference", "reference"})
+
+
 def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str:
     normalized = _text(widget_type).lower()
     descriptor = _dict(field)
     field_type = _text(descriptor.get("ttype") or descriptor.get("type")).lower()
     relation = _text(descriptor.get("relation")).lower()
+    # A reference value is a (model, id) pair the client resolves to its own
+    # record.  No client registers a reference editor, and a text input cannot
+    # carry one, so the declared type outranks every widget spelling here and
+    # the contract binds the readable display instead of a control the type
+    # cannot use.
+    if field_type in REFERENCE_FIELD_TYPES:
+        return "sc.display.text"
     if field_type == "monetary" or normalized == "monetary":
         return "sc.value.money"
     if normalized in {"percentage", "percentpie"}:
@@ -295,6 +305,11 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
         # object value.  Declare the readable display instead of falling
         # through to an input the resolver must then reject.
         return "display"
+    if ttype in REFERENCE_FIELD_TYPES:
+        # Same governed fallback for reference types: the readable display
+        # keeps the declared type and the target-model pointer on the widget
+        # instead of masquerading as a text value.
+        return "display"
     return "input"
 
 
@@ -332,6 +347,12 @@ def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
     # an explicit name nor a producer-filled default may bind an object value
     # to a control that cannot carry it.
     if _text(field.get("ttype") or field.get("type")).lower() == "json":
+        return _widget_type_from_field(field)
+    # Reference types carry the same precedence for the same reason: no client
+    # registers a reference editor, so neither an explicit widget name nor a
+    # producer-filled default may bind a (model, id) pair to a control that
+    # cannot carry it.
+    if _text(field.get("ttype") or field.get("type")).lower() in REFERENCE_FIELD_TYPES:
         return _widget_type_from_field(field)
     if normalized in CANONICAL_WIDGET_TYPES:
         return normalized
@@ -1587,7 +1608,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",
-        "relation_active_actions",
+        "relation_active_actions", "model_field",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1601,6 +1622,11 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         component_config["selection"] = deepcopy(list(selection))
     if _text(field.get("relation")):
         component_config["relation"] = _text(field.get("relation"))
+    if field_type in REFERENCE_FIELD_TYPES:
+        model_field = _text(field.get("model_field"))
+        if model_field:
+            # Canonical wire alias for the polymorphic target-model pointer.
+            component_config["referenceModelField"] = model_field
     relation_entry = _dict(field.get("relation_entry"))
     if relation_entry:
         component_config["relationEntry"] = deepcopy(relation_entry)

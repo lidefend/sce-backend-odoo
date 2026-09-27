@@ -803,6 +803,7 @@ def _govern_project_task_form_for_user(data: dict) -> None:
         data,
         profile=profile,
         make_labeled_field_node=lambda name, fields_map, preferred_labels: _make_labeled_field_node(name, fields_map, preferred_labels, primary_model),
+        collect_native_field_occurrences=_form_layout.collect_native_field_occurrences,
     )
 
 

@@ -52,7 +52,7 @@ def _load_handler():
             )
         ),
         client_requested_sudo=lambda params: False,
-        merge_orm_create_defaults=lambda model, vals: dict(vals or {}),
+        merge_orm_create_defaults=lambda model, vals, **kwargs: dict(vals or {}),
         resolve_api_data_sudo=lambda params: False,
     )
     _install_module(

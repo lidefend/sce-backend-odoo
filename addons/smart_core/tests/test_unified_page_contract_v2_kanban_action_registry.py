@@ -42,6 +42,21 @@ def _load_assembler():
     return module
 
 
+def _load_native_field_descriptor():
+    sys.modules.setdefault("odoo", types.ModuleType("odoo"))
+    utils_pkg = sys.modules.setdefault("odoo.addons.smart_core.utils", types.ModuleType("odoo.addons.smart_core.utils"))
+    utils_pkg.__path__ = [str(CORE_DIR.parent / "utils")]
+    spec = importlib.util.spec_from_file_location(
+        "odoo.addons.smart_core.utils.native_field_descriptor",
+        CORE_DIR.parent / "utils" / "native_field_descriptor.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    sys.modules["odoo.addons.smart_core.utils.native_field_descriptor"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _kanban_source():
     return {
         "model": "project.project",
@@ -143,6 +158,65 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 )
                 self.assertEqual(widget["widgetType"], "display")
                 self.assertEqual(widget["componentKey"], "sc.display.text")
+
+    def test_reference_field_declares_readable_display_instead_of_a_text_input(self):
+        # A ``many2one_reference`` value is a (model, id) pair the client
+        # resolves to a record.  No client registers a reference editor, so the
+        # contract must declare the readable display for every spelling that
+        # reaches the assembler -- including the producer default that carries
+        # the field type in the widget slot, which is what bound
+        # ``sc.input.text`` to ``many2one_reference`` and rejected the page.
+        for descriptor in (
+            {"type": "many2one_reference", "model_field": "sc_source_model"},
+            {"type": "many2one_reference", "model_field": "sc_source_model", "widget": "input"},
+            {"type": "many2one_reference", "model_field": "sc_source_model", "widget": "many2one_reference"},
+            {"ttype": "many2one_reference", "model_field": "sc_source_model", "widget": "select"},
+        ):
+            with self.subTest(descriptor=descriptor):
+                widget = self.assembler._field_widget(
+                    {"name": "sc_source_res_id", "string": "来源记录", **descriptor},
+                    layout_type="form",
+                )
+                self.assertEqual(widget["widgetType"], "display")
+                self.assertEqual(widget["componentKey"], "sc.display.text")
+                config = widget["componentConfig"]
+                # The declared type and the target-model authority survive; the
+                # widget is not disguised as text and not smuggled as a string.
+                self.assertEqual(config["fieldType"], "many2one_reference")
+                self.assertEqual(config["model_field"], "sc_source_model")
+                self.assertEqual(config["referenceModelField"], "sc_source_model")
+
+    def test_reference_component_key_never_binds_a_text_input(self):
+        for field_type in ("many2one_reference", "reference"):
+            for widget_type in ("input", field_type, "select", "number"):
+                with self.subTest(field_type=field_type, widget_type=widget_type):
+                    self.assertEqual(
+                        self.assembler._component_key(widget_type, {"name": "src", "type": field_type}),
+                        "sc.display.text",
+                    )
+
+    def test_native_field_descriptor_carries_the_reference_target_model_only_when_declared(self):
+        descriptor_module = _load_native_field_descriptor()
+        reference = descriptor_module.project_native_field_descriptor(
+            "sc_source_res_id",
+            {"type": "many2one_reference", "string": "来源记录", "model_field": "sc_source_model"},
+        )
+        self.assertEqual(reference["type"], "many2one_reference")
+        self.assertEqual(reference["model_field"], "sc_source_model")
+        # Absent authority must stay absent: an empty pointer is not evidence
+        # that the reference is unscoped.
+        self.assertNotIn(
+            "model_field",
+            descriptor_module.project_native_field_descriptor(
+                "sc_source_res_id", {"type": "many2one_reference", "string": "来源记录"}
+            ),
+        )
+        self.assertNotIn(
+            "model_field",
+            descriptor_module.project_native_field_descriptor(
+                "name", {"type": "char", "string": "名称", "model_field": "sc_source_model"}
+            ),
+        )
 
     def test_date_range_widget_preserves_native_semantics_for_public_component_consumers(self):
         widget = self.assembler._field_widget(

@@ -1593,8 +1593,28 @@ class ApiDataHandler(BaseIntentHandler):
             return list(domain or []), ""
         return list(domain or []) + self._build_search_term_domain(env_model, search_term, fields_safe), search_term
 
+    def _create_default_skip_fields(self, model: str) -> tuple:
+        """Fields whose ORM default must be applied by ``create()`` itself.
+
+        A model may confine a field to a state machine that refuses a direct
+        write; materializing that field's ORM default into the create payload
+        would fabricate exactly the refused write. The owning product module
+        declares the field through this hook, so the platform keeps no
+        business field knowledge of its own.
+        """
+        payload = call_extension_hook_first(
+            self.env,
+            "smart_core_create_default_skip_fields",
+            self.env,
+            str(model or "").strip(),
+        )
+        if not isinstance(payload, (list, tuple, set, frozenset)):
+            return ()
+        return tuple(str(name) for name in payload if str(name or "").strip())
+
     def _prepare_create_vals(self, env_model, vals: Dict[str, Any]) -> Dict[str, Any]:
-        safe_vals = merge_orm_create_defaults(env_model, vals)
+        skip_fields = self._create_default_skip_fields(env_model._name)
+        safe_vals = merge_orm_create_defaults(env_model, vals, skip_fields=skip_fields)
         self._apply_create_fallbacks(env_model, safe_vals)
         return safe_vals
 

@@ -1084,6 +1084,26 @@ def smart_core_create_field_fallbacks(env, model_name):
     return get_create_field_fallback_contributions(env, model_name)
 
 
+# Fields whose ORM default must be applied by ``create()`` instead of being
+# materialized into the create payload. ``project.task.sc_state`` is owned by
+# the task state machine: transitions write it under ``allow_transition`` and
+# the model guard refuses any other direct write. Resolving its ORM default
+# into ``vals`` would fabricate the very direct write the guard must reject.
+CREATE_DEFAULT_SKIP_FIELDS = {
+    "project.task": ("sc_state",),
+}
+
+
+def get_create_default_skip_field_contributions(env, model_name):
+    del env
+    return tuple(CREATE_DEFAULT_SKIP_FIELDS.get(str(model_name or ""), ()))
+
+
+def smart_core_create_default_skip_fields(env, model_name):
+    """Compatibility hook consumed by smart_core api.data create defaults."""
+    return get_create_default_skip_field_contributions(env, model_name)
+
+
 def smart_core_form_business_actions(env, model_name, record_id, contract):
     """Return model-level business action semantics for form contracts."""
     del contract

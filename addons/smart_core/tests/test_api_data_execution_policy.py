@@ -85,6 +85,34 @@ class TestApiDataExecutionPolicy(unittest.TestCase):
         )
         self.assertEqual(model.requested, ("project_id", "amount"))
 
+    def test_orm_owned_default_stays_out_of_create_vals(self):
+        class _Model:
+            _fields = {"sc_state": object(), "project_id": object()}
+
+            def default_get(self, names):
+                return {"sc_state": "draft", "project_id": 7}
+
+        # A state-machine field is skipped so create() applies its own default;
+        # materializing it would forge a direct state write the guard refuses.
+        self.assertEqual(
+            self.policy.merge_orm_create_defaults(_Model(), {}, skip_fields=("sc_state",)),
+            {"project_id": 7},
+        )
+
+    def test_skipped_field_still_passes_an_explicit_client_value(self):
+        class _Model:
+            _fields = {"sc_state": object()}
+
+            def default_get(self, names):
+                return {"sc_state": "draft"}
+
+        self.assertEqual(
+            self.policy.merge_orm_create_defaults(
+                _Model(), {"sc_state": "ready"}, skip_fields=("sc_state",),
+            ),
+            {"sc_state": "ready"},
+        )
+
     def test_explicit_values_win_and_unknown_values_are_removed(self):
         class _Model:
             _fields = {"project_id": object(), "amount": object()}

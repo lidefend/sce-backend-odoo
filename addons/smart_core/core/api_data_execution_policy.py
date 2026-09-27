@@ -53,14 +53,29 @@ def authoritative_context_default_fields(
     }))
 
 
-def merge_orm_create_defaults(env_model: Any, vals: dict[str, Any]) -> dict[str, Any]:
-    """Filter client values and resolve Odoo defaults for all missing fields."""
+def merge_orm_create_defaults(
+    env_model: Any,
+    vals: dict[str, Any],
+    skip_fields: Any = (),
+) -> dict[str, Any]:
+    """Filter client values and resolve Odoo defaults for all missing fields.
+
+    ``skip_fields`` names fields whose default must stay owned by ``create()``.
+    Resolving such a default into the create payload would turn the model's own
+    default into an explicit client write; models that confine a field to a
+    state machine refuse that direct write, so the default is left to the ORM.
+    A client-supplied value for a skipped field is still passed through and
+    stays subject to the model's own write guard.
+    """
     model_fields = env_model._fields or {}
+    skipped = {str(name) for name in (skip_fields or ()) if str(name or "").strip()}
     safe_vals = {key: value for key, value in (vals or {}).items() if key in model_fields}
     missing = [
         name
         for name in model_fields
-        if name not in safe_vals and not str(name or "").startswith("__")
+        if name not in safe_vals
+        and name not in skipped
+        and not str(name or "").startswith("__")
     ]
     if not missing:
         return safe_vals

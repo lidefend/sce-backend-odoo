@@ -336,11 +336,42 @@ def main() -> int:
                 "description_group_label": "任务说明",
             },
         )
+        def _native_field(name, locator, position):
+            return {
+                "type": "field",
+                "name": name,
+                "native_locator": locator,
+                "occurrence_index": 1,
+                "source_position": position,
+            }
+
+        # The flat field configuration is only a presentation overlay, so the
+        # resolved native layout has to be present: it is the sole authority
+        # for a projected node's occurrence identity.
         task_data = {
             "head": {"model": "project.task", "view_type": "form"},
             "model": "project.task",
             "governance": {"primary_model": "project.task"},
-            "views": {"form": {"model": "project.task"}},
+            "views": {"form": {
+                "model": "project.task",
+                "layout": [
+                    {"type": "sheet", "name": "native_sheet", "children": [
+                        {"type": "group", "name": "native_group", "children": [
+                            _native_field("name", "/form[1]/sheet[1]/group[1]/field[1]", 4),
+                            _native_field("project_id", "/form[1]/sheet[1]/group[1]/field[2]", 5),
+                            {"type": "notebook", "children": [
+                                {"type": "page", "children": [
+                                    _native_field(
+                                        "description",
+                                        "/form[1]/sheet[1]/notebook[1]/page[1]/field[1]",
+                                        9,
+                                    ),
+                                ]},
+                            ]},
+                        ]},
+                    ]},
+                ],
+            }},
             "fields": {
                 "name": {"type": "char", "string": "Name"},
                 "project_id": {"type": "many2one", "string": "Project"},
@@ -363,6 +394,59 @@ def main() -> int:
         first_node = (first_group.get("children") or [{}])[0]
         if first_node.get("string") != "任务名称":
             errors.append("project task form must use configured field labels in layout nodes")
+        def _collect_projected(items, sink):
+            for raw in items or []:
+                if not isinstance(raw, dict):
+                    continue
+                if str(raw.get("type") or "").lower() == "field":
+                    sink.append(raw)
+                _collect_projected(raw.get("children"), sink)
+
+        projected_nodes = []
+        _collect_projected(task_layout, projected_nodes)
+        if [node.get("name") for node in projected_nodes] != ["name", "project_id", "description"]:
+            errors.append("project task form must project every configured field with a native occurrence")
+        for node in projected_nodes:
+            if not node.get("native_locator") or int(node.get("occurrence_index") or 0) <= 0:
+                errors.append(
+                    "project task form must keep the native occurrence identity of every projected field"
+                )
+                break
+        if {node.get("name"): node.get("native_locator") for node in projected_nodes}.get("description") != (
+            "/form[1]/sheet[1]/notebook[1]/page[1]/field[1]"
+        ):
+            errors.append("project task form must resolve nested native occurrences, not fabricate them")
+
+        # A configured field with no native occurrence is not projectable and
+        # must be dropped instead of becoming a locator-less occurrence.
+        unprojectable = {
+            "head": {"model": "project.task", "view_type": "form"},
+            "model": "project.task",
+            "governance": {"primary_model": "project.task"},
+            "views": {"form": {
+                "model": "project.task",
+                "layout": [{"type": "sheet", "children": [
+                    {"type": "group", "children": [
+                        _native_field("name", "/form[1]/sheet[1]/group[1]/field[1]", 4),
+                    ]},
+                ]}],
+            }},
+            "fields": {
+                "name": {"type": "char", "string": "Name"},
+                "ghost": {"type": "char", "string": "Ghost"},
+            },
+        }
+        governance._govern_project_task_form_for_user(unprojectable)
+        unprojectable_layout = ((unprojectable.get("views") or {}).get("form") or {}).get("layout") or []
+        ghost_nodes = []
+        _collect_projected(unprojectable_layout, ghost_nodes)
+        if [node.get("name") for node in ghost_nodes] != ["name"]:
+            errors.append("project task form must not fabricate an occurrence for an unrendered field")
+        unprojectable_sheet = unprojectable_layout[0] if unprojectable_layout else {}
+        if unprojectable_sheet.get("name") != "project_task_form_sheet":
+            errors.append("project task form must still emit the governed sheet when a field is dropped")
+        if unprojectable.get("visible_fields") != ["name"]:
+            errors.append("project task form must declare only projectable fields as visible")
 
         transitions = [
             {"trigger": {"label": f"Transition {idx}", "kind": "server"}}
