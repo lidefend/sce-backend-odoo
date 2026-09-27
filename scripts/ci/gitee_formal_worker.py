@@ -167,6 +167,7 @@ class Worker:
         self.inbox.finish(delivery,'prepared' if reported else 'environment_error')
         print('[gitee_formal] preparation_failed reason='+reason+
               ' reported='+('true' if reported else 'false')+detail,flush=True)
+        return key if reported else None
 
     def prepare_delivery(self,delivery,event):
         try:
@@ -175,25 +176,27 @@ class Worker:
             reason=exc.reason if isinstance(exc,PreparationFailed) else 'preparation_incomplete'
         else:
             try:
-                self.queue.enqueue(p,delivery);self.inbox.finish(delivery,'prepared');return
+                key,_=self.queue.enqueue(p,delivery)
+                self.inbox.finish(delivery,'prepared');return key
             except Exception:
                 reason='preparation_incomplete'
-        self.report_preparation_failure(delivery,event,reason)
+        return self.report_preparation_failure(delivery,event,reason)
 
-    def report(self):
-        for _ in range(4):
-            try:self.reporter.sync_once()
+    def report(self, job=None):
+        for _ in range(4 if job is not None else 1):
+            try:self.reporter.sync_once(job=job)
             except Exception:
                 print('[gitee_formal] report_pending_retry',flush=True)
                 break
 
     def tick(self):
-        self.report()
+        # Never reconcile historical PRs before accepting fresh signed events.
         incoming=self.inbox.claim()
+        job=None
         if incoming:
             delivery,event=incoming
-            self.prepare_delivery(delivery,event)
-        if incoming:self.report()
+            job=self.prepare_delivery(delivery,event)
+        if job is not None:self.report(job)
         worked=execute_once(self.queue,self.executor,self.refresh)
-        self.report()
+        self.report(job)
         return bool(incoming) or worked

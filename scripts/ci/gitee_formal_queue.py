@@ -88,6 +88,7 @@ class FormalQueue:
             if receipt['status']=='success': validate_success(p,receipt)
             db.execute('UPDATE formal_jobs SET status=?,receipt=? WHERE id=?',
                        (receipt['status'],json.dumps(receipt,sort_keys=True),key))
+            db.execute('UPDATE formal_reports SET retry_at=0 WHERE job=?',(key,))
 
     def fail(self,key,receipt):
         """Terminalize a job that was never executed because preparation failed.
@@ -177,17 +178,24 @@ class FormalReporter:
     def __init__(self,queue,api,refresh_identity,*,clock=time.time):
         self.queue,self.api,self.refresh,self.clock=queue,api,refresh_identity,clock
 
-    def sync_once(self):
+    def sync_once(self, *, job=None):
         with Path(str(self.queue.path)+'.formal-report.lock').open('a') as lock:
             try: fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
             except BlockingIOError: return False
             with self.queue.connect() as db:
-                position=db.execute('SELECT position FROM formal_report_cursor WHERE id=1').fetchone()[0]
-                jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs WHERE rowid>? ORDER BY rowid LIMIT 128',(position,)).fetchall()
-                if not jobs:
-                    db.execute('UPDATE formal_report_cursor SET position=0 WHERE id=1')
-                    jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs ORDER BY rowid LIMIT 128').fetchall()
+                if job is not None:
+                    jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs WHERE id=?',(job,)).fetchall()
+                else:
+                    position=db.execute('SELECT position FROM formal_report_cursor WHERE id=1').fetchone()[0]
+                    jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs WHERE rowid>? ORDER BY rowid LIMIT 128',(position,)).fetchall()
+                    if not jobs:
+                        db.execute('UPDATE formal_report_cursor SET position=0 WHERE id=1')
+                        jobs=db.execute('SELECT rowid,id,plan,status,receipt FROM formal_jobs ORDER BY rowid LIMIT 128').fetchall()
+            # One historical identity per call. Slow HTTP cannot multiply by the
+            # number of retained jobs. In-flight requests keep their API timeout.
+            refreshed=False
             for rowid,key,raw,state,result in jobs:
+                if refreshed: break
                 plan=json.loads(raw)
                 current=None
                 for name in CHECKS:
@@ -197,13 +205,14 @@ class FormalReporter:
                         marker,phase,remote_id,delivered,retry_at=db.execute('SELECT marker,phase,remote_id,delivered,retry_at FROM formal_reports WHERE job=? AND name=?',(key,name)).fetchone()
                     if retry_at>self.clock():continue
                     if current is None:
+                        refreshed=True
                         try: current=self.refresh(plan)
                         except Exception: current={}
                     desired=payload(plan,state,json.loads(result) if result else None,name,marker,current)
                     encoded=json.dumps(desired,sort_keys=True)
                     if encoded==delivered:
                         with self.queue.connect() as db:
-                            db.execute('UPDATE formal_reports SET retry_at=? WHERE job=? AND name=?',(self.clock()+30,key,name))
+                            db.execute('UPDATE formal_reports SET retry_at=? WHERE job=? AND name=?',(self.clock()+(300 if current.get('historical_merged') is True and desired.get('conclusion')=='success' else 30),key,name))
                         continue
                     try:
                         if phase=='new':
@@ -233,13 +242,14 @@ class FormalReporter:
                         if not self.matches(remote,desired,remote_id):raise ReportError('readback_mismatch')
                         self.verify_pr_association(remote_id,desired)
                         with self.queue.connect() as db:
-                            db.execute('UPDATE formal_reports SET delivered=?,error=NULL,retry_at=? WHERE job=? AND name=?',(encoded,self.clock()+30,key,name))
+                            db.execute('UPDATE formal_reports SET delivered=?,error=NULL,retry_at=? WHERE job=? AND name=?',(encoded,self.clock()+(300 if current.get('historical_merged') is True and desired.get('conclusion')=='success' else 30),key,name))
                     except ReportError as exc:
                         with self.queue.connect() as db:
-                            db.execute('UPDATE formal_reports SET error=?,retry_at=? WHERE job=? AND name=?',(str(exc),self.clock()+30,key,name))
+                            db.execute('UPDATE formal_reports SET error=?,retry_at=? WHERE job=? AND name=?',(str(exc),self.clock()+(300 if current.get('historical_merged') is True and desired.get('conclusion')=='success' else 30),key,name))
                     return True
                 with self.queue.connect() as db:
-                    db.execute('UPDATE formal_report_cursor SET position=? WHERE id=1',(rowid,))
+                    if job is None:
+                        db.execute('UPDATE formal_report_cursor SET position=? WHERE id=1',(rowid,))
             return False
 
     def verify_pr_association(self,remote_id,desired):
