@@ -229,15 +229,36 @@ def normalize_odoo_action_result(env, result, *, menu_id=None, source_model: str
     action_target = _text(payload.get("target")).lower()
     view_id = _explicit_form_view_id(payload)
     explicit_action_id = _to_int(payload.get("id") or payload.get("action_id"))
+    if action_model and _declared_action_conflicts_with_target_model(env, explicit_action_id, action_model):
+        # The declared destination wins over a conflicting action identity: an
+        # action owned by another model is not this entry's authority.  Drop it
+        # so no consumer can attach it as the route authority, and keep the
+        # declared record/form destination instead of guessing a replacement.
+        # Whether the remaining entry is reachable stays with the existing
+        # route authority; this check widens no authorization.
+        explicit_action_id = 0
+        payload.pop("id", None)
+        payload.pop("action_id", None)
+    # An unreadable/absent action is deliberately left alone: dropping or
+    # rewriting it would fabricate an authorization judgement this layer does
+    # not own.
+    explicit_record_id = _to_int(payload.get("res_id"))
+    # A business action that declares its own destination already carries the
+    # authoritative identity of that entry.  Resolving a model-level action id
+    # would attach an action the caller never returned and that the current
+    # user may not be authorized for; a menu-less record/form destination is
+    # expressed by the related-record carrier instead.
+    declared_destination = bool(
+        action_type == "ir.actions.act_window"
+        and model
+        and (explicit_record_id or action_target == "new")
+    )
     action_id = explicit_action_id or (
-        0
-        if action_type == "ir.actions.act_window" and action_target == "new" and view_id
-        else _resolve_action_id_for_model(env, model)
+        0 if declared_destination else _resolve_action_id_for_model(env, model)
     )
     if action_id:
         payload.setdefault("id", action_id)
         payload.setdefault("action_id", action_id)
-    explicit_record_id = _to_int(payload.get("res_id"))
     source_record_matches_target = not action_model or action_model == _text(source_model)
     record_id = explicit_record_id or (
         _to_int(source_record_id)
@@ -346,6 +367,33 @@ def resolve_scene_key(env, *, menu_id=None, action_id=None, model: str = "", vie
         if normalized_model and target_model == normalized_model and target_view in normalized_view_modes:
             return scene_key
     return ""
+
+
+def _declared_action_conflicts_with_target_model(env, action_id: int, target_model: str) -> bool:
+    """An explicit action identity is authoritative only for its own model.
+
+    A business action that declares a target model but returns an action id
+    owned by a different model is internally inconsistent.  Existence,
+    readability and authorization of an action remain with the existing route
+    authority; this only refuses to pair a mismatched action identity with the
+    declared destination.
+
+    An action that cannot be read keeps its declared identity: no conflict can
+    be established, so nothing is dropped, and **no authorization is implied**
+    either -- this helper never asserts that an entry may be opened.  The
+    final access decision stays with the backend/route authority, which refuses
+    an entry whose action the caller is not entitled to.
+    """
+    if not action_id or not target_model or env is None:
+        return False
+    try:
+        action = env["ir.actions.act_window"].sudo().browse(action_id)
+        if not action.exists():
+            return False
+        action_model = _text(action.res_model)
+    except Exception:
+        return False
+    return bool(action_model) and action_model != target_model
 
 
 def _resolve_action_id_for_model(env, model: str) -> int:
