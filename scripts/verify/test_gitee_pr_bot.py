@@ -6,6 +6,7 @@ not a live integration eligibility.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,14 @@ class FakeAPI:
             if self.merge_raises:
                 raise self.merge_raises
             return {"sha": self.put_sha or self.merged_sha, "merged": True}
+        # Anchored to the real API shape so a by-id fallback that forgets the
+        # repository prefix fails the fake instead of passing it.
+        if method == "GET" and re.fullmatch(rf"/repos/{gitee_pr_bot.OWNER}/{gitee_pr_bot.REPO}/check-runs/\d+", path):
+            ident = int(path.rsplit("/", 1)[-1])
+            for item in self.checks:
+                if item.get("id") == ident:
+                    return dict(item)
+            raise AssertionError(f"unknown check run id {ident}")
         if method == "GET" and "/check-runs" in path:
             return {"check_runs": list(self.checks)}
         if method == "GET" and "/branches/" in path:
@@ -410,6 +419,111 @@ class MergeEntryTests(unittest.TestCase):
         self.assertIn("strictly increasing", doc)
         self.assertIn("single success authority", doc)
         self.assertIn("only shows it had not landed", doc)
+
+
+class ExplicitCheckRunIdTests(unittest.TestCase):
+    """The commit check-run list is empty on this platform, so ids may be given
+    explicitly.  They are still bound to the commit; nothing about the four-check
+    gate, the identity gate or the readback is relaxed."""
+
+    def run_merge(self, api, wrapper=None, **kwargs):
+        target = wrapper or api
+        with patch.object(gitee_pr_bot, "request", target):
+            return gitee_pr_bot.merge_pull("token", number=NUMBER, expected_head=HEAD,
+                                           expected_main=MAIN, expected_source=SOURCE, **kwargs)
+
+    def refuse(self, api, code, wrapper=None, **kwargs):
+        with self.assertRaises(gitee_pr_bot.Denied) as ctx:
+            self.run_merge(api, wrapper=wrapper, **kwargs)
+        self.assertIn(code, str(ctx.exception))
+        self.assertEqual(api.merge_calls, [], "a refusal must never call the merge endpoint")
+
+    def evidence(self, api):
+        return [(row["name"], row["id"]) for row in api.checks]
+
+    def test_explicit_ids_merge_when_every_run_binds_to_the_commit(self):
+        api, wrapper = merged_api()
+        receipt = self.run_merge(api, wrapper=wrapper, check_evidence=self.evidence(api))
+        self.assertEqual(len(api.merge_calls), 1)
+        self.assertEqual(set(receipt["checks"]), set(REQUIRED))
+        self.assertEqual(receipt["merge_commit"], MERGED)
+        self.assertEqual(receipt["check_verification"],
+                         {"source": "explicit_ids", "latest_run_proof": False})
+
+    def test_explicit_id_bound_to_another_commit_refuses(self):
+        api = FakeAPI(checks=[dict(row, head_sha="d" * 40) for row in passing_checks()])
+        self.refuse(api, "required_checks_stale_sha", check_evidence=self.evidence(api))
+
+    def test_explicit_id_carrying_a_failure_refuses(self):
+        api = FakeAPI(checks=[dict(row, conclusion="failure") for row in passing_checks()])
+        self.refuse(api, "required_checks_not_success", check_evidence=self.evidence(api))
+
+    def test_explicit_id_still_pending_refuses(self):
+        api = FakeAPI(checks=[dict(row, status="queued", conclusion=None) for row in passing_checks()])
+        self.refuse(api, "required_checks_pending", check_evidence=self.evidence(api))
+
+    def test_explicit_id_answering_a_different_name_refuses(self):
+        api = FakeAPI(checks=[dict(row, name="some_other_gate") for row in passing_checks()])
+        forged = [(name, row["id"]) for name, row in zip(REQUIRED, api.checks)]
+        self.refuse(api, "check_evidence_name_mismatch", check_evidence=forged)
+
+    def test_explicit_ids_cannot_shrink_the_required_set(self):
+        api = FakeAPI()
+        self.refuse(api, "required_checks_missing", check_evidence=self.evidence(api)[:3])
+
+    def test_explicit_ids_cannot_add_an_unknown_check(self):
+        api = FakeAPI()
+        extra = self.evidence(api) + [("smoke_gate", 99)]
+        self.refuse(api, "check_evidence_unknown", check_evidence=extra)
+
+    def test_a_repeated_name_refuses(self):
+        api = FakeAPI()
+        doubled = self.evidence(api) + [self.evidence(api)[0]]
+        self.refuse(api, "check_evidence_duplicate_name", check_evidence=doubled)
+
+    def test_a_repeated_run_id_refuses(self):
+        api = FakeAPI()
+        rows = self.evidence(api)
+        forged = rows[:-1] + [(rows[-1][0], rows[0][1])]
+        self.refuse(api, "check_evidence_duplicate_id", check_evidence=forged)
+
+    def test_a_non_numeric_or_non_positive_id_refuses(self):
+        for bad in (0, -3):
+            with self.subTest(bad=bad):
+                api = FakeAPI()
+                rows = self.evidence(api)
+                forged = rows[:-1] + [(rows[-1][0], bad)]
+                self.refuse(api, "check_evidence_invalid_id", check_evidence=forged)
+
+    def test_an_id_must_still_name_an_existing_run(self):
+        api = FakeAPI()
+        rows = self.evidence(api)
+        bogus = rows[:-1] + [(rows[-1][0], 987654321)]
+        with self.assertRaises(AssertionError):
+            with patch.object(gitee_pr_bot, "request", api):
+                gitee_pr_bot.merge_pull("token", number=NUMBER, expected_head=HEAD,
+                                        expected_main=MAIN, expected_source=SOURCE,
+                                        check_evidence=bogus)
+        self.assertEqual(api.merge_calls, [])
+
+    def test_the_list_endpoint_still_wins_when_it_answers(self):
+        api, wrapper = merged_api()
+        receipt = self.run_merge(api, wrapper=wrapper)
+        self.assertEqual(receipt["check_verification"],
+                         {"source": "commit_list", "latest_run_proof": True})
+
+    def test_docstring_records_the_platform_listing_limit(self):
+        doc = gitee_pr_bot.__doc__ or ""
+        self.assertIn("total_count=0", doc)
+        self.assertIn("latest_run_proof", doc)
+
+    def test_cli_parses_name_id_pairs_and_refuses_junk(self):
+        self.assertEqual(gitee_pr_bot.parse_check_evidence(["public_guard=17", "x=2"]),
+                         [("public_guard", 17), ("x", 2)])
+        for junk in ("public_guard", "public_guard=", "=17", "public_guard=abc"):
+            with self.subTest(junk=junk):
+                with self.assertRaises(SystemExit):
+                    gitee_pr_bot.parse_check_evidence([junk])
 
 
 class TokenFileTests(unittest.TestCase):
