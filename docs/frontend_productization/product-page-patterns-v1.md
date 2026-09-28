@@ -255,3 +255,18 @@ markers. The two real-route journeys are bound in
 project list, and legacy/edit controls) and `tpl03-switch-results.json` (7/7:
 adopted list → adopted detail → legacy detail → legacy list → back, with no
 fact, card, error, or registration leaking across models).
+
+The same two journeys are re-bound to one traceable candidate in
+`artifacts/frontend-web-fix-20260928/tpl03r/`: source `f017d42d` (the TPL-02R
+fix commit; the docs-only `9fd6a4b6` above it changes no product source), one
+off-repo build served by `release_static_server.mjs` pid 2166107 on `:5176`
+with all 100 files proven byte-identical over HTTP, re-run as **30/30** and
+**7/7**. This replaces the earlier build's un-retraceable product-identity
+claim (its bundle was overwritten); the historical `tpl03/` record is kept
+unchanged and is not back-filled. Two boundaries apply: the switch journey's
+legacy-detail step uses `/r/res.partner/1`, which shows a pre-existing
+`加载失败` page in this environment (identical at `bffc4b7e`) and so only proves
+the adopted composition did not leak — a rendering legacy detail is shown
+separately at `/r/project.project/10` under `fixture_role_pm`
+(`legacyGrids=4`, `facts=0`); and resize-without-reload across the narrow
+breakpoint was not exercised in the browser.

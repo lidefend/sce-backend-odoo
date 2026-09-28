@@ -646,6 +646,11 @@ A→B→回 A（同 `model`+`recordId` 也不复活旧草稿会话，且覆盖�
 运行前先确认样本可复用：`project.project` 10、`sc.general.contract` 11 均可读；
 已删除的记录 18 **不假定**仍存在。
 
+**收口结论**：异步身份修复通过（修复前 17/46 失败 → 修复后 46/46）、既有跨模型探测完整执行
+（`TPL02B-20260928204024` 8/8）、当前候选双视口补证完成（`TPL02C-20260928204429` 2/2 + 项目/合同双视口）
+——三条件同时满足，**FE-TPL-02 在当前整合候选 `f017d42d` 上收口**。`cc0eee7b` 历史 bundle 对应关系
+仍不可追溯，作为历史限制保留，**不阻塞**本次收口。
+
 **口径限制（不得夸大）**：
 - 只宣布 TPL-02 能力在**当前整合候选** `f017d42d` 上的验收结果；`cc0eee7b` 的历史浏览器产物对应关系
   仍不可完整追溯，作为历史限制保留，**不倒填**。
@@ -716,3 +721,43 @@ A→B→回 A（同 `model`+`recordId` 也不复活旧草稿会话，且覆盖�
 - 官方详情页的 `t-steps` 时间线**未采纳**：本仓已有更丰富的审计/协作时间线，替换会丢业务能力而非改表达。
 - 89 入口唯一分母不变；本轮只验证标准组合复用，**未**因模板复用通过就把任何业务职责标为 passed。
 - 专题内不推送、不合并、不部署目标环境。
+
+### FE-TPL-03 列表/只读详情证据再绑定到当前整合候选（2026-09-29）
+
+同一专题分支。**不是**新一轮 TPL-03 验收、不新增页面实现、不调整业务矩阵。目的：把已实现的
+列表/只读详情采纳证据，从“浏览器产物已被覆盖、无法追溯对应关系的 `bffc4b7e` 历史 bundle”
+改为绑定在**当前整合候选**上的一次可追溯运行。历史记录
+`artifacts/frontend-web-fix-20260928/tpl03/` **保持原样、不回填**。
+
+**输入**：源码候选 `f017d42d`（即 TPL-02R 修复提交；其上的 `9fd6a4b6` 仅动 `docs/`），离仓构建
+`/home/lidefend/workspace/sce-offrepo/artifacts/fe-tpl02b2-20260929/dist`（`index.html`
+sha256 `0163d514…f3488`，入口 `/assets/index-CdKU6vab.js` sha256 `9725be9c…3d4c3`），由
+`release_static_server.mjs` pid 2166107 @ `127.0.0.1:5176` 服务（`04:42:40` 起），100/100 文件经
+HTTP 取回校验逐字节一致。
+
+**结果**（均绑定上述候选/产物，运行于 `06:32–06:33`，`loadedScripts` 含被服务的入口
+`/assets/index-CdKU6vab.js`）：
+
+- `artifacts/frontend-web-fix-20260928/tpl03r/tpl03-journey-results.json`：**30/30**。采纳合同列表
+  `/m/662`（`official-standard-list`，1 官方卡片，分页/选择/列设置齐备）、采纳合同只读详情
+  `/r/sc.general.contract/11`（`official-standard-detail`，`facts/readonlySections/descriptions=7`、
+  `items=13`、`legacyGrids=0`、`relationEntries=4`）、采纳项目列表 `/m/680`，均 `1440×900`/`390×844`
+  无横向溢出；旧列表 `/a/713?menu_id=414`、旧详情 `/r/res.partner/1` 保持 `legacy-*-surface`；
+  编辑/新建表单保持旧网格（`not-a-readonly-profile`）。
+- `.../tpl03r/tpl03-switch-results.json`：**7/7**。采纳列表→采纳详情→旧详情→旧列表→回采纳详情→
+  回采纳列表，每步 `facts`/官方卡片/`grids` 归零，全程横向溢出 0。
+- 响应式（加载时）：`detail-contract-1440.png` 事实 2 列/行，`detail-contract-390.png` 1 列/行，
+  由 `composables/useNarrowViewport.ts`（`matchMedia` + `change` 监听）驱动。
+
+**边界（不得夸大）**：
+
+- switch 的“旧详情”一步落在 `/r/res.partner/1`，该页在本验收环境为**既有**的“记录详情 · 加载失败”
+  （`invalid contract v2 snapshot: …editable auth conflicts with readonly occurrence status`），
+  与 `bffc4b7e` 历史运行**完全一致** → 既有/环境问题，**非本候选引入**。该步因此只证明“采纳组合未
+  泄漏到旧详情面”，不是在可正常渲染的旧详情页上取得。补充参照：`/r/project.project/10` 在
+  `fixture_role_pm` 下渲染为 `legacy-detail-surface` 且旧网格 `legacyGrids=4`
+  （`tpl03r/legacy-detail-r_project.project_10-pm.png`）；在 `operator` 角色下为 `无权访问`
+  （预期读权限边界，非采纳副作用）。
+- “跨断点拖拽 resize（不重载）”本轮**未**在浏览器验证，仅有代码层 `matchMedia` 响应式救济。
+- 本轮**不**代表 TPL-03 整体通过：未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细、合同全流程
+  （R7R9/R5）；89 入口唯一分母不变；未调整业务矩阵状态；不推送、不合并、不部署目标环境。
