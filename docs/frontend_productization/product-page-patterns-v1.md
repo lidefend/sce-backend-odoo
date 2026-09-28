@@ -46,3 +46,43 @@ IDs, menu IDs, or renderer selection. A pattern/mode mismatch fails closed.
 - No professional component registry or readiness claims.
 - No industry component implementation.
 - No route, mutation, or settlement changes.
+
+## Official template adoption (FE-TPL)
+
+The presentation composition for standard pages is taken from the official
+`Tencent/tdesign-vue-next-starter` sources instead of being re-assembled per
+page. The reference snapshot is
+`aeed57076217f7777158b905f353d73585bad1c4`; it is a reference baseline, not a
+dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
+(lockfile version, re-read by `verify.frontend.component_driver_takeover.unit`).
+
+| Page type | Official source | Takeover position in this repository |
+|---|---|---|
+| Standard edit form | `src/pages/form/base/index.vue` | `components/template/FormSection.vue` (field grid, label, error slot) plus `design-system/ScForm.vue` / `ScFormItem.vue` (validation and instance capability pass-through) |
+| Standard query list | `src/pages/list/base/index.vue` | not adopted yet (planned TPL-03) |
+| Standard readonly detail | `src/pages/detail/base/index.vue` | not adopted yet (planned TPL-03) |
+| Application shell | `src/layouts/` | not adopted yet (planned TPL-04) |
+| Master-detail handling page | form/list/upload/overlay composition | not adopted yet (planned TPL-05) |
+
+### Adoption switch
+
+- `app/presentation/standardFormComposition.ts` is the pure adoption policy.
+  It resolves one model to `{ composition, adopted, reason }` and owns the
+  explicit pilot scope list; it does not import Vue, the DOM, or TDesign.
+- `pages/contractForm/standardFormCompositionRuntime.ts` provides the resolved
+  policy down the existing render chain and collects the adopted sections'
+  validation results (`createStandardFormValidationRegistry`).
+- `pages/ContractFormPage.vue` creates the runtime from the page model and
+  `components/template/FormSection.vue` consumes it. A section that is not in
+  the adopted scope renders its previous DOM unchanged (`bare` mode), so a
+  single page never runs two competing compositions.
+
+### Boundary
+
+Contract and Odoo facts decide what exists, what is editable, and what may be
+shown. The adopted composition decides how the form is laid out and when
+generic field validation runs and how errors surface. The existing business
+runtime keeps the single draft, the occurrence write decision, permission,
+domain validation, and the save chain. Validation rules are built from the
+contract's field facts (`components/template/contractFormValidationRules.ts`),
+not from model names or labels.

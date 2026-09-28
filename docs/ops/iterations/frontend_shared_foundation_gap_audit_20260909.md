@@ -389,3 +389,45 @@ P4修复：现有 `refresh.generated_reports` 仅改变 complexity_budget_report
 
 唯一 89 入口矩阵分母和状态保持不变。其他历史分支分类与本地同步结果见
 [本轮记录](local_iteration_sync_20260928.md)。
+
+### FE-TPL-01 官方标准表单首次接管（2026-09-28）
+
+专题分支 `feature/web-official-template-adoption`，从 `main`/`23f11f42` 切出，不再复用已合并的
+修复分支。官方参考快照固定为 `Tencent/tdesign-vue-next-starter@aeed57076217f7777158b905f353d73585bad1c4`
+（参考基线，不是依赖升级）。本地库身份仍为 `tdesign-vue-next@1.20.5`
+（`frontend/packages/ui`，由 component-driver 清单回读）。来源→接管位置的映射写入既有
+[Product Page Patterns v1](../../frontend_productization/product-page-patterns-v1.md)，未新建治理体系。
+
+**接管范围与提交**：能力接线 `82ab559d`（`standardFormComposition` 策略、`scFormContract`、
+`ScForm`/`ScFormItem` 实例与 props 透传、`contractFormValidationRules`、
+`standardFormCompositionRuntime`、81 例单测、make 目标与 quick gate）。真实页面接管 `fb6a778e`
+（`FormSection.vue` 落入官方组合并注册通用校验、`buildRequiredFieldErrorPayload` 抽出、
+`runAdoptedFormValidation` 接入 `saveRecord()` 前置、`ContractFormPage.vue` 提供 runtime）。
+未采纳范围由 `bare` 保持原 DOM，同一页面不会同时运行两套组合。
+
+**试点入口与运行来源**：入口 `menu_sc_product_project_edit_v1`（`/m/680` → `/f/project.project/10`），
+角色 `fixture_role_pm`。环境：`sc-backend-odoo-acceptance` `127.0.0.1:18082`、生产模式
+vite preview `127.0.0.1:5175`、隔离库 `sc_frontend_acceptance`。前端产物由本次源码重建
+（`dist-release/assets/ContractFormPage-BxZsuyWO.js`，源码最后修改 20:19:48 早于构建 20:21:54）。
+截图与 journey JSON：`artifacts/frontend-web-fix-20260928/tpl01/`（仓外未跟踪）。
+
+**结构证据**：6 个 section form；`24/24` 行渲染为 `t-form__item`、旧行 `0`；`1440×900` 与
+`390×844` 结论一致，窄屏 `scrollWidth === clientWidth === 390`，无横向溢出。
+
+**行为与业务证据**：清空「项目名称」并写入草稿标记后保存被拒——当次 0 次写入、唯一 invalid 字段、
+`role="alert"`、`aria-describedby` 指向该控件、摘要「请检查以下内容 / 项目名称不能为空」，
+草稿标记保留。纠正后保存 2xx 且错误清零，刷新回读 `name`/`location` 与期望一致，随后 fixture 已还原。
+
+**本轮实测检查**：`vue-tsc --noEmit` 0 error；页面模式/专业组件注册/原语适配/表单画布四个守门脚本 PASS；
+`standard_form_composition` 81 例、`contract_error_business_ownership` 92 例、
+`contract_field_occurrence_identity`、`contract_form_save_failure_recovery` 通过；
+`component_driver_takeover` 清单按新源文件刷新后 PASS（required=35 missing=0 bridge_only=0 raw=0）。
+
+**口径限制（不得夸大）**：
+- 只能宣布「官方标准表单接管到 `project.project` 的菜单 680 表单」；列表、详情、应用外壳、
+  主从办理组合均未接管，89 入口矩阵分母与状态不变，未批量升级任何行。
+- 「官方引擎结果参与保存判定」由 shipped 调用顺序断言、registry 单测与页面结构证据共同支持；
+  生产构建不暴露组件实例，未能在浏览器中把「官方引擎拒绝」与「既有 precheck 拒绝」两条同形输出分离。
+  两条路径按设计共用 `isRequiredFieldEmptyByType` 与同一错误载荷，本轮未观察到二者结果不一致。
+- 本环境 `vue-tsc` 未复现历史 31 项错误，因此不能作为「同基线、零新增」的对照，只能报告本次 0 新增。
+- 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。
