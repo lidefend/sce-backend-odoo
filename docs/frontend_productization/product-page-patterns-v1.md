@@ -268,5 +268,8 @@ legacy-detail step uses `/r/res.partner/1`, which shows a pre-existing
 `加载失败` page in this environment (identical at `bffc4b7e`) and so only proves
 the adopted composition did not leak — a rendering legacy detail is shown
 separately at `/r/project.project/10` under `fixture_role_pm`
-(`legacyGrids=4`, `facts=0`); and resize-without-reload across the narrow
-breakpoint was not exercised in the browser.
+(`legacyGrids=4`, `facts=0`). Resize-without-reload across the narrow breakpoint
+is now verified on the same candidate: `tpl03r/logs/resize-no-reload.log` shows
+the adopted readonly detail at 2 facts per row at `1440`, 1 per row after a live
+`setViewportSize(390)` (breakpoint 640), and back to 2 at `1440` — both
+directions without a reload.

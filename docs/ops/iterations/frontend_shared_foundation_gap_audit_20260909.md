@@ -761,3 +761,32 @@ HTTP 取回校验逐字节一致。
 - “跨断点拖拽 resize（不重载）”本轮**未**在浏览器验证，仅有代码层 `matchMedia` 响应式救济。
 - 本轮**不**代表 TPL-03 整体通过：未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细、合同全流程
   （R7R9/R5）；89 入口唯一分母不变；未调整业务矩阵状态；不推送、不合并、不部署目标环境。
+
+### FE-TPL-03 验收结论（2026-09-29）
+
+对已实现的列表/只读详情接管（代码提交 `308a85a6`）在**当前整合候选** `f017d42d` 上做验收。
+逐项判定如下，每项给出实现位置与原始证据；**未**下放新的列表/详情开发任务，**未**进入 TPL-04。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 采纳由显式策略驱动，不由外观、名称或角色推断 | PASS | `standardListComposition.ts:40`（`STANDARD_LIST_COMPOSITION_PILOT_MODELS`）、`:45` `resolveStandardListComposition`；`standardDetailComposition.ts:43/:47`；策略为纯函数（无 Vue/DOM/TDesign）。调用点只传 `model`（+只读面的 `renderProfile`）：`ListPage.vue:526`、`ContractFormPage.vue:1199`。 |
+| 2 | 同一组合被复用，不是第二套页面实现 | PASS | 列表只有 `ProductListSurface.vue` 一个官方容器（两个试点列表共用）；只读事实只有 `FormSection.vue` 内**一个** `ScDescriptions` 分支（`:26-58`，由 `:488` `adoptedDetailFactLayout` 守卫），对所有已采纳只读页生效；决策由页面 provide（`standardDetailCompositionRuntime.ts`），section 只消费。**未复制**表单渲染循环、保存链、错误存储或工具栏主次逻辑。 |
+| 3 | 非采纳面保持旧组合，无双重容器/半转换 | PASS | `ProductListSurface.vue:12` 未采纳时 `v-else` 直通插槽；`FormSection.vue:488-496` 需同时满足 adopted+`preferReadonlyFacts`+`allFieldsReadonly`+非选择/非配置编辑+有字段。证据：旧列表 `/a/713?menu_id=414`、旧详情 `/r/res.partner/1` 保持 `legacy-*-surface`，编辑 `/f/sc.general.contract/10` 与新建 `/f/…/new` 保持旧网格。 |
+| 4 | 采纳列表真实渲染（官方容器/卡片/分页/选择/列设置，双视口） | PASS | `tpl03r/tpl03-journey-results.json`：`/m/662`、`/m/680` = `official-standard-list`，`card=1 queryRow=1 table=1`、`pagination=2 selection=5 columnSettings=7`，`1440×900`/`390×844` 溢出 0。 |
+| 5 | 采纳只读详情真实渲染（逐项 label/value、关系入口保留、无编辑能力，双视口） | PASS | 同上：`/r/sc.general.contract/11` = `official-standard-detail`，`facts/readonlySections/descriptions=7`、`items=13`、`legacyGrids=0`、`relationEntries=4`；`detail-contract-1440.png`（2 列/行）与 `detail-contract-390.png`（1 列/行）。 |
+| 6 | 跨模型与 section 生命周期隔离 | PASS | `tpl03r/tpl03-switch-results.json`：采纳列表→采纳详情→旧详情→旧列表→回采纳详情→回采纳列表，每步 `facts`/官方卡片/`grids` 归零，溢出 0。 |
+| 7 | 响应式：加载时与**不重载 resize** 均视口正确 | PASS | `tpl03r/logs/resize-no-reload.log`：`/r/sc.general.contract/11` 首行单元格数 `1440→4`（2 列）、`setViewportSize(390)` 不重载 `→2`（1 列）、回到 `1440→4`；断点 640（500→1 列、700→2 列），由 `useNarrowViewport.ts` 的 `matchMedia` + `change` 监听驱动。上一轮登记的该风险已关闭。 |
+| 8 | 源码—产物—证据绑定同一候选 | PASS | 候选 `f017d42d`；离仓构建 `fe-tpl02b2-20260929/dist`（`index.html` sha256 `0163d514…`，入口 `index-CdKU6vab.js` sha256 `9725be9c…`）；`release_static_server.mjs` pid 2166107 @ `:5176`，100/100 文件 HTTP 逐字节一致；旅程 JSON 的 `loadedScripts` 含该入口。 |
+| 9 | 派生的生成清单与当前源码一致 | **FAIL → 已修复** | 验收初查 `verify.frontend.component_driver_takeover.unit` 报 `stale`（committed 生成于 `dfd2f324`，早于 `308a85a6`/`f017d42d` 的源码改动，`source_files=702`）。用仓库自带生成器刷新（提交 `3f3a48fe`）：无 schema/词汇变化，仅派生计数与摘要变化；`ScDescriptions` 首次获得生产消费者，一个适配器 `adapter_unconsumed → adapter_present`（present 32→33、unconsumed 3→2）。现 `PASS required=35 missing=0 bridge_only=0 raw=0`。**这是本轮验收发现的唯一确认缺陷**，按最小方式修复，未改产品行为。 |
+| 10 | 相关 L2 单元/结构门禁 | PASS | `logs/tpl03-gates-run.log`：`standard_collection_composition` `cases=64`、`mobile_viewport` PASS、`product_page_pattern` `cases=12`+guard `patterns=4`、`professional_component_registry` `cases=137`、`page_pattern_reference_parity` `surfaces=15`、`rendering_detail_state`（58 tests，含三份 inventory `--check`）PASS、`native_form_structure_responsibility` `cases=10`；日志中 `[frontend_official_design_alignment_inventory] FAIL incomplete=…` 是生成器**负向测试**（`test_generate_frontend_official_design_alignment_inventory.py:54`）的预期输出，该目标退出码 0。 |
+
+**验收结论**：列表与只读详情接管**在当前整合候选上验收通过**（第 9 项为过程缺陷、已按仓库机制修复）。
+`TPL-03` 的“官方列表 + 只读详情”范围就此收口。
+
+**边界（不得夸大）**：
+
+- switch 的旧详情一步落在既有加载失败的 `/r/res.partner/1`（见上一节），只证明“采纳组合未泄漏”；
+  可正常渲染的旧详情参照为 `fixture_role_pm` 下的 `/r/project.project/10`。
+- 只宣布已采纳范围（列表 `project.project` + `sc.general.contract`；只读详情 `sc.general.contract`）；
+  未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细与合同全流程（R7R9/R5）。
+- 89 入口唯一分母不变，未调整业务矩阵状态；不推送、不合并、不部署目标环境。
