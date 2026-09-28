@@ -675,3 +675,23 @@ f5b80a49 在任何检查执行前 environment_error；不能通过先合并再�
 队列备份 incremental-jcg2zwsq，MemoryHigh 已恢复 896M，Max=1152M、SwapMax=2G。
 本提交只补记录，以新 SHA 取得检查，避免沿用先前失败项；不把安装成功当作 CI 通过。
 后续结算若改变受信策略输入，同样须先经精确包预演/安装再验候选，不能移除摘要检查。
+
+### 2026-09-25 未发布候选受管同步入口
+
+三个 Web 专题（会计 JSON 只读详情、收款返回路径、many2many 官方交互及写入闭环）
+从未推送远端：已发布入口要求远端同名分支存在，未发布 rebase 入口
+`workspace.branch.sync-main` 固定 fetch GitHub `origin/main`（Gitee 车道不跟踪），
+两条都不可用。按所有者决定扩展现有 `scripts/ops/gitee_published_branch_sync.py`，
+复用其身份校验、恢复 bundle 与冲突恢复逻辑，不另造工具。
+
+新增 `make workspace.branch.sync-gitee-unpublished`（`--allow-absent`）与
+`make verify.workspace.branch.sync-gitee.unit`。未发布模式要求：clean 工作区，绑定
+分支、本地 HEAD 与实时 Gitee main；同名远端分支必须由**成功**的 `ls-remote` 证明
+不存在，检查失败不得当作不存在；已存在同名分支立即停止，不覆盖；追加精确 main 的
+`--no-ff` 合并提交，不改写历史；冲突自动 abort 并恢复原 HEAD 且保留恢复 bundle；
+同步不自动推送。发布仍走 `pr.push.gitee`，其在预演前后各回读远端头，同名分支不是
+候选祖先时拒绝。
+
+离线单元 16 项通过（既有 7 项 + 新增 9 项：正常同步、预演、dirty 拒绝、main 漂移、
+远端分支已存在拒绝、冲突恢复、确认短语要求、未发布模式拒绝 remote-head pin、
+已发布确认短语在未发布模式被拒）。未运行完整 Quick，未改动四项必需检查。

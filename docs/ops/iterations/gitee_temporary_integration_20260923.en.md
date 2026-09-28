@@ -486,3 +486,24 @@ MemoryHigh restored to 896M, Max 1152M and SwapMax 2G retained. This documentati
 commit requests fresh checks; installation is not CI acceptance. Future settlement
 policy changes likewise require reviewed exact-package installation before testing,
 not removal of fingerprint validation.
+
+### 2026-09-25 Unpublished candidate synchronization entry
+
+Three Web topics (accounting JSON read-only detail, payment-return navigation, many2many
+official interaction and write closure) never reached the remote. The published entry
+requires a same-name remote branch, and `workspace.branch.sync-main` fetches GitHub
+`origin/main`, which the Gitee lane does not track. Under the owner's decision the
+existing `scripts/ops/gitee_published_branch_sync.py` was extended in place, reusing its
+identity checks, recovery bundle and conflict restore instead of adding a second tool.
+
+New `make workspace.branch.sync-gitee-unpublished` (`--allow-absent`) and
+`make verify.workspace.branch.sync-gitee.unit`. Unpublished mode requires a clean
+worktree bound to the branch, local HEAD and live Gitee main; absence of the same-name
+remote branch must be proven by a successful `ls-remote` (a failed check is never
+absence); an existing same-name branch stops the run without overwriting; the entry
+appends an exact `--no-ff` merge of main without rewriting history, aborts to the original
+candidate on conflict with a verified recovery bundle, and never pushes. Publication
+still uses `pr.push.gitee`, which re-reads the remote head before and after preflight.
+
+16 offline unit tests pass (7 existing + 9 new). No full Quick was run and the four
+required checks were not changed.

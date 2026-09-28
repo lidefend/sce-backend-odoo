@@ -373,3 +373,19 @@ P4修复：现有 `refresh.generated_reports` 仅改变 complexity_budget_report
 所有者批准直接补齐复用工具；P4范围及信任边界详见 [操作说明](gitee_frontend_execution_reuse_20260928.md)。在同一PR继续最小接入现有验证器/SSH发布/worker，保留四必需检查和原链回退。独立复核发现的pnpm可写路径别名、产物父目录symlink、读取前容量限制三项已修，并有真实bwrap与封装反例。当前定向测试与生成检查结果、冻结身份、controller安装和真实消费回执继续归入同一仓外result-index。无业务源码变化、无新凭据/数据库/环境。旧本地verification.json不会追认为新受信回执。
 
 此前6ddf4bda远端运行已真实完成：public113、professional30、frontend145测试，四项成功；生产构建日志15m18s。此结果只绑定6ddf4bda/base28266e9b，不沿用为后续工具提交的远端成功。新工具必须以新候选重新验证并确认verified_local_execution记录。
+
+
+### 2026-09-28 未合并审计交接恢复
+
+从 `audit/formal-entry-gap-intake@28d2e05e` 恢复三份有独立价值的历史交接件，
+未覆盖本文件在 PR #30 中已有的错误、保存草稿、类型及 CI 收口结果。
+- G-F3-03 / B04：报表投影恒空的历史定位及待办见
+  [原定位](report_center_projection_availability_20260924.md) 与
+  [责任层交接](report_projection_capability_handoff_20260924.md)。当前源代码仍保留空投影初始化；
+  本轮无数据库复验，不能把历史角色/行数判断标成新主线验收。
+- G-F2-05 / B05：关系创建能力的对象级分类见
+  [边界记录](relation_create_capability_boundary_20260924.md)。不批量开放创建、不扩权；
+  quick create、税率闭环及缺失关系策略保持原未验收/待决定状态。
+
+唯一 89 入口矩阵分母和状态保持不变。其他历史分支分类与本地同步结果见
+[本轮记录](local_iteration_sync_20260928.md)。

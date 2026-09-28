@@ -831,3 +831,34 @@ ancestry and a verified recovery bundle. Conflicts abort to the original candida
 It never pushes or merges main; publication still uses `pr.push.gitee`, and all required
 CI must pass on the new source and current target. Raw merge/rebase/cherry-pick remain
 prohibited outside governed tools.
+
+### Unpublished Gitee candidate synchronization (2026-09-25)
+
+A topic branch that never reached the remote cannot use the published entry, and the
+unpublished rebase entry (`make workspace.branch.sync-main`) fetches GitHub `origin/main`,
+which the Gitee lane does not track. `make workspace.branch.sync-gitee-unpublished` closes
+that gap using the same module, identity checks, recovery bundle and conflict restore.
+It binds `SYNC_ROOT`, `EXPECTED_BRANCH`, full `EXPECTED_HEAD` and `GITEE_EXPECTED_MAIN`
+with no `GITEE_EXPECTED_SOURCE`; apply requires
+`GITEE_SYNC_CONFIRM=APPEND_EXACT_MAIN_TO_UNPUBLISHED_CANDIDATE`.
+Absence of the same-name remote branch must be proven by a *successful* `ls-remote`; a
+failed check is never accepted as absence, and an existing same-name branch stops the run
+instead of being overwritten. The entry appends an exact `--no-ff` merge commit of main,
+keeps history, aborts to the original candidate on conflict and never pushes.
+Publication still uses `pr.push.gitee`, which re-reads the remote head before and after
+its preflight and refuses a same-name branch that is not an ancestor of the candidate.
+`make verify.workspace.branch.sync-gitee.unit` runs the offline unit suite (preview, dirty,
+main drift, already-published branch, remote-head pin, conflict restore, confirmation).
+
+### Local Gitee main fast-forward (2026-09-28)
+
+`make main.sync.gitee EXPECTED_BRANCH=<current allowed branch> EXPECTED_HEAD=<full SHA>
+EXPECTED_LOCAL_MAIN=<full old local main SHA> GITEE_EXPECTED_MAIN=<full remote SHA>`
+is the owner-authorized local synchronization entry. Default preview fetches only.
+Apply requires `APPLY=1 GITEE_SYNC_CONFIRM=FAST_FORWARD_EXACT_LOCAL_GITEE_MAIN`.
+The existing sync module checks clean identity, fixed Gitee remote, exact local and
+remote refs, unoccupied local main and fast-forward ancestry; it uses compare-and-swap
+update-ref only inside this tool. It preserves the current topic branch/worktree,
+never pushes or changes upstream/remote configuration. Dirty, divergent or occupied
+main is refused. Existing main.sync retains its GitHub behavior. The existing
+verify.workspace.branch.sync-gitee.unit target covers both synchronization modes.

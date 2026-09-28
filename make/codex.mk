@@ -878,3 +878,19 @@ verify.gitee.frontend_cache_install.unit: guard.prod.forbid
 .PHONY: workspace.branch.sync-gitee-published
 workspace.branch.sync-gitee-published: guard.prod.forbid
 	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--remote-head "$(GITEE_EXPECTED_SOURCE)",) $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+.PHONY: workspace.branch.sync-gitee-unpublished verify.workspace.branch.sync-gitee.unit
+# Unpublished Gitee candidates have no same-name remote branch yet. Absence is
+# proven by a successful ls-remote, exact main is appended, history is kept and
+# nothing is pushed. Publication still uses pr.push.gitee, which re-checks the
+# remote identity and stops if a same-name branch appeared meanwhile.
+workspace.branch.sync-gitee-unpublished: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --allow-absent $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+verify.workspace.branch.sync-gitee.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_published_branch_sync.py scripts/ops/test_gitee_published_branch_sync.py
+	@cd scripts/ops && python3 -m unittest test_gitee_published_branch_sync
+
+.PHONY: main.sync.gitee
+main.sync.gitee: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --local-main --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --old-main "$(EXPECTED_LOCAL_MAIN)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
