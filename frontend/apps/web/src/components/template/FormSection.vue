@@ -1454,9 +1454,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 /* Official composition adoption (TPL-01).
-   The official form owns section composition and generic validation; these
+   The official form owns section composition and generic validation. These
    rules only stop its own chrome from competing with the contract-driven field
-   grid, which stays the authority for label, identity and error association. */
+   grid, which stays the authority for label, identity and error association.
+
+   The adopted row is selected by the primitive identity this project already
+   puts on the adapter (`ScFormItem`), never by a vendor class: a TDesign class
+   is allowed on an Sc root, but its internal descendants stay uncoupled, so
+   swapping the installed version cannot silently change what this styles. */
 .template-form-section-form {
   display: block;
   width: 100%;
@@ -1464,17 +1469,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
-.template-form-section-form :deep(.field-control-row.t-form__item) {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-}
-
-.template-form-section-form :deep(.field-control-row .t-form__controls),
-.template-form-section-form :deep(.field-control-row .t-form__controls-content) {
+.template-form-section-form :deep(.field-control-row[data-semantic-component='ScFormItem']) {
   display: block;
   width: 100%;
   max-width: 100%;

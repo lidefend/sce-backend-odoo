@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "1237fc7db5b47ea66472b5a116cf21ff169abed38457aa5e83340aab0cbe9a74",
+  "sourceIdentity": "a15da34d86681108db4509489983917eea65e6993e9f0aa8f9f57030193c8e84",
   "generatorDigest": "02038c38a68bb1203e0994bc8a44dc253c2c589a6f9673521d880d109d093eb8",
   "ownershipDigest": "b5cda2658fbd3ed4ebcb9188636a3107612fccf1a243a08441b9621dbaf2b75b",
-  "inputDigest": "daf922a5dfcdd0167c5e2dfed48b4d3087bafbeeaeec2b789dd63f119337c624",
+  "inputDigest": "e0dfeda221a7ac85cb0fcae6ed7fc7f1a3de46fc6e786aff78761adacc6b1280",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,13 +20,13 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 168,
+    "surfaceCount": 169,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
     "governed_composite": 110,
-    "governed_primitive": 40,
+    "governed_primitive": 41,
     "p3_out_of_scope": 18
   },
   "nextBatch": null,
@@ -468,6 +468,7 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "error",
         "disabled"
       ],
       "rawControls": {},
@@ -476,6 +477,18 @@
     },
     {
       "source": "frontend/apps/web/src/components/design-system/ScFormField.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue",
       "formalProductLayer": "P0",
       "status": "governed_primitive",
       "reason": "design-system primitive source",

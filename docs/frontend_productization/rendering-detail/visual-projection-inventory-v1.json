@@ -655,13 +655,15 @@
     },
     {
       "category": "form-fields",
-      "digest": "83114b1fbd624cd1388ef68737e7c7319c5fe0d6c520697fd1dc68bd5e72c6b9",
+      "digest": "fa9f37e8115f844c0b20636cbf8f2af0d04c119dca2e4519dc6e45409acce79e",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScForm.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
-      "scComponents": []
+      "scComponents": [
+        "ScFormProps"
+      ]
     },
     {
       "category": "form-fields",
@@ -675,13 +677,15 @@
     },
     {
       "category": "form-fields",
-      "digest": "8607a6b0f78eb692b5e99316a98df070f04038901da456da7c775d4fba729c62",
+      "digest": "32d81f2c4ffb6c769c1e8d7f8bdb0b9d6d8d2740136054334a9df76dd90df072",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScFormItem.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
-      "scComponents": []
+      "scComponents": [
+        "ScFormItemProps"
+      ]
     },
     {
       "category": "other",
@@ -1776,7 +1780,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d6071042692838ab21bb8f0063fc64f909f774953eb863ddef84fcde8236d69a",
+      "digest": "d73c317d800e2b70d82ab5abaf4e39530905703c199171ee5657f4c885317195",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1799,6 +1803,8 @@
         "ScCard",
         "ScDateField",
         "ScFileField",
+        "ScForm",
+        "ScFormItem",
         "ScIcon",
         "ScIconButton",
         "ScInput",
@@ -2007,7 +2013,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d66b33dc338e7c7466ca45f2ebcba23b910def984f99c020683e16d7eaa36b25",
+      "digest": "6fb35f38ddfe75bcd30dad7bd607ac239bb5a524599868ba17fb211fdec9f241",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2880,7 +2886,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "2383338c8dcfdd22901aef468f110ec038330bfd88eb464e9dd1dabba5e9b651",
+  "currentInputDigest": "9dd84f3ad78b34a34fc0ef431e78fd8c7614206de125a87bae68882d04eb3fca",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
