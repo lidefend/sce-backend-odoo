@@ -19,6 +19,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ref } from 'vue';
 
 import {
   STANDARD_FORM_COMPOSITION_PILOT_MODELS,
@@ -36,7 +37,7 @@ import {
   buildRequiredFieldErrorPayload,
   collectRequiredFieldValidation,
 } from '../src/pages/contractForm/saveRecordHelpers';
-import { businessErrorKey } from '../src/app/businessValidationError';
+import { businessErrorKey, errorOwnsRecordScope } from '../src/app/businessValidationError';
 import type { FormSectionFieldSchema } from '../src/components/template/formSection.types';
 import type { LayoutNode } from '../src/pages/contractForm/types';
 
@@ -323,6 +324,40 @@ check(unadopted.adopted.value, false, 'an unverified surface is not adopted');
 unadopted.register({ sectionId: 'x', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const unadoptedResult = await unadopted.validateAdoptedFields();
 checkDeep(unadoptedResult, { ok: true, fieldNames: [], coveredFieldNames: [] }, 'an unadopted surface contributes nothing to the save gate');
+
+// A model or record switch must not carry the previous surface with it: the
+// page unmounts the old sections and mounts new ones, and the registry has to
+// answer for the new surface only.
+const liveModel = ref('project.project');
+const switching = createStandardFormValidationRegistry(() => liveModel.value);
+check(switching.adopted.value, true, 'the first model is inside the adopted scope');
+switching.register({ sectionId: 'surface-a', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
+const beforeSwitch = await switching.validateAdoptedFields();
+checkDeep(beforeSwitch.coveredFieldNames, ['name'], 'the first model reports the positions its own sections cover');
+switching.unregister('surface-a');
+liveModel.value = 'sc.general.contract';
+switching.register({ sectionId: 'surface-b', ruleFieldNames: () => ['contract_no'], validate: async () => [] });
+const afterSwitch = await switching.validateAdoptedFields();
+check(switching.adopted.value, true, 'the second model is adopted by the same policy, not by a second policy');
+checkDeep(afterSwitch.fieldNames, [], 'the previous model\'s rejection cannot reach the new surface');
+checkDeep(afterSwitch.coveredFieldNames, ['contract_no'], 'the new surface covers only the positions it declares');
+check(
+  afterSwitch.coveredFieldNames.includes('name'),
+  false,
+  'a stale field code cannot remain covered after the surface changed',
+);
+liveModel.value = 'payment.request';
+check(switching.adopted.value, false, 'a surface outside the scope is not adopted later either');
+checkDeep(
+  await switching.validateAdoptedFields(),
+  { ok: true, fieldNames: [], coveredFieldNames: [] },
+  'leaving the adopted scope stops gating the save without a page reload',
+);
+
+const recordScopeError = buildRequiredFieldErrorPayload(rejected, { model: 'project.project', recordId: 501 }).fieldErrors.name;
+check(errorOwnsRecordScope(recordScopeError, { model: 'project.project', recordId: 501 }), true, 'an adopted rejection owns the record it was raised for');
+check(errorOwnsRecordScope(recordScopeError, { model: 'project.project', recordId: 502 }), false, 'the same rejection cannot leak onto the next record');
+check(errorOwnsRecordScope(recordScopeError, { model: 'sc.general.contract', recordId: 501 }), false, 'the same rejection cannot leak onto another model');
 
 const runtimeSource = readSource('frontend/apps/web/src/pages/contractForm/standardFormCompositionRuntime.ts');
 check(/provide\(/.test(runtimeSource), true, 'the page-level runtime provides the registry to the sections');
