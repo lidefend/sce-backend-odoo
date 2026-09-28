@@ -111,3 +111,43 @@ runtime keeps the single draft, the occurrence write decision, permission,
 domain validation, and the save chain. Validation rules are built from the
 contract's field facts (`components/template/contractFormValidationRules.ts`),
 not from model names or labels.
+
+### Validation ownership on an adopted surface
+
+One generic authority per rule. On an adopted surface the official engine
+(`ScForm`/`ScFormItem` → TDesign `Form.validate()`) decides the generic rules for
+the positions it really renders and declares rules for; those positions are
+reported as `coveredFieldNames` and excluded from the page-level required
+precheck, so a save is never decided twice. Everything the engine does not cover
+keeps its previous precheck, domain validation and the server constraints.
+
+The engine's result (not the call order) decides the save:
+
+| Engine outcome | Effect |
+|---|---|
+| non-success result | rejected codes join the one existing error store; no write |
+| success | domain validation and the existing save chain continue, one write |
+| unreadable / absent result | fail closed — no write, draft kept |
+| adopted, required positions declared, none covered | fail closed — the runtime or section registration is missing |
+| adopted, contract genuinely has no required position | legal empty set, save allowed |
+
+An adopted section that declares rules but has no engine instance, or whose
+result cannot be read, raises instead of returning "passed". A surface outside
+the pilot scope adopts nothing and needs no runtime. The real-engine integration
+proof is `frontend/apps/web/scripts/adopted_form_engine_decision_test.ts`
+(`make verify.frontend.adopted_form_engine_decision.unit`, 67 cases, real
+`TDesignForm`/`TDesignFormItem`, counted writes — it does not stub the engine or
+expose an instance in the production build).
+
+### Cross-model reuse (TPL-02)
+
+The second model joins by being listed in `STANDARD_FORM_COMPOSITION_PILOT_MODELS`;
+the render call sites stay model-agnostic, so this is a reuse of the same
+composition, not a second implementation. Verified on the real application
+route (project edit → contract, through the dirty-form guard → back to project
+edit): each model renders its own field set, section registration, errors and
+action identity, with `official=24 legacy=0` and `official=13 legacy=0`
+respectively, no state carried across, and `official=13 legacy=0` at both
+`1440×900` and `390×844` with no horizontal overflow. The project html field was
+re-verified through the actual edit surface (type → save → reload read-back →
+restore), allowing normal HTML normalization.

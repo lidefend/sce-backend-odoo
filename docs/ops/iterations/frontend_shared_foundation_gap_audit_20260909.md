@@ -488,3 +488,75 @@ official-design-alignment）在 TPL-01 改源后未刷新。修复：改用项�
 - 矩阵若干行引用的 `artifacts/frontend-web-fix-20260928/evidence.md`、`uat01a-raw/`、`uat02-raw/` 在本轮核对时
   **不存在**（该目录下仅有 `tpl01/`、`tpl02/`）。本轮只如实报告，未重建、未改写引用。
 - 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。
+
+### FE-TPL-02 补证：校验结果接管保存判定 · 跨模型复用确认（2026-09-28 续）
+
+同一专题分支，基线 `main`/`23f11f42`，上一段收口 HEAD `0ca84329`。上一轮只做到“结构接管 +
+调用顺序断言”，留了两点白：官方校验的返回值是否**控制**保存、同一组合能否接管第二个真实模型。
+本段把这两点补成**运行证据**，不重做结构审计。
+
+**校验责任边界（沿真实链核对，不是按文件名猜）**：
+- 已由官方引擎执行（通用规则）：adopted section 内、`displayFields ∩ rules` 命中位置的必填/类型规则，
+  经 `ScForm/ScFormItem` → `standardFormCompositionRuntime` → `runAdoptedFormValidation` →
+  TDesign `Form.validate()`。
+- 未接管能力：非 pilot 模型（`adopted=false`）整页走旧路径；adopted 页面里未渲染、或未声明规则的位置。
+- 领域与后端约束：`collectSceneValidationPrecheckErrors`、one2many 行错误、后端 ORM 约束全部保留。
+- 旧 precheck 是否重复：**是** —— `validateBeforeSaveRecord` 的必填 precheck 会对同一组通用规则再判一次。
+  修复取最小口：官方引擎**真正评估过**的位置（`coveredFieldNames`）从该次 precheck 中排除，
+  其余位置保持原判定。没有删除 `saveRecordHelpers`，也没有把“某个 section 已采纳”扩大成
+  “所有校验都可跳过”。
+
+**真实引擎运行证据（非替身）**：新增
+`frontend/apps/web/scripts/adopted_form_engine_decision_test.ts`（make 目标
+`verify.frontend.adopted_form_engine_decision.unit`）。用 Vue `createRenderer` 挂载**真实**
+`TDesignForm`/`TDesignFormItem`，不 stub 官方校验、不在生产构建里暴露调试实例：
+- 真实必填规则失败 → 官方校验返回非成功 → 错误进入既有统一存储 → **保存调用次数 0**；
+- 同一字段纠正 → 官方校验成功 → 既有领域校验与保存链继续 → **保存调用次数 1**；
+- 已接管位置不再被旧 precheck 独立否决（共用 `isRequiredFieldEmptyByType` 与同一错误载荷，
+  但通用权威只有一处）；
+- 校验未完成不得提前保存；结果不可读按失败处理（fail closed），不解释成通过。
+- 实测：`PASS cases=67 engine=real-tdesign-vue-next writes=counted`。
+
+**fail-closed 边界修复（最小）**：
+- `contractFormValidationRules.failedAdoptedFieldNames` 改为 `string[] | null`：`true`→`[]`，
+  对象→键集合，缺失/原始值/数组→`null`（fail closed）。
+- `FormSection.validateAdoptedSection`：已采纳且声明了规则却没有引擎实例 → 抛错；结果读到 `null` → 抛错。
+- `useRecordFormActions.runAdoptedFormValidation` 返回 `{ ok, coveredFieldNames }` 并区分三种边界：
+  **A** 未采纳页面不要求存在官方 runtime，保持既有合法路径；**B** 已采纳、契约声明了必填可写位置
+  而覆盖为空 → 阻止保存、保留草稿、给统一反馈，不静默跳过、不伪造字段业务错误；
+  **C** 按有效契约确实无待校验规则 → 合法空集合，不误判为故障。
+- `saveRecord` 用 `if (!adoptedValidation.ok) return false;`，并把 `coveredFieldNames` 作为
+  `excludedRequiredFieldNames` 传给 precheck。
+
+**跨模型复用确认**：第二模型 `sc.general.contract`（日常合同）本段**没有新增任何模型专属分支**——
+生产改动只有作用域清单已含该项（`STANDARD_FORM_COMPOSITION_PILOT_MODELS`）与共享运行时修复。
+三个实测点：
+- **真实应用路由隔离**：项目编辑 →（脏表单「确认离开页面」保护）→ 合同 → 返回项目编辑。
+  `project.project` 与 `sc.general.contract` 各渲染 `24`/`13` 行官方行、旧行 `0`；模型、字段集合、
+  section 注册、错误、动作身份互不沿用（草稿文本只出现在侧栏面包屑，不进入合同表单面）。
+- **第二模型视口**：`1440×900` 与 `390×844` 下 `official=13 legacy=0 labels=13`，
+  `scrollWidth === clientWidth`，无横向溢出，未混用新旧普通表单行。
+- **项目 HTML 富文本字段最小回归**：经实际编辑面输入普通文本 → 保存 → 刷新回读正文一致
+  （存为 `<p>…</p>`，允许编辑器对 HTML 正常规范化）→ 按受管规则还原。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error；`standard_form_composition` 114 例、
+`adopted_form_engine_decision` 67 例、`contract_form_save_failure_recovery`、
+`contract_error_business_ownership` 92 例、`j13_required_value_semantics` 110 例、
+`contract_field_occurrence_identity`、`cross_model_action_navigation` 全 PASS；`ci.local.iteration` PASS；
+前端产物重建后 TPL02（第二模型旅程）8/8、TPL02B（跨模型隔离 + HTML 字段回归 + 双视口）8/8。
+
+**本轮发现（真实，非 TPL 引入）**：`project.project.name` 是**可翻译字段**（JSONB `{en_US, zh_CN}`）。
+上一轮“还原”只写了 `en_US`，`zh_CN` 槽仍留草稿名；zh-CN 页面读到的正是 `zh_CN` 槽，
+因此表现为“接口读到陈旧值”，实为**翻译上下文不一致**，不是缓存或代理缺陷。
+按 `en_US` + `zh_CN` 双槽还原后两语言一致。记录以免下一轮误判。
+
+**口径限制（不得夸大）**：
+- 只宣布「官方标准表单接管 + 校验结果控制保存」到 `project.project`（菜单 680）与
+  `sc.general.contract`（action 673 / 菜单 662）；列表、详情、应用外壳、主从办理组合、付款明细、
+  合同全流程（R7R9/R5）本段均**未运行**。
+- 第二模型只覆盖 `fixture_role_contract_operator`（新建/编辑）与 `fixture_role_pm`（只读边界）；
+  未跑提交审批流转、附件、其余角色权限矩阵。
+- `vue-tsc --noEmit` 的准确口径是“**该命令在本次环境与候选上通过，0 错误**”；
+  不代表历史 31 项已分别修复，也不以历史错误数作默认豁免。
+- 89 入口唯一分母不变；托管行按真实证据回填，未因模板复用通过就整体标绿。
+- 专题内不推送、不合并、不部署目标环境。
