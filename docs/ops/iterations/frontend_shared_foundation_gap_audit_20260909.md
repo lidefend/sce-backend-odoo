@@ -560,3 +560,68 @@ official-design-alignment）在 TPL-01 改源后未刷新。修复：改用项�
   不代表历史 31 项已分别修复，也不以历史错误数作默认豁免。
 - 89 入口唯一分母不变；托管行按真实证据回填，未因模板复用通过就整体标绿。
 - 专题内不推送、不合并、不部署目标环境。
+
+### FE-TPL-03 官方列表与只读详情接管（2026-09-28/29）
+
+同一专题分支，基线 `main`/`23f11f42`，开工 HEAD `0ca84329`（本轮提交后 `dfd2f324` + 本轮实现提交）。
+目标：把 TPL-01/TPL-02 的同一套采纳机制扩展到**标准查询列表**与**标准只读详情**，且**不新增第二套页面实现**。
+
+**结论先行——本轮的“配置级采纳 vs 暴露的共享能力缺口”**：
+
+- 列表侧：**仅配置级采纳**。生产改动是新增纯策略模块
+  `app/presentation/standardListComposition.ts`（显式试点清单 + `{composition, adopted, reason}`）、
+  官方容器 `components/product-list/ProductListSurface.vue`、`pages/ListPage.vue` 的组装与两个 `data-*` 标识，
+  以及 `ProductListHeader.vue` 搜索框的官方图标槽。**未触碰**列、记录、动作或权限。
+- 详情侧：**同一处共享复用**，不是按模型的特例。改动落在既有 `components/template/FormSection.vue`
+  内新增只读事实分支（`ScDescriptions`=`t-descriptions`），对**所有**已采纳只读页生效；
+  `pages/ContractFormPage.vue` 只新增 runtime 创建与两个 `data-*` 标识。
+- **没有新增任何模型专属校验、保存或错误逻辑**，因此跨模型复用成立：采纳由 `model` 决定，
+  渲染调用点**不出现任何模型名**，错误仍进既有统一存储，保存仍走既有链。
+
+**两处共享修复（非模型专属）**：
+
+1. 官方容器原来用 `:deep(.t-card__body)` 去掉卡片内边距，被
+   `official-design-alignment-inventory` 记为 `legacy_override_gap`（对厂商内部的后代选择器耦合）。
+   改为使用项目自有 `ScCard appearance="table"`——零内边距由外观本身承载，**不写后代选择器**。
+2. `FormSection.vue` 需要按视口把只读事实收敛为单列，但
+   `frontend_professional_component_registry_guard` 禁止该组件触碰全局对象（已被守卫锁定的
+   fail-closed 谓词所在对象）。新增 `composables/useNarrowViewport.ts` 承载 `matchMedia`，
+   组件只消费其响应式结果——能力补齐在共享 composable，而不是在组件里开一个局部后门。
+
+**真实组件集成证据（沿用 TPL-02 的 `createRenderer` 宿主，不 stub 官方引擎、不在生产构建暴露实例）**：
+`frontend/apps/web/scripts/standard_collection_composition_test.ts`（make 目标
+`verify.frontend.standard_collection_composition.unit`，**64 例**，并已接入 `verify.frontend.quick.gate`）：
+策略纯函数真值表与幂等、两个试点模型复用同一组合、非试点保持旧组合、
+无关输入不触发采纳、调用点不含模型名、shipped 源码确实渲染采纳标识。
+
+**真实页面旅程证据（绑定本轮实际 `HEAD` 与实际 `dist-release` bundle）**：
+`artifacts/frontend-web-fix-20260928/tpl03/`——
+- `tpl03-journey-results.json`：**30/30**。采纳的合同列表 `/m/662`（`official-standard-list`，卡片含查询行 +
+  表格 + 分页 + 选择 + 列设置，`1440×900` 与 `390×844` 横向溢出 0）、采纳的合同只读详情 `/r/sc.general.contract/11`
+  （`official-standard-detail`，7 个 section 全部以 `t-descriptions` 呈现、共 13 项、旧网格 `0`、关系入口保留、
+  双视口无溢出）、采纳的项目列表 `/m/680`；对照项 `/a/713?menu_id=414` 旧列表、`/r/res.partner/1` 旧详情
+  （`outside-pilot-scope`）、`/f/sc.general.contract/10` 与 `/f/sc.general.contract/new`
+  （`not-a-readonly-profile`，网格与输入框原样保留）。
+- `tpl03-switch-results.json`：**7/7**。采纳列表 → 采纳详情 → 旧详情 → 旧列表 → 回采纳详情 → 回采纳列表，
+  每步 `detailFacts`/官方卡片/`grids` 归零，无状态跨模型残留，全程横向溢出 0。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error（口径：**该命令在本次环境与候选上通过、0 错误**，
+不代表历史 31 项已分别修复）；`standard_collection_composition` 64 例、`standard_form_composition` 114 例、
+`adopted_form_engine_decision` 67 例、`rendering_detail_state`、`page_pattern_reference_parity`、
+`product_page_pattern`、`primitive_adapter`、`collection_action_toolbar`、`canonical_form_presenter`（177 例）、
+`contract_render_profile`、`native_form_structure_responsibility`、`mobile_viewport`、
+`professional_component_registry`、`professional_detail_collection`、`detail_form_productization.guard` 全 PASS；
+`ci.local.iteration` PASS（L1）；`ci.generated_reports.guard` PASS、`architecture.complexity_baseline_lock` PASS（checked=11）。
+
+**已知前置失败（非本轮引入，基线 HEAD 即存在，未修复）**：
+`verify.product.page_structure`（基线 `PageHeader.vue` 即无 `sc-product-page-header`）与
+`verify.frontend.style_system.guard`（`ScRelationField.vue` 新 z-index、`ContractFormPage.vue` > 1900 行等）。
+本轮未据其推翻成果，也不将其计入本轮新增。
+
+**口径限制（不得夸大）**：
+- 只宣布「官方列表 + 只读详情组合接管到 `project.project`、`sc.general.contract`（列表）与
+  `sc.general.contract`（只读详情）」；**未运行** 列表/详情之外的接管、应用外壳（TPL-04）、主从办理组合（TPL-05）、
+  付款明细、合同全流程（R7R9/R5）。
+- 官方详情页的 `t-steps` 时间线**未采纳**：本仓已有更丰富的审计/协作时间线，替换会丢业务能力而非改表达。
+- 89 入口唯一分母不变；本轮只验证标准组合复用，**未**因模板复用通过就把任何业务职责标为 passed。
+- 专题内不推送、不合并、不部署目标环境。

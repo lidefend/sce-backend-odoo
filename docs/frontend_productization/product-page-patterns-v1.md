@@ -59,8 +59,8 @@ dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
 | Page type | Official source | Takeover position in this repository |
 |---|---|---|
 | Standard edit form | `src/pages/form/base/index.vue` | `components/template/FormSection.vue` (field grid, label, error slot) plus `design-system/ScForm.vue` / `ScFormItem.vue` (validation and instance capability pass-through) |
-| Standard query list | `src/pages/list/base/index.vue` | not adopted yet (planned TPL-03) |
-| Standard readonly detail | `src/pages/detail/base/index.vue` | not adopted yet (planned TPL-03) |
+| Standard query list | `src/pages/list/base/index.vue` | `components/product-list/ProductListSurface.vue` (one `t-card.list-card-container` wrapping the query row and the table) plus `product-list/ProductListHeader.vue` (search field) — TPL-03 |
+| Standard readonly detail | `src/pages/detail/base/index.vue` | `components/template/FormSection.vue` readonly-facts branch (`t-descriptions` label/value per section, same readonly value identities) — TPL-03 |
 | Application shell | `src/layouts/` | not adopted yet (planned TPL-04) |
 | Master-detail handling page | form/list/upload/overlay composition | not adopted yet (planned TPL-05) |
 
@@ -151,3 +151,85 @@ respectively, no state carried across, and `official=13 legacy=0` at both
 `1440×900` and `390×844` with no horizontal overflow. The project html field was
 re-verified through the actual edit surface (type → save → reload read-back →
 restore), allowing normal HTML normalization.
+
+## Official list and readonly detail adoption (TPL-03)
+
+TPL-03 extends the same adoption mechanism to the standard query list and the
+standard readonly detail. Both reuse the previous round's carriers instead of
+adding a second page implementation.
+
+### List composition
+
+- `app/presentation/standardListComposition.ts` is the pure adoption policy. It
+  resolves one model to `{ composition, adopted, reason }` and owns the explicit
+  pilot list (`project.project`, `sc.general.contract`); it imports no Vue, DOM,
+  or TDesign.
+- `components/product-list/ProductListSurface.vue` is the official container:
+  one `ScCard appearance="table" :bordered="false"` (the official
+  `t-card.list-card-container` shape) wrapping the query row and the table, with
+  the zero body padding carried by the card's `table` appearance rather than by
+  a selector onto the vendor's internals. Outside the adopted scope the slot is
+  passed through unchanged, so a list never renders through two containers.
+- `pages/ListPage.vue` resolves the decision from the page model, wraps the
+  populated branch in the surface, and publishes `data-list-composition` /
+  `data-list-composition-reason` on the page root. The list surface itself never
+  names a model, so a second model is a reuse, not a second implementation.
+
+### Readonly detail composition
+
+- `app/presentation/standardDetailComposition.ts` is the pure adoption policy;
+  only the `readonly` render profile adopts, and the pilot list is
+  `sc.general.contract`. An editable surface keeps its previous composition
+  (`reason=not-a-readonly-profile`) because the official detail page has no
+  editing state.
+- `pages/contractForm/standardDetailCompositionRuntime.ts` provides the resolved
+  decision down the existing section tree (the readonly counterpart of
+  `standardFormCompositionRuntime`); `pages/ContractFormPage.vue` creates it from
+  the page model and render profile and publishes `data-detail-composition` /
+  `data-detail-composition-reason`.
+- `components/template/FormSection.vue` renders its readonly facts through
+  `ScDescriptions` (`t-descriptions`, `:bordered="false"`) when the page is
+  adopted, the section is presented as readonly facts, and the section has
+  fields. Every item is built from the section's own contract field facts, and
+  the value slot reuses the **same** readonly value identities as the previous
+  fact grid (relation entry, html, task action, plain value). A narrow viewport
+  collapses to one fact per row via `composables/useNarrowViewport.ts`.
+
+### Adoption scope (TPL-03)
+
+| Surface | Model | Verified entry | Round |
+|---|---|---|---|
+| Standard query list | `project.project` | `menu_sc_product_project_edit_v1` (menu 680) | TPL-03 |
+| Standard query list | `sc.general.contract` | `menu_sc_p1_daily_contract` (menu 662) | TPL-03 |
+| Standard readonly detail | `sc.general.contract` | record `/r/sc.general.contract/11` | TPL-03 |
+
+### Boundary (TPL-03)
+
+Contract and Odoo facts still decide which columns, fields, values, records,
+actions and permissions exist. The adopted composition only decides how an
+already-authorized list or readonly record is arranged. Adoption is never
+derived from field names, labels, semantic roles, action IDs, menu IDs, roles,
+or renderer selection, and it is never an authorization input; the list and
+detail surfaces carry no model name.
+
+### Deliberately not adopted
+
+The official shell (`src/layouts/`, TPL-04) and the master-detail handling page
+(TPL-05) are still out of scope. The official detail page's `t-steps` timeline
+is **not** adopted: this project already owns a richer audit/collaboration
+timeline, and replacing it would drop business capability rather than re-express
+presentation. The legacy list and detail surfaces (for example `res.partner`)
+and every editable form keep their previous composition.
+
+### Evidence (TPL-03)
+
+`frontend/apps/web/scripts/standard_collection_composition_test.ts`
+(`make verify.frontend.standard_collection_composition.unit`, 64 cases) proves
+the policies are pure, that the pilot lists are explicit, that the call sites
+never name a model, and that the shipped surfaces really render the adopted
+markers. The two real-route journeys are bound in
+`artifacts/frontend-web-fix-20260928/tpl03/`: `tpl03-journey-results.json`
+(30/30: adopted contract list and readonly detail at `1440×900` and `390×844`,
+project list, and legacy/edit controls) and `tpl03-switch-results.json` (7/7:
+adopted list → adopted detail → legacy detail → legacy list → back, with no
+fact, card, error, or registration leaking across models).
