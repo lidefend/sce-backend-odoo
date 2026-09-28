@@ -157,10 +157,80 @@ def sync_local_main(root, branch, head, main, old_main, apply=False, confirm="",
             "head": head, "worktree_changed": False, "remote_writes": 0}
 
 
+def discard_local(root, branch, head, main, target, target_head, bundle,
+                  apply=False, confirm=""):
+    """Owner-approved abandonment, local only; never infer merge or touch remotes."""
+    root = Path(root).resolve()
+    archive = Path(bundle)
+    def check():
+        for value in (branch, target):
+            if not re.fullmatch(r"(feature|fix|refactor|audit|codex)/[A-Za-z0-9_./-]+", value):
+                raise RuntimeError("unprotected topic branch required")
+            git(root, "check-ref-format", "refs/heads/" + value)
+        if any(not re.fullmatch(r"[0-9a-f]{40}", v) for v in (head, main, target_head)):
+            raise RuntimeError("full exact SHA required")
+        if Path(out(root, "rev-parse", "--show-toplevel")).resolve() != root:
+            raise RuntimeError("repository root mismatch")
+        if out(root, "status", "--porcelain"):
+            raise RuntimeError("clean candidate required")
+        if out(root, "branch", "--show-current") != branch or out(root, "rev-parse", "HEAD") != head:
+            raise RuntimeError("candidate identity changed")
+        if out(root, "rev-parse", "refs/heads/main") != main:
+            raise RuntimeError("local main drift")
+        if "branch refs/heads/" + target in out(root, "worktree", "list", "--porcelain").splitlines():
+            raise RuntimeError("target occupied by worktree")
+        if git(root, "symbolic-ref", "-q", "refs/heads/" + target, check=False).returncode == 0:
+            raise RuntimeError("symbolic target refused")
+        if out(root, "rev-parse", "refs/heads/" + target) != target_head:
+            raise RuntimeError("target identity drift")
+        if not archive.is_absolute() or archive.is_symlink() or archive.resolve().is_relative_to(root):
+            raise RuntimeError("external regular recovery bundle required")
+    check()
+    receipt = dict(target=target, target_head=target_head, head=head, main=main,
+                   mode="explicit_local_abandonment", remote_writes=0)
+    if not apply:
+        return dict(receipt, writes=0, bundle=str(archive))
+    if confirm != "DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY":
+        raise RuntimeError("exact local abandonment confirmation required")
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    if not archive.exists():
+        git(root, "bundle", "create", str(archive), "refs/heads/" + target)
+    if not archive.is_file() or archive.is_symlink():
+        raise RuntimeError("regular recovery bundle required")
+    git(root, "bundle", "verify", str(archive))
+    expected = target_head + " refs/heads/" + target
+    if expected not in out(root, "bundle", "list-heads", str(archive)).splitlines():
+        raise RuntimeError("recovery bundle target mismatch")
+    # Existing bundles must also restore independently after local objects are GC'd.
+    with archive.open("rb") as stream:
+        header_bytes = 0
+        while True:
+            line = stream.readline(65537)
+            header_bytes += len(line)
+            if not line or header_bytes > 1048576:
+                raise RuntimeError("invalid recovery bundle header")
+            if line == b"\n": break
+            if line.startswith(b"-"):
+                raise RuntimeError("incremental recovery bundle refused")
+    bundle_hash = hashlib.sha256(archive.read_bytes()).hexdigest()
+    check()
+    git(root, "update-ref", "--no-deref", "-d", "refs/heads/" + target, target_head)
+    if git(root, "show-ref", "--verify", "refs/heads/" + target, check=False).returncode == 0:
+        raise RuntimeError("local deletion readback failed")
+    if out(root,"rev-parse","HEAD") != head or out(root,"status","--porcelain"):
+        raise RuntimeError("worktree changed during cleanup")
+    return dict(receipt, writes=1, bundle=str(archive), bundle_sha256=bundle_hash,
+                local_ref="absent", worktree_changed=False)
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     for name in ("root", "branch", "head", "main"):
         p.add_argument("--" + name, required=True)
+    p.add_argument("--discard-local", action="store_true")
+    p.add_argument("--target")
+    p.add_argument("--target-head")
+    p.add_argument("--bundle")
     p.add_argument("--local-main", action="store_true")
     p.add_argument("--old-main")
     p.add_argument("--remote-head")
@@ -170,7 +240,15 @@ if __name__ == "__main__":
     args = vars(p.parse_args())
     local_main = args.pop("local_main")
     old_main = args.pop("old_main")
-    if local_main:
+    discard = args.pop("discard_local")
+    target, target_head, bundle = (args.pop(k) for k in ("target", "target_head", "bundle"))
+    if discard:
+        if local_main or old_main or args.pop("remote_head") or args.pop("allow_absent") or not all((target, target_head, bundle)):
+            p.error("local abandonment requires target/head/bundle, rejects synchronization flags")
+        result = discard_local(**args, target=target, target_head=target_head, bundle=bundle)
+    elif target or target_head or bundle:
+        p.error("target/head/bundle require discard-local")
+    elif local_main:
         if not old_main or args.pop("remote_head") or args.pop("allow_absent"):
             p.error("local-main requires old-main and rejects candidate sync flags")
         result = sync_local_main(**args, old_main=old_main)

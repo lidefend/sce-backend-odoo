@@ -894,3 +894,8 @@ verify.workspace.branch.sync-gitee.unit: guard.prod.forbid
 .PHONY: main.sync.gitee
 main.sync.gitee: guard.prod.forbid
 	@python3 scripts/ops/gitee_published_branch_sync.py --local-main --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --old-main "$(EXPECTED_LOCAL_MAIN)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+# Explicit abandonment is local-only and retains a verified external recovery bundle.
+.PHONY: workspace.branch.discard-local
+workspace.branch.discard-local: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --discard-local --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(EXPECTED_LOCAL_MAIN)" --target "$(DISCARD_BRANCH)" --target-head "$(DISCARD_HEAD)" --bundle "$(DISCARD_RECOVERY_BUNDLE)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(DISCARD_CONFIRM)",)

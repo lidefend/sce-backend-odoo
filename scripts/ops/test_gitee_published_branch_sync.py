@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from gitee_published_branch_sync import git, out, sync, CONFIRM, CONFIRM_UNPUBLISHED, sync_local_main
+from gitee_published_branch_sync import git, out, sync, CONFIRM, CONFIRM_UNPUBLISHED, sync_local_main, discard_local
 
 class SyncTests(unittest.TestCase):
     def setUp(self):
@@ -173,5 +173,67 @@ class LocalMainTests(unittest.TestCase):
         self.assertEqual(out(self.root,"symbolic-ref","refs/heads/main"),"refs/heads/fix/retained")
         self.assertEqual(out(self.root,"rev-parse","HEAD"),self.head)
         self.assertEqual(out(self.root,"status","--porcelain"),"")
+
+class DiscardLocalTests(unittest.TestCase):
+    setUp = SyncTests.setUp
+    commit = SyncTests.commit
+    def discard(self, **kw):
+        target_head = self.head
+        git(self.root,"switch","-c","fix/cleanup",self.main)
+        args = dict(root=self.root, branch="fix/cleanup",head=self.main,main=self.main,
+                    target="fix/test",target_head=target_head,
+                    bundle=str(Path(self.tmp.name)/"recovery.bundle"))
+        args.update(kw)
+        return discard_local(**args)
+    def test_abandoned_local_ref_deleted_remote_and_worktree_preserved(self):
+        result=self.discard(apply=True,confirm="DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY")
+        self.assertEqual(result["remote_writes"],0)
+        self.assertNotEqual(git(self.root,"show-ref","--verify","refs/heads/fix/test",check=False).returncode,0)
+        self.assertEqual(out(self.root,"ls-remote","gitee-mirror","refs/heads/fix/test").split()[0],self.head)
+        recovered=Path(self.tmp.name)/"recovered"
+        git(self.root,"clone","--branch","fix/test",result["bundle"],str(recovered))
+        self.assertEqual(out(recovered,"rev-parse","fix/test"),self.head)
+        self.assertEqual(out(self.root,"status","--porcelain"),"")
+    def test_preview_retains_ref_and_no_bundle(self):
+        result=self.discard()
+        self.assertEqual(result["writes"],0)
+        self.assertFalse(Path(result["bundle"]).exists())
+        self.assertEqual(out(self.root,"rev-parse","fix/test"),self.head)
+    def test_wrong_confirmation_refuses(self):
+        with self.assertRaisesRegex(RuntimeError,"confirmation"):
+            self.discard(apply=True,confirm=CONFIRM)
+    def test_drift_refuses(self):
+        with self.assertRaisesRegex(RuntimeError,"drift"):
+            self.discard(target_head=self.main)
+    def test_protected_refuses(self):
+        with self.assertRaisesRegex(RuntimeError,"unprotected"):
+            self.discard(target="main")
+    def test_occupied_refuses(self):
+        with self.assertRaisesRegex(RuntimeError,"occupied"):
+            self.discard(target="fix/cleanup",target_head=self.main)
+    def test_dirty_refuses(self):
+        (self.root/"dirty").write_text("x")
+        with self.assertRaisesRegex(RuntimeError,"clean"):
+            self.discard()
+    def test_foreign_bundle_refuses(self):
+        bundle=Path(self.tmp.name)/"other.bundle"
+        git(self.root,"bundle","create",str(bundle),"main")
+        with self.assertRaisesRegex(RuntimeError,"bundle target mismatch"):
+            self.discard(bundle=str(bundle),apply=True,confirm="DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY")
+    def test_symbolic_refuses(self):
+        git(self.root,"symbolic-ref","refs/heads/fix/alias","refs/heads/fix/test")
+        with self.assertRaisesRegex(RuntimeError,"symbolic"):
+            self.discard(target="fix/alias")
+    def test_internal_archive_refuses(self):
+        with self.assertRaisesRegex(RuntimeError,"external"):
+            self.discard(bundle=str(self.root/"recovery.bundle"))
+
+    def test_incremental_bundle_refuses_before_deletion(self):
+        bundle=Path(self.tmp.name)/"incremental.bundle"
+        base=out(self.root,"merge-base","main","fix/test")
+        git(self.root,"bundle","create",str(bundle),"refs/heads/fix/test","^"+base)
+        with self.assertRaisesRegex(RuntimeError,"incremental"):
+            self.discard(bundle=str(bundle),apply=True,confirm="DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY")
+        self.assertEqual(out(self.root,"rev-parse","fix/test"),self.head)
 
 if __name__=="__main__": unittest.main()

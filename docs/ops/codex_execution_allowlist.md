@@ -862,3 +862,20 @@ update-ref only inside this tool. It preserves the current topic branch/worktree
 never pushes or changes upstream/remote configuration. Dirty, divergent or occupied
 main is refused. Existing main.sync retains its GitHub behavior. The existing
 verify.workspace.branch.sync-gitee.unit target covers both synchronization modes.
+
+### Explicit owner-approved local abandonment (2026-09-28)
+
+When the owner explicitly abandons an unmerged experiment, use
+`make workspace.branch.discard-local EXPECTED_BRANCH=<current> EXPECTED_HEAD=<full SHA>
+EXPECTED_LOCAL_MAIN=<full local main SHA> DISCARD_BRANCH=<exact topic>
+DISCARD_HEAD=<full topic SHA> DISCARD_RECOVERY_BUNDLE=<absolute external bundle>`.
+Default is read-only. Apply requires `APPLY=1
+DISCARD_CONFIRM=DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY` and the user's explicit
+abandonment instruction. This narrow exception permits unmerged local deletion only;
+ordinary merged cleanup remains unchanged. The existing synchronization module checks
+clean identity, rejects protected/symbolic/occupied refs and identity drift, creates or
+verifies a recovery bundle containing the exact named ref, hashes it, rechecks identity,
+and uses no-dereference CAS deletion. It never reads/writes remote refs, changes worktree
+files, removes environments, prunes objects, or claims the abandoned code was merged.
+Single-writer workspace governance remains required. Tests reuse
+`verify.workspace.branch.sync-gitee.unit`.
