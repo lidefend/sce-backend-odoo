@@ -445,12 +445,43 @@ const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')
 async function validateAdoptedSection(): Promise<string[]> {
   if (!adoptedComposition.value) return [];
   const instance = (sectionFormRef.value as ScFormInstance | null) || null;
-  if (!instance) return [];
-  return failedAdoptedFieldNames(await instance.validate());
+  if (!instance) {
+    // A section that hands rules to the engine but has no engine to run them
+    // cannot answer "passed"; it must not be read as one.
+    if (adoptedRuleFieldNames().length) {
+      throw new Error('adopted form section has no engine instance for its declared rules');
+    }
+    return [];
+  }
+  const rejected = failedAdoptedFieldNames(await instance.validate());
+  if (rejected === null) {
+    throw new Error('adopted form engine returned an unrecognised validation result');
+  }
+  return rejected;
+}
+
+/**
+ * Positions this section really hands to the official engine.
+ *
+ * Only a rendered position has a form item, and the engine evaluates rules for
+ * registered items only. Reporting the rendered-and-ruled set keeps the save
+ * chain honest: a required position that is not rendered here is *not* covered,
+ * so the page-level precheck must keep deciding it.
+ */
+function adoptedRuleFieldNames(): string[] {
+  if (!adoptedComposition.value) return [];
+  const rules = adoptedRules.value;
+  return displayFields.value
+    .map((field) => String(field.name || '').trim())
+    .filter((name) => Boolean(name && rules[name]));
 }
 
 onMounted(() => {
-  standardFormComposition?.register({ sectionId, validate: validateAdoptedSection });
+  standardFormComposition?.register({
+    sectionId,
+    ruleFieldNames: adoptedRuleFieldNames,
+    validate: validateAdoptedSection,
+  });
 });
 onBeforeUnmount(() => {
   standardFormComposition?.unregister(sectionId);

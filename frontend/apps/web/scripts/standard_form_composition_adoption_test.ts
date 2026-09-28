@@ -240,10 +240,27 @@ checkDeep(
   ['name'],
   'the engine reports rejected field codes',
 );
-checkDeep(failedAdoptedFieldNames({}), [], 'an empty result object rejects nothing');
-checkDeep(failedAdoptedFieldNames(undefined), [], 'a missing result rejects nothing');
-checkDeep(failedAdoptedFieldNames('unexpected'), [], 'an unrecognised result is not guessed at');
-checkDeep(failedAdoptedFieldNames(['name']), [], 'a list is not read as an error map');
+checkDeep(failedAdoptedFieldNames({}), [], 'an empty result object rejects nothing, so it is a real pass');
+check(
+  failedAdoptedFieldNames(undefined) === null,
+  true,
+  'a missing result cannot be read as a pass: the caller must fail closed',
+);
+check(
+  failedAdoptedFieldNames(null) === null,
+  true,
+  'a null result cannot be read as a pass',
+);
+check(
+  failedAdoptedFieldNames('unexpected') === null,
+  true,
+  'an unrecognised result is refused rather than guessed at',
+);
+check(
+  failedAdoptedFieldNames(['name']) === null,
+  true,
+  'a list is not read as an error map, so it is refused rather than treated as a pass',
+);
 
 // ---------------------------------------------------------------------------
 // Part 4 — one rejection produces one message, one key, one focus entry
@@ -284,25 +301,28 @@ checkDeep(buildRequiredFieldErrorPayload([], scope), { messages: [], fieldErrors
 const registry = createStandardFormValidationRegistry(() => 'project.project');
 check(registry.adopted.value, true, 'the page runtime reports the adopted scope');
 let validated = 0;
-registry.register({ sectionId: 'a', validate: async () => { validated += 1; return ['name', 'name']; } });
-registry.register({ sectionId: 'b', validate: async () => { validated += 1; return ['partner_id']; } });
+registry.register({ sectionId: 'a', ruleFieldNames: () => ['name'], validate: async () => { validated += 1; return ['name', 'name']; } });
+registry.register({ sectionId: 'b', ruleFieldNames: () => ['partner_id'], validate: async () => { validated += 1; return ['partner_id']; } });
 const collected = await registry.validateAdoptedFields();
 check(collected.ok, true, 'a registry whose sections answered reports ok');
 checkDeep(collected.fieldNames, ['name', 'partner_id'], 'rejected codes are collected once per field across sections');
+checkDeep(collected.coveredFieldNames, ['name', 'partner_id'], 'the registry reports exactly the positions the official engine evaluated');
 check(validated, 2, 'every registered section is asked');
 registry.unregister('a');
 const afterUnregister = await registry.validateAdoptedFields();
 checkDeep(afterUnregister.fieldNames, ['partner_id'], 'an unregistered section stops contributing');
-registry.register({ sectionId: 'boom', validate: async () => { throw new Error('engine unavailable'); } });
+checkDeep(afterUnregister.coveredFieldNames, ['partner_id'], 'an unregistered section stops being covered as well, so its positions stay with the precheck');
+registry.register({ sectionId: 'boom', ruleFieldNames: () => ['name'], validate: async () => { throw new Error('engine unavailable'); } });
 const failed = await registry.validateAdoptedFields();
 check(failed.ok, false, 'a section that cannot answer blocks the save instead of passing it');
 checkDeep(failed.fieldNames, [], 'a failed validation reports no field it cannot name');
+checkDeep(failed.coveredFieldNames, [], 'a failed run covers nothing, so nothing may be dropped from the precheck');
 
 const unadopted = createStandardFormValidationRegistry(() => 'payment.request');
 check(unadopted.adopted.value, false, 'an unverified surface is not adopted');
-unadopted.register({ sectionId: 'x', validate: async () => ['name'] });
+unadopted.register({ sectionId: 'x', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const unadoptedResult = await unadopted.validateAdoptedFields();
-checkDeep(unadoptedResult, { ok: true, fieldNames: [] }, 'an unadopted surface contributes nothing to the save gate');
+checkDeep(unadoptedResult, { ok: true, fieldNames: [], coveredFieldNames: [] }, 'an unadopted surface contributes nothing to the save gate');
 
 const runtimeSource = readSource('frontend/apps/web/src/pages/contractForm/standardFormCompositionRuntime.ts');
 check(/provide\(/.test(runtimeSource), true, 'the page-level runtime provides the registry to the sections');
@@ -352,9 +372,24 @@ check(
   'the adopted engine is asked before the write, not after it',
 );
 check(
-  actionsSource.includes("typeof validateAdoptedFormSections !== 'function'"),
+  actionsSource.includes('resolveStandardFormComposition({ model: model.value }).adopted'),
   true,
-  'a page without the runtime is not silently forced through a missing gate',
+  'the save gate derives adoption from the declared model, not from whether a callback was passed',
+);
+check(
+  actionsSource.includes('coverageMissing'),
+  true,
+  'an adopted surface with required positions but no registered section fails closed instead of passing',
+);
+check(
+  actionsSource.includes('excludedRequiredFieldNames: adoptedValidation.coveredFieldNames'),
+  true,
+  'exactly the engine-covered positions are excluded from the page-level precheck',
+);
+check(
+  sectionSource.includes('adopted form engine returned an unrecognised validation result'),
+  true,
+  'a section whose engine cannot be read refuses to answer "passed"',
 );
 check(
   actionsSource.includes('validationFieldErrors.value = payload.fieldErrors;'),

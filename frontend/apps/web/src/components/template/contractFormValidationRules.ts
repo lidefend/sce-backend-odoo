@@ -56,15 +56,15 @@ export function buildContractFormRules(
 }
 
 /**
- * Field names the engine rejected.
+ * Field names the engine rejected, or `null` when the result cannot be read.
  *
  * The engine resolves with `true` when everything passed, and with an object
- * holding only the rejected names otherwise. A shape this reader does not
- * recognise is reported as "nothing failed" by the caller's own fail-closed
- * check rather than guessed at here.
+ * holding only the rejected names otherwise. `null` is a distinct answer: an
+ * absent or unrecognised result is not evidence that the form passed, so the
+ * caller must fail closed instead of letting the save through.
  */
-export function failedAdoptedFieldNames(result: unknown): string[] {
-  if (!result || result === true) return [];
-  if (typeof result !== 'object' || Array.isArray(result)) return [];
+export function failedAdoptedFieldNames(result: unknown): string[] | null {
+  if (result === true) return [];
+  if (!result || typeof result !== 'object' || Array.isArray(result)) return null;
   return Object.keys(result as Record<string, unknown>).map((key) => key.trim()).filter(Boolean);
 }

@@ -17,6 +17,13 @@ import { resolveStandardFormComposition } from '../../app/presentation/standardF
 
 export type StandardFormSectionValidator = {
   sectionId: string;
+  /**
+   * Business field codes this section actually evaluates rules for, i.e. the
+   * positions it renders through the official engine. Reported so the save
+   * chain can tell "the engine owns this rule" from "no rule covers it": only
+   * the first may be excluded from the page-level generic precheck.
+   */
+  ruleFieldNames: () => string[];
   validate: () => Promise<string[]>;
 };
 
@@ -24,6 +31,8 @@ export type StandardFormValidationOutcome = {
   /** False when a section could not be validated at all; the caller fails closed. */
   ok: boolean;
   fieldNames: string[];
+  /** Field codes the official engine really evaluated during this run. */
+  coveredFieldNames: string[];
 };
 
 export type StandardFormCompositionRuntime = {
@@ -54,17 +63,23 @@ export function createStandardFormValidationRegistry(
       validators.delete(sectionId);
     },
     validateAdoptedFields: async () => {
-      if (!adopted.value) return { ok: true, fieldNames: [] };
+      if (!adopted.value) return { ok: true, fieldNames: [], coveredFieldNames: [] };
       const fieldNames: string[] = [];
+      const coveredFieldNames: string[] = [];
       for (const validator of [...validators.values()]) {
         try {
+          coveredFieldNames.push(...validator.ruleFieldNames());
           fieldNames.push(...(await validator.validate()));
         } catch {
           // A section that cannot answer must not let the save through.
-          return { ok: false, fieldNames: [] };
+          return { ok: false, fieldNames: [], coveredFieldNames: [] };
         }
       }
-      return { ok: true, fieldNames: [...new Set(fieldNames)] };
+      return {
+        ok: true,
+        fieldNames: [...new Set(fieldNames)],
+        coveredFieldNames: [...new Set(coveredFieldNames)],
+      };
     },
   };
   return runtime;

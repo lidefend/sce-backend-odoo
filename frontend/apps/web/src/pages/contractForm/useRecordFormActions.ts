@@ -9,6 +9,7 @@ import {
   indexBusinessFieldErrors,
 } from '../../app/businessValidationError';
 import { buildRequiredFieldErrorPayload, createSingleFlightSave } from './saveRecordHelpers';
+import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 
 type ActionDependencies = Record<string, any>;
 
@@ -433,24 +434,57 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
 
   /**
+   * Required editable positions the contract declares for this page.
+   *
+   * Used only to tell "the composition has nothing to validate" apart from
+   * "the composition should have validated but had nothing registered".
+   */
+  function adoptedExpectedRequiredFieldNames(): string[] {
+    return (layoutNodes.value as LayoutNode[])
+      .filter((node) => node.kind === 'field' && !node.readonly && Boolean(node.descriptor?.required))
+      .filter((node) => isWritableFieldVisible(node.name))
+      .map((node) => node.name);
+  }
+
+  /**
    * Ask the adopted form sections to validate before anything is written.
    *
-   * Their result joins the same error store the rest of the save chain uses, so
-   * there is one summary, one per-field message and one focus entry per rejected
-   * field. It never validates a second copy of the draft: the sections evaluate
-   * the values the page already holds.
+   * Three boundaries are kept apart:
+   *  - a surface outside the pilot scope adopts nothing and needs no runtime;
+   *  - an adopted surface whose runtime or section registration is missing,
+   *    while the contract still declares required editable positions, fails
+   *    closed and keeps the draft instead of passing silently;
+   *  - an adopted surface whose contract genuinely has no required editable
+   *    position is a legal empty set, not a runtime failure.
+   *
+   * `coveredFieldNames` is what the official engine really evaluated. The save
+   * chain excludes exactly those positions from the page-level generic precheck,
+   * so one save is never decided twice by two generic authorities. Positions the
+   * engine did not cover keep their pre-existing precheck, so an applicable but
+   * unmounted position can never be auto-passed.
+   *
+   * The rejected codes join the same error store the rest of the save chain
+   * uses, so there is one summary, one per-field message and one focus entry.
    */
-  async function runAdoptedFormValidation(): Promise<boolean> {
-    if (typeof validateAdoptedFormSections !== 'function') return true;
-    const outcome = await validateAdoptedFormSections();
-    if (!outcome?.ok) {
-      submissionFeedback.value = { kind: 'warn', message: '表单校验未能完成，请重试。' };
-      validationErrors.value = ['表单校验未能完成，请重试。'];
+  async function runAdoptedFormValidation(): Promise<{ ok: boolean; coveredFieldNames: string[] }> {
+    if (!resolveStandardFormComposition({ model: model.value }).adopted) {
+      return { ok: true, coveredFieldNames: [] };
+    }
+    const validate = typeof validateAdoptedFormSections === 'function' ? validateAdoptedFormSections : null;
+    const outcome = validate ? await validate() : null;
+    const coveredFieldNames = outcome?.ok && Array.isArray(outcome.coveredFieldNames)
+      ? outcome.coveredFieldNames
+      : [];
+    const coverageMissing = adoptedExpectedRequiredFieldNames().length > 0 && coveredFieldNames.length === 0;
+    if (!outcome?.ok || coverageMissing) {
+      const message = '表单校验未能完成，请重试。';
+      submissionFeedback.value = { kind: 'warn', message };
+      validationErrors.value = [message];
       validationFieldErrors.value = {};
-      return false;
+      return { ok: false, coveredFieldNames: [] };
     }
     const fieldNames: string[] = Array.isArray(outcome.fieldNames) ? outcome.fieldNames : [];
-    if (!fieldNames.length) return true;
+    if (!fieldNames.length) return { ok: true, coveredFieldNames };
     const labels = (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
       if (node.kind === 'field') acc[node.name] = node.label || node.name;
       return acc;
@@ -463,7 +497,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationFieldErrors.value = payload.fieldErrors;
     submissionFeedback.value = { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' };
     await focusFirstValidationError();
-    return false;
+    return { ok: false, coveredFieldNames: [] };
   }
 
   async function saveRecord(
@@ -476,8 +510,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationFieldErrors.value = {};
     formConflict.value = false;
     const adoptedValidation = await runAdoptedFormValidation();
-    if (adoptedValidation === false) return false;
+    if (!adoptedValidation.ok) return false;
     const validation = await validateBeforeSaveRecord({
+      excludedRequiredFieldNames: adoptedValidation.coveredFieldNames,
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
         collectSceneValidationPrecheckErrors(fieldLabels),
       collectWritableValues: () => collectWritableValues(),

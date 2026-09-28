@@ -42,6 +42,13 @@ export async function validateBeforeSaveRecord(params: {
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   one2manyFieldErrors: Record<string, BusinessFieldError>;
   one2manyIssues: string[];
+  /**
+   * Required positions whose generic rule is already executed by the official
+   * form engine on an adopted surface. They are skipped here so one save is
+   * never decided twice by two generic authorities; domain and server
+   * constraints are untouched.
+   */
+  excludedRequiredFieldNames?: readonly string[];
   /** Business model the saved values belong to; part of every error target. */
   model: string;
   recordId: number | null;
@@ -88,6 +95,7 @@ export async function validateBeforeSaveRecord(params: {
   const editableMap = params.collectWritableValues();
   {
     const requiredValidation = collectRequiredFieldValidation({
+      excludedFieldNames: params.excludedRequiredFieldNames,
       formData: params.formData,
       isWritableFieldVisible: params.isWritableFieldVisible,
       layoutNodes: params.layoutNodes,
@@ -127,6 +135,8 @@ export function collectRequiredFieldIssues(params: {
 }
 
 export function collectRequiredFieldValidation(params: {
+  /** Positions the official engine already decides; never re-decided here. */
+  excludedFieldNames?: readonly string[];
   formData: Record<string, unknown>;
   isWritableFieldVisible: (name: string) => boolean;
   layoutNodes: LayoutNode[];
@@ -138,8 +148,9 @@ export function collectRequiredFieldValidation(params: {
   values: Record<string, unknown>;
   submittedFieldsOnly?: boolean;
 }) {
+  const excluded = new Set(params.excludedFieldNames || []);
   const missing = params.layoutNodes
-    .filter((node) => node.kind === 'field' && !node.readonly && (
+    .filter((node) => node.kind === 'field' && !node.readonly && !excluded.has(node.name) && (
       params.submittedFieldsOnly
         ? Object.prototype.hasOwnProperty.call(params.values, node.name)
         : params.isWritableFieldVisible(node.name)
