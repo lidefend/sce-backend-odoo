@@ -23,9 +23,18 @@ export type StandardFormCompositionDecision = {
   reason: StandardFormCompositionReason;
 };
 
-/** Models whose standard form is served by the official composition. */
+/**
+ * Models whose standard form is served by the official composition.
+ *
+ * Every entry is a surface this project has verified against the official
+ * composition. The list is what makes a second model a *reuse* rather than a
+ * second implementation: the call sites never name a model, so a surface joins
+ * by being listed here and by carrying a contract the composition already
+ * understands.
+ */
 export const STANDARD_FORM_COMPOSITION_PILOT_MODELS: readonly string[] = Object.freeze([
   'project.project',
+  'sc.general.contract',
 ]);
 
 export function resolveStandardFormComposition(input: { model?: unknown }): StandardFormCompositionDecision {

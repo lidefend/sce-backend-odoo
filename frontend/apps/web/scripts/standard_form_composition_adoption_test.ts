@@ -85,7 +85,7 @@ check(
   'pilot-model-adopted',
   'adoption reports the scope it came from',
 );
-for (const other of ['payment.request', 'res.partner', '']) {
+for (const other of ['payment.request', 'res.partner', 'project.task', 'sc.general.contract.line', '']) {
   check(resolveStandardFormComposition({ model: other }).adopted, false, `adoption does not leak to ${other || 'an empty model'}`);
   check(
     resolveStandardFormComposition({ model: other }).reason,
@@ -100,8 +100,69 @@ check(
 );
 checkDeep(
   [...STANDARD_FORM_COMPOSITION_PILOT_MODELS],
-  ['project.project'],
-  'the adopted scope is exactly the verified surface',
+  ['project.project', 'sc.general.contract'],
+  'the adopted scope is exactly the verified surfaces',
+);
+
+// ---------------------------------------------------------------------------
+// Part 1b — the second model is a reuse, not a second implementation
+//
+// TPL-02: a different business model joins the same composition. The proof is
+// structural. The surfaces that actually render the form never learn the model
+// name, so nothing about the second model can be satisfied by a copy of the
+// first one's orchestration; the only thing that changes is the scope list.
+// ---------------------------------------------------------------------------
+check(
+  resolveStandardFormComposition({ model: 'sc.general.contract' }).adopted,
+  true,
+  'the second verified surface is adopted by the same policy',
+);
+check(
+  resolveStandardFormComposition({ model: 'sc.general.contract' }).composition,
+  'official-standard-form',
+  'the second surface reports the same official composition',
+);
+check(
+  resolveStandardFormComposition({ model: 'sc.general.contract' }).reason,
+  'pilot-model-adopted',
+  'the second surface reports the same scope reason as the first',
+);
+
+const compositionCallSites = [
+  'frontend/apps/web/src/components/template/FormSection.vue',
+  'frontend/apps/web/src/pages/ContractFormPage.vue',
+];
+for (const callSite of compositionCallSites) {
+  const source = readSource(callSite);
+  for (const adoptedModel of STANDARD_FORM_COMPOSITION_PILOT_MODELS) {
+    check(
+      source.includes(adoptedModel),
+      false,
+      `${callSite} does not name ${adoptedModel}; the surface reads the scope, it does not carry it`,
+    );
+  }
+  check(
+    /resolveStandardFormComposition/.test(source),
+    false,
+    `${callSite} does not re-decide adoption; it consumes the page runtime`,
+  );
+}
+check(
+  /standardFormComposition/.test(readSource('frontend/apps/web/src/components/template/FormSection.vue')),
+  true,
+  'the section still reads the adopted composition from the page runtime',
+);
+// The scope lives in exactly one place. A second declaration would let the two
+// surfaces disagree about which models are adopted.
+const pilotDeclarations = compositionCallSites
+  .concat(['frontend/apps/web/src/app/presentation/standardFormComposition.ts'])
+  .map((file) => [file, /STANDARD_FORM_COMPOSITION_PILOT_MODELS/.test(readSource(file))] as const)
+  .filter(([, present]) => present)
+  .map(([file]) => file);
+checkDeep(
+  pilotDeclarations,
+  ['frontend/apps/web/src/app/presentation/standardFormComposition.ts'],
+  'exactly one module declares the adopted scope',
 );
 
 const policySource = readSource('frontend/apps/web/src/app/presentation/standardFormComposition.ts');

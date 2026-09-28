@@ -431,3 +431,60 @@ vite preview `127.0.0.1:5175`、隔离库 `sc_frontend_acceptance`。前端产�
   两条路径按设计共用 `isRequiredFieldEmptyByType` 与同一错误载荷，本轮未观察到二者结果不一致。
 - 本环境 `vue-tsc` 未复现历史 31 项错误，因此不能作为「同基线、零新增」的对照，只能报告本次 0 新增。
 - 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。
+
+### FE-TPL-02 第二业务模型复用（2026-09-28）
+
+同一专题分支，基线 `main`/`23f11f42`，开工前 HEAD `0ca84329`。目标是证明标准表单组合可被第二个业务模型通过
+**契约差异**复用，而不是又做一次项目专用改版。
+
+**选型**：沿唯一矩阵选 `menu_sc_p1_daily_contract`（日常合同，action `action_sc_general_contract`，
+模型 `sc.general.contract`），入口 `rendering_path` 已声明 `form:form_structure [structural]`，与试点同一条渲染链。
+该模型在 ORM 层无业务 x2many（仅 chatter/附件），属普通标量表单。写权限按真实角色判定：
+`fixture_role_contract_operator` 与 `fixture_role_project_a_member`/`activity_accounting`/`config_admin` 可写，
+`fixture_role_pm` 只读（`check_access_rights(write)=false`），`fixture_role_finance` 无模型访问。
+角色公司域为 `FE Company A`（`allowed_company_ids=[8]`），因此可见记录 `GC2600011`(confirmed)/`GC2600010`(signed) 均为只读，
+唯一可写的既有草稿 `GC2600012` 属 `FE Company B`，不在该角色数据域内——写路径因此走**新建**表单模式。
+
+**复用证据是结构性的**：采用开关按 **model** 判定（`STANDARD_FORM_COMPOSITION_PILOT_MODELS`），
+而真正渲染的两个调用点 `components/template/FormSection.vue` 与 `pages/ContractFormPage.vue`
+**都不出现任何模型名**。因此本轮生产代码改动只有「作用域清单 + 其单测」，
+既没有复制保存函数、错误摘要，也没有按模型名写主按钮逻辑或第二套字段布局循环。
+
+**运行来源与结果**：`feature/web-official-template-adoption`，前端由本轮源码重建后
+`vite preview` 提供（`dist-release`）。角色 `fixture_role_contract_operator`，
+`/f/sc.general.contract/new?menu_id=662&action_id=673`。
+
+- 结构：新建表单 `official=4 legacy=0 sections=2`；已有草稿表单 `official=31 legacy=0 sections=10 editable=23`；
+  非草稿只读表单 `official=13 legacy=0 editable=0` 且无保存动作；`1440×900` 与 `390×844` 均无横向溢出。
+- 校验拒绝：清空「合同名称」后保存被拒——**当次 0 次写入**（合同数 3→3）、摘要「请检查以下内容合同名称不能为空」、
+  字段级「合同名称不能为空」、`data-field-state=invalid`、`aria-describedby` 指向该控件、金额草稿保留。
+- 办理闭环：纠正后保存草稿 → 记录创建（`GC2600015`，`state=draft`，`amount_total=123456`）→ 页面跳到该记录；
+  在既有草稿上改金额 `123456→654321` 保存 → 刷新回读一致；随后删除恢复基线（3→3）。
+- 删除需能力角色：业务角色 `unlink` 被拒（「允许对以下组进行此操作：合同中心审批」），清理以
+  `fixture_role_config_admin` 执行。**这是权限事实，不是缺陷。**
+
+**同轮收口的 TPL-01 遗留（本轮发现并修复）**：开工核对时 `verify.frontend.quick.gate` 在 TPL-01 的 HEAD 上
+**并未通过**——`FormSection.vue` 的两条样式规则直接命中 TDesign 内部类
+（`.field-control-row.t-form__item`、`.field-control-row .t-form__controls/.t-form__controls-content`），
+被 `internalVendorSelectorGapCount` 记为 1；同时三份生成清单（component-professionalization、visual-projection、
+official-design-alignment）在 TPL-01 改源后未刷新。修复：改用项目自有选择器
+`.field-control-row[data-semantic-component='ScFormItem']`（该身份本就由 `ScFormItem` 适配器写入，天然只覆盖已接管行），
+并移除对 TDesign 内部后代的耦合——不需要的规则就不写，而不是换一种写法继续穿透内部结构。
+对照 `1440×900` 下项目编辑页 24 行与合同只读页 13 行的逐行矩形，**几何零差异**；TPL-01 与 TPL-02 的浏览器
+旅程在修复后各自 8/8 通过。刷新三份清单后 `verify.frontend.quick.gate` 全绿（本次实测退出码 0）。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error；`standard_form_composition` 96 例
+（由 81 例扩展，新增第二模型作用域、跨模型不泄漏、调用点不含模型名、作用域只有一处声明）；
+`component_driver_takeover`（required=35 missing=0）、`product_page_pattern`、`contract_error_business_ownership`（92 例）PASS；
+三份渲染清单 `--check` PASS；`verify.frontend.quick.gate` 整体 PASS。
+
+**口径限制（不得夸大）**：
+- 只能宣布「官方标准表单接管到 `project.project`（菜单 680）与 `sc.general.contract`（action 673 的菜单 662/353）」；
+  列表、详情、应用外壳、主从办理组合仍未接管，89 入口矩阵分母不变，未按模型批量标绿。
+- 第二模型的业务证据只覆盖 `fixture_role_contract_operator` 一个角色、新建与编辑两种表单模式；
+  **未运行**提交审批等流转动作、该入口的列表查询/筛选/分页/详情返回上下文、附件上传下载、以及其余角色的权限矩阵。
+- 托管矩阵行 `menu_sc_p1_daily_contract` 按真实证据回填为 `partial_passed`，缺口逐项写明；
+  同 action 的 `menu_sc_general_contract` **不是**矩阵行，只记录其结构探测结果。
+- 矩阵若干行引用的 `artifacts/frontend-web-fix-20260928/evidence.md`、`uat01a-raw/`、`uat02-raw/` 在本轮核对时
+  **不存在**（该目录下仅有 `tpl01/`、`tpl02/`）。本轮只如实报告，未重建、未改写引用。
+- 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。

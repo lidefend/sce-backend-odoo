@@ -77,6 +77,31 @@ dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
   the adopted scope renders its previous DOM unchanged (`bare` mode), so a
   single page never runs two competing compositions.
 
+### Adopted scope
+
+`STANDARD_FORM_COMPOSITION_PILOT_MODELS` lists the surfaces verified against the
+composition. A model joins by being listed there and by carrying a contract the
+composition already understands; the rendering surfaces never name a model, so a
+second model is a reuse of the same composition rather than a second
+implementation of it.
+
+| Model | Verified entry | Round |
+|---|---|---|
+| `project.project` | `menu_sc_product_project_edit_v1` (menu 680) | TPL-01 |
+| `sc.general.contract` | `menu_sc_p1_daily_contract` (action `action_sc_general_contract`, menu 662) | TPL-02 |
+
+TPL-02 also adopted the sibling menu `一般合同（公司）` (`menu_sc_general_contract`, menu 353)
+because adoption is decided per model, not per menu. That menu is not a row of the entry
+matrix; its form was verified structurally, not through the business journey.
+
+### Style boundary
+
+The adopted row is selected by the primitive identity this project already puts on the adapter
+(`.field-control-row[data-semantic-component='ScFormItem']`), never by a vendor class. A TDesign
+class may appear on an Sc root; its internal descendants stay uncoupled, so a version swap cannot
+silently change what the section styles. `verify.frontend.rendering_detail_state.unit` enforces
+this (`internalVendorSelectorGapCount` must stay 0).
+
 ### Boundary
 
 Contract and Odoo facts decide what exists, what is editable, and what may be
