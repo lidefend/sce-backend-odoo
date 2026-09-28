@@ -74,11 +74,22 @@ REQUIREMENTS = {
         "max-block-size: 100%",
         ".shell :deep(.sidebar--scroll)",
         "overflow: hidden",
+        "color: var(--sc-semantic-text-primary)",
+        "background: var(--sc-semantic-surface-panel)",
+        "var(--sc-semantic-border-default)",
+        "var(--sc-touch-target-min)",
     ),
     "frontend/apps/web/src/layouts/AppShell.vue": (
         "workspacePanelMode === 'catalog'",
         "平台应用",
         "workspacePanelMode === 'navigation'",
+    ),
+    "frontend/apps/web/src/App.vue": (
+        "import { resolveStandardShellComposition } from './app/presentation/standardShellComposition';",
+        "const shellComposition = computed(() => resolveStandardShellComposition({",
+        'v-if="shellComposition.adopted"',
+        ':data-shell-composition="shellComposition.composition"',
+        ':data-shell-composition-reason="shellComposition.reason"',
     ),
 }
 FORBIDDEN_BY_SOURCE = {

@@ -104,6 +104,23 @@ class FrontendPagePatternReferenceParityGuardTest(unittest.TestCase):
         failures = validate(lambda source: values[source])
         self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
 
+    def test_shell_must_consume_the_shared_touch_target_contract(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/layouts/AppShell.css"
+        values[target] = values[target].replace("var(--sc-touch-target-min)", "44px")
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
+    def test_shell_gate_must_be_decided_by_the_adoption_policy(self) -> None:
+        values = self.source_map()
+        target = "frontend/apps/web/src/App.vue"
+        values[target] = values[target].replace(
+            'v-if="shellComposition.adopted"',
+            "v-if=\"route.meta?.layout === 'shell'\"",
+        )
+        failures = validate(lambda source: values[source])
+        self.assertTrue(any("parity requirement missing" in failure and target in failure for failure in failures))
+
     def test_embedded_list_cannot_create_a_second_page_header(self) -> None:
         values = self.source_map()
         target = "frontend/apps/web/src/pages/ListPage.vue"

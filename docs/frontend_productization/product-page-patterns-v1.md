@@ -61,7 +61,7 @@ dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
 | Standard edit form | `src/pages/form/base/index.vue` | `components/template/FormSection.vue` (field grid, label, error slot) plus `design-system/ScForm.vue` / `ScFormItem.vue` (validation and instance capability pass-through) |
 | Standard query list | `src/pages/list/base/index.vue` | `components/product-list/ProductListSurface.vue` (one `t-card.list-card-container` wrapping the query row and the table) plus `product-list/ProductListHeader.vue` (search field) — TPL-03 |
 | Standard readonly detail | `src/pages/detail/base/index.vue` | `components/template/FormSection.vue` readonly-facts branch (`t-descriptions` label/value per section, same readonly value identities) — TPL-03 |
-| Application shell | `src/layouts/` | not adopted yet (planned TPL-04) |
+| Application shell | `src/layouts/` | `app/presentation/standardShellComposition.ts` (adoption policy) + `App.vue` (shell gate) + `layouts/AppShell.css` (token layer) — TPL-04 |
 | Master-detail handling page | form/list/upload/overlay composition | not adopted yet (planned TPL-05) |
 
 ### Adoption switch
@@ -93,6 +93,38 @@ implementation of it.
 TPL-02 also adopted the sibling menu `一般合同（公司）` (`menu_sc_general_contract`, menu 353)
 because adoption is decided per model, not per menu. That menu is not a row of the entry
 matrix; its form was verified structurally, not through the business journey.
+
+### Application shell (TPL-04)
+
+The shell is a single surface, so its adoption scope is scoped by *route layout* rather than
+by model. `STANDARD_SHELL_COMPOSITION_LAYOUTS` lists the layouts verified against the official
+composition; `App.vue` resolves one pure decision
+(`{ composition, adopted, reason }`) and uses it both as the shell gate and as the published
+`data-shell-composition` / `data-shell-composition-reason` identity, so a gate and its evidence
+cannot drift apart. A route that is not adopted — or an embedded relation dialog, which
+intentionally bypasses the shell — renders its page component exactly as it did before.
+
+The shell container driver was already the official `t-layout` primitive
+(`ProductAppShell` → `ScLayout`); TPL-04 aligns the shell's *style layer* and makes the adoption
+scope explicit. It removes no capability: the workspace panel modes (`navigation`, `catalog`,
+`company`, `record`), the sidebar, the activity tabs and the minimal/compact topbar are all
+unchanged.
+
+Style-layer migration (presentation only, value-preserving):
+
+- `layouts/AppShell.css` no longer declares or consumes its own
+  `--surface/--ink/--muted/--accent/--panel/--layout-divider` alias block. Those positions now
+  consume the canonical semantic tokens (`--sc-semantic-text-primary`,
+  `--sc-semantic-text-secondary`, `--sc-semantic-surface-panel`,
+  `--sc-semantic-border-default`), which is what `frontend/packages/design-tokens/token-authority.json`
+  already classified the block as belonging to (owner `frontend.app_shell`).
+- The two `44px` touch-target blocks in the minimal topbar consume the shared
+  `--sc-touch-target-min` contract instead of repeating the literal.
+- The reserved shell dimension aliases (`--sc-shell-sidebar-collapsed-width`,
+  `--sc-shell-navigation-item-height`, `--sc-shell-page-gutter`) stay declared in the alias layer
+  but have **no runtime consumer**, because the shell has no collapsible rail, its navigation rows
+  are not 44 px, and its routed page gutter is already owned by the responsive
+  `--sc-page-padding` contract. No consumer was fabricated to "use" them.
 
 ### Style boundary
 
