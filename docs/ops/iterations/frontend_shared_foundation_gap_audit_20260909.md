@@ -561,6 +561,97 @@ official-design-alignment）在 TPL-01 改源后未刷新。修复：改用项�
 - 89 入口唯一分母不变；托管行按真实证据回填，未因模板复用通过就整体标绿。
 - 专题内不推送、不合并、不部署目标环境。
 
+### FE-TPL-02R 异步身份修复与只读探测适配（2026-09-29）
+
+同一专题分支。目标：把 TPL-02 收口到**一个固定候选**上——修复已确认的异步身份缺陷、让既有跨模型探测
+跟上 TPL-03 的只读呈现、并用同一份构建补齐双视口证据。**不进入 TPL-04，不验收 TPL-03。**
+
+**已确认缺陷（收口阻断项）**：一次已采纳的保存要 await 官方校验、关系创建往返与写请求。此前调用链只在
+await **之后**读取 `model`/`recordId`，因此当页面在等待期间切走（包括切回曾经看过的记录）时，
+迟到的校验结果会**给下一个记录标红**、**为从未校验的记录报成功**、甚至**把一个记录的值写到另一个记录**；
+其 `finally` 还会清掉更新操作的 loading。复现反例（修复前源码 + 本轮测试）：
+`cases=46 failed=17`，其中
+`observed stray write: model=sc.general.contract ids=[11] vals={"name":"A draft"}`（记录 10 的值写到记录 11）。
+
+**修复（提交 `f017d42d`，父提交 `bffc4b7e`）**：一次保存在**第一次 await 之前**建立归属，并在**每个真实
+副作用之前**复核归属；`finally` 只释放自己持有的忙碌标记。
+
+- 归属身份：`useRecordFormActions.ts:157` 的 `boundSurfaceKey()`（`model` + `recordId|new`）+
+  `:158` 的 `surfaceEpoch`（绑定面每次变化自增，`model`/`recordId` 相同也不复用同一会话）+
+  `:166` 的 `SaveOperation`（`id`/`epoch`/`model`/`recordId`）。
+- 复核点：`:182` `saveOperationOwnsSurface`；校验结果写入错误/摘要之前（`runAdoptedFormValidation` 内，
+  即副作用发生处，不是只在外层返回后）；precheck 错误写入前 `:607`；发写请求前 `:651`；写目标记录固定为
+  `operation.recordId`（不再读当前页面）；反馈与导航前 `:657/:660/:680/:683/:704`；`finally` 只在
+  `busyOwnerOperationId === operation.id` 时释放（`:739`）。
+- “校验的数据就是提交的数据”：`:575` 在官方校验前取 `canonicalizeSubmissionValues(collectWritableValues())`
+  快照，`:580` 在写之前再比一次；期间草稿被改则保留草稿、结束本次保存并提示重新保存，**不**用旧成功结果放行新值。
+- 单飞按面收敛：`saveRecordHelpers.ts:32` 的 `createSingleFlightSave(execute, scopeKey)`，
+  调用点 `useRecordFormActions.ts:750` 以 `surfaceEpoch` + `boundSurfaceKey` 为键；更旧的调用不得清掉
+  更新调用占用的槽位。
+
+**请求发出前后的边界（如实声明）**：本轮修复的是“**校验等待期间失效、尚未发出写请求**”，失效后旧操作
+**零写入**。若真实写请求**已发出**后才切换页面，前端只能丢弃响应、不重绘/不导航/不清理新页面、不自动重试；
+`useRecordFormActions.ts:651-655` 的注释即此口径——**不**声称数据库已回滚。未改后端事务来绕开前端身份问题。
+
+**回归覆盖（`adopted_form_validation_identity_test.ts`，46 例，进出写边界计数）**：
+A 校验延迟失败→切 B→A 返回（B 不标红、草稿不丢、不发写请求）；B 校验延迟成功→切 B（不得读 B 的数据继续保存）；
+A→B→回 A（同 `model`+`recordId` 也不复活旧草稿会话，且覆盖空 `recordId` 新建草稿）；
+同一记录较新操作先完成、旧操作后完成（旧结果与 `finally` 都不覆盖新错误/新 loading/新结果）；
+校验期间草稿被改（未校验的新值不放行）；正常路径（真失败不写、纠正单次写、服务端拒绝保留草稿可重试）。
+测试用可控完成时机的 Promise 门（40 微任务 `drain()`，**无固定 sleep**）；真实 Vue 实例承载**shipped** 的
+`useRecordFormActions`/registry/`validateBeforeSaveRecord`，只有写/创建边界被计数。
+`adopted_form_engine_decision_test.ts` 增补真实 TDesign 用例（引擎 item 错误实例绑定；记录变更 re-key 后
+挂载新树、旧错误文本消失），现 **74 例**，引擎仍为真实 `TDesignForm`/`TDesignFormItem`。
+
+**只读探测适配（探测脚本，非产品改动）**：TPL-02 时代的 TPL02B 探测把“只读详情成立”绑定在**可编辑网格**
+`.template-form-section-grid > .field[data-field-name] > .field-control-row` 上；TPL-03 的只读详情改用
+`ScDescriptions`（`[data-detail-facts="official-standard-detail"]`），探测因此在 S2 直接失败。适配后探测
+**按页面模式分支**：可编辑面仍断言官方网格行（`official>0 legacy=0`）；只读面改为断言**当前记录的业务事实**
+（`t-descriptions` 的 标签=值 对，与 ORM 读到的 `contract_name`/`amount_total` 对比），**然后**才断言记录区域
+内无可见编辑控件、无保存动作、旧网格行为 0。草稿泄漏判定**限定在记录区域**（`[data-form-model]`），
+不整页搜文本——页签里保留草稿标题是正常行为。没有“找不到就跳过”、没有把 FATAL 改 PASS、没有 try/catch 吞断言、
+没有硬编码记录值、没有恢复旧 grid 或隐藏假输入。
+**口径**：探测脚本历来是**会话本地、未入库**的验收探针（含凭据与环境假设），本轮按既有方式把它保存到
+`artifacts/frontend-web-fix-20260928/tpl02r/tools/` 并在此记录其适配，**未新增**入库 harness，也未新增治理体系。
+
+**固定候选与产物绑定（一次构建）**：
+- 候选 `f017d42d`（工作树干净），离仓构建到
+  `/home/lidefend/workspace/sce-offrepo/artifacts/fe-tpl02b2-20260929/dist`；`index.html`
+  sha256 `0163d514…f3488`，入口 `/assets/index-CdKU6vab.js` sha256 `9725be9c…3d4c3`，
+  `runtime-config.js` sha256 `0a69250f…d77bbc`（值为 `{}`，无凭据）。入口文件名与上一轮
+  （`bffc4b7e` 的 `/assets/index-BtjlhXBV.js`）**不同**，旧 bundle 不能替用。
+- 服务：`release_static_server.mjs` pid 2166107 @ `127.0.0.1:5176`，`STATIC_ROOT` 指向上面的构建目录。
+  停旧进程前先核对 cmdline/cwd/env（旧 pid 988564 与报告一致），未按陈旧 pid 直接 kill。
+  `served-bundle-identity.json` 逐文件经 HTTP 取回并哈希：**100/100 与本地构建逐字节一致**。
+
+**结果（均绑定上述候选与产物）**：
+- `adopted_form_validation_identity.unit`：修复前 17/46 失败（反例见上），修复后 **46/46 通过**。
+- `adopted_form_engine_decision.unit`：`PASS cases=74 engine=real-tdesign-vue-next writes=counted`。
+- `contract_field_occurrence_identity`、`contract_error_business_ownership`（92）、
+  `contract_form_save_failure_recovery`：PASS；`verify.frontend.typecheck.strict`：退出码 0。
+- 跨模型 + 只读 + 项目富文本（`TPL02B-20260928204024`）：**8/8**。项目入口 `official=24 legacy=0`；
+  脏表单保护 → 合同只读详情（`official-standard-detail`，事实 `合同名称=FE-B General Contract`、
+  `合同金额=¥985,000.00`，无可见编辑控件、无保存动作，项目草稿文本不出现在记录区域）；返回项目互不串用；
+  项目 HTML description 实际编辑→保存→刷新回读→还原；项目双视口 `official=24 legacy=0` 无溢出；
+  合同只读双视口事实正确、无溢出；无残留。
+- 单模型正向回归（`TPL02-20260928204248`）：**8/8**。必填拒绝**零写入**（3→3）且草稿保留
+  （`amount 123456.00`）→ 纠正保存（`id 19`）→ 刷新回读 → `/f/…/11` 只读事实 → 清理 3→3。
+- 合同**编辑面**正常/错误态双视口（`TPL02C-20260928204429`）：**2/2**，拒绝写入 0（3→3）。
+- 保留为记录：`TPL02B-20260928203759` 首次运行 S5b 失败——原因是**本轮探测自身的缺陷**
+  （`saveActions` 存成了数字却按 `.length` 断言），非产品回归；已修并在下一次运行通过。
+
+**数据恢复**：`project.project` 10 的 description 经受管富文本面改后清回，存为 `<p><br></p>`
+（空文本等价，编辑器对 HTML 规范化；上一轮同样落在此值），名称不变；`project.project` 11 与
+`sc.general.contract` 11 未变；正向回归创建的合同 `id 19` 由其自身清理删除（3→3）。
+运行前先确认样本可复用：`project.project` 10、`sc.general.contract` 11 均可读；
+已删除的记录 18 **不假定**仍存在。
+
+**口径限制（不得夸大）**：
+- 只宣布 TPL-02 能力在**当前整合候选** `f017d42d` 上的验收结果；`cc0eee7b` 的历史浏览器产物对应关系
+  仍不可完整追溯，作为历史限制保留，**不倒填**。
+- 探测脚本虽经过新详情页，**不**代表 TPL-03 整体通过；本轮未运行 89 入口全量、未跑发布门禁、
+  未调整业务矩阵状态；不推送、不合并、不部署。
+
 ### FE-TPL-03 官方列表与只读详情接管（2026-09-28/29）
 
 同一专题分支，基线 `main`/`23f11f42`，开工 HEAD `0ca84329`（本轮提交后 `dfd2f324` + 本轮实现提交）。

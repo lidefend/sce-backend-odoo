@@ -135,7 +135,7 @@ An adopted section that declares rules but has no engine instance, or whose
 result cannot be read, raises instead of returning "passed". A surface outside
 the pilot scope adopts nothing and needs no runtime. The real-engine integration
 proof is `frontend/apps/web/scripts/adopted_form_engine_decision_test.ts`
-(`make verify.frontend.adopted_form_engine_decision.unit`, 67 cases, real
+(`make verify.frontend.adopted_form_engine_decision.unit`, 74 cases, real
 `TDesignForm`/`TDesignFormItem`, counted writes — it does not stub the engine or
 expose an instance in the production build).
 
@@ -151,6 +151,28 @@ respectively, no state carried across, and `official=13 legacy=0` at both
 `1440×900` and `390×844` with no horizontal overflow. The project html field was
 re-verified through the actual edit surface (type → save → reload read-back →
 restore), allowing normal HTML normalization.
+
+### Save-operation identity across the awaits (TPL-02R)
+
+An adopted save awaits the engine, relation creates and the write, so the record
+the page is bound to can move during any of them — including back to a record it
+showed before. "Same model, same record id" is therefore not an identity: the id
+comes back but the draft session does not. `pages/contractForm/useRecordFormActions.ts`
+opens a save operation before its first await (bound surface key + a surface
+epoch that advances on every change to the bound model/record) and re-checks that
+it still owns the surface at every real side effect: the engine's error write, the
+precheck error write, focus, the write request, its target record, the feedback,
+and the busy flag. The single-flight join is scoped to the same key, so a save for
+another record is never joined and a superseded `finally` cannot clear a newer
+save's loading state. The values handed to the write are also proved to be the
+values the engine saw (a submission snapshot compared before the write), so an
+edit that lands mid-validation keeps the draft and stops the save instead of
+riding on the older answer.
+
+Scope note (do not overstate): this binds a save whose surface is lost **before**
+the write request is sent — such an operation writes nothing. If the request was
+already sent, the response is discarded as-is; that is not a rollback and is not
+retried.
 
 ## Official list and readonly detail adoption (TPL-03)
 
