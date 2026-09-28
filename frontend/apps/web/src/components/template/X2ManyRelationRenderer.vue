@@ -151,7 +151,7 @@
         label="正在加载关系记录"
         data-readonly-relation-loading
       />
-      <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" heading-level="4" data-readonly-relation-empty />
+      <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" :heading-level="4" data-readonly-relation-empty />
     </div>
         <template v-else>
     <div class="o2m-card">
@@ -333,7 +333,7 @@
         class="o2m-empty"
         density="compact"
         :title="`暂无明细，可使用「${adapter.one2manyCreateLabel(field.name, field.label)}」新增`"
-        heading-level="4"
+        :heading-level="4"
         data-o2m-empty
         data-detail-collection-content="empty"
       />
@@ -378,6 +378,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { businessRowErrorKey } from '../../app/businessValidationError';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScDisclosure from '../design-system/ScDisclosure.vue';
@@ -799,7 +800,7 @@ function one2manyCellControlId(fieldName: string, rowKey: string, columnName: st
 }
 
 function one2manyValidationTarget(fieldName: string, rowKey: string, columnName: string) {
-  return `${fieldName}:${rowKey}:${columnName}`;
+  return businessRowErrorKey(fieldName, rowKey, columnName);
 }
 
 const o2mTableFootData = computed(() => {

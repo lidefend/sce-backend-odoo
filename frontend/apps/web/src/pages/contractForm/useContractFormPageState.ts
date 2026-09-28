@@ -1,5 +1,6 @@
 import { reactive, ref } from 'vue';
 import type { ContractV2Snapshot } from '../../app/contracts/v2';
+import type { BusinessFieldError } from '../../app/businessValidationError';
 import type { BusyKind, SubmissionFeedback, UiStatus } from './types';
 
 export function useContractFormPageState() {
@@ -13,7 +14,7 @@ export function useContractFormPageState() {
     errorMessage: ref(''),
     loadError: reactive<{ status: number | null; reason: string; trace: string }>({ status: null, reason: '', trace: '' }),
     validationErrors: ref<string[]>([]),
-    validationFieldErrors: ref<Record<string, string>>({}),
+    validationFieldErrors: ref<Record<string, BusinessFieldError>>({}),
     submissionFeedback: ref<SubmissionFeedback>(null),
     formConflict: ref(false),
     showOne2manyErrors: ref(false),

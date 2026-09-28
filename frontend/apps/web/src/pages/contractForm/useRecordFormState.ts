@@ -14,13 +14,15 @@ import {
   hasAmbiguousRelationMatches, relationEntry, relationInlineCreate, resolveRelationQuickFillOption,
 } from './relationDescriptor';
 import { MANY2ONE_CREATE_OPTION, MANY2ONE_OPEN_RECORD_OPTION, MANY2ONE_SEARCH_MORE_OPTION, type LayoutNode, type RelationOption } from './types';
+import type { BusinessFieldError } from '../../app/businessValidationError';
+import type { FieldOccurrenceDecision } from './fieldOccurrenceWritability';
 
 export function useRecordFormState(context: {
   formFields:ComputedRef<Record<string,FieldDescriptor>>; model:ComputedRef<string>; recordId:ComputedRef<number|null>;
   rights:ComputedRef<{write:boolean}>; formData:Record<string,unknown>; originalValues:Ref<Record<string,unknown>>;
   submissionFeedback:Ref<any>; relationKeywords:Record<string,string>; invalidatedRelationKeywords:Record<string,string>;
   clearedDynamicRelationFields:Record<string,boolean>; relationQueryTimers:Record<string,ReturnType<typeof setTimeout>>;
-  relationOptions:Ref<Record<string,RelationOption[]>>; validationErrors:Ref<string[]>; validationFieldErrors:Ref<Record<string,string>>;
+  relationOptions:Ref<Record<string,RelationOption[]>>; validationErrors:Ref<string[]>; validationFieldErrors:Ref<Record<string,BusinessFieldError>>;
   onchangeModifiersPatch:Ref<Record<string,Record<string,unknown>>>; onchangeWarnings:Ref<any[]>; onchangeLinePatches:Ref<any[]>;
   applyingOnchangePatch:Ref<boolean>; changedFieldSet:Set<string>; dirtyFieldSet:Set<string>;
   getOnchangeTimer:()=>ReturnType<typeof setTimeout>|null; setOnchangeTimer:(timer:ReturnType<typeof setTimeout>|null)=>void;
@@ -38,6 +40,7 @@ export function useRecordFormState(context: {
   initOne2manyRows:(name:string,value:unknown)=>void; applyOnchangeLinePatches:(patches:any[])=>void;
   isWritableFieldVisible:(name:string)=>boolean;
   canonicalFieldWritable?:(name:string)=>boolean|undefined;
+  fieldOccurrenceDecision?:(name:string,occurrenceKey:string)=>FieldOccurrenceDecision;
   pendingInlineCreateFields?: Ref<string[]>;
 }) {
   const inputFieldValue=(name:string)=>{const raw=context.formData[name];return raw===false||raw===null||raw===undefined?'':String(raw);};
@@ -45,19 +48,22 @@ export function useRecordFormState(context: {
     if(type==='many2many')return JSON.stringify(normalizeRelationIds(value).sort((a,b)=>a-b));
     if(type==='one2many')return JSON.stringify(context.one2manyFieldRows(name).map(row=>({id:row.id||0,isNew:row.isNew,removed:row.removed,dirty:row.dirty,dirtyFields:row.dirtyFields||[],values:row.values||{}})));
     return normalizeComparable(value);};
-  const isFieldWritable=(name:string)=>{const canonical=context.canonicalFieldWritable?.(name);if(typeof canonical==='boolean')return canonical;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
+  // A keyed edit is judged by its own occurrence. An identity the contract
+  // cannot resolve is refused outright: searching for a writable same-name
+  // position is the exact bypass this guard exists to close.
+  const isFieldWritable=(name:string,occurrenceKey?:string)=>{const key=String(occurrenceKey??'').trim();if(key)return context.fieldOccurrenceDecision?.(name,key)==='writable';const canonical=context.canonicalFieldWritable?.(name);if(typeof canonical==='boolean')return canonical;const node=context.layoutNodes.value.find(item=>item.kind==='field'&&item.name===name);if(node)return !node.readonly;return Boolean(context.nativeStatusbar.value.field===name&&!context.nativeStatusbar.value.readonly);};
   const normalizeFieldValue=(name:string,value:unknown)=>normalizeContractFieldValue({name,value,descriptor:context.formFields.value[name],originalValue:context.originalValues.value[name],buildOne2manyValue:context.buildOne2manyCommandValue});
   let onchangeTimer:ReturnType<typeof setTimeout>|null=context.getOnchangeTimer();
   const markFieldChanged=(name:string)=>{const key=String(name||'').trim();if(!key||context.applyingOnchangePatch.value)return;delete context.validationFieldErrors.value[key];if(!Object.keys(context.validationFieldErrors.value).length)context.validationErrors.value=[];context.dirtyFieldSet.add(key);
     if(!fieldRequiresServerOnchange(context.contractV2ActionRules.value,key))return;context.changedFieldSet.add(key);if(onchangeTimer)clearTimeout(onchangeTimer);
     onchangeTimer=setTimeout(()=>void runOnchangeRoundtrip(),300);context.setOnchangeTimer(onchangeTimer);};
   const persistNativeFavoriteField=async(name:string,checked:boolean,previous:unknown)=>{try{await writeContractFormRecord({model:context.model.value,ids:[context.recordId.value],vals:{[name]:checked},context:{}});context.originalValues.value={...context.originalValues.value,[name]:checked};context.changedFieldSet.delete(name);context.dirtyFieldSet.delete(name);}catch{context.formData[name]=previous;context.submissionFeedback.value={kind:'error',message:'保存失败，请稍后重试。'};}};
-  const setBooleanField=(name:string,checked:boolean)=>{if(!isFieldWritable(name))return;const previous=context.formData[name];context.formData[name]=checked;if(context.isNativeFavoriteField(name)&&context.recordId.value&&context.rights.value.write){void persistNativeFavoriteField(name,checked,previous);return;}markFieldChanged(name);};
-  const setMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,value:string)=>{if(!isFieldWritable(name))return;const normalized=String(value||'').trim();if(!normalized){forgetPendingInlineCreate(name);context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
+  const setBooleanField=(name:string,checked:boolean,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const previous=context.formData[name];context.formData[name]=checked;if(context.isNativeFavoriteField(name)&&context.recordId.value&&context.rights.value.write){void persistNativeFavoriteField(name,checked,previous);return;}markFieldChanged(name);};
+  const setMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const normalized=String(value||'').trim();if(!normalized){forgetPendingInlineCreate(name);context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
     if(normalized===MANY2ONE_CREATE_OPTION){void context.openRelationCreateForm(name,descriptor);return;}if(normalized===MANY2ONE_SEARCH_MORE_OPTION){void context.openRelationSearchDialog(name,descriptor);return;}if(normalized===MANY2ONE_OPEN_RECORD_OPTION){void context.openRelationRecordForm(name,descriptor);return;}
     const id=Number(normalized);if(!Number.isFinite(id)||id<=0){context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
     const normalizedId=Math.trunc(id);forgetPendingInlineCreate(name);context.formData[name]=normalizedId;const selected=context.relationOptionsForField(name).find(option=>option.id===normalizedId);if(selected){context.relationKeywords[name]=selected.label;void context.switchFormByRelationOption(name,selected);}context.clearDynamicRelationDependents(name);markFieldChanged(name);};
-  const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string)=>{if(!isFieldWritable(name))return;const keyword=String(value||'').trim();if(keyword&&context.clearedDynamicRelationFields[name]){delete context.clearedDynamicRelationFields[name];delete context.invalidatedRelationKeywords[name];}
+  const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const keyword=String(value||'').trim();if(keyword&&context.clearedDynamicRelationFields[name]){delete context.clearedDynamicRelationFields[name];delete context.invalidatedRelationKeywords[name];}
     if(keyword&&context.invalidatedRelationKeywords[name]===keyword&&!context.formData[name]){context.relationKeywords[name]='';return;}if(keyword&&context.invalidatedRelationKeywords[name]&&context.invalidatedRelationKeywords[name]!==keyword)delete context.invalidatedRelationKeywords[name];context.relationKeywords[name]=keyword;if(!keyword){void context.queryRelationOptions(name,'');return;}context.setRelationKeyword(name,keyword);};
   // A search keyword is never a create request. Only the explicit create
   // action stages an intent, bound to this record and reset by the authoritative draft lifecycle.
@@ -66,7 +72,7 @@ export function useRecordFormState(context: {
   // relation was cleared would fire an empty-association onchange and would
   // make the search keyword look like a saved field value.
   const pendingInlineCreates = new Map<string, {
-    keyword: string; recordKey: string; stagedValue: string;
+    keyword: string; recordKey: string; stagedValue: string; occurrenceKey?: string;
   }>();
   const relationValueSnapshot = (name: string) => String(context.formData[name] ?? '');
   const syncPendingInlineCreateFields = () => {
@@ -81,12 +87,12 @@ export function useRecordFormState(context: {
     syncPendingInlineCreateFields();
   };
   const relationRecordKey = () => `${context.model.value}:${context.recordId.value ?? 'new'}`;
-  const commitMany2oneInline = async (name: string, descriptor: FieldDescriptor | undefined, value: string) => {
-    if (!isFieldWritable(name)) return;
+  const commitMany2oneInline = async (name: string, descriptor: FieldDescriptor | undefined, value: string, occurrenceKey?: string) => {
+    if (!isFieldWritable(name, occurrenceKey)) return;
     const keyword = String(value || '').trim();
     const inline = relationInlineCreate(descriptor);
     if (!keyword || !inline.enabled || !inline.createOnNoMatch || relationEntry(descriptor)?.canCreate !== true) return;
-    pendingInlineCreates.set(name, { keyword, recordKey: relationRecordKey(), stagedValue: relationValueSnapshot(name) });
+    pendingInlineCreates.set(name, { keyword, recordKey: relationRecordKey(), stagedValue: relationValueSnapshot(name), occurrenceKey: String(occurrenceKey ?? '').trim() || undefined });
     syncPendingInlineCreateFields();
     context.relationKeywords[name] = keyword;
     markFieldChanged(name);
@@ -105,7 +111,7 @@ export function useRecordFormState(context: {
       }
       const descriptor = context.formFields.value[name];
       const inline = relationInlineCreate(descriptor);
-      if (!isFieldWritable(name) || !inline.enabled || !inline.createOnNoMatch || relationEntry(descriptor)?.canCreate !== true) {
+      if (!isFieldWritable(name, pending.occurrenceKey) || !inline.enabled || !inline.createOnNoMatch || relationEntry(descriptor)?.canCreate !== true) {
         issues.push(context.relationUiLabel(descriptor, 'missing_create_entry', '当前字段不允许创建关联记录'));
         continue;
       }
@@ -126,9 +132,9 @@ export function useRecordFormState(context: {
   const addRelationId=(name:string,option:RelationOption)=>{context.upsertRelationOption(name,option);setRelationIds(name,[...context.relationIds(name),option.id]);context.relationKeywords[name]='';};
   const quickCreateMany2manyTag=async(name:string)=>{const descriptor=context.formFields.value[name];const entry=relationEntry(descriptor);const relation=context.relationModel(name);const label=context.relationKeyword(name).trim();const inline=relationInlineCreate(descriptor);if(entry?.canCreate!==true||!relation||!label||!inline.enabled||!inline.createOnNoMatch)return;const existing=resolveRelationQuickFillOption(context.relationOptionsForField(name),label,inline.match);if(existing){addRelationId(name,existing);return;}try{const created=await createContractFormRecord({model:relation,vals:{...(entry.defaultVals||{}),[inline.nameField||'name']:label}});const id=Number(created?.id||0);if(id>0){addRelationId(name,{id:Math.trunc(id),label});await context.queryRelationOptions(name,'');}}catch(error){context.validationErrors.value=[sanitizeUiErrorMessage(error instanceof Error?error.message:error,context.relationUiLabel(descriptor,'quick_create_failed'))];}};
   const resolvePendingMany2manyTagCreates=async()=>{const issues:string[]=[];for(const [name,raw] of Object.entries(context.relationKeywords)){const keyword=String(raw||'').trim();if(!keyword||!isFieldWritable(name)||!Array.isArray(context.formData[name])||!context.relationModel(name))continue;const descriptor=context.formFields.value[name];const inline=relationInlineCreate(descriptor);if(!inline.enabled||!inline.createOnNoMatch)continue;const label=context.layoutNodes.value.find(node=>node.kind==='field'&&node.name===name)?.label||descriptor?.string||name;const match=resolveRelationQuickFillOption(context.relationOptionsForField(name),keyword,inline.match)||resolveRelationQuickFillOption(await context.queryRelationOptions(name,keyword),keyword,inline.match);if(match){addRelationId(name,match);continue;}const rows=await context.queryRelationOptions(name,keyword);if(hasAmbiguousRelationMatches(rows,keyword,inline.match)){issues.push(`${label}存在多个匹配记录，请选择具体记录`);continue;}const before=context.validationErrors.value.slice();await quickCreateMany2manyTag(name);if(context.relationKeyword(name).trim()){issues.push(...(context.validationErrors.value.length?context.validationErrors.value:[context.relationUiLabel(descriptor,'inline_create_failed','保存时创建失败')]));context.validationErrors.value=before;}}return Array.from(new Set(issues)).slice(0,5);};
-  const setSelectionField=(name:string,value:string)=>{if(!isFieldWritable(name))return;context.formData[name]=value||false;markFieldChanged(name);};
+  const setSelectionField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;context.formData[name]=value||false;markFieldChanged(name);};
   const setRelationMultiField=(name:string,target:HTMLSelectElement)=>setRelationIds(name,Array.from(target.selectedOptions).map(item=>Number(item.value)));
-  const setTextField=(name:string,value:string)=>{if(!isFieldWritable(name))return;context.formData[name]=value;markFieldChanged(name);};
+  const setTextField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;context.formData[name]=value;markFieldChanged(name);};
   const setTechnicalCompanionTextField=(name:string,value:string)=>{const descriptor=context.formFields.value[name];if(!descriptor||descriptor.readonly===true)return;context.formData[name]=value;markFieldChanged(name);};
   const buildOnchangeValues=()=>buildOnchangeRequestPayload({fields:context.formFields.value,formData:context.formData,originalValues:context.originalValues.value,recordId:context.recordId.value,buildOne2manyValue:context.buildOne2manyCommandValue});
   // Onchange responses are derived data computed from an earlier draft, so every

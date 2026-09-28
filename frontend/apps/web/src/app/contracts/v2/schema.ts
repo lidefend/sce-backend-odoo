@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import type {
   ContractV2ActionContract,
   ContractV2ActionRule,
@@ -1610,8 +1611,15 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   if (presentationPriority !== undefined && (
     typeof presentationPriority !== 'number' || !Number.isInteger(presentationPriority)
   )) issues.push({ path: `${path}.presentationPriority`, message: 'must be an integer' });
+  const actionSemantics = normalizeActionSemantics({
+    actionId, backendIdentity: optionalString(raw, 'backendIdentity'),
+    actionSemantics: raw.actionSemantics, intent: optionalString(raw, 'intent'), target,
+    visibleProfiles,
+  });
   return {
     actionId,
+    ...(actionSemantics ? { actionSemantics } : {}),
+    ...(raw.actionSemantics !== undefined && !actionSemantics ? { actionSemanticsInvalid: true } : {}),
     ...(optionalString(raw, 'backendIdentity') ? { backendIdentity: optionalString(raw, 'backendIdentity') } : {}),
     ...(nativeIdentity && Object.keys(nativeIdentity).length ? { nativeIdentity } : {}),
     triggerType: decodeTriggerType(requiredString(raw, 'triggerType', path, issues), `${path}.triggerType`, issues),

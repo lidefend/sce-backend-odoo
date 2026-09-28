@@ -4,6 +4,15 @@ from scripts.verify.frontend_professional_base_field_guard import ROOT, validate
 
 
 class ProfessionalBaseFieldGuardTest(unittest.TestCase):
+    def test_occurrence_authority_cannot_regress_to_field_name_only(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                self.assertIn("isFieldWritable(name,occurrenceKey)", value)
+                return value.replace("isFieldWritable(name,occurrenceKey)", "isFieldWritable(name)")
+            return value
+        self.assertTrue(any("does not fail closed" in failure for failure in validate(source)))
+
     def test_repository_passes(self):
         self.assertEqual(validate(), [])
 
@@ -35,7 +44,7 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("useRecordFormState.ts"):
                 return value.replace(
-                    "const setTextField=(name:string,value:string)=>{if(!isFieldWritable(name))return;",
+                    "const setTextField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
                     "const setTextField=(name:string,value:string)=>{",
                 )
             return value

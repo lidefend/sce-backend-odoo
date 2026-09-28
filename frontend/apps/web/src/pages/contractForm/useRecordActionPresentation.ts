@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
+import { businessRowErrorKey } from '../../app/businessValidationError';
 import { routeAuthorityEntries } from '../../app/routeAuthority';
 import type { FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
@@ -221,7 +222,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     runtimeState, recordId, rights, contractFieldLabel, isContractFieldOrderEditable, effectiveFieldSize,
     rememberFormConfigFieldLabel, fieldOrderPreviewActive, fieldOrderDraft, formData, isFieldVisible,
     contractVisibleFields, coreFieldNames, advancedFieldNames, evaluatePolicyContext: policyContext,
-    runtimeFieldStates, validationErrors,
+    runtimeFieldStates, validationErrors, validationFieldErrors, model,
     relationOptionsForField, relationCreateMode, relationInlineCreate, relationKeyword,
     canOpenRelationRecordForm, relationUiLabel, inputFieldValue, many2oneValue,
     toDateInputValue, toDatetimeInputValue, evaluateNativeModifierValue, runtimeOccurrenceState,
@@ -243,19 +244,23 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
   }
 
   function onTemplateFieldChange(payload: FormSectionFieldChange) {
+    // The occurrence identity travels with the event from the emitting control
+    // all the way to the draft mutation, so a read-only position cannot borrow
+    // the writability of a sibling position of the same field.
+    const occurrenceKey = String(payload.occurrenceKey || '').trim();
     if (String(payload.type || '').trim().toLowerCase() === 'many2one' && payload.action === 'query') {
-      queryMany2oneInline(payload.name, payload.descriptor, String(payload.value ?? ''));
+      queryMany2oneInline(payload.name, payload.descriptor, String(payload.value ?? ''), occurrenceKey);
       return;
     }
     if (String(payload.type || '').trim().toLowerCase() === 'many2one' && payload.action === 'commit') {
-      void commitMany2oneInline(payload.name, payload.descriptor, String(payload.value ?? ''));
+      void commitMany2oneInline(payload.name, payload.descriptor, String(payload.value ?? ''), occurrenceKey);
       return;
     }
     dispatchTemplateFieldChange(payload, {
-      onBoolean: (name, value) => setBooleanField(name, value),
-      onSelection: (name, value) => setSelectionField(name, value),
-      onMany2one: (name, descriptor, value) => setMany2oneField(name, descriptor, value),
-      onText: (name, value) => setTextField(name, value),
+      onBoolean: (name, value, key) => setBooleanField(name, value, key),
+      onSelection: (name, value, key) => setSelectionField(name, value, key),
+      onMany2one: (name, descriptor, value, key) => setMany2oneField(name, descriptor, value, key),
+      onText: (name, value, key) => setTextField(name, value, key),
     });
     const filenameField = String(payload.descriptor?.filename || '').trim();
     if (String(payload.type || '').trim().toLowerCase() === 'binary' && filenameField && payload.fileName) {
@@ -393,7 +398,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     queryOne2manyColumnOptions: dependencies.queryOne2manyColumnOptions,
     setOne2manyRowField: (fieldName: string, rowKey: string, column: RelationFieldColumn, value: unknown) => {
       if (!one2manyCanInlineEdit(fieldName)) return;
-      delete validationFieldErrors.value[`${fieldName}:${rowKey}:${column.name}`];
+      delete validationFieldErrors.value[businessRowErrorKey(fieldName, rowKey, column.name)];
       if (!Object.keys(validationFieldErrors.value).length) validationErrors.value = [];
       setOne2manyRowField(fieldName, rowKey, column, value);
     },

@@ -19,6 +19,7 @@ function makeOne2manyKey() {
 }
 
 export function useOne2manyRuntime(params: {
+  model: () => string;
   recordId: () => number;
   originalValues: () => Record<string, unknown>;
   onchangeLinePatches: () => Array<Record<string, unknown>>;
@@ -117,6 +118,7 @@ export function useOne2manyRuntime(params: {
   function collectValidation() {
     return collectOne2manyDraftValidationFromRows({
       rowsByField,
+      model: params.model(),
       recordId: params.recordId(),
       resolvePrimaryColumn: params.resolvePrimaryColumn,
       resolveColumns: params.resolveColumns,

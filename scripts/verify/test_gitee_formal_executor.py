@@ -53,6 +53,7 @@ assert os.environ['GOMAXPROCS'] == '2'
 assert os.environ['MAKEFLAGS'] == '-j1'
 assert os.environ['NODE_OPTIONS'] == '--max-old-space-size=2048'
 assert not pathlib.Path('/etc/gitee-ci').exists()
+assert not pathlib.Path('/opt/gitee-ci/frontend-reuse').exists()
 assert not pathlib.Path('/var/run/docker.sock').exists()
 try: socket.create_connection(('1.1.1.1',443),timeout=.1)
 except OSError: pass
@@ -165,6 +166,62 @@ print('OK')
         commands=recipes('public_guard','required','a'*40)
         self.assertTrue(any(is_test for _,is_test in commands))
         self.assertTrue(any(not is_test for _,is_test in commands))
+
+    def test_verified_local_steps_still_run_remote_policy_guard(self):
+        p=self.candidate();p['checks'][-1]['mode']='standard'
+        p.pop('plan_sha256');p['plan_sha256']=digest(p)
+        snapshot={**{k:p[k] for k in IDENTITY_KEYS},'pr_identity_verified':True,'remote_refs_verified':True}
+        class ReuseExecutor(LocalExecutor):
+            def sandbox_command(self, workspace, command):
+                if command == ['node','--version']:
+                    return ['python3','-c',"print('v22.17.0')"]
+                self.needs_node=False
+                return super().sandbox_command(workspace,command)
+        cheap=['python3','-c',"print('Ran 2 tests in 0.01s');print('OK')"]
+        forbidden=['python3','-c',"raise SystemExit('expensive step must be reused')"]
+        def selected(name,mode,base):
+            return [(cheap,True)]+([(forbidden,True)]*4 if name=='frontend_release_gate' else [])
+        proof={'status':'verified_local_execution','tests':7,'attestation_sha256':'f'*64}
+        with tempfile.TemporaryDirectory() as root, \
+             patch('scripts.ci.gitee_frontend_reuse.consume',return_value=proof), \
+             patch('scripts.ops.gitee_frontend_cache.runtime_cache') as cache, \
+             patch('scripts.ci.gitee_formal_executor.recipes',side_effect=selected):
+            result=ReuseExecutor(Path(root)/'logs').execute_plan(p,lambda:snapshot)
+            self.assertEqual(result['status'],'success');cache.assert_not_called()
+            self.assertEqual(len(result['checks']),4)
+            self.assertEqual(result['checks'][-1]['tests'],7)
+            self.assertEqual(result['checks'][-1]['execution'],'verified_local_execution')
+            self.assertEqual([c['tests'] for c in result['checks'][:-1]],[2,2,2])
+            self.assertTrue(list(Path(root).glob('logs/formal-*/frontend_release_gate-0.log')))
+
+    def test_invalid_reuse_enters_original_dependency_path(self):
+        p=self.candidate();p['checks'][-1]['mode']='standard'
+        p.pop('plan_sha256');p['plan_sha256']=digest(p)
+        snapshot={**{k:p[k] for k in IDENTITY_KEYS},'pr_identity_verified':True,'remote_refs_verified':True}
+        class FallbackExecutor(LocalExecutor):
+            def sandbox_command(self, workspace, command):
+                if command == ['node','--version']:return ['python3','-c',"print('v22.17.0')"]
+                self.needs_node=False
+                return super().sandbox_command(workspace,command)
+        with tempfile.TemporaryDirectory() as root, \
+             patch('scripts.ci.gitee_frontend_reuse.consume',return_value={'status':'fallback','reason':'receipt_invalid_or_stale'}), \
+             patch('scripts.ops.gitee_frontend_cache.runtime_cache',side_effect=ValueError('original cache absent')) as cache, \
+             patch('scripts.ci.gitee_formal_executor.recipes',return_value=[(['python3','-c',"print('Ran 1 test in 0.1s')"],True)]):
+            result=FallbackExecutor(Path(root)/'logs').execute_plan(p,lambda:snapshot)
+            cache.assert_called_once()
+            self.assertEqual(result['status'],'environment_error')
+            self.assertEqual(result['frontend_reuse']['reason'],'receipt_invalid_or_stale')
+
+    def test_candidate_cannot_rewrite_host_git_metadata(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);metadata=root/'repo/.git';metadata.mkdir(parents=True)
+            config=metadata/'config';config.write_text('trusted fixture')
+            executor=FormalExecutor(root/'logs')
+            script="from pathlib import Path\ntry: Path('/work/.git/config').write_text('changed')\nexcept OSError: pass\nelse: raise AssertionError('metadata writable')"
+            command=executor.sandbox_command(root,['python3','-c',script])
+            with (root/'log').open('wb') as log:
+                self.assertEqual(executor.command(command,root,log,lambda:False,time.monotonic()+5,{'PATH':'/usr/bin:/bin'}),0)
+            self.assertEqual(config.read_text(),'trusted fixture')
 
 
 if __name__=='__main__': unittest.main()

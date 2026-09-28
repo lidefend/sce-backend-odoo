@@ -3177,9 +3177,13 @@ def _append_standard_form_save_action(
         "actionKey": action_id,
         "sourceActionKey": action_id,
         "backendIdentity": backend_identity,
-        "label": governed_primary_label or ("保存草稿" if render_profile == "create" else "保存修改"),
+        "label": "保存草稿",
         "intent": "api.data",
-        "target": {},
+        "target": {"model": _text(source.get("model") or ui.get("model")), "operation": required_right},
+        "actionSemantics": {
+            "kind": "persistence", "purpose": "save_draft", "executor": "record.save",
+            "origin": "platform_form_action", "operation": required_right,
+        },
         "button": {},
         "triggerType": "submit",
         "sourceWidgetId": "page.root",
@@ -3443,6 +3447,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
+            ("action_semantics", "actionSemantics"),
             ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
@@ -3532,6 +3537,11 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:
+    # Platform persistence is a contract command, not a generic target action.
+    # Adding its create/write target must not change the producer's identity.
+    if (_dict(rule.get("actionSemantics")).get("executor") == "record.save"
+            and rule.get("sourceChannel") == "platform_form_action"):
+        return _text(rule.get("backendIdentity"))
     native_identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
     native_locator = _text(native_identity.get("native_locator"))
     if native_identity.get("authoritative") is True and native_locator:
@@ -3756,6 +3766,13 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             continue
         current = by_identity[identity]
         current.setdefault("sourceTrace", []).extend(trace_rows)
+        incoming_semantics = row.get("actionSemantics")
+        if incoming_semantics is not None:
+            if current.get("actionSemantics") is None:
+                current["actionSemantics"] = deepcopy(incoming_semantics)
+            elif current["actionSemantics"] != incoming_semantics:
+                # Conflicts stay explicit; consumers must not infer a winner.
+                current["actionSemantics"] = {"conflict": True}
         if permission_clauses:
             current_permission = _dict(current.get("permissionConstraints"))
             clauses = [

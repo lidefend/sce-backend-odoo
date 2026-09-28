@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import type {
   CanonicalFormAction,
   CanonicalFormField,
@@ -591,7 +592,7 @@ function presentAction(
       && !definitionInvisible
       && profiles.includes(mode)
       && status?.visible !== false
-      && !(mode === 'readonly' && action.actionId === 'form.save'),
+      && !(mode === 'readonly' && (action.actionSemantics || normalizeActionSemantics(action))?.kind === 'persistence'),
     enabled: allowed && enabled,
     reasonCode: text(status?.reasonCode || action.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,

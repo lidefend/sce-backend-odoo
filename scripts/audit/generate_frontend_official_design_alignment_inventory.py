@@ -103,6 +103,9 @@ def build_inventory() -> dict[str, object]:
     visual_literal_gaps: list[dict[str, object]] = []
     appearances: dict[str, dict[str, object]] = {}
     for path, style_text, line_offset in style_sources:
+        # Comments describe capability gaps; they are not executable selectors.
+        # Blank them without shifting line offsets used by the evidence report.
+        style_text = re.sub(r"/\*[\s\S]*?\*/", lambda match: re.sub(r"[^\n]", " ", match.group()), style_text)
         for match in SELECTOR_RE.finditer(style_text):
             selector = normalized_selector(match.group("selector"))
             if selector_has_descendant_vendor_target(selector):

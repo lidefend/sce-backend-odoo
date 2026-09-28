@@ -328,11 +328,11 @@ require(
     and "var(--sc-semantic-text-on-interactive) !important" in form_host,
     "primary action does not consume the registered interactive contrast tokens",
 )
-require("actionId === 'form.save'" in action_executor, "canonical form.save is not bridged to the unified save executor")
+require("normalizeActionSemantics" in action_executor and "?.executor === 'record.save'" in action_executor and "!actionRef.actionSemanticsInvalid" in action_executor, "canonical persistence intent is not bridged to the unified save executor")
 canonical_node_renderer = (WEB_SRC / "pages/contractForm/CanonicalFormNodeRenderer.vue").read_text(encoding="utf-8")
 native_renderer = (WEB_SRC / "components/template/NativeFormTreeRenderer.vue").read_text(encoding="utf-8")
 require(
-    "mode === 'readonly' && action.actionId === 'form.save'" in presenter,
+    "mode === 'readonly'" in presenter and "normalizeActionSemantics(action))?.kind === 'persistence'" in presenter,
     "iteration one must retain the cb6e276 readonly save boundary",
 )
 require(
@@ -6885,7 +6885,7 @@ require(
 )
 require(
     form_section.index('v-else-if="usesSceneFieldControl(field) && !(preferReadonlyFacts && field.readonly)"')
-    < form_section.index('v-else-if="field.readonly"'),
+    < form_section.index('v-else-if="field.readonly || isJsonField(field)"'),
     "readonly ContractForm fields bypass the selected component driver",
 )
 require(
@@ -6902,7 +6902,7 @@ require(
 )
 require(
     form_section.index('v-else-if="usesProfessionalMany2many(field) && relationAdapter"')
-    < form_section.index('v-else-if="field.readonly"'),
+    < form_section.index('v-else-if="field.readonly || isJsonField(field)"'),
     "readonly x2many fields leak raw ids instead of using the professional governed relation renderer",
 )
 scene_field_control = (UI_SRC / "components/primitives/SceneFieldControl.vue").read_text(encoding="utf-8")

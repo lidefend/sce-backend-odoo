@@ -67,14 +67,19 @@ def _load_handler():
         call_extension_hook_first=lambda *args, **kwargs: None,
     )
     reason_mod = _install_module("odoo.addons.smart_core.utils.reason_codes")
+    reason_mod.REASON_BUSINESS_RULE_FAILED = "BUSINESS_RULE_FAILED"
     reason_mod.REASON_CURRENCY_FIELD_MISSING = "CURRENCY_FIELD_MISSING"
     reason_mod.REASON_CURRENCY_FIELD_NOT_READABLE = "CURRENCY_FIELD_NOT_READABLE"
     reason_mod.REASON_CURRENCY_SCOPE_UNVERIFIED = "CURRENCY_SCOPE_UNVERIFIED"
+    reason_mod.REASON_INTERNAL_ERROR = "INTERNAL_ERROR"
     reason_mod.REASON_MULTI_CURRENCY_AGGREGATION_PROHIBITED = "MULTI_CURRENCY_AGGREGATION_PROHIBITED"
+    reason_mod.REASON_NOT_FOUND = "NOT_FOUND"
     reason_mod.REASON_OK = "OK"
+    reason_mod.REASON_PERMISSION_DENIED = "PERMISSION_DENIED"
     reason_mod.REASON_PROJECT_SCOPE_DENIED = "PROJECT_SCOPE_DENIED"
     reason_mod.REASON_READONLY_PROJECTION_MUTATION_DENIED = "READONLY_PROJECTION_MUTATION_DENIED"
     reason_mod.REASON_RECORD_VERSION_CONFLICT = "RECORD_VERSION_CONFLICT"
+    reason_mod.REASON_USER_ERROR = "USER_ERROR"
     reason_mod.failure_meta_for_reason = lambda reason: {"reason_code": reason}
 
     request_params_name = "odoo.addons.smart_core.core.request_params"

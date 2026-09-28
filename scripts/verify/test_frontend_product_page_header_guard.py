@@ -270,6 +270,21 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
         with patch("pathlib.Path.read_text", altered):
             self.assertTrue(any("data-product-page-header" in item for item in validate()))
 
+    def test_action_semantic_normalization_is_required(self):
+        real = Path.read_text
+
+        def altered(path, *args, **kwargs):
+            value = real(path, *args, **kwargs)
+            if path.name == "contractFormHeaderCanonicalActions.ts":
+                return value.replace("normalizeActionSemantics", "removedSemanticNormalization")
+            return value
+
+        with patch("pathlib.Path.read_text", altered):
+            self.assertIn(
+                "canonical header action floorplan rendering misses normalizeActionSemantics",
+                validate(),
+            )
+
     def test_floorplan_decision_mode_rendering_required(self):
         real = Path.read_text
 

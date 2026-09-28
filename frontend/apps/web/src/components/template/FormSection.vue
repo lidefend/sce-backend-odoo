@@ -17,6 +17,7 @@
           :key="field.key"
           :class="fieldClass(field, index)"
           :data-field-name="field.name"
+          :data-validation-target="fieldValidationTarget(field)"
           :data-field-key="field.key"
           :data-field-type="field.type"
           :data-widget-type="field.widget || undefined"
@@ -227,7 +228,7 @@
                     <label class="native-date-range__label" :for="fieldControlId(field)">开始日期</label>
                     <ScDateField
                       :id="fieldControlId(field)"
-                      :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
+                      :model-value="String(field.inputValue ?? '')"
                       class="input"
                       appearance="form-field"
                       clearable
@@ -304,6 +305,7 @@
 
 <script setup lang="ts">
 import { computed, inject, useId, useSlots } from 'vue';
+import { businessErrorKey } from '../../app/businessValidationError';
 import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
@@ -332,7 +334,7 @@ import { isPaymentSettlementDetailCollectionField } from '../professional-fields
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
-import { formatMonetaryDisplayValue, formatMonetaryInputValue, monetaryInputStep } from './formSection.mapper';
+import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -415,6 +417,19 @@ const emit = defineEmits<{
   (e: 'field-add-after', payload: { field: FormSectionFieldSchema; groupTitle: string }): void;
   (e: 'field-select', payload: { field: FormSectionFieldSchema; groupTitle: string }): void;
 }>();
+
+/**
+ * Register the position the error layer may send the user to.
+ *
+ * Only a position the user can correct is registered: a read-only occurrence of
+ * the same field keeps its display role and is not advertised as an error
+ * correction site. Registering the key does not make a position focusable by
+ * itself; the focus layer still requires a real, enabled control inside it.
+ */
+function fieldValidationTarget(field: FormSectionFieldSchema) {
+  if (props.fieldSelectionMode || props.fieldConfigEditable || field.readonly) return undefined;
+  return businessErrorKey({ fieldCode: field.name, row: null }) || undefined;
+}
 
 function fieldControlId(field: FormSectionFieldSchema) {
   return `${formSectionDomId}-field-${String(field.key || field.name).replace(/[^A-Za-z0-9_-]/g, '-')}`;

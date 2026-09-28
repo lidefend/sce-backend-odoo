@@ -26,7 +26,7 @@ CREDENTIALS = ('/etc/gitee-ci/id_ed25519','/etc/gitee-ci/id_ed25519.pub','/etc/g
 PACKAGE = 'bubblewrap=0.9.0-1ubuntu0.3'
 DB = '/var/lib/gitee-ci/jobs.sqlite3'
 CHECKS_TOKEN = '/etc/gitee-ci/checks.token'
-FORMAL_FILES = tuple('scripts/ci/'+n for n in ('gitee_ci_acceptance.py','gitee_ci_checks.py','gitee_pr_identity.py','gitee_gate_plan.py','ci_risk_classifier.py','gitee_formal_executor.py','gitee_formal_queue.py','gitee_formal_worker.py')) + tuple('.github/workflows/'+n+'.yml' for n in ('public_guard','merge_policy_gate','professional_quality_gate','frontend_release_gate')) + ('config/ci/risk_tiering_v1.json','scripts/ops/gitee_frontend_cache.py')
+FORMAL_FILES = tuple('scripts/ci/'+n for n in ('gitee_ci_acceptance.py','gitee_ci_checks.py','gitee_pr_identity.py','gitee_gate_plan.py','ci_risk_classifier.py','gitee_formal_executor.py','gitee_formal_queue.py','gitee_formal_worker.py','gitee_frontend_reuse.py')) + tuple('.github/workflows/'+n+'.yml' for n in ('public_guard','merge_policy_gate','professional_quality_gate','frontend_release_gate')) + ('config/ci/risk_tiering_v1.json','scripts/ops/gitee_frontend_cache.py','scripts/ops/gitee_frontend_reuse.py')
 NODE_PATH = '/opt/gitee-ci/node-v22.17.0/bin/node'
 NODE_ARCHIVE_SHA = '325c0f1261e0c61bcae369a1274028e9cfb7ab7949c05512c5b1e630f7e80e12'
 NODE_SHA = '8071ae0fca095a272ad698a90c7061801a86fb6392ddb81e922b68a91a4374b9'

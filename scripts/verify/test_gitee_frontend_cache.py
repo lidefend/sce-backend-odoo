@@ -8,7 +8,7 @@ import os
 import time
 from scripts.ci.gitee_ci_acceptance import Executor, Interrupted
 import unittest
-from scripts.ops.gitee_frontend_cache import inputs, key, extract_pnpm, prepare, attempt_receipt, unpack_dependencies
+from scripts.ops.gitee_frontend_cache import inputs, key, extract_pnpm, prepare, attempt_receipt, unpack_dependencies, isolate_package_manager
 
 class CacheTests(unittest.TestCase):
     def setUp(self):
@@ -112,5 +112,20 @@ class CacheTests(unittest.TestCase):
 
     def test_output_scope_rejected(self):
         with self.assertRaises(ValueError):prepare(self.root,self.root/'outside','unused','unused','unused')
+
+    def test_candidate_alias_cannot_change_next_step_runtime_mount(self):
+        work=self.root/'work';(work/'pnpm').mkdir(parents=True)
+        (work/'pnpm/marker').write_text('trusted runtime')
+        runtime=isolate_package_manager(work,self.root/'runtime')
+        private=self.root/'host-fixture';private.mkdir();(private/'private-marker').write_text('fixture only')
+        prefix=['/usr/bin/bwrap','--unshare-all','--die-with-parent','--new-session',
+                '--ro-bind','/usr','/usr','--symlink','usr/bin','/bin','--symlink','usr/lib','/lib',
+                '--symlink','usr/lib64','/lib64','--proc','/proc','--dev','/dev','--tmpfs','/tmp',
+                '--bind',str(work),'/work','--ro-bind',str(runtime),'/pnpm']
+        scripts=["from pathlib import Path;Path('/work/pnpm').symlink_to("+repr(str(private))+")",
+                 "from pathlib import Path;assert Path('/pnpm/marker').read_text()=='trusted runtime';assert not Path('/pnpm/private-marker').exists()"]
+        for script in scripts:
+            with (self.root/'probe.log').open('wb') as log:
+                self.assertEqual(Executor(self.root).command(prefix+['python3','-c',script],work,log,lambda:False,time.monotonic()+5,{'PATH':'/usr/bin:/bin'}),0)
 
 if __name__=='__main__':unittest.main()

@@ -7,6 +7,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ProfessionalRelationFieldGuardTests(unittest.TestCase):
+    def test_occurrence_authority_cannot_regress_to_field_name_only(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                self.assertIn("isFieldWritable(name,occurrenceKey)", value)
+                return value.replace("isFieldWritable(name,occurrenceKey)", "isFieldWritable(name)")
+            return value
+        self.assertTrue(any("write authority is incomplete" in failure for failure in validate(source)))
+
     def test_current_sources_pass(self):
         self.assertEqual(validate(), [])
 

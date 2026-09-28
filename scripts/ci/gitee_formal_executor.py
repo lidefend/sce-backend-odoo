@@ -132,17 +132,18 @@ class FormalExecutor(Executor):
         frontend=[]
         if getattr(self,'needs_frontend',False):
             frontend=['--ro-bind',str(workspace/'tools'),'/tools',
-                      '--ro-bind',str(workspace/'repo/pnpm'),'/pnpm']
+                      '--ro-bind',str(workspace/'pnpm'),'/pnpm']
         if getattr(self,'needs_node',False):
             path=Path(NODE_PATH); info=path.stat()
             if path.is_symlink() or info.st_uid!=0 or info.st_mode & 0o022 or hashlib.sha256(path.read_bytes()).hexdigest()!=NODE_SHA256:
                 raise ValueError('untrusted_node_runtime')
             node=['--ro-bind',NODE_PATH,'/usr/bin/node']
+        git_metadata = ['--ro-bind', str(workspace/'repo/.git'), '/work/.git'] if (workspace/'repo/.git').is_dir() else []
         return ['/usr/bin/bwrap', '--unshare-all', '--die-with-parent', '--new-session',
                 '--ro-bind', '/usr', '/usr', '--symlink', 'usr/bin', '/bin',
                 '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64',
                 '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp',
-                '--bind', str(workspace/'repo'), '/work', *node, *frontend, '--chdir', '/work', *command]
+                '--bind', str(workspace/'repo'), '/work', *git_metadata, *node, *frontend, '--chdir', '/work', *command]
 
     def validate_selection(self, candidate):
         expected = build_plan(head=candidate['head_sha'], base=candidate['base_sha'],
@@ -172,7 +173,7 @@ class FormalExecutor(Executor):
         receipt = {k: plan[k] for k in IDENTITY_KEYS}
         receipt.update(plan_sha256=expected, checks=[], status="environment_error", integration_eligible=False)
         env = {"PATH": "/tools:/usr/bin:/bin", "HOME": "/tmp", "ENV": "test", "CI": "1",
-               "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "PYTHONDONTWRITEBYTECODE": "1"}
+               "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "PYTHONDONTWRITEBYTECODE": "1", "XDG_CACHE_HOME": "/tmp/cache"}
         env.update(RESOURCE_ENV)
         receipt["resource_environment"] = dict(RESOURCE_ENV)
         deadline = time.monotonic() + self.timeout
@@ -205,14 +206,24 @@ class FormalExecutor(Executor):
                     if code or node_log.read_text().strip() != 'v22.17.0':
                         raise ValueError("pinned_node_unavailable_in_sandbox")
                 for check, commands in zip(plan['checks'], command_sets):
+                    reuse = None
                     if check['name']=='frontend_release_gate' and check['mode']=='standard':
-                        from scripts.ops.gitee_frontend_cache import runtime_cache
-                        receipt['frontend_cache']=runtime_cache(workspace/'repo')
-                        (workspace/'tools').mkdir()
-                        launcher=workspace/'tools/pnpm'
-                        launcher.write_text('#!/bin/sh\nexec node /pnpm/bin/pnpm.cjs "$@"\n')
-                        launcher.chmod(0o755)
-                        self.needs_frontend=True
+                        from scripts.ci.gitee_frontend_reuse import consume
+                        reuse = consume(workspace/'repo', plan)
+                        receipt['frontend_reuse'] = reuse
+                        if reuse['status'] == 'verified_local_execution':
+                            # The cheap policy guard still executes remotely. Only
+                            # four exact, authenticated local steps are reused.
+                            commands = commands[:1]
+                        else:
+                            from scripts.ops.gitee_frontend_cache import runtime_cache, isolate_package_manager
+                            receipt['frontend_cache']=runtime_cache(workspace/'repo')
+                            isolate_package_manager(workspace/'repo', workspace/'pnpm')
+                            (workspace/'tools').mkdir()
+                            launcher=workspace/'tools/pnpm'
+                            launcher.write_text('#!/bin/sh\nexec node /pnpm/bin/pnpm.cjs "$@"\n')
+                            launcher.chmod(0o755)
+                            self.needs_frontend=True
                     check_deadline = min(deadline, time.monotonic() + {
                         'public_guard':900, 'merge_policy_gate':1800,
                         'professional_quality_gate':5400, 'frontend_release_gate':7200}[check['name']])
@@ -227,6 +238,9 @@ class FormalExecutor(Executor):
                         if require_tests:
                             if path.stat().st_size > 16 * 1024 * 1024: raise ValueError('test_log_too_large')
                             row['tests'] += nonzero_tests(path.read_text(errors='replace'))
+                    if reuse and reuse['status'] == 'verified_local_execution' and row['status'] == 'success':
+                        row.update(tests=reuse['tests'], execution='verified_local_execution',
+                                   attestation_sha256=reuse['attestation_sha256'])
                     receipt['checks'].append(row)
                 verify_snapshot(plan, refresh_identity())
                 receipt['status'] = 'success' if all(c['status']=='success' for c in receipt['checks']) else 'failed'

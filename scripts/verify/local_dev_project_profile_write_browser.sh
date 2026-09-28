@@ -23,7 +23,7 @@ guard_prod_forbid
 [[ "${ODOO_DBFILTER:-}" == "^sc_dev_demo$" ]] || { echo "[DENY] expected exact sc_dev_demo dbfilter" >&2; exit 2; }
 [[ "${SC_ENVIRONMENT:-}" == "dev" ]] || { echo "[DENY] expected SC_ENVIRONMENT=dev" >&2; exit 2; }
 [[ "${FRONTEND_URL:-http://127.0.0.1:5176}" == "http://127.0.0.1:5176" ]] || { echo "[DENY] expected candidate frontend 5176" >&2; exit 2; }
-for flag_name in READ_ONLY PREFLIGHT_ONLY NETWORK_FAILURE_RECOVERY PERMISSION_ONLY RELATION_ONLY RELATION_WRITE_ONLY M2M_ONLY; do
+for flag_name in CONTRACT_ACT_ONLY READ_ONLY PREFLIGHT_ONLY NETWORK_FAILURE_RECOVERY PERMISSION_ONLY RELATION_ONLY RELATION_WRITE_ONLY M2M_ONLY; do
   flag_value="${!flag_name:-0}"
   [[ "$flag_value" =~ ^[01]$ ]] || { echo "[DENY] ${flag_name} must be 0 or 1" >&2; exit 2; }
 done
@@ -43,6 +43,11 @@ if [[ "${NETWORK_FAILURE_RECOVERY:-0}" == "1" && ( "${READ_ONLY:-0}" == "1" || "
   echo "[DENY] read-only preflight cannot enable failure injection or retry" >&2
   exit 2
 fi
+if [[ "${CONTRACT_ACT_ONLY:-0}" == "1" && ( "${READ_ONLY:-0}" == "1" || "${PREFLIGHT_ONLY:-0}" == "1" || "${NETWORK_FAILURE_RECOVERY:-0}" == "1" || "${PERMISSION_ONLY:-0}" == "1" || "${RELATION_ONLY:-0}" == "1" || "${RELATION_WRITE_ONLY:-0}" == "1" || "${M2M_ONLY:-0}" == "1" ) ]]; then
+  echo "[DENY] contract action checks require exclusive dedicated write mode" >&2
+  exit 2
+fi
+export CONTRACT_ACT_ONLY="${CONTRACT_ACT_ONLY:-0}"
 pidfile="/tmp/sc-local-dev-candidate-frontend.pid"
 [[ -f "$pidfile" ]] || { echo "[DENY] candidate pidfile missing" >&2; exit 2; }
 served_sha="$(python3 - "$pidfile" <<'PY'

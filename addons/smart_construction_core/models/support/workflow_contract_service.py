@@ -882,12 +882,12 @@ class ScWorkflowContractService(models.AbstractModel):
 
     ACTIONS = {
         "save_draft": {"label": "保存草稿", "intent": "data.write", "method": None, "kind": "save"},
-        "submit": {"label": "提交审批", "intent": "server.object", "kind": "transition"},
-        "approve": {"label": "审批通过", "intent": "server.object", "kind": "approval"},
-        "reject": {"label": "审批驳回", "intent": "server.object", "kind": "approval"},
+        "submit": {"label": "提交审批", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "approve": {"label": "审批通过", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "approve", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "reject": {"label": "审批驳回", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "activate": {"label": "开始执行", "intent": "server.object", "kind": "transition"},
         "complete": {"label": "完成", "intent": "server.object", "kind": "transition"},
-        "cancel": {"label": "取消", "intent": "server.object", "kind": "transition"},
+        "cancel": {"label": "取消", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "cancel_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "reopen": {"label": "重置为草稿", "intent": "server.object", "kind": "transition"},
         # `reopen` 在本平台语义是「重置为草稿」（`cancel` -> `draft`）。分包登记
         # `已关闭` -> `已登记` 是另一个目标状态、另一个方法，所以用独立键，避免同一个
@@ -1043,6 +1043,7 @@ class ScWorkflowContractService(models.AbstractModel):
                     "label": profile.get("label_by_action", {}).get(key) or spec.get("label") or key,
                     "intent": spec.get("intent") or "server.object",
                     "kind": spec.get("kind") or "transition",
+                    **({"action_semantics": dict(spec["action_semantics"])} if spec.get("action_semantics") else {}),
                     "method": method,
                     "enabled": enabled,
                     "reason_code": blockers[0].get("reasonCode") if blockers else "",

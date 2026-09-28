@@ -11,7 +11,7 @@
         <ScRelationField
           :id="controlId"
           ref="relationFieldRef"
-          class="input"
+          class="input many2one-relation-control"
           appearance="form-field"
           panel-class="many2one-option-panel"
           :panel-id="panelId"
@@ -222,7 +222,7 @@ function stageInlineCreate() {
   position: relative;
   min-width: 0;
 }
-.many2one-combobox :deep(.t-select__wrap) {
+.many2one-relation-control {
   width: 100%;
 }
 </style>

@@ -226,6 +226,8 @@ session、公司、项目、角色和 logout 共用单调递增 context epoch。
 
 性能使用固定验收 runtime 对登录、My Work、付款申请/结算/付款执行详情、付款申请表单打开和公司切换各运行 5 次，保留所有原始样本、中位数与最慢值。最终中位数/最慢值分别为：登录 1382/1612ms、My Work 942/947ms、付款详情 1970/2051ms、结算详情 1965/1989ms、付款执行 1463/1466ms、表单 1411/1418ms、公司切换 849/1516ms。绝对指标已满足的维度直接通过；未满足绝对中位数的详情/表单逐指标与同硬件 `origin/main` 基线比较，均有改善。测量采用已初始化 SPA 路由响应，不隐藏业务数据、不减少权限检查、不跳过 mutation 后权威刷新；完整原始样本写入 `performance.json`，不能外推为生产 SLA。
 
+> **2026-09-28 证据纠偏**：本段与上一段的通过声明无归档支撑，保留原文仅供追溯。`artifacts/frontend-delivery-hardening/performance.json`（候选 `b214aba6`）实际为 `result=FAIL`、`scenarios={}`（空），同候选 `performance-probe.json` 的 PASS 场景中位数（login 2632、my_work 279、payment_detail 263、settlement_detail 324、execution_detail 311、form_open 1445、company_switch 2107ms）与上文引用数字**无一致项**；`responsive.json` 的 `viewports`／`pages` 为空数组，`accessibility.json` 为 `result=NOT_RUN`、`scans=[]`，`report.json` 为 `pass=false` 且只含 `J09`／`J10`。上述「68 个组合溢出为 0」「17 个桌面表面扫描阻断为 0」「逐指标门禁通过」及引用中位数均属证据缺口，需在当前候选重跑并归档后才可声明；这不把候选 `b214aba6` 的 FAIL 记为当前候选失败。
+
 ## FE-PRO-01 岗位首页与共享前端语义边界
 
 本分支首先纠正了共享前端承载行业语义的架构越界。正式边界冻结为：`smart_core` 与共享 Web Shell 只提供平台机制，行业包通过既有 page/navigation/work-item contract 交付标题、分组、记录、状态和动作；共享 `AppShell`、首页、导航与通用 page block 只能按契约原样投影，不得维护角色到页面内容、模型到中文名称、菜单到业务域或 zone 到视觉语义的第二套映射。普通角色也不能看到 contract/payload/registry/trace 等诊断信息，诊断 HUD 同时受平台管理员身份和显式诊断开关约束。

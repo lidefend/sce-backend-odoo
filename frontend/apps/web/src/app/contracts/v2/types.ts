@@ -1,3 +1,4 @@
+import type { ActionSemantics } from '@sc/schema';
 export type ContractV2ClientType = 'web_pc' | 'wx_mini' | 'harmony_h5';
 export type ContractV2DeliveryProfile = 'full' | 'mobile_compact' | 'mobile_primary';
 export type ContractV2ViewType = 'form' | 'list' | 'table' | 'kanban' | 'tree' | 'pivot' | 'graph' | 'calendar' | 'gantt' | 'activity' | 'dashboard' | 'combine';
@@ -361,6 +362,8 @@ export interface ContractV2LayoutContract {
 }
 
 export interface ContractV2ActionRule {
+  actionSemantics?: ActionSemantics;
+  actionSemanticsInvalid?: boolean;
   actionId: string;
   backendIdentity?: string;
   nativeIdentity?: ContractV2Dictionary;

@@ -153,6 +153,8 @@ const validate = (formData: Record<string, unknown>, values: Record<string, unkn
   formData,
   isWritableFieldVisible: () => true,
   layoutNodes,
+  model: 'x.document',
+  recordId: null,
   normalizeFieldValue,
   values,
 });
@@ -184,6 +186,7 @@ check(Boolean(clearedValidation.fieldErrors.f39), false, 'a filled required fiel
 const booleanNodes: LayoutNode[] = [{ key: 'field_flag', kind: 'field', name: 'flag', label: '标志', readonly: false, required: true, descriptor: descriptor({ type: 'boolean', required: true }) }];
 const booleanValidation = collectRequiredFieldValidation({
   formData: { flag: false }, isWritableFieldVisible: () => true, layoutNodes: booleanNodes,
+  model: 'x.document', recordId: null,
   normalizeFieldValue: (name, value) => normalizeContractFieldValue({ name, value, descriptor: descriptor({ type: 'boolean' }), originalValue: undefined, buildOne2manyValue: () => [] }),
   values: { flag: false },
 });

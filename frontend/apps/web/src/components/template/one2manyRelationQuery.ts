@@ -4,7 +4,7 @@ export type One2manyRelationOption = {
 };
 
 export function selectedOne2manyRelationOption(value: unknown): One2manyRelationOption | null {
-  const row = Array.isArray(value)
+  const row: Record<string, unknown> | null = Array.isArray(value)
     ? { id: value[0], label: value[1] }
     : value && typeof value === 'object'
       ? value as Record<string, unknown>

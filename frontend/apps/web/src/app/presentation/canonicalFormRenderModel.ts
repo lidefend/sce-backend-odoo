@@ -12,6 +12,7 @@ export type CanonicalRelationValue = {
 };
 
 export type CanonicalFormAction = {
+  loading?: boolean;
   key: string;
   label: string;
   icon: string;

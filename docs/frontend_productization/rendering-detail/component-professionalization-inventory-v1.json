@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "d990eb6c7fa61cde584ec70796adc1a0ddd397cd0cae9b5971155c4382045952",
+  "sourceIdentity": "1237fc7db5b47ea66472b5a116cf21ff169abed38457aa5e83340aab0cbe9a74",
   "generatorDigest": "02038c38a68bb1203e0994bc8a44dc253c2c589a6f9673521d880d109d093eb8",
   "ownershipDigest": "b5cda2658fbd3ed4ebcb9188636a3107612fccf1a243a08441b9621dbaf2b75b",
-  "inputDigest": "629118d85b63c68f50bdd962a0c1cb7889487cc25ca174cea98d005b21f7e263",
+  "inputDigest": "daf922a5dfcdd0167c5e2dfed48b4d3087bafbeeaeec2b789dd63f119337c624",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -649,6 +649,9 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
+        "empty",
+        "error",
         "disabled",
         "focus"
       ],

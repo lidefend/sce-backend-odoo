@@ -1,0 +1,37 @@
+{
+  "provenance": {
+    "source": "/tmp/wf_check/contract_dump.json",
+    "source_sha256": "5a2b603366eb684e68a29418f6ff87718508c3f0c041e4ea6893bb0407f05add",
+    "reported_candidate": "c79809757b25f9af779fc4e20e5d28a4a22f029c",
+    "candidate_in_raw": "not recorded; historical input only",
+    "extraction": "action metadata whitelist; record data and request metadata excluded"
+  },
+  "action": {
+    "actionId": "form.save",
+    "actionKey": "form.save",
+    "backendIdentity": "contract_action:form.save",
+    "label": "保存修改",
+    "intent": "api.data",
+    "target": {},
+    "button": {},
+    "triggerType": "submit",
+    "sourceWidgetId": "page.root",
+    "targetIds": [
+      "page.root"
+    ],
+    "dispatchMode": "serverBlocking",
+    "targetScope": "page",
+    "refreshMode": "partial",
+    "visibleProfiles": [
+      "edit"
+    ],
+    "allowed": true,
+    "enabled": true,
+    "disabled": false,
+    "entitlementEvaluated": true,
+    "presentation": {
+      "tier": "secondary"
+    },
+    "sourceChannel": "platform_form_action"
+  }
+}

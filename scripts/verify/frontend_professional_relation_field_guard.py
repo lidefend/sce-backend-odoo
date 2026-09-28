@@ -171,8 +171,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if "if (entry && entry.canRead === false)" in relationships:
         failures.append("relation search rows retain fail-open read authority")
     for marker in (
-        "if(!isFieldWritable(name))return;const normalized=",
-        "if(!isFieldWritable(name))return;const keyword=",
+        "if(!isFieldWritable(name,occurrenceKey))return;const normalized=",
+        "if(!isFieldWritable(name,occurrenceKey))return;const keyword=",
         "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
     ):
         if marker not in form_state:

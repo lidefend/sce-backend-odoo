@@ -180,6 +180,7 @@ const fieldDescriptors = {
 // must not turn an unrelated partial update into a full-record repair.
 async function validateEdit(values: Record<string, unknown>, visible = true) {
   return validateBeforeSaveRecord({
+    model: 'x.document',
     recordId: 501,
     collectSceneValidationPrecheckErrors: () => [],
     collectWritableValues: () => values,
@@ -200,7 +201,12 @@ async function validateEdit(values: Record<string, unknown>, visible = true) {
 for (const empty of ['', '  ', false, null, undefined]) {
   const rejected = await validateEdit({ title: empty });
   assert.equal(rejected.ok, false, 'clearing a required field in edit mode must fail');
-  assert.equal(rejected.fieldErrors?.title, '标题不能为空');
+  // The error states its business ownership, not only a message: the field it
+  // belongs to, the record or draft it belongs to, and the rule identity.
+  assert.equal(rejected.fieldErrors?.title?.message, '标题不能为空');
+  assert.equal(rejected.fieldErrors?.title?.target.fieldCode, 'title');
+  assert.equal(rejected.fieldErrors?.title?.target.recordId, 501);
+  assert.equal(rejected.fieldErrors?.title?.code, 'REQUIRED_VALUE_MISSING');
 }
 assert.equal((await validateEdit({ title: '' }, false)).ok, false, 'hidden submitted required values still obey the contract');
 assert.equal((await validateEdit({ title: 'Updated title' })).ok, true, 'untouched missing owner must not block a partial update');

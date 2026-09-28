@@ -15,6 +15,7 @@ const BATCH_PATTERN = /^[a-z0-9][a-z0-9-]{2,31}$/;
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const FRONTEND_URL = process.env.FRONTEND_URL || EXPECTED_FRONTEND_URL;
 const DB_NAME = process.env.DB_NAME || EXPECTED_DB;
+const CONTRACT_ACT_ONLY = process.env.CONTRACT_ACT_ONLY === '1';
 const READ_ONLY = process.env.READ_ONLY === '1';
 const PREFLIGHT_ONLY = process.env.PREFLIGHT_ONLY === '1';
 const NETWORK_FAILURE_RECOVERY = process.env.NETWORK_FAILURE_RECOVERY === '1';
@@ -309,6 +310,15 @@ function recordDiagnostics(page) {
       entry.error = body?.error || undefined;
       entry.data_keys = body?.data && typeof body.data === 'object' ? Object.keys(body.data) : [];
       if (body?.data?.records) entry.record_count = body.data.records.length;
+      if (CONTRACT_ACT_ONLY && body?.data?.actionContract?.actionRuleList) {
+        entry.actions = body.data.actionContract.actionRuleList.map(row => ({
+          actionId: row.actionId, backendIdentity: row.backendIdentity, label: row.label,
+          actionSemantics: row.actionSemantics, intent: row.intent,
+          target: { model: row.target?.model, operation: row.target?.operation },
+          allowed: row.allowed, enabled: row.enabled, disabled: row.disabled,
+          visibleProfiles: row.visibleProfiles, reasonCode: row.reasonCode,
+        }));
+      }
     } catch { /* non-json response */ }
     requests.push(entry);
     pending.delete(response.request());
@@ -339,6 +349,7 @@ async function successfulIntentData(response, label) {
   return body.data;
 }
 async function login(page, login) {
+  page.setDefaultTimeout(20000);
   await page.goto(`${FRONTEND_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   const inputs = page.locator('input');
   await inputs.nth(0).fill(login);
@@ -1043,7 +1054,7 @@ async function verifyMany2manyTagSelect(browser, page, report, beforeFacts) {
     return route.continue();
   });
   await closePanel();
-  const saveButton = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  const saveButton = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
   await saveButton.click();
   const failedWrite = await waitForWriteOutcome(page, writes, writesBeforeFailure);
   const errorFeedback = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
@@ -1277,7 +1288,7 @@ async function openProject(page) {
   await page.goto(`${FRONTEND_URL}/s/workspace.home`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('li[data-navigation-label="项目中心"] > .t-menu__item').click();
   await page.locator('li[data-navigation-label="项目创建"] > .t-menu__item').click();
-  await page.locator('li[data-navigation-node][data-navigation-menu-id="681"]').click();
+  await page.locator(`li[data-navigation-node][data-navigation-menu-id="${MENU_ID}"]`).click();
   await page.waitForFunction(() => !/正在载入数据|正在加载列表/.test(document.body.innerText || ''), null, { timeout: 30000 });
   if (PROJECT_NAME) await page.getByRole('button', { name: PROJECT_NAME, exact: true }).waitFor({ timeout: 30000 });
   let formContractSeen = false;
@@ -1334,7 +1345,7 @@ async function chooseDate(page, index, day) {
   await popup.locator('td:not(.t-is-disabled) .t-date-picker__cell-inner').filter({ hasText: new RegExp(`^${day}$`) }).first().click();
 }
 async function save(page) {
-  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  const button = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
   await button.waitFor({ timeout: 12000 });
   await button.click();
   try { await page.getByText(/保存成功/).waitFor({ timeout: 20000 }); }
@@ -1348,7 +1359,7 @@ async function saveWithFailureRecovery(page, writes, report, draftBeforeFailure)
     try { const body = JSON.parse(route.request().postData() || '{}'); if (!blocked && body.intent === 'api.data' && body.params?.op === 'write' && Number(body.params?.ids?.[0]) === PROJECT_ID) { blocked = true; resolveBlocked(true); await route.abort('failed'); return; } } catch {}
     await route.continue();
   });
-  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  const button = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
   await button.click();
   await Promise.race([blockedRequest, new Promise((_, reject) => setTimeout(() => reject(new Error('save_request_not_blocked')), 20000))]);
   const firstWrite = await waitForWriteOutcome(page, writes, 0);
@@ -1769,7 +1780,7 @@ async function verifyCustomerRelationWrite(page, report, beforeFacts) {
   await option.click();
   if (!await dirty(page) || normalize(await input.inputValue()) !== label) throw new Error('explicit_customer_selection_not_in_draft');
   if (mutations.length) throw new Error('customer_selection_mutated_before_save');
-  const button = page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first();
+  const button = page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first();
   await button.click();
   const failedWrite = await waitForWriteOutcome(page, writes, 0);
   const error = page.locator('.submission-feedback--error:visible, [data-semantic-component="ProductFormErrorSummary"]:visible').first();
@@ -1811,7 +1822,7 @@ async function verifyFieldValidation(page, report, beforeFacts) {
   const writes = recordWriteRequests(page);
   report.writes = writes;
   await fillField(page, 'name', '');
-  await page.getByRole('button', { name: /^保存(?:修改)?$/, exact: true }).first().click();
+  await page.getByRole('button', { name: /^保存(?:修改|草稿)?$/, exact: true }).first().click();
   const feedback = page.locator('[data-semantic-component="ProductFormErrorSummary"]:visible, .submission-feedback--error:visible').first();
   await feedback.waitFor({ state: 'visible', timeout: 10000 });
   const invalid = await field(page, 'name').locator('[aria-invalid="true"]').count();
@@ -1877,7 +1888,7 @@ async function verifyPermissionBoundary(browser, writerPage, report, beforeFacts
       && url.searchParams.get('reason') === 'NAVIGATION_AUTHORITY_DENIED'
       && url.searchParams.get('from') === targetRoute, { timeout: 30000 });
     await page.getByText(/无权限|没有权限|访问受限|权限不足/).first().waitFor({ state: 'visible', timeout: 10000 });
-    const enabledWrites = await page.getByRole('button', { name: /^(保存修改|保存|提交立项)$/ }).evaluateAll((buttons) => buttons.filter((button) => !button.disabled && button.getClientRects().length).length);
+    const enabledWrites = await page.getByRole('button', { name: /^(保存修改|保存草稿|保存|提交立项)$/ }).evaluateAll((buttons) => buttons.filter((button) => !button.disabled && button.getClientRects().length).length);
     report.scenarios.push({ name: 'readonly_write_actions_unavailable', status: enabledWrites === 0 ? 'PASS' : 'FAIL', enabled_write_actions: enabledWrites, target_route: targetRoute, reason_code: 'NAVIGATION_AUTHORITY_DENIED', url: page.url() });
     await page.screenshot({ path: path.join(OUT, 'readonly-denial.png'), fullPage: true });
     if (enabledWrites) throw new Error('readonly_write_action_enabled');
@@ -1889,6 +1900,89 @@ async function verifyPermissionBoundary(browser, writerPage, report, beforeFacts
     await context.close();
   }
 }
+async function verifyContractActions(browser, page, report, beforeFacts) {
+  if (!WRITE_MODE) deny('contract action checks require dedicated fixture authority');
+  const writes = recordWriteRequests(page);
+  report.writes = writes;
+  report.candidate_sha = process.env.PRODUCT_CANDIDATE_SHA;
+  const button = () => page.locator('.contract-form-command-bar button[data-product-primary-action]').filter({ hasText: '保存草稿' });
+  const check = (name, passed, details = {}) => {
+    report.scenarios.push({ name, status: passed ? 'PASS' : 'FAIL', ...details });
+    if (!passed) throw new Error(name);
+  };
+  const runtimeSave = report.diagnostics.flatMap(row => row.actions || []).find(row => row.actionId === 'form.save');
+  check('live_backend_save_semantics', runtimeSave?.actionSemantics?.purpose === 'save_draft'
+    && runtimeSave.actionSemantics.operation === 'write' && runtimeSave.target.model === 'project.project'
+    && runtimeSave.backendIdentity === 'contract_action:form.save', { action: runtimeSave });
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await button().waitFor({ state: 'visible' });
+    let backAvailable;
+    if (viewport.width > 520) backAvailable = await page.locator('[data-command-id="form.back"]').isVisible();
+    else {
+      const backLabel = await page.locator('[data-command-id="form.back"]').getAttribute('aria-label');
+      await page.getByRole('button', { name: '打开更多页面操作' }).click();
+      const backItem = page.locator('.t-dropdown__item').filter({ hasText: backLabel });
+      await backItem.waitFor({ state: 'visible' });
+      backAvailable = await backItem.isVisible();
+      await page.keyboard.press('Escape');
+    }
+    check(`command_bar_${viewport.width}`, await button().count() === 1
+      && backAvailable
+      && await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), { viewport });
+    await page.screenshot({ path: path.join(OUT, `commands-${viewport.width}.png`), fullPage: true });
+  }
+  await button().click();
+  await page.waitForTimeout(700);
+  check('unchanged_no_write', writes.length === 0);
+  await fillField(page, 'description', 'CONTRACT-ACT-01 retained draft');
+  await fillField(page, 'name', '');
+  await button().click();
+  const summary = page.locator('[data-form-error-summary]');
+  await summary.waitFor({ state: 'visible' });
+  check('required_error_no_write', writes.length === 0
+    && await field(page, 'name').locator('[aria-invalid="true"]').count() > 0);
+  const target = summary.locator('button').first();
+  if (await target.count()) await target.click();
+  check('error_focus', await field(page, 'name').evaluate((el) => el.contains(document.activeElement)));
+  check('draft_retained', (await captureDraftSnapshot(page)).fields !== null
+    && await field(page, 'description').innerText().then(async text => text.includes('CONTRACT-ACT-01') || await field(page, 'description').locator('textarea,input').first().inputValue() === 'CONTRACT-ACT-01 retained draft'));
+  const marker = `${beforeFacts.project.name} ACT`;
+  await fillField(page, 'name', marker);
+  let held;
+  let intercepted;
+  const interception = new Promise(resolve => { intercepted = resolve; });
+  const release = new Promise(resolve => { held = resolve; });
+  let first = true;
+  await page.route('**/api/v1/intent*', async route => {
+    const body = route.request().postDataJSON();
+    if (first && body?.intent === 'api.data' && body.params?.op === 'write' && Number(body.params?.ids?.[0]) === PROJECT_ID) {
+      first = false; intercepted(); await release; await route.abort('failed');
+    } else await route.continue();
+  });
+  await button().click();
+  await Promise.race([interception, new Promise((_, reject) => setTimeout(() => reject(new Error('save_not_intercepted')), 15000))]);
+  check('saving_same_primary_loading', await button().isDisabled() && await button().getAttribute('aria-busy') === 'true');
+  await button().evaluate(el => { el.click(); el.click(); });
+  check('repeated_click_single_request', writes.length === 1);
+  held();
+  await page.locator('[data-form-error-summary]:visible, .submission-feedback--error:visible').first().waitFor({ timeout: 20000 });
+  await page.waitForFunction(() => !document.querySelector('.contract-form-command-bar button[data-product-primary-action]')?.disabled);
+  check('failure_draft_and_authority', await field(page, 'name').locator('input').first().inputValue() === marker
+    && sameJson(beforeFacts, await readProjectFacts(page)));
+  await page.unroute('**/api/v1/intent*');
+  await save(page);
+  const after = await readProjectFacts(page);
+  check('retry_single_success_no_transition', writes.length === 2 && after.project.name === marker
+    && after.project.lifecycle_state === beforeFacts.project.lifecycle_state);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await button().waitFor({ state: 'visible', timeout: 30000 });
+  check('refresh_readback', sameJson(after, await readProjectFacts(page)));
+  await button().click(); await page.waitForTimeout(700);
+  check('after_save_no_extra_write', writes.length === 2);
+  await verifyPermissionBoundary(browser, page, report, after);
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
@@ -1911,6 +2005,10 @@ async function main() {
     if (!before || before.id !== PROJECT_ID) throw new Error(`project ${PROJECT_ID} authoritative read failed`);
     if (WRITE_MODE) assertOwnedProjectFacts(WRITE_AUTHORITY, beforeFacts);
     report.preflight = { page_state: pageState, authoritative_read: before, authoritative_facts: beforeFacts };
+    if (CONTRACT_ACT_ONLY) {
+      await verifyContractActions(browser, page, report, beforeFacts);
+      return;
+    }
     if (RELATION_WRITE_ONLY) {
       await verifyCustomerRelationWrite(page, report, beforeFacts);
       return;

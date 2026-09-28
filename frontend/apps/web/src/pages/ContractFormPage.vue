@@ -699,6 +699,9 @@ import { useRecordContractSemantics } from './contractForm/useRecordContractSema
 import { useRecordFormLayout } from './contractForm/useRecordFormLayout';
 import { useRecordFormFieldSchemas } from './contractForm/useRecordFormFieldSchemas';
 import { useRecordFormState } from './contractForm/useRecordFormState';
+import {
+  collectCanonicalFieldOccurrences, collectLayoutFieldOccurrences, createFormOccurrenceDecision,
+} from './contractForm/fieldOccurrenceWritability';
 import { useRecordFormProgress } from './contractForm/useRecordFormProgress';
 import { useRecordFormDesigner } from './contractForm/useRecordFormDesigner';
 import { useRecordRelationships } from './contractForm/useRecordRelationships';
@@ -827,6 +830,7 @@ const canonicalFormRenderState = computed(() => resolveCanonicalFormRenderState(
   renderProfile.value,
   formData,
   validationFieldErrors.value,
+  { model: model.value, recordId: recordId.value },
 ));
 const canonicalProductFloorplan = computed(() => canonicalFormRenderState.value.model
   ? composeCanonicalFormFloorplan(canonicalFormRenderState.value.model)
@@ -904,6 +908,7 @@ const {
   rowHints: one2manyRowHints,
   applyLinePatches: applyOnchangeLinePatches,
 } = useOne2manyRuntime({
+  model: () => model.value,
   recordId: () => recordId.value,
   originalValues: () => originalValues.value,
   parentValues: () => formData,
@@ -1165,7 +1170,7 @@ function recordVersionPolicy() {
 }
 const isConfigurationPreview = computed(() => Boolean(route.query.preview_token));
 const configurationDesignerUrl = computed(() => {
-  const query = { ...route.query, config_mode: 'form_field_configuration', change_set_token: route.query.designer_token };
+  const query: LocationQueryRaw = { ...route.query, config_mode: 'form_field_configuration', change_set_token: route.query.designer_token };
   delete query.preview_token; delete query.preview_role_key; delete query.designer_token;
   return router.resolve({ path: route.path, query }).href;
 });
@@ -1328,7 +1333,7 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
-const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value }));
+const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value, busy: busy.value, busyKind: busyKind.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
@@ -1343,7 +1348,7 @@ const draftSaveButtonLabel = computed(() => {
   // wording it has always used.
   const dispatchContext = isDispatchContextGovernance(declaredFormGovernance.value);
   if (declaredLabel && (!recordId.value || dispatchContext)) return declaredLabel;
-  return recordId.value ? '保存修改' : '保存草稿';
+  return '保存草稿';
 });
 const showDiscardAction = computed(() => !isIntakeCreateMode.value && Boolean(recordId.value) && hasChanges.value);
 const groupedHeaderActions = computed(() => groupContractHeaderActions({
@@ -1473,7 +1478,7 @@ const isQuickSubmitDisabled = computed(() => {
 const primaryFormActionDisabled = computed(() => primaryBusinessActionState.value.disabled);
 const primaryFormActionHint = computed(() => {
   if (primarySubmitAction.value && !primarySubmitAction.value.enabled) return primarySubmitAction.value.hint;
-  return primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存修改，再提交审批' : '';
+  return primarySubmitAction.value && recordId.value && hasChanges.value ? '请先保存草稿，再提交审批' : '';
 });
 const primaryBusinessFormAction = computed(() => (
   !recordId.value ? primaryCreateFooterAction.value : primarySubmitAction.value
@@ -1721,6 +1726,17 @@ const contractReadiness = computed<FormContractReadiness>(() => {
 let recordFormStateRuntime: ReturnType<typeof useRecordFormState>;
 function markFieldChanged(name: string) { recordFormStateRuntime.markFieldChanged(name); }
 function inputFieldValue(name: string) { return recordFormStateRuntime.inputFieldValue(name); }
+const canonicalFieldOccurrences = computed(() => collectCanonicalFieldOccurrences(canonicalFormRenderState.value.model));
+const layoutFieldOccurrences = computed(() => collectLayoutFieldOccurrences(layoutNodes.value));
+// Keyed edits are decided by the emitting occurrence alone, using the contract
+// occurrences first and the rendered positions second. The name-only aggregate
+// below stays for callers that have no occurrence identity (native companions,
+// relation hooks that read a field as a whole).
+const fieldOccurrenceSources = computed(() => ({
+  canonical: canonicalFieldOccurrences.value,
+  layout: layoutFieldOccurrences.value,
+}));
+const fieldOccurrenceDecision = createFormOccurrenceDecision(() => fieldOccurrenceSources.value);
 function canonicalFieldWritable(name: string): boolean | undefined {
   const model = canonicalFormRenderState.value.model;
   if (!model) return undefined;
@@ -1755,6 +1771,7 @@ recordFormStateRuntime = useRecordFormState({
   buildOne2manyCommandValue, one2manyFieldRows, initOne2manyRows, applyOnchangeLinePatches,
   isWritableFieldVisible,
   canonicalFieldWritable,
+  fieldOccurrenceDecision,
 });
 const {
   addRelationId, collectWritableValues, commitMany2oneInline, comparableFieldValue, isFieldWritable,
@@ -1802,7 +1819,7 @@ const {
   v2ShadowLegacyFieldOverlapCount, v2ShadowMainDataFieldCount, v2ShadowReadonlyValueCount,
   v2ShadowSourceContextKind, v2ShadowStatusFieldCount, v2ShadowStoreReady,
   v2ShadowValueFieldCount, v2ShadowValueSourceKind, v2ShadowWidgetCount,
-  validationErrors, writableFieldCount,
+  validationErrors, validationFieldErrors, writableFieldCount,
 });
 const {
   discardChanges, confirmActionSafety, ensureSavedBeforeRecordAction, applyClientMode, applyRouteConfigMode,

@@ -268,7 +268,7 @@ assert.equal(setOne2manyDraftRowField({
 }), false);
 assert.equal(hiddenRows.line_ids[0].dirty, false);
 assert.deepEqual(collectOne2manyDraftValidationFromRows({
-  rowsByField: hiddenRows, recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [hiddenRequiredColumn],
+  rowsByField: hiddenRows, model: 'x.parent', recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [hiddenRequiredColumn],
 }), { issues: [], rowErrors: {}, cellErrors: {} });
 const dynamicRows = { line_ids: [{
   key: 'done', id: 7, isNew: false, removed: false, dirty: false, dirtyFields: [],
@@ -287,7 +287,7 @@ assert.equal(dynamicRows.line_ids[0].values.note, 'locked');
 assert.equal(dynamicRows.line_ids[0].dirty, false);
 dynamicRows.line_ids[1].modifierPatches = { note: { invisible: true, required: true } };
 assert.deepEqual(collectOne2manyDraftValidationFromRows({
-  rowsByField: dynamicRows, recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [dynamicColumn],
+  rowsByField: dynamicRows, model: 'x.parent', recordId: 1, resolvePrimaryColumn: () => 'state', resolveColumns: () => [dynamicColumn],
 }), {
   issues: [],
   rowErrors: {},
@@ -297,16 +297,35 @@ const requiredRows = { line_ids: [{
   key: 'new-required', id: 0, isNew: true, removed: false, dirty: true, dirtyFields: [],
   values: { partner_id: false },
 }] };
-assert.deepEqual(collectOne2manyDraftValidationFromRows({
-  rowsByField: requiredRows,
-  recordId: null,
-  resolvePrimaryColumn: () => 'partner_id',
-  resolveColumns: () => [{ ...many2oneColumn, required: true }],
-}), {
-  issues: ['line_ids 第1行往来单位不能为空'],
-  rowErrors: { 'line_ids:new-required': ['往来单位不能为空'] },
-  cellErrors: { 'line_ids:new-required:partner_id': '往来单位不能为空' },
-});
+{
+  const structured = collectOne2manyDraftValidationFromRows({
+    rowsByField: requiredRows,
+    model: 'x.parent',
+    recordId: null,
+    resolvePrimaryColumn: () => 'partner_id',
+    resolveColumns: () => [{ ...many2oneColumn, required: true }],
+  });
+  assert.deepEqual(structured.issues, ['line_ids 第1行往来单位不能为空']);
+  assert.deepEqual(structured.rowErrors, { 'line_ids:new-required': ['往来单位不能为空'] });
+  assert.deepEqual(Object.keys(structured.cellErrors), ['line_ids:new-required:partner_id']);
+  // The cell error states its business ownership: parent model and draft, the
+  // relation that owns the row, the stable draft row key and the cell code.
+  assert.deepEqual(structured.cellErrors['line_ids:new-required:partner_id'], {
+    code: 'REQUIRED_VALUE_MISSING',
+    message: '往来单位不能为空',
+    target: {
+      model: 'x.parent',
+      recordId: null,
+      fieldCode: 'line_ids',
+      row: {
+        relationField: 'line_ids',
+        recordId: null,
+        rowKey: 'new-required',
+        cellField: 'partner_id',
+      },
+    },
+  });
+}
 const inlineActions = one2manyRowActionsFromSubview({ tree: { row_actions: [
   {
     label: 'Open Child', kind: 'object', payload: { method: 'action_open', type: 'object' },

@@ -73,10 +73,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if marker not in renderer:
             failures.append(f"canonical renderer missing profile projection {marker}")
     for marker in (
-        "const setBooleanField=(name:string,checked:boolean)=>{if(!isFieldWritable(name))return;",
-        "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string)=>{if(!isFieldWritable(name))return;",
-        "const setSelectionField=(name:string,value:string)=>{if(!isFieldWritable(name))return;",
-        "const setTextField=(name:string,value:string)=>{if(!isFieldWritable(name))return;",
+        "const setBooleanField=(name:string,checked:boolean,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
+        "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
+        "const setSelectionField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
+        "const setTextField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
     ):
         if marker not in form_state:
             failures.append(f"base field handler does not fail closed: {marker}")

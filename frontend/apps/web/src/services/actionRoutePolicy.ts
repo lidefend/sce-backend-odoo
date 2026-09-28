@@ -64,7 +64,7 @@ export function resolveAuthorizedConfigurationRoute(options: {
   if (!isBusinessConfigurationAction(authority)) return null;
   const model = String(authority.model || authority.res_model || '');
   if (['record', 'model-form'].includes(routeName) && options.routeModel !== model) return null;
-  const query = { ...options.query, ...resolveActionWebRouteQuery(authority),
+  const query: Record<string, unknown> = { ...options.query, ...resolveActionWebRouteQuery(authority),
     action_id: String(authority.action_id), menu_id: String(authority.menu_id || options.query.menu_id || '') };
   // A raw-record instance is not a configuration-workbench activity instance.
   delete query.activity_page_id;

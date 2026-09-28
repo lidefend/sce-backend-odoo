@@ -17,6 +17,14 @@ import {
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
+  BusinessErrorCodes,
+  createBusinessErrorTarget,
+  createBusinessFieldError,
+  errorOwnsField,
+  indexBusinessFieldErrors,
+  type BusinessFieldError,
+} from '../src/app/businessValidationError';
+import {
   canonicalFieldToFormSection,
   canonicalFieldHasPresentableValue,
   canonicalNodeHasContent,
@@ -3323,7 +3331,16 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-const validationProjection = applyCanonicalFormValidation(model, { name: 'Name 为必填项' });
+// A validation error names the business field it belongs to; the presenter maps
+// it onto the position it may correct. Field identity is never recovered from
+// the message text, so the label-collision case below keeps working by stating
+// `state` explicitly.
+const fieldError = (fieldCode: string, message: string): BusinessFieldError => createBusinessFieldError({
+  code: BusinessErrorCodes.REQUIRED_VALUE_MISSING,
+  message,
+  target: createBusinessErrorTarget({ model: model.identity.model, recordId: null, fieldCode }),
+})!;
+const validationProjection = applyCanonicalFormValidation(model, indexBusinessFieldErrors([fieldError('name', 'Name 为必填项')]));
 const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
 assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
 assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
@@ -3332,16 +3349,43 @@ assert.equal(renderedValidationField.invalid, true, 'canonical field validation 
 assert.equal(renderedValidationField.errorText, 'Name 为必填项', 'rendered validation must retain its accessible description');
 const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
 assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
-const labelCollisionProjection = applyCanonicalFormValidation(model, { state: 'Name 与 State 的组合提示' });
+const labelCollisionProjection = applyCanonicalFormValidation(model, indexBusinessFieldErrors([fieldError('state', 'Name 与 State 的组合提示')]));
 assert.equal(
   collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
   false,
   'canonical validation must never infer field identity from a label substring',
 );
+// `state` is an invisible, disabled context field in this contract. The error
+// keeps its explicit business identity, but it is not projected onto a position
+// the user can neither see nor correct; the form-level summary carries it.
 assert.equal(
   collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
+  false,
+  'canonical validation must not project an error onto a position the user cannot see',
+);
+const labelCollisionError = fieldError('state', 'Name 与 State 的组合提示');
+assert.equal(
+  errorOwnsField(labelCollisionError, { model: model.identity.model, recordId: null, fieldCode: 'state' }),
+  true,
+  'the error still owns the field it names even when the page renders no position for it',
+);
+const visibleStateSnapshot = snapshot();
+visibleStateSnapshot.statusContract.widgetStatus[1] = {
+  widgetId: 'field.state', visible: true, readonly: true, required: false, disabled: false,
+};
+const visibleStateProjection = applyCanonicalFormValidation(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(visibleStateSnapshot)), 'edit'),
+  indexBusinessFieldErrors([labelCollisionError]),
+);
+assert.equal(
+  collectFields(visibleStateProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
   true,
   'canonical validation must project an explicit field identity even when labels overlap',
+);
+assert.equal(
+  collectFields(visibleStateProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
+  false,
+  'the overlapping label must not steal the error from the field it names',
 );
 
 assert.deepEqual(normalizeNativeFormStatusbar({

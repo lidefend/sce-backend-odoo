@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import type {
   CanonicalFormAction,
@@ -23,7 +24,7 @@ export function resolveCanonicalFormActionExecution(
   const actionId = String(actionRef.actionId || '').trim();
   const backendIdentity = String(actionRef.backendIdentity || '').trim();
   if (!actionId || !backendIdentity) return { kind: 'error', reasonCode: 'CANONICAL_FORM_ACTION_REFERENCE_MISSING' };
-  if (actionId === 'form.save') return { kind: 'save' };
+  if (!actionRef.actionSemanticsInvalid && (actionRef.actionSemantics || normalizeActionSemantics(actionRef))?.executor === 'record.save') return { kind: 'save' };
 
   const occurrenceKey = nativeActionOccurrenceKey(actionRef.nativeIdentity);
 

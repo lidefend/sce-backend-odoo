@@ -247,7 +247,7 @@
     },
     {
       "category": "other",
-      "digest": "484e69c6bfa9a47ab7a715c64955ae24189eb1b1a26eaa3baf99ab0daeb0db73",
+      "digest": "f23023a49ad94397e1504a06cf3ea524b85434cccc2872bb95ca1e548cde9d7f",
       "nativeStyleSelectors": [],
       "path": "components/action/HierarchicalWorksheet.vue",
       "referenceNativeStyleSelectors": [
@@ -795,7 +795,7 @@
     },
     {
       "category": "other",
-      "digest": "e1c599338f45ed51361d5d992dc13c0c901b2e981e613e2495fc8cb6fdb1ecad",
+      "digest": "c92a4814670c163d05ef2a78abbada8ae5157db108f34c32707f452cbeb1f394",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScPageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -875,7 +875,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "25621762367aa1955ee2e9a932dd83c5f6300745cc21dee9b57fbb547605a8f8",
+      "digest": "0abda989a5c91be08192bc6c4959cf92835ad6e34ce7366026f7c268c53248e7",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScRelationField.vue",
       "referenceNativeStyleSelectors": [],
@@ -935,7 +935,7 @@
     },
     {
       "category": "other",
-      "digest": "b651ce466aa6c2a713b7c0488cbba7148b4625358fbc9398544fec8240f0201d",
+      "digest": "23aa155625d3fb49387536ae838c7c4580c1ee7475726ccfc7c13577cb6241cd",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTable.vue",
       "referenceNativeStyleSelectors": [],
@@ -1035,7 +1035,7 @@
     },
     {
       "category": "other",
-      "digest": "ef70e320996c6d9cb1081741108304d6557de02db5a36d4fcb9c46dea2471624",
+      "digest": "fe57d091dc52cfa440fd9556deee388a698822b01a886432fe63c3be9e28669f",
       "nativeStyleSelectors": [],
       "path": "components/page/PageHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -1195,7 +1195,7 @@
     },
     {
       "category": "other",
-      "digest": "2e69b925ede395e83d4b51acb0a03c718789a305a529a3e20e40055029aa4a02",
+      "digest": "484bca0e015ea6f0666b0e104e479f838580631764c2e8ea12ab43edad49dff2",
       "nativeStyleSelectors": [],
       "path": "components/page/blocks/BlockRichTextOverview.vue",
       "referenceNativeStyleSelectors": [],
@@ -1497,7 +1497,7 @@
     },
     {
       "category": "states",
-      "digest": "08c97a1d4ab2b643c8263dd9b474fb9a166741c063eca49b2b202d53512b3b24",
+      "digest": "f81d1cae2451aeb76b95f2be4e60c5f6116e9e57b38682f0919b6e3720d2a43d",
       "nativeStyleSelectors": [],
       "path": "components/product-record/ProductFormErrorSummary.vue",
       "referenceNativeStyleSelectors": [],
@@ -1689,7 +1689,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "67c8771003f73f771b141751dd14178ad19096d0139036a9cacbccaaa98b666d",
+      "digest": "4a4b1dd85102eab086da8bc7acebec1c045387e29d6aff2f4489330f550f3fd6",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalDetailCollectionControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1702,7 +1702,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "2d417371553ed9d4346fdc0cf065acdecc1b207d8332962e6aa8d75d15a40720",
+      "digest": "1827e497a9c8317710be2bac652e204ccb54e89de6ba7b7cfcbc9fd54cd12538",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalMany2oneFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1715,7 +1715,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "e844d0418adf99bb043e9370800f36f1ee0f0db9a00a8842137ca2198a29f37b",
+      "digest": "e5f02e04701b6caeb8601971b81d4b6601617153f9e70a11643976630adc867e",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalManyToManySelect.vue",
       "referenceNativeStyleSelectors": [],
@@ -1776,7 +1776,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "c08eb69873de8461493e9d9cf2a5ac6c7c5f6f32df12192266f782cc2b76a004",
+      "digest": "d6071042692838ab21bb8f0063fc64f909f774953eb863ddef84fcde8236d69a",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1808,7 +1808,7 @@
     },
     {
       "category": "other",
-      "digest": "3f301d4571a7a21569353947331dbb58d4f121bd47f0bdf20bcf50fec70f95fd",
+      "digest": "d604526ca42404fa5f95bafc8460356994471a78de610b1bdf955a838454d919",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeActionOverflowMenu.vue",
       "referenceNativeStyleSelectors": [],
@@ -1821,7 +1821,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "7b2f3b9f943e140c85f4dec2a8c0e0125387af7d634a2be02279dbd8d9fd95ca",
+      "digest": "40ccf122618918750248827cb927f3cf2af8c94424e2bb619f66a3be32b7d5b7",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -1878,7 +1878,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "33c175829c861bb446f34fd6537d5d7e8c4f96a8562bc9bc55b4446386f32971",
+      "digest": "17c50d1ec18698044166d06b1ee41459854a48fcfc0b2d9bc7bed9402cbcea74",
       "nativeStyleSelectors": [],
       "path": "components/template/X2ManyRelationRenderer.vue",
       "referenceNativeStyleSelectors": [
@@ -2007,7 +2007,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "209464338d8bcd050cda06672390f77fdc5882a478a5010ed1708552dfd492fe",
+      "digest": "d66b33dc338e7c7466ca45f2ebcba23b910def984f99c020683e16d7eaa36b25",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2021,7 +2021,7 @@
     },
     {
       "category": "collection",
-      "digest": "2c37412ac414bfe81cdda12cd4f2174d12ccc6292333397940ce34491d04c422",
+      "digest": "d299284470947efa82caabf144bd90389cee41372742665b8c210140b334f5b5",
       "nativeStyleSelectors": [],
       "path": "pages/KanbanPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2169,7 +2169,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "7f54007f3d6f6634a443bd1e594ed7ba2765b0b3728793fbfb95d026e25354cb",
+      "digest": "f8714931d0e561937f3349aa0587dfc1f76a55748083f78b302c445bb69ef50b",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormProductHeader.vue",
       "referenceNativeStyleSelectors": [],
@@ -2386,7 +2386,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "fd123aa117bd39f5073c99563de0618a79360d80b98d6eda775f2ae7243f41cb",
+      "digest": "8e650c1e0b3484e282bce20021e2f11ca16133dfd4e1cff58733c5b1d30cb0cb",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/RelationSearchDialog.vue",
       "referenceNativeStyleSelectors": [],
@@ -2627,7 +2627,7 @@
     },
     {
       "category": "other",
-      "digest": "6c38382ae77dd206a73dc16d5b32959da3c6e43feadf7161ba24c20fa46243f2",
+      "digest": "6f25a1841cbbad04f1fc28e460a0b94f10dee0267b9d4df6f2d940bf479e1833",
       "nativeStyleSelectors": [],
       "path": "views/SceneContractBlockGridView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2880,7 +2880,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "0afbd52d6313f566cc87bc55418f4b165495a503afaf56310590a45ff79e47d8",
+  "currentInputDigest": "2383338c8dcfdd22901aef468f110ec038330bfd88eb464e9dd1dabba5e9b651",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",

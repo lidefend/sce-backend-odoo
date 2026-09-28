@@ -162,7 +162,17 @@ def attempt_receipt(prepared,result):
         path.write_text(json.dumps(result,indent=2)+'\n')
 
 
-def verify(repo,prepared,node_archive):
+def isolate_package_manager(work, destination):
+    """Move the trusted runtime outside every candidate-writable bind mount."""
+    source = work/'pnpm'
+    if (source.is_symlink() or not source.is_dir() or destination.exists()
+            or destination.is_symlink() or destination.resolve().is_relative_to(work.resolve())):
+        raise ValueError('package_manager_isolation')
+    shutil.move(str(source), str(destination))
+    return destination
+
+
+def verify(repo,prepared,node_archive,*,reuse_context=None):
     repo=Path(repo).resolve();prepared=Path(prepared).resolve()
     allowed=(repo/'artifacts/gitee-temporary-integration').resolve()
     if not prepared.is_relative_to(allowed):raise ValueError('evidence_scope')
@@ -181,8 +191,11 @@ def verify(repo,prepared,node_archive):
             source=tmp/'source.tar'
             with source.open('wb') as stream:subprocess.run(['git','archive',head],cwd=repo,stdout=stream,check=True)
             with tarfile.open(source) as tf:tf.extractall(work,filter='data')
+            if reuse_context is not None and (work/'frontend/apps/web/dist').exists():
+                raise ValueError('reuse_preexisting_build_output')
             if inputs(work)!=manifest['dependency_inputs']:raise ValueError('committed_input_mismatch')
             unpack_dependencies(prepared/'dependencies.tar.gz',work,manifest['mounts'])
+            runtime = isolate_package_manager(work, tmp/'pnpm')
             with tarfile.open(node_archive,'r:xz') as tf:(tmp/'node').write_bytes(tf.extractfile('node-v22.17.0-linux-x64/bin/node').read())
             if sha(tmp/'node')!=NODE_SHA:raise ValueError('node_binary_mismatch')
             (tmp/'node').chmod(0o755)
@@ -191,10 +204,13 @@ def verify(repo,prepared,node_archive):
             prefix=['/usr/bin/bwrap','--unshare-all','--die-with-parent','--new-session',
                     '--ro-bind','/usr','/usr','--symlink','usr/bin','/bin','--symlink','usr/lib','/lib',
                     '--symlink','usr/lib64','/lib64','--proc','/proc','--dev','/dev','--tmpfs','/tmp',
-                    '--bind',str(work),'/work','--ro-bind',str(work/'pnpm'),'/pnpm',
+                    '--bind',str(work),'/work','--ro-bind',str(runtime),'/pnpm',
                     '--ro-bind',str(tmp/'node'),'/usr/bin/node','--ro-bind',str(tmp/'tools'),'/tools','--chdir','/work']
             env={'PATH':'/tools:/usr/bin:/bin','HOME':'/tmp','CI':'1','ENV':'test','PYTHONDONTWRITEBYTECODE':'1',
                  'GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':'/dev/null','XDG_CACHE_HOME':'/tmp/cache'}
+            if reuse_context is not None:
+                from scripts.ci.gitee_frontend_reuse import environment
+                env = environment()
             for step in ['lint:src','typecheck:strict','test','build']:
                 path=attempt/(step.replace(':','-')+'.log')
                 with path.open('wb') as stream:
@@ -207,6 +223,9 @@ def verify(repo,prepared,node_archive):
                     row['scope']='make verify.frontend.pr.unit; Node assertion entries recorded in raw log, not added to Python count'
                 result['steps'].append(row)
             result['status']='passed' if all(s['exit_code']==0 for s in result['steps']) else 'failed'
+            if reuse_context is not None:
+                from scripts.ci.gitee_frontend_reuse import seal
+                seal(work, attempt, result, reuse_context)
     return result
 
 

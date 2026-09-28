@@ -43,6 +43,20 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 `make verify.gitee.frontend_cache_install.unit` 验证摘要、重复安装和冲突边界。
 准备成功不代表服务器安装、完整前端检查或发布验收。
 
+2026-09-28 所有者批准补齐受管本地前端证据复用。`make gitee.ci.frontend.reuse.publish
+EXPECTED_HEAD=<sha> GITEE_EXPECTED_MAIN=<sha> GITEE_PR_NUMBER=<n>
+GITEE_FRONTEND_OUTPUT=<existing prepared bundle> GITEE_NODE_ARCHIVE=<pinned archive>`
+默认仅预演；`APPLY=1 GITEE_FRONTEND_REUSE_CONFIRM=RUN_AND_PUBLISH_EXACT_FRONTEND_EVIDENCE`
+在当前 clean 精确候选的断网导出中实际执行四步骤，全部成功且测试非零、产物非空后，
+通过既有 owner SSH 认证通道发布到 `/opt/gitee-ci/frontend-reuse/<identity-key>`。
+不接受任意旧回执导入，不新增凭据或环境；root仅校验和原子追加普通文件，不解压执行产物。
+同身份不同内容拒绝覆盖；传输不确定时先只读核对精确key，不盲目重跑发布。
+既有 `gitee.ci.server.update ... GITEE_FORMAL=1` 可安装本轮独立复核的发布/消费模块，
+仍需clean SHA、无活动job、预演摘要、备份及回读；不改变worker资源限制或数据库。
+远端从受管安装目录读取核验器，绑定源/目标/PR、工具、依赖、配方、环境、日志及产物，
+缺失或不合法则记录原因并继续原执行链；成功标注 verified_local_execution，保留四项必需检查。
+这属于已授权所有者执行器的受信发布，不声称哈希能证明执行来源，也不防御恶意root/所有者主机失陷。
+
 
 本次续跑所有者已明确要求直接执行现有 CI 线上更新及 CI-only 真实事件验收。用户截图和登录后的页面
 已确认 WebHook 2106026、平台镜像为空、Gitee Go 未开通；历史公开范围及同组客户标识授权沿用本会话。

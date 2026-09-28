@@ -4,6 +4,10 @@ import type {
   FormSectionFieldSchema,
 } from '../../components/template/formSection.types';
 import type { ContractAction, LayoutNode } from './types';
+import {
+  decodeServerFieldErrors,
+  indexBusinessFieldErrors,
+} from '../../app/businessValidationError';
 import { createSingleFlightSave } from './saveRecordHelpers';
 
 type ActionDependencies = Record<string, any>;
@@ -451,6 +455,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       normalizeFieldValue: (name, value) => normalizeFieldValue(name, value),
       one2manyFieldErrors: one2manyValidation.value.cellErrors,
       one2manyIssues: one2manyValidation.value.issues,
+      model: model.value,
       recordId: recordId.value,
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
@@ -554,9 +559,15 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         await focusFirstValidationError();
         return false;
       }
+      // A business rejection that names its owning field is presented against
+      // that field. A rejection that only carries a message stays an
+      // operation-level error: the field is never recovered from the text.
+      const serverFieldErrors = err instanceof ApiError && err.status === 422
+        ? decodeServerFieldErrors(err.details, { model: model.value, recordId: recordId.value })
+        : [];
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, fallback);
       validationErrors.value = [message];
-      validationFieldErrors.value = {};
+      validationFieldErrors.value = indexBusinessFieldErrors(serverFieldErrors);
       submissionFeedback.value = { kind: 'error', message: message && message !== fallback ? message : fallback };
       await focusFirstValidationError();
       return false;

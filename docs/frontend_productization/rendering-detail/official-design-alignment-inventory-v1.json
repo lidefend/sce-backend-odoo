@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "70d9e4b457815360fe1332096ff7c9f169539a5c0ee70ed1cc054bdd81c04baf",
+  "inputDigest": "7fc9ac63fea3cf818ac7952acd3bbd52d2345d9ce88b1623b3c2de15f3e5ba89",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -101,10 +101,9 @@
       "appearance": "collection",
       "consumers": [
         "frontend/apps/web/src/app/presentation/productPageHeader.ts",
+        "frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts",
         "frontend/apps/web/src/app/presentation/productPagePattern.ts",
-        "frontend/apps/web/src/components/design-system/ScPageHeader.vue",
         "frontend/apps/web/src/components/design-system/ScTable.vue",
-        "frontend/apps/web/src/components/page/PageHeader.vue",
         "frontend/apps/web/src/components/product-page-patterns/CollectionPattern.vue",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
@@ -639,7 +638,6 @@
         "frontend/apps/web/src/components/template/PageHeader.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/pages/ContractFormPage.vue",
-        "frontend/apps/web/src/pages/KanbanPage.vue",
         "frontend/apps/web/src/pages/contractForm/RelationCreateDialog.vue",
         "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
         "frontend/apps/web/src/router/index.ts",
@@ -658,7 +656,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 215,
+    "formalStyleSourceCount": 216,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

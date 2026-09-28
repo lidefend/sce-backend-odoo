@@ -409,7 +409,7 @@ router.beforeEach(async (to) => {
     }
     const configurationTarget = resolveAuthorizedConfigurationRoute({
       routeName: String(to.name || ''), routeModel: routeQueryText(to.params.model),
-      authority: routeAuthority as NavMeta | null, authorized: runtimeRouteAuthorized,
+      authority: routeAuthority ? { ...routeAuthority } : null, authorized: runtimeRouteAuthorized,
       query: to.query,
     });
     if (configurationTarget) return configurationTarget as never;

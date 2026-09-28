@@ -650,7 +650,9 @@ def validate() -> list[str]:
     if "@media(max-width:1500px){.product-page-header--task[data-has-status='true']" in component:
         failures.append("ProductPageHeader status layout must not use a widened viewport breakpoint as a container proxy")
     canonical_actions = source("frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts")
-    for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "input.floorplan.overflowActions", "['primary', 'secondary'].includes(action.tier)", "['overflow', 'configuration'].includes(action.tier)"):
+    # CONTRACT-ACT-01: direct/overflow now partition the effective action set;
+    # retaining a second floorplan overflow copy would duplicate commands.
+    for marker in ("input.floorplan?.decisionMode", "input.floorplan.directActions", "normalizeActionSemantics", "['primary', 'secondary'].includes(action.tier)", "adapted.filter((action) => !directKeys.has(action.key))"):
         if marker not in canonical_actions:
             failures.append(f"canonical header action floorplan rendering misses {marker}")
     if "localSavePrimary" in canonical_actions or "authorizedLocalSave" in canonical_actions:

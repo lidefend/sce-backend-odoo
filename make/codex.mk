@@ -858,7 +858,11 @@ verify.gitee.formal_pr.unit: guard.prod.forbid
 gitee.ci.frontend.prepare: guard.prod.forbid
 	@python3 -m scripts.ops.gitee_frontend_cache --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" --pnpm-archive "$(GITEE_PNPM_ARCHIVE)" --store "$(GITEE_PNPM_STORE)"
 verify.gitee.frontend_cache.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_gitee_frontend_cache
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache scripts/verify/test_gitee_frontend_reuse.py
+
+.PHONY: gitee.ci.frontend.reuse.publish
+gitee.ci.frontend.reuse.publish: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_reuse --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --pr-number "$(GITEE_PR_NUMBER)" --prepared "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_FRONTEND_REUSE_CONFIRM)"
 
 .PHONY: gitee.ci.frontend.verify
 gitee.ci.frontend.verify: guard.prod.forbid
