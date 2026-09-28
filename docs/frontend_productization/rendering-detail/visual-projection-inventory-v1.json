@@ -1780,7 +1780,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "d73c317d800e2b70d82ab5abaf4e39530905703c199171ee5657f4c885317195",
+      "digest": "86bcb8a96bf7da92fd3d27ea6a6e96b6a35333e409857d138fc8bb7bd3070b9e",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -2886,7 +2886,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "9dd84f3ad78b34a34fc0ef431e78fd8c7614206de125a87bae68882d04eb3fca",
+  "currentInputDigest": "bd615c97fa2129a24e0419f80f4e16fd49a75567b9374c4931761184f442ca54",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
