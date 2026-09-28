@@ -230,7 +230,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 424,
+      "productionConsumerCount": 425,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -268,7 +268,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 62,
+      "productionConsumerCount": 63,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -337,7 +337,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 412,
+      "productionConsumerCount": 413,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -413,10 +413,10 @@
         "TDesignDescriptionsItem"
       ],
       "officialComponent": "descriptions",
-      "productionConsumerCount": 0,
+      "productionConsumerCount": 1,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "status": "adapter_present"
     },
     {
       "adapterKeys": [
@@ -438,7 +438,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 96,
+      "productionConsumerCount": 97,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -473,7 +473,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 84,
+      "productionConsumerCount": 85,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -792,7 +792,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 66,
+      "productionConsumerCount": 67,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1147,7 +1147,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 103,
+      "productionConsumerCount": 104,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1179,7 +1179,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 490,
+      "productionConsumerCount": 492,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1371,7 +1371,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 409,
+      "productionConsumerCount": 410,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1388,13 +1388,13 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "a971a5fa1c7304b791aed7f163492f3914a167aa94c361556cefcfa7d5af18cf",
+  "inputDigest": "348005faac7e79ca26ab6a1dfc23372a3aeab77c5a6a36862a65548cb8ee1582",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
-    "adapter_present": 32,
-    "adapter_unconsumed": 3,
+    "adapter_present": 33,
+    "adapter_unconsumed": 2,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
