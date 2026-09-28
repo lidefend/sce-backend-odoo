@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ref, watch } from 'vue';
 import type {
   FormSectionFieldActionPayload,
   FormSectionFieldSchema,
@@ -8,7 +9,11 @@ import {
   decodeServerFieldErrors,
   indexBusinessFieldErrors,
 } from '../../app/businessValidationError';
-import { buildRequiredFieldErrorPayload, createSingleFlightSave } from './saveRecordHelpers';
+import {
+  buildRequiredFieldErrorPayload,
+  canonicalizeSubmissionValues,
+  createSingleFlightSave,
+} from './saveRecordHelpers';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 
 type ActionDependencies = Record<string, any>;
@@ -137,6 +142,49 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationFieldErrors,
     writeContractFormRecord,
   } = dependencies;
+
+  // ---------------------------------------------------------------------------
+  // Save-operation ownership across awaits
+  // ---------------------------------------------------------------------------
+  // An adopted save awaits the official engine, and may await relation creates
+  // and the write itself. The record the page is bound to can move during any
+  // of those waits - including back to a record it showed before - so "same
+  // model, same record id" is not an identity: the id comes back but the draft
+  // session does not. This epoch advances on every change to the bound surface,
+  // and every save takes an operation id, so a resumed operation can prove it
+  // still owns the surface before it writes an error, moves focus, sends a
+  // write, paints feedback, or clears the busy flag.
+  const boundSurfaceKey = () => `${String(model.value ?? '')}\u0000${recordId.value ?? 'new'}`;
+  const surfaceEpoch = ref(0);
+  let observedSurfaceKey = boundSurfaceKey();
+  watch(boundSurfaceKey, (next) => {
+    if (next === observedSurfaceKey) return;
+    observedSurfaceKey = next;
+    surfaceEpoch.value += 1;
+  }, { flush: 'sync' });
+
+  type SaveOperation = { id: number; epoch: number; model: string; recordId: number | null };
+  let saveOperationSequence = 0;
+  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, model: '', recordId: null };
+  let busyOwnerOperationId = 0;
+
+  const beginSaveOperation = (): SaveOperation => {
+    saveOperationSequence += 1;
+    activeSaveOperation = {
+      id: saveOperationSequence,
+      epoch: surfaceEpoch.value,
+      model: String(model.value ?? ''),
+      recordId: recordId.value ?? null,
+    };
+    return activeSaveOperation;
+  };
+
+  const saveOperationOwnsSurface = (operation: SaveOperation) =>
+    activeSaveOperation.id === operation.id
+    && surfaceEpoch.value === operation.epoch
+    && String(model.value ?? '') === operation.model
+    && (recordId.value ?? null) === operation.recordId;
+
   async function discardChanges() {
     if (!hasChanges.value || busy.value) return;
     await reload();
@@ -466,12 +514,22 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
    * The rejected codes join the same error store the rest of the save chain
    * uses, so there is one summary, one per-field message and one focus entry.
    */
-  async function runAdoptedFormValidation(): Promise<{ ok: boolean; coveredFieldNames: string[] }> {
+  async function runAdoptedFormValidation(): Promise<{ ok: boolean; coveredFieldNames: string[]; superseded: boolean }> {
+    // The operation this run belongs to. `saveRecord` opens one before calling
+    // here, so the await below is bound to a surface the caller can re-verify.
+    const operation = activeSaveOperation;
     if (!resolveStandardFormComposition({ model: model.value }).adopted) {
-      return { ok: true, coveredFieldNames: [] };
+      return { ok: true, coveredFieldNames: [], superseded: false };
     }
     const validate = typeof validateAdoptedFormSections === 'function' ? validateAdoptedFormSections : null;
     const outcome = validate ? await validate() : null;
+    // The engine can take a while, and the page can move on while it runs. A
+    // stale answer must not enter the error store, focus a field, or announce
+    // "validation could not finish" on a page it never validated: the guard is
+    // here, at the write, not only at the caller's return value.
+    if (!saveOperationOwnsSurface(operation)) {
+      return { ok: false, coveredFieldNames: [], superseded: true };
+    }
     const coveredFieldNames = outcome?.ok && Array.isArray(outcome.coveredFieldNames)
       ? outcome.coveredFieldNames
       : [];
@@ -481,10 +539,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       submissionFeedback.value = { kind: 'warn', message };
       validationErrors.value = [message];
       validationFieldErrors.value = {};
-      return { ok: false, coveredFieldNames: [] };
+      return { ok: false, coveredFieldNames: [], superseded: false };
     }
     const fieldNames: string[] = Array.isArray(outcome.fieldNames) ? outcome.fieldNames : [];
-    if (!fieldNames.length) return { ok: true, coveredFieldNames };
+    if (!fieldNames.length) return { ok: true, coveredFieldNames, superseded: false };
     const labels = (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
       if (node.kind === 'field') acc[node.name] = node.label || node.name;
       return acc;
@@ -497,7 +555,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationFieldErrors.value = payload.fieldErrors;
     submissionFeedback.value = { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' };
     await focusFirstValidationError();
-    return { ok: false, coveredFieldNames: [] };
+    return { ok: false, coveredFieldNames: [], superseded: false };
   }
 
   async function saveRecord(
@@ -505,12 +563,24 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     options: { navigateAfterCreate?: boolean } = {},
   ): Promise<boolean | number> {
     if (!canSave.value || !model.value) return false;
+    const operation = beginSaveOperation();
     submissionFeedback.value = null;
     validationErrors.value = [];
     validationFieldErrors.value = {};
     formConflict.value = false;
+    // The draft as it stands before the official engine looks at it. If it
+    // changes while the engine is deciding, the value about to be written was
+    // never validated: keep the draft, stop this save, and let the user save
+    // again. Nothing here retries or writes the newer draft on the older answer.
+    const validatedDraftSnapshot = canonicalizeSubmissionValues(collectWritableValues());
     const adoptedValidation = await runAdoptedFormValidation();
+    if (adoptedValidation.superseded) return false;
     if (!adoptedValidation.ok) return false;
+    if (!saveOperationOwnsSurface(operation)) return false;
+    if (canonicalizeSubmissionValues(collectWritableValues()) !== validatedDraftSnapshot) {
+      submissionFeedback.value = { kind: 'warn', message: '表单内容已变化，请重新保存。' };
+      return false;
+    }
     const validation = await validateBeforeSaveRecord({
       excludedRequiredFieldNames: adoptedValidation.coveredFieldNames,
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
@@ -527,11 +597,14 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       normalizeFieldValue: (name, value) => normalizeFieldValue(name, value),
       one2manyFieldErrors: one2manyValidation.value.cellErrors,
       one2manyIssues: one2manyValidation.value.issues,
-      model: model.value,
-      recordId: recordId.value,
+      model: operation.model,
+      recordId: operation.recordId,
       resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
       resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
     });
+    // The precheck awaited the network for relation creates too, so the same
+    // ownership and same-draft rules hold before anything is written.
+    if (!saveOperationOwnsSurface(operation)) return false;
     showOne2manyErrors.value = Boolean(validation.showOne2manyErrors);
     if (!validation.ok || !validation.editableMap) {
       validationErrors.value = validation.validationErrors || [];
@@ -541,7 +614,12 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       return false;
     }
     const editableMap = validation.editableMap;
+    if (canonicalizeSubmissionValues(collectWritableValues()) !== canonicalizeSubmissionValues(editableMap)) {
+      submissionFeedback.value = { kind: 'warn', message: '表单内容已变化，请重新保存。' };
+      return false;
+    }
     busyKind.value = 'save';
+    busyOwnerOperationId = operation.id;
     try {
       const values = buildSaveRecordPayload({
         comparableFieldValue: (name, value) => comparableFieldValue(name, value),
@@ -550,27 +628,36 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         editableMap,
         formData,
         originalValues: originalValues.value,
-        recordId: recordId.value,
+        recordId: operation.recordId,
       });
-      if (recordId.value && !Object.keys(values).length) {
-        busyKind.value = null;
+      if (operation.recordId && !Object.keys(values).length) {
+        if (busyOwnerOperationId === operation.id) busyKind.value = null;
         dirtyFieldSet.clear();
         return true;
       }
-      if (recordId.value) {
+      if (operation.recordId) {
+        // The write targets the record this operation started for, never
+        // whatever the page happens to show by the time the request is built.
         await writeContractFormRecord({
-          model: model.value,
-          ids: [recordId.value],
+          model: operation.model,
+          ids: [operation.recordId],
           vals: values,
           ifMatch: recordVersionPolicy() ? recordVersionToken.value : undefined,
         });
+        // The write has already been sent. A response for a surface the user
+        // has left is dropped as-is: it is not a rollback, it is not retried,
+        // and it must not repaint, navigate or clear the page that owns the
+        // screen now. The record is read back the next time it is opened.
+        if (!saveOperationOwnsSurface(operation)) return false;
         formConflict.value = false;
         originalValues.value = snapshotOriginalFormValues(Object.keys(formData), formData);
         dirtyFieldSet.clear();
         const appliedRefreshPolicy = refreshPolicy || { on_success: ['scene_projection'] };
         await applyProjectionRefreshPolicy(appliedRefreshPolicy);
+        if (!saveOperationOwnsSurface(operation)) return false;
         if (!appliedRefreshPolicy.on_success?.includes('scene_projection')) {
           await reload();
+          if (!saveOperationOwnsSurface(operation)) return false;
         }
         if (status.value !== 'ok') {
           submissionFeedback.value = {
@@ -589,9 +676,11 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
           v2ContractStore: v2ContractStore.value,
         }),
       );
-      const created = await createContractFormRecord({ model: model.value, vals: values, context });
+      const created = await createContractFormRecord({ model: operation.model, vals: values, context });
+      if (!saveOperationOwnsSurface(operation)) return false;
       if (created?.id) {
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
+        if (!saveOperationOwnsSurface(operation)) return false;
         if (!attachmentsUploaded) {
           return false;
         }
@@ -610,7 +699,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         });
       }
     } catch (err) {
-      const fallback = recordId.value ? '保存失败，请检查填写内容' : '创建失败，请检查填写内容';
+      // A rejection that names a page the user has left must not mark the
+      // current record, steal its focus, or drive it to login/denied.
+      if (!saveOperationOwnsSurface(operation)) return false;
+      const fallback = operation.recordId ? '保存失败，请检查填写内容' : '创建失败，请检查填写内容';
       if (err instanceof ApiError && err.status === 401) {
         await session.logout();
         await router.replace('/login');
@@ -635,7 +727,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       // that field. A rejection that only carries a message stays an
       // operation-level error: the field is never recovered from the text.
       const serverFieldErrors = err instanceof ApiError && err.status === 422
-        ? decodeServerFieldErrors(err.details, { model: model.value, recordId: recordId.value })
+        ? decodeServerFieldErrors(err.details, { model: operation.model, recordId: operation.recordId })
         : [];
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, fallback);
       validationErrors.value = [message];
@@ -644,11 +736,21 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       await focusFirstValidationError();
       return false;
     } finally {
-      busyKind.value = null;
+      // Only the operation that took the busy flag may release it, so a
+      // superseded save cannot switch off a newer save's loading state.
+      if (busyOwnerOperationId === operation.id) {
+        busyKind.value = null;
+        busyOwnerOperationId = 0;
+      }
     }
     return false;
   }
-  const singleFlightSaveRecord = createSingleFlightSave(saveRecord);
+  // Collapse repeated clicks onto one save, but only inside one surface: a save
+  // that belongs to another record or draft is never joined.
+  const singleFlightSaveRecord = createSingleFlightSave(
+    saveRecord,
+    () => `${surfaceEpoch.value}\u0000${boundSurfaceKey()}`,
+  );
 
   useFormPageLifecycleRuntime({
     formRouteIdentity: () => formRouteIdentity(),

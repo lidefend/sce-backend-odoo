@@ -668,6 +668,86 @@ const actionsSource = readSource('frontend/apps/web/src/pages/contractForm/useRe
 check(actionsSource.includes('await validate()'), true, 'the save gate awaits the engine before it decides');
 check(actionsSource.includes('coverageMissing'), true, 'the save gate separates a legal empty set from a missing registration');
 
+// ---------------------------------------------------------------------------
+// Part 9 - the engine keeps its own per-item error, and a record change must
+// re-create the tree rather than trust that the page's error store is clean
+// ---------------------------------------------------------------------------
+const renderedText = (node: HostNode): string[] => [
+  ...(node.text ? [node.text] : []),
+  ...node.children.flatMap((child) => renderedText(child)),
+];
+{
+  const staleMessage = '项目名称不能为空';
+  const revision = ref(0);
+  const nameDraft = { name: '' };
+  const engineInstances: Array<{ validate: () => Promise<unknown> }> = [];
+  const messageRule = [{ required: true, message: staleMessage }];
+  const KeyedSurface = defineComponent({
+    setup() {
+      return () => h(
+        TDesignForm as never,
+        {
+          // Exactly what the page does when the record identity changes:
+          // ContractFormNativeCanvas keys the form tree by
+          // nativeLayoutVisibilityRevision, which useRecordPageLifecycle bumps
+          // on every record load. Nothing calls clearValidate here.
+          key: `record-${revision.value}`,
+          ref: (instance: unknown) => { if (instance) engineInstances.push(instance as { validate: () => Promise<unknown> }); },
+          data: nameDraft,
+          rules: { name: messageRule },
+          showErrorMessage: true,
+        },
+        () => [
+          h(TDesignFormItem as never, { label: '项目名称', name: 'name', rules: messageRule }, () => h('input')),
+        ],
+      );
+    },
+  });
+  const keyedRoot = hostNode('root');
+  const keyedApp = renderer.createApp(KeyedSurface as never) as unknown as { unmount: () => void };
+  keyedApp.mount(keyedRoot);
+  await nextTick();
+
+  const engineBefore = engineInstances[engineInstances.length - 1];
+  const rejection = await engineBefore.validate() as Record<string, unknown>;
+  await nextTick();
+  checkDeep(Object.keys(rejection), ['name'], 'G: the engine marks the empty position on its own form item');
+  check(
+    renderedText(keyedRoot).filter((text) => text.includes(staleMessage)).length,
+    1,
+    'G: the official engine renders its rejection inside the form item, not only in the page error store',
+  );
+
+  revision.value += 1;
+  await nextTick();
+  await nextTick();
+  check(engineInstances.length, 2, 'G: a record identity change mounts a fresh adopted form tree');
+  check(
+    renderedText(keyedRoot).filter((text) => text.includes(staleMessage)).length,
+    0,
+    'G: the previous record\'s engine error cannot survive onto the new record once the tree is re-created',
+  );
+
+  const engineAfter = engineInstances[engineInstances.length - 1];
+  check(engineAfter === engineBefore, false, 'G: the new record is validated by a new engine instance, not the old one');
+  keyedApp.unmount();
+}
+
+// The page really does re-key the adopted form tree on every record load; the
+// experiment above is only meaningful together with this shipped wiring.
+const canvasSource = readSource('frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue');
+check(
+  canvasSource.includes(':key="layoutVisibilityRevision"'),
+  true,
+  'G: the canvas keys the adopted form tree by the layout revision',
+);
+const lifecycleSource = readSource('frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts');
+check(
+  lifecycleSource.split('nativeLayoutVisibilityRevision.value += 1;').length - 1,
+  2,
+  'G: every loaded record bumps that revision, so both create and edit loads re-create the tree',
+);
+
 surface.unmount();
 
 console.log(`[adopted_form_engine_decision_test] PASS cases=${cases} engine=real-tdesign-vue-next writes=counted`);

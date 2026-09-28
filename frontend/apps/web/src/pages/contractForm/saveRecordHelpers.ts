@@ -19,17 +19,61 @@ export type SaveRecordValidationResult = {
   submissionFeedback?: SubmissionFeedback;
 };
 
+/**
+ * Collapses concurrent calls onto a single in-flight promise.
+ *
+ * `scopeKey` is the identity of the business target the in-flight call belongs
+ * to (record, or unsaved draft). A call whose key differs from the in-flight
+ * one starts on its own: joining it would hand this caller another surface's
+ * result, which is exactly the "old operation took over the new context"
+ * failure. Without a key, the callers that are already scoped by construction
+ * keep the original collapse-everything behaviour.
+ */
 export function createSingleFlightSave<TArgs extends unknown[], T>(
   execute: (...args: TArgs) => Promise<T>,
+  scopeKey?: () => string,
 ): (...args: TArgs) => Promise<T> {
   let active: Promise<T> | null = null;
+  let activeScope: string | null = null;
   return (...args: TArgs) => {
-    if (active) return active;
-    active = execute(...args).finally(() => {
-      active = null;
+    const scope = scopeKey ? scopeKey() : '';
+    if (active && activeScope === scope) return active;
+    const started = execute(...args);
+    const tracked = started.finally(() => {
+      // Only the newest call may clear the slot: an older, superseded call that
+      // finishes later must not free a promise a newer call now owns.
+      if (active === tracked) {
+        active = null;
+        activeScope = null;
+      }
     });
-    return active;
+    active = tracked;
+    activeScope = scope;
+    return tracked;
   };
+}
+
+/**
+ * Canonical serialization of the values a save would submit.
+ *
+ * The save chain is only allowed to write values the official engine looked at.
+ * Comparing this string before and after an async validation proves the draft
+ * did not change underneath it: an edit that lands mid-validation changes the
+ * string and the save is abandoned instead of writing a value no rule saw. Key
+ * order is normalized so two reads of an unchanged draft compare equal.
+ */
+export function canonicalizeSubmissionValues(values: Record<string, unknown>): string {
+  const normalize = (input: unknown): unknown => {
+    if (input === null || input === undefined) return null;
+    if (typeof input !== 'object') return input;
+    if (Array.isArray(input)) return input.map(normalize);
+    const source = input as Record<string, unknown>;
+    return Object.keys(source).sort().reduce<Record<string, unknown>>((acc, key) => {
+      acc[key] = normalize(source[key]);
+      return acc;
+    }, {});
+  };
+  return JSON.stringify(normalize(values));
 }
 
 export async function validateBeforeSaveRecord(params: {
