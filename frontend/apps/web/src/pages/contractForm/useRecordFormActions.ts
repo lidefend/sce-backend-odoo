@@ -8,7 +8,7 @@ import {
   decodeServerFieldErrors,
   indexBusinessFieldErrors,
 } from '../../app/businessValidationError';
-import { createSingleFlightSave } from './saveRecordHelpers';
+import { buildRequiredFieldErrorPayload, createSingleFlightSave } from './saveRecordHelpers';
 
 type ActionDependencies = Record<string, any>;
 
@@ -130,6 +130,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     uploadPendingNativeAttachments,
     useFormPageLifecycleRuntime,
     v2ContractStore,
+    validateAdoptedFormSections,
     validateBeforeSaveRecord,
     validationErrors,
     validationFieldErrors,
@@ -431,6 +432,40 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     });
   }
 
+  /**
+   * Ask the adopted form sections to validate before anything is written.
+   *
+   * Their result joins the same error store the rest of the save chain uses, so
+   * there is one summary, one per-field message and one focus entry per rejected
+   * field. It never validates a second copy of the draft: the sections evaluate
+   * the values the page already holds.
+   */
+  async function runAdoptedFormValidation(): Promise<boolean> {
+    if (typeof validateAdoptedFormSections !== 'function') return true;
+    const outcome = await validateAdoptedFormSections();
+    if (!outcome?.ok) {
+      submissionFeedback.value = { kind: 'warn', message: '表单校验未能完成，请重试。' };
+      validationErrors.value = ['表单校验未能完成，请重试。'];
+      validationFieldErrors.value = {};
+      return false;
+    }
+    const fieldNames: string[] = Array.isArray(outcome.fieldNames) ? outcome.fieldNames : [];
+    if (!fieldNames.length) return true;
+    const labels = (layoutNodes.value as LayoutNode[]).reduce<Record<string, string>>((acc, node) => {
+      if (node.kind === 'field') acc[node.name] = node.label || node.name;
+      return acc;
+    }, {});
+    const payload = buildRequiredFieldErrorPayload(
+      fieldNames.map((name) => ({ name, label: labels[name] || name })),
+      { model: model.value, recordId: recordId.value },
+    );
+    validationErrors.value = payload.messages;
+    validationFieldErrors.value = payload.fieldErrors;
+    submissionFeedback.value = { kind: 'warn', message: '请先补充必填信息，再保存草稿或提交。' };
+    await focusFirstValidationError();
+    return false;
+  }
+
   async function saveRecord(
     refreshPolicy?: ContractAction['refreshPolicy'],
     options: { navigateAfterCreate?: boolean } = {},
@@ -440,6 +475,8 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     validationErrors.value = [];
     validationFieldErrors.value = {};
     formConflict.value = false;
+    const adoptedValidation = await runAdoptedFormValidation();
+    if (adoptedValidation === false) return false;
     const validation = await validateBeforeSaveRecord({
       collectSceneValidationPrecheckErrors: (fieldLabels) =>
         collectSceneValidationPrecheckErrors(fieldLabels),

@@ -10,6 +10,14 @@
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
+    <ScForm
+      ref="sectionFormRef"
+      :bare="!adoptedComposition"
+      class="template-form-section-form"
+      label-align="top"
+      :rules="adoptedRules"
+      :show-error-message="false"
+    >
     <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="displayFields.length">
         <div
@@ -78,7 +86,14 @@
               />
             </div>
           </div>
-          <div :class="['field-control-row', { 'field-control-row--favorite': field.favoriteToggle }]">
+          <ScFormItem
+            :bare="!adoptedComposition"
+            :class="['field-control-row', { 'field-control-row--favorite': field.favoriteToggle }]"
+            :name="field.name"
+            :rules="adoptedRules[field.name]"
+            :status="field.invalid ? 'error' : undefined"
+            :show-error-message="false"
+          >
             <ScIconButton
               v-if="field.favoriteToggle"
               class="field-favorite-toggle"
@@ -293,22 +308,28 @@
                 />
               </template>
             </div>
-          </div>
+          </ScFormItem>
           <p v-if="field.helpText" :id="fieldHelpId(field)" class="field-supporting-text">{{ field.helpText }}</p>
           <p v-if="field.errorText" :id="fieldErrorId(field)" class="field-error-text" role="alert">{{ field.errorText }}</p>
         </div>
       </template>
       <slot v-else />
     </div>
+    </ScForm>
   </ScCard>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, useId, useSlots } from 'vue';
+import { computed, inject, onBeforeUnmount, onMounted, ref, useId, useSlots } from 'vue';
 import { businessErrorKey } from '../../app/businessValidationError';
 import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
+import ScForm from '../design-system/ScForm.vue';
+import ScFormItem from '../design-system/ScFormItem.vue';
+import type { ScFormInstance } from '../design-system/scFormContract';
+import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
+import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -402,7 +423,38 @@ const props = withDefaults(defineProps<{
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
+const standardFormComposition = useOptionalStandardFormComposition();
+const sectionFormRef = ref<unknown>(null);
+const sectionId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
+/**
+ * Adopted sections render through the official form composition; every other
+ * section keeps the composition it had. `bare` makes the adapters transparent
+ * rather than emulated, so an unadopted surface is not silently half-adopted.
+ */
+const adoptedComposition = computed(() => standardFormComposition?.adopted.value === true);
+const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFormRules(props.fields) : {}));
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
+
+/**
+ * Generic validation of this section, reported as business field codes.
+ *
+ * The official engine decides when its rules run and how a failure is
+ * summarised; the caller decides what a rejected business field means. No
+ * second draft is kept: the rules read the values the page already holds.
+ */
+async function validateAdoptedSection(): Promise<string[]> {
+  if (!adoptedComposition.value) return [];
+  const instance = (sectionFormRef.value as ScFormInstance | null) || null;
+  if (!instance) return [];
+  return failedAdoptedFieldNames(await instance.validate());
+}
+
+onMounted(() => {
+  standardFormComposition?.register({ sectionId, validate: validateAdoptedSection });
+});
+onBeforeUnmount(() => {
+  standardFormComposition?.unregister(sectionId);
+});
 
 const emit = defineEmits<{
   (e: 'field-change', payload: FormSectionFieldChange): void;
@@ -1399,5 +1451,35 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Official composition adoption (TPL-01).
+   The official form owns section composition and generic validation; these
+   rules only stop its own chrome from competing with the contract-driven field
+   grid, which stays the authority for label, identity and error association. */
+.template-form-section-form {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.template-form-section-form :deep(.field-control-row.t-form__item) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.template-form-section-form :deep(.field-control-row .t-form__controls),
+.template-form-section-form :deep(.field-control-row .t-form__controls-content) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 </style>

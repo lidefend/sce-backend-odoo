@@ -652,6 +652,7 @@ import {
   type SubmissionFeedback,
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
+import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -1073,6 +1074,13 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
+/**
+ * Whether this page's standard form is served by the official composition, and
+ * the collected result of its generic validation. Presentation scope only: the
+ * adopted sections are asked one question before a write, and their answer joins
+ * the same error store the rest of the save chain uses.
+ */
+const standardFormComposition = createStandardFormCompositionRuntime(() => model.value);
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1868,6 +1876,7 @@ const {
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
+  validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields(),
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,
 });

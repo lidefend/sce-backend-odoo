@@ -157,14 +157,29 @@ export function collectRequiredFieldValidation(params: {
       label: String(node.label || node.descriptor?.string || node.name).trim(),
     }))
     .filter((item) => Boolean(item.name && item.label));
-  if (!missing.length) return { messages: [], fieldErrors: {} };
+  return buildRequiredFieldErrorPayload(missing, { model: params.model, recordId: params.recordId });
+}
+
+/**
+ * Turn rejected business field codes into the one error shape the form uses.
+ *
+ * Shared so a field rejected by the precheck and a field rejected by the
+ * official form engine produce the same summary, the same per-field message and
+ * the same store key. A second producer must never mean a second message or a
+ * second authority over the same field.
+ */
+export function buildRequiredFieldErrorPayload(
+  missing: readonly { name: string; label: string }[],
+  scope: { model: string; recordId: number | null },
+) {
+  if (!missing.length) return { messages: [] as string[], fieldErrors: {} as Record<string, BusinessFieldError> };
   const unique = Array.from(new Map(missing.map((item) => [item.name, item])).values()).slice(0, 5);
   const message = `保存前请填写：${unique.map((item) => item.label).join('、')}`;
   const fieldErrors: Record<string, BusinessFieldError> = {};
   unique.forEach((item) => {
     const target = createBusinessErrorTarget({
-      model: params.model,
-      recordId: params.recordId,
+      model: scope.model,
+      recordId: scope.recordId,
       fieldCode: item.name,
       row: null,
     });
