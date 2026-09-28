@@ -879,3 +879,24 @@ and uses no-dereference CAS deletion. It never reads/writes remote refs, changes
 files, removes environments, prunes objects, or claims the abandoned code was merged.
 Single-writer workspace governance remains required. Tests reuse
 `verify.workspace.branch.sync-gitee.unit`.
+
+### Owner-requested local main-only cleanup (2026-09-28)
+
+For an explicit request to retain only latest main locally, use
+`make workspace.retain-main-only EXPECTED_BRANCH=<current> EXPECTED_HEAD=<full SHA>
+GITEE_EXPECTED_MAIN=<full SHA> LOCAL_CLEANUP_BUNDLE=<external full bundle>`.
+Preview returns the full local branch/worktree inventory and plan SHA256. Apply requires
+`APPLY=1 LOCAL_CLEANUP_PLAN_SHA256=<reviewed hash>
+LOCAL_CLEANUP_CONFIRM=RETAIN_EXACT_MAIN_ONLY_WITH_RECOVERY`.
+This is the sole local exception for retiring release refs and switching to main as part
+of whole-workspace cleanup; main itself is retained. The existing branch tool verifies
+live Gitee main/local main, clean primary and sibling worktrees, exact heads, no symbolic
+refs and a full independently recoverable bundle covering every local branch. Unretained
+detached history is refused. After rechecking the plan it removes only inventoried linked
+worktrees, switches to main, and deletes inventoried non-main refs in a CAS transaction.
+No remote writes, object pruning, databases, services or volumes are touched. Ignored files
+in linked worktrees must first be preserved/removed through the reviewed file inventory.
+For the same explicit cleanup, ignored generated dependencies/cache may be deleted;
+other ignored files and local environment configs are moved to private external recovery
+storage. Symlinks are unlinked only, never followed into external runtime/evidence trees.
+Do not remove tracked files or traverse .git. Single-writer governance remains required.

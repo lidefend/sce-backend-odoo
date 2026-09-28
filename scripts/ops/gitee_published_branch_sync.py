@@ -223,10 +223,102 @@ def discard_local(root, branch, head, main, target, target_head, bundle,
                 local_ref="absent", worktree_changed=False)
 
 
+def main_only_plan(root, branch, head, main, allowed_urls=URLS):
+    """Inventory exact local refs/worktrees for an explicit retain-main-only request."""
+    root = Path(root).resolve()
+    if any(not re.fullmatch(r"[0-9a-f]{40}", v) for v in (head, main)):
+        raise RuntimeError("full exact SHA required")
+    if Path(out(root,"rev-parse","--show-toplevel")).resolve() != root:
+        raise RuntimeError("repository root mismatch")
+    if out(root,"branch","--show-current") != branch or out(root,"rev-parse","HEAD") != head:
+        raise RuntimeError("candidate identity changed")
+    if out(root,"remote","get-url","gitee-mirror") not in allowed_urls:
+        raise RuntimeError("unexpected Gitee remote")
+    if remote_refs(root,branch).get("refs/heads/main") != main:
+        raise RuntimeError("remote main drift")
+    if out(root,"rev-parse","refs/heads/main") != main:
+        raise RuntimeError("local main drift")
+    refs = {}
+    for line in out(root,"for-each-ref","--format=%(objectname) %(refname)","refs/heads").splitlines():
+        sha, ref = line.split(" ",1)
+        if ref != "refs/heads/main" and not re.fullmatch(r"refs/heads/(feature|fix|refactor|audit|release|codex)/[A-Za-z0-9_./-]+",ref):
+            raise RuntimeError("unexpected local branch")
+        if git(root,"symbolic-ref","-q",ref,check=False).returncode == 0:
+            raise RuntimeError("symbolic local branch refused")
+        refs[ref] = sha
+    worktrees=[]
+    for block in out(root,"worktree","list","--porcelain").split("\n\n"):
+        lines=block.splitlines();path=Path(lines[0].removeprefix("worktree "))
+        if path != root and (path.parent != root.parent or not path.name.startswith(root.name+"-")):
+            raise RuntimeError("worktree outside registered sibling scope")
+        if path.is_symlink() or not path.is_dir():
+            raise RuntimeError("unsafe worktree path")
+        if out(path,"status","--porcelain","--untracked-files=all"):
+            raise RuntimeError("dirty worktree refused")
+        sha=out(path,"rev-parse","HEAD")
+        if path != root and not any(line.startswith("branch ") for line in lines):
+            if git(root,"merge-base","--is-ancestor",sha,main,check=False).returncode:
+                raise RuntimeError("unretained detached worktree history")
+        worktrees.append(dict(path=str(path),head=sha))
+    if not worktrees or worktrees[0]['path'] != str(root):
+        raise RuntimeError("run from primary worktree")
+    return dict(root=str(root),branch=branch,head=head,main=main,refs=refs,worktrees=worktrees,
+                remote_writes=0,operation="retain_latest_main_only")
+
+
+def retain_main_only(root, branch, head, main, bundle, plan_sha256="", apply=False,
+                     confirm="", allowed_urls=URLS):
+    plan=main_only_plan(root,branch,head,main,allowed_urls)
+    digest=hashlib.sha256(json.dumps(plan,sort_keys=True).encode()).hexdigest()
+    if not apply: return dict(plan,plan_sha256=digest,writes=0)
+    if confirm != "RETAIN_EXACT_MAIN_ONLY_WITH_RECOVERY" or digest != plan_sha256:
+        raise RuntimeError("exact reviewed main-only plan required")
+    archive=Path(bundle);root=Path(root).resolve()
+    if not archive.is_absolute() or archive.is_symlink() or archive.resolve().is_relative_to(root):
+        raise RuntimeError("external recovery bundle required")
+    archive.parent.mkdir(parents=True,exist_ok=True)
+    if not archive.exists():git(root,"bundle","create",str(archive),"--branches")
+    if not archive.is_file() or archive.is_symlink():raise RuntimeError("regular bundle required")
+    git(root,"bundle","verify",str(archive))
+    with archive.open("rb") as stream:
+        size=0
+        while True:
+            line=stream.readline(65537);size+=len(line)
+            if not line or size>1048576:raise RuntimeError("invalid bundle header")
+            if line == b"\n":break
+            if line.startswith(b"-"):raise RuntimeError("incremental bundle refused")
+    heads=set(out(root,"bundle","list-heads",str(archive)).splitlines())
+    if any(sha+" "+ref not in heads for ref,sha in plan['refs'].items()):
+        raise RuntimeError("bundle does not cover all local refs")
+    bundle_sha=hashlib.sha256(archive.read_bytes()).hexdigest()
+    if main_only_plan(root,branch,head,main,allowed_urls) != plan:
+        raise RuntimeError("local cleanup plan drift")
+    # Ignored evidence must be moved/deleted by the reviewed file inventory first.
+    for entry in plan['worktrees']:
+        if out(Path(entry['path']),"ls-files","--others","--ignored","--exclude-standard"):
+            raise RuntimeError("worktree ignored files require preservation first")
+    removed=[]
+    for entry in plan['worktrees'][1:]:
+        git(root,"worktree","remove","--",entry['path']);removed.append(entry['path'])
+    git(root,"switch","--no-overwrite-ignore","main")
+    commands=["start","option no-deref"]
+    commands += ["delete "+ref+" "+sha for ref,sha in plan['refs'].items() if ref != "refs/heads/main"]
+    commands += ["prepare","commit",""]
+    result=subprocess.run(["git","update-ref","--stdin"],cwd=root,input="\n".join(commands),text=True,capture_output=True)
+    if result.returncode:raise RuntimeError("ref transaction refused; recovery bundle preserved")
+    if out(root,"for-each-ref","--format=%(refname)","refs/heads") != "refs/heads/main" or out(root,"rev-parse","HEAD") != main or out(root,"status","--porcelain"):
+        raise RuntimeError("main-only readback mismatch")
+    return dict(status="cleaned",main=main,local_branches=["main"],removed_worktrees=removed,
+                deleted_refs=[r for r in plan['refs'] if r != "refs/heads/main"],
+                bundle=str(archive),bundle_sha256=bundle_sha,remote_writes=0,plan_sha256=digest)
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     for name in ("root", "branch", "head", "main"):
         p.add_argument("--" + name, required=True)
+    p.add_argument("--retain-main-only", action="store_true")
+    p.add_argument("--plan-sha256", default="")
     p.add_argument("--discard-local", action="store_true")
     p.add_argument("--target")
     p.add_argument("--target-head")
@@ -242,7 +334,15 @@ if __name__ == "__main__":
     old_main = args.pop("old_main")
     discard = args.pop("discard_local")
     target, target_head, bundle = (args.pop(k) for k in ("target", "target_head", "bundle"))
-    if discard:
+    main_only = args.pop("retain_main_only")
+    plan_sha = args.pop("plan_sha256")
+    if main_only:
+        if discard or local_main or old_main or target or target_head or args.pop("remote_head") or args.pop("allow_absent") or not bundle:
+            p.error("main-only rejects other modes and requires recovery bundle")
+        result=retain_main_only(**args,bundle=bundle,plan_sha256=plan_sha)
+    elif plan_sha:
+        p.error("plan-sha256 requires retain-main-only")
+    elif discard:
         if local_main or old_main or args.pop("remote_head") or args.pop("allow_absent") or not all((target, target_head, bundle)):
             p.error("local abandonment requires target/head/bundle, rejects synchronization flags")
         result = discard_local(**args, target=target, target_head=target_head, bundle=bundle)

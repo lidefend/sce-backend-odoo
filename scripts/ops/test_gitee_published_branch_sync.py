@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from gitee_published_branch_sync import git, out, sync, CONFIRM, CONFIRM_UNPUBLISHED, sync_local_main, discard_local
+from gitee_published_branch_sync import git, out, sync, CONFIRM, CONFIRM_UNPUBLISHED, sync_local_main, discard_local, retain_main_only
 
 class SyncTests(unittest.TestCase):
     def setUp(self):
@@ -235,5 +235,80 @@ class DiscardLocalTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,"incremental"):
             self.discard(bundle=str(bundle),apply=True,confirm="DISCARD_EXACT_LOCAL_BRANCH_KEEP_RECOVERY")
         self.assertEqual(out(self.root,"rev-parse","fix/test"),self.head)
+
+class MainOnlyTests(unittest.TestCase):
+    setUp = SyncTests.setUp
+    commit = SyncTests.commit
+    def plan(self, **kw):
+        args=dict(root=self.root,branch="fix/test",head=self.head,main=self.main,
+                  bundle=str(Path(self.tmp.name)/"all.bundle"),allowed_urls={self.remote})
+        args.update(kw)
+        return retain_main_only(**args)
+    def apply(self, **kw):
+        plan=self.plan()
+        return self.plan(apply=True,plan_sha256=plan['plan_sha256'],confirm="RETAIN_EXACT_MAIN_ONLY_WITH_RECOVERY",**kw)
+    def test_keep_only_main_and_restore_every_branch(self):
+        git(self.root,"branch","release/old",self.head)
+        linked=Path(self.tmp.name)/"repo-old"
+        git(self.root,"worktree","add","--detach",str(linked),self.main)
+        before=out(self.root,"ls-remote","gitee-mirror")
+        r=self.apply()
+        self.assertEqual(out(self.root,"branch","--show-current"),"main")
+        self.assertEqual(out(self.root,"for-each-ref","--format=%(refname)","refs/heads"),"refs/heads/main")
+        self.assertFalse(linked.exists())
+        self.assertEqual(out(self.root,"ls-remote","gitee-mirror"),before)
+        restored=Path(self.tmp.name)/"restored"
+        git(self.root,"clone","--bare",r['bundle'],str(restored))
+        self.assertEqual(out(restored,"rev-parse","refs/heads/release/old"),self.head)
+    def test_preview_no_ref_or_worktree_changes(self):
+        p=self.plan();self.assertEqual(p['writes'],0)
+        self.assertEqual(out(self.root,"branch","--show-current"),"fix/test")
+        self.assertFalse((Path(self.tmp.name)/"all.bundle").exists())
+    def test_manifest_drift_denied(self):
+        p=self.plan();git(self.root,"branch","fix/new",self.main)
+        with self.assertRaisesRegex(RuntimeError,"reviewed"):
+            self.plan(apply=True,plan_sha256=p['plan_sha256'],confirm="RETAIN_EXACT_MAIN_ONLY_WITH_RECOVERY")
+    def test_dirty_linked_denied(self):
+        linked=Path(self.tmp.name)/"repo-old"
+        git(self.root,"worktree","add","--detach",str(linked),self.main)
+        (linked/"dirty").write_text("x")
+        with self.assertRaisesRegex(RuntimeError,"dirty"):
+            self.plan()
+    def test_ignored_linked_denied_before_removal(self):
+        linked=Path(self.tmp.name)/"repo-old"
+        git(self.root,"worktree","add","--detach",str(linked),self.main)
+        git(self.root,"config","core.excludesFile",str(Path(self.tmp.name)/"ignore"))
+        (Path(self.tmp.name)/"ignore").write_text("ignored-file\n")
+        (linked/"ignored-file").write_text("evidence")
+        with self.assertRaisesRegex(RuntimeError,"preservation"):
+            self.apply()
+        self.assertTrue(linked.exists())
+        self.assertEqual(out(self.root,"rev-parse","fix/test"),self.head)
+    def test_remote_main_drift_denied(self):
+        with self.assertRaisesRegex(RuntimeError,"remote main drift"):
+            self.plan(main=self.head)
+    def test_primary_ignored_main_path_preserved_before_worktree_removal(self):
+        linked=Path(self.tmp.name)/"repo-old"
+        git(self.root,"worktree","add","--detach",str(linked),self.main)
+        ignore=Path(self.tmp.name)/"ignore"
+        ignore.write_text("upstream\n")
+        git(self.root,"config","core.excludesFile",str(ignore))
+        (self.root/"upstream").write_text("local evidence must survive")
+        self.assertEqual(out(self.root,"status","--porcelain"),"")
+        with self.assertRaisesRegex(RuntimeError,"preservation"):
+            self.apply()
+        self.assertEqual((self.root/"upstream").read_text(),"local evidence must survive")
+        self.assertTrue(linked.exists())
+        self.assertEqual(out(self.root,"branch","--show-current"),"fix/test")
+        self.assertEqual(out(self.root,"rev-parse","fix/test"),self.head)
+    def test_symbolic_branch_denied(self):
+        git(self.root,"symbolic-ref","refs/heads/fix/alias","refs/heads/fix/test")
+        with self.assertRaisesRegex(RuntimeError,"symbolic"):
+            self.plan()
+    def test_incremental_bundle_denied(self):
+        base=out(self.root,"merge-base",self.main,self.head)
+        git(self.root,"bundle","create",str(Path(self.tmp.name)/"all.bundle"),"--branches","^"+base)
+        with self.assertRaisesRegex(RuntimeError,"incremental"):
+            self.apply()
 
 if __name__=="__main__": unittest.main()

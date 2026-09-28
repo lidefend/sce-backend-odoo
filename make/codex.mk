@@ -899,3 +899,7 @@ main.sync.gitee: guard.prod.forbid
 .PHONY: workspace.branch.discard-local
 workspace.branch.discard-local: guard.prod.forbid
 	@python3 scripts/ops/gitee_published_branch_sync.py --discard-local --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(EXPECTED_LOCAL_MAIN)" --target "$(DISCARD_BRANCH)" --target-head "$(DISCARD_HEAD)" --bundle "$(DISCARD_RECOVERY_BUNDLE)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(DISCARD_CONFIRM)",)
+
+.PHONY: workspace.retain-main-only
+workspace.retain-main-only: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --retain-main-only --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --bundle "$(LOCAL_CLEANUP_BUNDLE)" --plan-sha256 "$(LOCAL_CLEANUP_PLAN_SHA256)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(LOCAL_CLEANUP_CONFIRM)",)
