@@ -27,7 +27,11 @@
             @compositionstart="$emit('composition-start')"
             @compositionend="$emit('composition-end', $event)"
             @input="(value) => $emit('search-input', value)"
-          />
+          >
+            <template #suffix>
+              <ScIcon name="search" :size="16" />
+            </template>
+          </ScInput>
         </label>
         <ScButton type="submit" :disabled="loading">{{ searchLabel }}</ScButton>
         <ScButton v-if="searchValue" variant="ghost" :disabled="loading" @click="$emit('search-clear')">清除</ScButton>
@@ -43,6 +47,7 @@
 import type { StyleValue } from 'vue';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
+import ScIcon from '../design-system/ScIcon.vue';
 import ScInput from '../design-system/ScInput.vue';
 
 defineProps<{

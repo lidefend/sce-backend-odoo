@@ -6,6 +6,8 @@
     data-product-page-mode="form" data-semantic-component="ContractFormPage"
     :data-state="status"
     :data-form-model="model"
+    :data-detail-composition="standardDetailComposition.decision.value.composition"
+    :data-detail-composition-reason="standardDetailComposition.decision.value.reason"
     :data-form-record="recordId ? String(recordId) : 'new'"
     :data-form-action-id="String(actionId || '')"
     :data-form-menu-id="String(Number(route.query.menu_id || 0) || '')"
@@ -653,6 +655,7 @@ import {
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
+import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -1193,6 +1196,8 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
     requestedProfile: requestedRenderProfile.value,
   });
 });
+/** Official detail composition adoption for this page; presentation scope only. */
+const standardDetailComposition = createStandardDetailCompositionRuntime(() => model.value, () => renderProfile.value);
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();

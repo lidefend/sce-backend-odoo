@@ -18,7 +18,46 @@
       :rules="adoptedRules"
       :show-error-message="false"
     >
-    <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
+    <!-- 已采纳的只读详情：官方 detail 组合，t-card(:bordered="false") 内以
+         t-descriptions 逐项呈现该 section 的契约字段事实（label = 字段标签，
+         值槽复用与事实网格同一份只读取值：关系入口、富文本、办理动作、纯文本）。
+         可编辑与明细控制不在只读事实的适用范围内，因此这里不复制它们。 -->
+    <ScDescriptions
+      v-if="adoptedDetailFactLayout"
+      class="template-form-section-descriptions"
+      data-detail-facts="official-standard-detail"
+      :bordered="false"
+      :column="detailFactColumns"
+      :items="displayFields"
+    >
+      <template #item="{ item }">
+        <ScButton
+          v-if="detailFactRelationEntry(item)"
+          type="button"
+          appearance="auth-link"
+          variant="ghost"
+          :title="readonlyText(detailFactField(item))"
+          :aria-label="detailFactField(item).many2oneOpenLabel || `打开${detailFactField(item).label}`"
+          @click="emitFieldChange(detailFactField(item), detailFactField(item).many2oneOpenToken)"
+        ><span class="readonly-relation-label">{{ readonlyText(detailFactField(item)) }}</span></ScButton>
+        <div
+          v-else-if="detailFactField(item).type === 'html'"
+          class="readonly-value readonly-value--html"
+          v-html="readonlyHtml(detailFactField(item))"
+        />
+        <div
+          v-else-if="taskActionFor(detailFactField(item))"
+          role="button"
+          tabindex="0"
+          class="readonly-value readonly-value--action"
+          :aria-label="`${taskActionLabel(detailFactField(item))}（办理动作）`"
+          @click="taskActionRun(detailFactField(item))"
+          @keydown.enter.prevent="taskActionRun(detailFactField(item))"
+        >{{ taskActionLabel(detailFactField(item)) }}</div>
+        <span v-else class="readonly-value">{{ readonlyText(detailFactField(item)) }}</span>
+      </template>
+    </ScDescriptions>
+    <div v-else :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="displayFields.length">
         <div
           v-for="(field, index) in displayFields"
@@ -321,15 +360,18 @@
 
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, useId, useSlots } from 'vue';
+import { useNarrowViewport } from '../../composables/useNarrowViewport';
 import { businessErrorKey } from '../../app/businessValidationError';
 import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
+import ScDescriptions from '../design-system/ScDescriptions.vue';
 import ScForm from '../design-system/ScForm.vue';
 import ScFormItem from '../design-system/ScFormItem.vue';
 import type { ScFormInstance } from '../design-system/scFormContract';
 import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
 import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
+import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -424,6 +466,7 @@ const props = withDefaults(defineProps<{
 
 const sceneUiKit = useOptionalSceneUiKit();
 const standardFormComposition = useOptionalStandardFormComposition();
+const standardDetailComposition = useOptionalStandardDetailComposition();
 const sectionFormRef = ref<unknown>(null);
 const sectionId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
 /**
@@ -433,6 +476,34 @@ const sectionId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
  */
 const adoptedComposition = computed(() => standardFormComposition?.adopted.value === true);
 const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFormRules(props.fields) : {}));
+/**
+ * Whether this readonly section's facts render through the official detail
+ * composition.
+ *
+ * It reuses the same page-provided decisions as the form composition: the
+ * layout only applies to a section that is both adopted and presented as
+ * readonly facts, so an editable or a non-pilot surface keeps its previous
+ * composition and a list of fields is never half-converted.
+ */
+const adoptedDetailFactLayout = computed(() => (
+  standardDetailComposition?.adopted.value === true
+  && adoptedComposition.value
+  && props.preferReadonlyFacts
+  && !props.fieldSelectionMode
+  && !props.fieldConfigEditable
+  && allFieldsReadonly.value
+  && displayFields.value.length > 0
+));
+
+/**
+ * The official detail page arranges its facts in a label/value table. A narrow
+ * viewport keeps one fact per row so a long business value cannot be squeezed
+ * into half a phone screen; the contract's own column count is kept elsewhere.
+ */
+const narrowDetailFactViewport = useNarrowViewport(640);
+const detailFactColumns = computed(() => (
+  narrowDetailFactViewport.value ? 1 : Math.max(1, Math.min(3, Number(props.columns) || 2))
+));
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
 
 /**
@@ -825,6 +896,21 @@ function taskActionRun(field: FormSectionFieldSchema) {
 
 function readonlyHtml(field: FormSectionFieldSchema) {
   return sanitizeReadonlyHtml(field.value);
+}
+
+/**
+ * The descriptions slot hands back one item; the item *is* the contract field
+ * the entry was built from, so the value is read from the same object the fact
+ * grid reads and stays reactive. The cast exists only because the primitive's
+ * slot payload is generic.
+ */
+function detailFactField(item: unknown): FormSectionFieldSchema {
+  return item as FormSectionFieldSchema;
+}
+
+function detailFactRelationEntry(item: unknown): boolean {
+  const field = detailFactField(item);
+  return Boolean(field.many2oneOpenToken && !fieldHasEmptyValue(field));
 }
 
 function fieldActionsFor(field: FormSectionFieldSchema) {
@@ -1274,6 +1360,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   display: grid;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+}
+
+/* 官方 detail 组合：只读事实以 t-descriptions 的 label/value 表格呈现。
+   取值沿用同一份只读呈现样式（.readonly-value / 关系入口 / 富文本），因此
+   这里只负责表格自身的容器约束，不对厂商内部元素做后代选择器覆盖。 */
+.template-form-section-descriptions {
+  width: 100%;
   min-width: 0;
 }
 

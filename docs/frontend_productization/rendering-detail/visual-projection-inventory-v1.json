@@ -1419,7 +1419,7 @@
     },
     {
       "category": "collection",
-      "digest": "ddaa3a1e21e5f21616bd6a3630142e434de80b04951c2dc0582b4cbaf3a153d5",
+      "digest": "14c8e5c5de5ff9f92a461aa7cadcc964eb438232d385bd50aa2005a1361b50ee",
       "nativeStyleSelectors": [],
       "path": "components/product-list/ProductListHeader.vue",
       "referenceNativeStyleSelectors": [
@@ -1434,7 +1434,20 @@
       "scComponents": [
         "ScActionBar",
         "ScButton",
+        "ScIcon",
         "ScInput"
+      ]
+    },
+    {
+      "category": "collection",
+      "digest": "a6d2c929e5375c8ecbf530be2eb6063d6b520ee2934d8ec49b0210782cfdfc4d",
+      "nativeStyleSelectors": [],
+      "path": "components/product-list/ProductListSurface.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScCard"
       ]
     },
     {
@@ -1780,7 +1793,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "86bcb8a96bf7da92fd3d27ea6a6e96b6a35333e409857d138fc8bb7bd3070b9e",
+      "digest": "57906b200218fef7c94096229fae41eb85c509070f0d629fd431ec871f549886",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1802,6 +1815,7 @@
         "ScButton",
         "ScCard",
         "ScDateField",
+        "ScDescriptions",
         "ScFileField",
         "ScForm",
         "ScFormItem",
@@ -2013,7 +2027,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6fb35f38ddfe75bcd30dad7bd607ac239bb5a524599868ba17fb211fdec9f241",
+      "digest": "7304ed643832e379d1a6e476698659a71819e4e13b244212b657cc254c8ed6b0",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2037,7 +2051,7 @@
     },
     {
       "category": "collection",
-      "digest": "4568bd7ed6ca1961bd0e6085dbf9fc3736f586d34bb584aab16c8333b2530203",
+      "digest": "f0609ea27eba2880e8b0f179c97c7e2643a5584c8a7a68f42049265624c3cd05",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2886,7 +2900,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "bd615c97fa2129a24e0419f80f4e16fd49a75567b9374c4931761184f442ca54",
+  "currentInputDigest": "8a9ff9e9fdc9e1b26a4421a63fcd98f0c737c03a6951b3dd758eec198ea0acde",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3118,9 +3132,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 201,
+    "changedSourceCount": 202,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 220,
+    "currentSourceCount": 221,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

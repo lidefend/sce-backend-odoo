@@ -2,6 +2,8 @@
   <ScPage
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
+    :data-list-composition="listComposition.composition"
+    :data-list-composition-reason="listComposition.reason"
     :aria-busy="loading || undefined"
   >
     <ProductLoadingSkeleton
@@ -84,6 +86,7 @@
       />
     </template>
     <template v-else>
+      <ProductListSurface :adopted="listComposition.adopted">
       <ListSurfaceHeader
         :loading="loading"
         :show-search="showFallbackPlainSearch"
@@ -281,6 +284,7 @@
         @page-select="selectPage"
       />
     </section>
+      </ProductListSurface>
 
     </template>
     <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
@@ -305,11 +309,13 @@ import CollectionRowCell, { type CollectionRowCellKind } from '../components/pro
 import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
+import ProductListSurface from '../components/product-list/ProductListSurface.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
+import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
@@ -517,6 +523,9 @@ const errorCopy = computed(() =>
   ),
 );
 const emptyCopy = computed(() => resolveEmptyCopy('list'));
+// Presentation scope only: which containers this already-authorized list is
+// composed from. It never decides columns, records, actions or permissions.
+const listComposition = computed(() => resolveStandardListComposition({ model: props.model }));
 const createLabelText = computed(() => props.createLabel || uiLabel('create', '新建'));
 const hasActiveConditions = computed(() =>
   props.hasActiveConditions === true
