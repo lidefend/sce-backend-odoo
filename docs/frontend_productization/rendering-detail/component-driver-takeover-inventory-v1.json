@@ -524,12 +524,15 @@
       "adapterKeys": [
         "ScForm",
         "ScFormField",
-        "ScFormItem"
+        "ScFormItem",
+        "ScFormItemProps",
+        "ScFormProps"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScForm"
+            "ScForm",
+            "ScFormProps"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScForm.vue"
         },
@@ -541,7 +544,8 @@
         },
         {
           "semanticAdapters": [
-            "ScFormItem"
+            "ScFormItem",
+            "ScFormItemProps"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue"
         }
@@ -551,7 +555,7 @@
         "TDesignFormItem"
       ],
       "officialComponent": "form",
-      "productionConsumerCount": 8,
+      "productionConsumerCount": 12,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,7 +1388,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "cf1df7db3249c6ec9ba4d0a5ea1b118ac7c7c71eaff457e62ea2ad496015bb99",
+  "inputDigest": "9809de65fa24222e5b482eebc7997b6a9c651da4adc4e081e2e98d653c15d92f",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

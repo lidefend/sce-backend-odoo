@@ -1,0 +1,338 @@
+/**
+ * Executable proof for FE-TPL-01: the official form composition is adopted for
+ * the verified surface, its generic validation really gates a save, and every
+ * protection the merged fixes established is still the one in the chain.
+ *
+ * The chain under test is the shipped one:
+ *
+ *   adoption policy -> ScForm/ScFormItem adapter -> buildContractFormRules
+ *                   -> engine result -> failedAdoptedFieldNames
+ *                   -> buildRequiredFieldErrorPayload (one error store)
+ *                   -> the existing focus entry
+ *
+ * The counter-examples fail on a composition that claims adoption while
+ * validating a second copy of the draft, on a rule that disagrees with the
+ * pre-existing emptiness authority, on an error that produces a second message
+ * or store key for the same field, and on a section that silently lets a save
+ * through when it cannot answer.
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+import {
+  STANDARD_FORM_COMPOSITION_PILOT_MODELS,
+  resolveStandardFormComposition,
+} from '../src/app/presentation/standardFormComposition';
+import {
+  adoptedValidationValue,
+  buildContractFormRules,
+  contractFormFieldRules,
+  failedAdoptedFieldNames,
+  requiredFieldMessage,
+} from '../src/components/template/contractFormValidationRules';
+import { createStandardFormValidationRegistry } from '../src/pages/contractForm/standardFormCompositionRuntime';
+import {
+  buildRequiredFieldErrorPayload,
+  collectRequiredFieldValidation,
+} from '../src/pages/contractForm/saveRecordHelpers';
+import { businessErrorKey } from '../src/app/businessValidationError';
+import type { FormSectionFieldSchema } from '../src/components/template/formSection.types';
+import type { LayoutNode } from '../src/pages/contractForm/types';
+
+let cases = 0;
+const check = (actual: unknown, expected: unknown, label: string) => {
+  assert.equal(actual, expected, label);
+  cases += 1;
+};
+const checkDeep = (actual: unknown, expected: unknown, label: string) => {
+  assert.deepEqual(actual, expected, label);
+  cases += 1;
+};
+
+const locateSource = (relative: string) => {
+  let dir = process.cwd();
+  for (let depth = 0; depth < 4; depth += 1) {
+    const candidate = path.join(dir, relative);
+    if (fs.existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return '';
+};
+const readSource = (relative: string) => fs.readFileSync(locateSource(relative), 'utf8');
+
+const field = (overrides: Partial<FormSectionFieldSchema>): FormSectionFieldSchema => ({
+  key: String(overrides.name || 'field'),
+  name: String(overrides.name || 'field'),
+  label: String(overrides.label || '项目名称'),
+  type: String(overrides.type || 'char'),
+  required: false,
+  readonly: false,
+  ...overrides,
+});
+
+// ---------------------------------------------------------------------------
+// Part 1 — adoption is an explicit scope, never an inference
+// ---------------------------------------------------------------------------
+check(resolveStandardFormComposition({ model: 'project.project' }).adopted, true, 'the verified surface is adopted');
+check(
+  resolveStandardFormComposition({ model: 'project.project' }).composition,
+  'official-standard-form',
+  'the adopted surface reports the official composition',
+);
+check(
+  resolveStandardFormComposition({ model: 'project.project' }).reason,
+  'pilot-model-adopted',
+  'adoption reports the scope it came from',
+);
+for (const other of ['payment.request', 'res.partner', '']) {
+  check(resolveStandardFormComposition({ model: other }).adopted, false, `adoption does not leak to ${other || 'an empty model'}`);
+  check(
+    resolveStandardFormComposition({ model: other }).reason,
+    'outside-pilot-scope',
+    'a surface outside the verified scope keeps the composition it had',
+  );
+}
+check(
+  resolveStandardFormComposition({ model: undefined }).adopted,
+  false,
+  'a page without a declared model is never adopted by default',
+);
+checkDeep(
+  [...STANDARD_FORM_COMPOSITION_PILOT_MODELS],
+  ['project.project'],
+  'the adopted scope is exactly the verified surface',
+);
+
+const policySource = readSource('frontend/apps/web/src/app/presentation/standardFormComposition.ts');
+check(/from ['"]vue['"]/.test(policySource), false, 'the adoption policy is independent of a rendering framework');
+check(/\bdocument\./.test(policySource), false, 'the adoption policy does not read the DOM');
+check(/tdesign/i.test(policySource), false, 'the adoption policy is independent of the component vendor');
+
+// ---------------------------------------------------------------------------
+// Part 2 — the rule engine and the pre-existing authority cannot disagree
+// ---------------------------------------------------------------------------
+const requiredName = field({ name: 'name', label: '项目名称', required: true });
+checkDeep(
+  contractFormFieldRules(requiredName).map((rule) => rule.message),
+  [requiredFieldMessage('项目名称')],
+  'a required field declares the engine message the form already shows',
+);
+check(contractFormFieldRules(field({ name: 'code', required: false })).length, 0, 'an optional field declares no rule');
+check(
+  contractFormFieldRules(field({ name: 'code', required: true, readonly: true })).length,
+  0,
+  'a read-only position never becomes a correction site',
+);
+check(contractFormFieldRules(field({ name: '  ', required: true })).length, 0, 'a nameless field declares no rule');
+
+// The engine's answer and the save precheck's answer must be the same answer.
+const emptinessProbes: { value: unknown; type: string; empty: boolean }[] = [
+  { value: '', type: 'char', empty: true },
+  { value: '   ', type: 'char', empty: true },
+  { value: null, type: 'char', empty: true },
+  { value: false, type: 'char', empty: true },
+  { value: 'x', type: 'char', empty: false },
+  { value: 0, type: 'integer', empty: false },
+  { value: 0, type: 'many2one', empty: true },
+  { value: 12, type: 'many2one', empty: false },
+  { value: false, type: 'boolean', empty: false },
+  { value: [], type: 'many2many', empty: true },
+  { value: [1], type: 'many2many', empty: false },
+];
+for (const probe of emptinessProbes) {
+  const probeField = field({ name: 'probe', required: true, type: probe.type, inputValue: probe.value as never });
+  const rule = contractFormFieldRules(probeField)[0];
+  check(
+    rule.validator(),
+    !probe.empty,
+    `the engine accepts exactly what the precheck accepts for ${probe.type}=${JSON.stringify(probe.value)}`,
+  );
+}
+check(
+  adoptedValidationValue(field({ name: 'a', inputValue: 'draft', value: 'stored' })),
+  'draft',
+  'a rule reads the draft the page already holds',
+);
+check(
+  adoptedValidationValue(field({ name: 'a', value: 'stored' })),
+  'stored',
+  'a rule falls back to the value when no input projection exists',
+);
+
+checkDeep(
+  Object.keys(buildContractFormRules([
+    field({ name: 'name', required: true }),
+    field({ name: 'code', required: false }),
+    field({ name: 'partner_id', required: true, type: 'many2one' }),
+  ])),
+  ['name', 'partner_id'],
+  'the section only declares rules for the fields that take part',
+);
+
+// ---------------------------------------------------------------------------
+// Part 3 — reading the engine result, including what it cannot tell us
+// ---------------------------------------------------------------------------
+checkDeep(failedAdoptedFieldNames(true), [], 'the engine reports a pass as true');
+checkDeep(
+  failedAdoptedFieldNames({ name: [{ result: false, message: '项目名称不能为空' }] }),
+  ['name'],
+  'the engine reports rejected field codes',
+);
+checkDeep(failedAdoptedFieldNames({}), [], 'an empty result object rejects nothing');
+checkDeep(failedAdoptedFieldNames(undefined), [], 'a missing result rejects nothing');
+checkDeep(failedAdoptedFieldNames('unexpected'), [], 'an unrecognised result is not guessed at');
+checkDeep(failedAdoptedFieldNames(['name']), [], 'a list is not read as an error map');
+
+// ---------------------------------------------------------------------------
+// Part 4 — one rejection produces one message, one key, one focus entry
+// ---------------------------------------------------------------------------
+const rejected = [{ name: 'name', label: '项目名称' }];
+const scope = { model: 'project.project', recordId: 501 };
+const adoptedPayload = buildRequiredFieldErrorPayload(rejected, scope);
+const precheckLayout: LayoutNode[] = [{ kind: 'field', name: 'name', label: '项目名称', readonly: false, descriptor: { required: true, type: 'char' } } as unknown as LayoutNode];
+const precheckPayload = collectRequiredFieldValidation({
+  formData: { name: '' },
+  isWritableFieldVisible: () => true,
+  layoutNodes: precheckLayout,
+  model: 'project.project',
+  normalizeFieldValue: (_name, value) => value,
+  recordId: 501,
+  values: { name: '' },
+});
+checkDeep(adoptedPayload.messages, precheckPayload.messages, 'an adopted rejection speaks the same summary as the precheck');
+checkDeep(Object.keys(adoptedPayload.fieldErrors), Object.keys(precheckPayload.fieldErrors), 'an adopted rejection keys the store the same way');
+check(
+  adoptedPayload.fieldErrors.name.message,
+  precheckPayload.fieldErrors.name.message,
+  'an adopted rejection shows the same field message as the precheck',
+);
+check(
+  adoptedPayload.fieldErrors.name.target.model,
+  'project.project',
+  'an adopted rejection names the owning model',
+);
+check(adoptedPayload.fieldErrors.name.target.recordId, 501, 'an adopted rejection names the owning record');
+check(adoptedPayload.fieldErrors.name.target.fieldCode, 'name', 'an adopted rejection names the business field');
+check(businessErrorKey(adoptedPayload.fieldErrors.name.target), 'name', 'an adopted rejection uses the page display key');
+checkDeep(buildRequiredFieldErrorPayload([], scope), { messages: [], fieldErrors: {} }, 'nothing rejected is nothing reported');
+
+// ---------------------------------------------------------------------------
+// Part 5 — the registry fails closed and never validates silently
+// ---------------------------------------------------------------------------
+const registry = createStandardFormValidationRegistry(() => 'project.project');
+check(registry.adopted.value, true, 'the page runtime reports the adopted scope');
+let validated = 0;
+registry.register({ sectionId: 'a', validate: async () => { validated += 1; return ['name', 'name']; } });
+registry.register({ sectionId: 'b', validate: async () => { validated += 1; return ['partner_id']; } });
+const collected = await registry.validateAdoptedFields();
+check(collected.ok, true, 'a registry whose sections answered reports ok');
+checkDeep(collected.fieldNames, ['name', 'partner_id'], 'rejected codes are collected once per field across sections');
+check(validated, 2, 'every registered section is asked');
+registry.unregister('a');
+const afterUnregister = await registry.validateAdoptedFields();
+checkDeep(afterUnregister.fieldNames, ['partner_id'], 'an unregistered section stops contributing');
+registry.register({ sectionId: 'boom', validate: async () => { throw new Error('engine unavailable'); } });
+const failed = await registry.validateAdoptedFields();
+check(failed.ok, false, 'a section that cannot answer blocks the save instead of passing it');
+checkDeep(failed.fieldNames, [], 'a failed validation reports no field it cannot name');
+
+const unadopted = createStandardFormValidationRegistry(() => 'payment.request');
+check(unadopted.adopted.value, false, 'an unverified surface is not adopted');
+unadopted.register({ sectionId: 'x', validate: async () => ['name'] });
+const unadoptedResult = await unadopted.validateAdoptedFields();
+checkDeep(unadoptedResult, { ok: true, fieldNames: [] }, 'an unadopted surface contributes nothing to the save gate');
+
+const runtimeSource = readSource('frontend/apps/web/src/pages/contractForm/standardFormCompositionRuntime.ts');
+check(/provide\(/.test(runtimeSource), true, 'the page-level runtime provides the registry to the sections');
+check(
+  runtimeSource.indexOf('createStandardFormValidationRegistry') < runtimeSource.indexOf('provide('),
+  true,
+  'the registry is created before it is provided',
+);
+
+// ---------------------------------------------------------------------------
+// Part 6 — the shipped call sites are the ones under test
+// ---------------------------------------------------------------------------
+const sectionSource = readSource('frontend/apps/web/src/components/template/FormSection.vue');
+check(sectionSource.includes('<ScForm'), true, 'the section renders the official form container');
+check(sectionSource.includes('<ScFormItem'), true, 'the section renders the official form item');
+check(
+  sectionSource.includes(':bare="!adoptedComposition"'),
+  true,
+  'an unadopted section keeps the exact DOM it had instead of a half-applied form',
+);
+check(sectionSource.includes('instance.validate()'), true, 'the section validates through the engine, not a local rule checker');
+check(
+  sectionSource.includes('data-validation-target'),
+  true,
+  'the correction positions the error layer resolves are still registered',
+);
+check(
+  sectionSource.includes('standardFormComposition?.register({'),
+  true,
+  'the section registers its validation with the page runtime',
+);
+check(
+  sectionSource.includes('onBeforeUnmount(() => {'),
+  true,
+  'a section that leaves stops being validated',
+);
+check(
+  sectionSource.includes(':rules="adoptedRules[field.name]"'),
+  true,
+  'the field item receives the rules declared for that business field',
+);
+
+const actionsSource = readSource('frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts');
+check(
+  actionsSource.indexOf('await runAdoptedFormValidation()') < actionsSource.indexOf('await validateBeforeSaveRecord({'),
+  true,
+  'the adopted engine is asked before the write, not after it',
+);
+check(
+  actionsSource.includes("typeof validateAdoptedFormSections !== 'function'"),
+  true,
+  'a page without the runtime is not silently forced through a missing gate',
+);
+check(
+  actionsSource.includes('validationFieldErrors.value = payload.fieldErrors;'),
+  true,
+  'an adopted rejection enters the single error store',
+);
+check(
+  actionsSource.includes('await focusFirstValidationError();'),
+  true,
+  'an adopted rejection uses the existing focus entry',
+);
+check(
+  actionsSource.includes("payload.messages"),
+  true,
+  'an adopted rejection reaches the form-level summary',
+);
+check(
+  actionsSource.includes('表单校验未能完成，请重试。'),
+  true,
+  'a section that cannot answer stops the save with a form-level message',
+);
+
+const pageSource = readSource('frontend/apps/web/src/pages/ContractFormPage.vue');
+check(
+  pageSource.includes('createStandardFormCompositionRuntime(() => model.value)'),
+  true,
+  'the page runtime is scoped to the model the contract declared',
+);
+check(
+  pageSource.includes('validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields()'),
+  true,
+  'the page hands the adopted validation to the save chain',
+);
+
+const scFormSource = readSource('frontend/apps/web/src/components/design-system/ScForm.vue');
+for (const method of ['clearValidate', 'reset', 'setValidateMessage', 'submit', 'validate', 'validateOnly']) {
+  check(scFormSource.includes(`${method}:`), true, `the adapter exposes the engine method ${method}`);
+}
+check(/tdesign-vue-next/.test(scFormSource), false, 'the adapter reaches the vendor only through the project bridge');
+check(/from ['"]\.\/tdesignPrimitiveBridge['"]/.test(scFormSource), true, 'the adapter names the project bridge as its only vendor boundary');
+
+console.log(`[standard-form-composition-adoption] explicit adoption scope, shared emptiness authority, engine result reading, single error store, fail-closed registry, shipped call sites: ${cases} cases passed`);
