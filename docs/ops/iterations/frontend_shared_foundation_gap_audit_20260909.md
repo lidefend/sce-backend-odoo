@@ -3374,3 +3374,141 @@ view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
 ### 状态
 
 本段**批次验收完成（含自查更正）**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## FE-TPL-07 续：只读记录页的官方详情事实不可达（2026-09-30，已修复）
+
+分支 `feature/web-official-template-adoption`；修复前候选 HEAD `35d1f4d13`；修复后候选 `25b31e714`。
+本段是 `## FE-TPL-07`（2026-09-29）同一职责范围的续段，不新建专题、不改业务矩阵。
+
+### 1. 七问
+
+- Formal Product Layer：P0 平台通用前端表达（页面类型 → 组合采纳的消费边界）。
+- Layer Target：`app/presentation/standardDetailComposition.ts`、`components/template/FormSection.vue`；
+  只读探针 `frontend/apps/web/scripts/standard_page_type_browser.mjs`。
+- Standard vs User-Specific：跨模型通用机制，不含行业字段语义、客户偏好或管理员配置。
+- Why Here：「页面级采纳」与「section 是否有资格作为事实呈现」是两个判断，此前被折成一个恒假的合取。
+- Why Not Elsewhere：不涉及后端字段、事务或权限；也不需要每个页面各自决定，边界属于呈现组合层。
+- Blast Radius：所有 `preferReadonlyFacts` 的只读记录页（合同、付款、项目等）；可编辑表单页不受影响。
+
+### 2. 真实缺陷（先有运行证据，再改代码）
+
+修复前候选 `35d1f4d13` 在 5180 生产模式实测 `/r/payment.request/1813`（受管角色 `fixture_role_finance`）：
+
+| 观察 | 值 |
+|---|---|
+| `data-detail-composition` / `-reason` | `official-standard-detail` / `contract-readonly-record-view`（页面级采纳为**真**） |
+| `[data-detail-facts="official-standard-detail"]` | **0** |
+| `[data-semantic-component="ScDescriptions"]` | **0**；旧网格 `.template-form-section-grid` **10** 行 |
+| 10 个 section 的 `data-detail-section-reason` | 全部 `outside-standard-detail` |
+
+缺陷表达式（`FormSection.vue`）：`standardDetailComposition.adopted && standardFormComposition.adopted`。
+两者在 `20781fe2d` 之后同源于 `standardPageType.ts` 对同一页面的**单一**分类——`record-form`
+或 `record-detail`，互斥——因此该合取恒假，**官方只读详情在任何页面都不可能被渲染**。
+
+引入与可见窗口（已用 git 核实，不依赖推断）：
+
+- `308a85a60` 引入该合取：当时 form 采纳来自**模型试点表**、detail 采纳来自「试点模型 + readonly profile」，
+  两者可同时为真，`sc.general.contract` 只读页的 facts 可见（与本文件 TPL-03 记录的 record 11 `facts=7` 一致）。
+- `7f7392584` 把该合取搬进 `resolveStandardDetailSection`，同时加入 section 字段资格
+  （含专用控件的 section 不得降级为纯文本）。
+- `20781fe2d` 让两个采纳项都由**同一** `StandardPageTypeDecision` 推导 → 合取变为恒假。
+  **本文件此前记录的只读详情事实结论（`fc0afcb32` 及更早候选、含 `tpl07-1790669324381` 的
+  「付款非零 facts」）都不属于包含 `20781fe2d` 的候选，不能沿用。**
+
+### 3. 修复
+
+新增 `resolveStandardDetailFactLayout(decision, section)`：页面级采纳**只取** detail 决策，section 资格
+（设计模式、非只读、空 section、关系/附件集合、专用控件、未知类型）保持独立。`ScForm :bare` 仍跟随
+form 组合，因此只读页用官方事实呈现，但**不**借用可编辑表单的容器与规则；可编辑记录表单因页面级
+detail 采纳为假而继续走控件。`standardFormComposition.ts` 的注释同步更正（不再声称非采纳 section
+没有 facts 布局）。未改任何业务规则：字段、取值与读权限仍来自有效契约与后端。
+
+### 4. 负例（先证明回归真的抓得住）
+
+临时把合取写回 `FormSection.vue` → `verify.frontend.standard_collection_composition.unit`
+**FAIL**（源码守卫 `actual: true, expected: false`）；恢复后 **PASS cases=113**（原 102）。
+新增行为断言以 `StandardPageTypeDecision` 为输入、以 section 渲染结论为输出：
+契约声明的 readonly record 采纳 facts；可编辑记录表单 / 集合页 / 无 page 决策 / 编辑 section /
+设计器 / 关系集合分别落在 `outside-standard-detail` / `editable-section` / `configuration-editor` /
+`relation-collection-extension`。此前只有「采纳策略纯函数」和「源码里有某个守卫」两类断言，
+**页面级采纳能否在 section 看见**从无覆盖——这是本缺陷得以存活的直接原因。
+
+### 5. 探测适配（不降低断言）
+
+`form()` 的就绪条件原先恒为 `[data-form-composition="official-standard-form"][data-state="ok"]`；
+在只读页这要求一个契约不可能同时声明的模式，只读步骤只能**超时**，于是失败表现为「超时」而不是
+「事实缺失」。改为按契约声明的模式等待，并把只读断言**加强**为：只读模式已发布、
+可编辑表单组合**未**挂载、官方事实非零、关系/附件集合留在 facts 布局之外。不恢复旧 DOM 迎合探针。
+
+另补一条：**「引擎未挂载」不等于「记录没有被呈现为可编辑」**——只读记录仍可能被可编辑 section 框住而无需挂载官方引擎。
+因此只读步骤改为直接断言 section 自身状态（`[data-detail-section-reason][data-state="editable"]` 计数为 0），
+不再用组合身份代理记录的可编辑性。
+
+### 6. 验证（同一候选 `25b31e714`，一次构建）
+
+- L1：`make ci.local.iteration` PASS（dirty 阶段，`coverage=L1_only`）；`git diff --check` 干净。
+- L2：`standard_collection_composition` 113、`standard_form_composition` 97、
+  `adopted_form_engine_decision` 74（真实 TDesign 引擎）、`adopted_form_validation_identity` 46/46、
+  `product_page_pattern` 4 patterns、`page_pattern_reference_parity` 16 surfaces、
+  `canonical_form_presenter` 177 + 10、`collection_action_toolbar`、`primitive_adapter` 46、
+  `navigation_shell`、`standard_preview` 6、`verify.frontend.typecheck.strict`（vue-tsc ×2）全部 PASS。
+- L4：`make frontend.standard.preview.build` + `.up`；`verify.frontend.standard_page_type.browser`
+  三个 scope 全 PASS（`default` 32/32、`TPL07_SCOPE=detail` 19/19、`TPL07_SCOPE=additional` 3/3），
+  `forbiddenWrites=[]`、`pageErrors=[]`：
+  - `/r/payment.request/1813`：facts=2；section = 2×`standard-readonly-facts` + 2×`relation-collection-extension`
+    + 6×`dedicated-control-extension`；事实值回读 `FE-A Counterparty` / `FE Acceptance Bank A` / `FE-ACCEPTANCE-A-001`。
+  - `/r/sc.general.contract/11`：6×`standard-readonly-facts` + 1×`dedicated-control-extension`。
+  - 可编辑 `/f/payment.request/1813` **未受影响**：facts=0、8×`outside-standard-detail`、6 editable + 2 readonly
+    section、`official-standard-form`。
+  - 真实第二页（offset 10 → ids `[1803,1795,1794,1787,1710,33]`）与返回同集、组合原因、窄屏 containment 均通过。
+- 只读能力边界定向核对（`/r/payment.request/1813`、`/r/sc.general.contract/11`）：10 / 7 个 section 全部
+  `data-state="readonly"`；页面内唯一的可输入控件是外壳菜单搜索与集合/关系搜索（`inFacts=false`）；
+  无记录字段可编辑、无保存/提交草稿动作。页面上出现的 `提交审批` 是契约声明的**业务动作**（action bar，
+  草稿态可用），`删除` 只属于 chatter 消息（`native-chatter-message-delete`）与附件
+  （`native-attachment-delete`），不是记录或明细行的写入能力——业务只读与业务动作属不同层，不得混为一谈。
+- 「6 facts + 1 dedicated-control」**不是静默降级**：含专用控件的 section 按 `resolveStandardDetailSection`
+  的既有资格判定保留专用控件，而不是被压成纯文本；这是 `7f7392584` 起有意为之的 fail-closed 规则，
+  先前「7 个 section 全部进入 descriptions」的观察早于该资格判定。
+
+提交（本地，未推送）：`841b2e9f8 fix(web): render a readonly record's facts through the detail composition`、
+`25b31e714 test(web): wait for the mode the contract declared, not an assumed one`、
+`108fa3f60 test(web): assert the readonly record has no editable section, not just no engine`。
+产物 `sce-offrepo/artifacts/config05-20260929`（`build-identity.json`：`base_sha=25b31e714…`、`dirty_scope=""`、
+`entry=/assets/index-CNrigT9d.js`、`entry_sha256=4d80190b…`）；旧候选按既有约定改名保留为
+`config05-20260929-prev-35d1f4d13`（不是覆盖）。5180 监听 `pid=802966`，`STATIC_ROOT` 指向该 dist，
+端口 5180、proxy `http://127.0.0.1:18082` 与后端 `sc-backend-odoo-acceptance` 一致。
+
+### 7. 两处口径更正（回撤此前不成立的表述）
+
+- `legacy-detail-surface`（见 `### FE-TPL-03 列表/只读详情证据再绑定到当前整合候选`）与
+  `legacy-list-surface`（见 `### FE-TPL-05A`）：这两个 token 名为「未采纳」的回退渲染器，但本项目
+  只发布**一个**列表面和**一个**只读记录面，不存在第二渲染器。把它们写成渲染器身份是把「未采纳」
+  误报成实现事实。列表侧在 `20781fe2d` 收敛为单值，详情侧在 `eb479cedb` 收敛为单值；
+  相应表述更正为：**回退的答案是「未采纳」，不是另一个渲染器。**
+- 只读详情事实结论的有效窗口：`fc0afcb32` 及更早候选成立，`20781fe2d` 之后失效，
+  本候选 `25b31e714` 重新取得（不是回填历史报告）。
+
+### 8. 验收体系为什么之前没发现
+
+1. **页面级采纳与 section 渲染之间没有回归**。既有断言只覆盖「采纳规则纯函数」和「源码守卫」，
+   缺少「页面级采纳在 section 可见」的链路断言；补强见 §4，断言以「决策 → 渲染结论」为口。
+2. **探测把假设写进了就绪条件**。`form()` 恒等可编辑组合，使只读步骤在任何业务断言之前超时，
+   失败形态从「事实缺失」变成「定位超时」，掩盖了缺陷本相。
+3. **上游输入变化后没有重跑受影响的旅程**。`20781fe2d` 改的是「页面类型推导」这一上游输入，
+   但只读详情旅程未随该提交重跑，失效的通过结论被继续引用（连同 r2 的 facts 证据）。
+   由此固定一条规则：**页面类型/组合采纳这类上游输入变化，必须重跑受影响的只读与可编辑旅程，
+   不得沿用旧证据。** 本段即按该规则重跑，并保留旧报告不重标通过。
+
+### 9. 剩余（显式登记，不在本段）
+
+- `sc.safety.disclosure` / `sc.safety.plan` 原生 form header 无 workflow 按钮（契约有、arch 无）。
+- 缺失 `view_type` 仍默认 `form`（显式化属另一类缺口）。
+- 五条 `state_transition_undeclared`（权威侧待决，见 `### FE-CONTRACT-NATIVEBTN-01`）。
+- `style_system.guard` 四项文件长度欠账（本段未触及）。
+- 只读页仍发布 `data-form-composition="legacy-form-section"`：该页的 form 组合确实未采纳
+  （section 以 bare 呈现、无引擎规则），与 `data-detail-composition` 采纳并存是设计结果，不是矛盾。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
