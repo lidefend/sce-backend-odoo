@@ -18,6 +18,11 @@
 export type FormActionPlaceholderGateInput = {
   useNativeFormTree: boolean;
   nativeStructureAuthority: string;
+  /**
+   * The form body is composed by the official form composition (the pilot
+   * surfaces listed in `standardFormComposition.ts`).
+   */
+  officialFormComposition?: boolean;
   headerActionKeys: readonly unknown[];
   workflowTransitionActionKeys: readonly unknown[];
   bodyActionKeys: readonly unknown[];
@@ -38,7 +43,12 @@ export function resolveFormActionPlaceholderGate(
   input: FormActionPlaceholderGateInput,
 ): FormActionPlaceholderGateResult {
   const nativeAuthority = String(input.nativeStructureAuthority || '').trim() === 'native_authority';
-  const suppressSearchFilters = input.useNativeFormTree || nativeAuthority;
+  // A body whose structure this project composes owns its presentation, so the
+  // record-list query presets close there as well. This deliberately does not
+  // change the transition/body-action gate below: those are action entries and
+  // still close only when their carrier is provable.
+  const structureOwned = input.useNativeFormTree || nativeAuthority;
+  const suppressSearchFilters = structureOwned || Boolean(input.officialFormComposition);
   if (input.useNativeFormTree) {
     // The native tree renders header, statusbar and body buttons itself, so
     // the placeholders duplicate a proven carrier.
@@ -65,8 +75,8 @@ export function resolveFormActionPlaceholderGate(
   });
   return {
     suppressSearchFilters,
-    suppressWorkflowTransitions: suppressSearchFilters && workflowCarried,
-    suppressBodyActions: suppressSearchFilters && bodyCarried,
+    suppressWorkflowTransitions: structureOwned && workflowCarried,
+    suppressBodyActions: structureOwned && bodyCarried,
     uncarriedActionKeys: uncarried,
   };
 }

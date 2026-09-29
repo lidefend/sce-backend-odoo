@@ -124,6 +124,32 @@ assert.deepEqual(
   [false, false, false],
   'a legacy body keeps its own action entries',
 );
+// The official form composition owns its body, so the record-list query presets close
+// there too. It must not, however, close an action entry that has no proven carrier:
+// this body is not a native tree, and a carried action is what closes those two.
+const officialComposition = resolveFormActionPlaceholderGate({
+  useNativeFormTree: false,
+  nativeStructureAuthority: '',
+  officialFormComposition: true,
+  headerActionKeys: ['action_submit'],
+  workflowTransitionActionKeys: ['action_approve'],
+  bodyActionKeys: ['action_print'],
+});
+assert.equal(officialComposition.suppressSearchFilters, true, 'an officially composed body hosts no record-list presets');
+assert.equal(officialComposition.suppressWorkflowTransitions, false, 'composition authority alone still cannot close an uncarried transition');
+assert.equal(officialComposition.suppressBodyActions, false, 'composition authority alone still cannot close an uncarried body action');
+assert.deepEqual(officialComposition.uncarriedActionKeys, ['action_approve', 'action_print']);
+const officialCompositionCarried = resolveFormActionPlaceholderGate({
+  useNativeFormTree: false,
+  nativeStructureAuthority: '',
+  officialFormComposition: true,
+  headerActionKeys: ['action_approve'],
+  workflowTransitionActionKeys: ['action_approve'],
+  bodyActionKeys: [],
+});
+assert.equal(officialCompositionCarried.suppressSearchFilters, true);
+assert.equal(officialCompositionCarried.suppressWorkflowTransitions, false, 'a proven carrier closes the transition only on a structure-owned body');
+assert.equal(officialCompositionCarried.suppressBodyActions, false);
 
 // 9. Cleanup releases only a draft this run proves it authored: a positive `created`
 //    credential on a draft it asked to be fresh, confirmed by inventory exclusion. A

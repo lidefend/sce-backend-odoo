@@ -1547,6 +1547,7 @@ const nativeStructureAuthority = computed(() => resolveNativeStructureAuthority(
 const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
   useNativeFormTree: useNativeFormTree.value,
   nativeStructureAuthority: nativeStructureAuthority.value,
+  officialFormComposition: standardFormComposition.adopted.value,
   headerActionKeys: [
     ...groupedHeaderActions.value.direct.map((action) => action.key),
     ...groupedHeaderActions.value.overflow.map((action) => action.key),
