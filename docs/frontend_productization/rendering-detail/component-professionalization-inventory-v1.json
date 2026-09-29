@@ -1,10 +1,10 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "6929750ac12d4ea99a4432687c9d30b45215c5098c8f071243b035005418ee73",
-  "generatorDigest": "12288cc9c74ebcf08524749d09e39b3c2e71b90bb77919e7643aa5c59255a39f",
-  "ownershipDigest": "5bf15fb938b57d6d8a8cf5aebff9ee1e8da645be8e971072eaa03a5b6e56677d",
-  "inputDigest": "0711b2b8ad5d33d45b67d1c1910524cfbc986f58db42edfbb6ee6e75bfe1f7bb",
-  "scope": "repository formal-product frontend Vue rendering-detail sources",
+  "sourceIdentity": "7dd4e91e705354d3b55281bb8c2f3593b5945a5bb8700a37c025ac7306c3a9a3",
+  "generatorDigest": "70b27e2e553d774c054b9aaaeb80f5e1c749b5e7454daeb048b501644b404b29",
+  "ownershipDigest": "b26592aaf6b86ea982de2733542dd3998c93f6373f6478961b6c0fe34082837e",
+  "inputDigest": "d3242bbce5f22c4e88740ab38bc9719db943703115fd4785b0a8082eaa4ee414",
+  "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
     "gap",
@@ -20,12 +20,12 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 172,
+    "surfaceCount": 173,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 112,
+    "governed_composite": 113,
     "governed_primitive": 41,
     "p3_out_of_scope": 19
   },
@@ -67,7 +67,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -548,7 +550,9 @@
         "error"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": null
     },
     {
@@ -1362,7 +1366,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1402,7 +1408,9 @@
         "empty"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1442,7 +1450,9 @@
         "error"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
@@ -1497,7 +1507,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1541,6 +1553,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScEmptyState"
       ],
       "targetBatch": "p0-inline-full-state-completion-v1"
@@ -1577,7 +1590,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1593,7 +1608,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1625,6 +1642,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScEmptyState"
       ],
       "targetBatch": "p0-dataset-editor-analysis-ownership-v1"
@@ -1642,7 +1660,9 @@
         "focus"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1673,6 +1693,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScEmptyState"
       ],
       "targetBatch": "p0-collection-state-control-completion-v1"
@@ -1699,7 +1720,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1750,6 +1773,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScErrorState"
       ],
       "targetBatch": "p0-inline-full-state-completion-v1"
@@ -1858,7 +1882,21 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-inline-full-state-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1873,7 +1911,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -1914,7 +1954,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-inline-full-state-completion-v1"
     },
     {
@@ -1929,7 +1971,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
@@ -2021,6 +2065,7 @@
         "loading",
         "empty",
         "error",
+        "disabled",
         "focus"
       ],
       "rawControls": {},
@@ -2041,7 +2086,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
@@ -2056,7 +2103,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": null
     },
     {
@@ -2390,6 +2439,7 @@
     "deferred": true,
     "register": "p3-low-code-administration state-primitive ownership",
     "reason": "P3 administration/designer surfaces carry state and interaction vocabulary but no professionalization ownership declaration yet.  The deferral is declared here and counted below so it stays auditable instead of disappearing behind a scope filter.",
+    "externalTemplateCount": 2,
     "surfaceCount": 19,
     "surfaces": [
       "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
