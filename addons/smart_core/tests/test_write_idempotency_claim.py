@@ -350,7 +350,7 @@ class TestWriteIdempotencyClaim(unittest.TestCase):
         # 回归钉子：真实 Odoo 中 env.get() 返回空记录集（假值对象），
         # 存在性判定若误用真值判断会静默回退 audit 通道（曾在线上踩坑）。
         env = _FakeEnv(_FakeRecordModel(self.cr), self.cr)
-        self.assertFalse(env.get("sc.idempotency.record"))  # 空记录集语义
+        self.assertFalse(env.get("sc.idempotency.record"))  # noqa — 断言空记录集语义
         decision = self.module.claim_write_idempotency(
             env,
             event_code="X",

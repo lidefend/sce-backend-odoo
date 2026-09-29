@@ -119,6 +119,7 @@ class PackController(http.Controller):
     def _install_pack(self, user, env, pack_id, mode, dry_run, confirm, strict):
         Registry = env["sc.pack.registry"].sudo()
         Installation = env["sc.pack.installation"].sudo()
+        Usage = env.get("sc.usage.counter")
         record = Registry.search([("pack_id", "=", pack_id)], limit=1)
         if not record:
             return {"ok": False, "http_status": 404, "error": {"code": "PACK_NOT_FOUND", "message": "Pack not found"}}
@@ -187,7 +188,7 @@ class PackController(http.Controller):
                 inst.write(vals)
             else:
                 Installation.create(vals)
-            if Usage:
+            if Usage is not None:
                 Usage.bump(user.company_id, "packs_installed", 1)
 
         return {"ok": True, "http_status": 200, "data": data}

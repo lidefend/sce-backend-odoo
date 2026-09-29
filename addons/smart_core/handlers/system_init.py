@@ -1322,7 +1322,14 @@ def _filter_nav_for_user_data_acceptance_only(env, nav: list[dict], *, force: bo
     }
 
 
-def _append_user_data_acceptance_nav_group(nav: list[dict], acceptance_children: list[dict]) -> list[dict]:
+def _append_user_data_acceptance_nav_group(
+    nav: list[dict], acceptance_children: list[dict], acceptance_root_group_label: str
+) -> list[dict]:
+    """Append the user-data-acceptance group under the first branch that has children.
+
+    The group label belongs to the caller's acceptance contract, so it is passed in
+    rather than read from another function's local scope.
+    """
     if not isinstance(nav, list) or not acceptance_children:
         return nav if isinstance(nav, list) else []
 

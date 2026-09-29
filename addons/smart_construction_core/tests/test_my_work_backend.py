@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
 from unittest.mock import patch
 
+from odoo import fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -108,7 +110,7 @@ class TestMyWorkBackend(TransactionCase):
         self.assertTrue(str((failed_items[0] or {}).get("trace_id") or "").startswith("mw_batch_"))
 
     def test_batch_idempotent_replay_returns_same_contract(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         handler = MyWorkCompleteBatchHandler(self.env, payload={})
         payload = {"ids": ["bad"], "source": "mail.activity", "request_id": "req-idem-1"}
@@ -128,12 +130,13 @@ class TestMyWorkBackend(TransactionCase):
             second_data.get("idempotency_fingerprint"),
             first_data.get("idempotency_fingerprint"),
         )
-        self.assertTrue(int(second_data.get("replay_from_audit_id") or 0) > 0)
+        # G7：去重权威 = sc.idempotency.record，replay 证据由记录行给出。
+        self.assertTrue(int(second_data.get("replay_from_record_id") or 0) > 0)
         self.assertTrue(bool(second_data.get("replay_original_trace_id")))
         self.assertTrue(int(second_data.get("replay_age_ms") or 0) >= 0)
 
     def test_batch_idempotent_conflict_when_same_key_diff_payload(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         handler = MyWorkCompleteBatchHandler(self.env, payload={})
         first = handler.handle({"ids": ["bad"], "source": "mail.activity", "request_id": "req-idem-2"})
@@ -156,24 +159,44 @@ class TestMyWorkBackend(TransactionCase):
         self.assertEqual(str(data.get("replay_original_trace_id") or ""), "")
         self.assertEqual(int(data.get("replay_age_ms") or 0), 0)
 
-    def test_batch_idempotent_window_expired_no_replay(self):
-        if not self.env.get("sc.audit.log"):
+    def test_batch_replay_is_permanent_regardless_of_window(self):
+        """G7：键即逻辑操作，永久重放；window 仅作 replay_window_expired 信息标记。"""
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         handler = MyWorkCompleteBatchHandler(self.env, payload={})
         payload = {"ids": ["bad"], "source": "mail.activity", "request_id": "req-idem-3"}
         first = handler.handle(payload)
         self.assertTrue(first.get("ok"))
+        record = self.env["sc.idempotency.record"].sudo().search(
+            [("idempotency_key", "=", "req-idem-3")], limit=1
+        )
+        self.assertTrue(record, "幂等记录未落库，重复提交保护不成立")
+
+        # window=0 表示“无窗口限制”：仍然重放，且信息标记保持未过期。
         original_window = handler.IDEMPOTENCY_WINDOW_SECONDS
         try:
             handler.IDEMPOTENCY_WINDOW_SECONDS = 0
-            second = handler.handle(payload)
+            unlimited = handler.handle(payload)
         finally:
             handler.IDEMPOTENCY_WINDOW_SECONDS = original_window
-        self.assertTrue(second.get("ok"))
-        second_data = second.get("data") or {}
-        self.assertFalse(bool(second_data.get("idempotent_replay")))
-        self.assertTrue(bool(second_data.get("replay_window_expired")))
-        self.assertEqual(second_data.get("idempotency_replay_reason_code"), REASON_REPLAY_WINDOW_EXPIRED)
+        self.assertTrue(unlimited.get("ok"))
+        unlimited_data = unlimited.get("data") or {}
+        self.assertTrue(bool(unlimited_data.get("idempotent_replay")))
+        self.assertFalse(bool(unlimited_data.get("replay_window_expired")))
+        self.assertEqual(unlimited_data.get("idempotency_replay_reason_code"), "")
+
+        # 记录时间拨到窗口之外：信息标记置位，但重放照旧发生（永久重放语义）。
+        record.write({
+            "created_at": fields.Datetime.to_string(
+                fields.Datetime.from_string(fields.Datetime.now()) - timedelta(hours=1)
+            )
+        })
+        aged = handler.handle(payload)
+        self.assertTrue(aged.get("ok"))
+        aged_data = aged.get("data") or {}
+        self.assertTrue(bool(aged_data.get("idempotent_replay")))
+        self.assertTrue(bool(aged_data.get("replay_window_expired")))
+        self.assertEqual(aged_data.get("idempotency_replay_reason_code"), REASON_REPLAY_WINDOW_EXPIRED)
 
     def test_batch_replay_contract_shape_without_audit_model(self):
         handler = MyWorkCompleteBatchHandler(self.env, payload={})

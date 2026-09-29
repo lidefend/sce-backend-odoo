@@ -197,7 +197,7 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
 
     def _write_audit(self, *, payment_request_id: int, trace_id: str, idempotency_key: str, idempotency_fingerprint: str, result: dict):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             return
         try:
             Audit.write_event(

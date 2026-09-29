@@ -213,7 +213,7 @@ class ApiDataBatchHandler(BaseIntentHandler):
 
     def _write_batch_audit(self, *, trace_id: str, model: str, action: str, ids: List[int], vals: Dict[str, Any], idem_key: str, idem_fingerprint: str, result: Dict[str, Any]):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             return
         try:
             Audit.write_event(

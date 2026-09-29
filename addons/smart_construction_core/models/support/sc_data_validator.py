@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 from ...tools.validator.rules import get_registered_rules
 

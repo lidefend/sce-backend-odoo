@@ -16,7 +16,7 @@ def main():
     db_name = os.getenv("E2E_DB") or os.getenv("DB_NAME") or ""
     if not db_name:
         env_file = os.getenv("ENV_FILE") or os.path.join(os.getcwd(), ".env")
-        db_name = _load_env_value_from_file(env_file, "DB_NAME") or ""
+        db_name = load_env_value_from_file(env_file, "DB_NAME") or ""
     login = os.getenv("E2E_LOGIN") or "admin"
     password = os.getenv("E2E_PASSWORD") or os.getenv("ADMIN_PASSWD") or "admin"
 

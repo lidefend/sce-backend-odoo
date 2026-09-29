@@ -2,9 +2,12 @@
 # 📁 smart_core/handlers/load_contract.py
 import hashlib
 import json
+import logging
 import re
 
 from odoo import SUPERUSER_ID, api
+
+_logger = logging.getLogger(__name__)
 
 from ..core.base_handler import BaseIntentHandler
 from ..core.request_params import parse_positive_int

@@ -156,7 +156,7 @@ def _button_rows(model_name):
 
 def _tier_definition_count(model_name):
     Tier = env.get("tier.definition")
-    if not Tier:
+    if Tier is None:
         return 0
     domain_candidates = [
         [("model", "=", model_name)],
@@ -172,7 +172,7 @@ def _tier_definition_count(model_name):
 
 def _business_category_profile(model_name):
     Category = env.get("sc.business.category")
-    if not Category:
+    if Category is None:
         return []
     rows = Category.sudo().search([])
     out = []

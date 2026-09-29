@@ -92,16 +92,16 @@ class PlatformOpsController(http.Controller):
             data = []
             for company in companies:
                 ent_payload = {}
-                if Entitlement:
+                if Entitlement is not None:
                     ent = Entitlement.get_effective(company)
                     ent_payload = {
                         "plan_code": ent.plan_id.code if ent.plan_id else None,
                         "flags": ent.effective_flags_json or {},
                         "limits": ent.effective_limits_json or {},
                     }
-                usage = Usage.get_usage_map(company) if Usage else {}
+                usage = Usage.get_usage_map(company) if Usage is not None else {}
                 sub = None
-                if Subscription:
+                if Subscription is not None:
                     sub = Subscription.search([("company_id", "=", company.id)], order="start_date desc, id desc", limit=1)
                 data.append({
                     "company_id": company.id,

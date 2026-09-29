@@ -654,6 +654,7 @@ class ScScene(models.Model):
         })
 
     def action_publish(self):
+        Usage = self.env.get("sc.usage.counter")
         for scene in self:
             company = scene.env.user.company_id
             max_scenes = platform_limit_for_company(scene.env, company, "max_scenes")
@@ -691,7 +692,7 @@ class ScScene(models.Model):
                 "published_by": scene.env.user.id,
             })
             scene._log_audit("publish", version=ver)
-            if Usage:
+            if Usage is not None:
                 Usage.bump(scene.env.user.company_id, "scenes_published", 1)
 
     def action_archive(self):

@@ -735,7 +735,7 @@ class TestProjectFormGovernance(unittest.TestCase):
 
         self.assertEqual((out.get("toolbar") or {}).get("header"), [])
         self.assertEqual(out.get("buttons"), [])
-        self.assertNotIn("message_ids", visible_fields)
+        self.assertNotIn("message_ids", out.get("visible_fields") or [])
         form_profile = out.get("form_profile") or {}
         self.assertIsInstance(form_profile, dict)
         self.assertIsInstance(form_profile.get("core_fields"), list)

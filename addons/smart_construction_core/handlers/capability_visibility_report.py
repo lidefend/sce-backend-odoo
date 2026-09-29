@@ -26,7 +26,7 @@ class CapabilityVisibilityReportHandler(BaseIntentHandler):
     def handle(self, payload=None, ctx=None):
         user = self.env.user
         Cap = self.env.get("sc.capability")
-        if not Cap:
+        if Cap is None:
             return {"ok": True, "data": self._empty_payload(), "meta": {"intent": self.INTENT_TYPE, "source_authority": self.SOURCE_AUTHORITY}}
 
         caps = Cap.sudo().search([("active", "=", True)], order="sequence, id")
