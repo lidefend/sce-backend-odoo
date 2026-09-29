@@ -63,23 +63,18 @@
       <ContractFormActionBlocks
         v-if="!isConfigurationPreview && !canonicalProductFloorplan?.decisionMode && ((pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div')))"
         :style="[pageSectionStyle('next_actions'), pageSectionStyle('stat_buttons')]"
-        :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
         :busy="busy"
         :is-intake-create-mode="isIntakeCreateMode"
-        :search-filters="searchFilters"
         :show-hud="showHud"
-        :show-search-filters="showSearchFilters"
         :strict-contract-defaults-summary="strictContractDefaultsSummary"
         :strict-contract-missing-summary="strictContractMissingSummary"
-        :suppress-action-blocks="suppressFormActionBlocks"
         :suppress-workflow-transitions="actionPlaceholderGate.suppressWorkflowTransitions"
         :suppress-body-actions="actionPlaceholderGate.suppressBodyActions"
         :use-native-form-tree="useNativeFormTree"
         :warnings="warnings"
         :workflow-evidence-gate-rows="workflowEvidenceGateRows"
         :workflow-transitions="workflowTransitions"
-        @open-filter="openFilter"
         @run-action="runAction"
       />
       <section v-if="pageSectionEnabled('details_fallback', true) && pageSectionTagIs('details_fallback', 'section')" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }" :style="pageSectionStyle('details_fallback')">
@@ -385,7 +380,6 @@ import {
   resolveContractV2ActionRules,
   resolveContractV2FormFieldMap,
   resolveContractV2RuntimeContract,
-  resolveContractV2SearchContract,
   resolveContractV2WorkflowContract,
   loadActionContractV2,
   loadModelContractV2,
@@ -733,7 +727,6 @@ import {
   buildRouteContractContext,
   buildContractFormPolicyContext,
   normalizeContractWarnings,
-  normalizeSearchFilters,
   resolveBusinessCategoryContext,
   resolveNativeStructureAuthority,
   resolveRuntimeRoleCode,
@@ -824,7 +817,6 @@ const {
   nativeLayoutCount: () => nativeFormLayoutNodes.value.length,
   layoutNodes: () => layoutNodes.value,
 });
-const activeFilterKey = ref('');
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
@@ -1155,7 +1147,6 @@ const {
 });
 const {
   cancelIntake,
-  openFilter,
   returnToIntakeList,
 } = useFormNavigationActionsRuntime({
   actionId: () => actionId.value || 0,
@@ -1164,10 +1155,6 @@ const {
   resolveLandingPath: (fallback) => session.resolveLandingPath(fallback),
   resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   router,
-  searchFilters: () => searchFilters.value,
-  setActiveFilterKey: (key) => {
-    activeFilterKey.value = key;
-  },
 });
 function recordVersionPolicy() {
   const raw = v2ContractStore.value?.snapshot.runtimeContract.recordVersionPolicy;
@@ -1538,7 +1525,6 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   profile: renderProfile.value,
   showHud: showHud.value,
 }));
-const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2SearchContract(v2ContractStore.value).filters));
 const nativeStructureAuthority = computed(() => resolveNativeStructureAuthority(v2ContractStore.value));
 // Record-list queries stay on the record list, and action placeholders close
 // only when their actions provably have another carrier (the native tree or
@@ -1547,7 +1533,6 @@ const nativeStructureAuthority = computed(() => resolveNativeStructureAuthority(
 const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
   useNativeFormTree: useNativeFormTree.value,
   nativeStructureAuthority: nativeStructureAuthority.value,
-  officialFormComposition: standardFormComposition.adopted.value,
   headerActionKeys: [
     ...groupedHeaderActions.value.direct.map((action) => action.key),
     ...groupedHeaderActions.value.overflow.map((action) => action.key),
@@ -1558,13 +1543,6 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
   workflowTransitionActionKeys: workflowTransitions.value.map((item) => item.action?.key),
   bodyActionKeys: bodyActions.value.map((action) => action.key),
 }));
-const suppressFormActionBlocks = computed(() => actionPlaceholderGate.value.suppressSearchFilters);
-const showSearchFilters = computed(() => {
-  if (suppressFormActionBlocks.value) return false;
-  if (!v2ContractStore.value) return true;
-  if (renderProfile.value !== 'create') return true;
-  return true;
-});
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
   one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,

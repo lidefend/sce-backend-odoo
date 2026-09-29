@@ -8,26 +8,7 @@ export function useFormNavigationActionsRuntime(params: {
   resolveLandingPath: (fallback: string) => string;
   resolveWorkspaceContextQuery: () => LocationQueryRaw;
   router: Router;
-  searchFilters: () => Array<{ key: string; domainRaw?: string; contextRaw?: string }>;
-  setActiveFilterKey: (key: string) => void;
 }) {
-  async function openFilter(filterKey: string) {
-    const actionId = params.actionId();
-    if (!actionId) return;
-    const selected = params.searchFilters().find((item) => item.key === filterKey);
-    params.setActiveFilterKey(filterKey);
-    await params.router.push({
-      name: 'action',
-      params: { actionId: String(actionId) },
-      query: pickContractNavQuery(params.currentQuery(), {
-        action_id: actionId,
-        preset_filter: filterKey,
-        domain_raw: selected?.domainRaw || undefined,
-        context_raw: selected?.contextRaw || undefined,
-      }),
-    });
-  }
-
   async function cancelIntake() {
     if (!params.isIntakeCreateMode()) return;
     const target = params.resolveLandingPath('/');
@@ -51,7 +32,6 @@ export function useFormNavigationActionsRuntime(params: {
 
   return {
     cancelIntake,
-    openFilter,
     returnToIntakeList,
   };
 }

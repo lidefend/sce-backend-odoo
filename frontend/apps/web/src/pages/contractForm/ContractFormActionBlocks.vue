@@ -1,5 +1,5 @@
 <template>
-  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn" data-semantic-component="ContractFormActionBlocks" data-state="warning">
+  <section v-if="warnings.length && !isIntakeCreateMode" class="block warn" data-semantic-component="ContractFormActionBlocks" data-state="warning" data-form-body-action-block="warnings">
     <h3>提示信息</h3>
     <ul>
       <li v-for="item in warnings" :key="item">{{ item }}</li>
@@ -39,23 +39,7 @@
     </div>
   </section>
 
-  <section v-if="showSearchFilters && searchFilters.length && !isIntakeCreateMode && !suppressActionBlocks" class="block">
-    <h3>快捷筛选</h3>
-    <div class="chips">
-      <ScButton
-        v-for="item in searchFilters"
-        :key="`flt-${item.key}`"
-        variant="ghost"
-        :class="{ active: activeFilterKey === item.key }"
-        :disabled="busy || !item.key"
-        @click="$emit('open-filter', item.key)"
-      >
-        {{ item.label }}
-      </ScButton>
-    </div>
-  </section>
-
-  <section v-if="bodyActions.length && !isIntakeCreateMode && !suppressBodyActionsGate" class="block">
+  <section v-if="bodyActions.length && !isIntakeCreateMode && !suppressBodyActionsGate" class="block" data-form-body-action-block="body-actions">
     <h3>可执行操作</h3>
     <div class="chips">
       <ScButton
@@ -90,25 +74,15 @@ type WorkflowTransitionRow = {
   action: ContractAction | null;
 };
 
-type SearchFilterRow = {
-  key: string;
-  label: string;
-};
-
 const props = defineProps<{
   warnings: string[];
   workflowEvidenceGateRows: WorkflowEvidenceGateRow[];
   strictContractMissingSummary: string;
   strictContractDefaultsSummary: string;
   workflowTransitions: WorkflowTransitionRow[];
-  showSearchFilters: boolean;
-  searchFilters: SearchFilterRow[];
-  activeFilterKey: string;
   bodyActions: ContractAction[];
   isIntakeCreateMode: boolean;
   useNativeFormTree: boolean;
-  /** Record-list query presets never belong to a natively structured form body. */
-  suppressActionBlocks: boolean;
   /** Workflow transitions close only when their actions have a proven carrier. */
   suppressWorkflowTransitions?: boolean;
   /** Body actions close only when their actions have a proven carrier. */
@@ -117,18 +91,17 @@ const props = defineProps<{
   showHud: boolean;
 }>();
 
-// The placeholders keep their legacy switch as the default so an unset
-// carrier proof never silently closes an action entry.
+// The placeholders close only on an explicit carrier proof, so an unset proof
+// never silently closes an action entry.
 const suppressWorkflowTransitionsGate = computed(
-  () => props.suppressWorkflowTransitions ?? props.suppressActionBlocks,
+  () => props.suppressWorkflowTransitions ?? false,
 );
 const suppressBodyActionsGate = computed(
-  () => props.suppressBodyActions ?? props.suppressActionBlocks,
+  () => props.suppressBodyActions ?? false,
 );
 
 defineEmits<{
   'run-action': [action: ContractAction];
-  'open-filter': [filterKey: string];
 }>();
 </script>
 
