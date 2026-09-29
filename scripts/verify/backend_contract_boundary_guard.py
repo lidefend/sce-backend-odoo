@@ -4,12 +4,48 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import importlib.util
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 BOUNDARY_MODULE_PATH = ROOT / "addons" / "smart_core" / "utils" / "backend_contract_boundaries.py"
+
+# 业务契约只表达业务语义。视觉、DOM 结构与可访问性属于受管呈现策略和端侧设计系统，
+# 一旦出现在契约写入者发出的载荷里，端侧就无法再区分“业务说了什么”和“页面长什么样”。
+# 受管布局读取（arch 的 class / field_size / cols）走呈现策略通道，不在本规则内。
+CONTRACT_APPEARANCE_PATTERNS = (
+    re.compile(
+        r'"(?:font_size|font_weight|line_height|border_radius|borderRadius|box_shadow'
+        r'|boxShadow|z_index|zIndex|background_color|backgroundColor)"\s*:'
+    ),
+    re.compile(
+        r'"(?:css_class|dom_selector|appearance|density|breakpoint|theme|selector'
+        r'|aria_label|ariaLabel|css)"\s*:'
+    ),
+    re.compile(r'"aria-[a-z-]+"\s*:'),
+    re.compile(r'"role"\s*:'),
+    re.compile(r"style\s*=\s*['\"]"),
+    re.compile(r"<div\b"),
+    re.compile(r"\bv-if\b|\bv-for\b|@click"),
+    re.compile(r"\bScTable\b|\bt-form__"),
+)
+
+
+def scan_contract_appearance(text: str, rel: str) -> list[dict]:
+    """Return the appearance/structure leaks found in one contract writer."""
+    found = []
+    for pattern in CONTRACT_APPEARANCE_PATTERNS:
+        for match in pattern.finditer(text):
+            found.append({
+                "category": "contract_must_not_express_appearance",
+                "path": rel,
+                "line": text[:match.start()].count("\n") + 1,
+                "message": "contract payload expresses client appearance/structure: %s"
+                           % match.group(0),
+            })
+    return found
 
 
 def _load_boundary_constants() -> dict:
@@ -298,6 +334,16 @@ def build_report() -> dict:
                 })
     errors.extend(marker_errors)
     report["required_boundary_marker_errors"] = marker_errors
+    appearance_errors = []
+    for rel in unique_writer_paths:
+        path = ROOT / rel
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        appearance_errors.extend(scan_contract_appearance(text, rel))
+    errors.extend(appearance_errors)
+    report["contract_appearance_errors"] = appearance_errors
     report["error_count"] = len(errors)
     report["errors"] = errors
     return report

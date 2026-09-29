@@ -56,6 +56,25 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
             self.assertTrue(callable(rule["predicate"]))
             self.assertTrue(rule["allowed"])
 
+    def test_contract_appearance_rule_rejects_client_structure(self):
+        leaks = guard.scan_contract_appearance(
+            'payload = {"sections": [{"label": "表单字段与布局", "appearance": "section-tab"}]}',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+        dom_leaks = guard.scan_contract_appearance(
+            'row = {"role": "tab", "aria-label": "配置类型"}\nmarkup = "<div class=\'x\'></div>"',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+        clean = guard.scan_contract_appearance(
+            'row = {"label": "表单字段与布局", "boundary": "business_contract"}',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+
+        self.assertEqual(len(leaks), 1)
+        self.assertEqual(leaks[0]["line"], 1)
+        self.assertTrue(dom_leaks)
+        self.assertEqual(clean, [])
+
     def test_report_keys_match_declared_rules(self):
         report = guard.build_report()
 
