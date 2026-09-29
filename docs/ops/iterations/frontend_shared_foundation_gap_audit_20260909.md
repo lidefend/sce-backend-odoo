@@ -3512,3 +3512,194 @@ detail 采纳为假而继续走控件。`standardFormComposition.ts` 的注释�
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## FE-TPL-07 三续：验收门禁抓到后端未定义名缺陷，并修正只读事实计数口径（2026-09-30）
+
+分支 `feature/web-official-template-adoption`；本段起点 HEAD `41b765559`（工作树仅一份派生清单待提交）；
+收口 HEAD `1c95d4a74`。延续 `## FE-TPL-07 续` 的同一职责范围，不新建专题、不改业务矩阵、不进入下一批。
+
+### 1. 七问（本段的后端修复）
+
+- Formal Product Layer：P1 建筑行业标准产品。
+- Layer Target：`addons/smart_construction_core/handlers/payment_request_available_actions.py`。
+- Module：`smart_construction_core`。
+- Standard vs User-Specific：行业标准产品的动作面；不含客户偏好，不含管理员配置。
+- Why Here：角色码与授权组的关系由行业能力注册表 `capability_registry.role_code_for_group` 单点拥有，
+  `8890d5f0f2` 已把该关系收敛到那里；本 handler 只是消费方，缺的是**导入**，不是规则。
+- Why Not Elsewhere：不在前端补一份角色→按钮映射（那是把授权语义复制到端侧）；不在 `smart_core`
+  平台内核新增行业能力表；也不改后端事务绕过前端问题。
+- Blast Radius：`payment.request.available_actions` 意图，以及复用其 `_action_entry` 的
+  `payment_request_work_item_service`（财务「我的工作」的工作项投影）。
+
+### 2. 失败定性：不是探测失配，是真实产品缺陷
+
+`verify.frontend.standard_bootstrap.browser` 在本段起点为 FAIL：
+
+```
+locator.waitFor: Timeout 15000ms exceeded — waiting for locator('[data-workspace-composition="official-dashboard-workspace"]')
+```
+
+按「先定性、不草率下结论」的要求逐层核对：
+
+1. 源码字面值确认：`ProductWorkspaceSurface.vue` 根节点确为
+   `data-workspace-composition="official-dashboard-workspace"`（**探针期望值没有过期**，可排除上一种
+   「旧选择器失效」的假设；这一点必须亲自读文件，不能凭 `rg` 的显示下结论）。
+2. 目标复现：`/s/workspace.home` 正常渲染该标记（`markerCount=1`）；失败发生在 `/my-work`。
+3. `/my-work` 的状态是 `data-my-work-renderer="product-workspace" data-state="error"`，页面文本为
+   「操作未完成 / 当前无法读取工作事项，请检查网络后重试。」——`MyWorkApprovalWorkspace` 因此根本没有
+   挂载，探针等待的标记自然不存在。
+4. 请求级证据：`POST /api/v1/intent` 的 `my.work.summary` 对 `fixture_role_finance` 返回 **HTTP 500
+   INTERNAL_ERROR**（`trace_id=b024072b-146d-4a5a-a5dd-bdb7ea693064`）。
+5. 后端堆栈（容器内 `odoo.log`）：
+
+```
+File ".../smart_construction_core/services/payment_request_work_item_service.py", line 264, in _todo
+    actions = self._allowed_actions(record)
+File ".../smart_construction_core/handlers/payment_request_available_actions.py", line 344, in _action_entry
+    "required_role_key": role_code_for_group(required_group_xmlid),
+NameError: name 'role_code_for_group' is not defined
+```
+
+**根因**：`8890d5f0f2`（`fix(workflow): derive the role code and own only the industry projection`，2026-09-29 21:37）
+把每条动作的硬编码 `required_role_key`（`"finance"` / `"executive"`）改为由授权组派生，但**没有导入**
+`role_code_for_group`。该符号只在 `handlers/payment_request_available_actions.py:344` 被使用，文件内
+无定义、无导入。
+
+**回归窗口（git 坐实，不靠推断）**：
+
+| 候选 | 时间 | `role_code_for_group` 使用 | `verify.frontend.standard_bootstrap.browser` |
+|---|---|---|---|
+| `376e5a064592` | 2026-09-29 17:30 | 该文件无 | PASS（`bootstrap-inventory-1790674371809`） |
+| `8890d5f0f2` | 2026-09-29 21:37 | 引入第 344 行 | — |
+| `25b31e714a4e` | 2026-09-30 00:14 | 仍在 | FAIL（`bootstrap-inventory-1790702186688`，仅走到 `-home-*.png`，未产出 `-work-*.png`） |
+
+通过报告与本段失败报告的差异恰好落在 `/my-work` 这一步：前者有 `fixture_role_finance-work-1440.png` /
+`-work-390.png`，后者只有 `-home-1440.png` / `-home-390.png`。
+
+### 3. 修复（最小，且先有负例）
+
+`addons/smart_construction_core/handlers/payment_request_available_actions.py` 增补导入：
+
+```python
+from odoo.addons.smart_construction_core.services.capability_registry import (
+    role_code_for_group,
+)
+```
+
+角色码值不变（`group_sc_cap_finance_user` → `finance`、`group_sc_role_executive` → `executive`），
+既有断言无需改动；改的是「名字有没有被绑定」，不是业务规则。
+
+负例先行 / 修复后对照（同一门禁，`make local.dev.test MODULE=smart_construction_core`）：
+
+| 阶段 | 命令标签 | 结果 |
+|---|---|---|
+| 修复前 | `TEST_TAGS='payment_request_available_actions_backend'` | **`0 failed, 4 error(s) of 6 tests`**，4 条均为同一 `NameError` |
+| 修复后 | 同上 | **`0 failed, 0 error(s) of 6 tests`** |
+
+同层兄弟测试一并收口：`payment_request_available_actions_backend,payment_request_action_surface_backend,
+workflow_contract_backend` 合并运行得出 `0 failed, 7 error(s) of 42 tests`。这 7 条**与本修复无关且为既有失败**
+（同门禁在无本改动的纯净工作树上复跑得到完全相同的 7 条）：
+
+- 5 条测试夹具自身违反领域约束：`expense_claim` / `self_funding_registration` 抛
+  「必须关联已归属公司的有效项目」、`receipt_income` 抛「收款归集关系不存在或当前用户无权访问」。
+- 1 条 `payment.request.write` 被状态守卫拒绝：`[SC_GUARD:P0_PAYMENT_STATE_BYPASS_BLOCKED]`。
+
+### 4. 验收后端身份必须随代码刷新（不然门禁会正确拒绝）
+
+`addons/` 是 bind mount，容器跑的是**当前工作树**，但容器在启动时记录了 `SC_SOURCE_REVISION`；
+前端门禁会校验 `git diff <该修订> -- addons` 为空。因此改完后端后**必须**走受管入口刷新身份：
+
+- 刷新前：容器 `SC_SOURCE_REVISION=eb479cedb60ab7c63bf37c775a32d919d00237f7`。
+- `make backend.acceptance.replace-stale` → `PASS backend=sc-backend-odoo-acceptance revision=1c95d4a7457f9f63d07073f1a52a7eb0efc1c3ca`。
+- `git diff eb479cedb6 1c95d4a74 -- addons` = 仅本文件 `3 insertions(+)`，确认后端修订区间内**没有**其他代码漂移。
+- 副作用：**所有依赖该后端容器的浏览器证据都随之失效**，必须复跑（见 §5），不得沿用旧容器实例的结论。
+
+### 5. 复跑后的门禁结果（当前候选 + 当前后端）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='payment_request_available_actions_backend,payment_request_action_surface_backend'` | PASS（付款两项；工作流契约那 7 条为既有失败，见 §3） |
+| L4 | `verify.frontend.standard_bootstrap.browser` | **PASS `roles=3`**（`fixture_role_finance` / `fixture_role_contract_operator` / `fixture_role_config_admin` 三个角色均到达 `/s/workspace.home` 与 `/my-work`） |
+| L4 | `verify.frontend.standard_page_type.browser`（`default` / `detail` / `additional`） | PASS **32 / 19 / 3**；`forbiddenWrites=[]`、`pageErrors=[]` |
+| L4 | `verify.frontend.standard_config_field.browser` | PASS `checks=12` |
+| L4 | `verify.frontend.standard_public_auth.browser` | PASS `checks=18` |
+| L4 | `verify.frontend.standard_menu_config.browser` | PASS `checks=46` |
+
+### 6. 跨模型只读详情复核（当前候选 + 当前后端，全部 `data-state=ok` 后取值）
+
+| 目标 | 角色 | facts | section 数 | section 归属 | 可编辑 section |
+|---|---|---|---|---|---|
+| `/r/payment.request/1813` | `fixture_role_finance` | 34 | 51 | 34 facts + 16 dedicated-control + 1 relation-collection | **0** |
+| `/r/sc.general.contract/11` | `fixture_role_contract_operator` | 6 | 7 | 6 facts + 1 dedicated-control | **0** |
+| `/r/sc.general.contract/10` | `fixture_role_contract_operator` | 6 | 7 | 6 facts + 1 dedicated-control | **0** |
+| `/r/project.project/10` | `fixture_role_finance` | 4 | 5 | 4 facts + 1 relation-collection | **0** |
+| `/r/project.project/10` | `fixture_role_pm` | 2 | 4 | 2 facts + 2 relation-collection | **0** |
+| `/f/payment.request/1813`（可编辑） | `fixture_role_finance` | 0 | 44 | 44 `outside-standard-detail` | 17 |
+
+`pageErrors=0`。结论不变且更强：**只读详情按 `contract-readonly-record-view` 采纳，跨模型无特例；
+可编辑记录表单不被 facts 布局侵占。**
+
+**口径更正（本段发现，回撤 §6 的计数）**：上一段的 `facts=2、10 section` 是**加载过程中**的快照。
+固定延时（1500ms）在冷启动后端上会取到 `data-state=loading` 的中间态（本段先复现过 `facts=0、
+sectionCount=0`）。本段改为轮询到 `data-state=ok` 再取值，稳定得到上表数字；同一脚本在修复前
+后端上也返回过 `2 / 10`，说明那是**测量口径**差异而非契约差异。由此固定规则：**只读事实/分区计数
+必须在页面声明加载结束后读取，不得用固定 sleep 取数**——这与「等待绑定明确状态、不用固定延时掩盖
+渲染未完成」是同一条规则。
+
+### 7. 同族缺陷登记（同类未定义名，本段**不修**）
+
+同一类「名字被使用但从未绑定」的缺陷在仓库另有 5 处。它们不是本次失败的原因，也不在本段范围内，
+但必须显式登记，因为它们证明**这类缺陷没有静态防线**：
+
+| 位置 | 未绑定名 | 现状与影响 |
+|---|---|---|
+| `addons/smart_core/handlers/login.py:429` | `request` | 文件未导入 `odoo.http.request`。位于 `try` 中，`NameError` 被 `except Exception` 吞掉 → Cookie session 永不登出，只有一条 debug 日志。**静默降级。** |
+| `addons/smart_core/handlers/load_contract.py:463` | `_logger` | 全文件仅此一处，无 `logging` 导入。位于 `except` 内的日志语句 → 一旦 `fields_get(missing)` 失败，会在处理异常时再抛 `NameError`。 |
+| `addons/smart_construction_core/controllers/pack_controller.py:190` | `Usage` | `Usage` 从未赋值（对照 `platform_ops_controller.py:89` 的 `Usage = env.get("sc.usage.counter")`）。pack 安装成功后会 `NameError`。 |
+| `addons/smart_construction_core/models/support/scene_orchestration.py:694` | `Usage` | 同上；场景发布成功后会 `NameError`。**后续低代码发布闭环（WEB-LC-01 方向）若要经过此路径，需先修。** |
+| `addons/smart_core/handlers/system_init.py:1325` | `acceptance_root_group_label` | 死代码：`_append_user_data_acceptance_nav_group` 自 `401bcb3bd` 起**无任何调用点**，其函数体引用了另一个函数的局部变量。当前不可达，属潜伏缺陷。 |
+
+本段的处理是**登记 + 保留真实状态**，不是顺手全仓清理。建议单列一批（后端 P0/P1，需走
+`sc_smoke` 后端 lane 与验收后端身份刷新）。
+
+### 8. 验收体系为什么这次是靠浏览器门禁才发现的
+
+1. **后端单测 lane 没有随该后端提交运行。** `8890d5f0f2` 改的是 Python，但当日只跑了前端门禁；
+   `sc_smoke`（`make local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_smoke…`）本可**直接**
+   抓住它——本段修复前的负例正是这条 lane 报的 `4 error(s) of 6 tests`。
+2. **没有未定义名的静态检查。** 仓库无 `flake8` / `ruff` 配置，`ci.local.iteration` 只做 L1 静态
+   （`git diff --check`、增量计划、可信扫描范围），不解析 Python 名字绑定。用一个 30 行的
+   `symtable` 扫描即可在本段复现该类缺陷（`addons/**/*.py` 1255 个文件 → 7 个疑似命中，经人工分类
+   得到上表 5 处真缺陷；本段触及的模块扫描结果为 0）。
+3. **前端门禁反而成了唯一防线**，因为「财务角色能不能读我的工作」是跨模型浏览器旅程里的一条断言。
+   这说明跨模型旅程本身有价值，但**不能让它承担后端静态缺陷的兜底**。
+
+由此固定两条规则：
+
+- **改动 `addons/` 后必须至少跑一次受影响模块的非零后端测试**（按 `sc_smoke`/`sc_gate` 标签选择，
+  不是全量），再进入浏览器层。
+- **浏览器层失败必须先定位到「契约/后端/前端/探针」哪一层**，本段即是「先怀疑探针失配、实测为后端
+  500」的反例；没有 §2 的第 1~5 步逐层证据，就会把产品缺陷误修成选择器适配。
+
+### 9. 本段提交
+
+- `bd898fb35 fix(payment): import the role-code helper the action entry calls`（产品修复）
+- `1c95d4a74 chore(docs): refresh the component-driver takeover inventory digest`（派生清单跟随源码刷新；
+  该刷新在修复前即为既有失败，`required=35 missing=0 bridge_only=0 raw=0`）
+
+运行来源：源码 HEAD `1c95d4a74`；前端产物仍为 `sce-offrepo/artifacts/config05-20260929/dist`
+（`base_sha=25b31e714…`、`entry=/assets/index-CNrigT9d.js`、`entry_sha256=4d80190b…`）——
+本段 `frontend/` 无源码变化，`identity` 校验通过，故**不重建、不新增端口**；5180 仍为 `pid=802966`。
+验收后端已从 `eb479cedb6` 刷新到 `1c95d4a74`。
+
+### 10. 剩余（显式登记，不在本段）
+
+- §7 的 5 处同族未定义名缺陷（含 1 处会影响场景发布路径）。
+- `workflow_contract_backend` 的 7 条既有失败（测试夹具/状态守卫，与 Mock 或数据基线相关，未在本段定性）。
+- 上一段已登记项继续有效：`sc.safety.disclosure` / `sc.safety.plan` 原生 header 无 workflow 按钮；
+  缺失 `view_type` 仍默认 `form`；五条 `state_transition_undeclared`；`style_system.guard` 四项文件长度欠账。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
