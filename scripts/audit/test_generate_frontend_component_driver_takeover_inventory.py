@@ -52,9 +52,41 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
     def test_semantically_rejected_drivers_have_explicit_architecture_decisions(self) -> None:
         report = MODULE.build_inventory()
         rows = {row["officialComponent"]: row for row in report["components"]}
-        for component in ("popconfirm", "switch", "time-picker"):
+        for component in ("popconfirm", "switch", "time-picker", "auto-complete", "steps"):
             self.assertFalse(rows[component]["requiredForCurrentProduct"])
             self.assertNotEqual(rows[component]["requirementDecision"], "not required by current formal product semantics")
+        # The two drivers below were dropped from REQUIRED_DRIVERS, so their
+        # decision text is the only place the contract boundary is recorded.
+        self.assertIn("ScRelationField", MODULE.NOT_REQUIRED_DECISIONS["auto-complete"])
+        self.assertIn("frontend_professional_workflow_guard.py", MODULE.NOT_REQUIRED_DECISIONS["steps"])
+
+    def test_published_completion_rule_is_evaluated_and_clean(self) -> None:
+        report = MODULE.build_inventory()
+        self.assertEqual(MODULE.completion_rule_failures(report), [])
+        for condition in MODULE.COMPLETION_RULE_CONDITIONS:
+            self.assertIn(f"{condition[0]}=0", report["completionRule"])
+        self.assertIn("directLibraryImportBypasses=0", report["completionRule"])
+        self.assertIn("unassessedRawBehaviorSurfaces=0", report["completionRule"])
+
+    def test_required_driver_without_consumer_fails_the_completion_rule(self) -> None:
+        # Negative case: the exact regression this gate exists for.  Re-adding a
+        # required driver whose official adapter no surface consumes must fail,
+        # instead of passing because the JSON merely stayed current.
+        with patch.object(MODULE, "REQUIRED_DRIVERS", MODULE.REQUIRED_DRIVERS | {"steps"}):
+            report = MODULE.build_inventory()
+            rows = {row["officialComponent"]: row for row in report["components"]}
+            self.assertEqual(rows["steps"]["status"], "adapter_unconsumed")
+            failures = MODULE.completion_rule_failures(report)
+        self.assertTrue(any("adapter_unconsumed" in failure for failure in failures), failures)
+
+    def test_unassessed_takeover_is_derived_from_rows_not_hardcoded(self) -> None:
+        # Negative case: a required driver that is not fully adopted and owns no
+        # capability assessment must be counted, not published as zero.
+        with patch.object(MODULE, "REQUIRED_DRIVERS", MODULE.REQUIRED_DRIVERS | {"steps"}):
+            report = MODULE.build_inventory()
+        self.assertEqual(report["summary"]["unassessedRequiredTakeovers"], 1)
+        report = MODULE.build_inventory()
+        self.assertEqual(report["summary"]["unassessedRequiredTakeovers"], 0)
 
     def test_affected_public_capabilities_and_takeovers_are_explicitly_assessed(self) -> None:
         report = MODULE.build_inventory()

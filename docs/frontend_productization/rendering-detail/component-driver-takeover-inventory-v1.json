@@ -150,9 +150,9 @@
       ],
       "officialComponent": "auto-complete",
       "productionConsumerCount": 0,
-      "requiredForCurrentProduct": true,
-      "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 declares no free-text-with-suggestions field type. Relation input is the official filterable combobox already served by ScRelationField, and every other field type resolves to a value control with an exact value, so a standalone AutoComplete driver would have to invent a suggestion source the contract never declared.",
+      "status": "not_required"
     },
     {
       "adapterKeys": [],
@@ -1088,9 +1088,9 @@
       ],
       "officialComponent": "steps",
       "productionConsumerCount": 0,
-      "requiredForCurrentProduct": true,
-      "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 declares workflow state as a selection, not an ordered process. frontend_professional_workflow_guard.py forbids '<ScSteps' in the product status area precisely because a step indicator would imply an ordered topology the contract never declared, and the approval policy is an editable configuration list rather than a record process. No formal product surface declares an ordered-process presentation.",
+      "status": "not_required"
     },
     {
       "adapterKeys": [],
@@ -1398,20 +1398,20 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "ba63a5f43b8d3c21729449a9105a00f588b9506d00df43546368c27708b70e7a",
+  "inputDigest": "977a48193d2f3bb0179f275c9cb6f4aaa775a2bbd11de3b292db5c6d0bd9b368",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
   "summary": {
     "adapter_present": 33,
-    "adapter_unconsumed": 2,
+    "adapter_unconsumed": 0,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
-    "not_required": 36,
+    "not_required": 38,
     "officialComponents": 71,
-    "requiredDrivers": 35,
+    "requiredDrivers": 33,
     "unassessedRawBehaviorSurfaces": 0,
     "unassessedRequiredTakeovers": 0
   }
