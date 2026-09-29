@@ -159,7 +159,7 @@
                     <button name="action_approve" string="确认申请" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager,smart_construction_core.group_sc_cap_purchase_manager" invisible="state != 'submitted'"/>
                     <button name="action_create_rfq" string="生成询价单" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_purchase_user,smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
                     <button name="action_create_purchase_order" string="生成采购订单" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>

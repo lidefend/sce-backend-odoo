@@ -102,7 +102,7 @@
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_approve" string="确认计划" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
@@ -191,7 +191,7 @@
                 <header>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_approve" string="确认申请" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>

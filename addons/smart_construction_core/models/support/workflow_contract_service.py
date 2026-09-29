@@ -13,21 +13,22 @@ _logger = logging.getLogger(__name__)
 
 
 def _simple_approval_profiles(model_names):
+    """共享档案: 草稿 -> 已提交 -> 已确认/已取消.
+    `submit`/`rejected` were unreachable, and `reopen` belongs to 已取消.
+    See `test_the_shared_approval_family_declares_only_reachable_states`.
+    """
     profile = {
         "state_field": "state",
         "state_phase": {
             "draft": "draft",
             "submitted": "under_review",
-            "submit": "under_review",
             "approved": "approved",
-            "rejected": "rejected",
             "cancel": "cancelled",
         },
         "state_actions": {
             "draft": ["submit", "cancel"],
-            "submitted": ["approve", "reopen", "cancel"],
-            "submit": ["approve", "reopen", "cancel"],
-            "rejected": ["reopen", "cancel"],
+            "submitted": ["approve", "cancel"],
+            "cancel": ["reopen"],
         },
         "method_by_action": {
             "submit": "action_submit",

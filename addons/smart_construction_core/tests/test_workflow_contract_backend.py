@@ -5,6 +5,9 @@ from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_construction_core.models.support.workflow_contract_service import (
+    _simple_approval_profiles,
+)
 
 # The delivered `退回草稿` rule: `reopen` maps to `action_reset_draft`, and each of
 # these models accepts that method only on a cancelled record.  The map carries the
@@ -216,6 +219,96 @@ class TestWorkflowContractBackend(TransactionCase):
             {"value": "legacy_confirmed", "label": "历史确认"},
             contract["statusbar"]["states"],
         )
+
+    def test_the_shared_approval_family_declares_only_reachable_states(self):
+        """The shared approval template must not carry states its members lack.
+
+        The template shipped `submit`/`rejected` next to `submitted`.  No member's
+        Selection can produce either token and none of them inherits
+        `tier.validation`, so `describe_record`'s phase lookup never read those
+        keys: pure copy residue that the dead-entry registry had to carry for ten
+        models, which is how a registration set stops being informative.
+
+        It also declared `reopen` in 已提交, where `action_reset_draft` refuses on
+        eight of the ten members - a button whose only outcome is a UserError -
+        while 已取消, the state the model accepts, published no way back at all.
+        The member list is read from the helper itself so this check cannot be
+        narrowed by editing a hand-written map.
+        """
+        template = _simple_approval_profiles(("probe.model",))["probe.model"]
+        self.assertTrue(template, "the helper must return its profile for a probed model")
+
+        profiles = self.service.profile_by_model()
+        family = sorted(
+            model for model, profile in profiles.items()
+            if profile.get("state_actions") == template["state_actions"]
+            and profile.get("state_phase") == template["state_phase"]
+        )
+        self.assertEqual(
+            family,
+            [
+                "sc.equipment.plan",
+                "sc.equipment.request",
+                "sc.labor.plan",
+                "sc.labor.request",
+                "sc.material.purchase.request",
+                "sc.material.rental.plan",
+                "sc.safety.disclosure",
+                "sc.safety.plan",
+                "sc.subcontract.plan",
+                "sc.subcontract.request",
+            ],
+        )
+
+        self.assertEqual(
+            sorted(template["state_phase"]), ["approved", "cancel", "draft", "submitted"],
+            "the template must map exactly the states its members can hold",
+        )
+        for model_name in family:
+            profile = profiles[model_name]
+            with self.subTest(model=model_name):
+                self.assertEqual(
+                    sorted(profile["state_phase"]), ["approved", "cancel", "draft", "submitted"],
+                )
+                declared = {
+                    state for state, actions in profile["state_actions"].items()
+                    if "reopen" in actions
+                }
+                self.assertEqual(
+                    declared, {"cancel"},
+                    "%s may offer 退回草稿 only from 已取消, the state it accepts" % model_name,
+                )
+                self.assertEqual(profile["method_by_action"].get("reopen"), "action_reset_draft")
+                selection = dict(
+                    self.env[model_name].fields_get(["state"])["state"]["selection"]
+                )
+                self.assertEqual(
+                    sorted(selection), ["approved", "cancel", "draft", "submitted"],
+                    "%s declares phases for states its Selection does not hold" % model_name,
+                )
+
+        # The native header carried the same defect: eight of the ten forms
+        # rendered 退回草稿 in 已提交, where `action_reset_draft` refuses, and hid
+        # it in 已取消, the state it accepts.  The forms are read from the model,
+        # so a new form cannot reintroduce the dead control unnoticed.  A form
+        # without the button is left alone: the contract may be ahead of the
+        # native header, it may never offer a control the model rejects.
+        for model_name in family:
+            forms = self.env["ir.ui.view"].search(
+                [("model", "=", model_name), ("type", "=", "form")]
+            )
+            self.assertTrue(forms, "%s must have a form view" % model_name)
+            gates = set()
+            for view in forms:
+                buttons = etree.fromstring(view.arch.encode("utf-8")).xpath(
+                    ".//button[@name='action_reset_draft']"
+                )
+                gates |= {button.get("invisible") for button in buttons}
+            with self.subTest(model=model_name, surface="arch"):
+                self.assertLessEqual(
+                    gates, {"state != 'cancel'"},
+                    "%s renders 退回草稿 outside 已取消: %s" % (model_name, sorted(gates)),
+                )
 
     def test_profile_methods_resolve_to_existing_model_methods(self):
         profiles = self.service.PROFILE_BY_MODEL

@@ -76,7 +76,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1654 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1557 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1489 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1490 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1488 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | Python source | `scripts/release/release_publication.py` |
 | 1453 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
@@ -129,6 +129,7 @@ Generated from repository source files. This report is informational during the 
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 989 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 989 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
+| 981 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 958 | Python source | `addons/smart_construction_core/tests/test_cost_fact_model_v2.py` |
 | 955 | Python source | `scripts/release/test_release_publication.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
@@ -139,7 +140,6 @@ Generated from repository source files. This report is informational during the 
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 896 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 891 | Python source | `addons/smart_core/handlers/execute_button.py` |
-| 888 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 887 | Python source | `scripts/verify/release_capability_audit.py` |
 | 886 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
@@ -232,7 +232,7 @@ Generated from repository source files. This report is informational during the 
 | 1542 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1515 | split_plan_required | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1505 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1489 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
+| 1490 | warning | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
 | 1453 | warning | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
