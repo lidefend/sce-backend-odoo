@@ -52,11 +52,13 @@ import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtil
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
-  applyWorkflowAvailability,
-  normalizeNativeFormStatusbar,
-  normalizeWorkflowActionRows,
+  resolveWorkflowActionAvailability,
   workflowActionMethodAliases,
   workflowActionRowForMethod,
+} from '../src/app/contracts/v2/workflowActionAvailability';
+import {
+  normalizeNativeFormStatusbar,
+  normalizeWorkflowActionRows,
 } from '../src/pages/contractForm/workflowContract';
 import {
   buildContractFormActions,
@@ -613,13 +615,13 @@ const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
 
-const workflowAction = {
-  key: 'action_submit', label: 'Submit', kind: 'object', level: 'header', selection: 'none' as const,
-  actionId: null, methodName: 'action_submit', targetModel: 'x.document', context: {}, domainRaw: '',
-  target: '', url: '', enabled: true, hint: '', intent: 'server.object', semantic: '',
-  sourceWidgetId: 'page.header', clientMode: '', visibleProfiles: ['edit', 'readonly'] as Array<'edit' | 'readonly'>,
-  requiredParams: [], requiresReason: false,
-};
+// The page used to carry its own `applyWorkflowAvailability` / `shouldShowWorkflowAction`
+// pair beside the presenter's decision.  No consumer ever read them, and the visibility
+// helper answered `true` for a known transition whenever `availableActions` was present
+// but unreadable, so a carrier it could not parse still produced a workflow control.
+// The authority is `resolveWorkflowActionAvailability`, asserted here directly and,
+// end to end, through `presentContractV2Form` below.
+const submitIdentity = { actionKey: 'action_submit', methodName: 'action_submit' };
 const duplicateWorkflowRows = {
   availableActions: [
     { key: 'submit', method: 'action_submit', enabled: true },
@@ -632,13 +634,11 @@ assert.equal(
   'multiple rows claiming one executable method must fail closed instead of selecting the first row',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  false,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }] },
+    submitIdentity,
+  ).kind,
+  'error',
   'a non-boolean enabled value must not grant executable authority',
 );
 assert.equal(
@@ -649,48 +649,40 @@ assert.equal(
   'invalid workflow rows must not be projected into executable contract actions',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', target: [], enabled: true }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  false,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', target: [], enabled: true }] },
+    submitIdentity,
+  ).kind,
+  'error',
   'a malformed row that claims the requested action must fail that action closed',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: false, reason_code: 'WAIT' }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', method: 'action_submit', enabled: false, reason_code: 'WAIT' }] },
+    submitIdentity,
+  ).enabled,
   false,
   'a valid disabled row must retain the existing fail-closed behavior',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: {
+  resolveWorkflowActionAvailability(
+    {
       availableActions: [
         'isolated malformed row',
         { key: 'submit', method: 'action_submit', enabled: true },
       ],
     },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+    submitIdentity,
+  ).enabled,
   true,
   'an unidentifiable malformed row must not disable an unrelated valid action',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: { ...workflowAction, key: 'action_preview', methodName: 'action_preview' },
-    workflow: { availableActions: ['isolated malformed row'] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  true,
+  resolveWorkflowActionAvailability(
+    { availableActions: ['isolated malformed row'] },
+    { actionKey: 'action_preview', methodName: 'action_preview' },
+  ).kind,
+  'unmanaged',
   'an unrelated non-workflow action must remain outside workflow authority',
 );
 // 575 `已关闭 -> 已登记` 是独立键 `reactivate`（`reopen` 在本平台语义是 `已取消 -> 草稿`）。
@@ -701,14 +693,29 @@ assert.deepEqual(
   'the closed -> active transition must keep its own key bound to action_reopen',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: { ...workflowAction, key: 'reactivate', methodName: 'action_reopen' },
-    workflow: { availableActions: [] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(
+    { availableActions: [] },
+    { actionKey: 'reactivate', methodName: 'action_reopen' },
+  ).enabled,
   false,
   'a declared managed transition must fail closed when the contract serves no row for it',
+);
+
+// The deleted visibility helper answered `true` here: a known transition over a carrier
+// it could not read still rendered a control.  The single authority reports an error,
+// and reserves `unmanaged` for a method the transition registry does not know.
+assert.equal(
+  resolveWorkflowActionAvailability({ availableActions: 'unreadable' }, submitIdentity).kind,
+  'error',
+  'a known transition over an unreadable carrier must never resolve to an allowed action',
+);
+assert.equal(
+  resolveWorkflowActionAvailability(
+    { availableActions: 'unreadable' },
+    { methodName: 'action_not_a_registered_transition' },
+  ).kind,
+  'unmanaged',
+  'an unreadable carrier must not claim authority over a method the registry does not know',
 );
 
 const legalSameLabelRows = {
@@ -731,12 +738,7 @@ const unrelatedMalformedClaim = {
   ],
 };
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: unrelatedMalformedClaim,
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(unrelatedMalformedClaim, submitIdentity).enabled,
   true,
   'a malformed row claimed by a different action must remain isolated',
 );
