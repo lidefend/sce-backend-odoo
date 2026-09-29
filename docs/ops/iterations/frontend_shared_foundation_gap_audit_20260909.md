@@ -3215,3 +3215,125 @@ business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")  
 ### 状态
 
 本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## FE-CONTRACT-PAGE-INFO-01：把拼接的视图列表解析为唯一页面身份
+
+起点 HEAD `56150df42`（干净）。本段只修 `_assemble_ui_contract` 的一个投影缺陷：
+把 `head.view_type` 的**逗号拼接视图列表**解析为**一个活动视图**，再进入闭合枚举。
+不改 `page_assembler`（action 级 source 与 page 级职责不同）、不改 schema、不改前端。
+
+### 1. 七问
+
+- **Formal Product Layer**：P0 平台内核产品（`ui.contract.v2` 装配属平台机制）。
+- **Layer Target**：`smart_core`，`addons/smart_core/core/unified_page_contract_v2_assembler.py`
+  的 `_assemble_ui_contract()` 视图类型解析。
+- **Module**：`smart_core`。
+- **Standard vs User-Specific**：平台标准。视图列表 → 单一页面身份的映射与任何行业/客户无关。
+- **Why Here**：`pageInfo` 是 page 级契约，装配器是唯一把它写出来的地方；schema 已枚举
+  `viewType`/`layoutType`，映射职责天然属于该函数。
+- **Why Not Elsewhere**：不改 `page_assembler`（它发布的是 action 请求的视图列表，语义正确）；
+  不放松 schema（枚举是权威）；不改前端 `standardPageType.ts`（它按契约分类，
+  收到非法 token 时退回旧渲染器是**正确的 fail-closed 行为**，真正错的是上游投影）。
+- **Blast Radius**：所有经 `ui.contract` 装配的 `pageInfo.viewType/layoutType`、由其派生的
+  `pageId`、看板行动作注册表查找键、以及前端页面类型分类；由 runtime schema/assembler 守卫、
+  105 例装配器用例与前端 177 例消费用例共同证明收敛。
+
+### 2. 真实缺陷
+
+`page_assembler.py:621` 把 `head.view_type` 发布为**请求的视图列表**（`"tree,form"`），
+因为一个模型持有多份视图。而 `pageInfo` 描述的是**一个页面**，其 `viewType` / `layoutType`
+在权威 schema 中是**闭合枚举**：
+
+```python
+view_type = _text(source.get("view_type") or ui.get("view_type"), "form")
+```
+
+这行直接把拼接串写进枚举字段。实测（修复前）：
+
+| 输入 `view_type` | `pageInfo.viewType` | `pageInfo.layoutType` | 问题 |
+|---|---|---|---|
+| `"tree,form"` | `tree,form`（**枚举外**） | `form` | 视图类型与布局类型互相矛盾 |
+| `"form,tree"` | `form,tree`（**枚举外**） | `form` | 同上 |
+| `"kanban,tree,form"` | `kanban,tree,form`（**枚举外**） | `form` | 3 个真实模型（`project.project` 等）命中 |
+
+**前端后果**：`frontend/apps/web/src/app/presentation/standardPageType.ts` 对 `"tree,form"`
+判为 `specialized`，页面退回 `legacy-form-section` 渲染器。这正是“自定义前端没有回到官方模板”
+的一条**契约侧根因**——不是前端选错，而是它拿到的 token 根本不是合法页面类型。
+
+**第二处后果（修复前静默丢失）**：`_append_registered_kanban_row_action(contract, model, view_type)`
+以 `(model, view_type)` 查表。`project.project` 的真实动作声明是
+`view_mode="kanban,tree,form"`（`project_core.py:140`），而注册键是 `("project.project","kanban")`。
+修复前查找键为 `("project.project","kanban,tree,form")` → `None` → **看板行动作（进入项目驾驶舱）被静默丢弃**。
+
+### 3. 修复
+
+只用既有约定：取拼接列表的**首项**为活动视图（与 `unified_page_contract_v2_assembler.py:4543`
+原生工具条解析器一致），并把 `list` 归一到 `tree` 后再进入下面的映射：
+
+```python
+raw_view_type = _text(source.get("view_type") or ui.get("view_type"), "form").split(",")[0].strip()
+view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
+```
+
+- `list → tree` 归一在映射前完成，使 `"list"` 仍输出 `viewType="list" / layoutType="table"`，
+  与第 823 行既有改写 `"list" if view_type == "tree" else view_type` 一致，**不破坏既有单值行为**。
+- **不动**“缺失 → `form`”的现状：那是另一类缺口（缺视图类型应显式化），本段不扩张。
+
+修复后实测：
+
+| 输入 `view_type` | `viewType` | `layoutType` | `pageId` | `layoutContract.layoutType` |
+|---|---|---|---|---|
+| 缺失 | `form` | `form` | `x.document.form` | `form` |
+| `tree,form` | `list` | `table` | `x.document.tree` | `table` |
+| `form,tree` | `form` | `form` | `x.document.form` | `form` |
+| `kanban,tree,form` | `kanban` | `kanban` | `x.document.kanban` | `kanban` |
+| `tree,form,pivot,graph` | `list` | `table` | `x.document.tree` | `table` |
+
+看板行动作回归：`kanban,tree,form` → `viewType=kanban` 且 `open_project_dashboard` **回到** `actionRuleList`；
+修复前同一注册键查表结果为 `None`。
+
+### 4. 负例（先证明回归抓得住）
+
+新入库用例 `test_joined_view_type_cannot_publish_a_token_the_schema_does_not_enumerate`
+从 schema `$defs.pageInfo.properties` **读枚举**（不复制枚举副本），覆盖
+`tree,form` / `form,tree` / `tree` / `form` 四类输入，并断言 `layoutContract.layoutType == pageInfo.layoutType`。
+
+修复前该用例失败（确定性反例）：
+
+```
+python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
+→ Ran 105 tests, FAILED (failures=2)
+  AssertionError: 'tree,form' != 'list'
+  AssertionError: 'form,tree' != 'form'
+```
+
+修复后：`Ran 105 tests ... OK`。
+
+### 5. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | PASS 105 tests（修复前 FAILED failures=2） |
+| `make verify.unified_page_contract.v2.schema` | PASS `examples=4` + 3 tests |
+| `make verify.unified_page_contract.v2.assembler` | PASS `sources=4`（映射快照未漂移） |
+| `make verify.unified_page_contract.v2.runtime` | PASS `score=6`（含 105 例） |
+| `make verify.unified_page_contract.v2.action / .data / .status / .client` | PASS `actions=7` / `dataSources=2` / `widgets=4 buttons=2` / `clients=3` |
+| `make verify.unified_page_contract.v2.intent` | PASS（`ui.contract.v2` 仍是唯一终态入口） |
+| `make verify.unified_page_contract.v2.web_consumer` | PASS（5 tests + 双守卫） |
+| `make verify.unified_page_contract.v2.guard_inventory` | PASS |
+| `make verify.frontend.canonical_form_presenter.unit` | PASS `cases=177` |
+| `make verify.frontend.typecheck.strict` | PASS（两套 `vue-tsc --noEmit`） |
+| `make verify.unified_page_contract.v2.regression_audit.host` | **not_run（环境）**：该守卫打 `http://127.0.0.1/api/v1/intent` + `DB=sc_demo` 的活体实例，当前 80 端口返回 HTTP 500，未进入装配逻辑；属宿主验收守卫，不在迭代 profile 内，非本段回归 |
+
+### 6. 剩余（显式登记，不在本段）
+
+- **缺失 `view_type` 仍默认 `form`**：缺口应显现而非猜测。修法是让缺失走既有诊断/显式类型，
+  属另一类缺口（投影缺口 vs. 缺失显式化），本段不扩张。
+- `page_assembler` 继续发布 action 级视图列表是**正确语义**，不是欠账；转换点在 page 级装配器。
+- 前端 `standardPageType.ts` 的 `specialized → legacy-form-section` 兜底**保留**：它是契约未声明
+  可渲染页面类型时的 fail-closed 兜底，本段只是让合法输入不再误落入它。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
