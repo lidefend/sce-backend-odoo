@@ -103,8 +103,25 @@ try {
   await p.waitForTimeout(1800);
   const next = report.calls.filter((call) => call.model === 'payment.request').at(-1);
   check('payment: server next page', next.offset === 10 && next.ids.length > 0 && JSON.stringify(next.ids) !== JSON.stringify(before.ids), { ids: next.ids });
-  await p.locator('.flat-table tbody tr').filter({ has: p.locator('td') }).first().click();
-  await p.locator('[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
+  // The record a list opens declares its own mode: a closed row is a readonly
+  // detail, so the probe binds the opened page to the identity of the row it
+  // clicked and to the composition the contract declared for it, instead of
+  // assuming an editable draft sits first on the page. What must hold either
+  // way is that the page is classified by the contract (never an unclassified
+  // fallback) and keeps the list context it was opened from.
+  const openedRow = p.locator('.flat-table tbody tr[data-record-key]').filter({ has: p.locator('td') }).first();
+  const openedRecordKey = await openedRow.getAttribute('data-record-key');
+  await openedRow.click();
+  await p.locator(`[data-form-record="${openedRecordKey}"][data-state="ok"]`).waitFor();
+  check('payment: opened record identity matches the clicked row', await p.locator(`[data-form-record="${openedRecordKey}"]`).count() === 1, { openedRecordKey });
+  check(
+    'payment: opened record composition follows the contract declaration',
+    await p.locator('[data-form-composition-reason="contract-record-view"], [data-detail-composition-reason="contract-readonly-record-view"]').count() === 1,
+  );
+  check(
+    'payment: opened record is not an unclassified fallback',
+    await p.locator('[data-form-composition-reason="contract-view-not-classified"], [data-detail-composition-reason="contract-view-not-classified"]').count() === 0,
+  );
   check('payment: return context carried', new URL(p.url()).searchParams.get('list_offset') === '10');
   await p.goBack();
   await p.locator('[data-list-card-container="official"]').waitFor();
