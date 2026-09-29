@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "description": "workflow contract profile keys that the model's own state Selection can never produce. state_phase and state_actions are read with the record's raw state as the key, so these entries are dead configuration: harmless at runtime, but they hide the fact that the profile and the model disagree. The guard refuses an unregistered dead entry and a stale registration, so the set is explicit and cannot grow unnoticed.",
+  "registry_rule": "A state_phase or state_actions key that the model's state Selection cannot produce must be listed here with its exact key set and a reason, or removed from the profile. Entries go stale when the computed set changes.",
+  "keys": {
+    "phase:<raw_state>": "an unreachable key in state_phase",
+    "actions:<raw_state>": "an unreachable key in state_actions"
+  },
+  "entries": [
+    {
+      "model": "sc.equipment.plan",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.equipment.request",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.labor.plan",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.labor.request",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.material.rental.plan",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.safety.disclosure",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.safety.plan",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.subcontract.plan",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.subcontract.request",
+      "keys": [
+        "actions:rejected",
+        "actions:submit",
+        "phase:rejected",
+        "phase:submit"
+      ],
+      "reason": "the shared _simple_approval_profiles template declares the submit/rejected aliases next to submitted; this model's Selection is draft/submitted/approved/cancel, so the aliases can never be the record's raw state and the lookup never reads them"
+    },
+    {
+      "model": "sc.fund.account.operation",
+      "keys": [
+        "actions:cancel",
+        "actions:in_progress",
+        "phase:cancel",
+        "phase:in_progress",
+        "phase:legacy_confirmed"
+      ],
+      "reason": "the shared _confirm_done_profiles template declares both cancel/cancelled and legacy_confirmed; this model's Selection cannot produce the listed keys, so the entries are unreachable"
+    },
+    {
+      "model": "sc.plan",
+      "keys": [
+        "actions:cancelled",
+        "phase:cancelled",
+        "phase:legacy_confirmed"
+      ],
+      "reason": "the shared _confirm_done_profiles template declares both cancel/cancelled and legacy_confirmed; this model's Selection cannot produce the listed keys, so the entries are unreachable"
+    }
+  ]
+}

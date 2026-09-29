@@ -468,6 +468,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "draft": "draft",
                 "confirmed": "approved",
                 "signed": "effective",
+                "legacy_confirmed": "legacy_confirmed",
                 "cancel": "cancelled",
             },
             "state_actions": {

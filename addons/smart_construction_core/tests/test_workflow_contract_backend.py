@@ -183,6 +183,40 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["editability"], "editable")
         self.assertIn("submit", {row["key"] for row in contract["availableActions"]})
 
+    def test_general_contract_legacy_confirmed_phase_is_declared(self):
+        """`legacy_confirmed` is a real `sc.general.contract` state.
+
+        The profile omitted the key, so `describe_record` answered with the raw
+        token through its fallback.  That fallback happens to return the same
+        string here - which is exactly why the omission survived: the statusbar
+        and the editability verdict were right by accident, and the next value
+        added to the Selection would not be.  The declaration is asserted
+        directly so the fallback cannot stand in for it again.
+        """
+        profile = self.service.profile_by_model()["sc.general.contract"]
+        self.assertEqual(profile["state_phase"].get("legacy_confirmed"), "legacy_confirmed")
+
+        contract_record = self.env["sc.general.contract"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_name": "Workflow Contract Legacy Confirmed",
+                "contract_type": "材料采购",
+                "amount_total": 100.0,
+                "state": "legacy_confirmed",
+            }
+        )
+        contract = self.service.describe_record(contract_record)
+
+        self.assertEqual(contract["rawState"], "legacy_confirmed")
+        self.assertEqual(contract["businessPhase"], "legacy_confirmed")
+        self.assertEqual(contract["editability"], "locked")
+        self.assertEqual(contract["availableActions"], [])
+        self.assertIn(
+            {"value": "legacy_confirmed", "label": "历史确认"},
+            contract["statusbar"]["states"],
+        )
+
     def test_profile_methods_resolve_to_existing_model_methods(self):
         profiles = self.service.PROFILE_BY_MODEL
         self.assertTrue(profiles)
