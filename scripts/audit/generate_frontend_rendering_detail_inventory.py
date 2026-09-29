@@ -49,6 +49,29 @@ RAW_CONTROL_PATTERNS = {
 GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScInlineState", "ScEmptyState", "ScErrorState")
 EXTERNAL_TEMPLATE_SRC = re.compile(r"""<template\s+src\s*=\s*['"](?P<value>[^'"]+)['"]""")
 
+# P3 administration/designer surfaces whose transient state bands are already
+# rendered by governed state primitives, with the exact primitive/state pairs
+# they render.  This is the reduction ledger for the P3 ownership deferral: the
+# deferral itself stays unconditional, but a conversion is recorded here and
+# verified against the source.  Verification is fail-closed, so deleting the
+# primitive or changing its literal state re-opens the deferral instead of
+# leaving a green "owned" claim behind.
+P3_STATE_BAND_OWNERSHIP: dict[str, tuple[str, ...]] = {
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue": ("ScInlineState:loading",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue": (
+        "ScEmptyState:empty",
+        "ScInlineState:loading",
+    ),
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": ("ScEmptyState:empty",),
+}
+DEDICATED_STATE_PRIMITIVE = {
+    "ScLoading": "loading",
+    "ScEmptyState": "empty",
+    "ScErrorState": "error",
+}
+SC_INLINE_STATE_LITERAL = re.compile(r"""<ScInlineState\b[^>]*?\bstate\s*=\s*"([a-z]+)\"""")
+
 OWNERSHIP_PATH = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
 OWNERSHIP = json.loads(OWNERSHIP_PATH.read_text(encoding="utf-8"))
 P3_OWNER = OWNERSHIP["owners"]["p3-low-code-administration"]
@@ -348,6 +371,36 @@ def resolve_source_text(path: Path) -> tuple[str, list[Path]]:
     return text, externals
 
 
+def rendered_state_bands(text: str) -> set[str]:
+    """State bands a surface actually renders through a governed primitive."""
+    bands: set[str] = set()
+    for primitive, state in DEDICATED_STATE_PRIMITIVE.items():
+        if f"<{primitive}" in text:
+            bands.add(f"{primitive}:{state}")
+    for literal in SC_INLINE_STATE_LITERAL.findall(text):
+        bands.add(f"ScInlineState:{literal}")
+    return bands
+
+
+def p3_state_band_ownership_failures(deferred_sources: set[str] | None = None) -> list[str]:
+    """Fail closed when a declared P3 state-band ownership claim is no longer true."""
+    failures: list[str] = []
+    for source, declared in sorted(P3_STATE_BAND_OWNERSHIP.items()):
+        if not is_p3(source):
+            failures.append(f"declared P3 state-band owner is not a P3 surface: {source}")
+        if deferred_sources is not None and source not in deferred_sources:
+            failures.append(f"declared P3 state-band owner left the deferral register: {source}")
+        path = ROOT / source
+        if not path.is_file():
+            failures.append(f"declared P3 state-band owner is missing: {source}")
+            continue
+        rendered = rendered_state_bands(resolve_source_text(path)[0])
+        for claim in declared:
+            if claim not in rendered:
+                failures.append(f"declared P3 state band is not rendered: {source} -> {claim}")
+    return failures
+
+
 def digest(paths: list[Path]) -> str:
     result = hashlib.sha256()
     for path in sorted(paths):
@@ -431,6 +484,10 @@ def build_inventory() -> dict[str, Any]:
             "governedStatePrimitives": governed_primitives,
             "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
         })
+    deferred_sources = {item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"}
+    deferral_failures = p3_state_band_ownership_failures(deferred_sources)
+    if deferral_failures:
+        raise ValueError("invalid P3 state-band ownership declarations: " + "; ".join(deferral_failures))
     counts = Counter(item["status"] for item in surfaces)
     p0_p1_raw_bypass_surfaces = [
         item for item in surfaces
@@ -495,6 +552,16 @@ def build_inventory() -> dict[str, Any]:
             "externalTemplateCount": len(template_files),
             "surfaceCount": sum(1 for item in surfaces if item["status"] == "p3_out_of_scope"),
             "surfaces": sorted(item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"),
+            "stateBandOwnershipRule": (
+                "a surface is listed under stateBandOwned only with the exact primitive:state pairs it "
+                "renders; every claim is re-verified against the resolved source and the register fails "
+                "closed when a claim stops being rendered"
+            ),
+            "stateBandOwnedCount": len(P3_STATE_BAND_OWNERSHIP),
+            "stateBandOwned": [
+                {"source": source, "stateBands": sorted(P3_STATE_BAND_OWNERSHIP[source])}
+                for source in sorted(P3_STATE_BAND_OWNERSHIP)
+            ],
         },
     }
 

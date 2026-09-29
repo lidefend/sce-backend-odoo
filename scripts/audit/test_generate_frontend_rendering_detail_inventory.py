@@ -255,6 +255,53 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         self.assertTrue(governed.issubset(set(INVENTORY.GOVERNED_STATE_PRIMITIVES)))
         self.assertIn("ScLoading", INVENTORY.GOVERNED_STATE_PRIMITIVES)
 
+    def test_p3_state_band_ownership_claims_are_rendered(self) -> None:
+        self.assertTrue(INVENTORY.P3_STATE_BAND_OWNERSHIP)
+        self.assertEqual(INVENTORY.p3_state_band_ownership_failures(), [])
+        deferred = self.report["p3OwnershipDeferred"]
+        self.assertEqual(
+            deferred["stateBandOwned"],
+            [
+                {"source": source, "stateBands": sorted(INVENTORY.P3_STATE_BAND_OWNERSHIP[source])}
+                for source in sorted(INVENTORY.P3_STATE_BAND_OWNERSHIP)
+            ],
+        )
+        self.assertEqual(deferred["stateBandOwnedCount"], len(INVENTORY.P3_STATE_BAND_OWNERSHIP))
+        self.assertTrue(deferred["stateBandOwnershipRule"].strip())
+        deferred_sources = set(deferred["surfaces"])
+        for entry in deferred["stateBandOwned"]:
+            self.assertIn(entry["source"], deferred_sources)
+
+    def test_p3_state_band_ownership_fails_closed_when_a_claim_stops_rendering(self) -> None:
+        source = "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace("<ScEmptyState", "<div data-dropped-governed-primitive")
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScEmptyState:empty" in failure for failure in failures),
+            failures,
+        )
+
+    def test_p3_state_band_ownership_rejects_a_non_p3_declaration(self) -> None:
+        source = "frontend/apps/web/src/views/SceneHealthView.vue"
+        self.assertTrue(INVENTORY.is_p3(source))
+        INVENTORY.P3_STATE_BAND_OWNERSHIP[source] = ("ScEmptyState:empty",)
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            del INVENTORY.P3_STATE_BAND_OWNERSHIP[source]
+        self.assertTrue(any(source in failure for failure in failures), failures)
+
     def test_external_template_sources_are_counted(self) -> None:
         self.assertEqual(self.report["p3OwnershipDeferred"]["externalTemplateCount"], 2)
 
