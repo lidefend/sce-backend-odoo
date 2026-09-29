@@ -429,3 +429,20 @@ Both stages now use the official form engine; public account lifecycle and the
 recovery-channel notice remain specialized responsibilities. Its browser proof
 intercepts all API calls and simulates stage/error/success responses, so it is UI
 acceptance and not evidence of activating a real account or changing a password.
+
+### Anonymous public-page bootstrap (WEB-AUTH-03)
+
+`GET /api/v1/auth/page-contracts` returns `{ok, data: {schema_version: "1.0.0", pages}}`.
+The canonical builder projects only `login`, `account_activation`, and
+`password_recovery`, without caller context/profile input. Each page carries its
+existing schema version, texts, sections, and only public global/action targets;
+no role, navigation, company, record or authenticated page projection is exposed.
+The registered default action provider supplies `open_login` for activation and
+recovery, matching the existing shared action-target authority.
+
+The anonymous session loads this projection once per context, exposes loading
+and retryable failure, and rejects missing public actions. Context epoch, request
+sequence and authentication state prevent stale responses from replacing the
+subsequent authenticated `system.init` result. The existing page action executor
+consumes the targets; neither views nor the loader invent fallback destinations.
+Activation challenge state remains mounted while public configuration retries.

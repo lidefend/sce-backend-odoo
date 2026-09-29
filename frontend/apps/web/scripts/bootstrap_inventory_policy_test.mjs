@@ -25,3 +25,9 @@ test('navigation telemetry requires the explicit candidate journey mode', () => 
   assert.equal(allow('POST', '/api/v1/intent', { intent: 'usage.track' }, true), true);
   assert.equal(allow('POST', '/api/v1/intent', { intent: 'api.data', params: { op: 'write' } }, true), false);
 });
+
+test('anonymous contract GET is the only additional public API read', () => {
+  assert.equal(allow('GET', '/api/v1/auth/page-contracts', null), true);
+  assert.equal(allow('POST', '/api/v1/auth/page-contracts', {}), false);
+  assert.equal(allow('GET', '/api/v1/auth/activation/start', null), false);
+});

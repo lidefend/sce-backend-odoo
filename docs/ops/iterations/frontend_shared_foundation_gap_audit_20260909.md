@@ -1737,3 +1737,12 @@ AccountActivation/PasswordRecovery却依赖usePageContract中的open_login targe
 本批保持verification_pending，不进入发布收口，不把已有13项改写为整轮passed。
 下一最早步骤为P0公共页面匿名契约的生产/消费边界修复（仅公开页面、不得暴露授权导航/角色），
 再对返回链定向补验；不重做74/12不受影响用例、87入口盘点或激活真实写入。
+
+## WEB-AUTH-03：匿名公共契约引导（进行中）
+基线c2a852c7 clean。P0 smart_core公共页面投影/前端session消费，修复匿名返回链；
+既有builder/action target为唯一权威，只公开三页，不接收调用者profile/context，不开放system.init。
+GET /api/v1/auth/page-contracts → {ok,data:{schema_version:1.0.0,pages}}；pages沿用PageContract。
+无schema/model/data改变，不需-u；测试后只以backend.acceptance.up更新受管后端代码。
+原sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180/filestore不变，不改fixture或账号。
+P4复用public-auth探针，公共契约GET改用真实响应；激活写响应继续模拟。L1→非零backend/frontend
+定向L2→clean后端身份/受管重启→单次构建/定向匿名浏览器；远端/发布未进入。

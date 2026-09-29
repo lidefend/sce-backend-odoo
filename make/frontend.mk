@@ -927,3 +927,8 @@ verify.frontend.workspace_composition.unit: guard.prod.forbid
 verify.frontend.activation_form_engine.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/activation_form_engine_test.ts --bundle --platform=node --format=esm --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --alias:tdesign-vue-next=$(ROOT_DIR)/frontend/packages/ui/node_modules/tdesign-vue-next --outfile=/tmp/activation-form-engine-test.mjs >/dev/null
 	@node /tmp/activation-form-engine-test.mjs
+
+.PHONY: verify.frontend.public_auth_bootstrap.unit
+verify.frontend.public_auth_bootstrap.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_page_contracts_builder_boundaries.py
+	@node --test frontend/apps/web/scripts/public_auth_bootstrap_test.mjs
