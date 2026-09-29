@@ -4687,3 +4687,185 @@ BusinessConfigVersionPanel.vue         -> ScEmptyState:empty
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 32｜设计器与专用树的状态带收口：把剩余 P3 手写状态标记换回受治理原语，并扩表失败关闭（2026-09-30）
+
+### 1. 本段目标与边界
+
+段 31 把 P3 面上"语义最容易出错、风险最低"的 4 面状态带换成了受治理原语，并在
+`p3OwnershipDeferred.stateBandOwned` 建立失败关闭登记；但在段 31 §8 显式登记里，
+设计器、专用菜单树、审批面板三面被登记为"后续面"，工作台壳的两处状态带被
+`low_code_workbench_product_guard` 的 **600 行路由装配上限**挡住。
+
+本段承接这批登记，只做三件事：
+
+1. 把这三面 + 工作台壳（含外置模板）的**手写状态带**真正换成受治理状态原语；
+2. 把这 4 个新来源加进**失败关闭**登记（`P3_STATE_BAND_OWNERSHIP` 4 → 8），
+   让"已转成受治理原语"这件事继续可被机器验证——删原语、改字面状态立刻回退为延迟；
+3. 维护因退役类名而失配的探针（`configuration_center_batch_journey.mjs`），
+   **保留等待意图，不降断言**。
+
+**不做**：不放开 P3 的 `p3_out_of_scope` 不变量（`test_p3_surfaces_do_not_masquerade_as_p0_completion`
+仍要求 P3 面保持延迟状态）；不重构设计器；不动后端契约；**不拆**
+`BusinessConfigSurfaceView.vue` 的装配职责（见 §9）；不动四项 `style_system` 欠账。
+
+### 2. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P3 —— 低代码配置产品（设计器／管理台呈现面） |
+| `Layer Target` | 前端渲染层：`frontend/apps/web/src`（设计系统原语消费），非平台机制、非行业默认 |
+| `Module` | `frontend/apps/web`（Vue 呈现）+ `scripts/audit`（失败关闭登记与单测） |
+| `Standard vs User-Specific` | 平台机制级：状态**呈现**统一走受治理原语；与业务默认、客户偏好、管理员配置无关 |
+| `Why Here` | 状态带是**呈现**，归端侧设计系统；P3 面仍是 P3，本段只换承载原语，不改低代码语义与权限 |
+| `Why Not Elsewhere` | 不落后端契约（契约不表达外观）；不落 `smart_core`/`smart_construction_core`（非业务语义）；不落模板派生配置（非客户偏好） |
+| `Blast Radius` | 仅 `businessConfigSurface`、`menuConfig`、`contractForm` 设计器面与管理台壳的**瞬时状态带 DOM**；不动查询域、记录身份、授权、动作绑定。验证：既有 L1/L2 定向单测 + 失败关闭登记 + 一次浏览器观察 |
+
+### 3. 产品渲染收口（5 面 / 8 处）
+
+| 文件 | 原来（手写） | 现在（受治理原语） | 判定依据 |
+|---|---|---|---|
+| `pages/contractForm/CurrentFormFieldSettingsPanel.vue` | `<p class="contract-form-field-search-empty">没有匹配字段</p>` | `<ScEmptyState density="compact" :heading-level="5" title="没有匹配字段" />` | 真正的空结果带 |
+| 同上 | `<div class="contract-field-selection-empty">…`（含标题与说明） | `<ScEmptyState class="contract-field-selection-empty" density="compact" :heading-level="5" … />` | 空态引导，按 empty 语义；保留类名作外层框架 |
+| 同上 | `<p class="contract-form-operation-log-empty">暂无操作记录</p>` | `<ScEmptyState density="compact" :heading-level="6" title="暂无操作记录" />` | 真正的空结果带 |
+| `views/MenuConfigView.vue` + `views/menuConfig/template.html` | `<section class="menu-selected-panel menu-primary-panel menu-selected-panel--empty">…<h2>全部菜单</h2><p>…</p></section>` | `<ScEmptyState class="menu-empty-panel menu-primary-panel" :heading-level="2" title="全部菜单" … />` | "未选菜单"引导面板，empty 语义 |
+| `views/businessConfigSurface/BusinessConfigApprovalPanel.vue` | `<div class="approval-step-empty">…<ScButton>…</div>` | `<ScEmptyState class="approval-step-empty" density="compact" :heading-level="4" …><template #actions><ScButton … /></template></ScEmptyState>` | 空结果带 + 带内联主操作；动作经 `#actions` 槽保持同一业务意图 |
+| `views/BusinessConfigSurfaceView.vue` + `views/businessConfigSurface/template.html` | `<div v-else-if="error" class="status error">{{ error }}</div>` | `<ScInlineState v-else-if="error" state="error" :label="error" />` | 瞬时错误带 |
+| 同上 | `<div v-else-if="message.text" class="status ok">…</div>` | `<ScInlineState v-else-if="message.text" state="success">…</ScInlineState>` | 瞬时成功带 |
+| 同上 | `<section v-if="loading" class="loading-state">正在读取配置能力...</section>` | `<ScInlineState v-if="loading" state="loading" label="正在读取配置能力..." />` | 瞬时加载带 |
+
+配套清理（避免死样式）：
+- `CurrentFormFieldSettingsPanel.css`：删孤儿 `.contract-form-field-search-empty`、`.contract-form-operation-log-empty`；
+  把 `.contract-field-selection-empty` 从与 `.contract-field-selection-card` 的群组选择器拆出，独立保留边框/内边距/背景。
+- `menuConfig/table.css`：删 `.menu-selected-panel--empty` 及其 h2/p 规则；`.menu-empty-panel` 进面板边框群组 + `padding: 14px` 框架规则（注释说明只接管框架）。
+- `businessConfigSurface/style.css`：删孤儿 `.status.ok`、`.status small`、`.loading-state`；`.status`/`.loading-state` 从 margin 群组移除。
+- `BusinessConfigSurfaceView.vue`：新增一行 `import ScInlineState`，同时删除经核实**确属未用**的 `type BusinessConfigRemediationAction`
+  （唯一被削的阴影导入，**不是"删行凑数"**——该类型在文件内无任何引用；文件仍**恰好 600 行**）。
+
+### 4. 失败关闭的转换登记扩展
+
+`scripts/audit/generate_frontend_rendering_detail_inventory.py` 的 `P3_STATE_BAND_OWNERSHIP` 由 4 项扩到 **8 项**：
+
+```
+CurrentFormFieldSettingsPanel.vue            -> ScEmptyState:empty
+MenuConfigView.vue                           -> ScEmptyState:empty
+BusinessConfigApprovalPanel.vue              -> ScEmptyState:empty
+BusinessConfigSurfaceView.vue                -> ScErrorState:error, ScInlineState:error,
+                                                ScInlineState:loading, ScInlineState:success
+```
+
+检查逻辑沿用段 31：声明源必须是 P3 面、必须仍在延迟登记表内、文件必须存在、
+**每一条声明必须真的被渲染**（从解析后的源含外置模板取字面状态），
+`build_inventory()` 失败即 `ValueError` 抛出（不是打印告警）。
+
+### 5. 负例（先证明会红）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_p3_designer_and_tree_bands_are_owned_by_governed_primitives` | 显式断言退役类名（`.contract-field-selection-empty`、`menu-selected-panel--empty`、`.approval-step-empty` 的旧 div、`.status ok`、`.loading-state`）**不再渲染**，且对应原语已在位 | 通过 |
+| `test_p3_state_band_ownership_fails_closed_on_a_dropped_designer_band` | 把设计器某一 `<ScEmptyState` 换成裸 `<div>` | 断言失败（声明未被渲染 → 登记回退为延迟） |
+| `test_p3_state_band_ownership_fails_closed_on_a_changed_inline_state` | 改工作台壳 `<ScInlineState state="…">` 的字面状态 | 断言失败 |
+
+单测模块：`python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory` → **40 tests OK**（段 31 为 37）。
+
+### 6. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/**`（5 个 Vue/HTML + 3 个 CSS + 1 个探针），
+`scripts/audit/**`（生成器与单测），`docs/**` 派生清单。
+影响层：L1 静态/生成物、L2 前端定向单测；风险类：呈现与守卫登记（非持久化、非授权、非契约）。
+最早必需层 L2；L3/L4 跳过项及理由见 §7。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=clean coverage=L1_only receipt=none` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（`complexity_budget_report` 随本段 `MenuConfigView.vue` 行为刷新，已在校验前重生成） |
+| L1 | `python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory` | PASS `40 tests OK` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | PASS `76 tests OK`；`rendering_detail_inventory PASS surfaces=173 gaps=0` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS `13 tests OK`；`required=33 missing=0` |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（先修过 `heading-level="5"` 类型错误 → `:heading-level="5"`） |
+| L2 | `make verify.business_config.guard_inventory / .product_guard / .publish_boundary_guard` | 全 PASS |
+| L2 | `make verify.frontend.primitive_adapter.unit / navigation_shell.unit / form_designer_actions.unit / low_code_field_create_dialog.unit / page_pattern_reference_parity.unit` | 34 / 19 / cases=6 / 6 / 15 全 PASS |
+| L2 | `bash scripts/verify/menu_config_tree_editor_behavior_guard.sh` | PASS |
+
+**L3 跳过**：未改后端模型、权限、数据契约 → 不做模块升级与夹具重置。
+**L4**：一次定向浏览器观察（见 §7），非完整发布门禁。
+
+### 7. 候选、运行身份与浏览器观察
+
+- 旧产物保留：`config05-20260929` → `config05-20260929-prev-6cd68a909`（base_sha `013770d18…`，**未覆盖**）。
+- 新候选：`config05-20260929/dist`，`base_sha=3da37f767…`（本段 3 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-XdKv-Cj_.js`，
+  `entry_sha256=425f40ee523e8c52d3dad3056ad5087a86091ca1b5b1fc048fd7fc5a2a45e03c`，
+  `index_sha256=d421f8da30e382985336f3ba1f334769280cce3d4d8fba81b7e6392237cf9970`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （构建前须先移走旧目录，否则 `REUSED unchanged build`）。
+- 5180 监听进程在操作前后均**未变**：`pid=802966`，`node scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`。
+  静态服务按请求读盘 → 同路径替换产物即对新内容生效，**未新增常驻端口**。
+- 身份自校验：HTTP 回读 `index.html` 与入口 JS，`index_sha256` / `entry_sha256` 与 `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，db `sc_frontend_acceptance`），
+  受管角色 `fixture_role_config_admin`，凭据仅取 `SC_ACCEPTANCE_FIXTURE_PASSWORD`。**全程零写入**。
+- 证据目录：`sce-offrepo/artifacts/seg32-p3-designer-tree/`（`observation.json`、`designer-probe2.json`、
+  `approval-probe2.json`、`approval-mobile.json` 及截图）。
+
+定向浏览器观察（两个视口，受管角色，全程零写入）：
+
+| 检查 | `/admin/business-config` 1440×900 | 同 390×844 | `/admin/menu-config` 1440×900 | 同 390×844 |
+|---|---|---|---|---|
+| 可达（`scan-row`） | 是（60） | 是 | 是 | 是 |
+| 手写状态标记 `.status.ok/.status.error/.loading-state` | 0 | 0 | 0 | 0 |
+| 退役类名 `.workbench-status-empty` / `.empty-state` | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 专用树 `.menu-selected-panel--empty` → `.menu-empty-panel` | — | — | **0 → 1** | **0 → 1** |
+| 受治理 `[data-semantic-component="ScEmptyState"]` | 1（"选择一个业务页面…"） | 1 | 1（"全部菜单…"） | 1 |
+| `ScInlineState state="loading"` | 采集到（"正在读取配置能力..."） | 采集到 | 采集到 | 采集到 |
+| 页面级横向溢出 `scrollWidth/clientWidth` | 1440/1440 | 390/390 | 1440/1440 | 390/390 |
+| console error | 0 | 0 | 0 | 0 |
+
+审批空态：由工作台"付款申请（`payment.request`，`action_id=775`）→ 配置审批规则"驱动出来，
+断言 `approvalEmpty=1`、DOM `data-semantic-component="ScEmptyState"`、
+文本"当前没有审批步骤 启用审批后可添加办理节点。启用并添加步骤"；1440 与 390 均无横向溢出，console error 0。
+
+**未覆盖（如实记录，不当作通过）**：设计器面 `CurrentFormFieldSettingsPanel`（本段改造的三处之一）
+在本次运行中**未被渲染**——该路由 `/f/payment.request/new?…&config_mode=business_config_lowcode`
+当前由 `data-bound-form-designer[data-ready=true]` 接管（`boundDesigner=1 boundReady=1`），
+因此设计器面登记为 **`not_run`**；其证据来自源码级失败关闭登记（§4/§5），
+**未放宽任何条件去凑出页面级证据**。该次设计器探针另记录到一次 `404` console error（资源未找到），
+本段未改动相关链路，如实登记、不作归因。
+
+`/admin/release-operator`、`/admin/scene-health`、`/admin/scene-packages` 为 `adminOnly`，
+受管环境**无 platform-admin 夹具** → 保持 `not_run`（不放宽 `adminOnly`、不换管理员证明业务可用）。
+
+### 8. 对段 31 数字的补充（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变量未放开）；
+- 其中 `stateBandOwnedCount`：**4 → 8**；剩余纯延迟：**15 → 11**；
+- `governed_composite`：**113**（不变）；`governed_primitive`：**41**（不变）；
+- 清单总面数：**173**（不变），`gap=0`；
+- `component-driver-takeover` 消费者计数：empty **27 → 31**（+4），alert **56**（不变），loading **52**（不变）。
+
+### 9. 显式登记（不在本段范围）
+
+- `views/BusinessConfigSurfaceView.vue` 的**路由装配 600 行上限**仍需后续按职责拆分。
+  本段只删除了一个经核实确未使用的类型导入（`BusinessConfigRemediationAction`），
+  **没有**用"删一行凑数"的方式绕过上限，也没有把装配职责搬进 `AppShell`。
+- `views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue` 的 `page-config-selection-empty`：
+  已被 `ScEmptyState` 包在 `ScCard v-else` 框架内，属**布局框架**而非状态带 → 登记为后续面。
+- `views/businessConfigSurface/BusinessConfigStartPanel.vue` 的 `config-status--empty` 是**徽标修饰符**（非状态带）→ 登记。
+- 承接段 28–31 全部登记项：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`（已知不等价）；
+  `/admin/scene-health`、`/admin/scene-packages` 无 platform-admin 夹具；
+  `style_system.guard` 四项文件长度欠账；`state_transition_undeclared` 五条等。
+  本段未触碰，未新增越界。
+
+### 10. 提交
+
+- `refactor(web): render the remaining P3 designer and tree state bands through governed primitives`
+- `fix(guard): extend the fail-closed P3 state-band register to the designer and tree`
+- `chore(web): refresh the derived inventories for the designer and tree state bands`
+- 段记录（本文件）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
