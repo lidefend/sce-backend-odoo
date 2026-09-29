@@ -191,7 +191,7 @@
 
 **WEB-UAT-01A 付款申请定点补证（`menu_sc_user_payment_apply`）——页面级证据已补齐，但明细职责存在未修复阻断，状态由 `passed` 改回 `partial_passed`。** 补齐项（均为**页面点击**，非直接 API）：①附件经页面真实上传控件 `setInputFiles`→`file.upload` 200→列表显示→刷新仍可见（附件 1091，65B）→点击下载→`file.download` 200 且产生真实浏览器下载事件，下载字节 sha256 与上传一致（15/15）；②分页经可见「每页 10 条」选择器→点下一页→页码与记录集合变化→打开第二页详情→返回后仍在第二页且行集合与筛选保持（11/11）。明细职责范围按视图与运行时子视图契约核定：`outflow_line_ids` 内联可编辑、自由新增被禁（`create=false`）但存在受控新增路径「从结算单引入」、允许删除；`receipt_invoice_line_ids` 因 `type != 'receive'` 在本入口不渲染；`ledger_line_ids` 只读且不在本入口渲染面。**据此不再把明细整体写为「不适用」。**
 
-**未修复阻断（本入口无法取得「编辑已有明细行后保存」证据）**：多行付款申请（经正常 UI 由结算单引入、`source_line_type` 全部为常量「结算单明细」）在编辑任一明细单元格后保存，前端不发写请求并提示 `outflow_line_ids 存在重复行值：结算单明细`／`主值重复：结算单明细`（证据 `uat01a-raw/uat01a_line_dup_block.txt`）。根因：`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:521-549` 的 `collectOne2manyDraftValidationFromRows` 以 `one2manyPrimaryColumnFromColumns`（**首个业务列**）作行身份，而本子视图首列为 `source_line_type`，导入处理器 `addons/smart_construction_core/handlers/payment_request_settlement_introduce.py:526` 给每行写同常量，于是两行以上互相判重；对照实验（两行 `source_line_type` 取值不同）同一编辑保存即可成功。属既有行为（文件最后修改于 `de9a230d`/`0b47763`，非 `19b2d290`/`c0b9a62e` 引入）。最小修法（**未实施**）：对已持久化行改以记录 id 作行身份，而非主列标签；因该断言被全局 one2many 校验共用，改动语义面较大，故保留为待批准的阻断 + 修法建议，不在本轮改动。
+**~~未修复阻断~~ → 已关闭（FE-TPL-05A，2026-09-29；见文末）**（原文保留：本入口无法取得「编辑已有明细行后保存」证据）**：多行付款申请（经正常 UI 由结算单引入、`source_line_type` 全部为常量「结算单明细」）在编辑任一明细单元格后保存，前端不发写请求并提示 `outflow_line_ids 存在重复行值：结算单明细`／`主值重复：结算单明细`（证据 `uat01a-raw/uat01a_line_dup_block.txt`）。根因：`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:521-549` 的 `collectOne2manyDraftValidationFromRows` 以 `one2manyPrimaryColumnFromColumns`（**首个业务列**）作行身份，而本子视图首列为 `source_line_type`，导入处理器 `addons/smart_construction_core/handlers/payment_request_settlement_introduce.py:526` 给每行写同常量，于是两行以上互相判重；对照实验（两行 `source_line_type` 取值不同）同一编辑保存即可成功。属既有行为（文件最后修改于 `de9a230d`/`0b47763`，非 `19b2d290`/`c0b9a62e` 引入）。最小修法（**未实施**）：对已持久化行改以记录 id 作行身份，而非主列标签；因该断言被全局 one2many 校验共用，改动语义面较大，故保留为待批准的阻断 + 修法建议，不在本轮改动。 **→ 已关闭（FE-TPL-05A，2026-09-29）。** 该断言已改为按**行身份**判重（`id:<record>` / `key:<draft key>`），列值只作显示、不承担业务唯一性；修法与本段建议一致，但落在 adapter 自身拥有的不变量上而非新增业务规则。真实页面复验：付款申请草稿从两张结算单引入 2 行（`source_line_type` 同为常量）→ 编辑其一 → 保存 → 刷新回读，被编辑行正确、其他行未串位、无重复创建、来源关联正确，且发出真实写请求；`adopted_form_validation_identity` 46/46、`collection_view_semantics` PASS、`typecheck.strict` exit 0。详见同目录文末《FE-TPL-05A：付款申请主从办理接管》。
 
 **发现二（治理元数据，非产品缺陷）：矩阵 `role_authority` 无法表达 role-surface 暴露层。** `project.project` 三条入口的 Odoo 菜单/动作组绑定实测为：`menu_sc_product_project_edit_v1`（菜单 680/动作 861）＝`group_sc_cap_project_user+group_sc_cap_project_manager`；`menu_sc_project_initiation`（374/708）＝**同一对组**；`menu_sc_product_project_lifecycle_v1`（681/863）＝`group_sc_cap_project_manager`。`fixture_role_pm` 同时持有 manager 与 user 组，但其运行时路由面（`system.init`→`navigation.route_authority`，`primary_actions`）**只含 861，不含 708/863**，故 SPA 对 708/863 返回 `NAVIGATION_AUTHORITY_DENIED`（`router/index.ts` 的 `NAVIGATION_AUTHORITY_DENIED` 分支）；列表路由与建单路由结论一致，非路由形态问题。来源为声明式角色面策略 `addons/smart_construction_core/core_extension_policy_maps.py`→`ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids`：列了 `menu_sc_product_project_edit_v1`，未列另两者。**矩阵 role_authority 单元格只录 Odoo 组链、不含该层**，故对 pm 会预测可进 708/863 而运行时被拒——已在三条入口的 `gap` 单元格如实记录，**未**擅自改写组链为猜测值，交治理方复核。
 
@@ -1069,3 +1069,76 @@ TPL-03 探针：`artifacts/frontend-web-fix-20260928/tpl03fix-20260929/`（stamp
 
 **边界（不得夸大）**：本批是**契约边界硬化 + 验收缺口闭合**，不等于 89 入口矩阵或所有模型已验收；
 不重跑 89 入口与全站发布门禁；不修改业务矩阵状态；不推送、不合并、不部署；**未**进入 TPL-05。
+
+### FE-TPL-05A：付款申请主从办理接管（2026-09-29）
+
+**A｜异步保存旧阻断——关闭。** 旧漏洞（校验等待期间切换记录/草稿，旧异步结果污染新上下文）的实现
+已在真实保存链上：`frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts` 的
+`surfaceEpoch` / `SaveOperation` / `saveOperationOwnsSurface`。本轮不重复修复，只补关闭依据：
+`make verify.frontend.adopted_form_validation_identity.unit` → `cases=46 failed=0`、
+`no cross-identity leak observed`（真实 Vue 实例 + 真实保存链），覆盖 A 校验晚失败、A 校验晚成功读 B、
+A→B→A 同身份重入、旧 `finally` 不清理新操作、校验期间草稿被改等反例。
+
+**B/C｜master/detail 由有效契约驱动。** 入口 `menu_sc_user_payment_apply`（menu 545 / action 775 /
+`payment.request`），角色 `fixture_role_finance`，DB `sc_frontend_acceptance`。主单沿用官方表单与规则适配；
+明细 `outflow_line_ids` 的契约 `subview.policies={can_create:false, can_unlink:true, inline_edit:true}`：
+自由新增被禁，受控路径为 `从结算单引入`（`actionRefs.introduce=payment.request.add.settlement.lines`）。
+
+本轮修复两个**真实缺陷**（独立提交）：
+
+| 缺陷 | 根因 | 修复 |
+|---|---|---|
+| 明细行「主值重复」误判、保存被拦且零写请求 | `one2manyUtils.collectOne2manyDraftValidationFromRows` 以**首个业务列**（此处 `source_line_type`，导入处理器写同常量「结算单明细」）作行身份，两行以上互相判重 | 改按**行身份**判重（`one2manyRowCollectionIdentity`：`id:N` / `key:K`）；列值只作显示，业务唯一性只能来自契约或存储模型；消息改为 `存在重复明细行：…` |
+| 关系字段搜索吞掉空格 | `ProfessionalMany2oneFieldControl.vue` 把 `.trim()` 后的 keyword 作为**受控** `:query-value` 回填输入框，`FE Project` 尾随空格逐字符被删 → `FEProject`，请求亦发规范化键 | 拆成「输入文本（原样回填）」`resolveProfessionalMany2oneSearchInput` 与「请求键（trim）」`resolveProfessionalMany2oneQueryKey`；`useRecordFormState.queryMany2oneInline` 分别存储 |
+
+**主从办理链（真实页面，一次性 49/49 PASS，0 FAIL）**：
+`artifacts/frontend-web-fix-20260928/tpl05a-20260929/chain-masterdetail-20260929064307.json`
+
+- 主单草稿：真实关系选择（项目/往来单位/业务分类）→ 金额直填 → 保存 → RPC 回读 `state=draft`。
+- 受控引入：两张结算单各引 1 行 → 2 行；无自由新增控件；主单金额由明细合计重绑（300）。
+- 编辑一行 → 保存 → 刷新回读：被编辑行正确、其他行未串位、无重复创建、`settlement_line_id` 来源关联正确、
+  来源结算单头未变、`applied_amount` 随引入变化（结算行 15→200、14→40）。
+- 删除一行 → 保存 → 刷新回读：行消失、`applied_amount` 复原（14→0）。
+- 拒绝与恢复：导入对话框把超额申请 clamp 到可申请余额（`9999 → 100`）；同一规则由后端
+  `payment.request.add.settlement.lines` 强制（`AMOUNT_EXCEEDS_REMAINING`，且**全量校验后才创建 = 零写入**）；
+  主单必填被清空 → 保存被拦（`writesDuring:0`）、明细草稿保留 → 纠正后保存并回读成功。
+- 附件：页面文件控件上传 → 刷新可见（`ir.attachment`）→ 下载字节 sha256 与上传一致。
+- 受限操作：已批准申请为只读——无 `从结算单引入`、无 `保存草稿`、无可编辑明细输入。
+- 窄屏 390×844：无整页横向溢出、单一纵向滚动属主、主操作与明细（移动卡片式）可用。
+
+**唯一控制台报错是正确行为**：`/api/v1/intent` 返回 409 `RECORD_VERSION_CONFLICT`（phase `F-attachment`：
+附件上传后立即保存，乐观并发守卫拒绝过期写入），附件已持久化、记录收敛，记为
+`Z1b-conflict-recovered-without-loss` PASS；未捕获 JS 异常 0。
+
+**D｜真实下一页，不造数据。** 复用本批受管样本，在已有真实数据的付款申请列表 `/m/545` 完成：
+`nextpage-20260929065605.json`，6/6 PASS——每页 10（真实请求 `{limit:10, offset:10}`）→ 下一页 →
+第 2 页为**不同记录集合** → 打开该页记录（URL 携带 `list_offset=10`）→ 返回后仍第 2 页、记录集合与请求
+`{limit:10, offset:10}` 保持。**未创建任何记录。** 已接管试点列表 `sc.general.contract` / `project.project`
+在验收角色下受管可见记录仅 3 / 2 行，最小页长 10 仍单页；该缺口在试点列表上仍受**受管数据量**限制，
+记录为限制（不作产品缺陷，也不为它造 7–9 条业务数据）。
+
+**范围必须读准**：`payment.request` **不在** `STANDARD_LIST_COMPOSITION_PILOT_MODELS`
+（`frontend/apps/web/src/app/presentation/standardListComposition.ts`）内，该列表当前仍由
+`legacy-list-surface` 承载；因此上面这次真实翻页证明的是**共享列表分页/返回上下文链路**，
+**不等于官方列表组合的分页已取证**。官方组合的真实下一页仍受试点列表受管数据量限制（单页），
+保持 `NEEDS_EVIDENCE`；是否把 `payment.request` 纳入试点（并随之重新构建、对官方组合复验）
+留作后续批次决定，本轮不动源码、不重建候选。
+
+**双视口证据**：`tpl05a-masterdetail-desktop.png`、`tpl05a-masterdetail-narrow.png`（含 `-detail.png`
+元素截图：申请金额页签、明细 2 条、移动卡片明细）。
+
+**候选与运行来源**：HEAD `196bbcd3` + 两笔缺陷修复提交；`artifacts/` gitignored。产物
+`sce-offrepo/artifacts/tpl05a-20260929/dist`（入口 `/assets/index-BwDHt7Yf.js`，磁盘 sha256 == 服务端
+`cfddd84c…`）；`:5180` pid `1009190`（`STATIC_ROOT=…/tpl05a-20260929/dist`，代理 `:18082`），
+`:5176/:5178/:5179` 未变动。全部改动源码 mtime 早于构建时间，无漂移，故未重复构建。
+
+**回归**：`adopted_form_validation_identity` 46/46、`collection_view_semantics` PASS、
+`professional_relation_field` PASS、`typecheck.strict` exit 0。
+
+**数据恢复**：本轮新建的付款申请草稿经 `unlink` 删除（无孤儿 `payment.request.line`）；结算行
+`applied_amount` 全部回到 0；既有草稿 1813 未变（`amount=33`、行 `[1,2]`）。删除=新草稿、恢复=结算行
+applied、保留=1813 与结算单 13/14/15，分别记录。
+
+**边界（不得夸大）**：四项 `style_system.guard` 欠账与 `render_semantic_ready_guard.py`、
+`verify.list.surface.clean`、`no_new_any_guard` 仍独立记账，未处理；业务矩阵未升级整行（只关闭上述
+一条既有未修复阻断的记录）；未重跑 89 入口/全站发布门禁；不推送、不合并、不部署；下一批为 WEB-LC-01。
