@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import copy
 import hashlib
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -211,6 +212,51 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         self.assertIn("design-system adapter layer", policy["nativeControlScope"])
         self.assertTrue(policy["nativeControlRequiresExplicitCompositeOwnership"])
         self.assertTrue(policy["p3DoesNotBlockP0P1Completion"])
+
+    def test_external_template_joins_the_evaluated_source(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        vue_text = (ROOT / source).read_text(encoding="utf-8")
+        text, externals = INVENTORY.resolve_source_text(ROOT / source)
+        self.assertEqual(
+            [path.relative_to(ROOT).as_posix() for path in externals],
+            ["frontend/apps/web/src/views/menuConfig/template.html"],
+        )
+        # The rendered state primitive exists only in the external template.
+        self.assertNotIn("<ScInlineState", vue_text)
+        self.assertIn("<ScInlineState", text)
+
+    def test_missing_external_template_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            orphan = root / "Orphan.vue"
+            orphan.write_text('<template src="./missing.html"></template>\n', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                INVENTORY.resolve_source_text(orphan)
+
+    def test_object_task_page_is_owned_and_machine_bound(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        self.assertIn(source, self.by_source)
+        item = self.by_source[source]
+        self.assertEqual(item["status"], "governed_composite")
+        self.assertEqual(item["targetBatch"], "p0-inline-full-state-completion-v1")
+        self.assertEqual(item["governedStatePrimitives"], ["ScInlineState"])
+
+    def test_object_task_page_binding_fails_closed_when_state_changes(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        text = (ROOT / source).read_text(encoding="utf-8")
+        mutated = text.replace('state="info"', 'state="empty"')
+        self.assertNotEqual(text, mutated)
+        self.assertEqual(INVENTORY.classify(source, mutated)[0], "gap")
+
+    def test_governed_state_primitive_vocabulary_covers_the_inline_state_guard(self) -> None:
+        from scripts.verify.frontend_inline_state_guard import FILES as INLINE_STATE_FILES
+
+        governed = {path.stem for path in INLINE_STATE_FILES.values()}
+        self.assertTrue(governed.issubset(set(INVENTORY.GOVERNED_STATE_PRIMITIVES)))
+        self.assertIn("ScLoading", INVENTORY.GOVERNED_STATE_PRIMITIVES)
+
+    def test_external_template_sources_are_counted(self) -> None:
+        self.assertEqual(self.report["p3OwnershipDeferred"]["externalTemplateCount"], 2)
 
     def test_report_binds_generator_and_all_vue_inputs(self) -> None:
         self.assertNotIn("sourceCommit", self.report)

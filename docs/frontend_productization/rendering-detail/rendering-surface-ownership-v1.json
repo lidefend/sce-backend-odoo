@@ -13,6 +13,7 @@
         "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
         "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+    "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue",
         "frontend/apps/web/src/App.vue"
       ]
     },

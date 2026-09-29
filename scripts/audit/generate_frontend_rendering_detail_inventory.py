@@ -42,7 +42,12 @@ RAW_CONTROL_PATTERNS = {
     "select": re.compile(r"<select\b"),
     "textarea": re.compile(r"<textarea\b"),
 }
-GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScEmptyState", "ScErrorState")
+# Governed inline-state vocabulary.  Kept aligned with the dedicated
+# frontend_inline_state_guard (ScInlineState / ScEmptyState / ScErrorState) plus
+# the loading primitive; a surface that renders any of these owns its state
+# presentation through the design system.
+GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScInlineState", "ScEmptyState", "ScErrorState")
+EXTERNAL_TEMPLATE_SRC = re.compile(r"""<template\s+src\s*=\s*['"](?P<value>[^'"]+)['"]""")
 
 OWNERSHIP_PATH = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
 OWNERSHIP = json.loads(OWNERSHIP_PATH.read_text(encoding="utf-8"))
@@ -87,6 +92,7 @@ BATCH_BINDINGS = {
     "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": {"scinlinestate": {"states": {"empty", "error"}, "minimum": 2}},
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
     "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue": {"scinlinestate": {"states": {"error"}, "attrs": {"state": "error"}, "minimum": 5}},
+    "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue": {"scinlinestate": {"states": {"info"}, "attrs": {"density": "compact"}, "minimum": 1}},
     },
     "p0-collection-state-control-completion-v1": {
         "frontend/apps/web/src/components/product-list/ProductListSurface.vue": {"sccard": {"attrs": {"appearance": "table", ":bordered": "false", "data-list-card-container": "official", "data-semantic-component": "ProductListSurface"}}, "slot": {}},
@@ -320,6 +326,28 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
+def external_template_paths(path: Path, text: str) -> list[Path]:
+    """Resolve ``<template src="...">`` targets so the evaluated source set is
+    the component's real rendering surface.  A component that keeps its template
+    in an external file must not be judged from the ``.vue`` script alone: doing
+    so hides raw controls and governed state primitives that actually render."""
+    resolved = []
+    for match in EXTERNAL_TEMPLATE_SRC.finditer(text):
+        target = (path.parent / match.group("value")).resolve()
+        if not target.is_file():
+            raise ValueError(f"external component template is missing: {rel(path)} -> {match.group('value')}")
+        resolved.append(target)
+    return resolved
+
+
+def resolve_source_text(path: Path) -> tuple[str, list[Path]]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    externals = external_template_paths(path, text)
+    for target in externals:
+        text += "\n" + target.read_text(encoding="utf-8", errors="replace")
+    return text, externals
+
+
 def digest(paths: list[Path]) -> str:
     result = hashlib.sha256()
     for path in sorted(paths):
@@ -379,8 +407,10 @@ def build_inventory() -> dict[str, Any]:
         raise ValueError("invalid rendering ownership bindings: " + "; ".join(binding_failures))
     vue_files = sorted((ROOT / "frontend/apps/web/src").rglob("*.vue"))
     surfaces: list[dict[str, Any]] = []
+    template_files: set[Path] = set()
     for path in vue_files:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text, externals = resolve_source_text(path)
+        template_files.update(externals)
         state_types = [name for name, pattern in STATE_PATTERNS.items() if pattern.search(text)]
         raw_controls = {name: len(pattern.findall(text)) for name, pattern in RAW_CONTROL_PATTERNS.items()}
         raw_controls = {name: count for name, count in raw_controls.items() if count}
@@ -419,7 +449,7 @@ def build_inventory() -> dict[str, Any]:
     }
     generator_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     ownership_digest = hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest()
-    input_digest = digest(vue_files + [OWNERSHIP_PATH])
+    input_digest = digest(vue_files + sorted(template_files) + [OWNERSHIP_PATH])
     source_identity = hashlib.sha256(
         f"{generator_digest}:{ownership_digest}:{input_digest}".encode("utf-8")
     ).hexdigest()
@@ -429,7 +459,7 @@ def build_inventory() -> dict[str, Any]:
         "generatorDigest": generator_digest,
         "ownershipDigest": ownership_digest,
         "inputDigest": input_digest,
-        "scope": "repository formal-product frontend Vue rendering-detail sources",
+        "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
         "statusVocabulary": sorted(STATUS_VALUES),
         "excludedScopes": [
             "demo_addons",
@@ -462,6 +492,7 @@ def build_inventory() -> dict[str, Any]:
                 "professionalization ownership declaration yet.  The deferral is declared here and "
                 "counted below so it stays auditable instead of disappearing behind a scope filter."
             ),
+            "externalTemplateCount": len(template_files),
             "surfaceCount": sum(1 for item in surfaces if item["status"] == "p3_out_of_scope"),
             "surfaces": sorted(item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"),
         },

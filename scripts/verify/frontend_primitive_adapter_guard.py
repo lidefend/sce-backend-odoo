@@ -134,6 +134,28 @@ def native_descendant_visual_overrides(source_text: str, style_text: str | None 
     return sorted(set(findings))
 
 
+EXTERNAL_TEMPLATE_SRC = re.compile(r"""<template\s+src\s*=\s*['"](?P<value>[^'"]+)['"]""")
+
+
+def external_template_text(path: Path, source_text: str) -> str:
+    """Resolve ``<template src="...">`` so the scanned source is the component's
+    real rendering surface.  Judging an external-template component from the
+    ``.vue`` script alone would let a native control render undetected."""
+    chunks = []
+    for match in EXTERNAL_TEMPLATE_SRC.finditer(source_text):
+        target = (path.parent / match.group("value")).resolve()
+        if not target.is_file():
+            raise FileNotFoundError(f"external component template is missing: {target}")
+        chunks.append(target.read_text(encoding="utf-8"))
+    return "\n".join(chunks)
+
+
+def component_source_text(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    external = external_template_text(path, text)
+    return f"{text}\n{external}" if external else text
+
+
 def component_style_text(path: Path, source_text: str) -> str:
     styles = [source_text]
     for match in STYLE_SOURCE.finditer(source_text):
@@ -187,7 +209,7 @@ def validate(root: Path = ROOT) -> list[str]:
             relative = path.relative_to(root).as_posix()
             if "/components/design-system/" in f"/{relative}":
                 continue
-            source_text = path.read_text(encoding="utf-8")
+            source_text = component_source_text(path)
             if RAW_INTERACTIVE_CONTROL.search(source_text):
                 errors.append(f"business surface bypasses the professional primitive adapter: {relative}")
             if any('data-semantic-component=' in match.group("attrs") for match in SC_DIALOG_CONSUMER.finditer(source_text)):

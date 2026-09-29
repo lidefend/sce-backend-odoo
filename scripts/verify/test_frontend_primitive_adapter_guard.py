@@ -384,6 +384,19 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
             )
         )
 
+    def test_external_component_template_cannot_hide_a_native_control(self) -> None:
+        root = self.make_root()
+        view = root / "frontend/apps/web/src/views/ExternalTemplateView.vue"
+        view.parent.mkdir(parents=True, exist_ok=True)
+        view.write_text(
+            '<template src="./externalTemplateView/template.html"></template>\n<script setup lang="ts"></script>\n',
+            encoding="utf-8",
+        )
+        template_dir = view.parent / "externalTemplateView"
+        template_dir.mkdir(parents=True, exist_ok=True)
+        (template_dir / "template.html").write_text('<button type="button">Save</button>\n', encoding="utf-8")
+        self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
+
     def test_external_component_style_cannot_repaint_primitive_root(self) -> None:
         root = self.make_root()
         source = root / "frontend/apps/web/src/views/ExternalStyleView.vue"
