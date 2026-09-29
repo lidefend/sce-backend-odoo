@@ -4527,3 +4527,157 @@ frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 31｜P3 状态带所有权：把手写状态标记换回受治理原语，并让转换可被机器复核（2026-09-30）
+
+### 1. 本段目标与边界
+
+P3（低代码设计器／管理台）状态的**所有权延迟**在段 29/30 已显式化，但一直只是"欠账计数"：
+登记表说这些面"有状态词汇、没有专业化所有权声明"，却没有任何东西记录**哪一面已经真的把状态带交给了设计系统**。
+本段做两件事：
+
+1. 把 P3 面上**语义最容易出错、风险最低**的手写状态标记，真正换成受治理状态原语；
+2. 给这批转换加一份**失败关闭**的登记（`p3OwnershipDeferred.stateBandOwned`），
+   让"已转成受治理原语"这件事可被机器验证，且删除原语／改掉字面状态就会立刻回退为延迟。
+
+**不做**：不放开 P3 的 `p3_out_of_scope` 不变量（`test_p3_surfaces_do_not_masquerade_as_p0_completion`
+仍要求 P3 面保持延迟状态），不重构低代码设计器，不动后端契约，不动其他守卫欠账。
+
+### 2. 产品渲染收口（4 面 / 5 处）
+
+| 文件 | 原来（手写） | 现在（受治理原语） | 判定依据 |
+|---|---|---|---|
+| `views/businessConfigSurface/BusinessConfigVersionPanel.vue` | `<div class="empty-state">{{ emptyText }}</div>` | `<ScEmptyState :title="emptyText" … />` | 真正的空结果带 |
+| `views/businessConfigSurface/BusinessConfigStartPanel.vue` | `<div class="workbench-status-empty">状态读取中</div>` | `<ScInlineState state="loading" label="状态读取中" />` | **类名说"空"、文案说"读取中"**，语义错位；同一组件的 `deliveryReadinessStatusText` 也把该条件判为"读取中"，故按 loading 呈现是行为保持 |
+| `views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue` | 同上 | 同上 | 同上 |
+| `views/ReleaseOperatorView.vue` | 两处 `<p class="release-operator__empty">{{ … }}</p>` | 两处 `<ScEmptyState :title="…" … />` | 真正的空结果带 |
+
+配套清理（避免死样式）：
+`style.css` 的 `.empty-state` 改为 `.version-panel-empty`（保留原纵向节奏），删除已无消费者的 `.workbench-status-empty`。
+
+### 3. 失败关闭的转换登记
+
+`generate_frontend_rendering_detail_inventory.py` 新增：
+
+- `P3_STATE_BAND_OWNERSHIP`：`source -> ("Primitive:state", …)`，只登记**实际渲染**的原语/状态对；
+- `rendered_state_bands(text)`：从**解析后的源**（含外置模板）取
+  `ScLoading:loading` / `ScEmptyState:empty` / `ScErrorState:error` 与 `<ScInlineState state="…">` 的字面状态；
+- `p3_state_band_ownership_failures(deferred_sources)`：四条失败关闭检查——
+  声明源必须是 P3 面、必须仍在延迟登记表内、文件必须存在、**每一条声明必须真的被渲染**；
+- `build_inventory()` 在求值完 `surfaces` 后调用该检查，**失败即 `ValueError` 抛出**（不是打印告警）。
+
+报告新增 `p3OwnershipDeferred.stateBandOwned` / `stateBandOwnedCount` / `stateBandOwnershipRule`。
+`p3OwnershipDeferred.surfaces`（source 列表）保持不变，既有断言与外部消费不受影响。
+
+当前登记：
+
+```
+stateBandOwnedCount = 4
+ReleaseOperatorView.vue                -> ScEmptyState:empty
+BusinessConfigCoverageWorkspace.vue    -> ScEmptyState:empty, ScInlineState:loading
+BusinessConfigStartPanel.vue           -> ScInlineState:loading
+BusinessConfigVersionPanel.vue         -> ScEmptyState:empty
+```
+
+`p3OwnershipDeferred.surfaceCount` 仍为 **19**（不变量未放开），其中 **4** 面已进入"状态带已受治"登记，
+剩余 **15** 面仍为纯延迟。
+
+### 4. 负例（先证明会红，再证明会绿）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_p3_state_band_ownership_fails_closed_when_a_claim_stops_rendering` | 把 `BusinessConfigVersionPanel` 的 `<ScEmptyState` 换成裸 `<div>` | 断言失败（`ScEmptyState:empty` 未被渲染） |
+| （端到端实测） | 给 `BusinessConfigVersionPanel` 追加一条 `ScInlineState:loading` 声明 | `build_inventory()` 抛 `ValueError: … declared P3 state band is not rendered …` |
+| `test_p3_state_band_ownership_rejects_a_non_p3_declaration` | 把未渲染的 `SceneHealthView.vue` 登记进来 | 断言失败 |
+| `test_p3_state_band_ownership_claims_are_rendered` | 登记表与报告字段／延迟登记表一致性 | 通过 |
+
+### 5. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/views/**`（4 个 Vue + 1 个 CSS）+ `scripts/audit/**`（生成器与单测）+ `docs/**` 派生清单。
+影响层：L1 静态/生成物、L2 前端定向单测；风险类：呈现与守卫登记（非持久化、非授权）。
+最早必需层 L2；跳过项及理由见下。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（其中 `complexity_budget_report` 因本段文件尺寸变化先过期，已按提示重新生成） |
+| L1 | `python3 scripts/verify/docs_inventory.py` + `make verify.docs.links` | PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 73 tests**（段 30 后 70，+3）；`rendering_detail_inventory PASS surfaces=173 gaps=0`、`rendering_detail_state_guard PASS surfaces=98`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0` |
+| L2 | `scripts/audit/test_generate_frontend_rendering_detail_inventory` | **PASS 37 tests** |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS 34 tests；`components=46 eventCases=11` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS 13 tests；`required=33 missing=0 raw=0`（清单已刷新：alert 54→56、empty 24→27、loading 50→52） |
+| L2 | `make verify.business_config.guard_inventory` / `.product_guard` / `.publish_boundary_guard` | PASS（`design_system_usages=130`、`raw_controls=0`） |
+| L2 | `verify.frontend.official_icon.unit` / `.global_component_capability.unit` / `.low_code_field_create_dialog.unit` / `.page_pattern_reference_parity.unit` / `.product_page_pattern.unit` | PASS |
+| L2 | `make verify.frontend.typecheck.strict` | PASS |
+| L4 | 5180 新候选双视口定向观察 | 见第 6 节 |
+
+**跳过项与理由**：不重跑 89 入口、全站发布验收、后端模块升级与夹具重置——本段未改后端模型、权限或数据契约。
+
+### 6. 候选、运行身份与浏览器观察
+
+- 旧产物保留：`config05-20260929` → `config05-20260929-prev-640a97eb7`（base_sha `640a97eb7…`，未覆盖）。
+- 新候选：`config05-20260929/dist`，`base_sha=e01137026…`，构建前记录的 dirty scope 含本段 5 个前端文件与生成器/单测。
+- 5180 监听进程在操作前后均为 `pid=802966`（`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`）；
+  静态服务按请求读盘且 `index.html` 为 `no-cache`，同路径替换产物即对新内容生效，**未新增常驻端口**。
+- 身份自校验：`SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1 DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 python3 scripts/dev/frontend_standard_preview.py identity` → PASS。
+- 实际服务入口：`/assets/index-C53ItXQV.js`（与 `build-identity.json` 一致，已用 HTTP 回读核对）。
+
+定向浏览器观察（受管角色 `fixture_role_config_admin`，`sc_frontend_acceptance`，全程零写入）：
+
+| 检查 | 1440×900 | 390×844 |
+|---|---|---|
+| `/admin/business-config` 可达 | 是（`scan-row=60`） | 是 |
+| 手写状态标记 `.workbench-status-empty` | **0** | **0** |
+| 遗留 `.empty-state` | **0** | **0** |
+| 受治理 `[data-semantic-component="ScEmptyState"]` | **1** | 0（该视口未进入覆盖空态分支） |
+| 页面级横向溢出 `scrollWidth/clientWidth` | 1440/1440 | 390/390 |
+| console error | 0 | 0 |
+
+`/admin/release-operator` 为 `adminOnly`，受管环境**无 platform-admin 夹具** → 记录为
+`not_run`（不放宽 `adminOnly`、不换管理员证明业务可用）。该面的源码级证据来自失败关闭登记。
+
+**未覆盖（如实记录，不当作通过）**：版本记录面板的"空结果带"未在浏览器里被驱动出来
+（本次运行中三列工作台的版本触发入口未激活），因此
+`release-operator` 与版本面板空态目前只有**源码级失败关闭登记**，没有页面级截图证明。
+
+**环境差异（非本段引入）**：带 `model=construction.contract&action_id=1002` 的工作台入口在
+`sc_frontend_acceptance` 返回"动作 1002 不存在"——该样本属于 demo 库，本段改用无动作参数入口，
+未修改任何业务数据。
+
+### 7. 对段 30 数字的补充（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变）；
+- 其中 `stateBandOwnedCount`：**4**；剩余纯延迟：**15**；
+- `governed_composite`：**113**（不变，P3 面未跨状态）；
+- 清单总面数：**173**（不变）；
+- `component-driver-takeover` 消费者计数：alert 54→**56**、empty 24→**27**、loading 50→**52**。
+
+### 8. 显式登记（不在本段范围）
+
+- `views/businessConfigSurface/template.html` 仍有 2 处手写状态带
+  （`<div class="status error">`、`<section class="loading-state">`）。
+  转换需要在 `BusinessConfigSurfaceView.vue` 增加一行 import，而该文件**正好卡在
+  `low_code_workbench_product_guard` 的 600 行路由装配上限**（当前 600 行）。
+  **有意保留**：先拆装配职责再转换，不在本段用"删一行凑数"的方式绕过上限。
+- `BusinessConfigApprovalPanel.vue` 的 `approval-step-empty` 是带内联动作的虚线框布局，
+  换原语会改变对齐方式，登记为后续面。
+- `MenuConfigView` 的 `menu-selected-panel--empty` 是"未选菜单"引导面板（含标题与说明），
+  不是瞬时状态带，登记为布局面而非状态带。
+- 承接段 28–30 全部登记项：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`（已知不等价）；
+  `/admin/scene-health`、`/admin/scene-packages` 无 platform-admin 夹具；
+  `style_system.guard` 四项文件长度欠账；`state_transition_undeclared` 五条等。
+  本段未触碰，未新增越界。
+
+### 9. 提交
+
+- `refactor(web): render P3 administration state bands through governed primitives`
+- `fix(guard): fail closed on P3 state-band ownership claims`
+- 派生清单与段记录
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
