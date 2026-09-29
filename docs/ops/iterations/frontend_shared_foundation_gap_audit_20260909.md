@@ -1055,5 +1055,17 @@ TPL-03 探针：`artifacts/frontend-web-fix-20260928/tpl03fix-20260929/`（stamp
 - 仍未治理的旧推断（登记，不扩面）：`X2ManyRelationRenderer` 等处的 `Record<string,string>` 业务字典、
   `formConfigHelpers` 的原生标签缓存。按"触及范围逐步清理"，新代码不得新增。
 
+**边界四类反例的落点**（规范 §14.2 要求的最小反例，落在既有测试入口，不新建框架）
+
+| 反例类别 | 抓什么 | 现有入口与本批结果 |
+|---|---|---|
+| 删除关键契约语义 → 明确报缺口或停止 | 静默补齐 | `verify.frontend.native_form_structure_responsibility.unit`（`role alone → 无标题`，cases=11）、`verify.frontend.native_section_navigation.unit`（role-only 分区不给导航项）|
+| 换标题/标签/列顺序 → 身份与授权不变 | 文案猜测 | `verify.frontend.adopted_form_validation_identity.unit`（cases=46 failed=0，无跨身份泄漏）、`verify.frontend.contract_error_business_ownership.unit`（92 cases passed）|
+| 只改契约规则、不改页面 → 消费随规则变化 | 契约不消费 | `verify.frontend.adopted_form_engine_decision.unit`（cases=74，真实 TDesign 引擎 + 计数写入）、`verify.frontend.standard_form_composition.unit`（cases=114）|
+| 只改模板/布局、不改契约 → 输入语义与结果不变 | 模板越权 | `verify.frontend.standard_collection_composition.unit`（cases=64）、`verify.frontend.standard_shell_composition.unit`（cases=71）、`verify.frontend.cross_model_action_navigation.unit` |
+
+`F2` 之所以比"结构计数"更强：它把**渲染出来的分区标题**与**该容器自己的契约标题**逐一比对；
+旧的全绿测试只喂合成节点，渲染层兜底在生产里生效也照样通过。
+
 **边界（不得夸大）**：本批是**契约边界硬化 + 验收缺口闭合**，不等于 89 入口矩阵或所有模型已验收；
 不重跑 89 入口与全站发布门禁；不修改业务矩阵状态；不推送、不合并、不部署；**未**进入 TPL-05。
