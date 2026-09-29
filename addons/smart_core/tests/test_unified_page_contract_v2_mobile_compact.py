@@ -1220,6 +1220,65 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         ]
         self.assertEqual(len(promoted_again), 1)
 
+    def test_a_runtime_declared_purpose_is_projected_through_the_pairing(self):
+        """The runtime action channel is a producer too, so it is checked too.
+
+        Copying `action_semantics` verbatim let this channel publish a
+        `(kind, purpose, executor)` combination every terminal drops: the rule
+        looked declared while nothing could read it.  A declaration outside the
+        pairing must stay undeclared; one inside it must survive unchanged.
+        """
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.semantics.pairing",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {
+                "key": "probe_dropped",
+                "label": "Probe dropped",
+                "kind": "mutation",
+                "method": "action_probe_dropped",
+                "allowed": True,
+                "enabled": True,
+                "action_semantics": {
+                    "kind": "business",
+                    "purpose": "return",
+                    "executor": "client.back",
+                    "origin": "runtime.row.probe",
+                },
+            },
+            {
+                "key": "probe_published",
+                "label": "Probe published",
+                "kind": "mutation",
+                "method": "action_probe_published",
+                "allowed": True,
+                "enabled": True,
+                "action_semantics": {
+                    "kind": "business",
+                    "purpose": "start_execution",
+                    "executor": "contract.action",
+                    "origin": "runtime.row.probe",
+                },
+            },
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = {row["actionKey"]: row for row in contract["actionContract"]["actionRuleList"]}
+
+        self.assertNotIn("actionSemantics", rules["probe_dropped"])
+        self.assertEqual(
+            rules["probe_published"]["actionSemantics"],
+            {
+                "kind": "business",
+                "purpose": "start_execution",
+                "executor": "contract.action",
+                "origin": "runtime.row.probe",
+            },
+        )
+
     def test_runtime_business_action_without_explicit_permission_fails_closed(self):
         contract = assembler.assemble_unified_page_contract_v2(
             {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},

@@ -482,6 +482,36 @@ def validate_declared_action_semantics_vocabulary(schema: dict[str, Any], errors
                 f"{ACTION_SEMANTICS_AUTHORITY} {sorted(expected)}",
             )
 
+    published_pairs: dict[tuple[str, str], set[str]] = {}
+    for group in declaration_branch.get("allOf") or []:
+        for branch in (group.get("oneOf") if isinstance(group, dict) else []) or []:
+            branch_properties = (branch or {}).get("properties") or {}
+            pair_kind = (branch_properties.get("kind") or {}).get("const")
+            pair_executor = (branch_properties.get("executor") or {}).get("const")
+            if pair_kind and pair_executor:
+                published_pairs[(str(pair_kind), str(pair_executor))] = set(
+                    (branch_properties.get("purpose") or {}).get("enum") or []
+                )
+    expected_pairs = {
+        (str(pair_kind), str(pair_executor)): set(pair_purposes)
+        for pair_kind, kind_map in authority.DECLARATIONS.items()
+        for pair_executor, pair_purposes in kind_map.items()
+    }
+    if not published_pairs:
+        fail(errors, "schema must publish the actionSemantics (kind, executor) pairing")
+    elif published_pairs != expected_pairs:
+        missing = sorted(set(expected_pairs) - set(published_pairs))
+        extra = sorted(set(published_pairs) - set(expected_pairs))
+        drifted = sorted(
+            pair
+            for pair in set(expected_pairs) & set(published_pairs)
+            if expected_pairs[pair] != published_pairs[pair]
+        )
+        fail(
+            errors,
+            f"schema actionSemantics pairing drifted: missing={missing} extra={extra} purposes={drifted}",
+        )
+
     assembler_path = root / ACTION_SEMANTICS_ASSEMBLER
     tree = ast.parse(assembler_path.read_text(encoding="utf-8"), filename=str(assembler_path))
     for node in ast.walk(tree):

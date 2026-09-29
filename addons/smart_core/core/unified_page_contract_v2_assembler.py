@@ -3454,7 +3454,6 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
-            ("action_semantics", "actionSemantics"),
             ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
@@ -3466,6 +3465,13 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))
+        # A runtime-declared purpose goes through the same single authority as a
+        # policy declaration.  Copying the declaration verbatim would let this
+        # channel publish a `(kind, purpose, executor)` combination every
+        # terminal drops, looking declared while nothing can read it.
+        declared_semantics = declared_action_semantics(row.get("action_semantics"))
+        if declared_semantics is not None:
+            action_rule["actionSemantics"] = declared_semantics
         contract["actionContract"]["actionRuleList"].append(action_rule)
         contract["actionContract"]["dependencyGraph"].setdefault(source_id, []).append(action_id)
         allowed = row.get("allowed") is not False

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -41,6 +42,11 @@ CAPABILITY_REGISTRY = ROOT / "addons/smart_construction_core/services/capability
 ACTOR_ROLES = ROOT / "addons/smart_construction_core/core_extension_actor_roles.py"
 SECURITY_DIR = ROOT / "addons/smart_construction_core/security"
 SECURITY_MODULE = "smart_construction_core"
+# The one authority for the declared `(kind, purpose, executor)` vocabulary.
+# Checking the three parts against three independent enums would accept a
+# combination every terminal drops - the failure this guard exists to catch -
+# so the pairing itself is read from the authority.
+ACTION_SEMANTICS_AUTHORITY = "addons/smart_core/core/action_semantics_vocabulary.py"
 
 # The verdict the workflow contract must consult before it publishes an
 # approval action; removing it would leave the Web as the only decider.
@@ -351,9 +357,29 @@ def declared_purpose(value: Any) -> str:
     return str(declared.get("purpose") or "").strip().lower()
 
 
+def load_action_semantics_authority(repo_root: Path) -> Any:
+    path = repo_root / ACTION_SEMANTICS_AUTHORITY
+    if not path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("workflow_guard_action_semantics_vocabulary", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def declares_published_pair(authority: Any, declared: Any) -> bool:
+    """Whether the three parts form one declaration of the published vocabulary."""
+    value = declared if isinstance(declared, dict) else {}
+    return bool(
+        authority.is_declared(value.get("kind"), value.get("purpose"), value.get("executor"))
+    )
+
+
 def validate(
     *,
     vocabulary: set[str],
+    authority: Any,
     profiles: dict[str, Any],
     actions: dict[str, Any],
     specs: list[Any],
@@ -361,6 +387,8 @@ def validate(
     errors: list[str] = []
     if not vocabulary:
         return ["no published action purpose vocabulary was read from the schema"]
+    if authority is None:
+        return [f"the action semantics authority {ACTION_SEMANTICS_AUTHORITY} is missing"]
     if not profiles or not actions:
         return ["no workflow profile/action registry was read; the check would be vacuous"]
 
@@ -405,6 +433,11 @@ def validate(
             errors.append(f"action {key!r} binds method {method!r} without a declared action purpose")
         elif purpose not in vocabulary:
             errors.append(f"action {key!r} declares purpose {purpose!r} outside the published vocabulary")
+        elif not declares_published_pair(authority, spec.get("action_semantics")):
+            errors.append(
+                f"action {key!r} declares {spec.get('action_semantics')!r}, which is not a published "
+                f"(kind, purpose, executor) combination; every terminal would drop it"
+            )
 
     checked_specs = 0
     for spec in specs or []:
@@ -419,6 +452,11 @@ def validate(
             errors.append(f"payment action {spec.get('key')!r} binds method {method!r} without a declared action purpose")
         elif purpose not in vocabulary:
             errors.append(f"payment action {spec.get('key')!r} declares purpose {purpose!r} outside the published vocabulary")
+        elif not declares_published_pair(authority, spec.get("action_semantics")):
+            errors.append(
+                f"payment action {spec.get('key')!r} declares {spec.get('action_semantics')!r}, which is not a "
+                f"published (kind, purpose, executor) combination; every terminal would drop it"
+            )
 
     if checked == 0 or checked_specs == 0:
         errors.append("the guard matched no reachable transition; it must not pass vacuously")
@@ -537,8 +575,11 @@ def main() -> int:
     specs = payment.get("_ACTION_SPECS") or []
     role_hints = payment.get("_ACTION_ROLE_HINTS") or {}
     purposes = published_purposes(args.schema)
+    authority = load_action_semantics_authority(ROOT)
     errors = [*unresolved, *payment_unresolved]
-    errors += validate(vocabulary=purposes, profiles=profiles, actions=actions, specs=specs)
+    errors += validate(
+        vocabulary=purposes, authority=authority, profiles=profiles, actions=actions, specs=specs
+    )
 
     verdict, verdict_errors = verdict_keys(args.payment_actions, "_authorization_for_action", "key")
     vocabulary, declared_roles, role_errors = role_vocabulary(

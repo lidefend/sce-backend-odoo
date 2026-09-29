@@ -2334,3 +2334,36 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 未闭合：约 80 处未声明的原生按钮 occurrence 仍需按“权威侧缺失 / 原生未登记”逐类定性；
   `construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端 presentation 可达性缺口，非契约缺陷。
 - 状态边界：本批**批次验收完成**；未推送、未合并、未部署目标环境，整体用户交付未验收。
+
+### 独立复核与同批修复（2026-09-29）
+
+对本批四个提交（`c4b419878..21df11b45`）与跨仓 `bfbc736` 做了一次**只读独立复核**，
+结论 `REQUEST_CHANGES`，无 S0/S1，两条 S2，均在本批内收口：
+
+- **S2-1 运行时业务动作通道绕过权威校验**：`_append_actions` 的复制表把 `action_semantics` 原样搬运，
+  该通道（`project_runtime_business_actions`，P1 财务工作台正用）仍可发布“所有终端都会丢弃”的组合，
+  与“组合越界即丢弃”的表述不符。修复：该键从复制表移除，改为经 `declared_action_semantics` 投影。
+  复核者的原始探针（`business+return+client.back`）现返回 `contract actionRuleList actionSemantics: [None]`，
+  合法声明 `business+start_execution+contract.action` 仍原样发布。
+- **S2-2 守卫与 schema 只有逐维枚举、无配对校验**：把 `ACTIONS["activate"]` 的 executor 改成 `client.back`
+  时，新守卫仍 PASS。修复：schema 的 `actionSemantics` 声明分支新增 `allOf[].oneOf` 配对约束
+  （4 个 `(kind, executor)` 对，各自的 purpose 集合）；`unified_page_contract_v2_schema_guard`
+  新增“schema 配对 == 权威 `DECLARATIONS`”比对；`workflow_action_semantics_completeness_guard`
+  改为用权威 `is_declared` 做配对校验。负例实测：executor 漂移 → FAIL；schema 少一个 pair → FAIL；
+  schema 放宽某 pair 的 purpose → FAIL。
+
+同批补充登记：`verify.unified_page_contract.v2.stable_projection` 为**基线即红**
+（`frontend_v2_policy_projection_guard` 报 `types.ts` 的 `actionSemanticsInvalid` 不在严格白名单内；
+三处相关文件在本批 diff 中字节未变，该标识由基线祖先 `22ee5391b` 引入）。
+它同时被 `verify.unified_page_contract.v2` 与 `...professional_backend` 聚合依赖，
+合并资格需先确认它是否已登记为已知红项。
+
+复核者登记的非阻断后续（`POST_MERGE_FOLLOWUP`，本批未处理）：
+`register_workflow_contract_profile` 重复注册为静默覆盖；
+`method_by_action` 值类型未校验（非字符串会 `TypeError`，被 `core_extension` 的 `try/except` 兜住）；
+`schema_guard` 的 `ts_derives_business_list` 只校验派生表达式形状、不比对结果集合；
+`completeness_guard` 的 `can_review` 消费判定是存在性代理；
+本段落的 v2 定向验证表未列 `stable_projection`（已在上方补登）。
+
+复核者未能独立复核的部分：其运行环境无 `odoo` 模块，故 `TestWorkflowContractBackend`
+的 `0 failed / 7 error` 由其未复核；本批在注册环境（`sc_dev_demo`）自行跑过该套件，结论见上文表格。
