@@ -915,3 +915,55 @@ route-meta 比较，提升为显式、按 layout 限定的呈现策略，并把�
 未调整业务矩阵状态；**未**进入 TPL-05，也不据此宣布 TPL-03 通过；不推送、不合并、不部署目标环境。
 本轮未创建/修改/删除任何业务数据：写入探针拒绝后放弃编辑，`sc.general.contract` 记录 10
 前后逐字段一致、记录总数 3 不变。
+
+### FE-TPL-03 列表与详情定向验收（2026-09-29）
+
+范围：确认**已实现**的官方列表与只读详情不仅完成结构替换，而且正确消费真实服务端查询、
+记录身份与业务动作。不重新开发列表/详情，不继续外壳对齐，不处理四项 `style_system` 欠账，
+不进入 TPL-05。已完成的 TPL-04B 外壳结论直接复用，不重复采集几何。
+
+**候选与运行来源（复用，未重建）**：被测 HEAD `9e240dc4`（薄派生提交，产品源 `fb5934b7`，
+两者间无产品源码差异），工作树干净；沿用已固定的 `:5180`（`scripts/release/release_static_server.mjs`
+pid **60945**，`STATIC_ROOT=…/sce-offrepo/artifacts/fe-tpl04e-20260929/dist`，经 `/proc/60945/environ` 核实），
+`index.html` sha256 `a1d049b9…10ea`；后端 `127.0.0.1:18082`、库 `sc_frontend_acceptance`；
+写入角色 `fixture_role_contract_operator`。产品源未变，故不重建、不新增端口、不重跑 HTTP 全文件比对。
+权威运行记录：`artifacts/frontend-web-fix-20260928/tpl03closeout/tpl03-closeout-results.json`
+（stamp `20260929035002`），探针 `tools/tpl03_closeout_probe.mjs`，日志 `logs/tpl03-closeout-probe.log`。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 官方列表承担呈现与通用交互，真实服务端查询/身份/授权仍由原链路控制 | PASS | 采纳为**前端**切换：`frontend/apps/web/src/app/presentation/standardListComposition.ts`（`STANDARD_LIST_COMPOSITION_PILOT_MODELS=['project.project','sc.general.contract']`，标记 `data-list-composition="official-standard-list"` / `reason=pilot-model-adopted`）。探针绑定真实 `POST /api/v1/intent` `op:list` 请求+响应，非仅 DOM。 |
+| 2 | 查询发往服务端并改变结果集 | PASS | 搜索 `GC2600011` 携带 **`params.search_term`**，服务端 `total 2→1`、`共 1 条 1`；非前端数组过滤。清除后恢复 `total=2`。 |
+| 3 | 排序由服务端语义控制 | PASS | 点击列头 `contract_name` 发送 `order:"contract_name asc"`（基线 `contract_date desc, id desc`），行序随之变化；无第二套本地排序。 |
+| 4 | 分页为真实请求 | PASS（含 1 项证据缺口） | 每页选项 `10/20/50 条/页`；选择 10 发送真实 `limit:10 offset:0`。**真实下一页**在受管数据上不可达（最小页长 10 仍只 1 页，最大在职集合仅 2/4 行），记为 `kind: evidence_gap` 并附实测数字，不写成通过。 |
+| 5 | 无结果与恢复；接口失败不伪装成“没有数据” | PASS | 不命中查询得 `共 0 条` + `.list-empty-surface`（“没有符合当前条件的记录…”）、`alerts: []`；清除后恢复 `total=2`。 |
+| 6 | 只读详情事实与模式正确 | PASS | `/r/sc.general.contract/10` = `official-standard-detail`，0 可编辑控件、0 保存动作；事实 `FE-A General Contract`/`GHT2600010`/`FE Project A` 与记录一致。`/r/…/11` = `FE-B General Contract`/`GHT2600011`/`FE Project B`，0 编辑/0 保存/0 旧 grid 行。`/f/…/10` 才是同记录可编辑面（23 可编辑、`保存草稿`）。 |
+| 7 | 同记录往返不串位 | PASS | 列表 10 → 详情 10 → 编辑 10 → 返回：详情与“从编辑返回”均为 `/r/…/10`；回到列表 `/a/673…order=contract_name+asc…` 且 **保留 `search=GC2600010`**，行回读 `GC2600010`/`GHT2600010`/`FE Project A`。 |
+| 8 | 代表视口可用 | PASS | 390×844 列表与详情：无横向溢出、纵向属主恒为 `router-host` 单一个、详情仍只读；`consoleErrors: []`。 |
+
+**本轮内的测试维护（探针缺陷，非产品缺陷）**：
+
+- 列表搜索词是 `params.search_term`（非 `search`）；run1 读错键导致 `L2` 假失败。提交按钮文案为 `搜索`，
+  清除为 `清除`。
+- 事实标签映射：`合同编号`→`contract_no`（`GHT…`，非 `name` 的 `GC…`）、`合同名称`→`contract_name`、
+  `关联项目`→`project_id[1]`；run1 误用 `name` 断言 `合同编号`，导致 `R2`/`D1` 假失败。
+- 从编辑表单返回需沿打开它的详情条目回退；`R4` 改为循环 pop 历史直至 `/a/673` 再断言 `search=GC2600010` 保留。
+  上述修正只改探针定位/取值方式，**未降低断言、未吞失败、未改产品迎合探针**。
+
+**范围与边界（不得夸大）**：
+
+- 记录 11 为**独立只读核验**，不是同记录闭环；`/r/11` 与 `/r/10` 是同一只读机制，可编辑步骤必须使用记录 10，
+  **禁止**把“详情 11 → 编辑 10”写成同记录办理闭环。
+- 记录 12 的 `PROJECT_SCOPE_DENIED` 是项目范围契约**按设计生效**（记录 12 ∈ `FE Company B`/id 9，
+  角色范围 `FE Company A`/id 8）；保留为正常权限拒绝，未改角色或业务域来消除它。
+- 分页下一页为**证据缺口**，已附实测数字，不静默转成通过。
+- `verify.frontend.style_system.guard` 四项欠账（`ScRelationField.vue` 未登记 z-index、
+  `ContractFormPage.vue` 1932>1900、`useRecordActionPresentation.ts` 505>500、`useRecordFormActions.ts` 804>619）
+  仍保持**真实 FAIL**，放入独立合并前清理批次；未放宽阈值/忽略文件/压缩行数/改退出码；`AppShell.vue` 1597/1600，
+  未在其中新增业务职责。
+- 已确认的**异步身份漏洞**保持其既有阻断状态，不因本轮布局/列表验收自动消项，本轮也未重新开启排查。
+- 历史 `cc0eee7b` 产物缺口继续登记为历史限制，不倒填、不追溯。
+- **TPL-03 结论：PASS（含 1 项受管数据不可达的分页证据缺口）**，限于上述已核验的列表职责、只读详情、
+  同记录往返与代表视口；不代表 89 入口矩阵或所有路由/所有模型均已验收。业务矩阵状态不因模板验收升级；
+  未重跑 89 入口、全站发布验收与发布门禁；**未**进入 TPL-05；不推送、不合并、不部署目标环境。
+- 本轮未创建/修改/删除任何业务数据（未执行保存）；`sc.general.contract` 记录总数保持 3。
