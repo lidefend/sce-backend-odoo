@@ -1339,8 +1339,11 @@ def smart_core_finalize_projected_contract_data(env, data, context):
         action_id = 0
     list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
     column_policy = list_profile.get("column_policy") if isinstance(list_profile.get("column_policy"), dict) else {}
-    if str(column_policy.get("reason") or "").strip() == "business_list_config_contract_authoritative":
-        return None
+    configured_columns = (
+        list(list_profile.get("fact_columns") or list_profile.get("columns") or [])
+        if str(column_policy.get("reason") or "").strip() == "business_list_config_contract_authoritative"
+        else None
+    )
     if not action_id or action_id not in _user_confirmed_formal_list_action_ids(env):
         return None
     action = env["ir.actions.act_window"].sudo().browse(action_id)
@@ -1425,6 +1428,26 @@ def smart_core_finalize_projected_contract_data(env, data, context):
     if locked_order:
         tree["order"] = locked_order
         tree["default_order"] = locked_order
+    if configured_columns is not None:
+        # Reapply only declared display changes over the formal native baseline.
+        # The existing P0 orchestration remains the configuration interpreter.
+        from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+
+        native_names = {row.get("name") for row in tree.get("columns_schema") or [] if isinstance(row, dict)}
+        prior_tree = views.get("tree") or views.get("list") or {}
+        tree["columns_schema"] = list(tree.get("columns_schema") or []) + [
+            dict(row) for row in prior_tree.get("columns_schema") or []
+            if isinstance(row, dict) and row.get("name") in configured_columns and row.get("name") not in native_names
+        ]
+        tree = ViewOrchestrator(env).compose(
+            tree, model_name=action.res_model, view_type="tree", action_id=action_id,
+        )
+        schema_by_name = {
+            str(row.get("name") or ""): row
+            for row in tree.get("columns_schema") or [] if isinstance(row, dict)
+        }
+        tree["columns"] = configured_columns
+        tree["columns_schema"] = [schema_by_name[name] for name in configured_columns if name in schema_by_name]
     governance = dict(tree.get("governance") if isinstance(tree.get("governance"), dict) else {})
     governance["user_confirmed_formal_list_lock"] = {
         "applied": True,

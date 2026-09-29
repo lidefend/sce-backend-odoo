@@ -1001,7 +1001,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         data = {
             "model": "project.material.plan",
             "view_type": "tree",
-            "action_id": 525,
+            "action_id": self.env.ref("smart_construction_core.action_project_material_plan").id,
             "list_profile": {
                 "columns": [
                     "legacy_visible_01",
@@ -1024,7 +1024,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         projected = core_extension.smart_core_finalize_projected_contract_data(self.env, data, {"view_type": "tree"})
 
-        self.assertIsNone(projected)
+        self.assertIsInstance(projected, dict)
+        self.assertEqual(projected["views"]["tree"]["columns"], data["list_profile"]["columns"])
+        self.assertFalse(projected["list_profile"]["preference_policy"]["allow_order"])
+        self.assertEqual(projected["list_profile"]["preference_policy"]["locked_columns"], data["list_profile"]["columns"])
 
     def test_payment_request_formal_list_projects_page_and_total_amount_semantics(self):
         action = self.env.ref(
