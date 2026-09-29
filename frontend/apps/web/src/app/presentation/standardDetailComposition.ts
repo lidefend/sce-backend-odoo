@@ -2,6 +2,14 @@
  * A readonly record has one composition, with explicit collection/attachment
  * extensions. Section capabilities decide whether descriptions can carry facts.
  *
+ * The project renders readonly records through exactly one surface: the record
+ * page in its readonly render profile.  There is no second detail renderer that
+ * a "not adopted" answer could fall back to, so the decision carries a single
+ * composition value and claiming a legacy one would misreport the shipped
+ * state.  What the decision really carries is whether the effective contract
+ * declared the readonly-record responsibility that this surface owns, and the
+ * contract's own page-type reason for the answer.
+ *
  * Its input is the contract-derived page-type decision from
  * `standardPageType.ts` (`pageInfo.viewType` together with the page's effective
  * render profile), so an edit form is never treated as a readonly record and a
@@ -10,7 +18,7 @@
  */
 import type { StandardPageTypeDecision, StandardPageTypeReason } from './standardPageType';
 
-export type StandardDetailCompositionId = 'official-standard-detail' | 'legacy-detail-surface';
+export type StandardDetailCompositionId = 'official-standard-detail';
 
 export type StandardDetailCompositionReason = StandardPageTypeReason;
 
@@ -23,13 +31,17 @@ export type StandardDetailCompositionDecision = {
 export function resolveStandardDetailComposition(
   decision: StandardPageTypeDecision,
 ): StandardDetailCompositionDecision {
-  if (decision?.pageType === 'record-detail') {
-    return { composition: 'official-standard-detail', adopted: true, reason: decision.reason };
-  }
+  // The reason is the contract's own page-type reason, passed through instead
+  // of collapsed into one label: "the contract declared an editable record",
+  // "the contract declared conflicting views" and "the contract did not
+  // classify this page" are three different answers, and a caller has to act
+  // on the difference.  The single composition value names the surface that
+  // renders the page either way; adoption, not a renderer identity, is what
+  // the answer carries.
   return {
-    composition: 'legacy-detail-surface',
-    adopted: false,
-    reason: decision?.reason === 'contract-view-conflict' ? 'contract-view-conflict' : 'contract-view-not-classified',
+    composition: 'official-standard-detail',
+    adopted: decision?.pageType === 'record-detail',
+    reason: decision?.reason ?? 'contract-view-not-classified',
   };
 }
 

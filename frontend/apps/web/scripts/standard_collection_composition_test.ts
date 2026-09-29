@@ -10,6 +10,9 @@ import {
   resolveStandardDetailComposition,
   resolveStandardDetailSection,
 } from '../src/app/presentation/standardDetailComposition';
+import {
+  resolveStandardFormComposition,
+} from '../src/app/presentation/standardFormComposition';
 import { resolveStandardPageType } from '../src/app/presentation/standardPageType';
 import {
   DECLARED_BATCH_EXECUTORS,
@@ -62,13 +65,23 @@ for (const decision of [
 ] as Array<{ pageType: 'specialized' | 'record-form' | 'record-detail'; reason: string } | undefined>) {
   check(resolveStandardListComposition(decision as never).adopted, false, 'a surface the contract did not declare a collection stays an explicit exception');
 }
-check(resolveStandardDetailComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' }).adopted, true, 'readonly contract detail adopts');
+checkDeep(resolveStandardDetailComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' }), { composition: 'official-standard-detail', adopted: true, reason: 'contract-readonly-record-view' }, 'readonly contract detail adopts');
 for (const renderProfile of ['create', 'edit', '', undefined]) {
   const decision = resolveStandardPageType({ viewType: 'form', layoutType: 'form', renderProfile });
-  check(resolveStandardDetailComposition(decision).reason, 'contract-view-not-classified', 'an editable form is not a readonly detail');
+  checkDeep(resolveStandardDetailComposition(decision), { composition: 'official-standard-detail', adopted: false, reason: 'contract-record-view' }, 'an editable form is not a readonly detail and keeps the contract reason');
 }
-check(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'worksheet', renderProfile: 'readonly' })).adopted, false, 'dedicated workspace is not a generic detail');
+checkDeep(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'worksheet', renderProfile: 'readonly' })), { composition: 'official-standard-detail', adopted: false, reason: 'contract-view-not-classified' }, 'dedicated workspace is not a generic detail');
+checkDeep(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'form', layoutType: 'table', renderProfile: 'readonly' })), { composition: 'official-standard-detail', adopted: false, reason: 'contract-view-conflict' }, 'a conflicting declaration is reported instead of adopting a detail');
+checkDeep(resolveStandardDetailComposition(undefined as never), { composition: 'official-standard-detail', adopted: false, reason: 'contract-view-not-classified' }, 'a page with no contract decision reports the missing classification rather than guessing one');
+checkDeep(
+  resolveStandardFormComposition({ pageType: 'record-detail' }),
+  { composition: 'legacy-form-section', adopted: false, reason: 'contract-view-not-classified' },
+  'the form composition keeps the real second renderer it names, so the two policies stay distinguishable',
+);
 const facts = { adopted: true, configurationMode: false, readonlyFacts: true, fields: [{ type: 'char', dedicatedControl: false }] };
+const detailPolicySource = readSource('frontend/apps/web/src/app/presentation/standardDetailComposition.ts');
+check(/'legacy-detail-surface'/.test(detailPolicySource), false, 'the detail policy must not name a renderer the project does not ship, because adoption is the only thing the answer carries');
+check(/\|\s*'/.test(detailPolicySource.split('StandardDetailCompositionId =')[1]?.split(';')[0] ?? ''), false, 'the detail composition id stays single-valued while there is one detail surface');
 check(resolveStandardDetailSection(facts).adopted, true, 'scalar facts use descriptions');
 for (const type of ['one2many', 'many2many', 'binary', 'json', 'unknown']) {
   check(resolveStandardDetailSection({ ...facts, fields: [...facts.fields, { type, dedicatedControl: false }] }).adopted, false, 'mixed section preserves specialized control: ' + type);
