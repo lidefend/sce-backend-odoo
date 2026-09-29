@@ -951,7 +951,7 @@
     },
     {
       "category": "other",
-      "digest": "23aa155625d3fb49387536ae838c7c4580c1ee7475726ccfc7c13577cb6241cd",
+      "digest": "1a4981bcd23af42eb1d15d028d5c303aa69857054ea6b8aa58446dfa6a315b00",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScTable.vue",
       "referenceNativeStyleSelectors": [],
@@ -1840,7 +1840,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9ed158da9a0c11f759e47600cf167552ab340ca4ebfb8b8edd927f681815d027",
+      "digest": "d1fdec23ebc26c9dd7ac666da4e468ff40cc129280153daf26446cf7819cf118",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -2074,7 +2074,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "6554e939df82fdbc96270ad029c99ea92a6ebf94ff389c68fadec02ffcc739ad",
+      "digest": "5715d4620b5ca99c821771111cd0768d161af4aa39f2ed7881f2c472ee134a2b",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2098,7 +2098,7 @@
     },
     {
       "category": "collection",
-      "digest": "523c8fcced6b45b65be0890efa72581a0900fc3d5b6977f45d5358080299ee89",
+      "digest": "26de531175c28ba0f7755307febeba9e2c2b06dd1b31bf07ec2244c028f2aaef",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2514,7 +2514,7 @@
     },
     {
       "category": "collection",
-      "digest": "8759efd1f652319abee91a6b81bcb5c71f4af053db037eab8c392ac3b131150c",
+      "digest": "4b163c978c441773949de31023fb19846ffbff641ad4dd3a55dbf0a323fc23ed",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2564,7 +2564,7 @@
     },
     {
       "category": "other",
-      "digest": "d1e3ed4f23809566df61a3545af84e9f7e4f9dc68cab142bd50777b5a92f4c9d",
+      "digest": "39e43b55d7f58514dc071dc1e29c5b1be0717fc8e38d6c24893e20f0ad180556",
       "nativeStyleSelectors": [],
       "path": "views/BusinessConfigSurfaceView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2609,7 +2609,7 @@
     },
     {
       "category": "other",
-      "digest": "1a8c04df6f65bab3a8d49182df4c5202fb32182d8ce6ab7069b3baca6a2c2eb1",
+      "digest": "eaa82159e1faaadadd4d5acf582ddf3be59c026d65ae9acf86514b1fb7e46ef7",
       "nativeStyleSelectors": [],
       "path": "views/MenuConfigView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2878,7 +2878,7 @@
     },
     {
       "category": "other",
-      "digest": "0eb35d169603f4bf22f097beb8d918470905e7fb46cd0abbf62e09bd1bb441ef",
+      "digest": "03aa75020b11928e3eaf386669ba6312c93326759ddf02e67e48b3e03854a97a",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
       "referenceNativeStyleSelectors": [],
@@ -2915,7 +2915,19 @@
     },
     {
       "category": "other",
-      "digest": "a8ba11c09995cc3697ea8514d52125660f71f7dbb2637bf0cf05954482d9d58b",
+      "digest": "36ce44616dc59b9ac633d72737cdcb9c244297246bc1e56e6db55db216ef2c99",
+      "nativeStyleSelectors": [],
+      "path": "views/businessConfigSurface/BusinessConfigOverviewTable.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScTable"
+      ]
+    },
+    {
+      "category": "other",
+      "digest": "3df64733e46945da296a03110f7207f8d557f0945992f882239a4aaa84508de0",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigStartPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2963,7 +2975,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "93c2dcb610bc1df86b974b294539cf2a887e3048a1de1d297aa2193e7385ffbb",
+  "currentInputDigest": "278453347654099959704798e68cff688bc5d951d3966b2d04540806748f68c5",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3195,9 +3207,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 207,
+    "changedSourceCount": 208,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 225,
+    "currentSourceCount": 226,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

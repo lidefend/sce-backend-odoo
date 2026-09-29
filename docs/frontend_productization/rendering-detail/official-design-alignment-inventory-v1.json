@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "0bd550cafecdb177f96e1bc0e20aeca22fa7308694206acac43525d3a96caaf4",
+  "inputDigest": "4e8fc477b8c44f15c0de5292527359e6acdd59ed5cbd1e1b8cd1fe098419332a",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -479,7 +479,8 @@
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
-        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue"
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='section-tab']",

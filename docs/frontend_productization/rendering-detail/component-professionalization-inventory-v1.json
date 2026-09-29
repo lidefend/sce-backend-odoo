@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "64eba8a3a17e494bb6f6f3f98f212c728486100486fa2d85237f04f12527cb5c",
+  "sourceIdentity": "b4a8bdb63b2655865647bc98173dec3b2c16e71c8d81fc948b190c62c854a027",
   "generatorDigest": "e48ea991cc83b25fe7aacea3abc0b71ac0e988dae0e6ed2a86b48bcbb69fcfe5",
   "ownershipDigest": "5bf15fb938b57d6d8a8cf5aebff9ee1e8da645be8e971072eaa03a5b6e56677d",
-  "inputDigest": "4a3b9919f407fb330f6e5fe1492fcb6d76e5849f6ca14affb9e70a120e5608fa",
+  "inputDigest": "9efe87677323fdb9e1a1edcb3ee72bb1ccd0f35582f86fb74af601f98af4e0a6",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,14 +20,14 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 171,
+    "surfaceCount": 172,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
     "governed_composite": 112,
     "governed_primitive": 41,
-    "p3_out_of_scope": 18
+    "p3_out_of_scope": 19
   },
   "nextBatch": null,
   "surfaces": [
@@ -2313,6 +2313,18 @@
     },
     {
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+      "formalProductLayer": "P3",
+      "status": "p3_out_of_scope",
+      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "stateTypes": [
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigOverviewTable.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
