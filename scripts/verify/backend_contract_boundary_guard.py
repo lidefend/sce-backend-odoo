@@ -12,9 +12,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BOUNDARY_MODULE_PATH = ROOT / "addons" / "smart_core" / "utils" / "backend_contract_boundaries.py"
 
-# 业务契约只表达业务语义。视觉、DOM 结构与可访问性属于受管呈现策略和端侧设计系统，
-# 一旦出现在契约写入者发出的载荷里，端侧就无法再区分“业务说了什么”和“页面长什么样”。
-# 受管布局读取（arch 的 class / field_size / cols）走呈现策略通道，不在本规则内。
+# 一份契约，多终端消费。契约必须是终端无关的：业务语义只有一个权威，受管布局语义也
+# 只有一个权威，Web、移动 App 等终端各自从同一份契约派生自己的呈现。
+#
+# 「契约不表达外观」不等于「契约不表达布局」。布局本来就是契约体系里合法的一层：
+# 原生视图 arch 投影与低代码呈现配置通过 unified_page_contract_v2.layoutContract
+# （containerTree / listProfile / pivotProfile）、layoutType、layoutHints，以及
+# view_orchestration.views.form 的 sections[] 表达字段顺序、分组、显隐、列集合与
+# 受管尺寸档位。MANAGED_LAYOUT_CHANNEL_KEYS 登记的就是这一层，本规则不禁它。
+#
+# 本规则只禁那些把契约拉回单一终端实现的载荷：原始视觉值、DOM/CSS 通道、设计系统
+# 内部取值、客户端可访问性属性。它们一旦进入契约，其他终端就只能照抄某一个终端的实现。
 CONTRACT_APPEARANCE_PATTERNS = (
     re.compile(
         r'"(?:font_size|font_weight|line_height|border_radius|borderRadius|box_shadow'
@@ -33,8 +41,57 @@ CONTRACT_APPEARANCE_PATTERNS = (
 )
 
 
+# 受管布局契约通道的键。它们是合法契约内容：终端无关的布局语义，不是外观。这里登记
+# 后由 self_check 保证任何一条都不会被上面的外观规则命中；布局键与外观键不同名，因此
+# 不需要逐行白名单过滤。
+MANAGED_LAYOUT_CHANNEL_KEYS = (
+    "layout",
+    "layoutContract",
+    "layoutType",
+    "layoutHints",
+    "layoutNode",
+    "containerTree",
+    "listProfile",
+    "pivotProfile",
+    "sections",
+    "zone",
+    "block",
+    "visible",
+    "sequence",
+    "group_title",
+    "columns",
+    "cols",
+    "width",
+    "class",
+    "spanClass",
+    "field_size",
+)
+
+# 多终端边界：契约一旦带上终端标识维度，同一份契约就开始按终端分叉，其他终端只能跟随
+# 某个终端的实现。终端的组件选择、密度、断点、可访问性与导航由各终端设计系统自己决定，
+# 从同一份契约派生，不写回契约。
+#
+# 唯一的非契约用途是配置工作台的草稿预览作用域（preview token 绑定 device 仅用于预览），
+# 它属于 runtime carrier，不进入已发布契约，因此规则不针对裸 device 键，只针对
+# 「终端标识作为契约维度」和「终端取值直接写进契约载荷」。
+TERMINAL_BOUND_CONTRACT_PATTERNS = (
+    re.compile(
+        r'"(?:terminal|render_target|client_kind|device_kind|viewport|viewport_kind'
+        r'|device_variants|device_overrides|by_device|per_device|terminal_overrides'
+        r'|by_terminal|per_terminal|responsive_overrides)"\s*:'
+    ),
+    re.compile(
+        r'"(?:device|platform|terminal|viewport)"\s*:\s*[\'"](?:desktop|tablet|mobile|h5|ios|android|web)[\'"]'
+    ),
+)
+
+
 def scan_contract_appearance(text: str, rel: str) -> list[dict]:
-    """Return the appearance/structure leaks found in one contract writer."""
+    """Return the appearance/structure leaks found in one contract writer.
+
+    只针对单一终端实现进入契约的载荷。受管布局通道（MANAGED_LAYOUT_CHANNEL_KEYS）
+    是合法契约层，不会被本规则命中，并由 managed_layout_channel_conflicts() 自检。
+    """
     found = []
     for pattern in CONTRACT_APPEARANCE_PATTERNS:
         for match in pattern.finditer(text):
@@ -46,6 +103,40 @@ def scan_contract_appearance(text: str, rel: str) -> list[dict]:
                            % match.group(0),
             })
     return found
+
+
+def scan_terminal_bound_contract(text: str, rel: str) -> list[dict]:
+    """Return the terminal-bound leaks found in one contract writer."""
+    found = []
+    for pattern in TERMINAL_BOUND_CONTRACT_PATTERNS:
+        for match in pattern.finditer(text):
+            found.append({
+                "category": "contract_must_stay_terminal_agnostic",
+                "path": rel,
+                "line": text[:match.start()].count("\n") + 1,
+                "message": "contract payload binds the contract to one terminal: %s"
+                           % match.group(0),
+            })
+    return found
+
+
+def managed_layout_channel_conflicts() -> list[dict]:
+    """Return managed layout keys that the appearance rule would wrongly reject.
+
+    The layout contract is a legal, terminal-agnostic contract layer, so the two rule
+    sets must never overlap. A non-empty result means an edit made the appearance rule
+    outlaw part of the layout contract.
+    """
+    conflicts = []
+    for key in MANAGED_LAYOUT_CHANNEL_KEYS:
+        leaks = scan_contract_appearance('"%s": 1,' % key, "managed-layout-channel")
+        if leaks:
+            conflicts.append({
+                "category": "appearance_rule_outlaws_layout_contract",
+                "key": key,
+                "message": "the appearance rule matches the managed layout contract key: %s" % key,
+            })
+    return conflicts
 
 
 def _load_boundary_constants() -> dict:
@@ -344,6 +435,20 @@ def build_report() -> dict:
         appearance_errors.extend(scan_contract_appearance(text, rel))
     errors.extend(appearance_errors)
     report["contract_appearance_errors"] = appearance_errors
+    report["managed_layout_channel_keys"] = list(MANAGED_LAYOUT_CHANNEL_KEYS)
+    terminal_bound_errors = []
+    for rel in unique_writer_paths:
+        path = ROOT / rel
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        terminal_bound_errors.extend(scan_terminal_bound_contract(text, rel))
+    errors.extend(terminal_bound_errors)
+    report["terminal_bound_contract_errors"] = terminal_bound_errors
+    layout_conflicts = managed_layout_channel_conflicts()
+    errors.extend(layout_conflicts)
+    report["managed_layout_channel_conflicts"] = layout_conflicts
     report["error_count"] = len(errors)
     report["errors"] = errors
     return report

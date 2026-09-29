@@ -75,6 +75,59 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
         self.assertTrue(dom_leaks)
         self.assertEqual(clean, [])
 
+    def test_managed_layout_channel_is_not_outlawed_by_the_appearance_rule(self):
+        # 布局契约是合法的一层：arch 投影与低代码呈现配置用它表达顺序、分组、显隐、
+        # 列集合和受管尺寸档位。外观规则不得把它当成外观。
+        for key in guard.MANAGED_LAYOUT_CHANNEL_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual(
+                    guard.scan_contract_appearance('"%s": 1,' % key, "managed-layout-channel"),
+                    [],
+                )
+        self.assertEqual(guard.managed_layout_channel_conflicts(), [])
+        self.assertEqual(
+            guard.scan_contract_appearance(
+                'section = {"group_title": "结算信息", "visible": True, "sequence": 10, '
+                '"columns": 2, "cols": 2, "field_size": "wide"}\n'
+                'layout = {"layoutType": "form", "layoutHints": {"group_title": "结算信息"}}\n'
+                'contract = {"layoutContract": {"containerTree": [{"class": "o_group"}]}, '
+                '"listProfile": {}, "pivotProfile": {}}',
+                "addons/smart_core/handlers/form_field_configuration.py",
+            ),
+            [],
+        )
+        # 受管布局通道放行，不等于外观规则失效：设计系统内部取值仍被拦下。
+        self.assertTrue(
+            guard.scan_contract_appearance('hint = {"density": "compact"}', "managed-layout-channel")
+        )
+
+    def test_terminal_bound_contract_is_rejected(self):
+        # 同一份契约要驱动 Web、移动 App 等终端；契约带上终端维度就开始按终端分叉。
+        leaked = guard.scan_terminal_bound_contract(
+            'payload = {"render_target": "form"}\n'
+            'brand = {"terminal_overrides": {"mobile": 1}}\n'
+            'scope = {"platform": "mobile"}',
+            "addons/smart_core/handlers/form_field_configuration.py",
+        )
+        preview_scope = guard.scan_terminal_bound_contract(
+            'preview = {"device": _text(params.get("device")) if _text(params.get("device"))'
+            ' in {"desktop", "tablet", "mobile"} else "desktop"}',
+            "addons/smart_core/handlers/business_config_change_set.py",
+        )
+
+        self.assertEqual(len(leaked), 3)
+        self.assertEqual([row["line"] for row in leaked], [1, 2, 3])
+        # 草稿预览作用域是 runtime carrier，不写回已发布契约。
+        self.assertEqual(preview_scope, [])
+
+    def test_multi_terminal_boundary_is_declared_and_clean(self):
+        report = guard.build_report()
+
+        self.assertEqual(report["managed_layout_channel_conflicts"], [])
+        self.assertEqual(report["terminal_bound_contract_errors"], [])
+        self.assertIn("layoutContract", report["managed_layout_channel_keys"])
+        self.assertIn("field_size", report["managed_layout_channel_keys"])
+
     def test_report_keys_match_declared_rules(self):
         report = guard.build_report()
 
