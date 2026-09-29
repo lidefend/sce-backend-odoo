@@ -88,7 +88,7 @@ try {
  const role=panel.locator('.group-check-item').first();const roleInput=role.getByRole('checkbox');const wasRole=await roleInput.isChecked();
  await role.click();check(await roleInput.isChecked(),!wasRole);await role.click();check(await roleInput.isChecked(),wasRole);
  const parent=panel.locator('[data-semantic-component="ScSelect"]').first();await parent.click();
- await page.locator('.t-popup:visible').getByText('不移动',{exact:true}).click();check(((await parent.locator('input').inputValue()) || (await parent.innerText())).includes('不移动'),true);
+ await page.getByText('不移动',{exact:true}).click();check(((await parent.locator('input').inputValue()) || (await parent.innerText())).includes('不移动'),true);
  await page.getByRole('button',{name:'新增一级菜单',exact:true}).click();
  const createName=page.getByPlaceholder('输入业务菜单名称');await createName.fill('新菜单未保存');check(await createName.inputValue(),'新菜单未保存');
  await createName.fill('');check(await page.getByRole('button',{name:'创建菜单',exact:true}).isDisabled(),true);
@@ -97,7 +97,7 @@ try {
  const versionHttp=await versionResponse;assert.equal(versionHttp.ok(),true);const versionPayload=await versionHttp.json();assert.equal(versionPayload.ok,true);assert.ok(Array.isArray(versionPayload.data?.versions));assert.equal(versionPayload.meta?.bootstrapped_from_current_policies,false);const radios=page.getByRole('radio');if(versionPayload.data?.versions?.length) await radios.first().waitFor();const radioCount=await radios.count();report.versionOptions=radioCount;
  check(radioCount,versionPayload.data.versions.length);if(radioCount===1) report.uncovered=['版本互斥切换：现有数据仅一个版本'];if(radioCount){await radios.last().check();check(await page.getByRole('radio',{checked:true}).count(),1);await radios.first().check();check(await page.getByRole('radio',{checked:true}).count(),1);}
  else report.uncovered=['版本单选：现有数据无历史版本，不新增fixture'];
- for(const width of [1440,390]){await page.setViewportSize({width,height:950});await panel.scrollIntoViewIfNeeded();await parent.click();const option=page.locator('.t-popup:visible').getByText('不移动',{exact:true});await option.waitFor({state:'visible'});const bounds=await option.boundingBox();check(Boolean(bounds && bounds.x>=0 && bounds.x+bounds.width<=width+1),true);await option.click();await option.waitFor({state:'hidden'});check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`menu-${width}.png`)});}
+ for(const width of [1440,390]){await page.setViewportSize({width,height:950});await panel.scrollIntoViewIfNeeded();await parent.click();const option=page.getByText('不移动',{exact:true});await option.waitFor({state:'visible'});const bounds=await option.boundingBox();check(Boolean(bounds && bounds.x>=0 && bounds.x+bounds.width<=width+1),true);await option.click();await option.waitFor({state:'hidden'});check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`menu-${width}.png`)});}
  // Unsaved local state is discarded by closing the browser; no config action is executed.
  await page.unrouteAll({behavior:'wait'});check(report.errors,[]);check(report.blocked,[]);report.status='passed';
 }catch(e){await page?.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});report.status='failed';report.error=String(e.message).split('\n').slice(0,3).join(' | ');report.errorAt=String(e.stack||'').split('\n')[1]?.trim();process.exitCode=1;}
