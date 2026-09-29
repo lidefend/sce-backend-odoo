@@ -13,7 +13,11 @@
  * entry for both adopted and unadopted sections.
  */
 import { computed, inject, provide, type ComputedRef, type InjectionKey } from 'vue';
-import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
+import {
+  resolveStandardFormComposition,
+  type StandardFormCompositionDecision,
+} from '../../app/presentation/standardFormComposition';
+import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
 export type StandardFormSectionValidator = {
   sectionId: string;
@@ -36,6 +40,8 @@ export type StandardFormValidationOutcome = {
 };
 
 export type StandardFormCompositionRuntime = {
+  /** The composition this surface renders, and why. */
+  decision: ComputedRef<StandardFormCompositionDecision>;
   adopted: ComputedRef<boolean>;
   register: (validator: StandardFormSectionValidator) => void;
   unregister: (sectionId: string) => void;
@@ -48,13 +54,19 @@ export const StandardFormCompositionKey: InjectionKey<StandardFormCompositionRun
 /**
  * The registry itself, free of component context so the save-chain contract can
  * be exercised without mounting a page.
+ *
+ * `contractPageType` is the page's own contract-derived responsibility (see
+ * `standardPageType.ts`); it is a thunk so the surface follows the contract when
+ * the bound record, the route or the effective render profile changes.
  */
 export function createStandardFormValidationRegistry(
-  pageType: () => string,
+  contractPageType: () => StandardPageTypeDecision,
 ): StandardFormCompositionRuntime {
-  const adopted = computed(() => resolveStandardFormComposition({ pageType: pageType() }).adopted);
+  const decision = computed(() => resolveStandardFormComposition(contractPageType()));
+  const adopted = computed(() => decision.value.adopted);
   const validators = new Map<string, StandardFormSectionValidator>();
   const runtime: StandardFormCompositionRuntime = {
+    decision,
     adopted,
     register: (validator) => {
       validators.set(validator.sectionId, validator);
@@ -86,9 +98,9 @@ export function createStandardFormValidationRegistry(
 }
 
 export function createStandardFormCompositionRuntime(
-  pageType: () => string,
+  contractPageType: () => StandardPageTypeDecision,
 ): StandardFormCompositionRuntime {
-  const runtime = createStandardFormValidationRegistry(pageType);
+  const runtime = createStandardFormValidationRegistry(contractPageType);
   provide(StandardFormCompositionKey, runtime);
   return runtime;
 }

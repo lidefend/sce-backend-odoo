@@ -10,6 +10,7 @@ import {
   resolveStandardDetailComposition,
   resolveStandardDetailSection,
 } from '../src/app/presentation/standardDetailComposition';
+import { resolveStandardPageType } from '../src/app/presentation/standardPageType';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -35,16 +36,34 @@ const readSource = (relative: string) => fs.readFileSync(locateSource(relative),
 const OFFICIAL_REFERENCE = 'aeed57076217f7777158b905f353d73585bad1c4';
 
 // ---------------------------------------------------------------------------
-// Part 1/2 — existing page responsibilities select the shared composition.
-check(resolveStandardListComposition({ pageType: 'standard-query-list' }).adopted, true, 'all ordinary query lists adopt without a model whitelist');
-for (const pageType of ['', 'worksheet', 'hierarchy', 'kanban', undefined]) {
-  check(resolveStandardListComposition({ pageType }).adopted, false, 'specialized lists remain explicit exceptions');
+// Part 1 — the effective contract declares what a page is; the compositions
+// follow that declaration and never a model name, a route or a caption.
+checkDeep(resolveStandardPageType({ viewType: 'list', layoutType: 'table' }), { pageType: 'query-list', reason: 'contract-collection-view' }, 'a declared collection view is a query list');
+checkDeep(resolveStandardPageType({ viewType: 'tree', layoutType: 'tree' }), { pageType: 'query-list', reason: 'contract-collection-view' }, 'the backend tree token is a collection view');
+checkDeep(resolveStandardPageType({ viewType: 'form', layoutType: 'form' }), { pageType: 'record-form', reason: 'contract-record-view' }, 'a declared form view is a record form');
+checkDeep(resolveStandardPageType({ viewType: 'form', layoutType: 'form', renderProfile: 'readonly' }), { pageType: 'record-detail', reason: 'contract-readonly-record-view' }, 'an authorization-driven readonly form is a record detail');
+checkDeep(resolveStandardPageType({ viewType: 'list', layoutType: 'form' }), { pageType: 'specialized', reason: 'contract-view-conflict' }, 'disagreeing declarations are reported, not silently chosen between');
+checkDeep(resolveStandardPageType({ viewType: 'form', layoutType: 'table' }), { pageType: 'specialized', reason: 'contract-view-conflict' }, 'a record view with a collection layout is a conflict, not a form');
+checkDeep(resolveStandardPageType({ viewType: 'pivot' }), { pageType: 'specialized', reason: 'contract-view-not-classified' }, 'a view the contract does not classify is not upgraded by resemblance');
+checkDeep(resolveStandardPageType({}), { pageType: 'specialized', reason: 'contract-view-not-classified' }, 'an undeclared view is not guessed into a standard composition');
+
+// ---------------------------------------------------------------------------
+// Part 2 — existing page responsibilities select the shared composition.
+check(resolveStandardListComposition({ pageType: 'query-list', reason: 'contract-collection-view' }).adopted, true, 'all ordinary query lists adopt without a model whitelist');
+for (const decision of [
+  { pageType: 'specialized', reason: 'contract-view-not-classified' },
+  { pageType: 'record-form', reason: 'contract-record-view' },
+  { pageType: 'record-detail', reason: 'contract-readonly-record-view' },
+  undefined,
+] as Array<{ pageType: 'specialized' | 'record-form' | 'record-detail'; reason: string } | undefined>) {
+  check(resolveStandardListComposition(decision as never).adopted, false, 'a surface the contract did not declare a collection stays an explicit exception');
 }
-check(resolveStandardDetailComposition({ pageType: 'contract-record-detail', renderProfile: 'readonly' }).adopted, true, 'readonly contract detail adopts');
+check(resolveStandardDetailComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' }).adopted, true, 'readonly contract detail adopts');
 for (const renderProfile of ['create', 'edit', '', undefined]) {
-  check(resolveStandardDetailComposition({ pageType: 'contract-record-detail', renderProfile }).reason, 'not-a-readonly-profile', 'detail does not confer readonly state');
+  const decision = resolveStandardPageType({ viewType: 'form', layoutType: 'form', renderProfile });
+  check(resolveStandardDetailComposition(decision).reason, 'contract-view-not-classified', 'an editable form is not a readonly detail');
 }
-check(resolveStandardDetailComposition({ pageType: 'worksheet', renderProfile: 'readonly' }).adopted, false, 'dedicated workspace is not a generic detail');
+check(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'worksheet', renderProfile: 'readonly' })).adopted, false, 'dedicated workspace is not a generic detail');
 const facts = { adopted: true, configurationMode: false, readonlyFacts: true, fields: [{ type: 'char', dedicatedControl: false }] };
 check(resolveStandardDetailSection(facts).adopted, true, 'scalar facts use descriptions');
 for (const type of ['one2many', 'many2many', 'binary', 'json', 'unknown']) {
@@ -71,11 +90,20 @@ for (const relative of [
   check(source.includes(OFFICIAL_REFERENCE), true, `${name} records the official reference snapshot`);
 }
 
+const pageTypeSource = readSource('frontend/apps/web/src/app/presentation/standardPageType.ts');
+check(pageTypeSource.includes(`from 'vue'`), false, 'standardPageType must not import Vue');
+check(pageTypeSource.includes('document.'), false, 'standardPageType must not touch the DOM');
+check(pageTypeSource.includes('window.'), false, 'standardPageType must not touch the window');
+check(/from\s+['"]tdesign-vue-next['"]/.test(pageTypeSource), false, 'standardPageType must not import the component library');
+check(pageTypeSource.includes('pageInfo'), true, 'standardPageType reads the contract declared page info');
+
 // ---------------------------------------------------------------------------
 // Part 4 — the shipped surfaces really render the adopted composition
 // ---------------------------------------------------------------------------
 const listPageSource = readSource('frontend/apps/web/src/pages/ListPage.vue');
-check(listPageSource.includes("resolveStandardListComposition({ pageType: 'standard-query-list' })"), true, 'the list page resolves adoption from the contract model, not a renderer choice');
+check(listPageSource.includes('resolveStandardListComposition('), true, 'the list page resolves adoption from the contract-derived page type');
+check(listPageSource.includes('props.contractPageType'), true, 'the list page takes the contract-derived page type as an input instead of guessing one');
+check(listPageSource.includes('standard-query-list'), false, 'the list page must not name a page-type token of its own');
 check(listPageSource.includes(':data-list-composition="listComposition.composition"'), true, 'the list page publishes the composition it used');
 check(listPageSource.includes(':data-list-composition-reason="listComposition.reason"'), true, 'the list page publishes why it chose it');
 check(listPageSource.includes('<ProductListSurface>'), true, 'the list page routes the surface through the official container');
@@ -102,14 +130,15 @@ check(headerSource.includes('sc-product-page-toolbar'), true, 'the query row kee
 // ---------------------------------------------------------------------------
 const detailRuntimePath = 'frontend/apps/web/src/pages/contractForm/standardDetailCompositionRuntime.ts';
 const detailRuntimeSource = readSource(detailRuntimePath);
-check(detailRuntimeSource.includes('resolveStandardDetailComposition({'), true, 'the runtime resolves the one pure detail policy');
+check(detailRuntimeSource.includes('resolveStandardDetailComposition('), true, 'the runtime resolves the one pure detail policy from the contract-derived page type');
+check(detailRuntimeSource.includes('contractPageType: () => StandardPageTypeDecision'), true, 'the runtime takes the contract-derived page type as an input');
 check(detailRuntimeSource.includes('provide(StandardDetailCompositionKey, runtime)'), true, 'the page provides one decision for the sections to read');
 check(detailRuntimeSource.includes('inject(StandardDetailCompositionKey, null)'), true, 'a surface with no provider keeps its previous composition');
 check(/from\s+['"]vue['"]/.test(detailRuntimeSource), true, 'the runtime is a Vue-layer module');
 check(/from\s+['"]tdesign-vue-next['"]/.test(detailRuntimeSource), false, 'the runtime must not import the component library');
 
 const contractPageSource = readSource('frontend/apps/web/src/pages/ContractFormPage.vue');
-check(contractPageSource.includes("createStandardDetailCompositionRuntime(() => 'contract-record-detail', () => renderProfile.value)"), true, 'the record page resolves detail adoption from its own model and render profile');
+check(contractPageSource.includes('createStandardDetailCompositionRuntime(() => contractPageType.value)'), true, 'the record page resolves detail adoption from its own contract-derived page type');
 check(contractPageSource.includes(':data-detail-composition="standardDetailComposition.decision.value.composition"'), true, 'the record page publishes the detail composition it used');
 check(contractPageSource.includes(':data-detail-composition-reason="standardDetailComposition.decision.value.reason"'), true, 'the record page publishes why it chose it');
 

@@ -406,6 +406,7 @@
       :selection-actions="selectionActions"
       :batch-message="batchMessage"
       :list-profile="listProfile"
+      :contract-page-type="contractPageType"
       :ui-labels="toolbarUiLabels"
       :show-plain-search="!showTopActionToolbar"
       :has-active-conditions="toolbarActiveConditionCount > 0"
@@ -777,6 +778,7 @@ import { ErrorCodes } from '../app/error_codes';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { useStatus } from '../composables/useStatus';
 import { parseContractContextRaw, resolveContractAccessPolicy, resolveContractReadRight, resolveContractViewMode } from '../app/contractActionRuntime';
+import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { detectObjectMethodFromActionKey, normalizeActionKind, toPositiveInt } from '../app/contractRuntime';
 import { findActionMeta, findMenuNode } from '../app/menu';
 import { getSceneByKey, type Scene, type SceneListProfile } from '../app/resolvers/sceneRegistry';
@@ -1306,6 +1308,13 @@ const allowedBatchActions = computed(() =>
     ? batchPolicy.value.available_actions.map((item) => String(item || '').trim()).filter(Boolean)
     : [],
 );
+/**
+ * This page's own responsibility, read from the effective contract that the
+ * load preflight already resolved. It is the single classification the list
+ * surface publishes, so the surface never decides from a route name, a model
+ * name or a renderer preference what it is.
+ */
+const contractPageType = computed<StandardPageTypeDecision>(() => resolveStandardPageTypeFromStore(actionContract.value));
 const listColumnOptions = computed(() => resolveListColumnOptions(actionContract.value, listProfile.value));
 const listColumnVisibility = ref<Record<string, boolean>>({});
 const listColumnOrder = ref<string[]>([]);

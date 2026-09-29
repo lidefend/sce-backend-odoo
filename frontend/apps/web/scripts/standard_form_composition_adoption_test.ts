@@ -24,6 +24,7 @@ import { ref } from 'vue';
 import {
   resolveStandardFormComposition,
 } from '../src/app/presentation/standardFormComposition';
+import type { StandardPageTypeDecision } from '../src/app/presentation/standardPageType';
 import {
   adoptedValidationValue,
   buildContractFormRules,
@@ -73,10 +74,16 @@ const field = (overrides: Partial<FormSectionFieldSchema>): FormSectionFieldSche
 
 // ---------------------------------------------------------------------------
 // Part 1 — adoption follows page responsibility, never business model identity.
-check(resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted, true, 'contract record pages share the official form');
-check(resolveStandardFormComposition({ pageType: 'contract-record-form' }).reason, 'standard-page-type', 'page type owns adoption');
-for (const pageType of ['', 'worksheet', 'hierarchy', 'dashboard', undefined]) {
-  check(resolveStandardFormComposition({ pageType }).adopted, false, 'specialized and unknown responsibilities are not silently adopted');
+const recordFormDecision: StandardPageTypeDecision = { pageType: 'record-form', reason: 'contract-record-view' };
+check(resolveStandardFormComposition(recordFormDecision).adopted, true, 'contract record pages share the official form');
+check(resolveStandardFormComposition(recordFormDecision).reason, 'contract-record-view', 'the contract-declared page type owns adoption');
+for (const decision of [
+  { pageType: 'specialized', reason: 'contract-view-not-classified' },
+  { pageType: 'query-list', reason: 'contract-collection-view' },
+  { pageType: 'record-detail', reason: 'contract-readonly-record-view' },
+  undefined,
+] as Array<StandardPageTypeDecision | undefined>) {
+  check(resolveStandardFormComposition(decision as never).adopted, false, 'specialized and non-record responsibilities are not silently adopted');
 }
 const policySource = readSource('frontend/apps/web/src/app/presentation/standardFormComposition.ts');
 check(/PILOT_MODELS|project\.project|payment\.request/.test(policySource), false, 'no business model rollout selector remains');
@@ -210,7 +217,7 @@ checkDeep(buildRequiredFieldErrorPayload([], scope), { messages: [], fieldErrors
 // ---------------------------------------------------------------------------
 // Part 5 — the registry fails closed and never validates silently
 // ---------------------------------------------------------------------------
-const registry = createStandardFormValidationRegistry(() => 'contract-record-form');
+const registry = createStandardFormValidationRegistry(() => recordFormDecision);
 check(registry.adopted.value, true, 'the page runtime reports the adopted scope');
 let validated = 0;
 registry.register({ sectionId: 'a', ruleFieldNames: () => ['name'], validate: async () => { validated += 1; return ['name', 'name']; } });
@@ -230,7 +237,7 @@ check(failed.ok, false, 'a section that cannot answer blocks the save instead of
 checkDeep(failed.fieldNames, [], 'a failed validation reports no field it cannot name');
 checkDeep(failed.coveredFieldNames, [], 'a failed run covers nothing, so nothing may be dropped from the precheck');
 
-const unadopted = createStandardFormValidationRegistry(() => 'worksheet');
+const unadopted = createStandardFormValidationRegistry(() => ({ pageType: 'specialized', reason: 'contract-view-not-classified' }));
 check(unadopted.adopted.value, false, 'an unverified surface is not adopted');
 unadopted.register({ sectionId: 'x', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const unadoptedResult = await unadopted.validateAdoptedFields();
@@ -239,26 +246,26 @@ checkDeep(unadoptedResult, { ok: true, fieldNames: [], coveredFieldNames: [] }, 
 // A model or record switch must not carry the previous surface with it: the
 // page unmounts the old sections and mounts new ones, and the registry has to
 // answer for the new surface only.
-const liveModel = ref('contract-record-form');
-const switching = createStandardFormValidationRegistry(() => liveModel.value);
-check(switching.adopted.value, true, 'the first model is inside the adopted scope');
+const livePageType = ref<StandardPageTypeDecision>({ ...recordFormDecision });
+const switching = createStandardFormValidationRegistry(() => livePageType.value);
+check(switching.adopted.value, true, 'the first surface is inside the adopted scope');
 switching.register({ sectionId: 'surface-a', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const beforeSwitch = await switching.validateAdoptedFields();
 checkDeep(beforeSwitch.coveredFieldNames, ['name'], 'the first model reports the positions its own sections cover');
 switching.unregister('surface-a');
-liveModel.value = 'contract-record-form';
+livePageType.value = { ...recordFormDecision };
 switching.register({ sectionId: 'surface-b', ruleFieldNames: () => ['contract_no'], validate: async () => [] });
 const afterSwitch = await switching.validateAdoptedFields();
-check(switching.adopted.value, true, 'the second model is adopted by the same policy, not by a second policy');
-checkDeep(afterSwitch.fieldNames, [], 'the previous model\'s rejection cannot reach the new surface');
+check(switching.adopted.value, true, 'the re-entered surface is adopted by the same policy, not by a second policy');
+checkDeep(afterSwitch.fieldNames, [], 'the previous surface\'s rejection cannot reach the new surface');
 checkDeep(afterSwitch.coveredFieldNames, ['contract_no'], 'the new surface covers only the positions it declares');
 check(
   afterSwitch.coveredFieldNames.includes('name'),
   false,
   'a stale field code cannot remain covered after the surface changed',
 );
-liveModel.value = 'payment.request';
-check(switching.adopted.value, false, 'a surface outside the scope is not adopted later either');
+livePageType.value = { pageType: 'specialized', reason: 'contract-view-not-classified' };
+check(switching.adopted.value, false, 'a surface the contract did not declare a record form is not adopted later either');
 checkDeep(
   await switching.validateAdoptedFields(),
   { ok: true, fieldNames: [], coveredFieldNames: [] },
@@ -318,9 +325,9 @@ check(
   'the adopted engine is asked before the write, not after it',
 );
 check(
-  actionsSource.includes("resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted"),
+  actionsSource.includes('resolveStandardFormComposition(declaredPageType).adopted'),
   true,
-  'the save gate derives adoption from the declared model, not from whether a callback was passed',
+  'the save gate derives adoption from the contract-declared page type, not from whether a callback was passed',
 );
 check(
   actionsSource.includes('coverageMissing'),
@@ -360,9 +367,9 @@ check(
 
 const pageSource = readSource('frontend/apps/web/src/pages/ContractFormPage.vue');
 check(
-  pageSource.includes("createStandardFormCompositionRuntime(() => 'contract-record-form')"),
+  pageSource.includes('createStandardFormCompositionRuntime(() => contractPageType.value)'),
   true,
-  'the page runtime is scoped to the model the contract declared',
+  'the page runtime is scoped to the contract-derived page type',
 );
 check(
   pageSource.includes('validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields()'),

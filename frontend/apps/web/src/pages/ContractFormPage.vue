@@ -6,7 +6,8 @@
     data-product-page-mode="form" data-semantic-component="ContractFormPage"
     :data-state="status"
     :data-form-model="model"
-    :data-form-composition="standardFormComposition.adopted.value ? 'official-standard-form' : 'legacy-form-section'"
+    :data-form-composition="standardFormComposition.decision.value.composition"
+    :data-form-composition-reason="standardFormComposition.decision.value.reason"
     :data-detail-composition="standardDetailComposition.decision.value.composition"
     :data-detail-composition-reason="standardDetailComposition.decision.value.reason"
     :data-form-record="recordId ? String(recordId) : 'new'"
@@ -640,6 +641,7 @@ import {
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
 import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
+import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -1057,13 +1059,6 @@ const recordId = computed(() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
-/**
- * Whether this page's standard form is served by the official composition, and
- * the collected result of its generic validation. Presentation scope only: the
- * adopted sections are asked one question before a write, and their answer joins
- * the same error store the rest of the save chain uses.
- */
-const standardFormComposition = createStandardFormCompositionRuntime(() => 'contract-record-form');
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1171,8 +1166,25 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
     requestedProfile: requestedRenderProfile.value,
   });
 });
+/**
+ * This page's own responsibility, read from the effective contract: the declared
+ * `pageInfo.viewType`/`layoutType` plus the effective render profile. It is the
+ * single classification the compositions below consume, so a page never decides
+ * from a route name, a model name or a renderer preference what it is.
+ */
+const contractPageType = computed<StandardPageTypeDecision>(() => resolveStandardPageTypeFromStore(
+  v2ContractStore.value,
+  { renderProfile: renderProfile.value },
+));
+/**
+ * Whether this page's standard form is served by the official composition, and
+ * the collected result of its generic validation. Presentation scope only: the
+ * adopted sections are asked one question before a write, and their answer joins
+ * the same error store the rest of the save chain uses.
+ */
+const standardFormComposition = createStandardFormCompositionRuntime(() => contractPageType.value);
 /** Official detail composition adoption for this page; presentation scope only. */
-const standardDetailComposition = createStandardDetailCompositionRuntime(() => 'contract-record-detail', () => renderProfile.value);
+const standardDetailComposition = createStandardDetailCompositionRuntime(() => contractPageType.value);
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
@@ -1848,6 +1860,7 @@ const {
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
+  contractPageType: () => contractPageType.value,
   validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields(),
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,

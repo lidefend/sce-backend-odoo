@@ -3,9 +3,10 @@
  * composition, decided once per page and read by the sections that render them.
  *
  * It is the readonly counterpart of `standardFormCompositionRuntime`: the page
- * resolves the decision from its own model and render profile, provides it, and
- * every section asks the same instance instead of deciding for itself. A page
- * that provides nothing (no official detail pilot) keeps the composition it had.
+ * resolves its own contract-derived responsibility once (see
+ * `standardPageType.ts`), provides it, and every section asks the same instance
+ * instead of deciding for itself. A page that provides nothing keeps the
+ * composition it had.
  *
  * The decision is presentation scope only. It never decides which fields exist,
  * which values may be shown, or who may read the record; those stay with the
@@ -16,6 +17,7 @@ import {
   resolveStandardDetailComposition,
   type StandardDetailCompositionDecision,
 } from '../../app/presentation/standardDetailComposition';
+import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
 export type StandardDetailCompositionRuntime = {
   decision: ComputedRef<StandardDetailCompositionDecision>;
@@ -26,13 +28,9 @@ export const StandardDetailCompositionKey: InjectionKey<StandardDetailCompositio
   Symbol('sc:standard-detail-composition');
 
 export function createStandardDetailCompositionRuntime(
-  pageType: () => string,
-  renderProfile: () => string,
+  contractPageType: () => StandardPageTypeDecision,
 ): StandardDetailCompositionRuntime {
-  const decision = computed(() => resolveStandardDetailComposition({
-    pageType: pageType(),
-    renderProfile: renderProfile(),
-  }));
+  const decision = computed(() => resolveStandardDetailComposition(contractPageType()));
   const runtime: StandardDetailCompositionRuntime = {
     decision,
     adopted: computed(() => decision.value.adopted),

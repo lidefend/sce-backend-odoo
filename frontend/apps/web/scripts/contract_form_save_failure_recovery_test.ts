@@ -113,7 +113,7 @@ function buildHarness(options: {
     v2ContractStore: ref({ snapshot: { pageInfo: { pageName: '付款申请' } } }),
     useFormPageLifecycleRuntime: () => undefined,
     // This harness has no required fields; use the real adopted empty registry.
-    validateAdoptedFormSections: createStandardFormValidationRegistry(() => 'contract-record-form').validateAdoptedFields,
+    validateAdoptedFormSections: createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' } as const)).validateAdoptedFields,
     validateBeforeSaveRecord,
     validationErrors,
     validationFieldErrors: ref<Record<string, BusinessFieldError>>({}),

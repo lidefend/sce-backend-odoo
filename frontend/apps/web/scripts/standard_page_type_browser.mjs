@@ -52,7 +52,7 @@ async function login(role) {
 async function list(page, menu, name) {
   await page.goto(`${base}/m/${menu}`);
   await page.locator('[data-list-card-container="official"]').waitFor();
-  check(`${name}: standard type`, await page.locator('[data-list-composition-reason="standard-page-type"]').count() === 1);
+  check(`${name}: standard type`, await page.locator('[data-list-composition-reason="contract-collection-view"]').count() === 1);
   check(`${name}: one container`, await page.locator('[data-list-card-container="official"]').count() === 1);
   await page.screenshot({ path: path.join(out, `${name}.png`) });
 }
@@ -130,7 +130,7 @@ try {
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');
   await admin.page.getByText('客户档案', { exact: true }).first().click();
   await admin.page.locator('[data-list-card-container="official"]').waitFor();
-  check('non-pilot standard list: official default', await admin.page.locator('[data-list-composition-reason="standard-page-type"]').count() === 1);
+  check('non-pilot standard list: official default', await admin.page.locator('[data-list-composition-reason="contract-collection-view"]').count() === 1);
   await admin.page.screenshot({ path: path.join(out, 'customer-list.png') });
   await admin.ctx.close();
   }

@@ -12,6 +12,7 @@ import {
   createSingleFlightSave,
 } from './saveRecordHelpers';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
+import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
 type ActionDependencies = Record<string, any> & FormDesignerActionDependencies;
 
@@ -43,6 +44,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     contractActionConfirmationPrompt,
     contractFieldSequenceFromOrder,
     contractModeFeedback,
+    contractPageType,
     contractV2ActionRules,
     createContractFormRecord,
     dirtyFieldSet,
@@ -326,7 +328,14 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     // The operation this run belongs to. `saveRecord` opens one before calling
     // here, so the await below is bound to a surface the caller can re-verify.
     const operation = activeSaveOperation;
-    if (!resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted) {
+    // The page's own responsibility, resolved from the effective contract and
+    // read before any await, so this run's adoption belongs to the surface it
+    // started on. A page that declared no responsibility gets no adoption: the
+    // composition is never guessed from a model name, a route or a caption.
+    const declaredPageType: StandardPageTypeDecision | null = typeof contractPageType === 'function'
+      ? contractPageType()
+      : null;
+    if (!declaredPageType || !resolveStandardFormComposition(declaredPageType).adopted) {
       return { ok: true, coveredFieldNames: [], superseded: false };
     }
     const validate = typeof validateAdoptedFormSections === 'function' ? validateAdoptedFormSections : null;

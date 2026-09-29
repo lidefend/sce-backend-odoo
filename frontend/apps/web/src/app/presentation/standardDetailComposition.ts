@@ -1,19 +1,36 @@
 /** Official detail reference: Tencent/tdesign-vue-next-starter@aeed57076217f7777158b905f353d73585bad1c4.
  * A readonly record has one composition, with explicit collection/attachment
  * extensions. Section capabilities decide whether descriptions can carry facts.
+ *
+ * Its input is the contract-derived page-type decision from
+ * `standardPageType.ts` (`pageInfo.viewType` together with the page's effective
+ * render profile), so an edit form is never treated as a readonly record and a
+ * record the contract declares readonly is a detail even when the route asked
+ * for the edit form.
  */
+import type { StandardPageTypeDecision, StandardPageTypeReason } from './standardPageType';
+
 export type StandardDetailCompositionId = 'official-standard-detail' | 'legacy-detail-surface';
-export type StandardDetailCompositionReason = 'standard-page-type' | 'specialized-page-type' | 'not-a-readonly-profile';
+
+export type StandardDetailCompositionReason = StandardPageTypeReason;
+
 export type StandardDetailCompositionDecision = {
   composition: StandardDetailCompositionId;
   adopted: boolean;
   reason: StandardDetailCompositionReason;
 };
-export function resolveStandardDetailComposition(input: { pageType?: unknown; renderProfile?: unknown }): StandardDetailCompositionDecision {
-  if (input.renderProfile !== 'readonly') return { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' };
-  return input.pageType === 'contract-record-detail'
-    ? { composition: 'official-standard-detail', adopted: true, reason: 'standard-page-type' }
-    : { composition: 'legacy-detail-surface', adopted: false, reason: 'specialized-page-type' };
+
+export function resolveStandardDetailComposition(
+  decision: StandardPageTypeDecision,
+): StandardDetailCompositionDecision {
+  if (decision?.pageType === 'record-detail') {
+    return { composition: 'official-standard-detail', adopted: true, reason: decision.reason };
+  }
+  return {
+    composition: 'legacy-detail-surface',
+    adopted: false,
+    reason: decision?.reason === 'contract-view-conflict' ? 'contract-view-conflict' : 'contract-view-not-classified',
+  };
 }
 
 export function resolveStandardDetailSection(input: {

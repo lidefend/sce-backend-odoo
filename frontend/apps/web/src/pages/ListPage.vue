@@ -316,6 +316,7 @@ import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
 import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
+import type { StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
@@ -420,6 +421,12 @@ const props = defineProps<{
   enableSummaryStrip?: boolean;
   enableGroupedRows?: boolean;
   listProfile?: SceneListProfile | null;
+  /**
+   * This page's contract-derived responsibility, resolved by the surface that
+   * read the effective contract. The list composition never re-derives it from
+   * a route name, a model name or a renderer preference.
+   */
+  contractPageType?: StandardPageTypeDecision | null;
   columnLabels?: Record<string, string>;
   onFilter: (value: 'all' | 'active' | 'archived') => void;
   summaryItems?: Array<{ key: string; label: string; value: string; tone?: string }>;
@@ -525,7 +532,9 @@ const errorCopy = computed(() =>
 const emptyCopy = computed(() => resolveEmptyCopy('list'));
 // Presentation scope only: which containers this already-authorized list is
 // composed from. It never decides columns, records, actions or permissions.
-const listComposition = computed(() => resolveStandardListComposition({ pageType: 'standard-query-list' }));
+const listComposition = computed(() => resolveStandardListComposition(
+  props.contractPageType ?? { pageType: 'specialized', reason: 'contract-view-not-classified' },
+));
 const createLabelText = computed(() => props.createLabel || uiLabel('create', '新建'));
 const hasActiveConditions = computed(() =>
   props.hasActiveConditions === true

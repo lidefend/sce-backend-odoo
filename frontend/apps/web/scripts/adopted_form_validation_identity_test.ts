@@ -171,7 +171,7 @@ const layoutNodes = ref([{
   descriptor: { name: 'name', string: '项目名称', required: true, readonly: false, ttype: 'char' },
 }]);
 
-let registry = createStandardFormValidationRegistry(() => 'contract-record-form');
+let registry = createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' } as const));
 let sectionGate = deferred();
 registry.register({ sectionId: 'section-a', ruleFieldNames: () => ['name'], validate: () => { validateCalls += 1; return sectionGate.promise; } });
 
@@ -247,6 +247,10 @@ const deps: Record<string, unknown> = {
   uploadPendingNativeAttachments: async () => true,
   useFormPageLifecycleRuntime,
   v2ContractStore: ref(null),
+  // The surface this host stands in for: a page the effective contract declared
+  // as a record form. The page type is page-scoped, so switching the bound
+  // record never changes it — only the record identity does.
+  contractPageType: () => ({ pageType: 'record-form', reason: 'contract-record-view' } as const),
   validateAdoptedFormSections: () => registry.validateAdoptedFields(),
   validateBeforeSaveRecord,
   validationErrors,
