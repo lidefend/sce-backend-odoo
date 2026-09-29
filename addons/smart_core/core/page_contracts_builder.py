@@ -1810,6 +1810,23 @@ def build_public_auth_page_contracts() -> Dict[str, Any]:
             }
             for action in actions
         }
+        orchestration = page["page_orchestration"]
+        zones = []
+        referenced_sources = set()
+        for zone in orchestration["zones"]:
+            blocks = []
+            for block in zone["blocks"]:
+                projected = {field: block[field] for field in ("key", "section_key", "data_source", "priority")}
+                projected["payload"] = {field: block["payload"][field] for field in ("tag", "enabled", "open")}
+                referenced_sources.add(block["data_source"])
+                blocks.append(projected)
+            zones.append({"key": zone["key"], "blocks": blocks})
+        data_sources = {
+            name: {field: orchestration["data_sources"][name][field]
+                   for field in ("source_type", "provider", "page_key", "section_key", "section_tag")
+                   if field in orchestration["data_sources"][name]}
+            for name in sorted(referenced_sources)
+        }
         pages[key] = {
             "schema_version": page["schema_version"],
             "texts": page["texts"],
@@ -1817,6 +1834,8 @@ def build_public_auth_page_contracts() -> Dict[str, Any]:
             "page_orchestration": {
                 "page": {"global_actions": actions},
                 "action_schema": {"actions": safe_actions},
+                "zones": zones,
+                "data_sources": data_sources,
             },
         }
     return {"schema_version": "1.0.0", "pages": pages}

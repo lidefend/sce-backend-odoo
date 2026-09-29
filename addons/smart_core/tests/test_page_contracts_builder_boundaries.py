@@ -50,7 +50,7 @@ class TestPageContractsBuilderBoundaries(unittest.TestCase):
         self.assertEqual(set(public["pages"]), {"login", "account_activation", "password_recovery"})
         for key, page in public["pages"].items():
             self.assertEqual(set(page), {"schema_version", "texts", "sections", "page_orchestration"})
-            self.assertEqual(set(page["page_orchestration"]), {"page", "action_schema"})
+            self.assertEqual(set(page["page_orchestration"]), {"page", "action_schema", "zones", "data_sources"})
             for name, action in page["page_orchestration"]["action_schema"]["actions"].items():
                 self.assertEqual(action["target"], target._action_target(name, key))
                 self.assertEqual(action["target"]["kind"], "route.path")
@@ -67,6 +67,17 @@ class TestPageContractsBuilderBoundaries(unittest.TestCase):
                 for item in value:
                     check(item)
         check(target.build_public_auth_page_contracts())
+
+    def test_public_sections_keep_the_canonical_consumption_structure(self):
+        for page in target.build_public_auth_page_contracts()["pages"].values():
+            orchestration = page["page_orchestration"]
+            blocks = [block for zone in orchestration["zones"] for block in zone["blocks"]]
+            self.assertEqual({block["section_key"] for block in blocks}, {section["key"] for section in page["sections"]})
+            for block in blocks:
+                self.assertTrue(orchestration["data_sources"][block["data_source"]]["source_type"])
+                section = next(row for row in page["sections"] if row["key"] == block["section_key"])
+                self.assertEqual(block["payload"]["enabled"], section["enabled"])
+                self.assertEqual(block["payload"]["tag"], section["tag"])
 
     def test_public_projection_has_no_caller_context_parameter(self):
         with self.assertRaises(TypeError):
