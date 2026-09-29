@@ -72,6 +72,12 @@ async function form(page, url, name, profile = 'form') {
   if (profile === 'readonly') {
     check(`${name}: readonly mode published`, await page.locator('[data-semantic-component="ContractFormProductHeader"][data-state="readonly"]').count() === 1);
     check(`${name}: no editable form composition`, await page.locator('[data-form-composition="official-standard-form"]').count() === 0);
+    // "The form engine is not mounted" is not the same claim as "no part of the
+    // record is presented as editable": a readonly record could still be framed
+    // by an editable section without ever mounting the engine. Assert the
+    // sections themselves, so the readonly profile cannot hide an edit surface
+    // behind the facts layout.
+    check(`${name}: no editable record section`, await page.locator('[data-detail-section-reason][data-state="editable"]').count() === 0);
     check(`${name}: nonzero official facts`, await page.locator('[data-detail-facts="official-standard-detail"]').count() > 0);
     check(`${name}: readonly detail adopted`, await page.locator('[data-detail-composition="official-standard-detail"]').count() === 1);
     const collections = page.locator('[data-field-type="one2many"], [data-field-type="many2many"], [data-field-type="binary"]');
