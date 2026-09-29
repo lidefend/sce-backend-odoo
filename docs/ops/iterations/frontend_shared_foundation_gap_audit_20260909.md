@@ -3703,3 +3703,185 @@ sectionCount=0`）。本段改为轮询到 `data-state=ok` 再取值，稳定得
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## FE-CONTRACT-UNDEFINED-NAME（续）：名字未绑定族收口 + `env.get` 真值陷阱清理（2026-09-30）
+
+### 1. 七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P0 平台内核（`smart_core`）+ P1 行业标准（`smart_construction_core`），运维/校验脚本属 P4 |
+| `Layer Target` | 写动作审计落库、用量计数、能力可见性报告、登录登出、契约加载器、场景发布、工作流状态盘点；`make/ci.mk` 的 L1 入口 |
+| `Module` | `smart_core`、`smart_construction_core`、`scripts/`、`make/` |
+| `Standard vs User-Specific` | 平台机制缺陷（名字绑定、`env.get` 语义、审计/计数/去重落库），不含任何行业或客户偏好 |
+| `Why Here` | 缺陷就在这些模块的调用链上；`env.get` 真值判断是 Odoo 平台语义误用，必须由平台内核与行业标准模块承担 |
+| `Why Not Elsewhere` | 不在前端兜底（前端无法感知后端未落审计）、不改后端事务、不新建治理文档、不做全仓重构或顺手拆文件 |
+| `Blast Radius` | 审计落库恢复写入、用量计数恢复累加、能力报告恢复返回真实 payload；受影响写动作的幂等/去重响应字段口径须重新核对（见 §5） |
+
+### 2. 上一段 §7 登记的同族缺陷：已全部修复
+
+| 位置 | 未绑定名 | 修复方式 | 运行期影响 |
+|---|---|---|---|
+| `smart_core/handlers/login.py` | `request` | 补 `from odoo.http import request` | logout 分支不再静默 `NameError`（此前被 `except` 吞掉 → Cookie session 永不登出） |
+| `smart_core/handlers/load_contract.py` | `_logger` | 补 `import logging` + `_logger` | 异常分支不再在处理异常时二次抛 `NameError` |
+| `smart_core/handlers/system_init.py:1325` | `acceptance_root_group_label` | 改为形参传入 | 函数体恢复自洽；**仍无调用点**，性质仍是"潜伏死代码" |
+| `smart_construction_core/controllers/pack_controller.py` | `Usage` | 补 `Usage = env.get("sc.usage.counter")` | pack 安装成功后不再 `NameError` |
+| `smart_construction_core/models/support/scene_orchestration.py` | `Usage` | 同上 | 场景发布成功后不再 `NameError`；新增运行时回归（§7） |
+| `smart_construction_core/models/support/sc_data_validator.py` | `_` | `from odoo import _, api, fields, models` | 校验器取用翻译函数不再 `NameError` |
+| `smart_core/tests/test_contract_governance_project_form.py` | `visible_fields` | `out.get("visible_fields") or []` | 断言读取真实字段；`NameError` 变为真实断言结果（§8） |
+| `scripts/verify/{ops_batch_smoke,subscription_smoke}.py` | `_load_env_value_from_file` | 改用已 import 的 `load_env_value_from_file` | DB 名回退路径恢复 |
+| `scripts/verify/product_hardening_schema_guard.py` | `EXPECTED_INTENTS` | 改用 `REQUIRED_INTENTS | OPTIONAL_INTENTS` | 校验失败信息恢复，不再二次 `NameError` |
+
+### 3. 本段真正的产品缺陷：`env.get("<model>")` 真值判断恒假
+
+Odoo `Environment.get(model)`：
+
+- 模型**存在** → 返回**空 recordset**，`bool()` 为 `False`；
+- 模型**不存在** → 返回 `None`，同样 `False`。
+
+所以 `if env.get("sc.audit.log"):` 与 `if not env.get(...):` **永远走假分支**，而作者本意是"模型是否可用"。
+这不是代码风格问题，是**静默禁用功能**。仓库里已有正确对照（团队早已踩坑，附中文注释）：
+`addons/smart_core/utils/idempotency.py` 的 `if Audit is None: ...`。
+
+按 `is None` 修正、从而**恢复**的能力：
+
+| 位置 | 此前被静默禁用的能力 |
+|---|---|
+| `smart_core/handlers/api_data_write.py` | `api.data.write` 幂等审计**从不落库** |
+| `smart_core/handlers/api_data_unlink.py` | `api.data.unlink` 幂等审计**从不落库** |
+| `smart_core/handlers/api_data_batch.py` | `api.data.batch` 幂等审计**从不落库**（连带"重放窗口"永远判不出来） |
+| `smart_construction_core/handlers/my_work_complete.py`（两处） | 批量完成审计不落库；`todo_remaining` 恒为 0 |
+| `smart_construction_core/handlers/payment_request_approval.py` | 付款审批审计不落库 |
+| `smart_construction_core/handlers/capability_visibility_report.py` | 能力可见性报告**恒返回空 payload** |
+| `smart_construction_core/controllers/pack_controller.py` | `packs_installed` 从不累加 |
+| `smart_construction_core/models/support/scene_orchestration.py` | `scenes_published` 从不累加 |
+| `smart_core/controllers/platform_ops_controller.py`（3 处） | 权益/用量/订阅查询恒走空分支 |
+| `scripts/audit/workflow_state_inventory.py`（2 处） | tier / business-category 统计恒为 0 |
+| 7 处测试 `if not self.env.get(...): skipTest(...)` | **测试长期被静默跳过**（见 §6） |
+
+### 4. 静态门禁：`scripts/verify/python_name_binding_guard.py`
+
+新增两族静态检查（`symtable` 语义，不需要运行环境）：
+
+1. **名字被读但从未绑定**（`F821` 语义）→ 运行期 `NameError`；
+2. **`env.get("<model>")` 结果参与真值判断**（含 `if/while/三元/assert/assertTrue/assertFalse/变量间接`）。
+
+豁免按"显式命名单条、无通配目录"实现：builtins/dunder、`import *` 与 `globals()`（跳过并计数）、
+行内 `# noqa`（含既有 `# noqa: F821` 拼法）、`scripts/` 下的 `env`/`odoo`（`odoo shell < script.py` 注入；
+`addons/` 不豁免）。
+
+- 正例：**2844 文件 / 0 违反**（59 个动态绑定模块显式计数跳过）。
+- 负例（先证明抓得住）：把本段修复逐个回退后，门禁精确报出 **4 个名字缺陷 + 8 个 `env.get` 真值缺陷**。
+- 自测 `scripts/verify/test_python_name_binding_guard.py`：**19 用例全通过**。
+- 接入：`make verify.python_name_binding`，并作为 `make test.unit` 依赖。
+
+### 5. 三处"测试 vs 产品语义"冲突：按规则冲突流程核清权威依据
+
+激活被静默跳过的测试后暴露 3 处失败。**不由测试或页面自行选一方**，先找已发布契约：
+
+- `contracts/domain/write-idempotency.yaml`：
+  `replay_window_expired` = "信息性标记（记录权威路径下 replay 不受窗口限制——键即逻辑操作，永久可重放；
+  窗口仅保留信封可观测语义）。审计投影回退路径仍按窗口截断。"
+  `fallback` = "`sc.idempotency.record` 缺席时回退既有审计投影路径（`resolve_idempotency_decision` 窗口语义不变）。"
+- `smart_core/utils/idempotency.py` G7 段注释同义；`write_idempotency_source_authority_contract()` 输出
+  `replay_policy=permanent_for_key`、`window_semantics=informational_only`。
+- `smart_core/tests/test_write_idempotency_claim.py::test_done_beyond_window_still_replays_with_expired_flag` 已固化该语义。
+
+结论：**测试假设陈旧，不是产品缺陷。** 三条断言写于 `401bcb3bd`（审计通道时代），G7 `7e622c35a`
+迁移到记录去重权威后未同步，又因静默跳过而无人发现。修正断言，**不触碰产品语义**：
+
+| 测试 | 陈旧假设 | 修正后的断言 |
+|---|---|---|
+| `test_my_work_backend.test_batch_idempotent_replay_returns_same_contract` | 重放证据来自审计行（`replay_from_audit_id > 0`） | 记录通道证据 `replay_from_record_id > 0` |
+| `test_my_work_backend.test_batch_idempotent_window_expired_no_replay` → 更名 `test_batch_replay_is_permanent_regardless_of_window` | 「window=0 即过期，故不重放」 | window=0 表示"无窗口限制"→ **仍然重放**且信息标记为假；把记录 `created_at` 拨到窗口外 → **仍然重放**且信息标记为真 + `REPLAY_WINDOW_EXPIRED` |
+| `test_api_data_batch_contract_backend.test_replay_window_expired_is_exposed_in_contract` | 用 window=0 制造过期 | 该通道是**审计投影回退路径**（窗口语义保留）：把审计 `ts` 拨到窗口外，确定性地得到"不重放 + 标注过期" |
+
+**测量教训（固化）**：`window = 0 ⇒ 过期` 这个直觉在**两个通道上都不成立**——记录通道是"永久重放"，
+审计通道是"秒级精度，同一秒内仍算窗口内"。窗口类断言必须**显式构造时间差**，不能靠把窗口置 0。
+
+### 6. 验收体系为什么长期没发现（本段真正的机制缺口）
+
+1. **`skip` 被当成"通过"。** 7 处 `if not self.env.get("sc.audit.log"): self.skipTest(...)` 因真值陷阱
+   **永久跳过**：报告里是 `skip`，CI 只看 "0 failed" 就放行。改为 `is None` 后这些用例**首次真正执行**，
+   并立刻暴露 3 处语义漂移（§5）。
+2. **没有名字绑定静态检查。** `scripts/ci/python_syntax_check.py` 只建 AST、不做绑定解析；仓库无
+   `flake8`/`ruff` 配置。本段新增门禁补上这一层。
+3. **大量测试文件未接入任何 lane。** `addons/smart_core/tests/` 160 个测试文件中 **117 个无 `@tagged`**，
+   默认标签是 `at_install`，而仓库所有 lane 都用显式自定义标签（`sc_smoke`/`sc_gate`/业务标签）或
+   `post_install` 标签；`at_install` 只在"该模块正在安装/升级"时执行，而迭代 lane 传 `-d` 不带 `-u`，
+   因此这些文件**平时根本不跑**——与已登记的"121 个未接入测试文件"是同一件事。
+
+新增固定规则：
+
+- 判"测试通过"必须同时看 **test count 非零** 与 **skip 数**；`skip` 不得等价于 `pass`。
+- 新增/修正静态门禁必须**先给负例**（回退修复能精确报出），再给正例。
+- 测试与产品语义冲突时，先找**已发布契约/权威常量**；找不到权威依据才升级为产品缺陷，
+  **不允许改产品去迎合测试**。
+
+### 7. 定向验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make verify.python_name_binding` | PASS（2844 文件 0 违反；自测 19 用例 OK） |
+| L1 | `make test.unit` | PASS（含 `verify.python_name_binding` 前置） |
+| L1 | `make verify.guard.registry` | PASS（`AUDIT PASS: 1352 scripts`） |
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only`；`frontend/` 无源码变化 → 不选前端 L2 |
+| L2 | `local.dev.test MODULE=smart_construction_core TEST_TAGS='api_data_batch_backend,my_work_backend,capability_contract_backend'` | **PASS 46 tests, 0 failed**（修复前 3 failed） |
+| L2 | `local.dev.test MODULE=smart_construction_core TEST_TAGS='scene_publish_usage_backend'` | **PASS 1 test, 0 failed**（新增回归：发布后 `scenes_published` 真实累加） |
+| L4 | `verify.frontend.standard_page_type.browser`（`default` / `detail` / `additional`） | PASS **32 / 19 / 3**；`forbiddenWrites=[]`、`errors=[]` |
+| L4 | `verify.frontend.standard_bootstrap.browser` | PASS `roles=3` |
+
+L4 全部绑定的验收后端为 `d66182a91`（`make backend.acceptance.replace-stale` 刷新所得）。
+`frontend/` 本段无源码变化 → 5180 复用既有产物（`pid=802966`），**未重建、未新增端口**。
+
+### 8. 既有失败对照实验（证明与本段无关）
+
+`smart_core` 整模块跑出 `2 failed, 11 errors of 408`。用 `git stash`（含未跟踪文件）把本段**全部**改动移出后
+重跑，失败身份**完全一致**：
+
+- `TestOdooNativeAlignmentBoundaries.test_explicit_form_view_preserves_mixed_text_and_field_order`
+  （`'电话' != 'Phone'`，DB 本地化漂移）；
+- `TestUmP1OwnershipVisibilityContractOrm.test_real_registry_preserves_record_rule_topology_and_explicit_gaps`
+  （记录规则域文本与注册表现状漂移）；
+- `TestUmP2ReceiptRelationAggregationOrm` ×4（`could not serialize access due to concurrent update`，DB 并发）；
+- `TestUmP1{Payment,CostLedger}Visibility...` / `TestUmP2PaymentRelation...` / `TestUmP3...` 的 `setUpClass`
+  （**测试夹具绑定了会漂移的演示数据/能力状态**，如"付款申请必须处于已批准状态"、
+  `TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED`）。
+
+另单独对照 `tenant_extension`：`0 failed, 1 error of 0 tests`（`setUpClass` 能力门禁），同样与本段无关。
+
+**结论：13 条全部是既有失败或环境数据漂移；本段未新增失败、未扩大失败面。**
+
+`test_contract_governance_project_form.py` 独立执行对照（`odoo shell` 直接跑该文件）：
+
+- 修复前 `7 failures + 2 errors / 21`；
+- 修复后 `8 failures + 1 error / 21`。
+
+非通过总数不变（9 → 9）：本段把 1 个 `NameError` 变成真实断言失败，**未引入回归**。该文件 9 条非通过为
+**既有**，且属"未接入 lane 的测试文件"，本段只登记不修。
+
+### 9. 提交
+
+- `90e1c456f fix(backend): restore writes disabled by unbound names and env.get truthiness`
+- `e493a441f test(guard): detect unbound names and env.get truthiness statically`
+- `d66182a91 chore(docs): refresh generated reports for the name-binding guard`
+
+### 10. 剩余（显式登记，不在本段）
+
+- §6.3 的 117 个无 `@tagged` 测试文件（与已登记的"121 个未接入测试文件"合并计账）；
+- `test_contract_governance_project_form.py` 的 9 条既有非通过；
+- `smart_core` 整模块 13 条既有失败（含 6 条夹具/数据漂移类）；
+- `system_init.py:_append_user_data_acceptance_nav_group` 仍无调用点（死代码，本段只恢复自洽）；
+- `make verify.docs.product_boundary` 既有失败：`modules documented but not present under addons: smart_construction_demo`。
+  已核对：`addons/smart_construction_demo` 在 `7a963bbb7` 与本段 HEAD **均不存在**，且引用它的文档
+  （`docs/demo/*`、`docs/planning/.../G7_LAUNCH_SCOPING.md` 等）本段**未触碰** → 与本段无关。
+  `verify.docs.inventory` / `docs.links` / `docs.temp_guard` / `docs.contract_sync` 均 PASS；
+  `verify.docs.all` 只因 product_boundary 这一项中断。
+- 上一段已登记项继续有效：`workflow_contract_backend` 7 条既有失败、`sc.safety.disclosure` /
+  `sc.safety.plan` 原生 header 无 workflow 按钮、缺失 `view_type` 仍默认 `form`、五条
+  `state_transition_undeclared`、`style_system.guard` 四项文件长度欠账。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
