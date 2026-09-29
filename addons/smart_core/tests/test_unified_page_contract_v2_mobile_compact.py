@@ -233,6 +233,40 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     contract["pageInfo"]["layoutType"],
                 )
 
+    def test_assembler_active_view_resolution_agrees_with_the_native_view_finalizer(self):
+        """One active-view convention, not two.
+
+        `native_view_contract_projection.resolve_primary_view_type` is the
+        platform's existing rule: a requested view list (`"tree,form"`, what
+        `page_assembler` publishes in `head.view_type`) resolves to its first
+        token.  The legacy `ui.contract` finalizer already applies it, so a page
+        does not publish the joined list today.  The assembler's own boundary
+        normalization must agree with that rule instead of inventing a second
+        one, and must still produce a schema-enumerated page token.
+        """
+        projection = _load_module(
+            "smart_core_native_view_contract_projection",
+            CORE_DIR / "native_view_contract_projection.py",
+        )
+        for declared in ("tree,form", "form,tree", "kanban,tree,form", "tree,form,pivot,graph", "tree", "list", "form", ""):
+            with self.subTest(view_type=declared):
+                head = {"view_type": declared} if declared else {}
+                first_token = declared.split(",")[0].strip()
+                self.assertEqual(
+                    projection.resolve_primary_view_type(declared or None, head, {}),
+                    first_token or "form",
+                )
+                contract = assembler.assemble_unified_page_contract_v2(
+                    {"model": "x.document", "view_type": declared, "fields": {}},
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.active.view.parity.{declared}",
+                )
+                self.assertEqual(
+                    contract["pageInfo"]["viewType"],
+                    "list" if first_token in {"tree", "list"} else (first_token or "form"),
+                )
+
     def test_mobile_compact_preserves_create_business_context_outside_compat(self):
         source = {
             "model": "project.project",
