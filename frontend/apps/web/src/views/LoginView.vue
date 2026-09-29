@@ -92,11 +92,12 @@
             layout="vertical"
             label-align="top"
             :required-mark="false"
+            :show-error-message="true"
             :prevent-submit-default="true"
             data-auth-composition="official-credential-form"
             @submit="onValidatedSubmit"
           >
-            <ScFormItem name="username" :label="pageText('username_label', '账号')"
+            <ScFormItem :show-error-message="true" name="username" :label="pageText('username_label', '账号')"
               :rules="[{ required: true, message: pageText('username_placeholder', '请输入账号') }]">
               <ScInput
                 id="login-username"
@@ -114,7 +115,7 @@
                 <template #prefix><ScIcon name="user" :size="18" /></template>
               </ScInput>
             </ScFormItem>
-            <ScFormItem name="password" :label="pageText('password_label', '密码')"
+            <ScFormItem :show-error-message="true" name="password" :label="pageText('password_label', '密码')"
               :rules="[{ required: true, message: pageText('password_placeholder', '请输入密码') }]">
               <ScInput
                 id="login-password"
