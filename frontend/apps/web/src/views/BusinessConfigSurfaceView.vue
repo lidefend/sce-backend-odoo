@@ -32,14 +32,7 @@ import {
   type BusinessConfigListSearchAuditPayload,
   type BusinessConfigSurfacePayload,
 } from '../api/businessConfig';
-import {
-  BUSINESS_CONFIG_INTENTS,
-  BUSINESS_CONFIG_ROUTE_FLAGS,
-  isBusinessConfigRuntimeModel,
-} from '../app/businessConfigBoundaries';
-import { usePageContract } from '../app/pageContract';
-import { executePageContractAction } from '../app/pageContractActionRuntime';
-import { findActionMeta } from '../app/menu';
+import { BUSINESS_CONFIG_INTENTS } from '../app/businessConfigBoundaries';
 import { useSessionStore } from '../stores/session';
 import {
   analysisItemLabel,
@@ -79,6 +72,9 @@ import { useBusinessConfigImpactDialog } from './businessConfigSurface/useBusine
 import { useBusinessConfigDraftSession } from './businessConfigSurface/useBusinessConfigDraftSession';
 import { useBusinessConfigScopeLifecycle } from './businessConfigSurface/useBusinessConfigScopeLifecycle';
 import { useBusinessConfigWorkbenchBootstrap } from './businessConfigSurface/useBusinessConfigWorkbenchBootstrap';
+import { useBusinessConfigSurfacePageContract } from './businessConfigSurface/useBusinessConfigSurfacePageContract';
+import { useBusinessConfigSurfaceRuntimeRoute } from './businessConfigSurface/useBusinessConfigSurfaceRuntimeRoute';
+import { useBusinessConfigSurfaceScopeParams } from './businessConfigSurface/useBusinessConfigSurfaceScopeParams';
 import { useBusinessConfigPublishLifecycle } from './businessConfigSurface/useBusinessConfigPublishLifecycle';
 import { useBusinessConfigRemediationLifecycle } from './businessConfigSurface/useBusinessConfigRemediationLifecycle';
 import { analysisContractPayload, contractTargetKey, listContractPayload, searchContractPayload } from './businessConfigSurface/changeSetPayloads';
@@ -89,42 +85,17 @@ const CORE_DELIVERY_READINESS_SECTIONS = new Set(['form', 'list_search', 'menu',
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
-const pageContract = usePageContract('business_config');
-const pageSectionEnabled = pageContract.sectionEnabled;
-const pageSectionStyle = pageContract.sectionStyle;
-const pageSectionTagIs = pageContract.sectionTagIs;
-const pageActionIntent = pageContract.actionIntent;
-const pageActionTarget = pageContract.actionTarget;
-const pageGlobalActions = pageContract.globalActions;
-const pageSectionsReady = computed(() => (
-  pageSectionEnabled('root', true)
-  && pageSectionEnabled('header', true)
-  && pageSectionEnabled('coverage', true)
-  && pageSectionEnabled('designer', true)
-));
-const pageSectionContractValid = computed(() => (
-  pageSectionTagIs('root', 'section')
-  && pageSectionTagIs('header', 'header')
-  && pageSectionTagIs('coverage', 'section')
-  && pageSectionTagIs('designer', 'section')
-));
-const pageSectionsFingerprint = computed(() => JSON.stringify([
-  pageSectionContractValid.value,
-  pageSectionStyle('root'),
-  pageSectionStyle('header'),
-  pageSectionStyle('coverage'),
-  pageSectionStyle('designer'),
-]));
-async function executeGlobalPageAction(actionKey: string) {
-  await executePageContractAction({
-    actionKey,
-    router,
-    actionIntent: pageActionIntent,
-    actionTarget: pageActionTarget,
-    query: route.query,
-    onRefresh: loadSurface,
-  });
-}
+const {
+  pageSectionStyle,
+  pageGlobalActions,
+  pageSectionsReady,
+  pageSectionsFingerprint,
+  executeGlobalPageAction,
+} = useBusinessConfigSurfacePageContract({
+  router,
+  route,
+  refresh: () => loadSurface(),
+});
 const loading = ref(false);
 const scanLoading = ref(false);
 const listSearchBusy = ref(false);
@@ -144,18 +115,23 @@ const analysisPanelOpen = ref(false);
 const selectedRuntimeRoute = ref<BusinessConfigCoverageScanItem['runtime_route'] | null>(null);
 const advancedPanelOpen = ref(false);
 const surfaceLoadSeq = ref(0);
-const entryModel = findActionMeta(session.menuTree, numericQuery('action_id') || 0)?.model || '';
-const requestedBusinessModel = String(route.query.model || entryModel).trim();
-const scopeModel = ref(isBusinessConfigRuntimeModel(requestedBusinessModel) ? '' : requestedBusinessModel);
-const scopeActionId = ref(scopeModel.value ? (numericQuery('action_id') || 0) : 0);
-const scopeViewId = ref(scopeModel.value ? (numericQuery('view_id') || 0) : 0);
-const scopeRoleKey = ref(String(route.query.role_key || '').trim());
-const selectedPageLabel = ref(scopeModel.value ? String(route.query.page_label || '').trim() : '');
-const rootMenuXmlid = computed(() => String(route.query.root_menu_xmlid || '').trim());
-const shouldOpenPageList = computed(() => String(route.query[BUSINESS_CONFIG_ROUTE_FLAGS.openPages] || '').trim() === '1');
-const shouldOpenListSearch = computed(() => String(route.query.open_list_search || '').trim() === '1');
-const shouldOpenAnalysis = computed(() => String(route.query.open_analysis || '').trim() === '1');
-const shouldOpenFormConfig = computed(() => String(route.query.open_form_config || '').trim() === '1');
+const {
+  scopeModel,
+  scopeActionId,
+  scopeViewId,
+  scopeRoleKey,
+  selectedPageLabel,
+  rootMenuXmlid,
+  shouldOpenPageList,
+  shouldOpenListSearch,
+  shouldOpenAnalysis,
+  shouldOpenFormConfig,
+  currentModel,
+  scopeAction,
+  scopeView,
+  scopeRole,
+  currentModelIsRuntimeConfig,
+} = useBusinessConfigSurfaceScopeParams({ route, menuTree: session.menuTree });
 
 const sections = computed(() => surface.value?.sections || []);
 const visibleSections = computed(() => sections.value.filter((section) => {
@@ -201,11 +177,6 @@ const visibleConfigSections = computed(() => {
   }
   return result;
 });
-const currentModel = computed(() => String(scopeModel.value || '').trim());
-const scopeAction = computed(() => { const parsed = Number(scopeActionId.value || 0); return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined; });
-const scopeView = computed(() => { const parsed = Number(scopeViewId.value || 0); return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined; });
-const scopeRole = computed(() => String(scopeRoleKey.value || '').trim() || undefined);
-const currentModelIsRuntimeConfig = computed(() => isBusinessConfigRuntimeModel(currentModel.value));
 const approvalSection = computed(() => visibleConfigSections.value.find((section) => section.key === 'approval') || null);
 const {
   changeSet,
@@ -445,29 +416,12 @@ const {
   setMessage,
   clearMessage,
 });
-const runtimeRouteTarget = computed(() => {
-  const runtimeRoute = selectedRuntimeRoute.value || {};
-  const runtimePath = String(runtimeRoute.path || '').trim();
-  if (runtimePath && !runtimePath.startsWith('/admin/business-config')) {
-    return { path: runtimePath, query: runtimeRoute.query || {} };
-  }
-  if (scopeAction.value) {
-    const query: Record<string, string> = {};
-    const menuId = String(selectedCoverageRow.value?.runtime_route?.query?.menu_id || '').trim();
-    if (menuId) query.menu_id = menuId;
-    return { path: `/a/${scopeAction.value}`, query };
-  }
-  return { path: '', query: {} };
+const { runtimeRouteTarget, runtimeRouteHref } = useBusinessConfigSurfaceRuntimeRoute({
+  router,
+  selectedRuntimeRoute,
+  selectedCoverageRow,
+  scopeAction,
 });
-const runtimeRouteHref = computed(() => (
-  runtimeRouteTarget.value.path
-    ? router.resolve({ path: runtimeRouteTarget.value.path, query: runtimeRouteTarget.value.query }).href
-    : ''
-));
-function numericQuery(name: string) {
-  const parsed = Number(route.query[name] || 0);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : undefined;
-}
 
 const {
   buildRuntimeReturnQuery,
