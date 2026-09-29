@@ -113,31 +113,35 @@
         </div>
       </section>
 
-      <details
+      <ScDisclosure
         v-if="pageSectionEnabled('details_resolve_errors', true) && pageSectionTagIs('details_resolve_errors', 'details')"
-        :style="pageSectionStyle('details_resolve_errors')"
+        class="health-details"
+        :title="`Resolve Errors (${health.details?.resolve_errors?.length || 0})`"
         :open="pageSectionOpenDefault('details_resolve_errors', true)"
+        :style="pageSectionStyle('details_resolve_errors')"
       >
-        <summary>Resolve Errors ({{ health.details?.resolve_errors?.length || 0 }})</summary>
         <pre>{{ JSON.stringify(health.details?.resolve_errors || [], null, 2) }}</pre>
-      </details>
-      <details
+      </ScDisclosure>
+      <ScDisclosure
         v-if="pageSectionEnabled('details_drift', true) && pageSectionTagIs('details_drift', 'details')"
-        :style="pageSectionStyle('details_drift')"
+        class="health-details"
+        :title="`Drift (${health.details?.drift?.length || 0})`"
         :open="pageSectionOpenDefault('details_drift', false)"
+        :style="pageSectionStyle('details_drift')"
       >
-        <summary>Drift ({{ health.details?.drift?.length || 0 }})</summary>
         <pre>{{ JSON.stringify(health.details?.drift || [], null, 2) }}</pre>
-      </details>
-      <details
+      </ScDisclosure>
+      <ScDisclosure
         v-if="pageSectionEnabled('details_debt', true) && pageSectionTagIs('details_debt', 'details')"
-        :style="pageSectionStyle('details_debt')"
+        class="health-details"
+        :title="`Debt (${health.details?.debt?.length || 0})`"
         :open="pageSectionOpenDefault('details_debt', false)"
+        :style="pageSectionStyle('details_debt')"
       >
-        <summary>Debt ({{ health.details?.debt?.length || 0 }})</summary>
         <pre>{{ JSON.stringify(health.details?.debt || [], null, 2) }}</pre>
-      </details>
+      </ScDisclosure>
     </div>
+    <IntentConfirmationDialog ref="rollbackConfirmationRef" />
   </section>
 </template>
 
@@ -149,6 +153,8 @@ import ScCard from '../components/design-system/ScCard.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
+import ScDisclosure from '../components/design-system/ScDisclosure.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import { intentRequest } from '../api/intents';
 import { buildStatusError, resolveErrorCopy, type StatusError } from '../composables/useStatus';
 import { usePageContract } from '../app/pageContract';
@@ -171,6 +177,7 @@ const channelOptions = [
 
 const loading = ref(false);
 const governanceBusy = ref(false);
+const rollbackConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const health = ref<SceneHealthContract | null>(null);
 const errorText = ref('');
 const errorTraceId = ref('');
@@ -359,17 +366,17 @@ async function runGovernance(action: 'set_channel' | 'rollback' | 'pin_stable' |
     statusError.value = { message: errorText.value };
     return;
   }
+  if (action === 'rollback') {
+    const confirmed = await rollbackConfirmationRef.value?.confirm({
+      actionLabel: '回滚',
+      message: '确认回滚到稳定锁定模式？该操作会立即改变当前场景通道。',
+    });
+    if (!confirmed) return;
+  }
   governanceBusy.value = true;
   errorText.value = '';
   statusError.value = null;
   try {
-    if (action === 'rollback') {
-      const ok = window.confirm('Confirm rollback to stable pinned mode?');
-      if (!ok) {
-        governanceBusy.value = false;
-        return;
-      }
-    }
     const companyId = companyIdText.value ? Number(companyIdText.value) : undefined;
     let response: { readonly data: { readonly trace_id: string }; readonly traceId: string };
     if (action === 'set_channel') {
@@ -547,16 +554,11 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-details {
+.health-details {
   background: var(--sc-app-panel);
   border-radius: var(--sc-component-panel-radius);
   border: 1px solid var(--sc-app-border);
   padding: 10px 12px;
-}
-
-summary {
-  cursor: pointer;
-  font-weight: 600;
 }
 
 pre {
