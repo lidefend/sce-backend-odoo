@@ -4218,3 +4218,162 @@ project_manager / owner / contract_operator / config_admin）。实际访问被�
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 29｜"范围排除"的同类盲区复查：层级无关的策略边界不得被层级延迟吞掉（2026-09-30）
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 共享契约/守卫的判定范围）＋ P4（`scripts/audit`、`scripts/verify` 的前端守卫与其单测、派生清单） |
+| **Layer Target** | `scripts/audit/generate_frontend_rendering_detail_inventory.py`；`scripts/verify/frontend_primitive_adapter_guard.py` 及两份单测 |
+| **Module** | `smart_core`（守卫与清单归属）；不触及 `frontend/apps/web` 与 `frontend/packages/ui` 任何源码 |
+| **Standard vs User-Specific** | 平台标准：**"层级无关的策略边界（原生控件、原生行为）必须对全产品层生效，层级延迟只能延后所有权声明，不能吞掉策略边界"** —— 与行业/客户语义无关 |
+| **Why Here** | 只有生成器与守卫里能同时看到"对外声明的作用域"和"实际被求值的集合"；单测是唯一能把两者锁成不变量的地方 |
+| **Why Not Elsewhere** | 不放后端：后端不渲染 DOM；不放页面：页面不能自证；不删 `is_p3` 整体：会把 19 个 P3 所有权欠账一次性变成阻断，属扩大范围；不改业务矩阵：矩阵只随已证明职责升级 |
+| **Blast Radius** | 清单 `completionPolicy` 增加 `nativeControlScope`、新增 `p3OwnershipDeferred` 登记块、P3 面 `reason` 文本更新；判定顺序改变但**今日输出零差异**（P3 内原生控件命中 0）。菜单/模型/契约/请求载荷零变化 |
+
+### 2. 为什么上一轮验收体系没发现这个偏差（根因）
+
+段 28 修掉的是"**发布 `completionRule` 但从不求值**"。那是一次性缺陷，修完就没了。本段复查发现更根本的一层：
+
+> **守卫的"对外口径"（`scope` / `completionPolicy` / 错误文本）与"实际被求值的集合"是两处彼此独立的声明，没有任何机器把二者绑在一起。**
+> 因此任意一个提前 `return` / `continue` 都能悄悄缩窄求值集合，而对外口径不变，看板依旧全绿。
+
+具体到三个失效环节：
+
+1. **判定顺序无约束**：`is_p3` 提前 `return` 写在原生控件检查之前，读代码时两行都"正确"，只有把两者**组合**起来看才知道策略规则被吞掉。
+2. **`--check` 只证明确定性，不证明覆盖**：清单的 `--check` 只比对"生成结果与磁盘是否一致"，不做"声明范围 ⊇ 求值范围"的语义比对。生成器与清单一致地"少检查一块"，`--check` 恒绿。
+3. **单测只锁样例，不锁作用域**：既有单测断言的是具体正例/负例（某文件必须是 `gap`、某文件必须是 `governed_primitive`），没有一条断言"某条策略规则的作用域必须覆盖它声明的层级"。
+
+**本轮的补齐方式**（对应上面三条）：
+
+- (1) 把层级无关的策略边界移到**任何层级延迟之前**，并在原位留注释说明顺序是规则的一部分；
+- (2) 让口具有可校验的形状：`completionPolicy.nativeControlScope` 显式写出覆盖层，`p3OwnershipDeferred` 让"延后"本身变成**被计数、被登记**的数据，而不是一句字符串；
+- (3) 新增断言"作用域不变量"的负例测试，并**先证明旧行为会红**。
+
+### 3. 复查方法（D = 声明范围 − 求值范围）
+
+对 `scripts/audit/generate_frontend_*.py`（5 件）与 `scripts/verify/frontend_*guard*.py`／`*audit*.py`
+逐一检查"是否存在按 P3／路径前缀的排除"，并与该文件**对外声明的范围**对照：
+
+| 文件 | 是否有范围排除 | 对外声明的作用域 | 一致？ |
+|---|---|---|---|
+| `generate_frontend_component_driver_takeover_inventory.py` | 曾有 `is_p3`（段 28 已修） | `repository P0-P4 frontend production sources except the design-system adapter layer` | ✅ |
+| `generate_frontend_rendering_detail_inventory.py` | `is_p3` 提前 return，**吞掉原生控件规则** | `scope` = 全部正式产品前端；`completionPolicy.nativeControlRequiresExplicitCompositeOwnership` 无限定层 | ❌ **本段修复** |
+| `generate_frontend_visual_projection_inventory.py` | `consumer_primitive_visual_chrome` 排除 P3 | `scope` = `repository formal P0/P1 frontend source projection` | ✅ 声明的本来就是 P0/P1 |
+| `verify/frontend_primitive_adapter_guard.py` | 原生控件规则全仓；呈现 chrome 规则排除 P3 | 文件内**无声明**，且是裸 `continue` | ⚠️ **本段改为具名声明** |
+| `generate_frontend_official_design_alignment_inventory.py` | `excludedScopes` 显式含 `P3 low-code designer styling` | 已声明 | ✅ |
+| `generate_frontend_professionalization_baseline.py` | `EXCLUDED_SCOPES` 已声明，无 P3 跳过 | 已声明 | ✅ |
+| 其余前端守卫（约 30 处 `continue`） | 按文件后缀／diff 行过滤 | 与作用域无关 | ✅ |
+
+结论：与 P3 有关的排除共 4 处 —— 1 处已在段 28 修复、**1 处本段修复**、1 处声明本就一致、1 处本段改为具名声明。不存在需要继续扩张的第二个同类盲区。
+
+### 4. 已确认缺口 A：`rendering-detail` 清单的原生控件边界被 P3 延迟吞掉
+
+```python
+def classify(source, text):
+    if "/components/design-system/" in source:
+        return "governed_primitive", ...
+    if is_p3(source):                       # ← 提前 return，吞掉下面全部规则
+        return "p3_out_of_scope", "... handled by a separate P3 batch"
+    if source in DELIBERATE_NATIVE_COMPOSITES: ...
+    raw_controls = [...]                     # ← 层级无关的策略边界，反而在延迟之后
+    if raw_controls:
+        return "gap", f"formal P0/P1 surface bypasses governed adapters: ..."
+```
+
+两处不一致同时存在：
+
+- `completionPolicy.nativeControlRequiresExplicitCompositeOwnership = True` 写的是**无限定层**的规则，
+  实现上 P3 却被静默豁免；
+- `reason` 声称 `handled by a separate P3 batch`，但**没有任何被登记的 P3 批次** —— 这正是"缺口必须显现"的反面。
+
+### 5. 已确认缺口 B：原生适配守卫的 P3 呈现豁免是裸 `continue`
+
+```python
+if RAW_INTERACTIVE_CONTROL.search(source_text):        # 全仓规则，正确地在前面
+    errors.append(...)
+...
+if relative in p3_files or relative.startswith(p3_prefixes):
+    continue                                            # ← 裸 continue，无具名理由
+```
+
+豁免本身**是可辩护的**（`official-design-alignment` 已把 `P3 low-code designer styling` 声明为范围外），
+但豁免在**使用点**上没有声明，读者只能靠推断；一旦有人把这一行上移，全仓的原生控件规则会被一起吞掉。
+
+### 6. 修复
+
+**A（`generate_frontend_rendering_detail_inventory.py`）**
+
+- 与层级无关的原生控件边界移到 `is_p3` 延迟**之前**；
+- `reason` 按实际层命名：`formal P3 surface bypasses governed adapters: …` / `formal P0/P1 …`；
+- 新增 `layer_of(source)`，`formalProductLayer` 由 `"P3" if status == "p3_out_of_scope" else "P0"`
+  改为 `"P3" if is_p3(source) else "P0"` —— P3 面即使在 `gap` 状态下也**不会**被错标成 P0；
+- `completionPolicy` 新增 `nativeControlScope = "every formal-product surface (P0-P4) except the design-system adapter layer"`；
+- 新增 `p3OwnershipDeferred`：把"延后"变成显式、被计数的登记块
+  （`deferred/register/reason/surfaceCount/surfaces`，当前 `surfaceCount=19`）。
+
+**B（`frontend_primitive_adapter_guard.py`）**
+
+- 新增具名常量 `P3_CONSUMER_CHROME_EXEMPTION`（写明基准与理由）与函数
+  `consumer_chrome_exempt(relative, p3_files, p3_prefixes)`；使用点改为调用该函数，
+  并在常量注释中固定"原生控件/对话框语义规则必须先于该豁免运行"。
+
+**不动的东西**：`DELIBERATE_NATIVE_COMPOSITES` 的优先级、`STATE_PATTERNS`、
+`STATUS_VALUES` 词表、前端任何 `.vue` / `.ts`、业务矩阵、`.agent`。
+
+### 7. 负例（先证明会红，再声称修复）
+
+| 负例 | 变异 | 期望 | 实测 |
+|---|---|---|---|
+| `test_p3_surface_cannot_bypass_the_repo_wide_native_control_boundary` | 把 `is_p3` 延迟**移回**原生控件检查之前 | 必须红 | 变异后 `classify(P3, '<button>')` 返回 `p3_out_of_scope` → **断言失败，盲区复现** |
+| `test_p3_administration_consumer_chrome_is_a_declared_exemption` | 让 `consumer_chrome_exempt` 恒返回 `None`（撤销豁免） | 必须红 | 报出 `consumer primitive visual chrome must move to an adapter appearance: …LegacyPanel.vue` → **断言失败** |
+| `test_p3_administration_surface_cannot_bypass_native_control_boundary` | 把 P3 豁免上移到原生控件检查之前 | 必须红 | 变异后 P3 面的 `<input>` 不再报错 → **盲区复现** |
+
+新增不变量断言（正向锁）：`p3OwnershipDeferred.surfaceCount == len(p3_out_of_scope 面)`、
+`nativeControlScope` 同时含 `P0-P4` 与 `design-system adapter layer`、`layer_of` 分层正确。
+
+### 8. 验证（分层结果）
+
+改动只落在 `scripts/audit`、`scripts/verify` 与 `docs/` 派生清单，**未触及 `frontend/` 源码**，
+因此 L4 浏览器层与 `verify.frontend.typecheck.strict` 不因本段失效，不重跑（沿用段 28 同一候选）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only next=risk_selected_non_zero_L2_targets_required` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（含 `tracked generated reports are current`） |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 64 tests**（原 59，+5）；`rendering_detail_inventory PASS surfaces=172 gaps=0`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0`、`rendering_detail_state_guard PASS surfaces=97` |
+| L2 | `make verify.frontend.primitive_adapter.unit` | **PASS 33 tests**（原 31，+2）；`components=46 eventCases=11`、`frontend_primitive_adapter_guard PASS components=46` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS 13 tests；`required=33 missing=0 raw=0`（同类规则未回退） |
+
+派生清单刷新：`make refresh.frontend.rendering_detail.inventory` 后仅
+`component-professionalization-inventory-v1.json` 变化（49+/21−：`sourceIdentity`/`generatorDigest`、
+19 条 P3 `reason`、`completionPolicy.nativeControlScope`、新键 `p3OwnershipDeferred`）；
+`visual-projection-inventory-v1.json` 与 `official-design-alignment-inventory-v1.json` **逐字节不变**，
+证明改动未外溢到相邻清单。
+
+### 9. 显式登记（不在本段范围）
+
+- **P3 状态原语所有权欠账（非阻断，独立台账）**：`p3OwnershipDeferred.surfaceCount = 19`
+  （P3 共 20 个 `.vue`，1 个无相关词汇不入清单）；其中 **17 个有状态词汇但无
+  `ScLoading`/`ScEmptyState`/`ScErrorState` 原语**。这是真实的 P3 欠账，需单独的 P3 所有权批次建立声明；
+  **不通过删掉 `is_p3` 让 19 个 `gap` 一次性冒出并阻断 P0/P1 收口**。
+- `scale` 延后口径：P3 面判定为 `p3_out_of_scope` 时 `reason` 指向 `p3OwnershipDeferred`，
+  未来 P3 批次应把该块改为 `deferred: false` 并补齐所有权声明。
+- 承接段 28 全部登记项（含 `/admin/*` 无 platform-admin 夹具的页面级证据缺口、
+  `MenuTree.vue`/`CanonicalNavigationMenuNode.vue` 名称豁免移除后需同等理由才能恢复），本段未触碰。
+
+### 10. 提交
+
+- `fix(guard): evaluate the layer-independent native control boundary before the P3 deferral`
+- `chore(web): refresh the derived inventory for the layer-independent native control policy`
+- 本段记录（文档）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
