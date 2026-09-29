@@ -66,6 +66,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         },
         {
             "key": "done",
+            "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "完成",
             "intent": "payment.request.done",
             "method": "action_done",
@@ -97,25 +98,21 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     }
     _ACTION_ROLE_HINTS = {
         "submit": {
-            "required_role_key": "finance",
             "required_role_label": "财务",
             "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_user",
             "handoff_hint": "请由财务提交申请后进入审批链路。",
         },
         "approve": {
-            "required_role_key": "executive",
             "required_role_label": "管理层",
             "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
             "handoff_hint": "请由管理层执行审批决策。",
         },
         "reject": {
-            "required_role_key": "executive",
             "required_role_label": "管理层",
             "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
             "handoff_hint": "请由管理层执行驳回并填写原因。",
         },
         "done": {
-            "required_role_key": "finance",
             "required_role_label": "财务",
             "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_manager",
             "handoff_hint": "审批完成后由财务确认办结。",
@@ -344,7 +341,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "advisory_reason_codes": advisory_reason_codes,
             "force_block_available": bool(advisories),
             "suggested_action": suggested_action,
-            "required_role_key": str(role_hint.get("required_role_key") or ""),
+            "required_role_key": role_code_for_group(required_group_xmlid),
             "required_role_label": str(role_hint.get("required_role_label") or ""),
             "required_group_xmlid": required_group_xmlid,
             "handoff_hint": str(role_hint.get("handoff_hint") or ""),

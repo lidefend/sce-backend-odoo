@@ -7,6 +7,11 @@ from copy import deepcopy
 from urllib.parse import urlencode
 
 from ..models.support import operating_metrics as opm
+from .capability_registry import role_code_for_group
+
+# The capability that authorizes starting and tracing a payment execution.
+# It is declared once; the role code a terminal is told about is derived.
+PAYMENT_EXECUTION_ROLE_GROUP = "smart_construction_core.group_sc_cap_finance_manager"
 
 
 WORKSPACE_DECLARATIONS = {
@@ -652,7 +657,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         and not active_executions
     )
     execution_authorization_allowed = bool(
-        env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+        env.user.has_group(PAYMENT_EXECUTION_ROLE_GROUP)
     )
     execution_enabled = bool(execution_business_available and execution_authorization_allowed)
     if active_executions:
@@ -694,6 +699,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         "visible_profiles": ["edit", "readonly"],
         "visible": True,
         "method": "action_create_payment_execution",
+        "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "financial_workspace_contract.payment_request_execution"},
         "allowed": execution_enabled,
         "enabled": execution_enabled,
         "disabled": not execution_enabled,
@@ -702,8 +708,8 @@ def build_financial_form_business_actions(env, model_name, record_id):
         "entitlement_evaluated": True,
         "reason_code": execution_reason_code,
         "blocked_message": execution_blocked_message,
-        "required_group_xmlids": ["smart_construction_core.group_sc_cap_finance_manager"],
-        "required_role_key": "finance_manager",
+        "required_group_xmlids": [PAYMENT_EXECUTION_ROLE_GROUP],
+        "required_role_key": role_code_for_group(PAYMENT_EXECUTION_ROLE_GROUP),
         "required_role_label": "付款确认能力",
         "handoff_required": bool(execution_business_available and not execution_authorization_allowed),
         "handoff_hint": "请由具有付款确认能力的人员生成付款登记。",
@@ -742,8 +748,8 @@ def build_financial_form_business_actions(env, model_name, record_id):
             "entitlement_evaluated": True,
             "reason_code": "" if execution_authorization_allowed else "ROLE_HANDOFF_REQUIRED",
             "blocked_message": "" if execution_authorization_allowed else "请由具有付款确认能力的人员查看付款登记。",
-            "required_group_xmlids": ["smart_construction_core.group_sc_cap_finance_manager"],
-            "required_role_key": "finance_manager",
+            "required_group_xmlids": [PAYMENT_EXECUTION_ROLE_GROUP],
+            "required_role_key": role_code_for_group(PAYMENT_EXECUTION_ROLE_GROUP),
             "required_role_label": "付款确认能力",
             "handoff_required": not execution_authorization_allowed,
             "handoff_hint": "请由具有付款确认能力的人员查看付款登记。",

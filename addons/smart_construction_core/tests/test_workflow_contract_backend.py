@@ -198,6 +198,56 @@ class TestWorkflowContractBackend(TransactionCase):
                     "%s workflow action %s points to missing method %s" % (model_name, action_key, method_name),
                 )
 
+    def test_industry_layer_owns_no_profile_for_a_foreign_model(self):
+        """A user/product module publishes its own workflow projection.
+
+        `sc.partner.import.review` is owned by a customer module, so the
+        industry layer must not declare its states, actions or methods.  The
+        owning module registers the profile through the P0 registry and this
+        service merges it; a model that is absent from the current registry
+        keeps its actions undeclared instead of being back-filled here.
+        """
+        service = self.env["sc.workflow.contract.service"]
+        industry_models = set(service.PROFILE_BY_MODEL)
+        external = service._external_profile_by_model()
+        self.assertTrue(
+            industry_models.isdisjoint(set(external)),
+            "the industry layer must not declare a profile for a foreign model",
+        )
+        effective = service.profile_by_model()
+        self.assertTrue(industry_models.issubset(set(effective)))
+        for model_name in sorted(external):
+            with self.subTest(model=model_name):
+                if model_name in self.env.registry:
+                    self.assertIn(model_name, effective)
+                else:
+                    self.assertNotIn(model_name, effective)
+                    self.assertFalse(service.is_model_supported(model_name))
+
+    def test_an_external_profile_whose_methods_do_not_resolve_stays_undeclared(self):
+        """Registration alone must not publish an action the model cannot run."""
+        from odoo.addons.smart_core.utils import contract_governance
+        from odoo.addons.smart_core.utils import contract_governance_registry
+
+        registered = contract_governance.register_workflow_contract_profile(
+            "res.partner",
+            {
+                "state_field": "state",
+                "state_phase": {"draft": "draft"},
+                "state_actions": {"draft": ["submit"]},
+                "method_by_action": {"submit": "action_that_does_not_exist"},
+            },
+            source="unit.test",
+        )
+        self.assertTrue(registered)
+        try:
+            service = self.env["sc.workflow.contract.service"]
+            self.assertNotIn("res.partner", service.profile_by_model())
+            self.assertFalse(service.is_model_supported("res.partner"))
+        finally:
+            contract_governance_registry._WORKFLOW_CONTRACT_PROFILE_REGISTRY.pop("res.partner", None)
+            contract_governance_registry._WORKFLOW_CONTRACT_PROFILE_SOURCES.pop("res.partner", None)
+
     def test_supported_model_contract_schema_is_frontend_stable(self):
         expense_contract_wrapper = self.env["construction.contract.expense"].search(
             [("contract_id", "=", self.contract.id)],

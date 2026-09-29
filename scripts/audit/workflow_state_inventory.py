@@ -58,6 +58,7 @@ WORKFLOW_METHOD_NAMES = (
     "action_reset_to_draft",
     "action_set_running",
     "action_reset_draft",
+    "action_reopen",
     "action_cancel",
     "button_confirm",
     "button_draft",

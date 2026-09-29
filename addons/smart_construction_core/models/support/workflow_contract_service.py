@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import logging
+
 from odoo import api, models
 from odoo.addons.smart_construction_core.models.support import operating_metrics as opm
 from odoo.tools.float_utils import float_compare
+
+from odoo.addons.smart_core.utils.contract_governance import workflow_contract_profiles
+
+_logger = logging.getLogger(__name__)
 
 
 def _simple_approval_profiles(model_names):
@@ -861,23 +867,6 @@ class ScWorkflowContractService(models.AbstractModel):
             "method_by_action": {"submit": "action_confirm", "reopen": "action_reset_draft", "cancel": "action_cancel"},
             "label_by_action": {"submit": "确认"},
         },
-        "sc.partner.import.review": {
-            "state_field": "review_state",
-            "state_phase": {"candidate": "draft", "resolved": "done", "ignored": "cancelled"},
-            "state_actions": {"candidate": ["submit", "approve", "complete", "cancel"]},
-            "method_by_action": {
-                "submit": "action_resolve_customer",
-                "approve": "action_resolve_supplier",
-                "complete": "action_resolve_customer_supplier",
-                "cancel": "action_ignore",
-            },
-            "label_by_action": {
-                "submit": "确认为客户",
-                "approve": "确认为供应商",
-                "complete": "确认为客户+供应商",
-                "cancel": "忽略",
-            },
-        },
     }
 
     ACTIONS = {
@@ -885,14 +874,16 @@ class ScWorkflowContractService(models.AbstractModel):
         "submit": {"label": "提交审批", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "approve": {"label": "审批通过", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "approve", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "reject": {"label": "审批驳回", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "workflow.contract.service"}},
-        "activate": {"label": "开始执行", "intent": "server.object", "kind": "transition"},
-        "complete": {"label": "完成", "intent": "server.object", "kind": "transition"},
+        "activate": {"label": "开始执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "complete": {"label": "完成", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "cancel": {"label": "取消", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "cancel_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
-        "reopen": {"label": "重置为草稿", "intent": "server.object", "kind": "transition"},
         # `reopen` 在本平台语义是「重置为草稿」（`cancel` -> `draft`）。分包登记
         # `已关闭` -> `已登记` 是另一个目标状态、另一个方法，所以用独立键，避免同一个
         # 键在 `已取消` 与 `已关闭` 两个状态上声明两个互斥的方法与标签。
-        "reactivate": {"label": "重新打开", "intent": "server.object", "kind": "transition"},
+        # 两者的 `purpose` 同为 `reopen`：它只声明“把记录恢复到可继续办理的状态”，
+        # 具体目标状态仍由各自的 `method` / 动作规则承载。
+        "reopen": {"label": "重置为草稿", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "reopen", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "reactivate": {"label": "重新打开", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "reopen", "executor": "contract.action", "origin": "workflow.contract.service"}},
     }
 
     TERMINAL_PHASES = {"done", "cancelled", "legacy_confirmed"}
@@ -924,17 +915,54 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def supported_model_names(self):
-        return sorted(self.PROFILE_BY_MODEL)
+        return sorted(self.profile_by_model())
 
     @api.model
     def is_model_supported(self, model_name):
-        return str(model_name or "").strip() in self.PROFILE_BY_MODEL
+        return str(model_name or "").strip() in self.profile_by_model()
+
+    @api.model
+    def _external_profile_by_model(self):
+        """Profiles contributed by the module that owns the model.
+
+        `smart_construction_core` owns the construction-industry projection.
+        A model owned by a user/product module publishes its own profile
+        through the P0 registry; the industry layer merges it instead of
+        declaring rules for a model it does not own.
+        """
+        return workflow_contract_profiles()
+
+    @api.model
+    def _profile_is_executable(self, model_name, profile):
+        if model_name not in self.env.registry:
+            return False
+        model = self.env[model_name]
+        for method_name in (profile.get("method_by_action") or {}).values():
+            if method_name and not hasattr(model, method_name):
+                return False
+        return True
+
+    @api.model
+    def profile_by_model(self):
+        merged = {name: dict(profile) for name, profile in self.PROFILE_BY_MODEL.items()}
+        for model_name, profile in self._external_profile_by_model().items():
+            if model_name in merged:
+                continue
+            if not self._profile_is_executable(model_name, profile):
+                _logger.warning(
+                    "[workflow.contract] external profile for %s does not resolve in this registry; "
+                    "its actions stay undeclared",
+                    model_name,
+                )
+                continue
+            merged[model_name] = profile
+        return merged
 
     @api.model
     def describe_record(self, record):
         if not record or len(record) != 1:
             return {}
-        profile = self.PROFILE_BY_MODEL.get(record._name)
+        profile = self.profile_by_model().get(record._name)
         if not profile:
             return {}
         raw_state = str(getattr(record, profile["state_field"], "") or "").strip()

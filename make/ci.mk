@@ -419,9 +419,11 @@ audit.workflow_state.inventory: guard.prod.forbid
 
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory
-	@python3 -m py_compile addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py
+	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
+	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
+	@python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestWorkflowContractBackend' bash scripts/test/test_safe.sh
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines' bash scripts/test/test_safe.sh
 
