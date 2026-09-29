@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import sys
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / "frontend/apps/web/src/views/HomeView.vue"
@@ -21,10 +22,12 @@ def main() -> int:
         "session.activityPages",
         "isCurrentContextEpoch(requestEpoch)",
     ]
-    forbidden = ["session.workspaceHome", "keywordList(", "role ===", "role_code ===", "listRecords("]
+    forbidden = ["session.workspaceHome", "keywordList(", "listRecords("]
     errors = [f"HomeView missing token: {token}" for token in required_home if token not in home]
     errors += [f"runtime missing token: {token}" for token in required_runtime if token not in runtime]
     errors += [f"runtime forbidden token: {token}" for token in forbidden if token in runtime]
+    if re.search(r"\brole(?:_code)?\s*===", runtime):
+        errors.append("forbidden role inference")
     payload = {
         "ok": not errors,
         "contract_boundary": "page_identity_plus_authoritative_my_work_navigation_activity",

@@ -1613,3 +1613,97 @@ WEB-STYLE-01批次验收完成｜主线未集成｜目标环境未部署｜整�
 已知list/render/no-new-any/style阻断已逐项关闭，不等同未运行的完整发布门禁通过。
 下一阶段：统一候选的必要集成门禁与受管预览复核；专用页面例外继续按page-patterns登记，
 不把专用层级/工作表强塞普通列表，不以模板接管比例替代正式89入口的业务交付验收。
+
+## WEB-BOOT-01：由真实初始化契约驱动接管盘点（2026-09-29，进行中）
+
+基线 ef346859 clean。用户明确扩大到登录→system.init→授权导航→页面类型的系统盘点与补齐。
+P4只读观察复用验收库sc_frontend_acceptance、既有profile/fixture角色/5180→18082及构建receipt；
+先观察已登记旧预览，不将source不一致的观察算当前候选验收。不创建环境/数据，不写业务或配置。
+P0修复范围由实际契约与源码判定：登录呈现与初始化后共享页面，保留认证、权限、默认路由真源。
+L0身份→L1/P4探针及非零单测→真实启动链观察→P0缺口修复→定向L2→一次稳定候选构建/复核。
+
+WEB-BOOT-01真实来源：`bootstrap-inventory-1790671776437/report.json`首次取得三角色登录/system.init，
+finance/contract_operator落`/s/workspace.home`；config_admin落projects.list，和role_surface.landing_path一致。
+导航叶15/3/86，去重87，不把它替换正式89业务矩阵。旧登录form=1、officialForms=0；外壳均official。
+按授权导航扩大后的`bootstrap-inventory-1790672013759/report.json`观察104个角色×菜单入口：
+91个official-standard-list、6个official-standard-form标记、6个collection专用候选、1个配置工作台。
+该文件是旧TPL07-r2诊断，不是当前候选验收：偏好读取、6次创建默认值读取和1次配置surface读取曾被
+只读允许表拒绝，所致错误不归产品；usage.track也被阻止。菜单335/663的实际listProfile明确
+hierarchical_worksheet/sheet_groups，454明确kanban；不是普通列表的旧实现遗漏。
+完整观察已落盘，但外层Make最终failed：执行中的shell入口被本轮编辑，恢复读取时语法位置失效；
+当前`bash -n`通过。保留观察原件、不把此命令记为passed，后续只定向复核工具限制和受影响页面。
+
+P4探针修正轨迹：最初response事件读取body遭浏览器缓存逐出（failed），改route.fetch持有实际响应；
+随后精确路径未匹配带query的API导致init缺失（failed），改匹配API路径并解析实际pathname。
+独立复核指出写intent黑名单不足，旧全扫主动中止；采用明确read allowlist，未知请求fail-closed，
+6项负例包含配置stage/discard/validate、非intentAPI和写操作拒绝。读取默认值、个人偏好、配置surface
+分别核对后端handler后登记；候选启动另明确允许既有usage.track访问计数，业务/配置写仍不允许。
+observed-identity仅允许原构建观察，仍验证登记listener/代理和产物摘要；candidate入口保持源码匹配检查。
+
+P0落位：LoginView采用官方Login.vue的Form/FormItem/Input提交组合；Home/MyWork采用共享
+ProductWorkspaceSurface的summary/query/main/actions/secondary卡片区域。参考仍为固定Starter快照，
+未引入示例统计、模拟数据或角色推导。原业务适配/办理动作及登录→init→权威路由未改；旧Home私有
+panel/header及MyWork外层编排退出。B线确认槽职责保留，发现的残留CSS逗号已修复为按钮flex:none。
+相关guard以共享槽接线代替旧section类名，8项正反例；ScPanel检查迁到仍真实消费它的ApiKey页；
+两个旧home guard对display_role的子串误判改词边界，真实role/role_code推导仍拒绝。
+
+验证日志索引：
+- L1 iteration最终基于r3记录`/tmp/web-boot01-iteration-r3.log`；早期iteration因已清理的空白失败保留。
+- L2 strict typecheck/auth credential/auth surface：`/tmp/web-boot01-auth-feedback.log`passed。
+- L2 workspace接线8例、home职责/编排/my-work/shared semantic/style/no-any：
+  `/tmp/web-boot01-workspace2.log`的旧误判failed由`/tmp/web-boot01-remaining-guards.log`和
+  `/tmp/web-boot01-tool-final.log`的passed替代；700源码文件显式any仍25，无额度增加。
+- L2状态/事项呈现、活动页键盘/身份/保留、page-pattern12+5、真实表单引擎74：
+  `/tmp/web-boot01-behavior.log`passed。P4预览6例及允许表6例、布局8例有各自日志。
+- L4首次boot01产物在必填语义复核前未启用，保留；r2启用后空凭据真实检查failed：引擎阻断但
+  错误信息未显示。`bootstrap-inventory-1790672596362`与`1790672664978`保留failure，后者DOM确认
+  novalidate/required均有效，错误显示开关缺失。修复仅Login明确showErrorMessage=true，未更改共享
+  wrapper默认和业务表单摘要策略；因此有依据构建r3，而非重复同一失败。构建日志
+  `/tmp/web-boot01-build.log`、`/tmp/web-boot01-build-r2.log`、`/tmp/web-boot01-build-r3.log`分别保留。
+
+- r3构建与L1/预览6项已passed，P0提交`b3d918bf`，加载entry `index-CWMKjz2r.js`，
+  SHA256 `8cdd39c1fce3521e5e943da0885ece5973a6ede6189203d3d544f19fee169cc5`。
+  `/tmp/web-boot01-up-r3.log`确认5180切换成功，后续仅P4/docs变动，不重建。
+- r3首跑探针在关闭时出现route.fetch context disposed，未形成终态；保留
+  `bootstrap-inventory-1790672966925`为未完成，不算passed。P4补异常脱敏与收尾等待；
+  r3b到合同角色后无有界定位等待，主动中止，`bootstrap-inventory-1790673027623`亦非passed。
+  已有财务桌面/390截图显示共享工作台可用，但不替代整轮结果。后续P4明确15秒定位/30秒导航
+  超时、阶段日志、收尾前落盘，继续定位而非宣称产品通过。无业务写入、无新增构建。
+
+- r3c `bootstrap-inventory-1790673173453`明确failed：合同角色普通列表容器已出现，
+  但ui.contract.v2尚未完成时即断言。P4补networkidle后验证真实契约、route.fetch 15秒上限，
+  防止异步请求无限拖住收尾；不修改产品契约消费。r3c终态已落盘，收尾进程中止。
+  后续定向候选日志`/tmp/web-boot01-browser-r3d.log`；不得混用旧failed为成功证据。
+
+### WEB-BOOT-01收口（本地批次）
+
+- L4 r3d `bootstrap-inventory-1790673243161/report.json`保留整体failed，原因仅管理员
+  `ui.business_config.coverage.scan`被只读探针拒绝。财务/合同分角色终态均零页面/请求错误、
+  零拦截；登录官方必填提示→真实init→权威落地→标准列表→Home/MyWork双宽检查通过。
+  各自本次列表菜单334/414均有唯一新增成功V2响应，终态复核与独立B线确认可复用。
+- P4核对`BusinessConfigCoverageScanHandler`为查询投影后精确放行；bootstrap修复写仍拒绝。
+  B线发现的收尾竞态一并修正：先等待回调，再断言errors；异常route主动abort；列表响应绑定
+  本次导航新增契约和menu_id。工具策略6例passed `/tmp/web-boot01-policy-final.log`。
+- 仅管理员受影响补验 `make verify.frontend.standard_bootstrap.browser`，环境
+  `BOOTSTRAP_ROLES=fixture_role_config_admin`，`/tmp/web-boot01-browser-admin-final.log` passed，
+  `bootstrap-inventory-1790673383007/report.json`：1角色登录/初始化/权威落地、当前列表326、
+  Home/MyWork × 1440/390、10个定向导航；零未登记请求、零页面/请求异常。
+  10页落盘另核对零alerts/item.error，所有专用renderer为ready。417重定向到真实
+  `/admin/business-config`；其coverage扫描可能超过4秒观察窗口，未据此声称配置写流程已验收。
+- 此次13个角色×定向页面与旧104入口观察分开：6个创建页官方表单；335/663层级工作表，
+  454流程看板，702/703透视表；417专用P3工作台。它们有明确类型和职责，没有作为普通列表
+  静默回退。授权导航仍为87去重入口，不升级正式89行业务矩阵。
+- L1最终 `make ci.local.iteration` passed `/tmp/web-boot01-iteration-tools-final.log`；
+  共享接线8例/布局guard及策略6例passed `/tmp/web-boot01-final-tools.log`（策略最终以上一日志为准）。
+  类型、真实表单引擎、状态/事项/返回行为及预览6项复用上文成功结果，产品输入未再变。
+  B线最终只读复核无代码阻断。P4/docs变化不改变r3产品输入，不重新构建。
+- 当前预览5180为b3d918bf产品候选；本地后续工具/文档提交不改变产物。无业务/配置写入，
+  无推送/合并/目标环境部署。登录会话和既有usage.track访问计数为已声明启动副作用。
+
+WEB-BOOT-01批次验收完成（上述分角色有效证据组合），主线未集成、目标环境未部署、整体用户交付未验收。
+已补登录和共享工作台呈现缺口，普通列表/表单/详情沿用TPL07标准路径。公共激活/找回挑战流程、
+专用设计器/配置编辑器仍是明确保留范围，未冒称整个前端所有特殊页面已完成官方接管。
+
+提交后预览复核：误直接调用identity被既有Make入口保护拒绝（无变更、非验收）；
+随后使用`make frontend.standard.preview.up` passed，日志`/tmp/web-boot01-final-preview-reuse.log`
+确认REUSED current 5180 listener，不重建、不重启。

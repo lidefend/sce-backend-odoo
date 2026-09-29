@@ -917,3 +917,8 @@ verify.frontend.typed_dependencies.unit: guard.prod.forbid
 verify.frontend.form_designer_actions.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_designer_actions_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-designer-actions-test.mjs >/dev/null
 	@node /tmp/form-designer-actions-test.mjs
+
+.PHONY: verify.frontend.workspace_composition.unit
+verify.frontend.workspace_composition.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_workspace_composition_wiring
+	@python3 scripts/verify/frontend_home_layout_section_coverage_guard.py

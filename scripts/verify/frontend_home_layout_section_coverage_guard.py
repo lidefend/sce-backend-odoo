@@ -11,6 +11,17 @@ APP_SHELL = ROOT / "frontend/apps/web/src/layouts/AppShell.vue"
 ROUTER = ROOT / "frontend/apps/web/src/router/index.ts"
 
 
+def workspace_section_errors(home: str, work: str, surface: str) -> list[str]:
+    errors = []
+    for label, source, required in [
+        ('home', home, ['<ProductWorkspaceSurface', '<template #summary>', '<template #secondary>', '<template #main-actions>', "import ProductWorkspaceSurface from '../product-page-patterns/ProductWorkspaceSurface.vue'"]),
+        ('work', work, ['<ProductWorkspaceSurface', '<template #summary>', '<template #query>', "import ProductWorkspaceSurface from '../product-page-patterns/ProductWorkspaceSurface.vue'"]),
+        ('shared', surface, ['<ScCard', '<slot />', '<slot name="summary" />', '<slot name="query" />', '<slot name="secondary" />', '<slot name="main-actions" />']),
+    ]:
+        errors.extend(f'{label} missing shared workspace responsibility: {token}' for token in required if token not in source)
+    return errors
+
+
 def main() -> int:
     text = HOME.read_text(encoding="utf-8", errors="ignore") if HOME.is_file() else ""
     app_shell = APP_SHELL.read_text(encoding="utf-8", errors="ignore") if APP_SHELL.is_file() else ""
@@ -18,9 +29,6 @@ def main() -> int:
     my_work_view = MY_WORK_VIEW.read_text(encoding="utf-8", errors="ignore") if MY_WORK_VIEW.is_file() else ""
     router = ROUTER.read_text(encoding="utf-8", errors="ignore") if ROUTER.is_file() else ""
     required = [
-        'class="role-home-surface__tasks"',
-        'class="role-home-surface__overview"',
-        'class="role-home-surface__access"',
         'v-if="loading"',
         'v-else-if="error"',
         'v-else-if="tasks.length"',
@@ -28,6 +36,8 @@ def main() -> int:
         'class="role-home-surface__entry-copy"',
         'grid-template-columns: auto minmax(0, 1fr) auto',
     ]
+    surface = (ROOT / 'frontend/apps/web/src/components/product-page-patterns/ProductWorkspaceSurface.vue').read_text(encoding='utf-8')
+    work = (ROOT / 'frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue').read_text(encoding='utf-8')
     forbidden = [
         "legacy_home",
         "HUD:",
@@ -35,6 +45,7 @@ def main() -> int:
         "<h1",
     ]
     errors = [f"missing token: {token}" for token in required if token not in text]
+    errors += workspace_section_errors(text, work, surface)
     errors += [f"forbidden token: {token}" for token in forbidden if token in text]
     if re.search(r"\b(?:role|role_code)\s*===", text):
         errors.append("forbidden role branch")

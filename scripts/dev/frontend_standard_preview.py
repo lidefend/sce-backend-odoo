@@ -11,9 +11,9 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/tpl07-20260929-r2'
+OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/boot01-20260929-r3'
 DIST = OUTPUT / 'dist'
-PREVIOUS = ROOT.parent / 'sce-offrepo/artifacts/tpl07-20260929/dist'
+PREVIOUS = ROOT.parent / 'sce-offrepo/artifacts/boot01-20260929-r2/dist'
 INPUTS = ['frontend', ':!frontend/apps/web/scripts']
 
 
@@ -27,9 +27,9 @@ def inputs(base):
     return hashlib.sha256(git('diff', '--binary', base, '--', *INPUTS)).hexdigest()
 
 
-def identity():
+def identity(*, observed_only=False):
     saved = json.loads((OUTPUT / 'build-identity.json').read_text())
-    if inputs(saved['base_sha']) != saved['diff_sha256']:
+    if not observed_only and inputs(saved['base_sha']) != saved['diff_sha256']:
         raise RuntimeError('preview build inputs changed')
     html = (DIST / 'index.html').read_bytes()
     if hashlib.sha256(html).hexdigest() != saved['index_sha256']:
@@ -107,14 +107,14 @@ def main():
                 runtime_env['FRONTEND_ACCEPTANCE_STATIC_DIST'] = previous
                 subprocess.run(command, env=runtime_env, check=True)
             raise
-    elif operation == 'identity':
+    elif operation in {'identity', 'observed-identity'}:
         pids = re.findall(r'pid=(\d+)', subprocess.check_output(['ss', '-ltnp', 'sport = :5180']).decode())
         if len(pids) != 1:
             raise RuntimeError('browser requires one live preview listener')
         proc = Path('/proc') / pids[0]
         environment = dict(item.split('=', 1) for item in (proc / 'environ').read_text().split('\0') if '=' in item)
         validate_listener(environment, (proc / 'cmdline').read_text(), proc.stat().st_uid, current_only=True)
-        print(json.dumps(identity()))
+        print(json.dumps(identity(observed_only=operation == 'observed-identity')))
     else:
         raise RuntimeError('unknown bounded preview operation')
 

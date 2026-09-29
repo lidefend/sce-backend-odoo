@@ -2,6 +2,10 @@ import importlib.util
 import os
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import tempfile
+import json
+import hashlib
 
 spec = importlib.util.spec_from_file_location('preview', Path(__file__).resolve().parents[1] / 'dev/frontend_standard_preview.py')
 preview = importlib.util.module_from_spec(spec)
@@ -31,3 +35,24 @@ class PreviewIdentityTest(unittest.TestCase):
         for command, owner in [('other', os.getuid()), ('node scripts/release/release_static_server.mjs', os.getuid() + 1)]:
             with self.assertRaises(RuntimeError):
                 preview.validate_listener(self.env, command, owner)
+
+
+class ObservedBuildIdentityTest(unittest.TestCase):
+    def test_observation_preserves_artifact_checks_but_does_not_claim_current_source(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp)
+            dist = output / 'dist'
+            dist.mkdir()
+            (dist / 'index.html').write_text('index')
+            (dist / 'entry.js').write_text('entry')
+            receipt = {'base_sha': 'fixed', 'diff_sha256': 'original',
+                       'index_sha256': hashlib.sha256(b'index').hexdigest(),
+                       'entry': '/entry.js', 'entry_sha256': hashlib.sha256(b'entry').hexdigest()}
+            (output / 'build-identity.json').write_text(json.dumps(receipt))
+            with patch.object(preview, 'OUTPUT', output), patch.object(preview, 'DIST', dist), patch.object(preview, 'inputs', return_value='changed'):
+                with self.assertRaisesRegex(RuntimeError, 'inputs changed'):
+                    preview.identity()
+                self.assertEqual(preview.identity(observed_only=True), receipt)
+                (dist / 'entry.js').write_text('tampered')
+                with self.assertRaisesRegex(RuntimeError, 'entry changed'):
+                    preview.identity(observed_only=True)

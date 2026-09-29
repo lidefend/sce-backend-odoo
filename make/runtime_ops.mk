@@ -2352,3 +2352,15 @@ verify.business_config.formal_list.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
 	@python3 addons/smart_core/tests/test_view_orchestrator.py
 	@python3 scripts/verify/test_formal_list_configuration_baseline.py
+
+.PHONY: verify.frontend.standard_bootstrap.inventory
+verify.frontend.standard_bootstrap.inventory: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-inventory
+
+.PHONY: verify.frontend.bootstrap_inventory.unit
+verify.frontend.bootstrap_inventory.unit: guard.prod.forbid
+	@node --test frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs
+
+.PHONY: verify.frontend.standard_bootstrap.browser
+verify.frontend.standard_bootstrap.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-bootstrap

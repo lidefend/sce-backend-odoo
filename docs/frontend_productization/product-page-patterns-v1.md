@@ -60,6 +60,9 @@ selects the standard list, form or readonly detail composition.
 | `ListPage` standard query list | `ProductListSurface` in populated and empty states | Existing server search/sort/pagination, grouping, selection and actions; the legacy pass-through container is removed. Kanban, dashboards, hierarchy and worksheets remain dedicated page owners. |
 | `ContractFormPage` record form, including master/detail handling | Existing section `ScForm` / `ScFormItem`, one validation registry and save chain | Existing field controls, relation adapters, master/detail business extensions and data authority; designer sections and standalone sections without a runtime remain explicit exceptions. |
 | Readonly `ContractFormPage` facts | Existing `ScDescriptions` for supported scalar facts | Collection, attachment, dedicated controls, unknown fact types and configuration-editing sections remain contract-field extensions with `data-detail-section-reason`; the page composition marker does not claim every section is a descriptions table. |
+| Login credential submission (`WEB-BOOT-01`) | Existing `ScForm` / `ScFormItem` / `ScInput` / submit feedback, following Starter `pages/login/components/Login.vue` | Only the official engine's successful result may call the existing login/init/return chain. Native required semantics stay; `novalidate` avoids competing browser validation. Database pinning and public page actions stay authoritative. |
+| Home and My Work workspace (`WEB-BOOT-01`) | `ProductWorkspaceSurface`: summary, query, main/actions and auxiliary card regions, following Starter `dashboard/base` organization | Existing `product_workspace` facts/actions, authorized navigation and recent activity remain with their adapters. My Work remains a handling workspace, not a service-paged ordinary list. Private outer panel/header layout has exited these consumers. |
+
 
 The selection functions accept page responsibility and (for detail) the effective
 render profile. They neither infer permissions nor add business capabilities.
@@ -91,8 +94,8 @@ form save/epoch handling delegates designer selection, visibility and ordering t
 `useRecordFormDesignerActions`; return wiring lives in the existing record
 navigation runtime. Neither extraction creates a second state or execution path.
 The style and explicit-type guards now pass without increasing size allowances.
-This is local source/test verification; the running TPL07-r2 preview keeps its
-original build identity until a consolidated candidate is built and checked.
+This is local source/test verification. Runtime build identities and subsequent
+bootstrap observations are recorded in the existing iteration record.
 
 ### Historical rollout records
 
@@ -391,3 +394,31 @@ is now verified on the same candidate: `tpl03r/logs/resize-no-reload.log` shows
 the adopted readonly detail at 2 facts per row at `1440`, 1 per row after a live
 `setViewportSize(390)` (breakpoint 640), and back to 2 at `1440` — both
 directions without a reload.
+
+### Bootstrap-led coverage boundaries (WEB-BOOT-01)
+
+`system.init.navigation.nav`, `navigation.route_authority` and effective page
+contracts determine the observed scope; fixture roles are evidence scopes, not
+runtime selection rules. Three roles expose 15, 3 and 86 leaf entries (87 distinct
+menu identities), which is not the formal 89-entry business acceptance matrix.
+The role surface's declared landing path may refine the general default route.
+Home consumes its initialized page contract and `my.work.summary`; it does not
+need a fabricated extra `ui.contract` call.
+
+A list/table `pageInfo` does not override an explicit
+`listProfile.collection_presentation.semantic=hierarchical_worksheet` with
+`navigation_mode=sheet_groups`. Those entries use the registered worksheet
+renderer exclusively; a contract kanban likewise remains dedicated. They are
+not legacy standard-list fallbacks. Public account activation/recovery keep
+specialized challenge/credential lifecycles; this batch does not claim those
+write workflows were exercised or their entire presentation adopted.
+
+The WEB-BOOT-01 targeted runtime observation resolves the dedicated collection
+entries: menus 335/663 use `core.hierarchical_worksheet` (sheet groups), 454 uses
+`core.standard_collection` with `workflow_board`, and 702/703 use `core.pivot`.
+All report renderer status `ready`; none is counted as an ordinary-list fallback.
+Menu 417 remains the dedicated P3 business-configuration workbench, whose
+coverage scan is a read projection, distinct from configuration bootstrap/publish
+writes. Public challenge flows and dedicated designers are explicit remaining
+presentation scopes; this inventory does not claim full official adoption of
+every specialized editor or formal 89-entry business acceptance.
