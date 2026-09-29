@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "7dd4e91e705354d3b55281bb8c2f3593b5945a5bb8700a37c025ac7306c3a9a3",
-  "generatorDigest": "70b27e2e553d774c054b9aaaeb80f5e1c749b5e7454daeb048b501644b404b29",
+  "sourceIdentity": "d3b12f8437a1f23c7e4d2e8d864662d7788bf99399e3df1b555461b2fa987768",
+  "generatorDigest": "93395371c4bf9e180404f1f8788409aac42353912b2d2c760d06ba772c4a507b",
   "ownershipDigest": "b26592aaf6b86ea982de2733542dd3998c93f6373f6478961b6c0fe34082837e",
-  "inputDigest": "d3242bbce5f22c4e88740ab38bc9719db943703115fd4785b0a8082eaa4ee414",
+  "inputDigest": "5d0b2d5eb1909d09f1208fbfd9c12e75c0443126d88e03d1b356e33d52a9690e",
   "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -2186,7 +2186,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {
@@ -2344,6 +2346,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScEmptyState"
       ],
       "targetBatch": null
@@ -2395,7 +2398,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
       "targetBatch": null
     },
     {
@@ -2409,7 +2414,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {
@@ -2461,6 +2468,35 @@
       "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
       "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue",
       "frontend/apps/web/src/views/businessConfigSurface/LowCodeFieldChipEditor.vue"
+    ],
+    "stateBandOwnershipRule": "a surface is listed under stateBandOwned only with the exact primitive:state pairs it renders; every claim is re-verified against the resolved source and the register fails closed when a claim stops being rendered",
+    "stateBandOwnedCount": 4,
+    "stateBandOwned": [
+      {
+        "source": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "stateBands": [
+          "ScEmptyState:empty"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
+        "stateBands": [
+          "ScEmptyState:empty",
+          "ScInlineState:loading"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
+        "stateBands": [
+          "ScInlineState:loading"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue",
+        "stateBands": [
+          "ScEmptyState:empty"
+        ]
+      }
     ]
   }
 }

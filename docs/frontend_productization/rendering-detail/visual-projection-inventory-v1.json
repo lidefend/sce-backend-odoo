@@ -2692,7 +2692,7 @@
     },
     {
       "category": "other",
-      "digest": "8f4ab72aa5f580dfcba01db3c6bd8e20c09808d1e734ef8193abadd878c809c6",
+      "digest": "018af6ac52a3d0465d4f5399eddd4beb877cc76e0c769e474b8e99c9e6fd323f",
       "nativeStyleSelectors": [],
       "path": "views/ReleaseOperatorView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2702,6 +2702,7 @@
       ],
       "scComponents": [
         "ScButton",
+        "ScEmptyState",
         "ScSelect",
         "ScTable"
       ]
@@ -2880,7 +2881,7 @@
     },
     {
       "category": "other",
-      "digest": "03aa75020b11928e3eaf386669ba6312c93326759ddf02e67e48b3e03854a97a",
+      "digest": "a99a1e2d19757f8ca338f28d8a2856f5495aed1f597f136ae406cccc2a0a9e06",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
       "referenceNativeStyleSelectors": [],
@@ -2895,6 +2896,7 @@
         "ScCard",
         "ScCheckbox",
         "ScEmptyState",
+        "ScInlineState",
         "ScInput",
         "ScSelect",
         "ScStatusBadge"
@@ -2929,7 +2931,7 @@
     },
     {
       "category": "other",
-      "digest": "3df64733e46945da296a03110f7207f8d557f0945992f882239a4aaa84508de0",
+      "digest": "361b0df2709973976d85ebbd4fcfce6e3998554d7ad5b6a333d34d47f958e053",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigStartPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2939,12 +2941,13 @@
       ],
       "scComponents": [
         "ScButton",
-        "ScCard"
+        "ScCard",
+        "ScInlineState"
       ]
     },
     {
       "category": "other",
-      "digest": "06997c90920a1f501699ac8b98c8fdce2d6be6697fdc576248c0bbbc51e0883e",
+      "digest": "7db5f1ba3f7924ce3c27ed474700dbeadce6153229c2163b36e7941318e9643b",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigVersionPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2954,7 +2957,8 @@
       ],
       "scComponents": [
         "ScButton",
-        "ScCard"
+        "ScCard",
+        "ScEmptyState"
       ]
     },
     {
@@ -2977,7 +2981,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "f127d24116f7317e69c496fe97dcc046b4c4761fd40d70d841704ddcf7f6d1fb",
+  "currentInputDigest": "ca4992c2471c4eb5aa4e2f23e9cc94846896346bbfcaf757b2a266e2792ddf0d",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
