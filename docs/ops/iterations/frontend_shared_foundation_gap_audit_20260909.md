@@ -2330,7 +2330,8 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 非阻断：`docs/audit/workflow_state_inventory_sc_demo.md` 仍为历史 `sc_demo` 基线。
   当前注册库 `sc_dev_demo` 生成会得到空清单，`sc_demo` 未装模块，故**本批不重生成**；
   `verify.workflow_contract.backend` 的 `audit.workflow_state.inventory` 前置步骤在具备已装模块的 `sc_demo` 前不要单独跑。
-- 非阻断：`style_system.guard` 四项、`verify.guard.registry` 两个孤儿测试文件、探针层 vendor 选择器历史债务（均独立记账，未触碰）。
+- 非阻断：`style_system.guard` 三项文件长度、探针层 vendor 选择器历史债务（均独立记账，未触碰）。
+  `verify.guard.registry` 的两个 false-orphan 已在本批收口，见下方 `FE-GUARD-REGISTRY-01`。
 - 未闭合：约 80 处未声明的原生按钮 occurrence 仍需按“权威侧缺失 / 原生未登记”逐类定性；
   `construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端 presentation 可达性缺口，非契约缺陷。
 - 状态边界：本批**批次验收完成**；未推送、未合并、未部署目标环境，整体用户交付未验收。
@@ -2372,3 +2373,125 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 
 复核者未能独立复核的部分：其运行环境无 `odoo` 模块，故 `TestWorkflowContractBackend`
 的 `0 failed / 7 error` 由其未复核；本批在注册环境（`sc_dev_demo`）自行跑过该套件，结论见上文表格。
+
+## 守卫注册表 false-orphan 收口（2026-09-29，FE-GUARD-REGISTRY-01）
+
+### 定性：既有失败，非本批引入
+
+`verify.guard.registry`（属 `ci.professional.backend` 专业质量门禁）在本批开工前即报两条：
+
+```text
+✗ orphan script 'test_frontend_standard_preview.py' is not acknowledged in registry.yaml
+✗ orphan script 'test_workspace_composition_wiring.py' is not acknowledged in registry.yaml
+```
+
+按“是否既有应对照实际专题基线判断”，用不可变对象核对，而不是只跑一遍看它也红：
+
+| 证据 | 结果 |
+|---|---|
+| 两个脚本是否在本批 diff（`c4b419878..fb51e465b`）内 | 否 |
+| 基线 `c4b419878` 是否存在这两个脚本 | 是 |
+| 基线 `c4b419878` 的 `registry.yaml` 是否已承认二者 | 否 |
+| 基线 `c4b419878` 的引用正则与 HEAD 是否一致 | 一致（`SCRIPT_REFERENCE_RE` / `IMPORT_REFERENCE_RE` 字节相同） |
+| 基线 make 是否已以同一形式引用二者 | 是（`make/runtime_ops.mk:150`、`make/frontend.mk:929`） |
+
+⇒ 基线必然 FAIL。属既有失败，与本批契约改动无关。
+
+### 根因：引用检测不覆盖点分模块调用形式
+
+`guard_registry_audit.py` 的引用判定只用两类证据：脚本文件名（含 `.py`/`.sh`）与 Python import 语句。
+这两个脚本在 make 中的真实引用形式是
+
+```make
+python3 -m unittest scripts.verify.test_frontend_standard_preview
+python3 -m unittest scripts.verify.test_workspace_composition_wiring
+```
+
+既无 `.py` 后缀，也不是 import，于是被判为 orphan —— **false orphan**，脚本其实有消费者。
+
+### 处理：跟随仓库既有登记惯例
+
+registry.yaml 里**已有同类先例**：`test_frontend_system_state_recovery_guard.py`、
+`test_frontend_page_pattern_reference_parity_guard.py`、`test_form_structure_authority_unification.py`、
+`test_gitee_ci_acceptance.py` / `_checks` / `_incremental_update` 等条目都是 `status: orphan`，
+`reason` 写明 “invoked by make/… through Python unittest module notation; registry static scan does not
+recognize that invocation form”。本批按完全相同的体例补两条，保持 registry 文本单行风格：
+
+```yaml
+- script: test_frontend_standard_preview.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/runtime_ops.mk through Python unittest module notation (scripts.verify.test_frontend_standard_preview); registry static scan does not recognize that invocation form
+```
+
+```yaml
+- script: test_workspace_composition_wiring.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/frontend.mk through Python unittest module notation (scripts.verify.test_workspace_composition_wiring); registry static scan does not recognize that invocation form
+```
+
+`guard_registry_audit.py` 与 `docs/audit/guard_registry/guard_registry.json` 均未改动：前者不必为本批
+改判定语义，后者无任何 make/CI 消费者、且在本批之前已落后于 registry 多次变更（`counts` 差 6 active /
+2 orphan），不为它引入 117 行无关刷新噪声。
+
+### 为什么不改引用正则
+
+把 `-m unittest/pytest <dotted.module>` 纳入检测会让 **33 个脚本**从 orphan 翻转为 active
+（`test_gitee_*.py` 一系、`test_product_*_wave1_guard.py` 一系、`test_local_dev_*.py` 等）。
+其中 11 个当前以 `orphan` 登记、10 个未登记，其余已 active。翻转后这些 `orphan` 条目立刻变成
+guard 自身定义下的 stale，需一并重写 registry 的三十余条状态。那是一次注册表治理重写，
+超出本轮“最小定向修复”范围，因此不动引用正则。
+
+### 顺带发现的 guard 缺陷（登记，不在本批修）
+
+guard 的 docstring 把 `active-dynamic` 指定为这类 false orphan 的承认方式，但实测该分支实现与文档相反：
+
+```python
+if entry and entry.get("status") == STATUS_ACTIVE_DYNAMIC and item["status"] != STATUS_ACTIVE:
+    failures.append("claims active-dynamic but no static reference exists and it is not orphan-acknowledged")
+```
+
+判定要求脚本“静态可见”，而该状态的语义恰是“静态看不见但确有引用”，于是 `active-dynamic`
+在任何情况下都不可用（registry 中 0 条使用印证）。这是 guard 自身的实现缺陷，属 P4 ops 工具治理，
+**不在本批（契约词汇表）范围**，不引入首例状态语义变化，登记为后续项。
+
+### 定向验证
+
+| 命令 | 结果 |
+|---|---|
+| `python3 scripts/verify/guard_registry_audit.py` | **PASS** `1342 scripts (1218 referenced, 124/124 orphans acknowledged, 1 retired)`，`exit=0` |
+| `python3 -m unittest scripts.verify.test_guard_registry_audit` | 2 tests OK |
+| `python3 -m unittest scripts.verify.test_registry_audit_environment` | 18 tests OK |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+改动前后 `orphan` 承认数由 122 增至 124，与新增两条登记一致；`referenced` 1218 不变，
+说明未把任何真实脚本误判成“有引用”。
+
+### 与 style_system.guard 的边界
+
+`verify.frontend.style_system.guard` 实测 3 项，均为文件长度超限：
+
+```text
+- frontend/apps/web/src/pages/ContractFormPage.vue exceeds 1900 lines: 1903
+- frontend/apps/web/src/views/ActionView.vue exceeds 3800 lines: 3803
+- record runtime exceeds 619 lines: frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts=621
+```
+
+三文件在本批 diff 中未触及，且基线 `c4b419878` 与 HEAD 行数完全一致（1903/1903、3803/3803、621/621），
+未扩大。按既有口径独立保留，不靠放宽阈值、压缩行数或忽略文件消红。
+（此前记录中的“四项”含 `ScRelationField.vue` 的 z-index 一项，该标识现已不在仓库中，故本轮实测为 3 项。）
+
+### 候选与运行来源
+
+- 本段收口只动 `scripts/verify/registry.yaml`（+12 行）与本记录。
+- 未重跑 89 入口、全站发布验收或四项必需检查的其余部分；未推送、未合并、未部署目标环境。
+
+### 状态
+
+本批**批次验收完成**。`verify.guard.registry` 红项关闭；`style_system.guard` 三项为明确的既有非阻断债务；
+guard 自身 `active-dynamic` 分支缺陷已登记，未在本批扩大处理。
