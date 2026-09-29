@@ -1,7 +1,7 @@
 import { computed, defineComponent, h, type PropType } from 'vue';
 import { TDesignTree } from '../../components/design-system/tdesignPrimitiveBridge';
 import type { MenuConfigMenu } from '../../api/menuConfig';
-import { menuDropPosition, menuTreeExpandedIds, type MenuConfigDropPosition, type MenuConfigDropRequest } from './menuTreeContract';
+import { menuDropPosition, menuTreeExpandedIds, type MenuConfigDropRequest } from './menuTreeContract';
 
 type MenuConfigTreeNode = {
   value: number;
@@ -10,6 +10,7 @@ type MenuConfigTreeNode = {
   stateClass: string;
   stateLabel: string;
   deletable: boolean;
+  expandable: boolean;
   children?: MenuConfigTreeNode[];
 };
 
@@ -48,6 +49,7 @@ export function createMenuConfigTree(options: {
         stateClass: options.menuHandlingStateClass(menu),
         stateLabel: options.menuTreeStateLabel(menu),
         deletable: options.isUserCreatedMenu(menu),
+        expandable: Boolean(menu.children?.length),
         children: menu.children?.length ? menu.children.map(toTreeNode) : undefined,
       });
       const nodeIndex = computed(() => {
@@ -66,12 +68,15 @@ export function createMenuConfigTree(options: {
       const expandedIds = computed(() => (props.searchActive
         ? menuTreeExpandedIds(props.nodes, new Set<number>())
         : menuTreeExpandedIds(props.nodes, props.collapsedMenuIds)));
+      const expandedIdSet = computed(() => new Set(expandedIds.value));
       const renderNode = (value: unknown) => {
         const node = nodeIndex.value.get(Number(value));
         if (!node) return null;
         return h('span', {
           class: ['tree-node', { 'tree-node--deletable': node.deletable }],
           'data-menu-id': String(node.value),
+          'data-menu-expandable': node.expandable ? 'true' : 'false',
+          'data-menu-expanded': node.expandable && expandedIdSet.value.has(node.value) ? 'true' : 'false',
           title: node.pathLabel,
         }, [
           h('span', { class: 'tree-node-label' }, node.label),
