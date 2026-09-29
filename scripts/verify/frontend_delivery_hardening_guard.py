@@ -89,7 +89,7 @@ app_shell = require(
     'aria-controls="primary-sidebar"',
     ':aria-expanded="sidebarVisible"',
     '@close="closeMobileSidebar"',
-    "mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value",
+    "mobileViewport.value ? mobileSidebarOpen.value : true",
     "event.key !== 'Escape'",
     "sidebarToggleButton.value?.focus()",
 )
@@ -112,6 +112,14 @@ if not toggle_match:
     raise SystemExit(
         "[frontend_delivery_hardening_guard] FAIL AppShell sidebar toggle must control "
         "primary-sidebar with the unified sidebarVisible state"
+    )
+# Desktop visibility and desktop width are two different official concepts: the
+# sidebar is always present (`t-layout__sider`) and only collapses to the compact
+# rail. Binding the drawer to the compact width would re-hide the aside.
+if re.search(r"const sidebarVisible = computed\(\(\) =>[^;]*sidebarCompact", app_shell):
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL AppShell sidebar visibility must not be "
+        "conflated with the desktop compact-width state"
     )
 client = require("frontend/apps/web/src/api/client.ts", "redirectForExpiredSession")
 require("frontend/apps/web/src/api/client.ts", "currentContextSignal()")

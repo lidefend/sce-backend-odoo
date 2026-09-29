@@ -210,21 +210,30 @@ check(shellVue.includes("'project.project'"), false, 'the shell must not name a 
 check(shellVue.includes("'sc.general.contract'"), false, 'the shell must not name a business model');
 
 // ---------------------------------------------------------------------------
-// Part 6 — the shell dimension aliases stay reserved, with no fake consumer
+// Part 6 — the shell dimension aliases stay declared and honestly consumed
 // ---------------------------------------------------------------------------
 const patternCss = readSource('frontend/apps/web/src/styles/tokens/pattern.css');
-for (const reserved of [
+for (const declared of [
+  '--sc-shell-topbar-height:',
   '--sc-shell-sidebar-collapsed-width:',
   '--sc-shell-navigation-item-height:',
   '--sc-shell-page-gutter:',
 ]) {
-  check(patternCss.includes(reserved), true, `the reserved shell alias stays declared: ${reserved}`);
+  check(patternCss.includes(declared), true, `the shell alias stays declared: ${declared}`);
 }
-for (const reserved of [
-  'var(--sc-shell-sidebar-collapsed-width)',
-  'var(--sc-shell-navigation-item-height)',
-  'var(--sc-shell-page-gutter)',
-]) {
+// The official shell composition consumes both shell dimensions: the header band
+// (`--td-comp-size-xxxl` equivalent) and the compact rail (the official 64px
+// `t-menu` collapsed width). They must be real consumers in the shell style.
+for (const consumed of ['var(--sc-shell-topbar-height)', 'var(--sc-shell-sidebar-collapsed-width)']) {
+  check(
+    shellCss.includes(consumed) || shellVue.includes(consumed),
+    true,
+    `the adopted shell consumes the shared shell dimension ${consumed}`,
+  );
+}
+// The remaining aliases are still reserved: adopting them requires a real
+// consumer, not a placeholder reference.
+for (const reserved of ['var(--sc-shell-navigation-item-height)', 'var(--sc-shell-page-gutter)']) {
   check(
     shellCss.includes(reserved) || shellVue.includes(reserved),
     false,
