@@ -6,6 +6,7 @@ import {
   mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
   one2manyColumnsFromSubview,
+  one2manyRowCollectionIdentity,
   one2manyRowLabelFromPrimary,
   one2manyRowActionsFromSubview,
   resolveOne2manyRowColumnBehavior,
@@ -426,5 +427,70 @@ assert.notEqual(
   resolveCollectionEmptyStateKind({ hasActiveConditions: false, canCreateRecord: false }),
   'the empty copy must differ between a surface that can create and one that cannot',
 );
+
+// Row identity, not a display value, decides whether two collection rows are
+// the same business row. The first business column is frequently a constant
+// (a payment request's imported lines all read 来源类型=结算单明细), so keying
+// the duplicate rule on it rejected legitimate collections and produced a
+// false "存在重复行值" block with zero write requests.
+const constantFirstColumn = { name: 'source_line_type', label: '来源类型', ttype: 'char', required: false };
+const constantFirstValueRows = { outflow_line_ids: [
+  {
+    key: 'row-a', id: 501, isNew: false, removed: false, dirty: false, dirtyFields: [],
+    values: { source_line_type: '结算单明细' },
+  },
+  {
+    key: 'row-b', id: 502, isNew: false, removed: false, dirty: true, dirtyFields: [],
+    values: { source_line_type: '结算单明细' },
+  },
+] };
+assert.deepEqual(
+  collectOne2manyDraftValidationFromRows({
+    rowsByField: constantFirstValueRows,
+    model: 'payment.request',
+    recordId: 1813,
+    resolvePrimaryColumn: () => 'source_line_type',
+    resolveColumns: () => [constantFirstColumn],
+  }),
+  { issues: [], rowErrors: {}, cellErrors: {} },
+  'two persisted rows that share a display value are two different rows, so an edited collection must not be blocked as duplicate',
+);
+// The same applies to unsaved draft rows: two new lines that happen to share a
+// value are still two lines.
+const twoDraftRowsSameValue = { outflow_line_ids: [
+  { key: 'draft-1', id: 0, isNew: true, removed: false, dirty: true, dirtyFields: [], values: { source_line_type: '结算单明细' } },
+  { key: 'draft-2', id: 0, isNew: true, removed: false, dirty: true, dirtyFields: [], values: { source_line_type: '结算单明细' } },
+] };
+assert.deepEqual(
+  collectOne2manyDraftValidationFromRows({
+    rowsByField: twoDraftRowsSameValue,
+    model: 'payment.request',
+    recordId: 1813,
+    resolvePrimaryColumn: () => 'source_line_type',
+    resolveColumns: () => [constantFirstColumn],
+  }),
+  { issues: [], rowErrors: {}, cellErrors: {} },
+  'unsaved rows are identified by their draft row key, not by a shared column value',
+);
+// The invariant the adapter does own is kept: the same row identity must not be
+// collected twice, and that is still reported.
+const repeatedIdentityRows = { outflow_line_ids: [
+  { key: 'row-a', id: 501, isNew: false, removed: false, dirty: true, dirtyFields: [], values: { source_line_type: '结算单明细' } },
+  { key: 'row-a', id: 501, isNew: false, removed: false, dirty: true, dirtyFields: [], values: { source_line_type: '结算单明细' } },
+] };
+const repeatedIdentity = collectOne2manyDraftValidationFromRows({
+  rowsByField: repeatedIdentityRows,
+  model: 'payment.request',
+  recordId: 1813,
+  resolvePrimaryColumn: () => 'source_line_type',
+  resolveColumns: () => [constantFirstColumn],
+});
+assert.deepEqual(repeatedIdentity.issues, ['outflow_line_ids 存在重复明细行：结算单明细']);
+assert.deepEqual(repeatedIdentity.rowErrors, { 'outflow_line_ids:row-a': ['明细行重复：结算单明细'] });
+assert.deepEqual(Object.keys(repeatedIdentity.cellErrors), []);
+assert.equal(one2manyRowCollectionIdentity({ key: 'x', id: 9 } as never), 'id:9');
+assert.equal(one2manyRowCollectionIdentity({ key: 'x', id: 0 } as never), 'key:x');
+assert.equal(one2manyRowCollectionIdentity({ key: '', id: 0 } as never), '',
+  'a row with neither a record id nor a draft key has no identity and is never compared');
 
 console.log('[collection-view-semantics] PASS');
