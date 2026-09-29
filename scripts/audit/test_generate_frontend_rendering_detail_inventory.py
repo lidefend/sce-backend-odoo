@@ -173,6 +173,45 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         low_code = "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
         self.assertEqual(self.by_source[low_code]["status"], "p3_out_of_scope")
 
+    def test_p3_surface_cannot_bypass_the_repo_wide_native_control_boundary(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        self.assertTrue(INVENTORY.is_p3(source))
+        status, reason = INVENTORY.classify(source, '<template><button type="button">保存</button></template>')
+        self.assertEqual(status, "gap")
+        self.assertIn("formal P3 surface bypasses governed adapters", reason)
+
+    def test_p3_layer_label_survives_a_native_control_violation(self) -> None:
+        source = "frontend/apps/web/src/views/SceneHealthView.vue"
+        status, _ = INVENTORY.classify(source, "<template><select></select></template>")
+        self.assertEqual(status, "gap")
+        self.assertEqual(INVENTORY.layer_of(source), "P3")
+        self.assertEqual(INVENTORY.layer_of("frontend/apps/web/src/pages/Foo.vue"), "P0/P1")
+
+    def test_p3_state_primitive_ownership_deferral_stays_declared(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        status, reason = INVENTORY.classify(source, "<template><div>loading 加载中</div></template>")
+        self.assertEqual(status, "p3_out_of_scope")
+        self.assertEqual(reason, INVENTORY.P3_OWNERSHIP_DEFERRAL_REASON)
+
+    def test_p3_ownership_deferral_is_declared_and_counted(self) -> None:
+        deferred = self.report["p3OwnershipDeferred"]
+        self.assertTrue(deferred["deferred"])
+        self.assertTrue(deferred["register"].strip())
+        self.assertTrue(deferred["reason"].strip())
+        expected = sorted(
+            item["source"] for item in self.report["surfaces"] if item["status"] == "p3_out_of_scope"
+        )
+        self.assertEqual(deferred["surfaces"], expected)
+        self.assertEqual(deferred["surfaceCount"], len(expected))
+        self.assertGreater(len(expected), 0)
+
+    def test_native_control_policy_scope_is_declared_and_covers_every_layer(self) -> None:
+        policy = self.report["completionPolicy"]
+        self.assertIn("P0-P4", policy["nativeControlScope"])
+        self.assertIn("design-system adapter layer", policy["nativeControlScope"])
+        self.assertTrue(policy["nativeControlRequiresExplicitCompositeOwnership"])
+        self.assertTrue(policy["p3DoesNotBlockP0P1Completion"])
+
     def test_report_binds_generator_and_all_vue_inputs(self) -> None:
         self.assertNotIn("sourceCommit", self.report)
         self.assertRegex(self.report["sourceIdentity"], r"^[0-9a-f]{64}$")

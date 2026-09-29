@@ -54,6 +54,29 @@ RAW_INTERACTIVE_CONTROL = re.compile(r"<(?:button|input|select|textarea|table)(?
 SC_DIALOG_CONSUMER = re.compile(r"<ScDialog\b(?P<attrs>[^>]*)>", re.DOTALL)
 
 
+# Declared authority boundary.  Consumer *visual chrome* rules are scoped to
+# the formal P0/P1 business surfaces; P3 low-code administration/designer
+# styling is intentionally out of scope for this rule (the same boundary is
+# recorded in the official-design-alignment inventory excludedScopes entry
+# "P3 low-code designer styling").  The native-control and dialog-semantic
+# rules above must keep running before this exemption: moving this skip above
+# them would silently exempt P3 administration surfaces from a
+# layer-independent policy boundary while the rule text still claims coverage.
+P3_CONSUMER_CHROME_EXEMPTION = (
+    "declared P0/P1 authority: P3 low-code administration/designer styling is out of scope "
+    "for consumer primitive visual chrome rules (native control and dialog semantic rules stay repo-wide)"
+)
+
+
+def consumer_chrome_exempt(
+    relative: str, p3_files: set[str], p3_prefixes: tuple[str, ...]
+) -> str | None:
+    """Return the declared exemption reason, or None when the chrome rule applies."""
+    if relative in p3_files or relative.startswith(p3_prefixes):
+        return P3_CONSUMER_CHROME_EXEMPTION
+    return None
+
+
 def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
     path = root / OWNERSHIP.relative_to(ROOT)
     if not path.is_file():
@@ -171,7 +194,7 @@ def validate(root: Path = ROOT) -> list[str]:
                 errors.append(f"ScDialog consumer must use data-dialog-purpose instead of overriding primitive semantic identity: {relative}")
             if relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
-            if relative in p3_files or relative.startswith(p3_prefixes):
+            if consumer_chrome_exempt(relative, p3_files, p3_prefixes):
                 continue
             style_text = component_style_text(path, source_text)
             if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):

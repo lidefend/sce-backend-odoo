@@ -334,16 +334,32 @@ def is_p3(source: str) -> bool:
     return source in P3_FILES or source.startswith(P3_PREFIXES)
 
 
+def layer_of(source: str) -> str:
+    return "P3" if is_p3(source) else "P0/P1"
+
+
+P3_OWNERSHIP_DEFERRAL_REASON = (
+    "low-code or administration product surface; state-primitive ownership is deferred by the "
+    "declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion"
+)
+
+
 def classify(source: str, text: str) -> tuple[str, str]:
     if "/components/design-system/" in source:
         return "governed_primitive", "design-system primitive source"
-    if is_p3(source):
-        return "p3_out_of_scope", "low-code or administration product surface; handled by a separate P3 batch"
     if source in DELIBERATE_NATIVE_COMPOSITES:
         return "deliberate_native_composite", DELIBERATE_NATIVE_COMPOSITES[source]
+    # Layer-independent policy boundary.  A native control bypasses the governed
+    # primitive adapter no matter which formal product layer owns the surface, so
+    # this rule is evaluated before any layer deferral.  Placing a deferral above
+    # it would silently shrink the evaluated set while the reported policy still
+    # claims native-control coverage -- the exact blind spot this guard must not
+    # reproduce.
     raw_controls = sorted(name for name, pattern in RAW_CONTROL_PATTERNS.items() if pattern.search(text))
     if raw_controls:
-        return "gap", f"formal P0/P1 surface bypasses governed adapters: {', '.join(raw_controls)}"
+        return "gap", f"formal {layer_of(source)} surface bypasses governed adapters: {', '.join(raw_controls)}"
+    if is_p3(source):
+        return "p3_out_of_scope", P3_OWNERSHIP_DEFERRAL_REASON
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
     if source in OWNED_BINDINGS:
@@ -377,7 +393,7 @@ def build_inventory() -> dict[str, Any]:
             raise ValueError(f"invalid status for {source}: {status}")
         surfaces.append({
             "source": source,
-            "formalProductLayer": "P3" if status == "p3_out_of_scope" else "P0",
+            "formalProductLayer": "P3" if is_p3(source) else "P0",
             "status": status,
             "reason": reason,
             "stateTypes": state_types,
@@ -433,9 +449,21 @@ def build_inventory() -> dict[str, Any]:
         "completionPolicy": {
             "formalP0P1UntreatedGapTarget": 0,
             "formalP0P1RawControlBypassTarget": 0,
+            "nativeControlScope": "every formal-product surface (P0-P4) except the design-system adapter layer",
             "gapIsFailClosed": True,
             "nativeControlRequiresExplicitCompositeOwnership": True,
             "p3DoesNotBlockP0P1Completion": True,
+        },
+        "p3OwnershipDeferred": {
+            "deferred": True,
+            "register": "p3-low-code-administration state-primitive ownership",
+            "reason": (
+                "P3 administration/designer surfaces carry state and interaction vocabulary but no "
+                "professionalization ownership declaration yet.  The deferral is declared here and "
+                "counted below so it stays auditable instead of disappearing behind a scope filter."
+            ),
+            "surfaceCount": sum(1 for item in surfaces if item["status"] == "p3_out_of_scope"),
+            "surfaces": sorted(item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"),
         },
     }
 
