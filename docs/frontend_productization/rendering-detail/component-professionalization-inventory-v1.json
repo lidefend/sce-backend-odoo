@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "fd85777e135ff421abdfee157b0a597f2900390db7dfe397d6a197295534f29c",
-  "generatorDigest": "e48ea991cc83b25fe7aacea3abc0b71ac0e988dae0e6ed2a86b48bcbb69fcfe5",
+  "sourceIdentity": "6929750ac12d4ea99a4432687c9d30b45215c5098c8f071243b035005418ee73",
+  "generatorDigest": "12288cc9c74ebcf08524749d09e39b3c2e71b90bb77919e7643aa5c59255a39f",
   "ownershipDigest": "5bf15fb938b57d6d8a8cf5aebff9ee1e8da645be8e971072eaa03a5b6e56677d",
   "inputDigest": "0711b2b8ad5d33d45b67d1c1910524cfbc986f58db42edfbb6ee6e75bfe1f7bb",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
@@ -1811,7 +1811,7 @@
       "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "empty",
         "disabled"
@@ -1837,7 +1837,7 @@
       "source": "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "disabled",
         "focus"
@@ -2016,7 +2016,7 @@
       "source": "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2048,7 +2048,7 @@
       "source": "frontend/apps/web/src/views/MenuConfigView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2129,7 +2129,7 @@
       "source": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2158,7 +2158,7 @@
       "source": "frontend/apps/web/src/views/SceneHealthView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2173,7 +2173,7 @@
       "source": "frontend/apps/web/src/views/ScenePackagesView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "error",
@@ -2202,7 +2202,7 @@
       "source": "frontend/apps/web/src/views/UsageAnalyticsView.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2231,7 +2231,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigAdvancedAuditPanels.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "disabled",
@@ -2245,7 +2245,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2259,7 +2259,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigChangeSetPanel.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "error",
@@ -2273,7 +2273,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigContextBar.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "empty",
         "disabled"
@@ -2286,7 +2286,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2303,7 +2303,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigDraftPreview.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "disabled"
       ],
@@ -2315,7 +2315,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "disabled"
       ],
@@ -2327,7 +2327,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigOverviewTable.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "disabled"
       ],
@@ -2339,7 +2339,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2353,7 +2353,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "loading",
         "empty",
@@ -2367,7 +2367,7 @@
       "source": "frontend/apps/web/src/views/businessConfigSurface/LowCodeFieldChipEditor.vue",
       "formalProductLayer": "P3",
       "status": "p3_out_of_scope",
-      "reason": "low-code or administration product surface; handled by a separate P3 batch",
+      "reason": "low-code or administration product surface; state-primitive ownership is deferred by the declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion",
       "stateTypes": [
         "error",
         "disabled",
@@ -2381,8 +2381,36 @@
   "completionPolicy": {
     "formalP0P1UntreatedGapTarget": 0,
     "formalP0P1RawControlBypassTarget": 0,
+    "nativeControlScope": "every formal-product surface (P0-P4) except the design-system adapter layer",
     "gapIsFailClosed": true,
     "nativeControlRequiresExplicitCompositeOwnership": true,
     "p3DoesNotBlockP0P1Completion": true
+  },
+  "p3OwnershipDeferred": {
+    "deferred": true,
+    "register": "p3-low-code-administration state-primitive ownership",
+    "reason": "P3 administration/designer surfaces carry state and interaction vocabulary but no professionalization ownership declaration yet.  The deferral is declared here and counted below so it stays auditable instead of disappearing behind a scope filter.",
+    "surfaceCount": 19,
+    "surfaces": [
+      "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
+      "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue",
+      "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+      "frontend/apps/web/src/views/MenuConfigView.vue",
+      "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "frontend/apps/web/src/views/SceneHealthView.vue",
+      "frontend/apps/web/src/views/ScenePackagesView.vue",
+      "frontend/apps/web/src/views/UsageAnalyticsView.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigAdvancedAuditPanels.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigChangeSetPanel.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigContextBar.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigDraftPreview.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigOverviewTable.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue",
+      "frontend/apps/web/src/views/businessConfigSurface/LowCodeFieldChipEditor.vue"
+    ]
   }
 }
