@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -9,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
 GOVERNANCE_MODULES = (
+    ROOT / "addons/smart_core/utils/contract_governance_form_render.py",
     ROOT / "addons/smart_core/utils/contract_governance_form_fields.py",
     ROOT / "addons/smart_core/utils/contract_governance_form_actions.py",
 )
@@ -32,11 +34,31 @@ def _extract_core_cap(text: str) -> int | None:
         return None
 
 
+def render_profile_wiring_errors(source: str) -> list[str]:
+    try:
+        functions = {node.name: node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef)}
+        body = functions["_apply_form_render_semantics"].body
+        expected = [
+            "requested_profile = _resolve_render_profile(data)",
+            "data.setdefault('render_profile', requested_profile)",
+            "_apply_form_view_capabilities(data)",
+            "data.setdefault('effective_render_profile', _RENDER_PROFILE_READONLY)",
+        ]
+        if [ast.unparse(statement) for statement in body[1:5]] != expected:
+            return ["render profile request/capability/fallback sequence is disconnected"]
+        delegate = functions["_apply_form_view_capabilities"].body
+        if len(delegate) != 1 or ast.unparse(delegate[0]) != "_form_render.apply_form_view_capabilities(data)":
+            return ["form capability implementation delegation is disconnected"]
+    except (SyntaxError, KeyError):
+        return ["render profile governance functions are missing or invalid"]
+    return []
+
+
 def main() -> int:
     governance_text = "\n".join(_read(path) for path in (GOVERNANCE, *GOVERNANCE_MODULES))
     form_sources = [FORM_PAGE, *FORM_COMPONENTS.rglob("*.vue"), *FORM_COMPONENTS.rglob("*.ts")]
     form_text = "\n".join(_read(path) for path in form_sources)
-    errors: list[str] = []
+    errors: list[str] = render_profile_wiring_errors(_read(GOVERNANCE))
 
     if not governance_text:
         errors.append(f"missing file: {GOVERNANCE.relative_to(ROOT).as_posix()}")
@@ -50,7 +72,10 @@ def main() -> int:
         errors.append(f"core field cap invalid: {core_cap} (must be < 10)")
 
     required_governance_tokens = [
-        'data["render_profile"] = _resolve_render_profile(data)',
+        'requested_profile = _resolve_render_profile(data)',
+        'data.setdefault("render_profile", requested_profile)',
+        '_apply_form_view_capabilities(data)',
+        'data.setdefault("effective_render_profile", _RENDER_PROFILE_READONLY)',
         'data["hide_filters_on_create"] = True',
         '"name": "core"',
         '"name": "advanced"',

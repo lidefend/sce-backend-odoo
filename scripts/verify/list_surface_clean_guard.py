@@ -63,7 +63,7 @@ def main() -> int:
             errors.append(f"ActionView missing token: {token}")
 
     action_presentation_tokens = [
-        "resolveUnifiedPageContractV2SurfacePolicies",
+        "resolveContractV2SurfacePolicies(options.actionContract.value)",
         "surfacePolicies.actions_primary_max",
         "contractActionGroupsRaw",
         "resolveContractActionPresentation",
@@ -74,7 +74,7 @@ def main() -> int:
             errors.append(f"useActionViewActionPresentationRuntime missing token: {token}")
 
     filter_runtime_tokens = [
-        "resolveUnifiedPageContractV2SurfacePolicies",
+        "resolveContractV2SurfacePolicies(options.actionContract.value)",
         "surfacePolicies.filters_primary_max",
         "contractFilterChips",
         "filterPrimaryBudget",
@@ -82,6 +82,13 @@ def main() -> int:
     for token in filter_runtime_tokens:
         if token not in filter_computed_runtime_text:
             errors.append(f"useActionViewFilterComputedRuntime missing token: {token}")
+
+    for name, text in (
+        ("useActionViewActionPresentationRuntime", action_presentation_runtime_text),
+        ("useActionViewFilterComputedRuntime", filter_computed_runtime_text),
+    ):
+        if "resolveUnifiedPageContractV2SurfacePolicies" in text:
+            errors.append(f"{name} reintroduces retired raw-contract policy consumption")
 
     report = {
         "ok": len(errors) == 0,

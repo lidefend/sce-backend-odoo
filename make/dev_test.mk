@@ -2686,3 +2686,7 @@ policy.ensure.extension_modules: guard.prod.forbid check-compose-project check-c
 	  echo "[policy.ensure.extension_modules] HINT: re-run with AUTO_FIX_EXTENSION_MODULES=1 to auto-fix + restart"; \
 	  exit 2; \
 	fi
+
+.PHONY: verify.page_contract_gate_wiring.unit
+verify.page_contract_gate_wiring.unit: guard.prod.forbid
+	@python3 scripts/verify/test_page_contract_gate_wiring.py

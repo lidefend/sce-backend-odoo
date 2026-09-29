@@ -1507,3 +1507,21 @@ query/domain/context/权限及runtime能力保留；发布期间仅目标标签�
 **批次验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。**
 
 LC02 最终B线已核对同一候选报告及阶段化来源比较：范围内无剩余阻断，正常和异常恢复均不豁免配置来源残留。
+
+## WEB-GATE-01：强制门禁检查点校正（2026-09-29，进行中）
+
+基线 ebd069bf clean；P4 / scripts.verify / 门禁有效性。目标仅修正已迁移契约消费者后的
+两个失效字面检查，并验证破坏真实链路仍失败。产品层无改动：列表现消费canonical V2 store，
+表单render-profile需经能力约束；守卫不得要求已退役API或旧的直接赋值。
+不删除检查、不增加白名单/阈值、不更新any或尺寸基线。L0身份→L1 iteration/语法→L2守卫
+失败注入与真实门禁。无产品输入变化，跳过构建、运行态/数据库/浏览器，沿用已有LC02/TPL07证据。
+clean HEAD下首次复核 no_new_any：19文件超基线（`/tmp/web-gate-any-baseline.log`），包含注释误计及
+真实新增any，后续必须分别修正计数与类型；当前不改该门禁、不宣称通过。
+
+WEB-GATE-01收口：`make ci.local.iteration` passed（`/tmp/web-gate-01-iteration.log`）；
+`make verify.page_contract_gate_wiring.unit verify.list.surface.clean verify.render.semantic.ready`
+全部passed（`/tmp/web-gate-01-results.log`），6项测试，生成的既有两份报告同步。
+B线复核无放宽：AST检查请求→能力→只读fallback及委托，列表检查真实canonical调用并拒绝旧resolver。
+行为测试仅证明编排（能力函数替身），不冒称权限计算运行态验收。产品及构建/数据库输入未变，
+沿用TPL07/LC02原证据。本批两项门禁已关闭；no_new_any及style_system仍待收口。
+批次验收完成（两项守卫）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

@@ -1,12 +1,9 @@
 # Render Semantic Ready Report
 
-- ok: `False`
+- ok: `True`
 - core_field_cap: `6`
 - core_field_cap_lt_10: `True`
 - single_primary_action_guard: `True`
 - form_body_excludes_list_query_contract: `True`
 - create_hide_export_button: `True`
 - advanced_default_collapsed_on_create: `True`
-
-## Errors
-- contract_governance missing token: data["render_profile"] = _resolve_render_profile(data)
