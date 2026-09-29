@@ -67,19 +67,49 @@ MANAGED_LAYOUT_CHANNEL_KEYS = (
     "field_size",
 )
 
-# 多终端边界：契约一旦带上终端标识维度，同一份契约就开始按终端分叉，其他终端只能跟随
-# 某个终端的实现。终端的组件选择、密度、断点、可访问性与导航由各终端设计系统自己决定，
-# 从同一份契约派生，不写回契约。
+# 多终端边界：一份语义契约，按终端做投影；投影改变“投递多少”，不改变“业务含义”。
 #
-# 唯一的非契约用途是配置工作台的草稿预览作用域（preview token 绑定 device 仅用于预览），
-# 它属于 runtime carrier，不进入已发布契约，因此规则不针对裸 device 键，只针对
-# 「终端标识作为契约维度」和「终端取值直接写进契约载荷」。
-TERMINAL_BOUND_CONTRACT_PATTERNS = (
+# 多终端本来就是既有设计，不是违规：`addons/smart_core/core/unified_page_contract_v2_client.py`
+# 负责按终端投影，`pageInfo.clientType`（web_pc / wx_mini / harmony_h5）、
+# `pageInfo.deliveryProfile`（full / mobile_compact / mobile_primary）、
+# `layoutContract.adaptMode`（pc / mobile）、`meta.deliveryTrim`（limits / original /
+# delivered / omitted）都是合法契约内容。所以本规则**不禁止**终端维度，也不禁止不同终端
+# 拿到不同详细程度。
+#
+# 既有权威已经执行了两条更重要的约束，本规则不重造它们：
+#   1) 语义签名跨终端必须一致 —— `collect_semantic_signature` / `find_client_semantic_drift`，
+#      门禁 `make verify.unified_page_contract.v2.client`；
+#   2) 裁剪必须记账 —— `omitted = original - delivered`，同文件；门禁同时断言
+#      mobile_compact 必须报出 `omitted.widgets`。
+#
+# 本规则只补第三件事：终端身份必须走 `pageInfo.clientType` 这一个受管入口，不允许另外出现
+# 终端标识键、按终端覆盖语义，或把终端取值直接写进载荷来在语义层分叉。
+# 终端的组件选择、密度、断点与可访问性仍由各终端设计系统自己决定。
+TERMINAL_PROJECTION_CHANNEL_KEYS = (
+    "clientType",
+    "deliveryProfile",
+    "adaptMode",
+    "deliveryTrim",
+    "compact",
+    "limits",
+    "original",
+    "delivered",
+    "omitted",
+    "mobile_priority",
+)
+
+SEMANTIC_FORK_BY_TERMINAL_PATTERNS = (
+    # 终端身份必须走 pageInfo.clientType；另一个终端标识键意味着契约按终端分叉。
     re.compile(
-        r'"(?:terminal|render_target|client_kind|device_kind|viewport|viewport_kind'
-        r'|device_variants|device_overrides|by_device|per_device|terminal_overrides'
-        r'|by_terminal|per_terminal|responsive_overrides)"\s*:'
+        r'"(?:terminal|platform|viewport|device_kind|render_target|client_kind'
+        r'|terminal_kind|device_type)"\s*:'
     ),
+    # 按终端覆盖语义，而不是投影。
+    re.compile(
+        r'"(?:semantic_overrides|terminal_overrides|device_overrides|client_overrides'
+        r'|by_terminal|per_terminal|by_device|per_device|by_client|per_client)"\s*:'
+    ),
+    # 终端取值直接写进载荷，用来在语义层分叉。
     re.compile(
         r'"(?:device|platform|terminal|viewport)"\s*:\s*[\'"](?:desktop|tablet|mobile|h5|ios|android|web)[\'"]'
     ),
@@ -105,19 +135,44 @@ def scan_contract_appearance(text: str, rel: str) -> list[dict]:
     return found
 
 
-def scan_terminal_bound_contract(text: str, rel: str) -> list[dict]:
-    """Return the terminal-bound leaks found in one contract writer."""
+def scan_semantic_fork_by_terminal(text: str, rel: str) -> list[dict]:
+    """Return the terminal-driven semantic forks found in one contract writer.
+
+    终端投影（clientType / deliveryProfile / adaptMode / deliveryTrim 及其记账字段）
+    是合法契约内容，不会命中本规则，并由 terminal_projection_channel_conflicts() 自检。
+    语义是否跨终端一致由既有 `find_client_semantic_drift` 与
+    `make verify.unified_page_contract.v2.client` 负责，本函数不重复实现。
+    """
     found = []
-    for pattern in TERMINAL_BOUND_CONTRACT_PATTERNS:
+    for pattern in SEMANTIC_FORK_BY_TERMINAL_PATTERNS:
         for match in pattern.finditer(text):
             found.append({
-                "category": "contract_must_stay_terminal_agnostic",
+                "category": "contract_semantics_must_not_fork_by_terminal",
                 "path": rel,
                 "line": text[:match.start()].count("\n") + 1,
-                "message": "contract payload binds the contract to one terminal: %s"
+                "message": "contract payload forks business semantics by terminal: %s"
                            % match.group(0),
             })
     return found
+
+
+def terminal_projection_channel_conflicts() -> list[dict]:
+    """Return terminal projection keys that the semantic-fork rule would wrongly reject.
+
+    Contract-driven multi-terminal delivery is a declared design goal: one semantic
+    contract, projections with different detail levels per client. A non-empty result
+    means an edit made the rule outlaw the terminal projection layer itself.
+    """
+    conflicts = []
+    for key in TERMINAL_PROJECTION_CHANNEL_KEYS:
+        leaks = scan_semantic_fork_by_terminal('"%s": 1,' % key, "terminal-projection-channel")
+        if leaks:
+            conflicts.append({
+                "category": "terminal_rule_outlaws_projection_channel",
+                "key": key,
+                "message": "the semantic-fork rule matches the terminal projection key: %s" % key,
+            })
+    return conflicts
 
 
 def managed_layout_channel_conflicts() -> list[dict]:
@@ -436,16 +491,20 @@ def build_report() -> dict:
     errors.extend(appearance_errors)
     report["contract_appearance_errors"] = appearance_errors
     report["managed_layout_channel_keys"] = list(MANAGED_LAYOUT_CHANNEL_KEYS)
-    terminal_bound_errors = []
+    report["terminal_projection_channel_keys"] = list(TERMINAL_PROJECTION_CHANNEL_KEYS)
+    terminal_fork_errors = []
     for rel in unique_writer_paths:
         path = ROOT / rel
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             text = path.read_text(encoding="utf-8", errors="ignore")
-        terminal_bound_errors.extend(scan_terminal_bound_contract(text, rel))
-    errors.extend(terminal_bound_errors)
-    report["terminal_bound_contract_errors"] = terminal_bound_errors
+        terminal_fork_errors.extend(scan_semantic_fork_by_terminal(text, rel))
+    errors.extend(terminal_fork_errors)
+    report["semantic_fork_by_terminal_errors"] = terminal_fork_errors
+    projection_conflicts = terminal_projection_channel_conflicts()
+    errors.extend(projection_conflicts)
+    report["terminal_projection_channel_conflicts"] = projection_conflicts
     layout_conflicts = managed_layout_channel_conflicts()
     errors.extend(layout_conflicts)
     report["managed_layout_channel_conflicts"] = layout_conflicts

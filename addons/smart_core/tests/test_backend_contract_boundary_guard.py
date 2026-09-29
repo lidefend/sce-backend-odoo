@@ -101,32 +101,67 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
             guard.scan_contract_appearance('hint = {"density": "compact"}', "managed-layout-channel")
         )
 
-    def test_terminal_bound_contract_is_rejected(self):
-        # 同一份契约要驱动 Web、移动 App 等终端；契约带上终端维度就开始按终端分叉。
-        leaked = guard.scan_terminal_bound_contract(
+    def test_terminal_projection_is_not_outlawed(self):
+        # 多终端按不同详细程度投递是既有设计：一份语义契约 + 每终端一个投影。
+        for key in guard.TERMINAL_PROJECTION_CHANNEL_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual(
+                    guard.scan_semantic_fork_by_terminal('"%s": 1,' % key, "terminal-projection"),
+                    [],
+                )
+        self.assertEqual(guard.terminal_projection_channel_conflicts(), [])
+        self.assertEqual(
+            guard.scan_semantic_fork_by_terminal(
+                'page_info = {"clientType": "wx_mini", "deliveryProfile": "mobile_compact"}\n'
+                'layout = {"adaptMode": "mobile", "layoutHints": {"columns": 1}}\n'
+                'meta = {"deliveryTrim": {"compact": True, "limits": {"widgets": 8}, '
+                '"original": {"widgets": 20}, "delivered": {"widgets": 8}, "omitted": {"widgets": 12}}}',
+                "addons/smart_core/core/unified_page_contract_v2_client.py",
+            ),
+            [],
+        )
+
+    def test_semantic_fork_by_terminal_is_rejected(self):
+        # 终端身份必须走 pageInfo.clientType；另外出现终端标识键、按终端覆盖语义、
+        # 或把终端取值写进载荷，都是在语义层分叉。
+        forked = guard.scan_semantic_fork_by_terminal(
             'payload = {"render_target": "form"}\n'
             'brand = {"terminal_overrides": {"mobile": 1}}\n'
             'scope = {"platform": "mobile"}',
             "addons/smart_core/handlers/form_field_configuration.py",
         )
-        preview_scope = guard.scan_terminal_bound_contract(
-            'preview = {"device": _text(params.get("device")) if _text(params.get("device"))'
-            ' in {"desktop", "tablet", "mobile"} else "desktop"}',
-            "addons/smart_core/handlers/business_config_change_set.py",
-        )
 
-        self.assertEqual(len(leaked), 3)
-        self.assertEqual([row["line"] for row in leaked], [1, 2, 3])
-        # 草稿预览作用域是 runtime carrier，不写回已发布契约。
-        self.assertEqual(preview_scope, [])
+        # "platform": "mobile" 同时命中「终端标识键」与「终端取值写进载荷」两条，符合预期。
+        self.assertEqual(
+            sorted((row["line"], row["message"].split("by terminal: ", 1)[-1]) for row in forked),
+            sorted([
+                (1, '"render_target":'),
+                (2, '"terminal_overrides":'),
+                (3, '"platform":'),
+                (3, '"platform": "mobile"'),
+            ]),
+        )
+        # 配置工作台的草稿预览设备是 runtime carrier，不是契约里的终端维度。
+        self.assertEqual(
+            guard.scan_semantic_fork_by_terminal(
+                'preview = {"device": _text(params.get("device")) if _text(params.get("device"))'
+                ' in {"desktop", "tablet", "mobile"} else "desktop"}',
+                "addons/smart_core/handlers/business_config_change_set.py",
+            ),
+            [],
+        )
 
     def test_multi_terminal_boundary_is_declared_and_clean(self):
         report = guard.build_report()
 
         self.assertEqual(report["managed_layout_channel_conflicts"], [])
-        self.assertEqual(report["terminal_bound_contract_errors"], [])
+        self.assertEqual(report["terminal_projection_channel_conflicts"], [])
+        self.assertEqual(report["semantic_fork_by_terminal_errors"], [])
         self.assertIn("layoutContract", report["managed_layout_channel_keys"])
         self.assertIn("field_size", report["managed_layout_channel_keys"])
+        self.assertIn("clientType", report["terminal_projection_channel_keys"])
+        self.assertIn("deliveryProfile", report["terminal_projection_channel_keys"])
+        self.assertIn("omitted", report["terminal_projection_channel_keys"])
 
     def test_report_keys_match_declared_rules(self):
         report = guard.build_report()
