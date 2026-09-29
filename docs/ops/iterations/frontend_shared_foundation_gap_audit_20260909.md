@@ -2246,3 +2246,91 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 本批未关闭的表达缺口见上表（付款 `done`/`payment_execution`、workflow `activate/complete/reopen/reactivate`），
   按“缺口必须显现”处理，**不视为本批失败**，也不以猜测补齐。
 - 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+
+## 契约词汇表单一权威与后端自证完备性（2026-09-29，FE-CONTRACT-VOCAB-01）
+
+### 问题
+
+声明过的动作语义词汇表 `(kind, purpose, executor)` 在四处各写一份：后端装配器、schema、前端
+`actionSemantics.ts`、守卫脚本。于是生产者可以发布 `business + return + client.back` 这种**每个终端都会
+丢弃的组合**，四处副本一致地“看起来正常”，缺口被永久隐藏。同一批还暴露了两处同类越界：
+
+- `sc.partner.import.review` 是客户模块拥有的模型，却被 P1 行业模块当成自有 profile 登记，
+  `test_profile_methods_resolve_to_existing_model_methods` 在 `sc_dev_demo` 直接红。
+- 付款入口与财务工作台对同一字段用了两个词：`finance` 与 `finance_manager`，把角色码写成了第二份声明。
+
+### 分层归属（七问）
+
+- `Formal Product Layer`：P0 平台内核（`smart_core`）为权威；P1（`smart_construction_core`）只声明行业语义；P2（客户模块）只登记自己拥有的模型。
+- `Layer Target`：`smart_core.core.action_semantics_vocabulary`、`unified_page_contract_v2_assembler`、`contract_governance` 注册表；`smart_construction_core` 的 workflow 投影服务与能力注册表。
+- `Module`：`smart_core`、`smart_construction_core`、`sce_customer_baosheng_legacy`（属主侧）。
+- `Standard vs User-Specific`：词汇表与注册机制是平台标准；行业 profile 是行业标准；`sc.partner.import.review` 是客户专属，属 P2。
+- `Why Here`：词汇表的单位是 `(kind, executor)` 对而非三个独立集合——独立校验会接受所有终端都丢弃的组合，而生产者确实会发布它。
+- `Why Not Elsewhere`：不在前端重述业务子集（那是本次修掉的漂移源）；不在 P1 为不属于本层的模型写 profile；
+  不给角色码再加一份字面量；不靠禁止导航/刷新/清空草稿来掩盖身份问题。
+- `Blast Radius`：所有 form 契约的 `actionRuleList`、workflow `availableActions`、付款动作的 `required_role_key`。
+  实测 `examples=4`、`profiles=65 reachable_actions=9 payment_specs=4 role_gates=4 verdict_covers=4 roles=11 vocabulary=10`。
+
+### 实现
+
+- `addons/smart_core/core/action_semantics_vocabulary.py`（新）：`DECLARATIONS = {kind: {executor: frozenset(purposes)}}`，
+  派生 `KINDS/EXECUTORS/PURPOSES/OPERATIONS/BUSINESS_PURPOSES/NON_BUSINESS_PURPOSES` 与 `is_declared(kind, purpose, executor)`。
+- `unified_page_contract_v2_assembler.py`：删除本地四个 `DECLARED_ACTION_SEMANTICS_*` 字面量，改为消费权威；
+  组合越界即 `return None`，保持“可见地未声明”。
+- `frontend/packages/schema/src/actionSemantics.ts`：`DECLARED_BUSINESS_PURPOSES` 改为从 `ACTION_PURPOSES` 过滤派生，不再重述清单。
+- `unified_page_contract_v2_schema_guard.py`：四个 enum 对权威比对，禁止装配器再出现本地副本，
+  并要求前端业务子集必须是派生表达式；负例 ×3 均按预期 FAIL。
+- `contract_governance_registry.py` / `contract_governance.py`：新增 `register_workflow_contract_profile(model, profile, source=)`；
+  结构缺键即拒绝注册（缺口不降级为半份投影），读者拿隔离副本。
+- `workflow_contract_service.py`：`profile_by_model()` 合并 P1 自有 profile 与外部注册；
+  模型或其声明的方法在本 registry 解析不了时**不发布**该动作并留 warning，`describe_record`/`is_model_supported`/`supported_model_names` 统一走合并结果。
+- `capability_registry.role_code_for_group()`：角色码从门禁组 xmlid 派生；付款入口与财务工作台删除各自字面量。
+- `scripts/verify/workflow_action_semantics_completeness_guard.py`（新，已接入 `verify.workflow_contract.backend`）：
+  静态求值 profile/ACTIONS/`_ACTION_ROLE_HINTS`，校验可达动作的 purpose 落在 schema 词汇表内、
+  被提供的 payment spec 都有 role gate、role gate 不重述 `required_role_key`、gate 指向真实 `res.groups`，
+  以及 `approval_actions` 必须被 `can_review` 消费（否则 Web 会成为唯一决定者）。负例 ×4 均按预期 FAIL。
+- `scripts/audit/workflow_state_inventory.py`：`WORKFLOW_METHOD_NAMES` 补 `action_reopen`（注册表已交付该方法，清单缺失使守卫在 HEAD 即红）。
+
+### 定向验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.unified_page_contract.v2.schema` | PASS（examples=4） |
+| `verify.unified_page_contract.v2.{assembler,runtime,action,intent,client,web_consumer,web_architecture}` | 全部 PASS |
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | 103 tests OK |
+| `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | 4 tests OK（缺键拒绝/空名拒绝/隔离副本） |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS profile_methods=29 inventory_methods=41 |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS allowed_standard_uncovered=account.move,purchase.order,stock.picking |
+| `TestWorkflowContractBackend`（`sc_dev_demo`，注册 env） | **0 failed**，7 error(s) of 28 tests |
+| `make verify.frontend.contract_header_action.unit` | PASS |
+| `make verify.frontend.typecheck.strict` | PASS |
+| `make verify.frontend.build`（`VITE_ODOO_DB=sc_frontend_acceptance`） | 成功，`dist-dev` |
+
+修复前 `TestWorkflowContractBackend` 为 **2 failed**（`test_profile_methods_resolve_to_existing_model_methods`
+报 `sc.partner.import.review not found in registry`），现已归零。
+
+七条 error 全部是**开发库环境数据**类：`费用与扣款单据必须关联已归属公司的有效项目`、
+`自筹办理必须关联已归属公司的有效项目`、`收款归集关系不存在或当前用户无权访问`、
+`[SC_GUARD:P0_PAYMENT_STATE_BYPASS_BLOCKED] 未完成审批流程`。按“开发阶段关注功能而非环境数据”口径
+**不作为本批阻断**，也不以造数掩盖；修复前后的 error 集合逐条一致，未新增。
+
+### 候选与运行来源
+
+- 提交：`e7a523cca`（P0 词汇表权威 + 注册表）、`8890d5f0f`（P1 行业语义与角色派生 + 完备性守卫）、
+  `7ec3bbf16`（前端派生）；HEAD 见下方批次记录。
+- P2 属主侧提交：`sce-customer-baosheng-odoo` `bfbc736`（`fix/native-form-preference-upgrade`），
+  `runtime_registration.py` 注册 `sc.partner.import.review` profile。
+- 后端测试现场：`ENV_FILE=.env.dev DB_NAME=sc_dev_demo MODULE=smart_construction_core` 经 `scripts/test/test_safe.sh`。
+- 前端产物：`VITE_ODOO_DB=sc_frontend_acceptance VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance make verify.frontend.build`，
+  输出 `frontend/apps/web/dist-dev`（开发态，未冻结、未替换 5180 服务目录）。
+
+### 剩余阻断与非阻断
+
+- 非阻断：`docs/audit/workflow_state_inventory_sc_demo.md` 仍为历史 `sc_demo` 基线。
+  当前注册库 `sc_dev_demo` 生成会得到空清单，`sc_demo` 未装模块，故**本批不重生成**；
+  `verify.workflow_contract.backend` 的 `audit.workflow_state.inventory` 前置步骤在具备已装模块的 `sc_demo` 前不要单独跑。
+- 非阻断：`style_system.guard` 四项、`verify.guard.registry` 两个孤儿测试文件、探针层 vendor 选择器历史债务（均独立记账，未触碰）。
+- 未闭合：约 80 处未声明的原生按钮 occurrence 仍需按“权威侧缺失 / 原生未登记”逐类定性；
+  `construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端 presentation 可达性缺口，非契约缺陷。
+- 状态边界：本批**批次验收完成**；未推送、未合并、未部署目标环境，整体用户交付未验收。
