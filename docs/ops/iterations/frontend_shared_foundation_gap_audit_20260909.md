@@ -790,3 +790,40 @@ HTTP 取回校验逐字节一致。
 - 只宣布已采纳范围（列表 `project.project` + `sc.general.contract`；只读详情 `sc.general.contract`）；
   未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细与合同全流程（R7R9/R5）。
 - 89 入口唯一分母不变，未调整业务矩阵状态；不推送、不合并、不部署目标环境。
+
+### FE-TPL-04 官方应用外壳采纳验收（2026-09-29）
+
+同一专题分支 `feature/web-official-template-adoption`。把应用外壳的**采纳范围**从内联的
+route-meta 比较，提升为显式、按 layout 限定的呈现策略，并把外壳样式层从组件本地别名块收敛到
+权威令牌。**纯呈现改动**：不删除任何外壳能力、不新增业务语义。候选
+`b2fa65b6be864c271d8859a743cb49ab34fa2783`（工作树 clean），本轮提交：
+`1bf2d783`（采纳实现）与 `b2fa65b6`（仅派生清单刷新）。逐项判定如下，每项给出实现位置与原始证据。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 采纳由显式策略驱动，不由外观、名称或角色推断 | PASS | `frontend/apps/web/src/app/presentation/standardShellComposition.ts:46`（`STANDARD_SHELL_COMPOSITION_LAYOUTS`）、`:50` `resolveStandardShellComposition`；纯函数（无 Vue/DOM/TDesign/model/menu/action/role 输入）。调用点只传 `route.meta.layout` 与内嵌弹窗标记：`App.vue:50-53`。 |
+| 2 | 外壳门与对外发布的采纳身份同源，不会漂移 | PASS | `frontend/apps/web/src/App.vue:5-7`：`v-if="shellComposition.adopted"` 与 `:data-shell-composition`/`:data-shell-composition-reason` 都取自同一次 `resolveStandardShellComposition` 决策。 |
+| 3 | 未采纳路由与内嵌关系弹窗保持旧呈现，无双重外壳/半转换 | PASS | `standardShellComposition.ts:55-57`（非采纳 layout → `legacy-shell-surface`/`not-a-shell-layout`）、`:58-60`（内嵌关系弹窗 → `legacy-shell-surface`/`embedded-relation-dialog`）；此处直接渲染页面组件。 |
+| 4 | 官方组合在真实页面被采纳（双视口） | PASS | `artifacts/frontend-web-fix-20260928/tpl04b/shell-parity-results.json` 的 `after-5178-b2fa65b6` 运行：`1440×900` 与 `390×844` 均为 `official-standard-shell`/`shell-layout-adopted`，`compositionMarkerCount=1`，`layoutDriver=tdesign`；参照构建 `f017d42d` 无标记（`null`）。 |
+| 5 | 采纳前后呈现值等价，无视觉回归 | PASS | 同上：`diffs = []` —— 15 项实测计算值在**两个构建、两个视口**完全一致（`shell.color` `rgb(46,49,51)`、`topbar.minHeight` `52px`/`0px`、`sidebar.width` `232px`、分隔线 `rgb(226,232,240)`、触控目标 `44px` …）。 |
+| 6 | 组件本地别名收敛到权威令牌且取值不变 | PASS | `frontend/apps/web/src/layouts/AppShell.css:7`（`--sc-semantic-text-primary`）、`:54/:235/:263/:369`（`--sc-semantic-border-default`）、`:455`（`--sc-semantic-surface-panel`）、`:555`（`--sc-semantic-text-secondary`）、`:976-979/:1143-1144`（`--sc-touch-target-min`）；6 个本地别名实测由 hex 变为空串（已移除，非遮蔽）。`--sc-semantic-text-primary` 与旧 `--ink` 解析值完全相同。 |
+| 7 | 外壳能力无回退 | PASS | 同上 JSON：桌面折叠 `hidden false→true→false` 且侧栏随之存在/消失；390px 打开抽屉 `{sidebar: true, role: "dialog", backdrop: true}`；two 构建均 `consoleErrors: []`，均无横向溢出。 |
+| 8 | 参考一致性门禁与结构门禁扩展 | PASS | `scripts/verify/frontend_page_pattern_reference_parity_guard.py` 新增 4 条 AppShell.css 要求 + `App.vue` 条目（`surfaces` 15→16）；`test_frontend_page_pattern_reference_parity_guard.py` 新增 2 条负向测试（共 15 tests OK）。 |
+| 9 | 派生清单与当前源码一致 | PASS | `b2fa65b6` 用仓库自带生成器刷新 4 份派生清单：仅摘要变化，无计数/状态/词汇变化（`component-professionalization` `surfaces=169 gaps=0`、`official-design-alignment` `internalVendorSelectorGapCount=0`）。 |
+| 10 | 相关 L2 单元/结构门禁 | PASS | `artifacts/frontend-web-fix-20260928/tpl04b/logs/tpl04b-gates-run.log`：`standard_shell_composition` `cases=69 layouts=1`、`page_pattern_reference_parity` `surfaces=16`、`navigation_shell` 19 tests/`components=5`、`rendering_detail_state` 58 tests（含 `shell_density_contracts=2` 与三份 inventory `--check`）、`component_driver_takeover` `required=35 missing=0`、`product_page_pattern` `cases=12`/`patterns=4`；全部 `exit=0`。 |
+| 11 | 相关类型检查 | PASS | `.../tpl04b/logs/tpl04b-typecheck.log`：`make verify.frontend.typecheck.strict` 运行 `vue-tsc --noEmit` 与 `tsc.strict` 两份配置，`exit=0`、0 错误。 |
+| 12 | 源码—产物—证据绑定同一候选 | PASS | 候选 `b2fa65b6`；离仓构建 `.../fe-tpl04b-20260929/dist`（`index.html` sha256 `74f58f11…9eac`，入口 `/assets/index-Dnkap0aw.js` sha256 `b3b16f06…06bb`），`release_static_server.mjs` pid 3174598 @ `:5178`；`served-bundle-identity.json` HTTP 取回 **100/100** 文件逐字节一致（`mismatches: 0`）；探针 `loadedScripts` 含该入口。 |
+
+**验收结论**：应用外壳的官方组合采纳**在当前候选上验收通过**，且采纳前后外壳呈现值完全等价。
+`TPL-04` 的“官方应用外壳”范围就此收口；不据此宣布 TPL-05 或整个前端模板接管通过。
+
+**边界（不得夸大）**：
+
+- 本轮的浏览器证据是**只读角色 `fixture_role_pm` 对外壳的观测**，不是业务旅程：该角色可见外壳但无业务顶栏，
+  `rail.borderRightColor`/`footer.borderTopColor` 仅在 `1440×900` 测得（窄屏下栏隐藏）；未触发任何保存链或权限边界。
+- `verify.frontend.style_system.guard`（`scripts/audit/design_token_system.py`）仍报**既有**问题：
+  `ScRelationField.vue` 的新 z-index 未登记，以及 `ContractFormPage.vue`（1932>1900）、
+  `useRecordActionPresentation.ts`（505>500）、`useRecordFormActions.ts`（804>619）超长。
+  **非本轮引入**，属范围外，未在本轮处理。
+- 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
+  **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`）及其构建目录保持原样。
