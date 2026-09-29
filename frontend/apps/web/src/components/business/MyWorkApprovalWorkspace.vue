@@ -1,5 +1,6 @@
 <template>
-  <ScPanel tone="workspace" class="product-work" aria-label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
+  <ProductWorkspaceSurface class="product-work" aria-label="我的工作事项" data-semantic-component="MyWorkApprovalWorkspace" :data-state="busy ? 'loading' : 'ready'" :aria-busy="busy || undefined">
+    <template #summary>
     <div class="product-work__counts" aria-label="工作项汇总">
       <ScButton
         v-for="section in workspace.sections"
@@ -18,6 +19,8 @@
       </ScButton>
     </div>
 
+    </template>
+    <template #query>
     <section class="product-work__filters" aria-label="筛选和排序工作事项">
       <ScField v-slot="{ controlId, describedBy }" :label="workspace.presentation.search_label" field-key="my-work-search">
         <ScInput :id="controlId" v-model="searchText" appearance="form-field" type="search" :described-by="describedBy" :placeholder="workspace.presentation.search_placeholder" />
@@ -28,6 +31,7 @@
       <ScButton v-if="searchText" variant="ghost" @click="searchText = ''">清除查找</ScButton>
     </section>
 
+    </template>
     <p v-if="feedback" class="feedback" :class="{ error: feedbackError }" role="status">{{ feedback }}</p>
 
     <ScSection v-for="section in visibleSections" :key="section.key" class="work-section" :title="`${section.label} ${section.count}`" :data-section-key="section.key">
@@ -104,7 +108,7 @@
         </ScActionBar>
       </form>
     </ScDialog>
-  </ScPanel>
+  </ProductWorkspaceSurface>
 </template>
 
 <script setup lang="ts">
@@ -121,7 +125,7 @@ import ScEmptyState from '../design-system/ScEmptyState.vue';
 import ScField from '../design-system/ScField.vue';
 import ScMoney from '../design-system/ScMoney.vue';
 import ScCard from '../design-system/ScCard.vue';
-import ScPanel from '../design-system/ScPanel.vue';
+import ProductWorkspaceSurface from '../product-page-patterns/ProductWorkspaceSurface.vue';
 import ScSection from '../design-system/ScSection.vue';
 import ScSelect from '../design-system/ScSelect.vue';
 import ScStatusBadge from '../design-system/ScStatusBadge.vue';
@@ -278,7 +282,7 @@ async function confirmAction() {
 </script>
 
 <style scoped>
-.product-work { display: grid; align-content: start; gap: var(--sc-space-4, 16px); }
+
 .product-work__counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
 .product-work__filters { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(180px, auto) auto; gap: 12px; align-items: end; padding: var(--sc-product-space-2); border: 0; border-radius: var(--sc-product-radius-panel); background: var(--sc-app-subtle-bg); }
 .product-work__filters label { display: grid; gap: 6px; color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
@@ -318,7 +322,7 @@ async function confirmAction() {
   .work-card :deep(.work-card__body) { gap: 12px 16px; }
 }
 @media (max-width: 640px) {
-  .product-work { gap: 14px; }
+
   .product-work__counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .product-work__filters { grid-template-columns: 1fr; padding: 12px; --sc-component-input-form-height: 44px; }
   .work-card__main { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'identity' 'title' 'summary' 'disclosure'; gap: 8px; }

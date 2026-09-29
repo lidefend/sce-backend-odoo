@@ -83,31 +83,38 @@
             :label="pageText('session_expired_notice', '登录状态已过期，请重新登录。验证成功后将尝试返回原页面；无法访问时显示原因，并提供安全返回入口。')"
           />
 
-          <form
+          <ScForm
             v-if="pageSectionEnabled('form', true) && pageSectionTagIs('form', 'section')"
             class="sc-form"
             :style="pageSectionStyle('form')"
-            @submit.prevent="onSubmit"
+            :data="{ username, password, dbName }"
+            layout="vertical"
+            label-align="top"
+            :required-mark="false"
+            :prevent-submit-default="true"
+            data-auth-composition="official-credential-form"
+            @submit="onValidatedSubmit"
           >
-            <label class="sc-form-label">
-              {{ pageText('username_label', '账号') }}
+            <ScFormItem name="username" :label="pageText('username_label', '账号')"
+              :rules="[{ required: true, message: pageText('username_placeholder', '请输入账号') }]">
               <ScInput
                 id="login-username"
                 v-model="username"
                 class="sc-input"
                 size="large"
                 autocomplete="username"
+                :aria-label="pageText('username_label', '账号')"
+                aria-required="true"
                 :placeholder="pageText('username_placeholder', '请输入账号')"
                 :disabled="loading"
-                required
                 :status="error ? 'error' : 'default'"
                 :described-by="error ? 'login-error' : undefined"
               >
                 <template #prefix><ScIcon name="user" :size="18" /></template>
               </ScInput>
-            </label>
-            <label class="sc-form-label">
-              {{ pageText('password_label', '密码') }}
+            </ScFormItem>
+            <ScFormItem name="password" :label="pageText('password_label', '密码')"
+              :rules="[{ required: true, message: pageText('password_placeholder', '请输入密码') }]">
               <ScInput
                 id="login-password"
                 v-model="password"
@@ -115,15 +122,16 @@
                 size="large"
                 type="password"
                 autocomplete="current-password"
+                :aria-label="pageText('password_label', '密码')"
+                aria-required="true"
                 :placeholder="pageText('password_placeholder', '请输入密码')"
                 :disabled="loading"
-                required
                 :status="error ? 'error' : 'default'"
                 :described-by="error ? 'login-error' : undefined"
               >
                 <template #prefix><ScIcon name="lock" :size="18" /></template>
               </ScInput>
-            </label>
+            </ScFormItem>
             <div v-if="passwordRecoveryAction" class="auth-form-support">
               <ScButton
                 class="auth-entry-link"
@@ -136,8 +144,7 @@
                 {{ passwordRecoveryAction.label || passwordRecoveryAction.key }}
               </ScButton>
             </div>
-            <label v-if="!dbInputDisabled" class="sc-form-label">
-              {{ pageText('db_label', '数据库') }}
+            <ScFormItem v-if="!dbInputDisabled" name="dbName" :label="pageText('db_label', '数据库')">
               <ScInput
                 v-model="dbName"
                 class="sc-input"
@@ -146,7 +153,7 @@
                 :placeholder="pageText('db_placeholder', '请输入数据库名（如 sc_minimal）')"
                 :disabled="dbInputDisabled"
               />
-            </label>
+            </ScFormItem>
             <p
               v-if="pageSectionEnabled('error', true) && pageSectionTagIs('error', 'section') && error"
               id="login-error"
@@ -157,7 +164,7 @@
               {{ error }}
             </p>
             <ScButton class="submit" appearance="primary-submit" variant="primary" size="large" type="submit" :disabled="loading" :loading="loading">{{ loading ? pageText('submit_loading', '系统正在登录，请稍候…') : pageText('submit_idle', '登录') }}</ScButton>
-          </form>
+          </ScForm>
         </ScCard>
       </section>
     </section>
@@ -185,6 +192,8 @@ import {
 } from '../app/sessionExpiredRecovery';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScCard from '../components/design-system/ScCard.vue';
+import ScForm from '../components/design-system/ScForm.vue';
+import ScFormItem from '../components/design-system/ScFormItem.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
@@ -246,6 +255,11 @@ function normalizeLoginError(err: unknown): string {
     return pageText('error_network', '网络异常，请稍后重试');
   }
   return fallback;
+}
+
+function onValidatedSubmit(result: { validateResult: unknown }) {
+  if (result.validateResult !== true || loading.value) return;
+  void onSubmit();
 }
 
 async function onSubmit() {
