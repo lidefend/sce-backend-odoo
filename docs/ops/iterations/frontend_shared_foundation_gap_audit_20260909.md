@@ -2137,3 +2137,112 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 未执行：真实保存/发布/回滚，89 入口矩阵，全站发布门禁，TPL-05 之后的目标环境交付。
 - 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
   本批不把“模板接管通过”写成业务矩阵整行升级。
+
+## 契约动作语义投影：把声明的 purpose 绑到它声明的 occurrence（2026-09-29，FE-CONTRACT-ACTIONSEM-01）
+
+### 问题
+
+`workflowContract.availableActions[].action_semantics` 与 `runtimeContract.businessActions[].action_semantics`
+都已声明业务目的，但 `actionContract.actionRuleList` 没把它送到消费位置：**声明存在，语义缺席**，
+前端只能靠方法名或按钮文案推断。
+
+修复前实测（`sc_frontend_acceptance`，后端 `66202b629` 运行现场）：
+
+| 记录 | 权威声明 | 交付的 action rule |
+|---|---|---|
+| `sc.general.contract` 12（draft） | `submit → method action_confirm` | `action_confirm` → `actionSemantics: null` |
+| `sc.general.contract` 11/10 | 仅 `cancel → action_cancel` | 三条 native 按钮全部 `actionSemantics: null` |
+| `payment.request` 1787 | `approve → validate_tier` | `payment_approve.2/.3` 无语义 |
+
+修复后同一批记录：`contract 12 action_confirm → {"kind":"business","purpose":"submit","executor":"contract.action","origin":"workflow.contract.service"}`；
+`payment.request` 新增 `payment_approve.2/.3 → approve`、`action_cancel → cancel_record`；6 个记录合计 `conflicts=0`。
+
+### 分层归属（四问）
+
+- `Formal Product Layer`：P0 平台内核（`smart_core`）。
+- `Layer Target`：`unified_page_contract_v2` 投影 + `ui.contract.v2` 动作装配。
+- `Module`：`smart_core`。
+- `Standard vs User-Specific`：平台机制（已发布词汇表的校验 + 绑定投影）。业务目的本身由 P1 行业模块声明。
+- `Why Here`：把“某个方法的业务目的是什么”绑定到消费它的 occurrence，是终端无关的投影机制，任何模型都成立。
+- `Why Not Elsewhere`：不在 `smart_construction_core` 写通用绑定（否则行业模块承担平台职责）；
+  不在前端按方法名/按钮文案推断（那正是本批修掉的缺陷）；不新增全局状态或并发框架。
+- `Blast Radius`：所有 form 契约的 `actionRuleList`。实测 6 个受管记录零冲突，`record.save` 平台语义不被覆盖。
+
+### 实现
+
+- `declared_action_semantics`：按 schema `$defs.actionRule.actionSemantics` 校验声明；越界词汇**丢弃**，
+  使动作保持“可见地未声明”，不把未批准的语义当已批准语义投递；`{"conflict": true}` 原样保留。
+- `declared_action_meaning`：只比较业务含义（kind/purpose/executor/operation），**不比较 provenance**。
+- `project_workflow_action_semantics`：`availableActions[].method` ↔ `button.name`（`button.type` 必须为 `object`）绑定；
+  同一方法真正的语义分歧保留 `{"conflict": true}`；平台 `record.save` 语义永不覆盖。
+- `_row_declared_action_semantics`：声明随 occurrence 走（policy / row / 其 business action）时同样经词汇表校验后投递。
+- `handlers/ui_contract_v2.py` 在 `project_runtime_business_actions` 之后调用。
+
+### 中途发现并修正的假冲突
+
+首版实现按“整份声明”比较，导致 `payment_submit` 变成 `{"conflict": true}`：
+`workflow.contract.service` 与 `payment.request.available_actions` 对同一方法声明了**相同目的、不同 origin**。
+改为只比较业务含义后恢复为 `purpose: submit`，并保留既有 origin；新增反例
+`test_corroborated_purposes_from_two_authorities_are_not_a_conflict` 固定该行为。
+
+### 前端边界硬化（同批，独立提交）
+
+`resolveSelectionActions` 原先硬编码 `['export','archive','activate','delete']`：**由客户端决定有哪些批量动作**。
+改为消费契约的 `execution_intents` → 客户端执行器表（按 intent 而非动作名索引）：
+
+- 契约声明的每个动作都保留（隐藏等于前端否决契约）；
+- 声明了策略但被策略禁止的 → 可见但禁用；
+- 本构建无法解析执行方式的 → 显式报为未解析，不静默丢弃；
+- 启用条件仍来自声明的 `delete_mode` / `active_field`。
+
+### 未闭合的缺口（必须显现，不得猜测补齐）
+
+| 缺口 | 定性 | 归属 |
+|---|---|---|
+| `payment.request` 的 `done/action_done`、`payment_execution/action_create_payment_execution` 无语义声明 | 表达缺口（业务含义存在，契约未表达） | P1 行业模块 + schema 词汇表 |
+| workflow registry 的 `activate/complete/reopen/reactivate` 无语义声明 | 同上 | P1 行业模块 + schema 词汇表 |
+| 词汇表 `purpose` 无非 `submit/approve/reject/cancel_record` 之外的“完成/开始执行”取值 | 表达缺口 | contract 定义（schema） |
+
+本轮**不猜**这些目的：未声明即保持未声明，前端应显式报缺口而不是按方法名推断。
+补齐需要业务权威决定，属下一批，不在本批越权填入。
+
+### 定向验证
+
+- 后端：`addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` → `Ran 101 tests OK`。
+- 契约守卫 5 项：`verify.unified_page_contract.v2.runtime/action/assembler/schema/intent` 全 PASS。
+- 实测对照：6 个受管记录（contract 10/11/12、payment 1787/1813）修复前后差异如上，`TOTAL_CONFLICTS 0`。
+- 前端：`verify.frontend.typecheck.strict` PASS；`standard_collection_composition.unit`（84→89 cases）、
+  `standard_form_composition`（93）、`standard_shell_composition`（71）、`adopted_form_engine_decision`（74，真实 TDesign）、
+  `adopted_form_validation_identity`（46）、`contract_form_save_failure_recovery` 全 PASS；`make verify.frontend.build` PASS。
+- 既有守卫：`list_batch_action_closure_guard`（按新语义改写断言）PASS；`frontend_contract_consumer_intrusion_guard` PASS；
+  `frontend.collection_action_toolbar` / `page_pattern_reference_parity` / `contract_header_action` PASS。
+- `make ci.local.iteration` → `PASS coverage=L1_only`。
+- 受管浏览器（5180，`sc_frontend_acceptance`）：
+  付款列表 `/a/775?menu_id=545` → 呈现 `official-standard-list`（reason `contract-collection-view`），
+  选中 2 行后批量动作完整：行内「导出所选」+「更多批量操作」内「导出所选／批量归档／批量激活／批量删除」，
+  按钮身份以 `data-action-key="batch:*"` 暴露，`console/pageerror` 为空；
+  合同记录 11 → 只读详情 `data-detail-composition-reason=contract-readonly-record-view`；
+  付款表单 1815 → 动作身份来自契约（`form.save` / `payment_submit` / `action_cancel`）。
+  裸路由 `/a/775` 被 `NAVIGATION_AUTHORITY_DENIED` 拦住，导航授权仍由契约控制（符合预期，非缺陷）。
+- 未通过且**与本批无关**：`verify.guard.registry` 仍报既有两个孤儿测试文件（`test_frontend_standard_preview.py`、
+  `test_workspace_composition_wiring.py`），与上一批相同，本批未新增。
+
+### 候选与运行来源
+
+- 提交：`dfeecdd3d`（平台契约投影）、`95137138d`（前端批量声明消费 + 守卫/测试维护），HEAD `95137138dc9915d1fec8d9c19549bfb9bd04c154`。
+- 前端产物 `sce-offrepo/artifacts/sem01-20260929/dist`：以 `VITE_ODOO_DB=sc_frontend_acceptance VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance` 构建一次，
+  `entry=/assets/index-qp_wz1lo.js`、`entry_sha256=4bfc4ef6a4802be1e5805e9a4eb0a3aab68e5aa3ccf68c70f07ac49f11787c12`、
+  `index_sha256=b5f204d70e0f3971e61740c451d6d5384968e063c0437ff365cd518e4dcc7d64`。
+- 5180 运行现场：pid `3612724`，`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=<sem01-20260929/dist>`，`/api/`、`/web/` 代理 `127.0.0.1:18082`；
+  旧候选 `config05-20260929/dist` 保留未覆盖。
+- 后端验收容器 `sc-backend-odoo-acceptance`：以**保留容器身份**的方式重启加载工作树源码；
+  容器声明的 `SC_SOURCE_REVISION` 仍为 `66202b629`，实际加载的是本批提交的源码（开发态，未冻结）。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账）：`style_system.guard` 四项；`verify.guard.registry` 两个孤儿测试文件；
+  探针层 vendor 内部类选择器历史债务；菜单配置历史版本单选无数据。
+- 本批未关闭的表达缺口见上表（付款 `done`/`payment_execution`、workflow `activate/complete/reopen/reactivate`），
+  按“缺口必须显现”处理，**不视为本批失败**，也不以猜测补齐。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
