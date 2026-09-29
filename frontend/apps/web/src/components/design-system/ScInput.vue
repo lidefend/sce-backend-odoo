@@ -88,7 +88,7 @@
 import { computed, ref } from 'vue';
 import { TDesignInput } from './tdesignPrimitiveBridge';
 import { nativeControlProjection } from './nativeControlProjection';
-import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
+import { normalizePrimitiveSize, resolvePrimitiveControlUpdate, resolvePrimitiveNativeEvent, type ScPrimitiveSize, type ScPrimitiveStatus } from './primitiveAdapter';
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const tdesignInputRef = ref<{ $el?: HTMLElement } | null>(null);
@@ -194,8 +194,7 @@ function onBlur(event: FocusEvent) {
 }
 
 function tdesignEvent(context: unknown): Event {
-  const event = (context as { e?: Event } | undefined)?.e;
-  return event instanceof Event ? event : new Event('input');
+  return resolvePrimitiveNativeEvent(context) ?? new Event('input');
 }
 function onTDesignInput(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
@@ -207,29 +206,28 @@ function onTDesignChange(value: string | number, context?: unknown) {
   const next = resolvePrimitiveControlUpdate({ value, disabled: props.disabled, readonly: props.readonly, loading: props.loading });
   if (next !== null) emit('change', next, tdesignEvent(context));
 }
-function onTDesignFocus(value: string | number, context: { e?: FocusEvent }) {
-  emit('focus', value, context?.e ?? new FocusEvent('focus'));
+function onTDesignFocus(value: string | number, context?: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  emit('focus', value, event instanceof FocusEvent ? event : new FocusEvent('focus'));
 }
-function onTDesignBlur(value: string | number, context: { e?: FocusEvent }) {
-  emit('blur', value, context?.e ?? new FocusEvent('blur'));
+function onTDesignBlur(value: string | number, context?: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  emit('blur', value, event instanceof FocusEvent ? event : new FocusEvent('blur'));
 }
-function onTDesignKeydown(_value: string | number, context: { e?: KeyboardEvent }) {
-  emit('keydown', context?.e ?? new KeyboardEvent('keydown'));
+function onTDesignKeydown(_value: string | number, context?: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  emit('keydown', event instanceof KeyboardEvent ? event : new KeyboardEvent('keydown'));
 }
-function onTDesignKeyup(_value: string | number, context: { e?: KeyboardEvent }) {
-  emit('keyup', context?.e ?? new KeyboardEvent('keyup'));
+function onTDesignKeyup(_value: string | number, context?: unknown) {
+  const event = resolvePrimitiveNativeEvent(context);
+  emit('keyup', event instanceof KeyboardEvent ? event : new KeyboardEvent('keyup'));
 }
 
-// IME callers need a DOM `CompositionEvent` they can read the committed text from
-// (`event.target.value`). TDesign reports composition through its own `(value, context)`
-// signature while the native branch reports the DOM event directly, so both are
-// normalized here. Forwarding TDesign's raw value would hand callers a bare string whose
-// `.target` is undefined, and a caller that reads `.target.value` would then drop the
-// composed text.
-function compositionEventFrom(context: unknown): CompositionEvent | null {
-  const event = (context as { e?: unknown } | undefined)?.e;
-  return event instanceof CompositionEvent ? event : null;
-}
+// IME callers commit text by reading the DOM event (`event.target.value`), so a
+// `compositionend` here must carry the real `CompositionEvent`. TDesign reports
+// composition through its own `(value, context)` signature and its raw `value` is
+// stale at commit time, so the driver payload is resolved through the shared
+// `resolvePrimitiveNativeEvent` contract instead of being re-derived locally.
 function onNativeCompositionStart(event: Event) {
   if (event instanceof CompositionEvent) emit('compositionstart', event);
 }
@@ -237,12 +235,12 @@ function onNativeCompositionEnd(event: Event) {
   if (event instanceof CompositionEvent) emit('compositionend', event);
 }
 function onTDesignCompositionStart(_value: string | number, context?: unknown) {
-  const event = compositionEventFrom(context);
-  if (event) emit('compositionstart', event);
+  const event = resolvePrimitiveNativeEvent(context);
+  if (event instanceof CompositionEvent) emit('compositionstart', event);
 }
 function onTDesignCompositionEnd(_value: string | number, context?: unknown) {
-  const event = compositionEventFrom(context);
-  if (event) emit('compositionend', event);
+  const event = resolvePrimitiveNativeEvent(context);
+  if (event instanceof CompositionEvent) emit('compositionend', event);
 }
 
 defineExpose({
