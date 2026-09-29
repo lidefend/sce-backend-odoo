@@ -150,7 +150,9 @@ const primitiveOptions = computed(() => {
   return rows;
 });
 const showInlineCreate = computed(() => {
-  const text = queryKeyword.value;
+  // The keyword itself is the exact typed text that owns the input value; only
+  // this comparison needs a normalized key, so the trim stays local to the match.
+  const text = queryKeyword.value.trim();
   if (!text || !props.field.relationInlineCreate?.enabled || !props.field.relationInlineCreate.createOnNoMatch) return false;
   const normalized = text.toLowerCase();
   return !primitiveOptions.value.some((option) => option.label.trim().toLowerCase() === normalized);

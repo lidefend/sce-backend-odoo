@@ -172,11 +172,25 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("relation search rows retain fail-open read authority")
     for marker in (
         "if(!isFieldWritable(name,occurrenceKey))return;const normalized=",
-        "if(!isFieldWritable(name,occurrenceKey))return;const keyword=",
         "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
     ):
         if marker not in form_state:
             failures.append(f"relation selection write authority is incomplete: {marker}")
+    # The many2one search channel checks write authority before it reads the
+    # keyword, and it keeps the two projections separate: the stored keyword is
+    # the exact typed text that owns the controlled Select input, while the
+    # trimmed request key is derived from it. Normalizing in place would delete a
+    # character that is still being typed.
+    compact_form_state = "".join(form_state.split())
+    if (
+        "if(!isFieldWritable(name,occurrenceKey))return;"
+        "consttypedKeyword=resolveProfessionalMany2oneSearchInput(value);"
+        "constkeyword=resolveProfessionalMany2oneQueryKey(value);"
+    ) not in compact_form_state:
+        failures.append(
+            "relation selection write authority is incomplete: "
+            "if(!isFieldWritable(name,occurrenceKey))return;const keyword="
+        )
     if "canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))" not in relationships:
         failures.append("relation search selection does not fail closed on canonical write authority")
     if "canonicalFieldWritable: (...args: [string]) => canonicalFieldWritable(...args)" not in page:
