@@ -345,7 +345,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 413,
+      "productionConsumerCount": 417,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1398,10 +1398,10 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "977a48193d2f3bb0179f275c9cb6f4aaa775a2bbd11de3b292db5c6d0bd9b368",
+  "inputDigest": "2103562205180d887afe9e28d26988aa79257a10faa2b8359f9648eb56a3df70",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
-  "scope": "repository P0/P1 frontend production sources",
+  "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
   "summary": {
     "adapter_present": 33,
     "adapter_unconsumed": 0,

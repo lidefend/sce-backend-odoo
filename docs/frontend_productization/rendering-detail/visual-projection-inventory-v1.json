@@ -2718,7 +2718,7 @@
     },
     {
       "category": "other",
-      "digest": "38ea1dad0ede59cf3132c69b1df4d64e136c952720621eea412cbc60e37ffb75",
+      "digest": "0683a13a14a2350903d3f987a7c74f906eafe956ca9e66bd626f6c1e04674cad",
       "nativeStyleSelectors": [
         ".actions select"
       ],
@@ -2731,13 +2731,14 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScDisclosure",
         "ScInput",
         "ScSelect"
       ]
     },
     {
       "category": "other",
-      "digest": "c10b5472f11a48e901c5bf8f1ad9e99811d6cc382afb3f3c52d37e0817676a6c",
+      "digest": "3f048076fb7e1cf28978f3dbaff1c7194c9b4c626151b19d254e03735d76133f",
       "nativeStyleSelectors": [
         "button",
         "button.danger",
@@ -2840,7 +2841,7 @@
     },
     {
       "category": "other",
-      "digest": "f454969443cea37fa5e31651a160fb27724de2dbe1d07b7c026d789a28a9ef01",
+      "digest": "917bc3cc3c8ed57391ff911cacdcb1be55b3670e7a53b1bf2d2587c0d91417fa",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigChangeSetPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2852,6 +2853,7 @@
       ],
       "scComponents": [
         "ScButton",
+        "ScDisclosure",
         "ScPanel",
         "ScStatusBadge"
       ]
@@ -2975,7 +2977,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "278453347654099959704798e68cff688bc5d951d3966b2d04540806748f68c5",
+  "currentInputDigest": "f127d24116f7317e69c496fe97dcc046b4c4761fd40d70d841704ddcf7f6d1fb",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3173,7 +3175,7 @@
   "scAdapterWithNativeSelectorCandidates": [
     {
       "category": "other",
-      "digest": "38ea1dad0ede59cf3132c69b1df4d64e136c952720621eea412cbc60e37ffb75",
+      "digest": "0683a13a14a2350903d3f987a7c74f906eafe956ca9e66bd626f6c1e04674cad",
       "nativeStyleSelectors": [
         ".actions select"
       ],
@@ -3181,13 +3183,14 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScDisclosure",
         "ScInput",
         "ScSelect"
       ]
     },
     {
       "category": "other",
-      "digest": "c10b5472f11a48e901c5bf8f1ad9e99811d6cc382afb3f3c52d37e0817676a6c",
+      "digest": "3f048076fb7e1cf28978f3dbaff1c7194c9b4c626151b19d254e03735d76133f",
       "nativeStyleSelectors": [
         "button",
         "button.danger",
