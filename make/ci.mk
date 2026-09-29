@@ -709,7 +709,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 -m py_compile scripts/verify/frontend_release_gate.py scripts/verify/test_frontend_release_gate.py scripts/verify/ci_artifact_host_write_guard.py scripts/verify/test_ci_artifact_host_write_guard.py
@@ -958,7 +958,12 @@ test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web build
 
-test.unit: guard.prod.forbid
+verify.python_name_binding: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/python_name_binding_guard.py scripts/verify/test_python_name_binding_guard.py
+	@python3 scripts/verify/test_python_name_binding_guard.py
+	@python3 scripts/verify/python_name_binding_guard.py
+
+test.unit: guard.prod.forbid verify.python_name_binding
 	@python3 scripts/ci/python_syntax_check.py addons/smart_core addons/smart_construction_core scripts/ci scripts/audit scripts/common scripts/e2e
 	@python3 scripts/ci/test_node_syntax_check.py
 	@python3 scripts/test_render_odoo_conf.py
