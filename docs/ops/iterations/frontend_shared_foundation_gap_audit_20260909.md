@@ -2727,3 +2727,142 @@ object 按钮也真实存在。因此它们**不在**本守卫的未声明集合
 
 本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
 四条 `state_transition_undeclared` 保持为**权威侧待决**，不是本轮阻断项，也不因本段自动消项。
+
+## 契约接管模型集口径修正：把 helper 生成的 profile 纳入扫描（2026-09-29，FE-CONTRACT-NATIVEBTN-02）
+
+上一段 `FE-CONTRACT-NATIVEBTN-01` 的守卫用正则从源码文本里抓「被接管模型」，
+结果只认内联字面量，漏掉了通过 helper 调用生成的 profile。本段修掉这个口径，
+并把它暴露的缺口补齐。
+
+### 1. 根因：正则只看得见一半注册表
+
+上一段 `adopted_models()` 的匹配式是
+`"\n        \"<model>\": \{\n            \"state_field\""` —— 它要求 model 键**紧跟**一个内联的
+`state_field`。而 `PROFILE_BY_MODEL` 里还有另一类条目：
+
+```python
+**_simple_approval_profiles(("sc.equipment.plan", "sc.labor.plan", ...)),
+**_close_issue_profiles(("sc.quality.issue", "sc.safety.issue")),
+**_submit_confirm_profiles((...)), **_in_progress_done_profiles((...)), **_confirm_done_profiles((...)),
+```
+
+这些 helper 每个都返回**完整的 profile**（含 `state_field` / `state_phase` /
+`state_actions` / `method_by_action`），但它们在源码里不是内联字面量，正则抓不到。
+
+实测口径差：
+
+| 口径 | 被接管模型 |
+|---|---|
+| 上一段正则（内联字面量） | 40 |
+| 静态求值 `PROFILE_BY_MODEL`（含 helper 展开） | **65** |
+
+被漏掉的 25 个模型：`sc.dashboard.cockpit.fact`、`sc.document.admin.document`、
+`sc.equipment.plan/request/settlement/usage`、`sc.fund.account.operation`、
+`sc.hr.payroll.document`、`sc.labor.plan/request/settlement/usage`、
+`sc.material.purchase.request`、`sc.material.rental.plan`、`sc.material.settlement`、
+`sc.office.admin.document`、`sc.plan`、`sc.quality.issue`、`sc.safety.disclosure/issue/plan`、
+`sc.subcontract.plan/request/settlement`、`sc.workbench.item`。
+
+### 2. 影响：7 条未声明原生按钮从未被检查
+
+把这 25 个模型纳入扫描后，原「24 条登记」之外多出 7 条未声明按钮：
+
+| model | method | class | 实测行为 |
+|---|---|---|---|
+| `sc.material.purchase.request` | `action_create_rfq` | `document_helper` | `create` `sc.material.rfq`，不改自身状态 |
+| `sc.material.purchase.request` | `action_create_purchase_order` | `document_helper` | `create` `purchase.order`，不改自身状态 |
+| `sc.material.purchase.request` | `action_view_rfqs` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.material.purchase.request` | `action_view_purchase_orders` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.material.settlement` | `action_create_remaining_payment_request` | `document_helper` | `create` `payment.request`，自身状态不变 |
+| `sc.material.settlement` | `action_open_payment_request` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.plan` | `action_start` | **`state_transition_undeclared`** | `write({"state": "in_progress"})`，`confirmed → in_progress` |
+
+登记表因此从 24 条 / 25 occurrence / 16 模型变为 **31 条 / 32 occurrence / 19 模型**
+（`navigation` 11→14、`document_helper` 9→12、`state_transition_undeclared` 4→5）。
+
+### 3. `sc.plan.action_start` 同时是一条相位可达性缺口
+
+`sc.plan` 的 profile（经 `_confirm_done_profiles` 生成）声明了
+`state_phase = {draft, confirmed, in_progress, done, cancel, cancelled, legacy_confirmed}`，
+但 `state_actions` 的 `confirmed` 只有 `["complete", "reopen", "cancel"]` ——
+**没有任何声明动作能进入 `in_progress`**。原生视图里 `action_start` 正是那个入口
+（`invisible="state != 'confirmed'"`，`string="开始执行"`）。
+
+这与 `sc.general.contract.action_signed` 是同一类问题：**phase 声明了，进入它的动作没有声明**。
+本段仍按既定口径处理——登记、定性，不擅自补 purpose。
+
+### 4. 验收体系为什么没发现
+
+上一段的 8 个单测全部只做一件事：**验证守卫与它自己的登记表自洽**
+（登记一致、移除条目 FAIL、幽灵条目 stale、缺 reason FAIL……）。
+它们没有一条独立断言 **「守卫扫描的模型集 == 契约实际注册的模型集」**。
+于是「正则少抓 25 个模型」和「登记表也少 24 条」可以同时成立，两边互相印证，测试全绿。
+
+这正是「静默补齐」的镜像：不是前端补了业务语义，而是**验收工具静默缩小了自己的作用域**。
+
+### 5. 修复：用静态求值替代模式匹配，并把范围断言钉进单测
+
+新增 `scripts/verify/workflow_contract_profile_loader.py`：
+
+- 用 AST 求值 `PROFILE_BY_MODEL` 表达式，支持内联字面量、helper 调用、`**` 展开、`_()` 标记；
+- 只接受字面量表达式的白名单；遇到不支持的结构（推导式、模块属性、条件表达式……）
+  **抛 `ProfileSourceError` 而不是返回部分结果** —— 消费者永远不该静默扫一个子集；
+- 空注册表、非 dict 的 profile 条目同样拒绝。
+
+`native_view_workflow_action_coverage_guard.py` 的 `adopted_models()` /
+`declared_methods()` 改为调用该 loader；读不到注册表时守卫以 exit 1 fail-closed。
+
+补的单测：
+
+- `test_workflow_contract_profile_loader.py`（8 tests）：真实注册表读全、helper 生成的
+  `sc.plan` 在内、helper 绑定的方法计入声明集、`**` 展开、以及四类 fail-closed
+  （不支持的表达式 / 缺注册表 / 空注册表 / 非 profile 条目）；
+- `test_native_view_workflow_action_coverage_guard.py` 新增 2 tests（共 10）：
+  `test_helper_built_profiles_are_scanned_too` 断言几个 helper 生成的模型确实在扫描集里；
+  `test_a_helper_built_model_transition_must_be_registered` 断言移除 `action_start`
+  登记后守卫会 FAIL。
+
+### 6. 七问
+
+- **Formal Product Layer**：P4 ops/verify 工具（`scripts/verify`、`config/contract` 登记）。
+  不引入业务语义。
+- **Layer Target**：`scripts/verify/workflow_contract_profile_loader.py`、
+  `scripts/verify/native_view_workflow_action_coverage_guard.py`、
+  `scripts/verify/test_workflow_contract_profile_loader.py`、
+  `scripts/verify/test_native_view_workflow_action_coverage_guard.py`、
+  `config/contract/native_view_undeclared_actions.v1.json`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`scripts/verify` + 仓库级 `make` 门禁；被扫描对象仍是 `smart_construction_core`
+  的 workflow profile 与各模块原生视图。
+- **Standard vs User-Specific**：平台机制层——「契约声明 vs 原生呈现」的覆盖口径对每个部署一致。
+- **Why Here**：loader 与守卫同址；登记表与其它契约侧登记同址；仍挂在既有 v2 聚合下。
+- **Why Not Elsewhere**：不改 `workflow_contract_service.py` 去补 purpose（那是发明业务语义，
+  仍由业务权威决定）；不改前端渲染去隐藏按钮；不为了迁就旧正则而恢复内联写法。
+- **Blast Radius**：新增一个只读静态模块与两个单测；登记表 31 条；两处聚合依赖不变。
+  不改业务模型、契约投影、前端渲染、权限。受影响面仅为 `verify.unified_page_contract.v2*`，已验证 exit=0。
+
+### 7. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.native_view.workflow_action_coverage` | PASS（`registered=31 document_helper=12 navigation=14 state_transition_undeclared=5`；8 + 10 tests OK） |
+| 口径反证：回填旧正则模型集 | `models=40 undeclared=24 has_action_start=False`；求值口径 `models=65 undeclared=31 has_action_start=True` |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1348 scripts (1224 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make ci.generated_reports.guard` | PASS（test inventory 1416 entries 等全部 current） |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make verify.unified_page_contract.v2.professional_backend` | **exit=0** |
+| `make ci.local.iteration` | PASS `change_state=dirty` |
+
+### 8. 剩余（显式登记，不在本段）
+
+- **phase 覆盖完备性**尚未守卫：`state_phase` 是否覆盖该模型 `state` selection 的全部取值。
+  已验证 34/40 内联模型可直接 AST 解析、其余 6 个经 `ScStateMachine.selection(...)`；
+  当前已知一处真实缺口：`sc.general.contract` 的 `legacy_confirmed` 未在 `state_phase` 中声明
+  （同类模型如 `sc.expense.claim`、`sc.payment.execution` 都声明了该相位）。这是**投影缺口**，
+  应改契约投影；本段不顺手改，避免把两个口径混在一笔里。
+- **phase 可达性**：`sc.plan.in_progress`、`sc.general.contract.signed` 已通过
+  `state_transition_undeclared` 登记显式化；是否补声明由业务权威决定。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
