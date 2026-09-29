@@ -302,6 +302,73 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             del INVENTORY.P3_STATE_BAND_OWNERSHIP[source]
         self.assertTrue(any(source in failure for failure in failures), failures)
 
+    def test_p3_designer_and_tree_bands_are_owned_by_governed_primitives(self) -> None:
+        """The designer and the dedicated tree render their empty bands through
+        the governed primitive instead of a hand-written class, and the record
+        names those exact surfaces."""
+        retired = {
+            "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue": (
+                'class="contract-form-field-search-empty"',
+                '<div v-else class="contract-field-selection-empty">',
+                'class="contract-form-operation-log-empty"',
+            ),
+            "frontend/apps/web/src/views/MenuConfigView.vue": ("menu-selected-panel--empty",),
+            "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue": (
+                'class="approval-step-empty">',
+            ),
+        }
+        for source, gone in retired.items():
+            self.assertTrue(INVENTORY.is_p3(source), source)
+            self.assertIn(source, INVENTORY.P3_STATE_BAND_OWNERSHIP)
+            text, _ = INVENTORY.resolve_source_text(ROOT / source)
+            self.assertIn("ScEmptyState:empty", INVENTORY.rendered_state_bands(text), source)
+            for fragment in gone:
+                self.assertNotIn(fragment, text, f"{source} still renders {fragment}")
+        self.assertEqual(
+            INVENTORY.P3_STATE_BAND_OWNERSHIP["frontend/apps/web/src/views/BusinessConfigSurfaceView.vue"],
+            ("ScErrorState:error", "ScInlineState:error", "ScInlineState:loading", "ScInlineState:success"),
+        )
+
+    def test_p3_state_band_ownership_fails_closed_on_a_dropped_designer_band(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace("<ScEmptyState", "<p data-dropped-governed-primitive")
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScEmptyState:empty" in failure for failure in failures),
+            failures,
+        )
+
+    def test_p3_state_band_ownership_fails_closed_on_a_changed_inline_state(self) -> None:
+        source = "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace('state="success"', 'state="info"')
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScInlineState:success" in failure for failure in failures),
+            failures,
+        )
+
     def test_external_template_sources_are_counted(self) -> None:
         self.assertEqual(self.report["p3OwnershipDeferred"]["externalTemplateCount"], 2)
 

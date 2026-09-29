@@ -64,6 +64,15 @@ P3_STATE_BAND_OWNERSHIP: dict[str, tuple[str, ...]] = {
         "ScInlineState:loading",
     ),
     "frontend/apps/web/src/views/ReleaseOperatorView.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/MenuConfigView.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue": (
+        "ScErrorState:error",
+        "ScInlineState:error",
+        "ScInlineState:loading",
+        "ScInlineState:success",
+    ),
 }
 DEDICATED_STATE_PRIMITIVE = {
     "ScLoading": "loading",
