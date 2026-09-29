@@ -149,7 +149,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(88px, 0.35fr) minmax(112px, 0.4fr);
 }
 
-.menu-detail-grid label {
+.menu-detail-grid > label:not(.sc-checkbox) {
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -158,7 +158,6 @@
 }
 
 .menu-visible-toggle {
-  grid-template-columns: auto 1fr;
   align-content: end;
   align-items: center;
   box-sizing: border-box;

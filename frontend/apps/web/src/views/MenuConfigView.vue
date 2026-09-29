@@ -4,6 +4,10 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
+import ScNumberInput from '../components/design-system/ScNumberInput.vue';
+import ScRadio from '../components/design-system/ScRadio.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -37,7 +41,7 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { createMenuConfigTree, type MenuConfigDropPosition } from './menuConfig/createMenuConfigTree';
 import { useMenuTreeEditor } from './menuConfig/useMenuTreeEditor';
 import { createMenuTreeAdapter, type RuntimeMenuConfigGroup } from './menuConfig/menuTreeAdapter';
-import { checkedValue, cloneDraft, defaultDraft, defaultDraftForEmpty, inputValue, normalizeDraft, numericValue, type DraftPolicy } from './menuConfig/menuDraftAdapter';
+import { cloneDraft, defaultDraft, defaultDraftForEmpty, normalizeDraft, type DraftPolicy } from './menuConfig/menuDraftAdapter';
 import { persistMenuSaveNotice, storedMenuSaveNotice } from './menuConfig/menuSaveNotice';
 type FlatRow = {
   menu: MenuConfigMenu;

@@ -169,28 +169,8 @@ tr.dirty td:first-child {
   white-space: nowrap;
 }
 
-.cell-input {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 30px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 4px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  padding: 0 8px;
-}
 
-.number-input {
-  text-align: center;
-}
 
-.group-domain-select {
-  min-width: 0;
-  height: 30px;
-  padding: 0 6px;
-}
 
 .group-cell {
   display: grid;
@@ -218,21 +198,8 @@ tr.dirty td:first-child {
   background: var(--sc-app-panel);
 }
 
-.group-check-item {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
-  align-items: center;
-  min-height: 18px;
-  min-width: 0;
-  gap: 4px;
-  color: var(--sc-app-text-primary);
-  font-size: 11px;
-  line-height: 1.4;
-}
+.group-check-item { min-width: 0; font-size: 11px; }
 
-.group-check-item input {
-  margin: 0;
-}
 
 .group-check-item span {
   overflow: hidden;
@@ -367,4 +334,10 @@ tr.dirty td:first-child {
   .table-wrap {
     max-height: none;
   }
+}
+
+.menu-control {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }

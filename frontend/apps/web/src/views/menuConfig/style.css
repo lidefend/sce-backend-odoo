@@ -270,7 +270,7 @@
   gap: 10px;
 }
 
-.create-form label {
+.create-form > label:not(.sc-checkbox) {
   display: grid;
   gap: 6px;
   color: var(--sc-app-text-secondary);
@@ -278,10 +278,8 @@
 }
 
 .create-check {
-  grid-template-columns: auto 1fr;
-  align-items: end;
-  align-content: end;
-  min-height: 58px;
+  align-self: end;
+  min-height: 32px;
 }
 
 .create-panel-footer {

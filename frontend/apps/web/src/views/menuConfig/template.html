@@ -97,13 +97,13 @@
         </span>
       </div>
       <div v-if="versionState?.versions.length" class="version-list">
-        <label
+        <div
           v-for="version in versionState.versions"
           :key="version.id"
-          class="version-item"
+          class="version-item" @click="selectedVersionNo = version.version_no"
           :class="{ selected: selectedVersionNo === version.version_no, current: version.version_no === versionState?.contract?.version_no }"
         >
-          <input v-model.number="selectedVersionNo" type="radio" :value="version.version_no" />
+          <ScRadio name="menu-config-version" :checked="selectedVersionNo === version.version_no" :value="version.version_no" :label="`版本 ${version.version_no}`" @update:checked="checked => { if (checked) selectedVersionNo = version.version_no; }" />
           <span class="version-title">
             版本 {{ version.version_no }}
             <b v-if="version.version_no === versionState?.contract?.version_no">当前</b>
@@ -111,7 +111,7 @@
           <span class="version-meta">配置 {{ version.summary.policy_count }} 项</span>
           <span class="version-meta">隐藏 {{ version.summary.hidden_count }}，改名 {{ version.summary.renamed_count }}</span>
           <span class="version-meta">移动 {{ version.summary.moved_count }}，排序 {{ version.summary.reordered_count }}</span>
-        </label>
+        </div>
       </div>
       <div v-if="selectedRollbackVersion" class="version-preview">
         <span class="panel-kicker">准备回滚</span>
@@ -148,30 +148,19 @@
         </label>
         <label>
           <span>上级菜单</span>
-          <select v-model.number="createForm.parent_menu_id" class="cell-input">
-            <option v-if="!createParentOptions.length" :value="0" disabled>暂无可选业务父级</option>
-            <option v-for="target in createParentOptions" :key="target.id" :value="target.id">
-              {{ parentOptionLabel(target) }}
-            </option>
-          </select>
+          <ScSelect class="menu-control" :model-value="createForm.parent_menu_id" @update:model-value="createForm.parent_menu_id = Number($event)"
+                  :options="createParentOptions.length ? createParentOptions.map(target => ({value: target.id, label: parentOptionLabel(target)})) : [{value: 0, label: '暂无可选业务父级', disabled: true}]" />
         </label>
         <label>
           <span>复制已有入口</span>
-          <select v-model.number="createForm.source_menu_id" class="cell-input">
-            <option :value="0">只创建分组菜单</option>
-            <option v-for="source in copySourceOptions" :key="source.id" :value="source.id">
-              {{ menuPathLabel(source) }}
-            </option>
-          </select>
+          <ScSelect class="menu-control" :model-value="createForm.source_menu_id" @update:model-value="createForm.source_menu_id = Number($event)"
+                  :options="[{value: 0, label: '只创建分组菜单'}, ...copySourceOptions.map(source => ({value: source.id, label: menuPathLabel(source)}))]" />
         </label>
         <label>
           <span>排序号</span>
-          <input v-model.number="createForm.sequence" class="cell-input" type="number" placeholder="自动" />
+          <ScNumberInput :model-value="createForm.sequence" @update:model-value="createForm.sequence = Number($event || 0)" class="menu-control"  placeholder="自动" />
         </label>
-        <label class="create-check">
-          <input v-model="createForm.visible" type="checkbox" />
-          <span>创建后显示</span>
-        </label>
+        <ScCheckbox class="create-check" v-model:checked="createForm.visible"  >创建后显示</ScCheckbox>
         <label>
           <span>备注</span>
           <ScInput v-model="createForm.note" class="menu-text-input" type="text" placeholder="可选" />
@@ -307,39 +296,22 @@
             <div class="menu-detail-grid menu-detail-grid--placement">
               <label>
                 <span>移动到上级</span>
-                <select
-                  class="cell-input"
-                  :value="selectedDraft.target_parent_menu_id || 0"
-                  @change="updateDraft(selectedMenu.id, { target_parent_menu_id: numericValue($event) })"
-                >
-                  <option :value="0">不移动</option>
-                  <option
-                    v-for="target in parentOptions(selectedMenu.id)"
-                    :key="target.id"
-                    :value="target.id"
-                  >
-                    {{ parentOptionLabel(target) }}
-                  </option>
-                </select>
+                <ScSelect class="menu-control" :model-value="selectedDraft.target_parent_menu_id || 0" @update:model-value="updateDraft(selectedMenu.id, { target_parent_menu_id: Number($event) })"
+                  :options="[{value: 0, label: '不移动'}, ...parentOptions(selectedMenu.id).map(target => ({value: target.id, label: parentOptionLabel(target)}))]" />
               </label>
               <label>
                 <span>排序号</span>
-                <input
-                  class="cell-input"
-                  type="number"
-                  :value="selectedDraft.sequence_override || ''"
+                <ScNumberInput
+                  class="menu-control"
+                  :model-value="selectedDraft.sequence_override || undefined"
                   :placeholder="String(selectedMenu.sequence || 0)"
-                  @input="updateDraft(selectedMenu.id, { sequence_override: numericValue($event) })"
+                  @update:model-value="updateDraft(selectedMenu.id, { sequence_override: Number($event || 0) })"
                 />
               </label>
-              <label class="menu-visible-toggle">
-                <input
-                  type="checkbox"
+              <ScCheckbox class="menu-visible-toggle"
                   :checked="selectedDraft.visible"
-                  @change="updateDraft(selectedMenu.id, { visible: checkedValue($event) })"
-                />
-                <span>显示菜单</span>
-              </label>
+                  @update:checked="updateDraft(selectedMenu.id, { visible: $event })"
+                >显示菜单</ScCheckbox>
             </div>
           </div>
           <div class="menu-role-panel menu-detail-section">
@@ -358,29 +330,18 @@
                 <ScButton type="button" title="移除业务角色" @click="removeRoleGroup(selectedMenu.id, groupId)">移除</ScButton>
               </span>
             </div>
-            <select
-              class="cell-input group-domain-select"
-              :value="roleGroupDomainForMenu(selectedMenu.id)"
-              @change="setRoleGroupDomain(selectedMenu.id, inputValue($event))"
-            >
-              <option v-for="domain in roleGroupDomainOptions" :key="domain" :value="domain">
-                {{ domain }}
-              </option>
-            </select>
+            <ScSelect class="menu-control" :model-value="roleGroupDomainForMenu(selectedMenu.id)" @update:model-value="setRoleGroupDomain(selectedMenu.id, $event)"
+                  :options="roleGroupDomainOptions.map(domain => ({value: domain, label: domain}))" />
             <div class="group-check-list menu-role-check-list">
-              <label
+              <ScCheckbox
                 v-for="group in scopedRoleGroupOptions(selectedMenu.id)"
                 :key="`selected-${selectedMenu.id}-scope-${group.id}`"
                 class="group-check-item"
                 :title="group.display_name"
-              >
-                <input
-                  type="checkbox"
+
                   :checked="isRoleGroupSelected(selectedMenu.id, group.id)"
-                  @change="toggleRoleGroup(selectedMenu.id, group.id, checkedValue($event))"
-                />
-                <span>{{ group.display_name }}</span>
-              </label>
+                  @update:checked="toggleRoleGroup(selectedMenu.id, group.id, $event)"
+                >{{ group.display_name }}</ScCheckbox>
             </div>
             <div class="group-scope-actions">
               <span class="group-scope-count">{{ scopedRoleGroupSelectionText(selectedMenu.id) }}</span>
@@ -487,10 +448,7 @@
             </div>
             <div class="table-toolbar-actions">
               <span class="bulk-stat">未保存 {{ dirtyCount }}</span>
-              <label class="toggle-filter">
-                <input v-model="onlyConfigured" type="checkbox" />
-                只看已配置
-              </label>
+              <ScCheckbox class="toggle-filter" v-model:checked="onlyConfigured"  >只看已配置</ScCheckbox>
               <ScButton type="button" variant="secondary" @click="bulkPanelOpen = !bulkPanelOpen">
                 {{ bulkPanelOpen ? '收起批量维护表格' : '展开批量维护表格' }}
               </ScButton>
@@ -559,37 +517,22 @@
                 <td><span class="muted">{{ menuParentLabel(row.menu) }}</span></td>
                 <td class="level-col">{{ row.level }}</td>
                 <td class="sequence-col">
-                  <input
-                    class="cell-input number-input"
-                    type="number"
-                    :value="draftFor(row.menu.id).sequence_override || ''"
+                  <ScNumberInput
+                    class="menu-control number-input"
+
+                    :model-value="draftFor(row.menu.id).sequence_override || undefined"
                     :placeholder="String(row.menu.sequence || 0)"
                     title="可直接在左侧树拖动同级菜单排序，也可在这里输入精确顺序"
-                    @input="updateDraft(row.menu.id, { sequence_override: numericValue($event) })"
+                    @update:model-value="updateDraft(row.menu.id, { sequence_override: Number($event || 0) })"
                   />
                 </td>
                 <td>
-                  <select
-                    class="cell-input"
-                    :value="draftFor(row.menu.id).target_parent_menu_id || 0"
-                    @change="updateDraft(row.menu.id, { target_parent_menu_id: numericValue($event) })"
-                  >
-                    <option :value="0">不移动</option>
-                    <option
-                      v-for="target in parentOptions(row.menu.id)"
-                      :key="target.id"
-                      :value="target.id"
-                    >
-                      {{ parentOptionLabel(target) }}
-                    </option>
-                  </select>
+                  <ScSelect class="menu-control" :model-value="draftFor(row.menu.id).target_parent_menu_id || 0" @update:model-value="updateDraft(row.menu.id, { target_parent_menu_id: Number($event) })"
+                  :options="[{value: 0, label: '不移动'}, ...parentOptions(row.menu.id).map(target => ({value: target.id, label: parentOptionLabel(target)}))]" />
                 </td>
                 <td class="check-col">
-                  <input
-                    type="checkbox"
-                    :checked="draftFor(row.menu.id).visible"
-                    @change="updateDraft(row.menu.id, { visible: checkedValue($event) })"
-                  />
+                  <ScCheckbox :checked="draftFor(row.menu.id).visible" label="显示菜单" hide-label
+                    @update:checked="updateDraft(row.menu.id, { visible: $event })" />
                 </td>
                 <td>
                   <div class="group-cell">
@@ -604,29 +547,19 @@
                         <ScButton type="button" title="移除业务角色" @click="removeRoleGroup(row.menu.id, groupId)">移除</ScButton>
                       </span>
                     </div>
-                    <select
-                      class="cell-input group-domain-select"
-                      :value="roleGroupDomainForMenu(row.menu.id)"
-                      @change="setRoleGroupDomain(row.menu.id, inputValue($event))"
-                    >
-                      <option v-for="domain in roleGroupDomainOptions" :key="domain" :value="domain">
-                        {{ domain }}
-                      </option>
-                    </select>
+                    <ScSelect class="menu-control" :model-value="roleGroupDomainForMenu(row.menu.id)" @update:model-value="setRoleGroupDomain(row.menu.id, $event)"
+                  :options="roleGroupDomainOptions.map(domain => ({value: domain, label: domain}))" />
                     <div class="group-check-list">
-                      <label
+                      <ScCheckbox
                         v-for="group in scopedRoleGroupOptions(row.menu.id)"
                         :key="`${row.menu.id}-scope-${group.id}`"
                         class="group-check-item"
                         :title="group.display_name"
-                      >
-                        <input
-                          type="checkbox"
+
+
                           :checked="isRoleGroupSelected(row.menu.id, group.id)"
-                          @change="toggleRoleGroup(row.menu.id, group.id, checkedValue($event))"
-                        />
-                        <span>{{ group.display_name }}</span>
-                      </label>
+                          @update:checked="toggleRoleGroup(row.menu.id, group.id, $event)"
+                        >{{ group.display_name }}</ScCheckbox>
                     </div>
                     <div class="group-scope-actions">
                       <span class="group-scope-count">{{ scopedRoleGroupSelectionText(row.menu.id) }}</span>
