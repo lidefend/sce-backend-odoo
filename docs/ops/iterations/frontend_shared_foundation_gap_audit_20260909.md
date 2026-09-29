@@ -3325,6 +3325,31 @@ python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
 | `make verify.frontend.typecheck.strict` | PASS（两套 `vue-tsc --noEmit`） |
 | `make verify.unified_page_contract.v2.regression_audit.host` | **not_run（环境）**：该守卫打 `http://127.0.0.1/api/v1/intent` + `DB=sc_demo` 的活体实例，当前 80 端口返回 HTTP 500，未进入装配逻辑；属宿主验收守卫，不在迭代 profile 内，非本段回归 |
 
+### 5.1 运行时核对（本地 dev 实例 `127.0.0.1:8070`，只读 `ui.contract.v2`）
+
+`sc-local-dev-odoo-1` 的 `addons_path` 含 `/mnt/source-addons`，即本仓库 `addons/` 的 bind mount，
+故该实例直接运行本段源码（容器内 `unified_page_contract_v2_assembler.py:815-816` 即修复后的两行）。
+
+按**泄漏路径**复现：`op=action_open`、**不传 `view_type`**（`ActionView.vue:2386` 的真实调用形态，
+`params.view_type` 缺省时才回退到 `head.view_type`）：
+
+| 入口 | 声明 `view_mode` | 返回 `viewType` | 返回 `layoutType` | 返回 `pageId` |
+|---|---|---|---|---|
+| `product.packaging`（action 185） | `tree,form` | `list` | `table` | `product.packaging.tree` |
+| `tier.review`（action 579） | `tree,form` | `list` | `table` | `tier.review.tree` |
+
+`pageId` 的末段是**单一视图 token**（`tree`），证明拼接串在进入枚举前已被解析；
+修复前同一请求的装配输出为 `viewType="tree,form" / pageId="…tree,form"`（由第 4 节单测负例钉死）。
+
+**环境限制（如实登记，非产品缺口）**：`admin` 账号对 `sc.general.contract`（action 687）、
+`payment.request`（action 688）无读权限，`ui.contract.v2` 返回 500
+（日志：`resolved search view unavailable for sc.general.contract: You are not allowed to access …`）。
+业务角色登录在本库已不可用：该库 `res_users.password` 用 pbkdf2-sha512 校验
+`sc_test_admin` + `SC_DEMO_USER_PASSWORD` = **False**（同一方法校验 `admin` + `ADMIN_PASSWD` = **True**，
+方法本身有效）。即该库的 demo 业务角色口令与 `SC_DEMO_USER_PASSWORD` 已不一致，恢复它属于 P4 数据动作，
+**不在本批授权范围**；因此中文业务入口的运行时逐条取证留待该凭据恢复后进行。
+这不影响本段结论：缺陷路径已由 `tree,form` 类真实入口在活体实例上复现并修复。
+
 ### 6. 剩余（显式登记，不在本段）
 
 - **缺失 `view_type` 仍默认 `form`**：缺口应显现而非猜测。修法是让缺失走既有诊断/显式类型，
@@ -3332,6 +3357,8 @@ python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
 - `page_assembler` 继续发布 action 级视图列表是**正确语义**，不是欠账；转换点在 page 级装配器。
 - 前端 `standardPageType.ts` 的 `specialized → legacy-form-section` 兜底**保留**：它是契约未声明
   可渲染页面类型时的 fail-closed 兜底，本段只是让合法输入不再误落入它。
+- 本地 `sc_dev_demo` 的 demo 业务角色口令与 `SC_DEMO_USER_PASSWORD` 不一致（见 5.1）；
+  恢复它是 P4 数据动作，需单独授权。
 - `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
 
 ### 状态
