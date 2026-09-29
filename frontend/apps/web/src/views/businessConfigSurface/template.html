@@ -38,11 +38,11 @@
     <ScErrorState v-if="surfaceError" data-business-config-surface-error="true" title="配置工作台读取失败" :description="surfaceError">
       <template #actions><ScButton variant="secondary" :disabled="loading" @click="retryBusinessConfigSurface">{{ loading ? '重试中...' : '重试读取' }}</ScButton></template>
     </ScErrorState>
-    <div v-else-if="error" class="status error">{{ error }}</div>
-    <div v-else-if="message.text" class="status ok">
+    <ScInlineState v-else-if="error" state="error" :label="error" />
+    <ScInlineState v-else-if="message.text" state="success">
       <span>{{ message.text }}</span>
       <small v-if="advancedPanelOpen && message.detail">{{ message.detail }}</small>
-    </div>
+    </ScInlineState>
 
     <BusinessConfigStartPanel
       v-if="!surfaceError && !coverageScan"
@@ -104,7 +104,7 @@
       <ScButton type="button" class="ghost small" :disabled="loading" @click="applyScopeAndLoad">读取配置对象</ScButton>
     </section>
 
-    <section v-if="loading" class="loading-state">正在读取配置能力...</section>
+    <ScInlineState v-if="loading" state="loading" label="正在读取配置能力..." />
     <BusinessConfigCoverageWorkspace
       v-if="!surfaceError && coverageScan"
       v-model:page-search="pageSearch"

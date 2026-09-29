@@ -11,6 +11,7 @@ import ScRadio from '../components/design-system/ScRadio.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
+import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import BusinessConfigImpactDialog from './businessConfigSurface/BusinessConfigImpactDialog.vue';

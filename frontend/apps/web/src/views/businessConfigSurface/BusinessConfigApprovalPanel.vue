@@ -111,10 +111,11 @@
           </div>
         </div>
       </div>
-      <div v-else class="approval-step-empty">
-        当前没有审批步骤，启用审批后可添加办理节点。
-        <ScButton type="button" class="ghost small" :disabled="loading" @click="$emit('enableWithDefaultStep')">启用并添加步骤</ScButton>
-      </div>
+      <ScEmptyState v-else class="approval-step-empty" density="compact" :heading-level="4" title="当前没有审批步骤" description="启用审批后可添加办理节点。">
+        <template #actions>
+          <ScButton type="button" class="ghost small" :disabled="loading" @click="$emit('enableWithDefaultStep')">启用并添加步骤</ScButton>
+        </template>
+      </ScEmptyState>
       <div v-if="validationMessage" class="approval-validation">{{ validationMessage }}</div>
     </section>
     <div class="edit-panel-actions">
@@ -137,6 +138,7 @@ import ScCard from '../../components/design-system/ScCard.vue';
 import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 
 type ApprovalForm = {
   approval_required: boolean;

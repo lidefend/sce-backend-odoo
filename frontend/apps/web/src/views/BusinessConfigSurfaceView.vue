@@ -16,6 +16,7 @@ import BusinessConfigVersionPanel from './businessConfigSurface/BusinessConfigVe
 import ScInput from '../components/design-system/ScInput.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScErrorState from '../components/design-system/ScErrorState.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 import {
   auditBusinessAnalysisConfig,
   auditBusinessListSearchConfig,
@@ -29,7 +30,6 @@ import {
   type BusinessConfigCoverageScanItem,
   type BusinessConfigCoverageScanPayload,
   type BusinessConfigListSearchAuditPayload,
-  type BusinessConfigRemediationAction,
   type BusinessConfigSurfacePayload,
 } from '../api/businessConfig';
 import {

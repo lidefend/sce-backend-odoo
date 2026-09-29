@@ -115,7 +115,7 @@ export async function checkConfigurationCenterBatch({ page, scope, intent, out, 
       await page.waitForURL((url) => url.searchParams.get('action_id') === String(row.action_id));
       await page.getByRole('button', { name: '配置表单与布局', exact: true }).waitFor();
       assert.equal(new URL(page.url()).searchParams.get('action_id'), String(row.action_id));
-      await page.waitForFunction(() => !document.querySelector('.loading-state'));
+      await page.waitForFunction(() => !document.querySelector('[data-semantic-component="ScInlineState"][data-state="loading"]'));
       console.log(`[configuration-center] refresh ${row.action_id}`);
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.getByRole('button', { name: '配置表单与布局', exact: true }).waitFor();

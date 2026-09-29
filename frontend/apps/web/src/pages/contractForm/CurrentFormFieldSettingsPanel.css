@@ -284,12 +284,6 @@
   white-space: nowrap;
 }
 
-.contract-form-field-search-empty {
-  margin: 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
 .contract-form-field-navigator {
   display: grid;
   gap: 6px;
@@ -427,8 +421,7 @@
   gap: 8px;
 }
 
-.contract-field-selection-card,
-.contract-field-selection-empty {
+.contract-field-selection-card {
   display: grid;
   gap: 12px;
   min-width: 0;
@@ -438,9 +431,12 @@
   background: var(--sc-app-bg);
 }
 
-.contract-field-selection-main,
 .contract-field-selection-empty {
   min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--sc-app-border);
+  border-radius: 8px;
+  background: var(--sc-app-bg);
 }
 
 .contract-field-selection-main {
@@ -449,15 +445,13 @@
 }
 
 .contract-field-selection-main span,
-.contract-field-selection-main small,
-.contract-field-selection-empty span {
+.contract-field-selection-main small {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
   line-height: 1.35;
 }
 
-.contract-field-selection-main strong,
-.contract-field-selection-empty strong {
+.contract-field-selection-main strong {
   color: var(--sc-app-text-primary);
   font-size: 14px;
   overflow-wrap: anywhere;
@@ -791,8 +785,7 @@
   font-size: 13px;
 }
 
-.contract-form-operation-log header span,
-.contract-form-operation-log-empty {
+.contract-form-operation-log header span {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
@@ -854,10 +847,6 @@
 
 .contract-form-operation-log-status--reverted {
   color: var(--sc-semantic-text-muted);
-}
-
-.contract-form-operation-log-empty {
-  margin: 0;
 }
 
 .contract-field-governance-footer {

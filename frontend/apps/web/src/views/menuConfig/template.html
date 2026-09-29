@@ -363,13 +363,13 @@
             </div>
           </div>
         </section>
-        <section v-else class="menu-selected-panel menu-primary-panel menu-selected-panel--empty" aria-label="菜单配置概览">
-          <div>
-            <span class="panel-kicker">菜单配置</span>
-            <h2>全部菜单</h2>
-            <p>从左侧选择一个菜单后，在这里调整名称、父级、显示范围和业务角色。</p>
-          </div>
-        </section>
+        <ScEmptyState
+          v-else
+          class="menu-empty-panel menu-primary-panel"
+          :heading-level="2"
+          title="全部菜单"
+          description="从左侧选择一个菜单后，在这里调整名称、父级、显示范围和业务角色。"
+        />
 
         <aside class="menu-side-panel" aria-label="菜单配置摘要">
           <div class="menu-side-panel-head">
