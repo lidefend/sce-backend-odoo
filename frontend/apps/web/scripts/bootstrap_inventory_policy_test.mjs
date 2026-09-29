@@ -42,3 +42,9 @@ test('menu panel read does not allow menu writes', () => {
   assert.equal(allow('POST', '/api/v1/intent', {intent:'ui.menu_config.panel.get'}), true);
   for (const intent of ['ui.menu_config.panel.set','ui.menu_config.entry.create','ui.menu_config.entry.delete','ui.menu_config.rollback']) assert.equal(allow('POST','/api/v1/intent',{intent}),false);
 });
+
+test('menu versions read never authorizes rollback', () => {
+  assert.equal(allow('POST','/api/v1/intent',{intent:'ui.menu_config.versions'}),true);
+  for (const key of ['allow_bootstrap','allowBootstrap','bootstrap']) assert.equal(allow('POST','/api/v1/intent',{intent:'ui.menu_config.versions',params:{[key]:true}}),false);
+  for (const intent of ['ui.menu_config.rollback','ui.menu_config.menu.create','ui.menu_config.menu.delete']) assert.equal(allow('POST','/api/v1/intent',{intent}),false);
+});

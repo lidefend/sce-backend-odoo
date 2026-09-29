@@ -11,9 +11,9 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/config02-20260929'
+OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/config04-20260929-r2'
 DIST = OUTPUT / 'dist'
-PREVIOUS = ROOT.parent / 'sce-offrepo/artifacts/config01-20260929/dist'
+PREVIOUS = ROOT.parent / 'sce-offrepo/artifacts/config04-20260929/dist'
 INPUTS = ['frontend', ':!frontend/apps/web/scripts']
 
 

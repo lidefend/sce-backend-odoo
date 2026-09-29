@@ -507,3 +507,27 @@ the navigation repair, including synchronized selected/bulk text drafts, clear
 and restore, tree search, empty-create disabling and 1440/390 layouts. No menu
 save, create, publish or rollback request is executed; this closes presentation
 and read-projection scope only, not persistent configuration-write acceptance.
+
+
+### Menu configuration choice controls (WEB-CONFIG-04)
+
+Creation, selected-menu and bulk-row fields now use shared `ScSelect`,
+`ScNumberInput`, `ScCheckbox` and `ScRadio`; the native input/select path and its
+private border/padding styling exit this page. Option identities, the zero-value
+sentinels, parent exclusion rules, role catalogs, draft normalization and publish
+callbacks remain unchanged. Select values are converted to numeric menu IDs;
+numeric clearing retains zero while existing zero overrides display empty.
+Checkboxes consume booleans and own their labels. Version radios select only on
+checked=true and retain the common group name. Number controls use the official
+normal theme so narrow ordering columns retain readable values.
+
+The dedicated tree, bulk editing table and page-level feedback remain specialized
+composition work. Control adoption does not establish save/publish/rollback
+acceptance, nor replace the server's configuration/permission constraints.
+
+
+CONFIG04 passes 24 scoped real-page checks, including number clearing/restoration,
+selected/bulk checkbox synchronization, role toggles, default-parent selection and
+both viewport popup bounds. Version reads succeed without bootstrap; the existing
+acceptance data has no historical versions, so live version-radio interaction is
+explicitly unverified. No persistent configuration write or fixture creation occurs.

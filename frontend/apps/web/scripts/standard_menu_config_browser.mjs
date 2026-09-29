@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsInventoryRequest } from './bootstrap_inventory_policy.mjs';
 const root=process.cwd(), base='http://127.0.0.1:5180';
-const build=JSON.parse(await fs.readFile(path.resolve(root,'../sce-offrepo/artifacts/config02-20260929/build-identity.json')));
+const build=JSON.parse(await fs.readFile(path.resolve(root,'../sce-offrepo/artifacts/config04-20260929-r2/build-identity.json')));
 assert.equal(createHash('sha256').update(Buffer.from(await fetch(`${base}${build.entry}`).then(r=>r.arrayBuffer()))).digest('hex'),build.entry_sha256);
 assert.equal(process.env.DB_NAME,'sc_frontend_acceptance');
 assert.ok(process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD);
@@ -40,11 +40,27 @@ try {
  const row=page.locator('tr.selected');const bulk=row.locator('[data-semantic-component="ScInput"] input').first();
  check(await bulk.inputValue(),'菜单验收未保存');await bulk.fill('');check(await name.inputValue(),'');
  await name.fill(original);check(await bulk.inputValue(),original);
+ report.step='choice controls';
+ const number=panel.locator('[data-semantic-component="ScNumberInput"] input');const bulkNumber=row.locator('[data-semantic-component="ScNumberInput"] input');
+ const oldNumber=await number.inputValue();await number.fill('31');await number.press('Tab');check(await bulkNumber.inputValue(),'31');
+ await number.fill('');await number.press('Tab');check(await bulkNumber.inputValue(),'');
+ await number.fill(oldNumber);await number.press('Tab');check(await bulkNumber.inputValue(),oldNumber);
+ const visible=panel.getByRole('checkbox',{name:'显示菜单',exact:true});const wasVisible=await visible.isChecked();
+ await panel.getByText('显示菜单',{exact:true}).click();check(await visible.isChecked(),!wasVisible);check(await row.getByRole('checkbox',{name:'显示菜单',exact:true}).isChecked(),!wasVisible);
+ await panel.getByText('显示菜单',{exact:true}).click();check(await visible.isChecked(),wasVisible);
+ const role=panel.locator('.group-check-item').first();const roleInput=role.getByRole('checkbox');const wasRole=await roleInput.isChecked();
+ await role.click();check(await roleInput.isChecked(),!wasRole);await role.click();check(await roleInput.isChecked(),wasRole);
+ const parent=panel.locator('[data-semantic-component="ScSelect"]').first();await parent.click();
+ await page.locator('.t-popup:visible').getByText('不移动',{exact:true}).click();check(((await parent.locator('input').inputValue()) || (await parent.innerText())).includes('不移动'),true);
  await page.getByRole('button',{name:'新增一级菜单',exact:true}).click();
  const createName=page.getByPlaceholder('输入业务菜单名称');await createName.fill('新菜单未保存');check(await createName.inputValue(),'新菜单未保存');
  await createName.fill('');check(await page.getByRole('button',{name:'创建菜单',exact:true}).isDisabled(),true);
  await page.getByRole('button',{name:'收起新增入口',exact:true}).click();
- for(const width of [1440,390]){await page.setViewportSize({width,height:950});await panel.scrollIntoViewIfNeeded();check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`menu-${width}.png`)});}
+ report.step='version selection';const versionResponse=page.waitForResponse(r=>(r.request().postData()||'').includes('ui.menu_config.versions'));await page.getByRole('button',{name:'查看菜单版本与回滚',exact:true}).click();
+ const versionHttp=await versionResponse;assert.equal(versionHttp.ok(),true);const versionPayload=await versionHttp.json();assert.equal(versionPayload.ok,true);assert.ok(Array.isArray(versionPayload.data?.versions));assert.equal(versionPayload.meta?.bootstrapped_from_current_policies,false);const radios=page.getByRole('radio');if(versionPayload.data?.versions?.length) await radios.first().waitFor();const radioCount=await radios.count();report.versionOptions=radioCount;
+ check(radioCount,versionPayload.data.versions.length);if(radioCount===1) report.uncovered=['版本互斥切换：现有数据仅一个版本'];if(radioCount){await radios.last().check();check(await page.getByRole('radio',{checked:true}).count(),1);await radios.first().check();check(await page.getByRole('radio',{checked:true}).count(),1);}
+ else report.uncovered=['版本单选：现有数据无历史版本，不新增fixture'];
+ for(const width of [1440,390]){await page.setViewportSize({width,height:950});await panel.scrollIntoViewIfNeeded();await parent.click();const option=page.locator('.t-popup:visible').getByText('不移动',{exact:true});await option.waitFor({state:'visible'});const bounds=await option.boundingBox();check(Boolean(bounds && bounds.x>=0 && bounds.x+bounds.width<=width+1),true);await option.click();await option.waitFor({state:'hidden'});check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`menu-${width}.png`)});}
  // Unsaved local state is discarded by closing the browser; no config action is executed.
  await page.unrouteAll({behavior:'wait'});check(report.errors,[]);check(report.blocked,[]);report.status='passed';
 }catch(e){await page?.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});report.status='failed';report.error=String(e.message).split('\n')[0];process.exitCode=1;}

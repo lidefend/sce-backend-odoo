@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const base = 'http://127.0.0.1:5180';
 const candidateStartup = process.env.BOOTSTRAP_SCOPE === 'candidate-startup';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `bootstrap-inventory-${Date.now()}`);
-const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config02-20260929/build-identity.json')));
+const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config04-20260929-r2/build-identity.json')));
 const bytes = Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()));
 assert.equal(createHash('sha256').update(bytes).digest('hex'), build.entry_sha256);
 assert.equal(process.env.DB_NAME, 'sc_frontend_acceptance');

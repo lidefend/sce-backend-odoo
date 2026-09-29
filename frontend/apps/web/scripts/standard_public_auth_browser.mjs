@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 const root = process.cwd();
-const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config02-20260929/build-identity.json')));
+const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config04-20260929-r2/build-identity.json')));
 const base = 'http://127.0.0.1:5180';
 assert.equal(createHash('sha256').update(Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()))).digest('hex'), build.entry_sha256);
 assert.equal(process.env.DB_NAME, 'sc_frontend_acceptance');

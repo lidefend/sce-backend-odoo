@@ -1878,3 +1878,49 @@ node语法/diff检查及对应真实12项已重验；产品L1/L2及构建输入�
 旧config01产物保留；5180继续config02，后端14e9db7c。后续文档/探针提交无addons变化。
 主线未集成、目标环境未部署、整体用户交付未验收。后续仍需专用配置页数字/选择/复选、
 反馈与树/设计器通用交互接管；不把103个可配置菜单节点当作正式89入口业务通过数。
+
+
+## WEB-CONFIG-04：菜单配置通用选择控件接管（进行中）
+基线6bd1c8eb clean；P0 frontend renderer MenuConfigView/menuConfig template与直接CSS。
+ScSelect/NumberInput/Checkbox/Radio替代原生控件，选项/草稿/语义继续现有P3权威，非P1/P2规则。
+DOM event改值协议；ID显式Number，数字清空仍0，复选boolean；旧input边框退出，树及批量表格保留。
+L0→L1 iteration→L2严格类型/primitive/配置回归→一次构建及受管菜单定向L4；无后端改动跳过L3，
+L5远端发布未进入。复用14e9db7c后端/sc_frontend_acceptance/5180，不保存配置或新建环境。
+首次编辑脚本匹配无span标签失败，文件未写入；修正标签转换后继续，非产品验证失败。
+
+
+WEB-CONFIG-04验证索引：
+- P0 cfc9e6b0，L1 `/tmp/web-config04-iteration-fixed.log`及final passed；编辑器转换产生空白尾空格，
+  diff检查发现后清理，初始iteration不作通过依据。严格类型、primitive 11事件例及配置回归
+  passed `/tmp/web-config04-tests.log`；style/预览6例/lint通过 `/tmp/web-config04-quality.log`
+  （lint仍0 errors/56 warnings）。共享单测不替代实际浏览器交互。
+- B线指出新增复选框会被.create-form label布局覆盖，已在初次构建前排除.sc-checkbox；
+  同时详情区排除对应根label，原生标签嵌套退出。无改变已验证业务回调。
+- 首次构建21.79秒 `/tmp/web-config04-build.log`，受管up；浏览器14项通过后下拉option角色
+  定位超时，原始 `menu-config-1790676000863/report.json`。截图证实选项可见；P4改为
+  可见.t-popup范围内的用户文案定位，避免全页同名当前值。数字窄列加减按钮挤压数值为真实
+  视觉缺陷，f80cbffd仅采用官方theme=normal，非重建控件或修改值语义。
+- r2 L1 `/tmp/web-config04-r2-iteration.log` passed；严格类型及primitive回归passed
+  `/tmp/web-config04-r2-tests.log`。仅主题变化，之前配置业务回归输入不变复用。
+  r2修正构建20.47秒 `/tmp/web-config04-build-r2.log`，受管up `/tmp/web-config04-up-r2.log`。
+- 版本handler可能由allow_bootstrap/allowBootstrap/bootstrap触发初始化；探针只读白名单拒绝
+  三别名真值，10例passed `/tmp/web-config04-policy-final.log`。版本响应必须HTTP成功、ok=true、
+  versions数组及bootstrapped=false，失败不冒称空数据；0/1版本显式标明相应覆盖限制。
+  不执行保存/创建/回滚；登录session及usage遥测仍允许。最终浏览器补验进行中。
+
+
+WEB-CONFIG-04 r2页面结果：24/24 passed `/tmp/web-config04-browser-final.log`，
+`artifacts/frontend-web-fix-20260928/menu-config-1790676155504/report.json`。数字输入/清空/恢复、
+单条-批量显示同步、角色文字切换恢复、父级0选项、两宽弹层边界及页面无溢出均通过。
+versions真实读取成功、bootstrapped=false、现有0版本，版本单选运行交互明确未覆盖；无新增fixture。
+截图处在关闭动画中，P4增加等待可见弹层隐藏后取景；仅采集工具改变，未重建产品。
+前端base f80cbffd63051180944fd691335f0d557047a2ad加明确P4/docs dirty scope，非冻结身份；
+entry index-Bax7D-I5.js，SHA256 80ca1ab6a1339e377c1c0e3aad45c732b8cbf545b9b1803e7d09bb9fb5c3d8d6。
+后端14e9db7c/addons不变，既有profile/库/端口/volume不变。B线值协议与样式修正无阻断，
+P4版本响应严格校验及可见popup范围已采纳。之前无关AUTH/BOOT/付款证据复用。
+
+最终采集24/24 passed `/tmp/web-config04-browser-capture.log`及
+`artifacts/frontend-web-fix-20260928/menu-config-1790676189351/report.json`；390截图复核正常，
+零页面错误/未登记请求。就本批控件读写草稿范围批次验收完成，版本单选无数据的运行覆盖限制保留。
+未保存/发布/创建/回滚菜单，浏览器关闭丢弃未保存状态；主线未集成、目标环境未部署、整体用户
+交付未验收。后续仅P4/docs提交不改变产品/后端输入，复用本次证据。旧config04/config02产物保留。

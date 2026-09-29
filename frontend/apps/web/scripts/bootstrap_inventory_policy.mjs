@@ -5,6 +5,7 @@ export function permitsInventoryRequest(method, pathname, body, allowNavigationT
   if (method !== 'POST' || pathname !== '/api/v1/intent') return false;
   const request = body?.params?.intent ? body.params : body;
   if (request?.intent === 'ui.business_config.change_set.open') return request.params?.resume_only === true && !request.params?.fresh;
+  if (request?.intent === 'ui.menu_config.versions') return !['allow_bootstrap', 'allowBootstrap', 'bootstrap'].some(key => request.params?.[key]);
   if (request?.intent === 'usage.track') return allowNavigationTelemetry;
   if (request?.intent === 'api.data') return ['list', 'read', 'default_get'].includes(request.params?.op);
   return reads.has(request?.intent);
