@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { resolveNativeSectionHeading } from '../src/pages/contractForm/nativeBusinessSection';
 import {
   collectNativeVisibleFieldNames,
   collectNativeVisibleSectionTitles,
@@ -6,7 +7,13 @@ import {
   isLayoutOnlyGroupContainer,
   type NativeLayoutLikeNode,
 } from '../src/pages/contractForm/nativeLayoutUtils';
-import { resolveFormActionPlaceholderGate } from '../src/pages/contractForm/formActionPlaceholderGate';
+import {
+  FORM_ACTION_PLACEHOLDER_BODY_KINDS,
+  classifyFormActionPlaceholderBody,
+  formBodyOwnsStructure,
+  resolveFormActionPlaceholderGate,
+  type FormActionPlaceholderBodyKind,
+} from '../src/pages/contractForm/formActionPlaceholderGate';
 import {
   isDraftOperationAllowed,
   resolveDesignerDraftOwnership,
@@ -87,7 +94,6 @@ const authorityOnly = resolveFormActionPlaceholderGate({
   workflowTransitionActionKeys: ['action_approve'],
   bodyActionKeys: ['action_print'],
 });
-assert.equal(authorityOnly.suppressSearchFilters, true, 'record-list presets leave a native-structure body');
 assert.equal(authorityOnly.suppressWorkflowTransitions, false, 'an uncarried transition keeps its entry');
 assert.equal(authorityOnly.suppressBodyActions, false, 'an uncarried body action keeps its entry');
 assert.deepEqual(authorityOnly.uncarriedActionKeys, ['action_approve', 'action_print']);
@@ -108,8 +114,8 @@ const nativeTree = resolveFormActionPlaceholderGate({
   bodyActionKeys: ['action_print'],
 });
 assert.deepEqual(
-  [nativeTree.suppressSearchFilters, nativeTree.suppressWorkflowTransitions, nativeTree.suppressBodyActions],
-  [true, true, true],
+  [nativeTree.suppressWorkflowTransitions, nativeTree.suppressBodyActions],
+  [true, true],
   'the native tree is itself the carrier',
 );
 const plainLegacy = resolveFormActionPlaceholderGate({
@@ -120,13 +126,13 @@ const plainLegacy = resolveFormActionPlaceholderGate({
   bodyActionKeys: [],
 });
 assert.deepEqual(
-  [plainLegacy.suppressSearchFilters, plainLegacy.suppressWorkflowTransitions, plainLegacy.suppressBodyActions],
-  [false, false, false],
+  [plainLegacy.suppressWorkflowTransitions, plainLegacy.suppressBodyActions],
+  [false, false],
   'a legacy body keeps its own action entries',
 );
-// The official form composition owns its body, so the record-list query presets close
-// there too. It must not, however, close an action entry that has no proven carrier:
-// this body is not a native tree, and a carried action is what closes those two.
+// The officially composed body owns its presentation (the record-list query block is
+// gone from the form entirely), but composition authority is still not structure
+// ownership: it must not close an action entry whose carrier is unproven.
 const officialComposition = resolveFormActionPlaceholderGate({
   useNativeFormTree: false,
   nativeStructureAuthority: '',
@@ -135,7 +141,6 @@ const officialComposition = resolveFormActionPlaceholderGate({
   workflowTransitionActionKeys: ['action_approve'],
   bodyActionKeys: ['action_print'],
 });
-assert.equal(officialComposition.suppressSearchFilters, true, 'an officially composed body hosts no record-list presets');
 assert.equal(officialComposition.suppressWorkflowTransitions, false, 'composition authority alone still cannot close an uncarried transition');
 assert.equal(officialComposition.suppressBodyActions, false, 'composition authority alone still cannot close an uncarried body action');
 assert.deepEqual(officialComposition.uncarriedActionKeys, ['action_approve', 'action_print']);
@@ -147,9 +152,45 @@ const officialCompositionCarried = resolveFormActionPlaceholderGate({
   workflowTransitionActionKeys: ['action_approve'],
   bodyActionKeys: [],
 });
-assert.equal(officialCompositionCarried.suppressSearchFilters, true);
 assert.equal(officialCompositionCarried.suppressWorkflowTransitions, false, 'a proven carrier closes the transition only on a structure-owned body');
 assert.equal(officialCompositionCarried.suppressBodyActions, false);
+
+// 8b. Body-kind completeness. The record-list query block once leaked into a form body
+//     because a *new* body kind was added without re-asking whether that kind owns the
+//     form structure. The input table below is exhaustive over the declared union, so a
+//     future body kind fails to compile here until it is given an explicit case, and the
+//     structure-ownership answer is asserted for every kind instead of for the two kinds
+//     that happened to exist first.
+const bodyKindInputs: Record<FormActionPlaceholderBodyKind, {
+  useNativeFormTree: boolean;
+  nativeStructureAuthority: string;
+  officialFormComposition?: boolean;
+}> = {
+  native_form_tree: { useNativeFormTree: true, nativeStructureAuthority: '' },
+  native_authority: { useNativeFormTree: false, nativeStructureAuthority: 'native_authority' },
+  official_composition: { useNativeFormTree: false, nativeStructureAuthority: '', officialFormComposition: true },
+  unowned_body: { useNativeFormTree: false, nativeStructureAuthority: '' },
+};
+assert.deepEqual(
+  Object.keys(bodyKindInputs).sort(),
+  [...FORM_ACTION_PLACEHOLDER_BODY_KINDS].sort(),
+  'every declared body kind must have an explicit gate case',
+);
+for (const kind of FORM_ACTION_PLACEHOLDER_BODY_KINDS) {
+  const bodyKindInput = bodyKindInputs[kind];
+  assert.equal(classifyFormActionPlaceholderBody(bodyKindInput), kind, `${kind} must classify as itself`);
+  const result = resolveFormActionPlaceholderGate({
+    ...bodyKindInput,
+    headerActionKeys: ['action_approve'],
+    workflowTransitionActionKeys: ['action_approve'],
+    bodyActionKeys: [],
+  });
+  assert.equal(
+    result.suppressWorkflowTransitions,
+    formBodyOwnsStructure(kind),
+    `${kind}: only a structurally owned body may close a carried action entry`,
+  );
+}
 
 // 9. Cleanup releases only a draft this run proves it authored: a positive `created`
 //    credential on a draft it asked to be fresh, confirmed by inventory exclusion. A
@@ -201,4 +242,49 @@ assert.equal(
   'an authorization for a draft outside the inventory must not widen access',
 );
 
-console.log('[native_form_structure_responsibility_test] PASS cases=10');
+// 11. A section heading is contract-authored content. The renderer may not
+//     invent a business label from a semantic role: every role on its own must
+//     resolve to no heading, so a missing contract title stays visible as a
+//     gap instead of being silently filled with a placeholder. This is the
+//     counterexample for the defect where every section of a contract form
+//     rendered as "基本资料".
+const SEMANTIC_ROLES = ['context', 'relation', 'activity', 'task', 'summary', 'risk', 'audit'];
+for (const role of SEMANTIC_ROLES) {
+  assert.equal(
+    resolveNativeSectionHeading({ type: 'group', attributes: { semanticFormRole: role } }),
+    '',
+    `${role}: a role alone must never produce a business heading`,
+  );
+}
+assert.equal(
+  resolveNativeSectionHeading({ type: 'group', string: '金额与条款', attributes: { semanticFormRole: 'context' } }),
+  '金额与条款',
+  'the contract-authored group title wins over the semantic role',
+);
+assert.equal(
+  resolveNativeSectionHeading({ type: 'group', semanticTitle: '办理信息' }),
+  '办理信息',
+  'the governed form-structure semantic title is contract-authored heading content',
+);
+assert.equal(
+  resolveNativeSectionHeading({ type: 'group', string: '合同基本信息', attributes: { 'data-sc-anchor': 'contract.basic', semanticFormRole: '' } }),
+  '合同基本信息',
+  'an empty semantic role must not suppress an authored heading',
+);
+assert.equal(
+  resolveNativeSectionHeading({ type: 'group', attributes: { 'data-sc-anchor': 'contract.basic', }, string: '合同基本信息' }),
+  '合同基本信息',
+  'the released native opt-in keeps its section label',
+);
+assert.equal(
+  resolveNativeSectionHeading({ type: 'group', string: '合同基本信息' }, { fieldConfigEditable: true }),
+  '',
+  'the designer canvas keeps its own editing target instead of a runtime heading',
+);
+assert.equal(
+  resolveNativeSectionHeading({ type: 'field', name: 'amount', string: '金额' }),
+  '',
+  'only a group container owns a business section heading',
+);
+
+console.log('[native_form_structure_responsibility_test] PASS cases=11');

@@ -298,12 +298,20 @@ const unanchoredTitle = workspaceSectionNavigationItems([node({
 })]);
 assert.deepEqual(unanchoredTitle, [], 'an XML title alone must not opt a group into visible navigation');
 
-const contextSection = workspaceSectionNavigationItems([node({
+// A semantic role is contract data, but a localized business label is not. The
+// navigation label must be the contract-authored section title; a role-only
+// section gets no invented name (it stays visible as a contract gap instead).
+const roleOnlySection = workspaceSectionNavigationItems([node({
   nodeId: 'section.context', semanticRole: 'context', fields: [field({})],
 })]);
+assert.deepEqual(roleOnlySection, [], 'a role alone must not produce an invented navigation label');
+
+const contextSection = workspaceSectionNavigationItems([node({
+  nodeId: 'section.context', title: '合同基本信息', semanticRole: 'context', fields: [field({})],
+})]);
 assert.deepEqual(contextSection.map(({ label, role, sourceType, sourceIdentity }) => ({ label, role, sourceType, sourceIdentity })), [{
-  label: '基本资料', role: 'context', sourceType: 'node', sourceIdentity: 'section.context',
-}]);
+  label: '合同基本信息', role: 'context', sourceType: 'node', sourceIdentity: 'section.context',
+}], 'the contract-authored section title is the navigation label');
 
 const relationSections = workspaceSectionNavigationItems([node({
   nodeId: 'section.relations',

@@ -206,6 +206,82 @@ RULES: tuple[Rule, ...] = (
         rationale="默认排序仍有前端 fallback，尚未完全收口到 contract order。",
         suggestion="没有 contract order 时不要伪造默认排序，或由后端显式给出 canonical default_order。",
     ),
+    Rule(
+        key="form_body_consumes_list_search_contract",
+        scope="form_action_blocks",
+        kind="literal",
+        severity="high",
+        path="frontend/apps/web/src/pages/ContractFormPage.vue",
+        pattern="resolveContractV2SearchContract",
+        rationale=(
+            "记录表单消费记录列表的搜索契约：查询筛选只存在于列表页"
+            "（docs/ops/iterations/form_structure_consumption_stabilization_20260917.md）。"
+            "该契约曾把「快捷筛选」列表预设渲染进办理正文，并在官方组合接管表单体后再次泄漏。"
+        ),
+        suggestion=(
+            "表单正文只消费表单自身契约；列表查询筛选由列表页的官方列表组合表达，"
+            "不要在表单页推导或渲染列表查询动作。"
+        ),
+    ),
+    Rule(
+        key="form_body_renders_list_query_block",
+        scope="form_action_blocks",
+        kind="literal",
+        severity="high",
+        path="frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue",
+        pattern="快捷筛选",
+        rationale=(
+            "办理正文渲染列表查询预设块；该块是列表业务语义，不属于表单职责，"
+            "且不随表单体承载方式（原生树/结构权威/官方组合）变化而自动关闭。"
+        ),
+        suggestion="删除该块；表单动作区只保留契约声明的流程动作与可执行操作。",
+    ),
+    Rule(
+        key="form_navigation_invents_business_section_labels",
+        scope="form_section_heading",
+        kind="literal",
+        severity="high",
+        path="frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
+        pattern="SECTION_LABELS",
+        rationale=(
+            "表单分区导航把语义角色翻译成中文业务标签，属于前端发明业务语义："
+            "契约没给分区标题时导航仍会给它编一个名字，掩盖契约缺口。"
+        ),
+        suggestion=(
+            "导航标签只能取契约声明的分区标题；缺失时不给导航项，"
+            "让缺口显现而不是由渲染层补齐。"
+        ),
+    ),
+    Rule(
+        key="form_renderer_invents_business_section_labels",
+        scope="form_section_heading",
+        kind="regex",
+        severity="high",
+        path="frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        pattern=r"as Record<string, string>\)\[semanticFormRole",
+        rationale=(
+            "共享表单渲染器把语义角色翻译成中文业务标签，属于前端发明业务语义："
+            "不同契约分区会塌缩成同一个占位标题（例如整页都显示「基本资料」），"
+            "契约缺失标题时也会被静默补齐而不是暴露缺口。"
+        ),
+        suggestion=(
+            "分区标题只能来自契约（原生视图 string/label 或表单结构契约 semanticTitle）；"
+            "统一走 resolveNativeSectionHeading，缺标题就不渲染标题。"
+        ),
+    ),
+    Rule(
+        key="form_renderer_placeholder_section_label_literal",
+        scope="form_section_heading",
+        kind="literal",
+        severity="high",
+        path="frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        pattern="context: '基本资料'",
+        rationale=(
+            "共享表单渲染器内置角色→业务标签字面量表，前端据此发明业务分区名称，"
+            "越过业务契约边界。"
+        ),
+        suggestion="删除该字面量表；分区标题由契约提供。",
+    ),
 )
 
 

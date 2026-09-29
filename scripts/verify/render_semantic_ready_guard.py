@@ -66,9 +66,6 @@ def main() -> int:
     required_frontend_tokens = [
         "const renderProfile = computed<'create' | 'edit' | 'readonly'>",
         "const showDebugActions = computed(() => renderProfile.value !== 'create');",
-        "const showSearchFilters = computed(() => {",
-        "if (renderProfile.value !== 'create') return true;",
-        "return !contract.value.hide_filters_on_create;",
         "action.semantic === 'primary_action'",
         "advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;",
         "isFieldVisible(node.name)",
@@ -81,13 +78,28 @@ def main() -> int:
         if token not in form_text:
             errors.append(f"ContractFormPage missing token: {token}")
 
+    # Record-list query filters are a list-surface concept: the record form must not
+    # consume the list search contract nor render its filter block. This replaced the
+    # old `showSearchFilters` tokens, which pinned the boundary violation itself
+    # (docs/ops/iterations/form_structure_consumption_stabilization_20260917.md).
+    forbidden_frontend_tokens = [
+        "resolveContractV2SearchContract",
+        "showSearchFilters",
+        "快捷筛选",
+    ]
+    for token in forbidden_frontend_tokens:
+        if token in form_text:
+            errors.append(f"ContractFormPage must not carry a list query surface token: {token}")
+
     report = {
         "ok": len(errors) == 0,
         "summary": {
             "core_field_cap": core_cap,
             "core_field_cap_lt_10": core_cap is not None and core_cap < 10,
             "single_primary_action_guard": "primary_assigned = False" in governance_text,
-            "create_hide_search_filters": "showSearchFilters" in form_text,
+            "form_body_excludes_list_query_contract": not any(
+                token in form_text for token in forbidden_frontend_tokens
+            ),
             "create_hide_export_button": "showDebugActions" in form_text and "exportContractJson" in form_text,
             "advanced_default_collapsed_on_create": "advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;" in form_text,
         },
@@ -104,7 +116,7 @@ def main() -> int:
         f"- core_field_cap: `{report['summary']['core_field_cap']}`",
         f"- core_field_cap_lt_10: `{report['summary']['core_field_cap_lt_10']}`",
         f"- single_primary_action_guard: `{report['summary']['single_primary_action_guard']}`",
-        f"- create_hide_search_filters: `{report['summary']['create_hide_search_filters']}`",
+        f"- form_body_excludes_list_query_contract: `{report['summary']['form_body_excludes_list_query_contract']}`",
         f"- create_hide_export_button: `{report['summary']['create_hide_export_button']}`",
         f"- advanced_default_collapsed_on_create: `{report['summary']['advanced_default_collapsed_on_create']}`",
     ]
