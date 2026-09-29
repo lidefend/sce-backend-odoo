@@ -8,6 +8,7 @@
     expand-type="normal"
     :expand-mutex="false"
     :value="activeKey"
+    :collapsed="collapsed"
     :expanded="effectiveExpandedKeys"
     @change="onChange"
     @expand="onExpand"
@@ -32,10 +33,12 @@ const props = withDefaults(defineProps<{
   activeMenuId?: number;
   expandedKeys?: string[];
   searchActive?: boolean;
+  collapsed?: boolean;
 }>(), {
   activeMenuId: undefined,
   expandedKeys: () => [],
   searchActive: false,
+  collapsed: false,
 });
 
 const emit = defineEmits<{

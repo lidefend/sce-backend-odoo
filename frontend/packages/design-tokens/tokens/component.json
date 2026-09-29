@@ -68,9 +68,9 @@
     "gap": "{space.xs}"
   },
   "shell": {
-    "topbar_height": 48,
+    "topbar_height": 56,
     "sidebar_width": 232,
-    "sidebar_collapsed_width": 56,
+    "sidebar_collapsed_width": 64,
     "navigation_item_height": 44,
     "navigation_search_icon_z_index": 1,
     "page_gutter": 24,

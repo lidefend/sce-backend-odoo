@@ -8,8 +8,6 @@
   font-family: var(--sc-semantic-font-family-sans);
 }
 
-.shell--sidebar-hidden { display: flex; }
-
 .shell--configuration .content {
   padding: 8px 14px 14px;
 }
@@ -434,6 +432,20 @@
   padding: 0;
 }
 
+/* Official `*-footer-layout` treatment inside the content column: the vendored
+ * `.t-layout__footer` band ships a 24px padding, while the official starter
+ * overrides it to zero padding and offsets the caption by one 24px margin step.
+ * Mirror those values through the SC token authority; the caption keeps the
+ * official muted tone / 20px line box / centred alignment. */
+.shell-content-footer {
+  flex: 0 0 auto;
+  margin-bottom: var(--sc-space-lg);
+  padding: 0;
+  color: var(--sc-semantic-text-muted);
+  line-height: 20px;
+  text-align: center;
+}
+
 @media (min-width: 761px) {
   .shell:not(.shell--configuration) > .content {
     padding-top: 0;
@@ -489,17 +501,13 @@
   min-width: 0;
 }
 
-.topbar--compact .breadcrumb {
-  display: none;
-}
-
 .topbar--compact .headline {
   font-size: 20px;
 }
 
 .topbar--minimal {
   align-items: center;
-  min-height: 46px;
+  min-height: var(--sc-shell-topbar-height);
   background: var(--sc-app-panel);
   box-shadow: none;
   border-radius: 0;
@@ -511,39 +519,6 @@
   padding: var(--sc-space-xs) var(--sc-page-inline-padding);
   font-size: 13px;
   line-height: 20px;
-}
-
-.topbar--minimal .breadcrumb {
-  margin: 0;
-  gap: 6px;
-}
-
-.topbar--minimal .crumb {
-  padding: 3px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  line-height: 20px;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--sc-app-text-secondary);
-}
-
-.topbar--minimal .crumb.active {
-  border-color: transparent;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-weight: 500;
-}
-
-.topbar--minimal .crumb:not(:last-child)::after {
-  content: '/';
-  margin-left: 6px;
-  color: var(--sc-app-text-muted);
-  font-weight: 400;
 }
 
 .eyebrow {
@@ -568,42 +543,6 @@
   margin: 2px 0 0;
   font-size: 11px;
   color: var(--sc-semantic-text-muted);
-}
-
-.breadcrumb {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-
-.crumb {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 1px 5px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.crumb.active {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-  font-weight: 700;
-}
-
-.crumb:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 
 .router-host {
@@ -934,12 +873,6 @@
     line-height: 1.2;
     overflow-wrap: anywhere;
   }
-  .breadcrumb .crumb:not(:nth-last-child(-n + 2)) {
-    display: none;
-  }
-  .breadcrumb .crumb.active {
-    display: none;
-  }
   .topbar-actions {
     width: 100%;
     min-width: 0;
@@ -957,18 +890,12 @@
   }
 
   .topbar--minimal {
-    min-height: 0;
     padding-block: 4px 5px;
     gap: 2px;
   }
 
   .topbar--minimal .topbar-main {
     min-height: 22px;
-  }
-
-  .topbar--minimal .breadcrumb,
-  .topbar--minimal .crumb {
-    line-height: 18px;
   }
 
   .topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context),
@@ -1028,13 +955,6 @@
 @media (min-width: 961px) {
   .shell {
     background: var(--sc-app-bg);
-  }
-
-  /* Keep this more specific than the desktop shell rule: the aside is not
-   * rendered in the hidden state, so reserving its track creates a dead 312px
-   * column and makes every routed page calculate against the wrong viewport. */
-  .shell.shell--sidebar-hidden {
-    display: flex;
   }
 
   .shell :deep(.sidebar) {
@@ -1099,22 +1019,13 @@
   }
 
   .topbar--minimal {
-    min-height: 52px;
+    min-height: var(--sc-shell-topbar-height);
     width: 100%;
     margin-inline-start: 0;
     padding: var(--sc-space-2xs) var(--sc-page-inline-padding);
     border-bottom: 1px solid transparent;
     background: var(--sc-app-bg);
     box-shadow: none;
-  }
-
-  .topbar--minimal .crumb {
-    font-size: 13px;
-  }
-
-  .topbar--minimal .crumb.active {
-    color: var(--sc-app-text-primary);
-    font-weight: 650;
   }
 
   .topbar--minimal .topbar-actions {
@@ -1208,6 +1119,58 @@
   .shell:not(.shell--configuration) .router-host > [data-product-page-mode] {
     padding-inline-start: var(--sc-product-list-inline-start);
     padding-inline-end: var(--sc-product-list-inline-end);
+  }
+
+  /* Official t-header band: one row at the shared header height. */
+  .topbar {
+    height: var(--sc-shell-topbar-height);
+  }
+
+  /* Official t-layout__sider compact rail. The aside keeps its track and only
+   * narrows, exactly like the reference starter's `-sidebar-compact` state, so
+   * a collapsed shell never re-measures routed pages against a different
+   * viewport. `--sc-shell-sidebar-collapsed-width` is the official 64px
+   * t-menu collapsed width. */
+  .shell--sidebar-compact :deep(.sidebar) {
+    inline-size: var(--sc-shell-sidebar-collapsed-width);
+    min-inline-size: var(--sc-shell-sidebar-collapsed-width);
+    flex: 0 0 var(--sc-shell-sidebar-collapsed-width);
+  }
+
+  /* Collapsed rail content: the identity keeps only its mark and the scope
+   * panels leave the 64px column; the canonical t-menu keeps its icon rail. */
+  .shell--sidebar-compact .workspace-sidebar-panel {
+    padding: 8px 6px;
+  }
+
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand) {
+    min-height: 0;
+    margin: 0 0 2px;
+    padding: 1px 0 6px;
+    justify-content: center;
+  }
+
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand)::before,
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand > div:not(.logo)),
+  .shell--sidebar-compact .workspace-sidebar-panel .workspace-scope-panel {
+    display: none;
+  }
+
+  .shell--sidebar-compact .shell-sidebar-footer {
+    flex-direction: column;
+  }
+
+  /* The official compact sider keeps icon operations only; the accessible name
+   * stays on the button so the 64px rail never grows a text label. */
+  .shell--sidebar-compact .shell-sidebar-footer :deep(.shell-sidebar-footer__label) {
+    display: none;
+  }
+
+  .shell--sidebar-compact .shell-sidebar-footer :deep(.sc-btn) {
+    inline-size: var(--sc-touch-target-min);
+    min-inline-size: var(--sc-touch-target-min);
+    padding: 0;
+    justify-content: center;
   }
 }
 

@@ -4,7 +4,7 @@
     data-component="LayoutShell"
     :class="{
       'shell--configuration': isConfigurationRoute,
-      'shell--sidebar-hidden': !mobileViewport && sidebarHidden,
+      'shell--sidebar-compact': !mobileViewport && sidebarCompact,
       'shell--mobile-sidebar-open': mobileViewport && mobileSidebarOpen,
     }"
     :data-layout-kind="activeLayout.kind"
@@ -168,6 +168,7 @@
             :active-menu-id="activeMenuId"
             :expanded-keys="session.menuExpandedKeys"
             :search="query"
+            :collapsed="sidebarCompact"
             @select="handleSelect"
             @toggle="session.toggleMenuExpanded"
             @ensure-expanded="session.ensureMenuExpanded"
@@ -176,10 +177,10 @@
         </div>
       </div>
 
-        <div class="footer">
-          <ScButton v-if="showRefresh" variant="ghost" @click="refreshInit">刷新</ScButton>
-          <ScButton variant="ghost" @click="logout">退出登录</ScButton>
-        </div>
+        <ProductShellSidebarFooter
+          :compact="sidebarCompact" :show-refresh="showRefresh" :mobile="mobileViewport"
+          @toggle-compact="toggleSidebarCompact" @refresh="refreshInit" @logout="logout"
+        />
       </div>
     </ProductMobileNavigationDrawer>
 
@@ -200,7 +201,6 @@
               :items="displayBreadcrumb"
               :minimal="useMinimalTopbar"
               :compact="activeLayout.header === 'compact'"
-              @navigate="router.push"
             />
             <h1 v-if="showTopbarHeadline" class="headline">{{ pageTitle }}</h1>
           </div>
@@ -280,20 +280,21 @@
             <span class="topbar-tool-label">我的工作</span>
           </ScButton>
           <ScButton
+            v-if="mobileViewport"
             ref="sidebarToggleButton"
             class="sidebar-toggle sc-btn sc-btn-sm"
             appearance="outline-action"
             type="button"
             variant="ghost"
             size="small"
-            :title="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
-            :aria-label="mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏')"
+            :title="mobileSidebarOpen ? '关闭菜单' : '菜单'"
+            :aria-label="mobileSidebarOpen ? '关闭菜单' : '菜单'"
             aria-controls="primary-sidebar"
             :aria-expanded="sidebarVisible"
             @click="toggleSidebar"
           >
             <ScIcon name="panel-left" :size="16" />
-            <span class="topbar-tool-label">{{ mobileViewport ? (mobileSidebarOpen ? '关闭菜单' : '菜单') : (sidebarHidden ? '显示侧边栏' : '隐藏侧边栏') }}</span>
+            <span class="topbar-tool-label">{{ mobileSidebarOpen ? '关闭菜单' : '菜单' }}</span>
           </ScButton>
           <ScButton
             v-if="isConfigurationRoute"
@@ -375,6 +376,7 @@
         :message="hudMessage"
       />
       </ScContent>
+      <ProductShellContentFooter />
     </ScLayout>
   </ProductAppShell>
 </template>
@@ -389,6 +391,8 @@ import NavigationBreadcrumb from '../components/product-shell/NavigationBreadcru
 import WorkspaceContextIndicator from '../components/product-shell/WorkspaceContextIndicator.vue';
 import ProductIdentity from '../components/product-shell/ProductIdentity.vue';
 import ActivityPageTabs from '../components/product-shell/ActivityPageTabs.vue';
+import ProductShellContentFooter from '../components/product-shell/ProductShellContentFooter.vue';
+import ProductShellSidebarFooter from '../components/product-shell/ProductShellSidebarFooter.vue';
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import StatusPanel from '../components/StatusPanel.vue';
 import DevContextPanel from '../components/DevContextPanel.vue';
@@ -448,7 +452,7 @@ type PublishedApp = {
 };
 type WorkspacePanelMode = 'navigation' | 'catalog' | 'company' | 'record';
 const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
-const SIDEBAR_HIDDEN_STORAGE_KEY = 'sc_shell_sidebar_hidden';
+const SIDEBAR_COMPACT_STORAGE_KEY = 'sc_shell_sidebar_compact';
 
 function asDict(value: unknown): UnknownDict | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -483,7 +487,7 @@ const session = useSessionStore();
 const route = useRoute();
 const router = useRouter();
 const query = ref('');
-const sidebarHidden = ref(false);
+const sidebarCompact = ref(false);
 const mobileViewport = ref(false);
 const mobileSidebarOpen = ref(false);
 const sidebarToggleButton = ref<HTMLButtonElement | null>(null);
@@ -680,9 +684,10 @@ const showTopbarHeadline = computed(
     && !businessRouteUsesCompactTopbar.value
     && (!useMinimalTopbar.value || compactRouteKeepsHeadline.value),
 );
-const sidebarClass = computed(() =>
-  activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed'
-);
+const sidebarClass = computed(() => [
+  activeLayout.value.sidebar === 'scroll' ? 'sidebar--scroll' : 'sidebar--fixed',
+  sidebarCompact.value ? 'sidebar--compact' : 'sidebar--expanded',
+]);
 const sceneErrorMessage = computed(() => {
   if (!sceneRegistryErrors.length) {
     return '';
@@ -885,9 +890,9 @@ async function openWorkspacePanel(mode: WorkspacePanelMode) {
   if (mode === 'company') cancelScheduledScopeRefresh();
   workspacePanelMode.value = mode;
   if (mobileViewport.value) mobileSidebarOpen.value = true;
-  else if (sidebarHidden.value) {
-    sidebarHidden.value = false;
-    persistSidebarHidden(false);
+  else if (sidebarCompact.value) {
+    sidebarCompact.value = false;
+    persistSidebarCompact(false);
   }
   if (mode === 'company') companySearch.value = '';
   if (mode === 'record' && recordContextEnabled.value) {
@@ -1005,21 +1010,21 @@ function toggleTheme(): void {
   persistTheme(themeMode.value);
 }
 
-function loadSidebarHidden(): boolean {
+function loadSidebarCompact(): boolean {
   try {
-    return localStorage.getItem(SIDEBAR_HIDDEN_STORAGE_KEY) === '1';
+    return localStorage.getItem(SIDEBAR_COMPACT_STORAGE_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-function persistSidebarHidden(hidden: boolean): void {
+function persistSidebarCompact(compact: boolean): void {
   try {
-    localStorage.setItem(SIDEBAR_HIDDEN_STORAGE_KEY, hidden ? '1' : '0');
+    localStorage.setItem(SIDEBAR_COMPACT_STORAGE_KEY, compact ? '1' : '0');
   } catch { /* ignore */ }
 }
 
-const sidebarVisible = computed(() => mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value);
+const sidebarVisible = computed(() => mobileViewport.value ? mobileSidebarOpen.value : true);
 const showMobileWorkShortcut = computed(() => mobileViewport.value && !['my-work', 'scene-my-work'].includes(String(route.name || '')));
 
 async function toggleRoleContext(): Promise<void> {
@@ -1065,8 +1070,12 @@ function toggleSidebar(): void {
     mobileSidebarOpen.value = !mobileSidebarOpen.value;
     return;
   }
-  sidebarHidden.value = !sidebarHidden.value;
-  persistSidebarHidden(sidebarHidden.value);
+  toggleSidebarCompact();
+}
+
+function toggleSidebarCompact(): void {
+  sidebarCompact.value = !sidebarCompact.value;
+  persistSidebarCompact(sidebarCompact.value);
 }
 
 const runtimeNavigationRegistry = computed(() =>
@@ -1273,10 +1282,8 @@ function cancelScheduledScopeRefresh() {
 
 function scheduleScopeContextChanged(previousRecordContextId = 0) {
   cancelScheduledScopeRefresh();
-  // A scope switch invalidates the current page, but a rapid sequence must not
-  // start one obsolete reload per intermediate company. Coalescing the route
-  // refresh preserves the final authoritative scope and keeps shell feedback
-  // immediate without changing the emitted event contract.
+  // Coalesce a rapid scope switch so one page is not reloaded once per
+  // intermediate company, while keeping the emitted event contract unchanged.
   scopeRefreshTimer = setTimeout(() => {
     scopeRefreshTimer = null;
     emitRecordContextChanged(previousRecordContextId, true);
@@ -1321,7 +1328,7 @@ function exportSuggestedActionJson(filter: { success?: boolean; kind?: string; s
 
 onMounted(() => {
   themeMode.value = loadThemeMode();
-  sidebarHidden.value = loadSidebarHidden();
+  sidebarCompact.value = loadSidebarCompact();
   applyTheme(themeMode.value);
   profileMode.value = loadThemeProfile();
   applyThemeProfile(profileMode.value);
