@@ -2,6 +2,13 @@ import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRe
 import type { CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import { normalizeActionSemantics } from '@sc/schema';
 
+/** A declared primary action is still not promoted here when its purpose is a
+ * deliberate exit (decline, cancel, leave the page) or a lifecycle reversal:
+ * those reopen or end the record instead of being the current task. */
+const NON_AUTO_PRIMARY_PURPOSES: ReadonlySet<string> = new Set([
+  'reject', 'cancel_record', 'return', 'discard_changes', 'reopen',
+]);
+
 export function resolveCanonicalHeaderActionPresentation(input: {
   floorplan: CanonicalFormFloorplan | null;
   actions: CanonicalFormAction[];
@@ -22,7 +29,7 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   const explicit = visible.filter((action) => action.tier === 'primary'
     && !action.actionRef.actionSemanticsInvalid
     && (meaning(action)?.kind === 'business' || action.safety?.classification !== 'danger')
-    && !['reject', 'cancel_record', 'return', 'discard_changes'].includes(meaning(action)?.purpose || ''));
+    && !NON_AUTO_PRIMARY_PURPOSES.has(meaning(action)?.purpose || ''));
   // Conflicting explicit primaries resolve to none, never last/first wins.
   const primary = save || (explicit.length === 1 ? explicit[0] : undefined);
   const directKeys = new Set(input.floorplan?.decisionMode

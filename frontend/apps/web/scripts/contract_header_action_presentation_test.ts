@@ -939,5 +939,20 @@ print(json.dumps(rows))
     if (execution.kind === 'contract-action') assert.equal(execution.action, binding);
     assert.equal(adapt([action]).direct[0].actionRef, action.actionRef);
   }
-  console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5');
+  // Lifecycle purposes are consumed, not inferred: a forward step keeps its
+  // declared emphasis, a reversal is never auto-promoted, and a purpose outside
+  // the published vocabulary stays visibly undeclared.
+  const activate = command('action_set_running', 'start_execution');
+  const complete = command('action_complete', 'complete');
+  const reopen = command('action_reopen', 'reopen');
+  assert.equal(activate.actionRef.actionSemantics?.purpose, 'start_execution');
+  assert.equal(activate.actionRef.actionSemanticsInvalid, undefined);
+  assert.equal(adapt([activate]).direct[0].tier, 'primary');
+  assert.equal(adapt([complete]).direct[0].tier, 'primary');
+  assert.equal(adapt([reopen]).direct[0].tier, 'secondary');
+  assert.equal(adapt([complete, activate]).direct.filter(a => a.tier === 'primary').length, 0);
+  const unpublished = command('action_unpublished', 'approve_v2');
+  assert.equal(unpublished.actionRef.actionSemanticsInvalid, true);
+  assert.equal(adapt([unpublished]).direct[0].tier, 'secondary');
+  console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5 lifecycle_purposes=4 undeclared_purpose=1');
 }

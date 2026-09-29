@@ -1,8 +1,34 @@
 /** Terminal-independent meaning. Execution target and applicability stay on the
  * existing action rule; this declaration grants no capability or permission. */
+export const ACTION_PURPOSES = Object.freeze([
+  'save_draft',
+  'submit',
+  'approve',
+  'reject',
+  'cancel_record',
+  'start_execution',
+  'complete',
+  'reopen',
+  'discard_changes',
+  'return',
+] as const);
+
+export type ActionPurpose = (typeof ACTION_PURPOSES)[number];
+
+/** Purposes owned by platform persistence and the shared client commands. The
+ * business subset below is derived from this, so the vocabulary is never
+ * restated: a purpose is added in ACTION_PURPOSES and classified here. */
+export const NON_BUSINESS_PURPOSES = Object.freeze(['save_draft', 'discard_changes', 'return'] as const);
+
+/** Purposes a business action may declare. Persistence (`record.save`) and the
+ * client commands keep their own kind, so they are excluded from this subset. */
+export const DECLARED_BUSINESS_PURPOSES = Object.freeze(
+  ACTION_PURPOSES.filter((purpose) => !(NON_BUSINESS_PURPOSES as readonly string[]).includes(purpose)),
+);
+
 export type ActionSemantics = {
   kind: 'persistence' | 'business' | 'interaction';
-  purpose: 'save_draft' | 'submit' | 'approve' | 'reject' | 'cancel_record' | 'discard_changes' | 'return';
+  purpose: ActionPurpose;
   executor: 'record.save' | 'contract.action' | 'client.back' | 'client.discard';
   origin: string;
   operation?: 'create' | 'write';
@@ -45,8 +71,8 @@ export function normalizeActionSemantics(rule: {
     return { kind: row.kind, purpose: row.purpose, executor: row.executor, origin: row.origin, operation: row.operation };
   }
   if (row.kind === 'business' && row.executor === 'contract.action'
-    && ['submit', 'approve', 'reject', 'cancel_record'].includes(String(row.purpose))) {
-    return { kind: row.kind, purpose: row.purpose as ActionSemantics['purpose'], executor: row.executor, origin: row.origin };
+    && (DECLARED_BUSINESS_PURPOSES as readonly string[]).includes(String(row.purpose))) {
+    return { kind: row.kind, purpose: row.purpose as ActionPurpose, executor: row.executor, origin: row.origin };
   }
   if (row.kind === 'interaction' && ((row.purpose === 'return' && row.executor === 'client.back')
     || (row.purpose === 'discard_changes' && row.executor === 'client.discard'))) {
