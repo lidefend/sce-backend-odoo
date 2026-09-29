@@ -88,6 +88,7 @@
             class="sc-form"
             :style="pageSectionStyle('form')"
             :data="{ username, password, dbName }"
+            novalidate
             layout="vertical"
             label-align="top"
             :required-mark="false"
@@ -104,7 +105,7 @@
                 size="large"
                 autocomplete="username"
                 :aria-label="pageText('username_label', '账号')"
-                aria-required="true"
+                required
                 :placeholder="pageText('username_placeholder', '请输入账号')"
                 :disabled="loading"
                 :status="error ? 'error' : 'default'"
@@ -123,7 +124,7 @@
                 type="password"
                 autocomplete="current-password"
                 :aria-label="pageText('password_label', '密码')"
-                aria-required="true"
+                required
                 :placeholder="pageText('password_placeholder', '请输入密码')"
                 :disabled="loading"
                 :status="error ? 'error' : 'default'"
