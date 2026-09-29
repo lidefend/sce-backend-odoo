@@ -4617,21 +4617,27 @@ BusinessConfigVersionPanel.vue         -> ScEmptyState:empty
 ### 6. 候选、运行身份与浏览器观察
 
 - 旧产物保留：`config05-20260929` → `config05-20260929-prev-640a97eb7`（base_sha `640a97eb7…`，未覆盖）。
-- 新候选：`config05-20260929/dist`，`base_sha=e01137026…`，构建前记录的 dirty scope 含本段 5 个前端文件与生成器/单测。
+- 新候选（最终冻结）：`config05-20260929/dist`，`base_sha=013770d18…`（本段 4 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-C53ItXQV.js`。
+  过程序：先在 `e01137026` + dirty 树上构建一次用于观察，提交后在干净 HEAD 上重建；
+  两次构建的入口与 `entry_sha256` **逐字节一致**（`d8faca02…`），因此前面的观察证据对冻结候选同样成立。
+  另保留 dirty 构建为 `config05-20260929-prev-e01137026`（未覆盖）。
 - 5180 监听进程在操作前后均为 `pid=802966`（`scripts/release/release_static_server.mjs`，
   `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`）；
   静态服务按请求读盘且 `index.html` 为 `no-cache`，同路径替换产物即对新内容生效，**未新增常驻端口**。
 - 身份自校验：`SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1 DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 python3 scripts/dev/frontend_standard_preview.py identity` → PASS。
-- 实际服务入口：`/assets/index-C53ItXQV.js`（与 `build-identity.json` 一致，已用 HTTP 回读核对）。
+- 实际服务入口：`/assets/index-C53ItXQV.js`，已用 HTTP 回读核对与 `build-identity.json` 一致，
+  且回读字节的 sha256 等于 `entry_sha256`。
 
-定向浏览器观察（受管角色 `fixture_role_config_admin`，`sc_frontend_acceptance`，全程零写入）：
+定向浏览器观察（受管角色 `fixture_role_config_admin`，`sc_frontend_acceptance`，全程零写入；
+下表为**对冻结候选复采**的结果，两个视口均为 `scan-row=60`）：
 
 | 检查 | 1440×900 | 390×844 |
 |---|---|---|
 | `/admin/business-config` 可达 | 是（`scan-row=60`） | 是 |
 | 手写状态标记 `.workbench-status-empty` | **0** | **0** |
 | 遗留 `.empty-state` | **0** | **0** |
-| 受治理 `[data-semantic-component="ScEmptyState"]` | **1** | 0（该视口未进入覆盖空态分支） |
+| 受治理 `[data-semantic-component="ScEmptyState"]` | **1** | **1** |
 | 页面级横向溢出 `scrollWidth/clientWidth` | 1440/1440 | 390/390 |
 | console error | 0 | 0 |
 
