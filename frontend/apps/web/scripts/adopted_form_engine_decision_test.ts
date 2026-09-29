@@ -297,7 +297,7 @@ const surface = new AdoptedSurface(draft, [
 ]);
 surface.draft = draft;
 
-const registry = createStandardFormValidationRegistry(() => 'project.project');
+const registry = createStandardFormValidationRegistry(() => 'contract-record-form');
 check(registry.adopted.value, true, 'the adopted scope is the same policy the page uses');
 registry.register({ sectionId: 'section-1', ruleFieldNames: () => surface.ruleFieldNames(), validate: () => surface.validateSection() });
 
@@ -361,7 +361,7 @@ check(gate.writes, 1, 'a second gate call is not a second write for the same att
 // Part 2 — an unreadable engine result and a missing engine both fail closed
 // ---------------------------------------------------------------------------
 const muteSurface = new AdoptedSurface({ name: 'x' }, [{ name: 'name', label: '项目名称', required: true }]);
-const muteRegistry = createStandardFormValidationRegistry(() => 'project.project');
+const muteRegistry = createStandardFormValidationRegistry(() => 'contract-record-form');
 muteRegistry.register({
   sectionId: 'mute',
   ruleFieldNames: () => ['name'],
@@ -382,7 +382,7 @@ check(await muteGate.attempt(), false, 'a section that cannot read its engine re
 check(muteGate.writes, 0, 'an unreadable engine result performs zero writes');
 muteSurface.unmount();
 
-const throwing = createStandardFormValidationRegistry(() => 'project.project');
+const throwing = createStandardFormValidationRegistry(() => 'contract-record-form');
 throwing.register({
   sectionId: 'no-engine',
   ruleFieldNames: () => ['name'],
@@ -403,7 +403,7 @@ check(throwingGate.writes, 0, 'a missing engine performs zero writes');
 // ---------------------------------------------------------------------------
 // Part 3 — boundaries A / B / C
 // ---------------------------------------------------------------------------
-const unadoptedRegistry = createStandardFormValidationRegistry(() => 'payment.request');
+const unadoptedRegistry = createStandardFormValidationRegistry(() => 'worksheet');
 unadoptedRegistry.register({ sectionId: 'x', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const unadoptedGate = createSaveGate({
   draft: { name: '' },
@@ -415,7 +415,7 @@ const unadoptedGate = createSaveGate({
 check(await unadoptedGate.attempt(), true, 'A: a surface outside the scope keeps its pre-existing path');
 check(unadoptedGate.writes, 1, 'A: an unadopted surface is never forced through an absent gate');
 
-const emptyContract = createStandardFormValidationRegistry(() => 'project.project');
+const emptyContract = createStandardFormValidationRegistry(() => 'contract-record-form');
 const emptyGate = createSaveGate({
   draft: {},
   expectedRequired: [],
@@ -426,7 +426,7 @@ const emptyGate = createSaveGate({
 check(await emptyGate.attempt(), true, 'C: a contract with no required position is a legal empty set, not a failure');
 check(emptyGate.writes, 1, 'C: the legal empty set writes once');
 
-const uncovered = createStandardFormValidationRegistry(() => 'project.project');
+const uncovered = createStandardFormValidationRegistry(() => 'contract-record-form');
 const uncoveredGate = createSaveGate({
   draft: { name: 'ok' },
   expectedRequired: ['name'],
@@ -497,7 +497,7 @@ checkDeep(rejectedCodes(unpacked), ['name'], 'without an adopted engine the prec
 const aggregateDraft: Draft = { name: '', amount_total: '100', note: '' };
 const nameSection = new AdoptedSurface(aggregateDraft, [{ name: 'name', label: '项目名称', required: true }]);
 const noteSection = new AdoptedSurface(aggregateDraft, [{ name: 'note', label: '备注', required: true, type: 'text' }]);
-const aggregateRegistry = createStandardFormValidationRegistry(() => 'project.project');
+const aggregateRegistry = createStandardFormValidationRegistry(() => 'contract-record-form');
 aggregateRegistry.register({
   sectionId: 'name-section',
   ruleFieldNames: () => nameSection.ruleFieldNames(),
@@ -547,7 +547,7 @@ checkDeep(
   ['title'],
   'a position with no form item is not reported as engine-covered',
 );
-const hiddenRegistry = createStandardFormValidationRegistry(() => 'project.project');
+const hiddenRegistry = createStandardFormValidationRegistry(() => 'contract-record-form');
 hiddenRegistry.register({
   sectionId: 'hidden-section',
   ruleFieldNames: () => hiddenSurface.ruleFieldNames(),
@@ -598,7 +598,7 @@ checkDeep(
   ['name', 'name'],
   'two display positions of one business field are both handed to the engine',
 );
-const duplicateRegistry = createStandardFormValidationRegistry(() => 'project.project');
+const duplicateRegistry = createStandardFormValidationRegistry(() => 'contract-record-form');
 duplicateRegistry.register({
   sectionId: 'duplicate-section',
   ruleFieldNames: () => duplicateSurface.ruleFieldNames(),
@@ -622,7 +622,7 @@ const doubleSurface = new AdoptedSurface(
   [{ name: 'name', label: '项目名称', required: true }],
   { rulesOnItems: true },
 );
-const doubleRegistry = createStandardFormValidationRegistry(() => 'project.project');
+const doubleRegistry = createStandardFormValidationRegistry(() => 'contract-record-form');
 doubleRegistry.register({
   sectionId: 'double-section',
   ruleFieldNames: () => doubleSurface.ruleFieldNames(),

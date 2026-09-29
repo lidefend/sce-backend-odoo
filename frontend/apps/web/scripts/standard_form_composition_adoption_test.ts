@@ -22,7 +22,6 @@ import path from 'node:path';
 import { ref } from 'vue';
 
 import {
-  STANDARD_FORM_COMPOSITION_PILOT_MODELS,
   resolveStandardFormComposition,
 } from '../src/app/presentation/standardFormComposition';
 import {
@@ -73,103 +72,15 @@ const field = (overrides: Partial<FormSectionFieldSchema>): FormSectionFieldSche
 });
 
 // ---------------------------------------------------------------------------
-// Part 1 — adoption is an explicit scope, never an inference
-// ---------------------------------------------------------------------------
-check(resolveStandardFormComposition({ model: 'project.project' }).adopted, true, 'the verified surface is adopted');
-check(
-  resolveStandardFormComposition({ model: 'project.project' }).composition,
-  'official-standard-form',
-  'the adopted surface reports the official composition',
-);
-check(
-  resolveStandardFormComposition({ model: 'project.project' }).reason,
-  'pilot-model-adopted',
-  'adoption reports the scope it came from',
-);
-for (const other of ['payment.request', 'res.partner', 'project.task', 'sc.general.contract.line', '']) {
-  check(resolveStandardFormComposition({ model: other }).adopted, false, `adoption does not leak to ${other || 'an empty model'}`);
-  check(
-    resolveStandardFormComposition({ model: other }).reason,
-    'outside-pilot-scope',
-    'a surface outside the verified scope keeps the composition it had',
-  );
+// Part 1 — adoption follows page responsibility, never business model identity.
+check(resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted, true, 'contract record pages share the official form');
+check(resolveStandardFormComposition({ pageType: 'contract-record-form' }).reason, 'standard-page-type', 'page type owns adoption');
+for (const pageType of ['', 'worksheet', 'hierarchy', 'dashboard', undefined]) {
+  check(resolveStandardFormComposition({ pageType }).adopted, false, 'specialized and unknown responsibilities are not silently adopted');
 }
-check(
-  resolveStandardFormComposition({ model: undefined }).adopted,
-  false,
-  'a page without a declared model is never adopted by default',
-);
-checkDeep(
-  [...STANDARD_FORM_COMPOSITION_PILOT_MODELS],
-  ['project.project', 'sc.general.contract'],
-  'the adopted scope is exactly the verified surfaces',
-);
-
-// ---------------------------------------------------------------------------
-// Part 1b — the second model is a reuse, not a second implementation
-//
-// TPL-02: a different business model joins the same composition. The proof is
-// structural. The surfaces that actually render the form never learn the model
-// name, so nothing about the second model can be satisfied by a copy of the
-// first one's orchestration; the only thing that changes is the scope list.
-// ---------------------------------------------------------------------------
-check(
-  resolveStandardFormComposition({ model: 'sc.general.contract' }).adopted,
-  true,
-  'the second verified surface is adopted by the same policy',
-);
-check(
-  resolveStandardFormComposition({ model: 'sc.general.contract' }).composition,
-  'official-standard-form',
-  'the second surface reports the same official composition',
-);
-check(
-  resolveStandardFormComposition({ model: 'sc.general.contract' }).reason,
-  'pilot-model-adopted',
-  'the second surface reports the same scope reason as the first',
-);
-
-const compositionCallSites = [
-  'frontend/apps/web/src/components/template/FormSection.vue',
-  'frontend/apps/web/src/pages/ContractFormPage.vue',
-];
-for (const callSite of compositionCallSites) {
-  const source = readSource(callSite);
-  for (const adoptedModel of STANDARD_FORM_COMPOSITION_PILOT_MODELS) {
-    check(
-      source.includes(adoptedModel),
-      false,
-      `${callSite} does not name ${adoptedModel}; the surface reads the scope, it does not carry it`,
-    );
-  }
-  check(
-    /resolveStandardFormComposition/.test(source),
-    false,
-    `${callSite} does not re-decide adoption; it consumes the page runtime`,
-  );
-}
-check(
-  /standardFormComposition/.test(readSource('frontend/apps/web/src/components/template/FormSection.vue')),
-  true,
-  'the section still reads the adopted composition from the page runtime',
-);
-// The scope lives in exactly one place. A second declaration would let the two
-// surfaces disagree about which models are adopted.
-const pilotDeclarations = compositionCallSites
-  .concat(['frontend/apps/web/src/app/presentation/standardFormComposition.ts'])
-  .map((file) => [file, /STANDARD_FORM_COMPOSITION_PILOT_MODELS/.test(readSource(file))] as const)
-  .filter(([, present]) => present)
-  .map(([file]) => file);
-checkDeep(
-  pilotDeclarations,
-  ['frontend/apps/web/src/app/presentation/standardFormComposition.ts'],
-  'exactly one module declares the adopted scope',
-);
-
 const policySource = readSource('frontend/apps/web/src/app/presentation/standardFormComposition.ts');
-check(/from ['"]vue['"]/.test(policySource), false, 'the adoption policy is independent of a rendering framework');
-check(/\bdocument\./.test(policySource), false, 'the adoption policy does not read the DOM');
-check(/tdesign/i.test(policySource), false, 'the adoption policy is independent of the component vendor');
+check(/PILOT_MODELS|project\.project|payment\.request/.test(policySource), false, 'no business model rollout selector remains');
+check(/from ['"]vue['"]/.test(policySource), false, 'adoption remains pure');
 
 // ---------------------------------------------------------------------------
 // Part 2 — the rule engine and the pre-existing authority cannot disagree
@@ -299,7 +210,7 @@ checkDeep(buildRequiredFieldErrorPayload([], scope), { messages: [], fieldErrors
 // ---------------------------------------------------------------------------
 // Part 5 — the registry fails closed and never validates silently
 // ---------------------------------------------------------------------------
-const registry = createStandardFormValidationRegistry(() => 'project.project');
+const registry = createStandardFormValidationRegistry(() => 'contract-record-form');
 check(registry.adopted.value, true, 'the page runtime reports the adopted scope');
 let validated = 0;
 registry.register({ sectionId: 'a', ruleFieldNames: () => ['name'], validate: async () => { validated += 1; return ['name', 'name']; } });
@@ -319,7 +230,7 @@ check(failed.ok, false, 'a section that cannot answer blocks the save instead of
 checkDeep(failed.fieldNames, [], 'a failed validation reports no field it cannot name');
 checkDeep(failed.coveredFieldNames, [], 'a failed run covers nothing, so nothing may be dropped from the precheck');
 
-const unadopted = createStandardFormValidationRegistry(() => 'payment.request');
+const unadopted = createStandardFormValidationRegistry(() => 'worksheet');
 check(unadopted.adopted.value, false, 'an unverified surface is not adopted');
 unadopted.register({ sectionId: 'x', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const unadoptedResult = await unadopted.validateAdoptedFields();
@@ -328,14 +239,14 @@ checkDeep(unadoptedResult, { ok: true, fieldNames: [], coveredFieldNames: [] }, 
 // A model or record switch must not carry the previous surface with it: the
 // page unmounts the old sections and mounts new ones, and the registry has to
 // answer for the new surface only.
-const liveModel = ref('project.project');
+const liveModel = ref('contract-record-form');
 const switching = createStandardFormValidationRegistry(() => liveModel.value);
 check(switching.adopted.value, true, 'the first model is inside the adopted scope');
 switching.register({ sectionId: 'surface-a', ruleFieldNames: () => ['name'], validate: async () => ['name'] });
 const beforeSwitch = await switching.validateAdoptedFields();
 checkDeep(beforeSwitch.coveredFieldNames, ['name'], 'the first model reports the positions its own sections cover');
 switching.unregister('surface-a');
-liveModel.value = 'sc.general.contract';
+liveModel.value = 'contract-record-form';
 switching.register({ sectionId: 'surface-b', ruleFieldNames: () => ['contract_no'], validate: async () => [] });
 const afterSwitch = await switching.validateAdoptedFields();
 check(switching.adopted.value, true, 'the second model is adopted by the same policy, not by a second policy');
@@ -407,7 +318,7 @@ check(
   'the adopted engine is asked before the write, not after it',
 );
 check(
-  actionsSource.includes('resolveStandardFormComposition({ model: model.value }).adopted'),
+  actionsSource.includes("resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted"),
   true,
   'the save gate derives adoption from the declared model, not from whether a callback was passed',
 );
@@ -449,7 +360,7 @@ check(
 
 const pageSource = readSource('frontend/apps/web/src/pages/ContractFormPage.vue');
 check(
-  pageSource.includes('createStandardFormCompositionRuntime(() => model.value)'),
+  pageSource.includes("createStandardFormCompositionRuntime(() => 'contract-record-form')"),
   true,
   'the page runtime is scoped to the model the contract declared',
 );

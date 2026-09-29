@@ -26,7 +26,7 @@
       variant="error"
       :on-retry="onReload"
     />
-    <template v-else-if="status === 'empty'">
+    <ProductListSurface v-else-if="status === 'empty'">
       <ListSurfaceHeader
         :loading="loading"
         :show-search="showFallbackPlainSearch"
@@ -84,9 +84,9 @@
         :page-limit-options="pageLimitOptions"
         :labels="collectionPaginationLabels"
       />
-    </template>
+    </ProductListSurface>
     <template v-else>
-      <ProductListSurface :adopted="listComposition.adopted">
+      <ProductListSurface>
       <ListSurfaceHeader
         :loading="loading"
         :show-search="showFallbackPlainSearch"
@@ -525,7 +525,7 @@ const errorCopy = computed(() =>
 const emptyCopy = computed(() => resolveEmptyCopy('list'));
 // Presentation scope only: which containers this already-authorized list is
 // composed from. It never decides columns, records, actions or permissions.
-const listComposition = computed(() => resolveStandardListComposition({ model: props.model }));
+const listComposition = computed(() => resolveStandardListComposition({ pageType: 'standard-query-list' }));
 const createLabelText = computed(() => props.createLabel || uiLabel('create', '新建'));
 const hasActiveConditions = computed(() =>
   props.hasActiveConditions === true

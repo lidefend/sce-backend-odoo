@@ -5,6 +5,8 @@
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
+    :data-detail-section-composition="detailSectionDecision.adopted ? 'official-standard-detail' : 'contract-field-extension'"
+    :data-detail-section-reason="detailSectionDecision.reason"
     :title="undefined"
     :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
@@ -54,7 +56,9 @@
           @click="taskActionRun(detailFactField(item))"
           @keydown.enter.prevent="taskActionRun(detailFactField(item))"
         >{{ taskActionLabel(detailFactField(item)) }}</div>
-        <span v-else class="readonly-value">{{ readonlyText(detailFactField(item)) }}</span>
+        <slot v-else name="readonly" :field="detailFactField(item)">
+          <span class="readonly-value">{{ readonlyText(detailFactField(item)) }}</span>
+        </slot>
       </template>
     </ScDescriptions>
     <div v-else :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
@@ -372,6 +376,7 @@ import type { ScFormInstance } from '../design-system/scFormContract';
 import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
 import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
+import { resolveStandardDetailSection } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -474,7 +479,7 @@ const sectionId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
  * section keeps the composition it had. `bare` makes the adapters transparent
  * rather than emulated, so an unadopted surface is not silently half-adopted.
  */
-const adoptedComposition = computed(() => standardFormComposition?.adopted.value === true);
+const adoptedComposition = computed(() => standardFormComposition?.adopted.value === true && !props.fieldSelectionMode && !props.fieldConfigEditable);
 const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFormRules(props.fields) : {}));
 /**
  * Whether this readonly section's facts render through the official detail
@@ -482,18 +487,23 @@ const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFor
  *
  * It reuses the same page-provided decisions as the form composition: the
  * layout only applies to a section that is both adopted and presented as
- * readonly facts, so an editable or a non-pilot surface keeps its previous
+ * readonly facts, so an editable or a specialized surface keeps its previous
  * composition and a list of fields is never half-converted.
  */
-const adoptedDetailFactLayout = computed(() => (
-  standardDetailComposition?.adopted.value === true
-  && adoptedComposition.value
-  && props.preferReadonlyFacts
-  && !props.fieldSelectionMode
-  && !props.fieldConfigEditable
-  && allFieldsReadonly.value
-  && displayFields.value.length > 0
-));
+const detailSectionDecision = computed(() => resolveStandardDetailSection({
+  adopted: standardDetailComposition?.adopted.value === true && adoptedComposition.value,
+  configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
+  readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
+  fields: displayFields.value.map((field) => ({
+    type: field.type,
+    dedicatedControl: Boolean(field.favoriteToggle)
+      || declaresUnknownComponentRenderer(field)
+      || usesProfessionalBusinessValue(field)
+      || usesPaymentSettlementDetailCollection(field)
+      || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl'].includes(field.componentRenderer)),
+  })),
+}));
+const adoptedDetailFactLayout = computed(() => detailSectionDecision.value.adopted);
 
 /**
  * The official detail page arranges its facts in a label/value table. A narrow

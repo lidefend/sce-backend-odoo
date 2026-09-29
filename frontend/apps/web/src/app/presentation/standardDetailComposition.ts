@@ -1,60 +1,35 @@
-/**
- * Which readonly record surfaces render through the official detail composition.
- *
- * Presentation scope only. This decides *how* an already-authorized readonly
- * record is composed; it never decides which fields exist, which values may be
- * shown, or who may read the record. Adoption is therefore never derived from
- * field names, labels, semantic roles, action IDs, menu IDs, roles, or renderer
- * selection, and it is never an authorization input.
- *
- * The official source is the reference detail page `src/pages/detail/base/index.vue`
- * of `Tencent/tdesign-vue-next-starter`
- * (`aeed57076217f7777158b905f353d73585bad1c4`); it is a reference baseline, not
- * a dependency upgrade. Its `t-descriptions` label/value composition is the
- * official readonly presentation; its sample data is not, so this project
- * grounds every item in the record's own contract field facts.
- *
- * Only the `readonly` render profile is in scope. An editable surface keeps its
- * previous composition, because the official detail page has no editing state.
+/** Official detail reference: Tencent/tdesign-vue-next-starter@aeed57076217f7777158b905f353d73585bad1c4.
+ * A readonly record has one composition, with explicit collection/attachment
+ * extensions. Section capabilities decide whether descriptions can carry facts.
  */
-
 export type StandardDetailCompositionId = 'official-standard-detail' | 'legacy-detail-surface';
-
-export type StandardDetailCompositionReason =
-  | 'pilot-model-adopted'
-  | 'outside-pilot-scope'
-  | 'not-a-readonly-profile';
-
+export type StandardDetailCompositionReason = 'standard-page-type' | 'specialized-page-type' | 'not-a-readonly-profile';
 export type StandardDetailCompositionDecision = {
   composition: StandardDetailCompositionId;
   adopted: boolean;
   reason: StandardDetailCompositionReason;
 };
+export function resolveStandardDetailComposition(input: { pageType?: unknown; renderProfile?: unknown }): StandardDetailCompositionDecision {
+  if (input.renderProfile !== 'readonly') return { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' };
+  return input.pageType === 'contract-record-detail'
+    ? { composition: 'official-standard-detail', adopted: true, reason: 'standard-page-type' }
+    : { composition: 'legacy-detail-surface', adopted: false, reason: 'specialized-page-type' };
+}
 
-/**
- * Models whose standard readonly record is served by the official detail
- * composition.
- *
- * Every entry is a surface this project has verified against the official
- * composition. The detail surface never names a model, so a business model
- * joins by being listed here and by carrying a contract the detail renderer
- * already understands.
- */
-export const STANDARD_DETAIL_COMPOSITION_PILOT_MODELS: readonly string[] = Object.freeze([
-  'sc.general.contract',
-]);
-
-export function resolveStandardDetailComposition(input: {
-  model?: unknown;
-  renderProfile?: unknown;
-}): StandardDetailCompositionDecision {
-  const model = String(input?.model ?? '').trim();
-  const renderProfile = String(input?.renderProfile ?? '').trim();
-  if (renderProfile !== 'readonly') {
-    return { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' };
-  }
-  if (model && STANDARD_DETAIL_COMPOSITION_PILOT_MODELS.includes(model)) {
-    return { composition: 'official-standard-detail', adopted: true, reason: 'pilot-model-adopted' };
-  }
-  return { composition: 'legacy-detail-surface', adopted: false, reason: 'outside-pilot-scope' };
+export function resolveStandardDetailSection(input: {
+  adopted: boolean;
+  configurationMode: boolean;
+  readonlyFacts: boolean;
+  fields: readonly { type: string; dedicatedControl: boolean }[];
+}): { adopted: boolean; reason: string } {
+  if (!input.adopted) return { adopted: false, reason: 'outside-standard-detail' };
+  if (input.configurationMode) return { adopted: false, reason: 'configuration-editor' };
+  if (!input.readonlyFacts) return { adopted: false, reason: 'editable-section' };
+  if (!input.fields.length) return { adopted: false, reason: 'empty-section' };
+  if (input.fields.some((field) => ['one2many', 'many2many'].includes(field.type))) return { adopted: false, reason: 'relation-collection-extension' };
+  if (input.fields.some((field) => field.type === 'binary')) return { adopted: false, reason: 'attachment-extension' };
+  if (input.fields.some((field) => field.dedicatedControl)) return { adopted: false, reason: 'dedicated-control-extension' };
+  const factTypes = ['char', 'text', 'selection', 'many2one', 'boolean', 'date', 'datetime', 'integer', 'float', 'monetary', 'html'];
+  if (input.fields.some((field) => !factTypes.includes(field.type))) return { adopted: false, reason: 'unsupported-fact-type' };
+  return { adopted: true, reason: 'standard-readonly-facts' };
 }

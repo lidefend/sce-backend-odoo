@@ -171,7 +171,7 @@ const layoutNodes = ref([{
   descriptor: { name: 'name', string: '项目名称', required: true, readonly: false, ttype: 'char' },
 }]);
 
-let registry = createStandardFormValidationRegistry(() => model.value);
+let registry = createStandardFormValidationRegistry(() => 'contract-record-form');
 let sectionGate = deferred();
 registry.register({ sectionId: 'section-a', ruleFieldNames: () => ['name'], validate: () => { validateCalls += 1; return sectionGate.promise; } });
 

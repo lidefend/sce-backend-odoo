@@ -6,6 +6,7 @@
     data-product-page-mode="form" data-semantic-component="ContractFormPage"
     :data-state="status"
     :data-form-model="model"
+    :data-form-composition="standardFormComposition.adopted.value ? 'official-standard-form' : 'legacy-form-section'"
     :data-detail-composition="standardDetailComposition.decision.value.composition"
     :data-detail-composition-reason="standardDetailComposition.decision.value.reason"
     :data-form-record="recordId ? String(recordId) : 'new'"
@@ -1075,7 +1076,7 @@ const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) 
  * adopted sections are asked one question before a write, and their answer joins
  * the same error store the rest of the save chain uses.
  */
-const standardFormComposition = createStandardFormCompositionRuntime(() => model.value);
+const standardFormComposition = createStandardFormCompositionRuntime(() => 'contract-record-form');
 const recordContentLayoutMode = computed(() => showCurrentFormFieldConfigScope.value ? 'data-grid' : resolveContentLayoutMode({ contractContentLayout: contractContentLayoutMode(contract.value), pageKind: recordId.value ? (route.name === 'model-form' ? 'edit' : 'detail') : 'create' }));
 const showHud = computed(() => isHudEnabled(route));
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
@@ -1184,7 +1185,7 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
   });
 });
 /** Official detail composition adoption for this page; presentation scope only. */
-const standardDetailComposition = createStandardDetailCompositionRuntime(() => model.value, () => renderProfile.value);
+const standardDetailComposition = createStandardDetailCompositionRuntime(() => 'contract-record-detail', () => renderProfile.value);
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();

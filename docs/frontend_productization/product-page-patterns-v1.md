@@ -49,6 +49,35 @@ IDs, menu IDs, or renderer selection. A pattern/mode mismatch fails closed.
 
 ## Official template adoption (FE-TPL)
 
+### Current page-type adoption (TPL-07, locally verified)
+
+This section supersedes the historical model-pilot scope below. The existing
+page owners now declare their responsibility; no business model whitelist
+selects the standard list, form or readonly detail composition.
+
+| Existing responsibility | Shared implementation | Preserved capabilities / explicit exceptions |
+|---|---|---|
+| `ListPage` standard query list | `ProductListSurface` in populated and empty states | Existing server search/sort/pagination, grouping, selection and actions; the legacy pass-through container is removed. Kanban, dashboards, hierarchy and worksheets remain dedicated page owners. |
+| `ContractFormPage` record form, including master/detail handling | Existing section `ScForm` / `ScFormItem`, one validation registry and save chain | Existing field controls, relation adapters, master/detail business extensions and data authority; designer sections and standalone sections without a runtime remain explicit exceptions. |
+| Readonly `ContractFormPage` facts | Existing `ScDescriptions` for supported scalar facts | Collection, attachment, dedicated controls, unknown fact types and configuration-editing sections remain contract-field extensions with `data-detail-section-reason`; the page composition marker does not claim every section is a descriptions table. |
+
+The selection functions accept page responsibility and (for detail) the effective
+render profile. They neither infer permissions nor add business capabilities.
+Field validation coverage still determines which rules the legacy precheck may
+exclude; unmounted required fields and domain validations are not bypassed.
+The old model arrays are removed rather than expanded. Reverting the scoped
+P0 commit restores rollout behavior; the reusable controls remain single-source.
+
+WEB-LC-01 follow-up: the previous probe supplied a one-column **full list
+configuration**, not a label patch. The V2 direct-column policy intentionally
+replaced the configurable column universe and removed optional hidden columns
+during that probe. Rollback restored them. That evidence must not be cited as
+proof of label-only capability preservation. It does not invalidate unchanged-
+configuration page-type adoption; future label-only configuration verification
+must preserve and compare the complete column contract.
+
+### Historical rollout records
+
 The presentation composition for standard pages is taken from the official
 `Tencent/tdesign-vue-next-starter` sources instead of being re-assembled per
 page. The reference snapshot is

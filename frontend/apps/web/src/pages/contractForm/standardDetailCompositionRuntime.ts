@@ -26,11 +26,11 @@ export const StandardDetailCompositionKey: InjectionKey<StandardDetailCompositio
   Symbol('sc:standard-detail-composition');
 
 export function createStandardDetailCompositionRuntime(
-  model: () => string,
+  pageType: () => string,
   renderProfile: () => string,
 ): StandardDetailCompositionRuntime {
   const decision = computed(() => resolveStandardDetailComposition({
-    model: model(),
+    pageType: pageType(),
     renderProfile: renderProfile(),
   }));
   const runtime: StandardDetailCompositionRuntime = {

@@ -498,7 +498,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
    * Ask the adopted form sections to validate before anything is written.
    *
    * Three boundaries are kept apart:
-   *  - a surface outside the pilot scope adopts nothing and needs no runtime;
+   *  - a dedicated surface outside the contract-record responsibility needs no runtime;
    *  - an adopted surface whose runtime or section registration is missing,
    *    while the contract still declares required editable positions, fails
    *    closed and keeps the draft instead of passing silently;
@@ -518,7 +518,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     // The operation this run belongs to. `saveRecord` opens one before calling
     // here, so the await below is bound to a surface the caller can re-verify.
     const operation = activeSaveOperation;
-    if (!resolveStandardFormComposition({ model: model.value }).adopted) {
+    if (!resolveStandardFormComposition({ pageType: 'contract-record-form' }).adopted) {
       return { ok: true, coveredFieldNames: [], superseded: false };
     }
     const validate = typeof validateAdoptedFormSections === 'function' ? validateAdoptedFormSections : null;

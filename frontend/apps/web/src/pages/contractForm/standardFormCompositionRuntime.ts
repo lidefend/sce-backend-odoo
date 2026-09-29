@@ -50,9 +50,9 @@ export const StandardFormCompositionKey: InjectionKey<StandardFormCompositionRun
  * be exercised without mounting a page.
  */
 export function createStandardFormValidationRegistry(
-  model: () => string,
+  pageType: () => string,
 ): StandardFormCompositionRuntime {
-  const adopted = computed(() => resolveStandardFormComposition({ model: model() }).adopted);
+  const adopted = computed(() => resolveStandardFormComposition({ pageType: pageType() }).adopted);
   const validators = new Map<string, StandardFormSectionValidator>();
   const runtime: StandardFormCompositionRuntime = {
     adopted,
@@ -86,9 +86,9 @@ export function createStandardFormValidationRegistry(
 }
 
 export function createStandardFormCompositionRuntime(
-  model: () => string,
+  pageType: () => string,
 ): StandardFormCompositionRuntime {
-  const runtime = createStandardFormValidationRegistry(model);
+  const runtime = createStandardFormValidationRegistry(pageType);
   provide(StandardFormCompositionKey, runtime);
   return runtime;
 }

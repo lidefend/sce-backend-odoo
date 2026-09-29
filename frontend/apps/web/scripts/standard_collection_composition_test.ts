@@ -1,31 +1,14 @@
-/**
- * Executable proof for FE-TPL-03: the official list and readonly detail
- * compositions are adopted by an explicit, model-scoped presentation policy,
- * and the shipped surfaces really render them.
- *
- * Two things are proved that a screenshot cannot:
- *
- *   1. the adoption decision is an explicit pilot list, so a business model
- *      joins by being listed there and by carrying a contract the composition
- *      already understands — the call sites never name a model;
- *   2. outside the adopted scope the surfaces keep their previous composition,
- *      so a list or a record never renders through two competing containers.
- *
- * The policy modules are pure: no Vue, no DOM, no TDesign. The structural
- * checks read the shipped sources, so the test fails if the wiring is reverted
- * while the policy still reports "adopted".
- */
+/** Page-type adoption and explicit detail-extension boundaries. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import {
-  STANDARD_LIST_COMPOSITION_PILOT_MODELS,
   resolveStandardListComposition,
 } from '../src/app/presentation/standardListComposition';
 import {
-  STANDARD_DETAIL_COMPOSITION_PILOT_MODELS,
   resolveStandardDetailComposition,
+  resolveStandardDetailSection,
 } from '../src/app/presentation/standardDetailComposition';
 
 let cases = 0;
@@ -52,99 +35,25 @@ const readSource = (relative: string) => fs.readFileSync(locateSource(relative),
 const OFFICIAL_REFERENCE = 'aeed57076217f7777158b905f353d73585bad1c4';
 
 // ---------------------------------------------------------------------------
-// Part 1 — the list adoption policy is an explicit, model-scoped pilot list
-// ---------------------------------------------------------------------------
-checkDeep(
-  resolveStandardListComposition({ model: 'project.project' }),
-  { composition: 'official-standard-list', adopted: true, reason: 'pilot-model-adopted' },
-  'an adopted list resolves to the official composition',
-);
-checkDeep(
-  resolveStandardListComposition({ model: 'sc.general.contract' }),
-  { composition: 'official-standard-list', adopted: true, reason: 'pilot-model-adopted' },
-  'a second business model reuses the same composition, not a second implementation',
-);
-checkDeep(
-  resolveStandardListComposition({ model: 'payment.request' }),
-  { composition: 'official-standard-list', adopted: true, reason: 'pilot-model-adopted' },
-  'the payment-request list joins the same composition, so one business flow does not run two list implementations',
-);
-checkDeep(
-  resolveStandardListComposition({ model: 'res.partner' }),
-  { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'an unverified list keeps its previous composition',
-);
-checkDeep(
-  resolveStandardListComposition({ model: '  sc.general.contract  ' }),
-  { composition: 'official-standard-list', adopted: true, reason: 'pilot-model-adopted' },
-  'the decision is insensitive to surrounding whitespace',
-);
-checkDeep(
-  resolveStandardListComposition({ model: '' }),
-  { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'an unknown model never adopts by accident',
-);
-checkDeep(
-  resolveStandardListComposition({}),
-  { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'an absent model never adopts by accident',
-);
-checkDeep(
-  resolveStandardListComposition({ model: undefined }),
-  { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'a missing model never adopts by accident',
-);
-checkDeep(
-  resolveStandardListComposition({ model: 'PROJECT.PROJECT' }),
-  { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'adoption is an exact model identity, not a case-folded label guess',
-);
-check(Object.isFrozen(STANDARD_LIST_COMPOSITION_PILOT_MODELS), true, 'the pilot list is immutable');
-checkDeep(
-  [...STANDARD_LIST_COMPOSITION_PILOT_MODELS],
-  ['project.project', 'sc.general.contract', 'payment.request'],
-  'the pilot list stays the explicit verified scope',
-);
-
-// ---------------------------------------------------------------------------
-// Part 2 — only the readonly profile adopts the official detail composition
-// ---------------------------------------------------------------------------
-checkDeep(
-  resolveStandardDetailComposition({ model: 'sc.general.contract', renderProfile: 'readonly' }),
-  { composition: 'official-standard-detail', adopted: true, reason: 'pilot-model-adopted' },
-  'an adopted readonly record resolves to the official detail composition',
-);
-checkDeep(
-  resolveStandardDetailComposition({ model: 'sc.general.contract', renderProfile: 'edit' }),
-  { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' },
-  'an editable surface keeps its previous composition',
-);
-checkDeep(
-  resolveStandardDetailComposition({ model: 'sc.general.contract', renderProfile: 'create' }),
-  { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' },
-  'the official detail page has no create state, so create keeps its previous composition',
-);
-checkDeep(
-  resolveStandardDetailComposition({ model: 'sc.general.contract' }),
-  { composition: 'legacy-detail-surface', adopted: false, reason: 'not-a-readonly-profile' },
-  'an undeclared render profile is not treated as readonly',
-);
-checkDeep(
-  resolveStandardDetailComposition({ model: 'project.project', renderProfile: 'readonly' }),
-  { composition: 'legacy-detail-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'a readonly record outside the pilot scope keeps its previous composition',
-);
-checkDeep(
-  resolveStandardDetailComposition({ model: '', renderProfile: 'readonly' }),
-  { composition: 'legacy-detail-surface', adopted: false, reason: 'outside-pilot-scope' },
-  'an unknown readonly record never adopts by accident',
-);
-check(Object.isFrozen(STANDARD_DETAIL_COMPOSITION_PILOT_MODELS), true, 'the detail pilot list is immutable');
-checkDeep(
-  [...STANDARD_DETAIL_COMPOSITION_PILOT_MODELS],
-  ['sc.general.contract'],
-  'the detail pilot list stays the explicit verified scope',
-);
+// Part 1/2 — existing page responsibilities select the shared composition.
+check(resolveStandardListComposition({ pageType: 'standard-query-list' }).adopted, true, 'all ordinary query lists adopt without a model whitelist');
+for (const pageType of ['', 'worksheet', 'hierarchy', 'kanban', undefined]) {
+  check(resolveStandardListComposition({ pageType }).adopted, false, 'specialized lists remain explicit exceptions');
+}
+check(resolveStandardDetailComposition({ pageType: 'contract-record-detail', renderProfile: 'readonly' }).adopted, true, 'readonly contract detail adopts');
+for (const renderProfile of ['create', 'edit', '', undefined]) {
+  check(resolveStandardDetailComposition({ pageType: 'contract-record-detail', renderProfile }).reason, 'not-a-readonly-profile', 'detail does not confer readonly state');
+}
+check(resolveStandardDetailComposition({ pageType: 'worksheet', renderProfile: 'readonly' }).adopted, false, 'dedicated workspace is not a generic detail');
+const facts = { adopted: true, configurationMode: false, readonlyFacts: true, fields: [{ type: 'char', dedicatedControl: false }] };
+check(resolveStandardDetailSection(facts).adopted, true, 'scalar facts use descriptions');
+for (const type of ['one2many', 'many2many', 'binary', 'json', 'unknown']) {
+  check(resolveStandardDetailSection({ ...facts, fields: [...facts.fields, { type, dedicatedControl: false }] }).adopted, false, 'mixed section preserves specialized control: ' + type);
+}
+check(resolveStandardDetailSection({ ...facts, fields: [{ type: 'char', dedicatedControl: true }] }).reason, 'dedicated-control-extension', 'custom widget cannot degrade to text');
+check(resolveStandardDetailSection({ ...facts, configurationMode: true }).reason, 'configuration-editor', 'designer keeps editable field bindings');
+check(resolveStandardDetailSection({ ...facts, readonlyFacts: false }).adopted, false, 'editable facts keep controls');
+check(resolveStandardDetailSection({ ...facts, fields: [] }).adopted, false, 'empty section does not claim coverage');
 
 // ---------------------------------------------------------------------------
 // Part 3 — the policies stay pure presentation scope
@@ -166,10 +75,10 @@ for (const relative of [
 // Part 4 — the shipped surfaces really render the adopted composition
 // ---------------------------------------------------------------------------
 const listPageSource = readSource('frontend/apps/web/src/pages/ListPage.vue');
-check(listPageSource.includes('resolveStandardListComposition({ model: props.model })'), true, 'the list page resolves adoption from the contract model, not a renderer choice');
+check(listPageSource.includes("resolveStandardListComposition({ pageType: 'standard-query-list' })"), true, 'the list page resolves adoption from the contract model, not a renderer choice');
 check(listPageSource.includes(':data-list-composition="listComposition.composition"'), true, 'the list page publishes the composition it used');
 check(listPageSource.includes(':data-list-composition-reason="listComposition.reason"'), true, 'the list page publishes why it chose it');
-check(listPageSource.includes('<ProductListSurface :adopted="listComposition.adopted">'), true, 'the list page routes the surface through the official container');
+check(listPageSource.includes('<ProductListSurface>'), true, 'the list page routes the surface through the official container');
 check(listPageSource.includes("'project.project'"), false, 'the list page must not name a business model');
 check(listPageSource.includes("'sc.general.contract'"), false, 'the list page must not name a business model');
 
@@ -179,7 +88,8 @@ check(surfaceSource.includes(':bordered="false"'), true, 'the official list card
 check(surfaceSource.includes("appearance=\"table\""), true, 'the official list card uses the table surface appearance');
 check(surfaceSource.includes(':deep(.t-'), false, 'the official list card adds no selector of its own onto the vendor internals');
 check(surfaceSource.includes('appearance="table"'), true, 'the zero body padding comes from the primitive appearance, not a vendor override');
-check(surfaceSource.includes('<slot v-else />'), true, 'outside the adopted scope the surface is passed through unchanged');
+check(surfaceSource.includes('<slot v-else />'), false, 'standard list no longer has a legacy pass-through path');
+check(listPageSource.includes('<ProductListSurface v-else-if="status === \'empty\'">'), true, 'empty results retain the same official composition');
 
 const headerSource = readSource('frontend/apps/web/src/components/product-list/ProductListHeader.vue');
 check(headerSource.includes('<template #suffix>'), true, 'the official query row renders a search affordance inside the search input');
@@ -199,7 +109,7 @@ check(/from\s+['"]vue['"]/.test(detailRuntimeSource), true, 'the runtime is a Vu
 check(/from\s+['"]tdesign-vue-next['"]/.test(detailRuntimeSource), false, 'the runtime must not import the component library');
 
 const contractPageSource = readSource('frontend/apps/web/src/pages/ContractFormPage.vue');
-check(contractPageSource.includes("createStandardDetailCompositionRuntime(() => model.value, () => renderProfile.value)"), true, 'the record page resolves detail adoption from its own model and render profile');
+check(contractPageSource.includes("createStandardDetailCompositionRuntime(() => 'contract-record-detail', () => renderProfile.value)"), true, 'the record page resolves detail adoption from its own model and render profile');
 check(contractPageSource.includes(':data-detail-composition="standardDetailComposition.decision.value.composition"'), true, 'the record page publishes the detail composition it used');
 check(contractPageSource.includes(':data-detail-composition-reason="standardDetailComposition.decision.value.reason"'), true, 'the record page publishes why it chose it');
 
@@ -222,4 +132,4 @@ const descriptionsSource = readSource('frontend/apps/web/src/components/design-s
 check(descriptionsSource.includes('semanticPrimitiveIdentity(\'ScDescriptions\')'), true, 'the descriptions primitive keeps its project identity');
 check(descriptionsSource.includes('TDesignDescriptionsItem'), true, 'the descriptions primitive is the official implementation');
 
-console.log(`[standard_collection_composition_test] PASS cases=${cases} lists=${STANDARD_LIST_COMPOSITION_PILOT_MODELS.length} details=${STANDARD_DETAIL_COMPOSITION_PILOT_MODELS.length}`);
+console.log(`[standard_collection_composition_test] PASS cases=${cases} scope=page-types`);

@@ -1,6 +1,5 @@
 <template>
   <ScCard
-    v-if="adopted"
     class="list-card-container"
     appearance="table"
     :bordered="false"
@@ -9,7 +8,6 @@
   >
     <slot />
   </ScCard>
-  <slot v-else />
 </template>
 
 <script setup lang="ts">
@@ -23,16 +21,14 @@
  * the card's `table` appearance already carries the zero body padding, so the
  * composition adds no selector of its own onto the vendor's internals.
  *
- * It composes; it does not decide. Whether a list is adopted is resolved from the
- * model by `app/presentation/standardListComposition.ts`, and outside the adopted
- * scope the slot is passed through unchanged so a list never renders through two
- * competing containers.
+ * Standard query lists have one container in both populated and empty states.
+ * Dedicated worksheets and other page types do not instantiate this surface.
+ * There is no model-dependent pass-through path left in this component.
  */
 import ScCard from '../design-system/ScCard.vue';
 
 defineOptions({ inheritAttrs: false });
 
-defineProps<{ adopted: boolean }>();
 </script>
 
 <style scoped>
