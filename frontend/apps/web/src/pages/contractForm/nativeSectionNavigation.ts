@@ -121,12 +121,22 @@ export function nextBusinessActionLabel(
   return String(candidate?.label || '').trim();
 }
 
-const SECTION_LABELS: Partial<Record<CanonicalFormSemanticRole, string>> = {
-  summary: '概览',
-  task: '办理信息',
-  context: '基本资料',
-  risk: '风险与提示',
-};
+/**
+ * Contract-first section label.
+ *
+ * `semanticRole` is contract data, but a localized *business* label is not:
+ * the frontend must not translate a role into a business section name. The
+ * only accepted source is the contract-authored section title. A role-only
+ * section keeps no navigation entry, so the missing contract title stays
+ * visible as a gap instead of being silently named by the renderer.
+ */
+function contractSectionLabel(node: CanonicalFormNode): string {
+  const title = String(node.title || '').trim();
+  if (!title) return '';
+  if (['group', 'page', 'notebook', 'sheet', 'container', 'header', 'footer'].includes(title.toLowerCase())) return '';
+  if (/^[a-z][a-z0-9_:. -]*$/i.test(title) && /[_:.]/.test(title)) return '';
+  return title;
+}
 
 function normalizedKind(node: CanonicalFormNode): string {
   return String(node.kind || '').trim().toLowerCase();
@@ -173,7 +183,7 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
     if (!node.visible) return;
     const role = node.semanticRole;
     const kind = normalizedKind(node);
-    const label = SECTION_LABELS[role];
+    const label = contractSectionLabel(node);
     if (kind !== 'field' && role && label && role !== inheritedRole && !emittedRoles.has(role)) {
       const key = `node:${node.nodeId}:${role}`;
       items.push({

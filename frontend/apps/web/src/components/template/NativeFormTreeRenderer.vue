@@ -440,7 +440,7 @@ import { canonicalFormActionIconClass } from '../../pages/contractForm/canonical
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
 import { isLayoutOnlyGroupContainer } from '../../pages/contractForm/nativeLayoutUtils';
-import { collectNativeBusinessSections, nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
+import { collectNativeBusinessSections, nativeBusinessSectionIdentity, resolveNativeSectionHeading } from '../../pages/contractForm/nativeBusinessSection';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -680,20 +680,11 @@ function sectionSourceIdentity(node: NativeFormLayoutNode) {
 }
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {
-  if (props.fieldConfigEditable) return '';
-  const businessSection = nativeBusinessSectionIdentity(node);
-  if (businessSection) return businessSection.label;
-  if (authoritativeBusinessSectionMode.value) return '';
-  if (semanticFormRole(node) === String(props.inheritedSemanticRole || '').trim().toLowerCase()) return '';
-  return ({
-    summary: '概览',
-    task: '办理信息',
-    context: '基本资料',
-    risk: '风险与提示',
-    relation: '关系明细',
-    activity: '协作记录',
-    audit: '历史审计',
-  } as Record<string, string>)[semanticFormRole(node)] || '';
+  // Contract-first: the heading is resolved by the shared section-identity
+  // module (released native opt-in, then the contract-authored title). The
+  // renderer must not invent a business label from a semantic role, otherwise
+  // distinct contract sections collapse onto one placeholder heading.
+  return resolveNativeSectionHeading(node, { fieldConfigEditable: props.fieldConfigEditable });
 }
 
 function isReadablePolicyTitle(value: unknown) {
