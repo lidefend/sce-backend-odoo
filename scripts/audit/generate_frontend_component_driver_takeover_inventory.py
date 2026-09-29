@@ -152,16 +152,24 @@ def build_inventory() -> dict[str, object]:
                 if source == "frontend/apps/web/src/components/MenuTree.vue":
                     semantic_adapters.add("MenuTree")
                 adapter_rows.setdefault(driver, []).append({"source": source, "semanticAdapters": sorted(semantic_adapters)})
-            if not is_p3(source) and "/components/design-system/" not in source and source not in {
-                "frontend/apps/web/src/components/MenuTree.vue",
-                "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
-            }:
+            # Only the design-system adapter layer may own a native behavioural
+            # element, because realising a primitive is exactly its job.  Every
+            # other production surface -- including P3 low-code administration
+            # and the navigation-tree components -- owes the official
+            # composition.  Excluding them published raw=0 while three native
+            # surfaces still rendered on screen.
+            if "/components/design-system/" not in source:
                 tags = sorted(set(match.group(1).lower() for match in RAW_BEHAVIOR.finditer(text)))
                 api_text = re.sub(r"\b(?:async\s+)?function\s+(?:confirm|alert|prompt)\s*\(", "", text)
                 tags.extend(name for name, pattern in RAW_BEHAVIOR_APIS.items() if pattern.search(api_text))
                 tags = sorted(set(tags))
                 if tags:
-                    raw_surfaces.append({"source": source, "rawBehaviorTags": tags, "assessment": "unassessed"})
+                    raw_surfaces.append({
+                        "source": source,
+                        "productLayer": "P3" if is_p3(source) else "P0-P2/P4",
+                        "rawBehaviorTags": tags,
+                        "assessment": "unassessed",
+                    })
         for adapter in set(SC_TAG.findall(text)):
             if f"/{adapter}.vue" not in source:
                 consumer_counts[adapter] = consumer_counts.get(adapter, 0) + len(re.findall(fr"<{re.escape(adapter)}\b", text))
@@ -214,7 +222,7 @@ def build_inventory() -> dict[str, object]:
     return {
         "schemaVersion": "frontend-component-driver-takeover/v1",
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
-        "scope": "repository P0/P1 frontend production sources",
+        "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
         "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
         "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": unassessed_required_takeovers, "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
@@ -254,7 +262,13 @@ def completion_rule_failures(report: dict[str, object]) -> list[str]:
         failures.append(f"directLibraryImportBypasses={len(bypasses)} (a business source imports tdesign-vue-next directly)")
     raw_surfaces = report.get("rawBehaviorSurfaces") or []
     if raw_surfaces:
-        failures.append(f"unassessedRawBehaviorSurfaces={len(raw_surfaces)} (a raw behaviour surface has no assessment)")
+        detail = ", ".join(
+            f"{surface.get('source')}({'+'.join(surface.get('rawBehaviorTags') or [])})"
+            for surface in raw_surfaces
+        )
+        failures.append(
+            f"unassessedRawBehaviorSurfaces={len(raw_surfaces)} (a raw behaviour surface has no assessment: {detail})"
+        )
     return failures
 
 

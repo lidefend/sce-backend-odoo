@@ -100,6 +100,60 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
         self.assertEqual(report["summary"]["unassessedRequiredTakeovers"], 0)
         self.assertIn("unassessedRequiredTakeovers=0", report["completionRule"])
 
+    def test_raw_behavior_surface_inside_p3_administration_is_evaluated(self) -> None:
+        # Negative case: P3 low-code administration is a production surface
+        # too.  Excluding it published unassessedRawBehaviorSurfaces=0 while
+        # SceneHealthView and BusinessConfigChangeSetPanel still rendered a
+        # native <details> disclosure on screen.
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-p3-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            panel = source_root / "views" / "businessConfigSurface" / "RawPanel.vue"
+            panel.parent.mkdir(parents=True)
+            panel.write_text(
+                "<template><details><summary>x</summary>y</details></template>\n",
+                encoding="utf-8",
+            )
+            prefix = panel.parent.relative_to(ROOT).as_posix() + "/"
+            with patch.object(MODULE, "WEB", source_root), patch.object(MODULE, "P3_PREFIXES", (prefix,)):
+                report = MODULE.build_inventory()
+                failures = MODULE.completion_rule_failures(report)
+        surfaces = report["rawBehaviorSurfaces"]
+        self.assertEqual(len(surfaces), 1, surfaces)
+        self.assertEqual(surfaces[0]["productLayer"], "P3")
+        self.assertIn("details", surfaces[0]["rawBehaviorTags"])
+        self.assertTrue(any("unassessedRawBehaviorSurfaces=1" in failure for failure in failures), failures)
+
+    def test_native_confirmation_api_is_a_raw_behavior_surface(self) -> None:
+        # Negative case: window.confirm bypasses the governed confirmation
+        # dialog authority the repository uses everywhere else.
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-confirm-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            view = source_root / "views" / "NativeConfirmView.vue"
+            view.parent.mkdir(parents=True)
+            view.write_text(
+                "<script setup lang=\"ts\">export function run(){ return window.confirm('go?'); }</script>\n",
+                encoding="utf-8",
+            )
+            with patch.object(MODULE, "WEB", source_root):
+                report = MODULE.build_inventory()
+                failures = MODULE.completion_rule_failures(report)
+        surfaces = report["rawBehaviorSurfaces"]
+        self.assertEqual(len(surfaces), 1, surfaces)
+        self.assertIn("window.confirm", surfaces[0]["rawBehaviorTags"])
+        self.assertTrue(any("unassessedRawBehaviorSurfaces=1" in failure for failure in failures), failures)
+
+    def test_design_system_adapter_layer_may_own_native_elements(self) -> None:
+        # Positive control: the design-system layer exists to realise a
+        # primitive, so a native element there is the takeover, not a gap.
+        with tempfile.TemporaryDirectory(prefix=".component-takeover-ds-", dir=ROOT) as raw_root:
+            source_root = Path(raw_root)
+            primitive = source_root / "components" / "design-system" / "ScRaw.vue"
+            primitive.parent.mkdir(parents=True)
+            primitive.write_text("<template><button>x</button></template>\n", encoding="utf-8")
+            with patch.object(MODULE, "WEB", source_root):
+                report = MODULE.build_inventory()
+        self.assertEqual(report["rawBehaviorSurfaces"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
