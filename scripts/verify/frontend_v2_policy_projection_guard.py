@@ -15,6 +15,11 @@ CONTRACT_HELPERS = ROOT / "frontend/apps/web/src/app/contracts/unifiedPageContra
 STRICT_SCHEMA = ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts"
 STRICT_TYPES = ROOT / "frontend/apps/web/src/app/contracts/v2/types.ts"
 STRICT_STORE = ROOT / "frontend/apps/web/src/app/contracts/v2/store.ts"
+ACTION_SEMANTICS_INVALID_MARKER = "actionSemanticsInvalid"
+ACTION_SEMANTICS_INVALID_CONSUMERS = (
+    ROOT / "frontend/apps/web/src/pages/contractForm/canonicalFormActionExecutor.ts",
+    ROOT / "frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts",
+)
 CONSUMER_FILES = [
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts",
     ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
@@ -356,7 +361,12 @@ ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS = {
     # Action presentation metadata is projected by the backend and consumed
     # separately from the formal execution rule fields. Keep this set exact so
     # any new schema-external action field still fails closed.
-    "ContractV2ActionRule": set(),
+    # `actionSemanticsInvalid` is the one Web-side field allowed here: it records
+    # that the decoder *refused* a declaration the backend published, so the gap
+    # stays visible instead of the terminal silently dropping it.  It is only
+    # legitimate while the Web consumes it and the backend never publishes it,
+    # which the checks below enforce.
+    "ContractV2ActionRule": {"actionSemanticsInvalid"},
     # Container is compared against the explicit union of the formal container
     # and nativeLayoutNode schema branches below; no ad-hoc extension remains.
     "ContractV2Container": set(),
@@ -718,6 +728,26 @@ def main() -> int:
             violations.append(
                 f"{_relative(STRICT_TYPES)}: {interface_name} schema-extension whitelist drift; "
                 f"extra={sorted(extra)} expected={sorted(allowed_extra)}"
+            )
+
+    if ACTION_SEMANTICS_INVALID_MARKER in ALLOWED_STRICT_SCHEMA_EXTENSION_FIELDS.get("ContractV2ActionRule", set()):
+        # A tolerated marker is not a visible gap: it only stays whitelisted
+        # while the Web actually reads it, and it must never become a field the
+        # backend publishes (the terminal would then own a meaning it does not).
+        unconsumed = [
+            _relative(path)
+            for path in ACTION_SEMANTICS_INVALID_CONSUMERS
+            if not (path.exists() and ACTION_SEMANTICS_INVALID_MARKER in path.read_text(encoding="utf-8"))
+        ]
+        if unconsumed:
+            violations.append(
+                f"{ACTION_SEMANTICS_INVALID_MARKER} is whitelisted but unread in {unconsumed}; "
+                f"an unread refusal marker is dead weight, not a visible declaration gap"
+            )
+        if ACTION_SEMANTICS_INVALID_MARKER in json.dumps(schema_payload):
+            violations.append(
+                f"{_relative(BACKEND_SCHEMA)} must not publish {ACTION_SEMANTICS_INVALID_MARKER}; "
+                f"refusing a declaration is a terminal decision"
             )
 
     for path in CONSUMER_FILES:

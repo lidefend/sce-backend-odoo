@@ -2352,11 +2352,16 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
   改为用权威 `is_declared` 做配对校验。负例实测：executor 漂移 → FAIL；schema 少一个 pair → FAIL；
   schema 放宽某 pair 的 purpose → FAIL。
 
-同批补充登记：`verify.unified_page_contract.v2.stable_projection` 为**基线即红**
+**同批收口**：`verify.unified_page_contract.v2.stable_projection` 原为基线即红
 （`frontend_v2_policy_projection_guard` 报 `types.ts` 的 `actionSemanticsInvalid` 不在严格白名单内；
 三处相关文件在本批 diff 中字节未变，该标识由基线祖先 `22ee5391b` 引入）。
-它同时被 `verify.unified_page_contract.v2` 与 `...professional_backend` 聚合依赖，
-合并资格需先确认它是否已登记为已知红项。
+该字段是端侧对“后端发布了越界声明”的拒收标记：`canonicalFormActionExecutor` 与
+`contractFormHeaderCanonicalActions` 真实读取它，删掉会把“缺口可见”退化回静默丢弃。
+处理方式不是放宽白名单，而是把它登记为 `ContractV2ActionRule` 唯一允许的端侧扩展字段，
+并补两条 fail-closed 约束：白名单字段必须被声明的消费者读取，且后端 schema 不得发布它。
+负例实测：消费者不再读取 → FAIL；schema 发布该键 → FAIL。收口后
+`verify.unified_page_contract.v2`（含前端构建）与 `verify.unified_page_contract.v2.professional_backend`
+均 `exit=0`，该红项不再阻塞聚合门禁。
 
 复核者登记的非阻断后续（`POST_MERGE_FOLLOWUP`，本批未处理）：
 `register_workflow_contract_profile` 重复注册为静默覆盖；
