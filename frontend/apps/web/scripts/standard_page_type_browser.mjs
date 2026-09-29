@@ -59,10 +59,19 @@ async function list(page, menu, name) {
 
 async function form(page, url, name, profile = 'form') {
   await page.goto(`${base}${url}`);
-  await page.locator('[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
-  check(`${name}: official form engine mounted`, await page.locator('[data-semantic-component="ScForm"]').count() > 0);
+  // Readiness follows the mode the contract declared for this page, never one
+  // assumed composition. An editable record waits for the adopted form engine;
+  // a readonly record waits for the page to publish the readonly detail
+  // composition the contract declared. Demanding the editable engine on a
+  // readonly record would require a mode the same contract cannot declare at
+  // the same time, so the probe would hang on a page that is behaving correctly.
+  await page.locator(profile === 'readonly'
+    ? '[data-product-page-mode="form"][data-state="ok"][data-detail-composition="official-standard-detail"][data-detail-composition-reason="contract-readonly-record-view"]'
+    : '[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
   check(`${name}: no unknown renderer`, await page.locator('[data-field-fail-closed]').count() === 0);
   if (profile === 'readonly') {
+    check(`${name}: readonly mode published`, await page.locator('[data-semantic-component="ContractFormProductHeader"][data-state="readonly"]').count() === 1);
+    check(`${name}: no editable form composition`, await page.locator('[data-form-composition="official-standard-form"]').count() === 0);
     check(`${name}: nonzero official facts`, await page.locator('[data-detail-facts="official-standard-detail"]').count() > 0);
     check(`${name}: readonly detail adopted`, await page.locator('[data-detail-composition="official-standard-detail"]').count() === 1);
     const collections = page.locator('[data-field-type="one2many"], [data-field-type="many2many"], [data-field-type="binary"]');
@@ -73,6 +82,8 @@ async function form(page, url, name, profile = 'form') {
     }
     report.detailSections ??= {};
     report.detailSections[name] = await page.locator('[data-detail-section-reason]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-detail-section-reason')));
+  } else {
+    check(`${name}: official form engine mounted`, await page.locator('[data-semantic-component="ScForm"]').count() > 0);
   }
   await page.screenshot({ path: path.join(out, `${name}.png`) });
 }
