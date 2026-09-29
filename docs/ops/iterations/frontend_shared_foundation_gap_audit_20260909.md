@@ -3125,3 +3125,93 @@ business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")  
 ### 状态
 
 本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+---
+
+## FE-CONTRACT-WORKFLOW-AUTHORITY-01：工作流可用性收敛为单一权威
+
+起点 HEAD `6cabe3067`（干净）。本段只删除**没有消费方**的重复门禁与死接线，并给被删的 fail-open 默认留下回归钉子。
+不改业务动作、不改状态机、不改原生视图。
+
+### 1. 七问
+
+- **Formal Product Layer**：P0 平台内核产品（统一页面契约 v2 的通用消费行为）。
+- **Layer Target**：`frontend/apps/web` 的 `app/contracts/v2/workflowActionAvailability.ts`（权威）与
+  `pages/contractForm/workflowContract.ts`（页面适配）、`pages/ContractFormPage.vue`（组装）。
+- **Module**：前端 Web 渲染层，不涉及 Odoo 模块。
+- **Standard vs User-Specific**：平台机制。动作可用性判定不是客户偏好，也不是低代码可配置项。
+- **Why Here**：契约已经声明动作与按钮状态，前端只需要**一处**把它换算成"能不能点"；重复的第二处必然漂移。
+- **Why Not Elsewhere**：不放后端（后端已给出 `enabled`/`disabled`/`entitlementEvaluated` 事实），
+  不放低代码（不是呈现偏好），不放原生视图（按钮可见性由 arch modifier 表达）。
+- **Blast Radius**：仅合同表单的动作可用性判定路径；由 present 单测（177 例）＋严格类型检查＋一次前端构建证明收敛。
+
+### 2. 真实缺陷：两处门禁，其中一处还默认放行
+
+合同表单的动作可用性实际由 `contractFormPresenter.ts` 单点判定：读 `resolveWorkflowActionAvailability`，
+`error` 与 `managed && !enabled` 都产出 `enabled: false`（fail-closed，已有活体断言）。
+
+同时，页面侧长期带着第二个实现：
+
+| 死符号 | 位置 | 问题 |
+|---|---|---|
+| `applyWorkflowAvailability` | `pages/contractForm/workflowContract.ts` | presenter 同一判定的第二份拷贝；页面把它当依赖传入，消费方从未解构使用 |
+| `shouldShowWorkflowAction` | 同上 | 已知转移 + `availableActions` 存在但**不是数组**时直接 `return true` —— 读不懂的载体照样渲染出工作流控件 |
+| `isWorkflowTransitionMethod` / `workflowActionMethodAliases` / `workflowActionRowForMethod` | 页面导入 | 仅再导出，页面未使用 |
+| `normalizeWorkflowActionRows` / `normalizeWorkflowPhaseStatusbar` / `normalizeNativeFormStatusbar` / `resolveStatusbarSelectionValue` | 页面导入 | 前两者**只被测试引用**（测试保留，页面接线删除）；后两者由 `useRecordFormLayout` 直接导入，页面导入是纯冗余 |
+
+也就是说：**"未知判为允许"的默认值真实存在于代码里，只是恰好没有消费者。** 一旦有人按名字去调用它，
+按钮就会出现；而这条路径从来不在验收视野内，因为页面上看不到差异。
+
+### 3. 负例（先证明回归抓得住）
+
+`/tmp/deleted_helper_negative.ts`（一次性，未入库）逐字复制被删助手，对同一输入做对拍：
+
+| 输入 | 被删助手 | 现权威 |
+|---|---|---|
+| `{ availableActions: 'unreadable' }` + `action_submit` | `true`（渲染按钮，**fail-open**） | `kind: 'error'`（不可用，fail-closed） |
+| `{ availableActions: 'unreadable' }` + 未登记方法 | `true` | `kind: 'unmanaged'`（不扩大权威范围） |
+
+`[deleted_helper_negative] PASS: the removed helper failed open, the authority reports an error`
+
+新入库回归：`canonical_form_presenter_test.ts` 用 `resolveWorkflowActionAvailability` 直接断言上述两种输入，
+并保留原有 7 条语义（非布尔 `enabled`、畸形 `target`、合法禁用行、孤立畸形行不误伤、非工作流动作不越界、
+同标签不同身份合法、已声明转移无行时 fail-closed）。
+
+### 4. 修正既有记录的一处口径
+
+`form_structure_consumption_stabilization_20260917.md:4284/4425/4877` 把 `shouldShowWorkflowAction=true`
+记为 `reactivate` 降级的"后果/批次 C 探针实测值"。**该助手的真实消费方为零**，实测的是函数返回值，
+不是渲染出来的页面；当时真正的拦截来自交付状态契约的 `enabled` + 原生 modifier + 后端拒绝。
+结论方向（fail-closed 成立）不变，但"页面会渲染出该按钮"的表述应视为**函数级代理指标**。
+本段删除该助手后，该口径不再有歧义。
+
+### 5. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.frontend.canonical_form_presenter.unit` | PASS `cases=177`（含新增 fail-closed 回归） |
+| 负例对拍（一次性脚本） | PASS：被删助手 = fail-open，现权威 = error |
+| `make verify.frontend.adopted_form_validation_identity.unit` | PASS `cases=46 failed=0 host=real-vue-instance` |
+| `make verify.frontend.contract_form_save_failure_recovery.unit` | PASS（edit-retry / single-flight / create-retry / permission-denial） |
+| `make verify.frontend.contract_error_business_ownership.unit` | PASS `92 cases` |
+| `make verify.frontend.standard_form_composition.unit` | PASS `93 cases` |
+| `make verify.frontend.contract_field_occurrence_identity.unit` | PASS |
+| `make verify.frontend.lint.src` | PASS `0 errors`（57 warning 为既有 vue 属性换行风格项） |
+| `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` 两套配置） |
+| `make verify.frontend.no_new_any_guard` | PASS `files_checked=703 total_any=25` |
+| `make verify.frontend.build` | PASS（`ContractFormPage-*.js` 948.98 kB） |
+| `python3 -m unittest scripts.verify.test_product_view_capability_ledger` | PASS 22 tests（该测试文件同时是能力台账交互证据源，已确认守卫引用的符号未被触及） |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+### 6. 剩余（显式登记，不在本段）
+
+- `normalizeWorkflowActionRows`、`normalizeWorkflowPhaseStatusbar` 目前**只被测试引用**。二者语义 fail-closed，
+  暂不删除；若后续仍无消费方，与对应测试一并清理。
+- 合同表单仍有 `standardFormComposition.ts`（官方组合）与 `legacy-form-section` 两条渲染器：
+  后者是**契约未声明为 record-form 时的 fail-closed 兜底**，不是遗漏。真正要补的是
+  "哪些在册入口的契约没有声明 `pageInfo`"，属契约投影侧，不在本段。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
