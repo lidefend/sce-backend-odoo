@@ -967,3 +967,32 @@ pid **60945**，`STATIC_ROOT=…/sce-offrepo/artifacts/fe-tpl04e-20260929/dist`�
   同记录往返与代表视口；不代表 89 入口矩阵或所有路由/所有模型均已验收。业务矩阵状态不因模板验收升级；
   未重跑 89 入口、全站发布验收与发布门禁；**未**进入 TPL-05；不推送、不合并、不部署目标环境。
 - 本轮未创建/修改/删除任何业务数据（未执行保存）；`sc.general.contract` 记录总数保持 3。
+
+### FE-TPL-03 收口后的两个真实缺陷修复（2026-09-29）
+
+用户在实际页面上报两个问题，均为**产品缺陷**，已定位根因、修复并定向复验；不重开 TPL-03 全量验收。
+
+**候选与运行来源**：修复提交 `1087d708`（IME）、`fd581cb9`（表单体快捷筛选）之上 HEAD 为 `fd581cb9`，
+工作树干净。同批次构建一次：`scripts/dev/frontend_static_build.sh` →
+`sce-offrepo/artifacts/fe-tpl03fix-20260929/dist`，`index.html` sha256
+`cee31a23e6b353dce8524cb6885170e0d3d6a024f9c31456d7f934e8eec3354f`，入口 `/assets/index-jnbV95D6.js`。
+旧 `:5180`（pid 60945，服务 `fe-tpl04e-20260929/dist`）经核实后停止，同一端口改由新进程
+（pid **608525**，`STATIC_ROOT=…/fe-tpl03fix-20260929/dist`）服务；`/api/`、`/web/` 仍代理到 `:18082`。
+历史产物 `fe-tpl04e-20260929/dist` 与历史 `tpl03closeout/tpl03-closeout-results.json`（stamp `20260929035002`）
+**保留未覆盖**，不因新运行倒填。
+
+| 缺陷 | 根因 | 修复位置 | 复验证据 |
+|---|---|---|---|
+| 列表搜索框中文（IME）输入丢失 | `ScInput.vue` 未声明/透传 `compositionstart|end`；TDesign 走自身 `(value, context)` 签名且此处 `value` 陈旧，调用方读 `event.target.value` 得到 `""`，每次合成上屏清空草稿 | `frontend/apps/web/src/components/design-system/ScInput.vue`（透传真实 `CompositionEvent`）；`pages/ListPage.vue`、`views/ActionView.vue`（容错读取 `target.value` / `{e:{target}}` / 字符串，无法解析则**保留**草稿） | `tools/tpl03_search_ime_probe.mjs` 真实 CDP 合成：`commit-合同 → value="合同"`、`SEARCH_REQ {"search":"合同"}`（修复前 `value=""`、`search: undefined`） |
+| 「快捷筛选」（列表查询预设）泄漏到表单体 | `formActionPlaceholderGate` 仅对 `useNativeFormTree || nativeAuthority` 关闭预设；已采纳的 `sc.general.contract` / `project.project` 表单体两者皆否，故泄漏 | `pages/contractForm/formActionPlaceholderGate.ts` 新增 `officialFormComposition`（仅关闭 `suppressSearchFilters`；流转/体动作仍只看结构归属）；`pages/ContractFormPage.vue` 传入 `standardFormComposition.adopted` | `hasQF:false`、`hasQuickFilterChips:false`、表单字段与页签在位、`CONSOLE_ERRORS []`；截图 `tpl03closeout/fix-1440-form10.png` |
+
+**回归与门禁**：`make verify.frontend.native_form_structure_responsibility.unit` → `PASS cases=10`（新增
+`officialFormComposition` 两例）；`make verify.frontend.typecheck.strict` → exit 0。修复后在**新候选**上重采
+TPL-03 探针：`artifacts/frontend-web-fix-20260928/tpl03fix-20260929/`（stamp `20260929045101`），
+**16 PASS / 1 GAP**（分页下一页仍为受管数据不可达的证据缺口）、`consoleErrors: []`；列表查询/排序/清除、
+详情 10/11 只读、同记录往返、390×844 全部无回退。旧 `tpl03closeout` 结果保持不变，两次运行分别注明候选。
+本轮未创建/修改/删除业务数据（未执行保存），记录总数保持 3。
+
+**边界（不得夸大）**：历史 `cc0eee7b` 产物缺口与异步身份漏洞的既有阻断状态**均未因此消项**；
+四项 `style_system.guard` 欠账仍为真实 FAIL、独立记账；不重跑 89 入口/全站发布门禁；
+不修改业务矩阵；不推送、不合并、不部署；**未**进入 TPL-05。
