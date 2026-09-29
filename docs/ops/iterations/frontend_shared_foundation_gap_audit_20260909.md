@@ -1974,3 +1974,84 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 最终P4/docs提交不改已验产品与环境输入，继续复用本次页面证据及原始记录。旧config04-r2保留。
   主线未集成、目标环境未部署、整体用户交付未验收；零静态状态gap不等于89入口业务完成。
   菜单通用输入/反馈已接管，专用树/批量编排及设计器后续按必要职责收口，不再另造通用状态实现。
+
+
+## MENU-TREE-01：菜单专用树接管与探针层 vendor 耦合硬化（2026-09-29，本地批次）
+
+### 层级、范围与身份
+
+- `Formal Product Layer`：P0 平台内核产品（原语导出/桥接）+ P4 运维交付工具（验证脚本与门禁）。
+- `Layer Target`：`frontend/packages/ui` 原语导出、`frontend/apps/web` 菜单配置视图、
+  `scripts/verify` 探针门禁、`scripts/verify/baselines` 基线。
+- `Module`：`frontend/packages/ui/src/primitives.ts`、`frontend/apps/web/src/views/menuConfig/*`、
+  `frontend/apps/web/src/views/MenuConfigView.vue`、`scripts/verify/playwright_vendor_coupling_guard.py`。
+- `Reason`：菜单树是首个“页面类型”接管；通用交互必须回到官方组合，探针不得继续锁死私有 DOM。
+- `Why Not Elsewhere`：不新增业务功能、不重构模板体系、不改后端事务，也不把业务语义放进前端。
+- 本地提交（未推送/未合并/未部署目标环境）：`fc04b09c3`（树接管）→ `a114ffe0f`（拖拽契约守卫）
+  → `b2ad32f33`（派生清单刷新）→ `c5f08314b`（节点展开语义标识）→ `d3bc7b45d`（探针断言官方交互契约）
+  → `3c1d4e70a`（按可见文案定位选项）→ `1d155b257`（探针层 vendor 耦合门禁与基线）。
+
+### 本次提交的权威边界回答
+
+- 业务语义来源：菜单身份、层级、可删除性仍来自菜单配置契约的运行时投影；前端只决定呈现与交互。
+- 前端自主范围：节点标签插槽、`data-menu-id`/`data-menu-expandable`/`data-menu-expanded` 语义标识、
+  展开集合跟随编辑器折叠状态、拖拽可落点判定 `canDropTree`。
+- 未做静默补齐：删除的私有键盘微步重排不再由前端另造；父级移动与顺序重排仍走显式编辑器输入。
+
+### 定向验证
+
+- L1 `make ci.local.iteration` passed `/tmp/menu-tree-11-iteration.log`。
+- L2 定向：`verify.menu_config_tree_editor.behavior`（`/tmp/menu-tree-12-tree-guard.log`）、
+  `verify.frontend.primitive_adapter.unit`、`verify.frontend.component_driver_takeover.unit`、
+  `verify.frontend.rendering_detail_state.unit`、`verify.frontend.navigation_shell.unit`
+  （`/tmp/menu-tree-12-l2.log`、`/tmp/menu-tree-12-l2b.log`）；产品源码改动使
+  `component-driver-takeover-inventory-v1.json` stale，用既有生成器刷新后通过。
+- 类型检查 `scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck` passed
+  `/tmp/menu-tree-12-typecheck.log`；`make ci.generated_reports.guard` passed
+  `/tmp/menu-tree-12-generated.log`。
+- 受管浏览器：`make verify.frontend.standard_menu_config.browser` 46/46 passed，
+  errors/blocked 空，uncovered 仅“版本单选：现有数据无历史版本，不新增fixture”。
+  原始 `artifacts/frontend-web-fix-20260928/menu-config-1790679481731/report.json`
+  （`/tmp/menu-tree-16-browser.log`）。新增断言：面板只由官方树渲染（旧 `.config-tree-list`/
+  `.branch-marker` 计数为 0）、每节点恰有一个官方展开交互槽、展开/收起跟随折叠集合、
+  按菜单身份而非列表位置驱动业务面板。
+
+### 全局硬化：探针层 vendor 耦合门禁
+
+根因：只接管产品渲染不够。探针若用 vendor 内部类名、过渡状态类或像素几何断言，仍能报绿，
+于是验收体系跟随标记而不跟随业务事实，官方组件一变就掩盖真实回退。
+
+- `scripts/verify/playwright_vendor_coupling_guard.py`，扫描 `frontend/apps/web/scripts` 与
+  `scripts/verify`：
+  - 零容忍：过渡/动画状态类（`--enter-active`、`v-enter` 等）、
+    `querySelector`/`querySelectorAll` 内使用 Playwright 专属选择器语法（`:visible`、`:has-text(`、`:text=`）。
+  - 只减不增：非 `Sc` 根下的 vendor 内部类选择器（复用产品侧 official-design 规则口径）、
+    `getBoundingClientRect().width/height` 内联几何断言。
+- 基线 `scripts/verify/baselines/playwright_vendor_coupling.json` 登记既有债务
+  （vendor 23 文件/109 处，几何 11 文件/33 处），只允许减少；**本轮不清偿既有债务**。
+- 规则自身带反例：`scripts/verify/test_playwright_vendor_coupling_guard.py` 证明四类规则非空跑；
+  规则定义文件与反例文件按精确路径排除，不用目录或通配符。
+- 挂载：`verify.frontend.playwright_vendor_coupling.guard`，并接入 `verify.frontend.quick.gate`
+  与 `ci.professional.backend.shard-verify`，使远端必需检查覆盖该规则。
+- 顺带合规：`standard_menu_config_browser.mjs` 的移动选项定位由 `.t-popup:visible` 改为可见文案，
+  使 vendor 内部类选择器由 109 降至 107（其余 22 文件为已登记既有债务）。
+
+### 候选与运行来源
+
+- 单次构建 `make frontend.standard.preview.build` `/tmp/menu-tree-13-build.log`，
+  `base_sha=d3bc7b45df98adc5cfd368ba0fba9b71a5be734f`、`dirty_scope` 为空，
+  `index_sha256=a593c0411ce8e12629a6d3bf094130130c8ee2ddf0970e710feecf95811eeb3a`、
+  `entry=/assets/index-CaZN7DlL.js`。
+- 复用受管 5180 预览（pid 2669621，`config05-20260929/dist`，Odoo
+  `sc-backend-odoo-acceptance` / `sc_frontend_acceptance` / `SC_SOURCE_REVISION=14e9db7c`），
+  HTTP 回读 index 与 entry 哈希一致。旧冻结产物与历史 identity 存档保留。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账，本轮不动）：`verify.guard.registry` 报
+  `test_frontend_standard_preview.py`、`test_workspace_composition_wiring.py` 为未登记孤儿；
+  两者全仓零引用且不在本批 diff 中，本批改动经 diff 证明为纯增量，未移除任何引用。
+- 非阻断：探针层 vendor 内部类选择器既有债务 22 文件/107 处、几何断言 11 文件/33 处仍未清偿。
+- 非阻断：菜单历史版本单选项因无数据仍 uncovered；未新增 fixture。
+- 未执行：真实保存/发布/回滚，89 入口矩阵，发布门禁，设计器与批量编排职责。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
