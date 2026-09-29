@@ -3037,3 +3037,91 @@ business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")  
 ### 状态
 
 本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+---
+
+## FE-CONTRACT-DEADPHASE-01：共享审批模板的不可达相位收口
+
+起点 HEAD `119e1ea50`（干净）。本段只删除**没有成员能取到的相位/动作**，并让对应原生按钮在模型真正接受的状态出现。
+不新增业务动作、不改状态机语义、不重写模板体系。
+
+### 1. 七问
+
+- **Formal Product Layer**：P1 建筑行业标准产品（`sc.*` 计划/申请族的共享审批语义）。
+- **Layer Target**：`smart_construction_core`，`models/support/workflow_contract_service.py`
+  的 `_simple_approval_profiles()` 模板 + 五个原生 form 的 `action_reset_draft` 可见性。
+- **Module**：`smart_construction_core`。
+- **Standard vs User-Specific**：行业标准。10 个成员的 `state` Selection 都是
+  `draft/submitted/approved/cancel`，这是产品标准，不是客户偏好；因此修正落在标准模块而不是
+  `smart_construction_custom` 或低代码运行时。
+- **Why Here**：模板与原生视图同属该族标准定义处，删除残留与修正按钮可见性都在此层闭环。
+- **Why Not Elsewhere**：不放前端（前端只消费契约，不能替契约删状态）、不放低代码配置
+  （不是运行期偏好）、不放 ops 脚本（不是一次性修复）。
+- **Blast Radius**：10 个模型的 `describe_record` 相位表与 form 头部按钮；由
+  `verify.workflow_state_phase_coverage`（65/65）与新增后端用例共同证明收敛。
+
+### 2. 真实缺陷
+
+`_simple_approval_profiles` 是 10 个计划/申请模型共用的模板，长期带着一组**成员取不到的键**：
+
+- `state_phase` 里的 `submit` / `rejected`：10 个成员无一含这两个 Selection 值，也无一继承
+  `tier.validation`（`validation_status` 不可能为 `rejected`）；`_approval_phase()` 的 `under_review`
+  分支要求 `raw_state in ("submit","approve")`，`submitted` 不命中。**纯复制残留，删除零行为变化。**
+- `state_actions` 把 `reopen` 挂在 `submitted` / `submit` 上：`action_reset_draft` 在 8/10 成员上
+  仅接受 `cancel`，于是页面渲染出**只可能抛 UserError 的按钮**，而模型真正接受的 `cancel`
+  反而没有任何回退入口。
+
+同一缺陷在原生侧重复出现：8 个 form 的 `退回草稿` 按钮写成
+`invisible="state != 'submitted'"`，与模型接受的状态正好相反。
+
+本段同时把 `config/contract/workflow_state_phase_dead_entries.v1.json` 的登记条目从 **12 条降到 2 条**
+（仅剩 `sc.fund.account.operation`、`sc.plan`）——登记集重新变得有信息量。
+
+### 3. 负例（先证明测试真的会失败）
+
+| 负例 | 结果 |
+|---|---|
+| A：把旧模板（含 `submit`/`rejected`）还原回去 | **FAIL 如预期**：`['approved','cancel','draft','rejected','submit','submitted'] != [...]` |
+| B：对 `HEAD` 的旧 XML 施加新的 arch 断言 | 5 个 form **FAIL 如预期**（`state != 'submitted'`） |
+
+新增用例 `test_the_shared_approval_family_declares_only_reachable_states` 从 helper 自身读模板，
+按 `state_actions`/`state_phase` 全等**自动派生** 10 个成员名单——编辑手工映射无法收窄检查范围。
+它同时断言：模板相位键恰为四值、每个成员 `reopen` 只在 `cancel`、`method_by_action["reopen"]`
+指向 `action_reset_draft`、`fields_get(['state'])` 的 Selection 键一致，以及**从 `ir.ui.view` 读回**
+的每个 form 里 `action_reset_draft` 按钮的 `invisible` ⊆ `{"state != 'cancel'"}`（无按钮的 form 跳过：
+契约可以领先原生头，但不得提供模型拒绝的控件）。
+
+### 4. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.workflow_state_phase_coverage` | PASS `models=65 covered=65 dead_registered=2`；16 tests OK |
+| 后端单方法（新用例，DB `sc_dev_demo`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| 后端单方法（`test_general_contract_legacy_confirmed_phase_is_declared`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| `TestWorkflowContractBackend` 全类 | 30 tests，7 errors — **与 `HEAD` 基线完全一致**（stash 对拍：HEAD 亦 7 errors / 29 tests），属既有环境缺陷，非本批引入 |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS `profile_methods=29 inventory_methods=41` |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65` |
+| `make verify.native_view.workflow_action_coverage` | PASS `registered=31` |
+| `addons/smart_core/tests/test_workflow_contract_profile_registry.py` | PASS 9 tests |
+| `make refresh.generated_reports` + `make ci.generated_reports.guard` | PASS（全部 current） |
+| `make verify.unified_page_contract.v2.professional_backend` | PASS（含 `verify.workflow_state_phase_coverage`） |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+| `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core MODULE=smart_construction_core make mod.upgrade` | 成功（78 modules，registry 重新加载 view 后 arch 断言拿到真实结果） |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会用注册库
+覆盖历史 `sc_demo` 基线（既有环境限制，见 `FE-CONTRACT-NATIVEBTN-01`），与本段无关。本段以
+「守卫 + 单测 + 一条真实 Odoo arch 断言」覆盖同一口径。
+
+### 5. 剩余（显式登记，不在本段）
+
+- `sc.safety.disclosure` / `sc.safety.plan` 的原生 form header **完全没有** workflow 按钮（契约有、arch 无）：
+  按「契约可以领先 arch，但不得提供模型拒绝的控件」本段不扩大处理。
+- `sc.fund.account.operation`、`sc.plan` 两条死条目仍登记在册（权威侧待复核）。
+- `state_transition_undeclared` 五条仍为权威侧待决，不因本段消项。
+- `style_system.guard` 文件长度四项欠账独立保留；本段 `workflow_contract_service.py` 由 1488 → 1490 行，
+  仍在既有 warning 档，未跨过 split-plan 阈值。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
