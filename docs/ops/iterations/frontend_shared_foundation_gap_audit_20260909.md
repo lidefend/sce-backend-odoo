@@ -1707,3 +1707,33 @@ WEB-BOOT-01批次验收完成（上述分角色有效证据组合），主线未
 提交后预览复核：误直接调用identity被既有Make入口保护拒绝（无变更、非验收）；
 随后使用`make frontend.standard.preview.up` passed，日志`/tmp/web-boot01-final-preview-reuse.log`
 确认REUSED current 5180 listener，不重建、不重启。
+
+## WEB-AUTH-02：公共激活表单接管（进行中）
+
+基线91278229 clean；P0 frontend renderer / AccountActivationView。两处原生form迁已有
+ScForm/ScFormItem，官方成功校验事件接原start/finish；保留原required/minlength语义（官方规则承接，novalidate避免双引擎）、
+禁用/清理/上下文链。仅呈现所有权，非P1行业规则或P3配置变动。PasswordRecovery仅说明和返回，
+不为接管伪造恢复写流程。范围不含专用设计器。L1 iteration→L2类型/auth/真实表单引擎及
+受影响接线检查；无后端或DB写，L3升级跳过。L4仅在稳定候选按受管入口检验受影响页面，
+不重复87导航或三角色矩阵。L5发布不进入；沿用单写者/B线只读复核。
+
+WEB-AUTH-02当前结果：P0提交e58b9969；L1 iteration passed `/tmp/web-auth02-iteration-final.log`。
+L2严格类型passed `/tmp/web-auth02-type-final.log`；auth surface/credential及表单引擎74例passed
+`/tmp/web-auth02-focused.log`；本批实际官方引擎+源码规则/提交接线12行为例passed
+`/tmp/web-auth02-engine.log`。start/finish/unmount逐字等价 `/tmp/web-auth02-equivalence.json`。
+P4预览6例passed `/tmp/web-auth02-preview.log`。唯一构建22.47秒 `/tmp/web-auth02-build.log`，
+受管up passed `/tmp/web-auth02-up.log`，5180加载auth02候选，旧boot01-r3保留可回退。
+
+L4 `make verify.frontend.standard_public_auth.browser` **failed**：
+`public-auth-1790673764790/report.json`，13项UI检查已通过，包括激活两阶段、短密码阻断、
+模拟服务拒绝清空、双宽无溢出、成功后移除secret及恢复说明；最终返回登录超时。
+所有API被拦截，零真实账号写；零pageerror/未登记请求。B线建议的短密码等待已限定到对应
+ScFormItem的错误消息（不命中常驻说明）。不把模拟成功称真实激活验收。
+
+新发现P0公共契约引导缺口：冷启动session.pageContracts={}，仅登录后的system.init填充；
+AccountActivation/PasswordRecovery却依赖usePageContract中的open_login target。后端
+`action_target_schema.resolve_action_target`正式定义了/login，但匿名阶段未投影到前端；
+按钮因此无动作。不是本次表单替换造成，也不能以前端硬编码目标掩盖契约缺失。
+本批保持verification_pending，不进入发布收口，不把已有13项改写为整轮passed。
+下一最早步骤为P0公共页面匿名契约的生产/消费边界修复（仅公开页面、不得暴露授权导航/角色），
+再对返回链定向补验；不重做74/12不受影响用例、87入口盘点或激活真实写入。

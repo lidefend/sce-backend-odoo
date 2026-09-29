@@ -293,7 +293,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-page-build|standard-page-up|standard-page-browser|standard-page-inventory|standard-page-bootstrap)
+  standard-page-build|standard-page-up|standard-page-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -305,6 +305,10 @@ case "$command" in
     case "$command" in
       standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
       standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
+      standard-public-auth-browser)
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_public_auth_browser.mjs"
+        ;;
       standard-page-bootstrap)
         [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null

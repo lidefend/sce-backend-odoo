@@ -61,6 +61,7 @@ selects the standard list, form or readonly detail composition.
 | `ContractFormPage` record form, including master/detail handling | Existing section `ScForm` / `ScFormItem`, one validation registry and save chain | Existing field controls, relation adapters, master/detail business extensions and data authority; designer sections and standalone sections without a runtime remain explicit exceptions. |
 | Readonly `ContractFormPage` facts | Existing `ScDescriptions` for supported scalar facts | Collection, attachment, dedicated controls, unknown fact types and configuration-editing sections remain contract-field extensions with `data-detail-section-reason`; the page composition marker does not claim every section is a descriptions table. |
 | Login credential submission (`WEB-BOOT-01`) | Existing `ScForm` / `ScFormItem` / `ScInput` / submit feedback, following Starter `pages/login/components/Login.vue` | Only the official engine's successful result may call the existing login/init/return chain. Native required semantics stay; `novalidate` avoids competing browser validation. Database pinning and public page actions stay authoritative. |
+| Public activation stages (`WEB-AUTH-02`) | Existing `ScForm` / `ScFormItem` engine, with independent code/password stage identities | Original challenge lifecycle, required/12-character input constraints, backend confirmation/policy execution and credential clearing remain. Native form submit containers have exited. Recovery is a read-only channel notice, not an unimplemented password form. |
 | Home and My Work workspace (`WEB-BOOT-01`) | `ProductWorkspaceSurface`: summary, query, main/actions and auxiliary card regions, following Starter `dashboard/base` organization | Existing `product_workspace` facts/actions, authorized navigation and recent activity remain with their adapters. My Work remains a handling workspace, not a service-paged ordinary list. Private outer panel/header layout has exited these consumers. |
 
 
@@ -422,3 +423,9 @@ coverage scan is a read projection, distinct from configuration bootstrap/publis
 writes. Public challenge flows and dedicated designers are explicit remaining
 presentation scopes; this inventory does not claim full official adoption of
 every specialized editor or formal 89-entry business acceptance.
+
+WEB-AUTH-02 supersedes only the activation-form presentation exception above.
+Both stages now use the official form engine; public account lifecycle and the
+recovery-channel notice remain specialized responsibilities. Its browser proof
+intercepts all API calls and simulates stage/error/success responses, so it is UI
+acceptance and not evidence of activating a real account or changing a password.
