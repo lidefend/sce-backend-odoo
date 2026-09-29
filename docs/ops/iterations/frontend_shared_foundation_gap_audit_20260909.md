@@ -2495,3 +2495,103 @@ if entry and entry.get("status") == STATUS_ACTIVE_DYNAMIC and item["status"] != 
 
 本批**批次验收完成**。`verify.guard.registry` 红项关闭；`style_system.guard` 三项为明确的既有非阻断债务；
 guard 自身 `active-dynamic` 分支缺陷已登记，未在本批扩大处理。
+
+## 后端自证完备性：复核登记的 followup 收口（2026-09-29，FE-CONTRACT-SELFPROOF-01）
+
+上一批独立复核在 `FE-CONTRACT-VOCAB-01` 段落登记了四项 `POST_MERGE_FOLLOWUP`。本段逐项收口，
+不重开该批已通过的结论，只关闭这四条。
+
+### 1. 重复注册静默覆盖（P0 注册表）
+
+`register_workflow_contract_profile` 对同一 model 的第二次不同声明直接改写 `_WORKFLOW_CONTRACT_PROFILE_REGISTRY`，
+于是“哪个 owner 生效”取决于模块导入顺序。
+
+处理：第二次声明不再覆盖。
+
+- 内容与已注册项相同 → 幂等 `True`（允许重复 import / 热加载）；
+- 内容不同 → 拒绝 `False`，追加一条 `_WORKFLOW_CONTRACT_PROFILE_CONFLICTS` 记录
+  （`model` + `existing_source` + `incoming_source`）并输出 warning；第一个声明保留。
+
+经 `contract_governance` facade 暴露 `workflow_contract_profile_conflicts()`，让冲突可见而不是靠导入顺序解决。
+反例测试 `test_a_second_different_profile_for_the_same_model_is_refused` 同时断言“拒绝 + 保留第一份 + 冲突留痕”。
+
+### 2. `method_by_action` 值类型未校验（P0 注册表）
+
+原注册只做 truthy 检查。`{"submit": 123}` 能注册成功，直到 `_profile_is_executable` 调用
+`hasattr(model, 123)` 抛 `TypeError`，被 `core_extension` 的 `try/except` 兜住 → **整个 profile 静默消失**。
+
+处理：注册处校验 `method_by_action` 必须是 dict，键必须是去空白后的非空字符串，值必须是字符串或 `None`
+（`None` 表示“声明为无方法”）。`_profile_is_executable` 增加同层防御：非字符串名直接判为不可执行，
+不再依赖调用方的 `try/except`。
+
+反例测试：非字符串值（`123` / dict / list / `True`）与非字符串键都被拒绝；`None` 值仍被接受。
+
+### 3. `ts_derives_business_list` 只校验派生形状（前端派生守卫）
+
+原实现只匹配 `Object.freeze(\s*ACTION_PURPOSES\.filter(`。把谓词改成
+`... && purpose !== 'submit'` 后，形状仍匹配、两个数组字面量仍与权威相等，但派生结果集少一个 purpose。
+
+处理：谓词固定为唯一的受控补集形式
+`ACTION_PURPOSES.filter((x) => !(NON_BUSINESS_PURPOSES as readonly string[]).includes(x))`。
+配合原本已校验的两个字面量（`ACTION_PURPOSES` / `NON_BUSINESS_PURPOSES` == 权威），结果集由此完全确定。
+
+负例实测：加入额外谓词 → `verify.unified_page_contract.v2.schema` **FAIL**（
+`the web business purpose list must be derived from ACTION_PURPOSES and NON_BUSINESS_PURPOSES`），恢复后 PASS。
+
+### 4. `can_review` 消费判定是存在性代理（授权绑定守卫）
+
+原 `references_marker` 只要求 `_available_actions` 函数体内**出现** `"can_review"` 常量，
+因此只把 verdict 写进日志、或写成永不成立的分支，都能通过“运行时审批裁决被消费”这条检查。
+
+处理：marker 必须出现在 `if` / `while` / 三元表达式的 **test** 内，且该 test 不能本身是字面常量。
+真实实现 `if not bool(getattr(record, "can_review", False)): keys.remove(...)` 仍是合格形态。
+
+负例实测：把两处 `getattr(record, "can_review", ...)` 换成别的名字、只保留一行
+`_marker_only = "can_review"` 提及 → guard **FAIL**（
+`workflow profiles publish approval actions without consulting the runtime approval verdict`），恢复后 PASS。
+
+### 固化进现有测试
+
+两个守卫此前没有回归测试，本次反例只存在于一次性探针里。新增两个单测文件并接到各自的 make target：
+
+- `scripts/verify/test_unified_page_contract_v2_schema_guard.py`（3 tests）→ 接入 `verify.unified_page_contract.v2.schema`
+- `scripts/verify/test_workflow_action_semantics_completeness_guard.py`（4 tests）→ 接入 `verify.workflow_contract.backend`
+
+这样“代理检查”无法悄悄回归。
+
+### 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | 9 tests OK（新增 5 个反例） |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65 … verdict_covers=4` |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS `profile_methods=29 inventory_methods=41` |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS（见下方基线说明） |
+| `python3 scripts/verify/contract_governance_registry_split_guard.py` | PASS |
+| `make verify.unified_page_contract.v2.schema` / `.assembler` / `.action` | 均 PASS |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `TestWorkflowContractBackend`（`sc_dev_demo`） | `0 failed, 7 error(s) of 28`，**error 集合与 stash 基线逐条一致**（全为环境数据类） |
+| `make ci.local.iteration` | PASS `change_state=dirty` |
+
+后端套件的 7 个 error 用 `git stash` 前后各跑一次逐条比对：改动前后测试名完全一致，
+确认非本段引入。
+
+### 踩到并还原的一次基线覆盖
+
+`verify.workflow_contract.backend` 的前置 `audit.workflow_state.inventory` 会以注册库 `sc_dev_demo`
+重新生成 `docs/audit/workflow_state_inventory_sc_demo.md`，覆盖这份历史 `sc_demo` 基线；
+被覆盖后 `workflow_contract_custom_coverage_guard` 会报 13 个“意外未覆盖模型”。
+
+本次已 `git checkout` 还原该文件，未把覆盖结果带入提交。**该 target 在当前注册库下不能整条直接跑**；
+需要时按上面的清单逐条执行，跳过 inventory 前置。这是既有环境限制，非本段改动引入
+（`git stash` 后同一 target 同样如此，因为 stash 一并还原了被覆盖的基线文件）。
+
+### 未处理（保持登记）
+
+- `docs/audit/workflow_state_inventory_sc_demo.md` 需在具备已装模块的 `sc_demo` 环境重新生成，本段不重生成。
+- 跨仓 P2 注册（`sce-customer-baosheng-odoo` `bfbc736`，`sc.partner.import.review`）本次未跨仓运行验证；
+  新语义下同内容重复注册仍是幂等 `True`，不影响其现有调用形态。
+
+### 状态
+
+本段**批次验收完成**。四项 followup 全部关闭；未推送、未合并、未部署目标环境。
