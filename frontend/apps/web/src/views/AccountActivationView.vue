@@ -69,9 +69,11 @@
                 :disabled="busy"
               />
             </ScFormItem>
+            <ScFormItem>
             <ScButton type="submit" variant="primary" size="large" :disabled="busy || !activationCode.trim()" :loading="busy">
               {{ busy ? pageText('submit_code_loading', '正在验证…') : pageText('submit_code_idle', '继续') }}
             </ScButton>
+            </ScFormItem>
           </ScForm>
 
           <ScForm key="password" novalidate
@@ -94,9 +96,11 @@
               :rules="[{ required: true, message: pageText('password_confirm_label', '确认正式密码') }, { validator: () => confirmPassword.length >= 12, message: pageText('hint_password', '密码至少12位，并同时包含字母和数字。') }]">
               <ScInput id="activation-password-confirm" :aria-label="pageText('password_confirm_label', '确认正式密码')" v-model="confirmPassword" size="large" type="password" autocomplete="new-password" :min-length="12" required :disabled="busy" />
             </ScFormItem>
+            <ScFormItem>
             <ScButton type="submit" variant="primary" size="large" :disabled="busy || !password || !confirmPassword" :loading="busy">
               {{ busy ? pageText('submit_password_loading', '正在设置…') : pageText('submit_password_idle', '设置正式密码') }}
             </ScButton>
+            </ScFormItem>
           </ScForm>
 
           <section
