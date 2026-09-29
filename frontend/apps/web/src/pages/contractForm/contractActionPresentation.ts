@@ -303,3 +303,9 @@ export function isUnifiedSubmitMethod(methodName: string) {
 export function isUnifiedSubmitAction(action: ContractAction | null | undefined) {
   return Boolean(action && isUnifiedSubmitMethod(action.methodName));
 }
+
+/** Native occurrences borrow availability only from the resolved contract action. */
+export function resolveNativeContractActionState(action: ContractAction | null, busy: boolean) {
+  if (!action) return {};
+  return { disabled: busy || !action.enabled, title: action.hint || '' };
+}

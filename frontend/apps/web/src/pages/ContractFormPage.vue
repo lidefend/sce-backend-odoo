@@ -633,20 +633,9 @@ import {
   ContractAccessPolicyError,
   type ContractAccessPolicy,
   type ContractAction,
-  type ContractFieldGovernanceAction,
-  type ContractFieldGovernanceRow,
   type FormRuntimeStateEvent,
   type LayoutNode,
-  type LowCodeFieldSize,
-  type NativeChatterAction,
-  type NativeStatusbarVm,
-  type One2ManyColumn,
-  type One2ManyInlineRow,
-  type RelationOption,
-  type RelationSearchColumn,
   type RelationSearchRow,
-  type RelationUiLabels,
-  type SubmissionFeedback,
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
@@ -687,9 +676,7 @@ import { resolveFormActionPlaceholderGate } from './contractForm/formActionPlace
 import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
 import {
-  executeRecordFormReturn,
-  hasInAppReturnHistory,
-  resolveRecordFormReturnFallbackRoute,
+  createRecordFormReturnHandler,
   resolveRelationCreateDialogCancelMessage,
   useCreatedRecordNavigationRuntime,
 } from './contractForm/useCreatedRecordNavigationRuntime';
@@ -1870,20 +1857,11 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
     actionLabel: '离开页面', message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？' }) ?? false });
 watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
-async function returnToPreviousPage() {
-  await unsavedFormGuard.navigateAfterConfirm(async () => {
-    await executeRecordFormReturn({
-      query: route.query as Record<string, unknown>,
-      relationModel: model.value,
-      embedded: window.parent !== window,
-      postCancel: (message) => window.parent.postMessage(message, window.location.origin),
-      navigateBack: () => router.back(),
-      hasInAppHistoryEntry: () => hasInAppReturnHistory(router.options.history?.state),
-      fallbackRoute: () => resolveRecordFormReturnFallbackRoute(currentRouteAuthority.value?.route),
-      navigateFallback: async (target) => { await router.replace(target as never); },
-    });
-  });
-}
+const returnToPreviousPage = createRecordFormReturnHandler({
+  route, router, model: () => model.value,
+  authorityRoute: () => currentRouteAuthority.value?.route,
+  navigateAfterConfirm: unsavedFormGuard.navigateAfterConfirm,
+});
 useFormAuxiliaryWatchersRuntime({
   autosaveSource: () => [
     intakeAutosaveKey.value,

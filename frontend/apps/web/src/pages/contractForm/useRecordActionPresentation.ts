@@ -7,7 +7,7 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
-import { isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { resolveNativeContractActionState, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
 import { fieldType } from './fieldUtils';
 
 type PresentationDependencies = Record<string, any>;
@@ -109,14 +109,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     return resolveContractActionForNativeOccurrence(contractActions.value, row);
   }
 
-  function resolveNativeActionState(row: Record<string, unknown>) {
-    const action = contractActionFromNativeRow(row);
-    if (!action) return {};
-    return {
-      disabled: busy.value || !action.enabled,
-      title: action.hint || '',
-    };
-  }
+  const resolveNativeActionState = (row: Record<string, unknown>) =>
+    resolveNativeContractActionState(contractActionFromNativeRow(row), busy.value);
 
   const primarySubmitAction = computed<ContractAction | null>(() => {
     if (isIntakeCreateMode.value) return null;

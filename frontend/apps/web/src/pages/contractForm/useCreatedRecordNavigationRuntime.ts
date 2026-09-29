@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router';
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import type { ContractAction } from './types';
 import {
@@ -129,5 +129,29 @@ export function useCreatedRecordNavigationRuntime(params: {
 
   return {
     navigateCreatedRecord,
+  };
+}
+
+/** Bind return navigation to live route/context getters, behind the unsaved guard. */
+export function createRecordFormReturnHandler(params: {
+  route: Pick<RouteLocationNormalizedLoaded, 'query'>;
+  router: Router;
+  model: () => string;
+  authorityRoute: () => unknown;
+  navigateAfterConfirm: (navigate: () => Promise<void>) => Promise<boolean>;
+}) {
+  return async () => {
+    await params.navigateAfterConfirm(async () => {
+      await executeRecordFormReturn({
+        query: params.route.query as Record<string, unknown>,
+        relationModel: params.model(),
+        embedded: window.parent !== window,
+        postCancel: (message) => window.parent.postMessage(message, window.location.origin),
+        navigateBack: () => params.router.back(),
+        hasInAppHistoryEntry: () => hasInAppReturnHistory(params.router.options.history?.state),
+        fallbackRoute: () => resolveRecordFormReturnFallbackRoute(params.authorityRoute()),
+        navigateFallback: async (target) => { await params.router.replace(target); },
+      });
+    });
   };
 }
