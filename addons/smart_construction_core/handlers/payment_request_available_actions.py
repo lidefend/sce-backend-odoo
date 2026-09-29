@@ -24,6 +24,9 @@ from odoo.addons.smart_core.handlers.reason_codes import (
     REASON_PERMISSION_DENIED,
     failure_meta_for_reason,
 )
+from odoo.addons.smart_construction_core.services.capability_registry import (
+    role_code_for_group,
+)
 
 
 class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
