@@ -2297,7 +2297,7 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 |---|---|
 | `make verify.unified_page_contract.v2.schema` | PASS（examples=4） |
 | `verify.unified_page_contract.v2.{assembler,runtime,action,intent,client,web_consumer,web_architecture}` | 全部 PASS |
-| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | 103 tests OK |
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | 104 tests OK（含本批新增的运行时通道配对回归） |
 | `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | 4 tests OK（缺键拒绝/空名拒绝/隔离副本） |
 | `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS |
 | `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS profile_methods=29 inventory_methods=41 |
