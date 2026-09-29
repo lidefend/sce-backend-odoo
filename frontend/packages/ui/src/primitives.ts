@@ -37,6 +37,7 @@ export { Progress as TDesignProgress } from 'tdesign-vue-next/es/progress';
 export { Skeleton as TDesignSkeleton } from 'tdesign-vue-next/es/skeleton';
 export { Descriptions as TDesignDescriptions, DescriptionsItem as TDesignDescriptionsItem } from 'tdesign-vue-next/es/descriptions';
 export { List as TDesignList, ListItem as TDesignListItem } from 'tdesign-vue-next/es/list';
+export { Tree as TDesignTree } from 'tdesign-vue-next/es/tree';
 export { Timeline as TDesignTimeline, TimelineItem as TDesignTimelineItem } from 'tdesign-vue-next/es/timeline';
 export { Steps as TDesignSteps, StepItem as TDesignStepItem } from 'tdesign-vue-next/es/steps';
 export { Pagination as TDesignPagination } from 'tdesign-vue-next/es/pagination';

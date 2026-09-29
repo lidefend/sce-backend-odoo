@@ -55,5 +55,6 @@ export {
   TDesignTextarea,
   TDesignTooltip,
   TDesignUpload,
+  TDesignTree,
 } from '@sc/ui/primitives';
 export type { TDesignGlobalConfigProvider, TDesignTableRowAttributes, TDesignTableRowData } from '@sc/ui/primitives';

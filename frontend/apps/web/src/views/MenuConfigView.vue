@@ -39,7 +39,7 @@ import { config } from '../config';
 import { BUSINESS_CONFIG_ROUTE_FLAGS } from '../app/businessConfigBoundaries';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
-import { createMenuConfigTree, type MenuConfigDropPosition } from './menuConfig/createMenuConfigTree';
+import { createMenuConfigTree } from './menuConfig/createMenuConfigTree';
 import { useMenuTreeEditor } from './menuConfig/useMenuTreeEditor';
 import { createMenuTreeAdapter, type RuntimeMenuConfigGroup } from './menuConfig/menuTreeAdapter';
 import { cloneDraft, defaultDraft, defaultDraftForEmpty, normalizeDraft, type DraftPolicy } from './menuConfig/menuDraftAdapter';
@@ -48,7 +48,6 @@ type FlatRow = {
   menu: MenuConfigMenu;
   level: number;
 };
-type DropPosition = MenuConfigDropPosition;
 const pageContract = usePageContract('menu_config');
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
@@ -103,9 +102,6 @@ const selectedVersionNo = ref(0);
 const selectedMenuId = ref(0);
 const searchText = ref('');
 const menuStateFilter = ref<'all' | 'visible' | 'hidden' | 'unconfigured'>('all');
-const dragSourceMenuId = ref(0);
-const dragTargetMenuId = ref(0);
-const dragDropPosition = ref<DropPosition>('after');
 const onlyConfigured = ref(false);
 const showGuide = ref(false);
 const createPanelOpen = ref(false);
@@ -944,18 +940,11 @@ function menuParentLabel(menu: MenuConfigMenu | null | undefined) {
 const {
   initializeTreeCollapse,
   toggleTreeNodeCollapse,
-  startTreeDrag,
-  updateTreeDragTarget,
-  moveTreeNodeOrder,
+  canDropTree,
   applyTreeReorder,
-  applyTreeDrop,
-  clearTreeDrag,
 } = useMenuTreeEditor({
   selectedMenuId,
   collapsedMenuIds,
-  dragSourceMenuId,
-  dragTargetMenuId,
-  dragDropPosition,
   treeDragEnabled,
   tree,
   message,

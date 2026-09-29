@@ -224,19 +224,12 @@
           <MenuConfigTree
             :nodes="visibleTree"
             :selected-menu-id="selectedMenuId"
-            :drag-source-menu-id="dragSourceMenuId"
-            :drag-target-menu-id="dragTargetMenuId"
-            :drag-drop-position="dragDropPosition"
             :drag-enabled="treeDragEnabled"
             :search-active="treeViewFiltered"
             :collapsed-menu-ids="collapsedMenuIds"
+            :allow-drop="canDropTree"
             @select="selectMenu"
-            @drag-start="startTreeDrag"
-            @drag-over="updateTreeDragTarget"
-            @drop="applyTreeDrop"
             @reorder="applyTreeReorder"
-            @drag-end="clearTreeDrag"
-            @order-move="moveTreeNodeOrder"
             @toggle-collapse="toggleTreeNodeCollapse"
           />
         </div>

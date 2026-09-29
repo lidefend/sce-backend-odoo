@@ -397,40 +397,21 @@
   padding: 6px;
 }
 
-:deep(.config-tree-list) {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tree-node {
-  width: 100%;
-  min-height: 30px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
+/* Hierarchy, expansion, hover, active and drag feedback come from the official
+   tree composition; only our own node content is styled here. */
+.tree-node,
 :deep(.tree-node) {
   width: 100%;
-  min-height: 30px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--sc-app-text-primary);
+  color: inherit;
   text-align: left;
-  cursor: pointer;
 }
 
-:deep(.tree-node > span:nth-child(2)) {
+.tree-node-label,
+:deep(.tree-node-label) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -446,65 +427,13 @@
   padding: 8px 12px;
   border-radius: 4px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .tree-node.active {
   background: var(--sc-app-info-bg);
   color: var(--sc-app-info-text);
   font-weight: 600;
-}
-
-:deep(.tree-node.active) {
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-  font-weight: 600;
-}
-
-:deep(.tree-node.draggable) {
-  cursor: grab;
-  user-select: none;
-}
-
-:deep(.tree-node.draggable:hover) {
-  background: var(--sc-app-muted-bg);
-}
-
-:deep(.tree-node.dragging) {
-  cursor: grabbing;
-  opacity: 0.45;
-}
-
-:deep(.tree-node.drop-before) {
-  box-shadow: inset 0 2px 0 var(--sc-semantic-surface-interactive);
-}
-
-:deep(.tree-node.drop-after) {
-  box-shadow: inset 0 -2px 0 var(--sc-semantic-surface-interactive);
-}
-
-:deep(.tree-node.drop-inside) {
-  background: var(--sc-app-info-bg);
-  box-shadow: inset 0 0 0 1px var(--sc-semantic-surface-interactive);
-}
-
-.branch-marker {
-  width: 12px;
-  flex: 0 0 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-:deep(.branch-marker) {
-  width: 12px;
-  flex: 0 0 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-:deep(.branch-marker.toggleable) {
-  cursor: pointer;
-}
-
-:deep(.branch-marker.toggleable:hover) {
-  color: var(--sc-app-text-primary);
 }
 
 .menu-config-editor {

@@ -1,15 +1,12 @@
 import type { Ref } from 'vue';
 import type { MenuConfigMenu } from '../../api/menuConfig';
-import type { MenuConfigDropPosition as DropPosition } from './createMenuConfigTree';
+import type { MenuConfigDropPosition as DropPosition, MenuConfigDropRequest } from './menuTreeContract';
 
 type EditableDraft = { target_parent_menu_id: number; sequence_override: number };
 
 export function useMenuTreeEditor(options: {
   selectedMenuId: Ref<number>;
   collapsedMenuIds: Ref<Set<number>>;
-  dragSourceMenuId: Ref<number>;
-  dragTargetMenuId: Ref<number>;
-  dragDropPosition: Ref<DropPosition>;
   treeDragEnabled: Readonly<Ref<boolean>>;
   tree: Ref<MenuConfigMenu[]>;
   message: Ref<string>;
@@ -24,9 +21,6 @@ export function useMenuTreeEditor(options: {
   const {
     selectedMenuId,
     collapsedMenuIds,
-    dragSourceMenuId,
-    dragTargetMenuId,
-    dragDropPosition,
     treeDragEnabled,
     tree,
     message,
@@ -62,35 +56,19 @@ export function useMenuTreeEditor(options: {
     collapsedMenuIds.value = next;
   }
 
-  function startTreeDrag(menuId: number) {
-    if (!treeDragEnabled.value) return;
-    const menu = treeMenuById(menuId);
-    if (isRuntimeMenuGroup(menu)) return;
-    dragSourceMenuId.value = menuId;
-    dragTargetMenuId.value = 0;
-    dragDropPosition.value = 'after';
-  }
-
-  function updateTreeDragTarget(payload: { menuId: number; position: DropPosition }) {
-    if (!dragSourceMenuId.value || payload.menuId === dragSourceMenuId.value) return;
-    if (!areVisualSiblings(tree.value, dragSourceMenuId.value, payload.menuId)) {
-      const allowedParentIds = parentOptionIds(dragSourceMenuId.value);
-      const targetMenu = menuById(payload.menuId);
-      if (allowedParentIds.has(Number(payload.menuId))) {
-        dragTargetMenuId.value = payload.menuId;
-        dragDropPosition.value = 'inside';
-        return;
-      }
-      if (!targetMenu || !allowedParentIds.has(Number(targetMenu.parent_id || 0))) {
-        dragTargetMenuId.value = 0;
-        return;
-      }
-      dragTargetMenuId.value = payload.menuId;
-      dragDropPosition.value = payload.position;
-      return;
-    }
-    dragTargetMenuId.value = payload.menuId;
-    dragDropPosition.value = payload.position;
+  // The official tree asks the editor whether a drop is allowed; the business
+  // rules stay here instead of in a bespoke drag implementation.
+  function canDropTree(request: MenuConfigDropRequest): boolean {
+    const sourceId = Number(request.sourceId || 0);
+    const targetId = Number(request.targetId || 0);
+    if (!treeDragEnabled.value) return false;
+    if (!sourceId || !targetId || sourceId === targetId) return false;
+    if (isRuntimeMenuGroup(treeMenuById(sourceId))) return false;
+    if (areVisualSiblings(tree.value, sourceId, targetId)) return true;
+    const allowedParentIds = parentOptionIds(sourceId);
+    if (request.position === 'inside') return allowedParentIds.has(targetId);
+    const targetMenu = menuById(targetId);
+    return Boolean(targetMenu && allowedParentIds.has(Number(targetMenu.parent_id || 0)));
   }
 
   function resequenceBranch(items: MenuConfigMenu[]) {
@@ -216,42 +194,8 @@ export function useMenuTreeEditor(options: {
     return true;
   }
 
-  function moveTreeNodeOrder(payload: { menuId: number; delta: number }) {
-    const moveInBranch = (items: MenuConfigMenu[]): { rows: MenuConfigMenu[]; moved: boolean } => {
-      const index = items.findIndex((item) => item.id === payload.menuId);
-      if (index >= 0) {
-        const targetIndex = index + payload.delta;
-        if (targetIndex < 0 || targetIndex >= items.length) return { rows: items, moved: false };
-        const next = [...items];
-        const [moved] = next.splice(index, 1);
-        next.splice(targetIndex, 0, moved);
-        next.forEach((item, itemIndex) => {
-          const draft = draftFor(item.id);
-          if (draft) draft.sequence_override = (itemIndex + 1) * 10;
-        });
-        return { rows: next, moved: true };
-      }
-      let moved = false;
-      const rows = items.map((item) => {
-        if (!item.children?.length || moved) return item;
-        const result = moveInBranch(item.children);
-        moved = result.moved;
-        return result.moved ? { ...item, children: result.rows } : item;
-      });
-      return { rows, moved };
-    };
-    const result = moveInBranch(tree.value);
-    if (!result.moved) return;
-    tree.value = result.rows;
-    message.value = '';
-    setSaveNotice('');
-  }
-
   function applyTreeReorder(payload: { sourceId: number; targetId: number; position: DropPosition }) {
-    if (!payload.sourceId || !payload.targetId || payload.sourceId === payload.targetId) {
-      clearTreeDrag();
-      return;
-    }
+    if (!payload.sourceId || !payload.targetId || payload.sourceId === payload.targetId) return;
     if (!areVisualSiblings(tree.value, payload.sourceId, payload.targetId)) {
       const moved = payload.position === 'inside'
         ? moveTreeNodeToParent(payload.sourceId, payload.targetId)
@@ -260,41 +204,11 @@ export function useMenuTreeEditor(options: {
         message.value = '';
         setSaveNotice('');
       }
-      clearTreeDrag();
       return;
     }
     tree.value = reorderSiblingBranch(tree.value, payload.sourceId, payload.targetId, payload.position);
     message.value = '';
     setSaveNotice('');
-    clearTreeDrag();
-  }
-
-  function applyTreeDrop(targetId: number) {
-    const sourceId = dragSourceMenuId.value;
-    if (!sourceId || !targetId || sourceId === targetId || !dragTargetMenuId.value) {
-      clearTreeDrag();
-      return;
-    }
-    let moved = false;
-    if (dragDropPosition.value === 'inside') {
-      moved = moveTreeNodeToParent(sourceId, targetId);
-    } else if (areVisualSiblings(tree.value, sourceId, targetId)) {
-      tree.value = reorderSiblingBranch(tree.value, sourceId, targetId, dragDropPosition.value);
-      moved = true;
-    } else {
-      moved = moveTreeNodeRelative(sourceId, targetId, dragDropPosition.value);
-    }
-    if (moved) {
-      message.value = '';
-      setSaveNotice('');
-    }
-    clearTreeDrag();
-  }
-
-  function clearTreeDrag() {
-    dragSourceMenuId.value = 0;
-    dragTargetMenuId.value = 0;
-    dragDropPosition.value = 'after';
   }
 
   function areVisualSiblings(items: MenuConfigMenu[], sourceId: number, targetId: number): boolean {
@@ -305,11 +219,7 @@ export function useMenuTreeEditor(options: {
   return {
     initializeTreeCollapse,
     toggleTreeNodeCollapse,
-    startTreeDrag,
-    updateTreeDragTarget,
-    moveTreeNodeOrder,
+    canDropTree,
     applyTreeReorder,
-    applyTreeDrop,
-    clearTreeDrag,
   };
 }
