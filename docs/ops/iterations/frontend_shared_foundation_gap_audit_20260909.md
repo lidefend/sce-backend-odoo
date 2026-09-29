@@ -2055,3 +2055,85 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 - 非阻断：菜单历史版本单选项因无数据仍 uncovered；未新增 fixture。
 - 未执行：真实保存/发布/回滚，89 入口矩阵，发布门禁，设计器与批量编排职责。
 - 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+
+## OFFICIAL-RENDER-ALIGN-01：契约边界硬化与工作台官方呈现收口（2026-09-29，本地批次）
+
+### 层级、范围与身份
+
+- `Formal Product Layer`：P0 平台内核产品（契约边界与端侧消费）+ P4 运维交付工具（验证脚本与门禁）。
+- `Layer Target`：`smart_core` 契约投影载荷、`frontend/apps/web` 配置工作台视图、`scripts/verify` 边界门禁。
+- `Module`：`addons/smart_core/handlers/business_config_surface.py`、
+  `frontend/apps/web/src/views/businessConfigSurface/*`、`frontend/apps/web/src/views/BusinessConfigSurfaceView.vue`、
+  `scripts/verify/backend_contract_boundary_guard.py`、`scripts/verify/low_code_workbench_product_guard.py`。
+- `Reason`：工作台此前保留了一份与契约并行的业务名称词表，契约边界此前只有文字、没有可执行约束。
+- `Why Not Elsewhere`：不新增业务功能、不重构模板体系、不改后端事务、不把业务语义放进前端。
+- 本地提交（未推送/未合并/未部署目标环境）：`26ed7116e`（配置总览走官方表格）→ `10622e54f`（菜单批量维护与配置页签走官方原语）
+  → `612dca581`（配置工作台名称由契约声明）→ `a6c949c7a`（契约/外观职责边界首次可执行）
+  → `41a3853d3`（受管布局通道显式合法）→ `66202b629`（终端投影合法、语义分叉禁止）。
+
+### 本次边界回答（四问）
+
+- 本次涉及什么业务语义：配置分区与边界码的**人类可读名称**，以及契约可以表达/不可以表达什么。
+- 权威来源与契约路径：名称由 `ui.business_config.surface.get` 的 `data.sections[].label` /
+  `data.boundary_labels` / `data.source_category_labels` 声明；布局语义走 `unified_page_contract_v2.layoutContract`
+  与 `view_orchestration.views.form`；终端差异走 `unified_page_contract_v2_client.py` 的按终端投影。
+- 前端只决定了什么：组件选择与组合、章节/按钮/帮助文案、可访问性、瞬时交互状态。
+- 必要语义缺失时会怎样：`test_business_config_surface.py` 要求契约必须为它发出的每个分区、每个边界码和每个来源类别声明名称；
+  工作台不得保留第二份词表。
+
+### 关键纠正：三条边界一次说清（原先的写法是错的）
+
+最初把边界写成“契约不表达外观”，随后又写成“契约必须终端无关”。第二条**与仓库既有实现冲突**，
+已改正，不倒填、不保留错误口径：
+
+| 边界 | 正确口径 | 执行位置 |
+|---|---|---|
+| 外观 | 契约不表达原始视觉值、DOM/CSS 通道、设计系统内部取值、客户端可访问性属性 | `backend_contract_boundary_guard.CONTRACT_APPEARANCE_PATTERNS` |
+| 布局 | **布局是合法的一层契约**：`layoutContract`／`layoutType`／`layoutHints`／`view_orchestration.views.form` 表达顺序、分组、显隐、列集合与受管尺寸档位 | `MANAGED_LAYOUT_CHANNEL_KEYS` + 自检（外观规则永不误伤布局） |
+| 终端 | **投影可终端化，语义不可分叉**：一份语义契约驱动 `web_pc`／`wx_mini`／`harmony_h5`，允许不同详细程度；终端身份只有一个受管入口 `pageInfo.clientType`，少投必须记账 | `TERMINAL_PROJECTION_CHANNEL_KEYS` + 自检；语义一致性由既有 `find_client_semantic_drift` 与 `make verify.unified_page_contract.v2.client` 执行，本批不重造 |
+
+裁剪记账的既有权威是 `unified_page_contract_v2_client.py` 的 `omitted = original - delivered`，
+门禁同时断言 `mobile_compact` 必须报出 `omitted.widgets`；因此“未投递”不会被写成“不存在／不适用／无权”。
+
+### 验收体系为什么没有发现（本批缺口与闭合）
+
+| 缺口 | 为什么漏掉 | 闭合方式 |
+|---|---|---|
+| 契约边界只有文字 | 没有门禁时，前端可以保留一份与契约并行的业务名称词表，页面照样“看起来可用” | `low_code_workbench_product_guard` 新增：工作台不得重新声明契约已声明的名称，不得再绑定页面自有的章节标题；`*.html` 边车模板一并扫描；两条新规则各带反例自检 |
+| 反向边界没有约束 | 只有“前端不得发明业务语义”，没有“契约不得携带外观” | `backend_contract_boundary_guard` 新增外观规则并覆盖 8 个契约写入者；反例测试证明非空跑 |
+| 新规则可能误伤既有契约层 | 规则只按“看起来像外观”写，会连带把布局契约和终端投影判为违规 | 两个通道登记为合法并由自检保证永不误伤；`layoutContract`、`spanClass`、`field_size`、`clientType`、`deliveryProfile`、`omitted` 等逐一断言 |
+| 工作台名称可被前端覆盖 | 契约已声明 `sections[].label`，但页面曾用自有词表覆盖（`表单配置`／`列表`／`搜索配置`） | 删除 `sectionDisplayLabel` 与 `BUSINESS_FIELD_LABEL_OVERRIDES`；`BusinessConfigSurfaceView.vue` 改为只消费契约名称 |
+
+### 定向验证
+
+- L1 `make ci.local.iteration` → `PASS change_state=clean coverage=L1_only`（`/tmp/align01-iter4.log`）。
+- L1/L2 边界守卫：`python3 scripts/verify/backend_contract_boundary_guard.py` → `error_count=0`
+  （8 个契约写入者零误报；`appearance=0`、`semantic_fork=0`、两条通道自检为空）；
+  `python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py` → `Ran 10 tests OK`。
+- L2 工作台：`make verify.business_config.product_guard` → `PASS assertions=29 scanned_files=36`；
+  `make verify.business_config.guard_inventory` → `PASS assertions=151`；`make verify.business_config.unit` → OK。
+- L2 既有终端权威：`make verify.unified_page_contract.v2.client` → `passed: clients=3`
+  （三终端语义签名一致 + `mobile_compact` 必须报 `omitted.widgets`）。
+- 受管浏览器（5180，`fixture_role_config_admin`，`sc_frontend_acceptance`）：
+  8/8 通过，`consoleErrors []`。断言为“渲染出的页签名 == 契约声明的 `sections[].label`”，
+  实测 `["表单字段与布局","列表与搜索","菜单入口","审批规则"]` 完全一致；旧页面自有的
+  `表单配置／列表配置／搜索配置` 计数为 0；官方表格与 `[role=tab]` 语义存在；390×844 无整页横向溢出。
+  原始结果 `sce-offrepo/artifacts/align01-boundary/report.json`，截图同目录 `shots/`。
+
+### 候选与运行来源
+
+- 后端验收容器 `sc-backend-odoo-acceptance`：`SC_SOURCE_REVISION=66202b629`（`make backend.acceptance.replace-stale` PASS）。
+- 前端产物 `sce-offrepo/artifacts/config05-20260929/dist`：`base_sha=a6c949c7a`、`dirty_scope` 为空、
+  `index_sha256=e868f1e6490a9c45dcc7d320b34bf7cebf3adb1969fb8bdbf00264250d754935`、`entry=/assets/index-lnyQ5gBG.js`。
+  本批后三笔提交只改 `scripts/verify`、`addons/**/tests` 与文档，前端产品源码无变化，因此不重建、不二次比对。
+- 5180 运行现场：pid `2669621`，`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=<config05-20260929/dist>`，`/api/`、`/web/` 代理 `127.0.0.1:18082`（调整前已核对 PID、命令行与目录）。
+  5175/5176/5178/5179 旧预览与本批无关，未清理。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账，本轮不动）：`style_system.guard` 四项欠账；`verify.guard.registry` 两个孤儿测试文件；
+  探针层 vendor 内部类选择器与内联几何断言的历史债务；菜单配置历史版本单选因无数据仍 uncovered。
+- 未执行：真实保存/发布/回滚，89 入口矩阵，全站发布门禁，TPL-05 之后的目标环境交付。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+  本批不把“模板接管通过”写成业务矩阵整行升级。
