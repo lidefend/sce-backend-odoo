@@ -808,7 +808,12 @@ def _assemble_ui_contract(
     ui = _dict(source)
     head = _dict(source.get("head") or ui.get("head"))
     model = _text(source.get("model") or ui.get("model"))
-    view_type = _text(source.get("view_type") or ui.get("view_type"), "form")
+    # `head.view_type` carries the requested view list ("tree,form") because a
+    # model holds several views, and `pageInfo` is an enumerated single page.
+    # Resolve the active view first so the joined string never reaches the
+    # closed enums; `list` normalizes to `tree` as in the native toolbar resolver.
+    raw_view_type = _text(source.get("view_type") or ui.get("view_type"), "form").split(",")[0].strip()
+    view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
     record_id = _positive_int(source.get("record_id") or source.get("recordId") or ui.get("record_id") or ui.get("recordId"), 0)
     collection_layout_types = {
         "form", "kanban", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"

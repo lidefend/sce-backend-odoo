@@ -194,6 +194,45 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 self.assertEqual(contract["pageInfo"]["layoutType"], view_type)
                 self.assertEqual(contract["layoutContract"]["layoutType"], view_type)
 
+    def test_joined_view_type_cannot_publish_a_token_the_schema_does_not_enumerate(self):
+        """A declared view list must resolve to the one active view type.
+
+        `page_assembler` publishes `head.view_type` as the requested list
+        (`"tree,form"`) because a model carries several views.  A page contract
+        declares one page, and `pageInfo.viewType` is enumerated by the schema.
+        Emitting the joined string produced a token the schema does not hold and
+        left `layoutType` describing a different page kind (`form`) than the
+        `viewType` it was paired with.
+        """
+        schema = json.loads(
+            (
+                REPO_ROOT
+                / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        page_info = schema["$defs"]["pageInfo"]["properties"]
+        for declared, expected_view, expected_layout in (
+            ("tree,form", "list", "table"),
+            ("form,tree", "form", "form"),
+            ("tree", "list", "table"),
+            ("form", "form", "form"),
+        ):
+            with self.subTest(view_type=declared):
+                contract = assembler.assemble_unified_page_contract_v2(
+                    {"model": "x.document", "view_type": declared, "fields": {}},
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.joined.view.{declared}",
+                )
+                self.assertEqual(contract["pageInfo"]["viewType"], expected_view)
+                self.assertEqual(contract["pageInfo"]["layoutType"], expected_layout)
+                self.assertIn(contract["pageInfo"]["viewType"], page_info["viewType"]["enum"])
+                self.assertIn(contract["pageInfo"]["layoutType"], page_info["layoutType"]["enum"])
+                self.assertEqual(
+                    contract["layoutContract"]["layoutType"],
+                    contract["pageInfo"]["layoutType"],
+                )
+
     def test_mobile_compact_preserves_create_business_context_outside_compat(self):
         source = {
             "model": "project.project",
