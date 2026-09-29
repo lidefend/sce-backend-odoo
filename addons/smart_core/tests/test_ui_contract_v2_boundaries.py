@@ -1725,6 +1725,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler = self.module.UiContractV2Handler(env=_Env({
             "ui.business.config.contract": _ConfigModel(),
         }))
+        handler._merge_user_list_preference_columns = lambda *_: self.fail("personal order must wait for final product constraints")
         source_contract = {
             "action_id": 856,
             "model": "sc.demo",
@@ -2683,6 +2684,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertTrue(profile["preference_policy"]["allow_order"])
         self.assertEqual(profile["preference_policy"]["must_request_columns"], ["name", "source_created_by"])
         self.assertEqual(profile["sourceAuthority"]["source_key"], "list_profile.business_config_contract_authoritative")
+
+    def test_business_list_config_preserves_explicit_preference_constraints(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        handler._merge_user_list_preference_columns = lambda *_: self.fail("locked order cannot consume personal preferences")
+        source = {"list_profile": {
+            "columns": ["name", "amount"], "fact_columns": ["name", "amount"],
+            "column_policy": {"reason": "business_list_config_contract_authoritative"},
+            "preference_policy": {"allow_visibility": False, "allow_order": False,
+                                  "allow_width": False, "locked_columns": ["name", "amount"]},
+        }}
+        contract = {"layoutContract": {"listProfile": {}}}
+        handler._enforce_business_list_config_projection(contract, source)
+        policy = contract["layoutContract"]["listProfile"]["preference_policy"]
+        self.assertFalse(policy["allow_visibility"])
+        self.assertFalse(policy["allow_order"])
+        self.assertFalse(policy["allow_width"])
+        self.assertEqual(policy["locked_columns"], ["name", "amount"])
+        self.assertEqual(policy["must_request_columns"], ["name", "amount"])
 
     def test_business_list_config_projection_preserves_native_collection_presentation(self):
         handler = self.module.UiContractV2Handler(env=object())

@@ -1143,6 +1143,8 @@ class ViewOrchestrator:
                     field_info[key] = policy[key]
 
     def _apply_column_display_policy(self, col: dict, policy: dict) -> None:
+        if policy.get("visible") is True:
+            col["optional"] = "show"
         label = policy.get("label")
         if label:
             col["label"] = label
