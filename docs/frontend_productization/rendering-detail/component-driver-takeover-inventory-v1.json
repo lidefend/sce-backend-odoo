@@ -523,7 +523,7 @@
         "TDesignEmpty"
       ],
       "officialComponent": "empty",
-      "productionConsumerCount": 27,
+      "productionConsumerCount": 31,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1398,7 +1398,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "46925b23e513ab5a6070d292a1cbe369c0e61079e70202185b728963b510353e",
+  "inputDigest": "3e0f17bbb03302a37f3b46302f61b97511587f308a1959a1085b8756e5d8ae98",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",

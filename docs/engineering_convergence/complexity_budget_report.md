@@ -100,7 +100,7 @@ Generated from repository source files. This report is informational during the 
 | 1234 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1225 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1224 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
-| 1220 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
+| 1221 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
@@ -256,7 +256,7 @@ Generated from repository source files. This report is informational during the 
 | 1234 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1225 | warning | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1224 | warning | Python source | `scripts/ops/retire_historical_branch_refs.py` |
-| 1220 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
+| 1221 | warning | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 
 ## Interpretation
 

@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "d3b12f8437a1f23c7e4d2e8d864662d7788bf99399e3df1b555461b2fa987768",
-  "generatorDigest": "93395371c4bf9e180404f1f8788409aac42353912b2d2c760d06ba772c4a507b",
+  "sourceIdentity": "a1b5c5cd17a1529004748a172e94d434a54e69d3e39e7c52fc3243a55633e84b",
+  "generatorDigest": "dd3498b0c69eec63a54fa8b551175b2f8bc9e761e2b9bbc55febeb1307c29012",
   "ownershipDigest": "b26592aaf6b86ea982de2733542dd3998c93f6373f6478961b6c0fe34082837e",
-  "inputDigest": "5d0b2d5eb1909d09f1208fbfd9c12e75c0443126d88e03d1b356e33d52a9690e",
+  "inputDigest": "ef7e60ca9ed7d9120328022243206dda23f8d81c2f7d282424567e9b33236da3",
   "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -1841,7 +1841,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {
@@ -2070,6 +2072,7 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
+        "ScInlineState",
         "ScErrorState"
       ],
       "targetBatch": null
@@ -2104,7 +2107,8 @@
       ],
       "rawControls": {},
       "governedStatePrimitives": [
-        "ScInlineState"
+        "ScInlineState",
+        "ScEmptyState"
       ],
       "targetBatch": null
     },
@@ -2303,7 +2307,9 @@
         "disabled"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [],
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
       "targetBatch": null
     },
     {
@@ -2470,10 +2476,37 @@
       "frontend/apps/web/src/views/businessConfigSurface/LowCodeFieldChipEditor.vue"
     ],
     "stateBandOwnershipRule": "a surface is listed under stateBandOwned only with the exact primitive:state pairs it renders; every claim is re-verified against the resolved source and the register fails closed when a claim stops being rendered",
-    "stateBandOwnedCount": 4,
+    "stateBandOwnedCount": 8,
     "stateBandOwned": [
       {
+        "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
+        "stateBands": [
+          "ScEmptyState:empty"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+        "stateBands": [
+          "ScErrorState:error",
+          "ScInlineState:error",
+          "ScInlineState:loading",
+          "ScInlineState:success"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/MenuConfigView.vue",
+        "stateBands": [
+          "ScEmptyState:empty"
+        ]
+      },
+      {
         "source": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "stateBands": [
+          "ScEmptyState:empty"
+        ]
+      },
+      {
+        "source": "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
         "stateBands": [
           "ScEmptyState:empty"
         ]

@@ -2282,7 +2282,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "583e73898b51c0883a5769cdea6a61b9ba9b2276f560433c7390f3c55f26d953",
+      "digest": "b27fc62799878028db8790e18c79a67753d8f1830507b534f67e808f6d7b42b2",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/CurrentFormFieldSettingsPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2291,6 +2291,7 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScEmptyState",
         "ScInput",
         "ScRadio",
         "ScSelect"
@@ -2564,7 +2565,7 @@
     },
     {
       "category": "other",
-      "digest": "39e43b55d7f58514dc071dc1e29c5b1be0717fc8e38d6c24893e20f0ad180556",
+      "digest": "89d5ddf496887e7a472a64f26035bc230fa8ea59636153248a0b1b95d5999fb8",
       "nativeStyleSelectors": [],
       "path": "views/BusinessConfigSurfaceView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2609,7 +2610,7 @@
     },
     {
       "category": "other",
-      "digest": "eaa82159e1faaadadd4d5acf582ddf3be59c026d65ae9acf86514b1fb7e46ef7",
+      "digest": "94176ceb120301845fe79b3d4b8ce30b40cdc31e7704147be23ec7072d9d535c",
       "nativeStyleSelectors": [],
       "path": "views/MenuConfigView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2824,7 +2825,7 @@
     },
     {
       "category": "other",
-      "digest": "2248fbf3a9c2657c7b5e7ba3d251b906bd4d122dfee5ff4983cdea316749b161",
+      "digest": "a5aa51bd8b1e401b509cadf8499f98a613028b1772c1db823b62f8264aaa9445",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/BusinessConfigApprovalPanel.vue",
       "referenceNativeStyleSelectors": [],
@@ -2836,6 +2837,7 @@
         "ScButton",
         "ScCard",
         "ScCheckbox",
+        "ScEmptyState",
         "ScInput",
         "ScSelect"
       ]
@@ -2981,7 +2983,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "ca4992c2471c4eb5aa4e2f23e9cc94846896346bbfcaf757b2a266e2792ddf0d",
+  "currentInputDigest": "883cb95adc07e02b787c144ac2d4685e7e24b7a05f74d5ce1bd6d32f4b2352a1",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
