@@ -938,6 +938,13 @@ class ScWorkflowContractService(models.AbstractModel):
             return False
         model = self.env[model_name]
         for method_name in (profile.get("method_by_action") or {}).values():
+            # `hasattr` raises on a non-string name; treat that shape as
+            # non-executable rather than letting the read fail behind a caller's
+            # try/except.
+            if method_name is None:
+                continue
+            if not isinstance(method_name, str):
+                return False
             if method_name and not hasattr(model, method_name):
                 return False
         return True

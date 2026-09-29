@@ -17,6 +17,7 @@ _REGISTRY_EXPORTS = (
     "_LEGACY_STANDARD_LIST_PROFILE_REGISTRY",
     "_WORKFLOW_CONTRACT_PROFILE_REGISTRY",
     "_WORKFLOW_CONTRACT_PROFILE_SOURCES",
+    "_WORKFLOW_CONTRACT_PROFILE_CONFLICTS",
     "_LEGACY_FIELD_PRESENTATION_REGISTRY",
     "_LEGACY_PROJECT_FORM_GOVERNANCE_MODELS",
     "_LEGACY_PROJECT_FORM_PROFILE_REGISTRY",
@@ -377,6 +378,10 @@ def workflow_contract_profiles() -> dict[str, dict[str, Any]]:
 
 def workflow_contract_profile_sources() -> dict[str, str]:
     return _registry.workflow_contract_profile_sources()
+
+
+def workflow_contract_profile_conflicts() -> list[dict[str, Any]]:
+    return _registry.workflow_contract_profile_conflicts()
 
 
 def register_legacy_record_context_clear_model(model_name: str) -> None:

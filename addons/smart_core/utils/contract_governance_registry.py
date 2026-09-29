@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 SOURCE_KIND = "ui_contract_governance_projection"
 SOURCE_AUTHORITIES = ("native_contract", "governance_rules", "legacy_industry_governance_profile")
@@ -19,6 +22,11 @@ _LEGACY_STANDARD_LIST_PROFILE_REGISTRY: list[dict[str, Any]] = []
 # industry layer.
 _WORKFLOW_CONTRACT_PROFILE_REGISTRY: dict[str, dict[str, Any]] = {}
 _WORKFLOW_CONTRACT_PROFILE_SOURCES: dict[str, str] = {}
+# A second, different declaration for the same model is a conflict, not an
+# update: the model would otherwise silently pick whichever module imported
+# last.  Recorded so the collision stays visible instead of being resolved by
+# import order.
+_WORKFLOW_CONTRACT_PROFILE_CONFLICTS: list[dict[str, Any]] = []
 WORKFLOW_CONTRACT_PROFILE_REQUIRED_KEYS = ("state_field", "state_phase", "state_actions", "method_by_action")
 WORKFLOW_CONTRACT_PROFILE_SOURCE_KIND = "workflow_contract_profile_registry"
 _LEGACY_FIELD_PRESENTATION_REGISTRY: dict[tuple[str, str], dict[str, Any]] = {}
@@ -103,6 +111,11 @@ def register_workflow_contract_profile(model_name: str, profile: dict[str, Any],
     a missing model name or a profile without the structural keys the workflow
     service reads.  Refusing here keeps a partial profile from reaching the
     renderer as a silently degraded surface.
+
+    A second declaration for an already-registered model is only accepted when
+    it is byte-identical (idempotent re-import).  A different declaration is a
+    conflict: it is refused and recorded, so two owners cannot decide the same
+    model by import order.
     """
     model = _safe_text(model_name)
     if not model or not isinstance(profile, dict):
@@ -116,6 +129,37 @@ def register_workflow_contract_profile(model_name: str, profile: dict[str, Any],
             return False
     if not normalized["state_field"]:
         return False
+    # `method_by_action` drives `hasattr(model, name)`, which raises on a
+    # non-string name.  Refuse the bad shape here instead of letting the
+    # registry read fail-open behind a caller's try/except.
+    methods = normalized.get("method_by_action")
+    if not isinstance(methods, dict):
+        return False
+    for action_key, method_name in methods.items():
+        if not isinstance(action_key, str) or not action_key.strip():
+            return False
+        if method_name is None:
+            continue
+        if not isinstance(method_name, str) or not method_name.strip():
+            return False
+    existing = _WORKFLOW_CONTRACT_PROFILE_REGISTRY.get(model)
+    if existing is not None:
+        if existing == normalized:
+            return True
+        conflict = {
+            "model": model,
+            "existing_source": _safe_text(_WORKFLOW_CONTRACT_PROFILE_SOURCES.get(model)),
+            "incoming_source": _safe_text(source),
+        }
+        _WORKFLOW_CONTRACT_PROFILE_CONFLICTS.append(conflict)
+        _logger.warning(
+            "[workflow.contract] refusing a second, different profile for %s "
+            "(existing source=%r, incoming source=%r); the first declaration stays",
+            model,
+            conflict["existing_source"],
+            conflict["incoming_source"],
+        )
+        return False
     _WORKFLOW_CONTRACT_PROFILE_REGISTRY[model] = normalized
     _WORKFLOW_CONTRACT_PROFILE_SOURCES[model] = _safe_text(source)
     return True
@@ -126,6 +170,10 @@ def workflow_contract_profiles() -> dict[str, dict[str, Any]]:
         model: _deep_clone_json_like(profile)
         for model, profile in _WORKFLOW_CONTRACT_PROFILE_REGISTRY.items()
     }
+
+
+def workflow_contract_profile_conflicts() -> list[dict[str, Any]]:
+    return [dict(item) for item in _WORKFLOW_CONTRACT_PROFILE_CONFLICTS]
 
 
 def workflow_contract_profile_sources() -> dict[str, str]:

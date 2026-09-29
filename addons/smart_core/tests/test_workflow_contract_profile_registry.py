@@ -73,6 +73,62 @@ class TestWorkflowContractProfileRegistry(unittest.TestCase):
         second = self.registry.workflow_contract_profiles()
         self.assertEqual(second["sc.isolated.model"]["state_field"], "review_state")
 
+    def test_a_second_different_profile_for_the_same_model_is_refused(self):
+        self.assertTrue(
+            self.registry.register_workflow_contract_profile(
+                "sc.conflict.model", _valid_profile(), source="owner.a",
+            )
+        )
+        other = _valid_profile()
+        other["state_field"] = "another_state"
+        self.assertFalse(
+            self.registry.register_workflow_contract_profile(
+                "sc.conflict.model", other, source="owner.b",
+            )
+        )
+        profiles = self.registry.workflow_contract_profiles()
+        self.assertEqual(profiles["sc.conflict.model"]["state_field"], "review_state")
+        self.assertEqual(
+            self.registry.workflow_contract_profile_sources()["sc.conflict.model"], "owner.a",
+        )
+        self.assertEqual(
+            self.registry.workflow_contract_profile_conflicts(),
+            [{"model": "sc.conflict.model", "existing_source": "owner.a", "incoming_source": "owner.b"}],
+        )
+
+    def test_re_registering_the_same_content_stays_idempotent(self):
+        self.assertTrue(
+            self.registry.register_workflow_contract_profile("sc.idem.model", _valid_profile())
+        )
+        self.assertTrue(
+            self.registry.register_workflow_contract_profile("sc.idem.model", _valid_profile())
+        )
+        self.assertEqual(self.registry.workflow_contract_profile_conflicts(), [])
+
+    def test_a_non_string_method_name_is_refused(self):
+        for bad in (123, {"nested": "method"}, ["method"], True):
+            profile = _valid_profile()
+            profile["method_by_action"] = {"submit": bad}
+            with self.subTest(bad=bad):
+                self.assertFalse(
+                    self.registry.register_workflow_contract_profile("sc.badmethod.model", profile)
+                )
+                self.assertNotIn("sc.badmethod.model", self.registry.workflow_contract_profiles())
+
+    def test_a_non_string_action_key_is_refused(self):
+        profile = _valid_profile()
+        profile["method_by_action"] = {7: "action_resolve_customer"}
+        self.assertFalse(
+            self.registry.register_workflow_contract_profile("sc.badkey.model", profile)
+        )
+
+    def test_an_empty_method_name_is_allowed_as_a_declared_absence(self):
+        profile = _valid_profile()
+        profile["method_by_action"] = {"submit": "action_resolve_customer", "cancel": None}
+        self.assertTrue(
+            self.registry.register_workflow_contract_profile("sc.nullmethod.model", profile)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
