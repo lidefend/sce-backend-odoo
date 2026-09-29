@@ -446,3 +446,11 @@ sequence and authentication state prevent stale responses from replacing the
 subsequent authenticated `system.init` result. The existing page action executor
 consumes the targets; neither views nor the loader invent fallback destinations.
 Activation challenge state remains mounted while public configuration retries.
+
+WEB-AUTH-03 closes the anonymous return-navigation gap: the registered preview
+passes 18 scoped checks with real public contract/recovery reads and simulated
+activation writes, including retry and both return-to-login actions. Canonical
+public zones and referenced data-source identities are projected without role
+or authorization metadata. Error feedback and the submit action occupy separate
+official form items. The authenticated finance startup regression remains valid;
+no real account activation or password reset is claimed.

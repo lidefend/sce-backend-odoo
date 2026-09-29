@@ -11,7 +11,7 @@ const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `tpl07-${Date
 const report = { status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [] };
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
-const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/auth03-20260929/build-identity.json')));
+const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/auth03-20260929-r2/build-identity.json')));
 const entry = Buffer.from(await fetch(`${base}${build.entry}`).then((res) => res.arrayBuffer()));
 assert.equal(createHash('sha256').update(entry).digest('hex'), build.entry_sha256);
 report.build = build;

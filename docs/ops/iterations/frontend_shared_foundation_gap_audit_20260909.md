@@ -1746,3 +1746,42 @@ GET /api/v1/auth/page-contracts → {ok,data:{schema_version:1.0.0,pages}}；pag
 原sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180/filestore不变，不改fixture或账号。
 P4复用public-auth探针，公共契约GET改用真实响应；激活写响应继续模拟。L1→非零backend/frontend
 定向L2→clean后端身份/受管重启→单次构建/定向匿名浏览器；远端/发布未进入。
+
+WEB-AUTH-03验证索引：
+- 初始backend public投影测试failed，发现原page_orchestration_data_provider未登记激活/恢复open_login，
+  落到refresh；在该唯一provider补齐，builder中的共享target继续决定目的地。非前端fallback。
+- L1 `make ci.local.iteration` passed `/tmp/web-auth03-iteration-ready.log`及后续
+  `/tmp/web-auth03-iteration-zones.log`；L2严格类型/auth surface passed `/tmp/web-auth03-ready.log`。
+  `make verify.frontend.public_auth_bootstrap.unit`最终7后端+8前端并发/失败/缺失动作例passed
+  `/tmp/web-auth03-zones-final.log`。P4 public GET允许表7例/预览6例passed
+  `/tmp/web-auth03-focused-final.log`。新增API仍拒绝POST及其它匿名写。
+- P0 82664f30、P4 376e5a06后clean；受管`backend.acceptance.up`与health通过，
+  `/tmp/web-auth03-backend-up.log`、`/tmp/web-auth03-backend-health.log`。旧容器源码身份不符按
+  既有入口替换；相同库/profile/端口/filestore，不升级模块、不写fixture或账号。
+- 前端auth03一次构建21.96秒 `/tmp/web-auth03-build.log`，up通过。真实匿名公共契约GET和
+  真实恢复status、首次公共GET模拟503→重试、模拟激活两阶段→两条返回login16项passed：
+  `public-auth-1790674299932/report.json`，不冒称真实密码写闭环。
+- 随后P0补canonical zones/data_sources安全投影（3aa76af6）：原consumer不读旧sections，
+  不能只给actions后继续布局fallback。保留区块身份/priority/tag/enabled/open和数据源身份字段，
+  去掉role/visibility/context；7后端例含结构等价。后端受管再次up，未重建前端；16项定向复核
+  passed `public-auth-1790674367302/report.json`、`/tmp/web-auth03-browser-final.log`，绑定新后端。
+- 真实finance启动回归 `BOOTSTRAP_ROLES=fixture_role_finance make verify.frontend.standard_bootstrap.browser`
+  passed `/tmp/web-auth03-login-final.log`，`bootstrap-inventory-1790674371809/report.json`：
+  登录/真实init/权威落地/334列表契约、335工作表、698/699表单、Home/MyWork双宽，零错误/拦截。
+- 截图复核发现最后字段错误提示挤压提交按钮：行为16项通过不等于视觉通过。6ea88c6a仅把两处
+  裸submit纳入ScFormItem，保留既有grid/gap布局；12项引擎及类型passed
+  `/tmp/web-auth03-spacing-tests.log`、L1 `/tmp/web-auth03-spacing-iteration.log`。B线确认行为未变，
+  finance证据输入不受影响可复用；P4新增两宽度错误底部<=按钮顶部断言。由实际视觉缺陷触发
+  r2修正构建，原auth03保留；不称无依据重复构建。
+
+WEB-AUTH-03最终结果：r2构建21.83秒 `/tmp/web-auth03-build-r2.log`，受管up
+`/tmp/web-auth03-up-r2.log`，18/18公共页面检查passed `/tmp/web-auth03-browser-r2.log`及
+`public-auth-1790674497445/report.json`（含新增双宽反馈间距）；390截图复核无重叠。
+前端产物base `6ea88c6ab978b027d96589e3fd1aed031bf3cdad`，entry `index-B23jnz4I.js`，
+SHA256 `4da0248faec09b715ca92902d030ac65afc32f991cb1b1eab265ec8d192c0655`；后端3aa76af6
+及相同addons输入。P4/docs后续提交不改变产品输入，不重跑finance。
+公共契约实际响应随报告保存，版本1.0.0，三页动作来自后端；失败重试通过。激活请求全被模拟，
+未真实激活/重置账号；恢复status和公共契约真实读取。B线最终复核无代码阻断。
+WEB-AUTH-02返回链阻断由WEB-AUTH-03关闭，两批范围内批次验收完成；主线未集成、目标环境未部署、
+整体用户交付未验收。5180保留r2候选，旧auth02/auth03产物可回退。专用设计器/配置编辑器仍需按
+已登记页面职责推进，未自动升级正式89入口业务矩阵或宣称整体官方接管完成。

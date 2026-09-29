@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 const root = process.cwd();
-const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/auth03-20260929/build-identity.json')));
+const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/auth03-20260929-r2/build-identity.json')));
 const base = 'http://127.0.0.1:5180';
 assert.equal(createHash('sha256').update(Buffer.from(await fetch(`${base}${build.entry}`).then(r => r.arrayBuffer()))).digest('hex'), build.entry_sha256);
 assert.equal(process.env.DB_NAME, 'sc_frontend_acceptance');
@@ -79,6 +79,11 @@ try {
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 950 });
     check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    const error = page.locator('[data-semantic-component="ScFormItem"]').filter({ has: page.locator('#activation-password-confirm') }).getByText('确认正式密码', { exact: true }).nth(1);
+    await error.waitFor();
+    const errorBox = await error.boundingBox();
+    const submitBox = await page.getByRole('button', { name: '设置正式密码', exact: true }).boundingBox();
+    check(Boolean(errorBox && submitBox && submitBox.y >= errorBox.y + errorBox.height), true);
     // Only empty secret inputs are captured.
     await page.screenshot({ path: path.join(out, `activation-empty-after-failure-${width}.png`) });
   }
