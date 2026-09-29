@@ -11,6 +11,16 @@ LEGACY_USER_SURFACE_MODEL_POLICY_SOURCE_KIND = "legacy_user_surface_model_policy
 LEGACY_RECORD_CONTEXT_CLEAR_MODELS: set[str] = set()
 LEGACY_DELETE_ONLY_MODELS = {"res.company", "hr.department", "res.users"}
 _LEGACY_STANDARD_LIST_PROFILE_REGISTRY: list[dict[str, Any]] = []
+# Workflow projection profiles owned by modules other than the industry module.
+# `smart_construction_core` must not declare a profile for a model that a user
+# or product module owns; the owning module registers it here and the workflow
+# service merges it when it reads a record.  Keeping the two apart is what lets
+# a missing capability stay visible instead of being back-filled by the
+# industry layer.
+_WORKFLOW_CONTRACT_PROFILE_REGISTRY: dict[str, dict[str, Any]] = {}
+_WORKFLOW_CONTRACT_PROFILE_SOURCES: dict[str, str] = {}
+WORKFLOW_CONTRACT_PROFILE_REQUIRED_KEYS = ("state_field", "state_phase", "state_actions", "method_by_action")
+WORKFLOW_CONTRACT_PROFILE_SOURCE_KIND = "workflow_contract_profile_registry"
 _LEGACY_FIELD_PRESENTATION_REGISTRY: dict[tuple[str, str], dict[str, Any]] = {}
 _LEGACY_PROJECT_FORM_GOVERNANCE_MODELS: set[str] = set()
 _LEGACY_PROJECT_FORM_PROFILE_REGISTRY: dict[str, dict[str, Any]] = {}
@@ -84,6 +94,42 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
             _LEGACY_STANDARD_LIST_PROFILE_REGISTRY[index] = normalized
             return
     _LEGACY_STANDARD_LIST_PROFILE_REGISTRY.append(normalized)
+
+
+def register_workflow_contract_profile(model_name: str, profile: dict[str, Any], *, source: str = "") -> bool:
+    """Register a workflow projection profile owned outside the industry module.
+
+    Returns `False` when the request cannot become an executable projection:
+    a missing model name or a profile without the structural keys the workflow
+    service reads.  Refusing here keeps a partial profile from reaching the
+    renderer as a silently degraded surface.
+    """
+    model = _safe_text(model_name)
+    if not model or not isinstance(profile, dict):
+        return False
+    normalized = _deep_clone_json_like(profile)
+    if not isinstance(normalized, dict):
+        return False
+    normalized["state_field"] = _safe_text(normalized.get("state_field"))
+    for key in WORKFLOW_CONTRACT_PROFILE_REQUIRED_KEYS:
+        if not normalized.get(key):
+            return False
+    if not normalized["state_field"]:
+        return False
+    _WORKFLOW_CONTRACT_PROFILE_REGISTRY[model] = normalized
+    _WORKFLOW_CONTRACT_PROFILE_SOURCES[model] = _safe_text(source)
+    return True
+
+
+def workflow_contract_profiles() -> dict[str, dict[str, Any]]:
+    return {
+        model: _deep_clone_json_like(profile)
+        for model, profile in _WORKFLOW_CONTRACT_PROFILE_REGISTRY.items()
+    }
+
+
+def workflow_contract_profile_sources() -> dict[str, str]:
+    return dict(_WORKFLOW_CONTRACT_PROFILE_SOURCES)
 
 
 def register_legacy_record_context_clear_model(model_name: str) -> None:

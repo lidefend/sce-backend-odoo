@@ -699,10 +699,16 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         assembler.project_runtime_business_actions(contract)
         actions = contract["actionContract"]["actionRuleList"]
         purposes = {row["actionSemantics"]["purpose"] for row in actions if row.get("actionSemantics")}
-        self.assertEqual(purposes, {"save_draft", "submit", "approve", "reject"})
+        self.assertEqual(purposes, {"save_draft", "submit", "approve", "reject", "complete"})
         submit = next(row for row in actions if row.get("actionSemantics", {}).get("purpose") == "submit")
         self.assertEqual(submit["button"]["name"], "action_submit")
         self.assertEqual(submit["actionSemantics"]["executor"], "contract.action")
+        finished = next(row for row in actions if row.get("actionSemantics", {}).get("purpose") == "complete")
+        self.assertEqual(finished["button"]["name"], "action_done")
+        self.assertEqual(finished["actionSemantics"], {
+            "kind": "business", "purpose": "complete", "executor": "contract.action",
+            "origin": "payment.request.available_actions",
+        })
         duplicate = deepcopy(submit)
         duplicate["actionSemantics"]["purpose"] = "approve"
         actions.append(duplicate)
@@ -4202,6 +4208,57 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         assembler.project_workflow_action_semantics(contract)
         self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+    def test_lifecycle_purposes_are_published_for_the_declaring_owner(self):
+        """`start_execution` / `complete` / `reopen` are declarable, not inferred.
+
+        A lifecycle transition that carries no published purpose used to reach the
+        Web as an undeclared action.  These three purposes stay declarations: each
+        one is accepted only when the owning module states it, and each one still
+        binds to the method that owner declared.
+        """
+        for purpose in ("start_execution", "complete", "reopen"):
+            self.assertEqual(
+                assembler.declared_action_semantics({
+                    "kind": "business", "purpose": purpose,
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                }),
+                {
+                    "kind": "business", "purpose": purpose,
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            )
+        contract = self._semantics_contract(
+            [
+                {"key": "activate", "method": "action_set_running", "action_semantics": {
+                    "kind": "business", "purpose": "start_execution",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+                {"key": "complete", "method": "action_close", "action_semantics": {
+                    "kind": "business", "purpose": "complete",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+                {"key": "reopen", "method": "action_reset_draft", "action_semantics": {
+                    "kind": "business", "purpose": "reopen",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+            ],
+            [
+                self._method_rule("action_set_running"),
+                self._method_rule("action_close"),
+                self._method_rule("action_reset_draft"),
+                self._method_rule("action_done"),
+            ],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        rules = contract["actionContract"]["actionRuleList"]
+        self.assertEqual(
+            [rule.get("actionSemantics", {}).get("purpose") for rule in rules],
+            ["start_execution", "complete", "reopen", None],
+        )
+
+    def test_a_lifecycle_method_reaching_an_undeclared_owner_stays_undeclared(self):
+        for method in ("action_set_running", "action_done", "action_close", "action_reopen"):
+            contract = self._semantics_contract([], [self._method_rule(method)])
+            assembler.project_workflow_action_semantics(contract)
+            self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
 
 
 if __name__ == "__main__":

@@ -10,6 +10,13 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .action_semantics_vocabulary import (
+    EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
+    KINDS as ACTION_SEMANTICS_KINDS,
+    OPERATIONS as ACTION_SEMANTICS_OPERATIONS,
+    PURPOSES as ACTION_SEMANTICS_PURPOSES,
+    is_declared as action_semantics_purpose_is_declared,
+)
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
@@ -4805,23 +4812,14 @@ def _append_ui_contract_actions(
 # `$defs.actionRule.actionSemantics`).  The platform only *carries* a business
 # owner's declaration; it never derives a purpose from a method name, a label or
 # a button position.
-DECLARED_ACTION_SEMANTICS_KINDS = frozenset({"persistence", "business", "interaction"})
-DECLARED_ACTION_SEMANTICS_PURPOSES = frozenset({
-    "save_draft",
-    "submit",
-    "approve",
-    "reject",
-    "cancel_record",
-    "discard_changes",
-    "return",
-})
-DECLARED_ACTION_SEMANTICS_EXECUTORS = frozenset({
-    "record.save",
-    "contract.action",
-    "client.back",
-    "client.discard",
-})
-DECLARED_ACTION_SEMANTICS_OPERATIONS = frozenset({"create", "write"})
+# The declared action-semantics vocabulary has exactly one authority
+# (`action_semantics_vocabulary`); the published schema and the Web consumer are
+# projections a guard compares against it.  A local copy here would re-create
+# the drift that import removes.
+DECLARED_ACTION_SEMANTICS_KINDS = ACTION_SEMANTICS_KINDS
+DECLARED_ACTION_SEMANTICS_PURPOSES = ACTION_SEMANTICS_PURPOSES
+DECLARED_ACTION_SEMANTICS_EXECUTORS = ACTION_SEMANTICS_EXECUTORS
+DECLARED_ACTION_SEMANTICS_OPERATIONS = ACTION_SEMANTICS_OPERATIONS
 
 
 def declared_action_semantics(value: Any) -> dict[str, Any] | None:
@@ -4843,8 +4841,12 @@ def declared_action_semantics(value: Any) -> dict[str, Any] | None:
         kind not in DECLARED_ACTION_SEMANTICS_KINDS
         or purpose not in DECLARED_ACTION_SEMANTICS_PURPOSES
         or executor not in DECLARED_ACTION_SEMANTICS_EXECUTORS
+        or not action_semantics_purpose_is_declared(kind, purpose, executor)
         or not origin
     ):
+        # A combination outside the vocabulary is dropped here instead of being
+        # published: it would look declared while every terminal discards it,
+        # which is precisely the silent gap this has to expose.
         return None
     semantics = {"kind": kind, "purpose": purpose, "executor": executor, "origin": origin}
     operation = _text(declared.get("operation")).lower()
