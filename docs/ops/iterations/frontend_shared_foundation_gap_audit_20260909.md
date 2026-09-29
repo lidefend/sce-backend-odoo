@@ -4068,3 +4068,153 @@ exit=1
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 28｜低代码管理面的原生行为面盲区（P3 契约外观边界，2026-09-30）
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 契约结构与守卫）＋ P4（前端呈现适配），不新增业务层 |
+| **Layer Target** | `scripts/audit/generate_frontend_component_driver_takeover_inventory.py`；`frontend/apps/web/src/views/SceneHealthView.vue`、`ScenePackagesView.vue`、`views/businessConfigSurface/BusinessConfigChangeSetPanel.vue` |
+| **Module** | `smart_core`（契约/守卫）；`frontend/apps/web`（消费） |
+| **Standard vs User-Specific** | 平台标准：**"原生行为元素只能存在于设计系统适配层"** 是通用呈现规则，不属任何行业或客户语义 |
+| **Why Here** | 只有这里同时掌握"契约声明的分区角色"和"页面实际渲染的元素"；判定必须发生在能同时看到两者的守卫里，页面自身不能自证 |
+| **Why Not Elsewhere** | 不放后端：后端不渲染 DOM，无法判断页面是否用原生元素；不新增治理文档：既有接管清单本就是该规则的发布者；不改契约 `tag`：`tag` 是**布局角色**（呈现策略），不是组件指定，且已被 `frontend_page_contract_boundary_guard.py` 固定 |
+| **Blast Radius** | 接管清单评估范围由「非 P3 且非设计系统」扩到「全部产品前端，除设计系统适配层」；3 个 P3 页面改为官方组件；4 件派生清单刷新。菜单/模型/后端/请求载荷零变化 |
+
+### 2. 已确认缺口：发布规则却在**评估范围上留洞**
+
+前一段修掉了"发布 `completionRule` 但从不求值"。本段在同类检查里发现第二层：
+
+```python
+if not is_p3(source) and "/components/design-system/" not in source and source not in {
+    "frontend/apps/web/src/components/MenuTree.vue",
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+}:
+    ... 收集 rawBehaviourSurfaces ...
+```
+
+`not is_p3(source)` 把**整个低代码管理面（P3）**排除在原生行为扫描之外。
+于是规则文本写着 `unassessedRawBehaviorSurfaces=0`，实际生产面上仍有原生行为在渲染。
+`scope` 字段自称 `repository P0/P1 frontend production sources`，与实现共同把缺口包装成"范围之外"。
+
+**让缺口显现**（只计算、不落盘，改动生成器后第一次求值）：
+
+```
+raw surfaces:
+  views/SceneHealthView.vue                        ['details', 'window.confirm']
+  views/ScenePackagesView.vue                      ['window.confirm']
+  views/businessConfigSurface/BusinessConfigChangeSetPanel.vue  ['details']
+completion failures:
+  unassessedRawBehaviorSurfaces=3 (...)
+```
+
+三项全部落在 P3。这正是"契约缺口必须显现"的反面教材：**看板绿，页面红**。
+
+### 3. 裁定：`tag="details"` 不是契约越界
+
+对 `page_contracts_builder.py` / `workspace_home_contract_builder.py` 的 `sections[].tag` 逐值统计：
+`section`×68、`header`×8、`div`×5、`details`×4。裁定如下，**本段不重命名 tag 词表**：
+
+- `tag` 表达的是**布局角色**（结构语义），属"受管呈现策略"，不是组件指定，也不声明授权、状态迁移、业务唯一性或计算公式；
+- 词表取 HTML5 **语义元素名**（`header`/`section`/`div`/`details`），四者同级，不是把某个 TDesign 组件写进契约；
+- 因此契约给角色，**前端负责选择实现组件**：`header`/`section`/`div` → 原生语义容器；`details` → **官方 `ScDisclosure`**（TDesign Collapse），不再是原生 `<details>`；
+- 守卫只把**带行为语义**的原生元素（`button|input|select|textarea|table|dialog|details` 与 `window.confirm/alert/prompt`）计为缺口；纯布局容器（`header`/`section`/`div`）允许原生。这条口径写进本段并由此守卫执行；
+- 重命名 `details` 会牵动 `SectionTag` 联合类型、`sectionLayout.ts`、`pageContract.ts` 与 4 处消费点，且 `page_contract_boundary_guard` 已把 `"tag": "details", "open": True` 固定为必需契约文本——**无收益、有回归面**，不在本段。
+
+`window.confirm` 则无争议：仓库其余全部位置都走受管确认权威 `IntentConfirmationDialog`（`ScDialog` + 嵌套遮罩焦点/滚动恢复），这两处是**唯一的例外**。
+
+### 4. 修复
+
+产品侧（`fc38e62f6`）：
+
+- `SceneHealthView`：3 处原生 `<details>/<summary>` → `<ScDisclosure :title="..." :open=... :style=...>`，保留 `pageSectionTagIs(..., 'details')` 角色守卫与 `pageSectionOpenDefault` 默认展开；作用域样式 `details`/`summary` 选择器改为 `.health-details`（不再样式化原生元素）；
+- `SceneHealthView`（rollback）、`ScenePackagesView`（import）：`window.confirm` → `await ref.confirm({actionLabel, message})`，**确认放在 `busy = true` 之前**，取消不再闪现 loading，也不再需要 `busy=false` 回滚写；
+- `BusinessConfigChangeSetPanel`：`.high-risk-boundary` 原生 `<details>` → `<ScDisclosure>`。
+
+守卫侧（`0cd4d0a03`）：
+
+- 去掉 `not is_p3(source)` 与两个**惰性**名称排除（`MenuTree.vue`、`CanonicalNavigationMenuNode.vue` 实测无任何原生行为，排除只留未来盲点）；**设计系统适配层排除保留**，因为在适配层实现 primitive 正是它的职责；
+- `scope` 更正为 `repository P0-P4 frontend production sources except the design-system adapter layer`；
+- 失败信息由"只有一个计数"改为**逐源可定位**：`unassessedRawBehaviorSurfaces=3 (... SceneHealthView.vue(details+window.confirm), ...)`；
+- 新增 `productLayer` 字段，失败时能直接判断是 P3 还是主产品面。
+
+### 5. 负例（先证明门禁会红）
+
+`0cd4d0a03` 之前先用**未修复的真实源码**求值，得到 §2 的三项失败（非构造样本）。
+另有入册单测三条（`scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py`，10 → 13 测）：
+
+- `test_raw_behavior_surface_inside_p3_administration_is_evaluated`：把含 `<details>` 的临时文件放进 P3 前缀目录，必须被计入且 `productLayer=P3`；**若有人把 `not is_p3(source)` 加回去，这条立即失败**；
+- `test_native_confirmation_api_is_a_raw_behavior_surface`：`window.confirm` 必须被计入（覆盖非 P3 通用路径）；
+- `test_design_system_adapter_layer_may_own_native_elements`：设计系统层内的 `<button>` 必须**不**计为缺口（正向对照，防止守卫扩大化）。
+
+### 6. 验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | **PASS 13 tests**（原 10）；`PASS required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessedRequiredTakeovers=0 raw=0` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 59 tests** + 3 件清单 `--check` 全 PASS（`rendering_detail_inventory surfaces=172 gaps=0`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0`） |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS `components=46 eventCases=11` |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` 两套配置） |
+| L2 | `verify.frontend.state_dashboard.unit` / `scene_component_bridge.unit` / `scene_component_bridge.guard` / `global_component_capability.unit` | 全 PASS（`blocks=9 formal_gaps=0`、`checks=129`、`tests=31`） |
+| L2 | 6 条契约消费/边界守卫（`page_contract_boundary`、`orchestration_consumption`、`product.contract_consumption`、`scene_governance_consumption`、`section_tag_coverage`、`section_style_coverage`） | 全 PASS（`checked_pages=17 checked_sections=85`） |
+
+L4（受管 5180，一次构建、一次定向检查）：
+
+- `make frontend.standard.preview.build` 单次构建 22.73s，产物替换 `sce-offrepo/artifacts/config05-20260929/dist`
+  （旧候选另存 `config05-20260929-prev-8feb2ee0d`，未覆盖）。`build-identity.json`：
+  `base_sha=640a97eb7`、`dirty_scope=""`、`entry=/assets/index-Clm_Nfe3.js`、`entry_sha256=fc1ee8d0…`。
+  5180 监听进程仍为 `pid=802966`（`STATIC_ROOT` 指向同一路径，故**无需重启、未新增端口**），
+  HTTP 回读 `index`/`entry` 的 SHA-256 与身份文件逐一相符。
+- 定向探针 `artifacts/frontend-web-fix-20260928/p3-official-components/`：以受管角色
+  `fixture_role_config_admin` 登录，1440×950 与 390×844 两个视口。
+
+| 检查 | 结果 |
+|---|---|
+| `/admin/business-config` `.high-risk-boundary` | `data-semantic-component=ScDisclosure`、`data-disclosure-trigger` 标签为「独立高风险操作」、可展开收起、正文完整；页面 `details/summary` 计数 **0** |
+| 两视口横向溢出 | 1440 与 390 均 `scrollWidth-clientWidth <= 1` |
+| 写请求 | 仅 `login`；**零业务写**（`ui.business_config.*` 均为读/扫描） |
+| `window.confirm` | 全程未触发原生对话框（`page.on('dialog')` 零命中） |
+
+`ScDisclosure` 本身的渲染由同一次运行中的项目列表行（4 个实例）与上述 boundary（1 个实例）共同证明。
+
+### 7. 未取得的证据（明确登记，不扩大权限凑证据）
+
+`/admin/scene-health` 与 `/admin/scene-packages` 的路由守卫要求 `session.user.is_platform_admin === true`
+（`router/index.ts` `adminOnly`），而受管验收环境**没有 platform-admin 夹具账号**
+（`config/frontend/acceptance_environments_v1.json` 的 `role_bindings` 只有 finance / project_member /
+project_manager / owner / contract_operator / config_admin）。实际访问被重定向到 `/s/projects.list`。
+
+**不为此扩大角色或权限**：这是既有的授权边界，不是本段缺陷。因此这两个页面的页面级浏览器证据
+**本轮未取得**，其改动依据为：同一官方组件在本次运行中的 5 个实例、两套 `vue-tsc` 类型检查、
+以及 6 条契约消费/边界守卫。按分层规则记为 `not_run`，不写成通过。
+
+### 8. 提交
+
+- `fc38e62f6 fix(web): render administration disclosure and confirmation with official components`
+- `0cd4d0a03 fix(guard): evaluate raw behaviour surfaces in administration sources`
+- `640a97eb7 chore(web): refresh the derived inventories for the administration takeover`
+- 本段记录（文档）
+
+### 9. 剩余（显式登记，不在本段）
+
+- 承接上一段全部登记项（`state_transition_undeclared` 五条、`workflow_contract_backend` 7 条既有失败、
+  `style_system.guard` 四项文件长度欠账、117 个未接入 lane 的 `smart_core` 测试文件、
+  `test_contract_governance_project_form.py` 9 条、`smart_core` 整模块 13 条、
+  `verify.docs.product_boundary`、`playwright_vendor_coupling` 探针层债务），本段未触碰。
+- 本段**新登记（非阻断）**：`MenuTree.vue` / `CanonicalNavigationMenuNode.vue` 的名称排除已删除，
+  两文件当前无任何原生行为；若将来需要豁免，必须给出与设计系统同级的理由，不能只写文件名。
+- 本段**新登记（非阻断）**：`/admin/*` 管理面在受管验收环境无 platform-admin 夹具，
+  这三条管理路由的页面级回归目前只能靠组件级＋契约级证据；需要页面级证据时应单独申请夹具授权，
+  不得用放宽 `adminOnly` 解决。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
