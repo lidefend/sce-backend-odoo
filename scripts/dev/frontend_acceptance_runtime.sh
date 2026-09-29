@@ -293,6 +293,28 @@ case "$command" in
   preflight)
     preflight
     ;;
+  standard-list-lowcode)
+    preflight
+    validate_backend_resource_identity
+    [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == true ]] || exit 2
+    # Iteration evidence can reuse an unchanged backend. Prove both the original
+    # clean identity and the current addon inputs; never rewrite its receipt.
+    backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+    [[ "$backend_revision" =~ ^[0-9a-f]{40}$ ]] || exit 2
+    git -C "$ROOT_DIR" cat-file -e "$backend_revision^{commit}"
+    [[ "$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_FINGERPRINT)" == "$(printf '%s\n' "$backend_revision" | sha256sum | cut -d' ' -f1)" ]] || {
+      echo "DENY: original backend was not a clean addon candidate" >&2; exit 2;
+    }
+    git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons
+    [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
+    [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || {
+      echo "DENY: existing SC_ACCEPTANCE_FIXTURE_PASSWORD is required; no fixture reset" >&2; exit 2;
+    }
+    export WEB_LC_BACKEND_REVISION="$backend_revision"
+    export CHANGE_SET_STANDARD_LIST_LOOP=1
+    cd "$ROOT_DIR/frontend/apps/web"
+    node scripts/low_code_change_set_acceptance.mjs
+    ;;
   backend-up)
     preflight
     if docker inspect "$BACKEND_ACCEPTANCE_NAME" >/dev/null 2>&1; then

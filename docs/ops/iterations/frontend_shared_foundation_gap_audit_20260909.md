@@ -1216,3 +1216,55 @@ applied、保留=1813 与结算单 13/14/15，分别记录。
   未在本轮扩大处理范围。
 - 四项 `style_system.guard` 欠账、`render_semantic_ready_guard.py`、`verify.list.surface.clean`、
   `no_new_any_guard` 仍独立记账；业务矩阵未升级整行；未重跑 89 入口/全站发布门禁。
+
+## WEB-LC-01：标准列表配置闭环（2026-09-29，verification_pending）
+
+续跑基线 `e877afcc18cd7b5d2556e8053a64c4f93bda3e1b`，分支
+`feature/web-official-template-adoption`，开始时工作区干净。本增量只准备定向工具，
+**尚未取得真实配置发布、生效、恢复的浏览器结果**，不进入页面类型下一批推广。
+
+- Formal Product Layer / Layer Target / Module：P4，既有低代码变更集浏览器验收入口、
+  `frontend_acceptance_runtime.sh` 与 `make/runtime_ops.mk`。配置本身属于 P3 的临时验收配置；
+  不沉淀客户偏好，不修改 P0/P1 产品实现或业务事实。Why Here：绑定既有环境并验证现有 API；
+  Why Not Elsewhere：验证脚本不得成为配置或页面呈现的产品权威。
+- 范围：付款申请 menu 545 / action 775 / `payment.request` 普通列表，当前公司下
+  `fixture_role_config_admin` / `business_config_admin`，只改变 `name` 列标签，
+  经既有 change-set stage/validate/publish/rollback 完成闭环。旧配置不覆盖；独立临时 target key
+  和 token 在发布前保存，回滚停用本次新增配置，保留平台审计历史。权限及有效契约仍由后端决定。
+- 身份：内部隔离验收租户（非生产客户库、非控制库、非行业目录），local acceptance profile，
+  project `sc-fe-r2-p1-01`，DB `sc_frontend_acceptance`，filter `^sc_frontend_acceptance$`，
+  filestore `sc_fe_r2_p1_01_odoo:/var/lib/odoo/filestore/sc_frontend_acceptance`；
+  不新建 fixture、账号、凭据、数据库、端口或卷。既有 fixture 只读复用，禁止业务 create/write/unlink。
+- 后端证据复用：容器 source `23f11f426880585ca307544545c9bf9c01245b42`；
+  原 clean source fingerprint 与当前 `addons` 输入相同，经入口确定性核对，不改写旧回执。
+  前端复用 TPL-06A 的 5180 产物；核对现有 listener/proxy、入口摘要及源码差异，
+  不重新构建、不全文件 HTTP 比对。测试脚本变化不影响已有产品产物。
+
+### 本批结果索引
+
+| 层 | 命令/观察 | 结果 | 归因/下一步 |
+|---|---|---|---|
+| L0 | preflight、`git diff 23f11f4 HEAD -- addons`、既有 5180 listener | passed；clean 起点，后端产品输入无差异 | 后续 dirty scope 仅 P4 工具及本记录 |
+| L1 | `make ci.local.iteration` | passed；策略测试 16，L1 only，无交付回执 | 工具变更不扩大产品回归 |
+| L1 | `node --check frontend/apps/web/scripts/standard_list_lowcode_loop.mjs`、`bash -n`、`git diff --check` | passed | 定向工具可解析 |
+| L2 | `make verify.business_config.standard_list_loop.unit` | passed，7 tests | 发布不确定先回读；冲突不强制覆盖；未尝试发布的失败草稿清理；在途发布即使读到旧 ready 也不得 discard |
+| L3 前提 | `make acceptance.runtime.preflight`；定向入口 resource/source 核验 | passed | profile、精确 DB/filter/卷、后端输入可复用 |
+| L3/L4 | `make verify.business_config.standard_list_loop` | failed，凭据前置拒绝；浏览器及配置写入 not_run | environment prerequisite：缺少既有 `SC_ACCEPTANCE_FIXTURE_PASSWORD`，未重试、未重置 fixture |
+| L5 | Quick、发布、远端 CI、合并、部署 | not_run | 本地迭代范围；闭环未完成，禁止生成交付结论 |
+
+定向工具默认只读，显式 `WEB_LC_APPLY=1` 才执行已授权临时配置写入。凭据从既有私有权威注入，
+不得写进仓库或报告。报告位于既有 `artifacts/frontend-web-fix-20260928/web-lc-01-<run>/report.json`
+（目录 0700、报告 0600；包含精确恢复 token，禁止公开上传）。请求失败先回读同一变更集状态，
+已发布走同一幂等回滚请求，仅未尝试发布的本次草稿可放弃；发出发布请求后即使读到旧 ready，
+也不能据此推断事务未提交。未知状态/冲突/恢复失败均保留恢复身份并报告，不推测性 discard。
+验证有效契约标签、真实表头、服务端查询和返回记录摘要，恢复后与基线比较；不以配置存储成功代替页面验证。
+
+独立 B 线复核发现“发布失联但读到旧 ready 时 discard”的恢复竞态；工具已增加
+持久化 `publish_attempted` 标记并拒绝此类推测性清理，新增第 7 项失败注入测试通过。
+本次 L2 仅 7 项工具测试，不计作真实页面用例；产品源码未变，沿用上一批产物和页面证据，
+这些证据不代替本批尚未执行的配置闭环。
+
+下一步：既有验收凭据就绪后先运行默认只读入口，再用 `WEB_LC_APPLY=1` 运行同一入口；
+只有真实生效、恢复回读及独立复核通过后才能记为批次验收完成。
+回滚代码：撤回本 P4 增量；运行时恢复：仅本次变更集 token 的平台 rollback/discard，
+不得删除其他草稿或直接改配置表。批次未完成｜主线未集成｜目标环境未部署｜用户交付未验收。

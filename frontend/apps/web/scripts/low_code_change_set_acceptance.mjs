@@ -3,6 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
+if (process.env.CHANGE_SET_STANDARD_LIST_LOOP === '1') {
+  const { runStandardListLoop } = await import('./standard_list_lowcode_loop.mjs');
+  await runStandardListLoop();
+  process.exit(0);
+}
+
 if (process.env.CHANGE_SET_FORM_LOOP === '1') {
   const { runFormalFormLoop } = await import('./formal_form_lowcode_loop.mjs');
   await runFormalFormLoop();

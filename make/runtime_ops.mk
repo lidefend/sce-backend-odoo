@@ -131,6 +131,14 @@ verify.business_config.config_workbench_operation_acceptance: guard.prod.forbid
 verify.business_config.change_set_acceptance: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_change_set_acceptance.mjs
 
+.PHONY: verify.business_config.standard_list_loop verify.business_config.standard_list_loop.unit
+verify.business_config.standard_list_loop: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-lowcode
+
+verify.business_config.standard_list_loop.unit: guard.prod.forbid
+	@node --test frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs
+	@bash -n scripts/dev/frontend_acceptance_runtime.sh
+
 verify.business_config.safe_open_acceptance: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_safe_open_acceptance.mjs
 
