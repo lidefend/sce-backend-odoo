@@ -40,6 +40,7 @@ export type StandardListCompositionDecision = {
 export const STANDARD_LIST_COMPOSITION_PILOT_MODELS: readonly string[] = Object.freeze([
   'project.project',
   'sc.general.contract',
+  'payment.request',
 ]);
 
 export function resolveStandardListComposition(input: { model?: unknown }): StandardListCompositionDecision {

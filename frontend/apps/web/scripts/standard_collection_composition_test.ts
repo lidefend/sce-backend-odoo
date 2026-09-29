@@ -65,6 +65,11 @@ checkDeep(
   'a second business model reuses the same composition, not a second implementation',
 );
 checkDeep(
+  resolveStandardListComposition({ model: 'payment.request' }),
+  { composition: 'official-standard-list', adopted: true, reason: 'pilot-model-adopted' },
+  'the payment-request list joins the same composition, so one business flow does not run two list implementations',
+);
+checkDeep(
   resolveStandardListComposition({ model: 'res.partner' }),
   { composition: 'legacy-list-surface', adopted: false, reason: 'outside-pilot-scope' },
   'an unverified list keeps its previous composition',
@@ -97,7 +102,7 @@ checkDeep(
 check(Object.isFrozen(STANDARD_LIST_COMPOSITION_PILOT_MODELS), true, 'the pilot list is immutable');
 checkDeep(
   [...STANDARD_LIST_COMPOSITION_PILOT_MODELS],
-  ['project.project', 'sc.general.contract'],
+  ['project.project', 'sc.general.contract', 'payment.request'],
   'the pilot list stays the explicit verified scope',
 );
 
