@@ -10,14 +10,11 @@
  * sections render bare, without the official engine rules and without the
  * adopted-detail facts layout.
  */
-import type { StandardPageType } from './standardPageType';
+import type { StandardPageType, StandardPageTypeReason } from './standardPageType';
 
 export type StandardFormCompositionId = 'official-standard-form' | 'legacy-form-section';
 
-export type StandardFormCompositionReason =
-  | 'contract-record-view'
-  | 'contract-view-conflict'
-  | 'contract-view-not-classified';
+export type StandardFormCompositionReason = StandardPageTypeReason;
 
 export type StandardFormCompositionDecision = {
   composition: StandardFormCompositionId;
@@ -27,8 +24,15 @@ export type StandardFormCompositionDecision = {
 
 export function resolveStandardFormComposition(input: {
   pageType?: StandardPageType;
+  reason?: StandardPageTypeReason;
 }): StandardFormCompositionDecision {
+  // A page the contract did not declare as a record form keeps the bare section
+  // renderer it names, and the reason it reports is the contract's own
+  // classification, passed through instead of collapsed: a readonly record
+  // ("contract-readonly-record-view") and a page the contract never classified
+  // ("contract-view-not-classified") are different answers, and publishing the
+  // second for the first would claim the contract said nothing when it did.
   return input?.pageType === 'record-form'
     ? { composition: 'official-standard-form', adopted: true, reason: 'contract-record-view' }
-    : { composition: 'legacy-form-section', adopted: false, reason: 'contract-view-not-classified' };
+    : { composition: 'legacy-form-section', adopted: false, reason: input?.reason ?? 'contract-view-not-classified' };
 }

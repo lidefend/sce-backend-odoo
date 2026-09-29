@@ -32,6 +32,10 @@ export function resolveStandardListComposition(
     : {
       composition: 'official-standard-list',
       adopted: false,
-      reason: decision?.reason === 'contract-view-conflict' ? 'contract-view-conflict' : 'contract-view-not-classified',
+      // The contract's own classification, passed through: a page the contract
+      // declared as a record form or a readonly record is not the same answer
+      // as a page it never classified, and publishing the second for the first
+      // would misreport what the contract said.
+      reason: decision?.reason ?? 'contract-view-not-classified',
     };
 }

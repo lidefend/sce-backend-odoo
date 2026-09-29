@@ -64,6 +64,11 @@ for (const decision of [
   undefined,
 ] as Array<{ pageType: 'specialized' | 'record-form' | 'record-detail'; reason: string } | undefined>) {
   check(resolveStandardListComposition(decision as never).adopted, false, 'a surface the contract did not declare a collection stays an explicit exception');
+  check(
+    resolveStandardListComposition(decision as never).reason,
+    decision?.reason ?? 'contract-view-not-classified',
+    'a non-adopted list keeps the contract reason it was handed instead of inventing one',
+  );
 }
 checkDeep(resolveStandardDetailComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' }), { composition: 'official-standard-detail', adopted: true, reason: 'contract-readonly-record-view' }, 'readonly contract detail adopts');
 for (const renderProfile of ['create', 'edit', '', undefined]) {
@@ -74,9 +79,32 @@ checkDeep(resolveStandardDetailComposition(resolveStandardPageType({ viewType: '
 checkDeep(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'form', layoutType: 'table', renderProfile: 'readonly' })), { composition: 'official-standard-detail', adopted: false, reason: 'contract-view-conflict' }, 'a conflicting declaration is reported instead of adopting a detail');
 checkDeep(resolveStandardDetailComposition(undefined as never), { composition: 'official-standard-detail', adopted: false, reason: 'contract-view-not-classified' }, 'a page with no contract decision reports the missing classification rather than guessing one');
 checkDeep(
-  resolveStandardFormComposition({ pageType: 'record-detail' }),
-  { composition: 'legacy-form-section', adopted: false, reason: 'contract-view-not-classified' },
-  'the form composition keeps the real second renderer it names, so the two policies stay distinguishable',
+  resolveStandardFormComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' }),
+  { composition: 'legacy-form-section', adopted: false, reason: 'contract-readonly-record-view' },
+  'the form composition keeps the real second renderer it names, so the two policies stay distinguishable, and reports the contract reason it was given',
+);
+checkDeep(
+  resolveStandardFormComposition({ pageType: 'specialized', reason: 'contract-view-conflict' }),
+  { composition: 'legacy-form-section', adopted: false, reason: 'contract-view-conflict' },
+  'a conflicting declaration is reported as a conflict rather than as an unclassified page',
+);
+// Every composition decision reports the contract's own classification reason.
+// A record page that is not a query list is a classified page, so its list
+// reason must not claim the contract said nothing.
+checkDeep(
+  resolveStandardListComposition({ pageType: 'record-form', reason: 'contract-record-view' } as never),
+  { composition: 'official-standard-list', adopted: false, reason: 'contract-record-view' },
+  'a page the contract declared a record form keeps that reason when the list surface does not adopt it',
+);
+checkDeep(
+  resolveStandardListComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' } as never),
+  { composition: 'official-standard-list', adopted: false, reason: 'contract-readonly-record-view' },
+  'a readonly record keeps its reason when the list surface does not adopt it',
+);
+checkDeep(
+  resolveStandardListComposition({ pageType: 'specialized', reason: 'contract-view-conflict' } as never),
+  { composition: 'official-standard-list', adopted: false, reason: 'contract-view-conflict' },
+  'a conflicting declaration stays reported as a conflict for the list surface too',
 );
 const facts = { adopted: true, configurationMode: false, readonlyFacts: true, fields: [{ type: 'char', dedicatedControl: false }] };
 const detailPolicySource = readSource('frontend/apps/web/src/app/presentation/standardDetailComposition.ts');

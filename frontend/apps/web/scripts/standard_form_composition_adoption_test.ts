@@ -84,6 +84,11 @@ for (const decision of [
   undefined,
 ] as Array<StandardPageTypeDecision | undefined>) {
   check(resolveStandardFormComposition(decision as never).adopted, false, 'specialized and non-record responsibilities are not silently adopted');
+  check(
+    resolveStandardFormComposition(decision as never).reason,
+    decision?.reason ?? 'contract-view-not-classified',
+    'a page outside the record-form responsibility reports the contract classification it was handed',
+  );
 }
 const policySource = readSource('frontend/apps/web/src/app/presentation/standardFormComposition.ts');
 check(/PILOT_MODELS|project\.project|payment\.request/.test(policySource), false, 'no business model rollout selector remains');
