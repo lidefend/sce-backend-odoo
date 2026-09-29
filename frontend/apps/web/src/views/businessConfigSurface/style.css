@@ -332,29 +332,8 @@ h1 {
 .page-type-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-bg);
-}
-
-.page-type-tabs button {
-  min-height: 28px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-}
-
-.page-type-tabs button.active {
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  box-shadow: 0 0 0 1px var(--sc-app-border);
+  gap: var(--sc-product-space-1);
+  min-width: 0;
 }
 
 .scan-toggle {

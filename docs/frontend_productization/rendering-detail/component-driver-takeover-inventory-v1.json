@@ -1155,7 +1155,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 107,
+      "productionConsumerCount": 108,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1398,7 +1398,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "0139d0d8d297e0f4f0644f708d3a3f3845983e357dc8848229d14e254ea40792",
+  "inputDigest": "71b79903b67c0319d6e70dc75ebf3c0c1799f4fb4947899fb46580b0196402ac",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

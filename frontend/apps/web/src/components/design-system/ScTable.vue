@@ -17,6 +17,7 @@
     :table-content-width="tableContentWidth"
     :scroll="tableScroll"
     :height="height"
+    :max-height="maxHeight"
     :foot-data="footData"
     :selected-row-keys="selectedRowKeys"
     :row-selection-type="rowSelectionType"
@@ -107,6 +108,7 @@ const props = withDefaults(defineProps<{
   disableDataPage?: boolean;
   tableContentWidth?: string;
   height?: string | number;
+  maxHeight?: string | number;
   virtualScroll?: boolean;
   footData?: Record<string, unknown>[];
   selectedRowKeys?: Array<string | number>;

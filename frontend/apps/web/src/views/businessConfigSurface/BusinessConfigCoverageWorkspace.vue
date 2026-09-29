@@ -10,7 +10,11 @@
         v-for="option in pageTypeOptions"
         :key="option.key"
         type="button"
-        :class="{ active: pageTypeFilter === option.key }"
+        variant="ghost"
+        size="small"
+        appearance="section-tab"
+        :aria-pressed="pageTypeFilter === option.key"
+        :aria-current="pageTypeFilter === option.key ? 'location' : undefined"
         @click="$emit('update:pageTypeFilter', option.key)"
       >
         {{ option.label }}
@@ -132,9 +136,13 @@
         <ScButton
           v-for="section in visibleConfigSections"
           :key="`tab-${section.key}`"
-          :variant="activeSectionKey === section.key ? 'primary' : 'ghost'"
+          type="button"
+          variant="ghost"
+          size="small"
+          appearance="section-tab"
           role="tab"
           :aria-selected="activeSectionKey === section.key"
+          :aria-current="activeSectionKey === section.key ? 'location' : undefined"
           @click="$emit('update:activeSectionKey', section.key)"
         >
           {{ sectionDisplayLabel(section.key, section.label) }}
@@ -347,6 +355,7 @@ const activeSection = computed(() => (
   || props.visibleConfigSections[0]
   || null
 ));
+
 
 const emit = defineEmits<{
   'update:pageSearch': [value: string];

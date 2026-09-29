@@ -451,81 +451,61 @@
             <span>批量维护已收起，日常调整建议使用当前菜单主编辑区。</span>
             <ScButton type="button" class="link-button" @click="bulkPanelOpen = true">展开批量维护表格</ScButton>
           </div>
-          <div v-else class="table-wrap">
-            <table>
-            <colgroup>
-              <col class="index-col" />
-              <col class="name-col" />
-              <col class="default-col" />
-              <col class="status-col" />
-              <col class="parent-col" />
-              <col class="level-col" />
-              <col class="sequence-col" />
-              <col class="move-col" />
-              <col class="check-col" />
-              <col class="groups-col" />
-              <col class="note-col" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="index-col">#</th>
-                <th>显示名称</th>
-                <th>默认名称</th>
-                <th>来源</th>
-                <th>当前父级</th>
-                <th class="level-col">级别</th>
-                <th class="sequence-col">顺序</th>
-                <th>移动到上级</th>
-                <th class="check-col">显示</th>
-                <th>可见业务角色</th>
-                <th>备注</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(row, index) in filteredRows"
-                :key="row.menu.id"
-                :class="{ selected: row.menu.id === selectedMenuId, dirty: isDirty(row.menu.id) }"
+          <ScTable
+            v-else
+            class="menu-bulk-table"
+            label="批量菜单配置"
+            row-key="menuKey"
+            size="small"
+            :data="bulkRows"
+            :columns="bulkColumns"
+            :max-height="420"
+            :table-content-width="bulkTableContentWidth"
+            :row-class-name="bulkRowClassName"
+          >
+            <template #index="{ rowIndex }">{{ rowIndex + 1 }}</template>
+            <template #name="{ row }">
+              <ScInput
+                class="menu-text-input name-input"
+                :model-value="draftFor(row.menu.id).custom_label"
+                :placeholder="menuDisplayLabel(row.menu)"
+                @update:model-value="updateDraft(row.menu.id, { custom_label: String($event) })"
+              />
+            </template>
+            <template #defaultLabel="{ row }">
+              <span class="muted">{{ menuDisplayLabel(row.menu) }}</span>
+            </template>
+            <template #origin="{ row }">
+              <span
+                class="menu-origin-badge"
+                :class="isUserCreatedMenu(row.menu) ? 'deletable' : 'locked'"
               >
-                <td class="index-col">{{ index + 1 }}</td>
-                <td>
-                  <ScInput
-                    class="menu-text-input name-input"
-                    :model-value="draftFor(row.menu.id).custom_label"
-                    :placeholder="menuDisplayLabel(row.menu)"
-                    @update:model-value="updateDraft(row.menu.id, { custom_label: String($event) })"
-                  />
-                </td>
-                <td><span class="muted">{{ menuDisplayLabel(row.menu) }}</span></td>
-                <td class="status-col">
-                  <span
-                    class="menu-origin-badge"
-                    :class="isUserCreatedMenu(row.menu) ? 'deletable' : 'locked'"
-                  >
-                    {{ isUserCreatedMenu(row.menu) ? '可删除' : '系统' }}
-                  </span>
-                </td>
-                <td><span class="muted">{{ menuParentLabel(row.menu) }}</span></td>
-                <td class="level-col">{{ row.level }}</td>
-                <td class="sequence-col">
-                  <ScNumberInput theme="normal"
-                    class="menu-control number-input"
-
-                    :model-value="draftFor(row.menu.id).sequence_override || undefined"
-                    :placeholder="String(row.menu.sequence || 0)"
-                    title="可直接在左侧树拖动同级菜单排序，也可在这里输入精确顺序"
-                    @update:model-value="updateDraft(row.menu.id, { sequence_override: Number($event || 0) })"
-                  />
-                </td>
-                <td>
-                  <ScSelect class="menu-control" :model-value="draftFor(row.menu.id).target_parent_menu_id || 0" @update:model-value="updateDraft(row.menu.id, { target_parent_menu_id: Number($event) })"
-                  :options="[{value: 0, label: '不移动'}, ...parentOptions(row.menu.id).map(target => ({value: target.id, label: parentOptionLabel(target)}))]" />
-                </td>
-                <td class="check-col">
-                  <ScCheckbox :checked="draftFor(row.menu.id).visible" label="显示菜单" hide-label
-                    @update:checked="updateDraft(row.menu.id, { visible: $event })" />
-                </td>
-                <td>
+                {{ isUserCreatedMenu(row.menu) ? '可删除' : '系统' }}
+              </span>
+            </template>
+            <template #parent="{ row }">
+              <span class="muted">{{ menuParentLabel(row.menu) }}</span>
+            </template>
+            <template #level="{ row }">{{ row.level }}</template>
+            <template #sequence="{ row }">
+              <ScNumberInput
+                theme="normal"
+                class="menu-control number-input"
+                :model-value="draftFor(row.menu.id).sequence_override || undefined"
+                :placeholder="String(row.menu.sequence || 0)"
+                title="可直接在左侧树拖动同级菜单排序，也可在这里输入精确顺序"
+                @update:model-value="updateDraft(row.menu.id, { sequence_override: Number($event || 0) })"
+              />
+            </template>
+            <template #moveTarget="{ row }">
+              <ScSelect class="menu-control" :model-value="draftFor(row.menu.id).target_parent_menu_id || 0" @update:model-value="updateDraft(row.menu.id, { target_parent_menu_id: Number($event) })"
+              :options="[{value: 0, label: '不移动'}, ...parentOptions(row.menu.id).map(target => ({value: target.id, label: parentOptionLabel(target)}))]" />
+            </template>
+            <template #visible="{ row }">
+              <ScCheckbox :checked="draftFor(row.menu.id).visible" label="显示菜单" hide-label
+                @update:checked="updateDraft(row.menu.id, { visible: $event })" />
+            </template>
+            <template #roleGroups="{ row }">
                   <div class="group-cell">
                     <div v-if="draftFor(row.menu.id).role_group_ids.length" class="group-chip-list">
                       <span
@@ -544,13 +524,11 @@
                       <ScCheckbox
                         v-for="group in scopedRoleGroupOptions(row.menu.id)"
                         :key="`${row.menu.id}-scope-${group.id}`"
-                        class="group-check-item"
-                        :title="group.display_name"
-
-
-                          :checked="isRoleGroupSelected(row.menu.id, group.id)"
-                          @update:checked="toggleRoleGroup(row.menu.id, group.id, $event)"
-                        >{{ group.display_name }}</ScCheckbox>
+                      class="group-check-item"
+                      :title="group.display_name"
+                      :checked="isRoleGroupSelected(row.menu.id, group.id)"
+                      @update:checked="toggleRoleGroup(row.menu.id, group.id, $event)"
+                    >{{ group.display_name }}</ScCheckbox>
                     </div>
                     <div class="group-scope-actions">
                       <span class="group-scope-count">{{ scopedRoleGroupSelectionText(row.menu.id) }}</span>
@@ -581,19 +559,16 @@
                     </ScButton>
                     <small>{{ roleScopeSummary(row.menu.id) }}</small>
                   </div>
-                </td>
-                <td>
-                  <ScInput
-                    class="menu-text-input note-input"
-                    :model-value="displayNoteValue(draftFor(row.menu.id).note)"
-                    placeholder="可选"
-                    @update:model-value="updateDraft(row.menu.id, { note: String($event) })"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            </template>
+            <template #note="{ row }">
+              <ScInput
+                class="menu-text-input note-input"
+                :model-value="displayNoteValue(draftFor(row.menu.id).note)"
+                placeholder="可选"
+                @update:model-value="updateDraft(row.menu.id, { note: String($event) })"
+              />
+            </template>
+          </ScTable>
         </section>
       </main>
     </div>
