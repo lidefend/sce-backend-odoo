@@ -827,3 +827,49 @@ route-meta 比较，提升为显式、按 layout 限定的呈现策略，并把�
   **非本轮引入**，属范围外，未在本轮处理。
 - 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
   **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`）及其构建目录保持原样。
+
+### FE-TPL-04 scope A 官方外壳对齐验收（2026-09-29）
+
+范围：把 `artifacts/frontend-web-fix-20260928/shell-official-comparison/COMPARISON.md`
+§三 列出的 4 项“可对齐且不损失产品能力”的不一致，改为消费官方 TDesign 组合。
+本轮只做呈现与组合对齐；不新增业务语义、不删除外壳能力。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 高度由令牌权威驱动、与官方 `t-header` 带同值 | PASS | `frontend/packages/design-tokens/tokens/component.json`：`shell.topbar_height` 48→56、`shell.sidebar_collapsed_width` 56→64（dist 令牌已重建，`verify_tokens.py` PASS）；`frontend/apps/web/src/styles/tokens/pattern.css:44-46` 的 `--sc-shell-topbar-height` / `--sc-shell-sidebar-collapsed-width` 成为真实消费者。实测解析值 `tokenXxxl=56px`、`shellTokenValue=56px`。 |
+| 2 | 页头回到官方 `t-header` 带（非本地高度覆盖） | PASS | `frontend/apps/web/src/layouts/AppShell.css:456-457`（`.topbar` `min-height: var(--sc-shell-topbar-height)`，桌面块内 `height` 同值）；`AppShell.vue:193`（`ScHeader` → `t-header`）。实测 `header.height` 52px → **56px**（1440×900），窄屏 `minHeight` 0px → 56px。 |
+| 3 | 面包屑使用官方 `t-breadcrumb`，无本地仿制与并存旧行 | PASS | `frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue`：渲染 `TDesignBreadcrumb :max-item-width="'150'"` + `TDesignBreadcrumbItem`，scoped CSS 仅保留槽位（本地字号/分隔符规则已删除）。实测 `crumbs.present` false → true、`itemCount` 0→1、`legacyCrumbNodes` 两侧均为 0（旧 `.crumb` 未与新组件并存）。 |
+| 4 | 侧栏折叠回到官方 64px 紧凑栏，入口在侧栏底部 | PASS | `MenuTree.vue`（`t-menu :collapsed`）、`ProductSideNavigation.vue`（`:collapsed`）、`ProductShellSidebarFooter.vue`（`sidebar-compact-toggle`，`aria-controls="primary-sidebar"`）、`AppShell.css:1160-1180`（紧凑栏块）。实测 `shell--sidebar-hidden` → `shell--sidebar-compact`；`sider.box.w` → **64**、`flexBasis` `64px`、`menuCollapsed true`；`bottomCollapseControl` false → **true**、`topbarTogglePresent` true → **false**、`aria-expanded` `true→false→true`。 |
+| 5 | 内容列挂载真实 `t-footer` 并采用官方页脚几何 | PASS | 新增 `frontend/apps/web/src/components/design-system/ScFooter.vue`（`TDesignFooter` 原语）与 `product-shell/ProductShellContentFooter.vue`；`AppShell.vue:379` 挂载于内容列；`AppShell.css:435-447` 采用官方 `*-footer-layout` 语义（零内边距 + 一个 24px 偏移）与居中说明文字。实测 `content.footerPresent` false → true、`footerTag` → `FOOTER`、`footerPadding` → **0px**、`footerInsideContent true`。 |
+| 6 | 未采纳面与产品扩展不回退 | PASS | 移动抽屉 `{sidebar: true, role: "dialog", backdrop: true}`（390×844）；工作空间/公司/记录范围面板、活动页签、导航搜索、退出登录均保留（`AppShell.vue`、`ProductShellSidebarFooter.vue`）。两构建两视口 `consoleErrors: []`、无横向溢出。 |
+| 7 | 源码—产物—证据绑定同一候选，且构建可复现 | PASS | 候选 `fed15486`/`c3e29246`/`ed14d7bd`；离仓构建 `.../fe-tpl04d-20260929/dist`（`index.html` sha256 `b61b92de…7577`，入口 `/assets/index-DJ44umQ0.js` sha256 `174d4e35…3547`），`release_static_server.mjs` pid 4007259 @ `:5180`；`served-bundle-identity.json` HTTP 取回 **100/100** 文件逐字节一致（`mismatches: 0`）；同源码二次构建逐字节一致（100/100 文件、`contentDiffCount: 0`）。探针记录的入口与 `index.html` 一致。 |
+| 8 | 派生清单与当前源码一致 | PASS | `ed14d7bd` 用仓库自带生成器刷新 4 份清单：`component-driver-takeover` `required=35 missing=0 bridge_only=0 raw=0`（`breadcrumb` 首次获得 `bridgeExports`+适配源）、`rendering-detail` `surfaces=169 gaps=0`、`official-design-alignment` `internalVendorSelectorGapCount=0`/`visualLiteralGapCount=0`、`visual-projection` 新增 3 个源。两个 refresh 目标均为幂等（重复运行文件字节不变）。 |
+| 9 | 相关 L2 单元/结构门禁 | PASS | `standard_shell_composition` `cases=71 layouts=1`、`navigation_shell` 19 tests/`components=5`、`page_pattern_reference_parity` `surfaces=16`、`rendering_detail_state` 58 tests（`surfaces=95`、`shell_density_contracts=2`、三份 inventory `--check` PASS）、`component_driver_takeover` `required=35 missing=0`、`product_page_pattern` `patterns=4`、`delivery_hardening.guard` PASS（`async_epoch=enabled axe=4.10.2`）；全部 `exit=0`。日志中 `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}` 是生成器**负向测试**的预期输出，该目标退出码 0、正式检查输出 `internalVendorSelectorGapCount=0`。 |
+| 10 | 相关类型检查 | PASS | `make verify.frontend.typecheck.strict`：`vue-tsc --noEmit` 与 `tsconfig.strict.json` 两份配置，`exit=0`、0 错误（在本轮最后一次源码改动之后重跑）。 |
+
+**验收结论**：COMPARISON.md §三 的 4 项“纯呈现/交互不一致”**在本轮候选上已完成官方组合对齐并实测通过**；
+对齐后内容列页脚几何、面包屑组件、侧栏紧凑栏与页头高度均与官方模板取值一致。
+本结论不覆盖下方“仍未对齐”项，也不据此宣布 TPL-05 或整个前端模板接管通过。
+
+**对齐后仍未对齐（本轮未改动，不得当作已一致）**：
+
+- **页脚位置**：我方是内容列内的页脚带（贴列底部），官方把 `t-footer` 放在内容列的滚动容器内，
+  内容短时官方页脚紧跟内容。改动会牵动全站单一滚动属主（`.shell-content-surface` → `.router-host`），
+  本轮只对齐官方 `*-footer-layout` 的几何与文字处理，未迁移滚动属主。
+- **面包屑位置**：我方在页头工具条内渲染 `t-breadcrumb`，官方把 `<l-breadcrumb>` 置于 `t-content` 首行。
+  本轮只完成组件采纳，未迁移位置。
+- **移动端无官方基准**：官方模板 `src/style/layout.less:36-41` 对内容列强制 `min-width: 760px`，
+  不存在 390px 官方呈现；我方窄屏页头为两行产品组合，实测 78px，只保证不低于官方 56px 下限。
+- **官方一侧为源码级比对**：未运行官方模板本体，未做像素级截图对比。
+
+**边界（不得夸大）**：
+
+- 浏览器证据是**只读角色 `fixture_role_pm` 对外壳的观测**，不是业务旅程：未触发保存链、权限边界或合同业务办理；
+  截图只证明可见呈现，不证明写入与回读。
+- `verify.frontend.style_system.guard`（`scripts/audit/design_token_system.py`）仍报**既有**问题：
+  `ScRelationField.vue` 的新 z-index 未登记，以及 `ContractFormPage.vue`（1932>1900）、
+  `useRecordActionPresentation.ts`（505>500）、`useRecordFormActions.ts`（804>619）超长。
+  **非本轮引入**，属范围外，未在本轮处理。
+- 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
+  **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`/`:5178`/`:5179`）
+  及其构建目录保持原样，历史失败记录未被覆盖。
