@@ -3353,6 +3353,24 @@ view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
 - 本地 `sc_dev_demo` 的 demo 业务角色口令与 `SC_DEMO_USER_PASSWORD` 不一致（见 5.1）。
 - `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
 
+### 7. 验收机制补强（本次偏差的直接成因）
+
+本次偏差不是"看漏了一个页面"，而是**方法错误**：我用手写 dict 调用装配器，
+把合成输入的结果当成现网路径的证据，因此把"边界健壮性"写成了"现网缺陷"。
+对应的验收缺口是：**没有任何回归钉住"消费前已收敛为单值 token"这一不变式**，
+所以这类错判只能靠事后人工复核发现。
+
+补强（本段新增，已入库）：
+
+| 回归 | 钉住的不变式 | 负例验证 |
+|---|---|---|
+| `test_legacy_finalizer_publishes_one_active_view_for_the_consumer` | `inject_primary_view_projection` 必须把 `head.view_type` 与顶层 `view_type` 双双重写为单一 token；消费方（含 `_assemble_ui_contract`）**永远看不到列表** | 临时移除该双重重写 → 本回归 `FAILED (failures=3)`（`'form,tree' != 'form'`）；恢复后 `Ran 107 tests ... OK` |
+| `test_assembler_active_view_resolution_agrees_with_the_native_view_finalizer` | 装配器边界归一化必须与平台既有 `resolve_primary_view_type` 同一约定（取首项） | 约定漂移即失败（对 `tree,form` / `form,tree` / `kanban,tree,form` / `tree,form,pivot,graph` / `tree` / `list` / `form` / 缺失 逐一断言） |
+| `test_joined_view_type_cannot_publish_a_token_the_schema_does_not_enumerate` | 装配器输出必须落在 schema 枚举内，且 `layoutContract.layoutType == pageInfo.layoutType` | 见 §4 |
+
+效果：如果将来有人移掉规范化，或让两条约定分叉，**本地定向回归先失败**，
+不会再以"某个页面变成 specialized"这种远端表现才被发现。
+
 ### 状态
 
 本段**批次验收完成（含自查更正）**。未推送、未合并、未部署目标环境；业务矩阵状态不变。

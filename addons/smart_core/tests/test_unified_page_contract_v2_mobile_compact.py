@@ -233,6 +233,30 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                     contract["pageInfo"]["layoutType"],
                 )
 
+    def test_legacy_finalizer_publishes_one_active_view_for_the_consumer(self):
+        """The invariant the assembler boundary relies on must stay pinned.
+
+        Chain: `page_assembler` publishes `head.view_type` as the requested view
+        list -> `resolve_primary_view_type` takes the first token ->
+        `inject_primary_view_projection` rewrites both the head and the top-level
+        field to that single token.  If that rewrite is ever dropped, consumers
+        (including `_assemble_ui_contract`) start seeing the joined list, so this
+        test fails here instead of surfacing as a misclassified page.
+        """
+        projection = _load_module(
+            "smart_core_native_view_contract_projection",
+            CORE_DIR / "native_view_contract_projection.py",
+        )
+        for published, expected in (("tree,form", "tree"), ("kanban,tree,form", "kanban"), ("form,tree", "form")):
+            with self.subTest(published=published):
+                data = {
+                    "head": {"view_type": published},
+                    "views": {"form": {"layout": []}, "tree": {"layout": []}, "kanban": {"layout": []}},
+                }
+                projection.inject_primary_view_projection(data, requested_view_type=None)
+                self.assertEqual(data["head"]["view_type"], expected)
+                self.assertEqual(data["view_type"], expected)
+
     def test_assembler_active_view_resolution_agrees_with_the_native_view_finalizer(self):
         """One active-view convention, not two.
 
