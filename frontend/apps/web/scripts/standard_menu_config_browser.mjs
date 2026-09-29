@@ -36,7 +36,7 @@ try {
  await page.getByRole('button',{name:'清空筛选',exact:true}).click();check(await search.inputValue(),'');
  const name=panel.locator('[data-semantic-component="ScInput"] input').first();
  const original=await name.inputValue();await name.fill('菜单验收未保存');check(await name.inputValue(),'菜单验收未保存');
- await page.getByRole('button',{name:'展开批量维护表格',exact:true}).click();
+ await page.locator('.menu-side-panel').getByRole('button',{name:'展开批量维护表格',exact:true}).click();
  const row=page.locator('tr.selected');const bulk=row.locator('[data-semantic-component="ScInput"] input').first();
  check(await bulk.inputValue(),'菜单验收未保存');await bulk.fill('');check(await name.inputValue(),'');
  await name.fill(original);check(await bulk.inputValue(),original);

@@ -491,3 +491,19 @@ Tree drag/drop, role selection, numeric ordering, version selection and the
 specialized bulk table remain explicit dedicated responsibilities; this change
 is not a conversion to ordinary server-paginated collections. Their remaining
 native controls and page-level feedback are not counted as fully adopted.
+
+
+WEB-CONFIG-03 restores the menu panel's runtime navigation by consuming the
+existing `IdentityResolver` identity profile, preserving multiple roles, exposure
+and deny rules before `DeliveryEngine` filtering. A configuration-administrator
+flag does not grant platform discovery. The installed industry's identity profile
+and startup override provider currently use the same role policy source. This is
+not a guarantee of equivalence for future root/scene/priority override providers;
+those must preserve the same effective identity contract when introduced.
+
+
+The registered CONFIG02/03 preview passes 12 real administrator UI checks after
+the navigation repair, including synchronized selected/bulk text drafts, clear
+and restore, tree search, empty-create disabling and 1440/390 layouts. No menu
+save, create, publish or rollback request is executed; this closes presentation
+and read-projection scope only, not persistent configuration-write acceptance.

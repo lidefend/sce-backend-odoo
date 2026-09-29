@@ -1848,3 +1848,33 @@ P0 smart_core handler，现有IdentityResolver/扩展identity profile为唯一�
 能力标志；DeliveryEngine与权限过滤不动。无模型/schema/注册/data变化，不需-u，仅受管后端重启。
 单独P0提交及非零菜单单测，L1→L2→clean后端身份→L3 up/health→复用CONFIG02产物定向L4。
 不新增环境或凭据、不修改配置/账号，不重跑无关付款旅程。
+
+WEB-CONFIG-02/03合并结果索引（页面最终补验中）：
+- CONFIG02 L1 iteration passed `/tmp/web-config02-iteration-final.log`；L2严格类型、primitive
+  11事件例、页头28模型例及adapter/guard、配置回归passed `/tmp/web-config02-tests.log`。
+  style guard passed `/tmp/web-config02-style.log`；lint 0 errors/56 warnings `/tmp/web-config02-lint.log`。
+  允许表9例及预览6例passed `/tmp/web-config02-policy.log`、`/tmp/web-config02-preview.log`。
+- CONFIG03 P0 ba6478f2；L1 `/tmp/web-config03-iteration.log` passed；
+  `make verify.business_config.unit` passed `/tmp/web-config03-tests.log`，菜单专项49例含新增
+  多角色、曝光/拒绝透传断言。无模型变更跳过-u；不触及P1规则或数据库数据。
+- P4 14e9db7c形成clean后端候选，`make backend.acceptance.up`及health passed
+  `/tmp/web-config03-backend-up.log`、`/tmp/web-config03-health.log`，原容器旧源码身份被受管替换。
+  相同project/库/端口/volume。前端复用唯一config02产物base e5eee791，entry index-DznGOp-O.js，
+  SHA256 8a52fe645d3339e54fcddf6d788f3679ef0e33ed9b1b736a864735d1a97fc0e2。
+- 后端修复后浏览器通过前三项搜索/文本检查，随后因三个同名批量按钮strict定位失败，
+  `menu-config-1790675688914/report.json`。截图确认树/单条编辑已恢复。P4仅将定位限定到既有
+  菜单摘要面板，产品与产物不变后重试；不把此前失败改写为通过。
+- B线当前修复无阻断：不放宽DeliveryEngine过滤，不提升平台权限。当前安装identity profile与
+  startup override provider使用同一ROLE_SURFACE_OVERRIDES；未承诺未来多provider场景等价。
+
+
+WEB-CONFIG-02/03最终结果：12/12 passed `/tmp/web-config03-browser-final.log`，原始报告
+`artifacts/frontend-web-fix-20260928/menu-config-1790675716958/report.json`；errors/blocked均空。
+真实config_admin登录/init→菜单panel→搜索/清空→中文名称→单条与批量同步/清空/恢复→
+新增草稿名称及空值禁用→1440/390无水平溢出。390截图复核文本输入与编辑区可用。
+本地草稿恢复并关闭浏览器，无菜单保存/创建/发布/回滚请求，登录session及usage遥测除外。
+CONFIG02空树阻断由CONFIG03关闭，两批范围内批次验收完成。最终定位器修改只影响P4浏览器选择，
+node语法/diff检查及对应真实12项已重验；产品L1/L2及构建输入未变复用，文档不使页面证据失效。
+旧config01产物保留；5180继续config02，后端14e9db7c。后续文档/探针提交无addons变化。
+主线未集成、目标环境未部署、整体用户交付未验收。后续仍需专用配置页数字/选择/复选、
+反馈与树/设计器通用交互接管；不把103个可配置菜单节点当作正式89入口业务通过数。
