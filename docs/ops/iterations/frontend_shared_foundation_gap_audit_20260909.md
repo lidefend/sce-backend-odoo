@@ -4869,3 +4869,149 @@ BusinessConfigSurfaceView.vue                -> ScErrorState:error, ScInlineStat
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 33｜把工作台的路由装配从视图里拆出来：解除 600 行上限对后续收口的阻塞（2026-09-30）
+
+### 1. 本段目标与边界
+
+段 32 §9 显式登记了 `views/BusinessConfigSurfaceView.vue` **恰好卡在
+`low_code_workbench_product_guard` 的 600 行路由装配上限**（600 行，`>600` 即失败），
+并明确"先拆装配职责再转换，不用删行凑数"。本段执行这次拆分。
+
+**只拆装配，不改行为**：URL→业务范围、`business_config` 页契约门控、真实页面运行目标
+这三块内聚职责移出视图，落到该目录既有的 composable 形态里（同目录已有 15 个 `use*`）。
+视图保留编排与绑定，**不新增第二个业务数据源、不改任何契约消费逻辑、不动后端**。
+
+### 2. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P3 —— 低代码配置产品（管理台工作台的装配层） |
+| `Layer Target` | 前端呈现层：`frontend/apps/web/src/views/businessConfigSurface`（路由装配编排） |
+| `Module` | `frontend/apps/web`（Vue 呈现 + composable 拆分） |
+| `Standard vs User-Specific` | 平台机制级：装配边界属于端侧实现组织，与行业默认、客户偏好、管理员配置无关 |
+| `Why Here` | 该目录已经是 `business_config` 工作台的装配归属地；拆出的三块都是它的装配职责 |
+| `Why Not Elsewhere` | 不落后端契约（契约不表达装配）；不落 `smart_core`（非平台机制语义）；不进 `AppShell`（路由装配不属于外壳，且外壳已有自己的上限约束） |
+| `Blast Radius` | 仅 `BusinessConfigSurfaceView.vue` 与其同目录 3 个新 `.ts`；**对外暴露的 setup 绑定名全部保持不变**，因此模板、子组件 props、守卫 token 都不受影响。验证：类型检查 + 该目录全部守卫 + 派生清单复核 + 一次受管浏览器冒烟 |
+
+### 3. 产品改动
+
+新增（均在同目录，沿用既有 `useX(options)` 形态）：
+
+| 新文件 | 承接的职责 |
+|---|---|
+| `useBusinessConfigSurfaceScopeParams.ts` | URL query → 业务范围：`numericQuery`、`entryModel`、`scopeModel/scopeActionId/scopeViewId/scopeRoleKey/selectedPageLabel`、`rootMenuXmlid`、四个 `shouldOpen*` 意图位，以及派生的 `currentModel/scopeAction/scopeView/scopeRole/currentModelIsRuntimeConfig` |
+| `useBusinessConfigSurfacePageContract.ts` | `business_config` 页契约：`sectionEnabled/sectionStyle/sectionTagIs`、`pageSectionsReady`、`pageSectionContractValid`、`pageSectionsFingerprint`、`pageGlobalActions` 与 `executeGlobalPageAction` |
+| `useBusinessConfigSurfaceRuntimeRoute.ts` | 真实页面运行目标：`runtimeRouteTarget`、`runtimeRouteHref`（扫描行无 runtime route 时回落到 scope action，**不会指向操作者没有选择的页面**） |
+
+视图侧只保留解构调用与编排：`BusinessConfigSurfaceView.vue` **600 → 554 行**。
+
+同时删掉 4 个因移出而**确实不再使用**的导入
+（`usePageContract`、`executePageContractAction`、`findActionMeta`、
+`BUSINESS_CONFIG_ROUTE_FLAGS`/`isBusinessConfigRuntimeModel`）。
+这不是"删行凑数"：四个符号在视图内已无任何引用，`BUSINESS_CONFIG_INTENTS` 保留（仍在用）。
+
+`executeGlobalPageAction` 现在通过 `refresh: () => loadSurface()` 取得刷新回调。
+该闭包在 setup 期只被创建、不被调用，因此不产生 `const` 暂时性死区问题；
+运行时已由浏览器冒烟确认（见 §5）。
+
+### 4. 守卫为何不需要扩展
+
+段 31/32 的失败关闭登记解决的是"**声明把状态带交给设计系统、实际却没渲染**"。
+本段没有新增任何状态带声明，也没有新增可被伪造的语义声明——拆分是同一份代码的物理搬迁，
+因此**没有新建台账项**。守卫继续以原有方式失败关闭：
+
+- `low_code_workbench_product_guard`：视图行数 600 → **554**（回到上限内），
+  设计系统用量、contract 声明名、`section-display-label` 绑定等 29 条断言全部保持；
+- `low_code_publish_boundary_guard`：新 `.ts` 落在既有扫描根内，
+  仍禁止 `publishBusinessConfigChangeSet` 越权导入与编辑器内 `publish:true`
+  （扫描文件 39，AST 节点 44258，errors 空）。
+
+### 5. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/views/**`（1 个 Vue + 3 个新 `.ts`），
+`docs/**` 派生清单。影响层：L1 静态/生成物、L2 前端定向单测与守卫；风险类：
+纯重构（非持久化、非授权、非契约语义）。最早必需层 L2；L3/L4 见下。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（刷新后） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` + strict 工程） |
+| L2 | `eslint src/views/BusinessConfigSurfaceView.vue` + 3 个新文件 | PASS（0 问题） |
+| L2 | `make verify.business_config.product_guard / .publish_boundary_guard / .guard_inventory` | 全 PASS |
+| L2 | `make verify.business_config.unit` | PASS（9 组，多套用例全绿） |
+| L2 | `make verify.frontend.page_contract.key_consistency.guard / .orchestration_consumption.guard` | PASS（keys=18 / source_files=707；orchestration PASS） |
+| L2 | `make verify.frontend.navigation_shell.unit / primitive_adapter.unit / page_pattern_reference_parity.unit / low_code_field_create_dialog.unit` | 19/34/15/6 全 PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit / component_driver_takeover.unit` | PASS（`surfaces=173 gaps=0`；`required=33 missing=0`） |
+| L4 | 受管角色浏览器冒烟（见 §6） | PASS |
+
+**L3 跳过**：未改后端模型、权限、数据契约、迁移 → 不做模块升级与夹具重置。
+
+派生清单按既有方式刷新（未新增归档工具）：
+`make refresh.frontend.rendering_detail.inventory`、
+`make refresh.frontend.component_driver_takeover.inventory`、
+`python3 scripts/ci/generate_complexity_budget_report.py --write`。
+
+### 6. 候选、运行身份与浏览器冒烟
+
+- 旧产物归档保留（**未覆盖**）：`config05-20260929` → `config05-20260929-prev-3da37f767`
+  （其 `base_sha` 即 `3da37f767…`，即段 32 的候选）。
+- 新候选：`config05-20260929/dist`，`base_sha=e25a8e6ae…`（本段 2 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-jJZSUKRZ.js`，
+  `entry_sha256=c8a76a6e4512be2556f96547363604188b6e68c97a3471fbfe114ebd1119b296`，
+  `index_sha256=6cbe3902ef0367f5f35f0d286e3f63c49fb6c4b0ef3a5c184cdc6ff2b2599ca8`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （单次构建；构建前先移走旧目录，否则会 `REUSED unchanged build`）。
+- 5180 监听进程**未变**：`pid=802966`，`node scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`。按请求读盘 → 替换产物即生效，
+  **未新增常驻端口，未重启服务**。
+- 身份自校验：HTTP 回读 `index.html` 与入口 JS，`index_sha256`/`entry_sha256` 与
+  `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，
+  db `sc_frontend_acceptance`），受管角色 `fixture_role_config_admin`。**全程零写入**。
+- 证据目录：`sce-offrepo/artifacts/seg33-route-assembly/`（`route-assembly-smoke.json` + 2 张截图）。
+
+冒烟结果（同一受管角色，两视口，POST 写请求计数 **0**）：
+
+| 检查 | 工作台（无范围参数）1440×900 | 工作台（`model=payment.request&action_id=775`）1440×900 | 同 390×844 |
+|---|---|---|---|
+| `data-page-sections-ready`（页契约门控） | `true` | `true` | `true` |
+| `data-contract-sections`（指纹绑定） | `[true,{},{},{},{}]` | 同 | 同 |
+| `data-runtime-route`（抽离后的运行目标） | `''`（未选范围） | **`/a/775`** | `/a/775` |
+| 业务页面目录 `.scan-row` | 60 | 60 | 60 |
+| 页头契约动作按钮 | 2 | 2 | 2 |
+| 页面级横向溢出 | 无（1440/1440） | 无 | 无（390/390） |
+| console error | 0 | 0 | 0 |
+| POST 写请求 | — | 0 | 0 |
+
+### 7. 本段发现并登记的既有失败（非本段引入，独立记账）
+
+| 失败项 | 定性 | 证据 |
+|---|---|---|
+| `verify.frontend.config_workbench_navigation_boundary.guard` FAIL | **既有守卫/验收脚本漂移** | 守卫要求 `product_navigation_boundary_acceptance.mjs` 含 `product_configuration_entry_count === 1` 等 3 个 token；该脚本**在 HEAD 提交内也不含**（`git show HEAD:…` 计数为 0），两文件本段均未修改。漂移起点指向 `2ef14ff65 Merge PR #372`：该合并把验收脚本改成 TDesign 选择器（`:scope > .t-submenu__title` 等）后，守卫期望的旧 token 从未补回 |
+| `verify.business_config.coverage` FAIL | **独立的数据覆盖状态** | 失败信息为 `低代码业务配置覆盖验收未通过：system_root, user:admin, user:wutao`；`scripts/verify/business_config_coverage_gate.py` **不含任何前端引用**，本段前端改动不可能影响它 |
+
+两项都**未修复、未放宽、未改写成通过**，按既有规则独立保留（不扩大本段范围）。
+
+### 8. 显式登记（不在本段范围）
+
+- 承接段 28–32 全部登记项：`BusinessConfigCoverageWorkspace` 的
+  `page-config-selection-empty`（布局框架）、`BusinessConfigStartPanel` 的
+  `config-status--empty`（徽标修饰符）、`/admin/release-operator` 与
+  `scene-health`/`scene-packages` 无 platform-admin 夹具、`style_system.guard` 四项文件长度欠账、
+  `state_transition_undeclared` 五条、`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`。
+- 本段**未新增**任何越界，也未新增守卫欠账。
+
+### 9. 提交
+
+- `refactor(web): extract the workbench route assembly out of its view`
+- `chore(web): refresh the derived inventories after the route assembly split`
+- 段记录（本文件）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
