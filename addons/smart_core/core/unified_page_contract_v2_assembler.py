@@ -3536,6 +3536,89 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
     return contract
 
 
+def _action_rule_declared_method(rule: dict[str, Any]) -> str:
+    button = _dict(rule.get("button"))
+    return _text(button.get("name") or button.get("method") or rule.get("method_name"))
+
+
+def declared_action_meaning(semantics: Any) -> tuple[str, ...]:
+    """The business meaning a declaration carries, without its provenance.
+
+    Two authorities naming the same purpose for the same method agree, even when
+    they sign the declaration with their own `origin`.  Only a difference in what
+    the action *does* is a conflict; comparing provenance would turn a corroborated
+    purpose into a false ambiguity.
+    """
+    declared = _dict(semantics)
+    return tuple(
+        _text(declared.get(key)).lower()
+        for key in ("kind", "purpose", "executor", "operation")
+    )
+
+
+def project_workflow_action_semantics(contract: dict[str, Any]) -> dict[str, Any]:
+    """Bind each declared purpose to the native occurrence that declares the method.
+
+    A business owner declares, per available action, both the purpose
+    (`action_semantics`) and the Odoo method that purpose belongs to (`method`).
+    The native occurrence declares the same method in `button.name`.  Binding the
+    two is a projection: it carries a declaration onto the rule the Web consumes.
+
+    The platform never derives a purpose here.  A method no authority declared
+    keeps no semantics, and a genuine disagreement is marked `{"conflict": true}`
+    so the consumer sees the ambiguity instead of a guess.  A purpose the platform
+    itself declared (`record.save`) is never overwritten.
+    """
+    workflow = _dict(contract.get("workflowContract"))
+    declared: dict[str, dict[str, Any]] = {}
+    ambiguous: set[str] = set()
+    for row in _list(workflow.get("availableActions")) + _list(workflow.get("actions")):
+        if not isinstance(row, dict):
+            continue
+        method = _text(row.get("method") or row.get("method_name"))
+        semantics = declared_action_semantics(
+            row.get("action_semantics") or row.get("actionSemantics")
+        )
+        if not method or not semantics:
+            continue
+        current = declared.get(method)
+        if current is None:
+            declared[method] = semantics
+        elif declared_action_meaning(current) != declared_action_meaning(semantics):
+            ambiguous.add(method)
+    if not declared and not ambiguous:
+        return contract
+    action_contract = _dict(contract.get("actionContract"))
+    rules = _list(action_contract.get("actionRuleList"))
+    if not isinstance(rules, list):
+        return contract
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        existing = rule.get("actionSemantics")
+        # Platform persistence keeps the purpose the platform declared for it.
+        if _dict(existing).get("executor") == "record.save":
+            continue
+        button = _dict(rule.get("button"))
+        if _text(button.get("type"), "object").lower() != "object":
+            continue
+        method = _action_rule_declared_method(rule)
+        if not method:
+            continue
+        if method in ambiguous:
+            rule["actionSemantics"] = {"conflict": True}
+            continue
+        semantics = declared.get(method)
+        if not semantics:
+            continue
+        declared_meaning = declared_action_meaning(semantics)
+        if existing is None:
+            rule["actionSemantics"] = deepcopy(semantics)
+        elif _dict(existing).get("conflict") is not True and declared_action_meaning(existing) != declared_meaning:
+            rule["actionSemantics"] = {"conflict": True}
+    return contract
+
+
 def _action_backend_identity(rule: dict[str, Any]) -> str:
     # Platform persistence is a contract command, not a generic target action.
     # Adding its create/write target must not change the producer's identity.
@@ -4711,9 +4794,85 @@ def _append_ui_contract_actions(
                     "native_contract",
                 ),
                 "native_identity": deepcopy(native_identity),
+                "action_semantics": _row_declared_action_semantics(row, policy),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)
+
+
+# The published vocabulary of a declared action purpose
+# (`docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json`,
+# `$defs.actionRule.actionSemantics`).  The platform only *carries* a business
+# owner's declaration; it never derives a purpose from a method name, a label or
+# a button position.
+DECLARED_ACTION_SEMANTICS_KINDS = frozenset({"persistence", "business", "interaction"})
+DECLARED_ACTION_SEMANTICS_PURPOSES = frozenset({
+    "save_draft",
+    "submit",
+    "approve",
+    "reject",
+    "cancel_record",
+    "discard_changes",
+    "return",
+})
+DECLARED_ACTION_SEMANTICS_EXECUTORS = frozenset({
+    "record.save",
+    "contract.action",
+    "client.back",
+    "client.discard",
+})
+DECLARED_ACTION_SEMANTICS_OPERATIONS = frozenset({"create", "write"})
+
+
+def declared_action_semantics(value: Any) -> dict[str, Any] | None:
+    """Return a schema-valid declared action purpose, or ``None``.
+
+    A declaration outside the published vocabulary is dropped so the action
+    stays visibly undeclared.  It must never enter the delivered contract as if
+    it were an approved business meaning, and the platform must not fill the gap
+    with a guess of its own.
+    """
+    declared = _dict(value)
+    if declared.get("conflict") is True:
+        return {"conflict": True}
+    kind = _text(declared.get("kind")).lower()
+    purpose = _text(declared.get("purpose")).lower()
+    executor = _text(declared.get("executor")).lower()
+    origin = _text(declared.get("origin"))
+    if (
+        kind not in DECLARED_ACTION_SEMANTICS_KINDS
+        or purpose not in DECLARED_ACTION_SEMANTICS_PURPOSES
+        or executor not in DECLARED_ACTION_SEMANTICS_EXECUTORS
+        or not origin
+    ):
+        return None
+    semantics = {"kind": kind, "purpose": purpose, "executor": executor, "origin": origin}
+    operation = _text(declared.get("operation")).lower()
+    if operation in DECLARED_ACTION_SEMANTICS_OPERATIONS:
+        semantics["operation"] = operation
+    return semantics
+
+
+def _row_declared_action_semantics(
+    row: dict[str, Any],
+    policy: dict[str, Any],
+) -> dict[str, Any] | None:
+    """The purpose the action's owner declared for this occurrence.
+
+    The declaration travels either as a direct row field or inside the declared
+    business action that the owning module attached to the same native button.
+    Both are declarations by the same authority; neither is inferred here.
+    """
+    business_action = _dict(row.get("business_action") or row.get("businessAction"))
+    for candidate in (
+        policy.get("action_semantics") or policy.get("actionSemantics"),
+        row.get("action_semantics") or row.get("actionSemantics"),
+        business_action.get("action_semantics") or business_action.get("actionSemantics"),
+    ):
+        declared = declared_action_semantics(candidate)
+        if declared:
+            return declared
+    return None
 
 
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:

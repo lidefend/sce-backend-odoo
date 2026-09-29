@@ -4010,5 +4010,199 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             )
 
 
+    # ------------------------------------------------------------------
+    # A declared action purpose is bound to the occurrence that declares the
+    # same method.  The platform carries the declaration; it never derives one.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _semantics_contract(available: list, rules: list) -> dict:
+        return {
+            "workflowContract": {"availableActions": available},
+            "actionContract": {"actionRuleList": rules},
+        }
+
+    @staticmethod
+    def _method_rule(method: str, semantics: dict | None = None, button_type: str = "object") -> dict:
+        rule = {"actionKey": method, "button": {"name": method, "type": button_type}}
+        if semantics is not None:
+            rule["actionSemantics"] = semantics
+        return rule
+
+    def test_declared_workflow_purpose_binds_to_the_occurrence_declaring_the_method(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm"), self._method_rule("validate_tier")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        bound, undeclared = contract["actionContract"]["actionRuleList"]
+        self.assertEqual(bound["actionSemantics"], {
+            "kind": "business", "purpose": "submit",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        })
+        self.assertNotIn("actionSemantics", undeclared)
+
+    def test_undeclared_method_is_never_given_a_purpose_by_resemblance(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_set_approved")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+    def test_disagreeing_conflicting_declarations_stay_explicit(self):
+        approve = {
+            "kind": "business", "purpose": "approve",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        }
+        contract = self._semantics_contract(
+            [
+                {"key": "approve", "method": "validate_tier", "action_semantics": approve},
+                {"key": "reject", "method": "validate_tier", "action_semantics": {
+                    "kind": "business", "purpose": "reject",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                }},
+            ],
+            [self._method_rule("validate_tier")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {"conflict": True},
+        )
+
+    def test_an_occurrence_declaring_another_purpose_is_not_overwritten(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm", {
+                "kind": "business", "purpose": "approve",
+                "executor": "contract.action", "origin": "other.authority",
+            })],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {"conflict": True},
+        )
+
+    def test_corroborated_purposes_from_two_authorities_are_not_a_conflict(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_submit",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_submit", {
+                "kind": "business", "purpose": "submit",
+                "executor": "contract.action", "origin": "payment.request.available_actions",
+            })],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {
+                "kind": "business", "purpose": "submit",
+                "executor": "contract.action", "origin": "payment.request.available_actions",
+            },
+        )
+        self.assertEqual(
+            assembler.declared_action_meaning(
+                {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "a"}
+            ),
+            assembler.declared_action_meaning(
+                {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "b"}
+            ),
+        )
+
+    def test_platform_persistence_keeps_the_purpose_the_platform_declared(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_submit",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [{
+                "actionKey": "form.save",
+                "button": {},
+                "actionSemantics": {
+                    "kind": "persistence", "purpose": "save_draft",
+                    "executor": "record.save", "origin": "platform_form_action",
+                    "operation": "write",
+                },
+            }],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"]["purpose"],
+            "save_draft",
+        )
+
+    def test_a_declaration_outside_the_published_vocabulary_is_not_carried(self):
+        self.assertIsNone(assembler.declared_action_semantics({
+            "kind": "business", "purpose": "approve_v2",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        }))
+        self.assertIsNone(assembler.declared_action_semantics({
+            "kind": "business", "purpose": "submit", "executor": "contract.action",
+        }))
+        self.assertEqual(
+            assembler.declared_action_semantics({"conflict": True}),
+            {"conflict": True},
+        )
+        self.assertEqual(
+            assembler.declared_action_semantics({
+                "kind": "persistence", "purpose": "save_draft",
+                "executor": "record.save", "origin": "platform_form_action",
+                "operation": "write",
+            }),
+            {
+                "kind": "persistence", "purpose": "save_draft",
+                "executor": "record.save", "origin": "platform_form_action",
+                "operation": "write",
+            },
+        )
+
+    def test_a_non_method_button_is_not_bound_by_a_shared_name(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm", button_type="server_action")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

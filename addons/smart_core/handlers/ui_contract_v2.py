@@ -16,6 +16,7 @@ from ..core.unified_page_contract_v2_assembler import (
     hydrate_final_action_modifier_status,
     hydrate_final_layout_modifier_status,
     project_runtime_business_actions,
+    project_workflow_action_semantics,
 )
 from ..core.unified_page_contract_v2_client import (
     MOBILE_CLIENT_TYPES,
@@ -913,6 +914,11 @@ class UiContractV2Handler(BaseIntentHandler):
         self._ensure_native_layout_widget_status_visible(contract_v2)
         finalize_hook_at = time.monotonic()
         contract_v2 = project_runtime_business_actions(contract_v2)
+        # The workflow authority declares a purpose per available action.  Bind
+        # it to the native occurrence that declares the same method, so the Web
+        # consumes a declared purpose instead of inferring one from a method
+        # name or a button caption.
+        contract_v2 = project_workflow_action_semantics(contract_v2)
         runtime_actions_projected_at = time.monotonic()
         hydrate_final_modifier_dependencies(
             self.env,
