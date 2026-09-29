@@ -1142,3 +1142,77 @@ applied、保留=1813 与结算单 13/14/15，分别记录。
 **边界（不得夸大）**：四项 `style_system.guard` 欠账与 `render_semantic_ready_guard.py`、
 `verify.list.surface.clean`、`no_new_any_guard` 仍独立记账，未处理；业务矩阵未升级整行（只关闭上述
 一条既有未修复阻断的记录）；未重跑 89 入口/全站发布门禁；不推送、不合并、不部署；下一批为 WEB-LC-01。
+
+---
+
+## FE-TPL-06A：标准列表推广首例——付款申请（2026-09-29）
+
+**目标**：让付款申请列表采用已实现的官方标准列表组合，与已完成的付款表单/主从办理形成一致体验，
+并在同一稳定候选上完成官方组合的真实下一页验证。只本地提交；不推送、不合并、不部署。
+
+### 接管了什么
+
+| 项 | 变化 |
+|---|---|
+| 列表组合 | `payment.request` 加入 `STANDARD_LIST_COMPOSITION_PILOT_MODELS`（`standardListComposition.ts`），列表改由官方容器 `ProductListSurface`（`t-card.list-card-container` 形态，`bordered=false`，零 body padding 来自 primitive 的 `table` appearance）承载查询行与表格 |
+| 呈现路径 | 同一次运行只有一条列表呈现路径：`data-list-composition="official-standard-list"`、`data-list-composition-reason="pilot-model-adopted"`、`data-list-card-container="official"` 包裹表格，列表 surface 仍不出现任何模型名 |
+| 查询/排序/分页 | 仍走原链路：服务端 `api.data` 查询域、服务端 `order`、服务端 `limit/offset`，未新增第二份查询状态，也未在服务端分页之外叠加本地分页 |
+
+**旧路径退出**：付款列表不再以 `legacy-list-surface`（无官方容器）承载该范围的 DOM 与交互。
+未接管的普通列表仍按原实现渲染（明确登记，不是静默回退）。
+
+### 顺带修掉的共享适配缺口（本轮发现的真实缺陷）
+
+**排序点击被静默忽略**：付款列表“申请付款金额”列在契约里声明 `sort_field: "amount"`
+（`request_amount_display` → `amount`），表头据此提供排序；但请求侧的排序白名单
+（`collectContractOrderFields`）只收集字段码与 primary/search 候选，**没有收集契约声明的
+`sort_field`**，于是 `amount asc` 被静默丢弃、请求继续沿用 `id desc`。用户看到排序已应用（URL 带
+`order=amount+asc`），服务端顺序却没变——属于「契约已表达、前端未消费」的静默空操作，不是明确拒绝。
+
+- 修法：白名单同样收集每个 widget 声明的 `sort_field`，使表头可供排序的字段与请求放行字段
+  读**同一份契约声明**；反方向仍是 fail-closed（未声明的字段、非标识符、未知方向一律丢弃）。
+- 反例测试：`frontend/apps/web/scripts/list_order_field_contract_test.ts`
+  （`make verify.frontend.list_order_field_contract.unit`，14 cases）。**去掉修复即失败**，修复后通过。
+
+### 定向验证（同一候选，一次运行）
+
+`artifacts/frontend-web-fix-20260928/tpl05a-20260929/tpl06a-list-after-*.json`（**17/17 PASS，0 FAIL**）：
+
+- A 接管：官方组合身份 + 官方容器包裹表格 + 列表 surface 唯一（1 条）。
+- B 查询：输入 `PRQ` → 真实请求带 `search_term`（域仍含 `business_category_id.code` 业务域）
+  且 16→12 行；清除后恢复 16 行。
+- C 排序：点“申请付款金额” → 真实请求 `order: "amount asc"`，首行金额 0.00/5.00/10.00/12.00
+  实际升序（修复前同一操作被静默丢弃）。
+- D 真实翻页：每页 10（真实 `{limit:10, offset:10, order:"amount asc"}`）→ 第 2 页为不同记录集合
+  → 打开该页记录（URL 携带 `list_offset=10`）→ 返回后仍第 2 页、记录集合一致。
+- E 窄屏 390×844：官方组合与官方容器仍在；无整页横向溢出（表格未被迫横滚）；单一纵向滚动属主
+  （`MAIN.router-host`）；分页/页脚可用；未捕获 JS 异常 0。
+
+**旧路径基线**：`tpl06a-list-before-*.json`（改造前的同一旅程）记录旧状态：
+`data-list-composition="legacy-list-surface"`、无官方容器，且 C1/C2 复现上面的静默排序缺陷。
+旧结果保留，不覆盖。
+
+**回归**：`standard_collection_composition`（65 cases，含新增的 `payment.request` 用例）、
+`list_order_field_contract`（14）、`collection_view_semantics`、`product_page_pattern`、
+`page_pattern_reference_parity`、`collection_action_toolbar`、`adopted_form_validation_identity`
+（46/46）、`verify.frontend.typecheck.strict`（exit 0）全部通过；`make ci.local.iteration` PASS。
+
+### 候选与运行来源
+
+- 源码：HEAD `8adfff9e`（`27098f36` 排序契约修复 → `8adfff9e` 付款列表接管）。
+- 产物：`sce-offrepo/artifacts/tpl06a-20260929/dist`，入口 `/assets/index-D84RQvtG.js`
+  （sha256 `57ad4572…`）；构建时间 15:25 晚于最新源码 mtime（15:23），无漂移，只构建一次。
+- 运行：`:5180` pid `1532369`（`STATIC_ROOT=…/tpl06a-20260929/dist`，代理 `:18082`），
+  替换上一候选的 `tpl05a-20260929` 服务（未新增端口、未删除旧产物）；`:5176/5178/5179` 未动。
+
+### 剩余缺口（不得夸大）
+
+- **官方组合的分页只在本入口取证**；试点列表 `project.project` / `sc.general.contract` 在验收角色下
+  受管可见记录 3/2 行，最小页长 10 仍单页——该缺口保持**受管数据量**限制，未造数据。
+- **付款表单仍非官方表单组合**：`payment.request` 不在 `STANDARD_FORM_COMPOSITION_PILOT_MODELS`，
+  表单侧仍 `legacy-form-section`。同一业务流程目前是“官方列表 + 旧表单组合”，已登记为有意的范围不一致，
+  不写成“全流程已接管”。
+- 排序白名单的其余宽松处（例如无 `sort_field` 声明的显示列仍会被当作可排序字段发出请求）保持原状，
+  未在本轮扩大处理范围。
+- 四项 `style_system.guard` 欠账、`render_semantic_ready_guard.py`、`verify.list.surface.clean`、
+  `no_new_any_guard` 仍独立记账；业务矩阵未升级整行；未重跑 89 入口/全站发布门禁。

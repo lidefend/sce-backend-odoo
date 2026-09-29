@@ -216,8 +216,14 @@ adding a second page implementation.
 
 - `app/presentation/standardListComposition.ts` is the pure adoption policy. It
   resolves one model to `{ composition, adopted, reason }` and owns the explicit
-  pilot list (`project.project`, `sc.general.contract`); it imports no Vue, DOM,
-  or TDesign.
+  pilot list (`project.project`, `sc.general.contract`, `payment.request` — the
+  last one added by TPL-06A so one business flow does not run two list
+  implementations); it imports no Vue, DOM, or TDesign.
+  The pilot list is a **rollout switch, not a capability source**: membership
+  says "this list renders through the official container", never "this model
+  supports deletion, a given sort, or a given state action". Those stay with the
+  effective contract, and a page that is not a member keeps an explicitly
+  registered, still-correct implementation rather than silently falling back.
 - `components/product-list/ProductListSurface.vue` is the official container:
   one `ScCard appearance="table" :bordered="false"` (the official
   `t-card.list-card-container` shape) wrapping the query row and the table, with
@@ -255,6 +261,7 @@ adding a second page implementation.
 |---|---|---|---|
 | Standard query list | `project.project` | `menu_sc_product_project_edit_v1` (menu 680) | TPL-03 |
 | Standard query list | `sc.general.contract` | `menu_sc_p1_daily_contract` (menu 662) | TPL-03 |
+| Standard query list | `payment.request` | `menu_sc_user_payment_apply` (menu 545) | TPL-06A |
 | Standard readonly detail | `sc.general.contract` | record `/r/sc.general.contract/11` | TPL-03 |
 
 ### Boundary (TPL-03)
@@ -266,10 +273,30 @@ derived from field names, labels, semantic roles, action IDs, menu IDs, roles,
 or renderer selection, and it is never an authorization input; the list and
 detail surfaces carry no model name.
 
+### Ordering is a contract capability, not a header decoration (TPL-06A)
+
+While adopting the payment-request list, the header offered an `amount` sort that
+the request sanitiser silently dropped: the column declares `sort_field: "amount"`
+in the contract, but the request allowlist was built only from field codes and
+primary/search candidates, so the clause was discarded and the previous order was
+sent. The click looked applied while the server kept its old order — a silent
+no-op rather than a refusal.
+
+`useActionViewLoadPreflightRuntime.collectContractOrderFields` now also collects
+each widget's declared `sort_field`, so the header's affordance and the request
+allowlist read the **same** contract declaration. Fail-closed behaviour is
+unchanged in the other direction: a field the contract does not declare, a
+non-identifier, or an unknown direction is still dropped
+(`make verify.frontend.list_order_field_contract.unit`; the counterexample fails
+without the fix).
+
 ### Deliberately not adopted
 
-The official shell (`src/layouts/`, TPL-04) and the master-detail handling page
-(TPL-05) are still out of scope. The official detail page's `t-steps` timeline
+The master-detail handling page's **form** side is still out of scope:
+`payment.request` is not in `STANDARD_FORM_COMPOSITION_PILOT_MODELS`, so the
+payment form keeps the `legacy-form-section` composition while its list now
+renders through the official container. That is a recorded, deliberate
+inconsistency of scope, not a claim that the whole flow is adopted. The official detail page's `t-steps` timeline
 is **not** adopted: this project already owns a richer audit/collaboration
 timeline, and replacing it would drop business capability rather than re-express
 presentation. The legacy list and detail surfaces (for example `res.partner`)
