@@ -221,7 +221,7 @@
         <div v-if="candidateSnapshots.length" class="release-operator__table-wrap">
           <ScTable class="release-operator__table" label="可发布候选" :data="candidateTableRows" :columns="candidateColumns" row-key="id" size="small" />
         </div>
-        <p v-else class="release-operator__empty">{{ copy.empty_candidate || '当前没有可 Promote 的候选快照。' }}</p>
+        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_candidate || '当前没有可 Promote 的候选快照。'" :heading-level="3" density="compact" />
       </section>
 
       <section class="release-operator__section">
@@ -232,7 +232,7 @@
         <div v-if="pendingActions.length" class="release-operator__table-wrap">
           <ScTable class="release-operator__table" label="待审批动作" :data="pendingTableRows" :columns="pendingActionColumns" row-key="id" size="small" />
         </div>
-        <p v-else class="release-operator__empty">{{ copy.empty_pending || '当前没有待审批动作。' }}</p>
+        <ScEmptyState v-else class="release-operator__empty" :title="copy.empty_pending || '当前没有待审批动作。'" :heading-level="3" density="compact" />
       </section>
 
       <section class="release-operator__section release-operator__section--split">
@@ -284,6 +284,7 @@ import { computed, h, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';

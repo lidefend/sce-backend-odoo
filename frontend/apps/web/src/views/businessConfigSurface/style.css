@@ -369,14 +369,6 @@ h1 {
   padding-top: 10px;
 }
 
-.workbench-status-empty {
-  border: 1px dashed var(--sc-app-border);
-  border-radius: 6px;
-  padding: 10px;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
 .workbench-status-snapshot span,
 .workbench-status-snapshot em {
   color: var(--sc-app-text-secondary);
@@ -1199,10 +1191,8 @@ h1 {
   font-style: normal;
 }
 
-.empty-state {
+.version-panel-empty {
   padding: 10px 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
 }
 
 .version-list {

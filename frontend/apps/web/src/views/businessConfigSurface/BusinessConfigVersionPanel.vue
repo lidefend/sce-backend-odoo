@@ -13,7 +13,7 @@
       <strong>{{ guide.title }}</strong>
       <span>{{ guide.body }}</span>
     </div>
-    <div v-if="!contracts.length" class="empty-state">{{ emptyText }}</div>
+    <ScEmptyState v-if="!contracts.length" class="version-panel-empty" :title="emptyText" :heading-level="4" density="compact" />
     <div v-else class="version-list">
       <ScCard v-for="contract in contracts" :key="contract.id" appearance="record" class="version-card">
         <div class="version-card-head">
@@ -78,6 +78,7 @@
 import type { BusinessConfigContractVersionsPayload } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 
 type Contract = BusinessConfigContractVersionsPayload['contracts'][number];
 type Summary = Contract['summary'];

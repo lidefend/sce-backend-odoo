@@ -133,7 +133,7 @@
           <em>{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
-      <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
+      <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />
     </aside>
   </ScCard>
 </template>
@@ -142,6 +142,7 @@
 import type { BusinessConfigSurfacePayload } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];

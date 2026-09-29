@@ -259,7 +259,7 @@
           <em>{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
-      <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
+      <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />
       <div v-if="advancedPanelOpen && snapshotSummary" class="workbench-status-snapshot">
         <span>配置快照</span>
         <strong>{{ snapshotSummary.contract_count }}</strong>
@@ -286,6 +286,7 @@ import ScSelect from '../../components/design-system/ScSelect.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];
