@@ -3885,3 +3885,186 @@ L4 全部绑定的验收后端为 `d66182a91`（`make backend.acceptance.replace
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+
+## FE-CONTRACT-TAKEOVER-RULE-01：把接管清单"对外声明"的完成规则变成"实际被求值"（2026-09-30）
+
+分支 `feature/web-official-template-adoption`；本段起点 HEAD `e3412b370`（工作树干净）。
+延续前端接管专题的验收体系收口，不新建专题、不改业务矩阵、不进入下一批业务接管。
+
+### 1. 七问
+
+- **Formal Product Layer**：P4 ops/verify 工具（`scripts/audit` 的接管清单生成器与其单测、派生清单），
+  以及被清单描述的前端渲染面（P1 行业标准产品的前端呈现层）。不新增业务语义。
+- **Layer Target**：`scripts/audit/generate_frontend_component_driver_takeover_inventory.py`、
+  `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py`、
+  `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`
+  及三件指纹绑定派生清单。
+- **Module**：无 Odoo 模块改动；不改 `smart_core` / `smart_construction_core` / 前端产品源码。
+- **Standard vs User-Specific**：属平台级验收约定（每条正式产品线共用同一清单契约），非客户或行业特例。
+- **Why Here**：完成规则由该清单自己发布，因此只能由该清单自己的 `--check` 求值；放在别处就会出现
+  "第二份口径"，正是本段要消除的东西。
+- **Why Not Elsewhere**：不改前端产品源码——`ScSteps` / `ScAutoComplete` 的必需性判定是**契约层**结论，
+  不能用"删掉适配器"或"随便找一处塞进去"来消灭条目。
+- **Blast Radius**：仅接管清单的必需驱动集（35 → 33）与其 `--check` 行为；前端渲染、契约、权限、
+  后端事务、数据库、业务矩阵均不变。
+
+### 2. 真实缺陷（先有运行证据，再改代码）
+
+本段起点的门禁是**绿**的：
+
+```
+$ make verify.frontend.component_driver_takeover.unit
+[component_driver_takeover_inventory] PASS required=35 missing=0 bridge_only=0 raw=0
+```
+
+但同一份清单在 JSON 里对外发布了一条完成规则：
+
+```
+missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0,
+directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0
+```
+
+实测这份清单**违反**其中两项：
+
+- `adapter_unconsumed` 实际为 **2**——`ScAutoComplete`、`ScSteps` 的适配器存在、`productionConsumerCount=0`；
+- `unassessedRequiredTakeovers` 在 `summary` 里是**硬编码常量 `0`**，从未由行数据推导，因此不可被证伪。
+
+也就是说：**清单对外声明了一条完成规则，而门禁只验证"JSON 是否与生成器一致"，规则本身从未被计算。**
+只要 JSON 与生成器同步，规则被违反也照样报绿。这与上一段 `env.get` 真值判断同属一类：
+**口径比事实松，缺口被静默。**
+
+对照：同一目录下的 `generate_frontend_official_design_alignment_inventory.py` 的 `--check` **确实**对真实报告
+逐项求值（`unknownProjectTokenOverrideCount` 等四项非 0 即 `FAIL incomplete=...`）。
+正确模式就在隔壁，接管清单缺的正是这一步。
+
+### 3. 负例（先证明回归真的抓得住）
+
+**端到端负例**（把 `steps` 加回 `REQUIRED_DRIVERS`，再重新生成——即 JSON 与生成器**一致且最新**）：
+
+```
+$ python3 scripts/audit/generate_frontend_component_driver_takeover_inventory.py --check
+[component_driver_takeover_inventory] FAIL completion rule
+ - adapter_unconsumed=1 (a required official adapter has no production consumer)
+ - unassessedRequiredTakeovers=1 (a required driver is not fully adopted and carries no capability assessment)
+exit=1
+```
+
+"最新但违规"必然失败——这正是旧门禁放行的那种状态。负例执行后已恢复。
+
+**入册单测负例**：`test_required_driver_without_consumer_fails_the_completion_rule`、
+`test_unassessed_takeover_is_derived_from_rows_not_hardcoded`；
+另有 `test_published_completion_rule_is_evaluated_and_clean` 正向锁定当前仓库为零违反。
+
+### 4. 修复
+
+1. `--check` 新增 `completion_rule_failures(report)`：对 `completionRule` 声明的**每一项**求值
+   （summary 的四个计数 + 两个列表），非 0 / 非空即 `FAIL completion rule` 并逐项打印。
+2. 成功行补齐它此前漏印的两项：`adapter_unconsumed=`、`unassessedRequiredTakeovers=`。
+3. `unassessedRequiredTakeovers` 改为**由行数据推导**：必需驱动中"未完全采纳且没有能力评估归属"的条数。
+4. 按第 5 节的契约依据，把 `steps` / `auto-complete` 从 `REQUIRED_DRIVERS` 移入
+   `NOT_REQUIRED_DECISIONS`（必需驱动集 35 → 33）。
+
+### 5. 两项 `adapter_unconsumed`：按"契约是否声明该语义"裁决，不是把红改绿
+
+| driver | 裁决 | 依据（已发布契约 / 仓库自身权威） |
+|---|---|---|
+| `auto-complete` | `not_required` | Contract V2 **没有**"自由文本 + 建议"字段类型。关系输入是官方可过滤组合框（`ProfessionalRelationFieldControl` → `ScRelationField` → `TDesignSelect filterable`）；其余字段类型全部落入取值确定的 value 控件（`professionalComponentRegistry.ts` 的 `REGISTRATIONS` 字段类型集：`char/text/html/integer/float/monetary/selection/boolean/date/datetime/binary/many2one/many2many/one2many/action`）。独立 AutoComplete 必须**自造**一个契约未声明的建议源。 |
+| `steps` | `not_required` | Contract V2 把工作流状态声明为**选择（selection）**，不是有序流程；仓库自己的守卫 `scripts/verify/frontend_professional_workflow_guard.py` 明确禁止状态区出现 `<ScSteps` 或 `native-statusbar-track`——原文即 "selection status must not imply ordered workflow topology"；审批策略是**可编辑配置列表**，不是记录流程。 |
+
+并留下"没有遗漏面"的证据：全仓检索无任何自造步骤指示器（只有可编辑审批表
+`BusinessConfigApprovalPanel.vue` 与一处上下文条 `contract-form-design-strip`，后者是三列信息条而非序列），
+也没有任何页面的自由文本建议控件；因此不存在"应改用官方 Steps/AutoComplete 却用了自造实现"的遗漏面。
+
+**适配器本身保留**：bridge 与适配器仍在 `primitives.ts` / `tdesignPrimitiveBridge.ts` / `primitiveAdapter.ts`，
+仍受 `frontend_primitive_adapter_guard.py`、`frontend_rendering_detail_state_guard.py` 约束；
+变的只是"当前正式产品的**必需驱动集**"。若将来产品声明了有序流程面或建议输入面，
+该条必须从 `NOT_REQUIRED_DECISIONS` 退回 `REQUIRED_DRIVERS`，而不是让页面自造实现。
+
+### 6. 验收体系为什么长期没发现（本段真正的机制缺口）
+
+1. **成功行漏印关键项**。门禁 PASS 行只打印 `required/missing/bridge_only/raw`，
+   恰好漏掉 `adapter_unconsumed` 与 `unassessedRequiredTakeovers`——报绿的信息量小于它宣称的范围。
+2. **断言了规则的文本，没断言规则本身**。既有单测
+   `test_completion_rule_cannot_hide_unassessed_raw_behavior` 只断言 `completionRule` 字符串里**包含**
+   `adapter_unconsumed=0`，从未断言这个等式**成立**。
+3. **常量冒充推导值**。`unassessedRequiredTakeovers` 以字面量 0 写进 summary，使它天然不可被证伪。
+
+固化规则（本段起适用）：**凡清单/报告对外发布的 `completionRule`，其每一项都必须在同一 `--check` 内被求值，
+且成功行必须逐项打印实际值；字符串包含关系不作为通过依据。**
+
+**同类缺口的全仓收敛核对（本段已执行）**：
+
+- 生成器侧：`rg completionRule scripts/` 只有两处发布者——
+  `generate_frontend_official_design_alignment_inventory.py`（其 `--check` **本就**对真实报告求值，正确模式）
+  与 `generate_frontend_component_driver_takeover_inventory.py`（本段修好）。两者现已全部强制求值。
+- 报告侧：扫描 `docs/**/*.json` 中 `completionRule` 含 `=0` 字样的报告，命中**恰为上述两件**。
+- 单测侧：其余 `assertIn(..., rules)` 命中都是记录规则 XML 的**内容**断言（如 `tenant_product_payload_boundary_guard`、
+  `tax_certificate_formal_contract`），不是"规则文本通过即视为规则成立"，不属同类缺陷。
+
+即：这一类"发布规则但不计算规则"的缺口在本段之后**全仓为零**，并有本节判据可供后续复查。
+
+### 7. 顺带收口：两件陈旧派生清单（既有，先取基线证明与本段无关）
+
+`make verify.frontend.rendering_detail_state.unit` 在本段起点即为**红**：
+
+```
+[frontend_rendering_detail_inventory] FAIL stale=.../component-professionalization-inventory-v1.json
+```
+
+**归属判定**：把本段三处改动 `git stash`（含生成物）后复跑，失败身份**完全一致** → 与本段无关。
+根因：`26ed7116e refactor(web): render the configuration overview with the official table` 新增 P3 面
+`BusinessConfigOverviewTable.vue`，但未按注册目标刷新指纹绑定生成物。
+
+按既有恢复动作 `make refresh.frontend.rendering_detail.inventory` 刷新 3 件。
+逐件核对差异，**无内容漂移**：
+
+- `component-professionalization`：`inputDigest`/`sourceIdentity` 变化 + **1 条真实新增 P3 surface**
+  （`surfaces` 171→172、`summary.p3_out_of_scope` 18→19），即那个新文件本身；
+- `visual-projection`：`currentInputDigest` 变化 + `currentSourceCount` 225→226、`changedSourceCount` 207→208，
+  以及跟随的逐源 digest；
+- `official-design-alignment`：`inputDigest` 变化 + `section-tab` 一项消费方清单跟随真实源码。
+
+复跑 `make verify.frontend.rendering_detail_state.unit` **PASS**
+（59 测 OK；`rendering_detail_inventory PASS surfaces=172 gaps=0`、`visual_projection PASS`、
+`official_design_alignment PASS summary={... internalVendorSelectorGapCount: 0 ...}`）。
+（输出里那行 `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}`
+是单测 `test_check_fails_closed_when_completion_rule_has_gaps` 的**预期负例输出**，不是失败。）
+
+### 8. 验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（含 `tracked generated reports are current`） |
+| L1 | `make test.unit` | PASS（Python 语法 1170 文件、名字绑定 2844 文件 0 违反） |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | **PASS 10 tests**（原 7）；`PASS required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessedRequiredTakeovers=0 raw=0` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 59 tests** + 3 件清单 `--check` 全 PASS（起点为红，见 §7） |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS `components=46 eventCases=11` |
+
+未运行 L4 浏览器旅程：本段**未改前端产品源码**，页面呈现、交互与请求路径均未变化，
+按分层规则不触发受影响浏览器复验（`frontend/` 无源码变动 → 5180 复用既有产物，未重建、未新增端口）。
+
+### 9. 提交
+
+- `fix(guard): evaluate the published component takeover completion rule`（生成器 + 单测 + 清单）
+- `chore(web): refresh the stale rendering-detail inventories`（3 件派生清单，§7）
+
+### 10. 剩余（显式登记，不在本段）
+
+- 本段**新登记**：`frontend_primitive_adapter_guard.py` 的 `PRIMITIVES` 与
+  `primitive_adapter_contract_test.ts` 仍把 `ScSteps` / `ScAutoComplete` 列为**必须存在且合规**的适配器。
+  这是有意的：适配器保留，只是"当前正式产品必需驱动"集不含它们；两处清单口径不矛盾，但需在文档中并存说明。
+- 承接上一段全部登记项：`state_transition_undeclared` 五条（权威侧待决）、
+  `sc.safety.disclosure` / `sc.safety.plan` 原生 header 无 workflow 按钮、缺失 `view_type` 仍默认 `form`、
+  `workflow_contract_backend` 7 条既有失败、`style_system.guard` 四项文件长度欠账、
+  117 个无 `@tagged` 而未接入 lane 的 `smart_core` 测试文件、
+  `test_contract_governance_project_form.py` 9 条既有非通过、`smart_core` 整模块 13 条既有失败
+  （含 6 条夹具/数据漂移类）、`verify.docs.product_boundary` 既有失败（`smart_construction_demo`）、
+  `playwright_vendor_coupling` 探针层既有债务（vendor 内部类 22 文件 / 几何断言 11 文件）。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
