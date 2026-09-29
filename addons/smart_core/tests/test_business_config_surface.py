@@ -330,6 +330,42 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertEqual(readiness_items["version"]["contract_count"], 7)
         self.assertEqual(readiness_items["coverage"]["action"], "coverage_scan")
 
+    def test_surface_declares_every_name_the_workbench_renders(self):
+        env = _Env({
+            "ui.business.config.contract": _ContractModel([]),
+        })
+        handler = self.module.BusinessConfigSurfaceGetHandler(env=env, params={"model": "res.partner"})
+
+        result = handler.handle()
+
+        sections = {row["key"]: row for row in result["data"]["sections"]}
+        # The contract is the only authority for a section's business name, so
+        # every emitted section must carry one and the view must not shadow it.
+        for key, row in sections.items():
+            self.assertTrue(str(row.get("label") or "").strip(), f"section {key} declares no label")
+        boundary_labels = result["data"]["boundary_labels"]
+        self.assertTrue(boundary_labels)
+        for key, row in sections.items():
+            self.assertIn(
+                row["boundary"],
+                boundary_labels,
+                f"section {key} emits an undeclared boundary code: {row['boundary']}",
+            )
+        readiness = result["data"]["delivery_readiness"]
+        for item in readiness["items"]:
+            self.assertIn(
+                item["boundary"],
+                boundary_labels,
+                f"delivery item {item['id']} emits an undeclared boundary code: {item['boundary']}",
+            )
+        summary = result["data"]["snapshot_summary"]
+        for source_key in summary["source_counts"]:
+            self.assertIn(
+                source_key,
+                summary["source_category_labels"],
+                f"snapshot summary emits an unlabelled source category: {source_key}",
+            )
+
     def test_surface_delivery_readiness_marks_empty_authoring_sections_pending(self):
         env = _Env({
             "ui.business.config.contract": _ContractModel([]),

@@ -32,7 +32,7 @@
             <div class="config-card-head">
               <div>
                 <span>{{ sectionTaskKindLabel(section.key) }}</span>
-                <h2>{{ sectionDisplayLabel(section.key, section.label) }}</h2>
+              <h2>{{ section.label }}</h2>
               </div>
               <strong class="config-status-badge" :class="{ 'config-status--empty': !section.contract_count }">{{ sectionStatusLabel(section.key, section.contract_count) }}</strong>
             </div>
@@ -163,7 +163,6 @@ defineProps<{
   visibleDeliveryReadinessProgressText: string;
   visibleDeliveryReadinessItems: DeliveryItem[];
   sectionTaskKindLabel: (sectionKey: string) => string;
-  sectionDisplayLabel: (sectionKey: string, fallback: string) => string;
   sectionStatusLabel: (sectionKey: string, contractCount: number) => string;
   sectionPrimaryCopy: (sectionKey: string) => string;
   sectionImpactText: (sectionKey: string) => string;

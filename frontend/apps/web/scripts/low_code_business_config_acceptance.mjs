@@ -11,6 +11,16 @@ const CONFIG_MODEL = "construction.contract";
 const CONFIG_ACTION_ID = Number(process.env.LOW_CODE_CONFIG_ACTION_ID || "1002");
 const CONFIG_PAGE_LABEL = "合同办理";
 const ALTERNATE_PAGE_LABEL = "项目合同汇总";
+/* Section names are declared by the config contract (data.sections[].label).
+ * The probe asserts the rendered names against those declared values, so a view
+ * can no longer satisfy the probe with its own copy of the vocabulary. */
+const CONTRACT_SECTION_LABELS = {
+  form: "表单字段与布局",
+  list_search: "列表与搜索",
+  analysis: "分析视图",
+  menu: "菜单入口",
+  approval: "审批规则",
+};
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(SCRIPT_DIR, "..", "..", "..", "..");
@@ -1002,8 +1012,8 @@ async function main() {
     await approvalPanel.getByRole("button", { name: "返回工作台" }).click();
     await page.waitForSelector(".approval-panel", { state: "detached", timeout: 10000 });
     currentStep = "open menu config panel";
-    await page.getByRole("tab", { name: "菜单入口" }).click();
-    const menuCard = page.locator(".config-card").filter({ hasText: "菜单入口" });
+    await page.getByRole("tab", { name: CONTRACT_SECTION_LABELS.menu }).click();
+    const menuCard = page.locator(".config-card").filter({ hasText: CONTRACT_SECTION_LABELS.menu });
     await clickButtonByProductAliases(menuCard, ["配置菜单"]);
     await page.waitForURL((url) => String(url).includes("/admin/menu-config"), { timeout: 20000 });
     await page.waitForSelector(".menu-config-editor", { timeout: 20000 });
@@ -1230,7 +1240,12 @@ async function main() {
     };
     report.artifacts.defaultConfigPage = await captureStep(page, "default-config-page");
     assert(
-      defaultCards.join("|") === "表单字段与布局|列表与搜索|菜单入口|审批规则",
+      defaultCards.join("|") === [
+        CONTRACT_SECTION_LABELS.form,
+        CONTRACT_SECTION_LABELS.list_search,
+        CONTRACT_SECTION_LABELS.menu,
+        CONTRACT_SECTION_LABELS.approval,
+      ].join("|"),
       "默认配置卡片不符合用户配置边界",
       { defaultCards },
     );
@@ -1288,8 +1303,8 @@ async function main() {
     assert(
       selectedAfterSwitch === ALTERNATE_PAGE_LABEL
         && titleAfterSwitch.includes(ALTERNATE_PAGE_LABEL)
-        && cardsAfterSwitch.includes("表单字段与布局")
-        && cardsAfterSwitch.includes("列表与搜索")
+        && cardsAfterSwitch.includes(CONTRACT_SECTION_LABELS.form)
+        && cardsAfterSwitch.includes(CONTRACT_SECTION_LABELS.list_search)
         && selectedAfterRestore === CONFIG_PAGE_LABEL,
       "业务页面选择或恢复不可用",
       { selectedAfterSwitch, titleAfterSwitch, cardsAfterSwitch, selectedAfterRestore },
@@ -1526,7 +1541,7 @@ async function main() {
       analysisSelectedName,
       expected: ANALYSIS_PAGE_LABEL,
     });
-    assert(analysisCards.includes("分析视图"), "分析页面没有展示分析视图配置卡片", { analysisCards });
+    assert(analysisCards.includes(CONTRACT_SECTION_LABELS.analysis), "分析页面没有展示分析视图配置卡片", { analysisCards });
     assert(analysisTitle === "分析视图设置", "分析视图面板标题不正确", { analysisTitle });
     assert(
       analysisEditorPanelCount === 1 && analysisEditorNavCount === 1 && analysisEditorCanvasCount === 1,
@@ -2316,7 +2331,7 @@ async function main() {
       returnedQuery,
     );
     assert(
-      returnedCards.includes("表单字段与布局") && returnedCards.includes("列表与搜索"),
+      returnedCards.includes(CONTRACT_SECTION_LABELS.form) && returnedCards.includes(CONTRACT_SECTION_LABELS.list_search),
       "返回工作台后配置卡片丢失",
       { returnedCards },
     );

@@ -11,6 +11,7 @@ type UseBusinessConfigWorkbenchMetaOptions = {
   selectedCoverageRow: ComputedRef<BusinessConfigCoverageScanItem | undefined>;
   selectedPageLabel: Ref<string>;
   advancedPanelOpen: Ref<boolean>;
+  boundaryLabels: () => Record<string, string>;
   scanSystemRootCoverage: () => void;
   openMenuConfig: () => void;
   loadApprovalConfig: () => void;
@@ -81,7 +82,9 @@ export function useBusinessConfigWorkbenchMeta(options: UseBusinessConfigWorkben
 
   function deliveryReadinessItemMetaText(item: DeliveryItem) {
     const countText = item.contract_count ? `${item.contract_count} 项` : '未建立';
-    return options.advancedPanelOpen.value && item.boundary ? `${countText} · ${boundaryLabel(item.boundary)}` : countText;
+    return options.advancedPanelOpen.value && item.boundary
+      ? `${countText} · ${boundaryLabel(item.boundary, options.boundaryLabels())}`
+      : countText;
   }
 
   function runDeliveryReadinessAction(item: DeliveryItem) {

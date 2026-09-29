@@ -145,7 +145,7 @@
           :aria-current="activeSectionKey === section.key ? 'location' : undefined"
           @click="$emit('update:activeSectionKey', section.key)"
         >
-          {{ sectionDisplayLabel(section.key, section.label) }}
+          {{ section.label }}
         </ScButton>
       </div>
       <div v-if="activeSection" class="section-grid section-grid--active" data-lowcode-config-task-grid="v1">
@@ -153,7 +153,7 @@
           <div class="config-card-head">
             <div>
               <span>{{ sectionTaskKindLabel(activeSection.key) }}</span>
-              <h2>{{ sectionDisplayLabel(activeSection.key, activeSection.label) }}</h2>
+              <h2>{{ activeSection.label }}</h2>
             </div>
             <ScStatusBadge
               :label="sectionStatusLabel(activeSection.key, activeSection.contract_count)"
@@ -339,7 +339,6 @@ const props = defineProps<{
   overallStatusLabel: (status: string) => string;
   boundaryLabel: (boundary: unknown) => string;
   sectionTaskKindLabel: (sectionKey: string) => string;
-  sectionDisplayLabel: (sectionKey: string, fallback: string) => string;
   sectionStatusLabel: (sectionKey: string, contractCount: number) => string;
   sectionPrimaryCopy: (sectionKey: string) => string;
   sectionImpactText: (sectionKey: string) => string;

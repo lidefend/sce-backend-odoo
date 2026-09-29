@@ -319,6 +319,7 @@ export interface BusinessConfigSurfacePayload {
       query?: Record<string, string>;
     };
   }>;
+  boundary_labels?: Record<string, string>;
 }
 
 export interface BusinessConfigDeliveryReadinessPayload {

@@ -43,7 +43,7 @@ import { findActionMeta } from '../app/menu';
 import { useSessionStore } from '../stores/session';
 import {
   analysisItemLabel,
-  boundaryLabel,
+  createBoundaryLabel,
   deliveryReadinessItemStatusText,
   namesToText,
   normalizeNamesText,
@@ -59,7 +59,6 @@ import {
   rowHasListSearchConfig,
   runtimeEvidenceText,
   runtimeReasonText,
-  sectionDisplayLabel,
   sectionHelpLabel,
   sectionPrimaryActionLabel,
   sectionPrimaryCopy,
@@ -135,6 +134,8 @@ const surfaceError = ref('');
 const message = ref({ text: '', detail: '' });
 const { impactDialog, openImpactDialog, resolveImpactDialog, rollbackConfirm } = useBusinessConfigImpactDialog();
 const surface = ref<BusinessConfigSurfacePayload | null>(null);
+const boundaryLabels = () => surface.value?.boundary_labels || {};
+const boundaryLabel = createBoundaryLabel(boundaryLabels);
 const coverageScan = ref<BusinessConfigCoverageScanPayload | null>(null);
 const listSearchAudit = ref<BusinessConfigListSearchAuditPayload | null>(null);
 const analysisAudit = ref<BusinessConfigAnalysisAuditPayload | null>(null);
@@ -579,6 +580,7 @@ const {
   selectedCoverageRow,
   selectedPageLabel,
   advancedPanelOpen,
+  boundaryLabels,
   scanSystemRootCoverage,
   openMenuConfig,
   loadApprovalConfig,

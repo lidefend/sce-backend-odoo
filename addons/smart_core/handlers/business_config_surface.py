@@ -34,6 +34,21 @@ CONFIG_SOURCE_CATEGORIES = (
     ("unclassified", "来源待确认"),
 )
 
+# Declared names for the configuration-boundary codes carried by the workbench
+# payloads. The codes are the authoritative vocabulary; the names travel with
+# the contract so a view never has to translate an unknown code itself.
+CONFIG_BOUNDARY_LABELS = (
+    ("ui_only", "仅页面设置"),
+    ("business_contract", "业务默认配置"),
+    ("business_contract_not_user_preference", "业务默认配置"),
+    ("business_contract_with_policy_runtime", "菜单显示规则"),
+    ("business_contract_version", "版本记录"),
+    ("coverage_guard", "覆盖检查"),
+    ("industry_policy_runtime", "行业业务规则"),
+    ("not_a_source", "非偏好来源"),
+    ("not_user_preference", "非偏好配置"),
+)
+
 
 def _to_int(value: Any) -> int:
     try:
@@ -490,7 +505,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
         sections = [
             {
                 "key": "form",
-                "label": "表单配置",
+                "label": "表单字段与布局",
                 "contract_count": self._contract_count(
                     model=model,
                     view_type="form",
@@ -503,7 +518,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
             },
             {
                 "key": "list_search",
-                "label": "列表/搜索配置",
+                "label": "列表与搜索",
                 "contract_count": (
                     self._contract_count(
                         model=model,
@@ -528,14 +543,14 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
         if analysis_contract_count or action_view_types.intersection(ANALYSIS_VIEW_TYPES):
             sections.append({
                 "key": "analysis",
-                "label": "分析视图配置",
+                "label": "分析视图",
                 "contract_count": analysis_contract_count,
                 "intent": BUSINESS_CONFIG_INTENTS["contract_versions"],
                 "boundary": "business_contract",
             })
         sections.append({
             "key": "menu",
-            "label": "菜单配置",
+            "label": "菜单入口",
             "contract_count": self._contract_count(model="ir.ui.menu", role_key=role_key),
             "intent": MENU_CONFIG_INTENTS["audit"],
             "boundary": "business_contract_with_policy_runtime",
@@ -551,6 +566,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
                 "role_key": role_key,
                 "sections": sections,
                 "snapshot_summary": snapshot_summary,
+                "boundary_labels": dict(CONFIG_BOUNDARY_LABELS),
                 "delivery_readiness": self._delivery_readiness(sections, snapshot_summary),
             },
             "meta": {
