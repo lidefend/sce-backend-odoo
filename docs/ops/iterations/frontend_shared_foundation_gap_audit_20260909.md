@@ -1826,3 +1826,25 @@ WEB-CONFIG-01结果（批次验收完成）：
 - 后续P4/docs提交不改构建产品输入，沿用上述产物与页面证据。旧auth03-r2产物保留可回退。
   批次验收完成；主线未集成、目标环境未部署、整体用户交付未验收。剩余菜单配置树/编辑控件
   及专用设计器继续按页面职责收口；不自动升级正式89入口矩阵。
+
+
+## WEB-CONFIG-02：菜单配置页头与文本输入接管（进行中）
+基线5962350b clean；P0 frontend renderer，Module MenuConfigView/menuConfig模板与直接样式。
+通用呈现机制由P0负责，非P1行业规则、P2偏好或P3配置语义；后端、schema、store不变。
+复用ScPageHeader/ScInput，覆盖新增、单条、批量及树搜索文本输入；旧header/input自绘职责退出。
+树、数字/选择/复选控件、发布/版本逻辑继续明确保留，不冒称完整专用编辑器接管。
+风险为受控输入和响应式布局，L0身份→L1 iteration→L2严格类型/primitive/header/配置回归，
+再决定受影响L4；L3无后端改动跳过，L5远端发布不进入。沿用既有受管验收环境。
+
+WEB-CONFIG-02新增阻断：L1、L2通过后e5eee791构建一次21.83秒，真实panel.get返回空runtime.tree，
+页面正确拒绝旧树回退。两次探针0项超时，第二次仅补定位阶段/失败截图，见menu-config-1790675429611。
+受管只读诊断固定uid34/验收库，SET TRANSACTION READ ONLY并finally rollback，确认
+异常delivery_navigation_empty。相同actor仅替换为正式IdentityResolver得到非空树，
+`/tmp/web-config02-nav-canonical.log`；不是权限放宽或业务数据修复。
+
+## WEB-CONFIG-03：菜单配置复用正式身份投影（进行中）
+P0 smart_core handler，现有IdentityResolver/扩展identity profile为唯一角色曝光权威。
+停止前端改动，仅把菜单handler三字段自造role_surface替换为正式解析结果，保留平台/配置管理员
+能力标志；DeliveryEngine与权限过滤不动。无模型/schema/注册/data变化，不需-u，仅受管后端重启。
+单独P0提交及非零菜单单测，L1→L2→clean后端身份→L3 up/health→复用CONFIG02产物定向L4。
+不新增环境或凭据、不修改配置/账号，不重跑无关付款旅程。

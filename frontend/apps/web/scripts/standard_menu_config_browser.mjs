@@ -10,11 +10,12 @@ const build=JSON.parse(await fs.readFile(path.resolve(root,'../sce-offrepo/artif
 assert.equal(createHash('sha256').update(Buffer.from(await fetch(`${base}${build.entry}`).then(r=>r.arrayBuffer()))).digest('hex'),build.entry_sha256);
 assert.equal(process.env.DB_NAME,'sc_frontend_acceptance');
 assert.ok(process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD);
-const out=path.join(root,'artifacts/frontend-web-fix-20260928',`config-field-${Date.now()}`);await fs.mkdir(out,{recursive:true});
+const out=path.join(root,'artifacts/frontend-web-fix-20260928',`menu-config-${Date.now()}`);await fs.mkdir(out,{recursive:true});
 const report={build,status:'running',checks:0,errors:[],blocked:[],calls:[]};
 const browser=await launchChromium({headless:true});
+let page;
 try {
- const page=await browser.newPage({viewport:{width:1440,height:950}});page.setDefaultTimeout(20000);
+ page=await browser.newPage({viewport:{width:1440,height:950}});page.setDefaultTimeout(20000);
  page.on('pageerror',e=>report.errors.push(e.message));
  await page.route('**/api/**',async route=>{try{
   const req=route.request(),raw=req.postDataJSON(),body=raw?.params?.intent?raw.params:raw,pathname=new URL(req.url()).pathname;
@@ -27,19 +28,24 @@ try {
  await page.goto(`${base}/login`);await page.locator('input').nth(0).fill('fixture_role_config_admin');await page.locator('input').nth(1).fill(process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD);
  const db=page.getByPlaceholder('请输入数据库名');if(await db.count() && await db.isEnabled())await db.fill('sc_frontend_acceptance');
  await page.getByRole('button',{name:/^登录$/}).click();await page.waitForURL(u=>u.pathname!='/login');await page.waitForLoadState('networkidle');
- await page.goto(`${base}/admin/business-config?model=payment.request&action_id=775&menu_id=545&open_list_search=1`);
- await page.getByRole('button',{name:'开发者工具',exact:true}).click();
- const form=page.locator('[data-editor-composition="official-field-configuration"]');await form.waitFor();
- const draft=form.getByPlaceholder('输入字段名');
- await draft.fill('id');check(await draft.inputValue(),'id');await draft.press('Enter');
- await page.waitForFunction(()=>document.querySelector('input[placeholder="输入字段名"]')?.value==='');check(await draft.inputValue(),'');
- await draft.fill('id');await form.getByRole('button',{name:'添加',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('input[placeholder="输入字段名"]')?.value==='');check(await draft.inputValue(),'');
- const search=page.getByPlaceholder('搜索可选字段');await search.fill('name');check(await search.inputValue(),'name');await search.fill('');check(await search.inputValue(),'');
- const chips=page.locator('.field-chip-list .field-chip');const original=await chips.allTextContents();assert.ok(original.length>1);
- await chips.nth(0).getByRole('button',{name:/^下移/}).click();await chips.nth(1).getByRole('button',{name:/^上移/}).click();check(await chips.allTextContents(),original);
- for(const width of [1440,390]){await page.setViewportSize({width,height:950});await form.scrollIntoViewIfNeeded();const bounds=await form.boundingBox();check(Boolean(bounds && bounds.x>=0 && bounds.x+bounds.width<=width+1),true);check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`editor-${width}.png`)});await form.screenshot({path:path.join(out,`form-${width}.png`)});}
+ await page.goto(`${base}/admin/menu-config?menu_id=545`);
+ report.step='menu heading';await page.getByRole('heading',{name:'菜单配置',exact:true}).waitFor();
+ const panel=page.getByRole('region',{name:'当前菜单配置'});report.step='selected menu panel';await panel.waitFor();
+ const search=page.getByPlaceholder('搜索菜单名称或路径');
+ await search.fill('付款');check(await search.inputValue(),'付款');
+ await page.getByRole('button',{name:'清空筛选',exact:true}).click();check(await search.inputValue(),'');
+ const name=panel.locator('[data-semantic-component="ScInput"] input').first();
+ const original=await name.inputValue();await name.fill('菜单验收未保存');check(await name.inputValue(),'菜单验收未保存');
+ await page.getByRole('button',{name:'展开批量维护表格',exact:true}).click();
+ const row=page.locator('tr.selected');const bulk=row.locator('[data-semantic-component="ScInput"] input').first();
+ check(await bulk.inputValue(),'菜单验收未保存');await bulk.fill('');check(await name.inputValue(),'');
+ await name.fill(original);check(await bulk.inputValue(),original);
+ await page.getByRole('button',{name:'新增一级菜单',exact:true}).click();
+ const createName=page.getByPlaceholder('输入业务菜单名称');await createName.fill('新菜单未保存');check(await createName.inputValue(),'新菜单未保存');
+ await createName.fill('');check(await page.getByRole('button',{name:'创建菜单',exact:true}).isDisabled(),true);
+ await page.getByRole('button',{name:'收起新增入口',exact:true}).click();
+ for(const width of [1440,390]){await page.setViewportSize({width,height:950});await panel.scrollIntoViewIfNeeded();check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);await page.screenshot({path:path.join(out,`menu-${width}.png`)});}
  // Unsaved local state is discarded by closing the browser; no config action is executed.
  await page.unrouteAll({behavior:'wait'});check(report.errors,[]);check(report.blocked,[]);report.status='passed';
-}catch(e){report.status='failed';report.error=String(e.message).split('\n')[0];process.exitCode=1;}
-finally{await browser.close();await fs.writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2));console.log(`[config-field] ${report.status} checks=${report.checks} report=${out}/report.json`);}
+}catch(e){await page?.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});report.status='failed';report.error=String(e.message).split('\n')[0];process.exitCode=1;}
+finally{await browser.close();await fs.writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2));console.log(`[menu-config] ${report.status} checks=${report.checks} report=${out}/report.json`);}

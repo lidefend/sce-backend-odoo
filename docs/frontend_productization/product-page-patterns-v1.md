@@ -475,3 +475,19 @@ change-set reads are permitted, with `created=false` verified; no configuration
 save/publish occurred. Login/session and usage telemetry remain permitted.
 Menu configuration's native tree/editor controls and dedicated form-designer
 interactions remain explicit adoption work; this batch does not mark them complete.
+
+
+### Menu configuration presentation (WEB-CONFIG-02)
+
+The dedicated menu editor uses `ScPageHeader` for its identity and action area,
+retaining contract actions, dirty count, disabled conditions and configuration
+callbacks. Its seven text/search controls across creation, selection, bulk rows
+and tree filtering use controlled `ScInput` values. Page-owned header styling and
+native search-input border/height/padding no longer render that adopted scope.
+Text updates consume emitted values; native event adapters remain for unchanged
+number/select/checkbox controls. All text fields share the existing draft store.
+
+Tree drag/drop, role selection, numeric ordering, version selection and the
+specialized bulk table remain explicit dedicated responsibilities; this change
+is not a conversion to ordinary server-paginated collections. Their remaining
+native controls and page-level feedback are not counted as fully adopted.

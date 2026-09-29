@@ -37,3 +37,8 @@ test('configuration resume may read but cannot create a fresh draft', () => {
   assert.equal(allow('POST', '/api/v1/intent', request({resume_only:true})), true);
   for (const params of [{}, {resume_only:false}, {resume_only:'true'}, {resume_only:true,fresh:true}]) assert.equal(allow('POST', '/api/v1/intent', request(params)), false);
 });
+
+test('menu panel read does not allow menu writes', () => {
+  assert.equal(allow('POST', '/api/v1/intent', {intent:'ui.menu_config.panel.get'}), true);
+  for (const intent of ['ui.menu_config.panel.set','ui.menu_config.entry.create','ui.menu_config.entry.delete','ui.menu_config.rollback']) assert.equal(allow('POST','/api/v1/intent',{intent}),false);
+});
