@@ -912,3 +912,8 @@ verify.frontend.explicit_any.unit: guard.prod.forbid
 	@node --test scripts/verify/frontend_explicit_any_test.mjs
 verify.frontend.typed_dependencies.unit: guard.prod.forbid
 	@node scripts/verify/typed_dependency_contract_test.mjs
+
+.PHONY: verify.frontend.form_designer_actions.unit
+verify.frontend.form_designer_actions.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_designer_actions_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-designer-actions-test.mjs >/dev/null
+	@node /tmp/form-designer-actions-test.mjs

@@ -86,6 +86,14 @@ must return to native authority. This is API/contract/list acceptance, not full
 configuration-workbench UI acceptance. Evidence is in the existing iteration
 record under WEB-LC-02.
 
+WEB-STYLE-01 keeps those page-type defaults while separating their shared owners:
+form save/epoch handling delegates designer selection, visibility and ordering to
+`useRecordFormDesignerActions`; return wiring lives in the existing record
+navigation runtime. Neither extraction creates a second state or execution path.
+The style and explicit-type guards now pass without increasing size allowances.
+This is local source/test verification; the running TPL07-r2 preview keeps its
+original build identity until a consolidated candidate is built and checked.
+
 ### Historical rollout records
 
 The presentation composition for standard pages is taken from the official

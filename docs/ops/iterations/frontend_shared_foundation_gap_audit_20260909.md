@@ -1570,3 +1570,46 @@ min(原额度, 原源码AST计数)，同一baseline总额度55→36；记录metr
 后续按所属呈现职责处理，不增加尺寸阈值。本批不升级89入口业务矩阵或整体交付状态。
 
 WEB-TYPE-01批次验收完成（类型边界与同口径no-new-any）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## WEB-STYLE-01：共享表单职责与样式门禁（2026-09-29）
+
+基线 cb06a004 clean。Formal Product Layer=P0；Layer Target=frontend generic form renderer；
+Module=frontend/apps/web。平台通用呈现职责，不属于P1业务/P2偏好/P3配置内容/P4业务补丁。
+目标：配置字段交互退出保存处理器；原生动作状态映射归入既有动作适配器；页面返回接线归入既有导航运行时；
+关系选择局部层级使用受管令牌。范围仅对应文件、直接类型/测试/令牌，不改变契约、权限、保存epoch、
+数据身份、字段顺序、回退策略。不增加尺寸基线。L0身份→L1 iteration/style→L2严格类型、
+保存身份/失败恢复、字段事件和返回导航相关回归；先验证代码再决定必要页面复核。无数据库写入。
+
+实现收口：14个配置选择/显隐/拖放交互移到useRecordFormDesignerActions，明确36项依赖，
+原保存owner612行。动作状态映射复用contractActionPresentation，避免牵动字段分发链；
+页面返回接线进入useCreatedRecordNavigationRuntime，仍先确认未保存内容再读取实时路由/权威。
+清理Page中11个已无消费者的类型导入。关系弹层底部操作令牌计算值保持1。
+P0职责退出：原保存owner不再实现设计交互，Page不再重复返回接线；无第二状态或业务执行链。
+尺寸/颜色/类型基线均未提高。
+
+验证索引（cb06a004 + 上述P0实现及P4测试dirty范围）：
+- L1 `make ci.local.iteration` passed，`/tmp/web-style01-iteration-final.log`。
+- L1/L2 `make verify.frontend.style_system.guard verify.frontend.no_new_any_guard verify.frontend.typecheck.strict`
+  passed，`/tmp/web-style01-final-static.log`；样式/token PASS，699文件显式any仍25，严格类型PASS。
+  第一次style检查Page1901行失败；移除真实未使用的类型导入后通过，未提高1900限制。
+- L2 `make verify.frontend.form_designer_actions.unit` passed6项，`/tmp/web-style01-designer.log`。
+- L2 保存失败恢复首次failed（`/tmp/web-style01-behavior.log`）：旧harness未接已默认启用的
+  官方校验入口，写次数为0。P4修正为真实createStandardFormValidationRegistry的合法无必填空集；
+  未更改产品保存判定。`make verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.record_form_return.unit`
+  passed，`/tmp/web-style01-recovery.log`：4种失败恢复场景及13项返回测试（含确认拒绝和实时权威）。
+- L2 独立受影响回归 `/tmp/web-style01-independent.log`：adopted_form_validation_identity46、
+  adopted_form_engine_decision74、contract_error_business_ownership92、canonical_form_presenter177+10、
+  professional_relation_field18+17及Python10+36全部passed；对应入口均为`make verify.frontend.<name>.unit`。
+  同日志的旧12项return结果被上述13项替代，不重复计数。
+- 确定性影响复核 `/tmp/web-style01-equivalence.json`：14函数正文、保存核心/返回对象、save epoch
+  保护逐字一致。B线独立AST比较同样通过，无阻断。返回接线和动作映射有直接定向回归，token值同1。
+  L3跳过：无后端/DB/配置变化。L4复用TPL07/LC02原页面观察，不重新构建/浏览器全程；
+  当前源码不同于5180的TPL07-r2原构建，运行预览身份仍按原receipt，不冒称本批已加载。
+  L5未进入：仍是本地迭代，无推送/合并/目标环境部署。
+
+- L2 `make verify.frontend.standard_form_composition.unit verify.frontend.standard_collection_composition.unit verify.frontend.native_form_action_presentation.unit`
+  passed94/69/16，`/tmp/web-style01-compositions.log`。普通页面职责仍选择同一标准组合，旧路径未重启。
+WEB-STYLE-01批次验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+已知list/render/no-new-any/style阻断已逐项关闭，不等同未运行的完整发布门禁通过。
+下一阶段：统一候选的必要集成门禁与受管预览复核；专用页面例外继续按page-patterns登记，
+不把专用层级/工作表强塞普通列表，不以模板接管比例替代正式89入口的业务交付验收。

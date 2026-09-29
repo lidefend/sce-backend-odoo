@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { resolveCreateFormActivityRedirect } from '../src/app/recordFormActivityRoute.ts';
 import {
+  createRecordFormReturnHandler,
   executeRecordFormReturn,
   hasInAppReturnHistory,
   resolveRecordFormReturnFallbackRoute,
@@ -189,6 +190,39 @@ check('fallback is not used when no fallback handler is supplied', async () => {
   });
   assert.equal(mode, 'history');
   assert.deepEqual(calls, ['back']);
+});
+
+check('return handler consumes live authority only after unsaved confirmation', async () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const view = { parent: null as unknown, location: { origin: 'http://localhost' } };
+  view.parent = view;
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: view });
+  try {
+    let allow = false;
+    let authority = '/m/one';
+    const visits: string[] = [];
+    const params = {
+      route: { query: {} },
+      router: { options: { history: { state: {} } }, back: () => { visits.push('back'); },
+        replace: async (target: string) => { visits.push(target); } },
+      model: () => 'x.document', authorityRoute: () => authority,
+      navigateAfterConfirm: async (navigate: () => Promise<void>) => {
+        if (!allow) return false;
+        await navigate();
+        return true;
+      },
+    };
+    const navigate = createRecordFormReturnHandler(params as unknown as Parameters<typeof createRecordFormReturnHandler>[0]);
+    await navigate();
+    assert.deepEqual(visits, [], 'rejected confirmation must not navigate');
+    allow = true;
+    authority = '/m/two';
+    await navigate();
+    assert.deepEqual(visits, ['/m/two'], 'use current authority, not factory-time authority');
+  } finally {
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+    else Reflect.deleteProperty(globalThis, 'window');
+  }
 });
 
 for (const testCase of cases) {

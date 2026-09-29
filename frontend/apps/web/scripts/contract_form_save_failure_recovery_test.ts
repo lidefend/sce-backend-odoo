@@ -5,6 +5,7 @@ import { ApiError } from '../src/api/client';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers';
 import { snapshotOriginalFormValues } from '../src/pages/contractForm/recordHydration';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils';
+import { createStandardFormValidationRegistry } from '../src/pages/contractForm/standardFormCompositionRuntime';
 import { useRecordFormActions } from '../src/pages/contractForm/useRecordFormActions';
 import type { BusinessFieldError } from '../src/app/businessValidationError';
 
@@ -111,6 +112,8 @@ function buildHarness(options: {
     uploadPendingNativeAttachments: async () => true,
     v2ContractStore: ref({ snapshot: { pageInfo: { pageName: '付款申请' } } }),
     useFormPageLifecycleRuntime: () => undefined,
+    // This harness has no required fields; use the real adopted empty registry.
+    validateAdoptedFormSections: createStandardFormValidationRegistry(() => 'contract-record-form').validateAdoptedFields,
     validateBeforeSaveRecord,
     validationErrors,
     validationFieldErrors: ref<Record<string, BusinessFieldError>>({}),
