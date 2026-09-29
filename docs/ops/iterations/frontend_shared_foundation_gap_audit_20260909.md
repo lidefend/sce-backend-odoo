@@ -4377,3 +4377,153 @@ if relative in p3_files or relative.startswith(p3_prefixes):
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 30｜求值集合 ≠ 渲染面：外置模板与状态原语词表（2026-09-30）
+
+段 29 的复查结论是"P3 只残留所有权欠账，无第二处同类盲区"。本段在同一批生成器/守卫上继续追问
+"求值集合是否等于被声明的面"，又发现两处，其中一处会浮现**真实的 P0 所有权缺口**。
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 共享守卫的求值集合与所有权登记）＋ P4（`scripts/audit`、`scripts/verify`） |
+| **Layer Target** | `scripts/audit/generate_frontend_rendering_detail_inventory.py`、`scripts/verify/frontend_primitive_adapter_guard.py`、`docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json` |
+| **Module** | `smart_core`（守卫与所有权归属）；未改 `frontend/apps/web` 任何源码 |
+| **Standard vs User-Specific** | 平台标准：**"被求值的源必须等于该组件真实渲染面"**、**"状态原语词表必须与治理该原语的守卫一致"** —— 与行业/客户语义无关 |
+| **Why Here** | 只有守卫/清单能同时看到"声明的源集合"与"实际扫描的文件集合"；只有所有权登记能表达"这个面由谁负责" |
+| **Why Not Elsewhere** | 不放页面：页面不能自证被扫描到；不改后端；不放宽门禁阈值；不改业务矩阵 |
+| **Blast Radius** | 新增 2 个外置模板进入 `input_digest`；状态原语词表 +`ScInlineState`；`ObjectTaskPage.vue` 进入既有 P0 完成批次与所有权登记。菜单/模型/契约/请求载荷零变化；`frontend/` 源码零变化 |
+
+### 2. 同类根因的第三次显形
+
+段 28 修的是"发布规则但不求值"，段 29 修的是"层级延迟吞掉层级无关边界"。本段发现第三种形式：
+
+> **求值集合被"文件边界"和"词汇表"两处静默裁剪，而对外声明的面（组件 / 状态原语）并没有变小。**
+
+### 3. 缺口 A：外置 `<template src>` 不在求值集合
+
+仓库有 2 个正式产品组件把模板放在外部文件：
+
+```
+frontend/apps/web/src/views/MenuConfigView.vue            -> views/menuConfig/template.html (27,674 B)
+frontend/apps/web/src/views/BusinessConfigSurfaceView.vue -> views/businessConfigSurface/template.html (16,996 B)
+```
+
+而两处扫描都只看 `.vue` 本身：
+
+- `frontend_primitive_adapter_guard.py`：`frontend_root.rglob("*.vue"/"*.ts"/"*.js"/"*.mjs")` —— `.html` 模板**不在扫描集合内**；
+- `generate_frontend_rendering_detail_inventory.py`：`text = path.read_text()` —— 只读 `.vue`，外置模板内容**不参与任何判定**。
+
+后果是**双向**的：
+
+1. **漏报**：外置模板里的原生 `<button>`／`<input>` 完全不被 `RAW_INTERACTIVE_CONTROL` 看见；
+   而该模板正是这些组件真正的渲染面。这是一个可以长期潜伏的守卫空洞。
+2. **误判**：`MenuConfigView` 的状态呈现全靠外置模板里的 `<ScInlineState>`（4 处），
+   但清单只看到 `.vue`，于是把它的 `governedStatePrimitives` 记为"空"。
+
+今日两处外置模板恰好没有原生控件（实测 `<button|<input|<select|<textarea>` 命中 **0**），
+所以这是**结构性空洞**而非既发缺陷——但"今天没踩到"不能作为保留空洞的理由。
+
+### 4. 缺口 B：状态原语词表漏 `ScInlineState`，浮现真实 P0 所有权缺口
+
+清单的 `GOVERNED_STATE_PRIMITIVES = (ScLoading, ScEmptyState, ScErrorState)`，
+但仓库**另有** `frontend_inline_state_guard` 明确治理 3 个原语：
+`ScInlineState` / `ScEmptyState` / `ScErrorState`（该守卫逐项断言其 TDesign 驱动、语义身份与无障碍属性）。
+
+**清单的词表与治理该原语的守卫不一致**：`ScInlineState` 明明受治理，却不被清单识别为"状态原语已接管"。
+由于清单的纳入条件之一是 `governed_primitives` 非空，只用 `ScInlineState` 呈现状态的面
+会**整体从清单里消失**——不是判为缺口，而是**根本不出现**。
+
+补齐词表后立即浮现 **1 个真实的 P0 所有权缺口**：
+
+```
+frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue
+  status=gap  reason=relevant state or native interaction has no explicit professionalization ownership declaration
+```
+
+该组件是 `ContractFormDriverHost` 渲染的"当前任务"页（`ObjectTaskPage`，含 1 处 `ScInlineState`、
+多个 `ScCard`），并且**已被另外 5 个守卫治理**：
+
+- `frontend_professional_audit_guard.py`
+- `frontend_form_canvas_wide_grid_guard.py`
+- `frontend_page_pattern_reference_parity_guard.py`
+- `frontend_product_page_pattern_guard.py`
+- `frontend_scene_component_bridge_guard.py`
+
+也就是说：它并不缺专业实现，**缺的是在本清单的所有权登记**——长期不可见，因为词表根本没把它纳入。
+这正是"静默缺口"最危险的一种形态：不是判错，而是**看不到**。
+
+**没有通过放宽阈值或删除词表来消除它**：按既有机制把它登记进 `p0-inline-full-state-completion-v1`
+批次，并给出机器可校验的绑定（`ScInlineState` + `state="info"` + `density="compact"` ≥1），
+同时在 `rendering-surface-ownership-v1.json` 声明该源归属同一 P0 所有者。
+
+### 5. 修复
+
+**A（外置模板进入求值集合）**
+
+- 新增 `EXTERNAL_TEMPLATE_SRC` 与 `external_template_paths()` / `resolve_source_text()`
+  （清单）、`external_template_text()` / `component_source_text()`（守卫）；
+- 解析失败**失败关闭**（`ValueError` / `FileNotFoundError`），不允许"文件找不到就只判 `.vue`"；
+- 清单把外置模板并入 `input_digest`，`scope` 明确写为
+  `… including external <template src> files`，并在 `p3OwnershipDeferred.externalTemplateCount` 计数。
+
+**B（词表对齐 + 登记真实缺口）**
+
+- `GOVERNED_STATE_PRIMITIVES` 增加 `ScInlineState`，并注明与 `frontend_inline_state_guard` 对齐；
+- `BATCH_BINDINGS["p0-inline-full-state-completion-v1"]` 增加
+  `ObjectTaskPage.vue: {"scinlinestate": {"states": {"info"}, "attrs": {"density": "compact"}, "minimum": 1}}`；
+- `rendering-surface-ownership-v1.json` 的同一 P0 所有者 `sources` 增加 `ObjectTaskPage.vue`
+  （`ownership_binding_failures()` 要求批次的每个绑定源都有正式所有者，缺失即失败关闭）。
+
+### 6. 负例（先证明会红）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_external_component_template_cannot_hide_a_native_control` | 让 `component_source_text` 退化为纯读 `.vue` | 外置模板里的 `<button>` 逃过守卫 → **断言失败** |
+| `test_external_template_joins_the_evaluated_source` | 取消 `resolve_source_text` 的模板拼接 | 组合文本不再含 `<ScInlineState` → **断言失败** |
+| `test_object_task_page_binding_fails_closed_when_state_changes` | 把 `state="info"` 改成 `state="empty"` | 绑定失配 → `classify()` 返回 `gap` → **断言失败** |
+| （登记前实测） | 只补词表、不登记所有权 | `gap=1`、`nextBatch` 非空 → 缺口确实显现，未被吞掉 |
+
+### 7. 验证（分层结果）
+
+改动只落在 `scripts/`（audit/verify）与 `docs/` 派生清单，**`frontend/` 源码零变化**，
+因此 L4 浏览器层与 `verify.frontend.typecheck.strict` 不因本段失效，不重跑（沿用同一 5180 候选）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 70 tests**（段 29 后 64，+6）；`rendering_detail_inventory PASS surfaces=173 gaps=0`、`rendering_detail_state_guard PASS surfaces=98`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0` |
+| L2 | `make verify.frontend.primitive_adapter.unit` | **PASS 34 tests**（+1）；`components=46 eventCases=11` |
+
+### 8. 对段 29 数字的更正（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变）；
+- "有状态词汇但无状态原语"的 P3 面：段 29 记为 **17**，本段词表对齐后实际为 **16**
+  （`MenuConfigView`、`BusinessConfigSurfaceView` 已确证使用受治理状态原语）；
+- 清单总面数：172 → **173**（`ObjectTaskPage.vue` 由不可见变为可见并有归属）；
+- `governed_composite`：112 → **113**。
+
+### 9. 显式登记（不在本段范围）
+
+- **未解析外置模板的相邻扫描**：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`。
+  这两个规则面向组件自身的 `<style>` 块与容器 class，外置模板不含样式块；
+  且它已把 P3 排除在外（段 29 已定性为"声明的就是 P0/P1"）。
+  记录为**已知不等价**：若将来把外置模板用于非 P3 组件且在该模板内挂容器 class，需一并解析。
+- 承接段 28/29 全部登记项，本段未触碰。
+
+### 10. 提交
+
+- `fix(guard): evaluate external component templates and align the governed state vocabulary`
+- `chore(web): refresh the derived inventory for the external-template and vocabulary alignment`
+- 本段记录（文档）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
