@@ -9,7 +9,6 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
 const database = 'sc_frontend_acceptance';
-const source = '8adfff9e9d649c309f010bcbeae48e4be1386ba6';
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 
 // Recovery reads the authoritative state even when publish timed out. It never
@@ -46,6 +45,62 @@ export function listLabels(contract) {
   return rows;
 }
 
+// Preserve the complete column universe; visibility and mappings inherit from
+// the authoritative schema. Direct `visible:false` would REMOVE a column.
+export function completeLabelColumns(contract, label) {
+  listLabels(contract);
+  const profile = contract.layoutContract.listProfile;
+  const columns = profile?.columns;
+  assert.ok(Array.isArray(columns) && columns.length > 0, 'complete list profile required');
+  assert.ok(columns.every((name) => typeof name === 'string' && name.length), 'column names required');
+  assert.equal(new Set(columns).size, columns.length, 'duplicate profile columns');
+  assert.ok(columns.includes('name'), 'label target missing');
+  for (const key of ['fact_columns', 'hidden_columns']) {
+    assert.ok(Array.isArray(profile[key]), `missing ${key}`);
+    assert.ok(profile[key].every((name) => columns.includes(name)), `uncovered ${key}`);
+  }
+  const fields = [];
+  const visit = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.widgetType === 'table' && node.fieldCode) fields.push(node.fieldCode);
+    Object.values(node).forEach(visit);
+  };
+  visit(contract.layoutContract.containerTree);
+  assert.deepEqual(fields, columns, 'table widgets must match complete ordered profile');
+  return columns.map((name, index) => ({ name, sequence: (index + 1) * 10, ...(name === 'name' ? { label } : {}) }));
+}
+
+export function labelOnlyProjection(contract, label) {
+  completeLabelColumns(contract, label);
+  const result = structuredClone(contract);
+  const profile = result.layoutContract.listProfile;
+  if (profile.column_labels?.name === label) profile.column_labels.name = '__LABEL_UNDER_TEST__';
+  const visitContainer = (node) => {
+    for (const widget of node.widgetList || []) {
+      if (widget.widgetType !== 'table' || widget.fieldCode !== 'name') continue;
+      if (widget.label === label) widget.label = '__LABEL_UNDER_TEST__';
+      if (widget.fieldDescriptor?.name === 'name') {
+        for (const key of ['label', 'string']) {
+          if (widget.fieldDescriptor[key] === label) widget.fieldDescriptor[key] = '__LABEL_UNDER_TEST__';
+        }
+      }
+    }
+    for (const child of node.children || []) visitContainer(child);
+  };
+  result.layoutContract.containerTree.forEach(visitContainer);
+  // Only documented request identities and content hashes vary independently
+  // of capabilities. Definition, authority, trim counts and all runtime remain.
+  const meta = result.meta || {};
+  for (const key of ['etag', 'snapshotId', 'traceId', 'requestId']) delete meta[key];
+  if (meta.lifecycle?.generation) delete meta.lifecycle.generation.sourceSha256;
+  if (meta.lifecycle?.integrity) delete meta.lifecycle.integrity.contractSha256;
+  if (meta.lifecycle?.runtime) {
+    delete meta.lifecycle.runtime.requestId;
+    delete meta.lifecycle.runtime.traceId;
+  }
+  return result;
+}
+
 export function recordIds(records) {
   assert.ok(Array.isArray(records) && records.length > 0, 'nonempty record set required');
   const ids = records.map((row) => row.id);
@@ -55,31 +110,10 @@ export function recordIds(records) {
 }
 
 async function servedIdentity() {
-  // This is a bounded continuation of TPL-06A's existing build, not a new port
-  // or acceptance profile. A changed frontend requires its own reviewed build.
-  execFileSync('git', ['diff', '--quiet', source, '--', 'frontend', ':!frontend/apps/web/scripts'], { cwd: root });
-  assert.equal(execFileSync('git', ['ls-files', '--others', '--exclude-standard', '--', 'frontend/apps/web/src'], { cwd: root, encoding: 'utf8' }).trim(), '');
-  const dist = path.resolve(root, '../sce-offrepo/artifacts/tpl06a-20260929/dist');
-  const listener = execFileSync('ss', ['-ltnp', 'sport = :5180'], { encoding: 'utf8' });
-  const pids = [...listener.matchAll(/pid=(\d+)/g)].map((match) => match[1]);
-  assert.equal(pids.length, 1, 'one registered frontend listener required');
-  const processRoot = `/proc/${pids[0]}`;
-  assert.equal((await fs.stat(processRoot)).uid, process.getuid());
-  const environment = Object.fromEntries((await fs.readFile(`${processRoot}/environ`, 'utf8')).split('\0').filter(Boolean).map((item) => [item.slice(0, item.indexOf('=')), item.slice(item.indexOf('=') + 1)]));
-  assert.equal(environment.STATIC_ROOT, dist);
-  assert.equal(environment.API_PROXY_TARGET, 'http://127.0.0.1:18082');
-  assert.equal(environment.STATIC_PORT, '5180');
-  assert.ok((await fs.readFile(`${processRoot}/cmdline`, 'utf8')).includes('scripts/release/release_static_server.mjs'));
-  const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
-  const served = await fetch(`${base}/login`).then((res) => { assert.ok(res.ok); return res.text(); });
-  assert.equal(served, html, '5180 is not the registered TPL-06A build');
-  const entry = html.match(/src="(\/assets\/index-[^"]+\.js)"/)?.[1];
-  assert.ok(entry, 'entry asset missing');
-  const bytes = await fs.readFile(path.join(dist, entry));
-  const remote = Buffer.from(await fetch(`${base}${entry}`).then((res) => { assert.ok(res.ok); return res.arrayBuffer(); }));
-  assert.equal(digest(remote), digest(bytes));
-  assert.equal(digest(bytes), '57ad457282cb449e6190d757c8b3d5c7f6051cc1f9c3ca89f072d31d5e5984f9', 'reviewed entry digest');
-  return { source, entry, entry_sha256: digest(bytes), backend_source: process.env.WEB_LC_BACKEND_REVISION };
+  const build = JSON.parse(execFileSync('python3', [path.join(root, 'scripts/dev/frontend_standard_preview.py'), 'identity'], { cwd: root, encoding: 'utf8' }));
+  const bytes = Buffer.from(await fetch(`${base}${build.entry}`).then((res) => { assert.ok(res.ok); return res.arrayBuffer(); }));
+  assert.equal(digest(bytes), build.entry_sha256, 'live managed preview entry');
+  return { ...build, backend_source: process.env.WEB_LC_BACKEND_REVISION };
 }
 
 export async function runStandardListLoop() {
@@ -93,7 +127,7 @@ export async function runStandardListLoop() {
   const report = { run, status: 'not_run', assertions: [], calls: [], recovery: 'not_needed', candidate: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), dirty: execFileSync('git', ['status', '--short'], { cwd: root, encoding: 'utf8' }).trim() };
   const save = () => fs.writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
   const check = (name, condition) => { report.assertions.push({ name, passed: Boolean(condition) }); assert.ok(condition, name); };
-  let browser, page, token, baseline, publishAttempted = false;
+  let browser, page, token, baseline, baselineProjection, baselineLabel, publishAttempted = false;
   const bootstrap = new Set();
   const errors = [];
   async function intent(name, params) {
@@ -109,7 +143,7 @@ export async function runStandardListLoop() {
   // The authenticated actor is config_admin; the target is the existing
   // company/action list configuration, not a role-specific form override.
   const cs = (op, params = {}) => intent(`ui.business_config.change_set.${op}`, { role_key: '', ...params });
-  const contract = () => intent('ui.contract.v2', { op: 'action_open', action_id: 775, menu_id: 545, view_type: 'tree', client_type: 'web_pc', delivery_profile: 'full' });
+  const contract = (extra = {}) => intent('ui.contract.v2', { op: 'action_open', action_id: 775, menu_id: 545, view_type: 'tree', client_type: 'web_pc', delivery_profile: 'full', ...extra });
   async function observe(label) {
     const responsePromise = page.waitForResponse((response) => {
       try {
@@ -164,9 +198,13 @@ export async function runStandardListLoop() {
     await page.getByRole('button', { name: /^登录$/ }).click();
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 });
     await page.locator('.layout-shell').waitFor();
-    baseline = listLabels(await contract());
+    const baselineContract = await contract();
+    await fs.writeFile(path.join(out, 'baseline-contract.json'), JSON.stringify(baselineContract, null, 2), { mode: 0o600 });
+    baseline = listLabels(baselineContract);
     const field = baseline.find(([key]) => key === 'name');
     assert.ok(field, 'name column must exist in effective contract');
+    baselineLabel = field[1];
+    baselineProjection = labelOnlyProjection(baselineContract, baselineLabel);
     const beforeHeaders = await observe(field[1]);
     check('bootstrap includes system.init and contract', bootstrap.has('system.init') && [...bootstrap].some((name) => /^ui\.contract/.test(name)));
     report.baseline = { labels: baseline, surface: beforeHeaders };
@@ -174,19 +212,33 @@ export async function runStandardListLoop() {
     check('readonly has no browser exceptions', errors.length === 0);
     report.status = 'readonly_passed';
     if (process.env.WEB_LC_APPLY !== '1') return;
+
+    assert.deepEqual(baselineContract.dataContract?.dataSource?.primary?.params?.context?.allowed_company_ids, [8], 'exact existing acceptance company scope');
     const opened = await cs('open', { name: run });
     token = opened.token;
     report.change_set_token = token;
     await save(); // Recovery identity is durable before any publish request.
     const label = `配置闭环-${run.slice(-8)}`;
-    await cs('stage', { change_set_token: token, config_type: 'list', target_key: run, model: 'payment.request', action_id: 775, view_type: 'tree', draft_payload: { view_orchestration: { source: 'smart_core.lowcode.business_config', views: { tree: { columns: [{ name: 'name', label, visible: true }] } } } } });
+    await cs('stage', { change_set_token: token, config_type: 'list', target_key: run, model: 'payment.request', action_id: 775, view_type: 'tree', draft_payload: { view_orchestration: { source: 'smart_core.lowcode.business_config', views: { tree: { columns: completeLabelColumns(baselineContract, label) } } } } });
     check('validated ready', (await cs('validate', { change_set_token: token })).state === 'ready');
+    const preview = await cs('preview', { change_set_token: token, device: 'desktop' });
+    check('preview has no formal configuration writes', preview.preview?.formal_config_mutation_count === 0);
+    assert.equal(preview.preview?.creator_only, true);
+    assert.equal(preview.preview?.company_id, 8);
+    assert.equal(preview.preview?.role_key, '');
+    const draft = await contract({ preview_token: preview.preview.token, preview_role_key: '' });
+    await fs.writeFile(path.join(out, 'draft-contract.json'), JSON.stringify(draft, null, 2), { mode: 0o600 });
+    check('draft consumes label', listLabels(draft).some(([key, value]) => key === 'name' && value === label));
+    assert.deepEqual(labelOnlyProjection(draft, label), baselineProjection, 'draft changes capabilities beyond target label; publish prohibited');
+    check('draft preserves complete capabilities', true);
     report.publish_request_id = `${run}-publish`;
     report.publish_attempted = publishAttempted = true;
     await save();
     const published = await cs('publish', { change_set_token: token, request_id: report.publish_request_id });
     check('published content verified', published.state === 'published' && published.publish_result?.published_content_verified === true);
-    report.published_labels = listLabels(await contract());
+    const publishedContract = await contract();
+    assert.deepEqual(labelOnlyProjection(publishedContract, label), baselineProjection, 'published capabilities must match baseline');
+    report.published_labels = listLabels(publishedContract);
     check('effective contract consumes label', report.published_labels.some(([key, value]) => key === 'name' && value === label));
     report.changed_headers = await observe(label);
     assert.deepEqual(report.changed_headers.record_ids, beforeHeaders.record_ids, 'configuration must preserve ordered record identity');
@@ -195,7 +247,7 @@ export async function runStandardListLoop() {
     await page.screenshot({ path: path.join(out, 'published.png') });
     report.recovery = await recoverChangeSet(cs, token, `${run}-rollback`, publishAttempted);
     token = null;
-    assert.deepEqual(listLabels(await contract()), baseline, 'restored effective labels');
+    assert.deepEqual(labelOnlyProjection(await contract(), baselineLabel), baselineProjection, 'restored complete capabilities');
     assert.deepEqual(await observe(field[1]), beforeHeaders, 'restored visible headers, query and records');
     await page.screenshot({ path: path.join(out, 'restored.png') });
     check('restoration verified in contract and page', true);
@@ -209,7 +261,7 @@ export async function runStandardListLoop() {
     try {
       if (token) {
         report.recovery = await recoverChangeSet(cs, token, `${run}-rollback`, publishAttempted);
-        if (baseline) assert.deepEqual(listLabels(await contract()), baseline, 'emergency restoration');
+        if (baselineProjection) assert.deepEqual(labelOnlyProjection(await contract(), baselineLabel), baselineProjection, 'emergency complete capability restoration');
       }
     } catch (error) {
       report.recovery = 'failed';

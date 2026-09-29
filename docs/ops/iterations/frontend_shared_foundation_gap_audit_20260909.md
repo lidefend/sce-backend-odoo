@@ -1387,3 +1387,56 @@ B 线独立复核当前同一范围：未见新增保存授权/双引擎/集合�
 保留在此结果索引，禁止据本批结果宣称发布门禁全部通过。低代码完整列能力比较进入下一批；
 无本批数据库配置或业务写入，无推送/合并/目标部署。
 **批次验收完成（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。**
+
+## WEB-LC-01B：完整列能力保留（2026-09-29，进行中）
+
+基线 `bc630039` clean。P4 / 既有配置验收工具，修正临时测试配置输入和预发布检查；
+不更改 P0 full-list 替换语义，不把测试标签固化为 P1/P2 默认。复用同一受管库与 fixture，
+数据库角色/卷/过滤器沿用 TPL07；配置写入串行，仅拥有本批 token，可权威回读及 rollback/discard。
+先只读采集完整 normalized baseline，再新增预发布全能力比较与非零失败注入测试；
+未知语义差异必须在 publish 之前关闭，不以成功回滚证明发布安全。
+初始诊断阶段禁用 APPLY，随后改为完整预发布比较决定是否允许 publish；只读入口复用 TPL07 真实构建身份。
+L1 节点语法、L2 定向工具测试 → L4 只读基线；后续配置候选预览受上述检查阻挡。
+产品源码不变，不构建；不升级模块/fixture，不重复已过业务旅程。
+
+### LC01B 定向执行结果（保留真实阻断）
+
+P4 改为完整 profile 列全集+独立非零 sequence，只为 name 写 label；不写 visible，避免
+`false` 删除字段、`true` 强制展开。完整 table widgets 顺序必须与 profile 一致，拒绝空集、
+重复、隐藏/事实列不覆盖，不取并集掩盖权威冲突。比较完整 page/layout/status/action/data/runtime/search
+及 meta 的版本/authority/trim，只规范明确的请求ID/摘要和顶层 name table widget、descriptor、
+listProfile.column_labels.name 标签；嵌套同名字段不豁免。
+
+L1 `make ci.local.iteration` passed（`/tmp/lc01b-iteration.log`）；L2
+`make verify.business_config.standard_list_loop.unit` **13 tests passed**（`/tmp/lc01b-unit-final.log`），
+新增完整列/顺序/隐藏映射/权限与未知结构漂移/嵌套同标签拒绝测试。节点语法与 diff check passed。
+B 线复核预览 token 的 owner/company/database/action/menu/view/role 绑定及完整投影比较，没有发现
+阻断本次受管草稿验证的缺陷；采纳其建议收窄标签豁免范围。所有配置操作均串行。
+
+| 原始证据（既有 artifacts/frontend-web-fix-20260928 下） | 结果 |
+|---|---|
+| `web-lc-01-ba094467-4d94-483c-be03-ba1f37ecfab6/report.json` | readonly_passed / not_needed；3项，无配置写入；baseline-contract.json 留存完整基线 |
+| `web-lc-01-69db0ba3-0ab1-4046-8c5d-0da45a8f9379/report.json` | **failed / discarded**；到预览6项通过，完整能力比较拒绝后续 publish；没有 publish_attempted，完整有效契约回读与基线一致 |
+
+命令分别为 `make verify.business_config.standard_list_loop` 与
+`WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`，既有私有 env 注入口令。
+后者日志 `/tmp/lc01b-preview.log`；失败后没有原样重跑，未发布到有效配置，未修改业务记录。
+新证据绑定 `bc630039` 加本批 P4 dirty scope，前端仍为 TPL07-r2，未重建/重启后端。
+
+**实际阻断**：完整22列、13隐藏列已保留，但草稿令
+`preference_policy.allow_visibility/allow_order` 从 false→true，locked_columns 从22列→空；
+还注入 nativeWidget/cell_role/tone_by_value 与 column_policy，部分 selection 从tuple变object。
+其中显隐/顺序权限及锁定列变化具有行为意义，不能统一当作“正常投影”豁免。
+责任定位为 P0 `ui_contract_v2.py::_enforce_business_list_config_projection` 的强制 preference
+覆盖及业务列表投影对 schema 的补写；需独立收口完整配置与标签修改的语义边界，不能在 P4
+放宽断言或前端绕过。当前工具已具备发布前阻断与恢复保护，但 **LC01B 业务验收未完成**。
+既有 TPL07 页面类型批次结果不受影响，普通列表/表单默认接管保持；后续最早有效步骤为
+P0 定向语义修复/契约测试，禁止直接重复浏览器或宣称总接管完成。
+
+本批工具修正完成，配置完整能力闭环 blocked｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+B 线进一步定位：P1 `smart_construction_core/core_extension.py:1342` 见权威列表配置即提前返回，
+跳过正式 action-bound 原生 schema 及其 :1467 的锁策略；P0 `ui_contract_v2.py:3174` 与 :364
+又两次强制开启列偏好。`view_orchestrator.py:801` 不消费 tree.preference_policy/columns_schema，
+因此补 payload 不能解决。下一机制批次须保留 P0 全量列集选择语义，同时让 P1 标准 schema/锁策略
+先形成稳定基线，配置只覆盖显式职责；先后端定向测试，后受管预览，不再试错式发布。
