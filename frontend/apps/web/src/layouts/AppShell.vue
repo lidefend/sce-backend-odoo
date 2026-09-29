@@ -196,12 +196,6 @@
         <div class="topbar-main">
           <p v-if="!useMinimalTopbar" class="eyebrow">{{ config.appBrand.name }}</p>
           <div class="topbar-title-row">
-            <NavigationBreadcrumb
-              class="topbar-breadcrumb"
-              :items="displayBreadcrumb"
-              :minimal="useMinimalTopbar"
-              :compact="activeLayout.header === 'compact'"
-            />
             <h1 v-if="showTopbarHeadline" class="headline">{{ pageTitle }}</h1>
           </div>
           <p v-if="!useMinimalTopbar && topbarSubtitle" class="headline-subtitle">{{ topbarSubtitle }}</p>
@@ -337,6 +331,10 @@
       />
       <IntentConfirmationDialog ref="activityCloseConfirmationRef" />
 
+      <div v-if="displayBreadcrumb.length > 1" class="content-breadcrumb-row">
+        <NavigationBreadcrumb :items="displayBreadcrumb" />
+      </div>
+
       <StatusPanel
         v-if="initStatus === 'loading'"
         title="正在初始化角色首页..."
@@ -366,6 +364,7 @@
 
       <main v-else id="main-content" ref="mainContentRef" class="router-host" tabindex="-1">
         <slot />
+        <ProductShellContentFooter />
       </main>
 
       <DevContextPanel
@@ -376,7 +375,6 @@
         :message="hudMessage"
       />
       </ScContent>
-      <ProductShellContentFooter />
     </ScLayout>
   </ProductAppShell>
 </template>

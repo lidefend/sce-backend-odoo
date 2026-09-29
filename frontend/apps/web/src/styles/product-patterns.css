@@ -43,13 +43,15 @@
 [aria-busy="true"] { cursor: progress; }
 
 .router-host {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   width: 100%;
   min-height: 100%;
 }
 
 .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
-  min-height: 100%;
+  flex: 1 0 auto;
 }
 
 .sc-page-frame,

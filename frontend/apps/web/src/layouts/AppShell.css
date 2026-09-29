@@ -432,11 +432,12 @@
   padding: 0;
 }
 
-/* Official `*-footer-layout` treatment inside the content column: the vendored
- * `.t-layout__footer` band ships a 24px padding, while the official starter
- * overrides it to zero padding and offsets the caption by one 24px margin step.
- * Mirror those values through the SC token authority; the caption keeps the
- * official muted tone / 20px line box / centred alignment. */
+/* Official `*-footer-layout` treatment, applied to the footer as the last item of
+ * the shell's single vertical scroll owner: the vendored `.t-layout__footer` band
+ * ships a 24px padding, while the official starter overrides it to zero padding
+ * and offsets the caption by one 24px margin step. Mirror those values through the
+ * SC token authority; the caption keeps the official muted tone / 20px line box /
+ * centred alignment. */
 .shell-content-footer {
   flex: 0 0 auto;
   margin-bottom: var(--sc-space-lg);
@@ -444,6 +445,16 @@
   color: var(--sc-semantic-text-muted);
   line-height: 20px;
   text-align: center;
+}
+
+/* Content-area first row: the breadcrumb opens the content surface, directly
+ * above the routed page body, instead of sharing the topbar toolbar. It takes the
+ * same inline gutter as the page frames below it and stays out of the scrolling
+ * region, so a long page never pushes it under a sticky table header. */
+.content-breadcrumb-row {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: var(--sc-space-xs) var(--sc-page-padding) 0;
 }
 
 @media (min-width: 761px) {
@@ -547,12 +558,21 @@
 
 .router-host {
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
+}
+
+/* Children of the scroll owner keep their own size: a long page overflows into the
+ * scrollbar instead of being squeezed by flex shrinking. */
+.router-host > * {
+  flex-shrink: 0;
 }
 
 .shell:not(.shell--configuration) .router-host {
@@ -791,8 +811,7 @@
 }
 
 @media (max-width: 960px) {
-  .topbar--single-heading .eyebrow,
-  .topbar--single-heading .topbar-breadcrumb {
+  .topbar--single-heading .eyebrow {
     display: none;
   }
 
