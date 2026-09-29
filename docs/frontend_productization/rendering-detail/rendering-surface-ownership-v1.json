@@ -12,7 +12,8 @@
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue",
         "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue",
-        "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue"
+        "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
+        "frontend/apps/web/src/App.vue"
       ]
     },
     "p0-collection-state-control-completion-v1": {
@@ -36,7 +37,8 @@
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/pages/ModelListPage.vue",
         "frontend/apps/web/src/views/ActionView.vue",
-        "frontend/apps/web/src/components/GroupSummaryBar.vue"
+        "frontend/apps/web/src/components/GroupSummaryBar.vue",
+        "frontend/apps/web/src/components/product-list/ProductListSurface.vue"
       ]
     },
     "p0-navigation-hierarchy-composite-completion-v1": {
@@ -59,13 +61,13 @@
       "sources": [
         "frontend/apps/web/src/components/product-record/ProductFormErrorSummary.vue",
         "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
-      "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
-      "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
-      "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
-      "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
-      "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
-      "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
-      "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue",
         "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",

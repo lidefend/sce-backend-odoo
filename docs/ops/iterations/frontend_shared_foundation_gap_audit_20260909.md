@@ -1924,3 +1924,53 @@ P4版本响应严格校验及可见popup范围已采纳。之前无关AUTH/BOOT/
 零页面错误/未登记请求。就本批控件读写草稿范围批次验收完成，版本单选无数据的运行覆盖限制保留。
 未保存/发布/创建/回滚菜单，浏览器关闭丢弃未保存状态；主线未集成、目标环境未部署、整体用户
 交付未验收。后续仅P4/docs提交不改变产品/后端输入，复用本次证据。旧config04/config02产物保留。
+
+
+## WEB-CONFIG-05：菜单配置反馈组合接管（进行中）
+基线588b6881 clean。P0 frontend renderer共享ScInlineState增加官方success主题；菜单页错误、成功、
+加载及版本说明改用共享状态。旧状态边框/背景/加载样式退出。错误优先、提示来源、刷新方法不变。
+非P1行业规则/P2偏好/P3配置语义，无新接口、schema、store或后端。L0→L1→L2类型/状态/组件→
+单次构建/受管定向L4；L3无后端改动跳过、L5远端未进入。仅P4扩展原探针模拟读失败和会话提示，
+不称真实保存，不新增fixture，环境及后端14e9db7c不变。
+
+状态缺口同批修复：loadPanel已有保存提示时不清旧error，成功刷新仍可能显示失败。
+只在完整面板装载成功后清error，异常路径继续保留错误，不改变保存提示或丢弃草稿规则。
+P4受控拦截首次panel读取为失败，校验loading/错误优先/既有刷新恢复/成功提示；模拟会话提示
+在当前浏览器内生成，未调用真实保存。后续panel和版本查询仍真实读取。
+
+L2 rendering_detail_state发现5项失败，停止构建。归因3个旧绑定：ActionBlocks锁3按钮、MyWork
+锁ScPanel、WorkspaceHome锁div，均在已完成官方组合后过时。P4原inventory就地改为工作区
+精确导入+状态/忙碌绑定、两类动作各自循环/disabled/执行绑定，新增破坏绑定反向测试；
+不是降低按钮数或放宽未知组件。design_alignment打印的gap1来自负例，当前独立inventory为0。
+
+
+WEB-CONFIG-05门禁收敛：inventory完整复核另有App公共状态与ProductListSurface两处未登记，
+与三个旧绑定共同形成5个source gap。已在既有ownership登记，检查真实组件/条件/动作/slot；
+没有新建平行覆盖表。P4消费绑定规则增加精确composition导入路径和同节点attribute_groups，
+7处反向破坏测试覆盖拒绝错误导入、忙碌状态丢失、动作禁用丢失、重试/卡片职责丢失。
+- L1 `/tmp/web-config05-ready-iteration.log` passed；严格类型、state_dashboard先前通过
+  `/tmp/web-config05-tests.log`。rendering59测试/状态guard通过后旧生成清单stale，原始结果
+  `/tmp/web-config05-tests-final.log`；使用 `make refresh.frontend.rendering_detail.inventory` 后，
+  `make verify.frontend.rendering_detail_state.unit verify.frontend.primitive_adapter.unit` 全通过
+  `/tmp/web-config05-tests-ready.log`，含59测试、11输入事件及31 primitive guard测试、生成一致性。
+  负例中故意输出的design_alignment FAIL不代表当前清单失败，最终--check通过。
+- style/预览6例/lint passed `/tmp/web-config05-quality.log`，lint 0 errors/56 warnings。
+  后续P4规则不改变产品lint输入。B线复核无放宽门禁；工作区内部实现不变，沿用既有组合验证，
+  不把静态消费绑定59测试称运行页面验收。产品P0 dfc7a615，无后端变化。
+
+
+WEB-CONFIG-05最终结果：本批范围批次验收完成。
+- 单次构建21.11秒 `/tmp/web-config05-build.log`，受管up `/tmp/web-config05-up.log`；5180加载
+  config05-20260929，base dfc7a6152672556d198041ca78ed23e7c5cb466e加明确P4/docs dirty scope，
+  非冻结交付身份。entry index-9ng9XRoC.js，SHA256
+  6faee2e922755100ca36701931237e9be6a647b5dc59825888e61dbbce24f204。
+- `make verify.frontend.standard_menu_config.browser` 33/33 passed `/tmp/web-config05-browser.log`；
+  原始 `artifacts/frontend-web-fix-20260928/menu-config-1790676629976/report.json`，errors/blocked空。
+  首次panel读取及已保存文案明确模拟；loading aria-busy、error alert优先于success、既有刷新真实
+  读取恢复后error隐藏及success status保留、双宽反馈边界均通过。390错误红色/成功绿色截图复核。
+  后续文本/数字/选择草稿及弹层检查沿用同一旅程，未执行真实保存/创建/发布/回滚。
+- 版本真实读取仍0历史版本，单选运行交互保持uncovered；无fixture新增。浏览器关闭即丢弃模拟
+  会话提示和局部草稿。后端14e9db7c及addons输入未变，原profile/库/端口/volume复用。
+- 最终P4/docs提交不改已验产品与环境输入，继续复用本次页面证据及原始记录。旧config04-r2保留。
+  主线未集成、目标环境未部署、整体用户交付未验收；零静态状态gap不等于89入口业务完成。
+  菜单通用输入/反馈已接管，专用树/批量编排及设计器后续按必要职责收口，不再另造通用状态实现。

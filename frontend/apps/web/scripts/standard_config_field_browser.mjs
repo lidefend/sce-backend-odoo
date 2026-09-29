@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsInventoryRequest } from './bootstrap_inventory_policy.mjs';
 const root=process.cwd(), base='http://127.0.0.1:5180';
-const build=JSON.parse(await fs.readFile(path.resolve(root,'../sce-offrepo/artifacts/config04-20260929-r2/build-identity.json')));
+const build=JSON.parse(await fs.readFile(path.resolve(root,'../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
 assert.equal(createHash('sha256').update(Buffer.from(await fetch(`${base}${build.entry}`).then(r=>r.arrayBuffer()))).digest('hex'),build.entry_sha256);
 assert.equal(process.env.DB_NAME,'sc_frontend_acceptance');
 assert.ok(process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD);

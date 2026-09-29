@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "4363f086f9a87a1bf3adfc081c035878969fcc4ba0eaf5284a15565c3b65829e",
-  "generatorDigest": "02038c38a68bb1203e0994bc8a44dc253c2c589a6f9673521d880d109d093eb8",
-  "ownershipDigest": "b5cda2658fbd3ed4ebcb9188636a3107612fccf1a243a08441b9621dbaf2b75b",
-  "inputDigest": "b9b26290834bf62ba9ec786ac3c3b0a40e440698136ca9ce5b5bbd911bfdf13b",
+  "sourceIdentity": "c32e3407b17a0a5db068bb8e97609b7564df6a8cc5b7024ee0fba4d987abf821",
+  "generatorDigest": "e48ea991cc83b25fe7aacea3abc0b71ac0e988dae0e6ed2a86b48bcbb69fcfe5",
+  "ownershipDigest": "5bf15fb938b57d6d8a8cf5aebff9ee1e8da645be8e971072eaa03a5b6e56677d",
+  "inputDigest": "de8db71210a98015909453e90e7a49dc3a0dbc2373eadb7bada842cda8c558a5",
   "scope": "repository formal-product frontend Vue rendering-detail sources",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,17 +20,30 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 169,
+    "surfaceCount": 171,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 110,
+    "governed_composite": 112,
     "governed_primitive": 41,
     "p3_out_of_scope": 18
   },
   "nextBatch": null,
   "surfaces": [
+    {
+      "source": "frontend/apps/web/src/App.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-inline-full-state-completion-v1"
+    },
     {
       "source": "frontend/apps/web/src/components/DevContextPanel.vue",
       "formalProductLayer": "P0",
@@ -1178,6 +1191,18 @@
       "stateTypes": [
         "loading",
         "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-collection-state-control-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-list/ProductListSurface.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -2332,6 +2357,7 @@
       "status": "p3_out_of_scope",
       "reason": "low-code or administration product surface; handled by a separate P3 batch",
       "stateTypes": [
+        "error",
         "disabled",
         "focus"
       ],

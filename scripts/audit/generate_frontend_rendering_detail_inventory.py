@@ -70,6 +70,14 @@ KNOWN_GOVERNED_COMPOSITES = {
 
 BATCH_BINDINGS = {
     "p0-inline-full-state-completion-v1": {
+    "frontend/apps/web/src/App.vue": {
+        "scpanel": {"import": "ScPanel", "attribute_groups": [
+            {"v-if": "isPublicAuthPage && !session.token && session.publicPageContractStatus === 'error'", "role": "alert"},
+            {"v-else-if": "isPublicAuthPage && !session.token && session.publicPageContractStatus === 'loading'", "role": "status"},
+        ]},
+        "scbutton": {"import": "ScButton", "attrs": {"@click": "session.loadPublicPageContracts(true)"}},
+        "routerview": {"attrs": {"v-slot": "{ Component, route }"}},
+    },
     "frontend/apps/web/src/layouts/AppShell.vue": {"scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4}},
     "frontend/apps/web/src/components/GlobalMessagePanel.vue": {"scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
     "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": {"scerrorstate": {"minimum": 1}},
@@ -81,6 +89,7 @@ BATCH_BINDINGS = {
     "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue": {"scinlinestate": {"states": {"error"}, "attrs": {"state": "error"}, "minimum": 5}},
     },
     "p0-collection-state-control-completion-v1": {
+        "frontend/apps/web/src/components/product-list/ProductListSurface.vue": {"sccard": {"attrs": {"appearance": "table", ":bordered": "false", "data-list-card-container": "official", "data-semantic-component": "ProductListSurface"}}, "slot": {}},
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": {"scbutton": {"minimum": 1}, "sccheckbox": {"minimum": 1}, "scselect": {"minimum": 1}},
         "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
@@ -139,7 +148,10 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/ContractFormPage.vue": {"layoutshell": {"attrs": {"data-semantic-component": "ContractFormPage", ":data-state": "status"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue": {"nav": {"attrs": {"data-semantic-component": "CanonicalActionBar"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": {"section": {"attrs": {"data-semantic-component": "CanonicalFormNodeRenderer"}}},
-        "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue": {"scbutton": {"import": "ScButton", "minimum": 3}},
+        "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue": {"scbutton": {"import": "ScButton", "attribute_groups": [
+            {"v-for": "item in workflowTransitions", ":disabled": "busy || !item.action", "@click": "item.action && $emit('run-action', item.action)"},
+            {"v-for": "action in bodyActions", ":disabled": "busy || !action.enabled", "@click": "$emit('run-action', action)"},
+        ]}},
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue": {"section": {"attrs": {"data-semantic-component": "ContractFormNativeCanvas", ":data-state": "mode"}}},
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue": {"pageheadertemplate": {"attrs": {"data-semantic-component": "ContractFormProductHeader"}}},
         "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue": {"nav": {"attrs": {"data-semantic-component": "FormSectionNavigation"}}, "scbutton": {"attrs": {"appearance": "section-tab"}, "minimum": 1}},
@@ -152,12 +164,12 @@ BATCH_BINDINGS = {
     "p0-shared-utility-scene-completion-v1": {
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
         "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
-        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scpanel": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"productworkspacesurface": {"import": "ProductWorkspaceSurface", "import_path": "../product-page-patterns/ProductWorkspaceSurface.vue", "attrs": {"data-semantic-component": "MyWorkApprovalWorkspace", ":aria-busy": "busy || undefined", ":data-state": "busy ? 'loading' : 'ready'"}}},
         "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
         "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue": {"header": {"attrs": {"data-semantic-component": "ProductPageHeader"}}},
         "frontend/apps/web/src/components/product-shell/ProductIdentity.vue": {"div": {"attrs": {"data-semantic-component": "ProductIdentity"}}},
-        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue": {"div": {"attrs": {"data-semantic-component": "WorkspaceHome", ":aria-busy": "loading || undefined"}}, "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue": {"productworkspacesurface": {"import": "ProductWorkspaceSurface", "import_path": "../product-page-patterns/ProductWorkspaceSurface.vue", "attrs": {"data-semantic-component": "WorkspaceHome", ":aria-busy": "loading || undefined", ":data-state": "loading ? 'loading' : error ? 'error' : 'ready'"}}, "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
         "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue": {"section": {"attrs": {"data-semantic-component": "SceneBlocksRenderer"}}},
         "frontend/apps/web/src/views/AccessDeniedView.vue": {"scpage": {"attrs": {"data-semantic-component": "AccessDeniedView", "data-state": "error"}}},
         "frontend/apps/web/src/views/AccountActivationView.vue": {"main": {"attrs": {"data-semantic-component": "AccountActivationView"}}},
@@ -276,7 +288,12 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
     failures: list[str] = []
     for tag, rule in requirements.items():
         expected_import = rule.get("import") or COMPONENT_IMPORTS.get(tag)
-        if expected_import and expected_import not in imports:
+        import_path = rule.get("import_path")
+        if import_path:
+            pattern = rf"import\s+{re.escape(expected_import)}\s+from\s+['\"]{re.escape(import_path)}['\"]"
+            if not re.search(pattern, script):
+                failures.append(f"missing composition import {expected_import} from {import_path}")
+        elif expected_import and expected_import not in imports:
             failures.append(f"missing design-system import {expected_import}")
         nodes = [attrs for node_tag, attrs in parser.elements if node_tag == tag]
         if len(nodes) < rule.get("minimum", 1):
@@ -284,6 +301,9 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
         for name, value in rule.get("attrs", {}).items():
             if not any(attrs.get(name) == value for attrs in nodes):
                 failures.append(f"{expected_import or tag} missing template attribute {name}={value}")
+        for group in rule.get("attribute_groups", []):
+            if not any(all(attrs.get(name) == value for name, value in group.items()) for attrs in nodes):
+                failures.append(f"{expected_import or tag} missing bound action {group}")
         states = set()
         for attrs in nodes:
             if "state" in attrs:

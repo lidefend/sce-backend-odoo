@@ -130,13 +130,16 @@
   "changedSourceProjection": [
     {
       "category": "other",
-      "digest": "e0cf808395b023745da51847c50f8a5a3027e5a692d3522b0d0b7116bc97aa31",
+      "digest": "49426432b5c8491e0ced328d559143ff5de26ffeb2fd87608b6eb08abef8583f",
       "nativeStyleSelectors": [],
       "path": "App.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": true,
       "referenceScComponents": [],
-      "scComponents": []
+      "scComponents": [
+        "ScButton",
+        "ScPanel"
+      ]
     },
     {
       "category": "other",
@@ -370,7 +373,7 @@
     },
     {
       "category": "other",
-      "digest": "7617b9eeaccc10be68eef9a2351687b4c4bd6804240802a2af11b804c0b353ae",
+      "digest": "e221a3f6958b2aa1cb70bfc4f2035b60d4bf14564da7c6b2fd6374a05b744ed0",
       "nativeStyleSelectors": [],
       "path": "components/business/MyWorkApprovalWorkspace.vue",
       "referenceNativeStyleSelectors": [
@@ -402,7 +405,6 @@
         "ScField",
         "ScInput",
         "ScMoney",
-        "ScPanel",
         "ScSection",
         "ScSelect",
         "ScStatusBadge",
@@ -729,7 +731,7 @@
     },
     {
       "category": "states",
-      "digest": "e45929463201f9fcc1bb3b9a9417f75318cd9d0ce2e05d60dbb630dcefb34528",
+      "digest": "9ecfd1826134ee3ac8c528a0ad2653d6a00780c258995ca20cf5ecd6de86b015",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInlineState.vue",
       "referenceNativeStyleSelectors": [],
@@ -739,7 +741,7 @@
     },
     {
       "category": "other",
-      "digest": "2254568c44242b4a9bd7916a65ab012ac1ffc90683dd14ae75e8f2f981408e92",
+      "digest": "c1ac7c6ee07ef02445a349b1881c977adc6ff38b369fb2c751e60de36c9942d9",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScInput.vue",
       "referenceNativeStyleSelectors": [],
@@ -889,7 +891,7 @@
     },
     {
       "category": "relations-x2many",
-      "digest": "0abda989a5c91be08192bc6c4959cf92835ad6e34ce7366026f7c268c53248e7",
+      "digest": "834e54e4c37e3fc9bb5ef37087adf0056f6c6ba898d70f5aa3690e44b4a2b069",
       "nativeStyleSelectors": [],
       "path": "components/design-system/ScRelationField.vue",
       "referenceNativeStyleSelectors": [],
@@ -1450,7 +1452,7 @@
     },
     {
       "category": "collection",
-      "digest": "a6d2c929e5375c8ecbf530be2eb6063d6b520ee2934d8ec49b0210782cfdfc4d",
+      "digest": "4acda1a48fcecd25decfeb5d6222ae80a061fa924f4d9e5469b00f3eadf03964",
       "nativeStyleSelectors": [],
       "path": "components/product-list/ProductListSurface.vue",
       "referenceNativeStyleSelectors": [],
@@ -1501,6 +1503,18 @@
       "referencePresent": false,
       "referenceScComponents": [],
       "scComponents": []
+    },
+    {
+      "category": "other",
+      "digest": "e2ca5d62aa25b05d73e008dd08ea51bd8a3e76c78aef86e59141240dff87d8de",
+      "nativeStyleSelectors": [],
+      "path": "components/product-page-patterns/ProductWorkspaceSurface.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScCard"
+      ]
     },
     {
       "category": "form-fields",
@@ -1752,7 +1766,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1827e497a9c8317710be2bac652e204ccb54e89de6ba7b7cfcbc9fd54cd12538",
+      "digest": "544a967a88d6ef8dd0169c79c14f8d355d7ab4c1c7c721b15225b111fc45e21a",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/ProfessionalMany2oneFieldControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -1785,7 +1799,7 @@
     },
     {
       "category": "dashboard",
-      "digest": "8e1bf1fa967017b2ac45413f225491e6504a456eced9f32c0865dc00e7a83432",
+      "digest": "696b003d2079119d20b99ebb7f533cc2a55808cf1394846ab9b0aab15a89336e",
       "nativeStyleSelectors": [],
       "path": "components/role-home/WorkspaceHome.vue",
       "referenceNativeStyleSelectors": [
@@ -1826,7 +1840,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "57906b200218fef7c94096229fae41eb85c509070f0d629fd431ec871f549886",
+      "digest": "9ed158da9a0c11f759e47600cf167552ab340ca4ebfb8b8edd927f681815d027",
       "nativeStyleSelectors": [],
       "path": "components/template/FormSection.vue",
       "referenceNativeStyleSelectors": [
@@ -1874,7 +1888,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "40ccf122618918750248827cb927f3cf2af8c94424e2bb619f66a3be32b7d5b7",
+      "digest": "a34bf35c19e8ea5e21a3ea1905548c6226822e388ada854313a5e9a06a6b10ed",
       "nativeStyleSelectors": [],
       "path": "components/template/NativeFormTreeRenderer.vue",
       "referenceNativeStyleSelectors": [],
@@ -2060,7 +2074,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "7304ed643832e379d1a6e476698659a71819e4e13b244212b657cc254c8ed6b0",
+      "digest": "6554e939df82fdbc96270ad029c99ea92a6ebf94ff389c68fadec02ffcc739ad",
       "nativeStyleSelectors": [],
       "path": "pages/ContractFormPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2084,7 +2098,7 @@
     },
     {
       "category": "collection",
-      "digest": "f0609ea27eba2880e8b0f179c97c7e2643a5584c8a7a68f42049265624c3cd05",
+      "digest": "523c8fcced6b45b65be0890efa72581a0900fc3d5b6977f45d5358080299ee89",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2174,7 +2188,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "1c51f9362d455e336d38d2acb8f12611cec05eec7c3d1036e6b2e9ab78a68576",
+      "digest": "9184c66209ce6f00b60c9ca412824d1a37caf47667f8202b6e23fc38bd201131",
       "nativeStyleSelectors": [],
       "path": "pages/contractForm/ContractFormActionBlocks.vue",
       "referenceNativeStyleSelectors": [],
@@ -2480,7 +2494,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "e4ac80ca458938a95bd93cf7ef690a7d205454528634c8e64d09f624435e8fd9",
+      "digest": "491032f2b2ca7e0b7ae3568a4b7152c85985b7695524ecac252be00bc5656cea",
       "nativeStyleSelectors": [],
       "path": "views/AccountActivationView.vue",
       "referenceNativeStyleSelectors": [
@@ -2492,13 +2506,15 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScForm",
+        "ScFormItem",
         "ScInput",
         "ScPanel"
       ]
     },
     {
       "category": "collection",
-      "digest": "3df018dcfc975f876edc11c64bf0af4dd31362ba3dbaf55f0cb927ff0aa89854",
+      "digest": "8759efd1f652319abee91a6b81bcb5c71f4af053db037eab8c392ac3b131150c",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2548,7 +2564,7 @@
     },
     {
       "category": "other",
-      "digest": "aac6b8907975d77c57d3adacea37314791d003978c54139867632f930543a26f",
+      "digest": "d1e3ed4f23809566df61a3545af84e9f7e4f9dc68cab142bd50777b5a92f4c9d",
       "nativeStyleSelectors": [],
       "path": "views/BusinessConfigSurfaceView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2572,7 +2588,7 @@
     },
     {
       "category": "public-entry",
-      "digest": "158945aeeebc94e4890715746d121693c96682dd3663e0034a42ee499d964f11",
+      "digest": "8b0e08d31377f707fd525b155617eec2c64bf3146a97888561a01ea100abac2a",
       "nativeStyleSelectors": [],
       "path": "views/LoginView.vue",
       "referenceNativeStyleSelectors": [
@@ -2584,10 +2600,22 @@
       "scComponents": [
         "ScButton",
         "ScCard",
+        "ScForm",
+        "ScFormItem",
         "ScIcon",
         "ScInlineState",
         "ScInput"
       ]
+    },
+    {
+      "category": "other",
+      "digest": "88a23af2df430e5859dd5fce06a18dbeb15aff4ac1413eea91976aab8dc9ed92",
+      "nativeStyleSelectors": [],
+      "path": "views/MenuConfigView.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": true,
+      "referenceScComponents": [],
+      "scComponents": []
     },
     {
       "category": "other",
@@ -2917,7 +2945,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "b50c899a641aa3fabaf33b06131d58eac2355b43c94067537b09e9379d9e3811",
+      "digest": "986a137f088e6cf4209d939528c2c29323b311291421c214c36c42115cb9e391",
       "nativeStyleSelectors": [],
       "path": "views/businessConfigSurface/LowCodeFieldChipEditor.vue",
       "referenceNativeStyleSelectors": [],
@@ -2927,13 +2955,15 @@
       ],
       "scComponents": [
         "ScButton",
+        "ScForm",
+        "ScFormItem",
         "ScInput",
         "ScSelect"
       ]
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "109bf83ef81362bf97c2a1fff6a3d7bafbb5ed3fdc31edeaf5ae51c1a52c94ca",
+  "currentInputDigest": "4e6dec30068e18d7783af202c7607a4cbec5e5b722145b154da7f3bc47118849",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3165,9 +3195,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 205,
+    "changedSourceCount": 207,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 224,
+    "currentSourceCount": 225,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,

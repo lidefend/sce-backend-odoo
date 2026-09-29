@@ -531,3 +531,27 @@ selected/bulk checkbox synchronization, role toggles, default-parent selection a
 both viewport popup bounds. Version reads succeed without bootstrap; the existing
 acceptance data has no historical versions, so live version-radio interaction is
 explicitly unverified. No persistent configuration write or fixture creation occurs.
+
+
+### Menu configuration feedback (WEB-CONFIG-05)
+
+`ScInlineState` owns menu error, success notice, loading and version-explanation
+presentation, using official Alert/Loading drivers. Its additive `success` state
+uses the official success theme. Error retains priority over the existing saved
+notice; loading remains independent. A fully successful panel load clears a stale
+read error without discarding the saved notice. Failures continue to show the
+original handler error and the existing refresh action remains the recovery path.
+Private status/error/success, loading and version-empty styles exit this scope.
+
+The rendering inventory now verifies adopted workspace delegation and actual
+workflow/body action bindings instead of requiring retired tags/button counts.
+Public bootstrap states and the official list card are registered in the existing
+ownership source with explicit bindings and negative tests. This static coverage
+is separate from browser acceptance and from the formal 89-entry business scope.
+
+
+CONFIG05 passes 33 scoped menu checks, including a simulated read failure with a
+simulated saved notice followed by a real panel refresh. Loading/busy, alert/status
+semantics, error priority, recovery and both viewport feedback bounds pass. This
+is feedback/recovery evidence, not a real save. The no-history version-radio
+coverage limit remains explicit; no fixture or configuration write is introduced.

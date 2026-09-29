@@ -40,7 +40,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-collection-state-control-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 19)
+        self.assertEqual(len(sources), 20)
         for source in sources:
             self.assertIn(source, self.by_source)
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
@@ -78,6 +78,23 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertIn(source, self.by_source)
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_official_workspace_and_action_bindings_fail_closed(self):
+        cases = [
+            ('App.vue', '@click="session.loadPublicPageContracts(true)"', '@click="noop"'),
+            ('components/product-list/ProductListSurface.vue', 'appearance="table"', 'appearance="section"'),
+            ('components/role-home/WorkspaceHome.vue', '../product-page-patterns/ProductWorkspaceSurface.vue', '../Fake.vue'),
+            ('components/role-home/WorkspaceHome.vue', ':aria-busy="loading || undefined"', ':aria-busy="false"'),
+            ('components/business/MyWorkApprovalWorkspace.vue', ':aria-busy="busy || undefined"', ':aria-busy="false"'),
+            ('pages/contractForm/ContractFormActionBlocks.vue', ':disabled="busy || !item.action"', ':disabled="false"'),
+            ('pages/contractForm/ContractFormActionBlocks.vue', ':disabled="busy || !action.enabled"', ':disabled="false"'),
+        ]
+        for suffix, before, after in cases:
+            source = 'frontend/apps/web/src/' + suffix
+            text = (ROOT / source).read_text(encoding='utf-8')
+            with self.subTest(source=source, binding=before):
+                self.assertIn(before, text)
+                self.assertEqual(INVENTORY.classify(source, text.replace(before, after))[0], 'gap')
 
     def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
         self.assertEqual(self.report["summary"]["gap"], 0)
