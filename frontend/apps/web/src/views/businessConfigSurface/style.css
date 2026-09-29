@@ -1770,14 +1770,5 @@ h1 {
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-radius-md);
-  overflow-x: auto;
+  min-width: 0;
 }
-.configuration-overview table { width: 100%; border-collapse: collapse; }
-.configuration-overview th, .configuration-overview td {
-  padding: var(--sc-product-space-2);
-  text-align: right;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-.configuration-overview th:first-child { text-align: left; }
-.configuration-overview thead { color: var(--sc-app-text-secondary); }

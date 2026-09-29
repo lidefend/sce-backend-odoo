@@ -24,6 +24,16 @@ DELIVERY_CAPABILITIES = (
     ("capability_boundary_and_coverage", "覆盖检查", "coverage"),
 )
 
+# Declared source categories for the configuration snapshot summary. The keys
+# are the authoritative projection categories; the values are the display labels
+# carried by the contract so views never have to invent their own mapping.
+CONFIG_SOURCE_CATEGORIES = (
+    ("product_default", "产品默认"),
+    ("enterprise_configuration", "企业配置（含共享偏好投影）"),
+    ("personal_preference", "个人偏好（本人）"),
+    ("unclassified", "来源待确认"),
+)
+
 
 def _to_int(value: Any) -> int:
     try:
@@ -255,7 +265,7 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
         rows = self._visible_configuration_rows()
         status_counts, view_type_counts, source_categories = {}, {}, {}
         source_counts = {key: dict(total=0, draft=0, published=0, disabled=0, saved=0)
-                         for key in ("product_default", "enterprise_configuration", "personal_preference", "unclassified")}
+                         for key, _label in CONFIG_SOURCE_CATEGORIES}
         role_scope_count = action_scope_count = 0
         for rec in rows:
             status = "disabled" if not getattr(rec, "active", True) else (_to_text(rec.status) or "unknown")
@@ -285,6 +295,7 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
             "role_scope_count": role_scope_count, "action_scope_count": action_scope_count,
             "overview_scope": "当前公司及共享配置，按当前账号读取权限；个人偏好仅本人。记录状态不代表当前页面实际应用。",
             "source_counts": source_counts, "source_categories": source_categories,
+            "source_category_labels": dict(CONFIG_SOURCE_CATEGORIES),
         }
 
     def _snapshot_contract_row(self, rec) -> dict:

@@ -7,6 +7,7 @@ import BusinessConfigAdvancedAuditPanels from './businessConfigSurface/BusinessC
 import BusinessConfigApprovalPanel from './businessConfigSurface/BusinessConfigApprovalPanel.vue';
 import BusinessConfigContextBar from './businessConfigSurface/BusinessConfigContextBar.vue';
 import BusinessConfigChangeSetPanel from './businessConfigSurface/BusinessConfigChangeSetPanel.vue';
+import BusinessConfigOverviewTable from './businessConfigSurface/BusinessConfigOverviewTable.vue';
 import BusinessConfigCoverageWorkspace from './businessConfigSurface/BusinessConfigCoverageWorkspace.vue';
 import BusinessConfigEditorPanels from './businessConfigSurface/BusinessConfigEditorPanels.vue';
 import BusinessConfigImpactDialog from './businessConfigSurface/BusinessConfigImpactDialog.vue';

@@ -408,6 +408,15 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertEqual(rows.context, {"active_test": False})
         self.assertEqual(result["source_counts"]["product_default"]["published"], 1)
         self.assertEqual(result["source_counts"]["unclassified"]["disabled"], 1)
+        # The contract carries the declared display labels so views consume them
+        # instead of re-deriving configuration source categories.
+        self.assertEqual(result["source_category_labels"], {
+            "product_default": "产品默认",
+            "enterprise_configuration": "企业配置（含共享偏好投影）",
+            "personal_preference": "个人偏好（本人）",
+            "unclassified": "来源待确认",
+        })
+        self.assertEqual(set(result["source_counts"]), set(result["source_category_labels"]))
 
     def test_personal_preferences_use_own_principal_and_saved_not_published(self):
         class OwnPreferences:

@@ -348,6 +348,7 @@ export interface BusinessConfigSnapshotSummaryPayload {
   overview_scope?: string;
   source_categories?: Record<string, string>;
   source_counts?: Record<string, { total: number; draft: number; published: number; disabled: number; saved: number }>;
+  source_category_labels?: Record<string, string>;
 }
 
 export interface BusinessConfigSnapshotComparePayload {
