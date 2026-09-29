@@ -996,3 +996,64 @@ TPL-03 探针：`artifacts/frontend-web-fix-20260928/tpl03fix-20260929/`（stamp
 **边界（不得夸大）**：历史 `cc0eee7b` 产物缺口与异步身份漏洞的既有阻断状态**均未因此消项**；
 四项 `style_system.guard` 欠账仍为真实 FAIL、独立记账；不重跑 89 入口/全站发布门禁；
 不修改业务矩阵；不推送、不合并、不部署；**未**进入 TPL-05。
+
+### BOUNDARY-01：契约边界硬化与验收缺口闭合（2026-09-29）
+
+本节**取代**上文"FE-TPL-03 收口后的两个真实缺陷修复"中对"快捷筛选"修复方式的描述：
+当时先落地的 `officialFormComposition` 开关（判断"是否官方组合"再关掉预设块）**只是补丁**——它把
+"表单正文不该承载列表查询面"这条业务职责边界交给了一个渲染承载标志。现改为按职责边界直接删除该职责，
+并补上代码依赖与门禁级执行。原有提交与复验记录保留，不倒填、不改写。
+
+**权威运行标识（本批权威证据）**
+
+- 候选源码：本轮提交（见下 `fix(web)` 三笔）；`artifacts/` 为 gitignored，证据不入库。
+- 产物：`sce-offrepo/artifacts/fe-tpl03boundary-20260929/dist`，`index.html` sha256
+  `092486e77ac4535a050def56094d03ce5683d82d29eb303e12ec7acf3e389a16`，入口 `/assets/index-BMkF2JIf.js`。
+- 服务：`127.0.0.1:5180`（pid 796716，`scripts/release/release_static_server.mjs`，`STATIC_ROOT` 指向上述产物，
+  `/api/`、`/web/` 代理 `:18082`）。停旧进程前已核对 PID、命令行与 `STATIC_ROOT`；旧
+  `fe-tpl03fix-20260929/dist`（`index.html` sha256 `4fd1050f…b5612`）与 `fe-tpl04e/tpl04b/tpl04c` 产物**均未覆盖**。
+- 运行记录：`artifacts/frontend-web-fix-20260928/tpl03boundary-20260929/`（stamp `20260929052308`，
+  **19 PASS / 1 GAP / 0 deviation / consoleErrors []**）；同目录 `run1-prenavrule/`（stamp `20260929051816`）
+  保留为导航标签修复前的同候选运行，不倒填。
+- 库与角色：`sc_frontend_acceptance`，`fixture_role_contract_operator`。本轮**未执行任何保存**，
+  记录总数保持 3（`GC2600010/11`、记录 18 已删除），无数据创建或删除，无需恢复动作。
+
+**根本原因（产品）**
+
+| 缺陷 | 根本原因 | 修复 |
+|---|---|---|
+| "快捷筛选"（列表查询预设）出现在表单正文 | 表单页自行消费记录列表搜索契约并渲染查询块；提前落地的修复只把它与"是否官方组合"绑定 | 直接删除该职责：`ContractFormPage.vue` 不再 import/消费列表搜索契约，`ContractFormActionBlocks.vue` 删除查询块与相关 props，`useFormNavigationActionsRuntime`/`contractFormMetaLine` 同步清理 |
+| 列表搜索框中文（IME）丢失 | `ScInput` 未按共享适配器约定透传组合事件，调用方又读不到 TDesign 的取值路径 | `ScInput` 复用共享 `resolvePrimitiveNativeEvent`；`primitive_adapter_contract_test.ts` 扩到 6 个事件用例并断言真实 `CompositionEvent` 取值 |
+| 记录表单分区标题全部塌缩为占位名 | `NativeFormTreeRenderer.semanticSectionTitle()` 用**前端硬编码的语义角色→中文业务标签表**兜底；且"空角色 == 空继承角色"的抑制条件把有契约标题的首个分区也一起吃掉 | 分区标题改为契约解析：统一走 `resolveNativeSectionHeading()`（原生锚点 → 契约 `string/label` → 契约 `semanticTitle`），删除该硬编码表；`nativeSectionNavigation.SECTION_LABELS` 同源治理 |
+| 列表/详情承接方式变化后边界失效 | 判断入口是"是否原生树"而不是"是否业务职责" | `formActionPlaceholderGate.ts` 引入 `FormActionPlaceholderBodyKind` 穷尽表（`Record<Union,…>`：新增承载种类不补分类即编译失败），只有结构自有正文才可关闭动作入口 |
+
+**验收体系为什么没有发现（缺口分析与闭合）**
+
+| 缺口 | 为什么漏掉 | 闭合方式 |
+|---|---|---|
+| 只有正向断言 | 探针只检查"该有的存在"（标签、值、条数、请求），从不检查"不该有的不存在"，泄漏的列表查询面因此不可见 | 新增**否定断言** `F1-form-body-hosts-no-record-list-query-presets`（`[data-form-body-action-block="search-filters"]` 计数为 0 且正文无"快捷筛选"） |
+| 只到字段层，没到分区层 | 只断言字段标签与取值，分区层级从未被观察；渲染器内的兜底在生产里生效而单测喂的是合成节点，一直绿 | 新增 `F2-form-section-heads-are-contract-authored-titles`：每个渲染出的标题必须等于其容器自己的契约标题、不得是 `默认分组 N` 包装名、不得画在 layout 包装上；并由 `resolveNativeSectionHeading` 的纯函数用例覆盖（`role alone → 无标题`） |
+| 用 `fill()` 测输入 | Playwright `fill()` 直接赋值、**不触发 `compositionend`**，IME 缺陷在任何既有探针下都复现不了 | 新增 `L2b` 走真实 CDP `Input.imeSetComposition` + `Input.insertText`，断言上屏值 `合同` 进入搜索请求 |
+| 守卫把违规机制钉成标准 | `render_semantic_ready_guard` 原先把 `showSearchFilters` 计算属性列为 **required** token——等于要求违规存在；旧探针又依赖 `.template-form-section-grid > .field-control-row` 这类易变 DOM | 改为 forbidden-token 块（`resolveContractV2SearchContract`/`showSearchFilters`/`快捷筛选`）并新增 `form_body_excludes_list_query_contract` 摘要；新增入侵守卫规则阻止渲染层/导航层发明业务标签（并在修复前源码上验证守卫会真的失败，确保非空断言） |
+| 采纳范围按 model 配置，影响面按入口数被低估 | 采纳策略命中整个模型，只验一个入口会低估影响面 | 记录影响面口径：边界按**职责**而非入口数量执行；共享实现以代表模型验证，语义有差异才补验 |
+
+**执行方式**：`make verify.frontend.native_form_structure_responsibility.unit` → `PASS cases=11`；
+`make verify.frontend.native_section_navigation.unit` → PASS；`make verify.frontend.primitive_adapter.unit` → PASS components=46；
+`make verify.frontend.canonical_form_presenter.unit` → PASS cases=177；`make verify.frontend.standard_form_composition.unit` → PASS cases=114；
+`make verify.frontend.form_header_action_primitives.unit` → PASS；`make verify.frontend.typecheck.strict` → exit 0；
+`frontend_contract_consumer_intrusion_guard.py` → PASS files_scanned=8。
+
+**已登记未处理（明确不在本批）**
+
+- `render_semantic_ready_guard.py` 仍有一条**既有、与本批无关**的失败：
+  `contract_governance missing token: data["render_profile"] = _resolve_render_profile(data)`。
+  已核实该文件（`addons/smart_core/utils/contract_governance.py`）本轮未改动，且该字面量在 HEAD 上已不存在——
+  属于守卫期望滞后于后端重构，独立记账，不并入本批。
+- `verify.frontend.no_new_any_guard`、`make verify.list.surface.clean` 两项仍为既有失败，需在干净 HEAD 上复核后
+  另批处理，不归属本次改动。
+- 四项 `style_system.guard` 欠账与异步身份漏洞的既有阻断状态**均未消项**。
+- 仍未治理的旧推断（登记，不扩面）：`X2ManyRelationRenderer` 等处的 `Record<string,string>` 业务字典、
+  `formConfigHelpers` 的原生标签缓存。按"触及范围逐步清理"，新代码不得新增。
+
+**边界（不得夸大）**：本批是**契约边界硬化 + 验收缺口闭合**，不等于 89 入口矩阵或所有模型已验收；
+不重跑 89 入口与全站发布门禁；不修改业务矩阵状态；不推送、不合并、不部署；**未**进入 TPL-05。

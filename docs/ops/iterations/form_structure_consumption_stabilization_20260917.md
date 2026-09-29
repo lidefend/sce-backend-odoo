@@ -7263,3 +7263,21 @@ L5 exact-head `make ci.local.quick` 与两轮独立只读复核在本轮收口�
   **写入 `mergedPr.independentReview`**，并把 `fix` 措辞改为指向该字段；③**S4-1（A）**：`recordCorrections.none` 原称
   「无涉及残限登记的 S3」，而本轮 S3-1 正是关于残限**摘要计数**——现改为「无任何发现要求改动残限登记内容、三条条目
   未变，实际发现是两处摘要计数有误」。该第二修订再次产生新 HEAD，L1／L2／L5 与两轮独立复核按新冻结候选重跑与重绑。
+
+## 追加：表单正文与分区标题的职责边界（2026-09-29，强制定位）
+
+上表"查询筛选只存在于列表页"这条边界目前有了代码级与门禁级执行方式，不再只是开发约定。
+
+- **表单正文不承载列表查询面。** 记录表单不得消费记录列表的搜索契约（`resolveContractV2SearchContract`），
+  也不得渲染列表查询预设块（"快捷筛选"）。列表查询由列表页的官方列表组合表达。
+  强制点：`scripts/verify/frontend_contract_consumer_intrusion_guard.py` 的两条规则
+  （`form_body_consumes_list_search_contract`、`form_body_renders_list_query_block`）与
+  `scripts/verify/render_semantic_ready_guard.py` 的 forbidden-token 块。
+  注意：该 guard 原先把 `showSearchFilters` 这一**违规机制本身**列为 required token，等于要求违规存在；
+  现已改为 forbidden。守卫必须断言边界，不能把当时实现钉成标准。
+- **分区标题与分区导航标签都是契约内容。** 表单分区标题只能来自原生视图 `string`/`label` 或表单结构契约
+  `semanticTitle`，统一经 `resolveNativeSectionHeading()`；分区导航标签同样只取契约标题
+  （`nativeSectionNavigation.contractSectionLabel()`）。缺标题就不渲染标题、不给导航项，
+  让缺口显现，而不是由渲染层按语义角色编一个中文业务名（该写法会把多个分区塌缩成同一个"基本资料"）。
+- **承载方式变化不能自动关闭上述边界。** 原生树、结构权威、官方组合三种承载都必须遵守；
+  只按"是否原生树"判断会把已采纳模型漏在外面。
