@@ -3033,10 +3033,26 @@ function onToolbarSearchCompositionStart(): void {
   toolbarSearchComposing.value = true;
 }
 
-function onToolbarSearchCompositionEnd(event: CompositionEvent): void {
+/**
+ * Resolves the committed composition text from a DOM `CompositionEvent` or a `{ e }`
+ * context wrapper. An unresolvable shape returns `null` so the draft is kept: a bad
+ * event must never clear text the user just committed.
+ */
+function toolbarCompositionCommittedValue(event: unknown): string | null {
+  if (typeof event === 'string') return event;
+  const record = (event ?? null) as { target?: unknown; e?: { target?: unknown } } | null;
+  for (const candidate of [record?.target, record?.e?.target]) {
+    if (candidate && typeof candidate === 'object' && typeof (candidate as HTMLInputElement).value === 'string') {
+      return (candidate as HTMLInputElement).value;
+    }
+  }
+  return null;
+}
+
+function onToolbarSearchCompositionEnd(event: unknown): void {
   toolbarSearchComposing.value = false;
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
-  toolbarSearchDraft.value = value;
+  const value = toolbarCompositionCommittedValue(event);
+  if (value !== null) toolbarSearchDraft.value = value;
 }
 
 function submitToolbarSearch(): void {

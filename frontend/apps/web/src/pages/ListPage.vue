@@ -1265,9 +1265,27 @@ function onPlainSearchInput(value: string) {
   plainSearchDraft.value = String(value || '');
 }
 
-function onPlainSearchCompositionEnd(event: CompositionEvent) {
+/**
+ * Reads the committed text of a composition from the shapes a carrier may hand over:
+ * a DOM `CompositionEvent` (`event.target.value`), a `{ e }` context wrapper, or the
+ * committed value itself. An unresolvable shape returns `null` so the caller keeps the
+ * draft instead of clearing it — a bad event must never wipe what the user just typed.
+ */
+function compositionCommittedValue(event: unknown): string | null {
+  if (typeof event === 'string') return event;
+  const record = (event ?? null) as { target?: unknown; e?: { target?: unknown } } | null;
+  for (const candidate of [record?.target, record?.e?.target]) {
+    if (candidate && typeof candidate === 'object' && typeof (candidate as HTMLInputElement).value === 'string') {
+      return (candidate as HTMLInputElement).value;
+    }
+  }
+  return null;
+}
+
+function onPlainSearchCompositionEnd(event: unknown) {
   plainSearchComposing.value = false;
-  plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
+  const committed = compositionCommittedValue(event);
+  if (committed !== null) plainSearchDraft.value = committed;
 }
 
 function submitPlainSearch() {

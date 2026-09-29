@@ -39,6 +39,8 @@
     @blur="onTDesignBlur"
     @keydown="onTDesignKeydown"
     @keyup="onTDesignKeyup"
+    @compositionstart="onTDesignCompositionStart"
+    @compositionend="onTDesignCompositionEnd"
   >
     <template v-if="$slots.prefix" #prefixIcon><slot name="prefix" /></template>
     <template v-if="$slots.suffix" #suffixIcon><slot name="suffix" /></template>
@@ -77,6 +79,8 @@
     @change="onChange"
     @focus="onFocus"
     @blur="onBlur"
+    @compositionstart="onNativeCompositionStart"
+    @compositionend="onNativeCompositionEnd"
   />
 </template>
 
@@ -140,6 +144,8 @@ const emit = defineEmits<{
   blur: [value: string | number, event: FocusEvent];
   keydown: [event: KeyboardEvent];
   keyup: [event: KeyboardEvent];
+  compositionstart: [event: CompositionEvent];
+  compositionend: [event: CompositionEvent];
 }>();
 
 const usesTDesignDriver = computed(() => ['text', 'search', 'number', 'url', 'tel', 'password'].includes(props.type));
@@ -212,6 +218,31 @@ function onTDesignKeydown(_value: string | number, context: { e?: KeyboardEvent 
 }
 function onTDesignKeyup(_value: string | number, context: { e?: KeyboardEvent }) {
   emit('keyup', context?.e ?? new KeyboardEvent('keyup'));
+}
+
+// IME callers need a DOM `CompositionEvent` they can read the committed text from
+// (`event.target.value`). TDesign reports composition through its own `(value, context)`
+// signature while the native branch reports the DOM event directly, so both are
+// normalized here. Forwarding TDesign's raw value would hand callers a bare string whose
+// `.target` is undefined, and a caller that reads `.target.value` would then drop the
+// composed text.
+function compositionEventFrom(context: unknown): CompositionEvent | null {
+  const event = (context as { e?: unknown } | undefined)?.e;
+  return event instanceof CompositionEvent ? event : null;
+}
+function onNativeCompositionStart(event: Event) {
+  if (event instanceof CompositionEvent) emit('compositionstart', event);
+}
+function onNativeCompositionEnd(event: Event) {
+  if (event instanceof CompositionEvent) emit('compositionend', event);
+}
+function onTDesignCompositionStart(_value: string | number, context?: unknown) {
+  const event = compositionEventFrom(context);
+  if (event) emit('compositionstart', event);
+}
+function onTDesignCompositionEnd(_value: string | number, context?: unknown) {
+  const event = compositionEventFrom(context);
+  if (event) emit('compositionend', event);
 }
 
 defineExpose({
