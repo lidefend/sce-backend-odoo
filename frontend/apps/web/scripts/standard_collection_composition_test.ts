@@ -11,6 +11,10 @@ import {
   resolveStandardDetailSection,
 } from '../src/app/presentation/standardDetailComposition';
 import { resolveStandardPageType } from '../src/app/presentation/standardPageType';
+import {
+  DECLARED_BATCH_EXECUTORS,
+  resolveSelectionActions,
+} from '../src/app/runtime/actionViewSelectionExportRuntime';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -143,6 +147,60 @@ check(contractPageSource.includes(':data-detail-composition="standardDetailCompo
 check(contractPageSource.includes(':data-detail-composition-reason="standardDetailComposition.decision.value.reason"'), true, 'the record page publishes why it chose it');
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Part 6a — the contract declares which batch actions exist and how each one
+// executes.  The client maps a declared intent onto an executor it can run; it
+// never decides the set of batch actions and never hides a declared one.
+// ---------------------------------------------------------------------------
+const batchText = (_key: string, fallback: string) => fallback;
+const batchDeclaration = (over: Record<string, unknown> = {}) => ({
+  intents: {} as Record<string, string>,
+  deleteMode: 'none',
+  activeField: '',
+  ...over,
+});
+checkDeep(
+  resolveSelectionActions(
+    ['export', 'archive', 'activate', 'delete'],
+    batchDeclaration({
+      intents: { export: 'api.data', archive: 'api.data.batch', activate: 'api.data.batch', delete: 'api.data.unlink' },
+      deleteMode: 'unlink',
+      activeField: 'active',
+    }),
+    batchText,
+  ).map((row) => [row.key, row.enabled]),
+  [['batch:export', true], ['batch:archive', true], ['batch:activate', true], ['batch:delete', true]],
+  'every action the contract declares is offered and executes through its declared intent',
+);
+checkDeep(
+  resolveSelectionActions(
+    ['export', 'delete'],
+    batchDeclaration({ intents: { export: 'api.data', delete: 'api.data.unlink' }, deleteMode: 'none' }),
+    batchText,
+  ).map((row) => [row.key, row.enabled, row.hint !== '']),
+  [['batch:export', true, false], ['batch:delete', false, true]],
+  'a declared action the declared policy forbids stays visible but disabled',
+);
+checkDeep(
+  resolveSelectionActions(
+    ['export', 'purge'],
+    batchDeclaration({ intents: { export: 'api.data' } }),
+    batchText,
+  ).map((row) => [row.key, row.enabled, row.hint !== '']),
+  [['batch:export', true, false], ['batch:purge', false, true]],
+  'a declared action the contract gives no execution intent is reported unresolved, not silently dropped',
+);
+check(
+  resolveSelectionActions(['export'], batchDeclaration(), batchText)[0].enabled,
+  false,
+  'an undeclared execution never becomes enabled by a familiar action name',
+);
+check(
+  Object.entries(DECLARED_BATCH_EXECUTORS).every(([intent, executor]) => intent.startsWith('api.') && Boolean(executor)),
+  true,
+  'the client capability table is keyed by declared intent, so a new business action reaches the client without a client change',
+);
+
 // Part 6 — the shipped readonly section really renders the adopted composition
 // ---------------------------------------------------------------------------
 const formSectionSource = readSource('frontend/apps/web/src/components/template/FormSection.vue');

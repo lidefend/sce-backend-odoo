@@ -1956,8 +1956,16 @@ const {
 });
 
 const selectionActions = computed(() => {
+  // The contract declares which batch actions exist and how each one executes;
+  // this surface only maps the declared intent onto a client executor.
   return resolveSelectionActions(
-    allowedBatchActions.value, String(batchPolicy.value.delete_mode || 'none'), activeField.value, toolbarUiLabel,
+    allowedBatchActions.value,
+    {
+      intents: (batchPolicy.value.execution_intents || {}) as Record<string, string>,
+      deleteMode: String(batchPolicy.value.delete_mode || 'none'),
+      activeField: activeField.value,
+    },
+    toolbarUiLabel,
   );
 });
 function handleSelectionAction(key: string) {

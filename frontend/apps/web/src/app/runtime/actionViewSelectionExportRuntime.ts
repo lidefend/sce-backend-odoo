@@ -10,24 +10,74 @@ type ColumnOption = {
 
 type ExportField = { field: string; label: string };
 
+/**
+ * The batch declaration the contract publishes for this surface
+ * (`actionContract.surfacePolicies.batch_policy`).  The client reads which
+ * actions are available and how each one executes; it never decides either.
+ */
+export type BatchExecutionDeclaration = {
+  /** `execution_intents`: the intent each declared action executes through. */
+  intents: Record<string, string>;
+  /** `delete_mode`: whether deletion is declared as a hard unlink. */
+  deleteMode: string;
+  /** `active_field`: the declared active flag an archive/activate writes. */
+  activeField: string;
+};
+
+/**
+ * What this client build can actually run, keyed by the *declared intent*.  This
+ * is a client capability table, so it names executors rather than business
+ * actions: a contract that declares a new batch action reaches the client
+ * through its intent, and one whose intent this build cannot execute is
+ * reported unresolved instead of being guessed at or silently dropped.
+ */
+export const DECLARED_BATCH_EXECUTORS: Record<string, string> = Object.freeze({
+  'api.data': 'export_csv',
+  'api.data.batch': 'batch_write',
+  'api.data.unlink': 'unlink',
+});
+
+const BATCH_ACTION_LABELS: Record<string, [string, string]> = Object.freeze({
+  export: ['batch_label_export', '导出所选'],
+  delete: ['batch_label_delete', '批量删除'],
+  activate: ['batch_label_activate', '批量激活'],
+  archive: ['batch_label_archive', '批量归档'],
+});
+
+/**
+ * Turns the declared batch policy into the selection actions this surface may
+ * offer.  Every entry the contract declares is kept — hiding one would be the
+ * client overruling the contract — and an entry this build cannot execute is
+ * offered disabled with the reason it is unresolved.
+ */
 export function resolveSelectionActions(
   actions: string[],
-  deleteMode: string,
-  activeField: string,
+  declaration: BatchExecutionDeclaration,
   text: (key: string, fallback: string) => string,
 ) {
-  return actions
-    .filter((action) => ['export', 'archive', 'activate', 'delete'].includes(action))
-    .map((action) => ({
+  const intents = declaration?.intents || {};
+  return actions.map((action) => {
+    const intent = String(intents[action] || '').trim();
+    const executor = String(DECLARED_BATCH_EXECUTORS[intent] || '').trim();
+    const executionDeclared = Boolean(intent && executor);
+    const [labelKey, labelFallback] = BATCH_ACTION_LABELS[action] || ['', ''];
+    const label = labelKey ? text(labelKey, labelFallback) : action;
+    const enabled = executionDeclared
+      && (executor === 'export_csv'
+        || (executor === 'unlink'
+          ? String(declaration.deleteMode || '').trim() === 'unlink'
+          : Boolean(String(declaration.activeField || '').trim())));
+    return {
       key: `batch:${action}`,
-      label: action === 'export'
-        ? text('batch_label_export', '导出所选')
-        : action === 'delete'
-          ? text('batch_label_delete', '批量删除')
-          : text(action === 'activate' ? 'batch_label_activate' : 'batch_label_archive', action === 'activate' ? '批量激活' : '批量归档'),
-      enabled: action === 'export' || (action === 'delete' ? deleteMode === 'unlink' : Boolean(activeField)),
-      hint: '',
-    }));
+      label,
+      enabled,
+      hint: enabled
+        ? ''
+        : executionDeclared
+          ? text('batch_hint_unavailable', '当前状态下该操作不可用')
+          : text('batch_hint_execution_unresolved', '该批量操作未声明执行方式，暂不可用'),
+    };
+  });
 }
 
 function visibleExportFields(

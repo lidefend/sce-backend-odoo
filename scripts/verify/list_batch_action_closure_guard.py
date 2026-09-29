@@ -339,10 +339,27 @@ def _probe_frontend_sources(errors: list[str]) -> None:
         "ActionView must consume the backend selection policy without model branches",
         errors,
     )
+    selection_runtime = _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts")
     _assert(
         "resolveSelectionActions(" in action_view
-        and "action === 'export' || (action === 'delete' ? deleteMode === 'unlink' : Boolean(activeField))" in _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts"),
-        "ActionView must enable export while guarding delete/archive from backend policy",
+        and "execution_intents" in action_view,
+        "ActionView must read the declared batch policy instead of naming batch actions",
+        errors,
+    )
+    _assert(
+        # The client maps a *declared* intent onto a client executor; it never
+        # decides which batch actions exist.  A declared action whose intent this
+        # build cannot execute must be offered unresolved, not hidden.
+        "DECLARED_BATCH_EXECUTORS" in selection_runtime
+        and "intents[action]" in selection_runtime
+        and "'api.data': 'export_csv'" in selection_runtime
+        and "'api.data.unlink': 'unlink'" in selection_runtime
+        and "'api.data.batch': 'batch_write'" in selection_runtime
+        and "executor === 'export_csv'" in selection_runtime
+        and "String(declaration.deleteMode" in selection_runtime
+        and "String(declaration.activeField" in selection_runtime
+        and ".filter((action) =>" not in selection_runtime,
+        "batch selection must execute the declared intent, guard delete/archive from the declared policy, and never whitelist actions by name",
         errors,
     )
     _assert(

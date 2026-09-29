@@ -812,7 +812,7 @@ verify.frontend.adopted_form_engine_decision.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.standard_collection_composition.unit
 verify.frontend.standard_collection_composition.unit: guard.prod.forbid
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_collection_composition_test.ts --bundle --platform=node --format=esm --outfile=/tmp/standard-collection-composition-test.mjs >/dev/null
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_collection_composition_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --outfile=/tmp/standard-collection-composition-test.mjs >/dev/null
 	@node /tmp/standard-collection-composition-test.mjs
 
 .PHONY: verify.frontend.list_order_field_contract.unit
