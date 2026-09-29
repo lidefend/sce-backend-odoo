@@ -2974,6 +2974,34 @@ class TestMenuConfigurationAudit(unittest.TestCase):
         self.assertFalse(contract_center_state["runtime_visible"])
         self.assertEqual(contract_center_state["runtime_state"], "configured_visible_runtime_absent")
 
+    def test_runtime_identity_preserves_canonical_exposure_and_denials(self):
+        from unittest.mock import patch
+        module = _load_handler()
+        user = types.SimpleNamespace(has_group=lambda group: group == module.BUSINESS_CONFIG_GROUP)
+        env = types.SimpleNamespace(user=user)
+        handler = module.MenuConfigurationLoadHandler(env)
+        canonical = {"role_code": "cost", "role_codes": ["cost", "business_config_admin"],
+                     "exposure_policy_declared": True, "primary_menu_xmlids": ["product.allowed"],
+                     "denied_menu_xmlids": ["product.denied"], "deny_all_navigation": False}
+        class Resolver:
+            def __init__(self, actual):
+                self.env = actual
+                assert actual is env
+            def user_group_xmlids(self, actual):
+                assert actual is user
+                return {"product.role"}
+            def build_role_surface(self, groups, nav, scenes):
+                assert groups == {"product.role"} and nav == [] and scenes == set()
+                return canonical
+        fake = types.ModuleType('odoo.addons.smart_core.identity.identity_resolver')
+        fake.IdentityResolver = Resolver
+        with patch.dict(sys.modules, {fake.__name__: fake}):
+            result = handler._runtime_role_surface()
+        self.assertEqual({key: result[key] for key in canonical}, canonical)
+        self.assertTrue(result['is_business_config_admin'])
+        self.assertFalse(result['is_platform_admin'])
+        self.assertNotIn('is_platform_admin', canonical)
+
     def test_panel_runtime_state_exposes_authoritative_navigation_tree(self):
         module = _load_handler()
         handler = object.__new__(module.MenuConfigurationLoadHandler)
