@@ -1516,32 +1516,11 @@ h1 {
 }
 
 .field-chip-add {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.field-chip-add input {
-  width: 100%;
-  min-height: 32px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 0 9px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  font: inherit;
+  min-width: 0;
 }
 
 .field-option-search {
   width: 100%;
-  min-height: 30px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 0 9px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  font: inherit;
-  font-size: 12px;
 }
 
 .field-option-summary {
