@@ -7,8 +7,13 @@
  * `standardPageType.ts`, which reads `pageInfo.viewType` plus the page's
  * effective render profile. A surface the contract did not declare as a record
  * form keeps `legacy-form-section`, which is a real second renderer here: the
- * sections render bare, without the official engine rules and without the
- * adopted-detail facts layout.
+ * sections render bare, without the official engine rules.
+ *
+ * This is the *form* half of the classification only. A page the contract
+ * declared as a readonly record does not adopt the form composition, and that
+ * is exactly the page whose sections present their fields as readonly facts
+ * through the detail composition (`standardDetailComposition.ts`). The two
+ * answers are independent and must not be folded into one another.
  */
 import type { StandardPageType, StandardPageTypeReason } from './standardPageType';
 

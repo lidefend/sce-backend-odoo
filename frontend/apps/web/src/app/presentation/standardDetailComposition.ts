@@ -15,6 +15,13 @@
  * render profile), so an edit form is never treated as a readonly record and a
  * record the contract declares readonly is a detail even when the route asked
  * for the edit form.
+ *
+ * Page adoption and section eligibility are two separate questions and stay
+ * separate: `resolveStandardDetailFactLayout` answers the first from this
+ * decision alone, `resolveStandardDetailSection` answers the second from the
+ * section's own fields. Folding them into the form composition's adoption would
+ * make the facts layout unreachable, because a page is never both a record form
+ * and a record detail.
  */
 import type { StandardPageTypeDecision, StandardPageTypeReason } from './standardPageType';
 
@@ -45,6 +52,36 @@ export function resolveStandardDetailComposition(
   };
 }
 
+/**
+ * Whether a section renders its readonly facts through the adopted detail
+ * composition.
+ *
+ * The page-level term is the *detail* decision and nothing else. The record
+ * form composition is the other half of the same classification
+ * (`record-form` versus `record-detail`), so a contract never declares one page
+ * as both; requiring the form composition to be adopted here as well would make
+ * the facts layout unreachable on every page, including the readonly record it
+ * exists for. Sections on an editable record form already fail this gate
+ * because the contract classified the page as a record form, not a record
+ * detail — no second conjunction is needed to keep them on their controls.
+ */
+export function resolveStandardDetailFactLayout(
+  decision: StandardDetailCompositionDecision | null | undefined,
+  section: {
+    configurationMode: boolean;
+    readonlyFacts: boolean;
+    fields: readonly { type: string; dedicatedControl: boolean }[];
+  },
+): { adopted: boolean; reason: string } {
+  return resolveStandardDetailSection({ adopted: decision?.adopted === true, ...section });
+}
+
+/**
+ * The section-level half of the same question: does *this* section qualify to
+ * present its fields as facts. `adopted` is the page-level detail adoption
+ * supplied by the caller (see `resolveStandardDetailFactLayout`), never the
+ * form composition's adoption.
+ */
 export function resolveStandardDetailSection(input: {
   adopted: boolean;
   configurationMode: boolean;

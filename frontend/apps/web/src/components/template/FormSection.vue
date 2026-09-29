@@ -376,7 +376,7 @@ import type { ScFormInstance } from '../design-system/scFormContract';
 import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
 import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
-import { resolveStandardDetailSection } from '../../app/presentation/standardDetailComposition';
+import { resolveStandardDetailFactLayout } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -485,24 +485,28 @@ const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFor
  * Whether this readonly section's facts render through the official detail
  * composition.
  *
- * It reuses the same page-provided decisions as the form composition: the
- * layout only applies to a section that is both adopted and presented as
- * readonly facts, so an editable or a specialized surface keeps its previous
- * composition and a list of fields is never half-converted.
+ * The page-level term is the page's own readonly-record adoption, not the form
+ * composition's: `record-detail` and `record-form` are the two halves of one
+ * contract classification, so a page is never both and folding them together
+ * would leave the facts layout unreachable. `bare` above still follows the form
+ * composition, so a readonly page renders the facts without borrowing the
+ * editable form's container or its rules.
  */
-const detailSectionDecision = computed(() => resolveStandardDetailSection({
-  adopted: standardDetailComposition?.adopted.value === true && adoptedComposition.value,
-  configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
-  readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
-  fields: displayFields.value.map((field) => ({
-    type: field.type,
-    dedicatedControl: Boolean(field.favoriteToggle)
-      || declaresUnknownComponentRenderer(field)
-      || usesProfessionalBusinessValue(field)
-      || usesPaymentSettlementDetailCollection(field)
-      || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl'].includes(field.componentRenderer)),
-  })),
-}));
+const detailSectionDecision = computed(() => resolveStandardDetailFactLayout(
+  standardDetailComposition?.decision.value,
+  {
+    configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
+    readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
+    fields: displayFields.value.map((field) => ({
+      type: field.type,
+      dedicatedControl: Boolean(field.favoriteToggle)
+        || declaresUnknownComponentRenderer(field)
+        || usesProfessionalBusinessValue(field)
+        || usesPaymentSettlementDetailCollection(field)
+        || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl'].includes(field.componentRenderer)),
+    })),
+  },
+));
 const adoptedDetailFactLayout = computed(() => detailSectionDecision.value.adopted);
 
 /**

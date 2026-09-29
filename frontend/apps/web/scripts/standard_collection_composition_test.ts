@@ -8,6 +8,7 @@ import {
 } from '../src/app/presentation/standardListComposition';
 import {
   resolveStandardDetailComposition,
+  resolveStandardDetailFactLayout,
   resolveStandardDetailSection,
 } from '../src/app/presentation/standardDetailComposition';
 import {
@@ -118,6 +119,53 @@ check(resolveStandardDetailSection({ ...facts, fields: [{ type: 'char', dedicate
 check(resolveStandardDetailSection({ ...facts, configurationMode: true }).reason, 'configuration-editor', 'designer keeps editable field bindings');
 check(resolveStandardDetailSection({ ...facts, readonlyFacts: false }).adopted, false, 'editable facts keep controls');
 check(resolveStandardDetailSection({ ...facts, fields: [] }).adopted, false, 'empty section does not claim coverage');
+
+// The page-level half: a readonly record the contract declared, and an
+// editable record form, must reach opposite answers from the same section.
+const readonlyRecordDecision = resolveStandardDetailComposition(
+  resolveStandardPageType({ viewType: 'form', layoutType: 'form', renderProfile: 'readonly' }),
+);
+const editableRecordDecision = resolveStandardDetailComposition(
+  resolveStandardPageType({ viewType: 'form', layoutType: 'form', renderProfile: 'edit' }),
+);
+const readonlySection = { configurationMode: false, readonlyFacts: true, fields: [{ type: 'char', dedicatedControl: false }] };
+check(readonlyRecordDecision.adopted, true, 'the contract-declared readonly record adopts the official detail composition');
+check(editableRecordDecision.adopted, false, 'an editable record form does not adopt the readonly detail composition');
+check(
+  resolveStandardDetailFactLayout(readonlyRecordDecision, readonlySection).adopted,
+  true,
+  'a readonly record the contract declares renders its scalar section as official detail facts, without also demanding the form composition the same contract cannot declare at the same time',
+);
+check(
+  resolveStandardDetailFactLayout(editableRecordDecision, readonlySection).reason,
+  'outside-standard-detail',
+  'an editable record form keeps its controls instead of converting them to facts',
+);
+check(
+  resolveStandardDetailFactLayout(resolveStandardDetailComposition(resolveStandardPageType({ viewType: 'list', layoutType: 'table' })), readonlySection).reason,
+  'outside-standard-detail',
+  'a collection page is not a readonly record, so its sections never claim the detail layout',
+);
+check(
+  resolveStandardDetailFactLayout(null, readonlySection).reason,
+  'outside-standard-detail',
+  'a section outside a page that provides the decision keeps the composition it had',
+);
+check(
+  resolveStandardDetailFactLayout(readonlyRecordDecision, { ...readonlySection, readonlyFacts: false }).reason,
+  'editable-section',
+  'the page adoption alone does not convert an editable section into facts',
+);
+check(
+  resolveStandardDetailFactLayout(readonlyRecordDecision, { ...readonlySection, configurationMode: true }).reason,
+  'configuration-editor',
+  'the designer keeps editable field bindings even on a readonly record',
+);
+check(
+  resolveStandardDetailFactLayout(readonlyRecordDecision, { ...readonlySection, fields: [{ type: 'one2many', dedicatedControl: false }] }).reason,
+  'relation-collection-extension',
+  'a relation collection on a readonly record stays a dedicated control rather than being folded into facts',
+);
 
 // ---------------------------------------------------------------------------
 // Part 3 — the policies stay pure presentation scope
@@ -246,7 +294,18 @@ check(
 // ---------------------------------------------------------------------------
 const formSectionSource = readSource('frontend/apps/web/src/components/template/FormSection.vue');
 check(formSectionSource.includes("useOptionalStandardDetailComposition()"), true, 'the readonly section reads the page-provided detail decision');
-check(formSectionSource.includes("standardDetailComposition?.adopted.value === true"), true, 'only an adopted detail decision converts the facts layout');
+check(formSectionSource.includes('resolveStandardDetailFactLayout('), true, 'the facts layout is decided by the shared detail-fact resolver, not by an inline component condition');
+check(
+  formSectionSource.includes('standardDetailComposition?.adopted.value === true && adoptedComposition.value'),
+  false,
+  'the facts layout is never gated on the form composition being adopted: a contract classifies a page as a record form or a record detail, so conjoining the two leaves the layout unreachable on every page',
+);
+check(
+  /resolveStandardDetailFactLayout\(\s*standardDetailComposition\?\.decision\.value/
+    .test(formSectionSource),
+  true,
+  'the section feeds the resolver the page-level detail decision it was provided, not a locally re-derived page type',
+);
 check(formSectionSource.includes('data-detail-facts="official-standard-detail"'), true, 'the adopted readonly facts are identifiable at runtime');
 check(formSectionSource.includes(':bordered="false"'), true, 'the adopted readonly facts use the official unbordered card');
 check(formSectionSource.includes(':items="displayFields"'), true, 'the adopted readonly facts are driven by the contract field facts, not sample data');
