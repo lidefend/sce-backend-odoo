@@ -276,7 +276,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 63,
+      "productionConsumerCount": 68,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -563,7 +563,7 @@
         "TDesignFormItem"
       ],
       "officialComponent": "form",
-      "productionConsumerCount": 12,
+      "productionConsumerCount": 26,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1327,7 +1327,9 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
-      "bridgeExports": [],
+      "bridgeExports": [
+        "TDesignTree"
+      ],
       "officialComponent": "tree",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -1396,7 +1398,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "5594b9295e3e1c528a2d442f120a57f3169749e4d384b4e9b940b0104311b55f",
+  "inputDigest": "73f56dd37f734474c1d7031dd2230141b7a180ca6ddbd2ce6c5e9dbc7ce68107",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",
