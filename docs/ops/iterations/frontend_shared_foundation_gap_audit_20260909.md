@@ -2595,3 +2595,135 @@ guard 自身 `active-dynamic` 分支缺陷已登记，未在本批扩大处理�
 ### 状态
 
 本段**批次验收完成**。四项 followup 全部关闭；未推送、未合并、未部署目标环境。
+
+## 原生按钮 occurrence 覆盖收口：把未声明的 workflow 按钮显式登记（2026-09-29，FE-CONTRACT-NATIVEBTN-01）
+
+上一段 `FE-CONTRACT-VOCAB-01` 登记了一项未闭合：「约 80 处未声明的原生按钮 occurrence 仍需按
+『权威侧缺失 / 原生未登记』逐类定性」。本段把这条口径固定到可复算的范围内并闭合它，
+不重开该批结论，不猜测任何业务语义。
+
+### 1. 口径收敛：80 → 25 是收紧，不是问题消失
+
+重枚举口径（可复算）：
+
+- 扫 `addons/**/views/**/*.xml` 中 `model="ir.ui.view"` 记录里 `type="object"` 的 `<button>`；
+- 按钮所属 `model` 必须**已有 workflow profile**（`workflow_contract_service.PROFILE_BY_MODEL`，共 **40** 个）；
+- 按钮 `name` 必须**未被任何 profile 声明**（所有 `method_by_action` 取值合并收集，共 **29** 个）。
+
+第三条是故意保守的：跨 profile 合并收集只会**少报**（一个模型声明了某方法，会顺带遮蔽另一个模型上同名按钮），
+它不会凭空造出一个缺口。按模型精确判定需要执行各 profile builder，超出静态守卫的职责，不做。
+
+结果：未声明 occurrence **25 处**，去重 **24 条 `(model, method)`**，覆盖 **16 个模型**、**17 个去重方法名**。
+方法与模型的差来自两处一对多：`action_generate_lines_from_budget` 出现在 3 个模型、
+`action_view_company_contractor_responsibility_summary` 出现在 6 个模型。
+
+与旧登记的「约 80 处」相比，这是**口径收敛**：旧口径没有限定到被接管模型，也没有扣除跨 profile 已声明的同名方法。
+每个被移除的 occurrence 都落在「不是被接管模型」或「方法已有声明」两类之一。
+
+### 2. 登记分类（`config/contract/native_view_undeclared_actions.v1.json`，24 条）
+
+| class | 条数 | 含义 |
+|---|---|---|
+| `navigation` | 11 | 打开关联记录／视图，不改变状态 |
+| `document_helper` | 9 | 生成／加载／创建业务内容，不改变状态 |
+| `state_transition_undeclared` | **4** | 真实改变记录状态，且没有任何 profile 声明承担它 |
+
+前两类是「原生未登记」：它们不写状态，缺的只是显式登记，不是权威侧缺口。
+第三类是「权威侧缺失」，逐条经过实现确认。
+
+### 3. 四条 `state_transition_undeclared` 逐条定性
+
+| model | method | 实测状态变化 | 定性 |
+|---|---|---|---|
+| `payment.request` | `action_set_approved` | `approve → approved`，`with_context(allow_transition=True, payment_soft_gate=True)`，两侧有 `_assert_finance_approve_access` | 该模型另有 `action_approve` 承担 `approve`，此第二条批准入口尚无声明 |
+| `sc.general.contract` | `action_signed` | `draft/confirmed → signed` | profile 声明了 `signed` phase，却没有把任何动作投影进该 phase，签署在被接管页不可达 |
+| `sc.payment.execution` | `action_reverse_payment` | `paid → ` 冲销，有 `_assert_finance_cancel_access` 且 `raise_guard("PAYMENT_EXECUTION_REVERSAL_INVALID_STATE")`，**未**用 `allow_transition` 绕过 | 无 profile 动作覆盖冲销 |
+| `sc.project.document` | `action_reset_to_draft` | `state='draft'` 重置 | 该模型未声明 `reopen` 类动作 |
+
+四条**都不擅自补 purpose**。是否要为原生转移补一条声明，是业务权威的判断，不是守卫或适配器能自行发明的。
+本段只把它们从「静默消失」变成「显式登记」，让缺口可见。
+
+### 4. 守卫机制与 fail-closed 四类（`scripts/verify/native_view_workflow_action_coverage_guard.py`）
+
+守卫只做「显式登记 + 双向往返」，不提议任何含义。四类检查全部 fail-closed：
+
+1. 接管模型上的原生 object 按钮既未被声明、也不在登记表 → **FAIL**（新缺口无法静默进入）；
+2. 登记条目已不再对应任何原生按钮 → **FAIL**（stale，登记不能留存过期的缺口）；
+3. 登记条目对应的方法现在已被 profile 声明 → **FAIL**（登记不得比它记录的缺口活得更久）；
+4. 条目缺 `reason` 或 `class` 不在 `{state_transition_undeclared, navigation, document_helper}` → **FAIL**。
+
+### 5. 与 `workflow_action_semantics_completeness_guard` 的口径关系
+
+两个守卫口径起点相同（「原生呈现 vs 契约声明」），方向互补，不是重复：
+
+- `completeness_guard` 从**声明侧**出发：profile 声明了某 `(kind, executor, purpose)` 组合，端上是否有真实消费者；
+- 本守卫从**原生呈现侧**出发：原生视图里真实存在一个 object 按钮，契约侧是否有任何声明承担它。
+
+一个抓「声明了没人用」，一个抓「存在了没人声明」。合起来才是双向闭合。
+
+### 6. 修正一条旧说法
+
+旧登记里写着「`construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端
+presentation 可达性缺口」。本轮实测确认：`construction.contract` 的 profile **有** `state_actions`
+（`draft: submit/cancel`、`confirmed: activate/complete/cancel`、`running: complete/cancel`、`cancel: reopen`），
+且 `activate → action_set_running`、`complete → action_close` 均已声明；原生 `contract_views.xml` 里这两个
+object 按钮也真实存在。因此它们**不在**本守卫的未声明集合内，此前若把它读成契约缺口是不准确的。
+
+它是「已声明，端上是否渲染」的 presentation 面，本段不改变该登记、也不以本守卫覆盖它。
+
+### 7. 接入现有门禁（不新建治理体系）
+
+- 新 target `verify.native_view.workflow_action_coverage`：`py_compile` + 守卫 + 8 个单测；
+- 登记进 `verify.unified_page_contract.v2` 与 `verify.unified_page_contract.v2.professional_backend` 两个聚合
+  （与 `verify.unified_page_contract.v2.action` 相邻，同族）；
+- 同步登记进 `scripts/verify/unified_page_contract_v2_guard_inventory.py` 的 `OFFLINE_TARGETS`，
+  否则该 inventory guard 会报聚合依赖漂移；
+- `scripts/verify/guard_registry_audit.py` 因脚本已被 make 引用，不再是 orphan，无需 registry.yaml 条目。
+
+### 8. 负例实测（全部按预期 FAIL）
+
+| 人造偏差 | 期望 | 实测 |
+|---|---|---|
+| baseline 原样 | PASS | PASS `registered=24 document_helper=9 navigation=11 state_transition_undeclared=4` |
+| 删掉一条登记条目 | FAIL | FAIL（`no native form view uses it anymore` 之外的未登记缺口被报出） |
+| 登记一条幽灵条目（原生不存在） | stale FAIL | FAIL |
+| 登记一条已被 profile 声明的方法 | stale FAIL | FAIL |
+| 条目去掉 `reason` | FAIL | FAIL |
+| 条目 `class` 改成非法值 | FAIL | FAIL |
+
+### 9. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.native_view.workflow_action_coverage` | PASS（守卫 + 8 tests OK） |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1346 scripts (1222 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make verify.unified_page_contract.v2.professional_backend` | **exit=0**（inventory PASS、web_architecture PASS debt_lock findings=0 等） |
+| `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会污染历史
+`sc_demo` 基线，属既有环境限制（见上一段说明），与本次改动无关。
+
+### 10. 七问
+
+- **Formal Product Layer**：守卫与登记表属 **P4 ops/verify 工具**（`scripts/verify`、`config/contract` 的显式登记）；
+  被扫描的契约声明属 **P0 平台机制**（`smart_core` 动作语义词汇表）+ **P1 行业标准**（`smart_construction_core`
+  的 workflow profile）。不引入任何新的业务层语义。
+- **Layer Target**：`scripts/verify/native_view_workflow_action_coverage_guard.py`、
+  `scripts/verify/test_native_view_workflow_action_coverage_guard.py`、
+  `config/contract/native_view_undeclared_actions.v1.json`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`scripts/verify`（守卫/测试）+ 仓库级 `make` 门禁；被扫描对象是 `smart_construction_core` 的
+  workflow profile 与各模块原生视图。
+- **Standard vs User-Specific**：平台机制层——「原生呈现 vs 契约声明」的覆盖口径对每个部署一致，非客户偏好。
+- **Why Here**：登记表落在 `config/contract/`，与其它契约侧登记同址；守卫落在 `scripts/verify`，与
+  `workflow_action_semantics_completeness_guard` 同址；接入现有 v2 聚合，不新增体系。
+- **Why Not Elsewhere**：不改 `workflow_contract_service.py` 去补 purpose——那会由守卫发明业务语义；
+  不改前端渲染去隐藏按钮——那是让缺口更不可见；不新增独立门禁平台——现有 v2 聚合已覆盖同族口径。
+- **Blast Radius**：新增一个只读静态守卫 + 一张登记表 + 两处聚合依赖登记。不改业务模型、不改契约投影、
+  不改前端渲染、不改权限。受影响面仅为 `verify.unified_page_contract.v2*` 门禁，已验证 `exit=0`。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+四条 `state_transition_undeclared` 保持为**权威侧待决**，不是本轮阻断项，也不因本段自动消项。
