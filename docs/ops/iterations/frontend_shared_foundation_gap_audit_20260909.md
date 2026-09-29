@@ -1306,3 +1306,84 @@ selection 标签与未呈现字段数量差异，不能声称“整个契约结�
 
 下一批按既有 `product-page-patterns-v1.md` 推进页面职责/能力分组采纳与旧路径退出；
 不再新增模型专属列表。本批窄范围验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## FE-TPL-07：按页面类型默认接管（2026-09-29，本地批次收口）
+
+基线 `fc0afcb32cd7864f4495f5c60322ac7d26193391`，既有专题分支与工作树，开始 clean。
+P0 / frontend renderer / 标准呈现采纳机制：平台通用页面职责决定组合，不承载施工、客户或角色业务规则。
+P4 仅补既有 acceptance 入口的固定 5180 预览生命周期及只读定向探针。既有 local profile、
+sc-fe-r2-p1-01 / sc_frontend_acceptance / 精确过滤器与固定卷、fixture 权威和 18082 后端全部复用。
+不改 P1/P2/P3 数据或配置，不升级模块；当前候选身份为上述 HEAD 加显式 dirty scope，不称 frozen。
+
+边界与实施：三个 standard composition selector 改收页面职责，删除模型白名单；
+ListPage 有数据/空态共用 ProductListSurface，旧透传 DOM 分支退出；ContractFormPage 的主表、
+主从办理共用既有官方表单引擎和一次保存校验。只读详情增加 section 能力判断：集合、附件、
+专用 renderer、未知类型及设计模式保留原控件并记录 reason，不能降为文字或计作 descriptions 接管。
+影响普通列表和通用记录页；专用工作表/层级规划/看板不因名称相似自动接管。
+
+先决诊断：独立 B 线确认 WEB-LC 列减少为 P4 输入语义问题：`tree.columns=[name]` 在 V2
+是完整列权威（`ui_contract_v2.py:2961`），并非单字段 patch。可选隐藏列当时确实退出配置候选，
+原探针已回滚恢复。因此不扩大旧“标签闭环”结论；不改后端既有完整替换规则。
+无运行时配置变化的页面类型推广与该输入独立，可以继续；今后标签安全性须完整列能力比较。
+
+验证顺序：L0 身份 → L1 iteration/语法 → L2 采纳策略、真实官方引擎、异步身份、集合/动作及严格类型
+→ 一次定向构建与 L4 代表页。L3 模块升级/fixture reset 不适用（产品后端和数据未改）；
+L5 Quick/发布/远端 CI 不运行（本地迭代）。L1 iteration 已通过；L2 当前通过：form 94、collection 69、
+真实引擎 74、异步保存身份 46；集合语义 18+36、动作 6+11、页面模式 12+5、模板对齐 15；
+strict typecheck 通过。P4 固定预览身份测试 5 通过。保留原始终端输出及 `/tmp/tpl07-iteration.log`，
+后续只重验被实际修订影响的结果。
+
+本批登记的增量 Make 入口：`frontend.standard.preview.build`、`frontend.standard.preview.up`、
+`verify.frontend.standard_page_type.browser`、`verify.frontend.standard_preview.unit`。
+仅复用已授权 5180 → 18082；构建至既有仓外证据根下 `tpl07-20260929/dist`，保存 build-identity.json，
+绑定源 HEAD/dirty frontend 输入及入口摘要；源码未变重用产物。替换预览前核验唯一 PID、所属用户、
+static-server 命令、旧 tpl06a/current tpl07 目录、端口和 proxy；未知 listener 拒绝停止。
+旧产物保留，新启动失败尝试恢复旧目录。5175/5176/5178/5179 与数据库生命周期均不触及。
+
+代表页结果在下表统一收口；回滚为本批 P0 提交及保留的先前预览产物。
+全部入口与目标环境交付不在本批证据范围。
+
+TPL07 代表页审查修订：原生 readonly slot 是通用格式化呈现，不能整体列为专用能力。
+仅透传该 slot 至 descriptions 普通值分支，保留关系/HTML/办理动作优先级和集合、附件等排除；
+付款详情旧截图未证明 facts 接管，修订使该结果失效，需定向补验。为保留首轮产物与证据，
+修订候选构建登记为 `tpl07-20260929-r2/dist`，仅替换已验证的 `tpl07-20260929/dist` listener。
+这是一次具体缺陷修复所需重建，不重跑列表、编辑或全旅程；首次付款/合同列表与客户空态证据沿用。
+
+### TPL07 统一结果索引与证据复用
+
+原始报告均在 `artifacts/frontend-web-fix-20260928/`，失败报告不重标通过：
+
+| 原始报告 | 结果与本批使用范围 |
+|---|---|
+| `tpl07-1790668835237/report.json` | 探针 failed，锁定数据库构建只有两个可编辑登录输入，第三输入定位超时；尚未进入产品断言 |
+| `tpl07-1790668884648/report.json` | 20 项通过后探针因客户菜单被误认为 link 而 failed；沿用付款真实第二页/返回同集、主从引擎与明细、合同列表结果；旧详情结果由 r2 代替 |
+| `tpl07-1790669007131/report.json` | 修正为真实菜单搜索，additional 分支 passed 3 项；非旧试点 res.partner 客户空列表采用官方卡片，无业务写入 |
+| `tpl07-1790669293555/report.json` | r2 详情探针 failed：7 项已过，公司字段所在 mixed section 是专用控件扩展，探针错误要求其进入 descriptions；未改产品，只修正该定位断言 |
+| `tpl07-1790669324381/report.json` | **r2 detail passed 15 项**；付款非零 facts 与非零明细、明细扩展隔离、原公司值、窄屏；合同非零 facts；异常与业务写入均 0 |
+
+r2 事实文本回读包括既有往来单位户名、开户行、账号及匹配提示，slot 格式与取值保留。
+付款事实/专用混合 section 保留整节扩展，未把 page marker 当作整页 descriptions 完成。
+原列表、编辑、空态测试所依赖的代码与 backend/profile/fixture 输入未变；r2 仅修改 readonly
+事实普通值插槽及能力判断，故明确沿用首轮相应检查，不宣称整个 failed 报告通过。
+
+L1：`make ci.local.iteration` passed，`/tmp/tpl07-iteration.log`；后续只读插槽小修未改变
+该静态策略输入。L2 修订后 `make verify.frontend.standard_collection_composition.unit
+verify.frontend.standard_preview.unit verify.frontend.typecheck.strict` passed（69 + 5，strict typecheck），
+日志 `/tmp/tpl07-detail-check.log`；其他前述非零 L2 输入未变，沿用本批原结果。
+L4：`make frontend.standard.preview.build` 初次产物与 r2 保留，日志 `/tmp/tpl07-build.log`、
+`/tmp/tpl07-r2-build.log`；`make frontend.standard.preview.up` r2 成功，
+`TPL07_SCOPE=detail make verify.frontend.standard_page_type.browser` passed，
+日志 `/tmp/tpl07-detail-browser-r2.log`。5180 当前入口 `/assets/index-R2g4OV5o.js`，
+SHA256 `fabee65071492ce6409578f74758de5625e34861c5fe148251f3a0152540f444`，
+源基线仍为 `fc0afcb32cd7864f4495f5c60322ac7d26193391` 加本批 frontend dirty scope；
+后续仅提交不会改变相对该基线的构建输入摘要。build-identity.json 为真实构建身份，不伪写新 SHA。
+
+B 线独立复核当前同一范围：未见新增保存授权/双引擎/集合吞控件阻断，已核验 live listener
+绑定与非零能力断言。代码退出范围：标准列表旧透传容器及三个模型白名单删除；详情普通事实
+使用官方组合，集合/附件/专用控件仍由同一契约扩展承担，设计编辑及专用页面仍明确除外。
+本批未验证全部 89 入口、全部写入或每种专用能力；未升级业务矩阵整行。
+
+既有 style_system 4 项、render_semantic_ready 旧期望、no_new_any/list.surface.clean 待收口项继续
+保留在此结果索引，禁止据本批结果宣称发布门禁全部通过。低代码完整列能力比较进入下一批；
+无本批数据库配置或业务写入，无推送/合并/目标部署。
+**批次验收完成（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。**

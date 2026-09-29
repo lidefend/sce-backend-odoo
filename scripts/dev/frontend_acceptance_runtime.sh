@@ -293,6 +293,25 @@ case "$command" in
   preflight)
     preflight
     ;;
+  standard-page-build|standard-page-up|standard-page-browser)
+    preflight
+    validate_backend_resource_identity
+    # Same unchanged-backend reuse rules as the preceding low-code batch.
+    backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+    [[ "$backend_revision" =~ ^[0-9a-f]{40}$ ]] || exit 2
+    [[ "$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_FINGERPRINT)" == "$(printf '%s\n' "$backend_revision" | sha256sum | cut -d' ' -f1)" ]] || exit 2
+    git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons
+    [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
+    case "$command" in
+      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
+      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
+      standard-page-browser)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_page_type_browser.mjs"
+        ;;
+    esac
+    ;;
   standard-list-lowcode)
     preflight
     validate_backend_resource_identity
