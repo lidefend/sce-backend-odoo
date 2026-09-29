@@ -4,6 +4,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import BusinessConfigImpactDialog from './businessConfigSurface/BusinessConfigImpactDialog.vue';
 import {

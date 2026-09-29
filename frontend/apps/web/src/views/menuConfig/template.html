@@ -5,12 +5,8 @@
     :data-contract-sections="pageSectionsFingerprint"
     data-product-page-mode="admin"
   >
-    <header class="menu-config-header sc-product-page-header">
-      <div>
-        <p class="eyebrow">{{ companyLabel }}</p>
-        <h1>菜单配置</h1>
-      </div>
-      <div class="header-actions">
+    <ScPageHeader title="菜单配置" :eyebrow="companyLabel">
+      <template #actions>
         <span v-if="dirtyCount" class="dirty-count">{{ dirtyCount }} 项未保存</span>
         <ScButton
           v-for="action in pageGlobalActions"
@@ -32,8 +28,8 @@
         <ScButton type="button" variant="primary" :disabled="!dirtyCount || saving" @click="requestSaveChanges">
           {{ saving ? '保存中...' : '保存菜单配置' }}
         </ScButton>
-      </div>
-    </header>
+      </template>
+    </ScPageHeader>
 
     <section v-if="showGuide" class="guide-panel">
       <div>
@@ -148,7 +144,7 @@
       <div class="create-form">
         <label>
           <span>菜单名称</span>
-          <input v-model="createForm.name" class="cell-input" type="text" placeholder="输入业务菜单名称" />
+          <ScInput v-model="createForm.name" class="menu-text-input" type="text" placeholder="输入业务菜单名称" />
         </label>
         <label>
           <span>上级菜单</span>
@@ -178,7 +174,7 @@
         </label>
         <label>
           <span>备注</span>
-          <input v-model="createForm.note" class="cell-input" type="text" placeholder="可选" />
+          <ScInput v-model="createForm.note" class="menu-text-input" type="text" placeholder="可选" />
         </label>
       </div>
       <div class="create-panel-footer">
@@ -202,7 +198,7 @@
           </span>
         </div>
         <div class="tree-search">
-          <input v-model="searchText" type="search" placeholder="搜索菜单名称或路径" />
+          <ScInput v-model="searchText" type="search" placeholder="搜索菜单名称或路径" />
           <div class="tree-search-summary">
             <span>{{ treeSearchSummary }}</span>
             <ScButton
@@ -286,20 +282,20 @@
             <div class="menu-detail-grid menu-detail-grid--basic">
               <label>
                 <span>显示名称</span>
-                <input
-                  class="cell-input"
-                  :value="selectedDraft.custom_label"
+                <ScInput
+                  class="menu-text-input"
+                  :model-value="selectedDraft.custom_label"
                   :placeholder="selectedMenu.name"
-                  @input="updateDraft(selectedMenu.id, { custom_label: inputValue($event) })"
+                  @update:model-value="updateDraft(selectedMenu.id, { custom_label: String($event) })"
                 />
               </label>
               <label>
                 <span>备注</span>
-                <input
-                  class="cell-input"
-                  :value="displayNoteValue(selectedDraft.note)"
+                <ScInput
+                  class="menu-text-input"
+                  :model-value="displayNoteValue(selectedDraft.note)"
                   placeholder="可选"
-                  @input="updateDraft(selectedMenu.id, { note: inputValue($event) })"
+                  @update:model-value="updateDraft(selectedMenu.id, { note: String($event) })"
                 />
               </label>
             </div>
@@ -544,11 +540,11 @@
               >
                 <td class="index-col">{{ index + 1 }}</td>
                 <td>
-                  <input
-                    class="cell-input name-input"
-                    :value="draftFor(row.menu.id).custom_label"
+                  <ScInput
+                    class="menu-text-input name-input"
+                    :model-value="draftFor(row.menu.id).custom_label"
                     :placeholder="menuDisplayLabel(row.menu)"
-                    @input="updateDraft(row.menu.id, { custom_label: inputValue($event) })"
+                    @update:model-value="updateDraft(row.menu.id, { custom_label: String($event) })"
                   />
                 </td>
                 <td><span class="muted">{{ menuDisplayLabel(row.menu) }}</span></td>
@@ -663,11 +659,11 @@
                   </div>
                 </td>
                 <td>
-                  <input
-                    class="cell-input note-input"
-                    :value="displayNoteValue(draftFor(row.menu.id).note)"
+                  <ScInput
+                    class="menu-text-input note-input"
+                    :model-value="displayNoteValue(draftFor(row.menu.id).note)"
                     placeholder="可选"
-                    @input="updateDraft(row.menu.id, { note: inputValue($event) })"
+                    @update:model-value="updateDraft(row.menu.id, { note: String($event) })"
                   />
                 </td>
               </tr>
