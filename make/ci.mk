@@ -332,6 +332,7 @@ verify.native_view.ecosystem.readiness: guard.prod.forbid
 .PHONY: verify.unified_page_contract.v2.schema
 verify.unified_page_contract.v2.schema: guard.prod.forbid
 	@python3 scripts/verify/unified_page_contract_v2_schema_guard.py --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json --examples docs/architecture/unified_page_contract_v2/examples
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_unified_page_contract_v2_schema_guard.py
 
 .PHONY: verify.unified_page_contract.v2.guard_inventory
 verify.unified_page_contract.v2.guard_inventory: guard.prod.forbid
@@ -423,6 +424,7 @@ verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.invento
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
 	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
 	@python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestWorkflowContractBackend' bash scripts/test/test_safe.sh
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines' bash scripts/test/test_safe.sh

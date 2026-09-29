@@ -430,14 +430,25 @@ def ts_literal_list(source: str, name: str) -> set[str]:
     return set(re.findall(r"'([A-Za-z_][A-Za-z0-9_]*)'", match.group(1)))
 
 
+TS_BUSINESS_DERIVATION_RE = re.compile(
+    r"export const DECLARED_BUSINESS_PURPOSES\s*=\s*Object\.freeze\(\s*"
+    r"ACTION_PURPOSES\.filter\(\s*\(\s*(?P<item>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*=>\s*"
+    r"!\s*\(\s*NON_BUSINESS_PURPOSES\s+as\s+readonly\s+string\[\]\s*\)\s*"
+    r"\.includes\(\s*(?P=item)\s*\)\s*\)\s*,?\s*\)",
+    re.S,
+)
+
+
 def ts_derives_business_list(source: str) -> bool:
-    """The business subset must be derived, so it cannot drift from the whole."""
-    return bool(
-        re.search(
-            r"export const DECLARED_BUSINESS_PURPOSES = Object\.freeze\(\s*ACTION_PURPOSES\.filter\(",
-            source,
-        )
-    )
+    """The business subset must be the exact complement of the non-business one.
+
+    Matching only ``ACTION_PURPOSES.filter(`` would accept an extra predicate
+    (``... && purpose !== 'start_execution'``) that silently drops a purpose
+    from the derived set while the shape still reads as "derived".  The filter
+    is therefore pinned to the one controlled predicate, so the two literal
+    lists checked next to it fully determine the result set.
+    """
+    return bool(TS_BUSINESS_DERIVATION_RE.search(source))
 
 
 def validate_declared_action_semantics_vocabulary(schema: dict[str, Any], errors: list[str]) -> None:

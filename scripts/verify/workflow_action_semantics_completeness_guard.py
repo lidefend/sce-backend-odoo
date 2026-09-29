@@ -464,6 +464,12 @@ def validate(
 
 
 def references_marker(path: Path, function_name: str, marker: str) -> bool:
+    """True only when `marker` decides control flow inside `function_name`.
+
+    A bare occurrence would accept a verdict that is merely logged, or a branch
+    that can never be taken -- neither actually consults the runtime approval
+    decision, which is the thing this check exists to prove.
+    """
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     target = next(
         (node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == function_name),
@@ -471,9 +477,19 @@ def references_marker(path: Path, function_name: str, marker: str) -> bool:
     )
     if target is None:
         return False
-    return any(
-        isinstance(node, ast.Constant) and node.value == marker for node in ast.walk(target)
-    )
+    for node in ast.walk(target):
+        if isinstance(node, (ast.If, ast.While, ast.IfExp)):
+            test = node.test
+        else:
+            continue
+        if isinstance(test, ast.Constant):
+            continue
+        if any(
+            isinstance(inner, ast.Constant) and inner.value == marker
+            for inner in ast.walk(test)
+        ):
+            return True
+    return False
 
 
 def validate_authorization_binding(
