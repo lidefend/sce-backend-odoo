@@ -158,7 +158,7 @@
         </label>
         <label>
           <span>排序号</span>
-          <ScNumberInput :model-value="createForm.sequence" @update:model-value="createForm.sequence = Number($event || 0)" class="menu-control"  placeholder="自动" />
+          <ScNumberInput theme="normal" :model-value="createForm.sequence" @update:model-value="createForm.sequence = Number($event || 0)" class="menu-control"  placeholder="自动" />
         </label>
         <ScCheckbox class="create-check" v-model:checked="createForm.visible"  >创建后显示</ScCheckbox>
         <label>
@@ -301,7 +301,7 @@
               </label>
               <label>
                 <span>排序号</span>
-                <ScNumberInput
+                <ScNumberInput theme="normal"
                   class="menu-control"
                   :model-value="selectedDraft.sequence_override || undefined"
                   :placeholder="String(selectedMenu.sequence || 0)"
@@ -517,7 +517,7 @@
                 <td><span class="muted">{{ menuParentLabel(row.menu) }}</span></td>
                 <td class="level-col">{{ row.level }}</td>
                 <td class="sequence-col">
-                  <ScNumberInput
+                  <ScNumberInput theme="normal"
                     class="menu-control number-input"
 
                     :model-value="draftFor(row.menu.id).sequence_override || undefined"
