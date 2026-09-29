@@ -13,7 +13,7 @@ import json
 import unittest
 from pathlib import Path
 
-from native_view_workflow_action_coverage_guard import REGISTRY, validate
+from native_view_workflow_action_coverage_guard import REGISTRY, adopted_models, validate
 
 
 def _baseline() -> dict:
@@ -71,6 +71,25 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         before = copy.deepcopy(payload)
         validate(payload)
         self.assertEqual(payload, before)
+
+    def test_helper_built_profiles_are_scanned_too(self) -> None:
+        # Regression for the coverage hole that hid seven buttons: a regex over
+        # the source text only sees inline literals, so every model adopted
+        # through a **_helper(...) call was silently left unscanned.
+        models = adopted_models()
+        for helper_built in (
+            "sc.plan",
+            "sc.equipment.plan",
+            "sc.quality.issue",
+            "sc.material.settlement",
+        ):
+            self.assertIn(helper_built, models, "helper-built profile is missing from the scan")
+
+    def test_a_helper_built_model_transition_must_be_registered(self) -> None:
+        payload = _baseline()
+        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_start"]
+        errors = validate(payload)
+        self.assertTrue(any("action_start" in error for error in errors))
 
 
 if __name__ == "__main__":

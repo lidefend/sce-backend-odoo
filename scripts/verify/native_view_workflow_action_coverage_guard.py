@@ -16,11 +16,13 @@ This guard makes that set explicit and fail-closed:
 * an entry whose method is now declared by a contract profile is stale too --
   the registration must not outlive the gap it records.
 
-Scope note: declared methods are collected across every workflow profile rather
-than per model.  That is deliberately conservative -- it can only under-report
-(a method declared for one model shields the same-named button on another), it
-never invents a gap.  Per-model resolution would require executing the profile
-builders, which this guard must not do.
+Scope note: the model set and the declared-method set both come from statically
+evaluating ``PROFILE_BY_MODEL`` (see ``workflow_contract_profile_loader``).  The
+registry mixes inline literals with helper calls such as
+``**_simple_approval_profiles((...))``; a regex over the source text sees only the
+inline half and silently scans a subset of the contract.  Declared methods are
+still collected across every profile rather than per model, which is deliberately
+conservative -- it can only under-report, it never invents a gap.
 
 The guard never proposes a meaning.  Deciding whether a native transition needs
 a declared purpose is a business call; the registry records where that has not
@@ -37,8 +39,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-SERVICE = ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py"
 REGISTRY = ROOT / "config/contract/native_view_undeclared_actions.v1.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import workflow_contract_profile_loader as profile_loader  # noqa: E402
 
 CLASSES = {
     "state_transition_undeclared",
@@ -52,23 +56,17 @@ BUTTON_RE = re.compile(r"<button\b([^>]*)>", re.S)
 NAME_RE = re.compile(r'\bname="([^"]+)"')
 
 
-def _read_service() -> str:
-    return SERVICE.read_text(encoding="utf-8")
+def adopted_models() -> set[str]:
+    """Models the contract actually publishes a profile for.
+
+    Helper-built profiles count: the registry is evaluated, not pattern-matched.
+    """
+    return profile_loader.adopted_models(profile_loader.load_profiles())
 
 
-def adopted_models(source: str) -> set[str]:
-    """Models with a workflow projection profile."""
-    return set(
-        re.findall(r"\n        \"([a-z_]+\.[a-z_.]+)\": \{\n            \"state_field\"", source)
-    )
-
-
-def declared_methods(source: str) -> set[str]:
+def declared_methods() -> set[str]:
     """Every method any profile binds to a contract action."""
-    methods: set[str] = set()
-    for block in re.findall(r'"method_by_action": \{([^}]*)\}', source, re.S):
-        methods |= set(re.findall(r':\s*"([a-zA-Z_][a-zA-Z0-9_]*)"', block))
-    return methods
+    return profile_loader.declared_methods(profile_loader.load_profiles())
 
 
 def native_object_buttons(models: set[str]) -> dict[tuple[str, str], int]:
@@ -107,11 +105,10 @@ def registered_entries(payload: dict[str, Any]) -> dict[tuple[str, str], dict[st
 
 
 def validate(payload: dict[str, Any]) -> list[str]:
-    source = _read_service()
-    models = adopted_models(source)
+    models = adopted_models()
     if not models:
         return ["no workflow projection profile was found; the scan would be vacuous"]
-    declared = declared_methods(source)
+    declared = declared_methods()
     buttons = native_object_buttons(models)
     if not buttons:
         return ["no native object button was found on an adopted model; the scan would be vacuous"]
@@ -152,7 +149,12 @@ def main() -> int:
     parser.add_argument("--registry", type=Path, default=REGISTRY)
     args = parser.parse_args()
     payload = json.loads(args.registry.read_text(encoding="utf-8"))
-    errors = validate(payload)
+    try:
+        errors = validate(payload)
+    except profile_loader.ProfileSourceError as exc:
+        print("Native view workflow action coverage guard failed:")
+        print(f"- the workflow contract profile registry could not be read: {exc}")
+        return 1
     if errors:
         print("Native view workflow action coverage guard failed:")
         for error in errors:

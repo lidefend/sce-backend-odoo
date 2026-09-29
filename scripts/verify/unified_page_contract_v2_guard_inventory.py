@@ -28,7 +28,9 @@ OFFLINE_TARGETS = {
         "scripts/verify/unified_page_contract_v2_action_guard.py",
     ),
     "verify.native_view.workflow_action_coverage": (
+        "scripts/verify/workflow_contract_profile_loader.py",
         "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_workflow_contract_profile_loader.py",
         "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     ),
     "verify.unified_page_contract.v2.data": (

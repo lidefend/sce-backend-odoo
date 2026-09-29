@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Native type=object form buttons on workflow-adopted models that no contract profile declares. Each entry records the nature of the button so the uncovered set is explicit; it grants no meaning and does not replace a declared purpose.",
+  "description": "Native type=object form buttons on workflow-adopted models that no contract profile declares. The adopted model set is the evaluated PROFILE_BY_MODEL registry, so helper-built profiles count too. Each entry records the nature of the button so the uncovered set is explicit; it grants no meaning and does not replace a declared purpose.",
   "registry_rule": "A native object button on an adopted model must either be declared by a contract profile or be listed here. Entries go stale when the method becomes declared or disappears from the views.",
   "classes": {
     "state_transition_undeclared": "the button changes record state; the missing declaration is an authority-side gap",
@@ -128,11 +128,53 @@
       "reason": "opens a related record or view; it changes no record state"
     },
     {
+      "model": "sc.material.purchase.request",
+      "method": "action_create_purchase_order",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_create_rfq",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_view_purchase_orders",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_view_rfqs",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
+    },
+    {
       "model": "sc.material.rfq",
       "method": "action_create_purchase_order",
       "class": "document_helper",
       "occurrences": 1,
       "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.settlement",
+      "method": "action_create_remaining_payment_request",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.settlement",
+      "method": "action_open_payment_request",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
     },
     {
       "model": "sc.payment.execution",
@@ -147,6 +189,13 @@
       "class": "navigation",
       "occurrences": 1,
       "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.plan",
+      "method": "action_start",
+      "class": "state_transition_undeclared",
+      "occurrences": 1,
+      "reason": "writes state confirmed -> in_progress; the profile declares `complete`/`reopen`/`cancel` but no action that enters the in_progress phase"
     },
     {
       "model": "sc.project.document",

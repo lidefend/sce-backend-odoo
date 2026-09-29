@@ -356,8 +356,9 @@ verify.unified_page_contract.v2.action: guard.prod.forbid
 
 .PHONY: verify.native_view.workflow_action_coverage
 verify.native_view.workflow_action_coverage: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/native_view_workflow_action_coverage_guard.py
+	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py
 	@python3 scripts/verify/native_view_workflow_action_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_contract_profile_loader.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_native_view_workflow_action_coverage_guard.py
 
 .PHONY: verify.unified_page_contract.v2.data
