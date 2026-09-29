@@ -1525,3 +1525,10 @@ B线复核无放宽：AST检查请求→能力→只读fallback及委托，列�
 行为测试仅证明编排（能力函数替身），不冒称权限计算运行态验收。产品及构建/数据库输入未变，
 沿用TPL07/LC02原证据。本批两项门禁已关闭；no_new_any及style_system仍待收口。
 批次验收完成（两项守卫）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+后续类型诊断（只读，不计通过）：用现有TypeScript AST只统计script内AnyKeyword，原19项中
+实际超过现有数值基线的为6个文件：one2manyColumnOptionsRuntime、useRecordCollaborationPresentation、
+useBusinessConfigPublishLifecycle、useBusinessConfigRemediationLifecycle、useBusinessConfigScopeLifecycle、
+useBusinessConfigWorkbenchBootstrap。其余报告主要来自注释/禁用注释的词法误计。
+此诊断未改guard或baseline，不能替代no_new_any门禁。下一步需为6个真实依赖边界补明确类型，
+再处理词法计数对注释的误判；禁止把Record<string, any>机械替成不安全断言或提高基线。
