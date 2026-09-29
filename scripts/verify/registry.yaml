@@ -432,6 +432,12 @@ entries:
   date: '2026-08-26'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_standard_preview.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/runtime_ops.mk through Python unittest module notation (scripts.verify.test_frontend_standard_preview); registry static scan does not recognize that invocation form
 - script: test_frontend_system_state_recovery_guard.py
   status: orphan
   owner: platform-team
@@ -678,6 +684,12 @@ entries:
   date: '2026-08-04'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_workspace_composition_wiring.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/frontend.mk through Python unittest module notation (scripts.verify.test_workspace_composition_wiring); registry static scan does not recognize that invocation form
 - script: test_view_type_render_coverage_guard.py
   status: orphan
   owner: platform-team
