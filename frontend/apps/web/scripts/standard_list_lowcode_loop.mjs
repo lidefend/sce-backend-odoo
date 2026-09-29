@@ -70,10 +70,25 @@ export function completeLabelColumns(contract, label) {
   return columns.map((name, index) => ({ name, sequence: (index + 1) * 10, ...(name === 'name' ? { label } : {}) }));
 }
 
-export function labelOnlyProjection(contract, label) {
+export function labelOnlyProjection(contract, label, configured = false) {
   completeLabelColumns(contract, label);
   const result = structuredClone(contract);
   const profile = result.layoutContract.listProfile;
+  // Full-list configuration becomes the strict column authority only during
+  // draft/published comparison. Restoration must remove that authority again.
+  if (configured) {
+    assert.deepEqual(profile.column_policy, {
+      mode: 'strict', reason: 'business_list_config_contract_authoritative',
+      owner_layer: 'ui.business.config.contract.view_orchestration',
+    }, 'only the exact configured column authority is allowed');
+    assert.equal(profile.sourceAuthority?.source_key, 'list_profile.business_config_contract_authoritative');
+    delete profile.column_policy;
+    profile.sourceAuthority.source_key = 'list_profile';
+  } else {
+    assert.equal(profile.column_policy, undefined, 'baseline/restored configuration authority must be absent');
+    assert.equal(profile.sourceAuthority?.source_key, 'list_profile', 'baseline/restored native authority required');
+  }
+
   if (profile.column_labels?.name === label) profile.column_labels.name = '__LABEL_UNDER_TEST__';
   const visitContainer = (node) => {
     for (const widget of node.widgetList || []) {
@@ -229,7 +244,7 @@ export async function runStandardListLoop() {
     const draft = await contract({ preview_token: preview.preview.token, preview_role_key: '' });
     await fs.writeFile(path.join(out, 'draft-contract.json'), JSON.stringify(draft, null, 2), { mode: 0o600 });
     check('draft consumes label', listLabels(draft).some(([key, value]) => key === 'name' && value === label));
-    assert.deepEqual(labelOnlyProjection(draft, label), baselineProjection, 'draft changes capabilities beyond target label; publish prohibited');
+    assert.deepEqual(labelOnlyProjection(draft, label, true), baselineProjection, 'draft changes capabilities beyond target label; publish prohibited');
     check('draft preserves complete capabilities', true);
     report.publish_request_id = `${run}-publish`;
     report.publish_attempted = publishAttempted = true;
@@ -237,7 +252,7 @@ export async function runStandardListLoop() {
     const published = await cs('publish', { change_set_token: token, request_id: report.publish_request_id });
     check('published content verified', published.state === 'published' && published.publish_result?.published_content_verified === true);
     const publishedContract = await contract();
-    assert.deepEqual(labelOnlyProjection(publishedContract, label), baselineProjection, 'published capabilities must match baseline');
+    assert.deepEqual(labelOnlyProjection(publishedContract, label, true), baselineProjection, 'published capabilities must match baseline');
     report.published_labels = listLabels(publishedContract);
     check('effective contract consumes label', report.published_labels.some(([key, value]) => key === 'name' && value === label));
     report.changed_headers = await observe(label);

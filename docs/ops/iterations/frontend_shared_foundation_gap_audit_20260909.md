@@ -1466,3 +1466,44 @@ TARGET_ENVIRONMENT_ID=sc-fe-r2-p1-01/local；非platform-control/industry-catalo
 不允许真实客户业务数据，允许既有fixture。精确dbfilter `^sc_frontend_acceptance$`，filestore为
 受管 `sc_fe_r2_p1_01_odoo` 卷内该库目录；每次入口重新验证身份，不新建/复制/reset库或卷。
 受管后端仅重启Python，不做模块升级；前端5180/TPL07-r2原产物复用。运行态验证pending。
+
+LC02 首次运行：P0 `41737a8a`、P1 `e37cd160`、测试 `7be3cce8`；工作树clean后
+`make backend.acceptance.up` 成功替换旧revision后端（`/tmp/lc02-backend-up.log`），库/卷未改。
+`WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`：
+`web-lc-01-06b41f95-ec23-4ed3-97f2-759c09ab35dd/report.json` failed/discarded，无publish_attempted，
+恢复全契约一致。此前229叶节点差异消除，剩余仅listProfile的精确strict配置来源column_policy及
+sourceAuthority.source_key。原所有显隐/顺序/锁/schema/selection/映射/actions/data/runtime等深比较一致。
+后续必须证明来源标记允许差异边界；不能丢弃任意policy、sourceAuthority或profile再比较。
+
+### LC02 真实闭环收口
+
+来源差异审计：column_policy在后端确有strict列投影意义，不能称作任意无行为元数据。
+本次仅draft/published允许精确 `{mode: strict, reason: business_list_config_contract_authoritative,
+owner_layer: ui.business.config.contract.view_orchestration}` 三键对象及对应source_key，
+验证后规范为相同基线以比较所有有效能力；未知值/额外键拒绝。
+baseline/restored必须无该policy、source_key为list_profile，配置来源残留即恢复失败。
+P4失败注入测试新增阶段隔离、额外键/其他mode/错误来源拒绝，
+`make verify.business_config.standard_list_loop.unit` **14 tests passed**（`/tmp/lc02-tool-unit.log`）。
+未改变P0/P1后端代码，未重启第二次、未新建前端构建。
+
+最终命令 `WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`，日志
+`/tmp/lc02-loop-final.log`；原始报告：
+`artifacts/frontend-web-fix-20260928/web-lc-01-bb8af700-b57b-4832-8a65-458a5b1f0810/report.json`。
+**passed / rolled_back，13具名断言通过**；此外草稿、正式发布、恢复有效契约严格比较均通过。
+原22列、13隐藏列、显隐/顺序禁用和锁定集合、widget/selection/金额映射、actions/status/
+query/domain/context/权限及runtime能力保留；发布期间仅目标标签与精确配置来源发生预期变化。
+20条有序ID、固定id/name/amount/state/write_date摘要、实际查询上下文相同，browser errors=0。
+回滚后完整能力/原生来源以及可见表头、请求、记录集与原基线一致；所有配置已恢复，无业务写入。
+`before.png`、`published.png`、`restored.png`保存在同一原始目录；保留首次failed/discarded证据。
+
+真实后端绑定 clean `7be3cce84ba10a05e5e0240bc176a62cfd6b4a62`，最终工具运行身份为该HEAD+
+本批P4工具dirty scope；前端为已验证TPL07-r2，原build receipt不改写。后续工具/文档提交不改变
+本次产品输入，不需为换SHA重跑。风险回滚：P1后P0逆序撤回相关提交，受管backend重启；无schema/
+数据迁移。先前LC01B的行为漂移阻断已由本批关闭，但历史失败报告不改写为passed。
+
+范围：配置API→有效契约→官方标准列表→完整回滚已验证；不是配置工作台UI全旅程、全部模型/
+全部角色配置能力或全89入口验收。TPL07标准页面默认接管不变；原style_system等强制门禁仍待
+各自收口，不能据本批宣称总体官方接管/发布/交付全部完成。
+**批次验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。**
+
+LC02 最终B线已核对同一候选报告及阶段化来源比较：范围内无剩余阻断，正常和异常恢复均不豁免配置来源残留。

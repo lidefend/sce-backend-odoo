@@ -65,7 +65,7 @@ test('record identity survives presentation changes but rejects invalid and dupl
 function fullContract(label = '编号') {
   return { pageInfo: { model: 'payment.request' },
     layoutContract: {
-      listProfile: { columns: ['name', 'optional'], fact_columns: ['name', 'optional'], hidden_columns: ['optional'], column_labels: { name: label }, preference_policy: { allow_visibility: false } },
+      listProfile: { sourceAuthority: { source_key: 'list_profile' }, columns: ['name', 'optional'], fact_columns: ['name', 'optional'], hidden_columns: ['optional'], column_labels: { name: label }, preference_policy: { allow_visibility: false } },
       containerTree: [{ widgetList: [
         { fieldCode: 'name', widgetType: 'table', label, fieldDescriptor: { name: 'name', string: label }, componentConfig: { sort_field: 'id' } },
         { fieldCode: 'optional', widgetType: 'table', label: '可选', componentConfig: { optional: 'hide' } },
@@ -119,4 +119,24 @@ test('nested relation with the same name and label is outside label allowance', 
   before.layoutContract.relation = { name: 'name', label: '编号' };
   next.layoutContract.relation = { name: 'name', label: '新标签' };
   assert.notDeepEqual(labelOnlyProjection(before, '编号'), labelOnlyProjection(next, '新标签'));
+});
+
+test('configured authority is allowed only for draft/publication and must disappear on restore', () => {
+  const before = fullContract(); const configured = fullContract('新标签');
+  configured.layoutContract.listProfile.column_policy = {
+    mode: 'strict', reason: 'business_list_config_contract_authoritative',
+    owner_layer: 'ui.business.config.contract.view_orchestration',
+  };
+  configured.layoutContract.listProfile.sourceAuthority.source_key = 'list_profile.business_config_contract_authoritative';
+  assert.deepEqual(labelOnlyProjection(configured, '新标签', true), labelOnlyProjection(before, '编号'));
+  assert.throws(() => labelOnlyProjection(configured, '新标签'), /must be absent/);
+  assert.throws(() => labelOnlyProjection(before, '编号', true), /exact configured/);
+  for (const mutate of [
+    (c) => c.layoutContract.listProfile.column_policy.mode = 'extend',
+    (c) => c.layoutContract.listProfile.column_policy.additional_behavior = true,
+    (c) => c.layoutContract.listProfile.sourceAuthority.source_key = 'other',
+  ]) {
+    const changed = structuredClone(configured); mutate(changed);
+    assert.throws(() => labelOnlyProjection(changed, '新标签', true));
+  }
 });

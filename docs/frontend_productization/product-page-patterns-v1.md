@@ -76,6 +76,16 @@ proof of label-only capability preservation. It does not invalidate unchanged-
 configuration page-type adoption; future label-only configuration verification
 must preserve and compare the complete column contract.
 
+WEB-LC-02 closes that follow-up for the payment action: the formal native
+baseline is retained under explicit full-list configuration, and personal list
+preferences remain subject to its existing locks. The real draft → publish →
+rollback loop preserved all 22 columns, 13 hidden columns, schema mappings,
+actions, query scope and record identities. Only the tested label and the exact
+configuration-authority marker may differ during draft/publication; restoration
+must return to native authority. This is API/contract/list acceptance, not full
+configuration-workbench UI acceptance. Evidence is in the existing iteration
+record under WEB-LC-02.
+
 ### Historical rollout records
 
 The presentation composition for standard pages is taken from the official
