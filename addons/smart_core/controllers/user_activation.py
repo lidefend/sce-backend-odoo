@@ -8,6 +8,7 @@ from odoo.exceptions import UserError
 from odoo.http import request
 
 from ..models.user_activation import PURPOSE_ENTERPRISE_ACTIVATION
+from ..core.page_contracts_builder import build_public_auth_page_contracts
 
 
 _logger = logging.getLogger(__name__)
@@ -15,6 +16,13 @@ GENERIC_REJECTION = "激活请求无效、已过期或当前不可使用"
 
 
 class ScUserActivationController(http.Controller):
+    @http.route(
+        "/api/v1/auth/page-contracts", type="http", auth="public",
+        methods=["GET"], csrf=False, save_session=False,
+    )
+    def public_page_contracts(self, **_kwargs):
+        return self._response({"ok": True, "data": build_public_auth_page_contracts()})
+
     def _client_scope(self) -> str:
         req = request.httprequest
         remote = str(req.remote_addr or "unknown").strip()

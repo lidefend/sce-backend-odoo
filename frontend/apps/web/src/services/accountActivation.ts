@@ -13,7 +13,7 @@ interface ActivationCompleteResponse {
   message?: string;
 }
 
-async function activationRequest<T>(path: string, body?: Record<string, string>): Promise<T> {
+async function activationRequest<T>(path: string, body?: Record<string, string>, signal?: AbortSignal): Promise<T> {
   const headers = new Headers({
     Accept: 'application/json',
     'Content-Type': 'application/json',
@@ -28,6 +28,7 @@ async function activationRequest<T>(path: string, body?: Record<string, string>)
     cache: 'no-store',
     credentials: 'omit',
     referrerPolicy: 'no-referrer',
+    ...(signal ? { signal } : {}),
   });
   const payload = await response.json().catch(() => ({ ok: false })) as T & { message?: string };
   if (!response.ok) throw new Error(payload.message || '请求未完成');
@@ -51,5 +52,11 @@ export function completeAccountActivation(activationContext: string, password: s
 export function getPasswordRecoveryStatus() {
   return activationRequest<{ ok: boolean; self_service_enabled: boolean; message: string }>(
     '/api/v1/auth/password-recovery/status',
+  );
+}
+
+export function getPublicAuthPageContracts() {
+  return activationRequest<{ ok: boolean; data: { schema_version: string; pages: Record<string, import('../stores/session').PageContract> } }>(
+    '/api/v1/auth/page-contracts', undefined, AbortSignal.timeout(10000),
   );
 }

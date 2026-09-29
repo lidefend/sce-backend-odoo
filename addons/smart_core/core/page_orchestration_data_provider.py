@@ -140,6 +140,8 @@ def build_default_page_actions(page_key: str) -> list[Dict[str, Any]]:
             {"key": "open_account_activation", "label": "激活账号", "intent": "ui.contract"},
             {"key": "open_password_recovery", "label": "忘记密码", "intent": "ui.contract"},
         ]
+    if key in {"account_activation", "password_recovery"}:
+        return [{"key": "open_login", "label": "返回登录", "intent": "ui.contract"}]
     if key == "home":
         return [
             {"key": "open_my_work", "label": "我的工作", "intent": "ui.contract"},

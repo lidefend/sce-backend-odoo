@@ -1,3 +1,4 @@
+import { getPublicAuthPageContracts } from '../services/accountActivation';
 import { defineStore } from 'pinia';
 import type { AppInitResponse, CanonicalNavigationModel, LoginResponse, NavMeta, NavNode, RecordContextContract, RecordContextOption } from '@sc/schema';
 import { intentRequest } from '../api/intents';
@@ -188,6 +189,9 @@ export interface ActivityPage {
   last_active_at: number;
 }
 
+let publicPageRequestEpoch = -1;
+let publicPageRequestSequence = 0;
+
 export interface PageContract {
   schema_version?: string;
   texts?: Record<string, unknown>;
@@ -263,6 +267,7 @@ export interface SessionState {
     loaded?: boolean;
   } | null;
   pageContracts: Record<string, PageContract>;
+  publicPageContractStatus: 'idle' | 'loading' | 'ready' | 'error';
   sceneReadyContract: SceneReadyContract | null;
   sceneGovernance: SceneGovernancePayload | null;
   lastTraceId: string;
@@ -573,6 +578,7 @@ export const useSessionStore = defineStore('session', {
     workspaceHome: null,
     workspaceHomeRef: null,
     pageContracts: {},
+    publicPageContractStatus: 'idle',
     sceneReadyContract: null,
     sceneGovernance: null,
     lastTraceId: '',
@@ -1720,6 +1726,36 @@ export const useSessionStore = defineStore('session', {
           appInitInFlight = null;
           appInitEpoch = -1;
         }
+      }
+    },
+    async loadPublicPageContracts(force = false) {
+      if (this.token) return;
+      if (this.publicPageContractStatus === 'loading' && publicPageRequestEpoch === currentContextEpoch()) return;
+      if (!force && this.publicPageContractStatus === 'ready' && this.pageContracts.login) return;
+      const epoch = currentContextEpoch();
+      publicPageRequestEpoch = epoch;
+      const sequence = ++publicPageRequestSequence;
+      this.publicPageContractStatus = 'loading';
+      try {
+        const result = await getPublicAuthPageContracts();
+        if (sequence !== publicPageRequestSequence || !isCurrentContextEpoch(epoch) || this.token) return;
+        const pages = result?.data?.pages;
+        if (!result.ok || result.data?.schema_version !== '1.0.0' || !pages
+          || Object.keys(pages).length !== 3
+          || !['login', 'account_activation', 'password_recovery'].every(key => {
+            const actions = pages[key]?.page_orchestration?.action_schema?.actions as Record<string, { target?: { kind?: string; path?: string } }> | undefined;
+            const required = key === 'login' ? ['open_account_activation', 'open_password_recovery'] : ['open_login'];
+            return required.every(name => actions?.[name]?.target?.kind === 'route.path'
+              && actions[name].target?.path?.startsWith('/') && !actions[name].target?.path?.startsWith('//'));
+          })) {
+          throw new Error('Invalid public page contract');
+        }
+        this.pageContracts = pages;
+        this.publicPageContractStatus = 'ready';
+      } catch {
+        if (sequence === publicPageRequestSequence && isCurrentContextEpoch(epoch) && !this.token) this.publicPageContractStatus = 'error';
+      } finally {
+        if (sequence === publicPageRequestSequence && this.publicPageContractStatus === 'loading') this.publicPageContractStatus = 'idle';
       }
     },
     async loadWorkspaceHomeOnDemand(force = false) {
