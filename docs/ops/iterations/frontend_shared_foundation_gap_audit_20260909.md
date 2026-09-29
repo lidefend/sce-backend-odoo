@@ -2866,3 +2866,174 @@ object 按钮也真实存在。因此它们**不在**本守卫的未声明集合
 ### 状态
 
 本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## 相位覆盖完备性守卫：把 `state_phase` 的取值集双向钉死（2026-09-29，FE-CONTRACT-PHASECOV-01）
+
+上一段 `FE-CONTRACT-NATIVEBTN-02` 第 8 节登记了「`state_phase` 是否覆盖该模型 `state`
+selection 的全部取值」尚未守卫，并明确本轮不顺手改。本段收口这一项：补掉登记里那处真实缺口，
+并把覆盖口径做成静态守卫。
+
+### 1. 先确认 `state_phase` 是真实运行语义，不是装饰
+
+`state_phase` 在前端源码里没有任何字面引用，容易被读成「只为展示的映射表」。实际消费链在
+`addons/smart_construction_core/models/support/workflow_contract_service.py`：
+
+```python
+business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")   # 第 976 行
+```
+
+`business_phase` 随后驱动三处判定并发布到端上：
+
+| 派生结果 | 位置 | 未映射时的行为 |
+|---|---|---|
+| `editability` | `_editability()`（第 1028 行） | 用 raw token 去比 `field_editable_phases` / `TERMINAL_PHASES` / `editable_phases` |
+| `approvalPhase` | `_approval_phase()`（第 1012 行） | 只对 `approved/done/legacy_confirmed` 等已知相位生效 |
+| `statusbar` / `businessPhase` | `_statusbar_projection()`（第 991 行） | 把 raw token 当相位发布，并落 `STATUSBAR_EXTRA_LABELS` 兜底标签 |
+
+所以缺一条映射不是「显示少了几个字」：**一个真实业务相位会走兜底分支**，而兜底恰好返回相同字符串时
+一切看起来都对——这正是这类缺口能长期存活的原因。
+
+### 2. 状态集的权威来源：源码静态解析，不是生成报告
+
+`docs/audit/workflow_state_inventory_sc_demo.md` 是运行时快照，但它对
+`construction.contract.expense/income` 只能渲染成 `<callable>`（这两个模型经
+`_inherits` 委派到 `construction.contract`），对静态解析不到的模型无法给结论。用它当守卫权威，
+等于把「静默跳过」写进守卫本身。
+
+改用源码静态解析，解析不到就 FAIL：
+
+| 形态 | 解析方式 |
+|---|---|
+| `state = fields.Selection([...])` | 字面量表求值（含 `_()` 包裹） |
+| `ScStateMachine.selection(ScStateMachine.X)` | 解析 `state_machine.py` 的 `X_STATES`（5 个：`CONTRACT`/`PAYMENT_REQUEST`/`SETTLEMENT`/`SETTLEMENT_ORDER`/`PROJECT`） |
+| `_inherits = {"construction.contract": ...}` | 跟随委派基类 |
+| `_inherit = ["sc.business.fact.mixin", ...]` | 跟随 mixin |
+
+解析结果是**并集**：只可能多报（可见的 FAIL），不可能少报（静默 PASS）。
+
+对 63 个快照可枚举的模型做交叉校验：**静态解析结果与运行时快照 63/63 完全一致**，0 处差异 ——
+证明解析器没有少解析，也没有把 mixin 使用者的取值并进被复用模型。
+
+### 3. 实测缺口与修复
+
+| model | 缺口 | 定性 |
+|---|---|---|
+| `sc.general.contract` | `legacy_confirmed` 未在 `state_phase` | **投影缺口**，P1 行业标准层 |
+
+`sc.general.contract` 的 selection 是 `draft/confirmed/signed/legacy_confirmed/cancel`；
+`legacy_confirmed` 在模型里是真实状态（`general_contract.py:23-30`），又被
+`TERMINAL_PHASES`、`_approval_phase()`、`STATUSBAR_EXTRA_LABELS` 三处按相位名识别，
+但 profile 忘了声明它。同型模型（`sc.expense.claim`、`sc.payment.execution`、
+`sc.invoice.registration`、`sc.settlement.adjustment`）都声明了该相位。
+
+修复是 `state_phase` 补一行 `"legacy_confirmed": "legacy_confirmed"`。
+
+**诚实说明**：本例兜底返回值与映射值同为 `legacy_confirmed`，所以今天的
+`businessPhase` / `editability` / `approvalPhase` 用户可见结果**没有变化**。这是**潜在**缺口
+（下一个加入 selection 的取值就不会这么幸运），不是已发生的用户故障。按「缺口必须显现」登记并修复，
+不按「已经出事了」夸大。
+
+### 4. 反向口径：死条目必须有登记，不能静默存在
+
+同一个查找键方向还有反向问题：profile 声明了 `Selection` 永远产生不了的 key。
+扫描实测 **12 个模型**有这种情况，全部来自共享 helper 模板的防御性别名：
+
+| 来源模板 | 模型 | 死条目 |
+|---|---|---|
+| `_simple_approval_profiles` | `sc.equipment.plan/request`、`sc.labor.plan/request`、`sc.material.purchase.request`、`sc.material.rental.plan`、`sc.safety.disclosure/plan`、`sc.subcontract.plan/request` | `phase:submit`、`phase:rejected`、`actions:submit`、`actions:rejected` |
+| `_confirm_done_profiles` | `sc.fund.account.operation` | `phase:cancel`、`phase:in_progress`、`phase:legacy_confirmed`、`actions:cancel`、`actions:in_progress` |
+| `_confirm_done_profiles` | `sc.plan` | `phase:cancelled`、`phase:legacy_confirmed`、`actions:cancelled` |
+
+模板按 `payment.request` 的取值集写成（那里真有 `submit`），不是每个成员模型都有。
+运行期无害（查找键是记录的真实 raw state），但**profile 与模型在互相矛盾**。
+
+本段不改这 12 个 profile（那是对 12 个模型做配置编辑，不在授权范围），改为登记进
+`config/contract/workflow_state_phase_dead_entries.v1.json`，键集精确匹配、必须带 reason、
+登记表过期同样 FAIL。
+
+### 5. 守卫与 fail-closed
+
+`scripts/verify/workflow_state_phase_coverage_guard.py`：
+
+- 覆盖缺口 → FAIL（无可豁免通道：补映射或改模型，二选一）；
+- 未登记死条目 → FAIL；登记表 stale / 键集不符 / 缺 reason → FAIL；
+- 某模型 selection 解析不到 → FAIL 并单独报该模型（**不跳过**）；
+- profile 注册表读不全（复用 `workflow_contract_profile_loader`）→ FAIL；
+- 扫描数不等于 profile 数 → FAIL（防止守卫自身缩小作用域）。
+
+复用 `workflow_contract_profile_loader`，不再写第二套注册表读取。
+
+### 6. 负例实测（真实仓库，全部按预期 FAIL）
+
+| 人造偏差 | 期望 | 实测 |
+|---|---|---|
+| 移除 `sc.general.contract` 的 `legacy_confirmed` 映射 | FAIL | FAIL `raw state ['legacy_confirmed'] is absent from state_phase` |
+| 删掉 `sc.plan` 死条目登记 | FAIL | FAIL `sc.plan: ['actions:cancelled', 'phase:cancelled', 'phase:legacy_confirmed'] ... register it` |
+| 登记一个没有死条目的模型 | stale FAIL | FAIL `registered ... but none were found` |
+| 死条目去掉 reason | FAIL | FAIL `registered without a reason` |
+| 后端断言：移除映射后跑真实 Odoo 检验 | FAIL | FAIL `AssertionError: None != 'legacy_confirmed'` |
+
+### 7. 验收体系为什么之前没发现
+
+上一段的 8+10 个单测只验证「守卫与它自己的登记表自洽」。相位覆盖这一类**根本没有断言**，
+所以 `state_phase` 缺一条 key、以及 12 个模型的死条目可以长期存在而全套门禁全绿。
+与上一段同一病根：**工具没有声明自己的作用域**。本段把作用域断言直接钉进守卫
+（`scanned != len(profiles)` 即 FAIL），并把它挂进既有 v2 聚合。
+
+### 8. 七问
+
+- **Formal Product Layer**：被修的 `state_phase` 属 **P1 行业标准产品**
+  （`smart_construction_core` 的 workflow profile 与状态机，每个标准部署一致继承）；
+  守卫与登记表属 **P4 ops/verify 工具**。
+- **Layer Target**：`addons/smart_construction_core/models/support/workflow_contract_service.py`、
+  `scripts/verify/workflow_state_phase_coverage_guard.py`、
+  `scripts/verify/test_workflow_state_phase_coverage_guard.py`、
+  `config/contract/workflow_state_phase_dead_entries.v1.json`、
+  `addons/smart_construction_core/tests/test_workflow_contract_backend.py`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`smart_construction_core`（契约投影 + 后端断言）；`scripts/verify`（守卫/测试）。
+- **Standard vs User-Specific**：标准——`state_phase` 是行业标准的生命周期投影，
+  不是客户偏好，不进 `smart_construction_custom`，也不进低代码运行时。
+- **Why Here**：相位投影与状态机同在 `smart_construction_core`；覆盖口径与 loader 同址；
+  登记表与其它契约侧登记同址；仍挂在既有 `verify.unified_page_contract.v2*` 聚合下。
+- **Why Not Elsewhere**：不改前端去兜底相位猜测（那正是要禁止的「前端发明业务语义」）；
+  不把 12 个 profile 顺手改掉（配置编辑超出本轮授权，改为登记）；不新建治理文档或门禁平台。
+- **Blast Radius**：1 行 profile 声明 + 1 个静态守卫 + 1 张登记表 + 1 条后端断言；
+  不改业务模型、不改状态机、不改前端渲染、不改权限。
+  受影响面为 `verify.unified_page_contract.v2`、`.professional_backend` 及其新 target。
+
+### 9. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.workflow_state_phase_coverage` | PASS `models=65 covered=65 dead_registered=12`；16 tests OK |
+| `make verify.native_view.workflow_action_coverage` | PASS（相邻守卫未受影响，10 tests OK） |
+| 后端单方法（`TEST_TAGS=/smart_construction_core:TestWorkflowContractBackend.test_general_contract_legacy_confirmed_phase_is_declared`，DB `sc_dev_demo`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65` |
+| `make verify.unified_page_contract.v2.guard_inventory` | PASS |
+| `make verify.unified_page_contract.v2.professional_backend` | PASS |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make refresh.generated_reports` + `make ci.generated_reports.guard` | PASS（test inventory 1418 entries） |
+| `make architecture.complexity_baseline_lock` | PASS `checked=11` |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1350 scripts (1226 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会用注册库
+覆盖历史 `sc_demo` 基线，属既有环境限制（见 `FE-CONTRACT-NATIVEBTN-01` 说明），与本段改动无关。
+本段以「守卫 + 单测 + 一条真实 Odoo 断言」覆盖同一口径，不重复整条门禁。
+
+### 10. 剩余（显式登记，不在本段）
+
+- 12 个模型的死条目仍留在 profile 里（已登记，未删）。删除是对 12 个业务模型做配置编辑，
+  应与相位语义复核一起做，不在本轮授权范围。
+- `state_transition_undeclared` 五条（`payment.request.action_set_approved`、
+  `sc.general.contract.action_signed`、`sc.payment.execution.action_reverse_payment`、
+  `sc.plan.action_start`、`sc.project.document.action_reset_to_draft`）仍为**权威侧待决**，
+  不因本段消项。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
