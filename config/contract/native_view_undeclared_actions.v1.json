@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "description": "Native type=object form buttons on workflow-adopted models that no contract profile declares. Each entry records the nature of the button so the uncovered set is explicit; it grants no meaning and does not replace a declared purpose.",
+  "registry_rule": "A native object button on an adopted model must either be declared by a contract profile or be listed here. Entries go stale when the method becomes declared or disappears from the views.",
+  "classes": {
+    "state_transition_undeclared": "the button changes record state; the missing declaration is an authority-side gap",
+    "navigation": "opens a related record or view; no state change",
+    "document_helper": "generates/loads/creates business content; no state change"
+  },
+  "entries": [
+    {
+      "model": "construction.contract",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "construction.contract.expense",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "construction.contract.income",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_create_payment_execution",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_set_approved",
+      "class": "state_transition_undeclared",
+      "occurrences": 1,
+      "reason": "writes state approve->approved behind a finance approval check; the profile declares `approve` on action_approve, so this second entry point has no declared purpose yet"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_view_payment_execution",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_create_purchase_request",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_lines",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_orders",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_requests",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.expense.claim",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 2,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.general.contract",
+      "method": "action_signed",
+      "class": "state_transition_undeclared",
+      "occurrences": 1,
+      "reason": "draft/confirmed -> signed; the profile declares the signed phase but projects no action into it, so signing is unreachable from the adopted page"
+    },
+    {
+      "model": "sc.material.acceptance",
+      "method": "action_load_purchase_order_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.acceptance",
+      "method": "action_load_purchase_request_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.inbound",
+      "method": "action_load_acceptance_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.outbound",
+      "method": "action_open_transfer_inbound",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.material.rfq",
+      "method": "action_create_purchase_order",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.payment.execution",
+      "method": "action_reverse_payment",
+      "class": "state_transition_undeclared",
+      "occurrences": 1,
+      "reason": "paid -> reversed behind a finance cancel check; no profile action covers the reversal"
+    },
+    {
+      "model": "sc.payment.execution",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.project.document",
+      "method": "action_reset_to_draft",
+      "class": "state_transition_undeclared",
+      "occurrences": 1,
+      "reason": "returns a record to draft; the profile declares no reopen action for this model"
+    },
+    {
+      "model": "sc.receipt.income",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.self.funding.registration",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.tax.deduction.registration",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    }
+  ]
+}
