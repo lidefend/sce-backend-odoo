@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "2362101d523a98a33788b8aa7791240b2c6124930beef56096dffcc5616fda20",
+  "inputDigest": "2a377bf164ccf721bfb6cdbf2659b9283e77dc5723110eeaf80aa28c986a41b6",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -87,8 +87,7 @@
     {
       "appearance": "breadcrumb-item",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='breadcrumb-item']",
@@ -370,6 +369,7 @@
         "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
         "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
         "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
+        "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
         "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/views/LoginView.vue",

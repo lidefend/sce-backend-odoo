@@ -197,8 +197,16 @@
     },
     {
       "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
+      "adapterSources": [
+        {
+          "semanticAdapters": [],
+          "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignBreadcrumb",
+        "TDesignBreadcrumbItem"
+      ],
       "officialComponent": "breadcrumb",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -438,7 +446,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 97,
+      "productionConsumerCount": 100,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -473,7 +481,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 85,
+      "productionConsumerCount": 88,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -792,7 +800,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 67,
+      "productionConsumerCount": 70,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1147,7 +1155,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 104,
+      "productionConsumerCount": 107,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1179,7 +1187,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 492,
+      "productionConsumerCount": 495,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1388,7 +1396,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "aa8c40c7245f0cbd25c9378fbfbdf29cbba57b8176c60d5c29645810bf001735",
+  "inputDigest": "6b588949bf3cb9f043735cee582689a4fbf9722228e48dc2d3d0770c5fa08a6c",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "repository P0/P1 frontend production sources",

@@ -189,7 +189,7 @@
     },
     {
       "category": "shell",
-      "digest": "c32e09b0b72e456856f203164092b1725c77227f2b8de6c99640deb08bdbaf18",
+      "digest": "c4eec1db90f6143887653a042bda8cbb57e36593e94b9259d57a497c2a678b6d",
       "nativeStyleSelectors": [],
       "path": "components/MenuTree.vue",
       "referenceNativeStyleSelectors": [],
@@ -652,6 +652,16 @@
       "scComponents": [
         "ScButton"
       ]
+    },
+    {
+      "category": "other",
+      "digest": "bebad9ed71937400c3a7f9bdaa0035c111d5c764837ff0df69eda9299f2b9818",
+      "nativeStyleSelectors": [],
+      "path": "components/design-system/ScFooter.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": []
     },
     {
       "category": "form-fields",
@@ -1567,15 +1577,13 @@
     },
     {
       "category": "shell",
-      "digest": "886c344e4c2357b19b143b3a79f9d6a74f5f5ffc70167c83b47e880cb1799b9f",
+      "digest": "88aad1f393ee51712169a18b7312fa2c41acd84cee0c83d2156c71434242d760",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/NavigationBreadcrumb.vue",
       "referenceNativeStyleSelectors": [],
       "referencePresent": false,
       "referenceScComponents": [],
-      "scComponents": [
-        "ScButton"
-      ]
+      "scComponents": []
     },
     {
       "category": "shell",
@@ -1619,7 +1627,32 @@
     },
     {
       "category": "shell",
-      "digest": "c17b21ce3985a8e1265b92912aa012ad4a836b54749d599d3b322406ae7937a7",
+      "digest": "27955920bc6ddfe70cc4b6e7e95a83cc736a41e7555b97c17ba570ded3e68119",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductShellContentFooter.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScFooter"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "f8b0dd86c232b6e53affbd92eedcbc7caa8fa7281efd63a169fec76acf371762",
+      "nativeStyleSelectors": [],
+      "path": "components/product-shell/ProductShellSidebarFooter.vue",
+      "referenceNativeStyleSelectors": [],
+      "referencePresent": false,
+      "referenceScComponents": [],
+      "scComponents": [
+        "ScButton",
+        "ScIcon"
+      ]
+    },
+    {
+      "category": "shell",
+      "digest": "f02167fee9672a05f5f3683fbbf2ded762be09a01f4cf6caaa3069aef16d5250",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/ProductSideNavigation.vue",
       "referenceNativeStyleSelectors": [],
@@ -1963,7 +1996,7 @@
     },
     {
       "category": "shell",
-      "digest": "d1200bb7571d68e3b4af51b08c3d85f0cecd2210d6a321fbeaee6b87818d509e",
+      "digest": "fe1c1bc5c0ff3918cfd2aa8bddb4af35e89889f63abe5639fb483a04d8b06c27",
       "nativeStyleSelectors": [],
       "path": "layouts/AppShell.vue",
       "referenceNativeStyleSelectors": [],
@@ -2900,7 +2933,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "f7e707d7f3cd5fd1f12e10228b78ec7bfb285019671f62dd992611c7bc520a24",
+  "currentInputDigest": "915ffb305b7a05a91e311669c08310c6b4e2b15b0402f723365f2bdc9ef2fa84",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
@@ -3132,9 +3165,9 @@
   "scope": "repository formal P0/P1 frontend source projection",
   "summary": {
     "adapterCount": 18,
-    "changedSourceCount": 202,
+    "changedSourceCount": 205,
     "consumerPrimitiveVisualChromeCount": 0,
-    "currentSourceCount": 221,
+    "currentSourceCount": 224,
     "invalidFormalVisualEvidenceBindingCount": 0,
     "projectedAdapterCount": 18,
     "referenceSourceCount": 132,
