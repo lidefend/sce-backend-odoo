@@ -815,6 +815,11 @@ verify.frontend.standard_collection_composition.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_collection_composition_test.ts --bundle --platform=node --format=esm --outfile=/tmp/standard-collection-composition-test.mjs >/dev/null
 	@node /tmp/standard-collection-composition-test.mjs
 
+.PHONY: verify.frontend.list_order_field_contract.unit
+verify.frontend.list_order_field_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/list_order_field_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/list-order-field-contract-test.mjs >/dev/null
+	@node /tmp/list-order-field-contract-test.mjs
+
 .PHONY: verify.frontend.standard_shell_composition.unit
 verify.frontend.standard_shell_composition.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_shell_composition_test.ts --bundle --platform=node --format=esm --outfile=/tmp/standard-shell-composition-test.mjs >/dev/null

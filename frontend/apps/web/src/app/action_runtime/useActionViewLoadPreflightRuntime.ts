@@ -26,15 +26,33 @@ function collectOrderCandidateFields(value: unknown, fields: Set<string>): void 
   });
 }
 
-function collectContractOrderFields(contract: ContractV2NormalizedStore): Set<string> {
+/**
+ * A field identifier the contract itself names as an ordering target.
+ *
+ * A list column may declare the field it orders by (`sort_field`). That is the
+ * contract's own statement that ordering by it is supported, and the header
+ * offers exactly that field. Both sides must read the same declaration: the
+ * allowlist below decides what survives sanitisation, and the column decides
+ * what the user can click. When they disagreed, a click looked applied while
+ * the request kept its previous order.
+ */
+function addDeclaredOrderField(fields: Set<string>, value: unknown): void {
+  const text = String(value || '').trim();
+  if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(text)) fields.add(text);
+}
+
+export function collectContractOrderFields(contract: ContractV2NormalizedStore): Set<string> {
   const fields = new Set<string>(['id', 'name', 'display_name']);
-  resolveContractV2FieldWidgets(contract).forEach((widget) => fields.add(widget.fieldCode));
+  resolveContractV2FieldWidgets(contract).forEach((widget) => {
+    fields.add(widget.fieldCode);
+    addDeclaredOrderField(fields, (widget.componentConfig || {}).sort_field);
+  });
   collectOrderCandidateFields(resolveContractV2PrimaryDataSource(contract), fields);
   collectOrderCandidateFields(resolveContractV2SearchContract(contract), fields);
   return fields;
 }
 
-function sanitizeOrderValue(order: unknown, allowedFields: Set<string>): string {
+export function sanitizeOrderValue(order: unknown, allowedFields: Set<string>): string {
   const clauses: string[] = [];
   String(order || '').split(',').forEach((rawClause) => {
     const text = rawClause.trim();
