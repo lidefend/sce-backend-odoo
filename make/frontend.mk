@@ -906,3 +906,9 @@ verify.frontend.suggested_action.all: guard.prod.forbid verify.frontend.suggeste
 verify.frontend.bound_form_configuration.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/bound_form_configuration_test.ts --bundle --platform=node --format=esm --outfile=/tmp/bound-form-configuration-test.mjs >/dev/null
 	@node /tmp/bound-form-configuration-test.mjs
+
+.PHONY: verify.frontend.explicit_any.unit verify.frontend.typed_dependencies.unit
+verify.frontend.explicit_any.unit: guard.prod.forbid
+	@node --test scripts/verify/frontend_explicit_any_test.mjs
+verify.frontend.typed_dependencies.unit: guard.prod.forbid
+	@node scripts/verify/typed_dependency_contract_test.mjs

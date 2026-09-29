@@ -4,28 +4,28 @@
 from __future__ import annotations
 
 import json
-import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = ROOT / "frontend/apps/web/src"
 BASELINE_PATH = ROOT / "scripts/verify/baselines/frontend_no_new_any.json"
-ANY_RE = re.compile(r"\bany\b")
 
 
 def _collect_counts() -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for path in sorted(SRC_ROOT.rglob("*")):
-        if not path.is_file():
-            continue
-        if path.suffix not in {".ts", ".vue"}:
-            continue
-        if path.name.endswith(".d.ts"):
-            continue
-        rel = path.relative_to(ROOT).as_posix()
-        text = path.read_text(encoding="utf-8")
-        counts[rel] = len(ANY_RE.findall(text))
+    files = [
+        path.relative_to(ROOT).as_posix()
+        for path in sorted(SRC_ROOT.rglob("*"))
+        if path.is_file() and path.suffix in {".ts", ".vue"} and not path.name.endswith(".d.ts")
+    ]
+    result = subprocess.run(
+        ["node", str(ROOT / "scripts/verify/frontend_explicit_any.mjs")],
+        input=json.dumps(files), text=True, capture_output=True, check=True,
+    )
+    counts = json.loads(result.stdout)
+    if set(counts) != set(files) or any(type(value) is not int or value < 0 for value in counts.values()):
+        raise ValueError("invalid explicit type scan result")
     return counts
 
 
@@ -33,6 +33,8 @@ def _load_baseline() -> dict[str, int]:
     if not BASELINE_PATH.exists():
         return {}
     payload = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+    if payload.get("metric") != "typescript-any-keyword-v1":
+        raise ValueError("baseline must use the same explicit-type metric; regex allowances are invalid")
     files = payload.get("files") if isinstance(payload, dict) else {}
     if not isinstance(files, dict):
         return {}
@@ -47,6 +49,7 @@ def _load_baseline() -> dict[str, int]:
 
 def _write_baseline(current: dict[str, int]) -> None:
     data = {
+        "metric": "typescript-any-keyword-v1",
         "files": current,
         "total": sum(current.values()),
     }
@@ -89,7 +92,7 @@ def main() -> int:
     print("[OK] no-new-any guard")
     print(f"- files_checked: {len(current)}")
     print(f"- total_any: {sum(current.values())}")
-    print(f"- reduced_any_since_baseline: {improved}")
+    print(f"- unused_recorded_allowance: {improved}")
     return 0
 
 

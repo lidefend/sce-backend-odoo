@@ -1532,3 +1532,41 @@ useBusinessConfigPublishLifecycle、useBusinessConfigRemediationLifecycle、useB
 useBusinessConfigWorkbenchBootstrap。其余报告主要来自注释/禁用注释的词法误计。
 此诊断未改guard或baseline，不能替代no_new_any门禁。下一步需为6个真实依赖边界补明确类型，
 再处理词法计数对注释的误判；禁止把Record<string, any>机械替成不安全断言或提高基线。
+
+## WEB-TYPE-01：真实类型依赖与扫描语义（2026-09-29）
+
+基线 b43572ec clean。P0/frontend renderer：只补6个边界的精确依赖类型，复用API/事件/组合返回类型，
+不改变业务处理与授权；P4扫描只计算显式类型语法，不把注释/字符串中的词当作类型。
+不提高基线额度，不增加unknown索引签名/断言来替代类型。范围为上述6文件、必要显式调用传参、
+扫描工具及负例测试。L1 iteration/语法→L2严格类型与影响范围非零测试；若运行时代码未变，
+以擦除类型后的等价性复用页面证据，不为纯类型变更构建/写配置。风险回滚本批提交即可。
+
+WEB-TYPE-01复核修正：B线发现旧regex额度包含注释，不能直接当作AST额度使用。
+以原baseline提交 ea0170d2652188083146c5423ed9dcbb20a170d7 的源码重算，逐文件取
+min(原额度, 原源码AST计数)，同一baseline总额度55→36；记录metric/source_commit。
+没有从当前源码刷新额度；第6项扫描测试逐项验证来源和收紧值，并覆盖“历史只有注释、
+当前新增真实any必须超限”。首次负例路径误写pages而非app，修正测试路径后6/6通过。
+收紧后揭示useRecordRelationships布局回调还有一处真实any，已接入既有LayoutNode类型；
+父级历史Record<string, any>仍保留，不宣称完全无any。B线复核原额度阻断已关闭。
+
+结果索引（候选 b43572ec + 本节P0/P4 dirty范围）：
+- L1 `make ci.local.iteration` passed，`/tmp/web-type01-iteration-final.log`。
+- L2 `make verify.frontend.explicit_any.unit` passed 6/6，`/tmp/web-type01-any-final.log`；
+  同日志随后旧候选guard发现关系回调超限，是实际失败，已由上述类型修复解决。
+- L2 `make verify.frontend.no_new_any_guard verify.frontend.typed_dependencies.unit verify.frontend.typecheck.strict`
+  全部passed，`/tmp/web-type01-types-final2.log`；guard检查698文件、显式any25、剩余历史额度11；
+  依赖类型负例6项。首次类型负例执行器因/tmp配置不能定位node/vite类型而失败，
+  已改为复用仓库已安装的绝对类型路径，未改变产品类型检查规则。
+- L2 `make verify.frontend.native_collaboration_presentation.unit verify.frontend.professional_detail_collection.unit`
+  passed，`/tmp/web-type01-behavior.log`：协作呈现断言、集合matrix=6/domain=7、Python 10+37测试。
+- 7个修改TS文件类型擦除后与源HEAD逐字节一致，`/tmp/web-type01-runtime-equivalence.json`；
+  Vue调用只删除被调函数从未读取的replaceWorkbenchQuerySilently参数。
+  最后关系布局类型修正重新核验7文件等价，行为测试可沿用。
+- L3/L4不运行：无服务端/数据库变更，前端执行逻辑未变，不重复构建或浏览器旅程。
+  5180仍为TPL07-r2原构建，保留其原receipt身份；不冒称已加载当前源码版本。
+  TPL07/LC02页面证据按上述输入影响分析沿用。L5未进入，无推送/合并/部署。
+
+剩余强制门禁：style_system既有4项（关系选择z-index、表单与两处action文件尺寸），
+后续按所属呈现职责处理，不增加尺寸阈值。本批不升级89入口业务矩阵或整体交付状态。
+
+WEB-TYPE-01批次验收完成（类型边界与同口径no-new-any）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
