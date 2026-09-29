@@ -52,10 +52,6 @@
   color: var(--sc-app-text-secondary);
 }
 
-.loading-state {
-  padding: 28px;
-  color: var(--sc-app-text-secondary);
-}
 
 .bulk-collapsed-state {
   display: flex;

@@ -64,8 +64,8 @@
       </div>
     </section>
 
-    <div v-if="error" class="status error">{{ error }}</div>
-    <div v-else-if="statusMessage" class="status ok">{{ statusMessage }}</div>
+    <ScInlineState v-if="error" state="error" :label="error" />
+    <ScInlineState v-else-if="statusMessage" state="success" :label="statusMessage" />
     <section v-if="auditSummary" class="audit-panel" :class="{ 'audit-panel--warning': auditSummary.notApplicableCount > 0 }">
       <strong>菜单配置生效检查</strong>
       <span>
@@ -127,9 +127,7 @@
           {{ rollingBack ? '回滚中...' : rollbackButtonText }}
         </ScButton>
       </div>
-      <div v-else class="version-empty">
-        保存菜单配置后会自动生成已发布版本；没有历史版本时，当前菜单配置不能回滚。
-      </div>
+      <ScInlineState v-else state="info" label="保存菜单配置后会自动生成已发布版本；没有历史版本时，当前菜单配置不能回滚。" />
     </section>
     <section v-if="createPanelOpen" class="create-panel">
       <div class="create-panel-header">
@@ -455,7 +453,7 @@
             </div>
           </div>
 
-          <div v-if="loading" class="loading-state">正在加载菜单配置...</div>
+          <ScInlineState v-if="loading" state="loading" label="正在加载菜单配置..." />
           <div v-else-if="!bulkPanelOpen" class="bulk-collapsed-state">
             <span>批量维护已收起，日常调整建议使用当前菜单主编辑区。</span>
             <ScButton type="button" class="link-button" @click="bulkPanelOpen = true">展开批量维护表格</ScButton>

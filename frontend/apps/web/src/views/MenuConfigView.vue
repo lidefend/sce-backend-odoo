@@ -8,6 +8,7 @@ import ScSelect from '../components/design-system/ScSelect.vue';
 import ScCheckbox from '../components/design-system/ScCheckbox.vue';
 import ScNumberInput from '../components/design-system/ScNumberInput.vue';
 import ScRadio from '../components/design-system/ScRadio.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScPageHeader from '../components/design-system/ScPageHeader.vue';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -1040,6 +1041,7 @@ async function loadPanel(options: { preserveStatus?: boolean } = {}) {
       nextOriginal[menu.id] = cloneDraft(draft);
     });
     originalPolicies.value = nextOriginal;
+    error.value = '';
   } catch (err) {
     error.value = err instanceof Error ? err.message : '菜单配置加载失败';
   } finally {

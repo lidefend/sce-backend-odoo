@@ -4,7 +4,7 @@
     role="status" aria-live="polite" :aria-busy="state === 'loading' || undefined" size="small" :text="label" />
   <TDesignAlert v-else class="sc-inline-state" data-semantic-component="ScInlineState" data-semantic-driver="tdesign-alert"
     data-semantic-layer="primitive" :data-state="state" :data-density="density"
-    :theme="state === 'error' ? 'error' : 'info'"
+    :theme="state === 'error' ? 'error' : state === 'success' ? 'success' : 'info'"
     :role="state === 'error' ? 'alert' : 'status'" :aria-live="state === 'error' ? 'assertive' : 'polite'"
     :aria-busy="undefined">
     <span class="sc-inline-state__description"><slot>{{ label }}</slot></span><template v-if="$slots.actions" #operation><slot name="actions" /></template>
@@ -12,7 +12,7 @@
 </template>
 <script setup lang="ts">
 import { TDesignAlert, TDesignLoading } from './tdesignPrimitiveBridge';
-withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error';density?:'regular'|'compact';label?:string}>(),{state:'info',density:'compact',label:''});
+withDefaults(defineProps<{state?:'info'|'loading'|'empty'|'error'|'success';density?:'regular'|'compact';label?:string}>(),{state:'info',density:'compact',label:''});
 </script>
 <style scoped>
 .sc-inline-state{width:100%;container-type:inline-size}.sc-inline-state[data-density='compact']{padding-block:0}
