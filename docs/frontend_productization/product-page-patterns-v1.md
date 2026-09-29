@@ -292,6 +292,18 @@ without the fix).
 
 ### Deliberately not adopted
 
+WEB-LC-01 verified the existing company/action-scoped list configuration on the
+TPL-06A payment list: a temporary column label reached the effective contract and
+the official surface, then platform rollback restored the contract labels and
+visible headers. The same 20 ordered record IDs, fixed business fields (including
+write_date), server query and company context were preserved. This is an API-to-
+consumer configuration loop, not configuration-workbench UI acceptance or proof
+of role-specific list configuration. Other projection structure changed during
+publication; broader capability parity remains a requirement for type rollout.
+See the WEB-LC-01 section of
+`docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md` for original
+success/failure evidence and the three before/published/restored screenshots.
+
 The master-detail handling page's **form** side is still out of scope:
 `payment.request` is not in `STANDARD_FORM_COMPOSITION_PILOT_MODELS`, so the
 payment form keeps the `legacy-form-section` composition while its list now

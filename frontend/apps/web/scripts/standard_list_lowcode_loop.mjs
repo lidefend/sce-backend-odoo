@@ -46,6 +46,14 @@ export function listLabels(contract) {
   return rows;
 }
 
+export function recordIds(records) {
+  assert.ok(Array.isArray(records) && records.length > 0, 'nonempty record set required');
+  const ids = records.map((row) => row.id);
+  assert.ok(ids.every((id) => Number.isInteger(id) && id > 0), 'positive record identity required');
+  assert.equal(new Set(ids).size, ids.length, 'duplicate record identity');
+  return ids;
+}
+
 async function servedIdentity() {
   // This is a bounded continuation of TPL-06A's existing build, not a new port
   // or acceptance profile. A changed frontend requires its own reviewed build.
@@ -98,7 +106,9 @@ export async function runStandardListLoop() {
     assert.ok(result.status < 400 && result.body?.ok === true, `${name}: ${result.status} ${JSON.stringify(result.body?.error || {})}`);
     return result.body.data;
   }
-  const cs = (op, params = {}) => intent(`ui.business_config.change_set.${op}`, { role_key: 'business_config_admin', ...params });
+  // The authenticated actor is config_admin; the target is the existing
+  // company/action list configuration, not a role-specific form override.
+  const cs = (op, params = {}) => intent(`ui.business_config.change_set.${op}`, { role_key: '', ...params });
   const contract = () => intent('ui.contract.v2', { op: 'action_open', action_id: 775, menu_id: 545, view_type: 'tree', client_type: 'web_pc', delivery_profile: 'full' });
   async function observe(label) {
     const responsePromise = page.waitForResponse((response) => {
@@ -116,7 +126,18 @@ export async function runStandardListLoop() {
     await page.getByRole('columnheader').filter({ hasText: label }).first().waitFor();
     const headers = await page.getByRole('columnheader').allTextContents();
     check('single official list surface', await page.locator('[data-list-card-container="official"]').count() === 1);
-    return { headers: headers.map((value) => value.replace(/\s+/g, ' ').trim()), request: { domain: request.domain, context: request.context, order: request.order, limit: request.limit, offset: request.offset }, records_sha256: digest(JSON.stringify(body.data.records)) };
+    const query = { domain: request.domain, context: request.context, order: request.order, limit: request.limit, offset: request.offset };
+    // Presentation projections legitimately change when a configuration changes.
+    // Compare the actual ordered IDs and a separate fixed business-field read,
+    // rather than equating the whole presentation response with business facts.
+    const ids = recordIds(body.data.records);
+    const facts = await intent('api.data', { op: 'list', model: 'payment.request', ...query, fields: ['id', 'name', 'amount', 'state', 'write_date'] });
+    assert.deepEqual(recordIds(facts.records), ids, 'fixed-field read retains the exact authorized result set');
+    const values = facts.records.map((row) => ['id', 'name', 'amount', 'state', 'write_date'].map((key) => {
+      assert.ok(Object.hasOwn(row, key), `missing business field: ${key}`);
+      return row[key];
+    }));
+    return { headers: headers.map((value) => value.replace(/\s+/g, ' ').trim()), request: query, record_ids: ids, business_facts_sha256: digest(JSON.stringify(values)) };
   }
   try {
     report.identity = await servedIdentity();
@@ -149,6 +170,7 @@ export async function runStandardListLoop() {
     const beforeHeaders = await observe(field[1]);
     check('bootstrap includes system.init and contract', bootstrap.has('system.init') && [...bootstrap].some((name) => /^ui\.contract/.test(name)));
     report.baseline = { labels: baseline, surface: beforeHeaders };
+    await page.screenshot({ path: path.join(out, 'before.png') });
     check('readonly has no browser exceptions', errors.length === 0);
     report.status = 'readonly_passed';
     if (process.env.WEB_LC_APPLY !== '1') return;
@@ -164,15 +186,18 @@ export async function runStandardListLoop() {
     await save();
     const published = await cs('publish', { change_set_token: token, request_id: report.publish_request_id });
     check('published content verified', published.state === 'published' && published.publish_result?.published_content_verified === true);
-    check('effective contract consumes label', listLabels(await contract()).some(([key, value]) => key === 'name' && value === label));
+    report.published_labels = listLabels(await contract());
+    check('effective contract consumes label', report.published_labels.some(([key, value]) => key === 'name' && value === label));
     report.changed_headers = await observe(label);
-    assert.equal(report.changed_headers.records_sha256, beforeHeaders.records_sha256, 'configuration must preserve returned business records');
+    assert.deepEqual(report.changed_headers.record_ids, beforeHeaders.record_ids, 'configuration must preserve ordered record identity');
+    assert.equal(report.changed_headers.business_facts_sha256, beforeHeaders.business_facts_sha256, 'configuration must preserve fixed business fields and write_date');
     assert.deepEqual(report.changed_headers.request, beforeHeaders.request, 'configuration must preserve query and authorization context');
     await page.screenshot({ path: path.join(out, 'published.png') });
     report.recovery = await recoverChangeSet(cs, token, `${run}-rollback`, publishAttempted);
     token = null;
     assert.deepEqual(listLabels(await contract()), baseline, 'restored effective labels');
     assert.deepEqual(await observe(field[1]), beforeHeaders, 'restored visible headers, query and records');
+    await page.screenshot({ path: path.join(out, 'restored.png') });
     check('restoration verified in contract and page', true);
     check('no browser exceptions', errors.length === 0);
     report.status = 'passed';

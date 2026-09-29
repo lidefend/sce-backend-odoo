@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { recoverChangeSet, listLabels } from './standard_list_lowcode_loop.mjs';
+import { recoverChangeSet, listLabels, recordIds } from './standard_list_lowcode_loop.mjs';
 
 test('uncertain publish is read back and rolled back without republishing', async () => {
   const calls = [];
@@ -53,4 +53,11 @@ test('restored semantic labels detect differences and reject the wrong model', (
   assert.notDeepEqual(listLabels(changed), listLabels(contract));
   assert.throws(() => listLabels({ ...contract, pageInfo: { model: 'other' } }), /wrong contract/);
   assert.throws(() => listLabels({ ...contract, layoutContract: {} }), /empty label/);
+});
+test('record identity survives presentation changes but rejects invalid and duplicate records', () => {
+  assert.deepEqual(recordIds([{ id: 9, label: 'before' }, { id: 3 }]), recordIds([{ id: 9, label: 'after' }, { id: 3 }]));
+  assert.notDeepEqual(recordIds([{ id: 3 }, { id: 9 }]), [9, 3]);
+  assert.throws(() => recordIds([]), /nonempty/);
+  assert.throws(() => recordIds([{ id: 0 }]), /positive/);
+  assert.throws(() => recordIds([{ id: 9 }, { id: 9 }]), /duplicate/);
 });
