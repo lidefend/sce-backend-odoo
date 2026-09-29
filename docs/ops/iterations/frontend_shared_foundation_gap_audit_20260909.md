@@ -873,3 +873,45 @@ route-meta 比较，提升为显式、按 layout 限定的呈现策略，并把�
 - 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
   **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`/`:5178`/`:5179`）
   及其构建目录保持原样，历史失败记录未被覆盖。
+
+### FE-TPL-04 scope B 内容区布局收口验收（2026-09-29）
+
+范围：按所有者决策只处理两项内容层级——面包屑迁入内容区首行，页脚迁入**现有**主内容滚动区域，
+随内容自然滚动。不为复制官方 DOM 更换全站滚动属主；移动端继续使用我方窄屏适配，
+**不**照搬官方 `min-width: 760px`，也不把“移动端无官方样板”记为欠账。
+本节关闭 scope A 记录中“面包屑位置”“页脚位置”两条仍未对齐项；组件采纳（scope A）结论不回退。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 面包屑在内容区首行，且只有一份 | PASS | `frontend/apps/web/src/layouts/AppShell.vue:196-201`（页头标题行只剩 `h1`，面包屑与 `:minimal`/`:compact` 传参一并移除）；`:334-336` 新增 `content-breadcrumb-row`，位于 `ScContent` 内、`StatusPanel`/`main.router-host` 之前；`AppShell.css:454-458`（`flex:0 0 auto` + `padding: var(--sc-space-xs) var(--sc-page-padding) 0`，与页面栅格同槽位）；死规则 `.topbar--single-heading .topbar-breadcrumb` 已删除（保留 `.eyebrow` 半边）。实测 `inTopbar:false` / `inContentArea:true` / `inContentRow:true` / `insideRouter:false`，行内边距桌面 24px、窄屏 12px，`itemCount=3`，导航来源、路由身份与权限均未改（沿用同一 `displayBreadcrumb` 与 `NavigationBreadcrumb`/`t-breadcrumb`）。 |
+| 2 | 页脚进入现有单一滚动属主，随内容滚动 | PASS | `AppShell.vue:365-368`：`ProductShellContentFooter` 由 `ScLayout` 列内兄弟节点移入 `<main class="router-host">` 末尾、`<slot />` 之后；`AppShell.css:441-452` 沿用官方 `*-footer-layout` 几何；`AppShell.css:559-576`：`.router-host` 改 `display:flex; flex-direction:column; flex:1 1 auto`（仍是唯一 `overflow-y:auto`），新增 `.router-host > * { flex-shrink:0 }`；`styles/product-patterns.css:45-55`：`.router-host > :is(.sc-page-frame,.sc-product-page-frame)` 由 `min-height:100%` 改 `flex:1 0 auto`。实测页脚 `insideRouter:true`、`position:static`；长页 `scrollDelta=44`（改动前同为 44）、长详情 `scrollDelta=760`（改动前同为 760）、短页 `scrollDelta=0` 无幻影滚动；每页纵向属主恒为 `router-host` 单一个。**未**新增第二个滚动容器、未改路由滚动恢复、未改表头固定偏移。 |
+| 3 | 桌面长/短页与窄屏可用 | PASS | `scopeB-layout-results.json`（stamp `20260929032437`，只读角色 `fixture_role_pm`）**15/15 PASS**：长页/长详情页脚紧跟内容无重叠、短页无空白占位与额外滚动、390×844 无横向溢出且抽屉 `role=dialog` 可用、两视口 `consoleErrors: []`。 |
+| 4 | 一条既有页面往返与错误定位 | PASS | `scopeB-write-results.json`（stamp `20260929032225`，`fixture_role_contract_operator`）**9/9 PASS**：列表→详情(11)→编辑(10)→返回，列表查询上下文保持、每步单属主+内容区面包屑；必填拒绝时错误定位到真实控件（`controlBelowHeader`、`controlInViewport` 均 true）且**零写请求**，草稿放弃后记录回读不变；`consoleErrors: []`。 |
+| 5 | 相关 L1/L2 与构建 | PASS | `verify.frontend.workspace_content_alignment.guard`（`entries=31`）、`standard_list_scroll_contract.guard`（`vertical_owner=router-host`）、`standard_shell_composition.unit`（`cases=71`）、`navigation_shell.unit`、`product_page_pattern.unit`、`rendering_detail_state.unit`、`component_driver_takeover.unit`（`required=35 missing=0`）、`page_pattern_reference_parity.unit`（`surfaces=16`）、`verify.frontend.typecheck.strict` 全部 `exit=0`（`AppShell.vue` 1597 行，上限 1600）；单次构建见下。 |
+
+**候选与产物**：被测产品源 `fb5934b7`（薄派生 HEAD `69da338f` 仅刷新清单），工作树干净；
+离仓单次构建 `…/fe-tpl04e-20260929/dist`，`index.html` sha256 `a1d049b9…10ea`、
+入口 `/assets/index-CGFvSmxS.js` sha256 `11da9347…5dbfd`、`runtime-config.js` 值 `{}` 无凭据；
+`release_static_server.mjs` pid 60945 @ `:5180` 服务该目录，HTTP 取回的 `index.html` 与入口块
+与构建产物**逐字节哈希相同**，探针记录的加载入口即该入口块。历史产物与失败记录未被覆盖；
+`:5176`/`:5178`/`:5179` 三个旧预览进程本轮未清理。
+
+**本轮内的测试维护（非产品缺陷）**：首次写入探针使用 `sc.general.contract` **12**，
+该记录属 `FE Project C`/`FE Company B`（id 9），不在这两个角色的范围（`FE Company A`/id 8），
+`PROJECT_SCOPE_DENIED → /access-denied` 是既有的项目范围契约按设计生效，不是布局回归；
+探针改用范围内的 **11（详情）** 与 **10（编辑）**。`/f/…/11` 对已确认记录呈现只读详情，
+故可编辑表单步骤必须使用记录 10；详情(11)→编辑(10) 返回时回到打开它的详情条目即为正确历史语义。
+
+**仍未对齐 / 保留的差异（不得当作已一致）**：
+
+- `/`（角色首页）本身无面包屑轨迹（导航态面包屑 0 项），故 `v-if` 守卫下不渲染该行——与本轮之前一致。
+- 移动端为**我方窄屏组合**（两行页头实测 78px），非官方呈现；官方一侧仍为源码级比对，未运行官方模板本体。
+- `verify.frontend.style_system.guard` 仍报**既有** 4 项（`ScRelationField.vue` 未登记 z-index、
+  `ContractFormPage.vue` 1932>1900、`useRecordActionPresentation.ts` 505>500、`useRecordFormActions.ts` 804>619），非本轮引入、未处理。
+- 历史 `cc0eee7b` 产物被覆盖的缺口继续登记为历史限制，不倒填、不追溯。
+
+**边界（不得夸大）**：页脚与面包屑是**按我方适配**迁移到官方位置，不写成“与官方完全一致”；
+未运行 89 入口矩阵、全站浏览器验收与发布门禁（本轮差异无关）；89 入口唯一分母不变；
+未调整业务矩阵状态；**未**进入 TPL-05，也不据此宣布 TPL-03 通过；不推送、不合并、不部署目标环境。
+本轮未创建/修改/删除任何业务数据：写入探针拒绝后放弃编辑，`sc.general.contract` 记录 10
+前后逐字段一致、记录总数 3 不变。
