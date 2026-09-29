@@ -2368,3 +2368,7 @@ verify.frontend.standard_bootstrap.browser: guard.prod.forbid
 .PHONY: verify.frontend.standard_public_auth.browser
 verify.frontend.standard_public_auth.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-public-auth-browser
+
+.PHONY: verify.frontend.standard_config_field.browser
+verify.frontend.standard_config_field.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-config-field-browser

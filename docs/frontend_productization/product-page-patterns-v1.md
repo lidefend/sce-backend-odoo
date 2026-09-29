@@ -454,3 +454,24 @@ public zones and referenced data-source identities are projected without role
 or authorization metadata. Error feedback and the submit action occupy separate
 official form items. The authenticated finance startup regression remains valid;
 no real account activation or password reset is claimed.
+
+### Shared configuration field editor (WEB-CONFIG-01)
+
+`LowCodeFieldChipEditor` uses `ScForm`/`ScFormItem` and controlled `ScInput`
+values for its advanced field-name input; the official form validates before
+emitting the existing `addName` event. Native form submission and private input
+border/padding styling no longer control this scope. Field catalog search also
+uses the controlled input contract. The shared component serves list columns,
+search filters/grouping, pivot measures/dimensions and graph measures/dimensions.
+P3 field validity, deduplication, ordering, drafts and publication remain owned by
+the existing configuration handlers. Chips and field catalogs remain specialized
+editor responsibilities, not ordinary collection-page fallbacks.
+
+The real configuration-administrator journey covers the list/search consumer,
+input synchronization, Enter/button submission, reversible local ordering and
+1440/390 layouts (12 checks). It does not prove seven independent browser journeys
+or publication; 14 component checks cover the shared wiring. Only resume-only
+change-set reads are permitted, with `created=false` verified; no configuration
+save/publish occurred. Login/session and usage telemetry remain permitted.
+Menu configuration's native tree/editor controls and dedicated form-designer
+interactions remain explicit adoption work; this batch does not mark them complete.

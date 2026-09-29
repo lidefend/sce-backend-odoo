@@ -1785,3 +1785,44 @@ SHA256 `4da0248faec09b715ca92902d030ac65afc32f991cb1b1eab265ec8d192c0655`；后�
 WEB-AUTH-02返回链阻断由WEB-AUTH-03关闭，两批范围内批次验收完成；主线未集成、目标环境未部署、
 整体用户交付未验收。5180保留r2候选，旧auth02/auth03产物可回退。专用设计器/配置编辑器仍需按
 已登记页面职责推进，未自动升级正式89入口业务矩阵或宣称整体官方接管完成。
+
+## WEB-CONFIG-01：专用编辑器通用输入收口（进行中）
+基线aae185d9 clean。P0 frontend renderer共享LowCodeFieldChipEditor与直接style；
+覆盖列表列、搜索筛选/分组、透视/图表字段配置七种消费。P3目录、添加/排序/删除草稿与发布
+逻辑不变。修复ScInput旧value接线并接入ScForm/Item；退出原生form提交及重画input边框的CSS。
+普通列表组合不承接树/画布专用编排。不修改账号、业务或配置数据，不推送/合并/部署。
+L1 iteration→非零组件输入/表单及既有配置行为L2→受影响呈现验证；L3跳过无后端变化。
+
+
+WEB-CONFIG-01结果（批次验收完成）：
+- P0提交46196f195ccb474aa16f3652942a0f47c3b859d5；P4仅扩展既有Make、受管验收包装和探针，
+  无新环境/端口/凭据权威。页面类型范围在既有page-patterns同步。P0为通用契约控件消费，
+  非行业/客户规则；P3业务逻辑不迁入前端。未改后端，L3跳过；L5发布流程本批未进入。
+- L1 `make ci.local.iteration` passed `/tmp/web-config01-iteration-final.log`。
+  L2 `make verify.frontend.field_configuration_component.unit` 14项passed，严格类型检查及
+  `make verify.business_config.unit` passed，见 `/tmp/web-config01-tests-final.log`；包含配置草稿、
+  发布边界及后端配置回归。14项为真实SFC/官方组件SSR及提交接线，不冒称浏览器输入事件测试。
+- P4组件工具初次失败为compiler导入、server-renderer解析、mjs扩展及SSR空value属性假设，
+  分别修正工具后重试，日志 `/tmp/web-config01-tests.log` 与r2/r3/r4；不是产品运行失败。
+  允许表8项、预览工具6项passed `/tmp/web-config01-tools.log`；只放行严格resume_only=true且
+  非fresh的草稿读取及两项audit，创建/保存/发布仍拦截。
+- `make verify.frontend.lint.src` passed（0 errors、56 warnings） `/tmp/web-config01-lint.log`；
+  `make verify.frontend.style_system.guard` passed `/tmp/web-config01-style.log`。
+- 唯一构建20.15秒 `/tmp/web-config01-build.log`，受管up `/tmp/web-config01-up.log`。
+  5180加载config01-20260929；base为46196f19加明确P4/docs dirty scope，非冻结交付身份。
+  entry index-CmcaSee3.js，SHA256 7ccc3986dc000491645129165b375aa8ae6500099ddf3fa7c4c1bf1badfcc753；
+  后端继续3aa76af6及不变addons，sc-fe-r2-p1-01/sc_frontend_acceptance/18082不变。
+- `make verify.frontend.standard_config_field.browser` 初次failed：登录页数据库框缺席时探针
+  等待isEnabled超时，修正count检查。第二次10项passed（config-field-1790675036110），
+  截图取景落在覆盖列表，补scroll/表单边界及局部截图后定向重验，非产品修改或重复构建。
+  最终12/12 passed `/tmp/web-config01-browser-final.log`，原始结果
+  `artifacts/frontend-web-fix-20260928/config-field-1790675091316/report.json`。
+  真实config_admin登录→system.init→配置工作台，输入/清空、Enter/按钮提交、搜索、排序恢复、
+  1440/390无溢出通过，零页面错误及未登记请求；390局部截图复核通过。
+  id可能已存在，结果只证明提交/清空链，不宣称新增配置字段成功。
+- 草稿读取权威返回created=false，无配置保存/发布；局部未保存状态随浏览器关闭丢弃。
+  不宣称后端零写（登录session和usage.track仍允许）。B线只读复核无阻断，明确七种组件消费
+  不等于七条浏览器旅程。既有AUTH/BOOT业务输入未变，证据复用，不重跑87入口盘点。
+- 后续P4/docs提交不改构建产品输入，沿用上述产物与页面证据。旧auth03-r2产物保留可回退。
+  批次验收完成；主线未集成、目标环境未部署、整体用户交付未验收。剩余菜单配置树/编辑控件
+  及专用设计器继续按页面职责收口；不自动升级正式89入口矩阵。

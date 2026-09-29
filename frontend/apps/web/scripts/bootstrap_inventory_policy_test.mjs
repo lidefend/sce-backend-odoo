@@ -31,3 +31,9 @@ test('anonymous contract GET is the only additional public API read', () => {
   assert.equal(allow('POST', '/api/v1/auth/page-contracts', {}), false);
   assert.equal(allow('GET', '/api/v1/auth/activation/start', null), false);
 });
+
+test('configuration resume may read but cannot create a fresh draft', () => {
+  const request = params => ({ intent: 'ui.business_config.change_set.open', params });
+  assert.equal(allow('POST', '/api/v1/intent', request({resume_only:true})), true);
+  for (const params of [{}, {resume_only:false}, {resume_only:'true'}, {resume_only:true,fresh:true}]) assert.equal(allow('POST', '/api/v1/intent', request(params)), false);
+});

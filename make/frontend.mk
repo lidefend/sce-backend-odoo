@@ -932,3 +932,7 @@ verify.frontend.activation_form_engine.unit: guard.prod.forbid
 verify.frontend.public_auth_bootstrap.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_page_contracts_builder_boundaries.py
 	@node --test frontend/apps/web/scripts/public_auth_bootstrap_test.mjs
+
+.PHONY: verify.frontend.field_configuration_component.unit
+verify.frontend.field_configuration_component.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/field_configuration_component_test.mjs
