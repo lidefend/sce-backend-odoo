@@ -1440,3 +1440,29 @@ B 线进一步定位：P1 `smart_construction_core/core_extension.py:1342` 见�
 又两次强制开启列偏好。`view_orchestrator.py:801` 不消费 tree.preference_policy/columns_schema，
 因此补 payload 不能解决。下一机制批次须保留 P0 全量列集选择语义，同时让 P1 标准 schema/锁策略
 先形成稳定基线，配置只覆盖显式职责；先后端定向测试，后受管预览，不再试错式发布。
+
+## WEB-LC-02：配置与正式列表基线交接（2026-09-29，进行中）
+
+基线 c8ad8d66 clean，沿用已有分支/工作树/验收资源。本批唯一目标：全量配置列集仍权威，
+未声明改变的正式原生列语义和个人偏好锁不因配置存在而退出。P0 smart_core 最终投影负责保留
+已有策略；P1 smart_construction_core 正式列表既有 hook 提供 action-bound 原生基线，再调用
+现有 ViewOrchestrator 应用显式覆盖并按权威列集精准裁剪。施工金额/锁策略仍在 P1；P4与前端
+不实现语义。影响已登记正式 list action + 权威配置路径，无配置正式列表和非正式列表应保持。
+不新增 public intent/字段/schema、不修改模型/权限/fixture；仅 Python handler/hook 修复，
+运行时需重启清除进程缓存，不需数据库 -u 或数据迁移。P0/P1 提交分开，回滚按相反依赖顺序。
+L0身份→L1语法/iteration→L2非零P0/P1定向测试→受管后端重启→既有草稿预览。
+前置未通过不得运行浏览器；前端产物未变不重建。发布/主线/目标交付均未执行。
+
+LC02 开发验证：L1 iteration passed `/tmp/lc02-iteration.log`；L2
+`make verify.business_config.formal_list.unit` passed **111 P0 + 51 composer + 5 P1 hook tests**，
+`/tmp/lc02-unit-r2.log`。P1 测试执行真实 shipped hook 与真实 composer，ORM仅作有界替身；
+完整 Odoo TransactionCase suite 未运行，不把纯测试冒称数据库集成。Python语法/diff check passed。
+首次P1测试暴露 visible:true 未传为optional-show，已由P0列策略就地修复；未声明显隐仍继承native。
+B线发现个人顺序在锁前进入fact_columns，已将direct配置个人偏好处理推迟至最终约束之后。
+合法非native扩展schema（sort/value/readonly/required/selection）保留及显式覆盖均有非零测试。
+
+本次运行库判定：TARGET_DATABASE_ROLE=isolated_acceptance_tenant；TARGET_TENANT_ID=sc_frontend_acceptance；
+TARGET_ENVIRONMENT_ID=sc-fe-r2-p1-01/local；非platform-control/industry-catalog，隔离模拟客户租户；
+不允许真实客户业务数据，允许既有fixture。精确dbfilter `^sc_frontend_acceptance$`，filestore为
+受管 `sc_fe_r2_p1_01_odoo` 卷内该库目录；每次入口重新验证身份，不新建/复制/reset库或卷。
+受管后端仅重启Python，不做模块升级；前端5180/TPL07-r2原产物复用。运行态验证pending。

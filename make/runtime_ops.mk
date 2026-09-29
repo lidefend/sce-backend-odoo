@@ -2346,3 +2346,9 @@ verify.nav.pro01r.route_authority.http: guard.prod.forbid
 verify.nav.pro01r.route_authority.browser: guard.prod.forbid
 	@test -n "$(NAV_PRO_PASSWORD)" || { echo "NAV_PRO_PASSWORD is required"; exit 2; }
 	@DB_NAME=$(DB_NAME) FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:$(NGINX_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" node scripts/verify/nav_pro_01r_route_authority_browser.mjs
+
+.PHONY: verify.business_config.formal_list.unit
+verify.business_config.formal_list.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
+	@python3 addons/smart_core/tests/test_view_orchestrator.py
+	@python3 scripts/verify/test_formal_list_configuration_baseline.py
