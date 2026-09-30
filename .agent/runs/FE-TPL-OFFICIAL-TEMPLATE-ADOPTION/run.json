@@ -298,7 +298,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.61 project native readonly baseline18 passes on record10 but semantic gap proven. Added central project workflow lifecycle profile and approval action domains; P0 generic pause_execution/advance_phase/close_record vocabulary mirrored schema/TS;42 native/15 semantics/header6 pairs/typecheck pass. Commit,reload backend,one frontend build/up,approval-actions project.project edit read-only probe(no writes), verify semantic declarations and submit/start visibility. Existing45 model runtime unchanged reuse; project amount gap remains.",
+  "next_exact_step": "53.62 fix full workflow declaration catalog independently from availableActions; run L1/native/runtime projection pure tests then governed backend reload and project readonly browser. Prior edit probe failed because native view explicitly readonly, not missing form renderer.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

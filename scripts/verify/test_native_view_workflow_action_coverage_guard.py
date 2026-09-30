@@ -26,6 +26,26 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
+    def test_unavailable_actions_keep_meaning_without_becoming_execution_grants(self):
+        tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_declared_actions")
+        method.decorator_list = []
+        assignment = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "ACTIONS" for t in n.targets))
+        namespace = {}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, method], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
+        service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
+        profile = load_profiles()["project.project"]
+        declarations = namespace["_declared_actions"](service, profile)
+        meanings = {row["method"]: row["action_semantics"]["purpose"] for row in declarations}
+        self.assertEqual(meanings["action_sc_start"], "start_execution")
+        self.assertEqual(meanings["validate_tier"], "approve")
+        self.assertEqual(meanings["reject_tier"], "reject")
+        self.assertTrue(all("enabled" not in row and "target" not in row for row in declarations))
+        available = self._general_contract_actions("draft", model="project.project", record_fields={"sc_approval_state": "draft", "validation_status": "no"})
+        self.assertNotIn("action_sc_start", [row["method"] for row in available])
+        self.assertNotIn("validate_tier", [row["method"] for row in available])
+        self.assertEqual(namespace["_declared_actions"](service, {"method_by_action": {"undeclared": "action_guess"}}), [])
+
     def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))

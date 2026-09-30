@@ -1065,8 +1065,25 @@ class ScWorkflowContractService(models.AbstractModel):
             "editability": editability,
             "statusbar": self._statusbar_projection(business_phase, approval_phase),
             "evidenceGate": evidence_gate,
+            # Meaning is stable even when a transition is currently unavailable.
+            # This catalog is not an execution grant; availableActions remains
+            # the record/user/state-specific availability authority.
+            "actions": self._declared_actions(profile),
             "availableActions": actions,
         }
+
+    @api.model
+    def _declared_actions(self, profile):
+        actions = []
+        for key, method in (profile.get("method_by_action") or {}).items():
+            semantics = (self.ACTIONS.get(key) or {}).get("action_semantics")
+            if method and semantics:
+                actions.append({
+                    "key": key,
+                    "method": method,
+                    "action_semantics": dict(semantics),
+                })
+        return actions
 
     @api.model
     def _statusbar_projection(self, business_phase, approval_phase):

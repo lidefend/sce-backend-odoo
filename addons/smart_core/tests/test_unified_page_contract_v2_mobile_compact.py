@@ -4225,6 +4225,20 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         assembler.project_workflow_action_semantics(contract)
         self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
 
+    def test_unavailable_declared_action_keeps_semantics_without_changing_availability(self):
+        rule = self._method_rule("action_sc_start")
+        rule.update({"enabled": False, "visible": False})
+        contract = self._semantics_contract([], [rule])
+        contract["workflowContract"]["actions"] = [{
+            "method": "action_sc_start",
+            "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"},
+        }]
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(rule["actionSemantics"]["purpose"], "start_execution")
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule["visible"])
+        self.assertEqual(contract["workflowContract"]["availableActions"], [])
+
     def test_disagreeing_conflicting_declarations_stay_explicit(self):
         approve = {
             "kind": "business", "purpose": "approve",

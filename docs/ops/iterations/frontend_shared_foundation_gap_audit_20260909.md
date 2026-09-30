@@ -7917,3 +7917,12 @@ L5：未推送、未合并、未部署。
 - P0只增加通用pause_execution、advance_phase、close_record词汇，恢复使用已有start_execution；项目结算/保修等行业名称与方法只在P1。同步权威词汇、schema与TS消费投影，不把暂停当取消、阶段推进当最终完成。既有native登记表增记项目12个导航和2个BOQ辅助方法，不将它们伪装状态迁移、不建平行覆盖表；项目状态方法均由profile声明。
 - L1首次精确TS消费文件未登记导致reconcile（project-contract-iteration.log），补入既有scope后PASS（project-contract-iteration-scoped.log）；早期诊断不充当最终回执。L2 native8+34=42 PASS并begin/record42（project-contract-native-tests.log），语义15 PASS/67 profiles/13词汇（project-contract-semantics-tests.log）；实际表单header链及新增3合法/3非法配对PASS（project-contract-header-tests-final.log），严格双tsconfig PASS（project-contract-typecheck.log）。一次误用不存在的header测试目标未执行测试，改用既有verify.frontend.contract_header_action.unit，日志分开保留。
 - Probe增加edit只读观察模式与四动作语义断言；下一步提交/后端重载/一次新前端候选构建，仍查同一现有项目，不执行业务写入、不造fixture。无字段/XML变更，无模块升级；既有45真实审批输入不变复用。整体仍active，项目金额权威及跨状态用户办理未覆盖保留。
+
+
+### 53.62 完整动作声明与当前可用性分离（进行中）
+
+候选 51f470eb9 + 本段 dirty。53.61 浏览器报告 `artifacts/frontend-web-fix-20260928/tpl07-1790777792498/report.json` 超时：有效契约 viewCapabilities.write=false / effectiveRenderProfile=readonly，页面实际采用 official-standard-detail，测试误等 official-standard-form。四个原生动作均存在，只有当前可用 submit 具有 actionSemantics；start/approve/reject 缺失。
+
+P1 smart_construction_core workflow.contract.service 的完整动作目录通过既有 workflowContract.actions 输出，仅声明方法与含义，不携带 enabled/target；availableActions 保持当前状态、审批人与证据约束。P0 既有投影无需业务特例。范围为该生产器与两项现有纯测试；不改权限、状态机、原生视图或前端业务逻辑。L0 已确认当前分支、工作区原本 clean；L1 iteration → L2 native coverage 与有效契约投影纯测试 → L3 后端重载 → L4 复用现有构建核对只读入口。没有模型/XML变化，不升级模块；没有前端源变化，不重建；既有45项审批运行时输入不变，复用，不跑无关 ORM。
+
+L1 `action-catalog-iteration.log` PASS；L2 `action-catalog-native.log` 8+35=43 PASS，begin/record43 回执 `action-catalog-receipt.log`。投影首次新增用例缺必填 origin 导致1错误（产品正确拒绝不完整声明）；纠正测试输入后 `action-catalog-projection-fixed.log` 20+108=128 PASS，runtime guard score6。未改变生产投影校验；首次失败日志保留。待后端重载与实际契约核对。
