@@ -8449,3 +8449,9 @@ P4标准browser复用approval-actions扩展两安全模型create，safety-page-i
 53.108运行时：6f3f0220b升级/reload成功，subcontract-approval-runtime.log16 PASS、ROLLBACK VERIFIED；真实金额100/阈值200未匹配拒绝、实际tier审批/驳回重提及pending切换、父子事实锁成立。无真实双事务竞争证明。首轮create：plan tpl07-1790788333437工具报17 PASS，但390截图发现计划单号可输入，精确文本断言被必填标记绕过，编号结论作废；request tpl07-1790788346665第9项编号隐藏失败。两者同一P1原生name未声明创建隐藏，非前端补丁。
 
 修复两view name readonly=1/invisible=not id；P4测试改为包含必填标签的可见文本，并直接检查有效contract的name隐藏。新增原生字段回归，subcontract-number-unit.log110 PASS，L1 subcontract-number-iteration.log/node/diff通过。此变更只使两创建页证据失效，真实审批16输入未变可复用；不重复ORM，需加载实际新XML后只重跑两create。待完成，不沿用截图矛盾的旧通过结论。
+
+53.108最终定向结果：7446f6a11编号XML升级/reload成功。plan恢复首轮tpl07-1790788497038在第6项因P4测试仅认静态true而拒绝有效not-id modifier，实际contract结构化not(field_truthy id)已正确；8d69165e7修验证工具，接受精确create modifier且保留真实DOM标签检查，subcontract-number-probe-iteration.log/node/diff通过。产品无额外变化，无再次升级。
+
+最终plan tpl07-1790788531035 18 PASS，request tpl07-1790788542137 18 PASS：3输入契约、生成编号effective modifier及实际隐藏、旧直接批准动作退出、未保存记录动作边界、1440/390无横向溢出，errors/forbiddenWrites空。两390截图复核编号不再出现，项目/分包单位/明细入口可见。计划390图上可选开始/结束日期标签与输入排布异常，登记为共享日期呈现待核对，不以无横向溢出代替视觉完成。真实创建保存/已有角色全办理仍未证明。审批runtime16按P1状态机/工具输入未变复用6f3f0220b原日志，未重复ORM。当前只完成两模型审批机制和创建契约定向验证，不升级整体67/业务矩阵行。
+
+下一步先定位本次日期呈现异常的共享消费路径及分包申请必需输入实际可操作性，再接续分包结算等剩余审批职责；不重复安全/租赁全旅程，不新建fixture/环境，不推送合并目标部署。
