@@ -7896,3 +7896,12 @@ L5：未推送、未合并、未部署。
 - 实际候选更新已完成：fed2dfcc234565d8e48a644e38cff702c5c56c7b仅编译一次，23.45s（preview-refresh-build.log），旧候选保留于既有OUTPUT/previous-avuxmhgu（dist及原build-identity.json）。受管up复用5180监听进程，新首页HTTP hash与回执一致（preview-refresh-observed.json）；entry=/assets/index-C9RBIxc0.js，entry_sha256=3c9d155557f1dcb45d85a45be8dd0db457025fb23ed190c17efd1c434fa25fc4，index_sha256=8bf961230df3aa181e8963a125b630e69d99d1bac3c72b35999e02b6f5df9a3e。不做全文件HTTP比对。
 - 新候选PM任务create12 PASS（preview-refresh-task-browser.log，tpl07-1790776830481/report.json），官方共享表单和双视口加载正常。53.58共享阻断消费代码已实际进入当前前端；真实审批中任务操作UI仍无现有授权记录，不能用create12代替该旅程。无字段/XML改动，不升级；审批39输入不变复用，不重复ORM。
 - 53.58预览工具阻断关闭。本轮P4批次验证通过；总体目标未完成、主线未集成、目标环境未部署、用户整体验收未完成。下一步继续project.project审批/启动分离及原67台账的生产者/消费者/旧职责退出缺口，不再停留在预览更新。
+
+
+### 53.60 项目立项审批与生命周期启动分离
+
+- cdb10b1e1 clean起步，复用已加载前端fed2dfcc2。P1项目立项是独立审批事实，不把批准等同在建。新增同模块project_initiation_approval模型扩展，复用tier.validation/_state_field=sc_approval_state；原project_core.action_sc_submit实现移出并改为提交审批，原启动/提示行为由action_sc_start承接，没有两份提交编排。
+- 提交保留原项目角色门禁，校验草稿/名称/公司，无配置仅立项approved，有配置等待真实review。通过回调重验前提仅approved；驳回保留原因和消息，重提沿共享restart新链。立项状态只能私有对象token写入，create不能伪造approved，bool/string上下文不能绕过。实际启动调用原集中生命周期权限/状态机；集中_validate_lifecycle_transition拦住draft->in_progress及draft->paused绕行，历史在建/暂停项目原生命周期继续，不生成历史审批。
+- 原生通用项目表单/总览/启停管理拆分提交与启动并声明真实审批按钮；项目信息编辑仍只承担提交，不吸收生命周期操作，增加审批事实字段。总览提交不再把资料完备度当硬门槛，与既有advisory模型边界一致。配置增加project.project tier支持和回调注册。项目审批金额尚无确认业务权威，不猜合同额/预算额：共享适配遇无amount映射且配置金额条件时明确ValidationError，普通无金额规则可用；该必要配置能力保留产品缺口。
+- L1 iteration PASS（project-approval-iteration.log）；审批63 PASS（project-approval-tests.log，begin/record63），包括无配置/配置/真实回调与显式启动、集中绕行拦截、私有状态写保护、无金额权威禁止忽略条件。已有native8+33=41回归PASS（project-native-tests.log），仅覆盖现有profile集合，不声称项目中央profile完整。当前项目仍须核对原生到有效契约的状态/动作消费，不以模型通过代替页面。
+- P4既有回滚脚本新增项目6项（总45），所有新项目/策略加入原created清理回读；语法通过，待运行。下一步提交、受管模块升级与后端重载，再运行45。新字段/XML需升级；前端未改不构建，不重跑任务/付款全旅程。整体active，未推送/合并/目标部署。

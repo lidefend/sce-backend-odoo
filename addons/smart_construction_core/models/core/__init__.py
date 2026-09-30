@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import project_core
+from . import project_initiation_approval
 from . import purchase_extend
 from . import cost_domain
 from . import cost_period

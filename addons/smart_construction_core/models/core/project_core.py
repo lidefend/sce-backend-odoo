@@ -1744,29 +1744,6 @@ class ProjectProject(models.Model):
         self.action_set_lifecycle_state("closed")
         return True
 
-    def action_sc_submit(self):
-        """提交立项：从草稿进入在建。"""
-        if not (
-            self.env.user.has_group("smart_construction_core.group_sc_cap_project_user")
-            or self.env.user.has_group("smart_construction_core.group_sc_cap_project_manager")
-            or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
-        ):
-            raise UserError("你没有权限推进项目阶段。")
-        advisories = self._sc_lifecycle_advisories("in_progress")
-        self.action_set_lifecycle_state("in_progress")
-        if advisories:
-            return {
-                "type": "ir.actions.client",
-                "tag": "display_notification",
-                "params": {
-                    "title": "项目已启动",
-                    "message": "；".join(advisories),
-                    "type": "warning",
-                    "sticky": False,
-                },
-            }
-        return True
-
     def _sc_lifecycle_advisories(self, target_state=None):
         """Return non-blocking completeness suggestions for lifecycle work."""
         suggestions = []
@@ -1807,6 +1784,8 @@ class ProjectProject(models.Model):
 
     def _validate_lifecycle_transition(self, target_state):
         for project in self:
+            if project.lifecycle_state == "draft" and target_state in ("in_progress", "paused"):
+                project._assert_initiation_approved()
             ScStateMachine.assert_transition(
                 ScStateMachine.PROJECT,
                 project.lifecycle_state,

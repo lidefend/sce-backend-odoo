@@ -380,6 +380,81 @@ def _task_approval_checks(project, group, created):
     print("APPROVAL_CHECK=task_resubmission_completes_new_chain")
 
 
+def _project_approval_checks(group, created):
+    env = _env()
+    model = "project.project"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing project approval configuration must not be overwritten"
+
+    def document(label):
+        record = _project("Approval project " + label)
+        created.append((record._name, record.id))
+        return record
+
+    direct = document("direct")
+    for values in ({"sc_approval_state": "approved"}, {"lifecycle_state": "in_progress"}, {"lifecycle_state": "paused"}):
+        denied = False
+        try:
+            with env.cr.savepoint(): direct.write(values)
+        except UserError:
+            denied = True
+        assert denied
+        direct.invalidate_recordset()
+        assert direct.lifecycle_state == "draft" and direct.sc_approval_state == "draft"
+    print("APPROVAL_CHECK=project_direct_approval_and_draft_start_bypass_denied")
+    automatic = document("automatic")
+    automatic.action_sc_submit()
+    assert automatic.sc_approval_state == "approved" and not automatic.review_ids
+    assert automatic.lifecycle_state == "draft"
+    print("APPROVAL_CHECK=project_unconfigured_approval_does_not_start")
+    policy = Policy.create({
+        "name": "Runtime project approval", "code": "runtime_project_approval_smoke", "target_model": model,
+        "company_id": env.company.id, "approval_required": True, "mode": "single",
+        "manager_group_id": group.id, "runtime_state": "tier_validation",
+    })
+    created.append((policy._name, policy.id))
+    env["sc.approval.step"].sudo().create({
+        "policy_id": policy.id, "name": "Project review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id,
+    })
+    policy.sync_tier_definitions()
+    required = document("required")
+    required.action_sc_submit()
+    assert required.sc_approval_state == "draft" and required.review_ids
+    assert required.validation_status in ("waiting", "pending")
+    denied = False
+    try:
+        with env.cr.savepoint(): required.action_sc_start()
+    except UserError:
+        denied = True
+    assert denied and required.lifecycle_state == "draft"
+    print("APPROVAL_CHECK=project_pending_approval_cannot_start")
+    _approve_existing_reviews(required)
+    assert required.sc_approval_state == "approved" and required.validation_status == "validated"
+    assert required.lifecycle_state == "draft"
+    required.action_sc_start()
+    assert required.lifecycle_state == "in_progress"
+    print("APPROVAL_CHECK=project_real_approval_then_explicit_start")
+    rejected = document("rejection")
+    rejected.action_sc_submit()
+    previous_ids = set(rejected.review_ids.ids)
+    users = rejected.review_ids.mapped("reviewer_ids")
+    actor = next((rejected.with_user(user) for user in users if rejected.with_user(user).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime project rejection")
+    rejected.invalidate_recordset()
+    assert rejected.lifecycle_state == "draft" and rejected.sc_approval_state == "draft"
+    assert rejected.reject_reason == "Runtime project rejection"
+    print("APPROVAL_CHECK=project_rejection_preserves_reason")
+    rejected.action_sc_submit()
+    assert rejected.review_ids and previous_ids.isdisjoint(rejected.review_ids.ids)
+    _approve_existing_reviews(rejected)
+    assert rejected.sc_approval_state == "approved" and not rejected.reject_reason and rejected.lifecycle_state == "draft"
+    print("APPROVAL_CHECK=project_resubmission_completes_new_chain")
+
+
 def main():
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
@@ -527,6 +602,7 @@ def main():
         _draft_confirmation_checks(project, group, created, "sc.construction.diary")
         _tax_approval_checks(project, group, created)
         _task_approval_checks(project, group, created)
+        _project_approval_checks(group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -536,7 +612,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=39")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=45")
 
 
 main()

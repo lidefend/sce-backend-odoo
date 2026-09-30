@@ -402,6 +402,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_sync_supported(self):
         self.ensure_one()
         return self.target_model in {
+            "project.project",
             "project.task",
             "project.material.plan",
             "sc.material.outbound",
@@ -431,6 +432,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "project.project": (
+                "smart_construction_core.server_action_project_on_approved",
+                "smart_construction_core.server_action_project_on_rejected",
+            ),
             "project.task": (
                 "smart_construction_core.server_action_task_on_approved",
                 "smart_construction_core.server_action_task_on_rejected",
@@ -578,6 +583,8 @@ class ScApprovalPolicy(models.Model):
             "sc.settlement.adjustment": "amount",
         }
         amount_field = amount_field_by_model.get(self.target_model)
+        if not amount_field and (step.amount_min or step.amount_max):
+            raise ValidationError(_("该类单据尚未声明审批金额字段，不能配置金额条件。"))
         if amount_field and step.amount_min:
             domain.append((amount_field, ">=", step.amount_min))
         if amount_field and step.amount_max:

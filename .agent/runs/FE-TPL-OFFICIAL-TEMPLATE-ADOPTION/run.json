@@ -258,7 +258,14 @@
         "addons/smart_construction_core/services/project_execution_task_transition_service.py",
         "addons/smart_construction_core/models/support/task_extend.py",
         "addons/smart_construction_core/views/support/task_sc_state_views.xml",
-        "addons/smart_construction_core/services/project_execution_response_builder.py"
+        "addons/smart_construction_core/services/project_execution_response_builder.py",
+        "addons/smart_construction_core/models/core/project_initiation_approval.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/core/__init__.py",
+        "addons/smart_construction_core/views/core/project_information_edit_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
       ]
     },
     "standard_preview_tool": {
@@ -283,7 +290,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.59 preview update limitation closed:16 tool tests, one23.45s build fed2dfcc2, 5180 actual /assets/index-C9RBIxc0.js HTTP matches, old candidate previous-avuxmhgu preserved, task create12 passed. Backend b06c8a2f7; source addons unchanged. Continue project.project configured approval/start separation preserving lifecycle role/write guards and native contract; task existing-record/blocked page journey remains data-limited, do not repeat empty PM query. Preserve full67 rendering scope and continue producer/consumer/legacy exit gaps. No push/merge/deploy.",
+  "next_exact_step": "53.60 project initiation tier approval now separate from lifecycle; central draft->in_progress/paused guard requires approval; native forms submit/approve/start split, information edit retains submit-only responsibility.63 tests pass. Commit then governed module upgrade/backend reload and approval_runtime45 (project6). Existing native regression41 does not prove project profile (central project profile not yet adopted). After runtime, verify project effective contract/page and remaining amount authority gap; no frontend build needed.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -944,6 +951,16 @@
         "browser_checks": 12,
         "browser_report": "artifacts/frontend-web-fix-20260928/tpl07-1790776830481/report.json"
       }
+    },
+    "project_approval_53_60": {
+      "candidate": "cdb10b1e1 + P1 project approval/model/native views/shared policy/P4 rollback scope",
+      "l1": "iteration passed; added runtime script py_compile passed",
+      "l2": {
+        "approval": 63,
+        "existing_native_profile_regression": 41
+      },
+      "runtime": "not_run; schema and native view upgrade required",
+      "remaining": "real project approval45; project normalized action/state and browser; project approval amount authority undefined (explicit rejection)"
     }
   }
 }

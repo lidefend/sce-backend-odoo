@@ -291,9 +291,16 @@
       <field name="arch" type="xml">
         <form string="项目启停管理" create="false" delete="false">
           <header>
-            <button name="action_sc_submit" type="object" string="启动项目" class="btn-primary"
+                <field name="sc_approval_state" readonly="1"/>
+                <field name="validation_status" invisible="1"/>
+                <field name="can_review" invisible="1"/>
+                <field name="reject_reason" invisible="not reject_reason" readonly="1"/>
+                <button name="validate_tier" type="object" string="审批通过" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="reject_tier" type="object" string="审批驳回" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="action_sc_start" type="object" string="启动项目" invisible="lifecycle_state != 'draft' or sc_approval_state != 'approved'"/>
+            <button name="action_sc_submit" type="object" string="提交立项" class="btn-primary"
                     groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
-                    invisible="lifecycle_state != 'draft'"/>
+                    invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
             <button name="action_sc_pause" type="object" string="暂停项目"
                     groups="smart_construction_core.group_sc_cap_project_manager"
                     invisible="lifecycle_state != 'in_progress'"/>

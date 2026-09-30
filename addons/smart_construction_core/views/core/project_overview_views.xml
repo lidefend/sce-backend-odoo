@@ -45,11 +45,18 @@
                                             string="去补齐资料"
                                             class="btn btn-outline-primary"
                                             invisible="lifecycle_state != 'draft' or (sc_stage_required_done == sc_stage_required_total)"/>
+                                    <field name="sc_approval_state" readonly="1"/>
+                <field name="validation_status" invisible="1"/>
+                <field name="can_review" invisible="1"/>
+                <field name="reject_reason" invisible="not reject_reason" readonly="1"/>
+                                    <button name="validate_tier" type="object" string="审批通过" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="reject_tier" type="object" string="审批驳回" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="action_sc_start" type="object" string="启动项目" invisible="lifecycle_state != 'draft' or sc_approval_state != 'approved'"/>
                                     <button name="action_sc_submit"
                                             type="object"
-                                            string="进入下一阶段"
+                                            string="提交立项"
                                             class="btn btn-primary"
-                                            invisible="lifecycle_state != 'draft' or sc_stage_required_done &lt; sc_stage_required_total"/>
+                                            invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                                     <button name="action_view_stage_requirements"
                                             type="object"
                                             string="查看阶段要求"

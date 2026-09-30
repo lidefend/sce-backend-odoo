@@ -380,6 +380,95 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         call()
 
+    def test_project_approval_does_not_start_lifecycle(self):
+        path = MODEL.parent / 'project_initiation_approval.py'
+        names = {'action_sc_submit', '_check_initiation_ready', '_complete_initiation_approval', 'action_on_tier_approved', '_assert_initiation_approved', 'action_sc_start'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_INITIATION_APPROVAL_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Env(dict):
+            user = types.SimpleNamespace(has_group=lambda group: True)
+        class Project:
+            name = 'Project'
+            company_id = object()
+            def __iter__(self): return iter([self])
+            def ensure_one(self): pass
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+            def message_post(self, **kw): self.messages.append(kw)
+            def _sc_lifecycle_advisories(self, target): return []
+            def action_set_lifecycle_state(self, target): self.lifecycle_state = target
+        for name in names: setattr(Project, name, namespace[name])
+        for configured in (True, False):
+            project = Project()
+            project.lifecycle_state, project.sc_approval_state = 'draft', 'draft'
+            project.review_ids, project.validation_status, project.messages = [], 'no', []
+            project._state_field = 'sc_approval_state'
+            project.env = Env({'sc.approval.policy': types.SimpleNamespace(
+                _start_submission_review=lambda rec: configured,
+                _assert_submission_approved=lambda rec, states: PRODUCTION['_assert_submission_approved'](None, rec, states))})
+            with self.assertRaises(ValueError): project.action_sc_start()
+            project.action_sc_submit()
+            self.assertEqual(project.lifecycle_state, 'draft')
+            self.assertEqual(project.sc_approval_state, 'draft' if configured else 'approved')
+            if configured:
+                project.review_ids, project.validation_status = [1], 'pending'
+                with self.assertRaises(ValueError): project.action_sc_start()
+                project.action_on_tier_approved()
+                self.assertEqual(project.sc_approval_state, 'draft')
+                project.validation_status = 'validated'
+                project.action_on_tier_approved()
+            self.assertEqual(project.lifecycle_state, 'draft')
+            self.assertEqual(project.sc_approval_state, 'approved')
+            self.assertEqual(len(project.messages), 1)
+            project.action_sc_start()
+            self.assertEqual(project.lifecycle_state, 'in_progress')
+            with self.assertRaises(ValueError): project.action_sc_submit()
+
+    def test_project_approval_state_cannot_be_written_with_boolean_context(self):
+        path = MODEL.parent / 'project_initiation_approval.py'
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in ('write', 'create')]
+        for method in methods: method.decorator_list = []
+        token = object()
+        namespace = {'UserError': ValueError, '_INITIATION_APPROVAL_TOKEN': token}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for supplied in (None, True, 'true', object()):
+            record = types.SimpleNamespace(env=types.SimpleNamespace(context={'sc_initiation_approval_token': supplied}))
+            with self.assertRaises(ValueError): namespace['write'](record, {'sc_approval_state': 'approved'})
+            with self.assertRaises(ValueError): namespace['create'](record, [{'sc_approval_state': 'approved'}])
+
+    def test_project_central_lifecycle_guard_prevents_draft_pause_bypass(self):
+        path = MODEL.parent / 'project_core.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_validate_lifecycle_transition')
+        namespace = {'ScStateMachine': types.SimpleNamespace(PROJECT='project.project', assert_transition=lambda *a, **kw: None)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        checks = []
+        class Project:
+            display_name = 'project'
+            def __iter__(self): return iter([self])
+            def _assert_initiation_approved(self):
+                checks.append(self.lifecycle_state)
+                raise ValueError('approval required')
+            def _guard_project_close_by_settlement(self, state): pass
+            def _guard_project_close_by_payment(self, state): pass
+        project = Project()
+        for current, target, requires in [('draft', 'in_progress', True), ('draft', 'paused', True), ('draft', 'closed', False), ('paused', 'in_progress', False), ('in_progress', 'done', False)]:
+            project.lifecycle_state = current
+            if requires:
+                with self.assertRaises(ValueError): namespace['_validate_lifecycle_transition'](project, target)
+            else: namespace['_validate_lifecycle_transition'](project, target)
+        self.assertEqual(checks, ['draft', 'draft'])
+
+    def test_unmapped_approval_amount_constraints_are_not_ignored(self):
+        method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_domain')
+        namespace = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        policy = types.SimpleNamespace(target_model='project.project')
+        for lower, upper in [(100, 0), (0, 100)]:
+            with self.assertRaisesRegex(ValueError, '金额字段'):
+                namespace['_tier_definition_domain'](policy, types.SimpleNamespace(amount_min=lower, amount_max=upper))
+        self.assertEqual(namespace['_tier_definition_domain'](policy, types.SimpleNamespace(amount_min=0, amount_max=0)), '[]')
+
     def test_execution_approval_block_response_keeps_business_message(self):
         path = ROOT / 'addons/smart_construction_core/services/project_execution_response_builder.py'
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'blocked')
