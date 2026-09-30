@@ -572,6 +572,13 @@ class ScExpenseClaim(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         legacy_authority = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
         for vals in vals_list:
@@ -679,8 +686,8 @@ class ScExpenseClaim(models.Model):
 
     def write(self, vals):
         authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
-        if not authoritative and (vals.get("state") in {"done", "legacy_confirmed"} or "finance_identity_state" in vals):
-            raise UserError(_("费用与扣款终态及财务身份只能由正式业务动作或迁移写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("费用与扣款状态、来源及财务身份只能由正式业务动作或迁移写入。"))
         terminal_business_fields = {
             "project_id", "company_id", "currency_id", "partner_id", "business_category_id",
             "claim_type", "date_claim", "amount", "approved_amount", "paid_amount", "active",
@@ -902,7 +909,7 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("只有草稿状态的费用/保证金单据可以提交。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            rec.write({"state": "submit", "reject_reason": False})
+            rec._write_finance_authority({"state": "submit", "reject_reason": False})
             if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "expense_claim_submitted",
@@ -911,7 +918,7 @@ class ScExpenseClaim(models.Model):
                     "action_submit",
                 )
             else:
-                rec.write({"state": "approved", "reject_reason": False})
+                rec._write_finance_authority({"state": "approved", "reject_reason": False})
                 rec._audit_transition(
                     "expense_claim_approved",
                     before,
@@ -964,7 +971,7 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("费用/保证金单据尚未完成统一审批流程。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            rec.write({"state": "approved", "reject_reason": False})
+            rec._write_finance_authority({"state": "approved", "reject_reason": False})
             rec._audit_transition(
                 "expense_claim_approved",
                 before,
@@ -979,7 +986,7 @@ class ScExpenseClaim(models.Model):
             if not rec.review_ids or rec.validation_status != "rejected":
                 raise UserError(_("费用/保证金单据没有已驳回的审批事实。"))
             before = rec._snapshot_audit_payload()
-            rec.write(
+            rec._write_finance_authority(
                 {
                     "state": "draft",
                     "reject_reason": reason or rec._get_tier_reject_reason(),
@@ -1288,7 +1295,7 @@ class ScExpenseClaim(models.Model):
             if rec.state not in ("draft", "submit", "approved"):
                 raise UserError(_("只有草稿、已提交或已批准的费用/保证金单据可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition(
                 "expense_claim_cancelled",
                 before,

@@ -473,3 +473,8 @@ Bounded finance-family source review confirms another P1 gap: settlement adjustm
 ## Segment 53.128: receipt/self-funding approval-state authority
 
 Ordinary create/context defaults may only start in draft; ordinary state/origin/identity writes are refused. Confirmation, cancellation and validated reviewer callbacks use the existing private finance authority. Existing migration and terminal fact protections remain. L1/pure143/native62 pass; actual managed record handling is pending. Continue financing/expense/payment-execution state entry boundaries while preserving their existing account, source and fact constraints. Prior source-data/runtime gaps and overall detail.action-state remain open.
+
+
+## Segment 53.129: remaining finance-family state entry guards
+
+Financing and payment execution now use private state action writes; ordinary non-draft creation/context defaults and state/origin writes are refused. Expense uses its existing finance authority for submission, approval, rejection and cancellation. Existing payment-source, account-snapshot and reversal checks remain in place. L1/pure143/native62 pass after fixing a test extractor that selected expense deduction-line methods instead of the document. Actual payment/reversal, expense reject/resubmit, financing completion and historical replay compatibility remain unverified. Prior scoped-source blocker persists; prioritize consolidated affected runtime rather than treating source guards as delivery.

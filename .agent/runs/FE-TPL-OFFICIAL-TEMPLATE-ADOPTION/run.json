@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.128 receipt/self_funding ordinary create/context defaults draft-only; state/origin/identity writes protected via existing private finance tokens. Confirmation/cancel/real tier callbacks routed through existing helpers. L1 receipt-self-state-iteration PASS, unit143/native62 PASS with receipts. No backend reload/runtime yet; no schema/build needed. Next remaining finance-family financing/expense/payment-execution state create/write boundaries: preserve payment source/account snapshot/financial fact rules and existing migration; follow actual methods, then affected runtime. Previous finance-state-authority source prerequisite still unresolved; no unchanged retry. Overall67/detail.action-state open, no push/merge/deploy.",
+  "next_exact_step": "53.129 financing/payment-execution private state guards; expense existing finance authority covers all state transitions. L1 finance-family-state-iteration PASS; unit-fixed143/native62 PASS with receipts (first unit failed AST extraction of expense child methods, fixed owning test). No runtime reload yet; no schema/build. Next prioritize consolidated affected finance runtime and historical replay compatibility: expense rejection/resubmission, financing completion, actual payment/reversal, all changed state entry paths. Existing finance-state-authority source prerequisites unresolved; identify exact missing source or reuse governed authoritative preparation, no unchanged retry/invented tax/company-scope widening. Overall67/detail.action-state open, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

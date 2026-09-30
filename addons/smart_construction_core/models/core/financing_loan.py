@@ -32,6 +32,9 @@ FINANCING_LOAN_FORMAL_CANONICAL_FIELDS = {
 }
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScFinancingLoan(models.Model):
     _name = "sc.financing.loan"
     _description = "融资与借款登记"
@@ -508,6 +511,14 @@ class ScFinancingLoan(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -547,6 +558,8 @@ class ScFinancingLoan(models.Model):
         return set()
 
     def write(self, vals):
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
         if vals.get("project_id"):
             self._require_visible_company_project(vals["project_id"])
         if (
@@ -571,6 +584,9 @@ class ScFinancingLoan(models.Model):
                 raise UserError(_("历史迁移融资/借款单据已确认，只允许补充正式业务字段、往来单位、备注和历史录入审计事实。"))
         return super().write({**self._prepare_formal_business_values(vals), **vals})
 
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
         for rec in self:
@@ -586,7 +602,7 @@ class ScFinancingLoan(models.Model):
                     "action_confirm",
                 )
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "financing_loan_confirmed",
                     before,
@@ -603,7 +619,7 @@ class ScFinancingLoan(models.Model):
             policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
-            rec.write({"state": "done"})
+            rec._write_document_state({"state": "done"})
             rec._ensure_interfund_cash_ledger()
             rec._audit_transition(
                 "financing_loan_done",
@@ -744,7 +760,7 @@ class ScFinancingLoan(models.Model):
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的融资借款可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_document_state({"state": "cancel"})
             rec._audit_transition(
                 "financing_loan_cancelled",
                 before,
@@ -772,7 +788,7 @@ class ScFinancingLoan(models.Model):
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "financing_loan_confirmed",
                     before,

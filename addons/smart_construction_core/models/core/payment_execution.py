@@ -13,6 +13,9 @@ _logger = logging.getLogger(__name__)
 _PAYMENT_EXECUTION_BATCH_READY_TOKEN = object()
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScPaymentExecution(models.Model):
     _name = "sc.payment.execution"
     _description = "付款执行"
@@ -630,6 +633,14 @@ class ScPaymentExecution(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
         requests = self._assert_unique_request_anchors(
@@ -781,6 +792,8 @@ class ScPaymentExecution(models.Model):
         return True
 
     def write(self, vals):
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
         cancellation_metadata = {"cancellation_kind", "reversal_reason"}.intersection(vals)
         if cancellation_metadata and not self.env.context.get("allow_payment_cancel_metadata"):
             if "cancellation_kind" in vals:
@@ -840,6 +853,9 @@ class ScPaymentExecution(models.Model):
             return result
         return super().write(vals)
 
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     def action_confirm(self):
         self._assert_finance_handling_access()
         policy = self.env["sc.approval.policy"]
@@ -855,7 +871,7 @@ class ScPaymentExecution(models.Model):
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
             if not policy._start_submission_review(rec):
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_paid(self):
         self._assert_finance_confirm_access()
@@ -880,7 +896,7 @@ class ScPaymentExecution(models.Model):
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
             policy._assert_submission_approved(rec, ("confirmed",))
-            rec.state = "paid"
+            rec._write_document_state({"state": "paid"})
             rec._sync_payment_request_done()
             rec._message_post_non_blocking(_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
 
@@ -950,7 +966,7 @@ class ScPaymentExecution(models.Model):
                     _("取消付款执行"),
                     reasons=[_("历史已确认或已取消的付款执行不能取消")],
                 )
-            rec.with_context(allow_payment_cancel_metadata=True).write(
+            rec.with_context(allow_payment_cancel_metadata=True)._write_document_state(
                 {"state": "cancel", "cancellation_kind": "cancelled_before_payment"}
             )
 
@@ -1014,7 +1030,7 @@ class ScPaymentExecution(models.Model):
             ledger.action_reverse(rec, reason=reversal_reason)
             if request.state == "done":
                 request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-            rec.with_context(allow_payment_cancel_metadata=True).write(
+            rec.with_context(allow_payment_cancel_metadata=True)._write_document_state(
                 {"state": "cancel", "cancellation_kind": "payment_reversed"}
             )
             after = request._snapshot_audit_payload()
@@ -1209,7 +1225,7 @@ class ScPaymentExecution(models.Model):
                 # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:

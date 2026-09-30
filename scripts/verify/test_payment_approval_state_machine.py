@@ -88,6 +88,12 @@ class Record:
     def __iter__(self):
         yield self
 
+    def _write_document_state(self, values):
+        return self.write(values)
+
+    def _write_finance_authority(self, values):
+        return self.write(values)
+
     def ensure_one(self):
         pass
 
@@ -483,7 +489,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(calls), int(same_company))
 
     def test_reconciliation_adjustment_direct_state_and_origin_writes_denied(self):
-        for filename in ('treasury_reconciliation', 'settlement_adjustment'):
+        for filename in ('treasury_reconciliation', 'settlement_adjustment', 'financing_loan', 'payment_execution'):
             path = MODEL.with_name(filename + '.py')
             methods = [n for n in ast.walk(ast.parse(path.read_text()))
                        if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
@@ -515,7 +521,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 ns['write'](rows, {'source_origin': 'legacy'})
 
     def test_reconciliation_adjustment_private_state_and_import_boundary(self):
-        for filename in ('treasury_reconciliation', 'settlement_adjustment'):
+        for filename in ('treasury_reconciliation', 'settlement_adjustment', 'financing_loan', 'payment_execution'):
             path = MODEL.with_name(filename + '.py')
             methods = [n for n in ast.walk(ast.parse(path.read_text()))
                        if isinstance(n, ast.FunctionDef) and n.name in {'create', '_write_document_state'}]
@@ -556,9 +562,11 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         for filename, context, token in (
             ('receipt_income', 'sc_receipt_fact_authority_token', '_RECEIPT_FACT_AUTHORITY_TOKEN'),
             ('self_funding_registration', 'sc_self_funding_authority_token', '_SELF_FUNDING_AUTHORITY_TOKEN'),
+            ('expense_claim', 'sc_expense_fact_authority_token', '_EXPENSE_FACT_AUTHORITY_TOKEN'),
         ):
             path = MODEL.with_name(filename + '.py')
-            methods = [n for n in ast.walk(ast.parse(path.read_text()))
+            document_class = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef))
+            methods = [n for n in document_class.body
                        if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
             for method in methods:
                 method.decorator_list = []

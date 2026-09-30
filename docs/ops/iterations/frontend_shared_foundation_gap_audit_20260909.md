@@ -8702,3 +8702,12 @@ finance-state-runtime.log FAILED在首个业务检查之前：同一finance公�
 L1 receipt-self-state-iteration.log PASS；L2 receipt-self-state-unit.log143 PASS、receipt-self-state-native.log8+54=62 PASS，begin/record回执非零完成。测试生产create/write拒绝显式及上下文审批状态、伪造布尔token、来源/身份写入；原共享提交/真实回调与财务权限测试通过。尚未运行受管真实单据审批执行或页面办理，不把纯测试当闭环。旧finance-state-authority来源缺口未恢复，不重跑；前端CrYkOCxc未变。
 
 同一已登记finance-family定向续读：financing_loan.write主要保护legacy历史记录；expense_claim.write只保护done/legacy_confirmed和身份；payment_execution有付款依据/账户快照/业务事实保护，其状态入口还需连同实际付款及冲销方法核对，不能覆盖现有财务约束。下一步成组收口剩余融资/费用/付款执行的状态create/write入口，复用现有方法与权限，不重做已完成付款申请审批/财务身份；受影响真实运行仍需补证。总体67/detail.action-state不升整行，无推送合并目标部署。
+
+
+### 53.129 财务组剩余状态入口（源码验证通过，整组运行待验证）
+
+03e464376 clean起点。P1 smart_construction_core融资/费用/付款执行行业状态权威。融资、付款执行按现有invoice/adjustment模式加入模块内私有object状态token；普通create及context默认值仅draft，受控sudo legacy/legacy_confirmed创建保留；普通state/source_origin写入拒绝。正式确认、执行、取消、真实tier回调使用私有方法；付款paid及原冲销/撤销流程也通过此入口，不改付款申请权威、资金台账冲销、付款依据及账户快照保护。费用沿用原财务token，提交/自动批准/审核批准/驳回回草稿/取消使用原_write_finance_authority，默认状态与来源绕过拒绝。无字段/XML或前端改动，后续Python reload即可。
+
+L1 finance-family-state-iteration.log PASS。首次L2 finance-family-state-unit.log失败7例：测试整文件AST抓取同时包含费用主单与扣款明细，明细create覆盖主单create；属于测试归属错误。限定到主单类后finance-family-state-unit-fixed.log143 PASS，finance-family-state-native.log8+54=62 PASS；两项begin/record成功。新增模型通过扩展已有测试参数覆盖，143为测试函数数而非只测143个状态组合。测试检查显式/default状态/来源拒绝、伪造token、共享审批确认回调；不是实际付款/冲销或迁移重放证明。
+
+下一步优先整组受影响运行验证及历史迁移兼容核对，不继续只堆源码通过记录。现有finance-state-authority在财务公司来源缺失前提阻断，未恢复不重跑；须定位缺少的准确来源或复用已登记有权威来源的受管准备路径，不能造税率/扩大公司范围。费用驳回重提、实际付款/冲销及融资完成的ORM行为尚待证明，历史同步若写入state需核对受控入口，不能以新增guard当兼容通过。前端CrYkOCxc未变，不构建；整体67/detail.action-state保持开放，无推送合并目标部署。
