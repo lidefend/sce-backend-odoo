@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.31 contract execution/close use completed approval facts; three native forms now match confirmed-only activation (48 approval+33 coverage tests). Continue necessary document coverage beyond existing approval-supported list and two native product gaps; accumulated model/XML changes need governed upgrade and focused ORM/browser real workflows with configuration restoration. No new fixtures/environment or frontend rebuild.",
+  "next_exact_step": "53.32 governed smart_construction_core upgrade succeeded and backend loads4b8c4397e; existing5180 build reused, detail-state29 browser assertions pass (tpl07-1790772544286). Next fix existing approval runtime smoke to exercise real tier reviews with explicit restoration (old no-status/SQL-validated shortcuts are invalid), and finish necessary document coverage/two native product gaps. Do not rebuild frontend or repeat unchanged page checks.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -600,6 +600,16 @@
       },
       "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-execution-tests.log",
       "runtime": "not_run; XML upgrade pending"
+    },
+    "approval_runtime_53_32": {
+      "status": "partial_runtime_passed",
+      "candidate": "4b8c4397e2a0de6b24749f2a1826e8c7bc13629f",
+      "module_upgrade": "passed",
+      "backend_health": "passed",
+      "browser_test_count": 29,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790772544286/report.json",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-module-upgrade.log",
+      "business_approval_acceptance": "not_run; existing smoke needs genuine-review assertions and restoration"
     }
   }
 }

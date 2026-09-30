@@ -7641,3 +7641,13 @@ L5：未推送、未合并、未部署。
 - 三张原生合同表单开始执行按钮改为confirmed条件，保留合同经理组。有效契约既有状态职责不变；原始models、收入合同、支出合同投影均验证只有confirmed提供action_set_running。保留原运行/关闭状态消息和无明细不能关闭的业务校验。
 - L1 ci.local.iteration PASS（contract-execution-iteration.log），L2共享审批48、native8+25=33通过（contract-execution-tests.log，begin/record48）。执行真实开始/关闭方法，覆盖草稿包括有validated实例也拒绝、自动批准后配置变化可执行、pending拒绝、完整review通过，以及关闭明细检查；解析实际XML核对三张表单与三类profile动作。
 - XML仍待统一受管升级，真实权限/运行尚未验证；无数据库写入、无前端重建。后续需要对既有审批支持清单之外的必要业务单据确认有效契约接入，处理两项原生动作产品缺口，并运行已积累改动的受管升级/定向ORM和真实业务闭环。总体目标继续active，不据这81项窄测试宣称全系统完成。
+
+
+### 53.32 累计审批改动受管升级与付款只读页面验证
+
+- 4b8c4397e clean候选。P4执行既有受管入口验证P1累计模型/XML，不新建环境。目标角色=内部隔离验收租户，tenant/environment=sc_frontend_acceptance/local；非平台控制库、非行业目录、非客户生产库，既有fixture允许，客户生产数据不进入本次操作。preflight确认project=sc-fe-r2-p1-01、dbfilter=^sc_frontend_acceptance$，db/redis/filestore分别sc_fe_r2_p1_01_db/redis/odoo。日志approval-runtime-preflight.log。
+- L3 make acceptance.module.upgrade SC_ACCEPTANCE_RUNTIME_PROFILE=local MODULE=smart_construction_core CODEX_MODE=gate CODEX_NEED_UPGRADE=1成功，真实registry加载66.793秒并正常退出（approval-module-upgrade.log）。升级初始日志目录不可创建后回退stdout，完整日志已留存；不是模块加载失败。受管入口重建其登记redis容器，未更换数据库或卷。
+- make backend.acceptance.up受管识别旧SC_SOURCE_REVISION后替换旧后端，重新加载4b8c4397e2a0de6b24749f2a1826e8c7bc13629f；source fingerprint=12831d00b85a6886cb51fd23ae21641362e6f5d724e2f067eb20532664d0dfb6。backend.acceptance.health PASS，端口18082；日志approval-backend-up.log/approval-backend-health.log。此为本地验收更新，不是目标环境部署或主线集成。
+- L4复用原5180静态产物，TPL07_SCOPE=detail-state make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local，29项PASS（approval-detail-state-browser.log；tpl07-1790772544286/report.json）。既有finance角色读取付款1710 approved，双视口官方详情状态限制反馈通过，errors=[]、forbiddenWrites=[]，无业务写入。build.base_sha仍0d2c6190a6df7dcbd90f5f1dad23a18fea3fdfff，entry=/assets/index-BEqhG955.js，entry_sha256=4d954cbf38b86a8ab8e4c9cf383229dd7f70908b09743c7802f0dd32c1084aa5；端侧输入不变所以不构建。
+- 该29项只证明共享页面消费已加载契约，不证明审批办理闭环。现有business_config_approval_runtime_smoke允许validation_status=no，finance_document_tier_runtime_smoke通过SQL/_set_validated伪造结果，均不能直接用于本次真实审批验收；后续应在现有工具上修正真实review执行及配置恢复，不新增fixture权威。未运行这些不适用工具，不以旧证据冒充新规则通过。
+- 已完成本候选L3升级与所述只读页面验证；全单据覆盖、两项原生产品动作、审批开关/多级链/异常回滚和真实业务办理等仍未完成，总体active。无推送、合并或目标环境部署。
