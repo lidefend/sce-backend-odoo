@@ -422,3 +422,8 @@ Segment 53.110 identified hardcoded zero paid/requested summaries. Segment 53.11
 ## Segment 53.117: approval support lists do not define document coverage
 
 `tender.doc.purchase` was still directly approving drafts and was absent from shared approval configuration. It now consumes the shared tier state machine, declared amount authority and native/effective actions; runtime8 verifies configured/unconfigured flow, guards and rejection/resubmission with transaction restoration. PM create19 confirms official inputs and no unsaved direct approval, not a saved handling journey. Continue the existing `detail.action-state` item for remaining model responsibilities, beginning with project-document submission versus archival; do not exempt documents solely because they were absent from the old support list.
+
+
+## Segment 53.118: project-document archival and required classification
+
+Project-document submission now uses shared configured/automatic approval; approval stops at `approved`, and a separate guarded archival action reaches `done`. Existing project operation restrictions remain. Pure126/native60 pass and the module is loaded, but runtime acceptance stopped before its first case because no usable `sc.dictionary` with `type=doc_type` exists in the scoped query. Transaction restoration passed; this does not prove inactive classifications absent. The required business classification authority has been requested, not fabricated as a fixture. Browser acceptance remains not run until the prerequisite is resolved.

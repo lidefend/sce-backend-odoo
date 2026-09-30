@@ -602,12 +602,13 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.purchase.request', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.rfq', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.project.document', domain: [] },
       { role: 'fixture_role_pm', model: 'tender.doc.purchase', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.settlement', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.equipment.plan', domain: [] },
@@ -644,7 +645,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -666,6 +667,18 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.project.document') {
+          const fields = [];
+          const walk = (nodes) => { for (const node of nodes || []) { if (node.type === 'field') fields.push(node); walk(node.children); } };
+          walk(authority.layout?.containerTree);
+          for (const name of ['name', 'project_id', 'doc_type_id']) {
+            const field = fields.find((node) => node.name === name);
+            check(`project document: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
+            check(`project document: ${name} actual input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
+          }
+          check('project document: no archival before saved approval', await session.page.getByRole('button', { name: '归档', exact: true }).count() === 0);
+          check('project document: no approval of unsaved document', await session.page.getByRole('button', { name: '审批通过', exact: true }).count() === 0);
+        }
         if (spec.model === 'tender.doc.purchase') {
           const fields = [];
           const walk = (nodes) => { for (const node of nodes || []) { if (node.type === 'field') fields.push(node); walk(node.children); } };

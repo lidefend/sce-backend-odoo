@@ -8576,3 +8576,7 @@ P4同一approval-actions新增PM tender.doc.purchase create，tender-purchase-pa
 L1 project-document-iteration.log通过；L2 unit.log126 PASS。首轮native旧测试期望review可重置，与修正后防绕行边界冲突；改为done/cancel可reset并核对仅approved发布归档且purpose=complete，action-iteration.log通过，native-recovery.log8+52=60 PASS。非放宽测试，新增归档边界断言，旧失败日志保留。非零回执登记。P4同一rollback工具新增project-document8组，已有doc_type字典为前提，不造字典fixture；default all270但本批仅scope。tool-iteration.log/语法/diff通过。
 
 需一次受管模块升级（tier/字段/XML）与reload，沿local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，事务数据/策略恢复；尚未运行runtime/browser，不将源代码接入算已完成办理。前端CrYkOCxc未变不构建，无新环境/持久fixture/推送合并目标部署。
+
+53.118运行前提阻断：9573da065受管模块升级/reload成功（project-document-upgrade.log/reload.log）。project-document-runtime.log在首项前发现existing doc_type查询为空，明确AssertionError existing document classification required；ROLLBACK VERIFIED。这是可用分类数据前提缺失，不是审批执行通过，也不证明inactive记录不存在。未造字典/fixture，未重复同失败。已向用户异步请求工程资料大类的确认名称/代码或既有配置来源。
+
+P4 PM create检查已准备，project-document-page-iteration.log/node/diff通过，但因上游运行前提未满足不执行browser，保持not_run。本批P1源码/纯回归126+native60完成，运行时和普通角色办理未完成；不得把前序家族证据覆盖本模型。字段doc_type必填来自原模型，不能删掉职责换取通过。前端CrYkOCxc不变。下一步等待分类权威并通过既有配置机制解决；同时可推进互不依赖的既有workflow剩余模型职责，禁止重复空分类检查。无推送合并目标部署。
