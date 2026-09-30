@@ -47,3 +47,11 @@ goal:
     Reuse the existing 67-entry ledger and current owned product gaps; close producer and consumer
     responsibilities together, retire duplicate legacy paths, and verify real loops.
     Template demo features do not invent business requirements. Keep local-only delivery.
+
+  approval_unification_decision: >-
+    Owner decision53.17: authoritative state transitions consume existing
+    company-scoped user approval configuration. Submission auto-approves only
+    when approval is not configured; configured approval follows its real chain.
+    Missing enabled rules are errors, not permission to skip approval. Preserve
+    in-flight approval authority and business preconditions. Retire parallel
+    manual-approve logic rather than projecting every legacy button independently.

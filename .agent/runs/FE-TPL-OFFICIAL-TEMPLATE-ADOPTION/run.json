@@ -197,7 +197,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Correct native workflow coverage to bind model+method with a cross-model regression; reconcile actual uncovered state actions without broad unrelated scans. Finish native plan-button state parity, then governed reload/upgrade only as affected and verify signing/plan/document effective action authority. Reuse frontend build and business evidence.",
+  "next_exact_step": "Owner decision53.17 takes priority: unify payment submission and approval through existing company-scoped approval policy and authoritative state transitions. No configured approval => submit auto-approves; configured => real approval chain; missing rules fail; never infer auto-approval from empty reviews. Preserve in-flight approval authority, business guards, audit and idempotency. Then align canonical methods/native buttons/effective action projection and runtime validation; do not separately bless each legacy approve button. Model-bound coverage defect remains pending.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -408,6 +408,12 @@
       "remaining_registered_state_actions": 2,
       "coverage_limitation": "native coverage currently compares global method names; model-scoped proof must replace it",
       "runtime": "not_run"
+    },
+    "approval_state_machine_53_17": {
+      "status": "planned",
+      "authority": "owner explicit decision; sc.approval.policy",
+      "finding": "payment submit always requests validation; expense/settlement already consult policy; payment decision infers approval from absent reviews",
+      "runtime_writes": false
     }
   }
 }

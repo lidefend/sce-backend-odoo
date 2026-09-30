@@ -7509,3 +7509,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS。L2 native coverage 8+21=29通过（native-state-contract.log，begin/record29）；同一次命令的state_phase guard发现sc.plan旧dead-state登记已失效，分类为随产品修复而过期的证据登记。移除该精确条目后phase16、semantics15通过（native-state-phases-final.log）。无全量ORM、fixture写入、前端重建。后端运行态重载仍待执行。
 - 已知登记内未声明状态动作5→3（含53.15签署则剩2）：付款action_set_approved、付款执行action_reverse_payment；签署/计划/文档的运行态验收未闭合，67条中的detail.action-state继续开放。源码同时发现native coverage把各模型方法名汇成全局集合，存在同名方法跨模型误覆盖的验证工具缺陷；目前计数只代表已登记集合，不证明全系统仅余2个缺口。下一步必须按(model,method)验证，补可证伪测试，不能以全局方法存在消项。
 - 本批P1声明及纯测试完成，整体继续active；不推送、合并或目标部署。
+
+
+### 53.17 所有者裁决：审批由状态机和用户配置统一驱动
+
+- 所有者明确要求：配置审批则走审批，未配置审批则提交自动通过，统一由状态机控制。此裁决调整53.15/53.16后续顺序：不再逐个给旧批准按钮补平行声明；先收敛既有业务执行，再同步有效契约和原生入口。签署、计划启动、付款冲销等审批之外的业务转换仍保留各自状态/权限/数据前置条件，不把自动审批扩大为自动签署或自动付款。
+- 已定位权威：sc.approval.policy.is_approval_required(model, company)以及next_state_after_submit已经存在；费用action_submit、结算action_submit已按该权威分流。payment.request.action_submit却固定写submit并request_validation，action_approval_decision还把“validation_status=no且无review”当人工通过，形成不一致的第二套判断。此为P1执行缺陷，不是前端模板职责。
+- 修复要求：公司范围内的有效用户审批策略决定提交走向；启用审批但没有可匹配规则必须报配置错误，不能视同未配置。已在审批中的单据不得仅因当前策略改变或review集合为空被自动批准；需明确在途配置/审批实例权威。多级审批只在最后完成时推进一次，拒绝/重提/重复调用有稳定结果；审计记录区分提交自动通过与人工审批通过，不能伪造审批人或把no改成validated充当审批事实。
+- 统一入口应复用既有状态转换与审批策略机制，不新建工作流引擎；旧action_approve/action_set_approved与回调只能委托同一转换裁决，不能各自实现放行规则。前端消费最终状态/可执行动作，不判断是否配置审批。原生按钮与共享官方动作栏使用同一合法动作集合。
+- 本节为裁决与直接实现定位，未修改付款执行代码、未运行数据库写入、不宣称统一完成。下一批从付款提交/审批回调/写入守卫/执行handler一起做最小闭环，定向覆盖无审批、配置单级/多级、规则缺失、错误审批人、在途配置变化和重复回调；使用现有环境与配置恢复机制。模型绑定覆盖守卫缺陷继续登记，不因调整优先级消失。
