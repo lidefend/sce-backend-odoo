@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "GITHUB-RECOVERY",
+  "status": "verification_pending",
+  "branch": "fix/github-history-recovery",
+  "baseline_sha": "23f11f426880585ca307544545c9bf9c01245b42",
+  "goal": ".agent/goals/GITHUB-RECOVERY.yaml",
+  "record": "docs/ops/iterations/github_recovery_20260930.md",
+  "scope": [
+    ".agent/goals/GITHUB-RECOVERY.yaml",
+    ".agent/runs/GITHUB-RECOVERY/",
+    "docs/ops/iterations/github_recovery_20260930.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered Make gates; no database writes or deployment"
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Run exact-head Quick after this metadata commit; on success archive original evidence and publish protected GitHub PR. Track post-freeze outcomes in .runtime/github-recovery/ without changing candidate merely to copy receipts.",
+  "observations": {
+    "iteration": "passed: .runtime/github-recovery/iteration.log",
+    "targeted": "passed 15 push + 36 controller cases: .runtime/github-recovery/targeted.log",
+    "dependency_recovery": "passed offline frozen lock: .runtime/github-recovery/dependencies.log",
+    "component_inventory": "passed 7 tests after dependency recovery: .runtime/github-recovery/generated-recovery.log",
+    "public_scope": "passed full reachable history: secrets=0 personal=0; 21 registered exact false positives; .runtime/github-recovery/public-scope.log",
+    "freeze_prepare": "passed: .runtime/github-recovery/freeze-prepare.log",
+    "static_baseline": "passed complexity11/contract14/zero-residue: .runtime/github-recovery/static-baseline.log",
+    "strict_typecheck": "passed: .runtime/github-recovery/typecheck.log"
+  }
+}
