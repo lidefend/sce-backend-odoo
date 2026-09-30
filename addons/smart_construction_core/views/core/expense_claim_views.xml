@@ -228,6 +228,7 @@
                         </group>
                         <group name="deduction_note_attachment" data-sc-anchor="deduction_note_attachment" string="办理说明与附件">
                             <field name="note"/>
+                            <field name="submission_attachment_policy" invisible="1"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                             <field name="reject_reason" readonly="1"/>
                             <field name="return_reason"/>
@@ -368,6 +369,7 @@
                         </group>
                         <group name="claim_note_attachment" data-sc-anchor="claim_note_attachment" string="办理说明与附件">
                             <field name="note"/>
+                            <field name="submission_attachment_policy" invisible="1"/>
                             <field name="attachment_ids" widget="many2many_binary"/>
                             <field name="reject_reason" readonly="1"/>
                         </group>

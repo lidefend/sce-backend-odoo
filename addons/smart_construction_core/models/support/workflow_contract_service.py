@@ -213,6 +213,14 @@ class ScWorkflowContractService(models.AbstractModel):
             },
         },
         "sc.expense.claim": {
+            "submission_requirements": [{
+                "kind": "relation_required",
+                "field": "attachment_ids",
+                "requiredWhen": {"field": "submission_attachment_policy", "equals": "required"},
+                "pendingSource": "native_attachment",
+                "reasonCode": "EXPENSE_ATTACHMENT_REQUIRED",
+                "message": "当前业务分类要求上传附件后才能提交、批准或完成。",
+            }],
             "state_field": "state",
             "state_phase": {
                 "draft": "draft",
@@ -1182,6 +1190,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "source": {"kind": "sc_backend_workflow_action_catalog", "projection_only": True},
             "availabilityScope": "declaration_only",
             "actions": self._declared_actions(profile),
+            "submissionRequirements": list(profile.get("submission_requirements") or []),
         }
 
     @api.model
@@ -1213,6 +1222,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "editability": editability,
             "statusbar": self._statusbar_projection(business_phase, approval_phase),
             "evidenceGate": visible_evidence_gate,
+            "submissionRequirements": list(profile.get("submission_requirements") or []),
             # Meaning is stable even when a transition is currently unavailable.
             # This catalog is not an execution grant; availableActions remains
             # the record/user/state-specific availability authority.

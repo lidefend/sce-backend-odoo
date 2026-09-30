@@ -766,6 +766,24 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertNotIn('rawState', catalog)
         self.assertEqual(ns['describe_model_actions'](service, 'unsupported'), {})
 
+    def test_expense_submission_requirement_preserves_draft_optional_attachment(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/workflow_contract_service.py'
+        tree = ast.parse(path.read_text())
+        profile_node = next(n.value for n in ast.walk(tree) if isinstance(n, ast.Assign)
+                            and any(isinstance(t, ast.Name) and t.id == 'PROFILE_BY_MODEL' for t in n.targets))
+        expense_profile = next(value for key, value in zip(profile_node.keys, profile_node.values)
+                               if isinstance(key, ast.Constant) and key.value == 'sc.expense.claim')
+        requirement = ast.literal_eval(expense_profile)['submission_requirements'][0]
+        self.assertEqual(requirement['field'], 'attachment_ids')
+        self.assertEqual(requirement['requiredWhen'], {'field': 'submission_attachment_policy', 'equals': 'required'})
+        self.assertEqual(requirement['pendingSource'], 'native_attachment')
+        view = ET.parse(ROOT / 'addons/smart_construction_core/views/core/expense_claim_views.xml')
+        for form in view.findall('.//form'):
+            attachment = form.find('.//field[@name="attachment_ids"]')
+            if attachment is not None:
+                self.assertIsNone(attachment.get('required'), 'drafts must remain saveable without attachments')
+                self.assertIsNotNone(form.find('.//field[@name="submission_attachment_policy"]'))
+
     def test_unsaved_workflow_injection_preserves_capabilities_and_does_not_browse(self):
         path = ROOT / 'addons/smart_construction_core/core_extension.py'
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_sc_inject_workflow_contract')
@@ -807,7 +825,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         field = next(n.value for n in ast.walk(tree) if isinstance(n, ast.Assign)
                      and any(isinstance(t, ast.Name) and t.id == 'payment_request_id' for t in n.targets))
         domain = next(ast.literal_eval(k.value) for k in field.keywords if k.arg == 'domain')
-        self.assertEqual(eval(domain, {'__builtins__': {}}, {'project_id': 10, 'payment_request_types': ['pay']}),
+        self.assertEqual(eval(domain, {'__builtins__': {}}, {'project_id': 10, 'payment_request_types': ['pay'], 'submission_attachment_policy': 'required'}),
                          [('project_id', '=', 10), ('type', 'in', ['pay'])])
         root = ET.parse(ROOT / 'addons/smart_construction_core/views/core/expense_claim_views.xml')
         forms = [form for form in root.findall('.//form') if form.find('.//field[@name="payment_request_id"]') is not None]
@@ -827,12 +845,13 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
         row = types.SimpleNamespace(_context_project_id=lambda: False, _context_partner_id=lambda: False,
             _resolve_business_category_id=lambda vals: 31,
-            new=lambda vals: candidates.append(vals) or {'financial_flow': 'cash_out', 'payment_anchor_policy': 'pay_request_required', 'payment_request_types': ['pay']})
-        result = ns['default_get'](row, ['business_category_id', 'financial_flow', 'payment_anchor_policy', 'payment_request_types'])
+            new=lambda vals: candidates.append(vals) or {'financial_flow': 'cash_out', 'payment_anchor_policy': 'pay_request_required', 'payment_request_types': ['pay'], 'submission_attachment_policy': 'required'})
+        result = ns['default_get'](row, ['business_category_id', 'financial_flow', 'payment_anchor_policy', 'payment_request_types', 'submission_attachment_policy'])
         self.assertEqual(result['business_category_id'], 31)
         self.assertEqual(result['financial_flow'], 'cash_out')
         self.assertEqual(result['payment_anchor_policy'], 'pay_request_required')
         self.assertEqual(result['payment_request_types'], ['pay'])
+        self.assertEqual(result['submission_attachment_policy'], 'required')
         self.assertNotIn('financial_flow', candidates[0])
         defaults.clear()
         defaults['business_category_id'] = 42

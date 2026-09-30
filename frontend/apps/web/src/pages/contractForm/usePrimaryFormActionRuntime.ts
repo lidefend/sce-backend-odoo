@@ -26,6 +26,7 @@ export function usePrimaryFormActionRuntime(params: {
   status: Ref<UiStatus>;
   submissionFeedback: Ref<SubmissionFeedback>;
   validationErrors: Ref<string[]>;
+  validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
   async function executePrimarySubmitAction(action: ContractAction, resId: number) {
     if (!action.enabled) return;
@@ -76,6 +77,7 @@ export function usePrimaryFormActionRuntime(params: {
     const footerAction = params.primaryCreateFooterAction();
     if (footerAction) {
       if (!footerAction.enabled) return;
+      if (params.validateSubmissionRequirements?.(footerAction) === false) return;
       const saved = await params.saveRecord(
         footerAction.refreshPolicy,
         { navigateAfterCreate: false },
@@ -101,6 +103,7 @@ export function usePrimaryFormActionRuntime(params: {
       return;
     }
     if (!submitAction.enabled) return;
+    if (params.validateSubmissionRequirements?.(submitAction) === false) return;
     let submittedRecordId = params.recordId.value;
     if (params.hasChanges()) {
       const saved = await params.saveRecord(submitAction.refreshPolicy);

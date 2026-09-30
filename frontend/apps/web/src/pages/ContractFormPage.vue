@@ -658,6 +658,7 @@ import { useInlineFieldPolicyRuntime } from './contractForm/useInlineFieldPolicy
 import { useContractModeActionRuntime } from './contractForm/useContractModeActionRuntime';
 import { useActionResponseNavigation } from './contractForm/useActionResponseNavigation';
 import { usePrimaryFormActionRuntime } from './contractForm/usePrimaryFormActionRuntime';
+import { submissionRequirementErrors } from './contractForm/submissionRequirements';
 import { useFormActionRuntime } from './contractForm/useFormActionRuntime';
 import { useFormConfigSaveRuntime } from './contractForm/useFormConfigSaveRuntime';
 import { applyFormRuntimeStatusEvent } from './contractForm/runtimeStateApplier';
@@ -1068,9 +1069,18 @@ const requestedSourceMode = computed(() => (
   requestedSurface.value === 'native' ? 'native_parser' : 'governance_pipeline'
 ));
 const busy = computed(() => busyKind.value !== null);
+function validateSubmissionRequirements(action: ContractAction): boolean {
+  const errors = submissionRequirementErrors(action, resolveWorkflowContractFromStore(v2ContractStore.value),
+    formData, pendingNativeAttachments.value.length);
+  if (!errors.length) return true;
+  validationErrors.value = errors;
+  submissionFeedback.value = { kind: 'error', message: errors.join('；') };
+  return false;
+}
 const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
+  validateSubmissionRequirements,
   actionId: () => actionId.value || 0,
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
@@ -1091,6 +1101,7 @@ const {
 const {
   runAction,
 } = useFormActionRuntime({
+  validateSubmissionRequirements,
   actionId: () => actionId.value || 0,
   applyClientMode: (mode, toggle) => applyClientMode(mode, toggle),
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),

@@ -707,7 +707,7 @@ try {
             check(`expense create: ${name} has rendered input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
           }
           await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
-          await session.page.getByText('请先补充必填信息，再保存草稿或提交。', { exact: true }).waitFor({ state: 'visible' });
+          await session.page.getByText('当前业务分类要求上传附件后才能提交、批准或完成。', { exact: true }).first().waitFor({ state: 'visible' });
           check('expense create: incomplete submission stays on unsaved form', new URL(session.page.url()).pathname === '/f/sc.expense.claim/new');
           check('expense create: required validation sends no business write', report.forbiddenWrites.length === 0);
           const projectInput = session.page.locator('[data-field-name="project_id"] input').first();
@@ -786,6 +786,25 @@ try {
               await session.page.locator(`[data-field-name="${name}"] input`).first().fill(value);
             }
             expenseCreateCapture = true;
+            await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+            await session.page.getByText('当前业务分类要求上传附件后才能提交、批准或完成。', { exact: true }).first().waitFor();
+            check('expense submit: missing attachment blocks before create', !report.expenseSaveAttempts?.length);
+            const draftResponse = session.page.waitForResponse((response) => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'
+                && body.params?.op === 'create' && body.params.model === 'sc.expense.claim'; } catch { return false; }
+            });
+            await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+            await draftResponse;
+            await session.page.getByText('验收注入：保存暂不可用，请重试', { exact: true }).first().waitFor();
+            check('expense draft: missing attachment does not prevent save', report.expenseSaveAttempts?.length === 1);
+            report.expenseDraftSaveAttempt = report.expenseSaveAttempts[0];
+            report.expenseSaveAttempts = [];
+            const pendingName = 'tpl53-submission-requirement.txt';
+            await session.page.locator('[data-professional-collaboration-component="attachments"] input[type="file"]').setInputFiles({
+              name: pendingName, mimeType: 'text/plain', buffer: Buffer.from('Rollback-only submission prerequisite verification'),
+            });
+            await session.page.getByText(pendingName, { exact: true }).first().waitFor();
+            check('expense submit: attachment stays pending before record creation', report.forbiddenWrites.length === 0);
             for (let attempt = 1; attempt <= 2; attempt += 1) {
               const saveResponse = session.page.waitForResponse((response) => {
                 try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'

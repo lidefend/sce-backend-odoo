@@ -6,6 +6,7 @@ import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHyd
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
 import { buildSaveRecordPayload, createSingleFlightSave, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
+import { submissionRequirementErrors } from '../src/pages/contractForm/submissionRequirements';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
@@ -431,3 +432,33 @@ for (const [data, expectedError] of [
   mutationChecks += 1;
 }
 console.log(`[scene-mutation-outcome] PASS cases=${mutationChecks}`);
+
+const requirementAction = { actionSemantics: { kind: 'business', purpose: 'submit', executor: 'contract.action' } } as never;
+const submissionRule = { kind: 'relation_required', field: 'documents', requiredWhen: { field: 'policy', equals: 'required' },
+  pendingSource: 'native_attachment', reasonCode: 'DOCUMENT_REQUIRED', message: '请先选择凭证' };
+const requirementWorkflow = { submissionRequirements: [submissionRule] };
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [] }, 0), ['请先选择凭证']);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [] }, 1), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required' }, 0), ['请先选择凭证']);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required' }, 1), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [12] }, 0), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'recommended', documents: [] }, 0), []);
+assert.deepEqual(submissionRequirementErrors({ actionSemantics: { kind: 'system', purpose: 'save' } } as never, requirementWorkflow, {}, 0), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, {}, {}, 0), []);
+assert.equal(submissionRequirementErrors(requirementAction, requirementWorkflow, { documents: [] }, 0).length, 1);
+assert.equal(submissionRequirementErrors(requirementAction, { submissionRequirements: 'invalid' }, {}, 0).length, 1);
+assert.equal(submissionRequirementErrors(requirementAction, { submissionRequirements: [{ ...submissionRule, kind: 'unsupported' }] }, {}, 0).length, 1);
+assert.deepEqual(submissionRequirementErrors(requirementAction, { submissionRequirements: [{ ...submissionRule, pendingSource: undefined }] }, { policy: 'required', documents: [] }, 3), ['请先选择凭证']);
+for (const create of [true, false]) {
+  let writes = 0;
+  const guarded = usePrimaryFormActionRuntime({
+    primaryCreateFooterAction: () => create ? { ...requirementAction, enabled: true } : null,
+    primarySubmitAction: () => ({ ...requirementAction, enabled: true }),
+    validateSubmissionRequirements: () => false,
+    saveRecord: async () => { writes += 1; return 22; },
+    executeButtonRequest: async () => { writes += 1; return {}; },
+  } as never);
+  await guarded.runPrimaryFormAction();
+  assert.equal(writes, 0);
+}
+console.log('[create-record-user-journey] submission prerequisites PASS count=14');

@@ -36,9 +36,11 @@ export function useFormActionRuntime(params: {
   saveRecord: (refreshPolicy?: ContractAction['refreshPolicy']) => Promise<boolean | number>;
   status: Ref<UiStatus>;
   submissionFeedback: Ref<SubmissionFeedback>;
+  validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
   async function runAction(action: ContractAction) {
     if (!action.enabled) return;
+    if (params.validateSubmissionRequirements?.(action) === false) return;
     if (!await params.confirmActionSafety(action)) return;
     const plan = buildFormActionExecutionPlan({
       action,

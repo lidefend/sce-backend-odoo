@@ -210,6 +210,9 @@ class ScExpenseClaim(models.Model):
         required=True,
         default=lambda self: self.env.ref("base.CNY", raise_if_not_found=False).id or self.env.company.currency_id.id,
     )
+    submission_attachment_policy = fields.Selection(
+        related="business_category_id.attachment_policy", readonly=True,
+    )
     payment_request_types = fields.Json(
         string="申请方向候选", compute="_compute_payment_request_types", readonly=True,
     )
@@ -586,7 +589,7 @@ class ScExpenseClaim(models.Model):
         # entry cannot initially hide its required payment-request anchor.
         semantic_fields = {
             "direction", "handling_kind", "business_axis", "financial_flow",
-            "payment_anchor_policy", "claim_flow_label", "payment_request_types",
+            "payment_anchor_policy", "claim_flow_label", "payment_request_types", "submission_attachment_policy",
         }
         requested = semantic_fields.intersection(fields_list)
         if requested:

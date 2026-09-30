@@ -39,7 +39,33 @@
       "$ref": "#/$defs/searchContract"
     },
     "workflowContract": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "submissionRequirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "field", "requiredWhen", "reasonCode", "message"],
+            "properties": {
+              "kind": { "const": "relation_required" },
+              "field": { "type": "string", "minLength": 1 },
+              "requiredWhen": {
+                "type": "object",
+                "required": ["field", "equals"],
+                "properties": {
+                  "field": { "type": "string", "minLength": 1 },
+                  "equals": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              "pendingSource": { "const": "native_attachment" },
+              "reasonCode": { "type": "string", "minLength": 1 },
+              "message": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
     },
     "meta": {
       "$ref": "#/$defs/meta"
