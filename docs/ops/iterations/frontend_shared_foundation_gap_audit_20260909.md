@@ -9279,3 +9279,14 @@ L1 event-success-iteration.log PASS；standard_preview.unit40（15Node+25Python�
 uid33真实create sc.contract.event30，project464/company8/name TPL53-EVENT-SAVE-1790808342545/design_change，execute_button action_submit一次成功，普通角色api.data权威回读state=approved；未配置审批自动通过，未触发完成或结算。官方只读详情已接管、无可编辑表单，1440/390无页面溢出，截图event-success-1440/390.png；1440观察当前状态已审批、完成独立动作、删除按契约禁用提示。无未声明写入/页面异常；expense-cleanup-final.log确认record_ids[30]/actor33 restored且权威不存在。
 
 本批补齐普通合同操作员创建提交代表闭环，复用53.176配置审批后台12项，不冒充配置审批多角色UI、附件独立接口或全部67项完成。detail.action-state保持contract_gap；下一步处理既有计划执行中内容职责与状态机/动作契约一致性，避免继续重复事件与日志已过场景。无推送/合并/目标部署。
+
+
+### 53.179 计划真实驳回后的内容修正
+
+65ec2fbbe clean起点，限定读取sc.plan主单/line/version/report、原生视图及workflow profile。主单in_progress映射open而仍带validated审批时_editability返回readonly；节点/汇报/版本存在独立可写职责，不能用整单冻结替代字段与子模型执行边界。本批先补确切缺失的驳回修改验证，后续主单基准与节点执行契约仍开放。
+
+P4沿原plan-state-authority scope在真实驳回后增加note修改及回读，未新建环境/fixture；plan-rejected-probe-runtime.log首次失败：tier_validation拒绝草稿rejected的说明写入，ROLLBACK VERIFIED，证明可编辑契约与后端执行不一致。P1 d5f21e16c采用已有_check_allow_write_under_validation扩展点，仅draft+rejected且不含state时允许内容修正，其余调用父实现；原state令牌保护保持，未开放pending/validated、未修改审批配置或前端推导。
+
+payment.approval_state_machine.unit170 PASS（plan-rejected-unit.log），L1及begin/receipt完整；新增实际hook方法反例覆盖错误状态、pending/waiting/validated及状态写入仍委托。P4 136adf4bb保留新增真实修改检查，scope9项（all计数+1但不执行all）。backend.acceptance.up加载136adf4bb，纯Python无模块升级；前端e31e51c59无变更不构建。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082、原精确filter与卷，plan-rejected-runtime.log9项PASS、ROLLBACK VERIFIED：真实拒绝后说明可改，重提产生新review并批准，原无配置确认不执行、审核后独立开始/完成及状态拒绝保持。
+
+闭合计划驳回修正这一明确缺口，不将事务sudo执行与真实reviewer证据冒充普通角色UI。主单审批内容保护、执行中字段/节点/汇报/版本契约及子模型状态职责尚未闭合；下一步应在既有契约上表达分字段与子记录可用能力并绑定后端保护，不能仅改前端只读或绕过审批。detail.action-state及整体67仍开放。无推送/合并/目标部署。
