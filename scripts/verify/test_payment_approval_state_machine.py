@@ -594,6 +594,42 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             for name in ('action_confirm', 'action_submit', 'action_cancel'):
                 with self.assertRaises(ValueError): ns[name](rec)
 
+    def test_red_flush_unique_identity_uses_source_record_only_after_execution(self):
+        path = MODEL.with_name('output_invoice_adjustment.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_compute_confirmed_source_key')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        rows = [types.SimpleNamespace(state=state, original_source_model='sc.invoice.registration', original_source_record_id=17) for state in ('draft', 'approved', 'confirmed', 'cancel')]
+        ns['_compute_confirmed_source_key'](rows)
+        self.assertEqual([r.confirmed_source_key for r in rows], [False, False, 'sc.invoice.registration:17', False])
+        rows[2].original_source_model = 'sc.receipt.invoice.line'
+        ns['_compute_confirmed_source_key'](rows)
+        self.assertEqual(rows[2].confirmed_source_key, 'sc.receipt.invoice.line:17')
+
+    def test_red_flush_unexecuted_approval_can_cancel_without_erasing_review(self):
+        path = MODEL.with_name('output_invoice_adjustment.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_cancel')
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        for status in ('validated', 'pending'):
+            rec = self.record(state='approved', reviews=['approval history'], status=status)
+            rec.generated_invoice_id = False
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            if status == 'pending':
+                with self.assertRaises(ValueError): ns['action_cancel'](rec)
+                self.assertEqual(rec.state, 'approved')
+            else:
+                ns['action_cancel'](rec)
+                self.assertEqual(rec.state, 'cancel')
+                self.assertEqual(rec.review_ids, ['approval history'])
+                self.assertEqual(rec.validation_status, 'validated')
+                self.assertEqual(rec.restarts, 0)
+                with self.assertRaises(ValueError): ns['action_cancel'](rec)
+        rec = self.record(state='approved', reviews=['approval history'], status='validated')
+        rec.generated_invoice_id = 31
+        with self.assertRaises(ValueError): ns['action_cancel'](rec)
+
     def test_red_flush_reviewed_fields_and_external_state_are_protected(self):
         path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
         methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]

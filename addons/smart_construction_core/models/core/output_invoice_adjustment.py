@@ -16,6 +16,20 @@ class ScOutputInvoiceAdjustment(models.Model):
     reject_reason = fields.Text("驳回原因", readonly=True, copy=False)
     _order = "adjustment_date desc, id desc"
 
+    confirmed_source_key = fields.Char(compute="_compute_confirmed_source_key", store=True, copy=False)
+    _sql_constraints = [
+        ("confirmed_source_unique", "UNIQUE(confirmed_source_key)", "同一原销项票只能确认一次红冲。"),
+    ]
+
+    @api.depends("state", "original_source_model", "original_source_record_id")
+    def _compute_confirmed_source_key(self):
+        for rec in self:
+            rec.confirmed_source_key = (
+                "%s:%s" % (rec.original_source_model, rec.original_source_record_id)
+                if rec.state == "confirmed" and rec.original_source_model and rec.original_source_record_id
+                else False
+            )
+
     name = fields.Char(string="变更单号", required=True, default="新建", copy=False, tracking=True)
     adjustment_type = fields.Selection(
         [("red_flush", "红冲")],
@@ -104,6 +118,8 @@ class ScOutputInvoiceAdjustment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any("confirmed_source_key" in vals for vals in vals_list):
+            raise UserError(_("红冲唯一身份由正式确认动作计算。"))
         if any(vals.get("state", self.env.context.get("default_state", "draft")) != "draft" for vals in vals_list):
             raise UserError(_("销项变更必须从草稿提交审批。"))
         seq = self.env["ir.sequence"]
@@ -115,6 +131,8 @@ class ScOutputInvoiceAdjustment(models.Model):
         return records
 
     def write(self, vals):
+        if "confirmed_source_key" in vals:
+            raise UserError(_("红冲唯一身份不能直接修改。"))
         if "state" in vals and self.env.context.get("sc_red_flush_state_token") is not _RED_FLUSH_STATE_TOKEN:
             raise UserError(_("状态只能通过提交、审批和确认红冲动作产生。"))
         reviewed = {"original_ledger_id", "adjustment_date", "adjustment_type", "red_flush_invoice_no", "reason", "project_id", "partner_id", "contract_id", "currency_id", "original_source_model", "original_source_record_id", "invoice_no", "invoice_issue_company", "invoice_party_name", "original_invoice_amount", "original_amount_no_tax", "original_tax_amount", "original_surcharge_amount"}
@@ -232,8 +250,10 @@ class ScOutputInvoiceAdjustment(models.Model):
         for rec in self:
             if rec.generated_invoice_id:
                 raise UserError(_("已生成红冲销项票的变更登记不能取消。"))
-            if rec.state not in ("draft", "rejected"):
-                raise UserError(_("只有草稿或驳回的销项变更登记可以取消。"))
+            if rec.review_ids and rec.validation_status in ("waiting", "pending"):
+                raise UserError(_("审批中的销项变更登记不能取消。"))
+            if rec.state not in ("draft", "rejected", "approved"):
+                raise UserError(_("只有草稿、驳回或已批准但未出票的销项变更登记可以取消。"))
         self.with_context(skip_validation_check=True)._write_approval_state({"state": "cancel"})
 
     def _original_invoice_eligibility_blocker(self):

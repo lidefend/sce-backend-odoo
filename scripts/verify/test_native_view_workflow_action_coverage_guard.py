@@ -339,7 +339,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             actions = self._general_contract_actions(state, model="sc.output.invoice.adjustment")
             methods = {action["method"] for action in actions}
             self.assertEqual("action_confirm" in methods, state == "approved")
-            self.assertEqual("action_cancel" in methods, state in ("draft", "rejected"))
+            self.assertEqual("action_cancel" in methods, state in ("draft", "rejected", "approved"))
             for action in actions:
                 if action["method"] == "action_confirm":
                     self.assertEqual(action["action_semantics"]["purpose"], "complete")

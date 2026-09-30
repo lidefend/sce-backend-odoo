@@ -8638,3 +8638,11 @@ P4现有red-flush scope扩展12组，增加草稿/取消原票真实提交拒绝
 53.123结果：源码294c4aa28/后端dc677c589受管reload成功。red-source-runtime.log12 PASS、ROLLBACK VERIFIED，草稿/取消原票的提交拒绝及workflow reason实际成立，原11组审批/登记/权限保护继续通过。财务browser tpl07-1790793430354/report.json21 PASS：新增实际api.data list/sc.output.invoice.ledger请求域精确包含active/normal及注册来源registered/legacy_confirmed条件；无errors/forbiddenWrites。前端CrYkOCxc不变，不构建；外观沿53.121截图，新增证据证明查询域而非造数据或完整办理。
 
 本项原票资格已贯通字段关系域、共享官方关系选择实际请求、动作拒绝提示及服务端执行。仍未证明收款发票历史状态口径、普通角色选票保存审核办理、原票变动恢复、并发重复红冲；下一步处理同一原票并发执行保护和批准后未出票的恢复通路，保持审批记录和已生成票不可回退边界。所有结果沿原67台账/detail.action-state记录，不扩大为全部业务完成。无推送合并目标部署。
+
+### 53.124 未出票取消恢复与数据库唯一约束（进行中）
+
+ec8dcf987 clean续跑，P1红冲业务恢复：approved且未generated、无pending review允许正式cancel，不重置/删除原审批。修正后新建申请重新审批，已出票、在审及已取消不可此路径回退。native/workflow同步可用动作。现有业务语义是一张原票一次全额红冲；新增存储计算confirmed_source_key仅confirmed写入source_model:source_record_id，UNIQUE约束避免两个申请同时越过搜索检查。多份草稿/批准允许NULL，不以票号显示文案作唯一身份；外部create/write不能传唯一键，真实状态仍私有入口。
+
+L1 red-recovery-identity-iteration.log PASS；pure unit.log137 PASS、native.log8+54=62 PASS，验证恢复保留review/不restart、生成票拒绝、技术来源模型/ID唯一键仅执行后存在。P4 red-flush扩至15组：保留原12、取消保留审批、新申请新review后执行、pg_constraint安装存在和实际重复键拒绝。数据库重复键检查通过savepoint内私有状态写触发，明确不是两个并发会话验收。tool/contract-tool-iteration及语法/diff通过。
+
+目标沿用隔离fixture验收租户sc_frontend_acceptance/local/sc-fe-r2-p1-01，非控制库/行业库/生产，精确filter与固定filestore sc_fe_r2_p1_01_odoo由受管preflight核验。新增存储字段/SQL约束/native XML需一次受管upgrade/reload；历史若有冲突不得清数据或豁免约束，运行检查必须确认pg_constraint真实存在。尚未升级/runtime，前端CrYkOCxc未改不构建。普通角色全旅程及真正双会话并发证据仍未完成；不推送合并目标部署。
