@@ -895,7 +895,9 @@ try {
             await session.page.getByText('验收注入：日志保存暂不可用，请重试', { exact: true }).first().waitFor();
             const payload = report.diarySaveAttempts.at(-1);
             check(`diary ${label}: actual values and numeric project preserved`, payload.vals.project_id === project.id
-              && payload.vals.title === title && payload.vals.description === content && Boolean(payload.vals.date_diary));
+              && payload.vals.title === title && payload.vals.description === content);
+            check(`diary ${label}: unchanged date remains an effective backend default`, Boolean(authority.mainData?.date_diary)
+              && (!Object.hasOwn(payload.vals, 'date_diary') || payload.vals.date_diary === authority.mainData.date_diary));
             check(`diary ${label}: native entry context preserved`, String(payload.context?.menu_id) === String(report.approvalCreateEntry.menu_id)
               && String(payload.context?.action_id) === String(report.approvalCreateEntry.action_id));
             check(`diary ${label}: failed create preserves editable draft`, new URL(session.page.url()).pathname === '/f/sc.construction.diary/new'

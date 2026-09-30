@@ -609,3 +609,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.172：sc.plan主单状态绕过由167d6a637修复，165纯测及06a6f5985计划专用runtime8 PASS、ROLLBACK VERIFIED。普通创建/写状态拒绝，真实审批后独立启动完成、取消重置保留。未覆盖节点/版本/汇报、审批后内容冻结或PM浏览器办理；三类主单状态闭环不能外推全系统交付。
+
+
+53.173：PM新建施工日志项目/标题/内容被P1 priority88全局readonly覆盖，真实诊断1790806959283确认，f2606fa15移除业务字段无条件只读、保留系统和原生历史条件。166纯测及受管升级/backend bdeead8ab完成；PM真实填充/增量保存请求/503后草稿保持26 PASS（tpl07-1790807163178）。创建不可编辑缺口关闭，真实落库/提交成功仍待精确临时对象清理机制，不把失败恢复当成功办理。

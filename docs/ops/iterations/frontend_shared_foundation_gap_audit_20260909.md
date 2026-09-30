@@ -9205,3 +9205,16 @@ L1 plan-state-iteration、py_compile/bash-n/diff PASS；payment.approval_state_m
 受管backend.acceptance.up加载06a6f5985；SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：plan-runtime-smoke.log8具名PASS，ROLLBACK VERIFIED。实际外部状态写入及默认状态拒绝且草稿/实际日期不变；草稿编辑→正式取消→重置回草稿；无配置确认不启动；等待审批不能执行；真实批准后启动、完成分别发生；驳回原因与重提新审批链正确。原配置/步骤回读一致、登记临时对象均不存在。采用原事务sudo创建和业务动作、真实reviewer审批，不冒充PM浏览器证据。环境仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
 
 无字段/XML变化不升级；前端e31e51c59/index-7JTLfH1Y.js无变化不重建。日志、事件、计划主单直接状态绕过均有独立代码/运行证据，不能外推审批后内容冻结、子单据办理或全部89入口。下一步回到本组普通角色真实页面保存/提交缺口，沿现有受管浏览器及精确临时对象恢复机制补施工日志代表办理；不重复后台已过8项/配置/付款旅程，不造持久fixture。总体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.173 施工日志普通角色新建字段契约修复与真实请求验证
+
+897fb0ab4起点，P4沿原standard_page_type_browser添加显式TPL07_DIARY_SAVE_PROBE，限定approval-actions/sc.construction.diary/create，PM从system.init正式route_authority解析menu_sc_construction_diary，不硬编码角色菜单。填项目/标题/内容后保存草稿与提交分别截取api.data create并明确503，禁止后续动作/上传、无真实业务写。原工具36/L1/node语法通过（diary-form-tool-*）。首轮tpl07-1790806893091因项目输入不存在、预注册waitForResponse先超时触发未处理拒绝，未产完整report；原创建截图显示项目/标题/内容只读。P4增加必需输入存在的前置断言，保留完整报告；诊断tpl07-1790806959283在第7项project_id输入缺失失败，未发送创建，无forbiddenWrites。
+
+P1根因p1_daily_business_form_orchestration_contract_data.xml的sc_construction_diary_p1_form_business_facts_v1(priority88)将所有业务字段readonly=True；有效节点fieldInfo/componentConfig readonly=True覆盖原生条件state == legacy_confirmed，前端正确消费错误契约。f2606fa15只移除该模型业务字段无条件readonly，保留state/name/create_date系统只读与全部字段顺序，原生历史只读条件保持；不在P0或前端解锁、不替换布局。新增XML回归核对业务可编辑与系统/历史条件，payment_approval_state_machine166 PASS及begin/record（diary-form-contract-*）。探针bdeead8ab提交。受管CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core SC_ACCEPTANCE_RUNTIME_PROFILE=local成功，backend.acceptance.up加载bdeead8ab，环境仍local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter/原卷；生产前端e31e51c59不变不构建。日志diary-form-upgrade/backend。
+
+修复后tpl07-1790807124659项目/标题/内容输入与PM项目10候选均通过，保存实际payload只含project_id/title/description；P4错误要求未修改默认date_diary也在增量payload而失败。改为核对有效mainData默认日期存在、若发送日期则与默认一致，保留用户改动字段/入口身份严格断言；产品输入不改，不重复构建/升级。diary-form-payload-iteration/node/diff通过，原wrapper36的执行/断言依赖未改复用，不把它当新日期语义证据。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_APPROVAL_VIEW=create TPL07_DIARY_SAVE_PROBE=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local最终tpl07-1790807163178/report.json26 PASS，两个实际create请求被明确503截住；project_id=10、title/description精确、menu414/action713/company8/context/default_diary_type保持；默认日期来自有效契约；保存草稿和提交失败均留在new且输入未丢失，无后续审批或业务写。1440/390共享表单检查通过，填充截图人工复核。前端标题/内容恢复可输入，错误契约缺口关闭，不声称真实创建或提交成功。
+
+下一步沿这份真实最小payload及PM入口，扩展原受管临时单据恢复机制为精确日志model/title/actor/company/project/时间范围，先绑定恢复回执再放行create+action_confirm，权威回读并最终清理。没有持久fixture/业务数据前提需要新建；历史只读记录补充职责与审批后内容保护另保持开放。后台日志runtime8输入未改复用，不重复ORM。总体67/detail.action-state开放，无推送/合并/目标部署。
