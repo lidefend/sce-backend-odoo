@@ -341,7 +341,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.89 settlement missing-input gap closed: backend4eb114313/front7915f3bb9 tpl07-1790783437117 22 PASS. Shared representative project create tpl07-1790783460002 failed: date/date_start disabled=true NATIVE_MODIFIER_UNRESOLVED but auth=edit; date invisible too. Inspect unified_page_contract_v2_assembler.py modifier status finalization and ui_contract_v2_projection.py auth sync, plus missing create date inputs. Fix P0, retain fail-closed frontend schema. Then resume representative project/attendance/usage browser; stopped after project failure. No ORM/module upgrade/newfixture. Overall67 open.",
+  "next_exact_step": "53.90 backend0b8da3b04/frontend7915f3bb9: modifier auth schema conflict fixed (129 tests), new identity/native command shape pure corrections (169 tests). Labor attendance14/usage14/settlement22 pages pass. Project direct /f/project.project/new report1790783758165 is explicitly denied by resolved view (FORM_CREATE_NOT_ALLOWED/create=false), so missing dates not a hydration failure for this entry. Correct project probe to resolve actual backend-authorized initiation entry before validating create; do not expand permission or count denied route as pass. Then remaining business families/67 ledger; no repeated empty records/ORM/newfixtures/build unless frontend changes.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

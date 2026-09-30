@@ -8227,3 +8227,8 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 P0通用契约：occurrence初始/最终状态隐藏auth=none、未解析disabled或readonly时auth=read；policy合并同样不为disabled授edit，前端schema保留。项目日期缺失的另一路根因是native relation commands tuple与JSON list形状差异使create dependency hydration整批退出，比较仅递归统一list/tuple形状，仍用native defaults构造new且内容差异/权限/compute失败继续fail-closed，不猜False。
 
 候选88c9ecfae+dirty。modifier-authority-iteration.log L1 PASS；runtime unit20+mobile109=129 PASS、guard6 PASS，非零回执。边界新用例验证JSON等价默认命令被接受、不同ID拒绝；原stub缺少既有project_workflow_action_semantics导出导致首次112加载错误，仅测试替身补齐，modifier-dependencies-unit-fixed.log112+51+5=168 PASS。无ORM/数据库写/新增fixture；下一步Python源码reload与定向页面，前端未变不构建。总体67/真实办理仍开放。
+
+
+53.90复验与归因校正：d987f83f7 reload后tpl07-1790783702476 schema冲突消失，但探针仍因官方可编辑表单未挂载失败。补齐record_id=new身份支持，新增用例，modifier-create-identity-unit.log113+51+5=169 PASS，0b8da3b04 reload后tpl07-1790783758165同样停止第4项。最终回读globalStatus确认该直接/f/project.project/new实际解析到viewCapabilities.create=false、effective create=false、FORM_CREATE_NOT_ALLOWED；因此依赖不补齐是权限保护，不能将本入口当授权创建旅程。前述JSON tuple/list和new身份是纯测试证实的通用缺陷修正，不是本次受拒入口日期缺失的已证明原因。项目创建应绑定system.init的真实授权立项入口，不扩权/不修改视图权限。
+
+独立劳务代表页恢复验证：后端0b8da3b04、前端7915f3bb9，考勤tpl07-1790783794807 14 PASS，用工tpl07-1790783802116 14 PASS，结算tpl07-1790783809986 22 PASS。均双视口、真实契约、无业务写；结算输入已恢复。项目错误探针不算通过，旧已有记录空查询不重试。下一步先纠正项目入口验收身份，再依67台账剩余业务族推进。总体交付未完成、无推送/合并/目标部署。

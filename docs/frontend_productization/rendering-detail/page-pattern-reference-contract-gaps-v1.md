@@ -329,3 +329,10 @@ Offline replay of53.88 proves the remaining note defect was P0 widget status (vi
 
 
 53.89 shared-scope limitation: project create representative tpl07-1790783460002 fails normalized contract validation: date/date_start widget statuses are disabled with NATIVE_MODIFIER_UNRESOLVED but auth=edit (date also invisible). Frontend rejection is correct. Investigate missing create modifier inputs and assembler/projection auth consistency before further browser checks; attendance/usage representative checks were not run after this failure. Shared policy batch is not accepted yet.
+
+
+### Segment53.90 — Modifier authorization conflict closed; project entry scope corrected
+
+P0 occurrence and policy auth now agrees with hidden/disabled/readonly status;129 focused runtime tests pass. Native relation command comparison tolerates JSON array versus tuple shape without accepting changed identities, and create dependency hydration recognizes authorized `new` requests;169 boundary/config tests pass. These are unit-proven generic corrections, not proof that the denied project entry should hydrate defaults.
+
+Project direct-create report tpl07-1790783758165 no longer fails schema; its global status explicitly has FORM_CREATE_NOT_ALLOWED and view create=false. The probe expected an editable engine on a denied view and is not an authorized project-create journey. Resolve the actual initiation entry from backend navigation before further project acceptance. Do not loosen permissions. Labor attendance14/usage14/settlement22 representative checks pass on backend0b8da3b04/frontend7915f3bb9. Overall action-state and all-document adoption remain open.
