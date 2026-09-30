@@ -8471,3 +8471,9 @@ b55e6b480 clean续跑，只核对分包结算及既有登记/金额/数量author
 L1 subcontract-settlement-iteration.log通过，首轮L2发现确认调用漏传approved_states（真实签名缺参，非环境），就地补参数后signature-iteration.log通过；unit-recovery.log111 PASS，native.log8+52=60 PASS，回执登记。既有纯边界tests直接运行：金额4、累计数量5、登记结算authority9 PASS（subcontract-settlement-*-boundaries.log），未跑无关ORM。P4既有rollback工具新增subcontract-settlement8组及default all239，真实审批/金额未匹配/父子保护/显式确认，tool-iteration.log/语法/diff通过。需要一次受管升级，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；runtime尚未证明，无新fixture/环境/推送/合并/目标部署。
 
 另确认产品缺口：_compute_payment_boundary_amounts仍把paid/requested固定0、unpaid/unrequested固定amount_total，不能代表实际付款事实。仅登记必要P1财务归属/汇总契约缺口，前端不得推断或将只读数字当真实支付闭环。本批审批完成不关闭该项，后续需检视付款依据与真实ledger归属。
+
+53.110结果：5b4c13e73受管模块升级成功（subcontract-settlement-upgrade.log），44b05f03b reload成功。subcontract-settlement-runtime.log8/8 PASS、ROLLBACK VERIFIED：无配置自动approved后显式confirmed，配置金额未匹配拒绝、pending契约真实tier/pending配置切换保护、父单/直接子明细冻结、真实review后显式确认/重复确认拒绝、驳回重提新review均成立。事务单据builder为sudo、审核用实际reviewer；本scope未绑定正式登记合同，既有登记来源/累计约束18项是纯回归，不能将此作为真实formal登记并发/现金验收。
+
+P4 browser既有approval-actions新增settlementcreate，subcontract-settlement-page-iteration.log/node/diff通过。fixture_role_pm create tpl07-1790789142069 21 PASS：3输入有效契约及真实控件、编号创建隐藏、未保存无确认动作、1440/390无横向溢出，errors/forbiddenWrites空。390图核对项目/单位/明细入口/结算日期，frontend7915f3bb9复用不构建。未跑已有角色保存/正式登记选择全旅程。
+
+下一步按已登记产品缺口核对分包结算实际付款依据/请求/posted ledger映射，补齐真实财务汇总，不得将固定0视为事实。总体67/角色全办理/并发仍未完成。无新fixture环境/推送/合并/目标部署。

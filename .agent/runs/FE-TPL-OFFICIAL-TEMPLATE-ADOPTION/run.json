@@ -354,7 +354,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.109 P4 create input/geometry/calendar verified: plan44 report1790788768456/request36 report1790788780077 PASS errors/writes empty, 1440/390 actual controls and label separation; prior apparent optional-date overlap not reproduced, settle resize/popup before evidence. Product unchanged frontend7915f3bb9/backend7446f6a11; reuse approval16. Next remaining subcontract settlement shared approval/necessary contract, preserving authority/financial execution. Actual saved role journeys, true concurrency and other67 gaps remain; no newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.110 subcontract settlement source5b4c13e73 upgraded, backend44b05f03b; runtime8 PASS+ROLLBACK VERIFIED, pure111/native60/cumulative authority18, create21 report1790789142069 PASS frontend7915f3bb9 unchanged. Next P1 subcontract settlement financial gap: _compute_payment_boundary_amounts fixed zeros is not truth; inspect existing payment basis/request/posted ledger attribution, complete producer before claiming cash loop. Formal register/cumulative ORM, existing-role saved journeys and true concurrency remain unverified. No newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
