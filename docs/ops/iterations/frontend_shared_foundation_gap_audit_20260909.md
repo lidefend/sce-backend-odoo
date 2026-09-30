@@ -5775,3 +5775,134 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 39｜整体收口：把离线必需门禁从红恢复为绿（2026-09-30）
+
+### 1. 本轮触发
+
+段 38 把守卫接进了 `verify.unified_page_contract.v2`，但当时没有跑该聚合本身。
+本轮按「整体收口」要求，从聚合门禁而不是单点守卫出发，逐个确认必需检查的真实状态。
+结果：**发现三处真实红灯，全部修绿**，其中一处自 2026-09-29 起就已存在。
+
+### 2. 收口一：接线未同步清单，契约主 lane 被我弄红
+
+`make verify.unified_page_contract.v2` 第一次运行即失败：
+
+```
+[unified_page_contract_v2_guard_inventory] FAIL
+- verify.unified_page_contract.v2 aggregate dependencies drifted; extra=['verify.workflow_action_semantics.guard'] missing=[]
+```
+
+**原因**：该聚合有自己的权威清单 `OFFLINE_TARGETS`，`unified_page_contract_v2_guard_inventory.py`
+会比对聚合依赖集合与清单是否一致。段 38 只改了 `make/ci.mk`，没有同步清单。
+
+**修复**：把 `verify.workflow_action_semantics.guard` 及其两个脚本加入 `OFFLINE_TARGETS`
+（同步权威清单，**不是**放宽判定）。提交 `498cd38b8`。
+
+**顺带的结论**：这个清单守卫正是「接线完整性」的既有权威，它拦住了段 38 的疏漏。
+段 38 §5b 关于「守卫不被任何 lane 调用」的发现仍然成立——清单检查的是聚合依赖一致性，
+不检查守卫是否真的进入了某个 lane。
+
+### 3. 收口二：离线聚合门禁自 2026-09-29 起为红（记录里的客户品牌引用）
+
+`make ci.professional.backend.shard-verify` 失败：
+
+```
+[tenant_product_payload_boundary_guard] FAIL
+- rule=customer_identity_or_brand_reference path=docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+FIXED_CUSTOMER_IDENTIFIERS=1
+```
+
+**原因**：更早的段落记录里直接写入了 P2 属主侧的真实客户品牌模块名与仓库名
+（`sce_customer_baosheng_legacy`、`sce-customer-baosheng-odoo`）。
+这些字符串由 `21df11b45`（2026-09-29 记录提交）引入；
+守卫的 `CUSTOMER_IDENTITY_TOKENS` 从 `401bcb3bd`（clean product baseline）起就包含该品牌 token，
+**因此该必需门禁自那笔记录提交起一直是红的，只是没有以这种聚合形态跑过。**
+
+**修复**：把三处引用改写为仓库既有占位形式
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`），
+**不改守卫、不加豁免**。被记录的事实（哪一层拥有该模块、注册哪个动作、哪个提交）完整保留。
+提交 `c9135c13d`。
+
+**判定**：这是「文档里固化了客户身份」，属真实违约，不是假阳性；
+用占位符修正是它本就应有的形态。
+
+### 4. 收口三：复杂度生成报告过期
+
+`make ci.professional.backend.shard-reports` 失败：
+
+```
+[ERROR] complexity report is stale. Run: python3 scripts/ci/generate_complexity_budget_report.py --write
+```
+
+**原因**：段 38 把 `workflow_action_semantics_completeness_guard.py` 扩到 819 行，
+进入报告的尺寸分档；扫描数 4504→4505、超预警阈值文件 98→99。
+
+**修复**：经权威生成器 `generate_complexity_budget_report.py --write` 重新生成
+（**不手工编辑报告**）。提交 `818d7c7fe`。
+
+### 5. 整体验证矩阵（本轮实测）
+
+| 门禁 | 结果 |
+|---|---|
+| `make verify.unified_page_contract.v2`（含一次前端构建） | **PASS** |
+| `make ci.professional.backend.shard-verify` | **PASS** |
+| `make ci.professional.backend.shard-reports` | **PASS**（8 份生成报告 current；`complexity_baseline_lock checked=11`） |
+| `make ci.professional.backend.shard-tests` | **PASS**（name-binding 2844 文件、Python 语法 1170 文件、Node 语法 364 文件、E2E 预检） |
+| `make verify.repository.clean_history` | **PASS** |
+| `make verify.product.release.version` | **PASS** |
+| `make verify.tenant.product_payload_boundary` | **PASS**（`FIXED_CUSTOMER_IDENTIFIERS=0`） |
+| `make verify.frontend.typecheck.strict` | **PASS** |
+| `make verify.frontend.lint.src` | **PASS**（0 errors，57 warnings） |
+| `make verify.guard.registry` | **PASS**（1352 scripts，1228 referenced，124 orphans acknowledged） |
+| `make verify.contract.structure_lock` / `architecture.complexity_baseline_lock` | **PASS**（domains=14；checked=11） |
+| `make ci.local.iteration` | **PASS** |
+
+即 `ci.professional.backend` 的三个 shard 合起来已全绿，`public_guard` 与
+`merge_policy_gate` 的本地对应目标也全绿。
+
+### 6. 未在本轮范围
+
+- `verify.frontend.industry_agnostic.guard` 仍为 **FAIL（97 条）**，`policy.target=zero`，
+  **未接入任何聚合/CI lane**，本轮不接入、不处理。按规则实测的真实分布（按文件）：
+
+  | 文件 | 条数 | 规则 |
+  |---|---|---|
+  | `views/SceneContractBlockGridView.vue` | 6+3 | `business_field_inference` / `industry_behavior_identifier` |
+  | `api/overviewRichTextPatch.ts` | 6+4+3 | `industry_behavior_identifier` / `business_field_inference` / `industry_text_anywhere` |
+  | `components/page/blocks/BlockChartDataset.vue` | 6+5 | 同上两类 |
+  | `app/presentation/boqImportPreview.ts` | 5+2 | `business_field_inference` / 行业文案 |
+  | `app/presentation/productPageHeaderAdapters.ts` | 4+4 | `industry_literal` / `industry_text_anywhere` |
+  | 其余 12 个文件 | 各 1–5 | 混合 |
+
+  **判定口径（不臆断）**：`api/*` 的多为后端契约参数名/路径绑定（`project_id`、`contract_id`、
+  `boq*`），属「消费契约」形态；`views/*`、`components/page/blocks/*` 与
+  `app/presentation/*` 需要逐条判定是「消费契约」还是「按字段名/行业词推断行为」——
+  后者才是真正需要消掉的越界。**这需要一次专项（审计器语义细化 + 前端改造），本轮不做。**
+- `verify.business_config.coverage` 仍 FAIL，原因是验收数据库缺少 `system_root`/`user:admin`/`user:wutao`
+  三个身份的数据覆盖，属**环境数据**问题，非代码缺陷。
+- `verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`，not_run。
+- 段 38 §9 的其余登记项不变。
+
+### 7. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `make/ci.mk`、`scripts/verify/*`、生成报告与活记录；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 三处红灯都是「验收/交付体系自身的状态不对」，不属于任何业务模块；
+`Why Not Elsewhere` = **不**放宽守卫、**不**加豁免、**不**手工编辑生成报告、
+**不**把客户品牌留在记录里换取门禁变绿；
+`Blast Radius` = 契约 lane 接线清单、活记录文档、复杂度报告；
+产品代码零改动，业务渲染与办理不受影响。
+
+### 8. 提交
+
+- `fix(verify): register the action semantics guard in the contract lane inventory`
+- `fix(docs): replace the customer brand reference in the iteration log with the tenant placeholder`
+- `chore(reports): refresh the complexity budget report after the guard change`
+- 本段记录随第三笔提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
