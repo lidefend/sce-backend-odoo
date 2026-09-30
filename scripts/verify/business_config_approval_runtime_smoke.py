@@ -496,7 +496,7 @@ def _project_document_approval_checks(project, group, created):
     print("APPROVAL_CHECK=project_document_rejected_resubmission_new_chain")
 
 
-def _finance_state_authority_checks(group, created, source_ledger=None):
+def _finance_state_authority_checks(group, created, source_ledger=None, actor=None):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
     assert finance, "existing finance fixture required"
@@ -522,7 +522,9 @@ def _finance_state_authority_checks(group, created, source_ledger=None):
         policies = Policy.with_context(active_test=False).search([("target_model", "=", model), ("company_id", "in", [False, company.id])])
         policies.write({"approval_required": False, "mode": "none"})
         policies.sync_tier_definitions()
-        Document = env[model].sudo()
+        Document = env[model].with_user(actor) if actor is not None else env[model].sudo()
+        if actor is not None:
+            assert not Document.env.su and Document.env.user == actor
         values = ({"project_id": contract.project_id.id, "contract_id": contract.id, "item_name": "Rollback state authority", "amount": 100}
                   if model == "sc.settlement.adjustment" else
                   {"project_id": ledger.project_id.id, "treasury_ledger_id": ledger.id, "system_difference": 0})
@@ -638,7 +640,7 @@ def _self_funding_reconciliation_checks(group, created):
     assert required.state == "done" and len(ledger) == 1 and ledger.state == "posted" and ledger.company_id == company and ledger.project_id == project and ledger.amount == required.amount
     created.append((ledger._name, ledger.id))
     print("APPROVAL_CHECK=self_funding_review_then_explicit_post")
-    _finance_state_authority_checks(group, created, source_ledger=ledger)
+    _finance_state_authority_checks(group, created, source_ledger=ledger, actor=finance)
 
 
 def _legacy_workflow_boundary_checks():

@@ -8731,3 +8731,12 @@ L1 finance-family-state-iteration.log PASS。首次L2 finance-family-state-unit.
 随后只将自筹document创建/提交/完成改用fixture_role_finance非sudo并断言actor，准备项目归该角色manager/user，提升权限保留在源准备、附件载体、配置和结果查证。self-funding-chain-role-runtime.log10 PASS、ROLLBACK VERIFIED；审核仍使用实际reviewer。对账document办理仍sudo，不能声称整链普通角色或浏览器验收；自筹refund/余额责任未覆盖。首次10项是提升权限基线，第二次10项是变更actor后的受影响复验，不相加称20项独立职责。
 
 下一步补对账普通角色或已有正式页面消费，继续融资/收款/付款执行及结算调整已登记缺口；自筹金额/内容在审冻结、退回及权限边界也不得因这10项而隐去。总体67/detail.action-state保持contract_gap，无推送合并目标部署。
+
+
+### 53.132 普通财务角色对账与官方创建页（定向通过）
+
+a7cba573c clean起点，P4复用_finance_state_authority_checks增加显式actor参数；self-funding-reconciliation传入fixture finance，Document.with_user并断言非sudo。reconciliation-role-iteration.log L1 PASS，reconciliation-role-runtime.log10 PASS、ROLLBACK VERIFIED：同一真实自筹生成台账链中的自筹及对账创建/提交/执行均普通财务角色，真实审核人审批。配置/源准备/附件和财务结果查证仍提升权限，不宣称完全无sudo系统链。backend6fe68cc25与前端CrYkOCxc未改，不reload/build。
+
+既有standard_page_type_browser扩展这两个模型的approval-actions/create范围，复用官方表单/有效契约/双视口检查。自筹初次tpl07-1790795655360失败在project_id输入：字段在非活动页签；第二次tpl07-1790795696883按tab角色定位超时，页面未暴露该角色。截图和有效layout证明字段位于项目与承包人/自筹金额页签。工具按契约page层级的可见名称点击，不改产品或降级字段断言，node --check/diff通过。两次失败保留，不计通过；页签可访问性语义本轮未修，不以探针改动宣称其已符合ARIA。
+
+最终自筹tpl07-1790795749295、对账tpl07-1790795762666分别20 PASS；各errors=[]/forbiddenWrites=[]。关键关系/金额输入可用，未保存单据无审批通过/执行动作；1440和390无整页溢出。仅创建页/只读导航，没有新增持久单据，不证明保存后浏览器审核/执行。前序ORM10项与创建页20项分开记录、不升级总体67/detail.action-state。自筹退回/余额、已审核内容冻结、其他财务模型以及合同来源缺口仍开放。下一步回到必要财务执行/契约一致性未覆盖项，不重跑本批通过页面。无推送合并目标部署。

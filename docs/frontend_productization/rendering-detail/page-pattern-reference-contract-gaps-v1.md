@@ -488,3 +488,8 @@ Focused existing expense runtime passes12 checks at backend6fe68cc25 with transa
 ## Segment 53.131: authoritative self-funding ledger feeds reconciliation
 
 Managed self-funding/reconciliation scope passes10 checks with restoration verified. Approval does not post cash; explicit self-funding completion creates the real posted ledger used for reconciliation approval and explicit execution. A focused actor change then passes the same10 checks with non-sudo fixture finance creating/submitting/completing self-funding and actual reviewers. Preparation remains elevated, as does reconciliation handling. This resolves the posted-ledger prerequisite for this transactional chain, not the separate settlement-adjustment contract source. Refund/balance, ordinary-role reconciliation, browser handling and other finance/runtime gaps remain open. No frontend rebuild or source reload.
+
+
+## Segment 53.132: ordinary finance reconciliation and official create consumption
+
+Same-transaction runtime10 passes with both self-funding and reconciliation document handling under non-sudo fixture finance; real reviewers, elevated preparation/configuration/readback and verified rollback remain explicit. Official create pages each pass20 checks: self-funding tpl07-1790795749295 and reconciliation tpl07-1790795762666, both viewports, no errors/undeclared writes. Two earlier self-funding probe failures were fixed by navigating contract-declared pages via visible labels; this does not establish ARIA tab semantics. Saved-record browser handling, refunds/balances, reviewed-content integrity and remaining financial scope stay open.
