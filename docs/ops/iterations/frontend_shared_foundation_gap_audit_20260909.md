@@ -7908,3 +7908,12 @@ L5：未推送、未合并、未部署。
 
 - 运行回读：4a3e08ffa受管acceptance.module.upgrade、backend.acceptance.up/health均通过（project-approval-{upgrade,backend,health}.log）。集中真实审批45项PASS，新增项目6项全部通过：直接写批准/直接draft启动及暂停绕行拒绝，无配置仅批准未启动，真实在审不启动，真实review通过后显式start，驳回原因与重提新链。ROLLBACK=VERIFIED，原策略/步骤回读一致、临时项目/单据/策略不存在（project-approval-runtime.log）。
 - 阶段：模型与配置执行链验证成立，项目有效动作/状态契约和页面仍待核对；未将native41外推到未加入中央profile的project.project。金额条件权威缺口登记到原contract-gaps文档，保留detail.action-state未完成。前端候选fed2dfcc2未变；不构建、不推送、不合并、不部署目标环境。总体active。
+
+
+### 53.61 项目进入统一动作契约与生命周期语义
+
+- ed723870b clean起步。P4 probe扩展project.project/lifecycle_state及独立sc_approval_state读取，PM现有授权项目10（draft/draft）只读详情18 PASS（project-detail-browser.log；tpl07-1790777366552/report.json，errors/forbiddenWrites为空）。回读原生提交/审批/启动存在但actionSemantics缺失，18项只证明原生呈现与未批准不启动，不能据此宣称办理完成。
+- P1将project.project加入既有workflow profile，生命周期为主状态、审批事实保持独立；声明提交/审批/启动/暂停/恢复/竣工/结算/保修/关闭真实方法和状态范围。用既有Odoo filtered_domain承接profile.action_domains，提交与启动根据sc_approval_state及真实validation_status筛选，不新增前端模型分支。历史活跃/后续阶段元数据保持field_editable_phases范围；草稿审批阶段继续标准工作流只读约束。
+- P0只增加通用pause_execution、advance_phase、close_record词汇，恢复使用已有start_execution；项目结算/保修等行业名称与方法只在P1。同步权威词汇、schema与TS消费投影，不把暂停当取消、阶段推进当最终完成。既有native登记表增记项目12个导航和2个BOQ辅助方法，不将它们伪装状态迁移、不建平行覆盖表；项目状态方法均由profile声明。
+- L1首次精确TS消费文件未登记导致reconcile（project-contract-iteration.log），补入既有scope后PASS（project-contract-iteration-scoped.log）；早期诊断不充当最终回执。L2 native8+34=42 PASS并begin/record42（project-contract-native-tests.log），语义15 PASS/67 profiles/13词汇（project-contract-semantics-tests.log）；实际表单header链及新增3合法/3非法配对PASS（project-contract-header-tests-final.log），严格双tsconfig PASS（project-contract-typecheck.log）。一次误用不存在的header测试目标未执行测试，改用既有verify.frontend.contract_header_action.unit，日志分开保留。
+- Probe增加edit只读观察模式与四动作语义断言；下一步提交/后端重载/一次新前端候选构建，仍查同一现有项目，不执行业务写入、不造fixture。无字段/XML变更，无模块升级；既有45真实审批输入不变复用。整体仍active，项目金额权威及跨状态用户办理未覆盖保留。

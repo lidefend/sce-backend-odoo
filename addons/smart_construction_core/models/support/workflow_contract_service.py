@@ -635,6 +635,32 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "action_cancel",
             },
         },
+        "project.project": {
+            "state_field": "lifecycle_state",
+            "state_phase": {"draft": "draft", "in_progress": "effective", "paused": "paused", "done": "done", "closing": "closing", "warranty": "warranty", "closed": "closed"},
+            "field_editable_phases": ["effective", "paused", "done", "closing", "warranty", "closed"],
+            "state_actions": {
+                "draft": ["submit", "activate", "close"],
+                "in_progress": ["pause", "complete", "advance_closing", "close"],
+                "paused": ["resume", "close"],
+                "done": ["advance_closing", "advance_warranty", "close"],
+                "closing": ["advance_warranty", "close"],
+                "warranty": ["close"], "closed": [],
+            },
+            "approval_actions": ["approve", "reject"],
+            "action_domains": {
+                "submit": [("sc_approval_state", "=", "draft"), ("validation_status", "not in", ["waiting", "pending", "validated"])],
+                "activate": [("sc_approval_state", "=", "approved")],
+            },
+            "method_by_action": {
+                "submit": "action_sc_submit", "activate": "action_sc_start",
+                "approve": "validate_tier", "reject": "reject_tier",
+                "pause": "action_sc_pause", "resume": "action_sc_resume",
+                "complete": "action_sc_mark_done", "advance_closing": "action_sc_begin_closing",
+                "advance_warranty": "action_sc_start_warranty", "close": "action_sc_close",
+            },
+            "label_by_action": {"submit": "提交立项", "activate": "启动项目", "pause": "暂停项目", "resume": "恢复项目", "complete": "标记竣工", "advance_closing": "进入结算", "advance_warranty": "进入保修期", "close": "关闭项目"},
+        },
         "project.task": {
             "state_field": "sc_state",
             "state_phase": {"draft": "draft", "ready": "approved", "in_progress": "effective", "done": "done", "cancelled": "cancelled"},
@@ -908,6 +934,12 @@ class ScWorkflowContractService(models.AbstractModel):
     }
 
     ACTIONS = {
+        "pause": {"label": "暂停执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "pause_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "resume": {"label": "恢复执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "advance_closing": {"label": "推进阶段", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "advance_phase", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "advance_warranty": {"label": "推进阶段", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "advance_phase", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "close": {"label": "关闭记录", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "close_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
+
         "save_draft": {"label": "保存草稿", "intent": "data.write", "method": None, "kind": "save"},
         "submit": {"label": "提交审批", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "approve": {"label": "审批通过", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "approve", "executor": "contract.action", "origin": "workflow.contract.service"}},
@@ -941,6 +973,9 @@ class ScWorkflowContractService(models.AbstractModel):
         "rejected": "已驳回",
         "legacy_confirmed": "历史确认",
         "closed": "已关闭",
+        "paused": "停工",
+        "closing": "结算中",
+        "warranty": "保修期",
         "open": "处理中",
     }
 
@@ -1104,6 +1139,9 @@ class ScWorkflowContractService(models.AbstractModel):
         method_by_action = profile.get("method_by_action", {})
         actions = []
         for key in keys:
+            domain = (profile.get("action_domains") or {}).get(key)
+            if domain and not record.filtered_domain(domain):
+                continue
             spec = dict(self.ACTIONS.get(key) or {})
             if not spec:
                 continue

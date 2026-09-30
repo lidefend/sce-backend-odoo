@@ -27,7 +27,9 @@
     "config/contract/native_view_undeclared_actions.v1.json",
     "config/contract/workflow_state_phase_dead_entries.v1.json",
     "docs/phase_p0/state_machine.md",
-    "scripts/dev/frontend_standard_preview.py"
+    "scripts/dev/frontend_standard_preview.py",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "frontend/packages/schema/src/actionSemantics.ts"
   ],
   "environment": {
     "kind": "offline",
@@ -210,7 +212,13 @@
         "addons/smart_construction_core/models/core/tax_deduction_registration.py",
         "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
         "addons/smart_construction_core/models/support/task_extend.py",
-        "addons/smart_construction_core/views/support/task_sc_state_views.xml"
+        "addons/smart_construction_core/views/support/task_sc_state_views.xml",
+        "addons/smart_construction_core/models/core/project_initiation_approval.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/core/project_information_edit_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -290,7 +298,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.60 project tier initiation/runtime45 (project6) PASS after managed module upgrade/reload4a3e08ffa; rollback verified. Next effective project action/state contract and official project page: verify submit no automatic start, real approve/reject visibility and explicit action_sc_start through existing producer. Central project workflow profile not yet adopted, do not claim native41 covers project. Preserve dedicated information edit submit-only scope. Project amount-based policy has no declared amount authority; explicit error now prevents silently ignored conditions, registered product gap. Frontend fed2dfcc2 unchanged; no build needed. Overall67/all-business scope active.",
+  "next_exact_step": "53.61 project native readonly baseline18 passes on record10 but semantic gap proven. Added central project workflow lifecycle profile and approval action domains; P0 generic pause_execution/advance_phase/close_record vocabulary mirrored schema/TS;42 native/15 semantics/header6 pairs/typecheck pass. Commit,reload backend,one frontend build/up,approval-actions project.project edit read-only probe(no writes), verify semantic declarations and submit/start visibility. Existing45 model runtime unchanged reuse; project amount gap remains.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -968,6 +976,23 @@
         "log": "artifacts/frontend-web-fix-20260928/tpl52/project-approval-runtime.log"
       },
       "remaining": "real project approval45; project normalized action/state and browser; project approval amount authority undefined (explicit rejection)"
+    },
+    "project_contract_53_61": {
+      "candidate": "ed723870b + P0 vocabulary/schema/P1 project workflow/P4 probe scope",
+      "l1": "iteration passed after exact schema consumer path registration",
+      "l2": {
+        "native": 42,
+        "semantics": 15,
+        "header_declared_pairs": 3,
+        "header_rejected_pairs": 3,
+        "typecheck_strict": "passed"
+      },
+      "baseline_browser": {
+        "checks": 18,
+        "record": 10,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790777366552/report.json"
+      },
+      "runtime": "new project semantic contract not loaded; one build/reload then edit browser required"
     }
   }
 }

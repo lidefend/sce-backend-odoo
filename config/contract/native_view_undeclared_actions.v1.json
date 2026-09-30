@@ -189,6 +189,104 @@
       "class": "navigation",
       "occurrences": 1,
       "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_project_budgets",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_project_contracts",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_tasks",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "project_update_all_action",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_wbs",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_boq_import",
+      "class": "navigation",
+      "occurrences": 2,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_cost_ledger",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_progress_entries",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_boq_versions",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_wbs_planning",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_stage_requirements",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_my_tasks",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_rebuild_boq_hierarchy",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "validates or rebuilds BOQ hierarchy without changing project lifecycle"
+    },
+    {
+      "model": "project.project",
+      "method": "action_validate_boq",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "validates or rebuilds BOQ hierarchy without changing project lifecycle"
     }
   ]
 }

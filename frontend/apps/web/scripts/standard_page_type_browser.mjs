@@ -591,8 +591,9 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
+      { role: 'fixture_role_pm', model: 'project.project', stateField: 'lifecycle_state', fields: ['sc_approval_state'], domain: [] },
       { role: 'fixture_role_pm', model: 'project.task', stateField: 'sc_state', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.construction.diary', domain: [] },
@@ -601,7 +602,7 @@ try {
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project'].includes(spec.model));
         report.recordAuthority = null;
         await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
         const authority = report.recordAuthority;
@@ -618,11 +619,11 @@ try {
         await session.ctx.close();
         continue;
       }
-      const candidate = await session.page.evaluate(async ({ model, domain, stateField }) => {
+      const candidate = await session.page.evaluate(async ({ model, domain, stateField, fields }) => {
         const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
         const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
-          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model, fields: ['id', stateField || 'state'], domain, limit: 1 } }),
+          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model, fields: ['id', stateField || 'state', ...(fields || [])], domain, limit: 1 } }),
         });
         return response.json();
       }, spec);
@@ -630,7 +631,8 @@ try {
       check(`${spec.model}: existing authorized record available`, candidate.ok === true && candidate.data?.records?.length === 1);
       const record = candidate.data.records[0];
       report.recordAuthority = null;
-      await form(session.page, `/r/${spec.model}/${record.id}`, spec.model, 'readonly');
+      const editing = process.env.TPL07_APPROVAL_VIEW === 'edit';
+      await form(session.page, `/${editing ? 'f' : 'r'}/${spec.model}/${record.id}`, spec.model, editing ? 'form' : 'readonly');
       const authority = report.recordAuthority;
       check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.[spec.stateField || 'state'] === record[spec.stateField || 'state']);
       report.approvalPages.at(-1).authority = authority;
@@ -644,6 +646,20 @@ try {
         if (spec.model === 'sc.plan' && record.state !== 'cancel') {
           check('plan: reset absent outside cancelled state', await session.page.getByRole('button', { name: '重置草稿', exact: true }).count() === 0);
         }
+      }
+      if (spec.model === 'project.project') {
+        const rules = authority.actions?.actionRuleList || [];
+        check('project: submit and start are distinct native methods', ['action_sc_submit', 'action_sc_start'].every((method) => rules.some((rule) => rule.button?.name === method)));
+        for (const [method, purpose] of [['action_sc_submit', 'submit'], ['action_sc_start', 'start_execution'], ['validate_tier', 'approve'], ['reject_tier', 'reject']]) {
+          check(`project: ${method} has declared business meaning`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        }
+        if (editing && record.lifecycle_state === 'draft' && record.sc_approval_state === 'draft') {
+          check('project: editable draft exposes submission', await session.page.getByRole('button', { name: '提交立项', exact: true }).first().isVisible());
+        }
+        if (record.lifecycle_state !== 'draft' || record.sc_approval_state !== 'approved') {
+          check('project: start absent before approval or after startup', await session.page.getByRole('button', { name: '启动项目', exact: true }).count() === 0);
+        }
+        check('project: approval state remains a separate fact', authority.mainData?.sc_approval_state === record.sc_approval_state);
       }
       if (spec.model === 'sc.payment.execution') {
         check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);

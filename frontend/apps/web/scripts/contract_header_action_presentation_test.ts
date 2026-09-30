@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import assert from 'node:assert/strict';
 
 import { buildContractFormActions, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget } from '../src/pages/contractForm/contractActionPresentation';
@@ -956,3 +957,10 @@ print(json.dumps(rows))
   assert.equal(adapt([unpublished]).direct[0].tier, 'secondary');
   console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5 lifecycle_purposes=4 undeclared_purpose=1');
 }
+
+for (const purpose of ['pause_execution', 'advance_phase', 'close_record'] as const) {
+  const declaration = { kind: 'business', purpose, executor: 'contract.action', origin: 'workflow.contract.service' };
+  assert.deepEqual(normalizeActionSemantics({ actionId: purpose, backendIdentity: 'native:declared', actionSemantics: declaration }), declaration);
+  assert.equal(normalizeActionSemantics({ actionId: purpose, backendIdentity: 'native:declared', actionSemantics: { ...declaration, executor: 'client.back' } }), undefined);
+}
+console.log('[project-lifecycle-semantics] PASS declared_pairs=3 rejected_pairs=3');

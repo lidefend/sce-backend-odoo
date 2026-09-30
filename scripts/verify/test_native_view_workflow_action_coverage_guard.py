@@ -26,7 +26,7 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
-    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract"):
+    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
@@ -34,7 +34,11 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         assignment = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "ACTIONS" for t in n.targets))
         namespace = {}
         exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, method], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
-        record = SimpleNamespace(_name=model, id=23, can_review=can_review)
+        values = dict(record_fields or {})
+        def matches(domain):
+            return all(values.get(field) == value if operator == '=' else values.get(field) not in value
+                       for field, operator, value in domain)
+        record = SimpleNamespace(_name=model, id=23, can_review=can_review, filtered_domain=matches)
         service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, [])
 
@@ -312,6 +316,30 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(result['meta'], {})
         self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
         self.assertEqual(contract, baseline)
+
+    def test_project_actions_keep_approval_and_lifecycle_separate(self):
+        for approved, pending, reviewer, expected in (
+            (False, False, False, {'action_sc_submit', 'action_sc_close'}),
+            (True, False, False, {'action_sc_start', 'action_sc_close'}),
+            (False, True, False, {'action_sc_close'}),
+            (False, True, True, {'validate_tier', 'reject_tier', 'action_sc_close'}),
+        ):
+            actions = self._general_contract_actions('draft', model='project.project',
+                approval_phase='pending' if pending else 'none', can_review=reviewer,
+                record_fields={'sc_approval_state': 'approved' if approved else 'draft', 'validation_status': 'pending' if pending else 'no'})
+            self.assertEqual({a['method'] for a in actions}, expected)
+        for state, expected in (
+            ('in_progress', {'action_sc_pause', 'action_sc_mark_done', 'action_sc_begin_closing', 'action_sc_close'}),
+            ('paused', {'action_sc_resume', 'action_sc_close'}),
+            ('done', {'action_sc_begin_closing', 'action_sc_start_warranty', 'action_sc_close'}),
+            ('closing', {'action_sc_start_warranty', 'action_sc_close'}),
+            ('warranty', {'action_sc_close'}), ('closed', set()),
+        ):
+            actions = self._general_contract_actions(state, model='project.project')
+            self.assertEqual({a['method'] for a in actions}, expected)
+            for action in actions:
+                self.assertEqual(action['action_semantics']['executor'], 'contract.action')
+                self.assertNotEqual(action['action_semantics']['purpose'], 'cancel_record')
 
     def test_task_actions_follow_construction_state_and_real_reviewer(self):
         for state, expected in (('draft', 'action_prepare_task'), ('ready', 'action_start_task'), ('in_progress', 'action_mark_done'), ('done', None), ('cancelled', None)):

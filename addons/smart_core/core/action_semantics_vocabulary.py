@@ -34,6 +34,9 @@ DECLARATIONS = {
                 "reject",
                 "cancel_record",
                 "start_execution",
+                "pause_execution",
+                "advance_phase",
+                "close_record",
                 "complete",
                 "reopen",
             }
