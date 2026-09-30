@@ -1331,6 +1331,95 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         record, validate = self._rental_payment_basis(rental_settlement_id=False)
         validate()  # Existing non-rental request paths are unaffected.
 
+    def _rental_paid_methods(self):
+        path = MODEL.with_name('material_rental.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')
+        names = {'_compute_payment_summary', '_payment_confirmation_blocker', '_refresh_payment_confirmation', 'action_paid'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        for method in methods: method.decorator_list = []
+        def compare(a, b, precision_rounding):
+            left, right = round(a / precision_rounding), round(b / precision_rounding)
+            return (left > right) - (left < right)
+        ns = {'UserError': ValueError, '_': lambda text: text, 'float_compare': compare}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), str(path), 'exec'), ns)
+        paid_map, ambiguous, events = {1: 60, 2: 40, 999: 999}, set(), []
+        class Requests(list):
+            def _canonical_payment_paid_amount_map(self): return paid_map
+            def _ambiguous_posted_payment_request_ids(self): return ambiguous
+        class Settlements(list):
+            def sudo(self): return self
+            def with_context(self, **values): return self
+            def mapped(self, name): return Requests(row for record in self for row in record.payment_request_ids)
+            def _lock_payment_basis(self): events.append('lock')
+            def _serialize_payment_reservation(self): events.append('version')
+        record = types.SimpleNamespace(state='confirmed', amount_total=100, currency_id=types.SimpleNamespace(rounding=0.01), payment_request_ids=Requests([types.SimpleNamespace(id=1, state='cancel'), types.SimpleNamespace(id=2, state='approved')]), ensure_one=lambda: None, _check_business_anchor=lambda: None)
+        record.sudo = lambda: record
+        record.with_context = lambda **values: record
+        record._write_approval_state = lambda values: record.__dict__.update(values)
+        record._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](record)
+        return ns, Settlements([record]), record, paid_map, ambiguous, events
+
+    def test_rental_paid_summary_uses_only_attributed_canonical_posted_totals(self):
+        ns, records, record, paid_map, ambiguous, events = self._rental_paid_methods()
+        ns['_compute_payment_summary'](records)
+        self.assertEqual((record.payment_paid_amount, record.payment_remaining_amount), (100, 0))
+        self.assertIsNone(record._payment_confirmation_blocker())
+        ns['action_paid'](records)
+        self.assertEqual(record.state, 'paid')
+        self.assertEqual(events, ['lock'])
+        with self.assertRaises(ValueError): ns['action_paid'](records)
+
+    def test_rental_partial_or_ambiguous_payment_cannot_confirm(self):
+        ns, records, record, paid_map, ambiguous, events = self._rental_paid_methods()
+        paid_map[2] = 0
+        ns['_compute_payment_summary'](records)
+        self.assertEqual((record.payment_paid_amount, record.payment_remaining_amount), (60, 40))
+        with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_NOT_FULLY_PAID'): ns['action_paid'](records)
+        self.assertEqual(record.state, 'confirmed')
+        paid_map[2] = 40
+        ambiguous.add(2)
+        ns['_compute_payment_summary'](records)
+        with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_HISTORY_AMBIGUOUS'): ns['action_paid'](records)
+        ambiguous.clear()
+        record.amount_total = 0
+        with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_AMOUNT_INVALID'): ns['action_paid'](records)
+
+    def test_rental_reversal_reopens_confirmation_without_automatic_repayment(self):
+        ns, records, record, paid_map, ambiguous, events = self._rental_paid_methods()
+        ns['_compute_payment_summary'](records)
+        ns['action_paid'](records)
+        paid_map[2] = 0
+        ns['_compute_payment_summary'](records)
+        ns['_refresh_payment_confirmation'](records)
+        self.assertEqual(record.state, 'confirmed')
+        self.assertIn('version', events)
+        paid_map[2] = 40
+        ns['_compute_payment_summary'](records)
+        ns['_refresh_payment_confirmation'](records)
+        self.assertEqual(record.state, 'confirmed')
+        ns['action_paid'](records)
+        self.assertEqual(record.state, 'paid')
+
+    def test_ledger_reversal_refreshes_rental_after_fact_write(self):
+        path = MODEL.with_name('payment_ledger.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and any(isinstance(child, ast.FunctionDef) and child.name == 'action_reverse' for child in n.body))
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        events = []
+        row = types.SimpleNamespace(state='posted')
+        class Ledgers(list):
+            env = types.SimpleNamespace(su=True, context={'_sc_payment_ledger_internal_reversal': True})
+            def mapped(self, path):
+                events.append(path)
+                return types.SimpleNamespace(_refresh_payment_confirmation=lambda: events.append(row.state))
+        def write(values):
+            row.state = values['state']
+            return True
+        ns = {'AccessError': PermissionError, 'UserError': ValueError, '_': lambda text: text, 'super': lambda: types.SimpleNamespace(write=write)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        self.assertTrue(ns['write'](Ledgers([row]), {'state': 'reversed'}))
+        self.assertEqual(events, ['payment_request_id.rental_settlement_id', 'reversed'])
+        with self.assertRaises(ValueError): ns['write'](Ledgers([row]), {'state': 'reversed'})
+
     def test_rental_settlement_payment_link_cannot_manufacture_paid_fact(self):
         path = MODEL.with_name('material_rental.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')
@@ -1340,10 +1429,13 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         for request in (False, types.SimpleNamespace(is_fully_paid=True, paid_amount_total=100)):
             rec = self._purchase_request_record(state='confirmed')
             rec.payment_request_id = request
+            rec.payment_request_ids = []
+            rec.sudo = lambda: rec
+            rec._lock_payment_basis = lambda: None
             rec._check_business_anchor = lambda: None
             rec._write_approval_state = lambda values: rec.data.update(values)
             rec._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](rec)
-            with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE'):
+            with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_ATTRIBUTION_MISSING'):
                 ns['action_paid'](rec)
             self.assertEqual(rec.state, 'confirmed')
 

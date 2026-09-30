@@ -125,6 +125,10 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         ns['_'] = lambda text: text
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
         record = SimpleNamespace(_name='sc.material.rental.settlement', state='confirmed')
+        record.ensure_one = lambda: None
+        record.sudo = lambda: record
+        record.with_context = lambda **values: record
+        record.payment_request_ids = []
         record._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](record)
         service = SimpleNamespace()
         service._gate = lambda *args, **kw: ns['_gate'](service, *args, **kw)
@@ -132,7 +136,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         rows = self._general_contract_actions('confirmed', model=record._name, evidence_gate=gates)
         payment = next(row for row in rows if row['method'] == 'action_paid')
         self.assertFalse(payment['enabled'])
-        self.assertEqual(payment['reason_code'], 'RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE')
+        self.assertEqual(payment['reason_code'], 'RENTAL_PAYMENT_ATTRIBUTION_MISSING')
         self.assertTrue(payment['blocked_message'])
         self.assertTrue(next(row for row in rows if row['method'] == 'action_cancel')['enabled'])
         record.state = 'approved'

@@ -348,6 +348,8 @@
                             <field name="rent_amount" readonly="1"/>
                             <field name="damage_amount" readonly="1"/>
                             <field name="amount_total" readonly="1"/>
+                            <field name="payment_paid_amount" readonly="1"/>
+                            <field name="payment_remaining_amount" readonly="1"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>

@@ -288,7 +288,8 @@
         "addons/smart_construction_core/views/core/labor_management_views.xml",
         "addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml",
         "addons/smart_construction_core/models/core/material_rental.py",
-        "addons/smart_construction_core/views/core/material_rental_views.xml"
+        "addons/smart_construction_core/views/core/material_rental_views.xml",
+        "addons/smart_construction_core/models/core/payment_ledger.py"
       ]
     },
     "standard_preview_tool": {
@@ -345,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.102 rental basis wired into default_get/onchange/has_basis/classification/formal display/native field, caller-visible execution contract resolution + readiness amount/identity recheck; source cancel denies live obligations/posted ledgers.100 pure tests PASS (first99 error was recordset test double, corrected). Next canonical posted paid/remaining summaries and reversal/state recovery, then replace53.98 blocker with real guard. Need governed upgrade+rollback scope and official page; runtime concurrency/ORM/roles not proven. backend2d7eab703/frontend7915f3bb9 unchanged. Overall67 open, no newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.103 canonical attributed paid/remaining summary + real confirmation blockers and controlled ledger reversal source-version refresh/demotion implemented;104 pure +58 native PASS. Next extend existing approval rollback smoke with rental-settlement scope (review, confirmed source, defaults, partial/full payment, cap, reverse, direct line/parent protections, restored config), then one managed module upgrade/reload and actual scope. Verify SQL/cache/retry + role/page; targeted old paid-without-attribution audit, no invented cash facts. Backend2d7eab703/frontend7915f3bb9 unchanged; overall67/roles open, no newfixture/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

@@ -982,7 +982,9 @@ class PaymentLedger(models.Model):
                 raise UserError(_("付款台账受控状态只能变更为已冲销。"))
             if any(record.state != "posted" for record in self):
                 raise UserError(_("只有有效付款台账可以冲销。"))
-            return super().write(vals)
+            result = super().write(vals)
+            self.mapped("payment_request_id.rental_settlement_id")._refresh_payment_confirmation()
+            return result
         raise AccessError(
             _("付款台账是不可变现金事实，不允许修改；请通过受控冲销保留审计链。")
         )

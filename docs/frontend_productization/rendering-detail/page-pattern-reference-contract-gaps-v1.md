@@ -398,3 +398,8 @@ Active-process requests reserve the source settlement amount; draft/rejected/can
 ### Segment53.102 — Rental basis consumed by request and execution
 
 Rental source now participates in default_get/onchange, basis classification/existence, formal related-document display and the native request basis field. Execution resolves caller-visible rental source/contracts and rechecks source identity and reservation. Cancellation refuses live request obligations or posted payment facts.100 targeted pure tests pass after correcting an incomplete recordset test double. Canonical paid summaries, reversal/state recovery, actual ORM/concurrency/role and official page acceptance still remain; the payment-confirmation blocker stays active and overall67 is open.
+
+
+### Segment53.103 — Real payment confirmation predicates and reversal projection, source only
+
+Attributed canonical posted ledger totals now drive readonly paid/remaining fields. The temporary unavailable predicate is replaced by explicit missing-attribution, invalid-amount, ambiguous-history and insufficient-payment gates; sufficient facts allow explicit confirmation. Controlled ledger reversal refreshes the source version and demotes no-longer-paid settlements to confirmed, without automatically confirming later top-ups.104 state-machine and58 native-action tests pass. Runtime transaction/ORM/cache/concurrency, actual roles, legacy paid-without-attribution records and official page acceptance remain unverified. This closes the source stub, not the product payment gap or overall67 delivery.

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_compare
 
 
 _RENTAL_APPROVAL_STATE_TOKEN = object()
@@ -469,6 +470,14 @@ class ScMaterialRentalSettlement(models.Model):
     rent_amount = fields.Monetary(string="租金金额", currency_field="currency_id", compute="_compute_amounts", store=True)
     damage_amount = fields.Monetary(string="赔偿金额", currency_field="currency_id", compute="_compute_amounts", store=True)
     amount_total = fields.Monetary(string="结算金额", currency_field="currency_id", compute="_compute_amounts", store=True)
+    payment_paid_amount = fields.Monetary(
+        string="实际已付金额", currency_field="currency_id",
+        compute="_compute_payment_summary", readonly=True,
+    )
+    payment_remaining_amount = fields.Monetary(
+        string="实际未付金额", currency_field="currency_id",
+        compute="_compute_payment_summary", readonly=True,
+    )
     line_ids = fields.One2many("sc.material.rental.settlement.line", "settlement_id", string="结算明细")
     state = fields.Selection(
         [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("paid", "已支付"), ("cancel", "已取消")],
@@ -607,16 +616,57 @@ class ScMaterialRentalSettlement(models.Model):
             if requests.mapped("ledger_line_ids").filtered(lambda ledger: ledger.state == "posted"):
                 raise UserError(_("租赁结算仍有有效付款台账，不能取消。"))
 
+    @api.depends(
+        "amount_total", "payment_request_ids",
+        "payment_request_ids.ledger_line_ids.amount",
+        "payment_request_ids.ledger_line_ids.state",
+        "payment_request_ids.ledger_line_ids.normalization_state",
+    )
+    def _compute_payment_summary(self):
+        requests = self.sudo().with_context(active_test=False).mapped("payment_request_ids")
+        paid_map = requests._canonical_payment_paid_amount_map()
+        for record in self:
+            attributed = record.sudo().with_context(active_test=False).payment_request_ids
+            paid = sum(paid_map.get(request.id, 0.0) for request in attributed)
+            record.payment_paid_amount = paid
+            record.payment_remaining_amount = max(record.amount_total - paid, 0.0)
+
     def _payment_confirmation_blocker(self):
-        # Exit this product gap only when settlement-specific allocation and
-        # reversal authority exist. A request link or its paid total alone
-        # does not prove that this settlement has been paid.
-        return {
-            "reason_code": "RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE",
-            "message": _("租赁结算尚未建立付款归属与冲销校验，不能确认已支付；关联付款申请不代表本结算已付款。"),
-        }
+        self.ensure_one()
+        requests = self.sudo().with_context(active_test=False).payment_request_ids
+        if not requests:
+            return {
+                "reason_code": "RENTAL_PAYMENT_ATTRIBUTION_MISSING",
+                "message": _("没有明确归属本结算的付款申请，不能确认已支付。"),
+            }
+        rounding = self.currency_id.rounding or 0.01
+        if float_compare(self.amount_total, 0.0, precision_rounding=rounding) <= 0:
+            return {
+                "reason_code": "RENTAL_PAYMENT_AMOUNT_INVALID",
+                "message": _("结算金额必须大于零才能确认实际支付。"),
+            }
+        if requests._ambiguous_posted_payment_request_ids():
+            return {
+                "reason_code": "RENTAL_PAYMENT_HISTORY_AMBIGUOUS",
+                "message": _("归属付款申请存在身份不完整或不一致的有效台账，请先核对付款事实。"),
+            }
+        if float_compare(self.payment_paid_amount, self.amount_total, precision_rounding=rounding) < 0:
+            return {
+                "reason_code": "RENTAL_PAYMENT_NOT_FULLY_PAID",
+                "message": _("本结算的有效付款台账尚未足额，不能确认已支付。"),
+            }
+        return None
+
+    def _refresh_payment_confirmation(self):
+        # Reversal and explicit paid confirmation serialize on the same source
+        # version even when reversal finds a still-confirmed settlement.
+        self._serialize_payment_reservation()
+        for record in self:
+            if record.state == "paid" and record._payment_confirmation_blocker():
+                record._write_approval_state({"state": "confirmed"})
 
     def action_paid(self):
+        self._lock_payment_basis()
         for record in self:
             if record.state != "confirmed":
                 raise UserError(_("只有已确认租赁结算可以支付。"))

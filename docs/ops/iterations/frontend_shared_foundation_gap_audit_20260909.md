@@ -8365,3 +8365,14 @@ L1 rental-reservation-final-iteration.log PASS；最后counter sudo范围修正�
 L1 rental-basis-wire-iteration.log PASS；补依赖/测试后相关py_compile/XML parse/diff PASS。L2首轮rental-basis-wire-unit.log99有1 error：新纯测试将空Odoo line model模拟为SimpleNamespace，缺mapped；仅修复替身，fixed99 PASS。最终rental-basis-wire-final-unit.log100 PASS并登记回执，覆盖真实执行合同解析调用及不可见来源拒绝、无合同依据、零默认额、额度查询复用、取消责任边界。纯测试不等同于实际ORM/权限/浏览器。
 
 L3/L4尚未运行：下一步canonical posted汇总、冲销后事实/状态回读及确认支付guard，再一次受管升级和租赁结算rollback scope、代表官方页面验收。原审批链及财务权限守卫保留；不重复付款49或其他无关ORM。后端2d7eab703、前端7915f3bb9未变化，无构建/持久fixture/推送合并目标部署。整体67未完成。
+
+
+### 53.103 租赁支付事实与冲销回读（源码阶段）
+
+候选2195c991e+dirty，P1 smart_construction_core租赁结算与受控payment.ledger reversal。新增只读payment_paid_amount/payment_remaining_amount，按明确归属payment_request_ids调用现有_canonical_payment_paid_amount_map汇总；不按request取消状态丢弃仍有效的现金事实，也不把旧payment_request_id或其他申请金额算入。原生结算form声明两个只读金额，前端无模型分支。
+
+_payment_confirmation_blocker由临时UNAVAILABLE替换成真实门禁：无归属MISSING、非正结算金额INVALID、有效台账身份异常AMBIGUOUS、不足额NOT_FULLY_PAID分别明确原因；足额且事实有效才允许显式action_paid。确认前同源行锁及缓存失效确保重新读取。受控ledger.write成功冲销后调用租赁_refresh_payment_confirmation，始终推进源版本；paid但不再满足金额门禁回confirmed，不回滚审批也不自动再次标paid。触及源版本用于避免冲销发现confirmed就不写源而留下旧快照竞态；实际数据库事务/重试仍需运行证据。
+
+L1 rental-paid-facts-iteration.log、py_compile、rental XML及diff PASS。L2 rental-paid-facts-unit.log104 PASS：明确归属canonical汇总（未归属不计、取消申请有效事实仍计）、足额显式确认、部分/异常/零金额拒绝、冲销回confirmed/补付不自动确认、ledger真实write方法先写冲销事实再回读及重复冲销拒绝；rental-paid-facts-native.log8+50=58 PASS，真实evidenceGate消费新的明确缺因。非零回执登记。没有凭纯测试宣称DB原子性或实际财务闭环。
+
+下一步扩展已有rollback scope覆盖租赁结算实际review/付款依据/额度/posted/reversal/ORM缓存与明细保护，随后一次受管模块升级/reload及官方页面。也需核对验收范围旧paid记录是否缺正式归属，不自动给历史paid制造现金事实；数据修复不得取代权威。L3/L4尚未执行，后端仍2d7eab703，前端7915f3bb9未改不构建。无持久fixture/新环境/无关ORM/推送合并目标部署，整体67及角色旅程保持开放。
