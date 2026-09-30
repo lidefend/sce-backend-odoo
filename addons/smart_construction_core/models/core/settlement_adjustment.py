@@ -113,6 +113,19 @@ class ScSettlementAdjustment(models.Model):
         authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
         if not authoritative and {"state", "source_origin"}.intersection(vals):
             raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "settlement_id", "contract_id", "partner_id",
+            "adjustment_type", "date_adjustment", "item_name", "account_name",
+            "amount", "currency_id", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state == "confirmed" or (
+                    rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已确认的结算调整内容不可改写；请按正式流程重新办理。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"settlement_id", "contract_id", "partner_id", "note", "active", "write_uid", "write_date"}
             if set(vals) - allowed:

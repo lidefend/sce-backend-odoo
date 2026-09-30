@@ -607,6 +607,31 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_settlement_adjustment_reviewed_economic_content_is_frozen(self):
+        path = MODEL.with_name('settlement_adjustment.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        writes = []
+        token = object()
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'no')):
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context={'sc_document_state_token': True})
+            for values in ({'amount': 200}, {'adjustment_type': 'addition'}, {'contract_id': 9},
+                           {'settlement_id': 9}, {'project_id': 9}, {'currency_id': 9}, {'active': False}):
+                with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
+                    ns['write'](rows, values)
+            self.assertTrue(ns['write'](rows, {'note': 'supplement'}))
+        rows[0].state, rows[0].validation_status = 'draft', 'rejected'
+        self.assertTrue(ns['write'](rows, {'amount': 200}))
+        rows[0].state = 'confirmed'
+        rows.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'cancel'}))
+        self.assertEqual(writes[-1], {'state': 'cancel'})
+
     def test_receipt_reviewed_economic_content_is_frozen(self):
         path = MODEL.with_name('receipt_income.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
