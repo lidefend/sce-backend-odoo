@@ -8663,8 +8663,19 @@ L1 red-role-tool-iteration.log/py_compile/bash-n/diff PASS；red-role-runtime.lo
 
 仅沿已有workflow剩余项阅读sc_workflow.py：sc.workflow.instance/def明确为历史实例/定义，正常审批权威已有base_tier_validation；create_instance/publish受legacy runtime开关约束，但action_submit/approve/reject没有相同开关检查，workflow profile仍发布普通动作。下一步核对并收口历史恢复例外的动作契约和执行边界，不把该技术实例当新业务审批实现，更不引入第二框架。保留原67/detail.action-state及分类/项目金额/税率等既有缺口，无推送合并目标部署。
 
-### 53.126 历史流程运行关闭边界（进行中）
+### 53.126 历史流程运行关闭边界（本批定向验证完成）
 
 481182127 clean续跑。P1 sc_workflow是明确标记的历史兼容运行实例，正常业务审批仍base_tier_validation。本批补submit/approve/reject统一_require_legacy_runtime_enabled检查，默认关闭时不得继续历史流转。Definition/Instance上下文开关仅env.su内部恢复可用，普通调用者不能凭allow_legacy_workflow_runtime=True开启；显式受管参数仍保留。取消旧实例是管理员清理动作，保留原权限与执行，不将其当新业务审批。workflow evidenceGate给submit/approve/reject明确关闭原因，无前端专用规则、不修改旧数据。
 
 L1 legacy-runtime-iteration.log PASS；unit.log140 PASS、native.log8+54=62 PASS。生产方法纯回归证明上下文信任边界、配置权威及关闭时在任何流转前拒绝。P4沿已有受管事务工具新增legacy-workflow5组，不创建业务项目/实例，只在事务内切换指定参数，finally回读原参数key/value记录一致；wrapper白名单同步。tool-iteration/py_compile/bash-n/diff通过。需Python reload无需模块升级/前端构建，runtime尚未运行。历史恢复启用后完整节点办理不作为新业务标准；管理员/节点组既有权限保留，取消为明确兼容例外。整体不升行，无新环境/fixture/推送合并目标部署。
+
+
+53.126结果回填：backend acceptance reload至a9b73cdb1920dec1193d6aa0341e82942fe97e4c，legacy-runtime-smoke.log为5 PASS、ROLLBACK VERIFIED，参数原始key/value回读一致；覆盖普通上下文不可开启、关闭时三类动作拒绝、契约阻断一致、开启不授予管理员权限、取消仍需管理员。未验证开启后的完整历史节点旅程，不将历史引擎计作标准审批。unit140/native62原日志与输入未变，make agent.run.resume确认可复用。第一次native receipt因提交改变HEAD被拒绝（legacy-runtime-native-receipt.log）；固定a9b后重新begin/record成功（legacy-runtime-native-reconcile-receipt.log），没有重跑测试或将失败回执计为通过。后续回执完成前不得并行移动HEAD。前端CrYkOCxc未变，不重建、不重复浏览器。
+
+### 53.127 财务组状态写入与动作契约一致性（已确认缺口，待实现）
+
+a9b73cdb1 clean定向读取既有finance-family测试关联模型，不做全仓盘点。P1/Layer Target=单据状态写入权威/Module=smart_construction_core；行业标准，非P2客户偏好、非P3可配置绕过，前端不补语义。结算调整与资金对账的create/write只保护legacy_confirmed既有历史记录，未阻止普通新建或写入confirmed；收款write保护received/legacy_confirmed、自筹write保护done，但未保护confirmed审批状态。此为源码确认的执行边界缺口，不能因actions/availableActions已输出就算完整契约闭环；尚未用ORM证明利用路径。
+
+下一步按同一财务组复用既有私有状态写入与共享policy/tier机制，先补普通create/context默认值/write绕过的生产方法回归，再使正式动作与真实审核回调成为状态入口。保留明确受控历史迁移、财务事实身份及执行权限，禁止用sudo或客户端布尔context充当普通审批授权。关联融资/付款执行/费用报销已有保护须先核对，不能统一覆盖掉既有权威。字段快照冻结、在审取消与动作阻断需按实际依赖核对，不宣称本轮已修。
+
+本次仅P4记录更新：L0身份、JSON解析、diff检查；复用53.126 L1/L2/L3原始证据，因生产/测试/运行输入未变，不重新运行ORM、构建、浏览器或Quick。原67条detail.action-state继续contract_gap；分类/项目金额/收款税率及实际角色浏览器等未覆盖项保留，无推送、合并或目标部署。

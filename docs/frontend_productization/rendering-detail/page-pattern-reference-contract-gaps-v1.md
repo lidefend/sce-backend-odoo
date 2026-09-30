@@ -455,3 +455,10 @@ Approved but unexecuted adjustments may be cancelled with approval history retai
 ## Segment 53.125: actual finance role handling and empty detail scope
 
 Red-flush-role rollback16 passes: fixture finance creates/submits/confirms/cancels/replaces applications without sudo; project visibility and exact actor environment are asserted. Source/policy preparation and the database backstop probe retain explicit elevated scope. Existing detail browser lookup returns an empty authorized record set (report tpl07-1790794142106), so approved-detail and full browser handling remain unverified; do not repeat or fabricate data. The remaining declared sc.workflow.instance is explicitly historical: reconcile its legacy-mode action gates instead of treating it as another standard approval engine.
+
+
+## Segment 53.126–127: historical boundary verified; finance state authority remains open
+
+Historical workflow mode boundary passes140 pure/62 native checks and5 managed runtime checks with parameter restoration verified at backenda9b73cdb1. Ordinary context cannot activate the historical engine; disabled transitions and contract gates agree. Enabled historical node handling is not claimed. Native receipt identity sequencing was corrected at stable HEAD without rerunning unchanged tests.
+
+Bounded finance-family source review confirms another P1 gap: settlement adjustment and treasury reconciliation create/write do not prevent direct normal confirmed-state assignment; receipt and self-funding guards protect selected execution terminal states but not confirmed approval state. Action declarations and availableActions therefore do not prove exclusive authoritative transitions. Fix and verify producer execution boundaries through existing shared approval and private action writes; preserve governed legacy import and financial facts. No ORM exploit or closure is claimed yet. Keep detail.action-state open and do not compensate in the frontend.

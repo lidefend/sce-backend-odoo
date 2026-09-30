@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.125 P4 red-flush-role optional actor_env: L1 + runtime16 ROLLBACK VERIFIED with actual non-sudo fixture finance creating/submitting/confirming/cancelling/new approval; source/policy preparation and DB backstop remain elevated. Backend3fb696152/frontendCrYkOCxc unchanged, pure138/native62 reused. Readonly detail browser tpl07-1790794142106 returned authorized empty records; no approved-detail/full-browser proof, do not repeat or invent fixture. Next reconcile historical sc.workflow.instance legacy-mode action boundary: model explicitly historical, create_instance gated but submit/approve/reject not gated, profile still publishes standard-looking actions. Preserve documented classification/project amount/receipt tax gaps and overall67; no push/merge/deploy.",
+  "next_exact_step": "53.126 completed: backend a9b73cdb1; legacy-runtime-smoke.log 5 PASS and parameter restoration verified; pure140/native62 reusable. Native receipt first rejected moving HEAD, reconciled at stable a9b without rerun. 53.127 next: P1 finance-family state authority; settlement adjustment/treasury create-write permit ordinary confirmed state, receipt/self-funding protect only selected terminal states. Add focused production-method regressions and private authoritative transitions using existing approval mechanism; inspect existing financing/payment/expense guards before changing. No frontend rebuild or unrelated ORM; retain overall67/detail.action-state and existing amount/classification/tax/browser gaps. No push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
