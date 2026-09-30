@@ -543,3 +543,8 @@ P1 shared domain errors now govern submit/reviewer callback and effective submit
 ### Segment53.142 — reconciliation reviewed facts and ledger identity
 
 P1 reconciliation now protects reviewed/confirmed/reconciled economic content and shares ledger readiness errors with submit, reviewer callback, explicit reconciliation and workflow gates.151 pure checks pass; backend235dc4c78 existing self-funding→reconciliation runtime13 passes ordinary finance/real reviewers with rollback. Company/currency mismatch is pure-test evidence, not actual multi-company runtime proof. Existing create-page evidence does not prove saved-record display of new denials; source external facts/concurrency and overall detail.action-state stay open.
+
+
+### Segment53.143 — current-action evidence presentation
+
+Actual paid execution186 showed irrelevant pre-payment account blockers despite only reversal being available. P1 describe_record now projects gates to current action keys after computing availability from all original gates; disabled current-action denials and unscoped notices remain.152 pure checks and official paid-record20 checks pass (tpl07-1790797886406), no writes; reversal confirmation/cancel and delete denial remain. Receipt saved-record query tpl07-1790797726118 is empty/unverified. This fixes shared gate presentation, not all saved-record workflows or actual reversal of this record.
