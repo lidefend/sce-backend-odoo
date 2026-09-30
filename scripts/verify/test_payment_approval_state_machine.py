@@ -38,7 +38,7 @@ def load_methods():
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
     exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
-    for name in ('_start_submission_review', '_approve_submission_review'):
+    for name in ('_start_submission_review', '_approve_submission_review', '_assert_submission_approved'):
         route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == name)
         route.decorator_list = []
         exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
@@ -361,6 +361,44 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                             namespace['action_confirm'](rec)
                         self.assertEqual(rec.state, 'draft')
                         self.assertEqual(rec.requests, 1)
+
+    def test_execution_requires_completed_submission_not_current_configuration(self):
+        for state, reviews, status, allowed in (
+            ('draft', [], 'no', False), ('draft', ['tier'], 'validated', False),
+            ('confirmed', [], 'no', True), ('confirmed', ['tier'], 'validated', True),
+            ('confirmed', ['tier'], 'pending', False), ('confirmed', ['tier'], 'rejected', False),
+        ):
+            for required in (False, True):
+                rec = self.record(state=state, reviews=reviews, status=status, required=required)
+                call = lambda: PRODUCTION['_assert_submission_approved'](rec.policy, rec, ('confirmed',))
+                if allowed:
+                    self.assertTrue(call())
+                else:
+                    with self.assertRaises(ValueError):
+                        call()
+
+    def test_finance_family_callbacks_require_real_review_outcomes(self):
+        for filename in ('receipt_income', 'payment_execution', 'invoice_registration', 'financing_loan',
+                         'self_funding_registration', 'treasury_reconciliation', 'settlement_adjustment'):
+            path = MODEL.with_name(filename + '.py')
+            methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef)
+                       and n.name in {'action_on_tier_approved', 'action_on_tier_rejected'}]
+            namespace = {'UserError': ValueError, '_': lambda text: text}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+            for method, expected in (('action_on_tier_approved', 'validated'), ('action_on_tier_rejected', 'rejected')):
+                for reviews, status in (([], expected), (['tier'], 'pending'), (['tier'], expected)):
+                    with self.subTest(model=filename, method=method, status=status, reviews=reviews):
+                        rec = self.record(state='draft', reviews=reviews, status=status)
+                        rec.write = lambda values: rec.data.update(values)
+                        rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
+                        rec._check_business_anchor = lambda: None
+                        rec._get_tier_reject_reason = lambda: 'real rejection'
+                        namespace[method](rec)
+                        effective = bool(reviews) and status == expected
+                        self.assertEqual(rec.state, 'confirmed' if effective and expected == 'validated' else 'draft')
+                        if not effective:
+                            self.assertEqual(rec.audits, [])
+                            self.assertNotIn('reject_reason', rec.data)
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)

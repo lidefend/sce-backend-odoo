@@ -87,7 +87,7 @@
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_received" string="已收款" type="object" class="btn-primary"
                                 groups="smart_construction_core.group_sc_cap_finance_manager"
-                                invisible="state not in ('draft', 'confirmed')"/>
+                                invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
                                 invisible="state in ('received', 'cancel', 'legacy_confirmed')"/>
                         <field name="validation_status" invisible="1"/>

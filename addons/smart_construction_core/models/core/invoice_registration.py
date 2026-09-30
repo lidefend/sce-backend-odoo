@@ -579,8 +579,7 @@ class ScInvoiceRegistration(models.Model):
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认发票登记可以登记。"))
             rec._check_business_anchor()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("发票登记尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             rec.write({"state": "registered"})
             rec._audit_transition("invoice_registered", before, rec._snapshot_audit_payload(), action_name="action_register")
@@ -711,11 +710,8 @@ class ScInvoiceRegistration(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state != "draft":
                 raise UserError(_("只有草稿发票登记可以完成统一审批回调。"))
@@ -726,6 +722,8 @@ class ScInvoiceRegistration(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state != "draft":
                 raise UserError(_("只有草稿发票登记可以驳回。"))
             before = rec._snapshot_audit_payload()

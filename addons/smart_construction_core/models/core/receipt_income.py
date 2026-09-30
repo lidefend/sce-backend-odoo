@@ -514,8 +514,7 @@ class ScReceiptIncome(models.Model):
                 )
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("收款收入尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             with self.env.cr.savepoint():
                 rec._write_finance_authority({"state": "received"})
@@ -641,11 +640,8 @@ class ScReceiptIncome(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
@@ -659,6 +655,8 @@ class ScReceiptIncome(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
                 rec.with_context(skip_validation_check=True).write(

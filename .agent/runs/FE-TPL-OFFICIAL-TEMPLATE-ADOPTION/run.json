@@ -218,12 +218,17 @@
         "addons/smart_construction_core/models/core/financing_loan.py",
         "addons/smart_construction_core/models/core/self_funding_registration.py",
         "addons/smart_construction_core/models/core/treasury_reconciliation.py",
-        "addons/smart_construction_core/models/core/settlement_adjustment.py"
+        "addons/smart_construction_core/models/core/settlement_adjustment.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/views/core/receipt_income_views.xml",
+        "addons/smart_construction_core/views/core/self_funding_registration_views.xml",
+        "addons/smart_construction_core/views/core/financing_loan_views.xml",
+        "addons/smart_construction_core/views/core/treasury_reconciliation_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.24 seven finance document confirm routes now share policy submission (39 tests), removing seven duplicate orchestration helpers and fixing rejected resubmission. Next correct their downstream done/paid/register/reconcile gates and callbacks to use established approval facts rather than mutable current policy; preserve domain execution. Remaining documents, two native gaps, governed upgrade/runtime acceptance remain.",
+  "next_exact_step": "53.25 finance callbacks now require actual review outcomes; six execution gates consume confirmed approval facts; four native/profile draft-complete paths retired. 41 approval +32 native +15 semantics tests pass. Continue remaining business-document approval adoption and payment shared decision reuse; then governed module upgrade and focused real ORM/browser approval validation, including old callers now requiring submit first. Two native state-action gaps remain.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -523,6 +528,17 @@
         "sc.settlement.adjustment"
       ],
       "runtime": "not_run; downstream lifecycle gates still need convergence"
+    },
+    "finance_approval_outcomes_53_25": {
+      "status": "verification_pending",
+      "source_head": "891859fb4",
+      "tests": {
+        "approval": 41,
+        "native": 32,
+        "semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/finance-outcome-tests.log",
+      "runtime": "not_run; XML upgrade and targeted business transactions pending"
     }
   }
 }

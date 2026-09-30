@@ -7582,3 +7582,12 @@ L5：未推送、未合并、未部署。
 - 原七份实现的rejected分支只restart_validation而未重新request_validation；共享路径重置后确认清空并建立真实新链。审批等待期间即使关闭配置也不能直接确认；无配置直接confirmed，不制造review/validated。七类原有draft承载审批中状态保持，以真实review区分，不重建状态框架。
 - L1 ci.local.iteration PASS（finance-family-submit-iteration.log）；L2 verify.payment.approval_state_machine.unit 39项PASS（finance-family-submit-tests.log，begin/record39）。新增参数化执行七个真实action_confirm，每个覆盖无配置、有配置、驳回重提，并检查有配置后的在途关闭拒绝。首次测试失败为测试替身缺payment_execution._assert_finance_handling_access；补该协作者并断言它先执行，生产权限代码未改，失败日志finance-family-submit-tests-initial.log保留。
 - 该族尚未整体关闭：完成/付款/入账入口仍读取当前配置，部分批准回调还需真实实例事实约束，继续列为P1产品工作。下一步统一这些执行边界后再扩展其余业务单据；不能用提交路径测试代替整个生命周期。未写数据库、未重建前端；受管升级与真实多级审批/恢复验收仍待。
+
+
+### 53.25 财务单据按既有批准事实执行，回调不再自行放行
+
+- 891859fb4 clean起步；P1 smart_construction_core审批结果消费。新增共享_assert_submission_approved：后续业务办理要求已确认业务状态，已有review必须validated；未创建review的自动批准仍有效，不受后来配置启用影响。六个后续入口（收款、付款、发票登记、融资完成、自筹完成、资金对账）改消费该门禁，不再重新读取当前策略。资金来源、角色、金额、合同及账务同步逻辑保留。结算调整确认本身即该单据的审批结果，不新增执行步骤。
+- 七类批准/驳回回调均要求真实review及对应validated/rejected结果；中间层审批或伪造直接回调不推进、不产生审计。批准仍只从draft推进confirmed，重复批准不重复推进。驳回原生事实与意见逻辑保持；未宣称重复驳回审计全局幂等已验证。
+- 收款、自筹、融资、对账四类workflow profile退出draft complete，原生完成按钮同步仅confirmed；不让前端猜是否需要审批，也不把审批通过自动变成付款/入账。用户须先提交，无配置时提交自动确认，再执行业务办理。
+- L1 ci.local.iteration PASS（finance-outcome-iteration.log）；L2付款/共享审批41、native coverage8+24=32、semantics15全部PASS（finance-outcome-tests.log，begin/record41）。测试执行七类真实回调，含缺review、pending及真实终结；共享门禁覆盖草稿拒绝、自动批准后启用配置仍可办理、在途关闭仍拒绝；生产动作投影及真实XML验证四类草稿无完成动作。首次测试替身缺发票业务锚点协作者，补齐后重跑受影响目标，产品校验未删除。
+- 这是源码与函数级验证，尚无真实ORM交易/多级审批恢复证据。XML增加四处变更，需与前批统一受管模块升级；必要定向ORM须验证真实权限、事务与旧调用方对“先提交”的适应，不以既有TPL05A49项替代。仍有其他单据族接入、付款批准局部编排、合同履约事件及付款冲销投影等缺口；总体目标保持active，无推送/合并/目标部署。

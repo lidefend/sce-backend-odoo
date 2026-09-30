@@ -338,6 +338,16 @@ class ScApprovalPolicy(models.Model):
         return record.validate_tier()
 
     @api.model
+    def _assert_submission_approved(self, record, approved_states):
+        """Consume the completed submission, not today's configuration."""
+        record.ensure_one()
+        if record.state not in approved_states:
+            raise UserError(_("请先提交单据并完成审批，再执行后续办理。"))
+        if record.review_ids and record.validation_status != "validated":
+            raise UserError(_("单据的审批实例尚未通过，不能执行后续办理。"))
+        return True
+
+    @api.model
     def next_state_after_submit(self, model_name, submitted_state, approved_state, company=None):
         return submitted_state if self.is_approval_required(model_name, company=company) else approved_state
 

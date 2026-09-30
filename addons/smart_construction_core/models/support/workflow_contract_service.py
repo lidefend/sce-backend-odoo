@@ -355,7 +355,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
             },
             "approval_actions": ["approve", "reject"],
@@ -404,7 +404,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
             },
             "approval_actions": ["approve", "reject"],
@@ -426,7 +426,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
             },
             "approval_actions": ["approve", "reject"],
@@ -448,7 +448,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
             },
             "approval_actions": ["approve", "reject"],

@@ -215,8 +215,7 @@ class ScSelfFundingRegistration(models.Model):
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的自筹办理可以完成。"))
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("自筹办理尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
             rec._write_finance_authority({"state": "done"})
@@ -306,11 +305,8 @@ class ScSelfFundingRegistration(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
@@ -319,6 +315,8 @@ class ScSelfFundingRegistration(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
                 rec.with_context(skip_validation_check=True).write({"reject_reason": reason or _("统一审批驳回")})

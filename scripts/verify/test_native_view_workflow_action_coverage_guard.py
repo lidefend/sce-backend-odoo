@@ -161,6 +161,22 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                     self.assertIn('validation_status', buttons[method].get('invisible', ''))
                 self.assertIn('action_done', buttons)
 
+    def test_finance_execution_is_available_only_after_submission_confirmation(self):
+        for filename, model, method in (
+            ('receipt_income', 'sc.receipt.income', 'action_received'),
+            ('self_funding_registration', 'sc.self.funding.registration', 'action_done'),
+            ('financing_loan', 'sc.financing.loan', 'action_done'),
+            ('treasury_reconciliation', 'sc.treasury.reconciliation', 'action_reconcile'),
+        ):
+            for state in ('draft', 'confirmed'):
+                actions = self._general_contract_actions(state, model=model)
+                self.assertEqual(method in [action['method'] for action in actions], state == 'confirmed')
+            tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core' / (filename + '_views.xml'))
+            buttons = tree.findall(".//button[@name='%s']" % method)
+            self.assertTrue(buttons)
+            for button in buttons:
+                self.assertEqual(button.get('invisible'), "state != 'confirmed'")
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

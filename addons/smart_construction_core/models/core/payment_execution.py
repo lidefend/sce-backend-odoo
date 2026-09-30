@@ -857,8 +857,7 @@ class ScPaymentExecution(models.Model):
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("付款执行尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             rec.state = "paid"
             rec._sync_payment_request_done()
             rec._message_post_non_blocking(_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
@@ -1184,17 +1183,16 @@ class ScPaymentExecution(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write(
                     {"reject_reason": reason or rec._get_tier_reject_reason()}

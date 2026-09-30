@@ -62,7 +62,7 @@
                         <button name="reject_tier" string="审批驳回" type="object"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_done" string="完成" type="object" class="btn-primary"
-                                invisible="state not in ('draft', 'confirmed')"/>
+                                invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <field name="validation_status" invisible="1"/>
