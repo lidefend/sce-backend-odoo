@@ -226,12 +226,13 @@
         "addons/smart_construction_core/views/core/treasury_reconciliation_views.xml",
         "addons/smart_construction_core/models/core/general_contract.py",
         "addons/smart_construction_core/models/support/contract_center.py",
-        "addons/smart_construction_core/models/core/purchase_extend.py"
+        "addons/smart_construction_core/models/core/purchase_extend.py",
+        "addons/smart_construction_core/models/core/material_plan.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.27 purchase confirmation now forms eligible recordset via shared submission or real validated instance; duplicate local helpers removed (43 tests). Next material plan fixed-review/direct-approve convergence, remaining document adoption and contract execution prerequisites. Two native gaps, governed module upgrade and actual business/approval ORM+browser verification remain; no frontend rebuild.",
+  "next_exact_step": "53.28 material plan shares submit/approve/reject, preserves business checks and audit, auto-approval has no fake approver (45 tests). Next reuse common decision/rejection in payment, address material outbound and other necessary document scopes plus contract execution prerequisites; two native gaps remain. Governed upgrade and actual ORM/browser approval acceptance still required; no frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -559,6 +560,13 @@
       "test_count": 43,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/purchase-approval-tests.log",
       "runtime": "not_run; native purchase and cost ledger ORM integration pending"
+    },
+    "material_approval_53_28": {
+      "status": "verification_pending",
+      "source_head": "36fa7a954",
+      "test_count": 45,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/material-approval-tests.log",
+      "runtime": "not_run"
     }
   }
 }

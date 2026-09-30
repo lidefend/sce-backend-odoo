@@ -338,6 +338,28 @@ class ScApprovalPolicy(models.Model):
         return record.validate_tier()
 
     @api.model
+    def _reject_submission_review(self, record, reason=None):
+        """Use the native reviewer/wizard flow and preserve explicit comments."""
+        record.ensure_one()
+        if not record.review_ids or record.validation_status not in ("waiting", "pending") or not record.can_review:
+            raise UserError(_("当前用户没有可驳回的审批步骤。"))
+        reason = str(reason or "").strip()
+        if not reason:
+            return record.reject_tier()
+        sequences = record._get_sequences_to_approve(record.env.user)
+        reviews = record.review_ids.filtered(
+            lambda review: review.sequence in sequences
+            and review.status in ("waiting", "pending")
+            and record.env.user in review.reviewer_ids
+        )
+        if not reviews:
+            raise UserError(_("当前用户没有可驳回的审批步骤。"))
+        reviews.write({"comment": reason})
+        record._rejected_tier(reviews)
+        record._update_counter({"review_deleted": True})
+        return None
+
+    @api.model
     def _assert_submission_approved(self, record, approved_states):
         """Consume the completed submission, not today's configuration."""
         record.ensure_one()

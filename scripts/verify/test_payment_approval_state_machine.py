@@ -38,7 +38,7 @@ def load_methods():
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
     exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
-    for name in ('_start_submission_review', '_approve_submission_review', '_assert_submission_approved'):
+    for name in ('_start_submission_review', '_approve_submission_review', '_assert_submission_approved', '_reject_submission_review'):
         route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == name)
         route.decorator_list = []
         exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
@@ -159,6 +159,8 @@ class Record:
 # Preserve the production method's env lookup while retaining immutable context clones.
 class Env(types.SimpleNamespace):
     def __getitem__(self, name):
+        if name == 'ir.sequence':
+            return types.SimpleNamespace(next_by_code=lambda code: 'PLAN-TEST')
         if name == 'sc.data.validator':
             return self.validator
         assert name == 'sc.approval.policy'
@@ -483,6 +485,58 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     namespace['button_confirm'](Orders([rec]))
                 self.assertEqual(rec.ledger_calls, 0)
+
+    def test_material_plan_submission_and_decision_use_real_approval(self):
+        path = MODEL.with_name('material_plan.py')
+        names = {'action_submit', 'action_approve', 'action_on_tier_approved', 'action_on_tier_rejected'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text,
+                     'fields': types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: 'now'))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for required in (False, True):
+            rec = self.record(required=required, state='draft')
+            rec._name = 'project.material.plan'
+            rec.env.user = types.SimpleNamespace(id=42, has_group=lambda name: True)
+            rec.name = '新建'
+            rec._check_business_anchor = lambda: None
+            rec._normalize_lines_uom = lambda: None
+            rec.invalidate_recordset = lambda: None
+            rec.activity_unlink = lambda kinds: None
+            rec.write = lambda values: rec.data.update(values)
+            rec.action_on_tier_approved = lambda: namespace['action_on_tier_approved'](rec)
+            namespace['action_submit'](rec)
+            self.assertEqual(rec.state, 'submit' if required else 'approved')
+            self.assertEqual(rec.requests, int(required))
+            if not required:
+                self.assertFalse(rec.approved_by)
+            else:
+                rec.required = False
+                rec.data['next_status'] = 'pending'
+                namespace['action_approve'](rec)
+                self.assertEqual(rec.state, 'submit')
+                rec.data['next_status'] = 'validated'
+                namespace['action_approve'](rec)
+                self.assertEqual(rec.state, 'approved')
+                count = len(rec.audits)
+                rec.action_on_tier_approved()
+                self.assertEqual(len(rec.audits), count)
+            rec.data.update(state='submit', review_ids=[], validation_status='rejected')
+            namespace['action_on_tier_rejected'](rec)
+            self.assertEqual(rec.state, 'submit')
+
+    def test_shared_rejection_records_actual_reviewer_comment(self):
+        rec = self.rejecting_record()
+        PRODUCTION['_reject_submission_review'](rec.policy, rec, reason=' wrong amount ')
+        self.assertEqual(rec.review_ids[0].comment, 'wrong amount')
+        self.assertEqual(rec.review_ids[0].status, 'rejected')
+        rec = self.rejecting_record(reviewer=99)
+        with self.assertRaises(ValueError):
+            PRODUCTION['_reject_submission_review'](rec.policy, rec, reason='wrong')
+        self.assertEqual(rec.validation_status, 'pending')
+        rec = self.rejecting_record()
+        wizard = {'type': 'ir.actions.act_window'}
+        rec.reject_tier = lambda: wizard
+        self.assertIs(PRODUCTION['_reject_submission_review'](rec.policy, rec), wizard)
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)

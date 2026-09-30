@@ -7607,3 +7607,11 @@ L5：未推送、未合并、未部署。
 - 审批中关闭配置无法确认；驳回重提建立新链；批准/驳回回调都要求真实review结果。非draft/sent重复确认不触发原生确认或台账，也不误提示“已提交审批”。该状态分流不替代原生采购数量、供应商、权限、双重验证及账务规则。
 - L1 ci.local.iteration PASS（purchase-approval-iteration.log），L2 verify.payment.approval_state_machine.unit 43项PASS（purchase-approval-tests.log，begin/record43）。新增真实button_confirm执行，隔离原生父类与台账协作者，覆盖无配置、有配置、驳回重提、validated、在途关闭及重复确认；这不证明真实原生采购/成本台账ORM行为，相关集成验收仍必要。
 - 不重建前端、不写验收业务数据；物资计划固定审批/直接批准、其余单据类型、付款局部编排和合同执行前置条件继续待收敛，两项原生动作产品缺口未关闭。后续仍需受管模块升级和真实配置/业务闭环，不把函数测试外推为总体完成。
+
+
+### 53.28 物资计划提交/批准/驳回接入共享机制
+
+- 36fa7a954 clean起步；P1 smart_construction_core物资计划生命周期。提交保留发起权限、业务锚点、单位归一、编号、提交人/时间及审计，改用共享配置分流。无配置直接approved，approved_by=False，不伪造人工批准人或validated；自动结果使用material_plan_approved审计且action_submit来源。
+- action_approve委托已有共享真实审批决定，action_reject委托新增共享_reject_submission_review；有显式意见时核对真实reviewer/sequence后写意见并走原生_rejected_tier，无意见保留原生驳回向导。旧动作不再直接写批准/驳回状态。回调要求review及对应validated/rejected，只有submit可推进，部分/重复回调不再触发错误状态变更。保留物资经理限制、待办清理及审计；原生驳回回调从真实review取意见。
+- L1 ci.local.iteration通过（material-approval-iteration.log）；最终补回两处原有待办清理后定向生产方法编译及45项测试通过（material-approval-tests.log，begin/record45），未变架构/路径规则沿用L1结论。测试覆盖真实物资提交/批准与回调、自动批准人为空、部分审批、完整/重复批准、缺事实驳回，以及共享驳回的实际审批人、意见与向导返回。真实ORM权限/事务/多级运行仍待，函数协作者不能替代该验收。
+- 未改前端/XML、不重建、不写业务数据。尚待付款局部批准/驳回也复用共享服务、出库和其他未接入业务单据范围、合同执行前置条件、两项原生动作缺口及受管升级/真实业务验收。总体active，不推送/合并/目标部署。

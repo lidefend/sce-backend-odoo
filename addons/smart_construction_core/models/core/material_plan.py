@@ -250,81 +250,54 @@ class ProjectMaterialPlan(models.Model):
                 }
             )
             rec.invalidate_recordset()
-            company = rec.company_id or self.env.company
-            rec.with_company(company).with_context(
-                allowed_company_ids=[company.id],
-            ).request_validation()
-            rec._message_post_non_blocking(_("物资计划已提交，进入审批流程。"))
+            required = self.env["sc.approval.policy"]._start_submission_review(rec)
+            if required:
+                rec._message_post_non_blocking(_("物资计划已提交，进入审批流程。"))
+            else:
+                rec.write({"state": "approved", "approved_by": False, "approved_at": fields.Datetime.now()})
+                rec.activity_unlink(["mail.mail_activity_data_todo"])
+                rec._message_post_non_blocking(_("物资计划未配置审批，提交后自动通过。"))
             rec._audit_transition(
-                "material_plan_submitted",
+                "material_plan_submitted" if required else "material_plan_approved",
                 before,
                 rec._snapshot_audit_payload(),
                 action_name="action_submit",
             )
 
     def action_approve(self):
+        result = None
         for rec in self:
+            if rec.state == "approved":
+                continue
             if rec.state != "submit":
                 raise UserError(_("只有已提交状态的物资计划可以批准。"))
             if not self.env.user.has_group("smart_construction_core.group_sc_cap_material_manager"):
                 raise UserError(_("你没有审批物资计划的权限。"))
             rec._check_business_anchor()
-            before = rec._snapshot_audit_payload()
-            rec.write(
-                {
-                    "state": "approved",
-                    "approved_by": self.env.user.id,
-                    "approved_at": fields.Datetime.now(),
-                }
-            )
-            rec.activity_unlink(["mail.mail_activity_data_todo"])
-            rec._message_post_non_blocking(_("物资计划已批准。"))
-            rec._audit_transition(
-                "material_plan_approved",
-                before,
-                rec._snapshot_audit_payload(),
-                action_name="action_approve",
-            )
+            result = self.env["sc.approval.policy"]._approve_submission_review(rec)
+            if rec.validation_status == "validated":
+                rec.action_on_tier_approved()
+        return result
 
     def action_reject(self, reason=None):
-        for rec in self:
-            if rec.state != "submit":
-                raise UserError(_("只有已提交状态的物资计划可以驳回。"))
-            if not self.env.user.has_group("smart_construction_core.group_sc_cap_material_manager"):
-                raise UserError(_("你没有驳回物资计划的权限。"))
-            before = rec._snapshot_audit_payload()
-            rec.activity_unlink(["mail.mail_activity_data_todo"])
-            rec.write(
-                {
-                    "state": "draft",
-                    "reject_reason": reason or _("未填写原因"),
-                }
-            )
-            rec._message_post_non_blocking(_("物资计划被驳回：%s") % rec.reject_reason)
-            rec._audit_transition(
-                "material_plan_rejected",
-                before,
-                rec._snapshot_audit_payload(),
-                reason=rec.reject_reason,
-                action_name="action_reject",
-            )
+        self.ensure_one()
+        if self.state != "submit":
+            raise UserError(_("只有已提交状态的物资计划可以驳回。"))
+        if not self.env.user.has_group("smart_construction_core.group_sc_cap_material_manager"):
+            raise UserError(_("你没有驳回物资计划的权限。"))
+        result = self.env["sc.approval.policy"]._reject_submission_review(self, reason=reason)
+        if self.validation_status == "rejected":
+            self.action_on_tier_rejected(reason=reason)
+        return result
 
     # ==== Tier 回调 ====
     def action_on_tier_approved(self):
         for rec in self:
-            if rec.state != "submit":
-                raise UserError(_("只有已提交状态的物资计划可以执行审批通过回调。"))
-            if rec.validation_status != "validated":
-                if self.env.context.get("server_action_tier"):
-                    # OCA base_tier_validation_server_action fires this
-                    # callback after every approved level of a multi-level
-                    # linear chain; a mid-chain invocation must not raise.
-                    # The completed chain re-fires the callback and
-                    # finishes the transition.
-                    continue
-                raise UserError(_("物资计划尚未完成统一审批流程。"))
+            if rec.state != "submit" or not rec.review_ids or rec.validation_status != "validated":
+                continue
             rec._check_business_anchor()
             before = rec._snapshot_audit_payload()
+            rec.activity_unlink(["mail.mail_activity_data_todo"])
             rec.write(
                 {
                     "state": "approved",
@@ -342,13 +315,16 @@ class ProjectMaterialPlan(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
-            if rec.state != "submit":
-                raise UserError(_("只有已提交状态的物资计划可以执行审批驳回回调。"))
+            if rec.state != "submit" or not rec.review_ids or rec.validation_status != "rejected":
+                continue
+            comments = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+            review_reason = comments[-1].comment if comments else _("未填写原因")
             before = rec._snapshot_audit_payload()
+            rec.activity_unlink(["mail.mail_activity_data_todo"])
             rec.write(
                 {
                     "state": "draft",
-                    "reject_reason": reason or _("未填写原因"),
+                    "reject_reason": reason or review_reason,
                 }
             )
             rec._message_post_non_blocking(_("物资计划审批驳回：%s") % rec.reject_reason)
