@@ -300,6 +300,17 @@ class AppSearchConfig(models.Model):
             row["deletable"] = row_id in deletable
         return rows
 
+    @api.model
+    def refresh_saved_search_runtime(self, contract, model_name, action_id=None):
+        """Replace user/action facts after structural-cache lookup, including empty sets."""
+        visible = []
+        for row in self._collect_ir_filters(model_name, action_id=action_id):
+            owner = row.get('owner')
+            if row.get('is_shared') or (owner and int(owner) == self.env.uid):
+                visible.append(row)
+        contract['saved_filters'] = visible
+        return self._project_saved_search_capability(contract, model_name)
+
     def _project_saved_search_capability(self, contract, model_name):
         """把“能否保存/修改收藏”的权威结论投影进搜索契约。"""
         custom = contract.get("custom")

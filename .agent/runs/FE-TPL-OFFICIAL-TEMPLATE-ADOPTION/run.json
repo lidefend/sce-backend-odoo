@@ -21,7 +21,8 @@
     "addons/smart_construction_core/",
     "frontend/packages/design-tokens/",
     "frontend/packages/ui/src/kits/tdesign/theme.css",
-    "scripts/dev/frontend_acceptance_runtime.sh"
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json"
   ],
   "environment": {
     "kind": "offline",
@@ -159,12 +160,23 @@
         "make/frontend.mk",
         "frontend/apps/web/src/app/runtime/savedSearchSubmission.ts"
       ]
+    },
+    "saved_search_runtime": {
+      "target": "verify.frontend.saved_search_capability.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/handlers/ui_contract_v2_authority.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_saved_search_capability_projection.py",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [
-    "Saved-search recovery inconsistency: ORM post-commit remaining=0 versus HTTP list id=7 and stale menu (segment 53.3). Cache/carrier diagnosis required."
+    "Saved-search HTTP records now empty but cached menu still displays deleted probe. P0 runtime projection fix implemented/tested; governed reload and browser verification pending."
   ],
-  "next_exact_step": "Resolve saved-search recovery read inconsistency: governed ORM unlink committed and post-commit readback remaining=0, but HTTP api.data list still returns id=7 and ui.contract displays it. Verify exact carrier and cache invalidation before declaring recovery complete. Reuse frontend 30 targeted and 29 injected-failure checks. Full success/refresh closure remains pending; then detail.action-state.",
+  "next_exact_step": "Validate P0 saved-search runtime overlay after structural/assembled cache lookup. Tests 13 scoped cases then governed backend reload and targeted HTTP/menu restoration; frontend build unchanged. Earlier stale api.data diagnosis corrected: id7 was removed, id8 was a new probe artifact; id8 now removed and HTTP empty, only menu projection remained stale.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -239,9 +251,10 @@
       "recovery_readback": "artifacts/frontend-web-fix-20260928/tpl07-1790766734559/report.json",
       "recovery_remaining": {
         "orm": 0,
-        "http": 1
+        "http": 0,
+        "menu": "stale before runtime fix"
       },
-      "pending": "resolve ORM/HTTP read inconsistency before claiming recovery; successful saved-search write/refresh loop"
+      "pending": "runtime projection fix needs governed reload and browser verification; full successful saved-search write/refresh loop"
     }
   }
 }

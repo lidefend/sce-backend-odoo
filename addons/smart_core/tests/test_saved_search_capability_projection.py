@@ -288,5 +288,61 @@ class SavedFilterMutationCapabilityTests(unittest.TestCase):
         self.assertTrue(contract["saved_filters"][0]["owned_by_current_user"])
 
 
+class CachedFavoriteRuntimeTests(unittest.TestCase):
+    def test_deleted_rows_replace_cached_rows_with_empty_set(self):
+        module = _load_module()
+        record = _record(module, _Env(filters=_FilterModel(create_allowed=True)), rows=[])
+        cached = {'saved_filters': [{'id': 7}], 'filters': [{'key': 'native'}]}
+        record.refresh_saved_search_runtime(cached, 'x.demo', action_id=775)
+        self.assertEqual(cached['saved_filters'], [])
+        self.assertEqual(cached['filters'], [{'key': 'native'}])
+        self.assertTrue(cached['custom']['favorites']['save_enabled'])
+
+    def test_runtime_scope_and_permission_are_refreshed(self):
+        module = _load_module()
+        env = _Env(filters=_FilterModel(create_allowed=False))
+        record = _record(module, env)
+        calls = []
+        def rows(model, action_id=None):
+            calls.append((model, action_id))
+            return [{'id': 1, 'owner': env.uid}, {'id': 2, 'owner': env.uid + 1}, {'id': 3, 'is_shared': True}]
+        record._collect_ir_filters = rows
+        cached = {'custom': {'favorites': {'save_enabled': True}}, 'saved_filters': []}
+        record.refresh_saved_search_runtime(cached, 'x.demo', action_id=775)
+        self.assertEqual(calls, [('x.demo', 775)])
+        self.assertEqual([row['id'] for row in cached['saved_filters']], [1, 3])
+        self.assertFalse(cached['custom']['favorites']['save_enabled'])
+
+    def test_runtime_lookup_failure_does_not_deliver_cached_favorites(self):
+        module = _load_module()
+        record = _record(module, _Env(filters=_FilterModel(create_allowed=True)))
+        def unavailable(*args, **kwargs):
+            raise RuntimeError('authority unavailable')
+        record._collect_ir_filters = unavailable
+        with self.assertRaisesRegex(RuntimeError, 'authority unavailable'):
+            record.refresh_saved_search_runtime({'saved_filters': [{'id': 7}]}, 'x.demo', action_id=775)
+
+    def test_runtime_seal_refreshes_before_sealing(self):
+        import ast
+        from typing import Any
+        path = ROOT / 'addons/smart_core/handlers/ui_contract_v2_authority.py'
+        tree = ast.parse(path.read_text())
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'seal_runtime_contract')
+        events = []
+        class Search:
+            def refresh_saved_search_runtime(self, contract, model, action_id=None):
+                events.append(('refresh', model, action_id))
+                contract['saved_filters'] = []
+        owner = types.SimpleNamespace(env={'app.search.config': Search()}, SOURCE_KIND='test', VERSION='1', source_authority_contract=lambda: {})
+        def seal(contract, **kwargs):
+            events.append(('seal', len(contract['searchContract']['saved_filters'])))
+            return contract
+        namespace = {'Any': Any, 'seal_unified_page_contract': seal}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+        contract = {'searchContract': {'saved_filters': [{'id': 7}]}}
+        namespace['seal_runtime_contract'](owner, contract, {'model': 'x.demo'}, 'ui.contract', 'r', 't', 'web_pc', action_id=775)
+        self.assertEqual(events, [('refresh', 'x.demo', 775), ('seal', 0)])
+
+
 if __name__ == "__main__":
     unittest.main()

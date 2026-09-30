@@ -676,6 +676,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 str(request_id),
                 trace_id,
                 client_type,
+                action_id=action_id,
             )
             return IntentExecutionResult(
                 ok=True,
@@ -964,7 +965,7 @@ class UiContractV2Handler(BaseIntentHandler):
             )
         assembled_cache_stored_at = time.monotonic()
         contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type
+            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type, action_id=action_id
         )
         runtime_sealed_at = time.monotonic()
         assembler_stages.update({

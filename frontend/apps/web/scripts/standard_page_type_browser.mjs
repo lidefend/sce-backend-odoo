@@ -46,6 +46,7 @@ const entry = Buffer.from(await fetch(`${base}${build.entry}`).then((res) => res
 assert.equal(createHash('sha256').update(entry).digest('hex'), build.entry_sha256);
 report.build = build;
 const browser = await launchChromium({ headless: true });
+const pendingProbeAborts = new Set();
 
 async function login(role) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
@@ -149,9 +150,19 @@ async function favoritesScope() {
       const body = route.request().postDataJSON();
       if (body?.intent !== 'search.favorite.set') return route.fallback();
       report.injectedFavoriteFailures.push({ model: body.params.model, shared: body.params.is_shared });
+      let settled = false;
+      let resume;
+      const abort = async () => {
+        if (settled) return;
+        settled = true;
+        try { await route.abort('failed'); }
+        finally { resume?.(); pendingProbeAborts.delete(abort); }
+      };
+      pendingProbeAborts.add(abort);
+      const waiting = new Promise((resolve) => { resume = resolve; releaseRequest = resolve; });
       signalRequest();
-      await new Promise((resolve) => { releaseRequest = resolve; });
-      return route.abort('failed');
+      await waiting;
+      return abort();
     });
   }
   await list(page, 545, 'favorites-list');
@@ -348,6 +359,9 @@ try {
       return { status: response.status, body: await response.json() };
     });
     check('recovery: authoritative read succeeded', report.recovery.body.ok === true);
+    check('recovery: probe records are absent', report.recovery.body.data.records.length === 0);
+    await finance.page.getByRole('button', { name: '展开搜索菜单', exact: true }).click();
+    check('recovery: menu reflects removal', await finance.page.getByText('仅检查表单，不保存', { exact: true }).count() === 0);
     await finance.ctx.close();
   } else if (['favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
     await favoritesScope();
@@ -462,6 +476,7 @@ try {
   report.error = error.message;
   process.exitCode = 1;
 } finally {
+  await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
   await fs.writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`[standard_page_type_browser] ${report.status} assertions=${report.assertions.length} report=${out}/report.json`);

@@ -128,7 +128,14 @@ def seal_runtime_contract(
     request_id: str,
     trace_id: str,
     client_type: str,
+    action_id: int | None = None,
 ) -> dict[str, Any]:
+    # The cached page is structural authority, not a snapshot of user favorites.
+    # Both source-cache and assembled-cache paths pass through this boundary.
+    search = contract.get("searchContract")
+    model = str(source_payload.get("model") or "").strip()
+    if source_type != "scene_contract" and isinstance(search, dict) and model:
+        owner.env["app.search.config"].refresh_saved_search_runtime(search, model, action_id=action_id)
     return seal_unified_page_contract(
         contract,
         source_payload=source_payload,

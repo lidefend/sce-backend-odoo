@@ -228,7 +228,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-          "contractSha256": "da5df9ac802d4ede76146d25c3a313f15bf21afd9174d12ebc2ab7ee7bbde74e"
+          "contractSha256": "69267683b77afb0a46419c38d1940ac6ea4ac4083cf02d7c38b76e30366c87ae"
       },
       "authority": {
         "kind": "documentation_example",
