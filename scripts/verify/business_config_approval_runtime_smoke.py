@@ -8,7 +8,7 @@ approval smoke targets.
 
 from base64 import b64encode
 
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 
 def _env():
@@ -103,7 +103,7 @@ def main():
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
     baseline = policy.read(fields)
-    step_fields = ["active", "sequence", "approve_group_id", "amount_min", "amount_max", "tier_definition_id"]
+    step_fields = ["active", "sequence", "approval_scope_key", "approve_group_id", "amount_min", "amount_max", "tier_definition_id"]
     step_baseline = policy.step_ids.read(step_fields)
     created = []
     passed = False
@@ -189,6 +189,51 @@ def main():
         _approve_existing_reviews(retry)
         assert retry.state == "approved" and retry.validation_status == "validated"
         print("APPROVAL_CHECK=resubmission_creates_and_completes_new_review_chain")
+        # Reuse the current policy's reviewer group; two sequential decisions
+        # remain two steps even when the same eligible reviewer handles both.
+        group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+        assert group, "missing reviewer group for linear approval"
+        scope_key = policy._approval_scope_for_group(group)
+        assert scope_key, "reviewer group lacks a configured approval scope"
+        policy.step_ids.write({"active": False})
+        for sequence in (10, 20):
+            _env()["sc.approval.step"].sudo().create({
+                "policy_id": policy.id, "name": "Runtime linear step %s" % sequence,
+                "active": True, "sequence": sequence, "approval_scope_key": scope_key, "approve_group_id": group.id,
+            })
+        policy.write({"mode": "linear", "approval_required": True})
+        policy.sync_tier_definitions()
+        linear = _expense(project, partner, "linear")
+        created.append((linear._name, linear.id))
+        linear.action_submit()
+        assert len(linear.review_ids) == 2 and all(linear.review_ids.mapped("approve_sequence")), [(r.id, r.sequence, r.name, r.definition_id.active, r.approve_sequence) for r in linear.review_ids]
+        print("APPROVAL_CHECK=linear_configuration_creates_two_sequential_reviews")
+        users = linear.review_ids.mapped("reviewer_ids")
+        outsiders = _env()["res.users"].sudo().search([
+            ("login", "=like", "fixture_role_%"), ("active", "=", True), ("share", "=", False),
+            ("id", "not in", users.ids),
+        ], limit=1)
+        assert outsiders, "missing existing fixture non-reviewer"
+        denied = False
+        try:
+            with _env().cr.savepoint():
+                outsider = linear.with_user(outsiders)
+                outsider.env["sc.approval.policy"]._approve_submission_review(outsider)
+        except AccessError:
+            denied = True
+        assert denied and not linear.review_ids.filtered(lambda review: review.status == "approved")
+        print("APPROVAL_CHECK=non_reviewer_cannot_approve")
+        actor = next((linear.with_user(user) for user in users if linear.with_user(user).can_review), None)
+        assert actor is not None
+        actor.validate_tier()
+        linear.invalidate_recordset()
+        assert linear.state == "submit" and linear.validation_status in ("waiting", "pending")
+        assert len(linear.review_ids.filtered(lambda review: review.status == "approved")) == 1
+        print("APPROVAL_CHECK=first_linear_step_does_not_finish_document")
+        _approve_existing_reviews(linear)
+        assert linear.state == "approved" and linear.validation_status == "validated"
+        assert all(review.status == "approved" for review in linear.review_ids)
+        print("APPROVAL_CHECK=last_linear_step_finishes_document")
         passed = True
     finally:
         _env().cr.rollback()
@@ -198,7 +243,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=8")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=12")
 
 
 main()

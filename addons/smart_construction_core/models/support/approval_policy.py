@@ -574,7 +574,7 @@ class ScApprovalPolicy(models.Model):
     def sync_tier_definitions(self):
         TierDefinition = self.env["tier.definition"].sudo()
         synced = TierDefinition.browse()
-        for policy in self.sudo():
+        for policy in self.sudo().with_context(active_test=False):
             if not policy._tier_sync_supported():
                 for step in policy.step_ids.filtered("tier_definition_id"):
                     step.tier_definition_id.sudo().write({"active": False})

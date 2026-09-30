@@ -621,6 +621,35 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         namespace['action_set_running'](rec)
                     self.assertEqual(rec.state, state)
 
+    def test_policy_sync_includes_disabled_steps_to_revoke_stale_definitions(self):
+        method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'sync_tier_definitions')
+        namespace = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        updates = []
+        definition = types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(write=lambda values: updates.append(values)))
+        disabled = types.SimpleNamespace(active=False, approve_group_id=True, tier_definition_id=definition)
+        class Synced:
+            def __ior__(self, other):
+                return self
+        class Policy:
+            runtime_state = 'tier_validation'
+            def __init__(self):
+                self.context = {}
+                self.env = {'tier.definition': types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(browse=lambda: Synced()))}
+            def sudo(self): return self
+            def with_context(self, **values):
+                self.context.update(values)
+                return self
+            def __iter__(self): return iter([self])
+            @property
+            def step_ids(self): return [disabled] if self.context.get('active_test') is False else []
+            def _tier_sync_supported(self): return True
+            def _tier_definition_vals(self, step): return {'active': step.active}
+            def mapped(self, name): return ['test.document']
+            def _sync_tier_server_action_groups(self, models): pass
+        namespace['sync_tier_definitions'](Policy())
+        self.assertEqual(updates, [{'active': False}])
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

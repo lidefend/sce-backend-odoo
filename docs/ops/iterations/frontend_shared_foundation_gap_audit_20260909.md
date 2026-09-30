@@ -7670,3 +7670,10 @@ L5：未推送、未合并、未部署。
 - 真实当前审批人经共享驳回服务与原生_rejected_tier执行，业务回draft，驳回原因保留，sc.audit.log的expense_claim_rejected恰好1条。原生tier.validation在submit→draft时删除本次review，validation_status回no；首次断言错误要求rejected持久存在而失败，回滚仍VERIFIED（approval-exceptions-native-reset-failure.log）。核对原生_allow_to_remove_reviews后修正工具断言，未为测试修改产品。
 - 重提创建新的真实review IDs，与旧ID不相交，再由真实审批人validate_tier完成approved/validated。保存原策略和步骤active/sequence/group/amount/tier_definition身份，最终rollback后回读完全一致，临时项目/客商/费用不存在。
 - make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终8项PASS、ROLLBACK=VERIFIED（approval-exceptions-runtime.log）。其中原5项随着同一配置事务复验，新3项是缺规则保存点回滚、驳回原因/审计及新链重提。仍仅费用代表路径，不代表指定多级顺序/越权/所有业务模型及前端办理均通过。总体active；两项原生动作缺口、全单据必要能力及剩余真实业务验收继续推进，无远端或目标部署。
+
+
+### 53.35 多级运行发现停用步骤未撤销定义，修复共同同步
+
+- 7819842e7 clean起步，P4原smoke增加两级linear与现有fixture非审批人拒绝场景，事务结束核对原策略/步骤恢复。首次配置创建遗漏必填approval_scope_key，补既有组到岗位映射（approval-linear-scope-failure.log），未改约束。第二次发现实际生成3条review；定向诊断确认两条新linear步骤之外仍有旧“财务中心审核”active定义，approve_sequence=False（approval-linear-runtime.log）。所有失败均ROLLBACK=VERIFIED。
+- 归因P1产品缺陷：sc.approval.policy.sync_tier_definitions默认active_test隐藏停用step，无法把旧tier.definition.active同步为False，也无法更新其模式。修复为在既有同步流程使用active_test=False遍历完整步骤；不扩大模型范围、不删除审批实例、不新增引擎。新增执行实际同步方法的回归：停用步骤必须向旧定义写active=False。
+- L1 ci.local.iteration PASS（approval-inactive-sync-iteration.log）；L2共享审批49项PASS（approval-inactive-sync-tests.log）。当前提交是待运行复验候选，需受管重载后端后再次运行同一多级场景；无字段/XML变化，不需再次模块升级或前端构建。总体目标保持active，不能把定位或纯测试当作多级运行已通过。
