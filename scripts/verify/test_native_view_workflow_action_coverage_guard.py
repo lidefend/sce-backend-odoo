@@ -26,6 +26,33 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
+    def _assert_material_state_projection(self, class_name, model, method_name):
+        # Compare the real projection against the business method's state guard,
+        # so changes to business authority cannot leave copied expectations green.
+        path = DEFAULT_SERVICE.parents[1] / "core/material_acceptance.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        owner = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == class_name)
+        method = next(n for n in owner.body if isinstance(n, ast.FunctionDef) and n.name == method_name)
+        guard = next(n for n in ast.walk(method) if isinstance(n, ast.Call) and getattr(n.func, "attr", None) == "_sc_require_state")
+        allowed = ast.literal_eval(guard.args[0])
+        profile = load_profiles()[model]
+        for state in list(profile["state_phase"]) + ["unknown"]:
+            with self.subTest(model=model, method=method_name, state=state):
+                projected = self._general_contract_actions(state, model=model)
+                self.assertEqual(method_name in [a["method"] for a in projected], state in allowed)
+
+    def test_material_inbound_reset_matches_business_sources(self):
+        self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_reset_draft")
+
+    def test_material_inbound_cancel_matches_business_sources(self):
+        self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_cancel")
+
+    def test_material_acceptance_reset_matches_business_sources(self):
+        self._assert_material_state_projection("ScMaterialAcceptance", "sc.material.acceptance", "action_reset_draft")
+
+    def test_material_acceptance_cancel_matches_business_sources(self):
+        self._assert_material_state_projection("ScMaterialAcceptance", "sc.material.acceptance", "action_cancel")
+
     def test_unavailable_actions_keep_meaning_without_becoming_execution_grants(self):
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_declared_actions")

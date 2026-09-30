@@ -238,3 +238,9 @@ This closes the missing-project-profile statement in53.60 and the shared identit
 ### Segment53.64 — Project information-edit entry verified
 
 PM system.init.navigation.route_authority resolves the existing dedicated menu680/action861. Project10 renders the official editable form with16 passing browser assertions on unchanged frontend7915f3bb9/backende14519cb1: write allowed, create/delete denied, only save_draft/write and submit actions, both viewports and zero writes/errors. This closes the entry-consumption gap above; actual role/page save and submission are not exercised by this read-only check. Monetary authority, remaining document coverage and data-limited journeys remain open.
+
+### Segment53.65 — Material document approval and transfer dependency
+
+Material acceptance/inbound still bypass the shared configurable approval mechanism: submission directly writes submitted. Inbound receiving is separate execution; transfer outbound currently creates, submits and receives a destination inbound synchronously and requires received. Shared approval adoption must cover this dependent chain without bypassing configured review or conflating approval with receiving. This is a necessary P1 product gap under all-document scope.
+
+Source-only correction now aligns reset/cancel declarations with existing authoritative guards: acceptance reset from cancelled/rejected, cancel from draft/submitted; inbound reset only from cancelled.47 focused tests pass. Runtime remains pending and this does not close approval adoption or detail.action-state.

@@ -819,7 +819,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.material.acceptance": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "submitted", "accepted": "done", "rejected": "rejected", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "reject", "reopen", "cancel"], "rejected": ["reopen", "cancel"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "reject", "cancel"], "rejected": ["reopen"], "cancel": ["reopen"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "action_accept",
@@ -832,7 +832,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.material.inbound": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "submitted", "received": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["complete", "reopen", "cancel"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["complete", "cancel"], "cancel": ["reopen"]},
             "method_by_action": {
                 "submit": "action_submit",
                 "complete": "action_receive",

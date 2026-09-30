@@ -7950,3 +7950,12 @@ L1 `catalog-consumer-iteration.log` PASS；L2 `catalog-consumer-tests-final.log`
 首次入口检查4项处失败：新增probe误读旧顶层route_authority；当前system.init正式路径为data.navigation.route_authority（system_init.py生产器明确移除顶层carrier）。按正式路径纠正，仅P4输入变化；首份报告tpl07-1790778448035保留，不记产品失败。
 
 最终报告 `artifacts/frontend-web-fix-20260928/tpl07-1790778468464/report.json` 16 PASS，errors=[]、forbiddenWrites=[]。当前PM初始化route authority正式菜单680/action861，project10，独立入口effectiveRenderProfile=edit、write=true、create=false、unlink=false。动作契约只有平台save_draft/write与P1 submit；无启动/审批动作注入。双视口官方表单正常。源与构建沿用7915f3bb9/backend e14519cb1，无新构建、模块升级或ORM。该结果关闭入口职责/官方渲染验证，不是实际保存、提交和审批办理验收。原始失败仅新增probe旧字段路径错误，已纠正，不放宽契约。
+
+
+### 53.65 物资链统一审批前的状态契约纠偏（进行中）
+
+候选e5405a983+dirty。P1 smart_construction_core.workflow.contract.service：按既有模型权威纠正材料验收/入库 reset与cancel可用源状态；不放在前端/P3，不改模型授权与执行，不新增状态框架。验收取消仅draft/submitted，重置cancel/rejected；入库重置仅cancel。原契约错将提交态发布reset、遗漏cancel态reset，并允许rejected验收cancel。四项新回归从模型实际状态guard提取权威，再执行共享投影逐状态比较，包含unknown。L1 iteration→L2现有native coverage；未改数据库结构/XML，跳过升级和无关ORM，运行时验证尚待完成。
+
+下一项已定位的必要P1缺口：材料验收、入库均未继承tier.validation，也未进入sc.approval.policy支持；action_submit直接变submitted。入库实际action_receive改变received，出库调拨_sync_transfer_inbound_after_issue会sudo生成→提交→接收并强制received，否则回滚整个出库。统一审批不能只改按钮或静默跳过入库审批，必须处理该关联链与审批/实际执行分离。保留产品缺口，不将现有支持列表当全业务范围。
+
+L1 material-state-iteration.log PASS；L2 material-state-tests.log 8+39=47 PASS，begin/record47 material-state-receipt.log。本段仅源代码/纯投影完成，运行时候选未加载此改动，保持verification_pending；下一步补入库审批时合并一次受管升级/加载，不为两处profile改动重复构建和跑页面。此前前端7915f3bb9、后端e14519cb1的页面结果仍仅证明此前声明范围。

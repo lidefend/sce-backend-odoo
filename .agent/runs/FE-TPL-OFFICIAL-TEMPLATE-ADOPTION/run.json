@@ -218,7 +218,8 @@
         "addons/smart_construction_core/views/core/project_views.xml",
         "addons/smart_construction_core/views/core/project_information_edit_views.xml",
         "addons/smart_construction_core/views/core/project_overview_views.xml",
-        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/models/core/material_acceptance.py"
       ]
     },
     "payment_approval_state_machine": {
@@ -310,7 +311,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.64 project information-edit official form16 PASS, current PM init navigation authority menu680/action861, project10, write capability true, save_draft and submit declarations only. Reuse all53.62–64 evidence. Continue remaining native business transition/shared approval coverage from existing registries; actual role/page handling and project monetary authority remain distinct gaps. No product rebuild/ORM needed for last P4 probe/docs changes.",
+  "next_exact_step": "53.65 P1 material inbound/acceptance state action parity fix, L1/native focused tests first. Approval adoption remains necessary: inbound transfer auto-receive chain must preserve configured approval and separate execution; do not bypass policy or claim coverage from registry.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
