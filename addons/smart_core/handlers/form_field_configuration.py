@@ -2022,6 +2022,20 @@ class BusinessConfigListSearchAuditHandler(BaseIntentHandler):
             columns = _sanitize_config_name_list(contract.get("columns_schema"))
         business_fields = self._business_field_name_set(model)
         if business_fields:
+            # The add-field picker is intentionally narrower than native list
+            # rendering. Preserve readable collection columns already declared
+            # by that list; reordering must not silently delete their content.
+            # Do not promote them into search/grouping candidates.
+            try:
+                metadata = self.env[model].fields_get(columns)
+            except Exception:
+                metadata = {}
+            business_fields = business_fields | {
+                name for name in columns
+                if isinstance(metadata.get(name), dict)
+                and metadata[name].get("type") in {"one2many", "many2many"}
+                and _is_lowcode_business_field_candidate(name, "", metadata[name].get("string", ""))
+            }
             columns = [name for name in columns if name in business_fields]
         return columns
 

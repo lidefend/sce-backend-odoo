@@ -59,6 +59,26 @@ def _load_handler():
 
 
 class TestFormFieldConfigurationParams(unittest.TestCase):
+    def test_native_list_collections_survive_scalar_picker_filter(self):
+        metadata = {
+            "name": {"type": "char", "string": "Name"},
+            "documents": {"type": "many2many", "string": "Documents"},
+            "lines": {"type": "one2many", "string": "Lines"},
+            "message_ids": {"type": "one2many", "string": "Messages"},
+            "raw_file": {"type": "binary", "string": "File"},
+        }
+        class Model:
+            def fields_get(self, names):
+                return {name: metadata[name] for name in names if name in metadata}
+        handler = self.module.BusinessConfigListSearchAuditHandler(env={"x.document": Model()})
+        handler._business_field_name_set = lambda model: {"name"}
+        handler._runtime_view_contract = lambda **kwargs: {
+            "columns": ["name", "documents", "lines", "message_ids", "raw_file", "restricted_collection"],
+        }
+        self.assertEqual(handler._suggested_columns(model="x.document", action_id=12, view_id=0),
+                         ["name", "documents", "lines"])
+        self.assertFalse(self.module._is_lowcode_business_field_candidate("documents", "many2many", "Documents"))
+
     def setUp(self):
         self.module = _load_handler()
 
