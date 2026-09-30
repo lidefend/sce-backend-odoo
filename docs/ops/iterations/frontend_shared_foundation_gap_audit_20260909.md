@@ -7566,3 +7566,11 @@ L5：未推送、未合并、未部署。
 - 费用与结算action_approve委托共同决定，再由原审批完成回调执行业务转换。保留费用业务准备检查、财务权限和审计，结算角色、锁、合同/采购严格校验及数据验证。结算草稿不能直接批准；无审批应走已统一的提交路径。费用批准回调要求真实review，费用驳回回调要求rejected事实；终态重复批准回调不重复审计或业务转换。多级审批未完成保持submit。
 - L1 make ci.local.iteration PASS（shared-approval-decision-iteration.log）；L2 verify.payment.approval_state_machine.unit 38项PASS（shared-approval-decision-tests.log，begin/record38）。新增真实共享方法与费用/结算生产方法执行回归，覆盖配置变更不读取、缺实例/错误审批人、评论向导返回、重复完成、部分审批与草稿批准拒绝。函数测试不证明ORM事务或真实审批人权限链。
 - 原生按钮/契约投影尚未统一，四项状态动作登记保持开放；付款已有实例保护，但批准决定尚有局部编排，后续同样消费共享服务。其他业务单据仍须接入，不将两类旧入口修复外推为全系统完成。未重建前端、未写数据库、未运行无关ORM；受管升级和多级审批运行闭环仍待稳定批次执行。
+
+
+### 53.23 费用/结算原生重复批准按钮退出
+
+- 3973fc041 clean起步。P1 smart_construction_core原生视图与现有workflow契约一致性；费用两个表单、结算一个表单移除action_approve重复按钮。既有契约和原生validate_tier/reject_tier均保留，当前审批人及waiting/pending约束保留；action_done作为审批之后的业务办理仍保留。后台兼容action_approve已在53.22委托真实审批实例，本节不删除兼容方法。
+- 原登记的费用/结算action_approve因按钮退出而移除，原生状态动作登记4→2（合同履约事件驳回、付款执行冲销）。这是旧呈现职责退出，不是通过给按钮随意补语义来消项；全单据审批接入与运行态验收未完成，detail.action-state继续开放。
+- L1 ci.local.iteration PASS；L2 native_view.workflow_action_coverage 8+23=31通过，新增解析真实XML和profile的回归，确认三个表单审批方法一致、无重复批准且业务完成动作保留。日志approval-native-exit-iteration.log/approval-native-exit-tests.log，begin/record31。编辑脚本首次正则无匹配、断言在写入前退出，修正后才产生本批变更；最终L1绑定修改后作用域。
+- 未改业务方法，53.22的38项结果输入不变复用。XML需要smart_construction_core受管模块升级，尚未执行；前端无需重建，不跑无关ORM。源代码退出不等于已加载运行候选退出，待稳定后统一升级及定向页面验证。

@@ -193,7 +193,9 @@
         "scripts/verify/workflow_contract_profile_loader.py",
         "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
         "scripts/verify/test_workflow_contract_profile_loader.py",
-        "make/ci.mk"
+        "make/ci.mk",
+        "addons/smart_construction_core/views/core/expense_claim_views.xml",
+        "addons/smart_construction_core/views/core/settlement_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -214,7 +216,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.22 expense/settlement legacy approval now delegates shared real-instance decision (38 pure tests), preserving domain checks; no mutable-policy bypass. Continue remaining document adoption, payment decision reuse, and native/effective action convergence. Four registered state-action gaps and governed upgrade/runtime acceptance remain; no unrelated scans or frontend rebuild.",
+  "next_exact_step": "53.23 expense/settlement duplicate native approval buttons retired; 31 coverage tests pass, XML upgrade pending. Continue remaining all-document shared approval adoption and payment shared decision reuse. Two registered native state-action gaps remain: contract-event rejection and payment-execution reversal. Complete governed upgrade/runtime validation after stable affected code; reuse static preview.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -490,6 +492,14 @@
         "sc.settlement.order",
         "sc.approval.policy"
       ]
+    },
+    "approval_native_exit_53_23": {
+      "status": "verification_pending",
+      "source_head": "3973fc041",
+      "test_count": 31,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-native-exit-tests.log",
+      "remaining_registered_state_actions": 2,
+      "runtime": "not_run; XML module upgrade required"
     }
   }
 }

@@ -86,12 +86,6 @@
     },
     {
       "model": "sc.expense.claim",
-      "method": "action_approve",
-      "class": "state_transition_undeclared",
-      "reason": "P1 product gap: legacy approval entry re-reads current policy; converge with the shared in-flight approval instance decision before projecting this method (owner53.19)."
-    },
-    {
-      "model": "sc.expense.claim",
       "method": "action_view_company_contractor_responsibility_summary",
       "class": "navigation",
       "occurrences": 2,
@@ -201,12 +195,6 @@
       "class": "navigation",
       "occurrences": 1,
       "reason": "opens a related record or view; it changes no record state"
-    },
-    {
-      "model": "sc.settlement.order",
-      "method": "action_approve",
-      "class": "state_transition_undeclared",
-      "reason": "P1 product gap: legacy draft/submit approval entry is not declared for this model; converge with shared submission and approval-instance transitions (owner53.19)."
     },
     {
       "model": "sc.tax.deduction.registration",

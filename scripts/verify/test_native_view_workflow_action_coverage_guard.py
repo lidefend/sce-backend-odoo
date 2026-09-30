@@ -12,6 +12,7 @@ import ast
 import copy
 import json
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 from types import SimpleNamespace
 from pathlib import Path
@@ -138,6 +139,27 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertEqual(len(errors), 1)
             self.assertIn("second: native button 'action_approve'", errors[0])
             self.assertEqual(validate({"entries": [{"model": "second", "method": "action_approve", "class": "state_transition_undeclared", "reason": "Unresolved approval integration"}]}), [])
+
+    def test_expense_and_settlement_native_approval_match_contract_without_second_confirmation(self):
+        root = DEFAULT_SERVICE.parents[2]
+        profiles = load_profiles()
+        for filename, model, expected_forms in (
+            ('expense_claim_views.xml', 'sc.expense.claim', 2),
+            ('settlement_views.xml', 'sc.settlement.order', 1),
+        ):
+            tree = ET.parse(root / 'views/core' / filename)
+            forms = [record for record in tree.findall('.//record')
+                     if record.findtext("field[@name='model']") == model and record.find('.//form') is not None]
+            self.assertEqual(len(forms), expected_forms)
+            for form in forms:
+                buttons = {button.get('name'): button for button in form.findall('.//header/button')}
+                self.assertNotIn('action_approve', buttons)
+                for action in ('approve', 'reject'):
+                    method = profiles[model]['method_by_action'][action]
+                    self.assertIn(method, buttons)
+                    self.assertIn('can_review', buttons[method].get('invisible', ''))
+                    self.assertIn('validation_status', buttons[method].get('invisible', ''))
+                self.assertIn('action_done', buttons)
 
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])

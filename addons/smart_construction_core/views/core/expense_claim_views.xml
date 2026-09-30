@@ -162,9 +162,6 @@
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="reject_tier" type="object" string="审批驳回"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
-                        <button name="action_approve" type="object" string="批准"
-                                invisible="state != 'submit' or validation_status != 'validated'"
-                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
                         <button name="action_done" type="object" string="完成"
                                 invisible="state != 'approved'"
                                 groups="smart_construction_core.group_sc_cap_finance_manager"/>
@@ -294,9 +291,6 @@
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="reject_tier" type="object" string="审批驳回"
                                 invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
-                        <button name="action_approve" type="object" string="批准"
-                                invisible="state != 'submit' or validation_status != 'validated'"
-                                groups="smart_construction_core.group_sc_cap_finance_manager"/>
                         <button name="action_done" type="object" string="完成"
                                 invisible="state != 'approved'"
                                 groups="smart_construction_core.group_sc_cap_finance_manager"/>

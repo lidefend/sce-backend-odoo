@@ -155,3 +155,8 @@ Runtime reports `tpl07-1790769636566/report.json` (25 assertions) and `tpl07-179
 ## Segment 53.20: model-bound native action coverage
 
 The coverage guard now matches `(model, method)`, preventing declarations on another model from masking product gaps. The existing native-action registry now explicitly records four unresolved state actions: payment execution reversal, contract-event rejection, expense approval and settlement approval. Registration is visibility, not completion or an exemption from the owner's all-business-document approval rule. The shared approval runtime integration and affected native/effective entries remain necessary P1 work; `detail.action-state` stays open.
+
+
+## Segment 53.23: duplicate native approval entries retired in source
+
+Expense (two forms) and settlement (one form) now retain only the same tier approval/rejection entries declared by their workflow profiles. The redundant post-review `action_approve` buttons are removed; compatibility methods remain instance-bound from53.22. Their native-action registrations are therefore retired. Two registered state-action gaps remain (contract-event rejection and payment-execution reversal). Module upgrade/runtime verification and all-document approval adoption remain open; this is not overall closure.
