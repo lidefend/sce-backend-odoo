@@ -455,6 +455,116 @@ def _project_approval_checks(group, created):
     print("APPROVAL_CHECK=project_resubmission_completes_new_chain")
 
 
+
+def _inbound_approval_checks(project, group, created):
+    env = _env()
+    model = "sc.material.inbound"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing inbound approval configuration must not be overwritten"
+    warehouse = env["stock.warehouse"].sudo().search([("company_id", "=", env.company.id)], limit=1)
+    product = env["product.product"].sudo().search([("type", "=", "product")], limit=1)
+    assert warehouse and product, "existing warehouse and material required"
+
+    def document():
+        record = env[model].sudo().create({
+            "project_id": project.id, "warehouse_id": warehouse.id,
+            "dest_location_id": warehouse.lot_stock_id.id,
+            "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id, "qty": 2, "unit_price": 10})],
+        })
+        created.append((record._name, record.id))
+        return record
+
+    def cannot_receive(record):
+        denied = False
+        try:
+            with env.cr.savepoint(): record.action_receive()
+        except UserError:
+            denied = True
+        assert denied
+        record.invalidate_recordset()
+        assert record.state == "submitted"
+
+    automatic = document()
+    for token in (False, True, "trusted"):
+        denied = False
+        try:
+            with env.cr.savepoint(): automatic.with_context(sc_inbound_state_token=token).write({"state": "approved"})
+        except UserError:
+            denied = True
+        assert denied
+    print("APPROVAL_CHECK=inbound_direct_state_write_denied")
+    automatic.action_submit()
+    assert automatic.state == "approved" and not automatic.review_ids
+    automatic.action_receive()
+    assert automatic.state == "received"
+    print("APPROVAL_CHECK=inbound_unconfigured_approval_then_explicit_receiving")
+    policy = Policy.create({
+        "name": "Runtime inbound approval", "code": "runtime_inbound_approval_smoke", "target_model": model,
+        "company_id": env.company.id, "approval_required": True, "mode": "single",
+        "manager_group_id": group.id, "runtime_state": "tier_validation",
+    })
+    created.append((policy._name, policy.id))
+    env["sc.approval.step"].sudo().create({
+        "policy_id": policy.id, "name": "Inbound review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id,
+        "amount_min": 1,
+    })
+    policy.sync_tier_definitions()
+    required = document()
+    required.action_submit()
+    assert required.state == "submitted" and required.review_ids
+    cannot_receive(required)
+    print("APPROVAL_CHECK=inbound_configured_amount_review_blocks_receiving")
+    _set_policy(model, False)
+    cannot_receive(required)
+    _set_policy(model, True)
+    print("APPROVAL_CHECK=inbound_pending_review_survives_configuration_change")
+    _approve_existing_reviews(required)
+    assert required.state == "approved" and required.validation_status == "validated"
+    required.action_receive()
+    assert required.state == "received"
+    print("APPROVAL_CHECK=inbound_real_approval_then_explicit_receiving")
+    rejected = document()
+    rejected.action_submit()
+    previous = set(rejected.review_ids.ids)
+    actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime inbound rejection")
+    rejected.invalidate_recordset()
+    assert rejected.state == "draft" and rejected.reject_reason == "Runtime inbound rejection"
+    rejected.action_submit()
+    assert previous.isdisjoint(rejected.review_ids.ids) and rejected.review_ids
+    _approve_existing_reviews(rejected)
+    assert rejected.state == "approved" and not rejected.reject_reason
+    print("APPROVAL_CHECK=inbound_rejection_and_new_review_chain")
+
+    def transfer():
+        outbound = env["sc.material.outbound"].sudo().create({
+            "project_id": project.id, "outbound_type": "transfer", "dest_warehouse_id": warehouse.id,
+            "dest_location_id": warehouse.lot_stock_id.id,
+            "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id, "qty": 2, "unit_price": 10})],
+        })
+        created.append((outbound._name, outbound.id))
+        inbound = outbound._sync_transfer_inbound_after_issue()
+        created.append((inbound._name, inbound.id))
+        assert outbound.transfer_inbound_id == inbound
+        return inbound
+
+    pending = transfer()
+    assert pending.state == "submitted" and pending.review_ids
+    _approve_existing_reviews(pending)
+    assert pending.state == "approved"
+    pending.action_receive()
+    assert pending.state == "received"
+    print("APPROVAL_CHECK=transfer_inbound_review_persists_until_explicit_receiving")
+    _set_policy(model, False)
+    completed = transfer()
+    assert completed.state == "received" and not completed.review_ids
+    print("APPROVAL_CHECK=transfer_unconfigured_existing_auto_receive_preserved")
+
+
 def main():
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
@@ -603,6 +713,7 @@ def main():
         _tax_approval_checks(project, group, created)
         _task_approval_checks(project, group, created)
         _project_approval_checks(group, created)
+        _inbound_approval_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -612,7 +723,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=45")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=53")
 
 
 main()

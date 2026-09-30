@@ -7968,3 +7968,10 @@ P1 smart_construction_core：复用sc.approval.policy/OCA tier，无配置submit
 涉及模型/schema/XML，必须先L1+审批/native L2，再受管升级及真实审批/调拨检查，之后才页面验收。当前尚未升级，无运行时完成声明。旧前端构建未变可复用；此次backend/配置/领域输入改变，需要定向新增入库回归，非无关ORM。不新建环境fixture。
 
 源码L1 inbound-approval-iteration.log PASS，审批纯测试66（含新增入库/写令牌/调拨3项）inbound-approval-tests.log PASS；native8+39=47 inbound-native-tests.log PASS，两个begin/record非零回执已登记；2份XML解析PASS。当前verification_pending：未升级模块、未实际跑入库审批/驳回重提/调拨，不宣称批次验收完成。下一步扩展现有rollback审批smoke，审查新增状态保护与原有直接状态写入的兼容后再升级；复用旧前端构建，无需重建。
+
+
+### 53.67 入库统一审批受管运行验证（进行中）
+
+P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback事务、已有仓库和材料，新增8项：禁止外部状态写、无配置审批与独立接收、有金额配置真实review/禁止早接收、配置变动不绕过进行中review、真实审批后显式接收、驳回重提、调拨关联入库保留审批与回调不接收、无配置调拨保持既有自动接收。调拨项调用既有内部关联生成链，不能当完整出库办理验收。全部临时单据/政策加入原恢复检查；不建立新fixture或环境。
+
+数据库角色平台内部验收租户，local profile/sc-fe-r2-p1-01，sc_frontend_acceptance，精确filter及sc_fe_r2_p1_01固定卷沿用已登记预检；非客户生产/控制库。此次P1新字段/state/XML需要smart_construction_core受管升级；先L1、复用未变66/47定向输入结果（唯一变化为P4 smoke及文档），随后一次升级、后端重绑与实际53项。当前仅脚本编译通过，未开始数据库写入。
