@@ -882,9 +882,10 @@ try {
               const savedRow = saved.data?.records?.[0];
               check('expense success: submitted record and attachment authoritative readback', saved.ok === true && savedRow?.state === 'approved'
                 && savedRow.attachment_ids.length === 1 && savedRow.payment_request_id[0] === source.id && savedRow.summary === request.vals.summary);
-              await form(session.page, `/f/sc.expense.claim/${expenseSuccess.id}${createContext}`, 'expense-success-saved');
-              check('expense success: saved contract is readonly', report.recordAuthority?.model === 'sc.expense.claim'
-                && report.recordAuthority.status.effectiveRenderProfile === 'readonly');
+              await form(session.page, `/f/sc.expense.claim/${expenseSuccess.id}${createContext}`, 'expense-success-saved', 'readonly');
+              const savedAuthority = (report.contractResponses || []).map((row) => findRecordAuthority(row.contract))
+                .findLast((row) => row?.model === 'sc.expense.claim' && Number(row.mainData?.id) === expenseSuccess.id);
+              check('expense success: saved contract is readonly', savedAuthority?.status.effectiveRenderProfile === 'readonly');
               for (const width of [1440, 390]) {
                 await session.page.setViewportSize({ width, height: 950 });
                 check(`expense success ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));

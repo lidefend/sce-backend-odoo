@@ -402,7 +402,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.157 submission prerequisite implemented (P1 related policy/default/native dependency + optional workflow submissionRequirements, P0 shared submit checks/pending-native support, drafts unchanged).161 backend pure,14 new frontend cases/regression/strict and browser48 tpl07-1790802321792 PASS; missing attachment blocks create, draft allowed, pending selected permits503 save/retry, no upload/action/write. Candidate/backend1fae2361a/index-akeNgEn3.js built once. Next full successful browser upload-save-submit-saved detail needs exact P4 cleanup for transient expense/attachments; finance lacks unlink, do not broaden roles or persist fixtures. Existing runtime27/replay3 reused; live category policy switching and overall67/detail.action-state remain open. No push/merge/target deploy.",
+  "next_exact_step": "53.158 successful expense browser loop closed:57PASS tpl07-1790802961499 actualfinance create167/upload1291/execute_button submit approved/readback/official readonly1440+390; exact cleanup removed temporary objects,source1815 unchanged/no cashfacts. P0 fixed refresh of/new after success via existing created navigation; build8d4b9d088/index-DN9Q0KvX.js,backend1fae2361a unchanged. P4 tooling33 pure/L1 pass. Next narrowly verify post-create upload/submit failure recovery preserves generated record and avoids duplicate creation on retry (success evidence does not prove it); reuse exact cleanup, no new fixtures/roles. Do not reopen oldTPL03 async identity. Live category switching and overall67/detail.action-state remain open. No push/merge/target deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

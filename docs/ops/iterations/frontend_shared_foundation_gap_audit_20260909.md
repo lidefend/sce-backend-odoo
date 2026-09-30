@@ -9027,3 +9027,18 @@ c2843dbe1 clean起点。P1 expense增加非存储只读related字段submission_a
 submission-requirements-browser.log / tpl07-1790802321792：48 PASS，errors=[]、forbiddenWrites=[]。新建mainData.submission_attachment_policy=required；空表或填齐基本字段但无附件，点击提交显示分类附件要求且无create。无附件点击保存草稿仍实际发出create（由探针503拦截）。随后使用官方附件选择控件加入tpl53-submission-requirement.txt待上传，再点击提交/重试，各发一次create；ID、金额、菜单/公司上下文及输入保留。附件仍待上传，execute_button/file.upload均未发出；没有业务创建/附件持久写入。1440/390检查通过，390截图人工核对动作可用和布局。原关系project10→11及方向过滤保持。新前置契约改变空表提示顺序，本轮替代53.153对应旧提示观察，不重跑付款49。
 
 53.156缺少“提交必需、草稿可缺”的新建契约消费已补；本轮覆盖默认required及泛型纯测的recommended/空值/未知声明，真实分类切换/onchange尚未单独实测。既有费用执行27/实际请求回放3的业务执行路径未改，按依赖复用，不重跑ORM。完整成功上传→保存→提交→保存后详情的浏览器闭环仍开放，不能将本轮503注入当作成功办理；下一步复用P4范围约束，准备精确对象清理能力后推进该闭环（finance无unlink，不能无清理写入，也不扩角色权限）。总体67/detail.action-state和其余产品缺口继续开放。无推送/合并/目标部署。
+
+
+### 53.158 真实创建、附件上传、提交与官方只读详情闭环
+
+22343a730 clean起点，P4复用原standard_page_type_browser及verify.business_config.approval_runtime，增加expense-browser-cleanup窄范围和单次写入状态约束（8d84538bc）。先写expense-success-recovery.json；preflight核对既有DB/profile/后端身份及fixturefinance30/company8、来源1815原字段/无认领/无付款台账。创建仅放行当前精确payload及唯一TPL53-EXPENSE-SUCCESS时间标识；收到创建ID后仅允许该记录/精确内容的一次上传，再仅允许同ID/入口action_submit。无角色扩权、无新环境或fixture系统。finally无论失败/成功都经原Make执行P4清理：精确匹配创建人、公司、来源、金额、账户、摘要、创建时间和允许的非终态；存在资金事实则拒绝；删除本次临时单据及其附件，提交后回读对象缺失、来源不变。正常业务审计保留，不声称数据库全量回滚或序列恢复。
+
+首轮expense-success-browser.log / tpl07-1790802613205证明真实create163、file.upload1287、execute_button/action_submit均成功，随后页面仍/new且重载为空。这是P0新建提交成功后错误刷新未保存路由，独立于既有TPL03异步身份保护。8d4b9d088修复usePrimaryFormActionRuntime：后端显式导航优先；若本次由新建生成记录，普通refresh成功后复用navigateCreatedRecord进入生成ID，不再refresh/reload/new；原已保存记录刷新逻辑不变。共享create journey新增生成ID导航断言，原用例/14提交要求/严格类型均通过（expense-success-navigation-unit.log），L1导航及最终检查PASS。
+
+因P0生产改动，一次受管build/up替换此前复用候选；base8d4b9d08847ddde2562a1f49a74698959334dff3，entry/assets/index-DN9Q0KvX.js，entry_sha256=20c132e83677b822ff927fc864fa1793fc51169c19f67d245f4e62b3642c7015，index_sha256=96086094a9a50cb0a547dc6a3333360e2c6b2091b51622de26a0279ed4b89c9a。后端继续1fae2361a，addons未变，不升级或重跑ORM。
+
+后续tpl07-1790802785905已实际进入164且回读approved/附件1288，但探针错误等待editable form；第一次修正使用了错误profile字符串detail，tpl07-1790802853210因此仍失败（165/1289）。改用既有readonly参数后，tpl07-1790802912308的官方只读7项检查通过，但全局最后契约被ir.attachment子响应覆盖，父记录判定误失败（166/1290）。按模型+mainData.id选择费用契约，并先从旧报告核对166 readonly后重跑。以上每次均有最终restored回执，163–166及1287–1290已删除、来源1815保持；未修改业务来迎合探针。
+
+最终expense-success-bound-browser.log / tpl07-1790802961499：57 PASS，errors=[]/forbiddenWrites=[]。创建167、真实上传1291、提交均恰好一次；普通finance回读approved、project10/partner56/payment_request1815、amount999、一条附件和唯一摘要。浏览器实际进入生成记录，消费该记录readonly契约、官方detail，1440/390无整页溢出，390截图人工核对已批准/记录号/禁止删除提示/只读事实。final cleanup回执restored record_ids=[167],attachment_ids=[1291],source_id=1815；无付款或资金事实。工具33项（11Node+22Python）及begin/record通过，新增精确范围/错角色/重放/错文件/错数据库/终态/旧对象反例；最终L1/diff通过。
+
+关闭报销本次无配置审批的“真实创建→上传→提交→进入官方只读详情”成功链缺口，不能外推所有业务/配置审批或财务完成。下一步核对创建已经成功、后续上传或提交失败时的已生成记录恢复与重试，当前成功链不证明这些路径不会重复创建；限定此多步骤办理，不重开已关闭的旧TPL03。真实分类策略切换及整体67/detail.action-state仍开放。无持久验收业务记录，无推送/合并/目标环境部署；批次成功链验收通过，主线/部署/用户整体交付未升级。
