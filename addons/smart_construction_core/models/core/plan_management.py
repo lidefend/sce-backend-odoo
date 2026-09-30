@@ -124,6 +124,22 @@ class ScPlan(models.Model):
             raise UserError(_("已提交审批或已确认的计划基准内容不可直接修改。"))
         return super().write(vals)
 
+    def _plan_unlink_denial(self):
+        for rec in self:
+            if rec.state not in ("draft", "cancel") or rec.validation_status in ("waiting", "pending", "validated"):
+                return _("审批中或已形成执行事实的计划不可删除。")
+            if any(version.state != "draft" or version.validation_status in ("waiting", "pending", "validated") for version in rec.version_ids):
+                return _("计划包含审批中或已确认的版本，不能通过删除计划移除版本事实。")
+            if any(report.state not in ("draft", "rejected") or report.validation_status in ("waiting", "pending", "validated") for report in rec.report_ids):
+                return _("计划包含审批中或已确认的汇报，不能通过删除计划移除汇报事实。")
+        return False
+
+    def unlink(self):
+        reason = self._plan_unlink_denial()
+        if reason:
+            raise UserError(reason)
+        return super().unlink()
+
     def _check_allow_write_under_validation(self, vals):
         self.ensure_one()
         # A rejected draft is editable again; status remains action-owned.

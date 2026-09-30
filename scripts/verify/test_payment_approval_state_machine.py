@@ -4059,5 +4059,33 @@ class PlanVersionStateMachineTests(unittest.TestCase):
             self.assertIn('validation_status', form.find(".//field[@name='%s']" % name).get('readonly'))
 
 
+class PlanCascadeDeletionTests(unittest.TestCase):
+    def test_parent_checks_own_state_and_all_reviewed_children_before_unlink(self):
+        path = MODEL.with_name('plan_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScPlan')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in ('_plan_unlink_denial', 'unlink')]
+        calls = []
+        ns = {'UserError': ValueError, '_': lambda text: text, 'super': lambda: types.SimpleNamespace(unlink=lambda: calls.append('unlink') or True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            def _plan_unlink_denial(self): return ns['_plan_unlink_denial'](self)
+        parent = types.SimpleNamespace(state='draft', validation_status='no', version_ids=[], report_ids=[])
+        rows = Rows([parent])
+        self.assertTrue(ns['unlink'](rows)); self.assertEqual(calls, ['unlink']); calls.clear()
+        for relation, state, status in (('version_ids', 'approved', 'no'), ('version_ids', 'draft', 'pending'),
+                                        ('report_ids', 'accepted', 'no'), ('report_ids', 'submitted', 'pending')):
+            setattr(parent, relation, [types.SimpleNamespace(state=state, validation_status=status)])
+            with self.subTest(relation=relation, state=state), self.assertRaises(ValueError): ns['unlink'](rows)
+            setattr(parent, relation, [])
+        for state, status in (('confirmed', 'no'), ('in_progress', 'no'), ('draft', 'pending'), ('cancel', 'validated')):
+            parent.state, parent.validation_status = state, status
+            with self.assertRaises(ValueError): ns['unlink'](rows)
+        self.assertEqual(calls, [])
+        parent.state, parent.validation_status = 'draft', 'no'
+        parent.version_ids = [types.SimpleNamespace(state='draft', validation_status='rejected')]
+        parent.report_ids = [types.SimpleNamespace(state='rejected', validation_status='rejected')]
+        self.assertTrue(ns['unlink'](rows))
+
+
 if __name__ == '__main__':
     unittest.main()

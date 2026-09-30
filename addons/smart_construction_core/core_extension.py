@@ -713,6 +713,19 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
     if not isinstance(workflow_contract, dict) or not workflow_contract:
         return
     contract["workflowContract"] = workflow_contract
+    if model == "sc.plan":
+        denial = record._plan_unlink_denial()
+        if denial:
+            delete_policy = dict((contract.get("actionContract") or {}).get("deletePolicy") or {})
+            delete_policy.update({
+                "allowed": False, "delete_mode": "none",
+                "reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "message": denial,
+                "denied_reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "denied_message": denial,
+            })
+            contract.setdefault("actionContract", {})["deletePolicy"] = delete_policy
+            capabilities = (contract.get("statusContract") or {}).get("globalStatus", {}).get("effectiveRecordCapabilities")
+            if isinstance(capabilities, dict):
+                capabilities["unlink"] = False
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
     global_status = status.get("globalStatus") if isinstance(status.get("globalStatus"), dict) else {}
     editability = _sc_text(workflow_contract.get("editability"))
