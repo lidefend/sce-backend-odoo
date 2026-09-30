@@ -462,3 +462,22 @@ for (const create of [true, false]) {
   assert.equal(writes, 0);
 }
 console.log('[create-record-user-journey] submission prerequisites PASS count=14');
+
+const createdSubmitEvents: string[] = [];
+const createdSubmitRuntime = usePrimaryFormActionRuntime({
+  primaryCreateFooterAction: () => ({ ...requirementAction, enabled: true, context: {}, methodName: 'action_submit' }),
+  saveRecord: async () => { createdSubmitEvents.push('create'); return 902; },
+  confirmActionSafety: async () => true,
+  busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
+  executeButtonRequest: async (request: { res_id: number }) => {
+    assert.equal(request.res_id, 902); createdSubmitEvents.push('submit'); return { result: { type: 'refresh', res_id: 902 } };
+  },
+  navigateActionResponseResult: async () => false,
+  navigateCreatedRecord: async (id: number) => { assert.equal(id, 902); createdSubmitEvents.push('open-created'); },
+  applyProjectionRefreshPolicy: async () => { createdSubmitEvents.push('refresh-new'); },
+  reload: async () => { createdSubmitEvents.push('reload-new'); },
+  recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
+} as never);
+await createdSubmitRuntime.runPrimaryFormAction();
+assert.deepEqual(createdSubmitEvents, ['create', 'submit', 'open-created']);
+console.log('[create-record-user-journey] created submit navigates generated identity PASS count=1');

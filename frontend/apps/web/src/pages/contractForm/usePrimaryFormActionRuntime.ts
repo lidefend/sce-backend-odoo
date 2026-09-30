@@ -14,6 +14,7 @@ export function usePrimaryFormActionRuntime(params: {
   hasChanges: () => boolean;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown) => Promise<boolean>;
+  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy']) => Promise<unknown>;
   primaryCreateFooterAction: () => ContractAction | null;
   primarySubmitAction: () => ContractAction | null;
   recordId: Ref<number>;
@@ -28,7 +29,7 @@ export function usePrimaryFormActionRuntime(params: {
   validationErrors: Ref<string[]>;
   validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
-  async function executePrimarySubmitAction(action: ContractAction, resId: number) {
+  async function executePrimarySubmitAction(action: ContractAction, resId: number, created = false) {
     if (!action.enabled) return;
     if (!await params.confirmActionSafety(action)) return;
     params.busyKind.value = 'action';
@@ -57,6 +58,10 @@ export function usePrimaryFormActionRuntime(params: {
         return;
       }
       params.submissionFeedback.value = { kind: 'success', message: '提交成功' };
+      if (created && params.navigateCreatedRecord) {
+        await params.navigateCreatedRecord(resId, action.refreshPolicy);
+        return;
+      }
       await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
       await params.reload();
     } catch (err) {
@@ -94,7 +99,7 @@ export function usePrimaryFormActionRuntime(params: {
         });
         return;
       }
-      await executePrimarySubmitAction(footerAction, submittedRecordId);
+      await executePrimarySubmitAction(footerAction, submittedRecordId, true);
       return;
     }
     const submitAction = params.primarySubmitAction();

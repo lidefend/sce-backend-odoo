@@ -1081,6 +1081,12 @@ const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
   validateSubmissionRequirements,
+  navigateCreatedRecord: (createdId, refreshPolicy) => navigateCreatedRecord({
+    createdId, refreshPolicy,
+    createdLabel: String(formData.display_name || formData.name || '').trim(),
+    nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
+    nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
+  }),
   actionId: () => actionId.value || 0,
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
