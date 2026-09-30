@@ -336,9 +336,14 @@ class ScPlanLine(models.Model):
 class ScPlanVersion(models.Model):
     _name = "sc.plan.version"
     _description = "计划版本"
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft"]
+    _state_to = ["approved"]
     _order = "plan_id, version_no desc, id desc"
 
     plan_id = fields.Many2one("sc.plan", string="计划", required=True, ondelete="cascade", index=True)
+    company_id = fields.Many2one("res.company", related="plan_id.company_id", store=True, index=True)
+    reject_reason = fields.Text(string="退回原因", readonly=True, copy=False)
     version_no = fields.Char(string="版本号", required=True)
     base_version_id = fields.Many2one("sc.plan.version", string="对比基准版本", index=True)
     revision_type = fields.Selection(
@@ -357,6 +362,79 @@ class ScPlanVersion(models.Model):
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                raise UserError(_("计划版本必须从草稿通过正式提交和审批流转。"))
+            if any(values.get(name, self.env.context.get("default_" + name)) for name in ("approved_by", "approved_date", "reject_reason")):
+                raise UserError(_("计划版本审核结果只能由正式审批动作写入。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "approved_by", "approved_date", "reject_reason"}.intersection(vals):
+            raise UserError(_("计划版本状态和审核结果只能由正式业务动作写入。"))
+        definition_fields = {
+            "plan_id", "company_id", "version_no", "base_version_id", "revision_type", "version_date",
+            "change_reason", "diff_summary", "snapshot_note",
+        }
+        if not authoritative and definition_fields.intersection(vals) and any(
+            rec.state != "draft" or rec.validation_status in ("waiting", "pending", "validated") for rec in self
+        ):
+            raise UserError(_("审批中或已确认的计划版本内容不可直接修改。"))
+        return super().write(vals)
+
+    def unlink(self):
+        if any(rec.state != "draft" or rec.validation_status in ("waiting", "pending", "validated") for rec in self):
+            raise UserError(_("审批中或已确认的计划版本不可删除。"))
+        return super().unlink()
+
+    def _check_allow_write_under_validation(self, vals):
+        self.ensure_one()
+        if self.state == "draft" and self.validation_status == "rejected" and "state" not in vals:
+            return True
+        return super()._check_allow_write_under_validation(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
+    @api.constrains("plan_id", "base_version_id")
+    def _check_version_anchor(self):
+        for rec in self:
+            if rec.base_version_id and (rec.base_version_id == rec or rec.base_version_id.plan_id != rec.plan_id):
+                raise ValidationError(_("对比基准版本必须属于同一计划，且不能是当前版本自身。"))
+
+    def action_submit(self):
+        for rec in self:
+            if rec.state != "draft":
+                raise UserError(_("只有草稿状态的计划版本可以提交。"))
+            rec._check_version_anchor()
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True)._write_document_state({
+                    "state": "approved", "reject_reason": False, "approved_by": False,
+                    "approved_date": fields.Date.context_today(rec),
+                })
+        return True
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_version_anchor()
+                reviews = rec.review_ids.filtered(lambda review: review.status == "approved" and review.done_by)
+                last = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1]
+                rec.with_context(skip_validation_check=True)._write_document_state({
+                    "state": "approved", "reject_reason": False, "approved_date": fields.Date.context_today(rec),
+                    "approved_by": last.done_by.id if last else False,
+                })
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True)._write_document_state({"reject_reason": reason})
 
     _sql_constraints = [
         ("uniq_plan_version_no", "unique(plan_id, version_no)", "同一计划下版本号不能重复。"),

@@ -3982,5 +3982,82 @@ class PlanReportStateMachineTests(unittest.TestCase):
         self.assertEqual(ast.literal_eval(upgrade[1].get('eval'))['contract_json'], payload)
 
 
+class PlanVersionStateMachineTests(unittest.TestCase):
+    def methods(self):
+        path = MODEL.with_name('plan_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScPlanVersion')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef)]
+        for method in methods: method.decorator_list = []
+        token, calls = object(), []
+        ns = {'UserError': ValueError, 'ValidationError': ValueError, '_': lambda text: text,
+              '_DOCUMENT_STATE_TOKEN': token, 'fields': types.SimpleNamespace(Date=types.SimpleNamespace(context_today=lambda rec: '2026-10-01')),
+              'super': lambda: types.SimpleNamespace(create=lambda vals: calls.append(vals) or True, write=lambda vals: calls.append(vals) or True,
+                                                      unlink=lambda: calls.append('unlink') or True, _check_allow_write_under_validation=lambda vals: False)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        return ns, token, calls
+
+    def test_state_audit_defaults_and_context_cannot_forge_confirmation(self):
+        ns, token, calls = self.methods()
+        row = types.SimpleNamespace(env=types.SimpleNamespace(context={}))
+        for name, value in (('state', 'approved'), ('approved_by', 42), ('approved_date', '2026-10-01'), ('reject_reason', 'forged')):
+            for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
+                row.env.context = context
+                with self.assertRaises(ValueError): ns['create'](row, [{name: value}])
+                with self.assertRaises(ValueError): ns['write'](row, {name: value})
+            row.env.context = {'default_' + name: value}
+            with self.assertRaises(ValueError): ns['create'](row, [{}])
+        self.assertEqual(calls, [])
+        row.env.context = {}; self.assertTrue(ns['create'](row, [{'version_no': 'v1'}]))
+        row.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](row, {'state': 'approved'}))
+
+    def test_pending_and_approved_definitions_cannot_change_or_disappear(self):
+        ns, _, calls = self.methods()
+        class Rows(list): pass
+        rec = types.SimpleNamespace(state='draft', validation_status='no')
+        rows = Rows([rec]); rows.env = types.SimpleNamespace(context={})
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('approved', 'no')):
+            rec.state, rec.validation_status = state, status
+            for field in ('version_no', 'plan_id', 'base_version_id', 'change_reason', 'diff_summary'):
+                with self.subTest(state=state, field=field), self.assertRaises(ValueError): ns['write'](rows, {field: 'changed'})
+            with self.assertRaises(ValueError): ns['unlink'](rows)
+        self.assertEqual(calls, [])
+        rec.state, rec.validation_status = 'draft', 'rejected'; rec.ensure_one = lambda: None
+        self.assertTrue(ns['_check_allow_write_under_validation'](rec, {'change_reason': 'corrected'}))
+        self.assertTrue(ns['write'](rows, {'change_reason': 'corrected'}))
+        self.assertTrue(ns['unlink'](rows))
+
+    def test_submission_only_confirms_without_policy_and_preserves_parent(self):
+        ns, _, _ = self.methods()
+        class Rows(list): pass
+        class Version:
+            state = 'draft'
+            def _check_version_anchor(self): pass
+            def _write_document_state(self, vals): self.__dict__.update(vals)
+            def with_context(self, **kw): return self
+        for configured in (False, True):
+            rec = Version(); rows = Rows([rec])
+            rows.env = {'sc.approval.policy': types.SimpleNamespace(_start_submission_review=lambda rec: configured)}
+            self.assertTrue(ns['action_submit'](rows)); self.assertEqual(rec.state, 'draft' if configured else 'approved')
+            if not configured:
+                self.assertFalse(rec.approved_by)
+                with self.assertRaises(ValueError): ns['action_submit'](rows)
+        rec = Version(); rec.plan_id = 1; rec.base_version_id = types.SimpleNamespace(plan_id=2)
+        with self.assertRaises(ValueError): ns['_check_version_anchor']([rec])
+        rec.base_version_id = rec
+        with self.assertRaises(ValueError): ns['_check_version_anchor']([rec])
+
+    def test_native_version_fields_do_not_allow_manual_approval(self):
+        import xml.etree.ElementTree as ET
+        root = ET.parse(MODEL.parents[2] / 'views/core/plan_management_views.xml')
+        form = root.find(".//record[@id='view_sc_plan_version_form']/field[@name='arch']/form")
+        self.assertEqual({b.get('name') for b in form.findall('./header/button')}, {'action_submit', 'validate_tier', 'reject_tier'})
+        for scope in (form, root.find(".//field[@name='version_ids']/tree")):
+            for name in ('state', 'approved_by', 'approved_date'):
+                self.assertEqual(scope.find(".//field[@name='%s']" % name).get('readonly'), '1')
+        for name in ('version_no', 'change_reason', 'diff_summary', 'snapshot_note'):
+            self.assertIn('validation_status', form.find(".//field[@name='%s']" % name).get('readonly'))
+
+
 if __name__ == '__main__':
     unittest.main()
