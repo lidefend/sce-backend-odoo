@@ -211,7 +211,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Owner53.19: unify approval across ALL business documents via existing shared state machine/policy/tier mechanism, not copied payment routing. Reconcile existing responsibility/profile/configuration support (17 configured model types,15 tier sync,65 workflow profiles have different scopes); register necessary missing support as product gaps. Preserve completed payment code/tests, extend common route and native/effective entries, correct model-bound coverage, then governed module upgrade and scoped runtime acceptance. No new environment/fixture system, frontend rebuild or remote publication.",
+  "next_exact_step": "Implement shared approval submission/decision mechanism using existing policy and tier runtime, replacing payment-local orchestration and adapting all necessary business documents with their existing checks/state ownership. Model-bound native coverage is fixed in53.20; four registered state-action product gaps remain. Then governed module upgrade and affected runtime acceptance; no frontend rebuild or unrelated ORM.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -452,6 +452,15 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-rejection-stable.log",
       "runtime": "not_run",
       "scope_correction": "All business documents; payment-only success is insufficient. Reuse existing common state machine, approval policy, tier runtime and responsibility inventories."
+    },
+    "model_bound_coverage_53_20": {
+      "status": "passed",
+      "source_head": "3f48ef47c",
+      "layer": "P4",
+      "test_count": 30,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/model-bound-coverage-tests.log",
+      "registered_state_action_gaps": 4,
+      "product_completion": false
     }
   }
 }

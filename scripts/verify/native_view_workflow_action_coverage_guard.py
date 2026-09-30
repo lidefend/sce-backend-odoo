@@ -21,8 +21,8 @@ evaluating ``PROFILE_BY_MODEL`` (see ``workflow_contract_profile_loader``).  The
 registry mixes inline literals with helper calls such as
 ``**_simple_approval_profiles((...))``; a regex over the source text sees only the
 inline half and silently scans a subset of the contract.  Declared methods are
-still collected across every profile rather than per model, which is deliberately
-conservative -- it can only under-report, it never invents a gap.
+bound to their own model: a same-named method on another model cannot cover
+a missing business action.
 
 The guard never proposes a meaning.  Deciding whether a native transition needs
 a declared purpose is a business call; the registry records where that has not
@@ -64,9 +64,13 @@ def adopted_models() -> set[str]:
     return profile_loader.adopted_models(profile_loader.load_profiles())
 
 
-def declared_methods() -> set[str]:
-    """Every method any profile binds to a contract action."""
-    return profile_loader.declared_methods(profile_loader.load_profiles())
+def declared_methods() -> set[tuple[str, str]]:
+    """Model-bound methods; another model cannot supply an action declaration."""
+    return {
+        (model, method)
+        for model, profile in profile_loader.load_profiles().items()
+        for method in profile_loader.declared_methods({model: profile})
+    }
 
 
 def native_object_buttons(models: set[str]) -> dict[tuple[str, str], int]:
@@ -113,7 +117,7 @@ def validate(payload: dict[str, Any]) -> list[str]:
     if not buttons:
         return ["no native object button was found on an adopted model; the scan would be vacuous"]
 
-    expected = {key for key in buttons if key[1] not in declared}
+    expected = {key for key in buttons if key not in declared}
     entries = registered_entries(payload)
     errors: list[str] = []
 
@@ -123,7 +127,7 @@ def validate(payload: dict[str, Any]) -> list[str]:
             f"does not declare; register its nature in {REGISTRY.relative_to(ROOT)}"
         )
     for key in sorted(set(entries) - expected):
-        if key[1] in declared:
+        if key in declared:
             errors.append(
                 f"{key[0]}: {key[1]!r} is registered as undeclared but a contract profile now "
                 f"declares it; drop the stale entry"

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "description": "Native type=object form buttons on workflow-adopted models that no contract profile declares. The adopted model set is the evaluated PROFILE_BY_MODEL registry, so helper-built profiles count too. Each entry records the nature of the button so the uncovered set is explicit; it grants no meaning and does not replace a declared purpose.",
-  "registry_rule": "A native object button on an adopted model must either be declared by a contract profile or be listed here. Entries go stale when the method becomes declared or disappears from the views.",
+  "registry_rule": "A native object button must be declared by its own model profile or be listed here. Same-named methods on other models do not cover it. Registration records an unresolved gap and does not prove product completion.",
   "classes": {
     "state_transition_undeclared": "the button changes record state; the missing declaration is an authority-side gap",
     "navigation": "opens a related record or view; no state change",
@@ -77,6 +77,18 @@
       "class": "navigation",
       "occurrences": 1,
       "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.contract.event",
+      "method": "action_reject",
+      "class": "state_transition_undeclared",
+      "reason": "P1 product gap: direct submitted -> rejected path is not projected for this model and must join the shared configured approval mechanism (owner53.19)."
+    },
+    {
+      "model": "sc.expense.claim",
+      "method": "action_approve",
+      "class": "state_transition_undeclared",
+      "reason": "P1 product gap: legacy approval entry re-reads current policy; converge with the shared in-flight approval instance decision before projecting this method (owner53.19)."
     },
     {
       "model": "sc.expense.claim",
@@ -189,6 +201,12 @@
       "class": "navigation",
       "occurrences": 1,
       "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.settlement.order",
+      "method": "action_approve",
+      "class": "state_transition_undeclared",
+      "reason": "P1 product gap: legacy draft/submit approval entry is not declared for this model; converge with shared submission and approval-instance transitions (owner53.19)."
     },
     {
       "model": "sc.tax.deduction.registration",

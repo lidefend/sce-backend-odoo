@@ -7541,3 +7541,11 @@ L5：未推送、未合并、未部署。
 - 精确读取现有权威清单发现：sc.approval.policy.BUSINESS_MODEL_SELECTION仅17类，_tier_sync_supported仅15类，而workflowContract已有65个profile。它们职责并非等价，不能简单相减或把17类当用户确认的全范围。配置可用范围、审批运行时接入和状态动作投影需要按既有业务职责清单逐项关联；未接入但属于必要业务单据的部分登记产品缺口，不静默采用“不能配置，所以无审批”。不建立平行模型白名单来定义业务规则。
 - 下一步优先共同机制与必要业务单据覆盖，统一提交/通过/拒绝/重提/回调/动作投影，并消除旧并行路径；复用既有workflow/审批配置清单和67条台账。先前付款已通过的函数结果只证明付款范围，不能外推全系统。native coverage按全局方法名误覆盖的问题继续保留，必须绑定model+method再作为全范围证据。
 - 当前未执行模块升级、运行配置写入或业务写入，受管验收仍待。目标由所有者明确为全系统审批一致性，整体接管保持active；不推送、合并、部署。
+
+
+### 53.20 覆盖守卫按模型绑定，显式保留全单据审批缺口
+
+- 3f48ef47c clean起步，上一轮已提交53.19。Formal Product Layer=P4，Layer Target=原生动作覆盖验证，Module=scripts/verify；P1仅更新既有缺口登记，不改变业务语义。将declared_methods从全局方法集合改为(model, method)，复用既有profile loader。新增同名方法跨模型反例，验证另一模型声明不能覆盖本模型按钮，也不能错误判定本模型缺口登记已过期。
+- 修正首次运行准确暴露sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve三条此前隐藏路径；读取对应真实方法确认都是状态变更，在原native_view_undeclared_actions登记P1产品缺口。已登记状态动作1→4，不是新增业务缺陷，也不是批准旧路径永久保留。67条台账detail.action-state继续开放，范围仍是所有业务单据。
+- L1 make ci.local.iteration PASS（model-bound-coverage-iteration.log）；L2 make verify.native_view.workflow_action_coverage 8+22=30项通过（model-bound-coverage-tests.log），begin/record30。覆盖守卫通过只证明缺口被完整登记于本工具已采用模型范围，不能证明审批全系统接入。付款28项输入未变，复用既有证据。
+- L3/L4未运行：本批仅验证工具/登记，未改产品或数据库，无需模块升级、重建或浏览器矩阵。之前审批XML升级和真实业务验收仍待，不因本节工具通过而关闭。下一步将付款私有提交编排收敛到共享审批机制，推广必要单据并逐项退出登记中的旧并行入口；不复制模型专属审批引擎。

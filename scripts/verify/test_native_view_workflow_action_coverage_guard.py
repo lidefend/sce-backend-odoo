@@ -12,6 +12,7 @@ import ast
 import copy
 import json
 import unittest
+from unittest.mock import patch
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -128,6 +129,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
     def test_plan_fix_does_not_add_start_to_other_shared_profile_consumers(self):
         profile = load_profiles()["sc.fund.account.operation"]
         self.assertNotIn("action_start", profile["method_by_action"].values())
+
+    def test_same_named_method_on_another_model_does_not_cover_a_button(self):
+        with patch("native_view_workflow_action_coverage_guard.adopted_models", return_value={"first", "second"}), patch(
+            "native_view_workflow_action_coverage_guard.declared_methods", return_value={("first", "action_approve")}
+        ), patch("native_view_workflow_action_coverage_guard.native_object_buttons", return_value={("second", "action_approve"): 1}):
+            errors = validate({"entries": []})
+            self.assertEqual(len(errors), 1)
+            self.assertIn("second: native button 'action_approve'", errors[0])
+            self.assertEqual(validate({"entries": [{"model": "second", "method": "action_approve", "class": "state_transition_undeclared", "reason": "Unresolved approval integration"}]}), [])
 
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
