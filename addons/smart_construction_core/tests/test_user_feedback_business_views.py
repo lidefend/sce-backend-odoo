@@ -1567,8 +1567,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             }
         )
 
-        with self.assertRaises(UserError):
-            adjustment.action_confirm()
+        with self.assertRaisesRegex(UserError, "红冲发票号码不能与原发票号码相同"):
+            adjustment.action_submit()
         adjustment.invalidate_recordset()
         self.assertEqual(adjustment.state, "draft")
 
@@ -1605,6 +1605,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             }
         )
 
+        adjustment.action_submit()
         adjustment.action_confirm()
         adjustment.invalidate_recordset()
         self.assertEqual(adjustment.state, "confirmed")

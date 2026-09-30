@@ -435,3 +435,7 @@ Project-document submission now uses shared configured/automatic approval; appro
 ## Segment 53.120: guarantee shared approval adopted, role journey still open
 
 Guarantee submission now uses shared policy/tier approval with amount authority; approval and explicit cash posting are separate. Source975348a91/backendfe880cb8a upgraded and loaded; pure128/native61, rollback runtime10, PM official create20 pass. Runtime uses sudo source/submit preparation and actual configured reviewers, not a saved ordinary-role browser journey. Return-direction handling remains unverified. Preserve the overall action-state gap and existing document-classification/monetary-authority questions.
+
+## Segment 53.121: red-flush approval and execution
+
+Red-flush adjustment now uses shared tier/policy approval and executes only after approval, rejecting original-invoice snapshot changes. Pure131/native62 pass; backend4c564ef94 is upgraded/loaded. Registration-source rollback runtime11 and official finance create20 pass. Receipt-invoice source remains unverified: its setup required a formal contract and then missing default sale tax; both attempts rolled back, no tax fixture invented. Generated registered invoices versus common registration authority, ordinary-role handling, changed-source recovery and concurrent duplication remain product gaps. Continue this same chain before claiming overall approval closure.

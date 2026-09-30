@@ -503,11 +503,10 @@ def _red_flush_approval_checks(project, group, created):
     partner = _partner("Rollback red flush partner")
     created.append((partner._name, partner.id))
     def document(amount=100):
-        request = env["payment.request"].sudo().create({"name": "Rollback red flush source", "type": "receive", "project_id": project.id, "partner_id": partner.id, "amount": amount})
-        created.append((request._name, request.id))
-        number = "RUNTIME-RED-%s" % request.id
-        source = env["sc.receipt.invoice.line"].sudo().create({"request_id": request.id, "invoice_no": number, "invoice_issue_company": "Runtime company", "invoice_party_name": partner.name, "invoice_amount": amount})
+        source = env["sc.invoice.registration"].sudo().create({"project_id": project.id, "partner_id": partner.id, "direction": "output", "source_kind": "output_invoice_tax", "state": "registered", "invoice_no": "RUNTIME-RED-SOURCE", "amount_total": amount, "amount_no_tax": amount})
         created.append((source._name, source.id))
+        number = "RUNTIME-RED-%s" % source.id
+        source.write({"invoice_no": number})
         source.flush_recordset()
         ledger = env["sc.output.invoice.ledger"].sudo().search([("source_model", "=", source._name), ("source_record_id", "=", source.id)], limit=1)
         assert ledger, "existing ledger projection must include source invoice"
@@ -598,7 +597,7 @@ def _red_flush_approval_checks(project, group, created):
     changed.action_submit()
     _approve_existing_reviews(changed)
     source = changed._original_source_record(changed.original_ledger_id)
-    source.write({"invoice_amount": changed.original_invoice_amount + 1})
+    source.write({"amount_total": changed.original_invoice_amount + 1})
     source.flush_recordset()
     changed.original_ledger_id.invalidate_recordset()
     denied(changed.action_confirm)

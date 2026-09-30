@@ -8608,3 +8608,9 @@ P4现有approval-actions新增PM tender.guarantee create，page-iteration.log/no
 L1 red-flush-approval-iteration.log PASS，L2 unit.log131 PASS、native.log8+54=62 PASS。新增生产方法纯测试验证审批不生成票、显式生成/终态拒绝、外部状态/审核内容保护及原票金额/项目/票号变化拒绝。旧ORM红冲行为测试同步先submit，未运行全模块ORM。P4既有回滚工具新增red-flush11组，复用临时收款发票来源和SQL ledger，不建持久fixture；default all291不是本轮实际执行。tool-iteration.log/语法/diff通过。
 
 本批需模块升级与reload（tier/字段/XML），计划只跑red-flush scope及受影响角色创建页。运行时尚未证明；原票变化后的重新办理、并发重复红冲和生成登记票与通用登记权限/审批的关系仍需后续核对，不把本批纯测试当全部职责完成。保持detail.action-state与整体目标开放，前端CrYkOCxc未变不构建，无推送合并目标部署。
+
+53.121运行结果：7e50d623e源码/4c564ef94后端受管upgrade/reload成功。red-flush-runtime.log首项前因工具未提供收款发票正式合同拒绝，ROLLBACK VERIFIED；补合同后red-flush-source-runtime.log因验收公司缺默认销售9%税率停止，ROLLBACK VERIFIED。不编造税率或重复失败。改用本模型明确支持的另一原票来源sc.invoice.registration，保留收款发票来源未验证；registration-tool-iteration.log通过。red-flush-registration-runtime.log11 PASS、ROLLBACK VERIFIED：外部状态/未批执行拒绝、无配置批准不出票、审核金额保护、显式负数registered票与终态拒绝、阈值未匹配拒绝、真实review、在审配置关闭不绕过、真实回调、审核后出票、驳回重提、原票金额变化拒绝均通过。源票/策略/提交为sudo事务准备，实际审核人来自review，不能当普通角色闭环。
+
+财务create页面tpl07-1790792904864/report.json20 PASS，原票/变更日期/红冲票号为有效可编辑契约及真实输入，新建无直接批准/确认红冲，1440/390无横溢出，errors/forbiddenWrites为空，390截图复核。前端CrYkOCxc复用未构建。工具page-iteration与final-tool-iteration通过；旧ORM同号测试改在submit断言明确业务错误，终态测试先submit，未运行完整ORM，收款来源测试前提不宣称已修复。
+
+尚未完成：收款发票来源的合同税率前提、原票变动后重新办理、并发重复红冲、实际角色全流程，以及生成registered票与通用发票审批/登记权限的衔接。下一步优先在同一业务链收口invoice_registration.create/write和红冲生成的状态权威，不能因本scope通过转而忽略直写终态的缺口。不新开覆盖表、不升级detail.action-state整行，不推送合并目标部署。
