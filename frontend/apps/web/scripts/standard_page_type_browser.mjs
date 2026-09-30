@@ -99,7 +99,7 @@ async function login(role) {
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
-          if (process.env.TPL07_APPROVAL_VIEW === 'information-edit') report.routeAuthority = result.data?.navigation?.route_authority;
+          if (process.env.TPL07_SCOPE === 'approval-actions') report.routeAuthority = result.data?.navigation?.route_authority;
         }
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
@@ -629,7 +629,18 @@ try {
         check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
-        await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
+        let createContext = '';
+        if (spec.model === 'project.project') {
+          const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+            .flatMap((key) => report.routeAuthority?.[key] || []);
+          const matches = entries.filter((row) => row.menu_xmlid === 'smart_construction_core.menu_sc_project_initiation');
+          report.projectCreateEntryResolution = { role: spec.role, requestedMenuXmlid: 'smart_construction_core.menu_sc_project_initiation', matches, availableProjectEntries: entries.filter((row) => row.model === 'project.project') };
+
+          check('project create: one authorized initiation entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
+          report.approvalCreateEntry = matches[0];
+          createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
+        }
+        await form(session.page, `/f/${spec.model}/new${createContext}`, `${spec.model}-create`);
         // Child relation contracts may arrive last; bind the create observation
         // to the requested parent model within this navigation's responses.
         const authority = (report.contractResponses || []).slice(createResponseStart)

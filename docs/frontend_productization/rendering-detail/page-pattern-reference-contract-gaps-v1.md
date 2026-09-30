@@ -336,3 +336,8 @@ Offline replay of53.88 proves the remaining note defect was P0 widget status (vi
 P0 occurrence and policy auth now agrees with hidden/disabled/readonly status;129 focused runtime tests pass. Native relation command comparison tolerates JSON array versus tuple shape without accepting changed identities, and create dependency hydration recognizes authorized `new` requests;169 boundary/config tests pass. These are unit-proven generic corrections, not proof that the denied project entry should hydrate defaults.
 
 Project direct-create report tpl07-1790783758165 no longer fails schema; its global status explicitly has FORM_CREATE_NOT_ALLOWED and view create=false. The probe expected an editable engine on a denied view and is not an authorized project-create journey. Resolve the actual initiation entry from backend navigation before further project acceptance. Do not loosen permissions. Labor attendance14/usage14/settlement22 representative checks pass on backend0b8da3b04/frontend7915f3bb9. Overall action-state and all-document adoption remain open.
+
+
+### Segment53.91 — Project initiation lacks current PM entry authority
+
+The probe now resolves initiation menu/action from system.init rather than guessing a model create route. Report tpl07-1790783889835 contains PM route authority with23 primary/17 contextual entries but no menu_sc_project_initiation. Static existence of the native initiation action does not authorize this principal. Keep project creation unverified pending the appropriate role/entry responsibility; do not expand permissions or count denied entry as successful creation. Remaining independent document families can proceed.

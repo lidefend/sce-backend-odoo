@@ -8232,3 +8232,10 @@ P0通用契约：occurrence初始/最终状态隐藏auth=none、未解析disable
 53.90复验与归因校正：d987f83f7 reload后tpl07-1790783702476 schema冲突消失，但探针仍因官方可编辑表单未挂载失败。补齐record_id=new身份支持，新增用例，modifier-create-identity-unit.log113+51+5=169 PASS，0b8da3b04 reload后tpl07-1790783758165同样停止第4项。最终回读globalStatus确认该直接/f/project.project/new实际解析到viewCapabilities.create=false、effective create=false、FORM_CREATE_NOT_ALLOWED；因此依赖不补齐是权限保护，不能将本入口当授权创建旅程。前述JSON tuple/list和new身份是纯测试证实的通用缺陷修正，不是本次受拒入口日期缺失的已证明原因。项目创建应绑定system.init的真实授权立项入口，不扩权/不修改视图权限。
 
 独立劳务代表页恢复验证：后端0b8da3b04、前端7915f3bb9，考勤tpl07-1790783794807 14 PASS，用工tpl07-1790783802116 14 PASS，结算tpl07-1790783809986 22 PASS。均双视口、真实契约、无业务写；结算输入已恢复。项目错误探针不算通过，旧已有记录空查询不重试。下一步先纠正项目入口验收身份，再依67台账剩余业务族推进。总体交付未完成、无推送/合并/目标部署。
+
+
+### 53.91 项目立项验收绑定授权入口
+
+P4既有browser probe捕获当前角色system.init.route_authority，project create只能使用menu_sc_project_initiation的真实menu/action上下文；未授权时停止，不再直接/f/project.project/new选默认事实视图。源码menu.xml确有专用action_project_initiation/view_project_create_form，但不是当前用户授权的证明。L1 project-initiation-entry-iteration.log/node/diff PASS，产品源码与构建/后端未变，复用53.90纯测试及劳务页面。
+
+实测tpl07-1790783889835在第3项“one authorized initiation entry”失败：PM route_authority有23 primary、17 contextual，但无立项menu/action，项目仅台账/编辑/看板等已授权入口。这是入口/角色验收前置不足，不能直接断言应扩权或该角色必须可立项；不猜数字ID、不扩权、不新建账号/fixture、不重试无上下文路径。入口解析诊断继续附着原报告。下一步可独立推进既有台账剩余业务族；项目创建回到授权角色/正式入口职责核对后再恢复，不能算通过。总体67仍开放。
