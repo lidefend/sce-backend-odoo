@@ -8822,3 +8822,14 @@ P4复用_finance_state_authority_checks增加settlement-adjustment选择，只�
 P4创建页范围使用同一initiator，检查项目/合同/调整事项/金额可编辑契约与实际输入；adjustment-create-browser.log、tpl07-1790797303482共22 PASS，errors=[]、forbiddenWrites=[]。1440/390截图查看：桌面两列/窄屏单列，页签与输入可用，无整页溢出。未构建或升级schema，当前P1加载21137a593、工具dirty仅本批角色及探针。
 
 结算调整旧“来源前提未验证”已由实际可见合同解决，不能继续以缺少对账台账阻断该职责。未覆盖关联结算单汇总生效/取消恢复、跨项目或币种锚点一致性、已保存浏览器办理及关联外部事实变化，不能升级为整个业务闭环完成。下一步沿调整与结算直接关系核对上述必要约束和汇总，优先静态定位/现有定向入口，其他整体67/detail.action-state缺口保持。无推送合并目标部署。
+
+
+### 53.141 结算调整来源一致性、汇总及来源变化审批保护
+
+74a560b18 clean起点。P1 settlement_adjustment._business_anchor_errors集中返回既有事项/正金额/来源缺失及新增项目/币种/往来方/双锚点合同不一致原因；_check_business_anchor消费同一结果，workflow evidenceGate复用并绑定submit/approve。往来方未填仍遵循原可选字段，填入时须与来源一致。审批完成回调再次执行来源检查，防止来源在审核期间变化；不新增前端业务判断，不重写金额计算。源ed6adcf7a已受管加载，无schema/XML升级或前端构建。
+
+L1 adjustment-anchor-iteration.log PASS；初次adjustment-anchor-unit.log149中1error为隔离执行漏去Odoo装饰器（NameError api），修复测试提取后adjustment-anchor-unit-fixed.log149 PASS并begin/record成功，未在L2失败时运行运行态。新增纯测覆盖项目/币种/往来方/合同错配及同原因投影到submit/approve；既有未变前端创建页22证据保留，不证明新拒绝原因已经浏览器展示。
+
+P4既有settlement-adjustment工具使用实际可见合同，由非sudo业务发起角色临时创建1000结算及调整，原事务回滚。adjustment-anchor-runtime.log7 PASS：扣款确认900/取消1000，在审不汇总，真实审核通过后生效，调增1100/取消1000，正式备注/取消和内容冻结保持。进一步新增直接来源变化断言后adjustment-anchor-source-runtime.log8 PASS：将临时来源结算往来方改为既有不同伙伴，effective evidenceGate给PARTNER_MISMATCH且阻止approve，实际reviewer审批拒绝并保持draft/未validated/汇总0；恢复原伙伴后原审核链正常完成。总ROLLBACK VERIFIED，配置与临时记录恢复。非并发测试，不证明批准后所有外部事实变更全局封锁。
+
+已保存记录浏览器adjustment-record-browser.log/tpl07-1790797536087未通过：支持模型检查通过，但现有角色授权查询无记录；errors=[]/forbiddenWrites=[]。未创建持久数据或扩大权限，不能计作页面通过或重复空查询。合同/临时运行态事实已足够验证本次约束，不是已保存浏览器验收的替代。整体67/detail.action-state保持开放，下一步接续尚未覆盖的对账审核内容/来源完整性与共享动作消费，复用本轮收款/调整证据；后续已保存浏览器需要已有授权记录或正式业务执行产生的数据，不新建fixture。无推送合并目标部署。

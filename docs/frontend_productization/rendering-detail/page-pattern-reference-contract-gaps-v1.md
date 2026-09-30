@@ -533,3 +533,8 @@ Receipt6 runtime passes on backend7ea346a4b using existing finance-visible appro
 ### Segment53.140 — settlement adjustment authority and role
 
 Reviewed adjustment economic content is protected;148 pure checks pass at source21137a593. Runtime finance attempt correctly denied create access and rolled back (not a product grant request). Existing project-member business initiator then passes5 using an actual visible contract and real reviewers, configuration/records restored. Official create22 passes with1440/390 observations and no errors/writes. Contract prerequisite is resolved for this scope. Linked-settlement aggregation/cancellation, cross-project/currency anchor consistency and saved browser handling remain unverified; detail.action-state stays open.
+
+
+### Segment53.141 — adjustment source identity and totals
+
+P1 shared domain errors now govern submit/reviewer callback and effective submit/approve gates for source project/currency/partner/contract identity.149 pure checks pass; backended6adcf7a runtime8 passes actual initiator/reviewers with rollback, including1000→900/1100→1000 and changed-source reviewer rejection followed by successful restoration. Saved-record browser tpl07-1790797536087 has no authorized existing record and remains unverified; do not repeat the empty query or infer browser completion. Post-approval external-source mutation/concurrency and overall detail.action-state remain open.
