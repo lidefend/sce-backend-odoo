@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.33 existing approval runtime smoke now uses real reviewers and verified rollback; governed local expense path passes5 checks, wrapper9 tests pass. Extend same tool for required multi-level/missing-rule/reject-resubmit and authorization cases without fake validated writes; continue necessary document coverage and two native gaps. Backend4b8c4397e and original5180 build remain valid for unchanged inputs.",
+  "next_exact_step": "53.34 governed expense approval smoke passes8 real checks: missing-rule rollback, real rejection with reason/audit, new-chain resubmission plus prior flow; policy/steps and temporary records restored. Native submit-to-draft clears reviews by design. Next explicit multi-level/authorization proof, remaining necessary document coverage and two native product gaps; reuse backend4b8c4397e/5180 unchanged inputs.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -622,6 +622,15 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/real-review-runtime.log",
       "restoration": "policy readback equals baseline; temporary project/partner/expense absent after rollback",
       "scope": "expense representative only; all-document completion unproven"
+    },
+    "approval_exceptions_53_34": {
+      "status": "scoped_runtime_passed",
+      "source_head": "b65d1c839",
+      "backend": "4b8c4397e2a0de6b24749f2a1826e8c7bc13629f",
+      "test_count": 8,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-exceptions-runtime.log",
+      "restoration": "verified policy+step field readback and absent temporary documents",
+      "scope": "expense real missing-rule/reject/resubmit; not all models or explicit multi-level sequence proof"
     }
   }
 }

@@ -7661,3 +7661,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration通过（real-review-smoke-iteration.log），工具py_compile/bash语法通过；L2既有standard_preview.unit9通过（real-review-wrapper-tests.log）。首次真实运行失败：原项目helper未设置company_id，现行费用创建校验拒绝；ROLLBACK=VERIFIED，归因P4旧测试数据契约漂移（real-review-runtime-project-failure.log）。补项目company_id=_env().company.id，未改产品校验；脚本编译后受管定向重跑。
 - make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local真实运行5项PASS、ROLLBACK=VERIFIED（real-review-runtime.log）。这是费用单代表审批运行证据；不能外推全单据、多级指定顺序、错误审批人、缺规则、驳回重提、浏览器操作或付款/库存事务均已完成。未重载未变后端、未升级第二次、未构建前端。
 - 下一步沿同一工具补必要异常/多级和恢复断言，同时继续全单据有效契约缺口及两项原生动作收口。批次局部验证通过，总体active，无推送/合并/目标部署。
+
+
+### 53.34 真实缺规则拒绝与驳回重提闭环
+
+- b65d1c839 clean起步，P4仅扩展同一business_config_approval_runtime_smoke。沿53.33受管验收身份，backend4b8c4397e及前端输入不变，不重载/升级/构建。L1 ci.local.iteration通过（approval-exceptions-iteration.log），脚本编译通过；受管封装输入未变，9项封装证据复用，不重跑无关测试。
+- 临时将已有有效步骤金额下限置高于测试费用，配置仍启用。提交在保存点内失败，错误为缺匹配规则，回读仍draft且无review；随后恢复原步骤金额条件。不是删除规则或绕过产品验证。
+- 真实当前审批人经共享驳回服务与原生_rejected_tier执行，业务回draft，驳回原因保留，sc.audit.log的expense_claim_rejected恰好1条。原生tier.validation在submit→draft时删除本次review，validation_status回no；首次断言错误要求rejected持久存在而失败，回滚仍VERIFIED（approval-exceptions-native-reset-failure.log）。核对原生_allow_to_remove_reviews后修正工具断言，未为测试修改产品。
+- 重提创建新的真实review IDs，与旧ID不相交，再由真实审批人validate_tier完成approved/validated。保存原策略和步骤active/sequence/group/amount/tier_definition身份，最终rollback后回读完全一致，临时项目/客商/费用不存在。
+- make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终8项PASS、ROLLBACK=VERIFIED（approval-exceptions-runtime.log）。其中原5项随着同一配置事务复验，新3项是缺规则保存点回滚、驳回原因/审计及新链重提。仍仅费用代表路径，不代表指定多级顺序/越权/所有业务模型及前端办理均通过。总体active；两项原生动作缺口、全单据必要能力及剩余真实业务验收继续推进，无远端或目标部署。

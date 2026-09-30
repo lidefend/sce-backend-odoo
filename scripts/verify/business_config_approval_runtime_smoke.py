@@ -103,6 +103,8 @@ def main():
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
     baseline = policy.read(fields)
+    step_fields = ["active", "sequence", "approve_group_id", "amount_min", "amount_max", "tier_definition_id"]
+    step_baseline = policy.step_ids.read(step_fields)
     created = []
     passed = False
     try:
@@ -141,15 +143,62 @@ def main():
         assert optional.state == "approved", optional.state
         assert not optional.review_ids and optional.validation_status == "no"
         print("APPROVAL_CHECK=disabled_submission_auto_approves_without_fake_reviews")
+        _set_policy(model_name, True)
+        steps = policy.step_ids.filtered("active")
+        assert steps, "missing active approval configuration"
+        ranges = [(step, step.amount_min, step.amount_max) for step in steps]
+        steps.write({"amount_min": 10000.0, "amount_max": 0.0})
+        missing = _expense(project, partner, "missing-rule")
+        created.append((missing._name, missing.id))
+        denied = False
+        try:
+            with _env().cr.savepoint():
+                missing.action_submit()
+        except UserError as exc:
+            assert "没有匹配" in str(exc), str(exc)
+            denied = True
+        assert denied, "enabled approval with no matching rule was accepted"
+        missing.invalidate_recordset()
+        assert missing.state == "draft" and not missing.review_ids
+        print("APPROVAL_CHECK=missing_rule_fails_without_partial_submission")
+        for step, minimum, maximum in ranges:
+            step.write({"amount_min": minimum, "amount_max": maximum})
+
+        retry = _expense(project, partner, "reject-resubmit")
+        created.append((retry._name, retry.id))
+        retry.action_submit()
+        previous_ids = set(retry.review_ids.ids)
+        users = retry.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share)
+        actor = next((retry.with_user(user) for user in users if retry.with_user(user).can_review), None)
+        assert actor is not None, "no reviewer available to reject"
+        actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="runtime rejection evidence")
+        retry.invalidate_recordset()
+        # Native tier.validation clears reviews when returning from submit to draft.
+        # The document reason and business audit preserve the rejected decision.
+        assert retry.state == "draft" and retry.validation_status == "no", (retry.state, retry.validation_status)
+        assert not retry.review_ids and retry.reject_reason == "runtime rejection evidence"
+        assert _env()["sc.audit.log"].sudo().search_count([
+            ("model", "=", retry._name), ("res_id", "=", retry.id),
+            ("event_code", "=", "expense_claim_rejected"),
+        ]) == 1
+        print("APPROVAL_CHECK=real_rejection_returns_document_to_draft")
+        retry.action_submit()
+        retry.invalidate_recordset()
+        assert retry.state == "submit" and retry.review_ids
+        assert previous_ids.isdisjoint(retry.review_ids.ids), "rejected attempt reused"
+        _approve_existing_reviews(retry)
+        assert retry.state == "approved" and retry.validation_status == "validated"
+        print("APPROVAL_CHECK=resubmission_creates_and_completes_new_review_chain")
         passed = True
     finally:
         _env().cr.rollback()
         _env().invalidate_all()
         assert policy.read(fields) == baseline, "approval configuration was not restored"
+        assert policy.step_ids.read(step_fields) == step_baseline, "approval steps were not restored"
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=5")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=8")
 
 
 main()
