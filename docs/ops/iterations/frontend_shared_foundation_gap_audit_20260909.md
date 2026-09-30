@@ -9330,3 +9330,12 @@ P4 aa7717fb4扩原plan-state-authority为15项：真实节点在确认后拒绝�
 TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.plan TPL07_APPROVAL_VIEW=create原browser入口：plan-native-create-browser.log，tpl07-1790809196461/report.json12项PASS，PM官方新建form engine、有效契约、无新单审批通过/驳回/完成、1440/390无溢出及无异常/业务写。回读approvalPages.authority确认name/planned_finish规范modifiers含state与validation_status；line_ids内name/planned_finish及progress_rate携带parent.*规范表达式。此为新建页和契约投影证据，不证明执行页输入、增删能力或配置审批UI。
 
 继续待办：退出入口重复结构；子表增删/新增初始执行值与状态约束；汇报/版本审批统一；准备完成后再开放执行中父表单字段例外并验证普通角色办理。既有计划后端15、事件32等按未变执行依赖复用。整体detail.action-state/67条仍未完成，无推送/合并/目标部署。
+
+
+### 53.184 计划入口重复结构退出与默认关系显示待修
+
+edfd3de14 clean起点；P1 37af7959f把construction_plan_productized_form_v1从entry_semantic_surface字段/分组镜像改为仅title+native_semantic_surface，priority800，按既有noupdate同记录function write升级重放。原29字段保留于原生arch，补actual_start/actual_finish及legacy/source追溯/active，保留字段输入职责。L1/175纯测及receipt PASS，受管升级plan-native-adoption-upgrade.log成功，backend37af7959f，前端e31e51c59不构建。
+
+首次通用新建页tpl07-1790809415350通过12项，但无menu/action上下文不足证明入口配置；P4修改既有探针从system.init routeAuthority取得PM授权menu507/action655，工具40/L1/receipt PASS（plan-entry-probe-*）。入口浏览器tpl07-1790809477312通过13项，authority.structure.mode=native_structured_form/layoutPolicy=container_tree_authority，29字段来源未丢失。但人工截图观察公司/责任人显示#8/#32，不能以13项通过忽略可用性问题；计划入口批次产品验收仍未完成。
+
+对照两份原始报告mainData均为company_id[8,FE Company A]、owner_id[32,Acceptance Fixture PM]，不是后端关系名称缺失或权限拒绝。共享createDefaults.loadAuthoritativeCreateDefaults再调用api.data/default_get，原mergeAuthoritativeCreateDefaults直接覆盖；api_data._op_default_get按ORM返回数字ID，故同身份标签丢失。下一步P0通用消费修复须显式many2one类型且ID一致才保留原标签，值变化/清空不可沿用旧名，补定向反例和实际入口观察。无新增fixture/业务写，尚不宣称计划执行完成。节点初始执行值、增删能力、汇报/版本审批仍开放，无推送/合并/目标部署。

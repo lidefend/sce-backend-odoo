@@ -896,10 +896,12 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
-        if (diarySaveProbe || eventSaveProbe) {
+        if (diarySaveProbe || eventSaveProbe || spec.model === 'sc.plan') {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
             .flatMap(key => report.routeAuthority?.[key] || []);
-          const matches = entries.filter(row => row.menu_xmlid === (eventSaveProbe ? 'smart_construction_core.menu_sc_contract_event' : 'smart_construction_core.menu_sc_construction_diary'));
+          const entryXmlid = spec.model === 'sc.plan' ? 'smart_construction_core.menu_sc_plan'
+            : eventSaveProbe ? 'smart_construction_core.menu_sc_contract_event' : 'smart_construction_core.menu_sc_construction_diary';
+          const matches = entries.filter(row => row.menu_xmlid === entryXmlid);
           check(`${spec.model}: one authorized native entry`, matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
