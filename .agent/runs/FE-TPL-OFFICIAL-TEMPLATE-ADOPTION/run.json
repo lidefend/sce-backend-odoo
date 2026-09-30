@@ -374,7 +374,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.121 source7e50d623e/backend4c564ef94 upgraded: red flush shared approval/snapshot guard; pure131/native62, registration-source red-flush-registration-runtime.log11 ROLLBACK VERIFIED, finance create20 tpl07-1790792904864. FrontendCrYkOCxc unchanged. Next close same-chain invoice_registration.create/write and generated red-invoice state/registration authority, not another model scan. Receipt-source setup remains unverified due missing sale tax; no fixture creation/retry unchanged. Source-change recovery/concurrency/ordinary-role loop also open. Preserve pending project-document classification/project monetary questions and overall67 contract_gap; no push/merge/deploy.",
+  "next_exact_step": "53.122 invoice normal terminal-state/attribution guarded; red generation consumes parent approval + common registrar. Source467b78d01/backend8a7d13cf0 reloaded, pure134/native62/invoice-state-runtime.log11 ROLLBACK VERIFIED. Next finish same red-invoice chain source eligibility (draft/cancel invoice source not formal fact), changed-source recovery and duplicate concurrency, then actual-role handling. Receipt-source sale tax prerequisite remains unverified; no invented fixture/retry. FrontendCrYkOCxc/create20 presentation evidence unchanged. Preserve project classification/amount pending questions and overall67 contract_gap; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

@@ -439,3 +439,7 @@ Guarantee submission now uses shared policy/tier approval with amount authority;
 ## Segment 53.121: red-flush approval and execution
 
 Red-flush adjustment now uses shared tier/policy approval and executes only after approval, rejecting original-invoice snapshot changes. Pure131/native62 pass; backend4c564ef94 is upgraded/loaded. Registration-source rollback runtime11 and official finance create20 pass. Receipt-invoice source remains unverified: its setup required a formal contract and then missing default sale tax; both attempts rolled back, no tax fixture invented. Generated registered invoices versus common registration authority, ordinary-role handling, changed-source recovery and concurrent duplication remain product gaps. Continue this same chain before claiming overall approval closure.
+
+## Segment 53.122: invoice terminal-state and registrar authority
+
+Normal invoice create/write no longer accepts direct terminal state or forged red-flush attribution; private action writes preserve approval/audit checks. Explicit sudo legacy imports retain legacy-confirmed creation only. Red-flush generation consumes parent approval and common registrar permission. Pure134/native62 and backend8a7d13cf0 rollback runtime11 pass, including non-registrar denial, terminal-state/token forgery rejection and registered-source amount protection. Source setup still uses elevated data access; ordinary-role end-to-end scope remains open. Continue source eligibility, stale-source recovery and duplicate concurrency in this same chain; no overall closure claim.

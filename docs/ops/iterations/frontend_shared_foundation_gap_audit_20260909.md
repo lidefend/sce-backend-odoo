@@ -8624,3 +8624,7 @@ L1 red-flush-approval-iteration.log PASS，L2 unit.log131 PASS、native.log8+54=
 L1 invoice-state-iteration.log通过，初轮unit.log134中1个error来自旧finance-family替身缺新内部写状态方法，未放宽断言；test-iteration.log后unit-recovery.log134 PASS。native.log8+54=62 PASS，后续仅测试替身/P4变化不重跑未变native输入。P4同一red-flush scope源票改走正式action_confirm/实际review/action_register；使用既有财务登记人及sudo数据准备，不宣称普通角色数据权限闭环。新增直接注册/令牌伪造拒绝、非登记角色PM拒绝红冲。原票金额现在冻结，末项检查改为拒绝篡改；原票快照变化纯测试仍有效，旧runtime11因产品输入变化不继续算当前通过。permission-tool-iteration/语法/diff通过后才reload/runtime。
 
 运行验证仍待执行，前端CrYkOCxc未改不构建；既有create截图仅外观可复用，不证明新权限语义。收款来源税率、普通角色完整办理、源变化恢复/并发及其他已登记业务仍未收口。无新环境/持久fixture/推送合并目标部署。
+
+53.122结果：源码467b78d01/P4 8a7d13cf0，受管backend.acceptance.up重绑8a7d13cf0成功，无字段变化未升级。invoice-state-runtime.log11 PASS、ROLLBACK VERIFIED。与53.121相比，源票正式提交（存在review则真实审核）后由既有财务登记人登记，再作为红冲依据；直接create registered、write state、布尔令牌伪造拒绝，既有fixture_role_pm非登记人确认红冲拒绝，有登记权角色完成生成，已登记源票金额修改拒绝。真实角色用于权限判断，源记录数据访问仍sudo准备；不是普通角色端到端数据权限验收。原策略/步骤恢复、临时票据/生成票消失。
+
+纯134/native62与新runtime11成立；既有create20源渲染输入未变，只复用外观/输入检查，不声明该页面证明登记权限。未新建fixture/环境、未构建前端、未跑无关ORM。下一步继续同链：有效原票资格（草稿/取消源票不得被当正式可红冲事实）、原票变化后的可恢复办理及并发重复红冲，保留收款来源税率/普通角色完整办理缺口；生成票的通用登记权限与状态直写缺口本轮已补并定向验证。整体detail.action-state不升级。
