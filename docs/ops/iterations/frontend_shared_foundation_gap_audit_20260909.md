@@ -7599,3 +7599,11 @@ L5：未推送、未合并、未部署。
 - 已有真实validated链可完成其回调；其他提交走共享分流，无配置自动确认、配置审批建立真实链、驳回重提重建。两类回调要求实际review与对应结果，仅从draft推进，终态重复回调无副作用，不重读策略、不再次发起审批。一般合同原回调循环结束后无条件action_confirm会让部分审批重新进入提交路径，本节删除该递归编排。
 - L1 ci.local.iteration PASS（contract-approval-iteration.log）。L2共享审批42、native coverage8+24=32通过（contract-approval-tests.log，begin/record42），执行两类真实提交与回调，覆盖有/无配置、重提、部分审批后配置关闭、完整回调和缺review反例；既有签署回归随native目标通过。无ORM/数据库写入，无前端重建。
 - 采购button_confirm仍按可变配置过滤执行集合，物资计划仍固定申请审批并有直接批准路径，已读取直接方法明确后续责任；不是重新全仓盘点。合同后续执行入口前置条件、其余单据族与付款局部审批编排仍须收敛；两项原生状态动作缺口、受管模块升级和真实业务验收继续保留。总体active，不推送/合并/目标部署。
+
+
+### 53.27 采购确认集合按真实审批结果形成
+
+- 85e1bff94 clean起步；P1 smart_construction_core.purchase_extend。button_confirm复用_start_submission_review，新提交无配置或已有review且validated才进入to_confirm；不再第二次读取当前策略来过滤集合。保留项目暂停/关闭校验、原生super采购确认及已有成本台账调用。删除重复_requires_purchase_approval/_request_purchase_validation。
+- 审批中关闭配置无法确认；驳回重提建立新链；批准/驳回回调都要求真实review结果。非draft/sent重复确认不触发原生确认或台账，也不误提示“已提交审批”。该状态分流不替代原生采购数量、供应商、权限、双重验证及账务规则。
+- L1 ci.local.iteration PASS（purchase-approval-iteration.log），L2 verify.payment.approval_state_machine.unit 43项PASS（purchase-approval-tests.log，begin/record43）。新增真实button_confirm执行，隔离原生父类与台账协作者，覆盖无配置、有配置、驳回重提、validated、在途关闭及重复确认；这不证明真实原生采购/成本台账ORM行为，相关集成验收仍必要。
+- 不重建前端、不写验收业务数据；物资计划固定审批/直接批准、其余单据类型、付款局部编排和合同执行前置条件继续待收敛，两项原生动作产品缺口未关闭。后续仍需受管模块升级和真实配置/业务闭环，不把函数测试外推为总体完成。

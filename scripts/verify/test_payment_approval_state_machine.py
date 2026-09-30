@@ -438,6 +438,52 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     namespace['action_on_tier_rejected'](rec)
                     self.assertEqual(rec.state, 'draft')
 
+    def test_purchase_confirmation_only_executes_eligible_records(self):
+        path = MODEL.with_name('purchase_extend.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'button_confirm')
+        class Orders(list):
+            def __init__(self, records=()):
+                super().__init__(records)
+                self.env = Env(policy=types.SimpleNamespace(_start_submission_review=lambda record: record.policy._start_submission_review(record)))
+                self.ledger_calls = 0
+            def browse(self):
+                return Orders()
+            def __ior__(self, record):
+                self.append(record)
+                return self
+            def _create_enabled_cost_ledger_entries(self):
+                for record in self:
+                    record.data['ledger_calls'] += 1
+        def parent_confirm(records):
+            for record in records:
+                record.data['state'] = 'purchase'
+            return True
+        namespace = {'_': lambda text: text, 'PurchaseOrder': object,
+                     'super': lambda cls, records: types.SimpleNamespace(button_confirm=lambda: parent_confirm(records))}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        for required, status, reviews, expected in (
+            (False, 'no', [], 'purchase'), (True, 'no', [], 'draft'),
+            (True, 'rejected', ['old'], 'draft'), (True, 'validated', ['tier'], 'purchase'),
+        ):
+            rec = self.record(required=required, state='draft', status=status, reviews=reviews)
+            rec._name = 'purchase.order'
+            rec.project_id = False
+            rec.data['ledger_calls'] = 0
+            rec.write = lambda values: rec.data.update(values)
+            result = namespace['button_confirm'](Orders([rec]))
+            self.assertEqual(rec.state, expected)
+            self.assertEqual(rec.ledger_calls, int(expected == 'purchase'))
+            if expected == 'purchase':
+                self.assertTrue(namespace['button_confirm'](Orders([rec])))
+                self.assertEqual(rec.ledger_calls, 1)
+            if expected == 'draft':
+                self.assertEqual(result['tag'], 'display_notification')
+                self.assertEqual(rec.requests, 1)
+                rec.required = False
+                with self.assertRaises(ValueError):
+                    namespace['button_confirm'](Orders([rec]))
+                self.assertEqual(rec.ledger_calls, 0)
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

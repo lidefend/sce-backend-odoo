@@ -225,12 +225,13 @@
         "addons/smart_construction_core/views/core/financing_loan_views.xml",
         "addons/smart_construction_core/views/core/treasury_reconciliation_views.xml",
         "addons/smart_construction_core/models/core/general_contract.py",
-        "addons/smart_construction_core/models/support/contract_center.py"
+        "addons/smart_construction_core/models/support/contract_center.py",
+        "addons/smart_construction_core/models/core/purchase_extend.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.26 general/project contract submit now shares approval routing and callbacks consume real outcomes without resubmitting (42 approval+32 coverage tests). Next converge purchase button_confirm mutable-policy filtering and material-plan fixed approval/direct approval paths; check contract execution prerequisites. Remaining full-document adoption, two native gaps, governed upgrade and actual approval acceptance remain.",
+  "next_exact_step": "53.27 purchase confirmation now forms eligible recordset via shared submission or real validated instance; duplicate local helpers removed (43 tests). Next material plan fixed-review/direct-approve convergence, remaining document adoption and contract execution prerequisites. Two native gaps, governed module upgrade and actual business/approval ORM+browser verification remain; no frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -551,6 +552,13 @@
       },
       "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-approval-tests.log",
       "runtime": "not_run"
+    },
+    "purchase_approval_53_27": {
+      "status": "verification_pending",
+      "source_head": "85e1bff94",
+      "test_count": 43,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/purchase-approval-tests.log",
+      "runtime": "not_run; native purchase and cost ledger ORM integration pending"
     }
   }
 }
