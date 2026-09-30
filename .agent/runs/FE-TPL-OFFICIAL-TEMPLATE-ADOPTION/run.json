@@ -56,5 +56,37 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Refresh tracked generated reports after the mainline port, commit the report refresh, then run the declared resume/status/parity checks and record them."
+  "next_exact_step": "FE-TPL-06A: confirm the payment request list consumes the single official-standard-list composition with server-side query/sort/pagination, run one real next-page + open + return, then WEB-LC-01 low-code configuration closure.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
+    "l1": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "note": "agent_run_context resolved; change_state=clean"
+    },
+    "l1_generated_evidence": {
+      "command": "make ci.generated_evidence.preflight",
+      "status": "passed"
+    },
+    "l2": {
+      "resume": 30,
+      "status_presentation": 15,
+      "page_pattern_parity": 28,
+      "orm_selection": 14,
+      "trusted_scan": 10,
+      "construction_create_default_hooks": 4,
+      "split_and_responsibility_guards": "ran=37 fails=0"
+    },
+    "l4": {
+      "command": "make verify.frontend.build",
+      "status": "passed",
+      "note": "built in 21.06s; single build"
+    },
+    "inherited_gaps": [
+      "verify.guard.registry orphan acknowledgements missing on origin/main too"
+    ]
+  }
 }

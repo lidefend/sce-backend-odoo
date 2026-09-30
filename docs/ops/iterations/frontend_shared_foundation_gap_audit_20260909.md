@@ -6400,3 +6400,109 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 44｜主线移植（GitHub 恢复）与协作流程接入（2026-09-30）
+
+### 1. 触发与目标
+
+`origin`（GitHub `lidefend/sce-backend-odoo`）恢复可用，`origin/main` 前进到 `fff226d7b`
+（PR #524）。本段目标：把本专题分支移植到最新主线继续迭代，并接入主线新增的
+**统一执行器续接入口**（`.agent/active-runs.json` + `make agent.run.resume`）以提高迭代效率。
+不改变产品行为，不推送、不合并、不部署。
+
+### 2. 移植方式与结果
+
+- 移植前：`HEAD=33c3b553f`，`origin/main=fff226d7b`，本地 `main=23f11f426`（落后 8 个提交）；
+- 方式：**merge，不用 rebase**（不改写已交付历史）：`git fetch origin` 后
+  `git merge origin/main` → **合并提交 `dc460758c`**；合并前 `23f11f426` 正是本分支直接基点，
+  8 个主线提交干净并入，无历史重建；
+- 合并后：领先 `origin/main` 196 / 落后 0；工作区干净。
+
+主线新增能力（本分支自此遵循）：
+
+- `AGENTS.md` → **Unified Executor Resume Entry (2026-09-30)**：首次变更前经
+  `.agent/active-runs.json` 解析当前分支并跑 `make agent.run.resume`；新任务须先注册
+  一个 goal 与 `.agent/runs/<goal-id>/run.json`（此元数据 bootstrap 允许在 resume 通过前完成）；
+  续接复用当前 run 与证据索引，只 reconcile 变更过的输入/依赖/环境，**不重复全仓盘点**；
+- `make/codex.mk` 新增 `agent.run.resume` / `agent.run.begin` / `agent.run.record` /
+  `verify.agent.resume.unit` / `verify.trusted_scan.unit` / `verify.ci.orm_selection.unit`；
+- `make ci.local.iteration` 现在先跑 `scripts/ops/agent_run_context.py`，status 非 `resolved`
+  即整条入口失败（`outside_scope` 非空也算）；新增
+  `config/ci/risk_tiering_v1.json`、`scripts/ci/trusted_scan_scope.py`（增量扫描复用）；
+- `ci.local.quick.run` 新增 `python3 -m unittest scripts.verify.test_construction_create_default_hooks`。
+
+**冲突解法（已提交，勿回退）**：`make/ci.mk` 保留双方条目
+（`file_line_budget_uniform_guard.py` 与 `test_construction_create_default_hooks`）；
+5 个生成型收敛报告取主线版（随后由重生成覆盖为合并后真实值）。
+
+`core_extension.py` 行数算术自洽：base 1807 → 本分支 1830（-23 色调移除，含压缩空行）
+→ 主线 1784（+23 create-default 代码）→ **合并 1807**；双方改动位于不同区域，语义无丢失，
+`py_compile` 通过。
+
+### 3. 本段实际交付
+
+1. **注册本分支运行记录**（主线新流程要求）：
+   - `.agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml`（七问边界 + 约束 + 下一步）；
+   - `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`（baseline = 合并提交 `dc460758c`，
+     scope 8 条有界目录，3 个离线 check 及显式 inputs）；
+   - `.agent/active-runs.json` 增加本分支映射（**不动** 主线自己的 `fix/agent-resume-mainline` 条目）；
+   - `make agent.run.resume` → `status=resolved`、`outside_scope=[]`。
+2. **重生成漂移的生成型报告**（合并提交导致基线漂移，主线 gate 因此会红）：
+   - `make refresh.generated_reports`：`test_inventory.{csv,summary.md}`（1400→1427 资产）、
+     `complexity_budget_report.md`、`split_plan_queue.md`（55→57 文件）、
+     `e2e_journey_matrix.md`、`module_dependency_map.md`、`github_remote_execution_plan.*`、
+     `contracts/generated/contract_structure_fingerprint.json`（内容未变）；
+   - `make refresh.contract_form_split_evidence`：`ContractFormPage.vue` 证据行
+     1918（主线值）→ **1894（合并后真实值）**，与 `scripts/verify/line_budgets.py`
+     登记基线一致；
+   - `make refresh.frontend.component_driver_takeover.inventory`：
+     `inputDigest` 随合并后前端源码更新（`rendering-surface-ownership` 等源 SHA 同步）。
+
+### 4. 验证（分层，按简化口径）
+
+- L0 身份：开工 `HEAD=dc460758c` 干净；本段提交后工作区干净；
+- L1 `make ci.local.iteration` → `PASS change_state=clean coverage=L1_only receipt=none`，
+  且 `agent_run_context` 输出 `status=resolved`；
+- L1 `make ci.generated_evidence.preflight` → `PASS all content-bound generated evidence is current`
+  （含 `tracked generated reports are current`、`split plan queue is current`、
+  `contract structure fingerprint is current`、component-driver takeover `required=33 missing=0`、
+  `contract_form_split_evidence PASS lines=1894`）；
+- L2（**run 内声明并已记账**，`.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/*.log`）：
+  - `verify.agent.resume.unit` → `Ran 30 tests OK`（`source_head=f0894221b`，status=reusable）；
+  - `verify.frontend.collection_status_presentation.unit` → `PASS cases=15`；
+  - `verify.frontend.page_pattern_reference_parity.unit` → 15 + 13 tests OK、
+    `PASS surfaces=16`、`PASS entries=67 owned_gaps=20`；
+- L2 主线新增单测：`verify.ci.orm_selection.unit` OK（14 tests）、
+  `verify.trusted_scan.unit` OK（10 tests）、
+  `python3 -m unittest scripts.verify.test_construction_create_default_hooks` → `Ran 4 tests OK`；
+- L2 段 43 受影响面复跑：`contract_governance_*_split_guard` /
+  `construction_core_extension_*_split_guard` / `*_responsibility_map_guard` /
+  `file_line_budget_uniform_guard` 共 **`ran=37 fails=0`**
+  （行数登记 `registered_files=17 headroom=60 consumers=36 blocking_line_checks=0`）；
+- L2 `make verify.frontend.typecheck.strict` → `vue-tsc` 两遍均过；
+- L4 一次构建：`make verify.frontend.build` → `✓ built in 21.06s`（唯一一次，无二次构建比对）；
+- 未执行（按规则显式跳过）：浏览器旅程（本段无产品渲染/交互变更）、`ci.local.quick`
+  （只在最终干净冻结 HEAD 跑一次）、100 文件 HTTP 比对、89 入口、全站发布验收。
+
+### 5. 继承缺口（非本段引入，登记不改）
+
+- `make verify.guard.registry` → `AUDIT FAIL`：`test_construction_create_default_hooks.py` 与
+  `test_frontend_v2_policy_projection_guard.py` **未被 registry.yaml 承认**。
+  证据：两个脚本在 `origin/main` 已存在，且 `origin/main:scripts/verify/registry.yaml` 同样
+  没有这两个条目 → **主线自身即红**，非本分支引入；
+  远端必需检查走 `ci.professional.backend.shard-*`，不含 `verify.guard.registry`，
+  故不阻断本轮；合并前统一门禁批次再处理（可用 `make guard.registry.seed` 记账）。
+- 段 43 已登记的其余欠账（`industry_agnostic.guard` 97 条、`state_transition_undeclared` 5 条、
+  z-index 项、`p4_p0_03` 之外的旧产物缺口等）状态不变，本段未扩大处理。
+
+### 6. 提交
+
+- `c230cdb5d` `chore(agent): register the web official template adoption run for mainline resume entry`
+- `aa0c9f615` `chore(convergence): refresh generated reports after the mainline port`
+- `f0894221b` `chore(agent): include the rendering-detail inventory in the run scope`
+- 本段记录（本节）单独一笔随记录文件提交。
+
+### 状态
+
+本段**批次验收完成**（移植 + 协作流程接入 + 生成型证据一致）｜主线未集成｜目标环境未部署｜
+整体用户交付未验收。下一步：`FE-TPL-06A` 付款申请列表标准组合与真实翻页 → `WEB-LC-01` 低代码闭环。
