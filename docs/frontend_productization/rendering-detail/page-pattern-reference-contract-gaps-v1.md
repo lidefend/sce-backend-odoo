@@ -321,3 +321,11 @@ Three labor execution create probes pass14 narrow assertions each, but screensho
 ### Segment53.88 — Settlement input authority repaired; note rendering still missing
 
 P1 publication no longer forces project/contractor/date/note readonly; computed/payment/provenance readonly remains.82 focused tests pass. Backendbfcc36599 and unchanged frontend7915f3bb9 produce editable contracts for all four inputs. Captured browser tpl07-1790783233663 confirms project/contractor/date controls, but note textarea is absent despite editable authority. Keep this shared rendering gap open; inspect activity-role text consumption rather than adding model-specific frontend behavior. Earlier label matching failures were P4 observation defects, not evidence that restored relationship inputs were absent. No complete create/save journey proven.
+
+
+### Segment53.89 — Create visibility authority fixed; settlement input gap closed
+
+Offline replay of53.88 proves the remaining note defect was P0 widget status (visible=false/auth=none), not frontend rendering: automatically derived advanced grouping removed create visibility. The shared field-policy producer now keeps grouping separate from visibility; native modifiers, field ACL and explicit create-hidden policy remain authoritative. Four focused pure regressions and the existing split guard pass. Backend4eb114313 reload only, unchanged frontend7915f3bb9: tpl07-1790783437117 passes22 assertions with project/contractor/date/note input contracts and controls, both viewports, no errors/writes; screenshot confirms note textarea. This closes53.87–88 missing-input defect, not actual save/submission or all-document coverage.
+
+
+53.89 shared-scope limitation: project create representative tpl07-1790783460002 fails normalized contract validation: date/date_start widget statuses are disabled with NATIVE_MODIFIER_UNRESOLVED but auth=edit (date also invisible). Frontend rejection is correct. Investigate missing create modifier inputs and assembler/projection auth consistency before further browser checks; attendance/usage representative checks were not run after this failure. Shared policy batch is not accepted yet.

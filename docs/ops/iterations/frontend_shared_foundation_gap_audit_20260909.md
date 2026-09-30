@@ -8215,3 +8215,8 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 复用tpl07-1790783233663离线presenter重放：note布局readonly=false，但statusContract.widgetStatus visible=false/auth=none，故53.88“共享渲染缺口”归因修正为P0字段策略缺口。contract_governance_form_fields.build_form_field_policies把自动advanced分组隐藏于create；该布局分组不是权限/可见性权威。移除该隐式隐藏，保留原生modifier/字段访问、readonly及显式project create_hidden政策，前端不改。适用于通用契约，不含劳务模型规则。
 
 候选c45594611+本段dirty；L1 form-field-policy-iteration.log PASS、原split guard PASS；新增既有Make体系定向pure target验证4项：可选/必填advanced输入仍可见、只读事实不变、显式隐藏保留。首次unit空descriptor被已有忽略逻辑过滤，P4测试改成真实selection descriptor后form-field-policy-unit-fixed.log4 PASS，非零回执登记。不触发ORM/schema升级，仅源码reload后重验结算页面；前端7915f3bb9复用不构建。总体业务办理/67尚未完成。
+
+
+53.89结果：4eb114313受管reload成功，结算tpl07-1790783437117 22 PASS、errors/forbiddenWrites空，390截图说明textarea及项目/单位/经办人/日期输入恢复。关闭53.87–88输入丢失本身，不代表已保存/提交。首次agent.run.record因测试输入修正后旧begin失效拒收，重新begin绑定4eb114313运行4项并record成功（/tmp/tpl89-record-fixed.log），未绕过回执。
+
+共享影响代表页项目create tpl07-1790783460002失败，随后考勤/用工未运行。错误为日期date/date_start status disabled=true reason=NATIVE_MODIFIER_UNRESOLVED却auth=edit；date另visible=false。前端schema正确拒收“editable auth conflicts with readonly occurrence status”，不放宽校验。日期原生required依赖date_start/date在新建默认缺失；需查assembler的未解析modifier状态及projection auth同步。这是当前L4阻断，不能宣称本批验收完成；先修P0对应状态投影/默认值语义，再恢复代表页检查。不重复结算后端审批ORM或模块升级。
