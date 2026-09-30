@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { expenseProbeWriteKind } from './standard_expense_success_scope.mjs';
+import { expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -47,7 +47,7 @@ function findRecordAuthority(node, depth = 0) {
   if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
     return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
       deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData,
-      ...(['task-authority', 'approval-actions'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
+      ...(['task-authority', 'approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
   }
   for (const value of Object.values(node)) {
     const found = findRecordAuthority(value, depth + 1);
@@ -71,6 +71,7 @@ const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
 const expenseFailureStage = process.env.TPL07_EXPENSE_FAILURE_STAGE || '';
 assert.ok(['', 'upload', 'submit'].includes(expenseFailureStage));
 let expenseSuccess = null;
+let expensePolicyPermit = null;
 const expenseRecoveryPath = path.join(out, 'expense-success-recovery.json');
 async function expenseCleanup(stage) {
   const output = execFileSync('make', ['verify.business_config.approval_runtime', 'SC_ACCEPTANCE_RUNTIME_PROFILE=local'], {
@@ -88,6 +89,12 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (permitsExpensePolicyWrite(role, body, expensePolicyPermit)) {
+      report.expensePolicyWrites ??= [];
+      report.expensePolicyWrites.push({ ...expensePolicyPermit });
+      expensePolicyPermit = null;
+      return route.continue();
+    }
     const expenseWriteKind = expenseProbeWriteKind(role, body, expenseSuccess);
     if (expenseWriteKind) {
       if (expenseFailureStage === expenseWriteKind && !expenseSuccess.failureInjected) {
@@ -111,7 +118,7 @@ async function login(role) {
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
       return route.fulfill({ response });
     }
-    if (expenseSaveProbe && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
+    if ((expenseSaveProbe || process.env.TPL07_SCOPE === 'expense-policy') && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, reason: 'save-failure probe cannot execute business actions' });
       return route.abort();
     }
@@ -158,7 +165,7 @@ async function login(role) {
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
-          if (process.env.TPL07_SCOPE === 'approval-actions') report.routeAuthority = result.data?.navigation?.route_authority;
+          if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) report.routeAuthority = result.data?.navigation?.route_authority;
         }
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
@@ -167,7 +174,7 @@ async function login(role) {
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
-        if (process.env.TPL07_SCOPE === 'approval-actions') {
+        if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) {
           report.contractResponses ??= [];
           report.contractResponses.push({ intent: body.intent, model: body.params?.model, contract });
         }
@@ -468,6 +475,97 @@ async function styleScope() {
 }
 
 try {
+  if (process.env.TPL07_SCOPE === 'expense-policy') {
+    const admin = await login('fixture_role_config_admin');
+    const resolveEntry = (xmlid) => {
+      const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+        .flatMap((key) => report.routeAuthority?.[key] || []).filter((row) => row.menu_xmlid === xmlid);
+      assert.equal(entries.length, 1, `one authorized entry: ${xmlid}`);
+      assert.ok(Number(entries[0].menu_id) > 0 && Number(entries[0].action_id) > 0);
+      return entries[0];
+    };
+    const categoryEntry = resolveEntry('smart_construction_core.menu_sc_business_category');
+    const request = (params) => admin.page.evaluate(async (params) => {
+      const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+      const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+        body: JSON.stringify({ intent: 'api.data', params }),
+      });
+      return response.json();
+    }, params);
+    const found = await request({ op: 'list', model: 'sc.business.category',
+      domain: [['code', '=', 'finance.expense.reimbursement'], ['active', '=', true]],
+      fields: ['id', 'code', 'attachment_policy'], limit: 2 });
+    assert.equal(found.ok, true);
+    assert.equal(found.data?.records?.length, 1);
+    const baseline = found.data.records[0];
+    assert.equal(baseline.attachment_policy, 'required');
+    const read = async () => {
+      const result = await request({ op: 'read', model: 'sc.business.category', ids: [baseline.id], fields: ['id', 'code', 'attachment_policy'] });
+      assert.equal(result.ok, true);
+      assert.equal(result.data?.records?.length, 1);
+      return result.data.records[0];
+    };
+    const recovery = { database: 'sc_frontend_acceptance', role: 'fixture_role_config_admin', baseline, restored: false };
+    const recoveryPath = path.join(out, 'expense-policy-recovery.json');
+    await fs.writeFile(recoveryPath, JSON.stringify(recovery, null, 2));
+    report.expensePolicy = recovery;
+    const finance = await login('fixture_role_finance');
+    const expenseEntry = resolveEntry('smart_construction_core.menu_sc_reimbursement_request');
+    const observe = async (value, stage) => {
+      const start = report.contractResponses?.length || 0;
+      await form(finance.page, `/f/sc.expense.claim/new?menu_id=${expenseEntry.menu_id}&action_id=${expenseEntry.action_id}`, `expense-policy-${stage}`);
+      const authority = (report.contractResponses || []).slice(start).map((row) => findRecordAuthority(row.contract))
+        .findLast((row) => row?.model === 'sc.expense.claim' && !Number(row.mainData?.id));
+      check(`policy ${stage}: effective contract value`, authority?.mainData?.submission_attachment_policy === value);
+      await finance.page.getByRole('button', { name: '提交审批', exact: true }).click();
+      const message = value === 'required' ? '当前业务分类要求上传附件后才能提交、批准或完成。' : '请先补充必填信息，再保存草稿或提交。';
+      await finance.page.getByText(message, { exact: true }).first().waitFor();
+      check(`policy ${stage}: submission feedback`, true);
+      await finance.page.screenshot({ path: path.join(out, `expense-policy-${stage}-feedback.png`) });
+    };
+    const change = async (value, label) => {
+      const start = report.contractResponses?.length || 0;
+      await form(admin.page, `/f/sc.business.category/${baseline.id}?menu_id=${categoryEntry.menu_id}&action_id=${categoryEntry.action_id}`, `expense-policy-admin-${value}`);
+      const authority = (report.contractResponses || []).slice(start).map((row) => findRecordAuthority(row.contract))
+        .findLast((row) => row?.model === 'sc.business.category' && Number(row.mainData?.id) === baseline.id);
+      const save = authority?.actions?.actionRuleList?.find((row) => row.actionSemantics?.purpose === 'save_draft');
+      check('policy: authorized save action', save?.enabled === true && save.target?.operation === 'write');
+      await admin.page.locator('[data-field-name="attachment_policy"] input').click();
+      await admin.page.locator('li.t-select-option:visible').filter({ hasText: label }).click();
+      expensePolicyPermit = { id: baseline.id, value };
+      const response = admin.page.waitForResponse((res) => {
+        try { const body = res.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'write'; } catch { return false; }
+      });
+      const [saved] = await Promise.all([response, admin.page.getByRole('button', { name: save.label, exact: true }).click()]);
+      assert.equal((await saved.json()).ok, true);
+      check(`policy ${value}: authoritative readback`, (await read()).attachment_policy === value);
+    };
+    try {
+      await observe('required', 'before');
+      await change('recommended', '建议上传');
+      await observe('recommended', 'changed');
+      await change('required', '必须上传');
+      await observe('required', 'restored');
+    } finally {
+      expensePolicyPermit = null;
+      const current = await read();
+      assert.equal(current.code, baseline.code);
+      assert.ok(['required', 'recommended'].includes(current.attachment_policy), 'external configuration change; refuse overwrite');
+      if (current.attachment_policy !== baseline.attachment_policy) {
+        expensePolicyPermit = { id: baseline.id, value: baseline.attachment_policy };
+        const restored = await request({ op: 'write', model: 'sc.business.category', ids: [baseline.id], vals: { attachment_policy: baseline.attachment_policy } });
+        assert.equal(restored.ok, true);
+      }
+      expensePolicyPermit = null;
+      assert.deepEqual(await read(), baseline);
+      recovery.restored = true;
+      await fs.writeFile(recoveryPath, JSON.stringify(recovery, null, 2));
+      check('policy: baseline restored', true);
+    }
+    await finance.ctx.close();
+    await admin.ctx.close();
+  }
   if (['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume'].includes(process.env.TPL07_SCOPE)) {
     const finance = await login('fixture_role_finance');
     const page = finance.page;
@@ -1719,7 +1817,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'approval-actions', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['expense-policy', 'favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'approval-actions', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');
@@ -1735,7 +1833,7 @@ try {
 } catch (error) {
   report.status = 'failed';
   report.error = error.message;
-  if (process.env.TPL07_SCOPE === 'approval-actions') {
+  if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) {
     report.failurePages = [];
     for (const ctx of browser.contexts()) for (const page of ctx.pages()) {
       report.failurePages.push({ url: page.url(), text: (await page.locator('body').innerText()).slice(0, 8000),

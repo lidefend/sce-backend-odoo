@@ -140,6 +140,7 @@ ROLE_SURFACE_OVERRIDES = {
             },
         ],
         "admin_menu_xmlids": [
+            "smart_construction_core.menu_sc_business_category",
             "smart_construction_core.menu_sc_runtime_user_management",
             "smart_construction_core.menu_sc_business_config_workbench",
             "smart_construction_core.menu_ui_menu_config_policy_business_config",

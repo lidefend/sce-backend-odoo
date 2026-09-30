@@ -399,10 +399,25 @@
         "frontend/apps/web/scripts/contract_field_occurrence_identity_test.ts",
         "make/frontend.mk"
       ]
+    },
+    "configuration_entry": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "addons/smart_construction_core/views/support/business_category_views.xml",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "frontend/apps/web/scripts/canonical_navigation_model_test.ts",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.159 representative post-create recovery closed:submit503 browser58 tpl07-1790803342206 and upload503 browser58 tpl07-1790803536320 each retain generated ID, actual retry auto-approves/official readonly, exact cleanup168–170/1292–1294/source1815 unchanged. P0 recovery navigation plus same-clean-record attachment contract refresh;dirty edits preserved by6 pure cases, no live dirty/multifile/ambiguous-commit claim. Candidate dbc39c9a8/index-DlvbGtIp.js,backend1fae2361a unchanged;33 tool receipt. Next resume overall config contract goal: inspect existing governed P3 category policy editing authority/tool and validate required/recommended effective-contract change+shared response+restoration; no full menu scan/new fixture/environment. Existing67/detail.action-state/other business and delivery gaps remain open. No push/merge/target deployment.",
+  "next_exact_step": "53.160 P4 expense-policy tool34/L1 passed; live tpl07-1790803918645 stopped before writes: configadmin system.init route_authority lacks menu_sc_business_category (0 entries). Native menu/action/ACL and product_policy_sync classify it existing business-base configuration, but business_config_admin.admin_menu_xmlids omits it. Trace/fix P1 role entry projection with focused tests, managed backend refresh, then resume required→recommended→required UI/effective-contract/restoration. No hardcoded route bypass, no business fixture, no frontend rebuild/ORM unless owning change requires. Overall67/detail.action-state remains open; no push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

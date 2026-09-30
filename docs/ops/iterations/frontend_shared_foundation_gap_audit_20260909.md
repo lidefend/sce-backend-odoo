@@ -9057,3 +9057,12 @@ expense-upload-recovery-browser.log / tpl07-1790803374298发现独立P0缺口：
 submit恢复58按依赖复用到dbc候选：其上传走创建后pending队列，目标新ID/currentID0的分支继续不刷新；本次改动的是已有记录即时上传分支，恢复导航和submit执行代码未变。工具33及begin/record通过（expense-recovery-tool-unit/receipt.log），无需重复成功57或付款49。覆盖单个附件、一次明确503失败；不外推多文件部分成功、服务端已提交但响应丢失、dirty编辑与上传并行的浏览器行为（dirty有纯测）、所有业务单据审批。
 
 报销代表成功链及这两条失败恢复收口；下一步回到总体契约/配置目标，复用既有P3工具验证分类附件策略required/recommended变化的有效契约与共享消费/恢复，先核对现有配置权限和入口，不新建工具体系或再盘点菜单。总体67/detail.action-state仍开放，其他已登记职责及目标环境条件不升级。本轮仅本地，无推送/合并/目标部署。
+
+
+### 53.160 配置生效验证在初始化入口契约处发现缺口
+
+候选7961669dc+P4三个既有browser/scope/test文件。复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/5180，生产frontend dbc39c9a8与backend1fae2361a未改；本批不重建、不升级、不跑ORM。P4新增expense-policy窄范围：仅configadmin对精确分类ID的attachment_policy required/recommended写入；拒绝其他角色、模型、ID、额外字段、create及业务动作。计划通过既有官方表单修改、finance新建契约与提交反馈观察、finally权威回读恢复；这是原生业务配置即时保存，不是低代码变更集发布。
+
+L1 expense-policy-iteration.log PASS；L2 expense-policy-tool.log 34 PASS（12Node+22Python），begin/record回执expense-policy-receipt.log。运行expense-policy-browser.log / tpl07-1790803918645失败：configadmin uid34初始化route_authority的primary/role_home/contextual/admin均无smart_construction_core.menu_sc_business_category，入口解析0条。尚未读取或写入分类，assertions=0，不能算配置闭环通过；无配置恢复负担，未创建业务数据。
+
+已确认源码原生menu/action具有business_config_admin组，模型ACL允许该组维护，product_policy_sync将该菜单列为CONFIG_CENTER_BUSINESS_BASE_MENU_XMLIDS；但core_extension_policy_maps的business_config_admin.admin_menu_xmlids没有该项。这是P1角色入口与有效初始化契约的候选断点，需沿既有菜单授权/投影链确认并补齐，不能在P4硬编码菜单ID或绕过初始化授权。下一步仅修该必要配置入口及非零定向回归，然后受管后端刷新再续required→recommended→required；不重复全部菜单扫描。67/detail.action-state及总体目标保持开放，无推送、合并或目标部署。

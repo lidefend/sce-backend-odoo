@@ -1,5 +1,12 @@
 import { isDeepStrictEqual } from 'node:util';
 
+export function permitsExpensePolicyWrite(role, body, permit) {
+  const p = body?.params;
+  return Boolean(permit && role === 'fixture_role_config_admin' && body?.intent === 'api.data'
+    && p?.op === 'write' && p.model === 'sc.business.category' && isDeepStrictEqual(p.ids, [permit.id])
+    && ['required', 'recommended'].includes(permit.value) && isDeepStrictEqual(p.vals, { attachment_policy: permit.value }));
+}
+
 export function expenseProbeWriteKind(role, body, scope) {
   if (!scope || role !== 'fixture_role_finance') return null;
   const p = body?.params;

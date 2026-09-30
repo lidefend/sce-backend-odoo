@@ -18,7 +18,7 @@ for (const [key, value] of [['ids', [11]], ['ids', [10, 11]], ['model', 'payment
   });
 }
 
-import { expenseProbeWriteKind } from './standard_expense_success_scope.mjs';
+import { expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 const expenseScope = { phase: 'create', id: 120, request: { op: 'create', model: 'sc.expense.claim',
   vals: { summary: 'TPL53-EXPENSE-SUCCESS-1790802321792' }, context: { company_id: 8, menu_id: '564', action_id: '758' } }, filename: 'probe.txt', data: 'ZmlsZQ==' };
 test('expense writes bind exact create request and reject changed values/role/replay', () => {
@@ -42,4 +42,16 @@ test('expense submit binds identity, entry and exact action', () => {
   assert.equal(expenseProbeWriteKind('fixture_role_finance', body, scope), 'submit');
   assert.equal(expenseProbeWriteKind('fixture_role_finance', { ...body, meta: { menu_id: 545, action_id: 775 } }, scope), null);
   assert.equal(expenseProbeWriteKind('fixture_role_finance', { ...body, params: { ...body.params, button: { name: 'action_done', type: 'object' } } }, scope), null);
+});
+
+test('expense policy permit binds administrator, exact record, field and allowed value', () => {
+  const permit = { id: 18, value: 'recommended' };
+  const body = { intent: 'api.data', params: { op: 'write', model: 'sc.business.category', ids: [18], vals: { attachment_policy: 'recommended' } } };
+  assert.equal(permitsExpensePolicyWrite('fixture_role_config_admin', body, permit), true);
+  assert.equal(permitsExpensePolicyWrite('fixture_role_finance', body, permit), false);
+  assert.equal(permitsExpensePolicyWrite('fixture_role_config_admin', body, null), false);
+  for (const patch of [{ ids: [19] }, { ids: [18, 19] }, { op: 'create' }, { model: 'sc.expense.claim' },
+    { vals: { attachment_policy: 'none' } }, { vals: { attachment_policy: 'recommended', active: false } }]) {
+    assert.equal(permitsExpensePolicyWrite('fixture_role_config_admin', { ...body, params: { ...body.params, ...patch } }, permit), false);
+  }
 });
