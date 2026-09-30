@@ -68,6 +68,9 @@ let projectWritePermit = null;
 let expenseCreateCapture = false;
 const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
 assert.ok(!diarySaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.construction.diary' && process.env.TPL07_APPROVAL_VIEW === 'create'));
+const eventSaveProbe = process.env.TPL07_EVENT_SAVE_PROBE === '1';
+assert.ok(!eventSaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.contract.event' && process.env.TPL07_APPROVAL_VIEW === 'create'));
+let eventCreateCapture = false;
 let diaryCreateCapture = false;
 const diarySaveSuccess = process.env.TPL07_DIARY_SAVE_SUCCESS === '1';
 assert.ok(!diarySaveSuccess || (diarySaveProbe && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1'));
@@ -102,6 +105,18 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    if (eventSaveProbe && eventCreateCapture && role === 'fixture_role_contract_operator' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'sc.contract.event') {
+      report.eventSaveAttempts ??= [];
+      report.eventSaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({
+        ok: false, error: { code: 'TPL53_EVENT_SAVE_UNAVAILABLE', message: '验收注入：事件保存暂不可用，请重试' },
+      }) });
+    }
+    if (eventSaveProbe && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
+      report.forbiddenWrites.push({ intent: body.intent, reason: 'event save failure probe cannot execute business actions' });
+      return route.abort();
     }
     const diaryKind = diaryProbeWriteKind(role, body, diarySuccess);
     if (diaryKind) {
@@ -841,7 +856,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.expense.claim', 'sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.contract.event', 'sc.expense.claim', 'sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -863,11 +878,11 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
-        if (diarySaveProbe) {
+        if (diarySaveProbe || eventSaveProbe) {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
             .flatMap(key => report.routeAuthority?.[key] || []);
-          const matches = entries.filter(row => row.menu_xmlid === 'smart_construction_core.menu_sc_construction_diary');
-          check('diary create: one authorized native entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
+          const matches = entries.filter(row => row.menu_xmlid === (eventSaveProbe ? 'smart_construction_core.menu_sc_contract_event' : 'smart_construction_core.menu_sc_construction_diary'));
+          check(`${spec.model}: one authorized native entry`, matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
@@ -879,6 +894,52 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (eventSaveProbe) {
+          report.eventCreateAuthority = authority;
+          for (const field of ['name', 'project_id', 'event_type', 'description']) {
+            check(`event create: ${field} has an editable native input`,
+              await session.page.locator(`[data-field-name="${field}"]`).locator('input, textarea, [contenteditable="true"]').count() > 0);
+          }
+          const name = `TPL53-EVENT-SAVE-${Date.now()}`;
+          const content = '临时验收合同履约事件：核对官方表单保存与提交恢复。';
+          const projectInput = session.page.locator('[data-field-name="project_id"] input').first();
+          const projectResponse = session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+              && body.params.model === 'project.project' && JSON.stringify(body.params).includes('FE Project A'); } catch { return false; }
+          });
+          await projectInput.fill('FE Project A');
+          const candidates = await (await projectResponse).json();
+          const project = candidates.data?.records?.find(row => Number(row.id) === 10);
+          check('event create: project returned in operator authorized query', candidates.ok === true && Boolean(project));
+          await session.page.getByRole('option', { name: String(project.display_name || project.name), exact: true }).click();
+          const nameInput = session.page.locator('[data-field-name="name"]').locator('input, textarea').first();
+          const contentInput = session.page.locator('[data-field-name="description"]').locator('textarea, input').first();
+          await nameInput.fill(name);
+          await session.page.locator('[data-field-name="event_type"] input').first().click();
+          await session.page.getByRole('option', { name: '设计变更', exact: true }).click();
+          await contentInput.fill(content);
+          eventCreateCapture = true;
+          for (const label of ['保存草稿', '提交']) {
+            const response = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'create'
+                && body.params.model === 'sc.contract.event'; } catch { return false; }
+            });
+            await session.page.getByRole('button', { name: label, exact: true }).click();
+            await response;
+            await session.page.getByText('验收注入：事件保存暂不可用，请重试', { exact: true }).first().waitFor();
+            const payload = report.eventSaveAttempts.at(-1);
+            check(`event ${label}: actual fields and relation identity preserved`, payload.vals.project_id === project.id
+              && payload.vals.name === name && payload.vals.description === content && payload.vals.event_type === 'design_change');
+            check(`event ${label}: authorized context preserved`, String(payload.context?.menu_id) === String(report.approvalCreateEntry.menu_id)
+              && String(payload.context?.action_id) === String(report.approvalCreateEntry.action_id) && payload.context.company_id === 8);
+            check(`event ${label}: failed create retains draft`, new URL(session.page.url()).pathname === '/f/sc.contract.event/new'
+              && await nameInput.inputValue() === name && await contentInput.inputValue() === content);
+          }
+          eventCreateCapture = false;
+          check('event save: two attempts and no follow-up action', report.eventSaveAttempts.length === 2 && report.forbiddenWrites.length === 0);
+          await session.page.screenshot({ path: path.join(out, 'event-filled-save-failure.png') });
+        }
+
         if (diarySaveProbe) {
           const title = `TPL53-DIARY-SAVE-${Date.now()}`;
           const content = '临时验收施工日志：核对官方表单保存与提交失败恢复。';
