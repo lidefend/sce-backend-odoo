@@ -7975,3 +7975,7 @@ P1 smart_construction_core：复用sc.approval.policy/OCA tier，无配置submit
 P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback事务、已有仓库和材料，新增8项：禁止外部状态写、无配置审批与独立接收、有金额配置真实review/禁止早接收、配置变动不绕过进行中review、真实审批后显式接收、驳回重提、调拨关联入库保留审批与回调不接收、无配置调拨保持既有自动接收。调拨项调用既有内部关联生成链，不能当完整出库办理验收。全部临时单据/政策加入原恢复检查；不建立新fixture或环境。
 
 数据库角色平台内部验收租户，local profile/sc-fe-r2-p1-01，sc_frontend_acceptance，精确filter及sc_fe_r2_p1_01固定卷沿用已登记预检；非客户生产/控制库。此次P1新字段/state/XML需要smart_construction_core受管升级；先L1、复用未变66/47定向输入结果（唯一变化为P4 smoke及文档），随后一次升级、后端重绑与实际53项。当前仅脚本编译通过，未开始数据库写入。
+
+受管升级61facd29b成功（Registry72.023s），后端重载成功。全量现有45检查通过且rollback verified，新增入库因不存在非服务材料前置失败。P4现有入口增加SC_APPROVAL_RUNTIME_SCOPE=all|inbound白名单（默认all），复用身份预检，不新增环境；inbound只运行8项，不再重复45。已有仓库有效，最小消耗材料仅在同一rollback事务临时建立，product/template均纳入消失回读，无fixture基线或持久测试数据。
+
+入库前5项实际通过后，驳回重提触发OCA旧tier记录状态写锁；报告inbound-only-material-runtime.log，rollback verified。P1修复只在私有token保护的提交方法内skip_validation_check跨过旧锁，shared router随后重建review，外部状态写仍拒绝。新增重提纯回归，L1 inbound-resubmit-iteration.log PASS；67审批tests PASS及非零回执。仅Python改动，无第二次模块升级/前端构建，待后端重载后仅8项重验。

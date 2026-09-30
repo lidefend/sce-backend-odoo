@@ -5,6 +5,7 @@ import copy
 import sys
 import types
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -793,6 +794,26 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 self.assertEqual(rec.state, 'approved')
             methods['action_receive'](rec)
             self.assertEqual(rec.state, 'received')
+
+    def test_inbound_resubmission_uses_private_transition_before_restarting_tier(self):
+        methods = self._inbound_methods()
+        rec = self.record(required=True, state='draft', status='rejected', reviews=['old-review'])
+        rec._name, rec.id = 'sc.material.inbound', 23
+        rec.line_ids = types.SimpleNamespace(_check_qty=lambda: None)
+        rec._sc_require_material_user = rec._sc_require_state = lambda *args: None
+        rec._sc_material_audit_payload = lambda: {'state': rec.state}
+        rec._sc_warn_system_defaults_on_action = rec._sc_audit_material_transition = lambda *args, **kw: None
+        def write_state(actor, values):
+            if actor.review_ids and actor.validation_status == 'rejected' and not actor.env.context.get('skip_validation_check'):
+                raise ValueError('tier write lock')
+            actor.data.update(values)
+        # Bind the collaborator on the type so context clones retain their own
+        # environment (an instance-bound lambda would hide this regression).
+        with patch.object(Record, '_write_inbound_state', write_state, create=True):
+            methods['action_submit'](rec)
+        self.assertEqual(rec.state, 'submitted')
+        self.assertEqual(rec.restarts, 1)
+        self.assertEqual(rec.validation_status, 'pending')
 
     def test_inbound_state_write_rejects_external_context_tokens(self):
         methods = self._inbound_methods()

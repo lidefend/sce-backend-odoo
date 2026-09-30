@@ -5,6 +5,7 @@ This covers the shared configuration chain and newly adopted contract events, pl
 It does not claim full business-document coverage; every write is rolled back.
 """
 
+import os
 from base64 import b64encode
 
 from odoo.exceptions import AccessError, UserError
@@ -464,8 +465,12 @@ def _inbound_approval_checks(project, group, created):
         ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
     ]), "existing inbound approval configuration must not be overwritten"
     warehouse = env["stock.warehouse"].sudo().search([("company_id", "=", env.company.id)], limit=1)
-    product = env["product.product"].sudo().search([("type", "=", "product")], limit=1)
-    assert warehouse and product, "existing warehouse and material required"
+    product = env["product.product"].sudo().search([("type", "in", ["product", "consu"])], limit=1)
+    assert warehouse, "existing current-company warehouse required"
+    if not product:
+        # Transaction-local collaborator, never persisted as an acceptance fixture.
+        product = env["product.product"].sudo().create({"name": "Rollback inbound material", "type": "consu"})
+        created.extend([(product._name, product.id), (product.product_tmpl_id._name, product.product_tmpl_id.id)])
 
     def document():
         record = env[model].sudo().create({
@@ -566,6 +571,8 @@ def _inbound_approval_checks(project, group, created):
 
 
 def main():
+    scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    assert scope in ("all", "inbound"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -579,141 +586,146 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        _set_policy(model_name, True)
-        required = _expense(project, partner, "required")
-        created.append((required._name, required.id))
-        required.action_submit()
-        required.invalidate_recordset()
-        assert required.state == "submit", required.state
-        assert required.review_ids and required.validation_status in ("pending", "waiting"), required.validation_status
-        print("APPROVAL_CHECK=enabled_submission_has_real_reviews")
+        if scope == "inbound":
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "existing reviewer group required"
+            _inbound_approval_checks(project, group, created)
+        else:
+            _set_policy(model_name, True)
+            required = _expense(project, partner, "required")
+            created.append((required._name, required.id))
+            required.action_submit()
+            required.invalidate_recordset()
+            assert required.state == "submit", required.state
+            assert required.review_ids and required.validation_status in ("pending", "waiting"), required.validation_status
+            print("APPROVAL_CHECK=enabled_submission_has_real_reviews")
 
-        _set_policy(model_name, False)
-        try:
-            with _env().cr.savepoint():
-                required.action_on_tier_approved()
-        except UserError:
-            pass
-        required.invalidate_recordset()
-        assert required.state == "submit", "disabled configuration bypassed live instance"
-        print("APPROVAL_CHECK=configuration_change_does_not_bypass_instance")
-        _approve_existing_reviews(required)
-        assert required.state == "approved", required.state
-        assert required.validation_status == "validated"
-        assert all(review.status == "approved" for review in required.review_ids)
-        print("APPROVAL_CHECK=native_reviewers_complete_real_chain")
+            _set_policy(model_name, False)
+            try:
+                with _env().cr.savepoint():
+                    required.action_on_tier_approved()
+            except UserError:
+                pass
+            required.invalidate_recordset()
+            assert required.state == "submit", "disabled configuration bypassed live instance"
+            print("APPROVAL_CHECK=configuration_change_does_not_bypass_instance")
+            _approve_existing_reviews(required)
+            assert required.state == "approved", required.state
+            assert required.validation_status == "validated"
+            assert all(review.status == "approved" for review in required.review_ids)
+            print("APPROVAL_CHECK=native_reviewers_complete_real_chain")
 
-        optional = _expense(project, partner, "optional")
-        created.append((optional._name, optional.id))
-        optional.action_submit()
-        optional.invalidate_recordset()
-        assert optional.state == "approved", optional.state
-        assert not optional.review_ids and optional.validation_status == "no"
-        print("APPROVAL_CHECK=disabled_submission_auto_approves_without_fake_reviews")
-        _set_policy(model_name, True)
-        steps = policy.step_ids.filtered("active")
-        assert steps, "missing active approval configuration"
-        ranges = [(step, step.amount_min, step.amount_max) for step in steps]
-        steps.write({"amount_min": 10000.0, "amount_max": 0.0})
-        missing = _expense(project, partner, "missing-rule")
-        created.append((missing._name, missing.id))
-        denied = False
-        try:
-            with _env().cr.savepoint():
-                missing.action_submit()
-        except UserError as exc:
-            assert "没有匹配" in str(exc), str(exc)
-            denied = True
-        assert denied, "enabled approval with no matching rule was accepted"
-        missing.invalidate_recordset()
-        assert missing.state == "draft" and not missing.review_ids
-        print("APPROVAL_CHECK=missing_rule_fails_without_partial_submission")
-        for step, minimum, maximum in ranges:
-            step.write({"amount_min": minimum, "amount_max": maximum})
+            optional = _expense(project, partner, "optional")
+            created.append((optional._name, optional.id))
+            optional.action_submit()
+            optional.invalidate_recordset()
+            assert optional.state == "approved", optional.state
+            assert not optional.review_ids and optional.validation_status == "no"
+            print("APPROVAL_CHECK=disabled_submission_auto_approves_without_fake_reviews")
+            _set_policy(model_name, True)
+            steps = policy.step_ids.filtered("active")
+            assert steps, "missing active approval configuration"
+            ranges = [(step, step.amount_min, step.amount_max) for step in steps]
+            steps.write({"amount_min": 10000.0, "amount_max": 0.0})
+            missing = _expense(project, partner, "missing-rule")
+            created.append((missing._name, missing.id))
+            denied = False
+            try:
+                with _env().cr.savepoint():
+                    missing.action_submit()
+            except UserError as exc:
+                assert "没有匹配" in str(exc), str(exc)
+                denied = True
+            assert denied, "enabled approval with no matching rule was accepted"
+            missing.invalidate_recordset()
+            assert missing.state == "draft" and not missing.review_ids
+            print("APPROVAL_CHECK=missing_rule_fails_without_partial_submission")
+            for step, minimum, maximum in ranges:
+                step.write({"amount_min": minimum, "amount_max": maximum})
 
-        retry = _expense(project, partner, "reject-resubmit")
-        created.append((retry._name, retry.id))
-        retry.action_submit()
-        previous_ids = set(retry.review_ids.ids)
-        users = retry.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share)
-        actor = next((retry.with_user(user) for user in users if retry.with_user(user).can_review), None)
-        assert actor is not None, "no reviewer available to reject"
-        actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="runtime rejection evidence")
-        retry.invalidate_recordset()
-        # Native tier.validation clears reviews when returning from submit to draft.
-        # The document reason and business audit preserve the rejected decision.
-        assert retry.state == "draft" and retry.validation_status == "no", (retry.state, retry.validation_status)
-        assert not retry.review_ids and retry.reject_reason == "runtime rejection evidence"
-        assert _env()["sc.audit.log"].sudo().search_count([
-            ("model", "=", retry._name), ("res_id", "=", retry.id),
-            ("event_code", "=", "expense_claim_rejected"),
-        ]) == 1
-        print("APPROVAL_CHECK=real_rejection_returns_document_to_draft")
-        retry.action_submit()
-        retry.invalidate_recordset()
-        assert retry.state == "submit" and retry.review_ids
-        assert previous_ids.isdisjoint(retry.review_ids.ids), "rejected attempt reused"
-        _approve_existing_reviews(retry)
-        assert retry.state == "approved" and retry.validation_status == "validated"
-        print("APPROVAL_CHECK=resubmission_creates_and_completes_new_review_chain")
-        # Reuse the current policy's reviewer group; two sequential decisions
-        # remain two steps even when the same eligible reviewer handles both.
-        group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
-        assert group, "missing reviewer group for linear approval"
-        scope_key = policy._approval_scope_for_group(group)
-        assert scope_key, "reviewer group lacks a configured approval scope"
-        policy.step_ids.write({"active": False})
-        linear_steps = []
-        for sequence in (10, 20):
-            linear_steps.append(_env()["sc.approval.step"].sudo().create({
-                "policy_id": policy.id, "name": "Runtime linear step %s" % sequence,
-                "active": True, "sequence": sequence, "approval_scope_key": scope_key, "approve_group_id": group.id,
-            }))
-        policy.write({"mode": "linear", "approval_required": True})
-        policy.sync_tier_definitions()
-        linear = _expense(project, partner, "linear")
-        created.append((linear._name, linear.id))
-        linear.action_submit()
-        assert len(linear.review_ids) == 2 and all(linear.review_ids.mapped("approve_sequence")), [(r.id, r.sequence, r.name, r.definition_id.active, r.approve_sequence) for r in linear.review_ids]
-        expected_definitions = [step.tier_definition_id.id for step in linear_steps]
-        actual_definitions = linear.review_ids.sorted("sequence").mapped("definition_id").ids
-        assert actual_definitions == expected_definitions, (actual_definitions, expected_definitions)
-        print("APPROVAL_CHECK=linear_configuration_creates_two_sequential_reviews_in_configured_order")
-        users = linear.review_ids.mapped("reviewer_ids")
-        outsiders = _env()["res.users"].sudo().search([
-            ("login", "=like", "fixture_role_%"), ("active", "=", True), ("share", "=", False),
-            ("id", "not in", users.ids),
-        ], limit=1)
-        assert outsiders, "missing existing fixture non-reviewer"
-        denied = False
-        try:
-            with _env().cr.savepoint():
-                outsider = linear.with_user(outsiders)
-                outsider.env["sc.approval.policy"]._approve_submission_review(outsider)
-        except AccessError:
-            denied = True
-        assert denied and not linear.review_ids.filtered(lambda review: review.status == "approved")
-        print("APPROVAL_CHECK=non_reviewer_cannot_approve")
-        actor = next((linear.with_user(user) for user in users if linear.with_user(user).can_review), None)
-        assert actor is not None
-        actor.validate_tier()
-        linear.invalidate_recordset()
-        assert linear.state == "submit" and linear.validation_status in ("waiting", "pending")
-        approved_reviews = linear.review_ids.filtered(lambda review: review.status == "approved")
-        assert len(approved_reviews) == 1
-        assert approved_reviews.definition_id.id == expected_definitions[0]
-        print("APPROVAL_CHECK=first_linear_step_does_not_finish_document")
-        _approve_existing_reviews(linear)
-        assert linear.state == "approved" and linear.validation_status == "validated"
-        assert all(review.status == "approved" for review in linear.review_ids)
-        print("APPROVAL_CHECK=last_linear_step_finishes_document")
-        _contract_event_checks(project, group, created)
-        _draft_confirmation_checks(project, group, created, "sc.plan")
-        _draft_confirmation_checks(project, group, created, "sc.construction.diary")
-        _tax_approval_checks(project, group, created)
-        _task_approval_checks(project, group, created)
-        _project_approval_checks(group, created)
-        _inbound_approval_checks(project, group, created)
+            retry = _expense(project, partner, "reject-resubmit")
+            created.append((retry._name, retry.id))
+            retry.action_submit()
+            previous_ids = set(retry.review_ids.ids)
+            users = retry.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share)
+            actor = next((retry.with_user(user) for user in users if retry.with_user(user).can_review), None)
+            assert actor is not None, "no reviewer available to reject"
+            actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="runtime rejection evidence")
+            retry.invalidate_recordset()
+            # Native tier.validation clears reviews when returning from submit to draft.
+            # The document reason and business audit preserve the rejected decision.
+            assert retry.state == "draft" and retry.validation_status == "no", (retry.state, retry.validation_status)
+            assert not retry.review_ids and retry.reject_reason == "runtime rejection evidence"
+            assert _env()["sc.audit.log"].sudo().search_count([
+                ("model", "=", retry._name), ("res_id", "=", retry.id),
+                ("event_code", "=", "expense_claim_rejected"),
+            ]) == 1
+            print("APPROVAL_CHECK=real_rejection_returns_document_to_draft")
+            retry.action_submit()
+            retry.invalidate_recordset()
+            assert retry.state == "submit" and retry.review_ids
+            assert previous_ids.isdisjoint(retry.review_ids.ids), "rejected attempt reused"
+            _approve_existing_reviews(retry)
+            assert retry.state == "approved" and retry.validation_status == "validated"
+            print("APPROVAL_CHECK=resubmission_creates_and_completes_new_review_chain")
+            # Reuse the current policy's reviewer group; two sequential decisions
+            # remain two steps even when the same eligible reviewer handles both.
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "missing reviewer group for linear approval"
+            scope_key = policy._approval_scope_for_group(group)
+            assert scope_key, "reviewer group lacks a configured approval scope"
+            policy.step_ids.write({"active": False})
+            linear_steps = []
+            for sequence in (10, 20):
+                linear_steps.append(_env()["sc.approval.step"].sudo().create({
+                    "policy_id": policy.id, "name": "Runtime linear step %s" % sequence,
+                    "active": True, "sequence": sequence, "approval_scope_key": scope_key, "approve_group_id": group.id,
+                }))
+            policy.write({"mode": "linear", "approval_required": True})
+            policy.sync_tier_definitions()
+            linear = _expense(project, partner, "linear")
+            created.append((linear._name, linear.id))
+            linear.action_submit()
+            assert len(linear.review_ids) == 2 and all(linear.review_ids.mapped("approve_sequence")), [(r.id, r.sequence, r.name, r.definition_id.active, r.approve_sequence) for r in linear.review_ids]
+            expected_definitions = [step.tier_definition_id.id for step in linear_steps]
+            actual_definitions = linear.review_ids.sorted("sequence").mapped("definition_id").ids
+            assert actual_definitions == expected_definitions, (actual_definitions, expected_definitions)
+            print("APPROVAL_CHECK=linear_configuration_creates_two_sequential_reviews_in_configured_order")
+            users = linear.review_ids.mapped("reviewer_ids")
+            outsiders = _env()["res.users"].sudo().search([
+                ("login", "=like", "fixture_role_%"), ("active", "=", True), ("share", "=", False),
+                ("id", "not in", users.ids),
+            ], limit=1)
+            assert outsiders, "missing existing fixture non-reviewer"
+            denied = False
+            try:
+                with _env().cr.savepoint():
+                    outsider = linear.with_user(outsiders)
+                    outsider.env["sc.approval.policy"]._approve_submission_review(outsider)
+            except AccessError:
+                denied = True
+            assert denied and not linear.review_ids.filtered(lambda review: review.status == "approved")
+            print("APPROVAL_CHECK=non_reviewer_cannot_approve")
+            actor = next((linear.with_user(user) for user in users if linear.with_user(user).can_review), None)
+            assert actor is not None
+            actor.validate_tier()
+            linear.invalidate_recordset()
+            assert linear.state == "submit" and linear.validation_status in ("waiting", "pending")
+            approved_reviews = linear.review_ids.filtered(lambda review: review.status == "approved")
+            assert len(approved_reviews) == 1
+            assert approved_reviews.definition_id.id == expected_definitions[0]
+            print("APPROVAL_CHECK=first_linear_step_does_not_finish_document")
+            _approve_existing_reviews(linear)
+            assert linear.state == "approved" and linear.validation_status == "validated"
+            assert all(review.status == "approved" for review in linear.review_ids)
+            print("APPROVAL_CHECK=last_linear_step_finishes_document")
+            _contract_event_checks(project, group, created)
+            _draft_confirmation_checks(project, group, created, "sc.plan")
+            _draft_confirmation_checks(project, group, created, "sc.construction.diary")
+            _tax_approval_checks(project, group, created)
+            _task_approval_checks(project, group, created)
+            _project_approval_checks(group, created)
+            _inbound_approval_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -723,7 +735,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=53")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "inbound" else 53, scope))
 
 
 main()

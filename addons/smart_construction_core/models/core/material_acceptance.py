@@ -1576,7 +1576,10 @@ class ScMaterialInbound(models.Model):
             record.line_ids._check_qty()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料入库"))
-        self._write_inbound_state({"state": "submitted"})
+        # A rejected attempt still owns tier rows until the shared submission
+        # router restarts it. Only this token-protected transition may cross
+        # the old tier write lock; callers still cannot write state directly.
+        self.with_context(skip_validation_check=True)._write_inbound_state({"state": "submitted"})
         for record in self:
             required = self.env["sc.approval.policy"]._start_submission_review(record)
             if not required:
