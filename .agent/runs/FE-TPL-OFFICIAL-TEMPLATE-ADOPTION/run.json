@@ -11,6 +11,7 @@
     "docs/audit/guard_registry/",
     "docs/ops/iterations/",
     "docs/engineering_convergence/",
+    "frontend/apps/web/scripts/",
     "frontend/apps/web/src/",
     "scripts/verify/",
     "make/",
@@ -113,10 +114,22 @@
         "make/"
       ],
       "kind": "offline"
+    },
+    "row_action_identity": {
+      "target": "verify.frontend.collection_row_action_identity.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+        "scripts/verify/web_unified_page_contract_v2_guard.py",
+        "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "The mainline guard-registry accounting is closed; continue closing P0 smart_core contract projection gaps (row detail action, export capability, favorite ownership, copy/delete with disabled reason, section item counts) so the adopted official surface can consume them instead of guessing.",
+  "next_exact_step": "Row activation identity is pinned to the declared row placement and the reference ledger no longer claims missing labelled row actions or missing export capability; continue closing the remaining P0 smart_core contract projection gaps (favorite ownership, copy/delete disabled reason, section item counts).",
   "completion": {
     "batch": "passed",
     "mainline": "not_run",

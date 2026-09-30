@@ -7100,3 +7100,196 @@ L5：未推送、未合并，远端门禁不在本段范围。
 
 本段**批次验收完成**（守卫修复 + 自证伪回归）｜主线已并入（`fff226d7b` 为祖先，无待移植提交）｜
 目标环境未部署｜整体用户交付未验收。
+
+## 段 50｜行激活身份回到契约声明的行位：`targetScope` 不再冒充行级动作，并把"守卫只验字面量"这个缺口一起补上（2026-09-30）
+
+### 0. 主线移植状态（本段开工前先确认，不重复劳动）
+
+- `origin/main = fff226d7b`（Merge PR #524）**已是本分支祖先**：
+  `git rev-list --left-right --count origin/main...HEAD` = `0 210`。
+  `git fetch` 后未出现新主线提交 → **无需移植、无需再动**。
+- 主线协作流程优化已在祖先链上并被本段直接消费：`81788ca9a`（统一 agent resume + 增量证据复用）、
+  `8b44ce536`（跨登记工作树复用主线扫描）、`b6ea04f0d`（按运行影响选择 ORM 校验）。
+  本段按 `make agent.run.begin` → 执行 → `make agent.run.record` 留回执，未再全量扫 goals。
+- 开工 HEAD `ec268dee0`，工作区干净。
+
+### 1. 本段目标与边界
+
+段 48 §7 定的顺序是"先 `collection.record-action`、再 `collection.settings-export`"。
+本段的目标不是"再实现一个行级动作"，而是把这条**契约缺口按真实事实核清并收口**：
+
+| 对象 | 本段结论 | 依据 |
+| --- | --- | --- |
+| `collection.record-action` | 台账原文**已过期**；同时发现一个真实前端身份缺陷 | 受管环境 120 个列表契约实测 |
+| `collection.settings-export` | 台账原文**已过期**（能力已声明且已被消费） | 三个入口契约实测 + 前端消费链 |
+
+边界：不改业务动作、不改后端投影、不改外壳；只修"前端用错身份信号"这一处消费缺陷，
+并把因此失灵的守卫换回**能真的验到东西**的检查。
+
+七问：`Formal Product Layer = P0 platform kernel product`｜`Layer Target = frontend renderer /
+action runtime + smart_core contract V2 action contract`｜`Module = smart_core`（契约侧只读）+
+`frontend/apps/web`｜`Standard vs User-Specific = platform mechanism`（行位声明是契约通用能力，
+不属于某个模型/客户）｜`Why Here = 行位身份由契约的 sourceWidgetId 声明，消费方就是导航运行时`｜
+`Why Not Elsewhere = 不改后端投影去迎合前端、不在页面按模型名补规则`｜
+`Blast Radius = 列表行点击的目标解析 + 一个前端守卫 + 两条台账文字`。
+
+### 2. 用真实契约核清两条台账（推翻过期表述）
+
+只读探针 `odoo shell -d sc_frontend_acceptance`（`UiContractV2Handler`，`record_id` 非必需）：
+
+**行级动作声明（`actionRuleList`）** —— 三个采样入口：
+
+| action_id | 模型 | 行级动作 | 行位 | 表头/根动作 |
+| --- | --- | --- | --- | --- |
+| 675 | `payment.request` | `action.open_form`（`view_type=form`） | `page.row` | 10 条 `page.header` |
+| 673 | `sc.general.contract` | `action.open_form`（`view_type=form`） | `page.row` | 5 条 `page.header` |
+| 348 | `project.project` | `action.action_view_tasks.2` | `page.row` | 15 条 `page.header`/`page.root` |
+
+扩样到 **60 个真实列表契约**：**60/60 都声明了 `page.row` 行级动作**，且
+**60/60 的行级动作都带非空 `label`**。故台账原文
+"Some current collections only declare row activation and do not provide an explicit labelled detail action"
+**不成立**（`action.open_form` 本身即"带标签的详情动作声明"，`target.view_type="form"`）。
+
+**导出能力** —— 三个入口均声明（`layoutContract.listProfile.batch_policy` 与
+`actionContract.surfacePolicies.batch_policy` 双处）：
+
+```
+batch_policy.available_actions            = ["export"]
+batch_policy.execution_intents.export     = "api.data"
+batch_policy.execution_operations.export  = "export_csv"
+```
+
+前端确有消费：`useActionViewSelectionActionRuntime` 的 `resolveSelectionActions(...)` 从
+`available_actions` + `execution_intents` 映射执行器，`action === 'export'` 分支调用
+`executeActionViewSelectionExport`。故 `collection.settings-export` 的
+"the current action does not declare export capability" **不成立**。
+
+### 3. 顺带定位到的真实产品缺陷：行级身份用错信号
+
+`useActionViewNavigationRuntime.ts::resolveRowOpenAction()` 原判定为三者取或：
+
+```ts
+triggerType === 'row_click'  ||  sourceWidgetId === 'page.row'  ||  targetScope === 'page'
+```
+
+两个分支都站不住：
+
+1. `triggerType === 'row_click'` **永不可能成立**：后端 `normalize_trigger_type`
+   （`core/unified_page_contract_v2_action.py:75`）把 `row_click` 归一为 `click`，前端
+   `decodeTriggerType` 也只接受闭合词表 → 解码后的契约里不存在该字面量。
+2. `targetScope === 'page'` **过宽**：后端 `normalize_target_scope`（同文件 `:92`）的文档明确写
+   "Native action placement values such as header, toolbar, smart and row are presentation facts.
+   They must never leak into the closed V2 target-scope vocabulary"，而表头动作的实际
+   `target_scope` 默认值就是"row"→被归一成 `page`。于是**表头动作也满足该分支**，
+   而 `actionRuleList` 里表头动作排在行级动作**之前**（`_append_ui_contract_actions` 早于
+   `_append_actions(..., source_widget_id="page.row")`）→ `.find()` 会先命中表头动作。
+
+本源可追：`c0a6e9e2c` 把该分支从 `'row'` 改成 `'page'`（因为归一化把它变成了 `page`），
+从此行级判定就失去意义。
+
+**实际影响面（据实说明，不夸大）**：对 120 个列表契约做"命中位置是否携带可用跳转目标"的
+模拟统计 → **120/120 命中位置都不可跳转**（表头动作 `target` 基本为 `{}`），随后走既有兜底
+`buildActionViewRowClickTarget`，**因此当前没有可见的用户故障**。但身份规则是错的：
+一旦某个表头动作携带 `route`/`entry_target`/`record_entry`，行点击就会跳到表头动作的目标。
+属于**latent 缺陷 + 可复现反例**，不是"看起来能用就不用修"。
+
+### 4. 修复
+
+**产品代码（唯一改动点）**：`frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts`
+
+- 新增 `ROW_PLACEMENT_WIDGET_ID = 'page.row'` 与 `isRowPlacementAction(action)`，
+  行级判定**只认契约声明的行位** `sourceWidgetId === 'page.row'`；
+- 删除 `targetScope === 'page'` 兜底与已失效的 `row_click` 字面量；
+- 保留原结构（无行级声明时返回 `undefined`，由既有兜底路径处理，不按模型名猜）；
+- 注释写明"为什么不能用 `targetScope`/`row_click` 推断行位"及其后端依据。
+
+**验收体系缺口（本段重点）**：`scripts/verify/web_unified_page_contract_v2_guard.py` 原来只断言
+`"resolveContractV2ActionRules" in nav_source or "row_click" in nav_source` —— 它**只验字面量是否出现**，
+所以"把行位判定删掉、换成 targetScope"这种退化它根本看不见（`row_click` 在旧实现里一直存在，
+在正确实现里反而消失）。这属于与段 49 同类的"守卫在盯不存在的证据"。
+
+改为 `check_row_activation_identity(nav_source, errors)`：
+
+1. 必须消费 `resolveContractV2ActionRules`（仍来自 v2 列表契约）；
+2. 必须存在行位声明 `sourceWidgetId` + `page.row`；
+3. **不得出现 `targetScope`**（禁止再用 target scope 推断行位）；
+4. **不得出现 `row_click`**（不得回头检已退役触发器）；
+5. 判定前先 `strip_js_comments()` 剥离注释 —— 否则我自己写的说明注释会让守卫假阳/假阴，
+   正对应"不要把说明文字当作越界证据"。
+
+新增 `scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py`（**6 项**）：
+出厂源码必须通过，再加受控变异逐一证明守卫仍可被证伪 —— 用 `targetScope` 推断行位、
+把常量退回 `row_click`、去掉行位比较、不消费 v2 动作规则、以及**只用注释写规则**，五种都必须被拒。
+
+新增前端行为级定向测试
+`frontend/apps/web/scripts/collection_row_action_identity_test.ts`（**6 项**，真实执行生产函数）：
+- `isRowPlacementAction` 对 `page.header` / `page.row` / `null` / 空白的判定；
+- **缺陷反例**：表头动作带 `route:/f/other.model/999` 且排在行级动作之前时，行点击**不得**
+  继承表头目标，必须落到被点击记录（修复前实测会跳到 `/f/other.model/999`）；
+- 行级动作自己声明的 `route` 仍被尊重并做行值物化（`menu_id`/`action_id` 保持）；
+- 只有表头动作时**不得**解析出行级动作（fail-closed）；
+- `viewType` 非集合视图时不解析行级动作。
+
+入口：`make verify.frontend.collection_row_action_identity.unit`（`make/frontend.mk`），
+并纳入 `.PHONY`、`verify.frontend.quick.gate`、`verify.frontend.pr.unit`、`verify.frontend.release.unit`；
+守卫自检纳入 `make/ci.mk` 的 `verify.unified_page_contract.v2.web_consumer` 与
+`verify.workflow_contract.frontend`。
+
+### 5. 台账按事实更新（不是"为过守卫"删条目）
+
+- `page-pattern-reference-detail-ledger-v1.json`：
+  `collection.settings-export` 与 `collection.record-action` 由 `contract_gap` 改为 `aligned`，
+  并各带 `resolution` 说明关闭依据与实测口径；`owned_gaps 20 → 18`（守卫 PASS entries=67）。
+- `page-pattern-reference-contract-gaps-v1.md`：把两条已关闭结论移入
+  "Closed boundary decisions (no longer gaps)"（沿用该文件既有先例），
+  并把仍在开放的部分（copy/delete 的 disabled reason、view-switch/settings 的 capability-bound 规则）
+  收窄保留，不趁机重开新缺口。
+
+### 6. 定向验证
+
+L0：`origin/main` 关系已核（`0 210`），HEAD `ec268dee0`，开工 clean。
+L1：`make ci.local.iteration` PASS（`change_state=dirty`，L1-only，`scopeSource=.agent/runs/.../run.json`；
+未分类路径按设计不阻断）。
+L2（非零，逐项原始日志在 `.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/`）：
+
+| 检查 | 结果 | 计数 |
+| --- | --- | --- |
+| `resume`（`verify.agent.resume.unit`） | PASS | 30 |
+| `row_action_identity`（新） | PASS | 6 |
+| `page_pattern_parity` | PASS | 28（15+13） |
+| `record_denied_reason` | PASS | 25（10+15） |
+| `contract_record_action_state` | PASS | 19 |
+| `guard_registry` | PASS | 1（AUDIT PASS: 1362 scripts / 1275 referenced / 87/87 orphans / 1 retired） |
+| `status_presentation`（复用） | reusable | 15 |
+| `user_delete_guard`（复用） | reusable | 8 |
+
+另跑：`make verify.frontend.typecheck.strict` PASS；
+`make verify.frontend.style_system.guard` PASS（`hardcoded_color_refs_max=0`）；
+`make verify.unified_page_contract.v2.web_consumer` PASS；
+`make verify.workflow_contract.frontend` PASS（含 `verify.frontend.build` 一次最终构建）。
+
+`make agent.run.resume`：**8/8 reusable，`blockers=[]`，`outside_scope=[]`**。
+`make guard.registry.export` 已刷新登记（新增脚本计入 `active`）。
+L3/L4：本段未改后端业务代码、未改运行环境、未改数据库 → 模块升级/夹具/数据库**不适用**；
+浏览器旅程不在本段目标内（行点击目标解析已由行为级单测 + 真实契约探针覆盖），按影响分析记录而非跳过真实失败。
+L5：未推送、未合并、未部署。
+
+### 7. 剩余
+
+- 台账剩余缺口不变：`entries=67 aligned=48 contract_gap=18 not_applicable=1`
+  （17 条 P0、1 条 evidence 归属等），下一步仍按段 48 §7 顺序，优先
+  `detail.section-heading`、上下文抽屉呈现授权一族，以及 `detail.action-state` 的
+  copy/delete disabled-reason 呈现。
+- 真正独立保留项不变：`industry_agnostic.guard`、`state_transition_undeclared`、
+  390×844 官方参考截图证据缺口、合并前必要门禁批次。
+- 本段未触碰 `style_system.guard` 四项历史记账（实测仍 PASS）。
+
+### 提交
+
+- `fix(web): resolve row activation from the declared row placement`（产品修复 + 定向单测 + 守卫与自检 + Make + 登记导出）
+- `docs(iteration): record 段 50`（台账、缺口文档、专题记录、run.json）
+
+### 状态
+
+本段**批次验收完成**（行位身份修复 + 守卫可证伪 + 台账据实更新）｜主线已并入
+（`fff226d7b` 为祖先，无待移植提交；`0 210`）｜目标环境未部署｜整体用户交付未验收。
