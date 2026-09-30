@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "active": 1229,
+    "active": 1231,
     "orphan": 124,
     "retired": 1
   },
@@ -9401,6 +9401,20 @@
       "lines": 221
     },
     {
+      "script": "page_pattern_reference_ledger_guard.py",
+      "path": "scripts/verify/page_pattern_reference_ledger_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.page_pattern_reference_parity.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py"
+      ],
+      "lines": 133
+    },
+    {
       "script": "payment_execution_form_productization_runtime_guard.py",
       "path": "scripts/verify/payment_execution_form_productization_runtime_guard.py",
       "status": "active",
@@ -15456,6 +15470,19 @@
         "make/dev_test.mk"
       ],
       "lines": 92
+    },
+    {
+      "script": "test_page_pattern_reference_ledger_guard.py",
+      "path": "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.page_pattern_reference_parity.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 125
     },
     {
       "script": "test_pass_through_p2_extraction_migration.py",

@@ -762,3 +762,14 @@ entries:
   date: '2026-09-30'
   reason: self-test for the industry-agnostic lexical-role classifier; wired into
     make/frontend.mk as verify.frontend.industry_agnostic.audit.unit
+- script: page_pattern_reference_ledger_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: enforces the ledger completion rule (owner + follow-up for every contract gap);
+    run by make/frontend.mk as part of verify.frontend.page_pattern_reference_parity.unit
+- script: test_page_pattern_reference_ledger_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: self-test for the ledger guard; wired into the same make target

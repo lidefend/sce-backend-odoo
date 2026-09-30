@@ -6189,3 +6189,86 @@ FIXED_CUSTOMER_IDENTIFIERS=1
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 42｜把「reference 明细账」自带的完成规则做成机检：缺口必须有主、有出口（2026-09-30）
+
+### 1. 本轮触发
+
+段 41 把行业语义审计的角色维度补齐后，回头核查主目标依赖的第二本账：
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`。
+它自己声明了完成规则：
+
+> `No needs_work item may remain when this PR is declared visually complete. Contract gaps require an authoritative owner, evidence, and follow-up target.`
+
+但**没有任何门禁读它**。21 条 `contract_gap` 里多数只有一段描述性文字，没有
+`owner`，也没有明确的关闭出口。这正是本轮要消除的验收体系缺口：
+规则写在文件里，却由人工记得执行，等于没有边界。
+
+### 2. 改动：新增 ledger 守卫（fail-closed，只加校验）
+
+- 新增 `scripts/verify/page_pattern_reference_ledger_guard.py`，执行 ledger **自带的**
+  `completionRule`，不引入第二套判定：
+  - `needs_work` 不得残留（声明为 complete 的账本里出现即 FAIL）；
+  - 每条 `contract_gap` 必须同时具备 `authority`、`owner`（`^(P[0-4]\b|evidence\b)` 正则，
+    即 P0–P4 分层或 evidence）、`followUp`（≥12 字符，必须是可关闭的具体目标）；
+  - 校验 `status` 词表、`surface` 白名单、`key` 唯一；
+  - 非对象条目、缺 `completionRule`、`details` 非非空数组均 FAIL。
+- 新增 13 例自测 `scripts/verify/test_page_pattern_reference_ledger_guard.py`，
+  含 9 类反例：无 owner、伪造 owner（`P9`）、无 followUp、无 authority、
+  残留 needs_work、未知 status、重复 key、未知 surface、缺 completionRule、非对象条目。
+- **有牙齿验证**：补 `owner` 之前运行守卫 → FAIL 46 条；就地补全后 → PASS，
+  证明它拦的是真实缺口而不是空跑。
+- 接线：`make/frontend.mk` 的 `verify.frontend.page_pattern_reference_parity.unit`
+  追加两行（自测 + 守卫）；两脚本以 `active` 登记进 `scripts/verify/registry.yaml`。
+
+### 3. 缺口归属就地补全（只加字段，不改判定、不消红）
+
+给全部 21 条 `contract_gap` 就地补 `owner` / `followUp`（紧凑行内注入，`details` 仍为 67 条）：
+
+- `P0 smart_core`：`login.*`（4）、`shell.*`（2）、`collection.favorite`、
+  `collection.settings-export`、`collection.record-action`、`detail.*`（9）；
+- `P1 smart_construction_core`：`collection.semantic-tones`、`task.field-grid`、
+  `task.slot-coverage`；
+- `evidence`：`responsive.reference-mobile`（缺认证态 390px 参考截图，由证据补齐，非产品缺陷）。
+
+**没有把任何 `contract_gap` 改成 `aligned`，没有删条目，没有放宽词表。**
+`docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md`
+新增 `## Ownership enforcement` 节，说明该配对是强制而非建议。
+
+### 4. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `scripts/verify/page_pattern_reference_ledger_guard.py`、
+`scripts/verify/test_page_pattern_reference_ledger_guard.py`、`scripts/verify/registry.yaml`、
+`make/frontend.mk`、reference 明细账与其 contract-gaps 说明；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 「缺口必须有主有出口」是账本自带的完成规则，理应由读该账本的门禁执行，
+不属于任何业务模块；
+`Why Not Elsewhere` = **不**把 `contract_gap` 降级为 `aligned`、**不**删条目、
+**不**靠人工记忆维持、**不**把守卫降级为「提示」；
+`Blast Radius` = ledger JSON 只增 `owner`/`followUp` 字段、新增守卫与自测、make 接线、
+registry 登记、guard_registry 重导出。
+**产品源码与前端渲染/交互零改动**，本轮无渲染影响面。
+
+### 5. 验证
+
+- `python3 scripts/verify/page_pattern_reference_ledger_guard.py` → `PASS entries=67 owned_gaps=21`（rc=0）；
+- `python3 scripts/verify/test_page_pattern_reference_ledger_guard.py` → 13 tests OK（rc=0）；
+- `make verify.guard.registry` → `AUDIT PASS: 1355 scripts (1231 referenced, 124/124 orphans acknowledged, 1 retired)`；
+- `make verify.frontend.page_pattern_reference_parity.unit` → parity 15 tests OK + surfaces=16；
+  ledger 13 tests OK + `PASS entries=67 owned_gaps=21`（三步都在同一入口内跑通，验证接线）；
+- `python3 scripts/verify/tenant_product_payload_boundary_guard.py` → PASS
+  `FIXED_CUSTOMER_IDENTIFIERS=0`（文档改动复查）；
+- `make ci.local.iteration` → PASS `scope=unclassified_by_design coverage=L1_only`
+  `next=risk_selected_non_zero_L2_targets_required`。
+
+### 6. 提交
+
+- `feat(verify): enforce the reference ledger completion rule`
+  （守卫 + 13 例自测 + make 接线 + registry 登记 + ledger 归属补全 + contract-gaps 说明 + guard_registry 重导出）
+- 本段记录随该提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

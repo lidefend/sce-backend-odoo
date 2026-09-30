@@ -26,6 +26,15 @@ This ledger records reference details that cannot be implemented safely from the
 
 - No authenticated 390px screenshot exists for the reference implementation. Candidate mobile safety can be proven, but mobile visual parity cannot be claimed until the reference evidence is captured.
 
+## Ownership enforcement
+
+Every contract gap also carries an authoritative `owner` and the `followUp` target that closes it in
+`page-pattern-reference-detail-ledger-v1.json`. That pairing is not advisory: `make
+verify.frontend.page_pattern_reference_parity.unit` runs
+`scripts/verify/page_pattern_reference_ledger_guard.py`, which fails when a contract gap names no
+P0-P4 or evidence owner, states no follow-up, drops its authority, or when a `needs_work` item
+survives in a ledger declared complete.
+
 ## Fail-closed rules
 
 - Missing capability hides or disables the control; query parameters never create authority.
