@@ -1421,6 +1421,121 @@ def _rental_settlement_cash_checks(_project_unused, _group_unused, created):
     print("APPROVAL_CHECK=rental_cash_cancel_after_obligations_released")
 
 
+def _subcontract_settlement_cash_checks(_project_unused, _group_unused, created):
+    base = _env()
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing finance fixture required"
+    company = finance.company_id
+    env = base["res.company"].with_company(company).env
+    actor_env = env["payment.request"].with_user(finance).with_company(company).with_context(allowed_company_ids=[company.id]).env
+    assert not actor_env.su, "cash actions must use the fixture role without sudo"
+    assert actor_env["payment.request"]._has_submit_access(), "finance fixture cannot submit requests"
+    actor_env["sc.payment.execution"]._assert_finance_handling_access()
+    actor_env["sc.payment.execution"]._assert_finance_confirm_access()
+    actor_env["sc.payment.execution"]._assert_finance_cancel_access()
+    project = env["project.project"].sudo().create({"name": "Subcontract cash rollback project", "code": "SUBCONTRACT-CASH-ROLLBACK", "company_id": company.id, "manager_id": finance.id, "funding_enabled": True})
+    supplier = env["res.partner"].sudo().create({"name": "Subcontract cash rollback supplier", "supplier_rank": 1})
+    created.extend([(project._name, project.id), (supplier._name, supplier.id)])
+    today = fields.Date.context_today(project)
+    baseline = env["project.funding.baseline"].sudo().create({"project_id": project.id, "total_amount": 1000,
+        "period_start": today - timedelta(days=1), "period_end": today + timedelta(days=30),
+        "line_ids": [(0, 0, {"name": "Subcontract cash rollback allocation", "planned_amount": 1000})]})
+    created.append((baseline._name, baseline.id))
+    baseline.action_activate()
+    assert baseline.state == "active"
+    print("APPROVAL_CHECK=subcontract_cash_registered_finance_and_active_funding")
+
+    def denied(call, expected=None):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError as exc:
+            if expected: assert expected in str(exc), str(exc)
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    source = env["sc.subcontract.settlement"].sudo().create({"project_id": project.id, "subcontractor_id": supplier.id,
+        "line_ids": [(0, 0, {"work_scope": "Subcontract cash rollback item", "qty": 2, "unit_price": 30})]})
+    created.append((source._name, source.id))
+    source.action_submit()
+    if source.review_ids: _approve_existing_reviews(source)
+    assert source.state == "approved"
+    source.action_confirm()
+    print("APPROVAL_CHECK=subcontract_cash_source_approved_and_confirmed")
+
+    def request_for(amount):
+        request = actor_env["payment.request"].create({"type": "pay", "subcontract_settlement_id": source.id, "amount": amount,
+            "payment_account_name": "Rollback subcontract payee", "payment_bank_name": "Rollback bank", "payment_account_no": "ROLLBACK-SUBCONTRACT-PAYEE",
+            "payer_unit": "Rollback subcontract payer"})
+        created.append((request._name, request.id))
+        _attach(request, "subcontract-cash-request")
+        return request
+
+    request = request_for(60)
+    request.action_submit()
+    if request.review_ids: _approve_existing_reviews(request)
+    request.invalidate_recordset()
+    assert request.state == "approved" and request.funding_baseline_id == baseline
+    print("APPROVAL_CHECK=subcontract_cash_finance_request_submission_and_approval")
+    extra = request_for(1)
+    denied(extra.action_submit, "未占用额度")
+    denied(source.action_cancel, "未确认")
+    print("APPROVAL_CHECK=subcontract_cash_overbooking_and_live_source_cancel_denied")
+
+    def pay(amount):
+        action = request.action_create_payment_execution()
+        execution = actor_env["sc.payment.execution"].with_context(action["context"]).create({"payment_request_id": request.id, "paid_amount": amount,
+            "payment_account_name": "Rollback subcontract payer", "payment_bank_name": "Rollback bank",
+            "payment_account_no": "ROLLBACK-SUBCONTRACT-PAYER", "payment_method": "银行转账"})
+        created.append((execution._name, execution.id))
+        _attach(execution, "subcontract-cash-execution")
+        execution.action_confirm()
+        if execution.review_ids: _approve_existing_reviews(execution)
+        assert execution.state == "confirmed"
+        execution.action_paid()
+        execution.invalidate_recordset()
+        assert execution.state == "paid"
+        ledgers = env["payment.ledger"].sudo().search([("payment_execution_id", "=", execution.id), ("state", "=", "posted")])
+        assert len(ledgers) == 1 and ledgers.amount == amount
+        origin = ledgers.action_open_settlement()
+        assert origin["res_model"] == source._name and origin["res_id"] == source.id
+        created.extend((ledger._name, ledger.id) for ledger in ledgers)
+        source.invalidate_recordset()
+        request.invalidate_recordset()
+        return execution
+
+    first = pay(20)
+    assert source.payment_paid_amount == 20 and source.payment_unpaid_amount == 40
+    assert source.state == "confirmed"
+    print("APPROVAL_CHECK=subcontract_cash_partial_payment_updates_authoritative_summary")
+    second = pay(40)
+    assert source.payment_paid_amount == 60 and source.payment_unpaid_amount == 0
+    assert source.state == "confirmed"
+    assert source.payment_requested_amount == 60 and source.payment_unrequested_amount == 0
+    print("APPROVAL_CHECK=subcontract_cash_full_posted_payment_preserves_confirmed_settlement")
+    denied(lambda: request.write({"subcontract_settlement_id": False}), "归属")
+    print("APPROVAL_CHECK=subcontract_cash_posted_attribution_is_immutable")
+    second.write({"reversal_reason": "Subcontract cash rollback reversal"})
+    second.action_reverse_payment()
+    source.invalidate_recordset()
+    request.invalidate_recordset()
+    assert source.state == "confirmed" and source.payment_paid_amount == 20 and source.payment_unpaid_amount == 40
+    assert request.state == "approved"
+    print("APPROVAL_CHECK=subcontract_cash_reversal_updates_paid_summary")
+    first.write({"reversal_reason": "Subcontract cash rollback remaining reversal"})
+    first.action_reverse_payment()
+    source.invalidate_recordset()
+    assert source.payment_paid_amount == 0 and source.payment_unpaid_amount == 60
+    assert source.state == "confirmed"
+    denied(lambda: request.write({"subcontract_settlement_id": False}), "归属")
+    print("APPROVAL_CHECK=subcontract_cash_all_reversed_history_keeps_attribution")
+    request.action_cancel()
+    source.invalidate_recordset()
+    assert source.state == "confirmed"
+    assert source.payment_requested_amount == 0 and source.payment_unrequested_amount == 60
+    print("APPROVAL_CHECK=subcontract_cash_request_cancel_releases_reserved_amount")
+
+
 def _rental_settlement_checks(project, group, created):
     env = _env()
     model = "sc.material.rental.settlement"
@@ -2052,7 +2167,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -2066,10 +2181,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks, "rental-settlement-cash": _rental_settlement_cash_checks, "rental-cancellation-contract": _rental_settlement_cash_checks, "safety-approval": _safety_approval_checks, "subcontract-approval": _subcontract_approval_checks, "subcontract-settlement": _subcontract_settlement_approval_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks, "rental-settlement-cash": _rental_settlement_cash_checks, "rental-cancellation-contract": _rental_settlement_cash_checks, "safety-approval": _safety_approval_checks, "subcontract-approval": _subcontract_approval_checks, "subcontract-settlement": _subcontract_settlement_approval_checks, "subcontract-settlement-cash": _subcontract_settlement_cash_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -2222,6 +2337,7 @@ def main():
             _safety_approval_checks(project, group, created)
             _subcontract_approval_checks(project, group, created)
             _subcontract_settlement_approval_checks(project, group, created)
+            _subcontract_settlement_cash_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -2231,7 +2347,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement") else 239, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 249, scope))
 
 
 main()

@@ -1127,32 +1127,34 @@ class ScSubcontractSettlement(models.Model):
     amount_untaxed = fields.Monetary(string="未税金额", currency_field="currency_id", compute="_compute_amounts", store=True)
     tax_amount = fields.Monetary(string="税额", currency_field="currency_id", compute="_compute_amounts", store=True)
     amount_total = fields.Monetary(string="结算金额", currency_field="currency_id", compute="_compute_amounts", store=True)
+    payment_request_ids = fields.One2many("payment.request", "subcontract_settlement_id", string="关联付款申请", readonly=True)
+    payment_allocation_revision = fields.Integer(default=0, readonly=True, copy=False)
     payment_paid_amount = fields.Monetary(
         string="已付款金额",
         currency_field="currency_id",
         compute="_compute_payment_boundary_amounts",
-        store=True,
+        store=False,
         readonly=True,
     )
     payment_unpaid_amount = fields.Monetary(
         string="未付款金额",
         currency_field="currency_id",
         compute="_compute_payment_boundary_amounts",
-        store=True,
+        store=False,
         readonly=True,
     )
     payment_requested_amount = fields.Monetary(
         string="已申请金额",
         currency_field="currency_id",
         compute="_compute_payment_boundary_amounts",
-        store=True,
+        store=False,
         readonly=True,
     )
     payment_unrequested_amount = fields.Monetary(
         string="未申请金额",
         currency_field="currency_id",
         compute="_compute_payment_boundary_amounts",
-        store=True,
+        store=False,
         readonly=True,
     )
     state = fields.Selection(
@@ -1179,14 +1181,20 @@ class ScSubcontractSettlement(models.Model):
             record.tax_amount = sum(record.line_ids.mapped("tax_amount"))
             record.amount_total = sum(record.line_ids.mapped("amount_total"))
 
-    @api.depends("amount_total")
+    @api.depends("amount_total", "payment_request_ids", "payment_request_ids.amount", "payment_request_ids.state",
+                 "payment_request_ids.ledger_line_ids.state", "payment_request_ids.ledger_line_ids.amount",
+                 "payment_request_ids.ledger_line_ids.normalization_state")
     def _compute_payment_boundary_amounts(self):
+        requests = self.sudo().with_context(active_test=False).mapped("payment_request_ids")
+        paid_map = requests._canonical_payment_paid_amount_map()
         for record in self:
-            amount = record.amount_total or 0.0
-            record.payment_paid_amount = 0.0
-            record.payment_unpaid_amount = amount
-            record.payment_requested_amount = 0.0
-            record.payment_unrequested_amount = amount
+            attributed = record.sudo().with_context(active_test=False).payment_request_ids
+            paid = sum(paid_map.get(request.id, 0.0) for request in attributed)
+            reserved = sum(request.amount for request in attributed if request.state not in ("draft", "rejected", "cancel"))
+            record.payment_paid_amount = paid
+            record.payment_unpaid_amount = max(record.amount_total - paid, 0.0)
+            record.payment_requested_amount = reserved
+            record.payment_unrequested_amount = max(record.amount_total - reserved, 0.0)
 
     @api.model
     def _sc_validate_cumulative_registered_quantities(
@@ -1432,6 +1440,8 @@ class ScSubcontractSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any("payment_allocation_revision" in values for values in vals_list):
+            raise UserError(_("付款占额版本不能通过外部创建设置。"))
         if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
@@ -1472,6 +1482,8 @@ class ScSubcontractSettlement(models.Model):
         return records
 
     def write(self, vals):
+        if "payment_allocation_revision" in vals and self.env.context.get("sc_subcontract_approval_state_token") is not _SUBCONTRACT_APPROVAL_STATE_TOKEN:
+            raise UserError(_("付款占额版本只能由付款依据内部更新。"))
         if "state" in vals and self.env.context.get("sc_subcontract_approval_state_token") is not _SUBCONTRACT_APPROVAL_STATE_TOKEN:
             raise UserError(_("状态必须通过办理动作产生。"))
         if (
@@ -1697,6 +1709,42 @@ class ScSubcontractSettlement(models.Model):
             raise UserError(_("提交后的分包单据业务事实不可修改。"))
 
 
+
+    def _lock_payment_basis(self):
+        ids = sorted(record_id for record_id in self.ids if isinstance(record_id, int) and record_id > 0)
+        if ids:
+            self.env.cr.execute(
+                "SELECT id FROM sc_subcontract_settlement WHERE id IN %s ORDER BY id FOR UPDATE",
+                [tuple(ids)],
+            )
+            self.invalidate_recordset()
+
+    def _serialize_payment_reservation(self):
+        # A lock alone does not refresh a REPEATABLE READ snapshot. Touch the
+        # shared source row so competing allocations conflict and retry using
+        # a fresh transaction instead of both accepting an old aggregate.
+        self._lock_payment_basis()
+        for record in self:
+            # Finance may reserve a readable settlement without being allowed
+            # to edit its business facts. Elevation is confined to this counter.
+            record.sudo()._write_approval_state({
+                "payment_allocation_revision": record.payment_allocation_revision + 1,
+            })
+
+    def _payment_reserved_amount(self, exclude_request_id=False):
+        self.ensure_one()
+        domain = [
+            ("subcontract_settlement_id", "=", self.id),
+            ("state", "not in", ("draft", "rejected", "cancel")),
+        ]
+        if exclude_request_id:
+            domain.append(("id", "!=", exclude_request_id))
+        rows = self.env["payment.request"].sudo().read_group(domain, ["amount:sum"], [])
+        return rows[0].get("amount_sum", rows[0].get("amount", 0.0)) if rows else 0.0
+
+    def _payment_unreserved_amount(self):
+        self.ensure_one()
+        return max(self.amount_total - self._payment_reserved_amount(), 0.0)
 
 class ScSubcontractSettlementLine(models.Model):
     _name = "sc.subcontract.settlement.line"

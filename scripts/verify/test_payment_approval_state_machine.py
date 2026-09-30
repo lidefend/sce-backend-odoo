@@ -1021,6 +1021,245 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def _subcontract_payment_basis(self, **changes):
+        tree = ast.parse(MODEL.read_text())
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_check_subcontract_settlement_consistency')
+        method.decorator_list = []
+        ns = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        source = types.SimpleNamespace(state='confirmed', project_id=11, company_id=12, subcontractor_id=13, currency_id=14, contract_id=15)
+        lines = changes.pop('lines', [])
+        record = types.SimpleNamespace(subcontract_settlement_id=source, rental_settlement_id=False, type='pay', project_id=11, company_id=12, partner_id=13, currency_id=14, contract_id=15, settlement_id=False, material_settlement_id=False, outflow_line_ids=types.SimpleNamespace(filtered=lambda predicate: list(filter(predicate, lines))))
+        record.__dict__.update(changes)
+        return record, lambda: ns['_check_subcontract_settlement_consistency']([record])
+
+    def test_subcontract_payment_basis_rejects_identity_mismatch(self):
+        for field, value in [('type', 'receive'), ('project_id', 99), ('company_id', 99), ('partner_id', 99), ('currency_id', 99), ('contract_id', 99), ('partner_id', False), ('currency_id', False)]:
+            with self.subTest(field=field, value=value):
+                record, validate = self._subcontract_payment_basis(**{field: value})
+                with self.assertRaises(ValueError): validate()
+        for state in ('draft', 'submitted', 'approved', 'cancel'):
+            record, validate = self._subcontract_payment_basis()
+            record.subcontract_settlement_id.state = state
+            with self.assertRaises(ValueError): validate()
+
+    def test_subcontract_payment_basis_prevents_duplicate_obligation_claim(self):
+        for field in ('settlement_id', 'material_settlement_id', 'rental_settlement_id'):
+            record, validate = self._subcontract_payment_basis(**{field: 17})
+            with self.assertRaises(ValueError): validate()
+        for line in [types.SimpleNamespace(settlement_id=17, settlement_line_id=False, contract_id=15), types.SimpleNamespace(settlement_id=False, settlement_line_id=18, contract_id=15), types.SimpleNamespace(settlement_id=False, settlement_line_id=False, contract_id=99)]:
+            record, validate = self._subcontract_payment_basis(lines=[line])
+            with self.assertRaises(ValueError): validate()
+
+    def test_subcontract_payment_basis_accepts_same_source_multiple_requests(self):
+        record, validate = self._subcontract_payment_basis(lines=[types.SimpleNamespace(settlement_id=False, settlement_line_id=False, contract_id=15)])
+        validate()
+        other, validate_other = self._subcontract_payment_basis(subcontract_settlement_id=record.subcontract_settlement_id)
+        validate_other()
+        record.subcontract_settlement_id.state = 'paid'
+        with self.assertRaises(ValueError): validate()  # Subcontract has no paid lifecycle state.
+        record, validate = self._subcontract_payment_basis(contract_id=False)
+        record.subcontract_settlement_id.contract_id = False
+        validate()
+        record, validate = self._subcontract_payment_basis(subcontract_settlement_id=False)
+        validate()  # Existing non-subcontract request paths are unaffected.
+
+    def _subcontract_reservation_check(self, *, amount=40, reserved=60, state='approved', has_source=True):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_subcontract_settlement_remaining_amount')
+        method.decorator_list = []
+        def compare(a, b, precision_rounding):
+            left, right = round(a / precision_rounding), round(b / precision_rounding)
+            return (left > right) - (left < right)
+        ns = {'ValidationError': ValueError, '_': lambda text: text, 'float_compare': compare}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        events = []
+        source = types.SimpleNamespace(id=7, amount_total=100, currency_id=types.SimpleNamespace(rounding=0.01))
+        record = types.SimpleNamespace(id=23, subcontract_settlement_id=source if has_source else False, amount=amount, state=state)
+        source.ensure_one = lambda: None
+        source_path = MODEL.with_name('subcontract_management.py')
+        reserve = next(n for n in ast.walk(ast.parse(source_path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_reserved_amount')
+        exec(compile(ast.Module(body=[reserve], type_ignores=[]), str(source_path), 'exec'), ns)
+        source._payment_reserved_amount = lambda **kw: ns['_payment_reserved_amount'](source, **kw)
+        class Requests(list):
+            def filtered(self, predicate): return Requests(filter(predicate, self))
+            def mapped(self, field): return types.SimpleNamespace(_serialize_payment_reservation=lambda: events.append('serialize'))
+            def _check_subcontract_settlement_consistency(self): events.append('identity')
+            def sudo(self): return self
+            def read_group(self, domain, fields, groupby):
+                events.append(domain)
+                return [{'amount': reserved}]
+        source.env = {'payment.request': Requests([record])}
+        return lambda: ns['_check_subcontract_settlement_remaining_amount'](Requests([record])), events
+
+    def test_subcontract_basis_defaults_preserve_zero_remaining_amount(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_basis_payment_request_values')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        source = types.SimpleNamespace(project_id=types.SimpleNamespace(id=11), contract_id=types.SimpleNamespace(id=False), subcontractor_id=types.SimpleNamespace(id=13), currency_id=types.SimpleNamespace(id=14))
+        source.exists = lambda: source
+        class Env(dict): context = {}
+        record = types.SimpleNamespace(env=Env({'sc.subcontract.settlement': types.SimpleNamespace(browse=lambda value: source)}), _partner_payment_defaults=lambda partner, request_type: {'payment_account_no': 'existing-authority'})
+        for amount in (0, 40):
+            source._payment_unreserved_amount = lambda: amount
+            values = ns['_basis_payment_request_values'](record, {'subcontract_settlement_id': 7})
+            self.assertEqual(values['amount'], amount)
+            self.assertEqual(values['project_id'], 11)
+            self.assertEqual(values['partner_id'], 13)
+            self.assertEqual(values['currency_id'], 14)
+            self.assertEqual(values['payment_account_no'], 'existing-authority')
+
+    def test_subcontract_reservation_allows_split_payments_but_not_overbooking(self):
+        validate, events = self._subcontract_reservation_check()
+        validate()
+        self.assertEqual(events[:2], ['serialize', 'identity'])
+        self.assertIn(('id', '!=', 23), events[2])
+        self.assertIn(('subcontract_settlement_id', '=', 7), events[2])
+        self.assertIn(('state', 'not in', ('draft', 'rejected', 'cancel')), events[2])
+        for amount, reserved in ((40.01, 60), (1, 100), (0, 0), (-1, 0)):
+            validate, _ = self._subcontract_reservation_check(amount=amount, reserved=reserved)
+            with self.assertRaises(ValueError): validate()
+
+    def test_subcontract_reservation_does_not_charge_inactive_or_unrelated_requests(self):
+        for state in ('draft', 'rejected', 'cancel'):
+            validate, events = self._subcontract_reservation_check(state=state, amount=999)
+            validate()
+            self.assertEqual(events, [])
+        validate, events = self._subcontract_reservation_check(has_source=False, amount=999)
+        validate()
+        self.assertEqual(events, [])
+
+    def test_subcontract_reservation_touches_source_version_after_lock(self):
+        path = MODEL.with_name('subcontract_management.py')
+        tree = ast.parse(path.read_text())
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_serialize_payment_reservation')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        rec = self._purchase_request_record(state='confirmed')
+        rec.payment_allocation_revision = 8
+        rec.sudo = lambda: rec
+        events = []
+        rec._lock_payment_basis = lambda: events.append('lock')
+        rec._write_approval_state = lambda vals: events.append(vals)
+        ns['_serialize_payment_reservation'](rec)
+        self.assertEqual(events, ['lock', {'payment_allocation_revision': 9}])
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScSubcontractSettlement')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        ns = {'_SUBCONTRACT_APPROVAL_STATE_TOKEN': object(), 'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        with self.assertRaises(ValueError): ns['write'](rec, {'payment_allocation_revision': 100})
+
+    def test_subcontract_payment_summary_uses_attributed_canonical_cash_and_active_requests(self):
+        ns, records, record, paid_map, _ambiguous, _events = self._rental_paid_methods()
+        path = MODEL.with_name('subcontract_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScSubcontractSettlement')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '_compute_payment_boundary_amounts')
+        method.decorator_list = []
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        record.payment_request_ids[0].amount = 60
+        record.payment_request_ids[1].amount = 40
+        ns['_compute_payment_boundary_amounts'](records)
+        self.assertEqual((record.payment_paid_amount, record.payment_unpaid_amount), (100, 0))
+        self.assertEqual((record.payment_requested_amount, record.payment_unrequested_amount), (40, 60))
+        paid_map[1], paid_map[2] = 0, 20
+        ns['_compute_payment_boundary_amounts'](records)
+        self.assertEqual((record.payment_paid_amount, record.payment_unpaid_amount), (20, 80))
+        record.payment_request_ids[1].state = 'cancel'
+        ns['_compute_payment_boundary_amounts'](records)
+        self.assertEqual(record.payment_requested_amount, 0)
+        self.assertEqual(record.payment_paid_amount, 20)
+
+    def test_subcontract_attribution_cannot_reassign_financial_history(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_assert_subcontract_attribution_unchanged')
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(MODEL), 'exec'), ns)
+        contexts = []
+        class Requests(list):
+            def sudo(self): return self
+            def with_context(self, **values):
+                contexts.append(values)
+                return self
+        for current, target in ((7, False), (7, 8), (False, 7)):
+            for ledger, execution in ((['reversed'], []), ([], ['cancelled'])):
+                record = types.SimpleNamespace(subcontract_settlement_id=types.SimpleNamespace(id=current), ledger_line_ids=ledger, payment_execution_ids=execution)
+                with self.assertRaises(ValueError):
+                    ns['_assert_subcontract_attribution_unchanged'](Requests([record]), {'subcontract_settlement_id': target})
+                ns['_assert_subcontract_attribution_unchanged'](Requests([record]), {'subcontract_settlement_id': current})
+                ns['_assert_subcontract_attribution_unchanged'](Requests([record]), {'note': 'explanation'})
+        record.ledger_line_ids, record.payment_execution_ids = [], []
+        ns['_assert_subcontract_attribution_unchanged'](Requests([record]), {'subcontract_settlement_id': 8})
+        self.assertTrue(contexts)
+        self.assertTrue(all(values == {'active_test': False} for values in contexts))
+
+    def test_execution_contract_resolves_caller_visible_subcontract_source(self):
+        path = MODEL.with_name('payment_execution.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_basis_contracts_map')
+        method.decorator_list = []
+        ns = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), 'exec'), ns)
+        class Rows(list):
+            def search(self, domain): return Rows()
+            @property
+            def ids(self): return [row.id for row in self]
+            @property
+            def id(self): return self[0].id if self else False
+            def mapped(self, name):
+                result = Rows()
+                for row in self:
+                    value = getattr(row, name)
+                    result.extend(value if isinstance(value, list) else [value])
+                return result
+            def __or__(self, other):
+                return Rows(list(self) + [row for row in other if row not in self])
+        empty = Rows()
+        contract = types.SimpleNamespace(id=15, project_id=11)
+        source = types.SimpleNamespace(id=7, project_id=11, contract_id=Rows([contract]))
+        calls = []
+        request = types.SimpleNamespace(id=23, project_id=11, subcontract_settlement_id=Rows([source]), rental_settlement_id=empty, settlement_id=empty, material_settlement_id=empty, contract_id=Rows([contract]), _check_subcontract_settlement_consistency=lambda: calls.append('identity'))
+        def visible(model, ids):
+            calls.append((model, set(ids)))
+            if model == 'sc.subcontract.settlement': return {7: source}
+            if model == 'construction.contract': return {15: Rows([contract])}
+            return {}
+        service = types.SimpleNamespace(env={'construction.contract': empty, 'payment.request.line': Rows()}, _caller_visible_payment_relations=visible)
+        result = ns['_payment_basis_contracts_map'](service, Rows([request]))
+        self.assertEqual(result[23], Rows([contract]))
+        self.assertIn(('sc.subcontract.settlement', {7}), calls)
+        self.assertIn('identity', calls)
+        source.contract_id, request.contract_id = empty, empty
+        self.assertEqual(ns['_payment_basis_contracts_map'](service, Rows([request]))[23], empty)
+        def denied(model, ids):
+            if model == 'sc.subcontract.settlement': raise PermissionError('source invisible')
+            return visible(model, ids)
+        service._caller_visible_payment_relations = denied
+        with self.assertRaises(PermissionError): ns['_payment_basis_contracts_map'](service, Rows([request]))
+
+    def test_ledger_accepts_only_confirmed_valid_subcontract_payment_basis(self):
+        path = MODEL.with_name('payment_ledger.py')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'_check_request_state', 'action_open_settlement'}]
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        checks = []
+        source = types.SimpleNamespace(id=7, state='confirmed', project_id=types.SimpleNamespace(id=11))
+        request = types.SimpleNamespace(state='approved', payment_basis_type='subcontract_settlement', subcontract_settlement_id=source, rental_settlement_id=False,
+            _check_subcontract_settlement_consistency=lambda: checks.append('identity'),
+            _check_subcontract_settlement_remaining_amount=lambda: checks.append('reservation'))
+        ledger = types.SimpleNamespace(ensure_one=lambda: None, payment_request_id=request)
+        ns['_check_request_state'](ledger, request)
+        self.assertEqual(checks, ['identity', 'reservation'])
+        action = ns['action_open_settlement'](ledger)
+        self.assertEqual((action['res_model'], action['res_id']), ('sc.subcontract.settlement', 7))
+        self.assertEqual(action['context'], {'default_project_id': 11})
+        for state in ('draft', 'submitted', 'approved', 'paid', 'cancel'):
+            source.state = state
+            with self.assertRaises(ValueError): ns['_check_request_state'](ledger, request)
+        source.state = 'confirmed'
+        request.state = 'submit'
+        with self.assertRaises(ValueError): ns['_check_request_state'](ledger, request)
+        request.state = 'approved'
+        request._check_subcontract_settlement_remaining_amount = lambda: (_ for _ in ()).throw(ValueError('overbooked'))
+        with self.assertRaisesRegex(ValueError, 'overbooked'): ns['_check_request_state'](ledger, request)
+
     def test_subcontract_settlement_approval_precedes_explicit_confirmation(self):
         path = MODEL.with_name('subcontract_management.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScSubcontractSettlement')
@@ -1215,7 +1454,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         contract = types.SimpleNamespace(id=15, project_id=11)
         source = types.SimpleNamespace(id=7, project_id=11, contract_id=Rows([contract]))
         calls = []
-        request = types.SimpleNamespace(id=23, project_id=11, rental_settlement_id=Rows([source]), settlement_id=empty, material_settlement_id=empty, contract_id=Rows([contract]), _check_rental_settlement_consistency=lambda: calls.append('identity'))
+        request = types.SimpleNamespace(id=23, project_id=11, rental_settlement_id=Rows([source]), subcontract_settlement_id=empty, settlement_id=empty, material_settlement_id=empty, contract_id=Rows([contract]), _check_rental_settlement_consistency=lambda: calls.append('identity'))
         def visible(model, ids):
             calls.append((model, set(ids)))
             if model == 'sc.material.rental.settlement': return {7: source}
@@ -1238,7 +1477,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_has_payment_basis')
         ns = {}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(MODEL), 'exec'), ns)
-        record = types.SimpleNamespace(ensure_one=lambda: None, contract_id=False, settlement_id=False, material_settlement_id=False, rental_settlement_id=7, outflow_line_ids=types.SimpleNamespace(filtered=lambda field: []))
+        record = types.SimpleNamespace(ensure_one=lambda: None, contract_id=False, settlement_id=False, material_settlement_id=False, rental_settlement_id=7, subcontract_settlement_id=False, outflow_line_ids=types.SimpleNamespace(filtered=lambda field: []))
         self.assertTrue(ns['_has_payment_basis'](record))
         record.rental_settlement_id = False
         self.assertFalse(ns['_has_payment_basis'](record))
@@ -1392,7 +1631,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
         source = types.SimpleNamespace(state='confirmed', project_id=11, company_id=12, supplier_id=13, currency_id=14, contract_id=15)
         lines = changes.pop('lines', [])
-        record = types.SimpleNamespace(rental_settlement_id=source, type='pay', project_id=11, company_id=12, partner_id=13, currency_id=14, contract_id=15, settlement_id=False, material_settlement_id=False, outflow_line_ids=types.SimpleNamespace(filtered=lambda predicate: list(filter(predicate, lines))))
+        record = types.SimpleNamespace(rental_settlement_id=source, subcontract_settlement_id=False, type='pay', project_id=11, company_id=12, partner_id=13, currency_id=14, contract_id=15, settlement_id=False, material_settlement_id=False, outflow_line_ids=types.SimpleNamespace(filtered=lambda predicate: list(filter(predicate, lines))))
         record.__dict__.update(changes)
         return record, lambda: ns['_check_rental_settlement_consistency']([record])
 

@@ -437,6 +437,12 @@ class PaymentLedger(models.Model):
             request._check_rental_settlement_consistency()
             request._check_rental_settlement_remaining_amount()
             return
+        if basis_type == "subcontract_settlement":
+            if not request.subcontract_settlement_id or request.subcontract_settlement_id.state != "confirmed":
+                raise UserError("分包结算单未确认或已完成支付，不能登记付款。")
+            request._check_subcontract_settlement_consistency()
+            request._check_subcontract_settlement_remaining_amount()
+            return
         if basis_type == "material_settlement":
             if request.material_settlement_id.state == "confirmed":
                 return
@@ -1047,6 +1053,17 @@ class PaymentLedger(models.Model):
                 "view_mode": "form",
                 "target": "current",
                 "context": {"default_project_id": rental_settlement.project_id.id},
+            }
+        subcontract_settlement = self.payment_request_id.subcontract_settlement_id
+        if subcontract_settlement:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("分包结算"),
+                "res_model": "sc.subcontract.settlement",
+                "res_id": subcontract_settlement.id,
+                "view_mode": "form",
+                "target": "current",
+                "context": {"default_project_id": subcontract_settlement.project_id.id},
             }
         material_settlement = self.payment_request_id.material_settlement_id
         if material_settlement:

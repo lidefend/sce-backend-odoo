@@ -463,12 +463,15 @@ class ScPaymentExecution(models.Model):
         rental_settlements_by_id = self._caller_visible_payment_relations(
             "sc.material.rental.settlement", requests.mapped("rental_settlement_id").ids,
         )
+        subcontract_settlements_by_id = self._caller_visible_payment_relations(
+            "sc.subcontract.settlement", requests.mapped("subcontract_settlement_id").ids,
+        )
         contract_ids = (
             set(lines.mapped("contract_id").ids)
             | set(requests.mapped("contract_id").ids)
             | {
                 settlement.contract_id.id
-                for settlement in list(settlements_by_id.values()) + list(rental_settlements_by_id.values())
+                for settlement in list(settlements_by_id.values()) + list(rental_settlements_by_id.values()) + list(subcontract_settlements_by_id.values())
                 if settlement.contract_id
             }
         )
@@ -525,6 +528,14 @@ class ScPaymentExecution(models.Model):
                     if contracts and contracts != rental_contract:
                         raise ValidationError(_("付款登记合同与租赁结算依据不一致。"))
                     contracts |= rental_contract
+            if request.subcontract_settlement_id:
+                request._check_subcontract_settlement_consistency()
+                subcontract_settlement = subcontract_settlements_by_id[request.subcontract_settlement_id.id]
+                if subcontract_settlement.contract_id:
+                    subcontract_contract = contracts_by_id[subcontract_settlement.contract_id.id]
+                    if contracts and contracts != subcontract_contract:
+                        raise ValidationError(_("付款登记合同与分包结算依据不一致。"))
+                    contracts |= subcontract_contract
             if request.contract_id:
                 request_contract = contracts_by_id[request.contract_id.id]
                 if len(contracts) > 1:

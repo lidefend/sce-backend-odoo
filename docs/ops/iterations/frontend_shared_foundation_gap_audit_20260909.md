@@ -8477,3 +8477,13 @@ L1 subcontract-settlement-iteration.log通过，首轮L2发现确认调用漏传
 P4 browser既有approval-actions新增settlementcreate，subcontract-settlement-page-iteration.log/node/diff通过。fixture_role_pm create tpl07-1790789142069 21 PASS：3输入有效契约及真实控件、编号创建隐藏、未保存无确认动作、1440/390无横向溢出，errors/forbiddenWrites空。390图核对项目/单位/明细入口/结算日期，frontend7915f3bb9复用不构建。未跑已有角色保存/正式登记选择全旅程。
 
 下一步按已登记产品缺口核对分包结算实际付款依据/请求/posted ledger映射，补齐真实财务汇总，不得将固定0视为事实。总体67/角色全办理/并发仍未完成。无新fixture环境/推送/合并/目标部署。
+
+### 53.111 分包结算显式付款归属及真实汇总（进行中）
+
+151c4f547 clean续跑，仅核对payment request/line/execution/ledger和已确认分包结算。无既有分包归属，不能按合同/单位猜测。P1增加payment.request.subcontract_settlement_id（restrict/copyFalse），同公司/项目/收款方/币种/合同与confirmed来源约束、头部依据互斥、明细不得混其他结算；明确归属进入默认值/有效事实/付款依据分类/执行校验/ledger及来源导航。存在登记或台账历史（包括冲销/取消）不能新增、更换、清除归属。来源共享行锁+私有版本更新用于占额串行化，未声称真实并发已验。
+
+分包source payment_request_ids提供反向权威关联，paid只取既有canonical posted付款映射；requested仅在途/已完成申请占额；取消申请不抹除仍有效posted事实；4汇总改为非存储实时计算。财务申请可写私有sudo占额计数，不能改来源业务事实。无新前端业务规则，native payment basis只新增声明字段。既有历史数据不猜测回填，历史无显式归属仍需迁移/核对，不能声称全历史金额完整。
+
+初轮L2四项旧替身漏新字段，补实际模型形状；新测试另发现零剩余额度被default filter丢弃，P1修为两专用来源都保留0。工具测试的paid状态/局部变量问题已修复，不改变分包confirmed生命周期。最终L1 subcontract-payment-final-iteration.log、L2 unit-final.log122 PASS、native.log8+52=60 PASS并登记；身份/额度/历史冻结/同源拆分/零余额/执行可见性/ledger导航/规范汇总含冲销得到纯回归。
+
+P4既有rollback工具新增subcontract-settlement-cash10组，复用finance非sudo申请/执行与真实reviewer、sudo事务来源/资金基线准备，default all249；工具L1 subcontract-cash-tool-iteration.log/语法/diff通过。下一步一次受管模块升级（新字段/关系/非存储汇总/native XML）+reload，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；只跑新cash scope，审批8/create21/前端7915f3bb9暂按未变页面消费复用，金融关系选择尚需另验。不新建fixture/环境，不推送/合并/目标部署，整体67仍开放。

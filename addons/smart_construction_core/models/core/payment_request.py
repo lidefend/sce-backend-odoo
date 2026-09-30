@@ -269,6 +269,15 @@ class PaymentRequest(models.Model):
         ondelete="restrict",
         copy=False,
     )
+    subcontract_settlement_id = fields.Many2one(
+        "sc.subcontract.settlement",
+        string="分包结算单",
+        domain="[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+        index=True,
+        tracking=True,
+        ondelete="restrict",
+        copy=False,
+    )
     settlement_currency_id = fields.Many2one(
         "res.currency",
         string="结算币种",
@@ -368,6 +377,7 @@ class PaymentRequest(models.Model):
             ("line_settlement", "明细结算单"),
             ("material_settlement", "材料结算单"),
             ("rental_settlement", "租赁结算单"),
+            ("subcontract_settlement", "分包结算单"),
             ("contract", "合同依据"),
             ("legacy_relation", "历史关联依据"),
             ("none", "无可解释依据"),
@@ -766,6 +776,7 @@ class PaymentRequest(models.Model):
             "settlement_id",
             "material_settlement_id",
             "rental_settlement_id",
+            "subcontract_settlement_id",
             "partner_id",
             "currency_id",
             "amount",
@@ -1033,6 +1044,7 @@ class PaymentRequest(models.Model):
         "legacy_relation_summary",
         "material_settlement_id",
         "rental_settlement_id",
+        "subcontract_settlement_id",
         "contract_id",
         "payment_account_no",
         "legacy_payment_account_no",
@@ -1060,6 +1072,7 @@ class PaymentRequest(models.Model):
                     record.line_settlement_summary,
                     record.material_settlement_id,
                     record.rental_settlement_id,
+                    record.subcontract_settlement_id,
                     record.contract_id,
                 )
             )
@@ -1133,6 +1146,7 @@ class PaymentRequest(models.Model):
             "settlement_id",
             "material_settlement_id",
             "rental_settlement_id",
+            "subcontract_settlement_id",
             "contract_id",
             "partner_id",
         ):
@@ -1237,6 +1251,7 @@ class PaymentRequest(models.Model):
         "settlement_id",
         "material_settlement_id",
         "rental_settlement_id",
+        "subcontract_settlement_id",
         "outflow_line_ids.settlement_id",
         "payment_account_name",
         "payment_bank_name",
@@ -1370,6 +1385,7 @@ class PaymentRequest(models.Model):
         "settlement_id",
         "material_settlement_id",
         "rental_settlement_id",
+        "subcontract_settlement_id",
         "outflow_line_ids.settlement_id",
         "payee_account_completeness",
         "payment_execution_ids.state",
@@ -1429,6 +1445,10 @@ class PaymentRequest(models.Model):
             self.env["sc.material.rental.settlement"].browse(vals.get("rental_settlement_id")).exists()
             if vals.get("rental_settlement_id") else False
         )
+        subcontract_settlement = (
+            self.env["sc.subcontract.settlement"].browse(vals.get("subcontract_settlement_id")).exists()
+            if vals.get("subcontract_settlement_id") else False
+        )
         contract = self.env["construction.contract"].browse(vals.get("contract_id")).exists() if vals.get("contract_id") else False
         partner = self.env["res.partner"].browse(vals.get("partner_id")).exists() if vals.get("partner_id") else False
 
@@ -1462,6 +1482,15 @@ class PaymentRequest(models.Model):
                 "amount": rental_settlement._payment_unreserved_amount(),
             })
             partner = rental_settlement.supplier_id
+        elif subcontract_settlement:
+            values.update({
+                "project_id": subcontract_settlement.project_id.id,
+                "contract_id": subcontract_settlement.contract_id.id,
+                "partner_id": subcontract_settlement.subcontractor_id.id,
+                "currency_id": subcontract_settlement.currency_id.id,
+                "amount": subcontract_settlement._payment_unreserved_amount(),
+            })
+            partner = subcontract_settlement.subcontractor_id
         elif contract:
             values.update(
                 {
@@ -1474,7 +1503,7 @@ class PaymentRequest(models.Model):
 
         if partner:
             values.update(self._partner_payment_defaults(partner, request_type=request_type))
-        return {key: value for key, value in values.items() if value not in (False, None, "") or (rental_settlement and key == "amount")}
+        return {key: value for key, value in values.items() if value not in (False, None, "") or ((rental_settlement or subcontract_settlement) and key == "amount")}
 
     def _apply_payment_request_basis_values(self, values, *, only_empty=False):
         for field_name, value in values.items():
@@ -1484,7 +1513,7 @@ class PaymentRequest(models.Model):
                 continue
             setattr(self, field_name, value)
 
-    @api.onchange("settlement_id", "material_settlement_id", "rental_settlement_id", "contract_id", "partner_id", "type")
+    @api.onchange("settlement_id", "material_settlement_id", "rental_settlement_id", "subcontract_settlement_id", "contract_id", "partner_id", "type")
     def _onchange_payment_request_basis(self):
         for record in self:
             vals = {
@@ -1492,6 +1521,7 @@ class PaymentRequest(models.Model):
                 "settlement_id": record.settlement_id.id,
                 "material_settlement_id": record.material_settlement_id.id,
                 "rental_settlement_id": record.rental_settlement_id.id,
+                "subcontract_settlement_id": record.subcontract_settlement_id.id,
                 "contract_id": record.contract_id.id,
                 "partner_id": record.partner_id.id,
             }
@@ -1597,6 +1627,7 @@ class PaymentRequest(models.Model):
         """Fail closed before a payment request can anchor an execution record."""
         self._assert_unambiguous_posted_payment_history()
         self._check_rental_settlement_remaining_amount()
+        self._check_subcontract_settlement_remaining_amount()
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
@@ -2036,8 +2067,21 @@ class PaymentRequest(models.Model):
             if request.ledger_line_ids or request.payment_execution_ids:
                 raise UserError(_("付款申请已产生付款登记或台账历史，不可新增、更换或清除租赁结算归属。"))
 
+    def _assert_subcontract_attribution_unchanged(self, vals):
+        if "subcontract_settlement_id" not in vals:
+            return
+        # Financial history, including cancelled executions and reversed
+        # ledgers, keeps its original obligation identity permanently.
+        for request in self.sudo().with_context(active_test=False):
+            current_id = request.subcontract_settlement_id.id or False
+            if (vals["subcontract_settlement_id"] or False) == current_id:
+                continue
+            if request.ledger_line_ids or request.payment_execution_ids:
+                raise UserError(_("付款申请已产生付款登记或台账历史，不可新增、更换或清除分包结算归属。"))
+
     def write(self, vals):
         self._assert_rental_attribution_unchanged(vals)
+        self._assert_subcontract_attribution_unchanged(vals)
         claim_fields = {"terminal_cash_source_model", "terminal_cash_source_res_id"}
         claim_authority = (
             self.env.context.get("_sc_terminal_cash_source_claim_token")
@@ -2247,6 +2291,7 @@ class PaymentRequest(models.Model):
         "line_settlement_count",
         "material_settlement_id",
         "rental_settlement_id",
+        "subcontract_settlement_id",
         "contract_id",
         "legacy_relation_count",
     )
@@ -2260,6 +2305,8 @@ class PaymentRequest(models.Model):
                 rec.payment_basis_type = "material_settlement"
             elif rec.rental_settlement_id:
                 rec.payment_basis_type = "rental_settlement"
+            elif rec.subcontract_settlement_id:
+                rec.payment_basis_type = "subcontract_settlement"
             elif rec.contract_id:
                 rec.payment_basis_type = "contract"
             elif rec.legacy_relation_count:
@@ -2749,6 +2796,7 @@ class PaymentRequest(models.Model):
             or self.settlement_id
             or self.material_settlement_id
             or self.rental_settlement_id
+            or self.subcontract_settlement_id
             or self.outflow_line_ids.filtered("settlement_id")
             or self.outflow_line_ids.filtered("settlement_line_id")
         )
@@ -2803,7 +2851,8 @@ class PaymentRequest(models.Model):
                 rec._check_material_settlement_remaining_amount()
 
     @api.constrains(
-        "rental_settlement_id", "type", "project_id", "company_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id", "type", "project_id", "company_id",
         "partner_id", "currency_id", "contract_id", "settlement_id",
         "material_settlement_id", "outflow_line_ids",
     )
@@ -2825,13 +2874,45 @@ class PaymentRequest(models.Model):
                 raise ValidationError(_("租赁结算与付款申请的币种必须一致。"))
             if request.contract_id != settlement.contract_id:
                 raise ValidationError(_("付款申请合同必须与租赁结算的合同依据一致。"))
-            if request.settlement_id or request.material_settlement_id:
+            if request.settlement_id or request.material_settlement_id or request.subcontract_settlement_id:
                 raise ValidationError(_("租赁结算付款不能同时认领其他头部结算依据。"))
             if request.outflow_line_ids.filtered(
                 lambda line: line.settlement_id or line.settlement_line_id
                 or (line.contract_id and line.contract_id != settlement.contract_id)
             ):
                 raise ValidationError(_("租赁结算付款不能混入其他结算或合同的明细依据。"))
+
+    @api.constrains(
+        "rental_settlement_id",
+        "subcontract_settlement_id", "type", "project_id", "company_id",
+        "partner_id", "currency_id", "contract_id", "settlement_id",
+        "material_settlement_id", "outflow_line_ids",
+    )
+    def _check_subcontract_settlement_consistency(self):
+        for request in self:
+            settlement = request.subcontract_settlement_id
+            if not settlement:
+                continue
+            if request.type != "pay":
+                raise ValidationError(_("分包结算只能作为付款申请依据。"))
+            if settlement.state not in ("confirmed",):
+                raise ValidationError(_("分包结算必须先完成审批及确认才能作为付款依据。"))
+            if (not settlement.project_id or request.project_id != settlement.project_id
+                    or not settlement.company_id or request.company_id != settlement.company_id):
+                raise ValidationError(_("分包结算与付款申请的项目及公司必须一致。"))
+            if not settlement.subcontractor_id or request.partner_id != settlement.subcontractor_id:
+                raise ValidationError(_("分包结算供应商必须与付款申请收款方一致。"))
+            if not settlement.currency_id or request.currency_id != settlement.currency_id:
+                raise ValidationError(_("分包结算与付款申请的币种必须一致。"))
+            if request.contract_id != settlement.contract_id:
+                raise ValidationError(_("付款申请合同必须与分包结算的合同依据一致。"))
+            if request.settlement_id or request.material_settlement_id or request.rental_settlement_id:
+                raise ValidationError(_("分包结算付款不能同时认领其他头部结算依据。"))
+            if request.outflow_line_ids.filtered(
+                lambda line: line.settlement_id or line.settlement_line_id
+                or (line.contract_id and line.contract_id != settlement.contract_id)
+            ):
+                raise ValidationError(_("分包结算付款不能混入其他结算或合同的明细依据。"))
 
     @api.constrains("rental_settlement_id", "amount", "state")
     def _check_rental_settlement_remaining_amount(self):
@@ -2854,6 +2935,28 @@ class PaymentRequest(models.Model):
             available = source.amount_total - reserved
             if float_compare(request.amount, available, precision_rounding=rounding) > 0:
                 raise ValidationError(_("租赁结算付款申请金额超过未占用额度。"))
+
+    @api.constrains("subcontract_settlement_id", "amount", "state")
+    def _check_subcontract_settlement_remaining_amount(self):
+        requests = self.filtered(
+            lambda request: request.subcontract_settlement_id
+            and request.state not in ("draft", "rejected", "cancel")
+        )
+        if not requests:
+            return
+        requests.mapped("subcontract_settlement_id")._serialize_payment_reservation()
+        # Recheck identity under the source lock, including direct child-line
+        # mutations that do not trigger a parent @api.constrains call.
+        requests._check_subcontract_settlement_consistency()
+        for request in requests:
+            source = request.subcontract_settlement_id
+            reserved = source._payment_reserved_amount(exclude_request_id=request.id)
+            rounding = source.currency_id.rounding or 0.01
+            if float_compare(request.amount, 0.0, precision_rounding=rounding) <= 0:
+                raise ValidationError(_("分包结算付款申请金额必须大于零。"))
+            available = source.amount_total - reserved
+            if float_compare(request.amount, available, precision_rounding=rounding) > 0:
+                raise ValidationError(_("分包结算付款申请金额超过未占用额度。"))
 
     @api.constrains("contract_id", "type")
     def _check_contract_direction(self):
@@ -2892,6 +2995,7 @@ class PaymentRequest(models.Model):
         "settlement_id",
         "material_settlement_id",
         "rental_settlement_id",
+        "subcontract_settlement_id",
         "project_id",
         "outflow_line_ids",
     )
