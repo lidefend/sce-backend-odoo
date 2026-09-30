@@ -293,3 +293,39 @@ def form_field_aliases(payload: dict[str, Any] | None) -> dict[str, str] | None:
     if model == "sc.general.contract" and "tax_id" in fields_map:
         return {"tax_rate": "tax_id"}
     return None
+
+
+def restrict_plan_node_structure(data: dict[str, Any]) -> dict[str, Any]:
+    """Restrict native relation capabilities from the hydrated parent facts."""
+    record = data.get("record") if isinstance(data.get("record"), dict) else {}
+    if not record.get("id"):
+        return data
+    allowed = record.get("state") == "draft" and record.get("validation_status") not in ("waiting", "pending", "validated")
+    projected = deepcopy(data)
+
+    def restrict(subview):
+        if not isinstance(subview, dict):
+            return
+        policies = subview.get("policies")
+        if not isinstance(policies, dict):
+            return
+        for key in ("can_create", "can_unlink"):
+            policies[key] = policies.get(key) is True and allowed
+        if not allowed:
+            policies["reason_code"] = "PLAN_NODE_BASELINE_LOCKED"
+
+    def visit(value):
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+        elif isinstance(value, dict):
+            if value.get("name") == "line_ids":
+                restrict(value.get("subview"))
+            if isinstance(value.get("line_ids"), dict):
+                restrict(value["line_ids"])
+                restrict(value["line_ids"].get("subview"))
+            for item in value.values():
+                visit(item)
+
+    visit(projected)
+    return projected

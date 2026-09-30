@@ -3447,6 +3447,30 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         row.env.context = {'default_state': 'done', 'default_progress_rate': 100}
         self.assertTrue(ns['create'](row, [{'plan_id': 1, 'state': 'draft', 'progress_rate': 0}]))
 
+    def test_plan_node_contract_restricts_structure_without_granting_permissions(self):
+        path = ROOT / 'addons/smart_construction_core/core_extension_contract_normalizers.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'restrict_plan_node_structure')
+        ns = {'Any': object, 'deepcopy': copy.deepcopy}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        source = {'record': {'id': 1, 'state': 'draft', 'validation_status': 'no'},
+                  'views': {'form': {'subviews': {'line_ids': {'policies': {'can_create': True, 'can_unlink': True, 'inline_edit': True}},
+                                                 'report_ids': {'policies': {'can_create': True}}}}},
+                  'fields': {'line_ids': {'name': 'line_ids', 'subview': {'policies': {'can_create': False, 'can_unlink': True}}}}}
+        for state, approval, allowed in [('draft', 'no', True), ('draft', 'rejected', True), ('draft', 'pending', False),
+                                        ('draft', 'waiting', False), ('draft', 'validated', False), ('confirmed', 'no', False),
+                                        ('in_progress', 'validated', False), ('done', 'no', False), (None, 'no', False)]:
+            source['record'].update(state=state, validation_status=approval)
+            out = ns[method.name](source)
+            policies = out['views']['form']['subviews']['line_ids']['policies']
+            self.assertEqual(policies['can_create'], allowed)
+            self.assertEqual(policies['can_unlink'], allowed)
+            self.assertTrue(policies['inline_edit'])
+            self.assertFalse(out['fields']['line_ids']['subview']['policies']['can_create'])
+            self.assertTrue(out['views']['form']['subviews']['report_ids']['policies']['can_create'])
+            self.assertTrue(source['views']['form']['subviews']['line_ids']['policies']['can_create'])
+        source['record'] = {}
+        self.assertEqual(ns[method.name](source), source)
+
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')

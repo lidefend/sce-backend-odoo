@@ -1281,6 +1281,8 @@ def smart_core_finalize_projected_contract_data(env, data, context):
     head = data.get("head") if isinstance(data.get("head"), dict) else {}
     model = str(data.get("model") or head.get("model") or "").strip()
     view_type = str(data.get("view_type") or head.get("view_type") or (context or {}).get("view_type") or "").strip().lower()
+    if model == "sc.plan" and view_type == "form":
+        return _contract_normalizers.restrict_plan_node_structure(data)
     if model == "project.project" and (view_type == "form" or isinstance((data.get("views") or {}).get("form") if isinstance(data.get("views"), dict) else None, dict)):
         if _sc_explicit_source_view_id(data, head, context):
             return None
