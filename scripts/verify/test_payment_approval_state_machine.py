@@ -3401,6 +3401,25 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(tree.find("field[@name='%s']" % name).get('readonly'),
                              "parent.state != 'in_progress' or parent.validation_status in ('waiting', 'pending')")
 
+    def test_plan_entry_retires_layout_mirror_without_dropping_business_fields(self):
+        root = ET.parse(ROOT / 'addons/smart_construction_core/data/construction_plan_form_productization_contract.xml').getroot()
+        record = root.find(".//record[@id='business_config_contract_construction_plan_productized_form_v1']")
+        payload = ast.literal_eval(record.find("field[@name='contract_json']").get('eval'))
+        form = payload['view_orchestration']['views']['form']
+        self.assertEqual(form, {'title': '计划管理', 'composition_mode': 'native_semantic_surface'})
+        replay = [n for n in root.findall('function') if 'construction_plan_productized_form_v1' in n.find('value').get('eval', '')]
+        self.assertEqual(len(replay), 1)
+        self.assertEqual(ast.literal_eval(replay[0].findall('value')[1].get('eval')), {'priority': 800, 'contract_json': payload})
+        views = ET.parse(ROOT / 'addons/smart_construction_core/views/core/plan_management_views.xml').getroot()
+        native = views.find(".//record[@id='view_sc_plan_form']/field[@name='arch']/form")
+        fields = {n.get('name') for n in native.iter('field')}
+        required = {'state', 'name', 'plan_type', 'project_id', 'phase_name', 'company_id', 'owner_id', 'department_id',
+                    'template_name', 'creation_method', 'version_stage', 'report_cycle', 'planned_start', 'planned_finish',
+                    'actual_start', 'actual_finish', 'progress_rate', 'attainment_state', 'line_ids', 'report_ids',
+                    'version_ids', 'attachment_ids', 'note', 'legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type',
+                    'source_created_by', 'source_created_at', 'active'}
+        self.assertFalse(required - fields)
+
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')

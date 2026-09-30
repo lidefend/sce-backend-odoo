@@ -71,6 +71,8 @@
                             <field name="report_cycle" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                             <field name="planned_start" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                             <field name="planned_finish" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="actual_start"/>
+                            <field name="actual_finish"/>
                             <field name="progress_rate" readonly="1"/>
                             <field name="attainment_state" readonly="1"/>
                         </group>
@@ -117,6 +119,12 @@
                         </page>
                         <page string="来源追溯">
                             <group>
+                                <field name="legacy_fact_model" readonly="1"/>
+                                <field name="legacy_fact_id" readonly="1"/>
+                                <field name="legacy_fact_type" readonly="1"/>
+                                <field name="source_created_by" readonly="1"/>
+                                <field name="source_created_at" readonly="1"/>
+                                <field name="active"/>
                             </group>
                         </page>
                         <page string="说明">
