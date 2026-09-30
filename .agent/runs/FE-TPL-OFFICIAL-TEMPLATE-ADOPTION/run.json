@@ -354,7 +354,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.108 subcontract plan/request shared approval and parent/child fact guards: runtime16 PASS+rollback at6f3f0220b; source7446f6a11 upgraded/reloaded, tool8d69165e7 create plan18 report1790788531035/request18 report1790788542137 PASS. Reuse frontend7915f3bb9. First inspect plan390 optional date label/input overlap and actual required-input usability through shared rendering (do not mark full UI passed); then remaining subcontract settlement approval. Existing-role handling, true concurrency and other67 gaps remain. No newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.109 P4 create input/geometry/calendar verified: plan44 report1790788768456/request36 report1790788780077 PASS errors/writes empty, 1440/390 actual controls and label separation; prior apparent optional-date overlap not reproduced, settle resize/popup before evidence. Product unchanged frontend7915f3bb9/backend7446f6a11; reuse approval16. Next remaining subcontract settlement shared approval/necessary contract, preserving authority/financial execution. Actual saved role journeys, true concurrency and other67 gaps remain; no newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

@@ -748,7 +748,57 @@ try {
         }
         for (const width of [1440, 390]) {
           await session.page.setViewportSize({ width, height: 900 });
+          await session.page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
           check(`${spec.model}-create-${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+          if (spec.model.startsWith('sc.subcontract.')) {
+            const names = spec.model.endsWith('plan')
+              ? ['project_id', 'subcontract_scope', 'plan_date', 'start_date', 'end_date']
+              : ['project_id', 'subcontract_scope', 'request_date'];
+            const observation = await session.page.evaluate((fieldNames) => {
+              const box = (el) => {
+                if (!el) return null;
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              };
+              return fieldNames.map((name) => ({
+                name,
+                occurrences: [...document.querySelectorAll('[data-field-name]')]
+                  .filter((el) => el.getAttribute('data-field-name') === name)
+                  .map((el) => ({
+                    box: box(el),
+                    label: box(el.querySelector('label')),
+                    controls: [...el.querySelectorAll('input, textarea')].map((input) => ({
+                      box: box(input), id: input.id, placeholder: input.getAttribute('placeholder'),
+                      disabled: input.disabled, readonly: input.readOnly,
+                    })),
+                  })),
+              }));
+            }, names);
+            (report.createInputGeometry ||= []).push({ model: spec.model, width, fields: observation });
+            for (const field of observation) {
+              const rendered = field.occurrences.filter((row) => row.box?.width > 0 && row.box?.height > 0);
+              check(`${spec.model}-${width}: ${field.name} rendered usable input`, rendered.length > 0 && rendered.every((row) =>
+                row.controls.some((control) => !control.disabled && control.box?.width > 0 && control.box?.height > 0)));
+              check(`${spec.model}-${width}: ${field.name} label separated from input`, rendered.every((row) =>
+                row.label && row.controls.every((control) => control.box.y >= row.label.y + row.label.height)));
+            }
+            const scopeField = observation.find((field) => field.name === 'subcontract_scope');
+            const scopeInput = session.page.locator(`[id="${scopeField.occurrences[0].controls[0].id}"]`);
+            await scopeInput.fill('本地验收未保存分包范围');
+            check(`${spec.model}-${width}: scope accepts draft input`, await scopeInput.inputValue() === '本地验收未保存分包范围');
+            await scopeInput.fill('');
+            const dateField = observation.find((field) => field.name === (spec.model.endsWith('plan') ? 'start_date' : 'request_date'));
+            const dateInput = session.page.locator(`[id="${dateField.occurrences[0].controls[0].id}"]`);
+            await dateInput.click();
+            await session.page.getByText('一', { exact: true }).waitFor({ state: 'visible' });
+            await session.page.getByText('六', { exact: true }).waitFor({ state: 'visible' });
+            check(`${spec.model}-${width}: date opens official calendar`, await session.page.getByText('一', { exact: true }).isVisible() && await session.page.getByText('六', { exact: true }).isVisible());
+            await session.page.getByRole('heading', { name: '新建记录', exact: true }).click();
+            await session.page.getByText('一', { exact: true }).waitFor({ state: 'hidden' });
+            check(`${spec.model}-${width}: calendar closes on outside click`, !await session.page.getByText('一', { exact: true }).isVisible());
+            await session.page.evaluate(() => window.scrollTo(0, 0));
+
+          }
           await session.page.screenshot({ animations: 'disabled', path: path.join(out, `${spec.model}-create-${width}.png`) });
         }
         await session.ctx.close();

@@ -8455,3 +8455,11 @@ P4标准browser复用approval-actions扩展两安全模型create，safety-page-i
 最终plan tpl07-1790788531035 18 PASS，request tpl07-1790788542137 18 PASS：3输入契约、生成编号effective modifier及实际隐藏、旧直接批准动作退出、未保存记录动作边界、1440/390无横向溢出，errors/forbiddenWrites空。两390截图复核编号不再出现，项目/分包单位/明细入口可见。计划390图上可选开始/结束日期标签与输入排布异常，登记为共享日期呈现待核对，不以无横向溢出代替视觉完成。真实创建保存/已有角色全办理仍未证明。审批runtime16按P1状态机/工具输入未变复用6f3f0220b原日志，未重复ORM。当前只完成两模型审批机制和创建契约定向验证，不升级整体67/业务矩阵行。
 
 下一步先定位本次日期呈现异常的共享消费路径及分包申请必需输入实际可操作性，再接续分包结算等剩余审批职责；不重复安全/租赁全旅程，不新建fixture/环境，不推送合并目标部署。
+
+### 53.109 分包创建输入/日期几何与交互定向核验（完成本项验证）
+
+8e692a864 clean续跑，先定位共享FormSection/ScFormItem/ProfessionalBaseFieldControl/ScDateField，仅P4 standard_page_type_browser变更。有效ui.contract/前端消费无业务推断；原日期异常尚无P0缺陷证据，不直接改CSS。通过既有data-field-name及label/input真实geometry测量，1440/390日期label底与input顶间隔7px；新截图无重叠。分包申请project/scope/request_date均实际渲染（窄屏后两项在折叠区下方）；原input readonly是官方日期picker的文本输入方式，不等于disabled。
+
+工具增加viewport后两帧布局等待，记录createInputGeometry、实际输入存在/未禁用/标签分离断言；范围字段只填入未保存测试文本再清空，不发业务写。日期检查点击真实input，等待可见周标题证明calendar打开，点击外部标题并等待隐藏证明关闭。首轮tpl07-1790788702760日期即时isVisible失败，failure图显示展开中；修复为等待可见，不改产品。可见检查plan42/request34分别1790788731669/1790788742875通过；再补关闭等待，最终plan44 tpl07-1790788768456/request36 tpl07-1790788780077 PASS、errors/forbiddenWrites均空。最终390图复核可选日期标签与控件正常、弹层已关闭。旧异常归因于取证时机的推断获得本轮稳定geometry/截图/交互支持，未证明持久产品排布缺陷。
+
+L1 subcontract-geometry-iteration.log及subcontract-input-geometry-check-iteration.log、最终node语法/diff通过；本轮P4改动不影响P1审批runtime16或前端7915f3bb9/backend7446f6a11，跳过ORM、upgrade、build、全矩阵/Quick。此项收口仅证明创建输入可操作及日期开关，不代表日期选择保存、关系选择/明细创建、真实单据提交全旅程。下一步接续分包结算剩余必要审批契约，已有角色全办理与总体67继续开放，无新环境/fixture/推送/合并/目标部署。
