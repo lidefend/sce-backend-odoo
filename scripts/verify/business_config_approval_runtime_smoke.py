@@ -721,7 +721,7 @@ def _purchase_request_approval_checks(project, group, created):
     assert not any(downstream(required))
     print("APPROVAL_CHECK=purchase_request_amount_rule_and_pending_downstream_denial")
     policy.write({"approval_required": False})
-    required.action_submit()
+    denied(required.action_submit)
     assert required.state == "submitted" and required.review_ids
     denied(required.action_create_purchase_order)
     policy.write({"approval_required": True})
