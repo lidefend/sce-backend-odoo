@@ -195,10 +195,29 @@ class ContractGovernanceRecordContextRegistryTests(unittest.TestCase):
                     "row_primary": "name",
                     "row_secondary": "",
                     "status_field": "lifecycle_state",
+                    "tone_by_value": {},
                     "strict_columns": True,
                     "signature_any": [],
                 }
             ],
+        )
+
+    def test_standard_list_profile_keeps_the_declared_status_tone_map(self):
+        self.contract_governance.register_legacy_standard_list_profile(
+            {
+                "profile_key": "project.project.list",
+                "model_name": "project.project",
+                "columns_order": ["name"],
+                "row_primary": "name",
+                "status_field": "lifecycle_state",
+                "tone_by_value": {"draft": "Paused", "closed": "success", "": "danger"},
+            }
+        )
+
+        registered = self.contract_governance._LEGACY_STANDARD_LIST_PROFILE_REGISTRY[-1]
+        self.assertEqual(
+            registered["tone_by_value"],
+            {"draft": "Paused", "closed": "success"},
         )
 
     def test_business_kanban_row_actions_must_be_registered_explicitly(self):

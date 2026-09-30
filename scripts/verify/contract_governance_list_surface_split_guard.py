@@ -1,15 +1,49 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
 LIST_SURFACE = ROOT / "addons/smart_core/utils/contract_governance_list_surface.py"
+INDUSTRY_PROFILES = ROOT / "addons/smart_construction_core/core_extension.py"
 CI = ROOT / "make/ci.mk"
 
 MAX_GOVERNANCE_LINES = 1973
+
+# The construction-industry default product owns the project lifecycle
+# value-to-tone map; the kernel only projects it.  This guard proves both
+# halves of that split so neither side can drift silently.
+PROJECT_LIST_PROFILE_KEY = "project.project.list"
+STATUS_TONE_VOCABULARY = frozenset({"neutral", "info", "success", "warning", "danger"})
+
+
+def _declared_list_profiles(source: Path) -> dict[str, dict]:
+    """Read the literal `register_legacy_standard_list_profile` declarations."""
+    if not source.is_file():
+        return {}
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    profiles: dict[str, dict] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Name) or func.id != "register_legacy_standard_list_profile":
+            continue
+        if not node.args:
+            continue
+        try:
+            payload = ast.literal_eval(node.args[0])
+        except (ValueError, SyntaxError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        key = str(payload.get("profile_key") or payload.get("model_name") or "").strip()
+        if key:
+            profiles[key] = payload
+    return profiles
 
 
 def _read(path: Path) -> str:
@@ -58,6 +92,8 @@ def main() -> int:
             "def apply_standard_search_toolbar_labels(",
             "def govern_standard_list_for_user(",
             "def govern_tier_review_list_for_user(",
+            "STATUS_TONE_VOCABULARY",
+            "def normalize_status_tone_by_value(",
             "\"source\": \"contract_governance.curated_list_facts\"",
             "\"owner_layer\"] = \"scene_orchestration\"",
             "\"row_open\": \"打开\"",
@@ -70,6 +106,15 @@ def main() -> int:
         for token in (".search(", ".write(", "requests.", "env[", "registry["):
             if token in list_surface_text:
                 errors.append(f"list surface module must remain projection-only; found token: {token}")
+        # Status tone authority belongs to the declaring profile.  The kernel
+        # projects a declaration; it must never carry a business value-to-tone
+        # map of its own, so any known lifecycle value reappearing here is a
+        # re-introduced silent default.
+        for token in ('"draft"', '"in_progress"', '"paused"', '"done"', '"closing"', '"warranty"', '"closed"'):
+            if token in list_surface_text:
+                errors.append(
+                    "list surface must not hardcode business status values; found token: " + token
+                )
 
     if "python3 scripts/verify/contract_governance_list_surface_split_guard.py" not in ci_text:
         errors.append("ci.local.quick must run contract_governance_list_surface_split_guard.py")
@@ -248,6 +293,114 @@ def main() -> int:
         labels = ((list_data.get("search") or {}).get("ui_labels")) or {}
         if labels.get("row_open") != "打开":
             errors.append("standard list must keep toolbar/search label normalization")
+
+        # --- status tone authority is owned by the declaring profile ---
+        # 1) No declaration -> the kernel must omit tone_by_value entirely so
+        #    the renderer falls back to a neutral badge instead of the kernel
+        #    inventing which business states mean success or warning.
+        if "tone_by_value" in schema_by_name.get("stage_id", {}):
+            errors.append(
+                "standard list must omit tone_by_value when the profile declares no tone map"
+            )
+
+        def _govern_with_tone_map(tone_map):
+            run_data = {
+                "head": {"model": "project.project", "view_type": "tree"},
+                "model": "project.project",
+                "governance": {"primary_model": "project.project"},
+                "views": {
+                    "tree": {
+                        "columns": [{"name": "name"}, {"name": "stage_id"}],
+                        "columns_schema": [
+                            {"name": "name", "label": "Native Name"},
+                            {"name": "stage_id", "label": "Native Stage"},
+                        ],
+                        "row_actions": [{"name": "open_form", "payload": {}}],
+                    }
+                },
+                "fields": {
+                    "name": {"type": "char", "string": "Name"},
+                    "stage_id": {
+                        "type": "selection",
+                        "string": "Stage",
+                        "selection": [("draft", "Draft"), ("closed", "Closed")],
+                    },
+                },
+                "permissions": {"effective": {"rights": {"write": True, "unlink": True}}},
+                "delete_policy": {"delete_mode": "unlink"},
+                "search": {},
+            }
+            list_surface.govern_standard_list_for_user(
+                run_data,
+                model_name="project.project",
+                columns_order=["name", "stage_id"],
+                column_labels={},
+                row_primary="name",
+                row_secondary="",
+                status_field="stage_id",
+                status_tone_by_value=tone_map,
+                is_model_tree_contract=lambda data, model: model == "project.project",
+                legacy_field_presentation=lambda model, name: {},
+                deep_clone_json_like=lambda value: dict(value) if isinstance(value, dict) else value,
+                apply_standard_search_toolbar_labels=list_surface.apply_standard_search_toolbar_labels,
+            )
+            run_tree = (run_data.get("views") or {}).get("tree") or {}
+            return {
+                row.get("name"): row
+                for row in run_tree.get("columns_schema", [])
+                if isinstance(row, dict)
+            }.get("stage_id") or {}
+
+        declared = _govern_with_tone_map({"draft": "warning", "closed": "success"})
+        if declared.get("tone_by_value") != {"draft": "warning", "closed": "success"}:
+            errors.append("standard list must project the declared status tone map verbatim")
+
+        filtered = _govern_with_tone_map({"draft": "primary", "closed": "success", "": "danger"})
+        if filtered.get("tone_by_value") != {"closed": "success"}:
+            errors.append(
+                "standard list must drop tones outside the published vocabulary and empty keys"
+            )
+
+        absent = _govern_with_tone_map(None)
+        if "tone_by_value" in absent:
+            errors.append("standard list must not synthesize a tone map when none is declared")
+
+        # --- the declaring profile is the counterpart owner ---
+        # The kernel must not invent a tone map, so the industry default
+        # product must actually declare one; otherwise the relocation would
+        # quietly drop project lifecycle tones instead of moving them.
+        profiles = _declared_list_profiles(INDUSTRY_PROFILES)
+        if not profiles:
+            errors.append(
+                "industry module must declare literal register_legacy_standard_list_profile payloads"
+            )
+        project_profile = profiles.get(PROJECT_LIST_PROFILE_KEY) or {}
+        if not project_profile:
+            errors.append(f"industry module must declare the {PROJECT_LIST_PROFILE_KEY} profile")
+        declared_tones = project_profile.get("tone_by_value")
+        if not isinstance(declared_tones, dict) or not declared_tones:
+            errors.append(
+                "project.project.list must own its status tone map; the kernel no longer supplies one"
+            )
+        else:
+            invalid = sorted(
+                f"{key}={value}"
+                for key, value in declared_tones.items()
+                if str(value).strip().lower() not in STATUS_TONE_VOCABULARY
+            )
+            if invalid:
+                errors.append(
+                    "project.project.list declares tones outside the published vocabulary: "
+                    + ", ".join(invalid)
+                )
+            empty_keys = [key for key in declared_tones if not str(key).strip()]
+            if empty_keys:
+                errors.append("project.project.list declares an empty status value key")
+            projections = _govern_with_tone_map(declared_tones)
+            if projections.get("tone_by_value") != declared_tones:
+                errors.append(
+                    "project.project.list declared tones must project verbatim into the contract"
+                )
 
     if errors:
         print("[contract_governance_list_surface_split_guard] FAIL")

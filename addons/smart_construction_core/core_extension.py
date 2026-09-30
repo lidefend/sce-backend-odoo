@@ -395,6 +395,8 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "",
         "status_field": "lifecycle_state",
+        # P1 owns the project lifecycle tone meaning; the kernel only projects it. Values = ScStateMachine.PROJECT_STATES.
+        "tone_by_value": {"draft": "neutral", "in_progress": "info", "paused": "warning", "done": "success", "closing": "warning", "warranty": "info", "closed": "neutral"},
         # Keep the standard ordering and labels, while allowing the action's
         # native tree view to remain authoritative for optional columns such
         # as manager_id. A model-wide strict projection makes those columns

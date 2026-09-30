@@ -489,6 +489,7 @@ def _apply_registered_legacy_standard_list_profiles(data: dict) -> None:
             row_primary=_safe_text(profile.get("row_primary")),
             row_secondary=_safe_text(profile.get("row_secondary")),
             status_field=_safe_text(profile.get("status_field")),
+            status_tone_by_value=profile.get("tone_by_value"),
             strict_columns=bool(profile.get("strict_columns")),
         )
 
@@ -835,6 +836,7 @@ def _govern_standard_list_for_user(
     row_primary: str,
     row_secondary: str,
     status_field: str,
+    status_tone_by_value: Any = None,
     strict_columns: bool = False,
 ) -> None:
     _list_surface.govern_standard_list_for_user(
@@ -845,6 +847,7 @@ def _govern_standard_list_for_user(
         row_primary=row_primary,
         row_secondary=row_secondary,
         status_field=status_field,
+        status_tone_by_value=status_tone_by_value,
         strict_columns=strict_columns,
         is_model_tree_contract=_is_model_tree_contract,
         legacy_field_presentation=_legacy_field_presentation,

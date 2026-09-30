@@ -85,6 +85,16 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
         "row_primary": _safe_text(profile.get("row_primary")),
         "row_secondary": _safe_text(profile.get("row_secondary")),
         "status_field": _safe_text(profile.get("status_field")),
+        # Shape only: the declaring profile owns the business value-to-tone
+        # map, and the list surface holds the published tone vocabulary.  The
+        # registry normalizes the pairs and does not invent any of them.
+        "tone_by_value": {
+            _safe_text(key): _safe_text(value)
+            for key, value in (
+                profile.get("tone_by_value") if isinstance(profile.get("tone_by_value"), dict) else {}
+            ).items()
+            if _safe_text(key) and _safe_text(value)
+        },
         "strict_columns": bool(profile.get("strict_columns")),
         "profile_key": _safe_text(profile.get("profile_key")),
         "signature_any": [
