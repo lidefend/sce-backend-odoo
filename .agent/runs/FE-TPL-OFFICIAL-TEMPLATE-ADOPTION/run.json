@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.129 financing/payment-execution private state guards; expense existing finance authority covers all state transitions. L1 finance-family-state-iteration PASS; unit-fixed143/native62 PASS with receipts (first unit failed AST extraction of expense child methods, fixed owning test). No runtime reload yet; no schema/build. Next prioritize consolidated affected finance runtime and historical replay compatibility: expense rejection/resubmission, financing completion, actual payment/reversal, all changed state entry paths. Existing finance-state-authority source prerequisites unresolved; identify exact missing source or reuse governed authoritative preparation, no unchanged retry/invented tax/company-scope widening. Overall67/detail.action-state open, no push/merge/deploy.",
+  "next_exact_step": "53.130 backend6fe68cc25 expense-state-authority runtime12 PASS/ROLLBACK VERIFIED, actual reviewers, preparation/submission elevated; pure143/native62 reused unchanged. Next validate self-funding approval/completion and use its real generated posted treasury ledger for reconciliation in same governed rollback transaction (existing attachment/account preparation and company/partner authority), no fabricated ledger or persistent fixture. Keep settlement-adjustment contract source gap separate. Financing completion/payment reversal/runtime and historical replay compatibility still open; old scripts/migration Make paths absent, not executed. Overall67/detail.action-state open, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

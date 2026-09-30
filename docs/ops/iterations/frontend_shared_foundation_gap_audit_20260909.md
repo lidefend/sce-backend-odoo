@@ -8711,3 +8711,12 @@ L1 receipt-self-state-iteration.log PASS；L2 receipt-self-state-unit.log143 PAS
 L1 finance-family-state-iteration.log PASS。首次L2 finance-family-state-unit.log失败7例：测试整文件AST抓取同时包含费用主单与扣款明细，明细create覆盖主单create；属于测试归属错误。限定到主单类后finance-family-state-unit-fixed.log143 PASS，finance-family-state-native.log8+54=62 PASS；两项begin/record成功。新增模型通过扩展已有测试参数覆盖，143为测试函数数而非只测143个状态组合。测试检查显式/default状态/来源拒绝、伪造token、共享审批确认回调；不是实际付款/冲销或迁移重放证明。
 
 下一步优先整组受影响运行验证及历史迁移兼容核对，不继续只堆源码通过记录。现有finance-state-authority在财务公司来源缺失前提阻断，未恢复不重跑；须定位缺少的准确来源或复用已登记有权威来源的受管准备路径，不能造税率/扩大公司范围。费用驳回重提、实际付款/冲销及融资完成的ORM行为尚待证明，历史同步若写入state需核对受控入口，不能以新增guard当兼容通过。前端CrYkOCxc未变，不构建；整体67/detail.action-state保持开放，无推送合并目标部署。
+
+
+### 53.130 费用状态权威真实审批回归（12项通过）
+
+3e218b1b5 clean起点。P4仅将既有business_config_approval_runtime_smoke默认all的费用11项检查开放为expense-state-authority独立scope，原主体复用不复制；该scope额外检查真实记录state直写/布尔token伪造/终态create/default_state拒绝。其余业务族调用仅all执行，all295计数不变。原项目/往来方/_expense准备和finally事务回滚复用，不新增环境或持久fixture。L1 expense-state-tool-iteration.log/py_compile/bash-n/diff通过；P1 pure143/native62相关源未改复用。
+
+工具6fe68cc25提交并受管backend reload，expense-state-runtime.log12 PASS、ROLLBACK VERIFIED。local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。真实enabled提交生成review、关配置不绕过在审、实际审核人完成、未配置自动批准、启用无匹配拒绝、驳回草稿保留原因/审计、重提新review、线性两步按顺序、非审核人拒绝、首步不结束及末步批准均通过。文档准备和提交仍sudo，审核人真实非sudo；不宣称普通财务浏览器全流程或费用最终付款/完成通过。财务组其他模型runtime继续开放，前端不构建，无升级模块/推送合并目标部署。
+
+后续依赖核对：self_funding.action_done既有正式动作生成自筹资金台账；可在同一受管回滚链验证真实自筹审批/完成后，再用其真实生成的posted台账验证资金对账，避免凭空造台账或重复现有空来源查询。需要沿用附件/账户证据准备、公司/承包人身份及实际资金责任，验证后回滚；不能以这个替代结算调整的合同来源缺口。融资完成及付款/冲销仍待实际验证。旧Make引用scripts/migration路径在当前树不存在，本轮未执行迁移或扩大成迁移审计，历史重放兼容不计通过。

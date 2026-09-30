@@ -478,3 +478,8 @@ Ordinary create/context defaults may only start in draft; ordinary state/origin/
 ## Segment 53.129: remaining finance-family state entry guards
 
 Financing and payment execution now use private state action writes; ordinary non-draft creation/context defaults and state/origin writes are refused. Expense uses its existing finance authority for submission, approval, rejection and cancellation. Existing payment-source, account-snapshot and reversal checks remain in place. L1/pure143/native62 pass after fixing a test extractor that selected expense deduction-line methods instead of the document. Actual payment/reversal, expense reject/resubmit, financing completion and historical replay compatibility remain unverified. Prior scoped-source blocker persists; prioritize consolidated affected runtime rather than treating source guards as delivery.
+
+
+## Segment 53.130: expense approval runtime verified
+
+Focused existing expense runtime passes12 checks at backend6fe68cc25 with transaction/configuration restoration verified: direct state denial, configured reviews, no configuration bypass of in-flight review, automatic approval, unmatched-rule rejection, real rejection/resubmission and ordered two-step review with non-reviewer denial. Preparation/submission remains elevated; this is not ordinary-role browser handling or expense payment completion. Remaining finance runtime stays open. Existing self-funding completion can supply an authoritative posted ledger for a future same-transaction reconciliation journey; the adjustment contract-source gap is separate.
