@@ -1056,6 +1056,65 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def _rental_fact_lock_methods(self, class_name):
+        path = MODEL.with_name('material_rental.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == class_name)
+        names = {'write', 'create', 'unlink', '_assert_business_facts_editable'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        for method in methods:
+            method.decorator_list = []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_RENTAL_APPROVAL_STATE_TOKEN': object(), 'super': lambda: types.SimpleNamespace(write=lambda vals: vals, create=lambda vals: vals, unlink=lambda: True)}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), str(path), 'exec'), ns)
+        return ns
+
+    def test_rental_settlement_submitted_facts_cannot_be_rewritten(self):
+        ns = self._rental_fact_lock_methods('ScMaterialRentalSettlement')
+        for state in ('submitted', 'approved', 'confirmed', 'paid', 'cancel'):
+            rec = self._purchase_request_record(state=state)
+            rec._lock_payment_basis = lambda: None
+            rec._assert_business_facts_editable = lambda: ns['_assert_business_facts_editable'](rec)
+            for field in ('project_id', 'supplier_id', 'contract_id', 'currency_id', 'rental_order_id', 'settlement_date', 'line_ids', 'amount_total', 'damage_amount', 'rent_amount'):
+                with self.subTest(state=state, field=field):
+                    with self.assertRaises(ValueError): ns['write'](rec, {field: False})
+            self.assertEqual(ns['write'](rec, {'note': 'explanation'}), {'note': 'explanation'})
+        rec.data['state'] = 'draft'
+        self.assertEqual(ns['write'](rec, {'supplier_id': 19}), {'supplier_id': 19})
+        # Re-read after the serialization point, not the stale draft snapshot.
+        rec._lock_payment_basis = lambda: rec.data.update(state='submitted')
+        with self.assertRaises(ValueError): ns['write'](rec, {'supplier_id': 20})
+
+    def test_rental_settlement_direct_line_writes_check_both_parents(self):
+        ns = self._rental_fact_lock_methods('ScMaterialRentalSettlementLine')
+        class Parents(list):
+            def __or__(self, other): return Parents(list(self) + list(other))
+            def _assert_business_facts_editable(self):
+                if any(state != 'draft' for state in self): raise ValueError('immutable settlement')
+        source, target = Parents(['confirmed']), Parents(['draft'])
+        model = types.SimpleNamespace(browse=lambda ids: target)
+        env = {'sc.material.rental.settlement': model}
+        rec = types.SimpleNamespace(env=env, mapped=lambda name: source)
+        with self.assertRaises(ValueError): ns['write'](rec, {'qty': 100})
+        with self.assertRaises(ValueError): ns['unlink'](rec)
+        with self.assertRaises(ValueError): ns['write'](rec, {'settlement_id': 23})
+        source[:] = ['draft']
+        target[:] = ['approved']
+        with self.assertRaises(ValueError): ns['write'](rec, {'settlement_id': 23})
+        target[:] = ['draft']
+        self.assertEqual(ns['write'](rec, {'qty': 2}), {'qty': 2})
+        self.assertTrue(ns['unlink'](rec))
+
+    def test_rental_settlement_line_creation_checks_context_parent(self):
+        ns = self._rental_fact_lock_methods('ScMaterialRentalSettlementLine')
+        seen = []
+        def browse(ids):
+            seen.append(ids)
+            return types.SimpleNamespace(_assert_business_facts_editable=lambda: (_ for _ in ()).throw(ValueError('immutable settlement')))
+        class Env(dict): context = {'default_settlement_id': 41}
+        rec = types.SimpleNamespace(env=Env({'sc.material.rental.settlement': types.SimpleNamespace(browse=browse)}))
+        for vals in ({'settlement_id': 42}, {}):
+            with self.assertRaises(ValueError): ns['create'](rec, [vals])
+        self.assertEqual(seen, [[42], [41]])
+
     def _rental_payment_basis(self, **changes):
         tree = ast.parse(MODEL.read_text())
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_check_rental_settlement_consistency')
@@ -1125,6 +1184,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         for required in (False, True):
             rec = self._purchase_request_record(required=required, state='draft')
             rec._name = 'sc.material.rental.settlement'
+            rec._lock_payment_basis = lambda: None
             rec._write_approval_state = lambda values: rec.data.update(values)
             rec._check_business_anchor = lambda: None
             with self.assertRaises(ValueError): ns['write'](rec, {'state': 'paid'})

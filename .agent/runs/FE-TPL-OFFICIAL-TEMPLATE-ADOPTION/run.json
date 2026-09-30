@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.99 explicit rental_settlement_id on payment.request + inverse payment_request_ids + identity/conflicting-basis constraints implemented;89 pure tests PASS. Next add amount reservation/concurrency and approved-source amount/identity protection, then wire basis/default_get/onchange/native and execution contract resolution, canonical posted totals/reversal. Recheck child detail mutation at execution. Do not claim schema-only payable; _has_payment_basis not yet wired and53.98 blocker stays. No upgrade yet; backend2d7eab703/frontend7915f3bb9. Overall67/rolejourneys remain open, no newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.100 submitted rental settlement parent/line facts locked; shared _lock_payment_basis ordered row lock+invalidate used by submit/edit,92 pure tests PASS. Next payment amount reservation/identity check under same lock, protect request attribution after financial facts, recheck child basis at execution; then wire basis/defaults/native/execution + canonical posted sums/reversal. Runtime SQL/cache/command/concurrency not verified; no upgrade yet.53.98 payment blocker remains. backend2d7eab703/frontend7915f3bb9 unchanged. Overall67/role journeys open; no newfixture/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

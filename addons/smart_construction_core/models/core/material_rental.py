@@ -499,7 +499,28 @@ class ScMaterialRentalSettlement(models.Model):
                 vals["name"] = seq.next_by_code("sc.material.rental.settlement") or _("周转材料租赁结算")
         return super().create(vals_list)
 
+    def _lock_payment_basis(self):
+        ids = sorted(record_id for record_id in self.ids if isinstance(record_id, int) and record_id > 0)
+        if ids:
+            self.env.cr.execute(
+                "SELECT id FROM sc_material_rental_settlement WHERE id IN %s ORDER BY id FOR UPDATE",
+                [tuple(ids)],
+            )
+            self.invalidate_recordset()
+
+    def _assert_business_facts_editable(self):
+        self._lock_payment_basis()
+        if any(record.state != "draft" for record in self):
+            raise UserError(_("租赁结算提交后，项目、供应商、合同、币种及结算明细不可修改；驳回后可在草稿中修订。"))
+
     def write(self, vals):
+        business_fields = {
+            "project_id", "supplier_id", "contract_id", "currency_id",
+            "rental_order_id", "settlement_date", "line_ids",
+            "rent_amount", "damage_amount", "amount_total",
+        }
+        if business_fields.intersection(vals):
+            self._assert_business_facts_editable()
         if "state" in vals and self.env.context.get("sc_rental_approval_state_token") is not _RENTAL_APPROVAL_STATE_TOKEN:
             raise UserError(_("状态必须通过办理动作产生。"))
         return super().write(vals)
@@ -525,6 +546,7 @@ class ScMaterialRentalSettlement(models.Model):
                 record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
 
     def action_submit(self):
+        self._lock_payment_basis()
         for record in self:
             if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或待重新提交的租赁结算可以提交。"))
@@ -628,9 +650,28 @@ class ScMaterialRentalSettlementLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        parent_ids = {vals.get("settlement_id") or self.env.context.get("default_settlement_id") for vals in vals_list}
+        self.env["sc.material.rental.settlement"].browse([value for value in parent_ids if value])._assert_business_facts_editable()
         for vals in vals_list:
             self._apply_material_catalog_defaults(vals)
         return super().create(vals_list)
+
+    def write(self, vals):
+        business_fields = {
+            "settlement_id", "material_catalog_id", "product_id", "material_name",
+            "material_spec", "unit_name", "qty", "rental_days", "daily_price",
+            "damage_amount", "currency_id", "rent_amount",
+        }
+        if business_fields.intersection(vals):
+            parents = self.mapped("settlement_id")
+            if vals.get("settlement_id"):
+                parents |= self.env["sc.material.rental.settlement"].browse(vals["settlement_id"])
+            parents._assert_business_facts_editable()
+        return super().write(vals)
+
+    def unlink(self):
+        self.mapped("settlement_id")._assert_business_facts_editable()
+        return super().unlink()
 
     @api.model
     def _apply_material_catalog_defaults(self, vals):

@@ -8328,3 +8328,14 @@ L1 rental-payment-gap-iteration.log及diff PASS；L2 rental-payment-gap-unit.log
 L1 rental-payment-basis-iteration.log及diff PASS；L2 rental-payment-basis-unit.log89 PASS，新增三组真实模型方法纯执行：身份缺失/不一致和未确认来源拒绝，重复业务依据拒绝，同源多申请/同合同明细/无合同/非租赁路径接受。记录非零回执。没有真实ORM/并发验证，本组不声称完整付款依据可用。
 
 下一依赖：金额占用与并发锁、来源批准后金额/身份保护、付款basis/default_get/onchange/native契约及execution contract读取、实际posted ledger汇总和冲销回读；子明细变更后的执行前重验亦须覆盖。当前新增依据字段尚未接通_has_payment_basis，不可将新增字段宣称可付款；53.98 blocker继续有效。源码阶段暂不L3/L4，schema/XML在链路收敛后一次受管升级验收，后端仍2d7eab703/前端7915f3bb9，不构建/新fixture/推送/合并/目标部署。detail.action-state及整体67保持开放。
+
+
+### 53.100 租赁结算已提交事实保护（源码进行中）
+
+候选2949fa31f+dirty。P1 smart_construction_core租赁结算父/子模型，金额依据完整性归属行业模型，不在前端/P3配置实现。_lock_payment_basis按真实ID排序FOR UPDATE并失效缓存，提交及事实编辑复用同一父单锁。_assert_business_facts_editable只允许draft（包括实际驳回后的draft）。提交后项目/供应商/合同/币种/来源租赁单/结算日期/明细及汇总金额禁止直接改写，说明note不额外锁定。
+
+明细create同时覆盖显式settlement_id和default_settlement_id；write对事实字段检查原父及目标父，不能从已批准单移出或移入；unlink同样检查父状态。source模型的approval token仅用于状态写，不授权改写业务事实。没有改其他租赁计划/订单逻辑，没有新增前端模型分支。
+
+L1 rental-source-lock-iteration.log/diff PASS；L2 rental-source-lock-unit.log92 PASS并登记非零回执：父单10字段/5非draft状态拒绝、note允许、驳回draft恢复、serialization point后重新查state；直接明细修改/删除/双向迁移及context新增阻断。既有配置审批/身份依据测试同目标执行通过。纯测试未证明真实SQL并发、ORM计算缓存或批量明细command行为，L3仍not_run；金额额度/支付执行/冲销尚未接通，不能以事实锁定宣称财务闭环。
+
+下一步复用父锁实现租赁付款额度检查与执行前重验，再接basis/defaults/native及posted金额/冲销链，一次受管升级后定向验收。未改workflow声明/前端，沿用53.98动作语义证据，不重复无关门禁/ORM/构建。后端2d7eab703、前端7915f3bb9未改变；无推送合并目标部署，整体67继续开放。

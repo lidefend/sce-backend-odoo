@@ -383,3 +383,8 @@ Rental settlement retains action_paid declaration but refuses paid mutation unti
 ### Segment53.99 — Explicit rental payment attribution schema, not yet executable
 
 payment.request.rental_settlement_id and the settlement's inverse request collection establish explicit attribution without limiting a settlement to one request. The link participates in existing approval business-fact locking. Source identity and conflicting header/detail obligations are validated;89 targeted pure tests pass. Reservation/concurrency, post-approval source immutability, basis/defaults/native/execution consumption, canonical payment totals and reversal readback remain required. No runtime upgrade; the payment blocker remains. Do not promote this schema-only progress to payment delivery.
+
+
+### Segment53.100 — Submitted rental settlement facts protected
+
+P1 parent facts and direct line create/write/unlink now require a draft source; line moves check both parents. Submission and fact editing serialize through the same ordered parent row lock with cache invalidation.92 targeted pure tests pass, including state recheck after serialization and context-supplied parent creation. SQL concurrency, ORM recomputation and command behavior remain runtime-unverified. Payment reservation/execution/reversal remain open; the53.98 blocker is still active and no payment-delivery claim is made.
