@@ -3165,7 +3165,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
         print("APPROVAL_CHECK=%s_reject_resubmit_new_review" % model)
 
 
-def _expense_finance_execution_checks(created):
+def _expense_finance_execution_checks(group, created):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
     assert finance, "existing finance fixture required"
@@ -3178,7 +3178,10 @@ def _expense_finance_execution_checks(created):
     project = env["project.project"].search([("company_id", "=", company.id)], limit=1)
     partner = env["res.partner"].search([("company_id", "in", [False, company.id]), ("is_company", "=", True)], limit=1)
     assert project and partner, "existing finance-visible project and partner required"
-    _set_policy(model, False)
+    Policy = env["sc.approval.policy"].sudo()
+    policies = Policy.with_context(active_test=False).search([("target_model", "=", model), ("company_id", "in", [False, company.id])])
+    policies.write({"approval_required": False, "mode": "none"})
+    policies.sync_tier_definitions()
     def document():
         rec = Document.create({"claim_type": "project_company_repay", "expense_type": "还款登记",
             "project_id": project.id, "partner_id": partner.id, "amount": 100.0,
@@ -3215,7 +3218,20 @@ def _expense_finance_execution_checks(created):
     assert Ledger.search_count(ledger_domain) == 1
     rec.write({"note": "Supplement after execution"})
     print("APPROVAL_CHECK=expense_finance_terminal_repeat_and_mutation_denied")
-    _set_policy(model, True)
+    policy = policies.filtered(lambda row: row.company_id == company)[:1]
+    values = {"active": True, "approval_required": True, "mode": "single", "manager_group_id": group.id, "runtime_state": "tier_validation"}
+    if policy:
+        policy.write(values)
+        policy.step_ids.write({"active": False})
+    else:
+        policy = Policy.create(dict(values, name="Rollback expense finance", code="runtime_expense_finance_chain", target_model=model, company_id=company.id))
+        created.append((policy._name, policy.id))
+    step = env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Expense finance review",
+        "sequence": max(policy.step_ids.mapped("sequence") or [0]) + 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+    created.append((step._name, step.id))
+    policy.sync_tier_definitions()
+    assert Policy.get_active_policy(model, company=company) == policy
     configured = document()
     configured.action_submit()
     assert configured.state == "submit" and configured.review_ids and configured.validation_status in ("waiting", "pending")
@@ -3369,7 +3385,7 @@ def main():
     step_baseline = policy.step_ids.read(step_fields)
     created = []
     legacy_parameter_baseline = env["ir.config_parameter"].sudo().search([("key", "=", "sc.workflow.legacy_runtime_enabled")]).read(["key", "value"]) if scope == "legacy-workflow" else None
-    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.settlement.adjustment", "sc.treasury.reconciliation", "sc.self.funding.registration", "sc.financing.loan", "sc.receipt.income"])]) if scope in ("settlement-adjustment", "receipt-income", "finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing") else env["sc.approval.policy"]
+    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.expense.claim", "sc.settlement.adjustment", "sc.treasury.reconciliation", "sc.self.funding.registration", "sc.financing.loan", "sc.receipt.income"])]) if scope in ("expense-state-authority", "settlement-adjustment", "receipt-income", "finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing") else env["sc.approval.policy"]
     finance_baseline = finance_policies.read(fields)
     finance_steps = finance_policies.step_ids.read(step_fields)
     passed = False
@@ -3615,7 +3631,7 @@ def main():
             if scope == "expense-state-authority":
                 _expense_deduction_line_checks(project, partner, created)
                 _expense_readiness_checks(project, partner, created)
-                _expense_finance_execution_checks(created)
+                _expense_finance_execution_checks(group, created)
             if scope == "all":
                 _contract_event_checks(project, group, created)
                 _draft_confirmation_checks(project, group, created, "sc.plan")
