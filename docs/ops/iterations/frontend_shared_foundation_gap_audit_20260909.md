@@ -8153,3 +8153,10 @@ P1 smart_construction_core/labor_management行业计划申请职责，复用shar
 L1 labor-plan-request-iteration.log PASS；labor-plan-request-unit.log80 PASS（参数化两模型配置分流、真实review、wizard、token、approved非法逆转及正常cancel/reset）；labor-plan-request-native.log8+46=54 PASS；labor-plan-request-semantics.log15 PASS；2XML解析/重复id检查、diff --check PASS。输入预登记与非零回执完成，候选e269d3b67+本段dirty，不是冻结交付。
 
 L3未运行：tier/新字段/XML需受管升级，下一步扩展既有rollback劳务计划申请范围验证真实配置、无金额权威拒绝、审批/驳回重提及状态边界恢复；随后同组官方页面。L4未改前端不重建，L5非本地迭代范围。不重跑材料/设备独立ORM。考勤、劳务用工与结算等剩余职责及实际角色记录办理继续开放，总体67未完成。
+
+
+### 53.84 劳务计划／申请真实审批与状态保护（进行中）
+
+P4现有rollback工具新增labor-plan-request scope16，两模型各8：外部状态、无配置自动通过、缺失金额权威拒绝、pending配置变更保护、真实审批、approved禁止非法逆转、cancel正常reset、驳回重提。没有复制设备来源计划关系。默认all纳入，原配置恢复与临时单据消失校验保持；无新环境/持久fixture。
+
+L1 labor-plan-request-runtime-iteration.log与py_compile/bash-n PASS，P1/纯测试未变复用80/54/15。一次受管smart_construction_core升级/reload后只该scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter及固定卷沿用入口预检。L3尚pending，前端未改不构建，L5不在本地范围；旧材料/设备ORM不重跑。
