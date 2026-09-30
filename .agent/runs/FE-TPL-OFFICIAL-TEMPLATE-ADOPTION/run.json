@@ -350,7 +350,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.106 backend4dc443ee0 rental cancellation contract6 PASS+ROLLBACK VERIFIED; P1 shared predicate feeds execution and workflow availableActions, L2 106+60 PASS. Reuse cash10/source approval12/create23 and frontend7915f3bb9 unchanged. Continue existing67 safety/subcontract families necessary contracts. True two-transaction concurrency and role browser detail pending; PM empty1790786669074 do not repeat. No newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.107 safety plan/disclosure P1 shared approval source18182a6af upgraded, backendbf175ec6d, tool9b4040225: runtime16 PASS+ROLLBACK VERIFIED; create plan15 report1790787889137 and disclosure16 report1790787909071 PASS, frontend7915f3bb9 unchanged. Continue existing67 subcontract plan/request shared approval contracts. Safety existing-role handling and rental true concurrency/detail remain open; do not repeat PM empty rental query. No newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
