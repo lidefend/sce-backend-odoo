@@ -1350,6 +1350,24 @@ def _rental_settlement_cash_checks(_project_unused, _group_unused, created):
     denied(source.action_cancel, "付款申请")
     print("APPROVAL_CHECK=rental_cash_overbooking_and_live_source_cancel_denied")
 
+    if os.environ.get("SC_APPROVAL_RUNTIME_SCOPE") == "rental-cancellation-contract":
+        service = source.env["sc.workflow.contract.service"]
+        contract = service.describe_record(source)
+        cancel = next(row for row in contract["availableActions"] if row["key"] == "cancel")
+        assert cancel["enabled"] is False
+        assert cancel["reason_code"] == "RENTAL_PAYMENT_OBLIGATIONS_ACTIVE"
+        assert cancel["blocked_message"] and cancel["target"]["id"] == source.id
+        print("APPROVAL_CHECK=rental_cancel_contract_matches_active_obligation")
+        request.action_cancel()
+        source.invalidate_recordset()
+        contract = service.describe_record(source)
+        cancel = next(row for row in contract["availableActions"] if row["key"] == "cancel")
+        assert cancel["enabled"] is True and not cancel["reason_code"]
+        source.action_cancel()
+        assert source.state == "cancel"
+        print("APPROVAL_CHECK=rental_cancel_contract_recovers_after_release")
+        return
+
     def pay(amount):
         action = request.action_create_payment_execution()
         execution = actor_env["sc.payment.execution"].with_context(action["context"]).create({"payment_request_id": request.id, "paid_amount": amount,
@@ -1736,7 +1754,7 @@ def _labor_execution_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -1750,10 +1768,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks, "rental-settlement-cash": _rental_settlement_cash_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks, "rental-settlement-cash": _rental_settlement_cash_checks, "rental-cancellation-contract": _rental_settlement_cash_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -1912,7 +1930,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash") else 199, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract") else 199, scope))
 
 
 main()

@@ -607,14 +607,27 @@ class ScMaterialRentalSettlement(models.Model):
         self.ensure_one()
         return max(self.amount_total - self._payment_reserved_amount(), 0.0)
 
+    def _payment_cancellation_blocker(self):
+        self.ensure_one()
+        requests = self.sudo().with_context(active_test=False).payment_request_ids
+        if requests.filtered(lambda request: request.state not in ("draft", "rejected", "cancel")):
+            return {
+                "reason_code": "RENTAL_PAYMENT_OBLIGATIONS_ACTIVE",
+                "message": _("租赁结算仍有关联的在途或已办结付款申请，不能取消。"),
+            }
+        if requests.mapped("ledger_line_ids").filtered(lambda ledger: ledger.state == "posted"):
+            return {
+                "reason_code": "RENTAL_PAYMENT_FACTS_ACTIVE",
+                "message": _("租赁结算仍有有效付款台账，不能取消。"),
+            }
+        return None
+
     def _assert_no_live_payment_obligations(self):
         self._lock_payment_basis()
         for record in self:
-            requests = record.sudo().with_context(active_test=False).payment_request_ids
-            if requests.filtered(lambda request: request.state not in ("draft", "rejected", "cancel")):
-                raise UserError(_("租赁结算仍有关联的在途或已办结付款申请，不能取消。"))
-            if requests.mapped("ledger_line_ids").filtered(lambda ledger: ledger.state == "posted"):
-                raise UserError(_("租赁结算仍有有效付款台账，不能取消。"))
+            blocker = record._payment_cancellation_blocker()
+            if blocker:
+                raise UserError("[%s] %s" % (blocker["reason_code"], blocker["message"]))
 
     @api.depends(
         "amount_total", "payment_request_ids",

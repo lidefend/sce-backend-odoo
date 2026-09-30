@@ -1080,15 +1080,16 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
 
     def test_rental_source_cannot_cancel_live_payment_obligations(self):
         path = MODEL.with_name('material_rental.py')
-        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_assert_no_live_payment_obligations')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'_assert_no_live_payment_obligations', '_payment_cancellation_blocker'}]
         ns = {'UserError': ValueError, '_': lambda text: text}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
         class Rows(list):
             def filtered(self, predicate): return Rows(filter(predicate, self))
             def mapped(self, name): return Rows(row for item in self for row in getattr(item, name))
         record = self._purchase_request_record(state='confirmed')
         record._lock_payment_basis = lambda: None
         record.sudo = lambda: record
+        record._payment_cancellation_blocker = lambda: ns['_payment_cancellation_blocker'](record)
         for state, ledger, blocked in [('approved', [], True), ('done', [], True), ('cancel', [types.SimpleNamespace(state='posted')], True), ('cancel', [types.SimpleNamespace(state='reversed')], False), ('draft', [], False)]:
             record.payment_request_ids = Rows([types.SimpleNamespace(state=state, ledger_line_ids=ledger)])
             if blocked:

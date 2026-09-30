@@ -8413,3 +8413,11 @@ L1 rental-ledger-basis-iteration.log/py_compile/bash-n/diff PASS；L2 rental-led
 边界：源结算与资金计划仍是sudo事务准备；现金动作是实际finance身份的ORM路径，不等同于浏览器全旅程或真实双事务竞争。当前fixture_role_pm已有结算空查询不重跑，既有详情支付金额呈现待数据前提。前端7915f3bb9未改变、创建23和原审批12按未变产品输入复用。
 
 下一步动作可用性契约需补齐取消阻断：模型已拒绝在途付款责任下取消，但workflow rental evidenceGate目前只投影支付阻断，应复用同一业务谓词给cancel明确原因，不仅依赖点击后报错。并继续既有67台账剩余安全/分包等页面族，不将租赁财务事务通过升级为全系统交付；并发验证继续保留未验证状态。无推送/合并/目标部署。
+
+### 53.106 取消执行与动作契约共用业务谓词（进行中）
+
+候选基于2ada3eb5e，显式dirty为material_rental、workflow_contract_service及两项定向测试；P1 smart_construction_core拥有租赁取消责任约束，非客户偏好/P3配置，不放入P0或前端。抽取_payment_cancellation_blocker，取消执行仍先锁定来源再调用；workflow evidenceGate调用同一谓词给cancel返回在途申请/有效台账原因。支付动作自身gate保持独立，权限及财务规则不变。
+
+L1 rental-cancel-contract-iteration.log通过；L2 rental-cancel-contract-unit.log106、rental-cancel-contract-native.log8+52=60通过并登记非零回执；真实方法回归覆盖在途申请/posted ledger阻断及责任释放恢复。P4既有rollback工具增加rental-cancellation-contract窄scope，复用finance真实申请准备，只检查契约禁用及申请取消后契约恢复/实际取消，6组；不重跑10组支付冲销。工具L1 rental-cancel-runtime-tool-iteration.log、py_compile/bash-n/diff通过。
+
+复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与固定filestore/卷，所有临时记录事务rollback。仅Python改动需reload，不升级；前端7915f3bb9未改不构建，不重复创建23/空PM查询。运行时契约尚待验证，整体detail.action-state与67条目标仍开放；真实双事务竞争/角色浏览器详情未证明。无推送合并目标部署。

@@ -141,6 +141,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         record.sudo = lambda: record
         record.with_context = lambda **values: record
         record.payment_request_ids = []
+        record._payment_cancellation_blocker = lambda: None
         record._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](record)
         service = SimpleNamespace()
         service._gate = lambda *args, **kw: ns['_gate'](service, *args, **kw)
@@ -153,6 +154,33 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertTrue(next(row for row in rows if row['method'] == 'action_cancel')['enabled'])
         record.state = 'approved'
         self.assertEqual(ns['_evidence_gate'](service, record), [])
+
+    def test_rental_cancellation_contract_uses_the_execution_predicate(self):
+        tree = ast.parse(DEFAULT_SERVICE.read_text())
+        methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in {'_evidence_gate', '_gate'}]
+        path = DEFAULT_SERVICE.parents[1] / 'core/material_rental.py'
+        methods.append(next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_cancellation_blocker'))
+        for method in methods: method.decorator_list = []
+        ns = {'_': lambda text: text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), str(path), 'exec'), ns)
+        class Rows(list):
+            def filtered(self, predicate): return Rows(filter(predicate, self))
+            def mapped(self, name): return Rows(child for row in self for child in getattr(row, name))
+        record = SimpleNamespace(_name='sc.material.rental.settlement', state='confirmed', ensure_one=lambda: None, _payment_confirmation_blocker=lambda: None)
+        record.sudo = lambda: record
+        record.with_context = lambda **values: record
+        record._payment_cancellation_blocker = lambda: ns['_payment_cancellation_blocker'](record)
+        service = SimpleNamespace()
+        service._gate = lambda *args, **kw: ns['_gate'](service, *args, **kw)
+        for state, ledger_state, reason in [('approved', None, 'RENTAL_PAYMENT_OBLIGATIONS_ACTIVE'), ('cancel', 'posted', 'RENTAL_PAYMENT_FACTS_ACTIVE'), ('cancel', 'reversed', ''), ('draft', None, '')]:
+            record.payment_request_ids = Rows([SimpleNamespace(state=state, ledger_line_ids=Rows([SimpleNamespace(state=ledger_state)]) if ledger_state else Rows())])
+            gates = ns['_evidence_gate'](service, record)
+            rows = self._general_contract_actions('confirmed', model=record._name, evidence_gate=gates)
+            cancel = next(row for row in rows if row['method'] == 'action_cancel')
+            self.assertEqual(cancel['enabled'], not bool(reason))
+            self.assertEqual(cancel['reason_code'], reason)
+            self.assertEqual(bool(cancel['blocked_message']), bool(reason))
+            self.assertTrue(next(row for row in rows if row['method'] == 'action_paid')['enabled'])
 
     def test_rental_settlement_review_and_confirmation_are_distinct(self):
         model = 'sc.material.rental.settlement'
