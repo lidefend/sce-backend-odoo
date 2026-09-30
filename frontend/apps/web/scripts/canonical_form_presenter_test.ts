@@ -53,7 +53,6 @@ import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
   resolveWorkflowActionAvailability,
-  workflowActionMethodAliases,
   workflowActionRowForMethod,
 } from '../src/app/contracts/v2/workflowActionAvailability';
 import {
@@ -650,7 +649,7 @@ assert.equal(
 );
 assert.equal(
   resolveWorkflowActionAvailability(
-    { availableActions: [{ key: 'submit', target: [], enabled: true }] },
+    { availableActions: [{ key: 'submit', method: 'action_submit', target: [], enabled: true }] },
     submitIdentity,
   ).kind,
   'error',
@@ -685,16 +684,9 @@ assert.equal(
   'unmanaged',
   'an unrelated non-workflow action must remain outside workflow authority',
 );
-// 575 `已关闭 -> 已登记` 是独立键 `reactivate`（`reopen` 在本平台语义是 `已取消 -> 草稿`）。
-// 未登记该键时，合同无对应行会回落为 `unmanaged`、按钮保持可用（fail-open）。
-assert.deepEqual(
-  workflowActionMethodAliases('reactivate'),
-  ['action_reopen'],
-  'the closed -> active transition must keep its own key bound to action_reopen',
-);
 assert.equal(
   resolveWorkflowActionAvailability(
-    { availableActions: [] },
+    { actions: [{ key: 'reactivate', method: 'action_reopen' }], availableActions: [] },
     { actionKey: 'reactivate', methodName: 'action_reopen' },
   ).enabled,
   false,
@@ -703,7 +695,7 @@ assert.equal(
 
 // The deleted visibility helper answered `true` here: a known transition over a carrier
 // it could not read still rendered a control.  The single authority reports an error,
-// and reserves `unmanaged` for a method the transition registry does not know.
+// without inferring authority from a method-name registry.
 assert.equal(
   resolveWorkflowActionAvailability({ availableActions: 'unreadable' }, submitIdentity).kind,
   'error',
@@ -714,8 +706,8 @@ assert.equal(
     { availableActions: 'unreadable' },
     { methodName: 'action_not_a_registered_transition' },
   ).kind,
-  'unmanaged',
-  'an unreadable carrier must not claim authority over a method the registry does not know',
+  'error',
+  'unreadable workflow authority must fail closed without guessing method names',
 );
 
 const legalSameLabelRows = {
@@ -3443,3 +3435,21 @@ assert.equal(childPopulated.sectionLinks.some((item) => item.label === 'Source f
 emptySectionModel.identity.mode = 'create';
 assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).primaryNodes[0].visible, true, 'create controls retained');
 console.log('[canonical_form_presenter] readonly empty/populated section and navigation: 10 cases passed');
+
+// Complete declarations govern arbitrary business methods without name inference.
+const declaredPause = { actions: [{ key: 'pause', method: 'transition_42' }], availableActions: [] };
+assert.equal(resolveWorkflowActionAvailability(declaredPause, { methodName: 'transition_42' }).enabled, false);
+assert.equal(resolveWorkflowActionAvailability(declaredPause, { methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ actions: declaredPause.actions }, { methodName: 'transition_42' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, actions: 'broken' }, { methodName: 'transition_42' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, actions: [...declaredPause.actions, ...declaredPause.actions] }, { methodName: 'transition_42' }).reasonCode, 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS');
+assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'submit', method: 'different_method', enabled: true }] }, { actionKey: 'submit', methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'submit', method: 'action_submit', target: { method: 'different_method' }, enabled: true }] }, submitIdentity).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ actions: [], availableActions: [{ key: 'submit', method: 'action_submit', enabled: true }] }, submitIdentity).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, availableActions: [{ key: 'pause', method: 'transition_42', enabled: true }] }, { methodName: 'transition_42' }).enabled, true);
+const unavailableDeclaredSnapshot = snapshot();
+unavailableDeclaredSnapshot.actionContract.actionRuleList[0].button = { type: 'object', name: 'transition_42' };
+unavailableDeclaredSnapshot.workflowContract = declaredPause;
+assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unavailableDeclaredSnapshot)), 'edit').actionBar[0].enabled, false,
+  'the shared presenter must disable a declared unavailable method regardless of its name');
+console.log('[canonical_form_presenter] complete declaration identity cases PASS count=10');
