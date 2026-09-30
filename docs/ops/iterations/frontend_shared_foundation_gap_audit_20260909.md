@@ -8523,3 +8523,14 @@ P0通用解析器修复：数组域已结构化，不再当表达式解析，保
 再补既有第二项目切换检查，L1 relation-project-change-iteration.log/node/diff通过；最终tpl07-1790790517718/report.json21 PASS：finance现有项目464/463可选（project domain=[]，仍受后端授权），来源未选项目id=-1、选464保留project464+confirmed、搜索更多limit120同范围、切换463自动更新为project463+confirmed。其他付款依据的联动请求亦见报告，仅本次分包范围有直接断言。双视口无横向溢出，390截图人工核对表单/项目已切换；errors/forbiddenWrites为空，未保存业务记录。
 
 结构化域误阻断已修复，当前选源范围/项目变化请求已证明；源结果为空，不能证明旧来源值清理、非空候选选择及保存。保留数据前提缺口，不造fixture或重复空查询。下一步复用既有67台账接续必要动作契约/通用交互剩余项；P1现金/审批已有证据不重跑。整体接管/全部业务办理未完成，无推送合并目标部署。
+
+
+### 53.114 项目立项创建默认值状态保护（完成本项验证）
+
+983a44770 clean续跑，复用67台账唯一未关闭detail.action-state，不重扫仓库/空页面。项目审批金额权威仍无确认口径，已向用户异步确认；在回复前继续拒绝金额条件，不猜测合同额/预算额，不影响普通审批。只读项目审批源码发现create校验遗漏context.default_sc_approval_state，可绕过显式vals检查。
+
+P1 smart_construction_core拥有项目立项状态，修create按显式vals优先、其次context默认值、最后draft检查；非P0平台/前端/P3配置。既有真实方法纯测试补默认approved/unknown/False及混合批创建拒绝。L1 project-default-state-iteration.log PASS，L2 project-default-state-unit.log122 PASS并登记payment_approval_state_machine；不改字段/XML，跳过upgrade，不改前端，复用CrYkOCxc构建及上轮关系证据。
+
+P4既有rollback工具增加project-creation-state独立5项scope，default all计数254但本轮未执行all。只测试非法创建默认值拒绝、显式draft覆盖不安全默认值、合法draft默认值；scope复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter和固定卷，事务sudo builder验证模型状态边界，不替代普通角色办理。L1 project-default-tool-iteration.log/py_compile/bash-n/diff PASS。源910d8e214、工具7ad71c3bd本地提交，受管Python reload成功（project-default-state-reload.log），project-default-state-runtime.log5 PASS、ROLLBACK VERIFIED：配置原样恢复、临时记录不存在。没有新fixture/环境/模块升级/前端构建/无关ORM。
+
+本项仅关闭项目创建上下文绕过，不升级detail.action-state或总体67。金额口径、项目信息实际保存/审批用户闭环，以及已登记其他角色办理/数据前提保持开放。下一步继续既有台账的已授权实际保存/动作消费缺口，复用本轮及前序原证据；无推送合并目标部署。
