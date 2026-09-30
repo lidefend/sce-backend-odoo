@@ -43,7 +43,8 @@ function findRecordAuthority(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 14) return null;
   if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
     return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
-      deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData };
+      deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData,
+      ...(process.env.TPL07_SCOPE === 'task-authority' ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
   }
   for (const value of Object.values(node)) {
     const found = findRecordAuthority(value, depth + 1);
@@ -93,7 +94,13 @@ async function login(role) {
           report.projectionCaches.push(contract.meta.projection_cache);
         }
         const recordAuthority = findRecordAuthority(contract);
-        if (recordAuthority) report.recordAuthority = recordAuthority;
+        if (recordAuthority) {
+          report.recordAuthority = recordAuthority;
+          if (process.env.TPL07_SCOPE === 'task-authority') {
+            report.taskAuthorities ??= {};
+            report.taskAuthorities[recordAuthority.model] = recordAuthority;
+          }
+        }
         const savedSearch = findSavedSearchAuthority(contract);
         if (savedSearch) report.savedSearchAuthority = savedSearch;
         const found = findIntroduceConfig(contract);
@@ -379,7 +386,42 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'detail-state') {
+  if (process.env.TPL07_SCOPE === 'task-authority') {
+    const finance = await login('fixture_role_finance');
+    await form(finance.page, '/f/payment.request/1813?menu_id=545&action_id=775', 'task-authority');
+    const authority = report.taskAuthorities?.['payment.request'];
+    check('task: actual payment authority received', authority?.model === 'payment.request');
+    check('task: native tree is sole layout authority', authority.structure?.layoutPolicy === 'container_tree_authority');
+    check('task: retired slots remain empty', Array.isArray(authority.structure?.slots) && authority.structure.slots.length === 0);
+    check('task: effective native tree is present', Boolean(authority.layout?.containerTree));
+    report.taskPresentation = [];
+    for (const width of [1440, 390]) {
+      await finance.page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+      report.taskPresentation.push(await finance.page.evaluate(() => ({
+        width: innerWidth,
+        fields: [...document.querySelectorAll('[data-field-name]')].map((el) => ({
+          name: el.getAttribute('data-field-name'), visible: Boolean(el.getClientRects().length),
+        })),
+        groups: [...document.querySelectorAll('[data-group-title]')].map((el) => ({
+          title: el.getAttribute('data-group-title'), columns: getComputedStyle(el).gridTemplateColumns,
+          width: el.getBoundingClientRect().width,
+        })),
+      })));
+      const geometry = await finance.page.evaluate(() => {
+        const first = document.querySelector('[data-field-name="project_id"]')?.getBoundingClientRect();
+        const second = document.querySelector('[data-field-name="partner_id"]')?.getBoundingClientRect();
+        return first && second ? { first: { x: first.x, y: first.y }, second: { x: second.x, y: second.y } } : null;
+      });
+      check(`task-${width}: responsive field geometry`, Boolean(geometry) && (width > 600
+        ? Math.abs(geometry.first.y - geometry.second.y) < 2 && geometry.second.x > geometry.first.x
+        : Math.abs(geometry.first.x - geometry.second.x) < 2 && geometry.second.y > geometry.first.y), { geometry });
+      check(`task-${width}: one official form composition`, await finance.page.locator('[data-form-composition="official-standard-form"]').count() === 1);
+      check(`task-${width}: no page overflow`, await finance.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await finance.page.screenshot({ animations: 'disabled', path: path.join(out, `task-authority-${width}.png`), fullPage: true });
+    }
+    check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
+    await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'detail-state') {
     const finance = await login('fixture_role_finance');
     await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'detail-state', 'readonly');
     let authority = report.recordAuthority;
@@ -540,7 +582,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

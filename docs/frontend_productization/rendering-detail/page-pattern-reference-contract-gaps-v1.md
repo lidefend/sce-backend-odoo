@@ -5,8 +5,6 @@ This ledger records reference details that cannot be implemented safely from the
 ## P0 contract gaps
 
 - Record actions: declared edit/delete denial feedback is consumed by the shared official Alert (segment53.5). A duplicate capability boolean still supplies no executable copy action; confirm the business responsibility before adding an execution contract. The labelled collection detail action is already closed below; do not add a second row-action field.
-- Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
-- Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
 
 ## Closed boundary decisions (no longer gaps)
 
@@ -121,3 +119,9 @@ applicable for this rendering takeover; any separately confirmed feature must de
 own security/query/execution contract before controls are offered. Existing login, activation,
 recovery and authorized menu-search responsibilities remain required and covered by their
 existing evidence. No backend or account writes were performed in this batch.
+
+## Segment 53.7: live task authority replaces stale slot assumptions
+
+The existing payment action775/view2145 now returns `container_tree_authority`, an effective native field tree and intentionally empty retired `slots`. Its published configuration and native semantic anchors already provide the business structure. The 1440/390 browser probe verifies actual project/partner field positions: two columns on desktop, one column on narrow screens. No contract/layout rewrite is needed for `task.field-grid`.
+
+`task.slot-coverage` remains open as a responsibility-level coverage check, not a request to revive slots. Compare required facts and their native/display aliases, conditional visibility, notebook and relation responsibilities before claiming closure. The scoped report `tpl07-1790768273395/report.json` proves the current authority and geometry, not all business coverage.

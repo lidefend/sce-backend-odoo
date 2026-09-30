@@ -176,7 +176,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Close remaining3 ledger responsibilities (record copy execution decision; task field geometry and owned fact slots) from effective P0/P1 contracts and official baseline, then deliberate saved-search success/refresh/restoration loop and consolidated completion audit. Reuse53.6 public-auth/navigation/version evidence and prior configuration loop; no full inventory or unchanged ORM.",
+  "next_exact_step": "Compare confirmed payment task facts against current native tree/display aliases/conditional fields/relations (do not revive slots); resolve record-copy execution responsibility; complete planned saved-search success/refresh/restoration and full objective audit. Reuse53.7 geometry evidence and unchanged build/backend; no unrelated ORM.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -282,6 +282,15 @@
       "browser_assertions": 23,
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790767915401/report.json",
       "ledger_remaining": 3
+    },
+    "task_authority_segment_53_7": {
+      "status": "passed",
+      "source_head": "aedbd1f95",
+      "scope": "P4 read-only task authority and responsive geometry; not full business coverage",
+      "targeted_test_count": 11,
+      "browser_assertions": 15,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790768273395/report.json",
+      "ledger_remaining": 2
     }
   }
 }

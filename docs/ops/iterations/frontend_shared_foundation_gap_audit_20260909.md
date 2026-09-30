@@ -7422,3 +7422,11 @@ L5：未推送、未合并、未部署。
 - 公开契约现有 build_public_auth_page_contracts 声明激活/恢复目标，LoginView 已消费，并非台账所写“未声明”。本次核对实际登录标题和入口，复用早前public-auth18项（模拟激活无账号写入），不重复账号业务验收。
 - 按所有者“不复制官方演示业务”边界，纠正历史义务：官方 Header.vue 无fullscreen；Login.vue 的remember checkbox未绑定持久化；Search.vue 仅管理focus/text，未实现全局结果查询。不能为这些演示或旧参考控件新增凭据保留、三方登录或跨模型搜索。对应项记not_applicable，保留将来明确功能需契约先行的边界；没有删去已确认的登录、激活/恢复、授权菜单检索职责。
 - 67条台账结构不变，剩余3项：复制记录执行职责、任务字段几何、任务事实slot覆盖。复制权限bool不等于动作声明；后两项继续定位P1有效视图/结构生产者。另保留计划中的收藏成功/刷新/恢复闭环，不能用失败注入替代。总体仍进行中，主线/部署/整体用户验收均未完成。
+
+
+### 53.7 任务页实际权威与响应式布局核对
+
+- 候选 aedbd1f95 + P4 `standard_page_type_browser.mjs` dirty；产品源码/后端/构建输入未变，复用53.6候选与5180。L1 node syntax、ci.local.iteration通过；L2 native_form_structure_responsibility 11/11（tpl52/task-authority-static.log）。不运行ORM、升级、构建或fixture写入。
+- 新增既有探针的task-authority只读范围。首次报告tpl07-1790768213033为validation_tool_defect：关系附件响应覆盖单一recordAuthority。按模型保留观察结果后13/13通过（tpl07-1790768237871）；进一步补充实际字段坐标而非容器CSS猜测，15/15通过（tpl07-1790768273395，tpl52/task-authority-geometry.log）。所有请求只读，无业务写入；同一启动链及既有finance/1813身份。
+- 实际action775/view2145使用container_tree_authority、native_authority、slots=[]，契约组cols=2与显式cols=1并存。项目/往来单位实际桌面同排双列，390窄屏同列上下排列；无整页横向溢出。桌面截图已复核。task.field-grid关闭，不能再为旧“单列”记录重写P1。
+- task.slot-coverage仍未关闭，但纠正为必要业务事实覆盖核对：原生字段树、语义锚点、条件字段及关系/页签是当前权威，不能恢复旧slot路径。67条保留，剩余2项（事实职责覆盖、复制执行职责）；另有收藏成功/刷新/恢复闭环及总体完成审计待执行，不宣称整体完成。
