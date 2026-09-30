@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.72 purchase-request runtime8 PASS rollback verified (backendd3db44188, toole8617cd20); 53.71 approval72/native49/semantics15 reused. Extend existing approval-actions browser scope to purchase request, verify official unsaved create and existing authorized record if present without fixture creation. Do not rerun runtime8 or rebuild unchanged frontend. Then continue remaining business document approval producers; overall67 still incomplete.",
+  "next_exact_step": "53.73 purchase-request create14 passed but visual+effective-contract inspection found generated name editable/required on create. Fix P1 native form/generated-field declaration (create hidden, existing readonly), add focused contract coverage and recheck affected create only after required managed XML upgrade. Existing PM query empty; do not repeat without changed data. Keep backend purchase8 and other unchanged evidence; overall goal active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1120,6 +1120,14 @@
       "rollback": "verified",
       "log": "artifacts/frontend-web-fix-20260928/tpl52/purchase-request-runtime-fixed.log",
       "frontend": "unchanged7915f3bb9; purchase-request page pending"
+    },
+    "segment_53_73": {
+      "status": "product_gap_found",
+      "create_assertions": 14,
+      "create_report": "artifacts/frontend-web-fix-20260928/tpl07-1790780248705/report.json",
+      "existing_record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790780263093/report.json",
+      "existing_record": "authorized query empty; UI handling pending",
+      "gap": "P1 native purchase request name is generated but exposed as editable required create field"
     }
   }
 }

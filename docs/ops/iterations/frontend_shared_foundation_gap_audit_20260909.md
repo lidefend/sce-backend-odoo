@@ -8030,3 +8030,12 @@ P4扩展已有business_config_approval_runtime_smoke及受管wrapper，新增白
 受管模块升级及后端d3db44188重绑成功。首次purchase-request-runtime.log前三项通过、rollback verified；第4项脚本误期待pending再次提交正常返回，实际共享路由按规则拒绝重新初始化。归因P4测试预期，修为denied(required.action_submit)，不修改产品保护。L1 purchase-request-runtime-tool-fix.log后仅重跑当前8项，无需再次升级/构建。
 
 实际purchase-request-runtime-fixed.log 8/8 PASS，ROLLBACK VERIFIED；配置和步骤恢复，临时申请、RFQ、采购订单、材料/模板及供应商消失。后端产品d3db44188，执行工具e8617cd20（仅P4预期修正，无新增产品变动）。显式生成两次结果相同，采购订单保持draft；审批本身不生成下游。官方页面消费及实际角色办理待验证；本运行使用sudo建立事务单据+真实reviewer审批，不替代角色全旅程。总体detail.action-state仍contract_gap，无主线集成/目标部署。
+
+
+### 53.73 采购申请官方页面消费与新增契约缺口（进行中）
+
+P4仅扩展既有approval-actions浏览器范围，PM物资经理角色、真实登录/初始化/契约、只读已有记录及不保存创建。L1 purchase-request-page-iteration.log PASS、node --check PASS；前端7915f3bb9/后端产品d3db44188复用，不构建、不升级、不重跑采购8或独立ORM。
+
+创建报告tpl07-1790780248705/report.json 14项PASS：官方表单、有效model、未保存无审批/询价/订单动作、双视口无页面横向溢出，errors=[]、forbiddenWrites=[]。已有记录报告tpl07-1790780263093/report.json api.data ok=true records=[]，第2项数据前置失败；不造fixture、不扩权、不重试相同查询，实际记录角色办理pending。
+
+截图人工复核发现额外产品缺口：创建页“申请单号”显示为必填可编辑输入。有效契约fieldInfo.required=true/readonly=false且原生XML field name=name没有修饰；P1模型create已有序列生成，前端忠实消费了不完整producer。14项通过不覆盖此缺陷，不能称本批页面完整验收。归属P1原生视图/系统生成字段契约，下一步对该字段建立创建隐藏、已有记录只读的权威声明并验证有效契约，不以CSS或前端模型特判修补。已完成后端8项继续有效。detail.action-state及总体目标仍未完成。

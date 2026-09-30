@@ -271,3 +271,8 @@ Governed upgrade/backend3d2118bd9 passes8 acceptance-only real runtime checks wi
 ### Segment53.71–53.72 — Purchase request shared approval runtime verified
 
 P1 purchase request now consumes shared policy/tier approval. Submission without configuration auto-approves; configured submission requires actual reviews. Legacy approve delegates to real approval, and pending reviewer actions derive from review facts. RFQ/order generation remains an explicit independent action guarded by approval facts; generated purchase orders remain draft. Pure tests72/native49/semantics15 pass; scoped managed runtime8 passes with verified rollback (purchase-request-runtime-fixed.log, backendd3db44188/tool e8617cd20). Existing official page/role handling remains pending. These results do not close detail.action-state or the full business-document scope; no frontend rebuild or target deployment.
+
+
+### Segment53.73 — Purchase request create producer gap remains
+
+Official create14 checks pass (tpl07-1790780248705), but screenshot/effective-contract review reveals generated application name is still required/editable on create. Native P1 XML lacks readonly/create visibility authority; fix the producer, not frontend CSS/model rules. This is a remaining product gap despite green action checks. Existing PM record query is empty (tpl07-1790780263093); actual record handling remains pending, with no new fixture or permission expansion. Backend approval8 evidence stays valid.
