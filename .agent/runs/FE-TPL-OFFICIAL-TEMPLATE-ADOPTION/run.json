@@ -256,7 +256,8 @@
         "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
         "addons/smart_construction_core/services/project_execution_task_transition_service.py",
         "addons/smart_construction_core/models/support/task_extend.py",
-        "addons/smart_construction_core/views/support/task_sc_state_views.xml"
+        "addons/smart_construction_core/views/support/task_sc_state_views.xml",
+        "addons/smart_construction_core/services/project_execution_response_builder.py"
       ]
     },
     "standard_preview_tool": {
@@ -268,10 +269,19 @@
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
         "make/runtime_ops.mk"
       ]
+    },
+    "scene_mutation_outcome": {
+      "target": "verify.frontend.create_record_user_journey.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/sceneMutationRuntime.ts",
+        "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.57 project.task PM create official form12 passes with errors/forbiddenWrites empty; existing-record query empty so detail not_run, do not retry unchanged or create fixtures. Runtime task39 reusable. Next trace shared contract action result handling before adding actionable execution approval guidance (legacy project_execution hint only refreshes next-actions; no direct frontend consumer named execution.advance/suggested_action_payload found). Then project.project approval/start split. Do not declare backend code strings a verified UI. All67 rendering/interaction scope active.",
+  "next_exact_step": "53.58 shared sceneMutationRuntime now rejects explicit data.result=blocked and consumes backend message; P1 project execution response supplies required/pending messages. Frontend4 new actual executor cases + existing create journey pass, approval59 pass, strict typecheck pass. Commit then one governed frontend.standard.preview.build/up and backend reload, task create representative check. No actual task blocked journey due empty PM task scope. Continue project approval/start split and full67 scope.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -892,6 +902,17 @@
         "report": "artifacts/frontend-web-fix-20260928/tpl07-1790776285320/report.json"
       },
       "remaining": "existing task detail approval handling and actionable execution required/pending hints; project approval/start split"
+    },
+    "scene_outcome_53_58": {
+      "candidate": "8c3ee0cec + shared scene executor/P1 response/test scope",
+      "l1": "iteration passed",
+      "l2": {
+        "scene_outcome_cases": 4,
+        "approval": 59,
+        "typecheck_strict": "passed"
+      },
+      "runtime": "not_run; one candidate build and backend reload pending",
+      "remaining": "real blocked interaction/browser not covered; no existing authorized tasks; project approval split"
     }
   }
 }

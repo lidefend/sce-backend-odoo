@@ -1,3 +1,4 @@
+import { executeSceneMutation } from '../src/app/sceneMutationRuntime';
 import assert from 'node:assert/strict';
 import { reactive, ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
@@ -408,3 +409,25 @@ assert.deepEqual(events, ['save-draft', 'reopen-draft', 'save-edit', 'confirm', 
 assert.deepEqual(stored, { amount: 80, owner_id: 17, title: 'Draft A revised', id: 501, state: 'submit' });
 
 console.log('[create-record-user-journey] PASS checkpoints=defaults,single-flight-save,reopen,edit,submit,refresh');
+
+// Actual shared executor: transport success must not mask a blocked business result.
+let mutationChecks = 0;
+const mutationInput = { mutation: { intent: 'test.transition', params: { id: '$record_id' } }, actionKey: 'transition', recordId: 51 };
+for (const [data, expectedError] of [
+  [{ result: 'blocked', message: '任务正在审批中，请在任务详情查看审批进度，通过后再启动。' }, '任务正在审批中'],
+  [{ result: 'blocked' }, '当前操作未完成'],
+  [{ result: 'success', id: 51 }, ''],
+  [{ record_id: 51 }, ''],
+] as const) {
+  const request = async (payload: { intent: string; params: Record<string, unknown> }) => {
+    assert.deepEqual(payload, { intent: 'test.transition', params: { id: 51 } });
+    return { traceId: 'test-trace', data: { ...data } };
+  };
+  if (expectedError) {
+    await assert.rejects(executeSceneMutation(mutationInput, request), new RegExp(expectedError));
+  } else {
+    assert.deepEqual(await executeSceneMutation(mutationInput, request), { intent: 'test.transition', traceId: 'test-trace', data });
+  }
+  mutationChecks += 1;
+}
+console.log(`[scene-mutation-outcome] PASS cases=${mutationChecks}`);

@@ -7872,3 +7872,11 @@ L5：未推送、未合并、未部署。
 - 任务详情前置查询api.data fields=[id,sc_state]返回ok=true、records=[]（task-detail-browser.log；tpl07-1790776285320/report.json）。不是页面渲染失败，已有记录办理未运行；不反复重查、不扩权、不造数据，把数据前提保留为缺口。
 - 执行等待提示尚未闭环：当前project_execution_advance._blocked_response建议仍是刷新next-actions；仅加原因码不能算可操作UI完成。定向查询未发现前端直接按project.execution.advance/suggested_action_payload命名消费，后续必须沿共享动作结果链核实实际契约形状，不能凭空添加无人消费的字段/导航。此项与项目审批/启动拆分继续保留。
 - 总目标active；本轮完成任务新建共享消费证据，不自动升级detail.action-state台账整行。主线未集成、目标未部署、用户整体未验收；既有模型39运行证据依赖不变复用。
+
+
+### 53.58 共享场景动作拒绝将业务阻断报告为成功
+
+- 8c3ee0cec clean起步，上轮task/create12构成新增有效证据。沿直接消费链定位：普通原生按钮经execute_button/intent envelope处理失败；场景mutation经sceneMutationRuntime→intentRequestRaw只检查envelope.ok。project执行阻断明确返回ok=true,data.result=blocked，原场景调用者在await返回后固定显示操作完成，可能误报业务结果。
+- P0通用前端消费修正：共享sceneMutationRuntime只识别生产者明确result=blocked，抛出后端message或通用未完成提示，让现有表单/列表异常反馈承接，不依赖模型/按钮名/状态猜测。请求参数模板、trace和未声明业务结果的兼容响应保持。P1 project_execution_response_builder为审批待提交/审批中提供中文办理提示，保留task_id及原状态，不把失败当成已启动；不改审批或回滚逻辑。
+- L1 iteration PASS（scene-outcome-iteration.log）；实际共享执行器4例PASS：blocked自带文案、blocked无文案、显式success、原无result响应；原create_record_user_journey同时PASS（scene-outcome-tests.log，begin/record4仅计新增场景例）。P1响应生产方法测试加入审批目标，总59 PASS（scene-outcome-backend-tests.log，begin/record59）。verify.frontend.typecheck.strict双配置PASS（scene-outcome-typecheck.log）。
+- 已确认这是共享结果消费修复，不把未消费的legacy原因码文本当UI完成。当前无授权任务记录，真实执行阻断浏览器旅程仍待验证；这次单元测试不伪装真实请求。下一步一次构建/复用5180并后端重载，定向复核官方任务create；不重跑未变审批39，不升级模块（无字段/XML变化）。项目立项审批/启动拆分及全部台账仍active。

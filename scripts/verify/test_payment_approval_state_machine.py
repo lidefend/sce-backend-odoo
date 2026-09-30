@@ -380,6 +380,23 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         call()
 
+    def test_execution_approval_block_response_keeps_business_message(self):
+        path = ROOT / 'addons/smart_construction_core/services/project_execution_response_builder.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'blocked')
+        method.decorator_list = []
+        import typing
+        namespace = {'Dict': typing.Dict, 'Any': typing.Any}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        cls = types.SimpleNamespace(_meta=lambda **kw: {})
+        for code, phrase in [('EXECUTION_TASK_APPROVAL_REQUIRED', '提交'), ('EXECUTION_TASK_APPROVAL_PENDING', '审批进度')]:
+            response = namespace['blocked'](cls, intent='project.execution.advance', ts0=0, trace_id='test',
+                project_id=7, from_state='ready', to_state='ready', reason_code=code, extra_data={'task_id': 42})
+            self.assertTrue(response['ok'])
+            self.assertEqual(response['data']['result'], 'blocked')
+            self.assertIn(phrase, response['data']['message'])
+            self.assertEqual(response['data']['task_id'], 42)
+            self.assertEqual(response['data']['from_state'], response['data']['to_state'])
+
     def test_task_configuration_routes_readiness_without_starting_execution(self):
         path = POLICY.parent / 'task_extend.py'
         names = {'action_prepare_task', '_complete_task_approval', 'action_on_tier_approved', '_execution_approval_block'}

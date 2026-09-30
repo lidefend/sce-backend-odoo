@@ -63,16 +63,26 @@ function buildParams(input: SceneMutationExecuteInput): Record<string, unknown> 
   }) as Record<string, unknown>;
 }
 
-export async function executeSceneMutation(input: SceneMutationExecuteInput): Promise<SceneMutationExecuteResult> {
+export async function executeSceneMutation(
+  input: SceneMutationExecuteInput,
+  request: (payload: { intent: string; params: Record<string, unknown> }) => Promise<{
+    traceId: string; data: Record<string, unknown>;
+  }> = intentRequestRaw<Record<string, unknown>>,
+): Promise<SceneMutationExecuteResult> {
   const intent = asText(input.mutation.intent);
   if (!intent) {
     throw new Error('mutation intent is required by the backend contract');
   }
   const params = buildParams(input);
-  const response = await intentRequestRaw<Record<string, unknown>>({
+  const response = await request({
     intent,
     params,
   });
+  // A successful transport envelope does not mean the business transition happened.
+  // Consume the producer's explicit outcome; never infer it from model/state names.
+  if (response.data.result === 'blocked') {
+    throw new Error(asText(response.data.message) || '当前操作未完成，请先处理阻断项');
+  }
   return {
     intent,
     traceId: response.traceId,
