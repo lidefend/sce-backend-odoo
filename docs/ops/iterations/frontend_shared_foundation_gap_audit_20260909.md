@@ -5151,6 +5151,42 @@ BusinessConfigSurfaceView.vue                -> ScErrorState:error, ScInlineStat
 - `state_transition_undeclared` 五条；`generate_frontend_visual_projection_inventory.py` 仍只读 `.vue`。
 - 工作台「选择业务页面」目录加载约 13–15 s 才出现（既有性能观感问题，本段只作等待条件，未改实现）。
 
+### 10. 补记｜页面契约覆盖守卫的扫描范围与段 33 抽取结果失配（同段收口）
+
+段 33 把 `BusinessConfigSurfaceView.vue` 的页面契约消费抽到同名伴随目录
+`frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigSurfacePageContract.ts`
+（其中调用 `usePageContract('business_config')`）。四个页面契约守卫长期红，本段查实根因并定向收口。
+
+**根因（非猜测）**：四个守卫的 `_find_page_consumers()` / `usePageContract(` 扫描只覆盖
+`views/*.vue` + `pages/*.vue`。抽取后 `usePageContract(` 落在 `views/businessConfigSurface/*.ts`，
+不在扫描集合内 → 该页从消费者集合消失，覆盖断言随之报缺。
+
+**五问边界**：`Formal Product Layer` = P0 平台内核产品（验证/Gate 工具层，非业务层）；
+`Layer Target` = `scripts/verify/frontend_page_contract_*`；`Module` = 验证脚本；
+`Standard vs User-Specific` = 平台机制；`Why Here` = 断言集合的**取值来源**就是扫描范围，范围错口径就错；
+`Why Not Elsewhere` = 不能改 `usePageContract(` 的调用位置去迎合守卫，也不能给该页加豁免；
+`Blast Radius` = 仅四个守卫的候选文件集合，产品代码、契约、渲染路径零改动。
+
+**修复（放宽的是断言的"广度"而非"强度"）**：
+
+- 三个 section 覆盖守卫（`sections_coverage` / `section_tag_coverage` / `section_style_coverage`）：
+  `candidates` 扩展为 `views/*.vue`、`views/*/*.vue`、`views/*/*.ts`、`pages/**` 同形集合，
+  注释写明「视图可把抽出的部件放在同名伴随目录，仍属同一页面契约消费范围」。
+- `frontend_page_contract_boundary_guard.py`：新增
+  `view_module_scopes = {"BusinessConfigSurfaceView.vue": "businessConfigSurface"}`，
+  并对伴随目录做 `usePageContract(` 兜底检查（目录不存在也报错），不把检查放宽到无关模块。
+
+**反例验伪（证明检查真在求值，不是阈值放宽）**：把
+`useBusinessConfigSurfacePageContract.ts` 里的 `usePageContract('business_config')` 改成
+`usePageContractNeutralized(...)` 后，四项守卫**全部 FAIL**；`git restore` 复原后四项 **PASS**。
+
+**分层验证**：L0 `git status` 干净；L1 `make verify.guard.registry` PASS、`make ci.generated_reports.guard` PASS；
+L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部 PASS**
+（`checked_pages=17, checked_sections=85`；`keys=18, source_files=708`）。
+产品布局未变 → 产物与 5180 候选**无需重建**（`base_sha` 仍为 `221b5ba5b…`）。
+
+**提交**：`fix(guard): let the page-contract coverage guards see extracted companion modules`
+
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
