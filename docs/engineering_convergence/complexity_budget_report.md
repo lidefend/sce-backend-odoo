@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4455`
+- Scanned files: `4457`
 - Files requiring split plan: `55`
 - Files above warning threshold: `99`
 
@@ -49,9 +49,9 @@ Generated from repository source files. This report is informational during the 
 | 1869 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1865 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1844 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1807 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1801 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1791 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
+| 1784 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1761 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1708 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
@@ -110,7 +110,7 @@ Generated from repository source files. This report is informational during the 
 | 1152 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1144 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
-| 1133 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
+| 1143 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1128 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1114 | Python source | `scripts/ops/codex_agent_controller.py` |
@@ -213,9 +213,9 @@ Generated from repository source files. This report is informational during the 
 | 1869 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1865 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 1844 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
-| 1807 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1801 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1791 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
+| 1784 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 1761 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1708 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1687 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |

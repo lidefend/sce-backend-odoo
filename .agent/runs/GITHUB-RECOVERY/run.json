@@ -10,7 +10,15 @@
     ".agent/goals/GITHUB-RECOVERY.yaml",
     ".agent/runs/GITHUB-RECOVERY/",
     "docs/ops/iterations/github_recovery_20260930.md",
-    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md"
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "scripts/verify/frontend_v2_policy_projection_guard.py",
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+    "make/ci.mk",
+    "docs/engineering_convergence/",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/core_extension_policy_accessors.py",
+    "scripts/verify/test_construction_create_default_hooks.py"
   ],
   "environment": {
     "kind": "offline",
@@ -18,7 +26,7 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Run exact-head Quick after this metadata commit; on success archive original evidence and publish protected GitHub PR. Track post-freeze outcomes in .runtime/github-recovery/ without changing candidate merely to copy receipts.",
+  "next_exact_step": "Commit reviewed P4 recovery and generated evidence; freeze clean identity; run justified replacement exact-head Quick, independent final binding and archive before GitHub PR publication.",
   "observations": {
     "iteration": "passed: .runtime/github-recovery/iteration.log",
     "targeted": "passed 15 push + 36 controller cases: .runtime/github-recovery/targeted.log",
@@ -27,6 +35,13 @@
     "public_scope": "passed full reachable history: secrets=0 personal=0; 21 registered exact false positives; .runtime/github-recovery/public-scope.log",
     "freeze_prepare": "passed: .runtime/github-recovery/freeze-prepare.log",
     "static_baseline": "passed complexity11/contract14/zero-residue: .runtime/github-recovery/static-baseline.log",
-    "strict_typecheck": "passed: .runtime/github-recovery/typecheck.log"
+    "strict_typecheck": "passed: .runtime/github-recovery/typecheck.log",
+    "projection_recovery": "passed 3 cases: .runtime/github-recovery/projection-recovery.log",
+    "create_default_recovery": "passed 4 hook + 5 P0 boundary tests and three split guards: .runtime/github-recovery/create-default-recovery.log",
+    "independent_remaining": "53/54 original static recipes passed; remaining actor-role budget fixed to 1784<=1787; .runtime/github-recovery/remaining-static-recipes.log",
+    "capabilities": "passed: .runtime/github-recovery/remaining-capabilities.log",
+    "iteration_recovery": "passed: .runtime/github-recovery/iteration-recovery.log",
+    "freeze_prepare_recovery": "passed 7 component cases and all generated reports current: .runtime/github-recovery/freeze-prepare-recovery.log",
+    "failed_quick": "1edbb816baa828ae566f125117aa748c6e2a320a failed, no receipt: .runtime/github-recovery/quick.log"
   }
 }

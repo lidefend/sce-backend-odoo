@@ -44,3 +44,18 @@ L0 轻量身份；L1 iteration、生成证据只读检查；L2 历史责任测�
 - 公开扫描后新增内容仅本批状态说明、路径/SHA 与行数；产品源码、扫描工具、历史 blob 均未变化。原历史扫描证据保留；后续远端仍对新 SHA 执行必需检查。
 
 - `make verify.frontend.typecheck.strict` 通过（完整 vue-tsc + strict 配置）。冻结后 Quick、PR 与 CI 尚待执行，回执留既有运行目录，不伪造已完成状态。
+
+
+## 冻结 Quick 失败后的限定恢复
+
+`1edbb816b` Quick 因 P4 V2 投影守卫不接受已有 `actionSemanticsInvalid` 失败，无回执。只回移 `fb51e465b` 的守卫修复（不导入其余产品提交），加入正向/未消费/后端冒充三项测试。
+随后读取 Quick 中已登记的 54 个独立 Python/Node 静态 recipe，53 通过，仅 actor-roles split guard 失败：聚合文件 1807 行超过 1787。lint、图表、BOQ/rich-text 和菜单树独立检查通过。
+
+该第二项按 P1 修复：既有创建默认值 map 与四个纯函数移入已加载的 `core_extension_policy_maps` / `core_extension_policy_accessors`，原 `core_extension` 以同名 callable 暴露；保留相同字典/元组内容与复制语义，不放宽守卫、不提高预算。
+Formal Product Layer=P1；Layer Target=smart_construction_core 行业默认策略组织；Module=既有三个 core_extension 模块；Standard vs User-Specific=行业默认；Why Here=已有默认策略职责；Why Not Elsewhere=不进入平台/前端/配置或迁移脚本。
+调用链 api.data→extension_loader getattr(hook_name)→同名行业 hook→既有策略。manifest 依赖和注册不变；无 ORM 字段、XML、DB、缓存或契约变化，故不需要 -u；本批不部署、不重启，未来选定版本由正常进程装载源码。
+验证声明：纯函数与公开别名行为、P0调用顺序回归、三个既有拆分守卫；L3/L4 不触发数据库或业务旅程。提交按 P1 责任与 P4 门禁/证据分离。
+
+恢复结果：V2 投影正向及两项负向测试通过；创建默认值 4 项、P0 调用边界 5 项及三个拆分守卫通过，聚合文件 1784<=1787。其余独立能力检查与 L1 iteration 通过。P1 整理独立提交 `742a52210`；P4 修复与生成证据随后单独提交。
+增量独立复核未发现阻断；历史公开复核保留，新文件及修复将由冻结 Quick 再扫描。前端源文件、依赖锁、数据库身份未改变，复用原严格类型检查；54 项静态检查只重验受影响的 actor-role 项。生成准备通过，报告增加两个测试文件并更新真实行数，不提高任何预算。
+下一步：干净冻结后运行新的 Quick。原 `1edbb816b` 失败证据保留，不当作通过；远端 PR、四项必需检查及受保护合并仍未完成。本批未部署、未写数据库。
