@@ -696,7 +696,11 @@ try {
           visit(authority.layout?.containerTree);
           if (spec.model.startsWith('sc.subcontract.')) {
             const number = fields.find((node) => node.name === 'name');
-            check(`${spec.model}: generated number hidden by effective contract`, !number || number.invisible === true || number.fieldInfo?.invisible === true || number.componentConfig?.invisible === true);
+            const invisible = number?.modifiers?.invisible;
+            const hiddenForNewIdentity = invisible?.kind === 'not'
+              && invisible.expr?.kind === 'field_truthy' && invisible.expr?.field === 'id'
+              && !(Number(authority.mainData?.id) > 0);
+            check(`${spec.model}: generated number hidden by effective contract`, !number || number.invisible === true || number.fieldInfo?.invisible === true || number.componentConfig?.invisible === true || hiddenForNewIdentity);
           }
           const inputs = spec.model.startsWith('sc.subcontract.')
             ? ['project_id', 'subcontract_scope', spec.model.endsWith('plan') ? 'plan_date' : 'request_date']
