@@ -618,3 +618,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.175：日志审批中/已确认/终态业务内容冻结，并修复真实rejected draft被OCA审批写入锁误拦截。最终8df806f4e/168纯测/diary专用runtime12 PASS、ROLLBACK VERIFIED；首轮失败保留diary-content-runtime。复用53.174未变PM创建33，不外推附件独立接口或多角色审批UI。事件驳回编辑与计划执行职责仍开放。
+
+
+53.176：合同事件驳回有重提动作但契约只读，77c5b2308补editable_phases rejected并冻结审批/终态主单内容。169纯测及4822a34a5事件runtime12 PASS、ROLLBACK VERIFIED，真实驳回可修改且契约editable，新链重提完成。普通操作员UI、附件独立接口与计划执行职责仍未覆盖。

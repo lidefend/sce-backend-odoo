@@ -9244,3 +9244,14 @@ b53da823c起点，核对既有workflow._editability后区分三类职责：日�
 SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终diary-rejected-runtime.log12具名PASS、ROLLBACK VERIFIED。原直接状态拒绝/自动确认/真实审核后独立完成/取消保持；pending、approved、done修改标题/正文/项目/补充内容/active均拒绝且权威read与原值一致；真实驳回后正文可改、随后重提形成新review并批准。沿原事务sudo创建与业务执行、真实reviewer，不冒充PM多角色浏览器；环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082/精确filter/原卷。配置/步骤原值及临时对象恢复确认。
 
 53.174 PM创建自动确认33证据按未变create/草稿/确认语义及前端输入复用，不再次造临时日志；本次变化证明审批后内容边界及拒绝后修改，不改变原页面结果。日志已确认只读与后端主记录内容保护代表缺口关闭；关联附件独立接口、跨角色配置审批UI不由本次证明。合同事件rejected编辑策略、计划执行中内容职责待独立处理，总体67/detail.action-state开放。无推送/合并/目标部署。
+
+
+### 53.176 合同履约事件驳回编辑契约与审批内容保护
+
+fbe20aa24 clean起点，P1 77c5b2308：合同事件workflow profile已有rejected→submit/cancel动作却缺editable_phases rejected，造成允许重提但不可修正；补为[draft,rejected]，仍受审批waiting/pending/approved优先拒绝。模型write对submitted/approved/done/cancel及draft/rejected仍在等待或validated的主单业务字段冻结，覆盖项目/合同/相对方/金额/币种/说明/依据/附件关系等；内部状态令牌仍可正式迁移。未改前端、行业动作词汇或统一审批机制，也不将计划执行中字段一刀切冻结。
+
+L1 event-content-iteration/py_compile/diff PASS；payment.approval_state_machine.unit169 PASS及begin/record完成（event-content-begin/unit/receipt）。新增执行实际write与_editability方法，证明驳回可编辑、pending/approved不可编辑且关键业务字段拒绝普通/伪造上下文写。P4 4822a34a5仅原contract-event专用scope扩4项：pending/approved/done业务write拒绝后原字段回读一致，以及真实rejected修改并describe_record.editability=editable。原状态、审批、独立完成链继续执行；all预期计数相应+4但未运行all。
+
+受管backend.up加载4822a34a5，无字段/XML变化不升级，前端e31e51c59/index-7JTLfH1Y.js不变不构建。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-content-runtime.log12具名PASS、ROLLBACK VERIFIED。无配置只批准、有配置真实审批、独立完成、驳回修改和新review重提成立；实际reviewed写金额/项目/正文/纳入结算均被拒绝且read与原值相同。原审批配置/步骤与全部临时对象恢复确认，环境沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
+
+本次事件rejected不需日志的tier写入例外：事件_state_from=submitted，真实rejected已退出under-validation业务状态；运行已证明普通write可修正。创建/业务执行仍原事务sudo、审核由真实reviewer，不能算普通合同操作员UI全旅程。关闭主记录内容保护与驳回契约代表缺口，子附件独立接口、角色UI及计划执行内容职责继续开放。下一步回到合同事件普通角色官方表单消费，核对实际入口/必要字段和声明动作，复用已过后台12，不以新建可达替代办理。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。

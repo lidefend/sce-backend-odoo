@@ -442,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.175 diary content lock+real rejected draft correction fixed:168 pure/receipt,runtime12 rollback backend8df806f4e; frontende31e51c59 unchanged,PM create33 reused. Next resolve existing contract-event rejected editability and content authority (current profile lacks editable_phases rejected; verify exact policy and tier boundary), preserve plan in-progress/child execution responsibilities. Do not rerun closed diary/config/payment loops. Overall67 and multi-role UI remain open; no push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.176 event content/rejected editability fixed169 pure+receipt/runtime12 rollback backend4822a34a5. Frontende31e51c59 unchanged. Next return to contract-event ordinary-role official form handling, inspect native entry/fields and existing browser evidence, extend current bounded probe only as needed; do not repeat backend12 or closed diary/config/payment. Independent attachments,plan execution and overall67 remain open. No push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
