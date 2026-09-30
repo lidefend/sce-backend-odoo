@@ -36,7 +36,7 @@
         <ScButton
           v-if="detailFactRelationEntry(item)"
           type="button"
-          appearance="auth-link"
+          appearance="readonly-relation"
           variant="ghost"
           :title="readonlyText(detailFactField(item))"
           :aria-label="detailFactField(item).many2oneOpenLabel || `打开${detailFactField(item).label}`"
@@ -218,7 +218,7 @@
                   <ScButton
                     v-if="field.many2oneOpenToken && !fieldHasEmptyValue(field)"
                     type="button"
-                    appearance="auth-link"
+                    appearance="readonly-relation"
                     variant="ghost"
                     :title="readonlyText(field)"
                     :aria-label="field.many2oneOpenLabel || `打开${field.label}`"

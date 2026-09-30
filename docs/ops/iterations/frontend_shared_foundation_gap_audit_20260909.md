@@ -8855,3 +8855,16 @@ e66acd8d5 clean起点。收款已保存只读探针receipt-record-browser.log/tp
 L1 workflow-gate-scope-iteration.log PASS，workflow-gate-scope-unit.log152 PASS并begin/record成功。新增生产describe_record纯测覆盖reverse-only、disabled-submit及无动作的条件投影和完整输入保留。源d26bfec63受管加载，P4在原已付款浏览器断言增加无关账户提示不出现；payment-execution-record-fixed-browser.log/tpl07-1790797886406 20 PASS，errors=[]/forbiddenWrites=[]，1440/390无整页溢出，390前后截图人工核对。冲销入口、危险操作确认及声明后果仍显示，打开后取消确认不写入；删除限制提示正常保留。未实际冲销本记录，实际冲销结果继续引用53.138受管现金链10。
 
 前端CrYkOCxc未变，无重建。此次只读页面证据覆盖该已付款记录的动作与确认取消，不等于收款/对账/调整已保存办理或全业务交付。其他未变页面/运行证据按依赖复用；新gate投影可能影响其他阶段的提示，纯测覆盖选择逻辑，实际页面代表仅paid。整体67/detail.action-state及原业务缺口保留。下一步继续既有有效契约和可用记录的共享消费收口，优先当前可验证职责；缺记录不扩权/不新建fixture。无推送合并目标部署。
+
+
+### 53.144 官方只读关系值多行裁切修复
+
+a6c29167b clean起点。沿53.143已付款截图定位P0 FormSection两处只读关系入口：文字允许换行，但ScButton使用官方固定高度，桌面及窄屏均裁切。首次P4探针错误假设accessible name为打开付款申请（tpl07-1790798033160），改为按有效契约mainData关系显示值定位，不改产品标签。正确基线readonly-relation-baseline-browser.log/tpl07-1790798095646实测1440按钮36px、三行文字越出上下边界。
+
+第一次局部scoped高度样式未影响真实按钮，候选index-CDnaYfp4.js在tpl07-1790798251213仍失败；未计成功，旧候选及报告保留。正式修复将readonly-relation作为既有ScButton外观，在TDesign theme桥接层定义auto高度、现有SC控制最小高度、最大宽度及换行；FormSection官方描述及另一既有只读关系槽共用，不新增渲染器或模型规则、不改变关系导航/权限。局部失败样式移除。
+
+L1 readonly-relation-iteration/bridge-iteration PASS。readonly-main-data-coverage14 PASS；首轮style失败为组件直接引用TDesign高度token（不允许在bridge外），改为既有SC token。最终readonly-relation-bridge-checks.log：primitive adapter11事件case、Python34tests PASS（components46为登记数，不当测试数），style_system/contract_consumer_intrusion/严格类型检查PASS。P0生产仅ScButton/FormSection/theme，P4仅原浏览器工具；无后端/ORM/fixture改动。
+
+发生两次构建：首次局部样式候选实测失败，修复拥有层并完成定向检查后必要重建；不是为刷新SHA重跑。最终readonly-relation-bridge-build/preview及browser日志、tpl07-1790798391223 26 PASS，errors=[]/forbiddenWrites=[]。1440文字3行完整在66px按钮内，390文字5行完整在110px按钮内；390截图人工查看，冲销确认取消/删除限制及无整页溢出仍通过。未实际点击关系跳转或冲销，导航事件逻辑未变。
+
+当前5180入口/assets/index-irmVWfdy.js，entry_sha256=aeabd7ab54a6c29df03b60102592709c6301a29854cb890adc048091e3523196；index_sha256=85acb940109b93157919e2dc4ee5955eed64d4e7975de6f4b212c7f6d50371ff。构建绑定a6c29167b加当时四个frontend文件dirty，diff_sha256=2d791821a7b90f48434a1bfeebda00a27e3ac0f613111a8fe6e30d8253b22d63；backend仍d26bfec63。记录的是迭代候选，不冒称clean冻结交付。旧未变输入证据按影响复用，已知空授权记录不重复。整体67/detail.action-state等未验证业务职责保持开放，无推送合并目标部署。

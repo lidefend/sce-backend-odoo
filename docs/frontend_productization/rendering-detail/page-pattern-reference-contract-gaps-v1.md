@@ -548,3 +548,8 @@ P1 reconciliation now protects reviewed/confirmed/reconciled economic content an
 ### Segment53.143 — current-action evidence presentation
 
 Actual paid execution186 showed irrelevant pre-payment account blockers despite only reversal being available. P1 describe_record now projects gates to current action keys after computing availability from all original gates; disabled current-action denials and unscoped notices remain.152 pure checks and official paid-record20 checks pass (tpl07-1790797886406), no writes; reversal confirmation/cancel and delete denial remain. Receipt saved-record query tpl07-1790797726118 is empty/unverified. This fixes shared gate presentation, not all saved-record workflows or actual reversal of this record.
+
+
+### Segment53.144 — multiline readonly relation facts
+
+Official readonly relation buttons clipped wrapped contract values at fixed height. P0 shared readonly-relation appearance in the existing button/theme bridge fixes both FormSection relation slots. Desktop3 lines/narrow5 lines fit their action bounds; browser26 passes at tpl07-1790798391223 with no writes. Initial scoped-style candidate failed and was replaced after an owning-layer fix; final frontend index-irmVWfdy.js. This is a presentation closure, not missing saved-record business coverage or a new renderer.

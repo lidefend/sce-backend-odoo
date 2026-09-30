@@ -1217,6 +1217,28 @@ try {
       }
       for (const width of [1440, 390]) {
         await session.page.setViewportSize({ width, height: 900 });
+        if (spec.model === 'sc.payment.execution') {
+          const relationValue = authority.mainData.payment_request_id;
+          check(`paid execution-${width}: declared relation label available`, Array.isArray(relationValue) && Boolean(relationValue[1]));
+          const relation = session.page.getByRole('button').filter({ hasText: String(relationValue[1]) });
+          check(`paid execution-${width}: one relation action`, await relation.count() === 1);
+          const geometry = await relation.evaluate((button) => {
+            const bounds = button.getBoundingClientRect();
+            const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+            const lines = [];
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+              if (!node.textContent?.trim()) continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              for (const rect of range.getClientRects()) lines.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
+            }
+            return { bounds: { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom }, lines };
+          });
+          (report.readonlyRelationGeometry ||= []).push({ model: spec.model, width, ...geometry });
+          check(`paid execution-${width}: relation text fits its action`, geometry.lines.length > 0 && geometry.lines.every((line) =>
+            line.left >= geometry.bounds.left - 1 && line.right <= geometry.bounds.right + 1
+            && line.top >= geometry.bounds.top - 1 && line.bottom <= geometry.bounds.bottom + 1));
+        }
         check(`${spec.model}-${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         await session.page.screenshot({ animations: 'disabled', path: path.join(out, `${spec.model}-${width}.png`) });
       }
