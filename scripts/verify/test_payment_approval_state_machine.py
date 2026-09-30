@@ -3385,6 +3385,9 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_plan_native_fields_declare_baseline_and_execution_conditions(self):
         path = ROOT / 'addons/smart_construction_core/views/core/plan_management_views.xml'
         root = ET.parse(path).getroot()
+        for record in root.findall('record'):
+            for field in record.findall('field'):
+                self.assertNotIn('readonly', field.attrib, 'view metadata is not a form field')
         form = root.find(".//record[@id='view_sc_plan_form']/field[@name='arch']/form")
         definition = "state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"
         for name in ('name', 'plan_type', 'project_id', 'company_id', 'owner_id', 'planned_start', 'planned_finish', 'note', 'attachment_ids'):

@@ -36,7 +36,7 @@
     </record>
 
     <record id="view_sc_plan_form" model="ir.ui.view">
-        <field name="name" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')">sc.plan.form</field>
+        <field name="name">sc.plan.form</field>
         <field name="model">sc.plan</field>
         <field name="arch" type="xml">
             <form string="计划">
