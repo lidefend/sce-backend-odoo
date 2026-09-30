@@ -286,6 +286,11 @@ class ScPlanLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            initial = {name: vals.get(name, self.env.context.get("default_" + name))
+                       for name in ("state", "progress_rate", "actual_start", "actual_finish")}
+            if (initial["state"] not in (None, "draft") or float(initial["progress_rate"] or 0) != 0
+                    or initial["actual_start"] or initial["actual_finish"]):
+                raise UserError(_("新建计划节点必须为未开始、零进度且无实际执行日期。"))
             plan = self.env["sc.plan"].browse(vals.get("plan_id") or self.env.context.get("default_plan_id")).exists()
             if plan and (plan.state != "draft" or plan.validation_status in ("waiting", "pending", "validated")):
                 raise UserError(_("只能在未提交审批的草稿计划中新增节点。"))

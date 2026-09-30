@@ -3420,6 +3420,33 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     'source_created_by', 'source_created_at', 'active'}
         self.assertFalse(required - fields)
 
+    def test_plan_node_create_rejects_initial_execution_and_context_defaults(self):
+        path = MODEL.with_name('plan_management.py')
+        cls = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.ClassDef) and n.name == 'ScPlanLine')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'create')
+        method.decorator_list = []
+        calls = []
+        ns = {'UserError': ValueError, '_': lambda text: text,
+              'super': lambda: types.SimpleNamespace(create=lambda vals: calls.append(vals) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Env:
+            context = {}
+            def __getitem__(self, name):
+                return types.SimpleNamespace(browse=lambda id: types.SimpleNamespace(
+                    exists=lambda: types.SimpleNamespace(state='draft', validation_status='no')))
+        row = types.SimpleNamespace(env=Env())
+        for field, value in [('state', 'done'), ('state', 'in_progress'), ('state', 'cancel'),
+                             ('progress_rate', 100), ('actual_start', '2026-10-01'), ('actual_finish', '2026-10-01')]:
+            for vals, context in (({field: value}, {}), ({}, {'default_' + field: value})):
+                row.env.context = context
+                with self.subTest(field=field, context=context), self.assertRaises(ValueError):
+                    ns['create'](row, [{'plan_id': 1, **vals}])
+        self.assertEqual(calls, [])
+        row.env.context = {}
+        self.assertTrue(ns['create'](row, [{'plan_id': 1, 'state': 'draft', 'progress_rate': 0}]))
+        row.env.context = {'default_state': 'done', 'default_progress_rate': 100}
+        self.assertTrue(ns['create'](row, [{'plan_id': 1, 'state': 'draft', 'progress_rate': 0}]))
+
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')
