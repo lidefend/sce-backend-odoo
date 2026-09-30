@@ -231,9 +231,8 @@
         <section v-if="showSavedFilterColumn" class="search-dropdown-section">
           <p class="search-dropdown-title">{{ savedFilterLabel }}</p>
           <div class="search-dropdown-items">
+            <div v-for="chip in allSavedFilterChips" :key="`saved-filter-${chip.key}`" class="saved-filter-entry">
             <ScButton
-              v-for="chip in allSavedFilterChips"
-              :key="`saved-filter-${chip.key}`"
               class="search-menu-item"
               appearance="menu-item"
               variant="ghost"
@@ -248,6 +247,10 @@
               <span v-if="chip.isDefault" class="menu-badge">{{ uiLabel('default', '默认') }}</span>
               <span v-if="chip.isShared" class="menu-badge">{{ uiLabel('shared', '共享') }}</span>
             </ScButton>
+            <ScButton v-if="chip.deleteAction && deleteFavorite" variant="ghost" size="small"
+              :aria-label="`${chip.deleteAction.label}：${chip.label}`" :disabled="loading || favoriteDeleting || favoriteSaving"
+              @click="openFavoriteDelete(chip)">{{ chip.deleteAction.label }}</ScButton>
+            </div>
             <p v-if="!allSavedFilterChips.length" class="search-menu-empty">{{ uiLabel('empty_saved_filters', '暂无收藏') }}</p>
             <ScButton
               v-if="favoriteSaveVisible ?? favoriteSaveEnabled"
@@ -369,6 +372,14 @@
         {{ createLabel }}
       </ScButton>
     </div>
+    <ScDialog :open="Boolean(pendingFavoriteDelete)" title="删除收藏" :busy="favoriteDeleting" :dismissible="!favoriteDeleting" @close="closeFavoriteDelete">
+      <p>确定删除“{{ pendingFavoriteDelete?.label }}”？此操作只删除收藏筛选，不删除业务记录。</p>
+      <p v-if="deleteFeedback" role="alert">{{ deleteFeedback }}</p>
+      <template #actions>
+        <ScButton variant="ghost" :disabled="favoriteDeleting" @click="closeFavoriteDelete">取消</ScButton>
+        <ScButton variant="primary" :loading="favoriteDeleting" :disabled="favoriteDeleting" @click="confirmFavoriteDelete">确认删除</ScButton>
+      </template>
+    </ScDialog>
   </section>
 </template>
 
@@ -376,13 +387,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
 import ScButton from '../design-system/ScButton.vue';
+import ScDialog from '../design-system/ScDialog.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInputGroup from '../design-system/ScInputGroup.vue';
 import ScSelect from '../design-system/ScSelect.vue';
-import type { SavedSearchSubmissionResult } from '../../app/runtime/savedSearchSubmission';
+import type { SavedSearchSubmissionResult, SavedSearchDeletionResult, SavedSearchDeleteAction } from '../../app/runtime/savedSearchSubmission';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
@@ -411,8 +423,8 @@ const props = defineProps<{
   activeFilterKey: string;
   showSavedFilter: boolean;
   savedFilterLabel: string;
-  savedFilterPrimary: Array<{ key: string; label: string; isDefault?: boolean; isShared?: boolean }>;
-  savedFilterOverflow: Array<{ key: string; label: string; isDefault?: boolean; isShared?: boolean }>;
+  savedFilterPrimary: Array<{ key: string; label: string; isDefault?: boolean; isShared?: boolean; deleteAction?: SavedSearchDeleteAction | null }>;
+  savedFilterOverflow: Array<{ key: string; label: string; isDefault?: boolean; isShared?: boolean; deleteAction?: SavedSearchDeleteAction | null }>;
   activeSavedFilterKey: string;
   sortLabel: string;
   sortOptions: Array<{ label: string; value: string }>;
@@ -433,6 +445,7 @@ const props = defineProps<{
   favoriteDisabledReason?: string;
   favoriteContextKey: string;
   submitFavorite: (payload: { name: string; isDefault: boolean; isShared: boolean }) => Promise<SavedSearchSubmissionResult>;
+  deleteFavorite?: (id: number) => Promise<SavedSearchDeletionResult>;
   favoriteSaveLabel: string;
   activeCustomFilterLabel: string;
   activeGroupLabel: string;
@@ -475,6 +488,40 @@ const customFilterValue = ref('');
 const customGroupField = ref('');
 const favoriteName = ref('');
 const favoriteSaving = ref(false);
+const favoriteDeleting = ref(false);
+const pendingFavoriteDelete = ref<{ label: string; id: number } | null>(null);
+const deleteFeedback = ref('');
+function openFavoriteDelete(chip: { label: string; deleteAction?: SavedSearchDeleteAction | null }) {
+  if (!chip.deleteAction || !props.deleteFavorite || favoriteDeleting.value || favoriteSaving.value) return;
+  closeSearchMenuAndRestoreFocus();
+  deleteFeedback.value = '';
+  pendingFavoriteDelete.value = { label: chip.label, id: chip.deleteAction.params.id };
+}
+function closeFavoriteDelete() {
+  if (favoriteDeleting.value) return;
+  pendingFavoriteDelete.value = null;
+  void nextTick(() => searchMenuToggle.value?.focus());
+}
+async function confirmFavoriteDelete() {
+  if (!pendingFavoriteDelete.value || !props.deleteFavorite || favoriteDeleting.value) return;
+  const contextKey = props.favoriteContextKey;
+  favoriteDeleting.value = true;
+  deleteFeedback.value = '';
+  try {
+    const result = await props.deleteFavorite(pendingFavoriteDelete.value.id);
+    if (contextKey !== props.favoriteContextKey) return;
+    if (result.deleted) {
+      pendingFavoriteDelete.value = null;
+      favoriteFeedback.value = result.message;
+      favoriteFailed.value = false;
+      searchMenuOpen.value = true;
+      await nextTick();
+      searchMenuToggle.value?.focus();
+    } else deleteFeedback.value = result.message;
+  } catch {
+    if (contextKey === props.favoriteContextKey) deleteFeedback.value = '收藏删除未完成，请检查网络或权限后重试。';
+  } finally { favoriteDeleting.value = false; }
+}
 const favoriteFeedback = ref('');
 const favoriteFailed = ref(false);
 const favoriteUseByDefault = ref(false);
@@ -677,6 +724,8 @@ async function saveFavorite() {
 }
 
 watch(() => props.favoriteContextKey, () => {
+  pendingFavoriteDelete.value = null;
+  deleteFeedback.value = '';
   favoriteSaveOpen.value = false;
   favoriteName.value = '';
   favoriteUseByDefault.value = false;
@@ -1080,4 +1129,9 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .search-menu-caret { transition: none; }
 }
+</style>
+
+<style scoped>
+.saved-filter-entry { display: flex; align-items: center; gap: var(--sc-space-2); }
+.saved-filter-entry > .search-menu-item { flex: 1; min-width: 0; }
 </style>

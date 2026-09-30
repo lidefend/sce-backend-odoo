@@ -7464,3 +7464,12 @@ L5：未推送、未合并、未部署。
 - saved_filters逐项增加delete_action（intent/label/enabled/disabled_reason/params）；可删除要求当前所有者、模型read及过滤器read/unlink ACL/record-rule。沿53.4每次有效契约刷新投影，不从缓存继承旧权限。无create权限不影响已获授权的删除。
 - L1 ci.local.iteration及py_compile通过；L2现有saved_search_capability入口扩展执行handler边界测试，16+13=29项通过（tpl52/favorite-delete-backend-final.log），agent.run.begin/record29。覆盖共享/他人/错模型/错action、ACL/rule拒绝、非法身份类型、不能提权、删除不要求create等。纯测试不是运行态ORM证明。
 - collection.favorite保持contract_gap：尚待共享菜单消费删除动作、确认/反馈/失败恢复，以及真实保存→刷新→删除→刷新闭环。当前未重载后端、未构建、未执行配置写入，不宣称产品缺口关闭。其余页面证据不受本次后端范围影响。
+
+
+### 53.12 收藏删除共享消费与反馈
+
+- P0 generic frontend contract consumption；候选0c9915e43 + shared search runtime/VM/toolbar/ActionView与定向测试dirty。没有模型/角色专属分支：只接受显式enabled=true、已知search.favorite.delete及严格id/model/action_id参数。修复中间ChipVM适配丢弃删除动作的缺口，同一共享菜单供现有列表/看板宿主使用。
+- 收藏项使用独立删除按钮与现有ScDialog官方弹窗，清晰说明仅删除收藏不删除业务记录；确认期间阻止重复提交和关闭。执行前从当前契约按记录id重取授权动作，不用显示名称推导执行；页面上下文变化不把旧结果写入新页面。
+- 删除失败保留确认面与可重试反馈；删除成功后刷新有效契约和列表，当前选中收藏同步清除。删除成功但刷新失败明确告知无需再次删除，关闭删除确认，不以刷新失败重发删除请求。
+- L1 ci.local.iteration passed；L2 collection_action_toolbar 31+11=42通过（tpl52/favorite-delete-ui-receipt-tests.log，begin/record42），包含严格动作参数、VM动作透传、删除失败/刷新失败区分；strict typecheck、style_system.guard、contract_consumer_intrusion.guard通过（tpl52/favorite-delete-consumer-types.log）。中途类型检查期间仅helper/adapter收紧，最终再跑stable typecheck，使用最终日志。无ORM/构建/数据库写入。
+- 下一步受管重载后端至本批代码、稳定后一次构建，复用5180完成真实收藏保存→刷新→取消删除确认→确认删除→刷新回读，补失败与窄屏定向检查。collection.favorite仍为开放产品缺口，静态通过不能代替真实闭环。

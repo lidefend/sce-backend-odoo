@@ -1,4 +1,5 @@
-import { settleSavedSearchSubmission } from '../src/app/runtime/savedSearchSubmission';
+import { toChipVM } from '../src/app/assemblers/action/actionPageAdapters';
+import { settleSavedSearchSubmission, settleSavedSearchDeletion, resolveSavedSearchDeleteAction } from '../src/app/runtime/savedSearchSubmission';
 import assert from 'node:assert/strict';
 import { resolveSavedSearchMutationCapability as favorite } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import { resolveCollectionBatchActionSettlement } from '../src/app/presentation/collectionActionSettlement';
@@ -45,4 +46,22 @@ const refreshFailure = await settleSavedSearchSubmission(async () => { writes++;
 assert.equal(refreshFailure.saved, true);
 assert.match(refreshFailure.message, /无需再次保存/);
 assert.equal(writes, 2);
-console.log('[collection_action_settlement_test] PASS cases=19');
+
+
+const deleteGrant = { intent: 'search.favorite.delete', enabled: true, label: '删除收藏', params: { id: 17, model: 'x.demo', action_id: 31 } };
+assert.deepEqual(resolveSavedSearchDeleteAction(deleteGrant), deleteGrant);
+for (const malformed of [undefined, {}, { ...deleteGrant, enabled: false }, { ...deleteGrant, intent: 'api.data.unlink' }, { ...deleteGrant, params: { ...deleteGrant.params, id: true } }, { ...deleteGrant, params: { ...deleteGrant.params, action_id: '31' } }, { ...deleteGrant, params: { ...deleteGrant.params, model: '' } }]) {
+  assert.equal(resolveSavedSearchDeleteAction(malformed), null);
+}
+assert.deepEqual(toChipVM({ key: 'favorite', label: ' renamed ', deleteAction: deleteGrant })?.deleteAction, deleteGrant);
+let deletionRefreshes = 0;
+const deleted = await settleSavedSearchDeletion(async () => {}, async () => { deletionRefreshes++; });
+assert.equal(deleted.deleted, true);
+assert.equal(deletionRefreshes, 1);
+const deniedDelete = await settleSavedSearchDeletion(async () => { throw new Error('denied'); }, async () => { deletionRefreshes++; });
+assert.equal(deniedDelete.deleted, false);
+assert.equal(deletionRefreshes, 1);
+const deleteRefreshFailure = await settleSavedSearchDeletion(async () => {}, async () => { throw new Error('offline'); });
+assert.equal(deleteRefreshFailure.deleted, true);
+assert.match(deleteRefreshFailure.message, /无需再次删除/);
+console.log('[collection_action_settlement_test] PASS cases=31');

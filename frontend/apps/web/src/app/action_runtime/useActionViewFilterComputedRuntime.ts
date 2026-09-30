@@ -1,3 +1,4 @@
+import { resolveSavedSearchDeleteAction } from '../runtime/savedSearchSubmission';
 import { computed, type Ref } from 'vue';
 import {
   resolveContractV2SearchContract,
@@ -141,7 +142,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const context = options.parseContractContextRaw(raw.context_raw);
         const isDefault = raw.default === true || raw.is_default === true;
         const isShared = raw.is_shared === true;
-        return { key, label, domain, domainRaw, context, contextRaw, isDefault, isShared };
+        return { key, label, domain, domainRaw, context, contextRaw, isDefault, isShared, deleteAction: resolveSavedSearchDeleteAction(raw.delete_action) };
       })
       .filter(Boolean)
       .slice(0, 12);

@@ -160,7 +160,9 @@
         "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
         "frontend/apps/web/src/app/presentation/collectionActionSettlement.ts",
         "make/frontend.mk",
-        "frontend/apps/web/src/app/runtime/savedSearchSubmission.ts"
+        "frontend/apps/web/src/app/runtime/savedSearchSubmission.ts",
+        "frontend/apps/web/src/app/assemblers/action/actionPageAdapters.ts",
+        "frontend/apps/web/src/app/assemblers/action/actionPageVm.ts"
       ]
     },
     "saved_search_runtime": {
@@ -178,7 +180,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Consume saved_filters.delete_action in shared ActionSurfaceToolbar and ActionView: explicit contract params, confirmation, pending/double-submit protection, success vs refresh-failure feedback, clear deleted active selection. Add focused frontend regressions; then governed backend reload, one build and real save-refresh-delete-refresh lifecycle. collection.favorite remains open.",
+  "next_exact_step": "Governed backend reload for new search.favorite.delete and per-row authority, preserve current static candidate and build once. Extend existing browser probe with narrowly authorized private saved-search product writes; verify save/refresh/cancel/delete/refresh restoration, deletion failure and narrow-screen controls. No P4 cleanup substitute or new fixtures; collection.favorite remains open until real lifecycle passes.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -326,6 +328,14 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-backend-final.log",
       "scope": "P0 deletion execution and per-row contract authority, pure tests only",
       "runtime": "not_run until shared frontend consumer ready"
+    },
+    "favorite_delete_consumer_53_12": {
+      "status": "passed",
+      "source_head": "0c9915e43",
+      "targeted_test_count": 42,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-ui-receipt-tests.log",
+      "types_and_guards": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-consumer-types.log",
+      "runtime": "not_run; product gap stays open"
     }
   }
 }

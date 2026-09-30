@@ -366,6 +366,7 @@
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
           :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
           :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
@@ -517,6 +518,7 @@
           @clear-custom-filter="clearCustomFilter"
           @clear-all="clearAllListConditions"
           :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
           :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
@@ -575,6 +577,7 @@
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="false"
           :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
           :favorite-context-key="String(actionId)"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
@@ -660,6 +663,7 @@
           :custom-group-fields="[]"
           :favorite-save-enabled="false"
           :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
           :favorite-context-key="String(actionId)"
           :active-condition-count="0"
           :ui-labels="toolbarUiLabels"
@@ -857,7 +861,7 @@ import { useActionViewLoadSuccessRuntime } from '../app/action_runtime/useAction
 import { useActionViewLoadSuccessPhaseRuntime } from '../app/action_runtime/useActionViewLoadSuccessPhaseRuntime';
 import { useActionViewLoadFacadeRuntime } from '../app/action_runtime/useActionViewLoadFacadeRuntime';
 import { useActionViewActionPresentationRuntime } from '../app/action_runtime/useActionViewActionPresentationRuntime';
-import { settleSavedSearchSubmission } from '../app/runtime/savedSearchSubmission';
+import { settleSavedSearchSubmission, settleSavedSearchDeletion } from '../app/runtime/savedSearchSubmission';
 import {
   listActionViewRecordsRaw,
   saveActionViewSearchFavorite,
@@ -2216,6 +2220,25 @@ function clearCustomFilter() {
 
 function clearAllListConditions() {
   clearBusinessListQueryState({ composing: toolbarSearchComposing, searchDraft: toolbarSearchDraft, searchTerm, filterValue, contractFilterKey: activeContractFilterKey, showMoreContractFilters, savedFilterKey: activeSavedFilterKey, showMoreSavedFilters, customFilter: activeCustomFilter, groupByField: activeGroupByField, groupByLabel: activeGroupByDisplayLabel, listOffset, groupWindowOffset, clearSelection, syncRoute: () => syncRouteListState({ preset_filter: undefined }), reload: () => void requestLoadPage() });
+}
+
+async function handleDeleteFavorite(id: number) {
+  const chip = contractSavedFilterChips.value.find((row) => row?.deleteAction?.params.id === id);
+  const action = chip?.deleteAction;
+  if (!action) return { deleted: false, message: '当前契约未允许删除此收藏，请刷新后重试。' };
+  const sourceActionId = actionId.value;
+  const sourceContract = actionContract.value;
+  return settleSavedSearchDeletion(async () => {
+    const result = await intentRequest<{ deleted: boolean; id: number }>({ intent: action.intent, params: action.params });
+    if (result.deleted !== true || result.id !== id) throw new Error('SAVED_SEARCH_DELETE_OUTCOME_MISMATCH');
+  }, async () => {
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    if (activeSavedFilterKey.value === chip.key) clearSavedFilter();
+    const refreshed = await loadActionContractStore(sourceActionId, { sceneKey: sceneKey.value || undefined, menuId: menuId.value || undefined });
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    actionContract.value = refreshed;
+    await requestLoadPage();
+  });
 }
 
 async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {

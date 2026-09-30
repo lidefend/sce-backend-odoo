@@ -1,3 +1,4 @@
+import { resolveSavedSearchDeleteAction } from '../../runtime/savedSearchSubmission';
 import type {
   ActionButtonVM,
   ActionGroupVM,
@@ -17,7 +18,8 @@ export function toChipVM(value: unknown): ChipVM | null {
   const key = String(row.key || row.field || '').trim();
   const label = String(row.label || row.key || row.field || '').trim();
   if (!key || !label) return null;
-  return { key, label };
+  const deleteAction = resolveSavedSearchDeleteAction(row.deleteAction);
+  return { key, label, ...(deleteAction ? { deleteAction } : {}) };
 }
 
 export function toActionButtonVM(value: unknown): ActionButtonVM | null {

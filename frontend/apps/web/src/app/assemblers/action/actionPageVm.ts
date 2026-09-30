@@ -1,3 +1,4 @@
+import type { SavedSearchDeleteAction } from '../../runtime/savedSearchSubmission';
 export type ActionPageStatus = 'loading' | 'ok' | 'empty' | 'error';
 
 export type FocusActionVM = {
@@ -7,6 +8,7 @@ export type FocusActionVM = {
 };
 
 export type ChipVM = {
+  deleteAction?: SavedSearchDeleteAction | null;
   key: string;
   label: string;
   field?: string;
