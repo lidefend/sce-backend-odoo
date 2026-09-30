@@ -37,6 +37,10 @@ OFFLINE_TARGETS = {
         "scripts/verify/workflow_state_phase_coverage_guard.py",
         "scripts/verify/test_workflow_state_phase_coverage_guard.py",
     ),
+    "verify.workflow_action_semantics.guard": (
+        "scripts/verify/workflow_action_semantics_completeness_guard.py",
+        "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
+    ),
     "verify.unified_page_contract.v2.data": (
         "scripts/verify/unified_page_contract_v2_data_guard.py",
     ),
