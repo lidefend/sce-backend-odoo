@@ -852,9 +852,101 @@ def _rfq_approval_checks(project, group, created):
     print("APPROVAL_CHECK=rfq_resubmission_uses_new_review_without_selection")
 
 
+def _material_settlement_approval_checks(project, group, created):
+    env = _env()
+    model = "sc.material.settlement"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing material settlement policy must not be overwritten"
+    product = env["product.product"].sudo().search([("type", "in", ["product", "consu"])], limit=1)
+    if not product:
+        product = env["product.product"].sudo().create({"name": "Rollback settlement material", "type": "consu"})
+        created.extend([(product._name, product.id), (product.product_tmpl_id._name, product.product_tmpl_id.id)])
+    supplier = _partner("Rollback settlement supplier")
+    created.append((supplier._name, supplier.id))
+
+    def document():
+        record = env[model].sudo().create({"project_id": project.id, "supplier_id": supplier.id,
+            "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id,
+                                  "qty": 2, "unit_price": 10})]})
+        created.append((record._name, record.id))
+        return record
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    def downstream(record):
+        return (env["project.cost.ledger"].sudo().search([("source_model", "=", model), ("source_id", "=", record.id)]),
+                env["payment.request"].sudo().search([("material_settlement_id", "=", record.id)]))
+
+    automatic = document()
+    denied(lambda: automatic.write({"state": "confirmed"}))
+    denied(automatic.action_confirm)
+    print("APPROVAL_CHECK=material_settlement_external_state_and_premature_confirmation_denied")
+    automatic.action_submit()
+    assert automatic.state == "approved" and not automatic.review_ids and not any(downstream(automatic))
+    print("APPROVAL_CHECK=material_settlement_unconfigured_approval_has_no_downstream")
+    policy = Policy.create({"name": "Runtime material settlement approval", "code": "runtime_material_settlement_approval_smoke",
+        "target_model": model, "company_id": env.company.id, "approval_required": True, "mode": "single",
+        "manager_group_id": group.id, "runtime_state": "tier_validation"})
+    created.append((policy._name, policy.id))
+    env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Settlement review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id, "amount_min": 1})
+    policy.sync_tier_definitions()
+    required = document()
+    required.action_submit()
+    assert required.amount_total == 20 and required.state == "submitted" and required.review_ids
+    denied(required.action_confirm)
+    denied(required.action_create_remaining_payment_request)
+    assert not any(downstream(required))
+    print("APPROVAL_CHECK=material_settlement_amount_rule_and_pending_downstream_denial")
+    _approve_existing_reviews(required)
+    assert required.state == "approved" and required.validation_status == "validated" and not any(downstream(required))
+    print("APPROVAL_CHECK=material_settlement_real_approval_does_not_post_cost_or_payment")
+    denied(lambda: required.write({"settlement_date": "2026-01-01"}))
+    denied(lambda: required.line_ids.write({"qty": 3}))
+    denied(required.line_ids.unlink)
+    denied(required.unlink)
+    print("APPROVAL_CHECK=material_settlement_approved_facts_remain_immutable")
+    cost_enabled = required._sc_business_category_cost_trigger("material.settlement", "confirm_project_cost_ledger", default=True)
+    payment_enabled = required._sc_business_category_cost_trigger("material.settlement", "confirm_payment_request", default=True)
+    required.action_confirm()
+    ledger, requests = downstream(required)
+    created.extend([(record._name, record.id) for record in ledger])
+    created.extend([(record._name, record.id) for record in requests])
+    assert required.state == "confirmed" and bool(ledger) == cost_enabled and bool(requests) == payment_enabled
+    if ledger:
+        assert sum(ledger.mapped("source_amount")) == required.amount_untaxed
+    if requests:
+        assert len(requests) == 1 and requests.state == "draft" and requests.amount == required.amount_total
+    denied(required.action_confirm)
+    assert downstream(required) == (ledger, requests)
+    print("APPROVAL_CHECK=material_settlement_explicit_confirmation_preserves_configured_downstream")
+    rejected = document()
+    rejected.action_submit()
+    old = set(rejected.review_ids.ids)
+    actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime settlement rejection")
+    rejected.invalidate_recordset()
+    assert rejected.state == "draft" and rejected.reject_reason == "Runtime settlement rejection" and not any(downstream(rejected))
+    print("APPROVAL_CHECK=material_settlement_rejection_returns_draft_without_cost")
+    rejected.action_submit()
+    assert rejected.review_ids and old.isdisjoint(rejected.review_ids.ids)
+    _approve_existing_reviews(rejected)
+    assert rejected.state == "approved" and not rejected.reject_reason and not any(downstream(rejected))
+    print("APPROVAL_CHECK=material_settlement_resubmission_uses_new_review_without_confirmation")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -868,10 +960,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -1012,6 +1104,7 @@ def main():
             _acceptance_approval_checks(project, group, created)
             _purchase_request_approval_checks(project, group, created)
             _rfq_approval_checks(project, group, created)
+            _material_settlement_approval_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -1021,7 +1114,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("inbound", "acceptance", "purchase-request", "rfq") else 77, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement") else 85, scope))
 
 
 main()

@@ -8082,3 +8082,10 @@ P1 smart_construction_core材料结算行业标准，复用共享policy/tier；�
 L1 material-settlement-iteration.log PASS；material-settlement-approval-unit.log 76 PASS（新增审批不产生成本/付款、确认独立、审批后头/明细不可变）；material-settlement-native.log 8+43=51 PASS；material-settlement-semantics.log 15 PASS；2XML解析/diff --check PASS，非零回执登记。源码候选852221422+本段dirty；不是冻结交付。
 
 L3未执行：tier/company/reason/approved状态/native XML需要一次受管模块升级。下一步扩展既有rollback范围material-settlement，实际确认成本台账和付款申请仍按配置执行、approval不执行、金额/明细保护、拒绝重提及恢复。L4前端源码未改不重建，后续只查受影响页面；L5不在本地迭代范围。已完成其他单据证据按未变方法输入复用，不重扫/重复ORM；总体67仍未完成。
+
+
+### 53.78 材料结算真实审批及确认下游（进行中）
+
+P4既有回滚工具新增material-settlement scope8，默认all纳入。验证状态绕过/提前确认拒绝、无配置审批无下游、金额规则待审阻断、实际审批不记成本付款、approved事实/明细不可变、显式确认按现有类别配置产生台账/草稿申请、拒绝回draft、重提新review。所有新建测试单据/生成台账/付款申请纳入既有rollback消失回读，不新增环境或fixture基线。
+
+L1 material-settlement-runtime-iteration.log、py_compile/bash-n PASS；P1源/测试未变，复用76/51/15。后续受管smart_construction_core升级/后端重绑，仅执行本范围8项。环境沿用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤与固定卷由入口预检；非客户生产/控制库。L3及L4尚pending，前端未变不重建，L5不在本地任务范围。
