@@ -7489,3 +7489,14 @@ L5：未推送、未合并、未部署。
 - 为补“删除当前选中的收藏”的独立状态责任，通过相同产品入口保存私有非默认配置id10；应用后URL与菜单/条件标签均已选中。首次tpl07-1790769721849为validation_tool_defect：探针假定只有一个aria-pressed控件，实际两个选中控件均正确。修复为断言所有匹配控件均选中，不改产品、不重建；绑定原报告精确id10续验，tpl07-1790769758359/report.json（tpl52/favorite-active-delete-resumed.log）24项通过。删除后saved_filter路由清除、服务器空集、reload无残留。
 - 允许的写入只有fixture finance本人、payment.request/action775指定名称私有收藏的保存/删除；一次失败通过受控abort注入，记录未被删除且可重试。付款业务记录与共享配置未修改，未创建业务fixture。临时收藏9和10均由产品正常删除。
 - collection.favorite重新关闭，67条参考台账0开放项。29后端/42前端纯测试和strict types沿53.13修复证据复用；本节只改验收工具与记录，未变产品输入不再编译/构建。下一步执行总体完成核验，检查页面类型、旧路径退出、配置闭环及强制门禁，不能用台账0缺口代替总体完成。
+
+
+### 53.15 总体收口发现既有状态动作产品缺口，先补日常合同签署声明
+
+- 起点e1325df02 clean；前一回复仅状态确认，本节恢复实际产品推进。复用段45中TPL06A/LC01/TPL07/LC01B已完成事实，不重接付款列表、不重跑49项办理。段51注册表已PASS，段52已有官方390参考；run中旧注册表失败与goal中16项缺口数字已纠正，历史通过不是当前全量门禁通过。
+- 完成审计发现native_view_undeclared_actions仍登记5条真实状态变更。它们是P1产品投影缺口，不能长期“权威侧待决”后退出总体范围。既有67条中的detail.action-state重开（1个聚合产品缺口），保留53.5拒绝反馈和53.9复制范围裁决的有效证据；不另建覆盖表。
+- Formal Product Layer=P1；Layer Target=workflow contract profile；Module=smart_construction_core；Standard vs User-Specific=行业标准。原生general_contract_views.xml已声明合同经理签署按钮、draft/confirmed来源状态，general_contract.action_signed已执行业务锚点校验并从draft走action_confirm；审批未完成时不签署。这里补生产者方法声明，不在P0发明行业规则、不在P2/P3写运行偏好、不在前端猜方法/权限。Blast Radius仅sc.general.contract现有签署动作及其声明覆盖测试。
+- 复用现有complete业务动作语义，明确label=已签署、method=action_signed，在draft/confirmed声明；完成的是该业务操作，不把signed重命名为done。原生动作身份/组授权、execute_button重新加载有效actionRule并检查allowed/enabled/entitlement的执行链保持。未改模型方法、原生视图、schema词汇或前端。去除已经声明的唯一登记项，其余4项仍登记；这不是运行态验收关闭。
+- L1首次ci.local.iteration失败为run范围未登记config/contract路径；明确登记本次已有契约清单路径后重跑PASS（general-sign-iteration-final.log）。未用全量Quick排错。L2 native_view.workflow_action_coverage 8+17=25通过（general-sign-coverage-final.log；begin/record25），真实运行生产_available_actions与action_signed函数，覆盖合法来源、终态拒绝、审批未完成不签署、必要业务锚点、reviewer动作不可冒领。workflow_action_semantics.guard 15项通过（general-sign-contract.log）；page_pattern_reference_parity 28通过，67条/1开放项（general-sign-ledger.log）。台账随后仅恢复原紧凑格式，JSON语义逐值相等，不重跑相同断言。
+- 上述函数级测试不等于ORM权限或真实页面执行证明。L3受管后端重载、L4现有角色有效契约/实际动作定向验收仍待执行；无字段/XML/manifest变更，不需要模块升级，前端构建输入不变，不重建5180。当前未写业务数据库，未创建fixture。下一步补运行态身份/授权证据，再处理付款审批、付款冲销、计划启动、文档回草稿四条。行业无关审计97词法命中亦保留，需按现有分类证据处理，不能假称97业务缺陷或直接豁免。
+- 状态：本节实现及纯测试完成，产品缺口verification_pending；整体目标active。主线未集成、目标未部署、整体用户验收未完成。回滚为本节P1声明与覆盖登记的同批回退，不涉及数据恢复。

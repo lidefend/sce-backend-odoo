@@ -46,7 +46,9 @@ they are not producer-side gaps and must not be re-opened by adding the value to
 
 ## P1/P2 product gaps
 
-- Saved-search control projection is closed in segment 53.2: the shared collection menu consumes explicit save/shared grants and execution intent; missing grants never enable writes. Successful save, refresh, failure feedback and recovery remain a separate interaction closure, not proven by opening and cancelling the form.
+- Native state-action projection remains a product gap (segment53.15), not an ops cleanup or an indefinite authority-side exception. `sc.general.contract.action_signed` now binds the existing workflow completion action in draft/confirmed, retaining the original business method and native authorization. Runtime proof remains pending. Four other transitions remain in `config/contract/native_view_undeclared_actions.v1.json`: payment approval, payment reversal, plan start, document reset. Track closure in existing `detail.action-state`; do not infer actions in the frontend.
+
+- Saved-search control projection is closed in segment 53.2: the shared collection menu consumes explicit save/shared grants and execution intent; missing grants never enable writes. Successful save, refresh, failure feedback and product deletion/restoration subsequently passed in segment53.14; the earlier pending lifecycle is closed.
 - Collection view-switch and settings controls remain capability-bound; a single-view action must
   not acquire a decorative switch. Export is no longer part of this gap: the sampled list
   contracts now declare `batch_policy.available_actions=["export"]` together with

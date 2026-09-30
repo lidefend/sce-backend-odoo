@@ -473,8 +473,8 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "cancel"],
-                "confirmed": ["cancel"],
+                "draft": ["submit", "complete", "cancel"],
+                "confirmed": ["complete", "cancel"],
                 "signed": ["cancel"],
             },
             "approval_actions": ["approve", "reject"],
@@ -482,8 +482,10 @@ class ScWorkflowContractService(models.AbstractModel):
                 "submit": "action_confirm",
                 "approve": "validate_tier",
                 "reject": "reject_tier",
+                "complete": "action_signed",
                 "cancel": "action_cancel",
             },
+            "label_by_action": {"complete": "已签署"},
         },
         "sc.settlement.adjustment": {
             "state_field": "state",

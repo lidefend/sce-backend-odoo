@@ -93,13 +93,6 @@
       "reason": "opens a related record or view; it changes no record state"
     },
     {
-      "model": "sc.general.contract",
-      "method": "action_signed",
-      "class": "state_transition_undeclared",
-      "occurrences": 1,
-      "reason": "draft/confirmed -> signed; the profile declares the signed phase but projects no action into it, so signing is unreachable from the adopted page"
-    },
-    {
       "model": "sc.material.acceptance",
       "method": "action_load_purchase_order_lines",
       "class": "document_helper",

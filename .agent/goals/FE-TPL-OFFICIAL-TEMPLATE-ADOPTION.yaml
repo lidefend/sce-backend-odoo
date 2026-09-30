@@ -44,6 +44,6 @@ goal:
   next_exact_step: >-
     Complete the full-system contract-driven official rendering and interaction
     system, including missing contracts for confirmed business responsibilities.
-    Reuse the existing 67-entry ledger and 16 owned gaps; close producer and consumer
+    Reuse the existing 67-entry ledger and current owned product gaps; close producer and consumer
     responsibilities together, retire duplicate legacy paths, and verify real loops.
     Template demo features do not invent business requirements. Keep local-only delivery.

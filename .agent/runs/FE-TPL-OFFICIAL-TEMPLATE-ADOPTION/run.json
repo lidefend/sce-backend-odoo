@@ -23,7 +23,8 @@
     "frontend/packages/ui/src/kits/tdesign/theme.css",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "docs/architecture/unified_page_contract_v2/examples/",
-    "frontend/packages/schema/src/index.ts"
+    "frontend/packages/schema/src/index.ts",
+    "config/contract/native_view_undeclared_actions.v1.json"
   ],
   "environment": {
     "kind": "offline",
@@ -177,10 +178,25 @@
         "addons/smart_core/handlers/search_favorite_set.py",
         "addons/smart_core/tests/test_search_favorite_handler_boundaries.py"
       ]
+    },
+    "native_action_coverage": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/views/core/general_contract_views.xml",
+        "config/contract/native_view_undeclared_actions.v1.json",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_workflow_contract_profile_loader.py",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Run requirement-by-requirement overall completion audit using existing result index and living sections: shared page-type adoption/legacy exit, P0/P1/P2 authority, low-code configure/publish/rollback loop, startup and business evidence, outstanding mandatory gates. Reuse original evidence; fix actual uncovered responsibilities, not fresh broad scans. Saved-search lifecycle is closed through product UI; no pending temporary filters.",
+  "next_exact_step": "Finish general-contract signing product-gap closure: scoped authorization/projection tests, governed backend reload and existing-role read-only effective-contract check. No frontend rebuild for backend-only declaration. Then resolve remaining 4 native state-action gaps and the bounded industry-audit debt; reuse completed TPL06A/LC01/TPL07/LC01B and segment53 evidence.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -210,7 +226,8 @@
       "note": "built in 21.06s; single build"
     },
     "inherited_gaps": [
-      "verify.guard.registry orphan acknowledgements missing on origin/main too"
+      "industry_agnostic.guard: historical 97 lexical findings require bounded semantic adjudication; not a proven count of product defects",
+      "4 remaining native state transitions lack workflow declarations; general-contract signing now declared but runtime validation pending"
     ],
     "presentation_segment_52": {
       "status": "passed",
@@ -319,7 +336,8 @@
       "owner": "P0 smart_core and shared frontend contract consumption",
       "gap": "saved-search delete/management capability missing; owner explicitly requires product closure, not P4 cleanup",
       "temporary_restore_tool": "withdrawn before any database write",
-      "ledger_remaining": 1
+      "ledger_remaining": 1,
+      "resolved_by": "favorite_lifecycle_53_14; historical status preserved"
     },
     "favorite_delete_backend_53_11": {
       "status": "passed",
@@ -362,6 +380,20 @@
       ],
       "restoration": "product search.favorite.delete plus authoritative empty readback and reload",
       "ledger_remaining": 0
+    },
+    "general_contract_signing_53_15": {
+      "status": "verification_pending",
+      "source_head": "e1325df02",
+      "layer": "P1 smart_construction_core",
+      "targeted_tests": {
+        "native_action_coverage": 25,
+        "action_semantics": 15,
+        "reference_ledger": 28
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/general-sign-coverage-final.log",
+      "runtime": "not_run; backend reload and effective authorization check pending",
+      "remaining_undeclared_state_actions": 4,
+      "ledger_open_items": 1
     }
   }
 }
