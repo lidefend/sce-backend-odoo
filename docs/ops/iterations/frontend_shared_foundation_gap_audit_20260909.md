@@ -8920,3 +8920,14 @@ L1 expense-readiness-iteration/tool-iteration及修正探针iteration PASS；exp
 expense-readiness-fixed-runtime.log19 PASS、ROLLBACK VERIFIED：原配置/无配置、真实reviewer、拒绝重提、两步审批、审核内容/明细保护17项保留；新增真实报销缺付款申请提交拒绝，原因与契约gate一致且无state/reviews残留；缺往来单位和付款账户同样真实拒绝、消息与契约一致。该报销始终缺付款申请，后两项是多条件拒绝证据，不能冒充单一账户/往来条件独立运行证明；独立反例由155纯测覆盖。必需附件运行配置未改，只做生产方法纯测，普通role/浏览器/最终费用现金执行仍开放。准备/提交沿原工具sudo，不伪称finance全旅程。
 
 本轮关闭的是已确认必要条件的warning-only执行缺口；契约availability与真实执行不再为这些条件维护两份语义。现有67/detail.action-state保持开放，下一步普通finance角色费用动作与最终执行的实际职责验证，复用已存在数据和受管回滚；如前提不足记录具体原因，不重复空查询或制造持久fixture。前端index-CVVwVIuW.js未变，未重建。无推送、合并或目标部署。
+
+
+### 53.149 普通财务费用执行与已保存页面前提
+
+e21b3da97 clean起点，P4仅在既有standard_page_type_browser注册sc.expense.claim的finance非legacy已保存只读观察（未注册create）；原生submit/approve/reject/complete动作语义及非approved无完成按钮、双视口沿原工具。expense-record-browser-iteration静态/语法通过；expense-record-browser.log/tpl07-1790799758516：受管登录及api.data返回ok、records=[]，2项中记录前提失败，errors=[]、forbiddenWrites=[]。因此没有实际页面/动作验收，不重复查询，不扩大角色或改查legacy冒充新业务。
+
+随后P4在原expense-state-authority事务追加真实finance往来款执行，09185ccff工具源经backend.acceptance.up重绑，local/sc-fe-r2-p1-01/sc_frontend_acceptance身份保持。L1 expense-role-iteration PASS、py_compile/diff PASS；P1生产未改，155纯测按未变输入复用，前端index-CVVwVIuW.js不构建。
+
+expense-role-runtime.log22 PASS、ROLLBACK VERIFIED（原19+新增3组）：fixture_role_finance显式非sudo、同公司可见项目与往来单位、create/write权限前提核对，实际创建project_company_repay、普通角色提交、普通角色action_done。无配置提交后approved/no reviews且无资金台账，显式完成才done并生成唯一posted台账，核对公司/项目/往来单位/币种/方向/100金额；普通角色重复完成、取消及改金额拒绝，备注可补充，台账仍唯一。主单和台账登记created，原finally回读临时记录不存在及策略/步骤恢复。附件准备沿既有sudo工具；不声称附件普通角色上传或真实银行出款。
+
+这是费用模型下“项目还公司款”职责的普通角色最终执行证据，不是报销申请/保证金/扣款退回现金链，也不是configured审批同角色全旅程。原配置链的准备/提交sudo限制仍按53.148记录。保存页数据前提明确为空，剩余浏览器及其他职责保持detail.action-state开放。下一步继续普通角色配置审批/有效契约消费的必要缺口，并保留已明确缺少记录的页面前提，不反复扫同一数据。整体67不升级整行，无推送合并目标部署。
