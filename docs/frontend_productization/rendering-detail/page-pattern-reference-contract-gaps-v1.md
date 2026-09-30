@@ -538,3 +538,8 @@ Reviewed adjustment economic content is protected;148 pure checks pass at source
 ### Segment53.141 — adjustment source identity and totals
 
 P1 shared domain errors now govern submit/reviewer callback and effective submit/approve gates for source project/currency/partner/contract identity.149 pure checks pass; backended6adcf7a runtime8 passes actual initiator/reviewers with rollback, including1000→900/1100→1000 and changed-source reviewer rejection followed by successful restoration. Saved-record browser tpl07-1790797536087 has no authorized existing record and remains unverified; do not repeat the empty query or infer browser completion. Post-approval external-source mutation/concurrency and overall detail.action-state remain open.
+
+
+### Segment53.142 — reconciliation reviewed facts and ledger identity
+
+P1 reconciliation now protects reviewed/confirmed/reconciled economic content and shares ledger readiness errors with submit, reviewer callback, explicit reconciliation and workflow gates.151 pure checks pass; backend235dc4c78 existing self-funding→reconciliation runtime13 passes ordinary finance/real reviewers with rollback. Company/currency mismatch is pure-test evidence, not actual multi-company runtime proof. Existing create-page evidence does not prove saved-record display of new denials; source external facts/concurrency and overall detail.action-state stay open.

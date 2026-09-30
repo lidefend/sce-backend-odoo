@@ -8833,3 +8833,14 @@ L1 adjustment-anchor-iteration.log PASS；初次adjustment-anchor-unit.log149中
 P4既有settlement-adjustment工具使用实际可见合同，由非sudo业务发起角色临时创建1000结算及调整，原事务回滚。adjustment-anchor-runtime.log7 PASS：扣款确认900/取消1000，在审不汇总，真实审核通过后生效，调增1100/取消1000，正式备注/取消和内容冻结保持。进一步新增直接来源变化断言后adjustment-anchor-source-runtime.log8 PASS：将临时来源结算往来方改为既有不同伙伴，effective evidenceGate给PARTNER_MISMATCH且阻止approve，实际reviewer审批拒绝并保持draft/未validated/汇总0；恢复原伙伴后原审核链正常完成。总ROLLBACK VERIFIED，配置与临时记录恢复。非并发测试，不证明批准后所有外部事实变更全局封锁。
 
 已保存记录浏览器adjustment-record-browser.log/tpl07-1790797536087未通过：支持模型检查通过，但现有角色授权查询无记录；errors=[]/forbiddenWrites=[]。未创建持久数据或扩大权限，不能计作页面通过或重复空查询。合同/临时运行态事实已足够验证本次约束，不是已保存浏览器验收的替代。整体67/detail.action-state保持开放，下一步接续尚未覆盖的对账审核内容/来源完整性与共享动作消费，复用本轮收款/调整证据；后续已保存浏览器需要已有授权记录或正式业务执行产生的数据，不新建fixture。无推送合并目标部署。
+
+
+### 53.142 对账审核内容与来源身份统一保护
+
+6c26fd9d5 clean起点。P1 treasury_reconciliation普通在审/confirmed/reconciled经济内容保护：项目/公司/币种、余额/差额/收入支出/确认金额、来源台账、账户、日期/来源分类、附件关联和有效性不可普通写入；草稿/驳回后修改、备注和内部正式流转保留，原legacy补录边界不变。_reconcile_readiness_errors集中台账存在/posted/项目/公司/币种/零差额原因，提交、审核完成、显式对账和workflow evidenceGate共用；不把业务判断下放前端。无schema/XML变更。
+
+L1 reconciliation-integrity-iteration.log PASS；reconciliation-integrity-unit.log151 PASS及begin/record成功。新增生产方法纯测覆盖审核/终态拒绝与允许路径、来源状态/项目/公司/币种及差额错误和同原因契约投影。源235dc4c78受管加载，backend与现有local/sc-fe-r2-p1-01/sc_frontend_acceptance固定filter/卷一致。P4只给原self-funding-reconciliation范围增加对账内容断言，未重跑其他财务/浏览器矩阵。
+
+reconciliation-integrity-runtime.log13 PASS，ROLLBACK VERIFIED：普通finance生成真实自筹posted台账后办理对账，真实reviewer审批，检查在审不可改余额/差额/来源/附件关联，confirmed readonly且差额不可改；显式reconcile后确认金额/银行余额/台账/active不可改、不可取消，备注仍可补充且来源posted100与差额0保持。配置/步骤及临时记录恢复。运行13包括因来源依赖而复用的原自筹链，不是13个新增业务职责；来源公司/币种错配为151纯测覆盖，尚非真实多公司错配运行证明。
+
+无前端生产改动或构建，原对账创建页20只按未变布局/输入复用，不证明本轮新拒绝原因已经在已保存页面呈现。新代码不使所有外部关联对象不可变，仍保留外部事实变化/并发及已保存浏览器缺口。下一步回到共享动作契约在已保存财务页面的消费，以既有授权记录进行只读观察；无记录则复用已登记缺口，不无限空查询或制造fixture。整体67/detail.action-state继续开放，无推送合并目标部署。
