@@ -7837,3 +7837,6 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（tax-approval-iteration.log）；相关生产方法隔离协作者回归55 PASS（tax-approval-tests.log，begin/record55），native8+32=40 PASS（tax-native-tests.log，begin/record40），workflow语义15 PASS（tax-workflow-tests.log）。测试覆盖默认金额在策略调用前就绪、显式金额不覆盖、无配置/配置/未完成回调边界与财务执行顺序；不把隔离测试当真实ORM验收。
 - 既有runtime脚本增加7项税务事务检查：无配置、金额阈值、等待禁止抵扣、真实审批不抵扣、驳回审计、重提新链、启用无匹配拒绝。脚本语法通过，待运行。受管preflight已确认local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷；内部验收租户库，沿用既有全事务rollback和配置回读。
 - 下一步提交后受管升级模块/重载，再执行34项集中审批运行验证。新增字段/XML需要升级；前端未改，不构建、不重跑未受影响日志/计划新建浏览器。实际抵扣财务写入和税务浏览器仍未覆盖；总体active，未推送、合并或目标部署。
+
+- 运行回读：0a85b8168已通过受管acceptance.module.upgrade、backend.acceptance.up与health；原审批运行脚本34项PASS，其中税务7项全部PASS。实际tier review证明金额默认值在阈值匹配前就绪，真实审批仅confirmed未抵扣，驳回原因/审计和重提新链成立，启用但金额无匹配拒绝。末尾ROLLBACK=VERIFIED，原配置/步骤回读一致、临时对象不存在。日志tax-approval-{upgrade,backend,health,runtime}.log（同tpl52目录）。
+- 状态：本批代码及真实模型审批链验证通过，税务浏览器与实际财务抵扣仍未验收，不称全部业务接管完成；主线未集成、目标环境未部署、用户整体验收未完成。继续既有职责中剩余project.project/project.task配置与运行支持差距及其他必要单据，支持名单只记录覆盖进度。
