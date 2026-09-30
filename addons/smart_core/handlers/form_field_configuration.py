@@ -2223,6 +2223,13 @@ class BusinessConfigListSearchAuditHandler(BaseIntentHandler):
             action_id=int(action_id or 0),
             view_id=int(view_id or 0),
         )
+        suggested_column_labels = self._model_field_labels(model, suggested_columns)
+        if suggested_columns:
+            native_labels = self._action_tree_view_labels(model=model, action_id=int(action_id or 0), view_id=int(view_id or 0))
+            for name in suggested_columns:
+                label = str(native_labels.get(name) or "").strip()
+                if label and label.casefold() != name.casefold():
+                    suggested_column_labels[name] = label
         suggested_filters, suggested_group_by = ([], [])
         if not has_search_config:
             suggested_filters, suggested_group_by = self._suggested_search(
@@ -2253,6 +2260,7 @@ class BusinessConfigListSearchAuditHandler(BaseIntentHandler):
                 "business_config_search_filters": search_filters,
                 "business_config_search_group_by": search_group_by,
                 "suggested_list_columns": suggested_columns,
+                "suggested_list_column_labels": suggested_column_labels,
                 "suggested_search_filters": suggested_filters,
                 "suggested_search_group_by": suggested_group_by,
                 "available_model_fields": self._available_model_fields(model),

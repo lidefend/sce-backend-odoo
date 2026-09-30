@@ -96,7 +96,9 @@ export function useBusinessConfigFieldEditors(options: UseBusinessConfigFieldEdi
     .filter((field, index, rows) => rows.findIndex((row) => row.name === field.name) === index)
   );
   const configuredListColumnLabels = computed(() => {
-    const labels = options.listSearchAudit.value?.business_config_list_column_labels || {};
+    const audit = options.listSearchAudit.value;
+    const labels = (audit?.has_business_list_config
+      ? audit.business_config_list_column_labels : audit?.suggested_list_column_labels) || {};
     return Object.entries(labels).reduce<Record<string, string>>((acc, [name, label]) => {
       const fieldName = String(name || '').trim();
       const cleanLabel = cleanBusinessFieldLabel(fieldName, label);

@@ -135,6 +135,7 @@ export interface BusinessConfigListSearchAuditPayload {
   business_config_search_filters: string[];
   business_config_search_group_by: string[];
   suggested_list_columns?: string[];
+  suggested_list_column_labels?: Record<string, string>;
   suggested_search_filters?: string[];
   suggested_search_group_by?: string[];
   available_model_fields?: Array<{
