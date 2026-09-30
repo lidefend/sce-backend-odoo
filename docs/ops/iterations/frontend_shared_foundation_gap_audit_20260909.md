@@ -8443,3 +8443,5 @@ P4标准browser复用approval-actions扩展两安全模型create，safety-page-i
 父单事实、unlink只允许draft；直接子明细create含default父键、write旧新父、unlink均校验父状态，防在途/通过审核金额被子接口改写。纯测试执行真实方法验证父单及直接子路径；真实并发未验证，不作锁竞争结论。L1 subcontract-approval-iteration.log；L2 subcontract-approval-unit.log108、subcontract-approval-native.log8+52=60 PASS并登记回执。输入登记新增分包模型/view。P4既有工具新增subcontract-approval16组，实际金额阈值/配置切换/真实review/驳回重提/父子保护，default all计数231，本轮仅定向scope；工具L1/语法/diff通过。
 
 下一步一次受管模块升级并reload（新增字段继承/XML），local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；事务数据/配置必须rollback。运行时尚未验证，前端7915f3bb9未变不构建，不重复安全/租赁业务或全矩阵。已有角色办理、总体67及其他未完成职责保持开放，无新环境/持久fixture/推送合并目标部署。
+
+53.108增量：首轮3d9d11b70升级成功。升级期间只读直接生效form policy发现分包申请6输入被P1 blanket readonly：project/date/scope/建议单位/note/attachments，属于创建职责缺陷。等待既有升级进程完成后再修XML，保留9项编号/状态/计算/来源事实只读；新增纯回归109 PASS（subcontract-input-unit.log），L1 subcontract-input-iteration.log/diff PASS。因实际XML输入改变需要加载新配置，再次升级属于输入修复后的必要重载，不重复无变化验收。首轮候选未启动浏览器。P4 browser既有approval-actions新增两分包create与3输入/编号/旧直批动作检查，subcontract-page-iteration.log/node PASS。下一步新候选upgrade/reload后一次定向runtime及create；此时仍未证明运行时业务。

@@ -1021,6 +1021,16 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def test_subcontract_request_input_policy_preserves_calculated_facts(self):
+        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
+        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_subcontract_request_p1_form_business_facts_v1']")
+        payload = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
+        fields = {row['name']: row for row in payload['view_orchestration']['views']['form']['fields']}
+        for name in ('project_id', 'request_date', 'subcontract_scope', 'suggested_subcontractor_id', 'note', 'attachment_ids'):
+            self.assertNotIn('readonly', fields[name])
+        for name in ('state', 'name', 'subcontract_type_text', 'quantity_total', 'price_unit', 'amount_total', 'monthly_amount_total', 'applicant_id', 'create_date'):
+            self.assertIs(fields[name]['readonly'], True)
+
     def test_subcontract_submitted_and_approved_facts_are_frozen(self):
         path = MODEL.with_name('subcontract_management.py')
         for name in ('ScSubcontractPlan', 'ScSubcontractRequest'):
