@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
+  "branch": "feature/web-official-template-adoption",
+  "status": "active",
+  "baseline_sha": "dc460758c867a981795803048af68eb754de096d",
+  "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
+  "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
+  "scope": [
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/",
+    "frontend/apps/web/src/",
+    "scripts/verify/",
+    "make/",
+    "config/ci/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk",
+        ".agent/active-runs.json",
+        ".agent/README.md",
+        ".agent/context.yaml",
+        ".agent/runs/template/",
+        "AGENTS.md",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "status_presentation": {
+      "target": "verify.frontend.collection_status_presentation.unit",
+      "inputs": [
+        "scripts/verify/frontend_collection_status_presentation.test.mjs",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh tracked generated reports after the mainline port, commit the report refresh, then run the declared resume/status/parity checks and record them."
+}

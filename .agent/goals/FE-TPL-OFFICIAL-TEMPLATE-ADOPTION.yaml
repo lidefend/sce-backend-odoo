@@ -1,0 +1,47 @@
+schema_version: 1
+goal:
+  id: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION
+  title: custom_frontend_rendering_and_interaction_return_to_official_template_compositions
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_contract_consumption_and_standard_page_compositions
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make
+    - docs/ops/iterations
+  baseline:
+    branch: feature/web-official-template-adoption
+    full_sha: dc460758c867a981795803048af68eb754de096d
+    source: mainline_port_merge_of_origin_main_fff226d7b
+  objective: >-
+    Keep the custom web frontend rendering, interaction and page composition on
+    the official TDesign starter compositions, driven only by the effective
+    business contract, while the mainline (strategic) agent collaboration flow is
+    adopted for continuation.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      Official page compositions, contract consumption adapters and shared layouts
+      are generic frontend platform mechanisms; they must not encode
+      construction-industry or customer-specific business semantics.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics_in_frontend
+      - no_p3_low_code_editable_configuration_shortcut
+      - no_backend_transaction_or_permission_change
+      - no_database_fixture_or_release_write
+    blast_radius:
+      - standard_list_form_detail_and_master_detail_compositions
+      - contract_shaped_collection_and_form_adapters
+      - shell_breadcrumb_footer_and_scroll_owner
+      - targeted guard_and_unit_entries_under_scripts_verify
+  constraints:
+    - contract_is_the_only_authority_for_business_semantics
+    - frontend_owns_presentation_and_safe_interaction_only
+    - no_second_list_or_form_renderer_path
+    - tone_and_visual_tokens_never_enter_the_business_contract
+  next_exact_step: >-
+    Finish mainline port closure (generated reports refresh + registered resume run),
+    then continue FE-TPL-06A payment list pagination verification and WEB-LC-01
+    low-code configuration closure on this branch.
