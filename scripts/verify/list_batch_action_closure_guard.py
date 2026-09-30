@@ -328,6 +328,13 @@ def _probe_frontend_sources(errors: list[str]) -> None:
     list_page = _read("frontend/apps/web/src/pages/ListPage.vue")
     action_view = _read("frontend/apps/web/src/views/ActionView.vue")
     batch_flow = _read("frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts")
+    # The batch selection surface keeps its behaviour in the runtime ActionView
+    # composes, so the assertions below are bound to the owner that actually
+    # performs them - plus a check that the view still consumes that owner, so
+    # moving the behaviour out cannot silently make these pass.
+    selection_action_runtime = _read(
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts"
+    )
 
     _assert(
         "props.selectionEnabled !== false" in list_page,
@@ -341,9 +348,14 @@ def _probe_frontend_sources(errors: list[str]) -> None:
     )
     selection_runtime = _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts")
     _assert(
-        "resolveSelectionActions(" in action_view
-        and "execution_intents" in action_view,
-        "ActionView must read the declared batch policy instead of naming batch actions",
+        "useActionViewSelectionActionRuntime(" in action_view and "contractActions: contractActionButtons" in action_view,
+        "ActionView must compose the selection-action runtime that executes the declared batch policy",
+        errors,
+    )
+    _assert(
+        "resolveSelectionActions(" in selection_action_runtime
+        and "execution_intents" in selection_action_runtime,
+        "the batch selection surface must read the declared batch policy instead of naming batch actions",
         errors,
     )
     _assert(
@@ -363,13 +375,13 @@ def _probe_frontend_sources(errors: list[str]) -> None:
         errors,
     )
     _assert(
-        "const result = await unlinkActionViewRecord" in action_view,
-        "ActionView batch delete must call unlinkActionViewRecord",
+        "const result = await unlinkActionViewRecord" in selection_action_runtime,
+        "the batch selection surface must delete through unlinkActionViewRecord",
         errors,
     )
     _assert(
-        "const result = await batchUpdateActionViewRecords" in action_view,
-        "ActionView archive/activate must call batchUpdateActionViewRecords",
+        "const result = await batchUpdateActionViewRecords" in selection_action_runtime,
+        "the batch selection surface must archive/activate through batchUpdateActionViewRecords",
         errors,
     )
     _assert(

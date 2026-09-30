@@ -788,6 +788,7 @@ import { executeProjectionRefresh } from '../app/projectionRefreshRuntime';
 import { executeSceneMutation } from '../app/sceneMutationRuntime';
 import { useActionViewActionRuntime } from '../app/action_runtime/useActionViewActionRuntime';
 import { useActionViewSelectionRuntime } from '../app/action_runtime/useActionViewSelectionRuntime';
+import { useActionViewSelectionActionRuntime, type ActionBatchPolicy } from '../app/action_runtime/useActionViewSelectionActionRuntime';
 import { useActionViewTriggerRuntime } from '../app/action_runtime/useActionViewTriggerRuntime';
 import { useActionViewGroupedRowsRuntime } from '../app/action_runtime/useActionViewGroupedRowsRuntime';
 import { useActionViewRoutePresetRuntime } from '../app/action_runtime/useActionViewRoutePresetRuntime';
@@ -846,10 +847,8 @@ import { useActionViewLoadSuccessPhaseRuntime } from '../app/action_runtime/useA
 import { useActionViewLoadFacadeRuntime } from '../app/action_runtime/useActionViewLoadFacadeRuntime';
 import { useActionViewActionPresentationRuntime } from '../app/action_runtime/useActionViewActionPresentationRuntime';
 import {
-  batchUpdateActionViewRecords,
   listActionViewRecordsRaw,
   saveActionViewSearchFavorite,
-  unlinkActionViewRecord,
   writeActionViewRecord,
 } from '../app/runtime/actionViewDataRuntime';
 import {
@@ -928,19 +927,6 @@ import {
   resolveContractActionSelectionBlockMessage,
   shouldNavigateContractAction,
 } from '../app/runtime/actionViewContractActionRuntime';
-import {
-  buildBatchUpdateRequest,
-  resolveBatchActionFailureMessage,
-  resolveBatchDeleteFailureMessage,
-  resolveBatchActionGuardMessage,
-  resolveBatchActionResultMessage,
-} from '../app/runtime/actionViewBatchRuntime';
-import {
-  resolveBatchActionGuardDecision,
-  resolveBatchDeleteExecutionSeed,
-  resolveBatchStandardExecutionSeed,
-} from '../app/runtime/actionViewBatchActionFlowRuntime';
-import { executeActionViewSelectionExport, resolveSelectionActions } from '../app/runtime/actionViewSelectionExportRuntime';
 import { applyActionViewLoadResetState } from '../app/runtime/actionViewLoadResetRuntime';
 import {
   resolveContractFlagApplyState,
@@ -1293,7 +1279,6 @@ const hasLedgerOverviewStrip = computed(() => String(scene.value?.layout?.kind |
 const listProfile = computed<SceneListProfile | null>(() => {
   return extractListProfile(actionContract.value);
 });
-type ActionBatchPolicy = NonNullable<SceneListProfile['batch_policy']>;
 const batchPolicy = computed<ActionBatchPolicy>(() => {
   const profilePolicy = listProfile.value?.batch_policy;
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
@@ -1954,148 +1939,6 @@ const {
   resolveContractActionPresentation,
   pageText,
 });
-
-const selectionActions = computed(() => {
-  // The contract declares which batch actions exist and how each one executes;
-  // this surface only maps the declared intent onto a client executor.
-  return resolveSelectionActions(
-    allowedBatchActions.value,
-    {
-      intents: (batchPolicy.value.execution_intents || {}) as Record<string, string>,
-      deleteMode: String(batchPolicy.value.delete_mode || 'none'),
-      activeField: activeField.value,
-    },
-    toolbarUiLabel,
-  );
-});
-function handleSelectionAction(key: string) {
-  if (key.startsWith('batch:')) {
-    const action = key.slice('batch:'.length);
-    if (action === 'export') {
-      void executeActionViewSelectionExport({
-        model: String(resolvedModelRef.value || model.value || '').trim(),
-        ids: [...selectedIds.value],
-        columns: columns.value,
-        columnOptions: listColumnOptions.value,
-        visibility: listColumnVisibility.value,
-        columnLabels: contractColumnLabels.value,
-        context: resolveEffectiveRequestContext(),
-        setBusy: (busy) => { batchBusy.value = busy; },
-        onSuccess: (count) => { clearSelection(); batchMessage.value = toolbarUiLabel('batch_msg_export_done', `已导出 ${count} 条记录`); },
-        onFailure: () => { batchMessage.value = toolbarUiLabel('batch_msg_export_failed', '导出失败，请稍后重试'); },
-      });
-      return;
-    }
-    if (action === 'archive' || action === 'activate' || action === 'delete') {
-      void runBatchPolicyAction(action);
-    }
-    return;
-  }
-  const target = contractActionButtons.value.find((action) => action.key === key);
-  if (!target || !target.enabled) return;
-  void runContractAction(target as ContractActionButton);
-}
-async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
-  const targetModel = String(resolvedModelRef.value || model.value || '').trim();
-  const selected = [...selectedIds.value];
-  if (!allowedBatchActions.value.includes(action)) {
-    batchMessage.value = toolbarUiLabel('batch_msg_action_not_allowed', '当前场景不支持该批量操作');
-    return;
-  }
-  const guard = resolveBatchActionGuardDecision({
-    targetModel,
-    selectedCount: selected.length,
-    action,
-    hasActiveField: Boolean(activeField.value),
-    deleteMode: String(batchPolicy.value.delete_mode || 'none'),
-  });
-  if (!guard.ok) {
-    batchMessage.value = resolveBatchActionGuardMessage({
-      reason: guard.reason as 'missing_target_model' | 'missing_selection' | 'active_field_required' | 'delete_mode_unavailable',
-      text: toolbarUiLabel,
-    });
-    return;
-  }
-  if (action === 'delete') {
-    if (!await batchConfirmationRef.value?.confirm({ actionLabel: '批量删除', message: toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`) })) {
-      return;
-    }
-    const seed = resolveBatchDeleteExecutionSeed({
-      selectedIds: selected,
-      buildIfMatchMap,
-      buildIdempotencyKey,
-    });
-    batchBusy.value = true;
-    try {
-      await unlinkActionViewRecord({
-        model: targetModel,
-        ids: selected,
-        context: resolveEffectiveRequestContext(),
-        idempotencyKey: seed.dryRunIdempotencyKey,
-        dryRun: true,
-      });
-      const result = await unlinkActionViewRecord({
-        model: targetModel,
-        ids: selected,
-        context: resolveEffectiveRequestContext(),
-        idempotencyKey: seed.idempotencyKey,
-      });
-      const resultMessage = resolveBatchActionResultMessage({
-        action,
-        idempotentReplay: result.idempotent_replay === true,
-        succeeded: Array.isArray(result.ids) ? result.ids.length : selected.length,
-        failed: 0,
-        text: toolbarUiLabel,
-      });
-      clearSelection();
-      await requestLoadPage();
-      batchMessage.value = resultMessage;
-    } catch (err) {
-      batchMessage.value = action === 'delete'
-        ? resolveBatchDeleteFailureMessage(err, toolbarUiLabel)
-        : resolveBatchActionFailureMessage({ action, text: toolbarUiLabel });
-    } finally {
-      batchBusy.value = false;
-    }
-    return;
-  }
-  const activeValue = action === 'activate'
-    ? batchPolicy.value.activate_value === true
-    : batchPolicy.value.archive_value === true;
-  const seed = resolveBatchStandardExecutionSeed({
-    action,
-    selectedIds: selected,
-    activeField: activeField.value,
-    activeValue,
-    buildIfMatchMap,
-    buildIdempotencyKey,
-  });
-  batchBusy.value = true;
-  try {
-    const result = await batchUpdateActionViewRecords(buildBatchUpdateRequest({
-      model: targetModel,
-      ids: selected,
-      action,
-      ifMatchMap: seed.ifMatchMap,
-      idempotencyKey: seed.idempotencyKey,
-      context: resolveEffectiveRequestContext(),
-    }) as Parameters<typeof batchUpdateActionViewRecords>[0]);
-    const resultMessage = resolveBatchActionResultMessage({
-      action,
-      idempotentReplay: result.idempotent_replay === true,
-      succeeded: Number(result.succeeded || 0),
-      failed: Number(result.failed || 0),
-      text: toolbarUiLabel,
-    });
-    clearSelection();
-    await requestLoadPage();
-    batchMessage.value = resultMessage;
-  } catch {
-    batchMessage.value = resolveBatchActionFailureMessage({ action, text: toolbarUiLabel });
-  } finally {
-    batchBusy.value = false;
-  }
-}
 
 const advancedRows = computed(() => {
   return records.value.slice(0, 20).map((row, idx) => {
@@ -3317,6 +3160,32 @@ const {
   resolveTargetModel: () => resolvedModelRef.value || model.value || '',
 });
 clearSelectionInvoker = selectionRuntimeClearSelection;
+
+const {
+  selectionActions,
+  handleSelectionAction,
+} = useActionViewSelectionActionRuntime({
+  allowedBatchActions,
+  batchPolicy,
+  activeField,
+  selectedIds,
+  batchBusy,
+  batchMessage,
+  batchConfirmationRef,
+  columns,
+  listColumnOptions,
+  listColumnVisibility,
+  contractColumnLabels,
+  contractActions: contractActionButtons,
+  text: toolbarUiLabel,
+  resolveTargetModel: () => resolvedModelRef.value || model.value || '',
+  resolveEffectiveRequestContext,
+  buildIfMatchMap,
+  buildIdempotencyKey,
+  clearSelection,
+  reload: () => requestLoadPage(),
+  runDeclaredAction: (action) => { void runContractAction(action); },
+});
 
 function findMenuNodeByLabel(nodes: Array<Record<string, unknown>>, label: string): Record<string, unknown> | null {
   const expected = String(label || '').trim();
