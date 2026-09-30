@@ -451,3 +451,7 @@ Red-flush originals must exist, be active and normal; registration sources must 
 ## Segment 53.124: red-flush recovery and database uniqueness
 
 Approved but unexecuted adjustments may be cancelled with approval history retained; replacement records must obtain new reviews. OCA default cancellation deleted reviews, caught by runtime and corrected via the model's existing extension point. A stored confirmed-source identity has a database UNIQUE constraint, allowing multiple nonexecuted applications. Backend3fb696152, pure138/native62 and rollback runtime15 pass, including installed-constraint inspection and actual duplicate-key rejection. This is not a two-session race test. Ordinary-role saved handling and approved-detail browser actions remain open; no overall closure claim.
+
+## Segment 53.125: actual finance role handling and empty detail scope
+
+Red-flush-role rollback16 passes: fixture finance creates/submits/confirms/cancels/replaces applications without sudo; project visibility and exact actor environment are asserted. Source/policy preparation and the database backstop probe retain explicit elevated scope. Existing detail browser lookup returns an empty authorized record set (report tpl07-1790794142106), so approved-detail and full browser handling remain unverified; do not repeat or fabricate data. The remaining declared sc.workflow.instance is explicitly historical: reconcile its legacy-mode action gates instead of treating it as another standard approval engine.

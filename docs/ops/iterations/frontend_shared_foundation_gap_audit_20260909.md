@@ -8652,3 +8652,13 @@ L1 red-recovery-identity-iteration.log PASS；pure unit.log137 PASS、native.log
 3fb696152受管reload成功（仅Python修复不再次升级）。red-recovery-history-runtime.log15 PASS、ROLLBACK VERIFIED：已批准未出票cancel状态正确且review IDs/validated原样保留，新建同源申请须新的review并真实审核后出票，pg_constraint确认约束安装且实际第二个confirmed source key写入触发预期唯一约束拒绝，原12组继续通过。SQL重复检查在独立savepoint触发私有状态写，仅验证数据库兜底，不是双会话请求实测；本轮不声明并发负载验收。已有已出票事实不撤销，不删除原批准记录。
 
 前端CrYkOCxc未改不构建；原create21仅复用未变输入/查询域，新增approved取消由真实workflow可用动作和模型结果证明，普通角色已批准详情页面尚未验。下一步转实际非sudo角色办理与对应官方详情动作，复用现有数据/受管回滚工具，不重复全仓盘点或原创建页。工程资料分类/项目金额权威/收款发票税率仍待既有缺口处理；整体67不升行，无推送合并目标部署。
+
+### 53.125 非sudo财务角色红冲办理（完成本项模型验证）
+
+b55ea375e clean续跑，P4只扩展既有rollback工具可选actor_env及red-flush-role scope，wrapper白名单同步。复用fixture_role_finance（既有finance_manager角色）、公司/项目范围，不改ACL或组、不创建账号。事务项目manager/user为财务角色，非sudo查询证明可见；红冲Document.create、提交、取消、重提/新申请、confirm均同一非sudo环境并assert。源票/策略仍sudo准备，审核为实际reviewer，SQL唯一兜底探针仍为工具私有写，边界明确。
+
+L1 red-role-tool-iteration.log/py_compile/bash-n/diff PASS；red-role-runtime.log16 PASS、ROLLBACK VERIFIED；新check red_flush_role_runtime在原run结果索引登记begin/record16，kind=runtime需环境核对不能自动当离线可复用。纯138/native62的P1输入未改，沿53.124复用，不重跑、不升级、不reload、不构建。后端仍3fb696152，前端CrYkOCxc。
+
+为现存详情做一次定向只读browser：tpl07-1790794142106/report.json在existing authorized record断言失败；finance对sc.output.invoice.adjustment list返回ok=true、records=[]、count=0，errors/forbiddenWrites为空。属于当前角色可用数据前提，不证明其他角色/全库无记录；无已批准详情可验证，不重复查询、不为截图造fixture。模型办理16不能升级为浏览器完整保存审核出票旅程。
+
+仅沿已有workflow剩余项阅读sc_workflow.py：sc.workflow.instance/def明确为历史实例/定义，正常审批权威已有base_tier_validation；create_instance/publish受legacy runtime开关约束，但action_submit/approve/reject没有相同开关检查，workflow profile仍发布普通动作。下一步核对并收口历史恢复例外的动作契约和执行边界，不把该技术实例当新业务审批实现，更不引入第二框架。保留原67/detail.action-state及分类/项目金额/税率等既有缺口，无推送合并目标部署。

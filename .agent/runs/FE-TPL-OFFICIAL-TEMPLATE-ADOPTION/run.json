@@ -36,6 +36,20 @@
     "authority": "existing local Make tools; no database or service access"
   },
   "checks": {
+    "red_flush_role_runtime": {
+      "target": "verify.business_config.approval_runtime",
+      "kind": "runtime",
+      "scope": "SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=red-flush-role",
+      "inputs": [
+        "scripts/verify/business_config_approval_runtime_smoke.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+        "addons/smart_construction_core/models/core/invoice_registration.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/data/finance_document_tier_actions.xml"
+      ]
+    },
     "resume": {
       "target": "verify.agent.resume.unit",
       "inputs": [
@@ -374,7 +388,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.124 sourceb3c1f7111/upgrade88774a406; initial recovery runtime failed because OCA cancellation unlinks reviews, rollback verified. Fixed existing hook source/backend3fb696152, L1/pure138/native62 reused unchanged action inputs, red-recovery-history-runtime.log15 ROLLBACK VERIFIED. Cancel retains approval; new record/new review; actual UNIQUE installed and duplicate denied (not two-session race). Next actual non-sudo financial-role handling and official approved-detail actions using existing governed scope/data, not repeated create pages or full scans. FrontendCrYkOCxc unchanged. Pending classification/project amount/receipt tax remain, no fixtures/push/merge/deploy, overall67 open.",
+  "next_exact_step": "53.125 P4 red-flush-role optional actor_env: L1 + runtime16 ROLLBACK VERIFIED with actual non-sudo fixture finance creating/submitting/confirming/cancelling/new approval; source/policy preparation and DB backstop remain elevated. Backend3fb696152/frontendCrYkOCxc unchanged, pure138/native62 reused. Readonly detail browser tpl07-1790794142106 returned authorized empty records; no approved-detail/full-browser proof, do not repeat or invent fixture. Next reconcile historical sc.workflow.instance legacy-mode action boundary: model explicitly historical, create_instance gated but submit/approve/reject not gated, profile still publishes standard-looking actions. Preserve documented classification/project amount/receipt tax gaps and overall67; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
