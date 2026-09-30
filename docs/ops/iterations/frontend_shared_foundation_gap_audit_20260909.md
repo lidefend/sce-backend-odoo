@@ -2263,7 +2263,7 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 
 - `Formal Product Layer`：P0 平台内核（`smart_core`）为权威；P1（`smart_construction_core`）只声明行业语义；P2（客户模块）只登记自己拥有的模型。
 - `Layer Target`：`smart_core.core.action_semantics_vocabulary`、`unified_page_contract_v2_assembler`、`contract_governance` 注册表；`smart_construction_core` 的 workflow 投影服务与能力注册表。
-- `Module`：`smart_core`、`smart_construction_core`、`sce_customer_baosheng_legacy`（属主侧）。
+- `Module`：`smart_core`、`smart_construction_core`、`sce_customer_<tenant_key>_legacy`（属主侧）。
 - `Standard vs User-Specific`：词汇表与注册机制是平台标准；行业 profile 是行业标准；`sc.partner.import.review` 是客户专属，属 P2。
 - `Why Here`：词汇表的单位是 `(kind, executor)` 对而非三个独立集合——独立校验会接受所有终端都丢弃的组合，而生产者确实会发布它。
 - `Why Not Elsewhere`：不在前端重述业务子集（那是本次修掉的漂移源）；不在 P1 为不属于本层的模型写 profile；
@@ -2319,7 +2319,7 @@ WEB-CONFIG-05最终结果：本批范围批次验收完成。
 
 - 提交：`e7a523cca`（P0 词汇表权威 + 注册表）、`8890d5f0f`（P1 行业语义与角色派生 + 完备性守卫）、
   `7ec3bbf16`（前端派生）；HEAD 见下方批次记录。
-- P2 属主侧提交：`sce-customer-baosheng-odoo` `bfbc736`（`fix/native-form-preference-upgrade`），
+- P2 属主侧提交：`sce-customer-<tenant_key>-odoo` `bfbc736`（`fix/native-form-preference-upgrade`），
   `runtime_registration.py` 注册 `sc.partner.import.review` profile。
 - 后端测试现场：`ENV_FILE=.env.dev DB_NAME=sc_dev_demo MODULE=smart_construction_core` 经 `scripts/test/test_safe.sh`。
 - 前端产物：`VITE_ODOO_DB=sc_frontend_acceptance VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance make verify.frontend.build`，
@@ -2589,7 +2589,7 @@ guard 自身 `active-dynamic` 分支缺陷已登记，未在本批扩大处理�
 ### 未处理（保持登记）
 
 - `docs/audit/workflow_state_inventory_sc_demo.md` 需在具备已装模块的 `sc_demo` 环境重新生成，本段不重生成。
-- 跨仓 P2 注册（`sce-customer-baosheng-odoo` `bfbc736`，`sc.partner.import.review`）本次未跨仓运行验证；
+- 跨仓 P2 注册（`sce-customer-<tenant_key>-odoo` `bfbc736`，`sc.partner.import.review`）本次未跨仓运行验证；
   新语义下同内容重复注册仍是幂等 `True`，不影响其现有调用形态。
 
 ### 状态
