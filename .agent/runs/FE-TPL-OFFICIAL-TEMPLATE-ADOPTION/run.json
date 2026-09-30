@@ -442,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.168 two-attachment recovery59 PASS tpl07-1790806247599, owned171/1295/1296 cleaned and source1815 unchanged. Frontend e31e51c59/index-7JTLfH1Y.js,backendba1d18e59. Reuse hook66/strict and tool36. Return to existing task/event/plan/diary handling responsibilities: read related prior evidence and exact action contracts, distinguish missing semantics from consumer defect or unverified handling; choose next concrete gap without broad scans/config/payment reruns. Overall67/detail.action-state open; no push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.169 diary P1 create/write state bypass fixed using existing internal state token pattern; L1 and approval163 passed with receipt. Backend stillba1d18e59; no frontend/build change. Next extend existing approval_runtime with diary-only scope reusing _draft_confirmation_checks and rollback, add real external create/write rejection checks; reload backend once and run only affected scope. Do not run all or repeat task empty query. Diary reviewed content/role handling and overall67 remain open; no push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

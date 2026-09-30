@@ -3163,6 +3163,50 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): namespace['action_confirm'](plan)
             self.assertEqual(plan.state, 'draft')
 
+    def test_diary_state_and_origin_writes_require_internal_authority(self):
+        path = MODEL.with_name('construction_diary.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        token, writes = object(), []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rows = Rows([types.SimpleNamespace(source_origin='manual', state='draft')])
+        for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
+            rows.env = types.SimpleNamespace(context=context)
+            for values in ({'state': 'confirmed'}, {'state': 'done'}, {'source_origin': 'legacy'}):
+                with self.subTest(context=context, values=values), self.assertRaises(ValueError): ns['write'](rows, values)
+        self.assertEqual(writes, [])
+        rows.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'confirmed'}))
+        rows.env.context = {}
+        self.assertTrue(ns['write'](rows, {'description': 'draft content'}))
+        rows[0].source_origin, rows[0].state = 'legacy', 'legacy_confirmed'
+        self.assertTrue(ns['write'](rows, {'note': 'supplement'}))
+        with self.assertRaises(ValueError): ns['write'](rows, {'description': 'rewrite history'})
+
+    def test_diary_create_rejects_state_defaults_before_sequence(self):
+        path = MODEL.with_name('construction_diary.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'create')
+        method.decorator_list = []
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class SequenceReached(Exception): pass
+        class Env:
+            def __getitem__(self, key): raise SequenceReached(key)
+        row = types.SimpleNamespace(env=Env())
+        for su in (False, True):
+            row.env.su = su
+            for state in ('confirmed', 'done', 'cancel'):
+                for vals, context in (({'state': state}, {}), ({}, {'default_state': state})):
+                    row.env.context = context
+                    with self.subTest(su=su, vals=vals, context=context), self.assertRaises(ValueError): ns['create'](row, [vals])
+        row.env.su, row.env.context = False, {}
+        with self.assertRaises(ValueError): ns['create'](row, [{'source_origin': 'legacy'}])
+        with self.assertRaises(SequenceReached): ns['create'](row, [{}])
+        row.env.su = True
+        with self.assertRaises(SequenceReached): ns['create'](row, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
+
     def test_diary_configuration_and_real_approval_precede_completion(self):
         path = MODEL.parent / 'construction_diary.py'
         names = {'action_confirm', 'action_done', 'action_on_tier_approved'}
@@ -3172,7 +3216,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         class Diary:
             def __iter__(self): return iter([self])
             def with_context(self, **kw): return self
-            def write(self, values): self.__dict__.update(values)
+            def _write_document_state(self, values): self.__dict__.update(values)
             def _check_business_ready(self):
                 if not self.ready: raise ValueError('content')
         for configured in (True, False):

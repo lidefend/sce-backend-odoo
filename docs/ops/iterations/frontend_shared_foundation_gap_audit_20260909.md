@@ -9161,3 +9161,14 @@ TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.expense.claim TPL07_APPROVA
 finally精确删除171/1295/1296，cleanup-final权威回读restored，源1815原字段不变、无资金执行。正常审计/序列不回退，不声称整库回滚。同队列已确认项不重传由53.167真实hook纯测证明；浏览器跨页后重新选择失败文件，两类证据不能混写为File对象跨导航保留。明确失败恢复代表链闭合，不证明服务端已保存但响应丢失的去重；不因该未验证场景重开已闭合单附件/异步身份边界。
 
 总体67/detail.action-state仍开放。下一步回到原已登记任务/事件/计划/日志处理责任，读取对应既有记录与动作契约，准确区分缺少契约、消费缺陷、仅缺真实处理证据后选择下一项，不重跑配置/付款或全仓盘点。无推送、合并、目标部署。
+
+
+### 53.169 施工日志状态写入保护（代码验证完成，运行待续）
+
+0774aeb98 clean起点，沿既有任务/事件/计划/日志责任读取53.56–63原证据，不重复任务空查询。施工日志已有workflow动作目录、当前可用动作及统一policy/tier分流，缺口不属于“只有声明没有契约”。实际模型create/write仍允许外部直接写confirmed/done/source_origin，可绕过正式状态机。归属P1 smart_construction_core/models/core/construction_diary.py，行业标准单据事实保护，不放前端或低代码配置；本批只修这一模型，不做全仓审计。
+
+沿用现有结算调整的内部_DOCUMENT_STATE_TOKEN机制：普通create及default_state只能draft，受管sudo历史导入legacy/legacy_confirmed例外保留；普通write拒绝state/source_origin（含伪造布尔token和skip_validation_check），正式确认、真实审批回调、完成、取消统一经私有_write_document_state。原历史日志可补充字段限制保留，审批业务条件/状态含义/契约目录未变。不是新增审批框架，未更改其它业务模型。
+
+L1 make ci.local.iteration PASS（diary-state-iteration）；L2 verify.payment.approval_state_machine.unit163 PASS（diary-state-unit），新增实际create/write方法反例，既有无配置/真实回调/显式完成用例保留并适配内部写入方法；begin/record payment_approval_state_machine完成，日志diary-state-begin/receipt。git diff --check通过。生产无字段/XML改动，无需模块升级；前端不变、已加载e31e51c59证据复用，不构建。L3真实模型运行待补，后端仍ba1d18e59，不能把纯测称为运行闭环。
+
+下一步给既有approval_runtime增加仅施工日志的scope，复用_draft_confirmation_checks与原配置/临时对象rollback，加入实际外部create/write拒绝与合法动作后回读；不要为一模型跑all/旧无关ORM。随后一次受管backend重载并执行该scope。审批后内容保护、日志角色浏览器办理及其它业务责任仍未由本次证明，总体67/detail.action-state开放。无新环境/fixture、推送、合并或目标部署。
