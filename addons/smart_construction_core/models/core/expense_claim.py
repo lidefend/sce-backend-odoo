@@ -684,6 +684,15 @@ class ScExpenseClaim(models.Model):
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
+    def _reviewed_content_is_frozen(self):
+        self.ensure_one()
+        return self.state in {"done", "legacy_confirmed"} or (
+            self.source_origin != "legacy"
+            and (self.state in {"submit", "approved"} or (
+                self.state == "draft" and self.validation_status in {"waiting", "pending", "validated"}
+            ))
+        )
+
     def write(self, vals):
         authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
         if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
@@ -693,6 +702,15 @@ class ScExpenseClaim(models.Model):
             "claim_type", "date_claim", "amount", "approved_amount", "paid_amount", "active",
             "payment_request_id", "deduction_line_ids",
         }
+        reviewed_fields = terminal_business_fields | {
+            "attachment_ids", "expense_type", "guarantee_type", "payment_method",
+            "clearing_method", "payee", "receipt_account_name", "payee_account",
+            "payee_bank", "payment_account_name", "payer_account", "payer_bank",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and rec._reviewed_content_is_frozen() for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已完成的费用与扣款单据不可改写审核内容、账户或附件关联。"))
         if any(rec.state in {"done", "legacy_confirmed"} for rec in self) and not authoritative:
             blocked_terminal = set(vals) & terminal_business_fields
             if blocked_terminal:
@@ -1402,21 +1420,21 @@ class ScExpenseClaimDeductionLine(models.Model):
             if vals.get("claim_id") or default_claim_id
         ]
         terminal_claims = self.env["sc.expense.claim"].browse(claim_ids).exists().filtered(
-            lambda claim: claim.state in {"done", "legacy_confirmed"}
+            lambda claim: claim._reviewed_content_is_frozen()
         )
         if terminal_claims:
-            raise UserError(_("终态扣款事实的明细不可新增；更正必须形成独立冲销事实。"))
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可新增。"))
         return super().create(vals_list)
 
     def write(self, vals):
         target_claims = self.mapped("claim_id")
         if vals.get("claim_id"):
             target_claims |= self.env["sc.expense.claim"].browse(vals["claim_id"]).exists()
-        if target_claims.filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
-            raise UserError(_("终态扣款事实的明细不可修改；更正必须形成独立冲销事实。"))
+        if target_claims.filtered(lambda claim: claim._reviewed_content_is_frozen()):
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可修改。"))
         return super().write(vals)
 
     def unlink(self):
-        if self.mapped("claim_id").filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
-            raise UserError(_("终态扣款事实的明细不可删除；更正必须形成独立冲销事实。"))
+        if self.mapped("claim_id").filtered(lambda claim: claim._reviewed_content_is_frozen()):
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可删除。"))
         return super().unlink()

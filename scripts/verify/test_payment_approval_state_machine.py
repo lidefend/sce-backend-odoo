@@ -750,6 +750,83 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'state': 'cancel'}))
         self.assertEqual(writes[-1], {'state': 'cancel'})
 
+    def test_expense_reviewed_content_and_draft_recovery(self):
+        path = MODEL.with_name('expense_claim.py')
+        tree = ast.parse(path.read_text())
+        parent = next(n for n in tree.body if isinstance(n, ast.ClassDef))
+        methods = [n for n in parent.body if isinstance(n, ast.FunctionDef)
+                   and n.name in ('write', '_reviewed_content_is_frozen')]
+        writes, token = [], object()
+        ns = {'UserError': ValueError, '_': lambda text: text, '_EXPENSE_FACT_AUTHORITY_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Record:
+            source_origin = 'manual'
+            ensure_one = lambda self: None
+            _reviewed_content_is_frozen = ns['_reviewed_content_is_frozen']
+        class Rows(list):
+            pass
+        rec = Record()
+        rows = Rows([rec])
+        rows.env = types.SimpleNamespace(context={'sc_expense_fact_authority_token': True})
+        for state, status in [('submit', 'pending'), ('approved', 'no'), ('done', 'validated'),
+                              ('draft', 'waiting'), ('draft', 'validated')]:
+            rec.state, rec.validation_status = state, status
+            for vals in [{'amount': 20}, {'approved_amount': 20}, {'payment_request_id': 9},
+                         {'deduction_line_ids': [(5, 0, 0)]}, {'payee_account': 'changed'},
+                         {'attachment_ids': [(5, 0, 0)]}, {'active': False}]:
+                with self.subTest(state=state, vals=vals), self.assertRaises(ValueError):
+                    ns['write'](rows, vals)
+            self.assertTrue(ns['write'](rows, {'note': 'supplement'}))
+        for status in ['no', 'rejected']:
+            rec.state, rec.validation_status = 'draft', status
+            self.assertTrue(ns['write'](rows, {'amount': 20}))
+        rec.state = 'approved'
+        rows.env.context = {'sc_expense_fact_authority_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'done'}))
+        rec.source_origin = 'legacy'
+        self.assertFalse(rec._reviewed_content_is_frozen())
+        rec.state = 'legacy_confirmed'
+        self.assertTrue(rec._reviewed_content_is_frozen())
+
+    def test_expense_detail_guards_check_source_destination_and_default_parent(self):
+        path = MODEL.with_name('expense_claim.py')
+        tree = ast.parse(path.read_text())
+        line = next(n for n in tree.body if isinstance(n, ast.ClassDef) and any(
+            isinstance(m, ast.FunctionDef) and m.name == 'create' and 'default_claim_id' in ast.unparse(m)
+            for m in n.body))
+        methods = [n for n in line.body if isinstance(n, ast.FunctionDef) and n.name in ('create', 'write', 'unlink')]
+        for method in methods:
+            method.decorator_list = []
+        writes = []
+        ns = {'UserError': ValueError, '_': lambda text: text,
+              'super': lambda: types.SimpleNamespace(create=lambda vals: writes.append(vals) or True,
+                  write=lambda vals: writes.append(vals) or True, unlink=lambda: True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Claims(list):
+            def exists(self): return self
+            def filtered(self, predicate): return Claims(row for row in self if predicate(row))
+            def __or__(self, other): return Claims([*self, *other])
+        claims = {1: types.SimpleNamespace(_reviewed_content_is_frozen=lambda: False),
+                  2: types.SimpleNamespace(_reviewed_content_is_frozen=lambda: True)}
+        browse = lambda ids: Claims(claims[i] for i in (ids if isinstance(ids, list) else [ids]))
+        class Env:
+            context = {}
+            def __getitem__(self, key): return types.SimpleNamespace(browse=browse)
+        obj = types.SimpleNamespace(env=Env(), mapped=lambda name: Claims([claims[2]]))
+        for method, args in [('create', ([{'claim_id': 2}],)), ('write', ({'amount': 3},)),
+                             ('write', ({'claim_id': 1},)), ('unlink', ())]:
+            with self.subTest(method=method, args=args), self.assertRaises(ValueError):
+                ns[method](obj, *args)
+        obj.env.context = {'default_claim_id': 2}
+        with self.assertRaises(ValueError): ns['create'](obj, [{}])
+        obj.mapped = lambda name: Claims([claims[1]])
+        with self.assertRaises(ValueError): ns['write'](obj, {'claim_id': 2})
+        obj.env.context = {}
+        self.assertTrue(ns['create'](obj, [{'claim_id': 1}]))
+        self.assertTrue(ns['write'](obj, {'amount': 3}))
+        self.assertTrue(ns['unlink'](obj))
+
     def test_receipt_reviewed_economic_content_is_frozen(self):
         path = MODEL.with_name('receipt_income.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
