@@ -402,6 +402,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_sync_supported(self):
         self.ensure_one()
         return self.target_model in {
+            "project.task",
             "project.material.plan",
             "sc.material.outbound",
             "payment.request",
@@ -430,6 +431,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "project.task": (
+                "smart_construction_core.server_action_task_on_approved",
+                "smart_construction_core.server_action_task_on_rejected",
+            ),
             "sc.tax.deduction.registration": (
                 "smart_construction_core.server_action_tax_deduction_on_approved",
                 "smart_construction_core.server_action_tax_deduction_on_rejected",
@@ -555,6 +560,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_definition_domain(self, step):
         domain = []
         amount_field_by_model = {
+            "project.task": "boq_amount_total",
             "sc.tax.deduction.registration": "deduction_amount",
             "payment.request": "amount",
             "sc.expense.claim": "amount",

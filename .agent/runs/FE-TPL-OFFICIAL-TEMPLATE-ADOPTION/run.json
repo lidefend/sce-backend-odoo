@@ -207,7 +207,9 @@
         "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/core_extension_contract_normalizers.py",
         "addons/smart_construction_core/models/core/tax_deduction_registration.py",
-        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml"
+        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
+        "addons/smart_construction_core/models/support/task_extend.py",
+        "addons/smart_construction_core/views/support/task_sc_state_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -252,12 +254,14 @@
         "addons/smart_construction_core/views/core/construction_diary_views.xml",
         "addons/smart_construction_core/models/core/tax_deduction_registration.py",
         "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
-        "addons/smart_construction_core/services/project_execution_task_transition_service.py"
+        "addons/smart_construction_core/services/project_execution_task_transition_service.py",
+        "addons/smart_construction_core/models/support/task_extend.py",
+        "addons/smart_construction_core/views/support/task_sc_state_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.55 shared assertion uses native tier _state_field; task execution service reads actual prepare/start states and rejects false completion/recovery success,57 tests pass. Next integrate project.task in models/support/task_extend.py (_state_field=sc_state, draft->ready) with configured tier flow, then align services/project_execution_task_transition_service.py pending outcome/consumer. Project core action_sc_submit currently starts in_progress directly; must separate approval and start preserving permission/write lifecycle guard. No project/task workflow profile in current central service; inspect direct contract producer/handlers before adding new rendering logic. Backend still0a85b8168; consolidate upgrade/reload after model/schema adoption. All-document scope active.",
+  "next_exact_step": "53.56 task tier draft->ready configuration/native/profile/execution preflight implemented;58 approval/41 native/15 workflow pass. Commit, governed local acceptance module upgrade and backend reload, then existing approval_runtime39 (task5). Execution task preflight refuses configured unsubmitted/pending before atomic savepoint creates reviews; task actual submission is separate native/contract action. Browser waiting guidance remains unverified. Project approval still open; no broad scan.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -843,6 +847,17 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-state-field-tests.log",
       "runtime": "not loaded; existing 34 tax/expense/plan/diary/event observations remain source evidence, not new candidate runtime proof",
       "remaining": "project/task real approval/config/adapters/native contract and execution service pending response integration"
+    },
+    "task_approval_53_56": {
+      "candidate": "7e5c5dce7 + task/shared adapters/contract/runtime-tool dirty scope",
+      "l1": "iteration passed; runtime script py_compile passed",
+      "l2": {
+        "approval": 58,
+        "native": 41,
+        "workflow": 15
+      },
+      "runtime": "not_run; upgrade required",
+      "remaining": "real task approval/rollback; task browser and execution waiting guidance; project approval split"
     }
   }
 }

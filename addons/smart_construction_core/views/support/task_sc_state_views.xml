@@ -5,7 +5,17 @@
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
+                <field name="can_review" invisible="1"/>
+                <field name="validation_status" invisible="1"/>
+                <button name="action_prepare_task" string="提交" type="object" invisible="sc_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
+                <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="action_start_task" string="开始执行" type="object" invisible="sc_state != 'ready'"/>
+                <button name="action_mark_done" string="完成" type="object" invisible="sc_state != 'in_progress'"/>
                 <field name="sc_state" widget="statusbar" options="{'clickable': false}"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <field name="reject_reason" invisible="not reject_reason"/>
             </xpath>
         </field>
     </record>

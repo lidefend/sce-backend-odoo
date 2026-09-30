@@ -380,6 +380,48 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         call()
 
+    def test_task_configuration_routes_readiness_without_starting_execution(self):
+        path = POLICY.parent / 'task_extend.py'
+        names = {'action_prepare_task', '_complete_task_approval', 'action_on_tier_approved', '_execution_approval_block'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'raise_guard': guard}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Task:
+            _name = 'project.task'
+            display_name = 'task'
+            company_id = object()
+            def __iter__(self): return iter([self])
+            def ensure_one(self): pass
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+            def _check_approval_readiness(self):
+                if not self.ready: raise ValueError('not ready')
+            def _audit_transition(self, *args, **kw): self.audits.append(args)
+        for name in names: setattr(Task, name, namespace[name])
+        for configured in (True, False):
+            task = Task()
+            task.sc_state, task.ready, task.audits = 'draft', True, []
+            task.review_ids, task.validation_status = [], 'no'
+            policy = types.SimpleNamespace(_start_submission_review=lambda rec: configured,
+                is_approval_required=lambda *args, **kw: configured)
+            task.env = {'sc.approval.policy': policy}
+            self.assertEqual(task._execution_approval_block(), 'EXECUTION_TASK_APPROVAL_REQUIRED' if configured else False)
+            task.action_prepare_task()
+            self.assertEqual(task.sc_state, 'draft' if configured else 'ready')
+            if configured:
+                task.review_ids, task.validation_status = [1], 'pending'
+                self.assertEqual(task._execution_approval_block(), 'EXECUTION_TASK_APPROVAL_PENDING')
+                task.action_on_tier_approved()
+                self.assertEqual(task.sc_state, 'draft')
+                task.validation_status = 'validated'
+                task.action_on_tier_approved()
+            self.assertEqual(task.sc_state, 'ready')
+            self.assertFalse(task._execution_approval_block())
+            self.assertEqual(len(task.audits), 1)
+            task.sc_state, task.ready = 'draft', False
+            with self.assertRaises(ValueError): task.action_prepare_task()
+            self.assertEqual(task.sc_state, 'draft')
+
     def test_task_execution_reports_actual_transitions_only(self):
         path = ROOT / 'addons/smart_construction_core/services/project_execution_task_transition_service.py'
         names = {'_prepare_task_for_execution', '_complete_task_for_execution', '_recover_task_for_ready'}

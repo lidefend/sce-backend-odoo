@@ -7850,3 +7850,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（approval-state-field-iteration.log），后续直接服务变更py_compile及diff check通过；L2原审批注册目标57项PASS并begin/record57（approval-state-field-tests.log/receipt.log）。未改变视图/schema/前端，不构建或升级。当前运行仍0a85b8168，已有34项是该来源运行证据，不冒称本候选运行证明；税务等现有模型_state_field=state，逻辑分支等价，未受task service影响，不为安心重跑其旅程。
 - 项目/任务完整审批仍未完成：task_extend.action_prepare_task直接draft->ready；project_core.action_sc_submit直接draft->in_progress，write还集中校验生命周期权限与迁移。下一步任务tier配置/回调与执行服务等待响应共同接入；项目必须分开立项审批与实际启动，不能让统一审批自动启动项目。中央workflow未含这两模型，后续沿直接契约生产者/处理器适配，不复制渲染。
 - 总目标active；本次是必要共享前提与执行错误修复，不称全部单据接管。主线/目标部署/用户整体验收均未完成；无推送或合并。
+
+
+### 53.56 项目任务接入共享审批与显式执行边界
+
+- 7e5c5dce7 clean起步。P1 task_extend、共享审批适配、原生view/workflow及现有任务执行服务；P4只扩展已有事务回滚检查。任务使用OCA _state_field=sc_state，draft->ready、cancelled；提交先沿用原readiness阻断/缺失检查，无配置ready、有配置等待真实review。通过回调重新校验就绪后ready，驳回保留原因及审计，重提沿用共享重建review。开始/完成消费已完成审批事实，原取消权限/直接状态写保护保留。
+- 原BUSINESS_MODEL_SELECTION已有project.task，补齐tier支持、回调与原生可选模型；金额条件使用现有BOQ汇总boq_amount_total。原生任务表单增加提交/真实审批/启动/完成，workflow新增同一sc_state配置，无前端模型分支；审批不自动启动任务。
+- 直接服务发现执行推进处于原子savepoint，返回未完成会回滚新review。因此执行服务不隐式在该事务提交审批，先调用模型_execution_approval_block：待提交配置审批返回EXECUTION_TASK_APPROVAL_REQUIRED，真实在审返回EXECUTION_TASK_APPROVAL_PENDING；保持执行失败回滚边界，单独的提交动作承载审批事务。前端等待提示/跳转尚待页面验收，不宣称工作区闭环。
+- L1 iteration PASS（task-approval-iteration.log），P4扩展语法通过；审批58 PASS（task-approval-tests.log，begin/record58），native8+33=41 PASS（task-native-tests.log，最终inputs重绑begin/record41），workflow15 PASS/66 profiles（task-workflow-tests.log）。新增契约测试五状态及can_review真权限；生产方法隔离测试证明无配置/配置/回调只ready，未启动。
+- 既有rollback runtime工具新增task5项，整体预期39：无配置就绪、等待禁止启动、真实批准后显式启动、驳回原因、重提新链。待受管模块升级/重载后运行；不是已验收结果。无需前端构建；不新建环境或fixture，不做整体验收矩阵。项目project.project审批与启动拆分仍待完成，整体目标active。

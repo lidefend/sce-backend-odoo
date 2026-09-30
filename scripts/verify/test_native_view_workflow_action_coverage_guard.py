@@ -313,6 +313,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
         self.assertEqual(contract, baseline)
 
+    def test_task_actions_follow_construction_state_and_real_reviewer(self):
+        for state, expected in (('draft', 'action_prepare_task'), ('ready', 'action_start_task'), ('in_progress', 'action_mark_done'), ('done', None), ('cancelled', None)):
+            actions = self._general_contract_actions(state, model='project.task')
+            methods = {a['method'] for a in actions}
+            self.assertEqual(methods, {expected} if expected else set())
+        for can_review in (False, True):
+            methods = {a['method'] for a in self._general_contract_actions('draft', model='project.task', approval_phase='pending', can_review=can_review)}
+            self.assertEqual('validate_tier' in methods, can_review)
+            self.assertEqual('reject_tier' in methods, can_review)
+        self.assertEqual(load_profiles()['project.task']['state_field'], 'sc_state')
+
     def test_tax_deduction_requires_confirmation_and_keeps_finance_checks(self):
         path = DEFAULT_SERVICE.parents[1] / 'core/tax_deduction_registration.py'
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_deduct')

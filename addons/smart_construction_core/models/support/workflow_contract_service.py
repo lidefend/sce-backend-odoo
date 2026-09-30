@@ -635,6 +635,13 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "action_cancel",
             },
         },
+        "project.task": {
+            "state_field": "sc_state",
+            "state_phase": {"draft": "draft", "ready": "approved", "in_progress": "effective", "done": "done", "cancelled": "cancelled"},
+            "state_actions": {"draft": ["submit"], "ready": ["activate"], "in_progress": ["complete"]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_prepare_task", "activate": "action_start_task", "complete": "action_mark_done", "approve": "validate_tier", "reject": "reject_tier"},
+        },
         "sc.tax.deduction.registration": {
             "state_field": "state",
             "state_phase": {

@@ -70,6 +70,9 @@ class ProjectExecutionTaskTransitionService:
         if not task:
             reason_code = "EXECUTION_TASK_TARGET_INVALID" if int(task_id or 0) > 0 else "EXECUTION_TASK_MISSING"
             return False, reason_code, {}
+        approval_block = task._execution_approval_block() if hasattr(task, "_execution_approval_block") else False
+        if approval_block:
+            return False, approval_block, self._task_telemetry(task)
         before_state = ProjectExecutionStateMachine.normalize_task_state(getattr(task, "sc_state", "draft"))
         task_state = before_state
         if task_state not in {"draft", "ready", "in_progress"}:
@@ -134,6 +137,9 @@ class ProjectExecutionTaskTransitionService:
         if not task:
             reason_code = "EXECUTION_TASK_TARGET_INVALID" if int(task_id or 0) > 0 else "EXECUTION_TASK_MISSING"
             return False, reason_code, {}
+        approval_block = task._execution_approval_block() if hasattr(task, "_execution_approval_block") else False
+        if approval_block:
+            return False, approval_block, self._task_telemetry(task)
         before_state = ProjectExecutionStateMachine.normalize_task_state(getattr(task, "sc_state", "draft"))
         try:
             task_state = before_state
