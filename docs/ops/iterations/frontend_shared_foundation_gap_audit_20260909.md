@@ -5609,3 +5609,141 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 38｜把「动作语义完备性」守卫扩到第三条真实权威：财务工作区的对象方法动作不再能静默存在（2026-09-30）
+
+### 1. 本轮触发
+
+上一步顺着段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」复核。
+**活契约实测先推翻了这个旧登记**（见 §2）：八类业务动作的语义全部已声明，缺口并不存在。
+但同一轮复核暴露了真正的问题——**它本来就不该只靠人工核对活契约才能发现**：
+
+`scripts/verify/workflow_action_semantics_completeness_guard.py` 此前只读两条权威
+（`workflow_contract_service.py` 的 `PROFILE_BY_MODEL`/`ACTIONS`、`payment_request_available_actions.py`
+的 `_ACTION_SPECS`），**完全没有覆盖第三条真实权威** `services/financial_workspace_contract.py`。
+该文件里 `view_payment_execution`（L731-775）以对象方法 `action_view_payment_execution` 执行，
+**没有任何语义声明**，守卫却看不见它。
+
+这就是本专题反复出现的形态：**不是「某个词写错了」，而是「一条真实执行路径从未进入验收射程」。**
+缺的不是再核对一遍活契约，而是**让这类动作一旦新增就必须被分类，否则门禁失败**。
+
+### 2. 活契约实测（先证伪旧登记，再定位真实缺口）
+
+`/api/v1/intent`（`ui.contract.v2`，`model=payment.request`，`view_type=form`，`record_id=1813`，
+`fixture_role_finance` uid 30）返回 **11 个动作**，业务动作语义**全部已声明**：
+
+| 动作 key | method | `action_semantics` |
+|---|---|---|
+| `payment_submit` | `action_submit` | `business/submit/contract.action` |
+| `payment_approve`（3 变体） | `action_approve*` | `business/approve/contract.action` |
+| `payment_reject`（2 变体） | `action_reject*` | `business/reject/contract.action` |
+| `payment_done` | `action_done` | `business/complete/contract.action` |
+| `payment_execution` | `action_create_payment_execution` | `business/start_execution/contract.action` |
+| `cancel` | `action_cancel` | `business/cancel_record/contract.action` |
+| `save_draft` | `data.write` | 平台持久化例外（`PLATFORM_PERSISTENCE_KEYS`），正确 |
+
+即段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」**实际已闭合**；
+`action_semantics_vocabulary.py` 已含 `start_execution`/`complete`/`reopen`，
+`workflow_contract_service.py` L876-888 八个动作全部映射。**旧登记在本段更正，不再挂账**（见 §9）。
+
+顺带确认前端执行链**没有**按方法名猜意图：`canonicalFormActionExecutor.ts` 的
+`resolveCanonicalFormActionExecution()` 明确按 `backendIdentity` 精确匹配（不按标签/方法/模型/角色/状态推断），
+`actionExecutionPlan.ts` 按显式 `intent`/`kind`/`methodName` 分派。**前端这一侧是干净的，缺口在验收体系。**
+
+### 3. 权威归属
+
+| 事项 | 权威 | 本轮处理 |
+|---|---|---|
+| 一个可被 Web 执行的动作属于什么业务目的 | 已发布的动作语义词汇表 + 各契约权威的显式声明 | 守卫扩到第三条权威 |
+| 财务工作区的动作列表如何组装 | `financial_workspace_contract.py`（P1 行业标准） | 静态读取其字面声明 |
+| 导航类动作（读取关联记录、不做状态迁移） | 显式登记表 + 理由 + 硬化条件 | 新增 `NAVIGATION_METHOD_ACTIONS` |
+| 方法名/文案能否决定业务意图 | **不能** | 守卫以「是否声明语义」判定，不看方法名 |
+
+### 4. 改动（仅验证体系，产品源码零改动）
+
+**A. `scripts/verify/workflow_action_semantics_completeness_guard.py`**
+- 新增 `FINANCIAL_WORKSPACE` 常量与 `--financial-workspace` 参数。
+- 新增 `NAVIGATION_METHOD_ACTIONS`：带理由的导航豁免登记表（当前仅 `view_payment_execution`）。
+- 新增 `financial_workspace_action_declarations(path)`：AST 扫 `actions.append({...})` 与 `return [ {...} ]`，
+  用既有 `eval_node` 静态求值。**必须用 `eval_node` 才能读到嵌套 `action_semantics`**
+  （最初只读 `ast.Constant` 导致误报——这一段本身也是「校验器必须先能被反例打穿」的证明）。
+  `binds_method` 表示「存在 `method` 键（即使值不可解析）」；`propagates_semantics` 表示该 dict 用
+  `**(action_semantics=...)` 从 workflow registry 行传播语义（由既有 `validate()` 覆盖，跳过）。
+- 新增 `validate_navigation_exception(key, item)`（硬化）：豁免**不得**用于 `required_params` 非空、
+  `requires_reason` 为真、或 `action_safety.classification ∈ {danger, destructive}` 的动作。
+- 新增 `validate_financial_workspace_actions(...)`：绑定方法的动作必须
+  (a) 声明已发布 purpose 且落在已发布 (kind, purpose, executor) 三元组内，或
+  (b) 在导航登记表内并通过硬化检查；另检「登记 key 必须仍被声明」「登记项必须有理由」；
+  declarations 为空 → 报 vacuous 失败（**零读取等于失败，不是通过**）。
+
+**B. 单测 `scripts/verify/test_workflow_action_semantics_completeness_guard.py`：4 → 15 项**
+新增 `FinancialWorkspaceActionClassificationTest` 11 项：已声明通过、无 purpose 失败、词汇表外 purpose 失败、
+未发布三元组失败、registry 传播不重判、导航豁免覆盖通过、豁免 key 消失失败、豁免无理由失败、
+**豁免用于带输入动作失败**、**豁免用于破坏性动作失败**、空读取 vacuous 失败。
+
+### 5. 验证（L0→L5，风险类：验收体系正确性）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | **PASS**：`profiles=65 reachable_actions=9 payment_specs=4 workspace_actions=3 role_gates=4 verdict_covers=4 roles=11 vocabulary=10` |
+| L1 | `PYTHONPATH=scripts/verify python3 -m unittest test_workflow_action_semantics_completeness_guard` | **Ran 15 tests, OK** |
+| L1 | `make verify.native_view.workflow_action_coverage` | **PASS**（单测 8 + 10 项；`registered=31 navigation=14 state_transition_undeclared=5`） |
+| L1 | `make verify.workflow_state_phase_coverage` | **PASS**（16 项） |
+| L1 | `make ci.local.iteration` | **PASS**（`coverage=L1_only`，`change_state=dirty`） |
+
+**真实源码反例验伪**（对 `financial_workspace_contract.py` 本身，非构造输入）：
+
+1. 临时删除 `payment_execution` 的 `action_semantics` 行 → 守卫 **exit 1**，点名
+   `financial workspace action 'payment_execution' binds method 'action_create_payment_execution'
+   without a declared action purpose and is not a registered navigation action ['view_payment_execution']`。
+2. 临时注入 `{"key":"some_new_object_action","method":"action_some_new_thing"}` → **exit 1**，点名该 key。
+3. 两次恢复后 `git diff --stat` 均为空 → 守卫 **exit 0**。**产品文件零改动得到证明。**
+
+### 6. 缺口处理规则（本段落地形态）
+
+**一条可被 Web 执行的对象方法动作，要么声明已发布语义，要么以带理由的导航豁免登记并满足硬化条件；
+两者都不满足时门禁失败。** 新动作不能靠「没被扫描到」而静默存在。
+
+### 7. 候选与运行身份
+
+- 源码：`28c838c52`（段 37 记录提交）+ 本段两个验证脚本文件（提交前工作树）。
+- 本轮**未改 `addons`**，容器 `sc-backend-odoo-acceptance` 仍绑 `SC_SOURCE_REVISION=15351d632…`
+  （`SC_SOURCE_FINGERPRINT=4a3c77c5…`），无需重建。
+- 本轮**未构建前端**；5180 仍为段 37 产物（`pid=802966`，`127.0.0.1:5180` 监听），
+  入口 `entry=/assets/index-BlsrCAPY.js`；后端 `127.0.0.1:18082` 正常监听。
+
+### 8. 边界七问
+
+`Formal Product Layer` = P0 平台内核（动作语义词汇表/守卫）+ P1 行业标准（财务工作区契约）；
+`Layer Target` = `scripts/verify` 的验收守卫与单测，不触碰 `smart_core`/`smart_construction_core` 产品代码；
+`Module` = 验收体系（`scripts/verify`）；
+`Standard vs User-Specific` = 平台机制（动作语义的完备性校验规则）；
+`Why Here` = 「哪些执行路径必须被分类」是**验收体系的职责**，不是某个业务模块的；
+`Why Not Elsewhere` = **不**在产品契约里补声明来让门禁变绿（那会掩盖路径）、
+**不**在前端按方法名猜意图（前端已按 `backendIdentity` 精确匹配）、
+**不**放宽守卫判定或加无理由豁免；
+`Blast Radius` = `workflow_action_semantics_completeness_guard.py` 及其单测；
+其他契约权威、其他模型、前端渲染与业务办理不受影响。
+
+### 9. 显式登记（**不在本段范围**）
+
+- **更正**：段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」经活契约实测**已闭合**
+  （`complete`/`start_execution` 均有声明与三元组），本段从挂账中移除。
+- 段 32/35/36/37 全部登记项不变：`industry_agnostic.guard` 127→97（收敛门禁，未接入聚合目标）、
+  弹窗 1 条 `sc.*` 正则假阳性 + 集合组件键 1 条、`style_system.guard` z-index、
+  `state_transition_undeclared` 五条、`render_semantic_ready_guard` 滞后、
+  `verify.business_config.coverage` FAIL（数据覆盖）、platform-admin 夹具缺口、
+  `verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`、工作台目录 13–15 s 观感。
+- 新增观察（**未处理，仅记录**）：未跟踪的前端文件必须先 `git add` 才能被
+  `frontend_standard_preview.py` 的 `inputs()` 计入构建身份，而 `git add` 又会让暂存内容进入
+  `git diff` 计算 → **构建身份可能被暂存内容污染**。规避方式：构建前保持工作树干净。是否属缺陷待后续判定。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 10. 提交
+
+- `fix(verify): prove the financial workspace action authority is classified`（守卫 + 15 项单测）
+- 本段记录随该提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

@@ -38,6 +38,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
 WORKFLOW_SERVICE = ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py"
 PAYMENT_ACTIONS = ROOT / "addons/smart_construction_core/handlers/payment_request_available_actions.py"
+FINANCIAL_WORKSPACE = ROOT / "addons/smart_construction_core/services/financial_workspace_contract.py"
 CAPABILITY_REGISTRY = ROOT / "addons/smart_construction_core/services/capability_registry.py"
 ACTOR_ROLES = ROOT / "addons/smart_construction_core/core_extension_actor_roles.py"
 SECURITY_DIR = ROOT / "addons/smart_construction_core/security"
@@ -59,6 +60,19 @@ ROLE_GROUP_PREFIX = "ROLE_GROUP_PREFIX_CORE"
 # authority.  They keep the platform's own declaration (`record.save`), so they
 # are the only keys allowed to resolve no method and declare no purpose.
 PLATFORM_PERSISTENCE_KEYS = {"save_draft"}
+
+# A method-binding action the Web may execute must be classified: it either
+# declares a published business purpose, or it is registered here as navigation
+# with a reason.  The registry is not a bypass -- the guard fails when a
+# registered key is no longer declared and when a declared method-binding action
+# is neither classified nor registered, so a new object-method action cannot
+# inherit this exception silently.
+NAVIGATION_METHOD_ACTIONS = {
+    "view_payment_execution": (
+        "hands the Web the related payment-execution record; it reads a related "
+        "record and does not transition this one"
+    ),
+}
 
 UNRESOLVED = object()
 
@@ -336,6 +350,154 @@ def literal_assignments(path: Path, wanted: set[str]) -> tuple[dict[str, Any], l
     return found, unresolved
 
 
+def financial_workspace_action_declarations(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    """Read the action dicts the financial workspace authority literally declares.
+
+    The authority assembles most of its list from workflow rows at runtime, so a
+    literal dict is the only declaration a static guard can bind to.  A dict that
+    spreads a conditional ``action_semantics`` copies it from the workflow
+    registry, which :func:`validate` already checks; that is reported as
+    propagated rather than silently skipped.
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    except OSError as exc:
+        return [], [f"{path.name}: cannot read the financial workspace authority ({exc})"]
+
+    records: list[dict[str, Any]] = []
+    for node in ast.walk(tree):
+        candidates: list[ast.AST] = []
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "append"
+        ):
+            candidates = list(node.args)
+        elif isinstance(node, ast.Return) and isinstance(node.value, ast.List):
+            candidates = list(node.value.elts)
+        for candidate in candidates:
+            if not isinstance(candidate, ast.Dict):
+                continue
+            literal: dict[str, Any] = {}
+            propagated = False
+            binds_method = False
+            for key, value in zip(candidate.keys, candidate.values):
+                if key is None:
+                    # A spread that mentions action_semantics copies it from the
+                    # workflow registry instead of declaring it here.
+                    if "action_semantics" in ast.dump(value):
+                        propagated = True
+                    continue
+                if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                    continue
+                if key.value == "method":
+                    # An unresolved method still binds one: dropping the dict
+                    # would hide exactly the declaration this guard checks.
+                    binds_method = True
+                try:
+                    literal[key.value] = eval_node(value, {}, {})
+                except Unresolved:
+                    continue
+            if not binds_method and "action_semantics" not in literal:
+                continue
+            records.append(
+                {
+                    "key": str(literal.get("key") or f"<dict@{candidate.lineno}>"),
+                    "method": literal.get("method"),
+                    "binds_method": binds_method,
+                    "action_semantics": literal.get("action_semantics"),
+                    "required_params": literal.get("required_params"),
+                    "requires_reason": literal.get("requires_reason"),
+                    "action_safety": literal.get("action_safety"),
+                    "propagates_semantics": propagated,
+                    "line": candidate.lineno,
+                }
+            )
+    return records, []
+
+
+def validate_navigation_exception(key: str, item: dict[str, Any]) -> list[str]:
+    """A navigation exception must not excuse an action that takes business input.
+
+    The registry records a classification a human made; this check removes the
+    most dangerous misuse of it, where a real transition (reason prompt, required
+    parameters or a destructive classification) is excused as navigation.
+    """
+    errors: list[str] = []
+    required = item.get("required_params") or []
+    if item.get("requires_reason") or (isinstance(required, list) and required):
+        errors.append(
+            f"navigation exception {key!r} excuses an action that collects business input "
+            f"(required_params={required!r}, requires_reason={item.get('requires_reason')!r}); "
+            f"declare a published purpose instead"
+        )
+    safety = item.get("action_safety")
+    classification = str((safety or {}).get("classification") or "").strip().lower() if isinstance(safety, dict) else ""
+    if classification in {"danger", "destructive"}:
+        errors.append(
+            f"navigation exception {key!r} excuses a destructive action "
+            f"(action_safety.classification={classification!r}); declare a published purpose instead"
+        )
+    return errors
+
+
+def validate_financial_workspace_actions(
+    *,
+    vocabulary: set[str],
+    authority: Any,
+    declarations: list[dict[str, Any]],
+    registered_navigation: dict[str, str],
+) -> list[str]:
+    """Prove every method-binding action of the workspace authority is classified."""
+    errors: list[str] = []
+    if not declarations:
+        return [
+            "no financial workspace action declaration was read; the check would be vacuous"
+        ]
+
+    declared_keys = {str(item.get("key")) for item in declarations}
+    for key, reason in sorted(registered_navigation.items()):
+        if key not in declared_keys:
+            errors.append(
+                f"navigation exception {key!r} is registered but no longer declared by the "
+                f"financial workspace authority; remove it or restore the action"
+            )
+        if not str(reason or "").strip():
+            errors.append(f"navigation exception {key!r} is registered without a reason")
+
+    for item in declarations:
+        key = str(item.get("key"))
+        method = str(item.get("method") or "").strip() or "<unresolved method>"
+        if item.get("propagates_semantics"):
+            continue
+        if not item.get("binds_method"):
+            continue
+        semantics = item.get("action_semantics")
+        purpose = declared_purpose(semantics)
+        if not purpose:
+            if key in registered_navigation:
+                errors += validate_navigation_exception(key, item)
+                continue
+            errors.append(
+                f"financial workspace action {key!r} binds method {method!r} without a declared "
+                f"action purpose and is not a registered navigation action "
+                f"{sorted(registered_navigation)}"
+            )
+            continue
+        if purpose not in vocabulary:
+            errors.append(
+                f"financial workspace action {key!r} declares purpose {purpose!r} outside the "
+                f"published vocabulary"
+            )
+            continue
+        if not declares_published_pair(authority, semantics):
+            errors.append(
+                f"financial workspace action {key!r} declares {semantics!r}, which is not a "
+                f"published (kind, purpose, executor) combination; every terminal would drop it"
+            )
+    return errors
+
+
 def published_purposes(schema_path: Path) -> set[str]:
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     branches = (
@@ -577,6 +739,7 @@ def main() -> int:
     parser.add_argument("--schema", type=Path, default=SCHEMA)
     parser.add_argument("--workflow-service", type=Path, default=WORKFLOW_SERVICE)
     parser.add_argument("--payment-actions", type=Path, default=PAYMENT_ACTIONS)
+    parser.add_argument("--financial-workspace", type=Path, default=FINANCIAL_WORKSPACE)
     parser.add_argument("--capability-registry", type=Path, default=CAPABILITY_REGISTRY)
     parser.add_argument("--actor-roles", type=Path, default=ACTOR_ROLES)
     parser.add_argument("--security-dir", type=Path, default=SECURITY_DIR)
@@ -592,9 +755,18 @@ def main() -> int:
     role_hints = payment.get("_ACTION_ROLE_HINTS") or {}
     purposes = published_purposes(args.schema)
     authority = load_action_semantics_authority(ROOT)
-    errors = [*unresolved, *payment_unresolved]
+    workspace_declarations, workspace_unresolved = financial_workspace_action_declarations(
+        args.financial_workspace
+    )
+    errors = [*unresolved, *payment_unresolved, *workspace_unresolved]
     errors += validate(
         vocabulary=purposes, authority=authority, profiles=profiles, actions=actions, specs=specs
+    )
+    errors += validate_financial_workspace_actions(
+        vocabulary=purposes,
+        authority=authority,
+        declarations=workspace_declarations,
+        registered_navigation=NAVIGATION_METHOD_ACTIONS,
     )
 
     verdict, verdict_errors = verdict_keys(args.payment_actions, "_authorization_for_action", "key")
@@ -636,7 +808,8 @@ def main() -> int:
     print(
         "Workflow action semantics completeness guard passed: "
         f"profiles={len(profiles)} reachable_actions={len(reachable)} "
-        f"payment_specs={len(specs)} role_gates={len(role_hints)} "
+        f"payment_specs={len(specs)} workspace_actions={len(workspace_declarations)} "
+        f"role_gates={len(role_hints)} "
         f"verdict_covers={len(verdict)} roles={len(vocabulary)} vocabulary={len(purposes)}"
     )
     return 0
