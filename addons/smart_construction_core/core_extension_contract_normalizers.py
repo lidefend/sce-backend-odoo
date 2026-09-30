@@ -200,7 +200,8 @@ def normalize_construction_diary_form(contract: dict[str, Any], source_contract:
         label = _sc_text(info.get("label")) or name
         node.update({"type": "field", "name": name, "string": label, "label": label, "widgetId": f"field.{name}"})
         node["fieldInfo"] = {**(node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}), **info}
-        node["field_info"] = {**(node.get("field_info") if isinstance(node.get("field_info"), dict) else {}), **info}
+        # Formal V2 carries fieldInfo only; do not reintroduce parser aliases.
+        node.pop("field_info", None)
         config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
         config.update({"fieldType": info.get("type"), "required": name in required, "readonly": bool(info.get("readonly"))})
         if info.get("selection"):

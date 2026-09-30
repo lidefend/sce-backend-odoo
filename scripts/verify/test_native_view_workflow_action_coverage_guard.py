@@ -289,6 +289,30 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for name in ('validate_tier', 'reject_tier'):
             self.assertIn('can_review', buttons[name].get('invisible'))
 
+    def test_diary_postprocessor_does_not_reintroduce_legacy_field_alias(self):
+        path = DEFAULT_SERVICE.parents[2] / 'core_extension_contract_normalizers.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'normalize_construction_diary_form')
+        def collect(rows, target):
+            for node in rows or []:
+                if node.get('type') == 'field': target[node['name']] = node
+                collect(node.get('children'), target)
+        namespace = {'Any': object, 'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
+            '_sc_collect_field_nodes': collect,
+            '_sc_set_v2_container_tree': lambda contract, rows: contract['layoutContract'].update(containerTree=rows),
+            '_sc_set_v2_widget_status': lambda *args: None, '_sc_set_v2_governance_patch': lambda *args: None}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        original = {'type': 'field', 'name': 'project_id', 'field_info': {'relation': 'project.project'},
+                    'fieldInfo': {'relation': 'project.project'}, 'componentKey': 'sc.relation.selector'}
+        contract = {'layoutContract': {'containerTree': [copy.deepcopy(original)]}}
+        source = {'fields': {'project_id': {'type': 'many2one', 'relation': 'project.project'}}}
+        namespace['normalize_construction_diary_form'](contract, source, model='sc.construction.diary', view_type='form')
+        nodes = {}
+        collect(contract['layoutContract']['containerTree'], nodes)
+        self.assertNotIn('field_info', nodes['project_id'])
+        self.assertEqual(nodes['project_id']['fieldInfo']['relation'], 'project.project')
+        self.assertEqual(nodes['project_id']['componentKey'], original['componentKey'])
+        self.assertTrue(nodes['project_id']['fieldInfo']['required'])
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

@@ -83,7 +83,7 @@ async function login(role) {
         return permit.abort ? route.abort('failed') : route.continue();
       }
     }
-    if ((body?.intent === 'api.data' && !['list', 'read'].includes(body.params?.op))
+    if ((body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
       || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op });
       return route.abort();
@@ -105,6 +105,10 @@ async function login(role) {
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
+        if (process.env.TPL07_SCOPE === 'approval-actions') {
+          report.contractResponses ??= [];
+          report.contractResponses.push({ intent: body.intent, model: body.params?.model, contract });
+        }
         if (contract.meta?.projection_cache) {
           report.projectionCaches ??= [];
           report.projectionCaches.push(contract.meta.projection_cache);
