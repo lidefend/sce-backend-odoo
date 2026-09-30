@@ -178,3 +178,7 @@ Governed module upgrade and backend reload succeeded at b985a026b. The existing 
 ### Segment53.42 — Payment reversal page verified; event page lacks scoped record
 
 Finance record186 (`paid`) passes16 browser assertions on the unchanged official preview: effective contract binds reversal to `action_reverse_payment`, the detail shows exactly one reversal entry and no pre-payment cancel/payment entries; both viewports remain usable, with no script errors or writes. This verifies presentation, not financial reversal execution. Contract-operator lookup returns no contract events in its authorized company8 scope, so event browser acceptance remains pending. Neither an empty authorized query nor the previous transaction-local ORM test proves that page accepted.
+
+### Segment53.44 — Native reversal confirmation consumed by shared dialog
+
+Native payment reversal now explicitly declares its ledger/request consequences. The existing parser publishes danger/requires_confirm; the unchanged official frontend opens the shared confirmation dialog with the exact contract message. Governed browser19 assertions pass on existing paid186, including cancelling with zero business requests. This closes the missing confirmation declaration/interaction, not financial reversal execution or all-document approval coverage.

@@ -241,7 +241,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.42 paid execution186 official readonly detail/browser16 passed with effective reversal binding, dual viewport and zero writes. Contract operator company8 event query succeeds empty: event browser remains pending; do not retry unchanged or broaden roles. Next inspect existing financial action confirmation policy (reversal actionSafety observed safe), continue necessary all-document approval gaps and distinct reviewers. No fixture/environment creation; reuse backend b985a026b and original frontend.",
+  "next_exact_step": "53.43/44 reversal native confirmation implemented and upgraded at20f359069; native36+browser19 passed (dialog opens, exact contract consequence, cancel zero writes). Event browser remains pending missing company8 authorized records; do not retry unchanged. Continue existing sc.plan native/profile state-condition mismatch and necessary document approval coverage beyond existing supported inventory; actual reversal remains unexecuted. Reuse unchanged frontend.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -700,6 +700,17 @@
       "contract_event_report": "artifacts/frontend-web-fix-20260928/tpl07-1790773719865/report.json",
       "contract_event": "pending: no records in authorized company8 query",
       "payment": "existing paid186 effective binding and official detail; read-only, no reversal executed"
+    },
+    "reversal_confirmation_53_44": {
+      "status": "scoped_runtime_passed",
+      "backend": "20f359069",
+      "tests": {
+        "native": 36,
+        "browser": 19
+      },
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790773977925/report.json",
+      "writes": "none: confirmation cancelled",
+      "remaining": "actual financial reversal, contract-event browser data and all-document coverage"
     }
   }
 }
