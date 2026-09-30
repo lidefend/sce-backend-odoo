@@ -8039,3 +8039,10 @@ P4仅扩展既有approval-actions浏览器范围，PM物资经理角色、真实
 创建报告tpl07-1790780248705/report.json 14项PASS：官方表单、有效model、未保存无审批/询价/订单动作、双视口无页面横向溢出，errors=[]、forbiddenWrites=[]。已有记录报告tpl07-1790780263093/report.json api.data ok=true records=[]，第2项数据前置失败；不造fixture、不扩权、不重试相同查询，实际记录角色办理pending。
 
 截图人工复核发现额外产品缺口：创建页“申请单号”显示为必填可编辑输入。有效契约fieldInfo.required=true/readonly=false且原生XML field name=name没有修饰；P1模型create已有序列生成，前端忠实消费了不完整producer。14项通过不覆盖此缺陷，不能称本批页面完整验收。归属P1原生视图/系统生成字段契约，下一步对该字段建立创建隐藏、已有记录只读的权威声明并验证有效契约，不以CSS或前端模型特判修补。已完成后端8项继续有效。detail.action-state及总体目标仍未完成。
+
+
+### 53.74 采购申请系统编号创建态契约修正（进行中）
+
+P1原生采购申请表单name添加readonly=1/invisible=not id，沿用模型既有序列生成，不引入前端模型规则。P4既有创建观察增加编号输入不可见断言。L1 purchase-request-number-iteration.log PASS，native49 PASS并记录回执，node语法/XML声明解析PASS。模型方法与approval policy未变，复用72审批纯测/8真实运行；不重复ORM，不重建前端。原生XML需受管smart_construction_core升级后重绑，随后只重验受影响创建页；不重试已确认空记录查询。
+
+验收环境与53.72一致：平台内部sc_frontend_acceptance租户、local/sc-fe-r2-p1-01、精确^sc_frontend_acceptance$及固定卷；非客户生产/控制库。只升级既有视图，无业务数据写入或fixture创建。L3/L4结果pending，不称缺口已闭合。

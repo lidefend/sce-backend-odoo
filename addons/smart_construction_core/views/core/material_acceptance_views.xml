@@ -178,7 +178,7 @@
                     </div>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="business_category_id" readonly="1"/>
                             <field name="request_date"/>

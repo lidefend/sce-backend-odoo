@@ -614,6 +614,10 @@ try {
         const authority = report.recordAuthority;
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.material.purchase.request') {
+          check('purchase request: generated number not exposed for create input', await session.page.getByText('申请单号', { exact: true }).count() === 0);
+        }
+
         for (const name of ['审批通过', '审批驳回', '完成', ...(spec.model === 'sc.material.inbound' ? ['确认入库'] : spec.model === 'sc.material.acceptance' ? ['验收通过', '验收不通过'] : spec.model === 'sc.material.purchase.request' ? ['生成询价单', '生成采购订单'] : [])]) {
           check(`${spec.model}: unsaved form has no ${name} action`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
         }
