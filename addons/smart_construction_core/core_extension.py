@@ -544,7 +544,6 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
-    _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
     _contract_normalizers.normalize_payment_settlement_detail_component(
         out,
         model=model,
@@ -660,10 +659,6 @@ def _sc_set_v2_widget_status(contract: dict[str, Any], widget_status: list[dict[
 
 def _sc_set_v2_governance_patch(contract: dict[str, Any], key: str, patch: dict[str, Any]) -> None:
     _contract_helpers.sc_set_v2_governance_patch(contract, key, patch)
-
-
-def _sc_normalize_construction_diary_form(contract: dict[str, Any], source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
-    _contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)
 
 
 def _sc_replace_contract_content(contract: dict[str, Any], replacement: dict[str, Any]) -> None:

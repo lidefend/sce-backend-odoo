@@ -203,7 +203,9 @@
         "addons/smart_construction_core/views/core/plan_management_views.xml",
         "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
         "addons/smart_construction_core/models/core/construction_diary.py",
-        "addons/smart_construction_core/views/core/construction_diary_views.xml"
+        "addons/smart_construction_core/views/core/construction_diary_views.xml",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/core_extension_contract_normalizers.py"
       ]
     },
     "payment_approval_state_machine": {

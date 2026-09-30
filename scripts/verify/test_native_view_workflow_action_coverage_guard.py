@@ -289,29 +289,29 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for name in ('validate_tier', 'reject_tier'):
             self.assertIn('can_review', buttons[name].get('invisible'))
 
-    def test_diary_postprocessor_does_not_reintroduce_legacy_field_alias(self):
-        path = DEFAULT_SERVICE.parents[2] / 'core_extension_contract_normalizers.py'
-        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'normalize_construction_diary_form')
-        def collect(rows, target):
-            for node in rows or []:
-                if node.get('type') == 'field': target[node['name']] = node
-                collect(node.get('children'), target)
-        namespace = {'Any': object, 'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
-            '_sc_collect_field_nodes': collect,
-            '_sc_set_v2_container_tree': lambda contract, rows: contract['layoutContract'].update(containerTree=rows),
-            '_sc_set_v2_widget_status': lambda *args: None, '_sc_set_v2_governance_patch': lambda *args: None}
+    def test_diary_finalizer_preserves_native_and_configured_field_structure(self):
+        path = DEFAULT_SERVICE.parents[2] / 'core_extension.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'smart_core_finalize_unified_page_contract_v2')
+        def workflow(env, out, source, **kw):
+            out['actionContract'] = {'reviewerActions': ['validate_tier', 'reject_tier']}
+        namespace = {'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
+            '_sc_inject_workflow_contract': workflow, 'inject_financial_workspace_runtime': lambda *args: None,
+            'smart_core_form_business_actions': None,
+            '_contract_normalizers': SimpleNamespace(normalize_payment_settlement_detail_component=lambda *args, **kw: None)}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
-        original = {'type': 'field', 'name': 'project_id', 'field_info': {'relation': 'project.project'},
-                    'fieldInfo': {'relation': 'project.project'}, 'componentKey': 'sc.relation.selector'}
-        contract = {'layoutContract': {'containerTree': [copy.deepcopy(original)]}}
-        source = {'fields': {'project_id': {'type': 'many2one', 'relation': 'project.project'}}}
-        namespace['normalize_construction_diary_form'](contract, source, model='sc.construction.diary', view_type='form')
-        nodes = {}
-        collect(contract['layoutContract']['containerTree'], nodes)
-        self.assertNotIn('field_info', nodes['project_id'])
-        self.assertEqual(nodes['project_id']['fieldInfo']['relation'], 'project.project')
-        self.assertEqual(nodes['project_id']['componentKey'], original['componentKey'])
-        self.assertTrue(nodes['project_id']['fieldInfo']['required'])
+        names = ['name', 'title', 'description', 'attachment_ids', 'reject_reason', 'configured_extension']
+        contract = {'pageInfo': {'model': 'sc.construction.diary', 'viewType': 'form'},
+            'layoutContract': {'containerTree': [{'type': 'field', 'name': name, 'fieldInfo': {'name': name}} for name in names]},
+            'formStructureContract': {'slots': [{'fieldRefs': names}]},
+            'runtimeContract': {}, 'meta': {}}
+        baseline = copy.deepcopy(contract)
+        result = namespace['smart_core_finalize_unified_page_contract_v2'](None, contract, {'source_contract': {'model': 'sc.construction.diary', 'view_type': 'form'}})
+        self.assertEqual(result['layoutContract'], baseline['layoutContract'])
+        self.assertEqual(result['formStructureContract'], baseline['formStructureContract'])
+        self.assertEqual(result['runtimeContract'], {})
+        self.assertEqual(result['meta'], {})
+        self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
+        self.assertEqual(contract, baseline)
 
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
