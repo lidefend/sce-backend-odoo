@@ -1344,9 +1344,13 @@ class ScWorkflowContractService(models.AbstractModel):
         if record._name == "sc.receipt.income":
             return self._receipt_income_evidence_gate(record)
         if record._name == "sc.output.invoice.adjustment":
+            gates = []
+            blocker = record._original_invoice_eligibility_blocker()
+            if blocker:
+                gates.append(self._gate(blocker["reason_code"], blocker["message"], action_keys=["submit", "approve", "complete"]))
             if not self.env["sc.invoice.registration"]._has_finance_register_access():
-                return [self._gate("INVOICE_REGISTER_ACCESS_DENIED", "你没有完成发票登记的财务确认权限。", action_keys=["complete"])]
-            return []
+                gates.append(self._gate("INVOICE_REGISTER_ACCESS_DENIED", "你没有完成发票登记的财务确认权限。", action_keys=["complete"]))
+            return gates
         if record._name == "sc.invoice.registration":
             return self._invoice_registration_evidence_gate(record)
         if record._name == "sc.self.funding.registration":

@@ -37,7 +37,7 @@ class ScOutputInvoiceAdjustment(models.Model):
         "sc.output.invoice.ledger",
         string="需红冲销项票",
         required=True,
-        domain=[("active", "=", True), ("adjustment_kind", "=", "normal")],
+        domain=[("active", "=", True), ("adjustment_kind", "=", "normal"), "|", ("source_model", "!=", "sc.invoice.registration"), ("invoice_document_state", "in", ["registered", "legacy_confirmed"])],
         ondelete="restrict",
         tracking=True,
     )
@@ -236,12 +236,22 @@ class ScOutputInvoiceAdjustment(models.Model):
                 raise UserError(_("只有草稿或驳回的销项变更登记可以取消。"))
         self.with_context(skip_validation_check=True)._write_approval_state({"state": "cancel"})
 
+    def _original_invoice_eligibility_blocker(self):
+        self.ensure_one()
+        ledger = self.original_ledger_id.exists()
+        if not ledger or not ledger.active:
+            return {"reason_code": "RED_FLUSH_SOURCE_UNAVAILABLE", "message": _("请选择有效的原销项票。")}
+        if ledger.adjustment_kind != "normal":
+            return {"reason_code": "RED_FLUSH_SOURCE_NOT_NORMAL", "message": _("只能对正常开票记录做红冲。")}
+        if ledger.source_model == "sc.invoice.registration" and ledger.invoice_document_state not in ("registered", "legacy_confirmed"):
+            return {"reason_code": "RED_FLUSH_SOURCE_NOT_REGISTERED", "message": _("原销项票必须已登记，草稿、待登记或取消票不能红冲。")}
+        return None
+
     def _validate_red_flush_ready(self):
         self.ensure_one()
-        if not self.original_ledger_id:
-            raise UserError(_("请先选择需要红冲的销项票。"))
-        if self.original_ledger_id.adjustment_kind != "normal":
-            raise UserError(_("只能对正常开票记录做红冲，不能重复红冲红冲记录。"))
+        blocker = self._original_invoice_eligibility_blocker()
+        if blocker:
+            raise UserError(blocker["message"])
         if self.generated_invoice_id:
             raise UserError(_("该变更登记已经生成红冲销项票。"))
         if not (self.red_flush_invoice_no or "").strip():

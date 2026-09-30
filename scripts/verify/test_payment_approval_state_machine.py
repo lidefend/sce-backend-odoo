@@ -533,6 +533,28 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['_create_registered_red_flush'](invoice, adjustment, {})
         self.assertEqual(calls, ['approved', 'permission'])
 
+    def test_red_flush_requires_eligible_original_invoice(self):
+        path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_original_invoice_eligibility_blocker')
+        ns = {'_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        ledger = types.SimpleNamespace(active=True, adjustment_kind='normal', source_model='sc.invoice.registration')
+        ledger.exists = lambda: ledger
+        record = types.SimpleNamespace(ensure_one=lambda: None, original_ledger_id=ledger)
+        for state in ('draft', 'confirmed', 'registered', 'legacy_confirmed', 'cancel', 'unknown', False):
+            ledger.invoice_document_state = state
+            blocker = ns['_original_invoice_eligibility_blocker'](record)
+            self.assertEqual(blocker is None, state in ('registered', 'legacy_confirmed'))
+        ledger.source_model = 'sc.receipt.invoice.line'
+        self.assertIsNone(ns['_original_invoice_eligibility_blocker'](record))
+        ledger.active = False
+        self.assertEqual(ns['_original_invoice_eligibility_blocker'](record)['reason_code'], 'RED_FLUSH_SOURCE_UNAVAILABLE')
+        ledger.active = True
+        ledger.adjustment_kind = 'signed_adjustment'
+        self.assertEqual(ns['_original_invoice_eligibility_blocker'](record)['reason_code'], 'RED_FLUSH_SOURCE_NOT_NORMAL')
+        ledger.exists = lambda: False
+        self.assertEqual(ns['_original_invoice_eligibility_blocker'](record)['reason_code'], 'RED_FLUSH_SOURCE_UNAVAILABLE')
+
     def test_red_flush_approval_is_separate_from_generating_invoice(self):
         path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
         names = {'action_submit', 'action_on_tier_approved', 'action_confirm', 'action_cancel'}

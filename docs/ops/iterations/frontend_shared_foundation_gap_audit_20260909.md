@@ -8628,3 +8628,9 @@ L1 invoice-state-iteration.log通过，初轮unit.log134中1个error来自旧fin
 53.122结果：源码467b78d01/P4 8a7d13cf0，受管backend.acceptance.up重绑8a7d13cf0成功，无字段变化未升级。invoice-state-runtime.log11 PASS、ROLLBACK VERIFIED。与53.121相比，源票正式提交（存在review则真实审核）后由既有财务登记人登记，再作为红冲依据；直接create registered、write state、布尔令牌伪造拒绝，既有fixture_role_pm非登记人确认红冲拒绝，有登记权角色完成生成，已登记源票金额修改拒绝。真实角色用于权限判断，源记录数据访问仍sudo准备；不是普通角色端到端数据权限验收。原策略/步骤恢复、临时票据/生成票消失。
 
 纯134/native62与新runtime11成立；既有create20源渲染输入未变，只复用外观/输入检查，不声明该页面证明登记权限。未新建fixture/环境、未构建前端、未跑无关ORM。下一步继续同链：有效原票资格（草稿/取消源票不得被当正式可红冲事实）、原票变化后的可恢复办理及并发重复红冲，保留收款来源税率/普通角色完整办理缺口；生成票的通用登记权限与状态直写缺口本轮已补并定向验证。整体detail.action-state不升级。
+
+### 53.123 红冲原票资格贯通契约与执行（进行中）
+
+442c8990e clean续跑，P1 sc.output.invoice.adjustment维护原票资格：必须存在、有效且normal，sc.invoice.registration来源仅registered/legacy_confirmed，收款发票来源保留原有语义不猜历史状态文字。字段domain同步限定，_original_invoice_eligibility_blocker被执行校验和workflow denied gate共同消费，避免前端能选草稿票且后端也直接出票。L1 red-source-eligibility-iteration.log通过；pure unit.log135 PASS、native.log8+54=62 PASS。新生产方法纯回归覆盖draft/confirmed/registered/legacy/cancel/unknown/False、失效/删除/红冲来源。
+
+P4现有red-flush scope扩展12组，增加草稿/取消原票真实提交拒绝及契约reason；现有browser财务create增加原票关系请求域断言，不造记录或税率。tool-iteration/py_compile/node/diff通过。无新增列/XML，只需reload域与Python，前端构建不变；运行及关系请求尚未证明。保留异常恢复/并发及角色全旅程，整体不升行，无推送合并目标部署。
