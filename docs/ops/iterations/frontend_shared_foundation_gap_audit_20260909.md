@@ -8896,3 +8896,14 @@ L1 expense-content-iteration/tool-iteration PASS；expense-content-unit.log154 P
 expense-content-runtime.log14 PASS，ROLLBACK VERIFIED：实际配置审批实例、关闭配置不绕过在审、真实reviewer完成、无配置自动通过、无匹配拒绝、真实驳回重提、两步线性审批和非审核人拒绝继续通过；新增在审/批准金额、批准金额、账户、附件关联、明细关系、active拒绝，备注可写且原金额/附件保持。准备与提交沿原工具sudo，审核人真实非sudo；不夸称普通财务全办理或费用最终执行。明细独立CRUD/跨父单移动由纯测覆盖，本次真实运行只验证父单O2M写入口，不冒充真实明细CRUD验收。
 
 前端index-CVVwVIuW.js未变，不构建/重拍；既有共享readonly消费证据按未变输入复用，不代表本拒绝原因已做浏览器验收。总体67/detail.action-state保持开放，下一步继续该财务组已确认职责与实际角色的动作/内容消费闭环；已知无授权记录的模型不重复空查询、不新建fixture。无推送、合并或目标部署。
+
+
+### 53.147 扣款明细真实审核生命周期验证
+
+c1a5ad736 clean起点，生产1e3989bdc内容保护及154纯测按未变输入复用。P4仅在原expense-state-authority末尾追加真实扣款分类的主从审核验证，不改产品规则或创建持久fixture。3ba16be0a工具源经现有backend.acceptance.up重绑SC_SOURCE_REVISION；local/sc-fe-r2-p1-01/sc_frontend_acceptance18082/dbfilter/卷沿原身份，事务串行。L1 expense-lines-iteration PASS，py_compile/diff PASS；不因工具改动重跑无关纯测、前端构建或浏览器矩阵。
+
+expense-lines-runtime.log17 PASS、ROLLBACK VERIFIED。新增真实finance.deduction.bill分类扣款单（100元主单与真实100元明细），已注册temporary created并随原finally核对不存在。启用真实审批后，明细显式claim_id创建、context默认claim_id创建、金额修改、删除、从在审父单移出和从草稿父单移入均因内容保护拒绝；每次savepoint恢复，原明细ID/父单/金额与草稿归属回读不变。真实reviewer驳回到草稿后可改明细名称、增删临时明细；重提且真实审核完成后同组拒绝再验证。原14项同时通过。准备/提交/明细操作沿既有工具sudo，reviewer真实非sudo；不宣称普通用户ACL或浏览器办理。这里17为总计3项新增组，不是17个新增业务职责。
+
+同一路径定向读取发现明确产品缺口：expense_claim._check_business_ready中的R10-v2历史分支为旧spec测试保留“仅warning”，允许缺必需申请关联、现金往来单位/账户；_check_attachment_policy_or_raise对业务分类required附件也仅warning。workflow_contract_service._expense_claim_evidence_gate却将这些条件投影为blocking门禁。此为P1执行与契约不一致，不能通过模板按钮禁用代替服务端拒绝；下一步集中复用业务校验为唯一来源，保护共享审批配置/真实执行，移除为裸测试开通的生产放行。尚未实际修复，登记为detail.action-state具体阻断，不以本轮17通过覆盖。其他领域及外部关联/附件内容/并发不扩充证明。
+
+前端index-CVVwVIuW.js未变。原整体67和普通角色已保存办理/费用最终执行仍开放。无推送、合并或目标部署。
