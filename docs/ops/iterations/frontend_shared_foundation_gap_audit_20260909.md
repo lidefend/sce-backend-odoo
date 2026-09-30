@@ -8534,3 +8534,12 @@ P1 smart_construction_core拥有项目立项状态，修create按显式vals优�
 P4既有rollback工具增加project-creation-state独立5项scope，default all计数254但本轮未执行all。只测试非法创建默认值拒绝、显式draft覆盖不安全默认值、合法draft默认值；scope复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter和固定卷，事务sudo builder验证模型状态边界，不替代普通角色办理。L1 project-default-tool-iteration.log/py_compile/bash-n/diff PASS。源910d8e214、工具7ad71c3bd本地提交，受管Python reload成功（project-default-state-reload.log），project-default-state-runtime.log5 PASS、ROLLBACK VERIFIED：配置原样恢复、临时记录不存在。没有新fixture/环境/模块升级/前端构建/无关ORM。
 
 本项仅关闭项目创建上下文绕过，不升级detail.action-state或总体67。金额口径、项目信息实际保存/审批用户闭环，以及已登记其他角色办理/数据前提保持开放。下一步继续既有台账的已授权实际保存/动作消费缺口，复用本轮及前序原证据；无推送合并目标部署。
+
+
+### 53.115 项目信息编辑真实保存与恢复（完成本项验证）
+
+0c697055c clean续跑，复用53.64已授权PM/项目10/公司8/正式项目信息编辑入口。仅P4标准browser扩TPL07_PROJECT_SAVE=1精确scope，沿system.init.route_authority取得当前菜单动作，现有项目name临时附加本轮标记，通过官方保存按钮写入并权威回读。单次permit仅放行PM/api.data write/project.project/ids[10]/唯一name精确值；错角色/记录/多ID/模型/操作/额外审批字段均拒绝，8项纯测试+既有preview16=24 PASS并登记standard_preview_tool输入/回执。写前保存独立恢复记录，finally回读仅允许当前原名或本轮标记，遇第三方改变拒绝覆盖；恢复后比较全部基线业务字段。
+
+L1 project-save-scope-iteration.log、语法/diff PASS；L2 project-save-scope-unit.log24 PASS。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter固定卷，后端7ad71c3bd，前端CrYkOCxc产品输入未变；无build/upgrade/ORM复跑。运行project-information-save-browser.log，tpl07-1790790862553/report.json23 PASS：真实UI保存FE Project A [TPL53保存验证]，服务端read回读正确，company8/立项draft/lifecycle draft均保持；同用户原接口恢复FE Project A并再次回读一致，official form reload显示原名、未修改，双视口无横溢出，390截图人工核对。仅两次精确name写入（保存/恢复），errors=[]/forbiddenWrites=[]，project-save-recovery.json restored=true。审计元数据/日志可能保留真实保存痕迹，不声称数据库字节级回滚。
+
+随后将通用断言文字改为no undeclared business writes attempted，条件仍为forbiddenWrites.length===0；不改变执行/判定，沿用原browser证据不为文字重复业务写。本次关闭项目信息资料保存缺口，不等于立项提交/真实审核/启动已由角色浏览器验收。金额口径异步问题仍未得到回复，保持缺口；全系统detail.action-state及总体67仍开放，无新增fixture/环境/推送合并目标部署。

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
+import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
@@ -61,6 +62,7 @@ report.build = build;
 const browser = await launchChromium({ headless: true });
 const pendingProbeAborts = new Set();
 let favoriteWritePermit = null;
+let projectWritePermit = null;
 const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
 async function login(role) {
@@ -69,6 +71,12 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (permitsProjectNameWrite(role, body, projectWritePermit)) {
+        report.projectWriteAttempts ??= [];
+        report.projectWriteAttempts.push({ id: 10, name: projectWritePermit.name });
+        projectWritePermit = null;
+        return route.continue();
+    }
     if (favoriteWritePermit && body?.intent === favoriteWritePermit.intent) {
       const permit = favoriteWritePermit;
       const params = body.params || {};
@@ -906,6 +914,12 @@ try {
         await session.ctx.close();
         continue;
       }
+      const projectSave = process.env.TPL07_PROJECT_SAVE === '1';
+      if (projectSave) {
+        check('project save: exact governed scope', spec.model === 'project.project' && spec.role === 'fixture_role_pm'
+          && process.env.TPL07_APPROVAL_VIEW === 'information-edit');
+        spec.domain = [['id', '=', 10]];
+      }
       const candidate = await session.page.evaluate(async ({ model, domain, stateField, fields }) => {
         const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
         const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
@@ -1033,6 +1047,61 @@ try {
           check('project: start absent before approval or after startup', await session.page.getByRole('button', { name: '启动项目', exact: true }).count() === 0);
         }
         check('project: approval state remains a separate fact', authority.mainData?.sc_approval_state === record.sc_approval_state);
+        if (projectSave) {
+          const request = (params) => session.page.evaluate(async (params) => {
+            const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+            const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+              body: JSON.stringify({ intent: 'api.data', params }),
+            });
+            return response.json();
+          }, params);
+          const read = async () => {
+            const result = await request({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'name', 'company_id', 'lifecycle_state', 'sc_approval_state'] });
+            assert.equal(result.ok, true);
+            assert.equal(result.data?.records?.length, 1);
+            return result.data.records[0];
+          };
+          const baseline = await read();
+          check('project save: exact draft object authority', baseline.id === 10 && baseline.lifecycle_state === 'draft'
+            && baseline.sc_approval_state === 'draft' && baseline.name === authority.mainData.name);
+          const temporaryName = `${baseline.name} [TPL53保存验证]`;
+          report.projectSave = { baseline, temporaryName, restored: false };
+          await fs.writeFile(path.join(out, 'project-save-recovery.json'), JSON.stringify(report.projectSave, null, 2));
+          try {
+            const saveAction = authority.actions.actionRuleList.find((rule) => rule.actionSemantics?.purpose === 'save_draft');
+            check('project save: explicit enabled write action', saveAction?.enabled === true && saveAction.target?.operation === 'write');
+            await session.page.locator('[data-field-name="name"] input').fill(temporaryName);
+            projectWritePermit = { name: temporaryName };
+            const response = session.page.waitForResponse((res) => {
+              try { const body = res.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'write'; } catch { return false; }
+            });
+            const [saved] = await Promise.all([response, session.page.getByRole('button', { name: saveAction.label, exact: true }).click()]);
+            const result = await saved.json();
+            check('project save: write accepted', result.ok === true);
+            const observed = await read();
+            check('project save: authoritative readback preserves lifecycle', observed.name === temporaryName
+              && observed.lifecycle_state === baseline.lifecycle_state && observed.sc_approval_state === baseline.sc_approval_state);
+            report.projectSave.saved = observed;
+          } finally {
+            projectWritePermit = null;
+            const current = await read();
+            assert.ok(current.name === baseline.name || current.name === temporaryName, 'project changed outside this probe; refuse restoration overwrite');
+            if (current.name === temporaryName) {
+              projectWritePermit = { name: baseline.name };
+              const restored = await request({ op: 'write', model: 'project.project', ids: [10], vals: { name: baseline.name } });
+              assert.equal(restored.ok, true, 'project restoration rejected');
+            }
+            projectWritePermit = null;
+            assert.deepEqual(await read(), baseline, 'project baseline not restored');
+            report.projectSave.restored = true;
+            await fs.writeFile(path.join(out, 'project-save-recovery.json'), JSON.stringify(report.projectSave, null, 2));
+            check('project save: original business values restored', true);
+          }
+          await session.page.reload();
+          await session.page.locator('[data-field-name="name"] input').waitFor();
+          check('project save: reloaded official form shows restored name', await session.page.locator('[data-field-name="name"] input').inputValue() === baseline.name);
+        }
       }
       if (spec.model === 'sc.payment.execution') {
         check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);
@@ -1228,7 +1297,7 @@ try {
   await admin.ctx.close();
   }
   check('no page exceptions', report.errors.length === 0);
-  check('no business writes attempted', report.forbiddenWrites.length === 0);
+  check('no undeclared business writes attempted', report.forbiddenWrites.length === 0);
   report.status = 'passed';
 } catch (error) {
   report.status = 'failed';

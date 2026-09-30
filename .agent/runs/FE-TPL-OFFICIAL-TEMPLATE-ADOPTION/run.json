@@ -305,6 +305,8 @@
       "kind": "offline",
       "inputs": [
         "scripts/verify/test_frontend_standard_preview.py",
+        "frontend/apps/web/scripts/standard_project_save_scope.mjs",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
         "make/runtime_ops.mk",
@@ -364,7 +366,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.114 project creation context state bypass fixed source910d8e214, tool7ad71c3bd loaded by governed Python reload. L1/Pure122 PASS, project-creation-state runtime5 PASS+ROLLBACK VERIFIED. No upgrade/frontend build; reuse CrYkOCxc and relation browser21. Project approval amount authority question pending user; retain explicit configuration rejection, do not infer monetary field. Next existing detail.action-state actual project information-edit save/role handling and remaining declared contract gaps; no repeated empty queries/newfixtures/unrelatedORM/push/merge/deploy. Living53.114 owns evidence.",
+  "next_exact_step": "53.115 P4 exact PM/project10/name save-restoration verified in official information-edit page: preview tool24 PASS, browser tpl07-1790790862553 23 PASS, baseline name/company/approval/lifecycle restored and reload shows original. Two permitted name writes; errors/forbiddenWrites empty. No frontend build or ORM. Next detail.action-state actual submission/reviewer handling and remaining role/data gaps; project monetary authority still awaiting user, do not infer field. Reuse source7ad71c3bd and frontendCrYkOCxc evidence. No newfixtures/unrelatedscans/push/merge/deploy. Living53.115 owns evidence.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
