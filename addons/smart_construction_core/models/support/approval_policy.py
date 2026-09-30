@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class ScApprovalPolicy(models.Model):
@@ -334,15 +334,17 @@ class ScApprovalPolicy(models.Model):
         if record.validation_status not in ("waiting", "pending"):
             raise UserError(_("当前审批实例不处于可批准状态。"))
         if not record.can_review:
-            raise UserError(_("当前用户不是本审批步骤的审批人。"))
+            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
         return record.validate_tier()
 
     @api.model
     def _reject_submission_review(self, record, reason=None):
         """Use the native reviewer/wizard flow and preserve explicit comments."""
         record.ensure_one()
-        if not record.review_ids or record.validation_status not in ("waiting", "pending") or not record.can_review:
+        if not record.review_ids or record.validation_status not in ("waiting", "pending"):
             raise UserError(_("当前用户没有可驳回的审批步骤。"))
+        if not record.can_review:
+            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
         reason = str(reason or "").strip()
         if not reason:
             return record.reject_tier()
@@ -353,7 +355,7 @@ class ScApprovalPolicy(models.Model):
             and record.env.user in review.reviewer_ids
         )
         if not reviews:
-            raise UserError(_("当前用户没有可驳回的审批步骤。"))
+            raise AccessError(_("当前用户没有可驳回的审批步骤。"))
         reviews.write({"comment": reason})
         record._rejected_tier(reviews)
         record._update_counter({"review_deleted": True})

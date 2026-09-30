@@ -3069,9 +3069,9 @@ class PaymentRequest(models.Model):
                     raise AccessError(_("当前用户不是本审批步骤的审批人。"))
                 rec._check_material_settlement_remaining_amount()
                 rec._handle_payment_advisories("审批付款申请", rec._collect_payment_advisories("approve"))
-                action = rec.validate_tier()
-                if action:
-                    result = action
+            action = self.env["sc.approval.policy"]._approve_submission_review(rec)
+            if action:
+                result = action
             # OCA may finish through its callback; this is also safe if that
             # callback already advanced the record. Partial approval stays put.
             if rec.validation_status == "validated":
@@ -3410,19 +3410,7 @@ class PaymentRequest(models.Model):
             raise UserError(_("审批驳回必须填写原因。"))
         if self.state not in ("submit", "approve") or self.validation_status not in ("waiting", "pending"):
             raise UserError(_("只有审批中的付款/收款申请可以驳回。"))
-        if not self.can_review:
-            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
-        sequences = self._get_sequences_to_approve(self.env.user)
-        reviews = self.review_ids.filtered(
-            lambda review: review.sequence in sequences
-            and review.status in ("waiting", "pending")
-            and self.env.user in review.reviewer_ids
-        )
-        if not reviews:
-            raise AccessError(_("当前用户没有可驳回的审批步骤。"))
-        reviews.write({"comment": reason})
-        self._rejected_tier(reviews)
-        self._update_counter({"review_deleted": True})
+        self.env["sc.approval.policy"]._reject_submission_review(self, reason=reason)
         self.action_on_tier_rejected()
         return {}
 

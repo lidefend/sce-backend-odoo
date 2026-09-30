@@ -70,6 +70,7 @@ class Record:
         self.policy = types.SimpleNamespace(is_approval_required=self.requirement)
         self.policy._start_submission_review = lambda record: PRODUCTION['_start_submission_review'](self.policy, record)
         self.policy._approve_submission_review = lambda record: PRODUCTION['_approve_submission_review'](self.policy, record)
+        self.policy._reject_submission_review = lambda record, reason=None: PRODUCTION['_reject_submission_review'](self.policy, record, reason=reason)
         self.required = required
         self.matching = matching
         self.env = types.SimpleNamespace(context={}, company=self.company_id)
@@ -271,7 +272,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         for reviews, status, can_review in (([], 'validated', True), (['tier'], 'rejected', True), (['tier'], 'pending', False)):
             rec = self.record(reviews=reviews, status=status)
             rec.data['can_review'] = can_review
-            with self.assertRaises(ValueError):
+            with self.assertRaises(ValueError if can_review else PermissionError):
                 rec.policy._approve_submission_review(rec)
             self.assertEqual(rec.state, 'submit')
 
@@ -530,13 +531,21 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(rec.review_ids[0].comment, 'wrong amount')
         self.assertEqual(rec.review_ids[0].status, 'rejected')
         rec = self.rejecting_record(reviewer=99)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(PermissionError):
             PRODUCTION['_reject_submission_review'](rec.policy, rec, reason='wrong')
         self.assertEqual(rec.validation_status, 'pending')
         rec = self.rejecting_record()
         wizard = {'type': 'ir.actions.act_window'}
         rec.reject_tier = lambda: wizard
         self.assertIs(PRODUCTION['_reject_submission_review'](rec.policy, rec), wizard)
+
+    def test_payment_shared_approval_preserves_native_comment_wizard(self):
+        rec = self.record(reviews=['tier'], status='pending')
+        wizard = {'type': 'ir.actions.act_window', 'res_model': 'comment.wizard'}
+        rec.validate_tier = lambda: wizard
+        self.assertIs(rec.action_approval_decision(), wizard)
+        self.assertEqual(rec.state, 'submit')
+        self.assertEqual(rec.audits, [])
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)

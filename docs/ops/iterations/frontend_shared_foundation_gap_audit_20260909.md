@@ -7615,3 +7615,11 @@ L5：未推送、未合并、未部署。
 - action_approve委托已有共享真实审批决定，action_reject委托新增共享_reject_submission_review；有显式意见时核对真实reviewer/sequence后写意见并走原生_rejected_tier，无意见保留原生驳回向导。旧动作不再直接写批准/驳回状态。回调要求review及对应validated/rejected，只有submit可推进，部分/重复回调不再触发错误状态变更。保留物资经理限制、待办清理及审计；原生驳回回调从真实review取意见。
 - L1 ci.local.iteration通过（material-approval-iteration.log）；最终补回两处原有待办清理后定向生产方法编译及45项测试通过（material-approval-tests.log，begin/record45），未变架构/路径规则沿用L1结论。测试覆盖真实物资提交/批准与回调、自动批准人为空、部分审批、完整/重复批准、缺事实驳回，以及共享驳回的实际审批人、意见与向导返回。真实ORM权限/事务/多级运行仍待，函数协作者不能替代该验收。
 - 未改前端/XML、不重建、不写业务数据。尚待付款局部批准/驳回也复用共享服务、出库和其他未接入业务单据范围、合同执行前置条件、两项原生动作缺口及受管升级/真实业务验收。总体active，不推送/合并/目标部署。
+
+
+### 53.29 付款批准/驳回消费共享决定服务
+
+- b20352338 clean起步，P1 smart_construction_core付款适配。action_approval_decision改调共享_approve_submission_review；action_approval_reject删除本地review筛选/写意见/原生驳回编排，改调共享_reject_submission_review。财务权限、金额一致性、余额/提示、驳回必填原因、付款完成状态守卫保留，不把领域规则移入共享服务。
+- 共享当前审批人/步骤权限失败使用AccessError，缺实例或不合法审批状态仍为业务错误；付款既有错误审批人拒绝语义未降级。原生意见向导action完整返回，尚未提交意见时付款保持submit。
+- L1 ci.local.iteration PASS（payment-shared-decisions-iteration.log），L2 verify.payment.approval_state_machine.unit最终46项PASS（payment-shared-decisions-tests.log，begin/record46），既有付款真实方法回归现在经过共同服务；新增付款原生向导返回及不提前状态变更反例。无模型字段/XML变化，不重建前端，运行态重载与前批XML升级统一待执行。
+- 此处完成已接入付款消费者的重复编排退出；不等于所有业务单据已覆盖。下一步材料出库、既有配置/运行支持缺口及合同执行边界仍按原产品范围收敛；两条原生状态动作登记和真实ORM/浏览器审批闭环保持未完成。

@@ -232,7 +232,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.28 material plan shares submit/approve/reject, preserves business checks and audit, auto-approval has no fake approver (45 tests). Next reuse common decision/rejection in payment, address material outbound and other necessary document scopes plus contract execution prerequisites; two native gaps remain. Governed upgrade and actual ORM/browser approval acceptance still required; no frontend rebuild.",
+  "next_exact_step": "53.29 payment now consumes shared approve/reject services; 46 tests pass with preserved domain guards and native wizard result. Next material outbound approval integration (model in material_acceptance.py), missing necessary business-document coverage and contract execution prerequisites. Two native state-action gaps, governed upgrade, real ORM and browser approval acceptance remain.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -566,6 +566,13 @@
       "source_head": "36fa7a954",
       "test_count": 45,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/material-approval-tests.log",
+      "runtime": "not_run"
+    },
+    "payment_shared_decisions_53_29": {
+      "status": "verification_pending",
+      "source_head": "b20352338",
+      "test_count": 46,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-shared-decisions-tests.log",
       "runtime": "not_run"
     }
   }
