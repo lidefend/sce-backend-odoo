@@ -7,6 +7,7 @@ import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
 import { buildSaveRecordPayload, createSingleFlightSave, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
 import { submissionRequirementErrors } from '../src/pages/contractForm/submissionRequirements';
+import { nativeAttachmentRefreshDecision } from '../src/pages/contractForm/useNativeAttachmentRuntime';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
@@ -496,3 +497,11 @@ const failedCreatedSubmitRuntime = usePrimaryFormActionRuntime({
 await failedCreatedSubmitRuntime.runPrimaryFormAction();
 assert.deepEqual(failedSubmitEvents, ['create', 'submit-failed', 'recover:903:submit']);
 console.log('[create-record-user-journey] failed created submit preserves generated identity PASS count=1');
+
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 903, false), 'refresh');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 903, true), 'deferred');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 904, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'y.document', 903, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 0, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 0, 'x.document', 0, false), 'different_record');
+console.log('[create-record-user-journey] attachment refresh ownership and dirty preservation PASS count=6');

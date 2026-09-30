@@ -14,6 +14,11 @@ export type NativeAttachmentViewerLike = {
   open: (target: { id: number }, name?: string) => Promise<void> | void;
 };
 
+export function nativeAttachmentRefreshDecision(targetModel: string, targetId: number, currentModel: string, currentId: number, dirty: boolean) {
+  if (!targetId || targetId !== currentId || targetModel !== currentModel) return 'different_record';
+  return dirty ? 'deferred' : 'refresh';
+}
+
 export function useNativeAttachmentRuntime(params: {
   model: () => string;
   recordId: () => number;
@@ -45,6 +50,7 @@ export function useNativeAttachmentRuntime(params: {
       return;
     }
     const recordId = params.recordId();
+    const modelName = params.model();
     if (!recordId) {
       pendingAttachments.value = [
         ...pendingAttachments.value,
@@ -61,13 +67,13 @@ export function useNativeAttachmentRuntime(params: {
     try {
       const { data, mimetype } = await fileToBase64(file);
       await uploadFile({
-        model: params.model(),
+        model: modelName,
         res_id: recordId,
         name: file.name,
         mimetype,
         data,
       });
-      await params.reloadTimeline();
+      await params.reloadTimeline(recordId, modelName);
     } catch (err) {
       error.value = err instanceof Error ? err.message : params.resolveLabel('upload_failed', '附件上传失败');
     } finally {

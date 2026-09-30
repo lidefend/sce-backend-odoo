@@ -647,6 +647,7 @@ import {
 } from './contractForm/recordHydration';
 import {
   useNativeAttachmentRuntime,
+  nativeAttachmentRefreshDecision,
   type NativeAttachmentViewerLike,
 } from './contractForm/useNativeAttachmentRuntime';
 import { useNativeChatterRuntime } from './contractForm/useNativeChatterRuntime';
@@ -979,7 +980,12 @@ const {
   maxBytes: () => nativeAttachmentMaxBytes.value,
   canUpload: () => nativeAttachmentUploadEnabled.value,
   resolveLabel: (key, fallback) => resolveNativeAttachmentLabel(key, fallback),
-  reloadTimeline: loadNativeChatterTimeline,
+  reloadTimeline: async (resId = recordId.value, targetModel = model.value) => {
+    await loadNativeChatterTimeline(resId, targetModel);
+    const decision = nativeAttachmentRefreshDecision(targetModel, resId, model.value, recordId.value, hasChanges.value);
+    if (decision === 'refresh') await reload();
+    if (decision === 'deferred') submissionFeedback.value = { kind: 'warn', message: '附件已更新，请先保存当前修改以更新办理条件。' };
+  },
   viewerRef: attachmentViewerRef,
   onPendingUploadFailed: (message) => {
     validationErrors.value = [message];
