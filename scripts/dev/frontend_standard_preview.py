@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Bounded continuation of the owner's existing 5180 static preview."""
+import fcntl
 import hashlib
 import json
 import os
@@ -9,6 +10,8 @@ import signal
 import subprocess
 import sys
 import time
+import tempfile
+import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT.parent / 'sce-offrepo/artifacts/config05-20260929'
@@ -51,30 +54,77 @@ def validate_listener(environment, command, owner, current_only=False):
     return environment['STATIC_ROOT']
 
 
-def main():
-    if os.environ.get('SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY') != 'operation_entry_v1':
-        raise RuntimeError('use the governed Make entry')
-    if os.environ.get('DB_NAME') != 'sc_frontend_acceptance' or os.environ.get('COMPOSE_PROJECT_NAME') != 'sc-fe-r2-p1-01':
-        raise RuntimeError('managed profile mismatch')
-    operation = sys.argv[1]
-    if operation == 'build':
-        if (OUTPUT / 'build-identity.json').exists():
-            identity()
+def promote_candidate(staged_dist, staged_receipt, previous):
+    """Keep a verified rollback copy before replacing the registered candidate."""
+    backup = None
+    installed = False
+    old_moved = False
+    receipt_path = OUTPUT / 'build-identity.json'
+    if previous is not None:
+        if identity(observed_only=True) != previous:
+            raise RuntimeError('previous candidate changed during build')
+        backup = Path(tempfile.mkdtemp(prefix='previous-', dir=OUTPUT))
+        shutil.copy2(receipt_path, backup / 'build-identity.json')
+    elif DIST.exists() or receipt_path.exists():
+        raise RuntimeError('unregistered candidate appeared during build')
+    try:
+        if backup is not None:
+            DIST.rename(backup / 'dist')
+            old_moved = True
+        staged_dist.rename(DIST)
+        installed = True
+        os.replace(staged_receipt, receipt_path)
+        identity()
+    except BaseException:
+        if installed:
+            DIST.rename(staged_dist)
+        if old_moved:
+            (backup / 'dist').rename(DIST)
+            recovery_receipt = staged_receipt.parent / 'restore-identity.json'
+            shutil.copy2(backup / 'build-identity.json', recovery_receipt)
+            os.replace(recovery_receipt, receipt_path)
+            if identity(observed_only=True) != previous:
+                raise RuntimeError('previous candidate restoration verification failed')
+        elif previous is None and receipt_path.exists():
+            receipt_path.unlink()
+        raise
+    if backup is not None:
+        print('[standard.preview] PREVIOUS preserved at %s' % backup)
+
+
+def build_candidate():
+    previous = None
+    if (OUTPUT / 'build-identity.json').exists():
+        # Changed source permits a replacement; corrupt old artifacts do not.
+        previous = identity(observed_only=True)
+        if inputs(previous['base_sha']) == previous['diff_sha256']:
             print('[standard.preview] REUSED unchanged build')
             return
-        OUTPUT.mkdir(parents=True, exist_ok=True)
+    elif DIST.exists():
+        raise RuntimeError('unregistered dist must be resolved before building')
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.candidate-', dir=OUTPUT) as temporary:
+        stage = Path(temporary)
+        staged_dist = stage / 'dist'
         base = git('rev-parse', 'HEAD').decode().strip()
         before = inputs(base)
-        build_env = dict(os.environ, FRONTEND_DIST_DIR=str(DIST), VITE_ODOO_DB='sc_frontend_acceptance', VITE_ODOO_DB_LOCKED='1', VITE_APP_ENV='acceptance')
+        build_env = dict(os.environ, FRONTEND_DIST_DIR=str(staged_dist), VITE_ODOO_DB='sc_frontend_acceptance', VITE_ODOO_DB_LOCKED='1', VITE_APP_ENV='acceptance')
         subprocess.run(['bash', str(ROOT / 'scripts/dev/frontend_static_build.sh')], env=build_env, check=True)
         if inputs(base) != before:
             raise RuntimeError('source changed during build')
-        html = (DIST / 'index.html').read_bytes()
+        html = (staged_dist / 'index.html').read_bytes()
         entry = re.search(rb'src="(/assets/index-[^"]+\.js)"', html).group(1).decode()
         receipt = {'base_sha': base, 'dirty_scope': git('status', '--short').decode(), 'diff_sha256': before,
                    'index_sha256': hashlib.sha256(html).hexdigest(), 'entry': entry,
-                   'entry_sha256': hashlib.sha256((DIST / entry.lstrip('/')).read_bytes()).hexdigest()}
-        (OUTPUT / 'build-identity.json').write_text(json.dumps(receipt, indent=2))
+                   'entry_sha256': hashlib.sha256((staged_dist / entry.lstrip('/')).read_bytes()).hexdigest()}
+        staged_receipt = stage / 'build-identity.json'
+        staged_receipt.write_text(json.dumps(receipt, indent=2))
+        promote_candidate(staged_dist, staged_receipt, previous)
+
+
+def run_operation(operation):
+    if operation == 'build':
+        build_candidate()
     elif operation == 'up':
         identity()
         result = subprocess.check_output(['ss', '-ltnp', 'sport = :5180']).decode()
@@ -117,6 +167,17 @@ def main():
         print(json.dumps(identity(observed_only=operation == 'observed-identity')))
     else:
         raise RuntimeError('unknown bounded preview operation')
+
+
+def main():
+    if os.environ.get('SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY') != 'operation_entry_v1':
+        raise RuntimeError('use the governed Make entry')
+    if os.environ.get('DB_NAME') != 'sc_frontend_acceptance' or os.environ.get('COMPOSE_PROJECT_NAME') != 'sc-fe-r2-p1-01':
+        raise RuntimeError('managed profile mismatch')
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    with (OUTPUT / '.preview.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        run_operation(sys.argv[1])
 
 
 if __name__ == '__main__':

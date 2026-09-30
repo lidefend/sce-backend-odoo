@@ -26,7 +26,8 @@
     "frontend/packages/schema/src/index.ts",
     "config/contract/native_view_undeclared_actions.v1.json",
     "config/contract/workflow_state_phase_dead_entries.v1.json",
-    "docs/phase_p0/state_machine.md"
+    "docs/phase_p0/state_machine.md",
+    "scripts/dev/frontend_standard_preview.py"
   ],
   "environment": {
     "kind": "offline",
@@ -267,7 +268,8 @@
         "scripts/verify/test_frontend_standard_preview.py",
         "scripts/dev/frontend_acceptance_runtime.sh",
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_standard_preview.py"
       ]
     },
     "scene_mutation_outcome": {
@@ -281,7 +283,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.58 code b06c8a2f7 shared blocked outcome fix tested frontend4/approval59/typecheck strict, backend loaded. Preview frontend_standard_preview.py build only reuses matching receipt, rejects changed inputs; no actual build executed (both logs preserved),5180 still old0d2c6190a. Next P4 minimal existing-tool candidate refresh preserving previous dist+receipt, staging single build then governed switch/recovery; do not delete receipt/bypass identity/manual environment. Register focused preview tool tests before mutation. Then one actual build, task/create representative page; no claimed real blocked task browser (authorized task records empty). Continue project approval split/full67 scope.",
+  "next_exact_step": "53.59 existing preview tool now stages changed-input builds, preserves verified old dist/receipt and restores on promotion failure; lock serializes operations;16 tests pass. Commit then one frontend.standard.preview.build/up (backend b06c8a2f7 addon inputs unchanged), verify actual index/entry and task create browser. No runtime business39 repeat. Task detail missing existing authorized data; project approval/start split still required.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -921,6 +923,13 @@
         ]
       },
       "remaining": "real blocked interaction/browser not covered; no existing authorized tasks; project approval split"
+    },
+    "preview_refresh_53_59": {
+      "candidate": "13a3ec8ac + bounded P4 preview tool/tests/run scope",
+      "l1": "iteration passed after exact P4 path registration",
+      "l2": 16,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/preview-refresh-tests.log",
+      "runtime": "single build and page verification pending"
     }
   }
 }

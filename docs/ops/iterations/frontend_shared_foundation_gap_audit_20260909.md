@@ -7883,3 +7883,12 @@ L5：未推送、未合并、未部署。
 
 - 候选更新事实：b06c8a2f7首次frontend.standard.preview.build在addons相对已加载后端不一致处退出（scene-outcome-build.log），未进入编译。受管backend.acceptance.up已重载b06c8a2f7（scene-outcome-backend-load.log）。因这一前置恢复后再运行build，进入frontend_standard_preview.py发现旧receipt存在且inputs改变，identity()拒绝（scene-outcome-build-loaded.log）；同样未调用编译。两次不同前置失败均保留，未重复编译。
 - P4确定性缺口：现有build分支只有旧产物复用/首次构建，缺少源码变化后的安全候选更新。5180仍服务0d2c6190a旧前端，不能声称本轮前端修复已加载。下一步在既有工具内补齐保留上一dist/receipt、暂存构建、成功切换及失败恢复，沿用同端口/代理/环境身份；不直接删receipt解除锁。当前前端产品复核待候选更新，整体仍active，主线/部署/整体验收无升级。
+
+
+### 53.59 既有预览工具支持安全更新候选
+
+- 13a3ec8ac clean起步，上一轮共享动作修复及前置失败定位属于progress。本轮P4精确范围scripts/dev/frontend_standard_preview.py及既有测试/记录；不新环境、端口、数据库、凭据或fixture。复用固定OUTPUT/DIST/5180/18082及既有Make入口。
+- build先核对旧回执与产物：输入不变复用，旧产物损坏拒绝；源码改变时在同一artifact目录的临时候选目录构建，编译期间旧dist不变。构建前后输入一致才生成新回执；切换前再次核对旧候选，保留旧dist及原回执到previous-*目录，再提升新候选并验证identity。提升或验证异常恢复旧dist/receipt并回读验证，处理KeyboardInterrupt等BaseException；进程强杀恢复不在单元测试覆盖中，旧产物保留可供恢复，不宣称零停机原子部署。
+- 既有入口增加文件锁串行build/up/identity，原监听进程归属、STATIC_ROOT、端口/代理检查及不明候选拒绝保持。没有删除回执绕过输入校验，也没有两次编译。静态入口首次因run缺少精确工具路径reconcile退出（preview-refresh-iteration.log），补登记本批已授权P4路径后PASS（preview-refresh-iteration-scoped.log）；不扩大整个scripts/dev权限范围。
+- 既有preview测试从9增至16：未变不编译、变化只编译一次且旧产物保留、编译失败保持旧候选、编译中源码漂移拒绝、旧产物损坏拒绝、回执提升失败恢复、切换后身份失败恢复。最终L1之后begin/record16 PASS（preview-refresh-tests.log/receipt.log），首次L1前的测试仅诊断，不替代最后回执。
+- 下一步提交后实际一次构建/复用5180，再绑定加载entry复核任务create。后端仍b06c8a2f7，本轮未改addons，不重载/升级。审批39与模型证据输入无变化继续复用；前端共享结果修复仍待候选加载，不宣称真实阻断任务旅程已完成。
