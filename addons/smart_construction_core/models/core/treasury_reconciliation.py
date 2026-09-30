@@ -4,6 +4,9 @@ from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_is_zero
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScTreasuryReconciliation(models.Model):
     _name = "sc.treasury.reconciliation"
     _description = "资金对账"
@@ -116,6 +119,14 @@ class ScTreasuryReconciliation(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -126,11 +137,17 @@ class ScTreasuryReconciliation(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"treasury_ledger_id", "note", "active", "write_uid", "write_date"}
             if set(vals) - allowed:
                 raise UserError(_("历史迁移资金对账单已确认，只允许补充资金台账关联和备注。"))
         return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -139,7 +156,7 @@ class ScTreasuryReconciliation(models.Model):
                 raise UserError(_("只有草稿状态的资金对账单可以确认。"))
             rec._check_reconcile_ready()
             if not policy._start_submission_review(rec):
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_reconcile(self):
         policy = self.env["sc.approval.policy"]
@@ -148,7 +165,7 @@ class ScTreasuryReconciliation(models.Model):
                 raise UserError(_("只有草稿或已确认状态的资金对账单可以完成对账。"))
             policy._assert_submission_approved(rec, ("confirmed",))
             rec._check_reconcile_ready()
-            rec.state = "reconciled"
+            rec._write_document_state({"state": "reconciled"})
 
     def _check_reconcile_ready(self):
         self.ensure_one()
@@ -167,7 +184,7 @@ class ScTreasuryReconciliation(models.Model):
                 raise UserError(_("历史迁移资金对账单不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的资金对账单可以取消。"))
-            rec.state = "cancel"
+            rec._write_document_state({"state": "cancel"})
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -188,7 +205,7 @@ class ScTreasuryReconciliation(models.Model):
                 # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:

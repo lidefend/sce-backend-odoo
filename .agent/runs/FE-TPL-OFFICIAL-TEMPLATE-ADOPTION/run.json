@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.126 completed: backend a9b73cdb1; legacy-runtime-smoke.log 5 PASS and parameter restoration verified; pure140/native62 reusable. Native receipt first rejected moving HEAD, reconciled at stable a9b without rerun. 53.127 next: P1 finance-family state authority; settlement adjustment/treasury create-write permit ordinary confirmed state, receipt/self-funding protect only selected terminal states. Add focused production-method regressions and private authoritative transitions using existing approval mechanism; inspect existing financing/payment/expense guards before changing. No frontend rebuild or unrelated ORM; retain overall67/detail.action-state and existing amount/classification/tax/browser gaps. No push/merge/deploy.",
+  "next_exact_step": "53.127 P1 settlement_adjustment/treasury_reconciliation now guard ordinary create/context defaults/write state and origin; private action tokens preserve shared policy/reviewer callbacks, governed sudo legacy-confirmed creation. L1 finance-state-final-iteration PASS; L2 finance-state-unit142/native62 PASS. Runtime not yet run/loaded: next extend existing rollback-only approval smoke for these two models using governed existing source builders, reload Python (no upgrade/build), validate real auto/configured approval/direct-write denial/separate reconciliation. Other finance state/content/cancel boundaries remain open; keep67/detail.action-state, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

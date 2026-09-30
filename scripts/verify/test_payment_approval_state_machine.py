@@ -351,6 +351,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     rec.invalidate_recordset = lambda: None
                     rec.write = lambda values: rec.data.update(values)
                     rec._write_invoice_state = lambda values: rec.data.update(values)
+                    rec._write_document_state = lambda values: rec.data.update(values)
                     rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                     namespace['action_confirm'](rec)
                     self.assertTrue(checks)
@@ -479,6 +480,76 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             document = types.SimpleNamespace(company_id=8, project_id=types.SimpleNamespace(company_id=8 if same_company else 9, _ensure_operation_allowed=project_gate))
             with self.assertRaises(ValueError): ns['_check_document_operation'](Rows([document]), 'Archive')
             self.assertEqual(len(calls), int(same_company))
+
+    def test_reconciliation_adjustment_direct_state_and_origin_writes_denied(self):
+        for filename in ('treasury_reconciliation', 'settlement_adjustment'):
+            path = MODEL.with_name(filename + '.py')
+            methods = [n for n in ast.walk(ast.parse(path.read_text()))
+                       if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+            for method in methods:
+                method.decorator_list = []
+            ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': object()}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            class Rows(list):
+                pass
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state='draft')])
+            rows.env = types.SimpleNamespace(context={}, su=False)
+            for state in ('confirmed', 'reconciled', 'cancel', 'legacy_confirmed', False):
+                with self.subTest(model=filename, state=state):
+                    rows.env.context = {}
+                    with self.assertRaises(ValueError):
+                        ns['create'](rows, [{'state': state}])
+                    rows.env.context = {'default_state': state, 'sc_document_state_token': True}
+                    with self.assertRaises(ValueError):
+                        ns['create'](rows, [{}])
+                    with self.assertRaises(ValueError):
+                        ns['write'](rows, {'state': state})
+            rows.env.context = {}
+            with self.assertRaises(ValueError):
+                ns['create'](rows, [{'source_origin': 'legacy'}])
+            rows.env.context = {'default_source_origin': 'legacy'}
+            with self.assertRaises(ValueError):
+                ns['create'](rows, [{}])
+            with self.assertRaises(ValueError):
+                ns['write'](rows, {'source_origin': 'legacy'})
+
+    def test_reconciliation_adjustment_private_state_and_import_boundary(self):
+        for filename in ('treasury_reconciliation', 'settlement_adjustment'):
+            path = MODEL.with_name(filename + '.py')
+            methods = [n for n in ast.walk(ast.parse(path.read_text()))
+                       if isinstance(n, ast.FunctionDef) and n.name in {'create', '_write_document_state'}]
+            for method in methods:
+                method.decorator_list = []
+            token = object()
+            ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            writes = []
+            def with_context(**context):
+                self.assertIs(context['sc_document_state_token'], token)
+                return types.SimpleNamespace(write=lambda values: writes.append(values) or True)
+            record = types.SimpleNamespace(with_context=with_context)
+            self.assertTrue(ns['_write_document_state'](record, {'state': 'confirmed'}))
+            self.assertEqual(writes, [{'state': 'confirmed'}])
+            class SequenceReached(Exception):
+                pass
+            class Environment:
+                context = {}
+                su = False
+                def __getitem__(self, model):
+                    if model != 'ir.sequence':
+                        raise AssertionError(model)
+                    raise SequenceReached()
+            record.env = Environment()
+            # Accepted envelopes reach ordinary creation; this is not ORM import proof.
+            with self.assertRaises(SequenceReached):
+                ns['create'](record, [{}])
+            record.env.su = True
+            with self.assertRaises(SequenceReached):
+                ns['create'](record, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
+            with self.assertRaises(ValueError):
+                ns['create'](record, [{'state': 'confirmed'}])
+            with self.assertRaises(ValueError):
+                ns['create'](record, [{}, {'state': 'confirmed'}])
 
     def test_invoice_external_terminal_state_and_red_flush_attribution_denied(self):
         path = MODEL.with_name('invoice_registration.py')
@@ -979,6 +1050,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         rec = self.record(state='draft', reviews=reviews, status=status)
                         rec.write = lambda values: rec.data.update(values)
                         rec._write_invoice_state = lambda values: rec.data.update(values)
+                        rec._write_document_state = lambda values: rec.data.update(values)
                         rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                         rec._check_business_anchor = lambda: None
                         rec._get_tier_reject_reason = lambda: 'real rejection'
