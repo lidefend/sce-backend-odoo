@@ -301,6 +301,29 @@ class ScApprovalPolicy(models.Model):
         return bool(policy and policy.approval_required and policy.mode != "none")
 
     @api.model
+    def _start_submission_review(self, record):
+        """Route a checked submission; callers retain business transitions/audits.
+
+        Private server-side entry, called only after the document's submission
+        authorization and prerequisites. An existing live instance takes priority
+        over mutable policy configuration. No synthetic approval facts are created.
+        """
+        record.ensure_one()
+        company = record.company_id or record.env.company
+        record = record.with_company(company).with_context(allowed_company_ids=[company.id])
+        if record.review_ids:
+            if record.validation_status in ("waiting", "pending"):
+                raise UserError(_("单据仍在审批中，不能重新初始化或跳过当前审批。"))
+            record.restart_validation()
+            if record.review_ids:
+                raise UserError(_("旧审批实例未能重置，请检查单据提交状态。"))
+        if not self.is_approval_required(record._name, company=company):
+            return False
+        if not record.request_validation():
+            raise UserError(_("单据已启用审批，但没有匹配的审批规则，请检查业务审批配置。"))
+        return True
+
+    @api.model
     def next_state_after_submit(self, model_name, submitted_state, approved_state, company=None):
         return submitted_state if self.is_approval_required(model_name, company=company) else approved_state
 

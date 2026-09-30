@@ -902,12 +902,8 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("只有草稿状态的费用/保证金单据可以提交。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                rec.write({"state": "submit", "reject_reason": False})
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(
-                    allowed_company_ids=[company.id],
-                ).request_validation()
+            rec.write({"state": "submit", "reject_reason": False})
+            if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "expense_claim_submitted",
                     before,

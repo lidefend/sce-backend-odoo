@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / 'addons/smart_construction_core/models/core/payment_request.py'
+POLICY = ROOT / 'addons/smart_construction_core/models/support/approval_policy.py'
 STATE = ROOT / 'addons/smart_construction_core/models/support/state_machine.py'
 
 
@@ -37,6 +38,9 @@ def load_methods():
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
     exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
+    route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_start_submission_review')
+    route.decorator_list = []
+    exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
     return namespace, names
 
 
@@ -63,6 +67,7 @@ class Record:
                          next_status='validated', authorized=True)
         self.company_id = types.SimpleNamespace(id=7)
         self.policy = types.SimpleNamespace(is_approval_required=self.requirement)
+        self.policy._start_submission_review = lambda record: PRODUCTION['_start_submission_review'](self.policy, record)
         self.required = required
         self.matching = matching
         self.env = types.SimpleNamespace(context={}, company=self.company_id)
@@ -152,6 +157,8 @@ class Record:
 # Preserve the production method's env lookup while retaining immutable context clones.
 class Env(types.SimpleNamespace):
     def __getitem__(self, name):
+        if name == 'sc.data.validator':
+            return self.validator
         assert name == 'sc.approval.policy'
         return self.policy
 
@@ -173,6 +180,80 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         rec = Record(**kwargs)
         rec.env = Env(context={}, company=rec.company_id, policy=rec.policy, user=42)
         return rec
+
+    def test_shared_submission_route_has_no_model_specific_policy_branch(self):
+        for model in ('payment.request', 'sc.expense.claim', 'sc.settlement.order', 'another.business.document'):
+            for required in (False, True):
+                with self.subTest(model=model, required=required):
+                    rec = self.record(required=required)
+                    rec._name = model
+                    self.assertEqual(rec.policy._start_submission_review(rec), required)
+                    self.assertEqual(rec.requests, int(required))
+                    self.assertEqual(rec.state, 'submit')
+
+    def test_shared_route_preserves_inflight_instance_despite_policy_change(self):
+        for status in ('waiting', 'pending'):
+            rec = self.record(required=False, reviews=['existing'], status=status)
+            with self.assertRaisesRegex(ValueError, '仍在审批中'):
+                rec.policy._start_submission_review(rec)
+            self.assertEqual(rec.review_ids, ['existing'])
+            self.assertEqual(rec.restarts, 0)
+            self.assertEqual(rec.requests, 0)
+
+    def test_shared_route_refuses_failed_native_restart(self):
+        rec = self.record(required=False, reviews=['old'], status='rejected')
+        rec.restart_validation = lambda: None
+        with self.assertRaisesRegex(ValueError, '未能重置'):
+            rec.policy._start_submission_review(rec)
+
+    def test_expense_submission_executes_shared_route_and_preserves_audit(self):
+        path = MODEL.with_name('expense_claim.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_submit')
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        for required in (False, True):
+            rec = self.record(required=required, state='draft')
+            rec._name = 'sc.expense.claim'
+            checks = []
+            rec._check_business_ready = lambda: checks.append('checked')
+            rec.write = lambda values: rec.data.update(values)
+            rec._audit_transition = lambda *values: rec.audits.append(values)
+            namespace['action_submit'](rec)
+            self.assertEqual(checks, ['checked'])
+            self.assertEqual(rec.state, 'submit' if required else 'approved')
+            self.assertEqual(rec.requests, int(required))
+            self.assertEqual(len(rec.audits), 1)
+            self.assertEqual(rec.audits[0][1]['state'], 'draft')
+            self.assertEqual(rec.audits[0][2]['state'], rec.state)
+
+    def test_settlement_submission_preserves_checks_before_shared_route(self):
+        path = MODEL.with_name('settlement_order.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_submit')
+        namespace = {'raise_guard': guard, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        for required in (False, True):
+            rec = self.record(required=required, state='draft')
+            rec._name = 'sc.settlement.order'
+            rec.ids = [23]
+            calls = []
+            rec._assert_lifecycle_role = lambda role: calls.append(role)
+            rec._lock_lifecycle_rows = lambda: calls.append('lock')
+            rec._check_business_anchor_or_raise = lambda: calls.append('anchor')
+            rec._check_line_contracts_or_raise = lambda: calls.append('lines')
+            rec._check_contract_consistency_or_raise = lambda **kw: calls.append(('contract', kw))
+            rec._check_purchase_orders_or_raise = lambda **kw: calls.append(('purchase', kw))
+            rec.env.validator = types.SimpleNamespace(validate_or_raise=lambda **kw: calls.append(('validate', kw)))
+            rec.policy.sudo = lambda: rec.policy
+            def transition(state):
+                calls.append(('state', state))
+                rec.data['state'] = state
+            rec._write_lifecycle = transition
+            namespace['action_submit'](rec)
+            self.assertEqual(calls[:4], ['submit', 'lock', 'anchor', 'lines'])
+            self.assertEqual(calls[6], ('validate', {'scope': {'res_model': rec._name, 'res_ids': [23]}}))
+            self.assertEqual(calls[7], ('state', 'submit'))
+            self.assertEqual(rec.state, 'submit' if required else 'approve')
+            self.assertEqual(rec.requests, int(required))
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)

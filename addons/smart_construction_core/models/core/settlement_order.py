@@ -591,13 +591,8 @@ class ScSettlementOrder(models.Model):
         )
         policy = self.env["sc.approval.policy"].sudo()
         for rec in self:
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                rec._write_lifecycle("submit")
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(
-                    allowed_company_ids=[company.id],
-                ).request_validation()
-            else:
+            rec._write_lifecycle("submit")
+            if not policy._start_submission_review(rec):
                 rec._write_lifecycle("approve")
 
     def action_approve(self):

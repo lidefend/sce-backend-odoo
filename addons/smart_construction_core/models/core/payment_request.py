@@ -3043,15 +3043,7 @@ class PaymentRequest(models.Model):
         company = self.company_id or self.env.company
         record = self.with_company(company).with_context(allowed_company_ids=[company.id])
         policy = self.env["sc.approval.policy"]
-        required = policy.is_approval_required(self._name, company=company)
-        # Start a fresh native approval attempt after a rejected submission.
-        # This uses the existing OCA restart lifecycle, not fabricated review facts.
-        if record.review_ids:
-            record.restart_validation()
-        if required:
-            reviews = record.request_validation()
-            if not reviews:
-                raise UserError(_("付款/收款申请已启用审批，但没有匹配的审批规则，请检查业务审批配置。"))
+        if policy._start_submission_review(record):
             record._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
         else:
             record.with_context(

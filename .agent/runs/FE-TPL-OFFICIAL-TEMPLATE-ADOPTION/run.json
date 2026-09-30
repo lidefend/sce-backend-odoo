@@ -206,12 +206,15 @@
         "addons/smart_construction_core/views/core/payment_request_views.xml",
         "scripts/verify/test_payment_approval_state_machine.py",
         "make/ci.mk",
-        "addons/smart_construction_core/handlers/payment_request_approval.py"
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/core/expense_claim.py",
+        "addons/smart_construction_core/models/core/settlement_order.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement shared approval submission/decision mechanism using existing policy and tier runtime, replacing payment-local orchestration and adapting all necessary business documents with their existing checks/state ownership. Model-bound native coverage is fixed in53.20; four registered state-action product gaps remain. Then governed module upgrade and affected runtime acceptance; no frontend rebuild or unrelated ORM.",
+  "next_exact_step": "Shared _start_submission_review now consumed by payment/expense/settlement (53.21; 33 pure tests). Continue adapting remaining business-document submit routes and converge legacy approval/rejection callbacks on real in-flight review facts; do not re-read mutable policy to bypass existing instances. Four native state-action gaps remain. Governed upgrade/runtime acceptance after stable affected code; no frontend rebuild or unrelated ORM.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -461,6 +464,20 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/model-bound-coverage-tests.log",
       "registered_state_action_gaps": 4,
       "product_completion": false
+    },
+    "shared_submission_route_53_21": {
+      "status": "verification_pending",
+      "source_head": "755453829",
+      "layer": "P1",
+      "test_count": 33,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/shared-approval-route-tests.log",
+      "consumers": [
+        "payment.request",
+        "sc.expense.claim",
+        "sc.settlement.order"
+      ],
+      "runtime": "not_run; pure production-method tests only",
+      "all_document_completion": false
     }
   }
 }

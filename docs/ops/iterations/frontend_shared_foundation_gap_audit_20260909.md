@@ -7549,3 +7549,12 @@ L5：未推送、未合并、未部署。
 - 修正首次运行准确暴露sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve三条此前隐藏路径；读取对应真实方法确认都是状态变更，在原native_view_undeclared_actions登记P1产品缺口。已登记状态动作1→4，不是新增业务缺陷，也不是批准旧路径永久保留。67条台账detail.action-state继续开放，范围仍是所有业务单据。
 - L1 make ci.local.iteration PASS（model-bound-coverage-iteration.log）；L2 make verify.native_view.workflow_action_coverage 8+22=30项通过（model-bound-coverage-tests.log），begin/record30。覆盖守卫通过只证明缺口被完整登记于本工具已采用模型范围，不能证明审批全系统接入。付款28项输入未变，复用既有证据。
 - L3/L4未运行：本批仅验证工具/登记，未改产品或数据库，无需模块升级、重建或浏览器矩阵。之前审批XML升级和真实业务验收仍待，不因本节工具通过而关闭。下一步将付款私有提交编排收敛到共享审批机制，推广必要单据并逐项退出登记中的旧并行入口；不复制模型专属审批引擎。
+
+
+### 53.21 提交审批分流收敛为共享策略服务
+
+- 755453829 clean起步。Formal Product Layer=P1，Layer Target=sc.approval.policy私有提交编排，Module=smart_construction_core；行业单据共享执行责任，不放入前端、P2配置或P4脚本。复用现有审批策略及base_tier_validation，不新增引擎、模型、字段或审批事实。各单据仍负责入口权限、业务校验、状态机转换和审计。
+- 新增_start_submission_review(record)，按单据公司读取配置：未配置返回自动通过分支；已配置调用原生request_validation，匹配为空抛配置错误。已有waiting/pending实例禁止重建或自动通过；终结实例经原生restart_validation重置后必须确实清空，否则失败。调用为私有服务，不能由RPC直接发起，提交前置条件由调用单据验证。
+- 付款、费用、结算三条提交路径已实际消费共同机制，删除各自重复的配置/创建review逻辑。费用和结算统一先进入原有submit状态，再由服务决定保持审批中或转各自approved/approve；保留原有业务校验、结算锁和数据验证、费用审计，不伪造validated。付款原有自动批准私有token与金额/状态守卫继续生效。
+- L1 ci.local.iteration PASS（shared-approval-route-iteration.log）。L2 verify.payment.approval_state_machine.unit稳定33项（shared-approval-route-tests.log，begin/record33）：执行实际共享服务，跨模型配置分流、在途配置改变不绕过、原生重置失败拒绝；执行真实费用/结算action_submit，核对业务校验、锁/数据验证、原状态名与审计。新增测试后只重跑受影响目标，不重复其他页面证据。
+- 这是共同机制首次落地，不是全单据完成：其他单据提交消费者、费用/结算旧批准和回调的在途实例权威仍须继续统一，原四项状态动作缺口未关闭。未执行ORM事务/真实多级配置验收，不能把函数测试等同运行验收。此前付款XML仍需受管模块升级，稳定批次统一进行；前端产物不变、不重建、不推送/合并/目标部署。
