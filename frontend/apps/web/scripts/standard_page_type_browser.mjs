@@ -657,7 +657,12 @@ try {
           for (const [name, label] of [['project_id', '项目'], ['contractor_id', '劳务单位'], ['settlement_date', '结算日期'], ['note', '结算说明']]) {
             const field = nodes.find((node) => node.name === name);
             check(`labor settlement: ${name} input contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true && field.componentConfig?.readonly !== true);
-            check(`labor settlement: ${name} input visible`, await session.page.getByText(label, { exact: true }).count() > 0);
+            const input = name === 'project_id' || name === 'contractor_id'
+              ? session.page.getByPlaceholder(`请选择${label}`, { exact: true })
+              : name === 'settlement_date'
+                ? session.page.locator(`input[value="${authority.mainData.settlement_date}"]`)
+                : session.page.locator('textarea');
+            check(`labor settlement: ${name} input visible`, await input.count() > 0);
           }
         }
         if (spec.model === 'sc.material.settlement') check('material settlement: generated number absent on create', await session.page.getByText('结算单号', { exact: true }).count() === 0);

@@ -321,7 +321,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.87 three create probes14 each but screenshot finds labor settlement project/contractor inputs absent and date text. Trace existing tpl07-1790782924026 parent structure/layout/field authority versus native form, fix owning contract/renderer layer and strengthen create assertions. Existing PM three records empty; no repeated empty query/new fixtures. Reuse runtime25/backend1c18db880/frontend7915f3bb9; no rebuild unless frontend changes. Overall adoption remains incomplete.",
+  "next_exact_step": "53.88 backendbfcc36599 upgrade/reload PASS; published input readonly fixed,82 tests PASS. Browser tpl07-1790783233663 proves project/contractor/date contracts and controls restored, note editable authority but no textarea (15th assertion failed). Trace shared canonicalFormFloorplan/activity collaboration consumption for note. Keep assertion; no model-specific workaround, no repeat module upgrade or empty-record queries. Frontend7915f3bb9 unchanged; rebuild only after frontend fix. Overall67/action-state incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

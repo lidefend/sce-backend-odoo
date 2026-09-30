@@ -8203,3 +8203,8 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 复用53.87响应定位：native字段存在且模型可编辑，但P1发布sc_labor_settlement_p1_form_business_facts_v1把project_id/contractor_id/settlement_date/note无条件readonly，导致官方共享消费显示为事实而非输入。P1行业标准发布载体移除四项无条件只读，继承原生约束；付款/计算/来源事实只读保持。不向P0或前端写业务规则，不改ACL/审批/确认状态机。
 
 候选73e9a538f+本段dirty，L1 labor-settlement-input-iteration.log PASS、XML通过测试解析、diff/node检查PASS；L2 labor-settlement-input-unit.log82 PASS并登记非零回执，新增测试证明输入策略与付款事实分离。浏览器工具增加四字段契约及可见性断言，尚待升级后执行；运行时25不受业务逻辑变化影响，不重跑。原生动作55/语义15输入不变复用。下一步仅受管模块升级发布XML并复验结算创建；前端构建7915f3bb9复用，L5未运行。
+
+
+53.88运行：bfcc36599受管升级/reload成功（labor-settlement-input-upgrade.log/reload.log），前端构建未变。首次tpl07-1790783153713项目契约可编辑断言通过、精确label失败；截图实际项目/单位/日期已恢复输入。P4标签正则重试tpl07-1790783207949仍不匹配实际控件标签，不作为产品失败证据。改以关系输入placeholder及日期authority值绑定控件，tpl07-1790783233663证明项目/单位/日期契约与控件存在，note契约可编辑但无textarea，止于第15项，不能宣布页面通过。无errors/业务写。
+
+剩余产品缺口已缩小为说明字段共享消费：契约note role=activity，slots collaboration，普通文本框未呈现。下一步追查canonicalFormFloorplan/共享协作区域，不在前端添加劳务模型规则，不重复升级/XML修复或既有空记录查询。L3契约加载成功，L4仍failed，保持detail.action-state开放。

@@ -316,3 +316,8 @@ P1 source81/native55/semantics15 PASS. Runtime25 PASS with verified rollback (la
 ### Segment53.87 — Labor settlement create lacks necessary inputs
 
 Three labor execution create probes pass14 narrow assertions each, but screenshot review of tpl07-1790782924026 shows sc.labor.settlement lacks project/contractor inputs present in its native form and shows settlement date as text. Treat this as a product gap in effective contract/rendering, not completed creation. Trace the captured parent structure/layout and field authority before assigning ownership. Existing PM records for attendance/usage/settlement are empty; role-bound handling remains unverified. Preserve detail.action-state as open and do not infer whole-row completion from renderer/button checks.
+
+
+### Segment53.88 — Settlement input authority repaired; note rendering still missing
+
+P1 publication no longer forces project/contractor/date/note readonly; computed/payment/provenance readonly remains.82 focused tests pass. Backendbfcc36599 and unchanged frontend7915f3bb9 produce editable contracts for all four inputs. Captured browser tpl07-1790783233663 confirms project/contractor/date controls, but note textarea is absent despite editable authority. Keep this shared rendering gap open; inspect activity-role text consumption rather than adding model-specific frontend behavior. Earlier label matching failures were P4 observation defects, not evidence that restored relationship inputs were absent. No complete create/save journey proven.
