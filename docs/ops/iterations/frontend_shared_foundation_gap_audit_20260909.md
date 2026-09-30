@@ -7473,3 +7473,11 @@ L5：未推送、未合并、未部署。
 - 删除失败保留确认面与可重试反馈；删除成功后刷新有效契约和列表，当前选中收藏同步清除。删除成功但刷新失败明确告知无需再次删除，关闭删除确认，不以刷新失败重发删除请求。
 - L1 ci.local.iteration passed；L2 collection_action_toolbar 31+11=42通过（tpl52/favorite-delete-ui-receipt-tests.log，begin/record42），包含严格动作参数、VM动作透传、删除失败/刷新失败区分；strict typecheck、style_system.guard、contract_consumer_intrusion.guard通过（tpl52/favorite-delete-consumer-types.log）。中途类型检查期间仅helper/adapter收紧，最终再跑stable typecheck，使用最终日志。无ORM/构建/数据库写入。
 - 下一步受管重载后端至本批代码、稳定后一次构建，复用5180完成真实收藏保存→刷新→取消删除确认→确认删除→刷新回读，补失败与窄屏定向检查。collection.favorite仍为开放产品缺口，静态通过不能代替真实闭环。
+
+
+### 53.13 收藏闭环实测暴露并修复请求身份冲突
+
+- 候选faffa6cd6已受管backend.acceptance.up重载，原静态候选保留，构建22.20s并复用5180。真实私有收藏保存生成ir.filters id9（finance uid30、payment.request/action775、非默认、名称FE-TPL53-私有收藏闭环），服务端回读一致。新删除入口、双视口确认/取消及注入失败保留记录已通过。
+- 实际删除失败报告tpl07-1790769469765/report.json：INTENT_NOT_FOUND“记录[9]不存在”。P0 product_defect：请求model=payment.request与通用id=9触发路由前置业务记录检查，错误地把收藏ID当付款记录ID。不能修改/绕过通用权限保护；修正为明确filter_id，由收藏handler按ir.filters归属/ACL/record-rule执行。响应id仍是删除结果身份。
+- 生产者/consumer/handler及定向反例同步改filter_id；29项后端、42项前端及strict typecheck通过（tpl52/favorite-filter-identity-fix.log）。浏览器新增精确续验模式，只接受原报告所见id9及完整私有对象身份，不重建收藏；恢复只走产品删除入口。
+- 此处提交是修复候选，真实删除/恢复待新代码受管重载及构建后续验。既有id9仍须恢复，不能把失败或工具清理计作闭环完成。第二次构建属于已定位产品缺陷后的必要重验，不是无变化重建。

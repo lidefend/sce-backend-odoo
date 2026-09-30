@@ -307,7 +307,7 @@ class AppSearchConfig(models.Model):
                 "intent": "search.favorite.delete", "label": "删除收藏",
                 "enabled": row["deletable"],
                 "disabled_reason": "" if row["deletable"] else "SAVED_SEARCH_DELETE_DENIED",
-                "params": {"id": row_id, "model": model_name,
+                "params": {"filter_id": row_id, "model": model_name,
                            "action_id": row.get("action_id") or False},
             }
         return rows

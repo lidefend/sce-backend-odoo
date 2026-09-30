@@ -355,7 +355,7 @@ class SavedSearchDeleteCapabilityTests(unittest.TestCase):
         rows = _record(module, env)._project_saved_filter_mutation_rows(
             [{"id":1,"owner":7,"action_id":31},{"id":2,"owner":False,"is_shared":True}], 7, "x.demo")
         self.assertTrue(rows[0]["delete_action"]["enabled"])
-        self.assertEqual(rows[0]["delete_action"]["params"], {"id":1,"model":"x.demo","action_id":31})
+        self.assertEqual(rows[0]["delete_action"]["params"], {"filter_id":1,"model":"x.demo","action_id":31})
         self.assertFalse(rows[1]["deletable"])
         self.assertFalse(rows[1]["delete_action"]["enabled"])
 

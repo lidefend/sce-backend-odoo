@@ -48,9 +48,9 @@ assert.match(refreshFailure.message, /无需再次保存/);
 assert.equal(writes, 2);
 
 
-const deleteGrant = { intent: 'search.favorite.delete', enabled: true, label: '删除收藏', params: { id: 17, model: 'x.demo', action_id: 31 } };
+const deleteGrant = { intent: 'search.favorite.delete', enabled: true, label: '删除收藏', params: { filter_id: 17, model: 'x.demo', action_id: 31 } };
 assert.deepEqual(resolveSavedSearchDeleteAction(deleteGrant), deleteGrant);
-for (const malformed of [undefined, {}, { ...deleteGrant, enabled: false }, { ...deleteGrant, intent: 'api.data.unlink' }, { ...deleteGrant, params: { ...deleteGrant.params, id: true } }, { ...deleteGrant, params: { ...deleteGrant.params, action_id: '31' } }, { ...deleteGrant, params: { ...deleteGrant.params, model: '' } }]) {
+for (const malformed of [undefined, {}, { ...deleteGrant, enabled: false }, { ...deleteGrant, intent: 'api.data.unlink' }, { ...deleteGrant, params: { ...deleteGrant.params, filter_id: true } }, { ...deleteGrant, params: { ...deleteGrant.params, action_id: '31' } }, { ...deleteGrant, params: { ...deleteGrant.params, model: '' } }]) {
   assert.equal(resolveSavedSearchDeleteAction(malformed), null);
 }
 assert.deepEqual(toChipVM({ key: 'favorite', label: ' renamed ', deleteAction: deleteGrant })?.deleteAction, deleteGrant);

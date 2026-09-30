@@ -60,6 +60,8 @@ assert.equal(createHash('sha256').update(entry).digest('hex'), build.entry_sha25
 report.build = build;
 const browser = await launchChromium({ headless: true });
 const pendingProbeAborts = new Set();
+let favoriteWritePermit = null;
+const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
 async function login(role) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
@@ -67,8 +69,22 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (favoriteWritePermit && body?.intent === favoriteWritePermit.intent) {
+      const permit = favoriteWritePermit;
+      const params = body.params || {};
+      const exact = params.model === 'payment.request' && Number(params.action_id) === 775
+        && (body.intent === 'search.favorite.set'
+          ? params.name === lifecycleName && params.is_default === false && params.is_shared === false
+          : params.filter_id === permit.id);
+      if (exact) {
+        favoriteWritePermit = null;
+        report.configurationAttempts ??= [];
+        report.configurationAttempts.push({ intent: body.intent, id: params.filter_id, injectedFailure: permit.abort === true });
+        return permit.abort ? route.abort('failed') : route.continue();
+      }
+    }
     if ((body?.intent === 'api.data' && !['list', 'read'].includes(body.params?.op))
-      || ['search.favorite.set', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
+      || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op });
       return route.abort();
     }
@@ -386,7 +402,97 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'task-authority') {
+  if (['favorite-lifecycle', 'favorite-lifecycle-resume'].includes(process.env.TPL07_SCOPE)) {
+    const finance = await login('fixture_role_finance');
+    const page = finance.page;
+    await list(page, 545, 'favorite-lifecycle-list');
+    async function readFavorite() {
+      const response = await page.evaluate(async (name) => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model: 'ir.filters', fields: ['id', 'name', 'user_id', 'model_id', 'action_id', 'is_default'], domain: [['name','=',name],['user_id','=',30],['model_id','=','payment.request'],['action_id','=',775]], limit: 2 } }),
+        })).json();
+      }, lifecycleName);
+      check('favorite lifecycle: authoritative query succeeds', response.ok === true && Array.isArray(response.data?.records));
+      return response.data.records;
+    }
+    const baseline = await readFavorite();
+    const resuming = process.env.TPL07_SCOPE === 'favorite-lifecycle-resume';
+    if (resuming) {
+      const originalPath = 'artifacts/frontend-web-fix-20260928/tpl07-1790769469765/report.json';
+      const original = JSON.parse(await fs.readFile(path.join(root, originalPath)));
+      const created = original.favoriteCreated?.[0];
+      check('favorite lifecycle: resume exact previously observed private record', original.favoriteSaved?.ok === true
+        && created?.id === 9 && baseline.length === 1 && JSON.stringify(baseline[0]) === JSON.stringify(created));
+      report.carriedForwardSave = originalPath;
+    } else check('favorite lifecycle: named private configuration initially absent', baseline.length === 0);
+    check('favorite lifecycle: explicit save authority', report.savedSearchAuthority?.save_enabled === true);
+    const menu = page.getByRole('button', { name: '展开搜索菜单', exact: true });
+    let id = baseline[0]?.id;
+    await menu.click();
+    if (!resuming) {
+    await page.getByRole('button', { name: report.savedSearchAuthority.label, exact: true }).click();
+    const name = page.getByPlaceholder('收藏名称', { exact: true });
+    await name.fill(lifecycleName);
+    favoriteWritePermit = { intent: 'search.favorite.set' };
+    const saveResponse = page.waitForResponse((response) => response.request().postData()?.includes('search.favorite.set'), { timeout: 15000 });
+    await page.getByRole('button', { name: /^保存/ }).click();
+    const saved = await (await saveResponse).json();
+    report.favoriteSaved = saved;
+    check('favorite lifecycle: server accepted save', saved.ok === true && Number(saved.data?.id) > 0);
+    const rows = await readFavorite();
+    report.favoriteCreated = rows;
+    check('favorite lifecycle: exact private nondefault record read back', rows.length === 1 && rows[0].id === saved.data.id && rows[0].is_default === false);
+    id = rows[0].id;
+    await name.waitFor({ state: 'detached' });
+    }
+    // The menu stays open after saving; the refreshed contract supplies deletion.
+    const deleteButton = page.getByRole('button', { name: `删除收藏：${lifecycleName}`, exact: true });
+    await deleteButton.waitFor();
+    check('favorite lifecycle: refreshed menu supplies product delete action', await deleteButton.isEnabled());
+    await page.reload();
+    await page.locator('[data-list-card-container="official"]').waitFor();
+    await menu.click();
+    await deleteButton.waitFor();
+    check('favorite lifecycle: reload retains saved item and deletion grant', await deleteButton.isEnabled());
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+      if (!(await deleteButton.isVisible())) await menu.click();
+      await deleteButton.click();
+      const dialog = page.getByRole('dialog', { name: '删除收藏', exact: true });
+      await dialog.waitFor();
+      check(`favorite-${width}: official confirmation`, await dialog.getAttribute('data-semantic-driver') === 'tdesign-dialog');
+      check(`favorite-${width}: deletion scope explained`, (await dialog.innerText()).includes('不删除业务记录'));
+      check(`favorite-${width}: confirmation fits viewport`, await dialog.evaluate((el) => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
+      await page.screenshot({ animations: 'disabled', path: path.join(out, `favorite-delete-${width}.png`) });
+      await dialog.getByRole('button', { name: '取消', exact: true }).click();
+      await dialog.waitFor({ state: 'detached' });
+    }
+    check('favorite lifecycle: cancel preserved exact record', (await readFavorite())[0]?.id === id);
+    await menu.click();
+    await deleteButton.click();
+    const dialog = page.getByRole('dialog', { name: '删除收藏', exact: true });
+    favoriteWritePermit = { intent: 'search.favorite.delete', id, abort: true };
+    await dialog.getByRole('button', { name: '确认删除', exact: true }).click();
+    await dialog.getByRole('alert').waitFor();
+    check('favorite lifecycle: failed deletion retains confirmation', await dialog.isVisible());
+    check('favorite lifecycle: failed deletion preserved record', (await readFavorite())[0]?.id === id);
+    favoriteWritePermit = { intent: 'search.favorite.delete', id };
+    const deleteResponse = page.waitForResponse((response) => response.request().postData()?.includes('search.favorite.delete'), { timeout: 15000 });
+    await dialog.getByRole('button', { name: '确认删除', exact: true }).click();
+    const deleted = await (await deleteResponse).json();
+    report.favoriteDeleted = deleted;
+    check('favorite lifecycle: server confirms exact deletion', deleted.ok === true && deleted.data?.deleted === true && deleted.data?.id === id);
+    await dialog.waitFor({ state: 'detached' });
+    check('favorite lifecycle: authoritative state restored', (await readFavorite()).length === 0);
+    check('favorite lifecycle: refreshed menu removed deleted entry', await deleteButton.count() === 0);
+    await page.reload();
+    await page.locator('[data-list-card-container="official"]').waitFor();
+    await menu.click();
+    check('favorite lifecycle: reload retains restoration', await page.getByText(lifecycleName, { exact: true }).count() === 0);
+    await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'task-authority') {
     const finance = await login('fixture_role_finance');
     await form(finance.page, '/f/payment.request/1813?menu_id=545&action_id=775', 'task-authority');
     const authority = report.taskAuthorities?.['payment.request'];
@@ -627,7 +733,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

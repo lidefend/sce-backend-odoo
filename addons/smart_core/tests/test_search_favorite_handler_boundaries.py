@@ -249,7 +249,7 @@ class TestSearchFavoriteDeleteBoundaries(unittest.TestCase):
             target.check_access_rights = lambda operation: (_ for _ in ()).throw(error("model denied"))
         env = _Env({"x.model":target,"ir.filters":filters})
         env.user = types.SimpleNamespace(has_group=lambda group: internal)
-        handler = module.SearchFavoriteDeleteHandler(env=env, payload={"id":17,"model":"x.model","action_id":31})
+        handler = module.SearchFavoriteDeleteHandler(env=env, payload={"filter_id":17,"model":"x.model","action_id":31})
         return handler, record, filters, error
 
     def test_owner_can_delete_exact_private_filter_without_elevation(self):
@@ -281,7 +281,7 @@ class TestSearchFavoriteDeleteBoundaries(unittest.TestCase):
         self.assertFalse(record.deleted)
 
     def test_invalid_id_and_action_types_are_rejected(self):
-        for key, value in (("id",True),("id",0),("id","17"),("action_id",True),("action_id",-1),("action_id","31")):
+        for key, value in (("filter_id",True),("filter_id",0),("filter_id","17"),("action_id",True),("action_id",-1),("action_id","31")):
             with self.subTest(key=key,value=value):
                 handler, record, _, _ = self.setup_handler()
                 handler.payload[key] = value

@@ -22,7 +22,7 @@ export type SavedSearchDeleteAction = {
   intent: 'search.favorite.delete';
   enabled: true;
   label: string;
-  params: { id: number; model: string; action_id: number | false };
+  params: { filter_id: number; model: string; action_id: number | false };
 };
 
 export function resolveSavedSearchDeleteAction(value: unknown): SavedSearchDeleteAction | null {
@@ -30,12 +30,12 @@ export function resolveSavedSearchDeleteAction(value: unknown): SavedSearchDelet
   const row = value as Record<string, unknown>;
   const params = row.params as Record<string, unknown> | undefined;
   if (row.intent !== 'search.favorite.delete' || row.enabled !== true || !params || typeof params !== 'object' || Array.isArray(params)
-    || !Number.isInteger(params.id) || Number(params.id) <= 0
+    || !Number.isInteger(params.filter_id) || Number(params.filter_id) <= 0
     || typeof params.model !== 'string' || !params.model.trim()
     || !(params.action_id === false || (Number.isInteger(params.action_id) && Number(params.action_id) >= 0))) return null;
   return { intent: 'search.favorite.delete', enabled: true,
     label: typeof row.label === 'string' && row.label.trim() ? row.label.trim() : '删除收藏',
-    params: { id: Number(params.id), model: params.model, action_id: params.action_id as number | false } };
+    params: { filter_id: Number(params.filter_id), model: params.model, action_id: params.action_id as number | false } };
 }
 
 export type SavedSearchDeletionResult = { deleted: boolean; message: string };

@@ -495,7 +495,7 @@ function openFavoriteDelete(chip: { label: string; deleteAction?: SavedSearchDel
   if (!chip.deleteAction || !props.deleteFavorite || favoriteDeleting.value || favoriteSaving.value) return;
   closeSearchMenuAndRestoreFocus();
   deleteFeedback.value = '';
-  pendingFavoriteDelete.value = { label: chip.label, id: chip.deleteAction.params.id };
+  pendingFavoriteDelete.value = { label: chip.label, id: chip.deleteAction.params.filter_id };
 }
 function closeFavoriteDelete() {
   if (favoriteDeleting.value) return;

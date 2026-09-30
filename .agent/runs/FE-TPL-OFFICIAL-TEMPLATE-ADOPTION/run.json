@@ -180,7 +180,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Governed backend reload for new search.favorite.delete and per-row authority, preserve current static candidate and build once. Extend existing browser probe with narrowly authorized private saved-search product writes; verify save/refresh/cancel/delete/refresh restoration, deletion failure and narrow-screen controls. No P4 cleanup substitute or new fixtures; collection.favorite remains open until real lifecycle passes.",
+  "next_exact_step": "Commit filter_id correction, governed backend reload and justified rebuild, then TPL07_SCOPE=favorite-lifecycle-resume: reuse exact saved ir.filters9 from original report and delete through product UI. No second create or P4 cleanup. Product gap stays open until authoritative restoration passes.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -336,6 +336,14 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-ui-receipt-tests.log",
       "types_and_guards": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-consumer-types.log",
       "runtime": "not_run; product gap stays open"
+    },
+    "favorite_lifecycle_53_13": {
+      "status": "verification_pending",
+      "source_head": "faffa6cd6",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790769469765/report.json",
+      "failure_owner": "P0 request identity: generic id interpreted as target model record",
+      "fix": "filter_id explicit saved-search identity;29+42 tests and strict types passed",
+      "pending_private_filter_id": 9
     }
   }
 }

@@ -178,10 +178,10 @@ class SearchFavoriteDeleteHandler(SearchFavoriteSetHandler):
         params = self._params(payload or self.payload)
         if not isinstance(params, dict):
             return self._err(400, "params 无效")
-        record_id = params.get("id")
+        record_id = params.get("filter_id")
         action_id = params.get("action_id", 0)
         if type(record_id) is not int or record_id <= 0:
-            return self._err(400, "id 无效")
+            return self._err(400, "filter_id 无效")
         if action_id is False:
             action_id = 0
         if type(action_id) is not int or action_id < 0:
