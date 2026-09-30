@@ -493,3 +493,8 @@ Managed self-funding/reconciliation scope passes10 checks with restoration verif
 ## Segment 53.132: ordinary finance reconciliation and official create consumption
 
 Same-transaction runtime10 passes with both self-funding and reconciliation document handling under non-sudo fixture finance; real reviewers, elevated preparation/configuration/readback and verified rollback remain explicit. Official create pages each pass20 checks: self-funding tpl07-1790795749295 and reconciliation tpl07-1790795762666, both viewports, no errors/undeclared writes. Two earlier self-funding probe failures were fixed by navigating contract-declared pages via visible labels; this does not establish ARIA tab semantics. Saved-record browser handling, refunds/balances, reviewed-content integrity and remaining financial scope stay open.
+
+
+## Segment 53.133: reviewed self-funding fields match readonly workflow contract
+
+P1 write guard now freezes key self-funding content during pending review and after confirmation, preserving existing controlled migration and completed-record supplement rules. Pure144 and managed runtime11 pass at backend9bb5435b0 with verified rollback: actual finance actor cannot change reviewed amount/identity/evidence links, workflow editability is readonly, and completion posts the original amount. Prior create-page evidence is reused for unchanged rendering inputs. Attachment-content/external-reference mutation, refund balance, saved browser handling and other finance scope remain unverified.

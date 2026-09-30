@@ -8740,3 +8740,12 @@ a7cba573c clean起点，P4复用_finance_state_authority_checks增加显式actor
 既有standard_page_type_browser扩展这两个模型的approval-actions/create范围，复用官方表单/有效契约/双视口检查。自筹初次tpl07-1790795655360失败在project_id输入：字段在非活动页签；第二次tpl07-1790795696883按tab角色定位超时，页面未暴露该角色。截图和有效layout证明字段位于项目与承包人/自筹金额页签。工具按契约page层级的可见名称点击，不改产品或降级字段断言，node --check/diff通过。两次失败保留，不计通过；页签可访问性语义本轮未修，不以探针改动宣称其已符合ARIA。
 
 最终自筹tpl07-1790795749295、对账tpl07-1790795762666分别20 PASS；各errors=[]/forbiddenWrites=[]。关键关系/金额输入可用，未保存单据无审批通过/执行动作；1440和390无整页溢出。仅创建页/只读导航，没有新增持久单据，不证明保存后浏览器审核/执行。前序ORM10项与创建页20项分开记录、不升级总体67/detail.action-state。自筹退回/余额、已审核内容冻结、其他财务模型以及合同来源缺口仍开放。下一步回到必要财务执行/契约一致性未覆盖项，不重跑本批通过页面。无推送合并目标部署。
+
+
+### 53.133 自筹审批内容与只读契约一致（144纯测/11运行通过）
+
+54f251d50 clean起点。P1 self_funding_registration原write只有done终态保护，而workflowContract已对waiting/pending/approved发布readonly。补普通write关键业务字段保护：审批中draft(waiting/pending/validated)或confirmed不可改金额、项目/公司/承包人、币种、办理类型、分类、日期/来源号、账户、摘要、附件及有效性。沿用私有财务token，不动原历史迁移/已完成后允许补充备注附件规则；备注仍非审批金额/身份，不扩大成全部字段冻结。无schema/XML/frontend变更。
+
+L1 self-funding-freeze-iteration.log PASS；self-funding-freeze-unit.log144 PASS并begin/record非零成功。原生动作名称/状态映射/XML及consumer均未改，复用已有62项声明证据但不将其当新增write guard证据；144纯测与实际运行负责证明本改动。源码9bb5435b0受管reload后self-funding-freeze-runtime.log11 PASS/ROLLBACK VERIFIED：实际fixture finance在审关键内容改写拒绝，批准金额修改拒绝，describe_record.editability只读，显式完成仍按100原金额生成台账并完成对账。原策略/步骤恢复与临时记录消失均回读。env local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷不变。
+
+前序两个创建页20项依赖的布局/输入/动作声明未变，沿原报告复用，不重新浏览器或构建。这里只关闭自筹已审核内容直接字段写入与共享只读契约一致性；附件底层内容/外部关联记录变化、refund余额、保存后浏览器及其他财务单据未覆盖项仍开放。下一步继续同组其他单据必要执行/审核内容边界，优先融资完成/真实审批、收款与付款冲销运行；不得将本项11通过升级总体67/detail.action-state。无推送合并目标部署。
