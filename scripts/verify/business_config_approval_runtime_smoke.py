@@ -502,11 +502,27 @@ def _red_flush_approval_checks(project, group, created):
     assert not Policy.with_context(active_test=False).search_count([("target_model", "=", model), ("company_id", "in", [False, project.company_id.id])])
     partner = _partner("Rollback red flush partner")
     created.append((partner._name, partner.id))
+    registrar_group = env.ref("smart_construction_core.group_sc_cap_finance_manager")
+    registrars = registrar_group.users.filtered(lambda user: user.active and not user.share and project.company_id in user.company_ids)
+    assert registrars, "existing company-scoped finance registrar required"
+    registrar = registrars.sorted("id")[:1]
+    def confirm(record):
+        # Existing financial role supplies the permission; elevated fixture
+        # source access is preparation, not ordinary-role usability evidence.
+        record.with_user(registrar).sudo().action_confirm()
+        record.invalidate_recordset()
     def document(amount=100):
-        source = env["sc.invoice.registration"].sudo().create({"project_id": project.id, "partner_id": partner.id, "direction": "output", "source_kind": "output_invoice_tax", "state": "registered", "invoice_no": "RUNTIME-RED-SOURCE", "amount_total": amount, "amount_no_tax": amount})
+        source = env["sc.invoice.registration"].sudo().create({"project_id": project.id, "partner_id": partner.id, "direction": "output", "source_kind": "output_invoice_tax", "invoice_no": "RUNTIME-RED-SOURCE", "amount_total": amount, "amount_no_tax": amount})
         created.append((source._name, source.id))
         number = "RUNTIME-RED-%s" % source.id
         source.write({"invoice_no": number})
+        source.action_confirm()
+        if source.review_ids:
+            _approve_existing_reviews(source)
+        assert source.state == "confirmed"
+        source.with_user(registrar).sudo().action_register()
+        source.invalidate_recordset()
+        assert source.state == "registered"
         source.flush_recordset()
         ledger = env["sc.output.invoice.ledger"].sudo().search([("source_model", "=", source._name), ("source_record_id", "=", source.id)], limit=1)
         assert ledger, "existing ledger projection must include source invoice"
@@ -521,6 +537,10 @@ def _red_flush_approval_checks(project, group, created):
             refused = True
         assert refused, "red flush boundary was bypassed"
     automatic = document()
+    denied(lambda: env["sc.invoice.registration"].sudo().create({"state": "registered", "project_id": project.id}))
+    original = automatic._original_source_record(automatic.original_ledger_id)
+    denied(lambda: original.write({"state": "draft"}))
+    denied(lambda: original.with_context(sc_invoice_state_token=True).write({"state": "draft"}))
     denied(lambda: automatic.write({"state": "approved"}))
     denied(lambda: env[model].sudo().with_context(default_state="approved").create({"original_ledger_id": automatic.original_ledger_id.id}))
     denied(automatic.action_confirm)
@@ -532,7 +552,10 @@ def _red_flush_approval_checks(project, group, created):
     denied(lambda: automatic.write({"original_invoice_amount": 1}))
     denied(automatic.action_submit)
     print("APPROVAL_CHECK=red_flush_approved_amount_and_reset_protected")
-    automatic.action_confirm()
+    non_registrar = env["res.users"].sudo().search([("login", "=", "fixture_role_pm")], limit=1)
+    assert non_registrar and not env["sc.invoice.registration"].with_user(non_registrar)._has_finance_register_access(), "existing non-registrar role required"
+    denied(lambda: automatic.with_user(non_registrar).sudo().action_confirm())
+    confirm(automatic)
     ledger = automatic.generated_invoice_id
     assert ledger and ledger.state == "registered" and ledger.amount_total == -automatic.original_invoice_amount and ledger.direction == "output"
     assert ledger.red_flush_adjustment_id == automatic
@@ -572,7 +595,7 @@ def _red_flush_approval_checks(project, group, created):
     assert required.state == "approved" and required.validation_status == "validated"
     assert not required.generated_invoice_id
     print("APPROVAL_CHECK=red_flush_real_approval_callback")
-    required.action_confirm()
+    confirm(required)
     ledger = required.generated_invoice_id
     assert required.state == "confirmed" and ledger and ledger.state == "registered"
     assert ledger.amount_total == -required.original_invoice_amount and ledger.red_flush_adjustment_id == required
@@ -597,12 +620,10 @@ def _red_flush_approval_checks(project, group, created):
     changed.action_submit()
     _approve_existing_reviews(changed)
     source = changed._original_source_record(changed.original_ledger_id)
-    source.write({"amount_total": changed.original_invoice_amount + 1})
-    source.flush_recordset()
-    changed.original_ledger_id.invalidate_recordset()
-    denied(changed.action_confirm)
+    denied(lambda: source.write({"amount_total": changed.original_invoice_amount + 1}))
     assert not changed.generated_invoice_id
-    print("APPROVAL_CHECK=red_flush_source_change_rejects_stale_approval")
+    assert source.amount_total == changed.original_invoice_amount
+    print("APPROVAL_CHECK=red_flush_registered_source_amount_is_immutable")
 
 
 def _tender_guarantee_approval_checks(project, group, created):
