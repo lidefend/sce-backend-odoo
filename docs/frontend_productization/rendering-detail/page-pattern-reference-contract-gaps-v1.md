@@ -281,3 +281,8 @@ Official create14 checks pass (tpl07-1790780248705), but screenshot/effective-co
 ### Segment53.74 — Purchase request generated-number create gap fixed
 
 P1 native readonly/invisible-not-id declaration is live on backend41d692abe. Effective modifiers carry readonly=true and not(field_truthy id); official create15 checks pass (tpl07-1790780449473), narrow screenshot confirms the generated number is absent. No frontend rule or rebuild. Existing-record readonly UI remains unobserved because the authorized query is empty; approval8 unchanged evidence remains valid. This closes the observed create-number defect only, not full record handling or detail.action-state.
+
+
+### Segment53.75–53.76 — RFQ approval and separate quotation selection
+
+P1 RFQ shared approval source74/native50/semantics15 PASS. Managed runtime8 PASS with rollback verified on a3379822c: no configuration auto-approves only; configured real tier blocks selection/order; undefined monetary rule rejected; approval preserves quote selection requirement; explicit selection then draft order; rejection/resubmission preserves separation. Native reset/state/order visibility matches authority. Official create15 PASS (tpl07-1790780849651); PM record query empty (tpl07-1790780863288), actual role record handling remains pending. No frontend rebuild/new fixture. Existing overall action-state gap stays open.

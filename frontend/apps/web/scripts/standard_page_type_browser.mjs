@@ -594,11 +594,12 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.purchase.request', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.material.rfq', domain: [] },
       { role: 'fixture_role_pm', model: 'project.project', stateField: 'lifecycle_state', fields: ['sc_approval_state'], domain: [] },
       { role: 'fixture_role_pm', model: 'project.task', stateField: 'sc_state', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
@@ -608,17 +609,18 @@ try {
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq'].includes(spec.model));
         report.recordAuthority = null;
         await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
         const authority = report.recordAuthority;
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.material.rfq') check('RFQ: generated number absent on create', await session.page.getByText('询价单号', { exact: true }).count() === 0);
         if (spec.model === 'sc.material.purchase.request') {
           check('purchase request: generated number not exposed for create input', await session.page.getByText('申请单号', { exact: true }).count() === 0);
         }
 
-        for (const name of ['审批通过', '审批驳回', '完成', ...(spec.model === 'sc.material.inbound' ? ['确认入库'] : spec.model === 'sc.material.acceptance' ? ['验收通过', '验收不通过'] : spec.model === 'sc.material.purchase.request' ? ['生成询价单', '生成采购订单'] : [])]) {
+        for (const name of ['审批通过', '审批驳回', '完成', ...(spec.model === 'sc.material.inbound' ? ['确认入库'] : spec.model === 'sc.material.acceptance' ? ['验收通过', '验收不通过'] : spec.model === 'sc.material.purchase.request' ? ['生成询价单', '生成采购订单'] : spec.model === 'sc.material.rfq' ? ['确定报价', '生成采购订单'] : [])]) {
           check(`${spec.model}: unsaved form has no ${name} action`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
         }
         for (const width of [1440, 390]) {
@@ -672,6 +674,14 @@ try {
         if (spec.model === 'sc.plan' && record.state !== 'cancel') {
           check('plan: reset absent outside cancelled state', await session.page.getByRole('button', { name: '重置草稿', exact: true }).count() === 0);
         }
+      }
+      if (spec.model === 'sc.material.rfq') {
+        const rules = authority.actions?.actionRuleList || [];
+        for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject'], ['action_select', 'complete']]) {
+          check(`RFQ: ${method} declares its responsibility`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        }
+        if (record.state !== 'approved') check('RFQ: quote selection absent before approval or after selection', await session.page.getByRole('button', { name: '确定报价', exact: true }).count() === 0);
+        if (record.state !== 'selected') check('RFQ: order generation absent before selection', await session.page.getByRole('button', { name: '生成采购订单', exact: true }).count() === 0);
       }
       if (spec.model === 'sc.material.purchase.request') {
         const rules = authority.actions?.actionRuleList || [];

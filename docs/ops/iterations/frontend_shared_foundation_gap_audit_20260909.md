@@ -8066,3 +8066,8 @@ L3未运行：tier继承/字段/state/XML需要一次受管升级。下一步扩
 P4既有rollback工具新增rfq白名单范围8项：外部state/草稿订单拒绝、无配置审批不定价、未定义金额条件拒绝、pending与配置变化保护、实际审批仍需选价、显式选价再生成草稿订单、拒绝回草稿、重提新review。默认all纳入，沿用原配置恢复/临时记录消失校验；无新环境/持久fixture。
 
 L1 rfq-runtime-iteration.log与py_compile/bash-n PASS；74/50/15生产与测试输入未改，复用53.75原证据。受管升级复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤及固定存储卷由入口预检；非客户生产/控制库。需一次smart_construction_core升级后重绑，再只执行rfq8。运行及页面尚pending，前端未变不重建，不跑旧独立ORM。
+
+
+53.76实际结果：受管模块升级/后端a3379822c成功，rfq-runtime.log 8/8 PASS，ROLLBACK VERIFIED（配置/步骤恢复，临时RFQ/订单/材料模板/供应商消失）。运行使用真实tier reviewer，建单及独立执行使用事务sudo，不替代角色全旅程。未重跑独立旧ORM。
+
+P4扩展既有approval-actions页面范围sc.material.rfq，L1 rfq-page-iteration.log与node语法PASS；创建tpl07-1790780849651/report.json 15 PASS，官方组合/有效契约/未保存无定价或订单/系统编号隐藏/双视口无溢出，errors=[]、forbiddenWrites=[]，390截图人工复核一致。已有记录tpl07-1790780863288/report.json查询ok=true records=[]，第2项数据前置失败，不算记录页通过、不新增fixture、不重复空查询。前端7915f3bb9复用未重建，后端a3379822c；实际角色审批定价页面仍pending。总体detail.action-state及67条接管继续开放。
