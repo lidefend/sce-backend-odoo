@@ -304,7 +304,20 @@ case "$command" in
     [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
     case "$command" in
       standard-approval-runtime)
-        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|expense-create-request|settlement-adjustment|receipt-income|financing-borrowing|financing-approval|self-funding-reconciliation|expense-state-authority|finance-state-authority|legacy-workflow|red-flush-role|red-flush|tender-guarantee|project-document|tender-purchase|project-role-approval|project-creation-state|inbound|acceptance|purchase-request|rfq|material-settlement|equipment-plan-request|equipment-execution|labor-plan-request|labor-execution|rental-plan|rental-order|rental-settlement|rental-settlement-cash|rental-cancellation-contract|safety-approval|subcontract-approval|subcontract-settlement|subcontract-settlement-cash) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
+        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|expense-browser-cleanup|expense-create-request|settlement-adjustment|receipt-income|financing-borrowing|financing-approval|self-funding-reconciliation|expense-state-authority|finance-state-authority|legacy-workflow|red-flush-role|red-flush|tender-guarantee|project-document|tender-purchase|project-role-approval|project-creation-state|inbound|acceptance|purchase-request|rfq|material-settlement|equipment-plan-request|equipment-execution|labor-plan-request|labor-execution|rental-plan|rental-order|rental-settlement|rental-settlement-cash|rental-cancellation-contract|safety-approval|subcontract-approval|subcontract-settlement|subcontract-settlement-cash) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
+        if [[ "${SC_APPROVAL_RUNTIME_SCOPE:-all}" == "expense-browser-cleanup" ]]; then
+          : "${SC_EXPENSE_CREATE_REPORT:?exact browser recovery receipt required}"
+          expense_cleanup_json="$(python3 - "$ROOT_DIR" "$SC_EXPENSE_CREATE_REPORT" <<'PYCLEANUP'
+import json, sys
+from pathlib import Path
+root, receipt = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
+assert receipt.is_relative_to(root / 'artifacts/frontend-web-fix-20260928') and receipt.name == 'expense-success-recovery.json'
+print(json.dumps(json.loads(receipt.read_text())))
+PYCLEANUP
+)"
+          docker exec -i -e SC_EXPENSE_CREATE_PROBE_JSON="$expense_cleanup_json" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_expense_probe_cleanup.py"
+          exit $?
+        fi
         expense_create_probe_json=""
         if [[ "${SC_APPROVAL_RUNTIME_SCOPE:-all}" == "expense-create-request" ]]; then
           : "${SC_EXPENSE_CREATE_REPORT:?existing successful browser capture report required}"

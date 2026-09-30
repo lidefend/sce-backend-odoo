@@ -334,7 +334,9 @@
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
         "make/runtime_ops.mk",
         "scripts/dev/frontend_standard_preview.py",
-        "scripts/verify/business_config_approval_runtime_smoke.py"
+        "scripts/verify/business_config_approval_runtime_smoke.py",
+        "scripts/verify/frontend_expense_probe_cleanup.py",
+        "frontend/apps/web/scripts/standard_expense_success_scope.mjs"
       ]
     },
     "scene_mutation_outcome": {

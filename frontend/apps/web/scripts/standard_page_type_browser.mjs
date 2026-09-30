@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { expenseProbeWriteKind } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -65,6 +67,17 @@ let favoriteWritePermit = null;
 let projectWritePermit = null;
 let expenseCreateCapture = false;
 const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
+const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
+let expenseSuccess = null;
+const expenseRecoveryPath = path.join(out, 'expense-success-recovery.json');
+async function expenseCleanup(stage) {
+  const output = execFileSync('make', ['verify.business_config.approval_runtime', 'SC_ACCEPTANCE_RUNTIME_PROFILE=local'], {
+    cwd: root, encoding: 'utf8', timeout: 60000,
+    env: { ...process.env, SC_APPROVAL_RUNTIME_SCOPE: 'expense-browser-cleanup', SC_EXPENSE_CREATE_REPORT: expenseRecoveryPath },
+  });
+  await fs.writeFile(path.join(out, `expense-cleanup-${stage}.log`), output);
+  check(`expense cleanup: ${stage} authoritative restoration`, output.includes('EXPENSE_BROWSER_CLEANUP=') && output.includes('"status": "restored"'));
+}
 const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
 async function login(role) {
@@ -73,6 +86,21 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    const expenseWriteKind = expenseProbeWriteKind(role, body, expenseSuccess);
+    if (expenseWriteKind) {
+      expenseSuccess.phase = `${expenseWriteKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.expenseSuccessWrites ??= [];
+      report.expenseSuccessWrites.push({ kind: expenseWriteKind, intent: body.intent, result });
+      if (result.ok === true) {
+        if (expenseWriteKind === 'create') expenseSuccess.id = result.data?.id;
+        expenseSuccess.phase = ({ create: 'upload', upload: 'submit', submit: 'done' })[expenseWriteKind];
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
+      return route.fulfill({ response });
+    }
     if (expenseSaveProbe && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, reason: 'save-failure probe cannot execute business actions' });
       return route.abort();
@@ -827,6 +855,44 @@ try {
             }
             expenseCreateCapture = false;
             check('expense save: failed saves do not execute business actions', report.forbiddenWrites.length === 0);
+            if (expenseSaveSuccess) {
+              const request = structuredClone(report.expenseSaveAttempts[1]);
+              request.vals.summary = `TPL53-EXPENSE-SUCCESS-${Date.now()}`;
+              expenseSuccess = { request, source, filename: pendingName,
+                data: Buffer.from('Rollback-only submission prerequisite verification').toString('base64'), phase: 'prepare', id: null };
+              await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
+              await expenseCleanup('preflight');
+              await session.page.locator('[data-field-name="summary"]').locator('input, textarea').first().fill(request.vals.summary);
+              expenseSuccess.phase = 'create';
+              await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+              await session.page.waitForFunction(() => !window.location.pathname.endsWith('/new'));
+              const completed = () => report.expenseSuccessWrites?.some((row) => row.kind === 'submit' && row.result.ok === true);
+              for (let wait = 0; wait < 100 && !completed(); wait += 1) await session.page.waitForTimeout(100);
+              check('expense success: create upload submit occur exactly once',
+                JSON.stringify(report.expenseSuccessWrites?.map((row) => row.kind)) === JSON.stringify(['create', 'upload', 'submit']) && completed());
+              const saved = await session.page.evaluate(async (id) => {
+                const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+                return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+                  body: JSON.stringify({ intent: 'api.data', params: { op: 'read', model: 'sc.expense.claim', ids: [id],
+                    fields: ['id', 'state', 'project_id', 'partner_id', 'payment_request_id', 'amount', 'attachment_ids', 'summary'], context: { company_id: 8 } } }),
+                })).json();
+              }, expenseSuccess.id);
+              report.expenseSuccessRecord = saved;
+              const savedRow = saved.data?.records?.[0];
+              check('expense success: submitted record and attachment authoritative readback', saved.ok === true && savedRow?.state === 'approved'
+                && savedRow.attachment_ids.length === 1 && savedRow.payment_request_id[0] === source.id && savedRow.summary === request.vals.summary);
+              await form(session.page, `/f/sc.expense.claim/${expenseSuccess.id}${createContext}`, 'expense-success-saved');
+              check('expense success: saved contract is readonly', report.recordAuthority?.model === 'sc.expense.claim'
+                && report.recordAuthority.status.effectiveRenderProfile === 'readonly');
+              for (const width of [1440, 390]) {
+                await session.page.setViewportSize({ width, height: 950 });
+                check(`expense success ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+                await session.page.screenshot({ path: path.join(out, `expense-success-${width}.png`) });
+              }
+              await session.ctx.close();
+              continue;
+            }
           }
 
           await session.page.getByRole('heading', { name: '新建报销申请', exact: true }).click();
@@ -1650,6 +1716,10 @@ try {
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
+  if (expenseSuccess) {
+    try { await expenseCleanup('final'); }
+    catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
+  }
   await fs.writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`[standard_page_type_browser] ${report.status} assertions=${report.assertions.length} report=${out}/report.json`);
 }

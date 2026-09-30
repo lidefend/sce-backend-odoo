@@ -189,3 +189,29 @@ class CandidateReplacementTest(unittest.TestCase):
         with patch.object(preview, 'inputs', side_effect=['changed', 'new', 'new', 'drift']), patch.object(preview.subprocess, 'run', side_effect=self.compile):
             with self.assertRaisesRegex(RuntimeError, 'inputs changed'): preview.build_candidate()
         self.assert_old()
+
+
+class ExpenseBrowserCleanupTest(unittest.TestCase):
+    def setUp(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_expense_probe_target
+        self.validate = validate_expense_probe_target
+        from datetime import datetime, timezone
+        started = 1790802321792
+        self.row = dict(id=120, summary='TPL53-EXPENSE-SUCCESS-%s' % started, create_uid=30, company_id=8,
+            source_origin='manual', state='approved', project_id=10, partner_id=56, payment_request_id=1815,
+            amount=999, payee_account='EXPENSE-SAVE-PAYEE', payer_account='EXPENSE-SAVE-PAYER',
+            create_date=datetime.fromtimestamp(started / 1000 + 10, timezone.utc).replace(tzinfo=None).isoformat())
+        self.scope = {'id': 120, 'request': {'vals': {key: self.row[key] for key in ['summary', 'project_id', 'partner_id',
+            'payment_request_id', 'amount', 'payee_account', 'payer_account']}},
+            'source': {'id': 1815, 'project_id': [10, 'Project'], 'partner_id': [56, 'Partner'], 'amount': 999}}
+
+    def test_exact_transient_object(self):
+        self.validate('sc_frontend_acceptance', self.scope, self.row)
+
+    def test_other_object_scope_and_terminal_state_denied(self):
+        for key, value in [('id', 121), ('state', 'done'), ('create_uid', 1), ('company_id', 9), ('amount', 998),
+                           ('summary', 'existing document'), ('source_origin', 'legacy'), ('create_date', '2020-01-01 00:00:00')]:
+            with self.assertRaises(AssertionError): self.validate('sc_frontend_acceptance', self.scope, {**self.row, key: value})
+
+    def test_other_database_denied(self):
+        with self.assertRaises(AssertionError): self.validate('sc_dev_demo', self.scope, self.row)
