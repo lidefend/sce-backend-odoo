@@ -9357,3 +9357,12 @@ relation-default-label-browser.log及tpl07-1790809740513/report.json15项PASS，
 plan-node-initial-iteration L1、payment.approval_state_machine.unit176及begin/receipt PASS；新增实际create方法反例含state、progress与actual日期直接值和上下文。P4 614fd1fdd在原plan-state-authority增非法创建/默认值拒绝与无节点残留readback，runtime16 PASS/ROLLBACK VERIFIED（plan-node-initial-runtime.log），正常创建→确认→开始→节点进度更新→完成和审批驳回链仍通过。受管backend614fd1fdd、local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter原卷；无schema/XML不升级，前端e19eb1e16不变不构建，复用新建入口15证据。
 
 节点初始状态/进度/日期缺口关闭；动态新增删除能力契约、汇报/版本统一审批、执行中普通角色页面仍开放，整体67未完成。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.187 计划节点结构能力投影与运行证据缺口
+
+12dc60d5c clean起点；P1 e47ba113c沿既有smart_core_finalize_projected_contract_data，在ui.contract.v2完成record snapshot后对sc.plan form调用restrict_plan_node_structure。已有记录仅draft且非waiting/pending/validated可维护节点结构，can_create/can_unlink与原生策略取交集，不提升false权限、不改inline_edit或报告关系；无记录ID的新建契约保留原生策略。只改P1归一化和既有扩展接线，无P0/P3新框架或前端状态推断。
+
+L1/177纯测及receipt PASS（plan-node-capability-*），真实方法覆盖draft/rejected/pending/validated/confirmed/in_progress/done/未知state，原输入不变及无权限不提升。补齐当前测试已引用的plan/diary/event/XML/normalizer/hook依赖到既有run结果索引，防止未来错误复用；为新依赖绑定重记begin/177/receipt（plan-capability-dependencies-*），不扩全仓扫描。backend.acceptance.up加载e47ba113c，前端e19eb1e16不变不构建，无schema不升级。
+
+实际PM既有记录浏览器plan-node-capability-browser.log失败于数据前置：tpl07-1790810099823/report.json api.data list sc.plan ok=true/records=[]，未进入记录详情，无业务写。不能把纯测替代最终契约/按钮证据；不重复空查询、不扩大授权或新增fixture。下一步沿现有plan-state-authority事务回滚工具补真实ui.contract.v2投影检查，再补普通角色办理；本次能力投影尚非批次验收完成。动态结构之外，汇报/版本统一审批、执行中父表单开放和整体67仍未完成，无推送/合并/目标部署。

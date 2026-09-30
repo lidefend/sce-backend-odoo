@@ -330,7 +330,10 @@
         "addons/smart_construction_core/views/core/subcontract_management_views.xml",
         "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
         "addons/smart_construction_core/views/core/output_invoice_adjustment_views.xml",
-        "addons/smart_construction_core/models/support/sc_workflow.py"
+        "addons/smart_construction_core/models/support/sc_workflow.py",
+        "addons/smart_construction_core/data/construction_plan_form_productization_contract.xml",
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "addons/smart_construction_core/core_extension.py"
       ]
     },
     "standard_preview_tool": {
@@ -452,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.186 node initial state/progress/actual-date bypass fixed95997e57a; pure176/L1/receipt and runtime16 rollback PASS614fd1fdd. backend614fd1fdd/frontend e19eb1e16 unchanged, reuse plan-create15. Next wire dynamic child create/delete capabilities from parent plan approval/state through existing relation contract, then report/version unified approval and ordinary-role execution form (do not prematurely globally unlock parent). Prior native entry mirror retired and default labels fixed; overall67/attachment gaps open. No push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.187 P1 node structure capability projection e47ba113c via existing finalized source hook, pure177/L1/receipts. Existing PM sc.plan browser tpl07-1790810099823 returned ok empty; no final contract runtime proof yet. Next extend existing plan-state-authority rollback scope to real ui.contract.v2 handler for transaction plans and assert fieldInfo.subview policies across states; do not retry empty existing-record query or create fixtures. Then report/version approval and parent execution UI. Backend e47ba113c/frontend e19eb1e16. Run inputs now bind plan/diary/event/native XML and normalizer/hook. Overall67 open; no push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
