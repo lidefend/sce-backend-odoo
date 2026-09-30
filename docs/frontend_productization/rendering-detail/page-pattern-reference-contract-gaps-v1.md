@@ -8,9 +8,21 @@ This ledger records reference details that cannot be implemented safely from the
 - Contextual detail drawer: the current record-entry contract expresses record intent and route disposition, but does not explicitly authorize `standalone_page | contextual_drawer`. Existing `/r` and `/f` semantics must not be reinterpreted by appearance.
 - Record actions: copy, delete, disabled reason, and explicit labelled detail actions are not consistently projected for every model/action pair.
 - Readonly section metadata: the reference displays section item counts. Contract V2 currently carries nodes and container structure but no authoritative displayed item-count presentation.
-- Collection semantic tones: status tone is declared by the layer that owns the model, not by the platform kernel. The kernel no longer supplies a value-to-tone map for any model. `project.project.list` declares the full project lifecycle map; `payment.request.list`, `project.material.plan.list` and `project.task.list` declare only the pairs whose tones were already in effect, so their remaining states (for example `submit`, `approve`, `rejected`, `cancel`) still have no declared tone and correctly render neutral. Deciding those tones is a P1 product decision; the frontend must not infer them from Chinese labels.
 - Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
 - Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
+
+## Closed boundary decisions (no longer gaps)
+
+These were previously listed here. They are kept so the superseded wording is not reintroduced;
+they are not producer-side gaps and must not be re-opened by adding the value to the contract.
+
+- Collection semantic tones: a status badge colour is a presentation decision, so it is owned by the
+  frontend presentation layer and never by the business contract. No contract layer and no model
+  profile declares a status-to-tone map, and the kernel does not supply one; the frontend resolves the
+  tone from the authoritative status *value* (`frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts`),
+  so a localised label can never act as a colour authority. `scripts/verify/contract_governance_list_surface_split_guard.py`
+  pins this in both directions (no tone in the list surface or profiles, and no frontend read of a contract tone).
+  Which tone a declared state carries is therefore not a contract obligation at all.
 
 ## P1/P2 product gaps
 

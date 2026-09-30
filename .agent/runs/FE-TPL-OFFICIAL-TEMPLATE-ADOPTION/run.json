@@ -50,13 +50,14 @@
         "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
         "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
         "scripts/verify/page_pattern_reference_ledger_guard.py",
-        "scripts/verify/test_page_pattern_reference_ledger_guard.py"
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json"
       ],
       "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "FE-TPL-06A: confirm the payment request list consumes the single official-standard-list composition with server-side query/sort/pagination, run one real next-page + open + return, then WEB-LC-01 low-code configuration closure.",
+  "next_exact_step": "Contract-owner decisions remain for the three list reference gaps (favorite, settings-export, record-action) and the authentication/shell/drawer gaps; the frontend adoption itself is at its contract boundary. Next: keep the current candidate (626bac244, 5180) as the local preview and close the leftover mainline guard-registry orphan accounting before merge preparation.",
   "completion": {
     "batch": "passed",
     "mainline": "not_run",

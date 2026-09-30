@@ -6505,4 +6505,124 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 ### 状态
 
 本段**批次验收完成**（移植 + 协作流程接入 + 生成型证据一致）｜主线未集成｜目标环境未部署｜
-整体用户交付未验收。下一步：`FE-TPL-06A` 付款申请列表标准组合与真实翻页 → `WEB-LC-01` 低代码闭环。
+整体用户交付未验收。**段 44 曾把下一步写成「FE-TPL-06A → WEB-LC-01」，那是照抄一份过期交接摘要，
+与仓库事实不符：这两批在 2026-09-29 已完成并收口（`bb14bff52`、`196bbcd38` 等均为当前 HEAD 的祖先）。
+真实下一步见段 45。**
+## 段 45｜移植后的候选复位：前端门禁转绿、验收后端重绑、5180 当前候选与 38 项定向浏览器证据（2026-09-30）
+
+### 1. 本段要解决的问题
+
+段 44 完成了主线移植与协作流程接入，但没有检查移植对**前端派生产物**和**运行候选**的影响。
+本段把移植后的候选重新恢复到可用、可看、可复核的状态，并纠正段 44 对下一步的误述。
+
+**事实纠正（先说清楚，避免继续误传）**：`FE-TPL-06A`（付款申请标准列表首例）、`WEB-LC-01`（标准列表
+配置闭环）、`FE-TPL-07`（按页面类型默认接管、删除三个模型白名单）、`WEB-LC-01B` 均已在
+2026-09-29 完成并写进本记录；`bb14bff52`、`196bbcd38`、`9e240dc46`、`fb5934b77`、`d92ebf9c9`
+等提交都是当前 HEAD 的祖先（`git merge-base --is-ancestor` 已核）。因此不存在"再去接一次付款列表"
+的待办；`standardListComposition.ts` 现在只剩一条 `official-standard-list`，`legacy-list-surface` 已不存在。
+
+### 2. 改了什么
+
+**(A) 前端渲染明细清单过期 → 按既有入口重生成**
+
+`make verify.frontend.quick.gate` 在移植后为红，根因是两条受源码摘要绑定的生成型清单过期：
+
+- `docs/frontend_productization/rendering-detail/component-professionalization-inventory-v1.json`
+- `docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json`
+
+`make refresh.frontend.rendering_detail.inventory` 后 **diff 只有 `sourceIdentity` / `inputDigest` /
+逐文件 `digest`，无语义条目增删**（`ListPage.vue` / `ActionView.vue` / `KanbanPage.vue` 因移植而变摘要）。
+`official-design-alignment-inventory` 内容不变（`internalVendorSelectorGapCount=0` 保持）。
+
+> 说明：`verify.frontend.rendering_detail_state.unit` 的 unittest 阶段会**故意**打印一行
+> `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}`
+> 作为反向用例，随后 `--check` 才是真判定（`PASS ...GapCount': 0`）。不要把这行当成红。
+
+**(B) 验收后端容器重绑到当前修订**
+
+容器仍绑定旧修订 `SC_SOURCE_REVISION=26c32476f`，`addons` 与 HEAD 有差异（段 40–43 的契约改动 +
+主线 create-default 代码），浏览器候选入口会以 `exit 2` 拒绝。按既有治理入口
+`make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 重绑 →
+`SC_SOURCE_REVISION=626bac24430731b695f100a5922065e820c85c12`（= 当时 HEAD），容器 healthy。
+
+**(C) 5180 当前候选重建，不新增常驻端口**
+
+`make frontend.standard.preview.build SC_ACCEPTANCE_RUNTIME_PROFILE=local`：
+旧候选目录 `config05-20260929` 先以 **`config05-20260929-prev-15351d632`** 保留（不覆盖历史），
+再重建到同一路径。新 `build-identity.json`：
+
+- `base_sha = 626bac24430731b695f100a5922065e820c85c12`，`dirty_scope` 空
+- 入口 `/assets/index-DTvz9KvJ.js`，`entry_sha256 = a50ea83c…`，`index_sha256 = f05d4244…`
+
+`make frontend.standard.preview.up` → `REUSED current 5180 listener`（pid 802966 未变，`STATIC_ROOT`
+指向新产物，代理 `http://127.0.0.1:18082`）。
+
+**(D) 两处受治理文档与已发布决策对齐（不再自相矛盾）**
+
+本段复查时发现两处文档会**把人引回已经废止的做法**，就地修正，不新建治理文档：
+
+1. `docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md`：
+   把 "Collection semantic tones" 从 **P0 contract gaps** 里移出，改为新的
+   **"Closed boundary decisions (no longer gaps)"** 段落，写明：状态徽标颜色是呈现决策、
+   由前端呈现层唯一拥有，任何契约层和 profile 都不得声明状态→色调映射，
+   前端只按**权威状态值**解析（`collectionStatusPresentation.ts`），
+   并由 `contract_governance_list_surface_split_guard.py` 双向钉死。
+   保留该条是为了防止旧措辞被重新引入——它不是生产侧缺口。
+2. `docs/frontend_productization/product-page-patterns-v1.md`：
+   - "Adoption switch" 里"解析一个模型、拥有 pilot scope 清单"的描述改为
+     **按页面职责解析、不读模型名、不持有 scope 清单**（TPL-07 删除了
+     `STANDARD_FORM_COMPOSITION_PILOT_MODELS` 及列表/详情同名机制），
+     唯一输入是 `standardPageType.ts`；
+   - "Adopted scope" 小节标注为 **historical / superseded**；
+   - 采纳表里 "Master-detail handling page … not adopted yet (planned TPL-05)" 更正为
+     **已由共享记录表单组合（TPL-05A）+ 页面职责选择（TPL-07）采纳**；
+   - 原"付款表单仍是 `legacy-form-section`"的段落标注 **superseded**，并注明当前候选的浏览器
+     断言（`payment-master-detail: official form engine mounted`）已经推翻该结论。
+
+### 3. 定向验证
+
+- **L4 浏览器（当前候选）**：`TPL07_SCOPE` 默认全量，
+  `make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+  → `passed assertions=38`，报告
+  `artifacts/frontend-web-fix-20260928/tpl07-1790755616473/report.json`，
+  `forbiddenWrites=[]`、`errors=[]`、`calls=6`。关键断言：
+  付款列表 `standard type` / `one container`、**服务端下一页**（`ids=[1803,1795,1794,1787,1710,33]`）、
+  打开记录身份与点击行一致（`openedRecordKey=1803`）、返回上下文与页码集合保持、
+  主从页 `official form engine mounted` + 扩展保留、引入契约已发布且无缺口渲染、
+  只读页 `readonly mode published`。截图：`payment-list.png`、`payment-master-detail.png`、
+  `payment-readonly.png`、`payment-readonly-narrow.png`（390px）等 9 张。
+- **L2 采纳单测（移植后的合并树）**：
+  - `verify.frontend.standard_form_composition.unit`、`verify.frontend.adopted_form_engine_decision.unit` PASS；
+  - `verify.frontend.standard_collection_composition.unit` → `PASS cases=113 scope=page-types`
+    （模型白名单删除后，用例由"模型试点"改为"页面职责"）；
+  - `verify.frontend.standard_shell_composition.unit` → `PASS cases=71 layouts=1`；
+  - `verify.frontend.adopted_form_validation_identity.unit` → `cases=46 failed=0
+    engine=shipped-save-chain host=real-vue-instance`，且打印
+    `no cross-identity leak observed`；**这是异步身份保护的现成关闭依据**（实现与反例都在真实保存链上），
+    按既定口径补记即可，不再重复实现或重开排查；
+  - `verify.frontend.standard_preview.unit` → 6 tests OK。
+- **L1**：`make ci.local.iteration` PASS（见段 44 记录，本段未改动其输入）。
+- 未执行：全量 Quick、发布门禁、89 入口、目标环境验证——本段是本地候选复位，不是发布。
+
+### 4. 剩余缺口（不得夸大，也不得据本段消项）
+
+- **前端已到契约边界**：`page-pattern-reference-detail-ledger-v1.json` 现为
+  `entries=67 aligned=46 contract_gap=20 not_applicable=1`，无 `needs_work`。三条列表项
+  （`collection.favorite` / `collection.settings-export` / `collection.record-action`）与认证、壳、
+  上下文抽屉等其余缺口，`followUp` 都写明是**产品/契约决策**（"按模型决定是否声明显式行动作"、
+  "为支持导出的动作声明导出能力"），不是前端可自行消项；按既定边界不猜测补齐。
+- 两处受治理文档的过期口径**已在本段 (D) 收口**（色调边界、已删除的模型白名单、
+  "付款表单仍未接管"的事实错误）；两条 `PILOT_MODELS` 残留字样只出现在"已被删除/历史"的说明句中。
+- 390×844 官方参考截图证据缺口、主线继承的 `verify.guard.registry` 两条 orphan 记账、
+  四项 `style_system` 欠账状态均不变。
+
+### 5. 提交
+
+- `626bac244` `chore(convergence): refresh the render-detail inventories after the mainline port`
+- `docs(frontend): align the governed reference docs with the shipped tone and page-type decisions`
+  （两处文档对齐 + 本段记录）
+
+### 状态
+
+本段**批次验收完成**（候选复位 + 定向补验）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+

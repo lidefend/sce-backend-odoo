@@ -113,13 +113,15 @@ dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
 | Standard query list | `src/pages/list/base/index.vue` | `components/product-list/ProductListSurface.vue` (one `t-card.list-card-container` wrapping the query row and the table) plus `product-list/ProductListHeader.vue` (search field) — TPL-03 |
 | Standard readonly detail | `src/pages/detail/base/index.vue` | `components/template/FormSection.vue` readonly-facts branch (`t-descriptions` label/value per section, same readonly value identities) — TPL-03 |
 | Application shell | `src/layouts/` | `app/presentation/standardShellComposition.ts` (adoption policy) + `App.vue` (shell gate) + `layouts/AppShell.css` (token layer) — TPL-04 |
-| Master-detail handling page | form/list/upload/overlay composition | not adopted yet (planned TPL-05) |
+| Master-detail handling page | form/list/upload/overlay composition | Adopted through the shared record-form composition (TPL-05A) and the page-responsibility selection (TPL-07); the list, form, upload and overlay owners are the existing ones, with the master/detail business extension preserved. |
 
 ### Adoption switch
 
 - `app/presentation/standardFormComposition.ts` is the pure adoption policy.
-  It resolves one model to `{ composition, adopted, reason }` and owns the
-  explicit pilot scope list; it does not import Vue, the DOM, or TDesign.
+  It resolves a page *responsibility* to `{ composition, adopted, reason }` and does
+  not import Vue, the DOM, or TDesign. It reads no model name and holds no scope
+  list: TPL-07 removed `STANDARD_FORM_COMPOSITION_PILOT_MODELS` (and the list/detail
+  equivalents), so `app/presentation/standardPageType.ts` is the only input.
 - `pages/contractForm/standardFormCompositionRuntime.ts` provides the resolved
   policy down the existing render chain and collects the adopted sections'
   validation results (`createStandardFormValidationRegistry`).
@@ -128,13 +130,12 @@ dependency upgrade. Local library identity stays `tdesign-vue-next@1.20.5`
   the adopted scope renders its previous DOM unchanged (`bare` mode), so a
   single page never runs two competing compositions.
 
-### Adopted scope
+### Adopted scope (historical — superseded by the TPL-07 page-type adoption above)
 
-`STANDARD_FORM_COMPOSITION_PILOT_MODELS` lists the surfaces verified against the
-composition. A model joins by being listed there and by carrying a contract the
-composition already understands; the rendering surfaces never name a model, so a
-second model is a reuse of the same composition rather than a second
-implementation of it.
+The model-pilot list described here (`STANDARD_FORM_COMPOSITION_PILOT_MODELS`) no
+longer exists in the shipped code; it was deleted when page responsibility became the
+only selection input. The table is kept as rollout history only.
+
 
 | Model | Verified entry | Round |
 |---|---|---|
@@ -224,9 +225,10 @@ expose an instance in the production build).
 
 ### Cross-model reuse (TPL-02)
 
-The second model joins by being listed in `STANDARD_FORM_COMPOSITION_PILOT_MODELS`;
-the render call sites stay model-agnostic, so this is a reuse of the same
-composition, not a second implementation. Verified on the real application
+**Historical (TPL-02).** The second model joined by being listed in the then-current
+model pilot list. That list no longer exists: TPL-07 made the page responsibility the
+only selection input, and the render call sites stay model-agnostic, so a second
+model is still a reuse of the same composition, not a second implementation. Verified on the real application
 route (project edit → contract, through the dirty-form guard → back to project
 edit): each model renders its own field set, section registration, errors and
 action identity, with `official=24 legacy=0` and `official=13 legacy=0`
@@ -355,11 +357,13 @@ See the WEB-LC-01 section of
 `docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md` for original
 success/failure evidence and the three before/published/restored screenshots.
 
-The master-detail handling page's **form** side is still out of scope:
-`payment.request` is not in `STANDARD_FORM_COMPOSITION_PILOT_MODELS`, so the
-payment form keeps the `legacy-form-section` composition while its list now
-renders through the official container. That is a recorded, deliberate
-inconsistency of scope, not a claim that the whole flow is adopted. The official detail page's `t-steps` timeline
+**Superseded (recorded for history).** This paragraph used to state that the
+master-detail handling page's form side still kept `legacy-form-section` because
+`payment.request` was absent from the model pilot list. Both the pilot list and that
+scope gap are gone: the payment form and every other record form now resolve their
+composition from the contract's declared page responsibility, and the current
+candidate's browser check asserts the payment master/detail page mounts the official
+form engine (`payment-master-detail: official form engine mounted` contract). The official detail page's `t-steps` timeline
 is **not** adopted: this project already owns a richer audit/collaboration
 timeline, and replacing it would drop business capability rather than re-express
 presentation. The legacy list and detail surfaces (for example `res.partner`)
