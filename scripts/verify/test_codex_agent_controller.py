@@ -121,6 +121,25 @@ class StateAndGitHubTest(unittest.TestCase):
             notification_prefix="SCE Codex",
         )
 
+    @mock.patch("scripts.ops.codex_agent_controller.subprocess.Popen")
+    @mock.patch("scripts.ops.codex_agent_controller.resume_prompt")
+    def test_every_launch_consumes_common_run_context(self, run_prompt, popen):
+        run_prompt.return_value = "selected run; reconcile changed dependencies only"
+        popen.return_value.pid = 123
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.safe_notify = mock.Mock()
+            controller.worker_environment = mock.Mock(return_value={})
+            for resumed in (False, True):
+                state = controller.store.default()
+                state['task'] = {'id': 'test', 'branch': 'fix/test',
+                                 'run_dir': str(Path(directory) / 'run'), 'session_id': 'session'}
+                controller.launch(state, 'continue', resume=resumed)
+                command = popen.call_args.args[0]
+                self.assertTrue(any('selected run; reconcile' in arg for arg in command))
+                for handle in controller.worker_files: handle.close()
+            self.assertEqual(run_prompt.call_count, 2)
+
     def test_state_write_is_round_trip_and_utf8(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             store = StateStore(Path(directory))

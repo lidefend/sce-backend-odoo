@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4457`
+- Scanned files: `4459`
 - Files requiring split plan: `55`
 - Files above warning threshold: `99`
 
@@ -113,7 +113,7 @@ Generated from repository source files. This report is informational during the 
 | 1143 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1128 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
-| 1114 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1094 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |

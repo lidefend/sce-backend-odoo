@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "72ad88e6949508f3760a15101d61f288c7cf70d9",
+  "scope": [
+    ".agent/",
+    ".codex/skills/project-governance-codex/SKILL.md",
+    "scripts/ops/agent_run_context.py",
+    "scripts/ops/codex_agent_controller.py",
+    "scripts/ops/install_codex_agent_controller.sh",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_agent_run_context.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_codex_agent_controller.py",
+    "make/codex.mk",
+    "docs/ops/iterations/agent_incremental_resume_20260930.md",
+    "docs/ops/codex_execution_allowlist.md",
+    "AGENTS.md",
+    "make/ci.mk",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk",
+        ".agent/active-runs.json",
+        ".agent/README.md",
+        ".agent/context.yaml",
+        ".agent/workflows/frontend-improvement.yaml",
+        ".agent/workflows/governance-change.yaml",
+        ".agent/runs/template/",
+        "AGENTS.md",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "controller": {
+      "target": "verify.codex.agent_controller",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/codex_agent_controller.py",
+        "scripts/ops/agent_progress.py",
+        "scripts/ops/install_codex_agent_controller.sh",
+        "scripts/ops/feishu_agent_bridge.py",
+        "scripts/verify/test_codex_agent_controller.py",
+        "scripts/verify/test_feishu_agent_bridge.py",
+        "make/codex.mk",
+        "deploy/agent-controller/sce-agent-controller.service.in",
+        "deploy/agent-controller/sce-agent-feishu-bridge.service.in"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review generated evidence, commit clean candidate, freeze fingerprint and run exact-head GitHub Quick; publish and merge via current required checks. Remote receipts stay in .runtime and PR, never infer deployment.",
+  "id": "P4-INCREMENTAL-RESUME",
+  "branch": "fix/agent-resume-mainline",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P4-INCREMENTAL-RESUME.yaml",
+  "record": "docs/ops/iterations/agent_incremental_resume_20260930.md",
+  "completion": {
+    "batch": "passed",
+    "mainline": "not_run",
+    "controller_installation": "not_run",
+    "deployment": "not_run",
+    "review": "passed incremental independent code review; final fingerprint binding and CI pending",
+    "l1": {
+      "command": "make ci.local.iteration",
+      "status": "passed",
+      "tests": 16,
+      "log": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/iteration.log"
+    },
+    "l2": {
+      "resume": 30,
+      "planner": 17,
+      "controller": 37
+    },
+    "reuse_observation": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/reuse-plan.log"
+  },
+  "source_commit": "44429fd706c065aa0660c4cd87c91c5fba162f1e"
+}

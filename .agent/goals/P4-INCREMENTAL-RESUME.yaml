@@ -1,0 +1,40 @@
+{
+  "goal": {
+    "id": "P4-INCREMENTAL-RESUME",
+    "status": "active",
+    "formal_product_layer": "P4",
+    "objective": "Connect branch-scoped run state, dependency-bound iteration evidence and existing controller recovery without replaying writes.",
+    "scope": [
+      ".agent/",
+      ".codex/skills/project-governance-codex/SKILL.md",
+      "scripts/ops/agent_run_context.py",
+      "scripts/ops/codex_agent_controller.py",
+      "scripts/ops/install_codex_agent_controller.sh",
+      "scripts/verify/frontend_dev_incremental.py",
+      "scripts/verify/test_agent_run_context.py",
+      "scripts/verify/test_frontend_dev_incremental.py",
+      "scripts/verify/test_codex_agent_controller.py",
+      "make/codex.mk",
+      "docs/ops/iterations/agent_incremental_resume_20260930.md",
+      "docs/ops/codex_execution_allowlist.md",
+      "AGENTS.md",
+      "make/ci.mk",
+      "docs/ops/codex_workspace_execution_rules.md"
+    ],
+    "exclusions": [
+      "addons",
+      "frontend product code",
+      "official-template candidate and run registration",
+      "database and runtime writes",
+      "controller service installation",
+      "deployment"
+    ],
+    "acceptance": [
+      "resume via one branch lookup without repository inventory",
+      "committed and dirty batch changes remain visible",
+      "changed dependencies and missing evidence invalidate reuse",
+      "controller recovery remains fail closed"
+    ],
+    "rollback": "Revert this topic responsibility commit; no database or service changes."
+  }
+}

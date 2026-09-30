@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "branches": {
+    "fix/agent-resume-mainline": ".agent/runs/P4-INCREMENTAL-RESUME/run.json"
+  }
+}

@@ -903,3 +903,19 @@ workspace.branch.discard-local: guard.prod.forbid
 .PHONY: workspace.retain-main-only
 workspace.retain-main-only: guard.prod.forbid
 	@python3 scripts/ops/gitee_published_branch_sync.py --retain-main-only --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --bundle "$(LOCAL_CLEANUP_BUNDLE)" --plan-sha256 "$(LOCAL_CLEANUP_PLAN_SHA256)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(LOCAL_CLEANUP_CONFIRM)",)
+
+# P4 bounded run lookup and advisory local evidence; never a publication receipt.
+.PHONY: agent.run.resume agent.run.record verify.agent.resume.unit
+agent.run.resume: guard.prod.forbid
+	@python3 scripts/ops/agent_run_context.py
+
+agent.run.record: guard.prod.forbid
+	@python3 scripts/ops/agent_run_context.py --record "$(AGENT_CHECK)" --status "$(AGENT_CHECK_STATUS)" --test-count "$(AGENT_TEST_COUNT)" --log "$(AGENT_TEST_LOG)"
+
+verify.agent.resume.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/agent_run_context.py scripts/verify/test_agent_run_context.py
+	@python3 -m unittest scripts.verify.test_agent_run_context
+
+.PHONY: agent.run.begin
+agent.run.begin: guard.prod.forbid
+	@python3 scripts/ops/agent_run_context.py --begin "$(AGENT_CHECK)"

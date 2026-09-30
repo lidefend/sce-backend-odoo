@@ -1,14 +1,16 @@
 workflow:
   id: frontend-improvement
   purpose: frontend_product_iteration_router
-  authority: .agent/workflows/frontend-professionalization.yaml
+  authority: AGENTS.md
 
   routing:
-    default_program: frontend-system-professionalization-v1
+    default_program: selected_branch_run
+    run_entry: make agent.run.resume
+    historical_reference: .agent/workflows/frontend-professionalization.yaml
     load_before_frontend_change:
       - AGENTS.md
       - .agent/context.yaml
-      - .agent/workflows/frontend-professionalization.yaml
+      - .agent/active-runs.json
     require_phase_and_batch_selection: true
     prohibit_unplanned_cross_phase_writes: true
 

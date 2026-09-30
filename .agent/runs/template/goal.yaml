@@ -1,5 +1,8 @@
-run:
-  goal:
-    FE-R1
-  status:
-    completed
+goal:
+  id: REPLACE_GOAL_ID
+  status: planned
+  formal_product_layer: REPLACE_P0_TO_P4
+  objective: REPLACE_ONE_ACCEPTABLE_RESULT
+  acceptance: []
+  exclusions: []
+  rollback: REPLACE_ROLLBACK

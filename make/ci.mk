@@ -864,6 +864,7 @@ verify.overview.rich.text.patch.capability: guard.prod.forbid
 	@python3 addons/smart_construction_core/tests/test_project_overview_builder.py
 
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
+	@python3 scripts/ops/agent_run_context.py
 	@git diff --check
 	@python3 scripts/verify/frontend_dev_incremental.py --plan-worktree
 	@python3 scripts/ci/trusted_scan_scope.py

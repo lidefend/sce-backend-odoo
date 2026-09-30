@@ -52,6 +52,7 @@ case "${action}" in
     install -d -m 0700 "${config_dir}"
     install -d -m 0755 "${lib_dir}" "${unit_dir}" "${bin_dir}"
     install -m 0644 scripts/ops/agent_progress.py "${lib_dir}/agent_progress.py"
+    install -m 0644 scripts/ops/agent_run_context.py "${lib_dir}/agent_run_context.py"
     install -m 0755 scripts/ops/codex_agent_controller.py "${lib_dir}/codex_agent_controller.py"
     install -m 0755 scripts/ops/codex_agent_watch.py "${bin_dir}/sce-agent-watch"
     codex_bin="$(command -v codex)"
