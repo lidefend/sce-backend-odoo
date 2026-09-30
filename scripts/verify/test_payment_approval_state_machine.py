@@ -3074,6 +3074,30 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         namespace['action_set_running'](rec)
                     self.assertEqual(rec.state, state)
 
+    def test_contract_event_external_state_and_defaults_cannot_bypass_actions(self):
+        path = MODEL.with_name('contract_event.py')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+        for method in methods: method.decorator_list = []
+        token, calls = object(), []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(create=lambda vals: calls.append(vals) or True,
+                                                     write=lambda vals: calls.append(vals) or True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        row = types.SimpleNamespace(env=types.SimpleNamespace(context={}))
+        for state in ('submitted', 'approved', 'rejected', 'done', 'cancel'):
+            for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
+                row.env.context = context
+                with self.subTest(state=state, context=context), self.assertRaises(ValueError): ns['write'](row, {'state': state})
+                with self.assertRaises(ValueError): ns['create'](row, [{'state': state}])
+            row.env.context = {'default_state': state}
+            with self.assertRaises(ValueError): ns['create'](row, [{}])
+        self.assertEqual(calls, [])
+        row.env.context = {}
+        self.assertTrue(ns['create'](row, [{'name': 'draft'}]))
+        self.assertTrue(ns['write'](row, {'description': 'editable draft'}))
+        row.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](row, {'state': 'approved'}))
+
     def test_contract_event_submission_and_callback_require_shared_approval_facts(self):
         path = MODEL.parent / 'contract_event.py'
         tree = ast.parse(path.read_text())
@@ -3087,7 +3111,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             def _check_business_anchor(self):
                 if not self.valid_anchor: raise ValueError('anchor')
             def with_context(self, **kw): return self
-            def write(self, values): self.__dict__.update(values)
+            def _write_document_state(self, values): self.__dict__.update(values)
         for required in (False, True):
             event = Event()
             event.state, event.valid_anchor = 'draft', True
