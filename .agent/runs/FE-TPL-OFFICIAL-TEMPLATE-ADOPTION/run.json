@@ -241,7 +241,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.40 contract event now joins shared configured approval, selection/tier support/company/callbacks/native/profile aligned;51 approval+35 native+15 semantics pass. Requires governed smart_construction_core module upgrade and backend reload, then real contract-event configured/unconfigured/rejection/resubmission checks and payment-reversal effective contract checks. No frontend rebuild. Registry now has zero undeclared state actions but all-document approval remains incomplete; do not equate registry closure with product delivery.",
+  "next_exact_step": "53.41 governed module upgrade/backend reload at b985a026b and17 real approval checks passed with verified rollback (expense12+contract event5). Next verify effective UI contract/browser for contract event and payment reversal; continue necessary all-document coverage beyond existing support lists, distinct reviewers and governed existing-definition sync. Source registry state gaps zero is not delivery. Reuse unchanged frontend.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -682,6 +682,15 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-event-approval-tests.log",
       "upgrade_required": true,
       "scope": "new company/reject fields, tier inheritance/config/callbacks/native/profile; real ORM verification pending"
+    },
+    "contract_event_runtime_53_41": {
+      "status": "scoped_runtime_passed",
+      "backend": "b985a026b",
+      "test_count": 17,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-event-runtime.log",
+      "upgrade_log": "artifacts/frontend-web-fix-20260928/tpl52/contract-event-module-upgrade.log",
+      "restoration": "verified original expense policy/steps plus temporary events/policy/project/partner/expense absence",
+      "remaining": "effective UI/browser, distinct reviewers, payment reversal and all-document scope"
     }
   }
 }

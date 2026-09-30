@@ -170,3 +170,7 @@ The resolved undeclared-action registration is removed, leaving contract-event r
 ### Segment53.40 — Contract-event shared approval implemented; upgrade/runtime pending
 
 Contract events now participate in approval configuration, company-scoped shared submission, OCA reviews and outcome-bound callbacks. Native and workflow actions use the same real reviewer decisions; rejected events can resubmit and approved events can complete separately. The old direct approval/rejection UI path is removed. The final registered undeclared state-action entry is retired, leaving26 helper/navigation registrations. This is source-level closure of that registry only: module upgrade, real contract-event approval/rejection/resubmission and necessary document coverage beyond the old configuration/support lists remain product work. `detail.action-state` remains open.
+
+### Segment53.41 — Contract-event ORM approval loop verified
+
+Governed module upgrade and backend reload succeeded at b985a026b. The existing rollback-only approval smoke now passes17 checks, including five contract-event checks: no-configuration auto-approval without completion, real configured review creation, real approval plus explicit completion, rejection reason, and resubmission with a new review chain. Configuration restoration and absence of temporary records were verified. Final UI-contract/browser consumption, distinct reviewer roles and all necessary document coverage remain unproven; this does not close `detail.action-state`.

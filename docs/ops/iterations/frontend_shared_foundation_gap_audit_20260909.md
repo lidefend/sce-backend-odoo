@@ -7716,3 +7716,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（contract-event-approval-iteration.log）。L2审批51、native8+27=35、semantics15 PASS（contract-event-approval-tests.log）。新增实际方法测试覆盖有/无配置分流、共同审批委托、伪造/中间回调拒绝、真实通过与独立完成、业务anchor失败；新增实际契约当前审批人/重提/完成动作与原生入口一致性测试。补登记新直接输入后旧begin回执被正确拒绝，按新输入重新begin并执行51项后record（contract-event-approval-final-*）；不冒用旧身份。
 - 最后补原生驳回原因字段显示，XML解析通过，无业务方法再改。登记剩余合同事件直接action_reject按钮已退出，native registry=26（12helper+14navigation），state_transition_undeclared=0只表示当前登记缺口已编码，不能证明全单据覆盖或运行正确。detail.action-state继续open。
 - 新字段/继承/selection/XML需受管模块升级与后端重载；本提交尚未执行，必须先完成再做真实事件审批/拒绝/重提验证。同批付款冲销有效契约仍需运行核对。前端不变，不构建；不以纯测试宣称全系统接管或审批验收完成。总体active，无推送、合并或目标部署。
+
+
+### 53.41 合同履约事件受管升级与真实审批通过
+
+- b985a026b候选，P4运行验证P1新增模型能力；既有内部隔离验收tenant/database=sc_frontend_acceptance，profile=local，project=sc-fe-r2-p1-01，精确filter=^sc_frontend_acceptance$及sc_fe_r2_p1_01_db/redis/odoo卷复用。acceptance.module.upgrade MODULE=smart_construction_core CODEX_MODE=gate CODEX_NEED_UPGRADE=1成功，registry66.151秒（contract-event-module-upgrade.log）；backend.acceptance.up受管重载完成（contract-event-backend-up.log）。前端输入不变，无构建。
+- P4在原business_config_approval_runtime_smoke同一回滚事务增加合同事件5项，不新增环境/fixture权威。不覆盖已有事件策略：精确公司/全局范围内如已有策略（含停用）即拒绝。先验证不存在配置时submit→approved且无review、不自动done；再事务内创建策略/步骤，复用已有审批组，真实request_validation及with_user审批人validate_tier→approved，显式action_done后才done。
+- 新事件真实审批人经共同拒绝服务→原生驳回→业务rejected，原因一致；重提新review IDs与旧链不相交，真实批准到approved。临时事件/策略和原项目/客商/费用统一登记，finally rollback后均不存在；原费用策略/步骤完整回读一致。
+- L1 ci.local.iteration PASS、py_compile通过（contract-event-runtime-iteration.log）。受管verify.business_config.approval_runtime最终17项PASS、ROLLBACK=VERIFIED（contract-event-runtime.log）：既有费用12项及新增事件5项。这是本次新增tier/config/callback真实运行检查，不是全模块ORM扫描；封装未变，复用原9项wrapper证据。最后仅修改脚本说明为实际两类覆盖，不失效执行证据。
+- 本轮证明合同事件所述模型审批链，但尚未验证合同事件的最终ui.contract/浏览器办理、不同审批岗位以及全部业务单据；付款冲销有效契约/真实执行仍待。登记state gap归零不代表全系统交付，detail.action-state继续open。主线未集成、目标未部署、用户整体验收未完成，总体active。
