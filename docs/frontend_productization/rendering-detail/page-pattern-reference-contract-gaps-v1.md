@@ -576,3 +576,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.160：配置管理员业务分类入口契约缺口（开放）。现有原生配置权限及表单存在，但fixture_role_config_admin的system.init.route_authority不含menu_sc_business_category，报告tpl07-1790803918645；required/recommended生效验证因此在任何写入之前停止。候选归属P1角色入口投影，不由前端/P4硬编码绕过；需修复并验证配置→有效契约→共享提交反馈→恢复。本次34项工具测试通过不代表产品闭环通过，非低代码变更集发布证据。
+
+
+53.161：53.160业务分类入口缺口已由P1角色声明修复（2f93034b6，115定向测试）；实际配置修改又发现P0新建源缓存保留旧默认值，6fd0123cd通过现有动态投影路径修复（176测试）。tpl07-1790804200300配置范围21项证明required→recommended→required、共享提交反馈变化及原值回读恢复，生产前端复用dbc39c9a8。报告额外默认付款旅程不计本次，P4分支已纠正并34测试，配置主体证据依赖未变而复用。即时原生配置闭环成立，不代表版本化低代码发布或所有业务覆盖；总体仍开放。

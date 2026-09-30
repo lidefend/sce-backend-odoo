@@ -9066,3 +9066,18 @@ submit恢复58按依赖复用到dbc候选：其上传走创建后pending队列�
 L1 expense-policy-iteration.log PASS；L2 expense-policy-tool.log 34 PASS（12Node+22Python），begin/record回执expense-policy-receipt.log。运行expense-policy-browser.log / tpl07-1790803918645失败：configadmin uid34初始化route_authority的primary/role_home/contextual/admin均无smart_construction_core.menu_sc_business_category，入口解析0条。尚未读取或写入分类，assertions=0，不能算配置闭环通过；无配置恢复负担，未创建业务数据。
 
 已确认源码原生menu/action具有business_config_admin组，模型ACL允许该组维护，product_policy_sync将该菜单列为CONFIG_CENTER_BUSINESS_BASE_MENU_XMLIDS；但core_extension_policy_maps的business_config_admin.admin_menu_xmlids没有该项。这是P1角色入口与有效初始化契约的候选断点，需沿既有菜单授权/投影链确认并补齐，不能在P4硬编码菜单ID或绕过初始化授权。下一步仅修该必要配置入口及非零定向回归，然后受管后端刷新再续required→recommended→required；不重复全部菜单扫描。67/detail.action-state及总体目标保持开放，无推送、合并或目标部署。
+
+
+### 53.161 配置入口与新建默认值缓存修复，附件策略生效闭环
+
+53.160后沿已定位链处理：P1 core_extension_policy_maps在business_config_admin.admin_menu_xmlids补业务分类，原MenuFactService用户可见菜单交集和原生ACL保留，不硬编码前端路由或提高其他角色权限。2f93034b6提交，category-entry-iteration PASS，navigation_shell.unit 115 PASS（40场景+12导航+42菜单+2新增角色边界+19guard测试），begin/record记录configuration_entry。无字段/XML变更，仅backend.acceptance.up受管更新身份，未升级模块/跑ORM。
+
+expense-policy-entry-browser.log / tpl07-1790804060994证实入口已可用（menu411/action710），configadmin实际通过官方表单将分类18 required→recommended且权威回读成功；finance随后新建契约仍required。元数据从miss变为同一source_ref的hot_cache_hit，确定P0运行时源缓存错误复用了包含default_get实时业务事实的新建源。finally精确恢复required并回读通过；这次失败不算配置验收。
+
+6fd0123cd修复P0 load_contract_response_cache.projection_base_params：render_profile/renderProfile=create或记录身份new属于动态源，沿现有动态投影路径重算，不将实时默认值当作静态结构缓存。已保存记录和列表仍沿现有记录无关缓存。无行业字段名/分类规则进入P0；增加6种新建身份反例及列表/已有记录缓存边界测试。create-source-cache-iteration PASS；formal_list.unit 176 PASS（113投影+7cache+51编排+5基线），configuration_projection begin/record完成。受管backend.up刷新到6fd0123cd，frontend继续dbc39c9a8/index-DlvbGtIp.js，无新构建。新建源重新投影的耗时高于热缓存，这是正确性修复；未引入新缓存或分页框架。
+
+expense-policy-fresh-browser.log / tpl07-1790804200300配置范围21项全通过：普通configadmin对既有分类18官方表单保存recommended；finance相同授权报销入口重新打开后契约recommended，提交从附件阻断进入金额/项目普通必填反馈；再通过官方配置表单恢复required，finance契约与附件阻断恢复；最终分类id/code/policy与基线完全一致。两个实际写入均只涉及attachment_policy；没有单据创建、审批执行或附件写入。人工核对changed-feedback截图为官方共享表单的必填错误及提示。三次新建契约均dynamic_request bypass，证明未靠TTL等候生效。
+
+该报告总58 PASS含额外默认付款旅程：P4新scope分支未与后续if/else链互斥。进程正常结束后已改else if，node语法及工具34项通过（expense-policy-scope-unit/receipt.log）。配置分支本体与断言、产品及环境未变，复用原21项与恢复证据，不为范围调度修正再次写配置；额外付款结果不计本批验收，也不覆盖旧证据。
+
+本次关闭业务分类入口缺失和新建默认值缓存导致配置不即时生效的代表缺口。验证是原生配置即时保存，不是WEB-LC变更集发布/回滚；不外推其它类别字段或全部业务单据。67/detail.action-state、其余已登记业务责任与配置发布证据继续开放。下一步复用既有WEB-LC记录核对版本化配置发布/恢复尚缺的具体链，再在同一共享消费路径补齐，不重跑全菜单/付款49/ORM。无推送、合并、目标部署。

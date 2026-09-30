@@ -565,8 +565,7 @@ try {
     }
     await finance.ctx.close();
     await admin.ctx.close();
-  }
-  if (['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume'].includes(process.env.TPL07_SCOPE)) {
+  } else if (['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume'].includes(process.env.TPL07_SCOPE)) {
     const finance = await login('fixture_role_finance');
     const page = finance.page;
     await list(page, 545, 'favorite-lifecycle-list');
