@@ -6994,3 +6994,109 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 ### 状态
 
 本段**批次验收完成**（契约投影修复 + 定向回归 + 真实环境只读证据）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 49｜把"能静默失效的守卫"修回来：批量删除预检门的定位漂移、按序列重绑与自证伪（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- 分支 `feature/web-official-template-adoption`，开工 HEAD `6cf886bcb`、工作区 clean。
+- 主线移植**已完成且无需再动**：`origin/main = fff226d7b`（`Merge PR #524`，2026-09-30 15:32 +0800）
+  已是本分支祖先（`git rev-list --left-right --count origin/main...HEAD` = `0 208`），
+  且含本轮要复用的协作流程提交 `81788ca9a`（统一 agent resume 与增量证据复用）、
+  `8b44ce536`（跨登记工作树复用已校验的主线扫描）、`b6ea04f0d`（按运行影响选择 ORM 校验）。
+- 协作流程按主线新规范消费：`make agent.run.resume` 直接解析本分支唯一 run（不再全量扫描 goals）；
+  检查按 `make agent.run.begin` → 执行 → `make agent.run.record` 留回执。
+- Formal Product Layer：P0（平台内核的**验收工具**与通用前端消费契约）/ P4（执行与证据机制）。
+  Layer Target：`scripts/verify` 的删除数据闭包守卫、对应 Make 入口、`.agent/runs` 检查声明。
+  Module：`scripts/verify`、`make`、`.agent`。Standard vs User-Specific：通用工程机制，不含行业或客户语义。
+  Why Here：守卫定位方式与自证伪属于平台工程机制。Why Not Elsewhere：不向产品契约、前端呈现或数据库加入规则。
+  Blast Radius：一个前端写路径守卫的**可证伪性**；不改任何前端/后端产品行为、不放宽门禁、不写数据库。
+
+### 2. 先定性：这是产品缺陷还是守卫漂移？
+
+段 48 §4 把 `make verify.user_delete_data.closure_guard` 的 3 条失败记为"先前既有的守卫期望漂移"独立保留。
+本段按要求"对照实际专题基线判断，不凭'当前 HEAD 也会失败'就认定无关"，沿真实调用链核对**行为**：
+
+| 守卫断言 | 当前代码事实 | 定性 |
+| --- | --- | --- |
+| `ActionView.vue` 必须含 `dryRun: true` | 该调用已迁至 `app/action_runtime/useActionViewSelectionActionRuntime.ts` | **定位漂移** |
+| `ActionView.vue` 必须含 `const result = await unlinkActionViewRecord` | 同上 | **定位漂移** |
+| `ActionView.vue` 必须含 `resolveUnifiedPageContractV2SurfacePolicies(actionContract.value)` | 页面现持**归一化 store**，调用 `resolveContractV2SurfacePolicies`；语义相同，解析入口不同 | **符号漂移** |
+
+行为链核对（`useActionViewSelectionActionRuntime.ts`）：`resolveBatchActionGuardDecision` 前置校验
+→ 删除二次确认 → `resolveBatchDeleteExecutionSeed` 产出**两个不同**幂等键
+（`delete.dry_run` 与 `delete`）→ `await unlinkActionViewRecord({ dryRun: true, idempotencyKey: seed.dryRunIdempotencyKey })`
+→ `const result = await unlinkActionViewRecord({ idempotencyKey: seed.idempotencyKey })`，两者同一 `try`，
+`catch` 内**不再发出**真实删除。后端 `api_data_unlink.py` 在 `dry_run` 下仍执行
+`_check_record_delete_policy` + `check_access_rights("unlink")` + `check_access_rule("unlink")`，仅跳过 `recs.unlink()`。
+
+结论：**产品行为正确、预检确实在闸住真实写入**；失败的只是守卫的定位方式。
+但更严重的问题在定性之外——**该门禁已经停止证明任何东西**：
+它盯着的文件里不再有这些调用点，因此"预检被删掉"与"代码被搬迁"在守卫看来完全一样。
+这正是"验收体系为什么没有发现偏差"的同一类缺口，必须补。
+
+### 3. 修复：按序列重绑，并让守卫自证伪
+
+`scripts/verify/user_delete_data_closure_guard.py::_probe_frontend_delete_flow`：
+
+- 改为读**拥有该流程的模块** `useActionViewSelectionActionRuntime.ts`，断言从"某文件里有某个字符串"
+  升级为**业务序列**：
+  1. `dryRun: true` 预检必须存在；
+  2. 真实 `const result = await unlinkActionViewRecord` 必须存在；
+  3. **预检必须排在真实写入之前**（`preflight_at < destructive_at`）；
+  4. 两次调用必须使用**不同**幂等键（`seed.dryRunIdempotencyKey` vs `seed.idempotencyKey`）；
+  5. 预检与真实写入之间**不得**出现 `catch`/`finally`（否则失败可能被吞掉后继续写）；
+  6. `ActionView.vue` 必须**委派**给 `useActionViewSelectionActionRuntime` 且**不得**出现
+     `await unlinkActionViewRecord`（禁止页面长出第二条删除路径）。
+- 契约面策略回退改为**顺序断言**：`list_profile.batch_policy` 优先、`SurfacePolicies(actionContract.value)`
+  兜底，且 `list_profile_at < surface_policy_at`；同时保留"空 `available_actions` 视为未声明可执行动作"。
+- `_probe_frontend_delete_flow(errors, read=_read)` 增加可注入 reader，使守卫可被无容器自证伪。
+
+新增 `scripts/verify/test_user_delete_data_closure_guard.py`（8 项）：
+对**真实出厂源码**断言守卫成立（绑定测试），再用受控源码逐一证明守卫仍可被证伪——
+删预检、删真实写入、**颠倒顺序**、预检后插 `catch`、两次调用共用幂等键、去掉契约面策略回退、
+页面新增第二条删除路径，七种都必须被拒。
+新入口 `make verify.user_delete_data.closure_guard.self_test`（`make/dev_test.mk`）。
+
+登记：`docs/audit/guard_registry/guard_registry.json` 按既有生成方式
+（`make guard.registry.export`）刷新，`make verify.guard.registry` → **AUDIT PASS: 1361 scripts
+（1274 referenced, 87/87 orphans acknowledged, 1 retired）**。
+同次导出顺带收敛了此前未重导的登记行数（`frontend_v2_policy_projection_guard.py` 795→827 等），
+属生成物追平，非本次改动范围扩大。
+
+### 4. 定向验证
+
+L0：分支/HEAD/工作区已记录，开工 clean。L1：`make ci.local.iteration` PASS（scope=dirty，L1-only）。
+L2（非零，逐项留原始日志于 `.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/`）：
+
+| 目标 | 结果 | 计数 |
+| --- | --- | --- |
+| `verify.user_delete_data.closure_guard` | PASS | —（守卫本体） |
+| `verify.user_delete_data.closure_guard.self_test` | PASS | 8 |
+| `verify.guard.registry` | PASS | 1（AUDIT PASS，1361 scripts） |
+| `verify.frontend.style_system.guard` | PASS | `hardcoded_color_refs_max=0` |
+
+`make agent.run.resume`：7 项检查全部 `reusable`（`resume` 30 / `status_presentation` 15 /
+`page_pattern_parity` 28 / `record_denied_reason` 25 / `contract_record_action_state` 19 /
+`user_delete_guard` 8 / `guard_registry` 1），`blockers=[]`。
+L3/L4：本次只改守卫/工具/生成登记，未改前端或后端产品代码、未改运行环境
+→ 数据库、浏览器与服务目录**不适用**，不重跑构建与业务旅程（按影响分析，非跳过真实失败）。
+L5：未推送、未合并，远端门禁不在本段范围。
+
+### 5. 边界与剩余
+
+- **不改产品代码**去迎合旧选择器：前端与后端删除链一行未动；修的是守卫的定位方式与可证伪性。
+- 段 48 §4 的"独立保留"到此**关闭**：三条失败经定性为守卫漂移并已修复，不再是合并前清理批次的输入。
+- 真正独立保留的项不变：`industry_agnostic.guard` 97 条、`state_transition_undeclared` 5 条、
+  390×844 官方参考截图证据缺口、`style_system` 历史记账（本段实测已 PASS）。
+- 契约 ledger 现状不变：`entries=67 aligned=46 contract_gap=20 not_applicable=1`；
+  下一步仍按段 48 §7 的顺序收口 P0 投影缺口。
+
+### 提交
+
+- `fix(guard): bind the batch-delete preflight gate to the module that owns the flow`（守卫 + 自检 + Make + 登记）
+
+### 状态
+
+本段**批次验收完成**（守卫修复 + 自证伪回归）｜主线已并入（`fff226d7b` 为祖先，无待移植提交）｜
+目标环境未部署｜整体用户交付未验收。
