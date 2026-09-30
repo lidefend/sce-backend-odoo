@@ -426,6 +426,59 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(project.lifecycle_state, 'in_progress')
             with self.assertRaises(ValueError): project.action_sc_submit()
 
+    def test_project_document_approval_and_archival_are_separate(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/document_center.py'
+        names = {'action_submit', 'action_on_tier_approved', 'action_archive', 'action_approve', 'action_reset_to_draft'}
+        methods = [node for node in ast.walk(ast.parse(path.read_text())) if isinstance(node, ast.FunctionDef) and node.name in names]
+        ns = {'UserError': ValueError}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for configured in (False, True):
+            rec = self.record(required=configured, state='draft')
+            rec._name = 'sc.project.document'
+            class Env(dict): context = {}
+            rec.env = Env({'sc.approval.policy': rec.policy})
+            rec.env.company = rec.company_id
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            rec._check_document_operation = lambda label: None
+            rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+            rec.action_archive = lambda: ns['action_archive'](rec)
+            with self.assertRaises(ValueError): ns['action_approve'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'review' if configured else 'approved')
+            if configured:
+                with self.assertRaises(ValueError): ns['action_archive'](rec)
+                with self.assertRaises(ValueError): ns['action_reset_to_draft'](rec)
+                rec.policy._approve_submission_review(rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+            ns['action_archive'](rec)
+            self.assertEqual(rec.state, 'done')
+            with self.assertRaises(ValueError): ns['action_archive'](rec)
+            ns['action_reset_to_draft'](rec)
+            self.assertEqual(rec.state, 'draft')
+            self.assertFalse(rec.review_ids)
+
+    def test_project_document_external_state_and_reviewed_contents_are_protected(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/document_center.py'
+        methods = [node for node in ast.walk(ast.parse(path.read_text())) if isinstance(node, ast.FunctionDef) and node.name in {'create', 'write', '_check_document_operation'}]
+        for method in methods: method.decorator_list = []
+        ns = {'UserError': ValueError, '_DOCUMENT_APPROVAL_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rec = Rows([types.SimpleNamespace(state='approved')])
+        rec.env = types.SimpleNamespace(context={'default_state': 'done'})
+        with self.assertRaises(ValueError): ns['create'](rec, [{}])
+        for values in ({'state': 'done'}, {'project_id': 9}, {'attachment_ids': []}, {'name': 'new content'}):
+            with self.assertRaises(ValueError): ns['write'](rec, values)
+        for same_company in (False, True):
+            calls = []
+            def project_gate(**kwargs):
+                calls.append(kwargs)
+                raise ValueError('project paused')
+            document = types.SimpleNamespace(company_id=8, project_id=types.SimpleNamespace(company_id=8 if same_company else 9, _ensure_operation_allowed=project_gate))
+            with self.assertRaises(ValueError): ns['_check_document_operation'](Rows([document]), 'Archive')
+            self.assertEqual(len(calls), int(same_company))
+
     def test_tender_purchase_submission_uses_shared_approval(self):
         path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderDocPurchase')

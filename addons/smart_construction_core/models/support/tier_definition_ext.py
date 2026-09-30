@@ -13,6 +13,7 @@ class TierDefinition(models.Model):
         elif isinstance(names, (set, tuple)):
             names = list(names)
         for model_name in [
+            "sc.project.document",
             "tender.doc.purchase",
             "sc.material.inbound",
             "sc.material.acceptance",

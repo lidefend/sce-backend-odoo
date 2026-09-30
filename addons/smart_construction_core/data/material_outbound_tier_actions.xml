@@ -657,4 +657,32 @@ if target_records:
             <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]"/>
         </record>
 
+        <record id="server_action_project_document_on_approved" model="ir.actions.server">
+            <field name="name">工程资料审批approved回调</field>
+            <field name="model_id" ref="model_sc_project_document"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if not target_records and env.context.get("active_model") == "sc.project.document" and env.context.get("active_id"):
+    target_records = env["sc.project.document"].browse(env.context["active_id"])
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]"/>
+        </record>
+
+        <record id="server_action_project_document_on_rejected" model="ir.actions.server">
+            <field name="name">工程资料审批rejected回调</field>
+            <field name="model_id" ref="model_sc_project_document"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if not target_records and env.context.get("active_model") == "sc.project.document" and env.context.get("active_id"):
+    target_records = env["sc.project.document"].browse(env.context["active_id"])
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+            <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_internal_user')])]"/>
+        </record>
+
 </odoo>

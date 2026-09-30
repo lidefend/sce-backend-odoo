@@ -1019,10 +1019,12 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.project.document": {
             "state_field": "state",
-            "state_phase": {"draft": "draft", "review": "under_review", "done": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "review": ["approve", "cancel", "reopen"], "done": ["reopen"], "cancel": ["reopen"]},
-            "method_by_action": {"submit": "action_submit", "approve": "action_approve", "cancel": "action_cancel", "reopen": "action_reset_to_draft"},
-            "label_by_action": {"approve": "归档", "cancel": "作废"},
+            "state_phase": {"draft": "draft", "review": "under_review", "approved": "approved", "done": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "review": ["submit", "cancel"], "approved": ["complete", "cancel"], "done": ["reopen", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_archive", "cancel": "action_cancel", "reopen": "action_reset_to_draft"},
+            "label_by_action": {"complete": "归档", "cancel": "作废"},
         },
         "sc.safety.patrol.task": {
             "state_field": "state",

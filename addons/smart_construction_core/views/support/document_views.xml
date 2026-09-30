@@ -28,26 +28,18 @@
             <form string="工程资料">
 
                 <header>
-                    <!-- 提交审核：仅 draft 显示 -->
-                    <button name="action_submit" type="object" string="提交审批"
-                        class="oe_highlight"
-                        modifiers='{"invisible":[["state","!=","draft"]]}'/>
-
-                    <!-- 归档：draft 或 review 显示 -->
-                    <button name="action_approve" type="object" string="归档"
-                        modifiers='{"invisible":[["state","not in",["draft","review"]]]}'/>
-
-                    <!-- 作废：cancel 隐藏 -->
-                    <button name="action_cancel" type="object" string="作废"
-                        modifiers='{"invisible":[["state","=","cancel"]]}'/>
-
-                    <!-- 重置为草稿：draft 隐藏 -->
-                    <button name="action_reset_to_draft" type="object" string="重置为草稿"
-                        modifiers='{"invisible":[["state","=","draft"]]}'/>
-
-                    <!-- 状态条 -->
-                    <field name="state" widget="statusbar"
-                        statusbar_visible="draft,review,done,cancel"/>
+                    <button name="action_submit" type="object" string="提交审批" class="oe_highlight"
+                        invisible="state not in ['draft', 'review'] or validation_status in ['waiting', 'pending', 'validated']"/>
+                    <button name="validate_tier" type="object" string="审批通过"
+                        invisible="state != 'review' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                    <button name="reject_tier" type="object" string="驳回"
+                        invisible="state != 'review' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                    <button name="action_archive" type="object" string="归档" invisible="state != 'approved'"/>
+                    <button name="action_cancel" type="object" string="作废" invisible="state == 'cancel'"/>
+                    <button name="action_reset_to_draft" type="object" string="重置为草稿" invisible="state not in ['done', 'cancel']"/>
+                    <field name="state" readonly="1" widget="statusbar" statusbar_visible="draft,review,approved,done,cancel"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
                 </header>
 
                 <sheet>

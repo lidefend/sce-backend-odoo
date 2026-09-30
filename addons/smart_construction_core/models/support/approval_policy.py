@@ -10,6 +10,7 @@ class ScApprovalPolicy(models.Model):
     _order = "sequence, id"
     _runtime_authority = "base_tier_validation"
     BUSINESS_MODEL_SELECTION = [
+        ("sc.project.document", "工程资料"),
         ("tender.doc.purchase", "投标文件购买申请"),
         ("project.project", "项目立项"),
         ("project.task", "项目任务"),
@@ -425,6 +426,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_sync_supported(self):
         self.ensure_one()
         return self.target_model in {
+            "sc.project.document",
             "tender.doc.purchase",
             "project.project",
             "project.task",
@@ -565,6 +567,10 @@ class ScApprovalPolicy(models.Model):
             "sc.material.inbound": (
                 "smart_construction_core.server_action_material_inbound_on_approved",
                 "smart_construction_core.server_action_material_inbound_on_rejected",
+            ),
+            "sc.project.document": (
+                "smart_construction_core.server_action_project_document_on_approved",
+                "smart_construction_core.server_action_project_document_on_rejected",
             ),
             "tender.doc.purchase": (
                 "smart_construction_core.server_action_tender_purchase_on_approved",

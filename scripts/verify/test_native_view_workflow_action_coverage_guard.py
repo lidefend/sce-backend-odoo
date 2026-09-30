@@ -340,13 +340,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertEqual("action_done" in methods, state == "in_progress")
             self.assertEqual("action_reset_draft" in methods, state == "cancel")
 
-    def test_document_reset_is_declared_for_existing_non_draft_states(self):
-        for state in ("draft", "review", "done", "cancel", "unknown"):
+    def test_document_archival_and_reset_follow_approval_boundaries(self):
+        for state in ("draft", "review", "approved", "done", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="sc.project.document")
             resets = [a for a in actions if a["method"] == "action_reset_to_draft"]
-            self.assertEqual(bool(resets), state in ("review", "done", "cancel"))
+            self.assertEqual(bool(resets), state in ("done", "cancel"))
             if resets:
                 self.assertEqual(resets[0]["action_semantics"]["purpose"], "reopen")
+            archives = [a for a in actions if a["method"] == "action_archive"]
+            self.assertEqual(bool(archives), state == "approved")
+            if archives:
+                self.assertEqual(archives[0]["action_semantics"]["purpose"], "complete")
 
     def test_plan_fix_does_not_add_start_to_other_shared_profile_consumers(self):
         profile = load_profiles()["sc.fund.account.operation"]
