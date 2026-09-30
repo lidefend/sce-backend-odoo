@@ -13,6 +13,7 @@ from .equipment_management import (
 
 _INBOUND_STATE_TOKEN = object()
 _ACCEPTANCE_STATE_TOKEN = object()
+_PURCHASE_REQUEST_STATE_TOKEN = object()
 
 
 SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目"
@@ -356,7 +357,12 @@ class ScMaterialSystemDefaultMixin(models.AbstractModel):
 class ScMaterialPurchaseRequest(models.Model):
     _name = "sc.material.purchase.request"
     _description = "材料采购申请"
-    _inherit = ["mail.thread", "mail.activity.mixin", "sc.material.system.default.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+
     _order = "request_date desc, id desc"
 
     name = fields.Char(string="申请单号", required=True, default="新建", tracking=True)
@@ -465,6 +471,8 @@ class ScMaterialPurchaseRequest(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("采购申请状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
@@ -472,6 +480,37 @@ class ScMaterialPurchaseRequest(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.purchase.request") or _("材料采购申请")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_purchase_request_state_token") is not _PURCHASE_REQUEST_STATE_TOKEN:
+            raise UserError(_("采购申请状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_purchase_request_state(self, vals):
+        return self.with_context(sc_purchase_request_state_token=_PURCHASE_REQUEST_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "validated":
+                continue
+            before = record._sc_material_audit_payload()
+            record._write_purchase_request_state({"state": "approved", "reject_reason": False})
+            record._sc_audit_material_transition("material_purchase_request_approved", before, record._sc_material_audit_payload(), action_name="action_on_tier_approved")
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "rejected":
+                continue
+            before = record._sc_material_audit_payload()
+            record.with_context(skip_validation_check=True)._write_purchase_request_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+            record._sc_audit_material_transition("material_purchase_request_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
     def init(self):
         self.env.cr.execute(
@@ -499,16 +538,19 @@ class ScMaterialPurchaseRequest(models.Model):
     def action_submit(self):
         self._sc_require_material_user(_("提交采购申请"))
         for record in self:
-            record._sc_require_state({"draft"}, _("提交采购申请"))
+            record._sc_require_state({"draft", "submitted"}, _("提交采购申请"))
             if not record.line_ids:
                 raise ValidationError(_("提交采购申请前必须维护申请明细。"))
             record.line_ids._check_qty()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交采购申请"))
-        self.write({"state": "submitted"})
+        self.with_context(skip_validation_check=True)._write_purchase_request_state({"state": "submitted"})
         for record in self:
+            required = self.env["sc.approval.policy"]._start_submission_review(record)
+            if not required:
+                record._write_purchase_request_state({"state": "approved", "reject_reason": False})
             record._sc_audit_material_transition(
-                "material_purchase_request_submitted",
+                "material_purchase_request_submitted" if required else "material_purchase_request_approved",
                 snapshots[record.id],
                 record._sc_material_audit_payload(),
                 action_name="action_submit",
@@ -516,33 +558,14 @@ class ScMaterialPurchaseRequest(models.Model):
         return True
 
     def action_approve(self):
-        self._sc_require_any_group(
-            [
-                "smart_construction_core.group_sc_cap_material_manager",
-                "smart_construction_core.group_sc_cap_purchase_manager",
-            ],
-            _("审批采购申请"),
-        )
-        for record in self:
-            record._sc_require_state({"submitted"}, _("审批采购申请"))
-            record.line_ids._check_qty()
-        snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self._sc_warn_system_defaults_on_action(_("审批采购申请"))
-        self.write({"state": "approved"})
-        for record in self:
-            record._sc_audit_material_transition(
-                "material_purchase_request_approved",
-                snapshots[record.id],
-                record._sc_material_audit_payload(),
-                action_name="action_approve",
-            )
-        return True
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消采购申请"))
         self._sc_require_state({"draft", "submitted"}, _("取消采购申请"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "cancel"})
+        self._write_purchase_request_state({"state": "cancel"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_purchase_request_cancelled",
@@ -556,7 +579,7 @@ class ScMaterialPurchaseRequest(models.Model):
         self._sc_require_material_manager(_("重置采购申请为草稿"))
         self._sc_require_state({"cancel"}, _("重置采购申请为草稿"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "draft"})
+        self._write_purchase_request_state({"state": "draft"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_purchase_request_reset",
@@ -583,6 +606,7 @@ class ScMaterialPurchaseRequest(models.Model):
     def _require_approved_for_downstream(self, action_label):
         self.ensure_one()
         self._sc_require_state({"approved"}, action_label)
+        self.env["sc.approval.policy"]._assert_submission_approved(self, ("approved",))
         if not self.line_ids:
             raise ValidationError(_("%s前必须维护申请明细。") % action_label)
         self.line_ids._check_qty()

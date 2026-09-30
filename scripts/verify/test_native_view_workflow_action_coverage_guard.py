@@ -41,6 +41,21 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 projected = self._general_contract_actions(state, model=model)
                 self.assertEqual(method_name in [a["method"] for a in projected], state in allowed)
 
+    def test_purchase_request_actions_follow_review_facts_and_business_sources(self):
+        model = 'sc.material.purchase.request'
+        for method in ('action_cancel', 'action_reset_draft'):
+            self._assert_material_state_projection('ScMaterialPurchaseRequest', model, method)
+        historical = self._general_contract_actions('submitted', model=model, record_fields={'validation_status': 'no'})
+        self.assertEqual({row['method'] for row in historical}, {'action_submit', 'action_cancel'})
+        for reviewer in (False, True):
+            rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=reviewer, record_fields={'validation_status': 'pending'})
+            expected = {'action_cancel'} | ({'validate_tier', 'reject_tier'} if reviewer else set())
+            self.assertEqual({row['method'] for row in rows}, expected)
+            for row in rows:
+                self.assertEqual(row['target']['model'], model)
+                self.assertEqual(row['target']['method'], row['method'])
+        self.assertEqual(self._general_contract_actions('approved', model=model), [])
+
     def test_material_inbound_reset_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_reset_draft")
 

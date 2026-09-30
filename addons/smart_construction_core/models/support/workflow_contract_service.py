@@ -513,13 +513,20 @@ class ScWorkflowContractService(models.AbstractModel):
             "sc.equipment.request",
             "sc.labor.plan",
             "sc.labor.request",
-            "sc.material.purchase.request",
             "sc.material.rental.plan",
             "sc.safety.disclosure",
             "sc.safety.plan",
             "sc.subcontract.plan",
             "sc.subcontract.request",
         )),
+        "sc.material.purchase.request": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
         "project.material.plan": {
             "state_field": "state",
             "state_phase": {

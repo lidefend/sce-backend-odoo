@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.70 acceptance runtime8 PASS rollback verified on backend3d2118bd9; create14 PASS frontend7915f3bb9, PM recordqueryempty report1790779666048. Do not retry unchanged empty queries/old8+45 or rebuild. Next remaining all-document producer: material purchase request/RFQ/settlement profiles in same existing material_acceptance.py still direct transitions; inspect selected one and integrate shared approval preserving document generation/execution and native obligations. Existing monetary authority gaps project/acceptance remain explicit; overall67 not complete.",
+  "next_exact_step": "53.71 source tests PASS 72 approval/49 native/15 semantics. Extend existing approval runtime scope with purchase-request only; preserve RFQ/order independent generation and real pending/rejected/resubmitted review facts, rollback verification. Managed module upgrade needed then reload; no frontend rebuild or repeat independent inbound8/acceptance8/shared45. Overall goal remains active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1099,6 +1099,18 @@
       "existing_record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790779666048/report.json",
       "record_query": "ok=true records=[] for PM",
       "writes_in_browser": 0
+    },
+    "segment_53_71": {
+      "status": "verification_pending",
+      "scope": "P1 material purchase request shared approval and fact-bound action availability",
+      "tests": {
+        "approval": 72,
+        "native": 49,
+        "semantics": 15,
+        "xml": 2
+      },
+      "runtime": "not_run; needs managed module upgrade and purchase-request-only rollback scope",
+      "frontend_build": "reuse unchanged frontend7915f3bb9"
     }
   }
 }

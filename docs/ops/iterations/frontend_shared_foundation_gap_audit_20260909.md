@@ -8008,3 +8008,14 @@ L1 iteration/py_compile/bash-n，复用上批68审批/48native/15语义未变产
 模块升级与后端3d2118bd9加载成功，acceptance-only-runtime.log 8/8 PASS、rollback verified（配置/步骤恢复，单据与临时材料/模板均不存在）。未重跑独立inbound8/shared45。继续P4扩展既有审批浏览器范围支持材料验收：当前PM物资经理角色、创建页未保存无质量结果按钮、既有记录精确契约；未改产品代码/构建。
 
 页面结果：acceptance-page-iteration.log L1 PASS；tpl07-1790779649769/report.json 官方创建14 PASS，未保存无审批/质量决定、双视口、errors=[]/forbiddenWrites=[]。现有记录tpl07-1790779666048/report.json在第2项停止，api.data ok=true records=[]，PM授权范围数据不足；不是记录页通过。保留范围：后端真实审批/质量结果8，创建页14，实际记录UI办理pending。继续剩余全业务单据，不升级detail.action-state整行。无前端重建、fixture基线新增、推送、合并或目标部署。
+
+
+### 53.71 采购申请统一审批及动作授权（进行中）
+
+P1 / smart_construction_core / 采购申请行业标准。复用共享sc.approval.policy+tier机制：未配置提交自动approved，已配置提交进入真实review；旧action_approve仅委托真实审批，保留评论wizard。审批callback只变更审批状态，不生成询价/采购订单。既有下游生成入口继续保留，在原状态/数量校验外增加审批事实校验；金额条件仅使用既有amount_total。私有状态token拒绝外部state写，驳回重提沿用受保护过渡与共享review重建。此规则不属于P0平台业务默认或前端，也不是P2偏好/P3临时配置。
+
+动作契约修正：历史submitted且无review仅提供提交/取消；通过/驳回仅由pending审批事实和can_review产生，不因state字符串声明直接授予。native按钮采用真实tier动作，保留生成询价、采购订单职责；无第二前端实现。Blast radius为采购申请模型/配置选择/tier callback/native/profile，共享路由实现未改。
+
+候选c8d837e3e+本段dirty（6个P1文件、2个定向测试、既有记录/run）。风险为审批状态及下游业务写入，最早L1。purchase-request-iteration.log L1 PASS；purchase-request-approval-unit.log 72 PASS（新增4项：配置分流/待审禁止下游、旧入口保留wizard、外部token拒绝、驳回重提）；purchase-request-native.log 8+41=49 PASS（新增真实状态守卫和review授权投影）；purchase-request-semantics.log 15 PASS；2份XML标准库解析PASS，diff --check PASS。初次XML探针lxml不可用属本机工具依赖，改用标准库完成语法检查，未安装依赖。
+
+L3升级/运行验证尚未执行：tier继承/公司字段及XML需要受管smart_construction_core升级，之后仅扩展并运行采购申请rollback范围，验证真实配置、审批和下游职责。L4前端源码未变故无需重建；实际角色页面办理仍pending。L5不在本批本地实现范围，不运行Quick/发布；无推送合并部署。既有独立入库8/验收8/共享45结果按未变方法与输入复用，不重跑。不升级67条detail.action-state整行；总体目标继续active。

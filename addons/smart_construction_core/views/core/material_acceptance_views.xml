@@ -155,8 +155,12 @@
         <field name="arch" type="xml">
             <form string="采购申请">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认申请" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager,smart_construction_core.group_sc_cap_purchase_manager" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
                     <button name="action_create_rfq" string="生成询价单" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_purchase_user,smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
                     <button name="action_create_purchase_order" string="生成采购订单" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'cancel'"/>

@@ -803,6 +803,79 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(rec.state, 'rejected')
             self.assertFalse(rec.data.get('reject_reason'))
 
+    def _purchase_request_methods(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')
+        names = {'action_submit', 'action_approve', '_require_approved_for_downstream', 'action_on_tier_approved', 'action_on_tier_rejected', 'write'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_PURCHASE_REQUEST_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        return namespace
+
+    def _purchase_request_record(self, **values):
+        rec = self.record(**values)
+        rec._name, rec.id = 'sc.material.purchase.request', 23
+        rec.line_ids = types.SimpleNamespace(_check_qty=lambda: None)
+        rec._sc_require_material_user = lambda label: None
+        def require_state(states, label):
+            if rec.state not in states:
+                raise ValueError('wrong state')
+        rec._sc_require_state = require_state
+        rec._sc_material_audit_payload = lambda: {'state': rec.state}
+        rec._sc_warn_system_defaults_on_action = lambda label: None
+        rec._write_purchase_request_state = lambda values: rec.data.update(values)
+        rec._sc_audit_material_transition = lambda *args, **kw: rec.audits.append((args, kw))
+        rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+        return rec
+
+    def test_purchase_request_submission_requires_actual_review_before_downstream(self):
+        methods = self._purchase_request_methods()
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            methods['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError):
+                    methods['_require_approved_for_downstream'](rec, 'generate')
+                methods['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                # A forged approved state still cannot bypass pending review facts.
+                rec.data['state'] = 'approved'
+                with self.assertRaises(ValueError):
+                    methods['_require_approved_for_downstream'](rec, 'generate')
+                rec.data.update(state='submitted', validation_status='validated')
+                methods['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+            methods['_require_approved_for_downstream'](rec, 'generate')
+            self.assertEqual(rec.state, 'approved')
+
+    def test_purchase_request_legacy_approve_preserves_review_wizard(self):
+        rec = self._purchase_request_record(required=True, state='submitted', reviews=['tier'], status='pending')
+        wizard = {'type': 'ir.actions.act_window', 'res_model': 'comment.wizard'}
+        rec.validate_tier = lambda: wizard
+        self.assertIs(self._purchase_request_methods()['action_approve'](rec), wizard)
+        self.assertEqual(rec.state, 'submitted')
+
+    def test_purchase_request_state_write_rejects_external_tokens(self):
+        for token in (None, True, 'trusted'):
+            rec = self._purchase_request_record(state='draft').with_context(sc_purchase_request_state_token=token)
+            with self.assertRaises(ValueError):
+                self._purchase_request_methods()['write'](rec, {'state': 'approved'})
+            self.assertEqual(rec.state, 'draft')
+
+    def test_purchase_request_rejected_submission_restarts_review(self):
+        rec = self._purchase_request_record(required=True, state='draft', status='rejected', reviews=['old-review'])
+        del rec._write_purchase_request_state
+        def write_state(actor, values):
+            if actor.review_ids and actor.validation_status == 'rejected' and not actor.env.context.get('skip_validation_check'):
+                raise ValueError('tier write lock')
+            actor.data.update(values)
+        with patch.object(Record, '_write_purchase_request_state', write_state, create=True):
+            self._purchase_request_methods()['action_submit'](rec)
+        self.assertEqual(rec.state, 'submitted')
+        self.assertEqual(rec.restarts, 1)
+        self.assertEqual(rec.validation_status, 'pending')
+
     def _inbound_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialInbound')

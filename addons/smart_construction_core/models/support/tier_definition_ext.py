@@ -15,6 +15,7 @@ class TierDefinition(models.Model):
         for model_name in [
             "sc.material.inbound",
             "sc.material.acceptance",
+            "sc.material.purchase.request",
             "project.project",
             "project.task",
             "project.material.plan",
