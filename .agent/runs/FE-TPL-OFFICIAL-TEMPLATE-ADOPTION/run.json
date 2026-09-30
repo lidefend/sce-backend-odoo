@@ -400,7 +400,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.156 browser45 tpl07-1790801474585 proves filled expense create payload numeric IDs/context,503 preserves input and retry/no business action. Existing managed expense-create-request runtime3 replays real ApiDataHandler as finance30/company8: creation succeeds, missing attachment refused with same saved-contract gate; rollback-only support attachment then submit approved/readonly/no payment. Source1815/temporaryexpense162/attachments restored; reporthash recorded. Open product gap: new-form attachment_ids required=false/help empty lacks submit-only category requirement. Next P1 effective submit prerequisite + P0 generic action-stage/pending-upload consumption; preserve draft saves. Full browser upload/save/submit still unverified; existing67/detail.action-state open. No fixtures/push/merge/target deploy.",
+  "next_exact_step": "53.157 submission prerequisite implemented (P1 related policy/default/native dependency + optional workflow submissionRequirements, P0 shared submit checks/pending-native support, drafts unchanged).161 backend pure,14 new frontend cases/regression/strict and browser48 tpl07-1790802321792 PASS; missing attachment blocks create, draft allowed, pending selected permits503 save/retry, no upload/action/write. Candidate/backend1fae2361a/index-akeNgEn3.js built once. Next full successful browser upload-save-submit-saved detail needs exact P4 cleanup for transient expense/attachments; finance lacks unlink, do not broaden roles or persist fixtures. Existing runtime27/replay3 reused; live category policy switching and overall67/detail.action-state remain open. No push/merge/target deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

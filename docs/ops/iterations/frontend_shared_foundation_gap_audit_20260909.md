@@ -9014,3 +9014,16 @@ expense-direction-browser.log / tpl07-1790801331397：35 PASS，errors=[]、forb
 L1 expense-save-probe-iteration / expense-create-replay-final-iteration PASS；语法/diff PASS；既有standard_preview_tool检查扩充输入，最终8 Node+19 Python=27测试PASS（含3组payload范围测试），begin/record非零。初期误以standard_preview命名登记，随即删除重复项并沿用原standard_preview_tool，无平行检查保留。生产addons和前端产物未改，160纯测/既有费用27运行/方向browser35沿依赖复用，无构建/升级。
 
 确认产品缺口：本报告新建attachment_ids fieldInfo required=false/help为空；有效分类却在提交/审批/完成要求附件。保存后evidenceGate正确，缺口是新建契约及共享动作校验中的“提交必需、草稿可缺”职责，不能简单改字段required而阻断草稿保存。登记既有gap文档，下一步补该动作阶段契约并验证待上传文件、保存失败/上传失败恢复与真实提交衔接。总体67/detail.action-state、保存后浏览器及其余缺口仍开放。仅本地，无推送/合并/目标部署。
+
+
+### 53.157 提交阶段附件契约与共享消费
+
+c2843dbe1 clean起点。P1 expense增加非存储只读related字段submission_attachment_policy，直接取business_category_id.attachment_policy；两处原生表单隐藏依赖，default_get沿既有模型计算投影。workflow profile声明submission_requirements，describe_model_actions和describe_record均投影submissionRequirements：relation_required、字段attachment_ids、requiredWhen政策值required、pendingSource=native_attachment、reasonCode/message。不赋予记录执行权限、不改状态机或后端提交校验。P0 v2 schema补加可选提交要求结构；既有共享primary/form action runtime在明确business/submit语义下调用同一校验，普通save不调用。缺依赖/错误声明拒绝；空关系/尚无默认键均视为缺值；待上传native附件可满足前置条件，之后仍走原save→upload→submit链、上传失败保持原阻断。没有模型/文案分支或新保存引擎。
+
+生产实现c71b5f58d；P4 1fae2361a补失败探针对实际execute_button及file.upload的拦截（此前只拦contract.action不足以证明HTTP动作未调用，本轮以实际intent补强）。L1 submission-requirements-iteration/final-iteration PASS；161 backend纯测PASS，新增草稿附件非必填/原生策略依赖，扩充default_get；create_record_user_journey新增14提交前置案例、原共享动作回归及strict类型PASS。早期两项新测试自身取样错误（未更新default stub、对带字典展开的全profile literal_eval）修正后通过；begin/record因测试输入变化拒绝一次，最终稳定输入重新begin→161→record成功，未继承旧回执。
+
+受管smart_construction_core升级、backend.acceptance.up和一次前端build/up均通过；日志submission-requirements-{upgrade,backend,build,preview}.log。候选base1fae2361a984c0d9b8b33f0136486fa009aee5f2，entry/assets/index-akeNgEn3.js，entry_sha256=a4312fd004f1f7ccd57db4ad6f4e2190e531844f1bbe34750b4940c3ec0b5a14，index_sha256=3c8dfbc987e5875fd540feeb645e904ee93c96bcea7fb6c9bdd71abcc6f8889b；后端同源，仍复用local/sc-fe-r2-p1-01/sc_frontend_acceptance及原卷/5180。无新环境/fixture。
+
+submission-requirements-browser.log / tpl07-1790802321792：48 PASS，errors=[]、forbiddenWrites=[]。新建mainData.submission_attachment_policy=required；空表或填齐基本字段但无附件，点击提交显示分类附件要求且无create。无附件点击保存草稿仍实际发出create（由探针503拦截）。随后使用官方附件选择控件加入tpl53-submission-requirement.txt待上传，再点击提交/重试，各发一次create；ID、金额、菜单/公司上下文及输入保留。附件仍待上传，execute_button/file.upload均未发出；没有业务创建/附件持久写入。1440/390检查通过，390截图人工核对动作可用和布局。原关系project10→11及方向过滤保持。新前置契约改变空表提示顺序，本轮替代53.153对应旧提示观察，不重跑付款49。
+
+53.156缺少“提交必需、草稿可缺”的新建契约消费已补；本轮覆盖默认required及泛型纯测的recommended/空值/未知声明，真实分类切换/onchange尚未单独实测。既有费用执行27/实际请求回放3的业务执行路径未改，按依赖复用，不重跑ORM。完整成功上传→保存→提交→保存后详情的浏览器闭环仍开放，不能将本轮503注入当作成功办理；下一步复用P4范围约束，准备精确对象清理能力后推进该闭环（finance无unlink，不能无清理写入，也不扩角色权限）。总体67/detail.action-state和其余产品缺口继续开放。无推送/合并/目标部署。
