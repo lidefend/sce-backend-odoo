@@ -73,7 +73,7 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
-    if (expenseSaveProbe && body?.intent === 'contract.action') {
+    if (expenseSaveProbe && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, reason: 'save-failure probe cannot execute business actions' });
       return route.abort();
     }
