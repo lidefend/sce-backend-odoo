@@ -284,6 +284,8 @@ verify.frontend.professional_relation_field.unit: guard.prod.forbid
 verify.frontend.professional_detail_collection.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_detail_collection_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-detail-collection-model-test.mjs >/dev/null
 	@node /tmp/professional-detail-collection-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/payment-settlement-introduce-dialog-contract-test.mjs >/dev/null
+	@node /tmp/payment-settlement-introduce-dialog-contract-test.mjs
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py
 	@python3 -m unittest scripts/verify/test_frontend_professional_detail_collection_guard.py
 	@python3 scripts/verify/frontend_professional_detail_collection_guard.py

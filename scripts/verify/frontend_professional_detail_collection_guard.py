@@ -1,7 +1,72 @@
 #!/usr/bin/env python3
+import ast
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+DIALOG_CONFIG_KEY = "introduceDialog"
+
+# Every term, payload key and action identity the introduce dialog renders is a
+# business semantic.  It is declared once in the construction product layer and
+# must be required exactly once by the frontend resolver: a hand-shortened
+# requirement list silently re-opens "frontend guesses the missing semantic".
+_TS_PATH_LITERAL = re.compile(r"['\"`]([^'\"`]+)['\"`]")
+
+
+def _flatten_leaf_paths(value, prefix: str = "") -> set[str]:
+    paths: set[str] = set()
+    if isinstance(value, ast.Dict):
+        for key_node, item in zip(value.keys, value.values):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                continue
+            paths |= _flatten_leaf_paths(item, f"{prefix}{key_node.value}.")
+        return paths
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        paths.add(prefix.rstrip("."))
+    return paths
+
+
+def _declared_dialog_paths(normalizer_text: str) -> set[str]:
+    """Flatten the contract declaration that owns the introduce vocabulary."""
+    tree = ast.parse(normalizer_text)
+    declared: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr != "update" or not node.args or not isinstance(node.args[0], ast.Dict):
+            continue
+        payload = node.args[0]
+        for key_node, value in zip(payload.keys, payload.values):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                continue
+            key = key_node.value
+            if key in ("introduceLabel", "actionRefs"):
+                declared |= _flatten_leaf_paths(value, f"{key}.")
+            elif key == DIALOG_CONFIG_KEY:
+                declared |= _flatten_leaf_paths(value, f"{DIALOG_CONFIG_KEY}.")
+    return declared
+
+
+def _required_dialog_paths(model_text: str) -> set[str]:
+    """Read the requirement list the frontend resolver enforces."""
+    required: set[str] = set()
+    for name in (
+        "REQUIRED_ENTRY_PATHS",
+        "REQUIRED_TERM_PATHS",
+        "REQUIRED_PAYLOAD_PATHS",
+        "REQUIRED_ACTION_PATHS",
+    ):
+        match = re.search(
+            rf"const {name}: readonly string\[\] = Object\.freeze\(\[(.*?)\]\);",
+            model_text,
+            re.S,
+        )
+        if not match:
+            continue
+        for literal in _TS_PATH_LITERAL.findall(match.group(1)):
+            required.add(literal.replace("${DIALOG_CONFIG_KEY}", DIALOG_CONFIG_KEY))
+    return required
 
 
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
@@ -23,6 +88,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     action_presentation = read_text("frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts")
     load_contract = read_text("addons/smart_core/handlers/load_contract.py")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
+    dialog = read_text("frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue")
+    dialog_control = read_text("frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue")
+    dialog_model_path = "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts"
+    dialog_model = read_text(dialog_model_path)
+    normalizer = read_text("addons/smart_construction_core/core_extension_contract_normalizers.py")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
     example = read_text("docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json")
@@ -206,6 +276,58 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
         if forbidden in component or forbidden in model:
             failures.append(f"detail collection contains forbidden product special case {forbidden}")
+    declared_paths = _declared_dialog_paths(normalizer)
+    required_paths = _required_dialog_paths(dialog_model)
+    if not declared_paths:
+        failures.append("introduce dialog contract declaration is missing from the product normalizer")
+    if declared_paths != required_paths:
+        missing_in_frontend = sorted(declared_paths - required_paths)
+        unknown_in_frontend = sorted(required_paths - declared_paths)
+        failures.append(
+            "introduce dialog contract requirement list drifted from the declared vocabulary "
+            f"(unrequired={missing_in_frontend} undeclared={unknown_in_frontend})"
+        )
+    if "resolveSettlementIntroduceContract(props.field)" not in dialog_control:
+        failures.append("settlement detail collection does not resolve the introduce contract from the field")
+    if "introduceReady" not in dialog_control or "data-contract-semantic-gap" not in dialog_control:
+        failures.append("settlement detail collection does not fail closed when the introduce contract is incomplete")
+    if "introduceMissing" not in dialog_control:
+        failures.append("settlement detail collection does not surface the missing introduce semantics")
+    if ':contract="introduceContract"' not in dialog_control:
+        failures.append("settlement detail collection does not inject the resolved contract into the dialog")
+    for marker in (
+        ':data-dialog-purpose="contract.purpose"',
+        ':title="contract.title"',
+        ':description="contract.description"',
+        'props.contract.actions.search',
+        'props.contract.actions.preview',
+        'props.contract.actions.introduce',
+        'props.contract.payloadFields.record',
+        'props.contract.payloadFields.source',
+        'props.contract.payloadFields.sourceLines',
+        'props.contract.payloadFields.applyMode',
+        'props.contract.payloadFields.ratio',
+        'props.contract.payloadFields.totalAmount',
+        'props.contract.payloadFields.searchKeyword',
+        'props.contract.recordRequiredMessage',
+    ):
+        if marker not in dialog:
+            failures.append(f"introduce dialog does not consume declared contract semantic {marker}")
+    for forbidden in (
+        "requiredActionRef",
+        "PAYMENT_SETTLEMENT_ACTION_REF_MISSING",
+        "payment_request_id",
+        "settlement_id",
+        "settlement_line_ids",
+        "apply_mode",
+        "total_amount",
+        "付款",
+        "结算",
+        "合同",
+        "明细",
+    ):
+        if forbidden in dialog:
+            failures.append(f"introduce dialog keeps an undeclared business semantic {forbidden}")
     return failures
 
 

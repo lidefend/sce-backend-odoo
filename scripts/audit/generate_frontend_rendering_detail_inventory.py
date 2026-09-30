@@ -172,7 +172,7 @@ BATCH_BINDINGS = {
             "slot": {"attrs": {":adapter": "guardedAdapter"}},
         },
         "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue": {"div": {"attrs": {"data-semantic-component": "PaymentSettlementDetailCollectionControl"}}},
-        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "payment-settlement-introduce"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {":data-dialog-purpose": "contract.purpose"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue": {"professionalrelationfieldcontrol": {"attrs": {"data-semantic-component": "ProfessionalMany2oneFieldControl"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalManyToManySelect"}}},
         "frontend/apps/web/src/components/template/FormSection.vue": {"sccard": {"attrs": {"data-semantic-component": "FormSection"}}},
