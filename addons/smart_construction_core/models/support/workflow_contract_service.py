@@ -1184,6 +1184,11 @@ class ScWorkflowContractService(models.AbstractModel):
         editability = self._editability(profile, business_phase, approval_phase)
         evidence_gate = self._evidence_gate(record)
         actions = self._available_actions(record, profile, raw_state, business_phase, approval_phase, evidence_gate)
+        current_action_keys = {action["key"] for action in actions}
+        visible_evidence_gate = [
+            gate for gate in evidence_gate
+            if not gate.get("actionKeys") or current_action_keys.intersection(gate["actionKeys"])
+        ]
         return {
             "source": self.source_authority_contract(),
             "model": record._name,
@@ -1194,7 +1199,7 @@ class ScWorkflowContractService(models.AbstractModel):
             "approvalPhase": approval_phase,
             "editability": editability,
             "statusbar": self._statusbar_projection(business_phase, approval_phase),
-            "evidenceGate": evidence_gate,
+            "evidenceGate": visible_evidence_gate,
             # Meaning is stable even when a transition is currently unavailable.
             # This catalog is not an execution grant; availableActions remains
             # the record/user/state-specific availability authority.

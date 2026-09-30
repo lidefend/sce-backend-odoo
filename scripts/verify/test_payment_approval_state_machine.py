@@ -607,6 +607,41 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_workflow_evidence_only_describes_current_actions(self):
+        path = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'describe_record')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Row:
+            _name = 'test.document'
+            id = 1
+            state = 'done'
+            def __len__(self): return 1
+        gates = [
+            {'reasonCode': 'PREPARE_REQUIRED', 'actionKeys': ['submit', 'complete'], 'blocking': True},
+            {'reasonCode': 'REVERSAL_REQUIRED', 'actionKeys': ['reverse'], 'blocking': True},
+            {'reasonCode': 'GLOBAL_NOTICE', 'blocking': False},
+        ]
+        actions = [{'key': 'reverse', 'enabled': False}]
+        observed = []
+        service = types.SimpleNamespace(
+            profile_by_model=lambda: {'test.document': {'state_field': 'state', 'state_phase': {'done': 'done'}}},
+            _approval_phase=lambda *args, **kwargs: 'none', _editability=lambda *args: 'locked',
+            _evidence_gate=lambda record: gates,
+            _available_actions=lambda *args: observed.append(args[-1]) or actions,
+            source_authority_contract=lambda: {}, _statusbar_projection=lambda *args: {},
+            _declared_actions=lambda profile: [],
+        )
+        result = ns['describe_record'](service, Row())
+        self.assertEqual(result['evidenceGate'], gates[1:])
+        self.assertEqual(result['availableActions'], actions)
+        self.assertIs(observed[-1], gates)  # Availability still sees all authoritative gates.
+        actions[:] = [{'key': 'submit', 'enabled': False}]
+        self.assertEqual(ns['describe_record'](service, Row())['evidenceGate'], [gates[0], gates[2]])
+        actions.clear()
+        self.assertEqual(ns['describe_record'](service, Row())['evidenceGate'], [gates[2]])
+
     def test_reconciliation_reviewed_and_terminal_content_is_protected(self):
         path = MODEL.with_name('treasury_reconciliation.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')

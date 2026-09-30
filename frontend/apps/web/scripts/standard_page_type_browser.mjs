@@ -1200,6 +1200,7 @@ try {
         }
       }
       if (spec.model === 'sc.payment.execution') {
+        check('paid execution: unrelated payment prerequisite absent', await session.page.getByText('新系统付款执行必须填写付款账户信息。', { exact: true }).count() === 0);
         check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);
         check('paid execution: pre-payment cancellation is absent', await session.page.getByRole('button', { name: '取消', exact: true }).count() === 0);
         check('paid execution: duplicate payment is absent', await session.page.getByRole('button', { name: '已付款', exact: true }).count() === 0);
