@@ -1720,12 +1720,8 @@ class ScWorkflowContractService(models.AbstractModel):
         if getattr(record, "source_origin", "") == "legacy" and getattr(record, "state", "") == "legacy_confirmed":
             return []
         gates = []
-        if not record.item_name:
-            gates.append(self._gate("SETTLEMENT_ADJUSTMENT_MISSING_ITEM", "结算调整确认前必须维护调整事项。"))
-        if (record.amount or 0.0) <= 0:
-            gates.append(self._gate("SETTLEMENT_ADJUSTMENT_INVALID_AMOUNT", "结算调整确认前调整金额必须大于 0。"))
-        if not record.settlement_id and not record.contract_id:
-            gates.append(self._gate("SETTLEMENT_ADJUSTMENT_MISSING_ANCHOR", "结算调整确认前必须关联结算单或合同。"))
+        for code, message in record._business_anchor_errors():
+            gates.append(self._gate(code, message, action_keys=["submit", "approve"]))
         if getattr(record, "validation_status", "") in ("waiting", "pending"):
             gates.append(
                 self._gate(

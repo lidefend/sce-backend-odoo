@@ -607,6 +607,37 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_settlement_adjustment_source_identity_and_contract_gate_share_errors(self):
+        path = MODEL.with_name('settlement_adjustment.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_business_anchor_errors')
+        service = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        gate = next(n for n in ast.walk(ast.parse(service.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_settlement_adjustment_evidence_gate')
+        gate.decorator_list = []
+        ns = {'_': lambda text: text}
+        exec(compile(ast.Module(body=[method, gate], type_ignores=[]), str(path), 'exec'), ns)
+        source = types.SimpleNamespace(project_id=1, currency_id=2, partner_id=3)
+        settlement = types.SimpleNamespace(project_id=1, currency_id=2, partner_id=3, contract_id=source)
+        record = types.SimpleNamespace(ensure_one=lambda: None, item_name='Adjustment', amount=100,
+            project_id=1, currency_id=2, partner_id=3, contract_id=source, settlement_id=settlement,
+            source_origin='manual', state='draft', validation_status='no')
+        record._business_anchor_errors = lambda: ns['_business_anchor_errors'](record)
+        presenter = types.SimpleNamespace(_gate=lambda code, message, **kw: {'code': code, **kw})
+        self.assertEqual(record._business_anchor_errors(), [])
+        for field, bad, code in (
+            ('project_id', 9, 'PROJECT_MISMATCH'), ('currency_id', 9, 'CURRENCY_MISMATCH'),
+            ('partner_id', 9, 'PARTNER_MISMATCH'),
+            ('contract_id', types.SimpleNamespace(project_id=1, currency_id=2, partner_id=3, id=9), 'CONTRACT_MISMATCH'),
+        ):
+            old = getattr(record, field)
+            setattr(record, field, bad)
+            expected = 'SETTLEMENT_ADJUSTMENT_' + code
+            self.assertIn(expected, [row[0] for row in record._business_anchor_errors()])
+            gates = ns['_settlement_adjustment_evidence_gate'](presenter, record)
+            self.assertTrue(any(row['code'] == expected and row['action_keys'] == ['submit', 'approve'] for row in gates))
+            setattr(record, field, old)
+        record.partner_id = False
+        self.assertEqual(record._business_anchor_errors(), [])
+
     def test_settlement_adjustment_reviewed_economic_content_is_frozen(self):
         path = MODEL.with_name('settlement_adjustment.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')

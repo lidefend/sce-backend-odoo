@@ -152,14 +152,33 @@ class ScSettlementAdjustment(models.Model):
                 raise UserError(_("只有草稿或已确认状态的结算调整可以取消。"))
         self._write_document_state({"state": "cancel"})
 
+    def _business_anchor_errors(self):
+        self.ensure_one()
+        errors = []
+        if not self.item_name:
+            errors.append(("SETTLEMENT_ADJUSTMENT_MISSING_ITEM", _("结算调整确认前必须维护调整事项。")))
+        if (self.amount or 0.0) <= 0:
+            errors.append(("SETTLEMENT_ADJUSTMENT_INVALID_AMOUNT", _("结算调整确认前调整金额必须大于 0。")))
+        if not self.settlement_id and not self.contract_id:
+            errors.append(("SETTLEMENT_ADJUSTMENT_MISSING_ANCHOR", _("结算调整确认前必须关联结算单或合同。")))
+        for source in (self.settlement_id, self.contract_id):
+            if not source:
+                continue
+            if self.project_id != source.project_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_PROJECT_MISMATCH", _("结算调整项目必须与来源项目一致。")))
+            if self.currency_id != source.currency_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_CURRENCY_MISMATCH", _("结算调整币种必须与来源币种一致。")))
+            if self.partner_id and self.partner_id != source.partner_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_PARTNER_MISMATCH", _("结算调整往来单位必须与来源往来单位一致。")))
+        if self.settlement_id and self.contract_id and self.contract_id != self.settlement_id.contract_id:
+            errors.append(("SETTLEMENT_ADJUSTMENT_CONTRACT_MISMATCH", _("结算调整合同必须与来源结算单合同一致。")))
+        return errors
+
     def _check_business_anchor(self):
         for rec in self:
-            if not rec.item_name:
-                raise UserError(_("结算调整确认前必须维护调整事项。"))
-            if rec.amount <= 0:
-                raise UserError(_("结算调整确认前调整金额必须大于 0。"))
-            if not rec.settlement_id and not rec.contract_id:
-                raise UserError(_("结算调整确认前必须关联结算单或合同。"))
+            errors = rec._business_anchor_errors()
+            if errors:
+                raise UserError(errors[0][1])
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -180,6 +199,7 @@ class ScSettlementAdjustment(models.Model):
                 # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
+                rec._check_business_anchor()
                 rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
