@@ -7988,3 +7988,12 @@ P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback�
 P4仅扩展现有standard_page_type_browser审批范围支持sc.material.inbound。PM既有角色包含cap_material_manager，沿用公司/项目授权；先不保存创建表单，再查询已有记录做只读契约/状态观察，没有记录明确pending。沿用前端7915f3bb9、后端f5e771c03；无产品源改动，不重建/升级/重跑8项ORM。L1 iteration、node语法→本次受影响页面观察。
 
 结果：inbound-page-iteration.log L1 PASS；创建报告tpl07-1790779258521/report.json 13 PASS，官方表单、未保存无审批/确认入库、双视口、errors=[]、forbiddenWrites=[]。既有记录报告tpl07-1790779275827/report.json查询ok=true/records=[]，2项处停止；这是授权数据前置不足，不是记录页通过。不扩权、不新增fixture、不重试相同查询。实际记录UI审批/确认入库继续pending；后端8项及创建13项保持各自证据范围。
+
+
+### 53.69 材料验收统一审批与质量结果分离（进行中）
+
+P1 smart_construction_core模型/策略/tier/native/profile。审批提交→submitted/approved，无配置自动approved；真实tier决定只approved或驳回draft。quality action_accept/action_reject从approved执行，继续校验数量/质量不通过原因，分别accepted/rejected；reject_reason审批原因与rejection_reason质量原因分离，审批拒绝审计使用独立event。私有状态令牌拒绝外部state写；历史submitted无review可重提，不自动补审批。已审批阶段需填写质量事实，field_editable_phases显式保留approved。
+
+配置接入已有政策/tier callback，未声明材料验收金额来源；金额条件继续由既有编译器拒绝，不能猜采购单金额。原生审批按钮/质量按钮与契约分别绑定；两个质量结果均属完成验收（complete），不借approve/reject代替质量结果，无新前端业务规则。L1 iteration→L2审批/native/semantics→受管模块升级/真实运行；本段先源码定向，不重建前端，不跑旧全量ORM。
+
+源码验证：L1 acceptance-approval-iteration.log PASS；68审批纯测试 PASS；native8+40=48 PASS；semantics15 PASS（67 profiles/17 reachable_actions/13 vocabulary），2份XML解析PASS。非零回执已登记。运行时未升级/未验收，保持verification_pending。下一步扩展现有acceptance-only回滚范围，无须重跑入库8及独立共享45或前端构建。

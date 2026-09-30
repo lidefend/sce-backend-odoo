@@ -756,6 +756,53 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(rec.state, 'submit')
         self.assertEqual(rec.audits, [])
 
+    def test_material_acceptance_approval_does_not_decide_quality_outcome(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialAcceptance')
+        names = {'action_submit', 'action_accept', 'action_reject', 'action_on_tier_approved', 'action_on_tier_rejected', 'write'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_ACCEPTANCE_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self.record(required=required, state='draft')
+            rec._name, rec.id = 'sc.material.acceptance', 23
+            checks = []
+            rec.line_ids = types.SimpleNamespace(_check_quantities=lambda: checks.append('quantities'))
+            rec._sc_require_material_user = rec._sc_require_material_manager = lambda label: None
+            def require_state(states, label):
+                if rec.state not in states:
+                    raise ValueError('wrong state')
+            rec._sc_require_state = require_state
+            rec._sc_material_audit_payload = lambda: {'state': rec.state}
+            rec._sc_warn_system_defaults_on_action = lambda label: None
+            rec._write_acceptance_state = lambda values: rec.data.update(values)
+            rec._sc_audit_material_transition = lambda *args, **kw: rec.audits.append((args, kw))
+            rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+            for token in (None, True, 'trusted'):
+                with self.assertRaises(ValueError):
+                    ns['write'](rec.with_context(sc_acceptance_state_token=token), {'state': 'accepted'})
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            self.assertFalse(checks)
+            if required:
+                for method in ('action_accept', 'action_reject'):
+                    with self.assertRaises(ValueError): ns[method](rec)
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+            ns['action_accept'](rec)
+            self.assertEqual(rec.state, 'accepted')
+            self.assertEqual(checks, ['quantities'])
+            # Test the independent negative quality outcome from an approved
+            # document; rejection still requires its own business reason.
+            rec.data['state'] = 'approved'
+            rec.rejection_reason = False
+            with self.assertRaises(ValueError): ns['action_reject'](rec)
+            rec.rejection_reason = 'quality mismatch'
+            ns['action_reject'](rec)
+            self.assertEqual(rec.state, 'rejected')
+            self.assertFalse(rec.data.get('reject_reason'))
+
     def _inbound_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialInbound')

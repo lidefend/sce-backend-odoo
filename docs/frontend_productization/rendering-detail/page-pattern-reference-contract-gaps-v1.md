@@ -258,3 +258,7 @@ Effective official page/role-bound handling remains pending; transfer test cover
 ### Segment53.68 — Inbound create page passes; record UI data unavailable
 
 Existing PM role includes material-manager capability. Official inbound unsaved create form passes13 browser checks on unchanged frontend7915f3bb9/backendf5e771c03, with both viewports and zero errors/writes. Existing-record query succeeds but returns no authorized records; record action/handling UI remains unverified. Preserve the distinct scope of backend8 and create13; no fixture or permission expansion. Continue material acceptance approval adoption, preserving quality acceptance/rejection outcomes separately from tier approval decisions.
+
+### Segment53.69 — Material acceptance approval source implemented
+
+Material acceptance joins shared policy/tier review with a separate approved phase. Tier approval does not set quality accepted/rejected; material managers explicitly complete the quality outcome after approval, retaining quantity validation and mandatory negative-result reason. Approval reject_reason and audit event remain distinct from quality rejection_reason/result. Native/profile actions bind real tier methods separately from quality completion, private state writes reject external callers, and historical submitted records may resubmit.68 approval,48 native and15 semantics tests pass; XML parses. Module upgrade, real runtime and official page handling remain pending. No acceptance amount authority is invented; configured amount bounds remain explicitly unsupported.

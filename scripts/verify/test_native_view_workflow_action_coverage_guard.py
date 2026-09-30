@@ -50,6 +50,16 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
     def test_material_acceptance_reset_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialAcceptance", "sc.material.acceptance", "action_reset_draft")
 
+    def test_acceptance_quality_actions_are_separate_from_tier_decisions(self):
+        rows = self._general_contract_actions('approved', model='sc.material.acceptance')
+        by_method = {row['method']: row for row in rows}
+        for method in ('action_accept', 'action_reject'):
+            self.assertEqual(by_method[method]['action_semantics']['purpose'], 'complete')
+        self.assertNotIn('validate_tier', by_method)
+        self.assertNotIn('reject_tier', by_method)
+        pending = self._general_contract_actions('submitted', model='sc.material.acceptance', approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})
+        self.assertEqual({row['method'] for row in pending}, {'validate_tier', 'reject_tier', 'action_cancel'})
+
     def test_material_acceptance_cancel_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialAcceptance", "sc.material.acceptance", "action_cancel")
 

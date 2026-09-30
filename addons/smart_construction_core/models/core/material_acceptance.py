@@ -12,6 +12,7 @@ from .equipment_management import (
 
 
 _INBOUND_STATE_TOKEN = object()
+_ACCEPTANCE_STATE_TOKEN = object()
 
 
 SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目"
@@ -837,7 +838,12 @@ class ScMaterialPurchaseRequestLine(models.Model):
 class ScMaterialAcceptance(models.Model):
     _name = "sc.material.acceptance"
     _description = "材料进场验收"
-    _inherit = ["mail.thread", "mail.activity.mixin", "sc.material.system.default.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+
     _order = "acceptance_date desc, id desc"
 
     name = fields.Char(string="验收单号", required=True, default="新建", tracking=True)
@@ -877,7 +883,8 @@ class ScMaterialAcceptance(models.Model):
     state = fields.Selection(
         [
             ("draft", "草稿"),
-            ("submitted", "已提交"),
+            ("submitted", "待审批"),
+            ("approved", "已审批待验收"),
             ("accepted", "验收通过"),
             ("rejected", "验收不通过"),
             ("cancel", "已取消"),
@@ -905,6 +912,8 @@ class ScMaterialAcceptance(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("验收状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
@@ -914,6 +923,37 @@ class ScMaterialAcceptance(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.acceptance") or _("材料进场验收")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_acceptance_state_token") is not _ACCEPTANCE_STATE_TOKEN:
+            raise UserError(_("验收状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_acceptance_state(self, vals):
+        return self.with_context(sc_acceptance_state_token=_ACCEPTANCE_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "validated":
+                continue
+            before = record._sc_material_audit_payload()
+            record._write_acceptance_state({"state": "approved", "reject_reason": False})
+            record._sc_audit_material_transition("material_acceptance_approved", before, record._sc_material_audit_payload(), action_name="action_on_tier_approved")
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "rejected":
+                continue
+            before = record._sc_material_audit_payload()
+            record.with_context(skip_validation_check=True)._write_acceptance_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+            record._sc_audit_material_transition("material_acceptance_approval_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
     def init(self):
         self.env.cr.execute(
@@ -1020,15 +1060,18 @@ class ScMaterialAcceptance(models.Model):
     def action_submit(self):
         self._sc_require_material_user(_("提交材料验收"))
         for record in self:
-            record._sc_require_state({"draft"}, _("提交材料验收"))
+            record._sc_require_state({"draft", "submitted"}, _("提交材料验收"))
             if not record.line_ids:
                 raise ValidationError(_("提交前必须维护验收明细。"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料验收"))
-        self.write({"state": "submitted"})
+        self.with_context(skip_validation_check=True)._write_acceptance_state({"state": "submitted"})
         for record in self:
+            required = self.env["sc.approval.policy"]._start_submission_review(record)
+            if not required:
+                record._write_acceptance_state({"state": "approved", "reject_reason": False})
             record._sc_audit_material_transition(
-                "material_acceptance_submitted",
+                "material_acceptance_submitted" if required else "material_acceptance_approved",
                 snapshots[record.id],
                 record._sc_material_audit_payload(),
                 action_name="action_submit",
@@ -1038,11 +1081,12 @@ class ScMaterialAcceptance(models.Model):
     def action_accept(self):
         self._sc_require_material_manager(_("验收通过"))
         for record in self:
-            record._sc_require_state({"submitted"}, _("验收通过"))
+            record._sc_require_state({"approved"}, _("验收通过"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record.line_ids._check_quantities()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("验收通过"))
-        self.write({"state": "accepted", "rejection_reason": False})
+        self._write_acceptance_state({"state": "accepted", "rejection_reason": False})
         for record in self:
             record._sc_audit_material_transition(
                 "material_acceptance_accepted",
@@ -1055,11 +1099,12 @@ class ScMaterialAcceptance(models.Model):
     def action_reject(self):
         self._sc_require_material_manager(_("验收不通过"))
         for record in self:
-            record._sc_require_state({"submitted"}, _("验收不通过"))
+            record._sc_require_state({"approved"}, _("验收不通过"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             if not record.rejection_reason:
                 raise ValidationError(_("验收不通过前必须填写不通过原因。"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "rejected"})
+        self._write_acceptance_state({"state": "rejected"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_acceptance_rejected",
@@ -1072,9 +1117,9 @@ class ScMaterialAcceptance(models.Model):
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消材料验收"))
-        self._sc_require_state({"draft", "submitted"}, _("取消材料验收"))
+        self._sc_require_state({"draft", "submitted", "approved"}, _("取消材料验收"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "cancel"})
+        self._write_acceptance_state({"state": "cancel"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_acceptance_cancelled",
@@ -1088,7 +1133,7 @@ class ScMaterialAcceptance(models.Model):
         self._sc_require_material_manager(_("重置材料验收为草稿"))
         self._sc_require_state({"cancel", "rejected"}, _("重置材料验收为草稿"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "draft"})
+        self._write_acceptance_state({"state": "draft"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_acceptance_reset",

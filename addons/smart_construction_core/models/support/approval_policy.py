@@ -21,6 +21,7 @@ class ScApprovalPolicy(models.Model):
         ("project.material.plan", "物资计划"),
         ("sc.material.outbound", "材料出库/损耗"),
         ("sc.material.inbound", "材料入库"),
+        ("sc.material.acceptance", "材料验收"),
         ("purchase.order", "采购订单"),
         ("sc.settlement.order", "结算单"),
         ("payment.request", "付款/收款申请"),
@@ -408,6 +409,7 @@ class ScApprovalPolicy(models.Model):
             "project.material.plan",
             "sc.material.outbound",
             "sc.material.inbound",
+            "sc.material.acceptance",
             "payment.request",
             "sc.expense.claim",
             "sc.settlement.order",
@@ -434,6 +436,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.material.acceptance": (
+                "smart_construction_core.server_action_material_acceptance_on_approved",
+                "smart_construction_core.server_action_material_acceptance_on_rejected",
+            ),
             "sc.material.inbound": (
                 "smart_construction_core.server_action_material_inbound_on_approved",
                 "smart_construction_core.server_action_material_inbound_on_rejected",
