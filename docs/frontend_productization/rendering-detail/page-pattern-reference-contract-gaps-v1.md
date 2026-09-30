@@ -190,3 +190,7 @@ The native plan form now permits completion only in `in_progress`, reset only in
 ### Segment53.46 — Plan approval adoption implemented; runtime pending
 
 `sc.plan` now uses the existing shared policy and native review mechanism. Configured confirmation waits in draft with native approval status; no configuration confirms after schedule checks. Real validated callbacks confirm without starting execution. Start/completion remain separate, retain scheduling/node checks and require confirmed approval facts. Native/profile reviewer actions are aligned and rejection comments retained.52 approval,37 native and15 semantics tests pass. Module upgrade and real plan approval/rejection/resubmission remain pending; overall document coverage is not complete.
+
+### Segment53.47 — Plan real approval loop verified
+
+Governed module upgrade/backend reload at478215ca4 succeeded. The existing rollback approval smoke passes22 checks including five plan cases: automatic confirmation without execution, pending-review start denial, actual reviewer approval followed by explicit start/completion, rejection reason, and new-chain resubmission. Original configuration readback and temporary-record removal pass. Plan browser consumption and broader document coverage remain pending. The adjacent existing `sc.construction.diary` profile/model still has direct confirmation/completion without shared approval and remains necessary product work.

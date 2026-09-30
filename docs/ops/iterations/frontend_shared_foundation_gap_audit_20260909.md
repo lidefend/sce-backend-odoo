@@ -7765,3 +7765,12 @@ L5：未推送、未合并、未部署。
 - 原生视图添加can_review/validation_status与validate_tier/reject_tier，审批中不重复显示确认；profile声明同一审批动作。上一轮完成/取消/重置条件继续保持。兼容原draft/confirmed/in_progress/done/cancel状态，没有新状态或自动迁移已有业务记录。
 - L1 ci.local.iteration PASS（plan-approval-iteration.log）；L2审批52、native8+29=37、semantics15 PASS（plan-approval-tests.log，begin/record52）。新增执行实际确认/回调/开始/完成方法，验证配置分流、伪造/中间结果拒绝、通过不自动开始、独立开始/完成及节点完成校验仍调用；视图状态测试使用无配置协作者继续校对原动作状态边界。新增模型/视图输入注册于原审批检查。
 - 新字段/tier继承/selection/XML需统一受管升级，53.45视图亦随本批加载。下一步扩展同一rollback smoke验证计划有/无配置、真实审批/驳回重提及独立开始/完成，再做相关有效契约消费；本次尚无真实ORM通过证据。前端输入不变，无构建；总体active，未推送、合并或目标部署。
+
+
+### 53.47 计划单共享审批真实运行通过
+
+- 478215ca4候选，P4复用既有受管acceptance.module.upgrade与backend.acceptance.up验证P1累计53.45/46字段/原生视图/回调。sc_frontend_acceptance/local内部隔离验收租户、sc-fe-r2-p1-01、精确filter及原db/redis/filestore卷不变。升级registry68.600秒成功（plan-approval-upgrade.log），后端重载成功（plan-approval-backend.log）；前端未构建。
+- 原rollback smoke扩展计划5项，创建记录和策略全部在原事务登记，若公司/全局已有计划策略（含停用）则拒绝覆盖。无配置确认到confirmed、无review、无实际开始日期；配置下draft且真实review pending/waiting，action_start在savepoint明确拒绝，无开始日期。实际审批人validate_tier通过后仅confirmed，显式action_start才in_progress并写actual_start，显式action_done才done并写actual_finish。
+- 真实审批人经共同拒绝服务驳回，draft保留原因；重提review IDs与旧链不相交，原生批准后confirmed且原因清空。finally rollback回读原费用策略/步骤一致，所有临时计划/事件/策略/项目/客商/费用不存在。没有直接写审批结果，没有新环境或持久fixture。
+- L1 ci.local.iteration/py_compile PASS（plan-approval-runtime-iteration.log）。受管verify.business_config.approval_runtime22项PASS、ROLLBACK=VERIFIED（plan-approval-runtime.log），其中费用12+事件5沿同一事务验证、计划新增5。封装不变，原wrapper9证据复用；不以22项代表全部业务单据或浏览器完成。
+- 计划有效契约/浏览器、不同审批岗位、实际金融冲销与总体必要单据覆盖继续待验。沿已有profile顺序定向核对下一项sc.construction.diary：模型仅mail继承、直接action_confirm/action_done，profile draft仍包含complete，未接共享审批，是既有正式单据的后续产品缺口；本轮未改日志模型，不新建盘点表。总体active，无远端/目标部署。

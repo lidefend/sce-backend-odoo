@@ -246,7 +246,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.46 sc.plan shared approval implemented: configured confirmation waits draft, unconfigured confirms, real callbacks and separate execution checks;52 approval+37 native+15 semantics pass. Next governed module upgrade/reload (includes53.45 XML), then extend existing rollback approval smoke for plan real review/rejection/resubmit and explicit start/complete. Reuse unchanged frontend, payment19/event17 evidence. Overall all-document scope remains open.",
+  "next_exact_step": "53.47 governed upgrade/reload at478215ca4 and22 rollback runtime checks passed (expense12/event5/plan5),restoration verified. Continue existing sc.construction.diary direct confirmation/completion shared approval gap; profile draft currently offers complete. Plan effective UI/browser still pending; contract-event browser no company8 data unchanged. Reuse unchanged frontend and proven evidence; no global rescans or fixture creation.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -735,6 +735,14 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-approval-tests.log",
       "upgrade_required": true,
       "remaining": "real plan approval/rejection/resubmit and execution; all-document scope"
+    },
+    "plan_runtime_53_47": {
+      "status": "scoped_runtime_passed",
+      "backend": "478215ca4",
+      "test_count": 22,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-approval-runtime.log",
+      "restoration": "verified original policy/steps and absent temporary records",
+      "remaining": "plan UI/browser, construction diary/shared approval breadth and overall real delivery"
     }
   }
 }
