@@ -9428,3 +9428,13 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 plan-cascade-iteration/tool-iteration PASS；业务定向 **187 PASS**（plan-cascade-unit.log），agent.run.begin/record非零回执。P4新增只有原脚本函数和调用，py_compile通过；复用上轮44工具测试，其shell/profile/test工具输入未变，不重复环境测试。无schema/XML变化，不模块升级；backend.acceptance.up绑定d88433507成功，前端e19eb1e16未变不构建。
 - **plan-version 12 PASS、plan-report 16 PASS，均ROLLBACK VERIFIED**（plan-cascade-version-runtime.log、plan-cascade-report-runtime.log），原受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter/原卷，无持久测试记录或配置残留。自动确认/真实审批/退回重提与最终契约仍通过。
 - 本段关闭已知父计划cascade绕过，不扩大全仓删除审计。版本主从入口/普通PM实际办理及父计划执行UI继续待验；汇报PM27在未变化的保存/提交/详情返回范围复用，未声称新增删除提示已有浏览器证明。整体67条维持未完成；未推送、合并、目标部署。
+
+
+### 53.194 计划版本主从新增链定位：共享默认值消费缺口
+
+- `2c5d23e44` clean起点，P4仅扩展既有浏览器 `TPL07_PLAN_VERSION_INSPECT=1`，必须受原reportSaveSuccess精确开关约束；复用既有PM临时父计划创建与清理，只观察父计划原生版本区并新增未保存行，不创建版本/汇报持久事实。未做全仓/菜单/环境盘点。
+- L1 version-inspect-iteration/v2 PASS；工具42项通过及begin/record（version-inspect-unit.log）。随后定位修正仅把页签访问从不存在的role=tab改成用户可见“版本”文本，测试模块及其执行输入未变，复用42原证据；当前run receipt可能保守判为stale，不冒充重跑回执。
+- 首次 `tpl07-1790812075760` 在版本字段可见性等待失败：探针未切原生页签，不是页面缺失。PM临时parent58已清理。修正后 `tpl07-1790812163551` **17项观察PASS**：授权parent59表单、版本区“添加计划版本”、未保存新增行、最终parent清理成功；两张截图已检查。17项只检查存在性与观察，不证明可编辑/可保存/可审批。
+- 实质P0缺口：`useOne2manyRuntime.addRow`直接调用`createOne2manyDraftRow`，后者将所有列置空/false且全部dirty；subview没有defaults/default_values。真实新增版本行version_no/revision_type/version_date/state均空，原生own-row readonly `state != draft`据此成立，版本定义字段不能正常编辑；`buildOne2manyCommandValue`对isNew提交全部row.values，空state也会与已收口的后端状态创建规则冲突。应补共享后端default_get消费与新行提交字段规则，不给sc.plan.version前端硬编码draft，不放松后端状态保护，也不复制版本专用表单。
+- 另一个已见P1边界：父计划头部state仍为可编辑选择，actual_start/actual_finish仍为输入；在启用执行阶段field_editable_phases之前须补原生只读及模型动作权威。现阶段没有启用该profile例外，没有把缺口页面算作接管完成。
+- 后端d88433507/前端e19eb1e16保持不变，无构建/升级。汇报PM27与版本/汇报审批及cascade12/16证据继续按范围复用。未推送、合并或目标部署。

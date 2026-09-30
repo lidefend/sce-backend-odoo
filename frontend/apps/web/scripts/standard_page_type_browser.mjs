@@ -75,6 +75,8 @@ assert.ok(!eventSaveSuccess || (eventSaveProbe && process.env.TPL07_EXPENSE_SAVE
 const reportSaveSuccess = process.env.TPL07_REPORT_SAVE_SUCCESS === '1';
 assert.ok(!reportSaveSuccess || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.plan.report'
   && process.env.TPL07_APPROVAL_VIEW === 'create' && !eventSaveSuccess && process.env.TPL07_DIARY_SAVE_SUCCESS !== '1' && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1'));
+const planVersionInspect = process.env.TPL07_PLAN_VERSION_INSPECT === '1';
+assert.ok(!planVersionInspect || reportSaveSuccess);
 let reportSuccess = null;
 let reportCreateCapture = false;
 let eventSuccess = null;
@@ -976,6 +978,28 @@ try {
           reportSuccess.phase = 'parent';
           const parent = await api(parentRequest);
           check('report handling: exact temporary parent created', parent.ok === true && Number.isInteger(reportSuccess.parentId) && reportSuccess.parentId > 0);
+          if (planVersionInspect) {
+            await form(session.page, `/f/sc.plan/${reportSuccess.parentId}?menu_id=${parentRequest.context.menu_id}&action_id=${parentRequest.context.action_id}`, 'plan-version-parent');
+            await session.page.getByText('版本', { exact: true }).click();
+            const collection = session.page.locator('[data-field-name="version_ids"]').first();
+            await collection.waitFor();
+            await collection.scrollIntoViewIfNeeded();
+            report.planVersionInspection = {
+              parentId: reportSuccess.parentId, url: session.page.url(),
+              authority: report.recordAuthority,
+              text: await collection.innerText(),
+              buttons: await collection.getByRole('button').evaluateAll(nodes => nodes.map(n => ({ text: n.textContent, label: n.getAttribute('aria-label'), disabled: n.disabled }))),
+            };
+            await session.page.screenshot({ path: path.join(out, 'plan-version-parent-inspection.png') });
+            const add = collection.getByRole('button').filter({ hasText: /新增|添加/ }).first();
+            check('plan version: shared collection exposes creation', await add.count() === 1 && await add.isEnabled());
+            await add.click();
+            report.planVersionInspection.afterAdd = await collection.innerText();
+            report.planVersionInspection.inputs = await collection.locator('input,textarea').evaluateAll(nodes => nodes.map(n => ({ label: n.getAttribute('aria-label'), placeholder: n.getAttribute('placeholder'), value: n.value })));
+            check('plan version: draft row has inputs', report.planVersionInspection.inputs.length > 0);
+            await session.page.screenshot({ path: path.join(out, 'plan-version-new-row-inspection.png') });
+            continue;
+          }
           await session.page.locator('[data-field-name="name"] input').first().fill(marker);
           await session.page.locator('[data-field-name="summary"] textarea').first().fill(content);
           const planInput = session.page.locator('[data-field-name="plan_id"] input').first();
