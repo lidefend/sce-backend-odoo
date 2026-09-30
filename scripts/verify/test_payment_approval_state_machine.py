@@ -666,6 +666,50 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): namespace['action_submit'](event)
             self.assertEqual(event.state, 'draft')
 
+    def test_plan_configuration_routes_confirmation_and_never_starts_execution(self):
+        path = MODEL.parent / 'plan_management.py'
+        names = {'action_confirm', 'action_on_tier_approved', 'action_start', 'action_done'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text,
+                     'fields': types.SimpleNamespace(Date=types.SimpleNamespace(context_today=lambda rec: '2026-09-30'))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Plan:
+            def __iter__(self): return iter([self])
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+            def _check_business_anchor(self, **kw):
+                if not self.valid: raise ValueError('schedule')
+                self.checks.append(kw)
+        for configured in (True, False):
+            plan = Plan()
+            plan.state, plan.valid, plan.checks = 'draft', True, []
+            plan.review_ids, plan.validation_status = [], 'no'
+            gates = []
+            plan.env = {'sc.approval.policy': types.SimpleNamespace(
+                _start_submission_review=lambda rec: configured,
+                _assert_submission_approved=lambda rec, states: gates.append(states))}
+            namespace['action_confirm'](plan)
+            self.assertEqual(plan.state, 'draft' if configured else 'confirmed')
+            if configured:
+                namespace['action_on_tier_approved'](plan)
+                self.assertEqual(plan.state, 'draft')
+                plan.review_ids, plan.validation_status = [1], 'pending'
+                namespace['action_on_tier_approved'](plan)
+                self.assertEqual(plan.state, 'draft')
+                plan.validation_status = 'validated'
+                namespace['action_on_tier_approved'](plan)
+                self.assertEqual(plan.state, 'confirmed')
+            self.assertFalse(hasattr(plan, 'actual_start'))
+            namespace['action_start'](plan)
+            self.assertEqual(plan.state, 'in_progress')
+            namespace['action_done'](plan)
+            self.assertEqual(plan.state, 'done')
+            self.assertEqual(gates, [('confirmed',), ('in_progress',)])
+            self.assertIn({'require_schedule': True, 'require_lines_done': True}, plan.checks)
+            plan.state, plan.valid = 'draft', False
+            with self.assertRaises(ValueError): namespace['action_confirm'](plan)
+            self.assertEqual(plan.state, 'draft')
+
     def test_policy_step_order_maps_to_native_descending_priority(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_vals')
         namespace = {}

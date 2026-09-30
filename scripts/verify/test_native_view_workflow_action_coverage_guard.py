@@ -254,7 +254,10 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         buttons = {button.get('name'): button for button in tree.findall('.//header/button') if button.get('name') in names}
         self.assertEqual(set(buttons), names)
         class Plan:
-            def __init__(self, state): self.state = state
+            def __init__(self, state):
+                self.state = state
+                self.env = {'sc.approval.policy': SimpleNamespace(_start_submission_review=lambda rec: False, _assert_submission_approved=lambda rec, states: None)}
+            def with_context(self, **kwargs): return self
             def __iter__(self): return iter([self])
             def _check_business_anchor(self, **kwargs): pass
             def write(self, values): self.__dict__.update(values)
@@ -266,7 +269,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                     except ValueError: continue
                     executable.add(method)
                 visible = {method for method, button in buttons.items()
-                           if not eval(button.get('invisible'), {'__builtins__': {}}, {'state': state})}
+                           if not eval(button.get('invisible'), {'__builtins__': {}}, {'state': state, 'validation_status': 'no'})}
                 projected = {action['method'] for action in self._general_contract_actions(state, model='sc.plan')}
                 self.assertEqual(visible, executable)
                 self.assertEqual(projected, executable)

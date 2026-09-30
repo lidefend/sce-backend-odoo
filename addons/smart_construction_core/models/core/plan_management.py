@@ -6,9 +6,10 @@ from odoo.exceptions import UserError, ValidationError
 class ScPlan(models.Model):
     _name = "sc.plan"
     _description = "计划"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
     _order = "planned_start desc, id desc"
 
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
     name = fields.Char(string="计划名称", required=True, tracking=True)
     plan_type = fields.Selection(
         [
@@ -130,14 +131,29 @@ class ScPlan(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的计划可以确认。"))
             rec._check_business_anchor(require_schedule=True)
-        self.write({"state": "confirmed"})
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
         return True
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_business_anchor(require_schedule=True)
+                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True).write({"reject_reason": reason})
 
     def action_start(self):
         for rec in self:
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认状态的计划可以开始执行。"))
             rec._check_business_anchor(require_schedule=True)
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("confirmed",))
         self.write({"state": "in_progress", "actual_start": fields.Date.context_today(self)})
         return True
 
@@ -146,6 +162,7 @@ class ScPlan(models.Model):
             if rec.state != "in_progress":
                 raise UserError(_("只有执行中的计划可以完成。"))
             rec._check_business_anchor(require_schedule=True, require_lines_done=True)
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("in_progress",))
         self.write({"state": "done", "actual_finish": fields.Date.context_today(self)})
         return True
 

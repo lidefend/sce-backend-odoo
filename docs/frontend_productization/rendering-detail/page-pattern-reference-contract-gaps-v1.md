@@ -186,3 +186,7 @@ Native payment reversal now explicitly declares its ledger/request consequences.
 ### Segment53.45 — Plan state visibility corrected; approval adoption still required
 
 The native plan form now permits completion only in `in_progress`, reset only in `cancel`, and cancellation only in `draft/confirmed/in_progress`, matching existing model methods and workflow projection. A focused test executes all five model transitions and compares native/profile availability across all five states plus an unknown state. XML runtime loading is pending the next consolidated upgrade. `sc.plan` still lacks configured shared approval and must be adopted; this visibility correction does not close that product gap.
+
+### Segment53.46 — Plan approval adoption implemented; runtime pending
+
+`sc.plan` now uses the existing shared policy and native review mechanism. Configured confirmation waits in draft with native approval status; no configuration confirms after schedule checks. Real validated callbacks confirm without starting execution. Start/completion remain separate, retain scheduling/node checks and require confirmed approval facts. Native/profile reviewer actions are aligned and rejection comments retained.52 approval,37 native and15 semantics tests pass. Module upgrade and real plan approval/rejection/resubmission remain pending; overall document coverage is not complete.

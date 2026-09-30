@@ -7756,3 +7756,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（plan-state-iteration.log）；L2 native8+29=37 PASS（plan-state-tests.log，begin/record37）。新增测试执行模型五个实际动作，隔离日期/业务anchor协作者，逐draft/confirmed/in_progress/done/cancel/unknown比较可执行方法、实际XML可见集合和实际_available_actions输出一致。测试不是按标签或方法名称推导许可。新增相关模型/视图及前轮parser实际依赖至原native_action_coverage输入登记。
 - 本批只修正呈现状态边界；sc.plan尚无tier继承/审批配置支持，仍直接确认，按所有业务单据统一规则这是必要产品缺口，不计作自动审批已接入。下一步在同一产品批次补既有共同审批适配后统一受管升级与真实验证，不为本次三个视图属性单独升级/浏览器矩阵。既有付款19项及审批17项不因本次无依赖变更重跑。
 - XML待受管升级，不能宣称已加载；前端产物不变。总体active，主线未集成、目标未部署、整体验收未完成。
+
+
+### 53.46 计划单接入共享审批配置与运行机制
+
+- 222b47903 clean起步；P1 smart_construction_core的sc.plan业务能力，遵循所有业务单据统一审批要求。复用tier.validation与sc.approval.policy，新增配置选择/同步支持/OCA模型名单和既有回调XML；公司字段沿用原模型，不新增公司权威。新增reject_reason保存驳回意见。非客户特例，不由前端或工具决定审批分流。
+- action_confirm保留draft和日期/节点前置校验，调用共同_start_submission_review；配置审批则保持draft由原生validation_status表达审批进度，未配置则confirmed。真实review validated回调检查计划条件后confirmed，伪造/中间结果不推进；真实rejected回调保存原因，重提依共同服务重置旧链。开始/完成继续独立执行，在既有状态/日期/节点校验之外加入共同批准事实门禁。
+- 原生视图添加can_review/validation_status与validate_tier/reject_tier，审批中不重复显示确认；profile声明同一审批动作。上一轮完成/取消/重置条件继续保持。兼容原draft/confirmed/in_progress/done/cancel状态，没有新状态或自动迁移已有业务记录。
+- L1 ci.local.iteration PASS（plan-approval-iteration.log）；L2审批52、native8+29=37、semantics15 PASS（plan-approval-tests.log，begin/record52）。新增执行实际确认/回调/开始/完成方法，验证配置分流、伪造/中间结果拒绝、通过不自动开始、独立开始/完成及节点完成校验仍调用；视图状态测试使用无配置协作者继续校对原动作状态边界。新增模型/视图输入注册于原审批检查。
+- 新字段/tier继承/selection/XML需统一受管升级，53.45视图亦随本批加载。下一步扩展同一rollback smoke验证计划有/无配置、真实审批/驳回重提及独立开始/完成，再做相关有效契约消费；本次尚无真实ORM通过证据。前端输入不变，无构建；总体active，未推送、合并或目标部署。

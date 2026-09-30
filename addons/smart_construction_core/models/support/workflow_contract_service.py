@@ -577,7 +577,9 @@ class ScWorkflowContractService(models.AbstractModel):
                 "in_progress": ["complete", "cancel"],
                 "cancel": ["reopen"],
             },
+            "approval_actions": ["approve", "reject"],
             "method_by_action": {
+                "approve": "validate_tier", "reject": "reject_tier",
                 "submit": "action_confirm", "activate": "action_start",
                 "complete": "action_done", "cancel": "action_cancel",
                 "reopen": "action_reset_draft",

@@ -239,12 +239,14 @@
         "addons/smart_construction_core/views/core/contract_views.xml",
         "addons/smart_construction_core/models/core/contract_event.py",
         "addons/smart_construction_core/models/support/tier_definition_ext.py",
-        "addons/smart_construction_core/data/finance_document_tier_actions.xml"
+        "addons/smart_construction_core/data/finance_document_tier_actions.xml",
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/views/core/plan_management_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.45 sc.plan native completion/reset/cancel conditions now match existing model/profile; native37 passed. Next adopt sc.plan into shared configured approval (currently direct confirmation, no tier/config support), preserve scheduling/line checks and separate start/completion; then consolidate module upgrade and real runtime verification. XML from53.45 not yet loaded. Reuse unchanged payment19 and approval17 evidence; event browser still lacks authorized company8 records.",
+  "next_exact_step": "53.46 sc.plan shared approval implemented: configured confirmation waits draft, unconfigured confirms, real callbacks and separate execution checks;52 approval+37 native+15 semantics pass. Next governed module upgrade/reload (includes53.45 XML), then extend existing rollback approval smoke for plan real review/rejection/resubmit and explicit start/complete. Reuse unchanged frontend, payment19/event17 evidence. Overall all-document scope remains open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -721,6 +723,18 @@
       "test_count": 37,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-state-tests.log",
       "remaining": "shared approval adoption and consolidated upgrade/runtime; not all-document closure"
+    },
+    "plan_approval_53_46": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "222b47903",
+      "tests": {
+        "approval": 52,
+        "native": 37,
+        "semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-approval-tests.log",
+      "upgrade_required": true,
+      "remaining": "real plan approval/rejection/resubmit and execution; all-document scope"
     }
   }
 }
