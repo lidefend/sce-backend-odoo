@@ -311,3 +311,8 @@ Source80/native54/semantics15 PASS. Runtime16 PASS on387fb8f3c with rollback ver
 ### Segment53.85–53.86 — Attendance and labor execution runtime
 
 P1 source81/native55/semantics15 PASS. Runtime25 PASS with verified rollback (labor-execution-runtime-fixed.log, backend1c18db880/tool25c468e15): monetary authority, real tier decisions distinct from confirmation, protected in-flight review, labor usage immutable facts/manager boundary, settlement project/contractor/unsettled source constraints. Initial P4 source reuse violated existing unique-source rule; tool corrected with separate transaction-only sources, product rule preserved. Official page and role handling remain pending; overall action-state is open. No frontend rebuild or persistent fixture.
+
+
+### Segment53.87 — Labor settlement create lacks necessary inputs
+
+Three labor execution create probes pass14 narrow assertions each, but screenshot review of tpl07-1790782924026 shows sc.labor.settlement lacks project/contractor inputs present in its native form and shows settlement date as text. Treat this as a product gap in effective contract/rendering, not completed creation. Trace the captured parent structure/layout and field authority before assigning ownership. Existing PM records for attendance/usage/settlement are empty; role-bound handling remains unverified. Preserve detail.action-state as open and do not infer whole-row completion from renderer/button checks.
