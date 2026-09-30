@@ -1220,6 +1220,12 @@ def _labor_execution_checks(project, group, created):
         elif model == "sc.labor.usage":
             values.update(labor_team="Rollback team", work_content="Rollback work", worker_qty=1, work_hours=2, price_unit=10)
         else:
+            if usage is None:
+                usage = document("sc.labor.usage")
+                usage.action_submit()
+                if usage.review_ids:
+                    _approve_existing_reviews(usage)
+                usage.action_confirm()
             values["line_ids"] = [(0, 0, {"work_content": "Rollback work", "qty": 2, "unit_price": 10,
                                             "source_usage_id": usage.id if usage else False})]
         values.update(overrides)
@@ -1231,7 +1237,7 @@ def _labor_execution_checks(project, group, created):
         assert not Policy.with_context(active_test=False).search_count([
             ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
         ]), "existing labor execution policy must not be overwritten"
-        automatic = document(model, source)
+        automatic = document(model)
         denied(lambda: automatic.write({"state": "confirmed"}))
         denied(automatic.action_confirm)
         print("APPROVAL_CHECK=%s_external_state_and_premature_confirmation_denied" % model)
@@ -1253,7 +1259,7 @@ def _labor_execution_checks(project, group, created):
             step.write({"amount_min": 1})
             policy.sync_tier_definitions()
         print("APPROVAL_CHECK=%s_monetary_rule_respects_authority" % model)
-        required = document(model, source)
+        required = document(model)
         required.action_submit()
         assert required.state == "submitted" and required.review_ids
         if model != "sc.attendance.checkin": assert required.amount_total == 20
@@ -1278,7 +1284,7 @@ def _labor_execution_checks(project, group, created):
         denied(required.action_confirm)
         if model == "sc.labor.usage": source = required
         print("APPROVAL_CHECK=%s_explicit_confirmation_preserved" % model)
-        rejected = document(model, source)
+        rejected = document(model)
         rejected.action_submit()
         old = set(rejected.review_ids.ids)
         actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
@@ -1293,13 +1299,11 @@ def _labor_execution_checks(project, group, created):
         print("APPROVAL_CHECK=%s_rejection_resubmission_stops_before_confirmation" % model)
     other = _project("Rollback labor other project")
     created.append((other._name, other.id))
-    mismatch = document("sc.labor.settlement", source, project_id=other.id)
-    denied(mismatch.action_submit)
+    denied(lambda: document("sc.labor.settlement", source, project_id=other.id).action_submit())
     print("APPROVAL_CHECK=labor_settlement_cross_project_source_denied")
     other_contractor = _partner("Rollback other contractor")
     created.append((other_contractor._name, other_contractor.id))
-    mismatch = document("sc.labor.settlement", source, contractor_id=other_contractor.id)
-    denied(mismatch.action_submit)
+    denied(lambda: document("sc.labor.settlement", source, contractor_id=other_contractor.id).action_submit())
     print("APPROVAL_CHECK=labor_settlement_wrong_contractor_source_denied")
     source.write({"settlement_state": "settled"})
     already_settled = document("sc.labor.settlement", source)
