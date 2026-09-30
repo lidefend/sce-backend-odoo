@@ -6800,3 +6800,197 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 ### 状态
 
 本段**批次验收完成**（契约投影修复 + 定向回归）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 48｜契约侧投影缺口收口（二）：被拒绝的记录操作必须声明「是哪一层拒绝的」，不再让终端自己编理由（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- `git fetch origin main` 复核 = `fff226d7be72878ea6861cfab2ce13d990cee806`（`Merge PR #524`）；
+  `merge-base HEAD origin/main` = `fff226d7b`，`git rev-list --left-right --count origin/main...HEAD` = `0 206`
+  → **主线仍是本分支祖先，本段无待移植内容**（与段 47 结论一致，主线移植已完成）。
+- 主线协作流程本段继续实跑：`make agent.run.begin/record` 记录 `record_denied_reason`(25)、
+  `contract_record_action_state`(19)、`page_pattern_parity`(28)；`make agent.run.resume` → `status=resolved`、
+  `outside_scope=[]`。
+  **本段新增改动路径越出原 scope**（`addons/smart_core/`、`addons/smart_construction_core/`），
+  已按 fail-closed 语义先把两路径补进 `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json` 的 `scope`，
+  再进入实现；否则 `ci.local.iteration` 会判 `reconcile`（退出码 2）。
+
+### 2. 缺口定位（先核对"原生事实是否已有、契约是否只是没投影"）
+
+选中 ledger 条目 `detail.action-state`（`edit/copy/delete reflect explicit capability and disabled reason`）。
+原缺口描述"Copy/delete and disabled-reason authority are not consistently present in the current record contract"
+经查**部分准确、部分需要修正**：
+
+- **能力本身已投影**：详情契约 `statusContract.globalStatus.effectiveRecordCapabilities`
+  在传 `record_id` 时可用（早期探针漏传 `record_id` 导致误读为全 `false`，已修正）。
+- **真正的缺口**：任何被拒绝的记录操作**只有一个布尔值，没有权威原因**。
+  `statusContract.globalStatus` 原有
+  `modelRights/recordRights/viewCapabilities/entryCapabilities/effectiveRecordCapabilities/effectiveRenderProfile`，
+  **没有 `recordDeniedReasons`**；终端只能拿 `false` 去猜"是没权限、还是记录不允许、还是状态不允许"——
+  这正是"缺少必要业务语义时前端会猜着补"的典型入口。
+- **第二个缺口（P1 侧）**：`actionContract.deletePolicy` 已表达**模型级**状态门
+  （`policy_kind: state_limited_business_document`、`state_field`、`allowed_states`、
+  `reason_code: DRAFT_BUSINESS_DOCUMENT_DELETE_ALLOWED`），但**没有"当前记录状态不允许删除"的拒绝原因**；
+  且 `frontend/apps/web/src/pages/ContractFormPage.vue` 的删除权**只读 `rights.unlink`，完全忽略该状态门**——
+  `state=signed/confirmed` 的合同在页面上仍被当作"可删除"（属**消费缺陷**）。
+
+### 3. 修复内容（按层落位，前端只做消费）
+
+**P0 `smart_core`——投影"是哪一层拒绝的"（只读事实，不解析异常文本）**
+
+`addons/smart_core/app_config_engine/services/assemblers/page_assembler.py`：
+
+1. 新增 denial 词表常量：`MODEL_ACCESS_DENIED / RECORD_RULE_DENIED / RECORD_NOT_FOUND / RECORD_AUTHORITY_UNRESOLVED`。
+2. 新增 `_model_access_allows(env, model, op)`（`check_access_rights(..., raise_exception=False)`）与
+   `_record_rule_allows(env, model, record_id, op)`（`browse(id)._filter_access_rules(op)`）——
+   **只看 Odoo 自身的判定结果，不看异常文本**。
+3. 新增 `_record_rule_denied_reasons(...)`：对每个被拒操作判定 ACL 层 / record-rule 层；
+   记录不存在 → `RECORD_NOT_FOUND`；两层都放行但权限仍为假 → `RECORD_AUTHORITY_UNRESOLVED`（不猜）；
+   `duplicate` 视为 read+create 并按同一口径归因。
+4. 新增 `_record_capability_block(env, model, record_id)` → `{rights, record_id, denied_reason}`，
+   两处权限根（原 `:550` 附近与 `:3994` 附近）改为经它产出，保持 `record_id` 既有语义。
+5. `addons/smart_core/core/unified_page_contract_v2_assembler.py`：把
+   `source.permissions.record.denied_reason` 投影为
+   `statusContract.globalStatus.recordDeniedReasons`（**非空才写**，空则不materialize 成空对象）。
+
+**P1 `smart_construction_core`——状态门的拒绝原因由业务声明**
+
+6. `addons/smart_core/utils/delete_policy.py`：新增 `DELETE_POLICY_STATE_DENIED`；
+   `_normalize_policy` 透传 `denied_reason_code / denied_message`，并**强制**"声明了
+   `allowed_states`/`blocked_states` 却没声明 `denied_reason_code` 的策略自动补
+   `DELETE_POLICY_STATE_DENIED`"——状态门带原因成为不可省略的契约形状（没有状态门的策略**不补**，不发明）。
+7. `addons/smart_construction_core/core_extension_policy_maps.py`：`_state_unlink_policy` 增加
+   `denied_reason_code: BUSINESS_DOCUMENT_STATE_NOT_DELETABLE` 与业务化 `denied_message`
+   （"该{业务对象}已形成业务事实，仅未提交状态可删除。"）。
+
+**前端（P0 契约消费，不重造规则）**
+
+8. `frontend/apps/web/src/app/contracts/v2/types.ts` + `schema.ts`：`ContractV2GlobalStatus` 增
+   `recordDeniedReasons`，在 `rejectUnknownKeys` 白名单与 `optionalRecord` 解码中登记——
+   **仍是 fail-closed**（数组/未声明键照样报错）。
+9. `frontend/apps/web/src/app/contracts/v2/store.ts`：`resolveContractV2GlobalStatus` 透传
+   `recordDeniedReasons`；新增 `resolveContractV2RecordActionStates(store)`，把
+   `effectiveRecordCapabilities` 与 `actionContract.deletePolicy` 的状态门**做与运算**，
+   每个操作给出 `{operation, allowed, reasonCode}`；**契约没声明的原因保持空串，绝不编造**。
+10. `frontend/apps/web/src/pages/ContractFormPage.vue`：`rights.unlink` 改由
+    `resolveContractV2RecordActionStates` 的 `unlink.allowed` 决定，因此**尊重 deletePolicy 声明的状态门**；
+    未声明 record 能力时保持全 `false`（fail closed）。
+
+### 4. 反例与验证（L2 定向，非零；读写分离）
+
+**行为级反例（后端，新增 `addons/smart_core/tests/test_record_denied_reason_projection.py`，15 tests OK）**
+
+- ACL 层拒绝 → `MODEL_ACCESS_DENIED`；record rule 拒绝 → `RECORD_RULE_DENIED`；
+  记录不存在 → `RECORD_NOT_FOUND`；两层放行却仍为假 → `RECORD_AUTHORITY_UNRESOLVED`。
+- **关键反例（常量实现必失败）**：`acl_rights == unresolved_rights`（同一 operation、同一 `False`），
+  但归因**必须不同** → 证明原因来自"实际观测到的权威层"，不是常量。
+- `duplicate` 跟随 read 权威（ACL 与 record-rule 两种）；`create` **永不**被报成记录级拒绝；
+  ACL 权威不可用 → fail closed 到 `MODEL_ACCESS_DENIED`；`record_id ∈ {None,0,"abc",""}` → 不产原因。
+- **真实调用链**：直接调 `_assemble_ui_contract` 断言 `recordDeniedReasons` 进入已发布契约、
+  允许的记录与无 record 块的契约**都不出现该键**。
+
+**行为级反例（删除策略，新增 `addons/smart_core/tests/test_delete_policy_denied_reason.py`，10 tests OK）**
+
+- 声明状态门未声明原因 → 自动补 `DELETE_POLICY_STATE_DENIED`；
+  显式原因保留；无状态门 → **不产生** `denied_reason_code`；空白声明值不当作原因。
+- 端到端：P1 策略表经 `resolve_unlink_policy` 后 `payment.request` 得到
+  `BUSINESS_DOCUMENT_STATE_NOT_DELETABLE` + 含"付款申请"的业务文案；**未登记模型仍只给模型级
+  `DELETE_POLICY_DENIED`，不发明状态原因**。
+
+**行为级反例（前端消费，新增 `scripts/verify/frontend_contract_record_action_state.test.mjs`，19 cases PASS）**
+
+- 解码：`recordDeniedReasons` 保留；未声明键与数组形态**照样 fail closed**；缺省不 materialize。
+- 投影：无原因时 `allowed:false` 且 `reasonCode:''`（**不猜**）；有原因时原样透出；
+  状态门 `state=approved` → 用声明的 `denied_reason_code`；`state=draft` → 允许；
+  `mainData` 没有该状态字段 → **不当作被阻止**；状态门**不外溢**到其他操作；
+  策略整体禁止用 `reason_code`；状态门无声明原因 → 拒绝但原因为空；
+  `store=null` → 五项全拒且原因为空；已允许操作上出现的陈旧原因不翻转结论。
+- 接线：`ContractFormPage.vue` 必须 import 该 resolver，且 `unlink` 必须取自解析结果。
+
+**真实运行环境只读探针**（`sc-backend-odoo-acceptance` → `sc_frontend_acceptance`，日志
+`.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/record_denied_reason_runtime_probe.log`）：
+
+- P1→P0 链路：`resolve_unlink_policy(env,'sc.general.contract')` →
+  `denied_reason_code=BUSINESS_DOCUMENT_STATE_NOT_DELETABLE`、
+  `denied_message="该综合合同已形成业务事实，仅未提交状态可删除。"`。
+- 归因可区分（同模型不同用户）：`uid=31`（项目成员）→
+  `{'read':'RECORD_RULE_DENIED','write':'RECORD_RULE_DENIED','duplicate':'RECORD_RULE_DENIED'}`；
+  `uid=1/30/33/37` → `{}`（无拒绝）→ **不是常量**。
+- 契约链：`sc.general.contract` 记录 11（`state=confirmed`）经 `UiContractV2Handler` →
+  `statusContract.globalStatus.recordDeniedReasons` 为 `uid=31` 时真实发布；
+  `effectiveRecordCapabilities` 与 `actionContract.deletePolicy` 的
+  `policy_kind/state_field/allowed_states/denied_reason_code` 同时到端。
+- **本修复的可观察行为变化**：`uid=1` 对记录 10（`signed`）/11（`confirmed`）的
+  `effectiveRecordCapabilities.unlink` 仍为 `true`（ACL 层事实），但删除策略声明的状态门只允许
+  `cancel/cancelled/draft` → 页面解析出的删除态由"可删除"变为
+  `allowed=false, reasonCode=BUSINESS_DOCUMENT_STATE_NOT_DELETABLE`；记录 12（`draft`）仍可删除。
+
+**受影响的既有门禁（全绿，未新增失败）**
+
+- `make ci.local.iteration` → `PASS change_state=dirty coverage=L1_only`（5 个已登记检查全 reusable）。
+- `make verify.frontend.typecheck.strict` → PASS；`make verify.unified_page_contract.v2.frontend_static`（typecheck + 一次构建）→ PASS。
+- `verify.unified_page_contract.v2.{schema,guard_inventory,assembler,status,action,data,runtime,client,intent,web_consumer,web_architecture,stable_projection}` → 全 PASS。
+- `verify.frontend.style_system.guard` → **PASS**（`hardcoded_color_refs_max=0`）；
+  `verify.frontend.delivery_hardening.guard`、`verify.frontend.search_groupby_savedfilters.guard`、
+  `verify.contract.operation_gateway.guard`、`verify.list_batch_action.closure_guard` → PASS。
+- `make verify.frontend.page_pattern_reference_parity.unit` → 15 + 13 tests OK；
+  `[page_pattern_reference_ledger_guard] PASS entries=67 owned_gaps=20`。
+
+**守卫按设计拦住本段新增面（真 fail closed，未放宽门禁）**
+
+`verify.unified_page_contract.v2.stable_projection` 先报
+`frontend_v2_policy_projection_guard` FAIL：`store.ts` 新读入的 6 个 snake_case 契约键
+（`allowed_states/denied_reason_code/policy_kind/reason_code/state_field/state_limited_business_document`）
+不在白名单。处理方式不是放宽，而是**把白名单绑定到真实生产者**：新增
+`ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS` + `DELETE_POLICY_PRODUCERS`，
+逐个断言这些键必须由 `smart_core.utils.delete_policy` 或
+`smart_construction_core.core_extension_policy_maps` **真实声明**，并补负例单测
+（`test_delete_policy_token_must_have_a_backend_producer`）→ 4 tests OK，白名单无法漂移成"发明的别名"。
+
+**已存在且与本段无关的失败（如实登记，不顺手修）**
+
+`make verify.user_delete_data.closure_guard` FAIL 三条：
+"ActionView batch delete must preflight with dryRun" / "…must still execute real unlink after preflight" /
+"ActionView batch policy must fall back to surface policy when list_profile has no executable actions"。
+证据：该守卫读取的 `ActionView.vue` / `ListPage.vue` / `api/data.ts` /
+`actionViewBatchActionFlowRuntime.ts` / `useActionViewContractShapeRuntime.ts` /
+`ui_contract_v2_projection.py` **在本段 diff 中为空**，`ActionView.vue` 当前也确实不含 `dryRun: true`
+→ 属**先前既有**的守卫期望漂移，独立保留。
+
+### 5. 文档
+
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`
+（67 行单行 JSON 数组，精确替换按整行字符串）：
+
+`detail.action-state` 条目 `authority` 改为"`statusContract.globalStatus.effectiveRecordCapabilities`
++ 指明拒绝层的 `recordDeniedReasons` + `actionContract.deletePolicy` 状态门及其 `denied_reason_code`"；
+`gap` 改为**准确剩余状态**——契约侧（能力 + 拒绝层 + 状态门 + 业务拒绝原因）与
+表单页删除权消费均已到位，**仍缺的是只读详情面把声明的禁用原因呈现给操作者、以及
+`duplicate` 能力在该面的可用入口**；`followUp` 相应改为
+"在采纳的 readonly-detail 面渲染声明的禁用原因并在契约声明 `duplicate` 时提供复制入口，
+或把该 reference 差异记录为 accepted"。状态仍为 `contract_gap`（未宣称超前）。
+
+### 6. 提交
+
+- `fix(contract): declare the authority that denied a record operation`
+- `docs(iteration): record 段 48`（本段）
+
+### 7. 剩余缺口与下一步
+
+- 前端采纳契约边界现状不变：`entries=67 aligned=46 contract_gap=20 not_applicable=1`
+  （**17 条 P0 `smart_core`、2 条 P1 `smart_construction_core`**）。本段关闭其中
+  `detail.action-state` 的**契约侧**部分，剩余为只读详情面的呈现消费。
+- 仍待收口的 P0 投影缺口（按序）：`collection.record-action`（行详情动作需要**通用规则**，
+  不得按模型名硬编码；付款列表实测已含 `action.open_form`，需据实判断剩余是行级/工具栏声明还是消费）、
+  `collection.settings-export`（`batch_policy.available_actions` 已含 `export`，同上）、
+  `detail.section-heading`（区块条目计数）、上下文抽屉呈现授权一族
+  （`detail.container/header/primary-tabs/secondary-tabs/description-grid/loading-skeleton`）、
+  `login.*`、`shell.global-search`、`shell.footer-version`。
+- 事实更正：段 47 曾把"四项 `style_system` 欠账"列为待独立处理，本段实测
+  `make verify.frontend.style_system.guard` **PASS**（该项已不再失败）；`industry_agnostic.guard` 97 条、
+  `state_transition_undeclared` 5 条、390×844 官方参考截图证据缺口仍独立保留。
+- `user_delete_data.closure_guard` 的 3 条既有失败（见 §4）独立保留，作为合并前清理批次的输入。
+
+### 状态
+
+本段**批次验收完成**（契约投影修复 + 定向回归 + 真实环境只读证据）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
