@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.73 purchase-request create14 passed but visual+effective-contract inspection found generated name editable/required on create. Fix P1 native form/generated-field declaration (create hidden, existing readonly), add focused contract coverage and recheck affected create only after required managed XML upgrade. Existing PM query empty; do not repeat without changed data. Keep backend purchase8 and other unchanged evidence; overall goal active.",
+  "next_exact_step": "53.74 purchase-request generated number create gap fixed: native49, managed XML upgrade/backend41d692abe, create15 PASS report1790780449473 with actual modifier authority and screenshot. Existing record role UI pending because authorized query empty; do not repeat. Continue next remaining confirmed business document producer (material RFQ/settlement) from existing profile/model, preserve downstream execution and shared approval. No broad inventory, no repeat purchase8, no frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1128,6 +1128,15 @@
       "existing_record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790780263093/report.json",
       "existing_record": "authorized query empty; UI handling pending",
       "gap": "P1 native purchase request name is generated but exposed as editable required create field"
+    },
+    "segment_53_74": {
+      "status": "create_gap_fixed_existing_record_pending",
+      "backend": "41d692abe",
+      "native_tests": 49,
+      "browser_assertions": 15,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790780449473/report.json",
+      "contract": "native modifiers readonly=true/invisible=not id",
+      "runtime_approval": "reuse purchase8; methods unchanged"
     }
   }
 }

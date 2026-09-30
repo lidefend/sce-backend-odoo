@@ -8046,3 +8046,5 @@ P4仅扩展既有approval-actions浏览器范围，PM物资经理角色、真实
 P1原生采购申请表单name添加readonly=1/invisible=not id，沿用模型既有序列生成，不引入前端模型规则。P4既有创建观察增加编号输入不可见断言。L1 purchase-request-number-iteration.log PASS，native49 PASS并记录回执，node语法/XML声明解析PASS。模型方法与approval policy未变，复用72审批纯测/8真实运行；不重复ORM，不重建前端。原生XML需受管smart_construction_core升级后重绑，随后只重验受影响创建页；不重试已确认空记录查询。
 
 验收环境与53.72一致：平台内部sc_frontend_acceptance租户、local/sc-fe-r2-p1-01、精确^sc_frontend_acceptance$及固定卷；非客户生产/控制库。只升级既有视图，无业务数据写入或fixture创建。L3/L4结果pending，不称缺口已闭合。
+
+受管升级及后端41d692abe重绑成功。tpl07-1790780449473/report.json创建15 PASS，errors=[]、forbiddenWrites=[]，双视口无页面溢出；390截图复核编号已不显示，有效契约modifiers.readonly=true、invisible为not(field_truthy id)。源字段readonly=false仍是ORM元信息，native modifiers才是该视图只读权威；不改前端猜测。创建编号缺口已修复，已有记录只读有XML/契约声明证据但暂无角色记录页面证据，仍pending。复用采购审批8，无重复ORM/前端构建/空记录查询。

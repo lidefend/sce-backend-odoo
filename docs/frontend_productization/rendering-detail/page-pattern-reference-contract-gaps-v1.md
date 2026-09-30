@@ -276,3 +276,8 @@ P1 purchase request now consumes shared policy/tier approval. Submission without
 ### Segment53.73 — Purchase request create producer gap remains
 
 Official create14 checks pass (tpl07-1790780248705), but screenshot/effective-contract review reveals generated application name is still required/editable on create. Native P1 XML lacks readonly/create visibility authority; fix the producer, not frontend CSS/model rules. This is a remaining product gap despite green action checks. Existing PM record query is empty (tpl07-1790780263093); actual record handling remains pending, with no new fixture or permission expansion. Backend approval8 evidence stays valid.
+
+
+### Segment53.74 — Purchase request generated-number create gap fixed
+
+P1 native readonly/invisible-not-id declaration is live on backend41d692abe. Effective modifiers carry readonly=true and not(field_truthy id); official create15 checks pass (tpl07-1790780449473), narrow screenshot confirms the generated number is absent. No frontend rule or rebuild. Existing-record readonly UI remains unobserved because the authorized query is empty; approval8 unchanged evidence remains valid. This closes the observed create-number defect only, not full record handling or detail.action-state.
