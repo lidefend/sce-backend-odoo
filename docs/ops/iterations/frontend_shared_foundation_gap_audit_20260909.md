@@ -9266,3 +9266,16 @@ P1 5b27d52e3补齐project_member contextual_menu_xmlids中的原生合同事件�
 L1 event-selection-iteration.log PASS，standard_preview.unit38 PASS及begin/record完成（event-project-scope-begin/unit/receipt.log）。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter与卷执行event-selection-browser.log，tpl07-1790808209564/report.json共25断言PASS：uid33原生menu470/action672，新建有效契约、name/project_id/event_type/description输入、授权项目选择；保存草稿及提交均捕获真实create payload，project_id=464、design_change、名称/正文与company8/menu/action上下文保持。两次create在浏览器注入503，页面保持new和输入，无后续动作、无业务数据库写。截图event-filled-save-failure.png。
 
 动作声明不等于记录级可执行契约：导航只提供入口，workflow提供状态/动作/可编辑性，执行仍由后端统一状态机控制。复用53.176后台12项，不将本次失败恢复25项表述为普通角色真实创建/提交成功。下一步沿同一现有工具补齐精确目标及清理约束后验证普通角色真实创建提交；整体detail.action-state/67条接管及计划执行等未完成。无推送、合并、目标部署。
+
+
+### 53.178 合同操作员事件真实创建、自动审批及只读详情
+
+7a1d40fab clean起点；P4 5d6731bfb只扩既有standard_page_type_browser、standard_expense_success_scope与frontend_expense_probe_cleanup及其测试，不增加业务规则或新环境。事件成功开关要求精确approval-actions/model/create场景，角色fixture_role_contract_operator，实际选择项目ID与捕获create请求绑定；唯一TPL53-EVENT-SAVE时间标记、company8、同记录action_submit及菜单/action上下文，in-flight阶段禁止重放。沿既有recovery文件和Make cleanup入口，写入前落恢复范围并预检无当前审批配置；不修改审批设置。
+
+临时记录清理校验验收库、实际actor、项目公司、精确四字段、名称/正文/事件类型、创建时间窗口、草稿或approved状态；拒绝合同关联、纳入结算、legacy来源、review或附件，按精确名称与返回ID核对删除并提交后回读不存在。审计与序列不回滚，不冒充全库恢复。数据库身份沿local/sc-fe-r2-p1-01/sc_frontend_acceptance，平台内部隔离验收租户，公司8，^sc_frontend_acceptance$，原sc_fe_r2_p1_01_odoo filestore；非平台控制库/行业目录/客户生产库，不新建fixture。
+
+L1 event-success-iteration.log PASS；standard_preview.unit40（15Node+25Python）PASS，event-success-begin/unit/receipt完整；新增错角色、记录、模型、动作、内容及清理数据库/项目/创建人/时间反例。产品后端981aeb2ec、前端e31e51c59未变，未升级/构建。TPL07_EVENT_SAVE_PROBE=1 TPL07_EVENT_SAVE_SUCCESS=1沿受管browser入口，event-success-browser.log及tpl07-1790808338023/report.json32断言PASS。
+
+uid33真实create sc.contract.event30，project464/company8/name TPL53-EVENT-SAVE-1790808342545/design_change，execute_button action_submit一次成功，普通角色api.data权威回读state=approved；未配置审批自动通过，未触发完成或结算。官方只读详情已接管、无可编辑表单，1440/390无页面溢出，截图event-success-1440/390.png；1440观察当前状态已审批、完成独立动作、删除按契约禁用提示。无未声明写入/页面异常；expense-cleanup-final.log确认record_ids[30]/actor33 restored且权威不存在。
+
+本批补齐普通合同操作员创建提交代表闭环，复用53.176配置审批后台12项，不冒充配置审批多角色UI、附件独立接口或全部67项完成。detail.action-state保持contract_gap；下一步处理既有计划执行中内容职责与状态机/动作契约一致性，避免继续重复事件与日志已过场景。无推送/合并/目标部署。
