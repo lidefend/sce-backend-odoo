@@ -378,7 +378,6 @@ type ColumnOption = {
   filterField?: string;
   exportField?: string;
   selection?: Array<{ value: string; label: string }>;
-  toneByValue?: Record<string, string>;
 };
 type GroupSortDirection = 'asc' | 'desc';
 
@@ -740,7 +739,6 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     trueText: uiLabel('boolean_true', FIELD_VALUE_TRUE_TEXT),
     falseText: uiLabel('boolean_false', FIELD_VALUE_FALSE_TEXT),
     numeric: isNumericDisplayColumn(field),
-    toneByValue: option?.toneByValue,
   });
 }
 function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {

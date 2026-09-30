@@ -945,6 +945,7 @@ ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.con
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/construction_core_extension_service_builders_split_guard.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/file_line_budget_uniform_guard.py
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
 	@python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py
 	@python3 scripts/verify/v1_1_convergence_status_guard.py

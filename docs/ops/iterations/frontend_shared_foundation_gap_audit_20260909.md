@@ -6272,3 +6272,131 @@ registry 登记、guard_registry 重导出。
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 43｜色调回归前端呈现层：契约不再承载颜色，并把「文件行数」从阻断降为优化方向提示（2026-09-30）
+
+### 1. 本段要解决的问题
+
+段 40 已经认定「内核不能替业务决定哪个状态算成功」，但当时的修正方向是**让声明方在
+profile 里声明 `tone_by_value`**。这在边界上是错的：`tone_by_value` 是颜色（呈现），
+不是业务含义。于是本段把它彻底移出契约，并把方向掉转过来——
+**契约只给权威状态值与原生标签，颜色由前端呈现层唯一决定。**
+
+同时在执行中发现第二类「机械」问题：守卫把**文件行数**当作阻断点，且同一个文件被十几个
+守卫各自用不同的历史快照盯着（`core_extension.py` 同时挂着 1787/1809/1820/1830/1858/
+2065/2120/2243/3145/3763/4180/4241 十二个上限）。按本段确认的口径：
+**行数是代码优化方向的提示依据，不是功能迭代的阻断点。**
+
+### 2. 改了什么
+
+**(A) 色调退出契约（后端）**
+
+- `addons/smart_core/utils/contract_governance_list_surface.py`：删除 `STATUS_TONE_VOCABULARY`
+  与 `normalize_status_tone_by_value()`；`govern_standard_list_for_user` 去掉
+  `status_tone_by_value` 参数。状态列只写 `schema["cell_role"]="status"`。模块内不再出现
+  任何业务状态值字面量（`"draft"`/`"in_progress"`/`"closed"` …）。
+- `addons/smart_core/utils/contract_governance.py`：去掉调用点/签名/转发三处 `status_tone_by_value`。
+- `addons/smart_core/utils/contract_governance_registry.py`：profile 形状不再归一化 `tone_by_value`。
+- `addons/smart_construction_core/core_extension.py`：4 个 profile
+  （`project.project.list` / `project.task.list` / `payment.request.list` /
+  `project.material.plan.list`）删除 `tone_by_value` 声明（1842 → 1830 行）。
+
+**(B) 前端承接色调，且只有一份权威**
+
+- 新增 `frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts`：
+  `STATUS_TONE_POLICY` 以**权威状态值**为键（不是中文显示标签），覆盖共享生命周期与通用
+  进度/风险值，未声明 → `neutral`；导出 `resolveStatusTone(value)` 与
+  `resolveCollectionStatusPresentation({value, selection})`。
+- 消费方改为单一入口，删除各自的 `toneByValue`：
+  `pages/listPage/listCellPresentation.ts`、`utils/semantic.ts`（`statusTone()` 转发）、
+  `pages/ListPage.vue`、`pages/KanbanPage.vue`、`views/ActionView.vue`、
+  `app/action_runtime/useActionViewCollectionMetricRuntime.ts`、
+  `app/action_runtime/useActionViewContractShapeRuntime.ts`。
+- 色调依据是**我们自己的每日前端参考快照**（`审批中` = TDesign warning-1 `#FFF1E9`，
+  故 `approve → warning`），不是从契约反推。
+
+**(C) 行数锁定统一并降级为非阻断**
+
+- 新增 `scripts/verify/line_budgets.py`：**唯一权威**的行数登记表（17 个受监控文件），
+  规则只有一条 `guidance budget = 登记基线 + 统一余量(60)`；未登记文件 fail closed。
+- 36 个守卫改为向该登记表取预算；`action_view_responsibility_map_guard`、
+  `ui_contract_v2_responsibility_map_guard`、`low_code_workbench_product_guard`、
+  `frontend_style_system_guard` 的内联阈值一并收口。
+- **超预算不再 FAIL**：改为打印 `[size-advisory] <file> is N lines, M over the ...guidance
+  budget; consider splitting before the next structural change`，退出码不变。
+  守卫真正的阻断断言（模块归属、split token、禁止依赖）全部保留。
+- 新增元守卫 `scripts/verify/file_line_budget_uniform_guard.py`：禁止守卫再次写死数值预算、
+  禁止再出现 `line budget exceeded` 这类阻断措辞、校验登记表完整性；已接入 `make/ci.mk`。
+
+**(D) 顺带维护的两处**（均为既有红，非本段引入）
+
+- `action_view_responsibility_map_guard.py`：`runBatchPolicyAction` 已由该视图迁到
+  `frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts`，
+  守卫改为断言**新归属模块**持有该职责，并禁止视图内再本地实现（保留原业务断言）。
+- `docs/verify/frontend_native_list_alignment_batch_20260430.md`：为其中的
+  `tone_by_value` 条款加「已被取代」说明，避免它继续被读成现行规格。
+
+### 3. 未被本段更改的同名落点（已分类登记）
+
+| 落点 | 定性 | 处置 |
+| --- | --- | --- |
+| `addons/smart_construction_core/services/scene_block_schema.py`（`metric_card(...tone=)`） | **场景呈现载荷**（P1 编排输出），词表已限定 `{success,warning,danger,info,neutral}`，不含业务状态枚举 | 属呈现载体，**不是业务契约越界**，不改 |
+| `addons/smart_construction_core/services/insight/project_insight_service.py`（`tone: gentle/ready/ok_to_continue`） | hero 的**语气标记**，与「颜色」只是同名 | 命名债，登记不改 |
+| `addons/smart_construction_core/services/project_next_actions_builder.py`（`tone: info/neutral`） | 同上，场景/首页呈现载荷 | 登记不改 |
+
+判断依据：业务契约不得承载呈现，但**编排/首页呈现载荷本身**就是呈现载体的数据格式；
+本段要清除的是「业务状态值 → 颜色」被写进业务契约，这三处不属于该路径。
+
+### 4. 边界七问
+
+`Formal Product Layer` = P0 平台内核（契约投影与呈现边界）+ 验收体系（行数口径）；
+`Layer Target` = `smart_core.utils.contract_governance*`、`smart_construction_core.core_extension`
+声明档案、`frontend/apps/web` 呈现层、`scripts/verify/*`；
+`Module` = 契约内核 / 前端呈现 / 验收工具，三类各自归属；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 「什么算业务含义、什么算呈现」是内核与呈现层的通用边界，不属于任何行业或客户；
+`Why Not Elsewhere` = **不**把颜色词表留在契约里（内核越界）、**不**在前端按中文标签猜状态
+（呈现越界）、**不**靠放宽/忽略守卫消红（把机械约束伪装成通过）；
+`Blast Radius` = 列表契约状态列投影、4 个行业 profile、7 个前端消费点、36 个守卫的预算来源、
+ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、权限零改动**。
+
+### 5. 验证（分层）
+
+- L0 身份：开工 HEAD `afdffcd4d` + 显式 dirty scope；收口提交 `0a6cd0a98`（提交后工作区干净，
+  `git status --short` 空）；
+- L2（本段直接受影响面）：
+  - 40 个受影响的 `*_guard.py` 全 PASS（`ran=40 fails=0`）；
+  - `python3 -m unittest scripts.verify.test_frontend_dev_incremental` → 13 tests OK
+    （`SIZE_LIMITS` / `RECORD_RUNTIME_SIZE_LIMITS` 形状与路由断言保持有效）；
+  - `make verify.frontend.collection_status_presentation.unit` → `PASS cases=15`；
+  - `make verify.frontend.page_pattern_reference_parity.unit` → parity 15 tests OK +
+    ledger 13 tests OK + `PASS entries=67 owned_gaps=20`；
+  - `make verify.frontend.typecheck.strict` → `vue-tsc` 两遍均过；
+  - 容器内 `test_contract_governance_record_context_registry` → `RAN=21 FAIL=0 ERR=0`；
+- **反向注入**（证明新守卫有效，不是空转）：
+  - 往守卫写死 `MAX_GOVERNANCE_LINES = 9999` → `file_line_budget_uniform_guard` FAIL；
+  - 往守卫塞回 `"line budget exceeded"` → 同上 FAIL；恢复后 PASS；
+- 提交后干净态复跑：`make ci.local.iteration` → `PASS change_state=clean coverage=L1_only`；
+  41 个受影响守卫 `ran=41 fails=0`；`make verify.guard.registry` → `AUDIT PASS: 1357 scripts
+  (1233 referenced, 124/124 orphans acknowledged, 1 retired)`；`make verify.frontend.build`
+  → `✓ built in 21.46s`（唯一一次构建；后续未做同源码二次构建或逐文件比对）。
+- 未执行：浏览器旅程、全量 Quick（按规则 `ci.local.quick` 只在最终冻结 HEAD 跑一次）、
+  100 文件 HTTP 比对。理由：本段无产品渲染逻辑变更，只有呈现层颜色取值来源与验收工具，
+  派生产物按既有方式保留。
+- 已知与本段无关的既有红：`scripts/verify/frontend_product_design_system_metrics.py` 因克隆
+  缺少基线 ref `86f9b29eb…`（`fatal: not a tree object`）无法运行——该脚本只输出指标、
+  不设门禁，非本段引入，未扩大处理。
+
+### 6. 提交
+
+- 单笔本地提交：`fix(contract): return the list status tone to the frontend presentation layer and make line budgets advisory`
+  （契约去色 + 前端单一色调权威 + 边界守卫双向检查 + `.mjs` 自测接线 + ledger 归属 +
+  `line_budgets.py` + 36 个守卫预算收口 + 元守卫 + ci.mk 接线 + 两处文档加注 + 本段记录）。
+- **为什么合成一笔**：色调守卫（`contract_governance_list_surface_split_guard.py`）同时承载
+  边界断言与预算取数；拆成两笔会让任一笔处于「守卫引用了尚不存在的登记表」或
+  「守卫仍写死预算」的临时不一致状态。按职责拆提交不以制造中间坏状态为代价，
+  故本段按实际依赖合并提交，不做机械拆分。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

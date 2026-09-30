@@ -19,27 +19,11 @@ def _as_dict(value: Any) -> dict:
     return dict(value) if isinstance(value, dict) else {}
 
 
-# Status semantic tone is a presentation fact the declaring profile owns.  The
-# platform kernel only projects it: it must never carry a business
-# value-to-tone map of its own, because that would decide, for every model,
-# which business states mean success or warning.  Values outside the published
-# tone vocabulary are dropped so a declaration cannot smuggle an unknown tone
-# into the contract.
-STATUS_TONE_VOCABULARY: frozenset[str] = frozenset({"neutral", "info", "success", "warning", "danger"})
-
-
-def normalize_status_tone_by_value(raw: Any) -> dict[str, str]:
-    """Keep only declared value/tone pairs the published vocabulary admits."""
-    if not isinstance(raw, dict):
-        return {}
-    normalized: dict[str, str] = {}
-    for value, tone in raw.items():
-        key = _safe_text(value)
-        normalized_tone = _safe_lower(tone)
-        if key and normalized_tone in STATUS_TONE_VOCABULARY:
-            normalized[key] = normalized_tone
-    return normalized
-
+# A status badge colour is presentation, not business meaning: the contract
+# carries the authoritative status value and its label, and the frontend's
+# design system decides how that value is coloured.  The kernel therefore
+# projects no tone here, and no profile may declare one (see
+# contract_governance_list_surface_split_guard).
 
 def apply_standard_search_toolbar_labels(data: dict) -> None:
     search = _as_dict(data.get("search"))
@@ -216,7 +200,6 @@ def govern_standard_list_for_user(
     row_primary: str,
     row_secondary: str,
     status_field: str,
-    status_tone_by_value: Any = None,
     strict_columns: bool = False,
     is_model_tree_contract: Any,
     legacy_field_presentation: Any,
@@ -299,12 +282,9 @@ def govern_standard_list_for_user(
             if isinstance(presentation.get("mutation"), dict) and presentation["mutation"]:
                 schema["mutation"] = deep_clone_json_like(presentation["mutation"])
         if name == status_field:
+            # Mark the semantic role only.  The colour of the badge is resolved
+            # by the frontend presentation layer, never by the contract.
             schema["cell_role"] = "status"
-            # Absent declaration -> no tone map at all: the renderer falls back
-            # to a neutral badge instead of the kernel inventing business tones.
-            tones = normalize_status_tone_by_value(status_tone_by_value)
-            if tones:
-                schema["tone_by_value"] = tones
         if isinstance(field.get("selection"), list) and not isinstance(schema.get("selection"), list):
             schema["selection"] = [
                 {"value": item[0], "label": item[1]}

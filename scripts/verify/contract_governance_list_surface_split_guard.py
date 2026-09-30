@@ -3,7 +3,14 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import inspect
 from pathlib import Path
+
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
@@ -11,89 +18,18 @@ LIST_SURFACE = ROOT / "addons/smart_core/utils/contract_governance_list_surface.
 INDUSTRY_PROFILES = ROOT / "addons/smart_construction_core/core_extension.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_GOVERNANCE_LINES = 1973
-
-# The construction-industry default product owns the project lifecycle
-# value-to-tone map; the kernel only projects it.  This guard proves both
-# halves of that split so neither side can drift silently.
+# carries the authoritative status value and its label; the frontend design
+# system decides how that value is coloured.  This guard keeps the boundary
+# real in both directions: the list surface must not project a tone, no
+# declaring profile may carry one, and the frontend presentation layer must be
+# the place the colour policy lives.
 PROJECT_LIST_PROFILE_KEY = "project.project.list"
-STATUS_TONE_VOCABULARY = frozenset({"neutral", "info", "success", "warning", "danger"})
 
-STATE_MACHINE = ROOT / "addons/smart_construction_core/models/support/state_machine.py"
-MATERIAL_PLAN = ROOT / "addons/smart_construction_core/models/core/material_plan.py"
-TASK_EXTEND = ROOT / "addons/smart_construction_core/models/support/task_extend.py"
-
-# A declared tone is only meaningful for a value the model can actually hold.
-# Each declaring profile names where its status values are authored, so a typo
-# or an invented state fails here instead of silently never applying.
-STATUS_VALUE_SOURCES: dict[str, tuple[Path, str]] = {
-    "project.project.list": (STATE_MACHINE, "PROJECT_STATES"),
-    "payment.request.list": (STATE_MACHINE, "PAYMENT_REQUEST_STATES"),
-    "project.material.plan.list": (MATERIAL_PLAN, "state"),
-    "project.task.list": (TASK_EXTEND, "sc_state"),
-}
-
-
-def _pair_keys(node: ast.AST) -> set[str] | None:
-    """First element of every ``(value, label)`` pair in a literal pair list.
-
-    The label may be a translated call, so the pair list is walked structurally
-    instead of being literal-evaluated as a whole.
-    """
-    if not isinstance(node, ast.List):
-        return None
-    keys: set[str] = set()
-    for element in node.elts:
-        if not isinstance(element, (ast.Tuple, ast.List)) or not element.elts:
-            return None
-        first = element.elts[0]
-        if not isinstance(first, ast.Constant) or not isinstance(first.value, str):
-            return None
-        keys.add(first.value)
-    return keys or None
-
-
-def _state_machine_values(name: str) -> set[str] | None:
-    if not STATE_MACHINE.is_file():
-        return None
-    tree = ast.parse(STATE_MACHINE.read_text(encoding="utf-8"))
-    for node in tree.body:
-        if not isinstance(node, ast.ClassDef):
-            continue
-        for item in node.body:
-            if isinstance(item, ast.Assign) and any(
-                isinstance(target, ast.Name) and target.id == name for target in item.targets
-            ):
-                return _pair_keys(item.value)
-    return None
-
-
-def _selection_values(source: Path, field_name: str) -> set[str] | None:
-    if not source.is_file():
-        return None
-    tree = ast.parse(source.read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        if not any(isinstance(target, ast.Name) and target.id == field_name for target in node.targets):
-            continue
-        value = node.value
-        if not isinstance(value, ast.Call) or not getattr(value.func, "attr", "") == "Selection":
-            continue
-        if not value.args:
-            continue
-        return _pair_keys(value.args[0])
-    return None
-
-
-def _model_status_values(profile_key: str) -> set[str] | None:
-    entry = STATUS_VALUE_SOURCES.get(profile_key)
-    if entry is None:
-        return None
-    source, name = entry
-    if name.isupper():
-        return _state_machine_values(name)
-    return _selection_values(source, name)
+FRONTEND_STATUS_PRESENTATION = ROOT / "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts"
+FRONTEND_ROOTS = (
+    ROOT / "frontend/apps/web/src",
+    ROOT / "frontend/packages",
+)
 
 
 def _declared_list_profiles(source: Path) -> dict[str, dict]:
@@ -148,8 +84,7 @@ def main() -> int:
 
     if governance_text:
         line_count = len(governance_text.splitlines())
-        if line_count > MAX_GOVERNANCE_LINES:
-            errors.append(f"contract_governance.py line budget exceeded: {line_count} > {MAX_GOVERNANCE_LINES}")
+        line_budgets.advise_size("addons/smart_core/utils/contract_governance.py", line_count, label="contract_governance.py")
         for token in [
             "def _load_list_surface_module()",
             "contract_governance_list_surface.py",
@@ -168,8 +103,6 @@ def main() -> int:
             "def apply_standard_search_toolbar_labels(",
             "def govern_standard_list_for_user(",
             "def govern_tier_review_list_for_user(",
-            "STATUS_TONE_VOCABULARY",
-            "def normalize_status_tone_by_value(",
             "\"source\": \"contract_governance.curated_list_facts\"",
             "\"owner_layer\"] = \"scene_orchestration\"",
             "\"row_open\": \"打开\"",
@@ -182,6 +115,12 @@ def main() -> int:
         for token in (".search(", ".write(", "requests.", "env[", "registry["):
             if token in list_surface_text:
                 errors.append(f"list surface module must remain projection-only; found token: {token}")
+        # A badge colour is presentation; the kernel must not project one.
+        for token in ("tone_by_value", "STATUS_TONE_VOCABULARY", "normalize_status_tone_by_value", "status_tone_by_value"):
+            if token in list_surface_text:
+                errors.append(
+                    "list surface must not carry a status tone contract; found token: " + token
+                )
         # Status tone authority belongs to the declaring profile.  The kernel
         # projects a declaration; it must never carry a business value-to-tone
         # map of its own, so any known lifecycle value reappearing here is a
@@ -370,137 +309,60 @@ def main() -> int:
         if labels.get("row_open") != "打开":
             errors.append("standard list must keep toolbar/search label normalization")
 
-        # --- status tone authority is owned by the declaring profile ---
-        # 1) No declaration -> the kernel must omit tone_by_value entirely so
-        #    the renderer falls back to a neutral badge instead of the kernel
-        #    inventing which business states mean success or warning.
+        # --- a status badge colour is presentation, never contract data ---
+        # 1) The kernel projects the semantic role only; it must not emit a
+        #    status tone for any profile, declared or not.
         if "tone_by_value" in schema_by_name.get("stage_id", {}):
-            errors.append(
-                "standard list must omit tone_by_value when the profile declares no tone map"
-            )
+            errors.append("standard list must not project a status tone into the contract")
 
-        def _govern_with_tone_map(tone_map):
-            run_data = {
-                "head": {"model": "project.project", "view_type": "tree"},
-                "model": "project.project",
-                "governance": {"primary_model": "project.project"},
-                "views": {
-                    "tree": {
-                        "columns": [{"name": "name"}, {"name": "stage_id"}],
-                        "columns_schema": [
-                            {"name": "name", "label": "Native Name"},
-                            {"name": "stage_id", "label": "Native Stage"},
-                        ],
-                        "row_actions": [{"name": "open_form", "payload": {}}],
-                    }
-                },
-                "fields": {
-                    "name": {"type": "char", "string": "Name"},
-                    "stage_id": {
-                        "type": "selection",
-                        "string": "Stage",
-                        "selection": [("draft", "Draft"), ("closed", "Closed")],
-                    },
-                },
-                "permissions": {"effective": {"rights": {"write": True, "unlink": True}}},
-                "delete_policy": {"delete_mode": "unlink"},
-                "search": {},
-            }
-            list_surface.govern_standard_list_for_user(
-                run_data,
-                model_name="project.project",
-                columns_order=["name", "stage_id"],
-                column_labels={},
-                row_primary="name",
-                row_secondary="",
-                status_field="stage_id",
-                status_tone_by_value=tone_map,
-                is_model_tree_contract=lambda data, model: model == "project.project",
-                legacy_field_presentation=lambda model, name: {},
-                deep_clone_json_like=lambda value: dict(value) if isinstance(value, dict) else value,
-                apply_standard_search_toolbar_labels=list_surface.apply_standard_search_toolbar_labels,
-            )
-            run_tree = (run_data.get("views") or {}).get("tree") or {}
-            return {
-                row.get("name"): row
-                for row in run_tree.get("columns_schema", [])
-                if isinstance(row, dict)
-            }.get("stage_id") or {}
+        # 2) The governing entrypoint must not accept a tone declaration, so a
+        #    profile cannot smuggle a colour back through the contract.
+        signature = inspect.signature(list_surface.govern_standard_list_for_user)
+        for parameter in ("status_tone_by_value", "tone_by_value"):
+            if parameter in signature.parameters:
+                errors.append(f"govern_standard_list_for_user must not accept {parameter}")
 
-        declared = _govern_with_tone_map({"draft": "warning", "closed": "success"})
-        if declared.get("tone_by_value") != {"draft": "warning", "closed": "success"}:
-            errors.append("standard list must project the declared status tone map verbatim")
-
-        filtered = _govern_with_tone_map({"draft": "primary", "closed": "success", "": "danger"})
-        if filtered.get("tone_by_value") != {"closed": "success"}:
-            errors.append(
-                "standard list must drop tones outside the published vocabulary and empty keys"
-            )
-
-        absent = _govern_with_tone_map(None)
-        if "tone_by_value" in absent:
-            errors.append("standard list must not synthesize a tone map when none is declared")
-
-        # --- the declaring profile is the counterpart owner ---
-        # The kernel must not invent a tone map, so the industry default
-        # product must actually declare one; otherwise the relocation would
-        # quietly drop project lifecycle tones instead of moving them.
+        # 3) No declaring profile may carry a colour either.
         profiles = _declared_list_profiles(INDUSTRY_PROFILES)
         if not profiles:
             errors.append(
                 "industry module must declare literal register_legacy_standard_list_profile payloads"
             )
-        project_profile = profiles.get(PROJECT_LIST_PROFILE_KEY) or {}
-        if not project_profile:
+        if PROJECT_LIST_PROFILE_KEY not in profiles:
             errors.append(f"industry module must declare the {PROJECT_LIST_PROFILE_KEY} profile")
-        declared_tones = project_profile.get("tone_by_value")
-        if not isinstance(declared_tones, dict) or not declared_tones:
+        declaring = sorted(key for key, payload in profiles.items() if payload.get("tone_by_value"))
+        if declaring:
             errors.append(
-                "project.project.list must own its status tone map; the kernel no longer supplies one"
+                "status colour is a frontend presentation decision; profiles must not "
+                "declare tones: " + ", ".join(declaring)
+            )
+
+        # 4) The colour policy must live in the frontend presentation layer,
+        #    keyed by the authoritative status value rather than a display label.
+        if not FRONTEND_STATUS_PRESENTATION.is_file():
+            errors.append(
+                "frontend status presentation module is required: "
+                + str(FRONTEND_STATUS_PRESENTATION.relative_to(ROOT))
             )
         else:
-            projections = _govern_with_tone_map(declared_tones)
-            if projections.get("tone_by_value") != declared_tones:
-                errors.append(
-                    "project.project.list declared tones must project verbatim into the contract"
-                )
-
-        # Every profiling layer that declares tones is held to the same rules,
-        # so a second model cannot smuggle an unpublished tone or an empty key.
-        declaring = sorted(
-            key
-            for key, payload in profiles.items()
-            if isinstance(payload.get("tone_by_value"), dict) and payload.get("tone_by_value")
-        )
-        for key in declaring:
-            tones = profiles[key]["tone_by_value"]
-            invalid = sorted(
-                f"{value_key}={tone}"
-                for value_key, tone in tones.items()
-                if str(tone).strip().lower() not in STATUS_TONE_VOCABULARY
-            )
-            if invalid:
-                errors.append(f"{key} declares tones outside the published vocabulary: " + ", ".join(invalid))
-            if any(not str(value_key).strip() for value_key in tones):
-                errors.append(f"{key} declares an empty status value key")
-            projected = _govern_with_tone_map(tones)
-            if projected.get("tone_by_value") != tones:
-                errors.append(f"{key} declared tones must project verbatim into the contract")
-
-            # A declared value that the model cannot hold would never apply, so
-            # the gap would stay hidden.  Require an authored source instead.
-            if key not in STATUS_VALUE_SOURCES:
-                errors.append(f"{key} declares tones without a registered status value source")
+            presentation_text = FRONTEND_STATUS_PRESENTATION.read_text(encoding="utf-8", errors="ignore")
+            if "export function resolveStatusTone(" not in presentation_text:
+                errors.append("frontend status presentation must expose resolveStatusTone")
+        for root in FRONTEND_ROOTS:
+            if not root.is_dir():
                 continue
-            model_values = _model_status_values(key)
-            if not model_values:
-                errors.append(f"{key} status value source could not be read")
-                continue
-            invented = sorted(value_key for value_key in tones if value_key not in model_values)
-            if invented:
-                errors.append(
-                    f"{key} declares values the model does not define: " + ", ".join(invented)
-                )
+            for path in sorted(root.rglob("*")):
+                if not path.is_file() or path.suffix not in {".ts", ".vue", ".mjs", ".js"}:
+                    continue
+                if path == FRONTEND_STATUS_PRESENTATION:
+                    continue
+                if "node_modules" in path.parts:
+                    continue
+                if "tone_by_value" in path.read_text(encoding="utf-8", errors="ignore"):
+                    errors.append(
+                        "frontend must not read a status tone from the contract: "
+                        + str(path.relative_to(ROOT))
+                    )
 
     if errors:
         print("[contract_governance_list_surface_split_guard] FAIL")

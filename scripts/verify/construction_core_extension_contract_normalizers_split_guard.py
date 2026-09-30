@@ -6,14 +6,16 @@ import sys
 import types
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 NORMALIZERS = ROOT / "addons/smart_construction_core/core_extension_contract_normalizers.py"
 HELPERS = ROOT / "addons/smart_construction_core/core_extension_contract_helpers.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 1809
-MAX_NORMALIZER_LINES = 383
 
 
 def _read(path: Path) -> str:
@@ -55,8 +57,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_contract_normalizers as _contract_normalizers",
             "_contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)",
@@ -70,8 +71,7 @@ def main() -> int:
 
     if normalizer_text:
         line_count = len(normalizer_text.splitlines())
-        if line_count > MAX_NORMALIZER_LINES:
-            errors.append(f"contract normalizer line budget exceeded: {line_count} > {MAX_NORMALIZER_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension_contract_normalizers.py", line_count, label="core_extension_contract_normalizers.py")
         for token in [
             "def normalize_construction_diary_form(",
             "def general_contract_tax_contract(",

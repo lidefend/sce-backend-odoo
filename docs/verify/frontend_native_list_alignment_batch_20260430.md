@@ -8,6 +8,20 @@
 - Database: `sc_prod_sim`
 - Typical page: project list, action `506`
 
+## Superseded clause (2026-09-30, segment 43)
+
+This batch made `tone_by_value` a *contract* output.  That clause is **superseded**:
+a status badge colour is presentation, not business meaning.  The list contract now
+carries the authoritative status value and its native label (`cell_role=status`,
+`selection`), and the colour policy lives in exactly one frontend presentation file
+(`frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts`,
+`resolveStatusTone`).  No declaring profile, kernel projection or frontend consumer
+may carry `tone_by_value` again.  See
+`docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md` segment 43.
+
+The rest of this document (column schema, labels, grouping, batch policy) is unchanged
+and still authoritative.
+
 ## Checklist
 
 | ID | Gap | Status | Evidence |

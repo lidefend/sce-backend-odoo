@@ -6,13 +6,15 @@ import sys
 import types
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 SERVICE_BUILDERS = ROOT / "addons/smart_construction_core/core_extension_service_builders.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 2065
-MAX_SERVICE_BUILDERS_LINES = 110
 
 
 def _read(path: Path) -> str:
@@ -104,8 +106,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_service_builders as _service_builders",
             "return _service_builders.scene_package_service_class()",
@@ -118,8 +119,7 @@ def main() -> int:
 
     if service_text:
         line_count = len(service_text.splitlines())
-        if line_count > MAX_SERVICE_BUILDERS_LINES:
-            errors.append(f"service builder module line budget exceeded: {line_count} > {MAX_SERVICE_BUILDERS_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension_service_builders.py", line_count, label="core_extension_service_builders.py")
         for token in [
             "def scene_package_service_class(",
             "def scene_governance_service_class(",

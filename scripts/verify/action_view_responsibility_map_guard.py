@@ -3,15 +3,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs/engineering_convergence/action_view_responsibility_map.md"
 VIEW = ROOT / "frontend/apps/web/src/views/ActionView.vue"
 ROUTE_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts"
 CONTRACT_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts"
 NAVIGATION_CONTEXT = ROOT / "frontend/apps/web/src/app/navigationContext.ts"
+SELECTION_ACTION_RUNTIME = (
+    ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts"
+)
 CI = ROOT / "make/ci.mk"
-
-LINE_BUDGET = 3770
 
 
 def _read(path: Path) -> str:
@@ -29,6 +36,7 @@ def main() -> int:
     route_runtime = _read(ROUTE_RUNTIME)
     contract_action_runtime = _read(CONTRACT_ACTION_RUNTIME)
     navigation_context = _read(NAVIGATION_CONTEXT)
+    selection_action_runtime = _read(SELECTION_ACTION_RUNTIME)
     ci = _read(CI)
 
     if not doc:
@@ -84,9 +92,11 @@ def main() -> int:
             errors.append(f"responsibility map missing token: {token}")
 
     if view:
-        count = _line_count(view)
-        if count > LINE_BUDGET:
-            errors.append(f"ActionView.vue line budget exceeded: {count} > {LINE_BUDGET}")
+        line_budgets.advise_size(
+            "frontend/apps/web/src/views/ActionView.vue",
+            _line_count(view),
+            label="ActionView.vue",
+        )
         for token in [
             "<script setup lang=\"ts\">",
             "const route = useRoute();",
@@ -99,7 +109,7 @@ def main() -> int:
             "buildBusinessCategoryCreateNavQuery,",
             "useActionPageModel({",
             "useActionViewActionRuntime({",
-            "async function runBatchPolicyAction",
+            "useActionViewSelectionActionRuntime({",
             "async function loadListColumnPreference",
             "async function handleToggleRecordFavorite",
             "async function redirectMenuOnlyRouteIfNeeded",
@@ -116,6 +126,7 @@ def main() -> int:
         if "function normalizeActivityRuntimeRouteQuery(" in view:
             errors.append("ActionView.vue must not locally implement normalizeActivityRuntimeRouteQuery")
         for token in [
+            "function runBatchPolicyAction(",
             "function stableActionContractId(",
             "function resolveActionViewV2ButtonStatus(",
             "function applyActionViewV2ButtonStatus(",
@@ -166,6 +177,18 @@ def main() -> int:
         ]:
             if token in contract_action_runtime:
                 errors.append(f"actionViewContractActionRuntime.ts must remain pure; found: {token}")
+
+    if selection_action_runtime:
+        # The batch-policy write left the view; this module is the owner now, so
+        # the boundary is asserted where the responsibility actually lives.
+        for token in [
+            "async function runBatchPolicyAction(",
+            "runBatchPolicyAction,",
+        ]:
+            if token not in selection_action_runtime:
+                errors.append(f"useActionViewSelectionActionRuntime.ts missing token: {token}")
+    else:
+        errors.append("missing batch policy runtime module: useActionViewSelectionActionRuntime.ts")
 
     if navigation_context:
         for token in [

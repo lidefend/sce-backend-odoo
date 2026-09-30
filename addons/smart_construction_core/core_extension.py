@@ -395,8 +395,6 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "",
         "status_field": "lifecycle_state",
-        # P1 owns the project lifecycle tone meaning; the kernel only projects it. Values = ScStateMachine.PROJECT_STATES.
-        "tone_by_value": {"draft": "neutral", "in_progress": "info", "paused": "warning", "done": "success", "closing": "warning", "warranty": "info", "closed": "neutral"},
         # Keep the standard ordering and labels, while allowing the action's
         # native tree view to remain authoritative for optional columns such
         # as manager_id. A model-wide strict projection makes those columns
@@ -429,9 +427,6 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "project_id",
         "status_field": "sc_state",
-        # project.task.sc_state; pairs reproduce the tones in effect before the
-        # relocation.
-        "tone_by_value": {"draft": "neutral", "in_progress": "info", "done": "success"},
     }
 )
 
@@ -798,10 +793,6 @@ register_legacy_standard_list_profile({
     "row_primary": "name",
     "row_secondary": "project_name_display",
     "status_field": "state",
-    # Kernel-owned default removed: payment.request declares its own effective
-    # tones. Values are ScStateMachine.PAYMENT_REQUEST_STATES; pairs reproduce
-    # the tones that were in effect before the relocation.
-    "tone_by_value": {"draft": "neutral", "done": "success"},
 })
 
 register_legacy_standard_list_profile({
@@ -839,9 +830,6 @@ register_legacy_standard_list_profile({
     "row_primary": "name",
     "row_secondary": "project_id",
     "status_field": "state",
-    # project.material.plan.state; pairs reproduce the tones in effect before
-    # the relocation.
-    "tone_by_value": {"draft": "neutral", "done": "success"},
 })
 
 API_DATA_WRITE_ALLOWLIST = _policy_maps.API_DATA_WRITE_ALLOWLIST

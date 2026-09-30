@@ -4,12 +4,17 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 HELPERS = ROOT / "addons/smart_construction_core/core_extension_contract_helpers.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 4180
 
 
 def _read(path: Path) -> str:
@@ -38,8 +43,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_contract_helpers as _contract_helpers",
             "return _contract_helpers.sc_field_name(node)",

@@ -195,14 +195,15 @@ class ContractGovernanceRecordContextRegistryTests(unittest.TestCase):
                     "row_primary": "name",
                     "row_secondary": "",
                     "status_field": "lifecycle_state",
-                    "tone_by_value": {},
                     "strict_columns": True,
                     "signature_any": [],
                 }
             ],
         )
 
-    def test_standard_list_profile_keeps_the_declared_status_tone_map(self):
+    def test_standard_list_profile_shape_carries_no_status_tone(self):
+        # A status colour is presentation, so the profile shape must not carry
+        # a value-to-tone map even when a profile tries to declare one.
         self.contract_governance.register_legacy_standard_list_profile(
             {
                 "profile_key": "project.project.list",
@@ -210,15 +211,12 @@ class ContractGovernanceRecordContextRegistryTests(unittest.TestCase):
                 "columns_order": ["name"],
                 "row_primary": "name",
                 "status_field": "lifecycle_state",
-                "tone_by_value": {"draft": "Paused", "closed": "success", "": "danger"},
+                "tone_by_value": {"draft": "warning", "closed": "success"},
             }
         )
 
         registered = self.contract_governance._LEGACY_STANDARD_LIST_PROFILE_REGISTRY[-1]
-        self.assertEqual(
-            registered["tone_by_value"],
-            {"draft": "Paused", "closed": "success"},
-        )
+        self.assertNotIn("tone_by_value", registered)
 
     def test_business_kanban_row_actions_must_be_registered_explicitly(self):
         self.contract_governance.register_legacy_kanban_row_action(

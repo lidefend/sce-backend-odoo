@@ -125,7 +125,6 @@ const props = defineProps<{
   statusFields?: string[];
   fieldLabels?: Record<string, string>;
   fieldSelections?: Record<string, Array<{ value: string; label: string }>>;
-  fieldToneByValue?: Record<string, Record<string, string>>;
   titleField: string;
   onReload: () => void;
   onCardClick: (row: Record<string, unknown>) => void;
@@ -237,7 +236,6 @@ function semanticCell(field: string, value: unknown) {
     const status = resolveCollectionStatusPresentation({
       value,
       selection: props.fieldSelections?.[field],
-      toneByValue: props.fieldToneByValue?.[field],
     });
     return { text: status.label, tone: status.tone };
   }

@@ -5,7 +5,6 @@ import { resolveCollectionStatusPresentation } from '../presentation/collectionS
 type ListColumnMetricOption = {
   name: string;
   selection?: Array<{ value: string; label: string }>;
-  toneByValue?: Record<string, string>;
 };
 
 export function useActionViewCollectionMetricRuntime(options: {
@@ -26,7 +25,6 @@ export function useActionViewCollectionMetricRuntime(options: {
     const status = resolveCollectionStatusPresentation({
       value: row[statusField],
       selection: column?.selection,
-      toneByValue: column?.toneByValue,
     });
     return {
       text: status.label,

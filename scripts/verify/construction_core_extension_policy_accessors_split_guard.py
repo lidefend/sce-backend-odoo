@@ -6,13 +6,16 @@ import sys
 import types
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 ACCESSORS = ROOT / "addons/smart_construction_core/core_extension_policy_accessors.py"
 POLICY_MAPS = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 1820
 
 
 def _read(path: Path) -> str:
@@ -89,8 +92,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_policy_accessors as _policy_accessors",
             "return _policy_accessors.get_file_upload_allowed_model_contributions(env)",

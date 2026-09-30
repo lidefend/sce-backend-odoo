@@ -4,13 +4,17 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 ACTOR_ROLES = ROOT / "addons/smart_construction_core/core_extension_actor_roles.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 1787
-MAX_ACTOR_ROLES_LINES = 33
 
 
 def _read(path: Path) -> str:
@@ -58,8 +62,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_actor_roles as _actor_roles",
             "return _actor_roles.resolve_release_actor_role_codes(user)",
@@ -70,8 +73,7 @@ def main() -> int:
 
     if roles_text:
         line_count = len(roles_text.splitlines())
-        if line_count > MAX_ACTOR_ROLES_LINES:
-            errors.append(f"actor roles module line budget exceeded: {line_count} > {MAX_ACTOR_ROLES_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension_actor_roles.py", line_count, label="core_extension_actor_roles.py")
         for token in [
             "def resolve_release_actor_role_codes(",
             "smart_construction_core.group_sc_role_",

@@ -5,6 +5,10 @@ from pathlib import Path
 import re
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 WEB_SRC = ROOT / "frontend/apps/web/src"
 MAIN_TS = WEB_SRC / "main.ts"
@@ -59,22 +63,34 @@ GENERIC_BOUNDARY_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Size-monitored targets. Every budget comes from the single line-budget
+# registry (scripts/verify/line_budgets.py) so one file no longer carries a
+# different limit in each guard. Growing past a budget prints a hint and never
+# fails this guard: line count points at the next optimization, it does not
+# block a functional iteration.
+SIZE_MONITORED_TARGETS = (
+    "frontend/apps/web/src/layouts/AppShell.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/ContractFormRoute.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
+)
 SIZE_LIMITS = {
-    WEB_SRC / "layouts/AppShell.vue": 1600,
-    WEB_SRC / "pages/ListPage.vue": 2300,
-    WEB_SRC / "pages/ContractFormPage.vue": 1900,
-    WEB_SRC / "pages/ContractFormRoute.vue": 800,
-    WEB_SRC / "views/ActionView.vue": 3800,
+    ROOT / relative: line_budgets.budget_for(relative) for relative in SIZE_MONITORED_TARGETS
 }
 
-# These runtime owners were expanded from compressed source while the form path
-# was moved to the canonical V2 store. Keep an explicit ratchet for the known
-# debt instead of weakening the 500-line default for every new record runtime.
+# Known record runtimes keep an explicit baseline instead of weakening the
+# generic ceiling for every new `useRecord*.ts`.
+RECORD_RUNTIME_SIZE_TARGETS = (
+    "useRecordFormActions.ts",
+    "useRecordFormDesignerPersistence.ts",
+    "useRecordPageLifecycle.ts",
+    "useRecordRelationships.ts",
+)
+NEW_RECORD_RUNTIME_DEFAULT = 500
 RECORD_RUNTIME_SIZE_LIMITS = {
-    "useRecordFormActions.ts": 619,
-    "useRecordFormDesignerPersistence.ts": 686,
-    "useRecordPageLifecycle.ts": 544,
-    "useRecordRelationships.ts": 640,
+    name: line_budgets.budget_for(f"frontend/apps/web/src/pages/contractForm/{name}")
+    for name in RECORD_RUNTIME_SIZE_TARGETS
 }
 
 HARDCODE_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b|rgba?\(")
@@ -230,18 +246,23 @@ def _check_product_component_boundary(errors: list[str]) -> None:
 
 
 def _check_complexity_and_accessibility(errors: list[str]) -> None:
-    for path, limit in SIZE_LIMITS.items():
+    for path in sorted(SIZE_LIMITS):
         lines = len(_read(path).splitlines())
         if not lines:
             errors.append(f"missing complexity target: {_rel(path)}")
-        elif lines > limit:
-            errors.append(f"{_rel(path)} exceeds {limit} lines: {lines}")
+            continue
+        line_budgets.advise_size(_rel(path), lines, label=path.name)
 
     for path in sorted((WEB_SRC / "pages/contractForm").glob("useRecord*.ts")):
         lines = len(_read(path).splitlines())
-        limit = RECORD_RUNTIME_SIZE_LIMITS.get(path.name, 500)
+        limit = RECORD_RUNTIME_SIZE_LIMITS.get(path.name, NEW_RECORD_RUNTIME_DEFAULT)
         if lines > limit:
-            errors.append(f"record runtime exceeds {limit} lines: {_rel(path)}={lines}")
+            line_budgets.advisory(
+                _rel(path),
+                lines,
+                limit,
+                label=path.name,
+            )
 
     form_text = _check_required_file(FORM_SECTION, errors)
     accessible_contracts = {

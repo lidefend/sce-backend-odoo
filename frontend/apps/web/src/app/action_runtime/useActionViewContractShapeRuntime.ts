@@ -45,7 +45,6 @@ type ListColumnOption = {
   cellRole?: string;
   mutation?: Record<string, unknown>;
   selection?: Array<{ value: string; label: string }>;
-  toneByValue?: Record<string, string>;
   displayField?: string;
   valueField?: string;
   aggregationField?: string;
@@ -254,14 +253,6 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
                   return { value: String(row.value ?? '').trim(), label: String(row.label ?? '').trim() };
                 })
                 .filter((item) => item.value && item.label)
-            : undefined,
-          toneByValue: typeof schema.tone_by_value === 'object' && schema.tone_by_value
-            ? Object.entries(schema.tone_by_value as Dict).reduce<Record<string, string>>((acc, [value, tone]) => {
-                const key = String(value || '').trim();
-                const normalizedTone = String(tone || '').trim();
-                if (key && normalizedTone) acc[key] = normalizedTone;
-                return acc;
-              }, {})
             : undefined,
           displayField: String(schema.display_field || name).trim() || name,
           valueField,
