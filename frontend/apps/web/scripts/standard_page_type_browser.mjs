@@ -718,6 +718,9 @@ try {
           report.expenseRelation = { projectId: project.id, query, result };
           const hasProject = (value) => Array.isArray(value) && ((value[0] === 'project_id' && value[1] === '=' && Number(value[2]) === Number(project.id)) || value.some(hasProject));
           check('expense relation: actual request query includes selected project', hasProject(query.domain));
+          const hasPayDirection = (value) => Array.isArray(value) && ((value[0] === 'type' && value[1] === 'in'
+            && Array.isArray(value[2]) && value[2].length === 1 && value[2][0] === 'pay') || value.some(hasPayDirection));
+          check('expense relation: cash-out query restricts request direction', hasPayDirection(query.domain));
           check('expense relation: authorized request candidates returned', result.ok === true && result.data?.records?.length > 0);
           const selected = result.data.records[0];
           const selectedLabel = String(selected.display_name || selected.name);
@@ -742,6 +745,7 @@ try {
           const otherResponse = await otherPaymentResponse;
           report.expenseRelation.changedProject = { id: otherProject.id, query: otherResponse.request().postDataJSON().params, result: await otherResponse.json() };
           check('expense relation: next query uses changed project', report.expenseRelation.changedProject.result.ok === true);
+          check('expense relation: changed project preserves cash-out direction', hasPayDirection(report.expenseRelation.changedProject.query.domain));
           check('expense relation: draft interactions send no business write', report.forbiddenWrites.length === 0);
 
           await session.page.getByRole('heading', { name: '新建报销申请', exact: true }).click();

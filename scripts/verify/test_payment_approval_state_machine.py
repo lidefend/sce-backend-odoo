@@ -785,6 +785,38 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(contract['workflowContract'], catalog)
         self.assertEqual(contract['statusContract'], status)
 
+    def test_expense_relation_direction_uses_execution_authority(self):
+        path = MODEL.with_name('expense_claim.py')
+        names = {'_expected_payment_request_type', '_compute_payment_request_types'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        for method in methods:
+            method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for flow, expected in [('cash_out', ['pay']), ('cash_in', ['receive']),
+                               ('noncash', ['pay', 'receive']), ('interfund', ['pay', 'receive']),
+                               ('reference', ['pay', 'receive'])]:
+            row = types.SimpleNamespace(financial_flow=flow, ensure_one=lambda: None)
+            row._expected_payment_request_type = lambda: ns['_expected_payment_request_type'](row)
+            ns['_compute_payment_request_types']([row])
+            self.assertEqual(row.payment_request_types, expected, flow)
+
+    def test_expense_relation_domain_exposes_native_dependency(self):
+        path = MODEL.with_name('expense_claim.py')
+        tree = ast.parse(path.read_text())
+        field = next(n.value for n in ast.walk(tree) if isinstance(n, ast.Assign)
+                     and any(isinstance(t, ast.Name) and t.id == 'payment_request_id' for t in n.targets))
+        domain = next(ast.literal_eval(k.value) for k in field.keywords if k.arg == 'domain')
+        self.assertEqual(eval(domain, {'__builtins__': {}}, {'project_id': 10, 'payment_request_types': ['pay']}),
+                         [('project_id', '=', 10), ('type', 'in', ['pay'])])
+        root = ET.parse(ROOT / 'addons/smart_construction_core/views/core/expense_claim_views.xml')
+        forms = [form for form in root.findall('.//form') if form.find('.//field[@name="payment_request_id"]') is not None]
+        self.assertTrue(forms)
+        for form in forms:
+            dependency = form.find('.//field[@name="payment_request_types"]')
+            self.assertIsNotNone(dependency)
+            self.assertEqual(dependency.get('invisible'), '1')
+
     def test_expense_create_defaults_resolve_category_and_model_semantics(self):
         path = MODEL.with_name('expense_claim.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'default_get')
@@ -795,11 +827,12 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
         row = types.SimpleNamespace(_context_project_id=lambda: False, _context_partner_id=lambda: False,
             _resolve_business_category_id=lambda vals: 31,
-            new=lambda vals: candidates.append(vals) or {'financial_flow': 'cash_out', 'payment_anchor_policy': 'pay_request_required'})
-        result = ns['default_get'](row, ['business_category_id', 'financial_flow', 'payment_anchor_policy'])
+            new=lambda vals: candidates.append(vals) or {'financial_flow': 'cash_out', 'payment_anchor_policy': 'pay_request_required', 'payment_request_types': ['pay']})
+        result = ns['default_get'](row, ['business_category_id', 'financial_flow', 'payment_anchor_policy', 'payment_request_types'])
         self.assertEqual(result['business_category_id'], 31)
         self.assertEqual(result['financial_flow'], 'cash_out')
         self.assertEqual(result['payment_anchor_policy'], 'pay_request_required')
+        self.assertEqual(result['payment_request_types'], ['pay'])
         self.assertNotIn('financial_flow', candidates[0])
         defaults.clear()
         defaults['business_category_id'] = 42

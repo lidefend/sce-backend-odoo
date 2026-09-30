@@ -210,12 +210,15 @@ class ScExpenseClaim(models.Model):
         required=True,
         default=lambda self: self.env.ref("base.CNY", raise_if_not_found=False).id or self.env.company.currency_id.id,
     )
+    payment_request_types = fields.Json(
+        string="申请方向候选", compute="_compute_payment_request_types", readonly=True,
+    )
     payment_request_id = fields.Many2one(
         "payment.request",
         string="付款/收款申请",
         index=True,
         ondelete="set null",
-        domain="[('project_id', '=', project_id)]",
+        domain="[('project_id', '=', project_id), ('type', 'in', payment_request_types)]",
     )
     legacy_source_model = fields.Char(string="历史来源模型", index=True, readonly=True)
     legacy_source_table = fields.Char(string="历史来源表", index=True, readonly=True)
@@ -445,6 +448,14 @@ class ScExpenseClaim(models.Model):
             return "pay"
         return False
 
+    @api.depends("financial_flow")
+    def _compute_payment_request_types(self):
+        for rec in self:
+            expected = rec._expected_payment_request_type()
+            # Non-cash/reference links retain their existing scope. Only cash
+            # directions constrain candidates, using the execution authority.
+            rec.payment_request_types = [expected] if expected else ["pay", "receive"]
+
     @api.onchange("amount")
     def _onchange_amount(self):
         for rec in self:
@@ -575,7 +586,7 @@ class ScExpenseClaim(models.Model):
         # entry cannot initially hide its required payment-request anchor.
         semantic_fields = {
             "direction", "handling_kind", "business_axis", "financial_flow",
-            "payment_anchor_policy", "claim_flow_label",
+            "payment_anchor_policy", "claim_flow_label", "payment_request_types",
         }
         requested = semantic_fields.intersection(fields_list)
         if requested:
