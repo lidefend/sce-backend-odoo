@@ -151,3 +151,23 @@ def get_api_data_search_fields(env, model_name: str):
 
 def get_model_code_mapping_contributions(env):
     return dict(_policy_maps.MODEL_CODE_MAPPING)
+
+
+def get_create_field_fallback_contributions(env, model_name):
+    del env
+    return dict(_policy_maps.INDUSTRY_CREATE_FIELD_FALLBACKS.get(str(model_name or ""), {}))
+
+
+def smart_core_create_field_fallbacks(env, model_name):
+    """Compatibility hook consumed by smart_core api.data handlers."""
+    return get_create_field_fallback_contributions(env, model_name)
+
+
+def get_create_default_skip_field_contributions(env, model_name):
+    del env
+    return tuple(_policy_maps.CREATE_DEFAULT_SKIP_FIELDS.get(str(model_name or ""), ()))
+
+
+def smart_core_create_default_skip_fields(env, model_name):
+    """Compatibility hook consumed by smart_core api.data create defaults."""
+    return get_create_default_skip_field_contributions(env, model_name)
