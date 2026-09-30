@@ -260,6 +260,27 @@ def _plan_state_authority_checks(project, group, created):
     draft.invalidate_recordset()
     assert draft.state == "draft" and not draft.actual_start and not draft.actual_finish
     print("APPROVAL_CHECK=plan_formal_cancel_reset_and_draft_edit_preserved")
+    node = env["sc.plan.line"].sudo().create({"plan_id": draft.id, "name": "Runtime reviewed node"})
+    created.append((node._name, node.id))
+    draft.action_confirm()
+    baseline = node.read(["name", "plan_id", "planned_finish", "progress_rate"])
+    denied(lambda: node.write({"name": "changed baseline"}))
+    denied(lambda: draft.write({"line_ids": [(1, node.id, {"planned_finish": "2026-12-31"})]}))
+    denied(lambda: node.unlink())
+    denied(lambda: env["sc.plan.line"].sudo().create({"plan_id": draft.id, "name": "late node"}))
+    denied(lambda: node.write({"progress_rate": 50}))
+    node.invalidate_recordset()
+    assert node.read(["name", "plan_id", "planned_finish", "progress_rate"]) == baseline
+    print("APPROVAL_CHECK=plan_node_approved_baseline_and_structure_locked")
+    draft.action_start()
+    draft.write({"line_ids": [(1, node.id, {"progress_rate": 50, "state": "in_progress"})]})
+    node.invalidate_recordset()
+    assert node.progress_rate == 50 and node.state == "in_progress"
+    denied(lambda: node.with_context(skip_validation_check=True).write({"name": "rewrite during execution"}))
+    node.write({"progress_rate": 100, "state": "done"})
+    draft.action_done()
+    denied(lambda: node.write({"progress_rate": 0}))
+    print("APPROVAL_CHECK=plan_node_execution_updates_preserved_and_terminal_locked")
     _draft_confirmation_checks(project, group, created, "sc.plan")
 
 
@@ -4009,7 +4030,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 13 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 15 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
 
 
 main()
