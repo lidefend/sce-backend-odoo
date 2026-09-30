@@ -7311,3 +7311,12 @@ L5：未推送、未合并、未部署。
 - L1 `make ci.local.iteration` passed；token build/verify passed；token 构建单测 5/5；style_system.guard、contract_consumer_intrusion.guard、typecheck.strict passed。日志 `/tmp/tpl52-iteration.log`、`/tmp/tpl52-tokens.log`、`/tmp/tpl52-static.log`。
 - primitive adapter 初次失败原因为守卫锁定旧 placeholder 映射，修复后 11 个事件案例及 34 个 Python 测试通过；最终回执待共享样式稳定后登记。首次 begin 的任意命令/依赖目录符号链接均被工具拒绝，已改用注册 Make target 和源码依赖范围，未绕过检查。
 - 运行时断链检查与下一批标题双视口共用一次候选构建；本节为代码提交，浏览器验收仍 pending，不提前宣称批次通过。
+
+### 52.2 标题梯队与真实双视口
+
+- 外壳及 compact/mobile 标题规则统一 title-large；ScDialog/ScDrawer 标题统一 title-medium，副标题 body-small；caption/xs 兼容别名完成。ProductPageHeader 保持守卫锁定值。
+- 定向检查：primitive adapter 11 事件 + 34 单测，ProductPageHeader 70 单测及适配器契约、style_system 均 passed。`agent.run.begin/record` primitive_adapter 已登记 45 非零案例，日志 `artifacts/frontend-web-fix-20260928/tpl52/headings.log`。
+- 单次受管构建 21.85s，复用 5180 监听，入口 `/assets/index--AkVL68O.js`；候选 base `66d4386bc` + 显式样式 dirty 范围。原 510a37 候选保留 `sce-offrepo/artifacts/config05-20260929-prev-510a37d5f-tpl52`。
+- 既有浏览器工具增加 `TPL07_SCOPE=style`，真实 login/system.init + 有效合同读取，1440×900、390×844 付款列表/表单/详情/引入弹层，无业务写入，58/58 passed。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764766851/report.json`。全局兼容 token 链在实际 CSS 中全部解析，placeholder=muted，弹层标题 16/600/24；两视口无整页横向溢出。
+- 第一次探针错误地要求普通列表出现外壳 headline（该页依法由内容区标题负责，外壳不渲染）；已修正探针为实际内容标题 24/600/32，另测 title-large 角色 18/600/26。仅探针变化，复用同一构建，未重建。失败报告 `tpl07-1790764734192/report.json` 保留。
+- 图像复核覆盖窄屏弹层及列表；官方只读基线仍为 aeed5707，已有官方双视口原图复用，不新增演示业务数据。抽屉标题与弹层共享改动，但上下文抽屉的业务契约缺口未因此关闭。

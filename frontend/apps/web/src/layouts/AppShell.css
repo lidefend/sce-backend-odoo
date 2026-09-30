@@ -513,7 +513,7 @@
 }
 
 .topbar--compact .headline {
-  font-size: 20px;
+  font: var(--sc-font-title-large);
 }
 
 .topbar--minimal {
@@ -543,9 +543,7 @@
 
 .headline {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.15;
-  font-weight: 700;
+  font: var(--sc-font-title-large);
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -888,8 +886,7 @@
     gap: 4px;
   }
   .topbar .headline {
-    font-size: 21px;
-    line-height: 1.2;
+    font: var(--sc-font-title-large);
     overflow-wrap: anywhere;
   }
   .topbar-actions {

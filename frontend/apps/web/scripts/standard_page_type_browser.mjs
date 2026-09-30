@@ -8,7 +8,7 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `tpl07-${Date.now()}`);
-const report = { status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [], introduceContract: null };
+const report = { startup: [], status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [], introduceContract: null };
 // The introduce entry and dialog are contract driven: the probe reads the
 // declared vocabulary from the effective contract response, so it can assert
 // that the page renders the declared terms instead of a local rebuild.
@@ -53,6 +53,10 @@ async function login(role) {
   page.on('response', async (response) => {
     try {
       const body = response.request().postDataJSON();
+      if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
+        const result = await response.json();
+        report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
+      }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
         const result = await response.json();
         report.calls.push({ role, model: body.params.model, domain: body.params.domain, order: body.params.order, offset: body.params.offset || 0, limit: body.params.limit, ids: result.data?.records?.map((row) => row.id) || [] });
@@ -119,8 +123,72 @@ async function form(page, url, name, profile = 'form') {
   await page.screenshot({ path: path.join(out, `${name}.png`) });
 }
 
+async function styleScope() {
+  const finance = await login('fixture_role_finance');
+  const page = finance.page;
+  const tokenSources = await Promise.all([
+    'frontend/apps/web/src/styles/tokens/semantic.css',
+    'frontend/apps/web/src/styles/tokens/component.css',
+    'frontend/apps/web/src/styles/tokens/pattern.css',
+  ].map((file) => fs.readFile(path.join(root, file), 'utf8')));
+  const tokenNames = [...new Set(tokenSources.flatMap((text) => [...text.matchAll(/(--sc-[\w-]+)\s*:/g)].map((m) => m[1])))];
+  tokenNames.push('--sc-semantic-text-disabled', '--sc-font-title-large', '--sc-font-title-medium');
+  report.styles = [];
+  const titleRole = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.font = 'var(--sc-font-title-large)';
+    document.body.append(probe);
+    const style = getComputedStyle(probe);
+    const result = [style.fontSize, style.fontWeight, style.lineHeight];
+    probe.remove();
+    return result;
+  });
+  check('shell: official title-large role resolves', JSON.stringify(titleRole) === JSON.stringify(['18px', '600', '26px']), { titleRole });
+  async function inspect(name, headingSelector, expected) {
+    const result = await page.evaluate(({ tokenNames, headingSelector }) => {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const missing = tokenNames.filter((name) => !rootStyle.getPropertyValue(name).trim());
+      const headings = [...document.querySelectorAll(headingSelector)].filter((el) => el.getClientRects().length).map((el) => {
+        const s = getComputedStyle(el);
+        return { text: el.textContent.trim(), size: s.fontSize, weight: s.fontWeight, line: s.lineHeight };
+      });
+      return { missing, headings, placeholder: rootStyle.getPropertyValue('--td-text-color-placeholder').trim(),
+        muted: rootStyle.getPropertyValue('--sc-semantic-text-muted').trim(),
+        contained: document.documentElement.scrollWidth <= innerWidth + 1 };
+    }, { tokenNames, headingSelector });
+    report.styles.push({ name, ...result });
+    check(`${name}: shared token chains resolve`, result.missing.length === 0, { missing: result.missing });
+    check(`${name}: placeholder uses muted role`, result.placeholder === result.muted && Boolean(result.muted));
+    check(`${name}: heading rendered`, result.headings.length > 0);
+    if (expected) check(`${name}: official typography`, result.headings.every((h) => h.size === expected[0] && h.weight === expected[1] && h.line === expected[2]), { headings: result.headings });
+    check(`${name}: page contained`, result.contained);
+    await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
+  }
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await list(page, 545, `style-list-${viewport.width}`);
+    // This standard list intentionally suppresses the outer headline; its record
+    // header keeps the pinned official headline-small ladder.
+    await inspect(`shell-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+    await form(page, '/f/payment.request/1813?menu_id=545&action_id=775', `style-form-${viewport.width}`);
+    const introduce = page.locator('[data-contract-entry-label]');
+    check(`form-${viewport.width}: contract supplies introduce label`, Boolean(report.introduceContract?.introduceLabel));
+    await introduce.click();
+    await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor();
+    await inspect(`dialog-${viewport.width}`, '.sc-design-dialog__heading h2', ['16px', '600', '24px']);
+    await page.keyboard.press('Escape');
+    await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
+    await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');
+    await inspect(`detail-${viewport.width}`, '[data-semantic-component="ProductPageHeader"] h1, .product-page-header h1');
+  }
+  check('style: real startup contract loaded', report.startup.some((r) => r.intent === 'system.init' && r.success));
+  await finance.ctx.close();
+}
+
 try {
-  if (process.env.TPL07_SCOPE === 'detail') {
+  if (process.env.TPL07_SCOPE === 'style') {
+    await styleScope();
+  } else if (process.env.TPL07_SCOPE === 'detail') {
     const finance = await login('fixture_role_finance');
     await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'payment-readonly', 'readonly');
     check('payment: existing company fact preserved', await finance.page.getByText('FE Company A', { exact: true }).count() > 0);
@@ -209,7 +277,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (process.env.TPL07_SCOPE !== 'detail') {
+  if (!['detail', 'style'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

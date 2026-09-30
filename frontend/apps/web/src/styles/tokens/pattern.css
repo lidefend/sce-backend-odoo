@@ -31,6 +31,9 @@
   --sc-page-padding: var(--sc-page-padding-wide);
   --sc-product-page-gutter: var(--sc-page-padding);
   --sc-product-text-sm: calc(var(--sc-base-font-size-sm) * 1px);
+  /* Caption/xs legacy callers retire onto the shared body-small role. */
+  --sc-product-text-caption: var(--sc-product-text-sm);
+  --sc-product-text-xs: var(--sc-product-text-sm);
   --sc-product-text-body: calc(var(--sc-base-font-size-md) * 1px);
   --sc-product-text-section: calc(var(--sc-base-font-size-lg) * 1px);
   --sc-product-text-title: calc(var(--sc-pattern-page-header-title-size) * 1px);
