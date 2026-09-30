@@ -440,7 +440,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.164 source ready: P0 workbench target role summary now scopeRole, not actor label; configurationRoleLabel5 + business_config.unit228/strict pass. P4 WEB_LC_UI_STAGE=1 exact owned baseline draft, UI reorder/save/readback/unchanged live contract/UI discard;tool16 current receipt. Need one frontend build/up after clean commit then WEB_LC_APPLY=1 WEB_LC_UI_STAGE=1 managed standard_list_loop. Existing UI publish/rollback53.163 closed/reuse; no backend change/ORM/newfixtures. Goal67 remainsopen.",
+  "next_exact_step": "53.164 runtime gap: frontendf395a086a/index-BBNttmRb.js loaded,backend6fd0123cd unchanged. UI_STAGE report11628ad0-62f5-42e2-835b-89e3fbc99d3e stopped before saving: editor21 vs effective22; owned draft discarded/contract restored. Readonly report6421bd04-8548-4087-84bf-113087e72d80 proves list_search.audit missing only attachment_ids. Fix P0 form_field_configuration._suggested_columns/_business_field_name_set relation capability and inspect stage validation; retain technical/access boundaries, do not drop attachment column or loosen assertions. Tool16 receipts current. Continue exact UI stage/save/readback/discard and stable role-summary; reuse UI publication53.163, no ORM/newfixture/fullscan/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

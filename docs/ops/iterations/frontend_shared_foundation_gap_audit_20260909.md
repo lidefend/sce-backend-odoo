@@ -9110,3 +9110,8 @@ WEB_LC_APPLY=1 WEB_LC_UI_PUBLISH=1 make verify.business_config.standard_list_loo
 1107aff52 clean起点；P0 useBusinessConfigProductExperience原workbenchRoleLabel取操作者role_label，同时供适用角色和影响确认弹窗，造成空目标仍显示管理员。改消费scopeRole：空值未限定角色，显式目标仅在身份匹配时复用后端已给标签，否则保留目标标识；不推导权限或改变发布行为。共享configurationTargetRoleLabel新增5反例/匹配检查，business_config.unit228及严格类型PASS（lc-role-summary-*）。
 
 P4复用standard_list_lowcode_loop新增WEB_LC_UI_STAGE=1：已有草稿冲突停止，建立本次自有基线草稿后UI恢复；UI交换前两列、保存列表与搜索，只有同token/目标payment.request/775/tree/精确完整列payload可stage，禁止publish；权威get必须一条同项目及精确顺序，正式契约保持基线；UI放弃草稿并核对页面/业务摘要，异常仍走原恢复。自有基线由API暂存，不声称UI创建空草稿；测试的是实际UI编辑和更新暂存。工具16/当前begin-record及node语法通过。尚未构建加载、未运行本新模式；发布/回滚53.163不重跑。
+
+
+53.164运行续记：f395a086a34a66de640ffed1eea3dde8e7c3eeae受管构建/up一次，entry/assets/index-BBNttmRb.js，sha256=2209bc3bde4a54c97f2737b16bce6a6ed8f3a6866f64f4093014817531c8dde9；后端6fd0123cd不变。WEB_LC_APPLY=1 WEB_LC_UI_STAGE=1运行web-lc-01-11628ad0-62f5-42e2-835b-89e3fbc99d3e，UI正确恢复本次未限定角色草稿，但编辑器21列而有效列表22列，保存前停止；recovery=discarded，正式完整契约恢复/未变化，不宣称UI暂存通过。
+
+扩充原工具只读editorBaseline观察（16测试及新begin/record通过，lc-editor-baseline-*），不再次写入运行WEB_LC_UI_STAGE=1默认readonly：web-lc-01-6421bd04-8548-4087-84bf-113087e72d80 readonly_passed，list_search.audit建议列与最终22列差集精确missing=[attachment_ids],extra=[]。P0 form_field_configuration._suggested_columns经_business_field_name_set/_available_lowcode_model_fields过滤，而正式列表支持附件关系列；需补齐配置能力与最终消费的一致性，并核对stage字段校验，不可放宽断言或删正式列。当前已加载目标角色摘要修复，但尚无稳定截图确认，因此不把纯测当整页呈现验证。下一步仅修配置字段能力/定向测试，再续同一UI编辑暂存，避免重复发布链。

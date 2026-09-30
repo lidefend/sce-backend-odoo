@@ -582,3 +582,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.163：工作台草稿恢复把操作者角色当配置目标角色的P0缺口已修（559cc3c92）。受管候选index-D2WwqVPC.js；web-lc-01-75d6913b-63fc-4d4f-8c04-33a410a38d91的UI发布/按批次回滚15项PASS，完整列表契约/查询/记录/业务摘要恢复，未写业务记录。仍未覆盖UI编辑→暂存；发布截图含刷新中摘要，不算整页稳定显示。保留LC02 API闭环，不重新登记为未完成。
+
+
+53.164开放：付款列表最终契约22列，工作台list_search.audit只返回21，精确缺attachment_ids（只读报告6421bd04-8548-4087-84bf-113087e72d80）。UI编辑暂存探针在保存前拒绝并discarded，不得删附件列迁就编辑器。归属P0配置可编辑能力/建议列与stage校验，下一步收口。另已修目标角色摘要误用操作者标签（f395a086a/228测试+strict），运行候选index-BBNttmRb.js；整页稳定显示证据仍待补。

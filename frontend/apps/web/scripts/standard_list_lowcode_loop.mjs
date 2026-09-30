@@ -246,6 +246,12 @@ export async function runStandardListLoop() {
     const beforeHeaders = await observe(field[1]);
     check('bootstrap includes system.init and contract', bootstrap.has('system.init') && [...bootstrap].some((name) => /^ui\.contract/.test(name)));
     report.baseline = { labels: baseline, surface: beforeHeaders };
+    if (uiStage) {
+      const audit = await intent('ui.business_config.list_search.audit', { model: 'payment.request', action_id: 775, role_key: '' });
+      const editorColumns = audit.has_business_list_config ? audit.business_config_list_columns : audit.suggested_list_columns;
+      report.editorBaseline = { columns: editorColumns, missing: baselineContract.layoutContract.listProfile.columns.filter((name) => !editorColumns.includes(name)), extra: editorColumns.filter((name) => !baselineContract.layoutContract.listProfile.columns.includes(name)) };
+    }
+
     await page.screenshot({ path: path.join(out, 'before.png') });
     check('readonly has no browser exceptions', errors.length === 0);
     report.status = 'readonly_passed';
