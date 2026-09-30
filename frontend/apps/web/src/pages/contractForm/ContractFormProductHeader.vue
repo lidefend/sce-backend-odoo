@@ -3,8 +3,8 @@
     class="contract-form-command-bar"
     data-semantic-component="ContractFormProductHeader"
     :data-state="busy ? 'loading' : mode"
-    :title="title"
-    :subtitle="subtitle || undefined"
+    :title="identityTitle"
+    :subtitle="identitySubtitle || undefined"
     :hide-title="hideTitle"
     :presentation-mode="presentationMode"
     :render-profile="mode"
@@ -73,7 +73,8 @@
           type="button"
           :aria-label="backLabel"
           :data-form-secondary-action="backSemanticIdentity"
-          @click="$emit('back')"
+          :data-command-id="formClientCommands.back.actionId"
+          @click="$emit(formClientCommands.back.event)"
         ><ScIcon v-if="backSemanticIdentity === 'return-list'" name="arrow-left" :size="16" /> {{ backLabel }}</ScButton>
         <ScButton v-if="showReturn" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('return-workbench')">返回工作台</ScButton>
       </span>
@@ -81,14 +82,14 @@
         <ScButton v-if="showDraftSave" variant="ghost" size="small" :disabled="draftSaveDisabled" type="button" @click="$emit('save-draft')">{{ draftSaveLabel }}</ScButton>
         <ScButton v-if="showPrimaryFormAction" data-product-primary-action v-bind="actionEvidenceAttributes(primaryAction)" variant="primary" size="small" :disabled="primaryFormActionDisabled" :title="primaryFormActionHint || undefined" type="button" @click="$emit('run-primary')">{{ submitLabel }}</ScButton>
         <ScButton v-for="action in presentedDirectActions" :key="`hdr-${action.key}`" v-bind="actionEvidenceAttributes(action)" :data-product-primary-action="action.presentationTier === 'primary' || undefined" :variant="buttonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
-        <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
+        <ScButton v-for="action in canonicalPresentedDirectActions" :key="`canonical-hdr-${action.key}`" v-bind="canonicalActionEvidenceAttributes(action)" :data-product-primary-action="action.tier === 'primary' || undefined" :variant="canonicalButtonVariant(action)" :loading="action.loading" size="small" :disabled="busy || !action.enabled" :title="workflowDisabledReason(action) || undefined" type="button" @click="$emit('canonical-action', action)">{{ action.label }}</ScButton>
       </span>
       <ScDropdown v-if="headerOverflowItems.length && !isNarrowViewport" class="form-header-more-actions" :items="headerOverflowItems" @select="selectHeaderOverflow">
         <template #trigger><ScButton variant="ghost" size="small">更多操作</ScButton></template>
       </ScDropdown>
       <span v-if="configActions.length" class="form-header-action-separator" aria-hidden="true" />
       <ScButton v-for="action in configActions" :key="`hdr-config-${action.key}`" v-bind="actionEvidenceAttributes(action)" class="form-header-config-action" appearance="context-action" variant="ghost" size="small" :disabled="busy || !action.enabled" :title="action.hint" type="button" @click="$emit('run-action', action)">{{ action.label }}</ScButton>
-      <ScButton v-if="showDiscard" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('discard')">{{ discardLabel }}</ScButton>
+      <ScButton v-if="showDiscard" :data-command-id="formClientCommands.discard.actionId" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit(formClientCommands.discard.event)">{{ discardLabel }}</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('copy')">复制配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy || !contractPresent" type="button" @click="$emit('export')">导出配置</ScButton>
       <ScButton v-if="showDebug && !intakeMode" class="form-header-desktop-secondary-action" variant="ghost" size="small" :disabled="busy" type="button" @click="$emit('reload')">{{ reloadLabel }}</ScButton>
@@ -100,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { formClientCommands } from '@sc/schema';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageHeaderTemplate from '../../components/template/PageHeader.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
@@ -144,10 +146,20 @@ if (narrowViewportQuery) {
 const currentStatusIndex = computed(() => props.statusbar.states.findIndex((item) => String(item.value) === props.statusbar.current));
 const currentStatusLabel = computed(() => props.statusbar.states[currentStatusIndex.value]?.label || '未设置');
 const headerDirtyState = computed(() => props.busyKind === 'save' ? 'saving' : props.dirty ? 'dirty' : 'clean');
+
+/**
+ * 页面身份：记录业务名称优先作为标题，入口标签已由面包屑承载。
+ * 同一条记录名称不再同时出现在标题与副标题两处。
+ */
+const businessIdentity = computed(() => (props.subtitle || '').trim());
+const identityTitle = computed(() => businessIdentity.value || props.title);
+const identitySubtitle = computed(() => '');
+
 const builtInPrimaryClaimed = computed(() => props.showPrimaryFormAction);
 const presentedDirectActions = computed(() => builtInPrimaryClaimed.value
   ? props.directActions.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action')
   : props.directActions);
+
 const presentedOverflowActions = computed(() => {
   const displaced = builtInPrimaryClaimed.value
     ? props.directActions.filter((action) => action.presentationTier === 'primary' || action.semantic === 'primary_action')
@@ -155,13 +167,15 @@ const presentedOverflowActions = computed(() => {
   return [...displaced, ...props.overflowActions];
 });
 const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
-  if (props.showPrimaryFormAction) return [{ key: props.primaryAction?.key || 'save', label: props.submitLabel, semantic: props.primaryAction ? 'submit' : 'save', enabled: !props.primaryFormActionDisabled }];
+  if (props.showPrimaryFormAction) return [{ key: props.primaryAction?.key || 'save', label: props.submitLabel, semantic: props.primaryAction ? 'other' : 'save', enabled: !props.primaryFormActionDisabled }];
   const action = presentedDirectActions.value.find((item) => item.presentationTier === 'primary' || item.semantic === 'primary_action');
-  if (action) return [{ key: action.key, label: action.label, semantic: 'submit', enabled: action.enabled }];
+  if (action) return [{ key: action.key, label: action.label, semantic: 'other', enabled: action.enabled }];
   const canonical = props.canonicalDirectActions.find((item) => item.tier === 'primary');
-  return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'submit', enabled: canonical.enabled }] : [];
+  return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'other', enabled: canonical.enabled }] : [];
 });
-const canonicalPresentedDirectActions = computed(() => props.canonicalDirectActions);
+const canonicalPresentedDirectActions = computed(() => props.canonicalDirectActions.map((action) =>
+  builtInPrimaryClaimed.value && action.tier === 'primary' ? { ...action, tier: 'secondary' as const } : action));
+
 const mobilePresentedDirectActions = computed(() => presentedDirectActions.value.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action'));
 const mobileCanonicalDirectActions = computed(() => canonicalPresentedDirectActions.value.filter((action) => action.tier !== 'primary'));
 const canonicalPresentedOverflowActions = computed(() => props.canonicalOverflowActions);
@@ -241,10 +255,10 @@ function selectHeaderOverflow(item: ScDropdownItem) {
 
 function selectMobileAction(item: ScDropdownItem) {
   const value = String(item.value);
-  if (value === 'builtin:back') return emit('back');
+  if (value === 'builtin:back') return emit(formClientCommands.back.event);
   if (value === 'builtin:return') return emit('return-workbench');
   if (value === 'builtin:draft') return emit('save-draft');
-  if (value === 'builtin:discard') return emit('discard');
+  if (value === 'builtin:discard') return emit(formClientCommands.discard.event);
   dispatchDropdownAction(value);
 }
 
@@ -302,6 +316,7 @@ function buttonVariant(action: ContractAction): 'danger' | 'primary' | 'ghost' {
 function canonicalButtonVariant(action: CanonicalFormAction): 'primary' | 'ghost' {
   return action.tier === 'primary' ? 'primary' : 'ghost';
 }
+
 </script>
 
 <style scoped>

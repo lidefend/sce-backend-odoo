@@ -6,6 +6,7 @@ import PasswordRecoveryView from '../views/PasswordRecoveryView.vue';
 import { ApiError } from '../api/client';
 import { buildCanonicalSceneRouteTarget, normalizeEmbeddedSceneQuery, normalizeLegacyWorkbenchPath, parseSceneKeyFromQuery } from '../app/routeQuery';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
+import { resolveCreateFormActivityRedirect } from '../app/recordFormActivityRoute';
 import { findActionMeta, findActionMetaByMenu, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
@@ -408,7 +409,7 @@ router.beforeEach(async (to) => {
     }
     const configurationTarget = resolveAuthorizedConfigurationRoute({
       routeName: String(to.name || ''), routeModel: routeQueryText(to.params.model),
-      authority: routeAuthority as NavMeta | null, authorized: runtimeRouteAuthorized,
+      authority: routeAuthority ? { ...routeAuthority } : null, authorized: runtimeRouteAuthorized,
       query: to.query,
     });
     if (configurationTarget) return configurationTarget as never;
@@ -428,18 +429,14 @@ router.beforeEach(async (to) => {
   if (normalizedWorkbenchPath !== to.fullPath && normalizedWorkbenchPath !== to.path) {
     return splitRoutePath(normalizedWorkbenchPath);
   }
-  if ((to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new' && !routeQueryText(to.query.activity_page_id)) {
-    return {
-      name: to.name,
-      params: to.params,
-      query: {
-        ...to.query,
-        activity_page_id: createActivityInstanceId(),
-      },
-      hash: to.hash,
-      replace: true,
-    };
-  }
+  const createFormActivityRedirect = resolveCreateFormActivityRedirect({
+    routeName: to.name,
+    routeParams: to.params,
+    query: to.query,
+    hash: to.hash,
+    createActivityInstanceId,
+  });
+  if (createFormActivityRedirect) return createFormActivityRedirect as never;
   const querySceneKey = parseSceneKeyFromQuery(to.query);
   if (to.name === 'action') {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);

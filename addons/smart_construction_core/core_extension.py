@@ -1074,14 +1074,11 @@ def smart_core_capability_groups(env):
     return get_capability_group_contributions(env)
 
 
-def get_create_field_fallback_contributions(env, model_name):
-    del env
-    return dict(INDUSTRY_CREATE_FIELD_FALLBACKS.get(str(model_name or ""), {}))
-
-
-def smart_core_create_field_fallbacks(env, model_name):
-    """Compatibility hook consumed by smart_core api.data handlers."""
-    return get_create_field_fallback_contributions(env, model_name)
+CREATE_DEFAULT_SKIP_FIELDS = _policy_maps.CREATE_DEFAULT_SKIP_FIELDS
+get_create_field_fallback_contributions = _policy_accessors.get_create_field_fallback_contributions
+smart_core_create_field_fallbacks = _policy_accessors.smart_core_create_field_fallbacks
+get_create_default_skip_field_contributions = _policy_accessors.get_create_default_skip_field_contributions
+smart_core_create_default_skip_fields = _policy_accessors.smart_core_create_default_skip_fields
 
 
 def smart_core_form_business_actions(env, model_name, record_id, contract):

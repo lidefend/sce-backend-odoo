@@ -430,6 +430,57 @@ class TestProjectContextBoundaries(unittest.TestCase):
 
         self.assertEqual(core.business_scope_domain(Model, {"company_id": 3, "operation_strategy": "direct"}), [])
 
+    def test_shared_project_dictionary_without_company_column_is_not_company_scoped(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+
+        class Field:
+            def __init__(self, comodel_name=""):
+                self.comodel_name = comodel_name
+
+        class Model:
+            _name = "project.tags"
+            _fields = {
+                "project_ids": Field("project.project"),
+            }
+
+        # ``project.tags`` / ``project.task.type`` declare no company column and
+        # no company record rule, so the governed company scope must not infer one
+        # through the project_ids usage relation.
+        self.assertEqual(core.business_scope_domain(Model, {"company_id": 5}), [])
+
+        Model.env, _events = _tracked_project_env(core)
+
+        domain, meta = core.apply_business_scope_domain(
+            Model,
+            [("name", "ilike", "CODEX-P4-TAG")],
+            {"company_id": 5},
+            {},
+        )
+
+        self.assertEqual(domain, [("name", "ilike", "CODEX-P4-TAG")])
+        self.assertFalse(meta["applied"])
+        self.assertEqual(meta["model"], "project.tags")
+
+    def test_company_owned_model_declares_company_scope_through_company_id(self):
+        core = _load_project_context_core()
+        _register_construction_project_scope(core)
+
+        class Field:
+            def __init__(self, comodel_name=""):
+                self.comodel_name = comodel_name
+
+        class Model:
+            _name = "sc.customer.owned.model"
+            _fields = {
+                "company_id": Field("res.company"),
+                "project_ids": Field("project.project"),
+            }
+
+        # Company ownership is expressed by ``company_id``; the projects relation
+        # must not add a second, weaker company boundary.
+        self.assertEqual(core.business_scope_domain(Model, {"company_id": 5}), [("company_id", "=", 5)])
+
     def test_legacy_direct_acceptance_scope_model_is_not_active_until_registered(self):
         core = _load_project_context_core()
         _register_construction_project_scope(core)

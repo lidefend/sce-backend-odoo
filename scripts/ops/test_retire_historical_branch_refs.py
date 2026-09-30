@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -59,7 +60,10 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def make_branch(self, branch: str, *, push: bool) -> str:
+    def main_sha(self) -> str:
+        return git(self.root, "rev-parse", "refs/heads/main").stdout.strip()
+
+    def make_branch(self, branch: str, *, push: bool, merged: bool = True) -> str:
         git(self.root, "switch", "-c", branch, "main")
         marker = self.root / f"{branch.replace('/', '-')}.txt"
         marker.write_text(f"{branch}\n", encoding="utf-8")
@@ -78,12 +82,20 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         if push:
             git(self.root, "push", "origin", branch)
         git(self.root, "switch", "main")
+        if merged:
+            git(self.root, "merge", "--ff-only", branch)
+            git(self.root, "push", "origin", "main")
         return sha
 
-    def write_manifest(self, entries: list[dict[str, object]]) -> None:
+    def write_manifest(
+        self, entries: list[dict[str, object]], *, origin_url: str | None = None
+    ) -> None:
         payload = {
             "schema_version": 1,
-            "repository": {"name": "working", "origin_url": str(self.remote)},
+            "repository": {
+                "name": "working",
+                "origin_url": str(self.remote) if origin_url is None else origin_url,
+            },
             "references": entries,
         }
         self.manifest_path.write_text(json.dumps(payload), encoding="utf-8")
@@ -109,6 +121,9 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         open_branches: set[str] | None = None,
         report: Path | None = None,
         report_persistor=None,
+        expected_main: str | None = None,
+        remote: str = "origin",
+        open_pr_check: str = "github",
     ) -> dict[str, object]:
         digest = retirement.manifest_digest(self.manifest_path)
         if mode == "apply" and report is None:
@@ -120,6 +135,9 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
             bundle_path=bundle,
             approved_digest=digest if mode == "apply" else "",
             confirmation=retirement.CONFIRMATION if mode == "apply" else "",
+            expected_main=expected_main if expected_main is not None else self.main_sha(),
+            remote=remote,
+            open_pr_check=open_pr_check,
             report_path=report,
             report_persistor=report_persistor or retirement.persist_report,
             open_branch_provider=lambda _root: set(open_branches or set()),
@@ -293,6 +311,7 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
                 bundle_path=bundle,
                 approved_digest="0" * 64,
                 confirmation=retirement.CONFIRMATION,
+                expected_main=self.main_sha(),
                 report_path=self.base / "unapproved-report.json",
                 open_branch_provider=lambda _root: set(),
             )
@@ -311,6 +330,7 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
             bundle_path=None,
             approved_digest="",
             confirmation="",
+            expected_main=self.main_sha(),
             open_branch_provider=lambda _root: (_ for _ in ()).throw(
                 retirement.RetirementError("review service unavailable")
             ),
@@ -352,6 +372,237 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         self.assertIsNone(retirement.local_ref_sha(self.root, "fix/accepted"))
         self.assertEqual(retirement.remote_ref_sha(self.root, "fix/rejected"), rejected)
         self.assertIsNone(retirement.remote_ref_sha(self.root, "fix/accepted"))
+
+    # --- merge proof, live main binding and runtime carriers ----------------
+    def test_expected_main_must_match_the_live_remote_main(self) -> None:
+        sha = self.make_branch("fix/live-main", push=False)
+        self.write_manifest([self.entry("fix/live-main", sha, None)])
+
+        with self.assertRaisesRegex(retirement.RetirementError, "main drift"):
+            self.execute(expected_main="0" * 40)
+
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/live-main"), sha)
+
+    def test_unmerged_branch_is_skipped(self) -> None:
+        sha = self.make_branch("fix/never-landed", push=True, merged=False)
+        self.write_manifest([self.entry("fix/never-landed", sha, sha)])
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("not contained in origin/main" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/never-landed"), sha)
+        self.assertEqual(retirement.remote_ref_sha(self.root, "fix/never-landed"), sha)
+
+    def test_branch_referenced_by_a_runtime_carrier_is_skipped(self) -> None:
+        sha = self.make_branch("fix/carried", push=False)
+        self.write_manifest([self.entry("fix/carried", sha, None)])
+        carrier = self.root / "scripts" / "carrier.py"
+        carrier.parent.mkdir()
+        carrier.write_text("BRANCH = 'fix/carried'\n", encoding="utf-8")
+        git(self.root, "add", "scripts/carrier.py")
+        git(
+            self.root,
+            "-c",
+            "user.name=Retirement Test",
+            "-c",
+            "user.email=retirement@example.invalid",
+            "commit",
+            "-m",
+            "carry the branch identity",
+        )
+        git(self.root, "push", "origin", "main")
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("runtime carrier" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
+
+    def test_unreadable_remote_is_never_treated_as_absent(self) -> None:
+        sha = self.make_branch("fix/unreadable", push=False)
+        # The remote URL still matches the manifest, but it is not a usable repository:
+        # an unreadable remote must never be interpreted as "the branch does not exist".
+        broken = self.base / "broken.git"
+        broken.mkdir()
+        self.write_manifest(
+            [self.entry("fix/unreadable", sha, None)], origin_url=str(broken)
+        )
+        git(self.root, "remote", "set-url", "origin", str(broken))
+
+        with self.assertRaisesRegex(retirement.RetirementError, "cannot read origin main"):
+            self.execute(mode="apply", bundle=self.base / "recovery.bundle")
+
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/unreadable"), sha)
+        self.assertFalse((self.base / "recovery.bundle").exists())
+
+    def test_non_origin_remote_requires_an_explicit_open_pr_provider(self) -> None:
+        git(self.root, "remote", "add", "mirror", str(self.remote))
+        sha = self.make_branch("fix/mirrored", push=True)
+        self.write_manifest([self.entry("fix/mirrored", sha, sha)])
+
+        with self.assertRaisesRegex(retirement.RetirementError, "cannot be checked with the GitHub"):
+            self.execute(remote="mirror")
+
+        report = self.execute(remote="mirror", open_pr_check="none")
+
+        self.assertEqual(report["remote"], "mirror")
+        self.assertEqual(report["open_pr_check"], "none")
+        self.assertEqual(report["expected_main"], self.main_sha())
+        self.assertEqual(report["references"][0]["assessment"], "eligible")
+        self.assertEqual(retirement.local_ref_sha(self.root, "fix/mirrored"), sha)
+
+    def test_apply_on_a_mirrored_remote_deletes_the_bound_remote_ref(self) -> None:
+        git(self.root, "remote", "add", "mirror", str(self.remote))
+        sha = self.make_branch("fix/mirrored-apply", push=True)
+        self.write_manifest([self.entry("fix/mirrored-apply", sha, sha)])
+
+        report = self.execute(
+            mode="apply",
+            bundle=self.base / "recovery.bundle",
+            remote="mirror",
+            open_pr_check="none",
+        )
+
+        self.assertEqual(report["references"][0]["execution"]["status"], "retired")
+        self.assertIsNone(retirement.remote_ref_sha(self.root, "fix/mirrored-apply", "mirror"))
+        self.assertIsNone(retirement.local_ref_sha(self.root, "fix/mirrored-apply"))
+
+    def test_absent_local_entry_retires_only_the_remote_ref(self) -> None:
+        sha = self.make_branch("fix/remote-only", push=True)
+        git(self.root, "update-ref", "-d", "refs/heads/fix/remote-only")
+        self.write_manifest(
+            [
+                {
+                    "branch": "fix/remote-only",
+                    "local": {"state": "absent", "sha": None},
+                    "remote": {"state": "present", "sha": sha},
+                    "reason": "reviewed historical reference",
+                    "evidence": ["test evidence"],
+                }
+            ]
+        )
+        bundle = self.base / "recovery.bundle"
+
+        report = self.execute(mode="apply", bundle=bundle)
+
+        self.assertEqual(report["references"][0]["assessment"], "eligible")
+        self.assertEqual(report["references"][0]["local_expected_state"], "absent")
+        self.assertEqual(
+            report["references"][0]["execution"]["details"],
+            ["remote_deleted", "local_absent_confirmed"],
+        )
+        self.assertIsNone(retirement.remote_ref_sha(self.root, "fix/remote-only"))
+        self.assertIsNone(retirement.local_ref_sha(self.root, "fix/remote-only"))
+
+    def test_local_ref_outliving_an_absent_declaration_is_skipped(self) -> None:
+        sha = self.make_branch("fix/declared-absent", push=True)
+        self.write_manifest(
+            [
+                {
+                    "branch": "fix/declared-absent",
+                    "local": {"state": "absent", "sha": None},
+                    "remote": {"state": "present", "sha": sha},
+                    "reason": "reviewed historical reference",
+                    "evidence": ["test evidence"],
+                }
+            ]
+        )
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertIn("declared absent but exists", reference["assessment_reasons"][0])
+
+    def test_emit_manifest_and_inventory_bind_the_live_main(self) -> None:
+        contained = self.make_branch("fix/contained", push=True)
+        unmerged = self.make_branch("fix/unmerged", push=True, merged=False)
+        released = self.make_branch("release/rc-1", push=True)
+        manifest_path = self.base / "emitted-manifest.json"
+        inventory_path = self.base / "inventory.json"
+
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "retire_historical_branch_refs.py",
+                "--manifest",
+                str(manifest_path),
+                "--remote",
+                "origin",
+                "--expected-main",
+                self.main_sha(),
+                "--open-pr-provider",
+                "github",
+                "--emit-manifest",
+                str(manifest_path),
+                "--emit-inventory",
+                str(inventory_path),
+            ],
+        ):
+            cwd = Path.cwd()
+            os.chdir(self.root)
+            try:
+                exit_code = retirement.main()
+            finally:
+                os.chdir(cwd)
+
+        self.assertEqual(exit_code, 0)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        branches = [item["branch"] for item in manifest["references"]]
+        self.assertEqual(branches, ["fix/contained"])
+        entry = manifest["references"][0]
+        self.assertEqual(entry["remote"]["sha"], contained)
+        self.assertEqual(entry["local"]["sha"], contained)
+        payload, entries = retirement.load_manifest(manifest_path)
+        self.assertEqual(payload["repository"]["origin_url"], str(self.remote))
+        self.assertEqual(entries[0].local_state, "present")
+
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        states = {
+            item["branch"]: item["status"] for item in inventory["references"]
+        }
+        self.assertEqual(states["fix/contained"], "contained")
+        self.assertEqual(states["fix/unmerged"], "unmerged")
+        self.assertEqual(states["release/rc-1"], "protected")
+        self.assertEqual(inventory["pull_request_query"]["provider"], "github")
+        self.assertEqual(retirement.remote_ref_sha(self.root, "fix/unmerged"), unmerged)
+        self.assertEqual(retirement.remote_ref_sha(self.root, "release/rc-1"), released)
+
+    def test_emit_manifest_refuses_a_stale_expected_main(self) -> None:
+        self.make_branch("fix/contained", push=True)
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "retire_historical_branch_refs.py",
+                "--manifest",
+                str(self.base / "unused.json"),
+                "--remote",
+                "origin",
+                "--expected-main",
+                "0" * 40,
+                "--emit-manifest",
+                str(self.base / "emitted-manifest.json"),
+            ],
+        ):
+            cwd = Path.cwd()
+            os.chdir(self.root)
+            try:
+                exit_code = retirement.main()
+            finally:
+                os.chdir(cwd)
+
+        self.assertEqual(exit_code, 2)
+        self.assertFalse((self.base / "emitted-manifest.json").exists())
 
 
 if __name__ == "__main__":

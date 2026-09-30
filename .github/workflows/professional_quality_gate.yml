@@ -208,6 +208,18 @@ jobs:
           env.BACKEND_CHANGED == 'true'
         run: make test.chatter-timeline.authorization.orm
 
+      # The settlement component profile is an assertion about a published
+      # native form authority, so it can only be proven by a real ORM run in an
+      # isolated database. `addons/**` (product code and its test module) is the
+      # trigger scope, and both resolve to BACKEND_CHANGED here.
+      - name: Prove settlement component profile with real ORM
+        if: >-
+          env.BACKEND_CHANGED == 'true' &&
+          (env.PROFESSIONAL_MODE == 'full' ||
+          env.PROFESSIONAL_MODE == 'standard_backend' ||
+          env.PROFESSIONAL_MODE == 'mainline')
+        run: make test.payment-settlement.component-profile.orm
+
       - name: Restore pip dependency cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:

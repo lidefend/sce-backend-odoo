@@ -1,3 +1,4 @@
+export * from './actionSemantics';
 export interface IntentEnvelope<T> {
   ok?: boolean;
   data?: T;
@@ -858,6 +859,8 @@ export interface FieldDescriptor {
   relation_field?: string;
   editable?: boolean;
   filename?: string;
+  digits?: [number, number];
+  currency_field?: string;
 }
 
 export interface FormLayout {

@@ -71,6 +71,82 @@ def find_layout_sheet_node(nodes: Any) -> dict | None:
     return None
 
 
+_NATIVE_OCCURRENCE_CHILD_KEYS = ("children", "tabs", "pages", "nodes", "items")
+
+
+def _native_field_identity(raw: dict) -> dict[str, Any] | None:
+    """Return a native occurrence identity only when it is complete.
+
+    A partial identity is not a usable position: the native form projection
+    validator rejects a node whose locator is empty or whose occurrence index
+    is not positive, so an incomplete occurrence must not be offered as
+    projectable in the first place.
+    """
+    locator = _safe_text(raw.get("native_locator") or raw.get("nativeLocator"))
+    if not locator:
+        return None
+    try:
+        occurrence_index = int(raw.get("occurrence_index", raw.get("occurrenceIndex")))
+        source_position = int(raw.get("source_position", raw.get("sourcePosition")))
+    except (TypeError, ValueError):
+        return None
+    if occurrence_index <= 0 or source_position < 0:
+        return None
+    return {
+        "native_locator": locator,
+        "occurrence_index": occurrence_index,
+        "source_position": source_position,
+    }
+
+
+def collect_native_field_occurrences(nodes: Any) -> dict[str, dict[str, Any]]:
+    """Index the field occurrences carried by a resolved native form layout.
+
+    The flat field configuration is a presentation overlay: it may choose a
+    field's label, its group and its order, but it may not invent an
+    occurrence.  Projecting a field therefore requires a real occurrence in
+    the native view to carry the position identity, and this index is the
+    authority that overlay projects onto.
+
+    A field can occur more than once in a native view (a visible input inside
+    the sheet plus a carrier outside it).  The sheet occurrence is the one the
+    native form actually renders, so it wins regardless of document order.
+    """
+    occurrences: dict[str, dict[str, Any]] = {}
+    inside_sheet: dict[str, bool] = {}
+
+    def _walk(items: Any, *, in_sheet: bool) -> None:
+        if not isinstance(items, list):
+            return
+        for raw in items:
+            if not isinstance(raw, dict):
+                continue
+            node_type = _safe_lower(raw.get("type"))
+            node_in_sheet = in_sheet or node_type == "sheet"
+            if node_type == "field":
+                name = _safe_text(raw.get("name"))
+                identity = _native_field_identity(raw)
+                if name and identity and (name not in occurrences or (node_in_sheet and not inside_sheet[name])):
+                    occurrences[name] = identity
+                    inside_sheet[name] = node_in_sheet
+            for key in _NATIVE_OCCURRENCE_CHILD_KEYS:
+                _walk(raw.get(key), in_sheet=node_in_sheet)
+
+    if isinstance(nodes, dict):
+        nodes = [nodes]
+    _walk(nodes, in_sheet=False)
+    return occurrences
+
+
+def apply_native_field_identity(node: dict[str, Any], identity: dict[str, Any] | None) -> dict[str, Any]:
+    """Stamp a projected node with the native occurrence it stands for."""
+    for key in ("native_locator", "occurrence_index", "source_position"):
+        value = (identity or {}).get(key)
+        if value is not None:
+            node[key] = value
+    return node
+
+
 def make_labeled_field_node(
     name: str,
     fields_map: dict[str, Any],

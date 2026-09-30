@@ -45,7 +45,7 @@ PROFILE_CASES = (
 
 @tagged("payment_settlement_component_profile", "post_install", "-at_install")
 class TestPaymentSettlementComponentProfile(TransactionCase):
-    def test_income_settlement_form_preserves_policy_sections_and_detail_semantics(self):
+    def test_income_settlement_form_uses_recorded_native_structure_authority(self):
         self.env["sc.business.category"]._sync_seed_form_policies()
         action = self.env.ref("smart_construction_core.action_sc_settlement_order_income")
         menu = self.env.ref("smart_construction_core.menu_sc_p1_income_settlement")
@@ -67,15 +67,26 @@ class TestPaymentSettlementComponentProfile(TransactionCase):
         self.assertTrue(envelope.get("ok", True), envelope)
         contract = envelope["data"]
         structure = contract["formStructureContract"]
+        governance = structure["sourceAuthority"]["governance_source"]
+        # The income settlement form is owned by the published native semantic
+        # surface (settlement_income_native_form_v1). The recorded UC1 native
+        # migration retired action 781 / view 1764 from the category-policy
+        # projection and was accepted on that basis, so the category policy is
+        # not the structure owner here and must not re-enter as a second
+        # structure mechanism. The native container tree stays authoritative for
+        # the section and detail semantics asserted below.
+        self.assertEqual(structure["mode"], "native_structured_form")
+        self.assertEqual(structure["layoutPolicy"], "container_tree_authority")
+        self.assertEqual(governance["formStructureAuthority"], "native_authority")
+        self.assertEqual(governance["formPresentationMode"], "task")
+        self.assertEqual(governance["configuredSections"], [])
+        self.assertEqual(governance["compatibilityDependencies"], [])
+        self.assertEqual(structure["slots"], [])
+        self.assertEqual(structure["fieldRoles"], {})
         self.assertEqual(
-            structure["sourceAuthority"]["governance_source"]["categoryCode"],
-            "settlement.income",
+            [row.get("name") for row in governance.get("businessConfigContracts") or []],
+            ["settlement_income_native_form_v1"],
         )
-        self.assertEqual(
-            [slot["title"] for slot in structure["slots"][:5]],
-            ["办理类型", "项目与发包人", "结算依据", "结算明细与金额", "办理说明"],
-        )
-        self.assertEqual(structure["fieldRoles"]["attachment_ids"]["slot"], "handling")
 
         def walk(value):
             if isinstance(value, dict):
@@ -87,18 +98,20 @@ class TestPaymentSettlementComponentProfile(TransactionCase):
                     yield from walk(nested)
 
         nodes = list(walk(contract["layoutContract"]["containerTree"]))
-        identity = next(
-            node
-            for node in nodes
-            if (node.get("attributes") or {}).get("data-sc-anchor") == "settlement-business-object"
+        self.assertTrue(
+            any(str(node.get("fieldCode") or "") == "attachment_ids" for node in nodes),
+            "the native container tree must still carry the attachment field",
         )
-        self.assertEqual(identity["formStructureRole"]["slot"], "business_object")
-        invoice = next(
-            node
+        anchors = {
+            (node.get("attributes") or {}).get("data-sc-anchor")
             for node in nodes
-            if (node.get("attributes") or {}).get("data-sc-anchor") == "settlement-invoice"
+            if (node.get("attributes") or {}).get("data-sc-anchor")
+        }
+        self.assertTrue({"settlement-business-object", "settlement-invoice"} <= anchors, anchors)
+        self.assertFalse(
+            any("formStructureRole" in node for node in nodes),
+            "the native authority must not carry a second, policy-derived structure role",
         )
-        self.assertNotIn("formStructureRole", invoice)
         line = next(node for node in nodes if node.get("fieldCode") == "line_ids")
         subview = (line.get("fieldDescriptor") or line.get("fieldInfo") or {}).get("subview") or {}
         occurrences = ((subview.get("tree") or {}).get("column_occurrences") or [])
@@ -229,6 +242,16 @@ class TestPaymentSettlementComponentProfile(TransactionCase):
                 self.assertEqual(presentation["semantic"], "hierarchical_worksheet")
                 self.assertTrue(presentation["enabled"], presentation)
                 config = presentation["config"]
+                declared_domain = safe_eval(action.get("domain") or "[]", {"context": {}})
+                self.assertTrue(
+                    declared_domain,
+                    "the worksheet scope guard only proves anything with a non-empty action domain",
+                )
+                self.assertEqual(
+                    config["sheet"]["domain"][:len(declared_domain)],
+                    declared_domain,
+                    "the worksheet must not widen past the record set its action defines",
+                )
                 self.assertEqual(config["hierarchy"]["navigation_mode"], "sheet_groups")
                 self.assertEqual(config["hierarchy"]["tree_column"], case["tree_column"])
                 self.assertEqual(

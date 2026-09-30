@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import sqlite3
+import sys
 import subprocess
 import threading
 import time
@@ -27,6 +28,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+
+# Also supports the existing installed standalone script layout.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 MAX_BODY_BYTES = 1_048_576
@@ -315,10 +319,46 @@ class Application:
         self.log_dir = Path(os.environ.get("GITEE_CI_LOG_DIR", "/var/log/gitee-ci"))
         if worker_enabled:
             self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.queue = Queue(
+        self.formal = os.environ.get("GITEE_CI_MODE") == "formal-static"
+        self.formal_worker = None
+        if self.formal:
+            import sys
+            package = os.environ.get("GITEE_FORMAL_ROOT", "")
+            if not re.fullmatch(r"/opt/gitee-ci/formal/[0-9a-f]{40}", package):
+                raise RuntimeError("invalid trusted formal package")
+            trusted=Path(package)
+            if not trusted.is_dir(): raise RuntimeError('formal package missing')
+            for path in (*trusted.parents,trusted,*trusted.rglob('*')):
+                info=path.lstat()
+                if path.is_symlink() or info.st_uid!=0 or info.st_mode & 0o022:
+                    raise RuntimeError('formal package is not root-owned immutable code')
+            sys.path.insert(0, package)
+        self.acceptance = os.environ.get("GITEE_CI_MODE", "legacy") == "ci-only"
+        if os.environ.get("GITEE_CI_MODE", "legacy") not in {"legacy", "ci-only", "formal-static"}:
+            raise RuntimeError("unknown CI mode")
+        queue_type = Queue
+        if self.acceptance:
+            from gitee_ci_acceptance import AcceptanceQueue
+            queue_type = AcceptanceQueue
+        if self.formal:
+            from scripts.ci.gitee_formal_worker import Inbox
+            queue_type = Inbox
+        self.queue = queue_type(
             Path(os.environ.get("GITEE_CI_DB", "/var/lib/gitee-ci/jobs.sqlite3")),
             recover_running=worker_enabled,
         )
+
+        self.reporter = None
+        token_file = os.environ.get("GITEE_CHECKS_TOKEN_FILE")
+        if worker_enabled and self.formal:
+            if not token_file: raise RuntimeError("formal checks token required")
+            from scripts.ci.gitee_formal_worker import Worker
+            self.formal_worker = Worker(self.queue.path, self.log_dir, token_file)
+        elif worker_enabled and token_file:
+            if not self.acceptance:
+                raise RuntimeError("check reporter requires ci-only mode")
+            from gitee_ci_checks import API, Reporter
+            self.reporter = Reporter(self.queue, API(token_file))
 
     def accept(
         self,
@@ -354,16 +394,53 @@ class Application:
             allowed_sender=self.allowed_sender,
             allowed_pr_sender=self.allowed_pr_sender,
         )
-        inserted = self.queue.enqueue(job, timestamp)
+        if self.formal:
+            try: inserted = self.queue.enqueue(job, timestamp)
+            except ValueError as exc: raise Rejected(str(exc)) from exc
+        elif self.acceptance:
+            from gitee_ci_acceptance import validate
+            job["ref"] = payload.get("ref")
+            try:
+                validate(job)
+                inserted = self.queue.enqueue(job, timestamp)
+            except ValueError as exc:
+                raise Rejected(str(exc)) from exc
+        else:
+            inserted = self.queue.enqueue(job, timestamp)
         return inserted, job["sha"]
+
+    def report_checks(self) -> None:
+        if self.reporter is None:
+            return
+        try:
+            self.reporter.sync_once()
+        except Exception:
+            # Reporting failures never discard queued tests or expose API/token text.
+            print("[gitee_checks] reporting_unavailable", flush=True)
 
     def execute_once(self) -> bool:
         if self.runner is None:
             raise RuntimeError("worker is disabled")
+        if self.formal:
+            return self.formal_worker.tick()
+        self.report_checks()
         job = self.queue.claim()
         if job is None:
             return False
         sha = job["sha"]
+        if self.acceptance:
+            self.report_checks()
+            from gitee_ci_acceptance import Executor
+            executor = Executor(self.log_dir / "ci-only")
+            try:
+                result = executor.execute(job, lambda: self.queue.cancelled(sha))
+            except (OSError, ValueError, RuntimeError):
+                result = {"sha": sha, "status": "environment_error", "checkout_sha": None,
+                          "exit_code": None, "tests": None, "log": None,
+                          "reason": "executor_initialization_failed"}
+            self.queue.finish(sha, result)
+            self.report_checks()
+            return True
         log_path = self.log_dir / f"{sha}.log"
         safe_env = {
             key: value
@@ -483,9 +560,16 @@ def main() -> int:
     parser.add_argument("--bind", default=os.environ.get("GITEE_CI_BIND", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.environ.get("GITEE_CI_PORT", "9080")))
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--cancel-sha")
     parser.add_argument("--receiver-only", action="store_true")
     parser.add_argument("--worker-only", action="store_true")
     args = parser.parse_args()
+    if args.cancel_sha:
+        if os.environ.get("GITEE_CI_MODE") != "ci-only":
+            parser.error("cancel requires explicit ci-only mode")
+        from gitee_ci_acceptance import AcceptanceQueue
+        AcceptanceQueue(Path(required_env("GITEE_CI_DB"))).cancel(args.cancel_sha)
+        return 0
     if args.receiver_only and (args.worker_only or args.once):
         parser.error("--receiver-only cannot be combined with worker modes")
     if args.receiver_only:

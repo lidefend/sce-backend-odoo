@@ -1,10 +1,13 @@
 import type { FormSectionFieldChange } from './formSection.types';
 
+// Handlers receive the occurrence identity of the emitting control alongside
+// the field name, so the record-form runtime can decide the edit for that
+// position instead of for every position that shares the field code.
 export type FieldChangeDispatcherHandlers = {
-  onBoolean: (name: string, value: boolean) => void;
-  onSelection: (name: string, value: string) => void;
-  onMany2one: (name: string, descriptor: FormSectionFieldChange['descriptor'], value: string) => void;
-  onText: (name: string, value: string) => void;
+  onBoolean: (name: string, value: boolean, occurrenceKey: string) => void;
+  onSelection: (name: string, value: string, occurrenceKey: string) => void;
+  onMany2one: (name: string, descriptor: FormSectionFieldChange['descriptor'], value: string, occurrenceKey: string) => void;
+  onText: (name: string, value: string, occurrenceKey: string) => void;
 };
 
 function normalizeText(value: string | number | boolean | null): string {
@@ -25,22 +28,23 @@ export function dispatchTemplateFieldChange(
 ): void {
   const fieldName = String(payload.name || '').trim();
   if (!fieldName) return;
+  const occurrenceKey = String(payload.occurrenceKey || '').trim();
   const type = String(payload.type || '').trim().toLowerCase();
   if (type === 'many2one' && payload.action && payload.action !== 'change') {
-    handlers.onMany2one(fieldName, payload.descriptor, normalizeText(payload.value));
+    handlers.onMany2one(fieldName, payload.descriptor, normalizeText(payload.value), occurrenceKey);
     return;
   }
   switch (type) {
     case 'boolean': {
-      handlers.onBoolean(fieldName, normalizeBoolean(payload.value));
+      handlers.onBoolean(fieldName, normalizeBoolean(payload.value), occurrenceKey);
       return;
     }
     case 'selection': {
-      handlers.onSelection(fieldName, normalizeText(payload.value));
+      handlers.onSelection(fieldName, normalizeText(payload.value), occurrenceKey);
       return;
     }
     case 'many2one': {
-      handlers.onMany2one(fieldName, payload.descriptor, normalizeText(payload.value));
+      handlers.onMany2one(fieldName, payload.descriptor, normalizeText(payload.value), occurrenceKey);
       return;
     }
     case 'date':
@@ -48,7 +52,7 @@ export function dispatchTemplateFieldChange(
     case 'char':
     case 'text':
     default: {
-      handlers.onText(fieldName, normalizeText(payload.value));
+      handlers.onText(fieldName, normalizeText(payload.value), occurrenceKey);
     }
   }
 }

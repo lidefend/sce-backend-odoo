@@ -549,6 +549,46 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(base_info["currency_field"], "company_currency_id")
         self.assertEqual(base_info["digits"], [16, 2])
 
+    def test_reference_field_type_is_not_declared_as_a_widget_spelling(self):
+        # A field type is not a widget alias. ``many2one_reference`` used to be
+        # passed through as if the view had declared it, so the contract bound a
+        # text input that only accepts ``char`` and the client refused the page.
+        # The reference spellings must stay undeclared while the declared type and
+        # the target-model pointer survive.
+        info = self.base_parser._field_info_for_layout(
+            "sc_source_res_id",
+            {"sc_source_res_id": {
+                "type": "many2one_reference", "string": "来源记录",
+                "model_field": "sc_source_model",
+            }},
+        )
+        self.assertEqual(info["widget"], "")
+        self.assertEqual(info["type"], "many2one_reference")
+        self.assertEqual(info.get("model_field"), "sc_source_model")
+
+        reference_info = self.base_parser._field_info_for_layout(
+            "resource_ref",
+            {"resource_ref": {"type": "reference", "string": "资源"}},
+        )
+        self.assertEqual(reference_info["widget"], "")
+        self.assertEqual(reference_info["type"], "reference")
+
+    def test_unmapped_non_reference_types_keep_the_previous_widget_passthrough(self):
+        # The reference fix must not silently change unrelated rendering: the
+        # legacy form path treats a many2many with no declared widget as the tag
+        # renderer, so these spellings must keep their historical value.
+        for field_type, expected in (
+            ("char", "char"),
+            ("selection", "selection"),
+            ("many2many", "many2many"),
+            ("monetary", "monetary"),
+        ):
+            with self.subTest(field_type=field_type):
+                info = self.base_parser._field_info_for_layout(
+                    "probe_field", {"probe_field": {"type": field_type}}
+                )
+                self.assertEqual(info["widget"], expected)
+
     def test_non_relational_can_create_remains_raw_without_fake_active_action(self):
         element = _parse_test_xml('<field name="reference" can_create="0"/>')
         node = self.tree_form_parser._node_to_layout_from_dom(

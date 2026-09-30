@@ -74,7 +74,11 @@ function relationBox(page, index) {
 }
 
 async function openCustomerSearchMore(page) {
-  await relationBox(page, 0).locator('button').filter({ hasText: '搜索更多' }).first().click();
+  const input = relationBox(page, 0).locator('input').first();
+  await input.click();
+  const panel = page.locator('.many2one-option-panel:visible');
+  await panel.waitFor({ state: 'visible', timeout: 15000 });
+  await panel.getByRole('button', { name: /搜索更多/ }).first().click();
   await page.locator('.relation-dialog').waitFor({ timeout: 10000 });
   await page.locator('.relation-dialog tbody tr').first().waitFor({ timeout: 15000 });
 }

@@ -42,6 +42,12 @@ class FormHeaderActionPrimitivesGuardTests(unittest.TestCase):
 
         self.assertTrue(any("event authority" in error for error in validate(read_text)))
 
+    def test_client_command_cannot_be_rebound_to_business_cancel(self):
+        def read_text(path: str) -> str:
+            return (ROOT / path).read_text(encoding="utf-8").replace("event: 'discard'", "event: 'action_cancel'")
+
+        self.assertTrue(any("shared client command binding" in error for error in validate(read_text)))
+
     def test_action_evidence_fails(self):
         def read_text(path: str) -> str:
             return (ROOT / path).read_text(encoding="utf-8").replace('data-product-primary-action', 'data-legacy-primary-action')

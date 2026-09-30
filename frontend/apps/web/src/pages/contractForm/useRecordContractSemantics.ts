@@ -8,6 +8,7 @@ import {
   resolveContractV2VisibleFieldCodes,
   type ContractV2NormalizedStore,
 } from '../../app/contracts/v2';
+import type { BusinessFieldError } from '../../app/businessValidationError';
 import { intentRequest } from '../../api/intents';
 import { config } from '../../config';
 import { ErrorCodes } from '../../app/error_codes';
@@ -42,13 +43,16 @@ export function useRecordContractSemantics(context: {
   renderProfile: ComputedRef<string>;
   runtimeRoleCode: ComputedRef<string>;
   validationErrors: Ref<string[]>;
-  validationFieldErrors: Ref<Record<string, string>>;
+  validationFieldErrors: Ref<Record<string, BusinessFieldError>>;
   isIntakeCreateMode: ComputedRef<boolean>;
   intentConfirmationRef: Ref<{ confirm: (input: { actionLabel: string; message: string }) => Promise<boolean> } | null>;
   formConflict: Ref<boolean>;
   layoutNodes: () => Array<{ kind: string; name: string; label: string }>;
   reload: () => Promise<unknown>;
-  focusValidationError: (fieldName: string, fields: Array<{ kind: string; name: string; label: string }>) => void;
+  focusValidationError: (
+    target: string | { key?: string; sourceOccurrenceKey?: string },
+    fields: Array<{ kind: string; name: string; label: string }>,
+  ) => Promise<'focused' | 'summary' | 'no-form'>;
 }) {
   const semanticFieldGroups = computed<Record<string, SemanticFieldGroup>>(() => {
     return normalizeSemanticFieldGroups(resolveContractV2FieldGroups(context.v2ContractStore.value), undefined);
@@ -128,12 +132,24 @@ export function useRecordContractSemantics(context: {
   const nonSceneValidationErrors = computed(() => context.validationErrors.value.filter(
     (item) => !String(item || '').trim().startsWith(sceneValidationRequiredErrorPrefix),
   ));
-  const focusValidationError = (fieldName: string) => context.focusValidationError(fieldName, context.layoutNodes());
+  const focusValidationError = (target: string | { key?: string; sourceOccurrenceKey?: string }) =>
+    context.focusValidationError(target, context.layoutNodes());
+  // Errors are tried in the order they were produced. The first one the page can
+  // send the user to is focused; when none of them has a correction position the
+  // focus layer keeps the form-level summary, so no error is dropped and no
+  // unrelated field is highlighted.
   const focusFirstValidationError = async () => {
     await nextTick();
-    const fieldName = Object.keys(context.validationFieldErrors.value)[0] || '';
-    if (fieldName || nonSceneValidationErrors.value.length || context.validationErrors.value.length) {
-      focusValidationError(fieldName);
+    const entries = Object.entries(context.validationFieldErrors.value);
+    if (entries.length) {
+      for (const entry of entries) {
+        const result = await focusValidationError({ key: entry[0], sourceOccurrenceKey: entry[1]?.sourceOccurrenceKey });
+        if (result === 'focused') return;
+      }
+      return;
+    }
+    if (nonSceneValidationErrors.value.length || context.validationErrors.value.length) {
+      await focusValidationError('');
     }
   };
   const reloadLatestRecord = async () => {

@@ -3465,12 +3465,17 @@ try {
         let searchMore = null;
         for (let index = 0; index < relationCount; index += 1) {
           const relation = relations.nth(index);
-          await relation.locator('input').focus();
-          const candidate = relation.locator('.many2one-action:visible').filter({ hasText: /搜索更多/ }).first();
+          // The candidate panel and its business actions belong to the official
+          // Select popup, which mounts outside the field wrapper. Open it from
+          // the projected combobox input, then read the action from the panel.
+          await relation.locator('input').click();
+          const candidate = page.locator('.many2one-option-panel:visible')
+            .getByRole('button', { name: /搜索更多/ }).first();
           if (await candidate.count() === 1) {
             searchMore = candidate;
             break;
           }
+          await relation.locator('input').press('Escape');
         }
         if (!searchMore) throw new Error(`${target.name}: no visible relation field declares search-more capability`);
         const relationListResponsePromise = page.waitForResponse(isApiDataListResponse, { timeout: 45000 });

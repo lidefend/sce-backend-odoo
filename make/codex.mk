@@ -8,7 +8,7 @@ CODEX_ALLOWED_WRITE_BRANCH_PREFIXES := feature/* fix/* refactor/* audit/* releas
 .PHONY: verify.gitee.webhook.ci gitee.ci.server.install gitee.ci.server.status
 .PHONY: gitee.github.mirror.install gitee.github.mirror.seed gitee.github.mirror.run
 .PHONY: github.mirror.ruleset.configure github.mirror.non_mirror_push.test
-.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge
+.PHONY: gitee.pr.bot.create gitee.pr.bot.status gitee.pr.bot.merge gitee.pr.checks.fetch verify.gitee.pr_bot.unit verify.gitee.check_run_ids.unit
 .PHONY: gitee.pr.bot.professional.run
 .PHONY: gitee.ci.https.install gitee.ci.https.status gitee.ci.repository.configure
 .PHONY: verify.codex.agent_controller agent.controller.install agent.controller.config.check
@@ -144,11 +144,33 @@ gitee.pr.bot.status: guard.prod.forbid
 	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
 	@python3 scripts/ops/gitee_pr_bot.py status --token-file "$(GITEE_PR_BOT_TOKEN_FILE)"
 
+# Parameterized protected-lane merge: the four required checks are read back from
+# the platform and must belong to EXPECTED_HEAD. The token is only ever read from
+# the private file; main is never pushed.
 gitee.pr.bot.merge: guard.prod.forbid
 	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
 	@test -n "$(GITEE_PR_NUMBER)" || (echo "GITEE_PR_NUMBER is required"; exit 2)
-	@test -n "$(GITEE_PR_EVIDENCE_FILE)" || (echo "GITEE_PR_EVIDENCE_FILE is required"; exit 2)
-	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --evidence "$(GITEE_PR_EVIDENCE_FILE)"
+	@test -n "$(EXPECTED_HEAD)" || (echo "EXPECTED_HEAD is required"; exit 2)
+	@test -n "$(GITEE_EXPECTED_MAIN)" || (echo "GITEE_EXPECTED_MAIN is required"; exit 2)
+	@python3 scripts/ops/gitee_pr_bot.py merge --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" --number "$(GITEE_PR_NUMBER)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--expected-source "$(GITEE_EXPECTED_SOURCE)",) $(if $(GITEE_PR_MERGE_METHOD),--merge-method "$(GITEE_PR_MERGE_METHOD)",) $(if $(GITEE_PR_EVIDENCE_FILE),--evidence "$(GITEE_PR_EVIDENCE_FILE)",) $(foreach c,$(GITEE_PR_CHECK_RUNS),--check-run $(c))
+
+.PHONY: verify.gitee.pr_bot.unit
+verify.gitee.pr_bot.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_pr_bot.py scripts/verify/test_gitee_pr_bot.py
+	@python3 -m unittest scripts.verify.test_gitee_pr_bot
+
+# The platform's commit check-run list is empty in this repository, so the merge
+# entry needs the run ids observed by the trusted CI worker.  Read-only: it never
+# merges, and it refuses rather than reporting a partial or stale set.
+gitee.pr.checks.fetch: guard.prod.forbid
+	@test -n "$(GITEE_PR_BOT_TOKEN_FILE)" || (echo "GITEE_PR_BOT_TOKEN_FILE is required"; exit 2)
+	@test -n "$(EXPECTED_HEAD)" || (echo "EXPECTED_HEAD is required"; exit 2)
+	@test -n "$(GITEE_EXPECTED_MAIN)" || (echo "GITEE_EXPECTED_MAIN is required"; exit 2)
+	@python3 scripts/ops/gitee_check_run_ids.py --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --token-file "$(GITEE_PR_BOT_TOKEN_FILE)" $(if $(GITEE_CI_HOST),--host "$(GITEE_CI_HOST)",) $(if $(GITEE_CI_USER),--user "$(GITEE_CI_USER)",) $(if $(GITEE_CI_LEDGER_DB),--db "$(GITEE_CI_LEDGER_DB)",)
+
+verify.gitee.check_run_ids.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_check_run_ids.py scripts/verify/test_gitee_check_run_ids.py
+	@python3 -m unittest scripts.verify.test_gitee_check_run_ids
 
 gitee.pr.bot.professional.run: guard.prod.forbid
 	@GITEE_PR_PROFESSIONAL_CONFIRM="$(GITEE_PR_PROFESSIONAL_CONFIRM)" bash scripts/ops/run_gitee_pr_professional_gate.sh
@@ -357,6 +379,25 @@ pr.ready: guard.prod.forbid
 pr.push: guard.prod.forbid
 	@GITHUB_AUTH_REMOTE="$(or $(GITHUB_AUTH_REMOTE),origin)" bash scripts/ops/git_safe_push.sh
 
+# Temporary outage lane. The default is read-only; origin is never rewritten.
+.PHONY: gitee.integration.inspect main.gitee.catchup pr.push.gitee verify.gitee.integration.unit
+gitee.integration.inspect: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py inspect --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)"
+
+main.gitee.catchup: guard.prod.forbid
+	@python3 scripts/ops/gitee_temporary_integration.py catchup --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+GITEE_PUBLICATION_PURPOSE ?= integration
+pr.push.gitee: guard.prod.forbid
+	@GITEE_CI_EVIDENCE="$(GITEE_CI_EVIDENCE)" GITEE_CI_EVIDENCE_SHA256="$(GITEE_CI_EVIDENCE_SHA256)" python3 scripts/ops/gitee_temporary_integration.py publish --purpose "$(GITEE_PUBLICATION_PURPOSE)" --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_INTEGRATION_CONFIRM)"
+
+verify.gitee.integration.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_temporary_integration
+
+.PHONY: verify.gitee.publication_gate.unit
+verify.gitee.publication_gate.unit: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_gitee_ci_publication_gate
+
 verify.pr.push.unit: guard.prod.forbid
 	@bash scripts/ops/git_safe_push.sh --self-test
 
@@ -509,6 +550,11 @@ HISTORICAL_RETIREMENT_REPORT ?=
 HISTORICAL_RETIREMENT_BUNDLE ?=
 HISTORICAL_RETIREMENT_MANIFEST_SHA256 ?=
 HISTORICAL_RETIREMENT_CONFIRM ?=
+HISTORICAL_RETIREMENT_REMOTE ?= origin
+HISTORICAL_RETIREMENT_EXPECTED_MAIN ?=
+HISTORICAL_RETIREMENT_OPEN_PR_PROVIDER ?= github
+HISTORICAL_RETIREMENT_EMIT_MANIFEST ?=
+HISTORICAL_RETIREMENT_EMIT_INVENTORY ?=
 
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
@@ -543,10 +589,16 @@ branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
 
 branch.retire.historical: guard.prod.forbid
-	@test -n "$(HISTORICAL_RETIREMENT_MANIFEST)" || { echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required"; exit 2; }
+	@if [ -z "$(HISTORICAL_RETIREMENT_MANIFEST)" ] && [ -z "$(HISTORICAL_RETIREMENT_EMIT_MANIFEST)$(HISTORICAL_RETIREMENT_EMIT_INVENTORY)" ]; then echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required (or request a read-only --emit output)"; exit 2; fi
+	@test -n "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" || { echo "❌ HISTORICAL_RETIREMENT_EXPECTED_MAIN is required (full SHA of $(HISTORICAL_RETIREMENT_REMOTE)/main)"; exit 2; }
 	@python3 scripts/ops/retire_historical_branch_refs.py \
-		--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)" \
+		$(if $(HISTORICAL_RETIREMENT_MANIFEST),--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)",) \
+		--remote "$(HISTORICAL_RETIREMENT_REMOTE)" \
+		--expected-main "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" \
+		--open-pr-provider "$(HISTORICAL_RETIREMENT_OPEN_PR_PROVIDER)" \
 		$(if $(HISTORICAL_RETIREMENT_REPORT),--report "$(HISTORICAL_RETIREMENT_REPORT)",) \
+		$(if $(HISTORICAL_RETIREMENT_EMIT_MANIFEST),--emit-manifest "$(HISTORICAL_RETIREMENT_EMIT_MANIFEST)",) \
+		$(if $(HISTORICAL_RETIREMENT_EMIT_INVENTORY),--emit-inventory "$(HISTORICAL_RETIREMENT_EMIT_INVENTORY)",) \
 		$(if $(filter 1,$(PREPARE_BUNDLE)),--prepare-bundle --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)",) \
 		$(if $(filter 1,$(APPLY)),--apply --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)" --approved-manifest-sha256 "$(HISTORICAL_RETIREMENT_MANIFEST_SHA256)" --confirm "$(HISTORICAL_RETIREMENT_CONFIRM)",)
 
@@ -733,3 +785,121 @@ main.cutover.controlled: guard.prod.forbid
 		--authorization-id "$(CUTOVER_AUTHORIZATION_ID)" \
 		$(if $(CUTOVER_RUN_ID),--run-id "$(CUTOVER_RUN_ID)",) \
 		$(if $(filter 1,$(APPLY)),--apply --confirm CONTROLLED_MAIN_CUTOVER_APPLY,)
+
+.PHONY: verify.gitee.ci_only.unit
+verify.gitee.ci_only.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_acceptance
+
+.PHONY: gitee.ci.server.update verify.gitee.ci_update.unit
+gitee.ci.server.update: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" $(if $(filter 1,$(GITEE_FORMAL)),--formal --node-archive "$(GITEE_NODE_ARCHIVE)",) $(if $(filter 1,$(APPLY)),--apply,) --plan-sha256 "$(GITEE_UPDATE_PLAN_SHA256)" --confirm "$(GITEE_UPDATE_CONFIRM)" $(if $(GITEE_CHECKS_TOKEN_FILE),--checks-token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
+
+verify.gitee.ci_update.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_incremental_update
+
+.PHONY: gitee.ci.sandbox.probe
+gitee.ci.sandbox.probe: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_incremental_update.py --expected-head "$(EXPECTED_HEAD)" --probe-only
+
+.PHONY: gitee.ci.secret.rotate
+gitee.ci.secret.rotate: guard.prod.forbid
+	@python3 scripts/ops/gitee_ci_rotate_secret.py --secret-file "$(GITEE_ROTATION_FILE)" --expected-env-sha256 "$(GITEE_RECEIVER_ENV_SHA256)" --confirm "$(GITEE_ROTATION_CONFIRM)"
+
+.PHONY: verify.gitee.publication_scope.unit
+verify.gitee.publication_scope.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_publication_scope
+
+.PHONY: gitee.ci.mirror.isolate
+gitee.ci.mirror.isolate: guard.prod.forbid
+	@test "$(GITEE_ISOLATION_CONFIRM)" = "ISOLATE_EXISTING_REVERSE_MIRROR" || (echo 'exact isolation confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID; systemctl disable --now gitee-to-github-mirror.timer; systemctl stop gitee-to-github-mirror.service; test "$$(systemctl show gitee-to-github-mirror.timer --property=UnitFileState --value)" = disabled; test "$$(systemctl show gitee-to-github-mirror.timer --property=ActiveState --value)" = inactive; case "$$(systemctl show gitee-to-github-mirror.service --property=ActiveState --value)" in inactive|failed) ;; *) exit 2;; esac; test "$$(systemctl show gitee-to-github-mirror.service --property=MainPID --value)" = 0; systemctl show gitee-to-github-mirror.timer gitee-to-github-mirror.service --property=Id,ActiveState,UnitFileState,MainPID'
+
+.PHONY: gitee.ci.sandbox.profile.install
+gitee.ci.sandbox.profile.install: guard.prod.forbid
+	@test "$(GITEE_SANDBOX_CONFIRM)" = "INSTALL_UPSTREAM_BWRAP_PROFILE" || (echo 'exact sandbox confirmation required'; exit 2)
+	@ssh -o BatchMode=yes root@1.95.2.123 'set -eu; test ! -e /etc/apparmor.d/bwrap-userns-restrict; test ! -e /etc/apparmor.d/bwrap; umask 022; tmp=$$(mktemp /etc/apparmor.d/.gitee-bwrap.XXXXXX); trap '\''rm -f "$$tmp"'\'' EXIT; cat > "$$tmp"; apparmor_parser -Q -T "$$tmp"; install -m 0644 "$$tmp" /etc/apparmor.d/bwrap-userns-restrict; apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict; sha256sum /etc/apparmor.d/bwrap-userns-restrict' < deploy/gitee-ci/bwrap-userns-restrict
+
+.PHONY: verify.gitee.checks.unit
+verify.gitee.checks.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_ci_checks
+
+.PHONY: gitee.ci.gates.plan verify.gitee.gates.unit
+gitee.ci.gates.plan: guard.prod.forbid
+	@python3 -m scripts.ci.gitee_gate_plan --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)" $(if $(filter 1,$(GITEE_CANDIDATE)),--candidate,) $(if $(GITEE_CHECKS_TOKEN_FILE),--token-file "$(GITEE_CHECKS_TOKEN_FILE)",)
+
+verify.gitee.gates.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_gate_plan scripts.verify.test_gitee_pr_identity
+
+.PHONY: gitee.ci.pr.inspect
+gitee.ci.pr.inspect: guard.prod.forbid
+	@python3 -m scripts.ci.gitee_pr_identity --token-file "$(GITEE_CHECKS_TOKEN_FILE)" --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --source-branch "$(GITEE_SOURCE_BRANCH)" --pr-number "$(GITEE_PR_NUMBER)"
+
+.PHONY: verify.gitee.formal_executor.unit
+verify.gitee.formal_executor.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_executor
+
+.PHONY: verify.gitee.formal_queue.unit
+verify.gitee.formal_queue.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_queue
+
+.PHONY: verify.gitee.formal_worker.unit
+verify.gitee.formal_worker.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_worker
+
+.PHONY: gitee.ci.pr.create verify.gitee.formal_pr.unit
+export GITEE_SOURCE_BRANCH GITEE_PR_TITLE GITEE_PR_BODY_FILE GITEE_PR_TOKEN_FILE
+gitee.ci.pr.create: guard.prod.forbid
+	@test -n "$$GITEE_PR_TOKEN_FILE" || { echo "GITEE_PR_TOKEN_FILE is required (independent owner integration token; no CI token fallback)"; exit 2; }
+	@python3 -m scripts.ops.gitee_formal_pr --expected-head "$(EXPECTED_HEAD)" --expected-main "$(GITEE_EXPECTED_MAIN)" --token-file "$$GITEE_PR_TOKEN_FILE" --source-branch "$$GITEE_SOURCE_BRANCH" --title "$$GITEE_PR_TITLE" --body-file "$$GITEE_PR_BODY_FILE" $(if $(filter 1,$(APPLY)),--apply,)
+verify.gitee.formal_pr.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_formal_pr
+
+.PHONY: gitee.ci.frontend.prepare verify.gitee.frontend_cache.unit
+gitee.ci.frontend.prepare: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" --pnpm-archive "$(GITEE_PNPM_ARCHIVE)" --store "$(GITEE_PNPM_STORE)"
+verify.gitee.frontend_cache.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache scripts/verify/test_gitee_frontend_reuse.py
+
+.PHONY: gitee.ci.frontend.reuse.publish
+gitee.ci.frontend.reuse.publish: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_reuse --head "$(EXPECTED_HEAD)" --base "$(GITEE_EXPECTED_MAIN)" --pr-number "$(GITEE_PR_NUMBER)" --prepared "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_FRONTEND_REUSE_CONFIRM)"
+
+.PHONY: gitee.ci.frontend.verify
+gitee.ci.frontend.verify: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache --verify --output "$(GITEE_FRONTEND_OUTPUT)" --node-archive "$(GITEE_NODE_ARCHIVE)"
+
+.PHONY: gitee.ci.frontend.cache.install verify.gitee.frontend_cache_install.unit
+gitee.ci.frontend.cache.install: guard.prod.forbid
+	@python3 -m scripts.ops.gitee_frontend_cache_install --expected-head "$(EXPECTED_HEAD)" --prepared "$(GITEE_FRONTEND_OUTPUT)" --archive-sha256 "$(GITEE_FRONTEND_ARCHIVE_SHA256)" $(if $(filter 1,$(APPLY)),--apply,) --confirm "$(GITEE_FRONTEND_CONFIRM)"
+verify.gitee.frontend_cache_install.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_gitee_frontend_cache_install
+
+# Published Gitee candidates keep their history: append exact main, never rebase.
+.PHONY: workspace.branch.sync-gitee-published
+workspace.branch.sync-gitee-published: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" $(if $(GITEE_EXPECTED_SOURCE),--remote-head "$(GITEE_EXPECTED_SOURCE)",) $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+.PHONY: workspace.branch.sync-gitee-unpublished verify.workspace.branch.sync-gitee.unit
+# Unpublished Gitee candidates have no same-name remote branch yet. Absence is
+# proven by a successful ls-remote, exact main is appended, history is kept and
+# nothing is pushed. Publication still uses pr.push.gitee, which re-checks the
+# remote identity and stops if a same-name branch appeared meanwhile.
+workspace.branch.sync-gitee-unpublished: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --root "$(SYNC_ROOT)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --allow-absent $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+verify.workspace.branch.sync-gitee.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/gitee_published_branch_sync.py scripts/ops/test_gitee_published_branch_sync.py
+	@cd scripts/ops && python3 -m unittest test_gitee_published_branch_sync
+
+.PHONY: main.sync.gitee
+main.sync.gitee: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --local-main --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --old-main "$(EXPECTED_LOCAL_MAIN)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(GITEE_SYNC_CONFIRM)",)
+
+# Explicit abandonment is local-only and retains a verified external recovery bundle.
+.PHONY: workspace.branch.discard-local
+workspace.branch.discard-local: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --discard-local --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(EXPECTED_LOCAL_MAIN)" --target "$(DISCARD_BRANCH)" --target-head "$(DISCARD_HEAD)" --bundle "$(DISCARD_RECOVERY_BUNDLE)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(DISCARD_CONFIRM)",)
+
+.PHONY: workspace.retain-main-only
+workspace.retain-main-only: guard.prod.forbid
+	@python3 scripts/ops/gitee_published_branch_sync.py --retain-main-only --root "$(CURDIR)" --branch "$(EXPECTED_BRANCH)" --head "$(EXPECTED_HEAD)" --main "$(GITEE_EXPECTED_MAIN)" --bundle "$(LOCAL_CLEANUP_BUNDLE)" --plan-sha256 "$(LOCAL_CLEANUP_PLAN_SHA256)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(LOCAL_CLEANUP_CONFIRM)",)

@@ -31,6 +31,15 @@ class OfficialDesignAlignmentInventoryTest(unittest.TestCase):
         self.assertTrue(MODULE.selector_has_descendant_vendor_target(".sc-input .t-input"))
         self.assertTrue(MODULE.selector_has_descendant_vendor_target(".t-input"))
 
+    def test_comment_selectors_are_ignored_but_real_descendants_still_fail(self) -> None:
+        css = "/* .scope .t-popup__content { color: red; } */\n.own-control { width: 100%; }\n.scope :deep(.t-select__wrap) { width: 100%; }"
+        with patch.object(MODULE, "formal_style_sources", return_value=[(MODULE.WEB / "probe.css", css, 0)]):
+            report = MODULE.build_inventory()
+        gaps = report["internalVendorSelectorGaps"]
+        self.assertEqual(len(gaps), 1)
+        self.assertEqual(gaps[0]["selector"], ".scope :deep(.t-select__wrap)")
+        self.assertEqual(gaps[0]["line"], 2)
+
     def test_every_product_appearance_has_a_real_consumer(self) -> None:
         report = MODULE.build_inventory()
         orphaned = [row["appearance"] for row in report["productAppearanceVariants"] if row["status"] == "orphaned_product_variance"]

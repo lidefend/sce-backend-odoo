@@ -39,7 +39,9 @@
         :title="titleResolver(action)"
         @click.stop.prevent="select(action)"
       >
-        <ScIcon v-if="iconResolver(action)" class="native-action-overflow__icon" :name="iconResolver(action)" :size="18" />
+        <template v-for="icon in [iconResolver(action)]" :key="icon">
+          <ScIcon v-if="icon" class="native-action-overflow__icon" :name="icon" :size="18" />
+        </template>
         <span class="native-action-overflow__label">{{ labelResolver(action) }}</span>
       </ScButton>
     </div>

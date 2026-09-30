@@ -36,7 +36,7 @@
       />
       <slot :adapter="guardedAdapter" />
     </ScDisclosure>
-    <slot v-else-if="!optionalDetails" :adapter="guardedAdapter" />
+    <slot v-else-if="!optionalPresentation" :adapter="guardedAdapter" />
     <IntentConfirmationDialog ref="confirmationRef" />
   </div>
 </template>

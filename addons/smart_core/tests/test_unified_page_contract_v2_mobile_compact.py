@@ -651,6 +651,11 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
         save = next(row for row in allowed["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
         self.assertEqual(save["label"], "保存草稿")
+        self.assertEqual(save["actionSemantics"], {
+            "kind": "persistence", "purpose": "save_draft", "executor": "record.save",
+            "origin": "platform_form_action", "operation": "create",
+        })
+        self.assertEqual(save["target"], {"model": "x.document", "operation": "create"})
         self.assertEqual(save["visibleProfiles"], ["create"])
         self.assertEqual(save["sourceTrace"][0]["requiredRight"], "create")
         self.assertNotIn("form.save", {row["actionId"] for row in denied["actionContract"]["actionRuleList"]})
@@ -672,8 +677,39 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
 
         save = next(row for row in full["actionContract"]["actionRuleList"] if row["actionId"] == "form.save")
-        self.assertEqual(save["label"], "创建业务对象")
+        self.assertEqual(save["label"], "保存草稿")
         self.assertEqual(save["presentation"]["tier"], "primary")
+
+    def test_declared_business_semantics_survive_runtime_projection_and_conflict(self):
+        import ast
+        source = REPO_ROOT / "addons/smart_construction_core/handlers/payment_request_available_actions.py"
+        tree = ast.parse(source.read_text())
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef))
+        specs = next(ast.literal_eval(node.value) for node in cls.body
+                     if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "_ACTION_SPECS" for t in node.targets))
+        contract = assembler.assemble_unified_page_contract_v2({
+            "model": "payment.request", "view_type": "form", "head": {"render_profile": "edit"},
+            "permissions": {"read": True, "write": True},
+            "fields": {"name": {"name": "name", "type": "char"}},
+        }, source_type="ui.contract", client_type="web_pc", request_id="act.business")
+        contract["runtimeContract"]["businessActions"] = [
+            {**spec, "kind": "mutation", "allowed": True, "enabled": True}
+            for spec in specs if spec.get("action_semantics")
+        ]
+        assembler.project_runtime_business_actions(contract)
+        actions = contract["actionContract"]["actionRuleList"]
+        purposes = {row["actionSemantics"]["purpose"] for row in actions if row.get("actionSemantics")}
+        self.assertEqual(purposes, {"save_draft", "submit", "approve", "reject"})
+        submit = next(row for row in actions if row.get("actionSemantics", {}).get("purpose") == "submit")
+        self.assertEqual(submit["button"]["name"], "action_submit")
+        self.assertEqual(submit["actionSemantics"]["executor"], "contract.action")
+        duplicate = deepcopy(submit)
+        duplicate["actionSemantics"]["purpose"] = "approve"
+        actions.append(duplicate)
+        assembler._merge_action_rules_by_backend_identity(contract)
+        merged = next(row for row in contract["actionContract"]["actionRuleList"] if row["backendIdentity"] == submit["backendIdentity"])
+        self.assertEqual(merged["actionSemantics"], {"conflict": True})
+        self.assertEqual(merged["button"]["name"], "action_submit")
 
     def test_ui_contract_v2_readonly_form_never_publishes_save(self):
         full = assembler.assemble_unified_page_contract_v2(
@@ -3908,6 +3944,68 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "resolved layout"):
             assembler.assemble_unified_page_contract_v2(
                 missing_layout,
+                source_type="native_form_projection",
+            )
+
+    @staticmethod
+    def _native_form_projection_source():
+        return {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "views": {"form": {"layout": [{
+                "type": "field", "name": "name",
+                "native_locator": "form/field[name=name]",
+                "occurrence_index": 1, "source_position": 0,
+            }]}},
+            "nativeFormProjection": {
+                "schemaVersion": "2.0",
+                "model": "x.document",
+                "viewType": "form",
+                "fieldDescriptors": {"name": {"name": "name", "type": "char", "string": "Name"}},
+                "layout": [{
+                    "type": "field", "name": "name",
+                    "native_locator": "form/field[name=name]",
+                    "occurrence_index": 1, "source_position": 0,
+                }],
+                "capabilities": {},
+                "subviews": {},
+                "headerButtons": [],
+                "sourceAuthority": {
+                    "kind": "native_form_projection",
+                    "authorities": ["ir.ui.view", "ir.model.fields", "ir.model.access", "ir.rule"],
+                    "projectionOnly": True,
+                    "noBusinessFactAuthority": True,
+                    "runtimeCarrier": "app_config_engine.page_assembler.form",
+                },
+            },
+        }
+
+    def test_native_form_projection_rejects_layout_field_without_descriptor(self):
+        """A layout reference without an authoritative field descriptor must fail."""
+        source = self._native_form_projection_source()
+        source["nativeFormProjection"]["layout"][0]["name"] = "ghost"
+        with self.assertRaisesRegex(ValueError, "field descriptor identity mismatch"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="native_form_projection",
+            )
+
+    def test_native_form_projection_rejects_synthesized_field_without_identity(self):
+        """A synthesised occurrence with an empty locator must fail closed.
+
+        This is the 5xx shape: a field overlay rebuilt field nodes from the
+        flat configuration and dropped the native position identity, so the
+        projection carried ``locator=''`` and the whole page was rejected.
+        """
+        source = self._native_form_projection_source()
+        broken = source["nativeFormProjection"]["layout"][0]
+        broken["native_locator"] = ""
+        broken["occurrence_index"] = 0
+        broken.pop("source_position", None)
+        with self.assertRaisesRegex(ValueError, "field occurrence identity is incomplete"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
                 source_type="native_form_projection",
             )
 

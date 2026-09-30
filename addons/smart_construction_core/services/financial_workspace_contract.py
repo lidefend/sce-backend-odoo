@@ -622,6 +622,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
                 "requires_reason": bool(row.get("requires_reason")),
                 "required_params": list(row.get("required_params") or []), "primary": action_key == primary_key,
                 "presentation": dict(row.get("presentation") or {}),
+                **({"action_semantics": dict(row["action_semantics"])} if row.get("action_semantics") else {}),
                 "action_safety": {"classification": "danger", "requires_confirm": True,
                                   "confirm_message": f"确认{label}后，系统将重新读取付款申请及上下游金额状态。",
                                   "reason_code": "BUSINESS_STATE_TRANSITION"},

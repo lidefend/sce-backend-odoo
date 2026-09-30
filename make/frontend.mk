@@ -61,7 +61,7 @@ verify.frontend.chart_engine.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_chart_engine_guard.py
 
 
-verify.frontend.scene_component_bridge.unit: guard.prod.forbid
+verify.frontend.scene_component_bridge.unit: guard.prod.forbid verify.frontend.contract_form_collaboration_authority.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_component_driver_bridge_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-component-driver-bridge-test.mjs >/dev/null
 	@node /tmp/scene-component-driver-bridge-test.mjs
 	@$(MAKE) --no-print-directory verify.frontend.canonical_form_presenter.unit
@@ -98,6 +98,18 @@ verify.frontend.primitive_adapter.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_primitive_adapter_guard
 	@python3 scripts/verify/frontend_primitive_adapter_guard.py
 
+# Concurrent-read coalescing identity. The request key must cover every
+# result-affecting parameter, so a new keyword, page or ordering is a real
+# request and only genuinely identical in-flight reads are merged.
+.PHONY: verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit
+verify.frontend.intent_request_identity.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_identity_test.ts --bundle --platform=node --format=esm --outfile=/tmp/intent-request-identity-test.mjs >/dev/null
+	@node /tmp/intent-request-identity-test.mjs
+
+verify.frontend.intent_request_coalescing.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
+	@node /tmp/intent-request-coalescing-test.mjs
+
 .PHONY: verify.frontend.official_icon.unit
 verify.frontend.official_icon.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/official_icon_adapter_test.ts --bundle --platform=node --format=esm --loader:.css=empty --outfile=/tmp/official-icon-adapter-test.mjs >/dev/null
@@ -124,6 +136,11 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
 	@python3 -m unittest scripts/verify/test_frontend_navigation_shell_guard.py
 	@python3 scripts/verify/frontend_navigation_shell_guard.py
+
+.PHONY: verify.frontend.record_form_return.unit
+verify.frontend.record_form_return.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_form_return_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-form-return-navigation-test.mjs >/dev/null
+	@node /tmp/record-form-return-navigation-test.mjs
 
 .PHONY: verify.frontend.boq_import_preview.unit
 verify.frontend.boq_import_preview.unit: guard.prod.forbid
@@ -152,6 +169,8 @@ verify.frontend.overview_rich_text.unit: guard.prod.forbid
 verify.frontend.product_page_header.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-model-test.mjs >/dev/null
 	@node /tmp/product-page-header-model-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/product-page-header-adapter-contract-test.mjs >/dev/null
+	@node /tmp/product-page-header-adapter-contract-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_product_page_header_guard.py
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 
@@ -361,6 +380,11 @@ verify.frontend.native_form_structure_responsibility.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_form_structure_responsibility_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-form-structure-responsibility-test.mjs >/dev/null
 	@node /tmp/native-form-structure-responsibility-test.mjs
 
+.PHONY: verify.frontend.contract_form_collaboration_authority.unit
+verify.frontend.contract_form_collaboration_authority.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_collaboration_authority_test.ts --bundle --platform=node --format=esm --outfile=/tmp/contract-form-collaboration-authority-test.mjs >/dev/null
+	@node /tmp/contract-form-collaboration-authority-test.mjs
+
 .PHONY: verify.frontend.contract_v2_render_authority.unit
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
 	@python3 scripts/verify/contract_v2_render_authority_matrix.py --check
@@ -415,11 +439,11 @@ verify.frontend.page_pattern_reference_parity.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_page_pattern_reference_parity_guard
 	@python3 scripts/verify/frontend_page_pattern_reference_parity_guard.py
 
-verify.frontend.quick.gate: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.professional.extensions.unit verify.frontend.theme_profile.unit
+verify.frontend.quick.gate: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.scene_contract.consumption.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.native_form_action_presentation.unit verify.frontend.native_text_presentation.unit verify.frontend.native_form_structure_responsibility.unit verify.frontend.overlay_lifecycle.unit verify.frontend.state_dashboard.unit verify.frontend.rendering_detail_state.unit verify.frontend.hierarchical_worksheet.unit verify.frontend.page_pattern_reference_parity.unit verify.frontend.professional.extensions.unit verify.frontend.theme_profile.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit
 
-verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit
+verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit
 
-verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit
+verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit
 
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
@@ -546,6 +570,7 @@ verify.frontend.modifiers_runtime.guard: guard.prod.forbid
 
 verify.frontend.onchange_roundtrip.guard: guard.prod.forbid
 	@python3 scripts/verify/onchange_roundtrip_guard.py
+	@node frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs
 
 verify.frontend.onchange_contract_schema.guard: guard.prod.forbid
 	@python3 scripts/verify/onchange_contract_schema_guard.py
@@ -739,7 +764,7 @@ verify.frontend.contract_header_action.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_header_action_presentation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-header-action-presentation-test.mjs >/dev/null
 	@node /tmp/contract-header-action-presentation-test.mjs
 
-.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit
+.PHONY: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.j13_required_value_semantics.unit
 verify.frontend.canonical_form_presenter.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_form_presenter_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/canonical-form-presenter-test.mjs >/dev/null
 	@node /tmp/canonical-form-presenter-test.mjs
@@ -760,6 +785,26 @@ verify.frontend.create_record_user_journey.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_record_user_journey_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/create-record-user-journey-test.mjs >/dev/null
 	@node /tmp/create-record-user-journey-test.mjs
 
+.PHONY: verify.frontend.contract_field_occurrence_identity.unit
+verify.frontend.contract_field_occurrence_identity.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_field_occurrence_identity_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-field-occurrence-identity-test.mjs >/dev/null
+	@node /tmp/contract-field-occurrence-identity-test.mjs
+
+.PHONY: verify.frontend.contract_error_business_ownership.unit
+verify.frontend.contract_error_business_ownership.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_error_business_ownership_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-error-business-ownership-test.mjs >/dev/null
+	@node /tmp/contract-error-business-ownership-test.mjs
+
+.PHONY: verify.frontend.contract_form_save_failure_recovery.unit
+verify.frontend.contract_form_save_failure_recovery.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-form-save-failure-recovery-test.mjs >/dev/null
+	@node /tmp/contract-form-save-failure-recovery-test.mjs
+
+.PHONY: verify.frontend.j13_required_value_semantics.unit
+verify.frontend.j13_required_value_semantics.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/j13_required_value_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/j13-required-value-semantics-test.mjs >/dev/null
+	@node /tmp/j13-required-value-semantics-test.mjs
+
 .PHONY: verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit
 verify.frontend.native_section_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_section_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-section-navigation-test.mjs >/dev/null
@@ -778,7 +823,7 @@ verify.frontend.cross_model_action_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/cross_model_action_navigation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/cross-model-action-navigation-test.mjs >/dev/null
 	@node /tmp/cross-model-action-navigation-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
+verify.frontend.quick.gate: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.contract_field_occurrence_identity.unit verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.contract_error_business_ownership.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"
 

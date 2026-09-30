@@ -15,11 +15,25 @@ import io
 import hashlib
 import json
 import xml.etree.ElementTree as ET
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from urllib.parse import unquote
 
 from odoo.tools.safe_eval import safe_eval
 from odoo.exceptions import AccessError
+
+try:
+    from odoo.exceptions import AccessDenied, MissingError, UserError, ValidationError
+except ImportError:  # pragma: no cover - lightweight boundary tests stub a minimal odoo.exceptions
+    # Keep the module importable in fake-env boundary tests without pretending
+    # a real business-rejection class is available: bind the missing names to a
+    # private marker that no live code raises. A live Odoo runtime always takes
+    # the branch above, so real classification is unaffected.
+    class _OdooBusinessRejection(Exception):
+        """Placeholder used only when odoo.exceptions lacks the subclass."""
+
+    AccessDenied = MissingError = UserError = ValidationError = _OdooBusinessRejection
+
 from odoo.http import request
 
 from ..core.base_handler import BaseIntentHandler
@@ -44,20 +58,35 @@ from ..core.request_params import parse_non_negative_int, parse_positive_int
 from ..utils.extension_hooks import call_extension_hook_first
 from ..utils.localized_display import localized_display_value
 from ..utils.reason_codes import (
+    REASON_BUSINESS_RULE_FAILED,
     REASON_CURRENCY_FIELD_MISSING,
     REASON_CURRENCY_FIELD_NOT_READABLE,
     REASON_CURRENCY_SCOPE_UNVERIFIED,
+    REASON_INTERNAL_ERROR,
     REASON_MULTI_CURRENCY_AGGREGATION_PROHIBITED,
+    REASON_NOT_FOUND,
     REASON_OK,
+    REASON_PERMISSION_DENIED,
     REASON_PROJECT_SCOPE_DENIED,
     REASON_READONLY_PROJECTION_MUTATION_DENIED,
     REASON_RECORD_VERSION_CONFLICT,
+    REASON_USER_ERROR,
     failure_meta_for_reason,
 )
 
 _logger = logging.getLogger(__name__)
 _NOT_NULL_COLUMN_RE = re.compile(r'null value in column "([^"]+)"', re.IGNORECASE)
 _UNIQUE_VIOLATION_RE = re.compile(r"(duplicate key value|unique constraint|already exists)", re.IGNORECASE)
+# Server-side diagnostics stay in the log; anything matching this must never be
+# echoed back to the caller through the mutation error envelope.
+_INTERNAL_LEAK_RE = re.compile(
+    r"(psycopg2|Traceback|DETAIL:|HINT:|CONTEXT:|SQLSTATE|"
+    r"SELECT\s|INSERT\s|UPDATE\s|DELETE\s|"
+    r"/usr/|/home/|/mnt/|/var/|"
+    r"\.py\", line \d+|"
+    r"relation \"[^\"]+\" does not exist)",
+    re.IGNORECASE,
+)
 
 
 def _json(o):
@@ -1493,6 +1522,15 @@ class ApiDataHandler(BaseIntentHandler):
             field = env_model._fields.get(field_name)
             if not field:
                 continue
+            # A native search view may contain virtual filters with dedicated
+            # operators or input constraints. Merely appearing in that view
+            # does not opt such a filter into every free-text OR query.
+            if (field_name in search_view_fields
+                    and field_name not in fields_safe
+                    and field_name not in extension_fields
+                    and field_name != rec_name
+                    and not bool(getattr(field, "store", False))):
+                continue
             field_type = str(getattr(field, "type", "") or "")
             if not bool(getattr(field, "store", False)) and not getattr(field, "search", None):
                 continue
@@ -1584,8 +1622,28 @@ class ApiDataHandler(BaseIntentHandler):
             return list(domain or []), ""
         return list(domain or []) + self._build_search_term_domain(env_model, search_term, fields_safe), search_term
 
+    def _create_default_skip_fields(self, model: str) -> tuple:
+        """Fields whose ORM default must be applied by ``create()`` itself.
+
+        A model may confine a field to a state machine that refuses a direct
+        write; materializing that field's ORM default into the create payload
+        would fabricate exactly the refused write. The owning product module
+        declares the field through this hook, so the platform keeps no
+        business field knowledge of its own.
+        """
+        payload = call_extension_hook_first(
+            self.env,
+            "smart_core_create_default_skip_fields",
+            self.env,
+            str(model or "").strip(),
+        )
+        if not isinstance(payload, (list, tuple, set, frozenset)):
+            return ()
+        return tuple(str(name) for name in payload if str(name or "").strip())
+
     def _prepare_create_vals(self, env_model, vals: Dict[str, Any]) -> Dict[str, Any]:
-        safe_vals = merge_orm_create_defaults(env_model, vals)
+        skip_fields = self._create_default_skip_fields(env_model._name)
+        safe_vals = merge_orm_create_defaults(env_model, vals, skip_fields=skip_fields)
         self._apply_create_fallbacks(env_model, safe_vals)
         return safe_vals
 
@@ -1655,12 +1713,76 @@ class ApiDataHandler(BaseIntentHandler):
         return str(match.group(1) if match else "").strip()
 
     def _friendly_create_error(self, error: Exception) -> str:
-        message = str(error or "")
+        return self._friendly_mutation_error(error, "create")
+
+    # ------------------------------------------------------------------
+    # Mutation failure classification + failure atomicity (WEB-FIX-02)
+    # ------------------------------------------------------------------
+
+    def _mutation_savepoint(self):
+        """Open a savepoint so a rejected mutation rolls back as one operation.
+
+        A real Odoo cursor always exposes ``savepoint``. The ``nullcontext``
+        fallback exists only so the lightweight fake-env boundary tests (which
+        stub ``env`` with a plain dict) stay runnable; it is never taken on a
+        live runtime.
+        """
+        savepoint = getattr(getattr(self.env, "cr", None), "savepoint", None)
+        if callable(savepoint):
+            return savepoint()
+        return nullcontext()
+
+    def _friendly_mutation_error(self, error: Exception, op: str) -> str:
+        fallback = "创建失败，请检查填写内容后重试。" if op == "create" else "保存失败，请检查填写内容后重试。"
+        message = str(error or "").strip()
         if _UNIQUE_VIOLATION_RE.search(message):
             return "已有相同记录，请先搜索并选择已有记录；如确需新建，请使用不同名称。"
-        if "psycopg2" in message or "Traceback" in message or "DETAIL:" in message:
-            return "创建失败，请检查填写内容后重试。"
-        return message or "创建失败，请检查填写内容后重试。"
+        if _INTERNAL_LEAK_RE.search(message):
+            return fallback
+        return message or fallback
+
+    def _business_failure(self, code: int, message: str, reason_code: str):
+        """Failure envelope carrying the reason metadata the frontend classifies on."""
+        error = self._err(code, message, reason_code=reason_code)
+        meta = failure_meta_for_reason(reason_code)
+        if meta:
+            error.setdefault("error", {}).update(meta)
+        return error
+
+    def _system_failure(self, op: str, code: int = 500):
+        """Unexpected error: log server-side, return a generic, leak-free envelope."""
+        fallback = "创建失败，请检查填写内容后重试。" if op == "create" else "保存失败，请检查填写内容后重试。"
+        return self._business_failure(code, fallback, REASON_INTERNAL_ERROR)
+
+    def _mutation_exception_response(self, model: str, op: str, error: Exception):
+        """Map a mutation exception to a stable envelope, or ``None`` if unexpected.
+
+        Ordering matters: ``AccessError``/``MissingError`` all subclass
+        ``UserError``, so explicit denial semantics must be resolved first and
+        never swallowed by the broader business-rejection branch.
+        """
+        if isinstance(error, (AccessError, AccessDenied)):
+            _logger.warning("%s AccessError on %s: %s", op, model, error)
+            message = "无创建权限" if op == "create" else "无写入权限"
+            return self._business_failure(403, message, REASON_PERMISSION_DENIED)
+        if isinstance(error, MissingError):
+            _logger.warning("%s MissingError on %s: %s", op, model, error)
+            return self._business_failure(404, "记录不存在", REASON_NOT_FOUND)
+        if isinstance(error, ValidationError):
+            _logger.info("%s ValidationError on %s: %s", op, model, error)
+            return self._business_failure(
+                422,
+                self._friendly_mutation_error(error, op),
+                REASON_USER_ERROR,
+            )
+        if isinstance(error, UserError):
+            _logger.info("%s UserError on %s: %s", op, model, error)
+            return self._business_failure(
+                422,
+                self._friendly_mutation_error(error, op),
+                REASON_BUSINESS_RULE_FAILED,
+            )
+        return None
 
     def _mutation_policy(self, model: str, op: str) -> Dict[str, Any]:
         payload = call_extension_hook_first(
@@ -2307,10 +2429,13 @@ class ApiDataHandler(BaseIntentHandler):
                     return self._record_scope_denied("当前记录上下文不允许创建到其他记录", project_scope_meta)
 
         try:
-            rec = env_model.create(safe_vals)
-        except AccessError as ae:
-            _logger.warning("create AccessError on %s: %s", model, ae)
-            return self._err(403, "无创建权限")
+            # The savepoint keeps the whole logical create (record + its
+            # related writes) atomic even when we convert the failure into a
+            # normal business response instead of re-raising.
+            with self._mutation_savepoint():
+                rec = env_model.create(safe_vals)
+        except (AccessError, AccessDenied, MissingError, UserError) as e:
+            return self._mutation_exception_response(model, "create", e)
         except Exception as e:
             column = self._extract_not_null_column(e)
             if column and safe_vals.get(column) in (None, ""):
@@ -2318,17 +2443,20 @@ class ApiDataHandler(BaseIntentHandler):
                 changed = self._fill_not_null_column_fallback(env_model, retry_vals, column)
                 if changed:
                     try:
-                        rec = env_model.create(retry_vals)
+                        with self._mutation_savepoint():
+                            rec = env_model.create(retry_vals)
                         safe_vals = retry_vals
+                    except (AccessError, AccessDenied, MissingError, UserError) as retry_error:
+                        return self._mutation_exception_response(model, "create", retry_error)
                     except Exception:
                         _logger.exception("create failed on %s (retry column=%s)", model, column)
-                        return self._err(500, self._friendly_create_error(e))
+                        return self._system_failure("create")
                 else:
                     _logger.exception("create failed on %s (unresolved column=%s)", model, column)
-                    return self._err(500, self._friendly_create_error(e))
+                    return self._system_failure("create")
             else:
                 _logger.exception("create failed on %s", model)
-                return self._err(500, self._friendly_create_error(e))
+                return self._system_failure("create")
 
         data = {"id": rec.id}
         meta = {
@@ -2387,13 +2515,13 @@ class ApiDataHandler(BaseIntentHandler):
                         "数据已被其他操作更新，请重新加载后再保存。",
                         reason_code=REASON_RECORD_VERSION_CONFLICT,
                     )
-            recs.write(safe_vals)
-        except AccessError as ae:
-            _logger.warning("write AccessError on %s: %s", model, ae)
-            return self._err(403, "无写入权限")
-        except Exception as e:
+            with self._mutation_savepoint():
+                recs.write(safe_vals)
+        except (AccessError, AccessDenied, MissingError, UserError) as e:
+            return self._mutation_exception_response(model, "write", e)
+        except Exception:
             _logger.exception("write failed on %s", model)
-            return self._err(500, str(e))
+            return self._system_failure("write")
 
         data = {"ids": recs.ids}
         if len(recs) == 1 and "write_date" in env_model._fields:

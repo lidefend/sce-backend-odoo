@@ -17,6 +17,14 @@ import {
 import { composeCanonicalFormFloorplan } from '../src/app/presentation/canonicalFormFloorplan';
 import { applyCanonicalFormValidation } from '../src/pages/contractForm/canonicalFormRenderState';
 import {
+  BusinessErrorCodes,
+  createBusinessErrorTarget,
+  createBusinessFieldError,
+  errorOwnsField,
+  indexBusinessFieldErrors,
+  type BusinessFieldError,
+} from '../src/app/businessValidationError';
+import {
   canonicalFieldToFormSection,
   canonicalFieldHasPresentableValue,
   canonicalNodeHasContent,
@@ -790,6 +798,70 @@ assert.deepEqual(nativeMonetaryField?.componentConfig.currencyValue, [6, 'CNY'])
 const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
 assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
 assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
+
+// A form draft keeps a selected record as a plain id (record hydration stores
+// the bare id and the relation runtime publishes the display name on a separate
+// channel) and `false` once the field is cleared. Selecting a record on a field
+// the record never had must project that draft id instead of discarding it for
+// want of a contract relation to read a display name from.
+function projectRelationDraft(runtimeValues: Record<string, unknown> | undefined, contractPartner?: unknown) {
+  const draft = snapshot();
+  draft.layoutContract.containerTree[0].children.push({
+    containerId: 'field.partner_id', containerType: 'field', type: 'field', name: 'partner_id', title: '', span: 12,
+    children: [], widgetList: [{
+      widgetId: 'field.partner_id', widgetType: 'relation', fieldCode: 'partner_id', label: '客户', span: 12,
+      componentKey: 'sc.relation.many2one', capabilities: [], componentConfig: { fieldType: 'many2one' },
+      fieldDescriptor: { name: 'partner_id', type: 'many2one', relation: 'res.partner' },
+      ownerContainerId: 'field.partner_id',
+    }],
+  });
+  draft.statusContract.widgetStatus.push({
+    widgetId: 'field.partner_id', visible: true, readonly: false, required: false, disabled: false,
+  });
+  if (contractPartner !== undefined) draft.dataContract.mainData.partner_id = contractPartner;
+  const field = collectFields(presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(draft)),
+    'edit',
+    runtimeValues,
+  ).zones.primary).find((candidate) => candidate.fieldCode === 'partner_id');
+  return { field, schema: field ? canonicalFieldToFormSection(field) : undefined };
+}
+const selectedOnEmptyRecord = projectRelationDraft({ partner_id: 6390 });
+assert.deepEqual(
+  selectedOnEmptyRecord.field?.value,
+  { id: 6390, displayName: '', model: 'res.partner' },
+  'a draft record id must project as a selected relation even when the record had none',
+);
+assert.equal(
+  selectedOnEmptyRecord.schema?.inputValue,
+  6390,
+  'the projected relation must reach the field control as the selected value',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: 6390 }, [7, '既有客户']).field?.value,
+  { id: 6390, displayName: '', model: 'res.partner' },
+  'a draft record id must replace the contract relation it supersedes',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: 7 }, [7, '既有客户']).field?.value,
+  { id: 7, displayName: '既有客户', model: 'res.partner' },
+  'a hydrated draft id must keep the contract display name',
+);
+assert.equal(
+  projectRelationDraft({ partner_id: false }, [7, '既有客户']).field?.value,
+  null,
+  'a cleared draft must not fall back to the contract relation it replaced',
+);
+assert.deepEqual(
+  projectRelationDraft(undefined, [7, '既有客户']).field?.value,
+  { id: 7, displayName: '既有客户', model: 'res.partner' },
+  'without a draft key the contract relation stays authoritative',
+);
+assert.deepEqual(
+  projectRelationDraft({ partner_id: [9, '成对客户'] }).field?.value,
+  { id: 9, displayName: '成对客户', model: 'res.partner' },
+  'an Odoo-shaped draft value must keep projecting its own pair',
+);
 
 const dateRangeStartField = {
   ...nativeMonetaryField!,
@@ -1955,7 +2027,10 @@ const relationMappedField = canonicalFieldToFormSection({
   relationOpenLabel: () => '维护当前项',
   relationSearchLabel: () => '搜索更多',
 });
-assert.equal(relationMappedField.many2oneTextValue, '演示项目');
+assert.equal(relationMappedField.many2oneTextValue, undefined,
+  'a transient search keyword is never projected as the selected relation display text');
+assert.equal(relationMappedField.relationQueryKeyword, '演示项目',
+  'the search keyword keeps its own projection channel');
 assert.deepEqual(relationMappedField.relationOptions, [{ value: 7, label: '演示项目' }]);
 assert.equal(relationMappedField.required, true, 'required many2one authority must survive canonical projection');
 assert.equal(relationMappedField.relationCreateMode, 'page');
@@ -3256,7 +3331,16 @@ assert.deepEqual(
   'an executable body-node action without an adapter must fail closed',
 );
 
-const validationProjection = applyCanonicalFormValidation(model, { name: 'Name 为必填项' });
+// A validation error names the business field it belongs to; the presenter maps
+// it onto the position it may correct. Field identity is never recovered from
+// the message text, so the label-collision case below keeps working by stating
+// `state` explicitly.
+const fieldError = (fieldCode: string, message: string): BusinessFieldError => createBusinessFieldError({
+  code: BusinessErrorCodes.REQUIRED_VALUE_MISSING,
+  message,
+  target: createBusinessErrorTarget({ model: model.identity.model, recordId: null, fieldCode }),
+})!;
+const validationProjection = applyCanonicalFormValidation(model, indexBusinessFieldErrors([fieldError('name', 'Name 为必填项')]));
 const validationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'name');
 assert.equal(validationField?.invalid, true, 'canonical validation must mark the matching field invalid');
 assert.equal(validationField?.errorText, 'Name 为必填项', 'canonical validation must retain the authoritative error text');
@@ -3265,16 +3349,43 @@ assert.equal(renderedValidationField.invalid, true, 'canonical field validation 
 assert.equal(renderedValidationField.errorText, 'Name 为必填项', 'rendered validation must retain its accessible description');
 const unrelatedValidationField = collectFields(validationProjection.zones.primary).find((field) => field.fieldCode === 'state');
 assert.equal(unrelatedValidationField?.invalid, false, 'canonical validation must not mark unrelated fields invalid');
-const labelCollisionProjection = applyCanonicalFormValidation(model, { state: 'Name 与 State 的组合提示' });
+const labelCollisionProjection = applyCanonicalFormValidation(model, indexBusinessFieldErrors([fieldError('state', 'Name 与 State 的组合提示')]));
 assert.equal(
   collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
   false,
   'canonical validation must never infer field identity from a label substring',
 );
+// `state` is an invisible, disabled context field in this contract. The error
+// keeps its explicit business identity, but it is not projected onto a position
+// the user can neither see nor correct; the form-level summary carries it.
 assert.equal(
   collectFields(labelCollisionProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
+  false,
+  'canonical validation must not project an error onto a position the user cannot see',
+);
+const labelCollisionError = fieldError('state', 'Name 与 State 的组合提示');
+assert.equal(
+  errorOwnsField(labelCollisionError, { model: model.identity.model, recordId: null, fieldCode: 'state' }),
+  true,
+  'the error still owns the field it names even when the page renders no position for it',
+);
+const visibleStateSnapshot = snapshot();
+visibleStateSnapshot.statusContract.widgetStatus[1] = {
+  widgetId: 'field.state', visible: true, readonly: true, required: false, disabled: false,
+};
+const visibleStateProjection = applyCanonicalFormValidation(
+  presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(visibleStateSnapshot)), 'edit'),
+  indexBusinessFieldErrors([labelCollisionError]),
+);
+assert.equal(
+  collectFields(visibleStateProjection.zones.primary).find((field) => field.fieldCode === 'state')?.invalid,
   true,
   'canonical validation must project an explicit field identity even when labels overlap',
+);
+assert.equal(
+  collectFields(visibleStateProjection.zones.primary).find((field) => field.fieldCode === 'name')?.invalid,
+  false,
+  'the overlapping label must not steal the error from the field it names',
 );
 
 assert.deepEqual(normalizeNativeFormStatusbar({
@@ -3286,7 +3397,7 @@ assert.deepEqual(normalizeNativeFormStatusbar({
   visible: false, field: 'state', current: '', states: [{ value: 'draft', label: '草稿' }], reachedValues: [], readonly: true,
 }, 'create forms must retain the native statusbar claim without rendering a business status');
 
-console.log('[canonical_form_presenter_test] PASS cases=170');
+console.log('[canonical_form_presenter_test] PASS cases=177');
 
 // Container and navigation consume the same readonly display projection.
 const emptySectionModel = structuredClone(bodyActionModel);

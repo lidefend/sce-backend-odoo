@@ -8,7 +8,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     failures: list[str] = []
     component = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalRelationFieldControl.vue")
     many2one = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue")
+    many2many = read_text("frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue")
     model = read_text("frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts")
+    relation_field = read_text("frontend/apps/web/src/components/design-system/ScRelationField.vue")
     section = read_text("frontend/apps/web/src/components/template/FormSection.vue")
     registry = read_text("frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
@@ -32,7 +34,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if section.count("<ProfessionalRelationFieldControl") < 2:
         failures.append("FormSection does not route many2one and many2many through the relation family")
     if "import ScButton from '../design-system/ScButton.vue'" not in many2one or many2one.count("<ScButton") != 5:
-        failures.append("many2one options and lifecycle commands must consume five shared ScButton primitives")
+        failures.append("many2one panel actions must consume the five shared ScButton primitives")
     if "import ScInput from '../design-system/ScInput.vue'" not in section or '<ScInput\n              v-else-if="fieldConfigEditable"' not in section:
         failures.append("field configuration label editor must consume the shared ScInput primitive")
     if ".field-label-editor {\n  flex: 1 1 140px;\n  min-width: 96px;\n  max-width: 220px;\n  height:" in section:
@@ -45,20 +47,92 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in many2one:
             failures.append(f"many2one lifecycle command authority is incomplete: {marker}")
-    if "function emitCommit(value: string) {\n  if (!focused.value) return;" not in many2one:
-        failures.append("many2one selection can regress into a duplicate blur commit")
-    if ':aria-selected="activeIndex === optionIndex"\n              @mousedown.prevent' not in many2one:
-        failures.append("many2one option pointer-down can blur before selection")
-    if '@mousedown.prevent\n              @click="emitSelect(option.value, $event)"' not in many2one:
-        failures.append("many2one role option does not own its selection event")
-    if '@change="emitCommit' in many2one:
-        failures.append("many2one query updates can regress into an eager commit")
-    if "resolveProfessionalMany2oneTextValue(props.field)" not in many2one or "resolveProfessionalMany2oneTextValue" not in model:
+    # The business wrapper must project explicit channels instead of rebuilding a
+    # second candidate list, a second keyboard loop and a delayed blur.
+    for marker in (
+        ':query-value="queryKeyword"',
+        '@update:query-value="onQueryValueChange"',
+        '@update:model-value="onValueChange"',
+        '@mousedown.prevent',
+    ):
+        if marker not in many2one:
+            failures.append(f"many2one state channel is incomplete: {marker}")
+    for retired in (
+        "ScPopover",
+        'role="listbox"',
+        'role="option"',
+        "activeIndex",
+        "activeDescendant",
+        "suppressRestoredFocus",
+        "focused",
+        "blur()",
+        "setTimeout",
+        "handleKeydown",
+        "emitSelect",
+        "emitCommit",
+    ):
+        if retired in many2one:
+            failures.append(f"many2one reimplements official select interaction: {retired}")
+    # The many2many control delegates selection, keyboard handling and the popup to
+    # the official multi-select. The installed Select (1.20.5) resets its own
+    # keyword on a check selection and on a hidden popup without emitting `search`,
+    # so the runtime keyword follows those two official signals instead of a
+    # hand-written focus/blur timer.
+    for marker in (
+        '@search="onSearch"',
+        '@change="onChange"',
+        '@popup-visible-change="onPopupVisibleChange"',
+        'function resetKeyword()',
+        ':popup-props="popupProps"',
+        "overlayInnerStyle: { maxWidth:",
+    ):
+        if marker not in many2many:
+            failures.append(f"many2many state channel is incomplete: {marker}")
+    for retired in (
+        "setTimeout",
+        "focused",
+        "@blur=",
+        "@focus=",
+        "activeIndex",
+        'role="listbox"',
+        'role="option"',
+        "blur()",
+        "handleKeydown",
+    ):
+        if retired in many2many:
+            failures.append(f"many2many reimplements official select interaction: {retired}")
+    # The official multi-select also owns keyboard selection, so this control must
+    # not grow a second keyboard loop. The one official Enter gap it does hit has
+    # to stay recorded in place together with its exit condition.
+    # Keyboard commit under a live keyword is restored through the official
+    # TagInput `max` channel, so the control must keep that configuration and the
+    # note that records why it exists and when it can go away. A hand-written
+    # keyboard loop, a delayed blur or a synthesised event must never come back.
+    for marker in (
+        ':tag-input-props="tagInputProps"',
+        "const tagInputProps = { max: -1 }",
+        "official-enter-keyword:",
+        "official-enter-keyword-exit:",
+    ):
+        if marker not in many2many:
+            failures.append(f"many2many official keyboard commit channel is incomplete: {marker}")
+    for retired in ("upstream-gap: m2m-enter-with-keyword",):
+        if retired in many2many:
+            failures.append(f"many2many records a retired keyboard gap note: {retired}")
+    if "resolveProfessionalMany2oneDisplayValue(props.field)" not in many2one or "resolveProfessionalMany2oneDisplayValue" not in model:
         failures.append("many2one input does not consume the authoritative projected display value")
+    if "resolveProfessionalMany2oneQueryKeyword(props.field)" not in many2one or "resolveProfessionalMany2oneQueryKeyword" not in model:
+        failures.append("many2one input does not consume the runtime search keyword channel")
+    for marker in ("<TDesignSelect", "v-native-control-projection", "panelBottomContent", ":popup-visible=", ":input-value="):
+        if marker not in relation_field:
+            failures.append(f"ScRelationField does not delegate to the official select driver: {marker}")
+    for retired in ("TDesignAutoComplete", "ScPopover", 'role="listbox"', "activeIndex", "@keydown", "as unknown as Event"):
+        if retired in relation_field:
+            failures.append(f"ScRelationField retains a retired hand-written interaction: {retired}")
     if ".many2one-action:hover" in many2one or ".many2one-action {\n  min-height:" in many2one:
         failures.append("many2one lifecycle commands override shared ScButton presentation")
-    if '<ScButton\n                type="button"' not in many2one:
-        failures.append("many2one stateful listbox options must consume the shared ScButton primitive")
+    if "<button" in many2one:
+        failures.append("many2one panel actions must not regress to a private button element")
     for marker in (
         'adapter.isOne2manyHydrating(field.name)',
         'data-readonly-relation-loading',
@@ -97,8 +171,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if "if (entry && entry.canRead === false)" in relationships:
         failures.append("relation search rows retain fail-open read authority")
     for marker in (
-        "if(!isFieldWritable(name))return;const normalized=",
-        "if(!isFieldWritable(name))return;const keyword=",
+        "if(!isFieldWritable(name,occurrenceKey))return;const normalized=",
+        "if(!isFieldWritable(name,occurrenceKey))return;const keyword=",
         "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
     ):
         if marker not in form_state:
@@ -112,7 +186,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if "isFieldWritable: (...args: Parameters<typeof isFieldWritable>) => isFieldWritable(...args)" not in page:
         failures.append("professional relation adapter does not receive resolved field write authority")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
-        if forbidden in component or forbidden in many2one or forbidden in model:
+        if forbidden in component or forbidden in many2one or forbidden in model or forbidden in relation_field:
             failures.append(f"relation family contains forbidden product special case {forbidden}")
     return failures
 

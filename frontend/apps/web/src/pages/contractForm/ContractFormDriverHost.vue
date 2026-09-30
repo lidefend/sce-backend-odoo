@@ -146,6 +146,10 @@ import TaskFormPattern from '../../components/product-page-patterns/TaskFormPatt
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
 import {
+  isCollaborationSurfaceKind,
+  resolveCollaborationVisibility,
+} from './contractRuntimeVm';
+import {
   authoritativeNativeBusinessSections,
   shouldPreserveAuthoritativeBusinessSections,
   workspaceSurfaceNavigationItems,
@@ -267,11 +271,11 @@ const allowUserOverride = computed(() => (
 ));
 const directActions = computed(() => visibleActions.value.filter((action) => ['primary', 'secondary'].includes(action.tier)));
 const overflowActions = computed(() => visibleActions.value.filter((action) => ['overflow', 'configuration'].includes(action.tier)));
-const hasCollaborationNode = computed(() => Boolean(props.renderModel?.zones.subordinate.some((node) => collaborationKind(node.kind))));
-const hasCollaboration = computed(() => (
-  Boolean(props.showCollaborationPanel)
-  || (!props.suppressCollaboration && hasCollaborationNode.value)
-));
+const hasCollaboration = computed(() => resolveCollaborationVisibility({
+  capability: props.showCollaborationPanel,
+  suppressed: props.suppressCollaboration,
+  nodes: props.renderModel?.zones.subordinate,
+}));
 const auditEvents = computed<CanonicalAuditEvent[]>(() => resolveProfessionalAuditEvents(props.collaborationPanelProps?.timeline || []));
 const nativeBridgeModel = computed<CanonicalFormRenderModel | null>(() => {
   const model = props.renderModel;
@@ -295,7 +299,7 @@ const nativeBridge = computed(() => nativeBridgeModel.value
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes
-  .filter((node) => !collaborationKind(node.kind))
+  .filter((node) => !isCollaborationSurfaceKind(node.kind))
   .filter(canonicalNodeHasContent));
 const workspaceSectionLinks = computed(() => [
   ...(nativeBridge.value?.sectionLinks || []),
@@ -304,10 +308,6 @@ const workspaceSectionLinks = computed(() => [
     auditAvailable: props.showCollaborationPanel === true && auditEvents.value.length > 0,
   }),
 ]);
-
-function collaborationKind(kind: string) {
-  return ['chatter', 'activity'].includes(String(kind || '').trim().toLowerCase());
-}
 
 </script>
 

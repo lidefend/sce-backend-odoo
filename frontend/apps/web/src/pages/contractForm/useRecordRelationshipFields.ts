@@ -2,6 +2,7 @@
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
+import { businessRowErrorKey } from '../../app/businessValidationError';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
@@ -210,7 +211,8 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
   function one2manyCellError(fieldName: string, rowKey: string, columnName: string) {
-    return one2manyValidation.value.cellErrors[`${fieldName}:${rowKey}:${columnName}`] || '';
+    const error = one2manyValidation.value.cellErrors[businessRowErrorKey(fieldName, rowKey, columnName)];
+    return error ? error.message : '';
   }
 
 

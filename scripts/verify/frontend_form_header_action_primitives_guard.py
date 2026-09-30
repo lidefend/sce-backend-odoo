@@ -17,6 +17,7 @@ def _read(relative: str) -> str:
 def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     source = read_text(HEADER)
     steps = read_text(STEPS)
+    commands = read_text("frontend/packages/schema/src/actionSemantics.ts")
     errors: list[str] = []
     if "import ScButton" not in source or source.count("<ScButton") < 8:
         errors.append("form header actions must consume the shared ScButton primitive")
@@ -36,15 +37,18 @@ def validate(read_text: Callable[[str], str] = _read) -> list[str]:
     if "import ScDropdown" not in source or len(re.findall(r"<ScDropdown(?:\s|>)", source)) != 2:
         errors.append("header overflow actions must consume the shared ScDropdown primitive")
     for event in (
-        "@click=\"$emit('back')\"",
+        "@click=\"$emit(formClientCommands.back.event)\"",
         "@click=\"$emit('run-primary')\"",
         "@click=\"$emit('run-action', action)\"",
         "@click=\"$emit('canonical-action', action)\"",
         "@click=\"$emit('save-draft')\"",
-        "@click=\"$emit('discard')\"",
+        "@click=\"$emit(formClientCommands.discard.event)\"",
     ):
         if event not in source:
             errors.append(f"form header changed action event authority: {event}")
+    for binding in ("actionId: 'form.back', event: 'back'", "actionId: 'form.discard', event: 'discard'"):
+        if binding not in commands:
+            errors.append(f"form header changed shared client command binding: {binding}")
     for evidence in (
         'v-bind="actionEvidenceAttributes(action)"',
         'v-bind="canonicalActionEvidenceAttributes(action)"',

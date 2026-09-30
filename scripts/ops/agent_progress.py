@@ -76,7 +76,7 @@ def snapshot_from_state(state: dict[str, Any], *, now: float | None = None) -> P
     recoverable_failures = 0
     last_note = "-"
     last_activity_epoch: float | None = None
-    if events_path.is_file():
+    if task.get("run_dir") and events_path.is_file():
         last_activity_epoch = events_path.stat().st_mtime
         with events_path.open(encoding="utf-8", errors="replace") as handle:
             for raw in handle:
@@ -85,9 +85,11 @@ def snapshot_from_state(state: dict[str, Any], *, now: float | None = None) -> P
                     event = json.loads(raw)
                 except json.JSONDecodeError:
                     continue
-                if event.get("type") != "item.completed":
+                if not isinstance(event, dict) or event.get("type") != "item.completed":
                     continue
                 item = event.get("item") or {}
+                if not isinstance(item, dict):
+                    continue
                 if item.get("type") == "command_execution":
                     commands_completed += 1
                     if item.get("exit_code") not in (None, 0):

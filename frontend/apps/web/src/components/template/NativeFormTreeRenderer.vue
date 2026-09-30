@@ -268,7 +268,9 @@
                 :title="nativeActionTitle(buttonNode)"
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               >
-                <ScIcon v-if="buttonIcon(buttonNode)" class="native-action-icon" :name="buttonIcon(buttonNode)" :size="18" />
+                <template v-for="icon in [buttonIcon(buttonNode)]" :key="icon">
+                  <ScIcon v-if="icon" class="native-action-icon" :name="icon" :size="18" />
+                </template>
                 <span class="native-action-label">{{ buttonLabel(buttonNode) }}</span>
               </ScButton>
               <NativeSmartAction
@@ -397,7 +399,9 @@
           :title="nativeActionTitle(node)"
           @click.stop.prevent="emitNativeAction(node)"
         >
-          <ScIcon v-if="buttonIcon(node)" class="native-action-icon" :name="buttonIcon(node)" :size="18" />
+          <template v-for="icon in [buttonIcon(node)]" :key="icon">
+            <ScIcon v-if="icon" class="native-action-icon" :name="icon" :size="18" />
+          </template>
           <span class="native-action-label">{{ buttonLabel(node) }}</span>
         </ScButton>
         <NativeSmartAction

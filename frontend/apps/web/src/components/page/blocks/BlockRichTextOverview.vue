@@ -10,7 +10,7 @@
       <ScButton
         v-if="view.canEdit && phase === 'idle'"
         size="small"
-        variant="outline"
+        variant="secondary"
         data-action="begin-edit"
         @click="beginEdit"
       >
@@ -82,7 +82,7 @@
         </ScButton>
         <ScButton
           size="small"
-          variant="outline"
+          variant="secondary"
           :disabled="session.state === 'saving'"
           data-action="cancel"
           @click="cancelEdit"

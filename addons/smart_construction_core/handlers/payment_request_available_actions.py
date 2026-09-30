@@ -35,6 +35,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     _ACTION_SPECS = [
         {
             "key": "submit",
+            "action_semantics": {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "提交审批",
             "intent": "payment.request.submit",
             "method": "action_submit",
@@ -44,6 +45,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         },
         {
             "key": "approve",
+            "action_semantics": {"kind": "business", "purpose": "approve", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "审批",
             "intent": "payment.request.approve",
             "method": "action_approve",
@@ -53,6 +55,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         },
         {
             "key": "reject",
+            "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "驳回",
             "intent": "payment.request.reject",
             "method": "action_on_tier_rejected",
@@ -317,6 +320,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "key": action_key,
             "label": label,
             "intent": str(spec.get("intent") or ""),
+            **({"action_semantics": dict(spec["action_semantics"])} if spec.get("action_semantics") else {}),
             "method": method_name,
             "required_params": required_params,
             "allowed": allowed,

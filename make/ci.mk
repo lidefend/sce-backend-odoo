@@ -400,6 +400,7 @@ verify.unified_page_contract.v2.stable_projection: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/ui_contract_v2_contract_boundary_guard.py scripts/verify/frontend_v2_policy_projection_guard.py
 	@python3 scripts/verify/ui_contract_v2_contract_boundary_guard.py
 	@python3 scripts/verify/frontend_v2_policy_projection_guard.py
+	@python3 -m unittest scripts.verify.test_frontend_v2_policy_projection_guard
 
 .PHONY: verify.unified_page_contract.v2.frontend_static
 verify.unified_page_contract.v2.frontend_static: verify.frontend.typecheck.strict verify.frontend.build
@@ -919,6 +920,7 @@ ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.con
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/construction_core_extension_service_builders_split_guard.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
 	@python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py
 	@python3 scripts/verify/v1_1_convergence_status_guard.py
@@ -1058,3 +1060,11 @@ verify.repository.public_old_sha:
 	@test -n "$(OLD_PUBLIC_COMMIT_URL)" || (echo "OLD_PUBLIC_COMMIT_URL is required"; exit 2)
 	@python3 scripts/verify/test_public_old_commit_probe.py
 	@python3 scripts/verify/public_old_commit_probe.py --url "$(OLD_PUBLIC_COMMIT_URL)"
+
+.PHONY: verify.construction.create_defaults.unit
+verify.construction.create_defaults.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
+	@python3 addons/smart_core/tests/test_api_data_sudo_scope_order_boundaries.py
+	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
+	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py

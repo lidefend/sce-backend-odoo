@@ -4,25 +4,25 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1374`
+- Total assets: `1399`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `177`
+- Long-running assets: `181`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `972`
+- PR dedupe candidates: `993`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 553 |
+| governance | 555 |
 | contract | 361 |
-| unit | 245 |
-| odoo_integration | 104 |
+| unit | 264 |
+| odoo_integration | 107 |
 | e2e | 46 |
 | security | 34 |
-| frontend_acceptance | 27 |
+| frontend_acceptance | 28 |
 | gate | 2 |
 | data_migration | 2 |
 
@@ -30,8 +30,8 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1191 |
-| integration_candidate | 130 |
+| pr_candidate | 1212 |
+| integration_candidate | 134 |
 | release_candidate | 44 |
 | manual_review | 4 |
 | release_required | 2 |
@@ -43,9 +43,9 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 972 |
+| deduplicate_before_required | 993 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 129 |
+| keep_integration_or_release_only | 133 |
 | keep_release_only | 44 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
@@ -142,8 +142,8 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1193 |
-| 10-30m | 131 |
+| <5m | 1214 |
+| 10-30m | 135 |
 | 30-60m | 46 |
 | unknown | 3 |
 | 10-15m | 1 |
@@ -152,23 +152,23 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 553 |
+| architecture owner | 555 |
 | platform owner | 361 |
-| test owner | 246 |
-| backend owner | 104 |
+| test owner | 265 |
+| backend owner | 107 |
 | qa owner | 46 |
 | security owner | 34 |
-| frontend owner | 28 |
+| frontend owner | 29 |
 | data owner | 2 |
 
 ## By Directory
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1225 |
-| scripts/ops | 70 |
-| frontend/apps/web/scripts | 32 |
-| scripts/ci | 22 |
+| scripts/verify | 1243 |
+| scripts/ops | 73 |
+| frontend/apps/web/scripts | 33 |
+| scripts/ci | 25 |
 | scripts/audit | 9 |
 | make | 5 |
 | scripts/e2e | 5 |
@@ -179,18 +179,18 @@ Generated from `test_inventory.csv`.
 
 | ID | Layer | Entrypoint | Reason |
 | --- | --- | --- | --- |
-| T-ASSET-064 | unit | `scripts/diag/fe_smoke.sh` | status=review |
-| T-ASSET-065 | unit | `scripts/diag/test-default-menu.py` | status=review |
-| T-ASSET-066 | unit | `scripts/diag/test-frontend-changes.sh` | status=review |
-| T-ASSET-067 | unit | `scripts/diag/test-menu-issue.sh` | status=review |
+| T-ASSET-068 | unit | `scripts/diag/fe_smoke.sh` | status=review |
+| T-ASSET-069 | unit | `scripts/diag/test-default-menu.py` | status=review |
+| T-ASSET-070 | unit | `scripts/diag/test-frontend-changes.sh` | status=review |
+| T-ASSET-071 | unit | `scripts/diag/test-menu-issue.sh` | status=review |
 
 ## Unknown Runtime Assets
 
 | ID | Layer | Entrypoint |
 | --- | --- | --- |
-| T-ASSET-064 | unit | `scripts/diag/fe_smoke.sh` |
-| T-ASSET-066 | unit | `scripts/diag/test-frontend-changes.sh` |
-| T-ASSET-067 | unit | `scripts/diag/test-menu-issue.sh` |
+| T-ASSET-068 | unit | `scripts/diag/fe_smoke.sh` |
+| T-ASSET-070 | unit | `scripts/diag/test-frontend-changes.sh` |
+| T-ASSET-071 | unit | `scripts/diag/test-menu-issue.sh` |
 
 ## PR Dedupe Candidate Sample
 
@@ -215,68 +215,68 @@ Generated from `test_inventory.csv`.
 | T-ASSET-024 | frontend_acceptance | `frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs` | frontend owner |
 | T-ASSET-025 | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_fault_acceptance.mjs` | frontend owner |
 | T-ASSET-026 | frontend_acceptance | `frontend/apps/web/scripts/low_code_workbench_product_acceptance.mjs` | frontend owner |
-| T-ASSET-027 | frontend_acceptance | `frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` | frontend owner |
-| T-ASSET-028 | frontend_acceptance | `frontend/apps/web/scripts/product_page_structure_guard.mjs` | frontend owner |
-| T-ASSET-032 | frontend_acceptance | `frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs` | frontend owner |
-| T-ASSET-033 | governance | `scripts/audit/boundary_audit_smart_core.py` | architecture owner |
-| T-ASSET-034 | governance | `scripts/audit/scene_config_audit.js` | architecture owner |
-| T-ASSET-037 | unit | `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py` | test owner |
-| T-ASSET-038 | unit | `scripts/audit/test_generate_frontend_official_design_alignment_inventory.py` | test owner |
-| T-ASSET-039 | unit | `scripts/audit/test_generate_frontend_professionalization_baseline.py` | test owner |
-| T-ASSET-040 | unit | `scripts/audit/test_generate_frontend_rendering_detail_inventory.py` | test owner |
-| T-ASSET-041 | unit | `scripts/audit/test_generate_frontend_visual_projection_inventory.py` | test owner |
-| T-ASSET-042 | governance | `scripts/ci/assert_audit_tp08.py` | architecture owner |
-| T-ASSET-043 | contract | `scripts/ci/enforce_contract_structure_lock.py` | platform owner |
-| T-ASSET-045 | governance | `scripts/ci/frontend_professional_extension_guard.py` | architecture owner |
-| T-ASSET-046 | governance | `scripts/ci/gate_audit.sh` | architecture owner |
-| T-ASSET-047 | governance | `scripts/ci/gate_audit_tp08.sh` | architecture owner |
-| T-ASSET-048 | contract | `scripts/ci/generate_contract_structure_fingerprint.py` | platform owner |
-| T-ASSET-049 | unit | `scripts/ci/generate_e2e_journey_matrix.py` | test owner |
-| T-ASSET-050 | unit | `scripts/ci/generate_test_inventory.py` | test owner |
-| T-ASSET-051 | unit | `scripts/ci/summarize_test_inventory.py` | test owner |
-| T-ASSET-052 | contract | `scripts/ci/test_backend_test_suite_dispatch_contract.py` | platform owner |
-| T-ASSET-053 | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
-| T-ASSET-054 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
-| T-ASSET-055 | governance | `scripts/ci/test_frontend_professional_extension_guard.py` | architecture owner |
-| T-ASSET-056 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
-| T-ASSET-057 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
-| T-ASSET-058 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
-| T-ASSET-059 | unit | `scripts/ci/test_release_candidate_gate.py` | test owner |
-| T-ASSET-060 | unit | `scripts/ci/test_secret_scan.py` | test owner |
-| T-ASSET-061 | security | `scripts/ci/test_select_authoritative_workflow_run.py` | security owner |
-| T-ASSET-062 | unit | `scripts/ci/test_trusted_scan_scope.py` | test owner |
-| T-ASSET-063 | contract | `scripts/ci/verify_contract_form_split_evidence.py` | platform owner |
-| T-ASSET-076 | contract | `scripts/ops/contract_product_acceptance_policy_restore.py` | platform owner |
-| T-ASSET-083 | contract | `scripts/ops/formal_list_surface_test_contract_cleanup.py` | platform owner |
-| T-ASSET-088 | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
-| T-ASSET-097 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
-| T-ASSET-134 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
-| T-ASSET-145 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
-| T-ASSET-146 | governance | `scripts/verify/action_surface_renderer_architecture_guard.py` | architecture owner |
-| T-ASSET-147 | contract | `scripts/verify/action_view_contract_action_runtime_smoke.js` | platform owner |
-| T-ASSET-148 | contract | `scripts/verify/action_view_orchestration_contract_shape_smoke.js` | platform owner |
-| T-ASSET-149 | governance | `scripts/verify/action_view_responsibility_map_guard.py` | architecture owner |
-| T-ASSET-151 | governance | `scripts/verify/agent_context_verify.py` | architecture owner |
-| T-ASSET-152 | governance | `scripts/verify/app_config_engine_boundary_guard.py` | architecture owner |
-| T-ASSET-153 | governance | `scripts/verify/application_form_required_marker_audit.py` | architecture owner |
-| T-ASSET-156 | security | `scripts/verify/auth_credential_frontend_guard.py` | security owner |
-| T-ASSET-157 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
-| T-ASSET-161 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
-| T-ASSET-162 | governance | `scripts/verify/backend_business_fact_model_audit.py` | architecture owner |
-| T-ASSET-163 | contract | `scripts/verify/backend_contract_boundary_guard.py` | platform owner |
-| T-ASSET-169 | contract | `scripts/verify/backend_contract_lifecycle_authority_guard.py` | platform owner |
-| T-ASSET-170 | contract | `scripts/verify/backend_contract_lifecycle_migration_rehearsal_prepare.py` | platform owner |
-| T-ASSET-171 | contract | `scripts/verify/backend_contract_lifecycle_runtime_probe.py` | platform owner |
-| T-ASSET-174 | governance | `scripts/verify/baseline_freeze_guard.py` | architecture owner |
-| T-ASSET-175 | governance | `scripts/verify/baseline_iteration_execution_policy_guard.py` | architecture owner |
-| T-ASSET-176 | governance | `scripts/verify/baseline_policy_integrity_guard.py` | architecture owner |
-| T-ASSET-179 | security | `scripts/verify/boq_dual_role_five_viewport_evidence_guard.py` | security owner |
-| T-ASSET-183 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
-| T-ASSET-184 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
-| T-ASSET-185 | governance | `scripts/verify/business_action_coverage_audit.py` | architecture owner |
-| T-ASSET-188 | governance | `scripts/verify/business_category_dictionary_audit.py` | architecture owner |
-| T-ASSET-190 | contract | `scripts/verify/business_config_contract_snapshot.py` | platform owner |
-| ... | ... | 892 more | ... |
+| T-ASSET-027 | frontend_acceptance | `frontend/apps/web/scripts/onchange_roundtrip_race_test.mjs` | frontend owner |
+| T-ASSET-028 | frontend_acceptance | `frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` | frontend owner |
+| T-ASSET-029 | frontend_acceptance | `frontend/apps/web/scripts/product_page_structure_guard.mjs` | frontend owner |
+| T-ASSET-033 | frontend_acceptance | `frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs` | frontend owner |
+| T-ASSET-034 | governance | `scripts/audit/boundary_audit_smart_core.py` | architecture owner |
+| T-ASSET-035 | governance | `scripts/audit/scene_config_audit.js` | architecture owner |
+| T-ASSET-038 | unit | `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py` | test owner |
+| T-ASSET-039 | unit | `scripts/audit/test_generate_frontend_official_design_alignment_inventory.py` | test owner |
+| T-ASSET-040 | unit | `scripts/audit/test_generate_frontend_professionalization_baseline.py` | test owner |
+| T-ASSET-041 | unit | `scripts/audit/test_generate_frontend_rendering_detail_inventory.py` | test owner |
+| T-ASSET-042 | unit | `scripts/audit/test_generate_frontend_visual_projection_inventory.py` | test owner |
+| T-ASSET-043 | governance | `scripts/ci/assert_audit_tp08.py` | architecture owner |
+| T-ASSET-044 | contract | `scripts/ci/enforce_contract_structure_lock.py` | platform owner |
+| T-ASSET-046 | governance | `scripts/ci/frontend_professional_extension_guard.py` | architecture owner |
+| T-ASSET-047 | governance | `scripts/ci/gate_audit.sh` | architecture owner |
+| T-ASSET-048 | governance | `scripts/ci/gate_audit_tp08.sh` | architecture owner |
+| T-ASSET-049 | contract | `scripts/ci/generate_contract_structure_fingerprint.py` | platform owner |
+| T-ASSET-050 | unit | `scripts/ci/generate_e2e_journey_matrix.py` | test owner |
+| T-ASSET-051 | unit | `scripts/ci/generate_test_inventory.py` | test owner |
+| T-ASSET-052 | unit | `scripts/ci/gitee_ci_acceptance.py` | test owner |
+| T-ASSET-053 | unit | `scripts/ci/gitee_ci_acceptance_check.py` | test owner |
+| T-ASSET-055 | unit | `scripts/ci/summarize_test_inventory.py` | test owner |
+| T-ASSET-056 | contract | `scripts/ci/test_backend_test_suite_dispatch_contract.py` | platform owner |
+| T-ASSET-057 | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
+| T-ASSET-058 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
+| T-ASSET-059 | governance | `scripts/ci/test_frontend_professional_extension_guard.py` | architecture owner |
+| T-ASSET-060 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
+| T-ASSET-061 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
+| T-ASSET-062 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
+| T-ASSET-063 | unit | `scripts/ci/test_release_candidate_gate.py` | test owner |
+| T-ASSET-064 | unit | `scripts/ci/test_secret_scan.py` | test owner |
+| T-ASSET-065 | security | `scripts/ci/test_select_authoritative_workflow_run.py` | security owner |
+| T-ASSET-066 | unit | `scripts/ci/test_trusted_scan_scope.py` | test owner |
+| T-ASSET-067 | contract | `scripts/ci/verify_contract_form_split_evidence.py` | platform owner |
+| T-ASSET-080 | contract | `scripts/ops/contract_product_acceptance_policy_restore.py` | platform owner |
+| T-ASSET-087 | contract | `scripts/ops/formal_list_surface_test_contract_cleanup.py` | platform owner |
+| T-ASSET-092 | contract | `scripts/ops/operation_strategy_contract_surface_backfill.py` | platform owner |
+| T-ASSET-101 | contract | `scripts/ops/settlement_contract_surface_backfill.py` | platform owner |
+| T-ASSET-141 | contract | `scripts/ops/validate_contract_business_categories.sh` | platform owner |
+| T-ASSET-152 | contract | `scripts/verify/action_default_group_contract_audit.py` | platform owner |
+| T-ASSET-153 | governance | `scripts/verify/action_surface_renderer_architecture_guard.py` | architecture owner |
+| T-ASSET-154 | contract | `scripts/verify/action_view_contract_action_runtime_smoke.js` | platform owner |
+| T-ASSET-155 | contract | `scripts/verify/action_view_orchestration_contract_shape_smoke.js` | platform owner |
+| T-ASSET-156 | governance | `scripts/verify/action_view_responsibility_map_guard.py` | architecture owner |
+| T-ASSET-158 | governance | `scripts/verify/agent_context_verify.py` | architecture owner |
+| T-ASSET-159 | governance | `scripts/verify/app_config_engine_boundary_guard.py` | architecture owner |
+| T-ASSET-160 | governance | `scripts/verify/application_form_required_marker_audit.py` | architecture owner |
+| T-ASSET-163 | security | `scripts/verify/auth_credential_frontend_guard.py` | security owner |
+| T-ASSET-164 | unit | `scripts/verify/auto_degrade_smoke_report.py` | test owner |
+| T-ASSET-168 | governance | `scripts/verify/backend_boundary_guard.py` | architecture owner |
+| T-ASSET-169 | governance | `scripts/verify/backend_business_fact_model_audit.py` | architecture owner |
+| T-ASSET-170 | contract | `scripts/verify/backend_contract_boundary_guard.py` | platform owner |
+| T-ASSET-176 | contract | `scripts/verify/backend_contract_lifecycle_authority_guard.py` | platform owner |
+| T-ASSET-177 | contract | `scripts/verify/backend_contract_lifecycle_migration_rehearsal_prepare.py` | platform owner |
+| T-ASSET-178 | contract | `scripts/verify/backend_contract_lifecycle_runtime_probe.py` | platform owner |
+| T-ASSET-181 | governance | `scripts/verify/baseline_freeze_guard.py` | architecture owner |
+| T-ASSET-182 | governance | `scripts/verify/baseline_iteration_execution_policy_guard.py` | architecture owner |
+| T-ASSET-183 | governance | `scripts/verify/baseline_policy_integrity_guard.py` | architecture owner |
+| T-ASSET-186 | security | `scripts/verify/boq_dual_role_five_viewport_evidence_guard.py` | security owner |
+| T-ASSET-190 | governance | `scripts/verify/branch_governance_consistency_guard.py` | architecture owner |
+| T-ASSET-191 | unit | `scripts/verify/build_norm_engine_acceptance_fixture.py` | test owner |
+| ... | ... | 913 more | ... |
 
 ## Dedupe Hotspots
 
@@ -290,11 +290,14 @@ Generated from `test_inventory.csv`.
 | `scripts/audit/test_generate_frontend` | 5 |
 | `scripts/verify/contract_governance_form` | 5 |
 | `scripts/verify/test_local_dev` | 5 |
+| `scripts/verify/test_gitee_formal` | 4 |
 | `scripts/verify/test_product_view` | 4 |
 | `scripts/verify/backend_contract_lifecycle` | 3 |
 | `scripts/verify/frontend_acceptance_environment` | 3 |
 | `scripts/verify/frontend_financial_workspace` | 3 |
 | `scripts/verify/frontend_page_identity` | 3 |
+| `scripts/verify/test_gitee_ci` | 3 |
+| `scripts/verify/test_gitee_frontend` | 3 |
 | `scripts/verify/test_native_view` | 3 |
 | `frontend/apps/web/scripts/low_code_workbench` | 2 |
 | `scripts/ci/test_ci_risk` | 2 |
@@ -309,9 +312,6 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/frontend_contract_domain` | 2 |
 | `scripts/verify/frontend_evidence_capture` | 2 |
 | `scripts/verify/frontend_my_work` | 2 |
-| `scripts/verify/frontend_product_page` | 2 |
-| `scripts/verify/frontend_professional_relation` | 2 |
-| `scripts/verify/frontend_systemwide_coverage` | 2 |
 
 ## Residual Dedupe Hotspot Disposition
 
@@ -325,11 +325,14 @@ Generated from `test_inventory.csv`.
 | `scripts/audit/test_generate_frontend` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_local_dev` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_gitee_formal` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_product_view` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/backend_contract_lifecycle` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_acceptance_environment` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_financial_workspace` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/frontend_page_identity` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_gitee_ci` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_gitee_frontend` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_native_view` | 3 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `frontend/apps/web/scripts/low_code_workbench` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/ci/test_ci_risk` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
@@ -358,6 +361,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/test_frontend_contract` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_product` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_systemwide` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_gitee_pr` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_product_primary` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_scene_company` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_scene_inventory` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

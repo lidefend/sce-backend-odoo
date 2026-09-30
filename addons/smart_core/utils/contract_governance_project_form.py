@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 
 def _safe_text(value: Any, fallback: str = "") -> str:
@@ -601,7 +604,23 @@ def govern_project_task_form(
     *,
     profile: dict,
     make_labeled_field_node: Any,
+    collect_native_field_occurrences: Any = None,
 ) -> None:
+    """Project the flat task-form field configuration onto the native view.
+
+    The flat configuration is a presentation overlay: it decides which native
+    fields the contract surfaces, under which label, in which group and in
+    which order.  It is not an authority for the fields themselves, so a
+    projected node must carry the position identity of a real occurrence in
+    the resolved native view (``native_locator``, ``occurrence_index``,
+    ``source_position``).
+
+    Synthesising nodes without that identity produces an occurrence whose
+    locator is empty, which the native form projection validator rejects and
+    which takes the whole page down with a 5xx.  A configured field that has
+    no native occurrence is therefore not projectable: it is reported and
+    dropped rather than fabricated.
+    """
     if not profile:
         return
     fields_map = _as_dict(data.get("fields"))
@@ -614,52 +633,82 @@ def govern_project_task_form(
     core_group_label = _safe_text(profile.get("core_group_label")) or "基础信息"
     description_group_label = _safe_text(profile.get("description_group_label")) or "说明"
 
-    data["visible_fields"] = selected
-    data["field_groups"] = [
-        {
-            "name": "core",
-            "label": core_group_label,
-            "priority": 1,
-            "collapsible": False,
-            "fields": [name for name in selected if name not in description_fields],
-        },
-        {
-            "name": "advanced",
-            "label": description_group_label,
-            "priority": 2,
-            "collapsible": True,
-            "fields": [name for name in selected if name in description_fields],
-        },
-    ]
-
     views = _as_dict(data.get("views"))
     form = _as_dict(views.get("form"))
+    occurrences = (
+        collect_native_field_occurrences(form.get("layout"))
+        if callable(collect_native_field_occurrences)
+        else {}
+    )
+    projectable = [name for name in selected if name in occurrences]
+    unprojectable = [name for name in selected if name not in occurrences]
+    if unprojectable:
+        _logger.warning(
+            "project.task form configuration references fields without a native "
+            "occurrence and they are not projected: %s",
+            ", ".join(unprojectable),
+        )
+    if not projectable:
+        return
+
+    def _build_node(name: str) -> dict:
+        node = make_labeled_field_node(name, fields_map, label_map)
+        identity = occurrences.get(name)
+        for key in ("native_locator", "occurrence_index", "source_position"):
+            value = (identity or {}).get(key)
+            if value is not None:
+                node[key] = value
+        return node
+
+    core_fields = [name for name in projectable if name not in description_fields]
+    description_group_fields = [name for name in projectable if name in description_fields]
+
+    groups = []
+    layout_children = []
+    if core_fields:
+        groups.append(
+            {
+                "name": "core",
+                "label": core_group_label,
+                "priority": 1,
+                "collapsible": False,
+                "fields": core_fields,
+            }
+        )
+        layout_children.append(
+            {
+                "type": "group",
+                "name": "project_task_core_group",
+                "string": core_group_label,
+                "children": [_build_node(name) for name in core_fields],
+            }
+        )
+    if description_group_fields:
+        groups.append(
+            {
+                "name": "advanced",
+                "label": description_group_label,
+                "priority": 2,
+                "collapsible": True,
+                "fields": description_group_fields,
+            }
+        )
+        layout_children.append(
+            {
+                "type": "group",
+                "name": "project_task_description_group",
+                "string": description_group_label,
+                "children": [_build_node(name) for name in description_group_fields],
+            }
+        )
+
+    data["visible_fields"] = projectable
+    data["field_groups"] = groups
     form["layout"] = [
         {
             "type": "sheet",
             "name": "project_task_form_sheet",
-            "children": [
-                {
-                    "type": "group",
-                    "name": "project_task_core_group",
-                    "string": core_group_label,
-                    "children": [
-                        make_labeled_field_node(name, fields_map, label_map)
-                        for name in selected
-                        if name not in description_fields
-                    ],
-                },
-                {
-                    "type": "group",
-                    "name": "project_task_description_group",
-                    "string": description_group_label,
-                    "children": [
-                        make_labeled_field_node(name, fields_map, label_map)
-                        for name in selected
-                        if name in description_fields
-                    ],
-                },
-            ],
+            "children": layout_children,
         }
     ]
     views["form"] = form

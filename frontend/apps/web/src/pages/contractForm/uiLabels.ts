@@ -16,7 +16,7 @@ export function formUiLabelsFromFormView(formView: unknown): Record<string, stri
 
 export function formUiLabelFromLabels(labels: Record<string, string>, key: string) {
   const fallbackLabels: Record<string, string> = {
-    save: '保存',
+    save: '保存草稿',
     saving: '保存中...',
     discard: '放弃',
     reload: '刷新表单数据',

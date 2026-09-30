@@ -366,12 +366,15 @@ async function chooseUniqueRelationOption(
     const activeField = [...document.querySelectorAll(`[data-product-page-mode="form"] [data-field-name="${expectedField}"]`)]
       .find((node) => node instanceof HTMLElement && node.offsetParent !== null);
     const activeInput = activeField?.querySelector('input');
-    const visiblePanel = activeField?.querySelector('.many2one-option-panel');
+    // The panel is portaled, so it is not a descendant of the field wrapper.
+    const visiblePanel = document.querySelector('.many2one-option-panel');
     return String(activeInput?.value || '').trim() === expectedValue
       || Boolean(visiblePanel instanceof HTMLElement && visiblePanel.offsetParent !== null);
   }, { expectedField: fieldName, expectedValue: expectedLabel }, { timeout: 15000 });
   const selectedInput = surface.locator(`[data-field-name="${fieldName}"] input:visible`).first();
-  const visibleOptionPanel = field.locator('.many2one-option-panel:visible');
+  // The official Select popup mounts outside the field wrapper, so the
+  // candidate panel is addressed at page scope.
+  const visibleOptionPanel = page.locator('.many2one-option-panel:visible');
   if (String(await selectedInput.inputValue().catch(() => '')).trim() === expectedLabel
     && await visibleOptionPanel.count() === 0) {
     relationContextTrace.push({
@@ -412,7 +415,7 @@ async function chooseUniqueRelationOption(
     });
   const optionAction = await requireUnique(
     page,
-    option.getByRole('button', { name: expectedLabel, exact: true }),
+    option,
     `${fieldName} relation option action ${expectedLabel}#${targetId}`,
     { enabled: true, timeout: 15000 },
   );
@@ -628,7 +631,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     enterStage('project-dialog:cancel-search');
     const searchEntry = await requireUnique(
       projectPage,
-      projectField.locator('.many2one-action').filter({ hasText: /搜索/ }),
+      projectPage.locator('.many2one-option-panel:visible').getByRole('button', { name: /搜索/ }),
       'project search-more action',
       { enabled: true },
     );
@@ -756,7 +759,7 @@ async function verifyAuthorizedProjectRelationCreate(browser) {
     enterStage('project-dialog:success-child');
     const createEntry = await requireUnique(
       projectPage,
-      projectField.locator('.many2one-action').filter({ hasText: /新建|新增/ }),
+      projectPage.locator('.many2one-option-panel:visible').getByRole('button', { name: /新建|新增/ }),
       'project create action',
       { enabled: true },
     );
@@ -1030,15 +1033,29 @@ async function collectWriteFloorplanMetrics(page, surface) {
     nodes.map((node) => String(node.getAttribute('data-group-title') || '').trim()).filter(Boolean)
   ));
   const duplicateGroupTitles = [...new Set(groupTitles.filter((title, index) => groupTitles.indexOf(title) !== index))];
-  const many2oneCapabilities = await surface.locator(
-    '[data-object-task-page] [data-field-type="many2one"]',
-  ).evaluateAll((nodes) => nodes.map((node) => ({
-    fieldName: String(node.getAttribute('data-field-name') || ''),
-    fieldState: String(node.getAttribute('data-field-state') || ''),
-    actions: [...node.querySelectorAll('.many2one-action')]
-      .map((action) => String(action.textContent || '').replace(/\s+/g, ' ').trim())
-      .filter(Boolean),
-  })));
+  // Business actions live in the official Select popup panel, which mounts
+  // outside the field wrapper; open each relation field to read its actions.
+  const many2oneFields = surface.locator('[data-object-task-page] [data-field-type="many2one"]');
+  const many2oneCapabilities = [];
+  for (let index = 0; index < await many2oneFields.count(); index += 1) {
+    const node = many2oneFields.nth(index);
+    const fieldName = String(await node.getAttribute('data-field-name') || '');
+    const fieldState = String(await node.getAttribute('data-field-state') || '');
+    const opener = node.locator('input').first();
+    let actions = [];
+    if (await opener.count() === 1 && await opener.isEditable().catch(() => false)) {
+      await opener.click();
+      const openPanel = page.locator('.many2one-option-panel:visible');
+      if (await openPanel.count() === 1) {
+        actions = (await openPanel.locator('button').allInnerTexts())
+          .map((text) => String(text || '').replace(/\s+/g, ' ').trim())
+          .filter(Boolean);
+      }
+      await opener.press('Escape');
+      await openPanel.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => undefined);
+    }
+    many2oneCapabilities.push({ fieldName, fieldState, actions });
+  }
   const geometry = await page.evaluate(() => ({
     width: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
@@ -1291,7 +1308,7 @@ try {
   await createProjectInput.click();
   const searchMore = await requireUnique(
     page,
-    projectField.locator('.many2one-action').filter({ hasText: /搜索/ }),
+    page.locator('.many2one-option-panel:visible').getByRole('button', { name: /搜索/ }),
     'payment create project search action',
     { enabled: true },
   );

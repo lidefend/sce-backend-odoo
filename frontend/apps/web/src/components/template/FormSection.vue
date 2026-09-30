@@ -17,6 +17,7 @@
           :key="field.key"
           :class="fieldClass(field, index)"
           :data-field-name="field.name"
+          :data-validation-target="fieldValidationTarget(field)"
           :data-field-key="field.key"
           :data-field-type="field.type"
           :data-widget-type="field.widget || undefined"
@@ -91,8 +92,14 @@
               <ScIcon :name="field.favoriteToggle.active ? 'star' : 'star-outline'" :size="16" />
             </ScIconButton>
             <div class="field-control-main">
+              <div
+                v-if="declaresUnknownComponentRenderer(field)"
+                class="field-fail-closed"
+                role="alert"
+                :data-field-fail-closed="String(field.componentRenderer || '')"
+              >{{ failClosedRendererText(field) }}</div>
               <ScRadioGroup
-                v-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
+                v-else-if="field.type === 'selection' && isRadioWidget(field) && !(preferReadonlyFacts && field.readonly)"
                 class="native-radio-group"
                 :model-value="String(field.inputValue ?? '')"
                 :options="field.selectionOptions || []"
@@ -162,7 +169,9 @@
                   <span v-else class="readonly-value">{{ readonlyText(field) }}</span>
                 </slot>
               </ProfessionalRelationFieldControl>
-              <template v-else-if="field.readonly">
+              <!-- JSON 字段没有任何客户端编辑控件：契约声明只读可读展示，这里就必须按事实
+                   呈现，而不是把对象值交给可编辑兜底控件。 -->
+              <template v-else-if="field.readonly || isJsonField(field)">
                 <slot name="readonly" :field="field">
                   <div
                     v-if="field.type === 'html'"
@@ -209,16 +218,17 @@
                   :invalid="field.invalid"
                   :described-by="fieldDescribedBy(field)"
                   :model-value="String(field.inputValue ?? '')"
+                  :query-value="field.relationQueryKeyword || ''"
                   :placeholder="selectPlaceholderText(field)"
-                  @update:model-value="emitMany2oneQuery(field, $event)"
-                  @change="emitMany2oneCommit(field, ($event.target as HTMLInputElement).value)"
+                  @update:model-value="emitMany2oneCommit(field, $event)"
+                  @update:query-value="emitMany2oneQuery(field, $event)"
                 />
                 <div v-else-if="isDateRangeWidget(field)" class="native-date-range">
                   <div class="native-date-range__control">
                     <label class="native-date-range__label" :for="fieldControlId(field)">开始日期</label>
                     <ScDateField
                       :id="fieldControlId(field)"
-                      :model-value="formatMonetaryInputValue(field.inputValue, field.digits, field.currencyLabel)"
+                      :model-value="String(field.inputValue ?? '')"
                       class="input"
                       appearance="form-field"
                       clearable
@@ -295,6 +305,7 @@
 
 <script setup lang="ts">
 import { computed, inject, useId, useSlots } from 'vue';
+import { businessErrorKey } from '../../app/businessValidationError';
 import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
@@ -323,7 +334,7 @@ import { isPaymentSettlementDetailCollectionField } from '../professional-fields
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
 import { formatDisplayValue } from '../../utils/display';
 import { sanitizeReadonlyHtml } from '../../utils/sanitizeReadonlyHtml';
-import { formatMonetaryDisplayValue, formatMonetaryInputValue, monetaryInputStep } from './formSection.mapper';
+import { formatMonetaryDisplayValue, monetaryInputStep } from './formSection.mapper';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -343,6 +354,7 @@ import {
   ScTaskActionResolverKey,
   type ScTaskActionDescriptor,
 } from './taskActionResolver';
+import { PROFESSIONAL_COMPONENT_RENDERERS } from '../../app/presentation/professionalComponentRegistry';
 
 const props = withDefaults(defineProps<{
   title: string;
@@ -406,6 +418,19 @@ const emit = defineEmits<{
   (e: 'field-select', payload: { field: FormSectionFieldSchema; groupTitle: string }): void;
 }>();
 
+/**
+ * Register the position the error layer may send the user to.
+ *
+ * Only a position the user can correct is registered: a read-only occurrence of
+ * the same field keeps its display role and is not advertised as an error
+ * correction site. Registering the key does not make a position focusable by
+ * itself; the focus layer still requires a real, enabled control inside it.
+ */
+function fieldValidationTarget(field: FormSectionFieldSchema) {
+  if (props.fieldSelectionMode || props.fieldConfigEditable || field.readonly) return undefined;
+  return businessErrorKey({ fieldCode: field.name, row: null }) || undefined;
+}
+
 function fieldControlId(field: FormSectionFieldSchema) {
   return `${formSectionDomId}-field-${String(field.key || field.name).replace(/[^A-Za-z0-9_-]/g, '-')}`;
 }
@@ -437,6 +462,21 @@ const slots = useSlots();
 const toneClass = computed(() => (props.tone === 'advanced' ? 'template-form-section--advanced' : 'template-form-section--core'));
 const showHead = computed(() => Boolean(props.title || slots.action));
 const allFieldsReadonly = computed(() => props.fields.length > 0 && props.fields.every((field) => field.readonly));
+const knownComponentRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
+
+function declaresUnknownComponentRenderer(field: FormSectionFieldSchema) {
+  const renderer = field.componentRenderer;
+  return Boolean(renderer) && !knownComponentRenderers.has(renderer);
+}
+
+function failClosedRendererText(field: FormSectionFieldSchema) {
+  return `字段渲染器未注册：${String(field.componentRenderer || '')}`;
+}
+
+function isJsonField(field: FormSectionFieldSchema) {
+  return String(field.type || '').trim().toLowerCase() === 'json';
+}
+
 function isLegacyComplexField(field: FormSectionFieldSchema) {
   return ['many2one', 'binary', 'monetary'].includes(String(field.type || '').trim().toLowerCase())
     || isDateRangeWidget(field);
@@ -903,6 +943,15 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-error-text {
+  color: var(--sc-app-danger-text);
+}
+
+.field-fail-closed {
+  padding: 6px 8px;
+  border: 1px solid var(--sc-app-danger-text);
+  border-radius: var(--sc-radius-sm, 4px);
+  font-size: var(--sc-product-text-sm);
+  line-height: 1.45;
   color: var(--sc-app-danger-text);
 }
 

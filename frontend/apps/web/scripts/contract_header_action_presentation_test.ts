@@ -827,3 +827,117 @@ assert.equal(localDesigner[0].requiresSavedRecord, false);
 assert.deepEqual(buildFormActionExecutionPlan({ action: localDesigner[0], modelName: 'sample.record', recordId: null }),
   { kind: 'local_mode', mode: 'form_field_configuration', toggle: true });
 console.log('[contract_header_action_presentation_test] PASS unsaved_designer_entry=1');
+
+// CONTRACT-ACT-01: the real contract save producer may change its label; Web
+// emphasis must follow normalized intent, never text or array position.
+{
+  const { resolveCanonicalHeaderActionPresentation } = await import('../src/pages/contractForm/contractFormHeaderCanonicalActions');
+  const makeAction = (key: string, label: string, semantics?: Record<string, unknown>) => ({
+    key, label, icon: '', tier: 'secondary' as const, visible: true, enabled: true,
+    reasonCode: '', visibleProfiles: ['edit' as const], safety: {},
+    actionRef: decodeContractV2ActionRule({
+      actionId: key, backendIdentity: `contract_action:${key}`, actionKey: key,
+      triggerType: 'submit', sourceWidgetId: 'page.root', targetIds: ['page.root'],
+      dispatchMode: 'serverBlocking', targetScope: 'page', refreshMode: 'partial',
+      intent: 'api.data', target: { model: 'project.project', operation: 'write' },
+      ...(semantics ? { actionSemantics: semantics } : {}),
+    }),
+  });
+  const save = makeAction('form.save', 'Persist changes', {
+    kind: 'persistence', purpose: 'save_draft', executor: 'record.save',
+    origin: 'platform_form_action', operation: 'write',
+  });
+  const impostor = makeAction('unknown', '保存并审批');
+  const present = (actions: typeof save[], renderProfile: 'edit' | 'readonly' = 'edit') => resolveCanonicalHeaderActionPresentation({
+    floorplan: null, actions, renderProfile, rendererActive: true, dirty: true,
+  });
+  assert.equal(present([save, impostor]).direct.filter((item) => item.tier === 'primary').length, 1);
+  assert.equal(present([save, impostor]).direct.find((item) => item.tier === 'primary')?.key, 'form.save');
+  assert.equal(present([impostor]).direct.some((item) => item.tier === 'primary'), false);
+  assert.equal(present([save], 'readonly').direct.length, 0);
+  console.log('[contract_action_intent] PASS label_independence=2 readonly=1 zero_primary=1');
+}
+
+{
+  const { readFileSync } = await import('node:fs');
+  const { execFileSync } = await import('node:child_process');
+  const { resolveCanonicalHeaderActionPresentation: present } = await import('../src/pages/contractForm/contractFormHeaderCanonicalActions');
+  const { formClientCommands } = await import('../../../packages/schema/src/actionSemantics');
+  const legacy = JSON.parse(readFileSync('frontend/apps/web/scripts/fixtures/contract_act_legacy_runtime_save.json', 'utf8'));
+  const oldRule = decodeContractV2ActionRule(legacy.action);
+  assert.equal(oldRule.actionSemantics?.purpose, 'save_draft');
+  assert.equal(resolveCanonicalFormActionExecution(oldRule, []).kind, 'save');
+  // Exercise the actual Python producer, not a fabricated new semantic type.
+  const produced = JSON.parse(execFileSync('python3', ['-c', `
+import runpy,json
+m=runpy.run_path('addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py')
+a=m['assembler']
+rows=[]
+for mode in ['create','edit','readonly']:
+ c=a.assemble_unified_page_contract_v2({'model':'project.project','view_type':'form','head':{'render_profile':mode},'permissions':{'read':True,'write':True,'create':True},'fields':{'name':{'name':'name','type':'char'}}},source_type='ui.contract',client_type='web_pc',request_id='contract-act-test')
+ rows.append([r for r in c['actionContract']['actionRuleList'] if r['actionId']=='form.save'])
+print(json.dumps(rows))
+`], { encoding: 'utf8' }));
+  assert.equal(produced[2].length, 0);
+  for (const [index, operation] of ['create', 'write'].entries()) {
+    const rule = decodeContractV2ActionRule(produced[index][0]);
+    assert.equal(rule.label, '保存草稿');
+    assert.equal(rule.actionSemantics?.operation, operation);
+    assert.equal(rule.target?.operation, operation);
+    assert.equal(rule.backendIdentity, 'contract_action:form.save');
+    assert.equal(resolveCanonicalFormActionExecution(rule, []).kind, 'save');
+    const action = { key: rule.actionId, label: 'Enregistrer le brouillon', icon: '', tier: 'secondary' as const, visible: true, enabled: true, reasonCode: '', visibleProfiles: ['edit' as const], safety: {}, actionRef: rule };
+    const web = present({ floorplan: null, actions: [action], renderProfile: index ? 'edit' : 'create', rendererActive: true, dirty: false, busy: true, busyKind: 'save' });
+    assert.equal(web.direct[0].tier, 'primary');
+    assert.equal(web.direct[0].enabled, false);
+    assert.equal(web.direct[0].loading, true);
+    assert.equal(web.direct[0].actionRef, rule);
+    const alternate = { overflow: [action], direct: [] }; // data-only alternative terminal arrangement
+    assert.equal(alternate.overflow[0].actionRef, web.direct[0].actionRef);
+    assert.equal(action.enabled, true, 'projection cannot mutate authority');
+    const conflict = decodeContractV2ActionRule({ ...produced[index][0], actionSemantics: { conflict: true } });
+    assert.equal(conflict.actionSemanticsInvalid, true);
+    assert.equal(resolveCanonicalFormActionExecution(conflict, []).kind, 'error');
+    const unknown = { ...action, key: 'unknown', actionRef: { ...rule, actionId: 'unknown', backendIdentity: 'contract_action:unknown', actionSemantics: undefined }, tier: 'secondary' as const };
+    assert.equal(present({ floorplan: null, actions: [unknown], renderProfile: 'edit', rendererActive: true, dirty: true }).direct[0].tier, 'secondary');
+  }
+  assert.equal(formClientCommands.back.actionSemantics.purpose, 'return');
+  assert.equal(formClientCommands.discard.actionSemantics.purpose, 'discard_changes');
+  console.log('[contract_action_production] PASS real_legacy_input=1 python_producer_modes=3 loading_identity=2 terminal_arrangements=2 conflict=2 unknown=2 client_commands=2');
+}
+
+{
+  const { resolveCanonicalHeaderActionPresentation: present } = await import('../src/pages/contractForm/contractFormHeaderCanonicalActions');
+  const rule = (key: string, purpose?: string) => decodeContractV2ActionRule({
+    actionId: key, actionKey: key, backendIdentity: `button:object:${key}`,
+    triggerType: 'click', sourceWidgetId: 'page.header', targetIds: [],
+    dispatchMode: 'server', targetScope: 'page', refreshMode: 'partial',
+    intent: 'execute', button: { name: key, type: 'object' },
+    ...(purpose ? { actionSemantics: { kind: 'business', purpose, executor: 'contract.action', origin: 'declared_business_registry' } } : {}),
+  });
+  const command = (key: string, purpose?: string) => ({
+    key, label: '保存 / localized', icon: '', tier: 'primary' as const, visible: true,
+    enabled: true, reasonCode: '', visibleProfiles: ['edit' as const, 'readonly' as const],
+    safety: { classification: 'danger', requires_confirm: true }, actionRef: rule(key, purpose),
+  });
+  const submit = command('action_submit', 'submit');
+  const approve = command('action_approve', 'approve');
+  const cancel = command('action_cancel', 'cancel_record');
+  const reject = command('action_reject', 'reject');
+  const adapt = (actions: typeof submit[]) => present({ floorplan: null, actions, renderProfile: 'readonly', rendererActive: true, dirty: false });
+  assert.equal(adapt([approve]).direct[0].tier, 'primary', 'explicit approval presentation can retain confirmation without being reclassified as rejection');
+  assert.equal(adapt([submit, approve]).direct.filter(a => a.tier === 'primary').length, 0, 'conflicting explicit primaries do not silently pick last or first');
+  assert.equal(adapt([cancel, reject]).direct.filter(a => a.tier === 'primary').length, 0);
+  assert.equal(adapt([command('unknown')]).direct[0].tier, 'secondary');
+  const blocked = { ...submit, enabled: false, reasonCode: 'UNSAVED_CHANGES' };
+  assert.equal(adapt([blocked]).direct[0].enabled, false);
+  assert.equal(adapt([blocked]).direct[0].reasonCode, 'UNSAVED_CHANGES');
+  for (const action of [submit, approve, cancel, reject, command('unknown')]) {
+    const binding = { key: action.key, backendIdentity: action.actionRef.backendIdentity, enabled: action.enabled, label: action.label } as never;
+    const execution = resolveCanonicalFormActionExecution(action.actionRef, [binding]);
+    assert.equal(execution.kind, 'contract-action');
+    if (execution.kind === 'contract-action') assert.equal(execution.action, binding);
+    assert.equal(adapt([action]).direct[0].actionRef, action.actionRef);
+  }
+  console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5');
+}

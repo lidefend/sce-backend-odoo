@@ -24,6 +24,113 @@
     "c93e40c5e2613c0b9389492f185365c1d498e7d2",
     "e8cbc880f692d504f2849f75d099aeabd0fb7220"
   ],
+  "repository_token_documentation_exceptions": [
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/gitee_temporary_integration_v1.en.md",
+      "blob_id": "9fe4093e105fb3691ff63e29bc278e7963202fb9",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed outage runbook describes the installed legacy reverse-mirror destination; not executable configuration. Other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "7f7e7c6900746e303fe61ec6bb94d48c2a75ba92",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed historical observation identifies old mirror and runner ownership before isolation. Immutable documentation only; other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "cc797fc30811e08fe92ca2d28a1118027e207d74",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Reviewed historical observation identifies old mirror and runner ownership before isolation. Immutable documentation only; other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "dd3ed9a2a8c6e44e48ebb2f6b670627b84b0d651",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed legacy mirror/runner ownership observations retained in the CI reporting closeout record. Exact immutable documentation only; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "c3f5168a56e4ac8e7da60ee698d5de9978e6dd30",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed legacy mirror/runner ownership observations retained in the CI reporting closeout record. Exact immutable documentation only; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "56c477cef60d44a0139fb077c3f7c289178ead49",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged reviewed historical mirror and runner identity observations; appended formal CI stage results add no legacy endpoint. Exact immutable documentation only; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "46694cb16bafd3562762027ec6e808d24959b6c3",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged reviewed historical mirror and runner identity observations; appended formal CI stage results add no legacy endpoint. Exact immutable documentation only; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "fe6594f67d7babc59841e8572476fc58a4594bcc",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed historical automation identities; appended real formal PR and API adaptation evidence. Exact immutable documentation; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "0308376f666439c8188b0e576dbb85484489c461",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Same reviewed historical automation identities; appended real formal PR and API adaptation evidence. Exact immutable documentation; other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "113a11bf838bf401fa376da93cad20ce36bf832b",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged previously reviewed historical mirror/runner identity lines verified against 630e89b8; only ordinary frontend CI progress appended. Exact immutable documentation; all other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "f6ad815c98cd80c540df1ac29ffbc8a2fa70597b",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Unchanged previously reviewed historical mirror/runner identity lines verified against 630e89b8; only ordinary frontend CI progress appended. Exact immutable documentation; all other rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "581c9e9cc778cc93c66628f1eb790443bfd0c881",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Legacy mirror identity lines are byte-identical to merged a32b38b6; only governed branch synchronization and exact trusted package bootstrap evidence appended. Exact immutable documentation exception; all other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "fcbb9d4992df2debeb14995056a5746dbe20e492",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Legacy mirror identity lines are byte-identical to merged a32b38b6; only governed branch synchronization and exact trusted package bootstrap evidence appended. Exact immutable documentation exception; all other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.md",
+      "blob_id": "81e5a4f575e51f1da2d63689aad3bb723d13a6bf",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Historical mirror/runner identity lines are unchanged from merged22ee5391; only the previously pending unpublished-branch synchronization record is appended. Exact immutable documentation only; all other content rules remain enforced."
+    },
+    {
+      "rule_id": "RH008",
+      "path": "docs/ops/iterations/gitee_temporary_integration_20260923.en.md",
+      "blob_id": "88e380d55a209df28201a27ac3aaf9b6e813cb64",
+      "classification": "HISTORICAL_AUTOMATION_DOCUMENTATION",
+      "reason": "Historical mirror/runner identity lines are unchanged from merged22ee5391; only the previously pending unpublished-branch synchronization record is appended. Exact immutable documentation only; all other content rules remain enforced."
+    }
+  ],
   "personal_data_false_positive_registry": "scripts/ci/personal_data_false_positives.json",
   "oversized_blob_exception_registry": "config/security/repository_oversized_blob_exceptions.v1.json",
   "forbidden_path_prefixes": [

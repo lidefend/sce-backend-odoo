@@ -1,5 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
+import type { ProfessionalComponentRenderer } from '../../app/presentation/professionalComponentRegistry';
 
 export type TemplateFieldType =
   | 'char'
@@ -34,7 +35,7 @@ export type FormSectionFieldSchema = {
   componentConfig?: Record<string, unknown>;
   componentKey?: string;
   componentReadiness?: 'ready' | 'readable_fallback' | 'fail_closed';
-  componentRenderer?: string;
+  componentRenderer?: ProfessionalComponentRenderer;
   contractAdapter?: string;
   contractVersion?: string;
   componentFallback?: string | null;
@@ -88,6 +89,8 @@ export type FormSectionFieldSchema = {
   many2oneSearchToken?: string;
   many2oneOpenToken?: string;
   many2oneTextValue?: string;
+  // Transient relation search keyword; never a field value nor a display name.
+  relationQueryKeyword?: string;
   many2oneOpenLabel?: string;
   many2oneSearchLabel?: string;
   many2oneCreateLabel?: string;

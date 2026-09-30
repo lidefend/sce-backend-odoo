@@ -33,6 +33,21 @@ assert.equal(resolveLocalizedDisplayValue({}, { locale: 'zh_CN', emptyText: '--'
 assert.equal(formatDisplayValue([7, localized], { type: 'many2one' }, { locale: 'zh_CN' }), '项目甲');
 assert.equal(formatDisplayValue([7, localized], undefined, { locale: 'zh_CN' }), '项目甲');
 assert.equal(formatDisplayValue([1, 2, 3], undefined, { locale: 'zh_CN' }), '1, 2, 3');
+
+// JSON 字段没有客户端编辑控件，只读展示必须给出真实 JSON 文本与空值口径，
+// 不得退化为空文本，也不得把对象字符串化后冒充可编辑输入。
+assert.equal(
+  formatDisplayValue({ seq: 'A-1', level: 2 }, { type: 'json' }),
+  '{"seq":"A-1","level":2}',
+);
+assert.equal(formatDisplayValue({ seq: 'A-1' }, { ttype: 'json' }), '{"seq":"A-1"}');
+assert.equal(formatDisplayValue([1, 2], { type: 'json' }), '[1,2]');
+assert.equal(formatDisplayValue('{"a":1}', { type: 'json' }), '{"a":1}');
+assert.equal(formatDisplayValue({}, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue([], { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue(false, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue(null, { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue('   ', { type: 'json' }), FIELD_VALUE_EMPTY_TEXT);
 assert.equal(
   stripInternalMigrationMetadata('[migration:general_contract] legacy_record_id=e431f445\n公司综合平台\n业务备注'),
   '公司综合平台\n业务备注',
@@ -209,6 +224,25 @@ for (const source of presentationSources) {
     assert.ok(
       relativePath in TEMPORAL_PARSE_REGISTRY,
       `${relativePath} 出现了日期解析规则；必须走权威或在该守卫中登记理由`,
+    );
+  }
+}
+
+// 复核点名「尚未收口」的取值呈现消费方：逐条锁定其本地回退与格式化事实。
+// 锁定即「已知、有意保留、需单独决策」；任何漂移都必须先更新登记，不得静默变化。
+const PENDING_VALUE_PRESENTATION_CONSUMERS: Record<string, readonly string[]> = {
+  'app/presentation/productMyWorkPresentation.ts': ["'未填写'", "'未知'", '.slice(0, 16)'],
+  'views/ApiKeyManagementView.vue': ["'—'", 'toISOString().slice(0, 19)'],
+  'components/professional-fields/PaymentSettlementIntroduceDialog.vue': ["'—'"],
+  'components/boq/BoqImportPreviewPanel.vue': ["'—'"],
+  'pages/contractForm/RelationSearchDialog.vue': ["'未填写'"],
+};
+for (const [relativePath, markers] of Object.entries(PENDING_VALUE_PRESENTATION_CONSUMERS)) {
+  const text = sourceText(relativePath);
+  for (const marker of markers) {
+    assert.ok(
+      text.includes(marker),
+      `${relativePath} 的未收口取值呈现事实已变化（缺少 ${marker}）；必须重新决策，不得静默漂移`,
     );
   }
 }

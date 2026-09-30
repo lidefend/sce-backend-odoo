@@ -88,6 +88,8 @@
           <div v-else ref="tableScroll" class="worksheet-table-scroll">
             <ScTable
               appearance="worksheet"
+            virtual-scroll
+            height="min(60vh, 640px)"
               :data="worksheetTableData"
               :columns="worksheetTableColumns"
               row-key="key"
@@ -412,8 +414,8 @@ function renderPatchCell(entry: VisibleEntry, column: Column) {
       disabled: session.state !== BOQ_LINE_PATCH_SESSION_EDITING,
       'onUpdate:modelValue': (value: string) => { patchSession.value = updateBoqLinePatchDraft(session, value); },
       onBlur: () => { void commitPatchEdit(); },
-      onVnodeMounted: (vnode: { el?: HTMLElement }) => {
-        const input = vnode.el?.querySelector('input');
+      onVnodeMounted: (vnode) => {
+        const input = vnode.el instanceof HTMLElement ? vnode.el.querySelector('input') : null;
         if (input) { input.focus(); input.select(); }
       },
     }),
@@ -439,7 +441,7 @@ async function commitPatchEdit() {
   const session = patchSession.value;
   if (!session || session.state !== BOQ_LINE_PATCH_SESSION_EDITING) return;
   const validation = validateDraftQuantity(session.draft, session.expectedQuantity);
-  if (!validation.ok) {
+  if (validation.ok === false) {
     if (validation.code === 'NO_CHANGE') { patchSession.value = null; return; }
     patchSession.value = markBoqLinePatchError(session, 'INVALID_QUANTITY');
     return;

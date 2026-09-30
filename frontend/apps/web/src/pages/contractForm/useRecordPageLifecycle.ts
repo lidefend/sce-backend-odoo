@@ -107,6 +107,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     v2ShadowValueSourceKind,
     v2ShadowWidgetCount,
     validationErrors,
+    validationFieldErrors,
     writableFieldCount,
   } = dependencies;
   let activeReloadToken = 0;
@@ -312,6 +313,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     onchangeLinePatches.value = [];
     changedFieldSet.clear();
     dirtyFieldSet.clear();
+    dependencies.resetPendingInlineRelationCreates();
     const pendingOnchangeTimer = getOnchangeTimer();
     if (pendingOnchangeTimer) {
       clearTimeout(pendingOnchangeTimer);
@@ -423,6 +425,9 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       recordMissing.value = false;
       applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'loading' });
       validationErrors.value = [];
+      // Reloading means a new record identity or draft. Errors produced for the
+      // previous one must not decorate this one.
+      validationFieldErrors.value = {};
       showOne2manyErrors.value = false;
       try {
         await loadContract();

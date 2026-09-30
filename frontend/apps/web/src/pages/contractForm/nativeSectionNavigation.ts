@@ -174,7 +174,7 @@ export function workspaceSectionNavigationItems(nodes: CanonicalFormNode[]): Wor
     const role = node.semanticRole;
     const kind = normalizedKind(node);
     const label = SECTION_LABELS[role];
-    if (kind !== 'field' && label && role !== inheritedRole && !emittedRoles.has(role)) {
+    if (kind !== 'field' && role && label && role !== inheritedRole && !emittedRoles.has(role)) {
       const key = `node:${node.nodeId}:${role}`;
       items.push({
         key,

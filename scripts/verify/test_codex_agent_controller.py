@@ -21,9 +21,12 @@ from scripts.ops.codex_agent_controller import (
     GitHubIssueReader,
     OwnerCommand,
     StateStore,
+    checkpoint_context_prompt,
+    fallback_recovery_result,
     feishu_signature,
     output_schema,
     parse_owner_command,
+    restart_from_checkpoint_prompt,
 )
 
 
@@ -68,7 +71,7 @@ class CommandParserTest(unittest.TestCase):
 class FeishuTest(unittest.TestCase):
     def test_signature_matches_official_algorithm(self) -> None:
         timestamp = 1_599_360_473
-        secret = "test-secret"
+        secret = "synthetic-controller-signature-test-only"
         expected = base64.b64encode(
             hmac.new(f"{timestamp}\n{secret}".encode(), digestmod=hashlib.sha256).digest()
         ).decode()
@@ -336,12 +339,183 @@ class StateAndGitHubTest(unittest.TestCase):
                 self.assertIn("--strict-config", command)
                 self.assertIn('approval_policy="never"', command)
 
+    def test_checkpoint_context_prompt_includes_saved_progress_and_next_action(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir = root / "run"
+            run_dir.mkdir()
+            (run_dir / "codex-events.jsonl").write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {"type": "agent_message", "text": "已完成预检，准备跑定向验证"},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            state = {
+                "status": "FAILED_RECOVERABLE",
+                "task": {
+                    "id": "task-1",
+                    "description": "修复上下文续跑缺口",
+                    "branch": "feature/demo-mainline-alignment",
+                    "starting_head": "abc123",
+                    "run_dir": str(run_dir),
+                    "result": {
+                        "status": "failed",
+                        "summary": "定向验证中断，需要从保存检查点继续。",
+                        "next_action": "继续执行剩余验证并补充证据。",
+                        "evidence_paths": ["artifacts/agent/recovery.md"],
+                    },
+                },
+            }
+            prompt = checkpoint_context_prompt(state)
+            self.assertIn("修复上下文续跑缺口", prompt)
+            self.assertIn("已完成预检，准备跑定向验证", prompt)
+            self.assertIn("继续执行剩余验证并补充证据", prompt)
+            self.assertIn("artifacts/agent/recovery.md", prompt)
+
+    def test_missing_run_directory_does_not_claim_current_directory_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            previous = Path.cwd()
+            try:
+                os.chdir(directory)
+                Path("codex-events.jsonl").write_text('{"type":"item.completed","item":{"type":"agent_message","text":"unrelated"}}\n')
+                Path("codex-stderr.log").write_text("unrelated failure")
+                state = {"task": {"id": "task-1"}}
+                result = fallback_recovery_result(state, returncode=1)
+                self.assertEqual(result["evidence_paths"], [])
+                self.assertNotIn("unrelated", result["next_action"])
+                self.assertNotIn("unrelated", checkpoint_context_prompt(state))
+            finally:
+                os.chdir(previous)
+
+    def test_checkpoint_is_context_not_permission_to_replay_writes(self) -> None:
+        prompt = checkpoint_context_prompt({"task": {"id": "task-1"}})
+        self.assertIn("not execution authority", prompt)
+        self.assertIn("missing or stale evidence", prompt)
+        restart = restart_from_checkpoint_prompt({"task": {"id": "task-1"}}, reason="interrupted")
+        self.assertIn("stop before any write", restart)
+        self.assertIn("authoritative readback", restart)
+
+    def test_restart_from_checkpoint_prompt_forbids_restarting_from_scratch(self) -> None:
+        state = {
+            "task": {
+                "id": "task-1",
+                "description": "继续排查浏览器旅程失败",
+            }
+        }
+        prompt = restart_from_checkpoint_prompt(
+            state,
+            reason="the prior worker ended in FAILED_RECOVERABLE without a resumable session",
+        )
+        self.assertIn("continuation of an unfinished prior execution", prompt)
+        self.assertIn("Do not restart", prompt)
+        self.assertIn("the task from scratch.", prompt)
+        self.assertIn("继续排查浏览器旅程失败", prompt)
+
+    def test_fallback_recovery_result_preserves_checkpoint_guidance_without_final_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir = root / "run"
+            run_dir.mkdir()
+            events_path = run_dir / "codex-events.jsonl"
+            stderr_path = run_dir / "codex-stderr.log"
+            events_path.write_text(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "agent_message",
+                            "text": "已完成预检，下一步进入浏览器失败点复现",
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            stderr_path.write_text("context window exhausted\n", encoding="utf-8")
+            state = {
+                "status": "FAILED_RECOVERABLE",
+                "task": {
+                    "id": "task-1",
+                    "description": "继续排查浏览器旅程失败",
+                    "run_dir": str(run_dir),
+                },
+            }
+            result = fallback_recovery_result(state, returncode=1)
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("Resume from the saved checkpoint", result["summary"])
+            self.assertIn("已完成预检", result["next_action"])
+            self.assertIn(str(events_path), result["evidence_paths"])
+            self.assertIn(str(stderr_path), result["evidence_paths"])
+
+    def test_finish_worker_persists_failure_with_invalid_or_unreadable_progress(self) -> None:
+        for payload in ["[]\nnull\n", '{"type":"item.completed","item":[1]}\n', None]:
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                controller = Controller(self.config(root))
+                controller.safe_notify = mock.Mock()
+                run = root / "run"
+                run.mkdir()
+                (run / "codex-events.jsonl").write_text(payload or "")
+                state = controller.store.default()
+                state.update(status="RUNNING", task={"id":"task-1", "run_dir":str(run)})
+                if payload is None:
+                    with mock.patch("scripts.ops.codex_agent_controller.snapshot_from_state", side_effect=OSError("unreadable")):
+                        controller.finish_worker(state, 1)
+                    self.assertIn("evidence unavailable", state["task"]["result"]["next_action"])
+                else:
+                    controller.finish_worker(state, 1)
+                persisted = json.loads((controller.config.state_root / "state.json").read_text())
+                self.assertEqual(persisted["status"], "FAILED_RECOVERABLE")
+                self.assertEqual(persisted["task"]["result"]["status"], "failed")
+
+    def test_sessionless_restart_rejects_missing_identity_without_launch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.launch = mock.Mock()
+            state = {"status": "FAILED_RECOVERABLE", "task": {"id": "task-1"}}
+            with self.assertRaises(CommandRejected):
+                controller.resume_task(state, OwnerCommand(action="continue", argument="retry"))
+            controller.launch.assert_not_called()
+
+    def test_precommand_restart_accepts_only_exact_clean_identity_and_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            run = controller.config.state_root / "runs" / "task-1"
+            run.mkdir(parents=True)
+            events = run / "codex-events.jsonl"
+            events.write_text('{"type":"turn.failed"}\n')
+            (run / "codex-stderr.log").write_text("startup failed")
+            task = {"id":"task-1", "branch":"fix/test", "starting_head":"a"*40, "run_dir":str(run)}
+            state = {"task":task}
+            clean = {"branch":"fix/test", "head":"a"*40, "status":""}
+            with mock.patch("scripts.ops.codex_agent_controller.git_context", return_value=clean):
+                controller.require_safe_checkpoint_restart(state)
+                for payload in ['', '{}', '[]', 'null', '{"type":"thread.started"}', 'not-json', '{"type":"item.started","item":{"type":"command_execution"}}', '{"type":"item.completed","item":{"type":"command_execution"}}']:
+                    events.write_text(payload)
+                    with self.assertRaises(CommandRejected):
+                        controller.require_safe_checkpoint_restart(state)
+                events.write_text('{"type":"turn.failed"}\n')
+                (run / "codex-stderr.log").unlink()
+                with self.assertRaises(CommandRejected):
+                    controller.require_safe_checkpoint_restart(state)
+            for changed in [dict(clean,head="b"*40),dict(clean,branch="fix/other"),dict(clean,status=" M file")]:
+                with mock.patch("scripts.ops.codex_agent_controller.git_context", return_value=changed):
+                    with self.assertRaises(CommandRejected):
+                        controller.require_safe_checkpoint_restart(state)
+
     def test_restart_retries_pre_session_failure_once(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             controller = Controller(self.config(Path(directory)))
             controller.github.comments = mock.Mock(return_value=[])
             controller.safe_notify = mock.Mock()
             controller.launch = mock.Mock()
+            controller.require_safe_checkpoint_restart = mock.Mock()  # admission covered separately
             state = controller.store.default()
             state.update(
                 {
@@ -387,11 +561,44 @@ class StateAndGitHubTest(unittest.TestCase):
             controller.store.save(state)
             controller.initialize(state)
             controller.launch.assert_called_once_with(state, mock.ANY, resume=True)
+            prompt = controller.launch.call_args.args[1]
+            self.assertIn("Saved execution checkpoint:", prompt)
+            self.assertIn("read-only audit", prompt)
+
+    def test_restart_without_session_uses_checkpoint_restart_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            controller = Controller(self.config(Path(directory)))
+            controller.github.comments = mock.Mock(return_value=[])
+            controller.safe_notify = mock.Mock()
+            controller.launch = mock.Mock()
+            controller.require_safe_checkpoint_restart = mock.Mock()  # admission covered separately
+            state = controller.store.default()
+            state.update(
+                {
+                    "status": "FAILED_RECOVERABLE",
+                    "task": {
+                        "id": "task-2",
+                        "description": "read-only audit",
+                        "session_id": None,
+                        "startup_retry_count": 0,
+                        "startup_recovery_generation": None,
+                    },
+                }
+            )
+            controller.store.save(state)
+            controller.initialize(state)
+            controller.launch.assert_called_once()
+            prompt = controller.launch.call_args.args[1]
+            self.assertIn("continuation of an unfinished prior execution", prompt)
+            self.assertIn("Do not restart", prompt)
+            self.assertIn("the task from scratch.", prompt)
+            self.assertIn("Saved execution checkpoint:", prompt)
 
     def test_manual_continue_relaunches_failure_without_session(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             controller = Controller(self.config(Path(directory)))
             controller.launch = mock.Mock()
+            controller.require_safe_checkpoint_restart = mock.Mock()  # admission covered separately
             state = controller.store.default()
             state.update(
                 {
@@ -401,11 +608,18 @@ class StateAndGitHubTest(unittest.TestCase):
                         "description": "read-only audit",
                         "session_id": None,
                         "startup_retry_count": 1,
+                        "branch": "codex/test",
+                        "starting_head": "deadbeef",
                     },
                 }
             )
             controller.resume_task(state, OwnerCommand(action="continue", argument="retry"))
             controller.launch.assert_called_once()
+            prompt = controller.launch.call_args.args[1]
+            self.assertIn("Saved execution checkpoint:", prompt)
+            self.assertIn("read-only audit", prompt)
+            self.assertIn("Do not restart", prompt)
+            self.assertIn("the task from scratch.", prompt)
 
 
 if __name__ == "__main__":

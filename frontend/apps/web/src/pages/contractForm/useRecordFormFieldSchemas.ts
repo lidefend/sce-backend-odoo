@@ -19,6 +19,7 @@ import {
   nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode, nativeNodeWidget, nativeNodeWidgetSemantics,
   type NativeLayoutLikeNode,
 } from './nativeLayoutUtils';
+import { selectFieldErrorsForTarget, type BusinessFieldError } from '../../app/businessValidationError';
 import { fieldType } from './fieldUtils';
 import type { LayoutNode, LowCodeFieldSize } from './types';
 
@@ -33,6 +34,7 @@ export function useRecordFormFieldSchemas(context: {
   isFieldVisible:(name:string)=>boolean; contractVisibleFields:ComputedRef<string[]>; coreFieldNames:ComputedRef<string[]>;
   advancedFieldNames:ComputedRef<string[]>; evaluatePolicyContext:ComputedRef<any>; runtimeFieldStates:ComputedRef<Record<string,any>>;
   validationErrors:Ref<string[]>;
+  validationFieldErrors:Ref<Record<string,BusinessFieldError>>; model:ComputedRef<string>;
   relationOptionsForField:(name:string)=>any[]; relationCreateMode:(descriptor?:FieldDescriptor)=>'none'|'quick'|'page'|'dialog';
   relationInlineCreate:(descriptor?:FieldDescriptor)=>{enabled:boolean;createOnNoMatch:boolean;nameField:string;match?:string};
   relationKeyword:(name:string)=>string; canOpenRelationRecordForm:(name:string,descriptor?:FieldDescriptor)=>boolean;
@@ -116,10 +118,13 @@ export function useRecordFormFieldSchemas(context: {
     normalizeDateInputValue:context.toDateInputValue,normalizeDatetimeInputValue:context.toDatetimeInputValue,
     resolveTextInputValue:context.inputFieldValue,resolveInputPlaceholder,
     resolveHelpText:(field)=>String((field.descriptor as Record<string,unknown>|undefined)?.help||'').trim(),
-    resolveErrorText:(field)=>context.validationErrors.value.find(message=>String(message||'').includes(String(field.label||'').trim()))||'',
+    // A field error is presented from the business ownership the rule reported.
+    // It is never recovered by looking for the field label inside a message.
+    resolveErrorText:(field)=>selectFieldErrorsForTarget(context.validationFieldErrors.value,{model:context.model.value,recordId:context.recordId.value,fieldCode:(field as LayoutNode).name})[0]?.message||'',
     resolveSelectionOptions:mapDescriptorSelectionOptions,resolveRelationOptions:(name)=>mapRelationOptions(context.relationOptionsForField(name)),
     resolveRelationCreateMode:(_name,descriptor)=>context.relationCreateMode(descriptor),
     resolveRelationInlineCreate:(_name,descriptor)=>context.relationInlineCreate(descriptor),resolveRelationTextValue:context.relationKeyword,
+    resolveRelationQueryKeyword:context.relationKeyword,
     resolveCanOpenRelationRecord:context.canOpenRelationRecordForm,
     resolveRelationRecordOpenLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'open_existing','维护当前项'),
     resolveRelationSearchLabel:(_name,descriptor)=>context.relationUiLabel(descriptor,'search_more'),

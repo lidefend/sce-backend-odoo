@@ -21,7 +21,7 @@ import StatusPanel from '../components/StatusPanel.vue';
 import PageRenderer from '../components/page/PageRenderer.vue';
 import { useSessionStore } from '../stores/session';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
-import type { PageBlockActionEvent, PageOrchestrationContract } from '../app/pageOrchestration';
+import type { PageBlockActionEvent, PageOrchestrationBlock, PageOrchestrationContract } from '../app/pageOrchestration';
 import { usePageContract } from '../app/pageContract';
 
 type SceneBlock = Record<string, unknown> & {
@@ -47,6 +47,7 @@ type SceneContract = {
   };
   page_orchestration?: PageOrchestrationContract;
   datasets?: Record<string, unknown>;
+  runtime_fetch_hints?: { blocks?: Record<string, unknown> };
 };
 
 const props = defineProps<{
@@ -222,7 +223,7 @@ const pageContract = computed<PageOrchestrationContract>(() => {
     ? rawContract.value.summary_rows
     : [];
   const entryBlocks = Array.isArray(rawContract.value?.blocks) ? (rawContract.value?.blocks || []) : [];
-  const blocks: SceneBlock[] = summaryRows.map((row, index) => ({
+  const blocks: Array<PageOrchestrationBlock & SceneBlock> = summaryRows.map((row, index) => ({
     key: asText((row as Record<string, unknown>).key) || `summary_${index + 1}`,
     block_type: 'metric_card',
     title: asText((row as Record<string, unknown>).label) || asText((row as Record<string, unknown>).key) || `指标 ${index + 1}`,
@@ -240,7 +241,7 @@ const pageContract = computed<PageOrchestrationContract>(() => {
     if (payload && !asText(merged.data_source)) {
       (merged as SceneBlock).data_source = key;
     }
-    blocks.push(merged);
+    blocks.push({ ...merged, key: asText(merged.key), block_type: asText(merged.block_type) });
   }
   return {
     contract_version: '2.0.0',

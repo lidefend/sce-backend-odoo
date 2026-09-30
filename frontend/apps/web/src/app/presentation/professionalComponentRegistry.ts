@@ -1,6 +1,32 @@
 import type { CanonicalFormPresentationMode, CanonicalFormRenderMode } from './canonicalFormRenderModel';
+import { PROFESSIONAL_BASE_FIELD_TYPES } from '../../components/professional-fields/professionalBaseFieldModel';
 
 export type ProfessionalComponentReadiness = 'ready' | 'readable_fallback' | 'fail_closed';
+
+/**
+ * Every renderer name a registration may hand to the field renderer.
+ *
+ * ``FormSectionField`` is the deliberate sentinel for "no professional control
+ * owns this field; the section's own type-directed control renders it". Naming
+ * it in the union is what keeps a drifted renderer from compiling: once an
+ * arbitrary string reaches the template it is indistinguishable from the
+ * sentinel, which is exactly the silent fallback phase 6 forbids. A renderer
+ * that is added here without a branch in ``FormSection.vue`` fails the
+ * registry guard.
+ */
+export const PROFESSIONAL_COMPONENT_RENDERERS = Object.freeze([
+  'FormSectionField',
+  'ProfessionalBaseFieldControl',
+  'ProfessionalBusinessValueControl',
+  'ProfessionalRelationFieldControl',
+  'ProfessionalDetailCollectionControl',
+  'PaymentSettlementDetailCollectionControl',
+] as const);
+
+export type ProfessionalComponentRenderer = typeof PROFESSIONAL_COMPONENT_RENDERERS[number];
+
+/** The sentinel that routes a field to the section's own type-directed control. */
+export const FORM_SECTION_TYPE_DIRECTED_RENDERER: ProfessionalComponentRenderer = 'FormSectionField';
 
 export type ProfessionalComponentRegistration = {
   componentKey: string;
@@ -9,8 +35,8 @@ export type ProfessionalComponentRegistration = {
   supportedPresentationModes: readonly CanonicalFormPresentationMode[];
   supportedRenderProfiles: readonly CanonicalFormRenderMode[];
   requiredCapabilities: readonly string[];
-  renderer: string;
-  rendererByFieldType: Readonly<Record<string, string>>;
+  renderer: ProfessionalComponentRenderer;
+  rendererByFieldType: Readonly<Record<string, ProfessionalComponentRenderer>>;
   fallback: string | null;
   readiness: ProfessionalComponentReadiness;
 };
@@ -30,12 +56,12 @@ function registration(
   semanticType: string,
   supportedFieldTypes: readonly string[],
   readiness: ProfessionalComponentReadiness = 'ready',
-  renderer = 'FormSectionField',
+  renderer: ProfessionalComponentRenderer = FORM_SECTION_TYPE_DIRECTED_RENDERER,
 ): ProfessionalComponentRegistration {
-  const rendererByFieldType = Object.freeze(Object.fromEntries(
-    (renderer === 'FormSectionField' ? supportedFieldTypes : [])
-      .filter((fieldType) => ['char', 'text', 'html', 'integer', 'float', 'date', 'datetime', 'boolean', 'selection'].includes(fieldType))
-      .map((fieldType) => [fieldType, 'ProfessionalBaseFieldControl']),
+  const rendererByFieldType: Readonly<Record<string, ProfessionalComponentRenderer>> = Object.freeze(Object.fromEntries(
+    (renderer === FORM_SECTION_TYPE_DIRECTED_RENDERER ? supportedFieldTypes : [])
+      .filter((fieldType) => (PROFESSIONAL_BASE_FIELD_TYPES as readonly string[]).includes(fieldType))
+      .map((fieldType) => [fieldType, 'ProfessionalBaseFieldControl'] as [string, ProfessionalComponentRenderer]),
   ));
   return Object.freeze({
     componentKey, semanticType, supportedFieldTypes,

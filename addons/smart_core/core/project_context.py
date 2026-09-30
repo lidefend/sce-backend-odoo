@@ -431,9 +431,19 @@ def _company_scope_domain(env_model, company_id: int) -> list:
         return [("company_id", "=", selected_id)]
     if project_field and _field_targets_legacy_project_scope(project_field):
         return [("project_id.company_id", "=", selected_id)]
-    projects_field = fields.get("project_ids")
-    if projects_field and _field_targets_legacy_project_scope(projects_field):
-        return [("project_ids.company_id", "=", selected_id)]
+    # A company boundary is deliberately never inferred from a ``project_ids``
+    # many2many.  On every model that declares it without a ``company_id``
+    # (``project.tags``, ``project.task.type``,
+    # ``project.task.type.delete.wizard``) the relation is a usage/sharing
+    # relation, not ownership: Odoo keeps those shared dictionaries global
+    # (``project.tags`` has a unique global name and only uses
+    # ``project_ids``/project context to rank search results).  Inferring
+    # ``project_ids.company_id`` hid every record not yet attached to a project
+    # of the selected company - measured on the deployed database as 0/13 tags
+    # and 0/8 stages visible, including any freshly created tag, which is the
+    # reported "created a tag, cannot find it" defect.  Company-owned models
+    # declare ``company_id`` (handled above); shared dictionaries stay governed
+    # by their authoritative ACL and record rules only.
     return []
 
 

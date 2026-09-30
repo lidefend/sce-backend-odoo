@@ -1131,3 +1131,13 @@ API_DATA_FORMAL_SEARCH_FIELDS = {
         "name", "project_id", "settlement_unit_id", "source_created_by", "note",
     ),
 }
+
+
+# Fields whose ORM default must be applied by ``create()`` instead of being
+# materialized into the create payload. ``project.task.sc_state`` is owned by
+# the task state machine: transitions write it under ``allow_transition`` and
+# the model guard refuses any other direct write. Resolving its ORM default
+# into ``vals`` would fabricate the very direct write the guard must reject.
+CREATE_DEFAULT_SKIP_FIELDS = {
+    "project.task": ("sc_state",),
+}

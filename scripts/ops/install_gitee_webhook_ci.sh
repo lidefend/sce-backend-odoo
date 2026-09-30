@@ -25,6 +25,9 @@ trap cleanup EXIT
 tar -cf - \
   scripts/ci/gitee_webhook_ci.py \
   scripts/ci/gitee_ci_run.sh \
+  scripts/ci/gitee_ci_acceptance.py \
+  scripts/ci/gitee_ci_acceptance_check.py \
+  scripts/ci/gitee_ci_checks.py \
   deploy/gitee-ci/gitee-webhook-ci.service \
   deploy/gitee-ci/gitee-ci-worker.service \
   deploy/gitee-ci/install.sh \

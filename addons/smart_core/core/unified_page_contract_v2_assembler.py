@@ -229,11 +229,21 @@ def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
     return "unknown"
 
 
+REFERENCE_FIELD_TYPES = frozenset({"many2one_reference", "reference"})
+
+
 def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str:
     normalized = _text(widget_type).lower()
     descriptor = _dict(field)
     field_type = _text(descriptor.get("ttype") or descriptor.get("type")).lower()
     relation = _text(descriptor.get("relation")).lower()
+    # A reference value is a (model, id) pair the client resolves to its own
+    # record.  No client registers a reference editor, and a text input cannot
+    # carry one, so the declared type outranks every widget spelling here and
+    # the contract binds the readable display instead of a control the type
+    # cannot use.
+    if field_type in REFERENCE_FIELD_TYPES:
+        return "sc.display.text"
     if field_type == "monetary" or normalized == "monetary":
         return "sc.value.money"
     if normalized in {"percentage", "percentpie"}:
@@ -290,6 +300,16 @@ def _widget_type_from_field(field: dict[str, Any]) -> str:
         return "checkbox"
     if ttype == "binary":
         return "binary"
+    if ttype == "json":
+        # No client registers a JSON editor, and no text input can carry an
+        # object value.  Declare the readable display instead of falling
+        # through to an input the resolver must then reject.
+        return "display"
+    if ttype in REFERENCE_FIELD_TYPES:
+        # Same governed fallback for reference types: the readable display
+        # keeps the declared type and the target-model pointer on the widget
+        # instead of masquerading as a text value.
+        return "display"
     return "input"
 
 
@@ -323,6 +343,17 @@ NATIVE_WIDGET_TYPE_ALIASES = {
 
 def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
     normalized = _text(native_widget).lower()
+    # The declared field type outranks every widget spelling for JSON: neither
+    # an explicit name nor a producer-filled default may bind an object value
+    # to a control that cannot carry it.
+    if _text(field.get("ttype") or field.get("type")).lower() == "json":
+        return _widget_type_from_field(field)
+    # Reference types carry the same precedence for the same reason: no client
+    # registers a reference editor, so neither an explicit widget name nor a
+    # producer-filled default may bind a (model, id) pair to a control that
+    # cannot carry it.
+    if _text(field.get("ttype") or field.get("type")).lower() in REFERENCE_FIELD_TYPES:
+        return _widget_type_from_field(field)
     if normalized in CANONICAL_WIDGET_TYPES:
         return normalized
     if normalized in NATIVE_WIDGET_TYPE_ALIASES:
@@ -1577,7 +1608,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",
-        "relation_active_actions",
+        "relation_active_actions", "model_field",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -1591,6 +1622,11 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         component_config["selection"] = deepcopy(list(selection))
     if _text(field.get("relation")):
         component_config["relation"] = _text(field.get("relation"))
+    if field_type in REFERENCE_FIELD_TYPES:
+        model_field = _text(field.get("model_field"))
+        if model_field:
+            # Canonical wire alias for the polymorphic target-model pointer.
+            component_config["referenceModelField"] = model_field
     relation_entry = _dict(field.get("relation_entry"))
     if relation_entry:
         component_config["relationEntry"] = deepcopy(relation_entry)
@@ -3141,9 +3177,13 @@ def _append_standard_form_save_action(
         "actionKey": action_id,
         "sourceActionKey": action_id,
         "backendIdentity": backend_identity,
-        "label": governed_primary_label or ("保存草稿" if render_profile == "create" else "保存修改"),
+        "label": "保存草稿",
         "intent": "api.data",
-        "target": {},
+        "target": {"model": _text(source.get("model") or ui.get("model")), "operation": required_right},
+        "actionSemantics": {
+            "kind": "persistence", "purpose": "save_draft", "executor": "record.save",
+            "origin": "platform_form_action", "operation": required_right,
+        },
         "button": {},
         "triggerType": "submit",
         "sourceWidgetId": "page.root",
@@ -3407,6 +3447,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
+            ("action_semantics", "actionSemantics"),
             ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
@@ -3496,6 +3537,11 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
 
 
 def _action_backend_identity(rule: dict[str, Any]) -> str:
+    # Platform persistence is a contract command, not a generic target action.
+    # Adding its create/write target must not change the producer's identity.
+    if (_dict(rule.get("actionSemantics")).get("executor") == "record.save"
+            and rule.get("sourceChannel") == "platform_form_action"):
+        return _text(rule.get("backendIdentity"))
     native_identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
     native_locator = _text(native_identity.get("native_locator"))
     if native_identity.get("authoritative") is True and native_locator:
@@ -3720,6 +3766,13 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             continue
         current = by_identity[identity]
         current.setdefault("sourceTrace", []).extend(trace_rows)
+        incoming_semantics = row.get("actionSemantics")
+        if incoming_semantics is not None:
+            if current.get("actionSemantics") is None:
+                current["actionSemantics"] = deepcopy(incoming_semantics)
+            elif current["actionSemantics"] != incoming_semantics:
+                # Conflicts stay explicit; consumers must not infer a winner.
+                current["actionSemantics"] = {"conflict": True}
         if permission_clauses:
             current_permission = _dict(current.get("permissionConstraints"))
             clauses = [

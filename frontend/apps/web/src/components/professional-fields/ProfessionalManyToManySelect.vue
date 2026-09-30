@@ -34,10 +34,11 @@
       :min-collapsed-num="3"
       size="medium"
       class="m2m-select"
+      :popup-props="popupProps"
+      :tag-input-props="tagInputProps"
       @search="onSearch"
       @change="onChange"
-      @focus="onFocus"
-      @blur="onBlur"
+      @popup-visible-change="onPopupVisibleChange"
     >
       <!-- 自定义选项模板：支持颜色标识 -->
       <template #option="{ option }">
@@ -77,7 +78,6 @@ const props = defineProps<{
 }>();
 
 const selectRef = ref<InstanceType<typeof TDesignSelect> | null>(null);
-const focused = ref(false);
 
 // ===== 数据适配 =====
 const selectedIds = computed<(string | number)[]>({
@@ -99,6 +99,32 @@ const filteredOptions = computed<RelationOption[]>(() =>
 const canInlineCreate = computed(() =>
   Boolean(props.adapter.canInlineCreateRelation?.(props.field.name)),
 );
+
+// The official panel is at least as wide as its content (`useOverlayInnerStyle`
+// matchWidthFunc, capped at 1000px), so a long relation label would otherwise
+// push the whole document wider than a 390px viewport. Constrain it through the
+// official `popupProps.overlayInnerStyle` channel: the object has no `width`, so
+// the official width calculation stays in charge and only gains a ceiling.
+const popupProps = { overlayInnerStyle: { maxWidth: 'calc(100vw - 16px)' } };
+
+// official-enter-keyword: the text typed here is a search keyword, never a new
+// tag for this field. In the installed official Select (tdesign-vue-next
+// 1.20.5) Enter is delivered through TagInput, and with a non-empty input
+// TagInput first appends that text as a tag (`es/tag-input/hooks/useTagList.mjs`,
+// onInnerEnter). The Select then answers with `removeTag`, which calls
+// `e.stopPropagation()` on the same keydown (`es/select/select.mjs`), so the
+// event never reaches the official keyboard handler that owns the highlight
+// (`es/select/hooks/useKeyboardControl.mjs`, bound on the input wrap) and the
+// highlighted option could not be committed with Enter. The official channel for
+// this is TagInput's own `max`: once its limit is reached TagInput skips the
+// append, the keydown keeps propagating and the official Enter branch commits
+// the highlighted option. `max: -1` therefore means "this input never creates
+// tags"; selection, panel, highlight and keyboard stay with the official
+// component, and neither the candidate list nor the field value changes.
+// official-enter-keyword-exit: remove this prop once the pinned version routes
+// Enter to its keyboard handler while a keyword is present; re-run the many2many
+// keyboard scenarios on every version change.
+const tagInputProps = { max: -1 };
 
 const createOption = computed<SelectOption | null>(() => {
   if (!canInlineCreate.value) return null;
@@ -129,11 +155,30 @@ const selectOptions = computed<SelectOption[]>(() => {
 });
 
 // ===== 事件处理 =====
+// The official Select owns input, highlight, selection and the popup; this
+// control only mirrors the official search/check/close signals into the runtime
+// keyword (see the official-enter-keyword note above for the one TagInput
+// configuration this control has to set).
 function onSearch(keyword: string) {
   props.adapter.setRelationKeyword(props.field.name, keyword || '');
 }
 
-function onChange(value: (string | number)[]) {
+// The installed official Select (tdesign-vue-next 1.20.5) resets its own keyword
+// without reporting it as a search: a check selection clears the input because
+// `reserveKeyword` defaults to false (`es/select/select.mjs`, `setInnerValue`),
+// and a closed panel renders an empty input (`inputValue` is emptied when the
+// popup is hidden). `search` is emitted only for typing, so these two official
+// signals are the reset sources the runtime keyword follows; without them the
+// candidate list stays filtered by a keyword the input no longer shows.
+function resetKeyword() {
+  props.adapter.setRelationKeyword(props.field.name, '');
+}
+
+function onPopupVisibleChange(visible: boolean) {
+  if (!visible) resetKeyword();
+}
+
+function onChange(value: (string | number)[], context?: { trigger?: string }) {
   // 检查是否选择了创建选项
   const createVal = value.find((v) => String(v).startsWith('__create__'));
   if (createVal) {
@@ -150,14 +195,7 @@ function onChange(value: (string | number)[]) {
   // 普通选择：同步到 adapter
   const numericIds = value.map((id) => Number(id)).filter((id) => Number.isFinite(id));
   props.adapter.setRelationIds(props.field.name, numericIds);
-}
-
-function onFocus() {
-  focused.value = true;
-  // 聚焦时清空搜索关键词以展示全部选项
-  if (!props.adapter.relationKeyword(props.field.name)) {
-    props.adapter.setRelationKeyword(props.field.name, '');
-  }
+  if (String(context?.trigger || '') === 'check') resetKeyword();
 }
 
 // 组件挂载时预加载选项数据（空状态字段不会在 hydrate 时加载）
@@ -166,16 +204,6 @@ onMounted(() => {
     props.adapter.setRelationKeyword(props.field.name, '');
   }
 });
-
-function onBlur() {
-  focused.value = false;
-  // 失焦时清空搜索关键词
-  setTimeout(() => {
-    if (!focused.value) {
-      props.adapter.setRelationKeyword(props.field.name, '');
-    }
-  }, 200);
-}
 
 // ===== 工具函数 =====
 function tagColorStyle(color: unknown): Record<string, string> {

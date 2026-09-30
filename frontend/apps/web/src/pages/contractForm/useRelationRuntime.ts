@@ -61,6 +61,7 @@ export function useRelationRuntime() {
   }
 
   function clearRelationRuntime() {
+    searchGeneration += 1;
     Object.keys(relationKeywords).forEach((key) => {
       delete relationKeywords[key];
     });
@@ -80,7 +81,10 @@ export function useRelationRuntime() {
     deniedRelationModels.clear();
   }
 
+  let searchGeneration = 0;
+
   function closeRelationSearchDialog() {
+    searchGeneration += 1;
     Object.assign(relationSearchDialog, closedRelationSearchDialogState());
   }
 
@@ -102,6 +106,7 @@ export function useRelationRuntime() {
     loadColumns: () => Promise<RelationSearchColumn[]>;
     runSearch: () => Promise<void>;
   }) {
+    const generation = ++searchGeneration;
     Object.assign(relationSearchDialog, openRelationSearchDialogState({
       fieldName: params.fieldName,
       descriptor: params.descriptor,
@@ -110,7 +115,9 @@ export function useRelationRuntime() {
       columns: params.columns,
       createMode: params.createMode,
     }));
-    relationSearchDialog.columns = await params.loadColumns();
+    const columns = await params.loadColumns();
+    if (generation !== searchGeneration || !relationSearchDialog.open || relationSearchDialog.fieldName !== params.fieldName) return;
+    relationSearchDialog.columns = columns;
     await params.runSearch();
   }
 
@@ -120,10 +127,15 @@ export function useRelationRuntime() {
   }) {
     const fieldName = relationSearchDialog.fieldName;
     if (!fieldName) return;
+    const generation = ++searchGeneration;
     relationSearchDialog.loading = true;
     relationSearchDialog.error = '';
+    relationSearchDialog.rows = [];
+    relationSearchDialog.options = [];
+    relationSearchDialog.selectedId = null;
     try {
       const rows = await params.fetchRows(fieldName, relationSearchDialog.keyword);
+      if (generation !== searchGeneration || !relationSearchDialog.open) return;
       relationSearchDialog.rows = rows;
       relationSearchDialog.options = rows.map((row) => ({ id: row.id, label: row.label }));
       relationSearchDialog.selectedId = null;
@@ -132,14 +144,16 @@ export function useRelationRuntime() {
         [fieldName]: relationSearchDialog.options,
       };
     } catch (err) {
+      if (generation !== searchGeneration || !relationSearchDialog.open) return;
       relationSearchDialog.error = params.sanitizeError(err, relationSearchDialog.labels.search_failed || '');
     } finally {
-      relationSearchDialog.loading = false;
+      if (generation === searchGeneration) relationSearchDialog.loading = false;
     }
   }
 
   function confirmRelationSearchSelection(selectOption: (option: RelationOption) => void, rowArg?: RelationSearchRow) {
-    const row = rowArg || relationSearchDialog.rows.find((item) => item.id === relationSearchDialog.selectedId);
+    if (!relationSearchDialog.open || relationSearchDialog.loading || relationSearchDialog.error) return;
+    const row = relationSearchDialog.rows.find((item) => item.id === (rowArg?.id ?? relationSearchDialog.selectedId));
     if (!row) return;
     selectOption({ id: row.id, label: row.label });
   }
@@ -186,6 +200,10 @@ export function useRelationRuntime() {
     await params.openCreateForm(fieldName, descriptor);
   }
 
+  // Latest-issued query token per field; see queryRelationOptions.
+  const relationQueryTokens: Record<string, number> = {};
+  let relationQueryTokenSeq = 0;
+
   async function queryRelationOptions(params: {
     fieldName: string;
     keyword: string;
@@ -208,8 +226,15 @@ export function useRelationRuntime() {
       search = '';
       relationKeywords[params.fieldName] = '';
     }
+    // Only the newest candidate query per field may publish its rows. Search
+    // responses can settle out of order, and different keywords are separate
+    // requests now, so a late response for an earlier keyword must neither
+    // repaint the panel nor become selectable.
+    const queryToken = (relationQueryTokenSeq += 1);
+    relationQueryTokens[params.fieldName] = queryToken;
     try {
       const mapped = await params.fetchOptions(search, search ? 40 : 80);
+      if (relationQueryTokens[params.fieldName] !== queryToken) return mapped;
       if (search && !mapped.length && params.hasDynamicFallback) {
         return queryRelationOptions({ ...params, keyword: '' });
       }

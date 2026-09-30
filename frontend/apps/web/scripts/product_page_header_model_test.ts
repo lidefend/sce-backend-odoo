@@ -29,7 +29,7 @@ for (const presentationMode of ['task', 'workspace'] as const) {
 
 const saveAction = {
   key: 'form.save', label: '保存草稿', visible: true, enabled: true, tier: 'secondary',
-  actionRef: { actionId: 'form.save' },
+  actionRef: { actionId: 'form.save', backendIdentity: 'contract_action:form.save', intent: 'api.data' },
 } as CanonicalFormAction;
 const submitAction = {
   key: 'submit', label: '提交', visible: true, enabled: true, tier: 'primary',
@@ -43,12 +43,12 @@ const taskFloorplan = {
 const createHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'create', rendererActive: true, dirty: false,
 });
-assert.deepEqual(createHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
-assert.deepEqual(createHeader.overflow.map((action) => action.actionRef.actionId), ['form.save']);
+assert.deepEqual(createHeader.direct.map((action) => action.actionRef.actionId), ['submit', 'form.save']);
+assert.deepEqual(createHeader.overflow.map((action) => action.actionRef.actionId), [], 'one action cannot occupy both direct and overflow');
 const readonlyHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'readonly', rendererActive: true, dirty: false,
 });
-assert.deepEqual(readonlyHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+assert.deepEqual(readonlyHeader.direct.map((action) => action.actionRef.actionId), ['submit'], 'readonly must never expose persistence');
 const deniedSaveAction = { ...saveAction, enabled: false } as CanonicalFormAction;
 const blockedHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: { ...taskFloorplan, directActions: [deniedSaveAction] },
@@ -58,11 +58,11 @@ assert.deepEqual(blockedHeader.direct.map((action) => action.actionRef.actionId)
 const dirtyEditHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'edit', rendererActive: true, dirty: true,
 });
-assert.deepEqual(dirtyEditHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+assert.deepEqual(dirtyEditHeader.direct.map((action) => action.actionRef.actionId), ['submit', 'form.save']);
 const cleanEditHeader = resolveCanonicalHeaderActionPresentation({
   floorplan: taskFloorplan, actions: [saveAction, submitAction], renderProfile: 'edit', rendererActive: true, dirty: false,
 });
-assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['form.save', 'submit']);
+assert.deepEqual(cleanEditHeader.direct.map((action) => action.actionRef.actionId), ['submit', 'form.save']);
 const mobileAuthority = resolveMobileFormActionAuthority({
   showBack: true,
   showReturn: true,

@@ -35,6 +35,7 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
         "batch": batch,
         "namespace": "codex_p4_project_profile_write",
         "existing_batch": True,
+        "write_scope": ["name", "date_start", "date", "description", "responsibility_ids", "partner_id"],
         "project": {
             "xmlid": "codex_p4_project_profile_write.project_%s" % suffix,
             "id": project_id,
@@ -72,6 +73,27 @@ def _authority(batch=TEST_BATCH, project_id=TEST_PROJECT_ID):
     }
 
 
+def _m2m_authority():
+    authority = _authority()
+    suffix = TEST_BATCH.replace("-", "_")
+    authority["candidate_carrier"] = {
+        "xmlid": "codex_p4_project_profile_write.project_%s_tag_carrier" % suffix,
+        "id": TEST_PROJECT_ID + 1,
+        "ownership_marker": "CODEX-P4-%s-TAG-CARRIER" % TEST_BATCH.upper(),
+        "company_id": 1,
+        "tag_ids": [2, 3, 4],
+    }
+    authority["tags"] = [
+        {
+            "xmlid": "codex_p4_project_profile_write.tag_%s_%s" % (suffix, name),
+            "id": value,
+            "name": "CODEX-P4-%s-TAG-%s" % (TEST_BATCH.upper(), name.upper()),
+        }
+        for name, value in (("alpha", 2), ("beta", 3), ("gamma", 4))
+    ]
+    return authority
+
+
 def _facts(project_id=TEST_PROJECT_ID, responsibility_ids=None):
     ids = list(responsibility_ids or [24, 25])
     return {
@@ -95,6 +117,10 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
             "READ_ONLY",
             "PREFLIGHT_ONLY",
             "NETWORK_FAILURE_RECOVERY",
+            "PERMISSION_ONLY",
+            "RELATION_ONLY",
+            "RELATION_WRITE_ONLY",
+            "M2M_ONLY",
             "P4_PROJECT_PROFILE_BATCH",
             "P4_TOOL_CANDIDATE_SHA",
             "P4_PROJECT_PROFILE_AUTHORITY_JSON",
@@ -187,6 +213,13 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("external project references exist", PY)
         self.assertIn("_external_references", PY)
         self.assertIn("project.responsibility", PY)
+        # A tag created through the official create option carries no XMLID, so
+        # the cleanup has to find it by the batch marker and report what it
+        # removed; the browser batch is only clean when that list is read back
+        # empty.
+        self.assertIn("_marker_tags", PY)
+        self.assertIn("deleted_marker_tag_ids", PY)
+        self.assertIn("marker-owned project tags still exist", PY)
 
     def test_make_entry_is_local_dev_only(self):
         block = MK[MK.index("local.dev.project_profile_write_fixture:"):]
@@ -355,6 +388,58 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         for field in ("name", "date_start", "date", "description", "responsibility_ids"):
             self.assertIn('"%s"' % field, PY)
 
+    def test_permission_probe_requires_owned_write_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"PERMISSION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_permission_probe_cannot_reuse_readonly_or_recovery_modes(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "permission checks require dedicated write authority",
+                    {"PERMISSION_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_probe_requires_owned_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"RELATION_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_relation_probe_mode_is_exclusive(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY", "PERMISSION_ONLY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "relation checks require dedicated authority",
+                    {"RELATION_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_write_probe_requires_owned_scope(self):
+        self._assert_direct_denied(
+            "P4_PROJECT_PROFILE_BATCH must be explicit",
+            {"RELATION_WRITE_ONLY": "1"}, remove=("P4_PROJECT_PROFILE_BATCH",),
+        )
+
+    def test_relation_write_probe_mode_is_exclusive(self):
+        for mode in ("READ_ONLY", "PREFLIGHT_ONLY", "NETWORK_FAILURE_RECOVERY", "PERMISSION_ONLY", "RELATION_ONLY"):
+            with self.subTest(mode=mode):
+                self._assert_direct_denied(
+                    "relation write checks require dedicated authority",
+                    {"RELATION_WRITE_ONLY": "1", mode: "1"},
+                )
+
+    def test_relation_write_requires_explicit_partner_scope(self):
+        authority = _authority()
+        authority["write_scope"].remove("partner_id")
+        self._assert_direct_denied(
+            "relation write scope must explicitly include partner_id",
+            {"RELATION_WRITE_ONLY": "1", "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority)},
+        )
+        result, _ = self._direct_runner({"RELATION_WRITE_ONLY": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_recovery_report_cannot_reuse_normal_save_or_skip_failure_feedback(self):
         self.assertIn("if (!NETWORK_FAILURE_RECOVERY)", BROWSER_MJS)
         self.assertIn("failedMessageVisible", BROWSER_MJS)
@@ -381,6 +466,105 @@ class TestLocalDevProjectProfileWriteFixture(unittest.TestCase):
         self.assertIn("retryWrite.outcome === 'business_success'", BROWSER_MJS)
         self.assertIn("refreshConsistent = sameJson(afterRetry, refreshed)", BROWSER_MJS)
         self.assertIn("responsibility_operations_applied", BROWSER_MJS)
+
+
+class TestMany2manyCarrier(unittest.TestCase):
+    def _runner(self, overrides):
+        return TestLocalDevProjectProfileWriteFixture()._direct_runner(overrides)
+
+    def test_fixture_tag_carrier_is_batch_owned_and_bounded(self):
+        self.assertIn('"carrier_xmlid": "project_%s_tag_carrier" % suffix', PY)
+        self.assertIn('"carrier_code": "CODEX-P4-%s-TAG-CARRIER" % batch.upper()', PY)
+        self.assertIn("fixture tag carrier XMLID is not owned by this batch", PY)
+        self.assertIn("external tag-carrier references exist", PY)
+        self.assertIn("batch-owned tag carrier still exists", PY)
+
+    def test_many2many_mode_requires_a_bounded_carrier(self):
+        authority = _m2m_authority()
+        authority.pop("candidate_carrier")
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("authority must resolve the batch-owned many2many tag carrier", result.stderr)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_rejects_a_carrier_that_does_not_hold_the_candidates(self):
+        authority = _m2m_authority()
+        authority["candidate_carrier"]["tag_ids"] = [2, 3]
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertTrue(
+            "authority many2many tag carrier does not hold the batch candidates" in result.stderr
+            or "authority must resolve the three batch-owned many2many tag candidates" in result.stderr
+            or "authority many2many tag candidate identity is invalid" in result.stderr,
+            result.stderr,
+        )
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_rejects_the_acceptance_target_as_carrier(self):
+        authority = _m2m_authority()
+        authority["candidate_carrier"]["id"] = TEST_PROJECT_ID
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(authority),
+        })
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("authority many2many tag carrier must not be the acceptance target", result.stderr)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_mode_accepts_the_bounded_carrier(self):
+        result, artifact_created = self._runner({
+            "M2M_ONLY": "1",
+            "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(_m2m_authority()),
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("GUARD_VALIDATION_ONLY", result.stdout)
+        self.assertFalse(artifact_created)
+
+    def test_many2many_write_closure_is_pinned_by_the_browser_entry(self):
+        # The draft-only scenarios reuse their own evidence; the closure below is
+        # what has to be present for save, cancel, failure recovery and the
+        # read-only counterexample.
+        for marker in (
+            "m2m_selection_stays_draft_until_save",
+            "m2m_selection_saves_and_reads_back",
+            "m2m_cancel_discards_draft_without_a_write",
+            "m2m_save_failure_preserves_draft",
+            "m2m_save_retry_persists_and_matches_ui",
+            "m2m_readonly_principal_cannot_modify",
+            "m2m_write_closure_request_ledger",
+            "m2m_create_option_is_offered_for_an_unknown_name",
+            "m2m_create_option_creates_and_selects_the_record",
+            "m2m_created_tag_is_authoritative_in_the_relation_query",
+            "m2m_created_tag_saves_and_reads_back",
+            "applyTagCommands",
+            "chipSetMatches",
+            "recordWriteRequests(page)",
+            "NAVIGATION_AUTHORITY_DENIED",
+        ):
+            self.assertIn(marker, BROWSER_MJS)
+        self.assertIn("verifyMany2manyTagSelect(browser, page, report, beforeFacts)", BROWSER_MJS)
+        self.assertIn("name: '放弃', exact: true", BROWSER_MJS)
+        # The closure must compare the submitted relation commands with the
+        # authoritative readback instead of trusting the rendered chips.
+        self.assertIn("sameJson(submittedTagIds, savedTagIds)", BROWSER_MJS)
+        self.assertIn("sameJson(authoritativeAfterRetry, refreshedAfterRetry)", BROWSER_MJS)
+
+    def test_many2many_mode_stays_exclusive(self):
+        for conflicting in ("RELATION_ONLY", "RELATION_WRITE_ONLY", "PERMISSION_ONLY", "NETWORK_FAILURE_RECOVERY"):
+            with self.subTest(conflicting=conflicting):
+                result, _ = self._runner({
+                    "M2M_ONLY": "1",
+                    conflicting: "1",
+                    "P4_PROJECT_PROFILE_AUTHORITY_JSON": json.dumps(_m2m_authority()),
+                })
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertTrue("exclusive mode" in result.stderr, result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,11 @@
 import { buildOne2ManyInlineCommands } from '../../app/x2manyCommands';
+import {
+  BusinessErrorCodes,
+  businessErrorKey,
+  createBusinessErrorTarget,
+  createBusinessFieldError,
+  type BusinessFieldError,
+} from '../../app/businessValidationError';
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
 import { fieldType, fromDatetimeInputValue, normalizeRelationIds, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
@@ -506,6 +513,8 @@ export function initOne2manyRowsFromRelationSource(params: {
 
 export function collectOne2manyDraftValidationFromRows(params: {
   rowsByField: Record<string, One2ManyInlineRow[]>;
+  /** Business model that owns the parent record the rows belong to. */
+  model: string;
   recordId: number;
   resolvePrimaryColumn: (fieldName: string) => string;
   resolveColumns: (fieldName: string) => One2ManyColumn[];
@@ -513,7 +522,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
 }) {
   const issues: string[] = [];
   const rowErrors: Record<string, string[]> = {};
-  const cellErrors: Record<string, string> = {};
+  const cellErrors: Record<string, BusinessFieldError> = {};
   Object.entries(params.rowsByField).forEach(([fieldName, rows]) => {
     if (!Array.isArray(rows) || !rows.length) return;
     const hasTouchedRows = rows.some((row) => row.isNew || row.dirty || row.removed);
@@ -536,7 +545,30 @@ export function collectOne2manyDraftValidationFromRows(params: {
         if (isOne2manyEmptyValue(column, value)) {
           const message = `${column.label}不能为空`;
           perRow.push(message);
-          cellErrors[`${fieldName}:${row.key}:${column.name}`] = message;
+          // A row is identified by its own stable identity: the persisted record
+          // id once the row exists, and the draft row key while it is unsaved.
+          // Position and display text are never identity, so reordering rows
+          // cannot move an error onto a different row.
+          const target = createBusinessErrorTarget({
+            model: params.model,
+            recordId: params.recordId,
+            fieldCode: fieldName,
+            row: {
+              relationField: fieldName,
+              recordId: Number(row.id) > 0 ? Number(row.id) : null,
+              rowKey: row.key,
+              cellField: column.name,
+            },
+          });
+          const error = createBusinessFieldError({
+            code: BusinessErrorCodes.REQUIRED_VALUE_MISSING,
+            message,
+            target,
+          });
+          if (error) {
+            const key = businessErrorKey(error.target);
+            if (key) cellErrors[key] = error;
+          }
           issues.push(`${fieldName} 第${index + 1}行${column.label}不能为空`);
         }
       });
