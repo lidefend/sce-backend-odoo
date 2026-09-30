@@ -8089,3 +8089,8 @@ L3未执行：tier/company/reason/approved状态/native XML需要一次受管模
 P4既有回滚工具新增material-settlement scope8，默认all纳入。验证状态绕过/提前确认拒绝、无配置审批无下游、金额规则待审阻断、实际审批不记成本付款、approved事实/明细不可变、显式确认按现有类别配置产生台账/草稿申请、拒绝回draft、重提新review。所有新建测试单据/生成台账/付款申请纳入既有rollback消失回读，不新增环境或fixture基线。
 
 L1 material-settlement-runtime-iteration.log、py_compile/bash-n PASS；P1源/测试未变，复用76/51/15。后续受管smart_construction_core升级/后端重绑，仅执行本范围8项。环境沿用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤与固定卷由入口预检；非客户生产/控制库。L3及L4尚pending，前端未变不重建，L5不在本地任务范围。
+
+
+53.78实际：受管升级及后端7a6adbe17加载成功，material-settlement-runtime.log 8/8 PASS，ROLLBACK VERIFIED。审批阶段无成本/付款，approved头及明细修改删除拒绝，显式确认按现有类别配置检查下游金额与草稿付款状态，重复确认拒绝；拒绝重提新review且不确认。此运行建单/确认使用事务sudo，审批用实际reviewer，不等同完整角色业务旅程。
+
+P4既有浏览器范围增加sc.material.settlement；material-settlement-page-iteration.log L1/node语法PASS。创建tpl07-1790781211021/report.json 15 PASS，官方表单/有效契约、编号隐藏、未保存无确认或剩余付款、双视口，errors=[]/forbiddenWrites=[]，390截图复核。已有记录tpl07-1790781226628/report.json api.data ok=true records=[]，数据前置不足；不重复查询，不新建fixture，不升级全业务行。前端7915f3bb9复用未重建；真实角色记录办理仍pending。总体目标与detail.action-state继续开放。

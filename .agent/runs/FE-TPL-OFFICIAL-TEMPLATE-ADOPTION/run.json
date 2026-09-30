@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.77 material-settlement source76/native51/semantics15 PASS. Extend existing rollback scope material-settlement, verify actual policy/tier approval does not post cost/payment, explicit confirmation preserves existing category-controlled ledger/payment behavior, immutable approved head/lines, monetary rule, rejection/resubmit. Managed module upgrade/reload needed then scope-only runtime; no frontend rebuild or old ORM reruns. Overall role/UI and all-document coverage incomplete.",
+  "next_exact_step": "53.78 material settlement runtime8 rollback/create15 PASS backend7a6adbe17; existing PM recordqueryempty, no repeat. Continue remaining business-document shared approval producers using existing workflow profiles, next equipment/labor families in their current modules, preserving confirmation cost/downstream facts. Material family now has source/runtime coverage; actual role record UI remains pending for empty scopes. Reuse existing ledger/results, no broad audit/old ORM/frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1164,6 +1164,17 @@
       "native_tests": 51,
       "semantics_tests": 15,
       "runtime": "not_run; managed module upgrade required"
+    },
+    "segment_53_78": {
+      "status": "runtime_and_create_passed_record_ui_pending",
+      "backend": "7a6adbe17",
+      "runtime_checks": 8,
+      "rollback": "verified",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/material-settlement-runtime.log",
+      "create_assertions": 15,
+      "create_report": "artifacts/frontend-web-fix-20260928/tpl07-1790781211021/report.json",
+      "record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790781226628/report.json",
+      "record_status": "authorized query empty"
     }
   }
 }

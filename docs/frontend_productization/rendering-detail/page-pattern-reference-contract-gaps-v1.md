@@ -286,3 +286,8 @@ P1 native readonly/invisible-not-id declaration is live on backend41d692abe. Eff
 ### Segment53.75–53.76 — RFQ approval and separate quotation selection
 
 P1 RFQ shared approval source74/native50/semantics15 PASS. Managed runtime8 PASS with rollback verified on a3379822c: no configuration auto-approves only; configured real tier blocks selection/order; undefined monetary rule rejected; approval preserves quote selection requirement; explicit selection then draft order; rejection/resubmission preserves separation. Native reset/state/order visibility matches authority. Official create15 PASS (tpl07-1790780849651); PM record query empty (tpl07-1790780863288), actual role record handling remains pending. No frontend rebuild/new fixture. Existing overall action-state gap stays open.
+
+
+### Segment53.77–53.78 — Material settlement approval separated from confirmation
+
+P1 source76/native51/semantics15 PASS. Backend7a6adbe17 scoped runtime8 PASS with rollback verified: shared approval stops at approved, existing cost and payment side effects occur only on explicit confirmation; approved header/line facts remain immutable, actual monetary rule and rejection/resubmission checked. Official create15 PASS (tpl07-1790781211021); PM record query empty (tpl07-1790781226628), so role handling remains pending. Frontend build unchanged; no persistent fixtures. Overall detail.action-state and all-document adoption remain open.
