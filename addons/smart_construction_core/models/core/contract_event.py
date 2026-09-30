@@ -74,8 +74,21 @@ class ScContractEvent(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if "state" in vals and self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN:
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if "state" in vals and not authoritative:
             raise UserError(_("合同履约事件状态只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "name", "event_type", "project_id", "company_id", "contract_id", "partner_id", "cost_code_id",
+            "event_no", "source_channel", "event_date", "applicant_id", "department_id", "amount_impact",
+            "tax_excluded_amount", "currency_id", "tax_amount", "change_limit_amount", "limit_control_result",
+            "settlement_included", "attachment_ids", "description", "basis", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.state in ("submitted", "approved", "done", "cancel") or (
+                rec.state in ("draft", "rejected") and getattr(rec, "validation_status", "") in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已结束的合同履约事件内容不可改写；请按正式流程办理。"))
         return super().write(vals)
 
     def _write_document_state(self, values):

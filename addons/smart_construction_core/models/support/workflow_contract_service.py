@@ -688,6 +688,7 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.contract.event": {
             "state_field": "state",
+            "editable_phases": ["draft", "rejected"],
             "state_phase": {
                 "draft": "draft",
                 "submitted": "under_review",

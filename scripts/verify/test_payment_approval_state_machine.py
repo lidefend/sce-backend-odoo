@@ -3083,7 +3083,9 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
               'super': lambda: types.SimpleNamespace(create=lambda vals: calls.append(vals) or True,
                                                      write=lambda vals: calls.append(vals) or True)}
         exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
-        row = types.SimpleNamespace(env=types.SimpleNamespace(context={}))
+        class Rows(list): pass
+        row = Rows([types.SimpleNamespace(state='draft', validation_status='no')])
+        row.env = types.SimpleNamespace(context={})
         for state in ('submitted', 'approved', 'rejected', 'done', 'cancel'):
             for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
                 row.env.context = context
@@ -3121,6 +3123,35 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](row, {'description': 'editable draft'}))
         row.env.context = {'sc_document_state_token': token}
         self.assertTrue(ns['write'](row, {'state': 'confirmed'}))
+
+    def test_contract_event_reviewed_content_and_rejected_editability_agree(self):
+        path = MODEL.with_name('contract_event.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        token, writes = object(), []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(vals) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        row = types.SimpleNamespace(state='draft', validation_status='no')
+        rows = Rows([row]); rows.env = types.SimpleNamespace(context={'skip_validation_check': True, 'sc_document_state_token': True})
+        for state, status in (('submitted', 'pending'), ('approved', 'no'), ('done', 'validated'), ('cancel', 'no'), ('rejected', 'pending')):
+            row.state, row.validation_status = state, status
+            for vals in ({'amount_impact': 999}, {'project_id': 11}, {'description': 'changed'}, {'attachment_ids': [(5, 0, 0)]}, {'settlement_included': True}):
+                with self.subTest(state=state, vals=vals), self.assertRaises(ValueError): ns['write'](rows, vals)
+        self.assertEqual(writes, [])
+        row.state, row.validation_status = 'rejected', 'rejected'
+        self.assertTrue(ns['write'](rows, {'description': 'corrected'}))
+        service_path = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        tree = ast.parse(service_path.read_text())
+        profile = next(ast.literal_eval(value) for node in ast.walk(tree) if isinstance(node, ast.Dict)
+                       for key, value in zip(node.keys, node.values) if isinstance(key, ast.Constant) and key.value == 'sc.contract.event')
+        edit = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_editability')
+        edit.decorator_list = []
+        exec(compile(ast.Module(body=[edit], type_ignores=[]), str(service_path), 'exec'), ns)
+        service = types.SimpleNamespace(TERMINAL_PHASES={'done', 'cancelled'})
+        self.assertEqual(ns['_editability'](service, profile, 'rejected', 'rejected'), 'editable')
+        self.assertEqual(ns['_editability'](service, profile, 'rejected', 'pending'), 'readonly')
+        self.assertEqual(ns['_editability'](service, profile, 'approved', 'approved'), 'readonly')
 
     def test_contract_event_submission_and_callback_require_shared_approval_facts(self):
         path = MODEL.parent / 'contract_event.py'
