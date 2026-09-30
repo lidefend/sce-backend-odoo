@@ -229,7 +229,9 @@
         "addons/smart_construction_core/models/core/safety_management.py",
         "addons/smart_construction_core/views/core/safety_management_views.xml",
         "addons/smart_construction_core/models/core/subcontract_management.py",
-        "addons/smart_construction_core/views/core/subcontract_management_views.xml"
+        "addons/smart_construction_core/views/core/subcontract_management_views.xml",
+        "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+        "addons/smart_construction_core/views/core/output_invoice_adjustment_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -301,7 +303,9 @@
         "addons/smart_construction_core/models/core/safety_management.py",
         "addons/smart_construction_core/views/core/safety_management_views.xml",
         "addons/smart_construction_core/models/core/subcontract_management.py",
-        "addons/smart_construction_core/views/core/subcontract_management_views.xml"
+        "addons/smart_construction_core/views/core/subcontract_management_views.xml",
+        "addons/smart_construction_core/models/core/output_invoice_adjustment.py",
+        "addons/smart_construction_core/views/core/output_invoice_adjustment_views.xml"
       ]
     },
     "standard_preview_tool": {
