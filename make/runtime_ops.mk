@@ -2356,6 +2356,7 @@ verify.nav.pro01r.route_authority.browser: guard.prod.forbid
 .PHONY: verify.business_config.formal_list.unit
 verify.business_config.formal_list.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
+	@python3 addons/smart_core/tests/test_load_contract_response_cache.py
 	@python3 addons/smart_core/tests/test_view_orchestrator.py
 	@python3 scripts/verify/test_formal_list_configuration_baseline.py
 

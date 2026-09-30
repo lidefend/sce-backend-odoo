@@ -414,6 +414,19 @@
         "scripts/verify/test_frontend_navigation_shell_guard.py",
         "make/frontend.mk"
       ]
+    },
+    "configuration_projection": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/utils/load_contract_response_cache.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "make/runtime_ops.mk"
+      ]
     }
   },
   "blockers": [],

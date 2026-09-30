@@ -15,6 +15,20 @@ LoadContractResponseCache = TARGET.LoadContractResponseCache
 
 
 class TestLoadContractResponseCache(unittest.TestCase):
+    def test_create_defaults_are_not_a_reusable_projection_source(self):
+        for key, value in (("render_profile", "create"), ("renderProfile", "create"),
+                           ("record_id", "new"), ("recordId", "new"), ("res_id", "new"), ("resId", "new")):
+            with self.subTest(key=key):
+                self.assertIsNone(TARGET.projection_base_params({"model": "x.document", key: value}))
+
+    def test_saved_records_and_lists_keep_record_independent_projection_cache(self):
+        for request in ({"model": "x.document", "view_type": "tree"},
+                        {"model": "x.document", "render_profile": "edit", "record_id": 42}):
+            base = TARGET.projection_base_params(request)
+            self.assertEqual(base["model"], "x.document")
+            self.assertNotIn("record_id", base)
+        self.assertIsNone(TARGET.projection_base_params({"model": "x.document", "default_project_id": 10}))
+
     def setUp(self):
         self.now = 100.0
         self.cache = LoadContractResponseCache(
