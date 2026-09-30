@@ -399,7 +399,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.154 expense relation browser33 tpl07-1790800914871 PASS: candidate1815 selected, project10→11 clears old request and changes actual query; no writes. P1 next concrete gap: expense payment_request_id domain only project; cash-out reimbursement candidates include receipt-labelled id32. Align backend relation domain with existing _expected_payment_request_type/_check_payment_request_scope_or_raise, never frontend label inference. Production0bda7f8e0/index-Ddc2GXJe.js unchanged;158 pure/27 runtime reused. Existing67/detail.action-state, filled submit, saved-data and final readable source-ID evidence open. No fixture/push/merge/target deployment.",
+  "next_exact_step": "53.155 candidate direction closed: c0cbdf7a7 P1 nonstored payment_request_types reuses execution direction, native domain/defaults/hidden dependency;160 pure and browser35 tpl07-1790801331397 PASS. Actual cash-out query project10/type in [pay], receipt-labelled32 excluded; project11 preserves direction and clears old choice, no writes. Governed upgrade/backend c0cbdf7a7 passed; frontend index-Ddc2GXJe.js unchanged. Next continue filled expense create/submit using existing governed rollback tooling; saved nonlegacy query remains known empty, do not repeat. Cash-in browser and overall67/detail.action-state remain unverified. No fixture/push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

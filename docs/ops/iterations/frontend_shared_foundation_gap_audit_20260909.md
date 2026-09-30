@@ -8990,3 +8990,14 @@ fc2b16113 clean起点，P4只扩展原expense create探针，不改生产或运�
 发现明确P1候选范围缺口：现金流出报销的有效payment_request_id域只约束project_id，实际project10候选包含id32、display_name“收款申请 / FE Project A / FE-A Counterparty / ¥30.00 / FE-PFL035-RECEIVE-001”。现有模型_expected_payment_request_type和_check_payment_request_scope_or_raise已经校验方向，前端不应自行从文案或模型名推导过滤。下一步在既有关系契约适配/原生字段域声明与财务方向一致的候选范围，并用本查询链验证；不把当前33PASS当候选业务适配全部完成，也不因后端最终拒绝而忽略选择体验缺口。
 
 前端index-Ddc2GXJe.js/backend0bda7f8e0生产未变，158纯测/创建及费用运行27按依赖复用，无构建、模块升级、额外ORM或保存记录查询。旧项目关系值的依赖失效路径实测可用。整体67/detail.action-state、已保存数据前提、填完提交及最终可读源ID证据仍开放。无推送合并目标部署。
+
+
+### 53.155 费用申请候选方向契约收口
+
+f74b4f525 clean起点，P1 smart_construction_core原生费用关系域缺少既有现金方向约束。共享解析器仅支持直接字段依赖/字面量，不支持Python条件表达式；未扩建解析框架或在前端推导业务。c0cbdf7a7新增非存储只读payment_request_types，由_expected_payment_request_type执行权威计算（cash_out→[pay]、cash_in→[receive]；非现金/往来/追溯保留原有两类关联范围），字段域同时约束project_id与type in payment_request_types。两处原生表单补隐藏依赖，新建default_get从同一模型计算投影。审批/入账/权限和后端最终scope校验不改，前端生产代码不改。
+
+L1 expense-direction-iteration/final-iteration PASS；payment_approval_state_machine 160项纯测PASS，新增现金双向及其余流向、原生域/依赖检查并扩充default_get测试；begin/record非零回执已写。node语法及diff通过。运行需要字段注册和XML视图更新：首次升级因未声明CODEX_NEED_UPGRADE被入口拒绝，未执行；补齐CODEX_NEED_UPGRADE=1、CODEX_MODULES=smart_construction_core后，原受管acceptance.module.upgrade成功，随后backend.acceptance.up重载c0cbdf7a7。日志expense-direction-upgrade/backend.log；仍是local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter和原卷，无新环境/fixture。前端继续index-Ddc2GXJe.js，不构建。
+
+expense-direction-browser.log / tpl07-1790801331397：35 PASS，errors=[]、forbiddenWrites=[]。finance授权menu564/action758的新建报销实测query domain=[[project_id,=,10],[type,in,[pay]]]，返回15条（原16条中的收款标签id32退出），选择id1815显示值保留；项目10→11清空旧选择，新query保留type in [pay]且项目11。空提交必填反馈、原双视口检查保持通过。方向限制由实际请求证明，不通过显示文案过滤。cash_in的receive映射为纯测证据，未声称对应浏览器办理完成。
+
+原158纯测由160替代；生产消费者及保存/审批执行输入未改，费用27业务执行证据按依赖复用，无额外ORM/重跑付款49。53.154候选方向缺口关闭；整体67/detail.action-state继续开放。完整填表提交、非legacy已保存费用数据前提及最终可读来源ID证据仍待完成。仅本地提交，无推送、合并或目标部署；本批方向候选定向验收通过不等于全系统交付。
