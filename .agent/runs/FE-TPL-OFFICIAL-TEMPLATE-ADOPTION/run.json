@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.35 fixed stale active tier definitions for disabled steps (P1 sync active_test=False),49 unit tests pass. Backend4880989f8 reloaded;53.36 expense runtime12 passes with verified restoration and two-step/non-reviewer checks. Next assert configured step sequence10->20 matches actual definition/review order (not yet proven); continue full necessary document coverage and two native product action gaps. Reuse original frontend.",
+  "next_exact_step": "53.37/53.38 configured step order fixed in common P1 adapter,50 unit tests and12 real expense approval checks pass with verified restoration at backend7c3667740. ALL business documents remain scope. Continue necessary document coverage beyond current17/15 inventories and two native action product gaps; plan governed resync of existing policy definitions without modifying in-flight reviews. Distinct reviewers/all-model real journeys remain unverified. Reuse unchanged frontend.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -642,6 +642,18 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-linear-runtime.log",
       "restoration": "verified",
       "remaining": "configured step sequence direction, distinct reviewers, all-document coverage and native gaps"
+    },
+    "approval_order_53_38": {
+      "status": "scoped_runtime_passed",
+      "source_head": "7c3667740",
+      "tests": {
+        "unit": 50,
+        "runtime": 12
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-order-runtime.log",
+      "restoration": "verified policy/step readback and temporary document removal",
+      "scope": "definition-bound10-before20 and first decision on step10; expense representative only",
+      "remaining": "all-document missing support, distinct reviewers, existing definition resync, native action gaps"
     }
   }
 }

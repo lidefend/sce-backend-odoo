@@ -7692,3 +7692,10 @@ L5：未推送、未合并、未部署。
 - 新断言在现有受管sc_frontend_acceptance/local环境实证失败：实际definition顺序[4983,4982]，配置10→20对应[4982,4983]；ROLLBACK=VERIFIED（approval-order-runtime-failure.log）。OCA request_validation固定sequence desc，而配置按sequence,id升序。共同适配改用配置排序位置的负值作为原生优先级，保证零值、负值和并列序号也保持配置顺序；不修改OCA，不重排在途review实例。
 - L1 ci.local.iteration PASS（approval-order-iteration.log）；L2 verify.payment.approval_state_machine.unit 50项PASS（approval-order-tests.log，begin/record50）。新增执行真实_tier_definition_vals的方法测试，按原生降序恢复配置顺序。方法改动无需模块升级，提交后受管重载及真实顺序复验待执行；前端输入未变，不构建/不跑浏览器矩阵。
 - 既有持久tier.definition需通过原配置同步机制重新投影才应用新顺序；本轮不擅自批量改租户配置。在途实例不迁移。全单据缺失接入、不同审批人流转及两项原生业务动作仍为产品缺口；总体active。
+
+
+### 53.38 配置顺序修复真实运行通过
+
+- 7c3667740 clean候选经backend.acceptance.up受管重载，沿用sc_frontend_acceptance/local既有身份（approval-order-backend-up.log）。未再次升级模块、构建前端或运行无关ORM。
+- verify.business_config.approval_runtime 12项PASS、ROLLBACK=VERIFIED（approval-order-runtime.log）：配置10→20对应definition与实际review.sequence升序完全一致；首次真实validate_tier批准的definition明确是第10步，业务仍submit；最后一步才approved。启用、关闭、在途配置变化、缺规则、驳回重提、非审批人拒绝同事务仍通过，原策略/步骤回读一致、临时单据清理已核对。
+- 本批配置顺序缺陷定向验收完成；复用同一组审批人，不声称不同岗位链或全业务单据已验收。持久旧定义重新同步、支持清单外必要单据、两项原生业务动作仍按既有产品缺口推进。总体active；主线未集成、目标未部署、全产品用户验收未完成。
