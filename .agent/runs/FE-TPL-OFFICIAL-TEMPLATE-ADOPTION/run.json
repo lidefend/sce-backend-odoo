@@ -290,7 +290,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.60 project initiation tier approval now separate from lifecycle; central draft->in_progress/paused guard requires approval; native forms submit/approve/start split, information edit retains submit-only responsibility.63 tests pass. Commit then governed module upgrade/backend reload and approval_runtime45 (project6). Existing native regression41 does not prove project profile (central project profile not yet adopted). After runtime, verify project effective contract/page and remaining amount authority gap; no frontend build needed.",
+  "next_exact_step": "53.60 project tier initiation/runtime45 (project6) PASS after managed module upgrade/reload4a3e08ffa; rollback verified. Next effective project action/state contract and official project page: verify submit no automatic start, real approve/reject visibility and explicit action_sc_start through existing producer. Central project workflow profile not yet adopted, do not claim native41 covers project. Preserve dedicated information edit submit-only scope. Project amount-based policy has no declared amount authority; explicit error now prevents silently ignored conditions, registered product gap. Frontend fed2dfcc2 unchanged; no build needed. Overall67/all-business scope active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -959,7 +959,14 @@
         "approval": 63,
         "existing_native_profile_regression": 41
       },
-      "runtime": "not_run; schema and native view upgrade required",
+      "runtime": {
+        "status": "passed",
+        "backend": "4a3e08ffa",
+        "checks": 45,
+        "project_checks": 6,
+        "rollback": "VERIFIED",
+        "log": "artifacts/frontend-web-fix-20260928/tpl52/project-approval-runtime.log"
+      },
       "remaining": "real project approval45; project normalized action/state and browser; project approval amount authority undefined (explicit rejection)"
     }
   }

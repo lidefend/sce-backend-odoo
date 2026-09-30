@@ -7905,3 +7905,6 @@ L5：未推送、未合并、未部署。
 - 原生通用项目表单/总览/启停管理拆分提交与启动并声明真实审批按钮；项目信息编辑仍只承担提交，不吸收生命周期操作，增加审批事实字段。总览提交不再把资料完备度当硬门槛，与既有advisory模型边界一致。配置增加project.project tier支持和回调注册。项目审批金额尚无确认业务权威，不猜合同额/预算额：共享适配遇无amount映射且配置金额条件时明确ValidationError，普通无金额规则可用；该必要配置能力保留产品缺口。
 - L1 iteration PASS（project-approval-iteration.log）；审批63 PASS（project-approval-tests.log，begin/record63），包括无配置/配置/真实回调与显式启动、集中绕行拦截、私有状态写保护、无金额权威禁止忽略条件。已有native8+33=41回归PASS（project-native-tests.log），仅覆盖现有profile集合，不声称项目中央profile完整。当前项目仍须核对原生到有效契约的状态/动作消费，不以模型通过代替页面。
 - P4既有回滚脚本新增项目6项（总45），所有新项目/策略加入原created清理回读；语法通过，待运行。下一步提交、受管模块升级与后端重载，再运行45。新字段/XML需升级；前端未改不构建，不重跑任务/付款全旅程。整体active，未推送/合并/目标部署。
+
+- 运行回读：4a3e08ffa受管acceptance.module.upgrade、backend.acceptance.up/health均通过（project-approval-{upgrade,backend,health}.log）。集中真实审批45项PASS，新增项目6项全部通过：直接写批准/直接draft启动及暂停绕行拒绝，无配置仅批准未启动，真实在审不启动，真实review通过后显式start，驳回原因与重提新链。ROLLBACK=VERIFIED，原策略/步骤回读一致、临时项目/单据/策略不存在（project-approval-runtime.log）。
+- 阶段：模型与配置执行链验证成立，项目有效动作/状态契约和页面仍待核对；未将native41外推到未加入中央profile的project.project。金额条件权威缺口登记到原contract-gaps文档，保留detail.action-state未完成。前端候选fed2dfcc2未变；不构建、不推送、不合并、不部署目标环境。总体active。
