@@ -9308,3 +9308,14 @@ a1b1f8bc3 clean起点，P1 49e78190a在sc.plan.write冻结主单定义字段：�
 L1 plan-definition-iteration.log、payment.approval_state_machine.unit172及begin/receipt通过；纯测明确主单多状态拒绝、驳回修正、子执行命令交由下层与内部完成动作保留。P4 a3f24f6e0在原plan-state-authority增加pending/approved/in_progress/done基准写拒绝及原字段read不变，复用日记检查结构而未改日记断言语义。backend.acceptance.up加载a3f24f6e0，无字段/XML变化不升级，前端e31e51c59不变不构建。
 
 受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter和卷，plan-definition-runtime.log13具名PASS、ROLLBACK VERIFIED。真实审批/驳回修正/重提/独立开始完成保持；各阶段name/project/note/planned_finish伪造上下文写均拒绝且read原值一致。原事务sudo创建执行与真实reviewer，不冒充角色浏览器。单据主基准接口缺口收口；节点基准及执行字段/汇报/版本状态、原生字段策略和共享表单接线仍待完成，detail.action-state总体保持开放，无推送/合并/目标部署。
+
+
+### 53.182 计划节点基准与执行写入边界
+
+a6c7ef8de clean起点，P1 2b300b3bb给sc.plan.line补create/write/unlink保护：定义字段及增删/移入移出只允许父计划draft且非waiting/pending/validated；执行字段actual_start/actual_finish/progress_rate/state/deliverable_attachment_ids只允许父计划in_progress且无活动审批。节点state沿既有原生执行状态输入，未冒充独立审批单据；汇报、版本的独立审批职责仍待处理。P0/P3/前端不推断规则，也未提前全局解锁父表单。
+
+首轮173纯测有2错误，原因旧test_plan_external_state_and_defaults_cannot_bypass_actions从整文件收集同名方法导致被新增ScPlanLine覆盖，已限定ScPlan类。最初误写passed回执已即时更正failed（plan-node-failed-receipt.log），未据此运行后续验收。修正后plan-node-fixed-iteration L1、plan-node-fixed-unit173 PASS，重新begin/record，保留原失败证据。纯测覆盖审批中/确认/执行/终态定义保护与草稿驳回修正、执行记录开放。
+
+P4 aa7717fb4扩原plan-state-authority为15项：真实节点在确认后拒绝直接名称写、父line_ids计划日期写、删除、新增和未开始时进度写，回读基准一致；正式开始后父line_ids更新进度50/执行状态成功，直接改基准仍拒绝，完成节点与计划后进度改写拒绝。plan-node-runtime.log15具名PASS、ROLLBACK VERIFIED。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter原卷，backend aa7717fb4；纯Python不升级，前端e31e51c59未变不构建。原配置审批/驳回修正/重提仍通过；本次新增节点执行示例为无配置确认分支，不扩大为配置审批多角色UI。
+
+下一步原生主单/子节点字段readonly与创建删除能力需消费上述后端边界；汇报/版本还未统一状态机，因此尚未打开plan open的field_editable_phases。现有只读详情/整体detail.action-state仍不能标为计划执行完整接管。无新环境/fixture、推送、合并或目标部署。
