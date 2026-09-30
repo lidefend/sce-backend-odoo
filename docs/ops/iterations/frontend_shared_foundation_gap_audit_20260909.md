@@ -9128,3 +9128,12 @@ P4复用standard_list_lowcode_loop新增WEB_LC_UI_STAGE=1：已有草稿冲突�
 原只读standard_config_field.browser扩标题可读尺寸断言，config-field-1790805468208/report.json14 PASS，1440/390标题与按钮可读、表单/整页无横向溢出；截图人工核对，不再竖排。该探针本地添加id用于既有重复输入检查，因此截图23列不是配置变更，未保存发布/创建草稿。UI暂存12证据按CSS/卡片内容层变更不影响动作payload与后端能力复用，不重写配置。
 
 剩余精确缺口：截图中attachment_ids虽完整保留，却只显示技术名。available_model_fields仍是窄新增候选，fieldDisplayLabel缺少已选原生集合列的元数据；应补建议列/已选列标签契约，不能在前端写附件字段字典或放宽搜索候选。目标角色摘要已有纯测和候选，顶部稳定显示尚未单独截图。下一步仅该描述契约及稳定摘要观察；不重跑已闭合发布/暂存业务。67/detail.action-state与其它已登记业务责任继续open，无推送/合并/目标部署。
+
+
+### 53.166 建议列描述契约与稳定配置范围摘要收口
+
+P0 ba1d18e595f04c84875e54ddeab3688ce1a01846：list_search.audit新增可选suggested_list_column_labels，只为已确定建议列投影模型标签/原生视图标签；前端has_business_list_config选择已配置或建议标签映射，保存仍使用字段身份，不新增业务字典/搜索候选/第二套列状态。回归确认many2many建议列具中文标签，标签键集等于建议列集，该字段仍不在可新增模型字段中。business_config.unit229及strict/L1通过（lc-column-labels-*）。
+
+后端受管刷新ba1d18e59，无字段/XML变化不升级/ORM；一次受管前端build/up，entry/assets/index-DsM2C-7X.js，sha256=8c47636f9fa8d26722c21e6aafec3b4f66dbd4f9c37847854cb6af116b80c858。standard_config_field.browser config-field-1790805723804/report.json16 PASS：从同次audit拿到attachment_ids标签“附件”，实际选中chip唯一匹配；适用角色显示未限定角色；1440/390标题/表单/整页宽度保持；errors/blocked空，所有编辑本地未保存。人工核对target-scope.png已加载付款申请、未限定角色、默认配置及版本来源，不再引用53.163加载中截图作为稳定摘要。新增id为原只读探针本地输入测试，关闭丢弃，无正式配置或业务写入。
+
+本次新增显示元数据不改变列集/序列、stage、发布/回滚、业务读写，按输入依赖复用53.163发布回滚15与53.165UI编辑暂存12，不因换SHA再次配置写入。配置代表链已具原生即时策略变化/恢复、API完整能力发布恢复、UI发布回滚、UI编辑更新暂存与放弃、官方布局及描述证据；不外推所有低代码职责或从空草稿创建。下一步回到原67/detail.action-state未完成业务责任，按既有记录选择尚缺的实际处理链，不能把配置局部完成改写成全系统交付。无推送/合并/目标部署。
