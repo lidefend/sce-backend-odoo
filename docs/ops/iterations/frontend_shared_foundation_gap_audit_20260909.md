@@ -8883,3 +8883,16 @@ L1 readonly-relation-open-iteration及final-iteration PASS；open-checks中的�
 readonly-relation-final-browser.log / tpl07-1790799185906：33 PASS，errors=[]、forbiddenWrites=[]。既有finance执行186经关系值打开payment.request1710，声明menu545/action775、来源return_url/model/field及目标readonly官方详情验证通过；browser back恢复原URL/模型/记录、可见已付款徽标和唯一撤销付款入口，没有重复付款按钮。1440/390原关系换行及确认取消检查继续通过；返回390截图人工核对当前标签为执行单、标题状态一致。此处没有实际冲销或业务写入，实际现金/冲销证据仍引用53.138运行10。
 
 动作声明actions与当前可执行availableActions不可混淆；本记录确有目标ID/方法/enabled等执行契约，本缺陷属于消费链。只读关系旧的误用写权限拦截已退出；原只读编辑保护保持。总体67/detail.action-state及空授权收款/调整已保存办理等缺口仍开放，不自动升级业务矩阵。无推送、合并或目标部署。
+
+
+### 53.146 费用/扣款审批内容保护与契约一致性
+
+e3eb950f3 clean起点，沿既有detail.action-state财务职责缺口定向核对expense_claim：workflow已声明在审/批准只读，但write仅保护done/legacy_confirmed，直接ORM/API可改在审或批准内容；明细独立CRUD同样只保护终态。此为P1标准业务审核事实缺口，不能通过前端readonly隐藏。源1e3989bdc仅smart_construction_core既有费用模型和定向测试/P4探针，不改schema/XML/manifest依赖或前端。
+
+新增_reviewed_content_is_frozen统一父单与明细判定：非legacy submit/approved及draft的waiting/pending/validated冻结审核内容，done/legacy_confirmed保持终态保护。父单经济身份、金额、付款关联、扣款明细、账户及附件关联拒绝普通改写（布尔伪造私有token无效）；备注、草稿/驳回修改、私有正式状态动作保留。子明细create包含default_claim_id，write同时检查原父单与目的父单，unlink检查所属父单，不能移动明细绕过；legacy既有补录边界不扩权。附件文件内容本身及外部关联事实的不可变性不由本检查证明。
+
+L1 expense-content-iteration/tool-iteration PASS；expense-content-unit.log154 PASS、payment_approval_state_machine begin/record非零回执成功。新增生产方法测试验证审核内容冻结、草稿恢复、备注/私有动作和明细默认父单/原父单/目标父单入口。定向语法/diff通过。P4在原expense-state-authority增加2项组断言，其他scope不扩大。无模块升级；backend.acceptance.up受管替换旧SC_SOURCE_REVISION为1e3989bdc，既有local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份验证通过。
+
+expense-content-runtime.log14 PASS，ROLLBACK VERIFIED：实际配置审批实例、关闭配置不绕过在审、真实reviewer完成、无配置自动通过、无匹配拒绝、真实驳回重提、两步线性审批和非审核人拒绝继续通过；新增在审/批准金额、批准金额、账户、附件关联、明细关系、active拒绝，备注可写且原金额/附件保持。准备与提交沿原工具sudo，审核人真实非sudo；不夸称普通财务全办理或费用最终执行。明细独立CRUD/跨父单移动由纯测覆盖，本次真实运行只验证父单O2M写入口，不冒充真实明细CRUD验收。
+
+前端index-CVVwVIuW.js未变，不构建/重拍；既有共享readonly消费证据按未变输入复用，不代表本拒绝原因已做浏览器验收。总体67/detail.action-state保持开放，下一步继续该财务组已确认职责与实际角色的动作/内容消费闭环；已知无授权记录的模型不重复空查询、不新建fixture。无推送、合并或目标部署。
