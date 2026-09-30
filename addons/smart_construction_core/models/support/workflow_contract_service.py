@@ -583,8 +583,6 @@ class ScWorkflowContractService(models.AbstractModel):
             "sc.safety.issue",
         )),
         **_submit_confirm_profiles((
-            "sc.labor.settlement",
-            "sc.labor.usage",
             "sc.subcontract.settlement",
         )),
         **_in_progress_done_profiles((
@@ -781,18 +779,6 @@ class ScWorkflowContractService(models.AbstractModel):
             },
             "label_by_action": {"submit": "确认"},
         },
-        "sc.attendance.checkin": {
-            "state_field": "state",
-            "state_phase": {"draft": "draft", "submitted": "submitted", "confirmed": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["complete", "reopen", "cancel"]},
-            "method_by_action": {
-                "submit": "action_submit",
-                "complete": "action_confirm",
-                "reopen": "action_reset_draft",
-                "cancel": "action_cancel",
-            },
-            "label_by_action": {"complete": "确认考勤"},
-        },
         "sc.edition.release.snapshot": {
             "state_field": "state",
             "state_phase": {"candidate": "draft", "approved": "approved", "released": "done", "superseded": "cancelled"},
@@ -940,6 +926,33 @@ class ScWorkflowContractService(models.AbstractModel):
             "label_by_action": {"complete": "确认登记"},
         },
         "sc.equipment.settlement": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+            "label_by_action": {"complete": "确认结算"},
+        },
+        "sc.attendance.checkin": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+            "label_by_action": {"complete": "确认考勤"},
+        },
+        "sc.labor.usage": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+            "label_by_action": {"complete": "确认用工"},
+        },
+        "sc.labor.settlement": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},

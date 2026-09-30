@@ -8165,3 +8165,14 @@ L1 labor-plan-request-runtime-iteration.log与py_compile/bash-n PASS，P1/纯测
 53.84实际：受管升级/reload387fb8f3c成功，labor-plan-request-runtime.log16/16 PASS、ROLLBACK VERIFIED。两模型审批/拒绝重提/配置变更/金额拒绝及approved非法逆转均通过，原配置与临时记录回滚。真实reviewer审批+事务sudo建单不替代角色办理全旅程。
 
 P4复用计划申请页面检查，两模型仅扩展允许范围；labor-plan-request-page-iteration.log L1/node语法PASS。创建计划tpl07-1790782297631、申请tpl07-1790782307029各14 PASS：官方组合/有效契约/编号隐藏/旧直接审批退出/双视口，errors=[]、forbiddenWrites=[]，390截图复核。PM已有记录计划tpl07-1790782315231、申请tpl07-1790782320423均ok=true records=[]，数据前置不足；不扩权/造fixture/重复空查询。前端7915f3bb9未重建，后端387fb8f3c。实际角色记录办理、剩余劳务职责及总体67仍开放。
+
+
+### 53.85 考勤／劳务用工／结算审批与确认分离（进行中）
+
+P1 smart_construction_core/labor_management三类确认职责成组接入shared policy/tier。提交无配置只自动approved待确认，有配置真实review；回调只审批，显式action_confirm校验审批事实后沿用原确认。劳务用工继续成本状态令牌/非草稿事实锁/项目操作员与经理权限，取消approved仍经理；结算来源项目/劳务单位/未结算状态校验不变，不引入设备结算的来源规则。
+
+company权威统一项目公司，usage/settlement金额均用各自amount_total；考勤不具金额权威，未注册金额字段。原生tier动作、编号创建隐藏只读、approved状态栏、workflow确认complete同步。考勤reset从原错误submitted投影修为cancel，与后端既有守卫一致。所有业务语义在P1，不加前端模型条件；外部状态直接写保护补至考勤/结算，用工原机制复用。
+
+L1 labor-execution-iteration.log PASS；labor-execution-unit.log81 PASS（参数化三模型审批不确认、配置分流、真实review事实、confirmed不能逆转、用工经理权限）；labor-execution-native.log8+47=55 PASS；labor-execution-semantics.log15 PASS；2XML解析/重复ID、diff --check PASS，非零回执登记。候选a1a9bb85e+本段dirty，非冻结交付。
+
+L3尚未运行：tier/新字段/state/XML需要一次受管升级。下一步现有rollback scope劳务执行三模型，验证金额/无金额条件、审批与确认、用工事实锁/经理权限、结算来源限制、拒绝重提及回滚。L4前端未改不构建，只受影响页面后验；L5非本地范围。其他已完成单据不重验；实际角色记录及总体67仍未完成。

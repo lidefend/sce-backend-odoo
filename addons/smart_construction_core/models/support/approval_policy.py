@@ -28,6 +28,9 @@ class ScApprovalPolicy(models.Model):
         ("sc.equipment.request", "设备申请"),
         ("sc.labor.plan", "劳务计划"),
         ("sc.labor.request", "劳务申请"),
+        ("sc.labor.settlement", "劳务结算"),
+        ("sc.labor.usage", "劳务用工"),
+        ("sc.attendance.checkin", "考勤记录"),
         ("sc.equipment.usage", "机械台班登记"),
         ("sc.equipment.settlement", "设备结算"),
         ("sc.material.settlement", "材料结算"),
@@ -425,6 +428,9 @@ class ScApprovalPolicy(models.Model):
             "sc.equipment.request",
             "sc.labor.plan",
             "sc.labor.request",
+            "sc.labor.settlement",
+            "sc.labor.usage",
+            "sc.attendance.checkin",
             "sc.equipment.usage",
             "sc.equipment.settlement",
             "sc.material.settlement",
@@ -454,6 +460,18 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.labor.settlement": (
+                "smart_construction_core.server_action_labor_settlement_on_approved",
+                "smart_construction_core.server_action_labor_settlement_on_rejected",
+            ),
+            "sc.labor.usage": (
+                "smart_construction_core.server_action_labor_usage_on_approved",
+                "smart_construction_core.server_action_labor_usage_on_rejected",
+            ),
+            "sc.attendance.checkin": (
+                "smart_construction_core.server_action_attendance_checkin_on_approved",
+                "smart_construction_core.server_action_attendance_checkin_on_rejected",
+            ),
             "sc.labor.request": (
                 "smart_construction_core.server_action_labor_request_on_approved",
                 "smart_construction_core.server_action_labor_request_on_rejected",
@@ -639,6 +657,8 @@ class ScApprovalPolicy(models.Model):
             "sc.material.inbound": "amount_total",
             "sc.material.purchase.request": "amount_total",
             "sc.material.settlement": "amount_total",
+            "sc.labor.settlement": "amount_total",
+            "sc.labor.usage": "amount_total",
             "sc.equipment.settlement": "amount_total",
             "sc.equipment.usage": "amount",
             "sc.settlement.order": "amount_total",

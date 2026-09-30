@@ -334,7 +334,11 @@ class ScLaborRequestLine(models.Model):
 class ScAttendanceCheckin(models.Model):
     _name = "sc.attendance.checkin"
     _description = "考勤记录"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
     _order = "attendance_date desc, id desc"
 
     name = fields.Char(string="考勤单号", required=True, default="新建", tracking=True)
@@ -347,7 +351,7 @@ class ScAttendanceCheckin(models.Model):
     contractor_id = fields.Many2one("res.partner", string="劳务单位", index=True)
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
-        [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         index=True,
@@ -364,40 +368,70 @@ class ScAttendanceCheckin(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.attendance.checkin") or _("考勤记录")
         return super().create(vals_list)
 
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_labor_approval_state_token") is not _LABOR_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_labor_approval_state_token=_LABOR_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+
     def action_submit(self):
         for record in self:
-            if record.state != "draft":
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿用工单可以提交。"))
             record._check_values()
-            record.write({"state": "submitted"})
+            record.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_confirm(self):
         for record in self:
-            if record.state != "submitted":
-                raise UserError(_("只有已提交用工单可以确认。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            if record.state != "approved":
+                raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
-            record.write({"state": "confirmed"})
+            record._write_approval_state({"state": "confirmed"})
         return True
 
     def action_cancel(self):
         for record in self:
-            if record.state not in ("draft", "submitted"):
-                raise UserError(_("只有草稿或已提交用工单可以取消。"))
-            record.write({"state": "cancel"})
+            if record.state not in ("draft", "submitted", "approved"):
+                raise UserError(_("只有草稿、已提交或已审批用工单可以取消。"))
+            record._write_approval_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消用工单可以重置为草稿。"))
-            record.write({"state": "draft"})
+            record._write_approval_state({"state": "draft"})
         return True
 
     @api.constrains("attendance_qty", "work_hours")
@@ -412,7 +446,11 @@ class ScAttendanceCheckin(models.Model):
 class ScLaborUsage(models.Model):
     _name = "sc.labor.usage"
     _description = "劳务用工"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
     _order = "usage_date desc, id desc"
     # U-C4 G09 可办理性修正：业务事实只在草稿窗口内可录入（原生 arch 的
     # `readonly="state != 'draft'"` 是交互面），离开草稿后必须由后端拒绝修改，
@@ -472,7 +510,7 @@ class ScLaborUsage(models.Model):
     foreman_name = fields.Char(string="带班人")
     recorder_id = fields.Many2one("res.users", string="记录人", default=lambda self: self.env.user, index=True)
     state = fields.Selection(
-        [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         index=True,
@@ -528,29 +566,49 @@ class ScLaborUsage(models.Model):
             raise UserError(_("非草稿状态的劳务用工事实不可删除。"))
         return super().unlink()
 
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_cost_source_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_cost_source_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+
     def action_submit(self):
         self._check_project_operator()
         for record in self:
-            if record.state != "draft":
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿用工单可以提交。"))
             record._check_values()
-            record._write_cost_source_state({"state": "submitted"})
+            record.with_context(skip_validation_check=True)._write_cost_source_state({"state": "submitted"})
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_cost_source_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_confirm(self):
         self._check_project_manager()
         for record in self:
-            if record.state != "submitted":
-                raise UserError(_("只有已提交用工单可以确认。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            if record.state != "approved":
+                raise UserError(_("只有已审批用工单可以确认。"))
             record._check_values()
             record._write_cost_source_state({"state": "confirmed"})
         return True
 
     def action_cancel(self):
         for record in self:
-            if record.state not in ("draft", "submitted"):
-                raise UserError(_("只有草稿或已提交用工单可以取消。"))
-            if record.state == "submitted":
+            if record.state not in ("draft", "submitted", "approved"):
+                raise UserError(_("只有草稿、已提交或已审批用工单可以取消。"))
+            if record.state in ("submitted", "approved"):
                 record._check_project_manager()
             else:
                 record._check_project_operator()
@@ -597,7 +655,11 @@ class ScLaborUsage(models.Model):
 class ScLaborSettlement(models.Model):
     _name = "sc.labor.settlement"
     _description = "劳务结算"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
     _order = "settlement_date desc, id desc"
 
     name = fields.Char(string="结算单号", required=True, default="新建", tracking=True)
@@ -638,7 +700,7 @@ class ScLaborSettlement(models.Model):
         readonly=True,
     )
     state = fields.Selection(
-        [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         index=True,
@@ -672,44 +734,74 @@ class ScLaborSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.labor.settlement") or _("劳务结算")
         return super().create(vals_list)
 
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_labor_approval_state_token") is not _LABOR_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_labor_approval_state_token=_LABOR_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+
     def action_submit(self):
         for record in self:
-            if record.state != "draft":
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿劳务结算可以提交。"))
             if not record.line_ids:
                 raise ValidationError(_("提交结算前必须维护结算明细。"))
             record._check_business_anchor()
             record.line_ids._check_values()
-            record.write({"state": "submitted"})
+            record.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_confirm(self):
         for record in self:
-            if record.state != "submitted":
-                raise UserError(_("只有已提交劳务结算可以确认。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            if record.state != "approved":
+                raise UserError(_("只有已审批劳务结算可以确认。"))
             record._check_business_anchor()
             record.line_ids._check_values()
-            record.write({"state": "confirmed"})
+            record._write_approval_state({"state": "confirmed"})
         return True
 
     def action_cancel(self):
         for record in self:
-            if record.state not in ("draft", "submitted"):
-                raise UserError(_("只有草稿或已提交劳务结算可以取消。"))
-            record.write({"state": "cancel"})
+            if record.state not in ("draft", "submitted", "approved"):
+                raise UserError(_("只有草稿、已提交或已审批劳务结算可以取消。"))
+            record._write_approval_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消劳务结算可以重置为草稿。"))
-            record.write({"state": "draft"})
+            record._write_approval_state({"state": "draft"})
         return True
 
     def _check_business_anchor(self):

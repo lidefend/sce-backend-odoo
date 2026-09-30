@@ -320,7 +320,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.84 labor plan/request runtime16 rollback/create14+14 PASS backend387fb8f3c/frontend7915f3bb9; PM queries empty, no repeat. Continue remaining labor attendance/usage/settlement actual responsibilities in labor_management.py, preserve cost posting, immutable facts and manager boundary. Use existing ledger/results without broad scan/old ORM/frontend rebuild. Overall role journeys and all-document scope incomplete.",
+  "next_exact_step": "53.85 attendance/labor usage/settlement source81/native55/semantics15 PASS. Extend existing rollback labor-execution scope for three models: actual approval vs explicit confirmation, attendance amount unsupported, usage/settlement amount_total, usage immutable facts/manager guard, settlement existing source project/contractor/unsettled guards, rejection/resubmit. One managed upgrade/reload then scoped runtime/official pages. No broad scans/prior ORM/frontend rebuild; overall goal active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1268,6 +1268,14 @@
         "1790782320423"
       ],
       "record_status": "both authorized queries empty"
+    },
+    "segment_53_85": {
+      "status": "source_verified_runtime_pending",
+      "scope": "P1 attendance/labor usage/labor settlement shared approval and explicit confirmation",
+      "approval_tests": 81,
+      "native_tests": 55,
+      "semantics_tests": 15,
+      "runtime": "not_run; upgrade required"
     }
   }
 }
