@@ -7818,3 +7818,12 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（diary-native-exit-iteration.log）；native8+31=39 PASS（diary-native-exit-final-tests.log），normalizers_split_guard PASS（diary-native-exit-guard.log）。30ca72d76经受管backend.acceptance.up重载（diary-native-exit-backend.log），无模型/XML变化，不升级、不构建前端。
 - 既有受管approval-actions diary/create浏览器12项PASS（diary-native-create-browser.log；tpl07-1790775130070/report.json）。PM公司8未保存新建页有效契约/官方ScForm、无未知字段渲染、无未保存审批/完成入口、1440/390无溢出，errors=[]、forbiddenWrites=[]。回读有效布局31字段节点，name/reject_reason/report_period_start/report_period_end/attachment_ids/header_description均保留。53.50/51日志新建页面阻断实质关闭；此前计划create12证据输入不变复用。
 - 仍不等于已有记录办理验收：计划/日志/合同事件公司8无现有记录的详情前提未变化，真实审批27项只覆盖事务模型。下一步继续原工作流职责中的必要单据覆盖与配置/权限/页面组合缺口；总目标active，detail.action-state整体不升级。未推送、合并或目标部署。
+
+
+### 53.53 抵扣登记执行边界与原生/契约对齐
+
+- 69e1d4648 clean起步，P1税款抵扣登记，沿现有workflow下一个未接共享审批的正式单据定向核对，不扫描全仓。模型action_deduct、原生按钮及profile均允许draft直接deducted。先关闭该明确绕过确认边界：模型仅confirmed允许，profile draft移除complete，原生已抵扣仅confirmed。原生取消从原“非cancel/legacy”收紧到模型原draft/confirmed，防止deducted错误出现取消。
+- 财务权限、默认抵扣日期/金额、_check_deduct_ready、公司承包人责任校验、_write_finance_authority、审计顺序保留；未改终态token保护、财务身份或历史规则。未新增自动抵扣。
+- L1 ci.local.iteration PASS（tax-execution-state-iteration.log）；native8+32=40 PASS（tax-execution-state-tests.log，begin/record40）。执行实际action_deduct，覆盖五状态，只有confirmed走finance→ready→responsibility→authority→audit，其余在资金动作前拒绝；隔离余额协作者，不宣称真实台账通过。同一测试核对实际profile与原生条件。
+- sc.tax.deduction.registration仍未tier/config接入，是后续必要产品缺口，不把confirmed状态条件当作审批接入完成。直接发现审批金额前提：deduction_amount/deduction_tax_amount在action_deduct才从发票金额默认补值；共享审批接入需先明确/复用金额准备职责，不能拿未补出的0作为金额阈值事实或静默忽略配置条件。下一步继续该直接适配。
+- 模型/XML待受管升级，与后续完整审批适配合并运行验收；不为本次窄条件单独构建/升级/浏览器矩阵。已有日志新建12和审批27证据无依赖改变继续复用。总体active，未推送、合并、目标部署。

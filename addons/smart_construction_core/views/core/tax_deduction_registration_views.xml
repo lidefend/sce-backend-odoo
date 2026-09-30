@@ -79,9 +79,9 @@
                         <button name="action_confirm" string="确认" type="object" class="btn-primary"
                                 invisible="state != 'draft'"/>
                         <button name="action_deduct" string="已抵扣" type="object" class="btn-primary"
-                                invisible="state not in ('draft', 'confirmed')"/>
+                                invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
-                                invisible="state in ('cancel', 'legacy_confirmed')"/>
+                                invisible="state not in ('draft', 'confirmed')"/>
                         <field name="state" widget="statusbar" readonly="1"
                                statusbar_visible="draft,confirmed,deducted,legacy_confirmed,cancel"/>
                     </header>

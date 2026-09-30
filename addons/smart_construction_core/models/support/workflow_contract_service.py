@@ -645,7 +645,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
             },
             "method_by_action": {

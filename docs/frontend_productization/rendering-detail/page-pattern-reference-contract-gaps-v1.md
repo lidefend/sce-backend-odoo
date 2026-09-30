@@ -214,3 +214,7 @@ Plan create failure was a P4 probe bug: read-only `default_get` was intercepted.
 ### Segment53.52 — Diary duplicate layout retired; create page passes
 
 Removed the diary-specific post-finalization layout rewrite and its wrapper/call. Native/configured layout and form structure now remain authoritative; no schema relaxation or frontend model exception.39 focused tests and the updated normalizer guard pass. Backend30ca72d76 renders the official diary create form successfully:12 browser assertions, both viewports, no errors/writes;31 field nodes retain name, periods, attachment, description and rejection fields previously lost. Diary create blockers from53.50/51 are closed. Existing-record handling/permissions and overall document coverage remain pending; do not close the entire action-state row.
+
+### Segment53.53 — Tax deduction requires confirmation; approval adoption pending
+
+Tax deduction model, native view and workflow profile now allow actual deduction only from `confirmed`; draft completion is removed. Finance access, amount/date preparation, readiness, responsibility checks, authoritative write and audit remain intact.40 focused tests pass; runtime loading awaits consolidated upgrade. Shared approval adoption remains required, including resolving amount preparation before threshold-based approval because current default deduction amounts are populated only at execution. This state-boundary fix is not approval completion.

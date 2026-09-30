@@ -205,7 +205,9 @@
         "addons/smart_construction_core/models/core/construction_diary.py",
         "addons/smart_construction_core/views/core/construction_diary_views.xml",
         "addons/smart_construction_core/core_extension.py",
-        "addons/smart_construction_core/core_extension_contract_normalizers.py"
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "addons/smart_construction_core/models/core/tax_deduction_registration.py",
+        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -252,7 +254,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.52 diary duplicate layout finalizer removed (call/wrapper/105-line rewrite),native39+normalizer guard+diary create browser12 passed at backend30ca72d76. Effective layout retains31 nodes incl name/periods/attachments/rejection. Plan create12 reused. Known create-page blockers closed; existing-record role journeys still need company8 data. Continue existing workflow-profile necessary document approval coverage and remaining67-ledger product gaps; do not repeat full inventory or treat registry/create passes as delivery.",
+  "next_exact_step": "53.53 tax deduction model/native/profile now require confirmed, native40 pass; not yet runtime loaded. Next complete sc.tax.deduction.registration shared approval/config adoption while preserving finance authority/audit and resolving deduction amount default preparation before approval thresholds (currently only action_deduct fills from invoice). Consolidate upgrade/runtime after implementation. Reuse unchanged diary12/approval27; no broad scan.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -803,6 +805,13 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790775130070/report.json",
       "retired": "diary-specific post-finalization layout reconstruction",
       "remaining": "existing-record role/business journeys and all necessary document coverage"
+    },
+    "tax_execution_53_53": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "69e1d4648",
+      "test_count": 40,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/tax-execution-state-tests.log",
+      "remaining": "shared approval and amount-preparation boundary, consolidated runtime verification"
     }
   }
 }

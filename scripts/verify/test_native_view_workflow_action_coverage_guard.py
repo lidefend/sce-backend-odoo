@@ -313,6 +313,40 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
         self.assertEqual(contract, baseline)
 
+    def test_tax_deduction_requires_confirmation_and_keeps_finance_checks(self):
+        path = DEFAULT_SERVICE.parents[1] / 'core/tax_deduction_registration.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_deduct')
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        class Record:
+            deduction_confirm_date = '2026-09-30'
+            deduction_amount = 100
+            deduction_tax_amount = 10
+            def __init__(self, state): self.state, self.calls = state, []
+            def __iter__(self): return iter([self])
+            def _assert_finance_deduct_access(self): self.calls.append('finance')
+            def _snapshot_audit_payload(self): return {'state': self.state}
+            def _check_deduct_ready(self): self.calls.append('ready')
+            def _check_company_contractor_deduction_responsibility_or_raise(self): self.calls.append('responsibility')
+            def _write_finance_authority(self, values):
+                self.calls.append('authority')
+                self.state = values['state']
+            def _audit_transition(self, *args, **kwargs): self.calls.append('audit')
+        for state in ('draft', 'confirmed', 'deducted', 'legacy_confirmed', 'cancel'):
+            record = Record(state)
+            if state == 'confirmed':
+                namespace['action_deduct'](record)
+                self.assertEqual(record.calls, ['finance', 'ready', 'responsibility', 'authority', 'audit'])
+                self.assertEqual(record.state, 'deducted')
+            else:
+                with self.assertRaises(ValueError): namespace['action_deduct'](record)
+                self.assertEqual(record.calls, ['finance'])
+                self.assertEqual(record.state, state)
+            actions = self._general_contract_actions(state, model='sc.tax.deduction.registration')
+            self.assertEqual('action_deduct' in {a['method'] for a in actions}, state == 'confirmed')
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/tax_deduction_registration_views.xml')
+        self.assertEqual(tree.find(".//button[@name='action_deduct']").get('invisible'), "state != 'confirmed'")
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

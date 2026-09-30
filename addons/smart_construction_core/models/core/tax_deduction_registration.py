@@ -544,8 +544,8 @@ class ScTaxDeductionRegistration(models.Model):
     def action_deduct(self):
         self._assert_finance_deduct_access()
         for rec in self:
-            if rec.state not in ("draft", "confirmed"):
-                raise UserError(_("只有草稿或已确认状态的抵扣登记可以确认抵扣。"))
+            if rec.state != "confirmed":
+                raise UserError(_("只有已确认状态的抵扣登记可以确认抵扣。"))
             before = rec._snapshot_audit_payload()
             vals = {}
             if not rec.deduction_confirm_date:
