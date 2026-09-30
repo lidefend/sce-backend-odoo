@@ -3102,7 +3102,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
 
     def test_plan_external_state_and_defaults_cannot_bypass_actions(self):
         path = MODEL.with_name('plan_management.py')
-        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+        cls = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.ClassDef) and n.name == 'ScPlan')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
         for method in methods: method.decorator_list = []
         token, calls = object(), []
         ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
@@ -3348,6 +3349,38 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'report_ids': [(0, 0, {'summary': 'execution'})]}))
         rows.env.context = {'sc_document_state_token': token}
         self.assertTrue(ns['write'](rows, {'state': 'done', 'actual_finish': '2026-10-01'}))
+
+    def test_plan_node_definition_and_execution_have_separate_guards(self):
+        path = MODEL.with_name('plan_management.py')
+        cls = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.ClassDef) and n.name == 'ScPlanLine')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'write', 'create', 'unlink', '_assert_definition_editable'}]
+        for m in methods: m.decorator_list = []
+        writes = []
+        ns = {'UserError': ValueError, '_': lambda text: text, 'super': lambda: types.SimpleNamespace(
+            write=lambda vals: writes.append(vals) or True, create=lambda vals: vals, unlink=lambda: True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Plan:
+            def exists(self): return self
+        plan = Plan(); plan.state, plan.validation_status = 'draft', 'no'
+        class Env(dict): context = {}
+        class Rows(list):
+            def _assert_definition_editable(self): return ns['_assert_definition_editable'](self)
+        rows = Rows([types.SimpleNamespace(plan_id=plan)])
+        rows.env = Env({'sc.plan': types.SimpleNamespace(browse=lambda id: plan)})
+        self.assertTrue(ns['write'](rows, {'name': 'draft baseline'}))
+        for state, status in (('draft', 'pending'), ('confirmed', 'validated'), ('in_progress', 'validated'), ('done', 'no')):
+            plan.state, plan.validation_status = state, status
+            for method, args in [('write', ({'name': 'changed'},)), ('create', ([{'plan_id': 1}],)), ('unlink', ())]:
+                with self.subTest(state=state, method=method), self.assertRaises(ValueError): ns[method](rows, *args)
+        for state in ('draft', 'confirmed', 'done', 'cancel'):
+            plan.state, plan.validation_status = state, 'no'
+            with self.assertRaises(ValueError): ns['write'](rows, {'progress_rate': 50})
+        plan.state, plan.validation_status = 'in_progress', 'validated'
+        self.assertTrue(ns['write'](rows, {'progress_rate': 50, 'state': 'in_progress'}))
+        plan.validation_status = 'pending'
+        with self.assertRaises(ValueError): ns['write'](rows, {'progress_rate': 50})
+        plan.state, plan.validation_status = 'draft', 'rejected'
+        self.assertTrue(ns['write'](rows, {'name': 'corrected'}))
 
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')

@@ -279,6 +279,36 @@ class ScPlanLine(models.Model):
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
 
+    def _assert_definition_editable(self):
+        if any(line.plan_id.state != "draft" or line.plan_id.validation_status in ("waiting", "pending", "validated") for line in self):
+            raise UserError(_("已提交审批或已确认的计划节点基准不可直接修改。"))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            plan = self.env["sc.plan"].browse(vals.get("plan_id") or self.env.context.get("default_plan_id")).exists()
+            if plan and (plan.state != "draft" or plan.validation_status in ("waiting", "pending", "validated")):
+                raise UserError(_("只能在未提交审批的草稿计划中新增节点。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        execution_fields = {"actual_start", "actual_finish", "progress_rate", "state", "deliverable_attachment_ids"}
+        if set(vals) - execution_fields:
+            self._assert_definition_editable()
+        if "plan_id" in vals:
+            target = self.env["sc.plan"].browse(vals["plan_id"]).exists()
+            if target and (target.state != "draft" or target.validation_status in ("waiting", "pending", "validated")):
+                raise UserError(_("节点不能移入已提交审批或已确认的计划。"))
+        if execution_fields.intersection(vals) and any(
+            line.plan_id.state != "in_progress" or line.plan_id.validation_status in ("waiting", "pending") for line in self
+        ):
+            raise UserError(_("只有执行中的计划可以更新节点执行记录。"))
+        return super().write(vals)
+
+    def unlink(self):
+        self._assert_definition_editable()
+        return super().unlink()
+
     @api.depends("state", "planned_finish", "actual_finish")
     def _compute_delay_status(self):
         today = fields.Date.context_today(self)
