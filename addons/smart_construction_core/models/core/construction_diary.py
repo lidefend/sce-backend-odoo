@@ -156,6 +156,22 @@ class ScConstructionDiary(models.Model):
         authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
         if not authoritative and {"state", "source_origin"}.intersection(vals):
             raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "name", "project_id", "company_id", "date_diary", "report_period_start", "report_period_end",
+            "document_no", "title", "diary_type", "category", "construction_unit", "project_manager",
+            "weather", "manpower_count", "attendance_equipment", "quality_name", "handler_name",
+            "description", "material_inspection_note", "design_change_note", "test_block_note",
+            "safety_note", "hidden_acceptance_note", "next_plan", "header_description", "note",
+            "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state in ("confirmed", "done", "cancel") or (
+                    rec.state == "draft" and getattr(rec, "validation_status", "") in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已确认或已结束的施工日志内容不可改写；请按正式流程办理。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"note", "attendance_equipment", "active", "attachment_ids", "write_uid", "write_date"}
             if set(vals) - allowed:

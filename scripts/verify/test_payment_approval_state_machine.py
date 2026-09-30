@@ -3255,6 +3255,31 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         row.env.su = True
         with self.assertRaises(SequenceReached): ns['create'](row, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
 
+    def test_diary_reviewed_content_is_frozen_but_rejected_and_legacy_rules_remain(self):
+        path = MODEL.with_name('construction_diary.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        token, writes = object(), []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        row = types.SimpleNamespace(source_origin='manual', state='draft', validation_status='no')
+        rows = Rows([row]); rows.env = types.SimpleNamespace(context={'sc_document_state_token': True, 'skip_validation_check': True})
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'no'), ('done', 'validated'), ('cancel', 'no')):
+            row.state, row.validation_status = state, status
+            for vals in ({'project_id': 11}, {'title': 'replaced'}, {'description': 'rewritten'}, {'note': 'changed'},
+                         {'attachment_ids': [(5, 0, 0)]}, {'date_diary': '2026-10-01'}, {'active': False}):
+                with self.subTest(state=state, status=status, vals=vals), self.assertRaises(ValueError): ns['write'](rows, vals)
+        self.assertEqual(writes, [])
+        row.state, row.validation_status = 'draft', 'rejected'
+        self.assertTrue(ns['write'](rows, {'description': 'corrected for resubmission'}))
+        row.source_origin, row.state = 'legacy', 'legacy_confirmed'
+        self.assertTrue(ns['write'](rows, {'note': 'historical supplement', 'attendance_equipment': 'equipment'}))
+        with self.assertRaises(ValueError): ns['write'](rows, {'description': 'rewrite history'})
+        row.source_origin, row.state = 'manual', 'draft'
+        rows.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'confirmed'}))
+
     def test_diary_business_overlay_preserves_native_editability(self):
         import xml.etree.ElementTree as ET
         root = MODEL.parents[2]
