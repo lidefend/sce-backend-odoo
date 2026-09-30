@@ -206,11 +206,118 @@ class AppSearchConfig(models.Model):
         else:
             data['saved_filters'] = []
 
-        return {
+        contract = {
             "model": self.model,
             "version": self.version,
             **data
         }
+        return self._project_saved_search_capability(contract, self.model)
+
+    # ======================= 收藏能力：用户相关，只能运行时投影 =======================
+
+    def _saved_search_save_capability(self, model_name):
+        """按当前用户判定“保存为收藏”是否可用（权威来源，不做推断）。
+
+        与写入代理 handlers/search_favorite_set.py 的门禁保持一致：
+        内部用户(base.group_user)、目标模型可读、ir.filters 可 create；
+        共享收藏由 core/search_favorite_policy 固定为不允许。
+        该能力属于当前用户，故只在 get_search_contract() 运行时投影。
+        """
+        capability = {
+            "save_enabled": False,
+            "owner_scope": "current_user",
+            "shared_enabled": False,
+            "label": "加入收藏",
+            "intent": "search.favorite.set",
+            "disabled_reason": "SAVED_SEARCH_AUTHORITY_UNAVAILABLE",
+        }
+        try:
+            if "ir.filters" not in self.env:
+                return capability
+            user = getattr(self.env, "user", None)
+            has_group = getattr(user, "has_group", None)
+            if not callable(has_group) or not has_group("base.group_user"):
+                capability["disabled_reason"] = "SAVED_SEARCH_REQUIRES_INTERNAL_USER"
+                return capability
+            if model_name not in self.env:
+                capability["disabled_reason"] = "SAVED_SEARCH_MODEL_UNAVAILABLE"
+                return capability
+            if not self.env[model_name].check_access_rights("read", raise_exception=False):
+                capability["disabled_reason"] = "SAVED_SEARCH_MODEL_READ_DENIED"
+                return capability
+            if not self.env["ir.filters"].check_access_rights("create", raise_exception=False):
+                capability["disabled_reason"] = "SAVED_SEARCH_CREATE_DENIED"
+                return capability
+        except Exception:
+            _logger.warning(
+                "saved search save capability unresolved for %s", model_name, exc_info=True
+            )
+            return capability
+        capability["save_enabled"] = True
+        capability["disabled_reason"] = ""
+        return capability
+
+    def _project_saved_filter_mutation_rows(self, rows, uid):
+        """给收藏项补“归属 + 可变性”，用 Odoo 自身记录规则判定。
+
+        归属用 ir.filters.user_id 这一业务身份字段，不用名称/顺序推断；
+        write/unlink 能力由 _filter_access_rules 按当前用户实算，
+        判定不了时保守为不可变（fail closed）。
+        """
+        ids = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            try:
+                row_id = int(row.get("id") or 0)
+            except (TypeError, ValueError):
+                row_id = 0
+            if row_id > 0:
+                ids.append(row_id)
+        writable, deletable = set(), set()
+        if ids and "ir.filters" in self.env:
+            try:
+                records = self.env["ir.filters"].browse(ids)
+                writable = set(records._filter_access_rules("write").ids)
+                deletable = set(records._filter_access_rules("unlink").ids)
+            except Exception:
+                _logger.warning("saved filter mutation capability unresolved", exc_info=True)
+                writable, deletable = set(), set()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            owner = row.get("owner")
+            try:
+                owned = bool(owner) and uid is not None and int(owner) == int(uid)
+            except (TypeError, ValueError):
+                owned = False
+            try:
+                row_id = int(row.get("id") or 0)
+            except (TypeError, ValueError):
+                row_id = 0
+            row["owned_by_current_user"] = owned
+            row["writable"] = row_id in writable
+            row["deletable"] = row_id in deletable
+        return rows
+
+    def _project_saved_search_capability(self, contract, model_name):
+        """把“能否保存/修改收藏”的权威结论投影进搜索契约。"""
+        custom = contract.get("custom")
+        if not isinstance(custom, dict):
+            custom = {}
+        favorites = custom.get("favorites")
+        if not isinstance(favorites, dict):
+            favorites = {}
+        merged = dict(favorites)
+        merged.update(self._saved_search_save_capability(model_name))
+        custom["favorites"] = merged
+        contract["custom"] = custom
+        rows = contract.get("saved_filters")
+        if isinstance(rows, list):
+            contract["saved_filters"] = self._project_saved_filter_mutation_rows(
+                rows, getattr(self.env, "uid", None)
+            )
+        return contract
 
     # ======================= 内部：统一结构构建 =======================
 
@@ -622,9 +729,15 @@ class AppSearchConfig(models.Model):
                 "fields": group_fields[:30],
             },
             "favorites": {
-                "save_enabled": True,
+                # 这里只声明与用户无关的静态语义。是否真的可以保存收藏取决于
+                # 当前用户的组与权限，不能写进 model 级 search_def 缓存；
+                # get_search_contract() 会按当前用户注入权威能力，
+                # 缺省值保持保守（不可保存）。
                 "label": "加入收藏",
                 "intent": "search.favorite.set",
+                "owner_scope": "current_user",
+                "shared_enabled": False,
+                "save_enabled": False,
             },
         }
 
