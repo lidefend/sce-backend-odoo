@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "active": 1273,
+    "active": 1274,
     "orphan": 87,
     "retired": 1
   },
@@ -6262,7 +6262,7 @@
         "scripts/verify/test_frontend_v2_policy_projection_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 795
+      "lines": 827
     },
     {
       "script": "frontend_workbench_block_migration_guard.py",
@@ -15181,7 +15181,7 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 45
+      "lines": 54
     },
     {
       "script": "test_frontend_workbench_center_rollout.py",
@@ -16365,6 +16365,19 @@
         "make/ci.mk"
       ],
       "lines": 46
+    },
+    {
+      "script": "test_user_delete_data_closure_guard.py",
+      "path": "scripts/verify/test_user_delete_data_closure_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.user_delete_data.closure_guard.self_test"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 169
     },
     {
       "script": "test_user_formal_field_module_boundary_audit.py",
@@ -17625,13 +17638,15 @@
       "path": "scripts/verify/user_delete_data_closure_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.user_delete_data.closure_guard"
+        "verify.user_delete_data.closure_guard",
+        "verify.user_delete_data.closure_guard.self_test"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/dev_test.mk"
+        "make/dev_test.mk",
+        "scripts/verify/test_user_delete_data_closure_guard.py"
       ],
-      "lines": 224
+      "lines": 267
     },
     {
       "script": "user_form_preference_boundary_guard.py",

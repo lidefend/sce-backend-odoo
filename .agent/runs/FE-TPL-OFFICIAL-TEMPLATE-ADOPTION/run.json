@@ -80,6 +80,39 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "user_delete_guard": {
+      "target": "verify.user_delete_data.closure_guard.self_test",
+      "inputs": [
+        "scripts/verify/user_delete_data_closure_guard.py",
+        "scripts/verify/test_user_delete_data_closure_guard.py",
+        "make/dev_test.mk",
+        "frontend/apps/web/src/api/data.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/api_data_unlink.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/utils/delete_policy.py",
+        "addons/smart_construction_core/core_extension_policy_accessors.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/models/core/project_core.py"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/guard_registry_audit.py",
+        "scripts/verify/registry.yaml",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make/"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],

@@ -168,24 +168,67 @@ def _probe_business_delete_policy_scope(errors: list[str]) -> None:
     _assert("project.cost.compare" not in policy_models and "payment.ledger" not in policy_models, "read-only ledgers/projections must not be physically deletable", errors)
 
 
-def _probe_frontend_delete_flow(errors: list[str]) -> None:
-    api = _read("frontend/apps/web/src/api/data.ts")
-    flow = _read("frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts")
-    action_view = _read("frontend/apps/web/src/views/ActionView.vue")
-    list_page = _read("frontend/apps/web/src/pages/ListPage.vue")
-    shape_runtime = _read("frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts")
-    v2_store = _read("frontend/apps/web/src/app/contracts/v2/store.ts")
-    v2_projection = _read("addons/smart_core/handlers/ui_contract_v2_projection.py")
+def _probe_frontend_delete_flow(errors: list[str], read=_read) -> None:
+    api = read("frontend/apps/web/src/api/data.ts")
+    flow = read("frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts")
+    # The destructive flow moved out of ``ActionView.vue`` into the
+    # selection-action runtime, and the page now delegates to it.  Probing the
+    # page for the flow's call sites therefore stopped proving the business
+    # rule and started reporting a location drift as a product failure: the
+    # file no longer contains those call sites, so a future removal of the
+    # preflight would have looked exactly the same.  The rule is the sequence,
+    # so the probe is bound to the module that owns it.
+    selection_runtime = read(
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts"
+    )
+    action_view = read("frontend/apps/web/src/views/ActionView.vue")
+    list_page = read("frontend/apps/web/src/pages/ListPage.vue")
+    shape_runtime = read("frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts")
+    v2_store = read("frontend/apps/web/src/app/contracts/v2/store.ts")
+    v2_projection = read("addons/smart_core/handlers/ui_contract_v2_projection.py")
     _assert("dryRun?: boolean;" in api and "dry_run: Boolean(params.dryRun)" in api, "unlinkRecord must expose dryRun to api.data.unlink", errors)
     _assert("dryRunIdempotencyKey" in flow and "'delete.dry_run'" in flow, "batch delete must use a distinct dry-run idempotency key", errors)
-    _assert("dryRun: true" in action_view, "ActionView batch delete must preflight with dryRun", errors)
-    _assert("const result = await unlinkActionViewRecord" in action_view, "ActionView batch delete must still execute real unlink after preflight", errors)
+
+    preflight_at = selection_runtime.find("dryRun: true")
+    destructive_at = selection_runtime.find("const result = await unlinkActionViewRecord")
+    _assert(preflight_at != -1, "batch delete must issue a dry-run preflight before writing", errors)
+    _assert(destructive_at != -1, "batch delete must still execute the real unlink after the preflight", errors)
+    _assert(
+        preflight_at != -1 and destructive_at != -1 and preflight_at < destructive_at,
+        "the dry-run preflight must be awaited before the real unlink, not after it",
+        errors,
+    )
+    _assert(
+        "idempotencyKey: seed.dryRunIdempotencyKey" in selection_runtime
+        and "idempotencyKey: seed.idempotencyKey" in selection_runtime,
+        "the dry-run preflight and the destructive write must carry distinct idempotency keys",
+        errors,
+    )
+    between = selection_runtime[preflight_at:destructive_at] if 0 <= preflight_at < destructive_at else ""
+    _assert(
+        "catch" not in between and "finally" not in between,
+        "no error handler may sit between the dry-run preflight and the destructive write",
+        errors,
+    )
+    # One owner: the page delegates, and owns no second delete path of its own.
+    _assert(
+        "useActionViewSelectionActionRuntime" in action_view
+        and "await unlinkActionViewRecord" not in action_view,
+        "ActionView must delegate the batch delete flow to the selection runtime instead of owning a second delete path",
+        errors,
+    )
     _assert("props.selectionEnabled !== false" in list_page, "ListPage must keep selection as a backend-governed list capability", errors)
     _assert(':selection-enabled="listProfile?.selection_policy?.enabled !== false"' in action_view, "ActionView must consume backend selection policy", errors)
+    list_profile_at = action_view.find("const profilePolicy = listProfile.value?.batch_policy")
+    surface_policy_at = action_view.find("SurfacePolicies(actionContract.value)")
     _assert(
-        "Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0" in action_view
-        and "resolveUnifiedPageContractV2SurfacePolicies(actionContract.value)" in action_view,
-        "ActionView batch policy must fall back to surface policy when list_profile has no executable actions",
+        list_profile_at != -1 and surface_policy_at != -1 and list_profile_at < surface_policy_at,
+        "ActionView batch policy must prefer the list_profile declaration and fall back to the contract surface policy",
+        errors,
+    )
+    _assert(
+        "Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0" in action_view,
+        "ActionView must treat an empty list_profile action set as \'no executable actions declared\'",
         errors,
     )
     _assert(

@@ -47,6 +47,14 @@ verify.list_batch_action.closure_guard: guard.prod.forbid
 verify.user_delete_data.closure_guard: guard.prod.forbid
 	@python3 scripts/verify/user_delete_data_closure_guard.py
 
+# The delete-data guard is a text probe over the frontend write path, so the
+# only way to know it still proves anything is to falsify it on purpose.  This
+# entry is container-free and runs beside the guard it protects.
+.PHONY: verify.user_delete_data.closure_guard.self_test
+verify.user_delete_data.closure_guard.self_test: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/user_delete_data_closure_guard.py scripts/verify/test_user_delete_data_closure_guard.py
+	@python3 scripts/verify/test_user_delete_data_closure_guard.py
+
 .PHONY: verify.receipt_income_type_mapping.guard
 verify.receipt_income_type_mapping.guard: guard.prod.forbid
 	@python3 scripts/verify/receipt_income_type_mapping_guard.py
