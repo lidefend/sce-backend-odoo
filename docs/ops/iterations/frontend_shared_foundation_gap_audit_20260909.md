@@ -8388,3 +8388,10 @@ L1 rental-settlement-runtime-iteration.log、py_compile/bash-n/diff PASS；P1源
 53.104升级首轮fc5864270失败（rental-settlement-upgrade.log，exit255）：P1 rental settlement原生按钮modifier依赖validation_status但header漏声明，Odoo view验证拒绝，未加载候选；停止后续runtime/browser。修复仅补隐藏依赖字段，新增三类租赁header表达式Name必须有view字段的纯回归。并核对同页P1 published field policy，移除project/supplier两项无条件readonly；编号/状态/附件计数/来源事实只读保持，防已知创建输入缺陷延迟到浏览器。
 
 恢复L1 rental-upgrade-recovery-iteration.log/diff PASS，rental-upgrade-recovery-unit.log105 PASS（新增2输入/5事实策略回归），rental-view-dependency-native.log8+51=59 PASS，非零回执登记。仅源输入修复后允许重新升级，不能无变化重试旧失败；首轮失败不计成功升级，尚无数据库业务验收结论。
+
+
+53.104恢复结果：ef7889f78受管模块升级成功（rental-settlement-upgrade-recovery.log），backend.acceptance.up已加载该revision，18082；首轮失败保留，不混写。rental-settlement-runtime.log12/12 PASS、ROLLBACK VERIFIED，真实review、驳回后修改重提、父子事实锁及付款默认值/依据在ORM成立；配置基线与全部临时记录恢复。仍未覆盖真实入账、冲销、额度竞争或完整角色写链。
+
+P4 browser既有approval-actions范围增加rental settlement，复用rental order输入断言，不新建旅程框架。rental-settlement-page-iteration.log/node/diff PASS。创建tpl07-1790786611844 23 PASS：有效契约、官方表单、4输入可编辑/可见、生成编号隐藏、未保存无结算/付款执行、1440/390及无错误/业务写；390截图人工复核输入及明细入口。前端7915f3bb9未变不构建。已有记录tpl07-1790786669074在第2项失败，fixture_role_pm api.data ok=true records=[]，明确是角色数据前置不足，不扩权/造fixture/重复空查询；既有详情、支付只读金额呈现及实际办理未证明。
+
+下一步继续扩展同rental-settlement rollback scope验证真实付款申请提交/付款执行/posted台账/部分及足额/冲销和版本竞争；必要配置仍须基线恢复，不能伪写approved或直接制造paid事实。总体67仍开放，不升级整行业务交付结论，无推送/合并/目标部署。

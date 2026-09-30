@@ -346,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.104 first managed upgrade fc5864270 FAILED native rental settlement missing validation_status modifier field. Fixed hidden dependency + published project/supplier input readonly defect;105 approval/59 native +L1 PASS. Next retry managed module upgrade/reload on new clean recovery commit (changed P1 input justifies retry), then rental-settlement12 rollback scope. No runtime/browser pass yet; actual payment/reversal/concurrency still need same-scope extension. No newfixture/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.104 recovery backendef7889f78 loaded; rental-settlement12 ORM/reviewer/default checks PASS+ROLLBACK VERIFIED. Browser create1790786611844 23 PASS +390 screenshot checked; existing PM1790786669074 ok=true records=[] do not repeat. Next extend same rollback scope for actual request submit/payment execution/posted partial-full/reversal and concurrency; reuse registered environment/config restoration, never forge approved or paid facts. Pure105/native59 valid source; frontend7915f3bb9 unchanged. Overall67/detail money/role handling remain open; no newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

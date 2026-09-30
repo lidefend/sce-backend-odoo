@@ -403,3 +403,8 @@ Rental source now participates in default_get/onchange, basis classification/exi
 ### Segment53.103 — Real payment confirmation predicates and reversal projection, source only
 
 Attributed canonical posted ledger totals now drive readonly paid/remaining fields. The temporary unavailable predicate is replaced by explicit missing-attribution, invalid-amount, ambiguous-history and insufficient-payment gates; sufficient facts allow explicit confirmation. Controlled ledger reversal refreshes the source version and demotes no-longer-paid settlements to confirmed, without automatically confirming later top-ups.104 state-machine and58 native-action tests pass. Runtime transaction/ORM/cache/concurrency, actual roles, legacy paid-without-attribution records and official page acceptance remain unverified. This closes the source stub, not the product payment gap or overall67 delivery.
+
+
+### Segment53.104 — Rental settlement ORM and official creation verified
+
+The first upgrade failed on missing validation_status in the native modifier view; fixed it and restored project/supplier input policy. Recovery105 pure/59 native tests pass. Backendef7889f78 loads successfully; rental-settlement12 real ORM/reviewer/source/default checks PASS with rollback verified. Official create tpl07-1790786611844 passes23 checks at1440/390, no errors/writes, narrow screenshot reviewed. Existing PM records query tpl07-1790786669074 returns ok=true records=[]; do not repeat or fabricate fixtures. Actual payment posting/reversal/concurrency, existing detail money presentation and complete role handling remain open; no overall67 promotion.

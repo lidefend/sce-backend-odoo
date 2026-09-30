@@ -594,7 +594,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -609,6 +609,7 @@ try {
       { role: 'fixture_role_pm', model: 'sc.labor.request', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.rental.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.rental.order', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.material.rental.settlement', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.attendance.checkin', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.usage', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.settlement', domain: [] },
@@ -628,7 +629,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -650,7 +651,9 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
-        if (spec.model === 'sc.material.rental.order') {
+        if (['sc.material.rental.order', 'sc.material.rental.settlement'].includes(spec.model)) {
+          const settlement = spec.model === 'sc.material.rental.settlement';
+          const dateField = settlement ? 'settlement_date' : 'rental_date';
           const fields = [];
           const visit = (nodes) => {
             for (const node of nodes || []) {
@@ -659,19 +662,19 @@ try {
             }
           };
           visit(authority.layout?.containerTree);
-          for (const name of ['project_id', 'supplier_id', 'rental_date', 'note']) {
+          for (const name of ['project_id', 'supplier_id', dateField, 'note']) {
             const field = fields.find((node) => node.name === name);
-            check(`rental order: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
+            check(`${spec.model}: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
           }
           for (const label of ['项目', '供应商']) {
-            check(`rental order: ${label} input visible`, await session.page.getByPlaceholder(`请选择${label}`, { exact: true }).isVisible());
+            check(`${spec.model}: ${label} input visible`, await session.page.getByPlaceholder(`请选择${label}`, { exact: true }).isVisible());
           }
-          check('rental order: date input visible', await session.page.locator(`input[value="${authority.mainData.rental_date}"]`).isVisible());
-          check('rental order: note input visible', await session.page.locator('textarea').first().isVisible());
+          check(`${spec.model}: date input visible`, await session.page.locator(`input[value="${authority.mainData[dateField]}"]`).isVisible());
+          check(`${spec.model}: note input visible`, await session.page.locator('textarea').first().isVisible());
 
-          check('rental order: generated number absent on create', await session.page.getByText('租赁单号', { exact: true }).count() === 0);
-          for (const name of ['确认租赁', '确认退还', '完成结算']) {
-            check(`rental order: unsaved cannot ${name}`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
+          check(`${spec.model}: generated number absent on create`, await session.page.getByText(settlement ? '结算单号' : '租赁单号', { exact: true }).count() === 0);
+          for (const name of (settlement ? ['确认结算', '确认支付'] : ['确认租赁', '确认退还', '完成结算'])) {
+            check(`${spec.model}: unsaved cannot ${name}`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
           }
         }
         if (executionLabels) {
