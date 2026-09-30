@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.92 rental plan P1 source integrated shared approval, company/project and estimated_amount, native/workflow/callback, private state protection.82/55/15 tests PASS, runtime pending. Extend existing rollback smoke rental-plan scope: actual config/amount threshold, business anchor mismatch, reviewer approve/reject/resubmit, approved illegal reversal and restoration; one governed smart_construction_core upgrade/reload then scope only; official create/existing-authorized-page check. No newfixture/frontend build/unrelated ORM. Rental order/settlement and remaining safety/subcontract still needed. PM project initiation role/entry prerequisite remains recorded.",
+  "next_exact_step": "53.93 rental plan runtime10 PASS rollback verified backendf9b24b174; official create14 PASS report1790784243489/frontend7915f3bb9; PM existing record1790784253465 empty (do not retry). Next inspect material_rental.py order/settlement remaining document approval versus explicit activate/return/settle/pay responsibilities, declare P1 semantics and reuse shared state machine; do not conflate approval with execution or payment facts. Contract/supplier real negative and role-loop coverage remain open, as does project initiation role/entry gap. No newfixture/unrelatedORM/frontendbuild/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

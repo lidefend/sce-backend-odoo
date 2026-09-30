@@ -594,7 +594,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -607,6 +607,7 @@ try {
       { role: 'fixture_role_pm', model: 'sc.equipment.settlement', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.request', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.material.rental.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.attendance.checkin', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.usage', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.settlement', domain: [] },
@@ -626,7 +627,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -652,9 +653,9 @@ try {
           check(`${spec.model}: generated number absent on create`, await session.page.getByText(executionLabels[0], { exact: true }).count() === 0);
           check(`${spec.model}: unsaved cannot confirm`, await session.page.getByRole('button', { name: executionLabels[1], exact: true }).count() === 0);
         }
-        if (['sc.equipment.plan', 'sc.equipment.request', 'sc.labor.plan', 'sc.labor.request'].includes(spec.model)) {
+        if (['sc.equipment.plan', 'sc.equipment.request', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan'].includes(spec.model)) {
           check(`${spec.model}: generated number absent on create`, await session.page.getByText(spec.model.endsWith('plan') ? '计划单号' : '申请单号', { exact: true }).count() === 0);
-          check(`${spec.model}: old direct approval absent`, await session.page.getByRole('button', { name: spec.model.endsWith('plan') ? '确认计划' : '确认申请', exact: true }).count() === 0);
+          check(`${spec.model}: old direct approval absent`, await session.page.getByRole('button', { name: spec.model === 'sc.material.rental.plan' ? '确认' : spec.model.endsWith('plan') ? '确认计划' : '确认申请', exact: true }).count() === 0);
         }
         if (spec.model === 'sc.labor.settlement') {
           const nodes = [];
@@ -737,7 +738,7 @@ try {
           check('plan: reset absent outside cancelled state', await session.page.getByRole('button', { name: '重置草稿', exact: true }).count() === 0);
         }
       }
-      if (['sc.equipment.plan', 'sc.equipment.request', 'sc.labor.plan', 'sc.labor.request'].includes(spec.model)) {
+      if (['sc.equipment.plan', 'sc.equipment.request', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan'].includes(spec.model)) {
         const rules = authority.actions?.actionRuleList || [];
         for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject']]) {
           check(`${spec.model}: ${method} declares its responsibility`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));

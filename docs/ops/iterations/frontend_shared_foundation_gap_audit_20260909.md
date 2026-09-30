@@ -8257,3 +8257,8 @@ L3尚未运行：新tier/字段/XML需一次受管smart_construction_core升级�
 P4既有rollback工具新增rental-plan scope10：无配置自动通过、状态直接写拒绝、estimated_amount门槛、启用但未匹配拒绝、空明细拒绝、pending配置变化保护、真实review审批、approved逆转拒绝、cancel/reset、驳回重提。复用既有租户/角色/环境与事务恢复，不新增持久fixture。合同/供应商锚点源码保持，但本工具尚不宣称真实合同关联负例覆盖。
 
 L1 rental-plan-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用82/55/15。平台内部验收sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确dbfilter及固定卷由受管入口核验；需一次模块升级/reload后只当前scope。建单sudo+真实reviewer验证不替代完整角色业务旅程。前端未变不构建，L5未执行。
+
+
+53.93结果：一次受管模块升级/reload f9b24b174成功；rental-plan-runtime.log10/10 PASS、ROLLBACK VERIFIED，原配置/步骤恢复及全部临时记录消失。建单sudo、真实reviewer，不扩大为实际角色全业务旅程。
+
+P4 browser计划类允许范围扩至租赁计划，rental-plan-page-iteration.log/node检查PASS。创建tpl07-1790784243489 14 PASS：有效契约/官方表单/编号隐藏/旧直接确认退出/双视口/无错误及业务写，390截图项目/计划日期/进退场/用途/供应商/合同输入可见。已有记录tpl07-1790784253465 PM api.data ok=true records=[]，停第2项，记录办理数据前置不足；不造fixture/扩权/重复空查询。前端7915f3bb9复用未构建，后端f9b24b174。合同/供应商真实关联负例及完整角色保存办理未证明；租赁执行/结算与安全/分包等剩余职责继续推进，detail.action-state/总体67保持开放。

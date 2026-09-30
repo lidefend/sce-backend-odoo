@@ -346,3 +346,8 @@ The probe now resolves initiation menu/action from system.init rather than guess
 ### Segment53.92 — Rental plan approval source integrated; runtime pending
 
 sc.material.rental.plan now uses shared policy/tier with project company and estimated_amount authority. Submission auto-approves only when unconfigured, otherwise waits for actual reviews; old direct confirmation delegates to review authority. Private state writes, native buttons, workflow declarations and callbacks agree. Contract/project/supplier and line validations remain.82 approval/55 native/15 semantics tests pass, but module loading, real rollback approval checks and official-page consumption remain pending. Rental order/settlement responsibilities and overall action-state remain open.
+
+
+### Segment53.93 — Rental plan scoped runtime and official create evidence
+
+Backendf9b24b174 passes10 real rental-plan approval checks with rollback verified, including estimated_amount threshold matching, enabled-unmatched rejection, actual reviewer approval/rejection/resubmission and state boundaries. Official create tpl07-1790784243489 passes14 assertions on unchanged frontend7915f3bb9, both viewports, no writes/errors. PM existing-record query tpl07-1790784253465 is empty; actual role handling and contract/supplier association runtime negatives remain unproven. Rental order/settlement and remaining document families are still open.
