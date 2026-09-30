@@ -253,6 +253,30 @@ def _plan_node_contract_check(record, expected, phase):
     print("APPROVAL_CHECK=plan_node_%s_unified_contract" % phase)
 
 
+def _plan_cascade_check(plan, child, label):
+    env = plan.env
+    refused = False
+    try:
+        with env.cr.savepoint():
+            plan.unlink()
+    except UserError:
+        refused = True
+    assert refused and plan.exists() and child.exists(), "parent deletion lost reviewed child"
+    from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+    result = UiContractV2Handler(env, su_env=env).handle({
+        "model": "sc.plan", "view_type": "form", "record_id": plan.id,
+        "action_id": env.ref("smart_construction_core.action_sc_plan").id, "render_profile": "edit",
+    })
+    envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+    assert envelope.get("ok", True)
+    data = envelope.get("data", {})
+    assert data.get("statusContract", {}).get("globalStatus", {}).get("effectiveRecordCapabilities", {}).get("unlink") is False
+    policy = data.get("actionContract", {}).get("deletePolicy", {})
+    assert policy.get("allowed") is False and policy.get("reason_code") == "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE"
+    assert policy.get("message") == plan._plan_unlink_denial()
+    print("APPROVAL_CHECK=%s_parent_cascade_and_contract_denied" % label)
+
+
 def _plan_version_checks(project, group, created):
     env = _env()
     Version = env["sc.plan.version"].sudo()
@@ -290,6 +314,7 @@ def _plan_version_checks(project, group, created):
     assert auto.state == "approved" and auto.approved_date and not auto.approved_by and not auto.review_ids
     assert plan.state == "draft" and plan.progress_rate == 0
     print("APPROVAL_CHECK=version_auto_confirmation_preserves_parent")
+    _plan_cascade_check(plan, auto, "version_approved")
     denied(lambda: auto.write({"diff_summary": "rewrite confirmed"}))
     denied(auto.unlink)
     denied(auto.action_submit)
@@ -301,11 +326,15 @@ def _plan_version_checks(project, group, created):
     env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Version review", "sequence": 10,
         "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
     policy.sync_tier_definitions()
+    pending_parent = env["sc.plan"].sudo().create({"name": "Runtime pending child parent", "project_id": project.id})
+    created.append((pending_parent._name, pending_parent.id))
     required = create("required")
+    required.write({"plan_id": pending_parent.id})
     required.action_submit()
     assert required.state == "draft" and required.review_ids and required.validation_status in ("waiting", "pending")
     assert not required.approved_date and not required.approved_by
     print("APPROVAL_CHECK=version_configured_submission_waits_for_review")
+    _plan_cascade_check(pending_parent, required, "version_pending")
     denied(lambda: required.write({"change_reason": "rewrite pending"}))
     denied(required.unlink)
     denied(required.action_submit)
@@ -423,6 +452,7 @@ def _plan_report_checks(project, group, created):
     assert auto.state == "accepted" and auto.approved_date and not auto.approver_id and not auto.review_ids
     assert plan.state == "draft" and plan.progress_rate == 0
     print("APPROVAL_CHECK=report_unconfigured_auto_accept_preserves_parent")
+    _plan_cascade_check(plan, auto, "report_accepted")
     denied(lambda: auto.write({"summary": "rewrite accepted"}))
     denied(auto.action_submit)
     assert service.describe_record(auto)["editability"] == "readonly"
@@ -435,11 +465,15 @@ def _plan_report_checks(project, group, created):
     env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Report review", "sequence": 10,
         "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
     policy.sync_tier_definitions()
+    pending_parent = env["sc.plan"].sudo().create({"name": "Runtime pending child parent", "project_id": project.id})
+    created.append((pending_parent._name, pending_parent.id))
     required = create()
+    required.write({"plan_id": pending_parent.id})
     required.action_submit()
     assert required.state == "submitted" and required.validation_status in ("waiting", "pending") and required.review_ids
     assert not required.approved_date and not required.approver_id
     print("APPROVAL_CHECK=report_configured_submission_requires_review")
+    _plan_cascade_check(pending_parent, required, "report_pending")
     denied(lambda: required.write({"summary": "rewrite pending"}))
     required.action_on_tier_approved()
     assert required.state == "submitted" and service.describe_record(required)["editability"] == "readonly"
@@ -4295,7 +4329,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "plan-version" else 14 if scope == "plan-report" else 12 if scope in ("diary-state-authority", "contract-event-state-authority") else 20 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "plan-version" else 16 if scope == "plan-report" else 12 if scope in ("diary-state-authority", "contract-event-state-authority") else 20 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
 
 
 main()
