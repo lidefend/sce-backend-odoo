@@ -9231,3 +9231,16 @@ TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_AP
 1440/390官方详情截图人工核对，确认状态、内容/项目/经办人、完成按钮及无页溢出；仅查看完成动作，未点击，不把动作可见性计为完成办理。finally受管精确删除日志20，cleanup-final回读restored/model sc.construction.diary/actor32，无持久记录/附件；正常序列与审计不回退，不声称全库事务回滚。使用既有平台内部验收库local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与原卷，不触及目标环境。
 
 关闭53.173实际创建与无配置提交的代表缺口，普通PM不再只有新建可达证据；有配置多角色浏览器链、审批后内容写入保护与其它业务仍未覆盖。下一步处理本组既有“已审批页面只读与后端内容可写”的明确边界，复用主单状态/审批证据，避免重跑已闭合创建与配置旅程。总体67/detail.action-state保持开放，无推送/合并/目标部署。
+
+
+### 53.175 施工日志审批内容保护及真实驳回后修改
+
+b53da823c起点，核对既有workflow._editability后区分三类职责：日志draft+pending/approved及confirmed/done/cancel只读，计划in_progress映射open还涉及节点执行，不一刀切禁止。P1 41aba128e仅日志write冻结项目/日期/标题/正文/现场事实/附件关系/归档等业务字段，覆盖draft等待或validated、confirmed/done/cancel；内部状态令牌动作保留，legacy_confirmed沿原补充字段白名单。未把审批规则放前端或P4，未改变新建/普通草稿输入。167纯测及L1/receipt通过（diary-content-*），P4 96e755e76沿原diary scope追加pending/approved/done实际内容拒绝及rejected正文修改检查，共计划12项；all计数随新增4调整但不执行all。
+
+首轮受管backend96e755e76运行diary-content-runtime.log在真实驳回后正文write失败：OCA tier_validation._tier_validation_check_write_allowed将仍有review_ids的rejected draft当作under-validation拒绝正文。已完成的冻结检查通过，整体运行失败且ROLLBACK VERIFIED；不重试未变输入、不把纯测当真实通过。该问题使契约可编辑草稿无法修改重提，是P1审批插件适配缺口。
+
+8df806f4e通过插件既有_check_allow_write_under_validation扩展点，仅state=draft且validation_status=rejected且不写state/source_origin时允许普通内容修改，其余返回父实现；不向调用方暴露通用跳过开关，原模型状态与内容保护仍先执行。新增方法反例覆盖pending/waiting/validated、错误业务状态、状态/来源写入拒绝委托；168纯测/L1/receipt PASS（diary-rejected-*）。无字段/XML，不升级模块；受管backend.up加载8df806f4e，前端e31e51c59未变不构建。
+
+SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终diary-rejected-runtime.log12具名PASS、ROLLBACK VERIFIED。原直接状态拒绝/自动确认/真实审核后独立完成/取消保持；pending、approved、done修改标题/正文/项目/补充内容/active均拒绝且权威read与原值一致；真实驳回后正文可改、随后重提形成新review并批准。沿原事务sudo创建与业务执行、真实reviewer，不冒充PM多角色浏览器；环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082/精确filter/原卷。配置/步骤原值及临时对象恢复确认。
+
+53.174 PM创建自动确认33证据按未变create/草稿/确认语义及前端输入复用，不再次造临时日志；本次变化证明审批后内容边界及拒绝后修改，不改变原页面结果。日志已确认只读与后端主记录内容保护代表缺口关闭；关联附件独立接口、跨角色配置审批UI不由本次证明。合同事件rejected编辑策略、计划执行中内容职责待独立处理，总体67/detail.action-state开放。无推送/合并/目标部署。

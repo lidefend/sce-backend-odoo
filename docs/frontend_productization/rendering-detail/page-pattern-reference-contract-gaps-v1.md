@@ -615,3 +615,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.174：施工日志PM真实创建→提交自动确认→官方只读详情33 PASS（tpl07-1790807320202，工具b7d89df9c/38测试）；日志20/CD2600020字段由普通PM权威回读，双视口核对，精确清理restored。关闭53.173成功保存提交代表缺口，不覆盖独立完成点击、有配置多角色UI或审批后内容保护；总体业务覆盖仍开放。
+
+
+53.175：日志审批中/已确认/终态业务内容冻结，并修复真实rejected draft被OCA审批写入锁误拦截。最终8df806f4e/168纯测/diary专用runtime12 PASS、ROLLBACK VERIFIED；首轮失败保留diary-content-runtime。复用53.174未变PM创建33，不外推附件独立接口或多角色审批UI。事件驳回编辑与计划执行职责仍开放。
