@@ -894,6 +894,39 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.assertRaises(ValueError): ns['write'](rec, {field: 99})
                 with self.assertRaises(ValueError): ns['unlink'](rec)
 
+    def test_equipment_plan_and_request_use_shared_review_decisions(self):
+        path = MODEL.with_name('equipment_management.py')
+        tree = ast.parse(path.read_text())
+        for cls_name, model in [('ScEquipmentPlan', 'sc.equipment.plan'), ('ScEquipmentRequest', 'sc.equipment.request')]:
+            cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
+            names = {'action_submit', 'action_approve', 'action_on_tier_approved', 'write'}
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_EQUIPMENT_APPROVAL_STATE_TOKEN': object()}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            for required in (False, True):
+                rec = self._purchase_request_record(required=required, state='draft')
+                rec._name = model
+                rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+                anchors = []
+                rec._check_business_anchor = lambda: anchors.append('checked')
+                rec._write_approval_state = lambda values: rec.data.update(values)
+                for token in (None, True, 'trusted'):
+                    with self.assertRaises(ValueError):
+                        ns['write'](rec.with_context(sc_equipment_approval_state_token=token), {'state': 'approved'})
+                ns['action_submit'](rec)
+                self.assertEqual(rec.state, 'submitted' if required else 'approved')
+                if model == 'sc.equipment.request': self.assertEqual(anchors, ['checked'])
+                if required:
+                    ns['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'submitted')
+                    wizard = {'type': 'ir.actions.act_window'}
+                    rec.validate_tier = lambda: wizard
+                    self.assertIs(ns['action_approve'](rec), wizard)
+                    self.assertEqual(rec.state, 'submitted')
+                    rec.data['validation_status'] = 'validated'
+                    ns['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'approved')
+
     def _purchase_request_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')

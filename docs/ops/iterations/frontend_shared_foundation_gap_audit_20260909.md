@@ -8094,3 +8094,14 @@ L1 material-settlement-runtime-iteration.log、py_compile/bash-n PASS；P1源/�
 53.78实际：受管升级及后端7a6adbe17加载成功，material-settlement-runtime.log 8/8 PASS，ROLLBACK VERIFIED。审批阶段无成本/付款，approved头及明细修改删除拒绝，显式确认按现有类别配置检查下游金额与草稿付款状态，重复确认拒绝；拒绝重提新review且不确认。此运行建单/确认使用事务sudo，审批用实际reviewer，不等同完整角色业务旅程。
 
 P4既有浏览器范围增加sc.material.settlement；material-settlement-page-iteration.log L1/node语法PASS。创建tpl07-1790781211021/report.json 15 PASS，官方表单/有效契约、编号隐藏、未保存无确认或剩余付款、双视口，errors=[]/forbiddenWrites=[]，390截图复核。已有记录tpl07-1790781226628/report.json api.data ok=true records=[]，数据前置不足；不重复查询，不新建fixture，不升级全业务行。前端7915f3bb9复用未重建；真实角色记录办理仍pending。总体目标与detail.action-state继续开放。
+
+
+### 53.79 设备计划与设备申请成组接入统一审批（进行中）
+
+P1 smart_construction_core / equipment_management，行业标准计划申请职责。两类原确认无执行副作用，提交统一policy/tier：无配置自动approved，有配置实际review；旧action_approve仅委托真实审批保留wizard。保留明细及申请业务锚点校验，项目公司为配置归属；私有状态token拒绝外部直接写。回调只在真实review终态推进，拒绝回draft并保留原因，重提走共享review重建。设备使用登记确认记成本，未混入本组，后续需独立审批与执行。
+
+原生视图真实tier按钮/profile/配置选择/回调统一，系统编号创建隐藏只读。回调沿用同文件已注册数据载体，设备权限为既有internal_user，实际reviewer由tier保护，不借材料经理身份决定设备业务。无前端业务条件。设备申请amount_total为固定0展示边界字段，非真实审批金额；两模型不登记金额权威，金额条件应由现有编译器拒绝。
+
+L1 equipment-plan-request-iteration.log PASS；equipment-plan-request-unit.log 77 PASS（一个参数化测试覆盖两模型配置分流/回调事实/兼容wizard/外部token与来源校验）；equipment-plan-request-native.log 8+44=52 PASS；equipment-plan-request-semantics.log 15 PASS；2份XML解析/diff --check PASS，检查输入预登记与非零回执完成。候选0ccc41db0+本批dirty，非冻结交付。
+
+L3未执行：tier/company/reason/native XML需一次受管升级。下一步用现有rollback工具单独equipment-plan-request范围真实验证两模型配置、金额拒绝、来源计划关联、审批/驳回重提及恢复。L4仅后续受影响页面，不重建前端；L5不在本地范围。成本用量/设备结算尚未接入，67条和角色实际办理不能据此完成。

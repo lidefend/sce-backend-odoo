@@ -17,6 +17,8 @@ class TierDefinition(models.Model):
             "sc.material.acceptance",
             "sc.material.purchase.request",
             "sc.material.rfq",
+            "sc.equipment.plan",
+            "sc.equipment.request",
             "sc.material.settlement",
             "project.project",
             "project.task",

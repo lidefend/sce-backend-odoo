@@ -60,8 +60,12 @@
         <field name="arch" type="xml">
             <form string="设备计划">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认计划" type="object" class="btn-primary" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
@@ -69,7 +73,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="plan_date"/>
                             <field name="start_date"/>
@@ -106,6 +110,7 @@
                     </notebook>
                 </sheet>
                 <chatter/>
+
             </form>
         </field>
     </record>
@@ -156,8 +161,12 @@
         <field name="arch" type="xml">
             <form string="设备申请">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认申请" type="object" class="btn-primary" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
@@ -165,7 +174,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="plan_id"/>
                             <field name="request_date"/>
@@ -202,6 +211,7 @@
                     </notebook>
                 </sheet>
                 <chatter/>
+
             </form>
         </field>
     </record>

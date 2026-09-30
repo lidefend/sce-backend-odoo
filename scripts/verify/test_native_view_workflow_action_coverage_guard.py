@@ -76,6 +76,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         confirm = next(row for row in approved if row['method'] == 'action_confirm')
         self.assertEqual(confirm['action_semantics']['purpose'], 'complete')
 
+    def test_equipment_plan_request_project_actual_review_actions(self):
+        for model in ('sc.equipment.plan', 'sc.equipment.request'):
+            for reviewer in (False, True):
+                rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=reviewer, record_fields={'validation_status': 'pending'})
+                self.assertEqual({row['method'] for row in rows}, {'action_cancel'} | ({'validate_tier', 'reject_tier'} if reviewer else set()))
+            rows = self._general_contract_actions('submitted', model=model, record_fields={'validation_status': 'no'})
+            self.assertEqual({row['method'] for row in rows}, {'action_submit', 'action_cancel'})
+            self.assertEqual(self._general_contract_actions('approved', model=model), [])
+
     def test_material_inbound_reset_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_reset_draft")
 
