@@ -283,7 +283,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.59 existing preview tool now stages changed-input builds, preserves verified old dist/receipt and restores on promotion failure; lock serializes operations;16 tests pass. Commit then one frontend.standard.preview.build/up (backend b06c8a2f7 addon inputs unchanged), verify actual index/entry and task create browser. No runtime business39 repeat. Task detail missing existing authorized data; project approval/start split still required.",
+  "next_exact_step": "53.59 preview update limitation closed:16 tool tests, one23.45s build fed2dfcc2, 5180 actual /assets/index-C9RBIxc0.js HTTP matches, old candidate previous-avuxmhgu preserved, task create12 passed. Backend b06c8a2f7; source addons unchanged. Continue project.project configured approval/start separation preserving lifecycle role/write guards and native contract; task existing-record/blocked page journey remains data-limited, do not repeat empty PM query. Preserve full67 rendering scope and continue producer/consumer/legacy exit gaps. No push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -915,8 +915,8 @@
       },
       "runtime": {
         "backend": "b06c8a2f7 loaded by governed up",
-        "frontend": "old 0d2c6190a candidate retained; new code not built",
-        "build": "not_run: wrapper first stopped on backend revision; after reload preview identity rejected changed build inputs before invoking compiler",
+        "frontend": "fed2dfcc234565d8e48a644e38cff702c5c56c7b /assets/index-C9RBIxc0.js loaded at5180; index HTTP matches receipt",
+        "build": "resolved by53.59; one actual build23.45s, task create12 passed; real blocked task interaction still uncovered",
         "logs": [
           "artifacts/frontend-web-fix-20260928/tpl52/scene-outcome-build.log",
           "artifacts/frontend-web-fix-20260928/tpl52/scene-outcome-build-loaded.log"
@@ -929,7 +929,21 @@
       "l1": "iteration passed after exact P4 path registration",
       "l2": 16,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/preview-refresh-tests.log",
-      "runtime": "single build and page verification pending"
+      "runtime": {
+        "status": "passed",
+        "build_count": 1,
+        "build_seconds": 23.45,
+        "identity": {
+          "base_sha": "fed2dfcc234565d8e48a644e38cff702c5c56c7b",
+          "entry": "/assets/index-C9RBIxc0.js",
+          "entry_sha256": "3c9d155557f1dcb45d85a45be8dd0db457025fb23ed190c17efd1c434fa25fc4",
+          "index_sha256": "8bf961230df3aa181e8963a125b630e69d99d1bac3c72b35999e02b6f5df9a3e",
+          "http_index_matches": true
+        },
+        "previous": "/home/lidefend/workspace/sce-offrepo/artifacts/config05-20260929/previous-avuxmhgu",
+        "browser_checks": 12,
+        "browser_report": "artifacts/frontend-web-fix-20260928/tpl07-1790776830481/report.json"
+      }
     }
   }
 }

@@ -7892,3 +7892,7 @@ L5：未推送、未合并、未部署。
 - 既有入口增加文件锁串行build/up/identity，原监听进程归属、STATIC_ROOT、端口/代理检查及不明候选拒绝保持。没有删除回执绕过输入校验，也没有两次编译。静态入口首次因run缺少精确工具路径reconcile退出（preview-refresh-iteration.log），补登记本批已授权P4路径后PASS（preview-refresh-iteration-scoped.log）；不扩大整个scripts/dev权限范围。
 - 既有preview测试从9增至16：未变不编译、变化只编译一次且旧产物保留、编译失败保持旧候选、编译中源码漂移拒绝、旧产物损坏拒绝、回执提升失败恢复、切换后身份失败恢复。最终L1之后begin/record16 PASS（preview-refresh-tests.log/receipt.log），首次L1前的测试仅诊断，不替代最后回执。
 - 下一步提交后实际一次构建/复用5180，再绑定加载entry复核任务create。后端仍b06c8a2f7，本轮未改addons，不重载/升级。审批39与模型证据输入无变化继续复用；前端共享结果修复仍待候选加载，不宣称真实阻断任务旅程已完成。
+
+- 实际候选更新已完成：fed2dfcc234565d8e48a644e38cff702c5c56c7b仅编译一次，23.45s（preview-refresh-build.log），旧候选保留于既有OUTPUT/previous-avuxmhgu（dist及原build-identity.json）。受管up复用5180监听进程，新首页HTTP hash与回执一致（preview-refresh-observed.json）；entry=/assets/index-C9RBIxc0.js，entry_sha256=3c9d155557f1dcb45d85a45be8dd0db457025fb23ed190c17efd1c434fa25fc4，index_sha256=8bf961230df3aa181e8963a125b630e69d99d1bac3c72b35999e02b6f5df9a3e。不做全文件HTTP比对。
+- 新候选PM任务create12 PASS（preview-refresh-task-browser.log，tpl07-1790776830481/report.json），官方共享表单和双视口加载正常。53.58共享阻断消费代码已实际进入当前前端；真实审批中任务操作UI仍无现有授权记录，不能用create12代替该旅程。无字段/XML改动，不升级；审批39输入不变复用，不重复ORM。
+- 53.58预览工具阻断关闭。本轮P4批次验证通过；总体目标未完成、主线未集成、目标环境未部署、用户整体验收未完成。下一步继续project.project审批/启动分离及原67台账的生产者/消费者/旧职责退出缺口，不再停留在预览更新。
