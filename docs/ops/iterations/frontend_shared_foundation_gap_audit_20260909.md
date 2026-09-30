@@ -9339,3 +9339,12 @@ edfd3de14 clean起点；P1 37af7959f把construction_plan_productized_form_v1从e
 首次通用新建页tpl07-1790809415350通过12项，但无menu/action上下文不足证明入口配置；P4修改既有探针从system.init routeAuthority取得PM授权menu507/action655，工具40/L1/receipt PASS（plan-entry-probe-*）。入口浏览器tpl07-1790809477312通过13项，authority.structure.mode=native_structured_form/layoutPolicy=container_tree_authority，29字段来源未丢失。但人工截图观察公司/责任人显示#8/#32，不能以13项通过忽略可用性问题；计划入口批次产品验收仍未完成。
 
 对照两份原始报告mainData均为company_id[8,FE Company A]、owner_id[32,Acceptance Fixture PM]，不是后端关系名称缺失或权限拒绝。共享createDefaults.loadAuthoritativeCreateDefaults再调用api.data/default_get，原mergeAuthoritativeCreateDefaults直接覆盖；api_data._op_default_get按ORM返回数字ID，故同身份标签丢失。下一步P0通用消费修复须显式many2one类型且ID一致才保留原标签，值变化/清空不可沿用旧名，补定向反例和实际入口观察。无新增fixture/业务写，尚不宣称计划执行完成。节点初始执行值、增删能力、汇报/版本审批仍开放，无推送/合并/目标部署。
+
+
+### 53.185 共享新建默认关系标签合并修复
+
+1e7897f3e clean起点，P0 e19eb1e16修复createDefaults合并：仅显式fieldTypes many2one、权威新值为正整数且与原[id,label]身份完全一致、原标签非空时保留标签副本。新ID、false/null/0/空串、新标签及非关系类型全部以新响应为准，不改变记录身份或权限。useRecordPageLifecycle从既有formFields类型映射传入；无模型专属业务推断，不额外查库。既有run增加create_default_hydration定向结果项，仍复用同一结果索引。
+
+relation-default-label-unit39 PASS（原28+11标签/换ID/清空/类型/加载路径检查）、typecheck.strict PASS，L1 final-iteration PASS；工具40及begin/receipt通过，P4原计划入口探针新增company_id/owner_id输入值必须等于有效契约标签的两项断言。产品稳定后仅一次frontend.standard.preview.build，preview.up复用5180 listener；候选e19eb1e16063fa75691e61c3b2a34a1de90f77b2，entry/assets/index-BHjcel_-.js，sha256 d8a1de1dbef0102ed4cd2dfc79ef095f815c65e423449829f6addb5749d9ab5b，旧预览保留previous-xokzgzdh。后端37af7959f未变，不升级/重跑ORM。
+
+relation-default-label-browser.log及tpl07-1790809740513/report.json15项PASS，授权PM/menu507/action655，截图1440观察公司FE Company A/责任人Acceptance Fixture PM，390无溢出；两项标签明确通过，无异常或业务写。浏览器工具校验实际entry摘要与候选一致。53.184默认显示阻断关闭，计划入口重复字段布局退出与新建页面呈现代表范围通过；不扩大为计划执行全旅程或整体67验收。节点创建初始执行值、增删能力、汇报/版本审批仍开放。无推送/合并/目标部署。
