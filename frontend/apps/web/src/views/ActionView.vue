@@ -2225,7 +2225,7 @@ function clearAllListConditions() {
 async function handleDeleteFavorite(id: number) {
   const chip = contractSavedFilterChips.value.find((row) => row?.deleteAction?.params.filter_id === id);
   const action = chip?.deleteAction;
-  if (!action) return { deleted: false, message: '当前契约未允许删除此收藏，请刷新后重试。' };
+  if (!action) return { deleted: false, message: '当前页面未允许删除此收藏，请刷新后重试。' };
   const sourceActionId = actionId.value;
   const sourceContract = actionContract.value;
   return settleSavedSearchDeletion(async () => {

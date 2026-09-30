@@ -17,6 +17,6 @@ export function describeRecordActionDenials(states: ContractRecordActionState[])
   return states.flatMap((state) => {
     const label = operationLabels[state.operation];
     if (!label || state.allowed || !state.reasonCode) return [];
-    return [`不可${label}：${reasonLabels[state.reasonCode] || '当前契约未允许此操作'}`];
+    return [`不可${label}：${reasonLabels[state.reasonCode] || '当前页面未允许此操作'}`];
   });
 }

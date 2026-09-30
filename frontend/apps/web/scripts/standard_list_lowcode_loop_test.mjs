@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { recoverChangeSet, listLabels, recordIds, completeLabelColumns, labelOnlyProjection } from './standard_list_lowcode_loop.mjs';
+import { permitsOwnedChangeSetUiWrite, recoverChangeSet, listLabels, recordIds, completeLabelColumns, labelOnlyProjection } from './standard_list_lowcode_loop.mjs';
 
 test('uncertain publish is read back and rolled back without republishing', async () => {
   const calls = [];
@@ -139,4 +139,15 @@ test('configured authority is allowed only for draft/publication and must disapp
     const changed = structuredClone(configured); mutate(changed);
     assert.throws(() => labelOnlyProjection(changed, '新标签', true));
   }
+});
+
+test('workbench mutations bind owned draft and unrestricted-role scope', () => {
+  for (const op of ['validate', 'publish', 'rollback']) {
+    const body = { intent: `ui.business_config.change_set.${op}`, params: { change_set_token: 'owned', role_key: '' } };
+    assert.equal(permitsOwnedChangeSetUiWrite(body, 'owned'), true);
+    assert.equal(permitsOwnedChangeSetUiWrite(body, 'other'), false);
+    assert.equal(permitsOwnedChangeSetUiWrite({ ...body, params: { ...body.params, role_key: 'finance' } }, 'owned'), false);
+  }
+  for (const op of ['stage', 'discard', 'open']) assert.equal(permitsOwnedChangeSetUiWrite({ intent: `ui.business_config.change_set.${op}`, params: { change_set_token: 'owned' } }, 'owned'), false);
+  assert.equal(permitsOwnedChangeSetUiWrite({}, ''), false);
 });

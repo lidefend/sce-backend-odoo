@@ -65,4 +65,27 @@ await scenario('publishDraft', 'validateBusinessConfigChangeSet', 'company');
   assert.equal(writes, 1); assert.equal(session.busy.value, false);
   scope.stop(); cases++;
 }
+// Use the real workbench binding: actor identity must not become target scope.
+{
+  const view = fs.readFileSync(new URL('../src/views/BusinessConfigSurfaceView.vue', import.meta.url), 'utf8');
+  const binding = view.match(/useBusinessConfigDraftSession\((\(\) => [^,]+),/)[1];
+  for (const selectedRole of ['', 'finance']) {
+    const roleKey = vm.runInNewContext(binding, { scopeRole: { value: selectedRole }, session: { roleSurface: { role_code: 'business_config_admin' } } });
+    const calls = [];
+    const exports = {};
+    const api = {
+      resumeBusinessConfigChangeSet: async p => { calls.push(p); return draft('owned'); },
+      validateBusinessConfigChangeSet: async p => { calls.push(p); return draft('owned', 'ready'); },
+      publishBusinessConfigChangeSet: async p => { calls.push(p); return draft('owned', 'published'); },
+    };
+    vm.runInNewContext(compiled, { exports, require: name => name === 'vue' ? vue : api, Date, Math });
+    const scope = vue.effectScope();
+    const session = scope.run(() => exports.useBusinessConfigDraftSession(roleKey, () => ({ model: 'same.document', actionId: 666 })));
+    await session.resumeScope();
+    await session.publishDraft();
+    assert.ok(calls.length >= 3);
+    for (const call of calls) assert.equal(call.role_key || '', selectedRole);
+    scope.stop(); cases++;
+  }
+}
 console.log(`[business_config_draft_scope_race] PASS cases=${cases}`);

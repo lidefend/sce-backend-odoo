@@ -9081,3 +9081,14 @@ expense-policy-fresh-browser.log / tpl07-1790804200300配置范围21项全通过
 该报告总58 PASS含额外默认付款旅程：P4新scope分支未与后续if/else链互斥。进程正常结束后已改else if，node语法及工具34项通过（expense-policy-scope-unit/receipt.log）。配置分支本体与断言、产品及环境未变，复用原21项与恢复证据，不为范围调度修正再次写配置；额外付款结果不计本批验收，也不覆盖旧证据。
 
 本次关闭业务分类入口缺失和新建默认值缓存导致配置不即时生效的代表缺口。验证是原生配置即时保存，不是WEB-LC变更集发布/回滚；不外推其它类别字段或全部业务单据。67/detail.action-state、其余已登记业务责任与配置发布证据继续开放。下一步复用既有WEB-LC记录核对版本化配置发布/恢复尚缺的具体链，再在同一共享消费路径补齐，不重跑全菜单/付款49/ORM。无推送、合并、目标部署。
+
+
+### 53.162 工作台发布旅程定位配置目标角色误用操作者身份
+
+复用LC02最终报告bb8af700-b57b-4832-8a65-458a5b1f0810：API发布→完整列表能力→恢复已完成，不重新登记为缺口。本批补的是UI发布/回滚，非UI字段编辑。P4扩展原standard_list_lowcode_loop，WEB_LC_UI_PUBLISH=1显式模式仍由原API暂存精确标签/比较完整草稿，再通过工作台按钮发布/恢复；已有目标草稿冲突停止，scope/owner token严格匹配，发出UI publish前持久化request id和attempted，异常复用原权威回读/恢复。15工具测试及configuration_ui_publish begin/record通过，L1 PASS；不新增环境或fixture。
+
+三次受管运行均在发布前停止并discarded、完整能力恢复核对通过：dbf0b1a1-d4fa-4f50-839f-318fe933b5d3为P4快捷browser.newPage不允许第二页，改显式context；4f8d806e-2f98-45d3-b043-4242f0e10d5e为草稿恢复响应身份不符，收紧匹配目标；0475510d-766f-4515-a302-54ce6fbbfac2绑定payment.request/action775后仍失败，报告uiResume明确请求role_key=business_config_admin，API暂存目标role_key为空，返回无草稿。未发布，无业务写入。私有report保存恢复凭据，禁止公开上传；后续诊断仅记录身份是否匹配，不把token输出为断言值。
+
+P0根因BusinessConfigSurfaceView用scopeRole || session.roleSurface.role_code作为DraftSession目标范围；操作者身份被当作目标角色，与stageItem的scopeRole为空不一致。现改为scopeRole || ''，认证与后端权限保持；已有表面读取的角色上下文未改变。回归从真实View提取绑定，再执行DraftSession恢复/校验/发布，确认未限定及显式finance均不被admin覆盖；原8竞态+稳定目标9扩为11。verify.business_config.unit先被两处已有用户术语文案阻断（ActionView收藏拒绝、recordActionDenialPresentation）；仅把“当前契约未允许”改“当前页面未允许”，保持拒绝规则及原因。重跑入口223项通过（JS39+Python184），日志lc-target-role-unit-final；严格类型lc-target-role-types PASS，随后只有两个字符串字面量变化，按类型输入结构不变复用。
+
+本批P0源码已验证，生产前端仍dbc39c9a8，尚未加载目标角色修复。下一步一次受管前端构建/5180更新，再执行同一UI模式，确认发布及回滚而非只看API成功。后端仍6fd0123cd、addons未改，无需重启或ORM。总体67/detail.action-state保持open，无推送、合并、目标部署。

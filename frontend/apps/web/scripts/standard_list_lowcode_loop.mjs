@@ -13,6 +13,12 @@ const digest = (value) => createHash('sha256').update(value).digest('hex');
 
 // Recovery reads the authoritative state even when publish timed out. It never
 // repeats publish, overwrites somebody else's conflict, or hides cleanup failure.
+export function permitsOwnedChangeSetUiWrite(body, token) {
+  return Boolean(token && ['ui.business_config.change_set.validate', 'ui.business_config.change_set.publish',
+    'ui.business_config.change_set.rollback'].includes(body?.intent)
+    && body.params?.change_set_token === token && !body.params?.role_key);
+}
+
 export async function recoverChangeSet(cs, token, requestId, publishAttempted = false) {
   const current = await cs('get', { change_set_token: token });
   if (current.state === 'published') {
@@ -142,7 +148,8 @@ export async function runStandardListLoop() {
   const report = { run, status: 'not_run', assertions: [], calls: [], recovery: 'not_needed', candidate: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), dirty: execFileSync('git', ['status', '--short'], { cwd: root, encoding: 'utf8' }).trim() };
   const save = () => fs.writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
   const check = (name, condition) => { report.assertions.push({ name, passed: Boolean(condition) }); assert.ok(condition, name); };
-  let browser, page, token, baseline, baselineProjection, baselineLabel, publishAttempted = false;
+  let browser, page, workbench, token, baseline, baselineProjection, baselineLabel, publishAttempted = false;
+  const uiPublish = process.env.WEB_LC_UI_PUBLISH === '1';
   const bootstrap = new Set();
   const errors = [];
   async function intent(name, params) {
@@ -191,7 +198,8 @@ export async function runStandardListLoop() {
   try {
     report.identity = await servedIdentity();
     browser = await launchChromium({ headless: true });
-    page = await browser.newPage({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
+    const browserContext = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
+    page = await browserContext.newPage();
     await page.route('**/api/v1/intent', async (route) => {
       const body = route.request().postDataJSON();
       if (body?.intent === 'api.data' && !['list', 'read'].includes(body.params?.op)) {
@@ -229,7 +237,13 @@ export async function runStandardListLoop() {
     if (process.env.WEB_LC_APPLY !== '1') return;
 
     assert.deepEqual(baselineContract.dataContract?.dataSource?.primary?.params?.context?.allowed_company_ids, [8], 'exact existing acceptance company scope');
-    const opened = await cs('open', { name: run });
+    if (uiPublish) {
+      const existing = await cs('open', { resume_only: true, target_model: 'payment.request', target_action_id: 775 });
+      assert.equal(existing.created, false);
+      assert.ok(!existing.token, 'existing scoped draft must not be changed by this probe');
+    }
+    const opened = await cs('open', { name: run, ...(uiPublish ? { fresh: true, target_model: 'payment.request', target_action_id: 775 } : {}) });
+    if (uiPublish) assert.equal(opened.created, true, 'UI probe owns a fresh isolated draft');
     token = opened.token;
     report.change_set_token = token;
     await save(); // Recovery identity is durable before any publish request.
@@ -247,9 +261,54 @@ export async function runStandardListLoop() {
     assert.deepEqual(labelOnlyProjection(draft, label, true), baselineProjection, 'draft changes capabilities beyond target label; publish prohibited');
     check('draft preserves complete capabilities', true);
     report.publish_request_id = `${run}-publish`;
-    report.publish_attempted = publishAttempted = true;
+    report.publish_attempted = publishAttempted = !uiPublish;
     await save();
-    const published = await cs('publish', { change_set_token: token, request_id: report.publish_request_id });
+    let published;
+    if (uiPublish) {
+      workbench = await page.context().newPage();
+      const session = await page.evaluate(() => Object.fromEntries(Object.entries(sessionStorage)));
+      await workbench.addInitScript((values) => { for (const [key, value] of Object.entries(values)) sessionStorage.setItem(key, value); }, session);
+      workbench.on('pageerror', (error) => errors.push(error.message));
+      await workbench.route('**/api/v1/intent*', async (route) => {
+        const body = route.request().postDataJSON();
+        const name = body?.intent || '';
+        if (name.startsWith('ui.business_config.change_set.') && !['get', 'open', 'resume'].some((op) => name.endsWith(`.${op}`))) {
+          if (!permitsOwnedChangeSetUiWrite(body, token)) { errors.push('UI attempted an unowned change-set mutation'); return route.abort(); }
+          if (name.endsWith('.publish')) {
+            report.publish_request_id = body.params.request_id;
+            report.publish_attempted = publishAttempted = true;
+            await save();
+          }
+        }
+        if (name === 'ui.business_config.change_set.open' && body.params?.resume_only !== true) {
+          errors.push('UI attempted to open a new draft'); return route.abort();
+        }
+        if (name === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op)) {
+          errors.push('UI attempted a business write'); return route.abort();
+        }
+        return route.continue();
+      });
+      const resumed = workbench.waitForResponse((res) => {
+        try { const body = res.request().postDataJSON(); return body?.intent === 'ui.business_config.change_set.open' && body.params?.target_model === 'payment.request' && Number(body.params?.target_action_id) === 775; } catch { return false; }
+      });
+      await workbench.goto(`${base}/admin/business-config?model=payment.request&action_id=775&menu_id=545`);
+      const resumedResponse = await resumed;
+      const resumedBody = await resumedResponse.json();
+      report.uiResume = { params: resumedResponse.request().postDataJSON()?.params, ok: resumedBody.ok, state: resumedBody.data?.state, keys: Object.keys(resumedBody.data || {}), owned: resumedBody.data?.token === token };
+      await save();
+      assert.ok(report.uiResume.owned, 'workbench resumes the owned draft');
+      const response = workbench.waitForResponse((res) => {
+        try { return res.request().postDataJSON()?.intent === 'ui.business_config.change_set.publish'; } catch { return false; }
+      });
+      await workbench.getByRole('button', { name: '发布全部可逆配置', exact: true }).click();
+      await workbench.getByRole('button', { name: '确认继续', exact: true }).click();
+      const result = await (await response).json();
+      assert.equal(result.ok, true);
+      published = result.data;
+      await workbench.getByRole('button', { name: '按批次回滚', exact: true }).waitFor();
+      await workbench.screenshot({ path: path.join(out, 'workbench-published.png') });
+      check('workbench UI published owned configuration', true);
+    } else published = await cs('publish', { change_set_token: token, request_id: report.publish_request_id });
     check('published content verified', published.state === 'published' && published.publish_result?.published_content_verified === true);
     const publishedContract = await contract();
     assert.deepEqual(labelOnlyProjection(publishedContract, label, true), baselineProjection, 'published capabilities must match baseline');
@@ -260,7 +319,18 @@ export async function runStandardListLoop() {
     assert.equal(report.changed_headers.business_facts_sha256, beforeHeaders.business_facts_sha256, 'configuration must preserve fixed business fields and write_date');
     assert.deepEqual(report.changed_headers.request, beforeHeaders.request, 'configuration must preserve query and authorization context');
     await page.screenshot({ path: path.join(out, 'published.png') });
-    report.recovery = await recoverChangeSet(cs, token, `${run}-rollback`, publishAttempted);
+    if (uiPublish) {
+      const response = workbench.waitForResponse((res) => {
+        try { return res.request().postDataJSON()?.intent === 'ui.business_config.change_set.rollback'; } catch { return false; }
+      });
+      await workbench.getByRole('button', { name: '按批次回滚', exact: true }).click();
+      const result = await (await response).json();
+      assert.equal(result.ok, true);
+      assert.equal(result.data?.publish_result?.published_content_verified, true);
+      report.recovery = 'rolled_back';
+      await workbench.screenshot({ path: path.join(out, 'workbench-restored.png') });
+      check('workbench UI rollback verified', true);
+    } else report.recovery = await recoverChangeSet(cs, token, `${run}-rollback`, publishAttempted);
     token = null;
     assert.deepEqual(labelOnlyProjection(await contract(), baselineLabel), baselineProjection, 'restored complete capabilities');
     assert.deepEqual(await observe(field[1]), beforeHeaders, 'restored visible headers, query and records');

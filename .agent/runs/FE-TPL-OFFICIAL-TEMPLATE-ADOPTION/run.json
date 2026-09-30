@@ -427,10 +427,20 @@
         "scripts/verify/test_formal_list_configuration_baseline.py",
         "make/runtime_ops.mk"
       ]
+    },
+    "configuration_ui_publish": {
+      "target": "verify.business_config.standard_list_loop.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_list_lowcode_loop.mjs",
+        "frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/runtime_ops.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.161 native configuration immediate loop closed: P1 category admin entry2f93034b6/navigation115; P0 dynamic create-source6fd0123cd/projection176; browser tpl07-1790804200300 configuration21 required→recommended→required and finance feedback/restoration passed, no business records. Extra payment journey excluded; P4 else-if scope correction/tool34, original unchanged configuration evidence reused. Backend6fd0123cd/frontenddbc39c9a8. Next consult existing WEB-LC recorded versioned publish/rollback evidence and open67/detail.action-state scope, select remaining concrete contract/consumer gap; native policy save is not versioned publication. No full menu scan/new fixture/ORM, no push/merge/target deployment.",
+  "next_exact_step": "53.162 UI publication pending runtime: existing LC02 API full capability loop remains closed. Three owned prepublish drafts discarded/restored; latest report web-lc-01-0475510d-766f-4515-a302-54ce6fbbfac2 proves workbench resume role=business_config_admin vs intended unscoped. Fixed P0 BusinessConfigSurfaceView DraftSession callback to scopeRole only; real binding regression11 + full business_config.unit223 and strict pass. P4 WEB_LC_UI_PUBLISH=1 tool15/current receipt; logs tpl52/lc-target-role*. Need commit clean candidate, one managed frontend build/up5180, then same UI loop. Backend6fd0123cd unchanged; no ORM/restart/newfixture. Two user-message internal terms corrected for existing guard; types reused by literal-only impact. Overall67 stays open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

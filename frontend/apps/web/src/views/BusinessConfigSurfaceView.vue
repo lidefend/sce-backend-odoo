@@ -194,7 +194,7 @@ const {
   resumeScope,
   hasUnifiedDraft,
   resetScope: resetUnifiedDraftScope,
-} = useBusinessConfigDraftSession(() => scopeRole.value || session.roleSurface?.role_code || '', () => ({ model: currentModel.value, actionId: scopeAction.value, companyId: Number(session.recordContext?.company_id || 0) }));
+} = useBusinessConfigDraftSession(() => scopeRole.value || '', () => ({ model: currentModel.value, actionId: scopeAction.value, companyId: Number(session.recordContext?.company_id || 0) }));
 async function loadChangeSetSafely() {
   try { await resumeScope(); } catch { /* rendered by the change-set panel */ }
 }
