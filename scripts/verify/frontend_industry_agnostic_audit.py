@@ -7,6 +7,13 @@ select structure or behavior from industry identifiers. During M0 the audit
 emits a truthful report without approving a baseline. Set
 ``FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1`` only when the inventory has reached
 zero; that mode is intended for the release gate after convergence.
+
+Each finding also records the lexical role of the match. A word inside a comment
+or a plain string is not by itself a behavior selector, while a word used in a
+comparison, ternary or lookup does select structure. The role is diagnostic: it
+does not change ``finding_count`` or the enforcement decision, it only keeps the
+report from flattening "consumes a declared name" and "invents a rule" into one
+number.
 """
 
 from __future__ import annotations
@@ -35,6 +42,93 @@ class Finding:
     line: int
     excerpt: str
     reason: str
+    role: str
+
+
+ROLE_DOCUMENTATION = "documentation"
+ROLE_STRING_LITERAL = "string_literal"
+ROLE_CODE_IDENTIFIER = "code_identifier"
+ROLE_CODE_CONDITIONAL = "code_conditional"
+
+_CODE_BRANCH_MARKERS = (
+    "if (", "if(", "? ", " : ", "===", "!==", "==", "!=", ".filter(", ".find(",
+    ".some(", ".every(", ".includes(", ".sort(", "switch (", "case ",
+)
+_QUOTE_CHARS = ("'", '"', "`")
+
+
+def lexical_role(text: str, start: int, matched: str) -> str:
+    """Classify the match by where it sits, not by how important the word looks.
+
+    The scan walks to the match so a word inside a comment or a literal is not
+    reported as code.  This is deliberately shallow: it separates documentation
+    and plain literals from code, and separates a code reference from a code
+    branch, without pretending to resolve the value.
+    """
+    if matched[:1] in _QUOTE_CHARS:
+        return ROLE_STRING_LITERAL
+    state = "code"
+    quote = ""
+    index = 0
+    while index < start:
+        char = text[index]
+        following = text[index + 1] if index + 1 < len(text) else ""
+        if state == "code":
+            if char == "/" and following == "/":
+                state = "line_comment"
+                index += 2
+                continue
+            if char == "/" and following == "*":
+                state = "block_comment"
+                index += 2
+                continue
+            if text.startswith("<!--", index):
+                state = "block_comment"
+                index += 4
+                continue
+            if char in _QUOTE_CHARS:
+                state = "literal"
+                quote = char
+                index += 1
+                continue
+            index += 1
+            continue
+        if state == "line_comment":
+            if char == "\n":
+                state = "code"
+            index += 1
+            continue
+        if state == "block_comment":
+            if char == "*" and following == "/":
+                state = "code"
+                index += 2
+                continue
+            if text.startswith("-->", index):
+                state = "code"
+                index += 3
+                continue
+            index += 1
+            continue
+        if char == "\\":
+            index += 2
+            continue
+        if char == quote:
+            state = "code"
+            index += 1
+            continue
+        if char == "\n" and quote != "`":
+            state = "code"
+        index += 1
+    if state in {"line_comment", "block_comment"}:
+        return ROLE_DOCUMENTATION
+    if state == "literal":
+        return ROLE_STRING_LITERAL
+    line_start = text.rfind("\n", 0, start) + 1
+    line_end = text.find("\n", start)
+    line = text[line_start: line_end if line_end != -1 else len(text)]
+    if any(marker in line for marker in _CODE_BRANCH_MARKERS):
+        return ROLE_CODE_CONDITIONAL
+    return ROLE_CODE_IDENTIFIER
 
 
 RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
@@ -126,7 +220,9 @@ def main() -> int:
     findings: list[Finding] = []
     for relative, reason in FORBIDDEN_ASSETS.items():
         if (ROOT / relative).is_file():
-            findings.append(Finding("industry_asset", relative, 1, Path(relative).name, reason))
+            findings.append(
+                Finding("industry_asset", relative, 1, Path(relative).name, reason, ROLE_CODE_IDENTIFIER)
+            )
 
     for path in source_files():
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -134,12 +230,34 @@ def main() -> int:
         for rule, pattern, reason in RULES:
             for match in pattern.finditer(text):
                 line = text.count("\n", 0, match.start()) + 1
-                findings.append(Finding(rule, relative, line, line_excerpt(text, line), reason))
+                findings.append(
+                    Finding(
+                        rule,
+                        relative,
+                        line,
+                        line_excerpt(text, line),
+                        reason,
+                        lexical_role(text, match.start(), match.group(0)),
+                    )
+                )
 
-    findings = sorted(set(findings), key=lambda item: (item.file, item.line, item.rule, item.excerpt))
+    # One finding per rule per line, matching the historical counting: a line
+    # that mentions the same token twice is one location, not two.  The role of
+    # the first match on that line is kept so the split stays comparable across
+    # runs.
+    deduped: dict[tuple[str, str, int, str], Finding] = {}
+    for finding in findings:
+        deduped.setdefault(
+            (finding.rule, finding.file, finding.line, finding.excerpt), finding
+        )
+    findings = sorted(
+        deduped.values(), key=lambda item: (item.file, item.line, item.rule, item.excerpt)
+    )
     counts: dict[str, int] = {}
+    role_counts: dict[str, int] = {}
     for finding in findings:
         counts[finding.rule] = counts.get(finding.rule, 0) + 1
+        role_counts[finding.role] = role_counts.get(finding.role, 0) + 1
 
     report = {
         "schema_version": "sce.frontend_industry_agnostic_audit.v1",
@@ -148,6 +266,7 @@ def main() -> int:
         "enforced": ENFORCE,
         "finding_count": len(findings),
         "counts": counts,
+        "role_counts": role_counts,
         "findings": [asdict(item) for item in findings],
         "policy": {
             "frontend_role": "generic_contract_renderer",
@@ -162,6 +281,8 @@ def main() -> int:
     print(f"[frontend_industry_agnostic_audit] {status} files={len(source_files())} findings={len(findings)} report={REPORT}")
     for rule, count in sorted(counts.items()):
         print(f"- {rule}: {count}")
+    for role, count in sorted(role_counts.items()):
+        print(f"- role.{role}: {count}")
     return 1 if ENFORCE and findings else 0
 
 

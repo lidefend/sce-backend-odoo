@@ -1,8 +1,8 @@
 {
   "version": 1,
   "counts": {
-    "active": 1212,
-    "orphan": 122,
+    "active": 1229,
+    "orphan": 124,
     "retired": 1
   },
   "scripts": [
@@ -343,7 +343,7 @@
         "scripts/verify/business_config_guard_inventory.py",
         "scripts/verify/lowcode_config_boundary_guard.py"
       ],
-      "lines": 321
+      "lines": 531
     },
     {
       "script": "backend_contract_closure_guard.py",
@@ -2175,7 +2175,7 @@
         "make/ci.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 262
+      "lines": 515
     },
     {
       "script": "contract_governance_native_bridge_split_guard.py",
@@ -4246,7 +4246,7 @@
         "scripts/ci/verify_contract_form_split_evidence.py",
         "scripts/verify/contract_form_behavior_regression_runbook_guard.py"
       ],
-      "lines": 342
+      "lines": 418
     },
     {
       "script": "frontend_contract_domain_rollout.py",
@@ -4431,9 +4431,10 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py"
       ],
-      "lines": 341
+      "lines": 387
     },
     {
       "script": "frontend_delivery_hardening_runtime_ids.py",
@@ -4501,7 +4502,7 @@
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
       ],
-      "lines": 239
+      "lines": 257
     },
     {
       "script": "frontend_dev_process_isolation_guard.py",
@@ -4677,13 +4678,15 @@
       "path": "scripts/verify/frontend_home_layout_section_coverage_guard.py",
       "status": "active",
       "referenced_by_make_targets": [
-        "verify.frontend.home_layout_section_coverage.guard"
+        "verify.frontend.home_layout_section_coverage.guard",
+        "verify.frontend.workspace_composition.unit"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/dev_test.mk"
+        "make/dev_test.mk",
+        "make/frontend.mk"
       ],
-      "lines": 66
+      "lines": 77
     },
     {
       "script": "frontend_home_orchestration_consumption_guard.py",
@@ -4696,7 +4699,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 41
+      "lines": 48
     },
     {
       "script": "frontend_home_suggestion_semantics_guard.py",
@@ -4709,7 +4712,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 53
+      "lines": 56
     },
     {
       "script": "frontend_industry_agnostic_audit.py",
@@ -4717,13 +4720,15 @@
       "status": "active",
       "referenced_by_make_targets": [
         "audit.frontend.industry_agnostic",
+        "verify.frontend.industry_agnostic.audit.unit",
         "verify.frontend.industry_agnostic.guard"
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/verify/test_frontend_industry_agnostic_audit.py"
       ],
-      "lines": 169
+      "lines": 290
     },
     {
       "script": "frontend_inline_state_guard.py",
@@ -4814,6 +4819,17 @@
         "scripts/verify/test_frontend_material_domain_rollout.py"
       ],
       "lines": 49
+    },
+    {
+      "script": "frontend_menu_navigation_diagnostic.py",
+      "path": "scripts/verify/frontend_menu_navigation_diagnostic.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ],
+      "lines": 34
     },
     {
       "script": "frontend_mobile_viewport_guard.py",
@@ -5019,7 +5035,7 @@
         "scripts/verify/contract_form_side_effect_regression_guard.py",
         "scripts/verify/frontend_auth_surface_guard.py"
       ],
-      "lines": 437
+      "lines": 460
     },
     {
       "script": "frontend_page_contract_key_consistency_guard.py",
@@ -5077,7 +5093,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 135
+      "lines": 145
     },
     {
       "script": "frontend_page_contract_section_tag_coverage_guard.py",
@@ -5090,7 +5106,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 136
+      "lines": 146
     },
     {
       "script": "frontend_page_contract_sections_coverage_guard.py",
@@ -5103,7 +5119,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 149
+      "lines": 159
     },
     {
       "script": "frontend_page_identity_deep_runtime.py",
@@ -5170,7 +5186,7 @@
         "make/frontend.mk",
         "scripts/verify/frontend_dev_incremental.py"
       ],
-      "lines": 230
+      "lines": 241
     },
     {
       "script": "frontend_page_renderer_default_guard.py",
@@ -5276,7 +5292,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 482
+      "lines": 527
     },
     {
       "script": "frontend_product_contract_consumption_guard.py",
@@ -5454,7 +5470,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 105
+      "lines": 128
     },
     {
       "script": "frontend_professional_business_value_guard.py",
@@ -5506,7 +5522,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 224
+      "lines": 346
     },
     {
       "script": "frontend_professional_relation_field_guard.py",
@@ -5519,7 +5535,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 206
+      "lines": 220
     },
     {
       "script": "frontend_professional_relation_lifecycle_guard.py",
@@ -5543,7 +5559,9 @@
       ],
       "referenced_by_workflows": [],
       "referenced_by_files": [
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py"
       ],
       "lines": 77
     },
@@ -6109,7 +6127,7 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 34
+      "lines": 61
     },
     {
       "script": "frontend_tax_center_browser.sh",
@@ -6177,7 +6195,7 @@
         "scripts/verify/test_form_structure_authority_unification.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 765
+      "lines": 795
     },
     {
       "script": "frontend_workbench_block_migration_guard.py",
@@ -7437,7 +7455,7 @@
         "make/dev_test.mk",
         "scripts/verify/contract_governance_responsibility_map_guard.py"
       ],
-      "lines": 411
+      "lines": 440
     },
     {
       "script": "list_field_semantic_integrity_guard.py",
@@ -7463,7 +7481,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 122
+      "lines": 129
     },
     {
       "script": "load_view_access_contract_guard.py",
@@ -8021,7 +8039,7 @@
         "make/runtime_ops.mk",
         "scripts/verify/business_config_guard_inventory.py"
       ],
-      "lines": 83
+      "lines": 137
     },
     {
       "script": "lowcode_config_boundary_guard.py",
@@ -8764,6 +8782,21 @@
       "lines": 261
     },
     {
+      "script": "native_view_workflow_action_coverage_guard.py",
+      "path": "scripts/verify/native_view_workflow_action_coverage_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.native_view.workflow_action_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 175
+    },
+    {
       "script": "nav_pro_01_http_smoke.py",
       "path": "scripts/verify/nav_pro_01_http_smoke.py",
       "status": "active",
@@ -8835,7 +8868,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 97
+      "lines": 100
     },
     {
       "script": "non_demo_data_contamination_guard.py",
@@ -9648,6 +9681,20 @@
         "make/dev_test.mk"
       ],
       "lines": 104
+    },
+    {
+      "script": "playwright_vendor_coupling_guard.py",
+      "path": "scripts/verify/playwright_vendor_coupling_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.playwright_vendor_coupling.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk",
+        "scripts/verify/test_playwright_vendor_coupling_guard.py"
+      ],
+      "lines": 254
     },
     {
       "script": "portal_dashboard.sh",
@@ -10975,6 +11022,20 @@
       "lines": 203
     },
     {
+      "script": "python_name_binding_guard.py",
+      "path": "scripts/verify/python_name_binding_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.python_name_binding"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/test_python_name_binding_guard.py"
+      ],
+      "lines": 369
+    },
+    {
       "script": "receipt_income_partner_anchor_audit.py",
       "path": "scripts/verify/receipt_income_partner_anchor_audit.py",
       "status": "active",
@@ -11239,7 +11300,7 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 128
+      "lines": 165
     },
     {
       "script": "repository_clean_history_guard.py",
@@ -13958,6 +14019,19 @@
       "lines": 80
     },
     {
+      "script": "test_formal_list_configuration_baseline.py",
+      "path": "scripts/verify/test_formal_list_configuration_baseline.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.business_config.formal_list.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/runtime_ops.mk"
+      ],
+      "lines": 89
+    },
+    {
       "script": "test_formal_product_alias_cleanup_migration.py",
       "path": "scripts/verify/test_formal_product_alias_cleanup_migration.py",
       "status": "active",
@@ -14281,7 +14355,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 282
+      "lines": 300
     },
     {
       "script": "test_frontend_dev_incremental.py",
@@ -14294,7 +14368,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 160
+      "lines": 193
     },
     {
       "script": "test_frontend_finance_center_rollout.py",
@@ -14321,6 +14395,19 @@
         "make/frontend.mk"
       ],
       "lines": 65
+    },
+    {
+      "script": "test_frontend_industry_agnostic_audit.py",
+      "path": "scripts/verify/test_frontend_industry_agnostic_audit.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.frontend.industry_agnostic.audit.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "lines": 107
     },
     {
       "script": "test_frontend_inline_state_guard.py",
@@ -14438,7 +14525,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 116
+      "lines": 133
     },
     {
       "script": "test_frontend_payment_domain_rollout.py",
@@ -14460,7 +14547,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 335
+      "lines": 410
     },
     {
       "script": "test_frontend_product_page_header_guard.py",
@@ -14522,7 +14609,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 130
+      "lines": 185
     },
     {
       "script": "test_frontend_professional_business_value_guard.py",
@@ -14574,7 +14661,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 395
+      "lines": 476
     },
     {
       "script": "test_frontend_professional_relation_field_guard.py",
@@ -14801,6 +14888,15 @@
         "make/dev_test.mk"
       ],
       "lines": 106
+    },
+    {
+      "script": "test_frontend_standard_preview.py",
+      "path": "scripts/verify/test_frontend_standard_preview.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 58
     },
     {
       "script": "test_frontend_state_presentation_guard.py",
@@ -15326,6 +15422,20 @@
       "lines": 218
     },
     {
+      "script": "test_native_view_workflow_action_coverage_guard.py",
+      "path": "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.native_view.workflow_action_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 96
+    },
+    {
       "script": "test_p1_payment_request_field_completeness_guard.py",
       "path": "scripts/verify/test_p1_payment_request_field_completeness_guard.py",
       "status": "orphan",
@@ -15333,6 +15443,19 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 95
+    },
+    {
+      "script": "test_page_contract_gate_wiring.py",
+      "path": "scripts/verify/test_page_contract_gate_wiring.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.page_contract_gate_wiring.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "lines": 92
     },
     {
       "script": "test_pass_through_p2_extraction_migration.py",
@@ -15372,6 +15495,17 @@
         "make/dev_test.mk"
       ],
       "lines": 25
+    },
+    {
+      "script": "test_playwright_vendor_coupling_guard.py",
+      "path": "scripts/verify/test_playwright_vendor_coupling_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/verify/playwright_vendor_coupling_guard.py"
+      ],
+      "lines": 89
     },
     {
       "script": "test_product_administration_center_wave1_guard.py",
@@ -15671,6 +15805,19 @@
       "lines": 45
     },
     {
+      "script": "test_python_name_binding_guard.py",
+      "path": "scripts/verify/test_python_name_binding_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.python_name_binding"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk"
+      ],
+      "lines": 208
+    },
+    {
       "script": "test_registry_audit_environment.py",
       "path": "scripts/verify/test_registry_audit_environment.py",
       "status": "active",
@@ -15930,6 +16077,19 @@
       "lines": 161
     },
     {
+      "script": "test_unified_page_contract_v2_schema_guard.py",
+      "path": "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.unified_page_contract.v2.schema"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk"
+      ],
+      "lines": 46
+    },
+    {
       "script": "test_user_formal_field_module_boundary_audit.py",
       "path": "scripts/verify/test_user_formal_field_module_boundary_audit.py",
       "status": "orphan",
@@ -15946,6 +16106,57 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [],
       "lines": 102
+    },
+    {
+      "script": "test_workflow_action_semantics_completeness_guard.py",
+      "path": "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.workflow_action_semantics.guard"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 220
+    },
+    {
+      "script": "test_workflow_contract_profile_loader.py",
+      "path": "scripts/verify/test_workflow_contract_profile_loader.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.native_view.workflow_action_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 82
+    },
+    {
+      "script": "test_workflow_state_phase_coverage_guard.py",
+      "path": "scripts/verify/test_workflow_state_phase_coverage_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.workflow_state_phase_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 249
+    },
+    {
+      "script": "test_workspace_composition_wiring.py",
+      "path": "scripts/verify/test_workspace_composition_wiring.py",
+      "status": "orphan",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [],
+      "lines": 29
     },
     {
       "script": "ui_contract_v2_contract_boundary_guard.py",
@@ -16915,7 +17126,7 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 129
+      "lines": 143
     },
     {
       "script": "unified_page_contract_v2_harmony_h5_compile_acceptance_guard.py",
@@ -16985,9 +17196,10 @@
       "referenced_by_workflows": [],
       "referenced_by_files": [
         "make/ci.mk",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 439
+      "lines": 617
     },
     {
       "script": "unified_page_contract_v2_status_guard.py",
@@ -17481,6 +17693,22 @@
       "lines": 186
     },
     {
+      "script": "workflow_action_semantics_completeness_guard.py",
+      "path": "scripts/verify/workflow_action_semantics_completeness_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.workflow_action_semantics.guard",
+        "verify.workflow_contract.backend"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 819
+    },
+    {
       "script": "workflow_contract_custom_coverage_guard.py",
       "path": "scripts/verify/workflow_contract_custom_coverage_guard.py",
       "status": "active",
@@ -17494,6 +17722,24 @@
       "lines": 44
     },
     {
+      "script": "workflow_contract_profile_loader.py",
+      "path": "scripts/verify/workflow_contract_profile_loader.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.native_view.workflow_action_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_workflow_contract_profile_loader.py",
+        "scripts/verify/test_workflow_state_phase_coverage_guard.py",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py",
+        "scripts/verify/workflow_state_phase_coverage_guard.py"
+      ],
+      "lines": 143
+    },
+    {
       "script": "workflow_inventory_profile_method_guard.py",
       "path": "scripts/verify/workflow_inventory_profile_method_guard.py",
       "status": "active",
@@ -17505,6 +17751,21 @@
         "make/ci.mk"
       ],
       "lines": 122
+    },
+    {
+      "script": "workflow_state_phase_coverage_guard.py",
+      "path": "scripts/verify/workflow_state_phase_coverage_guard.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.workflow_state_phase_coverage"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk",
+        "scripts/verify/test_workflow_state_phase_coverage_guard.py",
+        "scripts/verify/unified_page_contract_v2_guard_inventory.py"
+      ],
+      "lines": 380
     },
     {
       "script": "workspace_home_orchestration_schema_guard.py",

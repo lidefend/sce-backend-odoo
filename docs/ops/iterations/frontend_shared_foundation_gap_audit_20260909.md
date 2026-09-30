@@ -6074,3 +6074,118 @@ FIXED_CUSTOMER_IDENTIFIERS=1
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 41｜主线契约 lane 在 HEAD 整体核验，并给行业语义审计加「角色」维度让缺口可见（2026-09-30）
+
+### 1. 本轮触发
+
+分支主目标：**前端所有渲染与交互由契约驱动，并使用组件官方模板组合逻辑**。
+段 40 收口了「列表状态色调」的权威归属；本轮回到主目标本体，做两件事：
+
+1. 在 HEAD 上**完整核验主目标的契约 lane**（不再逐入口试点证明）；
+2. 处理行业语义审计「把**消费契约**与**发明语义**压成同一个数字」的**验收体系缺口**。
+
+### 2. 主目标契约 lane 在 HEAD 的整体核验
+
+- `make verify.unified_page_contract.v2.professional_backend` **PASS**，包含
+  `unified_page_contract_v2_guard_inventory`、`_schema`、`_assembler`、`_status`、`_action`、
+  `native_view.workflow_action_coverage`、`workflow_state_phase_coverage`、
+  `workflow_action_semantics_completeness_guard`、`_data`、`_runtime`、`_client`、`_intent`、
+  `_web_consumer`、`_web_architecture`、`_stable_projection`；
+  单测 16 / 15 / 20 / 107 / 5 例全部 OK。
+- `make verify.unified_page_contract.v2.frontend_static` **PASS**
+  （`verify.frontend.typecheck.strict` + `verify.frontend.build`，21.29 s）。
+- 派生清单 `--check` 全绿：`frontend_rendering_detail_inventory` PASS surfaces=173 gaps=0；
+  `component_driver_takeover_inventory` required=33 missing=0 bridge_only=0 adapter_unconsumed=0；
+  `visual_projection_inventory` PASS；`official_design_alignment_inventory` PASS。
+- 组件专业化清单 173 个表面 **gap=0**（governed_composite 113 / governed_primitive 41 / p3_out_of_scope 19）。
+- 列表组合唯一：`standardListComposition.ts` 只有 `official-standard-list` 一个取值，
+  `legacy-list-surface` 已不存在。
+
+**结论：主目标的「契约驱动渲染 + 官方组合」在 HEAD 的结构与静态层没有缺口。**
+
+### 3. 缺口：行业语义审计把「消费契约」与「发明语义」压成一个数字
+
+`scripts/verify/frontend_industry_agnostic_audit.py` 是纯文本正则审计，`policy.target=zero`，
+当前 97 条命中，**未接入任何 lane**。它无法区分三类完全不同的东西：
+
+| 类别 | 例子 | 是否越界 |
+|---|---|---|
+| 注释/文档里的行业词 | `// 入参与后端 handler 对齐：project_id` | 否 |
+| 传输参数名、属性名、登记键 | `project_id: params.projectId`、`'sc.payment.settlement_detail_collection'` | 否（**消费契约**必然出现） |
+| 在比较/三元/过滤里用行业名选行为 | `key === 'project.management' ? '项目驾驶舱'` | **是** |
+
+三者被合并成一个 97：既不能据以收口，也不能据此判定达标。这是**验收体系缺口**，
+不是产品缺陷——它让「缺口不可见」。
+
+### 4. 改动：新增「角色」维度，不改判定、不改计数
+
+- `Finding` 增加 `role`，取值 `documentation | string_literal | code_identifier | code_conditional`。
+  由 `lexical_role(text, start, matched)` 按**词法位置**判定：从行首走到命中点，
+  跟踪 `//` 行注释、`/* */` 与 `<!-- -->` 块注释、引号字面量与转义（引号内出现未闭合的
+  `'` 不会吞掉后续代码）；命中点仍落在代码区、且该行含比较/三元/`.filter(` 等分支标记时，
+  记为 `code_conditional`，否则记为 `code_identifier`。
+- **保持历史口径**：仍是「每规则每行一条」，去重键与旧实现一致。
+  实测 `finding_count` 与各规则计数与改动前**逐一致**：97；28 / 2 / 36 / 5 / 3 / 2 / 21。
+- **不改 `policy.target`，不改 ENFORCE 语义**：`FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1` 下仍 rc=1。
+  本段不是消红，而是让报告第一次可以用于收口判定。
+- 报告新增 `role_counts`；14 例自测固定在
+  `scripts/verify/test_frontend_industry_agnostic_audit.py`，
+  入口 `make verify.frontend.industry_agnostic.audit.unit`，
+  并成为 `verify.frontend.industry_agnostic.guard` 的依赖；
+  脚本按 `active` 登记进 `scripts/verify/registry.yaml`，
+  `make verify.guard.registry` **PASS**（1353 scripts / 1229 referenced / 124 orphans acknowledged / 1 retired）。
+
+### 5. 角色分布与逐条判定
+
+97 条角色分布：`documentation` 21、`string_literal` 17、`code_identifier` 48、`code_conditional` 11。
+
+`code_conditional` 11 条已**逐条查看**（分布在 4 个文件）：
+
+- `api/boqImportPreview.ts:100`、`views/SceneContractBlockGridView.vue:153,161`：
+  按 `id > 0` 决定是否把**声明参数**放进请求载荷（传输整形）；
+- `app/presentation/boqImportPreview.ts:141`：类型保护式强制转换；
+- `components/page/blocks/BlockBoqImportPreview.vue:73`、`BlockChartDataset.vue:90,108`：
+  判断**上下文是否存在**，然后在契约声明的
+  `empty_message` / `empty_message_no_context` 两个键中择一。
+
+**未发现「按行业名字发明业务规则」**：择一的对象是契约已声明的键集，文案本身来自块契约。
+
+`code_identifier` 48 与 `string_literal` 17：按首次抽查为传输参数名/属性名/登记键（消费契约形态），
+**未逐条复核**，本段不作结论。
+
+**因此本段不宣布审计清零、不调整 `policy.target`、不动 ENFORCE。**
+把目标从「零行业词」改为「零发明语义」并据此重写规则，属独立专项，
+必须建立在本段的角色数据之上，**不得借收口顺手放宽**。
+
+### 6. 另一个确认的陈旧规则（登记，不在本段改）
+
+`industry_asset` 的 2 条命中是**按文件名**拦截：
+`components/role-home/WorkspaceHome.vue`、`composables/shared-surface/useWorkspaceHome.ts`。
+两者**仍在使用**（`views/HomeView.vue` 引用），且**按通用 `workspace_home` 契约渲染**
+（`data-role-home-renderer="workspace-contract"`，任务/摘要/入口全部来自契约），
+不是行业专用页面；原 11 个被拦文件中 9 个已删除。
+按路径而非按行为判定与「消费与发明分离」的原则相反，登记为专项内处理项。
+
+### 7. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `scripts/verify/frontend_industry_agnostic_audit.py`、
+`scripts/verify/test_frontend_industry_agnostic_audit.py`、`scripts/verify/registry.yaml`、`make/frontend.mk`；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 审计无法区分「消费」与「发明」，是审计自身能力的缺口，不属于任何业务模块；
+`Why Not Elsewhere` = **不**改前端去迎合审计、**不**放宽阈值、**不**删命中、
+**不**把 `target` 从 `zero` 换一个数字、**不**把 97 拆成「可忽略」；
+`Blast Radius` = 审计报告结构（只增字段）、新增自测与登记项。
+**产品源码与前端的渲染/交互零改动**，因此本轮无渲染影响面。
+
+### 8. 提交
+
+- `feat(verify): classify industry-agnostic findings by lexical role`
+  （角色分类 + 14 例自测 + make 入口 + registry 登记 + 报告重导出）
+- 本段记录随该提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

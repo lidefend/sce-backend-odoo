@@ -756,3 +756,9 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_industry_agnostic_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: self-test for the industry-agnostic lexical-role classifier; wired into
+    make/frontend.mk as verify.frontend.industry_agnostic.audit.unit
