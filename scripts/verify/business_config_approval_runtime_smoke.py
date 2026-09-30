@@ -123,6 +123,21 @@ def _contract_event_checks(project, group, created):
         created.append((record._name, record.id))
         return record
 
+    def assert_content_locked(record, phase):
+        names = ["project_id", "amount_impact", "description", "settlement_included"]
+        before = record.read(names)
+        for values in ({"amount_impact": 999}, {"project_id": False}, {"description": "rewritten"}, {"settlement_included": True}):
+            refused = False
+            try:
+                with env.cr.savepoint():
+                    record.with_context(skip_validation_check=True, sc_document_state_token=True).write(values)
+            except UserError:
+                refused = True
+            assert refused, "reviewed event content write permitted"
+        record.invalidate_recordset()
+        assert record.read(names) == before
+        print("APPROVAL_CHECK=contract_event_%s_content_locked" % phase)
+
     automatic = event("automatic")
     automatic.action_submit()
     assert automatic.state == "approved" and not automatic.review_ids
@@ -145,10 +160,13 @@ def _contract_event_checks(project, group, created):
     assert required.state == "submitted" and required.review_ids
     assert required.validation_status in ("waiting", "pending")
     print("APPROVAL_CHECK=contract_event_configured_submission_creates_real_review")
+    assert_content_locked(required, "pending")
     _approve_existing_reviews(required)
     assert required.state == "approved" and required.validation_status == "validated"
+    assert_content_locked(required, "approved")
     required.action_done()
     assert required.state == "done"
+    assert_content_locked(required, "done")
     print("APPROVAL_CHECK=contract_event_real_approval_then_explicit_completion")
     rejected = event("rejection")
     rejected.action_submit()
@@ -160,6 +178,11 @@ def _contract_event_checks(project, group, created):
     rejected.invalidate_recordset()
     assert rejected.state == "rejected" and rejected.reject_reason == "Runtime contract event rejection"
     print("APPROVAL_CHECK=contract_event_real_rejection_preserves_reason")
+    rejected.write({"description": "Corrected event after real rejection"})
+    rejected.invalidate_recordset()
+    assert rejected.description == "Corrected event after real rejection"
+    assert env["sc.workflow.contract.service"].describe_record(rejected)["editability"] == "editable"
+    print("APPROVAL_CHECK=contract_event_rejected_content_and_contract_editable")
     rejected.action_submit()
     assert rejected.state == "submitted" and previous_ids.isdisjoint(rejected.review_ids.ids)
     _approve_existing_reviews(rejected)
@@ -3977,7 +4000,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "diary-state-authority" else 8 if scope in ("plan-state-authority", "contract-event-state-authority") else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 299, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 8 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 303, scope))
 
 
 main()
