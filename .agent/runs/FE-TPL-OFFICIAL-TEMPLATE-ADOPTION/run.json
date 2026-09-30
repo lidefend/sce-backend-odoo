@@ -176,7 +176,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement governed planned saved-search success/refresh/restoration loop with exact private fixture filter identity and authoritative cleanup. Then audit full original objective and outstanding required gates using existing results;67 reference rows are resolved but overall completion remains unproven. No unrelated ORM, new fixtures/environments or remote publication.",
+  "next_exact_step": "Close owner-confirmed collection.favorite product gap: formal per-filter deletion capability/execution, server ownership/ACL checks and shared official-menu delete interaction. Then actual save-refresh-delete-refresh closure. No P4 cleanup substitute; prior temporary restore tool withdrawn before any DB write.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -308,6 +308,14 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790768656354/report.json",
       "ledger_remaining": 0,
       "scope": "reference task fact coverage and explicit record-copy scope disposition; not overall goal completion"
+    },
+    "saved_search_product_gap_53_10": {
+      "status": "verification_pending",
+      "source_head": "af7620ea3",
+      "owner": "P0 smart_core and shared frontend contract consumption",
+      "gap": "saved-search delete/management capability missing; owner explicitly requires product closure, not P4 cleanup",
+      "temporary_restore_tool": "withdrawn before any database write",
+      "ledger_remaining": 1
     }
   }
 }

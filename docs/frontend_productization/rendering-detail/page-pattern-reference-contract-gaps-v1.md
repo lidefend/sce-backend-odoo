@@ -132,3 +132,10 @@ Task coverage now follows the existing P1 matrix and effective native tree, not 
 Record-copy disposition: `effectiveRecordCapabilities.duplicate` is derived from access rights. Current payment `actionRuleList` declares save, workflow and relation actions but no copy execution; the P1 matrix and pinned official detail compositions do not require a copy journey. Do not invent that business feature from a capability boolean. Declared edit/delete denial feedback was verified in53.5. This resolves the former open scope decision; it is not a claim that copying records has been implemented.
 
 The67-entry reference ledger has no open items. Overall completion remains unproven: planned saved-search success/refresh/restoration, outstanding required gates and the full goal completion audit retain their own obligations.
+
+
+## Segment 53.10: owner-confirmed saved-search product gap
+
+The saved-search product currently exposes save but lacks a deletion/management entry. This is a P0 product gap, not merely an acceptance cleanup problem. Reopen `collection.favorite` in the existing67-entry ledger. Prior save-control, failure-feedback and cache-refresh results remain scoped evidence.
+
+Required closure: explicit per-filter deletion authority and executable binding, backend ownership/ACL enforcement, shared official-menu consumption, confirmation and success/failure feedback, followed by actual save→refresh→delete→authoritative refresh verification. An operational cleanup cannot satisfy those responsibilities. The proposed temporary P4 restore tool was withdrawn before any lifecycle configuration write or database operation.
