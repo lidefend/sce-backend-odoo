@@ -214,7 +214,10 @@ def hydrate_final_modifier_dependencies(
 
     if view_type != "form" or not model or not isinstance(contract_v2, dict):
         return
-    record_id_int, record_id_error = parse_positive_int(record_id, allow_empty=True)
+    # The request layer uses "new" for an unsaved form. Keep arbitrary invalid
+    # identities rejected; create authority is checked again before hydration.
+    normalized_record_id = None if str(record_id or "").strip().lower() == "new" else record_id
+    record_id_int, record_id_error = parse_positive_int(normalized_record_id, allow_empty=True)
     if record_id_error:
         return
     record_id_int = int(record_id_int or 0)

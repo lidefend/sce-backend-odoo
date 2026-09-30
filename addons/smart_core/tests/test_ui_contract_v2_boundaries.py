@@ -506,6 +506,12 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 self.assertEqual(model.values["lines"], lines)
                 self.assertNotIn("display_only", contract["dataContract"]["mainData"])
 
+    def test_create_modifier_dependencies_accept_new_request_identity(self):
+        model, contract = self._create_modifier_fixture()
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id="new", view_type="form")
+        self.assertIs(contract["dataContract"]["mainData"]["has_lines"], False)
+        self.assertIn("new", model.calls)
+
     def test_create_modifier_dependencies_accept_json_equivalent_native_commands(self):
         native = [(6, 0, [32])]
         model, contract = self._create_modifier_fixture(lines=native)
