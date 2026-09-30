@@ -8137,3 +8137,8 @@ L3未运行：tier/新字段/state/XML需一次受管升级，下一步既有rol
 P4现有rollback工具新增equipment-execution scope14：两模型各6（外部状态/提前确认、无配置只审批、金额规则pending、真实审批不执行、显式确认/重复确认拒绝、驳回重提），另usage事实不可改/经理确认取消边界、settlement未确认usage拒绝。使用现有finance fixture验证非经理方法保护，不新增账号/权限；临时项目/供应商/单据及台账均进入原回滚核验。建单使用sudo、审批实际reviewer，不替代角色全旅程。
 
 L1 equipment-execution-runtime-iteration.log及py_compile/bash-n PASS；P1及纯测试输入未变，复用79/53/15。一次受管smart_construction_core升级/reload后只本scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01、精确filter/固定卷由入口预检，无新环境或持久fixture。L3运行待定，前端未改不重建，L5不在本地范围。
+
+
+53.82结果：受管升级/reload a1e371b5f成功，equipment-execution-runtime.log 14/14 PASS，ROLLBACK VERIFIED。审批无成本副作用，真实确认ledger qty=2/source_amount=20，approved事实修改/删除拒绝，既有finance非经理确认/取消拒绝；结算使用来源confirmed，未confirmed来源拒绝。实际reviewer+事务sudo建单/执行不替代完整角色业务旅程。
+
+P4既有approval-actions支持usage/settlement；equipment-execution-page-iteration.log L1/node语法PASS。创建报告usage tpl07-1790781953996、settlement tpl07-1790781964386各14 PASS，编号隐藏/未保存无确认/有效契约/官方组合/双视口，errors=[]、forbiddenWrites=[]，390截图复核。已有记录usage tpl07-1790781971414、settlement tpl07-1790781978203均api.data ok=true records=[]，数据前置不足，不能算记录办理通过，不扩权/造fixture/重试空查询。前端7915f3bb9复用未构建，后端a1e371b5f；总体67和detail.action-state未完成。

@@ -316,7 +316,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.81 equipment usage/settlement source79/native53/semantics15 PASS. Extend existing rollback scope equipment-execution for actual approval/monetary rules/rejection/resubmit, usage confirmed cost ledger and approved immutable facts/manager boundary, settlement references confirmed usage. One managed upgrade/reload then scope-only runtime and affected official pages. No frontend rebuild/old ORM repeat. Overall scope active.",
+  "next_exact_step": "53.82 equipment execution runtime14 rollback/create14+14 PASS backenda1e371b5f/frontend7915f3bb9. Existing PM queries empty; no repeat. Continue next labor business-document family from existing workflow profiles and labor module, preserving usage/settlement execution/cost and source guards. Reuse existing ledger/results without broad scan or prior ORM/frontend rebuild. Overall role record handling and all-family scope incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1216,6 +1216,26 @@
       "native_tests": 53,
       "semantics_tests": 15,
       "runtime": "not_run; module upgrade required"
+    },
+    "segment_53_82": {
+      "status": "runtime_and_create_passed_record_ui_pending",
+      "backend": "a1e371b5f",
+      "runtime_checks": 14,
+      "rollback": "verified",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/equipment-execution-runtime.log",
+      "create_assertions": {
+        "usage": 14,
+        "settlement": 14
+      },
+      "create_reports": [
+        "1790781953996",
+        "1790781964386"
+      ],
+      "record_queries": [
+        "1790781971414",
+        "1790781978203"
+      ],
+      "record_status": "both authorized queries empty"
     }
   }
 }

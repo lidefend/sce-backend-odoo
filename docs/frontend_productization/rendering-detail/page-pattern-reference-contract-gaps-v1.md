@@ -296,3 +296,8 @@ P1 source76/native51/semantics15 PASS. Backend7a6adbe17 scoped runtime8 PASS wit
 ### Segment53.79–53.80 — Equipment plans and requests
 
 P1 shared approval source77/native52/semantics15 PASS; runtime14 PASS with verified rollback on859c761ad, including no-config/configured review, undefined monetary authority rejection, in-flight configuration protection, rejection/resubmission and invalid source-plan boundaries. Official creates14+14 PASS (tpl07-1790781561410/1790781615748). P4 create observer fixed child-contract race; no product workaround. Both PM existing-record queries empty (1790781578831/1790781623019); actual role handling remains pending. Usage/settlement execution-owning families and overall action-state remain open.
+
+
+### Segment53.81–53.82 — Equipment usage and settlement
+
+Source79/native53/semantics15 PASS. Scoped runtime14 PASS on a1e371b5f with rollback verified: actual monetary review, approval without execution, explicit usage cost posting, approved fact lock/manager boundary, settlement confirmed-usage prerequisite, rejection/resubmission. Official creates14+14 PASS (1790781953996/1790781964386), narrow screenshots reviewed. PM existing-record queries empty (1790781971414/1790781978203); role handling remains pending. Frontend unchanged. Overall action-state and remaining business families stay open.
