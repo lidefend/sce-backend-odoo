@@ -399,7 +399,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.153 source0bda7f8e0 backend+frontend index-Ddc2GXJe.js: P1 unsaved action catalog and P0 declaration-only availability/header submit consumer fixed.158 pure + header/presenter/create/type regression PASS; expense empty-submit browser25 tpl07-1790800755234 PASS no writes. Next actual expense payment-request relation query/selection, then filled handling prerequisites; known saved records empty, no repeated query. Existing67/detail.action-state and final readable source-ID evidence open. No fixtures/push/merge/target deployment.",
+  "next_exact_step": "53.154 expense relation browser33 tpl07-1790800914871 PASS: candidate1815 selected, project10→11 clears old request and changes actual query; no writes. P1 next concrete gap: expense payment_request_id domain only project; cash-out reimbursement candidates include receipt-labelled id32. Align backend relation domain with existing _expected_payment_request_type/_check_payment_request_scope_or_raise, never frontend label inference. Production0bda7f8e0/index-Ddc2GXJe.js unchanged;158 pure/27 runtime reused. Existing67/detail.action-state, filled submit, saved-data and final readable source-ID evidence open. No fixture/push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

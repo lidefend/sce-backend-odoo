@@ -697,6 +697,55 @@ try {
           await session.page.getByText('请先补充必填信息，再保存草稿或提交。', { exact: true }).waitFor({ state: 'visible' });
           check('expense create: incomplete submission stays on unsaved form', new URL(session.page.url()).pathname === '/f/sc.expense.claim/new');
           check('expense create: required validation sends no business write', report.forbiddenWrites.length === 0);
+          const projectInput = session.page.locator('[data-field-name="project_id"] input').first();
+          const projectResponse = session.page.waitForResponse((response) => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+              && body.params.model === 'project.project' && JSON.stringify(body.params).includes('FE Project A'); } catch { return false; }
+          });
+          await projectInput.fill('FE Project A');
+          const projectResult = await (await projectResponse).json();
+          const project = projectResult.data?.records?.find((row) => row.name === 'FE Project A' || row.display_name === 'FE Project A');
+          check('expense relation: existing authorized project returned', projectResult.ok === true && Number(project?.id) > 0);
+          await session.page.getByRole('option', { name: String(project.display_name || project.name), exact: true }).click();
+          const paymentInput = session.page.locator('[data-field-name="payment_request_id"] input').first();
+          const paymentResponse = session.page.waitForResponse((response) => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list' && body.params.model === 'payment.request'; } catch { return false; }
+          });
+          await paymentInput.click();
+          const response = await paymentResponse;
+          const query = response.request().postDataJSON().params;
+          const result = await response.json();
+          report.expenseRelation = { projectId: project.id, query, result };
+          const hasProject = (value) => Array.isArray(value) && ((value[0] === 'project_id' && value[1] === '=' && Number(value[2]) === Number(project.id)) || value.some(hasProject));
+          check('expense relation: actual request query includes selected project', hasProject(query.domain));
+          check('expense relation: authorized request candidates returned', result.ok === true && result.data?.records?.length > 0);
+          const selected = result.data.records[0];
+          const selectedLabel = String(selected.display_name || selected.name);
+          await session.page.getByRole('option', { name: selectedLabel, exact: true }).click();
+          check('expense relation: selected candidate label retained', await paymentInput.inputValue() === selectedLabel);
+          report.expenseRelation.selected = { id: selected.id, label: selectedLabel };
+          const otherProjectResponse = session.page.waitForResponse((response) => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+              && body.params.model === 'project.project' && JSON.stringify(body.params).includes('FE Project B'); } catch { return false; }
+          });
+          await projectInput.fill('FE Project B');
+          const otherResult = await (await otherProjectResponse).json();
+          const otherProject = otherResult.data?.records?.find((row) => row.name === 'FE Project B' || row.display_name === 'FE Project B');
+          check('expense relation: second authorized project returned', otherResult.ok === true && Number(otherProject?.id) > 0 && otherProject.id !== project.id);
+          await session.page.getByRole('option', { name: String(otherProject.display_name || otherProject.name), exact: true }).click();
+          check('expense relation: changing project clears stale request', await paymentInput.inputValue() === '');
+          const otherPaymentResponse = session.page.waitForResponse((response) => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list' && body.params.model === 'payment.request'
+              && JSON.stringify(body.params.domain).includes(JSON.stringify(['project_id', '=', otherProject.id])); } catch { return false; }
+          });
+          await paymentInput.click();
+          const otherResponse = await otherPaymentResponse;
+          report.expenseRelation.changedProject = { id: otherProject.id, query: otherResponse.request().postDataJSON().params, result: await otherResponse.json() };
+          check('expense relation: next query uses changed project', report.expenseRelation.changedProject.result.ok === true);
+          check('expense relation: draft interactions send no business write', report.forbiddenWrites.length === 0);
+
+          await session.page.getByRole('heading', { name: '新建报销申请', exact: true }).click();
+
         }
 
         if (['sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation'].includes(spec.model)) {

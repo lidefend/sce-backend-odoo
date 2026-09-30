@@ -8979,3 +8979,14 @@ L1 create-action-catalog/consumer-iteration PASS；backend158纯测PASS；contra
 实现稳定后一次受管构建/5180预览，base0bda7f8e051cb6f68446dc89daf996c135e4a32f clean，entry/assets/index-Ddc2GXJe.js，entry_sha256=aca7c83804cfae8752bb7058f3c8420eadac4046df0bce13ba35263a225a6cc2，index_sha256=7eabdae4e07fc36a4395729dca871f628ff68361272f31667f40b68b4f365451，backend同源。expense-validation-consumer-browser.log/tpl07-1790800755234：25 PASS、errors=[]/forbiddenWrites=[]，空表提交显示统一必填反馈、仍在/f/sc.expense.claim/new，1440/390无整页溢出；390截图人工核对金额/项目错误及提示。未保存/执行真实业务动作，填完后的保存提交链仅共享回归支持，不能冒称本报销已走完整用户办理。
 
 付款申请关系查询范围及选择仍待定向验证，本次未提前判通过；已保存非legacy费用数据为空及最终现金来源日志ID限制沿既有记录保留。总体67/detail.action-state继续开放。新建动作目录与记录可用性职责明确，旧的无语义原生提交静默无效路径在已覆盖提交范围退出。无推送合并目标部署。
+
+
+### 53.154 报销关系真实查询、选择与项目切换
+
+fc2b16113 clean起点，P4只扩展原expense create探针，不改生产或运行环境。expense-relation-iteration/switch-iteration L1、node语法/diff PASS。先expense-relation-browser.log/tpl07-1790800850900 28 PASS确认真实查询：finance在授权menu564/action758新建报销，项目输入搜索FE Project A、选择实际返回project10，付款申请查询api.data/list domain=[[project_id,=,10]]、返回真实授权候选。
+
+追加实际选择及失效依赖检查后，expense-relation-switch-browser.log/tpl07-1790800914871 33 PASS，errors=[]/forbiddenWrites=[]。选择返回id1815、display_name为付款申请/FE Project A/FE-A Counterparty/999/PRQ2600347，输入保留其展示值；再查询选择授权FE Project B/id11，旧申请输入清空，下一次真实付款申请请求domain切为[[project_id,=,11]]。原空表必填及1440/390无整页溢出保持通过。所选ID来自返回候选，未保存或发送业务执行，不能将展示值检查当作持久化ID写入证明；既有技术行身份/主从保存证据不重验。
+
+发现明确P1候选范围缺口：现金流出报销的有效payment_request_id域只约束project_id，实际project10候选包含id32、display_name“收款申请 / FE Project A / FE-A Counterparty / ¥30.00 / FE-PFL035-RECEIVE-001”。现有模型_expected_payment_request_type和_check_payment_request_scope_or_raise已经校验方向，前端不应自行从文案或模型名推导过滤。下一步在既有关系契约适配/原生字段域声明与财务方向一致的候选范围，并用本查询链验证；不把当前33PASS当候选业务适配全部完成，也不因后端最终拒绝而忽略选择体验缺口。
+
+前端index-Ddc2GXJe.js/backend0bda7f8e0生产未变，158纯测/创建及费用运行27按依赖复用，无构建、模块升级、额外ORM或保存记录查询。旧项目关系值的依赖失效路径实测可用。整体67/detail.action-state、已保存数据前提、填完提交及最终可读源ID证据仍开放。无推送合并目标部署。
