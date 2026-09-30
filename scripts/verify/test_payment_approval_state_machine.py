@@ -3224,7 +3224,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_plan_configuration_routes_confirmation_and_never_starts_execution(self):
         path = MODEL.parent / 'plan_management.py'
         names = {'action_confirm', 'action_on_tier_approved', 'action_start', 'action_done'}
-        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScPlan')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
         namespace = {'UserError': ValueError, '_': lambda text: text,
                      'fields': types.SimpleNamespace(Date=types.SimpleNamespace(context_today=lambda rec: '2026-09-30'))}
         exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
@@ -3894,6 +3895,91 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         rec = self.record(state='approve', reviews=['tier'], status='validated')
         rec.action_set_approved()
         self.assertEqual(rec.state, 'approved')
+
+
+class PlanReportStateMachineTests(unittest.TestCase):
+    def methods(self):
+        path = MODEL.with_name('plan_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScPlanReport')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef)]
+        for method in methods: method.decorator_list = []
+        token, calls = object(), []
+        ns = {'UserError': ValueError, 'ValidationError': ValueError, '_': lambda text: text,
+              '_DOCUMENT_STATE_TOKEN': token, 'fields': types.SimpleNamespace(Date=types.SimpleNamespace(context_today=lambda rec: '2026-10-01')),
+              'super': lambda: types.SimpleNamespace(create=lambda vals: calls.append(vals) or True, write=lambda vals: calls.append(vals) or True)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        return ns, token, calls
+
+    def test_external_state_audit_and_default_values_are_not_authority(self):
+        ns, token, calls = self.methods()
+        row = types.SimpleNamespace(env=types.SimpleNamespace(context={}))
+        for name, value in (('state', 'accepted'), ('state', 'submitted'), ('approver_id', 42), ('approved_date', '2026-10-01'), ('reject_reason', 'forged')):
+            for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
+                row.env.context = context
+                with self.subTest(name=name, context=context), self.assertRaises(ValueError): ns['create'](row, [{name: value}])
+                with self.assertRaises(ValueError): ns['write'](row, {name: value})
+            row.env.context = {'default_' + name: value}
+            with self.assertRaises(ValueError): ns['create'](row, [{}])
+        self.assertEqual(calls, [])
+        row.env.context = {}
+        self.assertTrue(ns['create'](row, [{'name': 'draft'}]))
+        row.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](row, {'state': 'accepted'}))
+
+    def test_reviewed_content_is_locked_and_rejected_content_editable(self):
+        ns, _, calls = self.methods()
+        class Rows(list): pass
+        rec = types.SimpleNamespace(state='draft', validation_status='no')
+        rows = Rows([rec]); rows.env = types.SimpleNamespace(context={})
+        for state, status in (('submitted', 'pending'), ('accepted', 'no'), ('accepted', 'validated'), ('rejected', 'pending')):
+            rec.state, rec.validation_status = state, status
+            for field in ('summary', 'plan_id', 'line_id', 'progress_rate', 'attachment_ids'):
+                with self.subTest(state=state, field=field), self.assertRaises(ValueError): ns['write'](rows, {field: 'changed'})
+        self.assertEqual(calls, [])
+        rec.state, rec.validation_status = 'rejected', 'rejected'
+        self.assertTrue(ns['write'](rows, {'summary': 'corrected'}))
+
+    def test_submission_uses_shared_policy_and_does_not_invent_approver(self):
+        ns, _, _ = self.methods()
+        class Rows(list): pass
+        class Report:
+            state = 'draft'
+            def _check_plan_anchor(self): pass
+            def _write_document_state(self, vals): self.__dict__.update(vals)
+            def with_context(self, **kw): return self
+        for configured in (False, True):
+            rec = Report(); rows = Rows([rec])
+            rows.env = {'sc.approval.policy': types.SimpleNamespace(_start_submission_review=lambda rec: configured)}
+            self.assertTrue(ns['action_submit'](rows))
+            self.assertEqual(rec.state, 'submitted' if configured else 'accepted')
+            self.assertFalse(rec.approver_id)
+            self.assertEqual(rec.approved_date, False if configured else '2026-10-01')
+            with self.assertRaises(ValueError): ns['action_submit'](rows)
+        rec = Report(); rec.line_id = types.SimpleNamespace(plan_id=2); rec.plan_id = 1
+        with self.assertRaises(ValueError): ns['_check_plan_anchor']([rec])
+
+    def test_callbacks_require_real_terminal_review(self):
+        ns, _, _ = self.methods()
+        for state, reviews, status in (('draft', [], 'validated'), ('submitted', [], 'validated'), ('submitted', [1], 'pending'), ('accepted', [1], 'validated')):
+            rec = types.SimpleNamespace(state=state, review_ids=reviews, validation_status=status)
+            ns['action_on_tier_approved']([rec]); ns['action_on_tier_rejected']([rec])
+            self.assertEqual(rec.state, state)
+
+    def test_native_report_replaces_mirror_without_losing_fields_or_audit_guards(self):
+        import xml.etree.ElementTree as ET
+        root = MODEL.parents[2]
+        view = ET.parse(root / 'views/core/plan_management_views.xml').find(".//record[@id='view_sc_plan_report_form']/field[@name='arch']/form")
+        self.assertEqual({b.get('name') for b in view.findall('./header/button')}, {'action_submit', 'validate_tier', 'reject_tier'})
+        for name in ('approver_id', 'approved_date', 'reject_reason', 'state'):
+            self.assertEqual(view.find(".//field[@name='%s']" % name).get('readonly'), '1')
+        for name in ('legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'source_created_by', 'source_created_at', 'active'):
+            self.assertIsNotNone(view.find(".//field[@name='%s']" % name))
+        config = ET.parse(root / 'data/construction_plan_form_productization_contract.xml')
+        record = config.find(".//record[@id='business_config_contract_construction_plan_report_productized_form_v1']")
+        payload = ast.literal_eval(record.find("field[@name='contract_json']").get('eval'))
+        self.assertEqual(payload['view_orchestration']['views']['form'], {'title': '计划汇报', 'composition_mode': 'native_semantic_surface'})
+        upgrade = next(f for f in config.findall('./function') if 'construction_plan_report_productized' in f[0].get('eval', ''))
+        self.assertEqual(ast.literal_eval(upgrade[1].get('eval'))['contract_json'], payload)
 
 
 if __name__ == '__main__':

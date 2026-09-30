@@ -641,6 +641,14 @@ class ScWorkflowContractService(models.AbstractModel):
         **_confirm_done_profiles((
             "sc.fund.account.operation",
         )),
+        "sc.plan.report": {
+            "state_field": "state",
+            "editable_phases": ["draft", "rejected"],
+            "state_phase": {"draft": "draft", "submitted": "under_review", "accepted": "approved", "rejected": "rejected"},
+            "state_actions": {"draft": ["submit"], "rejected": ["submit"]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier"},
+        },
         "sc.plan": {
             "state_field": "state",
             "state_phase": {

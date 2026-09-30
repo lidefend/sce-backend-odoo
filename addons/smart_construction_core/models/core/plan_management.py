@@ -366,11 +366,14 @@ class ScPlanVersion(models.Model):
 class ScPlanReport(models.Model):
     _name = "sc.plan.report"
     _description = "计划汇报"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["accepted"]
     _order = "report_date desc, id desc"
 
     name = fields.Char(string="汇报标题", required=True, default="计划汇报")
     plan_id = fields.Many2one("sc.plan", string="计划", required=True, ondelete="cascade", index=True)
+    company_id = fields.Many2one("res.company", related="plan_id.company_id", store=True, index=True)
     line_id = fields.Many2one("sc.plan.line", string="计划节点", index=True)
     reporter_id = fields.Many2one("res.users", string="汇报人", default=lambda self: self.env.user, index=True)
     report_date = fields.Date(string="汇报日期", default=fields.Date.context_today, index=True)
@@ -392,6 +395,67 @@ class ScPlanReport(models.Model):
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                raise UserError(_("计划汇报必须从草稿通过正式提交和审批流转。"))
+            if any(values.get(name, self.env.context.get("default_" + name)) for name in ("approver_id", "approved_date", "reject_reason")):
+                raise UserError(_("计划汇报审核结果只能由正式审批动作写入。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "approver_id", "approved_date", "reject_reason"}.intersection(vals):
+            raise UserError(_("计划汇报状态和审核结果只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "name", "plan_id", "line_id", "company_id", "reporter_id", "report_date",
+            "report_type", "source_channel", "progress_rate", "summary", "risk_note", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.state not in ("draft", "rejected") or rec.validation_status in ("waiting", "pending", "validated")
+            for rec in self
+        ):
+            raise UserError(_("审批中或已确认的计划汇报内容不可直接修改。"))
+        return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
+    @api.constrains("plan_id", "line_id")
+    def _check_plan_anchor(self):
+        for rec in self:
+            if rec.line_id and rec.line_id.plan_id != rec.plan_id:
+                raise ValidationError(_("汇报节点必须属于当前计划。"))
+
+    def action_submit(self):
+        for rec in self:
+            if rec.state not in ("draft", "rejected"):
+                raise UserError(_("只有草稿或已退回的计划汇报可以提交。"))
+            rec._check_plan_anchor()
+            rec._write_document_state({"state": "submitted", "reject_reason": False, "approver_id": False, "approved_date": False})
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "accepted", "approved_date": fields.Date.context_today(rec)})
+        return True
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_plan_anchor()
+                reviews = rec.review_ids.filtered(lambda review: review.status == "approved" and review.done_by)
+                last = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1]
+                rec.with_context(skip_validation_check=True)._write_document_state({
+                    "state": "accepted", "approved_date": fields.Date.context_today(rec),
+                    "approver_id": last.done_by.id if last else False,
+                })
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "rejected", "reject_reason": reason})
 
     @api.constrains("progress_rate")
     def _check_progress_rate(self):

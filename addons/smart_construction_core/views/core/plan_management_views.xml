@@ -183,33 +183,46 @@
         <field name="model">sc.plan.report</field>
         <field name="arch" type="xml">
             <form string="计划汇报">
+                <header>
+                    <button name="action_submit" string="提交" type="object" class="oe_highlight" invisible="state not in ('draft', 'rejected')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="state != 'submitted' or not can_review"/>
+                    <button name="reject_tier" string="退回" type="object" invisible="state != 'submitted' or not can_review"/>
+                    <field name="state" widget="statusbar" readonly="1" statusbar_visible="draft,submitted,accepted,rejected"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
-                            <field name="plan_id"/>
-                            <field name="line_id"/>
-                            <field name="report_type"/>
-                            <field name="source_channel"/>
-                            <field name="report_date"/>
+                            <field name="name" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="plan_id" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="line_id" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="report_type" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="source_channel" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="report_date" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
                         </group>
                         <group>
-                            <field name="reporter_id"/>
-                            <field name="progress_rate"/>
-                            <field name="approver_id"/>
-                            <field name="approved_date"/>
-                            <field name="state"/>
+                            <field name="reporter_id" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="progress_rate" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                            <field name="approver_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
                         </group>
                     </group>
                     <group>
-                        <field name="summary"/>
-                        <field name="risk_note"/>
-                        <field name="reject_reason"/>
+                        <field name="summary" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                        <field name="risk_note" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
+                        <field name="reject_reason" readonly="1"/>
                     </group>
                     <group string="成果附件">
-                        <field name="attachment_ids" widget="many2many_binary"/>
+                        <field name="attachment_ids" widget="many2many_binary" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
                     </group>
                     <group string="来源追溯">
+                        <field name="legacy_fact_model" readonly="1"/>
+                        <field name="legacy_fact_id" readonly="1"/>
+                        <field name="legacy_fact_type" readonly="1"/>
+                        <field name="source_created_by" readonly="1"/>
+                        <field name="source_created_at" readonly="1"/>
+                        <field name="active" readonly="state not in ('draft', 'rejected') or validation_status in ('waiting', 'pending', 'validated')"/>
                     </group>
                 </sheet>
                 <chatter/>

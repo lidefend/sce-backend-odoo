@@ -20,6 +20,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.general.contract", "一般合同（公司）"),
         ("sc.contract.event", "合同履约事件"),
         ("sc.plan", "计划"),
+        ("sc.plan.report", "计划汇报"),
         ("sc.construction.diary", "施工日志"),
         ("sc.tax.deduction.registration", "抵扣登记"),
         ("project.material.plan", "物资计划"),
@@ -466,6 +467,7 @@ class ScApprovalPolicy(models.Model):
             "sc.general.contract",
             "sc.contract.event",
             "sc.plan",
+            "sc.plan.report",
             "sc.construction.diary",
             "sc.tax.deduction.registration",
             "sc.receipt.income",
@@ -603,6 +605,10 @@ class ScApprovalPolicy(models.Model):
             "sc.construction.diary": (
                 "smart_construction_core.server_action_diary_on_approved",
                 "smart_construction_core.server_action_diary_on_rejected",
+            ),
+            "sc.plan.report": (
+                "smart_construction_core.server_action_plan_report_on_approved",
+                "smart_construction_core.server_action_plan_report_on_rejected",
             ),
             "sc.plan": (
                 "smart_construction_core.server_action_plan_on_approved",
