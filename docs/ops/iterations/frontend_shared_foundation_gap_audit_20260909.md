@@ -5814,7 +5814,7 @@ FIXED_CUSTOMER_IDENTIFIERS=1
 ```
 
 **原因**：更早的段落记录里直接写入了 P2 属主侧的真实客户品牌模块名与仓库名
-（`sce_customer_baosheng_legacy`、`sce-customer-baosheng-odoo`）。
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`）。
 这些字符串由 `21df11b45`（2026-09-29 记录提交）引入；
 守卫的 `CUSTOMER_IDENTITY_TOKENS` 从 `401bcb3bd`（clean product baseline）起就包含该品牌 token，
 **因此该必需门禁自那笔记录提交起一直是红的，只是没有以这种聚合形态跑过。**
@@ -5902,6 +5902,174 @@ FIXED_CUSTOMER_IDENTIFIERS=1
 - `fix(docs): replace the customer brand reference in the iteration log with the tenant placeholder`
 - `chore(reports): refresh the complexity budget report after the guard change`
 - 本段记录随第三笔提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 40｜把「列表状态色调」从平台内核收回声明方：内核不再替业务决定哪个状态算成功（2026-09-30）
+
+### 1. 本轮触发与分支主目标的关系
+
+分支主目标：**前端所有渲染与交互由有效契约驱动，并回到组件官方模板组合逻辑**。
+前面几段处理的是「前端自行推断业务语义」，本轮顺着同一条往前查了一层权威：
+**平台内核自己也在替业务层发明语义。**
+
+`addons/smart_core/utils/contract_governance_list_surface.py` 里硬编码了一份
+业务状态 → 色调映射（`draft / in_progress / paused / done / closing / warranty / closed`），
+并且**对所有带 `status_field` 的列表档案无条件生效**。
+结果是：内核替 P1/P2 决定了「哪个业务状态算成功、哪个算警告」，
+而这本来只能由拥有该模型的层声明。契约没有表达的东西被内核补齐了，缺口因此被永久隐藏。
+
+### 2. 问题定位
+
+- 映射写死在内核（`contract_governance_list_surface.py`），与具体模型无关却对全部档案生效；
+- 前端消费方 `collectionStatusPresentation.ts` 在无 `tone_by_value` 时回退 `neutral`，
+  本身是**正确的**（不猜），但内核总是给出映射，回退分支实际永不触发；
+- 部分档案的状态值（如 `payment.request` 的 `submit/approve/rejected/cancel`）根本不在映射内，
+  于是「已声明状态」和「未声明状态」被同一份内核默认值混在一起，**缺口不可见**。
+
+判定：这是**内核越界发明业务语义**，属分支主目标要清的口子。
+
+### 3. 修复：权威搬回声明方（行为保持的搬迁，非扩权）
+
+内核侧：
+
+- 只保留**投影**职责。新增 `STATUS_TONE_VOCABULARY =
+  frozenset({neutral, info, success, warning, danger})` 与
+  `normalize_status_tone_by_value(raw)`；
+- **无声明 → 完全不写 `tone_by_value`**，由前端按其既有规则回退 `neutral`；
+- `contract_governance.py`（facade）与 `contract_governance_registry.py` 只透传/整形，
+  不再发明任何语义。
+
+声明侧（P1，`addons/smart_construction_core/core_extension.py`）：
+
+| 档案 | 声明内容 | 值来源 |
+|---|---|---|
+| `project.project.list` | 全量 7 值（`draft/in_progress/paused/done/closing/warranty/closed`） | `ScStateMachine.PROJECT_STATES` |
+| `payment.request.list` | `{draft: neutral, done: success}` | `PAYMENT_REQUEST_STATES` |
+| `project.material.plan.list` | `{draft: neutral, done: success}` | 模型 `state` 选择项 |
+| `project.task.list` | `{draft: neutral, in_progress: info, done: success}` | 模型 `sc_state` 选择项 |
+| `tax_deduction_registration.list` | **仍不声明** | 旧映射唯一重叠值 `draft` 原本即 neutral，无行为变化 |
+
+**关键判定：这是行为保持的搬迁。**
+`payment.request` 的 `submit/approve/rejected/cancel` 在旧内核映射里本来就没有条目
+（只覆盖 `draft/done`），搬迁后**同样没有**，仍渲染中性——**没有借机扩权**。
+这些状态该用什么色调属 P1 产品决策，已登记为**显式产品缺口**（缺口必须显现）。
+
+### 4. 顺带修复：段 39 记录正文自己把客户品牌写回，聚合门禁自那笔提交起为红
+
+写本段记录时复跑 `scripts/verify/tenant_product_payload_boundary_guard.py`，发现它在 HEAD
+（`26c32476f`）**本身就是红的**：
+
+```
+[tenant_product_payload_boundary_guard] FAIL
+- rule=customer_identity_or_brand_reference path=docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+FIXED_CUSTOMER_IDENTIFIERS=1
+```
+
+`git log -S` 定位：命中由 **`382d37e35`（段 39 的「离线门禁恢复」记录提交）** 引入。
+段 39 在「原因」段落里为说明问题，把被判红的真实客户品牌模块名与仓库名**照着写了一遍**，
+于是 `c9135c13d` 的修正只覆盖了更早的三处，**记录自身又新增了第四处**，
+守卫从 `382d37e35` 起一直为红——这与段 39「聚合 PASS」的结论并不矛盾，
+因为那段结论是在更早的 `c9135c13d` 时刻取得的。
+
+**这暴露的是验收体系缺口，不是本段的副作用**：
+记录文本是在**之后那一笔记录提交**里才写下的，
+而那笔提交**没有复跑被它自己改变的文件所参与的守卫**。
+「记录/文档提交同样要复跑该文档参与的门禁」此前不是硬规则，本段起按此执行。
+
+**修复**：把该处改写为仓库既有占位形式
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`），
+**不改守卫、不加豁免、不删已记录事实**。复跑后 `FIXED_CUSTOMER_IDENTIFIERS=0`、PASS。
+
+### 5. 守卫：`scripts/verify/contract_governance_list_surface_split_guard.py`
+
+挂在 `ci.local.quick.run`（`make/ci.mk:919`），双向 fail-closed，均已用注入实验证明有牙齿：
+
+1. **内核不得出现任何业务状态字面量**（`draft`…`closed`）。
+   注入 `_LEGACY_TONE_SEED = {"draft": …}` 即 FAIL；
+2. **声明方 profile 必须拥有映射**。删掉 P1 声明即 FAIL
+   （`project.project.list must own its status tone map; the kernel no longer supplies one`）；
+3. **泛化到所有声明档案**：色调必须落在已发布词表内、键非空、逐字投影；
+4. **`STATUS_VALUE_SOURCES`**：每个声明档案必须登记其状态值来源；
+   守卫用 AST 读取 `ScStateMachine` 状态表或模型 `fields.Selection` 首元素，
+   声明了模型不存在的值即 FAIL（注入 `"nope": "danger"` 报
+   `declares values the model does not define`）。
+   **新增声明档案必须同步补 `STATUS_VALUE_SOURCES`，否则 FAIL。**
+
+### 6. 实测（按 L0→L5 分层；零测试即失败）
+
+- **L1（静态/守卫，离线）**：`contract_governance_list_surface_split_guard` PASS；
+  `_responsibility_map_guard`、`_registry_split_guard`、`_determinism_guard`、`_coverage` PASS；
+  `construction_core_extension_{intent_handlers,hook_facts,capability_rows,project_layout}_split_guard` PASS；
+  `navigation_contract_boundary_guard` PASS；`owner_industry_isolation_probe` PASS；
+  `make ci.local.iteration` PASS；`tenant_product_payload_boundary_guard` 由红转 PASS
+  （`FIXED_CUSTOMER_IDENTIFIERS=0`，见 §4）。
+  四个派生清单 `--check` 全部 CHECK-OK
+  （`rendering_detail` PASS surfaces=173 gaps=0；`component_driver_takeover` required=33 missing=0；
+  `visual_projection` PASS；`official_design_alignment` PASS）。
+- **L2（后端单测，受管容器内）**：
+  `odoo.addons.smart_core.tests.test_contract_governance_record_context_registry`
+  → **Ran 21 tests OK（0F/0E）**，含新增
+  `test_standard_list_profile_keeps_the_declared_status_tone_map`；
+  `test_contract_governance_kanban_profile_registry`、
+  `test_contract_governance_task_form_profile_registry`、
+  `scripts/verify/test_formal_list_configuration_baseline.py` 均 PASS。
+  L2 前端 16 项 collection/list 目标（`verify.frontend.collection_*.unit`、
+  `standard_collection_composition.unit`、`page_pattern_reference_parity.unit`、
+  `product_page_pattern.unit`、`scene_entry_contract.unit`、`primitive_adapter.unit`、
+  `professional_detail_collection.unit`）全 PASS。
+- **L3（受管运行时）**：容器 `sc-backend-odoo-acceptance`，库 `sc_frontend_acceptance`，
+  `127.0.0.1:18082`，`SC_SOURCE_REVISION=26c32476ff60a21fbc009a108b82bad4d189a448`（==HEAD），
+  `/web/login` HTTP 200。运行时探针结论：4 个声明档案的每个键都解析到模型真实状态；
+  `project.project` 列表契约投影出 `cell_role=status` + 完整 `tone_by_value`；
+  `payment.request` 契约投影 `cell_role=status` 且**无** `tone_by_value`；
+  `tax_deduction_registration.list` 记为 undeclared。
+
+### 7. 判定
+
+内核不再替业务决定语义，声明方成为唯一权威，缺口以「无声明 → 中性」的形式可见。
+前端未被改动，仍是纯呈现 + 中性回退，符合「缺语义不得猜测补齐」。
+
+### 8. 本段登记项（未处理，仅记录）
+
+- `payment.request` 的 `submit/approve/rejected/cancel` 色调**未声明**，
+  属 P1 产品决策，需业务确认后补声明（不代拟）。
+- `verify.frontend.industry_agnostic.guard` 仍 FAIL（97 条，`policy.target=zero`，
+  未接入任何聚合 lane）——需专项（审计器语义细化 + 前端改造）。
+- `verify.business_config.coverage` FAIL（验收库缺 `system_root`/`user:admin`/`user:wutao`，
+  环境数据）；`verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`（not_run）。
+- `state_transition_undeclared` 5 条仍在 `config/contract/native_view_undeclared_actions.v1.json`。
+- `style_system.guard` z-index 与四项文件长度欠账不变。
+- **P1 `core_extension.py` 行数预算守卫此前即红**（改动前 1830 已超 1787/1809/1820），
+  本段新增 P1 声明后为 1842。**已确认非本段引入**，属预存量技术债；
+  本段已把声明压到最小行数（净增 2 行/档案）。
+- `test_contract_governance_project_form.py` 在容器内仍 8F+1E（既有登记的非通过，
+  失败信息与色调无关）。
+
+### 9. 边界七问
+
+`Formal Product Layer` = P0 平台内核（搬运方）+ P1 建筑行业标准（声明方）；
+`Layer Target` = `smart_core/utils/contract_governance_list_surface.py`（投影）、
+`smart_construction_core/core_extension.py`（声明）、验收守卫；
+`Module` = `smart_core` / `smart_construction_core`；
+`Standard vs User-Specific` = 平台机制（投影）+ 行业标准默认（状态色调默认）；
+`Why Here` = 投影是内核机制，色调是行业模型的业务默认，二者必须分层；
+`Why Not Elsewhere` = **不**把业务状态留在内核、**不**把投影逻辑下放到 P1、
+**不**让前端从中文标签猜色调、**不**靠降低词表或加豁免消红；
+`Blast Radius` = 列表契约 `tone_by_value` 投影路径、4 个声明档案、契约守卫与单测。
+未声明档案的契约投影由「内核默认映射」变为「无映射」，前端回退中性，行为不变。
+
+### 10. 提交
+
+- `fix(contract): own the list status tone in the declaring profile`（内核搬迁 + P1 声明 + 守卫 + 单测）
+- `fix(contract): declare the remaining list status tones in the owning profiles`（其余档案补声明 + 守卫泛化）
+- `fix(verify): require declared tones to name real model states`（守卫新增状态值来源校验）
+- `docs(web): record segment 40 and reclaim the brand reference the boundary guard caught`
+  （活记录段 40；段 39 记录正文的客户品牌回写修正，守卫由红恢复为绿；
+  `page-pattern-reference-contract-gaps-v1.md` 与 `...-detail-ledger-v1.json`
+  仅 `collection.semantic-tones` 一条改述）。
 
 ### 状态
 
