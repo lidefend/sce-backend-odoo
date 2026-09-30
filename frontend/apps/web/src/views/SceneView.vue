@@ -185,6 +185,7 @@ import { intentRequest } from '../api/intents';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
+import { SCENE_CONTRACT_ENTRY_INTENTS, ownsSceneRoute, resolveSceneContractEntryIntent } from '../app/sceneEntryContract';
 import { findActionMeta, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
@@ -206,16 +207,12 @@ const pageActionTarget = pageContract.actionTarget;
 const pageGlobalActions = pageContract.globalActions;
 const headerActions = computed(() => pageGlobalActions.value);
 const currentSceneKey = computed(() => String(route.params.sceneKey || route.meta?.sceneKey || '').trim());
-const sceneContractEntryIntentMap: Record<string, string> = {
-  'workspace.home': 'workspace.home.enter',
-  'dashboard.company': 'dashboard.company.enter',
-  'project.management': 'project.dashboard.enter',
-};
-const sceneContractEntryIntent = computed(() => {
-  const routeIntent = String(route.query.entry_intent || route.query.scene_intent || '').trim();
-  if (routeIntent) return routeIntent;
-  return sceneContractEntryIntentMap[currentSceneKey.value] || '';
-});
+const sceneContractEntryIntent = computed(() => resolveSceneContractEntryIntent({
+  routeName: route.name,
+  sceneKey: currentSceneKey.value,
+  queryEntryIntent: route.query.entry_intent,
+  querySceneIntent: route.query.scene_intent,
+}));
 const findActionNodeByModelRef = findActionNodeByModel;
 const scene = ref<Scene | null>(null);
 const status = ref<'loading' | 'error' | 'forbidden' | 'idle'>('loading');
@@ -914,7 +911,7 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
 
 function fallbackSceneFromEntryIntent(sceneKey: string): Scene | null {
   const key = String(sceneKey || '').trim();
-  if (!sceneContractEntryIntentMap[key]) return null;
+  if (!SCENE_CONTRACT_ENTRY_INTENTS[key]) return null;
   return {
     key,
     label: key === 'dashboard.company'
@@ -985,6 +982,9 @@ function isCanonicalSceneOwnerTarget(target: SceneTarget, sceneKey: string) {
 }
 
 async function resolveScene() {
+  // The scene runtime only acts for the scene route it owns; a cached view must not
+  // dispatch a foreign route's business `entry_intent` value as a scene intent.
+  if (!ownsSceneRoute(route.name)) return;
   try {
     status.value = 'loading';
     clearError();

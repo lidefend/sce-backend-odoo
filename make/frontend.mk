@@ -129,8 +129,13 @@ verify.frontend.system_state_recovery.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_system_state_recovery_guard
 	@python3 scripts/verify/frontend_system_state_recovery_guard.py
 
+.PHONY: verify.frontend.scene_entry_contract.unit
+verify.frontend.scene_entry_contract.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-entry-contract-test.mjs >/dev/null
+	@node /tmp/scene-entry-contract-test.mjs
+
 .PHONY: verify.frontend.navigation_shell.unit
-verify.frontend.navigation_shell.unit: guard.prod.forbid
+verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/canonical_navigation_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/canonical-navigation-model-test.mjs >/dev/null
 	@node /tmp/canonical-navigation-model-test.mjs
 	@python3 addons/smart_core/tests/test_delivery_menu_entry_target.py
