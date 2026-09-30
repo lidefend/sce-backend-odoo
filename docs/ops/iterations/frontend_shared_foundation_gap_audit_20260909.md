@@ -8142,3 +8142,14 @@ L1 equipment-execution-runtime-iteration.log及py_compile/bash-n PASS；P1及纯
 53.82结果：受管升级/reload a1e371b5f成功，equipment-execution-runtime.log 14/14 PASS，ROLLBACK VERIFIED。审批无成本副作用，真实确认ledger qty=2/source_amount=20，approved事实修改/删除拒绝，既有finance非经理确认/取消拒绝；结算使用来源confirmed，未confirmed来源拒绝。实际reviewer+事务sudo建单/执行不替代完整角色业务旅程。
 
 P4既有approval-actions支持usage/settlement；equipment-execution-page-iteration.log L1/node语法PASS。创建报告usage tpl07-1790781953996、settlement tpl07-1790781964386各14 PASS，编号隐藏/未保存无确认/有效契约/官方组合/双视口，errors=[]、forbiddenWrites=[]，390截图复核。已有记录usage tpl07-1790781971414、settlement tpl07-1790781978203均api.data ok=true records=[]，数据前置不足，不能算记录办理通过，不扩权/造fixture/重试空查询。前端7915f3bb9复用未构建，后端a1e371b5f；总体67和detail.action-state未完成。
+
+
+### 53.83 劳务计划／申请统一审批及状态边界（进行中）
+
+P1 smart_construction_core/labor_management行业计划申请职责，复用shared policy/tier而非前端猜测。两模型原提交/确认/取消/重置缺少来源状态守卫，现按既有native按钮职责补齐：提交draft/历史submitted，cancel draft/submitted，reset仅cancel，approved不允许直接重提/取消/重置；外部state写拒绝。旧approve委托真实review，callback只在review终态推进，拒绝回draft带原因。保留明细数量/日期约束，不臆造不存在的来源计划关系。
+
+配置/tier/native/profile成组接入，项目公司为配置归属，系统编号创建隐藏只读；申请amount_total固定0仅展示边界，不登记审批金额权威。平台机制/前端保持无劳务规则，P4工具不是业务真源。原ACL/record rules沿用。
+
+L1 labor-plan-request-iteration.log PASS；labor-plan-request-unit.log80 PASS（参数化两模型配置分流、真实review、wizard、token、approved非法逆转及正常cancel/reset）；labor-plan-request-native.log8+46=54 PASS；labor-plan-request-semantics.log15 PASS；2XML解析/重复id检查、diff --check PASS。输入预登记与非零回执完成，候选e269d3b67+本段dirty，不是冻结交付。
+
+L3未运行：tier/新字段/XML需受管升级，下一步扩展既有rollback劳务计划申请范围验证真实配置、无金额权威拒绝、审批/驳回重提及状态边界恢复；随后同组官方页面。L4未改前端不重建，L5非本地迭代范围。不重跑材料/设备独立ORM。考勤、劳务用工与结算等剩余职责及实际角色记录办理继续开放，总体67未完成。

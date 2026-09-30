@@ -221,7 +221,9 @@
         "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
         "addons/smart_construction_core/models/core/material_acceptance.py",
         "addons/smart_construction_core/models/core/equipment_management.py",
-        "addons/smart_construction_core/views/core/equipment_management_views.xml"
+        "addons/smart_construction_core/views/core/equipment_management_views.xml",
+        "addons/smart_construction_core/models/core/labor_management.py",
+        "addons/smart_construction_core/views/core/labor_management_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -279,7 +281,9 @@
         "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
         "addons/smart_construction_core/data/material_outbound_tier_actions.xml",
         "addons/smart_construction_core/models/core/equipment_management.py",
-        "addons/smart_construction_core/views/core/equipment_management_views.xml"
+        "addons/smart_construction_core/views/core/equipment_management_views.xml",
+        "addons/smart_construction_core/models/core/labor_management.py",
+        "addons/smart_construction_core/views/core/labor_management_views.xml"
       ]
     },
     "standard_preview_tool": {
@@ -316,7 +320,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.82 equipment execution runtime14 rollback/create14+14 PASS backenda1e371b5f/frontend7915f3bb9. Existing PM queries empty; no repeat. Continue next labor business-document family from existing workflow profiles and labor module, preserving usage/settlement execution/cost and source guards. Reuse existing ledger/results without broad scan or prior ORM/frontend rebuild. Overall role record handling and all-family scope incomplete.",
+  "next_exact_step": "53.83 labor plan/request source80/native54/semantics15 PASS. Extend existing rollback scope labor-plan-request for both: real approval/no-config, missing amount authority rejection (fixed0 display not authority), rejection/resubmit, illegal approved cancel/reset/resubmit rejected, valid cancelled reset; no invented source-plan relation. One managed upgrade/reload then scoped runtime and official pages. Labor attendance/usage/settlement remain. No broad scan/prior ORM/frontend rebuild; overall active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1236,6 +1240,14 @@
         "1790781978203"
       ],
       "record_status": "both authorized queries empty"
+    },
+    "segment_53_83": {
+      "status": "source_verified_runtime_pending",
+      "scope": "P1 labor plan/request shared approval and authoritative transition guards",
+      "approval_tests": 80,
+      "native_tests": 54,
+      "semantics_tests": 15,
+      "runtime": "not_run; upgrade required"
     }
   }
 }

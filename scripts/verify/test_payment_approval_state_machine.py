@@ -980,6 +980,44 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         with self.assertRaises(PermissionError): ns['action_cancel'](rec)
         self.assertEqual(rec.state, 'approved')
 
+    def test_labor_plan_and_request_review_and_transition_boundaries(self):
+        path = MODEL.with_name('labor_management.py')
+        tree = ast.parse(path.read_text())
+        for cls_name, model in [('ScLaborPlan', 'sc.labor.plan'), ('ScLaborRequest', 'sc.labor.request')]:
+            cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
+            names = {'action_submit', 'action_approve', 'action_cancel', 'action_reset_draft', 'action_on_tier_approved', 'write'}
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_LABOR_APPROVAL_STATE_TOKEN': object()}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            for required in (False, True):
+                rec = self._purchase_request_record(required=required, state='draft')
+                rec._name = model
+                rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+                rec._write_approval_state = lambda values: rec.data.update(values)
+                for token in (None, True, 'trusted'):
+                    with self.assertRaises(ValueError):
+                        ns['write'](rec.with_context(sc_labor_approval_state_token=token), {'state': 'approved'})
+                ns['action_submit'](rec)
+                self.assertEqual(rec.state, 'submitted' if required else 'approved')
+                if required:
+                    ns['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'submitted')
+                    wizard = {'type': 'ir.actions.act_window'}
+                    rec.validate_tier = lambda: wizard
+                    self.assertIs(ns['action_approve'](rec), wizard)
+                    rec.data['validation_status'] = 'validated'
+                    ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+                for method in ('action_submit', 'action_cancel', 'action_reset_draft'):
+                    with self.assertRaises(ValueError): ns[method](rec)
+                self.assertEqual(rec.state, 'approved')
+            rec = self._purchase_request_record(state='draft')
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            ns['action_cancel'](rec)
+            self.assertEqual(rec.state, 'cancel')
+            ns['action_reset_draft'](rec)
+            self.assertEqual(rec.state, 'draft')
+
     def _purchase_request_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')

@@ -509,8 +509,6 @@ class ScWorkflowContractService(models.AbstractModel):
             },
         },
         **_simple_approval_profiles((
-            "sc.labor.plan",
-            "sc.labor.request",
             "sc.material.rental.plan",
             "sc.safety.disclosure",
             "sc.safety.plan",
@@ -534,6 +532,22 @@ class ScWorkflowContractService(models.AbstractModel):
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
         },
         "sc.equipment.request": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
+        "sc.labor.plan": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
+        "sc.labor.request": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},

@@ -19,6 +19,8 @@ class TierDefinition(models.Model):
             "sc.material.rfq",
             "sc.equipment.plan",
             "sc.equipment.request",
+            "sc.labor.plan",
+            "sc.labor.request",
             "sc.equipment.usage",
             "sc.equipment.settlement",
             "sc.material.settlement",
