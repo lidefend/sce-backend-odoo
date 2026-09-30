@@ -1109,7 +1109,11 @@ class ScSubcontractRegisterLine(models.Model):
 class ScSubcontractSettlement(models.Model):
     _name = "sc.subcontract.settlement"
     _description = "分包结算"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
     _order = "settlement_date desc, id desc"
 
     name = fields.Char(string="结算单号", required=True, default="新建", tracking=True)
@@ -1152,7 +1156,7 @@ class ScSubcontractSettlement(models.Model):
         readonly=True,
     )
     state = fields.Selection(
-        [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "已提交"), ("approved", "审批通过"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         index=True,
@@ -1428,6 +1432,8 @@ class ScSubcontractSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         explicit_fields_by_vals = []
         for vals in vals_list:
@@ -1466,11 +1472,15 @@ class ScSubcontractSettlement(models.Model):
         return records
 
     def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_subcontract_approval_state_token") is not _SUBCONTRACT_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
         if (
             self.env.context.get(_SETTLEMENT_AUTHORITY_CONTEXT_KEY)
             is _SETTLEMENT_AUTHORITY_TOKEN
         ):
             return super().write(vals)
+        if set(vals).intersection({"project_id", "register_id", "contract_id", "subcontractor_id", "currency_id", "settlement_date", "line_ids", "amount_total", "amount_untaxed", "tax_amount"}):
+            self._assert_approval_facts_editable()
         affected_register_line_ids = set(
             self.line_ids.mapped("register_line_id").ids
         )
@@ -1506,6 +1516,7 @@ class ScSubcontractSettlement(models.Model):
         return result
 
     def unlink(self):
+        self._assert_approval_facts_editable()
         if self.line_ids.mapped("register_line_id"):
             raise UserError(_("已有正式登记范围的分包结算不能删除，请保留审计关系。"))
         return super().unlink()
@@ -1596,36 +1607,40 @@ class ScSubcontractSettlement(models.Model):
 
     def action_submit(self):
         for record in self:
-            if record.state != "draft":
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿状态的分包结算可以提交。"))
             record._check_business_anchor()
             if not record.line_ids:
                 raise ValidationError(_("提交分包结算前必须维护结算明细。"))
             record.line_ids._check_values()
-        self.write({"state": "submitted"})
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_confirm(self):
         for record in self:
-            if record.state != "submitted":
-                raise UserError(_("只有已提交状态的分包结算可以确认。"))
+            if record.state != "approved":
+                raise UserError(_("只有审批通过的分包结算可以确认。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
             record.line_ids._check_values()
-        self.write({"state": "confirmed"})
+        self._write_approval_state({"state": "confirmed"})
         return True
 
     def action_cancel(self):
         for record in self:
-            if record.state not in ("draft", "submitted"):
-                raise UserError(_("只有草稿或已提交状态的分包结算可以取消。"))
-        self.write({"state": "cancel"})
+            if record.state not in ("draft", "submitted", "approved"):
+                raise UserError(_("只有未确认的分包结算可以取消。"))
+        self._write_approval_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
         for record in self:
             if record.state != "cancel":
                 raise UserError(_("只有已取消状态的分包结算可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_approval_state({"state": "draft"})
         return True
 
     def _check_business_anchor(self):
@@ -1650,6 +1665,37 @@ class ScSubcontractSettlement(models.Model):
                     raise UserError(_("分包结算合同必须属于当前项目。"))
                 if record.contract_id.partner_id and record.contract_id.partner_id != record.subcontractor_id:
                     raise UserError(_("分包结算单位必须与合同相对方一致。"))
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_subcontract_approval_state_token=_SUBCONTRACT_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._check_business_anchor()
+                record.line_ids._check_values()
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+
+    def action_approve(self):
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
+
+    def _assert_approval_facts_editable(self):
+        if any(record.state != "draft" for record in self):
+            raise UserError(_("提交后的分包单据业务事实不可修改。"))
+
 
 
 class ScSubcontractSettlementLine(models.Model):
@@ -1735,6 +1781,9 @@ class ScSubcontractSettlementLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            settlement, _line = self._sc_resolve_register_relations({"settlement_id": self.env.context.get("default_settlement_id"), **values})
+            settlement._assert_approval_facts_editable()
         for vals in vals_list:
             self._sc_validate_register_pair(
                 *self._sc_resolve_register_relations(vals)
@@ -1759,6 +1808,9 @@ class ScSubcontractSettlementLine(models.Model):
         return records
 
     def write(self, vals):
+        self.mapped("settlement_id")._assert_approval_facts_editable()
+        if vals.get("settlement_id"):
+            self.env["sc.subcontract.settlement"].browse(vals["settlement_id"])._assert_approval_facts_editable()
         settlements = self.mapped("settlement_id")
         affected_register_line_ids = set(
             self.mapped("register_line_id").ids
@@ -1790,6 +1842,7 @@ class ScSubcontractSettlementLine(models.Model):
         return result
 
     def unlink(self):
+        self.mapped("settlement_id")._assert_approval_facts_editable()
         if self.mapped("register_line_id"):
             raise UserError(_("已有正式登记来源的分包结算明细不能删除，请先保留或解除关系。"))
         settlements = self.mapped("settlement_id")

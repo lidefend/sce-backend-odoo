@@ -1021,10 +1021,40 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def test_subcontract_settlement_approval_precedes_explicit_confirmation(self):
+        path = MODEL.with_name('subcontract_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScSubcontractSettlement')
+        names = {'action_submit', 'action_confirm', 'action_cancel', 'action_on_tier_approved'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, 'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            rec._name = 'sc.subcontract.settlement'
+            anchors = []
+            rec._check_business_anchor = lambda: anchors.append('checked')
+            rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+            rec._write_approval_state = lambda vals: rec.data.update(vals)
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError): ns['action_confirm'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            ns['action_confirm'](rec)
+            self.assertEqual(rec.state, 'confirmed')
+            self.assertGreaterEqual(len(anchors), 2)
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            with self.assertRaises(ValueError): ns['action_cancel'](rec)
+
     def test_subcontract_generated_number_is_hidden_on_create(self):
         path = ROOT / 'addons/smart_construction_core/views/core/subcontract_management_views.xml'
         tree = ET.parse(path)
-        for name in ('plan', 'request'):
+        for name in ('plan', 'request', 'settlement'):
             field = tree.find(".//record[@id='view_sc_subcontract_%s_form']//form//field[@name='name']" % name)
             self.assertEqual(field.attrib.get('invisible'), 'not id')
             self.assertEqual(field.attrib.get('readonly'), '1')

@@ -615,9 +615,14 @@ class ScWorkflowContractService(models.AbstractModel):
             "sc.quality.issue",
             "sc.safety.issue",
         )),
-        **_submit_confirm_profiles((
-            "sc.subcontract.settlement",
-        )),
+        "sc.subcontract.settlement": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["confirm_settlement", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"confirm_settlement": "action_confirm", "submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
         **_in_progress_done_profiles((
             "sc.dashboard.cockpit.fact",
             "sc.document.admin.document",

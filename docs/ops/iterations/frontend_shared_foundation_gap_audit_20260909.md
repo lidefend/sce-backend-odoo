@@ -8463,3 +8463,11 @@ P4标准browser复用approval-actions扩展两安全模型create，safety-page-i
 工具增加viewport后两帧布局等待，记录createInputGeometry、实际输入存在/未禁用/标签分离断言；范围字段只填入未保存测试文本再清空，不发业务写。日期检查点击真实input，等待可见周标题证明calendar打开，点击外部标题并等待隐藏证明关闭。首轮tpl07-1790788702760日期即时isVisible失败，failure图显示展开中；修复为等待可见，不改产品。可见检查plan42/request34分别1790788731669/1790788742875通过；再补关闭等待，最终plan44 tpl07-1790788768456/request36 tpl07-1790788780077 PASS、errors/forbiddenWrites均空。最终390图复核可选日期标签与控件正常、弹层已关闭。旧异常归因于取证时机的推断获得本轮稳定geometry/截图/交互支持，未证明持久产品排布缺陷。
 
 L1 subcontract-geometry-iteration.log及subcontract-input-geometry-check-iteration.log、最终node语法/diff通过；本轮P4改动不影响P1审批runtime16或前端7915f3bb9/backend7446f6a11，跳过ORM、upgrade、build、全矩阵/Quick。此项收口仅证明创建输入可操作及日期开关，不代表日期选择保存、关系选择/明细创建、真实单据提交全旅程。下一步接续分包结算剩余必要审批契约，已有角色全办理与总体67继续开放，无新环境/fixture/推送/合并/目标部署。
+
+### 53.110 分包结算审批与确认分离（进行中）
+
+b55e6b480 clean续跑，只核对分包结算及既有登记/金额/数量authority。P1 smart_construction_core拥有业务审批/确认职责，不置于P0或前端；继承tier、company/reject_reason、新approved状态。提交无配置自动approved、有配置真实review；action_confirm只接受approved且调用共享审批断言，原confirmed累计数量/金额约束不改变，不把审批当结算确认。外部create（含default_state）/write状态保护、父子业务事实freeze与明细默认父键校验；既有内部登记权威同步token和累计校验保留。原生header真实tier批准驳回/确认/取消/重置，生成单号创建隐藏；published policy恢复project/subcontractor/note三输入，财务/来源显示继续只读。
+
+L1 subcontract-settlement-iteration.log通过，首轮L2发现确认调用漏传approved_states（真实签名缺参，非环境），就地补参数后signature-iteration.log通过；unit-recovery.log111 PASS，native.log8+52=60 PASS，回执登记。既有纯边界tests直接运行：金额4、累计数量5、登记结算authority9 PASS（subcontract-settlement-*-boundaries.log），未跑无关ORM。P4既有rollback工具新增subcontract-settlement8组及default all239，真实审批/金额未匹配/父子保护/显式确认，tool-iteration.log/语法/diff通过。需要一次受管升级，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；runtime尚未证明，无新fixture/环境/推送/合并/目标部署。
+
+另确认产品缺口：_compute_payment_boundary_amounts仍把paid/requested固定0、unpaid/unrequested固定amount_total，不能代表实际付款事实。仅登记必要P1财务归属/汇总契约缺口，前端不得推断或将只读数字当真实支付闭环。本批审批完成不关闭该项，后续需检视付款依据与真实ledger归属。

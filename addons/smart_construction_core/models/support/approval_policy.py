@@ -29,6 +29,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.labor.plan", "劳务计划"),
         ("sc.subcontract.plan", "分包计划"),
         ("sc.subcontract.request", "分包申请"),
+        ("sc.subcontract.settlement", "分包结算"),
         ("sc.safety.plan", "安全施工方案"),
         ("sc.safety.disclosure", "安全交底"),
         ("sc.material.rental.plan", "材料租赁计划"),
@@ -436,6 +437,7 @@ class ScApprovalPolicy(models.Model):
             "sc.labor.plan",
             "sc.subcontract.plan",
             "sc.subcontract.request",
+            "sc.subcontract.settlement",
             "sc.safety.plan",
             "sc.safety.disclosure",
             "sc.material.rental.plan",
@@ -493,6 +495,10 @@ class ScApprovalPolicy(models.Model):
             "sc.subcontract.plan": (
                 "smart_construction_core.server_action_subcontract_plan_on_approved",
                 "smart_construction_core.server_action_subcontract_plan_on_rejected",
+            ),
+            "sc.subcontract.settlement": (
+                "smart_construction_core.server_action_subcontract_settlement_on_approved",
+                "smart_construction_core.server_action_subcontract_settlement_on_rejected",
             ),
             "sc.subcontract.request": (
                 "smart_construction_core.server_action_subcontract_request_on_approved",
@@ -703,6 +709,7 @@ class ScApprovalPolicy(models.Model):
             "sc.labor.usage": "amount_total",
             "sc.subcontract.plan": "estimated_amount",
             "sc.subcontract.request": "estimated_amount",
+            "sc.subcontract.settlement": "amount_total",
             "sc.material.rental.plan": "estimated_amount",
             "sc.material.rental.order": "amount_total",
             "sc.material.rental.settlement": "amount_total",
