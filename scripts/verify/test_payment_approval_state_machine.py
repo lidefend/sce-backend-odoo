@@ -850,6 +850,50 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             # fail for an unexpected reason instead of satisfying this assertion.
             with self.assertRaises(ValueError): ns['action_create_purchase_order'](rec)
 
+    def test_material_settlement_approval_does_not_post_cost_or_create_payment(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialSettlement')
+        names = {'action_submit', 'action_confirm', 'action_on_tier_approved'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            rec._name = 'sc.material.settlement'
+            rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+            rec._sc_require_material_manager = lambda label: None
+            rec._write_cost_source_state = lambda values: rec.data.update(values)
+            downstream = []
+            rec._sync_downstream_after_confirm = lambda: downstream.append('cost-and-payment')
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            self.assertFalse(downstream)
+            if required:
+                with self.assertRaises(ValueError): ns['action_confirm'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            self.assertFalse(downstream)
+            ns['action_confirm'](rec)
+            self.assertEqual(rec.state, 'confirmed')
+            self.assertEqual(downstream, ['cost-and-payment'])
+
+    def test_material_settlement_approved_facts_and_lines_remain_immutable(self):
+        path = MODEL.with_name('material_acceptance.py')
+        tree = ast.parse(path.read_text())
+        for cls_name, field in [('ScMaterialSettlement', 'project_id'), ('ScMaterialSettlementLine', 'qty')]:
+            cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in ('write', 'unlink')]
+            ns = {'UserError': ValueError, '_': lambda text: text}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            for state in ('submitted', 'approved', 'confirmed'):
+                rec = types.SimpleNamespace(state=state, settlement_id=types.SimpleNamespace(state=state), _FACT_IMMUTABLE_FIELDS={field})
+                rec.filtered = lambda predicate: [rec] if predicate(rec) else []
+                with self.assertRaises(ValueError): ns['write'](rec, {field: 99})
+                with self.assertRaises(ValueError): ns['unlink'](rec)
+
     def _purchase_request_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')

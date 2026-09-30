@@ -8071,3 +8071,14 @@ L1 rfq-runtime-iteration.log与py_compile/bash-n PASS；74/50/15生产与测试�
 53.76实际结果：受管模块升级/后端a3379822c成功，rfq-runtime.log 8/8 PASS，ROLLBACK VERIFIED（配置/步骤恢复，临时RFQ/订单/材料模板/供应商消失）。运行使用真实tier reviewer，建单及独立执行使用事务sudo，不替代角色全旅程。未重跑独立旧ORM。
 
 P4扩展既有approval-actions页面范围sc.material.rfq，L1 rfq-page-iteration.log与node语法PASS；创建tpl07-1790780849651/report.json 15 PASS，官方组合/有效契约/未保存无定价或订单/系统编号隐藏/双视口无溢出，errors=[]、forbiddenWrites=[]，390截图人工复核一致。已有记录tpl07-1790780863288/report.json查询ok=true records=[]，第2项数据前置失败，不算记录页通过、不新增fixture、不重复空查询。前端7915f3bb9复用未重建，后端a3379822c；实际角色审批定价页面仍pending。总体detail.action-state及67条接管继续开放。
+
+
+### 53.77 材料结算审批与成本确认分离（进行中）
+
+P1 smart_construction_core材料结算行业标准，复用共享policy/tier；非P0业务默认、P2偏好或前端推导。实际action_confirm会生成成本台账和付款申请，因此新增approved待确认状态：提交无配置自动approved，有配置真实review；callback只审批，不触发_sync_downstream_after_confirm。显式确认从approved校验审批事实，再执行原confirmed及类别控制的成本/付款同步。生成剩余付款申请也校验审批事实；不改原金额与幂等/剩余额度规则。
+
+保留既有_COST_SOURCE_STATE_TOKEN，不重复实现状态保护。结算头及明细原submitted/confirmed不可变范围增加approved，防止审批后修改/删除事实；驳回回draft、重新提交新review沿用共享机制。金额条件使用既有amount_total，公司由项目提供。native/profile真实审批、独立确认complete、cancel/reset对齐；序列编号创建隐藏已有只读，前端没有新业务分支。
+
+L1 material-settlement-iteration.log PASS；material-settlement-approval-unit.log 76 PASS（新增审批不产生成本/付款、确认独立、审批后头/明细不可变）；material-settlement-native.log 8+43=51 PASS；material-settlement-semantics.log 15 PASS；2XML解析/diff --check PASS，非零回执登记。源码候选852221422+本段dirty；不是冻结交付。
+
+L3未执行：tier/company/reason/approved状态/native XML需要一次受管模块升级。下一步扩展既有rollback范围material-settlement，实际确认成本台账和付款申请仍按配置执行、approval不执行、金额/明细保护、拒绝重提及恢复。L4前端源码未改不重建，后续只查受影响页面；L5不在本地迭代范围。已完成其他单据证据按未变方法输入复用，不重扫/重复ORM；总体67仍未完成。

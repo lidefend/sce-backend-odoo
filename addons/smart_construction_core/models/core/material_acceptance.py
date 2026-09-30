@@ -2725,7 +2725,11 @@ class ScMaterialRfqLine(models.Model):
 class ScMaterialSettlement(models.Model):
     _name = "sc.material.settlement"
     _description = "材料结算"
-    _inherit = ["mail.thread", "mail.activity.mixin", "sc.material.system.default.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
     _order = "settlement_date desc, id desc"
     _FACT_IMMUTABLE_FIELDS = {
         "project_id", "supplier_id", "purchase_order_id", "purchase_scope_ids",
@@ -2795,7 +2799,7 @@ class ScMaterialSettlement(models.Model):
         compute="_compute_payment_summary",
     )
     state = fields.Selection(
-        [("draft", "草稿"), ("submitted", "已提交"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待确认"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         index=True,
@@ -2878,8 +2882,8 @@ class ScMaterialSettlement(models.Model):
         ):
             raise UserError(_("材料结算状态只能通过受控业务动作推进。"))
         if self._FACT_IMMUTABLE_FIELDS & set(vals):
-            if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
-                raise UserError(_("已提交或已确认的材料结算事实不可修改；请通过受控状态流程处理。"))
+            if self.filtered(lambda record: record.state in ("submitted", "approved", "confirmed")):
+                raise UserError(_("已提交、已审批或已确认的材料结算事实不可修改；请通过受控状态流程处理。"))
         if self.env.context.get("sc_skip_material_purchase_authority"):
             return super().write(vals)
         explicit_fields = {
@@ -2898,8 +2902,8 @@ class ScMaterialSettlement(models.Model):
         ).write(vals)
 
     def unlink(self):
-        if self.filtered(lambda record: record.state in ("submitted", "confirmed")):
-            raise UserError(_("已提交或已确认的材料结算事实不可删除。"))
+        if self.filtered(lambda record: record.state in ("submitted", "approved", "confirmed")):
+            raise UserError(_("已提交、已审批或已确认的材料结算事实不可删除。"))
         if self.purchase_scope_ids:
             raise UserError(_("已有正式采购范围的材料结算不能删除，请先保留或解除审计关系。"))
         return super().unlink()
@@ -2965,6 +2969,29 @@ class ScMaterialSettlement(models.Model):
                     sc_skip_material_purchase_authority=True
                 ).write(updates)
 
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "validated":
+                continue
+            before = record._sc_material_audit_payload()
+            record._write_cost_source_state({"state": "approved", "reject_reason": False})
+            record._sc_audit_material_transition("material_settlement_approved", before, record._sc_material_audit_payload(), action_name="action_on_tier_approved")
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "rejected":
+                continue
+            before = record._sc_material_audit_payload()
+            record.with_context(skip_validation_check=True)._write_cost_source_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+            record._sc_audit_material_transition("material_settlement_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
+
     def init(self):
         self.env.cr.execute(
             """
@@ -2980,16 +3007,19 @@ class ScMaterialSettlement(models.Model):
     def action_submit(self):
         self._sc_require_material_user(_("提交材料结算"))
         for record in self:
-            record._sc_require_state({"draft"}, _("提交材料结算"))
+            record._sc_require_state({"draft", "submitted"}, _("提交材料结算"))
             if not record.line_ids:
                 raise ValidationError(_("提交结算前必须维护结算明细。"))
             record.line_ids._check_values()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料结算"))
-        self._write_cost_source_state({"state": "submitted"})
+        self.with_context(skip_validation_check=True)._write_cost_source_state({"state": "submitted"})
         for record in self:
+            required = self.env["sc.approval.policy"]._start_submission_review(record)
+            if not required:
+                record._write_cost_source_state({"state": "approved", "reject_reason": False})
             record._sc_audit_material_transition(
-                "material_settlement_submitted",
+                "material_settlement_submitted" if required else "material_settlement_approved",
                 snapshots[record.id],
                 record._sc_material_audit_payload(),
                 action_name="action_submit",
@@ -2999,7 +3029,8 @@ class ScMaterialSettlement(models.Model):
     def action_confirm(self):
         self._sc_require_material_manager(_("确认材料结算"))
         for record in self:
-            record._sc_require_state({"submitted"}, _("确认材料结算"))
+            record._sc_require_state({"approved"}, _("确认材料结算"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record.line_ids._check_values()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("确认材料结算"))
@@ -3101,6 +3132,7 @@ class ScMaterialSettlement(models.Model):
         self.ensure_one()
         self._sc_require_material_manager(_("生成剩余付款申请"))
         self._sc_require_state({"confirmed"}, _("生成剩余付款申请"))
+        self.env["sc.approval.policy"]._assert_submission_approved(self, ("confirmed",))
         draft_request = self.payment_request_ids.filtered(lambda req: req.state == "draft")[:1]
         if draft_request:
             self.payment_request_id = draft_request.id
@@ -3163,7 +3195,7 @@ class ScMaterialSettlement(models.Model):
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消材料结算"))
-        self._sc_require_state({"draft", "submitted"}, _("取消材料结算"))
+        self._sc_require_state({"draft", "submitted", "approved"}, _("取消材料结算"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._write_cost_source_state({"state": "cancel"})
         for record in self:
@@ -3230,9 +3262,9 @@ class ScMaterialSettlementLine(models.Model):
             if vals.get("settlement_id")
         }
         if self.env["sc.material.settlement"].browse(settlement_ids).filtered(
-            lambda settlement: settlement.state in ("submitted", "confirmed")
+            lambda settlement: settlement.state in ("submitted", "approved", "confirmed")
         ):
-            raise UserError(_("已提交或已确认的材料结算不能新增明细。"))
+            raise UserError(_("已提交、已审批或已确认的材料结算不能新增明细。"))
         for vals in vals_list:
             self._sc_apply_line_defaults(vals, require_unit_price=True)
         return super().create(vals_list)
@@ -3240,14 +3272,14 @@ class ScMaterialSettlementLine(models.Model):
     def write(self, vals):
         if self._FACT_IMMUTABLE_FIELDS & set(vals):
             if self.filtered(
-                lambda line: line.settlement_id.state in ("submitted", "confirmed")
+                lambda line: line.settlement_id.state in ("submitted", "approved", "confirmed")
             ):
-                raise UserError(_("已提交或已确认的材料结算明细不可修改。"))
+                raise UserError(_("已提交、已审批或已确认的材料结算明细不可修改。"))
         return super().write(vals)
 
     def unlink(self):
-        if self.filtered(lambda line: line.settlement_id.state in ("submitted", "confirmed")):
-            raise UserError(_("已提交或已确认的材料结算明细不可删除。"))
+        if self.filtered(lambda line: line.settlement_id.state in ("submitted", "approved", "confirmed")):
+            raise UserError(_("已提交、已审批或已确认的材料结算明细不可删除。"))
         if self.purchase_scope_ids:
             raise UserError(_("已有正式采购范围的材料结算明细不能删除，请保留审计关系。"))
         return super().unlink()

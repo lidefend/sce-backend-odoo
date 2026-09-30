@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.76 RFQ runtime8 rollback and create15 PASS backenda3379822c/frontend7915f3bb9; PM existing query empty, do not repeat unchanged. Continue material settlement remaining direct confirmation producer in material_acceptance.py: preserve immutable cost facts/downstream cost ledger/payment behavior, separate shared approval from execution based on actual methods. Reuse current profile/ledger, no broad inventory or prior ORM reruns. Overall goal active.",
+  "next_exact_step": "53.77 material-settlement source76/native51/semantics15 PASS. Extend existing rollback scope material-settlement, verify actual policy/tier approval does not post cost/payment, explicit confirmation preserves existing category-controlled ledger/payment behavior, immutable approved head/lines, monetary rule, rejection/resubmit. Managed module upgrade/reload needed then scope-only runtime; no frontend rebuild or old ORM reruns. Overall role/UI and all-document coverage incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1156,6 +1156,14 @@
       "create_report": "artifacts/frontend-web-fix-20260928/tpl07-1790780849651/report.json",
       "record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790780863288/report.json",
       "record_status": "authorized query empty"
+    },
+    "segment_53_77": {
+      "status": "source_verified_runtime_pending",
+      "scope": "P1 material settlement shared approval separate from cost/payment confirmation",
+      "approval_tests": 76,
+      "native_tests": 51,
+      "semantics_tests": 15,
+      "runtime": "not_run; managed module upgrade required"
     }
   }
 }

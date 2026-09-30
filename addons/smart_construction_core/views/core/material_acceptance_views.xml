@@ -854,12 +854,17 @@
         <field name="arch" type="xml">
             <form string="材料结算">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
                     <button name="action_create_remaining_payment_request" string="生成剩余付款申请" type="object" class="btn-secondary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'confirmed'"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state in ('confirmed', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -873,7 +878,7 @@
                     </div>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="business_category_id" readonly="1"/>
                             <field name="supplier_id" readonly="state != 'draft'"/>

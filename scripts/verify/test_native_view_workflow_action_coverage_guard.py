@@ -66,6 +66,16 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         approved = self._general_contract_actions('approved', model=model)
         self.assertEqual({row['method'] for row in approved}, {'action_select', 'action_cancel'})
 
+    def test_material_settlement_confirmation_is_separate_from_approval(self):
+        model = 'sc.material.settlement'
+        for method in ('action_confirm', 'action_cancel', 'action_reset_draft'):
+            self._assert_material_state_projection('ScMaterialSettlement', model, method)
+        rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})
+        self.assertEqual({row['method'] for row in rows}, {'validate_tier', 'reject_tier', 'action_cancel'})
+        approved = self._general_contract_actions('approved', model=model)
+        confirm = next(row for row in approved if row['method'] == 'action_confirm')
+        self.assertEqual(confirm['action_semantics']['purpose'], 'complete')
+
     def test_material_inbound_reset_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_reset_draft")
 
