@@ -594,7 +594,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -608,6 +608,7 @@ try {
       { role: 'fixture_role_pm', model: 'sc.labor.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.request', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.rental.plan', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.material.rental.order', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.attendance.checkin', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.usage', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.labor.settlement', domain: [] },
@@ -627,7 +628,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -649,6 +650,12 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.material.rental.order') {
+          check('rental order: generated number absent on create', await session.page.getByText('租赁单号', { exact: true }).count() === 0);
+          for (const name of ['确认租赁', '确认退还', '完成结算']) {
+            check(`rental order: unsaved cannot ${name}`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
+          }
+        }
         if (executionLabels) {
           check(`${spec.model}: generated number absent on create`, await session.page.getByText(executionLabels[0], { exact: true }).count() === 0);
           check(`${spec.model}: unsaved cannot confirm`, await session.page.getByRole('button', { name: executionLabels[1], exact: true }).count() === 0);
@@ -744,6 +751,15 @@ try {
           check(`${spec.model}: ${method} declares its responsibility`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
         }
         check(`${spec.model}: legacy direct approval retired`, !rules.some((rule) => rule.button?.name === 'action_approve'));
+      }
+      if (spec.model === 'sc.material.rental.order') {
+        const rules = authority.actions?.actionRuleList || [];
+        for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject'], ['action_activate', 'start_execution'], ['action_return', 'complete'], ['action_settle', 'complete']]) {
+          check(`rental order: ${method} responsibility`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        }
+        for (const [state, name] of [['approved', '确认租赁'], ['active', '确认退还'], ['returned', '完成结算']]) {
+          if (record.state !== state) check(`rental order: ${name} respects state`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
+        }
       }
       if (executionLabels) {
         const rules = authority.actions?.actionRuleList || [];

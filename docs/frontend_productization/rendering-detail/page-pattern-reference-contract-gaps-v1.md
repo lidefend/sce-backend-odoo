@@ -358,3 +358,8 @@ Backendf9b24b174 passes10 real rental-plan approval checks with rollback verifie
 Rental order now has shared submitted/approved stages before explicit activation. Native tier actions and workflow declarations distinguish review, activation, return and settlement; returned cancellation is removed to match the backend.83 approval/56 native/15 semantics tests pass; runtime loading and browser handling are pending.
 
 Rental settlement action_paid currently only changes state after association checks; there is no authoritative payment-fact verification. Record this as a P1 product gap, not a completed payment workflow. Subsequent settlement approval work must keep payment execution/facts distinct from approval and cannot close all-document coverage using a paid flag alone.
+
+
+### Segment53.95 — Rental order runtime passes; create input gap remains
+
+Backend1f5c6bca3 passes13 scoped actual-review/execution checks with rollback verified. Official create report tpl07-1790784586492 passes16 narrow composition/action assertions, but screenshot shows missing project/supplier inputs and readonly rental date. Do not count creation as usable; inspect effective field policy against existing native form and strengthen input checks. PM existing record report tpl07-1790784596167 is empty. Preserve role-handling and rental-settlement payment-fact gaps.

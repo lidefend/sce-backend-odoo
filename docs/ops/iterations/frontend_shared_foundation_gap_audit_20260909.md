@@ -8280,3 +8280,8 @@ L1 rental-order-iteration.log PASS；首次unit新增测试括号错误，修正
 P4既有rollback工具扩展rental-order13项：外部状态/提前启用拒绝、无配置只审批、金额权威/未匹配拒绝/空明细、pending配置变更保护、实际review、显式启用→退还→结算及重复/returned取消拒绝、approved显式取消、驳回重提，来源计划未审批拒绝/已审批可用/跨项目拒绝。复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter和固定卷，既有fixture reviewer、事务sudo建单，恢复校验保持；不代表完整角色旅程。
 
 L1 rental-order-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用83/56/15；下一步一次受管模块升级/reload只本scope，前端未改不构建，无新环境/持久fixture/L5。
+
+
+53.95结果：一次受管升级/reload1f5c6bca3成功，rental-order-runtime.log13/13 PASS、ROLLBACK VERIFIED，真实review后显式activate/return/settle、来源未审批/跨项目拒绝及已审批接受均通过，原配置/临时记录恢复。建单sudo，非完整角色旅程。
+
+P4 browser新增order明确提交/审批/启用/退还/结算职责检查，rental-order-page-iteration.log/node PASS。创建tpl07-1790784586492 16项明确断言PASS（官方组合/有效契约/编号隐藏/未保存无执行/双视口），但390截图发现项目/供应商输入未显示、日期为只读文本，因此不能认定可建单。既有P1 sc_material_rental_order_p1_form_business_facts_v1为直接待核对策略源，下一步复用响应定位并修复字段权威，补强输入断言，不能以16项关闭缺口。已有记录tpl07-1790784596167 PM ok=true records=[]，角色办理前置不足，不重试/造fixture。前端7915f3bb9未重建。租赁结算支付事实缺口继续开放。

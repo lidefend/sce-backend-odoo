@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.94 rental order P1 source shared approval before explicit activation/return/settle.83/56/15 pure tests PASS; runtime pending. Extend existing rollback rental-order scope, verify actual configured/no-config review then separate execution, source-plan constraints, direct state protection/rejection/resubmission and cleanup; one governed module upgrade/reload then official page. Do not rerun rental-plan10. Rental settlement action_paid only changes paid flag without payment-fact authority is explicit P1 gap for next settlement batch. No newfixture/unrelatedORM/frontendbuild/push/merge/deploy; overall67 open.",
+  "next_exact_step": "53.95 rental-order runtime13 PASS rollback verified backend1f5c6bca3. Create report1790784586492 16 narrow checks PASS but screenshot missing project/supplier inputs and readonly rental date: fix effective P1 field policy (sc_material_rental_order_p1_form_business_facts_v1 in p1_daily_business_form_orchestration_contract_data.xml) after reading saved authority; strengthen input tests. Do not repeat runtime13. Existing PM record1790784596167 empty, no retry/newfixtures. Frontend7915f3bb9 unchanged. Rental settlement action_paid missing payment-fact authority and all67 rolejourneys remain open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
