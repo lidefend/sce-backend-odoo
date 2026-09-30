@@ -1039,8 +1039,10 @@ class ScWorkflowContractService(models.AbstractModel):
         "tender.doc.purchase": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "rejected": "rejected"},
-            "state_actions": {"draft": ["submit", "approve"], "submitted": ["approve", "reject", "reopen"], "rejected": ["reopen"]},
-            "method_by_action": {"submit": "action_submit", "approve": "action_approve", "reject": "action_reject", "reopen": "action_reset_draft"},
+            "state_actions": {"draft": ["submit"], "submitted": ["submit"], "rejected": ["submit", "reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "reopen": "action_reset_draft"},
         },
         "tender.guarantee": {
             "state_field": "state",

@@ -4,6 +4,7 @@ import json
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+_TENDER_PURCHASE_APPROVAL_TOKEN = object()
 _TENDER_GUARANTEE_AUTHORITY_TOKEN = object()
 _TENDER_AWARD_AUTHORITY_TOKEN = object()
 
@@ -556,7 +557,12 @@ class TenderBidLine(models.Model):
 class TenderDocPurchase(models.Model):
     _name = "tender.doc.purchase"
     _description = "投标文件购买申请"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["approved"]
+
+    company_id = fields.Many2one(related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text("驳回原因", readonly=True, copy=False)
 
     bid_id = fields.Many2one("tender.bid", string="投标", required=True, ondelete="cascade", tracking=True)
     project_id = fields.Many2one(related="bid_id.project_id", store=True, readonly=True)
@@ -671,6 +677,8 @@ class TenderDocPurchase(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(vals.get("state", self.env.context.get("default_state", "draft")) != "draft" for vals in vals_list):
+            raise UserError("状态必须通过提交和审批动作产生。")
         for vals in vals_list:
             partner_id = vals.get("receipt_partner_id")
             if partner_id:
@@ -682,6 +690,10 @@ class TenderDocPurchase(models.Model):
 
     def write(self, vals):
         vals = dict(vals or {})
+        if "state" in vals and self.env.context.get("sc_tender_purchase_approval_token") is not _TENDER_PURCHASE_APPROVAL_TOKEN:
+            raise UserError("状态必须通过提交和审批动作产生。")
+        if {"bid_id", "amount"}.intersection(vals) and any(record.state not in ("draft", "rejected") for record in self):
+            raise UserError("在审或已通过的申请不能修改投标来源或审批金额。")
         if "receipt_partner_id" in vals and vals.get("receipt_partner_id"):
             partner = self.env["res.partner"].browse(vals["receipt_partner_id"]).exists()
             for key, value in self._receipt_partner_snapshot_values(partner).items():
@@ -689,23 +701,43 @@ class TenderDocPurchase(models.Model):
                     vals[key] = value
         return super().write(vals)
 
+    def _write_approval_state(self, values):
+        return self.with_context(sc_tender_purchase_approval_token=_TENDER_PURCHASE_APPROVAL_TOKEN).write(values)
+
     def action_submit(self):
         for record in self:
-            if record.state != "draft":
-                raise UserError("只有草稿状态的投标报名费申请可以提交。")
-        self.write({"state": "submitted"})
+            if record.state not in ("draft", "submitted", "rejected"):
+                raise UserError("只有草稿、驳回或待重新提交的申请可以提交。")
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return self._processing_notification("已提交，建议继续完善资料")
 
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                reviews = record.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else "统一审批驳回（未填写原因）"
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "rejected", "reject_reason": reason})
+
     def action_approve(self):
-        self.write({"state": "approved"})
-        return True
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
 
     def action_reject(self):
-        self.write({"state": "rejected"})
-        return True
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._reject_submission_review(self)
 
     def action_reset_draft(self):
-        self.write({"state": "draft"})
+        if any(record.state != "rejected" for record in self):
+            raise UserError("只有已驳回申请可以重置草稿。")
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "draft"})
         return True
 
 

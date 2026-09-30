@@ -426,6 +426,49 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(project.lifecycle_state, 'in_progress')
             with self.assertRaises(ValueError): project.action_sc_submit()
 
+    def test_tender_purchase_submission_uses_shared_approval(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderDocPurchase')
+        names = {'action_submit', 'action_approve', 'action_on_tier_approved', 'action_reset_draft'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for configured in (False, True):
+            rec = self.record(required=configured, state='draft')
+            rec._name = 'tender.doc.purchase'
+            class Env(dict):
+                context = {}
+            rec.env = Env({'sc.approval.policy': rec.policy})
+            rec.env.company = rec.company_id
+            rec._write_approval_state = lambda vals: rec.data.update(vals)
+            rec._processing_notification = lambda title: True
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if configured else 'approved')
+            if configured:
+                rec.policy.is_approval_required = lambda *args: self.fail('approval must use existing review')
+                ns['action_approve'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+            with self.assertRaises(ValueError): ns['action_submit'](rec)
+            with self.assertRaises(ValueError): ns['action_reset_draft'](rec)
+
+    def test_tender_purchase_external_state_and_approved_amount_are_protected(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderDocPurchase')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+        for method in methods: method.decorator_list = []
+        ns = {'UserError': ValueError, '_TENDER_PURCHASE_APPROVAL_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rec = Rows([types.SimpleNamespace(state='approved')])
+        rec.env = types.SimpleNamespace(context={})
+        with self.assertRaises(ValueError): ns['write'](rec, {'state': 'draft'})
+        with self.assertRaises(ValueError): ns['write'](rec, {'amount': 1000})
+        with self.assertRaises(ValueError): ns['write'](rec, {'bid_id': 7})
+        with self.assertRaises(ValueError): ns['create'](rec, [{'state': 'approved'}])
+        rec.env.context = {'default_state': 'approved'}
+        with self.assertRaises(ValueError): ns['create'](rec, [{}])
+
     def test_project_approval_state_cannot_be_written_with_boolean_context(self):
         path = MODEL.parent / 'project_initiation_approval.py'
         methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in ('write', 'create')]

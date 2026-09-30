@@ -398,11 +398,13 @@
         <field name="arch" type="xml">
             <form string="投标报名费申请">
                 <header>
-                    <button name="action_submit" type="object" string="提交" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" type="object" string="通过" class="btn-primary" invisible="state not in ['draft', 'submitted']"/>
-                    <button name="action_reject" type="object" string="驳回" invisible="state in ['approved', 'rejected']"/>
-                    <button name="action_reset_draft" type="object" string="重置草稿" invisible="state == 'draft'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,rejected"/>
+                    <button name="action_submit" type="object" string="提交" class="btn-primary" invisible="state not in ['draft', 'submitted', 'rejected'] or validation_status in ['waiting', 'pending', 'validated']"/>
+                    <button name="validate_tier" type="object" string="通过" class="btn-primary" invisible="state != 'submitted' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                    <button name="reject_tier" type="object" string="驳回" invisible="state != 'submitted' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                    <button name="action_reset_draft" type="object" string="重置草稿" invisible="state != 'rejected'"/>
+                    <field name="state" readonly="1" widget="statusbar" statusbar_visible="draft,submitted,approved,rejected"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
                 </header>
                 <sheet>
                     <group>
