@@ -602,7 +602,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.expense.claim', 'sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -612,6 +612,7 @@ try {
       { role: 'fixture_role_pm', model: 'tender.doc.purchase', domain: [] },
       { role: 'fixture_role_pm', model: 'tender.guarantee', domain: [] },
       { role: 'fixture_role_project_a_member', model: 'sc.settlement.adjustment', domain: [] },
+      { role: 'fixture_role_finance', model: 'sc.expense.claim', domain: [['source_origin', '!=', 'legacy']] },
       { role: 'fixture_role_finance', model: 'sc.receipt.income', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.financing.loan', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.self.funding.registration', domain: [] },
@@ -1049,6 +1050,13 @@ try {
         .findLast((row) => row?.model === spec.model && Number(row.mainData?.id) === Number(record.id));
       check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.[spec.stateField || 'state'] === record[spec.stateField || 'state']);
       report.approvalPages.at(-1).authority = authority;
+      if (spec.model === 'sc.expense.claim') {
+        const rules = authority.actions?.actionRuleList || [];
+        for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject'], ['action_done', 'complete']]) {
+          check(`expense: ${method} declares its responsibility`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        }
+        if (record.state !== 'approved') check('expense: completion absent before approval or after execution', await session.page.getByRole('button', { name: '完成', exact: true }).count() === 0);
+      }
       if (['sc.plan', 'sc.construction.diary'].includes(spec.model)) {
         const rules = authority.actions?.actionRuleList || [];
         check(`${spec.model}: native approval methods declared`, ['validate_tier', 'reject_tier'].every((method) => rules.some((rule) => rule.button?.name === method)));
