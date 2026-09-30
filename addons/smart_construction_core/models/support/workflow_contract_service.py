@@ -1343,6 +1343,10 @@ class ScWorkflowContractService(models.AbstractModel):
             return self._payment_execution_evidence_gate(record)
         if record._name == "sc.receipt.income":
             return self._receipt_income_evidence_gate(record)
+        if record._name == "sc.workflow.instance":
+            if not record._legacy_runtime_enabled():
+                return [self._gate("LEGACY_WORKFLOW_RUNTIME_DISABLED", "历史流程运行已关闭；业务审批使用统一审批机制。", action_keys=["submit", "approve", "reject"])]
+            return []
         if record._name == "sc.output.invoice.adjustment":
             gates = []
             blocker = record._original_invoice_eligibility_blocker()

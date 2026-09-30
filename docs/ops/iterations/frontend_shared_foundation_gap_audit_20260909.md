@@ -8662,3 +8662,9 @@ L1 red-role-tool-iteration.log/py_compile/bash-n/diff PASS；red-role-runtime.lo
 为现存详情做一次定向只读browser：tpl07-1790794142106/report.json在existing authorized record断言失败；finance对sc.output.invoice.adjustment list返回ok=true、records=[]、count=0，errors/forbiddenWrites为空。属于当前角色可用数据前提，不证明其他角色/全库无记录；无已批准详情可验证，不重复查询、不为截图造fixture。模型办理16不能升级为浏览器完整保存审核出票旅程。
 
 仅沿已有workflow剩余项阅读sc_workflow.py：sc.workflow.instance/def明确为历史实例/定义，正常审批权威已有base_tier_validation；create_instance/publish受legacy runtime开关约束，但action_submit/approve/reject没有相同开关检查，workflow profile仍发布普通动作。下一步核对并收口历史恢复例外的动作契约和执行边界，不把该技术实例当新业务审批实现，更不引入第二框架。保留原67/detail.action-state及分类/项目金额/税率等既有缺口，无推送合并目标部署。
+
+### 53.126 历史流程运行关闭边界（进行中）
+
+481182127 clean续跑。P1 sc_workflow是明确标记的历史兼容运行实例，正常业务审批仍base_tier_validation。本批补submit/approve/reject统一_require_legacy_runtime_enabled检查，默认关闭时不得继续历史流转。Definition/Instance上下文开关仅env.su内部恢复可用，普通调用者不能凭allow_legacy_workflow_runtime=True开启；显式受管参数仍保留。取消旧实例是管理员清理动作，保留原权限与执行，不将其当新业务审批。workflow evidenceGate给submit/approve/reject明确关闭原因，无前端专用规则、不修改旧数据。
+
+L1 legacy-runtime-iteration.log PASS；unit.log140 PASS、native.log8+54=62 PASS。生产方法纯回归证明上下文信任边界、配置权威及关闭时在任何流转前拒绝。P4沿已有受管事务工具新增legacy-workflow5组，不创建业务项目/实例，只在事务内切换指定参数，finally回读原参数key/value记录一致；wrapper白名单同步。tool-iteration/py_compile/bash-n/diff通过。需Python reload无需模块升级/前端构建，runtime尚未运行。历史恢复启用后完整节点办理不作为新业务标准；管理员/节点组既有权限保留，取消为明确兼容例外。整体不升行，无新环境/fixture/推送合并目标部署。

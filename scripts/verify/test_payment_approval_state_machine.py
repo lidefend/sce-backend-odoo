@@ -555,6 +555,36 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         ledger.exists = lambda: False
         self.assertEqual(ns['_original_invoice_eligibility_blocker'](record)['reason_code'], 'RED_FLUSH_SOURCE_UNAVAILABLE')
 
+    def test_legacy_workflow_context_requires_internal_authority(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/sc_workflow.py'
+        tree = ast.parse(path.read_text())
+        for class_name in ('ScWorkflowDef', 'ScWorkflowInstance'):
+            cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == class_name)
+            method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '_legacy_runtime_enabled')
+            ns = {'LEGACY_WORKFLOW_RUNTIME_CONTEXT': 'allow_legacy_workflow_runtime', 'LEGACY_WORKFLOW_RUNTIME_PARAM': 'sc.workflow.legacy_runtime_enabled'}
+            exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+            class Params:
+                def sudo(self): return self
+                def get_param(self, *args): return self.value
+            params = Params()
+            class Env(dict): pass
+            env = Env({'ir.config_parameter': params})
+            env.context = {'allow_legacy_workflow_runtime': True}
+            for internal, configured in ((False, '0'), (True, '0'), (False, '1')):
+                env.su, params.value = internal, configured
+                self.assertEqual(ns['_legacy_runtime_enabled'](types.SimpleNamespace(env=env)), internal or configured == '1')
+
+    def test_legacy_workflow_transitions_stop_before_mutation_when_disabled(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/sc_workflow.py'
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScWorkflowInstance')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'action_submit', 'action_approve', 'action_reject'}]
+        ns = {}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        def disabled(): raise ValueError('historical runtime disabled')
+        record = types.SimpleNamespace(_require_legacy_runtime_enabled=disabled)
+        for method in ('action_submit', 'action_approve', 'action_reject'):
+            with self.assertRaisesRegex(ValueError, 'historical runtime disabled'): ns[method](record)
+
     def test_red_flush_approval_is_separate_from_generating_invoice(self):
         path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
         names = {'action_submit', 'action_on_tier_approved', 'action_confirm', 'action_cancel'}
