@@ -594,3 +594,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.167：多附件部分失败为P0共享执行恢复缺陷，并非动作声明缺少契约。useNativeAttachmentRuntime逐项确认后移除待上传项，定向66及strict通过（attachment-partial-*）；同一队列恢复不重复已确认上传。真实两附件浏览器与候选加载待续，不能以纯测关闭运行验收；53.159单附件证据保留、不外推网络响应丢失去重。
+
+
+53.168：53.167共享队列修复已加载e31e51c59/index-7JTLfH1Y.js；受管双附件第二份503恢复59 PASS（tpl07-1790806247599），同单据171补传第二份，最终两附件1295/1296并自动批准，全部临时对象清理、源1815保持。工具36项与清理checksum/数量边界通过。明确失败恢复代表缺口关闭，响应丢失去重未验证；其余业务处理责任仍开放，不将“未验证”笼统改称“无契约”。

@@ -9148,3 +9148,16 @@ L1 make ci.local.iteration已通过，复用attachment-partial-iteration.log，�
 本次是共享消费/执行恢复缺陷，不是动作契约缺失。动作声明、有效执行契约和真实处理验收须分别判断；detail.action-state中的未验证责任不得全部改称无契约。现有业务状态机/配置证据输入未改，复用53.161/163/165/166。L3后端/ORM/模块升级不适用；L4真实多附件部分失败与恢复尚未运行，5180仍ba1d18e59/index-DsM2C-7X.js，不宣称修复已加载；L5非本次集成阶段不运行Quick/发布。
 
 下一步仅扩展现有受管expense探针及精确清理的两附件范围，在第二份上传注入明确失败，验证首份保留、恢复同一单据且不重复创建，再构建一次并检查实际浏览器。测试工具必须绑定两个准确文件名、内容及创建身份，不能泛化附件清理。当前纯测不证明网络响应丢失后的服务端去重，也不证明整页跳转保留File对象；已有恢复导航要求重新选择失败文件。总体67/detail.action-state继续开放，无推送、合并、目标部署。
+
+
+### 53.168 双附件部分失败真实恢复与精确清理
+
+P4 e31e51c59在现有expense-success探针增加显式TPL07_EXPENSE_PARTIAL_UPLOAD=1，只允许success/save-probe/upload失败组合。按uploadIndex依次放行两份精确name/data/record请求，第二份注入503；首份成功后禁止重传，最终只能create/upload/upload/submit。清理保持原单据创建人、公司、源申请、账户、时间及无资金事实边界，并核对附件创建人、准确文件名、内容checksum、数量及无重复名；原单附件范围仍支持。L1 PASS、工具36 PASS（13 Node+23 Python），standard_preview_tool begin/record完成，日志attachment-partial-tool-*。没有创建新环境或fixture。
+
+受管frontend.standard.preview.build/up一次：e31e51c59b3194537760df6f25000a701f7d17ae，entry/assets/index-7JTLfH1Y.js，entry_sha256=873521e97165f0d28c507d85d5f51e069b3c6c18d697293eea17c7191e50c0bb；5180加载，后端ba1d18e59保持。生产仅53.167通用hook改动，66定向与strict复用，P4测试变化不影响其输入；后端/ORM/升级不适用。日志attachment-partial-build/preview/browser。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.expense.claim TPL07_APPROVAL_VIEW=create TPL07_EXPENSE_SAVE_PROBE=1 TPL07_EXPENSE_SAVE_SUCCESS=1 TPL07_EXPENSE_FAILURE_STAGE=upload TPL07_EXPENSE_PARTIAL_UPLOAD=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local：tpl07-1790806247599/report.json passed，59断言，errors/forbiddenWrites为空。普通finance创建171，第一份tpl53-submission-requirement.txt→1295成功、第二份明确503；恢复到同一171，第一份可见，仅重新选择tpl53-partial-second.txt→1296，随后submit成功。权威回读approved/附件1295+1296/源1815/金额999。成功请求恰好create/upload/upload/submit，无重复create。1440/390只读官方详情截图人工核对，批准状态与禁止删除提示一致。
+
+finally精确删除171/1295/1296，cleanup-final权威回读restored，源1815原字段不变、无资金执行。正常审计/序列不回退，不声称整库回滚。同队列已确认项不重传由53.167真实hook纯测证明；浏览器跨页后重新选择失败文件，两类证据不能混写为File对象跨导航保留。明确失败恢复代表链闭合，不证明服务端已保存但响应丢失的去重；不因该未验证场景重开已闭合单附件/异步身份边界。
+
+总体67/detail.action-state仍开放。下一步回到原已登记任务/事件/计划/日志处理责任，读取对应既有记录与动作契约，准确区分缺少契约、消费缺陷、仅缺真实处理证据后选择下一项，不重跑配置/付款或全仓盘点。无推送、合并、目标部署。
