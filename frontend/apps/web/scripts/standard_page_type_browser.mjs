@@ -74,6 +74,10 @@ async function login(role) {
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
+        if (contract.meta?.projection_cache) {
+          report.projectionCaches ??= [];
+          report.projectionCaches.push(contract.meta.projection_cache);
+        }
         const savedSearch = findSavedSearchAuthority(contract);
         if (savedSearch) report.savedSearchAuthority = savedSearch;
         const found = findIntroduceConfig(contract);
@@ -362,6 +366,11 @@ try {
     check('recovery: probe records are absent', report.recovery.body.data.records.length === 0);
     await finance.page.getByRole('button', { name: '展开搜索菜单', exact: true }).click();
     check('recovery: menu reflects removal', await finance.page.getByText('仅检查表单，不保存', { exact: true }).count() === 0);
+    await finance.page.reload();
+    await finance.page.locator('[data-list-card-container="official"]').waitFor();
+    await finance.page.getByRole('button', { name: '展开搜索菜单', exact: true }).click();
+    check('recovery: warm contract menu remains restored', await finance.page.getByText('仅检查表单，不保存', { exact: true }).count() === 0);
+    check('recovery: cache-hit delivery exercised', report.projectionCaches?.some((entry) => ['hot', 'persisted'].includes(entry.status)));
     await finance.ctx.close();
   } else if (['favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
     await favoritesScope();

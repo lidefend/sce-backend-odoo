@@ -173,10 +173,8 @@
       ]
     }
   },
-  "blockers": [
-    "Saved-search HTTP records now empty but cached menu still displays deleted probe. P0 runtime projection fix implemented/tested; governed reload and browser verification pending."
-  ],
-  "next_exact_step": "Validate P0 saved-search runtime overlay after structural/assembled cache lookup. Tests 13 scoped cases then governed backend reload and targeted HTTP/menu restoration; frontend build unchanged. Earlier stale api.data diagnosis corrected: id7 was removed, id8 was a new probe artifact; id8 now removed and HTTP empty, only menu projection remained stale.",
+  "blockers": [],
+  "next_exact_step": "Segment53.4 saved-search runtime facts now reproject after cache lookup; exact recovery verified empty HTTP and hot/persisted cache menu (9 browser checks), 13 scoped producer tests and lifecycle 8/8. Continue deliberate saved-search success/refresh loop with restoration, then detail.action-state. Official detail/base and advanced are standalone Card+Descriptions; distinguish obsolete daily-snapshot drawer obligations from required business responsibilities. No repeated inventory or unchanged tests.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -252,9 +250,19 @@
       "recovery_remaining": {
         "orm": 0,
         "http": 0,
-        "menu": "stale before runtime fix"
+        "menu": 0
       },
-      "pending": "runtime projection fix needs governed reload and browser verification; full successful saved-search write/refresh loop"
+      "pending": "planned successful saved-search write/refresh business loop; probe restoration and cache projection fixed in53.4"
+    },
+    "favorites_segment_53_4": {
+      "status": "passed",
+      "scope": "runtime saved-search cache refresh and exact probe restoration",
+      "backend_head": "8128f14b5",
+      "producer_cases": 13,
+      "lifecycle_dimensions": 8,
+      "browser_assertions": 9,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790767317777/report.json",
+      "remaining_probe_records": 0
     }
   }
 }
