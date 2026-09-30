@@ -7981,3 +7981,10 @@ P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback�
 入库前5项实际通过后，驳回重提触发OCA旧tier记录状态写锁；报告inbound-only-material-runtime.log，rollback verified。P1修复只在私有token保护的提交方法内skip_validation_check跨过旧锁，shared router随后重建review，外部状态写仍拒绝。新增重提纯回归，L1 inbound-resubmit-iteration.log PASS；67审批tests PASS及非零回执。仅Python改动，无第二次模块升级/前端构建，待后端重载后仅8项重验。
 
 实际结果：后端f5e771c03，inbound-only-runtime-fixed.log 8/8 PASS；ROLLBACK VERIFIED确认原配置/步骤恢复，临时入库/出库/项目/材料及product.template均不存在。此前inbound-approval-runtime.log中原有45项成功有效，后续修复只影响入库动作，P4只新增scope/临时材料协作者，按输入独立性复用45不重跑。新增8项全部真实Odoo执行；调拨仅关联生成与接收链，仍不等于完整出库角色旅程。未重建前端。入库有效页面与角色办理仍pending，材料验收等全单据范围继续开放。
+
+
+### 53.68 入库官方页面消费（进行中）
+
+P4仅扩展现有standard_page_type_browser审批范围支持sc.material.inbound。PM既有角色包含cap_material_manager，沿用公司/项目授权；先不保存创建表单，再查询已有记录做只读契约/状态观察，没有记录明确pending。沿用前端7915f3bb9、后端f5e771c03；无产品源改动，不重建/升级/重跑8项ORM。L1 iteration、node语法→本次受影响页面观察。
+
+结果：inbound-page-iteration.log L1 PASS；创建报告tpl07-1790779258521/report.json 13 PASS，官方表单、未保存无审批/确认入库、双视口、errors=[]、forbiddenWrites=[]。既有记录报告tpl07-1790779275827/report.json查询ok=true/records=[]，2项处停止；这是授权数据前置不足，不是记录页通过。不扩权、不新增fixture、不重试相同查询。实际记录UI审批/确认入库继续pending；后端8项及创建13项保持各自证据范围。

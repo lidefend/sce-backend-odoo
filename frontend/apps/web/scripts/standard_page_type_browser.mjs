@@ -594,8 +594,9 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
+      { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'project.project', stateField: 'lifecycle_state', fields: ['sc_approval_state'], domain: [] },
       { role: 'fixture_role_pm', model: 'project.task', stateField: 'sc_state', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
@@ -605,13 +606,13 @@ try {
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound'].includes(spec.model));
         report.recordAuthority = null;
         await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
         const authority = report.recordAuthority;
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
-        for (const name of ['审批通过', '审批驳回', '完成']) {
+        for (const name of ['审批通过', '审批驳回', '完成', ...(spec.model === 'sc.material.inbound' ? ['确认入库'] : [])]) {
           check(`${spec.model}: unsaved form has no ${name} action`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
         }
         for (const width of [1440, 390]) {
@@ -665,6 +666,13 @@ try {
         if (spec.model === 'sc.plan' && record.state !== 'cancel') {
           check('plan: reset absent outside cancelled state', await session.page.getByRole('button', { name: '重置草稿', exact: true }).count() === 0);
         }
+      }
+      if (spec.model === 'sc.material.inbound') {
+        const rules = authority.actions?.actionRuleList || [];
+        for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject'], ['action_receive', 'complete']]) {
+          check(`inbound: ${method} declares its business meaning`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        }
+        if (record.state !== 'approved') check('inbound: no receiving before approval or after receipt', await session.page.getByRole('button', { name: '确认入库', exact: true }).count() === 0);
       }
       if (spec.model === 'project.project') {
         const rules = authority.actions?.actionRuleList || [];
