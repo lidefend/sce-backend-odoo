@@ -591,6 +591,36 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 namespace['action_issue'](rec)
                 self.assertEqual(executed, ['issue'])
 
+    def test_contract_execution_requires_established_approval(self):
+        path = MODEL.parents[1] / 'support/contract_center.py'
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef)
+                   and n.name in {'action_set_running', 'action_close'}]
+        namespace = {'UserError': ValueError}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for state, reviews, status, allowed in (
+            ('draft', [], 'no', False), ('draft', ['tier'], 'validated', False),
+            ('confirmed', [], 'no', True), ('confirmed', ['tier'], 'pending', False),
+            ('confirmed', ['tier'], 'validated', True),
+        ):
+            for required in (False, True):
+                rec = self.record(state=state, reviews=reviews, status=status, required=required)
+                rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+                rec._post_contract_state_message = lambda message: rec.messages.append(message)
+                if allowed:
+                    namespace['action_set_running'](rec)
+                    self.assertEqual(rec.state, 'running')
+                    rec.line_ids = []
+                    with self.assertRaises(ValueError):
+                        namespace['action_close'](rec)
+                    self.assertEqual(rec.state, 'running')
+                    rec.line_ids = [23]
+                    namespace['action_close'](rec)
+                    self.assertEqual(rec.state, 'closed')
+                else:
+                    with self.assertRaises(ValueError):
+                        namespace['action_set_running'](rec)
+                    self.assertEqual(rec.state, state)
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

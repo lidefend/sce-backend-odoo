@@ -7633,3 +7633,11 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（outbound-approval-iteration.log）；L2共享审批47、native32、semantics15通过（outbound-approval-tests.log，begin/record47），state_phase16通过（outbound-phase-tests.log，65模型状态覆盖）。新增执行四类出库真实提交/回调/出库入口，确认有/无配置均不会在审批阶段触发_complete_issue，未批准拒绝执行、批准后仅显式办理才调用。库存/台账协作者隔离，真实ORM业务验收仍待。
 - 新增selection值和XML必须受管模块升级；不自动将既有submitted数据认作approved。既有无审批实例submitted记录需要在验收/迁移时逐项处理，现有受控cancel→draft→重新提交可用，不偷偷批量改历史数据。已在审批中的真实validated回调可完成批准；已issued事实不改。未执行数据库写入或前端重建。
 - 配置选择17类/运行支持15类不等于全业务单据完成；后续继续既有职责范围内必要接入、合同执行边界、两项原生动作缺口与受管升级/真实验证。总体active，不推送/合并/目标部署。
+
+
+### 53.31 项目合同执行入口与既有批准契约对齐
+
+- 665245103 clean起步。P1 smart_construction_core项目合同生命周期及三张原生合同表单。workflow已仅confirmed声明activate，但action_set_running及原生按钮仍接受draft。本批执行入口改用共享_assert_submission_approved(confirmed)，关闭入口在原confirmed/running状态限制和明细检查外，同样要求既有实例通过。不读取当前配置推翻自动批准，不允许草稿直接执行。
+- 三张原生合同表单开始执行按钮改为confirmed条件，保留合同经理组。有效契约既有状态职责不变；原始models、收入合同、支出合同投影均验证只有confirmed提供action_set_running。保留原运行/关闭状态消息和无明细不能关闭的业务校验。
+- L1 ci.local.iteration PASS（contract-execution-iteration.log），L2共享审批48、native8+25=33通过（contract-execution-tests.log，begin/record48）。执行真实开始/关闭方法，覆盖草稿包括有validated实例也拒绝、自动批准后配置变化可执行、pending拒绝、完整review通过，以及关闭明细检查；解析实际XML核对三张表单与三类profile动作。
+- XML仍待统一受管升级，真实权限/运行尚未验证；无数据库写入、无前端重建。后续需要对既有审批支持清单之外的必要业务单据确认有效契约接入，处理两项原生动作产品缺口，并运行已积累改动的受管升级/定向ORM和真实业务闭环。总体目标继续active，不据这81项窄测试宣称全系统完成。

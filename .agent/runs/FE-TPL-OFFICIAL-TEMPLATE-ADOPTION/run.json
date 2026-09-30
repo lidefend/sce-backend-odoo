@@ -195,7 +195,8 @@
         "scripts/verify/test_workflow_contract_profile_loader.py",
         "make/ci.mk",
         "addons/smart_construction_core/views/core/expense_claim_views.xml",
-        "addons/smart_construction_core/views/core/settlement_views.xml"
+        "addons/smart_construction_core/views/core/settlement_views.xml",
+        "addons/smart_construction_core/views/core/contract_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -229,12 +230,13 @@
         "addons/smart_construction_core/models/core/purchase_extend.py",
         "addons/smart_construction_core/models/core/material_plan.py",
         "addons/smart_construction_core/models/core/material_acceptance.py",
-        "addons/smart_construction_core/views/core/material_acceptance_views.xml"
+        "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+        "addons/smart_construction_core/views/core/contract_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.30 outbound uses shared submit for all kinds, new approved state separates review from stock/cost execution; 47 approval+32 native+15 semantics+16 phase tests pass. Governed upgrade must load new selection/XML; old submitted records are not silently approved. Continue necessary business-document coverage beyond 15 tier-supported types, contract execution prerequisites and two native gaps; actual ORM/browser configuration and approval loops remain required.",
+  "next_exact_step": "53.31 contract execution/close use completed approval facts; three native forms now match confirmed-only activation (48 approval+33 coverage tests). Continue necessary document coverage beyond existing approval-supported list and two native product gaps; accumulated model/XML changes need governed upgrade and focused ORM/browser real workflows with configuration restoration. No new fixtures/environment or frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -588,6 +590,16 @@
       },
       "log": "artifacts/frontend-web-fix-20260928/tpl52/outbound-approval-tests.log",
       "runtime": "not_run; new approved selection and XML need governed upgrade; existing submitted records need explicit transition review"
+    },
+    "contract_execution_53_31": {
+      "status": "verification_pending",
+      "source_head": "665245103",
+      "tests": {
+        "approval": 48,
+        "native": 33
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-execution-tests.log",
+      "runtime": "not_run; XML upgrade pending"
     }
   }
 }

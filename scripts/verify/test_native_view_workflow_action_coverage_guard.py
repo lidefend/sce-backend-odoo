@@ -177,6 +177,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             for button in buttons:
                 self.assertEqual(button.get('invisible'), "state != 'confirmed'")
 
+    def test_contract_execution_native_and_projection_require_confirmation(self):
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/contract_views.xml')
+        buttons = tree.findall(".//button[@name='action_set_running']")
+        self.assertEqual(len(buttons), 3)
+        for button in buttons:
+            self.assertEqual(button.get('invisible'), "state != 'confirmed'")
+        for model in ('construction.contract', 'construction.contract.income', 'construction.contract.expense'):
+            for state in ('draft', 'confirmed', 'running', 'closed'):
+                actions = self._general_contract_actions(state, model=model)
+                self.assertEqual('action_set_running' in [action['method'] for action in actions], state == 'confirmed')
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

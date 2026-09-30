@@ -1213,8 +1213,7 @@ class ConstructionContract(models.Model):
     def action_set_running(self):
         for contract in self:
             old = contract.state
-            if contract.state not in ("draft", "confirmed"):
-                raise UserError("仅草稿/已生效的合同可置为执行中。")
+            self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed",))
             contract.state = "running"
             if old != contract.state:
                 contract._post_contract_state_message("合同状态：%s → 执行中" % ("已生效" if old == "confirmed" else "草稿"))
@@ -1224,6 +1223,7 @@ class ConstructionContract(models.Model):
             old = contract.state
             if contract.state not in ("confirmed", "running"):
                 raise UserError("仅已生效/执行中的合同可关闭。")
+            self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed", "running"))
             if not contract.line_ids:
                 raise UserError("无合同明细的合同不可关闭，请补充明细。")
             contract.state = "closed"
