@@ -8800,3 +8800,14 @@ aaac6ca27 clean起点。上一轮已启动的payment-state-cash-runtime.log已�
 L1 receipt-freeze-iteration.log PASS；L2 receipt-freeze-unit.log147 PASS，生产方法隔离执行验证拒绝伪造布尔token改写和正常允许路径。首次回执因begin早于编辑而拒收，未将拒收计成功；稳定输入重新begin、执行147并record成功，receipt-freeze-receipt.log。已有native62/前端201输入未变，按原证据复用；无构建、模块升级、fixture或目标部署。此处代码尚未加载运行态，不能宣称收款闭环通过。
 
 下一步先受管加载该P1修复，再用现有合法合同与已批准receive申请准备验证实际收款及契约readonly一致性；不得伪造税率或无来源收款。必要来源缺失保持产品/数据前提缺口。审批声明、有效动作契约、后端执行约束分别核对，detail.action-state及整体67条目标仍开放。无推送合并。
+
+
+### 53.139 收款真实审批/入账与官方创建页通过
+
+7ea346a4b clean起点，P4扩展既有business_config_approval_runtime_smoke及frontend_acceptance_runtime白名单receipt-income；业务权威仍为P1原状态机。复用实际fixture finance/company8能看到的已批准receive申请及合法合同，不新造合同、税率或fixture。旧income_contract_receipt_invoice_closure_audit有直接设置审核结果路径，未使用它冒充真实统一审批。受管backend.acceptance.up加载7ea346a4b，身份检查发现旧SC_SOURCE_REVISION后由原入口替换；local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，前端CrYkOCxc保持。
+
+L1 receipt-runtime-tool-iteration.log、Python编译、bash/node语法和diff通过；P1前轮147纯测输入未变复用。receipt-income-runtime.log6 PASS：普通非sudo finance创建/提交/执行，配置准备及附件工具sudo，真实reviewer审核；无配置自动批准不入账，配置审批中不能收款，金额/申请/账户/附件关联不可改，审核后readonly且不入账，显式收款产生真实posted台账并使来源申请done，终态不能重复执行/改金额/取消而允许备注。原申请字段及审批配置/步骤readback恢复、临时记录消失，RECEIPT_SOURCE_ROLLBACK和总ROLLBACK均VERIFIED。未验证部分金额收款、双会话并发、外部关联事实变化、历史重放。
+
+P4既有approval-actions创建页范围增加sc.receipt.income，检查项目/收款申请/往来方/金额契约可编辑及真实输入，未保存不显示已收款/审批通过。receipt-create-browser.log与tpl07-1790797082686报告22 PASS，errors=[]、forbiddenWrites=[]；1440/390截图人工查看，桌面两列/窄屏单列、字段与金额输入保留，无整页溢出。没有浏览器保存或已批准记录页面办理，因此不能把创建页22+运行6称为保存后完整浏览器旅程。无生产前端改动或构建。
+
+下一步利用此处已有合法收款来源继续核对结算调整既有合同前提及有效动作消费，避免把先前“缺少posted ledger”失败误写为合同一定不存在；若选择调整，应独立核对其合同类型/权限/状态要求，不能借收款来源推定适用。既有全部67/detail.action-state仍开放；已保存浏览器、其他未覆盖职责和原产品缺口保持，不推送合并目标部署。

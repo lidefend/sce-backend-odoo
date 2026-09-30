@@ -602,7 +602,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -611,6 +611,7 @@ try {
       { role: 'fixture_role_pm', model: 'sc.project.document', domain: [] },
       { role: 'fixture_role_pm', model: 'tender.doc.purchase', domain: [] },
       { role: 'fixture_role_pm', model: 'tender.guarantee', domain: [] },
+      { role: 'fixture_role_finance', model: 'sc.receipt.income', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.financing.loan', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.self.funding.registration', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.treasury.reconciliation', domain: [] },
@@ -650,7 +651,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -672,12 +673,13 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
-        if (['sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation'].includes(spec.model)) {
+        if (['sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation'].includes(spec.model)) {
           const fields = [];
           const walk = (nodes, pages = []) => { for (const node of nodes || []) { const path = node.type === 'page' ? [...pages, node.label || node.title] : pages; if (node.type === 'field') fields.push({ ...node, probePages: path }); walk(node.children, path); } };
           walk(authority.layout?.containerTree);
           const required = spec.model === 'sc.treasury.reconciliation'
-            ? ['project_id', 'treasury_ledger_id', 'system_difference'] : ['project_id', 'partner_id', 'amount'];
+            ? ['project_id', 'treasury_ledger_id', 'system_difference'] : spec.model === 'sc.receipt.income'
+              ? ['project_id', 'payment_request_id', 'partner_id', 'amount'] : ['project_id', 'partner_id', 'amount'];
           for (const name of required) {
             const field = fields.find((node) => node.name === name);
             check(`${spec.model}: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
@@ -694,7 +696,7 @@ try {
             await input.scrollIntoViewIfNeeded();
             check(`${spec.model}: ${name} actual input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
           }
-          for (const label of ['审批通过', spec.model === 'sc.treasury.reconciliation' ? '对账完成' : '完成']) {
+          for (const label of ['审批通过', spec.model === 'sc.treasury.reconciliation' ? '对账完成' : spec.model === 'sc.receipt.income' ? '已收款' : '完成']) {
             check(`${spec.model}: no ${label} on unsaved document`, await session.page.getByRole('button', { name: label, exact: true }).count() === 0);
           }
         }

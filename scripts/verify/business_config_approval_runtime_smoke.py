@@ -496,6 +496,100 @@ def _project_document_approval_checks(project, group, created):
     print("APPROVAL_CHECK=project_document_rejected_resubmission_new_chain")
 
 
+def _receipt_income_checks(group, created):
+    """Actual finance handling against an existing approved source, rollback-only."""
+    base = _env()
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing finance fixture required"
+    company = finance.company_id
+    env = base["sc.receipt.income"].with_user(finance).with_company(company).with_context(allowed_company_ids=[company.id]).env
+    assert not env.su
+    request = env["payment.request"].search([
+        ("company_id", "=", company.id), ("type", "=", "receive"),
+        ("state", "=", "approved"), ("contract_id", "!=", False), ("amount", ">", 0),
+    ], limit=1)
+    assert request, "existing finance-visible approved receive request with contract required"
+    request_fields = ["state", "amount", "contract_id", "partner_id", "project_id", "currency_id"]
+    before = request.read(request_fields)
+    model = "sc.receipt.income"
+    Policy = env["sc.approval.policy"].sudo()
+    policies = Policy.with_context(active_test=False).search([("target_model", "=", model), ("company_id", "in", [False, company.id])])
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint():
+                call()
+        except UserError:
+            refused = True
+        assert refused, "receipt approval/content boundary bypassed"
+
+    def document():
+        record = env[model].create({
+            "payment_request_id": request.id, "project_id": request.project_id.id,
+            "contract_id": request.contract_id.id, "partner_id": request.partner_id.id,
+            "currency_id": request.currency_id.id, "amount": request.amount,
+            "receiving_account_name": "Rollback receipt account",
+            "receiving_account_no": "ROLLBACK-RECEIPT-ACCOUNT",
+        })
+        created.append((record._name, record.id))
+        _attach(record, "receipt-approval")
+        return record
+
+    try:
+        policies.write({"approval_required": False, "mode": "none"})
+        policies.sync_tier_definitions()
+        automatic = document()
+        automatic.action_confirm()
+        assert automatic.state == "confirmed" and not automatic.review_ids and not automatic.treasury_ledger_id
+        assert request.state == "approved"
+        print("APPROVAL_CHECK=receipt_auto_approval_not_cash")
+        automatic.action_cancel()
+        policy = policies.filtered(lambda row: row.company_id == company)[:1]
+        values = {"active": True, "approval_required": True, "mode": "single", "manager_group_id": group.id, "runtime_state": "tier_validation"}
+        if policy:
+            policy.write(values)
+            policy.step_ids.write({"active": False})
+        else:
+            policy = Policy.create(dict(values, name="Rollback receipt", code="runtime_receipt_chain", target_model=model, company_id=company.id))
+            created.append((policy._name, policy.id))
+        env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Receipt review", "sequence": max(policy.step_ids.mapped("sequence") or [0]) + 10,
+            "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+        policy.sync_tier_definitions()
+        record = document()
+        record.action_confirm()
+        assert record.state == "draft" and record.review_ids and record.validation_status in ("waiting", "pending")
+        denied(record.action_received)
+        print("APPROVAL_CHECK=receipt_pending_cannot_receive")
+        for change in ({"amount": request.amount + 1}, {"payment_request_id": False}, {"receiving_account_no": "changed"}, {"attachment_ids": [(5, 0, 0)]}):
+            denied(lambda change=change: record.write(change))
+        print("APPROVAL_CHECK=receipt_reviewed_content_frozen")
+        _approve_existing_reviews(record)
+        assert record.state == "confirmed" and not record.treasury_ledger_id and request.state == "approved"
+        denied(lambda: record.write({"amount": request.amount + 1}))
+        contract = env["sc.workflow.contract.service"].describe_record(record)
+        assert contract["editability"] == "readonly"
+        print("APPROVAL_CHECK=receipt_approved_readonly_not_cash")
+        record.action_received()
+        request.invalidate_recordset()
+        ledger = record.treasury_ledger_id
+        assert record.state == "received" and request.state == "done"
+        assert ledger and ledger.state == "posted" and ledger.amount == request.amount
+        assert ledger.company_id == company and ledger.project_id == request.project_id and ledger.currency_id == request.currency_id
+        print("APPROVAL_CHECK=receipt_explicit_cash_posts_real_ledger")
+        denied(record.action_received)
+        denied(lambda: record.write({"amount": request.amount + 1}))
+        denied(record.action_cancel)
+        record.write({"note": "Rollback receipt supplement"})
+        assert record.treasury_ledger_id == ledger and ledger.amount == request.amount
+        print("APPROVAL_CHECK=receipt_terminal_fact_protected")
+    finally:
+        env.cr.rollback()
+        env.invalidate_all()
+        assert request.read(request_fields) == before, "receipt source request not restored"
+        print("RECEIPT_SOURCE_ROLLBACK=VERIFIED")
+
+
 def _finance_state_authority_checks(group, created, source_ledger=None, actor=None):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
@@ -2997,7 +3091,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("receipt-income", "financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -3006,17 +3100,21 @@ def main():
     step_baseline = policy.step_ids.read(step_fields)
     created = []
     legacy_parameter_baseline = env["ir.config_parameter"].sudo().search([("key", "=", "sc.workflow.legacy_runtime_enabled")]).read(["key", "value"]) if scope == "legacy-workflow" else None
-    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.settlement.adjustment", "sc.treasury.reconciliation", "sc.self.funding.registration", "sc.financing.loan"])]) if scope in ("finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing") else env["sc.approval.policy"]
+    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.settlement.adjustment", "sc.treasury.reconciliation", "sc.self.funding.registration", "sc.financing.loan", "sc.receipt.income"])]) if scope in ("receipt-income", "finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing") else env["sc.approval.policy"]
     finance_baseline = finance_policies.read(fields)
     finance_steps = finance_policies.step_ids.read(step_fields)
     passed = False
     try:
-        if scope not in ("legacy-workflow", "finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing"):
+        if scope not in ("receipt-income", "legacy-workflow", "finance-state-authority", "self-funding-reconciliation", "financing-approval", "financing-borrowing"):
             project = _project("Business Config Approval Runtime")
             partner = _partner("Business Config Approval Runtime Partner")
             created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("financing-approval", "financing-borrowing"):
+        if scope == "receipt-income":
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "existing reviewer group required"
+            _receipt_income_checks(group, created)
+        elif scope in ("financing-approval", "financing-borrowing"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
             _financing_approval_checks(group, created)
@@ -3247,7 +3345,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 11 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 11 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
