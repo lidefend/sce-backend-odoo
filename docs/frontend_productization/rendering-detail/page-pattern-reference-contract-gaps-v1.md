@@ -621,3 +621,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.176：合同事件驳回有重提动作但契约只读，77c5b2308补editable_phases rejected并冻结审批/终态主单内容。169纯测及4822a34a5事件runtime12 PASS、ROLLBACK VERIFIED，真实驳回可修改且契约editable，新链重提完成。普通操作员UI、附件独立接口与计划执行职责仍未覆盖。
+
+
+计划汇报进展（53.189）：已补 P1 状态机、公司审批配置接线、审核结果写入保护和原生动作契约；原入口表单镜像退役。真实审批/自动确认/退回重提定向10项通过并回滚，证据沿用活记录。最终页面契约和普通角色浏览器尚未覆盖，`detail.action-state` 继续保持 `contract_gap`，不据此认定全业务单据或完整官方接管完成。

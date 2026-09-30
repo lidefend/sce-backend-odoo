@@ -9385,3 +9385,6 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 `make ci.local.iteration` PASS（plan-report-iteration-v2.log）；L2 `make verify.payment.approval_state_machine.unit` 182 PASS（plan-report-unit-v2.log）。首次182项中1项失败属测试提取范围问题：ScPlan测试整文件提取同名回调，现限定类；原失败receipt已如实记录，修复后再登记通过。
 - P4 `plan-report` 是现有审批 rollback 工具的精确范围；复用同一 project/database/profile/凭据，不创建环境或fixture。`make verify.acceptance.runtime.baseline_rebuild.unit` 44 PASS，环境源守卫 PASS（plan-report-runtime-tool-unit.log）。回滚工具语法及 shell 语法通过。
 - 所有日志沿用 `artifacts/frontend-web-fix-20260928/tpl52/`。L3 模块升级、运行验收、有效页面契约及普通角色浏览器尚未执行，因此不认定批次验收完成；既有前端 e19eb1e16 未变，不重建，不运行 Quick/发布门禁。
+
+
+53.189 运行结果补记：P1提交 `ffc75513d`，P4提交 `7670465a1`；受管 `acceptance.module.upgrade` 成功（plan-report-upgrade.log），`backend.acceptance.up` 识别旧revision后按受管入口替换并成功（plan-report-backend.log），后端7670465a1/18082。`SC_APPROVAL_RUNTIME_SCOPE=plan-report make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local` **10 PASS / ROLLBACK VERIFIED**（plan-report-runtime.log）：直接状态/审核结果及默认值绕过拒绝、草稿有效提交契约、无配置自动确认且不改父计划、有配置真实审批/实际审核人、内容锁定、真实退回及修改后重提。使用原 sc-fe-r2-p1-01 / sc_frontend_acceptance / 精确filter及原三个卷；无持久测试单据与配置残留。结果只证明此后端/工作流契约范围，最终 UiContractV2 页面契约及普通PM浏览器待验，不升级整行台账。前端构建 e19eb1e16 原样复用。批次持续推进；未推送、合并或部署目标环境。

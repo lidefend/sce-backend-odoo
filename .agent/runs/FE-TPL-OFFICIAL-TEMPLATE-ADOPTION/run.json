@@ -455,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.189 plan report P1 state machine/shared approval/native action contract implemented; L1 passed; targeted pure182 passed (old ScPlan AST class ambiguity corrected); P4 existing rollback tool now has plan-report scope, wrapper44 passed. Next managed smart_construction_core upgrade and backend bind, then SC_APPROVAL_RUNTIME_SCOPE=plan-report runtime check10; not yet runtime/browser accepted. Frontend e19eb1e16 unchanged; no build needed. Preserve existing plan/node evidence and overall67 open; no push/merge/targetdeploy.",
+  "next_exact_step": "53.189 P1 report state machine/native actions ffc75513d; P4 scoped rollback7670465a1. L1 PASS; pure182 PASS; runtime wrapper44 PASS; managed module upgrade PASS; backend7670465a1/18082; plan-report runtime10 PASS+ROLLBACK VERIFIED (plan-report-runtime.log), real configured/auto/reject-resubmit and authority readback verified. Next verify report final UiContractV2 and ordinary-PM official create/handling through existing browser tool, then plan version responsibilities; do not claim full entry acceptance from sudo/runtime evidence. Frontend e19eb1e16 unchanged, no rebuild. Overall67 remains open; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
