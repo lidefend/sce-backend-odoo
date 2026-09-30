@@ -170,13 +170,6 @@
     },
     {
       "model": "sc.payment.execution",
-      "method": "action_reverse_payment",
-      "class": "state_transition_undeclared",
-      "occurrences": 1,
-      "reason": "paid -> reversed behind a finance cancel check; no profile action covers the reversal"
-    },
-    {
-      "model": "sc.payment.execution",
       "method": "action_view_company_contractor_responsibility_summary",
       "class": "navigation",
       "occurrences": 1,

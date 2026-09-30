@@ -7699,3 +7699,11 @@ L5：未推送、未合并、未部署。
 - 7c3667740 clean候选经backend.acceptance.up受管重载，沿用sc_frontend_acceptance/local既有身份（approval-order-backend-up.log）。未再次升级模块、构建前端或运行无关ORM。
 - verify.business_config.approval_runtime 12项PASS、ROLLBACK=VERIFIED（approval-order-runtime.log）：配置10→20对应definition与实际review.sequence升序完全一致；首次真实validate_tier批准的definition明确是第10步，业务仍submit；最后一步才approved。启用、关闭、在途配置变化、缺规则、驳回重提、非审批人拒绝同事务仍通过，原策略/步骤回读一致、临时单据清理已核对。
 - 本批配置顺序缺陷定向验收完成；复用同一组审批人，不声称不同岗位链或全业务单据已验收。持久旧定义重新同步、支持清单外必要单据、两项原生业务动作仍按既有产品缺口推进。总体active；主线未集成、目标未部署、全产品用户验收未完成。
+
+
+### 53.39 付款执行状态动作与既有领域契约对齐
+
+- 34c4777b8 clean起步；P1 smart_construction_core工作流契约投影，非客户配置、非前端推断。只读取既有两项登记缺口及直接模型/原生视图/领域契约。payment-execution.yaml已声明paid独立reverse_payment→cancel，而profile仍给paid错误action_cancel、给draft提前action_paid。本批按权威领域边界修正：draft提交/取消，confirmed付款/取消，paid独立撤销付款；新增reverse_payment动作键绑定既有action_reverse_payment，标签撤销付款。
+- purpose沿既有cancel_record表示目标取消事实，但key/method明确区分付款前取消与已付款冲销；不改台账、冲销原因、财务授权或cancellation_kind。登记中错误paid→reversed说明随已解决条目退出；实际状态是cancel/payment_reversed。合同履约事件尚缺共享审批接入，继续为产品缺口，不通过直接补action_reject投影掩盖。
+- L1 make ci.local.iteration PASS（payment-reversal-contract-iteration.log）。L2 native coverage 8+26=34（payment-reversal-contract-tests.log，begin/record34），workflow_action_semantics15（payment-reversal-semantics-tests.log），payment approval50（payment-reversal-approval-tests.log）全部PASS。新增实际_available_actions执行覆盖六种状态及target/label/purpose，与原生财务组、付款/冲销状态条件核对。注册27项=12helper+14navigation+1state gap。
+- 方法常量变化无字段/XML变化，无需模块升级或前端构建；后端受管重载及有效契约/浏览器冲销入口仍待验证，不以离线测试宣称资金冲销业务验收通过。不重新执行费用审批12项（输入无依赖变化）。仍需全单据必要接入、持久审批定义同步及相关实际业务验证。总体active，未推送、合并、目标部署。

@@ -160,3 +160,9 @@ The coverage guard now matches `(model, method)`, preventing declarations on ano
 ## Segment 53.23: duplicate native approval entries retired in source
 
 Expense (two forms) and settlement (one form) now retain only the same tier approval/rejection entries declared by their workflow profiles. The redundant post-review `action_approve` buttons are removed; compatibility methods remain instance-bound from53.22. Their native-action registrations are therefore retired. Two registered state-action gaps remain (contract-event rejection and payment-execution reversal). Module upgrade/runtime verification and all-document approval adoption remain open; this is not overall closure.
+
+### Segment53.39 — Payment reversal projection aligned; runtime acceptance pending
+
+The payment-execution workflow profile now follows the existing domain contract and native actions: draft permits submission/cancellation, confirmed permits payment/cancellation, and paid permits only the distinct `action_reverse_payment` command. The reversal action uses its own key/label/method; `cancel_record` describes the resulting cancelled record, not permission to call pre-payment `action_cancel`. The model still owns finance authorization, mandatory reversal reason, ledger reversal and `cancellation_kind=payment_reversed`. No approval or ledger execution is moved into the frontend.
+
+The resolved undeclared-action registration is removed, leaving contract-event rejection as the single registered state-action gap. Offline projection/semantics tests pass; effective runtime/browser reversal verification remains pending. All-document approval adoption and `detail.action-state` remain open.

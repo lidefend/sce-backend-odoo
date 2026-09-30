@@ -188,13 +188,36 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 actions = self._general_contract_actions(state, model=model)
                 self.assertEqual('action_set_running' in [action['method'] for action in actions], state == 'confirmed')
 
+    def test_payment_execution_actions_match_domain_and_native_state_boundaries(self):
+        expected = {
+            'draft': {'action_confirm', 'action_cancel'},
+            'confirmed': {'action_paid', 'action_cancel'},
+            'paid': {'action_reverse_payment'},
+            'cancel': set(), 'legacy_confirmed': set(), 'unknown': set(),
+        }
+        for state, methods in expected.items():
+            with self.subTest(state=state):
+                actions = self._general_contract_actions(state, model='sc.payment.execution')
+                self.assertEqual({action['method'] for action in actions}, methods)
+                if state == 'paid':
+                    self.assertEqual(actions[0]['label'], '撤销付款')
+                    self.assertEqual(actions[0]['target'], {'model': 'sc.payment.execution', 'id': 23, 'method': 'action_reverse_payment'})
+                    self.assertEqual(actions[0]['action_semantics']['purpose'], 'cancel_record')
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/payment_execution_views.xml')
+        for method, state in [('action_paid', 'confirmed'), ('action_reverse_payment', 'paid')]:
+            buttons = tree.findall(".//button[@name='%s']" % method)
+            self.assertTrue(buttons)
+            for button in buttons:
+                self.assertEqual(button.get('invisible'), "state != '%s'" % state)
+                self.assertEqual(button.get('groups'), 'smart_construction_core.group_sc_cap_finance_manager')
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 
     def test_an_unregistered_native_transition_fails(self) -> None:
         payload = _baseline()
-        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_reverse_payment"]
-        self.assertTrue(any("action_reverse_payment" in error for error in validate(payload)))
+        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_reject"]
+        self.assertTrue(any("action_reject" in error for error in validate(payload)))
 
     def test_an_entry_with_no_native_button_is_stale(self) -> None:
         payload = _baseline()
@@ -215,14 +238,14 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
     def test_an_entry_without_a_reason_fails(self) -> None:
         payload = _baseline()
         for entry in payload["entries"]:
-            if entry["method"] == "action_reverse_payment":
+            if entry["method"] == "action_reject":
                 entry.pop("reason", None)
         self.assertTrue(any("without a reason" in error for error in validate(payload)))
 
     def test_an_unknown_class_fails(self) -> None:
         payload = _baseline()
         for entry in payload["entries"]:
-            if entry["method"] == "action_reverse_payment":
+            if entry["method"] == "action_reject":
                 entry["class"] = "not_a_class"
         self.assertTrue(any("expected one of" in error for error in validate(payload)))
 

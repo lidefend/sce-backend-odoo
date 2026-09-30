@@ -329,9 +329,9 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "cancelled",
             },
             "state_actions": {
-                "draft": ["submit", "complete", "cancel"],
+                "draft": ["submit", "cancel"],
                 "confirmed": ["complete", "cancel"],
-                "paid": ["cancel"],
+                "paid": ["reverse_payment"],
             },
             "approval_actions": ["approve", "reject"],
             "method_by_action": {
@@ -340,6 +340,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 "reject": "reject_tier",
                 "complete": "action_paid",
                 "cancel": "action_cancel",
+                "reverse_payment": "action_reverse_payment",
             },
             "label_by_action": {
                 "complete": "已付款",
@@ -899,6 +900,9 @@ class ScWorkflowContractService(models.AbstractModel):
         "activate": {"label": "开始执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "complete": {"label": "完成", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "cancel": {"label": "取消", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "cancel_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        # A separate command from pre-execution cancellation: the model owns
+        # reversing the posted ledger before entering the cancelled state.
+        "reverse_payment": {"label": "撤销付款", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "cancel_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
         # `reopen` 在本平台语义是「重置为草稿」（`cancel` -> `draft`）。分包登记
         # `已关闭` -> `已登记` 是另一个目标状态、另一个方法，所以用独立键，避免同一个
         # 键在 `已取消` 与 `已关闭` 两个状态上声明两个互斥的方法与标签。

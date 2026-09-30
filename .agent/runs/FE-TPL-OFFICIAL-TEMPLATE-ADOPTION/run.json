@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.37/53.38 configured step order fixed in common P1 adapter,50 unit tests and12 real expense approval checks pass with verified restoration at backend7c3667740. ALL business documents remain scope. Continue necessary document coverage beyond current17/15 inventories and two native action product gaps; plan governed resync of existing policy definitions without modifying in-flight reviews. Distinct reviewers/all-model real journeys remain unverified. Reuse unchanged frontend.",
+  "next_exact_step": "53.39 payment execution profile corrected to domain/native state actions; native34+semantics15+approval50 pass. Requires governed backend reload and effective-contract verification, no frontend rebuild or module upgrade. Remaining registered native state gap: sc.contract.event approval/rejection needs shared configured approval adoption. Continue all necessary documents beyond17/15 inventories, controlled existing-definition sync, distinct reviewers and real business loops. Keep detail.action-state open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -654,6 +654,17 @@
       "restoration": "verified policy/step readback and temporary document removal",
       "scope": "definition-bound10-before20 and first decision on step10; expense representative only",
       "remaining": "all-document missing support, distinct reviewers, existing definition resync, native action gaps"
+    },
+    "payment_reversal_53_39": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "34c4777b8",
+      "tests": {
+        "native": 34,
+        "semantics": 15,
+        "approval": 50
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-reversal-contract-tests.log",
+      "remaining": "backend reload/effective contract and business reversal verification; contract-event shared approval and all-document adoption"
     }
   }
 }
