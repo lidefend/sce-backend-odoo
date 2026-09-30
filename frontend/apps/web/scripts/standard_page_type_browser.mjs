@@ -44,7 +44,7 @@ function findRecordAuthority(node, depth = 0) {
   if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
     return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
       deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData,
-      ...(process.env.TPL07_SCOPE === 'task-authority' ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
+      ...(['task-authority', 'approval-actions'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
   }
   for (const value of Object.values(node)) {
     const found = findRecordAuthority(value, depth + 1);
@@ -585,6 +585,42 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions') {
+    report.approvalPages = [];
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution'].includes(process.env.TPL07_APPROVAL_MODEL));
+    for (const spec of [
+      { role: 'fixture_role_contract_operator', model: 'sc.contract.event', domain: [] },
+      { role: 'fixture_role_finance', model: 'sc.payment.execution', domain: [['state', '=', 'paid']] },
+    ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
+      const session = await login(spec.role);
+      const candidate = await session.page.evaluate(async ({ model, domain }) => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model, fields: ['id', 'state'], domain, limit: 1 } }),
+        });
+        return response.json();
+      }, spec);
+      report.approvalPages.push({ ...spec, candidate });
+      check(`${spec.model}: existing authorized record available`, candidate.ok === true && candidate.data?.records?.length === 1);
+      const record = candidate.data.records[0];
+      report.recordAuthority = null;
+      await form(session.page, `/r/${spec.model}/${record.id}`, spec.model, 'readonly');
+      const authority = report.recordAuthority;
+      check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.state === record.state);
+      report.approvalPages.at(-1).authority = authority;
+      if (spec.model === 'sc.payment.execution') {
+        check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);
+        check('paid execution: pre-payment cancellation is absent', await session.page.getByRole('button', { name: '取消', exact: true }).count() === 0);
+        check('paid execution: duplicate payment is absent', await session.page.getByRole('button', { name: '已付款', exact: true }).count() === 0);
+      }
+      for (const width of [1440, 390]) {
+        await session.page.setViewportSize({ width, height: 900 });
+        check(`${spec.model}-${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+        await session.page.screenshot({ animations: 'disabled', path: path.join(out, `${spec.model}-${width}.png`) });
+      }
+      await session.ctx.close();
+    }
   } else if (process.env.TPL07_SCOPE === 'detail-state') {
     const finance = await login('fixture_role_finance');
     await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'detail-state', 'readonly');
@@ -746,7 +782,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'approval-actions', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

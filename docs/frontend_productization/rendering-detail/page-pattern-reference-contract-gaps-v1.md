@@ -174,3 +174,7 @@ Contract events now participate in approval configuration, company-scoped shared
 ### Segment53.41 — Contract-event ORM approval loop verified
 
 Governed module upgrade and backend reload succeeded at b985a026b. The existing rollback-only approval smoke now passes17 checks, including five contract-event checks: no-configuration auto-approval without completion, real configured review creation, real approval plus explicit completion, rejection reason, and resubmission with a new review chain. Configuration restoration and absence of temporary records were verified. Final UI-contract/browser consumption, distinct reviewer roles and all necessary document coverage remain unproven; this does not close `detail.action-state`.
+
+### Segment53.42 — Payment reversal page verified; event page lacks scoped record
+
+Finance record186 (`paid`) passes16 browser assertions on the unchanged official preview: effective contract binds reversal to `action_reverse_payment`, the detail shows exactly one reversal entry and no pre-payment cancel/payment entries; both viewports remain usable, with no script errors or writes. This verifies presentation, not financial reversal execution. Contract-operator lookup returns no contract events in its authorized company8 scope, so event browser acceptance remains pending. Neither an empty authorized query nor the previous transaction-local ORM test proves that page accepted.
