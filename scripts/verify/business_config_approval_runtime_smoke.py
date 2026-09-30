@@ -511,18 +511,19 @@ def _red_flush_approval_checks(project, group, created):
         # source access is preparation, not ordinary-role usability evidence.
         record.with_user(registrar).sudo().action_confirm()
         record.invalidate_recordset()
-    def document(amount=100):
+    def document(amount=100, register=True):
         source = env["sc.invoice.registration"].sudo().create({"project_id": project.id, "partner_id": partner.id, "direction": "output", "source_kind": "output_invoice_tax", "invoice_no": "RUNTIME-RED-SOURCE", "amount_total": amount, "amount_no_tax": amount})
         created.append((source._name, source.id))
         number = "RUNTIME-RED-%s" % source.id
         source.write({"invoice_no": number})
-        source.action_confirm()
-        if source.review_ids:
-            _approve_existing_reviews(source)
-        assert source.state == "confirmed"
-        source.with_user(registrar).sudo().action_register()
-        source.invalidate_recordset()
-        assert source.state == "registered"
+        if register:
+            source.action_confirm()
+            if source.review_ids:
+                _approve_existing_reviews(source)
+            assert source.state == "confirmed"
+            source.with_user(registrar).sudo().action_register()
+            source.invalidate_recordset()
+            assert source.state == "registered"
         source.flush_recordset()
         ledger = env["sc.output.invoice.ledger"].sudo().search([("source_model", "=", source._name), ("source_record_id", "=", source.id)], limit=1)
         assert ledger, "existing ledger projection must include source invoice"
@@ -536,6 +537,18 @@ def _red_flush_approval_checks(project, group, created):
         except UserError:
             refused = True
         assert refused, "red flush boundary was bypassed"
+    ineligible = document(register=False)
+    denied(ineligible.action_submit)
+    assert ineligible.state == "draft"
+    contract = env["sc.workflow.contract.service"].describe_record(ineligible)
+    assert "RED_FLUSH_SOURCE_NOT_REGISTERED" in str(contract)
+    original = ineligible._original_source_record(ineligible.original_ledger_id)
+    original.action_cancel()
+    original.flush_recordset()
+    ineligible.original_ledger_id.invalidate_recordset()
+    denied(ineligible.action_submit)
+    assert not ineligible.generated_invoice_id
+    print("APPROVAL_CHECK=red_flush_draft_and_cancelled_originals_denied")
     automatic = document()
     denied(lambda: env["sc.invoice.registration"].sudo().create({"state": "registered", "project_id": project.id}))
     original = automatic._original_source_record(automatic.original_ledger_id)
@@ -2804,7 +2817,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (11 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 291, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 292, scope))
 
 
 main()

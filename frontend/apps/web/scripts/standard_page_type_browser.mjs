@@ -713,6 +713,18 @@ try {
             check(`red flush: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
             check(`red flush: ${name} actual input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
           }
+          const originalControl = session.page.locator('[data-field-name="original_ledger_id"] input').first();
+          const originalResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list' && body.params.model === 'sc.output.invoice.ledger';
+            } catch { return false; }
+          });
+          await originalControl.click();
+          const originalQuery = (await originalResponse).request().postDataJSON().params;
+          const eligibleDomain = [['active', '=', true], ['adjustment_kind', '=', 'normal'], '|', ['source_model', '!=', 'sc.invoice.registration'], ['invoice_document_state', 'in', ['registered', 'legacy_confirmed']]];
+          check('red flush: actual original query preserves eligibility domain', JSON.stringify(originalQuery.domain) === JSON.stringify(eligibleDomain));
+          await session.page.getByRole('heading', { name: '新建记录', exact: true }).click();
           check('red flush: no red invoice before approval', await session.page.getByRole('button', { name: '确认红冲', exact: true }).count() === 0);
           check('red flush: no direct approval on unsaved document', await session.page.getByRole('button', { name: '通过', exact: true }).count() === 0);
         }
