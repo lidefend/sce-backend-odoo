@@ -8767,3 +8767,14 @@ b9d4f607f clean起点，P4仅扩展既有rollback工具financing-approval scope�
 L1 financing-freeze-iteration.log PASS；financing-freeze-unit.log145 PASS并begin/record非零成功。源码6e76e65bd受管reload，financing-freeze-runtime.log9 PASS/ROLLBACK VERIFIED：普通finance在审金额不能改，confirmed金额不能改且workflow readonly；done金额/正式金额别名/方向/有效性不能改且workflow locked；允许备注补充仍保留amount100和贷款类型显示，真实审核/完成/驳回重提原链仍通过。配置/步骤恢复、临时记录消失；local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，前端CrYkOCxc不变。
 
 未改动作名称、XML、状态映射和前端输入，旧声明/创建页证据只按未变输入复用，未重跑浏览器或构建。历史重放及外部关联对象变化不是本轮证明范围；保留原67/detail.action-state。下一步借款分类实际资金台账与普通角色办理/官方页面消费，随后收款、付款冲销及结算调整来源等仍开放职责；不能将贷款登记9项替代两个借款类别台账。无推送合并目标部署。
+
+
+### 53.136 两类借款资金事实通过，融资官方创建页发现消费缺口
+
+78ed4628a clean起点，P4复用_financing_approval_checks增加financing-borrowing scope；不重复贷款登记9项。现有finance.loan.contractor_project_borrow/out与finance.loan.project_borrow_company/in分类权威，普通fixture finance创建/提交/完成，真实审核人审批。financing-borrowing-iteration.log L1/py_compile/bash-n/diff通过；financing-borrowing-runtime.log6 PASS、ROLLBACK VERIFIED。两类各验证在审不能完成/真实审批不入账、显式完成生成唯一正确方向/项目/公司/往来方/币种/金额100的interfund台账、重复业务完成拒绝且私有台账写入幂等不新增，完成金额不能变。非双事务并发测试，不宣称资金责任汇总全部验证。backend6e76e65bd及前端CrYkOCxc未变，不reload/build。
+
+P4既有创建页探针扩展sc.financing.loan（复用同一财务字段/契约页签检查）。financing-create-browser.log/tpl07-1790796266377 FAILED：有效契约存在，project_id在layout.containerTree的项目与借款方page且可编辑，但实际页面仅基本资料/协作记录，找不到契约页签。截图真实显示正式申请金额/实际金额等输入，未展示该原生页签。不同于前序自筹只是未点击活动页签，不能删除项目/往来方/金额检查来通过。页面无业务写入；该页面不能计通过。
+
+有界归因线索：form_structure_contract为business_task_form/task/entry_semantic_surface，包含project_id/partner_id/amount语义slots；sourceAuthority关联已发布业务配置116(sc_financing_loan_form_sections_v1,v2)、139(sc_financing_loan_p1_form_business_facts_v1,v2)，包含LEGACY_STRUCTURE_KEY_OVERRIDE诊断。P1 data/p1_daily_business_form_orchestration_contract_data.xml有该事实展示编排；前端pages/contractForm/ObjectTaskPage.vue在contextNodes缺少sectionLinks时回退基本资料。尚未断定是生产者丢布局还是消费者选错路径，不能先改业务配置或前端加模型分支。
+
+下一步优先修复该融资正式创建职责缺口：沿本次有效契约与共享canonical presenter/entry_semantic_surface选择核对必需项目/往来方/金额落点，按拥有层修复并定向复验此页；不继续绕过该问题增加其他绿色ORM。整体67/detail.action-state继续开放，保留其他已登记缺口，无推送合并目标部署。

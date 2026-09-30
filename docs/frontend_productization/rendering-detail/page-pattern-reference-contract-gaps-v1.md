@@ -508,3 +508,8 @@ Financing loan_registration/financing_in runtime8 passes under non-sudo fixture 
 ## Segment 53.135: financing reviewed/final economic content
 
 Financing ordinary documents now protect formal/canonical economic fields during review and after confirmation/completion. State/note writes no longer invoke unrelated business-default projection. Existing legacy supplementation rules remain. Pure145 and runtime9 pass at backend6e76e65bd with restored configuration and rollback: reviewed/final edits denied, workflow readonly/locked agrees, permitted note supplement preserves amount/type display, actual approval/completion still works. Borrowing-ledger categories, external reference mutation, historical replay and saved browser handling remain unverified.
+
+
+## Segment 53.136: borrowing ledgers verified; financing create consumption failed
+
+Borrowing-only runtime6 passes with non-sudo finance and real reviewers, verified rollback, existing category authority and exact out/in interfund ledger identity. Repeated completion is rejected and private ledger ensure is idempotent; this is not concurrent-session proof. Financing official create browser tpl07-1790796266377 fails: effective native layout declares editable project under 项目与借款方, but rendered task page exposes 基本资料 instead. Published configuration116/139 and entry_semantic_surface/task structure need reconciliation with shared presentation. No browser writes; do not count the page as passed or remove required-field checks. Fix producer/consumer ownership before more unrelated acceptance.

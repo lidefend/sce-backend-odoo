@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.135 backend6e76e65bd financing reviewed/final economic guard + no implicit business projection on state/note writes. L1 PASS/pure145 receipt/runtime9 PASS rollback; workflow readonly/locked and original amount preserved. Next borrowing-category actual interfund ledgers (contractor_project_borrow out, project_borrow_company in) with existing category authority/finance actor, and official consumption; loan-registration evidence does not prove these. Retain receipt/payment-reversal/adjustment source/refund/external-reference/historical/saved-browser gaps; no unchanged reruns. Overall67/detail.action-state open; no push/merge/deploy.",
+  "next_exact_step": "53.136 financing-borrowing runtime6 PASS rollback (actual finance/reviewers, two existing categories out/in, exact ledger and idempotency, not concurrency). Official financing create FAILED tpl07-1790796266377: layout editable project under 项目与借款方 but actual ObjectTaskPage shows 基本资料/context-only. Next PRIORITY trace effective config116/139 v2 entry_semantic_surface/task structure into shared canonical presenter; reconcile required project/partner/amount inputs without model-specific frontend rules or deleting checks. Producer vs consumer ownership not yet resolved. Backend6e76e65bd/frontendCrYkOCxc unchanged; no more unrelated ORM while this affected page remains broken. Overall67/detail.action-state open; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
