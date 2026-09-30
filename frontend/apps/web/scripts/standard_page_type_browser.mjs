@@ -613,6 +613,16 @@ try {
         check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);
         check('paid execution: pre-payment cancellation is absent', await session.page.getByRole('button', { name: '取消', exact: true }).count() === 0);
         check('paid execution: duplicate payment is absent', await session.page.getByRole('button', { name: '已付款', exact: true }).count() === 0);
+        const reversal = authority.actions?.actionRuleList?.find((action) => action.button?.name === 'action_reverse_payment');
+        check('paid execution: native reversal declares confirmation', reversal?.actionSafety?.requires_confirm === true && reversal.actionSafety.classification === 'danger');
+        await session.page.getByRole('button', { name: '撤销付款', exact: true }).click();
+        const dialog = session.page.getByRole('dialog');
+        await dialog.waitFor();
+        check('paid execution: confirmation consumes declared consequence', (await dialog.innerText()).includes(reversal.actionSafety.confirm_message));
+        await dialog.getByRole('button', { name: '取消', exact: true }).click();
+        await dialog.waitFor({ state: 'hidden' });
+        check('paid execution: cancelled confirmation dispatched no write', report.forbiddenWrites.length === 0);
+
       }
       for (const width of [1440, 390]) {
         await session.page.setViewportSize({ width, height: 900 });

@@ -211,6 +211,24 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 self.assertEqual(button.get('invisible'), "state != '%s'" % state)
                 self.assertEqual(button.get('groups'), 'smart_construction_core.group_sc_cap_finance_manager')
 
+    def test_payment_reversal_native_confirmation_projects_without_method_guessing(self):
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/payment_execution_views.xml')
+        button = tree.find(".//button[@name='action_reverse_payment']")
+        self.assertIsNotNone(button)
+        message = button.get('confirm')
+        self.assertTrue(message)
+        self.assertIn('付款台账', message)
+        self.assertIn('已批准', message)
+        parser = DEFAULT_SERVICE.parents[3] / 'smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py'
+        method = next(n for n in ast.walk(ast.parse(parser.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_button_action_safety')
+        namespace = {'_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(parser), 'exec'), namespace)
+        safety = namespace['_button_action_safety'](None, btn_node=button, btype='object',
+            method=button.get('name'), label=button.get('string'), classes=['btn-secondary'], confirm=message, level='header')
+        self.assertEqual(safety['classification'], 'danger')
+        self.assertTrue(safety['requires_confirm'])
+        self.assertEqual(safety['confirm_message'], message)
+
     def test_contract_event_uses_real_reviewer_actions_and_resubmission(self):
         for state in ('draft', 'rejected'):
             self.assertEqual({a['method'] for a in self._general_contract_actions(state, model='sc.contract.event')}, {'action_submit', 'action_cancel'})

@@ -7734,3 +7734,10 @@ L5：未推送、未合并、未部署。
 - 独立执行TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.payment.execution受管browser，finance在原授权范围读取现有paid记录186，16项PASS（payment-reversal-browser.log；tpl07-1790773738989/report.json）。有效ui.contract模型/state一致，actionRuleList中的action_reverse_payment为原生object动作、label撤销付款、actionSemantics=business/cancel_record/contract.action；页面该按钮恰好1，取消/已付款按钮0。官方readonly详情单一路径且有非零facts，1440/390无溢出，截图在同一目录，errors=[]、forbiddenWrites=[]。
 - 复用原静态build身份和已加载b985a026b后端（后续仅工具/记录变化），未构建/升级/重载。该16项证明冲销入口呈现及有效契约，不证明真实资金冲销成功；不点击按钮制造资金副作用。工具捕获的actionSafety仍标safe，后续需核对既有资金动作确认规则归属，不能从本次只读页面通过推出执行安全已验收。
 - 总体active：合同事件页面数据前提、资金冲销实际办理、不同审批人/必要全单据覆盖等继续；登记归零不关闭detail.action-state。未推送、合并或目标部署。
+
+
+### 53.43 付款冲销由原生契约声明执行前确认
+
+- 02722f3d1 clean起步，P1原生payment_execution视图；P4定向验证。追踪既有parser→actionSafety→contractActionConfirmationPrompt→共享IntentConfirmationDialog，确认能力已存在，缺的是冲销原生按钮confirm声明。原生补后果说明：冲销对应台账并将已完成付款申请退回已批准，不给前端增加模型判断或词法猜测。
+- L1 ci.local.iteration PASS（payment-reversal-confirm-iteration.log），L2 native8+28=36 PASS（payment-reversal-confirm-tests.log，begin/record36）。新增执行实际parser安全投影方法，读取真实XML并断言danger/requires_confirm/准确文案。浏览器定向分支增加有效契约确认断言、点击打开后取消，沿既有拦截禁止业务写入；node --check通过。
+- 本候选XML需受管升级后验证页面，未以静态测试宣称确认框已运行通过。前端源码/产物未改，无需构建。全单据审批及合同事件页面数据前提等原缺口保留；总体active，无远端/目标部署。
