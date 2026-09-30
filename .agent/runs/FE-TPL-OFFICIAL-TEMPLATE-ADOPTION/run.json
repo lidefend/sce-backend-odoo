@@ -402,7 +402,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.158 successful expense browser loop closed:57PASS tpl07-1790802961499 actualfinance create167/upload1291/execute_button submit approved/readback/official readonly1440+390; exact cleanup removed temporary objects,source1815 unchanged/no cashfacts. P0 fixed refresh of/new after success via existing created navigation; build8d4b9d088/index-DN9Q0KvX.js,backend1fae2361a unchanged. P4 tooling33 pure/L1 pass. Next narrowly verify post-create upload/submit failure recovery preserves generated record and avoids duplicate creation on retry (success evidence does not prove it); reuse exact cleanup, no new fixtures/roles. Do not reopen oldTPL03 async identity. Live category switching and overall67/detail.action-state remain open. No push/merge/target deploy.",
+  "next_exact_step": "53.159 representative post-create recovery closed:submit503 browser58 tpl07-1790803342206 and upload503 browser58 tpl07-1790803536320 each retain generated ID, actual retry auto-approves/official readonly, exact cleanup168–170/1292–1294/source1815 unchanged. P0 recovery navigation plus same-clean-record attachment contract refresh;dirty edits preserved by6 pure cases, no live dirty/multifile/ambiguous-commit claim. Candidate dbc39c9a8/index-DlvbGtIp.js,backend1fae2361a unchanged;33 tool receipt. Next resume overall config contract goal: inspect existing governed P3 category policy editing authority/tool and validate required/recommended effective-contract change+shared response+restoration; no full menu scan/new fixture/environment. Existing67/detail.action-state/other business and delivery gaps remain open. No push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

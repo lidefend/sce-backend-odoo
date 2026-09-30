@@ -9042,3 +9042,18 @@ submission-requirements-browser.log / tpl07-1790802321792：48 PASS，errors=[]�
 最终expense-success-bound-browser.log / tpl07-1790802961499：57 PASS，errors=[]/forbiddenWrites=[]。创建167、真实上传1291、提交均恰好一次；普通finance回读approved、project10/partner56/payment_request1815、amount999、一条附件和唯一摘要。浏览器实际进入生成记录，消费该记录readonly契约、官方detail，1440/390无整页溢出，390截图人工核对已批准/记录号/禁止删除提示/只读事实。final cleanup回执restored record_ids=[167],attachment_ids=[1291],source_id=1815；无付款或资金事实。工具33项（11Node+22Python）及begin/record通过，新增精确范围/错角色/重放/错文件/错数据库/终态/旧对象反例；最终L1/diff通过。
 
 关闭报销本次无配置审批的“真实创建→上传→提交→进入官方只读详情”成功链缺口，不能外推所有业务/配置审批或财务完成。下一步核对创建已经成功、后续上传或提交失败时的已生成记录恢复与重试，当前成功链不证明这些路径不会重复创建；限定此多步骤办理，不重开已关闭的旧TPL03。真实分类策略切换及整体67/detail.action-state仍开放。无持久验收业务记录，无推送/合并/目标环境部署；批次成功链验收通过，主线/部署/用户整体交付未升级。
+
+
+### 53.159 已创建记录的上传/提交失败恢复与契约刷新
+
+7079b2706 clean起点，P0限定既有多步骤create/upload/submit链，不重开TPL03。源码确认create成功后upload失败直接false、新建submit失败仅报错，均会留在/new；后续重试没有已生成ID的页面身份。d409455e5修复：两类失败均复用navigateCreatedRecord打开已生成记录；recovery模式跳过关系弹层回传/快速录入返回列表，保留记录路由与原导航上下文；固定create_recovery枚举在可继续提交的单据上提示上传/提交未完成。上传失败需重新选择文件，不宣称跨刷新保留File对象。保存/提交原授权、后端校验及已有save surface ownership不改。
+
+L1 expense-recovery-iteration/final-iteration PASS；contract_form_save_failure_recovery新增已创建/upload失败不提交而导航原ID的检查，create_record_user_journey新增已创建/submit失败导航原ID检查，原回归及strict类型PASS（expense-recovery-unit.log）。原P4写入范围增加一次503注入upload或submit，仍逐阶段只允许一条实际create/精确文件/该ID提交，finally精确清理。候选d409455e5构建后，expense-submit-recovery-browser.log / tpl07-1790803342206：58 PASS，创建168、上传1292后注入submit503，实际进入168草稿带恢复提示，重试真正submit并回读approved及官方readonly，两视口可用、无未声明写入，清理168/1292、来源1815保持。
+
+expense-upload-recovery-browser.log / tpl07-1790803374298发现独立P0缺口：创建169后upload503，正确进入同一草稿；重新上传1293成功，但页面契约未刷新，submit仍disabled/EXPENSE_ATTACHMENT_REQUIRED。失败已清理169/1293，无付款事实。dbc39c9a8修复共享native附件回读：即时上传绑定开始时model/id，原timeline回读后只在当前model/id相同且无未保存编辑时reload记录契约；dirty时保留输入并提示先保存以更新办理条件；新建待上传目标ID与/new不同，仍不提前刷新。新增6个同记录/dirty/跨记录/跨模型/未保存身份反例及strict通过（expense-upload-refresh-unit.log）；未重新实现附件或状态引擎。
+
+因新确认的生产缺口，dbc39c9a883ba73132d05320c031367a12865f62受管构建/预览替换d409候选；entry/assets/index-DlvbGtIp.js，entry_sha256=e3d8c682c1f8e98f3c7dba753622bc7dad8334a15e85d34b2a88ebfa61608df9，index_sha256=7fed76fa45c24fc33df37961dea9848b65a75cf4537d5ba34becadba0708c027。backend1fae2361a与addons不变，不升级/重跑ORM。expense-upload-refresh-browser.log / tpl07-1790803536320：58 PASS，upload503后仍为170，提示重新选择；实际重新上传1294后契约更新、提交恢复可用，再submit批准并显示官方readonly，两视口及无异常/无未声明写入通过。清理170/1294及来源1815回读均restored；仅一次实际create/upload/submit。
+
+submit恢复58按依赖复用到dbc候选：其上传走创建后pending队列，目标新ID/currentID0的分支继续不刷新；本次改动的是已有记录即时上传分支，恢复导航和submit执行代码未变。工具33及begin/record通过（expense-recovery-tool-unit/receipt.log），无需重复成功57或付款49。覆盖单个附件、一次明确503失败；不外推多文件部分成功、服务端已提交但响应丢失、dirty编辑与上传并行的浏览器行为（dirty有纯测）、所有业务单据审批。
+
+报销代表成功链及这两条失败恢复收口；下一步回到总体契约/配置目标，复用既有P3工具验证分类附件策略required/recommended变化的有效契约与共享消费/恢复，先核对现有配置权限和入口，不新建工具体系或再盘点菜单。总体67/detail.action-state仍开放，其他已登记职责及目标环境条件不升级。本轮仅本地，无推送/合并/目标部署。
