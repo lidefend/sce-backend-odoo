@@ -180,7 +180,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit filter_id correction, governed backend reload and justified rebuild, then TPL07_SCOPE=favorite-lifecycle-resume: reuse exact saved ir.filters9 from original report and delete through product UI. No second create or P4 cleanup. Product gap stays open until authoritative restoration passes.",
+  "next_exact_step": "Run requirement-by-requirement overall completion audit using existing result index and living sections: shared page-type adoption/legacy exit, P0/P1/P2 authority, low-code configure/publish/rollback loop, startup and business evidence, outstanding mandatory gates. Reuse original evidence; fix actual uncovered responsibilities, not fresh broad scans. Saved-search lifecycle is closed through product UI; no pending temporary filters.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -343,7 +343,25 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790769469765/report.json",
       "failure_owner": "P0 request identity: generic id interpreted as target model record",
       "fix": "filter_id explicit saved-search identity;29+42 tests and strict types passed",
-      "pending_private_filter_id": 9
+      "pending_private_filter_id": null
+    },
+    "favorite_lifecycle_53_14": {
+      "status": "passed",
+      "source_head": "0d2c6190a",
+      "reports": [
+        "artifacts/frontend-web-fix-20260928/tpl07-1790769636566/report.json",
+        "artifacts/frontend-web-fix-20260928/tpl07-1790769758359/report.json"
+      ],
+      "assertions": [
+        25,
+        24
+      ],
+      "restored_filter_ids": [
+        9,
+        10
+      ],
+      "restoration": "product search.favorite.delete plus authoritative empty readback and reload",
+      "ledger_remaining": 0
     }
   }
 }

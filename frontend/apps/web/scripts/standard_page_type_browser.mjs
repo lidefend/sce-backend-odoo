@@ -402,7 +402,7 @@ async function styleScope() {
 }
 
 try {
-  if (['favorite-lifecycle', 'favorite-lifecycle-resume'].includes(process.env.TPL07_SCOPE)) {
+  if (['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume'].includes(process.env.TPL07_SCOPE)) {
     const finance = await login('fixture_role_finance');
     const page = finance.page;
     await list(page, 545, 'favorite-lifecycle-list');
@@ -418,13 +418,15 @@ try {
       return response.data.records;
     }
     const baseline = await readFavorite();
-    const resuming = process.env.TPL07_SCOPE === 'favorite-lifecycle-resume';
+    const resuming = ['favorite-lifecycle-resume', 'favorite-active-delete-resume'].includes(process.env.TPL07_SCOPE);
     if (resuming) {
-      const originalPath = 'artifacts/frontend-web-fix-20260928/tpl07-1790769469765/report.json';
+      const originalPath = process.env.TPL07_SCOPE === 'favorite-active-delete-resume'
+        ? 'artifacts/frontend-web-fix-20260928/tpl07-1790769721849/report.json'
+        : 'artifacts/frontend-web-fix-20260928/tpl07-1790769469765/report.json';
       const original = JSON.parse(await fs.readFile(path.join(root, originalPath)));
       const created = original.favoriteCreated?.[0];
       check('favorite lifecycle: resume exact previously observed private record', original.favoriteSaved?.ok === true
-        && created?.id === 9 && baseline.length === 1 && JSON.stringify(baseline[0]) === JSON.stringify(created));
+        && created?.id === original.favoriteSaved?.data?.id && baseline.length === 1 && JSON.stringify(baseline[0]) === JSON.stringify(created));
       report.carriedForwardSave = originalPath;
     } else check('favorite lifecycle: named private configuration initially absent', baseline.length === 0);
     check('favorite lifecycle: explicit save authority', report.savedSearchAuthority?.save_enabled === true);
@@ -456,7 +458,14 @@ try {
     await menu.click();
     await deleteButton.waitFor();
     check('favorite lifecycle: reload retains saved item and deletion grant', await deleteButton.isEnabled());
-    for (const width of [1440, 390]) {
+    const activeDeletion = process.env.TPL07_SCOPE.startsWith('favorite-active-delete');
+    if (activeDeletion) {
+      await page.getByRole('button', { name: lifecycleName, exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get('saved_filter') === lifecycleName);
+      await menu.click();
+      check('favorite lifecycle: saved filter can be applied', await page.locator('[aria-pressed]').filter({ hasText: lifecycleName }).evaluateAll((nodes) => nodes.length > 0 && nodes.every((node) => node.getAttribute('aria-pressed') === 'true')));
+    }
+    for (const width of activeDeletion ? [390] : [1440, 390]) {
       await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
       if (!(await deleteButton.isVisible())) await menu.click();
       await deleteButton.click();
@@ -486,6 +495,10 @@ try {
     check('favorite lifecycle: server confirms exact deletion', deleted.ok === true && deleted.data?.deleted === true && deleted.data?.id === id);
     await dialog.waitFor({ state: 'detached' });
     check('favorite lifecycle: authoritative state restored', (await readFavorite()).length === 0);
+    if (activeDeletion) {
+      await page.waitForURL((url) => !url.searchParams.get('saved_filter'));
+      check('favorite lifecycle: deleting selected filter clears route state', !new URL(page.url()).searchParams.get('saved_filter'));
+    }
     check('favorite lifecycle: refreshed menu removed deleted entry', await deleteButton.count() === 0);
     await page.reload();
     await page.locator('[data-list-card-container="official"]').waitFor();
@@ -733,7 +746,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

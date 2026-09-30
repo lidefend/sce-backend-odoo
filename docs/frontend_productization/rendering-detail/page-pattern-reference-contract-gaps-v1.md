@@ -139,3 +139,10 @@ The67-entry reference ledger has no open items. Overall completion remains unpro
 The saved-search product currently exposes save but lacks a deletion/management entry. This is a P0 product gap, not merely an acceptance cleanup problem. Reopen `collection.favorite` in the existing67-entry ledger. Prior save-control, failure-feedback and cache-refresh results remain scoped evidence.
 
 Required closure: explicit per-filter deletion authority and executable binding, backend ownership/ACL enforcement, shared official-menu consumption, confirmation and success/failure feedback, followed by actual save→refresh→delete→authoritative refresh verification. An operational cleanup cannot satisfy those responsibilities. The proposed temporary P4 restore tool was withdrawn before any lifecycle configuration write or database operation.
+
+
+## Segment 53.14: saved-search product lifecycle closed
+
+The53.10 gap is closed by product implementation and real operation, not cleanup tooling. P0 projects per-filter `search.favorite.delete` actions with explicit `filter_id`/model/action identity and enforces current ownership plus native ACL/rules without elevation. The shared official menu and dialog provide confirmation, cancellation, pending protection and failure feedback. Successful deletion is distinguished from subsequent refresh failure.
+
+Runtime reports `tpl07-1790769636566/report.json` (25 assertions) and `tpl07-1790769758359/report.json` (24 assertions) bind their original successful save/readback reports. Private filters9 and10 were deleted through product UI, authoritative reads returned empty and reloads retained restoration. Deleting the selected favorite also cleared `saved_filter` route state. Narrow-screen confirmation was inspected. These are saved-search lifecycle results, not the older TPL05A49-case payment journey. The67 reference rows are again resolved; whole-goal completion still requires the original-scope audit and relevant mandatory gates.

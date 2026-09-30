@@ -7481,3 +7481,11 @@ L5：未推送、未合并、未部署。
 - 实际删除失败报告tpl07-1790769469765/report.json：INTENT_NOT_FOUND“记录[9]不存在”。P0 product_defect：请求model=payment.request与通用id=9触发路由前置业务记录检查，错误地把收藏ID当付款记录ID。不能修改/绕过通用权限保护；修正为明确filter_id，由收藏handler按ir.filters归属/ACL/record-rule执行。响应id仍是删除结果身份。
 - 生产者/consumer/handler及定向反例同步改filter_id；29项后端、42项前端及strict typecheck通过（tpl52/favorite-filter-identity-fix.log）。浏览器新增精确续验模式，只接受原报告所见id9及完整私有对象身份，不重建收藏；恢复只走产品删除入口。
 - 此处提交是修复候选，真实删除/恢复待新代码受管重载及构建后续验。既有id9仍须恢复，不能把失败或工具清理计作闭环完成。第二次构建属于已定位产品缺陷后的必要重验，不是无变化重建。
+
+
+### 53.14 收藏真实产品闭环完成
+
+- 0d2c6190a修复候选受管重载后端，必要重建21.79s，旧静态候选保留，5180复用同一产物。首次失败中的成功保存/回读不失效：仅续验精确私有收藏id9，tpl07-1790769636566/report.json（tpl52/favorite-lifecycle-resumed.log）25项通过。产品确认删除成功、api.data回读空集、有效契约刷新与再次reload均无旧收藏；未调用P4恢复工具。390确认截图已复核。
+- 为补“删除当前选中的收藏”的独立状态责任，通过相同产品入口保存私有非默认配置id10；应用后URL与菜单/条件标签均已选中。首次tpl07-1790769721849为validation_tool_defect：探针假定只有一个aria-pressed控件，实际两个选中控件均正确。修复为断言所有匹配控件均选中，不改产品、不重建；绑定原报告精确id10续验，tpl07-1790769758359/report.json（tpl52/favorite-active-delete-resumed.log）24项通过。删除后saved_filter路由清除、服务器空集、reload无残留。
+- 允许的写入只有fixture finance本人、payment.request/action775指定名称私有收藏的保存/删除；一次失败通过受控abort注入，记录未被删除且可重试。付款业务记录与共享配置未修改，未创建业务fixture。临时收藏9和10均由产品正常删除。
+- collection.favorite重新关闭，67条参考台账0开放项。29后端/42前端纯测试和strict types沿53.13修复证据复用；本节只改验收工具与记录，未变产品输入不再编译/构建。下一步执行总体完成核验，检查页面类型、旧路径退出、配置闭环及强制门禁，不能用台账0缺口代替总体完成。
