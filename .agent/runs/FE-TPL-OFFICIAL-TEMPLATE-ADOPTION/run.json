@@ -386,10 +386,20 @@
         "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
       ],
       "kind": "offline"
+    },
+    "readonly_relation_navigation": {
+      "target": "verify.frontend.contract_field_occurrence_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+        "frontend/apps/web/scripts/contract_field_occurrence_identity_test.ts",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.144 P0 readonly relation multiline clipping fixed through existing ScButton/theme appearance shared by FormSection. readonly14, adapter11 events+34 tests, static/type PASS; browser26 PASS tpl07-1790798391223 (1440/390 text bounds, no writes). Final5180 index-irmVWfdy.js build a6c29167b+four frontend dirty paths per receipt; backendd26bfec63 unchanged. First scoped-style candidate failed, corrected bridge candidate passed. Next existing67 contract-driven official consumption gaps, reuse valid evidence and known empty saved-record queries; no new fixture/push/merge/target deployment.",
+  "next_exact_step": "53.145 readonly relationship open/return fixed in generic P0 consumer; browser33 PASS tpl07-1790799185906, no writes, existing execution186 -> request1710 -> original record. Frontend index-CVVwVIuW.js (42e59c902 + owned frontend dirty), backendd26bfec63 unchanged. Continue existing67 contract-driven official consumption and open detail.action-state business gaps; reuse prior tests and known empty authorized queries. No fixture/push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

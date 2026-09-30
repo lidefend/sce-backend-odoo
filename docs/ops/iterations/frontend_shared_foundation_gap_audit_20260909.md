@@ -8868,3 +8868,18 @@ L1 readonly-relation-iteration/bridge-iteration PASS。readonly-main-data-covera
 发生两次构建：首次局部样式候选实测失败，修复拥有层并完成定向检查后必要重建；不是为刷新SHA重跑。最终readonly-relation-bridge-build/preview及browser日志、tpl07-1790798391223 26 PASS，errors=[]/forbiddenWrites=[]。1440文字3行完整在66px按钮内，390文字5行完整在110px按钮内；390截图人工查看，冲销确认取消/删除限制及无整页溢出仍通过。未实际点击关系跳转或冲销，导航事件逻辑未变。
 
 当前5180入口/assets/index-irmVWfdy.js，entry_sha256=aeabd7ab54a6c29df03b60102592709c6301a29854cb890adc048091e3523196；index_sha256=85acb940109b93157919e2dc4ee5955eed64d4e7975de6f4b212c7f6d50371ff。构建绑定a6c29167b加当时四个frontend文件dirty，diff_sha256=2d791821a7b90f48434a1bfeebda00a27e3ac0f613111a8fe6e30d8253b22d63；backend仍d26bfec63。记录的是迭代候选，不冒称clean冻结交付。旧未变输入证据按影响复用，已知空授权记录不重复。整体67/detail.action-state等未验证业务职责保持开放，无推送合并目标部署。
+
+
+### 53.145 只读关系导航真实打开与返回闭环
+
+起点42e59c902，延续三个已归属frontend dirty文件。P0共享useRecordFormState将打开已有关系记录从字段写入守卫之前分派给既有关系导航；导航仍由relation_entry.canRead/canOpen、真实记录ID和声明menu/action控制。创建、搜索选择、清空及改值仍受字段可写/occurrence约束，不引入模型业务分支或第二份状态。P4仅扩展现有standard_page_type_browser；无后端/数据库变更，不升级ORM。
+
+实际缺陷基线tpl07-1790798526248：按钮呈现但readonly写保护吞掉导航。修复后目标契约已返回，探针先后暴露三项错误假设：按请求model筛选遗漏action型请求；浏览器返回缓存页不一定再次请求契约；ScStatusBadge包含无障碍“状态：”前缀，精确裸文本“已付款”无法匹配。对应失败报告1790798741052/1790798813105/1790798883838/1790798935868保留，不算通过。最后一项先前误判为时序，现按组件源与失败日志纠正为定位器错误；改查业务状态区域中的既有title，未调整产品状态或增加固定延时。
+
+L1 readonly-relation-open-iteration及final-iteration PASS；open-checks中的关系入口guard、create journey（必填10/scene mutation4）、严格类型PASS按未变生产依赖复用。新增只读open/四种写操作拒绝5case，保留原occurrence身份反例；final-unit PASS，已用正确注册的readonly_relation_navigation完成begin/record非零回执。首次误用未登记check被拒，未签成功；随后误选form_field_policy仅begin未record，不计其验证证据。
+
+产品修复稳定后一次构建readonly-relation-open-build/preview，5180加载/assets/index-CVVwVIuW.js，entry_sha256=3f6670d2851a1b2c0cbc473fee0f4f8279f2c39da98a8bfa0ee2dd1dae152f4f，index_sha256=1e2a5368cd7e5b8b11b36309c350e49fbc005717620bd0b83632043503846491；build base42e59c902加当时三个frontend dirty，diff_sha256=836ca2dc832cf24b533c49e40120d0a55e2f1e2c0e1deb2740b0c59cce282bd1。其后仅探针修正，不重建；backend仍d26bfec63。现有local/sc-fe-r2-p1-01/sc_frontend_acceptance身份由浏览器前置验证。
+
+readonly-relation-final-browser.log / tpl07-1790799185906：33 PASS，errors=[]、forbiddenWrites=[]。既有finance执行186经关系值打开payment.request1710，声明menu545/action775、来源return_url/model/field及目标readonly官方详情验证通过；browser back恢复原URL/模型/记录、可见已付款徽标和唯一撤销付款入口，没有重复付款按钮。1440/390原关系换行及确认取消检查继续通过；返回390截图人工核对当前标签为执行单、标题状态一致。此处没有实际冲销或业务写入，实际现金/冲销证据仍引用53.138运行10。
+
+动作声明actions与当前可执行availableActions不可混淆；本记录确有目标ID/方法/enabled等执行契约，本缺陷属于消费链。只读关系旧的误用写权限拦截已退出；原只读编辑保护保持。总体67/detail.action-state及空授权收款/调整已保存办理等缺口仍开放，不自动升级业务矩阵。无推送、合并或目标部署。

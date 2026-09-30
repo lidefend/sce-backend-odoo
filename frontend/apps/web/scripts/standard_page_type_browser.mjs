@@ -1242,6 +1242,57 @@ try {
         check(`${spec.model}-${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         await session.page.screenshot({ animations: 'disabled', path: path.join(out, `${spec.model}-${width}.png`) });
       }
+      if (spec.model === 'sc.payment.execution') {
+        const originUrl = session.page.url();
+        const relationValue = authority.mainData.payment_request_id;
+        const targetId = Number(relationValue[0]);
+        const fields = [];
+        const walk = (nodes) => { for (const node of nodes || []) { if (node.type === 'field') fields.push(node); walk(node.children); } };
+        walk(authority.layout?.containerTree);
+        const entry = fields.find((field) => field.name === 'payment_request_id')?.fieldInfo?.relation_entry;
+        check('paid relation: explicit authorized entry', entry?.can_read === true && entry.can_open === true && entry.model === 'payment.request');
+        const waitRecordContract = (model, id) => session.page.waitForResponse(async (response) => {
+          try {
+            const body = response.request().postDataJSON();
+            if (!String(body?.intent || '').startsWith('ui.contract')) return false;
+            const current = findRecordAuthority(await response.json());
+            return current?.model === model && Number(current.mainData?.id) === id;
+          } catch { return false; }
+        });
+        const targetResponse = waitRecordContract(entry.model, targetId);
+        await session.page.getByRole('button').filter({ hasText: String(relationValue[1]) }).click();
+        const targetAuthority = findRecordAuthority(await (await targetResponse).json());
+        await session.page.waitForURL((url) => url.pathname.endsWith(`/payment.request/${targetId}`));
+        const targetUrl = new URL(session.page.url());
+        check('paid relation: target uses declared menu and action', Number(targetUrl.searchParams.get('menu_id')) === Number(entry.menu_id)
+          && Number(targetUrl.searchParams.get('action_id')) === Number(entry.action_id));
+        const sourceUrl = new URL(originUrl);
+        check('paid relation: return context preserves source', decodeURIComponent(targetUrl.searchParams.get('return_url') || '') === `${sourceUrl.pathname}${sourceUrl.search}`
+          && targetUrl.searchParams.get('return_model') === spec.model && targetUrl.searchParams.get('return_field') === 'payment_request_id');
+        const targetProfile = targetAuthority.status.effectiveRenderProfile;
+        await session.page.locator(targetProfile === 'readonly'
+          ? '[data-detail-composition="official-standard-detail"][data-state="ok"]'
+          : '[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
+        check('paid relation: target identity and declared renderer', Number(targetAuthority.mainData.id) === targetId
+          && await session.page.locator('[data-field-fail-closed]').count() === 0);
+        report.paidRelationNavigation = { source: { model: spec.model, id: record.id, url: originUrl }, target: { model: entry.model, id: targetId, url: targetUrl.href, profile: targetProfile } };
+        await session.page.goBack();
+        await session.page.waitForURL(originUrl);
+        const restoredPage = session.page.locator(`[data-form-model="${spec.model}"][data-form-record="${record.id}"][data-detail-composition="official-standard-detail"][data-state="ok"]`);
+        await restoredPage.waitFor();
+        check('paid relation: browser back restores exact source', session.page.url() === originUrl && await restoredPage.count() === 1);
+        await restoredPage.getByRole('button', { name: '撤销付款', exact: true }).waitFor({ state: 'visible' });
+        // The status badge includes the accessibility prefix “状态：”; its
+        // declared title identifies the label without assuming a bare text node.
+        await restoredPage.getByLabel('业务状态', { exact: true }).getByTitle('已付款', { exact: true }).waitFor({ state: 'visible' });
+        const terminalActions = {
+          reversal: await restoredPage.getByRole('button', { name: '撤销付款', exact: true }).count(),
+          duplicatePayment: await restoredPage.getByRole('button', { name: '已付款', exact: true }).count(),
+        };
+        check('paid relation: cached source keeps terminal actions', terminalActions.reversal === 1 && terminalActions.duplicatePayment === 0, terminalActions);
+        await session.page.screenshot({ animations: 'disabled', path: path.join(out, 'paid-relation-return.png') });
+        check('paid relation: navigation dispatched no business write', report.forbiddenWrites.length === 0);
+      }
       await session.ctx.close();
     }
   } else if (process.env.TPL07_SCOPE === 'detail-state') {

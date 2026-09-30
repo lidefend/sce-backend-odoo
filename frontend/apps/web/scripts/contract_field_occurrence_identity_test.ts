@@ -370,4 +370,30 @@ function createRuntime(overrides: Record<string, unknown> = {}) {
   assert.deepEqual([...readonlyRuntime.dirty], [], 'the real entry chain leaves the draft untouched for a read-only occurrence');
 }
 
+// Opening an existing record is navigation, not a draft mutation. The existing
+// relationship navigation handler owns canRead/canOpen; write-only operations
+// must still fail at this occurrence boundary.
+{
+  const opened: string[] = [];
+  const edits: string[] = [];
+  const { runtime, formData, dirty, changed, timerCalls } = createRuntime({
+    canonicalFieldWritable: () => false,
+    fieldOccurrenceDecision: () => 'blocked',
+    openRelationRecordForm: async (name: string) => { opened.push(name); },
+    openRelationCreateForm: async () => { edits.push('create'); },
+    openRelationSearchDialog: async () => { edits.push('search'); },
+  });
+  runtime.setMany2oneField('owner_id', undefined, '__open_record__', 'field.owner.readonly');
+  assert.deepEqual(opened, ['owner_id'], 'readonly relation opening delegates to the authorized navigation handler');
+  for (const value of ['31', '', '__create__', '__search_more__']) {
+    runtime.setMany2oneField('owner_id', undefined, value, 'field.owner.readonly');
+  }
+  assert.deepEqual(edits, [], 'readonly navigation cannot grant create or selection rights');
+  assert.equal(formData.owner_id, 17, 'readonly navigation never changes the relationship');
+  assert.equal(dirty.size, 0);
+  assert.equal(changed.size, 0);
+  assert.equal(timerCalls.length, 0, 'navigation does not trigger onchange');
+}
+console.log('[readonly-relation-navigation] PASS cases=5');
+
 console.log('[contract-field-occurrence-identity] PASS counterexample=read-only-position-cannot-write-via-writable-sibling');
