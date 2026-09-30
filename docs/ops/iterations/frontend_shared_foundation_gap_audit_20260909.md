@@ -9137,3 +9137,14 @@ P0 ba1d18e595f04c84875e54ddeab3688ce1a01846：list_search.audit新增可选sugge
 后端受管刷新ba1d18e59，无字段/XML变化不升级/ORM；一次受管前端build/up，entry/assets/index-DsM2C-7X.js，sha256=8c47636f9fa8d26722c21e6aafec3b4f66dbd4f9c37847854cb6af116b80c858。standard_config_field.browser config-field-1790805723804/report.json16 PASS：从同次audit拿到attachment_ids标签“附件”，实际选中chip唯一匹配；适用角色显示未限定角色；1440/390标题/表单/整页宽度保持；errors/blocked空，所有编辑本地未保存。人工核对target-scope.png已加载付款申请、未限定角色、默认配置及版本来源，不再引用53.163加载中截图作为稳定摘要。新增id为原只读探针本地输入测试，关闭丢弃，无正式配置或业务写入。
 
 本次新增显示元数据不改变列集/序列、stage、发布/回滚、业务读写，按输入依赖复用53.163发布回滚15与53.165UI编辑暂存12，不因换SHA再次配置写入。配置代表链已具原生即时策略变化/恢复、API完整能力发布恢复、UI发布回滚、UI编辑更新暂存与放弃、官方布局及描述证据；不外推所有低代码职责或从空草稿创建。下一步回到原67/detail.action-state未完成业务责任，按既有记录选择尚缺的实际处理链，不能把配置局部完成改写成全系统交付。无推送/合并/目标部署。
+
+
+### 53.167 多附件部分失败的共享队列恢复（代码验证完成，运行验证待续）
+
+4a315f10f起点，既有未提交范围为useNativeAttachmentRuntime、新增native_attachment_partial_failure_test、make/frontend.mk及原run输入声明。P0通用前端附件执行器：逐项uploadFile成功返回后立即从待上传队列移除，以快照遍历剩余项；后续失败不重传已确认文件。没有模型专属规则，不改变审批状态机、附件业务要求、上传权限或已关闭的异步身份保护；P1/P2/P3无变化。风险是共享上传恢复行为，回滚范围为该hook与定向测试入口。
+
+L1 make ci.local.iteration已通过，复用attachment-partial-iteration.log，不重复执行。L2 verify.frontend.create_record_user_journey.unit已终止且通过，具名计数66（旧明确计数62+新增Node4，checkpoints摘要不另计）；实际hook测试覆盖第二项上传失败后仅重试失败/未尝试项、文件转换失败、首项失败以及全部成功后时间线读取失败不重排队。agent.run.begin/record scene_mutation_outcome完成，日志attachment-partial-begin/unit/receipt。verify.frontend.typecheck.strict进程正常退出0，日志attachment-partial-types。候选为4a315f10f+上述dirty范围，不称冻结身份。
+
+本次是共享消费/执行恢复缺陷，不是动作契约缺失。动作声明、有效执行契约和真实处理验收须分别判断；detail.action-state中的未验证责任不得全部改称无契约。现有业务状态机/配置证据输入未改，复用53.161/163/165/166。L3后端/ORM/模块升级不适用；L4真实多附件部分失败与恢复尚未运行，5180仍ba1d18e59/index-DsM2C-7X.js，不宣称修复已加载；L5非本次集成阶段不运行Quick/发布。
+
+下一步仅扩展现有受管expense探针及精确清理的两附件范围，在第二份上传注入明确失败，验证首份保留、恢复同一单据且不重复创建，再构建一次并检查实际浏览器。测试工具必须绑定两个准确文件名、内容及创建身份，不能泛化附件清理。当前纯测不证明网络响应丢失后的服务端去重，也不证明整页跳转保留File对象；已有恢复导航要求重新选择失败文件。总体67/detail.action-state继续开放，无推送、合并、目标部署。

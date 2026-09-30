@@ -821,6 +821,7 @@ verify.frontend.create_default_hydration.unit: guard.prod.forbid
 verify.frontend.create_record_user_journey.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_record_user_journey_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/create-record-user-journey-test.mjs >/dev/null
 	@node /tmp/create-record-user-journey-test.mjs
+	@node --test frontend/apps/web/scripts/native_attachment_partial_failure_test.mjs
 
 .PHONY: verify.frontend.contract_field_occurrence_identity.unit
 verify.frontend.contract_field_occurrence_identity.unit: guard.prod.forbid

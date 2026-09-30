@@ -345,7 +345,9 @@
       "inputs": [
         "frontend/apps/web/src/app/sceneMutationRuntime.ts",
         "frontend/apps/web/scripts/create_record_user_journey_test.ts",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts",
+        "frontend/apps/web/scripts/native_attachment_partial_failure_test.mjs"
       ]
     },
     "relation_query_scope": {
@@ -440,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.166 config descriptor+stable summary closed: backend/frontendba1d18e59 index-DsM2C-7X.js; unit229/strict; readonly16 config-field-1790805723804 verifies attachment label and unscoped target stable header. Reuse UI publish15 and UI stage12 by metadata-only impact. Return to existing67/detail.action-state business responsibility gaps: read its latest unresolved cases and existing runtime reports, select a concrete missing actual handling/contract chain; do not repeat completed config loops or scans. Config UI-from-empty-draft/all-lowcode and remaining business coverage not claimed. No push/merge/targetdeploy/newfixture/ORM.",
+  "next_exact_step": "53.167 P0 pending attachment queue removes each confirmed upload; L1, create_record_user_journey.unit66, strict passed; scene_mutation_outcome receipt recorded. Runtime remains ba1d18e59. Next extend existing expense browser/cleanup scope for exactly two owned files and failure on second upload, test bounded authorization/cleanup, then one managed build and affected recovery journey. No repeated single-file/config/ORM scans. Declaration, effective action contract, and unverified handling are distinct; overall67/detail.action-state remains open. No push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

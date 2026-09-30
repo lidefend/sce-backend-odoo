@@ -591,3 +591,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.166：53.165已选集合列标签缺口已由P0 suggested_list_column_labels补齐（ba1d18e59，229测试/strict）；只读config-field-1790805723804的16项PASS证明附件chip契约标签、未限定角色、稳定付款申请/配置来源摘要及双视口。配置写入链证据按无相关输入变化复用53.163/165，不重跑。总体detail.action-state及未覆盖业务责任仍开放。
+
+
+53.167：多附件部分失败为P0共享执行恢复缺陷，并非动作声明缺少契约。useNativeAttachmentRuntime逐项确认后移除待上传项，定向66及strict通过（attachment-partial-*）；同一队列恢复不重复已确认上传。真实两附件浏览器与候选加载待续，不能以纯测关闭运行验收；53.159单附件证据保留、不外推网络响应丢失去重。

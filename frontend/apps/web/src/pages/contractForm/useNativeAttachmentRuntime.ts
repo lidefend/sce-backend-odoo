@@ -92,7 +92,7 @@ export function useNativeAttachmentRuntime(params: {
     error.value = '';
     uploading.value = true;
     try {
-      for (const item of pendingAttachments.value) {
+      for (const item of [...pendingAttachments.value]) {
         const { data, mimetype } = await fileToBase64(item.file);
         await uploadFile({
           model: modelName,
@@ -101,8 +101,10 @@ export function useNativeAttachmentRuntime(params: {
           mimetype,
           data,
         });
+        // Only confirmed uploads leave the queue. A later failure must not
+        // replay files that already exist on the saved record.
+        removePendingAttachment(item.key);
       }
-      pendingAttachments.value = [];
       await params.reloadTimeline(resId, modelName);
       return true;
     } catch (err) {
