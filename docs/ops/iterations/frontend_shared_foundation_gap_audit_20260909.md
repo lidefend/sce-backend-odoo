@@ -9407,3 +9407,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 最终有序证据：`report-handling-final-iteration.log` L1 PASS；`report-handling-final-unit.log` **16 Node+26 Python=42 PASS**，对应agent.run.begin/record非零回执；`report-handling-final-browser.log` 指向 **tpl07-1790811348619/report.json 27 PASS**。PM uid32创建父计划52/汇报10，原生提交后state=accepted、确认日期存在、无虚构人工审批人；官方只读详情1440/390、返回 `/a/656?menu_id=508` 官方列表，真实查询model=sc.plan.report/company8/menu508/order=report_date desc,id desc/offset0/limit20返回id10。截图已检查；final清理回执同时记录report10/parent52已恢复。
 - 诊断与修正如实保留：首次25项运行 `tpl07-1790811187626`；新增返回检查 `tpl07-1790811247678` 因未等待异步列表响应、页签同名文本提前满足而失败（最终响应实际包含id8），改为等待对应响应和表格行；`tpl07-1790811296771` 27项通过但仅保留诊断。执行器漏拦了此前L1 `test_frontend_standard_preview.py` EOF空行失败，不能拿这些运行代替顺序门禁；修正后重新按L1→L2→浏览器运行上面的最终证据，所有诊断运行的临时对象也均已清理。不得把之前L1称为通过。
 - 本次仅关闭无审批配置的普通角色汇报办理闭环；53.189/190有配置真实审批与最终契约14项沿用，未据此声称多角色审批UI完成。计划版本当前仅draft/approved字段和审核字段、没有正式动作，继续作为P1产品缺口补齐。整体67条台账仍在推进，未推送/合并/目标部署。
+
+
+### 53.192 计划版本正式确认及审批契约（运行验收待执行）
+
+- `16cca4bee` clean起点。P1 smart_construction_core版本业务职责：保留draft/approved状态，复用tier.validation和公司审批配置，未配置提交自动确认，有配置完成真实审批才确认；审核人取真实review.done_by，自动确认不伪造审核人。禁止直接写状态/审核结果、审批中或确认后的内容修改与删除，退回草稿可修订重提；基准版本须同计划且非自身，既有(plan_id,version_no)唯一约束保留。
+- 工作流profile、审批配置目标/同步回调和原生独立版本form接线；原父计划内版本tree的审核字段及state只读，内容依审批状态限制。版本说明/差异说明语义不变，不新增快照生成、不自动改写父计划或执行节点，前端无业务特判。P4仅新增既有rollback工具 `plan-version` 范围，不新建环境/fixture。
+- L1 `plan-version-iteration.log`/`plan-version-tool-iteration.log` PASS；业务定向 `plan-version-unit.log` **186 PASS**，agent.run.begin/record已登记；受管运行工具 `plan-version-tool-unit.log` **44 PASS**及environment source guard PASS。产品变更需要模块升级，L3/最终页面/browser尚未执行；前端e19eb1e16未变不构建。已有汇报27/14证据保留。

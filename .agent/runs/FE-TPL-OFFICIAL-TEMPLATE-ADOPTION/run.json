@@ -455,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.191 ordinary PM report handling closed for unconfigured approval: final ordered L1 PASS, standard_preview_tool42 PASS receipt, tpl07-1790811348619 browser27 PASS; exact parent52/report10 create-submit accepted-readonly-detail-return /a/656?menu_id=508 and actual list query id10; final cleanup both absent actor32. Product backend7670465a1 and frontend e19eb1e16 unchanged. Earlier browser runs diagnostic due missed EOF static failure and response timing corrected; preserve original logs. Next P1 sc.plan.version has only draft/approved state and editable approval facts, no formal actions/tier: unify confirmed version responsibility using existing approval/state contract without inventing snapshot execution; then finish parent execution UI. Configured approval backend14 reused; multi-role approval UI/overall67 still open; no push/merge/targetdeploy.",
+  "next_exact_step": "53.192 plan-version P1 shared approval/native form implemented, draft/approved values preserved; external state/audit forgery and pending/approved edits/unlink blocked, rejected edit restored. L1 PASS, pure186 PASS receipt, P4 runtime wrapper44 PASS. Next managed module upgrade and backend bind followed by plan-version rollback scope10; not yet runtime/browser accepted. Frontend e19eb1e16 unchanged; report PM27 evidence reused. Overall67 open; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
