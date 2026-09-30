@@ -3323,6 +3323,32 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             row.state, row.validation_status = state, status
             self.assertFalse(ns[method.name](row, {'description': 'changed'}))
 
+    def test_plan_reviewed_definition_is_protected_without_freezing_child_execution(self):
+        path = MODEL.with_name('plan_management.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        token, writes = object(), []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        row = types.SimpleNamespace(state='draft', validation_status='no')
+        rows = Rows([row]); rows.env = types.SimpleNamespace(context={'skip_validation_check': True, 'sc_document_state_token': True})
+        for state, approval in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'),
+                                ('confirmed', 'no'), ('in_progress', 'validated'), ('done', 'no'), ('cancel', 'no')):
+            row.state, row.validation_status = state, approval
+            for vals in ({'name': 'changed'}, {'project_id': 2}, {'company_id': 2}, {'planned_finish': '2026-12-31'},
+                         {'owner_id': 2}, {'version_stage': 'adjustment'}, {'note': 'changed'}, {'attachment_ids': [(5, 0, 0)]}):
+                with self.subTest(state=state, approval=approval, vals=vals), self.assertRaises(ValueError):
+                    ns['write'](rows, vals)
+        self.assertEqual(writes, [])
+        row.state, row.validation_status = 'draft', 'rejected'
+        self.assertTrue(ns['write'](rows, {'name': 'corrected', 'note': 'corrected'}))
+        row.state, row.validation_status = 'in_progress', 'validated'
+        self.assertTrue(ns['write'](rows, {'line_ids': [(1, 5, {'progress_rate': 50})]}))
+        self.assertTrue(ns['write'](rows, {'report_ids': [(0, 0, {'summary': 'execution'})]}))
+        rows.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'done', 'actual_finish': '2026-10-01'}))
+
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')

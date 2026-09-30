@@ -108,8 +108,20 @@ class ScPlan(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if "state" in vals and self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN:
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if "state" in vals and not authoritative:
             raise UserError(_("计划状态只能由正式业务动作写入。"))
+        # Child execution is governed separately; these are the reviewed plan facts.
+        definition_fields = {
+            "name", "plan_type", "project_id", "company_id", "owner_id", "department_id",
+            "phase_name", "template_name", "creation_method", "version_stage", "report_cycle",
+            "planned_start", "planned_finish", "note", "attachment_ids",
+        }
+        if not authoritative and definition_fields.intersection(vals) and any(
+            rec.state != "draft" or getattr(rec, "validation_status", "") in ("waiting", "pending", "validated")
+            for rec in self
+        ):
+            raise UserError(_("已提交审批或已确认的计划基准内容不可直接修改。"))
         return super().write(vals)
 
     def _check_allow_write_under_validation(self, vals):
