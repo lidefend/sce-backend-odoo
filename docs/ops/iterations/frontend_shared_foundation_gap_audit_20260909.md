@@ -5699,6 +5699,33 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 2. 临时注入 `{"key":"some_new_object_action","method":"action_some_new_thing"}` → **exit 1**，点名该 key。
 3. 两次恢复后 `git diff --stat` 均为空 → 守卫 **exit 0**。**产品文件零改动得到证明。**
 
+### 5b. 接线收口：让守卫真的会被自动运行
+
+写完 §4 后核查守卫是否进入任何自动门禁，发现同一形态的第二处实例：
+
+`workflow_action_semantics_completeness_guard` 只挂在 `verify.workflow_contract.backend` 下，
+而该目标仅被 `verify.workflow_contract` 引用，**后者不被任何 CI lane 引用**
+（`grep -rn "verify.workflow_contract\b" make/ .github/workflows/` 只命中定义自身）。
+即：**守卫此前只在我手动运行时生效，从不进入自动门禁**——正是本段主题：
+「一条真实路径从未进入验收射程」，只不过这次是守卫自己。
+
+**收口**（只改 `make/ci.mk`，产品代码零改动）：
+
+- 新增轻量目标 `verify.workflow_action_semantics.guard`（`py_compile` + 守卫 + 15 项单测），
+  **不依赖容器**与 `audit.workflow_state.inventory`。
+- 接入 `verify.unified_page_contract.v2` 与 `verify.unified_page_contract.v2.professional_backend`
+  （两者已有 `verify.native_view.workflow_action_coverage`、`verify.workflow_state_phase_coverage`）。
+- `verify.workflow_contract.backend` 改为依赖该新目标并移除重复调用，保持**单一接线权威**。
+
+**验证**：
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.workflow_action_semantics.guard` | **PASS**（守卫 + 15 项单测） |
+| L1 | `make -n verify.unified_page_contract.v2` | 命中该守卫 **3** 次调用（py_compile/守卫/单测） |
+| L1 | `make -n ci.local.quick.run` | 同样命中 **3** 次 → **Quick/交付 lane 会执行它** |
+| L1 | `make ci.local.iteration` | **PASS** |
+
 ### 6. 缺口处理规则（本段落地形态）
 
 **一条可被 Web 执行的对象方法动作，要么声明已发布语义，要么以带理由的导航豁免登记并满足硬化条件；
@@ -5706,7 +5733,7 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 
 ### 7. 候选与运行身份
 
-- 源码：`28c838c52`（段 37 记录提交）+ 本段两个验证脚本文件（提交前工作树）。
+- 源码：`4da430d50`（本段第一笔）+ 接线提交（`make/ci.mk`）。
 - 本轮**未改 `addons`**，容器 `sc-backend-odoo-acceptance` 仍绑 `SC_SOURCE_REVISION=15351d632…`
   （`SC_SOURCE_FINGERPRINT=4a3c77c5…`），无需重建。
 - 本轮**未构建前端**；5180 仍为段 37 产物（`pid=802966`，`127.0.0.1:5180` 监听），
@@ -5742,7 +5769,8 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 ### 10. 提交
 
 - `fix(verify): prove the financial workspace action authority is classified`（守卫 + 15 项单测）
-- 本段记录随该提交保存。
+- `fix(ci): run the workflow action semantics guard from the contract lanes`（`make/ci.mk` 接线）
+- 本段记录随这两笔提交保存。
 
 ### 状态
 
