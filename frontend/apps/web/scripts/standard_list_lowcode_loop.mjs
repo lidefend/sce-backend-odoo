@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isDeepStrictEqual } from 'node:util';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -17,6 +18,18 @@ export function permitsOwnedChangeSetUiWrite(body, token) {
   return Boolean(token && ['ui.business_config.change_set.validate', 'ui.business_config.change_set.publish',
     'ui.business_config.change_set.rollback'].includes(body?.intent)
     && body.params?.change_set_token === token && !body.params?.role_key);
+}
+
+export function permitsOwnedListStage(body, token, columns) {
+  const p = body?.params;
+  if (!token || p?.change_set_token !== token || p?.role_key) return false;
+  if (body.intent === 'ui.business_config.change_set.discard') return true;
+  return body.intent === 'ui.business_config.change_set.stage' && p.model === 'payment.request'
+    && p.action_id === 775 && !p.view_id && p.config_type === 'list' && p.view_type === 'tree'
+    && p.target_key === 'view_orchestration:payment.request:tree:action:775:view:0'
+    && isDeepStrictEqual(p.draft_payload, { view_orchestration: { views: { tree: {
+      columns: columns.map((name, index) => ({ name, sequence: (index + 1) * 10 })),
+    } } } });
 }
 
 export async function recoverChangeSet(cs, token, requestId, publishAttempted = false) {
@@ -149,7 +162,9 @@ export async function runStandardListLoop() {
   const save = () => fs.writeFile(path.join(out, 'report.json'), JSON.stringify(report, null, 2), { mode: 0o600 });
   const check = (name, condition) => { report.assertions.push({ name, passed: Boolean(condition) }); assert.ok(condition, name); };
   let browser, page, workbench, token, baseline, baselineProjection, baselineLabel, publishAttempted = false;
-  const uiPublish = process.env.WEB_LC_UI_PUBLISH === '1';
+  const uiStage = process.env.WEB_LC_UI_STAGE === '1';
+  const uiPublish = process.env.WEB_LC_UI_PUBLISH === '1' || uiStage;
+  let stagedColumns = [];
   const bootstrap = new Set();
   const errors = [];
   async function intent(name, params) {
@@ -247,8 +262,11 @@ export async function runStandardListLoop() {
     token = opened.token;
     report.change_set_token = token;
     await save(); // Recovery identity is durable before any publish request.
-    const label = `配置闭环-${run.slice(-8)}`;
-    await cs('stage', { change_set_token: token, config_type: 'list', target_key: run, model: 'payment.request', action_id: 775, view_type: 'tree', draft_payload: { view_orchestration: { source: 'smart_core.lowcode.business_config', views: { tree: { columns: completeLabelColumns(baselineContract, label) } } } } });
+    const label = uiStage ? baselineLabel : `配置闭环-${run.slice(-8)}`;
+    const stageKey = uiStage ? 'view_orchestration:payment.request:tree:action:775:view:0' : run;
+    stagedColumns = [...baselineContract.layoutContract.listProfile.columns];
+    if (uiStage) [stagedColumns[0], stagedColumns[1]] = [stagedColumns[1], stagedColumns[0]];
+    await cs('stage', { change_set_token: token, config_type: 'list', target_key: stageKey, model: 'payment.request', action_id: 775, view_type: 'tree', draft_payload: { view_orchestration: { source: 'smart_core.lowcode.business_config', views: { tree: { columns: completeLabelColumns(baselineContract, label) } } } } });
     check('validated ready', (await cs('validate', { change_set_token: token })).state === 'ready');
     const preview = await cs('preview', { change_set_token: token, device: 'desktop' });
     check('preview has no formal configuration writes', preview.preview?.formal_config_mutation_count === 0);
@@ -273,7 +291,7 @@ export async function runStandardListLoop() {
         const body = route.request().postDataJSON();
         const name = body?.intent || '';
         if (name.startsWith('ui.business_config.change_set.') && !['get', 'open', 'resume'].some((op) => name.endsWith(`.${op}`))) {
-          if (!permitsOwnedChangeSetUiWrite(body, token)) { errors.push('UI attempted an unowned change-set mutation'); return route.abort(); }
+          if (!(uiStage ? permitsOwnedListStage(body, token, stagedColumns) : permitsOwnedChangeSetUiWrite(body, token))) { errors.push('UI attempted an unowned change-set mutation'); return route.abort(); }
           if (name.endsWith('.publish')) {
             report.publish_request_id = body.params.request_id;
             report.publish_attempted = publishAttempted = true;
@@ -291,12 +309,48 @@ export async function runStandardListLoop() {
       const resumed = workbench.waitForResponse((res) => {
         try { const body = res.request().postDataJSON(); return body?.intent === 'ui.business_config.change_set.open' && body.params?.target_model === 'payment.request' && Number(body.params?.target_action_id) === 775; } catch { return false; }
       });
-      await workbench.goto(`${base}/admin/business-config?model=payment.request&action_id=775&menu_id=545`);
+      await workbench.goto(`${base}/admin/business-config?model=payment.request&action_id=775&menu_id=545${uiStage ? '&open_list_search=1' : ''}`);
       const resumedResponse = await resumed;
       const resumedBody = await resumedResponse.json();
       report.uiResume = { params: resumedResponse.request().postDataJSON()?.params, ok: resumedBody.ok, state: resumedBody.data?.state, keys: Object.keys(resumedBody.data || {}), owned: resumedBody.data?.token === token };
       await save();
       assert.ok(report.uiResume.owned, 'workbench resumes the owned draft');
+      if (uiStage) {
+        const editor = workbench.locator('.field-chip-editor').filter({ hasText: '默认列表列' });
+        await editor.waitFor();
+        const chips = editor.locator('.field-chip');
+        assert.equal(await chips.count(), stagedColumns.length, 'editor must retain the complete column universe');
+        const original = await chips.allTextContents();
+        await chips.nth(0).getByRole('button', { name: /^下移/ }).click();
+        const reordered = await chips.allTextContents();
+        assert.deepEqual(reordered, [original[1], original[0], ...original.slice(2)]);
+        const saved = workbench.waitForResponse((res) => {
+          try { return res.request().postDataJSON()?.intent === 'ui.business_config.change_set.stage'; } catch { return false; }
+        });
+        await workbench.getByRole('button', { name: '保存列表与搜索', exact: true }).click();
+        const staged = await (await saved).json();
+        assert.equal(staged.ok, true);
+        const readback = await cs('get', { change_set_token: token });
+        assert.equal(readback.items.length, 1, 'UI updates the same draft item');
+        assert.deepEqual(readback.items[0].draft_payload.view_orchestration.views.tree.columns.map((row) => row.name), stagedColumns);
+        check('UI reorder saved and authoritative draft readback matches', true);
+        assert.deepEqual(labelOnlyProjection(await contract(), baselineLabel), baselineProjection, 'staging cannot alter the effective contract');
+        check('UI stage leaves published page unchanged', true);
+        await workbench.getByText('列表与搜索修改已加入待发布变更', { exact: true }).waitFor();
+        await workbench.screenshot({ path: path.join(out, 'workbench-staged.png') });
+        const discarded = workbench.waitForResponse((res) => {
+          try { return res.request().postDataJSON()?.intent === 'ui.business_config.change_set.discard'; } catch { return false; }
+        });
+        await workbench.getByRole('button', { name: '放弃草稿', exact: true }).click();
+        assert.equal((await (await discarded).json()).data?.state, 'discarded');
+        report.recovery = 'discarded'; token = null;
+        assert.deepEqual(await observe(field[1]), beforeHeaders);
+        check('UI discard preserves baseline page and business facts', true);
+        check('no browser exceptions', errors.length === 0);
+        report.status = 'passed';
+        return;
+      }
+
       const response = workbench.waitForResponse((res) => {
         try { return res.request().postDataJSON()?.intent === 'ui.business_config.change_set.publish'; } catch { return false; }
       });

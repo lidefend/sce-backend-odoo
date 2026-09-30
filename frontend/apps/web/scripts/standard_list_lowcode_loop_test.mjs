@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { permitsOwnedChangeSetUiWrite, recoverChangeSet, listLabels, recordIds, completeLabelColumns, labelOnlyProjection } from './standard_list_lowcode_loop.mjs';
+import { permitsOwnedListStage, permitsOwnedChangeSetUiWrite, recoverChangeSet, listLabels, recordIds, completeLabelColumns, labelOnlyProjection } from './standard_list_lowcode_loop.mjs';
 
 test('uncertain publish is read back and rolled back without republishing', async () => {
   const calls = [];
@@ -150,4 +150,13 @@ test('workbench mutations bind owned draft and unrestricted-role scope', () => {
   }
   for (const op of ['stage', 'discard', 'open']) assert.equal(permitsOwnedChangeSetUiWrite({ intent: `ui.business_config.change_set.${op}`, params: { change_set_token: 'owned' } }, 'owned'), false);
   assert.equal(permitsOwnedChangeSetUiWrite({}, ''), false);
+});
+
+test('UI stage permits only exact list order and owned draft', () => {
+  const body = { intent: 'ui.business_config.change_set.stage', params: { change_set_token: 'owned', config_type: 'list', model: 'payment.request', action_id: 775, view_type: 'tree', target_key: 'view_orchestration:payment.request:tree:action:775:view:0', draft_payload: { view_orchestration: { views: { tree: { columns: [{ name: 'name', sequence: 10 }, { name: 'amount', sequence: 20 }] } } } } } };
+  assert.equal(permitsOwnedListStage(body, 'owned', ['name', 'amount']), true);
+  assert.equal(permitsOwnedListStage(body, 'other', ['name', 'amount']), false);
+  assert.equal(permitsOwnedListStage(body, 'owned', ['amount', 'name']), false);
+  for (const patch of [{ role_key: 'admin' }, { action_id: 776 }, { model: 'other' }, { view_id: 1 }]) assert.equal(permitsOwnedListStage({ ...body, params: { ...body.params, ...patch } }, 'owned', ['name', 'amount']), false);
+  assert.equal(permitsOwnedListStage({ ...body, intent: 'ui.business_config.change_set.publish' }, 'owned', []), false);
 });

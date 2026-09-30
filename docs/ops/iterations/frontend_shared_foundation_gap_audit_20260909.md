@@ -9103,3 +9103,10 @@ WEB_LC_APPLY=1 WEB_LC_UI_PUBLISH=1 make verify.business_config.standard_list_loo
 人工核对workbench-published截图：显示1项配置已发布、未限定角色及按批次回滚按钮；页面头部/配置能力仍在reload中，不能作为整页稳定摘要验收。列表before/published/restored与请求/契约深比较证明生效/恢复；不能将工作台瞬时截图外推UI编辑器全旅程。
 
 关闭本次P0操作者身份误作配置目标角色导致草稿恢复不一致的缺口及UI发布/回滚代表链。API暂存+草稿预览不冒充UI字段编辑；下一步只补仍缺的工作台UI编辑→暂存链，并核对刷新后目标范围/摘要，复用本次发布恢复证据与现有配置工具保护，不再从API发布起点重做。67/detail.action-state与其它业务职责继续open，未进行主线集成、目标部署或总体交付声明。
+
+
+### 53.164 工作台配置目标摘要与UI编辑暂存（运行验证待完成）
+
+1107aff52 clean起点；P0 useBusinessConfigProductExperience原workbenchRoleLabel取操作者role_label，同时供适用角色和影响确认弹窗，造成空目标仍显示管理员。改消费scopeRole：空值未限定角色，显式目标仅在身份匹配时复用后端已给标签，否则保留目标标识；不推导权限或改变发布行为。共享configurationTargetRoleLabel新增5反例/匹配检查，business_config.unit228及严格类型PASS（lc-role-summary-*）。
+
+P4复用standard_list_lowcode_loop新增WEB_LC_UI_STAGE=1：已有草稿冲突停止，建立本次自有基线草稿后UI恢复；UI交换前两列、保存列表与搜索，只有同token/目标payment.request/775/tree/精确完整列payload可stage，禁止publish；权威get必须一条同项目及精确顺序，正式契约保持基线；UI放弃草稿并核对页面/业务摘要，异常仍走原恢复。自有基线由API暂存，不声称UI创建空草稿；测试的是实际UI编辑和更新暂存。工具16/当前begin-record及node语法通过。尚未构建加载、未运行本新模式；发布/回滚53.163不重跑。

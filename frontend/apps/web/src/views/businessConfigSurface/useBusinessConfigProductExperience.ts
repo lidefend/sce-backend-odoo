@@ -7,7 +7,7 @@ import type {
 } from '../../api/businessConfig';
 import type { useSessionStore } from '../../stores/session';
 import { intentRequest } from '../../api/intents';
-import { effectiveConfigurationLabel } from './effectiveConfiguration';
+import { effectiveConfigurationLabel, configurationTargetRoleLabel } from './effectiveConfiguration';
 import { normalizeNamesText } from './formatters';
 
 type SessionStore = ReturnType<typeof useSessionStore>;
@@ -18,6 +18,7 @@ export function useBusinessConfigProductExperience(options: {
   currentModel: ComputedRef<string>;
   scopeAction: ComputedRef<number | undefined>;
   scopeView: ComputedRef<number | undefined>;
+  scopeRole: ComputedRef<string | undefined>;
   selectedViewType: ComputedRef<string>;
   surface: Ref<unknown>;
 
@@ -52,7 +53,9 @@ export function useBusinessConfigProductExperience(options: {
     || options.session.recordContext?.selected?.company_name
     || '',
   ).trim());
-  const workbenchRoleLabel = computed(() => String(options.session.roleSurface?.role_label || '').trim());
+  const workbenchRoleLabel = computed(() => configurationTargetRoleLabel(
+    options.scopeRole.value, options.session.roleSurface?.role_code, options.session.roleSurface?.role_label,
+  ));
   const hasWorkbenchDraftChanges = computed(() => (
     options.hasListSearchDraftChanges.value
     || options.hasAnalysisDraftChanges.value

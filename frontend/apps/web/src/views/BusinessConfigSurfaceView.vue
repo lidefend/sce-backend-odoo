@@ -495,7 +495,7 @@ const {
   inspectAnalysisDraft,
 } = useBusinessConfigProductExperience({
   session,
-  currentModel, scopeAction, scopeView, surface,
+  currentModel, scopeAction, scopeView, scopeRole, surface,
   selectedViewType: computed(() => selectedCoverageRow.value?.target_view_types?.includes('form') ? 'form' : (selectedCoverageRow.value?.view_mode?.split(',')[0] || 'form')),
   versionContracts,
   listSearchAudit,

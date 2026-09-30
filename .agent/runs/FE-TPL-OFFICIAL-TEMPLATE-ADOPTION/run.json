@@ -440,7 +440,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.163 UI publish/rollback15 passed/rolled_back report web-lc-01-75d6913b-63fc-4d4f-8c04-33a410a38d91. New frontend559cc3c92 index-D2WwqVPC.js,backend6fd0123cd unchanged. Full list contract/query/orderedIDs/business digest restored, no business writes. Actor/target role defect closed. Next remaining UI editor→stage scope and stable post-refresh workbench target-summary: use existing editor/lowcode probe, do not recast API staging as UI editing or rerun closed LC02 API journey. Published screenshot still loading summary; not full-page stable proof. Overall67/detail.action-state remainsopen/no push/merge/deploy.",
+  "next_exact_step": "53.164 source ready: P0 workbench target role summary now scopeRole, not actor label; configurationRoleLabel5 + business_config.unit228/strict pass. P4 WEB_LC_UI_STAGE=1 exact owned baseline draft, UI reorder/save/readback/unchanged live contract/UI discard;tool16 current receipt. Need one frontend build/up after clean commit then WEB_LC_APPLY=1 WEB_LC_UI_STAGE=1 managed standard_list_loop. Existing UI publish/rollback53.163 closed/reuse; no backend change/ORM/newfixtures. Goal67 remainsopen.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
