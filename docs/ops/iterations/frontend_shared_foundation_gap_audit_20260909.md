@@ -7293,3 +7293,21 @@ L5：未推送、未合并、未部署。
 
 本段**批次验收完成**（行位身份修复 + 守卫可证伪 + 台账据实更新）｜主线已并入
 （`fff226d7b` 为祖先，无待移植提交；`0 210`）｜目标环境未部署｜整体用户交付未验收。
+
+
+## 52. 官方模板共享样式收口（2026-09-30，进行中）
+
+- 起点：`510a37d5f784b36f1e1ad4d7d02dbd1331f673f5`，接管时 clean；以下实施阶段显式 dirty，不作冻结候选。
+- P0 / frontend tokens and shared presentation；平台通用样式，不属于 P1 行业、P2 客户或 P3 配置规则；不修改业务契约。P4 仅在现有验收工具确需补充定向探针时介入。
+- 裁决：外壳标题 18px/600/26px；Inter 优先为产品有意差异；兼容别名集中修复并登记退出条件，中心调用采用规范语义名。
+- 顺序：断链 token → 外壳/弹层标题 → 共享页面族 → 既有台账按实际证据更新。ProductPageHeader 的等价官方 24/600/32 保持不变。
+- 验证从 L1 静态开始，L2 token 非零测试及相关呈现守卫，稳定后受管 5180 候选和双视口；复用 18082 验收库及原 fixture 权威，不新增数据。L3 ORM/模块升级跳过（无后端或数据库变化）；全业务矩阵、Quick、远端与目标部署跳过（本轮仅本地呈现批次）。
+- 旧 run 基线 dc460758 的合同检查回执保留，样式阶段基线更新为 510a37d5f；未变合同输入不重跑。旧 next-step 已被本次明确授权替代。
+
+### 52.1 断链修复实施
+
+- semantic/component 兼容族集中补齐，每族附最后消费者退出条件；额外发现并修复 8 个 pre-v1 旧名，作用域 scene 变量不冒充全局缺失。浅/深 disabled 使用既有调色板引用，生成四份 dist。
+- placeholder 桥接 secondary → muted；对应 primitive guard 的旧 marker 同步纠正。NativeFormTreeRenderer 原有直接厂商 token 引用违反桥接边界，改用等价共享角色，官方字体定义仍只在 theme.css 消费。
+- L1 `make ci.local.iteration` passed；token build/verify passed；token 构建单测 5/5；style_system.guard、contract_consumer_intrusion.guard、typecheck.strict passed。日志 `/tmp/tpl52-iteration.log`、`/tmp/tpl52-tokens.log`、`/tmp/tpl52-static.log`。
+- primitive adapter 初次失败原因为守卫锁定旧 placeholder 映射，修复后 11 个事件案例及 34 个 Python 测试通过；最终回执待共享样式稳定后登记。首次 begin 的任意命令/依赖目录符号链接均被工具拒绝，已改用注册 Make target 和源码依赖范围，未绕过检查。
+- 运行时断链检查与下一批标题双视口共用一次候选构建；本节为代码提交，浏览器验收仍 pending，不提前宣称批次通过。

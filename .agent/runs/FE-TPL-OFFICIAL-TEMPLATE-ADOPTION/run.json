@@ -3,7 +3,7 @@
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "feature/web-official-template-adoption",
   "status": "active",
-  "baseline_sha": "dc460758c867a981795803048af68eb754de096d",
+  "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
   "scope": [
@@ -18,7 +18,9 @@
     "config/ci/",
     "docs/frontend_productization/",
     "addons/smart_core/",
-    "addons/smart_construction_core/"
+    "addons/smart_construction_core/",
+    "frontend/packages/design-tokens/",
+    "frontend/packages/ui/src/kits/tdesign/theme.css"
   ],
   "environment": {
     "kind": "offline",
@@ -126,12 +128,27 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/packages/ui/src/",
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/src/styles/tokens/",
+        "frontend/packages/design-tokens/tokens/",
+        "frontend/packages/design-tokens/dist/",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Row activation identity is pinned to the declared row placement and the reference ledger no longer claims missing labelled row actions or missing export capability; continue closing the remaining P0 smart_core contract projection gaps (favorite ownership, copy/delete disabled reason, section item counts).",
+  "next_exact_step": "Segment 52: repair unresolved shared tokens, align shell/overlay headings, then converge shared page-family typography; scoped tests and local preview only. Reuse unchanged contract evidence; no ORM, push, merge or target deployment.",
   "completion": {
-    "batch": "passed",
+    "batch": "in_progress",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",

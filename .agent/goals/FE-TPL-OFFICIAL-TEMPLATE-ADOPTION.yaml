@@ -42,6 +42,6 @@ goal:
     - no_second_list_or_form_renderer_path
     - tone_and_visual_tokens_never_enter_the_business_contract
   next_exact_step: >-
-    Finish mainline port closure (generated reports refresh + registered resume run),
-    then continue FE-TPL-06A payment list pagination verification and WEB-LC-01
-    low-code configuration closure on this branch.
+    Segment 52: repair missing semantic/component aliases, align official typography
+    by shared page family, verify the existing 5180 candidate at two viewports,
+    and record scoped results with local commits only. Preserve Inter and product colors.

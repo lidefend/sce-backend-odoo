@@ -488,7 +488,7 @@ def validate(root: Path = ROOT) -> list[str]:
 
     visual_projection_markers = (
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
-        "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
         ".sc-btn.t-button",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']",
