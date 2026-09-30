@@ -28,6 +28,25 @@ class CategoryEntryPolicyTest(unittest.TestCase):
             for key in ("admin_menu_xmlids", "primary_menu_xmlids", "role_home_menu_xmlids", "contextual_menu_xmlids"):
                 self.assertNotIn(CATEGORY, role.get(key, []), (name, key))
 
+    def test_contract_operator_event_entry_keeps_native_capability_boundary(self):
+        import csv
+        event = 'smart_construction_core.menu_sc_contract_event'
+        self.assertEqual(policy.ROLE_SURFACE_OVERRIDES['project_member']['contextual_menu_xmlids'].count(event), 1)
+        tree = ET.parse(MODULE / 'views/menu_business_taxonomy.xml')
+        menu = tree.find(".//menuitem[@id='menu_sc_contract_event']")
+        self.assertEqual(menu.get('action'), 'smart_construction_core.action_sc_contract_event')
+        groups = set(menu.get('groups').split(','))
+        self.assertEqual(groups, {'smart_construction_core.group_sc_cap_contract_read',
+                                 'smart_construction_core.group_sc_cap_contract_user',
+                                 'smart_construction_core.group_sc_cap_contract_manager'})
+        with (MODULE / 'security/ir.model.access.csv').open() as stream:
+            access = next(row for row in csv.DictReader(stream) if row['id'] == 'access_sc_contract_event_user')
+        self.assertEqual([access[k] for k in ('perm_read', 'perm_write', 'perm_create', 'perm_unlink')], ['1', '1', '1', '0'])
+        roles = ET.parse(MODULE / 'security/sc_role_groups.xml')
+        implied = roles.find(".//record[@id='group_sc_role_operation_user']/field[@name='implied_ids']").get('eval')
+        self.assertIn('group_sc_cap_contract_user', implied)
+
+
 
 if __name__ == "__main__":
     unittest.main()

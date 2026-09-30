@@ -54,6 +54,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_project_kanban",
             "smart_construction_core.menu_sc_contract_expense",
             "smart_construction_core.menu_sc_contract_income",
+            "smart_construction_core.menu_sc_contract_event",
             "smart_construction_core.menu_sc_quality_issue",
             "smart_construction_core.menu_sc_quality_rectification",
             "smart_construction_core.menu_sc_quality_recheck",
