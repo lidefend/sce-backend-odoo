@@ -266,3 +266,8 @@ Material acceptance joins shared policy/tier review with a separate approved pha
 ### Segment53.70 — Material acceptance runtime and create verified
 
 Governed upgrade/backend3d2118bd9 passes8 acceptance-only real runtime checks with rollback restoration verified: private state authority, optional approval, rejected unsupported amount bounds, pending-review protection, real approval plus independent quality outcome/quantity validation, separate quality failure reason, approval rejection and fresh-chain resubmission. Existing inbound/shared checks are reused. Official unsaved create page14 passes on frontend7915f3bb9 with zero errors/writes and both viewports. PM existing-record query succeeds but is empty, so record handling UI remains pending. Do not retry unchanged empty data or treat8+14 as full business delivery. Remaining all-document adoption and monetary authority gaps remain open.
+
+
+### Segment53.71–53.72 — Purchase request shared approval runtime verified
+
+P1 purchase request now consumes shared policy/tier approval. Submission without configuration auto-approves; configured submission requires actual reviews. Legacy approve delegates to real approval, and pending reviewer actions derive from review facts. RFQ/order generation remains an explicit independent action guarded by approval facts; generated purchase orders remain draft. Pure tests72/native49/semantics15 pass; scoped managed runtime8 passes with verified rollback (purchase-request-runtime-fixed.log, backendd3db44188/tool e8617cd20). Existing official page/role handling remains pending. These results do not close detail.action-state or the full business-document scope; no frontend rebuild or target deployment.

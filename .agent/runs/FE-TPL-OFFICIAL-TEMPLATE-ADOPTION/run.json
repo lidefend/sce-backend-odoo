@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.71 source tests PASS 72 approval/49 native/15 semantics. Extend existing approval runtime scope with purchase-request only; preserve RFQ/order independent generation and real pending/rejected/resubmitted review facts, rollback verification. Managed module upgrade needed then reload; no frontend rebuild or repeat independent inbound8/acceptance8/shared45. Overall goal remains active.",
+  "next_exact_step": "53.72 purchase-request runtime8 PASS rollback verified (backendd3db44188, toole8617cd20); 53.71 approval72/native49/semantics15 reused. Extend existing approval-actions browser scope to purchase request, verify official unsaved create and existing authorized record if present without fixture creation. Do not rerun runtime8 or rebuild unchanged frontend. Then continue remaining business document approval producers; overall67 still incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1111,6 +1111,15 @@
       },
       "runtime": "not_run; needs managed module upgrade and purchase-request-only rollback scope",
       "frontend_build": "reuse unchanged frontend7915f3bb9"
+    },
+    "segment_53_72": {
+      "status": "runtime_passed_ui_pending",
+      "backend": "d3db44188",
+      "tool": "e8617cd20",
+      "runtime_checks": 8,
+      "rollback": "verified",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/purchase-request-runtime-fixed.log",
+      "frontend": "unchanged7915f3bb9; purchase-request page pending"
     }
   }
 }

@@ -8028,3 +8028,5 @@ P4扩展已有business_config_approval_runtime_smoke及受管wrapper，新增白
 候选3d7810ce6+P4 dirty；L1 purchase-request-runtime-iteration.log PASS，py_compile/bash-n PASS。上一段72/49/15源与测试输入未变，复用其原日志和回执，不重跑。目标平台内部验收租户sc_frontend_acceptance，非平台控制/行业目录/客户生产库；local profile、sc-fe-r2-p1-01项目、^sc_frontend_acceptance$过滤及sc_fe_r2_p1_01固定卷沿用预检。L3受管smart_construction_core升级及后端重绑后运行本范围；L4前端构建不受影响复用7915f3bb9；L5不在当前本地迭代范围。结果待运行，不算批次验收完成。
 
 受管模块升级及后端d3db44188重绑成功。首次purchase-request-runtime.log前三项通过、rollback verified；第4项脚本误期待pending再次提交正常返回，实际共享路由按规则拒绝重新初始化。归因P4测试预期，修为denied(required.action_submit)，不修改产品保护。L1 purchase-request-runtime-tool-fix.log后仅重跑当前8项，无需再次升级/构建。
+
+实际purchase-request-runtime-fixed.log 8/8 PASS，ROLLBACK VERIFIED；配置和步骤恢复，临时申请、RFQ、采购订单、材料/模板及供应商消失。后端产品d3db44188，执行工具e8617cd20（仅P4预期修正，无新增产品变动）。显式生成两次结果相同，采购订单保持draft；审批本身不生成下游。官方页面消费及实际角色办理待验证；本运行使用sudo建立事务单据+真实reviewer审批，不替代角色全旅程。总体detail.action-state仍contract_gap，无主线集成/目标部署。
