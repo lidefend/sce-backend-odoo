@@ -346,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.103 canonical attributed paid/remaining summary + real confirmation blockers and controlled ledger reversal source-version refresh/demotion implemented;104 pure +58 native PASS. Next extend existing approval rollback smoke with rental-settlement scope (review, confirmed source, defaults, partial/full payment, cap, reverse, direct line/parent protections, restored config), then one managed module upgrade/reload and actual scope. Verify SQL/cache/retry + role/page; targeted old paid-without-attribution audit, no invented cash facts. Backend2d7eab703/frontend7915f3bb9 unchanged; overall67/roles open, no newfixture/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.104 P4 rental-settlement rollback scope added12 approval/source/default checks;L1 syntax passed, reuse P1 104/58. Next managed acceptance module upgrade/reload exact commit then SC_APPROVAL_RUNTIME_SCOPE=rental-settlement smoke. Extend same scope to actual posting/reversal/concurrency after first prerequisites pass;12 checks do not prove full financial journey. No frontend rebuild/newfixture/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

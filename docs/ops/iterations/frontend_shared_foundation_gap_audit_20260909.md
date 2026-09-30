@@ -8376,3 +8376,10 @@ _payment_confirmation_blocker由临时UNAVAILABLE替换成真实门禁：无归�
 L1 rental-paid-facts-iteration.log、py_compile、rental XML及diff PASS。L2 rental-paid-facts-unit.log104 PASS：明确归属canonical汇总（未归属不计、取消申请有效事实仍计）、足额显式确认、部分/异常/零金额拒绝、冲销回confirmed/补付不自动确认、ledger真实write方法先写冲销事实再回读及重复冲销拒绝；rental-paid-facts-native.log8+50=58 PASS，真实evidenceGate消费新的明确缺因。非零回执登记。没有凭纯测试宣称DB原子性或实际财务闭环。
 
 下一步扩展已有rollback scope覆盖租赁结算实际review/付款依据/额度/posted/reversal/ORM缓存与明细保护，随后一次受管模块升级/reload及官方页面。也需核对验收范围旧paid记录是否缺正式归属，不自动给历史paid制造现金事实；数据修复不得取代权威。L3/L4尚未执行，后端仍2d7eab703，前端7915f3bb9未改不构建。无持久fixture/新环境/无关ORM/推送合并目标部署，整体67及角色旅程保持开放。
+
+
+### 53.104 租赁结算受管事务验收（进行中）
+
+P4既有business_config_approval_runtime_smoke新增rental-settlement scope，第一阶段12项：私有state拒绝、无配置只审批、父/直接明细保护、显式确认、无支付事实拒绝、付款默认值与无合同依据、申请身份/状态守卫、金额未匹配拒绝、pending配置变更保护、真实review后确认、驳回修改重提、空明细/取消。沿用既有事务rollback、基线配置恢复、临时记录消失校验；sudo建单+实际reviewer不替代角色全旅程。付款入账/冲销/并发仍需继续扩展同scope，12项通过不能替代财务闭环。
+
+L1 rental-settlement-runtime-iteration.log、py_compile/bash-n/diff PASS；P1源码未变，复用53.103 104/58及原语义证据。受管local profile/sc-fe-r2-p1-01/sc_frontend_acceptance/精确dbfilter与固定卷复用；下一步一次smart_construction_core升级/reload后仅运行当前scope。前端7915f3bb9未改不构建，无新环境/持久fixture/推送合并目标部署。
