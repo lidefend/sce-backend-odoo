@@ -3165,6 +3165,66 @@ def _subcontract_settlement_approval_checks(project, group, created):
         print("APPROVAL_CHECK=%s_reject_resubmit_new_review" % model)
 
 
+def _expense_cash_execution_checks(created):
+    base = _env()
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing finance fixture required"
+    company = finance.company_id
+    env = base["sc.expense.claim"].with_user(finance).with_company(company).with_context(allowed_company_ids=[company.id]).env
+    assert not env.su
+    request = env["payment.request"].search([("company_id", "=", company.id), ("type", "=", "pay"),
+        ("state", "=", "approved"), ("terminal_cash_source_model", "=", False),
+        ("project_id", "!=", False), ("partner_id", "!=", False), ("amount", ">", 0)], limit=1)
+    assert request, "existing finance-visible unclaimed approved pay request required"
+    request_fields = ["state", "project_id", "company_id", "partner_id", "currency_id", "amount",
+        "terminal_cash_source_model", "terminal_cash_source_res_id"]
+    before = request.read(request_fields)
+    Ledger = env["payment.ledger"]
+    domain = [("payment_request_id", "=", request.id)]
+    ledger_before = Ledger.search(domain).ids
+    assert not ledger_before, "selected source already has payment facts"
+    policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([
+        ("target_model", "=", "sc.expense.claim"), ("company_id", "in", [False, company.id])])
+    try:
+        policies.write({"approval_required": False, "mode": "none"})
+        policies.sync_tier_definitions()
+        rec = env["sc.expense.claim"].with_context(default_business_category_code="finance.expense.reimbursement").create({
+            "claim_type": "expense", "expense_type": "报销申请", "payment_request_id": request.id,
+            "project_id": request.project_id.id, "partner_id": request.partner_id.id,
+            "currency_id": request.currency_id.id, "amount": request.amount, "approved_amount": request.amount,
+            "payee_account": "EXPENSE-CASH-PAYEE", "payer_account": "EXPENSE-CASH-PAYER"})
+        created.append((rec._name, rec.id))
+        _attach(rec, "expense-cash-execution")
+        rec.action_submit()
+        assert rec.state == "approved" and request.state == "approved"
+        assert not Ledger.search_count(domain) and not request.terminal_cash_source_model
+        print("APPROVAL_CHECK=expense_cash_approval_preserves_source_without_payment")
+        rec.action_done()
+        request.invalidate_recordset()
+        ledger = Ledger.search(domain)
+        assert rec.state == "done" and request.state == "done"
+        assert request.terminal_cash_source_model == rec._name and request.terminal_cash_source_res_id == rec.id
+        assert len(ledger) == 1 and ledger.state == "posted" and ledger.amount == request.amount
+        assert ledger.project_id == request.project_id and ledger.company_id == company
+        assert ledger.partner_id == request.partner_id and ledger.currency_id == request.currency_id
+        created.append((ledger._name, ledger.id))
+        for attempt in (rec.action_done, lambda: rec.write({"payment_request_id": False})):
+            denied = False
+            try:
+                with env.cr.savepoint(): attempt()
+            except UserError:
+                denied = True
+            assert denied, "terminal cash expense changed or repeated"
+        assert Ledger.search_count(domain) == 1
+        print("APPROVAL_CHECK=expense_cash_finance_execution_claims_source_and_posts_unique_payment")
+    finally:
+        env.cr.rollback()
+        env.invalidate_all()
+        assert request.read(request_fields) == before, "expense cash source not restored"
+        assert Ledger.search(domain).ids == ledger_before, "expense cash ledger not restored"
+        print("EXPENSE_CASH_SOURCE_ROLLBACK=VERIFIED")
+
+
 def _expense_finance_execution_checks(group, created):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
@@ -3632,6 +3692,7 @@ def main():
                 _expense_deduction_line_checks(project, partner, created)
                 _expense_readiness_checks(project, partner, created)
                 _expense_finance_execution_checks(group, created)
+                _expense_cash_execution_checks(created)
             if scope == "all":
                 _contract_event_checks(project, group, created)
                 _draft_confirmation_checks(project, group, created, "sc.plan")
@@ -3674,7 +3735,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 25 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
