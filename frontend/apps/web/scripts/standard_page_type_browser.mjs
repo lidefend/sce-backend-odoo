@@ -685,6 +685,67 @@ try {
             JSON.stringify(sourceQuery.domain) === JSON.stringify([['id', '=', -1]]));
           await session.page.screenshot({ animations: 'disabled', path: path.join(out, 'payment-subcontract-basis-open.png') });
           await session.page.getByRole('heading', { name: '新建记录', exact: true }).click();
+          const projectControl = session.page.locator('[data-field-name="project_id"]').locator('input').first();
+          const projectResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'project.project';
+            } catch { return false; }
+          });
+          await projectControl.click();
+          const projects = (await (await projectResponse).json()).data?.records || [];
+          check('payment source: existing authorized project available', projects.length > 0);
+          let project = projects[0];
+          const projectLabel = String(project.display_name || project.name);
+          const matchesScope = (domain) => Array.isArray(domain)
+            && domain.some((term) => JSON.stringify(term) === JSON.stringify(['project_id', '=', project.id]))
+            && domain.some((term) => JSON.stringify(term) === JSON.stringify(['state', '=', 'confirmed']));
+          const scopedResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'sc.subcontract.settlement'
+                && matchesScope(body.params.domain);
+            } catch { return false; }
+          });
+          await session.page.getByRole('option', { name: projectLabel, exact: true }).click();
+          const scopedQuery = (await scopedResponse).request().postDataJSON().params;
+          check('payment source: selected project and confirmed state preserved', matchesScope(scopedQuery.domain));
+          report.paymentSourceScope = { projectId: project.id, domain: scopedQuery.domain };
+          await control.click();
+          const moreResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'sc.subcontract.settlement' && body.params.limit === 120;
+            } catch { return false; }
+          });
+          const [moreResult] = await Promise.all([
+            moreResponse,
+            session.page.getByRole('button', { name: '搜索更多...', exact: true }).click(),
+          ]);
+          const moreQuery = moreResult.request().postDataJSON().params;
+          check('payment source: search dialog preserves same scope', matchesScope(moreQuery.domain));
+          const sourceDialog = session.page.getByRole('dialog');
+          await sourceDialog.getByRole('button', { name: '取消', exact: true }).click();
+          check('payment source: second existing project available', projects.length > 1);
+          project = projects[1];
+          await projectControl.click();
+          const changedSourceResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'sc.subcontract.settlement' && matchesScope(body.params.domain);
+            } catch { return false; }
+          });
+          const [changedSource] = await Promise.all([
+            changedSourceResponse,
+            session.page.getByRole('option', { name: String(project.display_name || project.name), exact: true }).click(),
+          ]);
+          check('payment source: project change replaces query scope', matchesScope(changedSource.request().postDataJSON().params.domain));
+          report.paymentSourceScope.changedProjectId = project.id;
+          await session.page.getByRole('heading', { name: '新建记录', exact: true }).click();
         }
         if (['sc.material.rental.order', 'sc.material.rental.settlement'].includes(spec.model)) {
           const settlement = spec.model === 'sc.material.rental.settlement';

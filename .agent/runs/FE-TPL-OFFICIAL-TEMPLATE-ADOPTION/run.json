@@ -320,6 +320,16 @@
         "make/frontend.mk"
       ]
     },
+    "relation_query_scope": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+        "make/frontend.mk"
+      ]
+    },
     "workflow_catalog_consumer": {
       "target": "verify.frontend.canonical_form_presenter.unit",
       "kind": "offline",
@@ -354,7 +364,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.112 P0 store descriptor domain/context fixed; L1 PASS, presenter201 and strict typecheck PASS. One governed build base3c2a2ffc3+owned dirty loaded entry index-CdI4m-Va.js. finance create tpl07-1790790192414 16 PASS, source domain id=-1 without project; errors/writes empty. Next existing authorized project selection must preserve project+confirmed, dependent invalidation and search-more same scope; no source fixtures/ORM reruns. Full67/detail.action-state remain open. Living53.112 owns evidence.",
+  "next_exact_step": "53.113 P0 structured array relation domains fixed (empty arrays previously blocked project picker). L1/Pure140/strict types PASS; registered relation_query_scope receipt. One build base94fa1a2f9+dirty entry index-CrYkOCxc.js; final finance browser tpl07-1790790517718 21 PASS proves missing-project block, authorized project464/463 choices, source project+confirmed scope, search-more same scope, project switch query. P4 option/button probe failure recovered without rebuild. Sources empty: old-value clearing/nonempty source selection/save remain unproven; do not repeat empty queries or invent fixtures. Next use existing67 action-state/interaction remaining gaps, reuse P1 cash/approval evidence, no unrelatedORM/push/merge/deploy. Living53.113 owns evidence.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
