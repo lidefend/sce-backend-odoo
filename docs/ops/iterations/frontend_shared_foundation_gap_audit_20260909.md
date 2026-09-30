@@ -8421,3 +8421,5 @@ L1 rental-ledger-basis-iteration.log/py_compile/bash-n/diff PASS；L2 rental-led
 L1 rental-cancel-contract-iteration.log通过；L2 rental-cancel-contract-unit.log106、rental-cancel-contract-native.log8+52=60通过并登记非零回执；真实方法回归覆盖在途申请/posted ledger阻断及责任释放恢复。P4既有rollback工具增加rental-cancellation-contract窄scope，复用finance真实申请准备，只检查契约禁用及申请取消后契约恢复/实际取消，6组；不重跑10组支付冲销。工具L1 rental-cancel-runtime-tool-iteration.log、py_compile/bash-n/diff通过。
 
 复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与固定filestore/卷，所有临时记录事务rollback。仅Python改动需reload，不升级；前端7915f3bb9未改不构建，不重复创建23/空PM查询。运行时契约尚待验证，整体detail.action-state与67条目标仍开放；真实双事务竞争/角色浏览器详情未证明。无推送合并目标部署。
+
+53.106结果：4dc443ee0受管reload成功（rental-cancel-contract-reload.log），rental-cancel-contract-runtime.log6/6 PASS、ROLLBACK VERIFIED。真实finance申请经提交/实际review后，describe_record.availableActions的cancel明确disabled/RENTAL_PAYMENT_OBLIGATIONS_ACTIVE/非空原因/精确record id；同事务执行取消拒绝。申请action_cancel后重新读取契约cancel enabled且reason为空，源action_cancel成功。源准备仍sudo，不宣称普通角色源办理权限或浏览器详情通过。此前10项现金证据继续作为未变支付规则基线，当前6项只证明取消投影与执行一致性。下一步按既有67台账安全/分包页面族补必要契约，继续保留并发与角色详情缺口。
