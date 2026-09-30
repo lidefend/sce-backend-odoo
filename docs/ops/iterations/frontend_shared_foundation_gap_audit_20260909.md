@@ -8693,3 +8693,12 @@ a9b73cdb1 clean定向读取既有finance-family测试关联模型，不做全仓
 finance-state-runtime.log FAILED在首个业务检查之前：同一finance公司内合同和已入账资金台账未同时存在；原assert未区分是哪一个缺失，不能擅自报告两者都没有。ROLLBACK VERIFIED：策略/步骤恢复、临时记录不存在。业务通过数0，不作为运行门禁通过；不重试相同数据前提。后续工具错误消息细化为分别报告contract/posted_ledger存在性，未为日志文字再次执行业务。保留来源前提缺口，不能拿已通过142/62替代真实ORM办理。未运行浏览器或构建、未升级模块、未推送合并目标部署。
 
 下一步继续同一财务组已确认的收款/自筹confirmed审批状态保护，复用各自既有财务事实私有token，不改已完成的财务身份规则；融资/付款/费用保护按既有代码核对。两模型真实运行在授权范围来源满足或既有受管准备路径确认后再恢复；不得猜造税率、扩大公司授权范围或把0检查说成通过。总体67/detail.action-state仍开放。
+
+
+### 53.128 收款、自筹审批状态入口保护（源码验证通过，运行待验证）
+
+1df551c45 clean起点。P1 smart_construction_core收款/自筹行业单据状态权威，非客户偏好或前端逻辑。沿用既有_RECEIPT_FACT_AUTHORITY_TOKEN/_SELF_FUNDING_AUTHORITY_TOKEN和_write_finance_authority，不新增状态框架、schema或token。普通create的显式state及context.default_state只允许draft；来源显式/default_source_origin为legacy必须经过原私有迁移载体。普通write阻止state/source_origin/finance_identity_state；确认、取消和真实tier通过回调改用已有私有方法；原终态事实、财务身份及历史迁移规则保留。无字段/XML变更，后续只需Python reload，不升级模块、不构建前端。
+
+L1 receipt-self-state-iteration.log PASS；L2 receipt-self-state-unit.log143 PASS、receipt-self-state-native.log8+54=62 PASS，begin/record回执非零完成。测试生产create/write拒绝显式及上下文审批状态、伪造布尔token、来源/身份写入；原共享提交/真实回调与财务权限测试通过。尚未运行受管真实单据审批执行或页面办理，不把纯测试当闭环。旧finance-state-authority来源缺口未恢复，不重跑；前端CrYkOCxc未变。
+
+同一已登记finance-family定向续读：financing_loan.write主要保护legacy历史记录；expense_claim.write只保护done/legacy_confirmed和身份；payment_execution有付款依据/账户快照/业务事实保护，其状态入口还需连同实际付款及冲销方法核对，不能覆盖现有财务约束。下一步成组收口剩余融资/费用/付款执行的状态create/write入口，复用现有方法与权限，不重做已完成付款申请审批/财务身份；受影响真实运行仍需补证。总体67/detail.action-state不升整行，无推送合并目标部署。

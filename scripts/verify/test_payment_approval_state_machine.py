@@ -352,6 +352,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     rec.write = lambda values: rec.data.update(values)
                     rec._write_invoice_state = lambda values: rec.data.update(values)
                     rec._write_document_state = lambda values: rec.data.update(values)
+                    rec._write_finance_authority = lambda values: rec.data.update(values)
                     rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                     namespace['action_confirm'](rec)
                     self.assertTrue(checks)
@@ -550,6 +551,37 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 ns['create'](record, [{'state': 'confirmed'}])
             with self.assertRaises(ValueError):
                 ns['create'](record, [{}, {'state': 'confirmed'}])
+
+    def test_receipt_self_funding_approval_state_cannot_be_forged(self):
+        for filename, context, token in (
+            ('receipt_income', 'sc_receipt_fact_authority_token', '_RECEIPT_FACT_AUTHORITY_TOKEN'),
+            ('self_funding_registration', 'sc_self_funding_authority_token', '_SELF_FUNDING_AUTHORITY_TOKEN'),
+        ):
+            path = MODEL.with_name(filename + '.py')
+            methods = [n for n in ast.walk(ast.parse(path.read_text()))
+                       if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+            for method in methods:
+                method.decorator_list = []
+            ns = {'UserError': ValueError, '_': lambda text: text, token: object()}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            record = types.SimpleNamespace(env=types.SimpleNamespace(context={}))
+            for state in ('confirmed', 'received', 'done', 'cancel', 'legacy_confirmed', False):
+                with self.subTest(model=filename, state=state):
+                    record.env.context = {}
+                    with self.assertRaises(ValueError):
+                        ns['create'](record, [{'state': state}])
+                    record.env.context = {'default_state': state, context: True}
+                    with self.assertRaises(ValueError):
+                        ns['create'](record, [{}])
+                    with self.assertRaises(ValueError):
+                        ns['write'](record, {'state': state})
+            record.env.context = {'default_source_origin': 'legacy'}
+            with self.assertRaises(ValueError):
+                ns['create'](record, [{}])
+            record.env.context = {}
+            for values in ({'source_origin': 'legacy'}, {'finance_identity_state': 'legacy_observed_identity'}):
+                with self.assertRaises(ValueError):
+                    ns['write'](record, values)
 
     def test_invoice_external_terminal_state_and_red_flush_attribution_denied(self):
         path = MODEL.with_name('invoice_registration.py')
@@ -1051,6 +1083,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         rec.write = lambda values: rec.data.update(values)
                         rec._write_invoice_state = lambda values: rec.data.update(values)
                         rec._write_document_state = lambda values: rec.data.update(values)
+                        rec._write_finance_authority = lambda values: rec.data.update(values)
                         rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                         rec._check_business_anchor = lambda: None
                         rec._get_tier_reject_reason = lambda: 'real rejection'

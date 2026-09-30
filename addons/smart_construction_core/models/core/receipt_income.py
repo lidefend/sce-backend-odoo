@@ -285,6 +285,13 @@ class ScReceiptIncome(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
         legacy_authority = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
@@ -426,8 +433,8 @@ class ScReceiptIncome(models.Model):
         authoritative = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
         if "treasury_ledger_id" in vals and not authoritative:
             raise UserError(_("收款资金台账只能由正式收款动作绑定。"))
-        if not authoritative and (vals.get("state") in {"received", "legacy_confirmed"} or "finance_identity_state" in vals):
-            raise UserError(_("收款终态及财务身份只能由正式业务动作或迁移写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("收款状态、来源及财务身份只能由正式业务动作或迁移写入。"))
         if any(rec.state == "received" for rec in self) and not authoritative:
             forbidden_fields = set(vals) - self._received_surface_allowed_write_fields()
             if forbidden_fields:
@@ -493,7 +500,7 @@ class ScReceiptIncome(models.Model):
                     "action_confirm",
                 )
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "receipt_income_confirmed",
                     before,
@@ -545,7 +552,7 @@ class ScReceiptIncome(models.Model):
                     reasons=[_("已收款、历史已确认或已取消的收款收入不能取消")],
                 )
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition(
                 "receipt_income_cancelled",
                 before,
@@ -645,7 +652,7 @@ class ScReceiptIncome(models.Model):
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "receipt_income_confirmed",
                     before,

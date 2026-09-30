@@ -141,6 +141,13 @@ class ScSelfFundingRegistration(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         legacy_authority = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
         for vals in vals_list:
@@ -177,8 +184,8 @@ class ScSelfFundingRegistration(models.Model):
 
     def write(self, vals):
         authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
-        if not authoritative and (vals.get("state") == "done" or "finance_identity_state" in vals):
-            raise UserError(_("自筹终态与财务身份只能由正式业务动作写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("自筹状态、来源与财务身份只能由正式业务动作写入。"))
         if any(rec.state == "done" for rec in self) and not authoritative:
             allowed = {"note", "attachment_ids", "source_created_by", "source_created_at", "write_uid", "write_date"}
             blocked = set(vals) - allowed
@@ -206,7 +213,7 @@ class ScSelfFundingRegistration(models.Model):
             if policy._start_submission_review(rec):
                 event_code = "self_funding_submitted"
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 event_code = "self_funding_confirmed"
             rec._audit_transition(event_code, before, rec._snapshot_audit_payload(), "action_confirm")
 
@@ -227,7 +234,7 @@ class ScSelfFundingRegistration(models.Model):
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的自筹办理可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition("self_funding_cancelled", before, rec._snapshot_audit_payload(), "action_cancel")
 
     def _check_done_ready(self):
@@ -310,7 +317,7 @@ class ScSelfFundingRegistration(models.Model):
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition("self_funding_confirmed", before, rec._snapshot_audit_payload(), "action_on_tier_approved")
 
     def action_on_tier_rejected(self, reason=None):
