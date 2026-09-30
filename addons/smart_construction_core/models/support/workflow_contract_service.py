@@ -1180,6 +1180,7 @@ class ScWorkflowContractService(models.AbstractModel):
         return {
             "model": model_name,
             "source": {"kind": "sc_backend_workflow_action_catalog", "projection_only": True},
+            "availabilityScope": "declaration_only",
             "actions": self._declared_actions(profile),
         }
 

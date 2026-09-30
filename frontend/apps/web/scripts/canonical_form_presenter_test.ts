@@ -3493,3 +3493,9 @@ if (process.env.SC_CANONICAL_CAPTURE) {
   }
   console.log(`CAPTURE_FIELDS_PASS model=${model.identity.model} count=${expected.length}`);
 }
+
+const declarationOnlyWorkflow = { availabilityScope: 'declaration_only', actions: [{ key: 'submit', method: 'action_submit' }] };
+assert.equal(resolveWorkflowActionAvailability(declarationOnlyWorkflow, { methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ ...declarationOnlyWorkflow, record_id: 7 }, { methodName: 'action_submit' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ actions: declarationOnlyWorkflow.actions }, { methodName: 'action_submit' }).kind, 'error');
+console.log('[declaration-only-workflow] PASS cases=3');

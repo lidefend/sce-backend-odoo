@@ -964,3 +964,13 @@ for (const purpose of ['pause_execution', 'advance_phase', 'close_record'] as co
   assert.equal(normalizeActionSemantics({ actionId: purpose, backendIdentity: 'native:declared', actionSemantics: { ...declaration, executor: 'client.back' } }), undefined);
 }
 console.log('[project-lifecycle-semantics] PASS declared_pairs=3 rejected_pairs=3');
+
+const declaredHeaderSubmitRule = { ...allowedCreateRule, sourceWidgetId: 'page.header',
+  actionSemantics: { kind: 'business', purpose: 'submit', executor: 'contract.action', origin: 'workflow.contract.service' } };
+const declaredHeaderSubmit = buildContractFormActions({ model: 'sc.expense.claim', recordId: 0, renderProfile: 'create',
+  sceneReadyActions: [], v2ButtonStatus: explicitStatuses(declaredHeaderSubmitRule), v2ActionRuleList: [declaredHeaderSubmitRule] });
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit })?.enabled, true);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit.map(action => ({ ...action, authorizationAllowed: false })) }), null);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit.map(action => ({ ...action, actionSemantics: undefined })) }), null);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: [...declaredHeaderSubmit, ...declaredHeaderSubmit] }), null);
+console.log('[declared-header-create-submit] PASS cases=4');

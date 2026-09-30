@@ -238,7 +238,9 @@ export function resolvePrimaryCreateFooterAction(params: {
     const kind = String(action.kind || '').trim().toLowerCase();
     const source = String(action.sourceWidgetId || '').trim();
     const isWizardRootAction = source === 'page.root' && level === 'header';
-    return (level === 'footer' || isWizardRootAction)
+    const declaredHeaderSubmit = level === 'header' && action.actionSemantics?.kind === 'business'
+      && action.actionSemantics.purpose === 'submit' && action.actionSemantics.executor === 'contract.action';
+    return (level === 'footer' || isWizardRootAction || declaredHeaderSubmit)
       && (kind === 'object' || kind === 'server')
       && Boolean(action.methodName)
       && action.selection === 'none';

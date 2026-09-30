@@ -97,6 +97,7 @@ export function resolveWorkflowActionAvailability(
     return { kind: 'error', reasonCode: 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS', message: '流程操作身份不唯一' };
   }
   if (!hasOwn(workflow, 'availableActions')) {
+    if (workflow.availabilityScope === 'declaration_only' && !Number(workflow.record_id || 0)) return { kind: 'unmanaged' };
     return declarations.length ? invalidAvailability() : { kind: 'unmanaged' };
   }
   if (!Array.isArray(workflow.availableActions)) return invalidAvailability();
