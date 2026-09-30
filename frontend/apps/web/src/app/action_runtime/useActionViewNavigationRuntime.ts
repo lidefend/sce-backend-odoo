@@ -12,6 +12,24 @@ import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
+/**
+ * Row-level placement is declared by the owning contract as
+ * `sourceWidgetId === 'page.row'`; it is the only row-activation identity.
+ *
+ * Row identity must never be inferred from `targetScope`: the backend
+ * `normalize_target_scope` intentionally collapses native placement
+ * (header / toolbar / smart / row) into the closed V2 target-scope vocabulary,
+ * so header actions also carry `targetScope: 'page'`.  The legacy `row_click`
+ * trigger is likewise rewritten to `click` by `normalize_trigger_type` before
+ * the contract is decoded, so it can never appear on a decoded action rule.
+ */
+export const ROW_PLACEMENT_WIDGET_ID = 'page.row';
+
+export function isRowPlacementAction(action: unknown): boolean {
+  if (!action || typeof action !== 'object') return false;
+  return String((action as Dict).sourceWidgetId || '').trim() === ROW_PLACEMENT_WIDGET_ID;
+}
+
 type UseActionViewNavigationRuntimeOptions = {
   routeQueryMap: Ref<Record<string, unknown>>;
   showHud: Ref<boolean>;
@@ -155,21 +173,12 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
 
   function resolveRowOpenAction() {
     const store = options.actionContract.value;
-    if (store) {
-      const v2ViewType = String(store.snapshot.pageInfo.viewType || '').trim().toLowerCase();
-      if (['list', 'tree', 'kanban'].includes(v2ViewType)) {
-        const rows = resolveContractV2ActionRules(store);
-        const rowAction = rows.find((action) => {
-          if (!action || typeof action !== 'object') return false;
-          const typed = action as unknown as Dict;
-          return String(typed.triggerType || '').trim() === 'row_click'
-            || String(typed.sourceWidgetId || '').trim() === 'page.row'
-            || String(typed.targetScope || '').trim() === 'page';
-        });
-        if (rowAction) return rowAction as unknown as Dict;
-      }
-    }
-    return undefined;
+    if (!store) return undefined;
+    const v2ViewType = String(store.snapshot.pageInfo.viewType || '').trim().toLowerCase();
+    if (!['list', 'tree', 'kanban'].includes(v2ViewType)) return undefined;
+    const rows = resolveContractV2ActionRules(store);
+    const rowAction = rows.find((action) => isRowPlacementAction(action));
+    return rowAction ? (rowAction as unknown as Dict) : undefined;
   }
 
   function handleRowClick(row: Dict) {

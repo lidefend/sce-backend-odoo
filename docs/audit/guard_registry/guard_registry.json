@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "active": 1274,
+    "active": 1275,
     "orphan": 87,
     "retired": 1
   },
@@ -16400,6 +16400,20 @@
       "lines": 102
     },
     {
+      "script": "test_web_unified_page_contract_v2_guard_row_identity.py",
+      "path": "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.unified_page_contract.v2.web_consumer",
+        "verify.workflow_contract.frontend"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk"
+      ],
+      "lines": 97
+    },
+    {
       "script": "test_workflow_action_semantics_completeness_guard.py",
       "path": "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
       "status": "active",
@@ -17957,9 +17971,10 @@
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/ci/generate_test_inventory.py",
+        "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 177
+      "lines": 255
     },
     {
       "script": "workbench_extraction_hit_rate_report.py",
