@@ -198,7 +198,10 @@
         "addons/smart_construction_core/views/core/settlement_views.xml",
         "addons/smart_construction_core/views/core/contract_views.xml",
         "addons/smart_construction_core/views/core/contract_event_views.xml",
-        "addons/smart_construction_core/views/core/payment_execution_views.xml"
+        "addons/smart_construction_core/views/core/payment_execution_views.xml",
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/views/core/plan_management_views.xml",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"
       ]
     },
     "payment_approval_state_machine": {
@@ -241,7 +244,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.43/44 reversal native confirmation implemented and upgraded at20f359069; native36+browser19 passed (dialog opens, exact contract consequence, cancel zero writes). Event browser remains pending missing company8 authorized records; do not retry unchanged. Continue existing sc.plan native/profile state-condition mismatch and necessary document approval coverage beyond existing supported inventory; actual reversal remains unexecuted. Reuse unchanged frontend.",
+  "next_exact_step": "53.45 sc.plan native completion/reset/cancel conditions now match existing model/profile; native37 passed. Next adopt sc.plan into shared configured approval (currently direct confirmation, no tier/config support), preserve scheduling/line checks and separate start/completion; then consolidate module upgrade and real runtime verification. XML from53.45 not yet loaded. Reuse unchanged payment19 and approval17 evidence; event browser still lacks authorized company8 records.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -711,6 +714,13 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790773977925/report.json",
       "writes": "none: confirmation cancelled",
       "remaining": "actual financial reversal, contract-event browser data and all-document coverage"
+    },
+    "plan_state_53_45": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "d97d8bc45",
+      "test_count": 37,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-state-tests.log",
+      "remaining": "shared approval adoption and consolidated upgrade/runtime; not all-document closure"
     }
   }
 }

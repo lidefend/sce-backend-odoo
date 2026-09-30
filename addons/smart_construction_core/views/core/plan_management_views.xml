@@ -43,9 +43,9 @@
                 <header>
                     <button name="action_confirm" string="确认" type="object" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_start" string="开始执行" type="object" class="btn-primary" invisible="state != 'confirmed'"/>
-                    <button name="action_done" string="完成" type="object" class="btn-primary" invisible="state not in ('confirmed', 'in_progress')"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('done', 'cancel')"/>
-                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state == 'draft'"/>
+                    <button name="action_done" string="完成" type="object" class="btn-primary" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'confirmed', 'in_progress')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
                 </header>
                 <sheet>

@@ -7748,3 +7748,11 @@ L5：未推送、未合并、未部署。
 - 20f359069经受管acceptance.module.upgrade及backend.acceptance.up成功，日志payment-reversal-confirm-upgrade.log/payment-reversal-confirm-backend.log；沿用sc_frontend_acceptance/local、精确过滤与原卷，无新环境。既有5180静态产物不变。
 - TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.payment.execution受管browser19项PASS（payment-reversal-confirm-browser.log；tpl07-1790773977925/report.json）。finance既有paid186有效契约requires_confirm=true/classification=danger，点击撤销付款打开共享确认弹层，后果文案与契约一致，点击取消后关闭且forbiddenWrites=[]，errors=[]。原双视口/单一官方详情/入口状态检查继续通过。未执行实际台账冲销，未改付款数据。
 - 该声明与共享消费闭环完成，合同事件页面无授权范围数据的前提仍未变化，不重试；全部业务单据审批覆盖与真实资金事务未由本次通过推定。下一步沿已登记必要业务缺口继续收敛，包括sc.plan原生状态条件旧不一致及现有配置支持之外的单据；不重新全仓审计。总体active，主线/目标部署/整体验收未完成。
+
+
+### 53.45 计划原生按钮与状态机/契约对齐
+
+- d97d8bc45 clean起步，P1 sc.plan原生视图。复用53.16登记缺口，只核对plan_management.py、原生视图及既有workflow profile。模型完成仅in_progress、重置仅cancel、取消仅draft/confirmed/in_progress；原生此前分别额外允许confirmed、所有非draft、所有非done/cancel。按模型现有规则修正三个invisible表达式，profile已正确不再修改。
+- L1 ci.local.iteration PASS（plan-state-iteration.log）；L2 native8+29=37 PASS（plan-state-tests.log，begin/record37）。新增测试执行模型五个实际动作，隔离日期/业务anchor协作者，逐draft/confirmed/in_progress/done/cancel/unknown比较可执行方法、实际XML可见集合和实际_available_actions输出一致。测试不是按标签或方法名称推导许可。新增相关模型/视图及前轮parser实际依赖至原native_action_coverage输入登记。
+- 本批只修正呈现状态边界；sc.plan尚无tier继承/审批配置支持，仍直接确认，按所有业务单据统一规则这是必要产品缺口，不计作自动审批已接入。下一步在同一产品批次补既有共同审批适配后统一受管升级与真实验证，不为本次三个视图属性单独升级/浏览器矩阵。既有付款19项及审批17项不因本次无依赖变更重跑。
+- XML待受管升级，不能宣称已加载；前端产物不变。总体active，主线未集成、目标未部署、整体验收未完成。

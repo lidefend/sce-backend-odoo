@@ -243,6 +243,34 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         for method in ('validate_tier', 'reject_tier'):
             self.assertIn('can_review', buttons[method].get('invisible'))
 
+    def test_plan_native_and_contract_actions_match_executable_model_states(self):
+        model = DEFAULT_SERVICE.parents[1] / 'core/plan_management.py'
+        names = {'action_confirm', 'action_start', 'action_done', 'action_cancel', 'action_reset_draft'}
+        methods = [node for node in ast.walk(ast.parse(model.read_text())) if isinstance(node, ast.FunctionDef) and node.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text,
+                     'fields': SimpleNamespace(Date=SimpleNamespace(context_today=lambda record: '2026-09-30'))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(model), 'exec'), namespace)
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/plan_management_views.xml')
+        buttons = {button.get('name'): button for button in tree.findall('.//header/button') if button.get('name') in names}
+        self.assertEqual(set(buttons), names)
+        class Plan:
+            def __init__(self, state): self.state = state
+            def __iter__(self): return iter([self])
+            def _check_business_anchor(self, **kwargs): pass
+            def write(self, values): self.__dict__.update(values)
+        for state in ('draft', 'confirmed', 'in_progress', 'done', 'cancel', 'unknown'):
+            with self.subTest(state=state):
+                executable = set()
+                for method in names:
+                    try: namespace[method](Plan(state))
+                    except ValueError: continue
+                    executable.add(method)
+                visible = {method for method, button in buttons.items()
+                           if not eval(button.get('invisible'), {'__builtins__': {}}, {'state': state})}
+                projected = {action['method'] for action in self._general_contract_actions(state, model='sc.plan')}
+                self.assertEqual(visible, executable)
+                self.assertEqual(projected, executable)
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

@@ -182,3 +182,7 @@ Finance record186 (`paid`) passes16 browser assertions on the unchanged official
 ### Segment53.44 — Native reversal confirmation consumed by shared dialog
 
 Native payment reversal now explicitly declares its ledger/request consequences. The existing parser publishes danger/requires_confirm; the unchanged official frontend opens the shared confirmation dialog with the exact contract message. Governed browser19 assertions pass on existing paid186, including cancelling with zero business requests. This closes the missing confirmation declaration/interaction, not financial reversal execution or all-document approval coverage.
+
+### Segment53.45 — Plan state visibility corrected; approval adoption still required
+
+The native plan form now permits completion only in `in_progress`, reset only in `cancel`, and cancellation only in `draft/confirmed/in_progress`, matching existing model methods and workflow projection. A focused test executes all five model transitions and compares native/profile availability across all five states plus an unknown state. XML runtime loading is pending the next consolidated upgrade. `sc.plan` still lacks configured shared approval and must be adopted; this visibility correction does not close that product gap.
