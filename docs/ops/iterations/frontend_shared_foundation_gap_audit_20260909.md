@@ -9414,3 +9414,8 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - `16cca4bee` clean起点。P1 smart_construction_core版本业务职责：保留draft/approved状态，复用tier.validation和公司审批配置，未配置提交自动确认，有配置完成真实审批才确认；审核人取真实review.done_by，自动确认不伪造审核人。禁止直接写状态/审核结果、审批中或确认后的内容修改与删除，退回草稿可修订重提；基准版本须同计划且非自身，既有(plan_id,version_no)唯一约束保留。
 - 工作流profile、审批配置目标/同步回调和原生独立版本form接线；原父计划内版本tree的审核字段及state只读，内容依审批状态限制。版本说明/差异说明语义不变，不新增快照生成、不自动改写父计划或执行节点，前端无业务特判。P4仅新增既有rollback工具 `plan-version` 范围，不新建环境/fixture。
 - L1 `plan-version-iteration.log`/`plan-version-tool-iteration.log` PASS；业务定向 `plan-version-unit.log` **186 PASS**，agent.run.begin/record已登记；受管运行工具 `plan-version-tool-unit.log` **44 PASS**及environment source guard PASS。产品变更需要模块升级，L3/最终页面/browser尚未执行；前端e19eb1e16未变不构建。已有汇报27/14证据保留。
+
+
+53.192运行结果补记：P1 `a710ad74a`、P4 `7594a9bf7`；受管模块升级成功（plan-version-upgrade.log），backend.acceptance.up绑定7594a9bf7/18082（plan-version-backend.log）。原受管验收scope `plan-version` **10 PASS / ROLLBACK VERIFIED**（plan-version-runtime.log）：伪造创建/default/直接写审核结果拒绝，无配置自动确认且父计划不执行；有配置真实审批，pending改写/删除/重提/伪回调拒绝，实际审核人记录，真实退回后编辑重提新链，最终UiContractV2已确认write=false且三类动作语义保留。公司/数据库/卷身份均沿原local验收配置；没有测试单据或配置残留。
+
+本段只证明版本模型、审批及最终契约；版本在父计划主从页面的实际入口/普通角色办理尚待验。直接version.unlink锁定已验证，父计划cascade删除对已审核版本的保护尚未覆盖，后续收口必须单独核对，不夸大为所有删除入口已受保护。未改变前端构建，复用汇报PM27证据，不据此认定整体67条完成。未推送、合并、目标部署。

@@ -455,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.192 plan-version P1 shared approval/native form implemented, draft/approved values preserved; external state/audit forgery and pending/approved edits/unlink blocked, rejected edit restored. L1 PASS, pure186 PASS receipt, P4 runtime wrapper44 PASS. Next managed module upgrade and backend bind followed by plan-version rollback scope10; not yet runtime/browser accepted. Frontend e19eb1e16 unchanged; report PM27 evidence reused. Overall67 open; no push/merge/targetdeploy.",
+  "next_exact_step": "53.192 version P1 a710ad74a / runtime tool7594a9bf7: L1 PASS, pure186 PASS, wrapper44 PASS, managed module upgrade PASS, backend7594a9bf7/18082, plan-version runtime10 PASS+ROLLBACK VERIFIED (plan-version-runtime.log), final approved UiContractV2 write=false + submit/approve/reject semantics. Next verify version actual master-detail entry/handling and parent execution field affordances through existing governed PM tool; before broad completion check parent cascading deletion containment for reviewed versions (direct version unlink verified, parent cascade not covered). Frontend e19eb1e16 unchanged. Report PM27 and configured runtime14 reused; overall67 and multi-role UI open. No push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
