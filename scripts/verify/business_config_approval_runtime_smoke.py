@@ -1454,9 +1454,10 @@ def _subcontract_settlement_cash_checks(_project_unused, _group_unused, created)
             refused = True
         assert refused, "business operation unexpectedly permitted"
 
-    source = env["sc.subcontract.settlement"].sudo().create({"project_id": project.id, "subcontractor_id": supplier.id,
+    source = env["sc.subcontract.settlement"].sudo().create({"project_id": project.id, "subcontractor_id": supplier.id, "owner_id": finance.id,
         "line_ids": [(0, 0, {"work_scope": "Subcontract cash rollback item", "qty": 2, "unit_price": 30})]})
     created.append((source._name, source.id))
+    assert actor_env[source._name].search([("id", "=", source.id)]) == source.with_env(actor_env), "source must be visible under existing owner/project rules"
     source.action_submit()
     if source.review_ids: _approve_existing_reviews(source)
     assert source.state == "approved"
