@@ -417,3 +417,8 @@ Backend2fef6a71c: rental-settlement-cash10 PASS and rollback VERIFIED. Non-sudo 
 ### P1 subcontract settlement financial facts (segment 53.110)
 
 Segment 53.110 identified hardcoded zero paid/requested summaries. Segment 53.111 replaces them with explicit `payment.request.subcontract_settlement_id` attribution and canonical posted/reversed ledger aggregation. Runtime cash10 verifies split payments, reversals, reservation release and immutable history under the existing finance-owner scope, with rollback. Keep the remaining product gap explicit: historical unbound records have not been reconciled, other role scopes and browser source selection are unverified, and this is not proof of all historical payment completeness. Do not infer attribution from matching contract/partner names. Follow the existing segment 53 living record and `detail.action-state`, not a new coverage table.
+
+
+## Segment 53.117: approval support lists do not define document coverage
+
+`tender.doc.purchase` was still directly approving drafts and was absent from shared approval configuration. It now consumes the shared tier state machine, declared amount authority and native/effective actions; runtime8 verifies configured/unconfigured flow, guards and rejection/resubmission with transaction restoration. PM create19 confirms official inputs and no unsaved direct approval, not a saved handling journey. Continue the existing `detail.action-state` item for remaining model responsibilities, beginning with project-document submission versus archival; do not exempt documents solely because they were absent from the old support list.

@@ -8561,3 +8561,9 @@ L1 project-role-iteration.log与py_compile/bash-n/diff通过；仅P4身份参数
 L1 tender-purchase-iteration.log通过；L2 tender-purchase-unit.log124 PASS、native.log8+52=60 PASS并登记，验证无配置/配置/实际回调/旧直批退出/终态与金额及上下文状态保护。P4既有rollback工具新增tender-purchase8组，复用事务bid/申请/策略，实际reviewer；新增scope默认all计数262但本轮只跑scope。工具L1 tender-purchase-contract-tool-iteration.log/py_compile/bash-n/diff通过。
 
 需要一次受管模块升级（新增tier继承/字段/XML）并reload，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，所有临时业务/配置同事务恢复。运行时/角色浏览器尚未证明，不关闭整体detail.action-state；其他尚未接入业务不能因现有policy清单而豁免。前端CrYkOCxc未变不构建，不重复已通过项目/付款ORM，无新环境/持久fixture/推送合并目标部署。
+
+53.117结果：7b3e4273e受管模块升级/reload成功（tender-purchase-upgrade.log/reload.log）。tender-purchase-runtime.log8 PASS、ROLLBACK VERIFIED：外部状态/默认值/无实例直批拒绝，无配置自动approved且资料仍advisory，批准金额/重置保护，amount100阈值200未匹配拒绝，真实review及完整workflow方法语义，pending配置关闭不能绕过，真实批准回调，驳回原因及重提新review均通过。事务bid/申请/策略是sudo准备，审核是实际reviewer；不是普通角色完整创建保存旅程。
+
+P4同一approval-actions新增PM tender.doc.purchase create，tender-purchase-page-iteration.log/node/diff通过。tpl07-1790791472547/report.json19 PASS，3输入bid/apply_date/amount的有效可编辑契约和真实输入均存在，草稿新建无直接通过按钮，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核实际金额/投标/日期和保存提交区。前端CrYkOCxc未变不构建。真实选投标/保存/角色提交审核仍未验证，不能将创建检查升级整行办理。
+
+本批限定现有支持表之外的真实审批单据接管首例，不把支持表当业务覆盖边界。已在同一workflow清单看到sc.project.document仍以action_approve归档、tender.guarantee确认及sc.output.invoice.adjustment红冲等职责需继续按实际模型区分审批与业务执行；尚未读取它们完整模型/契约，不能直接判为已统一或直接套审批。下一步优先项目文档的提交/归档职责，沿既有67/detail.action-state记录，不创建第二覆盖表。金额口径问题仍待用户。无新环境/持久fixture/推送合并目标部署。
