@@ -15,7 +15,9 @@
     "scripts/verify/",
     "make/",
     "config/ci/",
-    "docs/frontend_productization/"
+    "docs/frontend_productization/",
+    "addons/smart_core/",
+    "addons/smart_construction_core/"
   ],
   "environment": {
     "kind": "offline",
@@ -53,6 +55,29 @@
         "scripts/verify/page_pattern_reference_ledger_guard.py",
         "scripts/verify/test_page_pattern_reference_ledger_guard.py",
         "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json"
+      ],
+      "kind": "offline"
+    },
+    "record_denied_reason": {
+      "target": "verify.frontend.record_denied_reason.unit",
+      "inputs": [
+        "addons/smart_core/utils/delete_policy.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_core/tests/test_delete_policy_denied_reason.py",
+        "addons/smart_core/tests/test_record_denied_reason_projection.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_record_action_state": {
+      "target": "verify.frontend.contract_record_action_state.unit",
+      "inputs": [
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     }

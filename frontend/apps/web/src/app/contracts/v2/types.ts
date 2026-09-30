@@ -457,6 +457,7 @@ export interface ContractV2GlobalStatus {
   viewCapabilities?: ContractV2Dictionary;
   entryCapabilities?: ContractV2Dictionary;
   effectiveRecordCapabilities?: ContractV2Dictionary;
+  recordDeniedReasons?: ContractV2Dictionary;
   effectiveRenderProfile?: 'create' | 'edit' | 'readonly' | string;
   workflowPhase?: string;
   approvalPhase?: string;

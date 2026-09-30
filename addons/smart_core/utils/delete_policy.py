@@ -8,6 +8,9 @@ from .extension_hooks import call_extension_hook_first
 
 DELETE_POLICY_ALLOWED = "DELETE_POLICY_ALLOWED"
 DELETE_POLICY_DENIED = "DELETE_POLICY_DENIED"
+# A policy that declares a state gate must also declare why the gate denies;
+# otherwise the terminal would have to invent a reason for its disabled control.
+DELETE_POLICY_STATE_DENIED = "DELETE_POLICY_STATE_DENIED"
 SOURCE_KIND = "unlink_policy_projection"
 SOURCE_AUTHORITIES = ("extension_unlink_policy", "handler_default_allowlist", "odoo_access_control")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -67,6 +70,14 @@ def _normalize_policy(model: str, raw: Any, *, source: str) -> Dict[str, Any]:
         values = sorted(_as_model_set(row.get(key)))
         if values:
             normalized[key] = values
+    for key in ("denied_reason_code", "denied_message"):
+        value = str(row.get(key) or "").strip()
+        if value:
+            normalized[key] = value
+    if (
+        normalized.get("allowed_states") or normalized.get("blocked_states")
+    ) and not normalized.get("denied_reason_code"):
+        normalized["denied_reason_code"] = DELETE_POLICY_STATE_DENIED
     return normalized
 
 

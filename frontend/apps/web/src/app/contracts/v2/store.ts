@@ -268,6 +268,9 @@ export function resolveContractV2GlobalStatus(store: ContractV2NormalizedStore |
     ...(Object.keys(asDict(row.effectiveRecordCapabilities)).length
       ? { effectiveRecordCapabilities: asDict(row.effectiveRecordCapabilities) }
       : {}),
+    ...(Object.keys(asDict(row.recordDeniedReasons)).length
+      ? { recordDeniedReasons: asDict(row.recordDeniedReasons) }
+      : {}),
     ...(asText(row.effectiveRenderProfile) ? { effectiveRenderProfile: asText(row.effectiveRenderProfile) } : {}),
   };
 }
@@ -470,6 +473,71 @@ export interface ContractV2EffectiveFormCapabilities {
   create: boolean;
   unlink: boolean;
   duplicate: boolean;
+}
+
+export type ContractRecordOperation = 'read' | 'write' | 'create' | 'unlink' | 'duplicate';
+
+export interface ContractRecordActionState {
+  operation: ContractRecordOperation;
+  allowed: boolean;
+  /** The reason the contract declared for a denied operation, never a guess. */
+  reasonCode: string;
+}
+
+/**
+ * The declared disposition of every record-scoped operation.
+ *
+ * Two declarations combine and neither is re-derived from a label, a route or a
+ * default. `effectiveRecordCapabilities` names which authority allows the
+ * operation on this record; `actionContract.deletePolicy` adds the state gate a
+ * business document declares on top of delete (`state_limited_business_document`
+ * with its `state_field`, `allowed_states` and `denied_reason_code`). A denied
+ * operation reports the reason code the contract published; when the contract
+ * published no reason the code stays empty rather than being invented.
+ */
+export function resolveContractV2RecordActionStates(
+  store: ContractV2NormalizedStore | null,
+): ContractRecordActionState[] {
+  const operations: ContractRecordOperation[] = ['read', 'write', 'create', 'unlink', 'duplicate'];
+  const status = resolveContractV2GlobalStatus(store);
+  const effective = asDict(status?.effectiveRecordCapabilities);
+  const declaredReasons = asDict(status?.recordDeniedReasons);
+  const deletePolicy = resolveContractV2DeletePolicy(store);
+  const mainData = resolveContractV2MainData(store);
+  const deleteStateGate = resolveDeclaredDeleteStateGate(deletePolicy, mainData);
+  return operations.map((operation) => {
+    const capabilityAllowed = effective[operation] === true;
+    const declaredReason = asText(declaredReasons[operation]);
+    if (operation !== 'unlink') {
+      return { operation, allowed: capabilityAllowed, reasonCode: capabilityAllowed ? '' : declaredReason };
+    }
+    if (deletePolicy.allowed === false) {
+      return { operation, allowed: false, reasonCode: asText(deletePolicy.reason_code) || declaredReason };
+    }
+    if (!capabilityAllowed) {
+      return { operation, allowed: false, reasonCode: declaredReason };
+    }
+    if (deleteStateGate.blocked) {
+      return { operation, allowed: false, reasonCode: asText(deletePolicy.denied_reason_code) };
+    }
+    return { operation, allowed: true, reasonCode: '' };
+  });
+}
+
+function resolveDeclaredDeleteStateGate(
+  deletePolicy: Record<string, unknown>,
+  mainData: Record<string, unknown>,
+): { blocked: boolean } {
+  const kind = asText(deletePolicy.policy_kind);
+  if (kind !== 'state_limited_business_document') return { blocked: false };
+  const stateField = asText(deletePolicy.state_field);
+  const allowedStates = Array.isArray(deletePolicy.allowed_states)
+    ? deletePolicy.allowed_states.map((item) => asText(item)).filter(Boolean)
+    : [];
+  if (!stateField || !allowedStates.length) return { blocked: false };
+  const currentState = asText(mainData[stateField]);
+  if (!currentState || allowedStates.includes(currentState)) return { blocked: false };
+  return { blocked: true };
 }
 
 export function resolveContractV2EffectiveFormCapabilities(

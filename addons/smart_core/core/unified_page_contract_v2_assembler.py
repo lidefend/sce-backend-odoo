@@ -1113,6 +1113,16 @@ def _assemble_ui_contract(
         verdict = _dict(form_capabilities.get(key))
         if verdict:
             contract["statusContract"]["globalStatus"][key] = deepcopy(verdict)
+    record_denied_reasons = _dict(
+        _dict(_dict(source.get("permissions")).get("record")).get("denied_reason")
+    )
+    if record_denied_reasons:
+        # The producer observed which authority denied a record operation (model
+        # ACL or record rules).  Publishing it lets the terminal name a disabled
+        # record action instead of inventing a business reason for it.
+        contract["statusContract"]["globalStatus"]["recordDeniedReasons"] = deepcopy(
+            record_denied_reasons
+        )
     effective_render_profile = _text(
         form_capabilities.get("effectiveRenderProfile") or render_profile
     ).lower()

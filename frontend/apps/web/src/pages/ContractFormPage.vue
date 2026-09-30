@@ -377,6 +377,7 @@ import {
   resolveContractV2ContainerTree,
   resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
+  resolveContractV2RecordActionStates,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
   resolveContractV2ActionRules,
@@ -1176,17 +1177,33 @@ const contractPageType = computed<StandardPageTypeDecision>(() => resolveStandar
 const standardFormComposition = createStandardFormCompositionRuntime(() => contractPageType.value);
 /** Official detail composition adoption for this page; presentation scope only. */
 const standardDetailComposition = createStandardDetailCompositionRuntime(() => contractPageType.value);
+/**
+ * The page's record authority snapshot, taken from the contract's declared
+ * record action states.  Delete therefore honours both the record capability and
+ * the delete policy's declared state gate, so a business document the contract
+ * declares non-deletable is never treated as deletable here.  Denied operations
+ * keep the reason the contract published; an undeclared page stays denied.
+ */
+const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
+  const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
   if (globalStatus?.pageVisible === false || pageAuth === 'none') {
-    return { read: false, write: false, create: false, unlink: false, duplicate: false };
+    return denied;
   }
   const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);
-  if (authoritative) {
-    return authoritative;
+  if (!authoritative) {
+    return denied;
   }
-  return { read: false, write: false, create: false, unlink: false, duplicate: false };
+  const unlinkState = recordActionStates.value.find((state) => state.operation === 'unlink');
+  return {
+    read: authoritative.read,
+    write: authoritative.write,
+    create: authoritative.create,
+    unlink: unlinkState ? unlinkState.allowed : authoritative.unlink,
+    duplicate: authoritative.duplicate,
+  };
 });
 const canSave = computed(() => (
   !isConfigurationPreview.value && (renderProfile.value === 'edit'

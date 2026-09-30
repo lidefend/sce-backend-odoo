@@ -115,6 +115,81 @@ class PageAssembler:
         rights["duplicate"] = rights["read"]
         return rights
 
+    # A denied record operation must name the layer that denied it.  A bare
+    # boolean forces the terminal to explain a disabled control out of nothing,
+    # which is how a terminal ends up inventing a business reason.  These codes
+    # are facts the producer observed, never a parsed exception message.
+    _RECORD_DENIAL_MODEL_ACCESS = "MODEL_ACCESS_DENIED"
+    _RECORD_DENIAL_RECORD_RULE = "RECORD_RULE_DENIED"
+    _RECORD_DENIAL_RECORD_MISSING = "RECORD_NOT_FOUND"
+    _RECORD_DENIAL_AUTHORITY_UNRESOLVED = "RECORD_AUTHORITY_UNRESOLVED"
+
+    @staticmethod
+    def _model_access_allows(env, model_name, operation):
+        try:
+            return bool(env[model_name].check_access_rights(operation, raise_exception=False))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _record_rule_allows(env, model_name, record_id, operation):
+        """Ask Odoo's own record-rule filter, never the error message text."""
+        try:
+            return bool(env[model_name].browse(int(record_id))._filter_access_rules(operation))
+        except Exception:
+            return False
+
+    @classmethod
+    def _record_rule_denied_reasons(cls, env, model_name, record_id, rights):
+        """Name the authoritative layer observed for every denied operation."""
+        reasons = {}
+        try:
+            resolved_record_id = int(record_id or 0)
+        except (TypeError, ValueError):
+            return reasons
+        if resolved_record_id <= 0 or not rights:
+            return reasons
+        denied = [op for op in ("read", "write", "unlink") if rights.get(op) is False]
+        if rights.get("duplicate") is False and "duplicate" not in denied:
+            denied.append("duplicate")
+        if not denied:
+            return reasons
+        try:
+            record_exists = bool(env[model_name].browse(resolved_record_id).exists())
+        except Exception:
+            record_exists = False
+        if not record_exists:
+            return {operation: cls._RECORD_DENIAL_RECORD_MISSING for operation in denied}
+        for operation in denied:
+            if operation == "duplicate":
+                # Duplicate is read + create; name the layer this record shows.
+                if not cls._model_access_allows(env, model_name, "create") or not cls._model_access_allows(
+                    env, model_name, "read"
+                ):
+                    reasons[operation] = cls._RECORD_DENIAL_MODEL_ACCESS
+                elif rights.get("read") is False:
+                    reasons[operation] = reasons.get("read") or cls._RECORD_DENIAL_RECORD_RULE
+                else:
+                    reasons[operation] = cls._RECORD_DENIAL_AUTHORITY_UNRESOLVED
+                continue
+            if not cls._model_access_allows(env, model_name, operation):
+                reasons[operation] = cls._RECORD_DENIAL_MODEL_ACCESS
+            elif not cls._record_rule_allows(env, model_name, resolved_record_id, operation):
+                reasons[operation] = cls._RECORD_DENIAL_RECORD_RULE
+            else:
+                reasons[operation] = cls._RECORD_DENIAL_AUTHORITY_UNRESOLVED
+        return reasons
+
+    @classmethod
+    def _record_capability_block(cls, env, model_name, record_id):
+        """Record-scoped capability plus the layer that denied each denial."""
+        rights = cls._record_rule_rights(env, model_name, record_id)
+        return {
+            "rights": rights,
+            "record_id": record_id,
+            "denied_reason": cls._record_rule_denied_reasons(env, model_name, record_id, rights),
+        }
+
     @classmethod
     def source_authority_contract(cls):
         return {
@@ -546,10 +621,9 @@ class PageAssembler:
         effective_rights.update(runtime_rights)
         effective_permissions["rights"] = effective_rights
         permissions_root["effective"] = effective_permissions
-        permissions_root["record"] = {
-            "rights": self._record_rule_rights(env, model, requested_record_id),
-            "record_id": requested_record_id or None,
-        }
+        record_capability = self._record_capability_block(env, model, requested_record_id)
+        record_capability["record_id"] = requested_record_id or None
+        permissions_root["record"] = record_capability
         data["permissions"] = permissions_root
         data["delete_policy"] = resolve_unlink_policy(env, model)
 
@@ -3990,10 +4064,7 @@ class PageAssembler:
 
         permissions = data.get("permissions") if isinstance(data.get("permissions"), dict) else {}
         permissions = dict(permissions)
-        permissions["record"] = {
-            "rights": self._record_rule_rights(self.env, model_name, record_id),
-            "record_id": record_id,
-        }
+        permissions["record"] = self._record_capability_block(self.env, model_name, record_id)
         data["permissions"] = permissions
 
         self._inject_record_version_contract(

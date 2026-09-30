@@ -873,6 +873,8 @@ def _state_unlink_policy(
         "allowed_states": list(allowed_states),
         "reason_code": "DRAFT_BUSINESS_DOCUMENT_DELETE_ALLOWED",
         "message": f"允许删除未形成业务事实的{business_label}；仅限草稿/取消等未提交状态，并继续受模型 ACL 与记录规则约束。",
+        "denied_reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE",
+        "denied_message": f"该{business_label}已形成业务事实，仅未提交状态可删除。",
         "source": "smart_construction_core",
     }
 
