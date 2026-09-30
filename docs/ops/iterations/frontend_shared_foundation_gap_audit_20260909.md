@@ -8059,3 +8059,10 @@ action_select从approved执行并检查审批事实，保留至少一条报价�
 L1 rfq-approval-iteration.log PASS；rfq-approval-unit.log 74 PASS（新增审批不定价、无报价不能定价、外部状态写拒绝、未定价或审批未通过不能生成订单）；rfq-native.log 8+42=50 PASS；rfq-semantics.log 15 PASS；2份XML解析、diff --check PASS，相关非零回执登记。最后仅追加生成订单纯回归，生产输入未再改，复用此前L1与native/semantics。候选501a4ea06+本段dirty，不是冻结交付。
 
 L3未运行：tier继承/字段/state/XML需要一次受管升级。下一步扩展现有回滚工具rfq范围，真实验证审批、拒绝重提、独立定价及订单生成、未定义金额拒绝，并确认配置/数据恢复；再做受影响页面消费。L4不重建未变前端，不重查已空采购申请；L5不在本地批次。现有采购申请8等未变业务方法证据复用，总体67及detail.action-state保持未完成。不推送合并部署。
+
+
+### 53.76 询比价真实审批和定价验证（进行中）
+
+P4既有rollback工具新增rfq白名单范围8项：外部state/草稿订单拒绝、无配置审批不定价、未定义金额条件拒绝、pending与配置变化保护、实际审批仍需选价、显式选价再生成草稿订单、拒绝回草稿、重提新review。默认all纳入，沿用原配置恢复/临时记录消失校验；无新环境/持久fixture。
+
+L1 rfq-runtime-iteration.log与py_compile/bash-n PASS；74/50/15生产与测试输入未改，复用53.75原证据。受管升级复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤及固定存储卷由入口预检；非客户生产/控制库。需一次smart_construction_core升级后重绑，再只执行rfq8。运行及页面尚pending，前端未变不重建，不跑旧独立ORM。
