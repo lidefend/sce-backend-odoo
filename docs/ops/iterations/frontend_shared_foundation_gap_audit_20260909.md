@@ -9092,3 +9092,14 @@ expense-policy-fresh-browser.log / tpl07-1790804200300配置范围21项全通过
 P0根因BusinessConfigSurfaceView用scopeRole || session.roleSurface.role_code作为DraftSession目标范围；操作者身份被当作目标角色，与stageItem的scopeRole为空不一致。现改为scopeRole || ''，认证与后端权限保持；已有表面读取的角色上下文未改变。回归从真实View提取绑定，再执行DraftSession恢复/校验/发布，确认未限定及显式finance均不被admin覆盖；原8竞态+稳定目标9扩为11。verify.business_config.unit先被两处已有用户术语文案阻断（ActionView收藏拒绝、recordActionDenialPresentation）；仅把“当前契约未允许”改“当前页面未允许”，保持拒绝规则及原因。重跑入口223项通过（JS39+Python184），日志lc-target-role-unit-final；严格类型lc-target-role-types PASS，随后只有两个字符串字面量变化，按类型输入结构不变复用。
 
 本批P0源码已验证，生产前端仍dbc39c9a8，尚未加载目标角色修复。下一步一次受管前端构建/5180更新，再执行同一UI模式，确认发布及回滚而非只看API成功。后端仍6fd0123cd、addons未改，无需重启或ORM。总体67/detail.action-state保持open，无推送、合并、目标部署。
+
+
+### 53.163 工作台按钮发布与按批次回滚真实闭环
+
+559cc3c927ef9849e2a5e7e021f42f94eb91bbab clean，复用53.162的223定向/严格类型及P4工具15结果，frontend.standard.preview.build/up受管构建一次并更新5180。entry/assets/index-D2WwqVPC.js，entry_sha256=ff91782bac7e0867fa14882e321e486c3b6d6524fa90407378f2ec6e2aa4136e，index_sha256=3422c4d9588debb9c3e5c68f4d3c5382e0108a2c23922d3e7eb5b299879e36d6。后端6fd0123cd/addons不变，入口确定性复用，无重启/ORM/升级。日志lc-target-role-build/preview/browser.log。
+
+WEB_LC_APPLY=1 WEB_LC_UI_PUBLISH=1 make verify.business_config.standard_list_loop SC_ACCEPTANCE_RUNTIME_PROFILE=local：web-lc-01-75d6913b-63fc-4d4f-8c04-33a410a38d91/report.json passed/rolled_back，15具名检查通过。UI恢复请求role_key为空、model payment.request/action775，回读ready且token精确匹配本次自有草稿；点击发布全部可逆配置/确认继续，UI实际publish成功并权威回读verified；官方标准列表显示本次唯一label，完整能力比较、有序记录ID、固定业务字段摘要和query/context保持。点击UI按批次回滚，返回发布恢复批次verified；原完整契约/配置来源、表头/请求/记录/业务摘要均与基线相同。errors=[]。无业务写入，不覆盖他人配置或草稿，保留正常配置审计。原私有报告含恢复token，不公开上传。
+
+人工核对workbench-published截图：显示1项配置已发布、未限定角色及按批次回滚按钮；页面头部/配置能力仍在reload中，不能作为整页稳定摘要验收。列表before/published/restored与请求/契约深比较证明生效/恢复；不能将工作台瞬时截图外推UI编辑器全旅程。
+
+关闭本次P0操作者身份误作配置目标角色导致草稿恢复不一致的缺口及UI发布/回滚代表链。API暂存+草稿预览不冒充UI字段编辑；下一步只补仍缺的工作台UI编辑→暂存链，并核对刷新后目标范围/摘要，复用本次发布恢复证据与现有配置工具保护，不再从API发布起点重做。67/detail.action-state与其它业务职责继续open，未进行主线集成、目标部署或总体交付声明。

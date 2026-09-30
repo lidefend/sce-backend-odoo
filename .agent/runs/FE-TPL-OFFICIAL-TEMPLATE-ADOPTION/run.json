@@ -440,7 +440,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.162 UI publication pending runtime: existing LC02 API full capability loop remains closed. Three owned prepublish drafts discarded/restored; latest report web-lc-01-0475510d-766f-4515-a302-54ce6fbbfac2 proves workbench resume role=business_config_admin vs intended unscoped. Fixed P0 BusinessConfigSurfaceView DraftSession callback to scopeRole only; real binding regression11 + full business_config.unit223 and strict pass. P4 WEB_LC_UI_PUBLISH=1 tool15/current receipt; logs tpl52/lc-target-role*. Need commit clean candidate, one managed frontend build/up5180, then same UI loop. Backend6fd0123cd unchanged; no ORM/restart/newfixture. Two user-message internal terms corrected for existing guard; types reused by literal-only impact. Overall67 stays open.",
+  "next_exact_step": "53.163 UI publish/rollback15 passed/rolled_back report web-lc-01-75d6913b-63fc-4d4f-8c04-33a410a38d91. New frontend559cc3c92 index-D2WwqVPC.js,backend6fd0123cd unchanged. Full list contract/query/orderedIDs/business digest restored, no business writes. Actor/target role defect closed. Next remaining UI editor→stage scope and stable post-refresh workbench target-summary: use existing editor/lowcode probe, do not recast API staging as UI editing or rerun closed LC02 API journey. Published screenshot still loading summary; not full-page stable proof. Overall67/detail.action-state remainsopen/no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
