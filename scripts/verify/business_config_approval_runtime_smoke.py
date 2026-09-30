@@ -3190,8 +3190,10 @@ def _expense_readiness_checks(project, partner, created):
     assert claim.payment_anchor_policy == "pay_request_required"
     denied_submission(claim, "EXPENSE_MISSING_PAYMENT_REQUEST")
     print("APPROVAL_CHECK=expense_missing_anchor_contract_and_execution_agree")
-    ready = _expense(project, partner, "readiness")
-    created.append((ready._name, ready.id))
+    # The existing repayment fixture is interfund, not a cash account case.
+    # Reuse this cash reimbursement; its missing anchor remains an additional
+    # declared error, while pure tests isolate each readiness condition.
+    ready = claim
     ready.write({"partner_id": False})
     denied_submission(ready, "EXPENSE_MISSING_PARTNER")
     ready.write({"partner_id": partner.id})
