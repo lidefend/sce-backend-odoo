@@ -261,7 +261,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.56 task tier draft->ready configuration/native/profile/execution preflight implemented;58 approval/41 native/15 workflow pass. Commit, governed local acceptance module upgrade and backend reload, then existing approval_runtime39 (task5). Execution task preflight refuses configured unsubmitted/pending before atomic savepoint creates reviews; task actual submission is separate native/contract action. Browser waiting guidance remains unverified. Project approval still open; no broad scan.",
+  "next_exact_step": "53.56 task actual tier approval39 (task5) PASS after governed upgrade/reload fef68d390; rollback verified. Continue task browser/effective contract and required/pending execution guidance (no task-specific frontend semantics), then project.project action_sc_submit approval/start split preserving centralized lifecycle write/role guards. Task profile sc_state now present; existing state/action evidence not a full page proof. Reuse unchanged tax/diary/plan evidence, no broad scan.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -856,8 +856,15 @@
         "native": 41,
         "workflow": 15
       },
-      "runtime": "not_run; upgrade required",
-      "remaining": "real task approval/rollback; task browser and execution waiting guidance; project approval split"
+      "runtime": {
+        "status": "passed",
+        "backend": "fef68d390",
+        "checks": 39,
+        "task_checks": 5,
+        "rollback": "VERIFIED",
+        "log": "artifacts/frontend-web-fix-20260928/tpl52/task-approval-runtime.log"
+      },
+      "remaining": "task browser and actionable approval-required/pending guidance; project approval split; all-document and full rendering/interaction scope"
     }
   }
 }

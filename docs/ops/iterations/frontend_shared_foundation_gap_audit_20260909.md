@@ -7859,3 +7859,6 @@ L5：未推送、未合并、未部署。
 - 直接服务发现执行推进处于原子savepoint，返回未完成会回滚新review。因此执行服务不隐式在该事务提交审批，先调用模型_execution_approval_block：待提交配置审批返回EXECUTION_TASK_APPROVAL_REQUIRED，真实在审返回EXECUTION_TASK_APPROVAL_PENDING；保持执行失败回滚边界，单独的提交动作承载审批事务。前端等待提示/跳转尚待页面验收，不宣称工作区闭环。
 - L1 iteration PASS（task-approval-iteration.log），P4扩展语法通过；审批58 PASS（task-approval-tests.log，begin/record58），native8+33=41 PASS（task-native-tests.log，最终inputs重绑begin/record41），workflow15 PASS/66 profiles（task-workflow-tests.log）。新增契约测试五状态及can_review真权限；生产方法隔离测试证明无配置/配置/回调只ready，未启动。
 - 既有rollback runtime工具新增task5项，整体预期39：无配置就绪、等待禁止启动、真实批准后显式启动、驳回原因、重提新链。待受管模块升级/重载后运行；不是已验收结果。无需前端构建；不新建环境或fixture，不做整体验收矩阵。项目project.project审批与启动拆分仍待完成，整体目标active。
+
+- 运行回读：fef68d390受管preflight/模块升级/后端重载/health通过，身份仍local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷。approval_runtime39 PASS，新增任务5项全部通过；真实review校验draft等待、通过仅ready、显式start才in_progress，驳回/重提新链保留正确状态与原因。最终ROLLBACK=VERIFIED，原审批配置/步骤回读一致、临时对象不存在。日志task-approval-{preflight,upgrade,backend,health,runtime}.log。
+- 阶段状态：任务模型/配置审批链验证通过，页面与工作区审批提示尚未验收；本轮未构建前端、未推送/合并/目标部署，整体验收未完成。下一步继续任务契约/页面及可操作等待提示，再推进项目立项审批与启动拆分。
