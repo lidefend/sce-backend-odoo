@@ -8,6 +8,7 @@
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
   "scope": [
     ".agent/",
+    "docs/audit/guard_registry/",
     "docs/ops/iterations/",
     "docs/engineering_convergence/",
     "frontend/apps/web/src/",
@@ -57,7 +58,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Contract-owner decisions remain for the three list reference gaps (favorite, settings-export, record-action) and the authentication/shell/drawer gaps; the frontend adoption itself is at its contract boundary. Next: keep the current candidate (626bac244, 5180) as the local preview and close the leftover mainline guard-registry orphan accounting before merge preparation.",
+  "next_exact_step": "The mainline guard-registry accounting is closed; continue closing P0 smart_core contract projection gaps (row detail action, export capability, favorite ownership, copy/delete with disabled reason, section item counts) so the adopted official surface can consume them instead of guessing.",
   "completion": {
     "batch": "passed",
     "mainline": "not_run",

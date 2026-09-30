@@ -18,10 +18,12 @@ tool provides:
 * ``--retire``   Move a script into scripts/verify/retired/ and mark it
                  retired in registry.yaml (the retirement mechanism).
 
-Static-analysis caveat: references are matched by script filename across
-make files, scripts/** and .github/workflows. A script invoked only through
-fully dynamic name construction may be a false orphan; acknowledge it in
-registry.yaml with ``status: active-dynamic`` and a reason.
+Static-analysis caveat: references are matched by script filename, by python
+import statements, and by ``scripts.verify.<module>`` module invocations
+(``python3 -m unittest scripts.verify.<module>``) across make files,
+scripts/** and .github/workflows. A script invoked only through fully dynamic
+name construction may be a false orphan; acknowledge it in registry.yaml with
+``status: active-dynamic`` and a reason.
 """
 
 from __future__ import annotations
@@ -51,6 +53,11 @@ SCRIPT_CORPUS_GLOBS = ("scripts/**/*.py", "scripts/**/*.sh")
 SCRIPT_REFERENCE_RE = re.compile(r"\b([A-Za-z0-9_./-]+\.(?:py|sh))\b")
 IMPORT_REFERENCE_RE = re.compile(
     r"\b(?:from|import)\s+([A-Za-z_][A-Za-z0-9_\.]*)\b"
+)
+# ``python3 -m unittest scripts.verify.<module>`` is a static reference even
+# though it never spells out the ``.py`` filename.
+MODULE_INVOCATION_REFERENCE_RE = re.compile(
+    r"\bscripts\.verify\.([A-Za-z_][A-Za-z0-9_]*)\b"
 )
 
 STATUS_ACTIVE = "active"
@@ -136,16 +143,21 @@ def build_corpus(exclude: Path | None = None) -> dict[str, str]:
     return parts
 
 
-def build_reference_index(parts: dict[str, str]) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+def build_reference_index(
+    parts: dict[str, str],
+) -> tuple[dict[str, set[str]], dict[str, set[str]], dict[str, set[str]]]:
     """Index file texts once so per-script classification stays linear-ish."""
     filename_hits: dict[str, set[str]] = collections.defaultdict(set)
     import_hits: dict[str, set[str]] = collections.defaultdict(set)
+    module_hits: dict[str, set[str]] = collections.defaultdict(set)
     for key, text in parts.items():
         for match in SCRIPT_REFERENCE_RE.findall(text):
             filename_hits[Path(match).name].add(key)
         for module in IMPORT_REFERENCE_RE.findall(text):
             import_hits[module.rsplit(".", 1)[-1]].add(key)
-    return filename_hits, import_hits
+        for module in MODULE_INVOCATION_REFERENCE_RE.findall(text):
+            module_hits[module].add(key)
+    return filename_hits, import_hits, module_hits
 
 
 def _reference_patterns(name: str) -> list[re.Pattern[str]]:
@@ -159,6 +171,7 @@ def _reference_patterns(name: str) -> list[re.Pattern[str]]:
     return [
         re.compile(escaped),
         re.compile(rf"\b(?:import|from)\s+{stem}\b"),
+        re.compile(rf"\bscripts\.verify\.{stem}\b"),
     ]
 
 
@@ -168,11 +181,14 @@ def resolve_external_hits(
     parts: dict[str, str],
     filename_hits: dict[str, set[str]],
     import_hits: dict[str, set[str]],
+    module_hits: dict[str, set[str]] | None = None,
 ) -> list[str]:
     stem = script_name.rsplit(".", 1)[0]
     candidates = set(filename_hits.get(script_name, set())) | set(
         import_hits.get(stem, set())
     )
+    if module_hits:
+        candidates |= set(module_hits.get(stem, set()))
     candidates.discard(script_key)
     if not candidates:
         return []
@@ -186,14 +202,14 @@ def resolve_external_hits(
 
 def classify(scripts: list[Path]) -> list[dict]:
     parts = build_corpus()
-    filename_hits, import_hits = build_reference_index(parts)
+    filename_hits, import_hits, module_hits = build_reference_index(parts)
     targets = parse_make_targets()
     inventory = []
     for script in scripts:
         script_key = script.relative_to(ROOT).as_posix()
         name = script.name
         external_hits = resolve_external_hits(
-            script_key, name, parts, filename_hits, import_hits
+            script_key, name, parts, filename_hits, import_hits, module_hits
         )
         referenced_by_targets = [
             target

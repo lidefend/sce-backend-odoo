@@ -210,12 +210,6 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: native_view_capability_taxonomy_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-20'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: navigation_contract_boundary_guard.py
   status: orphan
   owner: platform-team
@@ -234,6 +228,12 @@ entries:
   date: '2026-08-16'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: page_pattern_reference_ledger_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: enforces the ledger completion rule (owner + follow-up for every contract
+    gap); run by make/frontend.mk as part of verify.frontend.page_pattern_reference_parity.unit
 - script: payment_request_visible_surface_alignment_audit.py
   status: orphan
   owner: platform-team
@@ -312,18 +312,6 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_contract_form_semantic_identity_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-23'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_contract_probe_routing.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-11'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_contract_snapshot_case_actors.py
   status: orphan
   owner: platform-team
@@ -348,22 +336,10 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_daily_dev_customer_addons_runtime_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-06'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_design_token_system.py
   status: orphan
   owner: platform-team
   date: '2026-08-24'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_dev_acceptance_release_identity.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_env_external_topology_precedence.sh
@@ -378,156 +354,24 @@ entries:
   date: '2026-08-11'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_acceptance_baseline_rebuild.py
-  status: orphan
+- script: test_frontend_industry_agnostic_audit.py
+  status: active
   owner: platform-team
-  date: '2026-09-10'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_acceptance_runtime_profile.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-14'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_chart_engine_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-10'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_inline_state_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-26'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_official_icon_resource_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-10'
-  review_by: '2026-09-30'
-  reason: invoked by make/frontend.mk through Python unittest module notation; registry static scan does not recognize that invocation form
-- script: test_frontend_page_pattern_reference_parity_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-27'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_primitive_adapter_guard.py
-  status: orphan
-  owner: platform-team
-  date: unknown
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-09-30'
+  reason: self-test for the industry-agnostic lexical-role classifier; wired into
+    make/frontend.mk as verify.frontend.industry_agnostic.audit.unit
 - script: test_frontend_productization_fixture_upsert.py
   status: orphan
   owner: platform-team
   date: '2026-09-01'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_rendering_detail_state_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-26'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_standard_preview.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-29'
-  review_by: '2026-09-30'
-  reason: invoked by make/runtime_ops.mk through Python unittest module notation (scripts.verify.test_frontend_standard_preview); registry static scan does not recognize that invocation form
-- script: test_frontend_system_state_recovery_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-10'
-  review_by: '2026-09-30'
-  reason: invoked by make/frontend.mk through Python unittest module notation; registry static scan does not recognize that invocation form
-- script: test_gitee_ci_acceptance.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.ci_only.unit via python -m unittest module notation (scripts.verify.test_gitee_ci_acceptance); registry filename-based scan cannot resolve module notation
-- script: test_gitee_ci_checks.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.checks.unit via python -m unittest module notation (scripts.verify.test_gitee_ci_checks); registry filename-based scan cannot resolve module notation
-- script: test_gitee_ci_incremental_update.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.ci_update.unit via python -m unittest module notation (scripts.verify.test_gitee_ci_incremental_update); registry filename-based scan cannot resolve module notation
-- script: test_gitee_formal_executor.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-25'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.formal_executor.unit via python -m unittest module notation (scripts.verify.test_gitee_formal_executor); registry filename-based scan cannot resolve module notation
-- script: test_gitee_formal_pr.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-27'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.formal_pr.unit via python -m unittest module notation (scripts.verify.test_gitee_formal_pr); registry filename-based scan cannot resolve module notation
-- script: test_gitee_formal_queue.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-27'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.formal_queue.unit via python -m unittest module notation (scripts.verify.test_gitee_formal_queue); registry filename-based scan cannot resolve module notation
-- script: test_gitee_formal_worker.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-27'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.formal_worker.unit via python -m unittest module notation (scripts.verify.test_gitee_formal_worker); registry filename-based scan cannot resolve module notation
-- script: test_gitee_frontend_cache.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.frontend_cache.unit via python -m unittest module notation (scripts.verify.test_gitee_frontend_cache); registry filename-based scan cannot resolve module notation
-- script: test_gitee_frontend_cache_install.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.frontend_cache_install.unit via python -m unittest module notation (scripts.verify.test_gitee_frontend_cache_install); registry filename-based scan cannot resolve module notation
-- script: test_gitee_gate_plan.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-25'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.gates.unit via python -m unittest module notation (scripts.verify.test_gitee_gate_plan); registry filename-based scan cannot resolve module notation
-- script: test_gitee_pr_identity.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.gates.unit via python -m unittest module notation (scripts.verify.test_gitee_pr_identity); registry filename-based scan cannot resolve module notation
-- script: test_gitee_publication_scope.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-23'
-  review_by: '2026-09-30'
-  reason: invoked by make/codex.mk target verify.gitee.publication_scope.unit via python -m unittest module notation (scripts.verify.test_gitee_publication_scope); registry filename-based scan cannot resolve module notation
 - script: test_guard_registry_audit.py
   status: orphan
   owner: platform-team
   date: '2026-09-01'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_form_structure_authority_unification.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-15'
-  review_by: '2026-09-30'
-  reason: invoked by the existing form structure Make target using python -m unittest module notation; filename-based registry scan cannot resolve this invocation
 - script: test_legacy_custom_column_retirement.py
   status: orphan
   owner: platform-team
@@ -539,35 +383,19 @@ entries:
   owner: platform-team
   date: '2026-08-24'
   review_by: '2026-09-30'
-  reason: referenced by the governed candidate frontend target and form structure regression suite
-- script: test_local_dev_frontend_quick.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-23'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_local_dev_project_profile_write_fixture.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-13'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  reason: referenced by the governed candidate frontend target and form structure
+    regression suite
 - script: test_local_dev_personnel_authorization_fixture.py
   status: orphan
   owner: platform-team
   date: '2026-09-13'
   review_by: '2026-09-30'
-  reason: targeted P4 safety suite for the one Batch-2A personnel-authorization write journey
-- script: test_local_dev_tender_award_fixture.py
+  reason: targeted P4 safety suite for the one Batch-2A personnel-authorization write
+    journey
+- script: test_local_dev_project_profile_write_fixture.py
   status: orphan
   owner: platform-team
-  date: '2026-09-15'
-  review_by: '2026-09-30'
-  reason: invoked by make/dev.mk through Python unittest module notation; registry static scan does not recognize that invocation form
-- script: test_local_development_lifecycle.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-18'
+  date: '2026-09-13'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_menu_governance_inventory.py
@@ -600,12 +428,11 @@ entries:
   date: '2026-08-16'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_product_view_capability_ledger.py
-  status: orphan
+- script: test_page_pattern_reference_ledger_guard.py
+  status: active
   owner: platform-team
-  date: '2026-08-21'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
+  date: '2026-09-30'
+  reason: self-test for the ledger guard; wired into the same make target
 - script: test_product_view_capability_ledger_schema.py
   status: orphan
   owner: platform-team
@@ -636,24 +463,6 @@ entries:
   date: '2026-08-12'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_scene_audit_disclosure_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-23'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_scene_company_access_preflight_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-06'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_scene_company_snapshot_collect.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-06'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_tax_certificate_formal_contract.py
   status: orphan
   owner: platform-team
@@ -682,18 +491,6 @@ entries:
   status: orphan
   owner: platform-team
   date: '2026-08-04'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_workspace_composition_wiring.py
-  status: orphan
-  owner: platform-team
-  date: '2026-09-29'
-  review_by: '2026-09-30'
-  reason: invoked by make/frontend.mk through Python unittest module notation (scripts.verify.test_workspace_composition_wiring); registry static scan does not recognize that invocation form
-- script: test_view_type_render_coverage_guard.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-23'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
 - script: um_p2_interfund_relation_aggregation_guard.py
@@ -756,20 +553,3 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_frontend_industry_agnostic_audit.py
-  status: active
-  owner: platform-team
-  date: '2026-09-30'
-  reason: self-test for the industry-agnostic lexical-role classifier; wired into
-    make/frontend.mk as verify.frontend.industry_agnostic.audit.unit
-- script: page_pattern_reference_ledger_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-09-30'
-  reason: enforces the ledger completion rule (owner + follow-up for every contract gap);
-    run by make/frontend.mk as part of verify.frontend.page_pattern_reference_parity.unit
-- script: test_page_pattern_reference_ledger_guard.py
-  status: active
-  owner: platform-team
-  date: '2026-09-30'
-  reason: self-test for the ledger guard; wired into the same make target

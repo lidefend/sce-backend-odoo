@@ -16,13 +16,14 @@ class GuardRegistryAuditIndexTest(unittest.TestCase):
             "scripts/ci/helper.py": "target = 'scripts/verify/example_guard.py'\n",
         }
 
-        filename_hits, import_hits = build_reference_index(parts)
+        filename_hits, import_hits, module_hits = build_reference_index(parts)
         hits = resolve_external_hits(
             "scripts/verify/example_guard.py",
             "example_guard.py",
             parts,
             filename_hits,
             import_hits,
+            module_hits,
         )
 
         self.assertEqual(hits, ["make/dev.mk", "scripts/ci/helper.py"])
@@ -36,18 +37,41 @@ class GuardRegistryAuditIndexTest(unittest.TestCase):
             "scripts/ci/other.py": "from scripts.verify import unrelated\n",
         }
 
-        filename_hits, import_hits = build_reference_index(parts)
+        filename_hits, import_hits, module_hits = build_reference_index(parts)
         hits = resolve_external_hits(
             "scripts/verify/frontend_professional_extension_guard.py",
             "frontend_professional_extension_guard.py",
             parts,
             filename_hits,
             import_hits,
+            module_hits,
         )
 
         self.assertEqual(
             hits, ["scripts/ci/test_frontend_professional_extension_guard.py"]
         )
+
+    def test_resolve_external_hits_matches_module_invocation(self) -> None:
+        parts = {
+            "scripts/verify/test_module_guard.py": "print('self')\n",
+            "make/dev.mk": (
+                "target:\n"
+                "\t@python3 -m unittest scripts.verify.test_module_guard\n"
+            ),
+            "make/other.mk": "\t@python3 -m unittest scripts.verify.unrelated\n",
+        }
+
+        filename_hits, import_hits, module_hits = build_reference_index(parts)
+        hits = resolve_external_hits(
+            "scripts/verify/test_module_guard.py",
+            "test_module_guard.py",
+            parts,
+            filename_hits,
+            import_hits,
+            module_hits,
+        )
+
+        self.assertEqual(hits, ["make/dev.mk"])
 
 
 if __name__ == "__main__":
