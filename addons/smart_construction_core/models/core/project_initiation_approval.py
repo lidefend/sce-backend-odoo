@@ -21,7 +21,7 @@ class ProjectInitiationApproval(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("sc_approval_state", "draft") != "draft" for values in vals_list):
+        if any(values.get("sc_approval_state", self.env.context.get("default_sc_approval_state", "draft")) != "draft" for values in vals_list):
             raise UserError("项目立项状态必须通过提交和审批动作产生。")
         return super().create(vals_list)
 
@@ -98,4 +98,3 @@ class ProjectInitiationApproval(models.Model):
                 },
             }
         return True
-

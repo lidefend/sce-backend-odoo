@@ -437,6 +437,10 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             record = types.SimpleNamespace(env=types.SimpleNamespace(context={'sc_initiation_approval_token': supplied}))
             with self.assertRaises(ValueError): namespace['write'](record, {'sc_approval_state': 'approved'})
             with self.assertRaises(ValueError): namespace['create'](record, [{'sc_approval_state': 'approved'}])
+        for default_state in ('approved', 'unknown', False):
+            record = types.SimpleNamespace(env=types.SimpleNamespace(context={'default_sc_approval_state': default_state}))
+            with self.assertRaises(ValueError): namespace['create'](record, [{'name': 'Unsubmitted project'}])
+            with self.assertRaises(ValueError): namespace['create'](record, [{'sc_approval_state': 'draft'}, {'name': 'Unsubmitted project'}])
 
     def test_project_central_lifecycle_guard_prevents_draft_pause_bypass(self):
         path = MODEL.parent / 'project_core.py'
