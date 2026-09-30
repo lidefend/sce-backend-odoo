@@ -8105,3 +8105,10 @@ P1 smart_construction_core / equipment_management，行业标准计划申请职�
 L1 equipment-plan-request-iteration.log PASS；equipment-plan-request-unit.log 77 PASS（一个参数化测试覆盖两模型配置分流/回调事实/兼容wizard/外部token与来源校验）；equipment-plan-request-native.log 8+44=52 PASS；equipment-plan-request-semantics.log 15 PASS；2份XML解析/diff --check PASS，检查输入预登记与非零回执完成。候选0ccc41db0+本批dirty，非冻结交付。
 
 L3未执行：tier/company/reason/native XML需一次受管升级。下一步用现有rollback工具单独equipment-plan-request范围真实验证两模型配置、金额拒绝、来源计划关联、审批/驳回重提及恢复。L4仅后续受影响页面，不重建前端；L5不在本地范围。成本用量/设备结算尚未接入，67条和角色实际办理不能据此完成。
+
+
+### 53.80 设备计划与申请成组真实审批验证（进行中）
+
+P4已有rollback工具新增equipment-plan-request白名单范围14：每模型6项（外部state保护、无配置自动审批、无金额权威拒绝金额条件、pending配置变更保护、真实review通过、驳回重提），另2项申请引用未批计划/跨项目计划拒绝。默认all纳入，沿用原配置恢复和临时记录消失回读，无新环境或持久fixture。
+
+L1 equipment-plan-request-runtime-iteration.log/py_compile/bash-n PASS，P1及纯回归输入未改，复用77/52/15。一次受管smart_construction_core升级/reload后仅本范围14；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产或控制库。运行尚pending，前端未改不重建；角色页面随后按真实数据检查，不重跑旧单据ORM。
