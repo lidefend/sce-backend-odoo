@@ -9348,3 +9348,12 @@ edfd3de14 clean起点；P1 37af7959f把construction_plan_productized_form_v1从e
 relation-default-label-unit39 PASS（原28+11标签/换ID/清空/类型/加载路径检查）、typecheck.strict PASS，L1 final-iteration PASS；工具40及begin/receipt通过，P4原计划入口探针新增company_id/owner_id输入值必须等于有效契约标签的两项断言。产品稳定后仅一次frontend.standard.preview.build，preview.up复用5180 listener；候选e19eb1e16063fa75691e61c3b2a34a1de90f77b2，entry/assets/index-BHjcel_-.js，sha256 d8a1de1dbef0102ed4cd2dfc79ef095f815c65e423449829f6addb5749d9ab5b，旧预览保留previous-xokzgzdh。后端37af7959f未变，不升级/重跑ORM。
 
 relation-default-label-browser.log及tpl07-1790809740513/report.json15项PASS，授权PM/menu507/action655，截图1440观察公司FE Company A/责任人Acceptance Fixture PM，390无溢出；两项标签明确通过，无异常或业务写。浏览器工具校验实际entry摘要与候选一致。53.184默认显示阻断关闭，计划入口重复字段布局退出与新建页面呈现代表范围通过；不扩大为计划执行全旅程或整体67验收。节点创建初始执行值、增删能力、汇报/版本审批仍开放。无推送/合并/目标部署。
+
+
+### 53.186 计划节点初始执行值绕过关闭
+
+6d342b816 clean起点；P1 95997e57a在sc.plan.line.create同时校验显式值与default_*上下文：新节点只能draft/零进度/无实际开始完成日期，不能先以已完成节点绕过执行中write限制；显式合法值优先于上下文，保留原草稿节点创建与执行中更新。未改前端/配置审批/附件独立接口，也未放宽历史导入权限。
+
+plan-node-initial-iteration L1、payment.approval_state_machine.unit176及begin/receipt PASS；新增实际create方法反例含state、progress与actual日期直接值和上下文。P4 614fd1fdd在原plan-state-authority增非法创建/默认值拒绝与无节点残留readback，runtime16 PASS/ROLLBACK VERIFIED（plan-node-initial-runtime.log），正常创建→确认→开始→节点进度更新→完成和审批驳回链仍通过。受管backend614fd1fdd、local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter原卷；无schema/XML不升级，前端e19eb1e16不变不构建，复用新建入口15证据。
+
+节点初始状态/进度/日期缺口关闭；动态新增删除能力契约、汇报/版本统一审批、执行中普通角色页面仍开放，整体67未完成。无新环境/fixture、推送、合并或目标部署。
