@@ -316,7 +316,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.80 equipment plan/request runtime14 rollback/create14+14 PASS backend859c761ad/frontend7915f3bb9. Existing PM queries empty, no repeat. Next equipment usage and settlement producers in equipment_management.py: usage confirmation posts cost so separate approval from execution; preserve source immutable guards/permissions. Use existing profile+ledger/results only; no broad audit, prior ORM reruns or frontend rebuild. Overall record-role journeys incomplete.",
+  "next_exact_step": "53.81 equipment usage/settlement source79/native53/semantics15 PASS. Extend existing rollback scope equipment-execution for actual approval/monetary rules/rejection/resubmit, usage confirmed cost ledger and approved immutable facts/manager boundary, settlement references confirmed usage. One managed upgrade/reload then scope-only runtime and affected official pages. No frontend rebuild/old ORM repeat. Overall scope active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1208,6 +1208,14 @@
       ],
       "record_status": "both authorized queries empty",
       "tool_fix": "create observation selects requested model instead of last relation response"
+    },
+    "segment_53_81": {
+      "status": "source_verified_runtime_pending",
+      "scope": "P1 equipment usage/settlement shared approval separate confirmation",
+      "approval_tests": 79,
+      "native_tests": 53,
+      "semantics_tests": 15,
+      "runtime": "not_run; module upgrade required"
     }
   }
 }

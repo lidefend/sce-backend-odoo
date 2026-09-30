@@ -8119,3 +8119,14 @@ L1 equipment-plan-request-runtime-iteration.log/py_compile/bash-n PASS，P1及�
 P4页面范围扩展两模型，equipment-plan-request-page-iteration.log L1/node语法PASS。设备计划创建tpl07-1790781561410/report.json 14 PASS。设备申请首次tpl07-1790781570251在模型断言失败：report.recordAuthority被后到达的sc.equipment.request.line覆盖，主表response存在，归因P4观察器。创建分支改为本次导航响应中按主模型及非正整数记录身份选择；equipment-create-observation-fix.log L1 PASS，设备申请复验tpl07-1790781615748/report.json 14 PASS。原计划保存authority确为sc.equipment.plan/NewId，选择修复不改变其证据；不因测试工具改动重跑独立业务。两者errors=[]/writes=[]，双视口，系统编号与旧直接审批入口不出现，申请390截图人工复核。
 
 PM记录查询：计划tpl07-1790781578831、申请tpl07-1790781623019均ok=true records=[]，数据前置不足，角色实际记录办理pending；不造fixture、不扩权、不重试相同空查询。前端7915f3bb9/后端859c761ad，detail.action-state与全系统目标保持开放。
+
+
+### 53.81 设备使用与结算审批／确认职责分离（进行中）
+
+P1 smart_construction_core设备使用及结算，复用policy/tier。两模型新增approved待确认：无配置提交自动approved，有配置真实review；callback不执行确认。使用登记action_confirm继续项目经理、来源申请/事实校验，新增审批事实检查后才写confirmed并_sync_project_cost_ledger。既有成本状态令牌/非draft事实保护不重建，取消approved要求项目经理，草稿仍操作员；设备结算保留来源usage同项目/供应商且confirmed的业务校验，再显式确认。
+
+审批金额分别绑定已有usage.amount与settlement.amount_total，公司来自项目；不借其付款展示字段执行付款。原生状态栏/tier按钮/确认可见性与workflow profile同步，系统编号创建隐藏只读；前端无新增业务逻辑。模型/配置/回调均属P1行业标准，非P0通用业务默认或P2客户偏好。保持原有ACL/record rules。
+
+L1 equipment-execution-iteration.log PASS；equipment-execution-unit.log79 PASS（参数化两模型审批不执行、确认副作用/来源校验、usage经理取消边界）；equipment-execution-native.log8+45=53 PASS；equipment-execution-semantics.log15 PASS；2XML解析/diff --check PASS，非零回执登记。候选8a82256ae+本批dirty，不是冻结交付。
+
+L3未运行：tier/新字段/state/XML需一次受管升级，下一步既有rollback工具设备执行范围真实验证使用成本台账、金额审批、权限/不可变、结算引用已确认使用及拒绝重提。L4产品前端未改不重建，仅受影响页面后验；L5不在本地范围，不重复旧ORM。实际角色办理及总体67仍未完成。

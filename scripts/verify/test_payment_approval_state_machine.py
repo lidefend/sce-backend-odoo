@@ -927,6 +927,59 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     ns['action_on_tier_approved'](rec)
                     self.assertEqual(rec.state, 'approved')
 
+    def test_equipment_usage_and_settlement_approval_preserve_explicit_confirmation(self):
+        path = MODEL.with_name('equipment_management.py')
+        tree = ast.parse(path.read_text())
+        for cls_name, model, writer in [('ScEquipmentUsage', 'sc.equipment.usage', '_write_cost_source_state'), ('ScEquipmentSettlement', 'sc.equipment.settlement', '_write_approval_state')]:
+            cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
+            names = {'action_submit', 'action_confirm', 'action_on_tier_approved'}
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            for required in (False, True):
+                rec = self._purchase_request_record(required=required, state='draft')
+                rec._name = model
+                rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+                checks = []
+                rec._check_business_anchor = lambda: checks.append('anchor')
+                rec._check_values = lambda: checks.append('values')
+                rec._check_project_operator = lambda: checks.append('operator')
+                rec._check_project_manager = lambda: checks.append('manager')
+                setattr(rec, writer, lambda values: rec.data.update(values))
+                costs = []
+                rec._sync_project_cost_ledger = lambda: costs.append('posted')
+                ns['action_submit'](rec)
+                self.assertEqual(rec.state, 'submitted' if required else 'approved')
+                self.assertFalse(costs)
+                if required:
+                    with self.assertRaises(ValueError): ns['action_confirm'](rec)
+                    ns['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'submitted')
+                    rec.data['validation_status'] = 'validated'
+                    ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+                self.assertFalse(costs)
+                ns['action_confirm'](rec)
+                self.assertEqual(rec.state, 'confirmed')
+                self.assertEqual(costs, ['posted'] if model.endswith('usage') else [])
+                self.assertIn('anchor', checks)
+                if model.endswith('usage'):
+                    self.assertIn('operator', checks)
+                    self.assertIn('manager', checks)
+
+    def test_equipment_usage_approved_cancel_keeps_manager_gate(self):
+        path = MODEL.with_name('equipment_management.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScEquipmentUsage')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'action_cancel')
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        rec = self._purchase_request_record(state='approved')
+        rec._check_project_operator = lambda: None
+        rec._check_project_manager = lambda: (_ for _ in ()).throw(PermissionError('manager required'))
+        rec._write_cost_source_state = lambda values: rec.data.update(values)
+        with self.assertRaises(PermissionError): ns['action_cancel'](rec)
+        self.assertEqual(rec.state, 'approved')
+
     def _purchase_request_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')

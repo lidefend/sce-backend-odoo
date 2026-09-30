@@ -569,8 +569,6 @@ class ScWorkflowContractService(models.AbstractModel):
             "sc.safety.issue",
         )),
         **_submit_confirm_profiles((
-            "sc.equipment.settlement",
-            "sc.equipment.usage",
             "sc.labor.settlement",
             "sc.labor.usage",
             "sc.subcontract.settlement",
@@ -910,6 +908,24 @@ class ScWorkflowContractService(models.AbstractModel):
             "label_by_action": {"approve": "确认结算", "complete": "确认支付"},
         },
         "sc.material.settlement": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+            "label_by_action": {"complete": "确认结算"},
+        },
+        "sc.equipment.usage": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+            "label_by_action": {"complete": "确认登记"},
+        },
+        "sc.equipment.settlement": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "done", "cancel": "cancelled"},
             "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
