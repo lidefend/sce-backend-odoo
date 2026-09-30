@@ -9419,3 +9419,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 53.192运行结果补记：P1 `a710ad74a`、P4 `7594a9bf7`；受管模块升级成功（plan-version-upgrade.log），backend.acceptance.up绑定7594a9bf7/18082（plan-version-backend.log）。原受管验收scope `plan-version` **10 PASS / ROLLBACK VERIFIED**（plan-version-runtime.log）：伪造创建/default/直接写审核结果拒绝，无配置自动确认且父计划不执行；有配置真实审批，pending改写/删除/重提/伪回调拒绝，实际审核人记录，真实退回后编辑重提新链，最终UiContractV2已确认write=false且三类动作语义保留。公司/数据库/卷身份均沿原local验收配置；没有测试单据或配置残留。
 
 本段只证明版本模型、审批及最终契约；版本在父计划主从页面的实际入口/普通角色办理尚待验。直接version.unlink锁定已验证，父计划cascade删除对已审核版本的保护尚未覆盖，后续收口必须单独核对，不夸大为所有删除入口已受保护。未改变前端构建，复用汇报PM27证据，不据此认定整体67条完成。未推送、合并、目标部署。
+
+
+### 53.193 父计划级联删除与有效删除契约一致
+
+- `8caa2d823` clean起点。P1 `7300ef1e7`：ScPlan._plan_unlink_denial由后端同时判断父计划自身审批/执行事实，以及版本、汇报审批/确认事实；ScPlan.unlink在SQL cascade之前阻断。沿现有P1工作流投影，将同一模型返回原因写入最终actionContract.deletePolicy并收窄effectiveRecordCapabilities.unlink，不新增前端业务判断或并行删除框架。原可删除草稿（包括可修订子单据）保持可删除；本次不改汇报直接unlink/既有精确临时清理路径。
+- P4 `d88433507`扩展原plan-version/plan-report rollback范围：pending子单据使用单独父计划，避免其他已确认兄弟记录替代触发断言。实际parent.unlink拒绝后回读父子exists；真实UiContractV2输出unlink=false，删除原因与模型相同。
+- L1 plan-cascade-iteration/tool-iteration PASS；业务定向 **187 PASS**（plan-cascade-unit.log），agent.run.begin/record非零回执。P4新增只有原脚本函数和调用，py_compile通过；复用上轮44工具测试，其shell/profile/test工具输入未变，不重复环境测试。无schema/XML变化，不模块升级；backend.acceptance.up绑定d88433507成功，前端e19eb1e16未变不构建。
+- **plan-version 12 PASS、plan-report 16 PASS，均ROLLBACK VERIFIED**（plan-cascade-version-runtime.log、plan-cascade-report-runtime.log），原受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter/原卷，无持久测试记录或配置残留。自动确认/真实审批/退回重提与最终契约仍通过。
+- 本段关闭已知父计划cascade绕过，不扩大全仓删除审计。版本主从入口/普通PM实际办理及父计划执行UI继续待验；汇报PM27在未变化的保存/提交/详情返回范围复用，未声称新增删除提示已有浏览器证明。整体67条维持未完成；未推送、合并、目标部署。
