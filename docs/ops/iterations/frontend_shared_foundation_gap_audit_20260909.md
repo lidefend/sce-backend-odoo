@@ -8552,3 +8552,12 @@ a1f1a09ff clean续跑。现有项目10尚无经过验证的立项审批回退动
 L1 project-role-iteration.log与py_compile/bash-n/diff通过；仅P4身份参数变化，既有P1单元122/创建状态5/项目保存browser23的产品输入均未变复用，不重建、不升级、不reload、无关ORM跳过。第一次project-role-runtime.log前4项通过，驳回helper未按公司筛reviewer触发公司访问拒绝，ROLLBACK VERIFIED；此为工具角色环境错误，不修改产品权限。只在项目helper筛选实际reviewer且具有项目公司访问权、绑定allowed_company_ids，同现有批准helper一致。L1 project-role-reviewer-iteration.log/语法/diff通过后重试具有明确输入修复依据。
 
 最终project-role-reviewer-runtime.log6 PASS、ROLLBACK VERIFIED：真实非sudo PM不能直写approved/越级启动；无配置提交只批准不启动；配置审批在审禁止启动；真实review通过后PM显式启动；驳回保留原因，PM重提生成新review链并实际通过。复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，后端7ad71c3bd未变。策略/步骤基线一致、临时记录消失。该证据属于实际角色ORM办理，不是浏览器提交/审核人页面闭环；仍保留金额口径、浏览器办理和其他已登记缺口，detail.action-state不升整行。无推送合并目标部署。
+
+
+### 53.117 投标文件购买申请统一审批（进行中）
+
+254b2af53 clean续跑，仅对照现有policy支持清单和workflow声明，确认tender.doc.purchase是遗漏业务审批：草稿直接approve、提交固定submitted、任意reset，不受统一配置。P1 smart_construction_core拥有行业单据及金额amount权威，非P0/前端规则、非P2偏好/P3临时数据。接入现有tier/company/reject_reason，policy支持/amount域/真实回调注册/native header/workflow同步；未配置提交自动approved，已配置真实review，compat approve/reject委托共享实例。外部state create含context默认值/write保护，在审/approved的bid和amount不可改；reset仅rejected，拒绝直接approved回草稿。原资料完整性建议保留，不把日期/金额/账户建议变硬门槛。
+
+L1 tender-purchase-iteration.log通过；L2 tender-purchase-unit.log124 PASS、native.log8+52=60 PASS并登记，验证无配置/配置/实际回调/旧直批退出/终态与金额及上下文状态保护。P4既有rollback工具新增tender-purchase8组，复用事务bid/申请/策略，实际reviewer；新增scope默认all计数262但本轮只跑scope。工具L1 tender-purchase-contract-tool-iteration.log/py_compile/bash-n/diff通过。
+
+需要一次受管模块升级（新增tier继承/字段/XML）并reload，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，所有临时业务/配置同事务恢复。运行时/角色浏览器尚未证明，不关闭整体detail.action-state；其他尚未接入业务不能因现有policy清单而豁免。前端CrYkOCxc未变不构建，不重复已通过项目/付款ORM，无新环境/持久fixture/推送合并目标部署。

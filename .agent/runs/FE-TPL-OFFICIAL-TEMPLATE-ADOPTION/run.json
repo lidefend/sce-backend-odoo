@@ -237,6 +237,8 @@
       "kind": "offline",
       "inputs": [
         "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/tender.py",
+        "addons/smart_construction_core/views/support/tender_views.xml",
         "addons/smart_construction_core/models/support/state_machine.py",
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/views/core/payment_request_views.xml",
