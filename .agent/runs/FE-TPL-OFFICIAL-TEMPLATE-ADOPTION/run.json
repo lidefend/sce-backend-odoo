@@ -274,7 +274,8 @@
         "addons/smart_construction_core/views/core/project_information_edit_views.xml",
         "addons/smart_construction_core/views/core/project_overview_views.xml",
         "addons/smart_construction_core/views/core/project_views.xml",
-        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/data/material_outbound_tier_actions.xml"
       ]
     },
     "standard_preview_tool": {
@@ -311,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.65 P1 material inbound/acceptance state action parity fix, L1/native focused tests first. Approval adoption remains necessary: inbound transfer auto-receive chain must preserve configured approval and separate execution; do not bypass policy or claim coverage from registry.",
+  "next_exact_step": "53.66 inbound approval source implemented; L1/66 approval/47 native/XML2 pass. Extend existing business_config_approval_runtime_smoke.py with inbound no-config/configured/rejection/resubmit/transfer cases and restoration, run focused tool checks, commit, governed module upgrade/reload then real runtime. Validate private state authority and existing direct state writers/migrations before upgrading. No browser before runtime; old build frontend7915f3bb9 reusable. Overall/all-document coverage remains open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1046,6 +1047,14 @@
       },
       "writes": 0,
       "not_verified": "actual save and submission from this role/page"
+    },
+    "segment_53_66": {
+      "status": "verification_pending",
+      "L1": "passed",
+      "approval_pure_tests": 66,
+      "native_tests": 47,
+      "runtime": "not_run",
+      "reason": "new tier model fields and XML require governed upgrade plus new inbound rollback smoke before browser"
     }
   }
 }

@@ -11,6 +11,9 @@ from .equipment_management import (
 )
 
 
+_INBOUND_STATE_TOKEN = object()
+
+
 SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目"
 LEGACY_SYSTEM_DEFAULT_PROJECT_NAME = "系统默认项目（待完善）"
 LEGACY_TECHNICAL_DEFAULT_PROJECT_NAME = "系统默认项目（技术兜底）"
@@ -1180,7 +1183,12 @@ class ScMaterialAcceptanceLine(models.Model):
 class ScMaterialInbound(models.Model):
     _name = "sc.material.inbound"
     _description = "材料入库单"
-    _inherit = ["mail.thread", "mail.activity.mixin", "sc.material.system.default.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
+
     _order = "inbound_date desc, id desc"
 
     name = fields.Char(string="入库单号", required=True, default="新建", tracking=True)
@@ -1311,7 +1319,8 @@ class ScMaterialInbound(models.Model):
     state = fields.Selection(
         [
             ("draft", "草稿"),
-            ("submitted", "已提交"),
+            ("submitted", "待审批"),
+            ("approved", "已审批"),
             ("received", "已入库"),
             ("cancel", "已取消"),
         ],
@@ -1447,6 +1456,8 @@ class ScMaterialInbound(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("入库状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             vals.setdefault("business_category_id", self._sc_resolve_material_business_category_id(vals))
@@ -1463,6 +1474,37 @@ class ScMaterialInbound(models.Model):
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.inbound") or _("材料入库单")
         return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_inbound_state_token") is not _INBOUND_STATE_TOKEN:
+            raise UserError(_("入库状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_inbound_state(self, vals):
+        return self.with_context(sc_inbound_state_token=_INBOUND_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "validated":
+                continue
+            before = record._sc_material_audit_payload()
+            record._write_inbound_state({"state": "approved", "reject_reason": False})
+            record._sc_audit_material_transition("material_inbound_approved", before, record._sc_material_audit_payload(), action_name="action_on_tier_approved")
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "rejected":
+                continue
+            before = record._sc_material_audit_payload()
+            record.with_context(skip_validation_check=True)._write_inbound_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+            record._sc_audit_material_transition("material_inbound_rejected", before, record._sc_material_audit_payload(), action_name="action_on_tier_rejected")
 
     def init(self):
         self.env.cr.execute(
@@ -1528,16 +1570,19 @@ class ScMaterialInbound(models.Model):
     def action_submit(self):
         self._sc_require_material_user(_("提交材料入库"))
         for record in self:
-            record._sc_require_state({"draft"}, _("提交材料入库"))
+            record._sc_require_state({"draft", "submitted"}, _("提交材料入库"))
             if not record.line_ids:
                 raise ValidationError(_("提交入库前必须维护入库明细。"))
             record.line_ids._check_qty()
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("提交材料入库"))
-        self.write({"state": "submitted"})
+        self._write_inbound_state({"state": "submitted"})
         for record in self:
+            required = self.env["sc.approval.policy"]._start_submission_review(record)
+            if not required:
+                record._write_inbound_state({"state": "approved", "reject_reason": False})
             record._sc_audit_material_transition(
-                "material_inbound_submitted",
+                "material_inbound_submitted" if required else "material_inbound_approved",
                 snapshots[record.id],
                 record._sc_material_audit_payload(),
                 action_name="action_submit",
@@ -1547,13 +1592,14 @@ class ScMaterialInbound(models.Model):
     def action_receive(self):
         self._sc_require_material_manager(_("确认材料入库"))
         for record in self:
-            record._sc_require_state({"submitted"}, _("确认材料入库"))
+            record._sc_require_state({"approved"}, _("确认材料入库"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record.line_ids._check_qty()
             if record.acceptance_id and record.acceptance_id.state != "accepted":
                 raise ValidationError(_("只有验收通过的材料才能办理入库。"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._sc_warn_system_defaults_on_action(_("确认材料入库"))
-        self.write({"state": "received"})
+        self._write_inbound_state({"state": "received"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_inbound_received",
@@ -1565,9 +1611,9 @@ class ScMaterialInbound(models.Model):
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消材料入库"))
-        self._sc_require_state({"draft", "submitted"}, _("取消材料入库"))
+        self._sc_require_state({"draft", "submitted", "approved"}, _("取消材料入库"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "cancel"})
+        self._write_inbound_state({"state": "cancel"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_inbound_cancelled",
@@ -1581,7 +1627,7 @@ class ScMaterialInbound(models.Model):
         self._sc_require_material_manager(_("重置材料入库为草稿"))
         self._sc_require_state({"cancel"}, _("重置材料入库为草稿"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
-        self.write({"state": "draft"})
+        self._write_inbound_state({"state": "draft"})
         for record in self:
             record._sc_audit_material_transition(
                 "material_inbound_reset",
@@ -1994,10 +2040,12 @@ class ScMaterialOutbound(models.Model):
             inbound = Inbound.create(self._prepare_transfer_inbound_vals())
         if inbound.state == "draft":
             inbound.action_submit()
-        if inbound.state == "submitted":
+        # The outbound execution may auto-receive only an unconfigured inbound.
+        # Configured review is a durable, separately handled document chain.
+        if inbound.state == "approved" and not inbound.review_ids:
             inbound.action_receive()
-        if inbound.state != "received":
-            raise ValidationError(_("调拨入库单必须处于已入库状态。"))
+        if inbound.state not in ("submitted", "approved", "received"):
+            raise ValidationError(_("调拨入库单必须已提交审批或已入库。"))
         if self.transfer_inbound_id != inbound:
             self.sudo().write({"transfer_inbound_id": inbound.id})
         return inbound

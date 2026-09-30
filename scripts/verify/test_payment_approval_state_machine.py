@@ -755,6 +755,67 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(rec.state, 'submit')
         self.assertEqual(rec.audits, [])
 
+    def _inbound_methods(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialInbound')
+        names = {'action_submit', 'action_receive', 'action_on_tier_approved', 'action_on_tier_rejected', 'write'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_INBOUND_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        return namespace
+
+    def test_inbound_submission_and_review_do_not_receive_material(self):
+        methods = self._inbound_methods()
+        for required in (False, True):
+            rec = self.record(required=required, state='draft')
+            rec._name, rec.id = 'sc.material.inbound', 23
+            rec.line_ids = types.SimpleNamespace(_check_qty=lambda: None)
+            rec.acceptance_id = False
+            rec._sc_require_material_user = rec._sc_require_material_manager = lambda label: None
+            def require_state(states, label):
+                if rec.state not in states:
+                    raise ValueError('wrong state')
+            rec._sc_require_state = require_state
+            rec._sc_material_audit_payload = lambda: {'state': rec.state}
+            rec._sc_warn_system_defaults_on_action = lambda label: None
+            rec._write_inbound_state = lambda values: rec.data.update(values)
+            rec._sc_audit_material_transition = lambda *args, **kw: rec.audits.append((args, kw))
+            rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+            methods['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError):
+                    methods['action_receive'](rec)
+                methods['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'validated'
+                methods['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'approved')
+            methods['action_receive'](rec)
+            self.assertEqual(rec.state, 'received')
+
+    def test_inbound_state_write_rejects_external_context_tokens(self):
+        methods = self._inbound_methods()
+        for token in (None, True, 'trusted'):
+            rec = self.record(state='draft').with_context(sc_inbound_state_token=token)
+            with self.assertRaises(ValueError):
+                methods['write'](rec, {'state': 'approved'})
+            self.assertEqual(rec.state, 'draft')
+
+    def test_transfer_preserves_pending_inbound_instead_of_bypassing_review(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialOutbound')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '_sync_transfer_inbound_after_issue')
+        namespace = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        for state, reviews, expected in [('submitted', ['review'], 'submitted'), ('approved', ['review'], 'approved'), ('approved', [], 'received')]:
+            inbound = types.SimpleNamespace(id=9, state=state, review_ids=reviews)
+            inbound.action_receive = lambda: setattr(inbound, 'state', 'received')
+            outbound = types.SimpleNamespace(id=8, outbound_type='transfer', transfer_inbound_id=inbound, ensure_one=lambda: None)
+            outbound.env = {'sc.material.inbound': types.SimpleNamespace(sudo=lambda: None)}
+            self.assertIs(namespace['_sync_transfer_inbound_after_issue'](outbound), inbound)
+            self.assertEqual(inbound.state, expected)
+
     def test_outbound_approval_never_executes_stock_or_cost_operations(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialOutbound')

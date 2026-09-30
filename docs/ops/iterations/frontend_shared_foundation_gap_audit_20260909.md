@@ -7959,3 +7959,12 @@ L1 `catalog-consumer-iteration.log` PASS；L2 `catalog-consumer-tests-final.log`
 下一项已定位的必要P1缺口：材料验收、入库均未继承tier.validation，也未进入sc.approval.policy支持；action_submit直接变submitted。入库实际action_receive改变received，出库调拨_sync_transfer_inbound_after_issue会sudo生成→提交→接收并强制received，否则回滚整个出库。统一审批不能只改按钮或静默跳过入库审批，必须处理该关联链与审批/实际执行分离。保留产品缺口，不将现有支持列表当全业务范围。
 
 L1 material-state-iteration.log PASS；L2 material-state-tests.log 8+39=47 PASS，begin/record47 material-state-receipt.log。本段仅源代码/纯投影完成，运行时候选未加载此改动，保持verification_pending；下一步补入库审批时合并一次受管升级/加载，不为两处profile改动重复构建和跑页面。此前前端7915f3bb9、后端e14519cb1的页面结果仍仅证明此前声明范围。
+
+
+### 53.66 材料入库统一审批与调拨关联链（进行中）
+
+P1 smart_construction_core：复用sc.approval.policy/OCA tier，无配置submitted→approved、有配置真实review，审批回调只到approved；独立action_receive要求approved和有效审批事实。新增company关联、拒绝原因、approved状态与私有写令牌；配置金额绑定既有amount_total。原生动作/中心profile同源；现有submitted无审批事实可再次提交，不能自动回填审批。调拨自动生成入库在configured pending时保留关联，不再强制received回滚；无review且自动通过保留既有显式调拨执行中的自动接收。审批回调不执行接收。
+
+涉及模型/schema/XML，必须先L1+审批/native L2，再受管升级及真实审批/调拨检查，之后才页面验收。当前尚未升级，无运行时完成声明。旧前端构建未变可复用；此次backend/配置/领域输入改变，需要定向新增入库回归，非无关ORM。不新建环境fixture。
+
+源码L1 inbound-approval-iteration.log PASS，审批纯测试66（含新增入库/写令牌/调拨3项）inbound-approval-tests.log PASS；native8+39=47 inbound-native-tests.log PASS，两个begin/record非零回执已登记；2份XML解析PASS。当前verification_pending：未升级模块、未实际跑入库审批/驳回重提/调拨，不宣称批次验收完成。下一步扩展现有rollback审批smoke，审查新增状态保护与原有直接状态写入的兼容后再升级；复用旧前端构建，无需重建。
