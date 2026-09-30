@@ -19,6 +19,82 @@ MAX_GOVERNANCE_LINES = 1973
 PROJECT_LIST_PROFILE_KEY = "project.project.list"
 STATUS_TONE_VOCABULARY = frozenset({"neutral", "info", "success", "warning", "danger"})
 
+STATE_MACHINE = ROOT / "addons/smart_construction_core/models/support/state_machine.py"
+MATERIAL_PLAN = ROOT / "addons/smart_construction_core/models/core/material_plan.py"
+TASK_EXTEND = ROOT / "addons/smart_construction_core/models/support/task_extend.py"
+
+# A declared tone is only meaningful for a value the model can actually hold.
+# Each declaring profile names where its status values are authored, so a typo
+# or an invented state fails here instead of silently never applying.
+STATUS_VALUE_SOURCES: dict[str, tuple[Path, str]] = {
+    "project.project.list": (STATE_MACHINE, "PROJECT_STATES"),
+    "payment.request.list": (STATE_MACHINE, "PAYMENT_REQUEST_STATES"),
+    "project.material.plan.list": (MATERIAL_PLAN, "state"),
+    "project.task.list": (TASK_EXTEND, "sc_state"),
+}
+
+
+def _pair_keys(node: ast.AST) -> set[str] | None:
+    """First element of every ``(value, label)`` pair in a literal pair list.
+
+    The label may be a translated call, so the pair list is walked structurally
+    instead of being literal-evaluated as a whole.
+    """
+    if not isinstance(node, ast.List):
+        return None
+    keys: set[str] = set()
+    for element in node.elts:
+        if not isinstance(element, (ast.Tuple, ast.List)) or not element.elts:
+            return None
+        first = element.elts[0]
+        if not isinstance(first, ast.Constant) or not isinstance(first.value, str):
+            return None
+        keys.add(first.value)
+    return keys or None
+
+
+def _state_machine_values(name: str) -> set[str] | None:
+    if not STATE_MACHINE.is_file():
+        return None
+    tree = ast.parse(STATE_MACHINE.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for item in node.body:
+            if isinstance(item, ast.Assign) and any(
+                isinstance(target, ast.Name) and target.id == name for target in item.targets
+            ):
+                return _pair_keys(item.value)
+    return None
+
+
+def _selection_values(source: Path, field_name: str) -> set[str] | None:
+    if not source.is_file():
+        return None
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == field_name for target in node.targets):
+            continue
+        value = node.value
+        if not isinstance(value, ast.Call) or not getattr(value.func, "attr", "") == "Selection":
+            continue
+        if not value.args:
+            continue
+        return _pair_keys(value.args[0])
+    return None
+
+
+def _model_status_values(profile_key: str) -> set[str] | None:
+    entry = STATUS_VALUE_SOURCES.get(profile_key)
+    if entry is None:
+        return None
+    source, name = entry
+    if name.isupper():
+        return _state_machine_values(name)
+    return _selection_values(source, name)
+
 
 def _declared_list_profiles(source: Path) -> dict[str, dict]:
     """Read the literal `register_legacy_standard_list_profile` declarations."""
@@ -410,6 +486,21 @@ def main() -> int:
             projected = _govern_with_tone_map(tones)
             if projected.get("tone_by_value") != tones:
                 errors.append(f"{key} declared tones must project verbatim into the contract")
+
+            # A declared value that the model cannot hold would never apply, so
+            # the gap would stay hidden.  Require an authored source instead.
+            if key not in STATUS_VALUE_SOURCES:
+                errors.append(f"{key} declares tones without a registered status value source")
+                continue
+            model_values = _model_status_values(key)
+            if not model_values:
+                errors.append(f"{key} status value source could not be read")
+                continue
+            invented = sorted(value_key for value_key in tones if value_key not in model_values)
+            if invented:
+                errors.append(
+                    f"{key} declares values the model does not define: " + ", ".join(invented)
+                )
 
     if errors:
         print("[contract_governance_list_surface_split_guard] FAIL")
