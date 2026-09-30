@@ -7651,3 +7651,13 @@ L5：未推送、未合并、未部署。
 - L4复用原5180静态产物，TPL07_SCOPE=detail-state make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local，29项PASS（approval-detail-state-browser.log；tpl07-1790772544286/report.json）。既有finance角色读取付款1710 approved，双视口官方详情状态限制反馈通过，errors=[]、forbiddenWrites=[]，无业务写入。build.base_sha仍0d2c6190a6df7dcbd90f5f1dad23a18fea3fdfff，entry=/assets/index-BEqhG955.js，entry_sha256=4d954cbf38b86a8ab8e4c9cf383229dd7f70908b09743c7802f0dd32c1084aa5；端侧输入不变所以不构建。
 - 该29项只证明共享页面消费已加载契约，不证明审批办理闭环。现有business_config_approval_runtime_smoke允许validation_status=no，finance_document_tier_runtime_smoke通过SQL/_set_validated伪造结果，均不能直接用于本次真实审批验收；后续应在现有工具上修正真实review执行及配置恢复，不新增fixture权威。未运行这些不适用工具，不以旧证据冒充新规则通过。
 - 已完成本候选L3升级与所述只读页面验证；全单据覆盖、两项原生产品动作、审批开关/多级链/异常回滚和真实业务办理等仍未完成，总体active。无推送、合并或目标环境部署。
+
+
+### 53.33 既有审批smoke改为真实review并完成受管运行
+
+- 9bf7c6e9b clean起步；P4验证工具，业务产品输入沿4b8c4397e加载版本不变。复用business_config_approval_runtime_smoke与现有verify.business_config.approval_runtime：显式SC_ACCEPTANCE_RUNTIME_PROFILE=local时经现有operation_entry→standard-approval-runtime，复用preflight和backend代码身份检查后在受管后端执行。其他原入口保留，未组装新环境/凭据/fixture体系。
+- smoke不再接受no审批状态：启用配置必须有真实review且waiting/pending；修改为无需审批后，待办实例不能通过回调放行；遍历真实reviewer_ids，以with_user用户身份和can_review选择当前审批人调用validate_tier，要求每次真实review状态推进，最多32步。完成后业务approved且全部review approved；另验证无配置提交approved、无review且validation_status=no。不写SQL或validated字段，不强制调用审批完成回调冒充审批成功。
+- 保留原工具事务内创建项目/客商/费用及附件方案，不新增持久fixture；finally回滚，invalidate缓存后回读原策略字段/步骤身份一致，并核对临时项目/客商/费用不存在。PASS仅在恢复核对后输出。目标仍sc_frontend_acceptance内部隔离验收租户、精确filter与既有filestore，沿53.32身份；无付款/入账操作。
+- L1 ci.local.iteration通过（real-review-smoke-iteration.log），工具py_compile/bash语法通过；L2既有standard_preview.unit9通过（real-review-wrapper-tests.log）。首次真实运行失败：原项目helper未设置company_id，现行费用创建校验拒绝；ROLLBACK=VERIFIED，归因P4旧测试数据契约漂移（real-review-runtime-project-failure.log）。补项目company_id=_env().company.id，未改产品校验；脚本编译后受管定向重跑。
+- make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local真实运行5项PASS、ROLLBACK=VERIFIED（real-review-runtime.log）。这是费用单代表审批运行证据；不能外推全单据、多级指定顺序、错误审批人、缺规则、驳回重提、浏览器操作或付款/库存事务均已完成。未重载未变后端、未升级第二次、未构建前端。
+- 下一步沿同一工具补必要异常/多级和恢复断言，同时继续全单据有效契约缺口及两项原生动作收口。批次局部验证通过，总体active，无推送/合并/目标部署。

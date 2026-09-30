@@ -293,7 +293,7 @@ case "$command" in
   preflight)
     preflight
     ;;
-  standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic)
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -303,6 +303,9 @@ case "$command" in
     git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons
     [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
     case "$command" in
+      standard-approval-runtime)
+        docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
+        ;;
       standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
       standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
       standard-favorite-recovery)

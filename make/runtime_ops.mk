@@ -210,8 +210,13 @@ verify.business_config.low_code_menu_navigation_alignment: guard.prod.forbid
 verify.business_config.low_code_global_stability: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_global_stability_acceptance.mjs
 
-verify.business_config.approval_runtime: guard.prod.forbid check-compose-project check-compose-env
+verify.business_config.approval_runtime: guard.prod.forbid
+ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE=local bash scripts/dev/frontend_acceptance_operation_entry.sh standard-approval-runtime
+else
+	@$(MAKE) --no-print-directory check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/business_config_approval_runtime_smoke.py
+endif
 
 verify.business_config.full_acceptance: verify.business_config.guard_inventory verify.business_config.unit verify.frontend.build verify.business_config.coverage verify.business_config.list_config_boundary verify.full_product_capability_scope verify.business_config.snapshot verify.business_config.approval_runtime verify.business_config.browser_acceptance verify.product.navigation_boundary verify.business_config.low_code_acceptance verify.business_config.config_workbench_operation_acceptance verify.business_config.change_set_acceptance verify.business_config.safe_open_acceptance verify.business_config.workbench_product_acceptance verify.business_config.workbench_fault_acceptance verify.business_config.low_code_runtime_consistency verify.business_config.low_code_group_matrix verify.business_config.low_code_layout_runtime verify.business_config.low_code_menu_navigation_alignment verify.business_config.low_code_global_stability verify.user_menu.reachability.guard
 

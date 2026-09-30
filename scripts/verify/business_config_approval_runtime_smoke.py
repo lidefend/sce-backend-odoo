@@ -8,6 +8,8 @@ approval smoke targets.
 
 from base64 import b64encode
 
+from odoo.exceptions import UserError
+
 
 def _env():
     return globals()["env"]
@@ -35,7 +37,7 @@ def _set_policy(model_name, enabled):
 
 
 def _project(name):
-    return _env()["project.project"].sudo().create({"name": name, "code": name.upper().replace(" ", "-")[:32]})
+    return _env()["project.project"].sudo().create({"name": name, "code": name.upper().replace(" ", "-")[:32], "company_id": _env().company.id})
 
 
 def _partner(name):
@@ -78,31 +80,76 @@ def _expense(project, partner, suffix):
     return claim
 
 
+def _approve_existing_reviews(record):
+    """Use actual reviewers and native decisions; never write review outcomes."""
+    for _step in range(32):
+        record.invalidate_recordset()
+        if record.validation_status == "validated":
+            return
+        assert record.review_ids, "approval instance missing"
+        before = [(review.id, review.status) for review in record.review_ids]
+        users = record.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share)
+        actor = next((record.with_user(user) for user in users if record.with_user(user).can_review), None)
+        assert actor is not None, "no authorized reviewer for current step"
+        actor.validate_tier()
+        record.invalidate_recordset()
+        after = [(review.id, review.status) for review in record.review_ids]
+        assert after != before, "native approval did not progress (possibly requires comment wizard)"
+    raise AssertionError("approval chain exceeded bounded step count")
+
+
 def main():
+    model_name = "sc.expense.claim"
+    policy = _policy(model_name)
+    fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
+    baseline = policy.read(fields)
+    created = []
+    passed = False
     try:
-        model_name = "sc.expense.claim"
         project = _project("Business Config Approval Runtime")
         partner = _partner("Business Config Approval Runtime Partner")
+        created.extend([(project._name, project.id), (partner._name, partner.id)])
 
         _set_policy(model_name, True)
         required = _expense(project, partner, "required")
+        created.append((required._name, required.id))
         required.action_submit()
         required.invalidate_recordset()
-        print("%s_ENABLED_SUBMIT_STATE=%s/%s" % (model_name, required.state, required.validation_status))
         assert required.state == "submit", required.state
-        assert required.validation_status in ("pending", "waiting", "no"), required.validation_status
+        assert required.review_ids and required.validation_status in ("pending", "waiting"), required.validation_status
+        print("APPROVAL_CHECK=enabled_submission_has_real_reviews")
 
         _set_policy(model_name, False)
+        try:
+            with _env().cr.savepoint():
+                required.action_on_tier_approved()
+        except UserError:
+            pass
+        required.invalidate_recordset()
+        assert required.state == "submit", "disabled configuration bypassed live instance"
+        print("APPROVAL_CHECK=configuration_change_does_not_bypass_instance")
+        _approve_existing_reviews(required)
+        assert required.state == "approved", required.state
+        assert required.validation_status == "validated"
+        assert all(review.status == "approved" for review in required.review_ids)
+        print("APPROVAL_CHECK=native_reviewers_complete_real_chain")
+
         optional = _expense(project, partner, "optional")
+        created.append((optional._name, optional.id))
         optional.action_submit()
         optional.invalidate_recordset()
-        print("%s_DISABLED_SUBMIT_STATE=%s/%s" % (model_name, optional.state, optional.validation_status))
         assert optional.state == "approved", optional.state
-
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS")
+        assert not optional.review_ids and optional.validation_status == "no"
+        print("APPROVAL_CHECK=disabled_submission_auto_approves_without_fake_reviews")
+        passed = True
     finally:
         _env().cr.rollback()
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=OK")
+        _env().invalidate_all()
+        assert policy.read(fields) == baseline, "approval configuration was not restored"
+        assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
+    if passed:
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=5")
 
 
 main()

@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.32 governed smart_construction_core upgrade succeeded and backend loads4b8c4397e; existing5180 build reused, detail-state29 browser assertions pass (tpl07-1790772544286). Next fix existing approval runtime smoke to exercise real tier reviews with explicit restoration (old no-status/SQL-validated shortcuts are invalid), and finish necessary document coverage/two native product gaps. Do not rebuild frontend or repeat unchanged page checks.",
+  "next_exact_step": "53.33 existing approval runtime smoke now uses real reviewers and verified rollback; governed local expense path passes5 checks, wrapper9 tests pass. Extend same tool for required multi-level/missing-rule/reject-resubmit and authorization cases without fake validated writes; continue necessary document coverage and two native gaps. Backend4b8c4397e and original5180 build remain valid for unchanged inputs.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -610,6 +610,18 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790772544286/report.json",
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-module-upgrade.log",
       "business_approval_acceptance": "not_run; existing smoke needs genuine-review assertions and restoration"
+    },
+    "real_approval_runtime_53_33": {
+      "status": "scoped_runtime_passed",
+      "source_head": "9bf7c6e9b",
+      "backend": "4b8c4397e2a0de6b24749f2a1826e8c7bc13629f",
+      "tests": {
+        "wrapper": 9,
+        "runtime": 5
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/real-review-runtime.log",
+      "restoration": "policy readback equals baseline; temporary project/partner/expense absent after rollback",
+      "scope": "expense representative only; all-document completion unproven"
     }
   }
 }
