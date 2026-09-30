@@ -394,6 +394,33 @@ try {
     check('task: native tree is sole layout authority', authority.structure?.layoutPolicy === 'container_tree_authority');
     check('task: retired slots remain empty', Array.isArray(authority.structure?.slots) && authority.structure.slots.length === 0);
     check('task: effective native tree is present', Boolean(authority.layout?.containerTree));
+    const matrix = JSON.parse(await fs.readFile(path.join(root, 'config/p1_payment_request_field_completeness_v1.json')));
+    const rules = matrix.field_rules.filter((row) => row.model === 'payment.request' && row.surfaces.some((surface) => ['edit', 'create_edit'].includes(surface)));
+    check('task: existing P1 field responsibilities are nonempty', rules.length > 0);
+    const fieldReferences = new Set(Object.keys(authority.mainData || {}));
+    function collectFieldReferences(node) {
+      if (!node || typeof node !== 'object') return;
+      if (node.fieldCode) fieldReferences.add(node.fieldCode);
+      if (node.type === 'field' && node.name) fieldReferences.add(node.name);
+      for (const child of Object.values(node)) collectFieldReferences(child);
+    }
+    collectFieldReferences(authority.layout.containerTree);
+    for (const field of Object.keys(authority.structure.sourceAuthority?.governance_source?.fieldSemanticRoles || {})) fieldReferences.add(field);
+    // The P1 native payment view explicitly removes this duplicate heading
+    // field; business_category_id remains the authoritative handling input.
+    const retiredDuplicateFields = ['payment_flow_label'];
+    const missingDeclarations = rules.filter((row) => !fieldReferences.has(row.field) && !retiredDuplicateFields.includes(row.field)).map((row) => row.field);
+    report.taskFieldCoverage = { ruleCount: rules.length, missingDeclarations, retiredDuplicateFields };
+    check('task: P1 handling fields declared by contract', missingDeclarations.length === 0, { missingDeclarations });
+    // Only unconditional required user inputs are asserted unconditionally.
+    // Conditional facts keep their backend modifiers; no inferred applicability.
+    for (const row of rules.filter((row) => row.classification === 'required' && row.applicability === 'always')) {
+      check(`task: required ${row.field} visible`, await finance.page.locator(`[data-field-name="${row.field}"]`).first().isVisible());
+    }
+    check('task: attachment input retained', await finance.page.locator('[data-field-name="attachment_ids"]').first().isVisible());
+    const trace = finance.page.locator('[data-group-title="履约与追溯"]').first();
+    await trace.getByRole('button', { name: '履约与追溯', exact: true }).click();
+    check('task: declared trace section can expand', await trace.getAttribute('data-collapsed') === 'false');
     report.taskPresentation = [];
     for (const width of [1440, 390]) {
       await finance.page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });

@@ -7430,3 +7430,11 @@ L5：未推送、未合并、未部署。
 - 新增既有探针的task-authority只读范围。首次报告tpl07-1790768213033为validation_tool_defect：关系附件响应覆盖单一recordAuthority。按模型保留观察结果后13/13通过（tpl07-1790768237871）；进一步补充实际字段坐标而非容器CSS猜测，15/15通过（tpl07-1790768273395，tpl52/task-authority-geometry.log）。所有请求只读，无业务写入；同一启动链及既有finance/1813身份。
 - 实际action775/view2145使用container_tree_authority、native_authority、slots=[]，契约组cols=2与显式cols=1并存。项目/往来单位实际桌面同排双列，390窄屏同列上下排列；无整页横向溢出。桌面截图已复核。task.field-grid关闭，不能再为旧“单列”记录重写P1。
 - task.slot-coverage仍未关闭，但纠正为必要业务事实覆盖核对：原生字段树、语义锚点、条件字段及关系/页签是当前权威，不能恢复旧slot路径。67条保留，剩余2项（事实职责覆盖、复制执行职责）；另有收藏成功/刷新/恢复闭环及总体完成审计待执行，不宣称整体完成。
+
+
+### 53.8 复用P1字段职责矩阵核对任务事实
+
+- 候选5c47cf263 + P4既有browser探针dirty；P0/P1产品输入未变，复用53.7的11项native structure定向结果及53.6构建，不运行ORM/模块升级/重构建。读既有config/p1_payment_request_field_completeness_v1.json作为41项edit/create_edit职责来源，不新增覆盖矩阵。
+- 原生view_payment_request_pay_form已明确移除payment_flow_label重复摘要，name/state由页头承载，legal_next_action_display与payment_blocking_reason_display由动作/反馈承载。历史slot不足记录不能作为恢复重复正文的依据。41项矩阵声明检查使用原生字段节点、语义锚点与页头数据；显式记录payment_flow_label的P1退役依据，不能把该摘要当新业务输入。
+- 首次探针使用旧dataMeta.fields位置，报告tpl07-1790768422213为validation_tool_defect，并非41项业务字段全部缺失；修复当前V2投影采集后23/23通过（tpl07-1790768458153/report.json，tpl52/task-facts-browser-fixed.log）。已证明4项always required输入可见、附件输入可见、追溯区可展开、双视口几何保留，41项职责无未解释的声明缺失；无业务写入。
+- task.slot-coverage继续保留：上述声明完整与代表字段可见不能直接证明每项条件字段/追溯页签事实均可消费。下一步只补条件字段与追溯页签的实际交互证据，复用TPL05A49项业务闭环，不重做办理；复制职责与收藏成功/刷新/恢复仍待收口。整体目标保持active。
