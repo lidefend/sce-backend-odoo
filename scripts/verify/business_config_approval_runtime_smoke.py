@@ -285,22 +285,25 @@ def _draft_confirmation_checks(project, group, created, model):
         created.append((record._name, record.id))
         return record
 
-    def assert_diary_content_locked(record, phase):
-        if is_plan:
-            return
-        baseline = record.read(["project_id", "title", "description", "date_diary", "note", "active"])
-        for values in ({"title": "changed reviewed title"}, {"description": "changed reviewed content"},
-                       {"project_id": False}, {"note": "changed supporting content"}, {"active": False}):
+    def assert_document_content_locked(record, phase):
+        fields = (["name", "project_id", "company_id", "planned_start", "planned_finish", "note"] if is_plan
+                  else ["project_id", "title", "description", "date_diary", "note", "active"])
+        changes = ({"name": "changed reviewed plan"}, {"project_id": False}, {"note": "changed plan"},
+                   {"planned_finish": "2026-12-31"}) if is_plan else (
+                       {"title": "changed reviewed title"}, {"description": "changed reviewed content"},
+                       {"project_id": False}, {"note": "changed supporting content"}, {"active": False})
+        baseline = record.read(fields)
+        for values in changes:
             refused = False
             try:
                 with env.cr.savepoint():
                     record.with_context(skip_validation_check=True, sc_document_state_token=True).write(values)
             except UserError:
                 refused = True
-            assert refused, "reviewed diary content write permitted"
+            assert refused, "reviewed document content write permitted"
         record.invalidate_recordset()
-        assert record.read(["project_id", "title", "description", "date_diary", "note", "active"]) == baseline
-        print("APPROVAL_CHECK=diary_%s_content_locked" % phase)
+        assert record.read(fields) == baseline
+        print("APPROVAL_CHECK=%s_%s_content_locked" % (label_prefix, phase))
 
     automatic = plan("automatic")
     automatic.action_confirm()
@@ -329,17 +332,18 @@ def _draft_confirmation_checks(project, group, created, model):
         denied = True
     assert denied and required.state == "draft" and (not is_plan or not required.actual_start)
     print("APPROVAL_CHECK=%s_pending_approval_cannot_execute" % label_prefix)
-    assert_diary_content_locked(required, "pending")
+    assert_document_content_locked(required, "pending")
     _approve_existing_reviews(required)
     assert required.state == "confirmed" and required.validation_status == "validated" and (not is_plan or not required.actual_start)
-    assert_diary_content_locked(required, "approved")
+    assert_document_content_locked(required, "approved")
     if is_plan:
         required.action_start()
         assert required.state == "in_progress" and required.actual_start
+        assert_document_content_locked(required, "execution")
     required.action_done()
     assert required.state == "done" and (not is_plan or required.actual_finish)
     print("APPROVAL_CHECK=%s_real_approval_then_explicit_execution" % label_prefix)
-    assert_diary_content_locked(required, "done")
+    assert_document_content_locked(required, "done")
     rejected = plan("rejection")
     rejected.action_confirm()
     previous_ids = set(rejected.review_ids.ids)
@@ -4005,7 +4009,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 9 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 304, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 13 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
 
 
 main()
