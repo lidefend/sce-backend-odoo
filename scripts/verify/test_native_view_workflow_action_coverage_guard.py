@@ -274,6 +274,21 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 self.assertEqual(visible, executable)
                 self.assertEqual(projected, executable)
 
+    def test_diary_completion_and_reviewer_actions_match_native_contract(self):
+        for state in ('draft', 'confirmed', 'done', 'cancel', 'legacy_confirmed'):
+            actions = self._general_contract_actions(state, model='sc.construction.diary')
+            self.assertEqual('action_done' in {a['method'] for a in actions}, state == 'confirmed')
+        for reviewer in (False, True):
+            actions = self._general_contract_actions('draft', model='sc.construction.diary', approval_phase='pending', can_review=reviewer)
+            self.assertEqual('validate_tier' in {a['method'] for a in actions}, reviewer)
+            self.assertEqual('reject_tier' in {a['method'] for a in actions}, reviewer)
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/construction_diary_views.xml')
+        buttons = {b.get('name'): b for b in tree.findall('.//header/button')}
+        self.assertEqual(buttons['action_done'].get('invisible'), "state != 'confirmed'")
+        self.assertEqual(buttons['action_cancel'].get('invisible'), "state not in ('draft', 'confirmed')")
+        for name in ('validate_tier', 'reject_tier'):
+            self.assertIn('can_review', buttons[name].get('invisible'))
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 

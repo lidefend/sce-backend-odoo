@@ -201,7 +201,9 @@
         "addons/smart_construction_core/views/core/payment_execution_views.xml",
         "addons/smart_construction_core/models/core/plan_management.py",
         "addons/smart_construction_core/views/core/plan_management_views.xml",
-        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_construction_core/models/core/construction_diary.py",
+        "addons/smart_construction_core/views/core/construction_diary_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -241,12 +243,14 @@
         "addons/smart_construction_core/models/support/tier_definition_ext.py",
         "addons/smart_construction_core/data/finance_document_tier_actions.xml",
         "addons/smart_construction_core/models/core/plan_management.py",
-        "addons/smart_construction_core/views/core/plan_management_views.xml"
+        "addons/smart_construction_core/views/core/plan_management_views.xml",
+        "addons/smart_construction_core/models/core/construction_diary.py",
+        "addons/smart_construction_core/views/core/construction_diary_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.47 governed upgrade/reload at478215ca4 and22 rollback runtime checks passed (expense12/event5/plan5),restoration verified. Continue existing sc.construction.diary direct confirmation/completion shared approval gap; profile draft currently offers complete. Plan effective UI/browser still pending; contract-event browser no company8 data unchanged. Reuse unchanged frontend and proven evidence; no global rescans or fixture creation.",
+  "next_exact_step": "53.48 construction diary shared approval implemented, draft completion removed, native/profile aligned;53 approval+38 native+15 semantics pass. Next governed module upgrade/reload and extend same rollback smoke with real diary configured/unconfigured/rejection/resubmission and independent completion. Reuse unchanged frontend/evidence; plan/event UI browser and broader necessary-document scope remain pending.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -743,6 +747,18 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-approval-runtime.log",
       "restoration": "verified original policy/steps and absent temporary records",
       "remaining": "plan UI/browser, construction diary/shared approval breadth and overall real delivery"
+    },
+    "diary_approval_53_48": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "75834d4a1",
+      "tests": {
+        "approval": 53,
+        "native": 38,
+        "semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/diary-approval-tests.log",
+      "upgrade_required": true,
+      "remaining": "real diary loop/UI and all-document scope"
     }
   }
 }

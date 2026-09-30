@@ -16,6 +16,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.general.contract", "一般合同（公司）"),
         ("sc.contract.event", "合同履约事件"),
         ("sc.plan", "计划"),
+        ("sc.construction.diary", "施工日志"),
         ("project.material.plan", "物资计划"),
         ("sc.material.outbound", "材料出库/损耗"),
         ("purchase.order", "采购订单"),
@@ -409,6 +410,7 @@ class ScApprovalPolicy(models.Model):
             "sc.general.contract",
             "sc.contract.event",
             "sc.plan",
+            "sc.construction.diary",
             "sc.receipt.income",
             "sc.payment.execution",
             "sc.invoice.registration",
@@ -425,6 +427,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.construction.diary": (
+                "smart_construction_core.server_action_diary_on_approved",
+                "smart_construction_core.server_action_diary_on_rejected",
+            ),
             "sc.plan": (
                 "smart_construction_core.server_action_plan_on_approved",
                 "smart_construction_core.server_action_plan_on_rejected",

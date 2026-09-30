@@ -22,6 +22,7 @@ class TierDefinition(models.Model):
             "sc.general.contract",
             "sc.contract.event",
             "sc.plan",
+            "sc.construction.diary",
         ]:
             if model_name not in names:
                 names.append(model_name)

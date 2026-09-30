@@ -194,3 +194,7 @@ The native plan form now permits completion only in `in_progress`, reset only in
 ### Segment53.47 — Plan real approval loop verified
 
 Governed module upgrade/backend reload at478215ca4 succeeded. The existing rollback approval smoke passes22 checks including five plan cases: automatic confirmation without execution, pending-review start denial, actual reviewer approval followed by explicit start/completion, rejection reason, and new-chain resubmission. Original configuration readback and temporary-record removal pass. Plan browser consumption and broader document coverage remain pending. The adjacent existing `sc.construction.diary` profile/model still has direct confirmation/completion without shared approval and remains necessary product work.
+
+### Segment53.48 — Construction diary shared approval implemented
+
+Construction diary now participates in company-scoped shared approval configuration and native review callbacks. Confirmation retains content validation; configured review waits in draft, no configuration confirms. Completion requires confirmed approval and remains independent. Native/profile actions align, including removing draft completion and the invalid done-state cancel entry.53 approval,38 native and15 semantics tests pass. Module upgrade and real diary runtime acceptance remain pending; overall approval coverage and `detail.action-state` remain open.

@@ -710,6 +710,46 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): namespace['action_confirm'](plan)
             self.assertEqual(plan.state, 'draft')
 
+    def test_diary_configuration_and_real_approval_precede_completion(self):
+        path = MODEL.parent / 'construction_diary.py'
+        names = {'action_confirm', 'action_done', 'action_on_tier_approved'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Diary:
+            def __iter__(self): return iter([self])
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+            def _check_business_ready(self):
+                if not self.ready: raise ValueError('content')
+        for configured in (True, False):
+            record = Diary()
+            record.state, record.ready = 'draft', True
+            record.review_ids, record.validation_status = [], 'no'
+            gates = []
+            record.env = {'sc.approval.policy': types.SimpleNamespace(
+                _start_submission_review=lambda rec: configured,
+                _assert_submission_approved=lambda rec, states: gates.append(states))}
+            with self.assertRaises(ValueError): namespace['action_done'](record)
+            namespace['action_confirm'](record)
+            self.assertEqual(record.state, 'draft' if configured else 'confirmed')
+            if configured:
+                namespace['action_on_tier_approved'](record)
+                self.assertEqual(record.state, 'draft')
+                record.review_ids, record.validation_status = [1], 'pending'
+                namespace['action_on_tier_approved'](record)
+                self.assertEqual(record.state, 'draft')
+                with self.assertRaises(ValueError): namespace['action_done'](record)
+                record.validation_status = 'validated'
+                namespace['action_on_tier_approved'](record)
+                self.assertEqual(record.state, 'confirmed')
+            namespace['action_done'](record)
+            self.assertEqual(record.state, 'done')
+            self.assertEqual(gates, [('confirmed',)])
+            record.state, record.ready = 'draft', False
+            with self.assertRaises(ValueError): namespace['action_confirm'](record)
+            self.assertEqual(record.state, 'draft')
+
     def test_policy_step_order_maps_to_native_descending_priority(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_vals')
         namespace = {}

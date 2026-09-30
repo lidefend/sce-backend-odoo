@@ -6,7 +6,7 @@ from odoo.exceptions import UserError
 class ScConstructionDiary(models.Model):
     _name = "sc.construction.diary"
     _description = "施工日志"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
     _order = "date_diary desc, id desc"
 
     name = fields.Char(string="日志编号", required=True, default="新建", copy=False)
@@ -30,6 +30,8 @@ class ScConstructionDiary(models.Model):
         required=True,
         index=True,
     )
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, index=True)
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True)
     date_diary = fields.Datetime(string="日志日期", default=fields.Datetime.now, index=True)
     report_period_start = fields.Date(string="报表期间开始", index=True)
@@ -172,14 +174,29 @@ class ScConstructionDiary(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的施工日志可以确认。"))
             rec._check_business_ready()
-            rec.state = "confirmed"
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
 
     def action_done(self):
         for rec in self:
-            if rec.state not in ("draft", "confirmed"):
-                raise UserError(_("只有草稿或已确认状态的施工日志可以完成。"))
+            if rec.state != "confirmed":
+                raise UserError(_("只有已确认状态的施工日志可以完成。"))
             rec._check_business_ready()
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("confirmed",))
             rec.state = "done"
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_business_ready()
+                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True).write({"reject_reason": reason})
 
     def _check_business_ready(self):
         self.ensure_one()

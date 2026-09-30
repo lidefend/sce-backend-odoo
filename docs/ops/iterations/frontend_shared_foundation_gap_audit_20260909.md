@@ -7774,3 +7774,12 @@ L5：未推送、未合并、未部署。
 - 真实审批人经共同拒绝服务驳回，draft保留原因；重提review IDs与旧链不相交，原生批准后confirmed且原因清空。finally rollback回读原费用策略/步骤一致，所有临时计划/事件/策略/项目/客商/费用不存在。没有直接写审批结果，没有新环境或持久fixture。
 - L1 ci.local.iteration/py_compile PASS（plan-approval-runtime-iteration.log）。受管verify.business_config.approval_runtime22项PASS、ROLLBACK=VERIFIED（plan-approval-runtime.log），其中费用12+事件5沿同一事务验证、计划新增5。封装不变，原wrapper9证据复用；不以22项代表全部业务单据或浏览器完成。
 - 计划有效契约/浏览器、不同审批岗位、实际金融冲销与总体必要单据覆盖继续待验。沿已有profile顺序定向核对下一项sc.construction.diary：模型仅mail继承、直接action_confirm/action_done，profile draft仍包含complete，未接共享审批，是既有正式单据的后续产品缺口；本轮未改日志模型，不新建盘点表。总体active，无远端/目标部署。
+
+
+### 53.48 施工日志共享审批接入，关闭草稿直接完成
+
+- 75834d4a1 clean起步，P1 smart_construction_core施工日志正式业务能力。原模型无tier继承、配置无支持且draft可直接done，属于全单据统一审批缺口。新增tier继承、项目公司相关字段、驳回原因，配置选择/同步支持/OCA模型列表及原回调XML纳入sc.construction.diary。沿既有机制，不新建审批引擎或前端业务分流。
+- 确认保留日期、标题、日志类型、非负人数及至少一项内容检查；调用共同_start_submission_review，配置审批保持draft等原生review结果，无配置校验后confirmed。通过回调只接受真实validated且重新校验内容；驳回保留真实意见，重提复用共同重置。完成仅confirmed且共同批准事实校验通过，保留内容校验，不由审批自动完成。
+- 原生增加真实审核按钮及can_review/validation_status，profile同一审批动作，draft移除complete；完成仅confirmed。原生取消此前误显示于done，按模型原draft/confirmed范围对齐，legacy取消拒绝业务规则未改。已有legacy_confirmed状态/历史数据未迁移。
+- L1 ci.local.iteration PASS（diary-approval-iteration.log）。L2审批53、native8+30=38、semantics15 PASS（diary-approval-tests.log，begin/record53）。实际方法测试验证无/有配置、草稿/审批中不能完成、伪造/部分回调不推进、真实通过后独立完成、内容不满足拒绝；实际投影与原生完成/取消/审核人条件一致。新模型/视图加入既有输入登记。
+- 字段/继承/XML仍需受管升级、真实日志审批/拒绝重提验证，尚未执行。本次不重建前端、不重跑无关浏览器；不能以纯测试宣称全系统完成。总体active，未推送、合并、目标部署。
