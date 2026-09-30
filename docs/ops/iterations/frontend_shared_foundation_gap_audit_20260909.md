@@ -8778,3 +8778,14 @@ P4既有创建页探针扩展sc.financing.loan（复用同一财务字段/契约
 有界归因线索：form_structure_contract为business_task_form/task/entry_semantic_surface，包含project_id/partner_id/amount语义slots；sourceAuthority关联已发布业务配置116(sc_financing_loan_form_sections_v1,v2)、139(sc_financing_loan_p1_form_business_facts_v1,v2)，包含LEGACY_STRUCTURE_KEY_OVERRIDE诊断。P1 data/p1_daily_business_form_orchestration_contract_data.xml有该事实展示编排；前端pages/contractForm/ObjectTaskPage.vue在contextNodes缺少sectionLinks时回退基本资料。尚未断定是生产者丢布局还是消费者选错路径，不能先改业务配置或前端加模型分支。
 
 下一步优先修复该融资正式创建职责缺口：沿本次有效契约与共享canonical presenter/entry_semantic_surface选择核对必需项目/往来方/金额落点，按拥有层修复并定向复验此页；不继续绕过该问题增加其他绿色ORM。整体67/detail.action-state继续开放，保留其他已登记缺口，无推送合并目标部署。
+
+
+### 53.137 融资创建页归因纠正与有效契约回放（通过，无生产改动）
+
+d617fe07c clean起点。沿tpl07-1790796266377原捕获定位：必须选sc.financing.loan主契约，最后一条响应是ir.attachment子契约，不可混用。主契约globalStatus.effectiveRenderProfile=create，project_id/partner_id/amount可见可编辑。P4现有canonical_form_presenter_test通过可选SC_CANONICAL_CAPTURE/MODEL/FIELDS回放原捕获，presentContractV2Form+composeCanonicalFormFloorplan在create/task模式保留项目与往来方于relationNodes，金额于postRelationInputNodes。生产presenter/floorplan与5180候选相关输入未漂移；未发现字段被丢弃。
+
+因此纠正53.136“产品呈现缺口”的初判：探针错误地要求task投影必须保留native notebook页签文字。共享测试先检查实际输入，只有输入未呈现时才导航契约页签，然后继续严格断言输入可见并滚动到输入；不删除必需字段检查，不新增模型专属生产分支。原生布局page与已声明task语义分区不是同一导航承诺。修复验证假设后financing-create-browser-inputs.log/tpl07-1790796559683 20 PASS，errors=[]/forbiddenWrites=[]、1440/390无整页溢出。该创建页消费缺口已消除，原失败保留为工具归因证据，不宣称本轮修复了生产渲染。
+
+L1 financing-probe-iteration.log PASS；financing-presenter-replay.log基线201项PASS（177+10+10+4）并登记workflow_catalog_consumer201非零回执，另有原始捕获3字段可编辑投影断言通过。捕获3项只绑定本地原报告，不并入可跨捕获复用的201计数。可选回放要求非零SC_CANONICAL_CAPTURE_FIELDS，仅输出模型/计数，不写库或创建fixture。仅P4测试文件改动；backend6e76e65bd/frontendCrYkOCxc不变，无reload/build。
+
+下一步回到尚未验证的收款/付款执行与冲销真实角色链及契约消费，优先使用现有已通过业务准备与实际数据，不重验已关闭付款申请49项。结算调整来源、自筹退回、已保存页面办理、关联事实变化等原67/detail.action-state未覆盖项保留。无推送合并目标部署。

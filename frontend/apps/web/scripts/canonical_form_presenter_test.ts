@@ -3471,3 +3471,25 @@ unavailableDeclaredSnapshot.workflowContract = declaredPause;
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unavailableDeclaredSnapshot)), 'edit').actionBar[0].enabled, false,
   'the shared presenter must disable a declared unavailable method regardless of its name');
 console.log('[canonical_form_presenter] complete declaration identity cases PASS count=10');
+
+// Optional replay of an existing browser capture through the shared presenter.
+// This does not create fixtures or claim runtime/browser behavior.
+if (process.env.SC_CANONICAL_CAPTURE) {
+  const { readFileSync } = await import('node:fs');
+  const captured = JSON.parse(readFileSync(process.env.SC_CANONICAL_CAPTURE, 'utf8'));
+  const expected = (process.env.SC_CANONICAL_CAPTURE_FIELDS || '').split(',').map((value) => value.trim()).filter(Boolean);
+  assert.ok(expected.length, 'capture replay requires non-zero expected fields');
+  const response = captured.contractResponses.find((row: any) => row.contract?.data?.pageInfo?.model === process.env.SC_CANONICAL_CAPTURE_MODEL);
+  assert.ok(response, 'requested captured model exists');
+  const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(response.contract.data)), 'create');
+  const floorplan = composeCanonicalFormFloorplan(model);
+  function fieldsIn(nodes: any[]): any[] {
+    return nodes.flatMap((node) => [...node.fields.filter((field: any) => field.visible), ...fieldsIn(node.children)]);
+  }
+  const visibleFields = Object.entries(floorplan).filter(([key, value]) => key.endsWith('Nodes') && Array.isArray(value))
+    .flatMap(([, nodes]) => fieldsIn(nodes as any[]));
+  for (const code of expected) {
+    assert.ok(visibleFields.some((field) => field.fieldCode === code && !field.readonly && !field.disabled), `captured editable field retained: ${code}`);
+  }
+  console.log(`CAPTURE_FIELDS_PASS model=${model.identity.model} count=${expected.length}`);
+}

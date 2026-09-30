@@ -681,8 +681,17 @@ try {
           for (const name of required) {
             const field = fields.find((node) => node.name === name);
             check(`${spec.model}: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
-            for (const title of field.probePages) await session.page.getByText(title, { exact: true }).click();
-            await session.page.locator(`[data-field-name="${name}"] input`).first().waitFor({ state: 'visible' });
+            const input = session.page.locator(`[data-field-name="${name}"] input`).first();
+            // Task forms may project native notebook fields into semantic regions.
+            // Prefer the actual input; native pages are navigation only when needed.
+            if (!(await input.isVisible())) {
+              for (const title of field.probePages) {
+                const pageLink = session.page.getByText(title, { exact: true });
+                if (await pageLink.count() === 1) await pageLink.click();
+              }
+            }
+            await input.waitFor({ state: 'visible' });
+            await input.scrollIntoViewIfNeeded();
             check(`${spec.model}: ${name} actual input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
           }
           for (const label of ['审批通过', spec.model === 'sc.treasury.reconciliation' ? '对账完成' : '完成']) {

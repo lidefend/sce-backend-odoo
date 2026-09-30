@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.136 financing-borrowing runtime6 PASS rollback (actual finance/reviewers, two existing categories out/in, exact ledger and idempotency, not concurrency). Official financing create FAILED tpl07-1790796266377: layout editable project under 项目与借款方 but actual ObjectTaskPage shows 基本资料/context-only. Next PRIORITY trace effective config116/139 v2 entry_semantic_surface/task structure into shared canonical presenter; reconcile required project/partner/amount inputs without model-specific frontend rules or deleting checks. Producer vs consumer ownership not yet resolved. Backend6e76e65bd/frontendCrYkOCxc unchanged; no more unrelated ORM while this affected page remains broken. Overall67/detail.action-state open; no push/merge/deploy.",
+  "next_exact_step": "53.137 CORRECTION: financing create gap was probe native-tab assumption, not lost fields. Parent captured contract replay keeps project/partner relation nodes and amount post-relation. P4 probe checks actual input before native page navigation; browser tpl07-1790796559683 20 PASS/no errors+writes/1440+390. Presenter base201 receipt plus capture3 PASS (capture-specific3 not reusable default count). No production change/rebuild; backend6e76e65bd/frontendCrYkOCxc unchanged. Next remaining receipt/payment-execution/reversal actual-role chain and effective consumption using governed existing prep/data; retain adjustment-source/refund/saved-browser/external-fact gaps. Overall67/detail.action-state open; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
