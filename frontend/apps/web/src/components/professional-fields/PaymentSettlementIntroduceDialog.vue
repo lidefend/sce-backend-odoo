@@ -463,16 +463,16 @@ async function confirmIntroduce() {
 }
 
 .settle-error {
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-error);
-  font-size: 13px;
   background: color-mix(in srgb, var(--sc-color-error) 8%, transparent);
   border-radius: 6px;
   padding: 8px 12px;
 }
 
 .settle-hint {
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-text-3);
-  font-size: 13px;
   padding: 12px;
   text-align: center;
 }
@@ -505,16 +505,16 @@ async function confirmIntroduce() {
 }
 
 .settle-option-name {
-  font-weight: 600;
-  font-size: 14px;
+  font: var(--sc-font-mark-medium);
+
   color: var(--sc-color-text-1);
 }
 
 .settle-option-meta {
+  font: var(--sc-font-body-small);
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  font-size: 12px;
   color: var(--sc-color-text-3);
 }
 
@@ -538,20 +538,20 @@ async function confirmIntroduce() {
 }
 
 .settle-preview-title strong {
-  font-size: 15px;
+  font: var(--sc-font-title-medium);
   color: var(--sc-color-text-1);
 }
 
 .settle-preview-sub {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-preview-toolbar {
+  font: var(--sc-font-body-small);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
   color: var(--sc-color-text-3);
 }
 
@@ -560,7 +560,7 @@ async function confirmIntroduce() {
 }
 
 .settle-total-hint {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-2);
 }
 
@@ -576,12 +576,12 @@ async function confirmIntroduce() {
 
 .settle-lines-head,
 .settle-line {
+  font: var(--sc-font-body-medium);
   display: grid;
   grid-template-columns: 32px minmax(120px, 2fr) minmax(100px, 1.2fr) 110px 100px 100px 84px;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13px;
 }
 
 .settle-lines-head {
@@ -638,7 +638,7 @@ async function confirmIntroduce() {
 
 .settle-state-open,
 .settle-state-done {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -671,19 +671,19 @@ async function confirmIntroduce() {
 }
 
 .settle-history-title {
-  font-size: 13px;
-  font-weight: 600;
+  font: var(--sc-font-mark-medium);
+
   color: var(--sc-color-text-1);
 }
 
 .settle-history-count {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-history-toggle {
+  font: var(--sc-font-body-small);
   margin-left: auto;
-  font-size: 12px;
   color: var(--sc-color-brand);
 }
 
@@ -692,11 +692,11 @@ async function confirmIntroduce() {
 }
 
 .settle-history-row {
+  font: var(--sc-font-body-small);
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 6px 12px;
-  font-size: 12px;
 }
 
 .settle-history-row + .settle-history-row {
@@ -712,11 +712,11 @@ async function confirmIntroduce() {
 }
 
 .settle-history-state {
+  font: var(--sc-font-body-small);
   min-width: 52px;
   text-align: center;
   padding: 1px 6px;
   border-radius: 4px;
-  font-size: 11px;
   background: var(--sc-color-bg-2);
   color: var(--sc-color-text-3);
 }
@@ -778,23 +778,23 @@ async function confirmIntroduce() {
 }
 
 .settle-apply-suffix {
-  font-size: 13px;
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-text-2);
 }
 
 .settle-apply-hint {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-apply-total {
+  font: var(--sc-font-body-medium);
   margin-left: auto;
-  font-size: 13px;
   color: var(--sc-color-text-2);
 }
 
 .settle-apply-total strong {
-  font-size: 15px;
+  font: var(--sc-font-title-medium);
   color: var(--sc-color-primary);
   font-variant-numeric: tabular-nums;
 }

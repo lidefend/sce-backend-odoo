@@ -571,8 +571,8 @@ const sectionLinks = computed(() => uniqueSectionLinks([
 }
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .readonly-value),
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .contract-readonly-value) {
-  font-size: 18px;
-  font-weight: 700;
+  font: var(--sc-font-title-large);
+
   font-variant-numeric: tabular-nums;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }

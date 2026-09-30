@@ -7333,3 +7333,11 @@ L5：未推送、未合并、未部署。
 - standard_collection_composition 113 案例 + style_system passed；一次构建。定向双视口 28/28 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765049108/report.json`。
 - 首次探针依赖当前契约未采用的 status-badge 单元格类型而超时；改为当前实际列标题和移动身份，复用构建，失败报告 `tpl07-1790764971580/report.json` 保留。不据此宣称未展示的看板/分组数据已做业务验收。
 - 所有者再次明确：本轮完整目标是全系统契约驱动的官方渲染/交互，样式修复只是基础批次；后续仍按既有页面类型核对唯一组合及旧职责退出，不能以字号修复代替整体接管。
+
+### 52.5 页面族：详情、表单、任务共享渲染与弹层正文
+
+- FormSection / NativeFormTreeRenderer / ContractFormPage 共享文字角色统一：区块 title-medium、记录 headline-small、正文 body-medium、辅助 body-small；readonly value 不再使用 550 字重。任务 monetary 强调保留，字体采用 title-large。记录标题输入桥接采用 headline-small。
+- 付款引入领域扩展保留全部业务输入/输出与动作，只更新呈现字体；同时纠正 ListPage 父级覆盖，防止共享部件对齐后再次被父级字号覆盖。
+- L2：standard_form_composition 97、product_page_pattern 12+5、page_pattern_reference_parity 15+13；style_system passed。日志 `artifacts/frontend-web-fix-20260928/tpl52/record-families.log`。无 TS/模板/业务逻辑变化，严格类型结果沿用 52.1 的同源脚本与类型输入。
+- 单次合并候选构建 21.65s，同一候选检查受影响列表、现有表单、只读详情、引入弹层；双视口 91/91 passed，包含浅/深两种 token 解析及禁用态。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765202063/report.json`。任务专用独立旅程未在本轮重跑，不把共享事实渲染证据扩大为全部任务业务验收。
+- 视觉复核发现过渡动画让弹层截图仍呈半透明，探针改为禁用截图动画并等待列表加载结束；同一构建只补弹层两视口 30/30，稳定截图 `artifacts/frontend-web-fix-20260928/tpl07-1790765261313/dialog-390.png` 等。之前 91 项的合同/数据/字体输入未变，继续复用。无额外构建。

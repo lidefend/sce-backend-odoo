@@ -1134,6 +1134,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container-drop-strip {
+  font: var(--sc-font-body-small);
   min-height: 44px;
   display: grid;
   place-items: center;
@@ -1141,7 +1142,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   border-radius: 6px;
   margin-bottom: 8px;
   color: var(--sc-app-text-muted);
-  font-size: 12px;
   pointer-events: auto;
 }
 
@@ -1157,9 +1157,9 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-static-text {
+  font: var(--sc-font-body-medium);
   margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
+
   overflow-wrap: anywhere;
 }
 
@@ -1230,14 +1230,14 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-ribbon {
+  font: var(--sc-font-mark-small);
   justify-self: end;
   max-width: 100%;
   border-radius: 4px;
   background: var(--sc-app-danger-text);
   color: var(--sc-semantic-text-on-interactive);
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
+
   overflow-wrap: anywhere;
 }
 
@@ -1302,8 +1302,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-action-label {
   min-width: 0;
   overflow-wrap: anywhere;
-  line-height: 1.25;
-  font-weight: inherit;
+  font: var(--sc-font-body-medium);
 }
 
 .native-title-row {
@@ -1327,17 +1326,16 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-title-input {
   flex: 1 1 auto;
   min-width: 0;
-  line-height: 1.25;
+  font: var(--sc-font-headline-small);
   padding: 2px 0;
   letter-spacing: 0;
 }
 
 .native-title-text {
+  font: var(--sc-font-headline-small);
   margin: 0;
   color: var(--sc-app-text-primary);
-  font-size: 27px;
-  font-weight: 600;
-  line-height: 1.25;
+
   overflow-wrap: break-word;
   line-break: strict;
   text-wrap: balance;
@@ -1347,6 +1345,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   .native-title-row { align-items: flex-start; gap: 8px; }
   .native-title-favorite { flex: 0 0 auto; margin-top: 2px; font-size: 23px; }
   .native-title-input,
-  .native-title-text { font-size: 24px; line-height: 1.3; }
+  .native-title-text {
+  font: var(--sc-font-headline-small);   }
 }
 </style>

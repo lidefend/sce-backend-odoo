@@ -35,21 +35,20 @@
 }
 
 .list-title h2 {
+  font: var(--sc-font-title-large);
   margin: 0;
   color: var(--sc-app-text-primary);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.25;
+
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .list-title p {
+  font: var(--sc-font-body-small);
   margin: 2px 0 0;
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  line-height: 1.25;
+
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -96,15 +95,15 @@
 }
 
 .list-empty-copy h2 {
+  font: var(--sc-font-title-large);
   color: var(--sc-app-text-primary);
-  font-size: 18px;
-  line-height: 1.3;
+
 }
 
 .list-empty-copy p {
+  font: var(--sc-font-body-medium);
   color: var(--sc-app-text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
+
 }
 
 .list-empty-actions {
@@ -115,10 +114,10 @@
 
 .list-empty-primary,
 .list-empty-secondary {
+  font: var(--sc-font-body-medium);
   min-height: 34px;
   border-radius: 8px;
   padding: 7px 12px;
-  font-size: 13px;
   cursor: pointer;
 }
 
@@ -186,11 +185,11 @@
 }
 
 .page[data-product-page-mode='list'] .table thead th {
+  font: var(--sc-font-mark-small);
   border-bottom: 1px solid var(--sc-app-border-strong);
   background: var(--sc-table-header-bg);
   color: var(--sc-app-text-primary);
-  font-size: 12px;
-  font-weight: 700;
+
 }
 
 .page[data-product-page-mode='list'] .table tbody td {
@@ -366,6 +365,7 @@
 }
 
 .list-plain-search input {
+  font: var(--sc-font-body-medium);
   min-width: 0;
   width: 100%;
   height: 30px;
@@ -374,7 +374,6 @@
   background: var(--sc-app-input-bg);
   color: var(--sc-app-text-primary);
   padding: 4px 8px;
-  font-size: 13px;
 }
 
 .grouped-table {
@@ -393,17 +392,17 @@
 }
 
 .batch-note {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-secondary);
 }
 
 .batch-details {
+  font: var(--sc-font-body-medium);
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
   background: var(--sc-app-panel);
   padding: 8px 10px;
   color: var(--sc-app-text-secondary);
-  font-size: 13px;
 }
 
 .batch-details p {
@@ -411,13 +410,13 @@
 }
 
 .batch-detail-action {
+  font: var(--sc-font-body-small);
   margin-left: 8px;
   border: 1px solid var(--sc-app-info-border);
   border-radius: 6px;
   background: var(--sc-app-info-bg);
   color: var(--sc-app-info-text);
   padding: 2px 8px;
-  font-size: 12px;
   cursor: pointer;
 }
 
@@ -443,6 +442,7 @@
 }
 
 .pagination-bar {
+  font: var(--sc-font-body-medium);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -453,7 +453,6 @@
   background: var(--sc-app-panel);
   padding: 10px 12px;
   color: var(--sc-app-text-secondary);
-  font-size: 13px;
 }
 
 .summary-strip,
@@ -513,11 +512,11 @@ table {
 
 th,
 td {
+  font: var(--sc-font-body-medium);
   box-sizing: border-box;
   padding: 9px 12px;
   border-bottom: 1px solid var(--sc-app-border);
   text-align: left;
-  font-size: 13px;
   vertical-align: middle;
   min-width: 72px;
   white-space: nowrap;
@@ -631,6 +630,7 @@ tbody td {
 }
 
 .table thead th {
+  font: var(--sc-font-mark-medium);
   box-sizing: border-box;
   position: sticky;
   top: 0;
@@ -640,9 +640,7 @@ tbody td {
   border-color: var(--sc-table-divider);
   background: var(--sc-table-header-bg);
   color: var(--sc-app-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 18px;
+
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -671,11 +669,11 @@ tbody td {
 }
 
 .table tbody td {
+  font: var(--sc-font-body-medium);
   padding: 8px 12px;
   border-color: var(--sc-table-divider);
   color: var(--sc-app-text-secondary);
-  font-size: 13px;
-  line-height: 20px;
+
   vertical-align: middle;
 }
 

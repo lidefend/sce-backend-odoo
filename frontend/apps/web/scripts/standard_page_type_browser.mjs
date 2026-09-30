@@ -83,7 +83,7 @@ async function list(page, menu, name) {
   await page.locator('[data-list-card-container="official"]').waitFor();
   check(`${name}: standard type`, await page.locator('[data-list-composition-reason="contract-collection-view"]').count() === 1);
   check(`${name}: one container`, await page.locator('[data-list-card-container="official"]').count() === 1);
-  await page.screenshot({ path: path.join(out, `${name}.png`) });
+  await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`) });
 }
 
 async function form(page, url, name, profile = 'form') {
@@ -120,7 +120,7 @@ async function form(page, url, name, profile = 'form') {
   } else {
     check(`${name}: official form engine mounted`, await page.locator('[data-semantic-component="ScForm"]').count() > 0);
   }
-  await page.screenshot({ path: path.join(out, `${name}.png`) });
+  await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`) });
 }
 
 async function styleScope() {
@@ -165,15 +165,17 @@ async function styleScope() {
     check(`${name}: heading rendered`, result.headings.length > 0);
     if (expected) check(`${name}: official typography`, result.headings.every((h) => h.size === expected[0] && h.weight === expected[1] && h.line === expected[2]), { headings: result.headings });
     check(`${name}: page contained`, result.contained);
-    await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
+    await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`), fullPage: true });
   }
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
+    if (family !== 'overlay') {
     await list(page, 545, `style-list-${viewport.width}`);
     // This standard list intentionally suppresses the outer headline; its record
     // header keeps the pinned official headline-small ladder.
     await inspect(`shell-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
-    if (family === 'collection') {
+    }
+    if (['all', 'collection'].includes(family)) {
       const selector = viewport.width > 600 ? '.flat-table .column-sort-btn' : '.collection-mobile-record-row__identity';
       await page.locator(selector).first().waitFor();
       await inspect(`collection-cells-${viewport.width}`, selector, viewport.width > 600 ? ['14px', '600', '22px'] : ['16px', '600', '24px']);
@@ -189,6 +191,7 @@ async function styleScope() {
       await inspect(`form-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
       continue;
     }
+    await inspect(`form-text-${viewport.width}`, '.template-form-section .readonly-value:not(.readonly-value--action)', ['14px', '400', '22px']);
     const introduce = page.locator('[data-contract-entry-label]');
     check(`form-${viewport.width}: contract supplies introduce label`, Boolean(report.introduceContract?.introduceLabel));
     await introduce.click();
@@ -197,8 +200,26 @@ async function styleScope() {
     await inspect(`dialog-${viewport.width}`, '.sc-design-dialog__heading h2', ['16px', '600', '24px']);
     await page.keyboard.press('Escape');
     await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
+    if (family === 'overlay') continue;
     await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');
-    await inspect(`detail-${viewport.width}`, '[data-semantic-component="ProductPageHeader"] h1, .product-page-header h1');
+    await inspect(`detail-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+    await inspect(`detail-text-${viewport.width}`, '.template-form-section-descriptions .readonly-value:not(.readonly-value--action)', ['14px', '400', '22px']);
+  }
+  if (family === 'all') {
+    const variants = await page.evaluate((names) => {
+      const el = document.documentElement;
+      const original = el.getAttribute('data-sc-theme');
+      try {
+        return ['light', 'dark'].map((theme) => {
+          el.setAttribute('data-sc-theme', theme);
+          const s = getComputedStyle(el);
+          return { theme, missing: names.filter((name) => !s.getPropertyValue(name).trim()), disabled: s.getPropertyValue('--td-text-color-disabled').trim() };
+        });
+      } finally {
+        if (original === null) el.removeAttribute('data-sc-theme'); else el.setAttribute('data-sc-theme', original);
+      }
+    }, tokenNames);
+    check('style: both token variants resolve including disabled text', variants.every((v) => !v.missing.length && v.disabled), { variants });
   }
   check('style: real startup contract loaded', report.startup.some((r) => r.intent === 'system.init' && r.success));
   await finance.ctx.close();

@@ -1109,16 +1109,16 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section-hint {
+  font: var(--sc-font-body-small);
   margin: -4px 0 10px;
-  font-size: var(--sc-product-text-sm);
   color: var(--sc-app-text-primary);
 }
 
 .field-supporting-text,
 .field-error-text {
+  font: var(--sc-font-body-small);
   margin: 6px 0 0;
-  font-size: var(--sc-product-text-sm);
-  line-height: 1.45;
+
 }
 
 .field-supporting-text {
@@ -1130,11 +1130,11 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-fail-closed {
+  font: var(--sc-font-body-small);
   padding: 6px 8px;
   border: 1px solid var(--sc-app-danger-text);
   border-radius: var(--sc-radius-sm, 4px);
-  font-size: var(--sc-product-text-sm);
-  line-height: 1.45;
+
   color: var(--sc-app-danger-text);
 }
 
@@ -1284,9 +1284,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .label {
-  font-size: var(--sc-product-text-sm);
+  font: var(--sc-font-mark-small);
   color: var(--sc-app-text-primary);
-  font-weight: 600;
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -1353,12 +1352,12 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-inline-actions {
+  font: var(--sc-font-body-small);
   display: inline-flex;
   align-items: center;
   gap: var(--sc-pattern-task-form-inline-actions-gap, 8px);
   color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-  line-height: 1;
+
 }
 
 .field-control-row {
@@ -1386,16 +1385,15 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .readonly-value {
+  font: var(--sc-font-body-medium);
   box-sizing: border-box;
   display: grid;
   align-items: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  font-size: var(--sc-product-text-body);
   color: var(--sc-app-text-primary);
   min-height: 32px;
-  line-height: 22px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1436,7 +1434,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .readonly-value--html {
   display: block;
-  line-height: 1.65;
+  font: var(--sc-font-body-medium);
 }
 
 .readonly-value--html :deep(ul),
@@ -1450,15 +1448,15 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .readonly-value {
+  font: var(--sc-font-body-medium);
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly :deep(.contract-readonly-value) {
+  font: var(--sc-font-body-medium);
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly .template-form-section-grid {
@@ -1491,17 +1489,17 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .label {
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-secondary);
-  font-size: var(--sc-product-text-sm);
-  font-weight: 500;
+
 }
 
 .template-form-section--readonly .readonly-value,
 .template-form-section--readonly :deep(.contract-readonly-value) {
+  font: var(--sc-font-body-medium);
   min-height: 24px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
-  font-weight: 550;
+
 }
 
 @media (max-width: 760px) {
@@ -1553,15 +1551,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .native-date-range__label {
+  font: var(--sc-font-mark-small);
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
+
 }
 
 .native-date-range-separator {
+  font: var(--sc-font-body-medium);
   color: var(--sc-semantic-text-muted);
-  font-size: 13px;
 }
 
 .input[type='date'] {
@@ -1586,8 +1583,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-currency-label {
+  font: var(--sc-font-body-medium);
   color: var(--sc-app-text-secondary);
-  font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
