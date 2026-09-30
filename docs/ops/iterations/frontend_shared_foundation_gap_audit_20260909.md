@@ -8758,3 +8758,12 @@ b9d4f607f clean起点，P4仅扩展既有rollback工具financing-approval scope�
 首轮financing-approval-runtime.log前7项成立后驳回阶段AccessError，finally回滚验证通过。归因P4候选审核人未按公司授权过滤；改为与_approve_existing_reviews一致的active/non-share/company_ids过滤及明确allowed_company_ids，不改产品权限。修复后financing-approval-runtime-fixed.log8 PASS/ROLLBACK VERIFIED：显式/default/假token状态绕过拒绝、无配置批准不完成、显式完成保持该类别无台账语义、在审不得完成、真实审核只批准、非财务负责人完成被拒绝、财务角色显式完成、真实驳回原因及重提新review均成立。第一次失败不能当通过；第二次有明确工具输入变更，非盲目重试。
 
 验证范围仅loan_registration/financing_in，借款分类生成台账/资金责任、已批准及已完成的内容冻结、历史重放、保存后浏览器仍未覆盖。下一步优先同一融资模型已审核/终态经济内容保护，与workflow readonly/locked一致；保留收款、付款冲销、结算调整合同来源及既有全局缺口。不扩展为全系统完成，不重复已通过页面，无推送合并目标部署。
+
+
+### 53.135 融资已审核与终态内容保护（145纯测/9运行通过）
+
+046c95aba clean起点。P1 financing_loan普通新系统单据审批中、confirmed/done的正式业务字段与规范字段集合，以及项目/公司/往来方/币种/方向/分类/来源号/利率/有效性等经济内容不可改写；复用两组既有字段常量和私有状态token，保留历史legacy专属补录规则。融资write仅在实际涉及正式业务字段时调用_prepare_formal_business_values，避免状态/备注写入隐式补默认贷款类型显示。该限制不新增schema、字段、前端规则或审批机制。
+
+L1 financing-freeze-iteration.log PASS；financing-freeze-unit.log145 PASS并begin/record非零成功。源码6e76e65bd受管reload，financing-freeze-runtime.log9 PASS/ROLLBACK VERIFIED：普通finance在审金额不能改，confirmed金额不能改且workflow readonly；done金额/正式金额别名/方向/有效性不能改且workflow locked；允许备注补充仍保留amount100和贷款类型显示，真实审核/完成/驳回重提原链仍通过。配置/步骤恢复、临时记录消失；local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，前端CrYkOCxc不变。
+
+未改动作名称、XML、状态映射和前端输入，旧声明/创建页证据只按未变输入复用，未重跑浏览器或构建。历史重放及外部关联对象变化不是本轮证明范围；保留原67/detail.action-state。下一步借款分类实际资金台账与普通角色办理/官方页面消费，随后收款、付款冲销及结算调整来源等仍开放职责；不能将贷款登记9项替代两个借款类别台账。无推送合并目标部署。

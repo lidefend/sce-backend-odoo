@@ -503,3 +503,8 @@ P1 write guard now freezes key self-funding content during pending review and af
 ## Segment 53.134: financing registration real-role approval
 
 Financing loan_registration/financing_in runtime8 passes under non-sudo fixture finance handling and real reviewers, with rollback/configuration restoration verified. It proves direct-state denial, approval separate from explicit completion, finance permission and rejection/resubmission; this category intentionally produces no interfund ledger. An initial rejection-probe failure was fixed by selecting only reviewers authorized for the company. Borrowing-ledger categories, reviewed/final content integrity, historical replay and saved browser handling remain open. Backend9bb5435b0 and frontend rendering inputs are unchanged.
+
+
+## Segment 53.135: financing reviewed/final economic content
+
+Financing ordinary documents now protect formal/canonical economic fields during review and after confirmation/completion. State/note writes no longer invoke unrelated business-default projection. Existing legacy supplementation rules remain. Pure145 and runtime9 pass at backend6e76e65bd with restored configuration and rollback: reviewed/final edits denied, workflow readonly/locked agrees, permitted note supplement preserves amount/type display, actual approval/completion still works. Borrowing-ledger categories, external reference mutation, historical replay and saved browser handling remain unverified.
