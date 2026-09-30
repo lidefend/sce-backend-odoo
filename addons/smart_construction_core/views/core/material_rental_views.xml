@@ -195,16 +195,22 @@
         <field name="arch" type="xml">
             <form string="周转材料租赁单">
                 <header>
-                    <button name="action_activate" string="确认租赁" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_activate" string="确认租赁" type="object" class="btn-primary" invisible="state != 'approved'"/>
                     <button name="action_return" string="确认退还" type="object" class="btn-primary" invisible="state != 'active'"/>
                     <button name="action_settle" string="完成结算" type="object" class="btn-primary" invisible="state != 'returned'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('settled', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,active,returned,settled"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state in ('returned', 'settled', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,active,returned,settled"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="plan_id"/>
                             <field name="rental_date"/>

@@ -351,3 +351,10 @@ sc.material.rental.plan now uses shared policy/tier with project company and est
 ### Segment53.93 — Rental plan scoped runtime and official create evidence
 
 Backendf9b24b174 passes10 real rental-plan approval checks with rollback verified, including estimated_amount threshold matching, enabled-unmatched rejection, actual reviewer approval/rejection/resubmission and state boundaries. Official create tpl07-1790784243489 passes14 assertions on unchanged frontend7915f3bb9, both viewports, no writes/errors. PM existing-record query tpl07-1790784253465 is empty; actual role handling and contract/supplier association runtime negatives remain unproven. Rental order/settlement and remaining document families are still open.
+
+
+### Segment53.94 — Rental order approval/execution source aligned; payment fact gap remains
+
+Rental order now has shared submitted/approved stages before explicit activation. Native tier actions and workflow declarations distinguish review, activation, return and settlement; returned cancellation is removed to match the backend.83 approval/56 native/15 semantics tests pass; runtime loading and browser handling are pending.
+
+Rental settlement action_paid currently only changes state after association checks; there is no authoritative payment-fact verification. Record this as a P1 product gap, not a completed payment workflow. Subsequent settlement approval work must keep payment execution/facts distinct from approval and cannot close all-document coverage using a paid flag alone.

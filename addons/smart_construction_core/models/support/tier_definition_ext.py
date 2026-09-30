@@ -21,6 +21,7 @@ class TierDefinition(models.Model):
             "sc.equipment.request",
             "sc.labor.plan",
             "sc.material.rental.plan",
+            "sc.material.rental.order",
             "sc.labor.request",
             "sc.attendance.checkin",
             "sc.labor.usage",

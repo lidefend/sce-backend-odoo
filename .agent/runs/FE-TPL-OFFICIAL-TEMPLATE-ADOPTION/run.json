@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.93 rental plan runtime10 PASS rollback verified backendf9b24b174; official create14 PASS report1790784243489/frontend7915f3bb9; PM existing record1790784253465 empty (do not retry). Next inspect material_rental.py order/settlement remaining document approval versus explicit activate/return/settle/pay responsibilities, declare P1 semantics and reuse shared state machine; do not conflate approval with execution or payment facts. Contract/supplier real negative and role-loop coverage remain open, as does project initiation role/entry gap. No newfixture/unrelatedORM/frontendbuild/push/merge/deploy.",
+  "next_exact_step": "53.94 rental order P1 source shared approval before explicit activation/return/settle.83/56/15 pure tests PASS; runtime pending. Extend existing rollback rental-order scope, verify actual configured/no-config review then separate execution, source-plan constraints, direct state protection/rejection/resubmission and cleanup; one governed module upgrade/reload then official page. Do not rerun rental-plan10. Rental settlement action_paid only changes paid flag without payment-fact authority is explicit P1 gap for next settlement batch. No newfixture/unrelatedORM/frontendbuild/push/merge/deploy; overall67 open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

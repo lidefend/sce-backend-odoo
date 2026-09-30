@@ -102,6 +102,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertEqual(self._general_contract_actions('approved', model=model), [])
             self.assertEqual({row['method'] for row in self._general_contract_actions('cancel', model=model)}, {'action_reset_draft'})
 
+    def test_rental_order_review_and_execution_have_distinct_purposes(self):
+        model = 'sc.material.rental.order'
+        pending = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})
+        self.assertEqual({row['method'] for row in pending}, {'validate_tier', 'reject_tier', 'action_cancel'})
+        for state, method, purpose in [('approved', 'action_activate', 'start_execution'), ('active', 'action_return', 'complete'), ('returned', 'action_settle', 'complete')]:
+            rows = self._general_contract_actions(state, model=model)
+            row = next(row for row in rows if row['method'] == method)
+            self.assertEqual(row['action_semantics']['purpose'], purpose)
+            self.assertFalse(any(row['method'] == 'validate_tier' for row in rows))
+        self.assertEqual({row['method'] for row in self._general_contract_actions('returned', model=model)}, {'action_settle'})
+
     def test_labor_execution_family_confirmation_projection(self):
         for model in ('sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'):
             rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})

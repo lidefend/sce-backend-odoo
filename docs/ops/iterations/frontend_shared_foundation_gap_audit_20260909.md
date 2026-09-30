@@ -8262,3 +8262,14 @@ L1 rental-plan-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未�
 53.93结果：一次受管模块升级/reload f9b24b174成功；rental-plan-runtime.log10/10 PASS、ROLLBACK VERIFIED，原配置/步骤恢复及全部临时记录消失。建单sudo、真实reviewer，不扩大为实际角色全业务旅程。
 
 P4 browser计划类允许范围扩至租赁计划，rental-plan-page-iteration.log/node检查PASS。创建tpl07-1790784243489 14 PASS：有效契约/官方表单/编号隐藏/旧直接确认退出/双视口/无错误及业务写，390截图项目/计划日期/进退场/用途/供应商/合同输入可见。已有记录tpl07-1790784253465 PM api.data ok=true records=[]，停第2项，记录办理数据前置不足；不造fixture/扩权/重复空查询。前端7915f3bb9复用未构建，后端f9b24b174。合同/供应商真实关联负例及完整角色保存办理未证明；租赁执行/结算与安全/分包等剩余职责继续推进，detail.action-state/总体67保持开放。
+
+
+### 53.94 租赁单审批与执行职责分离（源码阶段）
+
+P1材料租赁单复用shared policy/tier，项目公司及amount_total为配置权威。新增submitted/approved，提交无配置自动approved、有配置真实review；回调只审批不启用。action_activate仅approved+审批事实后执行，action_return仍active、action_settle仍returned，各自保留业务锚点校验。状态写私有令牌，非draft直接create拒绝；历史active后的执行不被重新审批配置反向解释。cancel保留既有active可取消，新增pending/approved可取消，returned/settled不可取消。
+
+原native/schema把action_settle当approve及returned可取消的漂移纠正：approve/reject仅真实tier，activate=start_execution，return_rental及complete=complete；返回与结算各有精确方法身份。native提交/tier/状态栏/编号同步，表单不加入模型猜测。新增P1动作声明return_rental复用既有complete语义，不新增前端词汇。
+
+L1 rental-order-iteration.log PASS；首次unit新增测试括号错误，修正后rental-order-unit-fixed.log83 PASS（新增完整submit→approve→activate→return→settle及重复/提前操作边界）；rental-order-native.log8+48=56 PASS，rental-order-semantics.log15 PASS，XML2解析/重复ID及diff PASS；非零回执登记。尚未模块升级/运行/页面验收，需下一批一次受管升级及scope验证；不重验租赁计划10或其他独立ORM，前端未改不构建。
+
+额外明确P1产品缺口：租赁结算action_paid只把confirmed改paid，没有读取实际支付事实；当前payment_request_id检查仅项目与收款方一致，不能证明已付款。审批接入不能把该动作视为真实付款闭环，应在租赁结算职责批次补齐支付事实权威或保留明确未交付状态，不能用按钮/状态变更冒充实际支付。总体67仍开放。

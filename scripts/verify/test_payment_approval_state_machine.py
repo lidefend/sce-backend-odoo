@@ -1021,6 +1021,41 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def test_rental_order_approval_does_not_execute_rental(self):
+        path = MODEL.with_name('material_rental.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalOrder')
+        names = {'action_submit', 'action_activate', 'action_return', 'action_settle', 'action_cancel', 'action_on_tier_approved'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, '_': lambda text: text, 'fields': types.SimpleNamespace(Date=types.SimpleNamespace(context_today=lambda record: '2026-10-01'))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            rec._name = 'sc.material.rental.order'
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            checks = []
+            rec._check_business_anchor = lambda: checks.append('anchor')
+            with self.assertRaises(ValueError): ns['action_activate'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError): ns['action_activate'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            ns['action_activate'](rec)
+            self.assertEqual(rec.state, 'active')
+            rec.data['actual_return_date'] = False
+            ns['action_return'](rec)
+            self.assertEqual(rec.state, 'returned')
+            self.assertEqual(rec.actual_return_date, '2026-10-01')
+            with self.assertRaises(ValueError): ns['action_cancel'](rec)
+            ns['action_settle'](rec)
+            self.assertEqual(rec.state, 'settled')
+            self.assertEqual(len(checks), 4)
+            with self.assertRaises(ValueError): ns['action_settle'](rec)
+
     def test_labor_settlement_inputs_remain_editable_in_published_contract(self):
         path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
         record = ET.parse(path).find(".//record[@id='business_config_contract_sc_labor_settlement_p1_form_business_facts_v1']")

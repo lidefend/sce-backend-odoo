@@ -197,7 +197,11 @@ class ScMaterialRentalPlanLine(models.Model):
 class ScMaterialRentalOrder(models.Model):
     _name = "sc.material.rental.order"
     _description = "周转材料租赁单"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
     _order = "rental_date desc, id desc"
 
     name = fields.Char(string="租赁单号", required=True, default="新建", tracking=True)
@@ -239,7 +243,7 @@ class ScMaterialRentalOrder(models.Model):
     )
     line_ids = fields.One2many("sc.material.rental.order.line", "order_id", string="租赁明细")
     state = fields.Selection(
-        [("draft", "草稿"), ("active", "租赁中"), ("returned", "已退还"), ("settled", "已结算"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "审批中"), ("approved", "已审批待启用"), ("active", "租赁中"), ("returned", "已退还"), ("settled", "已结算"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         required=True,
@@ -277,18 +281,57 @@ class ScMaterialRentalOrder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(values.get("state", "draft") != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
                 vals["name"] = seq.next_by_code("sc.material.rental.order") or _("周转材料租赁单")
         return super().create(vals_list)
 
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_rental_approval_state_token") is not _RENTAL_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_rental_approval_state_token=_RENTAL_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
+
+    def action_submit(self):
+        for record in self:
+            if record.state not in ("draft", "submitted"):
+                raise UserError(_("只有草稿或待重新提交的租赁单可以提交。"))
+            record._check_business_anchor()
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+        return True
+
     def action_activate(self):
         for record in self:
-            if record.state != "draft":
-                raise UserError(_("只有草稿租赁单可以启用。"))
+            if record.state != "approved":
+                raise UserError(_("只有已审批租赁单可以启用。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record._check_business_anchor()
-            record.write({"state": "active"})
+            record._write_approval_state({"state": "active"})
         return True
 
     def action_return(self):
@@ -296,7 +339,7 @@ class ScMaterialRentalOrder(models.Model):
             if record.state != "active":
                 raise UserError(_("只有租赁中的租赁单可以退还。"))
             record._check_business_anchor()
-            record.write({"state": "returned", "actual_return_date": record.actual_return_date or fields.Date.context_today(record)})
+            record._write_approval_state({"state": "returned", "actual_return_date": record.actual_return_date or fields.Date.context_today(record)})
         return True
 
     def action_settle(self):
@@ -304,14 +347,14 @@ class ScMaterialRentalOrder(models.Model):
             if record.state != "returned":
                 raise UserError(_("只有已退还的租赁单可以结算。"))
             record._check_business_anchor()
-            record.write({"state": "settled"})
+            record._write_approval_state({"state": "settled"})
         return True
 
     def action_cancel(self):
         for record in self:
-            if record.state not in ("draft", "active"):
-                raise UserError(_("只有草稿或租赁中的租赁单可以取消。"))
-            record.write({"state": "cancel"})
+            if record.state not in ("draft", "submitted", "approved", "active"):
+                raise UserError(_("只有尚未退还或结算的租赁单可以取消。"))
+            record._write_approval_state({"state": "cancel"})
         return True
 
     def _check_business_anchor(self):
