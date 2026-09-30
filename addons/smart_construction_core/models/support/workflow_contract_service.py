@@ -563,8 +563,26 @@ class ScWorkflowContractService(models.AbstractModel):
         )),
         **_confirm_done_profiles((
             "sc.fund.account.operation",
-            "sc.plan",
         )),
+        "sc.plan": {
+            "state_field": "state",
+            "state_phase": {
+                "draft": "draft", "confirmed": "approved", "in_progress": "open",
+                "done": "done", "cancel": "cancelled",
+            },
+            "state_actions": {
+                "draft": ["submit", "cancel"],
+                "confirmed": ["activate", "cancel"],
+                "in_progress": ["complete", "cancel"],
+                "cancel": ["reopen"],
+            },
+            "method_by_action": {
+                "submit": "action_confirm", "activate": "action_start",
+                "complete": "action_done", "cancel": "action_cancel",
+                "reopen": "action_reset_draft",
+            },
+            "label_by_action": {"submit": "确认"},
+        },
         "sc.construction.diary": {
             "state_field": "state",
             "state_phase": {
@@ -842,8 +860,8 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.project.document": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "review": "under_review", "done": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "review": ["approve", "cancel"]},
-            "method_by_action": {"submit": "action_submit", "approve": "action_approve", "cancel": "action_cancel"},
+            "state_actions": {"draft": ["submit", "cancel"], "review": ["approve", "cancel", "reopen"], "done": ["reopen"], "cancel": ["reopen"]},
+            "method_by_action": {"submit": "action_submit", "approve": "action_approve", "cancel": "action_cancel", "reopen": "action_reset_to_draft"},
             "label_by_action": {"approve": "归档", "cancel": "作废"},
         },
         "sc.safety.patrol.task": {

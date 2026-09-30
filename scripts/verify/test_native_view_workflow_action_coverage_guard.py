@@ -24,7 +24,7 @@ def _baseline() -> dict:
 
 
 class NativeViewActionCoverageGuardTest(unittest.TestCase):
-    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False):
+    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract"):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
@@ -32,7 +32,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         assignment = next(n for n in ast.walk(tree) if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "ACTIONS" for t in n.targets))
         namespace = {}
         exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment, method], type_ignores=[])), str(DEFAULT_SERVICE), "exec"), namespace)
-        record = SimpleNamespace(_name="sc.general.contract", id=23, can_review=can_review)
+        record = SimpleNamespace(_name=model, id=23, can_review=can_review)
         service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, [])
 
@@ -103,6 +103,32 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 execute()
             self.assertEqual(record.state, state)
 
+    def test_plan_start_is_published_only_after_confirmation(self):
+        for state in ("draft", "confirmed", "in_progress", "done", "cancel"):
+            actions = self._general_contract_actions(state, model="sc.plan")
+            starts = [a for a in actions if a["method"] == "action_start"]
+            self.assertEqual(bool(starts), state == "confirmed")
+            if starts:
+                self.assertEqual(starts[0]["action_semantics"]["purpose"], "start_execution")
+
+    def test_plan_completion_and_reopening_follow_model_preconditions(self):
+        for state in ("draft", "confirmed", "in_progress", "done", "cancel"):
+            methods = [a["method"] for a in self._general_contract_actions(state, model="sc.plan")]
+            self.assertEqual("action_done" in methods, state == "in_progress")
+            self.assertEqual("action_reset_draft" in methods, state == "cancel")
+
+    def test_document_reset_is_declared_for_existing_non_draft_states(self):
+        for state in ("draft", "review", "done", "cancel", "unknown"):
+            actions = self._general_contract_actions(state, model="sc.project.document")
+            resets = [a for a in actions if a["method"] == "action_reset_to_draft"]
+            self.assertEqual(bool(resets), state in ("review", "done", "cancel"))
+            if resets:
+                self.assertEqual(resets[0]["action_semantics"]["purpose"], "reopen")
+
+    def test_plan_fix_does_not_add_start_to_other_shared_profile_consumers(self):
+        profile = load_profiles()["sc.fund.account.operation"]
+        self.assertNotIn("action_start", profile["method_by_action"].values())
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 
@@ -160,7 +186,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         # through a **_helper(...) call was silently left unscanned.
         models = adopted_models()
         for helper_built in (
-            "sc.plan",
+            "sc.fund.account.operation",
             "sc.equipment.plan",
             "sc.quality.issue",
             "sc.material.settlement",
@@ -169,9 +195,9 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
 
     def test_a_helper_built_model_transition_must_be_registered(self) -> None:
         payload = _baseline()
-        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_start"]
+        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_create_remaining_payment_request"]
         errors = validate(payload)
-        self.assertTrue(any("action_start" in error for error in errors))
+        self.assertTrue(any("action_create_remaining_payment_request" in error for error in errors))
 
 
 if __name__ == "__main__":

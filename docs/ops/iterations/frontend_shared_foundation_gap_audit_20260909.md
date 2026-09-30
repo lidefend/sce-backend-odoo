@@ -7500,3 +7500,12 @@ L5：未推送、未合并、未部署。
 - L1首次ci.local.iteration失败为run范围未登记config/contract路径；明确登记本次已有契约清单路径后重跑PASS（general-sign-iteration-final.log）。未用全量Quick排错。L2 native_view.workflow_action_coverage 8+17=25通过（general-sign-coverage-final.log；begin/record25），真实运行生产_available_actions与action_signed函数，覆盖合法来源、终态拒绝、审批未完成不签署、必要业务锚点、reviewer动作不可冒领。workflow_action_semantics.guard 15项通过（general-sign-contract.log）；page_pattern_reference_parity 28通过，67条/1开放项（general-sign-ledger.log）。台账随后仅恢复原紧凑格式，JSON语义逐值相等，不重跑相同断言。
 - 上述函数级测试不等于ORM权限或真实页面执行证明。L3受管后端重载、L4现有角色有效契约/实际动作定向验收仍待执行；无字段/XML/manifest变更，不需要模块升级，前端构建输入不变，不重建5180。当前未写业务数据库，未创建fixture。下一步补运行态身份/授权证据，再处理付款审批、付款冲销、计划启动、文档回草稿四条。行业无关审计97词法命中亦保留，需按现有分类证据处理，不能假称97业务缺陷或直接豁免。
 - 状态：本节实现及纯测试完成，产品缺口verification_pending；整体目标active。主线未集成、目标未部署、整体用户验收未完成。回滚为本节P1声明与覆盖登记的同批回退，不涉及数据恢复。
+
+
+### 53.16 同族补齐计划启动与文档回草稿
+
+- d88ae3e41 clean起步，沿53.15 P1/workflow contract范围。核对原业务方法和原生按钮后，为sc.plan声明confirmed→action_start（activate/start_execution），为sc.project.document的review/done/cancel声明action_reset_to_draft（reopen）。未改P0词汇、业务方法或端侧规则。
+- 计划不再继承与模型前置条件冲突的通用完成/回草稿状态：完成仅in_progress，回草稿仅cancel；不向sc.fund.account.operation推广计划专属动作。原生计划视图仍有confirmed显示完成、非draft显示重置的旧宽条件，当前有效workflow声明不再赋予这些无效操作语义；原生视图一致性及运行态效果仍待定向收口，不能据单测宣布完整关闭。
+- L1 ci.local.iteration PASS。L2 native coverage 8+21=29通过（native-state-contract.log，begin/record29）；同一次命令的state_phase guard发现sc.plan旧dead-state登记已失效，分类为随产品修复而过期的证据登记。移除该精确条目后phase16、semantics15通过（native-state-phases-final.log）。无全量ORM、fixture写入、前端重建。后端运行态重载仍待执行。
+- 已知登记内未声明状态动作5→3（含53.15签署则剩2）：付款action_set_approved、付款执行action_reverse_payment；签署/计划/文档的运行态验收未闭合，67条中的detail.action-state继续开放。源码同时发现native coverage把各模型方法名汇成全局集合，存在同名方法跨模型误覆盖的验证工具缺陷；目前计数只代表已登记集合，不证明全系统仅余2个缺口。下一步必须按(model,method)验证，补可证伪测试，不能以全局方法存在消项。
+- 本批P1声明及纯测试完成，整体继续active；不推送、合并或目标部署。

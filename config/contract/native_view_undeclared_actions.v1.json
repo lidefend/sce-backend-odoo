@@ -184,20 +184,6 @@
       "reason": "opens a related record or view; it changes no record state"
     },
     {
-      "model": "sc.plan",
-      "method": "action_start",
-      "class": "state_transition_undeclared",
-      "occurrences": 1,
-      "reason": "writes state confirmed -> in_progress; the profile declares `complete`/`reopen`/`cancel` but no action that enters the in_progress phase"
-    },
-    {
-      "model": "sc.project.document",
-      "method": "action_reset_to_draft",
-      "class": "state_transition_undeclared",
-      "occurrences": 1,
-      "reason": "returns a record to draft; the profile declares no reopen action for this model"
-    },
-    {
       "model": "sc.receipt.income",
       "method": "action_view_company_contractor_responsibility_summary",
       "class": "navigation",

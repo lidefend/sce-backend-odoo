@@ -37,10 +37,10 @@ class WorkflowContractProfileLoaderTest(unittest.TestCase):
 
     def test_helper_built_profiles_are_loaded(self) -> None:
         profiles = load_profiles()
-        # sc.plan arrives through **_confirm_done_profiles((...)), never as an
+        # sc.fund.account.operation arrives through **_confirm_done_profiles((...)), never as an
         # inline literal, so a pattern-matching reader would drop it.
-        self.assertIn("sc.plan", profiles)
-        self.assertIn("state_phase", profiles["sc.plan"])
+        self.assertIn("sc.fund.account.operation", profiles)
+        self.assertIn("state_phase", profiles["sc.fund.account.operation"])
 
     def test_declared_methods_include_helper_bindings(self) -> None:
         methods = declared_methods(load_profiles())

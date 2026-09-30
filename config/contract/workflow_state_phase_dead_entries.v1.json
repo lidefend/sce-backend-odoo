@@ -17,15 +17,6 @@
         "phase:legacy_confirmed"
       ],
       "reason": "the shared _confirm_done_profiles template declares both cancel/cancelled and legacy_confirmed; this model's Selection cannot produce the listed keys, so the entries are unreachable"
-    },
-    {
-      "model": "sc.plan",
-      "keys": [
-        "actions:cancelled",
-        "phase:cancelled",
-        "phase:legacy_confirmed"
-      ],
-      "reason": "the shared _confirm_done_profiles template declares both cancel/cancelled and legacy_confirmed; this model's Selection cannot produce the listed keys, so the entries are unreachable"
     }
   ]
 }

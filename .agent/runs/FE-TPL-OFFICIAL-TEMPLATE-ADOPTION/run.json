@@ -24,7 +24,8 @@
     "scripts/dev/frontend_acceptance_runtime.sh",
     "docs/architecture/unified_page_contract_v2/examples/",
     "frontend/packages/schema/src/index.ts",
-    "config/contract/native_view_undeclared_actions.v1.json"
+    "config/contract/native_view_undeclared_actions.v1.json",
+    "config/contract/workflow_state_phase_dead_entries.v1.json"
   ],
   "environment": {
     "kind": "offline",
@@ -196,7 +197,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Finish general-contract signing product-gap closure: scoped authorization/projection tests, governed backend reload and existing-role read-only effective-contract check. No frontend rebuild for backend-only declaration. Then resolve remaining 4 native state-action gaps and the bounded industry-audit debt; reuse completed TPL06A/LC01/TPL07/LC01B and segment53 evidence.",
+  "next_exact_step": "Correct native workflow coverage to bind model+method with a cross-model regression; reconcile actual uncovered state actions without broad unrelated scans. Finish native plan-button state parity, then governed reload/upgrade only as affected and verify signing/plan/document effective action authority. Reuse frontend build and business evidence.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -227,7 +228,7 @@
     },
     "inherited_gaps": [
       "industry_agnostic.guard: historical 97 lexical findings require bounded semantic adjudication; not a proven count of product defects",
-      "4 remaining native state transitions lack workflow declarations; general-contract signing now declared but runtime validation pending"
+      "2 registered state transitions remain undeclared; signing/plan/document runtime pending; global-method coverage can hide cross-model gaps and must be corrected"
     ],
     "presentation_segment_52": {
       "status": "passed",
@@ -394,6 +395,19 @@
       "runtime": "not_run; backend reload and effective authorization check pending",
       "remaining_undeclared_state_actions": 4,
       "ledger_open_items": 1
+    },
+    "native_state_projection_53_16": {
+      "status": "verification_pending",
+      "source_head": "d88ae3e41",
+      "targeted_tests": {
+        "native_coverage": 29,
+        "state_phase": 16,
+        "action_semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/native-state-phases-final.log",
+      "remaining_registered_state_actions": 2,
+      "coverage_limitation": "native coverage currently compares global method names; model-scoped proof must replace it",
+      "runtime": "not_run"
     }
   }
 }
