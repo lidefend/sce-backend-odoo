@@ -7840,3 +7840,13 @@ L5：未推送、未合并、未部署。
 
 - 运行回读：0a85b8168已通过受管acceptance.module.upgrade、backend.acceptance.up与health；原审批运行脚本34项PASS，其中税务7项全部PASS。实际tier review证明金额默认值在阈值匹配前就绪，真实审批仅confirmed未抵扣，驳回原因/审计和重提新链成立，启用但金额无匹配拒绝。末尾ROLLBACK=VERIFIED，原配置/步骤回读一致、临时对象不存在。日志tax-approval-{upgrade,backend,health,runtime}.log（同tpl52目录）。
 - 状态：本批代码及真实模型审批链验证通过，税务浏览器与实际财务抵扣仍未验收，不称全部业务接管完成；主线未集成、目标环境未部署、用户整体验收未完成。继续既有职责中剩余project.project/project.task配置与运行支持差距及其他必要单据，支持名单只记录覆盖进度。
+
+
+### 53.55 统一审批状态字段及任务执行真实回读
+
+- 02ee7299a clean起步，上一轮有实际税务接入/运行证据，归类progress。仅核对剩余项目/任务直接实现，未全仓盘点。P1 shared approval及project execution service负责状态消费，行业模型仍是业务权威；不向前端/P3配置写入硬编码状态语义。
+- 发现共享_assert_submission_approved固定record.state，不适用于task.sc_state/project.lifecycle_state。改为使用现有OCA tier声明的_state_field，兼容缺省state；审批实例仍须validated，不重新查询当前策略。生产方法测试覆盖两种字段与相矛盾state值、无审批/真实通过/等待/驳回，防止借另一状态字段放行。
+- task执行服务准备后原来直接假设ready、启动后假设in_progress；恢复/完成不论真实状态返回True。改为回读sc_state，只在真实目标状态才成功，并使用既有失败码。测试执行三个实际服务方法，覆盖正常推进与方法返回但未推进；待审批式draft停留不会继续调用start，不虚报恢复/完成。
+- L1 ci.local.iteration PASS（approval-state-field-iteration.log），后续直接服务变更py_compile及diff check通过；L2原审批注册目标57项PASS并begin/record57（approval-state-field-tests.log/receipt.log）。未改变视图/schema/前端，不构建或升级。当前运行仍0a85b8168，已有34项是该来源运行证据，不冒称本候选运行证明；税务等现有模型_state_field=state，逻辑分支等价，未受task service影响，不为安心重跑其旅程。
+- 项目/任务完整审批仍未完成：task_extend.action_prepare_task直接draft->ready；project_core.action_sc_submit直接draft->in_progress，write还集中校验生命周期权限与迁移。下一步任务tier配置/回调与执行服务等待响应共同接入；项目必须分开立项审批与实际启动，不能让统一审批自动启动项目。中央workflow未含这两模型，后续沿直接契约生产者/处理器适配，不复制渲染。
+- 总目标active；本次是必要共享前提与执行错误修复，不称全部单据接管。主线/目标部署/用户整体验收均未完成；无推送或合并。

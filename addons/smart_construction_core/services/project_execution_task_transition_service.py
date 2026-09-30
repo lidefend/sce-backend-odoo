@@ -77,10 +77,10 @@ class ProjectExecutionTaskTransitionService:
         try:
             if task_state == "draft" and hasattr(task, "action_prepare_task"):
                 task.action_prepare_task()
-                task_state = "ready"
+                task_state = ProjectExecutionStateMachine.normalize_task_state(task.sc_state)
             if task_state == "ready" and hasattr(task, "action_start_task"):
                 task.action_start_task()
-                task_state = "in_progress"
+                task_state = ProjectExecutionStateMachine.normalize_task_state(task.sc_state)
             ProjectTaskStateSupport.sync_kanban_state(task)
         except Exception:
             self._log_exception(
@@ -93,7 +93,7 @@ class ProjectExecutionTaskTransitionService:
         after_state = ProjectExecutionStateMachine.normalize_task_state(getattr(task, "sc_state", task_state))
         return (
             after_state == "in_progress",
-            "EXECUTION_TRANSITION_READY_TO_IN_PROGRESS",
+            "EXECUTION_TRANSITION_READY_TO_IN_PROGRESS" if after_state == "in_progress" else "EXECUTION_TASK_START_FAILED",
             self._task_telemetry(task, before_state=before_state, after_state=after_state),
         )
 
@@ -124,8 +124,8 @@ class ProjectExecutionTaskTransitionService:
             return False, "EXECUTION_TASK_COMPLETE_FAILED", self._task_telemetry(task, before_state=before_state)
         after_state = ProjectExecutionStateMachine.normalize_task_state(getattr(task, "sc_state", "done"))
         return (
-            True,
-            "EXECUTION_TRANSITION_IN_PROGRESS_TO_DONE",
+            after_state == "done",
+            "EXECUTION_TRANSITION_IN_PROGRESS_TO_DONE" if after_state == "done" else "EXECUTION_TASK_COMPLETE_FAILED",
             self._task_telemetry(task, before_state=before_state, after_state=after_state),
         )
 
@@ -150,8 +150,8 @@ class ProjectExecutionTaskTransitionService:
             return False, "EXECUTION_TASK_RECOVER_FAILED", self._task_telemetry(task, before_state=before_state)
         after_state = ProjectExecutionStateMachine.normalize_task_state(getattr(task, "sc_state", task_state))
         return (
-            True,
-            "EXECUTION_TRANSITION_BLOCKED_TO_READY",
+            after_state == "ready",
+            "EXECUTION_TRANSITION_BLOCKED_TO_READY" if after_state == "ready" else "EXECUTION_TASK_RECOVER_FAILED",
             self._task_telemetry(task, before_state=before_state, after_state=after_state),
         )
 

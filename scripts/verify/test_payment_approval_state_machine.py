@@ -380,6 +380,66 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         call()
 
+    def test_task_execution_reports_actual_transitions_only(self):
+        path = ROOT / 'addons/smart_construction_core/services/project_execution_task_transition_service.py'
+        names = {'_prepare_task_for_execution', '_complete_task_for_execution', '_recover_task_for_ready'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        import typing
+        namespace = {'Tuple': typing.Tuple, 'Dict': typing.Dict, 'Any': typing.Any,
+                     'ProjectExecutionStateMachine': types.SimpleNamespace(normalize_task_state=lambda value: value),
+                     'ProjectTaskStateSupport': types.SimpleNamespace(sync_kanban_state=lambda task: None)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Task:
+            id = 42
+            def __getitem__(self, key): return self
+        for operation, initial, target, action in (
+            ('_prepare_task_for_execution', 'draft', 'in_progress', 'action_start_task'),
+            ('_complete_task_for_execution', 'in_progress', 'done', 'action_mark_done'),
+            ('_recover_task_for_ready', 'draft', 'ready', 'action_prepare_task'),
+        ):
+            for advances in (True, False):
+                task = Task()
+                task.sc_state = initial
+                calls = []
+                task.action_prepare_task = lambda: setattr(task, 'sc_state', 'ready' if advances else initial)
+                def transition():
+                    calls.append(action)
+                    if advances: task.sc_state = target
+                if action != 'action_prepare_task': setattr(task, action, transition)
+                service = types.SimpleNamespace(
+                    _actionable_open_task=lambda *args, **kw: task,
+                    _project_tasks=lambda *args, **kw: task,
+                    _task_telemetry=lambda record, **kw: kw,
+                    _log_exception=lambda *args, **kw: None)
+                success, code, telemetry = namespace[operation](service, types.SimpleNamespace(id=7), task_id=42)
+                self.assertEqual(success, advances, (operation, code))
+                self.assertEqual(telemetry['after_state'], target if advances else initial)
+                if not advances:
+                    self.assertTrue(code.endswith('_FAILED'))
+                    if operation == '_prepare_task_for_execution': self.assertEqual(calls, [])
+
+    def test_execution_uses_declared_tier_state_field(self):
+        # Odoo task.state is independent of the construction task sc_state.
+        # A contradictory conventional state must never grant or deny execution.
+        for field_name, approved in (('sc_state', 'ready'), ('lifecycle_state', 'approved')):
+            for actual, conventional, reviews, status, allowed in (
+                ('draft', 'confirmed', [], 'no', False),
+                (approved, 'draft', [], 'no', True),
+                (approved, 'draft', ['tier'], 'validated', True),
+                (approved, 'confirmed', ['tier'], 'pending', False),
+                (approved, 'confirmed', ['tier'], 'rejected', False),
+            ):
+                with self.subTest(field=field_name, actual=actual, status=status):
+                    record = types.SimpleNamespace(
+                        _state_field=field_name, state=conventional,
+                        review_ids=reviews, validation_status=status, ensure_one=lambda: None)
+                    setattr(record, field_name, actual)
+                    call = lambda: PRODUCTION['_assert_submission_approved'](None, record, (approved,))
+                    if allowed:
+                        self.assertTrue(call())
+                    else:
+                        with self.assertRaises(ValueError): call()
+
     def test_finance_family_callbacks_require_real_review_outcomes(self):
         for filename in ('receipt_income', 'payment_execution', 'invoice_registration', 'financing_loan',
                          'self_funding_registration', 'treasury_reconciliation', 'settlement_adjustment'):

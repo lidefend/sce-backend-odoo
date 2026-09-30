@@ -251,12 +251,13 @@
         "addons/smart_construction_core/models/core/construction_diary.py",
         "addons/smart_construction_core/views/core/construction_diary_views.xml",
         "addons/smart_construction_core/models/core/tax_deduction_registration.py",
-        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml"
+        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml",
+        "addons/smart_construction_core/services/project_execution_task_transition_service.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.54 tax shared approval implemented and upgraded at 0a85b8168; real approval runtime34 (tax7) passes with rollback verified. Continue all-business-document scope using existing workflow responsibilities: resolve remaining project.project/project.task config-vs-runtime support gaps and required document adapters; tax browser/actual deduction still uncovered. Reuse unchanged plan/diary create evidence and tax approval evidence; no broad scan or unrelated ORM.",
+  "next_exact_step": "53.55 shared assertion uses native tier _state_field; task execution service reads actual prepare/start states and rejects false completion/recovery success,57 tests pass. Next integrate project.task in models/support/task_extend.py (_state_field=sc_state, draft->ready) with configured tier flow, then align services/project_execution_task_transition_service.py pending outcome/consumer. Project core action_sc_submit currently starts in_progress directly; must separate approval and start preserving permission/write lifecycle guard. No project/task workflow profile in current central service; inspect direct contract producer/handlers before adding new rendering logic. Backend still0a85b8168; consolidate upgrade/reload after model/schema adoption. All-document scope active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -834,6 +835,14 @@
         "log": "artifacts/frontend-web-fix-20260928/tpl52/tax-approval-runtime.log"
       },
       "remaining": "tax browser and actual finance deduction not covered; continue other required documents, not limited by policy registry"
+    },
+    "approval_state_field_53_55": {
+      "candidate": "02ee7299a plus shared approval/task transition/tests dirty scope",
+      "l1": "iteration passed; changed service and policy py_compile + diff check passed",
+      "l2": 57,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-state-field-tests.log",
+      "runtime": "not loaded; existing 34 tax/expense/plan/diary/event observations remain source evidence, not new candidate runtime proof",
+      "remaining": "project/task real approval/config/adapters/native contract and execution service pending response integration"
     }
   }
 }

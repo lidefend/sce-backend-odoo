@@ -369,7 +369,8 @@ class ScApprovalPolicy(models.Model):
     def _assert_submission_approved(self, record, approved_states):
         """Consume the completed submission, not today's configuration."""
         record.ensure_one()
-        if record.state not in approved_states:
+        state_field = getattr(record, "_state_field", "state")
+        if getattr(record, state_field) not in approved_states:
             raise UserError(_("请先提交单据并完成审批，再执行后续办理。"))
         if record.review_ids and record.validation_status != "validated":
             raise UserError(_("单据的审批实例尚未通过，不能执行后续办理。"))
