@@ -1056,6 +1056,22 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def test_rental_settlement_payment_link_cannot_manufacture_paid_fact(self):
+        path = MODEL.with_name('material_rental.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'action_paid', '_payment_confirmation_blocker'}]
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for request in (False, types.SimpleNamespace(is_fully_paid=True, paid_amount_total=100)):
+            rec = self._purchase_request_record(state='confirmed')
+            rec.payment_request_id = request
+            rec._check_business_anchor = lambda: None
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            rec._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](rec)
+            with self.assertRaisesRegex(ValueError, 'RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE'):
+                ns['action_paid'](rec)
+            self.assertEqual(rec.state, 'confirmed')
+
     def test_rental_settlement_approval_requires_explicit_confirmation(self):
         path = MODEL.with_name('material_rental.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')

@@ -539,11 +539,23 @@ class ScMaterialRentalSettlement(models.Model):
             record._write_approval_state({"state": "confirmed"})
         return True
 
+    def _payment_confirmation_blocker(self):
+        # Exit this product gap only when settlement-specific allocation and
+        # reversal authority exist. A request link or its paid total alone
+        # does not prove that this settlement has been paid.
+        return {
+            "reason_code": "RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE",
+            "message": _("租赁结算尚未建立付款归属与冲销校验，不能确认已支付；关联付款申请不代表本结算已付款。"),
+        }
+
     def action_paid(self):
         for record in self:
             if record.state != "confirmed":
                 raise UserError(_("只有已确认租赁结算可以支付。"))
             record._check_business_anchor()
+            blocker = record._payment_confirmation_blocker()
+            if blocker:
+                raise UserError("[%s] %s" % (blocker["reason_code"], blocker["message"]))
             record._write_approval_state({"state": "paid"})
         return True
 

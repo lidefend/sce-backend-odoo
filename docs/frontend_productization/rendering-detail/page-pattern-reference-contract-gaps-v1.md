@@ -373,3 +373,8 @@ P1 publication now inherits native editability for14 input fields while9 state/c
 ### Segment53.97 — Rental settlement approval contract, source only
 
 P1 shared approval now separates submission/review from explicit settlement confirmation. Configured review and unconfigured automatic approval stop at approved; native/workflow actions agree.85 state-machine,57 native-action and15 semantics tests pass. No runtime upgrade or page acceptance yet. Existing action_paid still lacks authoritative settlement-specific payment attribution; canonical request paid total alone is insufficient, and receipt/expense terminal-cash ownership cannot be relabeled as rental settlement authority. Resolve payment basis/allocation and reversal before runtime finalization. Retain detail.action-state contract_gap and all-business scope.
+
+
+### Segment53.98 — Payment attribution gap fails closed, still a product gap
+
+Rental settlement retains action_paid declaration but refuses paid mutation until settlement-specific payment attribution/reversal authority exists. The shared backend evidenceGate disables only this payment action with RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE and a visible explanation; no frontend guessing or silent feature removal.86 state-machine and58 native-action tests pass, including an otherwise fully-paid linked request not proving settlement payment. This is containment, not payment delivery. Next add the formal rental settlement payment basis and authoritative allocated/remaining facts with reversal checks; retain all67 scope and detail.action-state contract_gap.

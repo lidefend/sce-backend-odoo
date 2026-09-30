@@ -113,6 +113,31 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertFalse(any(row['method'] == 'validate_tier' for row in rows))
         self.assertEqual({row['method'] for row in self._general_contract_actions('returned', model=model)}, {'action_settle'})
 
+    def test_rental_payment_gap_is_visible_and_blocks_only_payment(self):
+        tree = ast.parse(DEFAULT_SERVICE.read_text())
+        methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in {'_evidence_gate', '_gate'}]
+        for method in methods:
+            method.decorator_list = []
+        ns = {}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[])), str(DEFAULT_SERVICE), 'exec'), ns)
+        path = DEFAULT_SERVICE.parents[1] / 'core/material_rental.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_confirmation_blocker')
+        ns['_'] = lambda text: text
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        record = SimpleNamespace(_name='sc.material.rental.settlement', state='confirmed')
+        record._payment_confirmation_blocker = lambda: ns['_payment_confirmation_blocker'](record)
+        service = SimpleNamespace()
+        service._gate = lambda *args, **kw: ns['_gate'](service, *args, **kw)
+        gates = ns['_evidence_gate'](service, record)
+        rows = self._general_contract_actions('confirmed', model=record._name, evidence_gate=gates)
+        payment = next(row for row in rows if row['method'] == 'action_paid')
+        self.assertFalse(payment['enabled'])
+        self.assertEqual(payment['reason_code'], 'RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE')
+        self.assertTrue(payment['blocked_message'])
+        self.assertTrue(next(row for row in rows if row['method'] == 'action_cancel')['enabled'])
+        record.state = 'approved'
+        self.assertEqual(ns['_evidence_gate'](service, record), [])
+
     def test_rental_settlement_review_and_confirmation_are_distinct(self):
         model = 'sc.material.rental.settlement'
         for reviewer in (False, True):
@@ -174,7 +199,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertNotIn("validate_tier", [row["method"] for row in available])
         self.assertEqual(namespace["_declared_actions"](service, {"method_by_action": {"undeclared": "action_guess"}}), [])
 
-    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None):
+    def _general_contract_actions(self, state, *, approval_phase="none", can_review=False, model="sc.general.contract", record_fields=None, evidence_gate=None):
         # Execute the shipped projection method, not a duplicate of its algorithm.
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_available_actions")
@@ -188,7 +213,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                        for field, operator, value in domain)
         record = SimpleNamespace(_name=model, id=23, can_review=can_review, filtered_domain=matches)
         service = SimpleNamespace(ACTIONS=namespace["ACTIONS"])
-        return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, [])
+        return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, evidence_gate or [])
 
     def test_general_contract_signing_binds_the_existing_business_method(self):
         for state in ("draft", "confirmed"):

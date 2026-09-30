@@ -8308,3 +8308,12 @@ L1 rental-order-input-iteration.log/node/diff PASS，rental-order-input-unit.log
 L1 rental-settlement-iteration.log PASS，XML2解析/重复ID及diff检查PASS。L2 rental-settlement-unit.log85 PASS（新增配置分流、真实审批/驳回重提、直接state写拒绝、审批不执行确认、重复确认拒绝）；rental-settlement-native.log8+49=57 PASS（reviewer动作差异/确认独立于审批和支付）；rental-settlement-semantics.log15 PASS。非零run回执已记录。这些纯测试不证明真实tier/database行为。
 
 L3/L4 not_run：支付事实缺口需先补齐，新增字段/XML需一次受管升级后再跑租赁结算scope及官方页面；不提前升级不完整候选。后端仍2d7eab703，前端7915f3bb9未变不构建。未重跑独立租赁计划/订单或无关ORM。L5不适用当前迭代，无推送/合并/目标部署。台账detail.action-state保持contract_gap，总体67与实际角色旅程未完成。
+
+
+### 53.98 租赁支付缺口显式阻断（非支付交付）
+
+候选b55b568d5+dirty，P1 smart_construction_core租赁结算模型与既有workflow evidenceGate。直接核对payment_request的付款依据：standard settlement/material settlement/contract/line settlement存在，rental settlement尚无正式依据载体。单向payment_request_id及其canonical posted paid total不能证明租赁结算归属；终态现金认领另属receipt/expense，不应混用。下一步正式依据必须支持结算到付款申请的明确身份、项目/公司/供应商/币种一致、金额分配及冲销后事实恢复，不强加“一张结算只能一张申请”。
+
+本次先修复已知虚假结果：模型_payment_confirmation_blocker明确返回RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE；action_paid直接调用同样拒绝，仍保留方法/动作声明，workflow evidenceGate只禁用confirmed下的complete并提供中文原因。审批/确认结算不受此缺口门禁影响。前端复用既有enabled/reason_code/blocked_message，不隐藏功能或加入模型分支。退出条件是正式付款归属与冲销权威及定向验收齐备，不能把禁用付款当作功能完成。
+
+L1 rental-payment-gap-iteration.log及diff PASS；L2 rental-payment-gap-unit.log86 PASS：新增无关联/关联足额付款申请均不能制造paid事实；rental-payment-gap-native.log8+50=58 PASS：执行真实evidenceGate和availableActions，支付保留声明但禁用且原因非空，确认结算不被阻断。支付事实、冲销、实际权限仍未验收。非零回执登记。前端未改不构建，受管后端仍2d7eab703，L3/L4尚未执行，L5不在本轮；无环境变动/持久fixture/无关ORM/推送合并部署。整体67及支付缺口继续开放，下一步建设正式租赁付款依据，不停在临时阻断。

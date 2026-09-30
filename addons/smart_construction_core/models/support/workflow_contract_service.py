@@ -1281,6 +1281,10 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _evidence_gate(self, record):
+        if record._name == "sc.material.rental.settlement" and record.state == "confirmed":
+            blocker = record._payment_confirmation_blocker()
+            if blocker:
+                return [self._gate(blocker["reason_code"], blocker["message"], action_keys=["complete"])]
         if record._name == "sc.expense.claim":
             return self._expense_claim_evidence_gate(record)
         if record._name == "sc.settlement.order":
