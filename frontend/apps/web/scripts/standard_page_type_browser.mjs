@@ -8,7 +8,28 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const base = 'http://127.0.0.1:5180';
 const out = path.join(root, 'artifacts/frontend-web-fix-20260928', `tpl07-${Date.now()}`);
-const report = { status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [] };
+const report = { status: 'not_run', assertions: [], calls: [], errors: [], forbiddenWrites: [], introduceContract: null };
+// The introduce entry and dialog are contract driven: the probe reads the
+// declared vocabulary from the effective contract response, so it can assert
+// that the page renders the declared terms instead of a local rebuild.
+function findIntroduceConfig(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 14) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const hit = findIntroduceConfig(item, depth + 1);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (node.componentKey === 'sc.payment.settlement_detail_collection' && node.componentConfig?.introduceDialog) {
+    return { introduceLabel: node.componentConfig.introduceLabel, dialog: node.componentConfig.introduceDialog };
+  }
+  for (const value of Object.values(node)) {
+    const hit = findIntroduceConfig(value, depth + 1);
+    if (hit) return hit;
+  }
+  return null;
+}
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
@@ -35,6 +56,10 @@ async function login(role) {
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
         const result = await response.json();
         report.calls.push({ role, model: body.params.model, domain: body.params.domain, order: body.params.order, offset: body.params.offset || 0, limit: body.params.limit, ids: result.data?.records?.map((row) => row.id) || [] });
+      }
+      if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
+        const found = findIntroduceConfig(await response.json());
+        if (found) report.introduceContract = found;
       }
     } catch { /* only JSON list responses are observations */ }
   });
@@ -146,6 +171,32 @@ try {
   check('payment: return keeps page and set', JSON.stringify(report.calls.filter((call) => call.model === 'payment.request').at(-1).ids) === JSON.stringify(next.ids));
   await form(p, '/f/payment.request/1813?menu_id=545&action_id=775', 'payment-master-detail');
   check('payment: master detail extension preserved', await p.locator('[data-field-type="one2many"]').count() > 0);
+  // The introduce action and its dialog must render the terms the effective
+  // contract declares, and a contract gap must surface instead of being
+  // rebuilt locally from production copy.
+  const declaredIntroduce = report.introduceContract;
+  check('payment: introduce contract published to the page', Boolean(declaredIntroduce?.dialog?.title && declaredIntroduce?.introduceLabel));
+  const introduceEntry = p.locator('[data-contract-entry-label]');
+  check('payment: introduce entry carries the declared label', await introduceEntry.count() === 1);
+  check(
+    'payment: introduce entry text is the declared label',
+    (await introduceEntry.innerText()).trim() === String(declaredIntroduce.introduceLabel).trim(),
+  );
+  check('payment: no introduce contract gap rendered', await p.locator('[data-contract-semantic-gap]').count() === 0);
+  await introduceEntry.click();
+  const introduceDialog = p.locator('[data-dialog-purpose="payment-settlement-introduce"]');
+  await introduceDialog.waitFor();
+  check(
+    'payment: introduce dialog uses the declared title',
+    await introduceDialog.getByText(String(declaredIntroduce.dialog.title), { exact: false }).count() > 0,
+  );
+  check(
+    'payment: introduce dialog uses the declared confirm label',
+    await p.getByRole('button', { name: String(declaredIntroduce.dialog.confirmLabel), exact: true }).count() > 0,
+  );
+  await p.screenshot({ path: path.join(out, 'payment-introduce-dialog.png') });
+  await p.keyboard.press('Escape');
+  await p.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
   await form(p, '/r/payment.request/1813?menu_id=545&action_id=775', 'payment-readonly', 'readonly');
   await p.setViewportSize({ width: 390, height: 844 });
   check('payment detail: narrow page contained', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));

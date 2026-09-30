@@ -5471,3 +5471,141 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 ### 状态
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+
+## 段 37｜把「从结算单引入」弹窗的行业词汇收回 P1 契约，并让前端在契约缺口处失败关闭（2026-09-30）
+
+### 1. 本轮触发
+
+`verify.frontend.industry_agnostic.guard`（收敛门禁，`policy.target=zero`）报告里，
+`components/professional-fields/PaymentSettlementIntroduceDialog.vue` 是**单一最大命中点（31/127）**。
+逐条看下去，这不是「行业词汇恰好出现在通用组件里」，而是更严重的形态：
+**弹窗自带一整套行业文案与载荷键名，因此即使有效契约什么都不声明，它仍然能凭本地硬编码
+拼出一个看起来可用的办理流程——契约缺口被永久隐藏。** 这正是本专题要消掉的形态。
+
+### 2. 权威归属（先定边界，再改代码）
+
+| 事项 | 权威 | 本轮处理 |
+|---|---|---|
+| 弹窗标题/描述/占位/列头/状态/历史/模式/按钮文案 | P1 施工行业标准（`smart_construction_core`） | 由既有 normalizer 经 `componentConfig` 声明 |
+| 载荷键名（`payment_request_id`/`settlement_id`/…） | 后端真实参数名，同样属 P1 契约面 | 由契约声明，前端只按声明取值 |
+| 如何呈现、何时启用入口、缺口如何显现 | 端侧适配 | 前端负责，且必须 fail-closed |
+
+这**不是新发明**：同一组件家族早已用 `introduceLabel` / `optionalDetails` / `amountBinding` /
+`actionRefs` 驱动前端，并有既有测试断言。本段只是把「引入弹窗」这一块补进同一模式。
+
+### 3. 改动
+
+**A. P1 契约声明**（`addons/smart_construction_core/core_extension_contract_normalizers.py`）
+在既有 `introduceLabel` / `actionRefs` 之外新增 `introduceDialog` 块（36 个叶子键：
+文案、列头、状态、历史、模式、提示、`payloadFields` 七个真实参数名）。
+`actionRefs` 三个动作身份保持不变（`payment.request.settlement.search` / `.preview` /
+`payment.request.add.settlement.lines`）。
+
+**B. 前端消费 + 失败关闭**
+- 新增 `paymentSettlementIntroduceDialogModel.ts`：`SETTLEMENT_INTRODUCE_REQUIRED_PATHS`（44 条），
+  `resolveSettlementIntroduceContract()` 逐路径解析；**空白值也算缺口**；**无任何默认值**；
+  `requireSettlementIntroduceContract()` 为调用方提供失败关闭入口。
+- `PaymentSettlementDetailCollectionControl.vue`：契约就绪才渲染入口按钮并挂载弹窗；
+  不就绪则**不渲染入口、不挂载弹窗**，只渲染禁用按钮 + 缺口提示（点名缺失路径）。
+- `PaymentSettlementIntroduceDialog.vue`：全部模板文案、三个 intent 身份、七个载荷键改为
+  `contract.*`；删除 `requiredActionRef` 猜测函数与 `contract_id` 字段。
+  弹窗内 `付款|结算|合同|明细|名称|状态|取消|搜索|引入` 命中数 = **0**。
+
+**C. 守卫与反例**
+- `frontend_professional_detail_collection_guard.py`：AST 解析 normalizer 声明的叶子路径，
+  与前端 `REQUIRED_*` 数组**两侧比对**（`unrequired=` / `undeclared=` 分别报），
+  并禁止弹窗内出现载荷键/动作猜测/行业词。单测 43 → **44 项**。
+- 新增 `payment_settlement_introduce_dialog_contract_test.ts`（**67 例**）：
+  逐条 44 个必需路径单独删除/置空都必须失败关闭并点名。
+
+**D. 派生清单**（生成器权威输出，非放宽阈值）
+`generate_frontend_rendering_detail_inventory.py` 的期望条目由字面 `data-dialog-purpose`
+改为契约绑定的 `:data-dialog-purpose="contract.purpose"`；三份清单 digest 按实际源码刷新。
+
+**E. 浏览器定向断言**（复用既有 `standard_page_type_browser.mjs`，不新建 harness）
+从**有效契约响应**里取出声明词汇，再断言页面渲染的就是声明值：
+入口标签 == `introduceLabel`、弹窗标题 == `introduceDialog.title`、
+确认按钮 == `introduceDialog.confirmLabel`、页面上无 `data-contract-semantic-gap`。
+
+**F. 后端组件测试**：`test_core_extension_v2_finalize.py` 补 `introduceDialog` 全量断言
+（purpose/title/cancel/confirm/recordRequiredMessage/`columnLabels` 全字典/`payloadFields` 全字典/键全集），
+声明被截短时后端套件先失败。
+
+### 4. 本轮踩到的真实缺陷（前端类型层，值得记录）
+
+实现完成后 `vue-tsc` 报 3 处 `TS2339: Property 'missing' does not exist`。
+根因**不是**写法错误，而是本仓库 `frontend/apps/web/tsconfig.json` 是 `"strict": false`
+（`strictNullChecks` 关闭），**布尔判别式无法窄化联合类型**（已用最小复现确认：
+同一段代码 `--strict` 通过、非严格模式报错）。
+处理方式：模型与消费点改用 `in` 检查选择变体（`'missing' in resolved` / `'contract' in …`），
+**没有降低契约、没有引入 `any`、也没有把断言改成字符串**。
+
+### 5. 定向验证
+
+| 层 | 命令/入口 | 结果 |
+|---|---|---|
+| L1 | `scripts/verify/frontend_industry_agnostic_audit.py` | **127 → 97 findings**（files 748） |
+| L1 | `ci.local.iteration` | PASS（dirty / L1_only / 524 changed paths） |
+| L1 | `pnpm -C frontend/apps/web typecheck` | PASS（修复 `in` 检查后 0 error） |
+| L2 | `verify.frontend.professional_detail_collection.unit` | PASS（守卫 44 + 弹窗契约 67） |
+| L2 | `verify.frontend.rendering_detail_state.unit` | PASS（76 项；其中一行 `FAIL incomplete=` 是 fail-closed 反例测试的预期输出） |
+| L2 | `collection_action_toolbar / primitive_adapter / product_page_pattern / professional_component_registry / style_system.guard` | PASS |
+| 活契约 | `/api/v1/intent`（`ui.contract.v2`, `payment.request` form, `fixture_role_finance` uid 30） | 变更前 `introduceDialog` **不存在**；重建容器后 **存在**，36 键，`payloadFields` 与声明一致 |
+| L4 | `verify.frontend.standard_page_type.browser` | **passed assertions=38**（原 32，本轮 +6） |
+
+浏览器本轮新增断言全部通过：契约已发布到页面、入口标签 == 声明值、无缺口标记、
+弹窗标题 == 声明值、确认按钮 == 声明值；`errors=[]`、`forbiddenWrites=[]`。
+证据：`artifacts/frontend-web-fix-20260928/tpl07-1790739384227/`（含 `payment-introduce-dialog.png`）。
+
+### 6. 缺口处理规则（本轮落地形态）
+
+**契约缺失 → 入口禁用 + 弹窗不挂载 + 点名缺失路径；已确认安全的读取不受影响。**
+即「禁止未知语义被默认为允许」，而不是遇到一个缺口就停掉整页。
+
+### 7. 候选与运行身份
+
+- 源码：`15351d632`（本段三笔代码提交之后）+ 本轮记录提交。
+- 后端：受管容器按新修订重建（`make backend.acceptance.up`），
+  `SC_SOURCE_REVISION` 与实际 `addons` 一致——**这是构建预览的前置**：
+  `standard-page-build` 会拒绝 `git diff` 与容器记录修订不一致的候选。
+- 5180：新产物 `entry=/assets/index-BlsrCAPY.js`、`entry_sha256=db3b259f…`、
+  `index_sha256=ab5602d9…`；监听仍为 `pid=802966`（同路径替换产物，服务按请求读盘，
+  无需重启）；旧产物按序归档为 `config05-20260929-prev-introduce-contract`。
+  HTTP 回读确认服务端 entry 与 `build-identity.json` 完全一致。
+
+### 8. 边界七问
+
+`Formal Product Layer` = P1 施工行业标准（契约声明）+ 端侧契约消费；
+`Layer Target` = `smart_construction_core` 的 `core_extension_contract_normalizers.py` 与
+`components/professional-fields/*` 的引入弹窗/集合控制；
+`Module` = `smart_construction_core` + `frontend/apps/web`；
+`Standard vs User-Specific` = 行业标准（任何标准施工部署都应继承同一引入词汇）；
+`Why Here` = 词汇与载荷键名是**业务语义**，只能由有效契约声明；
+`Why Not Elsewhere` = **不**在前端按模型名/列名/按钮文案重建（本轮删除的正是这条路径）、
+**不**把契约缺口的判断放进页面、**不**用默认值兜底；
+`Blast Radius` = 付款申请表单的「从结算单引入」入口与弹窗、其守卫与派生清单；
+读取链路、其他模型与其他弹窗不受影响。
+
+### 9. 提交
+
+- `fix(web): consume the declared introduce-dialog contract instead of guessing`
+- `feat(construction): declare the settlement introduce vocabulary in the contract`
+- `fix(verify): bind the introduce-dialog gap to the declared contract vocabulary`
+- 记录与派生清单随本段单独提交。
+
+### 10. 显式登记（**不在本段范围**）
+
+- `industry_agnostic.guard` **127 → 97**：剩余集中在 `overviewRichTextPatch`(13+9)、
+  `BlockChartDataset.vue`(11)、`SceneContractBlockGridView.vue`(9)、`productPageHeaderAdapters.ts`(8)、
+  `boqImportPreview`(7+6)、`chartFetch.ts`(5) 等；仍不靠删基线/放宽判定消红。
+- 该弹窗残留 1 条**假阳性**（`settlement.contract_name` 被 `sc.(project|contract|…)` 正则命中）
+  与集合组件键 `sc.payment.settlement_detail_collection` 1 条，均在既有登记内。
+- 段 35/36 全部登记项不变（`verify.business_config.coverage`、platform-admin 夹具缺口、
+  `state_transition_undeclared`、`payment.request` 契约表达缺口、`render_semantic_ready_guard` 滞后、
+  `all_list_visual.audit` 凭据前置、工作台目录 13–15 s 观感）。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。

@@ -1692,7 +1692,7 @@
     },
     {
       "category": "form-fields",
-      "digest": "9686f49f41d92c3d84f0211c922372b40248bbe0ca9ea498669d3fc1019d4a52",
+      "digest": "aa101082b72342cbb8f7538f10a9c05a2c1785a04db9d4ba11205e461969dc3d",
       "nativeStyleSelectors": [],
       "path": "components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
       "referenceNativeStyleSelectors": [],
@@ -2984,7 +2984,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "2b8702a731cda4c6dca8c51cae63d5439ee9a300ef651e6a9d3db45dc5836ffc",
+  "currentInputDigest": "16f58ffd42a7186b74c20ef3ebacc19944407861730b9e5d9b93c742ee0ff552",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
