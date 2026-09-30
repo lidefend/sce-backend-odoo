@@ -7404,3 +7404,12 @@ L5：未推送、未合并、未部署。
 
 - 受管后端最终加载8128f14b5，18082健康；5180仍复用53.3构建，没有第二次前端构建。修复后只读恢复7/7 passed (`tpl07-1790767270036/report.json`)；增加同一页面重新加载并检查缓存命中交付，9/9 passed (`tpl07-1790767317777/report.json`)：HTTP精确查询空集合、首次和缓存命中菜单都无测试收藏，实际 projection_cache hot/persisted 由报告保留。恢复阻断关闭。
 - 本节验证了缓存后运行事实投影及测试对象恢复；不把失败注入或误建对象当成经过设计的收藏成功/刷新业务闭环。整体目标继续，仍需完成相应成功路径及详情动作状态。官方基线再次确认 detail/base 与 detail/advanced 是 Card+Descriptions 的独立页面，后续不得把旧日快照的右侧抽屉义务误当官方模板必须具备的业务契约。
+
+
+### 53.5 只读详情的声明限制反馈与官方参考收敛
+
+- P0 / frontend shared readonly header；沿既有 schema→store 的 recordActionStates 只解释明确拒绝，不改变权限/状态判定。通用 reason code 映射用户提示，未知原因只给中性说明；不因 capability boolean 生成执行动作。复用 ScInlineState 的官方 TDesign Alert，旧“有拒绝原因但不显示”职责退出，无新私有提示系统。
+- L2 contract_record_action_state 26/26、strict typecheck通过，begin/record26；前后端生产者未变，复用53.4生产者结果，L3不运行。一次受管构建21.85s，base533519b47 + 本节前端 dirty 范围，5180复用，原收藏候选保留。
+- 第一次实际样本1813是草稿，验证允许态不捏造限制（15/15报告 `tpl07-1790767535920/report.json`）。进一步按该契约声明的 state_field/allowed_states，在同一project/company和finance授权范围中只读选取现有记录1710 approved；双视口29/29通过 `tpl07-1790767599788/report.json`。实际显示“不可删除：当前业务状态不允许删除”，同一官方 Alert 驱动，窄屏可读且无整页横向溢出；无业务写入。截图已复核。
+- 官方 pinned aeed5707 的 detail/base 与 detail/advanced 源码是 standalone Card/Descriptions，并非日快照右侧抽屉。既有 FormSection/standardDetailCompositionRuntime 与段52实际详情证据已覆盖容器、共享页头、事实网格；对应3条改aligned。强制两级tab与抽屉loading几何是旧参考义务，3条改not_applicable；不豁免契约声明的 notebook/关系/协作/加载与返回职责，不为历史截图新造drawer契约。
+- 原67条台账保留，9项待处理；detail.action-state只关闭声明拒绝反馈，复制动作是否属于确认职责及执行契约仍待解决，不因 duplicate=true 前端补一个按钮。page_pattern_reference_parity 28测试通过，原样式/页型/返回链证据不重跑；无推送、合并、目标部署或整体交付声明。

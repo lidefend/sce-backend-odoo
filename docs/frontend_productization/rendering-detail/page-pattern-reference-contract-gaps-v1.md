@@ -5,10 +5,7 @@ This ledger records reference details that cannot be implemented safely from the
 ## P0 contract gaps
 
 - Global search: the reference shell exposes a global search control, while the current payload only authorizes navigation filtering. A future capability must identify search domain, target route, result identity, and authority.
-- Contextual detail drawer: the current record-entry contract expresses record intent and route disposition, but does not explicitly authorize `standalone_page | contextual_drawer`. Existing `/r` and `/f` semantics must not be reinterpreted by appearance.
-- Record actions: copy, delete and their disabled reason are not consistently projected for every
-  model/action pair. The explicit labelled detail action part of this bullet is closed; see the
-  closed boundary decisions below. Do not re-open it by adding a second row-action field.
+- Record actions: declared edit/delete denial feedback is consumed by the shared official Alert (segment53.5). A duplicate capability boolean still supplies no executable copy action; confirm the business responsibility before adding an execution contract. The labelled collection detail action is already closed below; do not add a second row-action field.
 - Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
 - Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
 
@@ -63,7 +60,6 @@ they are not producer-side gaps and must not be re-opened by adding the value to
   contracts now declare `batch_policy.available_actions=["export"]` together with
   `execution_intents.export = api.data` and `execution_operations.export = export_csv`, and the
   selection runtime executes that declared intent.
-- Contextual readonly detail header, first-level collaboration tabs, compact relation tabs, description-grid skeleton, and close settlement require the formal contextual-drawer container authority above.
 
 ## Official template baseline
 
@@ -100,3 +96,16 @@ survives in a ledger declared complete.
 - No model, action, menu, field label, or Chinese-text special case may substitute for a missing contract field.
 - A legacy route cannot silently become drawer authority.
 - Visual similarity cannot override readonly/edit, action, mutation, or record-level permission decisions.
+
+
+## Segment 53.5: readonly-detail reference correction
+
+The superseded contextual-drawer dependencies came from the historical daily frontend
+snapshot. They are superseded by the pinned official `detail/base/index.vue` and
+`detail/advanced/index.vue`, which use standalone Card/Descriptions pages. A drawer contract,
+forced first/second-level tabs and drawer skeleton geometry are therefore not prerequisites
+for official takeover. The existing shared readonly composition and contract-declared fields,
+notebooks, relations, collaboration and return context remain authoritative. This correction
+does not close `detail.action-state`: declared denial feedback and executable record actions
+are tracked separately. Existing segment52 runtime evidence is reused; no new business
+capability is inferred from either reference.

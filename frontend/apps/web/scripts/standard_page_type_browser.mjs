@@ -39,6 +39,18 @@ function findSavedSearchAuthority(node, depth = 0) {
   }
   return null;
 }
+function findRecordAuthority(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 14) return null;
+  if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
+    return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
+      deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData };
+  }
+  for (const value of Object.values(node)) {
+    const found = findRecordAuthority(value, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
@@ -78,6 +90,8 @@ async function login(role) {
           report.projectionCaches ??= [];
           report.projectionCaches.push(contract.meta.projection_cache);
         }
+        const recordAuthority = findRecordAuthority(contract);
+        if (recordAuthority) report.recordAuthority = recordAuthority;
         const savedSearch = findSavedSearchAuthority(contract);
         if (savedSearch) report.savedSearchAuthority = savedSearch;
         const found = findIntroduceConfig(contract);
@@ -351,7 +365,52 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'favorite-recovery') {
+  if (process.env.TPL07_SCOPE === 'detail-state') {
+    const finance = await login('fixture_role_finance');
+    await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'detail-state', 'readonly');
+    let authority = report.recordAuthority;
+    check('detail state: effective record authority received', authority?.model === 'payment.request');
+    check('detail state: allowed draft has no invented denial', await finance.page.locator('[data-record-action-denials]').count() === 0);
+    const statePolicy = authority.deletePolicy;
+    const candidate = await finance.page.evaluate(async ({ field, allowed, project, company }) => {
+      const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+      const domain = [[field, 'not in', allowed]];
+      if (project) domain.push(['project_id', '=', project]);
+      if (company) domain.push(['company_id', '=', company]);
+      const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+        body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model: 'payment.request', fields: ['id', field], domain, limit: 1 } }),
+      });
+      return response.json();
+    }, { field: statePolicy.state_field, allowed: statePolicy.allowed_states,
+      project: Array.isArray(authority.mainData.project_id) ? authority.mainData.project_id[0] : authority.mainData.project_id,
+      company: Array.isArray(authority.mainData.company_id) ? authority.mainData.company_id[0] : authority.mainData.company_id });
+    check('detail state: existing restricted record available in same scope', candidate.ok === true && candidate.data?.records?.length === 1);
+    report.restrictedRecord = candidate.data.records[0];
+    await form(finance.page, `/r/payment.request/${report.restrictedRecord.id}?menu_id=545&action_id=775`, 'detail-state-restricted', 'readonly');
+    authority = report.recordAuthority;
+    const caps = authority.status.effectiveRecordCapabilities;
+    const reasons = authority.status.recordDeniedReasons || {};
+    const policy = authority.deletePolicy || {};
+    const stateBlocked = policy.policy_kind === 'state_limited_business_document'
+      && policy.allowed_states?.length && authority.mainData?.[policy.state_field]
+      && !policy.allowed_states.includes(authority.mainData[policy.state_field]);
+    const declaredDenial = ['write', 'unlink'].some((op) => caps[op] !== true && reasons[op])
+      || (policy.allowed === false && policy.reason_code) || (stateBlocked && policy.denied_reason_code);
+    check('detail state: restriction explicitly declared', Boolean(declaredDenial));
+    for (const width of [1440, 390]) {
+      await finance.page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+      const notice = finance.page.locator('[data-record-action-denials]');
+      check(`detail-state-${width}: explicit denials drive feedback`, await notice.count() === (declaredDenial ? 1 : 0));
+      if (declaredDenial) {
+        check(`detail-state-${width}: official alert owns feedback`, await notice.getAttribute('data-semantic-driver') === 'tdesign-alert');
+        check(`detail-state-${width}: feedback explains restriction`, /不可编辑|不可删除/.test(await notice.innerText()));
+      }
+      check(`detail-state-${width}: no page overflow`, await finance.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await finance.page.screenshot({ animations: 'disabled', path: path.join(out, `detail-state-${width}.png`) });
+    }
+    await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'favorite-recovery') {
     const finance = await login('fixture_role_finance');
     await list(finance.page, 545, 'recovery-list');
     report.recovery = await finance.page.evaluate(async () => {
@@ -467,7 +526,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['detail', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

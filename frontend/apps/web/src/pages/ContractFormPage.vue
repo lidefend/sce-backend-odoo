@@ -44,6 +44,9 @@
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     >
       <template #notice>
+        <ScInlineState v-if="renderProfile === 'readonly' && !isConfigurationPreview && recordActionDenialMessages.length" data-record-action-denials>
+          <span v-for="message in recordActionDenialMessages" :key="message">{{ message }}</span>
+        </ScInlineState>
     <ScInlineState v-if="isConfigurationPreview" class="configuration-preview-banner" data-configuration-preview>
       <strong>未发布配置预览 · 不产生业务写入</strong>
       <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
@@ -632,6 +635,7 @@ import {
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
+import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
 import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
 import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import {
@@ -1185,6 +1189,7 @@ const standardDetailComposition = createStandardDetailCompositionRuntime(() => c
  * keep the reason the contract published; an undeclared page stays denied.
  */
 const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
+const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
