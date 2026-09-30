@@ -149,6 +149,12 @@ class ScConstructionDiary(models.Model):
         parts = [item for item in (project_name, date_label, diary_type) if item]
         return " - ".join(parts) or _("施工日志")
 
+    def _check_allow_write_under_validation(self, vals):
+        self.ensure_one()
+        if self.state == "draft" and self.validation_status == "rejected" and not {"state", "source_origin"}.intersection(vals):
+            return True
+        return super()._check_allow_write_under_validation(vals)
+
     def _write_document_state(self, values):
         return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 

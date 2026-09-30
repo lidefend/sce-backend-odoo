@@ -3255,6 +3255,21 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         row.env.su = True
         with self.assertRaises(SequenceReached): ns['create'](row, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
 
+    def test_diary_real_rejected_draft_can_edit_under_tier_rules(self):
+        path = MODEL.with_name('construction_diary.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')
+        calls = []
+        ns = {'super': lambda: types.SimpleNamespace(_check_allow_write_under_validation=lambda vals: calls.append(vals) or False)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        row = types.SimpleNamespace(ensure_one=lambda: None, state='draft', validation_status='rejected')
+        self.assertTrue(ns[method.name](row, {'description': 'corrected'}))
+        self.assertEqual(calls, [])
+        for vals in ({'state': 'confirmed'}, {'source_origin': 'legacy'}):
+            self.assertFalse(ns[method.name](row, vals))
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'rejected'), ('done', 'validated')):
+            row.state, row.validation_status = state, status
+            self.assertFalse(ns[method.name](row, {'description': 'changed'}))
+
     def test_diary_reviewed_content_is_frozen_but_rejected_and_legacy_rules_remain(self):
         path = MODEL.with_name('construction_diary.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
