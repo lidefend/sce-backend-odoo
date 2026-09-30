@@ -8239,3 +8239,14 @@ P0通用契约：occurrence初始/最终状态隐藏auth=none、未解析disable
 P4既有browser probe捕获当前角色system.init.route_authority，project create只能使用menu_sc_project_initiation的真实menu/action上下文；未授权时停止，不再直接/f/project.project/new选默认事实视图。源码menu.xml确有专用action_project_initiation/view_project_create_form，但不是当前用户授权的证明。L1 project-initiation-entry-iteration.log/node/diff PASS，产品源码与构建/后端未变，复用53.90纯测试及劳务页面。
 
 实测tpl07-1790783889835在第3项“one authorized initiation entry”失败：PM route_authority有23 primary、17 contextual，但无立项menu/action，项目仅台账/编辑/看板等已授权入口。这是入口/角色验收前置不足，不能直接断言应扩权或该角色必须可立项；不猜数字ID、不扩权、不新建账号/fixture、不重试无上下文路径。入口解析诊断继续附着原报告。下一步可独立推进既有台账剩余业务族；项目创建回到授权角色/正式入口职责核对后再恢复，不能算通过。总体67仍开放。
+
+
+### 53.92 材料租赁计划接入统一审批（源码阶段）
+
+P1 smart_construction_core材料租赁计划，行业标准职责复用现有policy/tier；不在P0或前端加入模型审批规则。公司来自项目、金额权威estimated_amount。原action_submit直接submitted/action_approve直接approved改为统一配置分流：无配置自动approved，有配置真实review；历史submitted可受控重新提交；真实review回调推进/驳回回draft，旧action_approve委托真实审批保留wizard结果。状态直接create/write保护使用私有令牌，cancel仍仅draft/submitted、reset仅cancel。合同项目/供应商、明细数量/天数/价格校验沿用，租赁执行/归还/结算未被审批隐式触发。
+
+原生view移除直接确认按钮，公布tier审批/驳回和提交状态域，编号创建隐藏只读；workflow从简单审批配置迁到真实review动作投影，policy/tier模型选择及callback同批注册。未改ACL。租赁单及租赁结算另有执行职责，仍待后续同族统一，不能以计划代表全族完成。
+
+候选feb78e3c0+dirty；L1 rental-plan-iteration.log PASS；L2 rental-plan-unit.log82 PASS（既有劳务状态机用例新增租赁计划参数，覆盖配置分流、实际review回调/wizard、approved非法逆转、cancel/reset、外部state拒绝），rental-plan-native.log8+47=55 PASS（新增租赁参数验证reviewer差异/动作投影），rental-plan-semantics.log15 PASS，2XML解析/重复ID与diff --check PASS；非零回执登记。未重复无关ORM。
+
+L3尚未运行：新tier/字段/XML需一次受管smart_construction_core升级，下一步扩展既有rollback scope验证租赁计划estimated_amount阈值、合同/供应商限制、真实审批驳回重提、配置恢复；随后同族官方页面。前端未变不重建，L5无推送/合并/目标部署，整体67及实际角色旅程未完成。

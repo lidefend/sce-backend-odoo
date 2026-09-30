@@ -341,3 +341,8 @@ Project direct-create report tpl07-1790783758165 no longer fails schema; its glo
 ### Segment53.91 — Project initiation lacks current PM entry authority
 
 The probe now resolves initiation menu/action from system.init rather than guessing a model create route. Report tpl07-1790783889835 contains PM route authority with23 primary/17 contextual entries but no menu_sc_project_initiation. Static existence of the native initiation action does not authorize this principal. Keep project creation unverified pending the appropriate role/entry responsibility; do not expand permissions or count denied entry as successful creation. Remaining independent document families can proceed.
+
+
+### Segment53.92 — Rental plan approval source integrated; runtime pending
+
+sc.material.rental.plan now uses shared policy/tier with project company and estimated_amount authority. Submission auto-approves only when unconfigured, otherwise waits for actual reviews; old direct confirmation delegates to review authority. Private state writes, native buttons, workflow declarations and callbacks agree. Contract/project/supplier and line validations remain.82 approval/55 native/15 semantics tests pass, but module loading, real rollback approval checks and official-page consumption remain pending. Rental order/settlement responsibilities and overall action-state remain open.

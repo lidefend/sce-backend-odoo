@@ -223,7 +223,9 @@
         "addons/smart_construction_core/models/core/equipment_management.py",
         "addons/smart_construction_core/views/core/equipment_management_views.xml",
         "addons/smart_construction_core/models/core/labor_management.py",
-        "addons/smart_construction_core/views/core/labor_management_views.xml"
+        "addons/smart_construction_core/views/core/labor_management_views.xml",
+        "addons/smart_construction_core/models/core/material_rental.py",
+        "addons/smart_construction_core/views/core/material_rental_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -284,7 +286,9 @@
         "addons/smart_construction_core/views/core/equipment_management_views.xml",
         "addons/smart_construction_core/models/core/labor_management.py",
         "addons/smart_construction_core/views/core/labor_management_views.xml",
-        "addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml"
+        "addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml",
+        "addons/smart_construction_core/models/core/material_rental.py",
+        "addons/smart_construction_core/views/core/material_rental_views.xml"
       ]
     },
     "standard_preview_tool": {
@@ -341,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.91 corrected project create probe binds authorized menu/action from system.init. PM report1790783889835 has no initiation entry (23primary/17contextual), so stop project create as role/entry prerequisite pending, no guessed IDs/permission expansion/repeat direct path. Continue remaining existing67 document family (material rental plan then safety/subcontract) from current profiles, using shared approval and native official contract. Reuse labor14/14/22, runtime25, backend0b8da3b04/frontend7915f3bb9. Project creation resumes only after legitimate role/entry authority is established. No newfixture/push/merge/deploy.",
+  "next_exact_step": "53.92 rental plan P1 source integrated shared approval, company/project and estimated_amount, native/workflow/callback, private state protection.82/55/15 tests PASS, runtime pending. Extend existing rollback smoke rental-plan scope: actual config/amount threshold, business anchor mismatch, reviewer approve/reject/resubmit, approved illegal reversal and restoration; one governed smart_construction_core upgrade/reload then scope only; official create/existing-authorized-page check. No newfixture/frontend build/unrelated ORM. Rental order/settlement and remaining safety/subcontract still needed. PM project initiation role/entry prerequisite remains recorded.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

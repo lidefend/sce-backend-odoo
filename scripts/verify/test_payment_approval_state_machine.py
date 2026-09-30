@@ -983,20 +983,23 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_labor_plan_and_request_review_and_transition_boundaries(self):
         path = MODEL.with_name('labor_management.py')
         tree = ast.parse(path.read_text())
-        for cls_name, model in [('ScLaborPlan', 'sc.labor.plan'), ('ScLaborRequest', 'sc.labor.request')]:
+        for cls_name, model in [('ScLaborPlan', 'sc.labor.plan'), ('ScLaborRequest', 'sc.labor.request'), ('ScMaterialRentalPlan', 'sc.material.rental.plan')]:
+            path = MODEL.with_name('material_rental.py' if model == 'sc.material.rental.plan' else 'labor_management.py')
+            tree = ast.parse(path.read_text())
             cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
             names = {'action_submit', 'action_approve', 'action_cancel', 'action_reset_draft', 'action_on_tier_approved', 'write'}
             methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
-            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_LABOR_APPROVAL_STATE_TOKEN': object()}
+            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_LABOR_APPROVAL_STATE_TOKEN': object(), '_RENTAL_APPROVAL_STATE_TOKEN': object()}
             exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
             for required in (False, True):
                 rec = self._purchase_request_record(required=required, state='draft')
                 rec._name = model
                 rec.line_ids = types.SimpleNamespace(_check_values=lambda: None)
+                rec._check_business_anchor = lambda: None
                 rec._write_approval_state = lambda values: rec.data.update(values)
                 for token in (None, True, 'trusted'):
                     with self.assertRaises(ValueError):
-                        ns['write'](rec.with_context(sc_labor_approval_state_token=token), {'state': 'approved'})
+                        ns['write'](rec.with_context(**{('sc_rental_approval_state_token' if model == 'sc.material.rental.plan' else 'sc_labor_approval_state_token'): token}), {'state': 'approved'})
                 ns['action_submit'](rec)
                 self.assertEqual(rec.state, 'submitted' if required else 'approved')
                 if required:

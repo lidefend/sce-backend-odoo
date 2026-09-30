@@ -95,7 +95,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertEqual(self._general_contract_actions('confirmed', model=model), [])
 
     def test_labor_plan_request_actions_follow_review_facts(self):
-        for model in ('sc.labor.plan', 'sc.labor.request'):
+        for model in ('sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan'):
             for reviewer in (False, True):
                 rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=reviewer, record_fields={'validation_status': 'pending'})
                 self.assertEqual({row['method'] for row in rows}, {'action_cancel'} | ({'validate_tier', 'reject_tier'} if reviewer else set()))
