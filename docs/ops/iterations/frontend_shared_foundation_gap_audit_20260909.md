@@ -7358,3 +7358,12 @@ L5：未推送、未合并、未部署。
 - 前端共性呈现、组合及模态生命周期由 P0 frontend 拥有；缺失的通用能力投影由 P0 smart_core，行业标准结构由 P1 smart_construction_core；不把视觉义务塞进业务契约，也不让模板演示创造新的业务要求。
 - 已确认移动导航仍用 ScAside + 手写遮罩/位移 + 独立生命周期，拟复用 ScDrawer 官方驱动并退出对应旧职责；同时继续已有 collection.favorite、detail.action-state 等声明能力的消费/生产闭环。
 - 后端未修改前不运行 ORM；一旦实际修改契约生产者，只运行受影响的非零契约测试及必要受管运行时检查，按层推进。无新环境、凭据或 fixture；不推送、合并或部署目标环境。
+
+### 53.1 移动导航官方 Drawer 接管
+
+- P0 / shared shell overlay：ProductMobileNavigationDrawer 在移动端只消费 ScDrawer，桌面只消费 ScAside。ScDrawer 增加通用 placement 和 navigation appearance；官方驱动统一负责遮罩、位移动画，既有共享生命周期负责焦点/滚动锁。菜单和上下文内容继续是同一契约消费者。
+- 旧职责退出：删除导航自己的 backdrop 节点、位移动画样式和 useModalLifecycle 实例；不保留双路径或第二份开关状态。旧 guard 从锁定导航自管生命周期修正为要求共享 ScDrawer，并加入拒绝私有遮罩/生命周期回流的负例。
+- L1/L2：navigation_shell 全链 40+12+42+19 个案例，primitive adapter 11+34；overlay lifecycle 12（新增两类负例），delivery_hardening、style_system、typecheck.strict 全部 passed。日志 `tpl52/navigation-takeover.log`、`tpl52/navigation-lifecycle.log`（同一批次证据目录继续复用，不再复制原始日志）。
+- 单次构建 21.11s，base `904b3fa65` + 明确导航 dirty 范围；5180 原 listener 复用，之前 c062 样式候选保留。
+- `TPL07_SCOPE=navigation` 真实 finance login/system.init →付款列表，1440/390 两视口 16/16 passed：一个官方导航模态、无私有遮罩、授权菜单保留、Tab 焦点在模态内、Escape 还原 opener、路由保持、滚动锁释放、官方遮罩可关闭、回桌面唯一导航。无业务写入。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765698870/report.json`，窄屏截图已实际复核。
+- 后端/数据库未变，ORM 不运行。下一项复用段47/48生产者修复证据，核对 collection.favorite 与 detail.action-state 的实际共享消费者。

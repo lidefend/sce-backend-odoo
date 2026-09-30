@@ -95,12 +95,14 @@ app_shell = require(
 )
 require(
     "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
-    'v-if="visible"',
+    '<ScDrawer',
+    'v-if="mobile"',
+    ':open="visible"',
+    'appearance="navigation"',
+    'placement="left"',
+    'v-else-if="visible"',
     ':id="surfaceId"',
-    ":role=\"mobile ? 'dialog' : undefined\"",
-    ":aria-modal=\"mobile ? 'true' : undefined\"",
-    "useModalLifecycle",
-    '@keydown="onKeydown"',
+    "@close=\"emit('close')\"",
 )
 toggle_match = re.search(
     r"<ScButton\b(?=[^>]*\baria-controls=\"primary-sidebar\")"

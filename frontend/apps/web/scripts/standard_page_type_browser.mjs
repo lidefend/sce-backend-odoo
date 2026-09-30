@@ -123,6 +123,40 @@ async function form(page, url, name, profile = 'form') {
   await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`) });
 }
 
+async function navigationScope() {
+  const finance = await login('fixture_role_finance');
+  const page = finance.page;
+  await list(page, 545, 'navigation-desktop');
+  check('navigation: desktop keeps one official aside', await page.locator('[data-navigation-driver="official-aside"]').count() === 1);
+  const before = new URL(page.url()).pathname;
+  await page.setViewportSize({ width: 390, height: 844 });
+  const toggle = page.getByRole('button', { name: '菜单', exact: true });
+  await toggle.click();
+  const dialog = page.getByRole('dialog', { name: '主导航', exact: true });
+  await dialog.waitFor();
+  check('navigation: exactly one dialog', await page.getByRole('dialog').count() === 1);
+  check('navigation: official drawer owns the navigation', await dialog.locator('[data-navigation-driver="official-drawer"]').count() === 1);
+  check('navigation: private mask exited', await page.locator('.mobile-sidebar-backdrop').count() === 0);
+  check('navigation: authorized current menu retained', await dialog.getByText('付款申请', { exact: true }).count() > 0);
+  await page.keyboard.press('Tab');
+  check('navigation: focus remains in drawer', await dialog.evaluate((el) => el.contains(document.activeElement)));
+  await page.screenshot({ animations: 'disabled', path: path.join(out, 'navigation-mobile-open.png') });
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'detached' });
+  check('navigation: escape restores opener', await toggle.evaluate((el) => el === document.activeElement));
+  check('navigation: closing preserves route', new URL(page.url()).pathname === before);
+  check('navigation: scroll lock released', await page.evaluate(() => document.body.style.overflow !== 'hidden'));
+  await toggle.click();
+  await dialog.waitFor();
+  await page.mouse.click(385, 420);
+  await dialog.waitFor({ state: 'detached' });
+  check('navigation: official backdrop dismisses', await page.getByRole('dialog').count() === 0);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  check('navigation: desktop restored without duplicate navigation', await page.locator('[data-navigation-driver="official-aside"]').count() === 1 && await page.locator('#primary-sidebar').count() === 1);
+  check('navigation: real startup authority present', report.startup.some((r) => r.intent === 'system.init' && r.success));
+  await finance.ctx.close();
+}
+
 async function styleScope() {
   const family = process.env.TPL52_FAMILY || 'all';
   assert.ok(['all', 'shell', 'collection', 'detail', 'form', 'overlay'].includes(family), 'known style family');
@@ -226,7 +260,9 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'style') {
+  if (process.env.TPL07_SCOPE === 'navigation') {
+    await navigationScope();
+  } else if (process.env.TPL07_SCOPE === 'style') {
     await styleScope();
   } else if (process.env.TPL07_SCOPE === 'detail') {
     const finance = await login('fixture_role_finance');
@@ -317,7 +353,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['detail', 'style'].includes(process.env.TPL07_SCOPE)) {
+  if (!['detail', 'style', 'navigation'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

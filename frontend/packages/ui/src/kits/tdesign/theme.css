@@ -669,3 +669,15 @@
   outline-offset: var(--sc-component-button-focus-offset);
   box-shadow: none;
 }
+
+/* The navigation adapter uses the official drawer's overlay and animation.
+ * Public padding variables keep its single navigation scroll owner flush. */
+.sc-design-drawer--navigation {
+  --td-comp-paddingTB-l: 0px;
+  --td-comp-paddingLR-l: 0px;
+  border-radius: 0;
+}
+.sc-design-drawer--navigation [data-semantic-component='ScDrawer'] {
+  height: 100%;
+  padding: 0;
+}

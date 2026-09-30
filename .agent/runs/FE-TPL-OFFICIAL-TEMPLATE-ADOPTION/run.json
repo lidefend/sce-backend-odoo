@@ -146,7 +146,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Owner clarified full-system closure includes missing contracts for confirmed business responsibilities. Reuse the existing 67-entry ledger and 16 owned gaps; distinguish frontend-owned presentation from required P0/P1/P2 producers, implement consumer and producer closure, and retire old interaction paths. Start with bounded mobile drawer ownership plus declared collection favorite/detail action gaps; no parallel inventory, new environment, push, merge or target deployment.",
+  "next_exact_step": "Segment 53.1 official mobile drawer verified (16 browser checks, 113 navigation cases, 45 primitive cases, 12 lifecycle cases). Next close collection.favorite and detail.action-state consumption using producer evidence from segments 47/48; do not repeat backend implementation or ORM unless producer inputs actually change.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -185,6 +185,22 @@
       "stable_overlay_assertions": 30,
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790765202063/report.json",
       "note": "Shared presentation batch only; full-system page/interaction ownership remains active. No push, merge or target deployment."
+    },
+    "navigation_segment_53_1": {
+      "status": "passed",
+      "source_head": "904b3fa65",
+      "dirty_scope": [
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
+        "frontend/apps/web/src/layouts/AppShell.css",
+        "frontend/packages/ui/src/kits/tdesign/theme.css",
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py"
+      ],
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790765698870/report.json",
+      "browser_assertions": 16
     }
   }
 }

@@ -34,6 +34,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         "action_view": ("<ScDialog", "business-category-picker-backdrop", 'role="dialog"'),
         "attachment": ("<ScDialog", "attachment-viewer-backdrop", "useModalLifecycle"),
         "messages": ("<ScDrawer", "global-message__backdrop", '<aside v-if="open"'),
+        "mobile_navigation": ("<ScDrawer", "mobile-sidebar-backdrop", "useModalLifecycle"),
     }
     for key, (required, forbidden_one, forbidden_two) in consumers.items():
         source = values[key]
@@ -49,8 +50,6 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for marker in ("<textarea", "<input"):
         if marker in messages:
             failures.append(f"messages drawer retains raw generic control: {marker}")
-    if "useModalLifecycle" not in values["mobile_navigation"]:
-        failures.append("mobile navigation lost shared modal lifecycle regression coverage")
     return failures
 
 
@@ -61,4 +60,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"- {error}")
         raise SystemExit(1)
-    print("[frontend_overlay_lifecycle_guard] PASS canonical=3 consumers=3 formal_gaps=0")
+    print("[frontend_overlay_lifecycle_guard] PASS canonical=3 consumers=4 formal_gaps=0")

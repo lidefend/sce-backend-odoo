@@ -47,6 +47,16 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
         values = self.altered("messages", "<ScDrawer", '<aside v-if="open" class="global-message__backdrop"')
         self.assertTrue(any("messages" in error for error in validate(values)))
 
+    def test_navigation_cannot_restore_private_mask_or_lifecycle(self):
+        for marker in ("mobile-sidebar-backdrop", "useModalLifecycle"):
+            values = dict(self.sources)
+            values["mobile_navigation"] += marker
+            self.assertTrue(any("mobile_navigation retains parallel" in error for error in validate(values)))
+
+    def test_navigation_requires_the_shared_official_drawer(self):
+        values = self.altered("mobile_navigation", "<ScDrawer", "<aside")
+        self.assertTrue(any("mobile_navigation does not consume" in error for error in validate(values)))
+
     def test_nested_scroll_lock_authority_is_required(self):
         values = dict(self.sources)
         values["lifecycle"] = values["lifecycle"].replace("bodyLockDepth", "legacyLock")
