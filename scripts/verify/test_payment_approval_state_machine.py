@@ -1056,6 +1056,16 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def test_rental_order_input_policy_separates_execution_and_calculated_facts(self):
+        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
+        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_order_p1_form_business_facts_v1']")
+        contract = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
+        fields = {row['name']: row for row in contract['view_orchestration']['views']['form']['fields']}
+        for name in ('project_id', 'supplier_id', 'contract_id', 'rental_date', 'planned_return_date', 'use_unit_name', 'deposit_amount', 'compensation_fee', 'repair_fee', 'transport_fee', 'deposit_deduction', 'attachment_ids', 'note', 'owner_id'):
+            self.assertNotIn('readonly', fields[name], name)
+        for name in ('state', 'name', 'actual_return_date', 'material_summary', 'specification_summary', 'quantity_total', 'amount_total', 'settlement_amount', 'create_date'):
+            self.assertIs(fields[name]['readonly'], True, name)
+
     def test_labor_settlement_inputs_remain_editable_in_published_contract(self):
         path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
         record = ET.parse(path).find(".//record[@id='business_config_contract_sc_labor_settlement_p1_form_business_facts_v1']")

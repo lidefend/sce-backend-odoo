@@ -651,6 +651,24 @@ try {
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
         if (spec.model === 'sc.material.rental.order') {
+          const fields = [];
+          const visit = (nodes) => {
+            for (const node of nodes || []) {
+              if (node.type === 'field') fields.push(node);
+              visit(node.children);
+            }
+          };
+          visit(authority.layout?.containerTree);
+          for (const name of ['project_id', 'supplier_id', 'rental_date', 'note']) {
+            const field = fields.find((node) => node.name === name);
+            check(`rental order: ${name} editable contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true);
+          }
+          for (const label of ['项目', '供应商']) {
+            check(`rental order: ${label} input visible`, await session.page.getByPlaceholder(`请选择${label}`, { exact: true }).isVisible());
+          }
+          check('rental order: date input visible', await session.page.locator(`input[value="${authority.mainData.rental_date}"]`).isVisible());
+          check('rental order: note input visible', await session.page.locator('textarea').first().isVisible());
+
           check('rental order: generated number absent on create', await session.page.getByText('租赁单号', { exact: true }).count() === 0);
           for (const name of ['确认租赁', '确认退还', '完成结算']) {
             check(`rental order: unsaved cannot ${name}`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
