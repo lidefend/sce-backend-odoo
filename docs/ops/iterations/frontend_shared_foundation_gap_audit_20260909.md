@@ -7880,3 +7880,6 @@ L5：未推送、未合并、未部署。
 - P0通用前端消费修正：共享sceneMutationRuntime只识别生产者明确result=blocked，抛出后端message或通用未完成提示，让现有表单/列表异常反馈承接，不依赖模型/按钮名/状态猜测。请求参数模板、trace和未声明业务结果的兼容响应保持。P1 project_execution_response_builder为审批待提交/审批中提供中文办理提示，保留task_id及原状态，不把失败当成已启动；不改审批或回滚逻辑。
 - L1 iteration PASS（scene-outcome-iteration.log）；实际共享执行器4例PASS：blocked自带文案、blocked无文案、显式success、原无result响应；原create_record_user_journey同时PASS（scene-outcome-tests.log，begin/record4仅计新增场景例）。P1响应生产方法测试加入审批目标，总59 PASS（scene-outcome-backend-tests.log，begin/record59）。verify.frontend.typecheck.strict双配置PASS（scene-outcome-typecheck.log）。
 - 已确认这是共享结果消费修复，不把未消费的legacy原因码文本当UI完成。当前无授权任务记录，真实执行阻断浏览器旅程仍待验证；这次单元测试不伪装真实请求。下一步一次构建/复用5180并后端重载，定向复核官方任务create；不重跑未变审批39，不升级模块（无字段/XML变化）。项目立项审批/启动拆分及全部台账仍active。
+
+- 候选更新事实：b06c8a2f7首次frontend.standard.preview.build在addons相对已加载后端不一致处退出（scene-outcome-build.log），未进入编译。受管backend.acceptance.up已重载b06c8a2f7（scene-outcome-backend-load.log）。因这一前置恢复后再运行build，进入frontend_standard_preview.py发现旧receipt存在且inputs改变，identity()拒绝（scene-outcome-build-loaded.log）；同样未调用编译。两次不同前置失败均保留，未重复编译。
+- P4确定性缺口：现有build分支只有旧产物复用/首次构建，缺少源码变化后的安全候选更新。5180仍服务0d2c6190a旧前端，不能声称本轮前端修复已加载。下一步在既有工具内补齐保留上一dist/receipt、暂存构建、成功切换及失败恢复，沿用同端口/代理/环境身份；不直接删receipt解除锁。当前前端产品复核待候选更新，整体仍active，主线/部署/整体验收无升级。

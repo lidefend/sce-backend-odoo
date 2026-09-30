@@ -281,7 +281,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.58 shared sceneMutationRuntime now rejects explicit data.result=blocked and consumes backend message; P1 project execution response supplies required/pending messages. Frontend4 new actual executor cases + existing create journey pass, approval59 pass, strict typecheck pass. Commit then one governed frontend.standard.preview.build/up and backend reload, task create representative check. No actual task blocked journey due empty PM task scope. Continue project approval/start split and full67 scope.",
+  "next_exact_step": "53.58 code b06c8a2f7 shared blocked outcome fix tested frontend4/approval59/typecheck strict, backend loaded. Preview frontend_standard_preview.py build only reuses matching receipt, rejects changed inputs; no actual build executed (both logs preserved),5180 still old0d2c6190a. Next P4 minimal existing-tool candidate refresh preserving previous dist+receipt, staging single build then governed switch/recovery; do not delete receipt/bypass identity/manual environment. Register focused preview tool tests before mutation. Then one actual build, task/create representative page; no claimed real blocked task browser (authorized task records empty). Continue project approval split/full67 scope.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -911,7 +911,15 @@
         "approval": 59,
         "typecheck_strict": "passed"
       },
-      "runtime": "not_run; one candidate build and backend reload pending",
+      "runtime": {
+        "backend": "b06c8a2f7 loaded by governed up",
+        "frontend": "old 0d2c6190a candidate retained; new code not built",
+        "build": "not_run: wrapper first stopped on backend revision; after reload preview identity rejected changed build inputs before invoking compiler",
+        "logs": [
+          "artifacts/frontend-web-fix-20260928/tpl52/scene-outcome-build.log",
+          "artifacts/frontend-web-fix-20260928/tpl52/scene-outcome-build-loaded.log"
+        ]
+      },
       "remaining": "real blocked interaction/browser not covered; no existing authorized tasks; project approval split"
     }
   }
