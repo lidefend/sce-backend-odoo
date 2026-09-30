@@ -9,6 +9,12 @@ workflow:
     - current_branch
     - complete_worktree_status
 
+  continuation:
+    entry: make agent.run.resume
+    reuse: current_run_and_original_evidence
+    reconcile: changed_identity_scope_inputs_authority_or_environment_only
+    full_inventory: first_entry_or_proven_relevant_drift_only
+
   steps:
     - load_authority_chain
     - inventory_registered_worktree_and_governed_infrastructure

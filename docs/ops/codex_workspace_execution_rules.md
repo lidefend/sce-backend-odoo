@@ -344,3 +344,11 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
   - 当前分支
   - 当前短 SHA
   - 本轮 Layer Target / Module / Reason
+
+
+## 统一续跑入口（所有执行器）
+
+遵循 `AGENTS.md` 的 Unified Executor Resume Entry。首次登记 goal/run 后，交互执行器、
+后台控制器和接替执行器均使用 `make agent.run.resume`；日常 `ci.local.iteration` 同样接线。
+续跑只核对当前身份、选定 run 和变化的依赖。缺失或不符时修复具体上下文，不重做全量盘点。
+格式与工具限制见 `.agent/README.md`；结果引用原始证据，不能把本地建议回执当作交付门禁。

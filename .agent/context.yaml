@@ -148,3 +148,13 @@ evidence_defaults:
   - verification_artifacts
   - risk_and_rollback
   - next_exact_step
+
+resume_entry:
+  applies_to: all_executors
+  branch_index: .agent/active-runs.json
+  command: make agent.run.resume
+  template: .agent/runs/template/run.json
+  first_entry: preflight_then_register_one_goal_and_run
+  continuation: identity_then_selected_run_then_changed_dependencies_only
+  receipts: .runtime/agent-runs/<goal-id>/
+  receipts_are_delivery_evidence: false

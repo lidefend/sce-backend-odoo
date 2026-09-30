@@ -182,7 +182,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/main'", text)
         self.assertIn("make ci.professional.backend", text)
         self.assertNotIn("run: make ci\n", text)
-        self.assertIn("env.BACKEND_CHANGED == 'true'", text)
+        self.assertIn("env.ORM_REQUIRED == 'true'", text)
         authorization_section = text.split("  professional_authorization:", 1)[1].split(
             "  python310_runtime_compatibility:", 1
         )[0]
@@ -242,6 +242,16 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github_actions_security_guard.py", mainline_section)
         self.assertIn("ci.generated_reports.guard", mainline_section)
         self.assertNotIn("ci.professional.backend", mainline_section)
+
+    def test_orm_selection_is_distinct_from_broad_backend_static_paths(self) -> None:
+        text = self.text('professional_quality_gate.yml')
+        self.assertIn('orm_required: ${{ steps.risk.outputs.orm_required }}', text)
+        self.assertIn("ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}", text)
+        block = text.split('- name: Prove settlement component profile with real ORM', 1)[1].split('- name:', 1)[0]
+        self.assertIn("if: env.ORM_REQUIRED == 'true'", block)
+        self.assertNotIn('env.BACKEND_CHANGED', block)
+        self.assertIn('make test.payment-settlement.component-profile.orm', block)
+        self.assertIn('Report ORM verification selection', text)
 
     def test_settlement_component_profile_orm_gate_stays_wired(self) -> None:
         """Keep the settlement ORM lane wired, and record where it can run.
