@@ -36,6 +36,16 @@
     "authority": "existing local Make tools; no database or service access"
   },
   "checks": {
+    "create_default_hydration": {
+      "target": "verify.frontend.create_default_hydration.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/createDefaults.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "make/frontend.mk"
+      ]
+    },
     "red_flush_role_runtime": {
       "target": "verify.business_config.approval_runtime",
       "kind": "runtime",

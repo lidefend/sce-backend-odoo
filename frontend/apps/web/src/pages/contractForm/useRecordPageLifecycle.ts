@@ -336,6 +336,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         model: model.value,
         fieldNames,
         baseDefaults,
+        fieldTypes: Object.fromEntries(fieldNames.map((name) => {
+          const field = formFields()[name];
+          return [name, String(field?.type || field?.ttype || '')];
+        })),
         fetchDefaults: defaultContractFormRecord,
       });
       fieldNames.forEach((name) => {

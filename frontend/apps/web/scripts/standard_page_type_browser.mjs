@@ -914,6 +914,14 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.plan') {
+          for (const field of ['company_id', 'owner_id']) {
+            const value = authority.mainData?.[field];
+            check(`plan create: ${field} default relation label retained`, Array.isArray(value)
+              && typeof value[1] === 'string' && value[1].length > 0
+              && await session.page.locator(`[data-field-name="${field}"] input`).first().inputValue() === value[1]);
+          }
+        }
         if (eventSaveProbe) {
           report.eventCreateAuthority = authority;
           for (const field of ['name', 'project_id', 'event_type', 'description']) {

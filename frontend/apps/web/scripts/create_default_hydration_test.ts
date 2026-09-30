@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {
   createRouteDefaultsFingerprint,
   loadAuthoritativeCreateDefaults,
+  mergeAuthoritativeCreateDefaults,
   resolveCreateDefaultGetRequest,
   resolveCreateDefaults,
   resolveCreateRouteRelationLabels,
@@ -166,4 +167,21 @@ assert.ok(
   'default_get consumption remains inside the create-only branch',
 );
 
-console.log('[create-default-hydration] PASS cases=28');
+const relationBase = { owner_id: [17, 'Authorized owner'] };
+const mergeRelation = (value: unknown, type = 'many2one') => mergeAuthoritativeCreateDefaults({
+  baseDefaults: relationBase, authoritativeDefaults: { owner_id: value },
+  fieldNames: ['owner_id'], fieldTypes: { owner_id: type },
+}).owner_id;
+assert.deepEqual(mergeRelation(17), [17, 'Authorized owner']);
+assert.notEqual(mergeRelation(17), relationBase.owner_id, 'do not mutate shared mainData tuples');
+for (const value of [18, false, null, 0, '', [17, 'Fresh label']]) {
+  assert.deepEqual(mergeRelation(value), value, 'new authority or cleared identity must win');
+}
+assert.equal(mergeRelation(17, 'integer'), 17, 'tuple shape alone is not relation authority');
+assert.equal(mergeAuthoritativeCreateDefaults({baseDefaults: relationBase,
+  authoritativeDefaults: {owner_id: 17}, fieldNames: ['owner_id']}).owner_id, 17);
+const relationLoaded = await loadAuthoritativeCreateDefaults({primaryDataSource,
+  model: 'x.document', fieldNames: ['owner_id'], baseDefaults: relationBase,
+  fieldTypes: {owner_id: 'many2one'}, fetchDefaults: async () => ({record: {owner_id: 17}})});
+assert.deepEqual(relationLoaded.owner_id, [17, 'Authorized owner']);
+console.log('[create-default-hydration] PASS cases=39');
