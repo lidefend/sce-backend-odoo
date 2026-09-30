@@ -8951,3 +8951,16 @@ expense-role-configured-iteration/scope-iteration L1、py_compile、diff PASS；
 受管backend.acceptance.up重绑d9f229b0f，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-cash-runtime.log27 PASS（原25+新增2组）。普通finance提交现金报销后approved，来源申请仍approved、未认领且没有付款台账；显式action_done后报销及申请均done，terminal_cash_source_model/res_id确指本报销，唯一payment.ledger为posted、金额等于申请，并核对公司/项目/往来/币种。重复完成及解除申请关联拒绝，台账仍一条。原申请只在该受管事务中暂时变化；helper finally rollback后逐字段比对原state/身份/金额/认领字段及原台账ID集合，EXPENSE_CASH_SOURCE_ROLLBACK=VERIFIED；主finally配置/步骤/全部临时对象复核BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。请求对象由同次受限查询所得recordset直接绑定并前后回读；本日志未输出请求具体ID，不将其作为精确对象发布归档回执，后续最终证据需要补齐可读身份绑定。
 
 此次关闭现金费用普通finance无配置批准→实际执行→付款申请/台账衔接的运行缺口，不新增第二套付款业务实现。配置审批角色链沿53.150同模型往来款证明，不外推现金报销配置链、部分付款、真实并发、保证金及退款。已保存expense浏览器查询为空事实沿53.149保留，无页面办理通过声明。整体67/detail.action-state仍开放，下一步回到费用官方页面可用能力与缺少保存数据的清晰边界，并补最终证据可读对象身份；不重复无关矩阵、fixture或付款49。无推送合并目标部署。
+
+
+### 53.152 报销创建契约初始化缺口修复
+
+638ec3b43 clean起点，从已捕获finance system.init route_authority复用授权费用报销菜单xmlid，P4读取当次实际menu/action而非硬编数字。现有探针新增create入口观察，未重查已知为空的保存记录。expense-create-browser.log/tpl07-1790800143905在第13断言失败：有效契约保留payment_request_id但页面无输入；截图/契约mainData显示business_category_code正确，business_category_id缺失、financial_flow缺失、payment_anchor_policy错误回落interfund_no_request，导致报销入口隐藏必需付款申请。无page异常/业务写入，不删除该职责以求兼容。
+
+P1 expense_claim.default_get此前只初始化项目/往来，category仅create解析，无法提供页面初始化所需语义。6fccee039补business_category_id缺省解析，保留已有显式类别默认；direction/handling_kind/business_axis/financial_flow/payment_anchor_policy/claim_flow_label从未持久化候选的既有模型compute读取，排除旧派生默认输入，按fields_list投影。不在P0/frontend复制行业规则、不引入新字段/XML/模块升级。P4仅原浏览器工具，P1新增default_get生产方法回归。
+
+expense-defaults-iteration L1 PASS；expense-defaults-unit.log156 PASS并begin/record成功，新增类别解析、显式默认保留、派生值不自引用和无关字段不计算反例。backend.acceptance.up加载6fccee039，原local/sc-fe-r2-p1-01/sc_frontend_acceptance身份保持，前端index-CVVwVIuW.js未变无需构建。
+
+expense-create-fixed-browser.log/tpl07-1790800235183：23 PASS，errors=[]/forbiddenWrites=[]。当次授权menu564/action758；mainData类别[18,报销申请]、handling_kind=expense_reimbursement、financial_flow=cash_out、payment_anchor_policy=pay_request_required、direction=outflow。官方表单保留项目/往来/付款申请/金额/账户，后四项有实际input，未保存不出现审批通过/驳回/完成；1440/390无整页溢出，390截图人工核对正确口径。未执行空表提交/保存/关系选择，不能将字段呈现证明升级为提交校验或业务创建完成。
+
+default_get影响真实create，故有依据重验既有费用27范围：expense-defaults-runtime.log27 PASS，EXPENSE_CASH_SOURCE_ROLLBACK及BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK VERIFIED。现金/往来分类、配置与无配置审批、真实finance执行/唯一台账及原来源恢复保持，未重验其他领域或付款49。最终对象可读ID日志限制沿53.151保留。总体67/detail.action-state仍开放，下一步是该创建入口的必填反馈和实际关系交互共享消费，不重复盘点/空查询。无推送合并目标部署。
