@@ -22,7 +22,7 @@
     "frontend/packages/design-tokens/",
     "frontend/packages/ui/src/kits/tdesign/theme.css",
     "scripts/dev/frontend_acceptance_runtime.sh",
-    "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json"
+    "docs/architecture/unified_page_contract_v2/examples/"
   ],
   "environment": {
     "kind": "offline",

@@ -7399,3 +7399,5 @@ L5：未推送、未合并、未部署。
 - P0 / smart_core / 搜索运行事实投影：缓存是页面结构权威，不能缓存用户收藏事实。沿现有 app.search.config 生产者补 refresh_saved_search_runtime，在统一 runtime seal 前重投影 searchContract 的 saved_filters 和收藏能力；冷源、缓存源和 assembled cache 都经过同一边界，显式传 action_id；不重写过滤器/分组/配置结构，不新增业务契约字段，不替前端造权限。scene_contract 维持原职责，不人为接入模型收藏。
 - L1 ci.local.iteration、Python语法通过；L2 saved_search_capability 13项通过，涵盖删除后空集合、action scope、用户隔离、权限变化、查询失败不交付旧结果、先刷新再封装。登记 begin/record13。生命周期守卫发现既有 nested_form_relation.json 哈希漂移，确认文件在起点HEAD未变；只按现有语义内容重算 contractSha256，不修改示例语义或降低守卫。
 - 模块加载评估：没有字段、XML、注册或 manifest 变化，无需 -u。纯 Python 代码需通过既有 backend.acceptance.up 重载；复用原验收库、卷与端口，不做安装/fixture/全量ORM回归。前端构建输入未变，继续使用53.3候选；受影响实际合同/菜单验证待重载后完成。
+
+- 生命周期首次报告同时存在 definition/schema 哈希和 validation/示例哈希两项漂移；首次修复只处理了报告末尾的示例错误，遗漏 definition，未达到完整通过。3de6778a2 的后端重载已发生，但没有在该失败状态继续浏览器验收。现已按原 schema 文件实际字节 SHA256 同步 runtime 常量与四份示例，不改 schema 或示例业务内容；完整守卫最终8/8维度、p0Count=0，5+10单测通过，日志 `tpl52/favorite-runtime-lifecycle-final.log`。后续只因这次运行常量变化再次受管重载，不重建前端。
