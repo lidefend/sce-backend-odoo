@@ -9366,3 +9366,12 @@ plan-node-initial-iteration L1、payment.approval_state_machine.unit176及begin/
 L1/177纯测及receipt PASS（plan-node-capability-*），真实方法覆盖draft/rejected/pending/validated/confirmed/in_progress/done/未知state，原输入不变及无权限不提升。补齐当前测试已引用的plan/diary/event/XML/normalizer/hook依赖到既有run结果索引，防止未来错误复用；为新依赖绑定重记begin/177/receipt（plan-capability-dependencies-*），不扩全仓扫描。backend.acceptance.up加载e47ba113c，前端e19eb1e16不变不构建，无schema不升级。
 
 实际PM既有记录浏览器plan-node-capability-browser.log失败于数据前置：tpl07-1790810099823/report.json api.data list sc.plan ok=true/records=[]，未进入记录详情，无业务写。不能把纯测替代最终契约/按钮证据；不重复空查询、不扩大授权或新增fixture。下一步沿现有plan-state-authority事务回滚工具补真实ui.contract.v2投影检查，再补普通角色办理；本次能力投影尚非批次验收完成。动态结构之外，汇报/版本统一审批、执行中父表单开放和整体67仍未完成，无推送/合并/目标部署。
+
+
+### 53.188 计划节点真实统一契约能力验证
+
+91e166f5e+dirty仅P4原business_config_approval_runtime_smoke新增_plan_node_contract_check，直接调用真实UiContractV2Handler.handle（sc.plan/action_sc_plan/form/edit/实际record_id），检查最终layoutContract中line_ids fieldInfo/subview的can_create/can_unlink，不只调用P1归一化函数。沿原plan-state-authority事务对象检查draft=true、confirmed=false、in_progress=false、pending=false，共新增4项；不新增环境/fixture或持久记录，不重复PM空列表查询。
+
+L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复用53.187 177纯测及已登记依赖receipt。受管plan-capability-v2-runtime.log进程终态exit0、20具名PASS/ROLLBACK VERIFIED，四次实际统一契约均返回节点策略且与后端写入边界一致；原节点执行更新、主单内容保护、真实审批与驳回重提继续通过。产品backend e47ba113c，frontend e19eb1e16无变更，不重载/升级/构建。环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter与原卷。
+
+关闭53.187最终契约投影缺少运行证据的问题。此链仍是原事务sudo创建/执行与实际reviewer，不能替代普通PM浏览器办理；全局父表单编辑仍未开放。下一步统一计划汇报/版本审批职责，再开放具备后端约束的执行页并做普通角色临时办理/精确清理。整体67/detail.action-state开放，无推送/合并/目标部署。
