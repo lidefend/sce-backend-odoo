@@ -5,6 +5,7 @@
  */
 :root {
   /* Shared typography roles consume the official ladder only at this bridge. */
+  --sc-font-title-extra-large: var(--td-font-title-extraLarge);
   --sc-font-title-large: var(--td-font-title-large);
   --sc-font-title-medium: var(--td-font-title-medium);
   --sc-font-title-small: var(--td-font-title-small);

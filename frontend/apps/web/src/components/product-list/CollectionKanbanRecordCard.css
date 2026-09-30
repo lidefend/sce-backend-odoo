@@ -9,7 +9,7 @@
 .collection-kanban-record-card__statuses { display: flex; flex-wrap: wrap; gap: var(--sc-product-space-1); }
 .collection-kanban-record-card__facts { display: grid; gap: var(--sc-product-space-1); margin: 0; }
 .collection-kanban-record-card__facts.is-primary { padding-bottom: var(--sc-product-space-1); border-bottom: 1px solid var(--sc-app-border); }
-.collection-kanban-record-card__fact { display: grid; grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr); gap: var(--sc-product-space-1); color: var(--sc-app-text-secondary); font-size: var(--sc-product-text-sm); }
+.collection-kanban-record-card__fact { display: grid; grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr); gap: var(--sc-product-space-1); color: var(--sc-app-text-secondary); font: var(--sc-font-body-small); }
 .collection-kanban-record-card__fact dt { color: var(--sc-app-text-primary); font-weight: 600; }
 .collection-kanban-record-card__fact dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 520px) { .collection-kanban-record-card__fact { grid-template-columns: minmax(76px, .4fr) minmax(0, 1fr); } }

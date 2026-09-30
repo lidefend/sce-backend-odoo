@@ -52,14 +52,15 @@
 }
 
 .status-badge {
+  font: var(--sc-font-mark-small);
   display: inline-flex;
   align-items: center;
   max-width: 100%;
   border-radius: 999px;
   min-height: 24px;
   padding: 2px 9px;
-  font-size: 12px;
-  font-weight: 650;
+
+
   border: 1px solid var(--sc-app-border);
   white-space: nowrap;
 }

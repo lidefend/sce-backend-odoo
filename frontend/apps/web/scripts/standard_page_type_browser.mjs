@@ -173,6 +173,11 @@ async function styleScope() {
     // This standard list intentionally suppresses the outer headline; its record
     // header keeps the pinned official headline-small ladder.
     await inspect(`shell-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+    if (family === 'collection') {
+      const selector = viewport.width > 600 ? '.flat-table .column-sort-btn' : '.collection-mobile-record-row__identity';
+      await page.locator(selector).first().waitFor();
+      await inspect(`collection-cells-${viewport.width}`, selector, viewport.width > 600 ? ['14px', '600', '22px'] : ['16px', '600', '24px']);
+    }
     if (['shell', 'collection'].includes(family)) continue;
     if (family === 'detail') {
       await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');

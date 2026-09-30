@@ -7326,3 +7326,10 @@ L5：未推送、未合并、未部署。
 - 导航/上下文/标签/账户等文字采用官方 body-small/body-medium、mark 与 title-medium 共享角色；品牌图形和关闭图标尺寸保留为几何用途。补充 mark/headline 桥接角色供后续共享族消费。
 - navigation_shell 单测 19 个及组件契约通过，style_system passed（`tpl52/shell.log`）；一次构建 22.27s。
 - `TPL07_SCOPE=style TPL52_FAMILY=shell` 两视口 18/18 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764883387/report.json`。未重跑付款业务办理；沿用前批 modal/合同结果。
+
+### 52.4 页面族：列表共享部件
+
+- 行/移动记录/分组/汇总/看板/分页的文字统一消费官方梯队；收藏星形等图标几何以及隐藏选择器 font-size:0 保持。列标题 14/600/22，移动记录身份 16/600/24。
+- standard_collection_composition 113 案例 + style_system passed；一次构建。定向双视口 28/28 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765049108/report.json`。
+- 首次探针依赖当前契约未采用的 status-badge 单元格类型而超时；改为当前实际列标题和移动身份，复用构建，失败报告 `tpl07-1790764971580/report.json` 保留。不据此宣称未展示的看板/分组数据已做业务验收。
+- 所有者再次明确：本轮完整目标是全系统契约驱动的官方渲染/交互，样式修复只是基础批次；后续仍按既有页面类型核对唯一组合及旧职责退出，不能以字号修复代替整体接管。
