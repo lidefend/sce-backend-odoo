@@ -22,7 +22,12 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "scripts/ci/trusted_scan_scope.py",
-    "scripts/ci/test_trusted_scan_scope.py"
+    "scripts/ci/test_trusted_scan_scope.py",
+    "config/ci/risk_tiering_v1.json",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    ".github/workflows/professional_quality_gate.yml"
   ],
   "environment": {
     "kind": "offline",
@@ -88,10 +93,22 @@
         "make/codex.mk"
       ],
       "kind": "offline"
+    },
+    "orm_selection": {
+      "target": "verify.ci.orm_selection.unit",
+      "inputs": [
+        "config/ci/risk_tiering_v1.json",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        ".github/workflows/professional_quality_gate.yml",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze reviewed P4-only candidate; Quick must use genuine main-tree receipt for incremental historical scans. Publish GitHub PR, require current four remote checks and protected Merge commit; product branch remains untouched.",
+  "next_exact_step": "Freeze reviewed PR524 update; exact-head Quick with trusted incremental scans; push same PR, verify new required checks and actual ORM step skipped, then protected authorized Merge commit.",
   "id": "P4-INCREMENTAL-RESUME",
   "branch": "fix/agent-resume-mainline",
   "status": "verification_pending",
@@ -102,7 +119,7 @@
     "mainline": "not_run",
     "controller_installation": "not_run",
     "deployment": "not_run",
-    "review": "passed: P4 extraction and exact trusted-scan migration; pending final fingerprint/Quick/remoteCI",
+    "review": "passed independent P4, trusted evidence migration and ORM impact selection review",
     "l1": {
       "command": "make ci.local.iteration",
       "status": "passed",
@@ -113,7 +130,8 @@
       "resume": 30,
       "planner": 17,
       "controller": 37,
-      "trusted_scan": 33
+      "trusted_scan": 33,
+      "orm_selection": 42
     },
     "reuse_observation": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/reuse-plan.log",
     "cancelled_quick": {

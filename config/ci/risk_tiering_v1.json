@@ -82,5 +82,32 @@
   ],
   "release_refs": [
     "refs/tags/**"
+  ],
+  "orm_runtime_paths": [
+    "addons/**",
+    "addons_external/**",
+    "demo_addons/**",
+    "customer_addons/**",
+    "migrations/**",
+    "tests/**",
+    "scripts/test/**",
+    "scripts/ci/*orm*",
+    "make/dev_test.mk",
+    "Makefile",
+    "Dockerfile*",
+    "**/Dockerfile*",
+    "docker-compose*",
+    "**/docker-compose*",
+    "deployment/**",
+    "release/**",
+    "**/*odoo*conf*",
+    "**/requirements*.txt",
+    "**/requirements*.lock",
+    "requirements*.txt",
+    "requirements*.lock"
+  ],
+  "orm_non_runtime_context_paths": [
+    ".agent/**",
+    ".codex/**"
   ]
 }

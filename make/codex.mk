@@ -922,3 +922,8 @@ agent.run.begin: guard.prod.forbid
 
 .PHONY: verify.trusted_scan.unit
 verify.trusted_scan.unit: security.online_capture.unit
+
+.PHONY: verify.ci.orm_selection.unit
+verify.ci.orm_selection.unit:
+	@python3 scripts/ci/test_ci_risk_classifier.py
+	@python3 scripts/ci/test_ci_risk_workflow_contract.py

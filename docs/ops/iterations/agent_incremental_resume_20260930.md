@@ -62,3 +62,10 @@ Formal Product Layer=P4；Layer Target=统一执行上下文与增量验证；Mo
 helper 的检测/覆盖代码、scanner/policy/例外名单与 producer 权威继续校验；回执查找的兼容转换绑定精确已审阅旧/新 AST 摘要，任何未登记的未来信任校验变化都失效。首次复核发现按函数名永久排除过宽，已用精确迁移对与负例关闭。
 33 项扫描复用/秘密扫描测试通过，实际三类扫描均找到真实 `83ba6406` Quick 回执，对等树 main `72ad88e6` 使用 incremental；历史检查结果 `reachable_scan=trusted_base_incremental`，仍扫描每个候选中间提交和新路径出现的旧 blob。实际增量日志为 `incremental-public-scans.log`，选择记录为 `trusted-scope-plan.log`。
 Make alias 改变声明输入，已只重验受影响的 30/17/37 工具测试；不重做业务验收。最终 Quick 必须针对新冻结候选，但已验证主线历史不再全扫。远端 runner 无本地可信回执时仍执行其必需检查，不能把本地复用声明冒充远端通过。
+
+### 远端 ORM 按实际影响选择
+
+PR524 初版出现无关结算 ORM。根因是 standard_backend_paths 包含整个 scripts/verify/**，工作流把 backend_changed 直接用于 ORM；纯执行器测试因而触发业务运行验证。现保留原 risk lane/backend_changed 静态责任，新增独立 orm_required 输出及受管运行依赖表。
+普通 P4 候选分类仍 HIGH_RISK/backend_changed=true，但 orm_required=false。业务 addons（含实际挂载的 addons_external/demo_addons）、客户模块、迁移、ORM runner、依赖及容器变化触发 ORM；未知/非法/空变更、正式发布、计划全验以及输出缺失均失败关闭。工程上下文只豁免 ORM，不降低原风险等级。依赖表要求字符串列表，配置错误拒绝。
+质量 job 及其必需检查名称保留；只调整对应 ORM 步骤选择，并打印选择结果。首次复核发现外部 addons 安全文件漏选，已补装载根和 Python/manifest/XML/CSV 正例关闭。42 项风险分类/工作流测试和 15 项 Actions 安全测试通过；输入变动后的 30/17/37/33 工具测试通过，生成准备 7 项及全部报告通过。本次不执行本地 ORM 或写数据库。
+后续新 SHA 必须取得新远端检查，核对结算 ORM 步骤为显式 skipped、必需 quality job 正常通过；初版 `8b44ce5` 的远端状态不用于新候选合并。本记录与同一 PR 持续更新，不新建平行任务。

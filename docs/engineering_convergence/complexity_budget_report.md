@@ -163,7 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 423 | Shell script | `scripts/demo/verify.sh` |
 | 345 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |
 | 343 | YAML workflow | `.github/workflows/infra-stage-gate.yml` |
-| 331 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 333 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 314 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 308 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 305 | YAML workflow | `.github/workflows/backend_test_suite.yml` |

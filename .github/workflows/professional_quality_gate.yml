@@ -31,6 +31,7 @@ jobs:
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
+      orm_required: ${{ steps.risk.outputs.orm_required }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - name: Deny forks and non-owner actors
@@ -165,6 +166,7 @@ jobs:
       PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
+      ORM_REQUIRED: ${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}
 
     defaults:
       run:
@@ -205,19 +207,19 @@ jobs:
         if: >-
           env.CANDIDATE_REQUESTED == 'true' &&
           env.PROFESSIONAL_MODE == 'full' &&
-          env.BACKEND_CHANGED == 'true'
+          env.ORM_REQUIRED == 'true'
         run: make test.chatter-timeline.authorization.orm
 
       # The settlement component profile is an assertion about a published
       # native form authority, so it can only be proven by a real ORM run in an
-      # isolated database. `addons/**` (product code and its test module) is the
-      # trigger scope, and both resolve to BACKEND_CHANGED here.
+      # isolated database. Use product/ORM runtime dependencies, not the broader
+      # BACKEND_CHANGED flag which also includes pure verification scripts.
+      - name: Report ORM verification selection
+        run: |
+          printf 'ORM_REQUIRED=%s BACKEND_CHANGED=%s PROFESSIONAL_MODE=%s\n' "${ORM_REQUIRED}" "${BACKEND_CHANGED}" "${PROFESSIONAL_MODE}"
+
       - name: Prove settlement component profile with real ORM
-        if: >-
-          env.BACKEND_CHANGED == 'true' &&
-          (env.PROFESSIONAL_MODE == 'full' ||
-          env.PROFESSIONAL_MODE == 'standard_backend' ||
-          env.PROFESSIONAL_MODE == 'mainline')
+        if: env.ORM_REQUIRED == 'true'
         run: make test.payment-settlement.component-profile.orm
 
       - name: Restore pip dependency cache

@@ -26,6 +26,7 @@ class Classification:
     frontend_changed: bool
     backend_changed: bool
     frontend_full_required: bool
+    orm_required: bool = True
 
     @property
     def frontend_mode(self) -> str:
@@ -52,6 +53,7 @@ class Classification:
             "professional_mode": self.professional_mode,
             "frontend_changed": str(self.frontend_changed).lower(),
             "backend_changed": str(self.backend_changed).lower(),
+            "orm_required": str(self.orm_required).lower(),
             "frontend_full_required": str(self.frontend_full_required).lower(),
             "changed_path_count": str(len(self.paths)),
             "changed_paths_json": json.dumps(self.paths, separators=(",", ":")),
@@ -92,6 +94,13 @@ def classify(
     policy: dict | None = None,
 ) -> Classification:
     policy = policy or load_policy()
+    orm_paths = policy.get("orm_runtime_paths")
+    context_paths = policy.get("orm_non_runtime_context_paths", [])
+    if (not isinstance(orm_paths, list) or not orm_paths
+            or not all(isinstance(path, str) and path for path in orm_paths)
+            or not isinstance(context_paths, list)
+            or not all(isinstance(path, str) and path for path in context_paths)):
+        raise ValueError("ORM dependency policy requires bounded string lists")
     changed = _normalize_paths(paths)
     if event_name == "workflow_dispatch" or _matches(ref, policy["release_refs"]):
         return Classification("RELEASE", changed, ("release_event",), True, True, True)
@@ -120,6 +129,11 @@ def classify(
     fast = tuple(path for path in changed if _matches(path, policy["fast_paths"]))
     known = set(high) | set(frontend) | set(backend) | set(fast)
     unknown = tuple(path for path in changed if path not in known)
+    unknown_runtime = tuple(path for path in unknown
+                            if not _matches(path, policy.get("orm_non_runtime_context_paths", ())))
+    orm_required = bool(invalid or unknown_runtime or any(
+        _matches(path, policy["orm_runtime_paths"]) for path in changed
+    ))
 
     if high or invalid or unknown:
         reasons = []
@@ -136,6 +150,7 @@ def classify(
             bool(frontend),
             bool(backend),
             bool(frontend_full),
+            orm_required,
         )
     if frontend or backend:
         return Classification(
@@ -145,8 +160,9 @@ def classify(
             bool(frontend),
             bool(backend),
             bool(frontend_full),
+            orm_required,
         )
-    return Classification("FAST", changed, ("non_runtime_change",), False, False, False)
+    return Classification("FAST", changed, ("non_runtime_change",), False, False, False, False)
 
 
 def changed_paths(base: str, head: str) -> tuple[str, ...]:
