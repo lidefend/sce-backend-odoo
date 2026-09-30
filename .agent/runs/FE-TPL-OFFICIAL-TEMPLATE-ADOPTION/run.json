@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.127 P1 settlement_adjustment/treasury_reconciliation now guard ordinary create/context defaults/write state and origin; private action tokens preserve shared policy/reviewer callbacks, governed sudo legacy-confirmed creation. L1 finance-state-final-iteration PASS; L2 finance-state-unit142/native62 PASS. Runtime not yet run/loaded: next extend existing rollback-only approval smoke for these two models using governed existing source builders, reload Python (no upgrade/build), validate real auto/configured approval/direct-write denial/separate reconciliation. Other finance state/content/cancel boundaries remain open; keep67/detail.action-state, no push/merge/deploy.",
+  "next_exact_step": "53.127 source a5a4ae43e pure142/native62 PASS; backend95d771097 loaded. New finance-state-authority runtime FAILED before first check: existing finance-company contract and posted ledger not both found (old assertion did not identify which); ROLLBACK VERIFIED. Zero business checks, do not claim runtime success or retry unchanged sources. Tool diagnostic now distinguishes prerequisites on future justified run. Next continue P1 receipt/self-funding confirmed-state create/write protection using existing financial authority tokens; preserve identity rules, retain reconciliation/adjustment runtime source gap, no invented tax/source fixtures or company-scope widening. Overall67/detail.action-state open; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

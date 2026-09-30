@@ -8686,3 +8686,10 @@ a9b73cdb1 clean定向读取既有finance-family测试关联模型，不做全仓
 本次仅两个模型状态入口收口，仍待受管运行验证；其他财务模型、审核期间内容冻结、取消行为和有效契约反馈按依赖继续补齐，不宣称整族或总体完成。下一步在既有business_config_approval_runtime_smoke扩展有界scope，复用既有项目/资金台账/合同准备与事务回滚设施，验证真实无配置确认、有配置等待/审核、直写拒绝及独立对账；先检查既有数据准备，不新建环境或持久fixture。后端尚未加载本dirty；前端CrYkOCxc继续复用。
 
 53.127回执：初次record漏传AGENT_CHECK_STATUS被参数解析拒绝；修正为passed后，两项重新begin/record成功，原142/62测试日志未重跑。finance-state-{unit,native}-reconcile-receipt.log保留准确结果；失败回执不算通过。
+
+
+53.127受管运行尝试：P4新增finance-state-authority scope（计划8组，非通过计数），复用fixture finance公司范围，以只读选取现有合同/posted资金台账作为来源；不新建来源、税率或持久fixture。现有同公司策略临时停用/恢复，配置审批时复用已有公司策略或事务创建，真实审核调用既有reviewer；扩展finally回读两模型原策略/步骤。L1 finance-state-tool-iteration.log及后续py_compile/bash-n/diff通过，P1 pure142/native62输入未变复用。工具95d771097已提交并受管reload，preflight确认local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。
+
+finance-state-runtime.log FAILED在首个业务检查之前：同一finance公司内合同和已入账资金台账未同时存在；原assert未区分是哪一个缺失，不能擅自报告两者都没有。ROLLBACK VERIFIED：策略/步骤恢复、临时记录不存在。业务通过数0，不作为运行门禁通过；不重试相同数据前提。后续工具错误消息细化为分别报告contract/posted_ledger存在性，未为日志文字再次执行业务。保留来源前提缺口，不能拿已通过142/62替代真实ORM办理。未运行浏览器或构建、未升级模块、未推送合并目标部署。
+
+下一步继续同一财务组已确认的收款/自筹confirmed审批状态保护，复用各自既有财务事实私有token，不改已完成的财务身份规则；融资/付款/费用保护按既有代码核对。两模型真实运行在授权范围来源满足或既有受管准备路径确认后再恢复；不得猜造税率、扩大公司授权范围或把0检查说成通过。总体67/detail.action-state仍开放。

@@ -505,7 +505,7 @@ def _finance_state_authority_checks(group, created):
     Policy = env["sc.approval.policy"].sudo()
     contract = env["construction.contract"].sudo().search([("company_id", "=", company.id)], limit=1)
     ledger = env["sc.treasury.ledger"].sudo().search([("company_id", "=", company.id), ("state", "=", "posted")], limit=1)
-    assert contract and ledger, "existing company-scoped contract and posted ledger required"
+    assert contract and ledger, "existing company-scoped sources required: company=%s contract=%s posted_ledger=%s" % (company.id, bool(contract), bool(ledger))
 
     def denied(call):
         refused = False
