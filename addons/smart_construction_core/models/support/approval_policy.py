@@ -13,6 +13,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.project.document", "工程资料"),
         ("tender.doc.purchase", "投标文件购买申请"),
         ("tender.guarantee", "投标保证金"),
+        ("sc.output.invoice.adjustment", "销项变更登记"),
         ("project.project", "项目立项"),
         ("project.task", "项目任务"),
         ("construction.contract", "项目合同"),
@@ -430,6 +431,7 @@ class ScApprovalPolicy(models.Model):
             "sc.project.document",
             "tender.doc.purchase",
             "tender.guarantee",
+            "sc.output.invoice.adjustment",
             "project.project",
             "project.task",
             "project.material.plan",
@@ -574,6 +576,10 @@ class ScApprovalPolicy(models.Model):
                 "smart_construction_core.server_action_project_document_on_approved",
                 "smart_construction_core.server_action_project_document_on_rejected",
             ),
+            "sc.output.invoice.adjustment": (
+                "smart_construction_core.server_action_output_adjustment_on_approved",
+                "smart_construction_core.server_action_output_adjustment_on_rejected",
+            ),
             "tender.guarantee": (
                 "smart_construction_core.server_action_tender_guarantee_on_approved",
                 "smart_construction_core.server_action_tender_guarantee_on_rejected",
@@ -717,6 +723,7 @@ class ScApprovalPolicy(models.Model):
         amount_field_by_model = {
             "tender.doc.purchase": "amount",
             "tender.guarantee": "amount",
+            "sc.output.invoice.adjustment": "original_invoice_amount",
             "project.task": "boq_amount_total",
             "sc.tax.deduction.registration": "deduction_amount",
             "payment.request": "amount",

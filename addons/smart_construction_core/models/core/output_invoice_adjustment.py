@@ -3,10 +3,17 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
+_RED_FLUSH_STATE_TOKEN = object()
+
+
 class ScOutputInvoiceAdjustment(models.Model):
     _name = "sc.output.invoice.adjustment"
     _description = "销项变更登记"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one(related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text("驳回原因", readonly=True, copy=False)
     _order = "adjustment_date desc, id desc"
 
     name = fields.Char(string="变更单号", required=True, default="新建", copy=False, tracking=True)
@@ -18,7 +25,7 @@ class ScOutputInvoiceAdjustment(models.Model):
         tracking=True,
     )
     state = fields.Selection(
-        [("draft", "草稿"), ("confirmed", "已确认"), ("cancel", "已取消")],
+        [("draft", "草稿"), ("submitted", "待审批"), ("approved", "已通过"), ("rejected", "已驳回"), ("confirmed", "已确认"), ("cancel", "已取消")],
         string="状态",
         default="draft",
         required=True,
@@ -97,6 +104,8 @@ class ScOutputInvoiceAdjustment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(vals.get("state", self.env.context.get("default_state", "draft")) != "draft" for vals in vals_list):
+            raise UserError(_("销项变更必须从草稿提交审批。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
@@ -106,6 +115,11 @@ class ScOutputInvoiceAdjustment(models.Model):
         return records
 
     def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_red_flush_state_token") is not _RED_FLUSH_STATE_TOKEN:
+            raise UserError(_("状态只能通过提交、审批和确认红冲动作产生。"))
+        reviewed = {"original_ledger_id", "adjustment_date", "adjustment_type", "red_flush_invoice_no", "reason", "project_id", "partner_id", "contract_id", "currency_id", "original_source_model", "original_source_record_id", "invoice_no", "invoice_issue_company", "invoice_party_name", "original_invoice_amount", "original_amount_no_tax", "original_tax_amount", "original_surcharge_amount"}
+        if reviewed.intersection(vals) and any(rec.state not in ("draft", "rejected") for rec in self):
+            raise UserError(_("在审或已通过红冲申请不能修改审批内容。"))
         if any(rec.state == "confirmed" for rec in self) and set(vals) - {"note", "message_follower_ids"}:
             raise UserError(_("已确认的销项变更登记不能修改。"))
         res = super().write(vals)
@@ -165,22 +179,62 @@ class ScOutputInvoiceAdjustment(models.Model):
             return self.env["sc.receipt.invoice.line"].browse()
         return self.env[ledger.source_model].browse(ledger.source_record_id)
 
+    def _write_approval_state(self, values):
+        return self.with_context(sc_red_flush_state_token=_RED_FLUSH_STATE_TOKEN).write(values)
+
+    def action_submit(self):
+        if any(rec.state not in ("draft", "submitted", "rejected") for rec in self):
+            raise UserError(_("只有草稿、驳回或待重新提交的红冲申请可以提交。"))
+        for rec in self:
+            if rec.state in ("draft", "rejected"):
+                rec._sync_original_invoice_snapshot()
+            rec._validate_red_flush_ready()
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for rec in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec._write_approval_state({"state": "approved", "reject_reason": False})
+        return True
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "validated":
+                rec._validate_red_flush_ready()
+                rec._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else "统一审批驳回（未填写原因）"
+                rec.with_context(skip_validation_check=True)._write_approval_state({"state": "rejected", "reject_reason": reason})
+
+    def _assert_original_snapshot_unchanged(self):
+        self.ensure_one()
+        ledger = self.original_ledger_id
+        pairs = {"original_source_model": "source_model", "original_source_record_id": "source_record_id", "invoice_no": "invoice_no", "invoice_issue_company": "invoice_issue_company", "invoice_party_name": "invoice_party_name", "original_invoice_amount": "invoice_amount", "original_amount_no_tax": "amount_no_tax", "original_tax_amount": "tax_amount", "original_surcharge_amount": "surcharge_amount"}
+        if any(self[field] != ledger[source] for field, source in pairs.items()):
+            raise UserError(_("原票信息已变化，不能按旧审批内容确认红冲。"))
+        source = self._original_source_record(ledger)
+        for field in ("project_id", "partner_id", "contract_id", "currency_id"):
+            expected = ledger[field] or getattr(source, field, False)
+            if expected and self[field] != expected:
+                raise UserError(_("原票业务身份已变化，不能确认红冲。"))
+
     def action_confirm(self):
         for rec in self:
-            if rec.state != "draft":
-                raise UserError(_("只有草稿状态的销项变更登记可以确认。"))
-            rec._sync_original_invoice_snapshot()
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("approved",))
+            rec._assert_original_snapshot_unchanged()
             rec._validate_red_flush_ready()
             generated = rec._create_red_flush_invoice_registration()
-            rec.write({"generated_invoice_id": generated.id, "state": "confirmed"})
+            rec._write_approval_state({"generated_invoice_id": generated.id, "state": "confirmed"})
 
     def action_cancel(self):
         for rec in self:
             if rec.generated_invoice_id:
                 raise UserError(_("已生成红冲销项票的变更登记不能取消。"))
-            if rec.state != "draft":
-                raise UserError(_("只有草稿状态的销项变更登记可以取消。"))
-            rec.state = "cancel"
+            if rec.state not in ("draft", "rejected"):
+                raise UserError(_("只有草稿或驳回的销项变更登记可以取消。"))
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "cancel"})
 
     def _validate_red_flush_ready(self):
         self.ensure_one()

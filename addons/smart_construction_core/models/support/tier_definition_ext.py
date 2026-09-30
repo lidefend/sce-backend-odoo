@@ -16,6 +16,7 @@ class TierDefinition(models.Model):
             "sc.project.document",
             "tender.doc.purchase",
             "tender.guarantee",
+            "sc.output.invoice.adjustment",
             "sc.material.inbound",
             "sc.material.acceptance",
             "sc.material.purchase.request",

@@ -479,6 +479,76 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): ns['_check_document_operation'](Rows([document]), 'Archive')
             self.assertEqual(len(calls), int(same_company))
 
+    def test_red_flush_approval_is_separate_from_generating_invoice(self):
+        path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
+        names = {'action_submit', 'action_on_tier_approved', 'action_confirm', 'action_cancel'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, '_': lambda value: value}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for configured in (False, True):
+            rec = self.record(required=configured, state='draft')
+            rec._name = 'sc.output.invoice.adjustment'
+            class Env(dict): context = {}
+            rec.env = Env({'sc.approval.policy': rec.policy})
+            rec.env.company = rec.company_id
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            rec._sync_original_invoice_snapshot = lambda: None
+            rec._assert_original_snapshot_unchanged = lambda: None
+            rec._validate_red_flush_ready = lambda: None
+            rec.generated_invoice_id = False
+            generated = []
+            def generate():
+                generated.append(rec.state)
+                return types.SimpleNamespace(id=31)
+            rec._create_red_flush_invoice_registration = generate
+            rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if configured else 'approved')
+            self.assertEqual(generated, [])
+            if configured:
+                with self.assertRaises(ValueError): ns['action_confirm'](rec)
+                with self.assertRaises(ValueError): ns['action_cancel'](rec)
+                rec.policy._approve_submission_review(rec)
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(generated, [])
+            ns['action_confirm'](rec)
+            self.assertEqual(generated, ['approved'])
+            self.assertEqual(rec.state, 'confirmed')
+            for name in ('action_confirm', 'action_submit', 'action_cancel'):
+                with self.assertRaises(ValueError): ns[name](rec)
+
+    def test_red_flush_reviewed_fields_and_external_state_are_protected(self):
+        path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+        for method in methods: method.decorator_list = []
+        ns = {'UserError': ValueError, '_': lambda value: value, '_RED_FLUSH_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rows = Rows([types.SimpleNamespace(state='approved')])
+        rows.env = types.SimpleNamespace(context={'default_state': 'confirmed'})
+        with self.assertRaises(ValueError): ns['create'](rows, [{}])
+        for values in ({'state': 'draft'}, {'original_invoice_amount': 99}, {'original_ledger_id': 4}, {'red_flush_invoice_no': 'changed'}, {'reason': 'changed'}):
+            with self.assertRaises(ValueError): ns['write'](rows, values)
+
+    def test_red_flush_source_change_rejects_old_approval(self):
+        path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_assert_original_snapshot_unchanged')
+        ns = {'UserError': ValueError, '_': lambda value: value}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Snapshot(dict):
+            def ensure_one(self): pass
+            def __getattr__(self, key): return self[key]
+        ledger = Snapshot(source_model='sc.invoice.registration', source_record_id=8, invoice_no='original', invoice_issue_company='company', invoice_party_name='partner', invoice_amount=100, amount_no_tax=90, tax_amount=10, surcharge_amount=0, project_id=1, partner_id=2, contract_id=3, currency_id=4)
+        rec = Snapshot(original_source_model=ledger.source_model, original_source_record_id=8, invoice_no='original', invoice_issue_company='company', invoice_party_name='partner', original_invoice_amount=100, original_amount_no_tax=90, original_tax_amount=10, original_surcharge_amount=0, project_id=1, partner_id=2, contract_id=3, currency_id=4, original_ledger_id=ledger)
+        rec['_original_source_record'] = lambda source: None
+        ns['_assert_original_snapshot_unchanged'](rec)
+        for field, value in (('invoice_amount', 200), ('project_id', 9), ('invoice_no', 'different')):
+            old = ledger[field]
+            ledger[field] = value
+            with self.assertRaises(ValueError): ns['_assert_original_snapshot_unchanged'](rec)
+            ledger[field] = old
+
     def test_guarantee_approval_never_posts_until_explicit_confirmation(self):
         path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderGuarantee')

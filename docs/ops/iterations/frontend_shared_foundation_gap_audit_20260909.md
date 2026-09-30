@@ -8600,3 +8600,11 @@ P4既有事务回滚工具扩展tender-guarantee10组，复用local/sc-fe-r2-p1-
 53.120结果：源码975348a91/P4 fe880cb8a受管upgrade/reload成功，后端已绑定fe880cb8a。guarantee-approval-runtime.log10 PASS、ROLLBACK VERIFIED：外部状态及未批入账拒绝、无配置批准不入账、批准金额保护、显式posted台账及终态拒绝、金额阈值未匹配拒绝、实际review契约、在审配置关闭不绕过、真实审核回调、审核后显式入账、驳回原因及新review重提全部通过。事务源单/策略与提交是sudo builder，审核为实际reviewer；不是普通角色浏览器办理，也未覆盖退回方向全旅程。
 
 P4现有approval-actions新增PM tender.guarantee create，page-iteration.log/node/diff通过。tpl07-1790792456049/report.json20 PASS：bid/date/amount有效可编辑契约及真实输入、草稿无直接审批/入账，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核投标/类型/日期/金额/账户与保存提交区。前端CrYkOCxc不变，未构建。保留实际选投标保存/普通角色提交审批入账与退回方向验证缺口，不能以创建页检查升级全旅程。下一步仍沿已有workflow责任清单处理红冲等未统一职责，不做全仓再盘点；工程资料分类和项目金额权威仍待确认。
+
+### 53.121 销项红冲统一审批与原票快照保护（进行中）
+
+2145214d0 clean续跑，限定已登记sc.output.invoice.adjustment职责。P1 smart_construction_core拥有全额红冲行业规则，旧草稿action_confirm直接生成registered负数发票而workflow误标submit。新增tier/company/submitted/approved/rejected/reject_reason，policy金额来自原票original_invoice_amount，注册真实回调/native/workflow；未配置自动批准、有配置真实review，approved后独立确认红冲。保留原生成负数登记票的业务职责，不由前端重新解释。外部状态create含默认值/write保护，审核内容在审/通过后不可改；执行不再静默重取原票覆盖审批快照，先比较金额/税额/票号/来源/项目等身份，变化拒绝。已确认仍冻结，仅draft/rejected可取消。
+
+L1 red-flush-approval-iteration.log PASS，L2 unit.log131 PASS、native.log8+54=62 PASS。新增生产方法纯测试验证审批不生成票、显式生成/终态拒绝、外部状态/审核内容保护及原票金额/项目/票号变化拒绝。旧ORM红冲行为测试同步先submit，未运行全模块ORM。P4既有回滚工具新增red-flush11组，复用临时收款发票来源和SQL ledger，不建持久fixture；default all291不是本轮实际执行。tool-iteration.log/语法/diff通过。
+
+本批需模块升级与reload（tier/字段/XML），计划只跑red-flush scope及受影响角色创建页。运行时尚未证明；原票变化后的重新办理、并发重复红冲和生成登记票与通用登记权限/审批的关系仍需后续核对，不把本批纯测试当全部职责完成。保持detail.action-state与整体目标开放，前端CrYkOCxc未变不构建，无推送合并目标部署。

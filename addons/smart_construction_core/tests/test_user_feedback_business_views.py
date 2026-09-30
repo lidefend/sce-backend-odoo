@@ -1508,6 +1508,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 "reason": "用户反馈红冲闭环验证",
             }
         )
+        adjustment.action_submit()
+        self.assertEqual(adjustment.state, "approved")
+        self.assertFalse(adjustment.generated_invoice_id)
         adjustment.action_confirm()
 
         generated = adjustment.generated_invoice_id
