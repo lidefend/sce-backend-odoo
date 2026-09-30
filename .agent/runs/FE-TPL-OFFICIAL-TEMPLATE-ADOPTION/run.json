@@ -320,7 +320,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.85 attendance/labor usage/settlement source81/native55/semantics15 PASS. Extend existing rollback labor-execution scope for three models: actual approval vs explicit confirmation, attendance amount unsupported, usage/settlement amount_total, usage immutable facts/manager guard, settlement existing source project/contractor/unsettled guards, rejection/resubmit. One managed upgrade/reload then scoped runtime/official pages. No broad scans/prior ORM/frontend rebuild; overall goal active.",
+  "next_exact_step": "53.86 labor execution runtime25 PASS rollback verified backend1c18db880/tool25c468e15. Extend existing approval-actions browser scope for sc.attendance.checkin/sc.labor.usage/sc.labor.settlement; verify official unsaved create and existing authorized record if present. No new fixture, no repeat unchanged runtime25, no frontend build. Then remaining business families from current profiles. Overall role journeys/all-document adoption incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1276,6 +1276,15 @@
       "native_tests": 55,
       "semantics_tests": 15,
       "runtime": "not_run; upgrade required"
+    },
+    "segment_53_86": {
+      "status": "runtime_passed_ui_pending",
+      "backend": "1c18db880",
+      "tool": "25c468e15",
+      "runtime_checks": 25,
+      "rollback": "verified",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/labor-execution-runtime-fixed.log",
+      "tool_fix": "separate usage sources per settlement; early create rejection included"
     }
   }
 }

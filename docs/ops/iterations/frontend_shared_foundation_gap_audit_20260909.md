@@ -8185,3 +8185,5 @@ P4现有rollback新增labor-execution scope25：三模型各7（状态保护、�
 L1 labor-execution-runtime-iteration.log及py_compile/bash-n PASS，P1纯回归输入未变复用81/55/15。一次受管smart_construction_core升级/reload后只本scope；sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产/控制库。L3尚pending；前端未变不重建，L5不在本地迭代范围。
 
 首次labor-execution-runtime.log考勤7/用工8及结算前3通过后，结算重复引用同一用工被既有line约束拒绝，ROLLBACK VERIFIED。归因P4数据安排，不改P1唯一性。工具为各正常结算单单独创建并真实审批确认一个事务用工来源；负例跨项目/单位断言包含创建阶段（既有约束会更早拒绝）。所有协作者仍纳入同一rollback回读，无持久fixture。L1 labor-execution-source-scope-fix.log/py_compile后仅当前scope重验，不重复升级/重建。
+
+复验labor-execution-runtime-fixed.log25/25 PASS，ROLLBACK VERIFIED，原配置/步骤恢复且临时项目/劳务单位/考勤/用工/结算全部消失。后端产品1c18db880，工具25c468e15仅P4修正；未再次升级。实际角色全旅程未证明（建单/确认使用事务sudo，审批真实reviewer，非经理拒绝现有finance）；三模型官方创建/已有记录页面下一步，不能以本运行关闭detail.action-state或总体67。

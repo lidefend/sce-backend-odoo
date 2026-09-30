@@ -306,3 +306,8 @@ Source79/native53/semantics15 PASS. Scoped runtime14 PASS on a1e371b5f with roll
 ### Segment53.83–53.84 — Labor plans and requests
 
 Source80/native54/semantics15 PASS. Runtime16 PASS on387fb8f3c with rollback verified: real approval, no-config auto approval, undefined amount rejection, in-flight protection, rejection/resubmission, approved transition guards and cancelled reset. Official creates14+14 PASS (1790782297631/1790782307029), narrow screenshots reviewed. Existing PM records empty (1790782315231/1790782320423), actual role handling remains pending. Labor attendance/usage/settlement and overall action-state remain open. No frontend rebuild or persistent fixture.
+
+
+### Segment53.85–53.86 — Attendance and labor execution runtime
+
+P1 source81/native55/semantics15 PASS. Runtime25 PASS with verified rollback (labor-execution-runtime-fixed.log, backend1c18db880/tool25c468e15): monetary authority, real tier decisions distinct from confirmation, protected in-flight review, labor usage immutable facts/manager boundary, settlement project/contractor/unsettled source constraints. Initial P4 source reuse violated existing unique-source rule; tool corrected with separate transaction-only sources, product rule preserved. Official page and role handling remain pending; overall action-state is open. No frontend rebuild or persistent fixture.
