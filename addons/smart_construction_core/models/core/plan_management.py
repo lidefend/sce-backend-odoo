@@ -112,6 +112,13 @@ class ScPlan(models.Model):
             raise UserError(_("计划状态只能由正式业务动作写入。"))
         return super().write(vals)
 
+    def _check_allow_write_under_validation(self, vals):
+        self.ensure_one()
+        # A rejected draft is editable again; status remains action-owned.
+        if self.state == "draft" and self.validation_status == "rejected" and "state" not in vals:
+            return True
+        return super()._check_allow_write_under_validation(vals)
+
     def _write_document_state(self, values):
         return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 
