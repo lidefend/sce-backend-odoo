@@ -14,6 +14,7 @@ class ScApprovalPolicy(models.Model):
         ("project.task", "项目任务"),
         ("construction.contract", "项目合同"),
         ("sc.general.contract", "一般合同（公司）"),
+        ("sc.contract.event", "合同履约事件"),
         ("project.material.plan", "物资计划"),
         ("sc.material.outbound", "材料出库/损耗"),
         ("purchase.order", "采购订单"),
@@ -405,6 +406,7 @@ class ScApprovalPolicy(models.Model):
             "purchase.order",
             "construction.contract",
             "sc.general.contract",
+            "sc.contract.event",
             "sc.receipt.income",
             "sc.payment.execution",
             "sc.invoice.registration",
@@ -421,6 +423,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.contract.event": (
+                "smart_construction_core.server_action_contract_event_on_approved",
+                "smart_construction_core.server_action_contract_event_on_rejected",
+            ),
             "project.material.plan": (
                 "smart_construction_core.server_action_material_plan_tier_approved",
                 "smart_construction_core.server_action_material_plan_tier_rejected",
@@ -537,6 +543,7 @@ class ScApprovalPolicy(models.Model):
             "purchase.order": "amount_total",
             "construction.contract": "amount_total",
             "sc.general.contract": "amount_total",
+            "sc.contract.event": "amount_impact",
             "sc.receipt.income": "amount",
             "sc.payment.execution": "paid_amount",
             "sc.invoice.registration": "amount_total",

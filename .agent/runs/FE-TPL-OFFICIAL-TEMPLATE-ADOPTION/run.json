@@ -196,7 +196,9 @@
         "make/ci.mk",
         "addons/smart_construction_core/views/core/expense_claim_views.xml",
         "addons/smart_construction_core/views/core/settlement_views.xml",
-        "addons/smart_construction_core/views/core/contract_views.xml"
+        "addons/smart_construction_core/views/core/contract_views.xml",
+        "addons/smart_construction_core/views/core/contract_event_views.xml",
+        "addons/smart_construction_core/views/core/payment_execution_views.xml"
       ]
     },
     "payment_approval_state_machine": {
@@ -231,12 +233,15 @@
         "addons/smart_construction_core/models/core/material_plan.py",
         "addons/smart_construction_core/models/core/material_acceptance.py",
         "addons/smart_construction_core/views/core/material_acceptance_views.xml",
-        "addons/smart_construction_core/views/core/contract_views.xml"
+        "addons/smart_construction_core/views/core/contract_views.xml",
+        "addons/smart_construction_core/models/core/contract_event.py",
+        "addons/smart_construction_core/models/support/tier_definition_ext.py",
+        "addons/smart_construction_core/data/finance_document_tier_actions.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.39 payment execution profile corrected to domain/native state actions; native34+semantics15+approval50 pass. Requires governed backend reload and effective-contract verification, no frontend rebuild or module upgrade. Remaining registered native state gap: sc.contract.event approval/rejection needs shared configured approval adoption. Continue all necessary documents beyond17/15 inventories, controlled existing-definition sync, distinct reviewers and real business loops. Keep detail.action-state open.",
+  "next_exact_step": "53.40 contract event now joins shared configured approval, selection/tier support/company/callbacks/native/profile aligned;51 approval+35 native+15 semantics pass. Requires governed smart_construction_core module upgrade and backend reload, then real contract-event configured/unconfigured/rejection/resubmission checks and payment-reversal effective contract checks. No frontend rebuild. Registry now has zero undeclared state actions but all-document approval remains incomplete; do not equate registry closure with product delivery.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -665,6 +670,18 @@
       },
       "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-reversal-contract-tests.log",
       "remaining": "backend reload/effective contract and business reversal verification; contract-event shared approval and all-document adoption"
+    },
+    "contract_event_53_40": {
+      "status": "targeted_tests_passed_runtime_pending",
+      "source_head": "747d380ef",
+      "tests": {
+        "approval": 51,
+        "native": 35,
+        "semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-event-approval-tests.log",
+      "upgrade_required": true,
+      "scope": "new company/reject fields, tier inheritance/config/callbacks/native/profile; real ORM verification pending"
     }
   }
 }

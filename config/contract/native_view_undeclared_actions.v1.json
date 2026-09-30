@@ -79,12 +79,6 @@
       "reason": "opens a related record or view; it changes no record state"
     },
     {
-      "model": "sc.contract.event",
-      "method": "action_reject",
-      "class": "state_transition_undeclared",
-      "reason": "P1 product gap: direct submitted -> rejected path is not projected for this model and must join the shared configured approval mechanism (owner53.19)."
-    },
-    {
       "model": "sc.expense.claim",
       "method": "action_view_company_contractor_responsibility_summary",
       "class": "navigation",

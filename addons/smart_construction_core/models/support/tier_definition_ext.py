@@ -20,6 +20,7 @@ class TierDefinition(models.Model):
             "purchase.order",
             "construction.contract",
             "sc.general.contract",
+            "sc.contract.event",
         ]:
             if model_name not in names:
                 names.append(model_name)

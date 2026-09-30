@@ -621,6 +621,51 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         namespace['action_set_running'](rec)
                     self.assertEqual(rec.state, state)
 
+    def test_contract_event_submission_and_callback_require_shared_approval_facts(self):
+        path = MODEL.parent / 'contract_event.py'
+        tree = ast.parse(path.read_text())
+        names = {'action_submit', 'action_approve', 'action_reject', 'action_done', 'action_on_tier_approved'}
+        methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Event:
+            def __iter__(self): return iter([self])
+            def ensure_one(self): pass
+            def _check_business_anchor(self):
+                if not self.valid_anchor: raise ValueError('anchor')
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+        for required in (False, True):
+            event = Event()
+            event.state, event.valid_anchor = 'draft', True
+            event.review_ids, event.validation_status = [], 'no'
+            calls = []
+            policy = types.SimpleNamespace(
+                _start_submission_review=lambda rec: required,
+                _approve_submission_review=lambda rec: calls.append('approve'),
+                _reject_submission_review=lambda rec: calls.append('reject'),
+                _assert_submission_approved=lambda rec, states: None)
+            event.env = {'sc.approval.policy': policy}
+            namespace['action_submit'](event)
+            self.assertEqual(event.state, 'submitted' if required else 'approved')
+            if required:
+                namespace['action_approve'](event)
+                namespace['action_reject'](event)
+                self.assertEqual(calls, ['approve', 'reject'])
+                namespace['action_on_tier_approved'](event)
+                self.assertEqual(event.state, 'submitted')
+                event.review_ids, event.validation_status = [1], 'pending'
+                namespace['action_on_tier_approved'](event)
+                self.assertEqual(event.state, 'submitted')
+                event.validation_status = 'validated'
+                namespace['action_on_tier_approved'](event)
+                self.assertEqual(event.state, 'approved')
+            namespace['action_done'](event)
+            self.assertEqual(event.state, 'done')
+            event.state, event.valid_anchor = 'draft', False
+            with self.assertRaises(ValueError): namespace['action_submit'](event)
+            self.assertEqual(event.state, 'draft')
+
     def test_policy_step_order_maps_to_native_descending_priority(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_vals')
         namespace = {}

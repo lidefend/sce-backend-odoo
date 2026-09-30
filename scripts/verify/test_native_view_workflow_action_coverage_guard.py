@@ -211,13 +211,27 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 self.assertEqual(button.get('invisible'), "state != '%s'" % state)
                 self.assertEqual(button.get('groups'), 'smart_construction_core.group_sc_cap_finance_manager')
 
+    def test_contract_event_uses_real_reviewer_actions_and_resubmission(self):
+        for state in ('draft', 'rejected'):
+            self.assertEqual({a['method'] for a in self._general_contract_actions(state, model='sc.contract.event')}, {'action_submit', 'action_cancel'})
+        for can_review in (True, False):
+            actions = self._general_contract_actions('submitted', model='sc.contract.event', approval_phase='pending', can_review=can_review)
+            self.assertEqual({a['method'] for a in actions}, {'action_cancel', 'validate_tier', 'reject_tier'} if can_review else {'action_cancel'})
+        self.assertEqual({a['method'] for a in self._general_contract_actions('approved', model='sc.contract.event')}, {'action_done'})
+        tree = ET.parse(DEFAULT_SERVICE.parents[2] / 'views/core/contract_event_views.xml')
+        buttons = {b.get('name'): b for b in tree.findall('.//header/button')}
+        self.assertNotIn('action_approve', buttons)
+        self.assertNotIn('action_reject', buttons)
+        for method in ('validate_tier', 'reject_tier'):
+            self.assertIn('can_review', buttons[method].get('invisible'))
+
     def test_the_shipped_registry_is_consistent(self) -> None:
         self.assertEqual(validate(_baseline()), [])
 
     def test_an_unregistered_native_transition_fails(self) -> None:
         payload = _baseline()
-        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_reject"]
-        self.assertTrue(any("action_reject" in error for error in validate(payload)))
+        payload["entries"] = [e for e in payload["entries"] if e["method"] != "action_load_purchase_order_lines"]
+        self.assertTrue(any("action_load_purchase_order_lines" in error for error in validate(payload)))
 
     def test_an_entry_with_no_native_button_is_stale(self) -> None:
         payload = _baseline()
@@ -238,14 +252,14 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
     def test_an_entry_without_a_reason_fails(self) -> None:
         payload = _baseline()
         for entry in payload["entries"]:
-            if entry["method"] == "action_reject":
+            if entry["method"] == "action_load_purchase_order_lines":
                 entry.pop("reason", None)
         self.assertTrue(any("without a reason" in error for error in validate(payload)))
 
     def test_an_unknown_class_fails(self) -> None:
         payload = _baseline()
         for entry in payload["entries"]:
-            if entry["method"] == "action_reject":
+            if entry["method"] == "action_load_purchase_order_lines":
                 entry["class"] = "not_a_class"
         self.assertTrue(any("expected one of" in error for error in validate(payload)))
 
@@ -254,7 +268,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         allowed = {"state_transition_undeclared", "navigation", "document_helper"}
         covered = {entry["class"] for entry in payload["entries"]}
         self.assertTrue(covered <= allowed)
-        self.assertIn("state_transition_undeclared", covered)
+        self.assertNotIn("state_transition_undeclared", covered)
 
     def test_validate_does_not_mutate_the_registry_payload(self) -> None:
         payload = _baseline()

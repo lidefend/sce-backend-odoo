@@ -37,11 +37,13 @@
         <field name="arch" type="xml">
             <form string="合同履约事件">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="审批通过" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reject" string="驳回" type="object" invisible="state != 'submitted'"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'rejected')"/>
+                    <button name="validate_tier" string="审批通过" type="object" class="btn-primary" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                     <button name="action_done" string="完成" type="object" class="btn-primary" invisible="state != 'approved'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('done', 'cancel')"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted', 'rejected')"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="validation_status" invisible="1"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,done"/>
                 </header>
                 <sheet>
@@ -71,6 +73,7 @@
                     </group>
                     <notebook>
                         <page string="说明">
+                            <field name="reject_reason" invisible="not reject_reason"/>
                             <field name="description" nolabel="1"/>
                         </page>
                         <page string="依据">

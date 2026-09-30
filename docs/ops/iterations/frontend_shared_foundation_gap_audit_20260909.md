@@ -7707,3 +7707,12 @@ L5：未推送、未合并、未部署。
 - purpose沿既有cancel_record表示目标取消事实，但key/method明确区分付款前取消与已付款冲销；不改台账、冲销原因、财务授权或cancellation_kind。登记中错误paid→reversed说明随已解决条目退出；实际状态是cancel/payment_reversed。合同履约事件尚缺共享审批接入，继续为产品缺口，不通过直接补action_reject投影掩盖。
 - L1 make ci.local.iteration PASS（payment-reversal-contract-iteration.log）。L2 native coverage 8+26=34（payment-reversal-contract-tests.log，begin/record34），workflow_action_semantics15（payment-reversal-semantics-tests.log），payment approval50（payment-reversal-approval-tests.log）全部PASS。新增实际_available_actions执行覆盖六种状态及target/label/purpose，与原生财务组、付款/冲销状态条件核对。注册27项=12helper+14navigation+1state gap。
 - 方法常量变化无字段/XML变化，无需模块升级或前端构建；后端受管重载及有效契约/浏览器冲销入口仍待验证，不以离线测试宣称资金冲销业务验收通过。不重新执行费用审批12项（输入无依赖变化）。仍需全单据必要接入、持久审批定义同步及相关实际业务验证。总体active，未推送、合并、目标部署。
+
+
+### 53.40 合同履约事件接入共同审批，原生未声明状态动作归零
+
+- 747d380ef clean起步。P1 smart_construction_core合同履约事件；现有直接状态批准/驳回且无配置支持属于已确认全单据产品缺口。新增tier.validation继承、project公司相关字段、驳回原因；审批配置选择、同步支持、OCA可选模型、金额影响条件及既有回调XML共同接入。复用已登记finance_document_tier_actions.xml，未新建模块或审批引擎。
+- action_submit保留日期/合同项目校验，在submitted调用共同_start_submission_review；无配置批准但不完成事件。兼容action_approve/action_reject委托共同实际review决策；通过/驳回回调要求submitted及真实review最终结果，驳回保留意见；完成要求原approved条件与共同批准事实门禁。原生按钮改validate_tier/reject_tier并受can_review/validation_status约束，驳回后可重提。profile同步审批动作、重提，去掉模型不允许的approved取消；原生取消同样限draft/submitted/rejected。
+- L1 ci.local.iteration PASS（contract-event-approval-iteration.log）。L2审批51、native8+27=35、semantics15 PASS（contract-event-approval-tests.log）。新增实际方法测试覆盖有/无配置分流、共同审批委托、伪造/中间回调拒绝、真实通过与独立完成、业务anchor失败；新增实际契约当前审批人/重提/完成动作与原生入口一致性测试。补登记新直接输入后旧begin回执被正确拒绝，按新输入重新begin并执行51项后record（contract-event-approval-final-*）；不冒用旧身份。
+- 最后补原生驳回原因字段显示，XML解析通过，无业务方法再改。登记剩余合同事件直接action_reject按钮已退出，native registry=26（12helper+14navigation），state_transition_undeclared=0只表示当前登记缺口已编码，不能证明全单据覆盖或运行正确。detail.action-state继续open。
+- 新字段/继承/selection/XML需受管模块升级与后端重载；本提交尚未执行，必须先完成再做真实事件审批/拒绝/重提验证。同批付款冲销有效契约仍需运行核对。前端不变，不构建；不以纯测试宣称全系统接管或审批验收完成。总体active，无推送、合并或目标部署。
