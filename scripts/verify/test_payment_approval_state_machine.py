@@ -479,6 +479,62 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): ns['_check_document_operation'](Rows([document]), 'Archive')
             self.assertEqual(len(calls), int(same_company))
 
+    def test_guarantee_approval_never_posts_until_explicit_confirmation(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderGuarantee')
+        names = {'action_submit', 'action_on_tier_approved', 'action_confirm', 'action_cancel', 'action_reset_draft'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, '_': lambda value: value}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for configured in (False, True):
+            rec = self.record(required=configured, state='draft')
+            rec._name = 'tender.guarantee'
+            class Env(dict): context = {}
+            rec.env = Env({'sc.approval.policy': rec.policy})
+            rec.env.company = rec.company_id
+            rec._write_finance_authority = lambda values: rec.data.update(values)
+            rec._check_submission_identity = lambda: None
+            posted = []
+            rec._ensure_treasury_ledger = lambda: posted.append(rec.state)
+            rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if configured else 'approved')
+            self.assertEqual(posted, [])
+            if configured:
+                for name in ('action_confirm', 'action_cancel', 'action_reset_draft'):
+                    with self.assertRaises(ValueError): ns[name](rec)
+                rec.policy._approve_submission_review(rec)
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            self.assertEqual(posted, [])
+            ns['action_confirm'](rec)
+            self.assertEqual(posted, ['confirmed'])
+            for name in ('action_submit', 'action_confirm', 'action_cancel', 'action_reset_draft'):
+                with self.assertRaises(ValueError): ns[name](rec)
+
+    def test_guarantee_external_state_and_reviewed_cash_are_protected(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderGuarantee')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write', '_check_submission_identity'}]
+        for method in methods: method.decorator_list = []
+        ns = {'UserError': ValueError, 'ValidationError': ValueError, '_': lambda value: value, '_TENDER_GUARANTEE_AUTHORITY_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rows = Rows([types.SimpleNamespace(state='approved')])
+        rows.env = types.SimpleNamespace(context={})
+        for state in ('submitted', 'approved', 'confirmed', 'cancel', False):
+            with self.assertRaises(ValueError): ns['create'](rows, [{'state': state}])
+            rows.env.context = {'default_state': state}
+            with self.assertRaises(ValueError): ns['create'](rows, [{}])
+        rows.env.context = {'sc_tender_guarantee_authority_token': True}
+        for state in ('submitted', 'approved', 'confirmed'):
+            rows[0].state = state
+            for values in ({'state': 'draft'}, {'amount': 999}, {'bid_id': 7}, {'bank_account_id': 3}):
+                with self.assertRaises(ValueError): ns['write'](rows, values)
+        for amount in (0, -1):
+            with self.assertRaises(ValueError): ns['_check_submission_identity']([types.SimpleNamespace(date=True, amount=amount)])
+
     def test_tender_purchase_submission_uses_shared_approval(self):
         path = ROOT / 'addons/smart_construction_core/models/support/tender.py'
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'TenderDocPurchase')

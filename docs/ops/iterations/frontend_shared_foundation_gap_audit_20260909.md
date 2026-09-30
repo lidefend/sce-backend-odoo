@@ -8588,3 +8588,11 @@ fbb45a857 dirty两文件续跑，复用上轮已完成日志，不重复执行�
 L1 guarantee-action-iteration.log PASS；L2 guarantee-action-native.log 8+53=61 PASS，新增draft/confirmed/cancel/unknown动作边界和确认purpose断言，agent.run.begin/record登记61。L0 HEAD+dirty已核对；本次中等风险P1契约投影，最早L1。无字段/XML变更不需模块升级；模型执行输入不变，不跑无关ORM。前端源未变，复用CrYkOCxc不构建；后端仍9573da065，本修正尚未加载，L3/L4本轮not_run，不宣称运行时已接管。L5非发布阶段不运行Quick/推送。
 
 明确产品缺口：tender.guarantee已有动作方法及部分契约，但尚无统一审批。下一步复用tier与company-scoped policy，补提交/在审/批准/驳回职责，并将批准与确认入账分开；金额权威来自既有amount，必须保留财务身份冻结及已确认不可取消/重置约束。涉及模型/字段后再执行必要定向模型回归、受管升级和事务恢复验证。工程资料分类仍待确认，禁止重复同一阻断或造fixture。detail.action-state继续contract_gap，不升级整体状态，无推送合并目标部署。
+
+### 53.120 投标保证金统一审批与显式入账（进行中）
+
+83fb064b4 clean续跑。P1 smart_construction_core拥有保证金金额amount及财务状态，新增tier/submitted/approved/rejected/reject_reason，policy支持、金额映射、真实回调和native/workflow一致接管。无配置提交自动approved但不入账；配置审批消费真实review，approved后独立action_confirm生成原有posted台账。提交和确认均检查日期/正金额/财务身份；外部create含默认状态/write不能写后续状态，审核内容在submitted/approved锁定，confirmed冻结不变。仅draft/rejected可取消，仅cancel/rejected可reset并重启review，不能在审取消/重置绕过。旧确认方法保留但须先批准，这是统一审批边界修正。
+
+L1 guarantee-approval-contract-iteration.log PASS；L2 guarantee-approval-unit.log128 PASS、native.log8+53=61 PASS，非零回执登记。新增实际生产方法纯回归覆盖无配置/配置审批不入账、独立入账及重复/终态拒绝、外部默认值/金额/账户保护；不是ORM证据。首次自检发现phase写pending，改成既有under_review后重新L1，再执行L2；最终日志为上述版本。
+
+P4既有事务回滚工具扩展tender-guarantee10组，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance与现有审核岗位，不新建环境或持久fixture，临时单据/策略/台账全事务恢复。tool-iteration.log/py_compile/bash-n/diff通过；default all280仅清单计数，未执行全量。需受管模块升级（tier/字段/XML）和reload后执行本scope；运行时及角色页面尚未通过，detail.action-state保持缺口。前端CrYkOCxc源码未变不构建，不重跑其他业务ORM，无推送合并目标部署。

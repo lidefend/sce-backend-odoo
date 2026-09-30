@@ -314,5 +314,25 @@ if target_records:
     target_records.action_on_tier_rejected()
 ]]></field>
         </record>
+        <record id="server_action_tender_guarantee_on_approved" model="ir.actions.server">
+            <field name="name">投标保证金审批通过回调</field>
+            <field name="model_id" ref="model_tender_guarantee"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+        <record id="server_action_tender_guarantee_on_rejected" model="ir.actions.server">
+            <field name="name">投标保证金审批驳回回调</field>
+            <field name="model_id" ref="model_tender_guarantee"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
     </data>
 </odoo>

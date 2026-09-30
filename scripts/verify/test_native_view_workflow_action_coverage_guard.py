@@ -335,12 +335,12 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 self.assertEqual(starts[0]["action_semantics"]["purpose"], "start_execution")
 
     def test_tender_guarantee_confirmed_cash_has_no_cancel_or_reset(self):
-        for state in ("draft", "confirmed", "cancel", "unknown"):
+        for state in ("draft", "submitted", "approved", "rejected", "confirmed", "cancel", "unknown"):
             actions = self._general_contract_actions(state, model="tender.guarantee")
             methods = {action["method"] for action in actions}
-            self.assertEqual("action_confirm" in methods, state == "draft")
-            self.assertEqual("action_cancel" in methods, state == "draft")
-            self.assertEqual("action_reset_draft" in methods, state == "cancel")
+            self.assertEqual("action_confirm" in methods, state == "approved")
+            self.assertEqual("action_cancel" in methods, state in ("draft", "rejected"))
+            self.assertEqual("action_reset_draft" in methods, state in ("cancel", "rejected"))
             for action in actions:
                 if action["method"] == "action_confirm":
                     self.assertEqual(action["action_semantics"]["purpose"], "complete")

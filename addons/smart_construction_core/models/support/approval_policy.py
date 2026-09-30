@@ -12,6 +12,7 @@ class ScApprovalPolicy(models.Model):
     BUSINESS_MODEL_SELECTION = [
         ("sc.project.document", "工程资料"),
         ("tender.doc.purchase", "投标文件购买申请"),
+        ("tender.guarantee", "投标保证金"),
         ("project.project", "项目立项"),
         ("project.task", "项目任务"),
         ("construction.contract", "项目合同"),
@@ -428,6 +429,7 @@ class ScApprovalPolicy(models.Model):
         return self.target_model in {
             "sc.project.document",
             "tender.doc.purchase",
+            "tender.guarantee",
             "project.project",
             "project.task",
             "project.material.plan",
@@ -572,6 +574,10 @@ class ScApprovalPolicy(models.Model):
                 "smart_construction_core.server_action_project_document_on_approved",
                 "smart_construction_core.server_action_project_document_on_rejected",
             ),
+            "tender.guarantee": (
+                "smart_construction_core.server_action_tender_guarantee_on_approved",
+                "smart_construction_core.server_action_tender_guarantee_on_rejected",
+            ),
             "tender.doc.purchase": (
                 "smart_construction_core.server_action_tender_purchase_on_approved",
                 "smart_construction_core.server_action_tender_purchase_on_rejected",
@@ -710,6 +716,7 @@ class ScApprovalPolicy(models.Model):
         domain = []
         amount_field_by_model = {
             "tender.doc.purchase": "amount",
+            "tender.guarantee": "amount",
             "project.task": "boq_amount_total",
             "sc.tax.deduction.registration": "deduction_amount",
             "payment.request": "amount",

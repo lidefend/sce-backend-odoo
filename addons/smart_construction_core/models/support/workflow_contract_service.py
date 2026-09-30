@@ -1048,10 +1048,12 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "tender.guarantee": {
             "state_field": "state",
-            "state_phase": {"draft": "draft", "confirmed": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["complete", "cancel"], "cancel": ["reopen"]},
-            "method_by_action": {"complete": "action_confirm", "reopen": "action_reset_draft", "cancel": "action_cancel"},
-            "label_by_action": {"complete": "确认"},
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "rejected": "rejected", "confirmed": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit"], "approved": ["complete"], "rejected": ["submit", "cancel", "reopen"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "complete": "action_confirm", "reopen": "action_reset_draft", "cancel": "action_cancel"},
+            "label_by_action": {"complete": "确认入账"},
         },
     }
 
