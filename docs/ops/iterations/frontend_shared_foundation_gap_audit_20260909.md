@@ -8931,3 +8931,14 @@ e21b3da97 clean起点，P4仅在既有standard_page_type_browser注册sc.expense
 expense-role-runtime.log22 PASS、ROLLBACK VERIFIED（原19+新增3组）：fixture_role_finance显式非sudo、同公司可见项目与往来单位、create/write权限前提核对，实际创建project_company_repay、普通角色提交、普通角色action_done。无配置提交后approved/no reviews且无资金台账，显式完成才done并生成唯一posted台账，核对公司/项目/往来单位/币种/方向/100金额；普通角色重复完成、取消及改金额拒绝，备注可补充，台账仍唯一。主单和台账登记created，原finally回读临时记录不存在及策略/步骤恢复。附件准备沿既有sudo工具；不声称附件普通角色上传或真实银行出款。
 
 这是费用模型下“项目还公司款”职责的普通角色最终执行证据，不是报销申请/保证金/扣款退回现金链，也不是configured审批同角色全旅程。原配置链的准备/提交sudo限制仍按53.148记录。保存页数据前提明确为空，剩余浏览器及其他职责保持detail.action-state开放。下一步继续普通角色配置审批/有效契约消费的必要缺口，并保留已明确缺少记录的页面前提，不反复扫同一数据。整体67不升级整行，无推送合并目标部署。
+
+
+### 53.150 公司范围配置审批的普通财务执行闭环
+
+4462a61df clean起点，P4复用既有费用普通finance往来款文档工厂，补配置审批消费与执行，无P1生产变化，155纯测原输入复用。49cf8bc59第一次runtime失败：旧_set_policy按模型取首条配置而未按实际finance公司定位，configured未进入预期submit。expense-role-configured-runtime.log保留失败、ROLLBACK VERIFIED，不把其22个前置通过算配置链完成。此为工具配置作用域错误，不改产品policy选择逻辑。
+
+352e98a9f修正工具：按finance.company_id定位当前公司/全局配置，自动链关闭实际可用范围；配置链使用当前公司政策及现有审核组，已有步骤暂时停用，新步骤仅事务内创建，使用get_active_policy回读精确命中。原finance_policies基线纳入费用，finally回读所有相关策略/步骤恢复；新策略/步骤/单据/台账均登记created并核验不存在。复用既有配置验收方式，不新增环境或持久fixture。
+
+expense-role-configured-iteration/scope-iteration L1、py_compile、diff PASS；源352e98a9f经backend.acceptance.up受管重绑，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-role-configured-fixed-runtime.log25 PASS，ROLLBACK VERIFIED。原22项承接同事务，新增3组：实际finance非sudo创建/提交，有配置生成真实review、pending契约readonly且无complete，提前完成/改金额拒绝且无台账；实际reviewer完成后approved/validated，契约readonly但complete enabled，仍无台账；普通finance显式done后唯一posted台账，核对公司/项目/往来/币种/方向/100金额，完成动作从可用契约退出。此单与无配置自动链台账彼此独立。
+
+本次覆盖的是expense模型“项目还公司款”职责的有/无配置普通角色运行闭环，附件准备仍既有sudo工具。费用报销/保证金等不同现金职责、用户浏览器配置与已保存办理不能外推；53.149无授权非legacy记录事实保持，不重复空查。前端index-CVVwVIuW.js未变，未构建。下一步对照既有职责及可用来源，继续现金费用的申请关联、执行结果及官方页面消费收口；总体67/detail.action-state保持开放，无推送合并目标部署。
