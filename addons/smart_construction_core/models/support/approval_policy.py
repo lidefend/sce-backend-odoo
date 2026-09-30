@@ -561,7 +561,9 @@ class ScApprovalPolicy(models.Model):
             "model": self.target_model,
             "company_id": self.company_id.id or self.env.company.id,
             "active": bool(self.active and self.approval_required and self.mode != "none" and step.active),
-            "sequence": step.sequence or self.sequence or 10,
+            # OCA consumes definitions in descending priority. Configuration
+            # uses ascending (sequence, id), including zero and tied positions.
+            "sequence": -(self.step_ids.sorted(lambda item: (item.sequence, item.id)).ids.index(step.id) + 1),
             "review_type": "group",
             "reviewer_group_id": step.approve_group_id.id,
             "definition_type": "domain",

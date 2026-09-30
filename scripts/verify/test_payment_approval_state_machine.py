@@ -621,6 +621,29 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         namespace['action_set_running'](rec)
                     self.assertEqual(rec.state, state)
 
+    def test_policy_step_order_maps_to_native_descending_priority(self):
+        method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_vals')
+        namespace = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        class Steps(list):
+            def sorted(self, key): return Steps(sorted(self, key=key))
+            @property
+            def ids(self): return [step.id for step in self]
+        steps = Steps(types.SimpleNamespace(id=i, sequence=seq, name=str(i), active=True,
+                      approve_group_id=types.SimpleNamespace(id=7))
+                      for i, seq in [(5, 20), (4, 10), (3, 10), (2, 0), (1, -10)])
+        model = types.SimpleNamespace(id=12)
+        company = types.SimpleNamespace(id=7)
+        class Env(dict): pass
+        env = Env({'ir.model': types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(_get=lambda name: model))})
+        env.company = company
+        policy = types.SimpleNamespace(ensure_one=lambda: None, env=env, target_model='test.document',
+            _tier_server_actions=lambda: (False, False), name='policy', company_id=company,
+            active=True, approval_required=True, mode='linear', step_ids=steps,
+            _tier_definition_domain=lambda step: '[]')
+        priorities = [(step.id, namespace['_tier_definition_vals'](policy, step)['sequence']) for step in steps]
+        self.assertEqual([identity for identity, priority in sorted(priorities, key=lambda row: row[1], reverse=True)], [1, 2, 3, 4, 5])
+
     def test_policy_sync_includes_disabled_steps_to_revoke_stale_definitions(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'sync_tier_definitions')
         namespace = {}

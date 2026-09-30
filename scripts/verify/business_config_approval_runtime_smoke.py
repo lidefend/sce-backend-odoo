@@ -196,18 +196,22 @@ def main():
         scope_key = policy._approval_scope_for_group(group)
         assert scope_key, "reviewer group lacks a configured approval scope"
         policy.step_ids.write({"active": False})
+        linear_steps = []
         for sequence in (10, 20):
-            _env()["sc.approval.step"].sudo().create({
+            linear_steps.append(_env()["sc.approval.step"].sudo().create({
                 "policy_id": policy.id, "name": "Runtime linear step %s" % sequence,
                 "active": True, "sequence": sequence, "approval_scope_key": scope_key, "approve_group_id": group.id,
-            })
+            }))
         policy.write({"mode": "linear", "approval_required": True})
         policy.sync_tier_definitions()
         linear = _expense(project, partner, "linear")
         created.append((linear._name, linear.id))
         linear.action_submit()
         assert len(linear.review_ids) == 2 and all(linear.review_ids.mapped("approve_sequence")), [(r.id, r.sequence, r.name, r.definition_id.active, r.approve_sequence) for r in linear.review_ids]
-        print("APPROVAL_CHECK=linear_configuration_creates_two_sequential_reviews")
+        expected_definitions = [step.tier_definition_id.id for step in linear_steps]
+        actual_definitions = linear.review_ids.sorted("sequence").mapped("definition_id").ids
+        assert actual_definitions == expected_definitions, (actual_definitions, expected_definitions)
+        print("APPROVAL_CHECK=linear_configuration_creates_two_sequential_reviews_in_configured_order")
         users = linear.review_ids.mapped("reviewer_ids")
         outsiders = _env()["res.users"].sudo().search([
             ("login", "=like", "fixture_role_%"), ("active", "=", True), ("share", "=", False),
@@ -228,7 +232,9 @@ def main():
         actor.validate_tier()
         linear.invalidate_recordset()
         assert linear.state == "submit" and linear.validation_status in ("waiting", "pending")
-        assert len(linear.review_ids.filtered(lambda review: review.status == "approved")) == 1
+        approved_reviews = linear.review_ids.filtered(lambda review: review.status == "approved")
+        assert len(approved_reviews) == 1
+        assert approved_reviews.definition_id.id == expected_definitions[0]
         print("APPROVAL_CHECK=first_linear_step_does_not_finish_document")
         _approve_existing_reviews(linear)
         assert linear.state == "approved" and linear.validation_status == "validated"

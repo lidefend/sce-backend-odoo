@@ -7684,3 +7684,11 @@ L5：未推送、未合并、未部署。
 - 4880989f8候选经backend.acceptance.up受管重载成功（approval-inactive-backend-up.log），无模块再次升级、无前端构建。原失败完整日志保留approval-linear-stale-definition-failure.log；未改配置绕过旧定义缺陷。
 - 同一受管verify.business_config.approval_runtime最终12项PASS、ROLLBACK=VERIFIED（approval-linear-runtime.log）。新证据为正好两条linear review、既有非审批fixture角色被AccessError拒绝且无review推进、一次validate_tier仅完成一级且业务仍submit、第二次完成后才approved。原8项随同一事务仍通过，策略/步骤含approval_scope_key回读恢复、临时单据不存在。
 - 覆盖边界：两个步骤复用同一合资格审批组，证明分次推进而非两个不同人的岗位流转；非审批人拒绝可能发生于对象访问或审批能力层，不宣称覆盖所有权限层。尚未断言配置sequence10先于20的精确方向；此前诊断显示原生review排序与配置序号需要进一步核对，不能把本12项当作配置顺序完全一致。下一步补绑定definition/step的顺序断言，再处理必要全单据与两条原生业务动作缺口。总体active，未推送/合并/目标部署。
+
+
+### 53.37 全单据共同审批适配修正配置步骤顺序
+
+- dbcb0545f clean起步，沿用所有业务单据统一审批决策；已有17类配置/15类运行支持不是范围上限。P1 smart_construction_core共同审批适配，P4既有rollback smoke补definition绑定断言；非用户专属规则，不在前端或测试工具实现审批语义。
+- 新断言在现有受管sc_frontend_acceptance/local环境实证失败：实际definition顺序[4983,4982]，配置10→20对应[4982,4983]；ROLLBACK=VERIFIED（approval-order-runtime-failure.log）。OCA request_validation固定sequence desc，而配置按sequence,id升序。共同适配改用配置排序位置的负值作为原生优先级，保证零值、负值和并列序号也保持配置顺序；不修改OCA，不重排在途review实例。
+- L1 ci.local.iteration PASS（approval-order-iteration.log）；L2 verify.payment.approval_state_machine.unit 50项PASS（approval-order-tests.log，begin/record50）。新增执行真实_tier_definition_vals的方法测试，按原生降序恢复配置顺序。方法改动无需模块升级，提交后受管重载及真实顺序复验待执行；前端输入未变，不构建/不跑浏览器矩阵。
+- 既有持久tier.definition需通过原配置同步机制重新投影才应用新顺序；本轮不擅自批量改租户配置。在途实例不迁移。全单据缺失接入、不同审批人流转及两项原生业务动作仍为产品缺口；总体active。
