@@ -310,7 +310,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.63 shared consumer removed method alias/knownKeys; project22/payment19 browser pass on frontend7915f3bb9 and backend e14519cb1, no writes. Reuse evidence. Continue remaining all-business approval/native transition producer coverage from existing registry and detail.action-state gaps; project information-edit actual entry still not verified, project monetary authority unresolved, task/event/plan/diary existing-record data absent. Do not rerun closed scans/ORM/these browsers without changed inputs.",
+  "next_exact_step": "53.64 project information-edit official form16 PASS, current PM init navigation authority menu680/action861, project10, write capability true, save_draft and submit declarations only. Reuse all53.62–64 evidence. Continue remaining native business transition/shared approval coverage from existing registries; actual role/page handling and project monetary authority remain distinct gaps. No product rebuild/ORM needed for last P4 probe/docs changes.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1030,6 +1030,21 @@
         "artifacts/frontend-web-fix-20260928/tpl07-1790778322370/report.json",
         "artifacts/frontend-web-fix-20260928/tpl07-1790778337439/report.json"
       ]
+    },
+    "segment_53_64": {
+      "status": "scoped_passed",
+      "frontend_base": "7915f3bb9",
+      "backend_source": "e14519cb1",
+      "browser_assertions": 16,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790778468464/report.json",
+      "authorized_entry": {
+        "menu_id": 680,
+        "action_id": 861,
+        "model": "project.project",
+        "record_id": 10
+      },
+      "writes": 0,
+      "not_verified": "actual save and submission from this role/page"
     }
   }
 }

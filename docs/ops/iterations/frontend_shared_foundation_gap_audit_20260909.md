@@ -7941,3 +7941,12 @@ L1 `catalog-consumer-iteration.log` PASS；L2 `catalog-consumer-tests-final.log`
 构建7915f3bb9一次24.37s完成。首次项目浏览器 `tpl07-1790778275644/report.json` 11断言处失败：P4最后响应观测被 project.responsibility 子契约覆盖，主响应project.project/id10已存在；页面无错误。修复既有审批检查脚本按本次导航的model+id选择契约，保留首次失败报告。仅工具变动，不失效生产构建或已通过前端类型/纯测试；node语法检查后重跑定向页面。
 
 最终运行：前端7915f3bb9，entry `/assets/index-DHbyXOXT.js`，SHA256 `88b2bf54f30cca97c91fac0942c83b883079245460594ac380f02f4b0c14e865`；原候选保留 previous-5rbtrx0q。后端源e14519cb1未改，工具接受相关addon输入不变。修正probe的L1 `catalog-consumer-probe-iteration.log` PASS；项目 `tpl07-1790778322370/report.json` 22 PASS，付款执行 `tpl07-1790778337439/report.json` 19 PASS，双视口/errors=[]/forbiddenWrites=[]。确认取消不派发写入；未执行财务撤销，不增加fixture。同步既有detail.action-state后续说明及缺口文档，不升级整行状态。批次定向验证完成，原总体目标仍active；无主线集成/目标部署/完整交付声明。
+
+
+### 53.64 项目信息编辑入口定向验收（进行中）
+
+候选a8a5ccc4c + P4 probe dirty；复用53.63全部产品测试/构建。原生独立编辑菜单/action/view职责为资料保存+提交立项，不含审批/启动。验收扩展按当前PM system.init.route_authority查正式menu XMLID取得菜单与动作ID，携带真实入口上下文打开现有project10；无业务写入、无fixture。L1 iteration与node语法检查后运行单次定向浏览器；产品输入无变化，不运行ORM/类型检查/重建。
+
+首次入口检查4项处失败：新增probe误读旧顶层route_authority；当前system.init正式路径为data.navigation.route_authority（system_init.py生产器明确移除顶层carrier）。按正式路径纠正，仅P4输入变化；首份报告tpl07-1790778448035保留，不记产品失败。
+
+最终报告 `artifacts/frontend-web-fix-20260928/tpl07-1790778468464/report.json` 16 PASS，errors=[]、forbiddenWrites=[]。当前PM初始化route authority正式菜单680/action861，project10，独立入口effectiveRenderProfile=edit、write=true、create=false、unlink=false。动作契约只有平台save_draft/write与P1 submit；无启动/审批动作注入。双视口官方表单正常。源与构建沿用7915f3bb9/backend e14519cb1，无新构建、模块升级或ORM。该结果关闭入口职责/官方渲染验证，不是实际保存、提交和审批办理验收。原始失败仅新增probe旧字段路径错误，已纠正，不放宽契约。

@@ -97,7 +97,10 @@ async function login(role) {
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
-        if (body.intent === 'system.init') report.productVersion = result.data?.product_version;
+        if (body.intent === 'system.init') {
+          report.productVersion = result.data?.product_version;
+          if (process.env.TPL07_APPROVAL_VIEW === 'information-edit') report.routeAuthority = result.data?.navigation?.route_authority;
+        }
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
         const result = await response.json();
@@ -631,9 +634,20 @@ try {
       check(`${spec.model}: existing authorized record available`, candidate.ok === true && candidate.data?.records?.length === 1);
       const record = candidate.data.records[0];
       report.recordAuthority = null;
-      const editing = process.env.TPL07_APPROVAL_VIEW === 'edit';
+      const informationEdit = process.env.TPL07_APPROVAL_VIEW === 'information-edit';
+      const editing = process.env.TPL07_APPROVAL_VIEW === 'edit' || informationEdit;
+      let entryContext = '';
+      if (informationEdit) {
+        check('information edit: project-only responsibility', spec.model === 'project.project');
+        const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+          .flatMap((key) => report.routeAuthority?.[key] || []);
+        const matches = entries.filter((row) => row.menu_xmlid === 'smart_construction_core.menu_sc_product_project_edit_v1');
+        check('information edit: current principal has one authorized entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
+        report.approvalPages.at(-1).entry = matches[0];
+        entryContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
+      }
       const responseStart = report.contractResponses?.length || 0;
-      await form(session.page, `/${editing ? 'f' : 'r'}/${spec.model}/${record.id}`, spec.model, editing ? 'form' : 'readonly');
+      await form(session.page, `/${editing ? 'f' : 'r'}/${spec.model}/${record.id}${entryContext}`, spec.model, editing ? 'form' : 'readonly');
       // Embedded relation contracts can finish after the main record. Select
       // this navigation's exact record, never the last unrelated response.
       const authority = (report.contractResponses || []).slice(responseStart)
@@ -654,9 +668,14 @@ try {
       }
       if (spec.model === 'project.project') {
         const rules = authority.actions?.actionRuleList || [];
-        check('project: submit and start are distinct native methods', ['action_sc_submit', 'action_sc_start'].every((method) => rules.some((rule) => rule.button?.name === method)));
-        for (const [method, purpose] of [['action_sc_submit', 'submit'], ['action_sc_start', 'start_execution'], ['validate_tier', 'approve'], ['reject_tier', 'reject']]) {
-          check(`project: ${method} has declared business meaning`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+        if (informationEdit) {
+          check('information edit: submission is the only native workflow action', rules.filter((rule) => rule.button?.type === 'object').every((rule) => rule.button.name === 'action_sc_submit') && rules.some((rule) => rule.button?.name === 'action_sc_submit' && rule.actionSemantics?.purpose === 'submit'));
+          check('information edit: effective entry remains editable', authority.status?.effectiveRenderProfile === 'edit' || authority.status?.effectiveRenderProfile === 'editable');
+        } else {
+          check('project: submit and start are distinct native methods', ['action_sc_submit', 'action_sc_start'].every((method) => rules.some((rule) => rule.button?.name === method)));
+          for (const [method, purpose] of [['action_sc_submit', 'submit'], ['action_sc_start', 'start_execution'], ['validate_tier', 'approve'], ['reject_tier', 'reject']]) {
+            check(`project: ${method} has declared business meaning`, rules.some((rule) => rule.button?.name === method && rule.actionSemantics?.purpose === purpose));
+          }
         }
         if (editing && record.lifecycle_state === 'draft' && record.sc_approval_state === 'draft') {
           check('project: editable draft exposes submission', await session.page.getByRole('button', { name: '提交立项', exact: true }).first().isVisible());
