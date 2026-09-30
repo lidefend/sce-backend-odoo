@@ -8208,3 +8208,10 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 53.88运行：bfcc36599受管升级/reload成功（labor-settlement-input-upgrade.log/reload.log），前端构建未变。首次tpl07-1790783153713项目契约可编辑断言通过、精确label失败；截图实际项目/单位/日期已恢复输入。P4标签正则重试tpl07-1790783207949仍不匹配实际控件标签，不作为产品失败证据。改以关系输入placeholder及日期authority值绑定控件，tpl07-1790783233663证明项目/单位/日期契约与控件存在，note契约可编辑但无textarea，止于第15项，不能宣布页面通过。无errors/业务写。
 
 剩余产品缺口已缩小为说明字段共享消费：契约note role=activity，slots collaboration，普通文本框未呈现。下一步追查canonicalFormFloorplan/共享协作区域，不在前端添加劳务模型规则，不重复升级/XML修复或既有空记录查询。L3契约加载成功，L4仍failed，保持detail.action-state开放。
+
+
+### 53.89 高级分组不得隐式隐藏创建字段（进行中）
+
+复用tpl07-1790783233663离线presenter重放：note布局readonly=false，但statusContract.widgetStatus visible=false/auth=none，故53.88“共享渲染缺口”归因修正为P0字段策略缺口。contract_governance_form_fields.build_form_field_policies把自动advanced分组隐藏于create；该布局分组不是权限/可见性权威。移除该隐式隐藏，保留原生modifier/字段访问、readonly及显式project create_hidden政策，前端不改。适用于通用契约，不含劳务模型规则。
+
+候选c45594611+本段dirty；L1 form-field-policy-iteration.log PASS、原split guard PASS；新增既有Make体系定向pure target验证4项：可选/必填advanced输入仍可见、只读事实不变、显式隐藏保留。首次unit空descriptor被已有忽略逻辑过滤，P4测试改成真实selection descriptor后form-field-policy-unit-fixed.log4 PASS，非零回执登记。不触发ORM/schema升级，仅源码reload后重验结算页面；前端7915f3bb9复用不构建。总体业务办理/67尚未完成。

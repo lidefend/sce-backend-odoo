@@ -239,10 +239,8 @@ def build_form_field_policies(
         required = name in required_set
         readonly = to_bool(descriptor.get("readonly"))
         visible_profiles = [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT, _RENDER_PROFILE_READONLY]
-        if name in advanced_group:
-            visible_profiles = [_RENDER_PROFILE_EDIT, _RENDER_PROFILE_READONLY]
-            if is_project_form and name not in project_form_create_hidden_fields:
-                visible_profiles = [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT, _RENDER_PROFILE_READONLY]
+        # Layout grouping is not visibility authority. Native modifiers, field
+        # access and explicit create-hidden policies retain their own gates.
         required_profiles = [_RENDER_PROFILE_CREATE, _RENDER_PROFILE_EDIT] if required and not readonly else []
         readonly_profiles = [_RENDER_PROFILE_READONLY]
         if readonly:

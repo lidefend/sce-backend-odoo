@@ -318,6 +318,15 @@
         "make/frontend.mk",
         "make/runtime_ops.mk"
       ]
+    },
+    "form_field_policy": {
+      "target": "verify.contract.form_field_policy.unit",
+      "inputs": [
+        "addons/smart_core/utils/contract_governance_form_fields.py",
+        "scripts/verify/test_form_field_policy.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],

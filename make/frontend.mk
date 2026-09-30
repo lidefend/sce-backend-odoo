@@ -978,3 +978,7 @@ verify.frontend.public_auth_bootstrap.unit: guard.prod.forbid
 .PHONY: verify.frontend.field_configuration_component.unit
 verify.frontend.field_configuration_component.unit: guard.prod.forbid
 	@node frontend/apps/web/scripts/field_configuration_component_test.mjs
+
+.PHONY: verify.contract.form_field_policy.unit
+verify.contract.form_field_policy.unit: guard.prod.forbid
+	@python3 scripts/verify/test_form_field_policy.py
