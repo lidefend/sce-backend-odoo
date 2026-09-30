@@ -600,3 +600,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.169：施工日志已有动作契约及统一审批，但普通create/write可绕过状态机写状态/来源，属于P1事实写入保护缺口。内部状态令牌及创建默认状态校验已补，163纯测/L1通过；实际运行待仅diary scope验证，不称闭合。不外推其它模型和日志审批后内容保护。
+
+
+53.170：施工日志状态写入保护在受管35fa989cd完成8项实际模型验证（diary-runtime-smoke.log），真实审批/驳回重提、显式完成及外部状态拒绝成立，配置与临时对象ROLLBACK VERIFIED。关闭53.169状态绕过缺口；普通角色浏览器办理、审批后内容保护仍开放，不能外推全单据覆盖。

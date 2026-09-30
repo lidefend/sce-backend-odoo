@@ -442,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.169 diary P1 create/write state bypass fixed using existing internal state token pattern; L1 and approval163 passed with receipt. Backend stillba1d18e59; no frontend/build change. Next extend existing approval_runtime with diary-only scope reusing _draft_confirmation_checks and rollback, add real external create/write rejection checks; reload backend once and run only affected scope. Do not run all or repeat task empty query. Diary reviewed content/role handling and overall67 remain open; no push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.170 diary state authority runtime8 passed with rollback on backend35fa989cd; frontend e31e51c59 unchanged. Reuse163 pure/tool36. Next examine same-family contract event direct state authority and existing evidence, fix only confirmed owning-layer gap; no broad scan/task empty query/unrelated ORM. Diary ordinary-role browser and reviewed-content boundaries still open; overall67/detail.action-state not complete. No push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

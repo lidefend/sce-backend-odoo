@@ -9172,3 +9172,14 @@ finally精确删除171/1295/1296，cleanup-final权威回读restored，源1815�
 L1 make ci.local.iteration PASS（diary-state-iteration）；L2 verify.payment.approval_state_machine.unit163 PASS（diary-state-unit），新增实际create/write方法反例，既有无配置/真实回调/显式完成用例保留并适配内部写入方法；begin/record payment_approval_state_machine完成，日志diary-state-begin/receipt。git diff --check通过。生产无字段/XML改动，无需模块升级；前端不变、已加载e31e51c59证据复用，不构建。L3真实模型运行待补，后端仍ba1d18e59，不能把纯测称为运行闭环。
 
 下一步给既有approval_runtime增加仅施工日志的scope，复用_draft_confirmation_checks与原配置/临时对象rollback，加入实际外部create/write拒绝与合法动作后回读；不要为一模型跑all/旧无关ORM。随后一次受管backend重载并执行该scope。审批后内容保护、日志角色浏览器办理及其它业务责任仍未由本次证明，总体67/detail.action-state开放。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.170 施工日志状态机受管运行验证
+
+35fa989cd在原approval_runtime及受管shell白名单增加diary-state-authority，仅调用新日志状态边界检查和既有_draft_confirmation_checks，不进入all/费用/其他单据链。P4复用原验收环境、审批组、事务临时项目/日志/配置与finally回滚，不新建环境或持久fixture。新增3组检查：直接create终态与default_state拒绝；普通/伪造token/skip_validation_check写state/source_origin拒绝且草稿回读不变；草稿编辑与正式取消可执行。原5组无配置确认、pending不得执行、实际review后显式完成、驳回原因、重提新链原样复用。
+
+L1 diary-runtime-iteration PASS，py_compile/bash-n/diff通过；工具standard_preview.unit36 PASS及begin/record完成（diary-runtime-tool-*），这36仅是原工具回归，不冒充模型运行测试。P1 163纯测输入不变复用53.169；无字段/XML变化，不升级模块，前端e31e51c59/index-7JTLfH1Y.js保持，不重建。
+
+backend.acceptance.up在原local/sc-fe-r2-p1-01/sc_frontend_acceptance18082重绑35fa989cd，精确dbfilter/原卷预检通过。SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：diary-runtime-smoke.log终止0、8具名检查全部通过，BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。配置/步骤原值及全部登记临时对象不存在的回读通过。创建和业务动作采用原事务sudo，审批调用真实reviewer；不能写成普通PM浏览器全办理。
+
+53.169状态绕过代表缺口关闭，审批后内容保护和普通角色真实保存/办理仍未覆盖。动作目录及前端生产输入未变化，不重跑只读创建页作为无意义证明。下一步同族合同履约事件的状态写入边界（先检查直接生产调用及已有证据，不全仓扫描），同时保留既有日志角色旅程待验证责任；不得将已配置审批模型覆盖等同全系统用户交付。总体67/detail.action-state开放，无推送、合并、目标部署。
