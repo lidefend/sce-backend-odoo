@@ -591,6 +591,22 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     ns['write'](record, values)
 
+    def test_self_funding_reviewed_business_content_is_frozen(self):
+        path = MODEL.with_name('self_funding_registration.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        ns = {'UserError': ValueError, '_': lambda text: text, '_SELF_FUNDING_AUTHORITY_TOKEN': object()}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'no'), ('confirmed', 'validated')):
+            rows = Rows([types.SimpleNamespace(state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context={'sc_self_funding_authority_token': True})
+            for values in ({'amount': 200}, {'project_id': 9}, {'partner_id': 9}, {'currency_id': 9},
+                           {'funding_type': 'refund'}, {'payment_account_name': 'changed'},
+                           {'partner_account_name': 'changed'}, {'attachment_ids': [(5, 0, 0)]}, {'active': False}):
+                with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
+                    ns['write'](rows, values)
+
     def test_invoice_external_terminal_state_and_red_flush_attribution_denied(self):
         path = MODEL.with_name('invoice_registration.py')
         methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]

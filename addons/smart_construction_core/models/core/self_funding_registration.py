@@ -186,6 +186,17 @@ class ScSelfFundingRegistration(models.Model):
         authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
         if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
             raise UserError(_("自筹状态、来源与财务身份只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "partner_id", "funding_type", "business_category_id",
+            "amount", "currency_id", "document_date", "document_no", "payment_account_name",
+            "partner_account_name", "bank_name", "bank_account", "summary", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.state == "confirmed" or (
+                rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已批准的自筹内容不可改写；请按正式流程重新办理。"))
         if any(rec.state == "done" for rec in self) and not authoritative:
             allowed = {"note", "attachment_ids", "source_created_by", "source_created_at", "write_uid", "write_date"}
             blocked = set(vals) - allowed
