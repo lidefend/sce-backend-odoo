@@ -388,3 +388,8 @@ payment.request.rental_settlement_id and the settlement's inverse request collec
 ### Segment53.100 — Submitted rental settlement facts protected
 
 P1 parent facts and direct line create/write/unlink now require a draft source; line moves check both parents. Submission and fact editing serialize through the same ordered parent row lock with cache invalidation.92 targeted pure tests pass, including state recheck after serialization and context-supplied parent creation. SQL concurrency, ORM recomputation and command behavior remain runtime-unverified. Payment reservation/execution/reversal remain open; the53.98 blocker is still active and no payment-delivery claim is made.
+
+
+### Segment53.101 — Rental reservation and financial-history ownership guards
+
+Active-process requests reserve the source settlement amount; draft/rejected/cancel requests do not. Positive/remaining-amount checks follow ordered source serialization with a protected allocation revision, designed to invalidate competing REPEATABLE READ snapshots. Existing execution/ledger history, including cancelled/reversed facts, prohibits changing rental attribution.96 pure tests pass; actual concurrency/retry, ORM and role behavior remain unverified. Basis/execution consumption, source cancellation boundaries, posted totals and reversal must still close before removing the payment blocker or claiming delivery.

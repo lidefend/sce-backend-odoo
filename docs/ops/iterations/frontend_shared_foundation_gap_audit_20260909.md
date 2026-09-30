@@ -8339,3 +8339,16 @@ L1 rental-payment-basis-iteration.log及diff PASS；L2 rental-payment-basis-unit
 L1 rental-source-lock-iteration.log/diff PASS；L2 rental-source-lock-unit.log92 PASS并登记非零回执：父单10字段/5非draft状态拒绝、note允许、驳回draft恢复、serialization point后重新查state；直接明细修改/删除/双向迁移及context新增阻断。既有配置审批/身份依据测试同目标执行通过。纯测试未证明真实SQL并发、ORM计算缓存或批量明细command行为，L3仍not_run；金额额度/支付执行/冲销尚未接通，不能以事实锁定宣称财务闭环。
 
 下一步复用父锁实现租赁付款额度检查与执行前重验，再接basis/defaults/native及posted金额/冲销链，一次受管升级后定向验收。未改workflow声明/前端，沿用53.98动作语义证据，不重复无关门禁/ORM/构建。后端2d7eab703、前端7915f3bb9未改变；无推送合并目标部署，整体67继续开放。
+
+
+### 53.101 租赁付款额度与历史归属保护（源码进行中）
+
+候选054080df5+dirty，P1 smart_construction_core租赁结算及payment.request。按既有材料结算口径排除draft/rejected/cancel申请，其余同源申请金额占用结算额度；非正/超额金额拒绝，支持多张分次申请。约束在rental_settlement_id/amount/state变化时运行，先序列化源再核对身份/明细依据。后续执行前仍需显式复验，以覆盖直接子明细变更，不宣称本约束单独覆盖完整执行链。
+
+租赁源新增只读copy=False payment_allocation_revision，create/write禁止外部设置。_serialize_payment_reservation先用53.100父行锁，再私有写递增版本，避免REPEATABLE READ仅行锁但聚合仍旧快照的竞态；内部版本更新限于sudo，财务消费可读结算不需获得修改结算业务事实权限。事务冲突重试及实际ORM表现尚待运行验证，不凭代码声明并发通过。
+
+payment.request.write在任何租赁归属变化前用sudo+active_test=False读取财务历史；已有付款登记（含取消）或台账（含冲销）时，不得补绑/换绑/清除归属，保留同值写及无历史修改，防历史支付被重新归因。现有审批后事实锁继续生效。
+
+L1 rental-reservation-final-iteration.log PASS；最后counter sudo范围修正后仅相关py_compile/diff复核PASS，其余L1输入未变。L2 rental-reservation-counter-unit.log96 PASS并登记：额度恰好用满/超额/非正边界，未入流程和非租赁不计占用，先锁再版本写与外部版本写拒绝，历史财务归属不可重绑。初版95及中间96日志保留，不当最终结果混写。
+
+下一步basis/default_get/onchange/native契约与execution读取、执行前额度/身份重验、canonical posted汇总和冲销，检查来源取消与现存付款责任一致性；然后一次受管升级及真实并发/ORM/角色定向验收。L3/L4尚未运行，支付blocker仍在，不将纯测试扩大为真实付款闭环。后端2d7eab703/前端7915f3bb9未改变，无新fixture/无关ORM/推送合并目标部署。整体67继续开放。

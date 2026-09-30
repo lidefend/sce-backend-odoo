@@ -1056,6 +1056,86 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def test_rental_attribution_cannot_reassign_financial_history(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_assert_rental_attribution_unchanged')
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(MODEL), 'exec'), ns)
+        contexts = []
+        class Requests(list):
+            def sudo(self): return self
+            def with_context(self, **values):
+                contexts.append(values)
+                return self
+        for current, target in ((7, False), (7, 8), (False, 7)):
+            for ledger, execution in ((['reversed'], []), ([], ['cancelled'])):
+                record = types.SimpleNamespace(rental_settlement_id=types.SimpleNamespace(id=current), ledger_line_ids=ledger, payment_execution_ids=execution)
+                with self.assertRaises(ValueError):
+                    ns['_assert_rental_attribution_unchanged'](Requests([record]), {'rental_settlement_id': target})
+                ns['_assert_rental_attribution_unchanged'](Requests([record]), {'rental_settlement_id': current})
+                ns['_assert_rental_attribution_unchanged'](Requests([record]), {'note': 'explanation'})
+        record.ledger_line_ids, record.payment_execution_ids = [], []
+        ns['_assert_rental_attribution_unchanged'](Requests([record]), {'rental_settlement_id': 8})
+        self.assertTrue(contexts)
+        self.assertTrue(all(values == {'active_test': False} for values in contexts))
+
+    def _rental_reservation_check(self, *, amount=40, reserved=60, state='approved', has_source=True):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_rental_settlement_remaining_amount')
+        method.decorator_list = []
+        def compare(a, b, precision_rounding):
+            left, right = round(a / precision_rounding), round(b / precision_rounding)
+            return (left > right) - (left < right)
+        ns = {'ValidationError': ValueError, '_': lambda text: text, 'float_compare': compare}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        events = []
+        source = types.SimpleNamespace(id=7, amount_total=100, currency_id=types.SimpleNamespace(rounding=0.01))
+        record = types.SimpleNamespace(id=23, rental_settlement_id=source if has_source else False, amount=amount, state=state)
+        class Requests(list):
+            def filtered(self, predicate): return Requests(filter(predicate, self))
+            def mapped(self, field): return types.SimpleNamespace(_serialize_payment_reservation=lambda: events.append('serialize'))
+            def _check_rental_settlement_consistency(self): events.append('identity')
+            def sudo(self): return self
+            def read_group(self, domain, fields, groupby):
+                events.append(domain)
+                return [{'amount': reserved}]
+        return lambda: ns['_check_rental_settlement_remaining_amount'](Requests([record])), events
+
+    def test_rental_reservation_allows_split_payments_but_not_overbooking(self):
+        validate, events = self._rental_reservation_check()
+        validate()
+        self.assertEqual(events[:2], ['serialize', 'identity'])
+        self.assertIn(('id', '!=', 23), events[2])
+        self.assertIn(('rental_settlement_id', '=', 7), events[2])
+        self.assertIn(('state', 'not in', ('draft', 'rejected', 'cancel')), events[2])
+        for amount, reserved in ((40.01, 60), (1, 100), (0, 0), (-1, 0)):
+            validate, _ = self._rental_reservation_check(amount=amount, reserved=reserved)
+            with self.assertRaises(ValueError): validate()
+
+    def test_rental_reservation_does_not_charge_inactive_or_unrelated_requests(self):
+        for state in ('draft', 'rejected', 'cancel'):
+            validate, events = self._rental_reservation_check(state=state, amount=999)
+            validate()
+            self.assertEqual(events, [])
+        validate, events = self._rental_reservation_check(has_source=False, amount=999)
+        validate()
+        self.assertEqual(events, [])
+
+    def test_rental_reservation_touches_source_version_after_lock(self):
+        path = MODEL.with_name('material_rental.py')
+        tree = ast.parse(path.read_text())
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_serialize_payment_reservation')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        rec = self._purchase_request_record(state='confirmed')
+        rec.payment_allocation_revision = 8
+        rec.sudo = lambda: rec
+        events = []
+        rec._lock_payment_basis = lambda: events.append('lock')
+        rec._write_approval_state = lambda vals: events.append(vals)
+        ns['_serialize_payment_reservation'](rec)
+        self.assertEqual(events, ['lock', {'payment_allocation_revision': 9}])
+        ns = self._rental_fact_lock_methods('ScMaterialRentalSettlement')
+        with self.assertRaises(ValueError): ns['write'](rec, {'payment_allocation_revision': 100})
+
     def _rental_fact_lock_methods(self, class_name):
         path = MODEL.with_name('material_rental.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == class_name)

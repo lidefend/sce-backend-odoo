@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.100 submitted rental settlement parent/line facts locked; shared _lock_payment_basis ordered row lock+invalidate used by submit/edit,92 pure tests PASS. Next payment amount reservation/identity check under same lock, protect request attribution after financial facts, recheck child basis at execution; then wire basis/defaults/native/execution + canonical posted sums/reversal. Runtime SQL/cache/command/concurrency not verified; no upgrade yet.53.98 payment blocker remains. backend2d7eab703/frontend7915f3bb9 unchanged. Overall67/role journeys open; no newfixture/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.101 rental reservation amount constraint (exclude draft/rejected/cancel), protected allocation revision under source lock, financial-history attribution immutability implemented;96 pure tests PASS. Next wire rental basis/default_get/onchange/native and execution contract resolution/readiness revalidation; source cancel must respect live payment obligations; then canonical posted sums/reversal and remove blocker only after verified. Runtime concurrency/retry/ORM/roles untested; no upgrade yet, backend2d7eab703/frontend7915f3bb9 unchanged. Overall67 open; no newfixture/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

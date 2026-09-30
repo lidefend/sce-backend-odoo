@@ -459,6 +459,7 @@ class ScMaterialRentalSettlement(models.Model):
     payment_request_id = fields.Many2one("payment.request", string="支付申请", index=True)
     # The historical single link is not payment allocation authority. New
     # attribution lives on each request; a settlement can have many requests.
+    payment_allocation_revision = fields.Integer(default=0, readonly=True, copy=False)
     payment_request_ids = fields.One2many(
         "payment.request", "rental_settlement_id", string="归属付款申请", readonly=True,
     )
@@ -491,6 +492,8 @@ class ScMaterialRentalSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any("payment_allocation_revision" in values for values in vals_list):
+            raise UserError(_("付款额度版本只能由付款依据服务维护。"))
         if any(values.get("state", "draft") != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
@@ -508,12 +511,26 @@ class ScMaterialRentalSettlement(models.Model):
             )
             self.invalidate_recordset()
 
+    def _serialize_payment_reservation(self):
+        # A lock alone does not refresh a REPEATABLE READ snapshot. Touch the
+        # shared source row so competing allocations conflict and retry using
+        # a fresh transaction instead of both accepting an old aggregate.
+        self._lock_payment_basis()
+        for record in self:
+            # Finance may reserve a readable settlement without being allowed
+            # to edit its business facts. Elevation is confined to this counter.
+            record.sudo()._write_approval_state({
+                "payment_allocation_revision": record.payment_allocation_revision + 1,
+            })
+
     def _assert_business_facts_editable(self):
         self._lock_payment_basis()
         if any(record.state != "draft" for record in self):
             raise UserError(_("租赁结算提交后，项目、供应商、合同、币种及结算明细不可修改；驳回后可在草稿中修订。"))
 
     def write(self, vals):
+        if "payment_allocation_revision" in vals and self.env.context.get("sc_rental_approval_state_token") is not _RENTAL_APPROVAL_STATE_TOKEN:
+            raise UserError(_("付款额度版本只能由付款依据服务维护。"))
         business_fields = {
             "project_id", "supplier_id", "contract_id", "currency_id",
             "rental_order_id", "settlement_date", "line_ids",

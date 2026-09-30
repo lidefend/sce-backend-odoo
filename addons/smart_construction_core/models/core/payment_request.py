@@ -2003,7 +2003,20 @@ class PaymentRequest(models.Model):
         )
         return category.id if category else False
 
+    def _assert_rental_attribution_unchanged(self, vals):
+        if "rental_settlement_id" not in vals:
+            return
+        # Financial history, including cancelled executions and reversed
+        # ledgers, keeps its original obligation identity permanently.
+        for request in self.sudo().with_context(active_test=False):
+            current_id = request.rental_settlement_id.id or False
+            if (vals["rental_settlement_id"] or False) == current_id:
+                continue
+            if request.ledger_line_ids or request.payment_execution_ids:
+                raise UserError(_("付款申请已产生付款登记或台账历史，不可新增、更换或清除租赁结算归属。"))
+
     def write(self, vals):
+        self._assert_rental_attribution_unchanged(vals)
         claim_fields = {"terminal_cash_source_model", "terminal_cash_source_res_id"}
         claim_authority = (
             self.env.context.get("_sc_terminal_cash_source_claim_token")
@@ -2794,6 +2807,33 @@ class PaymentRequest(models.Model):
                 or (line.contract_id and line.contract_id != settlement.contract_id)
             ):
                 raise ValidationError(_("租赁结算付款不能混入其他结算或合同的明细依据。"))
+
+    @api.constrains("rental_settlement_id", "amount", "state")
+    def _check_rental_settlement_remaining_amount(self):
+        requests = self.filtered(
+            lambda request: request.rental_settlement_id
+            and request.state not in ("draft", "rejected", "cancel")
+        )
+        if not requests:
+            return
+        requests.mapped("rental_settlement_id")._serialize_payment_reservation()
+        # Recheck identity under the source lock, including direct child-line
+        # mutations that do not trigger a parent @api.constrains call.
+        requests._check_rental_settlement_consistency()
+        for request in requests:
+            source = request.rental_settlement_id
+            data = self.sudo().read_group([
+                ("rental_settlement_id", "=", source.id),
+                ("state", "not in", ("draft", "rejected", "cancel")),
+                ("id", "!=", request.id),
+            ], ["amount:sum"], [])
+            reserved = data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
+            rounding = source.currency_id.rounding or 0.01
+            if float_compare(request.amount, 0.0, precision_rounding=rounding) <= 0:
+                raise ValidationError(_("租赁结算付款申请金额必须大于零。"))
+            available = source.amount_total - reserved
+            if float_compare(request.amount, available, precision_rounding=rounding) > 0:
+                raise ValidationError(_("租赁结算付款申请金额超过未占用额度。"))
 
     @api.constrains("contract_id", "type")
     def _check_contract_direction(self):
