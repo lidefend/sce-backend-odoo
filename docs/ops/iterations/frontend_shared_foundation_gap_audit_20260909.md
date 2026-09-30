@@ -8964,3 +8964,18 @@ expense-defaults-iteration L1 PASS；expense-defaults-unit.log156 PASS并begin/r
 expense-create-fixed-browser.log/tpl07-1790800235183：23 PASS，errors=[]/forbiddenWrites=[]。当次授权menu564/action758；mainData类别[18,报销申请]、handling_kind=expense_reimbursement、financial_flow=cash_out、payment_anchor_policy=pay_request_required、direction=outflow。官方表单保留项目/往来/付款申请/金额/账户，后四项有实际input，未保存不出现审批通过/驳回/完成；1440/390无整页溢出，390截图人工核对正确口径。未执行空表提交/保存/关系选择，不能将字段呈现证明升级为提交校验或业务创建完成。
 
 default_get影响真实create，故有依据重验既有费用27范围：expense-defaults-runtime.log27 PASS，EXPENSE_CASH_SOURCE_ROLLBACK及BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK VERIFIED。现金/往来分类、配置与无配置审批、真实finance执行/唯一台账及原来源恢复保持，未重验其他领域或付款49。最终对象可读ID日志限制沿53.151保留。总体67/detail.action-state仍开放，下一步是该创建入口的必填反馈和实际关系交互共享消费，不重复盘点/空查询。无推送合并目标部署。
+
+
+### 53.153 新建页提交动作语义与共享执行链收口
+
+247b4cb48 clean起点，P4在原报销create探针点击空表提交并等待必填反馈。expense-validation-browser.log/tpl07-1790800345071失败：点击成功但无反馈、无业务写入。定向追踪证实P1 _sc_inject_workflow_contract对record_id<=0直接返回，新建页原生action_submit声明有按钮/权限，却无submit语义；不能将不写入误判为正确校验。
+
+d9334ec26补P1 describe_model_actions稳定目录及新建页注入，不构造记录、不假造审批状态/可用动作；158纯测和begin/record通过。仅此修复后的tpl07-1790800516166再次失败：P0将声明目录误当记录可用性，按钮因WORKFLOW_ACTION_AVAILABILITY_INVALID禁用。进一步定位共享先创建再提交入口只支持footer或page.root向导，遗漏明确submit语义的page.header原生动作。
+
+0bda7f8e0补P0通用消费：目录显式availabilityScope=declaration_only，在无record_id且无availableActions时不提供记录级可用性；错误/有歧义目录、已保存记录缺可用性继续拒绝。ContractAction保留经@sc/schema校验的actionSemantics，原resolvePrimaryCreateFooterAction纳入已声明business/submit/contract.action的header动作，仍要求唯一候选、authorizationAllowed及既有记录条件，只复用原saveRecord→executePrimarySubmitAction链。不按方法名/标签/模型推导语义，不授予新权限、不新增保存实现。scope为P1契约声明和P0共用消费者，无业务状态/schema字段/数据库升级。
+
+L1 create-action-catalog/consumer-iteration PASS；backend158纯测PASS；contract_header_action新增4反例、canonical_form_presenter新增3反例及原用例PASS；严格类型PASS，create_record_user_journey原默认/单飞保存/关系意图/必填10/scene mutation4等定向回归PASS（create-action-consumer-checks/regression.log）。已保存记录describe_record和业务执行未变，原费用27运行证据按依赖复用，不重验ORM。此处目录影响所有登记工作流新建表单，覆盖来自通用纯测和报销代表；不外推所有入口已实际创建/提交完成。
+
+实现稳定后一次受管构建/5180预览，base0bda7f8e051cb6f68446dc89daf996c135e4a32f clean，entry/assets/index-Ddc2GXJe.js，entry_sha256=aca7c83804cfae8752bb7058f3c8420eadac4046df0bce13ba35263a225a6cc2，index_sha256=7eabdae4e07fc36a4395729dca871f628ff68361272f31667f40b68b4f365451，backend同源。expense-validation-consumer-browser.log/tpl07-1790800755234：25 PASS、errors=[]/forbiddenWrites=[]，空表提交显示统一必填反馈、仍在/f/sc.expense.claim/new，1440/390无整页溢出；390截图人工核对金额/项目错误及提示。未保存/执行真实业务动作，填完后的保存提交链仅共享回归支持，不能冒称本报销已走完整用户办理。
+
+付款申请关系查询范围及选择仍待定向验证，本次未提前判通过；已保存非legacy费用数据为空及最终现金来源日志ID限制沿既有记录保留。总体67/detail.action-state继续开放。新建动作目录与记录可用性职责明确，旧的无语义原生提交静默无效路径在已覆盖提交范围退出。无推送合并目标部署。
