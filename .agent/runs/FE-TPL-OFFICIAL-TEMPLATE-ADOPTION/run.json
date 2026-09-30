@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.66 inbound approval source implemented; L1/66 approval/47 native/XML2 pass. Extend existing business_config_approval_runtime_smoke.py with inbound no-config/configured/rejection/resubmit/transfer cases and restoration, run focused tool checks, commit, governed module upgrade/reload then real runtime. Validate private state authority and existing direct state writers/migrations before upgrading. No browser before runtime; old build frontend7915f3bb9 reusable. Overall/all-document coverage remains open.",
+  "next_exact_step": "53.67 inbound real runtime8 PASS/rollback verified on backendf5e771c03, moduleupgrade61facd29b, frontend7915f3bb9 unchanged. Shared45 completed before inbound data prerequisite failure and code-independent results reused. Next verify inbound native/effective official page using existing authorized role/data; if no record use bounded create without pretending handling. Continue material acceptance shared approval and remaining67 gaps. New SC_APPROVAL_RUNTIME_SCOPE=inbound avoids rerunning unrelated45; all remains default. No new environment or persistent fixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1055,6 +1055,19 @@
       "native_tests": 47,
       "runtime": "not_run",
       "reason": "new tier model fields and XML require governed upgrade plus new inbound rollback smoke before browser"
+    },
+    "segment_53_67": {
+      "status": "backend_runtime_passed_browser_pending",
+      "source_head": "f5e771c03",
+      "module_upgrade_head": "61facd29b",
+      "approval_pure_tests": 67,
+      "runtime_checks": 8,
+      "runtime_scope": "inbound",
+      "original_shared_checks": 45,
+      "restoration": "verified",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/inbound-only-runtime-fixed.log",
+      "frontend_base": "7915f3bb9",
+      "remaining": "inbound effective page and role handling; material acceptance and remaining all-document coverage"
     }
   }
 }

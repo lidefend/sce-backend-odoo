@@ -248,3 +248,9 @@ Source-only correction now aligns reset/cancel declarations with existing author
 ### Segment53.66 — Inbound approval source implemented; runtime pending
 
 Inbound now declares company-scoped shared approval with amount_total, tier callbacks, approved state separated from received, private state-write authority and native/profile review actions. Unconfigured submission approves without receiving; configured review waits; receiving checks approved facts. Historical submitted records can resubmit rather than receiving an invented approval. Transfer outbound retains the linked pending inbound; automatic receive remains only for unreviewed auto-approved inbound in the existing explicit transfer execution.66 approval and47 native pure tests pass. Module upgrade, real rejection/resubmission/transfer checks and effective page consumption remain pending; material acceptance and other document adoption remain open.
+
+### Segment53.67 — Inbound real approval loop verified
+
+Governed module upgrade61facd29b and backendf5e771c03 load successfully. Eight inbound-only real ORM checks pass with verified rollback: private state protection, unconfigured auto-approval without receiving, amount-based configured review, pending-instance protection after configuration changes, real approval then explicit receiving, rejection/resubmission, transfer-linked pending approval and unchanged unconfigured transfer receiving. Runtime exposed and fixed the rejected-tier write lock during resubmission;67 pure tests pass. Original45 independent checks are reused. The existing runtime tool now supports bounded all/inbound scopes to avoid unrelated reruns; transaction-local material collaborators are rolled back and absence verified, not registered fixtures.
+
+Effective official page/role-bound handling remains pending; transfer test covers the linked generation/receiving mechanism, not an entire outbound journey. Material acceptance and remaining all-document gaps stay open.

@@ -7979,3 +7979,5 @@ P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback�
 受管升级61facd29b成功（Registry72.023s），后端重载成功。全量现有45检查通过且rollback verified，新增入库因不存在非服务材料前置失败。P4现有入口增加SC_APPROVAL_RUNTIME_SCOPE=all|inbound白名单（默认all），复用身份预检，不新增环境；inbound只运行8项，不再重复45。已有仓库有效，最小消耗材料仅在同一rollback事务临时建立，product/template均纳入消失回读，无fixture基线或持久测试数据。
 
 入库前5项实际通过后，驳回重提触发OCA旧tier记录状态写锁；报告inbound-only-material-runtime.log，rollback verified。P1修复只在私有token保护的提交方法内skip_validation_check跨过旧锁，shared router随后重建review，外部状态写仍拒绝。新增重提纯回归，L1 inbound-resubmit-iteration.log PASS；67审批tests PASS及非零回执。仅Python改动，无第二次模块升级/前端构建，待后端重载后仅8项重验。
+
+实际结果：后端f5e771c03，inbound-only-runtime-fixed.log 8/8 PASS；ROLLBACK VERIFIED确认原配置/步骤恢复，临时入库/出库/项目/材料及product.template均不存在。此前inbound-approval-runtime.log中原有45项成功有效，后续修复只影响入库动作，P4只新增scope/临时材料协作者，按输入独立性复用45不重跑。新增8项全部真实Odoo执行；调拨仅关联生成与接收链，仍不等于完整出库角色旅程。未重建前端。入库有效页面与角色办理仍pending，材料验收等全单据范围继续开放。
