@@ -417,6 +417,84 @@ def _project_creation_state_checks(project, group, created):
         print("APPROVAL_CHECK=project_creation_%s_draft_preserved" % label)
 
 
+def _project_document_approval_checks(project, group, created):
+    env = _env()
+    model = "sc.project.document"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([("target_model", "=", model), ("company_id", "in", [False, project.company_id.id])])
+    doc_type = env["sc.dictionary"].sudo().search([("type", "=", "doc_type")], limit=1)
+    assert doc_type, "existing document classification required"
+    def document():
+        record = env[model].sudo().create({"name": "Rollback project document", "project_id": project.id,
+            "company_id": project.company_id.id, "doc_type_id": doc_type.id})
+        created.append((record._name, record.id))
+        return record
+    def denied(action):
+        refused = False
+        try:
+            with env.cr.savepoint(): action()
+        except UserError:
+            refused = True
+        assert refused, "document approval boundary bypassed"
+    automatic = document()
+    denied(lambda: automatic.write({"state": "done"}))
+    denied(lambda: env[model].sudo().with_context(default_state="done").create({"name": "Denied document", "project_id": project.id, "doc_type_id": doc_type.id}))
+    denied(automatic.action_approve)
+    print("APPROVAL_CHECK=project_document_external_state_and_early_archive_denied")
+    automatic.action_submit()
+    assert automatic.state == "approved" and not automatic.review_ids
+    print("APPROVAL_CHECK=project_document_auto_approval_does_not_archive")
+    denied(lambda: automatic.write({"name": "Changed reviewed content"}))
+    automatic.action_archive()
+    assert automatic.state == "done"
+    denied(automatic.action_archive)
+    automatic.action_reset_to_draft()
+    assert automatic.state == "draft" and not automatic.review_ids
+    print("APPROVAL_CHECK=project_document_explicit_archive_and_reopen")
+    policy = Policy.create({"name": "Runtime document approval", "code": "runtime_project_document_approval", "target_model": model,
+        "company_id": project.company_id.id, "approval_required": True, "mode": "single", "manager_group_id": group.id, "runtime_state": "tier_validation"})
+    created.append((policy._name, policy.id))
+    step = env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Document review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+    denied(lambda: step.write({"amount_min": 1}))
+    policy.sync_tier_definitions()
+    print("APPROVAL_CHECK=project_document_no_invented_amount_authority")
+    required = document()
+    required.action_submit()
+    assert required.state == "review" and required.review_ids
+    contract = env["sc.workflow.contract.service"].describe_record(required)
+    assert contract["approvalPhase"] in ("waiting", "pending")
+    assert any(action["method"] == "action_archive" and action["action_semantics"]["purpose"] == "complete" for action in contract["actions"])
+    denied(required.action_archive)
+    denied(required.action_reset_to_draft)
+    policy.write({"approval_required": False})
+    denied(required.action_submit)
+    policy.write({"approval_required": True})
+    print("APPROVAL_CHECK=project_document_pending_review_cannot_be_bypassed")
+    _approve_existing_reviews(required)
+    assert required.state == "approved"
+    required.action_archive()
+    assert required.state == "done"
+    print("APPROVAL_CHECK=project_document_real_review_then_explicit_archive")
+    required.action_reset_to_draft()
+    required.action_submit()
+    assert required.state == "review" and required.validation_status in ("waiting", "pending")
+    print("APPROVAL_CHECK=project_document_reopen_requires_new_review")
+    users = required.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share and required.company_id in user.sudo().company_ids)
+    candidates = [required.with_user(user).with_context(allowed_company_ids=[required.company_id.id]).with_company(required.company_id) for user in users]
+    actor = next((record for record in candidates if record.can_review), None)
+    assert actor is not None
+    previous = set(required.review_ids.ids)
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime document rejection")
+    required.invalidate_recordset()
+    assert required.state == "draft" and required.reject_reason == "Runtime document rejection"
+    required.action_submit()
+    assert required.review_ids and previous.isdisjoint(required.review_ids.ids)
+    _approve_existing_reviews(required)
+    assert required.state == "approved" and not required.reject_reason
+    print("APPROVAL_CHECK=project_document_rejected_resubmission_new_chain")
+
+
 def _tender_purchase_approval_checks(project, group, created):
     env = _env()
     model = "tender.doc.purchase"
@@ -2294,7 +2372,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -2308,7 +2386,11 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope == "tender-purchase":
+        if scope == "project-document":
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "existing reviewer group required"
+            _project_document_approval_checks(project, group, created)
+        elif scope == "tender-purchase":
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
             _tender_purchase_approval_checks(project, group, created)
@@ -2457,6 +2539,7 @@ def main():
             _draft_confirmation_checks(project, group, created, "sc.construction.diary")
             _tax_approval_checks(project, group, created)
             _task_approval_checks(project, group, created)
+            _project_document_approval_checks(project, group, created)
             _tender_purchase_approval_checks(project, group, created)
             _project_creation_state_checks(project, group, created)
             _project_approval_checks(group, created)
@@ -2486,7 +2569,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "tender-purchase" else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 262, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 270, scope))
 
 
 main()

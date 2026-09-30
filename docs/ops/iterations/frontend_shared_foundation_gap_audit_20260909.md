@@ -8567,3 +8567,12 @@ L1 tender-purchase-iteration.log通过；L2 tender-purchase-unit.log124 PASS、n
 P4同一approval-actions新增PM tender.doc.purchase create，tender-purchase-page-iteration.log/node/diff通过。tpl07-1790791472547/report.json19 PASS，3输入bid/apply_date/amount的有效可编辑契约和真实输入均存在，草稿新建无直接通过按钮，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核实际金额/投标/日期和保存提交区。前端CrYkOCxc未变不构建。真实选投标/保存/角色提交审核仍未验证，不能将创建检查升级整行办理。
 
 本批限定现有支持表之外的真实审批单据接管首例，不把支持表当业务覆盖边界。已在同一workflow清单看到sc.project.document仍以action_approve归档、tender.guarantee确认及sc.output.invoice.adjustment红冲等职责需继续按实际模型区分审批与业务执行；尚未读取它们完整模型/契约，不能直接判为已统一或直接套审批。下一步优先项目文档的提交/归档职责，沿既有67/detail.action-state记录，不创建第二覆盖表。金额口径问题仍待用户。无新环境/持久fixture/推送合并目标部署。
+
+
+### 53.118 工程资料审批与归档职责分离（进行中）
+
+392babd2d clean续跑，只读document_center/native view/workflow/policy：旧action_approve实际归档且draft可直达done，提交固定review，任意状态可reset。P1 smart_construction_core接入共享tier及approved中间状态/reject_reason，policy/callback/native/profile统一；无配置提交仅approved，有配置真实review，action_archive显式done。旧action_approve兼容调用同一归档校验，不再作为审批决策。保留项目paused/closed业务限制，核验资料公司与项目一致；状态create含default_state/write保护，审核内容在非draft锁定；归档/作废后显式重新办理重启review，不允许在审直接reset。工程资料无金额权威，不虚构金额条件。
+
+L1 project-document-iteration.log通过；L2 unit.log126 PASS。首轮native旧测试期望review可重置，与修正后防绕行边界冲突；改为done/cancel可reset并核对仅approved发布归档且purpose=complete，action-iteration.log通过，native-recovery.log8+52=60 PASS。非放宽测试，新增归档边界断言，旧失败日志保留。非零回执登记。P4同一rollback工具新增project-document8组，已有doc_type字典为前提，不造字典fixture；default all270但本批仅scope。tool-iteration.log/语法/diff通过。
+
+需一次受管模块升级（tier/字段/XML）与reload，沿local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，事务数据/策略恢复；尚未运行runtime/browser，不将源代码接入算已完成办理。前端CrYkOCxc未变不构建，无新环境/持久fixture/推送合并目标部署。
