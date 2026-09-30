@@ -37,3 +37,18 @@ export function diaryProbeWriteKind(role, body, scope) {
     && Number(body.meta?.action_id) === Number(r.context.action_id)) return 'submit';
   return null;
 }
+
+export function eventProbeWriteKind(role, body, scope) {
+  if (!scope || role !== 'fixture_role_contract_operator' || scope.model !== 'sc.contract.event') return null;
+  const p = body?.params;
+  const r = scope.request;
+  if (!/^TPL53-EVENT-SAVE-\d{13}$/.test(r?.vals?.name) || !Number.isInteger(scope.projectId) || scope.projectId <= 0 || r?.vals?.project_id !== scope.projectId || r?.context?.company_id !== 8) return null;
+  if (scope.phase === 'create' && body?.intent === 'api.data' && p?.op === 'create'
+    && p.model === scope.model && isDeepStrictEqual(p, r)) return 'create';
+  if (scope.phase === 'submit' && Number.isInteger(scope.id) && scope.id > 0
+    && body?.intent === 'execute_button' && p?.model === scope.model && p.res_id === scope.id
+    && p.button?.name === 'action_submit' && p.button.type === 'object'
+    && Number(body.meta?.menu_id) === Number(r.context.menu_id)
+    && Number(body.meta?.action_id) === Number(r.context.action_id)) return 'submit';
+  return null;
+}

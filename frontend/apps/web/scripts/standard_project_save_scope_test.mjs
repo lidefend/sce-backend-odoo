@@ -86,3 +86,21 @@ test('diary success permit binds PM, exact request, generated identity and confi
   }
   assert.equal(diaryProbeWriteKind('fixture_role_pm', { ...submit, meta: { menu_id: 1, action_id: 713 } }, { ...scope, phase: 'submit' }), null);
 });
+
+import { eventProbeWriteKind } from './standard_expense_success_scope.mjs';
+test('event success permit binds operator, exact request, generated identity and confirm only', () => {
+  const scope = { model: 'sc.contract.event', phase: 'create', id: 123, projectId: 464,
+    request: { op: 'create', model: 'sc.contract.event', vals: { project_id: 464, name: 'TPL53-EVENT-SAVE-1790807163178', description: 'content' },
+      context: { company_id: 8, menu_id: 414, action_id: 713 } } };
+  const create = { intent: 'api.data', params: scope.request };
+  assert.equal(eventProbeWriteKind('fixture_role_contract_operator', create, scope), 'create');
+  assert.equal(eventProbeWriteKind('fixture_role_finance', create, scope), null);
+  assert.equal(eventProbeWriteKind('fixture_role_contract_operator', create, { ...scope, phase: 'create_in_flight' }), null);
+  assert.equal(eventProbeWriteKind('fixture_role_contract_operator', { ...create, params: { ...scope.request, vals: { ...scope.request.vals, state: 'confirmed' } } }, scope), null);
+  const submit = { intent: 'execute_button', params: { model: scope.model, res_id: 123, button: { name: 'action_submit', type: 'object' } }, meta: { menu_id: 414, action_id: 713 } };
+  assert.equal(eventProbeWriteKind('fixture_role_contract_operator', submit, { ...scope, phase: 'submit' }), 'submit');
+  for (const patch of [{ res_id: 124 }, { button: { name: 'action_done', type: 'object' } }, { model: 'sc.plan' }]) {
+    assert.equal(eventProbeWriteKind('fixture_role_contract_operator', { ...submit, params: { ...submit.params, ...patch } }, { ...scope, phase: 'submit' }), null);
+  }
+  assert.equal(eventProbeWriteKind('fixture_role_contract_operator', { ...submit, meta: { menu_id: 1, action_id: 713 } }, { ...scope, phase: 'submit' }), null);
+});

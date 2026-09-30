@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -70,6 +70,9 @@ const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
 assert.ok(!diarySaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.construction.diary' && process.env.TPL07_APPROVAL_VIEW === 'create'));
 const eventSaveProbe = process.env.TPL07_EVENT_SAVE_PROBE === '1';
 assert.ok(!eventSaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.contract.event' && process.env.TPL07_APPROVAL_VIEW === 'create'));
+const eventSaveSuccess = process.env.TPL07_EVENT_SAVE_SUCCESS === '1';
+assert.ok(!eventSaveSuccess || (eventSaveProbe && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1' && process.env.TPL07_DIARY_SAVE_SUCCESS !== '1'));
+let eventSuccess = null;
 let eventCreateCapture = false;
 let diaryCreateCapture = false;
 const diarySaveSuccess = process.env.TPL07_DIARY_SAVE_SUCCESS === '1';
@@ -105,6 +108,21 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    const eventKind = eventProbeWriteKind(role, body, eventSuccess);
+    if (eventKind) {
+      eventSuccess.phase = `${eventKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(eventSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.eventSuccessWrites ??= [];
+      report.eventSuccessWrites.push({ kind: eventKind, result });
+      if (result.ok === true) {
+        if (eventKind === 'create') eventSuccess.id = result.data?.id;
+        eventSuccess.phase = eventKind === 'create' ? 'submit' : 'done';
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(eventSuccess, null, 2));
+      return route.fulfill({ response });
     }
     if (eventSaveProbe && eventCreateCapture && role === 'fixture_role_contract_operator' && body?.intent === 'api.data'
       && body.params?.op === 'create' && body.params.model === 'sc.contract.event') {
@@ -951,6 +969,36 @@ try {
           eventCreateCapture = false;
           check('event save: two attempts and no follow-up action', report.eventSaveAttempts.length === 2 && report.forbiddenWrites.length === 0);
           await session.page.screenshot({ path: path.join(out, 'event-filled-save-failure.png') });
+          if (eventSaveSuccess) {
+            eventSuccess = { model: spec.model, request: structuredClone(report.eventSaveAttempts.at(-1)), phase: 'prepare', id: null, projectId: project.id };
+            await fs.writeFile(expenseRecoveryPath, JSON.stringify(eventSuccess, null, 2));
+            await expenseCleanup('preflight');
+            eventSuccess.phase = 'create';
+            await session.page.getByRole('button', { name: '提交', exact: true }).click();
+            await session.page.waitForFunction(() => !window.location.pathname.endsWith('/new'));
+            check('event success: create and confirm each execute once', eventSuccess.phase === 'done'
+              && JSON.stringify(report.eventSuccessWrites?.map(row => row.kind)) === JSON.stringify(['create', 'submit']));
+            const saved = await session.page.evaluate(async id => {
+              const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+              return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+                body: JSON.stringify({ intent: 'api.data', params: { op: 'read', model: 'sc.contract.event', ids: [id],
+                  fields: ['id', 'state', 'project_id', 'company_id', 'name', 'description', 'event_type'], context: { company_id: 8 } } }),
+              })).json();
+            }, eventSuccess.id);
+            report.eventSavedRecord = saved;
+            const row = saved.data?.records?.[0];
+            check('event success: operator authoritative record readback', saved.ok === true && row?.id === eventSuccess.id
+              && row.state === 'approved' && row.project_id[0] === project.id && row.company_id[0] === 8
+              && row.name === name && row.description === content && row.event_type === 'design_change');
+            await form(session.page, `/f/sc.contract.event/${eventSuccess.id}${createContext}`, 'event-success-saved', 'readonly');
+            for (const width of [1440, 390]) {
+              await session.page.setViewportSize({ width, height: 950 });
+              check(`event saved ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+              await session.page.screenshot({ path: path.join(out, `event-success-${width}.png`) });
+            }
+            continue;
+          }
         }
 
         if (diarySaveProbe) {
@@ -2064,7 +2112,7 @@ try {
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
-  if (expenseSuccess || diarySuccess) {
+  if (expenseSuccess || diarySuccess || eventSuccess) {
     try { await expenseCleanup('final'); }
     catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
   }

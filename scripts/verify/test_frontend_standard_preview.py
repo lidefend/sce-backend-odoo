@@ -245,3 +245,19 @@ class ExpenseBrowserCleanupTest(unittest.TestCase):
                       {'create_date': '2020-01-01 00:00:00'}):
             with self.assertRaises(AssertionError): validate_diary_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 24)
         with self.assertRaises(AssertionError): validate_diary_probe_target('sc_dev_demo', scope, row, 24)
+
+    def test_event_cleanup_rejects_unowned_record_and_scope(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_event_probe_target
+        from datetime import datetime, timezone
+        marker = 'TPL53-EVENT-SAVE-1790807163178'
+        scope = {'model': 'sc.contract.event', 'id': 123, 'projectId': 464, 'request': {
+            'vals': {'name': marker, 'project_id': 464, 'description': 'content', 'event_type': 'design_change'}, 'context': {'company_id': 8}}}
+        row = {'id': 123, 'name': marker, 'description': 'content', 'project_id': 464, 'company_id': 8,
+               'create_uid': 24, 'event_type': 'design_change', 'state': 'approved',
+               'create_date': datetime.fromtimestamp(1790807163.178 + 10, timezone.utc).replace(tzinfo=None).isoformat()}
+        validate_event_probe_target('sc_frontend_acceptance', scope, row, 24)
+        for patch in ({'id': 124}, {'name': 'existing'}, {'description': 'changed'}, {'project_id': 11},
+                      {'company_id': 9}, {'create_uid': 1}, {'event_type': 'claim'}, {'state': 'done'},
+                      {'create_date': '2020-01-01 00:00:00'}):
+            with self.assertRaises(AssertionError): validate_event_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 24)
+        with self.assertRaises(AssertionError): validate_event_probe_target('sc_dev_demo', scope, row, 24)

@@ -87,7 +87,57 @@ def recover_diary(env, scope):
     print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': ids, 'actor_id': actor.id}))
 
 
+def validate_event_probe_target(database, scope, row, actor_id):
+    assert database == 'sc_frontend_acceptance' and scope['model'] == 'sc.contract.event'
+    vals = scope['request']['vals']
+    assert re.fullmatch(r'TPL53-EVENT-SAVE-\d{13}', vals['name'])
+    assert set(vals) == {'project_id', 'name', 'description', 'event_type'} and vals['project_id'] == scope['projectId'] and isinstance(scope['projectId'], int) and scope['projectId'] > 0
+    assert scope['request']['context']['company_id'] == 8
+    assert row['name'] == vals['name'] and row['description'] == vals['description']
+    assert row['project_id'] == scope['projectId'] and row['company_id'] == 8 and row['create_uid'] == actor_id
+    assert row['event_type'] == vals['event_type'] == 'design_change' and row['state'] in ('draft', 'approved')
+    if scope.get('id'):
+        assert row['id'] == scope['id']
+    started = int(vals['name'].rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
+def recover_event(env, scope):
+    assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.contract.event'
+    actor = env['res.users'].sudo().search([('login', '=', 'fixture_role_contract_operator')])
+    assert len(actor) == 1 and actor.company_id.id == 8
+    vals = scope['request']['vals']
+    assert set(vals) == {'project_id', 'name', 'description', 'event_type'} and vals['project_id'] == scope['projectId'] and isinstance(scope['projectId'], int) and scope['projectId'] > 0
+    marker = vals['name']
+    assert re.fullmatch(r'TPL53-EVENT-SAVE-\d{13}', marker)
+    project = env['project.project'].sudo().browse(scope['projectId']).exists()
+    assert project and project.company_id.id == 8
+    # Do not change or bypass existing approval configuration for this probe.
+    assert not env['sc.approval.policy'].sudo().search_count([
+        ('target_model', '=', 'sc.contract.event'), ('company_id', 'in', [False, 8]),
+        ('approval_required', '=', True)])
+    records = env['sc.contract.event'].sudo().with_context(active_test=False).search([('name', '=', marker)])
+    assert len(records) <= 1
+    ids = records.ids
+    for record in records:
+        row = {key: record[key] for key in ('id', 'name', 'description', 'event_type', 'state')}
+        row.update({key: record[key].id for key in ('create_uid', 'company_id', 'project_id')})
+        row['create_date'] = str(record.create_date)
+        validate_event_probe_target(env.cr.dbname, scope, row, actor.id)
+        assert not record.contract_id and not record.settlement_included and not record.legacy_fact_id
+        assert not record.review_ids and not record.attachment_ids
+        assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
+        record.unlink()
+    env.cr.commit()
+    env.invalidate_all()
+    assert not env['sc.contract.event'].sudo().with_context(active_test=False).search_count([('name', '=', marker)])
+    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': ids, 'actor_id': actor.id}))
+
+
 def recover(env, scope):
+    if scope.get("model") == "sc.contract.event":
+        return recover_event(env, scope)
     if scope.get('model') == 'sc.construction.diary':
         return recover_diary(env, scope)
     assert env.cr.dbname == 'sc_frontend_acceptance'
