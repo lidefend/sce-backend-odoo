@@ -7783,3 +7783,12 @@ L5：未推送、未合并、未部署。
 - 原生增加真实审核按钮及can_review/validation_status，profile同一审批动作，draft移除complete；完成仅confirmed。原生取消此前误显示于done，按模型原draft/confirmed范围对齐，legacy取消拒绝业务规则未改。已有legacy_confirmed状态/历史数据未迁移。
 - L1 ci.local.iteration PASS（diary-approval-iteration.log）。L2审批53、native8+30=38、semantics15 PASS（diary-approval-tests.log，begin/record53）。实际方法测试验证无/有配置、草稿/审批中不能完成、伪造/部分回调不推进、真实通过后独立完成、内容不满足拒绝；实际投影与原生完成/取消/审核人条件一致。新模型/视图加入既有输入登记。
 - 字段/继承/XML仍需受管升级、真实日志审批/拒绝重提验证，尚未执行。本次不重建前端、不重跑无关浏览器；不能以纯测试宣称全系统完成。总体active，未推送、合并、目标部署。
+
+
+### 53.49 施工日志真实审批闭环验证通过
+
+- cbd60bd63候选经既有acceptance.module.upgrade与backend.acceptance.up受管升级/重载成功（diary-approval-upgrade.log/diary-approval-backend.log）。继续复用内部隔离sc_frontend_acceptance/local、sc-fe-r2-p1-01、精确dbfilter及原卷；前端产物不变，不构建。
+- P4原rollback smoke将计划的共同确认/审批/拒绝/重提检查复用于施工日志，模型限定为sc.plan/sc.construction.diary，只在创建字段与独立执行动作上区分。先拒绝覆盖该公司/全局任何既有策略，再创建事务内策略及业务记录，均进入原created恢复清单；不增加持久fixture权威。
+- 新日志5项真实通过：无配置confirmed无review且不done；配置审批draft+真实review，savepoint内action_done明确拒绝；实际审批人validate_tier完成后confirmed，显式action_done才done；真实驳回保留意见；重提新review IDs与旧链不交集，通过后清空旧原因。没有SQL伪造审批结果或强制回调冒充审批。
+- L1 ci.local.iteration和py_compile PASS（diary-runtime-iteration.log）。受管verify.business_config.approval_runtime27项PASS、ROLLBACK=VERIFIED（diary-approval-runtime.log），包括费用12、事件5、计划5、日志5；计划与日志共享工具改变，因此同事务复验相关链。原策略/步骤回读一致，临时项目/客商/单据/策略不存在。受管封装不变，原9项证据复用。
+- 这证明所述模型审批循环，不证明项目经理角色端到端权限、最终页面契约及整个业务单据集合完成。下一步将计划/日志加入现有只读页面验收范围核对有效契约消费，按现有授权角色查已有记录；合同事件公司8无记录前提不变不重试。总体active，未推送、合并或目标部署。

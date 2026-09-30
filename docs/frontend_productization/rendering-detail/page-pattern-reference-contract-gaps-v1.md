@@ -198,3 +198,7 @@ Governed module upgrade/backend reload at478215ca4 succeeded. The existing rollb
 ### Segment53.48 — Construction diary shared approval implemented
 
 Construction diary now participates in company-scoped shared approval configuration and native review callbacks. Confirmation retains content validation; configured review waits in draft, no configuration confirms. Completion requires confirmed approval and remains independent. Native/profile actions align, including removing draft completion and the invalid done-state cancel entry.53 approval,38 native and15 semantics tests pass. Module upgrade and real diary runtime acceptance remain pending; overall approval coverage and `detail.action-state` remain open.
+
+### Segment53.49 — Construction diary real approval loop verified
+
+Governed upgrade/reload atcbd60bd63 succeeded. The existing rollback smoke passes27 checks including five diary cases: no-configuration confirmation without completion, pending approval blocks completion, real reviewer approval before explicit completion, rejection reason, and new-chain resubmission. Baseline policy/step readback and temporary-record absence were verified. PM-role end-to-end permissions, effective page/browser consumption and full document coverage remain open.

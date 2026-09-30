@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rollback-only smoke for low-code approval policy runtime consumption.
 
-This covers the shared configuration chain and newly adopted contract events and plans.
+This covers the shared configuration chain and newly adopted contract events, plans and construction diaries.
 It does not claim full business-document coverage; every write is rolled back.
 """
 
@@ -158,27 +158,34 @@ def _contract_event_checks(project, group, created):
     print("APPROVAL_CHECK=contract_event_resubmission_uses_new_real_chain")
 
 
-def _plan_checks(project, group, created):
+def _draft_confirmation_checks(project, group, created, model):
+    assert model in ("sc.plan", "sc.construction.diary")
+    is_plan = model == "sc.plan"
+    label_prefix = "plan" if is_plan else "diary"
     env = _env()
     Policy = env["sc.approval.policy"].sudo()
     assert not Policy.with_context(active_test=False).search_count([
-        ("target_model", "=", "sc.plan"), ("company_id", "in", [False, env.company.id]),
-    ]), "existing plan configuration must not be overwritten"
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing %s configuration must not be overwritten" % model
 
     def plan(label):
-        record = env["sc.plan"].sudo().create({
-            "name": "Approval runtime " + label, "project_id": project.id,
-            "company_id": env.company.id, "planned_start": "2026-09-30", "planned_finish": "2026-10-01",
-        })
+        values = {"project_id": project.id}
+        if is_plan:
+            values.update(name="Approval runtime " + label, company_id=env.company.id,
+                          planned_start="2026-09-30", planned_finish="2026-10-01")
+        else:
+            values.update(title="Approval runtime " + label, diary_type="施工日志",
+                          description="Runtime approval content")
+        record = env[model].sudo().create(values)
         created.append((record._name, record.id))
         return record
 
     automatic = plan("automatic")
     automatic.action_confirm()
-    assert automatic.state == "confirmed" and not automatic.review_ids and not automatic.actual_start
-    print("APPROVAL_CHECK=plan_unconfigured_confirmation_does_not_start")
+    assert automatic.state == "confirmed" and not automatic.review_ids and (not is_plan or not automatic.actual_start)
+    print("APPROVAL_CHECK=%s_unconfigured_confirmation_does_not_execute" % label_prefix)
     policy = Policy.create({
-        "name": "Runtime plan", "code": "runtime_plan_smoke", "target_model": "sc.plan",
+        "name": "Runtime " + label_prefix, "code": "runtime_%s_smoke" % label_prefix, "target_model": model,
         "company_id": env.company.id, "approval_required": True, "mode": "single",
         "manager_group_id": group.id, "runtime_state": "tier_validation",
     })
@@ -195,33 +202,34 @@ def _plan_checks(project, group, created):
     denied = False
     try:
         with env.cr.savepoint():
-            required.action_start()
+            required.action_start() if is_plan else required.action_done()
     except UserError:
         denied = True
-    assert denied and required.state == "draft" and not required.actual_start
-    print("APPROVAL_CHECK=plan_pending_approval_cannot_start")
+    assert denied and required.state == "draft" and (not is_plan or not required.actual_start)
+    print("APPROVAL_CHECK=%s_pending_approval_cannot_execute" % label_prefix)
     _approve_existing_reviews(required)
-    assert required.state == "confirmed" and required.validation_status == "validated" and not required.actual_start
-    required.action_start()
-    assert required.state == "in_progress" and required.actual_start
+    assert required.state == "confirmed" and required.validation_status == "validated" and (not is_plan or not required.actual_start)
+    if is_plan:
+        required.action_start()
+        assert required.state == "in_progress" and required.actual_start
     required.action_done()
-    assert required.state == "done" and required.actual_finish
-    print("APPROVAL_CHECK=plan_real_approval_then_explicit_start_and_completion")
+    assert required.state == "done" and (not is_plan or required.actual_finish)
+    print("APPROVAL_CHECK=%s_real_approval_then_explicit_execution" % label_prefix)
     rejected = plan("rejection")
     rejected.action_confirm()
     previous_ids = set(rejected.review_ids.ids)
     users = rejected.review_ids.mapped("reviewer_ids")
     actor = next((rejected.with_user(user) for user in users if rejected.with_user(user).can_review), None)
     assert actor is not None
-    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime plan rejection")
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime %s rejection" % label_prefix)
     rejected.invalidate_recordset()
-    assert rejected.state == "draft" and rejected.reject_reason == "Runtime plan rejection"
-    print("APPROVAL_CHECK=plan_real_rejection_preserves_reason")
+    assert rejected.state == "draft" and rejected.reject_reason == "Runtime %s rejection" % label_prefix
+    print("APPROVAL_CHECK=%s_real_rejection_preserves_reason" % label_prefix)
     rejected.action_confirm()
     assert rejected.state == "draft" and rejected.review_ids and previous_ids.isdisjoint(rejected.review_ids.ids)
     _approve_existing_reviews(rejected)
     assert rejected.state == "confirmed" and rejected.validation_status == "validated" and not rejected.reject_reason
-    print("APPROVAL_CHECK=plan_resubmission_completes_new_review_chain")
+    print("APPROVAL_CHECK=%s_resubmission_completes_new_review_chain" % label_prefix)
 
 
 def main():
@@ -367,7 +375,8 @@ def main():
         assert all(review.status == "approved" for review in linear.review_ids)
         print("APPROVAL_CHECK=last_linear_step_finishes_document")
         _contract_event_checks(project, group, created)
-        _plan_checks(project, group, created)
+        _draft_confirmation_checks(project, group, created, "sc.plan")
+        _draft_confirmation_checks(project, group, created, "sc.construction.diary")
         passed = True
     finally:
         _env().cr.rollback()
@@ -377,7 +386,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=22")
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=27")
 
 
 main()
