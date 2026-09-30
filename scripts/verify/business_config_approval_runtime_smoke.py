@@ -570,9 +570,99 @@ def _inbound_approval_checks(project, group, created):
     print("APPROVAL_CHECK=transfer_unconfigured_existing_auto_receive_preserved")
 
 
+
+def _acceptance_approval_checks(project, group, created):
+    env = _env()
+    model = "sc.material.acceptance"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing material acceptance policy must not be overwritten"
+    product = env["product.product"].sudo().search([("type", "in", ["product", "consu"])], limit=1)
+    if not product:
+        product = env["product.product"].sudo().create({"name": "Rollback acceptance material", "type": "consu"})
+        created.extend([(product._name, product.id), (product.product_tmpl_id._name, product.product_tmpl_id.id)])
+
+    def document():
+        record = env[model].sudo().create({
+            "project_id": project.id,
+            "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id,
+                                  "received_qty": 2, "accepted_qty": 2})],
+        })
+        created.append((record._name, record.id))
+        return record
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    automatic = document()
+    for state in ("approved", "accepted", "rejected"):
+        denied(lambda: automatic.with_context(sc_acceptance_state_token=True).write({"state": state}))
+    print("APPROVAL_CHECK=acceptance_external_state_write_denied")
+    automatic.action_submit()
+    assert automatic.state == "approved" and not automatic.review_ids
+    automatic.action_accept()
+    assert automatic.state == "accepted"
+    print("APPROVAL_CHECK=acceptance_unconfigured_approval_then_quality_decision")
+    policy = Policy.create({
+        "name": "Runtime material acceptance approval", "code": "runtime_acceptance_approval_smoke", "target_model": model,
+        "company_id": env.company.id, "approval_required": True, "mode": "single",
+        "manager_group_id": group.id, "runtime_state": "tier_validation",
+    })
+    created.append((policy._name, policy.id))
+    step = env["sc.approval.step"].sudo().create({
+        "policy_id": policy.id, "name": "Acceptance review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id,
+    })
+    policy.sync_tier_definitions()
+    denied(lambda: step.write({"amount_min": 1}))
+    step.invalidate_recordset()
+    assert not step.amount_min
+    print("APPROVAL_CHECK=acceptance_undefined_amount_condition_rejected")
+    required = document()
+    required.action_submit()
+    assert required.state == "submitted" and required.review_ids
+    denied(required.action_accept)
+    denied(required.action_reject)
+    print("APPROVAL_CHECK=acceptance_pending_review_blocks_both_quality_outcomes")
+    _approve_existing_reviews(required)
+    assert required.state == "approved" and required.validation_status == "validated"
+    denied(lambda: required.line_ids.write({"accepted_qty": 3}))
+    required.action_accept()
+    assert required.state == "accepted"
+    print("APPROVAL_CHECK=acceptance_real_approval_preserves_quantity_validation")
+    negative = document()
+    negative.action_submit()
+    _approve_existing_reviews(negative)
+    denied(negative.action_reject)
+    negative.write({"rejection_reason": "Runtime quality mismatch"})
+    negative.action_reject()
+    assert negative.state == "rejected" and negative.rejection_reason == "Runtime quality mismatch" and not negative.reject_reason
+    print("APPROVAL_CHECK=acceptance_quality_failure_has_separate_required_reason")
+    rejected = document()
+    rejected.action_submit()
+    old = set(rejected.review_ids.ids)
+    actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime approval rejection")
+    rejected.invalidate_recordset()
+    assert rejected.state == "draft" and rejected.reject_reason == "Runtime approval rejection" and not rejected.rejection_reason
+    print("APPROVAL_CHECK=acceptance_approval_rejection_is_not_quality_failure")
+    rejected.action_submit()
+    assert rejected.review_ids and old.isdisjoint(rejected.review_ids.ids)
+    _approve_existing_reviews(rejected)
+    assert rejected.state == "approved" and not rejected.reject_reason
+    print("APPROVAL_CHECK=acceptance_resubmission_completes_new_review_without_quality_decision")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -586,10 +676,11 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope == "inbound":
+        if scope in ("inbound", "acceptance"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            _inbound_approval_checks(project, group, created)
+            checks = _inbound_approval_checks if scope == "inbound" else _acceptance_approval_checks
+            checks(project, group, created)
         else:
             _set_policy(model_name, True)
             required = _expense(project, partner, "required")
@@ -726,6 +817,7 @@ def main():
             _task_approval_checks(project, group, created)
             _project_approval_checks(group, created)
             _inbound_approval_checks(project, group, created)
+            _acceptance_approval_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -735,7 +827,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "inbound" else 53, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("inbound", "acceptance") else 61, scope))
 
 
 main()

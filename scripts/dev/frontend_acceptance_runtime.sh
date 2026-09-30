@@ -304,7 +304,7 @@ case "$command" in
     [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
     case "$command" in
       standard-approval-runtime)
-        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|inbound) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
+        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|inbound|acceptance) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
         docker exec -i -e SC_APPROVAL_RUNTIME_SCOPE="${SC_APPROVAL_RUNTIME_SCOPE:-all}" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
         ;;
       standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;

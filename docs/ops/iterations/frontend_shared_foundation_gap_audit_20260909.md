@@ -7997,3 +7997,10 @@ P1 smart_construction_core模型/策略/tier/native/profile。审批提交→sub
 配置接入已有政策/tier callback，未声明材料验收金额来源；金额条件继续由既有编译器拒绝，不能猜采购单金额。原生审批按钮/质量按钮与契约分别绑定；两个质量结果均属完成验收（complete），不借approve/reject代替质量结果，无新前端业务规则。L1 iteration→L2审批/native/semantics→受管模块升级/真实运行；本段先源码定向，不重建前端，不跑旧全量ORM。
 
 源码验证：L1 acceptance-approval-iteration.log PASS；68审批纯测试 PASS；native8+40=48 PASS；semantics15 PASS（67 profiles/17 reachable_actions/13 vocabulary），2份XML解析PASS。非零回执已登记。运行时未升级/未验收，保持verification_pending。下一步扩展现有acceptance-only回滚范围，无须重跑入库8及独立共享45或前端构建。
+
+
+### 53.70 材料验收审批真实运行（进行中）
+
+P4扩展现有受管rollback工具scope=acceptance（白名单，默认all）。新增8项分别验证外部状态保护、无配置自动审批与独立质量决定、未声明金额条件拒绝、pending禁止两类质量结果、真实审批后仍执行数量校验、质量不通过原因、审批驳回不变质量不通过、重提新审批链且不自动质量通过。无环境/fixture基线新增，材料协作者沿用原回滚策略，产品/模板和单据均校验消失。
+
+L1 iteration/py_compile/bash-n，复用上批68审批/48native/15语义未变产品输入；之后受管smart_construction_core升级、后端加载、只跑acceptance8，不重跑inbound8/shared45，不重建前端。数据库角色/租户/profile/精确filter/固定卷沿用53.67受管身份；仅平台内部验收库，不触及客户生产库。
