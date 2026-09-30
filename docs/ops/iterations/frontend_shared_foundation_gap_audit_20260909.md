@@ -5015,3 +5015,143 @@ BusinessConfigSurfaceView.vue                -> ScErrorState:error, ScInlineStat
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 34｜导航边界守卫漂移：把断言重新绑到真实配置入口，并修掉被它挡住的缓存场景视图越权派发（2026-09-30）
+
+段 33 登记的 `verify.frontend.config_workbench_navigation_boundary.guard` FAIL，本段定向收口。
+裁决：**升级验收脚本把断言重新绑到当前真实入口；不改守卫、不降断言、不恢复旧 DOM 迎合测试。**
+
+### 1. 漂移定性
+
+守卫 `scripts/verify/frontend_config_workbench_navigation_boundary_guard.py` 对验收脚本
+`frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` 要求 3 个 token：
+
+- `product_configuration_entry_count === 1`
+- `legacy_configuration_entry_count === 0`
+- `getByRole("heading", { name: "菜单配置", exact: true })`（语义：配置入口必须**真实可达**）
+
+`2ef14ff65 Merge PR #372` 把验收脚本改成 TDesign 内部选择器（`.t-submenu__title` 等）后，
+3 个 token 全部消失，守卫从此长期红。守卫本身要表达的业务边界（唯一「产品配置」入口、
+拒绝旧「配置中心」、配置入口真实可达）**没有被推翻**，只是验收脚本的定位方式与入口事实
+同时失效，所以按「保留断言含义、替换定位方式」处理。
+
+### 2. 本段实测的真实入口（不再假设历史菜单分支）
+
+- 导航树当前发布 `产品配置`（唯一）→ `表单配置`(menu 417/action 720)、`流程审批配置`(711)、`字段管理`(732)。
+- **没有** `低代码系统配置`/`菜单配置` 节点；`legacy_configuration_entry_count = 0`。
+  菜单 `smart_construction_core.menu_ui_menu_config_policy_business_config` 处于 `active=False`，
+  故「产品配置 → 菜单配置」这条旧分支已不发布，验收不得再靠它证明可达。
+- 真实可达路径：`产品配置 → 表单配置` → `/admin/business-config`（工作台）
+  → `选择业务页面` → 选择一条业务页面（本次 `account.account` / action 302）
+  → 工作台发布 `导航入口` 任务卡 → `配置菜单` → `/admin/menu-config` → `H1 菜单配置`。
+- 该路径为只读：`选择` 与 `配置菜单` 只产生
+  `ui.business_config.surface.get` / `coverage.scan` / `change_set.open`，**无 create/write/unlink/execute_button/upload**。
+
+### 3. 被这条路径挡住的真实产品缺陷（根因修复）
+
+修复前，沿上述真实用户路径点击 `表单配置` 后，页面会发出
+`POST /api/v1/intent {"intent":"handling", ...}` → `404 INTENT_NOT_FOUND: Unknown intent: handling`，
+并在浏览器留下 console error。
+
+根因（非猜测，逐层查实）：
+
+1. `表单配置` 的菜单/动作入口带业务契约字段 `entry_intent=handling`
+   （`addons/smart_construction_core/models/support/product_policy_sync.py` 的 `entry_intent_label='办理'`），
+   落地 URL 为 `/admin/business-config?…&entry_intent=handling&…`。
+2. `App.vue` 用 `<KeepAlive :max="6">` 缓存业务视图；被缓存的 `SceneView` 的 watcher
+   仍随**全局 route 变化**继续触发。
+3. `SceneView.vue` 用 `route.query.entry_intent` 直接当**场景入口意图**派发
+   （`sceneContractEntryIntent`），于是把「业务办理处置值」当成「场景意图」发出去。
+
+`entry_intent` 是**两个契约共用的一列参数**：业务入口契约用 `handling/query/analysis/config/master_data/source_fact`，
+而打开场景的行动作（如 `_PROJECT_DASHBOARD_ROW_ACTION`）用它携带 `project.dashboard.enter`
+这类**已声明场景意图**。所以判定依据只能是「谁拥有这条路由」，**不能是取值形状**（不做字符串启发式猜测业务语义）。
+
+修复（最小、契约正确）：
+
+- 新增 `frontend/apps/web/src/app/sceneEntryContract.ts`：`ownsSceneRoute()` + `resolveSceneContractEntryIntent()`
+  （非 `scene` 路由一律返回空意图；`scene` 路由继续接受查询里的已声明场景意图，否则回落到场景契约自声明表）。
+- `SceneView.resolveScene()` 首行先校验路由归属；`SceneView.vue` 不再各自持有意图映射表。
+- **未**通过禁止导航、全屏刷新、清空草稿或改后端来绕开。
+
+### 4. 验收体系为什么没发现这个偏差（缺口与补齐）
+
+| 缺口 | 为什么漏 | 本段补齐 |
+|---|---|---|
+| 只读页/工作台入口漂移 | 守卫只校验验收脚本**是否含 token**，不校验该断言是否仍指向**真实可达**路径；token 缺失时长期红也无人跟进 | 验收脚本改为走真实入口（选择业务页面 → 配置菜单），守卫 token 原样保留 |
+| 缓存视图越权派发无确定性验证 | 没有场景路由归属的单元测试；浏览器验收也从不从场景页进入业务配置页 | 新增 `verify.frontend.scene_entry_contract.unit`（40 例），覆盖 `handling/query/analysis/config/master_data/source_fact` 在非归属路由上**必须为空** |
+| 改动 `SceneView.vue` 只会落到通用兜底 | `scripts/verify/frontend_dev_incremental.py` 的 RULES 无 `SceneView.vue` 规则 → 只推荐 `verify.frontend.typecheck.strict` | 新增规则：`/views/SceneView.vue`、`/app/sceneEntryContract.ts` → `verify.frontend.scene_entry_contract.unit` + `verify.frontend.navigation_shell.unit`，并加对应单测 |
+| 只读详情呈现结构 | 已有 `data-navigation-toggle="submenu"` 第一方语义锚点替代已消失的 `.t-submenu__title`/`aria-expanded` | 沿用段 33 已落地的锚点，不再依赖 TDesign 内部类名 |
+
+### 5. 分层验证（L0→L5）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L0 | `git diff --check` / 工作树与 HEAD 身份 | PASS |
+| L1 | `make ci.local.iteration` | PASS（`change_state=dirty coverage=L1_only`） |
+| L1 | `make verify.guard.registry` | PASS（1352 scripts / 124 孤儿已登记） |
+| L1 | `make ci.generated_reports.guard` | PASS（含 complexity / split-plan 派生刷新） |
+| L2 | `make verify.frontend.scene_entry_contract.unit`（新增） | PASS `cases=40` |
+| L2 | `make verify.frontend.navigation_shell.unit` | PASS（含新增前置依赖） |
+| L2 | `python3 -m unittest scripts.verify.test_frontend_dev_incremental` | PASS 12 |
+| L2 | `make verify.frontend.config_workbench_navigation_boundary.guard` | **PASS**（段 33 的 FAIL 关闭） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS |
+| L2 | `make verify.frontend.lint.src` | PASS（0 error / 57 既有 warning） |
+| L2 | 三份派生清单 `--check` | PASS |
+| L4 | `make verify.product.navigation_boundary`（受管角色 + 5180 真实候选） | **PASS**（desktop + mobile，`errors=[]`、`mutations=0`） |
+
+**L3 跳过**：未改后端模型、权限、数据、契约投影或迁移 → 不做模块升级与夹具重置。
+
+### 6. 候选、运行身份与环境
+
+- 旧产物保留（**未覆盖**，按序归档）：
+  `config05-20260929-prev-221b5ba5b`（07:48 构建）、
+  `config05-20260929-prev-221b5ba5b-navdrift`（验收脚本重绑版）、
+  `config05-20260929-prev-221b5ba5b-sceneown-v1`（仅含第一次场景修复版）。
+- 新候选：`config05-20260929/dist`，`base_sha=221b5ba5b…`，`dirty_scope` 见
+  `config05-20260929/build-identity.json`，`entry=/assets/index-D-WZIX_H.js`，
+  `entry_sha256=7ee7724b0b344fc38f8a2dcad1ac8e31c89314e1a666fa8933a42317374a41d3`，
+  `index_sha256=18127f6813ec84740d01ad505dba6984aa37fdd6184aa16e4ac02536d378fb53`，
+  `diff_sha256=28027a581ee8df80046346e3162b072184952fff2e60301784acdbb048fac91b`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （单次构建；构建前先移走旧目录，否则 `REUSED unchanged build`）。
+  **未二次构建、未做全文件 HTTP 比对。**
+- 5180 监听进程**未变、未重启、未新增端口**：`pid=802966`，
+  `node scripts/release/release_static_server.mjs`，`STATIC_ROOT=…/config05-20260929/dist`，
+  `STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`。按请求读盘 → 替换产物即生效。
+- 身份自校验：HTTP 回读 `index.html` 与新入口 JS，`index_sha256`/`entry_sha256` 与
+  `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，
+  db `sc_frontend_acceptance`），受管角色 `fixture_role_config_admin`。
+  **本轮全部浏览器操作 mutations=0，零业务写入、零数据恢复动作。**
+
+### 7. 验收结果（`make verify.product.navigation_boundary`，5180 真实候选）
+
+| 项 | 1440×900 desktop | 390×844 mobile |
+|---|---|---|
+| 旅程 | 项目中心深链→刷新→折叠持久→前进后退→产品配置→表单配置→选业务页面→配置菜单→`H1 菜单配置` | Drawer `role=dialog`/`aria-modal`、Esc 关闭并归还焦点、横向溢出 0 |
+| `errors`（console/pageerror/≥400 API） | 0 | 0 |
+| `mutations` | 0 | 0 |
+| 绑定身份 | menu 680 / action 861；配置对象 `account.account` / action 302 | — |
+| 守卫 token 事实 | `product_configuration_entry_count=1`、`legacy_configuration_entry_count=0`、`menuConfigurationHeadingText=菜单配置` | — |
+
+### 8. 提交
+
+- `fix(web): keep the cached scene runtime inside the route it owns`（产品代码 + 反例单测）
+- `chore(verify): rebind the navigation boundary acceptance to the published config entry`（验收脚本 + 派生清单 + 复杂度/分片派生 + 增量映射规则）
+
+### 9. 显式登记（**不在本段范围，继续独立记账**）
+
+- `verify.business_config.coverage` FAIL（`低代码业务配置覆盖未通过：system_root, user:admin, user:wutao`）——
+  数据覆盖状态，脚本无前端引用，本段未触及。
+- `BusinessConfigCoverageWorkspace` 的 `page-config-selection-empty`、`BusinessConfigStartPanel` 的
+  `config-status--empty`、`/admin/release-operator`、`scene-health`/`scene-packages` 无 platform-admin 夹具。
+- `style_system.guard` 四项文件长度欠账（本段未放宽阈值、未压行数消红）；
+  `SceneView.vue` 行数保持 1708（**未增长**）。
+- `state_transition_undeclared` 五条；`generate_frontend_visual_projection_inventory.py` 仍只读 `.vue`。
+- 工作台「选择业务页面」目录加载约 13–15 s 才出现（既有性能观感问题，本段只作等待条件，未改实现）。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
