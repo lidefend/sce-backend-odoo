@@ -48,6 +48,24 @@ process.stdout.write(JSON.stringify(diagnose(surface)));
             self.assertIn("artifacts/frontend-delivery-hardening/" + suffix, workflow)
 
 
+class NewModelSpecificCssTest(unittest.TestCase):
+    """The hardening rule is about selectors that are new to the product.
+
+    Re-organizing a rule that had a shared selector list prints the surviving
+    selector as an added diff line, so deciding novelty from the diff shape
+    alone reported a pre-existing selector as newly added model-specific CSS.
+    The rule must keep deciding novelty against the base revision while still
+    failing on a selector the base revision does not have.
+    """
+
+    def test_novelty_is_decided_against_the_base_revision(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_guard.py").read_text(encoding="utf-8")
+
+        self.assertIn('["git", "show", f"origin/main:{path}"]', source)
+        self.assertIn('re.escape(selector) + r"(?![\\w-])"', source)
+        self.assertNotIn('"model-specific CSS": r"', source)
+
+
 TOGGLE_PATTERN = re.compile(
     r"<ScButton\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
     r"(?=[^>]*:aria-expanded=\"sidebarVisible\")[^>]*>",
