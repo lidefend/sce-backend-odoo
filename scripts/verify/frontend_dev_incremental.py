@@ -56,11 +56,25 @@ RULES = (
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
+    # These views/pages carry a size ratchet that only `style_system.guard`
+    # enforces, so a growing file must be routed to it instead of falling
+    # through to the generic typecheck fallback.
+    Rule((
+        "/layouts/AppShell.vue",
+        "/pages/ListPage.vue",
+        "/pages/ContractFormPage.vue",
+        "/pages/ContractFormRoute.vue",
+        "/views/ActionView.vue",
+    ), (
+        "verify.frontend.style_system.guard",
+    )),
     Rule(("/pages/contractForm/", "/components/template/"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.product_page_pattern.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
+        # `useRecord*.ts` carry their own size ratchet in style_system.guard.
+        "verify.frontend.style_system.guard",
     )),
     Rule(("/components/action/", "/components/product-list/"), (
         "verify.frontend.collection_action_toolbar.unit",

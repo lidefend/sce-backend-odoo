@@ -13,6 +13,10 @@ from scripts.verify.frontend_dev_incremental import (
     select_targets,
     worktree_changed_paths,
 )
+from scripts.verify.frontend_style_system_guard import (
+    RECORD_RUNTIME_SIZE_LIMITS,
+    SIZE_LIMITS,
+)
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
@@ -67,6 +71,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.frontend.scene_entry_contract.unit",
                 ],
             )
+
+    def test_size_ratcheted_files_route_to_the_size_guard(self) -> None:
+        # A file with a size ratchet can only be caught by style_system.guard.
+        # If the ratchet is extended without extending the routing, the file
+        # silently falls back to typecheck and can grow past its limit again.
+        ratcheted = [path.relative_to(Path(__file__).resolve().parents[2]).as_posix() for path in SIZE_LIMITS]
+        ratcheted += [
+            f"frontend/apps/web/src/pages/contractForm/{name}"
+            for name in RECORD_RUNTIME_SIZE_LIMITS
+        ]
+        self.assertTrue(ratcheted)
+        for path in ratcheted:
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.style_system.guard", select_targets([path]))
 
     def test_template_consumer_change_recommends_primitive_adapter(self) -> None:
         targets = select_targets(
