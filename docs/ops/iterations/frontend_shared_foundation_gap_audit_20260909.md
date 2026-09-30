@@ -7341,3 +7341,11 @@ L5：未推送、未合并、未部署。
 - L2：standard_form_composition 97、product_page_pattern 12+5、page_pattern_reference_parity 15+13；style_system passed。日志 `artifacts/frontend-web-fix-20260928/tpl52/record-families.log`。无 TS/模板/业务逻辑变化，严格类型结果沿用 52.1 的同源脚本与类型输入。
 - 单次合并候选构建 21.65s，同一候选检查受影响列表、现有表单、只读详情、引入弹层；双视口 91/91 passed，包含浅/深两种 token 解析及禁用态。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765202063/report.json`。任务专用独立旅程未在本轮重跑，不把共享事实渲染证据扩大为全部任务业务验收。
 - 视觉复核发现过渡动画让弹层截图仍呈半透明，探针改为禁用截图动画并等待列表加载结束；同一构建只补弹层两视口 30/30，稳定截图 `artifacts/frontend-web-fix-20260928/tpl07-1790765261313/dialog-390.png` 等。之前 91 项的合同/数据/字体输入未变，继续复用。无额外构建。
+
+### 52.6 样式基础批次收口与总体目标边界
+
+- 官方参考台账明确 aeed5707 为权威、旧日快照为历史；不再混用两个实现的视觉义务。390px 官方原图已存在，旧 missing-evidence 条目改为不适用像素对齐（保留产品窄屏可用性责任），其余 16 项能力缺口未擅自关闭。
+- 最终 primitive_adapter 回执 45、page_pattern_parity 回执 28 均 passed；日志与 begin/record 在 `artifacts/frontend-web-fix-20260928/tpl52/`。前一类型检查、未变业务合同回执复用；未运行 ORM、模块升级、Quick 或全旅程。
+- 加载候选：构建基线 `825a3795c6aac8ffc7f45e9034123d29075c6e80` 加构建回执所列样式 dirty 输入，代码已收进 `c0623fb18`；入口 `/assets/index-DzCJIgmD.js`，entry SHA256 `e60ddb0ccfe637175da3f46d41eb11890390c1457de7c948a84277607e51cd74`。浏览器已核对实际 HTTP entry。之后仅文档/记录变更，不重建或伪装 clean 构建。
+- 样式基础批次验收完成；总体官方页面/交互接管继续。主线未集成、目标环境未部署、整体用户交付未验收。所有提交仅本地。
+- 下一步复用本 run 与台账，处理仍由旧共享实现承担的呈现/交互职责；已确认的候选、角色、数据和原始报告均复用，不重新执行菜单/环境全量盘点。

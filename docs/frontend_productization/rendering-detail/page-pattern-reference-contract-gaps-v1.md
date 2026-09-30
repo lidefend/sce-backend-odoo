@@ -82,7 +82,8 @@ own adaptation and is not an official-sample debt.
 
 ## Evidence gaps
 
-- No authenticated 390px screenshot exists for the reference implementation. Candidate mobile safety can be proven, but mobile visual parity cannot be claimed until the reference evidence is captured.
+- The former missing-390px-reference claim is closed: official list/base, detail/base, detail/advanced and form/base screenshots already exist at both 1440x900 and 390x844 in `sce-offrepo/artifacts/official-starter-reference/`. The official sample preserves a desktop minimum width, so mobile pixel parity is not a requirement; candidate navigation, containment and action usability remain product responsibilities.
+- Segment 52 verifies shared token resolution, typography and representative dual-viewport rendering. It does not close the capability gaps above or establish overall product delivery.
 
 ## Ownership enforcement
 

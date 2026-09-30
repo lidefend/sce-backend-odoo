@@ -146,7 +146,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Segment 52: repair unresolved shared tokens, align shell/overlay headings, then converge shared page-family typography; scoped tests and local preview only. Reuse unchanged contract evidence; no ORM, push, merge or target deployment.",
+  "next_exact_step": "Continue full-system official interaction ownership from the existing page-type ledger; inspect the known mobile navigation drawer (ScAside plus custom mask) for takeover by the existing official drawer driver. Preserve navigation contract, focus and route state. Segment 52 source/runtime evidence remains reusable.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -177,6 +177,14 @@
     },
     "inherited_gaps": [
       "verify.guard.registry orphan acknowledgements missing on origin/main too"
-    ]
+    ],
+    "presentation_segment_52": {
+      "status": "passed",
+      "code_head": "c0623fb18",
+      "browser_assertions": 91,
+      "stable_overlay_assertions": 30,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790765202063/report.json",
+      "note": "Shared presentation batch only; full-system page/interaction ownership remains active. No push, merge or target deployment."
+    }
   }
 }

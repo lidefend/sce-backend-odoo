@@ -13,8 +13,8 @@ goal:
     - docs/ops/iterations
   baseline:
     branch: feature/web-official-template-adoption
-    full_sha: dc460758c867a981795803048af68eb754de096d
-    source: mainline_port_merge_of_origin_main_fff226d7b
+    full_sha: 510a37d5f784b36f1e1ad4d7d02dbd1331f673f5
+    source: owner_confirmed_segment_52_handoff
   objective: >-
     Keep the custom web frontend rendering, interaction and page composition on
     the official TDesign starter compositions, driven only by the effective
@@ -42,6 +42,7 @@ goal:
     - no_second_list_or_form_renderer_path
     - tone_and_visual_tokens_never_enter_the_business_contract
   next_exact_step: >-
-    Segment 52: repair missing semantic/component aliases, align official typography
-    by shared page family, verify the existing 5180 candidate at two viewports,
-    and record scoped results with local commits only. Preserve Inter and product colors.
+    Complete segment 52 evidence reconciliation, then continue full-system official
+    page-type and interaction ownership from the existing ledger: preserve effective
+    contracts, remove duplicate legacy responsibilities, and keep capability gaps
+    separate from presentation. No new model whitelist, full inventory, push or merge.
