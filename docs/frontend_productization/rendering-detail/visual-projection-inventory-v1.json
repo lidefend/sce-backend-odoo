@@ -2089,7 +2089,7 @@
     },
     {
       "category": "collection",
-      "digest": "d299284470947efa82caabf144bd90389cee41372742665b8c210140b334f5b5",
+      "digest": "355b529bd4aed4ab12c9b8aff2a31550f280c73340b3d34d796f0f367a668831",
       "nativeStyleSelectors": [],
       "path": "pages/KanbanPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2099,7 +2099,7 @@
     },
     {
       "category": "collection",
-      "digest": "26de531175c28ba0f7755307febeba9e2c2b06dd1b31bf07ec2244c028f2aaef",
+      "digest": "f672a45e863f652bc7c8972555f45a62086ed867e672524d68aeea390c0a4a85",
       "nativeStyleSelectors": [],
       "path": "pages/ListPage.vue",
       "referenceNativeStyleSelectors": [],
@@ -2516,7 +2516,7 @@
     },
     {
       "category": "collection",
-      "digest": "51573ad7ca15bcf3c1db4eb1fb41b3f2c97829e5708a9f94bdfe752e5d3eb801",
+      "digest": "bbbdaf5be4de5222bed5b8ab26bf12e5018666c18bbce7580c45e88975857815",
       "nativeStyleSelectors": [],
       "path": "views/ActionView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2984,7 +2984,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "16f58ffd42a7186b74c20ef3ebacc19944407861730b9e5d9b93c742ee0ff552",
+  "currentInputDigest": "fe025405d4698aca57eb3976483253ba3d3f1425179eac079edf8d9d9e68b17e",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
