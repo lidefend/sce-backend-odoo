@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -69,6 +69,9 @@ let expenseCreateCapture = false;
 const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
 assert.ok(!diarySaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.construction.diary' && process.env.TPL07_APPROVAL_VIEW === 'create'));
 let diaryCreateCapture = false;
+const diarySaveSuccess = process.env.TPL07_DIARY_SAVE_SUCCESS === '1';
+assert.ok(!diarySaveSuccess || (diarySaveProbe && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1'));
+let diarySuccess = null;
 const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
 const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
 const expenseFailureStage = process.env.TPL07_EXPENSE_FAILURE_STAGE || '';
@@ -99,6 +102,21 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    const diaryKind = diaryProbeWriteKind(role, body, diarySuccess);
+    if (diaryKind) {
+      diarySuccess.phase = `${diaryKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(diarySuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.diarySuccessWrites ??= [];
+      report.diarySuccessWrites.push({ kind: diaryKind, result });
+      if (result.ok === true) {
+        if (diaryKind === 'create') diarySuccess.id = result.data?.id;
+        diarySuccess.phase = diaryKind === 'create' ? 'submit' : 'done';
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(diarySuccess, null, 2));
+      return route.fulfill({ response });
     }
     if (diarySaveProbe && diaryCreateCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
       && body.params?.op === 'create' && body.params.model === 'sc.construction.diary') {
@@ -906,6 +924,38 @@ try {
           diaryCreateCapture = false;
           check('diary save: two explicit attempts and no follow-up business mutation', report.diarySaveAttempts.length === 2 && report.forbiddenWrites.length === 0);
           await session.page.screenshot({ path: path.join(out, 'diary-filled-save-failure.png'), fullPage: true });
+          if (diarySaveSuccess) {
+            diarySuccess = { model: spec.model, request: structuredClone(report.diarySaveAttempts.at(-1)), phase: 'prepare', id: null };
+            await fs.writeFile(expenseRecoveryPath, JSON.stringify(diarySuccess, null, 2));
+            await expenseCleanup('preflight');
+            diarySuccess.phase = 'create';
+            await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+            await session.page.waitForFunction(() => !window.location.pathname.endsWith('/new'));
+            check('diary success: create and confirm each execute once', diarySuccess.phase === 'done'
+              && JSON.stringify(report.diarySuccessWrites?.map(row => row.kind)) === JSON.stringify(['create', 'submit']));
+            const saved = await session.page.evaluate(async id => {
+              const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+              return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+                body: JSON.stringify({ intent: 'api.data', params: { op: 'read', model: 'sc.construction.diary', ids: [id],
+                  fields: ['id', 'state', 'project_id', 'company_id', 'title', 'description', 'date_diary', 'diary_type', 'source_origin'], context: { company_id: 8 } } }),
+              })).json();
+            }, diarySuccess.id);
+            report.diarySavedRecord = saved;
+            const row = saved.data?.records?.[0];
+            check('diary success: PM authoritative record readback', saved.ok === true && row?.id === diarySuccess.id
+              && row.state === 'confirmed' && row.project_id[0] === 10 && row.company_id[0] === 8
+              && row.title === title && row.description === content && Boolean(row.date_diary)
+              && row.diary_type === '施工日志' && row.source_origin === 'manual');
+            await form(session.page, `/f/sc.construction.diary/${diarySuccess.id}${createContext}`, 'diary-success-saved', 'readonly');
+            for (const width of [1440, 390]) {
+              await session.page.setViewportSize({ width, height: 950 });
+              check(`diary saved ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+              await session.page.screenshot({ path: path.join(out, `diary-success-${width}.png`) });
+            }
+            continue;
+          }
+
         }
 
         if (spec.model === 'sc.expense.claim') {
@@ -1940,7 +1990,7 @@ try {
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
-  if (expenseSuccess) {
+  if (expenseSuccess || diarySuccess) {
     try { await expenseCleanup('final'); }
     catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
   }

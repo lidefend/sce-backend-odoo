@@ -68,3 +68,21 @@ test('expense partial upload permits only current exact file and rejects confirm
   assert.equal(expenseProbeWriteKind('fixture_role_finance', body, { ...scope, uploadIndex: 2 }), null);
   assert.equal(expenseProbeWriteKind('fixture_role_finance', body, { ...scope, phase: 'upload_in_flight' }), null);
 });
+
+import { diaryProbeWriteKind } from './standard_expense_success_scope.mjs';
+test('diary success permit binds PM, exact request, generated identity and confirm only', () => {
+  const scope = { model: 'sc.construction.diary', phase: 'create', id: 123,
+    request: { op: 'create', model: 'sc.construction.diary', vals: { project_id: 10, title: 'TPL53-DIARY-SAVE-1790807163178', description: 'content' },
+      context: { company_id: 8, menu_id: 414, action_id: 713 } } };
+  const create = { intent: 'api.data', params: scope.request };
+  assert.equal(diaryProbeWriteKind('fixture_role_pm', create, scope), 'create');
+  assert.equal(diaryProbeWriteKind('fixture_role_finance', create, scope), null);
+  assert.equal(diaryProbeWriteKind('fixture_role_pm', create, { ...scope, phase: 'create_in_flight' }), null);
+  assert.equal(diaryProbeWriteKind('fixture_role_pm', { ...create, params: { ...scope.request, vals: { ...scope.request.vals, state: 'confirmed' } } }, scope), null);
+  const submit = { intent: 'execute_button', params: { model: scope.model, res_id: 123, button: { name: 'action_confirm', type: 'object' } }, meta: { menu_id: 414, action_id: 713 } };
+  assert.equal(diaryProbeWriteKind('fixture_role_pm', submit, { ...scope, phase: 'submit' }), 'submit');
+  for (const patch of [{ res_id: 124 }, { button: { name: 'action_done', type: 'object' } }, { model: 'sc.plan' }]) {
+    assert.equal(diaryProbeWriteKind('fixture_role_pm', { ...submit, params: { ...submit.params, ...patch } }, { ...scope, phase: 'submit' }), null);
+  }
+  assert.equal(diaryProbeWriteKind('fixture_role_pm', { ...submit, meta: { menu_id: 1, action_id: 713 } }, { ...scope, phase: 'submit' }), null);
+});

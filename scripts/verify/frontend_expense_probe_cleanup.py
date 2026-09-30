@@ -40,7 +40,56 @@ def expense_probe_attachment_checksums(scope):
     return {f['name']: hashlib.sha1(base64.b64decode(f['data'], validate=True)).hexdigest() for f in files}
 
 
+def validate_diary_probe_target(database, scope, row, actor_id):
+    assert database == 'sc_frontend_acceptance' and scope['model'] == 'sc.construction.diary'
+    vals = scope['request']['vals']
+    assert re.fullmatch(r'TPL53-DIARY-SAVE-\d{13}', vals['title'])
+    assert set(vals) == {'project_id', 'title', 'description'} and vals['project_id'] == 10
+    assert scope['request']['context']['company_id'] == 8
+    assert row['title'] == vals['title'] and row['description'] == vals['description']
+    assert row['project_id'] == 10 and row['company_id'] == 8 and row['create_uid'] == actor_id
+    assert row['source_origin'] == 'manual' and row['state'] in ('draft', 'confirmed')
+    if scope.get('id'):
+        assert row['id'] == scope['id']
+    started = int(vals['title'].rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
+def recover_diary(env, scope):
+    assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.construction.diary'
+    actor = env['res.users'].sudo().search([('login', '=', 'fixture_role_pm')])
+    assert len(actor) == 1 and actor.company_id.id == 8
+    vals = scope['request']['vals']
+    assert set(vals) == {'project_id', 'title', 'description'} and vals['project_id'] == 10
+    marker = vals['title']
+    assert re.fullmatch(r'TPL53-DIARY-SAVE-\d{13}', marker)
+    project = env['project.project'].sudo().browse(10).exists()
+    assert project and project.company_id.id == 8
+    # Do not change or bypass existing approval configuration for this probe.
+    assert not env['sc.approval.policy'].sudo().search_count([
+        ('target_model', '=', 'sc.construction.diary'), ('company_id', 'in', [False, 8]),
+        ('approval_required', '=', True)])
+    records = env['sc.construction.diary'].sudo().with_context(active_test=False).search([('title', '=', marker)])
+    assert len(records) <= 1
+    ids = records.ids
+    for record in records:
+        row = {key: record[key] for key in ('id', 'title', 'description', 'source_origin', 'state')}
+        row.update({key: record[key].id for key in ('create_uid', 'company_id', 'project_id')})
+        row['create_date'] = str(record.create_date)
+        validate_diary_probe_target(env.cr.dbname, scope, row, actor.id)
+        assert not record.review_ids and not record.attachment_ids
+        assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
+        record.unlink()
+    env.cr.commit()
+    env.invalidate_all()
+    assert not env['sc.construction.diary'].sudo().with_context(active_test=False).search_count([('title', '=', marker)])
+    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': ids, 'actor_id': actor.id}))
+
+
 def recover(env, scope):
+    if scope.get('model') == 'sc.construction.diary':
+        return recover_diary(env, scope)
     assert env.cr.dbname == 'sc_frontend_acceptance'
     finance = env['res.users'].sudo().browse(30)
     assert finance.login == 'fixture_role_finance' and finance.company_id.id == 8

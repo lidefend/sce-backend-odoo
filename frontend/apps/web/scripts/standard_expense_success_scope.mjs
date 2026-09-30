@@ -22,3 +22,18 @@ export function expenseProbeWriteKind(role, body, scope) {
     && Number(body.meta?.action_id) === Number(scope.request.context.action_id)) return 'submit';
   return null;
 }
+
+export function diaryProbeWriteKind(role, body, scope) {
+  if (!scope || role !== 'fixture_role_pm' || scope.model !== 'sc.construction.diary') return null;
+  const p = body?.params;
+  const r = scope.request;
+  if (!/^TPL53-DIARY-SAVE-\d{13}$/.test(r?.vals?.title) || r?.vals?.project_id !== 10 || r?.context?.company_id !== 8) return null;
+  if (scope.phase === 'create' && body?.intent === 'api.data' && p?.op === 'create'
+    && p.model === scope.model && isDeepStrictEqual(p, r)) return 'create';
+  if (scope.phase === 'submit' && Number.isInteger(scope.id) && scope.id > 0
+    && body?.intent === 'execute_button' && p?.model === scope.model && p.res_id === scope.id
+    && p.button?.name === 'action_confirm' && p.button.type === 'object'
+    && Number(body.meta?.menu_id) === Number(r.context.menu_id)
+    && Number(body.meta?.action_id) === Number(r.context.action_id)) return 'submit';
+  return null;
+}
