@@ -215,3 +215,17 @@ class ExpenseBrowserCleanupTest(unittest.TestCase):
 
     def test_other_database_denied(self):
         with self.assertRaises(AssertionError): self.validate('sc_dev_demo', self.scope, self.row)
+
+    def test_attachment_cleanup_binds_two_exact_contents(self):
+        import base64
+        import hashlib
+        from scripts.verify.frontend_expense_probe_cleanup import expense_probe_attachment_checksums
+        first = {'name': 'first.txt', 'data': base64.b64encode(b'first').decode()}
+        second = {'name': 'tpl53-partial-second.txt', 'data': base64.b64encode(b'Rollback-only second attachment').decode()}
+        scope = {'filename': first['name'], 'data': first['data'], 'files': [first, second]}
+        self.assertEqual(expense_probe_attachment_checksums(scope)[first['name']], hashlib.sha1(b'first').hexdigest())
+        self.assertEqual(len(expense_probe_attachment_checksums(scope)), 2)
+        for files in [[first], [first, second, second], [second, first],
+                      [first, {**second, 'name': 'unowned.txt'}], [first, {**second, 'data': first['data']}]]:
+            with self.assertRaises(AssertionError): expense_probe_attachment_checksums({**scope, 'files': files})
+        self.assertEqual(len(expense_probe_attachment_checksums({'filename': first['name'], 'data': first['data']})), 1)

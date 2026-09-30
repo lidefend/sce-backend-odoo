@@ -70,6 +70,8 @@ const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
 const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
 const expenseFailureStage = process.env.TPL07_EXPENSE_FAILURE_STAGE || '';
 assert.ok(['', 'upload', 'submit'].includes(expenseFailureStage));
+const expensePartialUpload = process.env.TPL07_EXPENSE_PARTIAL_UPLOAD === '1';
+assert.ok(!expensePartialUpload || (expenseSaveSuccess && expenseSaveProbe && expenseFailureStage === 'upload'));
 let expenseSuccess = null;
 let expensePolicyPermit = null;
 const expenseRecoveryPath = path.join(out, 'expense-success-recovery.json');
@@ -97,7 +99,8 @@ async function login(role) {
     }
     const expenseWriteKind = expenseProbeWriteKind(role, body, expenseSuccess);
     if (expenseWriteKind) {
-      if (expenseFailureStage === expenseWriteKind && !expenseSuccess.failureInjected) {
+      if (expenseFailureStage === expenseWriteKind && !expenseSuccess.failureInjected
+        && (!expensePartialUpload || expenseSuccess.uploadIndex === 1)) {
         expenseSuccess.failureInjected = true;
         report.expenseInjectedFailure = { kind: expenseWriteKind, id: expenseSuccess.id };
         await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
@@ -110,10 +113,14 @@ async function login(role) {
       const response = await route.fetch();
       const result = await response.json();
       report.expenseSuccessWrites ??= [];
-      report.expenseSuccessWrites.push({ kind: expenseWriteKind, intent: body.intent, result });
+      report.expenseSuccessWrites.push({ kind: expenseWriteKind, intent: body.intent, filename: body.params?.name, result });
       if (result.ok === true) {
         if (expenseWriteKind === 'create') expenseSuccess.id = result.data?.id;
         expenseSuccess.phase = ({ create: 'upload', upload: 'submit', submit: 'done' })[expenseWriteKind];
+        if (expenseWriteKind === 'upload' && expenseSuccess.files) {
+          expenseSuccess.uploadIndex += 1;
+          if (expenseSuccess.uploadIndex < expenseSuccess.files.length) expenseSuccess.phase = 'upload';
+        }
       }
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
       return route.fulfill({ response });
@@ -967,6 +974,18 @@ try {
               request.vals.summary = `TPL53-EXPENSE-SUCCESS-${Date.now()}`;
               expenseSuccess = { request, source, filename: pendingName,
                 data: Buffer.from('Rollback-only submission prerequisite verification').toString('base64'), phase: 'prepare', id: null };
+              if (expensePartialUpload) {
+                expenseSuccess.files = [
+                  { name: pendingName, data: expenseSuccess.data },
+                  { name: 'tpl53-partial-second.txt', data: Buffer.from('Rollback-only second attachment').toString('base64') },
+                ];
+                expenseSuccess.uploadIndex = 0;
+                const second = expenseSuccess.files[1];
+                await session.page.locator('[data-professional-collaboration-component="attachments"] input[type="file"]').setInputFiles({
+                  name: second.name, mimeType: 'text/plain', buffer: Buffer.from(second.data, 'base64'),
+                });
+                await session.page.getByText(second.name, { exact: true }).first().waitFor();
+              }
               await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
               await expenseCleanup('preflight');
               await session.page.locator('[data-field-name="summary"]').locator('input, textarea').first().fill(request.vals.summary);
@@ -983,11 +1002,18 @@ try {
                   : '单据已保存，提交未完成。请在当前单据核对后重试。';
                 await session.page.getByText(message, { exact: true }).waitFor();
                 if (expenseFailureStage === 'upload') {
+                  if (expensePartialUpload) {
+                    check('expense partial: first file confirmed before second failed', expenseSuccess.uploadIndex === 1
+                      && report.expenseSuccessWrites.filter(row => row.kind === 'upload').length === 1);
+                    await session.page.getByText(pendingName, { exact: true }).first().waitFor();
+                  }
+                  const retryFile = expenseSuccess.files?.[expenseSuccess.uploadIndex]
+                    || { name: pendingName, data: expenseSuccess.data };
                   const uploadResponse = session.page.waitForResponse((response) => {
                     try { return response.request().postDataJSON()?.intent === 'file.upload'; } catch { return false; }
                   });
                   await session.page.locator('[data-professional-collaboration-component="attachments"] input[type="file"]').setInputFiles({
-                    name: pendingName, mimeType: 'text/plain', buffer: Buffer.from('Rollback-only submission prerequisite verification'),
+                    name: retryFile.name, mimeType: 'text/plain', buffer: Buffer.from(retryFile.data, 'base64'),
                   });
                   await uploadResponse;
                 }
@@ -996,7 +1022,7 @@ try {
               const completed = () => report.expenseSuccessWrites?.some((row) => row.kind === 'submit' && row.result.ok === true);
               for (let wait = 0; wait < 100 && !completed(); wait += 1) await session.page.waitForTimeout(100);
               check('expense success: create upload submit occur exactly once',
-                JSON.stringify(report.expenseSuccessWrites?.map((row) => row.kind)) === JSON.stringify(['create', 'upload', 'submit']) && completed());
+                JSON.stringify(report.expenseSuccessWrites?.map((row) => row.kind)) === JSON.stringify(expensePartialUpload ? ['create', 'upload', 'upload', 'submit'] : ['create', 'upload', 'submit']) && completed());
               const saved = await session.page.evaluate(async (id) => {
                 const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
                 return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
@@ -1008,7 +1034,7 @@ try {
               report.expenseSuccessRecord = saved;
               const savedRow = saved.data?.records?.[0];
               check('expense success: submitted record and attachment authoritative readback', saved.ok === true && savedRow?.state === 'approved'
-                && savedRow.attachment_ids.length === 1 && savedRow.payment_request_id[0] === source.id && savedRow.summary === request.vals.summary);
+                && savedRow.attachment_ids.length === (expensePartialUpload ? 2 : 1) && savedRow.payment_request_id[0] === source.id && savedRow.summary === request.vals.summary);
               await form(session.page, `/f/sc.expense.claim/${expenseSuccess.id}${createContext}`, 'expense-success-saved', 'readonly');
               const savedAuthority = (report.contractResponses || []).map((row) => findRecordAuthority(row.contract))
                 .findLast((row) => row?.model === 'sc.expense.claim' && Number(row.mainData?.id) === expenseSuccess.id);

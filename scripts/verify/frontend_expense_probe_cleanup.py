@@ -1,4 +1,6 @@
 """Exact transient browser document cleanup; never fixture provisioning."""
+import base64
+import hashlib
 import json
 import os
 import re
@@ -25,10 +27,24 @@ def validate_expense_probe_target(database, scope, row):
     assert -5 <= created - started <= 300, 'record predates or exceeds this bounded browser run'
 
 
+def expense_probe_attachment_checksums(scope):
+    files = scope.get('files')
+    if files is None:
+        files = [{'name': scope['filename'], 'data': scope['data']}]
+    else:
+        assert isinstance(files, list) and len(files) == 2
+        assert files[0] == {'name': scope['filename'], 'data': scope['data']}
+        assert files[1] == {'name': 'tpl53-partial-second.txt',
+                            'data': base64.b64encode(b'Rollback-only second attachment').decode()}
+    assert len({f['name'] for f in files}) == len(files)
+    return {f['name']: hashlib.sha1(base64.b64decode(f['data'], validate=True)).hexdigest() for f in files}
+
+
 def recover(env, scope):
     assert env.cr.dbname == 'sc_frontend_acceptance'
     finance = env['res.users'].sudo().browse(30)
     assert finance.login == 'fixture_role_finance' and finance.company_id.id == 8
+    expected_files = expense_probe_attachment_checksums(scope)
     vals = scope['request']['vals']
     marker = vals['summary']
     assert re.fullmatch(r'TPL53-EXPENSE-SUCCESS-\d{13}', marker)
@@ -46,7 +62,10 @@ def recover(env, scope):
         validate_expense_probe_target(env.cr.dbname, scope, row)
         assert not env['sc.treasury.ledger'].sudo().search_count([('source_model', '=', record._name), ('source_res_id', '=', record.id)])
         attachments = env['ir.attachment'].sudo().search([('res_model', '=', record._name), ('res_id', '=', record.id)])
-        assert all(a.create_uid == finance and a.name == scope['filename'] for a in attachments)
+        assert len(attachments) <= len(expected_files)
+        assert len(set(attachments.mapped('name'))) == len(attachments)
+        assert all(a.create_uid == finance and a.name in expected_files
+                   and a.checksum == expected_files[a.name] for a in attachments)
         assert set(record.attachment_ids.ids) <= set(attachments.ids)
         attachment_ids = attachments.ids
         record.unlink()

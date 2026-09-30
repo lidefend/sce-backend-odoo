@@ -55,3 +55,16 @@ test('expense policy permit binds administrator, exact record, field and allowed
     assert.equal(permitsExpensePolicyWrite('fixture_role_config_admin', { ...body, params: { ...body.params, ...patch } }, permit), false);
   }
 });
+
+test('expense partial upload permits only current exact file and rejects confirmed replay', () => {
+  const files = [{ name: 'first.txt', data: 'Zmlyc3Q=' }, { name: 'second.txt', data: 'c2Vjb25k' }];
+  const scope = { ...expenseScope, phase: 'upload', files, uploadIndex: 1 };
+  const body = { intent: 'file.upload', params: { model: 'sc.expense.claim', res_id: scope.id,
+    name: files[1].name, data: files[1].data, mimetype: 'text/plain' } };
+  assert.equal(expenseProbeWriteKind('fixture_role_finance', body, scope), 'upload');
+  for (const patch of [files[0], { data: 'different' }, { name: 'other.txt' }, { res_id: 121 }]) {
+    assert.equal(expenseProbeWriteKind('fixture_role_finance', { ...body, params: { ...body.params, ...patch } }, scope), null);
+  }
+  assert.equal(expenseProbeWriteKind('fixture_role_finance', body, { ...scope, uploadIndex: 2 }), null);
+  assert.equal(expenseProbeWriteKind('fixture_role_finance', body, { ...scope, phase: 'upload_in_flight' }), null);
+});
