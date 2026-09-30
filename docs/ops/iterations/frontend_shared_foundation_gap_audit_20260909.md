@@ -8176,3 +8176,10 @@ company权威统一项目公司，usage/settlement金额均用各自amount_total
 L1 labor-execution-iteration.log PASS；labor-execution-unit.log81 PASS（参数化三模型审批不确认、配置分流、真实review事实、confirmed不能逆转、用工经理权限）；labor-execution-native.log8+47=55 PASS；labor-execution-semantics.log15 PASS；2XML解析/重复ID、diff --check PASS，非零回执登记。候选a1a9bb85e+本段dirty，非冻结交付。
 
 L3尚未运行：tier/新字段/state/XML需要一次受管升级。下一步现有rollback scope劳务执行三模型，验证金额/无金额条件、审批与确认、用工事实锁/经理权限、结算来源限制、拒绝重提及回滚。L4前端未改不构建，只受影响页面后验；L5非本地范围。其他已完成单据不重验；实际角色记录及总体67仍未完成。
+
+
+### 53.86 考勤／劳务执行真实审批验证（进行中）
+
+P4现有rollback新增labor-execution scope25：三模型各7（状态保护、无配置只审批、金额权威、pending配置变化保护、实际审批、显式确认、拒绝重提），另用工事实锁/非经理边界、结算跨项目/劳务单位不符/已结算来源3拒绝。全部复用内部验收租户及既有fixture角色，不新建环境/持久fixture；原配置及临时记录回滚核验保持。
+
+L1 labor-execution-runtime-iteration.log及py_compile/bash-n PASS，P1纯回归输入未变复用81/55/15。一次受管smart_construction_core升级/reload后只本scope；sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产/控制库。L3尚pending；前端未变不重建，L5不在本地迭代范围。

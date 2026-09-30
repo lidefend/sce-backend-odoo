@@ -1198,9 +1198,119 @@ def _labor_plan_request_checks(project, group, created):
         print("APPROVAL_CHECK=%s_rejection_and_resubmission_use_new_review" % model)
 
 
+def _labor_execution_checks(project, group, created):
+    env = _env()
+    Policy = env["sc.approval.policy"].sudo()
+    contractor = _partner("Rollback labor contractor")
+    created.append((contractor._name, contractor.id))
+    source = None
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    def document(model, usage=None, **overrides):
+        values = {"project_id": project.id, "contractor_id": contractor.id}
+        if model == "sc.attendance.checkin":
+            values.update(labor_team="Rollback team", work_content="Rollback work", attendance_qty=1, work_hours=2)
+        elif model == "sc.labor.usage":
+            values.update(labor_team="Rollback team", work_content="Rollback work", worker_qty=1, work_hours=2, price_unit=10)
+        else:
+            values["line_ids"] = [(0, 0, {"work_content": "Rollback work", "qty": 2, "unit_price": 10,
+                                            "source_usage_id": usage.id if usage else False})]
+        values.update(overrides)
+        record = env[model].sudo().create(values)
+        created.append((record._name, record.id))
+        return record
+
+    for model in ("sc.attendance.checkin", "sc.labor.usage", "sc.labor.settlement"):
+        assert not Policy.with_context(active_test=False).search_count([
+            ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+        ]), "existing labor execution policy must not be overwritten"
+        automatic = document(model, source)
+        denied(lambda: automatic.write({"state": "confirmed"}))
+        denied(automatic.action_confirm)
+        print("APPROVAL_CHECK=%s_external_state_and_premature_confirmation_denied" % model)
+        automatic.action_submit()
+        assert automatic.state == "approved" and not automatic.review_ids
+        print("APPROVAL_CHECK=%s_unconfigured_approval_stops_before_confirmation" % model)
+        policy = Policy.create({"name": "Runtime labor execution approval", "code": "runtime_" + model.replace(".", "_"),
+            "target_model": model, "company_id": env.company.id, "approval_required": True, "mode": "single",
+            "manager_group_id": group.id, "runtime_state": "tier_validation"})
+        created.append((policy._name, policy.id))
+        step = env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Labor execution review", "sequence": 10,
+            "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+        policy.sync_tier_definitions()
+        if model == "sc.attendance.checkin":
+            denied(lambda: step.write({"amount_min": 1}))
+            step.invalidate_recordset()
+            assert not step.amount_min
+        else:
+            step.write({"amount_min": 1})
+            policy.sync_tier_definitions()
+        print("APPROVAL_CHECK=%s_monetary_rule_respects_authority" % model)
+        required = document(model, source)
+        required.action_submit()
+        assert required.state == "submitted" and required.review_ids
+        if model != "sc.attendance.checkin": assert required.amount_total == 20
+        denied(required.action_confirm)
+        policy.write({"approval_required": False})
+        denied(required.action_submit)
+        policy.write({"approval_required": True})
+        print("APPROVAL_CHECK=%s_pending_review_blocks_confirmation_and_restart" % model)
+        _approve_existing_reviews(required)
+        assert required.state == "approved" and required.validation_status == "validated"
+        print("APPROVAL_CHECK=%s_real_approval_does_not_confirm" % model)
+        if model == "sc.labor.usage":
+            denied(lambda: required.write({"work_hours": 3}))
+            denied(required.unlink)
+            actor = env["res.users"].sudo().search([("login", "=", "fixture_role_finance")], limit=1)
+            assert actor and not actor.has_group("smart_construction_core.group_sc_cap_project_manager") and not actor.has_group("smart_construction_core.group_sc_super_admin")
+            denied(required.with_user(actor).action_confirm)
+            denied(required.with_user(actor).action_cancel)
+            print("APPROVAL_CHECK=labor_usage_approved_fact_lock_and_manager_boundary")
+        required.action_confirm()
+        assert required.state == "confirmed"
+        denied(required.action_confirm)
+        if model == "sc.labor.usage": source = required
+        print("APPROVAL_CHECK=%s_explicit_confirmation_preserved" % model)
+        rejected = document(model, source)
+        rejected.action_submit()
+        old = set(rejected.review_ids.ids)
+        actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+        assert actor is not None
+        actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime labor execution rejection")
+        rejected.invalidate_recordset()
+        assert rejected.state == "draft" and rejected.reject_reason == "Runtime labor execution rejection"
+        rejected.action_submit()
+        assert rejected.review_ids and old.isdisjoint(rejected.review_ids.ids)
+        _approve_existing_reviews(rejected)
+        assert rejected.state == "approved" and not rejected.reject_reason
+        print("APPROVAL_CHECK=%s_rejection_resubmission_stops_before_confirmation" % model)
+    other = _project("Rollback labor other project")
+    created.append((other._name, other.id))
+    mismatch = document("sc.labor.settlement", source, project_id=other.id)
+    denied(mismatch.action_submit)
+    print("APPROVAL_CHECK=labor_settlement_cross_project_source_denied")
+    other_contractor = _partner("Rollback other contractor")
+    created.append((other_contractor._name, other_contractor.id))
+    mismatch = document("sc.labor.settlement", source, contractor_id=other_contractor.id)
+    denied(mismatch.action_submit)
+    print("APPROVAL_CHECK=labor_settlement_wrong_contractor_source_denied")
+    source.write({"settlement_state": "settled"})
+    already_settled = document("sc.labor.settlement", source)
+    denied(already_settled.action_submit)
+    assert already_settled.state == "draft" and not already_settled.review_ids
+    print("APPROVAL_CHECK=labor_settlement_already_settled_source_denied")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -1214,10 +1324,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -1362,6 +1472,7 @@ def main():
             _equipment_plan_request_checks(project, group, created)
             _equipment_execution_checks(project, group, created)
             _labor_plan_request_checks(project, group, created)
+            _labor_execution_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -1371,7 +1482,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request") else 129, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution") else 154, scope))
 
 
 main()
