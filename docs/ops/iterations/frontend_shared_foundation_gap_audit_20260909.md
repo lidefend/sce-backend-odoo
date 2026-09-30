@@ -7862,3 +7862,13 @@ L5：未推送、未合并、未部署。
 
 - 运行回读：fef68d390受管preflight/模块升级/后端重载/health通过，身份仍local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷。approval_runtime39 PASS，新增任务5项全部通过；真实review校验draft等待、通过仅ready、显式start才in_progress，驳回/重提新链保留正确状态与原因。最终ROLLBACK=VERIFIED，原审批配置/步骤回读一致、临时对象不存在。日志task-approval-{preflight,upgrade,backend,health,runtime}.log。
 - 阶段状态：任务模型/配置审批链验证通过，页面与工作区审批提示尚未验收；本轮未构建前端、未推送/合并/目标部署，整体验收未完成。下一步继续任务契约/页面及可操作等待提示，再推进项目立项审批与启动拆分。
+
+
+### 53.57 任务官方新建页验收与记录办理前提
+
+- 5227e572f clean起步，上轮任务配置/真实review39属于progress。P4扩展既有standard_page_type_browser approval-actions支持project.task，使用PM角色、sc_state字段读取，不新建脚本/环境/fixture；不改变产品模型、前端运行代码或权限。沿用已有受管5180候选与fef68d390后端，未构建/升级/重载。
+- L1 iteration及node --check通过（task-page-iteration.log）；原preview wrapper9通过，登记到本run既有checks机制standard_preview_tool并begin/record9（task-page-wrapper-tests.log、task-page-tool-receipt.log）。该测试证明工具包装，不替代浏览器结果。
+- PM任务create12 PASS（task-create-browser.log；tpl07-1790776268742/report.json）：login/system.init后有效契约project.task、官方共享表单、未保存无审批通过/驳回/完成、1440/390无页溢出；errors=[]、forbiddenWrites=[]，截图沿用报告目录。表单包含后端原生审批动作声明，由现有创建态消费控制显示。
+- 任务详情前置查询api.data fields=[id,sc_state]返回ok=true、records=[]（task-detail-browser.log；tpl07-1790776285320/report.json）。不是页面渲染失败，已有记录办理未运行；不反复重查、不扩权、不造数据，把数据前提保留为缺口。
+- 执行等待提示尚未闭环：当前project_execution_advance._blocked_response建议仍是刷新next-actions；仅加原因码不能算可操作UI完成。定向查询未发现前端直接按project.execution.advance/suggested_action_payload命名消费，后续必须沿共享动作结果链核实实际契约形状，不能凭空添加无人消费的字段/导航。此项与项目审批/启动拆分继续保留。
+- 总目标active；本轮完成任务新建共享消费证据，不自动升级detail.action-state台账整行。主线未集成、目标未部署、用户整体未验收；既有模型39运行证据依赖不变复用。

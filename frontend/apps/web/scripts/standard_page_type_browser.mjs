@@ -591,8 +591,9 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
+      { role: 'fixture_role_pm', model: 'project.task', stateField: 'sc_state', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.construction.diary', domain: [] },
       { role: 'fixture_role_contract_operator', model: 'sc.contract.event', domain: [] },
@@ -600,7 +601,7 @@ try {
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit plan or diary', ['sc.plan', 'sc.construction.diary'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task'].includes(spec.model));
         report.recordAuthority = null;
         await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
         const authority = report.recordAuthority;
@@ -617,11 +618,11 @@ try {
         await session.ctx.close();
         continue;
       }
-      const candidate = await session.page.evaluate(async ({ model, domain }) => {
+      const candidate = await session.page.evaluate(async ({ model, domain, stateField }) => {
         const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
         const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
-          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model, fields: ['id', 'state'], domain, limit: 1 } }),
+          body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model, fields: ['id', stateField || 'state'], domain, limit: 1 } }),
         });
         return response.json();
       }, spec);
@@ -631,7 +632,7 @@ try {
       report.recordAuthority = null;
       await form(session.page, `/r/${spec.model}/${record.id}`, spec.model, 'readonly');
       const authority = report.recordAuthority;
-      check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.state === record.state);
+      check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.[spec.stateField || 'state'] === record[spec.stateField || 'state']);
       report.approvalPages.at(-1).authority = authority;
       if (['sc.plan', 'sc.construction.diary'].includes(spec.model)) {
         const rules = authority.actions?.actionRuleList || [];
