@@ -3,6 +3,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScPlan(models.Model):
     _name = "sc.plan"
     _description = "计划"
@@ -97,6 +100,21 @@ class ScPlan(models.Model):
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
     note = fields.Text(string="说明")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                raise UserError(_("计划必须从草稿通过正式审批和业务动作流转。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN:
+            raise UserError(_("计划状态只能由正式业务动作写入。"))
+        return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     @api.depends("line_ids.progress_rate")
     def _compute_progress_rate(self):
         for plan in self:
@@ -132,14 +150,14 @@ class ScPlan(models.Model):
                 raise UserError(_("只有草稿状态的计划可以确认。"))
             rec._check_business_anchor(require_schedule=True)
             if not self.env["sc.approval.policy"]._start_submission_review(rec):
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
         return True
 
     def action_on_tier_approved(self):
         for rec in self:
             if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
                 rec._check_business_anchor(require_schedule=True)
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self):
         for rec in self:
@@ -154,7 +172,7 @@ class ScPlan(models.Model):
                 raise UserError(_("只有已确认状态的计划可以开始执行。"))
             rec._check_business_anchor(require_schedule=True)
             self.env["sc.approval.policy"]._assert_submission_approved(rec, ("confirmed",))
-        self.write({"state": "in_progress", "actual_start": fields.Date.context_today(self)})
+        self._write_document_state({"state": "in_progress", "actual_start": fields.Date.context_today(self)})
         return True
 
     def action_done(self):
@@ -163,21 +181,21 @@ class ScPlan(models.Model):
                 raise UserError(_("只有执行中的计划可以完成。"))
             rec._check_business_anchor(require_schedule=True, require_lines_done=True)
             self.env["sc.approval.policy"]._assert_submission_approved(rec, ("in_progress",))
-        self.write({"state": "done", "actual_finish": fields.Date.context_today(self)})
+        self._write_document_state({"state": "done", "actual_finish": fields.Date.context_today(self)})
         return True
 
     def action_cancel(self):
         for rec in self:
             if rec.state not in ("draft", "confirmed", "in_progress"):
                 raise UserError(_("只有未完成的计划可以取消。"))
-        self.write({"state": "cancel"})
+        self._write_document_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
         for rec in self:
             if rec.state != "cancel":
                 raise UserError(_("只有已取消状态的计划可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_document_state({"state": "draft"})
         return True
 
     def _check_business_anchor(self, require_schedule=False, require_lines_done=False):
