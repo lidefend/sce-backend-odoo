@@ -339,6 +339,9 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="customSearchCapabilities.favoriteSaveEnabled"
+          :favorite-save-visible="customSearchCapabilities.favoriteSaveVisible"
+          :favorite-shared-enabled="customSearchCapabilities.favoriteSharedEnabled"
+          :favorite-disabled-reason="customSearchCapabilities.favoriteDisabledReason"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -484,6 +487,9 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="customSearchCapabilities.favoriteSaveEnabled"
+          :favorite-save-visible="customSearchCapabilities.favoriteSaveVisible"
+          :favorite-shared-enabled="customSearchCapabilities.favoriteSharedEnabled"
+          :favorite-disabled-reason="customSearchCapabilities.favoriteDisabledReason"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -2208,7 +2214,7 @@ function clearAllListConditions() {
 async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {
   const targetModel = String(resolvedModelRef.value || model.value || '').trim();
   const name = String(payload.name || '').trim();
-  if (!targetModel || !name) return;
+  if (!targetModel || !name || !customSearchCapabilities.value.favoriteSaveEnabled) return;
   await saveActionViewSearchFavorite({
     model: targetModel,
     name,
@@ -2217,7 +2223,7 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     order: sortValue.value,
     action_id: actionId.value,
     is_default: payload.isDefault === true,
-    is_shared: payload.isShared === true,
+    is_shared: payload.isShared === true && customSearchCapabilities.value.favoriteSharedEnabled,
   });
   actionContract.value = await loadActionContractStore(actionId.value, {
     sceneKey: sceneKey.value || undefined,

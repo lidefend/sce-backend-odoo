@@ -250,13 +250,14 @@
             </ScButton>
             <p v-if="!allSavedFilterChips.length" class="search-menu-empty">{{ uiLabel('empty_saved_filters', '暂无收藏') }}</p>
             <ScButton
-              v-if="favoriteSaveEnabled"
+              v-if="favoriteSaveVisible ?? favoriteSaveEnabled"
               class="search-menu-item custom-entry"
               appearance="menu-item"
               type="button"
               variant="ghost"
               size="small"
-              :disabled="loading"
+              :disabled="loading || !favoriteSaveEnabled"
+              :title="favoriteDisabledReason || undefined"
               @click="favoriteSaveOpen = !favoriteSaveOpen"
             >
               <span class="menu-check"></span>
@@ -265,9 +266,9 @@
             <div v-if="favoriteSaveEnabled && favoriteSaveOpen" class="custom-search-panel">
               <ScInput v-model="favoriteName" size="small" :placeholder="uiLabel('favorite_name', '收藏名称')" />
               <ScCheckbox v-model:checked="favoriteUseByDefault" :label="uiLabel('favorite_use_by_default', '设为默认筛选')" />
-              <ScCheckbox v-model:checked="favoriteShared" :label="uiLabel('favorite_shared', '共享给所有用户')" />
+              <ScCheckbox v-if="favoriteSharedEnabled" v-model:checked="favoriteShared" :label="uiLabel('favorite_shared', '共享给所有用户')" />
               <div class="custom-search-actions">
-                <ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
+                <ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading || !favoriteSaveEnabled" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
                 <ScButton type="button" variant="ghost" size="small" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</ScButton>
               </div>
             </div>
@@ -425,6 +426,9 @@ const props = defineProps<{
   customGroupLabel: string;
   customGroupFields: Array<{ key: string; label: string }>;
   favoriteSaveEnabled: boolean;
+  favoriteSaveVisible?: boolean;
+  favoriteSharedEnabled?: boolean;
+  favoriteDisabledReason?: string;
   favoriteSaveLabel: string;
   activeCustomFilterLabel: string;
   activeGroupLabel: string;
@@ -525,6 +529,7 @@ const showGroupColumn = computed(() =>
 const showSavedFilterColumn = computed(() =>
   props.showSavedFilter
   || allSavedFilterChips.value.length > 0
+  || props.favoriteSaveVisible
   || props.favoriteSaveEnabled,
 );
 const hasSearchMenu = computed(() =>
@@ -636,15 +641,19 @@ function applyCustomGroup() {
 
 function saveFavorite() {
   const name = favoriteName.value.trim();
-  if (!name) return;
+  if (!name || !props.favoriteSaveEnabled || props.loading) return;
   searchMenuOpen.value = false;
   favoriteSaveOpen.value = false;
   emit('save-favorite', {
     name,
     isDefault: favoriteUseByDefault.value,
-    isShared: favoriteShared.value,
+    isShared: props.favoriteSharedEnabled === true && favoriteShared.value,
   });
 }
+
+watch(() => props.favoriteSharedEnabled, (enabled) => {
+  if (enabled !== true) favoriteShared.value = false;
+});
 
 watch(activeCustomFilterField, (field) => {
   customFilterOperator.value = field?.operators?.[0]?.value || '=';

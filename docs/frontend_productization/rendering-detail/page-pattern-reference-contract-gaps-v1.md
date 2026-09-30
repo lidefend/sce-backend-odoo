@@ -53,7 +53,7 @@ they are not producer-side gaps and must not be re-opened by adding the value to
 
 ## P1/P2 product gaps
 
-- Saved-search favorites need ownership and mutation capability before the favorite control can be universal.
+- Saved-search control projection is closed in segment 53.2: the shared collection menu consumes explicit save/shared grants and execution intent; missing grants never enable writes. Successful save, refresh, failure feedback and recovery remain a separate interaction closure, not proven by opening and cancelling the form.
 - The Shell needs a formal user-facing release/version identity if the reference footer version is required.
 - Authentication must declare credential-retention policy before a remember-account option stores any identifier.
 - Authentication page authority must explicitly declare account-registration/help and alternate-login actions; the reference controls are not safe as hard-coded links.

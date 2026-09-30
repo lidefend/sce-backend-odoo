@@ -30,6 +30,15 @@ function findIntroduceConfig(node, depth = 0) {
   }
   return null;
 }
+function findSavedSearchAuthority(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 14) return null;
+  if (node.custom?.favorites && typeof node.custom.favorites.save_enabled === 'boolean') return node.custom.favorites;
+  for (const value of Object.values(node)) {
+    const found = findSavedSearchAuthority(value, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
@@ -62,7 +71,10 @@ async function login(role) {
         report.calls.push({ role, model: body.params.model, domain: body.params.domain, order: body.params.order, offset: body.params.offset || 0, limit: body.params.limit, ids: result.data?.records?.map((row) => row.id) || [] });
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
-        const found = findIntroduceConfig(await response.json());
+        const contract = await response.json();
+        const savedSearch = findSavedSearchAuthority(contract);
+        if (savedSearch) report.savedSearchAuthority = savedSearch;
+        const found = findIntroduceConfig(contract);
         if (found) report.introduceContract = found;
       }
     } catch { /* only JSON list responses are observations */ }
@@ -121,6 +133,39 @@ async function form(page, url, name, profile = 'form') {
     check(`${name}: official form engine mounted`, await page.locator('[data-semantic-component="ScForm"]').count() > 0);
   }
   await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`) });
+}
+
+async function favoritesScope() {
+  const finance = await login('fixture_role_finance');
+  const page = finance.page;
+  await list(page, 545, 'favorites-list');
+  const authority = report.savedSearchAuthority;
+  check('favorites: effective contract declares capability', typeof authority?.save_enabled === 'boolean');
+  check('favorites: authorized fixture can exercise save form', authority.save_enabled === true && authority.intent === 'search.favorite.set');
+  const menu = page.getByRole('button', { name: '展开搜索菜单', exact: true });
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+    await menu.click();
+    const entry = page.getByRole('button', { name: authority.label, exact: true });
+    check(`favorites-${width}: declared save entry is available`, await entry.isEnabled());
+    await entry.click();
+    const name = page.getByPlaceholder('收藏名称', { exact: true });
+    await name.waitFor();
+    check(`favorites-${width}: sharing follows declared capability`, await page.getByRole('checkbox', { name: '共享给所有用户', exact: true }).count() === (authority.shared_enabled === true ? 1 : 0));
+    await name.fill('仅检查表单，不保存');
+    const save = page.getByRole('button', { name: '保存', exact: true });
+    await save.scrollIntoViewIfNeeded();
+    check(`favorites-${width}: named save form is usable`, await save.isEnabled());
+    check(`favorites-${width}: save action can enter viewport`, await save.evaluate((el) => { const box = el.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight; }));
+    await page.screenshot({ animations: 'disabled', path: path.join(out, `favorites-${width}.png`) });
+    await page.getByRole('button', { name: '取消', exact: true }).click();
+    await name.waitFor({ state: 'detached' });
+    await page.keyboard.press('Escape');
+    check(`favorites-${width}: escape restores search control`, await menu.evaluate((el) => el === document.activeElement));
+    check(`favorites-${width}: no page overflow`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  }
+  check('favorites: real startup authority present', report.startup.some((r) => r.intent === 'system.init' && r.success));
+  await finance.ctx.close();
 }
 
 async function navigationScope() {
@@ -260,7 +305,9 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'navigation') {
+  if (process.env.TPL07_SCOPE === 'favorites') {
+    await favoritesScope();
+  } else if (process.env.TPL07_SCOPE === 'navigation') {
     await navigationScope();
   } else if (process.env.TPL07_SCOPE === 'style') {
     await styleScope();
@@ -353,7 +400,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['detail', 'style', 'navigation'].includes(process.env.TPL07_SCOPE)) {
+  if (!['detail', 'style', 'navigation', 'favorites'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

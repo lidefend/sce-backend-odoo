@@ -7367,3 +7367,13 @@ L5：未推送、未合并、未部署。
 - 单次构建 21.11s，base `904b3fa65` + 明确导航 dirty 范围；5180 原 listener 复用，之前 c062 样式候选保留。
 - `TPL07_SCOPE=navigation` 真实 finance login/system.init →付款列表，1440/390 两视口 16/16 passed：一个官方导航模态、无私有遮罩、授权菜单保留、Tab 焦点在模态内、Escape 还原 opener、路由保持、滚动锁释放、官方遮罩可关闭、回桌面唯一导航。无业务写入。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765698870/report.json`，窄屏截图已实际复核。
 - 后端/数据库未变，ORM 不运行。下一项复用段47/48生产者修复证据，核对 collection.favorite 与 detail.action-state 的实际共享消费者。
+
+
+### 53.2 收藏能力按有效契约消费
+
+- P0 / frontend generic collection consumer，平台共享行为；不在 P1/P2/P3 或模型白名单定义权限。复用段47已有生产者，影响 ActionView 的共享搜索菜单，未改后端，L3 ORM/升级不适用。
+- 修复缺省 `save_enabled !== false` 放行、缺失 intent 自动补写、无条件展示共享选项三个消费偏差。现在只接受显式 true 及现有适配器支持的 search.favorite.set；共享必须单独明确授权，提交时再次限制。声明拒绝时保留禁用入口及原因，未声明不制造权限。
+- L1 intrusion guard、strict typecheck passed；L2 collection_action_toolbar 16 纯逻辑 + 11 守卫测试 passed，begin/record 回执27。日志 `artifacts/frontend-web-fix-20260928/tpl52/favorite-static.log`。既有生产者输入未变，复用原证据，无 ORM。
+- 一次构建21.31s，base d1da61c0f + 上述 dirty 范围，5180 原 listener 复用。真实 finance login/system.init/ui.contract，1440/390 收藏入口、显式不共享、表单可用、取消、Escape、无横向溢出19/19 passed：`artifacts/frontend-web-fix-20260928/tpl07-1790766225490/report.json`。
+- 首次17项报告 `tpl07-1790766188416/report.json` 已通过；图像复核发现窄屏截图未展示保存操作，探针增加滚动到操作并核对其进入视口，仅补验相同受影响收藏范围，复用构建。不是产品失败或第二次构建。
+- collection.favorite 台账仅关闭“声明控制项已呈现”的职责；没有点击保存，不宣称写入/刷新/失败恢复已验收。下一步继续这些交互及 detail.action-state；整体目标进行中，主线未集成、目标未部署、整体用户验收未完成。

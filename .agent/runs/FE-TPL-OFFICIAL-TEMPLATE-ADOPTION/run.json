@@ -143,10 +143,24 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "collection_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/collection_action_settlement_test.ts",
+        "scripts/verify/frontend_collection_action_toolbar_guard.py",
+        "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
+        "frontend/apps/web/src/app/presentation/collectionActionSettlement.ts",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Segment 53.1 official mobile drawer verified (16 browser checks, 113 navigation cases, 45 primitive cases, 12 lifecycle cases). Next close collection.favorite and detail.action-state consumption using producer evidence from segments 47/48; do not repeat backend implementation or ORM unless producer inputs actually change.",
+  "next_exact_step": "Segment 53.2 saved-search capability presentation verified (27 targeted cases, 19 browser assertions). Continue saved-search save/failure recovery and detail.action-state consumer/execution closure; reuse producer segments 47/48. Do not equate readonly form checks with successful writes; no unrelated ORM or full inventory.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -201,6 +215,16 @@
       ],
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790765698870/report.json",
       "browser_assertions": 16
+    },
+    "favorites_segment_53_2": {
+      "status": "passed",
+      "scope": "declared capability presentation only",
+      "source_head": "d1da61c0f",
+      "dirty_scope": "saved-search resolver, shared toolbar and ActionView consumer",
+      "targeted_cases": 27,
+      "browser_assertions": 19,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790766225490/report.json",
+      "uncovered": "successful save, refresh, failure feedback and recovery"
     }
   }
 }

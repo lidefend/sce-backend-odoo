@@ -29,8 +29,8 @@ goal:
     why_not_elsewhere:
       - no_p1_industry_or_p2_customer_semantics_in_frontend
       - no_p3_low_code_editable_configuration_shortcut
-      - no_backend_transaction_or_permission_change
-      - no_database_fixture_or_release_write
+      - required_contract_producer_changes_stay_with_their_p0_p1_p2_owner
+      - no_new_fixture_or_environment_authority_and_no_target_release
     blast_radius:
       - standard_list_form_detail_and_master_detail_compositions
       - contract_shaped_collection_and_form_adapters
