@@ -13,7 +13,8 @@
     "frontend/apps/web/src/",
     "scripts/verify/",
     "make/",
-    "config/ci/"
+    "config/ci/",
+    "docs/frontend_productization/"
   ],
   "environment": {
     "kind": "offline",
