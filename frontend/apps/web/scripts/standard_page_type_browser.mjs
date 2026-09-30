@@ -645,6 +645,21 @@ try {
           check(`${spec.model}: generated number absent on create`, await session.page.getByText(spec.model.endsWith('plan') ? '计划单号' : '申请单号', { exact: true }).count() === 0);
           check(`${spec.model}: old direct approval absent`, await session.page.getByRole('button', { name: spec.model.endsWith('plan') ? '确认计划' : '确认申请', exact: true }).count() === 0);
         }
+        if (spec.model === 'sc.labor.settlement') {
+          const nodes = [];
+          const visit = (items) => {
+            for (const node of items || []) {
+              if (node.type === 'field') nodes.push(node);
+              visit(node.children);
+            }
+          };
+          visit(authority.layout?.containerTree);
+          for (const [name, label] of [['project_id', '项目'], ['contractor_id', '劳务单位'], ['settlement_date', '结算日期'], ['note', '结算说明']]) {
+            const field = nodes.find((node) => node.name === name);
+            check(`labor settlement: ${name} input contract`, Boolean(field) && field.readonly !== true && field.fieldInfo?.readonly !== true && field.componentConfig?.readonly !== true);
+            check(`labor settlement: ${name} input visible`, await session.page.getByText(label, { exact: true }).count() > 0);
+          }
+        }
         if (spec.model === 'sc.material.settlement') check('material settlement: generated number absent on create', await session.page.getByText('结算单号', { exact: true }).count() === 0);
         if (spec.model === 'sc.material.rfq') check('RFQ: generated number absent on create', await session.page.getByText('询价单号', { exact: true }).count() === 0);
         if (spec.model === 'sc.material.purchase.request') {

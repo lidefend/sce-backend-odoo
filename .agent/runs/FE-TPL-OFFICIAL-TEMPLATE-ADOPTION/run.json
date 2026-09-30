@@ -283,7 +283,8 @@
         "addons/smart_construction_core/models/core/equipment_management.py",
         "addons/smart_construction_core/views/core/equipment_management_views.xml",
         "addons/smart_construction_core/models/core/labor_management.py",
-        "addons/smart_construction_core/views/core/labor_management_views.xml"
+        "addons/smart_construction_core/views/core/labor_management_views.xml",
+        "addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml"
       ]
     },
     "standard_preview_tool": {

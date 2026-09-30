@@ -8196,3 +8196,10 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 创建报告考勤tpl07-1790782907395、用工tpl07-1790782916765、结算tpl07-1790782924026各14 PASS：有效父契约、官方表单、编号隐藏、无提前确认/审批、1440/390无溢出、errors/forbiddenWrites为空。390截图复核发现结算创建缺少原生表单project_id/contractor_id等必要输入，日期显示为文本。故14项仅证明其明确断言，不能证明结算可创建；新增产品缺口，下一步沿现有响应structure/layout与原生字段追查，不新增fixture。
 
 已有记录报告考勤tpl07-1790782932490、用工tpl07-1790782937288、结算tpl07-1790782942305均api.data ok=true records=[]，2项处数据前置失败；不能计为动作办理通过，不重复空查询。全业务状态机/67条台账及detail.action-state继续开放。L5未执行，无推送/合并/目标部署。
+
+
+### 53.88 劳务结算创建输入契约修正（进行中）
+
+复用53.87响应定位：native字段存在且模型可编辑，但P1发布sc_labor_settlement_p1_form_business_facts_v1把project_id/contractor_id/settlement_date/note无条件readonly，导致官方共享消费显示为事实而非输入。P1行业标准发布载体移除四项无条件只读，继承原生约束；付款/计算/来源事实只读保持。不向P0或前端写业务规则，不改ACL/审批/确认状态机。
+
+候选73e9a538f+本段dirty，L1 labor-settlement-input-iteration.log PASS、XML通过测试解析、diff/node检查PASS；L2 labor-settlement-input-unit.log82 PASS并登记非零回执，新增测试证明输入策略与付款事实分离。浏览器工具增加四字段契约及可见性断言，尚待升级后执行；运行时25不受业务逻辑变化影响，不重跑。原生动作55/语义15输入不变复用。下一步仅受管模块升级发布XML并复验结算创建；前端构建7915f3bb9复用，L5未运行。

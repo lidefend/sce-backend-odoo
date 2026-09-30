@@ -1018,6 +1018,16 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def test_labor_settlement_inputs_remain_editable_in_published_contract(self):
+        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
+        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_labor_settlement_p1_form_business_facts_v1']")
+        contract = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
+        fields = {row['name']: row for row in contract['view_orchestration']['views']['form']['fields']}
+        for name in ('project_id', 'contractor_id', 'settlement_date', 'note'):
+            self.assertNotIn('readonly', fields[name], name)
+        for name in ('payment_paid_amount', 'payment_unpaid_amount', 'payment_requested_amount', 'payment_unrequested_amount', 'source_created_at'):
+            self.assertIs(fields[name]['readonly'], True, name)
+
     def test_labor_execution_family_requires_approval_before_confirmation(self):
         path = MODEL.with_name('labor_management.py')
         tree = ast.parse(path.read_text())
