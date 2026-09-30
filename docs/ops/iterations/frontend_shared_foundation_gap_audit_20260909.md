@@ -5330,3 +5330,144 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 36｜前端门禁聚合由红转绿：两条守卫的真实缺陷（探针与源码布局耦合、探针与 diff 形状耦合）（2026-09-30）
+
+### 1. 本轮触发
+
+段 35 收口后，在 clean HEAD 上第一次跑完整**前端门禁聚合** `verify.frontend.quick.gate`
+（45 个子目标），得到 **一条真实 FAIL**：`verify.frontend.professional_base_field.unit`。
+继续扫权威门禁面，又得到第二条真实 FAIL：`verify.frontend.delivery_hardening.guard`。
+两条都不是产品行为缺陷，而是**探针自身的判定方式与源码形式耦合**——正是段 34/35 反复处理的同一类漂移。
+
+### 2. 修复 A｜`professional_base_field` 守卫：断言绑定到语句，而不是源码布局
+
+**现象**：clean HEAD 上 `[frontend_professional_base_field_guard] FAIL base field handler does not fail closed`，
+指向 `useRecordFormState.ts` 的 `queryMany2oneInline`。
+
+**根因（查实，非猜测）**：`030a189b9 fix(web): keep the exact typed text in the relation search input`
+把该 handler 改成多行、并在声明前加了一段注释（**行为未变，仍然 fail-closed**）。
+守卫把「非可写即返回」写成**整行字面量**，于是换行/注释一变即失配——
+报告的是一个**仍然 fail-closed 的 handler**“没有 fail-closed”。同文件另外三个 handler 仍是一行，故未触发。
+
+**修复（保留断言含义，替换定位方式）**：新增 `_compact()`，**先去注释（行/块）再去空白**，两侧同时规范化。
+于是绑定变成「声明签名后面**紧跟** fail-closed 守卫，且它仍是函数体的第一条语句」：
+
+- 换行重排 + 无关注释 → 不再误报；
+- 守卫被注释掉 → 注释被剥离后消失 → **仍然 FAIL**；
+- 守卫被移到别的语句之后 → 前缀不再紧邻 → **仍然 FAIL**。
+
+**新增回归（`test_frontend_professional_base_field_guard.py` 13 → 16 项）**：
+`test_rewrapped_handler_still_passes`（重排+内联注释仍通过）、
+`test_rewrapped_handler_without_the_guard_fails`、`test_rewrapped_handler_that_does_not_open_with_the_guard_fails`。
+
+**真实源码反例验伪**：临时删除真实 `useRecordFormState.ts` 里那一句守卫 → 守卫 **FAIL**；
+原样恢复 → **PASS**；`git diff` 对该产品文件为空（确认原样恢复、产品零改动）。
+
+### 3. 修复 B｜`delivery_hardening` 守卫：按基线修订判定“新增”，而不是按 diff 形状
+
+**现象**：clean HEAD 上 `[frontend_delivery_hardening_guard] FAIL new model-specific CSS`。
+
+**根因（查实）**：该规则在 `git diff --unified=0 origin/main -- frontend/apps/web/src` 的**新增行**里
+匹配 `\.(?:project|contract|settlement|payment)[-_][\w-]+\s*\{`。
+而 `CurrentFormFieldSettingsPanel.css` 里原有一条**共享选择器规则**：
+
+```css
+-.contract-field-selection-card,
+-.contract-field-selection-empty {
++.contract-field-selection-card {
+```
+
+共享选择器列表被拆开后，git 把**保留下来的那个选择器**重新输出为一条新增行。
+于是 `.contract-field-selection-card` 这个**在 `origin/main` 早已存在**的选择器被当成新增模型专用 CSS。
+换言之：**零新增模型专用样式，却报了一条新增违规**——判定绑定到了 diff 形状，而不是“是否是新产品语义”。
+
+**修复（保留断言含义，替换定位方式）**：新增 `MODEL_SPECIFIC_SELECTOR_RE` 与
+`_base_frontend_source(path)`（按路径缓存 `git show origin/main:<path>`）。
+新增行里命中的选择器，只有在**基线修订中不存在**时才计为违规；比较带边界
+（`re.escape(selector) + r"(?![\w-])"`，避免长名满足短名）。
+真正新增的模型专用选择器依旧 FAIL，并且报出精确路径与选择器。
+
+**反例验伪**：临时向 `CurrentFormFieldSettingsPanel.css` 追加
+`.payment-brand-new-banner { … }` → 守卫 **FAIL**
+`… : .payment-brand-new-banner`；移除后 → **PASS**；产品文件 `git diff` 为空。
+
+**回归**：`test_frontend_delivery_hardening_guard.py` 新增 `NewModelSpecificCssTest`，
+锁定“按基线判定新增”的实现（含 `git show origin/main:{path}` 与边界检查），并断言
+“只看新增行的旧字典键”不再存在，防止退回 diff 形状判定。
+
+> 说明：该守卫的基线引用是 `origin/main`。本轮先执行了一次 `git fetch origin main`，
+> 使远端跟踪引用与实际 `origin/main` 一致，比较才有意义（只更新 remote-tracking ref，
+> 未改工作树、分支、也未推送）。
+
+### 4. 本轮实测的门禁现状（HEAD，全部为真实运行）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS（`change_state=clean`、`coverage=L1_only`） |
+| L1 | `make ci.generated_reports.guard` | PASS（复杂度/分片/remote plan/fingerprint 全部 current） |
+| L2 | `make verify.frontend.quick.gate`（45 子目标） | **由 FAIL 转 PASS（exit=0）** |
+| L2 | `make verify.frontend.pr.unit` | PASS |
+| L2 | `make verify.frontend.release.unit` | PASS |
+| L2 | `make verify.frontend.delivery_hardening.guard` | **由 FAIL 转 PASS** `/ PASS error_states=12 title_writers=1 async_epoch=enabled axe=4.10.2` |
+| L2 | `make verify.frontend.professional_base_field.unit` | **由 FAIL 转 PASS**（13 → **16 tests**） |
+| L2 | `make verify.frontend.style_system.guard` / `no_new_any_guard` / `typecheck.strict` | PASS |
+| L2 | `make verify.frontend.lint.src` | PASS（**0 error / 57 warning**，exit 0） |
+| L2 | `make verify.frontend.release_navigation_policy.guard`、`page_width_contract.guard`、`page_identity` | PASS |
+
+### 5. 本轮新登记的欠账（**不靠放宽消红**）
+
+- **`verify.frontend.industry_agnostic.guard`：FAIL，`files=747 findings=127`。**
+  这是**收敛型门禁**：脚本自身声明 `FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1`
+  “intended for the release gate after convergence”，报告 `policy.target=zero`、
+  `policy.baseline_approval=forbidden`。它**未接入任何聚合目标，也不在
+  `.github/workflows/frontend_release_gate.yml` 的任何 lane**里。
+  逐类计数：`industry_text_anywhere` 37、`industry_behavior_identifier` 36、
+  `business_field_inference` 32、`industry_literal` 12、`industry_model_or_xmlid` 5、
+  `industry_regex_inference` 3、`industry_asset` 2；
+  集中在 `components/professional-fields/PaymentSettlementIntroduceDialog.vue`(31)、
+  `api/overviewRichTextPatch.ts`(13)、`components/page/blocks/BlockChartDataset.vue`(11) 等。
+  **本轮只登记准确数字，不展开全仓行业语义清理，也不允许靠删基线/放宽判定消红。**
+- `verify.frontend.all_list_visual.audit` 需要 `E2E_PASSWORD`（浏览器凭据）→ 本轮 **not_run**（前置缺失，非门禁失败）。
+
+### 6. 验收体系为什么没及时发现（本轮的直接教训）
+
+这两条守卫有一条共同特征：**它们不在这条专题日常会跑的路径上**。
+`quick.gate` 直到本段才第一次在前端专题里运行；`professional_base_field` 的失配自
+`030a189b9`（09-29）起潜伏，期间所有前端批次都不会碰到它。
+段 35 已把「尺寸棘轮」接回增量路由；本段暴露的是同一类问题在**聚合层**的版本：
+**单一入口的守卫失配不会被任何日常路径发现，只有聚合门禁才会暴露。**
+因此本段的两条修复各自的回归都随提交保存，且 `quick.gate` 可以作为后续批次的一条低成本聚合检查。
+
+### 7. 边界七问
+
+`Formal Product Layer` = P0 平台内核（验证/Gate 工具层）；`Layer Target` =
+`scripts/verify/frontend_professional_base_field_guard.py`、`scripts/verify/frontend_delivery_hardening_guard.py`
+及其单测；`Module` = 验证脚本；`Standard vs User-Specific` = 平台机制；
+`Why Here` = 两条断言都在声称“某行为必须成立”，而它们实际判定的是源码**形式**；
+`Why Not Elsewhere` = **不**改产品去迎合探针（本段产品源码零改动）、**不**放宽阈值、
+**不**给 `industry_agnostic` 加豁免；`Blast Radius` = 仅两个守卫脚本与其单测。
+
+### 8. 候选与运行身份
+
+本段**无产品源码改动**（仅 `scripts/verify/*`）→ 按既有证据失效规则，
+段 35 的 5180 候选继续有效，**不重建、不重启、不新增端口**：
+`base_sha=3e46b5649…`、`entry=/assets/index-DShCtG8D.js`、`entry_sha256=cc73042c…`、
+`index_sha256=4c236bf0…`；监听仍为 `pid=802966`。
+
+### 9. 提交
+
+- `fix(verify): bind the base-field fail-closed assertion to statements, not layout`
+- `fix(verify): decide new model-specific CSS against the base revision`
+
+### 10. 显式登记（**不在本段范围，继续独立记账**）
+
+- 段 35 全部登记项不变（`verify.business_config.coverage` 数据覆盖、
+  platform-admin 夹具缺口、`state_transition_undeclared` 五条、
+  `payment.request` 契约表达缺口需 P1 权威补声明、工作台目录 13–15 s 观感）。
+- 新增：`industry_agnostic.guard` 127 项（见 §5）；`all_list_visual.audit` 凭据前置缺失。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
