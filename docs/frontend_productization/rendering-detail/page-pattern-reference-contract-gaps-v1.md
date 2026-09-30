@@ -553,3 +553,8 @@ Actual paid execution186 showed irrelevant pre-payment account blockers despite 
 ### Segment53.144 — multiline readonly relation facts
 
 Official readonly relation buttons clipped wrapped contract values at fixed height. P0 shared readonly-relation appearance in the existing button/theme bridge fixes both FormSection relation slots. Desktop3 lines/narrow5 lines fit their action bounds; browser26 passes at tpl07-1790798391223 with no writes. Initial scoped-style candidate failed and was replaced after an owning-layer fix; final frontend index-irmVWfdy.js. This is a presentation closure, not missing saved-record business coverage or a new renderer.
+
+
+### Segment53.156 — expense create submission attachment prerequisite (open)
+
+Browser tpl07-1790801474585 / backend c0cbdf7a7: reimbursement create attachment_ids declares required=false and no help. Captured filled-form payload reaches the real create handler as finance, but actual submission correctly rejects missing category-required attachment. Saved-record evidenceGate carries EXPENSE_ATTACHMENT_REQUIRED with the exact execution message; new-form declaration-only actions do not communicate this submit prerequisite. P1 must project effective category submission requirements and P0 must consume the action-stage requirement, including pending native uploads, without making draft saves require attachments. Do not weaken backend guards or infer policy from model/labels. Browser45 proves payload/failure/retry only; rollback runtime3 proves create/missing-attachment denial and submit after a separately supplied runtime attachment. Complete browser upload→save→submit remains open.

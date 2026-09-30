@@ -63,6 +63,8 @@ const browser = await launchChromium({ headless: true });
 const pendingProbeAborts = new Set();
 let favoriteWritePermit = null;
 let projectWritePermit = null;
+let expenseCreateCapture = false;
+const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
 const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
 async function login(role) {
@@ -71,6 +73,17 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (expenseSaveProbe && body?.intent === 'contract.action') {
+      report.forbiddenWrites.push({ intent: body.intent, reason: 'save-failure probe cannot execute business actions' });
+      return route.abort();
+    }
+    if (expenseCreateCapture && role === 'fixture_role_finance' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'sc.expense.claim') {
+      report.expenseSaveAttempts ??= [];
+      report.expenseSaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: { code: 'TPL53_SAVE_UNAVAILABLE', message: '验收注入：保存暂不可用，请重试' } }) });
+    }
     if (permitsProjectNameWrite(role, body, projectWritePermit)) {
         report.projectWriteAttempts ??= [];
         report.projectWriteAttempts.push({ id: 10, name: projectWritePermit.name });
@@ -747,6 +760,55 @@ try {
           check('expense relation: next query uses changed project', report.expenseRelation.changedProject.result.ok === true);
           check('expense relation: changed project preserves cash-out direction', hasPayDirection(report.expenseRelation.changedProject.query.domain));
           check('expense relation: draft interactions send no business write', report.forbiddenWrites.length === 0);
+
+          if (expenseSaveProbe) {
+            const sourceResult = await session.page.evaluate(async ({ id, context }) => {
+              const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+              return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+                body: JSON.stringify({ intent: 'api.data', params: { op: 'read', model: 'payment.request', ids: [id],
+                  fields: ['id', 'project_id', 'partner_id', 'company_id', 'currency_id', 'amount', 'type', 'state'], context } }),
+              })).json();
+            }, { id: selected.id, context: query.context });
+            const source = sourceResult.data?.records?.[0];
+            check('expense save: selected source authoritatively read', sourceResult.ok === true && source?.id === selected.id && source.type === 'pay');
+            report.expenseSaveSource = source;
+            await projectInput.fill('FE Project A');
+            await session.page.getByRole('option', { name: String(project.display_name || project.name), exact: true }).click();
+            const partnerInput = session.page.locator('[data-field-name="partner_id"] input').first();
+            await partnerInput.fill(source.partner_id[1]);
+            await session.page.getByRole('option', { name: source.partner_id[1], exact: true }).click();
+            await paymentInput.click();
+            await session.page.getByRole('option', { name: selectedLabel, exact: true }).click();
+            const amountInput = session.page.locator('[data-field-name="amount"] input').first();
+            await amountInput.fill(String(source.amount));
+            for (const [name, value] of [['payee_account', 'EXPENSE-SAVE-PAYEE'], ['payer_account', 'EXPENSE-SAVE-PAYER']]) {
+              await session.page.locator(`[data-field-name="${name}"] input`).first().fill(value);
+            }
+            expenseCreateCapture = true;
+            for (let attempt = 1; attempt <= 2; attempt += 1) {
+              const saveResponse = session.page.waitForResponse((response) => {
+                try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'
+                  && body.params?.op === 'create' && body.params.model === 'sc.expense.claim'; } catch { return false; }
+              });
+              await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+              await saveResponse;
+              await session.page.getByText('验收注入：保存暂不可用，请重试', { exact: true }).first().waitFor();
+              check(`expense save: attempt ${attempt} sends exactly one create`, report.expenseSaveAttempts.length === attempt);
+              const payload = report.expenseSaveAttempts[attempt - 1];
+              check(`expense save: attempt ${attempt} preserves numeric relationship identity`,
+                payload.vals.project_id === project.id && payload.vals.partner_id === source.partner_id[0]
+                && payload.vals.payment_request_id === selected.id);
+              check(`expense save: attempt ${attempt} preserves amount and entry context`,
+                Number(payload.vals.amount) === Number(source.amount)
+                && String(payload.context?.menu_id) === String(report.approvalCreateEntry.menu_id)
+                && String(payload.context?.action_id) === String(report.approvalCreateEntry.action_id));
+              check(`expense save: attempt ${attempt} preserves editable draft`, new URL(session.page.url()).pathname === '/f/sc.expense.claim/new'
+                && Number(await amountInput.inputValue()) === Number(source.amount) && await paymentInput.inputValue() === selectedLabel);
+            }
+            expenseCreateCapture = false;
+            check('expense save: failed saves do not execute business actions', report.forbiddenWrites.length === 0);
+          }
 
           await session.page.getByRole('heading', { name: '新建报销申请', exact: true }).click();
 

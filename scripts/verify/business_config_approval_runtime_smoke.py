@@ -6,6 +6,7 @@ It does not claim full business-document coverage; every write is rolled back.
 """
 
 import os
+import json
 from base64 import b64encode
 from datetime import timedelta
 from odoo import fields
@@ -3434,8 +3435,104 @@ def _expense_deduction_line_checks(project, partner, created):
     print("APPROVAL_CHECK=deduction_approved_child_crud_and_reparent_denied")
 
 
+def validate_expense_create_probe(probe):
+    request = probe.get("request", {})
+    source = probe.get("source", {})
+    assert request.get("op") == "create" and request.get("model") == "sc.expense.claim"
+    vals, context = request.get("vals", {}), request.get("context", {})
+    allowed_vals = {"business_category_id", "date_claim", "fill_date", "amount", "project_id", "partner_id",
+                    "payment_request_id", "guarantee_type", "payee_account", "payer_account", "is_returned", "summary", "attachment_ids"}
+    allowed_context = {"company_id", "default_claim_type", "default_expense_type", "default_summary",
+                       "default_business_category_code", "search_default_active_rows", "search_default_expense_reimbursement",
+                       "search_default_group_project", "allowed_business_category_codes", "allowed_company_ids", "lang", "menu_id", "action_id"}
+    assert set(vals) <= allowed_vals and set(context) <= allowed_context
+    assert source.get("type") == "pay" and source.get("id", 0) > 0
+    assert vals.get("payment_request_id") == source["id"]
+    assert vals.get("project_id") == source["project_id"][0] and vals.get("partner_id") == source["partner_id"][0]
+    assert vals.get("amount") == source["amount"] and vals["amount"] > 0
+    assert vals.get("attachment_ids") == [[6, 0, []]], "probe cannot mutate attachments"
+    assert context.get("default_business_category_code") == "finance.expense.reimbursement"
+    assert context.get("company_id") == source["company_id"][0]
+    assert len(probe.get("report_sha256", "")) == 64
+    return request
+
+
+def _expense_create_request_checks():
+    from odoo.addons.smart_core.handlers.api_data import ApiDataHandler
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance", "acceptance database required"
+    probe = json.loads(os.environ["SC_EXPENSE_CREATE_PROBE_JSON"])
+    request = validate_expense_create_probe(probe)
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance and finance.company_id.id == request["context"]["company_id"]
+    assert set(request["context"]["allowed_company_ids"]) <= set(finance.company_ids.ids)
+    user_env = base["sc.expense.claim"].with_user(finance).with_context(request["context"]).env
+    assert not user_env.su
+    menu = user_env.ref("smart_construction_core.menu_sc_reimbursement_request")
+    assert int(request["context"]["menu_id"]) == menu.id and int(request["context"]["action_id"]) == menu.action.id
+    category = user_env["sc.business.category"].browse(request["vals"]["business_category_id"])
+    assert category.code == "finance.expense.reimbursement"
+    source = user_env["payment.request"].browse(probe["source"]["id"])
+    fields_to_read = list(probe["source"])
+    # HTTP JSON represents Odoo many2one tuples as arrays. Compare at the same
+    # serialization boundary, preserving every captured field and value.
+    current_source = json.loads(json.dumps(source.read(fields_to_read)[0]))
+    assert current_source == probe["source"], "source changed since browser capture: %s" % current_source
+    source_fields = fields_to_read + ["terminal_cash_source_model", "terminal_cash_source_res_id"]
+    before = source.read(source_fields)
+    ledger_domain = [("payment_request_id", "=", source.id)]
+    ledger_before = user_env["payment.ledger"].search(ledger_domain).ids
+    created_id = None
+    attachment_ids = []
+    try:
+        result = ApiDataHandler(user_env, context=request["context"]).handle(**request)
+        assert isinstance(result, tuple), "create handler rejected browser payload: %s" % (result,)
+        data = result[0]
+        created_id = data.get("id")
+        assert created_id, data
+        rec = user_env["sc.expense.claim"].browse(created_id)
+        assert rec.project_id == source.project_id and rec.partner_id == source.partner_id and rec.payment_request_id == source
+        assert rec.company_id == finance.company_id and rec.amount == source.amount and rec.financial_flow == "cash_out"
+        print("APPROVAL_CHECK=expense_browser_payload_created_with_finance_scope")
+        assert category.attachment_policy == "required", "current captured case requires an attachment"
+        contract_before = user_env["sc.workflow.contract.service"].describe_record(rec)
+        attachment_gate = next(gate for gate in contract_before["evidenceGate"] if gate["reasonCode"] == "EXPENSE_ATTACHMENT_REQUIRED")
+        denied = False
+        try:
+            with user_env.cr.savepoint():
+                rec.action_submit()
+        except UserError as exc:
+            denied = True
+            assert str(exc) == attachment_gate["message"], (str(exc), attachment_gate)
+        assert denied and rec.state == "draft", "missing attachment must preserve draft"
+        print("APPROVAL_CHECK=expense_browser_payload_missing_attachment_matches_contract")
+        # Separate runtime completion from the captured browser payload: the
+        # browser did not upload this rollback-only supporting attachment.
+        _attach(rec, "expense-browser-payload-runtime-support")
+        attachment_ids = rec.attachment_ids.ids
+        rec.action_submit()
+        assert rec.state in ("submit", "approved"), (rec.state, rec.validation_status)
+        contract = user_env["sc.workflow.contract.service"].describe_record(rec)
+        assert contract["editability"] in ("readonly", "locked"), contract
+        assert source.read(source_fields) == before and user_env["payment.ledger"].search(ledger_domain).ids == ledger_before
+        print("APPROVAL_CHECK=expense_browser_payload_submit_projects_readonly_without_payment")
+        print("EXPENSE_CREATE_PROBE_IDENTITY=" + json.dumps({"report_sha256": probe["report_sha256"], "uid": finance.id,
+              "company_id": finance.company_id.id, "source_id": source.id, "expense_id": created_id,
+              "state": rec.state, "validation_status": rec.validation_status}))
+    finally:
+        base.cr.rollback()
+        base.invalidate_all()
+        assert not created_id or not user_env["sc.expense.claim"].browse(created_id).exists()
+        assert not user_env["ir.attachment"].browse(attachment_ids).exists()
+        assert source.read(source_fields) == before and user_env["payment.ledger"].search(ledger_domain).ids == ledger_before
+        print("EXPENSE_CREATE_PROBE_ROLLBACK=VERIFIED")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=expense-create-request")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "expense-create-request":
+        return _expense_create_request_checks()
     assert scope in ("settlement-adjustment", "receipt-income", "financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)

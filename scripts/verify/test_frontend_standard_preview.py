@@ -6,6 +6,37 @@ from unittest.mock import patch
 import tempfile
 import json
 import hashlib
+import ast
+import copy
+
+
+class ExpenseCreateProbeScopeTest(unittest.TestCase):
+    def setUp(self):
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        method = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'validate_expense_create_probe')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        self.validate = ns['validate_expense_create_probe']
+        self.probe = {'request': {'op': 'create', 'model': 'sc.expense.claim', 'vals': {'payment_request_id': 21,
+            'project_id': 10, 'partner_id': 56, 'amount': 999, 'attachment_ids': [[6, 0, []]]},
+            'context': {'company_id': 8, 'default_business_category_code': 'finance.expense.reimbursement'}},
+            'source': {'id': 21, 'project_id': [10, 'P'], 'partner_id': [56, 'Partner'], 'company_id': [8, 'Company'], 'amount': 999, 'type': 'pay'},
+            'report_sha256': 'a' * 64}
+
+    def test_bound_request_is_accepted(self):
+        self.assertEqual(self.validate(self.probe), self.probe['request'])
+
+    def test_state_and_privilege_inputs_rejected(self):
+        for section, key, value in [('vals', 'state', 'approved'), ('context', 'sudo', True), ('context', 'tier_validation_callback', True)]:
+            probe = copy.deepcopy(self.probe)
+            probe['request'][section][key] = value
+            with self.assertRaises(AssertionError): self.validate(probe)
+
+    def test_source_identity_and_attachment_mutation_rejected(self):
+        for key, value in [('payment_request_id', 22), ('project_id', 11), ('partner_id', 57), ('amount', 1000), ('attachment_ids', [[4, 123]])]:
+            probe = copy.deepcopy(self.probe)
+            probe['request']['vals'][key] = value
+            with self.assertRaises(AssertionError): self.validate(probe)
 
 spec = importlib.util.spec_from_file_location('preview', Path(__file__).resolve().parents[1] / 'dev/frontend_standard_preview.py')
 preview = importlib.util.module_from_spec(spec)

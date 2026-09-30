@@ -304,8 +304,27 @@ case "$command" in
     [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
     case "$command" in
       standard-approval-runtime)
-        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|settlement-adjustment|receipt-income|financing-borrowing|financing-approval|self-funding-reconciliation|expense-state-authority|finance-state-authority|legacy-workflow|red-flush-role|red-flush|tender-guarantee|project-document|tender-purchase|project-role-approval|project-creation-state|inbound|acceptance|purchase-request|rfq|material-settlement|equipment-plan-request|equipment-execution|labor-plan-request|labor-execution|rental-plan|rental-order|rental-settlement|rental-settlement-cash|rental-cancellation-contract|safety-approval|subcontract-approval|subcontract-settlement|subcontract-settlement-cash) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
-        docker exec -i -e SC_APPROVAL_RUNTIME_SCOPE="${SC_APPROVAL_RUNTIME_SCOPE:-all}" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
+        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|expense-create-request|settlement-adjustment|receipt-income|financing-borrowing|financing-approval|self-funding-reconciliation|expense-state-authority|finance-state-authority|legacy-workflow|red-flush-role|red-flush|tender-guarantee|project-document|tender-purchase|project-role-approval|project-creation-state|inbound|acceptance|purchase-request|rfq|material-settlement|equipment-plan-request|equipment-execution|labor-plan-request|labor-execution|rental-plan|rental-order|rental-settlement|rental-settlement-cash|rental-cancellation-contract|safety-approval|subcontract-approval|subcontract-settlement|subcontract-settlement-cash) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
+        expense_create_probe_json=""
+        if [[ "${SC_APPROVAL_RUNTIME_SCOPE:-all}" == "expense-create-request" ]]; then
+          : "${SC_EXPENSE_CREATE_REPORT:?existing successful browser capture report required}"
+          expense_create_probe_json="$(python3 - "$ROOT_DIR" "$SC_EXPENSE_CREATE_REPORT" <<'PYPROBE'
+import hashlib, json, sys
+from pathlib import Path
+root = Path(sys.argv[1]).resolve()
+report = Path(sys.argv[2]).resolve()
+assert report.is_relative_to(root / 'artifacts/frontend-web-fix-20260928') and report.name == 'report.json'
+raw = report.read_bytes()
+data = json.loads(raw)
+assert data.get('status') == 'passed' and not data.get('errors') and not data.get('forbiddenWrites')
+assert len(data.get('expenseSaveAttempts', [])) == 2
+assert data['expenseSaveAttempts'][0] == data['expenseSaveAttempts'][1]
+assert any(row.get('role') == 'fixture_role_finance' and row.get('intent') == 'system.init' and row.get('success') for row in data['startup'])
+print(json.dumps({'request': data['expenseSaveAttempts'][0], 'source': data['expenseSaveSource'], 'report_sha256': hashlib.sha256(raw).hexdigest()}))
+PYPROBE
+)"
+        fi
+        docker exec -i -e SC_APPROVAL_RUNTIME_SCOPE="${SC_APPROVAL_RUNTIME_SCOPE:-all}" -e SC_EXPENSE_CREATE_PROBE_JSON="$expense_create_probe_json" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
         ;;
       standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
       standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;

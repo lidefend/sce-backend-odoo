@@ -333,7 +333,8 @@
         "scripts/dev/frontend_acceptance_runtime.sh",
         "frontend/apps/web/scripts/standard_page_type_browser.mjs",
         "make/runtime_ops.mk",
-        "scripts/dev/frontend_standard_preview.py"
+        "scripts/dev/frontend_standard_preview.py",
+        "scripts/verify/business_config_approval_runtime_smoke.py"
       ]
     },
     "scene_mutation_outcome": {
@@ -399,7 +400,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.155 candidate direction closed: c0cbdf7a7 P1 nonstored payment_request_types reuses execution direction, native domain/defaults/hidden dependency;160 pure and browser35 tpl07-1790801331397 PASS. Actual cash-out query project10/type in [pay], receipt-labelled32 excluded; project11 preserves direction and clears old choice, no writes. Governed upgrade/backend c0cbdf7a7 passed; frontend index-Ddc2GXJe.js unchanged. Next continue filled expense create/submit using existing governed rollback tooling; saved nonlegacy query remains known empty, do not repeat. Cash-in browser and overall67/detail.action-state remain unverified. No fixture/push/merge/target deployment.",
+  "next_exact_step": "53.156 browser45 tpl07-1790801474585 proves filled expense create payload numeric IDs/context,503 preserves input and retry/no business action. Existing managed expense-create-request runtime3 replays real ApiDataHandler as finance30/company8: creation succeeds, missing attachment refused with same saved-contract gate; rollback-only support attachment then submit approved/readonly/no payment. Source1815/temporaryexpense162/attachments restored; reporthash recorded. Open product gap: new-form attachment_ids required=false/help empty lacks submit-only category requirement. Next P1 effective submit prerequisite + P0 generic action-stage/pending-upload consumption; preserve draft saves. Full browser upload/save/submit still unverified; existing67/detail.action-state open. No fixtures/push/merge/target deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

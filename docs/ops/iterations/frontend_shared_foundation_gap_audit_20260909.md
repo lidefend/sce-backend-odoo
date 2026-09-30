@@ -9001,3 +9001,16 @@ L1 expense-direction-iteration/final-iteration PASS；payment_approval_state_mac
 expense-direction-browser.log / tpl07-1790801331397：35 PASS，errors=[]、forbiddenWrites=[]。finance授权menu564/action758的新建报销实测query domain=[[project_id,=,10],[type,in,[pay]]]，返回15条（原16条中的收款标签id32退出），选择id1815显示值保留；项目10→11清空旧选择，新query保留type in [pay]且项目11。空提交必填反馈、原双视口检查保持通过。方向限制由实际请求证明，不通过显示文案过滤。cash_in的receive映射为纯测证据，未声称对应浏览器办理完成。
 
 原158纯测由160替代；生产消费者及保存/审批执行输入未改，费用27业务执行证据按依赖复用，无额外ORM/重跑付款49。53.154候选方向缺口关闭；整体67/detail.action-state继续开放。完整填表提交、非legacy已保存费用数据前提及最终可读来源ID证据仍待完成。仅本地提交，无推送、合并或目标部署；本批方向候选定向验收通过不等于全系统交付。
+
+
+### 53.156 报销完整字段保存失败恢复与真实请求事务回放
+
+7a5f2e028 clean起点。本批P4扩展原standard_page_type_browser和business_config_approval_runtime_smoke，不改生产。财务角色create/write但无unlink，故不创建无法自行清理的持久验收记录，也不提升角色。TPL07_EXPENSE_SAVE_PROBE=1在既有create范围填入真实来源1815的project10/partner56/amount999及测试账户，创建请求在网络边界注入503，任何contract.action拦截拒绝。expense-save-probe-browser.log / tpl07-1790801474585：45 PASS；两次点击各一次真实create请求，技术关系ID、金额、menu564/action758及公司上下文一致，错误可见、输入保留、仍为new、无业务执行。记录保存的是被拦截请求，不声称浏览器保存成功。
+
+复用verify.business_config.approval_runtime新增expense-create-request窄范围，不重跑费用27或全领域。入口只读取既有artifacts树的成功报告，核对两次请求相等、finance登录及无未声明写入；绑定报告SHA256。纯校验限制模型/op/可写字段/上下文，拒绝state、sudo、回调上下文及附件修改；运行核对sc_frontend_acceptance、financeuid30、company8、可用公司、实际菜单/动作/分类、来源字段。真实ApiDataHandler以普通finance处理原payload，整个transaction最终rollback，来源/台账/临时单据/临时附件均回读。未新增环境/凭据/fixture系统。
+
+首个回放在任何写入前因ORM tuple与HTTP array表示不同拒绝；修正为同一JSON边界比较后，真实create成功但submit因缺必需附件拒绝，ROLLBACK VERIFIED（expense-create-replay-normalized-runtime.log）。这是业务输入不完整，不是放宽后端校验的理由。后续探针以reasonCode绑定既有evidenceGate，修正一次误用code键的工具错误（expense-create-attachment-runtime.log，已回滚）。最终expense-create-attachment-contract-runtime.log：3 PASS，创建身份一致；缺附件的错误与保存后契约一致、仍draft；复用原_attach在事务内补附件后submit→approved/validation_status=no，契约readonly，没有付款/来源认领。报告hash b9b04b4f8f687d87732c2941586a927cc911cd4fca5c2e0bede7721aafab178d，临时expense162、来源1815，最终EXPENSE_CREATE_PROBE_ROLLBACK VERIFIED。附件由运行探针补充，不是浏览器上传，不能合并称完整浏览器办理闭环；调用真实create handler+模型submit，不声称经过HTTP动作路由。
+
+L1 expense-save-probe-iteration / expense-create-replay-final-iteration PASS；语法/diff PASS；既有standard_preview_tool检查扩充输入，最终8 Node+19 Python=27测试PASS（含3组payload范围测试），begin/record非零。初期误以standard_preview命名登记，随即删除重复项并沿用原standard_preview_tool，无平行检查保留。生产addons和前端产物未改，160纯测/既有费用27运行/方向browser35沿依赖复用，无构建/升级。
+
+确认产品缺口：本报告新建attachment_ids fieldInfo required=false/help为空；有效分类却在提交/审批/完成要求附件。保存后evidenceGate正确，缺口是新建契约及共享动作校验中的“提交必需、草稿可缺”职责，不能简单改字段required而阻断草稿保存。登记既有gap文档，下一步补该动作阶段契约并验证待上传文件、保存失败/上传失败恢复与真实提交衔接。总体67/detail.action-state、保存后浏览器及其余缺口仍开放。仅本地，无推送/合并/目标部署。
