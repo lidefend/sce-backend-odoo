@@ -51,10 +51,11 @@ async function login(role) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
   const page = await ctx.newPage();
   page.on('pageerror', (error) => report.errors.push(error.message));
-  await page.route('**/api/v1/intent', async (route) => {
+  await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
-    if (body?.intent === 'api.data' && !['list', 'read'].includes(body.params?.op)) {
-      report.forbiddenWrites.push(body.params?.op);
+    if ((body?.intent === 'api.data' && !['list', 'read'].includes(body.params?.op))
+      || ['search.favorite.set', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
+      report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op });
       return route.abort();
     }
     return route.continue();
@@ -138,6 +139,21 @@ async function form(page, url, name, profile = 'form') {
 async function favoritesScope() {
   const finance = await login('fixture_role_finance');
   const page = finance.page;
+  const failureProbe = process.env.TPL07_SCOPE === 'favorites-failure';
+  let signalRequest;
+  let releaseRequest;
+  let requestStarted;
+  if (failureProbe) {
+    report.injectedFavoriteFailures = [];
+    await page.route('**/api/v1/intent*', async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.intent !== 'search.favorite.set') return route.fallback();
+      report.injectedFavoriteFailures.push({ model: body.params.model, shared: body.params.is_shared });
+      signalRequest();
+      await new Promise((resolve) => { releaseRequest = resolve; });
+      return route.abort('failed');
+    });
+  }
   await list(page, 545, 'favorites-list');
   const authority = report.savedSearchAuthority;
   check('favorites: effective contract declares capability', typeof authority?.save_enabled === 'boolean');
@@ -153,10 +169,25 @@ async function favoritesScope() {
     await name.waitFor();
     check(`favorites-${width}: sharing follows declared capability`, await page.getByRole('checkbox', { name: '共享给所有用户', exact: true }).count() === (authority.shared_enabled === true ? 1 : 0));
     await name.fill('仅检查表单，不保存');
-    const save = page.getByRole('button', { name: '保存', exact: true });
+    const save = page.getByRole('button', { name: /^保存/ });
     await save.scrollIntoViewIfNeeded();
     check(`favorites-${width}: named save form is usable`, await save.isEnabled());
     check(`favorites-${width}: save action can enter viewport`, await save.evaluate((el) => { const box = el.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight; }));
+    if (failureProbe) {
+      requestStarted = new Promise((resolve) => { signalRequest = resolve; });
+      await save.click();
+      let requestDeadline;
+      try {
+        await Promise.race([requestStarted, new Promise((_, reject) => { requestDeadline = setTimeout(() => reject(new Error('favorite request did not start')), 15000); })]);
+      } finally { clearTimeout(requestDeadline); }
+      check(`favorites-${width}: saving prevents duplicate submission`, await save.isDisabled());
+      check(`favorites-${width}: pending input is stable`, await name.isDisabled());
+      releaseRequest();
+      await page.getByRole('alert').filter({ hasText: '收藏保存未完成' }).waitFor();
+      check(`favorites-${width}: failure retains input`, await name.inputValue() === '仅检查表单，不保存');
+      check(`favorites-${width}: failure permits retry`, await save.isEnabled());
+      check(`favorites-${width}: no sharing escalation`, report.injectedFavoriteFailures.at(-1).shared === false);
+    }
     await page.screenshot({ animations: 'disabled', path: path.join(out, `favorites-${width}.png`) });
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await name.waitFor({ state: 'detached' });
@@ -305,7 +336,20 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'favorites') {
+  if (process.env.TPL07_SCOPE === 'favorite-recovery') {
+    const finance = await login('fixture_role_finance');
+    await list(finance.page, 545, 'recovery-list');
+    report.recovery = await finance.page.evaluate(async () => {
+      const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+      const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+        body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model: 'ir.filters', fields: ['id', 'name', 'user_id', 'model_id', 'action_id', 'create_date', 'is_default'], domain: [['name', '=', '仅检查表单，不保存'], ['user_id', '=', 30], ['model_id', '=', 'payment.request'], ['action_id', '=', 775]], limit: 2 } }),
+      });
+      return { status: response.status, body: await response.json() };
+    });
+    check('recovery: authoritative read succeeded', report.recovery.body.ok === true);
+    await finance.ctx.close();
+  } else if (['favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
     await favoritesScope();
   } else if (process.env.TPL07_SCOPE === 'navigation') {
     await navigationScope();
@@ -400,7 +444,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['detail', 'style', 'navigation', 'favorites'].includes(process.env.TPL07_SCOPE)) {
+  if (!['detail', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');

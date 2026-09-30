@@ -56,3 +56,20 @@ class ObservedBuildIdentityTest(unittest.TestCase):
                 (dist / 'entry.js').write_text('tampered')
                 with self.assertRaisesRegex(RuntimeError, 'entry changed'):
                     preview.identity(observed_only=True)
+
+
+class FavoriteRecoveryIdentityTest(unittest.TestCase):
+    def test_recovery_is_exactly_bound(self):
+        from scripts.verify.frontend_favorite_probe_recovery import EXPECTED, validate_target
+        validate_target('sc_frontend_acceptance', EXPECTED.copy())
+
+    def test_other_database_rejected(self):
+        from scripts.verify.frontend_favorite_probe_recovery import EXPECTED, validate_target
+        with self.assertRaises(RuntimeError):
+            validate_target('sc_dev_demo', EXPECTED.copy())
+
+    def test_every_object_identity_difference_rejected(self):
+        from scripts.verify.frontend_favorite_probe_recovery import EXPECTED, validate_target
+        for key in EXPECTED:
+            with self.subTest(field=key), self.assertRaises(RuntimeError):
+                validate_target('sc_frontend_acceptance', {**EXPECTED, key: 'different'})

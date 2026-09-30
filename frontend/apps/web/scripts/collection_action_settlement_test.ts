@@ -1,3 +1,4 @@
+import { settleSavedSearchSubmission } from '../src/app/runtime/savedSearchSubmission';
 import assert from 'node:assert/strict';
 import { resolveSavedSearchMutationCapability as favorite } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import { resolveCollectionBatchActionSettlement } from '../src/app/presentation/collectionActionSettlement';
@@ -31,4 +32,17 @@ assert.equal(favorite({ ...grant, save_enabled: false, shared_enabled: true }).s
 assert.equal(favorite({ ...grant, intent: '' }).saveEnabled, false);
 assert.equal(favorite({ ...grant, intent: 'other.write' }).saveEnabled, false);
 assert.equal(favorite({ ...grant, save_enabled: false, disabled_reason: 'SAVED_SEARCH_CREATE_DENIED' }).disabledReason, '没有保存收藏的权限');
-console.log('[collection_action_settlement_test] PASS cases=16');
+let writes = 0;
+let refreshes = 0;
+const success = await settleSavedSearchSubmission(async () => { writes++; }, async () => { refreshes++; });
+assert.equal(success.saved, true);
+assert.equal(writes, 1);
+assert.equal(refreshes, 1);
+const writeFailure = await settleSavedSearchSubmission(async () => { throw new Error('denied'); }, async () => { refreshes++; });
+assert.equal(writeFailure.saved, false);
+assert.equal(refreshes, 1);
+const refreshFailure = await settleSavedSearchSubmission(async () => { writes++; }, async () => { throw new Error('offline'); });
+assert.equal(refreshFailure.saved, true);
+assert.match(refreshFailure.message, /无需再次保存/);
+assert.equal(writes, 2);
+console.log('[collection_action_settlement_test] PASS cases=19');

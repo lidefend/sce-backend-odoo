@@ -263,13 +263,14 @@
               <span class="menu-check"></span>
               <span>{{ favoriteSaveLabel }}</span>
             </ScButton>
+            <p v-if="favoriteFeedback" :role="favoriteFailed ? 'alert' : 'status'" class="search-menu-empty">{{ favoriteFeedback }}</p>
             <div v-if="favoriteSaveEnabled && favoriteSaveOpen" class="custom-search-panel">
-              <ScInput v-model="favoriteName" size="small" :placeholder="uiLabel('favorite_name', '收藏名称')" />
-              <ScCheckbox v-model:checked="favoriteUseByDefault" :label="uiLabel('favorite_use_by_default', '设为默认筛选')" />
-              <ScCheckbox v-if="favoriteSharedEnabled" v-model:checked="favoriteShared" :label="uiLabel('favorite_shared', '共享给所有用户')" />
+              <ScInput v-model="favoriteName" :disabled="favoriteSaving" size="small" :placeholder="uiLabel('favorite_name', '收藏名称')" />
+              <ScCheckbox v-model:checked="favoriteUseByDefault" :disabled="favoriteSaving" :label="uiLabel('favorite_use_by_default', '设为默认筛选')" />
+              <ScCheckbox v-if="favoriteSharedEnabled" v-model:checked="favoriteShared" :disabled="favoriteSaving" :label="uiLabel('favorite_shared', '共享给所有用户')" />
               <div class="custom-search-actions">
-                <ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading || !favoriteSaveEnabled" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
-                <ScButton type="button" variant="ghost" size="small" :disabled="loading" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</ScButton>
+                <ScButton type="button" variant="primary" size="small" :loading="favoriteSaving" :disabled="!favoriteName.trim() || loading || favoriteSaving || !favoriteSaveEnabled" @click="saveFavorite">{{ uiLabel('save', '保存') }}</ScButton>
+                <ScButton type="button" variant="ghost" size="small" :disabled="loading || favoriteSaving" @click="favoriteSaveOpen = false">{{ uiLabel('cancel', '取消') }}</ScButton>
               </div>
             </div>
           </div>
@@ -381,6 +382,7 @@ import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
 import ScInputGroup from '../design-system/ScInputGroup.vue';
 import ScSelect from '../design-system/ScSelect.vue';
+import type { SavedSearchSubmissionResult } from '../../app/runtime/savedSearchSubmission';
 
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
@@ -429,6 +431,8 @@ const props = defineProps<{
   favoriteSaveVisible?: boolean;
   favoriteSharedEnabled?: boolean;
   favoriteDisabledReason?: string;
+  favoriteContextKey: string;
+  submitFavorite: (payload: { name: string; isDefault: boolean; isShared: boolean }) => Promise<SavedSearchSubmissionResult>;
   favoriteSaveLabel: string;
   activeCustomFilterLabel: string;
   activeGroupLabel: string;
@@ -458,7 +462,6 @@ const emit = defineEmits<{
   'custom-filter': [payload: { field: string; label: string; operator: string; value: unknown; domain: unknown[] }];
   'clear-custom-filter': [];
   'clear-all': [];
-  'save-favorite': [payload: { name: string; isDefault: boolean; isShared: boolean }];
   create: [];
 }>();
 
@@ -471,6 +474,9 @@ const customFilterOperator = ref('');
 const customFilterValue = ref('');
 const customGroupField = ref('');
 const favoriteName = ref('');
+const favoriteSaving = ref(false);
+const favoriteFeedback = ref('');
+const favoriteFailed = ref(false);
 const favoriteUseByDefault = ref(false);
 const favoriteShared = ref(false);
 const toolbarRoot = ref<HTMLElement | null>(null);
@@ -639,17 +645,44 @@ function applyCustomGroup() {
   emit('custom-group', { key, label: found?.label || key });
 }
 
-function saveFavorite() {
+async function saveFavorite() {
   const name = favoriteName.value.trim();
-  if (!name || !props.favoriteSaveEnabled || props.loading) return;
-  searchMenuOpen.value = false;
-  favoriteSaveOpen.value = false;
-  emit('save-favorite', {
-    name,
-    isDefault: favoriteUseByDefault.value,
-    isShared: props.favoriteSharedEnabled === true && favoriteShared.value,
-  });
+  if (!name || !props.favoriteSaveEnabled || props.loading || favoriteSaving.value) return;
+  const contextKey = props.favoriteContextKey;
+  favoriteSaving.value = true;
+  favoriteFeedback.value = '';
+  try {
+    const result = await props.submitFavorite({
+      name,
+      isDefault: favoriteUseByDefault.value,
+      isShared: props.favoriteSharedEnabled === true && favoriteShared.value,
+    });
+    if (contextKey !== props.favoriteContextKey) return;
+    favoriteFailed.value = !result.saved;
+    favoriteFeedback.value = result.message;
+    if (result.saved) {
+      favoriteSaveOpen.value = false;
+      favoriteName.value = '';
+      favoriteUseByDefault.value = false;
+      favoriteShared.value = false;
+    }
+  } catch {
+    if (contextKey === props.favoriteContextKey) {
+      favoriteFailed.value = true;
+      favoriteFeedback.value = '收藏保存未完成，输入已保留，请重试。';
+    }
+  } finally {
+    favoriteSaving.value = false;
+  }
 }
+
+watch(() => props.favoriteContextKey, () => {
+  favoriteSaveOpen.value = false;
+  favoriteName.value = '';
+  favoriteUseByDefault.value = false;
+  favoriteShared.value = false;
+  favoriteFeedback.value = '';
+});
 
 watch(() => props.favoriteSharedEnabled, (enabled) => {
   if (enabled !== true) favoriteShared.value = false;

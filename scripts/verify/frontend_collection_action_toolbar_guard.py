@@ -43,7 +43,7 @@ def validate(
         '<ScSelect v-model="customFilterOperator" size="small" :options=',
         ':options="activeCustomFilterOperators.map(',
         '<ScButton type="button" variant="primary" size="small" :disabled="!canApplyCustomFilter || loading"',
-        '<ScButton type="button" variant="primary" size="small" :disabled="!favoriteName.trim() || loading || !favoriteSaveEnabled"',
+        '<ScButton type="button" variant="primary" size="small" :loading="favoriteSaving" :disabled="!favoriteName.trim() || loading || favoriteSaving || !favoriteSaveEnabled"',
         'v-if="hasStructuredConditions"\n                class="toolbar-clear-all"',
         '<ScButton\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
         "'search-input': [value: string]",
@@ -58,7 +58,7 @@ def validate(
     forbidden_legacy_actions = (
         '<button\n          v-if="hasStructuredConditions"\n          class="toolbar-clear-all"',
         '<button type="button" :disabled="!canApplyCustomFilter || loading"',
-        '<button type="button" :disabled="!favoriteName.trim() || loading || !favoriteSaveEnabled"',
+        '<button type="button" :loading="favoriteSaving" :disabled="!favoriteName.trim() || loading || favoriteSaving || !favoriteSaveEnabled"',
         '<button\n          v-if="canCreateRecord"\n          class="toolbar-overflow-create"',
     )
     if any(marker in text for marker in forbidden_legacy_actions):

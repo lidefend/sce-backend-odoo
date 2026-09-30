@@ -20,7 +20,8 @@
     "addons/smart_core/",
     "addons/smart_construction_core/",
     "frontend/packages/design-tokens/",
-    "frontend/packages/ui/src/kits/tdesign/theme.css"
+    "frontend/packages/ui/src/kits/tdesign/theme.css",
+    "scripts/dev/frontend_acceptance_runtime.sh"
   ],
   "environment": {
     "kind": "offline",
@@ -155,12 +156,15 @@
         "scripts/verify/frontend_collection_action_toolbar_guard.py",
         "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
         "frontend/apps/web/src/app/presentation/collectionActionSettlement.ts",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "frontend/apps/web/src/app/runtime/savedSearchSubmission.ts"
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Segment 53.2 saved-search capability presentation verified (27 targeted cases, 19 browser assertions). Continue saved-search save/failure recovery and detail.action-state consumer/execution closure; reuse producer segments 47/48. Do not equate readonly form checks with successful writes; no unrelated ORM or full inventory.",
+  "blockers": [
+    "Saved-search recovery inconsistency: ORM post-commit remaining=0 versus HTTP list id=7 and stale menu (segment 53.3). Cache/carrier diagnosis required."
+  ],
+  "next_exact_step": "Resolve saved-search recovery read inconsistency: governed ORM unlink committed and post-commit readback remaining=0, but HTTP api.data list still returns id=7 and ui.contract displays it. Verify exact carrier and cache invalidation before declaring recovery complete. Reuse frontend 30 targeted and 29 injected-failure checks. Full success/refresh closure remains pending; then detail.action-state.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -225,6 +229,19 @@
       "browser_assertions": 19,
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790766225490/report.json",
       "uncovered": "successful save, refresh, failure feedback and recovery"
+    },
+    "favorites_segment_53_3": {
+      "status": "partial",
+      "source_head": "7f8c38288",
+      "targeted_cases": 30,
+      "failure_browser_assertions": 29,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790766709771/report.json",
+      "recovery_readback": "artifacts/frontend-web-fix-20260928/tpl07-1790766734559/report.json",
+      "recovery_remaining": {
+        "orm": 0,
+        "http": 1
+      },
+      "pending": "resolve ORM/HTTP read inconsistency before claiming recovery; successful saved-search write/refresh loop"
     }
   }
 }

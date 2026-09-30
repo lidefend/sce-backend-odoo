@@ -365,7 +365,8 @@
           @clear-group="clearGroupBy"
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
-          @save-favorite="handleSaveFavorite"
+          :submit-favorite="handleSaveFavorite"
+          :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
       </template>
@@ -515,7 +516,8 @@
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
           @clear-all="clearAllListConditions"
-          @save-favorite="handleSaveFavorite"
+          :submit-favorite="handleSaveFavorite"
+          :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
       </template>
@@ -572,6 +574,8 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="false"
+          :submit-favorite="handleSaveFavorite"
+          :favorite-context-key="String(actionId)"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -655,6 +659,8 @@
           :custom-group-enabled="false"
           :custom-group-fields="[]"
           :favorite-save-enabled="false"
+          :submit-favorite="handleSaveFavorite"
+          :favorite-context-key="String(actionId)"
           :active-condition-count="0"
           :ui-labels="toolbarUiLabels"
           @switch-view="switchViewMode"
@@ -851,6 +857,7 @@ import { useActionViewLoadSuccessRuntime } from '../app/action_runtime/useAction
 import { useActionViewLoadSuccessPhaseRuntime } from '../app/action_runtime/useActionViewLoadSuccessPhaseRuntime';
 import { useActionViewLoadFacadeRuntime } from '../app/action_runtime/useActionViewLoadFacadeRuntime';
 import { useActionViewActionPresentationRuntime } from '../app/action_runtime/useActionViewActionPresentationRuntime';
+import { settleSavedSearchSubmission } from '../app/runtime/savedSearchSubmission';
 import {
   listActionViewRecordsRaw,
   saveActionViewSearchFavorite,
@@ -2214,8 +2221,10 @@ function clearAllListConditions() {
 async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {
   const targetModel = String(resolvedModelRef.value || model.value || '').trim();
   const name = String(payload.name || '').trim();
-  if (!targetModel || !name || !customSearchCapabilities.value.favoriteSaveEnabled) return;
-  await saveActionViewSearchFavorite({
+  if (!targetModel || !name || !customSearchCapabilities.value.favoriteSaveEnabled) return { saved: false, message: '当前页面不允许保存收藏' };
+  const sourceActionId = actionId.value;
+  const sourceContract = actionContract.value;
+  return settleSavedSearchSubmission(() => saveActionViewSearchFavorite({
     model: targetModel,
     name,
     domain: resolveEffectiveFilterDomain(),
@@ -2224,12 +2233,16 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     action_id: actionId.value,
     is_default: payload.isDefault === true,
     is_shared: payload.isShared === true && customSearchCapabilities.value.favoriteSharedEnabled,
+  }), async () => {
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    const refreshed = await loadActionContractStore(sourceActionId, {
+      sceneKey: sceneKey.value || undefined,
+      menuId: menuId.value || undefined,
+    });
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    actionContract.value = refreshed;
+    await requestLoadPage();
   });
-  actionContract.value = await loadActionContractStore(actionId.value, {
-    sceneKey: sceneKey.value || undefined,
-    menuId: menuId.value || undefined,
-  });
-  await requestLoadPage();
 }
 
 const {

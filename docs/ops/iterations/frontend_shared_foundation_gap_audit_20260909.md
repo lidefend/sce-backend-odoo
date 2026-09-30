@@ -7377,3 +7377,16 @@ L5：未推送、未合并、未部署。
 - 一次构建21.31s，base d1da61c0f + 上述 dirty 范围，5180 原 listener 复用。真实 finance login/system.init/ui.contract，1440/390 收藏入口、显式不共享、表单可用、取消、Escape、无横向溢出19/19 passed：`artifacts/frontend-web-fix-20260928/tpl07-1790766225490/report.json`。
 - 首次17项报告 `tpl07-1790766188416/report.json` 已通过；图像复核发现窄屏截图未展示保存操作，探针增加滚动到操作并核对其进入视口，仅补验相同受影响收藏范围，复用构建。不是产品失败或第二次构建。
 - collection.favorite 台账仅关闭“声明控制项已呈现”的职责；没有点击保存，不宣称写入/刷新/失败恢复已验收。下一步继续这些交互及 detail.action-state；整体目标进行中，主线未集成、目标未部署、整体用户验收未完成。
+
+
+### 53.3 收藏异步结果与失败恢复（进行中）
+
+- P0 / shared collection interaction；沿用 ui.contract 的已有权限和写入口，schema/store 不新增业务语义。提交从无返回值事件改为可等待的共享回调；等待期间禁止重复保存和修改输入，失败保留名称/默认选项，成功后收起输入并反馈；已写入但刷新失败独立提示，不误报写入失败。路由/合同切换后不覆盖新页面合同。
+- L1 `ci.local.iteration` passed；L2 collection toolbar 19+11 passed、strict typecheck passed，回执30。首次类型检查发现两处禁用收藏的工具栏缺少新增接口，已补齐并定向复验，原失败日志保留 `favorite-feedback-static.log`，最终 `favorite-feedback-static-fixed.log`。
+- 单次构建21.21s，base 7f8c38288 + 收藏交互 dirty 范围。后续只改浏览器探针/恢复工具，未重复构建。
+- P4 探针缺陷：原 `**/api/v1/intent` 未匹配带 `?db=` 的实际请求。首次失败注入 `tpl07-1790766458924/report.json` 未拦截保存，不计通过；只读回读 `tpl07-1790766553758/report.json` 确认误建 ir.filters 7（finance 30/payment.request/action775/非默认）。工具匹配修为 `intent*`，并阻断 search.favorite.set 及独立 create/write/unlink intent；不得继续把旧 guard 的零记录当作写入未发生的充分证据。
+- 最小 P4 恢复沿用 acceptance profile/preflight/容器与 filestore 校验，专用 Make 入口锁定该记录全部身份。首次因 HTTP create_date 去掉微秒而 fail closed，诊断确认 ORM 精度后绑定完整时间 2026-09-30 11:07:45.676133；没有放宽匹配条件。恢复工具9项测试通过，精确删除并提交后回读 remaining=0，日志 `tpl52/favorite-recovery-restored.log`。不重置 fixture、不升级模块、不运行无关 ORM 测试。该脚本只用于本次对象恢复，不是通用删除入口。
+
+- 修正拦截后第二次探针已截获请求，但等待态的可访问名称包含“处理中”，精确“保存”定位超时（`tpl07-1790766654026/report.json`）；只修正定位，复用同一构建。最终受控网络失败29/29 passed：`tpl07-1790766709771/report.json`，两个视口均验证 pending 防重复、输入保留、恢复重试、共享不越权、取消与焦点。失败注入不经过后端写入；不冒充真实成功写入旅程。随后取消已完成请求的探针超时计时器，消除多余等待，语法检查通过。
+- 恢复工具提交后的 ORM 回读 remaining=0；独立 HTTP 回读 `tpl07-1790766734559/report.json` 却仍返回 id=7 一条记录，同候选菜单截图也仍呈现该收藏。数据库直接回读与 HTTP 读路径矛盾，需要诊断缓存或读写载体一致性；不能宣称 HTTP 恢复确认完成。该发现是下一项真实闭环阻断，不能把本节宣布为收藏完整验收。
+- 下一步 P0 契约生产者：沿 ui_contract_v2 缓存命中路径确认 saved_filters 的用户/action 运行事实何时重投影；修复后定向契约测试及必要受管装载，不通过前端过滤不存在记录或强制刷新兜底。后端真正变化时才执行相关层验证。
