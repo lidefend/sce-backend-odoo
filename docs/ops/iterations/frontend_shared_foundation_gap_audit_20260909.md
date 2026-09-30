@@ -9388,3 +9388,13 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 
 
 53.189 运行结果补记：P1提交 `ffc75513d`，P4提交 `7670465a1`；受管 `acceptance.module.upgrade` 成功（plan-report-upgrade.log），`backend.acceptance.up` 识别旧revision后按受管入口替换并成功（plan-report-backend.log），后端7670465a1/18082。`SC_APPROVAL_RUNTIME_SCOPE=plan-report make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local` **10 PASS / ROLLBACK VERIFIED**（plan-report-runtime.log）：直接状态/审核结果及默认值绕过拒绝、草稿有效提交契约、无配置自动确认且不改父计划、有配置真实审批/实际审核人、内容锁定、真实退回及修改后重提。使用原 sc-fe-r2-p1-01 / sc_frontend_acceptance / 精确filter及原三个卷；无持久测试单据与配置残留。结果只证明此后端/工作流契约范围，最终 UiContractV2 页面契约及普通PM浏览器待验，不升级整行台账。前端构建 e19eb1e16 原样复用。批次持续推进；未推送、合并或部署目标环境。
+
+
+### 53.190 计划汇报最终契约与普通 PM 官方新建页
+
+- `b073a727d` clean起点，上一轮完成产品实现及运行验收，属progress；本轮仅P4现有 `standard_page_type_browser.mjs` 和 `business_config_approval_runtime_smoke.py` 定向扩展。产品后端7670465a1、前端e19eb1e16复用，未升级或重建。
+- 浏览器新增计划汇报模型选择与普通PM授权入口解析，仍由login/system.init返回真实菜单，不硬编码权限或借管理员开页。`tpl07-1790810928967/report.json` **13 PASS**：menu508/action656、新建官方表单、有效契约、无未保存审批执行按钮、1440/390无横向溢出、无页面异常与业务写入。已查看两张截图：汇报人正常标签、审核人/日期只读展示。最终结构 `native_structured_form` / `container_tree_authority`，原入口镜像不再拥有body。
+- 浏览器首调在启动前因未导出受管fixture口令退出2，未生成浏览器证据；载入既有 `/tmp/wf_check_fixture.env` 后重试，未建立新凭据或改环境。原日志 `plan-report-ui-browser.log` 保留，成功为 `plan-report-ui-browser-v2.log`。
+- L1 iteration两次均PASS（后一次仅新增最终契约探针）；P4 `verify.frontend.standard_preview.unit` 15 Node+25 Python=40 PASS（plan-report-ui-tool-unit.log），脚本syntax/diff通过。182项产品测试输入不变，复用上轮证据；不重复计划节点/付款业务流程。
+- 既有 `plan-report` 回滚范围扩展四种实际记录状态的 `UiContractV2Handler.handle` 检查：草稿/退回write=true，审批中/已确认write=false；submit/approve/reject动作语义以及审核字段readonly modifier仍进入最终layout。**14 PASS / ROLLBACK VERIFIED**（plan-report-final-contract-runtime.log），不是只查workflow service。复用原受管DB/profile/精确filter/卷；未改变产品输入，后端身份仍7670465a1，dirty仅P4两个工具文件。
+- 未覆盖：普通PM实际保存、提交、详情返回、角色间审批UI，以及计划版本职责。已有PM授权计划列表为空的证据仍有效，不重复空查询或造fixture；下一步扩展既有精确临时记录恢复机制。保持整体 `detail.action-state=contract_gap`，不宣布完整接管。未推送、合并、目标部署。
