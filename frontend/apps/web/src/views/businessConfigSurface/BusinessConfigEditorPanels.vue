@@ -1,5 +1,5 @@
 <template>
-<ScCard v-if="analysisPanelOpen" appearance="main-surface" class="edit-panel config-editor-panel">
+<ScCard v-if="analysisPanelOpen" appearance="main-surface" class="edit-panel" body-class-name="config-editor-panel">
   <div class="edit-panel-head">
     <div>
       <h2>分析视图设置</h2>
@@ -70,7 +70,7 @@
   </div>
 </ScCard>
 
-<ScCard v-if="listSearchPanelOpen" appearance="main-surface" class="edit-panel config-editor-panel">
+<ScCard v-if="listSearchPanelOpen" appearance="main-surface" class="edit-panel" body-class-name="config-editor-panel">
   <div class="edit-panel-head">
     <div>
       <h2>列表与搜索设置</h2>

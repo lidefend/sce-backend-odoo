@@ -816,6 +816,7 @@ h1 {
 }
 
 .config-editor-panel {
+  display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   column-gap: var(--sc-product-workspace-gap);
   row-gap: var(--sc-product-panel-gap);
