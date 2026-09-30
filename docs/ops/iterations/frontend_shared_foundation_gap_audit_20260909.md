@@ -9255,3 +9255,14 @@ L1 event-content-iteration/py_compile/diff PASS；payment.approval_state_machine
 受管backend.up加载4822a34a5，无字段/XML变化不升级，前端e31e51c59/index-7JTLfH1Y.js不变不构建。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-content-runtime.log12具名PASS、ROLLBACK VERIFIED。无配置只批准、有配置真实审批、独立完成、驳回修改和新review重提成立；实际reviewed写金额/项目/正文/纳入结算均被拒绝且read与原值相同。原审批配置/步骤与全部临时对象恢复确认，环境沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
 
 本次事件rejected不需日志的tier写入例外：事件_state_from=submitted，真实rejected已退出under-validation业务状态；运行已证明普通write可修正。创建/业务执行仍原事务sudo、审核由真实reviewer，不能算普通合同操作员UI全旅程。关闭主记录内容保护与驳回契约代表缺口，子附件独立接口、角色UI及计划执行内容职责继续开放。下一步回到合同事件普通角色官方表单消费，核对实际入口/必要字段和声明动作，复用已过后台12，不以新建可达替代办理。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。
+
+
+### 53.177 合同操作员事件入口及官方表单失败恢复
+
+P1 5b27d52e3补齐project_member contextual_menu_xmlids中的原生合同事件入口；保留原生菜单组与ACL交集，不扩权限、不把业务动作放导航声明。navigation_shell.unit116通过（event-entry-unit.log）；P4 981aeb2ec沿既有standard_page_type_browser增加事件表单定向探针。backend981aeb2ec，frontend e31e51c59/index-7JTLfH1Y.js不变，未重建或升级模块。
+
+981aeb2ec+dirty单文件standard_page_type_browser.mjs：最初FE Project A查询ok但为空，不能误报无项目权限；清空搜索后同角色/company8返回现有项目464、463。本批选择实际返回的464，不创建fixture、不调整授权。tpl07-1790808129776证明该查询与必需输入存在，但定位设计变更失败；截图证明可见选项已渲染，故归类P4定位错误，将getByRole(option)改为精确可见文本。有效契约本身含design_change/设计变更，不改产品选择规则。
+
+L1 event-selection-iteration.log PASS，standard_preview.unit38 PASS及begin/record完成（event-project-scope-begin/unit/receipt.log）。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter与卷执行event-selection-browser.log，tpl07-1790808209564/report.json共25断言PASS：uid33原生menu470/action672，新建有效契约、name/project_id/event_type/description输入、授权项目选择；保存草稿及提交均捕获真实create payload，project_id=464、design_change、名称/正文与company8/menu/action上下文保持。两次create在浏览器注入503，页面保持new和输入，无后续动作、无业务数据库写。截图event-filled-save-failure.png。
+
+动作声明不等于记录级可执行契约：导航只提供入口，workflow提供状态/动作/可编辑性，执行仍由后端统一状态机控制。复用53.176后台12项，不将本次失败恢复25项表述为普通角色真实创建/提交成功。下一步沿同一现有工具补齐精确目标及清理约束后验证普通角色真实创建提交；整体detail.action-state/67条接管及计划执行等未完成。无推送、合并、目标部署。

@@ -908,15 +908,28 @@ try {
               && body.params.model === 'project.project' && JSON.stringify(body.params).includes('FE Project A'); } catch { return false; }
           });
           await projectInput.fill('FE Project A');
-          const candidates = await (await projectResponse).json();
-          const project = candidates.data?.records?.find(row => Number(row.id) === 10);
+          const projectResult = await projectResponse;
+          let candidates = await projectResult.json();
+          report.eventProjectQuery = { request: projectResult.request().postDataJSON(), result: candidates };
+          if (candidates.ok === true && !candidates.data?.records?.length) {
+            const availableResponse = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'project.project' && !body.params.search_term; } catch { return false; }
+            });
+            await projectInput.fill('');
+            const available = await availableResponse;
+            candidates = await available.json();
+            report.eventAvailableProjects = { request: available.request().postDataJSON(), result: candidates };
+          }
+          const project = candidates.data?.records?.find(row => Number(row.id) > 0);
+          report.eventSelectedProject = project || null;
           check('event create: project returned in operator authorized query', candidates.ok === true && Boolean(project));
           await session.page.getByRole('option', { name: String(project.display_name || project.name), exact: true }).click();
           const nameInput = session.page.locator('[data-field-name="name"]').locator('input, textarea').first();
           const contentInput = session.page.locator('[data-field-name="description"]').locator('textarea, input').first();
           await nameInput.fill(name);
           await session.page.locator('[data-field-name="event_type"] input').first().click();
-          await session.page.getByRole('option', { name: '设计变更', exact: true }).click();
+          await session.page.getByText('设计变更', { exact: true }).click();
           await contentInput.fill(content);
           eventCreateCapture = true;
           for (const label of ['保存草稿', '提交']) {
