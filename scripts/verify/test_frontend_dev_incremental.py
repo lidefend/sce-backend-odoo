@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import subprocess
 import tempfile
 import unittest
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from scripts.verify.frontend_dev_incremental import (
     FALLBACK_TARGET,
+    iteration_plan,
     print_plan,
     select_targets,
     worktree_changed_paths,
@@ -187,6 +189,61 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn('"unmappedPathCount": 1', text)
         self.assertIn('"unmappedPaths": ["addons/smart_core/models/example.py"]', text)
         self.assertIn("verify.frontend.primitive_adapter.unit", text)
+
+
+class RunScopedPlannerTest(unittest.TestCase):
+    def setUp(self):
+        from scripts.verify.test_agent_run_context import RunContextTest
+        self.fixture = RunContextTest()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
+
+    def test_registered_run_does_not_need_origin_or_reinventory_branch_history(self):
+        fixture = self.fixture
+        fixture.run['baseline_sha'] = fixture.git('rev-parse', 'HEAD')
+        fixture.save()
+        fixture.write('source/new.py', 'change')
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(iteration_plan(fixture.root), 0)
+        self.assertIn('.agent/runs/TEST/run.json', output.getvalue())
+        self.assertNotIn('branch_fallback', output.getvalue())
+        self.assertNotIn('source/a.py', output.getvalue())
+        self.assertIn('source/new.py', output.getvalue())
+
+    def test_receipt_advice_never_claims_tests_ran(self):
+        self.fixture.receipt()
+        output = io.StringIO()
+        with redirect_stdout(output): iteration_plan(self.fixture.root)
+        self.assertIn('reusable', output.getvalue())
+        self.assertIn('"testsRun": false', output.getvalue())
+
+    def test_reusable_target_is_not_recommended_again(self):
+        self.fixture.receipt()
+        output = io.StringIO()
+        with redirect_stdout(output): iteration_plan(self.fixture.root)
+        payload = json.loads(output.getvalue().split('] ', 1)[1])
+        self.assertIn('verify.test', payload['reusedTargets'])
+        self.assertNotIn('verify.test', payload['targets'])
+
+    def test_unchanged_failure_is_blocked_not_blindly_retried(self):
+        self.fixture.receipt('failed', 2)
+        output = io.StringIO()
+        with redirect_stdout(output): iteration_plan(self.fixture.root)
+        payload = json.loads(output.getvalue().split('] ', 1)[1])
+        self.assertIn('verify.test', payload['blockedTargets'])
+        self.assertNotIn('verify.test', payload['targets'])
+
+    def test_missing_registration_cannot_trigger_full_branch_inventory(self):
+        from scripts.ops.agent_run_context import RunError
+        (self.fixture.root / ".agent/active-runs.json").unlink()
+        with self.assertRaises(RunError): iteration_plan(self.fixture.root)
+
+    def test_invalid_registration_cannot_silently_fallback(self):
+        from scripts.ops.agent_run_context import RunError
+        self.fixture.run['branch'] = 'fix/other'
+        self.fixture.save()
+        with self.assertRaises(RunError): iteration_plan(self.fixture.root)
 
 
 if __name__ == "__main__":

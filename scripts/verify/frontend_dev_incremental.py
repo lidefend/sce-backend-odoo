@@ -14,11 +14,15 @@ import hashlib
 import json
 import subprocess
 import time
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from scripts.ops.agent_run_context import RunError, resolve_run, delta_paths, evaluate
+
 WATCH_ROOTS = (
     "frontend/apps/web/src",
     "frontend/apps/web/scripts",
@@ -146,22 +150,44 @@ def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> 
         text=True,
         stdout=subprocess.PIPE,
     ).stdout.strip()
-    paths = set(_git_paths(root, "diff", "--name-only", "-z", f"{merge_base}..HEAD"))
-    paths.update(_git_paths(root, "diff", "--name-only", "-z"))
-    paths.update(_git_paths(root, "diff", "--cached", "--name-only", "-z"))
+    paths = set(_git_paths(root, "diff", "--no-renames", "--name-only", "-z", f"{merge_base}..HEAD"))
+    paths.update(_git_paths(root, "diff", "--no-renames", "--name-only", "-z"))
+    paths.update(_git_paths(root, "diff", "--no-renames", "--cached", "--name-only", "-z"))
     paths.update(_git_paths(root, "ls-files", "--others", "--exclude-standard", "-z"))
     return sorted(paths)
 
 
-def print_plan(paths: list[str]) -> int:
-    targets = select_targets(paths)
+def iteration_plan(root: Path = ROOT) -> int:
+    selected = resolve_run(root)
+    if selected is None:
+        raise RunError("no registered run; select/register one goal before iteration")
+    relative, run = selected
+    if run["status"] in ("completed", "superseded"):
+        raise RunError("selected run is closed; register/select the next task")
+    checks = {key: evaluate(root, run, key) for key in run["checks"]}
+    return print_plan(delta_paths(root, run["baseline_sha"]), source=relative, checks=checks)
+
+
+def print_plan(paths: list[str], *, source: str = "explicit_paths", checks: dict | None = None) -> int:
+    targets = set(select_targets(paths))
+    grouped: dict[str, list[str]] = {}
+    for check in (checks or {}).values():
+        grouped.setdefault(check["target"], []).append(check["status"])
+    reusable = {target for target, states in grouped.items() if all(state == "reusable" for state in states)}
+    blocked = {target for target, states in grouped.items() if "failed" in states}
+    targets.update(grouped)
+    targets.difference_update(reusable | blocked)
     unmapped_paths = [path for path in paths if not select_targets([path])]
     payload = {
         "schemaVersion": 1,
+        "scopeSource": source,
+        "recordedChecks": checks or {},
         "mode": "development_incremental_plan",
         "status": "recommendation_only",
         "changedPathCount": len(paths),
-        "targets": targets,
+        "targets": sorted(targets),
+        "reusedTargets": sorted(reusable),
+        "blockedTargets": sorted(blocked),
         "unmappedPathCount": len(unmapped_paths),
         "unmappedPaths": unmapped_paths,
         "candidateEvidence": False,
@@ -210,6 +236,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="recommend affected frontend L2 targets without running them",
     )
+    parser.add_argument("--plan-branch", action="store_true", help="explicit whole-branch comparison for review; not daily continuation")
     parser.add_argument("--path", action="append", default=[], help="validate an explicit repository-relative path")
     parser.add_argument("--interval", type=float, default=0.75)
     parser.add_argument("--debounce", type=float, default=0.8)
@@ -240,14 +267,21 @@ def watch(interval: float, debounce: float) -> int:
 
 def main() -> int:
     args = parse_args()
-    if args.watch and args.plan_worktree:
-        raise SystemExit("--watch and --plan-worktree are mutually exclusive")
+    if sum((args.watch, args.plan_worktree, args.plan_branch)) > 1:
+        raise SystemExit("--watch, --plan-worktree and --plan-branch are mutually exclusive")
+    if args.plan_branch:
+        if args.path:
+            raise SystemExit("--plan-branch does not accept --path")
+        return print_plan(worktree_changed_paths(), source="explicit_whole_branch_review")
     if args.watch:
         return watch(args.interval, args.debounce)
     if args.plan_worktree:
         if args.path:
             raise SystemExit("--plan-worktree does not accept --path")
-        return print_plan(worktree_changed_paths())
+        try:
+            return iteration_plan()
+        except RunError as exc:
+            raise SystemExit(f"run reconciliation required: {exc}") from exc
     if not args.path:
         raise SystemExit("at least one --path is required outside --watch mode")
     return run_targets(args.path)

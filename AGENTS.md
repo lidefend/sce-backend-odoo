@@ -131,3 +131,33 @@ When executing work:
 - Generate verification evidence for completed work.
 
 The `.agent/` directory records engineering context and decisions. It does not replace existing source code, contracts, tests, or CI rules.
+
+
+## Unified Executor Resume Entry (2026-09-30)
+
+This applies to every executor (interactive, controller, CLI, or handoff), not only Codex.
+Before the first mutation, resolve the current branch through `.agent/active-runs.json`
+and run `make agent.run.resume`. A new task must register one goal and
+`.agent/runs/<goal-id>/run.json` after identity/layer preflight; this bounded metadata
+bootstrap is permitted before the resume entry can pass. No active run may silently
+inherit another branch's task or select a completed historical workflow.
+
+On continuation: reuse the current run and its original evidence index. Perform the
+mandatory lightweight identity preflight, read the run, and reconcile only changed
+inputs, dependencies, authority or environment. Do not repeat full worktree, menu,
+repository or environment inventory without an observed relevant change. If the run
+is absent, invalid or out of scope, repair that specific context before product writes.
+Record `next_exact_step`, blockers, stage identity and truthful check results at handoff.
+
+`make ci.local.iteration` requires this same run resolution. Local dependency receipts
+are advisory development observations, never substitutes for required tests, exact-head
+Quick, remote checks or runtime readback. Failed/unknown/zero-test results are not passes.
+Input lists must include test tools and build/config dependencies; an omitted dependency
+must be corrected before reuse. Runtime writes require existing authority and readback;
+a saved next action never authorizes write replay. Rules for final delivery remain intact.
+
+The run is the single current result index; long-form batch records and original logs
+are referenced, not copied into parallel coverage tables. One independently acceptable
+product result may have multiple layer-owned commits; layer labels alone do not require
+new batches, worktrees or repeated acceptance. Source of truth and enforcement limits
+are documented in `.agent/README.md`.

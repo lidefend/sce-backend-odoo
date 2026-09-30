@@ -31,8 +31,10 @@ from typing import Any
 
 try:
     from scripts.ops.agent_progress import format_status, snapshot_from_state
+    from scripts.ops.agent_run_context import resume_prompt
 except ModuleNotFoundError:  # installed beside the controller
     from agent_progress import format_status, snapshot_from_state
+    from agent_run_context import resume_prompt
 
 
 SCHEMA_VERSION = "sce.codex_agent_controller.v1"
@@ -737,6 +739,7 @@ class Controller:
         run_dir.mkdir(parents=True, exist_ok=True)
         events_handle = (run_dir / "codex-events.jsonl").open("a", encoding="utf-8")
         stderr_handle = (run_dir / "codex-stderr.log").open("a", encoding="utf-8")
+        prompt = prompt + "\n\n" + resume_prompt(self.config.repository_root)
         command = self._worker_command(task, prompt, resume=resume)
         self.worker = subprocess.Popen(
             command,

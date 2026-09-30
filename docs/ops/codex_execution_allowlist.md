@@ -900,3 +900,13 @@ For the same explicit cleanup, ignored generated dependencies/cache may be delet
 other ignored files and local environment configs are moved to private external recovery
 storage. Symlinks are unlinked only, never followed into external runtime/evidence trees.
 Do not remove tracked files or traverse .git. Single-writer governance remains required.
+
+
+## P4 统一续跑入口（2026-09-30）
+
+- `make agent.run.resume`：只读当前分支对应 run、范围差异及所声明依赖和本地证据；不扫描全仓目标，不执行历史动作。
+- `make agent.run.record AGENT_CHECK=<id> AGENT_CHECK_STATUS=<passed|failed> AGENT_TEST_COUNT=<n> AGENT_TEST_LOG=<relative log>`：仅写当前工作树 `.runtime/agent-runs/`，记录实际执行结果；不是 CI/发布凭证，不自动复用运行环境证据。
+- `make verify.agent.resume.unit`：临时 Git 和文件系统离线单测，不写业务环境、凭据或远端。
+- 当前 P4 专题允许增量完善现有 controller/planner、模板和 Make 接线，不安装服务、不新建运行环境。
+
+- `make agent.run.begin AGENT_CHECK=<id>`：仅在既有 `.runtime/agent-runs/` 记录执行前依赖；record 比较前后身份与输入，漂移拒绝。

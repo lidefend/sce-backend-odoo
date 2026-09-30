@@ -1,0 +1,7 @@
+goal:
+  id: GITHUB-RECOVERY
+  status: active
+  formal_product_layer: P4
+  objective: Restore GitHub integration through protected PRs preserving Gitee history and task dependencies.
+  run: .agent/runs/GITHUB-RECOVERY/run.json
+  exclusions: [direct_main_push, force_push, protection_changes, database_writes, product_deployment]

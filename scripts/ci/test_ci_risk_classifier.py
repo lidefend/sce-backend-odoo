@@ -94,6 +94,51 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(result.lane, "STANDARD")
         self.assertEqual(result.professional_mode, "standard_backend")
 
+    def test_p4_executor_batch_does_not_require_orm(self) -> None:
+        result = classify([
+            '.agent/context.yaml', '.agent/runs/P4-INCREMENTAL-RESUME/run.json',
+            '.codex/skills/project-governance-codex/SKILL.md', 'AGENTS.md',
+            'make/ci.mk', 'make/codex.mk', 'scripts/ops/agent_run_context.py',
+            'scripts/verify/test_agent_run_context.py', 'scripts/verify/frontend_dev_incremental.py',
+            'scripts/ci/trusted_scan_scope.py', 'config/ci/risk_tiering_v1.json',
+            '.github/workflows/professional_quality_gate.yml',
+        ], event_name='pull_request')
+        self.assertEqual(result.lane, 'HIGH_RISK')
+        self.assertTrue(result.backend_changed)  # broad existing static-test ownership retained
+        self.assertFalse(result.orm_required)
+        self.assertEqual(result.outputs()['orm_required'], 'false')
+
+    def test_orm_runtime_and_runner_changes_still_require_orm(self) -> None:
+        for path in ('addons/smart_core/models/core.py', 'customer_addons/acme/models.py',
+                     'addons_external/oca_server_ux/security/ir.model.access.csv',
+                     'addons_external/oca_server_ux/models/model.py',
+                     'addons_external/oca_server_ux/__manifest__.py',
+                     'addons_external/oca_server_ux/security/groups.xml',
+                     'demo_addons/demo/security/ir.model.access.csv',
+                     'addons/smart_construction_core/tests/test_payment_settlement_component_profile.py',
+                     'scripts/test/admin_vis_p3_project_record_rule_orm.sh', 'scripts/ci/orm_result_guard.sh',
+                     'make/dev_test.mk', 'requirements-odoo.txt', 'Dockerfile', 'docker-compose.yml',
+                     'migrations/upgrade.py', 'tests/runtime/test_model.py'):
+            with self.subTest(path=path):
+                self.assertTrue(classify([path], event_name='pull_request').orm_required)
+        self.assertTrue(classify(['scripts/ops/agent_run_context.py',
+                                 'addons/smart_core/models/core.py'], event_name='pull_request').orm_required)
+
+    def test_orm_unknown_empty_release_and_missing_policy_fail_closed(self) -> None:
+        for paths in ([], ['unclassified/runtime.bin'], ['../invalid.py']):
+            self.assertTrue(classify(paths, event_name='pull_request').orm_required)
+        self.assertTrue(classify(['docs/readme.md'], event_name='workflow_dispatch').orm_required)
+        self.assertTrue(classify(['docs/readme.md'], event_name='push', ref='refs/tags/v1').orm_required)
+        from ci_risk_classifier import load_policy
+        policy = load_policy();policy.pop('orm_runtime_paths')
+        with self.assertRaises(ValueError):
+            classify(['docs/readme.md'], event_name='pull_request', policy=policy)
+        for key in ('orm_runtime_paths', 'orm_non_runtime_context_paths'):
+            for bad in ('addons/**', [False], ['']):
+                policy = load_policy();policy[key] = bad
+                with self.assertRaises(ValueError):
+                    classify(['docs/readme.md'], event_name='pull_request', policy=policy)
+
     def test_security_xml_is_high_risk(self) -> None:
         self.assertEqual(
             self.lane("addons/smart_core/security/smart_core_groups.xml"),

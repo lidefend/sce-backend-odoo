@@ -7,6 +7,14 @@ metadata:
 
 # Project Governance Codex
 
+## 当前统一入口（优先于本文件旧批次描述）
+
+所有执行器遵循 AGENTS.md 的 Unified Executor Resume Entry：首次登记一个 goal/run，
+续跑使用 `make agent.run.resume`，仅核对变化的依赖。单批次以独立可验收产品结果为界，
+允许不同层的责任提交；下文“不跨层”限制语义归属，不要求按层另建批次。
+日常 L1/L2、发布及远端车道按 AGENTS 最新阶段规则选择，不能把旧流程当作每轮全量门禁。
+
+
 ## Collaboration Mechanism v2 (Enforced)
 
 ### Fixed Roles（强约束）

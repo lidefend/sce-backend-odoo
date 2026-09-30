@@ -37,6 +37,8 @@ class TrustedScopeTests(unittest.TestCase):
         self.git('remote', 'add', 'origin', 'https://github.com/lidefend/sce-backend-odoo.git')
         for path in set(scope.COMMON_AUTHORITY).union(*scope.AUTHORITY.values()):
             self.write(path, 'baseline authority\n')
+        self.write('scripts/ci/trusted_scan_scope.py', Path(scope.__file__).read_text())
+        self.write('make/ci.mk', 'ci.local.iteration: guard.prod.forbid\n\t@echo daily\n\nsecurity.secrets.scan: security.online_capture.unit\n\t@python3 scripts/ci/secret_scan.py --scope all --auto-trusted-base\n')
         self.write('old.txt', 'baseline\n')
         self.commit('base')
         self.base = self.git('rev-parse', 'HEAD').strip()
@@ -67,6 +69,80 @@ class TrustedScopeTests(unittest.TestCase):
             self.assertEqual(result.base, self.base)
             self.assertEqual(result.receipt, str(self.receipt))
         self.assertEqual(scope.changed_paths(self.root, self.base), ['product.py'])
+
+    def test_registered_linked_worktree_receipt_is_reused_without_copy(self):
+        linked = self.root / 'linked'
+        self.git('worktree', 'add', '--detach', str(linked), self.base)
+        directory = Path(subprocess.check_output(['git', '-C', str(linked), 'rev-parse',
+            '--path-format=absolute', '--git-dir'], text=True).strip())
+        receipt = directory / 'codex/evidence/ci.local.quick' / self.receipt.name
+        receipt.parent.mkdir(parents=True)
+        self.receipt.rename(receipt)
+        for kind in scope.AUTHORITY:
+            selected = scope.select_scope(self.root, kind)
+            self.assertEqual(selected.base, self.base)
+            self.assertEqual(selected.receipt, str(receipt))
+        self.assertFalse(self.receipt.exists())
+        payload = json.loads(receipt.read_text());payload['tree'] = 'a' * 40
+        receipt.write_text(json.dumps(payload))
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+
+    def test_unregistered_receipt_directory_and_symlink_are_not_authority(self):
+        fake = self.root / '.git/worktrees/unregistered/codex/evidence/ci.local.quick' / self.receipt.name
+        fake.parent.mkdir(parents=True);self.receipt.rename(fake)
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        self.receipt.symlink_to(fake)
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+
+    def test_unrelated_daily_rule_change_reuses_but_scan_changes_invalidate(self):
+        path = self.root / 'make/ci.mk';original = path.read_text()
+        path.write_text(original.replace('ci.local.iteration: guard.prod.forbid',
+                                        'ci.local.iteration: guard.prod.forbid agent.run.resume'))
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+        for changed in (original.replace('--scope all', '--scope worktree'),
+                        original + 'SCANNER_MODE = unsafe\n',
+                        original + 'ci.local.iteration: second\n',
+                        original.replace('ci.local.iteration: guard.prod.forbid', 'ci.local.iteration: $(DYNAMIC)'),
+                        original + 'ci.local.quick.run: ci.local.iteration\n'):
+            path.write_text(changed)
+            self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+
+    def test_unreviewed_selection_refactor_and_coverage_changes_invalidate(self):
+        path = self.root / 'scripts/ci/trusted_scan_scope.py';original = path.read_text()
+        path.write_text(original.replace("return Scope(None, 'main_tree_evidence_missing')",
+                                         "return Scope(None, 'evidence_lookup_missing')"))
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        for changed in (original.replace("'--reverse'", "'--first-parent'"),
+                        original.replace("'--no-renames', '--name-only'", "'--name-only'"),
+                        original + '\nUNKNOWN_SCAN_DEPENDENCY = True\n',
+                        original + '\ndef new_scan_helper():\n    return True\n'):
+            path.write_text(changed)
+            self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+
+    def test_trust_checks_and_registry_changes_invalidate(self):
+        path = self.root / 'scripts/ci/trusted_scan_scope.py';original = path.read_text()
+        for changed in (
+            original.replace("git(root, 'merge-base', '--is-ancestor', base, 'HEAD')", 'pass'),
+            original.replace('payload != expected', 'False'),
+            original.replace('owner != common.resolve()', 'False'),
+            original.replace("COMMON_AUTHORITY = ('scripts/ops/local_quick_evidence.py',)", 'COMMON_AUTHORITY = ()'),
+            original.replace('EVIDENCE_SELECTION_MIGRATIONS = frozenset(', 'EVIDENCE_SELECTION_MIGRATIONS = set('),
+        ):
+            path.write_text(changed)
+            self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+
+    def test_exact_reviewed_legacy_transition_not_future_refactors(self):
+        import re
+        current = Path(scope.__file__).read_text()
+        old = re.sub(r'^EVIDENCE_SELECTION_MIGRATIONS = .*\n', '', current, flags=re.M)
+        old = old.replace("'main_tree_evidence_missing'", "'legacy_lookup_missing'")
+        pair = (scope.selection_digest(old.encode()), scope.selection_digest(current.encode()))
+        current = re.sub(r'^EVIDENCE_SELECTION_MIGRATIONS = .*$',
+                         'EVIDENCE_SELECTION_MIGRATIONS = frozenset(' + repr([pair]) + ')', current, flags=re.M)
+        with mock.patch.object(scope, 'EVIDENCE_SELECTION_MIGRATIONS', frozenset([pair])):
+            self.assertTrue(scope.helper_authority_equal(old.encode(), current.encode()))
+            changed = current.replace("git(root, 'merge-base', '--is-ancestor', base, 'HEAD')", 'pass')
+            self.assertFalse(scope.helper_authority_equal(old.encode(), changed.encode()))
 
     def test_missing_or_tampered_receipt_falls_back(self):
         for payload in ('{}', '{broken', '[]'):

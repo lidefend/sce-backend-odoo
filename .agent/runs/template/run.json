@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "REPLACE_FULL_BASELINE_SHA",
+  "scope": [
+    "REPLACE_OWNED_PATH"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.REPLACE_REGISTERED_TARGET",
+      "inputs": [
+        "REPLACE_SOURCE_AND_TEST_TOOL_DEPENDENCIES"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "REPLACE_CONCRETE_NEXT_ACTION",
+  "id": "REPLACE_GOAL_ID",
+  "branch": "fix/replace-task",
+  "status": "active",
+  "goal": ".agent/goals/REPLACE_GOAL_ID.yaml",
+  "record": "docs/ops/iterations/REPLACE_RECORD.md"
+}
