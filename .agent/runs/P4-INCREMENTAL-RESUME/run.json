@@ -20,7 +20,9 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/ci/trusted_scan_scope.py",
+    "scripts/ci/test_trusted_scan_scope.py"
   ],
   "environment": {
     "kind": "offline",
@@ -71,10 +73,25 @@
         "deploy/agent-controller/sce-agent-feishu-bridge.service.in"
       ],
       "kind": "offline"
+    },
+    "trusted_scan": {
+      "target": "verify.trusted_scan.unit",
+      "inputs": [
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/test_secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "make/ci.mk",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Review generated evidence, commit clean candidate, freeze fingerprint and run exact-head GitHub Quick; publish and merge via current required checks. Remote receipts stay in .runtime and PR, never infer deployment.",
+  "next_exact_step": "Freeze reviewed P4-only candidate; Quick must use genuine main-tree receipt for incremental historical scans. Publish GitHub PR, require current four remote checks and protected Merge commit; product branch remains untouched.",
   "id": "P4-INCREMENTAL-RESUME",
   "branch": "fix/agent-resume-mainline",
   "status": "verification_pending",
@@ -85,7 +102,7 @@
     "mainline": "not_run",
     "controller_installation": "not_run",
     "deployment": "not_run",
-    "review": "passed incremental independent code review; final fingerprint binding and CI pending",
+    "review": "passed: P4 extraction and exact trusted-scan migration; pending final fingerprint/Quick/remoteCI",
     "l1": {
       "command": "make ci.local.iteration",
       "status": "passed",
@@ -95,9 +112,15 @@
     "l2": {
       "resume": 30,
       "planner": 17,
-      "controller": 37
+      "controller": 37,
+      "trusted_scan": 33
     },
-    "reuse_observation": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/reuse-plan.log"
+    "reuse_observation": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/reuse-plan.log",
+    "cancelled_quick": {
+      "head": "81788ca9a703905b4e97bba391ff660136ff7db8",
+      "log": ".runtime/agent-runs/P4-INCREMENTAL-RESUME/quick.log",
+      "receipt": false
+    }
   },
   "source_commit": "44429fd706c065aa0660c4cd87c91c5fba162f1e"
 }

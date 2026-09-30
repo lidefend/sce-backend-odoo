@@ -54,3 +54,11 @@ Formal Product Layer=P4；Layer Target=统一执行上下文与增量验证；Mo
 
 新基线结果：L1 16 项通过；L2 resume 30、planner 17、controller 37 全部通过（planner 另两项仅存在于未集成产品前置分支，本批不导入）。实际 begin/record 后，三个目标均 reusable、targets=[]、testsRun=false；只读续跑没有再次执行测试。当前候选批次验收通过；主线集成待冻结 Quick 和新 PR 检查。
 生成准备通过：7 项组件检查和全部报告 current；生成差异仅新增工具/测试对应清单及行数。未修改产品源、安装控制器服务、运行数据库或浏览器。新基线验证日志位于本工作树同名 .runtime 目录；旧工作树原日志保留。
+
+### 可信历史扫描复用补齐
+
+用户指出最终 Quick 仍重复无关全扫。已取消 `81788ca9a` 的 Quick（无回执）；旧日志保留为 `quick.log`。根因：回执生产者使用 linked gitdir，消费者仅查 common-dir；整份 make/ci.mk 比较又把无关 L1 接线视为所有扫描权威变化。
+本批新增 P4 修复：仅发现同一 common-dir 的 Git 登记工作树回执，继续校验完整 payload/head/tree/main 祖先，不复制或制造回执；Make 只忽略唯一静态 ci.local.iteration 规则，其余所有入口、变量、依赖和调用保持比较。缺失、重复或动态规则失败关闭。
+helper 的检测/覆盖代码、scanner/policy/例外名单与 producer 权威继续校验；回执查找的兼容转换绑定精确已审阅旧/新 AST 摘要，任何未登记的未来信任校验变化都失效。首次复核发现按函数名永久排除过宽，已用精确迁移对与负例关闭。
+33 项扫描复用/秘密扫描测试通过，实际三类扫描均找到真实 `83ba6406` Quick 回执，对等树 main `72ad88e6` 使用 incremental；历史检查结果 `reachable_scan=trusted_base_incremental`，仍扫描每个候选中间提交和新路径出现的旧 blob。实际增量日志为 `incremental-public-scans.log`，选择记录为 `trusted-scope-plan.log`。
+Make alias 改变声明输入，已只重验受影响的 30/17/37 工具测试；不重做业务验收。最终 Quick 必须针对新冻结候选，但已验证主线历史不再全扫。远端 runner 无本地可信回执时仍执行其必需检查，不能把本地复用声明冒充远端通过。

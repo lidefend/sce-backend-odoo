@@ -919,3 +919,6 @@ verify.agent.resume.unit: guard.prod.forbid
 .PHONY: agent.run.begin
 agent.run.begin: guard.prod.forbid
 	@python3 scripts/ops/agent_run_context.py --begin "$(AGENT_CHECK)"
+
+.PHONY: verify.trusted_scan.unit
+verify.trusted_scan.unit: security.online_capture.unit
