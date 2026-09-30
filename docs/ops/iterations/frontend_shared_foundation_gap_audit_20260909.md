@@ -8942,3 +8942,12 @@ expense-role-runtime.log22 PASS、ROLLBACK VERIFIED（原19+新增3组）：fixt
 expense-role-configured-iteration/scope-iteration L1、py_compile、diff PASS；源352e98a9f经backend.acceptance.up受管重绑，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-role-configured-fixed-runtime.log25 PASS，ROLLBACK VERIFIED。原22项承接同事务，新增3组：实际finance非sudo创建/提交，有配置生成真实review、pending契约readonly且无complete，提前完成/改金额拒绝且无台账；实际reviewer完成后approved/validated，契约readonly但complete enabled，仍无台账；普通finance显式done后唯一posted台账，核对公司/项目/往来/币种/方向/100金额，完成动作从可用契约退出。此单与无配置自动链台账彼此独立。
 
 本次覆盖的是expense模型“项目还公司款”职责的有/无配置普通角色运行闭环，附件准备仍既有sudo工具。费用报销/保证金等不同现金职责、用户浏览器配置与已保存办理不能外推；53.149无授权非legacy记录事实保持，不重复空查。前端index-CVVwVIuW.js未变，未构建。下一步对照既有职责及可用来源，继续现金费用的申请关联、执行结果及官方页面消费收口；总体67/detail.action-state保持开放，无推送合并目标部署。
+
+
+### 53.151 普通财务现金费用与真实付款申请执行链
+
+945cb86de clean起点，P4沿expense-state-authority最后追加现金报销执行，源d9f229b0f，无生产变更。使用fixture_role_finance非sudo、精确公司，按type=pay/state=approved/terminal_cash_source_model空及正金额/完整项目往来条件选择现有可见申请；要求无既有付款台账，不放宽条件或新建申请。新报销主单只在原回滚事务内创建，绑定实际申请项目/往来/币种/金额，附件准备沿既有工具sudo。相关审批配置按真实公司范围处理。L1 expense-cash-iteration、py_compile/diff PASS；155纯测源未变复用，无前端构建。
+
+受管backend.acceptance.up重绑d9f229b0f，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-cash-runtime.log27 PASS（原25+新增2组）。普通finance提交现金报销后approved，来源申请仍approved、未认领且没有付款台账；显式action_done后报销及申请均done，terminal_cash_source_model/res_id确指本报销，唯一payment.ledger为posted、金额等于申请，并核对公司/项目/往来/币种。重复完成及解除申请关联拒绝，台账仍一条。原申请只在该受管事务中暂时变化；helper finally rollback后逐字段比对原state/身份/金额/认领字段及原台账ID集合，EXPENSE_CASH_SOURCE_ROLLBACK=VERIFIED；主finally配置/步骤/全部临时对象复核BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。请求对象由同次受限查询所得recordset直接绑定并前后回读；本日志未输出请求具体ID，不将其作为精确对象发布归档回执，后续最终证据需要补齐可读身份绑定。
+
+此次关闭现金费用普通finance无配置批准→实际执行→付款申请/台账衔接的运行缺口，不新增第二套付款业务实现。配置审批角色链沿53.150同模型往来款证明，不外推现金报销配置链、部分付款、真实并发、保证金及退款。已保存expense浏览器查询为空事实沿53.149保留，无页面办理通过声明。整体67/detail.action-state仍开放，下一步回到费用官方页面可用能力与缺少保存数据的清晰边界，并补最终证据可读对象身份；不重复无关矩阵、fixture或付款49。无推送合并目标部署。
