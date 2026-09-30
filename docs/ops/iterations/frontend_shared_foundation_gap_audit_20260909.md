@@ -6626,3 +6626,81 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 
 本段**批次验收完成**（候选复位 + 定向补验）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 
+
+## 段 46｜主线现状复核 + 守卫登记审计的根因修复：`python3 -m unittest scripts.verify.<mod>` 不再被误判为孤儿（2026-09-30）
+
+### 1. 主线复核（本轮起点）
+
+- GitHub 恢复后实际核对：`origin` = `https://github.com/lidefend/sce-backend-odoo.git`，
+  `origin/main` = `fff226d7be72878ea6861cfab2ce13d990cee806`（2026-09-30 15:32，`Merge PR #524`），
+  与 `git ls-remote origin main` 一致；`git merge-base HEAD origin/main` = `fff226d7b`，
+  即**主线最新提交已在 `dc460758c` 并入本分支，无新增待移植内容**（领先 202 / 落后 0）。
+- `gitee-mirror/main` = `23f11f426` 为另一条发布镜像线，`git rev-list --left-right --count
+  gitee-mirror/main...HEAD` = `0 210`，已完全包含于本分支；本轮不改动其方向。
+- 主线新增协作流程已可用并被本轮实际使用：`make agent.run.resume`（本节）、
+  `agent.run.begin AGENT_CHECK=<id>`、`agent.run.record ...`、`verify.agent.resume.unit`。
+
+### 2. 未决项的实际根因（不是"缺登记"，是审计漏识别）
+
+移植后 `make verify.guard.registry` 报两条孤儿：
+`test_construction_create_default_hooks.py`、`test_frontend_v2_policy_projection_guard.py`。
+
+复核结论（推翻"只是登记没同步"的判断）：
+
+- 两条脚本**都已被 make 引用**——`make/ci.mk:951`、`make/ci.mk:1099`
+  （`python3 -m unittest scripts.verify.test_construction_create_default_hooks`）与
+  `make/ci.mk:417`（`python3 -m unittest scripts.verify.test_frontend_v2_policy_projection_guard`）。
+- 漏识别根因：`scripts/verify/guard_registry_audit.py` 的引用索引只认两种形态——
+  `.py` 文件名字符串（`SCRIPT_REFERENCE_RE`）与 `import/from` 语句（`IMPORT_REFERENCE_RE`）。
+  `-m unittest scripts.verify.<module>` 这种**点号模块调用**两种都不匹配，于是真实被测脚本被判孤儿。
+- 影响面不止两条：把点号形态纳入识别后，**37 条历史 orphan 登记**（`test_gitee_*`、`test_local_dev_*`、
+  `test_frontend_standard_preview.py` 等）实际都被引用，属长期误登记。逐条核对命中来源确为真实引用
+  （`make/codex.mk`、`make/ci.mk`、`scripts/verify/test_native_view_capability_taxonomy.py` 等）。
+
+判定：这是**门禁的真实性缺陷**，不是"红项需要消红"。按"门禁检查真实边界、不用放宽阈值或改退出码"的原则，
+修审计而不是补假登记。
+
+### 3. 修复内容
+
+- `scripts/verify/guard_registry_audit.py`：
+  - 新增 `MODULE_INVOCATION_REFERENCE_RE = \bscripts\.verify\.([A-Za-z_][A-Za-z0-9_]*)\b`；
+  - `build_reference_index()` 增加 `module_hits`（返回三元组），`resolve_external_hits()` 接受并合并该索引
+    （新增参数带默认值，调用方兼容）；`_reference_patterns()` 增加点号模块形态的正则；
+  - 模块文档串同步说明"文件名 / import / `scripts.verify.<module>` 模块调用"三种静态引用形态。
+- `scripts/verify/test_guard_registry_audit.py`：既有两例随三元组签名更新，并新增
+  `test_resolve_external_hits_matches_module_invocation`（命中 `make/dev.mk`，不命中 `scripts.verify.unrelated`）。
+- `scripts/verify/registry.yaml`：`make guard.registry.seed` 丢弃 37 条失效登记，**129 → 92 条**；
+  结构化比对确认"仅删除这 37 条，无新增、无字段改动"（`removed=37 added=0 changed=0`）。
+- `docs/audit/guard_registry/guard_registry.json`：按既有 `make guard.registry.export` 重生成，
+  counts `active 1231 / orphan 124 / retired 1` → `active 1273 / orphan 87 / retired 1`，脚本 1355 → 1360。
+- `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`：scope 增加 `docs/audit/guard_registry/`。
+
+### 4. 验证
+
+- **L2（定向，非零）**：`python3 -m unittest scripts.verify.test_guard_registry_audit` → 3 tests OK。
+- **L2（审计本体）**：`make verify.guard.registry` →
+  `AUDIT PASS: 1360 scripts (1273 referenced, 87/87 orphans acknowledged, 1 retired)`。
+- **L1**：`make ci.local.iteration` PASS（`status=resolved`，`outside_scope=[]`）。
+  期间观察到主线新流程的实际约束：派生导出件落在 scope 外时 run 状态为 `reconcile`、
+  L1 退出码 2（fail closed）；把派生目录正确定位进 scope 后恢复 `resolved`——**这是流程在起作用，
+  不是被绕过**。
+- 未执行：全量 Quick、发布门禁、89 入口、浏览器旅程（本段只动审计脚本与登记，不影响产品面）。
+
+### 5. 提交
+
+- `fix(guard): recognize module-invocation references in the guard registry audit`
+  （审计脚本 + 单测 + registry.yaml + 派生导出件 + run scope）
+- `docs(iteration): record 段 46`（本段）
+
+### 6. 剩余缺口与下一步
+
+- 前端采纳仍在**契约边界**：`page-pattern-reference-detail-ledger-v1.json` =
+  `entries=67 aligned=46 contract_gap=20 not_applicable=1`。其中 **17 条归 P0 `smart_core`、2 条归 P1
+  `smart_construction_core`**，都是"原生事实已有、契约未投影/未声明能力"的**投影缺口**，
+  按用户口径"契约不满足就先完善契约"应转为主线工作项：行详情动作、导出能力、收藏归属与可变性、
+  复制/删除能力与禁用原因、区块条目计数、上下文抽屉呈现授权等。
+- 四项 `style_system` 欠账、合并前门禁批次、390×844 官方参考截图证据缺口不变。
+
+### 状态
+
+本段**批次验收完成**（审计修复 + 登记复位）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
