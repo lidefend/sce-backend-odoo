@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, watch } from 'vue';
 import { useRecordFormDesignerActions, type FormDesignerActionDependencies } from './useRecordFormDesignerActions';
+import { useRecordFormDesignerNavigation } from './useRecordFormDesignerNavigation';
 import type { ContractAction, LayoutNode } from './types';
 import {
   decodeServerFieldErrors,
@@ -215,19 +216,29 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     onContractInlineFieldOrderDragEnd,
   } = useRecordFormDesignerActions(dependencies);
 
-  function lowCodeApplyBaseParams() {
-    const configAction = contractV2ActionRules.value.find(
-      (rule) =>
-        contractActionRuleKey(rule) === BUSINESS_CONFIG_ACTION_KEYS.currentFormFieldOrderSave,
-    );
-    const target = parseMaybeJsonRecord(configAction?.target);
-    return buildLowCodeApplyBaseParams({
-      actionId: actionId.value || route.query.action_id,
-      viewId: routeQueryText('view_id') || routeQueryText('viewId'),
-      targetParams: parseMaybeJsonRecord(target.params),
-      modelName: String(model.value || ''),
-    });
-  }
+  const {
+    lowCodeApplyBaseParams,
+    lowCodeReturnQuery,
+    previewLowCodeConfiguredPage,
+    previewCurrentFormConfiguration,
+    returnToBusinessConfigDesigner,
+  } = useRecordFormDesignerNavigation({
+    actionId,
+    contractActionRuleKey,
+    contractV2ActionRules,
+    parseMaybeJsonRecord,
+    buildLowCodeApplyBaseParams,
+    buildLowCodePreviewQuery,
+    buildLowCodeReturnQuery,
+    BUSINESS_CONFIG_ACTION_KEYS,
+    BUSINESS_CONFIG_ROUTE_FLAGS,
+    hasCurrentFormFieldDraftChanges,
+    model,
+    route,
+    routeQueryText,
+    router,
+    saveContractFieldOrder,
+  });
 
   function contractFieldSequence(fieldKey: string, fallback = 100) {
     return contractFieldSequenceFromOrder(fieldOrderDraft.value, fieldKey, fallback);
@@ -235,39 +246,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
 
   function fieldGroupTitleForDraft(fieldKey: string) {
     return effectiveFieldGroupTitleForDraft(fieldKey);
-  }
-
-  function lowCodeReturnQuery() {
-    return buildLowCodeReturnQuery({
-      routeQuery: route.query as Record<string, unknown>,
-      modelName: model.value,
-      actionId: actionId.value,
-      openPagesFlag: BUSINESS_CONFIG_ROUTE_FLAGS.openPages,
-    });
-  }
-
-  function previewLowCodeConfiguredPage() {
-    const query = buildLowCodePreviewQuery({
-      routeQuery: route.query as Record<string, unknown>,
-      returnToBusinessConfigFlag: BUSINESS_CONFIG_ROUTE_FLAGS.returnToBusinessConfig,
-      openPagesFlag: BUSINESS_CONFIG_ROUTE_FLAGS.openPages,
-    });
-    router.push({ path: route.path, query });
-  }
-
-  async function previewCurrentFormConfiguration() {
-    if (hasCurrentFormFieldDraftChanges.value) {
-      const saved = await saveContractFieldOrder();
-      if (!saved) return;
-    }
-    previewLowCodeConfiguredPage();
-  }
-
-  function returnToBusinessConfigDesigner() {
-    router.push({
-      path: '/admin/business-config',
-      query: lowCodeReturnQuery(),
-    });
   }
 
   async function applyProjectionRefreshPolicy(policy?: ContractAction['refreshPolicy']) {
