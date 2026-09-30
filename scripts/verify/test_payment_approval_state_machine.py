@@ -607,6 +607,14 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         ns['_compute_confirmed_source_key'](rows)
         self.assertEqual(rows[2].confirmed_source_key, 'sc.receipt.invoice.line:17')
 
+    def test_red_flush_cancel_overrides_tier_review_deletion(self):
+        path = MODEL.with_name('output_invoice_adjustment.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_allow_to_remove_reviews')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        record = types.SimpleNamespace(ensure_one=lambda: None)
+        self.assertFalse(ns['_allow_to_remove_reviews'](record, {'state': 'cancel'}))
+
     def test_red_flush_unexecuted_approval_can_cancel_without_erasing_review(self):
         path = MODEL.with_name('output_invoice_adjustment.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_cancel')

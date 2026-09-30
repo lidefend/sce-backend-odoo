@@ -246,6 +246,14 @@ class ScOutputInvoiceAdjustment(models.Model):
             generated = rec._create_red_flush_invoice_registration()
             rec._write_approval_state({"generated_invoice_id": generated.id, "state": "confirmed"})
 
+    def _allow_to_remove_reviews(self, values):
+        self.ensure_one()
+        # Cancellation ends this application; a replacement is a new record.
+        # Retain its actual approval history instead of OCA's default cleanup.
+        if values.get("state") == "cancel":
+            return False
+        return super()._allow_to_remove_reviews(values)
+
     def action_cancel(self):
         for rec in self:
             if rec.generated_invoice_id:
