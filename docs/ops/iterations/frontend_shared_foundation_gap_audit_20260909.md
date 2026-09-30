@@ -8250,3 +8250,10 @@ P1 smart_construction_core材料租赁计划，行业标准职责复用现有pol
 候选feb78e3c0+dirty；L1 rental-plan-iteration.log PASS；L2 rental-plan-unit.log82 PASS（既有劳务状态机用例新增租赁计划参数，覆盖配置分流、实际review回调/wizard、approved非法逆转、cancel/reset、外部state拒绝），rental-plan-native.log8+47=55 PASS（新增租赁参数验证reviewer差异/动作投影），rental-plan-semantics.log15 PASS，2XML解析/重复ID与diff --check PASS；非零回执登记。未重复无关ORM。
 
 L3尚未运行：新tier/字段/XML需一次受管smart_construction_core升级，下一步扩展既有rollback scope验证租赁计划estimated_amount阈值、合同/供应商限制、真实审批驳回重提、配置恢复；随后同族官方页面。前端未变不重建，L5无推送/合并/目标部署，整体67及实际角色旅程未完成。
+
+
+### 53.93 租赁计划真实审批定向验收（进行中）
+
+P4既有rollback工具新增rental-plan scope10：无配置自动通过、状态直接写拒绝、estimated_amount门槛、启用但未匹配拒绝、空明细拒绝、pending配置变化保护、真实review审批、approved逆转拒绝、cancel/reset、驳回重提。复用既有租户/角色/环境与事务恢复，不新增持久fixture。合同/供应商锚点源码保持，但本工具尚不宣称真实合同关联负例覆盖。
+
+L1 rental-plan-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用82/55/15。平台内部验收sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确dbfilter及固定卷由受管入口核验；需一次模块升级/reload后只当前scope。建单sudo+真实reviewer验证不替代完整角色业务旅程。前端未变不构建，L5未执行。
