@@ -16,6 +16,7 @@ class TierDefinition(models.Model):
             "sc.material.inbound",
             "sc.material.acceptance",
             "sc.material.purchase.request",
+            "sc.material.rfq",
             "project.project",
             "project.task",
             "project.material.plan",

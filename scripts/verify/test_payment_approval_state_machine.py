@@ -803,6 +803,53 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(rec.state, 'rejected')
             self.assertFalse(rec.data.get('reject_reason'))
 
+    def test_rfq_approval_is_separate_from_quote_selection(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRfq')
+        names = {'action_submit', 'action_select', 'action_on_tier_approved', 'write'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_RFQ_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            rec._name = 'sc.material.rfq'
+            selected = []
+            rec.line_ids = types.SimpleNamespace(_check_values=lambda: None, filtered=lambda field: selected)
+            rec._sc_require_purchase_user = rec._sc_require_purchase_manager = lambda label: None
+            rec._write_rfq_state = lambda values: rec.data.update(values)
+            for token in (None, True, 'trusted'):
+                with self.assertRaises(ValueError):
+                    ns['write'](rec.with_context(sc_rfq_state_token=token), {'state': 'selected'})
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError): ns['action_select'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            with self.assertRaisesRegex(ValueError, '至少一条报价'): ns['action_select'](rec)
+            selected.append(types.SimpleNamespace(supplier_id=types.SimpleNamespace(id=9)))
+            ns['action_select'](rec)
+            self.assertEqual(rec.state, 'selected')
+            self.assertEqual(rec.selected_supplier_id, 9)
+
+    def test_rfq_order_generation_requires_selection_and_review_facts(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRfq')
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'action_create_purchase_order')
+        ns = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        for state in ('draft', 'submitted', 'approved', 'selected'):
+            rec = self._purchase_request_record(state=state, reviews=['pending-review'], status='pending')
+            rec._name = 'sc.material.rfq'
+            rec._sc_require_purchase_manager = lambda label: None
+            rec.env = {'purchase.order': None, 'sc.approval.policy': rec.policy}
+            # No downstream collaborator is provided: reaching generation would
+            # fail for an unexpected reason instead of satisfying this assertion.
+            with self.assertRaises(ValueError): ns['action_create_purchase_order'](rec)
+
     def _purchase_request_methods(self):
         path = MODEL.with_name('material_acceptance.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialPurchaseRequest')

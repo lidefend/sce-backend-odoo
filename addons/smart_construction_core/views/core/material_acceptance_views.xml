@@ -720,17 +720,22 @@
         <field name="arch" type="xml">
             <form string="询比价">
                 <header>
-                    <button name="action_submit" string="发起询价" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_user,smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
-                    <button name="action_select" string="确定报价" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
-                    <button name="action_create_purchase_order" string="生成采购订单" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state == 'cancel'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="发起询价" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_user,smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_select" string="确定报价" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
+                    <button name="action_create_purchase_order" string="生成采购订单" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'selected'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" groups="smart_construction_core.group_sc_cap_purchase_manager,smart_construction_core.group_sc_cap_material_manager" invisible="state in ('selected', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,selected"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,selected"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id" readonly="state != 'draft'"/>
                             <field name="business_category_id" readonly="1"/>
                             <field name="purchase_request_id"/>

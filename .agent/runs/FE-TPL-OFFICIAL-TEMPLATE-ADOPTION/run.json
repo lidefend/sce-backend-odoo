@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.74 purchase-request generated number create gap fixed: native49, managed XML upgrade/backend41d692abe, create15 PASS report1790780449473 with actual modifier authority and screenshot. Existing record role UI pending because authorized query empty; do not repeat. Continue next remaining confirmed business document producer (material RFQ/settlement) from existing profile/model, preserve downstream execution and shared approval. No broad inventory, no repeat purchase8, no frontend rebuild.",
+  "next_exact_step": "53.75 RFQ source74/native50/semantics15 PASS. Extend existing rollback runtime scope=rfq and wrapper, verify no config/configured real review, amount unsupported, no premature selection/order, rejection/resubmission, explicit quotation selection then order. Managed module upgrade required for tier/company/reason/approved-state/XML, then reload, scope-only runtime. No frontend rebuild/repeat prior ORM. Actual page/role journey and all-document adoption remain incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1137,6 +1137,14 @@
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790780449473/report.json",
       "contract": "native modifiers readonly=true/invisible=not id",
       "runtime_approval": "reuse purchase8; methods unchanged"
+    },
+    "segment_53_75": {
+      "status": "source_verified_runtime_pending",
+      "scope": "P1 RFQ shared approval; quote selection and order generation remain explicit",
+      "approval_tests": 74,
+      "native_tests": 50,
+      "semantics_tests": 15,
+      "runtime": "not_run; module upgrade required"
     }
   }
 }

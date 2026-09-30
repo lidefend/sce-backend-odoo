@@ -898,10 +898,15 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.material.rfq": {
             "state_field": "state",
-            "state_phase": {"draft": "draft", "submitted": "submitted", "selected": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["complete", "reopen", "cancel"]},
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "selected": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "field_editable_phases": ["approved"],
             "method_by_action": {
                 "submit": "action_submit",
+                "approve": "validate_tier",
+                "reject": "reject_tier",
                 "complete": "action_select",
                 "reopen": "action_reset_draft",
                 "cancel": "action_cancel",

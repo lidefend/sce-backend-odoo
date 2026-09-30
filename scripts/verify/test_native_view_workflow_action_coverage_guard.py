@@ -56,6 +56,16 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                 self.assertEqual(row['target']['method'], row['method'])
         self.assertEqual(self._general_contract_actions('approved', model=model), [])
 
+    def test_rfq_projection_separates_review_quote_selection_and_reset(self):
+        model = 'sc.material.rfq'
+        for method in ('action_cancel', 'action_reset_draft', 'action_select'):
+            self._assert_material_state_projection('ScMaterialRfq', model, method)
+        for reviewer in (False, True):
+            rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=reviewer, record_fields={'validation_status': 'pending'})
+            self.assertEqual({row['method'] for row in rows}, {'action_cancel'} | ({'validate_tier', 'reject_tier'} if reviewer else set()))
+        approved = self._general_contract_actions('approved', model=model)
+        self.assertEqual({row['method'] for row in approved}, {'action_select', 'action_cancel'})
+
     def test_material_inbound_reset_matches_business_sources(self):
         self._assert_material_state_projection("ScMaterialInbound", "sc.material.inbound", "action_reset_draft")
 

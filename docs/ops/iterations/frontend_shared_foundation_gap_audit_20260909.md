@@ -8048,3 +8048,14 @@ P1原生采购申请表单name添加readonly=1/invisible=not id，沿用模型�
 验收环境与53.72一致：平台内部sc_frontend_acceptance租户、local/sc-fe-r2-p1-01、精确^sc_frontend_acceptance$及固定卷；非客户生产/控制库。只升级既有视图，无业务数据写入或fixture创建。L3/L4结果pending，不称缺口已闭合。
 
 受管升级及后端41d692abe重绑成功。tpl07-1790780449473/report.json创建15 PASS，errors=[]、forbiddenWrites=[]，双视口无页面溢出；390截图复核编号已不显示，有效契约modifiers.readonly=true、invisible为not(field_truthy id)。源字段readonly=false仍是ORM元信息，native modifiers才是该视图只读权威；不改前端猜测。创建编号缺口已修复，已有记录只读有XML/契约声明证据但暂无角色记录页面证据，仍pending。复用采购审批8，无重复ORM/前端构建/空记录查询。
+
+
+### 53.75 询比价统一审批与独立定价（进行中）
+
+P1 smart_construction_core。询比价属于行业业务标准，不放P0或前端；沿用既有共享policy/tier。提交无配置自动approved（待定价），有配置submitted等实际review，审批回调只approved或驳回draft，不选择供应商、不生成订单；配置选择和tier回调注册同步。未定义唯一金额口径，不把多家报价相加当审批金额，金额条件继续由已有policy编译器拒绝。公司权威来自项目，外部state写受私有token保护。
+
+action_select从approved执行并检查审批事实，保留至少一条报价等原校验；approved契约保留字段编辑以处理选价。生成订单原本没有状态检查，新增selected+审批事实检查，杜绝待审/未定价直接生成。未改变其按供应商分组生成方式，幂等行为不在此宣称。原生按钮、状态栏及契约同步：pending才有审批人动作；cancel才有reset，修复原submitted错误投影；定价后才显示生成订单。系统编号原生创建隐藏/只读，复用上一段已验证消费机制。
+
+L1 rfq-approval-iteration.log PASS；rfq-approval-unit.log 74 PASS（新增审批不定价、无报价不能定价、外部状态写拒绝、未定价或审批未通过不能生成订单）；rfq-native.log 8+42=50 PASS；rfq-semantics.log 15 PASS；2份XML解析、diff --check PASS，相关非零回执登记。最后仅追加生成订单纯回归，生产输入未再改，复用此前L1与native/semantics。候选501a4ea06+本段dirty，不是冻结交付。
+
+L3未运行：tier继承/字段/state/XML需要一次受管升级。下一步扩展现有回滚工具rfq范围，真实验证审批、拒绝重提、独立定价及订单生成、未定义金额拒绝，并确认配置/数据恢复；再做受影响页面消费。L4不重建未变前端，不重查已空采购申请；L5不在本地批次。现有采购申请8等未变业务方法证据复用，总体67及detail.action-state保持未完成。不推送合并部署。
