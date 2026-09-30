@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.95 rental-order runtime13 PASS rollback verified backend1f5c6bca3. Create report1790784586492 16 narrow checks PASS but screenshot missing project/supplier inputs and readonly rental date: fix effective P1 field policy (sc_material_rental_order_p1_form_business_facts_v1 in p1_daily_business_form_orchestration_contract_data.xml) after reading saved authority; strengthen input tests. Do not repeat runtime13. Existing PM record1790784596167 empty, no retry/newfixtures. Frontend7915f3bb9 unchanged. Rental settlement action_paid missing payment-fact authority and all67 rolejourneys remain open.",
+  "next_exact_step": "53.96 rental order input gap closed backend2d7eab703/frontend7915f3bb9, report1790784797476 24 PASS +84 pure tests. Reuse runtime13 and no repeat empty existing PM query. Next P1 rental settlement: unify shared approval before explicit confirmation, resolve action_paid paid-flag-without-authoritative-payment gap using existing payment execution authority; do not invent paid facts or conflate approval/payment. Inspect direct model/payment consumers only. Overall67/rolejourneys/project initiation role prerequisite remain open. No newfixture/unrelatedORM/push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

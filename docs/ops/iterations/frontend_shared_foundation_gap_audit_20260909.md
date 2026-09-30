@@ -8292,3 +8292,6 @@ P4 browser新增order明确提交/审批/启用/退还/结算职责检查，rent
 复用53.95响应确认project/supplier/rental_date/contract/owner/note readonly=true来自P1 sc_material_rental_order_p1_form_business_facts_v1。发布载体按职责移除14项用户输入的无条件readonly（项目/供应商/合同/日期/计划退还/使用单位/押金与各费用/附件/备注/经办人），继承原生和tier约束；state/name/actual_return_date/汇总数量金额/settlement_amount/create_date只读保持，非前端模型特殊处理。
 
 L1 rental-order-input-iteration.log/node/diff PASS，rental-order-input-unit.log84 PASS并登记回执，新增纯测试分离14输入与9事实。浏览器增加4输入有效契约及控件可见性8断言，防止只凭原16项判定可建单。下一步仅XML受管升级/reload及创建页复验；P1审批/执行方法未变，复用runtime13/原生56/语义15，已有记录空查询不重跑。前端未改不构建，不做L5/持久fixture。
+
+
+53.96结果：2d7eab703受管升级/reload成功，rental-order-input-page.log对应tpl07-1790784797476 24 PASS，4字段可编辑契约及项目/供应商/日期/说明控件可见，1440/390无溢出、errors/forbiddenWrites为空，390截图复核。关闭53.95创建输入缺失；不声称实际save/submit/角色全旅程已证明。前端7915f3bb9仍未重建，原runtime13依赖的审批执行代码未变复用，不重跑已有空记录查询。下一步租赁结算审批/执行与支付事实缺口，整体67保持开放。
