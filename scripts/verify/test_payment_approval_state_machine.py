@@ -607,6 +607,58 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_reconciliation_reviewed_and_terminal_content_is_protected(self):
+        path = MODEL.with_name('treasury_reconciliation.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        token = object()
+        writes = []
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'no'), ('reconciled', 'validated')):
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context={'sc_document_state_token': True})
+            for values in ({'account_balance': 200}, {'system_difference': 1}, {'treasury_ledger_id': 9},
+                           {'project_id': 9}, {'currency_id': 9}, {'confirmation_amount': 200},
+                           {'attachment_ids': [(5, 0, 0)]}, {'active': False}):
+                with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
+                    ns['write'](rows, values)
+            self.assertTrue(ns['write'](rows, {'note': 'supplement'}))
+        rows[0].state, rows[0].validation_status = 'draft', 'rejected'
+        self.assertTrue(ns['write'](rows, {'system_difference': 0}))
+        rows[0].state = 'confirmed'
+        rows.env.context = {'sc_document_state_token': token}
+        self.assertTrue(ns['write'](rows, {'state': 'reconciled'}))
+        self.assertEqual(writes[-1], {'state': 'reconciled'})
+
+    def test_reconciliation_source_errors_are_shared_with_contract(self):
+        path = MODEL.with_name('treasury_reconciliation.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_reconcile_readiness_errors')
+        service = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        gate = next(n for n in ast.walk(ast.parse(service.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_treasury_reconciliation_evidence_gate')
+        gate.decorator_list = []
+        ns = {'_': lambda text: text, 'float_is_zero': lambda value, precision_rounding: abs(value) < precision_rounding / 2}
+        exec(compile(ast.Module(body=[method, gate], type_ignores=[]), str(path), 'exec'), ns)
+        currency = types.SimpleNamespace(id=2, rounding=0.01)
+        ledger = types.SimpleNamespace(state='posted', project_id=1, company_id=3, currency_id=currency)
+        record = types.SimpleNamespace(ensure_one=lambda: None, project_id=1, company_id=3, currency_id=currency,
+            treasury_ledger_id=ledger, system_difference=0, source_origin='manual', state='draft', validation_status='no')
+        record._reconcile_readiness_errors = lambda: ns['_reconcile_readiness_errors'](record)
+        presenter = types.SimpleNamespace(_gate=lambda code, message: {'code': code})
+        self.assertEqual(record._reconcile_readiness_errors(), [])
+        for field, bad, code in (('state', 'draft', 'NOT_POSTED'), ('project_id', 9, 'PROJECT_MISMATCH'),
+                                 ('company_id', 9, 'COMPANY_MISMATCH'), ('currency_id', False, 'CURRENCY_MISMATCH')):
+            old = getattr(ledger, field)
+            setattr(ledger, field, bad)
+            expected = 'TREASURY_RECONCILIATION_LEDGER_' + code
+            self.assertIn(expected, [row[0] for row in record._reconcile_readiness_errors()])
+            self.assertIn({'code': expected}, ns['_treasury_reconciliation_evidence_gate'](presenter, record))
+            setattr(ledger, field, old)
+        record.system_difference = 1
+        self.assertIn('TREASURY_RECONCILIATION_DIFFERENCE_NOT_ZERO', [row[0] for row in record._reconcile_readiness_errors()])
+
     def test_settlement_adjustment_source_identity_and_contract_gate_share_errors(self):
         path = MODEL.with_name('settlement_adjustment.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_business_anchor_errors')
@@ -1224,6 +1276,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         rec._write_finance_authority = lambda values: rec.data.update(values)
                         rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                         rec._check_business_anchor = lambda: None
+                        rec._check_reconcile_ready = lambda: None
                         rec._get_tier_reject_reason = lambda: 'real rejection'
                         namespace[method](rec)
                         effective = bool(reviews) and status == expected

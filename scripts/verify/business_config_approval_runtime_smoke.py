@@ -682,6 +682,10 @@ def _finance_state_authority_checks(group, created, source_ledger=None, actor=No
         denied(lambda: required.write({"state": "confirmed"}))
         if model == "sc.treasury.reconciliation":
             denied(required.action_reconcile)
+            if source_ledger is not None:
+                for change in ({"account_balance": 200}, {"system_difference": 1}, {"treasury_ledger_id": False}, {"attachment_ids": [(5, 0, 0)]}):
+                    denied(lambda change=change: required.write(change))
+                print("APPROVAL_CHECK=reconciliation_reviewed_content_is_frozen")
         print("APPROVAL_CHECK=%s_configured_review_waits" % model)
         if adjustment_only:
             assert settlement.adjustment_total == 0 and settlement.amount_after_adjustment == 1000
@@ -710,8 +714,19 @@ def _finance_state_authority_checks(group, created, source_ledger=None, actor=No
             assert settlement.adjustment_total == 0 and settlement.amount_after_adjustment == 1000
             print("APPROVAL_CHECK=settlement_adjustment_reviewed_content_and_explicit_cancel")
         if model == "sc.treasury.reconciliation":
+            if source_ledger is not None:
+                denied(lambda: required.write({"system_difference": 1}))
+                assert env["sc.workflow.contract.service"].describe_record(required)["editability"] == "readonly"
             required.action_reconcile()
             assert required.state == "reconciled"
+            if source_ledger is not None:
+                for change in ({"confirmation_amount": 200}, {"bank_balance": 200}, {"treasury_ledger_id": False}, {"active": False}):
+                    denied(lambda change=change: required.write(change))
+                denied(required.action_cancel)
+                required.write({"note": "Rollback reconciled supplement"})
+                assert required.system_difference == 0 and required.treasury_ledger_id == source_ledger
+                assert source_ledger.state == "posted" and source_ledger.amount == 100
+                print("APPROVAL_CHECK=reconciliation_terminal_content_keeps_source_fact")
         print("APPROVAL_CHECK=%s_review_then_explicit_execution" % model)
         if adjustment_only:
             addition = Document.create(dict(values, adjustment_type="addition"))
@@ -3410,7 +3425,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 11 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()

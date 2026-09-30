@@ -1694,17 +1694,8 @@ class ScWorkflowContractService(models.AbstractModel):
         if getattr(record, "source_origin", "") == "legacy" and getattr(record, "state", "") == "legacy_confirmed":
             return []
         gates = []
-        if not record.project_id:
-            gates.append(self._gate("TREASURY_RECONCILIATION_MISSING_PROJECT", "资金对账必须关联项目。"))
-        if not record.treasury_ledger_id:
-            gates.append(self._gate("TREASURY_RECONCILIATION_MISSING_LEDGER", "请先关联资金台账后再完成对账。"))
-        elif record.treasury_ledger_id.state != "posted":
-            gates.append(self._gate("TREASURY_RECONCILIATION_LEDGER_NOT_POSTED", "只能对已入账的资金台账完成对账。"))
-        elif record.treasury_ledger_id.project_id != record.project_id:
-            gates.append(self._gate("TREASURY_RECONCILIATION_LEDGER_PROJECT_MISMATCH", "资金台账项目与对账单项目不一致，不能完成对账。"))
-        rounding = record.currency_id.rounding if record.currency_id else 0.01
-        if float_compare(record.system_difference or 0.0, 0.0, precision_rounding=rounding) != 0:
-            gates.append(self._gate("TREASURY_RECONCILIATION_DIFFERENCE_NOT_ZERO", "银企差额未归零，不能完成资金对账。"))
+        for code, message in record._reconcile_readiness_errors():
+            gates.append(self._gate(code, message))
         if getattr(record, "validation_status", "") in ("waiting", "pending"):
             gates.append(
                 self._gate(
