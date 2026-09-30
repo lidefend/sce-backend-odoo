@@ -1024,9 +1024,106 @@ def _equipment_plan_request_checks(project, group, created):
     print("APPROVAL_CHECK=equipment_request_cross_project_source_plan_denied")
 
 
+def _equipment_execution_checks(project, group, created):
+    env = _env()
+    Policy = env["sc.approval.policy"].sudo()
+    supplier = _partner("Rollback equipment execution supplier")
+    created.append((supplier._name, supplier.id))
+    confirmed_usage = None
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    def document(model, usage=None):
+        values = {"project_id": project.id, "supplier_id": supplier.id}
+        if model.endswith("usage"):
+            values.update(equipment_name="Rollback machine", usage_location="Rollback site", operator_name="Rollback operator", usage_qty=1, usage_hours=2, price_unit=10)
+        else:
+            values["line_ids"] = [(0, 0, {"equipment_name": "Rollback machine", "qty": 2, "unit_price": 10,
+                                            "usage_id": usage.id if usage else False})]
+        record = env[model].sudo().create(values)
+        created.append((record._name, record.id))
+        return record
+
+    def ledger(record):
+        return env["project.cost.ledger"].sudo().search([("source_model", "=", record._name), ("source_id", "=", record.id)])
+
+    for model in ("sc.equipment.usage", "sc.equipment.settlement"):
+        assert not Policy.with_context(active_test=False).search_count([
+            ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+        ]), "existing equipment execution policy must not be overwritten"
+        automatic = document(model, confirmed_usage)
+        denied(lambda: automatic.write({"state": "confirmed"}))
+        denied(automatic.action_confirm)
+        print("APPROVAL_CHECK=%s_external_state_and_premature_confirmation_denied" % model)
+        automatic.action_submit()
+        assert automatic.state == "approved" and not automatic.review_ids and not ledger(automatic)
+        print("APPROVAL_CHECK=%s_unconfigured_approval_does_not_confirm" % model)
+        policy = Policy.create({"name": "Runtime equipment execution approval", "code": "runtime_" + model.replace(".", "_"),
+            "target_model": model, "company_id": env.company.id, "approval_required": True, "mode": "single",
+            "manager_group_id": group.id, "runtime_state": "tier_validation"})
+        created.append((policy._name, policy.id))
+        env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Equipment execution review", "sequence": 10,
+            "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id, "amount_min": 1})
+        policy.sync_tier_definitions()
+        required = document(model, confirmed_usage)
+        required.action_submit()
+        assert (required.amount if model.endswith("usage") else required.amount_total) == 20
+        assert required.state == "submitted" and required.review_ids
+        denied(required.action_confirm)
+        assert not ledger(required)
+        print("APPROVAL_CHECK=%s_amount_rule_blocks_pending_confirmation" % model)
+        _approve_existing_reviews(required)
+        assert required.state == "approved" and required.validation_status == "validated" and not ledger(required)
+        print("APPROVAL_CHECK=%s_real_approval_does_not_execute" % model)
+        if model.endswith("usage"):
+            denied(lambda: required.write({"usage_hours": 3}))
+            denied(required.unlink)
+            actor = env["res.users"].sudo().search([("login", "=", "fixture_role_finance")], limit=1)
+            assert actor and not actor.has_group("smart_construction_core.group_sc_cap_project_manager") and not actor.has_group("smart_construction_core.group_sc_super_admin")
+            denied(required.with_user(actor).action_confirm)
+            denied(required.with_user(actor).action_cancel)
+            print("APPROVAL_CHECK=equipment_usage_approved_fact_lock_and_manager_boundary")
+        required.action_confirm()
+        rows = ledger(required)
+        created.extend([(row._name, row.id) for row in rows])
+        assert required.state == "confirmed"
+        if model.endswith("usage"):
+            assert len(rows) == 1 and rows.source_amount == required.amount and rows.qty == 2
+            confirmed_usage = required
+        else:
+            assert not rows
+        denied(required.action_confirm)
+        assert ledger(required) == rows
+        print("APPROVAL_CHECK=%s_explicit_confirmation_preserves_execution" % model)
+        rejected = document(model, confirmed_usage)
+        rejected.action_submit()
+        old = set(rejected.review_ids.ids)
+        actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+        assert actor is not None
+        actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime equipment execution rejection")
+        rejected.invalidate_recordset()
+        assert rejected.state == "draft" and rejected.reject_reason == "Runtime equipment execution rejection"
+        rejected.action_submit()
+        assert rejected.review_ids and old.isdisjoint(rejected.review_ids.ids)
+        _approve_existing_reviews(rejected)
+        assert rejected.state == "approved" and not rejected.reject_reason and not ledger(rejected)
+        print("APPROVAL_CHECK=%s_rejection_resubmission_stops_before_execution" % model)
+    unconfirmed = document("sc.equipment.usage")
+    invalid = document("sc.equipment.settlement", unconfirmed)
+    denied(invalid.action_submit)
+    assert invalid.state == "draft" and not invalid.review_ids
+    print("APPROVAL_CHECK=equipment_settlement_unconfirmed_usage_denied")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -1040,10 +1137,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -1186,6 +1283,7 @@ def main():
             _rfq_approval_checks(project, group, created)
             _material_settlement_approval_checks(project, group, created)
             _equipment_plan_request_checks(project, group, created)
+            _equipment_execution_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -1195,7 +1293,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (14 if scope == "equipment-plan-request" else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request") else 99, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (14 if scope in ("equipment-plan-request", "equipment-execution") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution") else 113, scope))
 
 
 main()

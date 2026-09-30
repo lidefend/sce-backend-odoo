@@ -8130,3 +8130,10 @@ P1 smart_construction_core设备使用及结算，复用policy/tier。两模型�
 L1 equipment-execution-iteration.log PASS；equipment-execution-unit.log79 PASS（参数化两模型审批不执行、确认副作用/来源校验、usage经理取消边界）；equipment-execution-native.log8+45=53 PASS；equipment-execution-semantics.log15 PASS；2XML解析/diff --check PASS，非零回执登记。候选8a82256ae+本批dirty，不是冻结交付。
 
 L3未运行：tier/新字段/state/XML需一次受管升级，下一步既有rollback工具设备执行范围真实验证使用成本台账、金额审批、权限/不可变、结算引用已确认使用及拒绝重提。L4产品前端未改不重建，仅受影响页面后验；L5不在本地范围，不重复旧ORM。实际角色办理及总体67仍未完成。
+
+
+### 53.82 设备使用与结算真实执行验证（进行中）
+
+P4现有rollback工具新增equipment-execution scope14：两模型各6（外部状态/提前确认、无配置只审批、金额规则pending、真实审批不执行、显式确认/重复确认拒绝、驳回重提），另usage事实不可改/经理确认取消边界、settlement未确认usage拒绝。使用现有finance fixture验证非经理方法保护，不新增账号/权限；临时项目/供应商/单据及台账均进入原回滚核验。建单使用sudo、审批实际reviewer，不替代角色全旅程。
+
+L1 equipment-execution-runtime-iteration.log及py_compile/bash-n PASS；P1及纯测试输入未变，复用79/53/15。一次受管smart_construction_core升级/reload后只本scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01、精确filter/固定卷由入口预检，无新环境或持久fixture。L3运行待定，前端未改不重建，L5不在本地范围。
