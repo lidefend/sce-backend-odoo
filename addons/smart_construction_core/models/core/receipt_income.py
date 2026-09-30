@@ -435,6 +435,22 @@ class ScReceiptIncome(models.Model):
             raise UserError(_("收款资金台账只能由正式收款动作绑定。"))
         if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
             raise UserError(_("收款状态、来源及财务身份只能由正式业务动作或迁移写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "currency_id", "partner_id", "contract_id",
+            "payment_request_id", "date_receipt", "amount", "document_no", "source_kind",
+            "business_category_id", "receipt_type", "income_category", "payment_method",
+            "receiving_account", "receiving_account_name", "receiving_account_no",
+            "receiving_bank_name", "bill_no", "invoice_ref", "deducted_invoice_amount",
+            "deducted_tax_amount", "settlement_amount", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state == "confirmed" or (
+                    rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已批准的收款内容不可改写；请按正式流程重新办理。"))
         if any(rec.state == "received" for rec in self) and not authoritative:
             forbidden_fields = set(vals) - self._received_surface_allowed_write_fields()
             if forbidden_fields:

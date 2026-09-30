@@ -607,6 +607,46 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_receipt_reviewed_economic_content_is_frozen(self):
+        path = MODEL.with_name('receipt_income.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        ns = {'UserError': ValueError, '_': lambda text: text, '_RECEIPT_FACT_AUTHORITY_TOKEN': object()}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('draft', 'validated'), ('confirmed', 'no'), ('confirmed', 'validated')):
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context={'sc_receipt_fact_authority_token': True})
+            for values in ({'amount': 200}, {'project_id': 9}, {'partner_id': 9}, {'currency_id': 9},
+                           {'payment_request_id': 9}, {'contract_id': 9}, {'receiving_account_no': 'changed'},
+                           {'deducted_tax_amount': 10}, {'settlement_amount': 200},
+                           {'attachment_ids': [(5, 0, 0)]}, {'active': False}):
+                with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
+                    ns['write'](rows, values)
+
+    def test_receipt_content_guard_preserves_draft_notes_and_private_execution(self):
+        path = MODEL.with_name('receipt_income.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        writes = []
+        token = object()
+        ns = {'UserError': ValueError, '_': lambda text: text, '_RECEIPT_FACT_AUTHORITY_TOKEN': token,
+              'super': lambda: types.SimpleNamespace(write=lambda vals: writes.append(dict(vals)) or True)}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status, values, context in (
+            ('draft', 'no', {'amount': 200}, {}),
+            ('draft', 'rejected', {'amount': 200}, {}),
+            ('confirmed', 'validated', {'note': 'supplement'}, {}),
+            ('confirmed', 'validated', {'state': 'received'}, {'sc_receipt_fact_authority_token': token}),
+        ):
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context=context)
+            with self.subTest(state=state, status=status, values=values):
+                self.assertTrue(ns['write'](rows, values))
+                self.assertEqual(writes[-1], values)
+        self.assertEqual(len(writes), 4)
+
     def test_financing_reviewed_and_completed_economic_content_is_frozen(self):
         path = MODEL.with_name('financing_loan.py')
         tree = ast.parse(path.read_text())
