@@ -253,6 +253,91 @@ def _plan_node_contract_check(record, expected, phase):
     print("APPROVAL_CHECK=plan_node_%s_unified_contract" % phase)
 
 
+def _plan_report_checks(project, group, created):
+    """Real report actions and policy routing, entirely inside the existing rollback."""
+    env = _env()
+    Report = env["sc.plan.report"].sudo()
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.search_count([("target_model", "=", "sc.plan.report"), ("company_id", "=", env.company.id)]), "report scope requires no existing policy; never overwrite user configuration"
+    plan = env["sc.plan"].sudo().create({"name": "Runtime report parent", "project_id": project.id})
+    created.append((plan._name, plan.id))
+    values = {"name": "Runtime report", "plan_id": plan.id, "summary": "Rollback-only report"}
+
+    def create():
+        rec = Report.create(values)
+        created.append((rec._name, rec.id))
+        return rec
+
+    def denied(call):
+        try:
+            with env.cr.savepoint():
+                call()
+        except UserError:
+            return
+        raise AssertionError("report bypass unexpectedly permitted")
+
+    for name, value in (("state", "accepted"), ("approver_id", env.uid), ("approved_date", "2026-10-01"), ("reject_reason", "forged")):
+        denied(lambda: Report.create(dict(values, **{name: value})))
+        denied(lambda: Report.with_context(**{"default_" + name: value}).create(values))
+    print("APPROVAL_CHECK=report_forged_create_and_defaults_denied")
+    auto = create()
+    for name, value in (("state", "accepted"), ("approver_id", env.uid), ("approved_date", "2026-10-01"), ("reject_reason", "forged")):
+        denied(lambda: auto.with_context(sc_document_state_token=True, skip_validation_check=True).write({name: value}))
+    assert auto.state == "draft" and not auto.approver_id
+    print("APPROVAL_CHECK=report_forged_state_and_audit_write_denied")
+    service = env["sc.workflow.contract.service"]
+    contract = service.describe_record(auto)
+    assert contract["editability"] == "editable" and "submit" in {a["key"] for a in contract["availableActions"]}
+    print("APPROVAL_CHECK=report_draft_contract_submit_available")
+    auto.action_submit()
+    assert auto.state == "accepted" and auto.approved_date and not auto.approver_id and not auto.review_ids
+    assert plan.state == "draft" and plan.progress_rate == 0
+    print("APPROVAL_CHECK=report_unconfigured_auto_accept_preserves_parent")
+    denied(lambda: auto.write({"summary": "rewrite accepted"}))
+    denied(auto.action_submit)
+    assert service.describe_record(auto)["editability"] == "readonly"
+    print("APPROVAL_CHECK=report_accepted_content_and_replay_denied")
+    policy = Policy.create({"name": "Runtime report review", "code": "runtime_report_review", "target_model": "sc.plan.report",
+                            "company_id": env.company.id, "approval_required": True, "mode": "single",
+                            "manager_group_id": group.id, "runtime_state": "tier_validation"})
+    created.append((policy._name, policy.id))
+    env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Report review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+    policy.sync_tier_definitions()
+    required = create()
+    required.action_submit()
+    assert required.state == "submitted" and required.validation_status in ("waiting", "pending") and required.review_ids
+    assert not required.approved_date and not required.approver_id
+    print("APPROVAL_CHECK=report_configured_submission_requires_review")
+    denied(lambda: required.write({"summary": "rewrite pending"}))
+    required.action_on_tier_approved()
+    assert required.state == "submitted" and service.describe_record(required)["editability"] == "readonly"
+    print("APPROVAL_CHECK=report_pending_content_and_callback_bypass_denied")
+    _approve_existing_reviews(required)
+    required.invalidate_recordset()
+    assert required.state == "accepted" and required.validation_status == "validated" and required.approved_date
+    assert required.approver_id in required.review_ids.mapped("done_by")
+    assert service.describe_record(required)["businessPhase"] == "approved"
+    print("APPROVAL_CHECK=report_real_approval_records_actual_reviewer")
+    rejected = create()
+    rejected.action_submit()
+    previous = set(rejected.review_ids.ids)
+    actor = next((rejected.with_user(u) for u in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(u).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime report correction")
+    rejected.invalidate_recordset()
+    assert rejected.state == "rejected" and rejected.reject_reason == "Runtime report correction"
+    assert service.describe_record(rejected)["editability"] == "editable"
+    rejected.write({"summary": "Corrected after rejection"})
+    print("APPROVAL_CHECK=report_real_rejection_restores_editability")
+    rejected.action_submit()
+    assert rejected.review_ids and previous.isdisjoint(rejected.review_ids.ids)
+    _approve_existing_reviews(rejected)
+    rejected.invalidate_recordset()
+    assert rejected.state == "accepted" and not rejected.reject_reason and rejected.summary == "Corrected after rejection"
+    print("APPROVAL_CHECK=report_resubmission_uses_new_review_chain")
+
+
 def _plan_state_authority_checks(project, group, created):
     env = _env()
     Plan = env["sc.plan"].sudo()
@@ -3758,7 +3843,7 @@ def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
     if scope == "expense-create-request":
         return _expense_create_request_checks()
-    assert scope in ("plan-state-authority", "contract-event-state-authority", "diary-state-authority", "settlement-adjustment", "receipt-income", "financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("plan-report", "plan-state-authority", "contract-event-state-authority", "diary-state-authority", "settlement-adjustment", "receipt-income", "financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -3777,7 +3862,11 @@ def main():
             partner = _partner("Business Config Approval Runtime Partner")
             created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope == "plan-state-authority":
+        if scope == "plan-report":
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "existing reviewer group required"
+            _plan_report_checks(project, group, created)
+        elif scope == "plan-state-authority":
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
             _plan_state_authority_checks(project, group, created)
@@ -4069,7 +4158,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope in ("diary-state-authority", "contract-event-state-authority") else 20 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "plan-report" else 12 if scope in ("diary-state-authority", "contract-event-state-authority") else 20 if scope == "plan-state-authority" else 8 if scope == "settlement-adjustment" else 6 if scope == "receipt-income" else 6 if scope == "financing-borrowing" else 9 if scope == "financing-approval" else 13 if scope == "self-funding-reconciliation" else 27 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 308, scope))
 
 
 main()

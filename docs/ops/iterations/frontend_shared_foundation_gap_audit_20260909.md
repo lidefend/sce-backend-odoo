@@ -9375,3 +9375,13 @@ L1/177纯测及receipt PASS（plan-node-capability-*），真实方法覆盖draf
 L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复用53.187 177纯测及已登记依赖receipt。受管plan-capability-v2-runtime.log进程终态exit0、20具名PASS/ROLLBACK VERIFIED，四次实际统一契约均返回节点策略且与后端写入边界一致；原节点执行更新、主单内容保护、真实审批与驳回重提继续通过。产品backend e47ba113c，frontend e19eb1e16无变更，不重载/升级/构建。环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter与原卷。
 
 关闭53.187最终契约投影缺少运行证据的问题。此链仍是原事务sudo创建/执行与实际reviewer，不能替代普通PM浏览器办理；全局父表单编辑仍未开放。下一步统一计划汇报/版本审批职责，再开放具备后端约束的执行页并做普通角色临时办理/精确清理。整体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.189 计划汇报补齐动作执行与契约（运行验收待执行）
+
+- 候选：`4e8396de8` + 本段明确 dirty 范围；上一轮为动作缺口定位证据，当前继续实现。P1 `smart_construction_core` 拥有计划汇报状态机、公司归属及原生视图；P4 只扩展既有事务回滚验收范围，不承载业务规则。
+- `sc.plan.report` 复用 tier.validation 和公司审批配置。草稿/退回提交，无配置自动 accepted，有配置必须完成真实审批；拒绝外部直接写状态/审核结果，审批中及已确认内容锁定。人工审核人来自真实 tier.review.done_by，自动确认不伪造人工审核人。不自动改写计划或节点进度。
+- 工作流契约声明提交/审批/退回，原生表单提供条件按钮及只读规则；入口镜像退役为 native_semantic_surface，并保留原有来源字段与升级重放。前端共享消费实现不增加业务特判。
+- L1 `make ci.local.iteration` PASS（plan-report-iteration-v2.log）；L2 `make verify.payment.approval_state_machine.unit` 182 PASS（plan-report-unit-v2.log）。首次182项中1项失败属测试提取范围问题：ScPlan测试整文件提取同名回调，现限定类；原失败receipt已如实记录，修复后再登记通过。
+- P4 `plan-report` 是现有审批 rollback 工具的精确范围；复用同一 project/database/profile/凭据，不创建环境或fixture。`make verify.acceptance.runtime.baseline_rebuild.unit` 44 PASS，环境源守卫 PASS（plan-report-runtime-tool-unit.log）。回滚工具语法及 shell 语法通过。
+- 所有日志沿用 `artifacts/frontend-web-fix-20260928/tpl52/`。L3 模块升级、运行验收、有效页面契约及普通角色浏览器尚未执行，因此不认定批次验收完成；既有前端 e19eb1e16 未变，不重建，不运行 Quick/发布门禁。

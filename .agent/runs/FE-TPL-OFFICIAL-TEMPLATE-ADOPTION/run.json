@@ -455,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.188 real UiContractV2Handler plan node policies verified through final layout: draft true, confirmed/execution/pending false; existing rollback scope20 PASS/rollback plan-capability-v2-runtime.log. Productbackend e47ba113c/frontende19eb1e16 unchanged; pure177 reused. Next unify plan report/version approval responsibilities (user configured=>review, none=>auto) and their backend/native action contracts before enabling parent execution fields and ordinary-PM browser handling. PM persistent plan list empty; use only existing bounded temporary recovery pattern, no fixtures or repeated empty queries. Overall67 open, no push/merge/targetdeploy.",
+  "next_exact_step": "53.189 plan report P1 state machine/shared approval/native action contract implemented; L1 passed; targeted pure182 passed (old ScPlan AST class ambiguity corrected); P4 existing rollback tool now has plan-report scope, wrapper44 passed. Next managed smart_construction_core upgrade and backend bind, then SC_APPROVAL_RUNTIME_SCOPE=plan-report runtime check10; not yet runtime/browser accepted. Frontend e19eb1e16 unchanged; no build needed. Preserve existing plan/node evidence and overall67 open; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
