@@ -4,7 +4,6 @@ This ledger records reference details that cannot be implemented safely from the
 
 ## P0 contract gaps
 
-- Record actions: declared edit/delete denial feedback is consumed by the shared official Alert (segment53.5). A duplicate capability boolean still supplies no executable copy action; confirm the business responsibility before adding an execution contract. The labelled collection detail action is already closed below; do not add a second row-action field.
 
 ## Closed boundary decisions (no longer gaps)
 
@@ -125,3 +124,11 @@ existing evidence. No backend or account writes were performed in this batch.
 The existing payment action775/view2145 now returns `container_tree_authority`, an effective native field tree and intentionally empty retired `slots`. Its published configuration and native semantic anchors already provide the business structure. The 1440/390 browser probe verifies actual project/partner field positions: two columns on desktop, one column on narrow screens. No contract/layout rewrite is needed for `task.field-grid`.
 
 `task.slot-coverage` remains open as a responsibility-level coverage check, not a request to revive slots. Compare required facts and their native/display aliases, conditional visibility, notebook and relation responsibilities before claiming closure. The scoped report `tpl07-1790768273395/report.json` proves the current authority and geometry, not all business coverage.
+
+## Segment 53.9: remaining reference responsibilities resolved
+
+Task coverage now follows the existing P1 matrix and effective native tree, not obsolete slots. Report `tpl07-1790768656354/report.json` has43 passing assertions: required inputs, contract/settlement conditional fields, attachment, payment-record relation, historical readonly fact, return, and responsive layout. Earlier business-write journeys remain their own unchanged evidence; this closes the reference projection gap without promoting the formal business matrix.
+
+Record-copy disposition: `effectiveRecordCapabilities.duplicate` is derived from access rights. Current payment `actionRuleList` declares save, workflow and relation actions but no copy execution; the P1 matrix and pinned official detail compositions do not require a copy journey. Do not invent that business feature from a capability boolean. Declared edit/delete denial feedback was verified in53.5. This resolves the former open scope decision; it is not a claim that copying records has been implemented.
+
+The67-entry reference ledger has no open items. Overall completion remains unproven: planned saved-search success/refresh/restoration, outstanding required gates and the full goal completion audit retain their own obligations.

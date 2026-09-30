@@ -7438,3 +7438,12 @@ L5：未推送、未合并、未部署。
 - 原生view_payment_request_pay_form已明确移除payment_flow_label重复摘要，name/state由页头承载，legal_next_action_display与payment_blocking_reason_display由动作/反馈承载。历史slot不足记录不能作为恢复重复正文的依据。41项矩阵声明检查使用原生字段节点、语义锚点与页头数据；显式记录payment_flow_label的P1退役依据，不能把该摘要当新业务输入。
 - 首次探针使用旧dataMeta.fields位置，报告tpl07-1790768422213为validation_tool_defect，并非41项业务字段全部缺失；修复当前V2投影采集后23/23通过（tpl07-1790768458153/report.json，tpl52/task-facts-browser-fixed.log）。已证明4项always required输入可见、附件输入可见、追溯区可展开、双视口几何保留，41项职责无未解释的声明缺失；无业务写入。
 - task.slot-coverage继续保留：上述声明完整与代表字段可见不能直接证明每项条件字段/追溯页签事实均可消费。下一步只补条件字段与追溯页签的实际交互证据，复用TPL05A49项业务闭环，不重做办理；复制职责与收藏成功/刷新/恢复仍待收口。整体目标保持active。
+
+
+### 53.9 条件事实及追溯页签闭环，参考台账收敛
+
+- P4探针；候选2c1c9ca6e + browser script dirty，无产品/后端变化。复用53.7 L2 11项与53.6静态候选，node syntax和diff通过；无ORM、构建或业务写入。
+- 现有finance1813同时有合同/结算依据，按原P1矩阵核对适用事实。首轮tpl07-1790768539759在付款记录tab定位超时；追加有界DOM/screenshot诊断tpl07-1790768605198证明页签存在，官方Tabs没有role=tab。分类validation_tool_defect，改用可见标签，无产品改动。最终tpl07-1790768656354/report.json（tpl52/task-conditional-final.log）43/43通过：合同/结算条件字段、付款记录关系、历史金额只读与声明空文本、切回结算事实、双视口布局。诊断截图已复核。
+- task.slot-coverage关闭：41项既有P1职责及当前原生投影、代表/条件事实/关系切换证据共同证明本条呈现责任；条件性权限/审批等业务闭环仍引用原TPL05A49结果，不宣称本次重跑或自动升级业务矩阵。
+- detail.action-state关闭剩余范围判断：duplicate是权限交集，不是动作；实际actionRuleList没有copy，既有P1职责矩阵与pinned官方detail均不要求copy。禁止仅据boolean新增端侧执行，未来明确业务要求需正式执行契约。既有编辑/删除拒绝反馈沿用53.5。
+- 67条参考台账无开放项不等于整体目标完成。下一项是收藏成功保存→有效契约刷新→恢复原配置闭环，之后核对原整体计划、必要门禁与现有证据；不推送/合并/目标部署。

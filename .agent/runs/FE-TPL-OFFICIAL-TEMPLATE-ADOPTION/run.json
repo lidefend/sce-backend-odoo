@@ -176,7 +176,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Complete only remaining task conditional-field and trace-notebook consumption evidence using effective native modifiers and existing records;41 matrix declarations and4 required inputs/attachment/trace expansion proven53.8. Then settle copy responsibility and saved-search success/refresh/restoration. Reuse53.7 tests and unchanged frontend/backend; no full49 journey rerun.",
+  "next_exact_step": "Implement governed planned saved-search success/refresh/restoration loop with exact private fixture filter identity and authoritative cleanup. Then audit full original objective and outstanding required gates using existing results;67 reference rows are resolved but overall completion remains unproven. No unrelated ORM, new fixtures/environments or remote publication.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -300,6 +300,14 @@
       "matrix_rule_count": 41,
       "browser_assertions": 23,
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790768458153/report.json"
+    },
+    "task_conditional_segment_53_9": {
+      "status": "passed",
+      "source_head": "2c1c9ca6e",
+      "browser_assertions": 43,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790768656354/report.json",
+      "ledger_remaining": 0,
+      "scope": "reference task fact coverage and explicit record-copy scope disposition; not overall goal completion"
     }
   }
 }

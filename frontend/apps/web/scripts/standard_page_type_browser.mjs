@@ -421,6 +421,24 @@ try {
     const trace = finance.page.locator('[data-group-title="履约与追溯"]').first();
     await trace.getByRole('button', { name: '履约与追溯', exact: true }).click();
     check('task: declared trace section can expand', await trace.getAttribute('data-collapsed') === 'false');
+    check('task: existing record supplies conditional contract and settlement', Boolean(authority.mainData.contract_id && authority.mainData.settlement_id));
+    const applicableFacts = rules.filter((row) => ['contract_selected', 'settlement_selected'].includes(row.applicability));
+    check('task: conditional fact scope is nonempty', applicableFacts.length > 0);
+    for (const row of applicableFacts) {
+      check(`task: applicable ${row.field} visible`, await finance.page.locator(`[data-field-name="${row.field}"]`).first().isVisible());
+    }
+    check('task: pay record does not expose receipt-only notebook', await trace.getByText('收款发票明细', { exact: true }).count() === 0);
+    report.traceControls = await trace.evaluate((el) => ({ text: el.innerText, controls: [...el.querySelectorAll('[role],button')].map((node) => ({ tag: node.tagName, role: node.getAttribute('role'), text: node.textContent?.trim() })) }));
+    await finance.page.screenshot({ animations: 'disabled', path: path.join(out, 'trace-before-tabs.png') });
+    await trace.getByText('付款记录', { exact: true }).click();
+    check('task: declared payment relation is reachable', await trace.locator('[data-field-name="ledger_line_ids"]').isVisible());
+    await trace.getByText('历史金额确认', { exact: true }).click();
+    const historical = trace.locator('[data-field-name="accepted_amount_uppercase"]');
+    check('task: historical fact is reachable', await historical.isVisible());
+    check('task: historical fact remains readonly', await historical.locator('input, textarea').count() === 0);
+    check('task: historical empty text follows declared semantics', (await historical.innerText()).includes('无历史确认记录'));
+    await trace.getByText('结算与来源匹配', { exact: true }).click();
+    check('task: trace return restores settlement facts', await trace.locator('[data-field-name="paid_amount_total"]').isVisible());
     report.taskPresentation = [];
     for (const width of [1440, 390]) {
       await finance.page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
