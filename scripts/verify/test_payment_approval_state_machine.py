@@ -31,7 +31,8 @@ def load_methods():
     exec(compile(ast.Module(body=[state_class], type_ignores=[]), str(STATE), 'exec'), namespace)
     names = {'_route_submitted_approval', '_complete_payment_approval',
              '_check_approval_state_transition', 'action_approval_decision',
-             'action_approve', 'action_set_approved', 'action_on_tier_approved'}
+             'action_approve', 'action_set_approved', 'action_on_tier_approved',
+             'action_approval_reject', 'action_on_tier_rejected'}
     tree = ast.parse(MODEL.read_text())
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
@@ -42,12 +43,22 @@ def load_methods():
 PRODUCTION, METHODS = load_methods()
 
 
+class Reviews(list):
+    def filtered(self, predicate):
+        return Reviews(row for row in self if predicate(row))
+
+    def write(self, values):
+        for row in self:
+            for key, value in values.items():
+                setattr(row, key, value)
+
+
 class Record:
     _name = 'payment.request'
     display_name = 'approval probe'
 
     def __init__(self, *, required=True, reviews=None, status='no', state='submit', matching=True):
-        self.data = dict(state=state, review_ids=list(reviews or []), validation_status=status,
+        self.data = dict(state=state, review_ids=Reviews(reviews or []), validation_status=status,
                          can_review=True, audits=[], messages=[], requests=0, restarts=0,
                          next_status='validated', authorized=True)
         self.company_id = types.SimpleNamespace(id=7)
@@ -96,6 +107,20 @@ class Record:
 
     def validate_tier(self):
         self.data['validation_status'] = self.next_status
+
+    def _get_sequences_to_approve(self, user):
+        return [1]
+
+    def _rejected_tier(self, reviews):
+        reviews.write({'status': 'rejected'})
+        self.data['validation_status'] = 'rejected'
+        self.action_on_tier_rejected()
+
+    def _update_counter(self, values):
+        pass
+
+    def _get_tier_reject_reason(self):
+        return next((row.comment for row in self.review_ids if row.status == 'rejected'), None)
 
     def _check_detail_amount_consistency(self):
         pass
@@ -146,7 +171,7 @@ for name in METHODS:
 class PaymentApprovalStateMachineTests(unittest.TestCase):
     def record(self, **kwargs):
         rec = Record(**kwargs)
-        rec.env = Env(context={}, company=rec.company_id, policy=rec.policy)
+        rec.env = Env(context={}, company=rec.company_id, policy=rec.policy, user=42)
         return rec
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
@@ -308,6 +333,59 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(self.producer()._next_state_hint(rec, 'approve'), '')
         rec.data['validation_status'] = 'validated'
         self.assertEqual(self.producer()._next_state_hint(rec, 'approve'), 'approved')
+
+    def rejecting_record(self, *, reviewer=42, sequence=1):
+        review = types.SimpleNamespace(status='pending', sequence=sequence, reviewer_ids=[reviewer], comment='')
+        return self.record(reviews=[review], status='pending')
+
+    def test_rejection_records_review_reason_before_single_business_transition(self):
+        rec = self.rejecting_record()
+        rec.action_approval_reject(reason='  incorrect amount  ')
+        self.assertEqual(rec.state, 'rejected')
+        self.assertEqual(rec.review_ids[0].status, 'rejected')
+        self.assertEqual(rec.review_ids[0].comment, 'incorrect amount')
+        self.assertEqual(rec.audits[0][3]['reason'], 'incorrect amount')
+        self.assertEqual(len(rec.audits), 1)
+
+    def test_rejection_denies_wrong_user_or_step_even_with_stale_can_review(self):
+        for kwargs in ({'reviewer': 99}, {'sequence': 2}):
+            rec = self.rejecting_record(**kwargs)
+            with self.assertRaises(PermissionError):
+                rec.action_approval_reject(reason='denied')
+            self.assertEqual(rec.review_ids[0].comment, '')
+            self.assertEqual(rec.state, 'submit')
+
+    def test_rejection_requires_reason_and_current_review_capability(self):
+        rec = self.rejecting_record()
+        with self.assertRaises(ValueError):
+            rec.action_approval_reject(reason=' ')
+        rec.data['can_review'] = False
+        with self.assertRaises(PermissionError):
+            rec.action_approval_reject(reason='denied')
+        self.assertEqual(rec.state, 'submit')
+
+    def test_reject_intent_targets_review_decision_instead_of_callback(self):
+        path = ROOT / 'addons/smart_construction_core/handlers/payment_request_approval.py'
+        cls = next(n for n in ast.parse(path.read_text()).body
+                   if isinstance(n, ast.ClassDef) and n.name == 'PaymentRequestRejectHandler')
+        method = next(ast.literal_eval(n.value) for n in cls.body if isinstance(n, ast.Assign)
+                      and any(getattr(t, 'id', None) == 'ACTION_METHOD' for t in n.targets))
+        self.assertEqual(method, 'action_approval_reject')
+
+    def test_rejection_callback_without_rejected_chain_is_inert(self):
+        rec = self.rejecting_record()
+        rec.action_on_tier_rejected(reason='forged')
+        self.assertEqual(rec.state, 'submit')
+        self.assertFalse(rec.audits)
+
+    def test_rejection_projection_requires_existing_pending_chain_and_reviewer(self):
+        rec = self.record()
+        self.assertEqual(self.producer()._evaluate_prerequisites(rec, 'reject'), (False, 'FAILED'))
+        rec = self.rejecting_record()
+        rec._has_finance_approve_access = lambda: True
+        self.assertEqual(self.producer()._evaluate_prerequisites(rec, 'reject'), (True, 'OK'))
+        rec.data['can_review'] = False
+        self.assertFalse(self.producer()._authorization_for_action(rec, 'reject'))
 
     def test_legacy_approving_state_uses_same_completed_chain(self):
         rec = self.record(state='approve', reviews=['tier'], status='validated')

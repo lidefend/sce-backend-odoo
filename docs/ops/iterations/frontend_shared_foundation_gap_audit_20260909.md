@@ -7531,3 +7531,13 @@ L5：未推送、未合并、未部署。
 - 本批改XML，L3必须通过既有acceptance.module.upgrade针对smart_construction_core升级；当前尚未升级/重载，没有执行任何业务数据库写入。前端输入未变，5180继续复用原产物，不需构建。L4真实配置切换/多级链/返回反馈仍待同一受管环境验证。既有TPL05A49项只作未变范围基线，本次审批变化不能继承其审批结果。
 - 已知未完：拒绝/重提的完整ORM链、审批策略配置变化的运行验证、费用/结算旧批准入口一致性，以及native coverage全局方法名误覆盖缺陷。登记中仍余付款冲销1项不代表全系统只剩1项；模型绑定的只读比较已发现5个隐藏方法（付款action_approve/validate_tier本批退役，另外sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve仍需按所有者统一规则处置）。签署/计划/文档运行验证仍保留，不宣称完整收口。
 - 当前为实现与纯测试完成，批次产品验收verification_pending，整体active；本地提交，不推送、合并或目标部署。
+
+
+### 53.19 审批范围明确为所有业务单据；付款驳回先退出直改状态路径
+
+- 所有者补充强制范围：审批统一逻辑覆盖所有业务单据，付款仅首个修复点，不是最终架构。后续必须复用现有状态机、sc.approval.policy和base_tier_validation的共同机制，不能逐模型复制付款私有审批编排；业务单据各自合法状态、权限、输入校验和审批后执行职责仍由行业/用户契约拥有。配置审批走真实链，无配置提交自动通过，已启用而无规则不放行。
+- 本节已完成P1付款驳回执行修复：payment.request.reject改调action_approval_reject，验证财务权限、当前can_review、实际reviewer及当前sequence；先写review意见，交给原生_rejected_tier记录真实驳回，再由action_on_tier_rejected推进业务状态。回调没有rejected审批事实时不推进，重复回调不重复审计。原生reject_tier仍走相同审批运行时及事实回调，未增加第二套审批引擎。
+- 定向回归verify.payment.approval_state_machine.unit稳定28项、workflow_action_semantics.guard15项通过（approval-rejection-stable.log，begin/record28），L1 ci.local.iteration通过（approval-rejection-iteration.log）。覆盖错误审批人/错误步骤、缺意见、伪造回调、真实意见先于状态推进及专用intent方法绑定。HTTP dispatcher已按失败结果显式rollback，未为猜测另改事务框架。函数测试不等于ORM/数据库恢复验证。
+- 精确读取现有权威清单发现：sc.approval.policy.BUSINESS_MODEL_SELECTION仅17类，_tier_sync_supported仅15类，而workflowContract已有65个profile。它们职责并非等价，不能简单相减或把17类当用户确认的全范围。配置可用范围、审批运行时接入和状态动作投影需要按既有业务职责清单逐项关联；未接入但属于必要业务单据的部分登记产品缺口，不静默采用“不能配置，所以无审批”。不建立平行模型白名单来定义业务规则。
+- 下一步优先共同机制与必要业务单据覆盖，统一提交/通过/拒绝/重提/回调/动作投影，并消除旧并行路径；复用既有workflow/审批配置清单和67条台账。先前付款已通过的函数结果只证明付款范围，不能外推全系统。native coverage按全局方法名误覆盖的问题继续保留，必须绑定model+method再作为全范围证据。
+- 当前未执行模块升级、运行配置写入或业务写入，受管验收仍待。目标由所有者明确为全系统审批一致性，整体接管保持active；不推送、合并、部署。

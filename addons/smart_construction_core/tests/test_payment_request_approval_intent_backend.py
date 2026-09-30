@@ -169,7 +169,7 @@ class TestPaymentRequestApprovalIntentBackend(TransactionCase):
         self._set_handler_contract_state(payment_request, "submit", "pending")
         handler = PaymentRequestRejectHandler(self.env, payload={})
         with patch(
-            "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_on_tier_rejected",
+            "odoo.addons.smart_construction_core.models.core.payment_request.PaymentRequest.action_approval_reject",
             autospec=True,
             return_value=None,
         ):

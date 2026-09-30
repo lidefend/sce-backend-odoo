@@ -205,12 +205,13 @@
         "addons/smart_construction_core/handlers/payment_request_available_actions.py",
         "addons/smart_construction_core/views/core/payment_request_views.xml",
         "scripts/verify/test_payment_approval_state_machine.py",
-        "make/ci.mk"
+        "make/ci.mk",
+        "addons/smart_construction_core/handlers/payment_request_approval.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Close scoped approval runtime requirements after53.18: review actual ORM/callback/reject/retry dependencies, fix native model+method coverage undercount, then governed smart_construction_core module upgrade and targeted approval-policy runtime validation using existing environment/evidence tools. No frontend rebuild. Payment approve compatibility methods now delegate; never reintroduce no-review approval. Preserve pending signing/plan/document checks and remaining reversal/product gaps.",
+  "next_exact_step": "Owner53.19: unify approval across ALL business documents via existing shared state machine/policy/tier mechanism, not copied payment routing. Reconcile existing responsibility/profile/configuration support (17 configured model types,15 tier sync,65 workflow profiles have different scopes); register necessary missing support as product gaps. Preserve completed payment code/tests, extend common route and native/effective entries, correct model-bound coverage, then governed module upgrade and scoped runtime acceptance. No new environment/fixture system, frontend rebuild or remote publication.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -440,6 +441,17 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-unification-stable.log",
       "runtime": "not_run; XML requires governed module upgrade before affected runtime checks",
       "database_writes": false
+    },
+    "approval_rejection_53_19": {
+      "status": "verification_pending",
+      "source_head": "16d942e11",
+      "targeted_tests": {
+        "approval_state_machine": 28,
+        "action_semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-rejection-stable.log",
+      "runtime": "not_run",
+      "scope_correction": "All business documents; payment-only success is insufficient. Reuse existing common state machine, approval policy, tier runtime and responsibility inventories."
     }
   }
 }

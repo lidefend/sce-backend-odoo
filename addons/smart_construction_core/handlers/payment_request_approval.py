@@ -452,7 +452,7 @@ class PaymentRequestRejectHandler(_BasePaymentApprovalHandler):
     DESCRIPTION = "Reject payment request via canonical intent contract"
     VERSION = "1.0.0"
     AUDIT_EVENT_CODE = "PAYMENT_REQUEST_REJECT_INTENT"
-    ACTION_METHOD = "action_on_tier_rejected"
+    ACTION_METHOD = "action_approval_reject"
     ACTION_NAME = "reject"
     ACCESS_GROUPS = [
         "smart_core.group_smart_core_finance_approver",

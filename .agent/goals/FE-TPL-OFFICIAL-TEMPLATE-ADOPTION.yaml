@@ -49,9 +49,18 @@ goal:
     Template demo features do not invent business requirements. Keep local-only delivery.
 
   approval_unification_decision: >-
-    Owner decision53.17: authoritative state transitions consume existing
+    Owner decisions53.17/53.19 apply to ALL business documents, not payment alone.
+    Reuse one shared approval mechanism and retire parallel per-model approval
+    routing. Authoritative state transitions consume existing
     company-scoped user approval configuration. Submission auto-approves only
     when approval is not configured; configured approval follows its real chain.
     Missing enabled rules are errors, not permission to skip approval. Preserve
     in-flight approval authority and business preconditions. Retire parallel
     manual-approve logic rather than projecting every legacy button independently.
+
+  approval_scope_completion_rule: >-
+    The current approval configuration selection and tier-sync support list are
+    implementation coverage, not permission to shrink the business-document scope.
+    Reconcile them with existing business responsibilities and workflow profiles;
+    required missing configuration/runtime support is a product gap. A passing
+    payment test or a global method-name match never proves all-document coverage.

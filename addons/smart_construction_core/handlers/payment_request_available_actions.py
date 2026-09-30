@@ -61,8 +61,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "驳回",
             "intent": "payment.request.reject",
-            "method": "action_on_tier_rejected",
-            "allowed_states": {"submit"},
+            "method": "action_approval_reject",
+            "allowed_states": {"submit", "approve"},
             "required_params": ["reason"],
             "delivery_priority": 30,
             "presentation": {"tier": "secondary", "semantic": "destructive"},
@@ -141,7 +141,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             # R10-v2: stub records in work-item projections may not carry the
             # finance-approve helper; mirror the submit fallback semantics.
             finance_allowed = bool(getattr(record, '_has_finance_approve_access', lambda: False)())
-            if key == "approve" and str(getattr(record, "validation_status", "") or "") in ("waiting", "pending"):
+            if str(getattr(record, "validation_status", "") or "") in ("waiting", "pending"):
                 return finance_allowed and bool(getattr(record, "can_review", False))
             return finance_allowed
         if key == "done":
@@ -198,6 +198,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
         if key == "reject":
+            if not record.review_ids or record.validation_status not in ("waiting", "pending"):
+                return False, REASON_BUSINESS_RULE_FAILED
             return True, REASON_OK
         if key == "done":
             if str(record.type or "") == "pay":

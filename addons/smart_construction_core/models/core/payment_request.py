@@ -3409,9 +3409,37 @@ class PaymentRequest(models.Model):
             return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
         return False
 
+    def action_approval_reject(self, reason=None):
+        """Record a real reviewer decision before advancing the business state."""
+        self._assert_finance_approve_access()
+        self.ensure_one()
+        reason = str(reason or "").strip()
+        if not reason:
+            raise UserError(_("审批驳回必须填写原因。"))
+        if self.state not in ("submit", "approve") or self.validation_status not in ("waiting", "pending"):
+            raise UserError(_("只有审批中的付款/收款申请可以驳回。"))
+        if not self.can_review:
+            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
+        sequences = self._get_sequences_to_approve(self.env.user)
+        reviews = self.review_ids.filtered(
+            lambda review: review.sequence in sequences
+            and review.status in ("waiting", "pending")
+            and self.env.user in review.reviewer_ids
+        )
+        if not reviews:
+            raise AccessError(_("当前用户没有可驳回的审批步骤。"))
+        reviews.write({"comment": reason})
+        self._rejected_tier(reviews)
+        self._update_counter({"review_deleted": True})
+        self.action_on_tier_rejected()
+        return {}
+
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
+                continue
+            if not rec.review_ids or rec.validation_status != "rejected":
+                # A public callback is not permission to fabricate rejection.
                 continue
             reason = reason or rec._get_tier_reject_reason()
             if not reason:
