@@ -1571,6 +1571,24 @@ assert.deepEqual(
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
 const descriptorWidgetOptionsSnapshot = snapshot();
+const relationScopeSnapshot = snapshot();
+const relationScopeWidget = relationScopeSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
+relationScopeWidget.fieldDescriptor = {
+  name: 'name', type: 'many2one', relation: 'x.source',
+  domain: "[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+  context: { active_test: false },
+};
+const declaredRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
+assert.equal(declaredRelationScope.domain, relationScopeWidget.fieldDescriptor.domain,
+  'field descriptor query restrictions must survive store projection without component overrides');
+assert.deepEqual(declaredRelationScope.context, { active_test: false },
+  'declared relation context must survive store projection');
+relationScopeWidget.componentConfig.domain = [];
+relationScopeWidget.componentConfig.context = {};
+const overriddenRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
+assert.deepEqual(overriddenRelationScope.domain, [], 'explicit empty component domain retains precedence');
+assert.deepEqual(overriddenRelationScope.context, {}, 'explicit empty component context retains precedence');
+console.log('[canonical_form_presenter] relation descriptor domain/context projection PASS count=4');
 descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
   no_create: true,
   no_quick_create: true,

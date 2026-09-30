@@ -379,8 +379,10 @@ export function resolveContractV2FieldDescriptorMap(
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),
-      ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain } : {}),
-      ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context } : {}),
+      ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain }
+        : Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
+      ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
+        : Object.prototype.hasOwnProperty.call(descriptor, 'context') ? { context: descriptor.context } : {}),
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
