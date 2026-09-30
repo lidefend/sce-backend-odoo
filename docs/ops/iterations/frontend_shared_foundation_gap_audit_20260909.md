@@ -7926,3 +7926,7 @@ L5：未推送、未合并、未部署。
 P1 smart_construction_core workflow.contract.service 的完整动作目录通过既有 workflowContract.actions 输出，仅声明方法与含义，不携带 enabled/target；availableActions 保持当前状态、审批人与证据约束。P0 既有投影无需业务特例。范围为该生产器与两项现有纯测试；不改权限、状态机、原生视图或前端业务逻辑。L0 已确认当前分支、工作区原本 clean；L1 iteration → L2 native coverage 与有效契约投影纯测试 → L3 后端重载 → L4 复用现有构建核对只读入口。没有模型/XML变化，不升级模块；没有前端源变化，不重建；既有45项审批运行时输入不变，复用，不跑无关 ORM。
 
 L1 `action-catalog-iteration.log` PASS；L2 `action-catalog-native.log` 8+35=43 PASS，begin/record43 回执 `action-catalog-receipt.log`。投影首次新增用例缺必填 origin 导致1错误（产品正确拒绝不完整声明）；纠正测试输入后 `action-catalog-projection-fixed.log` 20+108=128 PASS，runtime guard score6。未改变生产投影校验；首次失败日志保留。待后端重载与实际契约核对。
+
+实际运行完成：后端 `e14519cb1` 受管重载成功；5180 复用 `51f470eb9` 的 `/assets/index-C5E0xYhV.js`，SHA256 `86ff6b206abb70d2e56716f2ce6b1bc7df0aabc6f8b7b495bdc328d1d3b56b18`，前端构建输入无变动、未重建。PM/公司8/project10 的官方只读详情浏览器22项 PASS，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790778081937/report.json`：submit/start/approve/reject 均有正确语义，未审批无启动，审批事实与生命周期分离，双视口、errors=[]、forbiddenWrites=[]。这是只读入口与契约验收，不证明信息编辑入口或真实提交操作已验收。
+
+后续已定位共享消费者 `workflowActionAvailability.ts` 仍使用方法名别名和固定 knownKeys；应以完整声明目录识别受管动作，退出名称推导，不能因 unavailableActions 不含动作就漏掉新声明的暂停/阶段推进等动作约束。本段未改变该消费者，不声称全系统收口；67条/所有业务单据目标继续，金额权威与数据不足旅程仍保留原缺口。无推送、合并、目标环境部署。
