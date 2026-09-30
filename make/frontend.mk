@@ -702,6 +702,7 @@ verify.frontend.search_groupby_savedfilters.guard: guard.prod.forbid
 verify.frontend.saved_search_capability.unit: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/app_config_engine/models/app_search_config.py addons/smart_core/tests/test_saved_search_capability_projection.py
 	@python3 addons/smart_core/tests/test_saved_search_capability_projection.py
+	@python3 addons/smart_core/tests/test_search_favorite_handler_boundaries.py
 
 .PHONY: verify.frontend.record_denied_reason.unit
 verify.frontend.record_denied_reason.unit: guard.prod.forbid

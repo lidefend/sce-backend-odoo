@@ -167,3 +167,47 @@ class SearchFavoriteSetHandler(BaseIntentHandler):
             },
             "meta": {"intent": self.INTENT_TYPE, "version": self.VERSION, **self._source_meta()},
         }
+
+
+class SearchFavoriteDeleteHandler(SearchFavoriteSetHandler):
+    """Delete only the caller's exact private saved filter, without elevation."""
+    INTENT_TYPE = "search.favorite.delete"
+    DESCRIPTION = "删除当前用户的私有收藏筛选"
+
+    def handle(self, payload=None, ctx=None):
+        params = self._params(payload or self.payload)
+        if not isinstance(params, dict):
+            return self._err(400, "params 无效")
+        record_id = params.get("id")
+        action_id = params.get("action_id", 0)
+        if type(record_id) is not int or record_id <= 0:
+            return self._err(400, "id 无效")
+        if action_id is False:
+            action_id = 0
+        if type(action_id) is not int or action_id < 0:
+            return self._err(400, "action_id 无效")
+        model, error = self._text_param(params, "model", required=True)
+        if error:
+            return error
+        if model not in self.env:
+            return self._err(400, "模型不存在或未指定")
+        if not self.env.user.has_group("base.group_user"):
+            return self._err(403, "当前用户不能管理收藏")
+        self.env[model].check_access_rights("read")
+        filters = self.env["ir.filters"]
+        filters.check_access_rights("read")
+        filters.check_access_rights("unlink")
+        record = filters.search([
+            ("id", "=", record_id), ("user_id", "=", self.env.uid),
+            ("model_id", "=", model), ("action_id", "=", action_id or False),
+        ], limit=1)
+        if not record:
+            return self._err(404, "收藏不存在或当前用户无权删除")
+        record.check_access_rule("unlink")
+        record.unlink()
+        return {
+            "ok": True,
+            "data": {"id": record_id, "deleted": True, "model": model,
+                     "action_id": action_id or False},
+            "meta": {"intent": self.INTENT_TYPE, "version": self.VERSION, **self._source_meta()},
+        }

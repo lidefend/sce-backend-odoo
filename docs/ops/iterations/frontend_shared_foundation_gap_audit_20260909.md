@@ -7455,3 +7455,12 @@ L5：未推送、未合并、未部署。
 - 本轮临时工具、Make接线和浏览器写入分支全部撤回，未提交；没有调用prepare/restore，没有执行收藏保存、删除或其他数据库写入。纯工具日志仅为已撤回方案的历史记录，不计产品验收证据。
 - 既有67条台账中collection.favorite重开为P0 contract_gap；P0 smart_core拥有权限/执行及投影，通用前端仅消费明确能力与动作，不按角色或过滤器名称猜权限。下一步补齐删除执行、私有收藏所有权/ACL边界、共享菜单入口及成功/失败反馈，再通过产品入口验证保存→刷新→删除→刷新。维持单一主路径，不另建收藏管理页面。
 - 53.9的67条无开放项仅代表当时已确认范围，现已被本次产品缺口裁决修正；整体目标一直未宣布完成。其他67条的既有通过证据不失效。
+
+
+### 53.11 收藏删除的P0执行与契约投影
+
+- 候选913d71a99 + smart_core收藏handler/投影/定向测试、make/frontend.mk dirty。Formal Product Layer=P0，Layer Target=通用收藏权限与执行；不涉及行业/客户规则，不在前端推导归属。沿既有handler模块自动发现增加search.favorite.delete，无模型字段/XML变更，不需要模块升级；待共享消费完成后受管重载及运行态验证。
+- 删除显式绑定id/model/action_id，内部用户、目标模型read、ir.filters read/unlink ACL和记录规则均由后端检查；查询强制user_id=当前用户，拒绝共享与他人私有收藏，全程无sudo。响应明确deleted结果，重复/不存在对象不伪报删除成功。
+- saved_filters逐项增加delete_action（intent/label/enabled/disabled_reason/params）；可删除要求当前所有者、模型read及过滤器read/unlink ACL/record-rule。沿53.4每次有效契约刷新投影，不从缓存继承旧权限。无create权限不影响已获授权的删除。
+- L1 ci.local.iteration及py_compile通过；L2现有saved_search_capability入口扩展执行handler边界测试，16+13=29项通过（tpl52/favorite-delete-backend-final.log），agent.run.begin/record29。覆盖共享/他人/错模型/错action、ACL/rule拒绝、非法身份类型、不能提权、删除不要求create等。纯测试不是运行态ORM证明。
+- collection.favorite保持contract_gap：尚待共享菜单消费删除动作、确认/反馈/失败恢复，以及真实保存→刷新→删除→刷新闭环。当前未重载后端、未构建、未执行配置写入，不宣称产品缺口关闭。其余页面证据不受本次后端范围影响。

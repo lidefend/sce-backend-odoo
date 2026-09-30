@@ -257,7 +257,7 @@ class AppSearchConfig(models.Model):
         capability["disabled_reason"] = ""
         return capability
 
-    def _project_saved_filter_mutation_rows(self, rows, uid):
+    def _project_saved_filter_mutation_rows(self, rows, uid, model_name=None):
         """给收藏项补“归属 + 可变性”，用 Odoo 自身记录规则判定。
 
         归属用 ir.filters.user_id 这一业务身份字段，不用名称/顺序推断；
@@ -279,7 +279,12 @@ class AppSearchConfig(models.Model):
             try:
                 records = self.env["ir.filters"].browse(ids)
                 writable = set(records._filter_access_rules("write").ids)
-                deletable = set(records._filter_access_rules("unlink").ids)
+                if (model_name in self.env
+                        and self.env.user.has_group("base.group_user")
+                        and self.env[model_name].check_access_rights("read", raise_exception=False)
+                        and self.env["ir.filters"].check_access_rights("read", raise_exception=False)
+                        and self.env["ir.filters"].check_access_rights("unlink", raise_exception=False)):
+                    deletable = set(records._filter_access_rules("unlink").ids)
             except Exception:
                 _logger.warning("saved filter mutation capability unresolved", exc_info=True)
                 writable, deletable = set(), set()
@@ -297,7 +302,14 @@ class AppSearchConfig(models.Model):
                 row_id = 0
             row["owned_by_current_user"] = owned
             row["writable"] = row_id in writable
-            row["deletable"] = row_id in deletable
+            row["deletable"] = owned and row_id in deletable
+            row["delete_action"] = {
+                "intent": "search.favorite.delete", "label": "删除收藏",
+                "enabled": row["deletable"],
+                "disabled_reason": "" if row["deletable"] else "SAVED_SEARCH_DELETE_DENIED",
+                "params": {"id": row_id, "model": model_name,
+                           "action_id": row.get("action_id") or False},
+            }
         return rows
 
     @api.model
@@ -326,7 +338,7 @@ class AppSearchConfig(models.Model):
         rows = contract.get("saved_filters")
         if isinstance(rows, list):
             contract["saved_filters"] = self._project_saved_filter_mutation_rows(
-                rows, getattr(self.env, "uid", None)
+                rows, getattr(self.env, "uid", None), model_name
             )
         return contract
 

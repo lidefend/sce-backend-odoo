@@ -86,7 +86,7 @@ class _FilterModel:
         return self
 
     def check_access_rights(self, operation, raise_exception=False):
-        return bool(self._create_allowed) and operation == "create"
+        return bool(self._create_allowed) if operation == "create" else operation in ("read", "unlink")
 
     def search(self, domain, limit=None):
         return []
@@ -256,6 +256,10 @@ class SavedFilterMutationCapabilityTests(unittest.TestCase):
         self.assertTrue(by_id[1]["owned_by_current_user"])
         self.assertTrue(by_id[1]["writable"])
         self.assertTrue(by_id[1]["deletable"])
+        self.assertEqual(by_id[1]["delete_action"]["intent"], "search.favorite.delete")
+        self.assertEqual(by_id[1]["delete_action"]["params"]["model"], "x.demo")
+        self.assertTrue(by_id[1]["delete_action"]["enabled"])
+        self.assertFalse(by_id[3]["delete_action"]["enabled"])
         self.assertFalse(by_id[3]["owned_by_current_user"])
         self.assertTrue(by_id[3]["writable"])
         self.assertFalse(by_id[3]["deletable"])
@@ -342,6 +346,35 @@ class CachedFavoriteRuntimeTests(unittest.TestCase):
         contract = {'searchContract': {'saved_filters': [{'id': 7}]}}
         namespace['seal_runtime_contract'](owner, contract, {'model': 'x.demo'}, 'ui.contract', 'r', 't', 'web_pc', action_id=775)
         self.assertEqual(events, [('refresh', 'x.demo', 775), ('seal', 0)])
+
+
+class SavedSearchDeleteCapabilityTests(unittest.TestCase):
+    def test_shared_delete_is_denied_even_when_record_rule_allows(self):
+        module = _load_module()
+        env = _Env(filters=_FilterModel(deletable=(1, 2)))
+        rows = _record(module, env)._project_saved_filter_mutation_rows(
+            [{"id":1,"owner":7,"action_id":31},{"id":2,"owner":False,"is_shared":True}], 7, "x.demo")
+        self.assertTrue(rows[0]["delete_action"]["enabled"])
+        self.assertEqual(rows[0]["delete_action"]["params"], {"id":1,"model":"x.demo","action_id":31})
+        self.assertFalse(rows[1]["deletable"])
+        self.assertFalse(rows[1]["delete_action"]["enabled"])
+
+    def test_delete_requires_acl_internal_user_and_readable_model(self):
+        module = _load_module()
+        for denied in ("read", "unlink", "internal", "model"):
+            with self.subTest(denied=denied):
+                filters = _FilterModel(deletable=(1,))
+                if denied in ("read", "unlink"):
+                    filters.check_access_rights = lambda operation, raise_exception=False: operation != denied
+                env = _Env(filters=filters, internal=denied != "internal", readable=denied != "model")
+                rows = _record(module, env)._project_saved_filter_mutation_rows([{"id":1,"owner":7}],7,"x.demo")
+                self.assertFalse(rows[0]["delete_action"]["enabled"])
+
+    def test_delete_does_not_require_create_permission(self):
+        module = _load_module()
+        env = _Env(filters=_FilterModel(create_allowed=False, deletable=(1,)))
+        rows = _record(module, env)._project_saved_filter_mutation_rows([{"id":1,"owner":7}],7,"x.demo")
+        self.assertTrue(rows[0]["delete_action"]["enabled"])
 
 
 if __name__ == "__main__":

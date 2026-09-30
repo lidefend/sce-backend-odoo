@@ -171,12 +171,14 @@
         "addons/smart_core/handlers/ui_contract_v2_authority.py",
         "addons/smart_core/handlers/ui_contract_v2.py",
         "addons/smart_core/tests/test_saved_search_capability_projection.py",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "addons/smart_core/handlers/search_favorite_set.py",
+        "addons/smart_core/tests/test_search_favorite_handler_boundaries.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Close owner-confirmed collection.favorite product gap: formal per-filter deletion capability/execution, server ownership/ACL checks and shared official-menu delete interaction. Then actual save-refresh-delete-refresh closure. No P4 cleanup substitute; prior temporary restore tool withdrawn before any DB write.",
+  "next_exact_step": "Consume saved_filters.delete_action in shared ActionSurfaceToolbar and ActionView: explicit contract params, confirmation, pending/double-submit protection, success vs refresh-failure feedback, clear deleted active selection. Add focused frontend regressions; then governed backend reload, one build and real save-refresh-delete-refresh lifecycle. collection.favorite remains open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -316,6 +318,14 @@
       "gap": "saved-search delete/management capability missing; owner explicitly requires product closure, not P4 cleanup",
       "temporary_restore_tool": "withdrawn before any database write",
       "ledger_remaining": 1
+    },
+    "favorite_delete_backend_53_11": {
+      "status": "passed",
+      "source_head": "913d71a99",
+      "test_count": 29,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/favorite-delete-backend-final.log",
+      "scope": "P0 deletion execution and per-row contract authority, pure tests only",
+      "runtime": "not_run until shared frontend consumer ready"
     }
   }
 }
