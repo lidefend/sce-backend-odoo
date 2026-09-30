@@ -178,6 +178,7 @@
       </div>
 
         <ProductShellSidebarFooter
+          :product-version="session.productVersion"
           :compact="sidebarCompact" :show-refresh="showRefresh" :mobile="mobileViewport"
           @toggle-compact="toggleSidebarCompact" @refresh="refreshInit" @logout="logout"
         />

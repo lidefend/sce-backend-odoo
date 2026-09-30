@@ -594,6 +594,7 @@ export const useSessionStore = defineStore('session', {
     bootstrapNextIntent: 'system.init',
   }),
   getters: {
+    productVersion: (state): string => typeof state.initMeta?.product_version === 'string' ? state.initMeta.product_version.trim() : '',
     workspaceHeroRows(state): WorkspaceHeroRow[] {
       const hero = asRecord(state.workspaceHome?.hero);
       const source = Array.isArray(hero.summary_rows) ? hero.summary_rows : [];
@@ -1609,8 +1610,8 @@ export const useSessionStore = defineStore('session', {
       this.initMeta = {
         ...(result.meta ?? {}),
         nav_meta: (result as AppInitResponse & { nav_meta?: unknown }).nav_meta ?? null,
-        product_version: String((result as AppInitResponse & { product_version?: unknown }).product_version || ''),
-        source_revision: String((result as AppInitResponse & { source_revision?: unknown }).source_revision || ''),
+        product_version: String(result.product_version || ''),
+        source_revision: String(result.source_revision || ''),
       } as AppInitResponse['meta'];
       const defaultRouteRaw = (result as AppInitResponse & { default_route?: unknown }).default_route;
       if (defaultRouteRaw && typeof defaultRouteRaw === 'object') {

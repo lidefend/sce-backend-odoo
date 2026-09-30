@@ -7413,3 +7413,12 @@ L5：未推送、未合并、未部署。
 - 第一次实际样本1813是草稿，验证允许态不捏造限制（15/15报告 `tpl07-1790767535920/report.json`）。进一步按该契约声明的 state_field/allowed_states，在同一project/company和finance授权范围中只读选取现有记录1710 approved；双视口29/29通过 `tpl07-1790767599788/report.json`。实际显示“不可删除：当前业务状态不允许删除”，同一官方 Alert 驱动，窄屏可读且无整页横向溢出；无业务写入。截图已复核。
 - 官方 pinned aeed5707 的 detail/base 与 detail/advanced 源码是 standalone Card/Descriptions，并非日快照右侧抽屉。既有 FormSection/standardDetailCompositionRuntime 与段52实际详情证据已覆盖容器、共享页头、事实网格；对应3条改aligned。强制两级tab与抽屉loading几何是旧参考义务，3条改not_applicable；不豁免契约声明的 notebook/关系/协作/加载与返回职责，不为历史截图新造drawer契约。
 - 原67条台账保留，9项待处理；detail.action-state只关闭声明拒绝反馈，复制动作是否属于确认职责及执行契约仍待解决，不因 duplicate=true 前端补一个按钮。page_pattern_reference_parity 28测试通过，原样式/页型/返回链证据不重跑；无推送、合并、目标部署或整体交付声明。
+
+
+### 53.6 公开登录契约复用与共享页脚版本消费
+
+- P0 / schema→session→shared shell：system.init_payload_builder 已调用 runtime_product_identity，版本由部署配置/产品VERSION产生；补齐 AppInitResponse 已有字段的类型声明，session productVersion getter 映射既有 initMeta，侧栏页脚显示真实版本。展开桌面及移动导航显示，折叠栏保留操作空间；无来源时不造版本，不暴露源码SHA。没有后端/schema-wire语义或数据库变化，L3/ORM不运行。
+- L1 ci.local.iteration passed；L2 navigation_shell 40+12+42+19 =113，strict typecheck passed（`tpl52/shell-version-static.log`）。单次构建22.43s，base4d32e3f3a + 明确本节前端dirty范围，复用5180。浏览器真实public auth→login→system.init→付款列表→移动导航23/23 passed，报告 `tpl07-1790767915401/report.json`；版本值匹配实际system.init，移动页脚可见且不溢出。截图已复核，未写业务数据。
+- 公开契约现有 build_public_auth_page_contracts 声明激活/恢复目标，LoginView 已消费，并非台账所写“未声明”。本次核对实际登录标题和入口，复用早前public-auth18项（模拟激活无账号写入），不重复账号业务验收。
+- 按所有者“不复制官方演示业务”边界，纠正历史义务：官方 Header.vue 无fullscreen；Login.vue 的remember checkbox未绑定持久化；Search.vue 仅管理focus/text，未实现全局结果查询。不能为这些演示或旧参考控件新增凭据保留、三方登录或跨模型搜索。对应项记not_applicable，保留将来明确功能需契约先行的边界；没有删去已确认的登录、激活/恢复、授权菜单检索职责。
+- 67条台账结构不变，剩余3项：复制记录执行职责、任务字段几何、任务事实slot覆盖。复制权限bool不等于动作声明；后两项继续定位P1有效视图/结构生产者。另保留计划中的收藏成功/刷新/恢复闭环，不能用失败注入替代。总体仍进行中，主线/部署/整体用户验收均未完成。

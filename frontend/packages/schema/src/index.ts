@@ -178,6 +178,9 @@ export interface CanonicalNavigationModel {
 }
 
 export interface AppInitResponse {
+  /** Runtime product identity projected by system.init; no frontend build fallback. */
+  product_version?: string;
+  source_revision?: string;
   capabilities?: Array<string | {
     key?: string;
     label?: string;

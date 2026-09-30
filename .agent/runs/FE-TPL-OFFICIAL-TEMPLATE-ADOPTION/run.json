@@ -22,7 +22,8 @@
     "frontend/packages/design-tokens/",
     "frontend/packages/ui/src/kits/tdesign/theme.css",
     "scripts/dev/frontend_acceptance_runtime.sh",
-    "docs/architecture/unified_page_contract_v2/examples/"
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "frontend/packages/schema/src/index.ts"
   ],
   "environment": {
     "kind": "offline",
@@ -175,7 +176,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Segment53.5 declared detail denials verified (26 tests,29 browser assertions; actual approved payment1710). Continue 9 remaining ledger responsibilities against pinned official reference and confirmed product scope; copy capability is not an execution contract. Complete deliberate saved-search success/refresh with restoration. Reuse standalone detail evidence; do not recreate the historical drawer or repeat inventory.",
+  "next_exact_step": "Close remaining3 ledger responsibilities (record copy execution decision; task field geometry and owned fact slots) from effective P0/P1 contracts and official baseline, then deliberate saved-search success/refresh/restoration loop and consolidated completion audit. Reuse53.6 public-auth/navigation/version evidence and prior configuration loop; no full inventory or unchanged ORM.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -273,6 +274,14 @@
       "browser_assertions": 29,
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790767599788/report.json",
       "ledger_remaining": 9
+    },
+    "shell_auth_segment_53_6": {
+      "status": "passed",
+      "source_head": "4d32e3f3a",
+      "targeted_cases": 113,
+      "browser_assertions": 23,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790767915401/report.json",
+      "ledger_remaining": 3
     }
   }
 }

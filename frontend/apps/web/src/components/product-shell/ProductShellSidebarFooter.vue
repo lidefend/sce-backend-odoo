@@ -39,6 +39,7 @@
       <ScIcon name="user" :size="16" />
       <span class="shell-sidebar-footer__label">退出登录</span>
     </ScButton>
+    <span v-if="productVersion && (!compact || mobile)" class="shell-sidebar-footer__version" data-product-version :title="`产品版本 ${productVersion}`">版本 {{ productVersion }}</span>
   </div>
 </template>
 
@@ -47,10 +48,12 @@ import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 
 withDefaults(defineProps<{
+  productVersion?: string;
   mobile?: boolean;
   compact?: boolean;
   showRefresh?: boolean;
 }>(), {
+  productVersion: '',
   mobile: false,
   compact: false,
   showRefresh: false,
@@ -62,3 +65,14 @@ const emit = defineEmits<{
   (event: 'logout'): void;
 }>();
 </script>
+
+<style scoped>
+.shell-sidebar-footer { flex-wrap: wrap; }
+.shell-sidebar-footer__version {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font: var(--sc-font-body-small);
+  color: var(--sc-semantic-text-muted);
+}
+</style>

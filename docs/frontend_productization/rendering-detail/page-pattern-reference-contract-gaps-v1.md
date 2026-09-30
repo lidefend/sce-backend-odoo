@@ -4,7 +4,6 @@ This ledger records reference details that cannot be implemented safely from the
 
 ## P0 contract gaps
 
-- Global search: the reference shell exposes a global search control, while the current payload only authorizes navigation filtering. A future capability must identify search domain, target route, result identity, and authority.
 - Record actions: declared edit/delete denial feedback is consumed by the shared official Alert (segment53.5). A duplicate capability boolean still supplies no executable copy action; confirm the business responsibility before adding an execution contract. The labelled collection detail action is already closed below; do not add a second row-action field.
 - Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
 - Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
@@ -51,10 +50,6 @@ they are not producer-side gaps and must not be re-opened by adding the value to
 ## P1/P2 product gaps
 
 - Saved-search control projection is closed in segment 53.2: the shared collection menu consumes explicit save/shared grants and execution intent; missing grants never enable writes. Successful save, refresh, failure feedback and recovery remain a separate interaction closure, not proven by opening and cancelling the form.
-- The Shell needs a formal user-facing release/version identity if the reference footer version is required.
-- Authentication must declare credential-retention policy before a remember-account option stores any identifier.
-- Authentication page authority must explicitly declare account-registration/help and alternate-login actions; the reference controls are not safe as hard-coded links.
-- Authentication page authority must explicitly declare fullscreen if that reference control is required; the frontend must not render a non-functional icon.
 - Collection view-switch and settings controls remain capability-bound; a single-view action must
   not acquire a decorative switch. Export is no longer part of this gap: the sampled list
   contracts now declare `batch_policy.available_actions=["export"]` together with
@@ -109,3 +104,20 @@ notebooks, relations, collaboration and return context remain authoritative. Thi
 does not close `detail.action-state`: declared denial feedback and executable record actions
 are tracked separately. Existing segment52 runtime evidence is reused; no new business
 capability is inferred from either reference.
+
+
+## Segment 53.6: public authentication and shell disposition
+
+Runtime version was already produced by `system.init`; the missing shared-footer consumer is
+implemented. Public activation/recovery actions likewise already exist and are consumed;
+they are not producer gaps. Current live checks bind the visible heading, actions and product
+version to those authorities.
+
+The pinned official login Header has no fullscreen action. Its remember checkbox has no
+bound persistence behavior, and its shell Search component only controls focus/text without
+querying results. These demo/reference details do not authorize new credential retention,
+SMS/QR/third-party authentication or cross-model business search. They are marked not
+applicable for this rendering takeover; any separately confirmed feature must declare its
+own security/query/execution contract before controls are offered. Existing login, activation,
+recovery and authorized menu-search responsibilities remain required and covered by their
+existing evidence. No backend or account writes were performed in this batch.

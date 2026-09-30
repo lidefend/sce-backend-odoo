@@ -75,10 +75,12 @@ async function login(role) {
   });
   page.on('response', async (response) => {
     try {
+      if (new URL(response.url()).pathname === '/api/v1/auth/page-contracts') report.publicAuthContract = await response.json();
       const body = response.request().postDataJSON();
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
+        if (body.intent === 'system.init') report.productVersion = result.data?.product_version;
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
         const result = await response.json();
@@ -101,6 +103,14 @@ async function login(role) {
   });
   await page.goto(`${base}/login`);
   const inputs = page.locator('input');
+  if (process.env.TPL07_SCOPE === 'navigation') {
+    await page.getByRole('button', { name: '激活账号', exact: true }).waitFor();
+    const actions = report.publicAuthContract?.data?.pages?.login?.page_orchestration?.action_schema?.actions;
+    check('login: activation has public execution target', actions?.open_account_activation?.target?.path === '/activate-account');
+    check('login: declared recovery entry is present', await page.getByRole('button', { name: '忘记密码', exact: true }).count() === 1);
+    check('login: heading consumes public brand identity', (await page.getByRole('heading', { level: 1 }).innerText()).includes(report.publicAuthContract.data.pages.login.texts.brand_name));
+    await page.screenshot({ animations: 'disabled', path: path.join(out, 'login-public-authority.png') });
+  }
   await inputs.nth(0).fill(role);
   await inputs.nth(1).fill(process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD);
   if (await inputs.count() > 2 && await inputs.nth(2).isEnabled()) await inputs.nth(2).fill('sc_frontend_acceptance');
@@ -233,12 +243,16 @@ async function navigationScope() {
   const page = finance.page;
   await list(page, 545, 'navigation-desktop');
   check('navigation: desktop keeps one official aside', await page.locator('[data-navigation-driver="official-aside"]').count() === 1);
+  check('navigation: runtime product version is declared', typeof report.productVersion === 'string' && report.productVersion.length > 0);
+  check('navigation: expanded footer consumes runtime version', (await page.locator('[data-product-version]').innerText()).trim() === `版本 ${report.productVersion}`);
   const before = new URL(page.url()).pathname;
   await page.setViewportSize({ width: 390, height: 844 });
   const toggle = page.getByRole('button', { name: '菜单', exact: true });
   await toggle.click();
   const dialog = page.getByRole('dialog', { name: '主导航', exact: true });
   await dialog.waitFor();
+  check('navigation: mobile footer preserves runtime version', (await dialog.locator('[data-product-version]').innerText()).trim() === `版本 ${report.productVersion}`);
+  check('navigation: mobile version fits drawer', await dialog.locator('[data-product-version]').evaluate((el) => { const box = el.getBoundingClientRect(); return box.right <= innerWidth && box.bottom <= innerHeight; }));
   check('navigation: exactly one dialog', await page.getByRole('dialog').count() === 1);
   check('navigation: official drawer owns the navigation', await dialog.locator('[data-navigation-driver="official-drawer"]').count() === 1);
   check('navigation: private mask exited', await page.locator('.mobile-sidebar-backdrop').count() === 0);
