@@ -8004,3 +8004,7 @@ P1 smart_construction_core模型/策略/tier/native/profile。审批提交→sub
 P4扩展现有受管rollback工具scope=acceptance（白名单，默认all）。新增8项分别验证外部状态保护、无配置自动审批与独立质量决定、未声明金额条件拒绝、pending禁止两类质量结果、真实审批后仍执行数量校验、质量不通过原因、审批驳回不变质量不通过、重提新审批链且不自动质量通过。无环境/fixture基线新增，材料协作者沿用原回滚策略，产品/模板和单据均校验消失。
 
 L1 iteration/py_compile/bash-n，复用上批68审批/48native/15语义未变产品输入；之后受管smart_construction_core升级、后端加载、只跑acceptance8，不重跑inbound8/shared45，不重建前端。数据库角色/租户/profile/精确filter/固定卷沿用53.67受管身份；仅平台内部验收库，不触及客户生产库。
+
+模块升级与后端3d2118bd9加载成功，acceptance-only-runtime.log 8/8 PASS、rollback verified（配置/步骤恢复，单据与临时材料/模板均不存在）。未重跑独立inbound8/shared45。继续P4扩展既有审批浏览器范围支持材料验收：当前PM物资经理角色、创建页未保存无质量结果按钮、既有记录精确契约；未改产品代码/构建。
+
+页面结果：acceptance-page-iteration.log L1 PASS；tpl07-1790779649769/report.json 官方创建14 PASS，未保存无审批/质量决定、双视口、errors=[]/forbiddenWrites=[]。现有记录tpl07-1790779666048/report.json在第2项停止，api.data ok=true records=[]，PM授权范围数据不足；不是记录页通过。保留范围：后端真实审批/质量结果8，创建页14，实际记录UI办理pending。继续剩余全业务单据，不升级detail.action-state整行。无前端重建、fixture基线新增、推送、合并或目标部署。

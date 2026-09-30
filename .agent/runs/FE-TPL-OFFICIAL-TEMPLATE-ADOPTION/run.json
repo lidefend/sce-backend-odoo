@@ -312,7 +312,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.69 acceptance shared approval source L1/68 approval/48 native/15 semantics/XML2 PASS. Extend existing rollback smoke and bounded runtime scope with acceptance cases (no-config, configured approval distinct from quality verdict, rejection/resubmit, quantity/negative-reason, private state protection); reuse transaction-local material helper. Then commit and governed smart_construction_core upgrade/reload, run acceptance-only scope, keep inbound8/shared45 evidence unchanged. No browser until runtime passes. Monetary authority for acceptance absent: bounded conditions fail closed.",
+  "next_exact_step": "53.70 acceptance runtime8 PASS rollback verified on backend3d2118bd9; create14 PASS frontend7915f3bb9, PM recordqueryempty report1790779666048. Do not retry unchanged empty queries/old8+45 or rebuild. Next remaining all-document producer: material purchase request/RFQ/settlement profiles in same existing material_acceptance.py still direct transitions; inspect selected one and integrate shared approval preserving document generation/execution and native obligations. Existing monetary authority gaps project/acceptance remain explicit; overall67 not complete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1086,6 +1086,19 @@
       "semantics_tests": 15,
       "runtime": "not_run",
       "remaining": "module upgrade and acceptance-scoped rollback checks, then effective page"
+    },
+    "segment_53_70": {
+      "status": "backend_and_create_passed_record_data_pending",
+      "backend_source": "3d2118bd9",
+      "frontend_base": "7915f3bb9",
+      "runtime_checks": 8,
+      "runtime_scope": "acceptance",
+      "rollback": "verified",
+      "create_assertions": 14,
+      "create_report": "artifacts/frontend-web-fix-20260928/tpl07-1790779649769/report.json",
+      "existing_record_report": "artifacts/frontend-web-fix-20260928/tpl07-1790779666048/report.json",
+      "record_query": "ok=true records=[] for PM",
+      "writes_in_browser": 0
     }
   }
 }
