@@ -496,6 +496,50 @@ def _project_document_approval_checks(project, group, created):
     print("APPROVAL_CHECK=project_document_rejected_resubmission_new_chain")
 
 
+def _legacy_workflow_boundary_checks():
+    env = _env()
+    key = "sc.workflow.legacy_runtime_enabled"
+    params = env["ir.config_parameter"].sudo()
+    finance = env["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing fixture finance required"
+    Model = env["sc.workflow.instance"].with_user(finance).with_context(allow_legacy_workflow_runtime=True)
+    Definition = env["sc.workflow.def"].with_user(finance).with_context(allow_legacy_workflow_runtime=True)
+    assert not Model.env.su
+    params.set_param(key, "0")
+    assert not Model._legacy_runtime_enabled() and not Definition._legacy_runtime_enabled()
+    assert Model.sudo()._legacy_runtime_enabled(), "internal recovery context compatibility lost"
+    print("APPROVAL_CHECK=legacy_workflow_untrusted_context_does_not_enable_runtime")
+    for name in ("action_submit", "action_approve", "action_reject"):
+        try:
+            getattr(Model, name)()
+        except UserError as error:
+            assert "base_tier_validation" in str(error)
+        else:
+            raise AssertionError("disabled legacy transition executed: " + name)
+    print("APPROVAL_CHECK=legacy_workflow_disabled_transitions_rejected")
+    gates = env["sc.workflow.contract.service"]._evidence_gate(Model)
+    gate = next(row for row in gates if row["reasonCode"] == "LEGACY_WORKFLOW_RUNTIME_DISABLED")
+    assert set(gate["actionKeys"]) == {"submit", "approve", "reject"} and gate["blocking"]
+    print("APPROVAL_CHECK=legacy_workflow_contract_matches_runtime_mode")
+    params.set_param(key, "1")
+    assert Model._legacy_runtime_enabled() and Definition._legacy_runtime_enabled()
+    try:
+        Model.action_submit()
+    except UserError as error:
+        assert "permission to manage workflow instances" in str(error)
+    else:
+        raise AssertionError("enabled legacy runtime granted administrator authority")
+    print("APPROVAL_CHECK=legacy_workflow_enabled_mode_does_not_grant_admin")
+    params.set_param(key, "0")
+    try:
+        Model.action_cancel()
+    except UserError as error:
+        assert "permission to manage workflow instances" in str(error)
+    else:
+        raise AssertionError("historical cancellation lost administrator restriction")
+    print("APPROVAL_CHECK=legacy_workflow_cleanup_still_requires_admin")
+
+
 def _red_flush_role_checks(_project_unused, group, created):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
@@ -2675,7 +2719,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -2683,13 +2727,17 @@ def main():
     step_fields = ["active", "sequence", "approval_scope_key", "approve_group_id", "amount_min", "amount_max", "tier_definition_id"]
     step_baseline = policy.step_ids.read(step_fields)
     created = []
+    legacy_parameter_baseline = env["ir.config_parameter"].sudo().search([("key", "=", "sc.workflow.legacy_runtime_enabled")]).read(["key", "value"]) if scope == "legacy-workflow" else None
     passed = False
     try:
-        project = _project("Business Config Approval Runtime")
-        partner = _partner("Business Config Approval Runtime Partner")
-        created.extend([(project._name, project.id), (partner._name, partner.id)])
+        if scope != "legacy-workflow":
+            project = _project("Business Config Approval Runtime")
+            partner = _partner("Business Config Approval Runtime Partner")
+            created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope == "red-flush-role":
+        if scope == "legacy-workflow":
+            _legacy_workflow_boundary_checks()
+        elif scope == "red-flush-role":
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
             _red_flush_role_checks(project, group, created)
@@ -2881,12 +2929,14 @@ def main():
     finally:
         _env().cr.rollback()
         _env().invalidate_all()
+        if legacy_parameter_baseline is not None:
+            assert env["ir.config_parameter"].sudo().search([("key", "=", "sc.workflow.legacy_runtime_enabled")]).read(["key", "value"]) == legacy_parameter_baseline, "legacy runtime parameter not restored"
         assert policy.read(fields) == baseline, "approval configuration was not restored"
         assert policy.step_ids.read(step_fields) == step_baseline, "approval steps were not restored"
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
