@@ -53,6 +53,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn("verify.frontend.navigation_shell.unit", targets)
         self.assertIn("verify.frontend.primitive_adapter.unit", targets)
 
+    def test_scene_route_change_recommends_scene_entry_contract(self) -> None:
+        # The scene runtime is cached by <KeepAlive> and its route ownership rule
+        # must be re-verified whenever the view or the rule module changes.
+        for path in (
+            "frontend/apps/web/src/views/SceneView.vue",
+            "frontend/apps/web/src/app/sceneEntryContract.ts",
+        ):
+            self.assertEqual(
+                select_targets([path]),
+                [
+                    "verify.frontend.navigation_shell.unit",
+                    "verify.frontend.scene_entry_contract.unit",
+                ],
+            )
+
     def test_template_consumer_change_recommends_primitive_adapter(self) -> None:
         targets = select_targets(
             ["frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"]

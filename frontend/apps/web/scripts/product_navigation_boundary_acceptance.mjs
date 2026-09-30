@@ -35,29 +35,46 @@ async function login(page) {
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
-  const inputs = page.locator('input.sc-input');
-  await inputs.nth(0).fill(LOGIN);
-  await inputs.nth(1).fill(PASSWORD);
-  if (DB_NAME && await inputs.nth(2).isEditable()) await inputs.nth(2).fill(DB_NAME);
+  const usernameInput = page.getByPlaceholder('请输入账号');
+  const passwordInput = page.getByPlaceholder('请输入密码');
+  await usernameInput.waitFor({ state: 'visible', timeout: 45000 });
+  await usernameInput.fill(LOGIN);
+  await passwordInput.fill(PASSWORD);
+  if (DB_NAME) {
+    const databaseInput = page.getByPlaceholder('请输入数据库名（如 sc_minimal）');
+    if (await databaseInput.count()) await databaseInput.fill(DB_NAME);
+  }
   await page.locator('button[type="submit"]').click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
   await page.locator('[data-semantic-component="ProductAppShell"]').waitFor({ state: 'visible', timeout: 45000 });
 }
 
-function canonicalNode(page, menuId, actionId) {
-  return page.locator(`[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id="${actionId}"]`);
+function nodeByLabel(page, label) {
+  return page.locator(`[data-navigation-node="canonical"][data-navigation-label="${label}"]`);
 }
 
-function nodeByLabel(page, label) {
-  return page.locator('[data-navigation-node="canonical"]').filter({ hasText: label }).first();
+async function submenuToggle(node, label) {
+  const toggle = node.locator('[data-navigation-toggle="submenu"]').first();
+  await toggle.waitFor({ state: 'visible', timeout: 15000 });
+  const toggleLabel = String(await toggle.textContent() || '').trim();
+  check(toggleLabel === label, `${label} 分组标题必须与其业务标签一致`, { toggleLabel });
+  return toggle;
 }
 
 async function expandNode(page, label) {
   const node = nodeByLabel(page, label);
   check(await node.count() === 1, `${label} canonical navigation node must be unique`, { count: await node.count() });
-  const toggle = node.locator(':scope > .t-submenu__title');
-  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  const children = node.locator('[data-navigation-node="canonical"]');
+  check(await children.count() > 0, `${label} 必须是可展开的分组节点`, { childCount: await children.count() });
+  if (!(await children.first().isVisible())) {
+    await (await submenuToggle(node, label)).click();
+    await children.first().waitFor({ state: 'visible', timeout: 15000 });
+  }
   return node;
+}
+
+async function navigationLabels(page) {
+  return page.locator('[data-navigation-node="canonical"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-navigation-label')));
 }
 
 async function desktopJourney(browser, report) {
@@ -68,18 +85,24 @@ async function desktopJourney(browser, report) {
   await page.locator('[data-navigation-state="ready"] [data-semantic-component="ProductSideNavigation"]')
     .waitFor({ state: 'visible', timeout: 45000 });
 
-  const projectGroup = await expandNode(page, '项目中心');
+  await expandNode(page, '项目中心');
   await expandNode(page, '项目创建');
-  const target = canonicalNode(page, 679, 859);
+  const target = page.locator(
+    '[data-navigation-node="canonical"][data-navigation-label="项目中心"] '
+    + '[data-navigation-node="canonical"][data-navigation-label="项目创建"] '
+    + '[data-navigation-node="canonical"][data-navigation-label="项目信息编辑"]',
+  );
   check(await target.count() === 1, '项目完整工作区必须拥有唯一 canonical menu/action 身份', { count: await target.count() });
-  const targetButton = target;
-  check((await targetButton.textContent() || '').trim() === '项目信息编辑', '项目工作区菜单标签漂移');
+  check((await target.textContent() || '').trim() === '项目信息编辑', '项目工作区菜单标签漂移');
   const depth = Number(await target.getAttribute('data-navigation-depth'));
   check(depth >= 2, '正式项目入口必须保留三级父子层级', { depth });
+  const targetMenuId = String(await target.getAttribute('data-navigation-menu-id') || '');
+  const targetActionId = String(await target.getAttribute('data-navigation-action-id') || '');
+  check(/^\d+$/.test(targetMenuId) && /^\d+$/.test(targetActionId), '项目工作区入口必须绑定真实 menu/action 身份', { targetMenuId, targetActionId });
 
   const sourceUrl = page.url();
-  await targetButton.click();
-  await page.waitForURL((url) => url.pathname === '/a/859' && url.searchParams.get('menu_id') === '679', { timeout: 45000 });
+  await target.click();
+  await page.waitForURL((url) => url.pathname === `/a/${targetActionId}` && url.searchParams.get('menu_id') === targetMenuId, { timeout: 45000 });
   const firstTarget = page.url();
   check(await page.locator('[data-navigation-node="canonical"][aria-current="page"]').count() === 1, '当前叶子菜单必须恰好一个');
 
@@ -89,22 +112,65 @@ async function desktopJourney(browser, report) {
   check(await page.locator('[data-navigation-node="canonical"][aria-current="page"]').count() === 1, '刷新后当前叶子菜单必须保持唯一');
 
   const collapsibleGroup = await expandNode(page, '合同中心');
-  const collapsibleToggle = collapsibleGroup.locator(':scope > .t-submenu__title');
-  const beforeCollapse = await collapsibleToggle.getAttribute('aria-expanded');
-  await collapsibleToggle.click();
-  const afterCollapse = await collapsibleToggle.getAttribute('aria-expanded');
-  check(beforeCollapse !== afterCollapse, '桌面导航折叠状态必须可切换');
+  const collapsibleChildren = collapsibleGroup.locator('[data-navigation-node="canonical"]');
+  await (await submenuToggle(collapsibleGroup, '合同中心')).click();
+  await collapsibleChildren.first().waitFor({ state: 'hidden', timeout: 15000 });
+  check(!(await collapsibleChildren.first().isVisible()), '桌面导航折叠状态必须可切换');
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('[data-navigation-state="ready"]').waitFor({ timeout: 45000 });
   const reloadedCollapsibleGroup = nodeByLabel(page, '合同中心');
-  check(await reloadedCollapsibleGroup.locator(':scope > .t-submenu__title').getAttribute('aria-expanded') === afterCollapse, '桌面导航折叠偏好必须在刷新后保持');
+  check(await reloadedCollapsibleGroup.count() === 1, '刷新后合同中心节点必须仍唯一', { count: await reloadedCollapsibleGroup.count() });
+  check(!(await reloadedCollapsibleGroup.locator('[data-navigation-node="canonical"]').first().isVisible()), '桌面导航折叠偏好必须在刷新后保持');
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
   await page.goForward({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-navigation-state="ready"]').waitFor({ timeout: 45000 });
-  check(new URL(page.url()).searchParams.get('menu_id') === '679', '浏览器前进后退不得丢失 menu identity');
+  check(new URL(page.url()).searchParams.get('menu_id') === targetMenuId, '浏览器前进后退不得丢失 menu identity');
 
-  report.desktop = { sourceUrl, firstTarget, depth, activeLeafCount: 1, collapsePersisted: true };
+  const canonicalLabels = await navigationLabels(page);
+  const product_configuration_entry_count = canonicalLabels.filter((label) => label === '产品配置').length;
+  const legacy_configuration_entry_count = canonicalLabels.filter((label) => label === '配置中心').length;
+  check(product_configuration_entry_count === 1, '产品配置入口必须唯一', { product_configuration_entry_count, canonicalLabels });
+  check(legacy_configuration_entry_count === 0, '旧配置中心入口必须被拒绝', { legacy_configuration_entry_count, canonicalLabels });
+
+  await expandNode(page, '产品配置');
+  const formConfigurationEntry = nodeByLabel(page, '表单配置');
+  check(await formConfigurationEntry.count() === 1, '产品配置必须发布唯一表单配置入口', { count: await formConfigurationEntry.count() });
+  check((await formConfigurationEntry.textContent() || '').trim() === '表单配置', '产品配置子入口业务标签漂移');
+  await formConfigurationEntry.click();
+  await page.waitForURL((url) => url.pathname.startsWith('/admin/business-config'), { timeout: 45000 });
+  const workbench = page.locator('.business-config-page');
+  await workbench.waitFor({ state: 'visible', timeout: 45000 });
+  check(await workbench.getAttribute('data-page-sections-ready') === 'true', '配置工作台页面契约区块必须就绪');
+
+  // The workbench publishes its configuration tasks only after a business page is
+  // selected from the governed catalog. Walk that real path instead of asserting a
+  // menu-config entry the current published menu tree does not contain.
+  const pagePicker = page.getByRole('button', { name: '选择业务页面', exact: true }).first();
+  await pagePicker.waitFor({ state: 'visible', timeout: 60000 });
+  const firstPageChoice = page.getByRole('button', { name: '选择', exact: true }).first();
+  await firstPageChoice.waitFor({ state: 'visible', timeout: 60000 });
+  await firstPageChoice.click();
+  await page.waitForURL(
+    (url) => url.searchParams.has('model') && url.searchParams.has('action_id'),
+    { timeout: 45000 },
+  );
+  const configuredPage = new URL(page.url());
+  const configuredModel = String(configuredPage.searchParams.get('model') || '');
+  const configuredActionId = String(configuredPage.searchParams.get('action_id') || '');
+  check(configuredModel.length > 0, '配置工作台必须绑定真实业务模型身份', { configuredModel });
+  check(/^\d+$/.test(configuredActionId), '配置工作台必须绑定真实业务动作身份', { configuredActionId });
+
+  const menuConfigurationAction = page.getByRole('button', { name: '配置菜单', exact: true });
+  await menuConfigurationAction.first().waitFor({ state: 'visible', timeout: 45000 });
+  await menuConfigurationAction.first().click();
+  await page.waitForURL((url) => url.pathname === '/admin/menu-config', { timeout: 45000 });
+  const menuConfigurationHeading = page.getByRole("heading", { name: "菜单配置", exact: true });
+  await menuConfigurationHeading.waitFor({ state: 'visible', timeout: 45000 });
+  const menuConfigurationHeadingText = String(await menuConfigurationHeading.textContent() || '').trim();
+  check(menuConfigurationHeadingText === '菜单配置', '菜单配置页标题漂移', { menuConfigurationHeadingText });
+
+  report.desktop = { sourceUrl, firstTarget, targetMenuId, targetActionId, depth, activeLeafCount: 1, collapsePersisted: true, product_configuration_entry_count, legacy_configuration_entry_count, configuredModel, configuredActionId, menuConfigurationHeadingText };
   await context.close();
 }
 

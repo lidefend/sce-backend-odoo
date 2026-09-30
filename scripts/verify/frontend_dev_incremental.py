@@ -48,6 +48,10 @@ RULES = (
         "verify.frontend.navigation_shell.unit",
         "verify.frontend.page_pattern_reference_parity.unit",
     )),
+    Rule(("/views/SceneView.vue", "/app/sceneEntryContract.ts"), (
+        "verify.frontend.scene_entry_contract.unit",
+        "verify.frontend.navigation_shell.unit",
+    )),
     Rule(("/components/design-system/", "frontend/packages/ui/"), (
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.page_pattern_reference_parity.unit",

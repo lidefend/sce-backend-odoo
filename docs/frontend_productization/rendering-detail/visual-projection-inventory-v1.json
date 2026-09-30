@@ -1579,7 +1579,7 @@
     },
     {
       "category": "shell",
-      "digest": "7b7a023240d6bb3796695d4304f32f88983bdfb6d8a9e28967f21a4cbace2358",
+      "digest": "eecf05e00c8f786224f71fa0fac00352deae97d5df124096da5ac4a84c33bfde",
       "nativeStyleSelectors": [],
       "path": "components/product-shell/CanonicalNavigationMenuNode.vue",
       "referenceNativeStyleSelectors": [],
@@ -2765,7 +2765,7 @@
     },
     {
       "category": "other",
-      "digest": "6314f0965dbe2ee4c12bc5c2f5915adc72cf87069b949f74c38a944ed3622121",
+      "digest": "22334954ede48cb4f2aaadc5ac1a5d998730e44f4317adade2c4a4e094da1a27",
       "nativeStyleSelectors": [],
       "path": "views/SceneView.vue",
       "referenceNativeStyleSelectors": [],
@@ -2983,7 +2983,7 @@
     }
   ],
   "consumerPrimitiveVisualChrome": [],
-  "currentInputDigest": "75e3a5f68a7ee2ffbc238799908b83af0a683a510818890bdc7b663ecaa5ca93",
+  "currentInputDigest": "3c44a3b61934a0d9c6f01009c06ab6aa76828477e34e8fb26f2aba960a75da7f",
   "evidenceSemantics": "tracked inventory proves deterministic evidence binding only; exact-head runtime artifacts decide candidate verification and this report never asserts runtime closure",
   "excludedScopes": [
     "runtime permissions",
