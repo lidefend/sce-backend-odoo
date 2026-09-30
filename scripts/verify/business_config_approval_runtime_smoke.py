@@ -1801,14 +1801,18 @@ def _safety_approval_checks(project, group, created):
             "manager_group_id": group.id, "runtime_state": "tier_validation"})
         created.append((policy._name, policy.id))
         step = env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Safety review", "sequence": 10,
-            "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id, "amount_min": 1})
+            "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
         policy.sync_tier_definitions()
+        denied(lambda: step.write({"amount_min": 1}))
+        step.invalidate_recordset()
+        assert not step.amount_min
+        step.write({"active": False})
         unmatched = document()
         denied(unmatched.action_submit)
         unmatched.invalidate_recordset()
         assert unmatched.state == "draft"
         print("APPROVAL_CHECK=%s_configured_unmatched_denied" % model)
-        step.write({"amount_min": 0})
+        step.write({"active": True})
         policy.sync_tier_definitions()
         required = document()
         required.action_submit()
