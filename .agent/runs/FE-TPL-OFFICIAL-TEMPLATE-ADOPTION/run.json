@@ -442,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.170 diary state authority runtime8 passed with rollback on backend35fa989cd; frontend e31e51c59 unchanged. Reuse163 pure/tool36. Next examine same-family contract event direct state authority and existing evidence, fix only confirmed owning-layer gap; no broad scan/task empty query/unrelated ORM. Diary ordinary-role browser and reviewed-content boundaries still open; overall67/detail.action-state not complete. No push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.171 contract-event state bypass closed with164 pure/receipt and scoped runtime8 rollback verified on backendadcb9a5f6; frontende31e51c59 unchanged. Next inspect existing sc.plan state authority against its already-tested workflow, fix only confirmed direct write bypass; no full scan/unrelated ORM or closed config/payment rerun. Diary/event reviewed-content and ordinary-role UI handling remain open, overall67 not complete. No push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

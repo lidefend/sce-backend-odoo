@@ -603,3 +603,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.170：施工日志状态写入保护在受管35fa989cd完成8项实际模型验证（diary-runtime-smoke.log），真实审批/驳回重提、显式完成及外部状态拒绝成立，配置与临时对象ROLLBACK VERIFIED。关闭53.169状态绕过缺口；普通角色浏览器办理、审批后内容保护仍开放，不能外推全单据覆盖。
+
+
+53.171：合同履约事件有有效动作契约但缺模型状态写入保护，P1 0eaeab072已补内部动作写入/普通create-defaults-write拒绝。164纯测及adcb9a5f6受管事件专用8项PASS、ROLLBACK VERIFIED，状态绕过缺口关闭。未证明审批后内容冻结、普通操作员浏览器办理或全部业务覆盖。

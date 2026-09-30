@@ -9183,3 +9183,14 @@ L1 diary-runtime-iteration PASS，py_compile/bash-n/diff通过；工具standard_
 backend.acceptance.up在原local/sc-fe-r2-p1-01/sc_frontend_acceptance18082重绑35fa989cd，精确dbfilter/原卷预检通过。SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：diary-runtime-smoke.log终止0、8具名检查全部通过，BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。配置/步骤原值及全部登记临时对象不存在的回读通过。创建和业务动作采用原事务sudo，审批调用真实reviewer；不能写成普通PM浏览器全办理。
 
 53.169状态绕过代表缺口关闭，审批后内容保护和普通角色真实保存/办理仍未覆盖。动作目录及前端生产输入未变化，不重跑只读创建页作为无意义证明。下一步同族合同履约事件的状态写入边界（先检查直接生产调用及已有证据，不全仓扫描），同时保留既有日志角色旅程待验证责任；不得将已配置审批模型覆盖等同全系统用户交付。总体67/detail.action-state开放，无推送、合并、目标部署。
+
+
+### 53.171 合同履约事件状态权威与真实审批链
+
+787236f0d clean续跑，复用合同事件已有统一审批与workflow动作目录。直接模型缺create/write状态保护；P1 0eaeab072在contract_event.py加入私有状态令牌写入方法，普通create及default_state仅draft，普通write拒绝state；submit/审批回调/拒绝回调/完成/取消经内部方法。不新增前端动作规则或第二审批框架，不改业务锚点/审批金额权威/原状态含义。状态字段的公开可写性由模型执行层真正约束，而非依赖按钮隐藏。
+
+L1 event-state-iteration PASS；payment.approval_state_machine.unit164 PASS、begin/record完成（event-state-begin/unit/receipt）。新增实际create/write生产方法反例覆盖submitted/approved/rejected/done/cancel、default_state、伪造token与skip_validation_check，保留草稿普通编辑及内部迁移；原配置/无配置/回调/显式完成回归适配内部方法继续通过。P4 adcb9a5f6仅原approval_runtime/shell白名单新增contract-event-state-authority，3状态边界检查+原_contract_event_checks5项。event-runtime-iteration/py_compile/bash-n/diff通过，产品164输入不变复用；不将原wrapper36冒充新范围执行证据。
+
+受管backend.acceptance.up加载adcb9a5f6，仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter与原卷。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-runtime-smoke.log 8具名PASS，ROLLBACK VERIFIED（原审批配置/步骤回读及全部登记临时对象不存在）。真实检查直接终态create/defaults拒绝、普通/伪造上下文write拒绝且draft保持、草稿编辑/正式cancel、无配置只批准、有配置真实review、实际批准后独立完成、驳回原因及重提新链。创建/办理沿原事务sudo，review由真实审核人，不冒充普通合同操作员UI全旅程。
+
+无字段/XML变化不升级模块；前端e31e51c59/index-7JTLfH1Y.js未变，不构建或重跑创建页。事件状态绕过缺口关闭；审批后业务内容冻结、普通角色浏览器保存办理及同族计划职责仍未由本次覆盖。下一步核对既有sc.plan的状态权威边界，复用其动作/审批证据，不扩全仓扫描或重跑已闭合领域。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。
