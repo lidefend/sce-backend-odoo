@@ -400,6 +400,44 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                             self.assertEqual(rec.audits, [])
                             self.assertNotIn('reject_reason', rec.data)
 
+    def test_contract_family_shared_submission_and_non_recursive_callbacks(self):
+        for path, model in ((MODEL.with_name('general_contract.py'), 'sc.general.contract'),
+                            (MODEL.parents[1] / 'support/contract_center.py', 'construction.contract')):
+            methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef)
+                       and n.name in {'action_confirm', 'action_on_tier_approved', 'action_on_tier_rejected'}]
+            namespace = {'UserError': ValueError, '_': lambda text: text}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+            for required, retry in ((False, False), (True, False), (True, True)):
+                with self.subTest(model=model, required=required, retry=retry):
+                    rec = self.record(required=required, state='draft', reviews=['old'] if retry else [], status='rejected' if retry else 'no')
+                    rec._name = model
+                    rec.write = lambda values: rec.data.update(values)
+                    rec._check_business_anchor = lambda: None
+                    rec._post_contract_state_message = lambda message: rec.messages.append(message)
+                    rec.action_on_tier_approved = lambda: namespace['action_on_tier_approved'](rec)
+                    namespace['action_confirm'](rec)
+                    self.assertEqual(rec.state, 'draft' if required else 'confirmed')
+                    self.assertEqual(rec.requests, int(required))
+                    self.assertEqual(rec.restarts, int(retry))
+                    if required:
+                        rec.required = False
+                        rec.action_on_tier_approved()
+                        self.assertEqual(rec.requests, 1)
+                        self.assertEqual(rec.state, 'draft')
+                        with self.assertRaises(ValueError):
+                            namespace['action_confirm'](rec)
+                        rec.data['validation_status'] = 'validated'
+                        rec.action_on_tier_approved()
+                        rec.action_on_tier_approved()
+                        self.assertEqual(rec.state, 'confirmed')
+                        self.assertEqual(rec.requests, 1)
+                    rec.data.update(state='draft', review_ids=[], validation_status='validated')
+                    rec.action_on_tier_approved()
+                    self.assertEqual(rec.state, 'draft')
+                    rec.data['validation_status'] = 'rejected'
+                    namespace['action_on_tier_rejected'](rec)
+                    self.assertEqual(rec.state, 'draft')
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

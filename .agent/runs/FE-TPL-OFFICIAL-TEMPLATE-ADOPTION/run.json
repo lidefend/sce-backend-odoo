@@ -223,12 +223,14 @@
         "addons/smart_construction_core/views/core/receipt_income_views.xml",
         "addons/smart_construction_core/views/core/self_funding_registration_views.xml",
         "addons/smart_construction_core/views/core/financing_loan_views.xml",
-        "addons/smart_construction_core/views/core/treasury_reconciliation_views.xml"
+        "addons/smart_construction_core/views/core/treasury_reconciliation_views.xml",
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/models/support/contract_center.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.25 finance callbacks now require actual review outcomes; six execution gates consume confirmed approval facts; four native/profile draft-complete paths retired. 41 approval +32 native +15 semantics tests pass. Continue remaining business-document approval adoption and payment shared decision reuse; then governed module upgrade and focused real ORM/browser approval validation, including old callers now requiring submit first. Two native state-action gaps remain.",
+  "next_exact_step": "53.26 general/project contract submit now shares approval routing and callbacks consume real outcomes without resubmitting (42 approval+32 coverage tests). Next converge purchase button_confirm mutable-policy filtering and material-plan fixed approval/direct approval paths; check contract execution prerequisites. Remaining full-document adoption, two native gaps, governed upgrade and actual approval acceptance remain.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -539,6 +541,16 @@
       },
       "log": "artifacts/frontend-web-fix-20260928/tpl52/finance-outcome-tests.log",
       "runtime": "not_run; XML upgrade and targeted business transactions pending"
+    },
+    "contract_approval_53_26": {
+      "status": "verification_pending",
+      "source_head": "48d6c25ad",
+      "tests": {
+        "approval": 42,
+        "native": 32
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/contract-approval-tests.log",
+      "runtime": "not_run"
     }
   }
 }

@@ -393,12 +393,12 @@ class ScGeneralContract(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的一般合同（公司）可以确认。"))
             rec._check_business_anchor()
-            if policy_model.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                rec._request_general_contract_validation()
+            if rec.review_ids and rec.validation_status == "validated":
+                rec.action_on_tier_approved()
                 continue
-            policy = policy_model.get_active_policy(rec._name, company=rec.company_id)
-            if policy and not policy_model.is_approval_required(rec._name, company=rec.company_id):
-                policy.assert_user_can_approve()
+            if policy_model._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True).write({"reject_reason": False})
+                continue
             rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
 
     def action_signed(self):
@@ -423,18 +423,6 @@ class ScGeneralContract(models.Model):
             if rec.contract_direction == "unknown":
                 raise UserError(_("一般合同（公司）必须明确合同方向。"))
 
-    def _request_general_contract_validation(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                    raise UserError(_("一般合同（公司）已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("一般合同（公司）已经在统一审批流程中，请等待审批完成。"))
-        self.with_context(skip_validation_check=True).write({"reject_reason": False})
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -450,23 +438,15 @@ class ScGeneralContract(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if rec.state != "draft":
+            if rec.state != "draft" or not rec.review_ids or rec.validation_status != "validated":
                 continue
-            if rec.validation_status != "validated":
-                if self.env.context.get("server_action_tier"):
-                    # OCA base_tier_validation_server_action fires this
-                    # callback after every approved level of a multi-level
-                    # linear chain; a mid-chain invocation must not raise.
-                    # The completed chain re-fires the callback and
-                    # finishes the transition.
-                    continue
-                raise UserError(_("一般合同（公司）尚未完成统一审批流程。"))
-            rec.with_context(skip_validation_check=True).write({"reject_reason": False})
-        return self.action_confirm()
+            rec._check_business_anchor()
+            rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+        return True
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
-            if rec.state != "draft":
+            if rec.state != "draft" or not rec.review_ids or rec.validation_status != "rejected":
                 continue
             rec.with_context(skip_validation_check=True).write(
                 {"reject_reason": reason or rec._get_tier_reject_reason()}

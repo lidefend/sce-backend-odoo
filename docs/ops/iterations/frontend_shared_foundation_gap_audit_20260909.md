@@ -7591,3 +7591,11 @@ L5：未推送、未合并、未部署。
 - 收款、自筹、融资、对账四类workflow profile退出draft complete，原生完成按钮同步仅confirmed；不让前端猜是否需要审批，也不把审批通过自动变成付款/入账。用户须先提交，无配置时提交自动确认，再执行业务办理。
 - L1 ci.local.iteration PASS（finance-outcome-iteration.log）；L2付款/共享审批41、native coverage8+24=32、semantics15全部PASS（finance-outcome-tests.log，begin/record41）。测试执行七类真实回调，含缺review、pending及真实终结；共享门禁覆盖草稿拒绝、自动批准后启用配置仍可办理、在途关闭仍拒绝；生产动作投影及真实XML验证四类草稿无完成动作。首次测试替身缺发票业务锚点协作者，补齐后重跑受影响目标，产品校验未删除。
 - 这是源码与函数级验证，尚无真实ORM交易/多级审批恢复证据。XML增加四处变更，需与前批统一受管模块升级；必要定向ORM须验证真实权限、事务与旧调用方对“先提交”的适应，不以既有TPL05A49项替代。仍有其他单据族接入、付款批准局部编排、合同履约事件及付款冲销投影等缺口；总体目标保持active，无推送/合并/目标部署。
+
+
+### 53.26 合同族提交/审批回调收敛
+
+- 48d6c25ad clean起步；P1 smart_construction_core的一般合同与项目合同。action_confirm共同使用已有共享提交服务，删除两份申请审批助手及项目合同局部配置判断助手；保留一般合同业务锚点、项目合同状态消息与原confirmed业务状态。不调整签署或执行语义。
+- 已有真实validated链可完成其回调；其他提交走共享分流，无配置自动确认、配置审批建立真实链、驳回重提重建。两类回调要求实际review与对应结果，仅从draft推进，终态重复回调无副作用，不重读策略、不再次发起审批。一般合同原回调循环结束后无条件action_confirm会让部分审批重新进入提交路径，本节删除该递归编排。
+- L1 ci.local.iteration PASS（contract-approval-iteration.log）。L2共享审批42、native coverage8+24=32通过（contract-approval-tests.log，begin/record42），执行两类真实提交与回调，覆盖有/无配置、重提、部分审批后配置关闭、完整回调和缺review反例；既有签署回归随native目标通过。无ORM/数据库写入，无前端重建。
+- 采购button_confirm仍按可变配置过滤执行集合，物资计划仍固定申请审批并有直接批准路径，已读取直接方法明确后续责任；不是重新全仓盘点。合同后续执行入口前置条件、其余单据族与付款局部审批编排仍须收敛；两项原生状态动作缺口、受管模块升级和真实业务验收继续保留。总体active，不推送/合并/目标部署。
