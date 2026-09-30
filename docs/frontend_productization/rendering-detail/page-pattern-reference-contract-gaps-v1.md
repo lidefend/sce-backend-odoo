@@ -291,3 +291,8 @@ P1 RFQ shared approval source74/native50/semantics15 PASS. Managed runtime8 PASS
 ### Segment53.77–53.78 — Material settlement approval separated from confirmation
 
 P1 source76/native51/semantics15 PASS. Backend7a6adbe17 scoped runtime8 PASS with rollback verified: shared approval stops at approved, existing cost and payment side effects occur only on explicit confirmation; approved header/line facts remain immutable, actual monetary rule and rejection/resubmission checked. Official create15 PASS (tpl07-1790781211021); PM record query empty (tpl07-1790781226628), so role handling remains pending. Frontend build unchanged; no persistent fixtures. Overall detail.action-state and all-document adoption remain open.
+
+
+### Segment53.79–53.80 — Equipment plans and requests
+
+P1 shared approval source77/native52/semantics15 PASS; runtime14 PASS with verified rollback on859c761ad, including no-config/configured review, undefined monetary authority rejection, in-flight configuration protection, rejection/resubmission and invalid source-plan boundaries. Official creates14+14 PASS (tpl07-1790781561410/1790781615748). P4 create observer fixed child-contract race; no product workaround. Both PM existing-record queries empty (1790781578831/1790781623019); actual role handling remains pending. Usage/settlement execution-owning families and overall action-state remain open.

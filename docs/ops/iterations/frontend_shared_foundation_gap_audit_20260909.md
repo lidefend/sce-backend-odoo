@@ -8112,3 +8112,10 @@ L3未执行：tier/company/reason/native XML需一次受管升级。下一步用
 P4已有rollback工具新增equipment-plan-request白名单范围14：每模型6项（外部state保护、无配置自动审批、无金额权威拒绝金额条件、pending配置变更保护、真实review通过、驳回重提），另2项申请引用未批计划/跨项目计划拒绝。默认all纳入，沿用原配置恢复和临时记录消失回读，无新环境或持久fixture。
 
 L1 equipment-plan-request-runtime-iteration.log/py_compile/bash-n PASS，P1及纯回归输入未改，复用77/52/15。一次受管smart_construction_core升级/reload后仅本范围14；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产或控制库。运行尚pending，前端未改不重建；角色页面随后按真实数据检查，不重跑旧单据ORM。
+
+
+53.80结果：受管升级/reload859c761ad成功；equipment-plan-request-runtime.log 14/14 PASS，ROLLBACK VERIFIED，两模型配置恢复、临时单据/项目消失。真实reviewer执行审批，建单使用事务sudo；非完整角色办理证明。未重跑旧ORM/前端构建。
+
+P4页面范围扩展两模型，equipment-plan-request-page-iteration.log L1/node语法PASS。设备计划创建tpl07-1790781561410/report.json 14 PASS。设备申请首次tpl07-1790781570251在模型断言失败：report.recordAuthority被后到达的sc.equipment.request.line覆盖，主表response存在，归因P4观察器。创建分支改为本次导航响应中按主模型及非正整数记录身份选择；equipment-create-observation-fix.log L1 PASS，设备申请复验tpl07-1790781615748/report.json 14 PASS。原计划保存authority确为sc.equipment.plan/NewId，选择修复不改变其证据；不因测试工具改动重跑独立业务。两者errors=[]/writes=[]，双视口，系统编号与旧直接审批入口不出现，申请390截图人工复核。
+
+PM记录查询：计划tpl07-1790781578831、申请tpl07-1790781623019均ok=true records=[]，数据前置不足，角色实际记录办理pending；不造fixture、不扩权、不重试相同空查询。前端7915f3bb9/后端859c761ad，detail.action-state与全系统目标保持开放。
