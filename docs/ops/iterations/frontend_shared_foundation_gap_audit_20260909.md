@@ -8493,3 +8493,18 @@ P4既有rollback工具新增subcontract-settlement-cash10组，复用finance非s
 subcontract-payment-cash-owner.log10/10 PASS、ROLLBACK VERIFIED，finance非sudo申请/付款执行、真实reviewer，资金基线真实activate，source单据sudo事务准备并走实际审批确认；申请60占额拒绝超额1，20+40分别真实posted台账且准确返回source，paid/unpaid由20/40→60/0，requested/unrequested60/0；冲销40后20/40、再冲销20后0/60，来源仍confirmed，付款历史归属始终不可清除，申请取消后reserved0/available60。配置基线和临时记录恢复，无权限扩张。失败原日志保留不混写成功。
 
 本轮把P1固定0汇总替换为显式归属的真实聚合，但未证明历史无归属行的完整性、其他角色范围、正式登记合同现金链、浏览器选源与真实双事务竞争；不将10项升为整行业务完成。下一步在已有台账中接续必要关系选择/角色范围及其他未收口契约，付款49/租赁10/安全等既有独立证据不重跑；无前端build/新fixture环境/推送合并目标部署。
+
+
+### 53.112 付款关系选源与共享字段约束消费（进行中）
+
+候选3c2a2ffc3，续接既有P4 standard_page_type_browser未提交改动。finance付款create tpl07-1790789752812报15 PASS、无错误/业务写；但仅证明分包来源声明/控件/打开与双视口，实际source api.data list domain=[]，不能作为选源范围正确的证据。原生fieldInfo/fieldDescriptor均声明同项目且confirmed；现有源数据空，不补fixture，不宣称存在实际越权数据读取。
+
+P0共享v2/store.ts确认字段描述domain/context只在componentConfig声明时才投影，descriptor-only声明丢失。修为与其他字段相同的显式组件配置优先、否则消费字段描述；空数组/空对象显式覆盖仍保留。该规则属通用契约消费，不置于P1模型条件/P2偏好/P3临时配置。既有schema已承载domain/context，无扩schema/前端业务推断。增加4项存储映射回归；此缺口与当前浏览器请求的完整因果链仍须加载候选后核验，不以单元测试代替浏览器关闭。
+
+P4同一browser记录domain_raw并等待精确source响应，增加未选项目时domain必须id=-1的断言，避免下拉可打开假通过。L1 relation-scope-final-iteration.log、node语法/diff通过；L2 relation-scope-final-unit.log201 PASS（既有177+10+10及新增4），已登记workflow_catalog_consumer非零回执。严格类型检查relation-scope-typecheck.log运行中，后续不得越过失败结果启动build/browser。
+
+受影响为ui.contract→V2 store→共享关系消费，风险是多表单关系范围；继续复用P1支付122/native60和cash10，模型与数据库输入未变，跳过ORM/upgrade/全矩阵/Quick。前端仍7915f3bb9，需实现稳定后一次受管preview build/up与finance受影响请求验收；无新环境/持久fixture/推送合并目标部署。67及detail.action-state仍开放。
+
+53.112增量结果：strict typecheck PASS，受管preview一次构建及up通过（relation-scope-build.log/preview.log），候选base3c2a2ffc3+上述显式dirty，entry /assets/index-CdI4m-Va.js，entry SHA25616af7711251ce0e3d6349e4b4c38b9c10d3d1e83b2cdc63acd2dc0c9f66675d5。tpl07-1790790192414/report.json16 PASS，source请求实际domain=[["id","=",-1]]，domain_raw为空，errors/forbiddenWrites为空；证明修复后未选项目阻断生效。后端0b329c68d及cash10输入未变，未运行ORM。
+
+该结果不证明选定项目时confirmed+project候选限制、切换项目清理与搜索更多弹层均正确；下一步使用既有授权项目选择验证这些共享交互，不增加来源fixture。空source数据不能用于宣称成功选中/保存真实来源。当前批次仍进行中，67整体验收与主线/目标交付未完成。

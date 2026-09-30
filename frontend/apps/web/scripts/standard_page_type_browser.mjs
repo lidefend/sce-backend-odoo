@@ -104,7 +104,7 @@ async function login(role) {
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
         const result = await response.json();
-        report.calls.push({ role, model: body.params.model, domain: body.params.domain, order: body.params.order, offset: body.params.offset || 0, limit: body.params.limit, ids: result.data?.records?.map((row) => row.id) || [] });
+        report.calls.push({ role, model: body.params.model, domain: body.params.domain, domainRaw: body.params.domain_raw, order: body.params.order, offset: body.params.offset || 0, limit: body.params.limit, ids: result.data?.records?.map((row) => row.id) || [] });
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
@@ -594,7 +594,7 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
       { role: 'fixture_role_pm', model: 'sc.material.inbound', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.material.acceptance', domain: [] },
@@ -623,6 +623,7 @@ try {
       { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
       { role: 'fixture_role_pm', model: 'sc.construction.diary', domain: [] },
       { role: 'fixture_role_contract_operator', model: 'sc.contract.event', domain: [] },
+      { role: 'fixture_role_finance', model: 'payment.request', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.payment.execution', domain: [['state', '=', 'paid']] },
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const executionLabels = {
@@ -634,7 +635,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -656,6 +657,35 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'payment.request') {
+          const nodes = [];
+          const visit = (items) => {
+            for (const node of items || []) {
+              if (node.type === 'field') nodes.push(node);
+              visit(node.children);
+            }
+          };
+          visit(authority.layout?.containerTree);
+          const basis = nodes.find((node) => node.name === 'subcontract_settlement_id');
+          check('payment create: explicit subcontract basis in effective contract', Boolean(basis));
+          check('payment create: subcontract basis is editable', basis.readonly !== true && basis.fieldInfo?.readonly !== true && basis.componentConfig?.readonly !== true);
+          const control = session.page.getByPlaceholder('请选择分包结算单', { exact: true });
+          check('payment create: actual subcontract relation control', await control.count() === 1);
+          await control.scrollIntoViewIfNeeded();
+          const sourceResponse = session.page.waitForResponse((response) => {
+            try {
+              const body = response.request().postDataJSON();
+              return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === 'sc.subcontract.settlement';
+            } catch { return false; }
+          });
+          await control.click();
+          const sourceQuery = (await sourceResponse).request().postDataJSON().params;
+          check('payment create: unresolved project blocks source query',
+            JSON.stringify(sourceQuery.domain) === JSON.stringify([['id', '=', -1]]));
+          await session.page.screenshot({ animations: 'disabled', path: path.join(out, 'payment-subcontract-basis-open.png') });
+          await session.page.getByRole('heading', { name: '新建记录', exact: true }).click();
+        }
         if (['sc.material.rental.order', 'sc.material.rental.settlement'].includes(spec.model)) {
           const settlement = spec.model === 'sc.material.rental.settlement';
           const dateField = settlement ? 'settlement_date' : 'rental_date';
