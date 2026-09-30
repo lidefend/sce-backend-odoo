@@ -324,6 +324,20 @@ class ScApprovalPolicy(models.Model):
         return True
 
     @api.model
+    def _approve_submission_review(self, record):
+        """Act on the existing instance, never re-evaluate mutable configuration."""
+        record.ensure_one()
+        if not record.review_ids:
+            raise UserError(_("单据没有审批实例，不能手工批准。"))
+        if record.validation_status == "validated":
+            return None
+        if record.validation_status not in ("waiting", "pending"):
+            raise UserError(_("当前审批实例不处于可批准状态。"))
+        if not record.can_review:
+            raise UserError(_("当前用户不是本审批步骤的审批人。"))
+        return record.validate_tier()
+
+    @api.model
     def next_state_after_submit(self, model_name, submitted_state, approved_state, company=None):
         return submitted_state if self.is_approval_required(model_name, company=company) else approved_state
 

@@ -920,27 +920,19 @@ class ScExpenseClaim(models.Model):
                 )
 
     def action_approve(self):
+        """Compatibility entry delegates the real review decision."""
         self._assert_finance_approve_access()
-        policy_model = self.env["sc.approval.policy"]
+        result = None
         for rec in self:
+            if rec.state == "approved":
+                continue
             if rec.state != "submit":
                 raise UserError(_("只有已提交的费用/保证金单据可以批准。"))
-            before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            if policy_model.is_approval_required(rec._name, company=rec.company_id):
-                if rec.validation_status != "validated":
-                    raise UserError(_("请先完成统一审批流程后再批准费用/保证金单据。"))
-            else:
-                policy = policy_model.get_active_policy(rec._name, company=rec.company_id)
-                if policy:
-                    policy.assert_user_can_approve()
-            rec.write({"state": "approved", "reject_reason": False})
-            rec._audit_transition(
-                "expense_claim_approved",
-                before,
-                rec._snapshot_audit_payload(),
-                "action_approve",
-            )
+            result = self.env["sc.approval.policy"]._approve_submission_review(rec)
+            if rec.validation_status == "validated":
+                rec.action_on_tier_approved()
+        return result
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -957,9 +949,11 @@ class ScExpenseClaim(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
+            if rec.state == "approved":
+                continue
             if rec.state != "submit":
                 raise UserError(_("只有已提交的费用/保证金单据可以完成统一审批回调。"))
-            if rec.validation_status != "validated":
+            if not rec.review_ids or rec.validation_status != "validated":
                 if self.env.context.get("server_action_tier"):
                     # OCA base_tier_validation_server_action fires this
                     # callback after every approved level of a multi-level
@@ -981,7 +975,9 @@ class ScExpenseClaim(models.Model):
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
             if rec.state != "submit":
-                raise UserError(_("只有已提交的费用/保证金单据可以驳回。"))
+                continue
+            if not rec.review_ids or rec.validation_status != "rejected":
+                raise UserError(_("费用/保证金单据没有已驳回的审批事实。"))
             before = rec._snapshot_audit_payload()
             rec.write(
                 {

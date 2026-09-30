@@ -7558,3 +7558,11 @@ L5：未推送、未合并、未部署。
 - 付款、费用、结算三条提交路径已实际消费共同机制，删除各自重复的配置/创建review逻辑。费用和结算统一先进入原有submit状态，再由服务决定保持审批中或转各自approved/approve；保留原有业务校验、结算锁和数据验证、费用审计，不伪造validated。付款原有自动批准私有token与金额/状态守卫继续生效。
 - L1 ci.local.iteration PASS（shared-approval-route-iteration.log）。L2 verify.payment.approval_state_machine.unit稳定33项（shared-approval-route-tests.log，begin/record33）：执行实际共享服务，跨模型配置分流、在途配置改变不绕过、原生重置失败拒绝；执行真实费用/结算action_submit，核对业务校验、锁/数据验证、原状态名与审计。新增测试后只重跑受影响目标，不重复其他页面证据。
 - 这是共同机制首次落地，不是全单据完成：其他单据提交消费者、费用/结算旧批准和回调的在途实例权威仍须继续统一，原四项状态动作缺口未关闭。未执行ORM事务/真实多级配置验收，不能把函数测试等同运行验收。此前付款XML仍需受管模块升级，稳定批次统一进行；前端产物不变、不重建、不推送/合并/目标部署。
+
+
+### 53.22 费用/结算旧批准入口退出配置重判放行
+
+- 785094a7f clean起步，P1 smart_construction_core审批执行；共享策略服务新增私有_approve_submission_review，只读取真实review、当前审批状态及can_review，委托原生validate_tier并保留评论向导返回值。无实例/驳回/非当前审批人拒绝，不再以当前策略关闭为在途放行依据。
+- 费用与结算action_approve委托共同决定，再由原审批完成回调执行业务转换。保留费用业务准备检查、财务权限和审计，结算角色、锁、合同/采购严格校验及数据验证。结算草稿不能直接批准；无审批应走已统一的提交路径。费用批准回调要求真实review，费用驳回回调要求rejected事实；终态重复批准回调不重复审计或业务转换。多级审批未完成保持submit。
+- L1 make ci.local.iteration PASS（shared-approval-decision-iteration.log）；L2 verify.payment.approval_state_machine.unit 38项PASS（shared-approval-decision-tests.log，begin/record38）。新增真实共享方法与费用/结算生产方法执行回归，覆盖配置变更不读取、缺实例/错误审批人、评论向导返回、重复完成、部分审批与草稿批准拒绝。函数测试不证明ORM事务或真实审批人权限链。
+- 原生按钮/契约投影尚未统一，四项状态动作登记保持开放；付款已有实例保护，但批准决定尚有局部编排，后续同样消费共享服务。其他业务单据仍须接入，不将两类旧入口修复外推为全系统完成。未重建前端、未写数据库、未运行无关ORM；受管升级和多级审批运行闭环仍待稳定批次执行。

@@ -38,9 +38,10 @@ def load_methods():
     methods = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name in names]
     assert len(methods) == len(names)
     exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
-    route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_start_submission_review')
-    route.decorator_list = []
-    exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
+    for name in ('_start_submission_review', '_approve_submission_review'):
+        route = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == name)
+        route.decorator_list = []
+        exec(compile(ast.Module(body=[route], type_ignores=[]), str(POLICY), 'exec'), namespace)
     return namespace, names
 
 
@@ -68,6 +69,7 @@ class Record:
         self.company_id = types.SimpleNamespace(id=7)
         self.policy = types.SimpleNamespace(is_approval_required=self.requirement)
         self.policy._start_submission_review = lambda record: PRODUCTION['_start_submission_review'](self.policy, record)
+        self.policy._approve_submission_review = lambda record: PRODUCTION['_approve_submission_review'](self.policy, record)
         self.required = required
         self.matching = matching
         self.env = types.SimpleNamespace(context={}, company=self.company_id)
@@ -254,6 +256,78 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(calls[7], ('state', 'submit'))
             self.assertEqual(rec.state, 'submit' if required else 'approve')
             self.assertEqual(rec.requests, int(required))
+
+    def test_shared_decision_never_reads_changed_policy(self):
+        for required in (False, True):
+            rec = self.record(required=required, reviews=['tier'], status='pending')
+            rec.policy.is_approval_required = lambda *a, **kw: self.fail('in-flight policy read')
+            rec.policy._approve_submission_review(rec)
+            self.assertEqual(rec.validation_status, 'validated')
+            self.assertEqual(rec.state, 'submit')
+
+    def test_shared_decision_denies_missing_rejected_and_wrong_reviewer(self):
+        for reviews, status, can_review in (([], 'validated', True), (['tier'], 'rejected', True), (['tier'], 'pending', False)):
+            rec = self.record(reviews=reviews, status=status)
+            rec.data['can_review'] = can_review
+            with self.assertRaises(ValueError):
+                rec.policy._approve_submission_review(rec)
+            self.assertEqual(rec.state, 'submit')
+
+    def test_shared_decision_preserves_comment_wizard_result(self):
+        rec = self.record(reviews=['tier'], status='pending')
+        wizard = {'type': 'ir.actions.act_window', 'res_model': 'comment.wizard'}
+        rec.validate_tier = lambda: wizard
+        self.assertIs(rec.policy._approve_submission_review(rec), wizard)
+        self.assertEqual(rec.validation_status, 'pending')
+
+    def test_expense_compatibility_approval_uses_instance_and_is_idempotent(self):
+        path = MODEL.with_name('expense_claim.py')
+        names = {'action_approve', 'action_on_tier_approved', 'action_on_tier_rejected'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for status in ('pending', 'validated'):
+            rec = self.record(required=False, reviews=['tier'], status=status)
+            rec._name = 'sc.expense.claim'
+            rec._check_business_ready = lambda: None
+            rec.write = lambda values: rec.data.update(values)
+            rec._audit_transition = lambda *values: rec.audits.append(values)
+            rec.action_on_tier_approved = lambda: namespace['action_on_tier_approved'](rec)
+            namespace['action_approve'](rec)
+            namespace['action_approve'](rec)
+            rec.action_on_tier_approved()
+            self.assertEqual(rec.state, 'approved')
+            self.assertEqual(len(rec.audits), 1)
+        rec = self.record(required=False, state='submit')
+        with self.assertRaises(ValueError):
+            namespace['action_on_tier_rejected'](rec)
+        self.assertEqual(rec.state, 'submit')
+
+    def test_settlement_compatibility_approval_keeps_partial_chain_and_blocks_draft(self):
+        path = MODEL.with_name('settlement_order.py')
+        names = {'action_approve', 'action_on_tier_approved'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, 'raise_guard': guard, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for final_status in ('pending', 'validated'):
+            rec = self.record(required=False, reviews=['tier'], status='pending')
+            rec._name = 'sc.settlement.order'
+            rec.ids = [23]
+            rec.data['next_status'] = final_status
+            rec._assert_lifecycle_role = lambda role: None
+            rec._lock_lifecycle_rows = lambda: None
+            rec._check_business_anchor_or_raise = lambda: None
+            rec._check_line_contracts_or_raise = lambda: None
+            rec._check_contract_consistency_or_raise = lambda **kw: None
+            rec._check_purchase_orders_or_raise = lambda **kw: None
+            rec.env.validator = types.SimpleNamespace(validate_or_raise=lambda **kw: None)
+            rec._write_lifecycle = lambda state: rec.data.update(state=state)
+            rec.action_on_tier_approved = lambda: namespace['action_on_tier_approved'](rec)
+            namespace['action_approve'](rec)
+            self.assertEqual(rec.state, 'approve' if final_status == 'validated' else 'submit')
+            rec.data['state'] = 'draft'
+            with self.assertRaises(ValueError):
+                namespace['action_approve'](rec)
 
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)

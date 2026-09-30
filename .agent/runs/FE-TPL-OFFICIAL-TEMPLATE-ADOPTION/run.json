@@ -214,7 +214,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Shared _start_submission_review now consumed by payment/expense/settlement (53.21; 33 pure tests). Continue adapting remaining business-document submit routes and converge legacy approval/rejection callbacks on real in-flight review facts; do not re-read mutable policy to bypass existing instances. Four native state-action gaps remain. Governed upgrade/runtime acceptance after stable affected code; no frontend rebuild or unrelated ORM.",
+  "next_exact_step": "53.22 expense/settlement legacy approval now delegates shared real-instance decision (38 pure tests), preserving domain checks; no mutable-policy bypass. Continue remaining document adoption, payment decision reuse, and native/effective action convergence. Four registered state-action gaps and governed upgrade/runtime acceptance remain; no unrelated scans or frontend rebuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -478,6 +478,18 @@
       ],
       "runtime": "not_run; pure production-method tests only",
       "all_document_completion": false
+    },
+    "shared_approval_decision_53_22": {
+      "status": "verification_pending",
+      "source_head": "785094a7f",
+      "test_count": 38,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/shared-approval-decision-tests.log",
+      "runtime": "not_run",
+      "scope": [
+        "sc.expense.claim",
+        "sc.settlement.order",
+        "sc.approval.policy"
+      ]
     }
   }
 }
