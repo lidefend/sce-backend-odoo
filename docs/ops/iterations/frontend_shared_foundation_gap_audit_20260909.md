@@ -9115,3 +9115,16 @@ P4复用standard_list_lowcode_loop新增WEB_LC_UI_STAGE=1：已有草稿冲突�
 53.164运行续记：f395a086a34a66de640ffed1eea3dde8e7c3eeae受管构建/up一次，entry/assets/index-BBNttmRb.js，sha256=2209bc3bde4a54c97f2737b16bce6a6ed8f3a6866f64f4093014817531c8dde9；后端6fd0123cd不变。WEB_LC_APPLY=1 WEB_LC_UI_STAGE=1运行web-lc-01-11628ad0-62f5-42e2-835b-89e3fbc99d3e，UI正确恢复本次未限定角色草稿，但编辑器21列而有效列表22列，保存前停止；recovery=discarded，正式完整契约恢复/未变化，不宣称UI暂存通过。
 
 扩充原工具只读editorBaseline观察（16测试及新begin/record通过，lc-editor-baseline-*），不再次写入运行WEB_LC_UI_STAGE=1默认readonly：web-lc-01-6421bd04-8548-4087-84bf-113087e72d80 readonly_passed，list_search.audit建议列与最终22列差集精确missing=[attachment_ids],extra=[]。P0 form_field_configuration._suggested_columns经_business_field_name_set/_available_lowcode_model_fields过滤，而正式列表支持附件关系列；需补齐配置能力与最终消费的一致性，并核对stage字段校验，不可放宽断言或删正式列。当前已加载目标角色摘要修复，但尚无稳定截图确认，因此不把纯测当整页呈现验证。下一步仅修配置字段能力/定向测试，再续同一UI编辑暂存，避免重复发布链。
+
+
+### 53.165 原生集合列保留、UI暂存闭环与官方Card内容布局修复
+
+8275b665f起点。P0 form_field_configuration._suggested_columns将“新增候选”标量筛选误当作原生列表能力全集。e4ca948b0只保留当前用户fields_get可读、原生列表已声明、且非技术名称/标签的one2many/many2many列；不扩大通用搜索/分组候选，不注入付款/附件业务名称。新增反例覆盖技术message_ids、binary、缺失权限描述字段继续排除，以及原生集合保留。BusinessConfigChangeSet的stage/validate按实际模型字段存在性处理，无同样类型裁剪。L1 PASS，business_config.unit229 PASS（lc-native-collections-unit）。无字段/XML变化，受管backend.up到e4ca948b0，无模块升级或ORM。
+
+同一WEB_LC_UI_STAGE真实运行报告web-lc-01-f94d83c7-7855-40ce-aedf-29aa39d66530 passed/discarded，12具名断言：editorBaseline无缺列/额外列；UI22列完整，交换前两列并点击保存列表与搜索，普通configadmin权威get一条同项目且顺序精确匹配；正式完整契约不变；UI放弃草稿，正式表头/query/有序记录/业务摘要不变。publish_attempted=false，errors=[]。保留“API建立本次基线草稿、UI编辑并更新暂存”的准确边界，不声称UI从空草稿创建或再次发布。53.163发布恢复证据继续复用。
+
+人工截图发现真实布局缺陷：BusinessConfigEditorPanels把220px+内容两列grid放在ScCard外层，官方Card唯一body落进首列，桌面标题说明竖排。c13a95f92经官方body-class-name把config-editor-panel网格移至内容层，根edit-panel不再两列；不增加vendor内部选择器或并行卡片渲染。L1/229业务配置测试/node语法通过。生产前端变化故一次受管build/up：base c13a95f92bd8a8c5dd78bb2aa4a4c813bf1cb14f，entry/assets/index-py5qUVzP.js，sha256=0f136ae80862ed7d5ed1cae24049b3d7af9a97b6491cbcadd43d7e03f6a283f7。后端e4ca948b0复用。
+
+原只读standard_config_field.browser扩标题可读尺寸断言，config-field-1790805468208/report.json14 PASS，1440/390标题与按钮可读、表单/整页无横向溢出；截图人工核对，不再竖排。该探针本地添加id用于既有重复输入检查，因此截图23列不是配置变更，未保存发布/创建草稿。UI暂存12证据按CSS/卡片内容层变更不影响动作payload与后端能力复用，不重写配置。
+
+剩余精确缺口：截图中attachment_ids虽完整保留，却只显示技术名。available_model_fields仍是窄新增候选，fieldDisplayLabel缺少已选原生集合列的元数据；应补建议列/已选列标签契约，不能在前端写附件字段字典或放宽搜索候选。目标角色摘要已有纯测和候选，顶部稳定显示尚未单独截图。下一步仅该描述契约及稳定摘要观察；不重跑已闭合发布/暂存业务。67/detail.action-state与其它已登记业务责任继续open，无推送/合并/目标部署。

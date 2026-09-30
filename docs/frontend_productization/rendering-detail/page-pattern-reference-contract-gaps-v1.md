@@ -585,3 +585,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.164开放：付款列表最终契约22列，工作台list_search.audit只返回21，精确缺attachment_ids（只读报告6421bd04-8548-4087-84bf-113087e72d80）。UI编辑暂存探针在保存前拒绝并discarded，不得删附件列迁就编辑器。归属P0配置可编辑能力/建议列与stage校验，下一步收口。另已修目标角色摘要误用操作者标签（f395a086a/228测试+strict），运行候选index-BBNttmRb.js；整页稳定显示证据仍待补。
+
+
+53.165：53.164附件列丢失已修e4ca948b0（只保留原生已声明且用户可读的非技术集合列，不扩搜索/分组候选），UI编辑暂存/正式不变/放弃12PASS报告f94d83c7-7855-40ce-aedf-29aa39d66530。官方Card外层网格误挤内容已修c13a95f92，1440/390只读14PASS报告config-field-1790805468208。仍缺已选集合列描述：attachment_ids显示技术名，需由后端建议列标签契约提供，不建前端业务字典；不因此重开已通过的发布/暂存链。
