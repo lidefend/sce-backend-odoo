@@ -1107,16 +1107,23 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   padding-left: 0;
 }
 
-.native-container--group > .native-container-head h3 {
-  font-size: 15px;
-  line-height: 1.35;
-}
-
+/* Official section-title typography: ``--td-font-title-medium`` (16px / 24px,
+ * weight 600) is the TDesign title the official detail and form compositions
+ * print for a section head, and it is the same value the task/canonical section
+ * heading already renders. The heading is presentation only - it carries no
+ * contract meaning - so its type comes from the official token instead of a
+ * locally invented size. */
 .native-container-head h3 {
   margin: 0;
-  font-size: 14px;
+  font: var(--td-font-title-medium);
   color: var(--sc-app-text-primary);
-  font-weight: 600;
+}
+
+/* The collapsible heading is the same section head as the plain one, so it
+ * carries the same official title typography; only its toggle behaviour is ours. */
+.native-container-head > .sc-btn[data-appearance='context-action'] {
+  font: var(--td-font-title-medium);
+  color: var(--sc-app-text-primary);
 }
 
 .native-container-head {

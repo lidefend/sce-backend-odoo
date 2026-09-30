@@ -9,11 +9,22 @@ This ledger records reference details that cannot be implemented safely from the
 - Record actions: copy, delete and their disabled reason are not consistently projected for every
   model/action pair. The explicit labelled detail action part of this bullet is closed; see the
   closed boundary decisions below. Do not re-open it by adding a second row-action field.
-- Readonly section metadata: the reference displays section item counts. Contract V2 currently carries nodes and container structure but no authoritative displayed item-count presentation.
 - Task slot coverage: the payment task form projects only a subset of the business facts shown by the reference detail. The form-structure producer must explicitly assign the remaining owned fields to task/core/condition/supplementary slots before the task renderer may show them.
 - Task field geometry: the real payment task structure currently projects single-column containers whose widgets retain full-span metadata. `CanonicalFormNodeRenderer` correctly preserves those declared columns and spans. A future producer change must derive compact task geometry from the effective action/view structure; the frontend must not reinterpret `span=24` as half-width merely to imitate the reference readonly drawer.
 
 ## Closed boundary decisions (no longer gaps)
+
+- Readonly section metadata: the daily-snapshot reference printed an item count on the section
+  heading line, and the earlier wording here asked Contract V2 to carry a displayed item-count
+  presentation field. That wording is superseded and must not be re-opened. The authoritative detail
+  composition is the official TDesign Starter (`detail/base`, `detail/advanced` at
+  `aeed57076217f7777158b905f353d73585bad1c4`), whose section title is the card head only: the rendered
+  `t-card__header` has `border-bottom: 0px`, and its `#actions` slot carries controls (quarter/month
+  switch), never a count. An item count is a presentation derivation of the facts the section already
+  renders, so it is neither a contract obligation nor something the frontend may fail a section for
+  omitting. The dataset contract, the section nodes and the container structure stay exactly as they
+  are; see `detail.section-heading` in
+  `docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`.
 
 These were previously listed here. They are kept so the superseded wording is not reintroduced;
 they are not producer-side gaps and must not be re-opened by adding the value to the contract.
@@ -53,6 +64,21 @@ they are not producer-side gaps and must not be re-opened by adding the value to
   `execution_intents.export = api.data` and `execution_operations.export = export_csv`, and the
   selection runtime executes that declared intent.
 - Contextual readonly detail header, first-level collaboration tabs, compact relation tabs, description-grid skeleton, and close settlement require the formal contextual-drawer container authority above.
+
+## Official template baseline
+
+The authoritative Web rendering and interaction baseline is the official TDesign Starter
+(`Tencent/tdesign-vue-next-starter`), not the 2026-08-26 daily frontend snapshot that the original
+reference screenshots were captured from. That snapshot stays a historical presentation reference
+only: it is our own pre-adoption frontend (`referenceKind: daily-frontend-source-snapshot`, zero
+`t-*` usages, `@sc/ui` as its only UI dependency), which is why some of its reference details have no
+official counterpart.
+
+Evidence: a local render of the official commit `aeed57076217f7777158b905f353d73585bad1c4`
+(dev server against the shipped mock data, viewports 1440x900 and 390x844) held off-repo in
+`sce-offrepo/artifacts/official-starter-reference/`. The official shell keeps a desktop minimum
+width: at 390x844 it reports `scrollWidth - clientWidth = 434`, so the narrow-screen layout stays our
+own adaptation and is not an official-sample debt.
 
 ## Evidence gaps
 
