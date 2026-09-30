@@ -11,6 +11,7 @@ from datetime import timedelta
 from odoo import fields
 
 from odoo.exceptions import AccessError, UserError
+from psycopg2 import IntegrityError
 
 
 def _env():
@@ -637,6 +638,45 @@ def _red_flush_approval_checks(project, group, created):
     assert not changed.generated_invoice_id
     assert source.amount_total == changed.original_invoice_amount
     print("APPROVAL_CHECK=red_flush_registered_source_amount_is_immutable")
+
+
+    recoverable = document()
+    recoverable.action_submit()
+    _approve_existing_reviews(recoverable)
+    reviews_before = recoverable.review_ids.ids
+    recovery_contract = env["sc.workflow.contract.service"].describe_record(recoverable)
+    assert any(action["method"] == "action_cancel" and not action.get("disabled", False) for action in recovery_contract["availableActions"])
+    recoverable.action_cancel()
+    assert recoverable.state == "cancel" and not recoverable.generated_invoice_id
+    assert recoverable.review_ids.ids == reviews_before and recoverable.validation_status == "validated"
+    denied(recoverable.action_submit)
+    print("APPROVAL_CHECK=red_flush_approved_unexecuted_cancellation_preserves_review")
+    replacement = env[model].sudo().create({"original_ledger_id": recoverable.original_ledger_id.id, "red_flush_invoice_no": recoverable.red_flush_invoice_no + "-RETRY", "reason": "New application after cancellation"})
+    created.append((replacement._name, replacement.id))
+    replacement.action_submit()
+    assert replacement.state == "submitted" and set(reviews_before).isdisjoint(replacement.review_ids.ids)
+    _approve_existing_reviews(replacement)
+    confirm(replacement)
+    assert replacement.state == "confirmed" and replacement.generated_invoice_id
+    created.append((replacement.generated_invoice_id._name, replacement.generated_invoice_id.id))
+    print("APPROVAL_CHECK=red_flush_replacement_requires_new_approval_before_execution")
+    constraint = "sc_output_invoice_adjustment_confirmed_source_unique"
+    env.cr.execute("SELECT 1 FROM pg_constraint WHERE conname = %s AND conrelid = 'sc_output_invoice_adjustment'::regclass", (constraint,))
+    assert env.cr.fetchone(), "red-flush unique constraint not installed"
+    duplicate = env[model].sudo().create({"original_ledger_id": replacement.original_ledger_id.id, "red_flush_invoice_no": replacement.red_flush_invoice_no + "-DUP"})
+    created.append((duplicate._name, duplicate.id))
+    refused = False
+    try:
+        with env.cr.savepoint():
+            # Exercise the database backstop separately from the ordinary
+            # business duplicate check; this is not a two-session race test.
+            duplicate._write_approval_state({"state": "confirmed"})
+            duplicate.flush_recordset()
+    except IntegrityError as error:
+        assert error.diag.constraint_name == constraint
+        refused = True
+    assert refused, "database accepted a second confirmed adjustment for the same source"
+    print("APPROVAL_CHECK=red_flush_database_unique_source_backstop")
 
 
 def _tender_guarantee_approval_checks(project, group, created):
@@ -2817,7 +2857,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 292, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
