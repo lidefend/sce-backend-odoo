@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "active": 1275,
+    "active": 1277,
     "orphan": 87,
     "retired": 1
   },
@@ -4468,7 +4468,7 @@
         "make/frontend.mk",
         "scripts/verify/test_frontend_delivery_hardening_guard.py"
       ],
-      "lines": 387
+      "lines": 389
     },
     {
       "script": "frontend_delivery_hardening_runtime_ids.py",
@@ -4565,6 +4565,18 @@
         "make/dev_test.mk"
       ],
       "lines": 63
+    },
+    {
+      "script": "frontend_favorite_probe_recovery.py",
+      "path": "scripts/verify/frontend_favorite_probe_recovery.py",
+      "status": "active",
+      "referenced_by_make_targets": [],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_standard_preview.py"
+      ],
+      "lines": 38
     },
     {
       "script": "frontend_finance_center_browser.sh",
@@ -5020,7 +5032,7 @@
         "make/frontend.mk",
         "scripts/verify/test_frontend_overlay_lifecycle_guard.py"
       ],
-      "lines": 64
+      "lines": 63
     },
     {
       "script": "frontend_page_block_registry_guard.py",
@@ -14718,7 +14730,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 57
+      "lines": 67
     },
     {
       "script": "test_frontend_page_pattern_reference_parity_guard.py",
@@ -15107,7 +15119,7 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 58
+      "lines": 75
     },
     {
       "script": "test_frontend_state_presentation_guard.py",
@@ -15688,7 +15700,7 @@
         "make/ci.mk",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py"
       ],
-      "lines": 96
+      "lines": 204
     },
     {
       "script": "test_p1_payment_request_field_completeness_guard.py",
@@ -15737,6 +15749,19 @@
         "make/dev_test.mk"
       ],
       "lines": 42
+    },
+    {
+      "script": "test_payment_approval_state_machine.py",
+      "path": "scripts/verify/test_payment_approval_state_machine.py",
+      "status": "active",
+      "referenced_by_make_targets": [
+        "verify.payment.approval_state_machine.unit"
+      ],
+      "referenced_by_workflows": [],
+      "referenced_by_files": [
+        "make/ci.mk"
+      ],
+      "lines": 319
     },
     {
       "script": "test_platform_company_access_manifest_guard.py",
@@ -18043,6 +18068,7 @@
       "referenced_by_files": [
         "make/ci.mk",
         "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
         "scripts/verify/test_workflow_contract_profile_loader.py",
         "scripts/verify/test_workflow_state_phase_coverage_guard.py",
         "scripts/verify/unified_page_contract_v2_guard_inventory.py",

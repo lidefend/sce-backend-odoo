@@ -7518,3 +7518,16 @@ L5：未推送、未合并、未部署。
 - 修复要求：公司范围内的有效用户审批策略决定提交走向；启用审批但没有可匹配规则必须报配置错误，不能视同未配置。已在审批中的单据不得仅因当前策略改变或review集合为空被自动批准；需明确在途配置/审批实例权威。多级审批只在最后完成时推进一次，拒绝/重提/重复调用有稳定结果；审计记录区分提交自动通过与人工审批通过，不能伪造审批人或把no改成validated充当审批事实。
 - 统一入口应复用既有状态转换与审批策略机制，不新建工作流引擎；旧action_approve/action_set_approved与回调只能委托同一转换裁决，不能各自实现放行规则。前端消费最终状态/可执行动作，不判断是否配置审批。原生按钮与共享官方动作栏使用同一合法动作集合。
 - 本节为裁决与直接实现定位，未修改付款执行代码、未运行数据库写入、不宣称统一完成。下一批从付款提交/审批回调/写入守卫/执行handler一起做最小闭环，定向覆盖无审批、配置单级/多级、规则缺失、错误审批人、在途配置变化和重复回调；使用现有环境与配置恢复机制。模型绑定覆盖守卫缺陷继续登记，不因调整优先级消失。
+
+
+### 53.18 付款审批执行收敛到状态机与公司审批配置
+
+- c4cfd498a clean起步。Formal Product Layer=P1，Layer Target=payment request transitions/approval policy consumption，Module=smart_construction_core；P4仅补同层函数执行回归。行业执行规则放P1，不在P0通用前端/模板、P2客户规则或P3临时配置中复制。Blast Radius为付款提交、批准回调、批准兼容入口、后续结清状态校验及其动作投影/原生按钮；非付款业务方法未改。
+- 提交的原有权限、对象/公司范围、依据/金额/资金门禁、锁与审计保留。提交后由既有公司sc.approval.policy判定：无需审批经私有提交身份推进approved，不伪写validation_status、不制造review；已配置则调用原生request_validation，缺匹配规则抛错。同一重提先用既有restart_validation重置上次审批尝试。未新建工作流引擎或数据字段。
+- action_approve/action_set_approved只委托action_approval_decision；等待/待处理要求真实review和当前can_review，已有完整validated链统一调用_complete_payment_approval。回调也调用同一完成逻辑；未完成多级不推进，重复回调不重复审计。无review不再成为人工放行条件，在途判断不读取后续变更的策略。自动路径是不可伪造的本地对象token，不接受布尔回调标记；原先tier_validation_callback=True绕过完成检查的逻辑退出。
+- write接入已有ScStateMachine.assert_transition，状态机补齐已经真实存在的submit→approved、rejected→submit以及受付款冲销执行保护的done→approved。approved/done是已经取得批准的业务事实，后续办理不再要求虚构审批记录；现金结清/来源/角色门禁仍先于done状态变更。未把自动批准扩展成自动付款。
+- 原生表单移除validate_tier/action_approve/action_set_approved三条重复批准入口，只保留action_approval_decision，保留财务经理组、当前审批人和待审批状态条件。available_actions绑定同一方法，拒绝无review批准，校验当前审批人，提交状态提示调用既有next_state_after_submit；待处理多级不承诺最终approved。删除已经退出原生面的action_set_approved登记，不给旧按钮新增平行语义。
+- L1 ci.local.iteration PASS（approval-unification-iteration-final.log）；L2新增verify.payment.approval_state_machine.unit稳定22项，执行真实生产方法与状态机，含原生/动作描述绑定、无配置自动通过、有配置等待、规则缺失、错误审批人、部分审批、完整审批、重复回调、旧入口统一、金额校验、伪造token/布尔回调拒绝和审批后配置变化。原native coverage 29与semantics15同次通过，日志approval-unification-stable.log；begin/record22。新脚本Make与registry登记、guard.registry.export同步。函数级测试不证明ORM事务回滚/真实权限/模块升级效果。
+- 本批改XML，L3必须通过既有acceptance.module.upgrade针对smart_construction_core升级；当前尚未升级/重载，没有执行任何业务数据库写入。前端输入未变，5180继续复用原产物，不需构建。L4真实配置切换/多级链/返回反馈仍待同一受管环境验证。既有TPL05A49项只作未变范围基线，本次审批变化不能继承其审批结果。
+- 已知未完：拒绝/重提的完整ORM链、审批策略配置变化的运行验证、费用/结算旧批准入口一致性，以及native coverage全局方法名误覆盖缺陷。登记中仍余付款冲销1项不代表全系统只剩1项；模型绑定的只读比较已发现5个隐藏方法（付款action_approve/validate_tier本批退役，另外sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve仍需按所有者统一规则处置）。签署/计划/文档运行验证仍保留，不宣称完整收口。
+- 当前为实现与纯测试完成，批次产品验收verification_pending，整体active；本地提交，不推送、合并或目标部署。

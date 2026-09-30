@@ -38,13 +38,6 @@
     },
     {
       "model": "payment.request",
-      "method": "action_set_approved",
-      "class": "state_transition_undeclared",
-      "occurrences": 1,
-      "reason": "writes state approve->approved behind a finance approval check; the profile declares `approve` on action_approve, so this second entry point has no declared purpose yet"
-    },
-    {
-      "model": "payment.request",
       "method": "action_view_company_contractor_responsibility_summary",
       "class": "navigation",
       "occurrences": 1,

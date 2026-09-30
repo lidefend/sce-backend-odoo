@@ -15,6 +15,7 @@ _logger = logging.getLogger(__name__)
 _FUNDING_BINDING_TOKEN = object()
 _TERMINAL_CASH_SOURCE_CLAIM_TOKEN = object()
 _DETAIL_AMOUNT_SYNC_TOKEN = object()
+_AUTOMATIC_APPROVAL_TOKEN = object()
 
 PAYMENT_REQUEST_DOCUMENT_STATE_LABELS = {
     "-1": "已作废",
@@ -2039,17 +2040,8 @@ class PaymentRequest(models.Model):
             )
         if vals.get("state") == "done":
             self._check_can_done()
-        tier_validation_callback = self.env.context.get("tier_validation_callback")
-        if vals.get("state") in ("approved", "done") and not tier_validation_callback:
-            for rec in self:
-                if rec.validation_status != "validated":
-                    raise_guard(
-                        "P0_PAYMENT_STATE_BYPASS_BLOCKED",
-                        f"付款申请[{rec.display_name}]",
-                        "状态变更",
-                        reasons=["未完成审批流程"],
-                        hints=["请先完成审批后再进入已批准/已完成状态"],
-                    )
+        if "state" in vals:
+            self._check_approval_state_transition(vals["state"])
         res = super().write(vals)
         if (
             "amount" in vals
@@ -2059,6 +2051,26 @@ class PaymentRequest(models.Model):
         if any(key in vals for key in ("state", "type", "project_id", "amount")):
             self._enforce_funding_gate(vals)
         return res
+
+    def _check_approval_state_transition(self, target_state):
+        for rec in self:
+            ScStateMachine.assert_transition(self._name, rec.state, target_state, rec.display_name)
+        automatic_approval = self.env.context.get("_sc_automatic_approval_token") is _AUTOMATIC_APPROVAL_TOKEN
+        if target_state in ("approved", "done"):
+            for rec in self:
+                # Existing approved/done states already carry the approval outcome.
+                # A later policy edit cannot invalidate that outcome or approve an
+                # in-flight request. A boolean callback context is not authority.
+                if (rec.state not in ("approved", "done")
+                        and not automatic_approval
+                        and not (rec.review_ids and rec.validation_status == "validated")):
+                    raise_guard(
+                        "P0_PAYMENT_STATE_BYPASS_BLOCKED",
+                        f"付款申请[{rec.display_name}]",
+                        "状态变更",
+                        reasons=["未完成审批流程"],
+                        hints=["请先完成审批后再进入已批准/已完成状态"],
+                    )
 
     def _get_attachment_count(self):
         self.ensure_one()
@@ -3020,109 +3032,66 @@ class PaymentRequest(models.Model):
         submitted_records = self.sudo()
         submitted_records.invalidate_recordset()
         for rec in submitted_records:
-            company = rec.company_id or self.env.company
-            rec.with_company(company).with_context(
-                allowed_company_ids=[company.id],
-            ).request_validation()
-        submitted_records._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
+            rec._route_submitted_approval()
         return {"warnings": advisory_result}
 
+    def _route_submitted_approval(self):
+        """Called only by submission after its access, scope and business checks."""
+        self.ensure_one()
+        if self.state != "submit":
+            raise UserError(_("只有已提交的付款/收款申请可以初始化审批。"))
+        company = self.company_id or self.env.company
+        record = self.with_company(company).with_context(allowed_company_ids=[company.id])
+        policy = self.env["sc.approval.policy"]
+        required = policy.is_approval_required(self._name, company=company)
+        # Start a fresh native approval attempt after a rejected submission.
+        # This uses the existing OCA restart lifecycle, not fabricated review facts.
+        if record.review_ids:
+            record.restart_validation()
+        if required:
+            reviews = record.request_validation()
+            if not reviews:
+                raise UserError(_("付款/收款申请已启用审批，但没有匹配的审批规则，请检查业务审批配置。"))
+            record._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
+        else:
+            record.with_context(
+                _sc_automatic_approval_token=_AUTOMATIC_APPROVAL_TOKEN,
+            )._complete_payment_approval(automatic=True)
+
     def action_approve(self):
-        self._assert_finance_approve_access()
-        advisory_result = {}
-        for rec in self:
-            if rec.state != "submit":
-                continue
-            rec._check_detail_amount_consistency()
-            if rec.validation_status != "validated" and not rec.env.context.get("tier_validation_callback"):
-                raise_guard(
-                    "PAYMENT_TIER_INCOMPLETE",
-                    f"付款申请[{rec.display_name}]",
-                    "审批付款申请",
-                    reasons=["tier validation not complete"],
-                )
-            # R10: overpay handled as advisory via _handle_payment_advisories
-            rec._check_material_settlement_remaining_amount()
-            advisory_result[rec.id] = rec._handle_payment_advisories(
-                "审批付款申请",
-                rec._collect_payment_advisories("approve"),
-            )
-        result = None
-        for rec in self:
-            if rec.state != "submit":
-                continue
-            rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approve"})
-            action = rec.validate_tier()
-            if action:
-                result = action
-        return result or {"warnings": advisory_result}
+        """Compatibility entry; no independent state-changing approval path."""
+        return self.action_approval_decision()
 
     def action_approval_decision(self):
-        """Execute the current approval step without forcing the frontend to know tier state."""
+        """Approve the existing review chain; absent reviews never grant approval."""
         self._assert_finance_approve_access()
         result = None
-        advisory_result = {}
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
                 continue
             rec._check_detail_amount_consistency()
+            if not rec.review_ids:
+                raise UserError(_("当前申请没有有效审批实例，请检查审批配置并重新提交。"))
             if rec.validation_status in ("waiting", "pending"):
-                # R10: overpay handled as advisory via _handle_payment_advisories
+                if not rec.can_review:
+                    raise AccessError(_("当前用户不是本审批步骤的审批人。"))
                 rec._check_material_settlement_remaining_amount()
-                advisory_result[rec.id] = rec._handle_payment_advisories(
-                    "审批付款申请",
-                    rec._collect_payment_advisories("approve"),
-                )
+                rec._handle_payment_advisories("审批付款申请", rec._collect_payment_advisories("approve"))
                 action = rec.validate_tier()
                 if action:
                     result = action
-                continue
+            # OCA may finish through its callback; this is also safe if that
+            # callback already advanced the record. Partial approval stays put.
             if rec.validation_status == "validated":
-                return rec.action_approve()
-            if rec.validation_status in ("no", False) and not rec.review_ids:
-                # R10: overpay handled as advisory via _handle_payment_advisories
-                rec._check_material_settlement_remaining_amount()
-                advisory_result[rec.id] = rec._handle_payment_advisories(
-                    "审批付款申请",
-                    rec._collect_payment_advisories("approve"),
-                )
-                before = rec._snapshot_audit_payload()
-                rec.write({"validation_status": "validated"})
-                rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-                after = rec._snapshot_audit_payload()
-                rec._audit_transition("payment_approved", before, after, action_name="action_approval_decision")
-                continue
-            raise_guard(
-                "PAYMENT_TIER_INCOMPLETE",
-                f"付款申请[{rec.display_name}]",
-                "审批付款申请",
-                reasons=[f"validation_status={rec.validation_status}"],
-            )
-        return result or {"warnings": advisory_result}
+                rec._complete_payment_approval()
+            elif rec.validation_status not in ("waiting", "pending"):
+                raise_guard("PAYMENT_TIER_INCOMPLETE", f"付款申请[{rec.display_name}]",
+                            "审批付款申请", reasons=[f"validation_status={rec.validation_status}"])
+        return result or {}
 
     def action_set_approved(self):
-        self._assert_finance_approve_access()
-        advisory_result = {}
-        result = None
-        for rec in self:
-            rec._check_detail_amount_consistency()
-            # R10: overpay handled as advisory via _handle_payment_advisories
-            rec._check_material_settlement_remaining_amount()
-            advisory_result[rec.id] = rec._handle_payment_advisories(
-                "批准付款申请",
-                rec._collect_payment_advisories("approve"),
-            )
-            if rec.state == "approve" and rec.validation_status == "validated":
-                before = rec._snapshot_audit_payload()
-                rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-                after = rec._snapshot_audit_payload()
-                rec._audit_transition("payment_approved", before, after, action_name="action_set_approved")
-                continue
-            action = rec.validate_tier()
-            if action:
-                result = action
-                continue
-        return result or {"warnings": advisory_result}
+        """Historical callers use the same approval decision as the product UI."""
+        return self.action_approval_decision()
 
     def action_done(self):
         has_finance_done_access = self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
@@ -3141,18 +3110,6 @@ class PaymentRequest(models.Model):
                     _(
                         "收款申请必须通过专业收款登记完成入账；请生成收款登记并由财务执行“登记收款”。"
                     )
-                )
-            approved_reviews = rec.review_ids.filtered(lambda review: review.status == "approved")
-            open_reviews = rec.review_ids.filtered(
-                lambda review: review.status not in ("approved", "rejected")
-            )
-            tier_callback_complete = bool(approved_reviews) and not open_reviews
-            if rec.validation_status != "validated" and not tier_callback_complete:
-                raise_guard(
-                    "PAYMENT_TIER_INCOMPLETE",
-                    f"付款申请[{rec.display_name}]",
-                    "完成付款申请",
-                    reasons=["tier validation not complete"],
                 )
             if rec.state != "approved":
                 raise_guard(
@@ -3410,15 +3367,19 @@ class PaymentRequest(models.Model):
         return base_ok or self.state == "submit"
 
     def action_on_tier_approved(self):
+        return self._complete_payment_approval()
+
+    def _complete_payment_approval(self, automatic=False):
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
                 continue
             rec._check_detail_amount_consistency()
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if automatic:
+                if self.env.context.get("_sc_automatic_approval_token") is not _AUTOMATIC_APPROVAL_TOKEN:
+                    raise AccessError(_("自动批准只能由已校验的提交状态转换执行。"))
+            elif not rec.review_ids or rec.validation_status != "validated":
+                # A callback can run after an intermediate tier. Only the full
+                # existing chain, never the current configuration, can finish it.
                 continue
             # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
@@ -3438,8 +3399,8 @@ class PaymentRequest(models.Model):
                 tier_validation_callback=True,
             ).write({"state": "approved"})
             after = rec._snapshot_audit_payload()
-            rec._audit_transition("payment_approved", before, after, action_name="action_on_tier_approved")
-            rec._message_post_non_blocking(_("付款/收款申请审批通过。"))
+            rec._audit_transition("payment_approved", before, after, action_name="action_submit" if automatic else "action_on_tier_approved")
+            rec._message_post_non_blocking(_("付款/收款申请提交自动通过（未配置审批）。") if automatic else _("付款/收款申请审批通过。"))
 
     def _get_tier_reject_reason(self):
         self.ensure_one()

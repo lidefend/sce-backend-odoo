@@ -354,6 +354,11 @@ verify.unified_page_contract.v2.action: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_action.py scripts/verify/unified_page_contract_v2_action_guard.py
 	@python3 scripts/verify/unified_page_contract_v2_action_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json --patch-fixture docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
+.PHONY: verify.payment.approval_state_machine.unit
+verify.payment.approval_state_machine.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/core/payment_request.py addons/smart_construction_core/models/support/state_machine.py
+	@python3 scripts/verify/test_payment_approval_state_machine.py
+
 .PHONY: verify.native_view.workflow_action_coverage
 verify.native_view.workflow_action_coverage: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py

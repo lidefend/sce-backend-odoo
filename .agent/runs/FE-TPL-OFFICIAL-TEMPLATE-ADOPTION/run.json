@@ -25,7 +25,8 @@
     "docs/architecture/unified_page_contract_v2/examples/",
     "frontend/packages/schema/src/index.ts",
     "config/contract/native_view_undeclared_actions.v1.json",
-    "config/contract/workflow_state_phase_dead_entries.v1.json"
+    "config/contract/workflow_state_phase_dead_entries.v1.json",
+    "docs/phase_p0/state_machine.md"
   ],
   "environment": {
     "kind": "offline",
@@ -194,10 +195,22 @@
         "scripts/verify/test_workflow_contract_profile_loader.py",
         "make/ci.mk"
       ]
+    },
+    "payment_approval_state_machine": {
+      "target": "verify.payment.approval_state_machine.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+        "scripts/verify/test_payment_approval_state_machine.py",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Owner decision53.17 takes priority: unify payment submission and approval through existing company-scoped approval policy and authoritative state transitions. No configured approval => submit auto-approves; configured => real approval chain; missing rules fail; never infer auto-approval from empty reviews. Preserve in-flight approval authority, business guards, audit and idempotency. Then align canonical methods/native buttons/effective action projection and runtime validation; do not separately bless each legacy approve button. Model-bound coverage defect remains pending.",
+  "next_exact_step": "Close scoped approval runtime requirements after53.18: review actual ORM/callback/reject/retry dependencies, fix native model+method coverage undercount, then governed smart_construction_core module upgrade and targeted approval-policy runtime validation using existing environment/evidence tools. No frontend rebuild. Payment approve compatibility methods now delegate; never reintroduce no-review approval. Preserve pending signing/plan/document checks and remaining reversal/product gaps.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -414,6 +427,19 @@
       "authority": "owner explicit decision; sc.approval.policy",
       "finding": "payment submit always requests validation; expense/settlement already consult policy; payment decision infers approval from absent reviews",
       "runtime_writes": false
+    },
+    "approval_state_machine_53_18": {
+      "status": "verification_pending",
+      "source_head": "c4cfd498a",
+      "layer": "P1 smart_construction_core",
+      "tests": {
+        "payment_approval": 22,
+        "native_action_coverage": 29,
+        "action_semantics": 15
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-unification-stable.log",
+      "runtime": "not_run; XML requires governed module upgrade before affected runtime checks",
+      "database_writes": false
     }
   }
 }

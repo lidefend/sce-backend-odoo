@@ -1,5 +1,10 @@
 version: 1
 entries:
+- script: test_payment_approval_state_machine.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: targeted production approval state-machine execution and bypass regressions
 - script: auth_xpath_guard.sh
   status: retired
   owner: platform-team
