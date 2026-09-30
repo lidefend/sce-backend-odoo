@@ -3255,6 +3255,22 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         row.env.su = True
         with self.assertRaises(SequenceReached): ns['create'](row, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
 
+    def test_diary_business_overlay_preserves_native_editability(self):
+        import xml.etree.ElementTree as ET
+        root = MODEL.parents[2]
+        data = ET.parse(root / 'data/p1_daily_business_form_orchestration_contract_data.xml')
+        record = data.find(".//record[@id='business_config_contract_sc_construction_diary_p1_form_business_facts_v1']")
+        config = ast.literal_eval(record.find("field[@name='contract_json']").attrib['eval'])
+        fields_by_name = {item['name']: item for item in config['view_orchestration']['views']['form']['fields']}
+        for name in ('project_id', 'date_diary', 'title', 'description', 'manpower_count', 'weather', 'attachment_ids'):
+            self.assertNotIn('readonly', fields_by_name[name], name)
+        for name in ('state', 'name', 'create_date'):
+            self.assertTrue(fields_by_name[name]['readonly'])
+        native = ET.parse(root / 'views/core/construction_diary_views.xml')
+        for name in ('project_id', 'title', 'description'):
+            field = native.find(".//record[@id='view_sc_construction_diary_form']//field[@name='%s']" % name)
+            self.assertEqual(field.attrib['readonly'], "state == 'legacy_confirmed'")
+
     def test_diary_configuration_and_real_approval_precede_completion(self):
         path = MODEL.parent / 'construction_diary.py'
         names = {'action_confirm', 'action_done', 'action_on_tier_approved'}
