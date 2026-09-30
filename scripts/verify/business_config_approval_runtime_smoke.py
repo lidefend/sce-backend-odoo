@@ -660,9 +660,105 @@ def _acceptance_approval_checks(project, group, created):
     print("APPROVAL_CHECK=acceptance_resubmission_completes_new_review_without_quality_decision")
 
 
+def _purchase_request_approval_checks(project, group, created):
+    env = _env()
+    model = "sc.material.purchase.request"
+    Policy = env["sc.approval.policy"].sudo()
+    assert not Policy.with_context(active_test=False).search_count([
+        ("target_model", "=", model), ("company_id", "in", [False, env.company.id]),
+    ]), "existing purchase request policy must not be overwritten"
+    product = env["product.product"].sudo().search([("type", "in", ["product", "consu"])], limit=1)
+    if not product:
+        product = env["product.product"].sudo().create({"name": "Rollback purchase material", "type": "consu"})
+        created.extend([(product._name, product.id), (product.product_tmpl_id._name, product.product_tmpl_id.id)])
+    supplier = _partner("Rollback purchase supplier")
+    created.append((supplier._name, supplier.id))
+
+    def document():
+        record = env[model].sudo().create({
+            "project_id": project.id, "supplier_id": supplier.id,
+            "line_ids": [(0, 0, {"product_id": product.id, "product_uom_id": product.uom_id.id,
+                                  "qty": 2, "estimated_unit_price": 10})],
+        })
+        created.append((record._name, record.id))
+        return record
+
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    def downstream(record):
+        return (env["sc.material.rfq"].sudo().search([("purchase_request_id", "=", record.id)]),
+                env["purchase.order"].sudo().search([("source_material_purchase_request_id", "=", record.id)]))
+
+    automatic = document()
+    denied(lambda: automatic.with_context(sc_purchase_request_state_token=True).write({"state": "approved"}))
+    print("APPROVAL_CHECK=purchase_request_external_state_write_denied")
+    automatic.action_submit()
+    assert automatic.state == "approved" and not automatic.review_ids and not any(downstream(automatic))
+    print("APPROVAL_CHECK=purchase_request_unconfigured_approval_does_not_generate_documents")
+    policy = Policy.create({
+        "name": "Runtime purchase request approval", "code": "runtime_purchase_request_approval_smoke", "target_model": model,
+        "company_id": env.company.id, "approval_required": True, "mode": "single",
+        "manager_group_id": group.id, "runtime_state": "tier_validation",
+    })
+    created.append((policy._name, policy.id))
+    step = env["sc.approval.step"].sudo().create({
+        "policy_id": policy.id, "name": "Purchase request review", "sequence": 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id,
+        "amount_min": 1,
+    })
+    policy.sync_tier_definitions()
+    required = document()
+    required.action_submit()
+    assert required.amount_total == 20 and required.state == "submitted" and required.review_ids
+    denied(required.action_create_rfq)
+    denied(required.action_create_purchase_order)
+    assert not any(downstream(required))
+    print("APPROVAL_CHECK=purchase_request_amount_rule_and_pending_downstream_denial")
+    policy.write({"approval_required": False})
+    required.action_submit()
+    assert required.state == "submitted" and required.review_ids
+    denied(required.action_create_purchase_order)
+    policy.write({"approval_required": True})
+    print("APPROVAL_CHECK=purchase_request_configuration_change_keeps_pending_authority")
+    _approve_existing_reviews(required)
+    assert required.state == "approved" and required.validation_status == "validated" and not any(downstream(required))
+    print("APPROVAL_CHECK=purchase_request_real_approval_does_not_generate_documents")
+    required.action_create_rfq()
+    required.action_create_purchase_order()
+    rfq, order = downstream(required)
+    created.extend([(record._name, record.id) for record in rfq])
+    created.extend([(record._name, record.id) for record in order])
+    assert len(rfq) == len(order) == 1 and order.state == "draft"
+    required.action_create_rfq()
+    required.action_create_purchase_order()
+    assert downstream(required) == (rfq, order)
+    print("APPROVAL_CHECK=purchase_request_explicit_generation_is_idempotent_and_order_stays_draft")
+    rejected = document()
+    rejected.action_submit()
+    old = set(rejected.review_ids.ids)
+    actor = next((rejected.with_user(user) for user in rejected.review_ids.mapped("reviewer_ids") if rejected.with_user(user).can_review), None)
+    assert actor is not None
+    actor.env["sc.approval.policy"]._reject_submission_review(actor, reason="Runtime purchase rejection")
+    rejected.invalidate_recordset()
+    assert rejected.state == "draft" and rejected.reject_reason == "Runtime purchase rejection"
+    denied(rejected.action_create_rfq)
+    print("APPROVAL_CHECK=purchase_request_rejection_returns_draft_without_downstream")
+    rejected.action_submit()
+    assert rejected.review_ids and old.isdisjoint(rejected.review_ids.ids)
+    _approve_existing_reviews(rejected)
+    assert rejected.state == "approved" and not rejected.reject_reason and not any(downstream(rejected))
+    print("APPROVAL_CHECK=purchase_request_resubmission_uses_new_review")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -676,10 +772,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance"):
+        if scope in ("inbound", "acceptance", "purchase-request"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = _inbound_approval_checks if scope == "inbound" else _acceptance_approval_checks
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -818,6 +914,7 @@ def main():
             _project_approval_checks(group, created)
             _inbound_approval_checks(project, group, created)
             _acceptance_approval_checks(project, group, created)
+            _purchase_request_approval_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -827,7 +924,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("inbound", "acceptance") else 61, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope in ("inbound", "acceptance", "purchase-request") else 69, scope))
 
 
 main()

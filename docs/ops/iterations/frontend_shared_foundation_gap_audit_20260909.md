@@ -8019,3 +8019,10 @@ P1 / smart_construction_core / 采购申请行业标准。复用共享sc.approva
 候选c8d837e3e+本段dirty（6个P1文件、2个定向测试、既有记录/run）。风险为审批状态及下游业务写入，最早L1。purchase-request-iteration.log L1 PASS；purchase-request-approval-unit.log 72 PASS（新增4项：配置分流/待审禁止下游、旧入口保留wizard、外部token拒绝、驳回重提）；purchase-request-native.log 8+41=49 PASS（新增真实状态守卫和review授权投影）；purchase-request-semantics.log 15 PASS；2份XML标准库解析PASS，diff --check PASS。初次XML探针lxml不可用属本机工具依赖，改用标准库完成语法检查，未安装依赖。
 
 L3升级/运行验证尚未执行：tier继承/公司字段及XML需要受管smart_construction_core升级，之后仅扩展并运行采购申请rollback范围，验证真实配置、审批和下游职责。L4前端源码未变故无需重建；实际角色页面办理仍pending。L5不在本批本地实现范围，不运行Quick/发布；无推送合并部署。既有独立入库8/验收8/共享45结果按未变方法与输入复用，不重跑。不升级67条detail.action-state整行；总体目标继续active。
+
+
+### 53.72 采购申请真实审批与独立生成验证（进行中）
+
+P4扩展已有business_config_approval_runtime_smoke及受管wrapper，新增白名单purchase-request范围8项，默认all纳入该范围。无新环境或fixture基线。检查外部状态拒绝、无配置审批不生成下游、金额条件/待审拒绝下游、配置变化不绕过在途审批、真实审批不生成下游、显式生成RFQ/草稿订单及幂等、拒绝回草稿、重提新review。临时材料/模板/供应商/申请/RFQ/订单及配置均归入既有rollback消失核验。
+
+候选3d7810ce6+P4 dirty；L1 purchase-request-runtime-iteration.log PASS，py_compile/bash-n PASS。上一段72/49/15源与测试输入未变，复用其原日志和回执，不重跑。目标平台内部验收租户sc_frontend_acceptance，非平台控制/行业目录/客户生产库；local profile、sc-fe-r2-p1-01项目、^sc_frontend_acceptance$过滤及sc_fe_r2_p1_01固定卷沿用预检。L3受管smart_construction_core升级及后端重绑后运行本范围；L4前端构建不受影响复用7915f3bb9；L5不在当前本地迭代范围。结果待运行，不算批次验收完成。
