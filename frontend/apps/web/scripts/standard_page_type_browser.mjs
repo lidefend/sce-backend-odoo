@@ -587,12 +587,32 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
-    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution'].includes(process.env.TPL07_APPROVAL_MODEL));
+    check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.construction.diary'].includes(process.env.TPL07_APPROVAL_MODEL));
     for (const spec of [
+      { role: 'fixture_role_pm', model: 'sc.plan', domain: [] },
+      { role: 'fixture_role_pm', model: 'sc.construction.diary', domain: [] },
       { role: 'fixture_role_contract_operator', model: 'sc.contract.event', domain: [] },
       { role: 'fixture_role_finance', model: 'sc.payment.execution', domain: [['state', '=', 'paid']] },
     ].filter((spec) => !process.env.TPL07_APPROVAL_MODEL || spec.model === process.env.TPL07_APPROVAL_MODEL)) {
       const session = await login(spec.role);
+      if (process.env.TPL07_APPROVAL_VIEW === 'create') {
+        check('approval create scope: explicit plan or diary', ['sc.plan', 'sc.construction.diary'].includes(spec.model));
+        report.recordAuthority = null;
+        await form(session.page, `/f/${spec.model}/new`, `${spec.model}-create`);
+        const authority = report.recordAuthority;
+        check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
+        report.approvalPages.push({ ...spec, view: 'create', authority });
+        for (const name of ['审批通过', '审批驳回', '完成']) {
+          check(`${spec.model}: unsaved form has no ${name} action`, await session.page.getByRole('button', { name, exact: true }).count() === 0);
+        }
+        for (const width of [1440, 390]) {
+          await session.page.setViewportSize({ width, height: 900 });
+          check(`${spec.model}-create-${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+          await session.page.screenshot({ animations: 'disabled', path: path.join(out, `${spec.model}-create-${width}.png`) });
+        }
+        await session.ctx.close();
+        continue;
+      }
       const candidate = await session.page.evaluate(async ({ model, domain }) => {
         const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
         const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
@@ -609,6 +629,17 @@ try {
       const authority = report.recordAuthority;
       check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.state === record.state);
       report.approvalPages.at(-1).authority = authority;
+      if (['sc.plan', 'sc.construction.diary'].includes(spec.model)) {
+        const rules = authority.actions?.actionRuleList || [];
+        check(`${spec.model}: native approval methods declared`, ['validate_tier', 'reject_tier'].every((method) => rules.some((rule) => rule.button?.name === method)));
+        const completeState = spec.model === 'sc.plan' ? 'in_progress' : 'confirmed';
+        if (record.state !== completeState) {
+          check(`${spec.model}: premature completion absent`, await session.page.getByRole('button', { name: '完成', exact: true }).count() === 0);
+        }
+        if (spec.model === 'sc.plan' && record.state !== 'cancel') {
+          check('plan: reset absent outside cancelled state', await session.page.getByRole('button', { name: '重置草稿', exact: true }).count() === 0);
+        }
+      }
       if (spec.model === 'sc.payment.execution') {
         check('paid execution: reversal entry is visible', await session.page.getByRole('button', { name: '撤销付款', exact: true }).count() === 1);
         check('paid execution: pre-payment cancellation is absent', await session.page.getByRole('button', { name: '取消', exact: true }).count() === 0);
@@ -808,6 +839,14 @@ try {
 } catch (error) {
   report.status = 'failed';
   report.error = error.message;
+  if (process.env.TPL07_SCOPE === 'approval-actions') {
+    report.failurePages = [];
+    for (const ctx of browser.contexts()) for (const page of ctx.pages()) {
+      report.failurePages.push({ url: page.url(), text: (await page.locator('body').innerText()).slice(0, 8000),
+        surfaces: await page.locator('[data-product-page-mode], [data-form-composition], [data-detail-composition], [data-semantic-component="ScForm"]').evaluateAll((nodes) => nodes.map((node) => ({ tag: node.tagName, attributes: Object.fromEntries([...node.attributes].filter((attr) => attr.name.startsWith('data-')).map((attr) => [attr.name, attr.value])) }))) });
+      await page.screenshot({ path: path.join(out, `failure-${report.failurePages.length}.png`) });
+    }
+  }
   process.exitCode = 1;
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));

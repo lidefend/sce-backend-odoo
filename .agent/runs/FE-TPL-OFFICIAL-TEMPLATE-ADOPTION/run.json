@@ -250,7 +250,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.49 diary governed upgrade/reload atcbd60bd63 and27 rollback runtime checks passed (expense12/event5/plan5/diary5),restoration verified. Next use existing read-only browser scope for plan/diary effective contracts and authorized existing PM records; event company8 no records unchanged, do not retry. Continue all necessary document approval breadth; runtime27 does not prove overall UI or role delivery. Reuse unchanged frontend.",
+  "next_exact_step": "53.50 real page blockers: PM plan create receives valid create contract but official form state=error/network message (tpl07-1790774686651); diary create rejects V2 layout children.field_info (tpl07-1790774692654). Existing record queries empty company8; do not retry unchanged. Next capture exact diary ui.contract layout producer path, fix P0 normalization (do not relax schema), identify plan failed request. Earlier27 ORM passes do not cover UI failures. No broad browser/release while these blockers persist.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -767,6 +767,18 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/diary-approval-runtime.log",
       "restoration": "verified original policy/steps and absence of temporary records",
       "remaining": "effective pages, PM end-to-end permissions and full document scope"
+    },
+    "plan_diary_pages_53_50": {
+      "status": "failed",
+      "source_head": "b7d554d45",
+      "plan_report": "artifacts/frontend-web-fix-20260928/tpl07-1790774686651/report.json",
+      "diary_report": "artifacts/frontend-web-fix-20260928/tpl07-1790774692654/report.json",
+      "failures": [
+        "plan create error after contract load, request source unresolved",
+        "diary layout field_info alias violates V2 schema"
+      ],
+      "record_data": "both authorized company8 queries empty",
+      "writes": "none"
     }
   }
 }

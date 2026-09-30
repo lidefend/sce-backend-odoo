@@ -7792,3 +7792,12 @@ L5：未推送、未合并、未部署。
 - 新日志5项真实通过：无配置confirmed无review且不done；配置审批draft+真实review，savepoint内action_done明确拒绝；实际审批人validate_tier完成后confirmed，显式action_done才done；真实驳回保留意见；重提新review IDs与旧链不交集，通过后清空旧原因。没有SQL伪造审批结果或强制回调冒充审批。
 - L1 ci.local.iteration和py_compile PASS（diary-runtime-iteration.log）。受管verify.business_config.approval_runtime27项PASS、ROLLBACK=VERIFIED（diary-approval-runtime.log），包括费用12、事件5、计划5、日志5；计划与日志共享工具改变，因此同事务复验相关链。原策略/步骤回读一致，临时项目/客商/单据/策略不存在。受管封装不变，原9项证据复用。
 - 这证明所述模型审批循环，不证明项目经理角色端到端权限、最终页面契约及整个业务单据集合完成。下一步将计划/日志加入现有只读页面验收范围核对有效契约消费，按现有授权角色查已有记录；合同事件公司8无记录前提不变不重试。总体active，未推送、合并或目标部署。
+
+
+### 53.50 计划/日志页面定向检查发现实际消费阻断
+
+- b7d554d45 clean起步，P4扩展既有approval-actions浏览器范围，仅fixture_role_pm的sc.plan/sc.construction.diary；原backend cbd60bd63及5180产物不变。L1 ci.local.iteration PASS（plan-diary-browser-iteration.log），新增分支node --check通过。无写入/新数据/新环境。
+- 两类现有记录查询均ok=true、公司8授权范围records=[]：plan-browser.log对应tpl07-1790774584870/report.json，diary-browser.log对应tpl07-1790774597249/report.json。不能称全库无数据，不改权限换角色取证，详情验收pending。
+- 单独新增TPL07_APPROVAL_VIEW=create明确打开未保存新建表单，不是自动回退或替代详情验收。计划首次timeout（plan-create-browser.log；tpl07-1790774631462/report.json），已收到sc.plan/create且create=true有效契约，不能据presentationMode=workspace就认作工具等待错误。追加有界失败现场捕获（当前页正文/语义surface/截图），只重跑受影响计划并独立检查日志。
+- 计划诊断失败（plan-create-diagnostic.log；tpl07-1790774686651/report.json）：实际data-form-composition=official-standard-form但data-state=error，页面“网络连接异常”；契约已到达，需继续定位后续失败请求。日志失败（diary-create-browser.log；tpl07-1790774692654/report.json）：明确invalid contract v2 snapshot，layoutContract.containerTree若干children仍含不允许的field_info，页面拒绝契约；该处属于P0有效契约/规范投影缺口，不放宽前端schema。两者errors=[]，但页面错误不能以JS无异常算通过。
+- 当前已知早层阻断，不继续广泛浏览器/发布门禁。直接源码定位现有assembler _normalize_native_layout_nodes已有field_info→fieldInfo归一化，而_native_field_node仍deepcopy输入；尚未证明真实泄漏路径，未盲改或重复全仓扫描。下一步捕获该ui.contract的精确布局投影链并修正产生层，及计划失败请求；修复后只重验受影响页面。既有27项ORM只证明审批模型，不覆盖这些页面阻断。总体active，未推送/合并/目标部署。

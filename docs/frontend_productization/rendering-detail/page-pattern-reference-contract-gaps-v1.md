@@ -202,3 +202,7 @@ Construction diary now participates in company-scoped shared approval configurat
 ### Segment53.49 — Construction diary real approval loop verified
 
 Governed upgrade/reload atcbd60bd63 succeeded. The existing rollback smoke passes27 checks including five diary cases: no-configuration confirmation without completion, pending approval blocks completion, real reviewer approval before explicit completion, rejection reason, and new-chain resubmission. Baseline policy/step readback and temporary-record absence were verified. PM-role end-to-end permissions, effective page/browser consumption and full document coverage remain open.
+
+### Segment53.50 — New plan/diary page blockers confirmed
+
+PM authorized-company8 queries for existing plans/diaries are empty, so record-detail acceptance remains pending. Separately opening unsaved create forms exposed real failures: plan receives a create-enabled contract but renders the official form in error with a network message; diary rejects its V2 snapshot because layout container children leak unsupported `field_info`. These are not passed browser checks and cannot be covered by27 ORM tests. Keep `detail.action-state` and affected form/contract delivery open; repair the producer for the diary and identify the failing plan request before downstream page acceptance. No business writes occurred.
