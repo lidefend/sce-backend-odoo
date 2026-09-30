@@ -399,7 +399,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.147 source3ba16be0a runtime17 PASS rollback verified for expense approval and actual deduction child CRUD/reparent/rejection recovery. Production154 pure reused unchanged. Next P1 explicit blocker: expense_claim business readiness/attachment policy has R10-v2 warning-only bypass whereas workflow_contract_service expense evidenceGate blocks missing required anchor/partner/accounts/attachments. Unify authoritative validation and affected tests/runtime; do not invent frontend semantics. Existing67/detail.action-state, ordinary-role saved browser/final expense execution remain open. No fixture/push/merge/target deployment.",
+  "next_exact_step": "53.148 expense readiness model/projection unified source25406c8df; tool correctiond5605cd68 loaded.155 pure and expense-state-authority runtime19 PASS rollback verified. Partner/account runtime uses simultaneous missing anchor; independent reasons/required attachments pure only. Next ordinary finance expense action/final-execution responsibility using existing governed data and rollback; preserve known-empty-query evidence. Existing67/detail.action-state and role/browser gaps remain open. Frontend index-CVVwVIuW.js unchanged; no fixture/push/merge/target deployment.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

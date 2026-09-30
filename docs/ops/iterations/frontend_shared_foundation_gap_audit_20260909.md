@@ -8907,3 +8907,16 @@ expense-lines-runtime.log17 PASS、ROLLBACK VERIFIED。新增真实finance.deduc
 同一路径定向读取发现明确产品缺口：expense_claim._check_business_ready中的R10-v2历史分支为旧spec测试保留“仅warning”，允许缺必需申请关联、现金往来单位/账户；_check_attachment_policy_or_raise对业务分类required附件也仅warning。workflow_contract_service._expense_claim_evidence_gate却将这些条件投影为blocking门禁。此为P1执行与契约不一致，不能通过模板按钮禁用代替服务端拒绝；下一步集中复用业务校验为唯一来源，保护共享审批配置/真实执行，移除为裸测试开通的生产放行。尚未实际修复，登记为detail.action-state具体阻断，不以本轮17通过覆盖。其他领域及外部关联/附件内容/并发不扩充证明。
 
 前端index-CVVwVIuW.js未变。原整体67和普通角色已保存办理/费用最终执行仍开放。无推送、合并或目标部署。
+
+
+### 53.148 费用动作契约与后端必要条件统一
+
+b50c9d25d clean起点，直接处理53.147登记的P1生产放行缺口。25406c8df将原workflow费用evidenceGate中的项目/往来单位/金额/付款申请/扣款明细/附件策略/现金账户条件移入expense_claim._business_readiness_errors，返回原因码与消息；workflow仅映射为原gate结构，保持原因码和动作范围。_check_business_ready消费同一结果并UserError拒绝，提交、实际审批回调和显式done原有调用链沿用；附件独立check也复用此来源。移除为裸spec测试保留的warning-only放行，不让前端承担执行校验。财务身份、保证金退回余额、责任余额及付款关联一致性等既有专用验证保留；legacy已确认门禁豁免和原受管历史办理边界不扩大。无新字段/XML/前端规则。
+
+L1 expense-readiness-iteration/tool-iteration及修正探针iteration PASS；expense-readiness-unit.log155 PASS、begin/record成功。新增生产方法纯测覆盖6种必要条件（申请、往来、出款收款账户、入款账户、必需附件）的独立原因、投影一致和执行拒绝，以及完整输入、可选附件、历史确认边界。非本范围ORM/浏览器/前端构建不跑，既有154未变部分按依赖承接，相关新纯测实际执行。
+
+首次expense-readiness-runtime.log：原17项及缺申请真实提交拒绝通过，但探针错误把项目还公司款interfund当作现金账户场景，AssertionError interfund，ROLLBACK VERIFIED；不计整轮通过。d5605cd68仅修P4，改用本轮已有现金报销记录检查往来/账户，不修改产品分类。受管backend.acceptance.up重绑精确源，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份验证，无模块升级。
+
+expense-readiness-fixed-runtime.log19 PASS、ROLLBACK VERIFIED：原配置/无配置、真实reviewer、拒绝重提、两步审批、审核内容/明细保护17项保留；新增真实报销缺付款申请提交拒绝，原因与契约gate一致且无state/reviews残留；缺往来单位和付款账户同样真实拒绝、消息与契约一致。该报销始终缺付款申请，后两项是多条件拒绝证据，不能冒充单一账户/往来条件独立运行证明；独立反例由155纯测覆盖。必需附件运行配置未改，只做生产方法纯测，普通role/浏览器/最终费用现金执行仍开放。准备/提交沿原工具sudo，不伪称finance全旅程。
+
+本轮关闭的是已确认必要条件的warning-only执行缺口；契约availability与真实执行不再为这些条件维护两份语义。现有67/detail.action-state保持开放，下一步普通finance角色费用动作与最终执行的实际职责验证，复用已存在数据和受管回滚；如前提不足记录具体原因，不重复空查询或制造持久fixture。前端index-CVVwVIuW.js未变，未重建。无推送、合并或目标部署。
