@@ -346,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.104 recovery backendef7889f78 loaded; rental-settlement12 ORM/reviewer/default checks PASS+ROLLBACK VERIFIED. Browser create1790786611844 23 PASS +390 screenshot checked; existing PM1790786669074 ok=true records=[] do not repeat. Next extend same rollback scope for actual request submit/payment execution/posted partial-full/reversal and concurrency; reuse registered environment/config restoration, never forge approved or paid facts. Pure105/native59 valid source; frontend7915f3bb9 unchanged. Overall67/detail money/role handling remain open; no newfixtures/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.105 rental-settlement-cash scope added; P4 env/group/company-reviewer assumptions corrected without permission changes. Actual finance first4 checks passed; ledger creation failed missing rental basis in payment.ledger._check_request_state, rollback verified. P1 guard+source navigation fixed,106 pure tests PASS. Next managed backend reload new commit (Python only, no module upgrade) then cash10 scope. Prior rental12/create23 valid; no repeat PM empty1790786669074. Overall67/concurrency/fullroles still open.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

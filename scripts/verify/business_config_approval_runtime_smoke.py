@@ -7,6 +7,8 @@ It does not claim full business-document coverage; every write is rolled back.
 
 import os
 from base64 import b64encode
+from datetime import timedelta
+from odoo import fields
 
 from odoo.exceptions import AccessError, UserError
 
@@ -45,7 +47,7 @@ def _partner(name):
 
 
 def _attach(record, label):
-    attachment = _env()["ir.attachment"].sudo().create(
+    attachment = record.env["ir.attachment"].sudo().create(
         {
             "name": "%s.txt" % label,
             "datas": b64encode(("business-config-approval-runtime:%s" % label).encode("utf-8")).decode("ascii"),
@@ -88,8 +90,12 @@ def _approve_existing_reviews(record):
             return
         assert record.review_ids, "approval instance missing"
         before = [(review.id, review.status) for review in record.review_ids]
-        users = record.review_ids.mapped("reviewer_ids").filtered(lambda user: user.active and not user.share)
-        actor = next((record.with_user(user) for user in users if record.with_user(user).can_review), None)
+        company = record.company_id if "company_id" in record._fields else record.project_id.company_id if "project_id" in record._fields else record.env.company
+        users = record.review_ids.mapped("reviewer_ids").filtered(
+            lambda user: user.active and not user.share and company in user.sudo().company_ids
+        )
+        candidates = [record.with_user(user).with_context(allowed_company_ids=[company.id]).with_company(company) for user in users]
+        actor = next((candidate for candidate in candidates if candidate.can_review), None)
         assert actor is not None, "no authorized reviewer for current step"
         actor.validate_tier()
         record.invalidate_recordset()
@@ -1283,6 +1289,120 @@ def _rental_plan_checks(project, group, created):
         print("APPROVAL_CHECK=%s_rejection_and_resubmission_use_new_review" % model)
 
 
+def _rental_settlement_cash_checks(_project_unused, _group_unused, created):
+    base = _env()
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing finance fixture required"
+    company = finance.company_id
+    env = base["res.company"].with_company(company).env
+    actor_env = env["payment.request"].with_user(finance).with_company(company).with_context(allowed_company_ids=[company.id]).env
+    assert not actor_env.su, "cash actions must use the fixture role without sudo"
+    assert actor_env["payment.request"]._has_submit_access(), "finance fixture cannot submit requests"
+    actor_env["sc.payment.execution"]._assert_finance_handling_access()
+    actor_env["sc.payment.execution"]._assert_finance_confirm_access()
+    actor_env["sc.payment.execution"]._assert_finance_cancel_access()
+    project = env["project.project"].sudo().create({"name": "Rental cash rollback project", "code": "RENTAL-CASH-ROLLBACK", "company_id": company.id, "manager_id": finance.id, "funding_enabled": True})
+    supplier = env["res.partner"].sudo().create({"name": "Rental cash rollback supplier", "supplier_rank": 1})
+    created.extend([(project._name, project.id), (supplier._name, supplier.id)])
+    today = fields.Date.context_today(project)
+    baseline = env["project.funding.baseline"].sudo().create({"project_id": project.id, "total_amount": 1000,
+        "period_start": today - timedelta(days=1), "period_end": today + timedelta(days=30),
+        "line_ids": [(0, 0, {"name": "Rental cash rollback allocation", "planned_amount": 1000})]})
+    created.append((baseline._name, baseline.id))
+    baseline.action_activate()
+    assert baseline.state == "active"
+    print("APPROVAL_CHECK=rental_cash_registered_finance_and_active_funding")
+
+    def denied(call, expected=None):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError as exc:
+            if expected: assert expected in str(exc), str(exc)
+            refused = True
+        assert refused, "business operation unexpectedly permitted"
+
+    source = env["sc.material.rental.settlement"].sudo().create({"project_id": project.id, "supplier_id": supplier.id,
+        "line_ids": [(0, 0, {"material_name": "Rental cash rollback item", "qty": 2, "rental_days": 3, "daily_price": 10})]})
+    created.append((source._name, source.id))
+    source.action_submit()
+    if source.review_ids: _approve_existing_reviews(source)
+    assert source.state == "approved"
+    source.action_confirm()
+    print("APPROVAL_CHECK=rental_cash_source_approved_and_confirmed")
+
+    def request_for(amount):
+        request = actor_env["payment.request"].create({"type": "pay", "rental_settlement_id": source.id, "amount": amount,
+            "payment_account_name": "Rollback rental payee", "payment_bank_name": "Rollback bank", "payment_account_no": "ROLLBACK-RENTAL-PAYEE",
+            "payer_unit": "Rollback rental payer"})
+        created.append((request._name, request.id))
+        _attach(request, "rental-cash-request")
+        return request
+
+    request = request_for(60)
+    request.action_submit()
+    if request.review_ids: _approve_existing_reviews(request)
+    request.invalidate_recordset()
+    assert request.state == "approved" and request.funding_baseline_id == baseline
+    print("APPROVAL_CHECK=rental_cash_finance_request_submission_and_approval")
+    extra = request_for(1)
+    denied(extra.action_submit, "未占用额度")
+    denied(source.action_cancel, "付款申请")
+    print("APPROVAL_CHECK=rental_cash_overbooking_and_live_source_cancel_denied")
+
+    def pay(amount):
+        action = request.action_create_payment_execution()
+        execution = actor_env["sc.payment.execution"].with_context(action["context"]).create({"payment_request_id": request.id, "paid_amount": amount,
+            "payment_account_name": "Rollback rental payer", "payment_bank_name": "Rollback bank",
+            "payment_account_no": "ROLLBACK-RENTAL-PAYER", "payment_method": "银行转账"})
+        created.append((execution._name, execution.id))
+        _attach(execution, "rental-cash-execution")
+        execution.action_confirm()
+        if execution.review_ids: _approve_existing_reviews(execution)
+        assert execution.state == "confirmed"
+        execution.action_paid()
+        execution.invalidate_recordset()
+        assert execution.state == "paid"
+        ledgers = env["payment.ledger"].sudo().search([("payment_execution_id", "=", execution.id), ("state", "=", "posted")])
+        assert len(ledgers) == 1 and ledgers.amount == amount
+        origin = ledgers.action_open_settlement()
+        assert origin["res_model"] == source._name and origin["res_id"] == source.id
+        created.extend((ledger._name, ledger.id) for ledger in ledgers)
+        source.invalidate_recordset()
+        request.invalidate_recordset()
+        return execution
+
+    first = pay(20)
+    assert source.payment_paid_amount == 20 and source.payment_remaining_amount == 40
+    denied(source.action_paid, "RENTAL_PAYMENT_NOT_FULLY_PAID")
+    print("APPROVAL_CHECK=rental_cash_partial_payment_is_not_paid_settlement")
+    second = pay(40)
+    assert source.payment_paid_amount == 60 and source.payment_remaining_amount == 0
+    source.action_paid()
+    assert source.state == "paid"
+    print("APPROVAL_CHECK=rental_cash_full_posted_payment_allows_explicit_confirmation")
+    denied(lambda: request.write({"rental_settlement_id": False}), "归属")
+    print("APPROVAL_CHECK=rental_cash_posted_attribution_is_immutable")
+    second.write({"reversal_reason": "Rental cash rollback reversal"})
+    second.action_reverse_payment()
+    source.invalidate_recordset()
+    request.invalidate_recordset()
+    assert source.state == "confirmed" and source.payment_paid_amount == 20 and source.payment_remaining_amount == 40
+    assert request.state == "approved"
+    print("APPROVAL_CHECK=rental_cash_reversal_demotes_paid_confirmation")
+    first.write({"reversal_reason": "Rental cash rollback remaining reversal"})
+    first.action_reverse_payment()
+    source.invalidate_recordset()
+    assert source.payment_paid_amount == 0 and source.payment_remaining_amount == 60
+    denied(source.action_paid, "RENTAL_PAYMENT_NOT_FULLY_PAID")
+    denied(lambda: request.write({"rental_settlement_id": False}), "归属")
+    print("APPROVAL_CHECK=rental_cash_all_reversed_history_keeps_attribution")
+    request.action_cancel()
+    source.action_cancel()
+    assert source.state == "cancel"
+    print("APPROVAL_CHECK=rental_cash_cancel_after_obligations_released")
+
+
 def _rental_settlement_checks(project, group, created):
     env = _env()
     model = "sc.material.rental.settlement"
@@ -1616,7 +1736,7 @@ def _labor_execution_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement"), "unsupported approval runtime scope"
+    assert scope in ("all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -1630,10 +1750,10 @@ def main():
         partner = _partner("Business Config Approval Runtime Partner")
         created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement"):
+        if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash"):
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
-            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks}[scope]
+            checks = {"inbound": _inbound_approval_checks, "acceptance": _acceptance_approval_checks, "purchase-request": _purchase_request_approval_checks, "rfq": _rfq_approval_checks, "material-settlement": _material_settlement_approval_checks, "equipment-plan-request": _equipment_plan_request_checks, "equipment-execution": _equipment_execution_checks, "labor-plan-request": _labor_plan_request_checks, "labor-execution": _labor_execution_checks, "rental-plan": _rental_plan_checks, "rental-order": _rental_order_checks, "rental-settlement": _rental_settlement_checks, "rental-settlement-cash": _rental_settlement_cash_checks}[scope]
             checks(project, group, created)
         else:
             _set_policy(model_name, True)
@@ -1782,6 +1902,7 @@ def main():
             _rental_plan_checks(project, group, created)
             _rental_order_checks(project, group, created)
             _rental_settlement_checks(project, group, created)
+            _rental_settlement_cash_checks(project, group, created)
         passed = True
     finally:
         _env().cr.rollback()
@@ -1791,7 +1912,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement") else 189, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash") else 199, scope))
 
 
 main()

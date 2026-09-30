@@ -1400,6 +1400,32 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         ns['action_paid'](records)
         self.assertEqual(record.state, 'paid')
 
+    def test_ledger_accepts_only_confirmed_valid_rental_payment_basis(self):
+        path = MODEL.with_name('payment_ledger.py')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'_check_request_state', 'action_open_settlement'}]
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        checks = []
+        source = types.SimpleNamespace(id=7, state='confirmed', project_id=types.SimpleNamespace(id=11))
+        request = types.SimpleNamespace(state='approved', payment_basis_type='rental_settlement', rental_settlement_id=source,
+            _check_rental_settlement_consistency=lambda: checks.append('identity'),
+            _check_rental_settlement_remaining_amount=lambda: checks.append('reservation'))
+        ledger = types.SimpleNamespace(ensure_one=lambda: None, payment_request_id=request)
+        ns['_check_request_state'](ledger, request)
+        self.assertEqual(checks, ['identity', 'reservation'])
+        action = ns['action_open_settlement'](ledger)
+        self.assertEqual((action['res_model'], action['res_id']), ('sc.material.rental.settlement', 7))
+        self.assertEqual(action['context'], {'default_project_id': 11})
+        for state in ('draft', 'submitted', 'approved', 'paid', 'cancel'):
+            source.state = state
+            with self.assertRaises(ValueError): ns['_check_request_state'](ledger, request)
+        source.state = 'confirmed'
+        request.state = 'submit'
+        with self.assertRaises(ValueError): ns['_check_request_state'](ledger, request)
+        request.state = 'approved'
+        request._check_rental_settlement_remaining_amount = lambda: (_ for _ in ()).throw(ValueError('overbooked'))
+        with self.assertRaisesRegex(ValueError, 'overbooked'): ns['_check_request_state'](ledger, request)
+
     def test_ledger_reversal_refreshes_rental_after_fact_write(self):
         path = MODEL.with_name('payment_ledger.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and any(isinstance(child, ast.FunctionDef) and child.name == 'action_reverse' for child in n.body))

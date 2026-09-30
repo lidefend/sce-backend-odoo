@@ -8395,3 +8395,14 @@ L1 rental-settlement-runtime-iteration.log、py_compile/bash-n/diff PASS；P1源
 P4 browser既有approval-actions范围增加rental settlement，复用rental order输入断言，不新建旅程框架。rental-settlement-page-iteration.log/node/diff PASS。创建tpl07-1790786611844 23 PASS：有效契约、官方表单、4输入可编辑/可见、生成编号隐藏、未保存无结算/付款执行、1440/390及无错误/业务写；390截图人工复核输入及明细入口。前端7915f3bb9未变不构建。已有记录tpl07-1790786669074在第2项失败，fixture_role_pm api.data ok=true records=[]，明确是角色数据前置不足，不扩权/造fixture/重复空查询；既有详情、支付只读金额呈现及实际办理未证明。
 
 下一步继续扩展同rental-settlement rollback scope验证真实付款申请提交/付款执行/posted台账/部分及足额/冲销和版本竞争；必要配置仍须基线恢复，不能伪写approved或直接制造paid事实。总体67仍开放，不升级整行业务交付结论，无推送/合并/目标部署。
+
+
+### 53.105 租赁实际支付/冲销事务验收（进行中）
+
+P4同rollback工具新增rental-settlement-cash独立定向scope（拟10组），用既有fixture_role_finance及其公司，assert非sudo actor；仅准备源结算、资金基线等用事务内sudo builder。资金基线走draft→action_activate，申请/付款登记走真实动作与实际reviewer，不改组/公司权限、配置门禁或伪写审批/支付状态。付款账户完整新输入，不用legacy账号字段；附件使用record.env保持同公司。原12/创建23有效，不重复空PM查询。
+
+前两次工具前提失败均ROLLBACK VERIFIED：rental-settlement-cash-runtime.log将with_company误用于Environment；fixed.log将产品提交权限的OR误写成AND。恢复为记录集环境与产品_has_submit_access/原生finance权限断言。authority.log已通过前4组，在执行审批因旧helper选中无当前公司访问权的reviewer失败；helper现只从实际reviewer_ids筛选有单据公司权限者，限定该公司再调用原生validate_tier，不扩权。
+
+company.log仍前4组通过，真正支付入账失败：P1 payment.ledger._check_request_state遗漏rental_settlement，已有申请/执行承认但ledger不承认。rollback VERIFIED，无支付残留。就地补rental依据分支：必须confirmed，调用现有租赁身份及额度校验；补ledger.action_open_settlement返回租赁源，避免入账后导航断链。未改旧basis类型语义。
+
+L1 rental-ledger-basis-iteration.log/py_compile/bash-n/diff PASS；L2 rental-ledger-basis-unit.log106 PASS并登记：真实ledger guard接受合法confirmed，未确认/已paid/取消/申请未批/超额拒绝，来源导航精确绑定。前端未变，创建23无需重跑；模型Python变更只需受管reload，不做重复模块升级。下一步加载新提交再运行现金scope；实际入账/冲销尚未证明，不宣称财务闭环。
