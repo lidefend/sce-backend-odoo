@@ -3153,6 +3153,28 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(ns['_editability'](service, profile, 'rejected', 'pending'), 'readonly')
         self.assertEqual(ns['_editability'](service, profile, 'approved', 'approved'), 'readonly')
 
+    def test_field_editable_phases_cannot_override_pending_approval(self):
+        path = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        tree = ast.parse(path.read_text())
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_editability')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        service = types.SimpleNamespace(TERMINAL_PHASES={'done', 'cancelled', 'closed'})
+        profiles = [ast.literal_eval(n) for n in ast.walk(tree) if isinstance(n, ast.Dict)
+                    and any(isinstance(k, ast.Constant) and k.value == 'field_editable_phases' for k in n.keys)]
+        self.assertGreater(len(profiles), 0)
+        for profile in profiles:
+            for phase in profile['field_editable_phases']:
+                for approval in ('waiting', 'pending'):
+                    with self.subTest(phase=phase, approval=approval):
+                        self.assertEqual(ns['_editability'](service, profile, phase, approval), 'readonly')
+                for approval in ('none', 'approved'):
+                    self.assertEqual(ns['_editability'](service, profile, phase, approval), 'editable')
+        self.assertEqual(ns['_editability'](service, {}, 'draft', 'rejected'), 'editable')
+        self.assertEqual(ns['_editability'](service, {}, 'approved', 'approved'), 'readonly')
+        self.assertEqual(ns['_editability'](service, {}, 'done', 'approved'), 'locked')
+
     def test_contract_event_submission_and_callback_require_shared_approval_facts(self):
         path = MODEL.parent / 'contract_event.py'
         tree = ast.parse(path.read_text())

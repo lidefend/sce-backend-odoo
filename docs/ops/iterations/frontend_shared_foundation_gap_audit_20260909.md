@@ -9290,3 +9290,12 @@ P4沿原plan-state-authority scope在真实驳回后增加note修改及回读，
 payment.approval_state_machine.unit170 PASS（plan-rejected-unit.log），L1及begin/receipt完整；新增实际hook方法反例覆盖错误状态、pending/waiting/validated及状态写入仍委托。P4 136adf4bb保留新增真实修改检查，scope9项（all计数+1但不执行all）。backend.acceptance.up加载136adf4bb，纯Python无模块升级；前端e31e51c59无变更不构建。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082、原精确filter与卷，plan-rejected-runtime.log9项PASS、ROLLBACK VERIFIED：真实拒绝后说明可改，重提产生新review并批准，原无配置确认不执行、审核后独立开始/完成及状态拒绝保持。
 
 闭合计划驳回修正这一明确缺口，不将事务sudo执行与真实reviewer证据冒充普通角色UI。主单审批内容保护、执行中字段/节点/汇报/版本契约及子模型状态职责尚未闭合；下一步应在既有契约上表达分字段与子记录可用能力并绑定后端保护，不能仅改前端只读或绕过审批。detail.action-state及整体67仍开放。无推送/合并/目标部署。
+
+
+### 53.180 执行字段例外不得覆盖进行中的审批
+
+64cf749f9 clean起点，追踪计划分字段执行所需既有机制：workflow._editability的field_editable_phases用于保留审批后执行字段，已被项目、材料验收、询价等profile消费。原函数先命中该例外即返回editable，后判断waiting/pending，导致例外阶段可遮蔽正在进行的审批。P1共享契约投影修正：waiting/pending优先readonly；审批后approved/none仍保留原字段级例外，未改变动作执行、模型权限、项目终态字段例外或前端实现。
+
+新增实际函数与实际profile参数化测试，field-phase-pending-before.log在171测试中复现18个失败组合；修正后field-phase-pending-unit.log171 PASS，L1及begin/receipt通过。范围仅workflow_contract_service.py与定向测试：L0日常HEAD/dirty；L1静态、L2真实纯方法覆盖所有现有field_editable_phases，含审批后例外保留与普通草稿/批准/终态反例。未改变schema/XML，跳过模块升级；前端未变不构建，未跑ORM或全浏览器。此处是确定性投影修正，不声称已新增实际业务审批UI证据。原plan/diary/event没有field_editable_phases，已有运行结果依赖分支行为不变，沿用53.179 runtime9与事件32证据。
+
+计划主单与子执行边界仍待完整接线：此项只消除复用执行字段例外的共享先决缺陷，不能据此开放整张计划或标记计划接管完成。下一步需在P1提供主单基准字段及子节点执行字段原生策略和后端限制，再通过既有表单契约投影。总体detail.action-state保持contract_gap，无推送/合并/目标部署。

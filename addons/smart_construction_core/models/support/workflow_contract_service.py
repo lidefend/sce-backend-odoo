@@ -1278,6 +1278,9 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _editability(self, profile, business_phase, approval_phase):
+        # Execution-field exceptions apply only outside an active review.
+        if approval_phase in ("waiting", "pending"):
+            return "readonly"
         field_editable_phases = {
             str(value or "").strip()
             for value in (profile.get("field_editable_phases") or [])
