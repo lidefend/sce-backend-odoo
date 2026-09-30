@@ -632,8 +632,13 @@ try {
       const record = candidate.data.records[0];
       report.recordAuthority = null;
       const editing = process.env.TPL07_APPROVAL_VIEW === 'edit';
+      const responseStart = report.contractResponses?.length || 0;
       await form(session.page, `/${editing ? 'f' : 'r'}/${spec.model}/${record.id}`, spec.model, editing ? 'form' : 'readonly');
-      const authority = report.recordAuthority;
+      // Embedded relation contracts can finish after the main record. Select
+      // this navigation's exact record, never the last unrelated response.
+      const authority = (report.contractResponses || []).slice(responseStart)
+        .map((row) => findRecordAuthority(row.contract))
+        .findLast((row) => row?.model === spec.model && Number(row.mainData?.id) === Number(record.id));
       check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.[spec.stateField || 'state'] === record[spec.stateField || 'state']);
       report.approvalPages.at(-1).authority = authority;
       if (['sc.plan', 'sc.construction.diary'].includes(spec.model)) {

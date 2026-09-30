@@ -7937,3 +7937,7 @@ L1 `action-catalog-iteration.log` PASS；L2 `action-catalog-native.log` 8+35=43 
 候选1c6a76b18 + dirty；P0 frontend/apps/web 共享 workflowActionAvailability 消费 workflowContract.actions/availableActions，不添加业务规则。删除固定 knownKeys 与方法别名表；方法身份优先精确匹配，声明但缺可用项禁用，冲突/损坏契约报错。无目录的旧契约仍仅精确消费显式可用项，不再猜测未知方法含义。L1 iteration → L2 canonical presenter 非零回归与严格类型 → L4 单次构建、既有项目记录浏览器。后端源、模型与45项审批执行输入未变，跳过ORM/模块升级；后端运行身份仅在受管入口要求时重绑。目标为退出共享旧推导，不以单页通过宣称67条已完成。
 
 L1 `catalog-consumer-iteration.log` PASS；L2 `catalog-consumer-tests-final.log` 原有177+10与新增10项 PASS（含真实 presenter 禁用未知命名但已声明的不可用动作），回执绑定新增10项 `catalog-consumer-receipt-final.log`；`catalog-consumer-typecheck.log` 严格双配置类型检查 PASS。只读检查既有所有 profile 的 method_by_action 无重复方法；未修改映射。最后新增仅测试用例，生产输入未变，复用已通过类型结果。等待构建与定向浏览器。
+
+构建7915f3bb9一次24.37s完成。首次项目浏览器 `tpl07-1790778275644/report.json` 11断言处失败：P4最后响应观测被 project.responsibility 子契约覆盖，主响应project.project/id10已存在；页面无错误。修复既有审批检查脚本按本次导航的model+id选择契约，保留首次失败报告。仅工具变动，不失效生产构建或已通过前端类型/纯测试；node语法检查后重跑定向页面。
+
+最终运行：前端7915f3bb9，entry `/assets/index-DHbyXOXT.js`，SHA256 `88b2bf54f30cca97c91fac0942c83b883079245460594ac380f02f4b0c14e865`；原候选保留 previous-5rbtrx0q。后端源e14519cb1未改，工具接受相关addon输入不变。修正probe的L1 `catalog-consumer-probe-iteration.log` PASS；项目 `tpl07-1790778322370/report.json` 22 PASS，付款执行 `tpl07-1790778337439/report.json` 19 PASS，双视口/errors=[]/forbiddenWrites=[]。确认取消不派发写入；未执行财务撤销，不增加fixture。同步既有detail.action-state后续说明及缺口文档，不升级整行状态。批次定向验证完成，原总体目标仍active；无主线集成/目标部署/完整交付声明。
