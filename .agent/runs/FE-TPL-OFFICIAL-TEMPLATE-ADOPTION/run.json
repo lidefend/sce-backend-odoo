@@ -374,7 +374,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.122 invoice normal terminal-state/attribution guarded; red generation consumes parent approval + common registrar. Source467b78d01/backend8a7d13cf0 reloaded, pure134/native62/invoice-state-runtime.log11 ROLLBACK VERIFIED. Next finish same red-invoice chain source eligibility (draft/cancel invoice source not formal fact), changed-source recovery and duplicate concurrency, then actual-role handling. Receipt-source sale tax prerequisite remains unverified; no invented fixture/retry. FrontendCrYkOCxc/create20 presentation evidence unchanged. Preserve project classification/amount pending questions and overall67 contract_gap; no push/merge/deploy.",
+  "next_exact_step": "53.123 original-invoice eligibility source294c4aa28/backenddc677c589 loaded; pure135/native62/red-source-runtime.log12 ROLLBACK VERIFIED, finance browser21 tpl07-1790793430354 verifies actual relation query domain. FrontendCrYkOCxc unchanged. Next close same-source duplicate concurrency and approved-but-unexecuted recovery without erasing reviews or resetting generated financial facts, then normal-role saved handling. Receipt historical-state/tax prerequisites and project classification/amount questions remain; no invented fixtures or unchanged failed reruns. Overall67/detail.action-state stays open, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

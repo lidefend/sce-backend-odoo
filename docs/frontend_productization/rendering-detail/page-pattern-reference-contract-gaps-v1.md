@@ -443,3 +443,7 @@ Red-flush adjustment now uses shared tier/policy approval and executes only afte
 ## Segment 53.122: invoice terminal-state and registrar authority
 
 Normal invoice create/write no longer accepts direct terminal state or forged red-flush attribution; private action writes preserve approval/audit checks. Explicit sudo legacy imports retain legacy-confirmed creation only. Red-flush generation consumes parent approval and common registrar permission. Pure134/native62 and backend8a7d13cf0 rollback runtime11 pass, including non-registrar denial, terminal-state/token forgery rejection and registered-source amount protection. Source setup still uses elevated data access; ordinary-role end-to-end scope remains open. Continue source eligibility, stale-source recovery and duplicate concurrency in this same chain; no overall closure claim.
+
+## Segment 53.123: original-invoice eligibility across producer and consumer
+
+Red-flush originals must exist, be active and normal; registration sources must be registered/legacy-confirmed. Shared blocker drives execution and workflow feedback; the field domain drives the official relation query. Source294c4aa28/backenddc677c589, pure135/native62, rollback runtime12 and finance browser21 pass. Actual query domain is verified; no fixture or frontend rebuild. Receipt historical-state semantics, normal-role saved handling, source-change recovery and duplicate concurrency remain open.

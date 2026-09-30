@@ -8634,3 +8634,7 @@ L1 invoice-state-iteration.log通过，初轮unit.log134中1个error来自旧fin
 442c8990e clean续跑，P1 sc.output.invoice.adjustment维护原票资格：必须存在、有效且normal，sc.invoice.registration来源仅registered/legacy_confirmed，收款发票来源保留原有语义不猜历史状态文字。字段domain同步限定，_original_invoice_eligibility_blocker被执行校验和workflow denied gate共同消费，避免前端能选草稿票且后端也直接出票。L1 red-source-eligibility-iteration.log通过；pure unit.log135 PASS、native.log8+54=62 PASS。新生产方法纯回归覆盖draft/confirmed/registered/legacy/cancel/unknown/False、失效/删除/红冲来源。
 
 P4现有red-flush scope扩展12组，增加草稿/取消原票真实提交拒绝及契约reason；现有browser财务create增加原票关系请求域断言，不造记录或税率。tool-iteration/py_compile/node/diff通过。无新增列/XML，只需reload域与Python，前端构建不变；运行及关系请求尚未证明。保留异常恢复/并发及角色全旅程，整体不升行，无推送合并目标部署。
+
+53.123结果：源码294c4aa28/后端dc677c589受管reload成功。red-source-runtime.log12 PASS、ROLLBACK VERIFIED，草稿/取消原票的提交拒绝及workflow reason实际成立，原11组审批/登记/权限保护继续通过。财务browser tpl07-1790793430354/report.json21 PASS：新增实际api.data list/sc.output.invoice.ledger请求域精确包含active/normal及注册来源registered/legacy_confirmed条件；无errors/forbiddenWrites。前端CrYkOCxc不变，不构建；外观沿53.121截图，新增证据证明查询域而非造数据或完整办理。
+
+本项原票资格已贯通字段关系域、共享官方关系选择实际请求、动作拒绝提示及服务端执行。仍未证明收款发票历史状态口径、普通角色选票保存审核办理、原票变动恢复、并发重复红冲；下一步处理同一原票并发执行保护和批准后未出票的恢复通路，保持审批记录和已生成票不可回退边界。所有结果沿原67台账/detail.action-state记录，不扩大为全部业务完成。无推送合并目标部署。
