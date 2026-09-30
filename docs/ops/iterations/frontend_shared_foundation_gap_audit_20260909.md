@@ -8646,3 +8646,9 @@ ec8dcf987 clean续跑，P1红冲业务恢复：approved且未generated、无pend
 L1 red-recovery-identity-iteration.log PASS；pure unit.log137 PASS、native.log8+54=62 PASS，验证恢复保留review/不restart、生成票拒绝、技术来源模型/ID唯一键仅执行后存在。P4 red-flush扩至15组：保留原12、取消保留审批、新申请新review后执行、pg_constraint安装存在和实际重复键拒绝。数据库重复键检查通过savepoint内私有状态写触发，明确不是两个并发会话验收。tool/contract-tool-iteration及语法/diff通过。
 
 目标沿用隔离fixture验收租户sc_frontend_acceptance/local/sc-fe-r2-p1-01，非控制库/行业库/生产，精确filter与固定filestore sc_fe_r2_p1_01_odoo由受管preflight核验。新增存储字段/SQL约束/native XML需一次受管upgrade/reload；历史若有冲突不得清数据或豁免约束，运行检查必须确认pg_constraint真实存在。尚未升级/runtime，前端CrYkOCxc未改不构建。普通角色全旅程及真正双会话并发证据仍未完成；不推送合并目标部署。
+
+53.124结果：88774a406受管upgrade/reload成功，初次red-recovery-runtime.log原12组通过后，取消保留review断言失败，ROLLBACK VERIFIED。直接检查OCA _allow_to_remove_reviews确认默认cancel会unlink审核记录；不是工具误报。P1红冲通过既有扩展点仅对cancel返回False保留历史，其他流转委托super，不修改第三方模块、不重建审批框架。history-iteration.log通过，history-unit.log138 PASS。native62绑定未变profile/header及动作投影输入复用；新增私有审核清理hook不影响其断言，实际语义由单元与runtime重验。
+
+3fb696152受管reload成功（仅Python修复不再次升级）。red-recovery-history-runtime.log15 PASS、ROLLBACK VERIFIED：已批准未出票cancel状态正确且review IDs/validated原样保留，新建同源申请须新的review并真实审核后出票，pg_constraint确认约束安装且实际第二个confirmed source key写入触发预期唯一约束拒绝，原12组继续通过。SQL重复检查在独立savepoint触发私有状态写，仅验证数据库兜底，不是双会话请求实测；本轮不声明并发负载验收。已有已出票事实不撤销，不删除原批准记录。
+
+前端CrYkOCxc未改不构建；原create21仅复用未变输入/查询域，新增approved取消由真实workflow可用动作和模型结果证明，普通角色已批准详情页面尚未验。下一步转实际非sudo角色办理与对应官方详情动作，复用现有数据/受管回滚工具，不重复全仓盘点或原创建页。工程资料分类/项目金额权威/收款发票税率仍待既有缺口处理；整体67不升行，无推送合并目标部署。

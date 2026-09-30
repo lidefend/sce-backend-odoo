@@ -447,3 +447,7 @@ Normal invoice create/write no longer accepts direct terminal state or forged re
 ## Segment 53.123: original-invoice eligibility across producer and consumer
 
 Red-flush originals must exist, be active and normal; registration sources must be registered/legacy-confirmed. Shared blocker drives execution and workflow feedback; the field domain drives the official relation query. Source294c4aa28/backenddc677c589, pure135/native62, rollback runtime12 and finance browser21 pass. Actual query domain is verified; no fixture or frontend rebuild. Receipt historical-state semantics, normal-role saved handling, source-change recovery and duplicate concurrency remain open.
+
+## Segment 53.124: red-flush recovery and database uniqueness
+
+Approved but unexecuted adjustments may be cancelled with approval history retained; replacement records must obtain new reviews. OCA default cancellation deleted reviews, caught by runtime and corrected via the model's existing extension point. A stored confirmed-source identity has a database UNIQUE constraint, allowing multiple nonexecuted applications. Backend3fb696152, pure138/native62 and rollback runtime15 pass, including installed-constraint inspection and actual duplicate-key rejection. This is not a two-session race test. Ordinary-role saved handling and approved-detail browser actions remain open; no overall closure claim.
