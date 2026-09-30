@@ -250,7 +250,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.50 real page blockers: PM plan create receives valid create contract but official form state=error/network message (tpl07-1790774686651); diary create rejects V2 layout children.field_info (tpl07-1790774692654). Existing record queries empty company8; do not retry unchanged. Next capture exact diary ui.contract layout producer path, fix P0 normalization (do not relax schema), identify plan failed request. Earlier27 ORM passes do not cover UI failures. No broad browser/release while these blockers persist.",
+  "next_exact_step": "53.51 plan create12 passed after P4 default_get allowlist correction. Diary P1 field_info alias fixed338d5253f/native39, backend reloaded; still fails runtime.containerTree/widgetStatus/governancePatches,meta.governance_patches and structure references to missing name etc (tpl07-1790774968894). Next inspect/retire redundant normalize_construction_diary_form finalizer rather than patching aliases; preserve native/configured fields and strict schema. No broad browser until this owning-layer blocker fixed.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -779,6 +779,17 @@
       ],
       "record_data": "both authorized company8 queries empty",
       "writes": "none"
+    },
+    "create_diagnosis_53_51": {
+      "status": "partial",
+      "backend": "338d5253f",
+      "tests": {
+        "native": 39,
+        "plan_create": 12
+      },
+      "plan_report": "artifacts/frontend-web-fix-20260928/tpl07-1790774808335/report.json",
+      "diary_report": "artifacts/frontend-web-fix-20260928/tpl07-1790774968894/report.json",
+      "remaining": "diary P1 redundant postprocessor breaks runtime/meta schema and field membership"
     }
   }
 }

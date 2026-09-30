@@ -7801,3 +7801,11 @@ L5：未推送、未合并、未部署。
 - 单独新增TPL07_APPROVAL_VIEW=create明确打开未保存新建表单，不是自动回退或替代详情验收。计划首次timeout（plan-create-browser.log；tpl07-1790774631462/report.json），已收到sc.plan/create且create=true有效契约，不能据presentationMode=workspace就认作工具等待错误。追加有界失败现场捕获（当前页正文/语义surface/截图），只重跑受影响计划并独立检查日志。
 - 计划诊断失败（plan-create-diagnostic.log；tpl07-1790774686651/report.json）：实际data-form-composition=official-standard-form但data-state=error，页面“网络连接异常”；契约已到达，需继续定位后续失败请求。日志失败（diary-create-browser.log；tpl07-1790774692654/report.json）：明确invalid contract v2 snapshot，layoutContract.containerTree若干children仍含不允许的field_info，页面拒绝契约；该处属于P0有效契约/规范投影缺口，不放宽前端schema。两者errors=[]，但页面错误不能以JS无异常算通过。
 - 当前已知早层阻断，不继续广泛浏览器/发布门禁。直接源码定位现有assembler _normalize_native_layout_nodes已有field_info→fieldInfo归一化，而_native_field_node仍deepcopy输入；尚未证明真实泄漏路径，未盲改或重复全仓扫描。下一步捕获该ui.contract的精确布局投影链并修正产生层，及计划失败请求；修复后只重验受影响页面。既有27项ORM只证明审批模型，不覆盖这些页面阻断。总体active，未推送/合并/目标部署。
+
+
+### 53.51 新建页双故障分层定位，计划通过，日志重复后处理仍阻断
+
+- fef872276起步。P4查原失败report发现计划forbiddenWrites实际含api.data/default_get；53.50“无写入”应解读未发生业务写入，不能描述为未拦截请求。api_data将default_get明确定义为读操作，工具白名单补此op，其他写入继续拦截。计划新建双视口12项PASS（plan-create-defaults.log；tpl07-1790774808335/report.json），无需产品修复；记录详情无数据仍pending，不混记。
+- 现有失败诊断补当前ui.contract完整响应（仅approval-actions本地受限验收），日志再次捕获tpl07-1790774814944/report.json，确认不是P0归一化缺失：P1 core_extension_contract_normalizers.normalize_construction_diary_form在规范化之后为所有字段重复添加field_info。修复该行保留fieldInfo并移除旧别名，关系/必填/组件信息保留。L1 ci.local.iteration PASS（diary-alias-iteration.log），native8+31=39 PASS（diary-alias-tests.log，begin/record39），实际后处理方法回归覆盖别名不泄漏与信息保留。
+- 338d5253f受管backend.acceptance.up重载（diary-alias-backend.log），无模型字段/XML变更不升级/构建。日志复验仍失败（diary-create-fixed.log；tpl07-1790774968894/report.json），field_info已不再报错，但runtimeContract.containerTree/widgetStatus/governancePatches及meta.governance_patches不允许，formStructureContract.slots引用name等字段未投影。证明同一重复行业后处理还有结构性冲突，不能据39单测称页面完成。
+- 下一步核对并退役日志的重复布局重组/兼容投影路径，让原生视图及有效配置保有完整字段/结构；不继续逐个放宽schema或增加别名。计划误阻断关闭，日志页面阻断保持open，早层失败禁止广泛浏览器/发布门禁。审批27项只证明业务模型，不能替代此处消费。总体active，无远端/目标部署。

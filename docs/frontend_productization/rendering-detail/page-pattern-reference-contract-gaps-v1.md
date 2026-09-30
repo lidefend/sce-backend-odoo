@@ -206,3 +206,7 @@ Governed upgrade/reload atcbd60bd63 succeeded. The existing rollback smoke passe
 ### Segment53.50 — New plan/diary page blockers confirmed
 
 PM authorized-company8 queries for existing plans/diaries are empty, so record-detail acceptance remains pending. Separately opening unsaved create forms exposed real failures: plan receives a create-enabled contract but renders the official form in error with a network message; diary rejects its V2 snapshot because layout container children leak unsupported `field_info`. These are not passed browser checks and cannot be covered by27 ORM tests. Keep `detail.action-state` and affected form/contract delivery open; repair the producer for the diary and identify the failing plan request before downstream page acceptance. No business writes occurred.
+
+### Segment53.51 — Plan create passes; diary postprocessor remains incompatible
+
+Plan create failure was a P4 probe bug: read-only `default_get` was intercepted. Corrected probe passes12 create-form assertions with unchanged frontend/backend product inputs. Diary `field_info` leakage originated in P1 postprocessing, not the P0 assembler; the alias is fixed and39 focused tests pass. Runtime still rejects additional fields that the same postprocessor injects into runtime/meta and reports missing fields referenced by form structure. Retire/align the redundant diary layout rewrite with the native/configured contract; do not relax schema. Diary create remains failed, and existing-record acceptance remains pending scoped data.
