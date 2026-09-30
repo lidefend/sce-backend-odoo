@@ -27,6 +27,8 @@ class ScApprovalPolicy(models.Model):
         ("sc.equipment.plan", "设备计划"),
         ("sc.equipment.request", "设备申请"),
         ("sc.labor.plan", "劳务计划"),
+        ("sc.safety.plan", "安全施工方案"),
+        ("sc.safety.disclosure", "安全交底"),
         ("sc.material.rental.plan", "材料租赁计划"),
         ("sc.material.rental.order", "材料租赁单"),
         ("sc.material.rental.settlement", "材料租赁结算"),
@@ -430,6 +432,8 @@ class ScApprovalPolicy(models.Model):
             "sc.equipment.plan",
             "sc.equipment.request",
             "sc.labor.plan",
+            "sc.safety.plan",
+            "sc.safety.disclosure",
             "sc.material.rental.plan",
             "sc.material.rental.order",
             "sc.material.rental.settlement",
@@ -481,6 +485,14 @@ class ScApprovalPolicy(models.Model):
             "sc.labor.request": (
                 "smart_construction_core.server_action_labor_request_on_approved",
                 "smart_construction_core.server_action_labor_request_on_rejected",
+            ),
+            "sc.safety.plan": (
+                "smart_construction_core.server_action_safety_plan_on_approved",
+                "smart_construction_core.server_action_safety_plan_on_rejected",
+            ),
+            "sc.safety.disclosure": (
+                "smart_construction_core.server_action_safety_disclosure_on_approved",
+                "smart_construction_core.server_action_safety_disclosure_on_rejected",
             ),
             "sc.labor.plan": (
                 "smart_construction_core.server_action_labor_plan_on_approved",

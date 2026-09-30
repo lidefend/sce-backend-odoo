@@ -20,6 +20,8 @@ class TierDefinition(models.Model):
             "sc.equipment.plan",
             "sc.equipment.request",
             "sc.labor.plan",
+            "sc.safety.plan",
+            "sc.safety.disclosure",
             "sc.material.rental.plan",
             "sc.material.rental.order",
             "sc.material.rental.settlement",

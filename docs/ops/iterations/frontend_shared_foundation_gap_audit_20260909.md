@@ -8423,3 +8423,11 @@ L1 rental-cancel-contract-iteration.log通过；L2 rental-cancel-contract-unit.l
 复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与固定filestore/卷，所有临时记录事务rollback。仅Python改动需reload，不升级；前端7915f3bb9未改不构建，不重复创建23/空PM查询。运行时契约尚待验证，整体detail.action-state与67条目标仍开放；真实双事务竞争/角色浏览器详情未证明。无推送合并目标部署。
 
 53.106结果：4dc443ee0受管reload成功（rental-cancel-contract-reload.log），rental-cancel-contract-runtime.log6/6 PASS、ROLLBACK VERIFIED。真实finance申请经提交/实际review后，describe_record.availableActions的cancel明确disabled/RENTAL_PAYMENT_OBLIGATIONS_ACTIVE/非空原因/精确record id；同事务执行取消拒绝。申请action_cancel后重新读取契约cancel enabled且reason为空，源action_cancel成功。源准备仍sudo，不宣称普通角色源办理权限或浏览器详情通过。此前10项现金证据继续作为未变支付规则基线，当前6项只证明取消投影与执行一致性。下一步按既有67台账安全/分包页面族补必要契约，继续保留并发与角色详情缺口。
+
+### 53.107 安全方案/交底统一审批与动作契约（进行中）
+
+ab3347596 clean续跑，只读安全两模型/原生view/现有workflow与审批注册，发现旧action_approve直接写通过、无配置仍固定submitted，交底无header。P1 smart_construction_core拥有行业单据审批默认及业务校验，P0共享审批机制沿用，非P2偏好/P3临时数据，前端不推断。两模型接入tier.validation/project company/reject_reason；共享_start_submission_review、实际review回调、外部state create/write拒绝；保留既有业务anchor/取消重置范围。workflow approve/reject使用真实tier方法及pending域，原生header声明全部动作和modifier依赖，body state只读。
+
+L1 safety-approval-iteration.log通过，L2 safety-approval-unit.log106（同项扩展两模型无配置/配置/实际回调/状态伪造与终态动作）、safety-approval-native.log8+52=60通过并登记。run输入登记新增安全模型/view，避免错误复用。P4既有回滚工具新增safety-approval scope16组：自动通过/业务anchor/状态保护/配置未命中/真实review契约/pending配置切换/实际通过/驳回重提；default all计数215但本轮只跑安全scope。safety-approval-tool-iteration.log及语法/diff通过。
+
+需要一次受管模块升级（新增字段/继承/XML），复用local sc-fe-r2-p1-01/sc_frontend_acceptance、精确filter固定卷；临时policy和记录同事务rollback，不新建fixture/环境/权限。尚未运行ORM或安全浏览器，不宣称页面族验收完成。前端7915f3bb9未改，跳过构建及无关支付回归/全矩阵/Quick/发布；总体67与detail.action-state仍开放。
