@@ -9319,3 +9319,14 @@ a6c7ef8de clean起点，P1 2b300b3bb给sc.plan.line补create/write/unlink保护�
 P4 aa7717fb4扩原plan-state-authority为15项：真实节点在确认后拒绝直接名称写、父line_ids计划日期写、删除、新增和未开始时进度写，回读基准一致；正式开始后父line_ids更新进度50/执行状态成功，直接改基准仍拒绝，完成节点与计划后进度改写拒绝。plan-node-runtime.log15具名PASS、ROLLBACK VERIFIED。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter原卷，backend aa7717fb4；纯Python不升级，前端e31e51c59未变不构建。原配置审批/驳回修正/重提仍通过；本次新增节点执行示例为无配置确认分支，不扩大为配置审批多角色UI。
 
 下一步原生主单/子节点字段readonly与创建删除能力需消费上述后端边界；汇报/版本还未统一状态机，因此尚未打开plan open的field_editable_phases。现有只读详情/整体detail.action-state仍不能标为计划执行完整接管。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.183 计划原生字段策略进入有效契约
+
+40f2615be clean起点；P1 900ae9b92给view_sc_plan_form主单定义字段增加state/validation_status readonly，节点基准采用parent.state/parent.validation_status，节点progress_rate/state仅执行中且无活动审批可改。复用既有one2many父值解析，无前端业务分支。入口construction_plan_productized_form_v1仍有entry_semantic_surface手工结构，未盲目删除字段配置；不因此宣称重复结构退出。
+
+首轮L2发现XML表达式转义错误，修正后174通过；首轮受管升级失败于XML schema：视图元数据field name也被误加readonly。2487a4831精确移除元数据属性，并在既有测试增加所有record直接field不能携带readonly的检查。plan-native-schema-iteration/unit174及begin/receipt通过；plan-native-schema-upgrade.log受管升级smart_construction_core成功（原plan-native-policy-upgrade失败日志保留），backend.acceptance.up加载2487a4831。环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082、原filter与卷；无新环境/fixture。前端e31e51c59未变不构建。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.plan TPL07_APPROVAL_VIEW=create原browser入口：plan-native-create-browser.log，tpl07-1790809196461/report.json12项PASS，PM官方新建form engine、有效契约、无新单审批通过/驳回/完成、1440/390无溢出及无异常/业务写。回读approvalPages.authority确认name/planned_finish规范modifiers含state与validation_status；line_ids内name/planned_finish及progress_rate携带parent.*规范表达式。此为新建页和契约投影证据，不证明执行页输入、增删能力或配置审批UI。
+
+继续待办：退出入口重复结构；子表增删/新增初始执行值与状态约束；汇报/版本审批统一；准备完成后再开放执行中父表单字段例外并验证普通角色办理。既有计划后端15、事件32等按未变执行依赖复用。整体detail.action-state/67条仍未完成，无推送/合并/目标部署。
