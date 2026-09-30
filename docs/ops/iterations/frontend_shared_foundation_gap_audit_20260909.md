@@ -8273,3 +8273,10 @@ P1材料租赁单复用shared policy/tier，项目公司及amount_total为配置
 L1 rental-order-iteration.log PASS；首次unit新增测试括号错误，修正后rental-order-unit-fixed.log83 PASS（新增完整submit→approve→activate→return→settle及重复/提前操作边界）；rental-order-native.log8+48=56 PASS，rental-order-semantics.log15 PASS，XML2解析/重复ID及diff PASS；非零回执登记。尚未模块升级/运行/页面验收，需下一批一次受管升级及scope验证；不重验租赁计划10或其他独立ORM，前端未改不构建。
 
 额外明确P1产品缺口：租赁结算action_paid只把confirmed改paid，没有读取实际支付事实；当前payment_request_id检查仅项目与收款方一致，不能证明已付款。审批接入不能把该动作视为真实付款闭环，应在租赁结算职责批次补齐支付事实权威或保留明确未交付状态，不能用按钮/状态变更冒充实际支付。总体67仍开放。
+
+
+### 53.95 租赁单真实审批与执行验收（进行中）
+
+P4既有rollback工具扩展rental-order13项：外部状态/提前启用拒绝、无配置只审批、金额权威/未匹配拒绝/空明细、pending配置变更保护、实际review、显式启用→退还→结算及重复/returned取消拒绝、approved显式取消、驳回重提，来源计划未审批拒绝/已审批可用/跨项目拒绝。复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter和固定卷，既有fixture reviewer、事务sudo建单，恢复校验保持；不代表完整角色旅程。
+
+L1 rental-order-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用83/56/15；下一步一次受管模块升级/reload只本scope，前端未改不构建，无新环境/持久fixture/L5。
