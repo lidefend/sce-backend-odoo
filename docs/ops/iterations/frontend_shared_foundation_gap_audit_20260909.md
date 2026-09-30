@@ -5191,3 +5191,142 @@ L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部
 
 本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 35｜尺寸门禁越限收口：把受限文件里的职责拆出去，并补上增量路由缺口（2026-09-30）
+
+### 1. 本轮触发与真实起点
+
+- 起点 HEAD `3e46b5649`（段 34 收口），工作树干净，分支 `feature/web-official-template-adoption`。
+- 实测当前强制门禁，`verify.frontend.style_system.guard` **FAIL**，其余通过：
+  - `frontend/apps/web/src/views/ActionView.vue exceeds 3800 lines: 3803`
+  - `record runtime exceeds 619 lines: frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts=621`
+  - `verify.frontend.no_new_any_guard` PASS（709 文件 / 25 any / 11 余额）。
+
+### 2. 越限溯源（按实际 git 历史核对，未按行号猜改）
+
+| 文件 | 越限前 | 越限提交 | 越限后 | 阈值 |
+|---|---|---|---|---|
+| `views/ActionView.vue` | `20781fe2d` = 3795 | `95137138d` *refactor(web): execute the declared batch intent instead of naming actions* | **3803** | 3800 |
+| `pages/contractForm/useRecordFormActions.ts` | `97f5ff0fe` = 612 | `20781fe2d` *feat(web): derive the page type from the contract, not from a business model* | **621** | 619 |
+
+两条都是**业务驱动的真实重构**（声明式批量意图、由契约派生页面类型）把文件推过棘轮，
+不是无意义代码增长；因此本轮只拆职责，不放宽阈值、不压行数消红。
+
+### 3. 验收体系为什么没发现（用户明确要求先补缺口）
+
+`scripts/verify/frontend_dev_incremental.py` 的 `RULES` **从不指向** `verify.frontend.style_system.guard`：
+`views/ActionView.vue` 与 `pages/contractForm/*.ts` 只落到兜底 `verify.frontend.typecheck.strict`。
+于是日常增量迭代对这两个文件**只做类型检查**，尺寸棘轮只有在有人手工全量跑守卫时才暴露——
+这正是它们能连续越限的直接原因。尺寸规则的唯一执行点在人工路径上，不在迭代路径上。
+
+### 4. 修复 A｜批量选择行为退出 `ActionView.vue`（3803 → 3672）
+
+- 新增 `frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts`（225 行）：
+  承载 `selectionActions`、`handleSelectionAction`、`runBatchPolicyAction`，并导出 `ActionBatchPolicy`。
+- `ActionView.vue` 只保留组合，删除本地 `ActionBatchPolicy` 及
+  `actionViewBatchRuntime` / `actionViewBatchActionFlowRuntime` / `actionViewSelectionExportRuntime` 导入。
+- **行为等价搬运**：同一份声明式批量策略、同一批 execution intents、同一守卫与确认决策、
+  同一 `unlinkActionViewRecord` / `batchUpdateActionViewRecords` 调用与同一 `finally` 清理。
+
+### 5. 修复 B｜设计器导航退出保存属主（621 → 599）
+
+- 新增 `frontend/apps/web/src/pages/contractForm/useRecordFormDesignerNavigation.ts`（117 行）：
+  `lowCodeApplyBaseParams` / `lowCodeReturnQuery` / `previewLowCodeConfiguredPage` /
+  `previewCurrentFormConfiguration` / `returnToBusinessConfigDesigner`。
+- `useRecordFormActions.ts` 在已组合设计器动作处组合该导航，**函数体逐行等价**：
+  同一路由标志、同一「有草稿先保存再预览」判断、同一业务配置设计器返回路径。
+
+### 6. 修复 C｜把尺寸门禁接回增量路由，并给路由本身加自检
+
+- `frontend_dev_incremental.py` 新增两条 `Rule`：
+  `layouts/AppShell.vue` / `pages/ListPage.vue` / `pages/ContractFormPage.vue` /
+  `pages/ContractFormRoute.vue` / `views/ActionView.vue` → `verify.frontend.style_system.guard`；
+  `pages/contractForm/` + `components/template/` **追加**该守卫（既有目标一个不减）。
+- 新增单测 `test_size_ratcheted_files_route_to_the_size_guard`：直接读取守卫的
+  `SIZE_LIMITS` 与 `RECORD_RUNTIME_SIZE_LIMITS`，断言**每条**受限路径都被路由到尺寸门禁。
+  这样扩展棘轮而漏扩路由会立刻失败，而不是再次静默兜底。
+- 实测增量入口对这两个文件已经调用尺寸门禁：
+  `make verify.frontend.dev.incremental FRONTEND_DEV_CHANGED_PATHS="…/ActionView.vue …/useRecordFormActions.ts"`
+  → `frontend_style_system_guard PASS` + `[frontend.dev.incremental] PASSED returncode=0`。
+
+### 7. 守卫探测位置维护（保留断言含义，未放宽）
+
+`scripts/verify/list_batch_action_closure_guard.py` 三条断言原扫描 `ActionView.vue`，行为抽出后失效。
+处理原则同段 34：**跟随行为到新属主，并保留「视图确实消费该属主」的反向断言**。
+
+- 新增 `selection_action_runtime` 读取抽出的运行时；
+- `ActionView` 必须组合 `useActionViewSelectionActionRuntime(` 且仍传 `contractActions: contractActionButtons`；
+- `resolveSelectionActions(` + `execution_intents`、`unlinkActionViewRecord`、`batchUpdateActionViewRecords`
+  三条在生产该行为的模块内断言。
+
+### 8. 反例验伪（证明检查真在求值）
+
+- 把 `ActionView.vue` 中的 `useActionViewSelectionActionRuntime(` 改名 →
+  `verify.list_batch_action.closure_guard` **FAIL**；复原 → **PASS**。
+- 删掉新增的尺寸路由 → `test_size_ratcheted_files_route_to_the_size_guard` **FAILED (failures=5)**；
+  复原 → **OK (13 tests)**。
+
+### 9. 分层验证结果
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.frontend.style_system.guard` | **PASS**（`hardcoded_color_refs_max=0`，两条尺寸越限关闭） |
+| L1 | `make verify.frontend.no_new_any_guard` | PASS |
+| L1 | `make ci.local.iteration` | PASS（`coverage=L1_only`） |
+| L1 | `make verify.guard.registry` | PASS（1352 scripts / 124 orphans） |
+| L1 | `py_compile` + `python3 -m unittest scripts.verify.test_frontend_dev_incremental` | OK（**13 tests**） |
+| L2 | `make verify.list_batch_action.closure_guard` | PASS |
+| L2 | `make verify.frontend.standard_collection_composition.unit` | PASS（`cases=113`） |
+| L2 | `make verify.frontend.form_designer_actions.unit` | PASS（`cases=6`） |
+| L2 | `make verify.frontend.contract_form_save_failure_recovery.unit` | PASS（edit-retry / single-flight / create-retry / permission-denial） |
+| L2 | `make verify.frontend.adopted_form_validation_identity.unit` | PASS（`cases=46 failed=0 engine=shipped-save-chain host=real-vue-instance`） |
+| L2 | `make verify.frontend.record_form_return.unit` | PASS（`cases=13`） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（抽离前后各一次） |
+| L4 | `make verify.frontend.standard_preview.unit` | OK（6 tests） |
+| L4 | `make verify.frontend.standard_page_type.browser`（5180 真实候选） | **passed assertions=32**，`errors=[]`、`forbiddenWrites=[]` |
+| — | `make ci.generated_reports.guard` | PASS（先刷新复杂度/分片派生，再复检） |
+
+说明：`scripts/verify/test_frontend_dev_incremental.py` 在托管环境**无 pytest**，
+按仓库既有入口用 `python3 -m unittest` 运行（与 `make verify.frontend.dev.incremental.unit` 一致）。
+
+### 10. 候选、运行身份与产物归档
+
+- 旧产物保留（**未覆盖**，按序归档）：
+  `config05-20260929-prev-221b5ba5b-sizesplit-v1`（本轮起点候选，
+  `entry=/assets/index-D-WZIX_H.js`，`entry_sha256=7ee7724b…`，`index_sha256=18127f68…`）。
+- 新候选：`config05-20260929/dist`，`base_sha=3e46b5649…`，
+  `entry=/assets/index-DShCtG8D.js`，
+  `entry_sha256=cc73042cdab8684bedc572cba22d7d73943e041ccb1c370c318b886ee7c5b891`，
+  `index_sha256=4c236bf058f4b866449dda73f7b9d49230195e6e4c7d374c21eb332c00380555`，
+  `diff_sha256=483c0f4e1cd4d23eab5a188f510f524cfaf578f5d18837e44d3ab625ea62d0f1`。
+  **单次构建**：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （构建前先归档旧目录，否则入口按设计拒绝：`preview build inputs changed`）。
+- 5180 监听进程**未变、未重启、未新增端口**：`pid=802966`，
+  `node scripts/release/release_static_server.mjs`，`STATIC_ROOT=…/config05-20260929/dist`，
+  `STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`；`preview.up` 返回
+  `REUSED current 5180 listener`（按请求读盘，替换产物即生效）。
+- 浏览器断言已绑定当前候选：报告内 `build.entry_sha256` 与上文 `entry_sha256` 一致。
+- **未二次构建、未做全文件 HTTP 比对、未新增常驻端口**；本轮浏览器操作 `mutations=0`。
+
+### 11. 提交
+
+- `refactor(web): move the list batch-selection behaviour out of ActionView`（新运行时 + 视图 + 探测位置维护）
+- `refactor(web): move the designer navigation out of the save owner`（新运行时 + 保存属主 + 复杂度/分片/三份渲染清单派生刷新）
+- `fix(verify): route size-ratcheted frontend files to the size guard`（增量路由 + 路由自检单测）
+
+### 12. 显式登记（**不在本段范围，继续独立记账**）
+
+- `verify.business_config.coverage` FAIL（`system_root, user:admin, user:wutao`）——数据覆盖状态，脚本无前端引用。
+- `BusinessConfigCoverageWorkspace` 的 `page-config-selection-empty`、`BusinessConfigStartPanel` 的
+  `config-status--empty`、`/admin/release-operator`、`scene-health`/`scene-packages` 无 platform-admin 夹具。
+- `style_system.guard` 四项欠账中**尺寸两项本段关闭**，其余（z-index 等）保留；
+  `state_transition_undeclared` 五条保留。**未放宽阈值、未改退出码。**
+- `verify.unified_page_contract.v2` 的 `payment.request` 表达缺口
+  （`done`/`payment_execution`、workflow `activate/complete/reopen/reactivate`）仍待 P1 权威补声明，**不得猜测补齐**。
+- 工作台「选择业务页面」目录约 13–15 s 才出现（既有性能观感问题）。
+- 本段未触及 `.agent/`、未触碰业务矩阵；`AppShell.vue` 未新增业务职责。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
