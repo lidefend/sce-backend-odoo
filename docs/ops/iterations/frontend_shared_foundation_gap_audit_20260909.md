@@ -8487,3 +8487,9 @@ P4 browser既有approval-actions新增settlementcreate，subcontract-settlement-
 初轮L2四项旧替身漏新字段，补实际模型形状；新测试另发现零剩余额度被default filter丢弃，P1修为两专用来源都保留0。工具测试的paid状态/局部变量问题已修复，不改变分包confirmed生命周期。最终L1 subcontract-payment-final-iteration.log、L2 unit-final.log122 PASS、native.log8+52=60 PASS并登记；身份/额度/历史冻结/同源拆分/零余额/执行可见性/ledger导航/规范汇总含冲销得到纯回归。
 
 P4既有rollback工具新增subcontract-settlement-cash10组，复用finance非sudo申请/执行与真实reviewer、sudo事务来源/资金基线准备，default all249；工具L1 subcontract-cash-tool-iteration.log/语法/diff通过。下一步一次受管模块升级（新字段/关系/非存储汇总/native XML）+reload，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；只跑新cash scope，审批8/create21/前端7915f3bb9暂按未变页面消费复用，金融关系选择尚需另验。不新建fixture/环境，不推送/合并/目标部署，整体67仍开放。
+
+53.111结果：0b329c68d受管模块升级/reload成功（subcontract-payment-upgrade.log/reload.log）。首轮cash-runtime.log前2项通过，在真实finance读取来源时被record rule正确拒绝，ROLLBACK VERIFIED。窄查既有规则是owner/project user/follower，P4事务准备的source默认owner为管理员；cf65295c6仅把临时source owner指定为finance并增加非sudo search可见性断言，不改组/权限/record rules。只证明既有本人经办范围，不能外推所有财务可见。
+
+subcontract-payment-cash-owner.log10/10 PASS、ROLLBACK VERIFIED，finance非sudo申请/付款执行、真实reviewer，资金基线真实activate，source单据sudo事务准备并走实际审批确认；申请60占额拒绝超额1，20+40分别真实posted台账且准确返回source，paid/unpaid由20/40→60/0，requested/unrequested60/0；冲销40后20/40、再冲销20后0/60，来源仍confirmed，付款历史归属始终不可清除，申请取消后reserved0/available60。配置基线和临时记录恢复，无权限扩张。失败原日志保留不混写成功。
+
+本轮把P1固定0汇总替换为显式归属的真实聚合，但未证明历史无归属行的完整性、其他角色范围、正式登记合同现金链、浏览器选源与真实双事务竞争；不将10项升为整行业务完成。下一步在已有台账中接续必要关系选择/角色范围及其他未收口契约，付款49/租赁10/安全等既有独立证据不重跑；无前端build/新fixture环境/推送合并目标部署。
