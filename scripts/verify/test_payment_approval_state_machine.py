@@ -750,6 +750,58 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'state': 'cancel'}))
         self.assertEqual(writes[-1], {'state': 'cancel'})
 
+    def test_expense_readiness_is_shared_by_contract_and_execution(self):
+        path = MODEL.with_name('expense_claim.py')
+        names = {'_business_readiness_errors', '_check_business_ready', '_check_attachment_policy_or_raise'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, '_': lambda text: text, 'float_compare': lambda a, b, **kw: (a > b) - (a < b)}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        service_path = ROOT / 'addons/smart_construction_core/models/support/workflow_contract_service.py'
+        projection = next(n for n in ast.walk(ast.parse(service_path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_expense_claim_evidence_gate')
+        projection.decorator_list = []
+        exec(compile(ast.Module(body=[projection], type_ignores=[]), str(service_path), 'exec'), ns)
+        class Record:
+            ensure_one = lambda self: None
+            _is_noncash_deduction_bill = lambda self: False
+            _is_interfund_repayment = lambda self: False
+            _business_readiness_errors = ns['_business_readiness_errors']
+            _check_deposit_refund_balance_or_raise = lambda self: None
+            _check_payment_request_scope_or_raise = lambda self: None
+        def record(**overrides):
+            row = Record()
+            row.__dict__.update(dict(source_origin='manual', state='draft', finance_identity_state='normalized',
+                project_id=types.SimpleNamespace(company_id=8), company_id=8, partner_id=1,
+                amount=100, approved_amount=100, paid_amount=0, payment_anchor_policy='pay_request_required',
+                payment_request_id=9, financial_flow='cash_out', payee_account='receiver',
+                receipt_account_name='', payee='', payer_account='payer', payment_account_name='',
+                business_category_id=types.SimpleNamespace(attachment_policy='required'), attachment_ids=[1]))
+            row.__dict__.update(overrides)
+            return row
+        projection_owner = types.SimpleNamespace(_gate=lambda code, message: {'reasonCode': code, 'message': message})
+        cases = [({'payment_request_id': False}, 'EXPENSE_MISSING_PAYMENT_REQUEST'),
+                 ({'partner_id': False}, 'EXPENSE_MISSING_PARTNER'),
+                 ({'payee_account': ''}, 'EXPENSE_MISSING_PAYEE_ACCOUNT'),
+                 ({'payer_account': ''}, 'EXPENSE_MISSING_PAYER_ACCOUNT'),
+                 ({'financial_flow': 'cash_in', 'payer_account': ''}, 'EXPENSE_MISSING_RECEIVING_ACCOUNT'),
+                 ({'attachment_ids': []}, 'EXPENSE_ATTACHMENT_REQUIRED')]
+        for changes, code in cases:
+            row = record(**changes)
+            errors = row._business_readiness_errors()
+            with self.subTest(code=code):
+                self.assertEqual([c for c, _ in errors], [code])
+                gates = ns['_expense_claim_evidence_gate'](projection_owner, row)
+                self.assertEqual(gates, [{'reasonCode': c, 'message': m} for c, m in errors])
+                with self.assertRaisesRegex(ValueError, errors[0][1]): ns['_check_business_ready']([row])
+        good = record()
+        self.assertEqual(good._business_readiness_errors(), [])
+        ns['_check_business_ready']([good])
+        with self.assertRaises(ValueError): ns['_check_attachment_policy_or_raise'](record(attachment_ids=[]))
+        ns['_check_attachment_policy_or_raise'](good)
+        optional = record(business_category_id=types.SimpleNamespace(attachment_policy='optional'), attachment_ids=[])
+        self.assertEqual(optional._business_readiness_errors(), [])
+        legacy = record(source_origin='legacy', state='legacy_confirmed', partner_id=False, attachment_ids=[])
+        self.assertEqual(legacy._business_readiness_errors(), [])
+
     def test_expense_reviewed_content_and_draft_recovery(self):
         path = MODEL.with_name('expense_claim.py')
         tree = ast.parse(path.read_text())

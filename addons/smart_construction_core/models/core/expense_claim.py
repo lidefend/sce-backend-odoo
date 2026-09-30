@@ -1045,74 +1045,81 @@ class ScExpenseClaim(models.Model):
         if not self._has_finance_confirm_access():
             raise UserError(_("你没有批准费用/保证金单据的权限。"))
 
+    def _business_readiness_errors(self):
+        self.ensure_one()
+        record = self
+        if getattr(record, "source_origin", "") == "legacy" and getattr(record, "state", "") == "legacy_confirmed":
+            return []
+        gates = []
+        def error(code, message):
+            return (code, _(message))
+        if not record.project_id:
+            gates.append(error("EXPENSE_MISSING_PROJECT", "费用/扣款/保证金单据必须关联项目。"))
+        if not record.partner_id:
+            gates.append(error("EXPENSE_MISSING_PARTNER", "费用/扣款/保证金单据必须选择往来单位。"))
+        if (record.amount or 0.0) <= 0:
+            gates.append(error("EXPENSE_INVALID_AMOUNT", "费用/扣款/保证金金额必须大于 0。"))
+        if (record.approved_amount or 0.0) < 0:
+            gates.append(error("EXPENSE_INVALID_APPROVED_AMOUNT", "批准金额不能为负数。"))
+        expected = record.approved_amount or record.amount or 0.0
+        if (record.paid_amount or 0.0) < 0:
+            gates.append(error("EXPENSE_INVALID_PAID_AMOUNT", "已付款金额不能为负数。"))
+        elif (record.paid_amount or 0.0) > expected:
+            gates.append(error("EXPENSE_PAID_AMOUNT_OVER_EXPECTED", "已付款金额不能超过批准/申请金额。"))
+        if record.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not record.payment_request_id:
+            gates.append(error("EXPENSE_MISSING_PAYMENT_REQUEST", "现金办理必须关联付款/收款申请。"))
+        is_noncash_deduction = record._is_noncash_deduction_bill()
+        if is_noncash_deduction:
+            if record.payment_request_id:
+                gates.append(error("DEDUCTION_BILL_SHOULD_NOT_LINK_PAYMENT_REQUEST", "扣款单是非现金责任清分事实，不应关联付款/收款申请。"))
+            lines = record.deduction_line_ids
+            if not lines:
+                gates.append(error("DEDUCTION_BILL_MISSING_LINES", "扣款登记必须填写至少一条扣款单明细后才能提交、批准或完成。"))
+            else:
+                if any(not (line.item_name or "").strip() for line in lines):
+                    gates.append(error("DEDUCTION_BILL_LINE_MISSING_ITEM", "扣款单明细必须填写扣款事项。"))
+                if any((line.amount or 0.0) <= 0 for line in lines):
+                    gates.append(error("DEDUCTION_BILL_LINE_INVALID_AMOUNT", "扣款单明细金额必须大于 0。"))
+                total = sum(lines.mapped("amount"))
+                rounding = record.currency_id.rounding if record.currency_id else 0.01
+                if float_compare(total, expected, precision_rounding=rounding) != 0:
+                    gates.append(
+                        error(
+                            "DEDUCTION_BILL_LINE_TOTAL_MISMATCH",
+                            "扣款单明细金额合计必须等于本次扣款金额。当前明细合计：%s，本次扣款金额：%s。" % (total, expected),
+                        )
+                    )
+        category = record.business_category_id
+        if category and category.attachment_policy == "required" and not record.attachment_ids:
+            gates.append(error("EXPENSE_ATTACHMENT_REQUIRED", "当前业务分类要求上传附件后才能提交、批准或完成。"))
+        if record.financial_flow == "cash_out":
+            payee_account = record.payee_account or record.receipt_account_name or record.payee
+            payer_account = record.payer_account or record.payment_account_name
+            if not payee_account:
+                gates.append(error("EXPENSE_MISSING_PAYEE_ACCOUNT", "现金流出办理必须填写收款账户信息。"))
+            if not payer_account:
+                gates.append(error("EXPENSE_MISSING_PAYER_ACCOUNT", "现金流出办理必须填写付款账户信息。"))
+        elif record.financial_flow == "cash_in":
+            receiving_account = record.payer_account or record.payment_account_name
+            if not receiving_account:
+                gates.append(error("EXPENSE_MISSING_RECEIVING_ACCOUNT", "现金流入办理必须填写收款账户信息。"))
+        return gates
+
     def _check_business_ready(self):
         for rec in self:
             if rec.source_origin == "legacy":
                 continue
             if rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id:
                 raise UserError(_("费用与扣款单据财务身份已失配，请重建草稿后再办理。"))
-            if not rec.project_id:
-                raise UserError(_("费用/保证金单据必须关联项目。"))
+            errors = rec._business_readiness_errors()
+            if errors:
+                raise UserError("\n".join(message for _code, message in errors))
             if rec._is_interfund_repayment() and rec.payment_request_id:
                 raise UserError(_("往来款办理应与经营收付款申请分开，不应关联付款/收款申请。"))
-            if rec._is_noncash_deduction_bill() and rec.payment_request_id:
-                raise UserError(_("扣款单是扣款登记中的代扣列支明细，表达公司与项目/承包人之间的责任清分事实，不应关联付款/收款申请；扣款实缴或退回请使用对应现金办理入口。"))
-            # R10-v2: anchor requirement downgraded from hard UserError to a
-            # logged advisory — spec tests drive bare expense claims through
-            # submit/done without a payment request (state-machine coverage).
-            # Cash anchoring is still enforced where it matters: the payment
-            # ledger only closes requests that are actually linked.
-            if rec.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not rec.payment_request_id:
-                _logger.warning(
-                    "sc.expense.claim %s (policy=%s) handled without payment request link",
-                    rec.display_name,
-                    rec.payment_anchor_policy,
-                )
-            # R10-v2: partner on cash-flow claims is advisory at the state
-            # machine layer — the workflow-contract projection surfaces the
-            # missing-partner gate to the frontend, and spec tests drive bare
-            # claims through submit/done without a partner.
-            if rec.financial_flow in ("cash_in", "cash_out") and not rec.partner_id:
-                _logger.warning(
-                    "sc.expense.claim %s (flow=%s) handled without partner",
-                    rec.display_name,
-                    rec.financial_flow,
-                )
-            if (rec.amount or 0.0) <= 0:
-                raise UserError(_("费用/保证金申请金额必须大于 0。"))
-            if (rec.approved_amount or 0.0) < 0:
-                raise UserError(_("费用/保证金批准金额不能为负数。"))
-            expected = rec.approved_amount or rec.amount or 0.0
-            if (rec.paid_amount or 0.0) < 0:
-                raise UserError(_("费用/保证金已付款金额不能为负数。"))
-            if (rec.paid_amount or 0.0) > expected:
-                raise UserError(_("费用/保证金已付款金额不能超过批准/申请金额。"))
-            if rec._is_noncash_deduction_bill():
-                rec._check_deduction_bill_lines_or_raise()
-            rec._check_attachment_policy_or_raise()
             rec._check_deposit_refund_balance_or_raise()
             if rec._is_noncash_deduction_bill():
                 rec._check_company_contractor_deduction_responsibility_or_raise()
                 continue
-            if rec.financial_flow == "cash_out":
-                payee_account = rec.payee_account or rec.receipt_account_name or rec.payee
-                payer_account = rec.payer_account or rec.payment_account_name
-                # R10-v2: account completeness is surfaced by the
-                # workflow-contract projection gates (EXPENSE_MISSING_*_ACCOUNT);
-                # the state machine stays permissive so bare spec records can
-                # complete, mirroring the projection layer's authority.
-                if not payee_account or not payer_account:
-                    _logger.warning(
-                        "sc.expense.claim %s (flow=cash_out) handled without complete account info",
-                        rec.display_name,
-                    )
-            elif rec.financial_flow == "cash_in":
-                receiving_account = rec.payer_account or rec.payment_account_name
-                if not receiving_account:
-                    _logger.warning(
-                        "sc.expense.claim %s (flow=cash_in) handled without receiving account",
-                        rec.display_name,
-                    )
             rec._check_payment_request_scope_or_raise()
 
     def _check_deposit_refund_balance_or_raise(self):
@@ -1212,17 +1219,9 @@ class ScExpenseClaim(models.Model):
 
     def _check_attachment_policy_or_raise(self):
         self.ensure_one()
-        category = self.business_category_id
-        # R10-v2: attachment completeness is enforced by the workflow-contract
-        # projection gate (frontend), mirroring the product's per-category
-        # policy. The state machine stays permissive so spec-driven bare
-        # records can traverse submit/done; the policy is logged for audit.
-        if category and category.attachment_policy == "required" and not self.attachment_ids:
-            _logger.warning(
-                "sc.expense.claim %s (category=%s, policy=required) handled without attachments",
-                self.display_name,
-                category.code,
-            )
+        for code, message in self._business_readiness_errors():
+            if code == "EXPENSE_ATTACHMENT_REQUIRED":
+                raise UserError(message)
 
     def _sync_payment_request_done(self):
         for rec in self:

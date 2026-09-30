@@ -1384,63 +1384,7 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _expense_claim_evidence_gate(self, record):
-        if getattr(record, "source_origin", "") == "legacy" and getattr(record, "state", "") == "legacy_confirmed":
-            return []
-        gates = []
-        if not record.project_id:
-            gates.append(self._gate("EXPENSE_MISSING_PROJECT", "费用/扣款/保证金单据必须关联项目。"))
-        if not record.partner_id:
-            gates.append(self._gate("EXPENSE_MISSING_PARTNER", "费用/扣款/保证金单据必须选择往来单位。"))
-        if (record.amount or 0.0) <= 0:
-            gates.append(self._gate("EXPENSE_INVALID_AMOUNT", "费用/扣款/保证金金额必须大于 0。"))
-        if (record.approved_amount or 0.0) < 0:
-            gates.append(self._gate("EXPENSE_INVALID_APPROVED_AMOUNT", "批准金额不能为负数。"))
-        expected = record.approved_amount or record.amount or 0.0
-        if (record.paid_amount or 0.0) < 0:
-            gates.append(self._gate("EXPENSE_INVALID_PAID_AMOUNT", "已付款金额不能为负数。"))
-        elif (record.paid_amount or 0.0) > expected:
-            gates.append(self._gate("EXPENSE_PAID_AMOUNT_OVER_EXPECTED", "已付款金额不能超过批准/申请金额。"))
-        if record.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not record.payment_request_id:
-            gates.append(self._gate("EXPENSE_MISSING_PAYMENT_REQUEST", "现金办理必须关联付款/收款申请。"))
-        try:
-            is_noncash_deduction = record._is_noncash_deduction_bill()
-        except Exception:
-            is_noncash_deduction = False
-        if is_noncash_deduction:
-            if record.payment_request_id:
-                gates.append(self._gate("DEDUCTION_BILL_SHOULD_NOT_LINK_PAYMENT_REQUEST", "扣款单是非现金责任清分事实，不应关联付款/收款申请。"))
-            lines = record.deduction_line_ids
-            if not lines:
-                gates.append(self._gate("DEDUCTION_BILL_MISSING_LINES", "扣款登记必须填写至少一条扣款单明细后才能提交、批准或完成。"))
-            else:
-                if any(not (line.item_name or "").strip() for line in lines):
-                    gates.append(self._gate("DEDUCTION_BILL_LINE_MISSING_ITEM", "扣款单明细必须填写扣款事项。"))
-                if any((line.amount or 0.0) <= 0 for line in lines):
-                    gates.append(self._gate("DEDUCTION_BILL_LINE_INVALID_AMOUNT", "扣款单明细金额必须大于 0。"))
-                total = sum(lines.mapped("amount"))
-                rounding = record.currency_id.rounding if record.currency_id else 0.01
-                if float_compare(total, expected, precision_rounding=rounding) != 0:
-                    gates.append(
-                        self._gate(
-                            "DEDUCTION_BILL_LINE_TOTAL_MISMATCH",
-                            "扣款单明细金额合计必须等于本次扣款金额。当前明细合计：%s，本次扣款金额：%s。" % (total, expected),
-                        )
-                    )
-        category = record.business_category_id
-        if category and category.attachment_policy == "required" and not record.attachment_ids:
-            gates.append(self._gate("EXPENSE_ATTACHMENT_REQUIRED", "当前业务分类要求上传附件后才能提交、批准或完成。"))
-        if record.financial_flow == "cash_out":
-            payee_account = record.payee_account or record.receipt_account_name or record.payee
-            payer_account = record.payer_account or record.payment_account_name
-            if not payee_account:
-                gates.append(self._gate("EXPENSE_MISSING_PAYEE_ACCOUNT", "现金流出办理必须填写收款账户信息。"))
-            if not payer_account:
-                gates.append(self._gate("EXPENSE_MISSING_PAYER_ACCOUNT", "现金流出办理必须填写付款账户信息。"))
-        elif record.financial_flow == "cash_in":
-            receiving_account = record.payer_account or record.payment_account_name
-            if not receiving_account:
-                gates.append(self._gate("EXPENSE_MISSING_RECEIVING_ACCOUNT", "现金流入办理必须填写收款账户信息。"))
-        return gates
+        return [self._gate(code, message) for code, message in record._business_readiness_errors()]
 
     @api.model
     def _settlement_order_evidence_gate(self, record):
