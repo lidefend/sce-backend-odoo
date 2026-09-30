@@ -983,13 +983,13 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_labor_plan_and_request_review_and_transition_boundaries(self):
         path = MODEL.with_name('labor_management.py')
         tree = ast.parse(path.read_text())
-        for cls_name, model in [('ScLaborPlan', 'sc.labor.plan'), ('ScLaborRequest', 'sc.labor.request'), ('ScMaterialRentalPlan', 'sc.material.rental.plan'), ('ScSafetyPlan', 'sc.safety.plan'), ('ScSafetyDisclosure', 'sc.safety.disclosure')]:
-            path = MODEL.with_name('safety_management.py' if model.startswith('sc.safety.') else 'material_rental.py' if model == 'sc.material.rental.plan' else 'labor_management.py')
+        for cls_name, model in [('ScLaborPlan', 'sc.labor.plan'), ('ScLaborRequest', 'sc.labor.request'), ('ScMaterialRentalPlan', 'sc.material.rental.plan'), ('ScSafetyPlan', 'sc.safety.plan'), ('ScSafetyDisclosure', 'sc.safety.disclosure'), ('ScSubcontractPlan', 'sc.subcontract.plan'), ('ScSubcontractRequest', 'sc.subcontract.request')]:
+            path = MODEL.with_name('subcontract_management.py' if model.startswith('sc.subcontract.') else 'safety_management.py' if model.startswith('sc.safety.') else 'material_rental.py' if model == 'sc.material.rental.plan' else 'labor_management.py')
             tree = ast.parse(path.read_text())
             cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls_name)
             names = {'action_submit', 'action_approve', 'action_cancel', 'action_reset_draft', 'action_on_tier_approved', 'write'}
             methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
-            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_LABOR_APPROVAL_STATE_TOKEN': object(), '_RENTAL_APPROVAL_STATE_TOKEN': object(), '_SAFETY_APPROVAL_STATE_TOKEN': object()}
+            ns = {'ValidationError': ValueError, 'UserError': ValueError, '_': lambda text: text, '_LABOR_APPROVAL_STATE_TOKEN': object(), '_RENTAL_APPROVAL_STATE_TOKEN': object(), '_SAFETY_APPROVAL_STATE_TOKEN': object(), '_SUBCONTRACT_APPROVAL_STATE_TOKEN': object()}
             exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
             for required in (False, True):
                 rec = self._purchase_request_record(required=required, state='draft')
@@ -1020,6 +1020,53 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(rec.state, 'cancel')
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
+
+    def test_subcontract_submitted_and_approved_facts_are_frozen(self):
+        path = MODEL.with_name('subcontract_management.py')
+        for name in ('ScSubcontractPlan', 'ScSubcontractRequest'):
+            cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == name)
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in ('write', '_assert_approval_facts_editable', 'unlink')]
+            ns = {'UserError': ValueError, '_': lambda text: text, '_SUBCONTRACT_APPROVAL_STATE_TOKEN': object()}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            for state in ('submitted', 'approved', 'cancel'):
+                rec = self._purchase_request_record(state=state)
+                rec._assert_approval_facts_editable = lambda: ns['_assert_approval_facts_editable'](rec)
+                for field in ('project_id', 'contract_id', 'currency_id', 'line_ids', 'estimated_amount', 'subcontract_scope'):
+                    with self.assertRaises(ValueError): ns['write'](rec, {field: False})
+                with self.assertRaises(ValueError): ns['unlink'](rec)
+            rec = self._purchase_request_record(state='draft')
+            ns['_assert_approval_facts_editable'](rec)
+
+    def test_subcontract_direct_lines_check_old_new_and_default_parent(self):
+        path = MODEL.with_name('subcontract_management.py')
+        for name, parent in [('ScSubcontractPlanLine', 'plan_id'), ('ScSubcontractRequestLine', 'request_id')]:
+            cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == name)
+            methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in ('create', 'write', 'unlink')]
+            for method in methods: method.decorator_list = []
+            ns = {}
+            exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+            calls = []
+            def locked():
+                calls.append('locked')
+                raise ValueError('approval fact frozen')
+            frozen = types.SimpleNamespace(_assert_approval_facts_editable=locked)
+            draft = types.SimpleNamespace(_assert_approval_facts_editable=lambda: calls.append('draft'))
+            class Env(dict):
+                context = {'default_' + parent: 12}
+            class Model:
+                def browse(self, ids):
+                    calls.append(ids)
+                    return frozen
+            rec = types.SimpleNamespace(env=Env({'sc.subcontract.' + ('plan' if parent == 'plan_id' else 'request'): Model()}),
+                mapped=lambda field: frozen)
+            with self.assertRaises(ValueError): ns['create'](rec, [{}])
+            self.assertIn([12], calls)
+            with self.assertRaises(ValueError): ns['write'](rec, {'estimated_amount': 1})
+            with self.assertRaises(ValueError): ns['unlink'](rec)
+            rec.mapped = lambda field: draft
+            with self.assertRaises(ValueError): ns['write'](rec, {parent: 12})
+            self.assertIn('draft', calls)
+            self.assertIn(12, calls)
 
     def test_rental_order_approval_does_not_execute_rental(self):
         path = MODEL.with_name('material_rental.py')

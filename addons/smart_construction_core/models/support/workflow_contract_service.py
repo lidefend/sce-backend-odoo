@@ -508,10 +508,22 @@ class ScWorkflowContractService(models.AbstractModel):
                 "cancel": "action_cancel",
             },
         },
-        **_simple_approval_profiles((
-            "sc.subcontract.plan",
-            "sc.subcontract.request",
-        )),
+        "sc.subcontract.plan": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
+        "sc.subcontract.request": {
+            "state_field": "state",
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
+        },
         "sc.safety.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},

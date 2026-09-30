@@ -8435,3 +8435,11 @@ L1 safety-approval-iteration.log通过，L2 safety-approval-unit.log106（同项
 53.107结果：18182a6af受管升级成功（safety-approval-upgrade.log），bf175ec6d reload成功。首轮safety-approval-runtime.log前三组通过后P4测试配置错误：安全单据未声明金额权威，金额步骤被产品正确拒绝，ROLLBACK VERIFIED。9b4040225仅修改验证工具：先验证金额配置拒绝，再用inactive step制造启用但未匹配；产品不添加虚构金额。safety-runtime-recovery-iteration.log/语法/diff通过，safety-approval-runtime-recovery.log16/16 PASS、ROLLBACK VERIFIED：两模型无配置自动批准、anchor/状态保护、配置未匹配拒绝、pending契约真实review、配置变更不能绕过在途审核、实际审核通过、驳回重提新review。事务builder为sudo、审批为真实reviewer，不等同普通角色全办理。
 
 P4标准browser复用approval-actions扩展两安全模型create，safety-page-iteration.log/node/diff通过。fixture_role_pm创建页：tpl07-1790787889137安全方案15 PASS、tpl07-1790787909071安全交底16 PASS；有效字段契约3/4项editable、官方表单、未保存无批准/完成动作、1440/390无横向溢出，errors/forbiddenWrites均空。两390截图人工核对名称/项目输入及操作区。frontend7915f3bb9复用，无构建。已有记录实际角色办理/保存审批未验证，不将创建检查当作办理验收。下一步既有67分包计划/申请统一审批，并保留安全详情角色链和其他已登记未覆盖点。无新环境/持久fixture/推送/合并/目标部署。
+
+### 53.108 分包计划/申请统一审批及父子事实保护（进行中）
+
+9f02fb0f5 clean续跑，只核对现有分包两模型/原生view/审批服务。P1 smart_construction_core拥有行业标准项目合同/分包单位/来源计划/明细约束；共享审批机制不变，非P2偏好/P3临时配置，前端不承接语义。两模型接入tier/company/reject_reason，配置金额权威为既有estimated_amount；提交保留全部anchor/非空明细/数值检查，真实通过回调再次检查anchor/明细。外部create（含default_state）/write状态拒绝，原生approve直写退出，统一真实review或无配置自动批准；workflow/原生header补真实tier批准驳回及完整modifier依赖。
+
+父单事实、unlink只允许draft；直接子明细create含default父键、write旧新父、unlink均校验父状态，防在途/通过审核金额被子接口改写。纯测试执行真实方法验证父单及直接子路径；真实并发未验证，不作锁竞争结论。L1 subcontract-approval-iteration.log；L2 subcontract-approval-unit.log108、subcontract-approval-native.log8+52=60 PASS并登记回执。输入登记新增分包模型/view。P4既有工具新增subcontract-approval16组，实际金额阈值/配置切换/真实review/驳回重提/父子保护，default all计数231，本轮仅定向scope；工具L1/语法/diff通过。
+
+下一步一次受管模块升级并reload（新增字段继承/XML），local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；事务数据/配置必须rollback。运行时尚未验证，前端7915f3bb9未变不构建，不重复安全/租赁业务或全矩阵。已有角色办理、总体67及其他未完成职责保持开放，无新环境/持久fixture/推送合并目标部署。
