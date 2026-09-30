@@ -260,6 +260,15 @@ class PaymentRequest(models.Model):
         tracking=True,
         ondelete="set null",
     )
+    rental_settlement_id = fields.Many2one(
+        "sc.material.rental.settlement",
+        string="租赁结算单",
+        domain="[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+        index=True,
+        tracking=True,
+        ondelete="restrict",
+        copy=False,
+    )
     settlement_currency_id = fields.Many2one(
         "res.currency",
         string="结算币种",
@@ -755,6 +764,7 @@ class PaymentRequest(models.Model):
             "contract_id",
             "settlement_id",
             "material_settlement_id",
+            "rental_settlement_id",
             "partner_id",
             "currency_id",
             "amount",
@@ -2753,6 +2763,37 @@ class PaymentRequest(models.Model):
                 raise ValidationError(_("材料结算供应商必须与付款申请往来单位一致。"))
             if rec.state in ("submit", "approve", "approved", "done"):
                 rec._check_material_settlement_remaining_amount()
+
+    @api.constrains(
+        "rental_settlement_id", "type", "project_id", "company_id",
+        "partner_id", "currency_id", "contract_id", "settlement_id",
+        "material_settlement_id", "outflow_line_ids",
+    )
+    def _check_rental_settlement_consistency(self):
+        for request in self:
+            settlement = request.rental_settlement_id
+            if not settlement:
+                continue
+            if request.type != "pay":
+                raise ValidationError(_("租赁结算只能作为付款申请依据。"))
+            if settlement.state not in ("confirmed", "paid"):
+                raise ValidationError(_("租赁结算必须先完成审批及确认才能作为付款依据。"))
+            if (not settlement.project_id or request.project_id != settlement.project_id
+                    or not settlement.company_id or request.company_id != settlement.company_id):
+                raise ValidationError(_("租赁结算与付款申请的项目及公司必须一致。"))
+            if not settlement.supplier_id or request.partner_id != settlement.supplier_id:
+                raise ValidationError(_("租赁结算供应商必须与付款申请收款方一致。"))
+            if not settlement.currency_id or request.currency_id != settlement.currency_id:
+                raise ValidationError(_("租赁结算与付款申请的币种必须一致。"))
+            if request.contract_id != settlement.contract_id:
+                raise ValidationError(_("付款申请合同必须与租赁结算的合同依据一致。"))
+            if request.settlement_id or request.material_settlement_id:
+                raise ValidationError(_("租赁结算付款不能同时认领其他头部结算依据。"))
+            if request.outflow_line_ids.filtered(
+                lambda line: line.settlement_id or line.settlement_line_id
+                or (line.contract_id and line.contract_id != settlement.contract_id)
+            ):
+                raise ValidationError(_("租赁结算付款不能混入其他结算或合同的明细依据。"))
 
     @api.constrains("contract_id", "type")
     def _check_contract_direction(self):

@@ -1056,6 +1056,49 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def _rental_payment_basis(self, **changes):
+        tree = ast.parse(MODEL.read_text())
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_check_rental_settlement_consistency')
+        method.decorator_list = []
+        ns = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        source = types.SimpleNamespace(state='confirmed', project_id=11, company_id=12, supplier_id=13, currency_id=14, contract_id=15)
+        lines = changes.pop('lines', [])
+        record = types.SimpleNamespace(rental_settlement_id=source, type='pay', project_id=11, company_id=12, partner_id=13, currency_id=14, contract_id=15, settlement_id=False, material_settlement_id=False, outflow_line_ids=types.SimpleNamespace(filtered=lambda predicate: list(filter(predicate, lines))))
+        record.__dict__.update(changes)
+        return record, lambda: ns['_check_rental_settlement_consistency']([record])
+
+    def test_rental_payment_basis_rejects_identity_mismatch(self):
+        for field, value in [('type', 'receive'), ('project_id', 99), ('company_id', 99), ('partner_id', 99), ('currency_id', 99), ('contract_id', 99), ('partner_id', False), ('currency_id', False)]:
+            with self.subTest(field=field, value=value):
+                record, validate = self._rental_payment_basis(**{field: value})
+                with self.assertRaises(ValueError): validate()
+        for state in ('draft', 'submitted', 'approved', 'cancel'):
+            record, validate = self._rental_payment_basis()
+            record.rental_settlement_id.state = state
+            with self.assertRaises(ValueError): validate()
+
+    def test_rental_payment_basis_prevents_duplicate_obligation_claim(self):
+        for field in ('settlement_id', 'material_settlement_id'):
+            record, validate = self._rental_payment_basis(**{field: 17})
+            with self.assertRaises(ValueError): validate()
+        for line in [types.SimpleNamespace(settlement_id=17, settlement_line_id=False, contract_id=15), types.SimpleNamespace(settlement_id=False, settlement_line_id=18, contract_id=15), types.SimpleNamespace(settlement_id=False, settlement_line_id=False, contract_id=99)]:
+            record, validate = self._rental_payment_basis(lines=[line])
+            with self.assertRaises(ValueError): validate()
+
+    def test_rental_payment_basis_accepts_same_source_multiple_requests(self):
+        record, validate = self._rental_payment_basis(lines=[types.SimpleNamespace(settlement_id=False, settlement_line_id=False, contract_id=15)])
+        validate()
+        other, validate_other = self._rental_payment_basis(rental_settlement_id=record.rental_settlement_id)
+        validate_other()
+        record.rental_settlement_id.state = 'paid'
+        validate()  # Historical attribution remains readable after completion.
+        record, validate = self._rental_payment_basis(contract_id=False)
+        record.rental_settlement_id.contract_id = False
+        validate()
+        record, validate = self._rental_payment_basis(rental_settlement_id=False)
+        validate()  # Existing non-rental request paths are unaffected.
+
     def test_rental_settlement_payment_link_cannot_manufacture_paid_fact(self):
         path = MODEL.with_name('material_rental.py')
         cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')

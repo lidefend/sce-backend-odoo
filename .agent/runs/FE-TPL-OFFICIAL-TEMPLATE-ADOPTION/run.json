@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.98 rental payment gap now fail-closed in model+workflow evidenceGate, 86 state-machine/58 native-action PASS. No runtime load. Next implement formal rental settlement payment basis (explicit request attribution; many requests may fund one settlement), consistent project/company/partner/currency, canonical posted amounts and reversal behavior. Existing payment_request_id alone is not authority; terminal cash source claim is receipt/expense only. Do not stop at temporary disabled action or mark payment delivered. Then targeted rollback scope/one governed upgrade/page checks. backend2d7eab703/frontend7915f3bb9 unchanged; overall67/role journeys open.",
+  "next_exact_step": "53.99 explicit rental_settlement_id on payment.request + inverse payment_request_ids + identity/conflicting-basis constraints implemented;89 pure tests PASS. Next add amount reservation/concurrency and approved-source amount/identity protection, then wire basis/default_get/onchange/native and execution contract resolution, canonical posted totals/reversal. Recheck child detail mutation at execution. Do not claim schema-only payable; _has_payment_basis not yet wired and53.98 blocker stays. No upgrade yet; backend2d7eab703/frontend7915f3bb9. Overall67/rolejourneys remain open, no newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

@@ -457,6 +457,11 @@ class ScMaterialRentalSettlement(models.Model):
     contract_id = fields.Many2one("construction.contract", string="租赁合同", index=True)
     supplier_id = fields.Many2one("res.partner", string="供应商", required=True, index=True, tracking=True)
     payment_request_id = fields.Many2one("payment.request", string="支付申请", index=True)
+    # The historical single link is not payment allocation authority. New
+    # attribution lives on each request; a settlement can have many requests.
+    payment_request_ids = fields.One2many(
+        "payment.request", "rental_settlement_id", string="归属付款申请", readonly=True,
+    )
     settlement_date = fields.Date(string="结算日期", required=True, default=fields.Date.context_today, index=True)
     owner_id = fields.Many2one("res.users", string="经办人", default=lambda self: self.env.user, index=True)
     currency_id = fields.Many2one("res.currency", string="币种", required=True, default=lambda self: self.env.company.currency_id.id)

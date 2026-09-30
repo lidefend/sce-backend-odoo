@@ -8317,3 +8317,14 @@ L3/L4 not_run：支付事实缺口需先补齐，新增字段/XML需一次受管
 本次先修复已知虚假结果：模型_payment_confirmation_blocker明确返回RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE；action_paid直接调用同样拒绝，仍保留方法/动作声明，workflow evidenceGate只禁用confirmed下的complete并提供中文原因。审批/确认结算不受此缺口门禁影响。前端复用既有enabled/reason_code/blocked_message，不隐藏功能或加入模型分支。退出条件是正式付款归属与冲销权威及定向验收齐备，不能把禁用付款当作功能完成。
 
 L1 rental-payment-gap-iteration.log及diff PASS；L2 rental-payment-gap-unit.log86 PASS：新增无关联/关联足额付款申请均不能制造paid事实；rental-payment-gap-native.log8+50=58 PASS：执行真实evidenceGate和availableActions，支付保留声明但禁用且原因非空，确认结算不被阻断。支付事实、冲销、实际权限仍未验收。非零回执登记。前端未改不构建，受管后端仍2d7eab703，L3/L4尚未执行，L5不在本轮；无环境变动/持久fixture/无关ORM/推送合并部署。整体67及支付缺口继续开放，下一步建设正式租赁付款依据，不停在临时阻断。
+
+
+### 53.99 正式租赁付款归属载体及身份约束（源码进行中）
+
+候选af220f0e2+dirty；P1 smart_construction_core付款申请/租赁结算行业业务依据，不属于P0机制、P2客户偏好或前端推导。payment.request新增rental_settlement_id（restrict删除、copy=False），纳入既有_business_fact_fields审批后业务事实写保护；结算新增payment_request_ids反向一对多。旧payment_request_id保持兼容但不自动迁移为归属权威，不把终态现金claim改名套用。
+
+约束核对付款方向、来源已确认/历史已支付、项目及公司/供应商/币种/合同精确一致；不能同时认领其他标准/材料结算头部，也不能混入其他结算或不同合同明细。一张结算可有多张申请，同合同明细和无合同但其他身份一致的结算不被错误排除。paid来源允许保持已有归属，不等同于允许再次占用金额；额度守卫尚待实现。
+
+L1 rental-payment-basis-iteration.log及diff PASS；L2 rental-payment-basis-unit.log89 PASS，新增三组真实模型方法纯执行：身份缺失/不一致和未确认来源拒绝，重复业务依据拒绝，同源多申请/同合同明细/无合同/非租赁路径接受。记录非零回执。没有真实ORM/并发验证，本组不声称完整付款依据可用。
+
+下一依赖：金额占用与并发锁、来源批准后金额/身份保护、付款basis/default_get/onchange/native契约及execution contract读取、实际posted ledger汇总和冲销回读；子明细变更后的执行前重验亦须覆盖。当前新增依据字段尚未接通_has_payment_basis，不可将新增字段宣称可付款；53.98 blocker继续有效。源码阶段暂不L3/L4，schema/XML在链路收敛后一次受管升级验收，后端仍2d7eab703/前端7915f3bb9，不构建/新fixture/推送/合并/目标部署。detail.action-state及整体67保持开放。

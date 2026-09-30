@@ -378,3 +378,8 @@ P1 shared approval now separates submission/review from explicit settlement conf
 ### Segment53.98 — Payment attribution gap fails closed, still a product gap
 
 Rental settlement retains action_paid declaration but refuses paid mutation until settlement-specific payment attribution/reversal authority exists. The shared backend evidenceGate disables only this payment action with RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE and a visible explanation; no frontend guessing or silent feature removal.86 state-machine and58 native-action tests pass, including an otherwise fully-paid linked request not proving settlement payment. This is containment, not payment delivery. Next add the formal rental settlement payment basis and authoritative allocated/remaining facts with reversal checks; retain all67 scope and detail.action-state contract_gap.
+
+
+### Segment53.99 — Explicit rental payment attribution schema, not yet executable
+
+payment.request.rental_settlement_id and the settlement's inverse request collection establish explicit attribution without limiting a settlement to one request. The link participates in existing approval business-fact locking. Source identity and conflicting header/detail obligations are validated;89 targeted pure tests pass. Reservation/concurrency, post-approval source immutability, basis/defaults/native/execution consumption, canonical payment totals and reversal readback remain required. No runtime upgrade; the payment blocker remains. Do not promote this schema-only progress to payment delivery.
