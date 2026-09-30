@@ -750,6 +750,28 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'state': 'cancel'}))
         self.assertEqual(writes[-1], {'state': 'cancel'})
 
+    def test_expense_create_defaults_resolve_category_and_model_semantics(self):
+        path = MODEL.with_name('expense_claim.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'default_get')
+        method.decorator_list = []
+        defaults = {'claim_type': 'expense', 'financial_flow': 'stale'}
+        candidates = []
+        ns = {'super': lambda: types.SimpleNamespace(default_get=lambda fields: dict(defaults))}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        row = types.SimpleNamespace(_context_project_id=lambda: False, _context_partner_id=lambda: False,
+            _resolve_business_category_id=lambda vals: 31,
+            new=lambda vals: candidates.append(vals) or {'financial_flow': 'cash_out', 'payment_anchor_policy': 'pay_request_required'})
+        result = ns['default_get'](row, ['business_category_id', 'financial_flow', 'payment_anchor_policy'])
+        self.assertEqual(result['business_category_id'], 31)
+        self.assertEqual(result['financial_flow'], 'cash_out')
+        self.assertEqual(result['payment_anchor_policy'], 'pay_request_required')
+        self.assertNotIn('financial_flow', candidates[0])
+        defaults.clear()
+        defaults['business_category_id'] = 42
+        result = ns['default_get'](row, ['business_category_id'])
+        self.assertEqual(result, {'business_category_id': 42})
+        self.assertEqual(len(candidates), 1, 'no unrelated compute for a category-only default request')
+
     def test_expense_readiness_is_shared_by_contract_and_execution(self):
         path = MODEL.with_name('expense_claim.py')
         names = {'_business_readiness_errors', '_check_business_ready', '_check_attachment_policy_or_raise'}

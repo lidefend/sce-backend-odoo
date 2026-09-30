@@ -653,7 +653,7 @@ try {
       }[spec.model];
       const session = await login(spec.role);
       if (process.env.TPL07_APPROVAL_VIEW === 'create') {
-        check('approval create scope: explicit supported form', ['sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
+        check('approval create scope: explicit supported form', ['sc.expense.claim', 'sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.plan', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(spec.model));
         report.recordAuthority = null;
         const createResponseStart = report.contractResponses?.length || 0;
         let createContext = '';
@@ -667,6 +667,14 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
+        if (spec.model === 'sc.expense.claim') {
+          const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+            .flatMap((key) => report.routeAuthority?.[key] || []);
+          const matches = entries.filter((row) => row.menu_xmlid === 'smart_construction_core.menu_sc_reimbursement_request');
+          check('expense create: one authorized reimbursement entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
+          report.approvalCreateEntry = matches[0];
+          createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
+        }
         await form(session.page, `/f/${spec.model}/new${createContext}`, `${spec.model}-create`);
         // Child relation contracts may arrive last; bind the create observation
         // to the requested parent model within this navigation's responses.
@@ -675,6 +683,18 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (spec.model === 'sc.expense.claim') {
+          const fields = [];
+          const visit = (nodes) => { for (const node of nodes || []) { if (node.type === 'field') fields.push(node); visit(node.children); } };
+          visit(authority.layout?.containerTree);
+          for (const name of ['project_id', 'partner_id', 'payment_request_id', 'amount', 'payee_account', 'payer_account']) {
+            check(`expense create: ${name} retained in effective contract`, fields.some((field) => field.name === name));
+          }
+          for (const name of ['payment_request_id', 'amount', 'payee_account', 'payer_account']) {
+            check(`expense create: ${name} has rendered input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
+          }
+        }
+
         if (['sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation'].includes(spec.model)) {
           const fields = [];
           const walk = (nodes, pages = []) => { for (const node of nodes || []) { const path = node.type === 'page' ? [...pages, node.label || node.title] : pages; if (node.type === 'field') fields.push({ ...node, probePages: path }); walk(node.children, path); } };

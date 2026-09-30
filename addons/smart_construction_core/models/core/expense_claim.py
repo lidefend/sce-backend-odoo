@@ -568,6 +568,20 @@ class ScExpenseClaim(models.Model):
         partner_id = res.get("partner_id") or self._context_partner_id()
         if partner_id and "partner_id" in fields_list:
             res["partner_id"] = partner_id
+        if "business_category_id" in fields_list and "business_category_id" not in res:
+            res["business_category_id"] = self._resolve_business_category_id(res)
+        # The create contract consumes default_get before any onchange. Project
+        # the same model-computed semantics used after persistence, so a cash
+        # entry cannot initially hide its required payment-request anchor.
+        semantic_fields = {
+            "direction", "handling_kind", "business_axis", "financial_flow",
+            "payment_anchor_policy", "claim_flow_label",
+        }
+        requested = semantic_fields.intersection(fields_list)
+        if requested:
+            candidate = self.new({key: value for key, value in res.items() if key not in semantic_fields})
+            for name in requested:
+                res[name] = candidate[name]
         return res
 
     @api.model_create_multi
