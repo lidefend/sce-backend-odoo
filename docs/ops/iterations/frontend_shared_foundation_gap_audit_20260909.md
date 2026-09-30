@@ -7809,3 +7809,12 @@ L5：未推送、未合并、未部署。
 - 现有失败诊断补当前ui.contract完整响应（仅approval-actions本地受限验收），日志再次捕获tpl07-1790774814944/report.json，确认不是P0归一化缺失：P1 core_extension_contract_normalizers.normalize_construction_diary_form在规范化之后为所有字段重复添加field_info。修复该行保留fieldInfo并移除旧别名，关系/必填/组件信息保留。L1 ci.local.iteration PASS（diary-alias-iteration.log），native8+31=39 PASS（diary-alias-tests.log，begin/record39），实际后处理方法回归覆盖别名不泄漏与信息保留。
 - 338d5253f受管backend.acceptance.up重载（diary-alias-backend.log），无模型字段/XML变更不升级/构建。日志复验仍失败（diary-create-fixed.log；tpl07-1790774968894/report.json），field_info已不再报错，但runtimeContract.containerTree/widgetStatus/governancePatches及meta.governance_patches不允许，formStructureContract.slots引用name等字段未投影。证明同一重复行业后处理还有结构性冲突，不能据39单测称页面完成。
 - 下一步核对并退役日志的重复布局重组/兼容投影路径，让原生视图及有效配置保有完整字段/结构；不继续逐个放宽schema或增加别名。计划误阻断关闭，日志页面阻断保持open，早层失败禁止广泛浏览器/发布门禁。审批27项只证明业务模型，不能替代此处消费。总体active，无远端/目标部署。
+
+
+### 53.52 施工日志重复布局退出，官方新建表单通过
+
+- c62e25241 clean起步。P1核对原生施工日志视图已完整承载主信息、期间经办、现场、正文、附件及驳回原因；标准合成契约已有对应formStructure。旧normalize_construction_diary_form按固定清单重建布局、向runtime/meta投兼容属性并裁掉字段，与权威合成冲突。删除core_extension最终调用和包装、删除105行独立重组实现；不再为这条路径逐项补别名，不改schema。
+- 原拆分守卫从强制保留旧函数/compat治理字段改为禁止已退役路径复活，其他normalizer检查保留。测试执行实际最终处理函数，隔离工作流/无关财务协作者，确认注入审批动作后layout、formStructure、runtime/meta以及配置扩展字段保持原样，输入不被修改。新增直接生产依赖到原native检查输入，按最终输入begin/record39。
+- L1 ci.local.iteration PASS（diary-native-exit-iteration.log）；native8+31=39 PASS（diary-native-exit-final-tests.log），normalizers_split_guard PASS（diary-native-exit-guard.log）。30ca72d76经受管backend.acceptance.up重载（diary-native-exit-backend.log），无模型/XML变化，不升级、不构建前端。
+- 既有受管approval-actions diary/create浏览器12项PASS（diary-native-create-browser.log；tpl07-1790775130070/report.json）。PM公司8未保存新建页有效契约/官方ScForm、无未知字段渲染、无未保存审批/完成入口、1440/390无溢出，errors=[]、forbiddenWrites=[]。回读有效布局31字段节点，name/reject_reason/report_period_start/report_period_end/attachment_ids/header_description均保留。53.50/51日志新建页面阻断实质关闭；此前计划create12证据输入不变复用。
+- 仍不等于已有记录办理验收：计划/日志/合同事件公司8无现有记录的详情前提未变化，真实审批27项只覆盖事务模型。下一步继续原工作流职责中的必要单据覆盖与配置/权限/页面组合缺口；总目标active，detail.action-state整体不升级。未推送、合并或目标部署。

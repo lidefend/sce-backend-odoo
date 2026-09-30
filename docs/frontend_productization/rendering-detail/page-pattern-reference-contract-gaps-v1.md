@@ -210,3 +210,7 @@ PM authorized-company8 queries for existing plans/diaries are empty, so record-d
 ### Segment53.51 — Plan create passes; diary postprocessor remains incompatible
 
 Plan create failure was a P4 probe bug: read-only `default_get` was intercepted. Corrected probe passes12 create-form assertions with unchanged frontend/backend product inputs. Diary `field_info` leakage originated in P1 postprocessing, not the P0 assembler; the alias is fixed and39 focused tests pass. Runtime still rejects additional fields that the same postprocessor injects into runtime/meta and reports missing fields referenced by form structure. Retire/align the redundant diary layout rewrite with the native/configured contract; do not relax schema. Diary create remains failed, and existing-record acceptance remains pending scoped data.
+
+### Segment53.52 — Diary duplicate layout retired; create page passes
+
+Removed the diary-specific post-finalization layout rewrite and its wrapper/call. Native/configured layout and form structure now remain authoritative; no schema relaxation or frontend model exception.39 focused tests and the updated normalizer guard pass. Backend30ca72d76 renders the official diary create form successfully:12 browser assertions, both viewports, no errors/writes;31 field nodes retain name, periods, attachment, description and rejection fields previously lost. Diary create blockers from53.50/51 are closed. Existing-record handling/permissions and overall document coverage remain pending; do not close the entire action-state row.
