@@ -8543,3 +8543,12 @@ P4既有rollback工具增加project-creation-state独立5项scope，default all�
 L1 project-save-scope-iteration.log、语法/diff PASS；L2 project-save-scope-unit.log24 PASS。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter固定卷，后端7ad71c3bd，前端CrYkOCxc产品输入未变；无build/upgrade/ORM复跑。运行project-information-save-browser.log，tpl07-1790790862553/report.json23 PASS：真实UI保存FE Project A [TPL53保存验证]，服务端read回读正确，company8/立项draft/lifecycle draft均保持；同用户原接口恢复FE Project A并再次回读一致，official form reload显示原名、未修改，双视口无横溢出，390截图人工核对。仅两次精确name写入（保存/恢复），errors=[]/forbiddenWrites=[]，project-save-recovery.json restored=true。审计元数据/日志可能保留真实保存痕迹，不声称数据库字节级回滚。
 
 随后将通用断言文字改为no undeclared business writes attempted，条件仍为forbiddenWrites.length===0；不改变执行/判定，沿用原browser证据不为文字重复业务写。本次关闭项目信息资料保存缺口，不等于立项提交/真实审核/启动已由角色浏览器验收。金额口径异步问题仍未得到回复，保持缺口；全系统detail.action-state及总体67仍开放，无新增fixture/环境/推送合并目标部署。
+
+
+### 53.116 真实PM项目审批执行身份（完成本项定向验证）
+
+a1f1a09ff clean续跑。现有项目10尚无经过验证的立项审批回退动作，不为浏览器验收推进后伪写状态恢复。P4沿用既有事务回滚项目六项检查，新增project-role-approval scope与可选actor_env；源项目/策略仅事务sudo builder准备，项目提交/启动/重提由现有fixture_role_pm本人公司8环境执行且assert非sudo，owner字段绑定该经办人并非sudo search验证可见。不改任何组/ACL/record rules，不新建持久fixture或环境。真实reviewer仍由review实例选取。
+
+L1 project-role-iteration.log与py_compile/bash-n/diff通过；仅P4身份参数变化，既有P1单元122/创建状态5/项目保存browser23的产品输入均未变复用，不重建、不升级、不reload、无关ORM跳过。第一次project-role-runtime.log前4项通过，驳回helper未按公司筛reviewer触发公司访问拒绝，ROLLBACK VERIFIED；此为工具角色环境错误，不修改产品权限。只在项目helper筛选实际reviewer且具有项目公司访问权、绑定allowed_company_ids，同现有批准helper一致。L1 project-role-reviewer-iteration.log/语法/diff通过后重试具有明确输入修复依据。
+
+最终project-role-reviewer-runtime.log6 PASS、ROLLBACK VERIFIED：真实非sudo PM不能直写approved/越级启动；无配置提交只批准不启动；配置审批在审禁止启动；真实review通过后PM显式启动；驳回保留原因，PM重提生成新review链并实际通过。复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，后端7ad71c3bd未变。策略/步骤基线一致、临时记录消失。该证据属于实际角色ORM办理，不是浏览器提交/审核人页面闭环；仍保留金额口径、浏览器办理和其他已登记缺口，detail.action-state不升整行。无推送合并目标部署。
