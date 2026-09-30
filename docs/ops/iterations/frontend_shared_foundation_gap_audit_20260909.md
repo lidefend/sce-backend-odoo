@@ -9398,3 +9398,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 iteration两次均PASS（后一次仅新增最终契约探针）；P4 `verify.frontend.standard_preview.unit` 15 Node+25 Python=40 PASS（plan-report-ui-tool-unit.log），脚本syntax/diff通过。182项产品测试输入不变，复用上轮证据；不重复计划节点/付款业务流程。
 - 既有 `plan-report` 回滚范围扩展四种实际记录状态的 `UiContractV2Handler.handle` 检查：草稿/退回write=true，审批中/已确认write=false；submit/approve/reject动作语义以及审核字段readonly modifier仍进入最终layout。**14 PASS / ROLLBACK VERIFIED**（plan-report-final-contract-runtime.log），不是只查workflow service。复用原受管DB/profile/精确filter/卷；未改变产品输入，后端身份仍7670465a1，dirty仅P4两个工具文件。
 - 未覆盖：普通PM实际保存、提交、详情返回、角色间审批UI，以及计划版本职责。已有PM授权计划列表为空的证据仍有效，不重复空查询或造fixture；下一步扩展既有精确临时记录恢复机制。保持整体 `detail.action-state=contract_gap`，不宣布完整接管。未推送、合并、目标部署。
+
+
+### 53.191 普通 PM 计划汇报保存、提交、详情返回闭环
+
+- 起点 `3edb39255`，本轮P4扩展既有标准页浏览器、写入许可helper及精确清理工具和两份测试。无产品后端/前端构建变更；继续复用后端7670465a1、前端e19eb1e16、原受管local/sc-fe-r2-p1-01/sc_frontend_acceptance环境与凭据。
+- 仅本次标记、PM角色、公司8、授权项目10，允许一条临时计划（父计划创建通过同角色正式API，不计作计划表单UI验收）和一条汇报；精确请求/ID/入口身份及in-flight阶段控制防止扩大写入或自动重放。先验证保存503保留输入，再通过官方表单提交创建+正式action_submit，各执行一次；不改审批配置。恢复先核对父子记录、创建人/公司/时间窗口/内容，无节点/版本/预警/审批/附件等额外依赖，先删汇报再删计划并提交后回读不存在。
+- 最终有序证据：`report-handling-final-iteration.log` L1 PASS；`report-handling-final-unit.log` **16 Node+26 Python=42 PASS**，对应agent.run.begin/record非零回执；`report-handling-final-browser.log` 指向 **tpl07-1790811348619/report.json 27 PASS**。PM uid32创建父计划52/汇报10，原生提交后state=accepted、确认日期存在、无虚构人工审批人；官方只读详情1440/390、返回 `/a/656?menu_id=508` 官方列表，真实查询model=sc.plan.report/company8/menu508/order=report_date desc,id desc/offset0/limit20返回id10。截图已检查；final清理回执同时记录report10/parent52已恢复。
+- 诊断与修正如实保留：首次25项运行 `tpl07-1790811187626`；新增返回检查 `tpl07-1790811247678` 因未等待异步列表响应、页签同名文本提前满足而失败（最终响应实际包含id8），改为等待对应响应和表格行；`tpl07-1790811296771` 27项通过但仅保留诊断。执行器漏拦了此前L1 `test_frontend_standard_preview.py` EOF空行失败，不能拿这些运行代替顺序门禁；修正后重新按L1→L2→浏览器运行上面的最终证据，所有诊断运行的临时对象也均已清理。不得把之前L1称为通过。
+- 本次仅关闭无审批配置的普通角色汇报办理闭环；53.189/190有配置真实审批与最终契约14项沿用，未据此声称多角色审批UI完成。计划版本当前仅draft/approved字段和审核字段、没有正式动作，继续作为P1产品缺口补齐。整体67条台账仍在推进，未推送/合并/目标部署。

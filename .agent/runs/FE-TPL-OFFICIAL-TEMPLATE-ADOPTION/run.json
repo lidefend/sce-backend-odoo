@@ -455,7 +455,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.190 report final UiContractV2 verified draft/rejected editable and pending/accepted readonly, stable submit/approve/reject semantics and audit modifiers; plan-report runtime14 PASS+ROLLBACK (plan-report-final-contract-runtime.log), product backend7670465a1 unchanged. Ordinary PM authorized report entry508/action656 create13 PASS dual viewport (tpl07-1790810928967), native_structured_form; frontend e19eb1e16 unchanged. Next complete ordinary-role report save/submit/detail journey through existing bounded temporary recovery pattern (PM has no persistent plans), then resolve plan-version responsibilities. Do not equate create/read/runtime with full business handling; overall67 open. No push/merge/targetdeploy.",
+  "next_exact_step": "53.191 ordinary PM report handling closed for unconfigured approval: final ordered L1 PASS, standard_preview_tool42 PASS receipt, tpl07-1790811348619 browser27 PASS; exact parent52/report10 create-submit accepted-readonly-detail-return /a/656?menu_id=508 and actual list query id10; final cleanup both absent actor32. Product backend7670465a1 and frontend e19eb1e16 unchanged. Earlier browser runs diagnostic due missed EOF static failure and response timing corrected; preserve original logs. Next P1 sc.plan.version has only draft/approved state and editable approval facts, no formal actions/tier: unify confirmed version responsibility using existing approval/state contract without inventing snapshot execution; then finish parent execution UI. Configured approval backend14 reused; multi-role approval UI/overall67 still open; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

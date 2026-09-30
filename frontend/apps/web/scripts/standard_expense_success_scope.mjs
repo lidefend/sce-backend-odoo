@@ -52,3 +52,27 @@ export function eventProbeWriteKind(role, body, scope) {
     && Number(body.meta?.action_id) === Number(r.context.action_id)) return 'submit';
   return null;
 }
+
+export function reportProbeWriteKind(role, body, scope) {
+  if (!scope || role !== 'fixture_role_pm' || scope.model !== 'sc.plan.report'
+    || !/^TPL53-REPORT-SAVE-\d{13}$/.test(scope.marker)) return null;
+  const p = body?.params;
+  const parent = scope.parentRequest;
+  if (parent?.model !== 'sc.plan' || parent?.vals?.project_id !== 10
+    || parent.vals.name !== scope.marker.replace('REPORT-SAVE', 'REPORT-PARENT')
+    || Object.keys(parent.vals).sort().join(',') !== 'name,project_id' || parent.context?.company_id !== 8) return null;
+  if (scope.phase === 'parent' && body?.intent === 'api.data' && p?.op === 'create'
+    && isDeepStrictEqual(p, parent)) return 'parent';
+  const request = scope.request;
+  if (!Number.isInteger(scope.parentId) || scope.parentId <= 0 || request?.model !== scope.model
+    || request?.vals?.plan_id !== scope.parentId || request?.vals?.name !== scope.marker || request?.context?.company_id !== 8
+    || Object.keys(request.vals).sort().join(',') !== 'name,plan_id,summary') return null;
+  if (scope.phase === 'create' && body?.intent === 'api.data' && p?.op === 'create'
+    && isDeepStrictEqual(p, request)) return 'create';
+  if (scope.phase === 'submit' && Number.isInteger(scope.id) && scope.id > 0
+    && body?.intent === 'execute_button' && p?.model === scope.model && p.res_id === scope.id
+    && p.button?.name === 'action_submit' && p.button.type === 'object'
+    && Number(body.meta?.menu_id) === Number(request.context.menu_id)
+    && Number(body.meta?.action_id) === Number(request.context.action_id)) return 'submit';
+  return null;
+}

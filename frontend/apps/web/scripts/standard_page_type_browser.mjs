@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -72,6 +72,11 @@ const eventSaveProbe = process.env.TPL07_EVENT_SAVE_PROBE === '1';
 assert.ok(!eventSaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.contract.event' && process.env.TPL07_APPROVAL_VIEW === 'create'));
 const eventSaveSuccess = process.env.TPL07_EVENT_SAVE_SUCCESS === '1';
 assert.ok(!eventSaveSuccess || (eventSaveProbe && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1' && process.env.TPL07_DIARY_SAVE_SUCCESS !== '1'));
+const reportSaveSuccess = process.env.TPL07_REPORT_SAVE_SUCCESS === '1';
+assert.ok(!reportSaveSuccess || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.plan.report'
+  && process.env.TPL07_APPROVAL_VIEW === 'create' && !eventSaveSuccess && process.env.TPL07_DIARY_SAVE_SUCCESS !== '1' && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1'));
+let reportSuccess = null;
+let reportCreateCapture = false;
 let eventSuccess = null;
 let eventCreateCapture = false;
 let diaryCreateCapture = false;
@@ -108,6 +113,28 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    const reportKind = reportProbeWriteKind(role, body, reportSuccess);
+    if (reportKind) {
+      reportSuccess.phase = `${reportKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.reportSuccessWrites ??= [];
+      report.reportSuccessWrites.push({ kind: reportKind, result });
+      if (result.ok === true) {
+        if (reportKind === 'parent') reportSuccess.parentId = result.data?.id;
+        if (reportKind === 'create') reportSuccess.id = result.data?.id;
+        reportSuccess.phase = reportKind === 'parent' ? 'prepare' : reportKind === 'create' ? 'submit' : 'done';
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      return route.fulfill({ response });
+    }
+    if (reportSaveSuccess && reportCreateCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'sc.plan.report') {
+      report.reportSaveAttempts ??= [];
+      report.reportSaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'TPL53_REPORT_CAPTURE', message: '计划汇报定向保存失败验证' } }) });
     }
     const eventKind = eventProbeWriteKind(role, body, eventSuccess);
     if (eventKind) {
@@ -923,6 +950,81 @@ try {
               && typeof value[1] === 'string' && value[1].length > 0
               && await session.page.locator(`[data-field-name="${field}"] input`).first().inputValue() === value[1]);
           }
+        }
+        if (reportSaveSuccess) {
+          const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+            .flatMap(key => report.routeAuthority?.[key] || []);
+          const parentEntries = entries.filter(row => row.menu_xmlid === 'smart_construction_core.menu_sc_plan');
+          check('report handling: one authorized parent entry', parentEntries.length === 1);
+          const api = params => session.page.evaluate(async params => {
+            const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+            return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+              body: JSON.stringify({ intent: 'api.data', params }),
+            })).json();
+          }, params);
+          const marker = `TPL53-REPORT-SAVE-${Date.now()}`;
+          const parentName = marker.replace('REPORT-SAVE', 'REPORT-PARENT');
+          const content = '临时验收计划汇报：核对官方表单提交和详情返回。';
+          const parentRequest = { op: 'create', model: 'sc.plan', vals: { name: parentName, project_id: 10 },
+            context: { company_id: 8, menu_id: Number(parentEntries[0].menu_id), action_id: Number(parentEntries[0].action_id) } };
+          reportSuccess = { model: spec.model, marker, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
+          await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+          await expenseCleanup('preflight');
+          const projectRead = await api({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'company_id'], context: { company_id: 8 } });
+          check('report handling: parent project authorized', projectRead.ok === true && projectRead.data?.records?.[0]?.company_id?.[0] === 8);
+          reportSuccess.phase = 'parent';
+          const parent = await api(parentRequest);
+          check('report handling: exact temporary parent created', parent.ok === true && Number.isInteger(reportSuccess.parentId) && reportSuccess.parentId > 0);
+          await session.page.locator('[data-field-name="name"] input').first().fill(marker);
+          await session.page.locator('[data-field-name="summary"] textarea').first().fill(content);
+          const planInput = session.page.locator('[data-field-name="plan_id"] input').first();
+          await planInput.fill(parentName);
+          await session.page.getByRole('option', { name: parentName, exact: true }).click();
+          reportCreateCapture = true;
+          await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+          await session.page.getByText('计划汇报定向保存失败验证', { exact: false }).first().waitFor();
+          check('report handling: failed save retains input', await session.page.locator('[data-field-name="name"] input').first().inputValue() === marker
+            && await session.page.locator('[data-field-name="summary"] textarea').first().inputValue() === content);
+          reportSuccess.request = structuredClone(report.reportSaveAttempts.at(-1));
+          check('report handling: create request binds selected parent', reportSuccess.request.vals.plan_id === reportSuccess.parentId
+            && reportSuccess.request.vals.name === marker && reportSuccess.request.vals.summary === content);
+          reportSuccess.phase = 'create';
+          await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+          await session.page.getByRole('button', { name: '提交', exact: true }).click();
+          await session.page.waitForFunction(() => !window.location.pathname.endsWith('/new'));
+          check('report handling: one parent, one report, one submit', reportSuccess.phase === 'done'
+            && JSON.stringify(report.reportSuccessWrites.map(row => row.kind)) === JSON.stringify(['parent', 'create', 'submit']));
+          const saved = await api({ op: 'read', model: spec.model, ids: [reportSuccess.id],
+            fields: ['id', 'state', 'plan_id', 'company_id', 'name', 'summary', 'approver_id', 'approved_date'], context: { company_id: 8 } });
+          report.reportSavedRecord = saved;
+          const row = saved.data?.records?.[0];
+          check('report handling: PM authoritative accepted readback', saved.ok === true && row?.id === reportSuccess.id
+            && row.state === 'accepted' && row.plan_id[0] === reportSuccess.parentId && row.company_id[0] === 8
+            && row.name === marker && row.summary === content && !row.approver_id && Boolean(row.approved_date));
+          await form(session.page, `/f/sc.plan.report/${reportSuccess.id}${createContext}`, 'report-success-saved', 'readonly');
+          for (const width of [1440, 390]) {
+            await session.page.setViewportSize({ width, height: 950 });
+            check(`report saved ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+            await session.page.screenshot({ path: path.join(out, `report-success-${width}.png`) });
+          }
+          await session.page.setViewportSize({ width: 1440, height: 950 });
+          const returnedQuery = session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'
+              && body.params?.op === 'list' && body.params.model === spec.model; } catch { return false; }
+          });
+          await session.page.getByRole('button', { name: '返回', exact: true }).click();
+          const returnedResponse = await returnedQuery;
+          const returnedResult = await returnedResponse.json();
+          report.reportReturnQuery = { request: returnedResponse.request().postDataJSON(), result: returnedResult };
+          await session.page.locator('[data-list-composition-reason="contract-collection-view"]').waitFor();
+          await session.page.getByRole('row').filter({ hasText: marker }).first().waitFor();
+          check('report handling: return reaches official authorized list', new URL(session.page.url()).pathname === `/m/${report.approvalCreateEntry.menu_id}`
+            || new URL(session.page.url()).pathname === `/a/${report.approvalCreateEntry.action_id}`);
+          check('report handling: returned query includes saved report', returnedResult.ok === true && returnedResult.data?.records?.some(row => row.id === reportSuccess.id));
+          report.reportReturnUrl = session.page.url();
+          await session.page.screenshot({ path: path.join(out, 'report-success-return-list.png') });
+          continue;
         }
         if (eventSaveProbe) {
           report.eventCreateAuthority = authority;
@@ -2124,7 +2226,7 @@ try {
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
-  if (expenseSuccess || diarySuccess || eventSuccess) {
+  if (expenseSuccess || diarySuccess || eventSuccess || reportSuccess) {
     try { await expenseCleanup('final'); }
     catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
   }

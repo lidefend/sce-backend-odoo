@@ -261,3 +261,21 @@ class ExpenseBrowserCleanupTest(unittest.TestCase):
                       {'create_date': '2020-01-01 00:00:00'}):
             with self.assertRaises(AssertionError): validate_event_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 24)
         with self.assertRaises(AssertionError): validate_event_probe_target('sc_dev_demo', scope, row, 24)
+class PlanReportCleanupTest(unittest.TestCase):
+    def test_cleanup_binds_both_records_and_rejects_unowned_data(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_report_probe_target
+        from datetime import datetime, timezone
+        marker = 'TPL53-REPORT-SAVE-1790807163178'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'parentId': 24, 'id': 31,
+                 'request': {'vals': {'name': marker, 'plan_id': 24, 'summary': 'content'}, 'context': {'company_id': 8}}}
+        common = {'company_id': 8, 'create_uid': 32, 'create_date': datetime.fromtimestamp(1790807163.178 + 10, timezone.utc).replace(tzinfo=None).isoformat()}
+        report = dict(common, id=31, name=marker, plan_id=24, summary='content', state='accepted')
+        parent = dict(common, id=24, name=marker.replace('REPORT-SAVE', 'REPORT-PARENT'), project_id=10, state='draft')
+        for row, is_parent in ((report, False), (parent, True)):
+            validate_report_probe_target('sc_frontend_acceptance', scope, row, 32, is_parent)
+            for patch in ({'id': 99}, {'name': 'unowned'}, {'company_id': 1}, {'create_uid': 1}, {'state': 'submitted'}, {'create_date': '2020-01-01 00:00:00'}):
+                with self.subTest(parent=is_parent, patch=patch), self.assertRaises(AssertionError):
+                    validate_report_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32, is_parent)
+            with self.assertRaises(AssertionError): validate_report_probe_target('sc_dev_demo', scope, row, 32, is_parent)
+        for patch in ({'plan_id': 99}, {'summary': 'changed'}):
+            with self.assertRaises(AssertionError): validate_report_probe_target('sc_frontend_acceptance', scope, {**report, **patch}, 32)

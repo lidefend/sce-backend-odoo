@@ -104,3 +104,28 @@ test('event success permit binds operator, exact request, generated identity and
   }
   assert.equal(eventProbeWriteKind('fixture_role_contract_operator', { ...submit, meta: { menu_id: 1, action_id: 713 } }, { ...scope, phase: 'submit' }), null);
 });
+
+
+test('report handling permits exact parent/create/submit and rejects scope drift', async () => {
+  const { reportProbeWriteKind } = await import('./standard_expense_success_scope.mjs');
+  const marker = 'TPL53-REPORT-SAVE-1790807163178';
+  const scope = { model: 'sc.plan.report', marker, phase: 'parent', parentId: 24, id: 31,
+    parentRequest: { op: 'create', model: 'sc.plan', vals: { name: marker.replace('REPORT-SAVE', 'REPORT-PARENT'), project_id: 10 }, context: { company_id: 8 } },
+    request: { op: 'create', model: 'sc.plan.report', vals: { name: marker, plan_id: 24, summary: 'content' }, context: { company_id: 8, menu_id: 508, action_id: 656 } } };
+  const parent = { intent: 'api.data', params: scope.parentRequest };
+  assert.equal(reportProbeWriteKind('fixture_role_pm', parent, scope), 'parent');
+  assert.equal(reportProbeWriteKind('fixture_role_finance', parent, scope), null);
+  assert.equal(reportProbeWriteKind('fixture_role_pm', parent, { ...scope, phase: 'parent_in_flight' }), null);
+  const create = { intent: 'api.data', params: scope.request };
+  assert.equal(reportProbeWriteKind('fixture_role_pm', create, { ...scope, phase: 'create' }), 'create');
+  for (const vals of [{ ...scope.request.vals, state: 'accepted' }, { ...scope.request.vals, plan_id: 25 }]) {
+    const request = { ...scope.request, vals };
+    assert.equal(reportProbeWriteKind('fixture_role_pm', { intent: 'api.data', params: request }, { ...scope, phase: 'create', request }), null);
+  }
+  const submit = { intent: 'execute_button', params: { model: scope.model, res_id: 31, button: { name: 'action_submit', type: 'object' } }, meta: { menu_id: 508, action_id: 656 } };
+  assert.equal(reportProbeWriteKind('fixture_role_pm', submit, { ...scope, phase: 'submit' }), 'submit');
+  assert.equal(reportProbeWriteKind('fixture_role_pm', submit, { ...scope, phase: 'submit_in_flight' }), null);
+  for (const patch of [{ res_id: 32 }, { model: 'sc.plan' }, { button: { name: 'validate_tier', type: 'object' } }]) {
+    assert.equal(reportProbeWriteKind('fixture_role_pm', { ...submit, params: { ...submit.params, ...patch } }, { ...scope, phase: 'submit' }), null);
+  }
+});
