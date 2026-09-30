@@ -9218,3 +9218,16 @@ P1根因p1_daily_business_form_orchestration_contract_data.xml的sc_construction
 TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_APPROVAL_VIEW=create TPL07_DIARY_SAVE_PROBE=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local最终tpl07-1790807163178/report.json26 PASS，两个实际create请求被明确503截住；project_id=10、title/description精确、menu414/action713/company8/context/default_diary_type保持；默认日期来自有效契约；保存草稿和提交失败均留在new且输入未丢失，无后续审批或业务写。1440/390共享表单检查通过，填充截图人工复核。前端标题/内容恢复可输入，错误契约缺口关闭，不声称真实创建或提交成功。
 
 下一步沿这份真实最小payload及PM入口，扩展原受管临时单据恢复机制为精确日志model/title/actor/company/project/时间范围，先绑定恢复回执再放行create+action_confirm，权威回读并最终清理。没有持久fixture/业务数据前提需要新建；历史只读记录补充职责与审批后内容保护另保持开放。后台日志runtime8输入未改复用，不重复ORM。总体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.174 施工日志普通PM真实创建、提交与官方详情闭环
+
+P4 b7d89df9c沿现有standard_page_type_browser、standard_expense_success_scope及frontend_expense_probe_cleanup增加显式TPL07_DIARY_SAVE_SUCCESS范围；仅与diary-save-probe/approval-actions/diary/create组合，不能与expense-success并用。写前将原失败捕获的精确增量request持久化到既有expense-success-recovery.json（沿用受管恢复入口的历史文件名，scope.model明确diary，不混计费用业务）。仅fixture_role_pm可依次create、对返回正整数ID action_confirm；in-flight防重复，其他模型/ID/角色/动作/上下文拒绝。清理只识别本次唯一title、固定project10/company8、真实PM创建人、内容一致、300秒创建窗口、draft/confirmed、无review/附件；已有有效日志审批配置则preflight停止而非改配置。原费用恢复逻辑保持。
+
+L1 diary-success-tool-iteration/node语法/py_compile/diff PASS；standard_preview.unit38 PASS（14Node+24Python），begin/record日志diary-success-tool-*。新增许可反例和清理目标反例，受管实测证明恢复执行。P0/P1产品输入未改，166纯测、日志后台8及已有前端证据复用；没有构建、后端重载、模块升级或新fixture，后端bdeead8ab/前端e31e51c59 index-7JTLfH1Y.js保持。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_APPROVAL_VIEW=create TPL07_DIARY_SAVE_PROBE=1 TPL07_DIARY_SAVE_SUCCESS=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local：diary-success-browser.log / tpl07-1790807320202/report.json33 PASS，errors/forbiddenWrites为空。普通PM(uid32/company8)沿正式menu414/action713，真实项目候选10；先验证保存/提交503保留输入，再实际点击提交审批，成功请求严格create→confirm各一次，生成日志20/CD2600020，状态confirmed。普通PM权威read项目/公司/标题/内容/日期/类型/来源匹配；默认日期、施工单位、经理和经办人由后端生成，前端不注入业务默认值。自动审批不执行完成，官方只读详情仍有独立完成动作。
+
+1440/390官方详情截图人工核对，确认状态、内容/项目/经办人、完成按钮及无页溢出；仅查看完成动作，未点击，不把动作可见性计为完成办理。finally受管精确删除日志20，cleanup-final回读restored/model sc.construction.diary/actor32，无持久记录/附件；正常序列与审计不回退，不声称全库事务回滚。使用既有平台内部验收库local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与原卷，不触及目标环境。
+
+关闭53.173实际创建与无配置提交的代表缺口，普通PM不再只有新建可达证据；有配置多角色浏览器链、审批后内容写入保护与其它业务仍未覆盖。下一步处理本组既有“已审批页面只读与后端内容可写”的明确边界，复用主单状态/审批证据，避免重跑已闭合创建与配置旅程。总体67/detail.action-state保持开放，无推送/合并/目标部署。
