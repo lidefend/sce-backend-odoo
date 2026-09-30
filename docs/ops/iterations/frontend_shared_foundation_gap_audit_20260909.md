@@ -6704,3 +6704,99 @@ ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、
 ### 状态
 
 本段**批次验收完成**（审计修复 + 登记复位）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 47｜契约侧投影缺口收口（一）：`collection.favorite` 的收藏能力改为按 `ir.filters` 权威判定，不再硬编码 `True`（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- `origin/main`（GitHub 已恢复）经 `git fetch origin main` 复核 = `fff226d7be72878ea6861cfab2ce13d990cee806`
+  （`Merge PR #524`），与 `git ls-remote` 一致；`merge-base HEAD origin/main` = `fff226d7b`，
+  `git rev-list --left-right --count origin/main...HEAD` = `0 204` → **主线已是本分支祖先，无待移植内容**。
+- 主线新协作流程本轮**实际使用**：`make agent.run.resume` 已按 `.agent/active-runs.json` 直接解析
+  （`resume=30 / status_presentation=15` reusable；`page_pattern_parity` 因本段 ledger 变更判 `stale`），
+  `make agent.run.begin/record` 用于候选取证，`change_state` 与 `outside_scope` 作为 fail-closed 约束。
+
+### 2. 缺口定位（先核对"原生事实是否已有、契约是否只是没投影"）
+
+选中 `collection.favorite`（P0 `smart_core`）。原缺口描述"payload 未一致投影收藏归属与可变性"经查**准确**：
+
+- `addons/smart_core/app_config_engine/models/app_search_config.py` 的
+  `_build_custom_search_contract()` 把 `favorites.save_enabled` **无条件写成 `True`**——
+  这是模型级 `search_def` 缓存里的**非权威常量**，对任何用户/权限都返回同一结果；
+  行内也没有 `owned_by_current_user / writable / deletable`。
+- 属**投影缺口**（原生事实在 `ir.filters` ACL + record rule + `check_access_rights` 里已有），
+  按用户口径"契约不满足就先完善契约"应由契约侧补投影，而不是让前端猜。
+
+### 3. 修复内容（P0 `smart_core`，唯一权威来源 = Odoo 17 `ir.filters`）
+
+`addons/smart_core/app_config_engine/models/app_search_config.py`：
+
+1. `_build_custom_search_contract()` 静态块：**移除硬编码 `save_enabled: True`**，只声明用户无关的静态语义
+   + 保守默认（`owner_scope: "current_user"`、`shared_enabled: False`、`save_enabled: False`），
+   避免把用户相关能力写进 model 级 `search_def` 缓存。
+2. `get_search_contract()` 先构造 `contract`，再 `return self._project_saved_search_capability(contract, self.model)`。
+3. 新增 `_saved_search_save_capability(model_name)`：按 Odoo 17 权威规则判定——
+   `base.group_user` 内部用户、目标模型 `check_access_rights("read", raise_exception=False)`、
+   `ir.filters.check_access_rights("create", raise_exception=False)`；共享收藏由既有
+   `core/search_favorite_policy` 固定 `False`；任何异常 → 保守 `False`（fail closed）。
+   `disabled_reason` ∈ {`SAVED_SEARCH_AUTHORITY_UNAVAILABLE`, `SAVED_SEARCH_REQUIRES_INTERNAL_USER`,
+   `SAVED_SEARCH_MODEL_UNAVAILABLE`, `SAVED_SEARCH_MODEL_READ_DENIED`, `SAVED_SEARCH_CREATE_DENIED`}，成功为空串。
+4. 新增 `_project_saved_filter_mutation_rows(rows, uid)`：用
+   `env["ir.filters"].browse(ids)._filter_access_rules("write"/"unlink").ids` **实算**行级可变性，
+   归属用 `ir.filters.user_id` 业务身份字段比对 `uid`，判定不了保守 `False`；
+   注入 `owned_by_current_user / writable / deletable`。
+5. 新增 `_project_saved_search_capability(contract, model_name)` 完成投影（保留静态 `label`/`intent`）。
+
+### 4. 反例与验证（L2 定向，非零）
+
+新增 `addons/smart_core/tests/test_saved_search_capability_projection.py`（**9 tests OK**），
+关键是"同一 model 级缓存下不同用户/权限必须得到不同 `save_enabled`"——**常量实现无法同时满足**：
+
+- 内部用户判定；模型 read 拒绝；缺 authority fail-closed；
+- 静态保守默认 vs 运行时投影；私收藏行不外泄（仅本人 + 共享）；跨用户行能力拒绝；
+- `_filter_access_rules` 异常 fail-closed。
+
+`make/frontend.mk` 新增 `verify.frontend.saved_search_capability.unit`，并纳入 `verify.frontend.quick.gate` prereq。
+
+既有回归同步复核（全绿）：
+
+- `make verify.frontend.saved_search_capability.unit` → 9 tests OK
+- `make verify.frontend.page_pattern_reference_parity.unit` → 15 tests OK；`ledger PASS entries=67 owned_gaps=20`
+- `make verify.frontend.search_groupby_savedfilters.guard` → PASS
+- `python3 addons/smart_core/tests/test_search_favorite_handler_boundaries.py` → 8 tests OK
+- `python3 addons/smart_core/tests/test_contract_projection_json_boundaries.py` → 4 tests OK
+
+**真实环境能力判定链只读探针**（`docker exec -i sc-backend-odoo-acceptance ... odoo shell -d sc_frontend_acceptance`）：
+`uid=1 internal=True`、`ir_filters_create=True`、`config_found=False`（该库尚无 `app.search.config` 记录）、
+`portal_has_users=False`。→ 链路可用，但 `cap=False` 差异场景现场不可观察（无 portal 用户、无配置记录），
+已用行为级单测覆盖并**如实记录为环境限制**。
+
+### 5. 文档
+
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`：
+`collection.favorite` 条目更新为**准确剩余状态**（仍 `contract_gap`）——
+`authority` 改为 saved search contract（runtime capability from `ir.filters` record rules plus the
+`search.favorite.set` write-proxy gate）；`gap` 改为"契约已投影 save 能力与行归属/可变性，
+但采纳的 collection surface 尚未渲染该动作，能力暂无消费者"；`followUp` 改为
+"在采纳的 list 工具栏搜索菜单暴露该能力并给浏览器证据，或记录差异为 accepted"。
+（该文件为 67 行单行 JSON 数组格式，精确替换按整行字符串进行。）
+
+### 6. 提交
+
+- `fix(contract): project saved-search capability from ir.filters authority instead of a constant`
+- `docs(iteration): record 段 47`（本段）
+
+### 7. 剩余缺口与下一步
+
+- 前端采纳契约边界现状：`entries=67 aligned=46 contract_gap=20 not_applicable=1`；
+  **17 条归 P0 `smart_core`、2 条归 P1 `smart_construction_core`**，均为投影缺口，按序收口：
+  行详情动作（`collection.record-action` 需要**通用规则**，不得按模型名硬编码）、
+  导出能力（`collection.settings-export`，先核对是行级/工具栏声明缺口还是前端消费缺陷）、
+  复制/删除能力与禁用原因（`detail.action-state`）、区块条目计数（`detail.section-heading`）、
+  上下文抽屉呈现授权、`detail.primary-tabs`/`secondary-tabs`。
+- 保留不并入：四项 `style_system` 欠账、`industry_agnostic.guard` 97 条、
+  `state_transition_undeclared` 5 条、390×844 官方参考截图证据缺口、合并前门禁批次。
+
+### 状态
+
+本段**批次验收完成**（契约投影修复 + 定向回归）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
