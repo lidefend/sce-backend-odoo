@@ -320,7 +320,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.83 labor plan/request source80/native54/semantics15 PASS. Extend existing rollback scope labor-plan-request for both: real approval/no-config, missing amount authority rejection (fixed0 display not authority), rejection/resubmit, illegal approved cancel/reset/resubmit rejected, valid cancelled reset; no invented source-plan relation. One managed upgrade/reload then scoped runtime and official pages. Labor attendance/usage/settlement remain. No broad scan/prior ORM/frontend rebuild; overall active.",
+  "next_exact_step": "53.84 labor plan/request runtime16 rollback/create14+14 PASS backend387fb8f3c/frontend7915f3bb9; PM queries empty, no repeat. Continue remaining labor attendance/usage/settlement actual responsibilities in labor_management.py, preserve cost posting, immutable facts and manager boundary. Use existing ledger/results without broad scan/old ORM/frontend rebuild. Overall role journeys and all-document scope incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1248,6 +1248,26 @@
       "native_tests": 54,
       "semantics_tests": 15,
       "runtime": "not_run; upgrade required"
+    },
+    "segment_53_84": {
+      "status": "runtime_and_create_passed_record_ui_pending",
+      "backend": "387fb8f3c",
+      "runtime_checks": 16,
+      "rollback": "verified",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/labor-plan-request-runtime.log",
+      "create_assertions": {
+        "plan": 14,
+        "request": 14
+      },
+      "create_reports": [
+        "1790782297631",
+        "1790782307029"
+      ],
+      "record_queries": [
+        "1790782315231",
+        "1790782320423"
+      ],
+      "record_status": "both authorized queries empty"
     }
   }
 }

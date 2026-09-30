@@ -301,3 +301,8 @@ P1 shared approval source77/native52/semantics15 PASS; runtime14 PASS with verif
 ### Segment53.81–53.82 — Equipment usage and settlement
 
 Source79/native53/semantics15 PASS. Scoped runtime14 PASS on a1e371b5f with rollback verified: actual monetary review, approval without execution, explicit usage cost posting, approved fact lock/manager boundary, settlement confirmed-usage prerequisite, rejection/resubmission. Official creates14+14 PASS (1790781953996/1790781964386), narrow screenshots reviewed. PM existing-record queries empty (1790781971414/1790781978203); role handling remains pending. Frontend unchanged. Overall action-state and remaining business families stay open.
+
+
+### Segment53.83–53.84 — Labor plans and requests
+
+Source80/native54/semantics15 PASS. Runtime16 PASS on387fb8f3c with rollback verified: real approval, no-config auto approval, undefined amount rejection, in-flight protection, rejection/resubmission, approved transition guards and cancelled reset. Official creates14+14 PASS (1790782297631/1790782307029), narrow screenshots reviewed. Existing PM records empty (1790782315231/1790782320423), actual role handling remains pending. Labor attendance/usage/settlement and overall action-state remain open. No frontend rebuild or persistent fixture.

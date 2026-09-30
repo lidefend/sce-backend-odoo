@@ -8160,3 +8160,8 @@ L3未运行：tier/新字段/XML需受管升级，下一步扩展既有rollback�
 P4现有rollback工具新增labor-plan-request scope16，两模型各8：外部状态、无配置自动通过、缺失金额权威拒绝、pending配置变更保护、真实审批、approved禁止非法逆转、cancel正常reset、驳回重提。没有复制设备来源计划关系。默认all纳入，原配置恢复与临时单据消失校验保持；无新环境/持久fixture。
 
 L1 labor-plan-request-runtime-iteration.log与py_compile/bash-n PASS，P1/纯测试未变复用80/54/15。一次受管smart_construction_core升级/reload后只该scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter及固定卷沿用入口预检。L3尚pending，前端未改不构建，L5不在本地范围；旧材料/设备ORM不重跑。
+
+
+53.84实际：受管升级/reload387fb8f3c成功，labor-plan-request-runtime.log16/16 PASS、ROLLBACK VERIFIED。两模型审批/拒绝重提/配置变更/金额拒绝及approved非法逆转均通过，原配置与临时记录回滚。真实reviewer审批+事务sudo建单不替代角色办理全旅程。
+
+P4复用计划申请页面检查，两模型仅扩展允许范围；labor-plan-request-page-iteration.log L1/node语法PASS。创建计划tpl07-1790782297631、申请tpl07-1790782307029各14 PASS：官方组合/有效契约/编号隐藏/旧直接审批退出/双视口，errors=[]、forbiddenWrites=[]，390截图复核。PM已有记录计划tpl07-1790782315231、申请tpl07-1790782320423均ok=true records=[]，数据前置不足；不扩权/造fixture/重复空查询。前端7915f3bb9未重建，后端387fb8f3c。实际角色记录办理、剩余劳务职责及总体67仍开放。
