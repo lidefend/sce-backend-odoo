@@ -17,6 +17,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.contract.event", "合同履约事件"),
         ("sc.plan", "计划"),
         ("sc.construction.diary", "施工日志"),
+        ("sc.tax.deduction.registration", "抵扣登记"),
         ("project.material.plan", "物资计划"),
         ("sc.material.outbound", "材料出库/损耗"),
         ("purchase.order", "采购订单"),
@@ -411,6 +412,7 @@ class ScApprovalPolicy(models.Model):
             "sc.contract.event",
             "sc.plan",
             "sc.construction.diary",
+            "sc.tax.deduction.registration",
             "sc.receipt.income",
             "sc.payment.execution",
             "sc.invoice.registration",
@@ -427,6 +429,10 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.tax.deduction.registration": (
+                "smart_construction_core.server_action_tax_deduction_on_approved",
+                "smart_construction_core.server_action_tax_deduction_on_rejected",
+            ),
             "sc.construction.diary": (
                 "smart_construction_core.server_action_diary_on_approved",
                 "smart_construction_core.server_action_diary_on_rejected",
@@ -548,6 +554,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_definition_domain(self, step):
         domain = []
         amount_field_by_model = {
+            "sc.tax.deduction.registration": "deduction_amount",
             "payment.request": "amount",
             "sc.expense.claim": "amount",
             "sc.material.outbound": "amount_total",

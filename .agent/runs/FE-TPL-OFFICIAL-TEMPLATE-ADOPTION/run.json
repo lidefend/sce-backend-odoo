@@ -249,12 +249,14 @@
         "addons/smart_construction_core/models/core/plan_management.py",
         "addons/smart_construction_core/views/core/plan_management_views.xml",
         "addons/smart_construction_core/models/core/construction_diary.py",
-        "addons/smart_construction_core/views/core/construction_diary_views.xml"
+        "addons/smart_construction_core/views/core/construction_diary_views.xml",
+        "addons/smart_construction_core/models/core/tax_deduction_registration.py",
+        "addons/smart_construction_core/views/core/tax_deduction_registration_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.53 tax deduction model/native/profile now require confirmed, native40 pass; not yet runtime loaded. Next complete sc.tax.deduction.registration shared approval/config adoption while preserving finance authority/audit and resolving deduction amount default preparation before approval thresholds (currently only action_deduct fills from invoice). Consolidate upgrade/runtime after implementation. Reuse unchanged diary12/approval27; no broad scan.",
+  "next_exact_step": "53.54 tax shared approval implemented with invoice amount preparation before threshold; approval55/native40/workflow15 pass. Commit and governed module upgrade/backend reload, then existing approval runtime probe (34 checks including 7 tax); no broad scan, no frontend build. Overall all-document scope remains active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -812,6 +814,18 @@
       "test_count": 40,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/tax-execution-state-tests.log",
       "remaining": "shared approval and amount-preparation boundary, consolidated runtime verification"
+    },
+    "tax_approval_53_54": {
+      "candidate": "a8e36c9b7 + explicit tax model/policy/tier/native/profile/test dirty scope",
+      "layer": "P1 business approval; P4 existing rollback probe extension",
+      "l1": "ci.local.iteration passed; runtime probe py_compile passed",
+      "l2": {
+        "approval": 55,
+        "native": 40,
+        "workflow": 15
+      },
+      "runtime": "not_run; governed preflight passed local sc_frontend_acceptance",
+      "remaining": "module upgrade, real configured/no-config/threshold/rejection/resubmit and rollback checks; actual deduction and browser not covered"
     }
   }
 }

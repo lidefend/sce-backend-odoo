@@ -750,6 +750,64 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError): namespace['action_confirm'](record)
             self.assertEqual(record.state, 'draft')
 
+    def test_tax_submission_resolves_amount_before_policy_without_executing(self):
+        path = MODEL.parent / 'tax_deduction_registration.py'
+        names = {'action_confirm', '_prepare_approval_amounts', '_complete_registration_approval', 'action_on_tier_approved'}
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in names]
+        namespace = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        class Record:
+            def __iter__(self): return iter([self])
+            def ensure_one(self): pass
+            def with_context(self, **kw): return self
+            def write(self, values): self.__dict__.update(values)
+            def _check_deduct_ready(self, require_date=True):
+                self.calls.append(('ready', require_date))
+                if not self.ready: raise ValueError('invalid invoice')
+            def _check_company_contractor_deduction_responsibility_or_raise(self): self.calls.append('responsibility')
+            def _snapshot_audit_payload(self): return {'state': self.state}
+            def _audit_transition(self, *args, **kw): self.calls.append('audit')
+        for name in names: setattr(Record, name, namespace[name])
+        for configured in (True, False):
+            record = Record()
+            record.state, record.ready, record.calls = 'draft', True, []
+            record.deduction_amount, record.deduction_tax_amount = 0, 0
+            record.invoice_amount_untaxed, record.invoice_tax_amount = 100, 13
+            record.review_ids, record.validation_status = [], 'no'
+            def start(rec):
+                self.assertEqual((rec.deduction_amount, rec.deduction_tax_amount), (100, 13))
+                self.assertEqual(rec.calls[-2:], [('ready', False), 'responsibility'])
+                return configured
+            record.env = {'sc.approval.policy': types.SimpleNamespace(_start_submission_review=start)}
+            record.action_confirm()
+            self.assertEqual(record.state, 'draft' if configured else 'confirmed')
+            self.assertFalse(hasattr(record, 'deduction_confirm_date'))
+            if configured:
+                record.action_on_tier_approved()
+                self.assertEqual(record.state, 'draft')
+                record.review_ids, record.validation_status = [1], 'pending'
+                record.action_on_tier_approved()
+                self.assertEqual(record.state, 'draft')
+                record.validation_status = 'validated'
+                record.action_on_tier_approved()
+                self.assertEqual(record.state, 'confirmed')
+            self.assertEqual(record.calls.count('audit'), 1)
+            record.state, record.ready = 'draft', False
+            with self.assertRaises(ValueError): record.action_confirm()
+            self.assertEqual(record.state, 'draft')
+            record.deduction_amount, record.deduction_tax_amount = 50, 6
+            record._prepare_approval_amounts()
+            self.assertEqual((record.deduction_amount, record.deduction_tax_amount), (50, 6))
+
+    def test_tax_threshold_domain_uses_prepared_deduction_amount(self):
+        method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_domain')
+        namespace = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        domain = namespace['_tier_definition_domain'](
+            types.SimpleNamespace(target_model='sc.tax.deduction.registration'),
+            types.SimpleNamespace(amount_min=50, amount_max=150))
+        self.assertEqual(ast.literal_eval(domain), [('deduction_amount', '>=', 50), ('deduction_amount', '<=', 150)])
+
     def test_policy_step_order_maps_to_native_descending_priority(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_vals')
         namespace = {}

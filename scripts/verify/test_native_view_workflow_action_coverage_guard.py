@@ -322,7 +322,10 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             deduction_confirm_date = '2026-09-30'
             deduction_amount = 100
             deduction_tax_amount = 10
-            def __init__(self, state): self.state, self.calls = state, []
+            def __init__(self, state):
+                self.state, self.calls = state, []
+                self.env = {'sc.approval.policy': SimpleNamespace(
+                    _assert_submission_approved=lambda rec, states: self.calls.append('approval'))}
             def __iter__(self): return iter([self])
             def _assert_finance_deduct_access(self): self.calls.append('finance')
             def _snapshot_audit_payload(self): return {'state': self.state}
@@ -336,7 +339,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             record = Record(state)
             if state == 'confirmed':
                 namespace['action_deduct'](record)
-                self.assertEqual(record.calls, ['finance', 'ready', 'responsibility', 'authority', 'audit'])
+                self.assertEqual(record.calls, ['finance', 'approval', 'ready', 'responsibility', 'authority', 'audit'])
                 self.assertEqual(record.state, 'deducted')
             else:
                 with self.assertRaises(ValueError): namespace['action_deduct'](record)

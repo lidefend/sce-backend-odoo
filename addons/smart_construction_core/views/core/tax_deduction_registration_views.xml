@@ -76,8 +76,12 @@
             <field name="arch" type="xml">
                 <form string="抵扣税务办理">
                     <header>
+                        <field name="can_review" invisible="1"/>
+                        <field name="validation_status" invisible="1"/>
+                        <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                        <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_confirm" string="确认" type="object" class="btn-primary"
-                                invisible="state != 'draft'"/>
+                                invisible="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                         <button name="action_deduct" string="已抵扣" type="object" class="btn-primary"
                                 invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
@@ -86,6 +90,7 @@
                                statusbar_visible="draft,confirmed,deducted,legacy_confirmed,cancel"/>
                     </header>
                     <sheet>
+                        <field name="reject_reason" invisible="not reject_reason"/>
                         <group>
                             <group name="deduction_business_direction" data-sc-anchor="deduction_business_direction" string="业务方向">
                                 <field name="name" readonly="1"/>

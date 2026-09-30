@@ -7827,3 +7827,13 @@ L5：未推送、未合并、未部署。
 - L1 ci.local.iteration PASS（tax-execution-state-iteration.log）；native8+32=40 PASS（tax-execution-state-tests.log，begin/record40）。执行实际action_deduct，覆盖五状态，只有confirmed走finance→ready→responsibility→authority→audit，其余在资金动作前拒绝；隔离余额协作者，不宣称真实台账通过。同一测试核对实际profile与原生条件。
 - sc.tax.deduction.registration仍未tier/config接入，是后续必要产品缺口，不把confirmed状态条件当作审批接入完成。直接发现审批金额前提：deduction_amount/deduction_tax_amount在action_deduct才从发票金额默认补值；共享审批接入需先明确/复用金额准备职责，不能拿未补出的0作为金额阈值事实或静默忽略配置条件。下一步继续该直接适配。
 - 模型/XML待受管升级，与后续完整审批适配合并运行验收；不为本次窄条件单独构建/升级/浏览器矩阵。已有日志新建12和审批27证据无依赖改变继续复用。总体active，未推送、合并、目标部署。
+
+
+### 53.54 抵扣登记接入统一审批配置与真实审批链
+
+- a8e36c9b7 clean起步。沿用所有业务单据统一审批目标，支持名单不作为范围上限。P1 smart_construction_core负责税务单据校验与动作；复用既有sc.approval.policy/OCA机制，P3用户配置决定是否审批；前端不增加业务分支。P4只扩展既有事务回滚验收脚本，不新增环境或fixture权威。
+- 税务登记增加tier.validation、驳回原因、真实审批回调、配置可选模型/同步支持/服务端动作；原生及workflow统一validate_tier/reject_tier，等待时不重复提交。金额阈值绑定deduction_amount；沿用原有发票金额默认准备，但前移至提交前，先校验财务身份、发票、税额上限及责任余额，再启动审批。无配置只confirmed；有配置保持draft等待真实review；启用无匹配规则沿用共享fail-closed。
+- 审批完成仅确认登记并保留确认审计；驳回保留原因及新审计事件。抵扣执行校验共享审批事实后才走原财务权限、日期、责任余额、私有财务token及审计。认证抵扣日期仍在实际执行时默认，不在提交时伪造；已审批金额不在执行时重新补值。历史状态与既有财务身份保护不变。
+- L1 ci.local.iteration PASS（tax-approval-iteration.log）；相关生产方法隔离协作者回归55 PASS（tax-approval-tests.log，begin/record55），native8+32=40 PASS（tax-native-tests.log，begin/record40），workflow语义15 PASS（tax-workflow-tests.log）。测试覆盖默认金额在策略调用前就绪、显式金额不覆盖、无配置/配置/未完成回调边界与财务执行顺序；不把隔离测试当真实ORM验收。
+- 既有runtime脚本增加7项税务事务检查：无配置、金额阈值、等待禁止抵扣、真实审批不抵扣、驳回审计、重提新链、启用无匹配拒绝。脚本语法通过，待运行。受管preflight已确认local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷；内部验收租户库，沿用既有全事务rollback和配置回读。
+- 下一步提交后受管升级模块/重载，再执行34项集中审批运行验证。新增字段/XML需要升级；前端未改，不构建、不重跑未受影响日志/计划新建浏览器。实际抵扣财务写入和税务浏览器仍未覆盖；总体active，未推送、合并或目标部署。
