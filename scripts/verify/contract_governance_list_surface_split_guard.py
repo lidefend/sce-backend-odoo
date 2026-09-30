@@ -383,24 +383,33 @@ def main() -> int:
                 "project.project.list must own its status tone map; the kernel no longer supplies one"
             )
         else:
-            invalid = sorted(
-                f"{key}={value}"
-                for key, value in declared_tones.items()
-                if str(value).strip().lower() not in STATUS_TONE_VOCABULARY
-            )
-            if invalid:
-                errors.append(
-                    "project.project.list declares tones outside the published vocabulary: "
-                    + ", ".join(invalid)
-                )
-            empty_keys = [key for key in declared_tones if not str(key).strip()]
-            if empty_keys:
-                errors.append("project.project.list declares an empty status value key")
             projections = _govern_with_tone_map(declared_tones)
             if projections.get("tone_by_value") != declared_tones:
                 errors.append(
                     "project.project.list declared tones must project verbatim into the contract"
                 )
+
+        # Every profiling layer that declares tones is held to the same rules,
+        # so a second model cannot smuggle an unpublished tone or an empty key.
+        declaring = sorted(
+            key
+            for key, payload in profiles.items()
+            if isinstance(payload.get("tone_by_value"), dict) and payload.get("tone_by_value")
+        )
+        for key in declaring:
+            tones = profiles[key]["tone_by_value"]
+            invalid = sorted(
+                f"{value_key}={tone}"
+                for value_key, tone in tones.items()
+                if str(tone).strip().lower() not in STATUS_TONE_VOCABULARY
+            )
+            if invalid:
+                errors.append(f"{key} declares tones outside the published vocabulary: " + ", ".join(invalid))
+            if any(not str(value_key).strip() for value_key in tones):
+                errors.append(f"{key} declares an empty status value key")
+            projected = _govern_with_tone_map(tones)
+            if projected.get("tone_by_value") != tones:
+                errors.append(f"{key} declared tones must project verbatim into the contract")
 
     if errors:
         print("[contract_governance_list_surface_split_guard] FAIL")

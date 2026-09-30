@@ -429,6 +429,9 @@ register_legacy_standard_list_profile(
         "row_primary": "name",
         "row_secondary": "project_id",
         "status_field": "sc_state",
+        # project.task.sc_state; pairs reproduce the tones in effect before the
+        # relocation.
+        "tone_by_value": {"draft": "neutral", "in_progress": "info", "done": "success"},
     }
 )
 
@@ -795,6 +798,10 @@ register_legacy_standard_list_profile({
     "row_primary": "name",
     "row_secondary": "project_name_display",
     "status_field": "state",
+    # Kernel-owned default removed: payment.request declares its own effective
+    # tones. Values are ScStateMachine.PAYMENT_REQUEST_STATES; pairs reproduce
+    # the tones that were in effect before the relocation.
+    "tone_by_value": {"draft": "neutral", "done": "success"},
 })
 
 register_legacy_standard_list_profile({
@@ -832,6 +839,9 @@ register_legacy_standard_list_profile({
     "row_primary": "name",
     "row_secondary": "project_id",
     "status_field": "state",
+    # project.material.plan.state; pairs reproduce the tones in effect before
+    # the relocation.
+    "tone_by_value": {"draft": "neutral", "done": "success"},
 })
 
 API_DATA_WRITE_ALLOWLIST = _policy_maps.API_DATA_WRITE_ALLOWLIST
