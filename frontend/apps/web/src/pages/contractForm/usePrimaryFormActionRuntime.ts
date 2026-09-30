@@ -14,7 +14,7 @@ export function usePrimaryFormActionRuntime(params: {
   hasChanges: () => boolean;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown) => Promise<boolean>;
-  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy']) => Promise<unknown>;
+  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy'], recovery?: 'submit') => Promise<unknown>;
   primaryCreateFooterAction: () => ContractAction | null;
   primarySubmitAction: () => ContractAction | null;
   recordId: Ref<number>;
@@ -73,6 +73,9 @@ export function usePrimaryFormActionRuntime(params: {
         transaction: 'primaryAction',
         status: 'error',
       });
+      if (created && params.navigateCreatedRecord) {
+        await params.navigateCreatedRecord(resId, action.refreshPolicy, 'submit');
+      }
     } finally {
       params.busyKind.value = null;
     }

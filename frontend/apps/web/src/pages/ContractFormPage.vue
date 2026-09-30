@@ -25,6 +25,8 @@
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
     <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
+    <ScInlineState v-if="recordId && primarySubmitAction && route.query.create_recovery === 'upload'" state="error" label="单据已保存，附件上传未完成。请在当前单据重新选择附件后提交。" />
+    <ScInlineState v-else-if="recordId && primarySubmitAction && route.query.create_recovery === 'submit'" state="error" label="单据已保存，提交未完成。请在当前单据核对后重试。" />
     <ContractFormProductHeader
       v-if="!initialFormLoading && !recordMissing && !renderErrorMessage && status !== 'error'"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="!isConfigurationPreview && suppressPageHeaderTitle" :show-hud="showHud"
@@ -1081,8 +1083,8 @@ const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
   validateSubmissionRequirements,
-  navigateCreatedRecord: (createdId, refreshPolicy) => navigateCreatedRecord({
-    createdId, refreshPolicy,
+  navigateCreatedRecord: (createdId, refreshPolicy, recovery) => navigateCreatedRecord({
+    createdId, refreshPolicy, recovery,
     createdLabel: String(formData.display_name || formData.name || '').trim(),
     nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
     nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),

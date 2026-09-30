@@ -87,6 +87,7 @@ export function useCreatedRecordNavigationRuntime(params: {
     nextSceneKey: string;
     nextSceneRoute: string;
     refreshPolicy?: ContractAction['refreshPolicy'];
+    recovery?: 'upload' | 'submit';
   }) {
     const currentQuery = params.currentQuery();
     const relationDialogMessage = resolveRelationCreateDialogMessage({
@@ -95,7 +96,7 @@ export function useCreatedRecordNavigationRuntime(params: {
       relationModel: params.modelName(),
       label: options.createdLabel,
     });
-    if (relationDialogMessage && window.parent !== window) {
+    if (!options.recovery && relationDialogMessage && window.parent !== window) {
       await params.applyProjectionRefreshPolicy(
         options.refreshPolicy || { on_success: ['record', 'collection'] },
       );
@@ -103,7 +104,7 @@ export function useCreatedRecordNavigationRuntime(params: {
       return true;
     }
     const resolvedNextRoute = options.nextSceneRoute || (options.nextSceneKey ? `/s/${options.nextSceneKey}` : '');
-    if (params.isQuickIntakeMode() || params.isStandardIntakeMode()) {
+    if (!options.recovery && (params.isQuickIntakeMode() || params.isStandardIntakeMode())) {
       await params.applyProjectionRefreshPolicy(options.refreshPolicy || { on_success: ['scene_projection', 'workbench_projection'] });
       if (await params.returnToIntakeList(options.createdId)) return true;
       if (resolvedNextRoute) {
@@ -120,7 +121,7 @@ export function useCreatedRecordNavigationRuntime(params: {
     const createdRoute = params.router.resolve({
       name: 'model-form',
       params: { model: params.modelName(), id: String(options.createdId) },
-      query: pickContractNavQuery(currentQuery),
+      query: { ...pickContractNavQuery(currentQuery), ...(options.recovery ? { create_recovery: options.recovery } : {}) },
     });
     window.location.replace(new URL(createdRoute.href, window.location.origin).toString());
     await new Promise<never>(() => {});

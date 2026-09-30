@@ -68,6 +68,8 @@ let projectWritePermit = null;
 let expenseCreateCapture = false;
 const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
 const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
+const expenseFailureStage = process.env.TPL07_EXPENSE_FAILURE_STAGE || '';
+assert.ok(['', 'upload', 'submit'].includes(expenseFailureStage));
 let expenseSuccess = null;
 const expenseRecoveryPath = path.join(out, 'expense-success-recovery.json');
 async function expenseCleanup(stage) {
@@ -88,6 +90,14 @@ async function login(role) {
     const body = route.request().postDataJSON();
     const expenseWriteKind = expenseProbeWriteKind(role, body, expenseSuccess);
     if (expenseWriteKind) {
+      if (expenseFailureStage === expenseWriteKind && !expenseSuccess.failureInjected) {
+        expenseSuccess.failureInjected = true;
+        report.expenseInjectedFailure = { kind: expenseWriteKind, id: expenseSuccess.id };
+        await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
+        return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({
+          ok: false, error: { code: 'TPL53_LATER_STAGE_UNAVAILABLE', message: '验收注入：后续操作暂不可用，请重试' },
+        }) });
+      }
       expenseSuccess.phase = `${expenseWriteKind}_in_flight`;
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(expenseSuccess, null, 2));
       const response = await route.fetch();
@@ -866,6 +876,26 @@ try {
               expenseSuccess.phase = 'create';
               await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
               await session.page.waitForFunction(() => !window.location.pathname.endsWith('/new'));
+              if (expenseFailureStage) {
+                await session.page.locator('[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
+                const recoveryUrl = new URL(session.page.url());
+                check('expense recovery: generated record remains the current identity', recoveryUrl.pathname === `/f/sc.expense.claim/${expenseSuccess.id}`
+                  && recoveryUrl.searchParams.get('create_recovery') === expenseFailureStage && report.expenseInjectedFailure?.id === expenseSuccess.id);
+                const message = expenseFailureStage === 'upload'
+                  ? '单据已保存，附件上传未完成。请在当前单据重新选择附件后提交。'
+                  : '单据已保存，提交未完成。请在当前单据核对后重试。';
+                await session.page.getByText(message, { exact: true }).waitFor();
+                if (expenseFailureStage === 'upload') {
+                  const uploadResponse = session.page.waitForResponse((response) => {
+                    try { return response.request().postDataJSON()?.intent === 'file.upload'; } catch { return false; }
+                  });
+                  await session.page.locator('[data-professional-collaboration-component="attachments"] input[type="file"]').setInputFiles({
+                    name: pendingName, mimeType: 'text/plain', buffer: Buffer.from('Rollback-only submission prerequisite verification'),
+                  });
+                  await uploadResponse;
+                }
+                await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+              }
               const completed = () => report.expenseSuccessWrites?.some((row) => row.kind === 'submit' && row.result.ok === true);
               for (let wait = 0; wait < 100 && !completed(); wait += 1) await session.page.waitForTimeout(100);
               check('expense success: create upload submit occur exactly once',

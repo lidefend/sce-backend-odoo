@@ -481,3 +481,18 @@ const createdSubmitRuntime = usePrimaryFormActionRuntime({
 await createdSubmitRuntime.runPrimaryFormAction();
 assert.deepEqual(createdSubmitEvents, ['create', 'submit', 'open-created']);
 console.log('[create-record-user-journey] created submit navigates generated identity PASS count=1');
+
+const failedSubmitEvents: string[] = [];
+const failedCreatedSubmitRuntime = usePrimaryFormActionRuntime({
+  primaryCreateFooterAction: () => ({ ...requirementAction, enabled: true, context: {}, methodName: 'action_submit' }),
+  saveRecord: async () => { failedSubmitEvents.push('create'); return 903; },
+  confirmActionSafety: async () => true,
+  busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
+  executeButtonRequest: async () => { failedSubmitEvents.push('submit-failed'); throw new Error('Temporary refusal'); },
+  navigateCreatedRecord: async (id: number, _policy: unknown, recovery: string) => { failedSubmitEvents.push(`recover:${id}:${recovery}`); },
+  reload: async () => { failedSubmitEvents.push('reload-new'); },
+  recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
+} as never);
+await failedCreatedSubmitRuntime.runPrimaryFormAction();
+assert.deepEqual(failedSubmitEvents, ['create', 'submit-failed', 'recover:903:submit']);
+console.log('[create-record-user-journey] failed created submit preserves generated identity PASS count=1');

@@ -477,6 +477,12 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         const attachmentsUploaded = await uploadPendingNativeAttachments(Number(created.id));
         if (!saveOperationOwnsSurface(operation)) return false;
         if (!attachmentsUploaded) {
+          // Creation already committed. Continue on that record rather than
+          // leave a new-form surface whose next save would create again.
+          await navigateCreatedRecord({
+            createdId: created.id,
+            nextSceneKey: '', nextSceneRoute: '', refreshPolicy, recovery: 'upload',
+          });
           return false;
         }
         const title = String(v2ContractStore.value?.snapshot.pageInfo.pageName || '').trim();
