@@ -8720,3 +8720,14 @@ L1 finance-family-state-iteration.log PASS。首次L2 finance-family-state-unit.
 工具6fe68cc25提交并受管backend reload，expense-state-runtime.log12 PASS、ROLLBACK VERIFIED。local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。真实enabled提交生成review、关配置不绕过在审、实际审核人完成、未配置自动批准、启用无匹配拒绝、驳回草稿保留原因/审计、重提新review、线性两步按顺序、非审核人拒绝、首步不结束及末步批准均通过。文档准备和提交仍sudo，审核人真实非sudo；不宣称普通财务浏览器全流程或费用最终付款/完成通过。财务组其他模型runtime继续开放，前端不构建，无升级模块/推送合并目标部署。
 
 后续依赖核对：self_funding.action_done既有正式动作生成自筹资金台账；可在同一受管回滚链验证真实自筹审批/完成后，再用其真实生成的posted台账验证资金对账，避免凭空造台账或重复现有空来源查询。需要沿用附件/账户证据准备、公司/承包人身份及实际资金责任，验证后回滚；不能以这个替代结算调整的合同来源缺口。融资完成及付款/冲销仍待实际验证。旧Make引用scripts/migration路径在当前树不存在，本轮未执行迁移或扩大成迁移审计，历史重放兼容不计通过。
+
+
+### 53.131 自筹入账到对账的真实来源链（10项通过）
+
+1fe977d8e clean起点，P4既有回滚工具新增self-funding-reconciliation scope，扩展_finance_state_authority_checks接受同事务正式生成的source_ledger；此分支只验资金对账，不借机绕过结算调整合同来源。复用fixture finance公司、既有审批岗位、项目/往来方/附件准备与既有业务动作，不手写posted台账。临时策略/步骤/项目/单据/附件/资金台账全部rollback，finally回读自筹及对账原策略/步骤一致、created记录全部消失。L1 self-funding-chain-iteration.log及py_compile/bash-n/diff通过，P1 pure143/native62输入未改复用；backend6fe68cc25与前端CrYkOCxc不变，无reload/构建/升级。
+
+第一轮self-funding-chain-runtime.log10 PASS、ROLLBACK VERIFIED：自筹直写/default/假token拒绝；无配置确认不入账，显式完成生成posted；有配置在审不能完成、真实审批通过不自动入账、显式完成绑定真实project/company/amount台账；该台账作为资金对账来源，验证直写拒绝、无配置确认、配置后等待审核、真实审核后显式reconcile。真实来源改变了先前资金对账缺少posted数据的前提，所以属于有依据的运行恢复，不是重试原空查询。
+
+随后只将自筹document创建/提交/完成改用fixture_role_finance非sudo并断言actor，准备项目归该角色manager/user，提升权限保留在源准备、附件载体、配置和结果查证。self-funding-chain-role-runtime.log10 PASS、ROLLBACK VERIFIED；审核仍使用实际reviewer。对账document办理仍sudo，不能声称整链普通角色或浏览器验收；自筹refund/余额责任未覆盖。首次10项是提升权限基线，第二次10项是变更actor后的受影响复验，不相加称20项独立职责。
+
+下一步补对账普通角色或已有正式页面消费，继续融资/收款/付款执行及结算调整已登记缺口；自筹金额/内容在审冻结、退回及权限边界也不得因这10项而隐去。总体67/detail.action-state保持contract_gap，无推送合并目标部署。

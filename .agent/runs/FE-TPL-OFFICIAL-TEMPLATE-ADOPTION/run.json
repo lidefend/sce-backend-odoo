@@ -389,7 +389,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.130 backend6fe68cc25 expense-state-authority runtime12 PASS/ROLLBACK VERIFIED, actual reviewers, preparation/submission elevated; pure143/native62 reused unchanged. Next validate self-funding approval/completion and use its real generated posted treasury ledger for reconciliation in same governed rollback transaction (existing attachment/account preparation and company/partner authority), no fabricated ledger or persistent fixture. Keep settlement-adjustment contract source gap separate. Financing completion/payment reversal/runtime and historical replay compatibility still open; old scripts/migration Make paths absent, not executed. Overall67/detail.action-state open, no push/merge/deploy.",
+  "next_exact_step": "53.131 self-funding-reconciliation runtime10 PASS/ROLLBACK VERIFIED; actor-change role-runtime10 passes non-sudo fixture finance self-funding create/submit/complete with real reviewers. Actual generated ledger feeds reconciliation; reconciliation still sudo, source/config/attachment prep elevated. Backend6fe68cc25/frontendCrYkOCxc unchanged. Next ordinary-role reconciliation/effective page consumption plus remaining financing/receipt/payment/adjustment gaps; self-funding refund and reviewed-content integrity still unverified. Separate adjustment contract prerequisite persists; do not repeat empty query. Overall67/detail.action-state open, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

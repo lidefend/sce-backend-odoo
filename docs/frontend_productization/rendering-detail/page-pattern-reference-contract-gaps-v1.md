@@ -483,3 +483,8 @@ Financing and payment execution now use private state action writes; ordinary no
 ## Segment 53.130: expense approval runtime verified
 
 Focused existing expense runtime passes12 checks at backend6fe68cc25 with transaction/configuration restoration verified: direct state denial, configured reviews, no configuration bypass of in-flight review, automatic approval, unmatched-rule rejection, real rejection/resubmission and ordered two-step review with non-reviewer denial. Preparation/submission remains elevated; this is not ordinary-role browser handling or expense payment completion. Remaining finance runtime stays open. Existing self-funding completion can supply an authoritative posted ledger for a future same-transaction reconciliation journey; the adjustment contract-source gap is separate.
+
+
+## Segment 53.131: authoritative self-funding ledger feeds reconciliation
+
+Managed self-funding/reconciliation scope passes10 checks with restoration verified. Approval does not post cash; explicit self-funding completion creates the real posted ledger used for reconciliation approval and explicit execution. A focused actor change then passes the same10 checks with non-sudo fixture finance creating/submitting/completing self-funding and actual reviewers. Preparation remains elevated, as does reconciliation handling. This resolves the posted-ledger prerequisite for this transactional chain, not the separate settlement-adjustment contract source. Refund/balance, ordinary-role reconciliation, browser handling and other finance/runtime gaps remain open. No frontend rebuild or source reload.

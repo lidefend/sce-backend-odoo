@@ -496,16 +496,18 @@ def _project_document_approval_checks(project, group, created):
     print("APPROVAL_CHECK=project_document_rejected_resubmission_new_chain")
 
 
-def _finance_state_authority_checks(group, created):
+def _finance_state_authority_checks(group, created, source_ledger=None):
     base = _env()
     finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
     assert finance, "existing finance fixture required"
     company = finance.company_id
     env = base["sc.approval.policy"].with_company(company).with_context(allowed_company_ids=[company.id]).env
     Policy = env["sc.approval.policy"].sudo()
-    contract = env["construction.contract"].sudo().search([("company_id", "=", company.id)], limit=1)
-    ledger = env["sc.treasury.ledger"].sudo().search([("company_id", "=", company.id), ("state", "=", "posted")], limit=1)
-    assert contract and ledger, "existing company-scoped sources required: company=%s contract=%s posted_ledger=%s" % (company.id, bool(contract), bool(ledger))
+    contract = env["construction.contract"].sudo().search([("company_id", "=", company.id)], limit=1) if source_ledger is None else None
+    ledger = source_ledger if source_ledger is not None else env["sc.treasury.ledger"].sudo().search([("company_id", "=", company.id), ("state", "=", "posted")], limit=1)
+    assert ledger and ledger.company_id == company and ledger.state == "posted", "company-scoped posted ledger required"
+    assert source_ledger is not None or contract, "existing company-scoped contract required"
+    models = ("sc.treasury.reconciliation",) if source_ledger is not None else ("sc.settlement.adjustment", "sc.treasury.reconciliation")
 
     def denied(call):
         refused = False
@@ -516,7 +518,7 @@ def _finance_state_authority_checks(group, created):
             refused = True
         assert refused, "finance state authority bypassed"
 
-    for model in ("sc.settlement.adjustment", "sc.treasury.reconciliation"):
+    for model in models:
         policies = Policy.with_context(active_test=False).search([("target_model", "=", model), ("company_id", "in", [False, company.id])])
         policies.write({"approval_required": False, "mode": "none"})
         policies.sync_tier_definitions()
@@ -564,6 +566,79 @@ def _finance_state_authority_checks(group, created):
             required.action_reconcile()
             assert required.state == "reconciled"
         print("APPROVAL_CHECK=%s_review_then_explicit_execution" % model)
+
+
+def _self_funding_reconciliation_checks(group, created):
+    base = _env()
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)], limit=1)
+    assert finance, "existing finance fixture required"
+    company = finance.company_id
+    env = base["sc.self.funding.registration"].with_company(company).with_context(allowed_company_ids=[company.id]).env
+    project = env["project.project"].sudo().create({"name": "Rollback self funding chain", "code": "SELF-FUNDING-CHAIN", "company_id": company.id, "manager_id": finance.id, "user_id": finance.id})
+    partner = _partner("Rollback self funding partner")
+    created.extend([(project._name, project.id), (partner._name, partner.id)])
+    model = "sc.self.funding.registration"
+    Policy = env["sc.approval.policy"].sudo()
+    policies = Policy.with_context(active_test=False).search([("target_model", "=", model), ("company_id", "in", [False, company.id])])
+    policies.write({"approval_required": False, "mode": "none"})
+    policies.sync_tier_definitions()
+    def document():
+        record = env[model].with_user(finance).create({"project_id": project.id, "partner_id": partner.id,
+            "amount": 100, "payment_account_name": "Rollback company account", "partner_account_name": "Rollback partner account"})
+        assert not record.env.su and record.env.user == finance
+        created.append((record._name, record.id))
+        attachment = _attach(record, "self-funding-chain")
+        created.append((attachment._name, attachment.id))
+        return record
+    def ledger_for(record):
+        return env["sc.treasury.ledger"].sudo().search([("source_model", "=", model), ("source_res_id", "=", record.id)])
+    def denied(call):
+        refused = False
+        try:
+            with env.cr.savepoint(): call()
+        except UserError:
+            refused = True
+        assert refused, "self funding authority bypassed"
+    automatic = document()
+    denied(lambda: automatic.write({"state": "confirmed"}))
+    denied(lambda: env[model].sudo().with_context(default_state="confirmed").create({}))
+    denied(lambda: automatic.with_context(sc_self_funding_authority_token=True).write({"state": "done"}))
+    print("APPROVAL_CHECK=self_funding_direct_state_denied")
+    automatic.action_confirm()
+    assert automatic.state == "confirmed" and not automatic.review_ids and not ledger_for(automatic)
+    print("APPROVAL_CHECK=self_funding_auto_approval_does_not_post")
+    automatic.action_done()
+    ledger = ledger_for(automatic)
+    assert len(ledger) == 1 and ledger.state == "posted" and ledger.company_id == company and ledger.amount == 100
+    created.append((ledger._name, ledger.id))
+    print("APPROVAL_CHECK=self_funding_explicit_completion_posts_source_ledger")
+    policy = policies.filtered(lambda row: row.company_id == company)[:1]
+    configuration = {"active": True, "approval_required": True, "mode": "single", "manager_group_id": group.id, "runtime_state": "tier_validation"}
+    if policy:
+        policy.write(configuration)
+        policy.step_ids.write({"active": False})
+    else:
+        policy = Policy.create(dict(configuration, name="Rollback self funding", code="runtime_self_funding_chain", target_model=model, company_id=company.id))
+        created.append((policy._name, policy.id))
+    env["sc.approval.step"].sudo().create({"policy_id": policy.id, "name": "Self funding review",
+        "sequence": max(policy.step_ids.mapped("sequence") or [0]) + 10,
+        "approval_scope_key": policy._approval_scope_for_group(group), "approve_group_id": group.id})
+    policy.sync_tier_definitions()
+    required = document()
+    required.action_confirm()
+    assert required.state == "draft" and required.review_ids and required.validation_status in ("waiting", "pending")
+    denied(required.action_done)
+    assert not ledger_for(required)
+    print("APPROVAL_CHECK=self_funding_pending_cannot_post")
+    _approve_existing_reviews(required)
+    assert required.state == "confirmed" and required.validation_status == "validated" and not ledger_for(required)
+    print("APPROVAL_CHECK=self_funding_real_review_does_not_post")
+    required.action_done()
+    ledger = ledger_for(required)
+    assert required.state == "done" and len(ledger) == 1 and ledger.state == "posted" and ledger.company_id == company and ledger.project_id == project and ledger.amount == required.amount
+    created.append((ledger._name, ledger.id))
+    print("APPROVAL_CHECK=self_funding_review_then_explicit_post")
+    _finance_state_authority_checks(group, created, source_ledger=ledger)
 
 
 def _legacy_workflow_boundary_checks():
@@ -2789,7 +2864,7 @@ def _subcontract_settlement_approval_checks(project, group, created):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
-    assert scope in ("expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
+    assert scope in ("self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"
     model_name = "sc.expense.claim"
     policy = _policy(model_name)
     fields = ["active", "approval_required", "mode", "runtime_state", "manager_group_id", "step_ids"]
@@ -2798,17 +2873,21 @@ def main():
     step_baseline = policy.step_ids.read(step_fields)
     created = []
     legacy_parameter_baseline = env["ir.config_parameter"].sudo().search([("key", "=", "sc.workflow.legacy_runtime_enabled")]).read(["key", "value"]) if scope == "legacy-workflow" else None
-    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.settlement.adjustment", "sc.treasury.reconciliation"])]) if scope == "finance-state-authority" else env["sc.approval.policy"]
+    finance_policies = env["sc.approval.policy"].sudo().with_context(active_test=False).search([("target_model", "in", ["sc.settlement.adjustment", "sc.treasury.reconciliation", "sc.self.funding.registration"])]) if scope in ("finance-state-authority", "self-funding-reconciliation") else env["sc.approval.policy"]
     finance_baseline = finance_policies.read(fields)
     finance_steps = finance_policies.step_ids.read(step_fields)
     passed = False
     try:
-        if scope not in ("legacy-workflow", "finance-state-authority"):
+        if scope not in ("legacy-workflow", "finance-state-authority", "self-funding-reconciliation"):
             project = _project("Business Config Approval Runtime")
             partner = _partner("Business Config Approval Runtime Partner")
             created.extend([(project._name, project.id), (partner._name, partner.id)])
 
-        if scope == "finance-state-authority":
+        if scope == "self-funding-reconciliation":
+            group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
+            assert group, "existing reviewer group required"
+            _self_funding_reconciliation_checks(group, created)
+        elif scope == "finance-state-authority":
             group = policy.manager_group_id or policy.step_ids[:1].approve_group_id
             assert group, "existing reviewer group required"
             _finance_state_authority_checks(group, created)
@@ -3031,7 +3110,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (10 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
