@@ -350,6 +350,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                         setattr(rec, check, lambda name=check: checks.append(name))
                     rec.invalidate_recordset = lambda: None
                     rec.write = lambda values: rec.data.update(values)
+                    rec._write_invoice_state = lambda values: rec.data.update(values)
                     rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                     namespace['action_confirm'](rec)
                     self.assertTrue(checks)
@@ -478,6 +479,59 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             document = types.SimpleNamespace(company_id=8, project_id=types.SimpleNamespace(company_id=8 if same_company else 9, _ensure_operation_allowed=project_gate))
             with self.assertRaises(ValueError): ns['_check_document_operation'](Rows([document]), 'Archive')
             self.assertEqual(len(calls), int(same_company))
+
+    def test_invoice_external_terminal_state_and_red_flush_attribution_denied(self):
+        path = MODEL.with_name('invoice_registration.py')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]
+        for method in methods: method.decorator_list = []
+        ns = {'UserError': ValueError, '_': lambda value: value, '_INVOICE_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list): pass
+        rows = Rows([types.SimpleNamespace(source_origin='manual', state='confirmed', validation_status='no')])
+        rows.env = types.SimpleNamespace(context={}, su=False)
+        for state in ('confirmed', 'registered', 'legacy_confirmed', 'cancel', False):
+            with self.assertRaises(ValueError): ns['create'](rows, [{'state': state}])
+            rows.env.context = {'default_state': state, 'sc_invoice_state_token': True}
+            with self.assertRaises(ValueError): ns['create'](rows, [{}])
+        rows.env.context = {}
+        with self.assertRaises(ValueError): ns['create'](rows, [{'source_origin': 'legacy', 'state': 'legacy_confirmed'}])
+        for field in ('red_flush_adjustment_id', 'red_flush_origin_source_record_id'):
+            with self.assertRaises(ValueError): ns['create'](rows, [{field: 7}])
+            rows.env.context = {'default_' + field: 7}
+            with self.assertRaises(ValueError): ns['create'](rows, [{}])
+            rows.env.context = {}
+        for values in ({'state': 'registered'}, {'source_origin': 'legacy'}, {'red_flush_adjustment_id': 4}, {'amount_total': 200}, {'invoice_no': 'replacement'}):
+            with self.assertRaises(ValueError): ns['write'](rows, values)
+        rows[0].state, rows[0].validation_status = 'draft', 'pending'
+        with self.assertRaises(ValueError): ns['write'](rows, {'amount_total': 200})
+
+    def test_invoice_registration_and_cancellation_keep_review_authority(self):
+        path = MODEL.with_name('invoice_registration.py')
+        methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'action_register', 'action_cancel'}]
+        ns = {'UserError': ValueError, '_': lambda value: value}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        rec = self.record(state='draft', reviews=['actual'], status='pending')
+        rec.source_origin = 'manual'
+        with self.assertRaises(ValueError): ns['action_cancel'](rec)
+        def denied(): raise ValueError('finance permission required')
+        rec._assert_finance_register_access = denied
+        with self.assertRaisesRegex(ValueError, 'finance permission required'): ns['action_register'](rec)
+
+    def test_red_flush_generation_checks_finance_permission_before_create(self):
+        path = MODEL.with_name('invoice_registration.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_create_registered_red_flush')
+        method.decorator_list = []
+        ns = {'UserError': ValueError, '_': lambda value: value, '_INVOICE_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        calls = []
+        def denied():
+            calls.append('permission')
+            raise ValueError('finance permission required')
+        invoice = types.SimpleNamespace(env={'sc.approval.policy': types.SimpleNamespace(_assert_submission_approved=lambda *args: calls.append('approved'))}, _assert_finance_register_access=denied)
+        adjustment = types.SimpleNamespace(ensure_one=lambda: None, _name='sc.output.invoice.adjustment', generated_invoice_id=False)
+        with self.assertRaisesRegex(ValueError, 'finance permission required'):
+            ns['_create_registered_red_flush'](invoice, adjustment, {})
+        self.assertEqual(calls, ['approved', 'permission'])
 
     def test_red_flush_approval_is_separate_from_generating_invoice(self):
         path = ROOT / 'addons/smart_construction_core/models/core/output_invoice_adjustment.py'
@@ -828,6 +882,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     with self.subTest(model=filename, method=method, status=status, reviews=reviews):
                         rec = self.record(state='draft', reviews=reviews, status=status)
                         rec.write = lambda values: rec.data.update(values)
+                        rec._write_invoice_state = lambda values: rec.data.update(values)
                         rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
                         rec._check_business_anchor = lambda: None
                         rec._get_tier_reject_reason = lambda: 'real rejection'

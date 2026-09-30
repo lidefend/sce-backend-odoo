@@ -1343,6 +1343,10 @@ class ScWorkflowContractService(models.AbstractModel):
             return self._payment_execution_evidence_gate(record)
         if record._name == "sc.receipt.income":
             return self._receipt_income_evidence_gate(record)
+        if record._name == "sc.output.invoice.adjustment":
+            if not self.env["sc.invoice.registration"]._has_finance_register_access():
+                return [self._gate("INVOICE_REGISTER_ACCESS_DENIED", "你没有完成发票登记的财务确认权限。", action_keys=["complete"])]
+            return []
         if record._name == "sc.invoice.registration":
             return self._invoice_registration_evidence_gate(record)
         if record._name == "sc.self.funding.registration":
@@ -1609,7 +1613,7 @@ class ScWorkflowContractService(models.AbstractModel):
                 self._gate(
                     "INVOICE_REGISTRATION_APPROVAL_IN_PROGRESS",
                     "发票登记已经在统一审批流程中，请等待审批完成后再重复提交。",
-                    action_keys=["submit"],
+                    action_keys=["submit", "cancel"],
                 )
             )
         return gates

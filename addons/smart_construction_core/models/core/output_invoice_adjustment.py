@@ -274,7 +274,8 @@ class ScOutputInvoiceAdjustment(models.Model):
             note_parts.append(_("红冲原因：%s") % self.reason)
         if self.note:
             note_parts.append(self.note)
-        return self.env["sc.invoice.registration"].create(
+        return self.env["sc.invoice.registration"]._create_registered_red_flush(
+            self,
             {
                 "source_origin": "manual",
                 "source_kind": "output_invoice_tax",

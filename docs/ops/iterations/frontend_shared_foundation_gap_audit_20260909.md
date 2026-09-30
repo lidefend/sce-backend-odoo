@@ -8614,3 +8614,13 @@ L1 red-flush-approval-iteration.log PASS，L2 unit.log131 PASS、native.log8+54=
 财务create页面tpl07-1790792904864/report.json20 PASS，原票/变更日期/红冲票号为有效可编辑契约及真实输入，新建无直接批准/确认红冲，1440/390无横溢出，errors/forbiddenWrites为空，390截图复核。前端CrYkOCxc复用未构建。工具page-iteration与final-tool-iteration通过；旧ORM同号测试改在submit断言明确业务错误，终态测试先submit，未运行完整ORM，收款来源测试前提不宣称已修复。
 
 尚未完成：收款发票来源的合同税率前提、原票变动后重新办理、并发重复红冲、实际角色全流程，以及生成registered票与通用发票审批/登记权限的衔接。下一步优先在同一业务链收口invoice_registration.create/write和红冲生成的状态权威，不能因本scope通过转而忽略直写终态的缺口。不新开覆盖表、不升级detail.action-state整行，不推送合并目标部署。
+
+### 53.122 发票状态权限及红冲生成登记入口（进行中）
+
+3583a8d56 clean续跑。P1 smart_construction_core收口invoice_registration create/write直接终态缺口；仅内部对象令牌可写状态，普通创建仅draft，历史legacy_confirmed仅source_origin=legacy且env.su迁移保留，普通角色不能声明历史来源。红冲归属含context默认值不可外部伪造。在审/已批准/已登记手工票的审批内容冻结，在审取消拒绝。action_confirm/register/cancel及真实tier回调使用内部状态入口，原权限/业务锚点/audit保留。
+
+红冲生成改用私有_create_registered_red_flush：核对已批准原变更单、未生成、原票快照、业务前提、绑定身份，并复用通用财务登记权限；workflow对无权限的complete发布明确denied gate，发票在审cancel同样阻断。不是前端增加模型规则，也不是将配置当授权。无字段/XML变更，不需模块升级，但需reload并更新受影响运行证据。
+
+L1 invoice-state-iteration.log通过，初轮unit.log134中1个error来自旧finance-family替身缺新内部写状态方法，未放宽断言；test-iteration.log后unit-recovery.log134 PASS。native.log8+54=62 PASS，后续仅测试替身/P4变化不重跑未变native输入。P4同一red-flush scope源票改走正式action_confirm/实际review/action_register；使用既有财务登记人及sudo数据准备，不宣称普通角色数据权限闭环。新增直接注册/令牌伪造拒绝、非登记角色PM拒绝红冲。原票金额现在冻结，末项检查改为拒绝篡改；原票快照变化纯测试仍有效，旧runtime11因产品输入变化不继续算当前通过。permission-tool-iteration/语法/diff通过后才reload/runtime。
+
+运行验证仍待执行，前端CrYkOCxc未改不构建；既有create截图仅外观可复用，不证明新权限语义。收款来源税率、普通角色完整办理、源变化恢复/并发及其他已登记业务仍未收口。无新环境/持久fixture/推送合并目标部署。
