@@ -606,3 +606,6 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 
 
 53.171：合同履约事件有有效动作契约但缺模型状态写入保护，P1 0eaeab072已补内部动作写入/普通create-defaults-write拒绝。164纯测及adcb9a5f6受管事件专用8项PASS、ROLLBACK VERIFIED，状态绕过缺口关闭。未证明审批后内容冻结、普通操作员浏览器办理或全部业务覆盖。
+
+
+53.172：sc.plan主单状态绕过由167d6a637修复，165纯测及06a6f5985计划专用runtime8 PASS、ROLLBACK VERIFIED。普通创建/写状态拒绝，真实审批后独立启动完成、取消重置保留。未覆盖节点/版本/汇报、审批后内容冻结或PM浏览器办理；三类主单状态闭环不能外推全系统交付。

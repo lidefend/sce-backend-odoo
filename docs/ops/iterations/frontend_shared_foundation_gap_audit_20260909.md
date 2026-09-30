@@ -9194,3 +9194,14 @@ L1 event-state-iteration PASS；payment.approval_state_machine.unit164 PASS、be
 受管backend.acceptance.up加载adcb9a5f6，仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter与原卷。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-runtime-smoke.log 8具名PASS，ROLLBACK VERIFIED（原审批配置/步骤回读及全部登记临时对象不存在）。真实检查直接终态create/defaults拒绝、普通/伪造上下文write拒绝且draft保持、草稿编辑/正式cancel、无配置只批准、有配置真实review、实际批准后独立完成、驳回原因及重提新链。创建/办理沿原事务sudo，review由真实审核人，不冒充普通合同操作员UI全旅程。
 
 无字段/XML变化不升级模块；前端e31e51c59/index-7JTLfH1Y.js未变，不构建或重跑创建页。事件状态绕过缺口关闭；审批后业务内容冻结、普通角色浏览器保存办理及同族计划职责仍未由本次覆盖。下一步核对既有sc.plan的状态权威边界，复用其动作/审批证据，不扩全仓扫描或重跑已闭合领域。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。
+
+
+### 53.172 计划主单状态权威与独立执行验证
+
+c936ef0f0 clean起点，P1 167d6a637仅sc.plan主单：普通create/default_state只能draft，普通write不能写state；正式确认、真实审批回调、启动、完成、取消、重置通过既有私有状态令牌模式。计划节点/版本/汇报不是本批状态职责，不随主单一起禁用。原日期/节点完成检查、统一审批配置分流、独立执行及实际起止日期记录保持；前端不补业务规则。
+
+L1 plan-state-iteration、py_compile/bash-n/diff PASS；payment.approval_state_machine.unit165 PASS及begin/record完成（plan-state-begin/unit/receipt），覆盖直接终态create/defaults/write、伪造token/skip_validation_check拒绝，草稿编辑和内部状态写入可用；原计划配置与无配置审批/显式启动完成回归继续通过。P4 06a6f5985在既有approval_runtime/shell白名单增加plan-state-authority，3项状态边界检查+复用_draft_confirmation_checks5项；不新增环境或fixture工具。
+
+受管backend.acceptance.up加载06a6f5985；SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：plan-runtime-smoke.log8具名PASS，ROLLBACK VERIFIED。实际外部状态写入及默认状态拒绝且草稿/实际日期不变；草稿编辑→正式取消→重置回草稿；无配置确认不启动；等待审批不能执行；真实批准后启动、完成分别发生；驳回原因与重提新审批链正确。原配置/步骤回读一致、登记临时对象均不存在。采用原事务sudo创建和业务动作、真实reviewer审批，不冒充PM浏览器证据。环境仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
+
+无字段/XML变化不升级；前端e31e51c59/index-7JTLfH1Y.js无变化不重建。日志、事件、计划主单直接状态绕过均有独立代码/运行证据，不能外推审批后内容冻结、子单据办理或全部89入口。下一步回到本组普通角色真实页面保存/提交缺口，沿现有受管浏览器及精确临时对象恢复机制补施工日志代表办理；不重复后台已过8项/配置/付款旅程，不造持久fixture。总体67/detail.action-state开放，无推送/合并/目标部署。
