@@ -801,8 +801,8 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.material.outbound": {
             "state_field": "state",
-            "state_phase": {"draft": "draft", "submitted": "under_review", "issued": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "reject", "complete", "reopen", "cancel"]},
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "issued": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "reject", "cancel"], "approved": ["complete", "cancel"], "cancel": ["reopen"]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {
                 "submit": "action_submit",

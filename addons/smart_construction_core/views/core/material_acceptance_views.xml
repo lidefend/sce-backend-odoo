@@ -563,12 +563,16 @@
         <field name="arch" type="xml">
             <form string="出库办理">
                 <header>
+                    <field name="can_review" invisible="1"/>
+                    <field name="validation_status" invisible="1"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="state != 'submitted' or not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="state != 'submitted' or not can_review or validation_status not in ('waiting', 'pending')"/>
                     <button name="action_submit" string="提交" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="state != 'draft'"/>
-                    <button name="action_issue" string="确认出库" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'submitted'"/>
+                    <button name="action_issue" string="确认出库" type="object" class="btn-primary" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'approved'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" groups="smart_construction_core.group_sc_cap_material_manager" invisible="state in ('issued', 'cancel')"/>
                     <button name="action_open_transfer_inbound" string="查看调入入库" type="object" groups="smart_construction_core.group_sc_cap_material_read,smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="outbound_type != 'transfer' or not transfer_inbound_id"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,issued"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,issued"/>
                 </header>
                 <sheet>
                     <group string="出退库主信息">

@@ -227,12 +227,14 @@
         "addons/smart_construction_core/models/core/general_contract.py",
         "addons/smart_construction_core/models/support/contract_center.py",
         "addons/smart_construction_core/models/core/purchase_extend.py",
-        "addons/smart_construction_core/models/core/material_plan.py"
+        "addons/smart_construction_core/models/core/material_plan.py",
+        "addons/smart_construction_core/models/core/material_acceptance.py",
+        "addons/smart_construction_core/views/core/material_acceptance_views.xml"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.29 payment now consumes shared approve/reject services; 46 tests pass with preserved domain guards and native wizard result. Next material outbound approval integration (model in material_acceptance.py), missing necessary business-document coverage and contract execution prerequisites. Two native state-action gaps, governed upgrade, real ORM and browser approval acceptance remain.",
+  "next_exact_step": "53.30 outbound uses shared submit for all kinds, new approved state separates review from stock/cost execution; 47 approval+32 native+15 semantics+16 phase tests pass. Governed upgrade must load new selection/XML; old submitted records are not silently approved. Continue necessary business-document coverage beyond 15 tier-supported types, contract execution prerequisites and two native gaps; actual ORM/browser configuration and approval loops remain required.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -574,6 +576,18 @@
       "test_count": 46,
       "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-shared-decisions-tests.log",
       "runtime": "not_run"
+    },
+    "outbound_approval_53_30": {
+      "status": "verification_pending",
+      "source_head": "1b62c67f4",
+      "tests": {
+        "approval": 47,
+        "native": 32,
+        "semantics": 15,
+        "state_phase": 16
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/outbound-approval-tests.log",
+      "runtime": "not_run; new approved selection and XML need governed upgrade; existing submitted records need explicit transition review"
     }
   }
 }

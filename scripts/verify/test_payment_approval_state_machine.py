@@ -547,6 +547,50 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(rec.state, 'submit')
         self.assertEqual(rec.audits, [])
 
+    def test_outbound_approval_never_executes_stock_or_cost_operations(self):
+        path = MODEL.with_name('material_acceptance.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialOutbound')
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in {'action_submit', 'action_issue', 'action_on_tier_approved', 'action_on_tier_rejected'}]
+        namespace = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        for required in (False, True):
+            for kind in ('issue', 'return', 'transfer', 'loss'):
+                rec = self.record(required=required, state='draft')
+                rec._name = 'sc.material.outbound'
+                rec.id = 23
+                rec.outbound_type = kind
+                rec.dest_warehouse_id = True
+                rec.purpose = 'material use'
+                rec.line_ids = types.SimpleNamespace(_check_qty=lambda: None)
+                rec._sc_require_material_user = lambda label: None
+                rec._sc_require_material_manager = lambda label: None
+                def require_state(states, label):
+                    if rec.state not in states:
+                        raise ValueError('wrong state')
+                rec._sc_require_state = require_state
+                rec._validate_return_authority = lambda **kw: None
+                rec._sc_material_audit_payload = lambda: {'state': rec.state}
+                rec._sc_warn_system_defaults_on_action = lambda label: None
+                rec._write_cost_source_state = lambda values: rec.data.update(values)
+                rec._sc_audit_material_transition = lambda *args, **kw: rec.audits.append((args, kw))
+                rec.policy._assert_submission_approved = lambda record, states: PRODUCTION['_assert_submission_approved'](rec.policy, record, states)
+                executed = []
+                rec._complete_issue = lambda: executed.append('issue')
+                namespace['action_submit'](rec)
+                self.assertEqual(rec.state, 'submitted' if required else 'approved')
+                self.assertEqual(executed, [])
+                if required:
+                    with self.assertRaises(ValueError):
+                        namespace['action_issue'](rec)
+                    namespace['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'submitted')
+                    rec.data['validation_status'] = 'validated'
+                    namespace['action_on_tier_approved'](rec)
+                    self.assertEqual(rec.state, 'approved')
+                    self.assertEqual(executed, [])
+                namespace['action_issue'](rec)
+                self.assertEqual(executed, ['issue'])
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

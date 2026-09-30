@@ -7623,3 +7623,13 @@ L5：未推送、未合并、未部署。
 - 共享当前审批人/步骤权限失败使用AccessError，缺实例或不合法审批状态仍为业务错误；付款既有错误审批人拒绝语义未降级。原生意见向导action完整返回，尚未提交意见时付款保持submit。
 - L1 ci.local.iteration PASS（payment-shared-decisions-iteration.log），L2 verify.payment.approval_state_machine.unit最终46项PASS（payment-shared-decisions-tests.log，begin/record46），既有付款真实方法回归现在经过共同服务；新增付款原生向导返回及不提前状态变更反例。无模型字段/XML变化，不重建前端，运行态重载与前批XML升级统一待执行。
 - 此处完成已接入付款消费者的重复编排退出；不等于所有业务单据已覆盖。下一步材料出库、既有配置/运行支持缺口及合同执行边界仍按原产品范围收敛；两条原生状态动作登记和真实ORM/浏览器审批闭环保持未完成。
+
+
+### 53.30 材料出库审批与实际出库分离
+
+- 1b62c67f4 clean起步；P1 smart_construction_core材料出库生命周期。原action_issue仅对loss读取配置，批准回调直接_complete_issue写库存/成本；不符合提交统一分流及审批不代替业务执行。新增approved（已批准）状态，submitted明确审批中；提交对issue/return/transfer/loss共同调用共享服务，无配置直接approved、有配置等待真实review。启用审批却规则只覆盖部分类型仍按共享服务报缺规则，不静默放行其他类型。
+- 审批回调要求真实review结果，通过仅submitted→approved，驳回submitted→draft并记录原因/审计；删除loss专属配置/申请编排。实际action_issue要求approved且共享批准事实门禁通过，再调用原_complete_issue。项目成本、退回数量锁、调拨入库、库存执行逻辑未改，审批不执行它们。主单与明细修改/删除锁加入approved，取消可从approved进入cancel。
+- workflow profile和原生页面同步新增approved，只在approved暴露确认出库；新增真实can_review/validation_status批准驳回按钮。顺带修正直接相关旧不一致：reset模型只接受cancel，契约/原生旧submitted重置入口改为cancel；不改重置业务方法。
+- L1 ci.local.iteration PASS（outbound-approval-iteration.log）；L2共享审批47、native32、semantics15通过（outbound-approval-tests.log，begin/record47），state_phase16通过（outbound-phase-tests.log，65模型状态覆盖）。新增执行四类出库真实提交/回调/出库入口，确认有/无配置均不会在审批阶段触发_complete_issue，未批准拒绝执行、批准后仅显式办理才调用。库存/台账协作者隔离，真实ORM业务验收仍待。
+- 新增selection值和XML必须受管模块升级；不自动将既有submitted数据认作approved。既有无审批实例submitted记录需要在验收/迁移时逐项处理，现有受控cancel→draft→重新提交可用，不偷偷批量改历史数据。已在审批中的真实validated回调可完成批准；已issued事实不改。未执行数据库写入或前端重建。
+- 配置选择17类/运行支持15类不等于全业务单据完成；后续继续既有职责范围内必要接入、合同执行边界、两项原生动作缺口与受管升级/真实验证。总体active，不推送/合并/目标部署。

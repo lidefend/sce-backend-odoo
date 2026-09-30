@@ -1745,7 +1745,8 @@ class ScMaterialOutbound(models.Model):
     state = fields.Selection(
         [
             ("draft", "草稿"),
-            ("submitted", "已提交"),
+            ("submitted", "审批中"),
+            ("approved", "已批准"),
             ("issued", "已出库"),
             ("cancel", "已取消"),
         ],
@@ -1817,7 +1818,7 @@ class ScMaterialOutbound(models.Model):
         ):
             raise UserError(_("材料出库状态只能通过受控业务动作推进。"))
         if self._FACT_IMMUTABLE_FIELDS & set(vals):
-            locked = self.filtered(lambda record: record.state in ("submitted", "issued"))
+            locked = self.filtered(lambda record: record.state in ("submitted", "approved", "issued"))
             if locked:
                 raise UserError(_("已提交或已出库的材料出库事实不可修改；请先通过受控流程退回草稿。"))
         return super().write(vals)
@@ -1828,7 +1829,7 @@ class ScMaterialOutbound(models.Model):
         ).write(vals)
 
     def unlink(self):
-        if self.filtered(lambda record: record.state in ("submitted", "issued")):
+        if self.filtered(lambda record: record.state in ("submitted", "approved", "issued")):
             raise UserError(_("已提交或已出库的材料出库事实不可删除。"))
         return super().unlink()
 
@@ -1865,8 +1866,11 @@ class ScMaterialOutbound(models.Model):
         self._sc_warn_system_defaults_on_action(_("提交材料出库"))
         self._write_cost_source_state({"state": "submitted"})
         for record in self:
+            required = self.env["sc.approval.policy"]._start_submission_review(record)
+            if not required:
+                record._write_cost_source_state({"state": "approved", "reject_reason": False})
             record._sc_audit_material_transition(
-                "material_outbound_submitted",
+                "material_outbound_submitted" if required else "material_outbound_approved",
                 snapshots[record.id],
                 record._sc_material_audit_payload(),
                 action_name="action_submit",
@@ -1876,17 +1880,10 @@ class ScMaterialOutbound(models.Model):
     def action_issue(self):
         self._sc_require_material_manager(_("确认材料出库"))
         for record in self:
-            record._sc_require_state({"submitted"}, _("确认材料出库"))
+            record._sc_require_state({"approved"}, _("确认材料出库"))
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
             record.line_ids._check_qty()
-        records_to_issue = self.browse()
-        for record in self:
-            if record._requires_loss_approval() and record.validation_status != "validated":
-                record._request_material_outbound_approval()
-                continue
-            records_to_issue |= record
-        if not records_to_issue:
-            return True
-        return records_to_issue._complete_issue()
+        return self._complete_issue()
 
     def _complete_issue(self):
         self.ensure_one() if len(self) == 1 else None
@@ -1913,28 +1910,6 @@ class ScMaterialOutbound(models.Model):
             record._sync_transfer_inbound_after_issue()
         return True
 
-    def _requires_loss_approval(self):
-        self.ensure_one()
-        if self.outbound_type != "loss":
-            return False
-        return self.env["sc.approval.policy"].is_approval_required(self._name, company=self.company_id)
-
-    def _request_material_outbound_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            company = self.company_id or self.env.company
-            reviews = self.with_company(company).with_context(
-                allowed_company_ids=[company.id],
-            ).request_validation()
-            if not reviews:
-                raise ValidationError(_("材料损耗已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            return True
-        self.sudo().message_post(body=_("材料损耗已发起统一审批，审批通过后才能确认损耗并写入项目成本。"))
-        return True
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -1950,27 +1925,26 @@ class ScMaterialOutbound(models.Model):
 
     def action_on_tier_approved(self):
         for record in self:
-            if record.state != "submitted":
-                raise ValidationError(_("只有已提交的材料损耗单可以完成统一审批回调。"))
-            if record.outbound_type != "loss":
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "validated":
                 continue
-            if record.validation_status != "validated":
-                if self.env.context.get("server_action_tier"):
-                    # OCA base_tier_validation_server_action fires this
-                    # callback after every approved level of a multi-level
-                    # linear chain; a mid-chain invocation must not raise.
-                    # The completed chain re-fires the callback and
-                    # finishes the transition.
-                    continue
-                raise ValidationError(_("材料损耗尚未完成统一审批流程。"))
-            record._complete_issue()
+            before = record._sc_material_audit_payload()
+            record._write_cost_source_state({"state": "approved", "reject_reason": False})
+            record._sc_audit_material_transition(
+                "material_outbound_approved", before, record._sc_material_audit_payload(),
+                action_name="action_on_tier_approved",
+            )
 
     def action_on_tier_rejected(self, reason=None):
         for record in self:
-            if record.state != "submitted" or record.outbound_type != "loss":
+            if record.state != "submitted" or not record.review_ids or record.validation_status != "rejected":
                 continue
-            record.with_context(skip_validation_check=True).write(
-                {"reject_reason": reason or record._get_tier_reject_reason()}
+            before = record._sc_material_audit_payload()
+            record.with_context(skip_validation_check=True)._write_cost_source_state(
+                {"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()}
+            )
+            record._sc_audit_material_transition(
+                "material_outbound_rejected", before, record._sc_material_audit_payload(),
+                action_name="action_on_tier_rejected",
             )
 
     def _prepare_transfer_inbound_line_vals(self, line):
@@ -2133,7 +2107,7 @@ class ScMaterialOutbound(models.Model):
 
     def action_cancel(self):
         self._sc_require_material_manager(_("取消材料出库"))
-        self._sc_require_state({"draft", "submitted"}, _("取消材料出库"))
+        self._sc_require_state({"draft", "submitted", "approved"}, _("取消材料出库"))
         snapshots = {record.id: record._sc_material_audit_payload() for record in self}
         self._write_cost_source_state({"state": "cancel"})
         for record in self:
@@ -2208,7 +2182,7 @@ class ScMaterialOutboundLine(models.Model):
             if vals.get("outbound_id")
         }
         if self.env["sc.material.outbound"].browse(outbound_ids).filtered(
-            lambda outbound: outbound.state in ("submitted", "issued")
+            lambda outbound: outbound.state in ("submitted", "approved", "issued")
         ):
             raise UserError(_("已提交或已出库的材料出库单不能新增明细。"))
         for vals in vals_list:
@@ -2219,12 +2193,12 @@ class ScMaterialOutboundLine(models.Model):
         if "returned_qty" in vals:
             raise UserError(_("累计已退数量只能由退库确认服务维护。"))
         if self._FACT_IMMUTABLE_FIELDS & set(vals):
-            if self.filtered(lambda line: line.outbound_id.state in ("submitted", "issued")):
+            if self.filtered(lambda line: line.outbound_id.state in ("submitted", "approved", "issued")):
                 raise UserError(_("已提交或已出库的材料出库明细不可修改。"))
         return super().write(vals)
 
     def unlink(self):
-        if self.filtered(lambda line: line.outbound_id.state in ("submitted", "issued")):
+        if self.filtered(lambda line: line.outbound_id.state in ("submitted", "approved", "issued")):
             raise UserError(_("已提交或已出库的材料出库明细不可删除。"))
         return super().unlink()
 
