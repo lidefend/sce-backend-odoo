@@ -8580,3 +8580,11 @@ L1 project-document-iteration.log通过；L2 unit.log126 PASS。首轮native旧�
 53.118运行前提阻断：9573da065受管模块升级/reload成功（project-document-upgrade.log/reload.log）。project-document-runtime.log在首项前发现existing doc_type查询为空，明确AssertionError existing document classification required；ROLLBACK VERIFIED。这是可用分类数据前提缺失，不是审批执行通过，也不证明inactive记录不存在。未造字典/fixture，未重复同失败。已向用户异步请求工程资料大类的确认名称/代码或既有配置来源。
 
 P4 PM create检查已准备，project-document-page-iteration.log/node/diff通过，但因上游运行前提未满足不执行browser，保持not_run。本批P1源码/纯回归126+native60完成，运行时和普通角色办理未完成；不得把前序家族证据覆盖本模型。字段doc_type必填来自原模型，不能删掉职责换取通过。前端CrYkOCxc不变。下一步等待分类权威并通过既有配置机制解决；同时可推进互不依赖的既有workflow剩余模型职责，禁止重复空分类检查。无推送合并目标部署。
+
+### 53.119 投标保证金动作契约与资金执行语义校正
+
+fbb45a857 dirty两文件续跑，复用上轮已完成日志，不重复执行。P1 smart_construction_core workflow投影拥有行业动作语义；非前端推断、非用户偏好。现有action_confirm实际校验日期/正金额/固化财务身份并生成posted资金台账，因此purpose由submit纠正为complete，confirmed phase由approved纠正为done。已确认记录退出cancel/reopen投影；草稿确认与取消、取消后重置保持实际模型边界。本次不修改资金执行方法、不声称统一审批已接入。
+
+L1 guarantee-action-iteration.log PASS；L2 guarantee-action-native.log 8+53=61 PASS，新增draft/confirmed/cancel/unknown动作边界和确认purpose断言，agent.run.begin/record登记61。L0 HEAD+dirty已核对；本次中等风险P1契约投影，最早L1。无字段/XML变更不需模块升级；模型执行输入不变，不跑无关ORM。前端源未变，复用CrYkOCxc不构建；后端仍9573da065，本修正尚未加载，L3/L4本轮not_run，不宣称运行时已接管。L5非发布阶段不运行Quick/推送。
+
+明确产品缺口：tender.guarantee已有动作方法及部分契约，但尚无统一审批。下一步复用tier与company-scoped policy，补提交/在审/批准/驳回职责，并将批准与确认入账分开；金额权威来自既有amount，必须保留财务身份冻结及已确认不可取消/重置约束。涉及模型/字段后再执行必要定向模型回归、受管升级和事务恢复验证。工程资料分类仍待确认，禁止重复同一阻断或造fixture。detail.action-state继续contract_gap，不升级整体状态，无推送合并目标部署。

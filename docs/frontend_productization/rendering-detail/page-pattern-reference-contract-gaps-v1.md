@@ -427,3 +427,7 @@ Segment 53.110 identified hardcoded zero paid/requested summaries. Segment 53.11
 ## Segment 53.118: project-document archival and required classification
 
 Project-document submission now uses shared configured/automatic approval; approval stops at `approved`, and a separate guarded archival action reaches `done`. Existing project operation restrictions remain. Pure126/native60 pass and the module is loaded, but runtime acceptance stopped before its first case because no usable `sc.dictionary` with `type=doc_type` exists in the scoped query. Transaction restoration passed; this does not prove inactive classifications absent. The required business classification authority has been requested, not fabricated as a fixture. Browser acceptance remains not run until the prerequisite is resolved.
+
+## Segment 53.119: guarantee action projection is not approval completion
+
+`tender.guarantee` confirmation posts a treasury ledger; its purpose is business completion, not approval submission. The workflow projection now reflects this and removes cancellation/reset from confirmed facts. Native coverage61 passes; the changed projection is not yet loaded in runtime. Shared approval remains a product gap: introduce configured/automatic submission separately from explicit posting, preserving financial identity and final-state protections. Keep the existing `detail.action-state` open.

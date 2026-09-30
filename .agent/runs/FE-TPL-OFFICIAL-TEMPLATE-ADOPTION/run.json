@@ -370,7 +370,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.118 sc.project.document review/archive separated, source022898811/backend9573da065 upgraded and loaded. L1/Pure126/native60 PASS; runtime project-document-runtime.log blocked before first case: no usable existing doc_type, ROLLBACK VERIFIED. Asked user for confirmed classification authority; do not invent dictionary fixture or repeat unchanged failure. PM create probe prepared/L1 passed but browser NOT_RUN due unmet upstream prerequisite. Resolve classification via governed existing config when authority supplied. Meanwhile independent existing workflow gap tender.guarantee/red-invoice may be inspected in owning model; no blanket scans. Keep overall active and detail.action-state open. No newfixtures/push/merge/deploy; frontendCrYkOCxc reused.",
+  "next_exact_step": "53.119 tender.guarantee workflow correction L1 PASS/native61 PASS recorded: confirm is complete/cash posting, confirmed has no cancel/reset. Source projection only; backend9573da065 not reloaded, frontendCrYkOCxc unchanged. Next implement shared tier/policy submission for guarantee, distinct approved versus confirmed, preserving frozen finance identity and posted ledger protections; then focused tests and governed upgrade/runtime rollback. Project-document classification authority remains pending; do not repeat blocked scope or invent fixture. Keep detail.action-state/overall goal open; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
