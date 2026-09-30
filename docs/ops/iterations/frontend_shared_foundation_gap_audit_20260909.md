@@ -8406,3 +8406,10 @@ P4同rollback工具新增rental-settlement-cash独立定向scope（拟10组）�
 company.log仍前4组通过，真正支付入账失败：P1 payment.ledger._check_request_state遗漏rental_settlement，已有申请/执行承认但ledger不承认。rollback VERIFIED，无支付残留。就地补rental依据分支：必须confirmed，调用现有租赁身份及额度校验；补ledger.action_open_settlement返回租赁源，避免入账后导航断链。未改旧basis类型语义。
 
 L1 rental-ledger-basis-iteration.log/py_compile/bash-n/diff PASS；L2 rental-ledger-basis-unit.log106 PASS并登记：真实ledger guard接受合法confirmed，未确认/已paid/取消/申请未批/超额拒绝，来源导航精确绑定。前端未变，创建23无需重跑；模型Python变更只需受管reload，不做重复模块升级。下一步加载新提交再运行现金scope；实际入账/冲销尚未证明，不宣称财务闭环。
+
+
+53.105结果：受管Python reload2fef6a71c成功（rental-cash-ledger-reload.log）。rental-settlement-cash-runtime-ledger.log10/10 PASS、ROLLBACK VERIFIED：fixture_role_finance非sudo完成申请/付款登记动作，真实配置reviewer处理审批，资金基线真实activate；申请额度拒绝1元超额，20+40分别产生posted ledger及正确来源导航，20时拒绝paid、60后显式paid，冲销40后confirmed/paid20/unpaid40，全部冲销后paid0/unpaid60，历史归属仍拒绝清除，申请取消释放责任后源取消成功。原配置及临时记录恢复，无权限/门禁改动。该结果替代前四轮失败，不抹除失败证据。
+
+边界：源结算与资金计划仍是sudo事务准备；现金动作是实际finance身份的ORM路径，不等同于浏览器全旅程或真实双事务竞争。当前fixture_role_pm已有结算空查询不重跑，既有详情支付金额呈现待数据前提。前端7915f3bb9未改变、创建23和原审批12按未变产品输入复用。
+
+下一步动作可用性契约需补齐取消阻断：模型已拒绝在途付款责任下取消，但workflow rental evidenceGate目前只投影支付阻断，应复用同一业务谓词给cancel明确原因，不仅依赖点击后报错。并继续既有67台账剩余安全/分包等页面族，不将租赁财务事务通过升级为全系统交付；并发验证继续保留未验证状态。无推送/合并/目标部署。

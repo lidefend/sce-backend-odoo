@@ -408,3 +408,8 @@ Attributed canonical posted ledger totals now drive readonly paid/remaining fiel
 ### Segment53.104 — Rental settlement ORM and official creation verified
 
 The first upgrade failed on missing validation_status in the native modifier view; fixed it and restored project/supplier input policy. Recovery105 pure/59 native tests pass. Backendef7889f78 loads successfully; rental-settlement12 real ORM/reviewer/source/default checks PASS with rollback verified. Official create tpl07-1790786611844 passes23 checks at1440/390, no errors/writes, narrow screenshot reviewed. Existing PM records query tpl07-1790786669074 returns ok=true records=[]; do not repeat or fabricate fixtures. Actual payment posting/reversal/concurrency, existing detail money presentation and complete role handling remain open; no overall67 promotion.
+
+
+### Segment53.105 — Rental cash ORM loop passes with real finance role
+
+Backend2fef6a71c: rental-settlement-cash10 PASS and rollback VERIFIED. Non-sudo fixture finance submits requests and executes20+40 payments via genuine review/actions; posted ledgers navigate to rental source, partial/full confirmation rules hold, reversals restore source state/amounts, financial attribution stays immutable, and cancellation succeeds after obligations release. The run exposed and fixed missing rental basis in ledger validation. Source/funding setup is sudo; this is not a browser end-to-end or two-transaction concurrency result. Existing detail data remains unavailable. Next project the already-enforced cancellation blocker into workflow availability and continue remaining business families; overall67 stays open.

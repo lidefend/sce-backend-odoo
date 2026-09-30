@@ -346,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.105 rental-settlement-cash scope added; P4 env/group/company-reviewer assumptions corrected without permission changes. Actual finance first4 checks passed; ledger creation failed missing rental basis in payment.ledger._check_request_state, rollback verified. P1 guard+source navigation fixed,106 pure tests PASS. Next managed backend reload new commit (Python only, no module upgrade) then cash10 scope. Prior rental12/create23 valid; no repeat PM empty1790786669074. Overall67/concurrency/fullroles still open.",
+  "next_exact_step": "53.105 backend2fef6a71c cash10 PASS+ROLLBACK VERIFIED using non-sudo fixture finance and real reviewers; partial20/full60/reversals/source state/history/cancel proven ORM. Reuse source approval12/create23, frontend7915f3bb9 unchanged. Next reuse rental cancellation business predicate in workflow evidenceGate (currently backend denies live obligations but cancel availability lacks reason), then existing67 remaining safety/subcontract families. True two-transaction concurrency and role browser detail pending; PM empty1790786669074 do not repeat. No newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
