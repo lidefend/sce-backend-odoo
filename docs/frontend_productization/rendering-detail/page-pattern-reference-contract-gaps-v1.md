@@ -498,3 +498,8 @@ Same-transaction runtime10 passes with both self-funding and reconciliation docu
 ## Segment 53.133: reviewed self-funding fields match readonly workflow contract
 
 P1 write guard now freezes key self-funding content during pending review and after confirmation, preserving existing controlled migration and completed-record supplement rules. Pure144 and managed runtime11 pass at backend9bb5435b0 with verified rollback: actual finance actor cannot change reviewed amount/identity/evidence links, workflow editability is readonly, and completion posts the original amount. Prior create-page evidence is reused for unchanged rendering inputs. Attachment-content/external-reference mutation, refund balance, saved browser handling and other finance scope remain unverified.
+
+
+## Segment 53.134: financing registration real-role approval
+
+Financing loan_registration/financing_in runtime8 passes under non-sudo fixture finance handling and real reviewers, with rollback/configuration restoration verified. It proves direct-state denial, approval separate from explicit completion, finance permission and rejection/resubmission; this category intentionally produces no interfund ledger. An initial rejection-probe failure was fixed by selecting only reviewers authorized for the company. Borrowing-ledger categories, reviewed/final content integrity, historical replay and saved browser handling remain open. Backend9bb5435b0 and frontend rendering inputs are unchanged.

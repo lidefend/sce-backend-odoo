@@ -8749,3 +8749,12 @@ a7cba573c clean起点，P4复用_finance_state_authority_checks增加显式actor
 L1 self-funding-freeze-iteration.log PASS；self-funding-freeze-unit.log144 PASS并begin/record非零成功。原生动作名称/状态映射/XML及consumer均未改，复用已有62项声明证据但不将其当新增write guard证据；144纯测与实际运行负责证明本改动。源码9bb5435b0受管reload后self-funding-freeze-runtime.log11 PASS/ROLLBACK VERIFIED：实际fixture finance在审关键内容改写拒绝，批准金额修改拒绝，describe_record.editability只读，显式完成仍按100原金额生成台账并完成对账。原策略/步骤恢复与临时记录消失均回读。env local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷不变。
 
 前序两个创建页20项依赖的布局/输入/动作声明未变，沿原报告复用，不重新浏览器或构建。这里只关闭自筹已审核内容直接字段写入与共享只读契约一致性；附件底层内容/外部关联记录变化、refund余额、保存后浏览器及其他财务单据未覆盖项仍开放。下一步继续同组其他单据必要执行/审核内容边界，优先融资完成/真实审批、收款与付款冲销运行；不得将本项11通过升级总体67/detail.action-state。无推送合并目标部署。
+
+
+### 53.134 融资贷款登记真实角色审批（8项通过）
+
+b9d4f607f clean起点，P4仅扩展既有rollback工具financing-approval scope。fixture finance非sudo创建/提交/完成loan_registration+financing_in；同公司临时项目/往来方及策略/步骤准备提升权限，原配置回读恢复。贷款登记按既有业务规则不生成内部往来台账，不把该范围冒充借款台账验证。L1 financing-approval-iteration.log及py_compile/bash-n/diff通过；P1源未改复用pure144，backend9bb5435b0/前端CrYkOCxc不变，不reload/build。
+
+首轮financing-approval-runtime.log前7项成立后驳回阶段AccessError，finally回滚验证通过。归因P4候选审核人未按公司授权过滤；改为与_approve_existing_reviews一致的active/non-share/company_ids过滤及明确allowed_company_ids，不改产品权限。修复后financing-approval-runtime-fixed.log8 PASS/ROLLBACK VERIFIED：显式/default/假token状态绕过拒绝、无配置批准不完成、显式完成保持该类别无台账语义、在审不得完成、真实审核只批准、非财务负责人完成被拒绝、财务角色显式完成、真实驳回原因及重提新review均成立。第一次失败不能当通过；第二次有明确工具输入变更，非盲目重试。
+
+验证范围仅loan_registration/financing_in，借款分类生成台账/资金责任、已批准及已完成的内容冻结、历史重放、保存后浏览器仍未覆盖。下一步优先同一融资模型已审核/终态经济内容保护，与workflow readonly/locked一致；保留收款、付款冲销、结算调整合同来源及既有全局缺口。不扩展为全系统完成，不重复已通过页面，无推送合并目标部署。
