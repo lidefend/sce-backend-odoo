@@ -431,3 +431,7 @@ Project-document submission now uses shared configured/automatic approval; appro
 ## Segment 53.119: guarantee action projection is not approval completion
 
 `tender.guarantee` confirmation posts a treasury ledger; its purpose is business completion, not approval submission. The workflow projection now reflects this and removes cancellation/reset from confirmed facts. Native coverage61 passes; the changed projection is not yet loaded in runtime. Shared approval remains a product gap: introduce configured/automatic submission separately from explicit posting, preserving financial identity and final-state protections. Keep the existing `detail.action-state` open.
+
+## Segment 53.120: guarantee shared approval adopted, role journey still open
+
+Guarantee submission now uses shared policy/tier approval with amount authority; approval and explicit cash posting are separate. Source975348a91/backendfe880cb8a upgraded and loaded; pure128/native61, rollback runtime10, PM official create20 pass. Runtime uses sudo source/submit preparation and actual configured reviewers, not a saved ordinary-role browser journey. Return-direction handling remains unverified. Preserve the overall action-state gap and existing document-classification/monetary-authority questions.

@@ -370,7 +370,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.119 tender.guarantee workflow correction L1 PASS/native61 PASS recorded: confirm is complete/cash posting, confirmed has no cancel/reset. Source projection only; backend9573da065 not reloaded, frontendCrYkOCxc unchanged. Next implement shared tier/policy submission for guarantee, distinct approved versus confirmed, preserving frozen finance identity and posted ledger protections; then focused tests and governed upgrade/runtime rollback. Project-document classification authority remains pending; do not repeat blocked scope or invent fixture. Keep detail.action-state/overall goal open; no push/merge/deploy.",
+  "next_exact_step": "53.120 guarantee shared tier/policy complete in source975348a91/backendfe880cb8a, upgrade/reload PASS; pure128/native61/runtime guarantee-approval-runtime.log10 with ROLLBACK VERIFIED, PM create20 tpl07-1790792456049, frontendCrYkOCxc unchanged. Ordinary-role saved browser approval/posting and return-direction remain unverified. Continue existing workflow responsibilities next sc.output.invoice.adjustment owning-model semantics, not whole-repo scans. Project-document classification and project monetary authority pending user input, do not invent fixture or repeat unchanged blocked tests. Keep overall67/detail.action-state open; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

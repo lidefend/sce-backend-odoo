@@ -8596,3 +8596,7 @@ L1 guarantee-action-iteration.log PASS；L2 guarantee-action-native.log 8+53=61 
 L1 guarantee-approval-contract-iteration.log PASS；L2 guarantee-approval-unit.log128 PASS、native.log8+53=61 PASS，非零回执登记。新增实际生产方法纯回归覆盖无配置/配置审批不入账、独立入账及重复/终态拒绝、外部默认值/金额/账户保护；不是ORM证据。首次自检发现phase写pending，改成既有under_review后重新L1，再执行L2；最终日志为上述版本。
 
 P4既有事务回滚工具扩展tender-guarantee10组，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance与现有审核岗位，不新建环境或持久fixture，临时单据/策略/台账全事务恢复。tool-iteration.log/py_compile/bash-n/diff通过；default all280仅清单计数，未执行全量。需受管模块升级（tier/字段/XML）和reload后执行本scope；运行时及角色页面尚未通过，detail.action-state保持缺口。前端CrYkOCxc源码未变不构建，不重跑其他业务ORM，无推送合并目标部署。
+
+53.120结果：源码975348a91/P4 fe880cb8a受管upgrade/reload成功，后端已绑定fe880cb8a。guarantee-approval-runtime.log10 PASS、ROLLBACK VERIFIED：外部状态及未批入账拒绝、无配置批准不入账、批准金额保护、显式posted台账及终态拒绝、金额阈值未匹配拒绝、实际review契约、在审配置关闭不绕过、真实审核回调、审核后显式入账、驳回原因及新review重提全部通过。事务源单/策略与提交是sudo builder，审核为实际reviewer；不是普通角色浏览器办理，也未覆盖退回方向全旅程。
+
+P4现有approval-actions新增PM tender.guarantee create，page-iteration.log/node/diff通过。tpl07-1790792456049/report.json20 PASS：bid/date/amount有效可编辑契约及真实输入、草稿无直接审批/入账，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核投标/类型/日期/金额/账户与保存提交区。前端CrYkOCxc不变，未构建。保留实际选投标保存/普通角色提交审批入账与退回方向验证缺口，不能以创建页检查升级全旅程。下一步仍沿已有workflow责任清单处理红冲等未统一职责，不做全仓再盘点；工程资料分类和项目金额权威仍待确认。
