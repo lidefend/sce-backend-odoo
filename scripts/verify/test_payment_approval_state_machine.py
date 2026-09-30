@@ -607,6 +607,24 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
                     ns['write'](rows, values)
 
+    def test_financing_reviewed_and_completed_economic_content_is_frozen(self):
+        path = MODEL.with_name('financing_loan.py')
+        tree = ast.parse(path.read_text())
+        constants = [n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(target, ast.Name) and target.id.startswith('FINANCING_LOAN_FORMAL_') for target in n.targets)]
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == 'write')
+        ns = {'UserError': ValueError, '_': lambda text: text, '_DOCUMENT_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=constants + [method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            pass
+        for state, status in (('draft', 'waiting'), ('draft', 'pending'), ('confirmed', 'no'), ('confirmed', 'validated'), ('done', 'no')):
+            rows = Rows([types.SimpleNamespace(source_origin='manual', state=state, validation_status=status)])
+            rows.env = types.SimpleNamespace(context={'sc_document_state_token': True, 'history_surface_sync': True})
+            for values in ({'amount': 200}, {'financing_loan_approved_amount': '200'}, {'project_id': 9},
+                           {'partner_id': 9}, {'currency_id': 9}, {'direction': 'borrowed_fund'},
+                           {'loan_account': 'changed'}, {'loan_type': 'borrowing_request'}, {'active': False}):
+                with self.subTest(state=state, status=status, values=values), self.assertRaises(ValueError):
+                    ns['write'](rows, values)
+
     def test_invoice_external_terminal_state_and_red_flush_attribution_denied(self):
         path = MODEL.with_name('invoice_registration.py')
         methods = [n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name in {'create', 'write'}]

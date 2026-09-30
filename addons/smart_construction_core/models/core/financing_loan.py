@@ -560,6 +560,16 @@ class ScFinancingLoan(models.Model):
     def write(self, vals):
         if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and {"state", "source_origin"}.intersection(vals):
             raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        protected_fields = FINANCING_LOAN_FORMAL_BUSINESS_FIELDS | FINANCING_LOAN_FORMAL_CANONICAL_FIELDS | {
+            "project_id", "company_id", "partner_id", "currency_id", "direction", "business_category_id",
+            "document_no", "rate_label", "extra_ref", "extra_label", "active",
+        }
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and protected_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state in ("confirmed", "done") or rec.validation_status in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已完成的融资内容不可改写，请按正式流程重新办理。"))
         if vals.get("project_id"):
             self._require_visible_company_project(vals["project_id"])
         if (
@@ -582,7 +592,10 @@ class ScFinancingLoan(models.Model):
                     blocked.remove(field_name)
             if blocked:
                 raise UserError(_("历史迁移融资/借款单据已确认，只允许补充正式业务字段、往来单位、备注和历史录入审计事实。"))
-        return super().write({**self._prepare_formal_business_values(vals), **vals})
+        formal_values = self._prepare_formal_business_values(vals) if (
+            FINANCING_LOAN_FORMAL_BUSINESS_FIELDS | FINANCING_LOAN_FORMAL_CANONICAL_FIELDS
+        ).intersection(vals) else {}
+        return super().write({**formal_values, **vals})
 
     def _write_document_state(self, values):
         return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)

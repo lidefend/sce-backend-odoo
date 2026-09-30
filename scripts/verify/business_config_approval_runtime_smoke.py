@@ -705,6 +705,7 @@ def _financing_approval_checks(group, created):
     required.action_confirm()
     assert required.state == "draft" and required.review_ids and required.validation_status in ("waiting", "pending")
     denied(required.action_done)
+    denied(lambda: required.write({"amount": 200}))
     print("APPROVAL_CHECK=financing_pending_cannot_complete")
     _approve_existing_reviews(required)
     assert required.state == "confirmed" and required.validation_status == "validated"
@@ -713,9 +714,18 @@ def _financing_approval_checks(group, created):
     assert outsider and not outsider.has_group("smart_construction_core.group_sc_cap_finance_manager") and not outsider.has_group("smart_construction_core.group_sc_super_admin")
     denied(required.with_user(outsider).action_done)
     print("APPROVAL_CHECK=financing_completion_requires_finance_permission")
+    denied(lambda: required.write({"amount": 200}))
+    assert required.env["sc.workflow.contract.service"].describe_record(required)["editability"] == "readonly"
     required.action_done()
     assert required.state == "done"
+    for values in ({"amount": 200}, {"financing_loan_approved_amount": "200"}, {"direction": "borrowed_fund"}, {"active": False}):
+        denied(lambda values=values: required.write(values))
+    before_display = required.financing_loan_loan_type_display
+    required.write({"note": "Rollback permitted supplement"})
+    assert required.amount == 100 and required.financing_loan_loan_type_display == before_display
+    assert required.env["sc.workflow.contract.service"].describe_record(required)["editability"] == "locked"
     print("APPROVAL_CHECK=financing_review_then_explicit_completion")
+    print("APPROVAL_CHECK=financing_reviewed_final_content_matches_contract")
     retry = document()
     retry.action_confirm()
     old = set(retry.review_ids.ids)
@@ -3206,7 +3216,7 @@ def main():
         assert all(not _env()[model].sudo().browse(record_id).exists() for model, record_id in created), "temporary document remains"
         print("BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED")
     if passed:
-        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (8 if scope == "financing-approval" else 11 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=%s" % (9 if scope == "financing-approval" else 11 if scope == "self-funding-reconciliation" else 12 if scope == "expense-state-authority" else 8 if scope == "finance-state-authority" else 5 if scope == "legacy-workflow" else 16 if scope == "red-flush-role" else 15 if scope == "red-flush" else 10 if scope == "tender-guarantee" else 8 if scope in ("project-document", "tender-purchase") else 6 if scope == "project-role-approval" else 5 if scope == "project-creation-state" else 10 if scope == "subcontract-settlement-cash" else 8 if scope == "subcontract-settlement" else 16 if scope in ("safety-approval", "subcontract-approval") else 6 if scope == "rental-cancellation-contract" else 10 if scope == "rental-settlement-cash" else 12 if scope == "rental-settlement" else 13 if scope == "rental-order" else 10 if scope == "rental-plan" else 25 if scope == "labor-execution" else 16 if scope == "labor-plan-request" else 14 if scope in ("equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 8 if scope in ("inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash") else 295, scope))
 
 
 main()
