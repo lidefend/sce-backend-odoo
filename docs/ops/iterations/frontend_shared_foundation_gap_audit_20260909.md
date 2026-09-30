@@ -8220,3 +8220,10 @@ P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类�
 53.89结果：4eb114313受管reload成功，结算tpl07-1790783437117 22 PASS、errors/forbiddenWrites空，390截图说明textarea及项目/单位/经办人/日期输入恢复。关闭53.87–88输入丢失本身，不代表已保存/提交。首次agent.run.record因测试输入修正后旧begin失效拒收，重新begin绑定4eb114313运行4项并record成功（/tmp/tpl89-record-fixed.log），未绕过回执。
 
 共享影响代表页项目create tpl07-1790783460002失败，随后考勤/用工未运行。错误为日期date/date_start status disabled=true reason=NATIVE_MODIFIER_UNRESOLVED却auth=edit；date另visible=false。前端schema正确拒收“editable auth conflicts with readonly occurrence status”，不放宽校验。日期原生required依赖date_start/date在新建默认缺失；需查assembler的未解析modifier状态及projection auth同步。这是当前L4阻断，不能宣称本批验收完成；先修P0对应状态投影/默认值语义，再恢复代表页检查。不重复结算后端审批ORM或模块升级。
+
+
+### 53.90 修饰条件状态授权一致性与新建关系默认值（进行中）
+
+P0通用契约：occurrence初始/最终状态隐藏auth=none、未解析disabled或readonly时auth=read；policy合并同样不为disabled授edit，前端schema保留。项目日期缺失的另一路根因是native relation commands tuple与JSON list形状差异使create dependency hydration整批退出，比较仅递归统一list/tuple形状，仍用native defaults构造new且内容差异/权限/compute失败继续fail-closed，不猜False。
+
+候选88c9ecfae+dirty。modifier-authority-iteration.log L1 PASS；runtime unit20+mobile109=129 PASS、guard6 PASS，非零回执。边界新用例验证JSON等价默认命令被接受、不同ID拒绝；原stub缺少既有project_workflow_action_semantics导出导致首次112加载错误，仅测试替身补齐，modifier-dependencies-unit-fixed.log112+51+5=168 PASS。无ORM/数据库写/新增fixture；下一步Python源码reload与定向页面，前端未变不构建。总体67/真实办理仍开放。

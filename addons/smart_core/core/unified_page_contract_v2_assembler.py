@@ -3405,7 +3405,7 @@ def _field_status(
         "readonly": readonly_value,
         "required": required_value,
         "disabled": unresolved,
-        "auth": "read" if readonly_value else "edit",
+        "auth": "none" if not visible else "read" if readonly_value or unresolved else "edit",
         **({"reasonCode": "NATIVE_MODIFIER_UNRESOLVED"} if unresolved else {}),
     }
 
@@ -4407,7 +4407,7 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
                 status["readonly"] = readonly is not False
                 status["required"] = required is not False
                 status["disabled"] = unresolved
-                status["auth"] = "read" if status["readonly"] else "edit"
+                status["auth"] = "none" if not status["visible"] else "read" if status["readonly"] or unresolved else "edit"
                 if unresolved:
                     status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
                 elif not status["visible"]:

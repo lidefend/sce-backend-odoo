@@ -128,6 +128,7 @@ def _load_handler():
         hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
+        project_workflow_action_semantics=lambda contract: contract,
     )
 
     def _trim_unified_page_contract_v2(contract, **kwargs):
@@ -504,6 +505,19 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 self.assertEqual(model.values["partner_id"], 7)
                 self.assertEqual(model.values["lines"], lines)
                 self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_create_modifier_dependencies_accept_json_equivalent_native_commands(self):
+        native = [(6, 0, [32])]
+        model, contract = self._create_modifier_fixture(lines=native)
+        contract["dataContract"]["mainData"]["lines"] = [[6, 0, [32]]]
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+        self.assertIs(contract["dataContract"]["mainData"]["has_lines"], True)
+        self.assertEqual(model.values["lines"], native)
+        model, contract = self._create_modifier_fixture(lines=native)
+        contract["dataContract"]["mainData"]["lines"] = [[6, 0, [33]]]
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+        self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+        self.assertNotIn("new", model.calls)
 
     def test_create_modifier_dependencies_fail_closed_on_permission_or_compute(self):
         for deny, broken in [("create", None), ("read", None), ("field", None), (None, "defaults"), (None, "compute")]:

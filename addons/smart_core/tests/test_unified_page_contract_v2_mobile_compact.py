@@ -2520,6 +2520,26 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertFalse(second["readonly"])
         self.assertTrue(second["required"])
 
+    def test_unresolved_required_modifier_never_grants_edit_auth(self):
+        for hidden in (False, True):
+            with self.subTest(hidden=hidden):
+                contract = {
+                    "layoutContract": {"containerTree": [{
+                        "type": "field", "name": "date_start", "widgetId": "field.date_start.occ.test",
+                        "modifiers": {"invisible": hidden, "required": {"kind": "field_truthy", "field": "date"}},
+                    }]},
+                    "statusContract": {"widgetStatus": [{"widgetId": "field.date_start.occ.test"}]},
+                    "dataContract": {"mainData": {}},
+                }
+                assembler.hydrate_final_layout_modifier_status(contract)
+                status = contract["statusContract"]["widgetStatus"][0]
+                self.assertTrue(status["disabled"])
+                self.assertEqual(status["auth"], "none" if hidden else "read")
+                contract["dataContract"]["mainData"]["date"] = False
+                assembler.hydrate_final_layout_modifier_status(contract)
+                self.assertFalse(status["disabled"])
+                self.assertEqual(status["auth"], "none" if hidden else "edit")
+
     def test_final_layout_modifier_hydration_fails_closed_for_unknown_field_modifier(self):
         contract = {
             "layoutContract": {"containerTree": [{

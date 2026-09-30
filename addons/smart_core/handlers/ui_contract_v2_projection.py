@@ -515,7 +515,7 @@ def apply_field_policies_to_v2_status(
                 or (key == "visible" and value is False)
             ):
                 merge_flag(key, value)
-        row["auth"] = "none" if row.get("visible") is False else "read" if row.get("readonly") else "edit"
+        row["auth"] = "none" if row.get("visible") is False else "read" if row.get("readonly") or row.get("disabled") else "edit"
 
     for field_name, policy in field_policies.items():
         if not isinstance(policy, dict):

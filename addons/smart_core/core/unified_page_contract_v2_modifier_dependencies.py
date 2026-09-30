@@ -127,6 +127,15 @@ def collect_visible_layout_hydration_fields(contract_v2: Any) -> list[str]:
     return (priority + ordinary)[:FORM_VISIBLE_LAYOUT_HYDRATION_BUDGET]
 
 
+def _relation_seed_shape(value: Any) -> Any:
+    """Compare native commands with their JSON transport shape, not display rows."""
+    if isinstance(value, (list, tuple)):
+        return [_relation_seed_shape(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _relation_seed_shape(item) for key, item in value.items()}
+    return value
+
+
 def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], logger: Any) -> None:
     """Materialize missing predicate inputs on an unsaved native record."""
     status = contract.get("statusContract", {}).get("globalStatus", {})
@@ -168,7 +177,7 @@ def _hydrate_create_modifier_dependencies(Model: Any, contract: dict[str, Any], 
                 else:
                     raise ValueError("invalid native create relation identity")
             elif kind in {"one2many", "many2many"}:
-                if value != defaults.get(name, False):
+                if _relation_seed_shape(value) != _relation_seed_shape(defaults.get(name, False)):
                     raise ValueError("create relation snapshot differs from native defaults")
             elif kind in scalar_types and not isinstance(value, (dict, list, tuple)):
                 values[name] = value
