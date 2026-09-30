@@ -598,10 +598,13 @@ def _finance_state_authority_checks(group, created, source_ledger=None, actor=No
     env = base["sc.approval.policy"].with_company(company).with_context(allowed_company_ids=[company.id]).env
     Policy = env["sc.approval.policy"].sudo()
     if adjustment_only:
-        actor = finance
-        Contract = env["construction.contract"].with_user(finance)
+        actor = base["res.users"].sudo().search([("login", "=", "fixture_role_project_a_member"), ("active", "=", True)], limit=1)
+        assert actor and actor.company_id == company, "existing same-company business initiator required"
+        Document = env["sc.settlement.adjustment"].with_user(actor)
+        assert Document.check_access_rights("create", raise_exception=False) and Document.check_access_rights("write", raise_exception=False), "registered initiator lacks adjustment handling rights"
+        Contract = env["construction.contract"].with_user(actor)
         contract = Contract.search([("company_id", "=", company.id)], limit=1)
-        assert contract, "existing finance-visible company-scoped contract required"
+        assert contract, "existing initiator-visible company-scoped contract required"
         ledger = None
         models = ("sc.settlement.adjustment",)
     else:

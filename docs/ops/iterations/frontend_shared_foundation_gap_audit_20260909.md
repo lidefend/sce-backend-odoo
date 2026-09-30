@@ -8811,3 +8811,14 @@ L1 receipt-runtime-tool-iteration.log、Python编译、bash/node语法和diff通
 P4既有approval-actions创建页范围增加sc.receipt.income，检查项目/收款申请/往来方/金额契约可编辑及真实输入，未保存不显示已收款/审批通过。receipt-create-browser.log与tpl07-1790797082686报告22 PASS，errors=[]、forbiddenWrites=[]；1440/390截图人工查看，桌面两列/窄屏单列、字段与金额输入保留，无整页溢出。没有浏览器保存或已批准记录页面办理，因此不能把创建页22+运行6称为保存后完整浏览器旅程。无生产前端改动或构建。
 
 下一步利用此处已有合法收款来源继续核对结算调整既有合同前提及有效动作消费，避免把先前“缺少posted ledger”失败误写为合同一定不存在；若选择调整，应独立核对其合同类型/权限/状态要求，不能借收款来源推定适用。既有全部67/detail.action-state仍开放；已保存浏览器、其他未覆盖职责和原产品缺口保持，不推送合并目标部署。
+
+
+### 53.140 结算调整审批内容保护与角色边界验证
+
+bb04a82b0 clean起点。P1 settlement_adjustment在审批中及confirmed禁止普通写金额、方向、合同/结算/项目/往来方/币种/事项/账户/日期及active，私有状态动作、草稿/驳回后编辑、备注、历史补录原边界保留。不新增schema/XML或前端业务规则。L1 adjustment-iteration.log PASS，adjustment-unit.log148 PASS及begin/record成功；源提交21137a593受管加载，前端CrYkOCxc不变。
+
+P4复用_finance_state_authority_checks增加settlement-adjustment选择，只核对调整合同，解除无关posted ledger前置，原finance-state-authority/self-funding-reconciliation分支不变。首次adjustment-runtime.log在创建时AccessError（0业务检查），ROLLBACK VERIFIED：fixture finance只有读取权限，不是产品必须给财务创建权。依既有fixture定义改为fixture_role_project_a_member（业务发起），显式检查create/write权限与同公司合同可见性；不改角色/权限、不sudo办理。调整工具输入后adjustment-initiator-runtime.log5 PASS及rollback：禁止伪造状态、无配置自动确认、有配置真实审核等待、在审/已确认内容保护且契约readonly、备注允许且金额100/影响-100保持、正式取消通过。配置准备sudo、业务办理普通initiator、真实reviewer审批，未冒称全部无sudo。
+
+P4创建页范围使用同一initiator，检查项目/合同/调整事项/金额可编辑契约与实际输入；adjustment-create-browser.log、tpl07-1790797303482共22 PASS，errors=[]、forbiddenWrites=[]。1440/390截图查看：桌面两列/窄屏单列，页签与输入可用，无整页溢出。未构建或升级schema，当前P1加载21137a593、工具dirty仅本批角色及探针。
+
+结算调整旧“来源前提未验证”已由实际可见合同解决，不能继续以缺少对账台账阻断该职责。未覆盖关联结算单汇总生效/取消恢复、跨项目或币种锚点一致性、已保存浏览器办理及关联外部事实变化，不能升级为整个业务闭环完成。下一步沿调整与结算直接关系核对上述必要约束和汇总，优先静态定位/现有定向入口，其他整体67/detail.action-state缺口保持。无推送合并目标部署。

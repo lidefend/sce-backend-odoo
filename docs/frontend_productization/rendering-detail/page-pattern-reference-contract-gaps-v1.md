@@ -528,3 +528,8 @@ Payment execution/reversal affected runtime passes10 with rollback in payment-st
 ### Segment53.139 — receipt actual approval/cash verified
 
 Receipt6 runtime passes on backend7ea346a4b using existing finance-visible approved receive request and its contract, actual finance handling and real reviewers. Source request, policies and created records restore. Official create22 passes at tpl07-1790797082686 with no errors/writes and1440/390 observations. Source dependency is available for this receipt scope; do not infer settlement-adjustment contract compatibility. Saved-record browser handling, partial receipts, concurrency/external facts and other detail.action-state responsibilities remain open.
+
+
+### Segment53.140 — settlement adjustment authority and role
+
+Reviewed adjustment economic content is protected;148 pure checks pass at source21137a593. Runtime finance attempt correctly denied create access and rolled back (not a product grant request). Existing project-member business initiator then passes5 using an actual visible contract and real reviewers, configuration/records restored. Official create22 passes with1440/390 observations and no errors/writes. Contract prerequisite is resolved for this scope. Linked-settlement aggregation/cancellation, cross-project/currency anchor consistency and saved browser handling remain unverified; detail.action-state stays open.
