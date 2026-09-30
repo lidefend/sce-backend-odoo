@@ -9299,3 +9299,12 @@ payment.approval_state_machine.unit170 PASS（plan-rejected-unit.log），L1及b
 新增实际函数与实际profile参数化测试，field-phase-pending-before.log在171测试中复现18个失败组合；修正后field-phase-pending-unit.log171 PASS，L1及begin/receipt通过。范围仅workflow_contract_service.py与定向测试：L0日常HEAD/dirty；L1静态、L2真实纯方法覆盖所有现有field_editable_phases，含审批后例外保留与普通草稿/批准/终态反例。未改变schema/XML，跳过模块升级；前端未变不构建，未跑ORM或全浏览器。此处是确定性投影修正，不声称已新增实际业务审批UI证据。原plan/diary/event没有field_editable_phases，已有运行结果依赖分支行为不变，沿用53.179 runtime9与事件32证据。
 
 计划主单与子执行边界仍待完整接线：此项只消除复用执行字段例外的共享先决缺陷，不能据此开放整张计划或标记计划接管完成。下一步需在P1提供主单基准字段及子节点执行字段原生策略和后端限制，再通过既有表单契约投影。总体detail.action-state保持contract_gap，无推送/合并/目标部署。
+
+
+### 53.181 计划主单审批基准内容保护
+
+a1b1f8bc3 clean起点，P1 49e78190a在sc.plan.write冻结主单定义字段：名称/类型/项目/公司/责任人部门/分期/模板与编制方式/版本阶段/汇报周期/计划日期/说明/附件关系。非draft或waiting/pending/validated禁止直接改写，伪造状态令牌/skip_validation_check不绕过；内部正式动作保持。line_ids/report_ids/version_ids及其子模型职责没有被主单冻结逻辑一并锁死，尚需单独落地，不能据此宣称节点基准已保护或执行契约已开放。
+
+L1 plan-definition-iteration.log、payment.approval_state_machine.unit172及begin/receipt通过；纯测明确主单多状态拒绝、驳回修正、子执行命令交由下层与内部完成动作保留。P4 a3f24f6e0在原plan-state-authority增加pending/approved/in_progress/done基准写拒绝及原字段read不变，复用日记检查结构而未改日记断言语义。backend.acceptance.up加载a3f24f6e0，无字段/XML变化不升级，前端e31e51c59不变不构建。
+
+受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter和卷，plan-definition-runtime.log13具名PASS、ROLLBACK VERIFIED。真实审批/驳回修正/重提/独立开始完成保持；各阶段name/project/note/planned_finish伪造上下文写均拒绝且read原值一致。原事务sudo创建执行与真实reviewer，不冒充角色浏览器。单据主基准接口缺口收口；节点基准及执行字段/汇报/版本状态、原生字段策略和共享表单接线仍待完成，detail.action-state总体保持开放，无推送/合并/目标部署。

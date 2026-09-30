@@ -442,7 +442,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.180 prerequisite fixed: workflow field_editable_phases cannot override waiting/pending approval (18 red combinations -> pure171 PASS/L1/receipt). No runtime reload/build yet; backend136adf4bb/frontend e31e51c59. Continue sc.plan main approved baseline vs child execution contract: use existing native field modifiers + model guards and existing field_editable_phases only after scoped capabilities ready. Do not blanket-unlock parent or freeze execution children. Reuse closed plan rejected runtime9,event32,diary/config evidence. Overall67/independent attachments open; no push/merge/targetdeploy/newfixture.",
+  "next_exact_step": "53.181 plan main definition protection49e78190a, pure172/L1/receipt and runtime13 rollback PASS a3f24f6e0. backend a3f24f6e0/frontend e31e51c59. Next implement sc.plan.line baseline versus execution field enforcement and native parent/child modifiers; align report/version state responsibilities before enabling plan open field_editable_phases. Main guard deliberately delegates line/report/version commands, not proof of their protection. Reuse closed plan/event/diary/config tests by dependencies. Overall67 and independent attachment APIs open. No push/merge/targetdeploy/newfixture.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
