@@ -66,6 +66,9 @@ const pendingProbeAborts = new Set();
 let favoriteWritePermit = null;
 let projectWritePermit = null;
 let expenseCreateCapture = false;
+const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
+assert.ok(!diarySaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.construction.diary' && process.env.TPL07_APPROVAL_VIEW === 'create'));
+let diaryCreateCapture = false;
 const expenseSaveProbe = process.env.TPL07_EXPENSE_SAVE_PROBE === '1';
 const expenseSaveSuccess = process.env.TPL07_EXPENSE_SAVE_SUCCESS === '1';
 const expenseFailureStage = process.env.TPL07_EXPENSE_FAILURE_STAGE || '';
@@ -96,6 +99,18 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    if (diarySaveProbe && diaryCreateCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'sc.construction.diary') {
+      report.diarySaveAttempts ??= [];
+      report.diarySaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({
+        ok: false, error: { code: 'TPL53_DIARY_SAVE_UNAVAILABLE', message: '验收注入：日志保存暂不可用，请重试' },
+      }) });
+    }
+    if (diarySaveProbe && ['contract.action', 'execute_button', 'file.upload'].includes(body?.intent)) {
+      report.forbiddenWrites.push({ intent: body.intent, reason: 'diary save failure probe cannot execute business actions' });
+      return route.abort();
     }
     const expenseWriteKind = expenseProbeWriteKind(role, body, expenseSuccess);
     if (expenseWriteKind) {
@@ -830,6 +845,14 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
+        if (diarySaveProbe) {
+          const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+            .flatMap(key => report.routeAuthority?.[key] || []);
+          const matches = entries.filter(row => row.menu_xmlid === 'smart_construction_core.menu_sc_construction_diary');
+          check('diary create: one authorized native entry', matches.length === 1 && Number(matches[0].menu_id) > 0 && Number(matches[0].action_id) > 0);
+          report.approvalCreateEntry = matches[0];
+          createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
+        }
         await form(session.page, `/f/${spec.model}/new${createContext}`, `${spec.model}-create`);
         // Child relation contracts may arrive last; bind the create observation
         // to the requested parent model within this navigation's responses.
@@ -838,6 +861,51 @@ try {
           .findLast((row) => row?.model === spec.model && !(Number(row.mainData?.id) > 0));
         check(`${spec.model}: new form effective contract`, authority?.model === spec.model);
         report.approvalPages.push({ ...spec, view: 'create', authority });
+        if (diarySaveProbe) {
+          const title = `TPL53-DIARY-SAVE-${Date.now()}`;
+          const content = '临时验收施工日志：核对官方表单保存与提交失败恢复。';
+          report.diaryCreateAuthority = authority;
+          for (const field of ['project_id', 'title', 'description']) {
+            check(`diary create: ${field} has an editable native input`,
+              await session.page.locator(`[data-field-name="${field}"]`).locator('input, textarea, [contenteditable="true"]').count() > 0);
+          }
+          const projectInput = session.page.locator('[data-field-name="project_id"] input').first();
+          const projectResponse = session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+              && body.params.model === 'project.project' && JSON.stringify(body.params).includes('FE Project A'); } catch { return false; }
+          });
+          await projectInput.fill('FE Project A');
+          const candidates = await (await projectResponse).json();
+          const project = candidates.data?.records?.find(row => Number(row.id) === 10);
+          check('diary create: project returned in PM authorized query', candidates.ok === true && Boolean(project));
+          const label = String(project.display_name || project.name);
+          await session.page.getByRole('option', { name: label, exact: true }).click();
+          const titleInput = session.page.locator('[data-field-name="title"]').locator('input, textarea').first();
+          const contentInput = session.page.locator('[data-field-name="description"]').locator('textarea, input').first();
+          await titleInput.fill(title);
+          await contentInput.fill(content);
+          diaryCreateCapture = true;
+          for (const label of ['保存草稿', '提交审批']) {
+            const response = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'create'
+                && body.params.model === 'sc.construction.diary'; } catch { return false; }
+            });
+            await session.page.getByRole('button', { name: label, exact: true }).click();
+            await response;
+            await session.page.getByText('验收注入：日志保存暂不可用，请重试', { exact: true }).first().waitFor();
+            const payload = report.diarySaveAttempts.at(-1);
+            check(`diary ${label}: actual values and numeric project preserved`, payload.vals.project_id === project.id
+              && payload.vals.title === title && payload.vals.description === content && Boolean(payload.vals.date_diary));
+            check(`diary ${label}: native entry context preserved`, String(payload.context?.menu_id) === String(report.approvalCreateEntry.menu_id)
+              && String(payload.context?.action_id) === String(report.approvalCreateEntry.action_id));
+            check(`diary ${label}: failed create preserves editable draft`, new URL(session.page.url()).pathname === '/f/sc.construction.diary/new'
+              && await titleInput.inputValue() === title && await contentInput.inputValue() === content);
+          }
+          diaryCreateCapture = false;
+          check('diary save: two explicit attempts and no follow-up business mutation', report.diarySaveAttempts.length === 2 && report.forbiddenWrites.length === 0);
+          await session.page.screenshot({ path: path.join(out, 'diary-filled-save-failure.png'), fullPage: true });
+        }
+
         if (spec.model === 'sc.expense.claim') {
           const fields = [];
           const visit = (nodes) => { for (const node of nodes || []) { if (node.type === 'field') fields.push(node); visit(node.children); } };
