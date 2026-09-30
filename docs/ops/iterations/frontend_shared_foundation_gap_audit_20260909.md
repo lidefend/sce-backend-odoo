@@ -8445,3 +8445,7 @@ P4标准browser复用approval-actions扩展两安全模型create，safety-page-i
 下一步一次受管模块升级并reload（新增字段继承/XML），local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；事务数据/配置必须rollback。运行时尚未验证，前端7915f3bb9未变不构建，不重复安全/租赁业务或全矩阵。已有角色办理、总体67及其他未完成职责保持开放，无新环境/持久fixture/推送合并目标部署。
 
 53.108增量：首轮3d9d11b70升级成功。升级期间只读直接生效form policy发现分包申请6输入被P1 blanket readonly：project/date/scope/建议单位/note/attachments，属于创建职责缺陷。等待既有升级进程完成后再修XML，保留9项编号/状态/计算/来源事实只读；新增纯回归109 PASS（subcontract-input-unit.log），L1 subcontract-input-iteration.log/diff PASS。因实际XML输入改变需要加载新配置，再次升级属于输入修复后的必要重载，不重复无变化验收。首轮候选未启动浏览器。P4 browser既有approval-actions新增两分包create与3输入/编号/旧直批动作检查，subcontract-page-iteration.log/node PASS。下一步新候选upgrade/reload后一次定向runtime及create；此时仍未证明运行时业务。
+
+53.108运行时：6f3f0220b升级/reload成功，subcontract-approval-runtime.log16 PASS、ROLLBACK VERIFIED；真实金额100/阈值200未匹配拒绝、实际tier审批/驳回重提及pending切换、父子事实锁成立。无真实双事务竞争证明。首轮create：plan tpl07-1790788333437工具报17 PASS，但390截图发现计划单号可输入，精确文本断言被必填标记绕过，编号结论作废；request tpl07-1790788346665第9项编号隐藏失败。两者同一P1原生name未声明创建隐藏，非前端补丁。
+
+修复两view name readonly=1/invisible=not id；P4测试改为包含必填标签的可见文本，并直接检查有效contract的name隐藏。新增原生字段回归，subcontract-number-unit.log110 PASS，L1 subcontract-number-iteration.log/node/diff通过。此变更只使两创建页证据失效，真实审批16输入未变可复用；不重复ORM，需加载实际新XML后只重跑两create。待完成，不沿用截图矛盾的旧通过结论。

@@ -694,6 +694,10 @@ try {
             }
           };
           visit(authority.layout?.containerTree);
+          if (spec.model.startsWith('sc.subcontract.')) {
+            const number = fields.find((node) => node.name === 'name');
+            check(`${spec.model}: generated number hidden by effective contract`, !number || number.invisible === true || number.fieldInfo?.invisible === true || number.componentConfig?.invisible === true);
+          }
           const inputs = spec.model.startsWith('sc.subcontract.')
             ? ['project_id', 'subcontract_scope', spec.model.endsWith('plan') ? 'plan_date' : 'request_date']
             : spec.model === 'sc.safety.plan'
@@ -705,7 +709,8 @@ try {
           }
         }
         if (['sc.equipment.plan', 'sc.equipment.request', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.subcontract.plan', 'sc.subcontract.request'].includes(spec.model)) {
-          check(`${spec.model}: generated number absent on create`, await session.page.getByText(spec.model.endsWith('plan') ? '计划单号' : '申请单号', { exact: true }).count() === 0);
+          const numberLabel = spec.model.endsWith('plan') ? '计划单号' : '申请单号';
+          check(`${spec.model}: generated number absent on create`, await session.page.getByText(new RegExp(numberLabel)).count() === 0);
           check(`${spec.model}: old direct approval absent`, await session.page.getByRole('button', { name: spec.model === 'sc.material.rental.plan' ? '确认' : spec.model.endsWith('plan') ? '确认计划' : '确认申请', exact: true }).count() === 0);
         }
         if (spec.model === 'sc.labor.settlement') {

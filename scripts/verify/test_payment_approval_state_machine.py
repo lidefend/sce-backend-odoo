@@ -1021,6 +1021,14 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_reset_draft'](rec)
             self.assertEqual(rec.state, 'draft')
 
+    def test_subcontract_generated_number_is_hidden_on_create(self):
+        path = ROOT / 'addons/smart_construction_core/views/core/subcontract_management_views.xml'
+        tree = ET.parse(path)
+        for name in ('plan', 'request'):
+            field = tree.find(".//record[@id='view_sc_subcontract_%s_form']//form//field[@name='name']" % name)
+            self.assertEqual(field.attrib.get('invisible'), 'not id')
+            self.assertEqual(field.attrib.get('readonly'), '1')
+
     def test_subcontract_request_input_policy_preserves_calculated_facts(self):
         path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
         record = ET.parse(path).find(".//record[@id='business_config_contract_sc_subcontract_request_p1_form_business_facts_v1']")
