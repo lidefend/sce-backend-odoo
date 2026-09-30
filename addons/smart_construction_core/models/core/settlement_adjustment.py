@@ -111,10 +111,7 @@ class ScSettlementAdjustment(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的结算调整可以确认。"))
             rec._check_business_anchor()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
-            else:
+            if not policy._start_submission_review(rec):
                 rec.write({"state": "confirmed", "reject_reason": False})
 
     def action_cancel(self):
@@ -133,17 +130,6 @@ class ScSettlementAdjustment(models.Model):
                 raise UserError(_("结算调整确认前调整金额必须大于 0。"))
             if not rec.settlement_id and not rec.contract_id:
                 raise UserError(_("结算调整确认前必须关联结算单或合同。"))
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("结算调整已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("结算调整已经在统一审批流程中，请等待审批完成。"))
 
     def _check_state_from_condition(self):
         self.ensure_one()

@@ -485,9 +485,7 @@ class ScReceiptIncome(models.Model):
             before = rec._snapshot_audit_payload()
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
+            if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "receipt_income_submitted",
                     before,
@@ -627,17 +625,6 @@ class ScReceiptIncome(models.Model):
             rounding = rec.currency_id.rounding if rec.currency_id else 0.01
             if float_compare(rec.amount or 0.0, request.amount or 0.0, precision_rounding=rounding) == 1:
                 raise UserError(_("收款金额不能超过收款申请金额。"))
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("收款收入已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("收款收入已经在统一审批流程中，请等待审批完成。"))
 
     def _check_state_from_condition(self):
         self.ensure_one()

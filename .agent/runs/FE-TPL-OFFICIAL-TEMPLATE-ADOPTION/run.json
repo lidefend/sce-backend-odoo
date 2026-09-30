@@ -211,12 +211,19 @@
         "addons/smart_construction_core/handlers/payment_request_approval.py",
         "addons/smart_construction_core/models/support/approval_policy.py",
         "addons/smart_construction_core/models/core/expense_claim.py",
-        "addons/smart_construction_core/models/core/settlement_order.py"
+        "addons/smart_construction_core/models/core/settlement_order.py",
+        "addons/smart_construction_core/models/core/receipt_income.py",
+        "addons/smart_construction_core/models/core/payment_execution.py",
+        "addons/smart_construction_core/models/core/invoice_registration.py",
+        "addons/smart_construction_core/models/core/financing_loan.py",
+        "addons/smart_construction_core/models/core/self_funding_registration.py",
+        "addons/smart_construction_core/models/core/treasury_reconciliation.py",
+        "addons/smart_construction_core/models/core/settlement_adjustment.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.23 expense/settlement duplicate native approval buttons retired; 31 coverage tests pass, XML upgrade pending. Continue remaining all-document shared approval adoption and payment shared decision reuse. Two registered native state-action gaps remain: contract-event rejection and payment-execution reversal. Complete governed upgrade/runtime validation after stable affected code; reuse static preview.",
+  "next_exact_step": "53.24 seven finance document confirm routes now share policy submission (39 tests), removing seven duplicate orchestration helpers and fixing rejected resubmission. Next correct their downstream done/paid/register/reconcile gates and callbacks to use established approval facts rather than mutable current policy; preserve domain execution. Remaining documents, two native gaps, governed upgrade/runtime acceptance remain.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -500,6 +507,22 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-native-exit-tests.log",
       "remaining_registered_state_actions": 2,
       "runtime": "not_run; XML module upgrade required"
+    },
+    "finance_family_submission_53_24": {
+      "status": "verification_pending",
+      "source_head": "4e8ffeebe",
+      "test_count": 39,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/finance-family-submit-tests.log",
+      "models": [
+        "sc.receipt.income",
+        "sc.payment.execution",
+        "sc.invoice.registration",
+        "sc.financing.loan",
+        "sc.self.funding.registration",
+        "sc.treasury.reconciliation",
+        "sc.settlement.adjustment"
+      ],
+      "runtime": "not_run; downstream lifecycle gates still need convergence"
     }
   }
 }

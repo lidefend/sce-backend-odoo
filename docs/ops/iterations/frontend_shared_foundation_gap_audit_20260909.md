@@ -7574,3 +7574,11 @@ L5：未推送、未合并、未部署。
 - 原登记的费用/结算action_approve因按钮退出而移除，原生状态动作登记4→2（合同履约事件驳回、付款执行冲销）。这是旧呈现职责退出，不是通过给按钮随意补语义来消项；全单据审批接入与运行态验收未完成，detail.action-state继续开放。
 - L1 ci.local.iteration PASS；L2 native_view.workflow_action_coverage 8+23=31通过，新增解析真实XML和profile的回归，确认三个表单审批方法一致、无重复批准且业务完成动作保留。日志approval-native-exit-iteration.log/approval-native-exit-tests.log，begin/record31。编辑脚本首次正则无匹配、断言在写入前退出，修正后才产生本批变更；最终L1绑定修改后作用域。
 - 未改业务方法，53.22的38项结果输入不变复用。XML需要smart_construction_core受管模块升级，尚未执行；前端无需重建，不跑无关ORM。源代码退出不等于已加载运行候选退出，待稳定后统一升级及定向页面验证。
+
+
+### 53.24 财务单据族成组接入共享提交分流
+
+- 4e8ffeebe clean起步，P1 smart_construction_core：收款收入、付款执行、发票、融资借款、自筹办理、资金对账、结算调整七类action_confirm共同消费sc.approval.policy._start_submission_review。删除七份_request_document_approval及各提交入口重复的公司/策略分支，保留原权限、业务锚点/来源校验、审计、confirmed状态和批准后的独立业务执行。
+- 原七份实现的rejected分支只restart_validation而未重新request_validation；共享路径重置后确认清空并建立真实新链。审批等待期间即使关闭配置也不能直接确认；无配置直接confirmed，不制造review/validated。七类原有draft承载审批中状态保持，以真实review区分，不重建状态框架。
+- L1 ci.local.iteration PASS（finance-family-submit-iteration.log）；L2 verify.payment.approval_state_machine.unit 39项PASS（finance-family-submit-tests.log，begin/record39）。新增参数化执行七个真实action_confirm，每个覆盖无配置、有配置、驳回重提，并检查有配置后的在途关闭拒绝。首次测试失败为测试替身缺payment_execution._assert_finance_handling_access；补该协作者并断言它先执行，生产权限代码未改，失败日志finance-family-submit-tests-initial.log保留。
+- 该族尚未整体关闭：完成/付款/入账入口仍读取当前配置，部分批准回调还需真实实例事实约束，继续列为P1产品工作。下一步统一这些执行边界后再扩展其余业务单据；不能用提交路径测试代替整个生命周期。未写数据库、未重建前端；受管升级与真实多级审批/恢复验收仍待。

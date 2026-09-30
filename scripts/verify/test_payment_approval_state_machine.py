@@ -329,6 +329,39 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 namespace['action_approve'](rec)
 
+    def test_finance_document_family_confirms_through_shared_submission(self):
+        for filename in ('receipt_income', 'payment_execution', 'invoice_registration', 'financing_loan',
+                         'self_funding_registration', 'treasury_reconciliation', 'settlement_adjustment'):
+            path = MODEL.with_name(filename + '.py')
+            method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'action_confirm')
+            namespace = {'UserError': ValueError, 'raise_guard': guard, '_': lambda text: text}
+            exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+            for required, retry in ((False, False), (True, False), (True, True)):
+                with self.subTest(model=filename, required=required, retry=retry):
+                    rec = self.record(required=required, state='draft', reviews=['old'] if retry else [], status='rejected' if retry else 'no')
+                    rec._name = 'sc.' + filename.replace('_', '.')
+                    checks = []
+                    for check in ('_assert_finance_handling_access', '_check_business_anchor', '_check_business_anchor_or_raise', '_check_payment_request_scope_or_raise',
+                                  '_check_company_contractor_payment_responsibility_or_raise', '_check_done_ready', '_check_reconcile_ready'):
+                        setattr(rec, check, lambda name=check: checks.append(name))
+                    rec.invalidate_recordset = lambda: None
+                    rec.write = lambda values: rec.data.update(values)
+                    rec._audit_transition = lambda *args, **kw: rec.audits.append((args, kw))
+                    namespace['action_confirm'](rec)
+                    self.assertTrue(checks)
+                    if filename == 'payment_execution':
+                        self.assertEqual(checks[0], '_assert_finance_handling_access')
+                    self.assertEqual(rec.state, 'draft' if required else 'confirmed')
+                    self.assertEqual(rec.requests, int(required))
+                    self.assertEqual(rec.restarts, int(retry))
+                    self.assertEqual(rec.validation_status, 'pending' if required else 'no')
+                    if required:
+                        rec.required = False
+                        with self.assertRaisesRegex(ValueError, '仍在审批中'):
+                            namespace['action_confirm'](rec)
+                        self.assertEqual(rec.state, 'draft')
+                        self.assertEqual(rec.requests, 1)
+
     def test_unconfigured_submission_auto_approves_without_fabricating_reviews(self):
         rec = self.record(required=False)
         rec._route_submitted_approval()

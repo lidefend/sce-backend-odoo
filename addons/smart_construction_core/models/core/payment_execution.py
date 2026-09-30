@@ -832,10 +832,7 @@ class ScPaymentExecution(models.Model):
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
-            else:
+            if not policy._start_submission_review(rec):
                 rec.write({"state": "confirmed", "reject_reason": False})
 
     def action_paid(self):
@@ -1171,17 +1168,6 @@ class ScPaymentExecution(models.Model):
                     reasons=failures,
                     hints=[_("打开公司-承包人责任余额，核对到款确认、自筹、拨付和扣款明细后再继续办理。")],
                 )
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("付款执行已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("付款执行已经在统一审批流程中，请等待审批完成。"))
 
     def _check_state_from_condition(self):
         self.ensure_one()
