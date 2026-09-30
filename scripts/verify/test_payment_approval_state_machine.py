@@ -1474,6 +1474,16 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             ns['action_on_tier_approved'](rec)
             self.assertEqual(rec.state, 'confirmed')
 
+    def test_rental_settlement_creation_policy_keeps_required_inputs_editable(self):
+        path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
+        record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_settlement_p1_form_business_facts_v1']")
+        contract = ast.literal_eval(record.find("field[@name='contract_json']").get('eval'))
+        fields = {field['name']: field for field in contract['view_orchestration']['views']['form']['fields']}
+        for field in ('project_id', 'supplier_id'):
+            self.assertNotIn('readonly', fields[field])
+        for field in ('state', 'name', 'message_attachment_count', 'rental_settlement_source_created_by_display', 'source_created_at'):
+            self.assertTrue(fields[field]['readonly'])
+
     def test_rental_order_input_policy_separates_execution_and_calculated_facts(self):
         path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
         record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_order_p1_form_business_facts_v1']")

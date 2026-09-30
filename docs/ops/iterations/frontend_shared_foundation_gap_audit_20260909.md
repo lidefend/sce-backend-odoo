@@ -8383,3 +8383,8 @@ L1 rental-paid-facts-iteration.log、py_compile、rental XML及diff PASS。L2 re
 P4既有business_config_approval_runtime_smoke新增rental-settlement scope，第一阶段12项：私有state拒绝、无配置只审批、父/直接明细保护、显式确认、无支付事实拒绝、付款默认值与无合同依据、申请身份/状态守卫、金额未匹配拒绝、pending配置变更保护、真实review后确认、驳回修改重提、空明细/取消。沿用既有事务rollback、基线配置恢复、临时记录消失校验；sudo建单+实际reviewer不替代角色全旅程。付款入账/冲销/并发仍需继续扩展同scope，12项通过不能替代财务闭环。
 
 L1 rental-settlement-runtime-iteration.log、py_compile/bash-n/diff PASS；P1源码未变，复用53.103 104/58及原语义证据。受管local profile/sc-fe-r2-p1-01/sc_frontend_acceptance/精确dbfilter与固定卷复用；下一步一次smart_construction_core升级/reload后仅运行当前scope。前端7915f3bb9未改不构建，无新环境/持久fixture/推送合并目标部署。
+
+
+53.104升级首轮fc5864270失败（rental-settlement-upgrade.log，exit255）：P1 rental settlement原生按钮modifier依赖validation_status但header漏声明，Odoo view验证拒绝，未加载候选；停止后续runtime/browser。修复仅补隐藏依赖字段，新增三类租赁header表达式Name必须有view字段的纯回归。并核对同页P1 published field policy，移除project/supplier两项无条件readonly；编号/状态/附件计数/来源事实只读保持，防已知创建输入缺陷延迟到浏览器。
+
+恢复L1 rental-upgrade-recovery-iteration.log/diff PASS，rental-upgrade-recovery-unit.log105 PASS（新增2输入/5事实策略回归），rental-view-dependency-native.log8+51=59 PASS，非零回执登记。仅源输入修复后允许重新升级，不能无变化重试旧失败；首轮失败不计成功升级，尚无数据库业务验收结论。

@@ -102,6 +102,18 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertEqual(self._general_contract_actions('approved', model=model), [])
             self.assertEqual({row['method'] for row in self._general_contract_actions('cancel', model=model)}, {'action_reset_draft'})
 
+    def test_rental_approval_modifiers_declare_their_view_fields(self):
+        path = DEFAULT_SERVICE.parents[2] / 'views/core/material_rental_views.xml'
+        root = ET.parse(path)
+        for kind in ('plan', 'order', 'settlement'):
+            form = root.find(".//record[@id='view_sc_material_rental_%s_form']//form" % kind)
+            declared = {field.get('name') for field in form.iter('field')} | {'id'}
+            for button in form.findall('./header/button'):
+                expression = button.get('invisible')
+                if expression:
+                    dependencies = {node.id for node in ast.walk(ast.parse(expression, mode='eval')) if isinstance(node, ast.Name)}
+                    self.assertFalse(dependencies - declared, (kind, button.get('name'), dependencies - declared))
+
     def test_rental_order_review_and_execution_have_distinct_purposes(self):
         model = 'sc.material.rental.order'
         pending = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})

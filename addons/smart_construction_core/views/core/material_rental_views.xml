@@ -322,6 +322,7 @@
         <field name="arch" type="xml">
             <form string="周转材料租赁结算">
                 <header>
+                    <field name="validation_status" invisible="1"/>
                     <field name="can_review" invisible="1"/>
                     <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
                     <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>

@@ -346,7 +346,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.104 P4 rental-settlement rollback scope added12 approval/source/default checks;L1 syntax passed, reuse P1 104/58. Next managed acceptance module upgrade/reload exact commit then SC_APPROVAL_RUNTIME_SCOPE=rental-settlement smoke. Extend same scope to actual posting/reversal/concurrency after first prerequisites pass;12 checks do not prove full financial journey. No frontend rebuild/newfixture/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.104 first managed upgrade fc5864270 FAILED native rental settlement missing validation_status modifier field. Fixed hidden dependency + published project/supplier input readonly defect;105 approval/59 native +L1 PASS. Next retry managed module upgrade/reload on new clean recovery commit (changed P1 input justifies retry), then rental-settlement12 rollback scope. No runtime/browser pass yet; actual payment/reversal/concurrency still need same-scope extension. No newfixture/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
