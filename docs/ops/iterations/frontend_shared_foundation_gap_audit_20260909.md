@@ -7320,3 +7320,9 @@ L5：未推送、未合并、未部署。
 - 既有浏览器工具增加 `TPL07_SCOPE=style`，真实 login/system.init + 有效合同读取，1440×900、390×844 付款列表/表单/详情/引入弹层，无业务写入，58/58 passed。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764766851/report.json`。全局兼容 token 链在实际 CSS 中全部解析，placeholder=muted，弹层标题 16/600/24；两视口无整页横向溢出。
 - 第一次探针错误地要求普通列表出现外壳 headline（该页依法由内容区标题负责，外壳不渲染）；已修正探针为实际内容标题 24/600/32，另测 title-large 角色 18/600/26。仅探针变化，复用同一构建，未重建。失败报告 `tpl07-1790764734192/report.json` 保留。
 - 图像复核覆盖窄屏弹层及列表；官方只读基线仍为 aeed5707，已有官方双视口原图复用，不新增演示业务数据。抽屉标题与弹层共享改动，但上下文抽屉的业务契约缺口未因此关闭。
+
+### 52.3 页面族：外壳
+
+- 导航/上下文/标签/账户等文字采用官方 body-small/body-medium、mark 与 title-medium 共享角色；品牌图形和关闭图标尺寸保留为几何用途。补充 mark/headline 桥接角色供后续共享族消费。
+- navigation_shell 单测 19 个及组件契约通过，style_system passed（`tpl52/shell.log`）；一次构建 22.27s。
+- `TPL07_SCOPE=style TPL52_FAMILY=shell` 两视口 18/18 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764883387/report.json`。未重跑付款业务办理；沿用前批 modal/合同结果。

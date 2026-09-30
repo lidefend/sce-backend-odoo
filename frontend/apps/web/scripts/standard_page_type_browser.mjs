@@ -124,6 +124,9 @@ async function form(page, url, name, profile = 'form') {
 }
 
 async function styleScope() {
+  const family = process.env.TPL52_FAMILY || 'all';
+  assert.ok(['all', 'shell', 'collection', 'detail', 'form', 'overlay'].includes(family), 'known style family');
+  report.styleFamily = family;
   const finance = await login('fixture_role_finance');
   const page = finance.page;
   const tokenSources = await Promise.all([
@@ -170,11 +173,22 @@ async function styleScope() {
     // This standard list intentionally suppresses the outer headline; its record
     // header keeps the pinned official headline-small ladder.
     await inspect(`shell-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+    if (['shell', 'collection'].includes(family)) continue;
+    if (family === 'detail') {
+      await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');
+      await inspect(`detail-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+      continue;
+    }
     await form(page, '/f/payment.request/1813?menu_id=545&action_id=775', `style-form-${viewport.width}`);
+    if (family === 'form') {
+      await inspect(`form-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
+      continue;
+    }
     const introduce = page.locator('[data-contract-entry-label]');
     check(`form-${viewport.width}: contract supplies introduce label`, Boolean(report.introduceContract?.introduceLabel));
     await introduce.click();
     await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor();
+    await page.getByText('正在搜索结算单', { exact: false }).waitFor({ state: 'hidden' });
     await inspect(`dialog-${viewport.width}`, '.sc-design-dialog__heading h2', ['16px', '600', '24px']);
     await page.keyboard.press('Escape');
     await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
