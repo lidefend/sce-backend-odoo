@@ -393,3 +393,8 @@ P1 parent facts and direct line create/write/unlink now require a draft source; 
 ### Segment53.101 — Rental reservation and financial-history ownership guards
 
 Active-process requests reserve the source settlement amount; draft/rejected/cancel requests do not. Positive/remaining-amount checks follow ordered source serialization with a protected allocation revision, designed to invalidate competing REPEATABLE READ snapshots. Existing execution/ledger history, including cancelled/reversed facts, prohibits changing rental attribution.96 pure tests pass; actual concurrency/retry, ORM and role behavior remain unverified. Basis/execution consumption, source cancellation boundaries, posted totals and reversal must still close before removing the payment blocker or claiming delivery.
+
+
+### Segment53.102 — Rental basis consumed by request and execution
+
+Rental source now participates in default_get/onchange, basis classification/existence, formal related-document display and the native request basis field. Execution resolves caller-visible rental source/contracts and rechecks source identity and reservation. Cancellation refuses live request obligations or posted payment facts.100 targeted pure tests pass after correcting an incomplete recordset test double. Canonical paid summaries, reversal/state recovery, actual ORM/concurrency/role and official page acceptance still remain; the payment-confirmation blocker stays active and overall67 is open.

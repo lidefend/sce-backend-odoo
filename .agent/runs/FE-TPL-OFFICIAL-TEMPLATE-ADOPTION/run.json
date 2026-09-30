@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.101 rental reservation amount constraint (exclude draft/rejected/cancel), protected allocation revision under source lock, financial-history attribution immutability implemented;96 pure tests PASS. Next wire rental basis/default_get/onchange/native and execution contract resolution/readiness revalidation; source cancel must respect live payment obligations; then canonical posted sums/reversal and remove blocker only after verified. Runtime concurrency/retry/ORM/roles untested; no upgrade yet, backend2d7eab703/frontend7915f3bb9 unchanged. Overall67 open; no newfixture/unrelatedORM/push/merge/deploy.",
+  "next_exact_step": "53.102 rental basis wired into default_get/onchange/has_basis/classification/formal display/native field, caller-visible execution contract resolution + readiness amount/identity recheck; source cancel denies live obligations/posted ledgers.100 pure tests PASS (first99 error was recordset test double, corrected). Next canonical posted paid/remaining summaries and reversal/state recovery, then replace53.98 blocker with real guard. Need governed upgrade+rollback scope and official page; runtime concurrency/ORM/roles not proven. backend2d7eab703/frontend7915f3bb9 unchanged. Overall67 open, no newfixtures/unrelatedORM/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

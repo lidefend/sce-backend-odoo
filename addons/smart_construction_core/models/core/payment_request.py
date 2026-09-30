@@ -367,6 +367,7 @@ class PaymentRequest(models.Model):
             ("standard_settlement", "标准结算单"),
             ("line_settlement", "明细结算单"),
             ("material_settlement", "材料结算单"),
+            ("rental_settlement", "租赁结算单"),
             ("contract", "合同依据"),
             ("legacy_relation", "历史关联依据"),
             ("none", "无可解释依据"),
@@ -1031,6 +1032,7 @@ class PaymentRequest(models.Model):
         "line_settlement_summary",
         "legacy_relation_summary",
         "material_settlement_id",
+        "rental_settlement_id",
         "contract_id",
         "payment_account_no",
         "legacy_payment_account_no",
@@ -1057,6 +1059,7 @@ class PaymentRequest(models.Model):
                     record.settlement_id,
                     record.line_settlement_summary,
                     record.material_settlement_id,
+                    record.rental_settlement_id,
                     record.contract_id,
                 )
             )
@@ -1129,6 +1132,7 @@ class PaymentRequest(models.Model):
             "type",
             "settlement_id",
             "material_settlement_id",
+            "rental_settlement_id",
             "contract_id",
             "partner_id",
         ):
@@ -1232,6 +1236,7 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
         "outflow_line_ids.settlement_id",
         "payment_account_name",
         "payment_bank_name",
@@ -1364,6 +1369,7 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
         "outflow_line_ids.settlement_id",
         "payee_account_completeness",
         "payment_execution_ids.state",
@@ -1419,6 +1425,10 @@ class PaymentRequest(models.Model):
             if vals.get("material_settlement_id")
             else False
         )
+        rental_settlement = (
+            self.env["sc.material.rental.settlement"].browse(vals.get("rental_settlement_id")).exists()
+            if vals.get("rental_settlement_id") else False
+        )
         contract = self.env["construction.contract"].browse(vals.get("contract_id")).exists() if vals.get("contract_id") else False
         partner = self.env["res.partner"].browse(vals.get("partner_id")).exists() if vals.get("partner_id") else False
 
@@ -1443,6 +1453,15 @@ class PaymentRequest(models.Model):
                 }
             )
             partner = material_settlement.supplier_id or partner
+        elif rental_settlement:
+            values.update({
+                "project_id": rental_settlement.project_id.id,
+                "contract_id": rental_settlement.contract_id.id,
+                "partner_id": rental_settlement.supplier_id.id,
+                "currency_id": rental_settlement.currency_id.id,
+                "amount": rental_settlement._payment_unreserved_amount(),
+            })
+            partner = rental_settlement.supplier_id
         elif contract:
             values.update(
                 {
@@ -1455,7 +1474,7 @@ class PaymentRequest(models.Model):
 
         if partner:
             values.update(self._partner_payment_defaults(partner, request_type=request_type))
-        return {key: value for key, value in values.items() if value not in (False, None, "")}
+        return {key: value for key, value in values.items() if value not in (False, None, "") or (rental_settlement and key == "amount")}
 
     def _apply_payment_request_basis_values(self, values, *, only_empty=False):
         for field_name, value in values.items():
@@ -1465,13 +1484,14 @@ class PaymentRequest(models.Model):
                 continue
             setattr(self, field_name, value)
 
-    @api.onchange("settlement_id", "material_settlement_id", "contract_id", "partner_id", "type")
+    @api.onchange("settlement_id", "material_settlement_id", "rental_settlement_id", "contract_id", "partner_id", "type")
     def _onchange_payment_request_basis(self):
         for record in self:
             vals = {
                 "type": record.type,
                 "settlement_id": record.settlement_id.id,
                 "material_settlement_id": record.material_settlement_id.id,
+                "rental_settlement_id": record.rental_settlement_id.id,
                 "contract_id": record.contract_id.id,
                 "partner_id": record.partner_id.id,
             }
@@ -1576,6 +1596,7 @@ class PaymentRequest(models.Model):
     def _assert_payment_execution_ready(self, *, require_authorized_actor=False):
         """Fail closed before a payment request can anchor an execution record."""
         self._assert_unambiguous_posted_payment_history()
+        self._check_rental_settlement_remaining_amount()
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
@@ -2225,6 +2246,7 @@ class PaymentRequest(models.Model):
         "settlement_id",
         "line_settlement_count",
         "material_settlement_id",
+        "rental_settlement_id",
         "contract_id",
         "legacy_relation_count",
     )
@@ -2236,6 +2258,8 @@ class PaymentRequest(models.Model):
                 rec.payment_basis_type = "line_settlement"
             elif rec.material_settlement_id:
                 rec.payment_basis_type = "material_settlement"
+            elif rec.rental_settlement_id:
+                rec.payment_basis_type = "rental_settlement"
             elif rec.contract_id:
                 rec.payment_basis_type = "contract"
             elif rec.legacy_relation_count:
@@ -2724,6 +2748,7 @@ class PaymentRequest(models.Model):
             self.contract_id
             or self.settlement_id
             or self.material_settlement_id
+            or self.rental_settlement_id
             or self.outflow_line_ids.filtered("settlement_id")
             or self.outflow_line_ids.filtered("settlement_line_id")
         )
@@ -2822,12 +2847,7 @@ class PaymentRequest(models.Model):
         requests._check_rental_settlement_consistency()
         for request in requests:
             source = request.rental_settlement_id
-            data = self.sudo().read_group([
-                ("rental_settlement_id", "=", source.id),
-                ("state", "not in", ("draft", "rejected", "cancel")),
-                ("id", "!=", request.id),
-            ], ["amount:sum"], [])
-            reserved = data[0].get("amount_sum", data[0].get("amount", 0.0)) if data else 0.0
+            reserved = source._payment_reserved_amount(exclude_request_id=request.id)
             rounding = source.currency_id.rounding or 0.01
             if float_compare(request.amount, 0.0, precision_rounding=rounding) <= 0:
                 raise ValidationError(_("租赁结算付款申请金额必须大于零。"))
@@ -2871,6 +2891,7 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
         "project_id",
         "outflow_line_ids",
     )

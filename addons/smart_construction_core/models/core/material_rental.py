@@ -583,6 +583,30 @@ class ScMaterialRentalSettlement(models.Model):
             record._write_approval_state({"state": "confirmed"})
         return True
 
+    def _payment_reserved_amount(self, exclude_request_id=False):
+        self.ensure_one()
+        domain = [
+            ("rental_settlement_id", "=", self.id),
+            ("state", "not in", ("draft", "rejected", "cancel")),
+        ]
+        if exclude_request_id:
+            domain.append(("id", "!=", exclude_request_id))
+        rows = self.env["payment.request"].sudo().read_group(domain, ["amount:sum"], [])
+        return rows[0].get("amount_sum", rows[0].get("amount", 0.0)) if rows else 0.0
+
+    def _payment_unreserved_amount(self):
+        self.ensure_one()
+        return max(self.amount_total - self._payment_reserved_amount(), 0.0)
+
+    def _assert_no_live_payment_obligations(self):
+        self._lock_payment_basis()
+        for record in self:
+            requests = record.sudo().with_context(active_test=False).payment_request_ids
+            if requests.filtered(lambda request: request.state not in ("draft", "rejected", "cancel")):
+                raise UserError(_("租赁结算仍有关联的在途或已办结付款申请，不能取消。"))
+            if requests.mapped("ledger_line_ids").filtered(lambda ledger: ledger.state == "posted"):
+                raise UserError(_("租赁结算仍有有效付款台账，不能取消。"))
+
     def _payment_confirmation_blocker(self):
         # Exit this product gap only when settlement-specific allocation and
         # reversal authority exist. A request link or its paid total alone
@@ -604,6 +628,7 @@ class ScMaterialRentalSettlement(models.Model):
         return True
 
     def action_cancel(self):
+        self._assert_no_live_payment_obligations()
         for record in self:
             if record.state not in ("draft", "submitted", "approved", "confirmed"):
                 raise UserError(_("只有未支付租赁结算可以取消。"))

@@ -1078,6 +1078,93 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(contexts)
         self.assertTrue(all(values == {'active_test': False} for values in contexts))
 
+    def test_rental_source_cannot_cancel_live_payment_obligations(self):
+        path = MODEL.with_name('material_rental.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_assert_no_live_payment_obligations')
+        ns = {'UserError': ValueError, '_': lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        class Rows(list):
+            def filtered(self, predicate): return Rows(filter(predicate, self))
+            def mapped(self, name): return Rows(row for item in self for row in getattr(item, name))
+        record = self._purchase_request_record(state='confirmed')
+        record._lock_payment_basis = lambda: None
+        record.sudo = lambda: record
+        for state, ledger, blocked in [('approved', [], True), ('done', [], True), ('cancel', [types.SimpleNamespace(state='posted')], True), ('cancel', [types.SimpleNamespace(state='reversed')], False), ('draft', [], False)]:
+            record.payment_request_ids = Rows([types.SimpleNamespace(state=state, ledger_line_ids=ledger)])
+            if blocked:
+                with self.assertRaises(ValueError): ns['_assert_no_live_payment_obligations'](record)
+            else: ns['_assert_no_live_payment_obligations'](record)
+
+    def test_execution_contract_resolves_caller_visible_rental_source(self):
+        path = MODEL.with_name('payment_execution.py')
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_basis_contracts_map')
+        method.decorator_list = []
+        ns = {'ValidationError': ValueError, '_': lambda text: text}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(path), 'exec'), ns)
+        class Rows(list):
+            def search(self, domain): return Rows()
+            @property
+            def ids(self): return [row.id for row in self]
+            @property
+            def id(self): return self[0].id if self else False
+            def mapped(self, name):
+                result = Rows()
+                for row in self:
+                    value = getattr(row, name)
+                    result.extend(value if isinstance(value, list) else [value])
+                return result
+            def __or__(self, other):
+                return Rows(list(self) + [row for row in other if row not in self])
+        empty = Rows()
+        contract = types.SimpleNamespace(id=15, project_id=11)
+        source = types.SimpleNamespace(id=7, project_id=11, contract_id=Rows([contract]))
+        calls = []
+        request = types.SimpleNamespace(id=23, project_id=11, rental_settlement_id=Rows([source]), settlement_id=empty, material_settlement_id=empty, contract_id=Rows([contract]), _check_rental_settlement_consistency=lambda: calls.append('identity'))
+        def visible(model, ids):
+            calls.append((model, set(ids)))
+            if model == 'sc.material.rental.settlement': return {7: source}
+            if model == 'construction.contract': return {15: Rows([contract])}
+            return {}
+        service = types.SimpleNamespace(env={'construction.contract': empty, 'payment.request.line': Rows()}, _caller_visible_payment_relations=visible)
+        result = ns['_payment_basis_contracts_map'](service, Rows([request]))
+        self.assertEqual(result[23], Rows([contract]))
+        self.assertIn(('sc.material.rental.settlement', {7}), calls)
+        self.assertIn('identity', calls)
+        source.contract_id, request.contract_id = empty, empty
+        self.assertEqual(ns['_payment_basis_contracts_map'](service, Rows([request]))[23], empty)
+        def denied(model, ids):
+            if model == 'sc.material.rental.settlement': raise PermissionError('source invisible')
+            return visible(model, ids)
+        service._caller_visible_payment_relations = denied
+        with self.assertRaises(PermissionError): ns['_payment_basis_contracts_map'](service, Rows([request]))
+
+    def test_rental_basis_counts_as_payment_basis_without_contract(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_has_payment_basis')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(MODEL), 'exec'), ns)
+        record = types.SimpleNamespace(ensure_one=lambda: None, contract_id=False, settlement_id=False, material_settlement_id=False, rental_settlement_id=7, outflow_line_ids=types.SimpleNamespace(filtered=lambda field: []))
+        self.assertTrue(ns['_has_payment_basis'](record))
+        record.rental_settlement_id = False
+        self.assertFalse(ns['_has_payment_basis'](record))
+
+    def test_rental_basis_defaults_preserve_zero_remaining_amount(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_basis_payment_request_values')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), str(MODEL), 'exec'), ns)
+        source = types.SimpleNamespace(project_id=types.SimpleNamespace(id=11), contract_id=types.SimpleNamespace(id=False), supplier_id=types.SimpleNamespace(id=13), currency_id=types.SimpleNamespace(id=14))
+        source.exists = lambda: source
+        class Env(dict): context = {}
+        record = types.SimpleNamespace(env=Env({'sc.material.rental.settlement': types.SimpleNamespace(browse=lambda value: source)}), _partner_payment_defaults=lambda partner, request_type: {'payment_account_no': 'existing-authority'})
+        for amount in (0, 40):
+            source._payment_unreserved_amount = lambda: amount
+            values = ns['_basis_payment_request_values'](record, {'rental_settlement_id': 7})
+            self.assertEqual(values['amount'], amount)
+            self.assertEqual(values['project_id'], 11)
+            self.assertEqual(values['partner_id'], 13)
+            self.assertEqual(values['currency_id'], 14)
+            self.assertEqual(values['payment_account_no'], 'existing-authority')
+
     def _rental_reservation_check(self, *, amount=40, reserved=60, state='approved', has_source=True):
         method = next(n for n in ast.walk(ast.parse(MODEL.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_rental_settlement_remaining_amount')
         method.decorator_list = []
@@ -1089,6 +1176,11 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         events = []
         source = types.SimpleNamespace(id=7, amount_total=100, currency_id=types.SimpleNamespace(rounding=0.01))
         record = types.SimpleNamespace(id=23, rental_settlement_id=source if has_source else False, amount=amount, state=state)
+        source.ensure_one = lambda: None
+        source_path = MODEL.with_name('material_rental.py')
+        reserve = next(n for n in ast.walk(ast.parse(source_path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_payment_reserved_amount')
+        exec(compile(ast.Module(body=[reserve], type_ignores=[]), str(source_path), 'exec'), ns)
+        source._payment_reserved_amount = lambda **kw: ns['_payment_reserved_amount'](source, **kw)
         class Requests(list):
             def filtered(self, predicate): return Requests(filter(predicate, self))
             def mapped(self, field): return types.SimpleNamespace(_serialize_payment_reservation=lambda: events.append('serialize'))
@@ -1097,6 +1189,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             def read_group(self, domain, fields, groupby):
                 events.append(domain)
                 return [{'amount': reserved}]
+        source.env = {'payment.request': Requests([record])}
         return lambda: ns['_check_rental_settlement_remaining_amount'](Requests([record])), events
 
     def test_rental_reservation_allows_split_payments_but_not_overbooking(self):

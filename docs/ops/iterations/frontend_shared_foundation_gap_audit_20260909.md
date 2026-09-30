@@ -8352,3 +8352,16 @@ payment.request.write在任何租赁归属变化前用sudo+active_test=False读�
 L1 rental-reservation-final-iteration.log PASS；最后counter sudo范围修正后仅相关py_compile/diff复核PASS，其余L1输入未变。L2 rental-reservation-counter-unit.log96 PASS并登记：额度恰好用满/超额/非正边界，未入流程和非租赁不计占用，先锁再版本写与外部版本写拒绝，历史财务归属不可重绑。初版95及中间96日志保留，不当最终结果混写。
 
 下一步basis/default_get/onchange/native契约与execution读取、执行前额度/身份重验、canonical posted汇总和冲销，检查来源取消与现存付款责任一致性；然后一次受管升级及真实并发/ORM/角色定向验收。L3/L4尚未运行，支付blocker仍在，不将纯测试扩大为真实付款闭环。后端2d7eab703/前端7915f3bb9未改变，无新fixture/无关ORM/推送合并目标部署。整体67继续开放。
+
+
+### 53.102 租赁付款依据接通现有消费链（源码阶段）
+
+候选051176dd7+dirty，P1 smart_construction_core租赁/付款申请/付款执行及原生view。统一_payment_reserved_amount供额度约束和创建剩余额度默认值使用；default_get seed/onchange、_has_payment_basis、payment_basis_type及正式关联展示接入rental_settlement_id，零可申请额显式保留，不因false过滤消失。原生付款依据区公开租赁结算选择、沿用草稿/驳回编辑规则及模型domain，不新增前端解释。
+
+付款执行_payment_basis_contracts_map通过既有caller-visible resolver读取租赁结算与合同，复验来源身份，不sudo跳过来源可见性；可无合同但有合法租赁结算依据。request._assert_payment_execution_ready调用租赁额度/身份校验，直接明细变更不能只靠旧父约束结果办理。原执行依据约束依赖新增租赁字段。剩余额度仅提供默认建议，最终受53.101版本锁校验。
+
+租赁取消先锁源，sudo读取所有归属申请及有效posted台账；在途/办结申请或有效付款事实拒绝取消，已取消且全冲销历史不单独阻止取消。付款依据消费与结算付款确认仍有区别，53.98 blocker继续保留，canonical paid汇总与反向冲销状态尚未完成。
+
+L1 rental-basis-wire-iteration.log PASS；补依赖/测试后相关py_compile/XML parse/diff PASS。L2首轮rental-basis-wire-unit.log99有1 error：新纯测试将空Odoo line model模拟为SimpleNamespace，缺mapped；仅修复替身，fixed99 PASS。最终rental-basis-wire-final-unit.log100 PASS并登记回执，覆盖真实执行合同解析调用及不可见来源拒绝、无合同依据、零默认额、额度查询复用、取消责任边界。纯测试不等同于实际ORM/权限/浏览器。
+
+L3/L4尚未运行：下一步canonical posted汇总、冲销后事实/状态回读及确认支付guard，再一次受管升级和租赁结算rollback scope、代表官方页面验收。原审批链及财务权限守卫保留；不重复付款49或其他无关ORM。后端2d7eab703、前端7915f3bb9未变化，无构建/持久fixture/推送合并目标部署。整体67未完成。

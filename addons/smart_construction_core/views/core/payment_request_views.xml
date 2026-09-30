@@ -130,6 +130,7 @@
                                 <field name="settlement_approved_amount" readonly="1" invisible="not settlement_id"/>
                                 <field name="settlement_deduction_amount" readonly="1" invisible="not settlement_id"/>
                                 <field name="material_settlement_id" domain="[('project_id', '=', project_id)]" options="{'no_create': True, 'no_create_edit': True}" readonly="state not in ['draft', 'rejected']"/>
+                                <field name="rental_settlement_id" options="{'no_create': True, 'no_create_edit': True}" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="payment_basis_type" readonly="1"/>
                                 <field name="cost_category_name" readonly="1"/>
                             </group>
