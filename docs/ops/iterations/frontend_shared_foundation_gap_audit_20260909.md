@@ -8295,3 +8295,16 @@ L1 rental-order-input-iteration.log/node/diff PASS，rental-order-input-unit.log
 
 
 53.96结果：2d7eab703受管升级/reload成功，rental-order-input-page.log对应tpl07-1790784797476 24 PASS，4字段可编辑契约及项目/供应商/日期/说明控件可见，1440/390无溢出、errors/forbiddenWrites为空，390截图复核。关闭53.95创建输入缺失；不声称实际save/submit/角色全旅程已证明。前端7915f3bb9仍未重建，原runtime13依赖的审批执行代码未变复用，不重跑已有空记录查询。下一步租赁结算审批/执行与支付事实缺口，整体67保持开放。
+
+
+### 53.97 租赁结算动作声明补齐审批执行契约（源码阶段）
+
+候选b6cd0cfcd+明确dirty，原工作区干净。P1 smart_construction_core材料租赁结算行业标准职责，复用现有policy/tier；P0/前端不接收租赁业务判断，P3配置只选择审批路线。直接影响material_rental settlement、policy/tier/callback注册、workflow及native view，未变更ACL、启动链或前端。动作有声明不代表执行契约完整：旧approve指向确认结算、旧paid仅写状态，两者均为P1缺口。
+
+源码加入项目公司、真实amount_total配置权威、submitted/approved分离、私有状态写保护和真实review回调；无配置提交自动approved，有配置走review，approved后显式action_confirm才confirmed。新增confirm_settlement动作身份复用complete语义；approve/reject只真实tier，原生按钮与状态栏同步。生成编号创建隐藏只读。原payment_request关联校验、明细及来源租赁单校验保留。
+
+支付调查结论：payment.request._canonical_payment_paid_amount_map是精确申请的posted ledger权威，但不是租赁结算分摊/归属证据；_claim_terminal_cash_source仅支持receipt.income/expense.claim，属于终态现金来源认领，不能把租赁结算直接当现金来源套入。action_paid现有缺陷仍开放，未通过简单is_fully_paid或强加一对一业务规则冒充解决；下一步补支付依据、归属、金额/币种与冲销语义，不能以本次审批通过关闭支付缺口。
+
+L1 rental-settlement-iteration.log PASS，XML2解析/重复ID及diff检查PASS。L2 rental-settlement-unit.log85 PASS（新增配置分流、真实审批/驳回重提、直接state写拒绝、审批不执行确认、重复确认拒绝）；rental-settlement-native.log8+49=57 PASS（reviewer动作差异/确认独立于审批和支付）；rental-settlement-semantics.log15 PASS。非零run回执已记录。这些纯测试不证明真实tier/database行为。
+
+L3/L4 not_run：支付事实缺口需先补齐，新增字段/XML需一次受管升级后再跑租赁结算scope及官方页面；不提前升级不完整候选。后端仍2d7eab703，前端7915f3bb9未变不构建。未重跑独立租赁计划/订单或无关ORM。L5不适用当前迭代，无推送/合并/目标部署。台账detail.action-state保持contract_gap，总体67与实际角色旅程未完成。

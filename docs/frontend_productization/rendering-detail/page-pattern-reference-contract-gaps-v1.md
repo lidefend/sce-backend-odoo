@@ -368,3 +368,8 @@ Backend1f5c6bca3 passes13 scoped actual-review/execution checks with rollback ve
 ### Segment53.96 — Rental order creation input defect closed
 
 P1 publication now inherits native editability for14 input fields while9 state/computed/execution/provenance facts remain readonly.84 pure tests pass. Backend2d7eab703, unchanged frontend7915f3bb9: tpl07-1790784797476 passes24 assertions including editable project/supplier/date/note contracts and visible controls, both viewports, no errors/writes. This closes53.95 missing-input defect. Actual save/submission/role handling and rental-settlement payment-fact authority remain unverified; no whole-ledger promotion.
+
+
+### Segment53.97 — Rental settlement approval contract, source only
+
+P1 shared approval now separates submission/review from explicit settlement confirmation. Configured review and unconfigured automatic approval stop at approved; native/workflow actions agree.85 state-machine,57 native-action and15 semantics tests pass. No runtime upgrade or page acceptance yet. Existing action_paid still lacks authoritative settlement-specific payment attribution; canonical request paid total alone is insufficient, and receipt/expense terminal-cash ownership cannot be relabeled as rental settlement authority. Resolve payment basis/allocation and reversal before runtime finalization. Retain detail.action-state contract_gap and all-business scope.

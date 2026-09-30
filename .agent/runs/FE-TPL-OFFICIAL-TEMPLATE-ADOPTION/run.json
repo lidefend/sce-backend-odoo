@@ -345,7 +345,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.96 rental order input gap closed backend2d7eab703/frontend7915f3bb9, report1790784797476 24 PASS +84 pure tests. Reuse runtime13 and no repeat empty existing PM query. Next P1 rental settlement: unify shared approval before explicit confirmation, resolve action_paid paid-flag-without-authoritative-payment gap using existing payment execution authority; do not invent paid facts or conflate approval/payment. Inspect direct model/payment consumers only. Overall67/rolejourneys/project initiation role prerequisite remain open. No newfixture/unrelatedORM/push/merge/targetdeploy.",
+  "next_exact_step": "53.97 rental settlement source approval/explicit confirmation implemented, L1+85 approval/57 native/15 semantics PASS; no runtime upgrade. Next resolve action_paid payment basis/attribution/amount/currency/reversal using existing payment ledger authority. Do not treat request.is_fully_paid as settlement allocation or reuse receipt/expense terminal cash claim blindly. Then extend existing rollback scope and upgrade once; backend remains2d7eab703/frontend7915f3bb9. All67/role journeys remain open; no newfixture/unrelatedORM/push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

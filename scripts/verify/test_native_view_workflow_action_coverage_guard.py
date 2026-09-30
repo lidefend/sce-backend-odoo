@@ -113,6 +113,16 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             self.assertFalse(any(row['method'] == 'validate_tier' for row in rows))
         self.assertEqual({row['method'] for row in self._general_contract_actions('returned', model=model)}, {'action_settle'})
 
+    def test_rental_settlement_review_and_confirmation_are_distinct(self):
+        model = 'sc.material.rental.settlement'
+        for reviewer in (False, True):
+            rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=reviewer, record_fields={'validation_status': 'pending'})
+            self.assertEqual({row['method'] for row in rows}, {'validate_tier', 'reject_tier', 'action_cancel'} if reviewer else {'action_cancel'})
+        rows = self._general_contract_actions('approved', model=model)
+        self.assertEqual({row['method'] for row in rows}, {'action_confirm', 'action_cancel'})
+        self.assertEqual(next(row for row in rows if row['method'] == 'action_confirm')['action_semantics']['purpose'], 'complete')
+        self.assertFalse(any(row['method'] == 'action_paid' for row in rows))
+
     def test_labor_execution_family_confirmation_projection(self):
         for model in ('sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'):
             rows = self._general_contract_actions('submitted', model=model, approval_phase='pending', can_review=True, record_fields={'validation_status': 'pending'})

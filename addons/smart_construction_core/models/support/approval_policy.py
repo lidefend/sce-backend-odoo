@@ -29,6 +29,7 @@ class ScApprovalPolicy(models.Model):
         ("sc.labor.plan", "劳务计划"),
         ("sc.material.rental.plan", "材料租赁计划"),
         ("sc.material.rental.order", "材料租赁单"),
+        ("sc.material.rental.settlement", "材料租赁结算"),
         ("sc.labor.request", "劳务申请"),
         ("sc.labor.settlement", "劳务结算"),
         ("sc.labor.usage", "劳务用工"),
@@ -431,6 +432,7 @@ class ScApprovalPolicy(models.Model):
             "sc.labor.plan",
             "sc.material.rental.plan",
             "sc.material.rental.order",
+            "sc.material.rental.settlement",
             "sc.labor.request",
             "sc.labor.settlement",
             "sc.labor.usage",
@@ -491,6 +493,10 @@ class ScApprovalPolicy(models.Model):
             "sc.material.rental.order": (
                 "smart_construction_core.server_action_material_rental_order_on_approved",
                 "smart_construction_core.server_action_material_rental_order_on_rejected",
+            ),
+            "sc.material.rental.settlement": (
+                "smart_construction_core.server_action_material_rental_settlement_on_approved",
+                "smart_construction_core.server_action_material_rental_settlement_on_rejected",
             ),
             "sc.equipment.settlement": (
                 "smart_construction_core.server_action_equipment_settlement_on_approved",
@@ -673,6 +679,7 @@ class ScApprovalPolicy(models.Model):
             "sc.labor.usage": "amount_total",
             "sc.material.rental.plan": "estimated_amount",
             "sc.material.rental.order": "amount_total",
+            "sc.material.rental.settlement": "amount_total",
             "sc.equipment.settlement": "amount_total",
             "sc.equipment.usage": "amount",
             "sc.settlement.order": "amount_total",

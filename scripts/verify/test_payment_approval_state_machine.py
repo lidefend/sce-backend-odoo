@@ -1056,6 +1056,40 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             self.assertEqual(len(checks), 4)
             with self.assertRaises(ValueError): ns['action_settle'](rec)
 
+    def test_rental_settlement_approval_requires_explicit_confirmation(self):
+        path = MODEL.with_name('material_rental.py')
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == 'ScMaterialRentalSettlement')
+        names = {'action_submit', 'action_confirm', 'action_cancel', 'action_on_tier_approved', 'action_on_tier_rejected', 'write'}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        ns = {'UserError': ValueError, '_': lambda text: text, '_RENTAL_APPROVAL_STATE_TOKEN': object()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        for required in (False, True):
+            rec = self._purchase_request_record(required=required, state='draft')
+            rec._name = 'sc.material.rental.settlement'
+            rec._write_approval_state = lambda values: rec.data.update(values)
+            rec._check_business_anchor = lambda: None
+            with self.assertRaises(ValueError): ns['write'](rec, {'state': 'paid'})
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            ns['action_submit'](rec)
+            self.assertEqual(rec.state, 'submitted' if required else 'approved')
+            if required:
+                with self.assertRaises(ValueError): ns['action_confirm'](rec)
+                ns['action_on_tier_approved'](rec)
+                self.assertEqual(rec.state, 'submitted')
+                rec.data['validation_status'] = 'rejected'
+                ns['action_on_tier_rejected'](rec, 'revise')
+                self.assertEqual(rec.state, 'draft')
+                self.assertEqual(rec.reject_reason, 'revise')
+                ns['action_submit'](rec)
+                rec.data['validation_status'] = 'validated'
+                ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'approved')
+            ns['action_confirm'](rec)
+            self.assertEqual(rec.state, 'confirmed')
+            with self.assertRaises(ValueError): ns['action_confirm'](rec)
+            ns['action_on_tier_approved'](rec)
+            self.assertEqual(rec.state, 'confirmed')
+
     def test_rental_order_input_policy_separates_execution_and_calculated_facts(self):
         path = ROOT / 'addons/smart_construction_core/data/p1_daily_business_form_orchestration_contract_data.xml'
         record = ET.parse(path).find(".//record[@id='business_config_contract_sc_material_rental_order_p1_form_business_facts_v1']")

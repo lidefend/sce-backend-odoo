@@ -901,15 +901,12 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.material.rental.settlement": {
             "state_field": "state",
-            "state_phase": {"draft": "draft", "submitted": "submitted", "confirmed": "approved", "paid": "done", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "confirmed": ["complete", "cancel"]},
-            "method_by_action": {
-                "submit": "action_submit",
-                "approve": "action_confirm",
-                "complete": "action_paid",
-                "cancel": "action_cancel",
-            },
-            "label_by_action": {"approve": "确认结算", "complete": "确认支付"},
+            "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "confirmed": "approved", "paid": "done", "cancel": "cancelled"},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "approved": ["confirm_settlement", "cancel"], "confirmed": ["complete", "cancel"]},
+            "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
+            "approval_actions": ["approve", "reject"],
+            "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "confirm_settlement": "action_confirm", "complete": "action_paid", "cancel": "action_cancel"},
+            "label_by_action": {"confirm_settlement": "确认结算", "complete": "确认支付"},
         },
         "sc.material.settlement": {
             "state_field": "state",
@@ -1025,6 +1022,7 @@ class ScWorkflowContractService(models.AbstractModel):
 
     ACTIONS = {
         "return_rental": {"label": "确认退还", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "confirm_settlement": {"label": "确认结算", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "accept_result": {"label": "验收通过", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "reject_result": {"label": "验收不通过", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "pause": {"label": "暂停执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "pause_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
