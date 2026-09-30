@@ -693,6 +693,10 @@ try {
           for (const name of ['payment_request_id', 'amount', 'payee_account', 'payer_account']) {
             check(`expense create: ${name} has rendered input`, await session.page.locator(`[data-field-name="${name}"] input`).count() > 0);
           }
+          await session.page.getByRole('button', { name: '提交审批', exact: true }).click();
+          await session.page.getByText('请先补充必填信息，再保存草稿或提交。', { exact: true }).waitFor({ state: 'visible' });
+          check('expense create: incomplete submission stays on unsaved form', new URL(session.page.url()).pathname === '/f/sc.expense.claim/new');
+          check('expense create: required validation sends no business write', report.forbiddenWrites.length === 0);
         }
 
         if (['sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation'].includes(spec.model)) {

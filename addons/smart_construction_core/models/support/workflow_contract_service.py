@@ -1172,6 +1172,18 @@ class ScWorkflowContractService(models.AbstractModel):
         return merged
 
     @api.model
+    def describe_model_actions(self, model_name):
+        """Stable meanings for an unsaved form; never a record execution grant."""
+        profile = self.profile_by_model().get(model_name)
+        if not profile:
+            return {}
+        return {
+            "model": model_name,
+            "source": {"kind": "sc_backend_workflow_action_catalog", "projection_only": True},
+            "actions": self._declared_actions(profile),
+        }
+
+    @api.model
     def describe_record(self, record):
         if not record or len(record) != 1:
             return {}

@@ -750,6 +750,41 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertTrue(ns['write'](rows, {'state': 'cancel'}))
         self.assertEqual(writes[-1], {'state': 'cancel'})
 
+    def test_unsaved_workflow_catalog_declares_meaning_without_execution_grants(self):
+        path = ROOT / 'addons/smart_construction_core/models/support/workflow_contract_service.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'describe_model_actions')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        declaration = {'key': 'submit', 'method': 'action_submit', 'action_semantics': {'purpose': 'submit'}}
+        service = types.SimpleNamespace(profile_by_model=lambda: {'sc.expense.claim': {'state_field': 'state'}},
+            _declared_actions=lambda profile: [declaration])
+        catalog = ns['describe_model_actions'](service, 'sc.expense.claim')
+        self.assertEqual(catalog['actions'], [declaration])
+        self.assertNotIn('availableActions', catalog)
+        self.assertNotIn('editability', catalog)
+        self.assertNotIn('rawState', catalog)
+        self.assertEqual(ns['describe_model_actions'](service, 'unsupported'), {})
+
+    def test_unsaved_workflow_injection_preserves_capabilities_and_does_not_browse(self):
+        path = ROOT / 'addons/smart_construction_core/core_extension.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_sc_inject_workflow_contract')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        catalog = {'model': 'sc.expense.claim', 'actions': [{'method': 'action_submit'}]}
+        class Env:
+            registry = {'sc.expense.claim': True}
+            def __getitem__(self, name):
+                self.assert_service(name)
+                return types.SimpleNamespace(describe_model_actions=lambda model: catalog)
+            def assert_service(self, name):
+                assert name == 'sc.workflow.contract.service', 'unsaved injection must not browse or invent a record'
+        status = {'globalStatus': {'effectiveRecordCapabilities': {'create': True, 'write': False}}}
+        contract = {'statusContract': copy.deepcopy(status)}
+        ns['_sc_inject_workflow_contract'](Env(), contract, {}, model='sc.expense.claim', view_type='form')
+        self.assertEqual(contract['workflowContract'], catalog)
+        self.assertEqual(contract['statusContract'], status)
+
     def test_expense_create_defaults_resolve_category_and_model_semantics(self):
         path = MODEL.with_name('expense_claim.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'default_get')

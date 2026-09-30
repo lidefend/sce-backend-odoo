@@ -695,10 +695,13 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
         record_id = int(record_id or 0)
     except Exception:
         record_id = 0
-    if record_id <= 0:
-        return
     try:
         if model not in env.registry:
+            return
+        if record_id <= 0:
+            catalog = env["sc.workflow.contract.service"].describe_model_actions(model)
+            if catalog:
+                contract["workflowContract"] = catalog
             return
         record = env[model].browse(record_id).exists()
         if not record:
