@@ -3382,6 +3382,22 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         plan.state, plan.validation_status = 'draft', 'rejected'
         self.assertTrue(ns['write'](rows, {'name': 'corrected'}))
 
+    def test_plan_native_fields_declare_baseline_and_execution_conditions(self):
+        path = ROOT / 'addons/smart_construction_core/views/core/plan_management_views.xml'
+        root = ET.parse(path).getroot()
+        form = root.find(".//record[@id='view_sc_plan_form']/field[@name='arch']/form")
+        definition = "state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"
+        for name in ('name', 'plan_type', 'project_id', 'company_id', 'owner_id', 'planned_start', 'planned_finish', 'note', 'attachment_ids'):
+            field = form.find(".//field[@name='%s']" % name)
+            self.assertEqual(field.get('readonly'), definition)
+        tree = form.find(".//field[@name='line_ids']/tree")
+        for name in ('name', 'planned_start', 'planned_finish', 'owner_id', 'parent_id'):
+            self.assertEqual(tree.find("field[@name='%s']" % name).get('readonly'),
+                             "parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')")
+        for name in ('progress_rate', 'state'):
+            self.assertEqual(tree.find("field[@name='%s']" % name).get('readonly'),
+                             "parent.state != 'in_progress' or parent.validation_status in ('waiting', 'pending')")
+
     def test_plan_real_rejected_draft_can_edit_under_tier_rules(self):
         path = MODEL.with_name('plan_management.py')
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_check_allow_write_under_validation')
