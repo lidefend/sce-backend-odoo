@@ -236,7 +236,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.34 governed expense approval smoke passes8 real checks: missing-rule rollback, real rejection with reason/audit, new-chain resubmission plus prior flow; policy/steps and temporary records restored. Native submit-to-draft clears reviews by design. Next explicit multi-level/authorization proof, remaining necessary document coverage and two native product gaps; reuse backend4b8c4397e/5180 unchanged inputs.",
+  "next_exact_step": "53.35 fixed stale active tier definitions for disabled steps (P1 sync active_test=False),49 unit tests pass. Backend4880989f8 reloaded;53.36 expense runtime12 passes with verified restoration and two-step/non-reviewer checks. Next assert configured step sequence10->20 matches actual definition/review order (not yet proven); continue full necessary document coverage and two native product action gaps. Reuse original frontend.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -631,6 +631,17 @@
       "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-exceptions-runtime.log",
       "restoration": "verified policy+step field readback and absent temporary documents",
       "scope": "expense real missing-rule/reject/resubmit; not all models or explicit multi-level sequence proof"
+    },
+    "approval_linear_53_36": {
+      "status": "scoped_runtime_passed",
+      "source_head": "4880989f8",
+      "tests": {
+        "unit": 49,
+        "runtime": 12
+      },
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/approval-linear-runtime.log",
+      "restoration": "verified",
+      "remaining": "configured step sequence direction, distinct reviewers, all-document coverage and native gaps"
     }
   }
 }
