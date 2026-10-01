@@ -65,6 +65,18 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             {"workspace.home"},
         )
         authority = MenuService(self.env).build_route_authority(surface)
+        from .system_init import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
+        from ..delivery.product_policy_service import ProductPolicyService
+        identity = _resolve_startup_delivery_identity(self.env, {})
+        policy = ProductPolicyService(self.env).get_policy(
+            **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
+            role_code=surface.get("role_code"), enforce_release=True, enforce_access=True,
+        )
+        release_gate = _load_platform_release_gate(self.env, product_key=policy["product_key"])
+        authority = MenuService.filter_route_authority_by_publication(
+            authority, filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
+                _filter_nav_by_release_gate(nodes, release_gate, env=self.env)[0],
+        )
         entries = [
             row
             for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
@@ -72,6 +84,9 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             if isinstance(row, dict) and _positive_int(row.get("action_id")) == action_id
         ]
         if len(entries) != 1:
+            if any(_positive_int(row.get("action_id")) == action_id and row.get("reason_code") == "PRODUCT_ENTRY_NOT_RELEASED"
+                   for row in authority.get("denied_actions") or []):
+                return self._deny("PRODUCT_ENTRY_NOT_RELEASED")
             return self._deny("ROUTE_ACTION_NOT_AUTHORIZED")
         entry = entries[0]
         requirements = entry.get("context_requirements") if isinstance(entry.get("context_requirements"), dict) else {}

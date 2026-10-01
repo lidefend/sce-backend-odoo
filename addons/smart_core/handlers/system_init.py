@@ -2319,6 +2319,11 @@ class SystemInitHandler(BaseIntentHandler):
             role_surface,
             nav=_final_navigation,
         )
+        _final_route_authority = delivery_engine.menu_service.filter_route_authority_by_publication(
+            _final_route_authority,
+            filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
+                _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
+        )
         # Startup overlays can reintroduce compatibility action nodes after
         # DeliveryEngine performed its first role-scoped projection. Reconcile
         # the final tree with this response-local authority before sealing the

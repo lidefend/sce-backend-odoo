@@ -507,6 +507,26 @@ class MenuService:
         return targets
 
     @staticmethod
+    def filter_route_authority_by_publication(authority: dict, *, filter_nodes) -> dict:
+        """Apply the existing publication projection to executable route entries."""
+        buckets = ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+        nodes, originals = [], {}
+        for bucket in buckets:
+            for index, entry in enumerate(authority.get(bucket) or []):
+                key = f"route-publication:{bucket}:{index}"
+                originals[key] = (bucket, entry)
+                nodes.append({"key": key, "menu_id": entry.get("menu_id"), "meta": dict(entry)})
+        retained = {node["key"] for node in filter_nodes(nodes)}
+        result = {**authority, **{bucket: [] for bucket in buckets},
+                  "denied_actions": list(authority.get("denied_actions") or [])}
+        for key, (bucket, entry) in originals.items():
+            if key in retained:
+                result[bucket].append(entry)
+            else:
+                result["denied_actions"].append({**entry, "reason_code": "PRODUCT_ENTRY_NOT_RELEASED"})
+        return result
+
+    @staticmethod
     def filter_nav_by_route_authority(nav: list[dict], route_authority: dict | None) -> list[dict]:
         """Keep action-bearing navigation only when this payload authorizes it."""
         authority = route_authority if isinstance(route_authority, dict) else {}
