@@ -1818,3 +1818,8 @@ def smart_core_scene_entry_orchestrator_specs(env):
 def smart_core_user_data_acceptance_nav_contract(env):
     del env
     return _hook_facts.user_data_acceptance_nav_contract()
+
+
+def smart_core_authorize_work_item_origin(env, origin, **target):
+    from .services.review_work_item_service import authorize_review_origin
+    return authorize_review_origin(env, origin, **target)
