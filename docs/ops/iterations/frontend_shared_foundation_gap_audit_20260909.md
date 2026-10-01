@@ -9461,3 +9461,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 受管backend.acceptance.up绑定c7f3674b1；acceptance.module.upgrade smart_construction_core一次成功，registry加载终态exit0（plan-date-backend-up/module-upgrade.log），环境复用sc-fe-r2-p1-01/sc_frontend_acceptance/exactfilter及原卷。SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **22 PASS、ROLLBACK VERIFIED**（plan-date-authority-runtime.log）：草稿/确认/执行/审批中最终契约、拒绝外部日期、正式动作日期回读、真实审批/驳回/重新提交均通过。
 - 前端保持fa1f92993/index-s6eU2T-G.js，无重建。既有未保存版本行浏览器tpl07-1790813184944 **19 PASS**（plan-date-authority-browser.log）；已查看截图，父计划状态仅展示、实际日期为只读文本，版本号仍可填写。errors/forbiddenWrites为空，临时父计划65最终清理，未创建版本持久事实。
 - 本批主单动作事实保护及只读投影范围验收完成；版本真实保存/审批界面闭环和执行阶段编辑仍未完成，detail.action-state整体不升级。下一步沿现有精确临时父计划探针补版本保存回读、动作契约消费及恢复检查；不扩大环境/fixture。无推送、合并、目标部署，整体产品交付仍active。
+
+### 53.197 计划版本真实主从保存与精确恢复
+
+- b3550f886 clean起点，上一轮P1状态/日期事实及只读契约验证属progress。本批P4 9fe6bad70沿原report临时父计划/planVersionInspect工具扩展，不改生产、不新建环境/fixture。新增显式TPL07_PLAN_VERSION_SAVE必须同时满足原inspect/report-save/approval-actions/model/view范围。
+- 写许可仅fixture_role_pm、已登记父计划正整数ID、company8、api.data write的精确已捕获request；唯一version_ids创建命令、字段仅version_no/revision_type/version_date，marker及后端默认日期绑定，不允许状态、审核字段、更新旧版本或在途重复写。恢复预先登记原recovery文件，逐一核对父/子创建人32、company8/project10、唯一marker/ID/300秒窗口、草稿、无review/审核事实/附件/基准引用/其他依赖；全部核验后删除版本再父计划、提交回读。仍拒绝清理approved版本，未为取证绕过审批保护。
+- L1 version-save-tool-iteration PASS；verify.frontend.standard_preview.unit **44 PASS**（Node17/Python27，version-save-tool-unit.log）并begin/record。测试覆盖错误角色/父身份/额外写字段/原有行命令/在途重放及恢复的数据库、创建人、状态、时间窗和版本身份拒绝。产品输入未变，前后端原证据复用，不跑ORM/升级/构建。
+- version-save-browser.log / tpl07-1790813377873 **27 PASS**。PM普通表单父计划66：第一次保存注入503，版本号输入保留；重试单次write仅version_ids [[0,0,{revision_type:adjustment,version_date:2026-10-01,version_no:TPL53-VERSION-SAVE-1790813382525}]]、company8/if_match；后端普通角色回读版本7，draft/正确父ID/默认值、approved_by和approved_date为空。重新打开父表单已显示持久版本行，实际行操作为“打开/删除”。errors=[]、forbiddenWrites=[]。
+- 最终精确恢复回执version_ids=[7]/parent_ids=[66]/actor32/restored，无残留。桌面截图已检查；390宽页面溢出断言通过，但该截图停在长表单上部，不能证明窄屏版本行操作可用，下一次定向运行须滚动版本区后复核，不冒充完整双视口旅程。
+- Backend c7f3674b1、frontend fa1f92993/index-s6eU2T-G.js保持；下一步沿真实行“打开”入口消费版本动作契约，完成提交与返回；该动作实际运行前须扩展精确恢复以覆盖确认为本轮产生的自动通过版本，不能默许删除任何已审批记录。已配置审批分支复用原运行验证，页面办理尚未关闭。总体67/action-state保持缺口，不推送/合并/目标部署。

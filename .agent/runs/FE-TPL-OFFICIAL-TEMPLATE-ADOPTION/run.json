@@ -464,7 +464,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.196 P1 3fb12f549 parent plan state/actual dates action-owned; P4 c7f3674b1 + exact helper correction. L1 PASS, approval187 PASS/record; backend c7f3674b1 bound and one governed module upgrade PASS. plan-state-authority22 PASS/rollback verified with final readonly contract across phases. tpl07-1790813184944 browser19 PASS, screenshot state/date controls removed, defaults still editable, parent65 cleaned; frontend fa1f92993 unchanged/no build. Next bounded real version save/readback and approval action UI through existing temp-parent/recovery mechanism; then execution phase editing with valid field contracts. No persistent version created yet. Overall67/detail.action-state remains active gap; no push/merge/targetdeploy.",
+  "next_exact_step": "53.197 P4 9fe6bad70 version save probe44 PASS/L1. tpl07-1790813377873 browser27 PASS: parent66 exact write creates version7 draft, first503 preserves input, real save/readback/reopen succeeds, row exposes Open/Delete; all cleaned (version7,parent66). Frontend fa1f92993/backend c7f3674b1 unchanged; no build/upgrade. Next actual row Open -> version action contract -> submit -> return; before approved write extend exact temporary recovery with strict unconfigured autoapproved-only identity/no dependencies, never general approval bypass. Scroll collection before390 screenshot (current390 only page overflow, row not shown). Overall67/detail.action-state still gap; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
