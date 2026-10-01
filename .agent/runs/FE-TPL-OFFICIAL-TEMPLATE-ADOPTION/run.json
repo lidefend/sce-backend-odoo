@@ -593,11 +593,9 @@
   },
   "blockers": [
     "Positive executive company/project scene browser scope has no matching final publication route_authority; company previously relied on unfiltered requested-scene restoration. Do not expand publication to pass a test.",
-    "Original all-document approval responsibility/legacy retirement reconciliation remains open (detail.action-state).",
-    "Engineering document runtime needs confirmed existing doc_type classification (53.118).",
-    "Project initiation approval amount field semantics awaits owner decision (53.116)."
+    "Original all-document approval responsibility/legacy retirement reconciliation remains open (detail.action-state)."
   ],
-  "next_exact_step": "Resolve owner doc_type/approval amount answers and local publication preference without inventing data or widening release. Otherwise continue registered P4 rental/subcontract/red-flush two-transaction verification preparation using existing runtime authority; no new fixture/profile. Preserve75+57+79/strict passes and original logs; pending positive scene browser and all-document role journeys remain explicit.",
+  "next_exact_step": "Commit converged P4 browser adjustments; A receives sole writer token for one ordinary PM native capability scope in existing runtime script/wrapper/tests. B review, L1/L2 then serialized governed execution. Finance red-flush detail browser remains independently pending.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1959,20 +1957,23 @@
         {
           "responsibility": "工程资料提交/审批/归档",
           "source": "53.118",
-          "blocker": "confirmed doc_type required",
-          "next": "resolve confirmed classification then original project-document runtime scope"
+          "blocker": "",
+          "next": "reuse native8 and UI33; configured UI/attachments not claimed",
+          "status": "closed_scoped_capability_and_published_PM_autoapproval_UI"
         },
         {
           "responsibility": "项目立项审批金额条件",
           "source": "53.116",
-          "blocker": "owner amount-field semantics",
-          "next": "confirm amount authority; preserve6 role runtime passes"
+          "blocker": "",
+          "next": "project intentionally unsupported amount; actual role/sequence UI works; no new amount semantics required",
+          "status": "closed_capability_contract_gap"
         },
         {
           "responsibility": "租赁/分包选源与并发",
           "source": "53.105/53.111/53.113",
-          "next": "governed two-transaction test; actual source selection when valid data exists",
-          "reuse": "finance cash/reversal10 each; empty source query not completion"
+          "next": "reuse rental6/subcontract6 exact committed conflict results; selected current PM has no corresponding final authority",
+          "reuse": "finance cash/reversal10 each; empty source query not completion",
+          "status": "concurrency_passed_source_UI_unpublished_for_current_PM"
         },
         {
           "responsibility": "劳务/安全/租赁/分包/投标普通角色办理",
@@ -1982,8 +1983,9 @@
         {
           "responsibility": "红冲并发/实际页面",
           "source": "53.124/53.125",
-          "next": "same-source two-session concurrency; valid record detail",
-          "reuse": "non-sudo finance runtime; unique constraint is not concurrency test"
+          "next": "reuse redflush6; inspect retained finance42 detail through published authority",
+          "reuse": "non-sudo finance runtime; unique constraint is not concurrency test",
+          "status": "concurrency_passed_detail_pending"
         },
         {
           "responsibility": "计划终态呈现/版本标题/多角色配置UI",
@@ -1998,6 +2000,263 @@
         "53.238 zero undeclared state transitions;26 navigation+14document helpers not approval gaps",
         "53.237 payment sequential configured user loop passed; do not repeat"
       ]
+    },
+    "segment_53_246": {
+      "status": "runtime_passed_browser_pending",
+      "stage_identity": "98bf30edebf98e33449e00ca72b5e984dcebde72 + explicit dirty P4 tools/tests/run; not frozen",
+      "authority": "owner permits synthetic development data adaptation and retention in existing isolated acceptance environment",
+      "environment": "local/sc-fe-r2-p1-01/sc_frontend_acceptance/company8; native finance uid30; backend9924ee61c unchanged addons",
+      "L1": "passed; committed-concurrency-iteration.log",
+      "L2": {
+        "status": "passed",
+        "count": 95,
+        "log": "artifacts/frontend-web-fix-20260928/tpl52/document-flow-tool-unit.log",
+        "breakdown": "35 Node +60 Python"
+      },
+      "L3": [
+        {
+          "scope": "rental-concurrency",
+          "status": "passed",
+          "count": 6,
+          "project": 592,
+          "source": 11,
+          "requests": [
+            1837,
+            1838
+          ],
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/rental-committed-concurrency-runtime.log"
+        },
+        {
+          "scope": "subcontract-concurrency",
+          "status": "passed",
+          "count": 6,
+          "project": 593,
+          "source": 8,
+          "requests": [
+            1839,
+            1840
+          ],
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/subcontract-committed-concurrency-runtime.log"
+        },
+        {
+          "scope": "red-flush-concurrency",
+          "status": "passed",
+          "count": 6,
+          "project": 594,
+          "source": 52,
+          "adjustments": [
+            42,
+            43
+          ],
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/red-flush-committed-concurrency-runtime.log"
+        },
+        {
+          "scope": "project-document",
+          "status": "passed",
+          "count": 8,
+          "rollback": "verified",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/project-document-runtime-with-classification.log"
+        }
+      ],
+      "limitations": "Two actual cursors prove 55P03 lock contention, committed winner, fresh transaction business rejection and authoritative outcome; not HTTP automatic retry or waiter surviving commit. Runtime proof is not browser/user delivery.",
+      "data": "ITER-DOC-TYPE dictionary21 and named committed synthetic samples retained per owner authority",
+      "review": "B concurrency_review inspected contention and retry exact reason/index; document browser script review pending",
+      "L4": "not_run; new document browser scope ready; build required for prior shell fix"
+    },
+    "segment_53_247": {
+      "status": "scoped_amount_and_document_review_passed",
+      "identity": "98bf30edebf98e33449e00ca72b5e984dcebde72 + explicit dirty producer/consumer/tools/docs/run; not frozen",
+      "ownership": "P1 single existing amount mapping/config projection and validation; P0 generic editor; P4 browser scopes",
+      "L1": "passed amount-browser-iteration.log",
+      "L2": {
+        "business_config": 190,
+        "approval_state_machine": 194,
+        "approval_targets_editor": 44,
+        "standard_preview": 97,
+        "strict_types": "passed",
+        "final_id_boundary_handler": 9
+      },
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-condition-business-config-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-condition-state-machine-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-condition-editor-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-condition-typecheck.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-condition-handler-id-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-browser-tool-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-browser-iteration.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/amount-capability-backend-refresh.log"
+      ],
+      "review": {
+        "document_scope": "B concurrency_review PASS after actual context bypass fixes; UI outcome pending",
+        "amount_product": "B scene_boundary_review PASS; dirty11-file subset SHA256 9694bd5214f387396abb74b4a6d168da2b40006e3242250e61a3dd04619194e3"
+      },
+      "impact_reuse": "Original 32 model amount mappings equal; tier predicates unchanged. Prior committed concurrency/document native lifecycle results remain valid for their business inputs; configuration handler/editor results replaced by current targeted tests. Browser build invalidated by actual frontend product changes.",
+      "L3": "PASS actual config responses for payment.request amount and project.project unsupported, via registered HTTP runtime",
+      "L4": {
+        "amount_inspector": {
+          "status": "passed",
+          "count": 17,
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830221403/report.json",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/amount-capability-browser-v2.log",
+          "viewports": [
+            1440,
+            390
+          ],
+          "writes": 0,
+          "visual_review": "project narrow screen inspected: clear backend reason, no amount columns, editable reviewer/step controls; unsaved draft only"
+        },
+        "document": {
+          "status": "passed",
+          "count": 33,
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830734303/report.json",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/document-flow-browser-v7.log",
+          "record_id": 6,
+          "states": [
+            "draft",
+            "approved",
+            "done"
+          ],
+          "profiles": [
+            "edit",
+            "readonly",
+            "readonly"
+          ],
+          "scope": "PM32 company8 project10 classification21; actual published site_documents462/action588; no configured review in this UI loop; native configured approval8 checks separate",
+          "visual_review": "archived390 inspected; declared readonly, visible archived status and structured fields;1440/390 overflow assertions pass",
+          "errors": 0,
+          "forbidden_writes": 0
+        },
+        "document_attempt_1": {
+          "status": "failed",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830266938/report.json",
+          "owner": "P4 obsolete expected menu XMLID",
+          "recovery": "canonical PM entry observed site_documents462/action588; bind this existing exact entry, no publication mutation",
+          "writes": 0
+        },
+        "document_attempt_2": {
+          "status": "failed",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830311763/report.json",
+          "owner": "P4 relation result selection",
+          "recovery": "response may contain multiple records while UI filters typed text; choose authorized result matching FE Project A rather than first FE Project B. Screenshot confirms option present.",
+          "writes": 0
+        },
+        "document_attempt_3": {
+          "status": "failed",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830375701/report.json",
+          "owner": "P4 exact locale whitelist",
+          "recovery": "actual captured request includes lang zh_CN; permit only that observed constant and regress other locale rejection at all phases",
+          "writes": 0
+        },
+        "document_attempt_4": {
+          "status": "failed_after_create",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830437075/report.json",
+          "recovery_receipt": "artifacts/frontend-web-fix-20260928/tpl07-1790830437075/document-flow-recovery.json",
+          "owner": "P4 navigation readiness",
+          "recovery": "actual create committed id3. Wait native window.location.replace to exact new record and mounted ready surface before evaluate readback. Prior id3 retained per owner, no replay of its create. Next fresh named sample.",
+          "created_id": 3
+        },
+        "document_attempt_5": {
+          "status": "failed_after_draft_readback",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830509625/report.json",
+          "owner": "P4 incorrect readonly expectation",
+          "recovery": "draft record4 actual effectiveRenderProfile edit. Observe declared profile and exact contract state instead of forcing readonly for every document stage. Native/producer unchanged.",
+          "created_id": 4,
+          "authoritative_readback": "draft company8 project10 classification21"
+        },
+        "document_attempt_6": {
+          "status": "failed_after_approved_screenshot",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/document-flow-browser-v6.log",
+          "recovery_receipt": "artifacts/frontend-web-fix-20260928/tpl07-1790830629716/document-flow-recovery.json",
+          "owner": "P4 action presentation and promise handling",
+          "recovery": "Approved screenshot shows readonly official detail with more-actions. Follow visible overflow menu for archive, handle response waiter rejection so failures retain report. No product or permit change.",
+          "created_id": 5,
+          "evidence": "create and submit responses observed in execution; process unhandled wait prevented final report; recovery phase readback, screenshot approved, not full pass"
+        }
+      },
+      "L5": "not_run local-only iteration; no PR/push/deploy",
+      "commits": {
+        "P1": "fe598596e",
+        "P0": "9d04210ae",
+        "P4": "53a8bad56"
+      },
+      "runtime_identity": "53a8bad569885c09989d0cebea20ecfe70432d27 plus dirty run/docs only; backend bound53a8bad569885c09989d0cebea20ecfe70432d27",
+      "browser_attempt_1": {
+        "status": "failed",
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790830137391/report.json",
+        "passed_assertions": 3,
+        "owner": "P4 locator",
+        "reason": "TDesign visual checkbox span intercepts hidden native input; capability HTTP readback already passed",
+        "recovery": "click actual .approval-toggle label, not hidden input; source/build/backend unchanged",
+        "writes": 0
+      },
+      "build": {
+        "base_sha": "53a8bad569885c09989d0cebea20ecfe70432d27",
+        "dirty_scope": " M .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json\n M docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md\n",
+        "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "index_sha256": "32bddf98d255a8fdf9094442653f877f26127b5021299359515ac32eb66a11e3",
+        "entry": "/assets/index-Dfjs6Mjo.js",
+        "entry_sha256": "3e18ddea71fbebd7b99276971bd5b5cc39eaf0f312739564559c2d6d41fd655f"
+      },
+      "targeted_browser_tool_fixes": "Fixed actual observed locale, menu identity, relation filtering, save hard-navigation readiness, contract-declared profile, overflow action and waiter rejection. Last locale permit tests97PASS; later readiness/locator changes validated by successful33 checks; no product input change or rebuild.",
+      "product_review": "One consolidated local scoped review: supported/unsupported amount17 and document33; prior failures preserved with owning-layer fixes. Overall all-document goal remains incomplete."
+    },
+    "segment_53_248": {
+      "status": "planned",
+      "scope": "P4 ordinary PM native capability for five families, isolated existing acceptance role/environment; publication remains separate",
+      "source_publication_observation": "PM canonical navigation.route_authority from report1790830734303 has no safety.plan/tender.doc.purchase/labor.plan/subcontract.plan/material.rental.order entries. Do not manufacture published UI proof.",
+      "existing_runtime_reuse": [
+        "safety16",
+        "tender8",
+        "labor16",
+        "subcontract16",
+        "rental13"
+      ],
+      "gap": "Existing runtime used sudo preparation; need actual non-sudo PM create/save/submit/native outcome/authoritative readback under existing ACL and record rules.",
+      "not_claimed": "No user acceptance for unpublished entries; no wider publication/ACL/config changes."
     }
+  },
+  "owner_iteration_authority_20261001": {
+    "instruction": "开发期间验收数据可以随时适配，开发数据保护不作为前置；持续迭代直到本分支目标达成；必须遵守智能体协作流程",
+    "scope": "existing isolated local acceptance/dev only; use governed entrypoints; no production access/new environment/credential authority",
+    "data": "P4 may prepare and retain native-action-generated synthetic business samples for concurrency, source selection and role journeys; no need repeat approval for this scope",
+    "publication": "test-data adaptation does not change production publication/ACL authority"
+  },
+  "collaboration": {
+    "coordinator_and_single_writer": "/root coordinator; document_browser_impl sole code writer during53.248",
+    "implementation": "A implements only53.248 execution order; root keeps runtime serialized and does not change tracked files until token returned",
+    "read_only_reviewers": {
+      "concurrency_review": "P4 two-transaction business conflict code/test review",
+      "scene_boundary_review": "remaining P1/P0 business responsibility and browser execution order review"
+    },
+    "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+    "workflow": ".agent/workflows/runtime-fixture.yaml",
+    "stage_identity": "98bf30edebf98e33449e00ca72b5e984dcebde72 + dirty P4 runtime script/wrapper/test and run",
+    "handoff": "each executor resume resolves same goal/run; no new writer, no runtime write replay from saved next step"
+  },
+  "current_execution_order": {
+    "objective": "Close ordinary-role native capability gap for existing all-document approval responsibility",
+    "formal_product_layer": "P4 governed verification; product semantics unchanged",
+    "layer_target": "existing business_config_approval_runtime_smoke and wrapper/test",
+    "module": "scripts/verify + scripts/dev existing acceptance operation",
+    "standard_vs_user_specific": "isolated synthetic developer evidence, not P1 defaults/P2 preferences or customer data",
+    "why_here": "prove actual non-sudo fixture role executes existing native model workflow; no product behavior in test tool",
+    "why_not_elsewhere": "do not patch ACL/publication or invent policies to satisfy acceptance; observed actual product failure returns to owning layer",
+    "blast_radius": "sc.safety.plan,tender.doc.purchase,sc.labor.plan,sc.subcontract.plan,sc.material.rental.order and native child lines; fixtures company8/project10",
+    "scope": [
+      "scripts/verify/business_config_approval_runtime_smoke.py",
+      "scripts/dev/frontend_acceptance_runtime.sh",
+      "scripts/verify/test_frontend_standard_preview.py"
+    ],
+    "writer": "document_browser_impl sole tracked writer after explicit token transfer; root read-only/runtime on stable inputs",
+    "risk": "isolated committed synthetic business samples; exact role/database/company/project; no approval configuration changes",
+    "order": [
+      "L0 resume",
+      "L1 iteration/syntax",
+      "L2 focused non-zero tests and B review",
+      "L3 serial governed runtime scope per-model, create/draft readback/submit/actual reviewer if needed/terminal commit+fresh readback",
+      "record native capability separately from publication/UI"
+    ],
+    "skipped": "L4 five-family browser prerequisites absent actual PM entry; existing create rendering evidence retained. No full matrix/freeze/Quick/PR/local deployment.",
+    "restore": "failed pending transactions rollback; successful synthetic samples intentionally retained with precise IDs; do not replay after uncertain commit; approval policies and role assignments unchanged"
   }
 }
