@@ -1060,7 +1060,7 @@ try {
       const finalDetail = manager.page.locator(`[data-form-model="sc.payment.execution"][data-form-record="${paymentReview.id}"][data-detail-composition="official-standard-detail"][data-state="ok"]`);
       await finalDetail.waitFor();
       await manager.page.getByRole('heading', { name: created.name, exact: true }).waitFor();
-      await manager.page.getByText('已确认', { exact: true }).first().waitFor();
+      await finalDetail.getByText(/状态[：:]\s*已确认/).first().waitFor();
       check('payment review: refreshed official detail shows approved state', await finalDetail.count() === 1
         && await manager.page.getByRole('button', { name: '审批通过', exact: true }).count() === 0);
       for (const width of [1440, 390]) {

@@ -9721,3 +9721,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - P1本地提交122f735ae。首次升级被fast模式拦截（缺显式升级声明，无升级发生）；因两处原生button XML变更，按受管入口补CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core，payment-handler-upgrade-explicit退出0。backend.acceptance.up绑定122f并PASS。payment-handler-runtime **6PASS rollback_verified**：经办创建并提交、独立审核、审批契约/重放拒绝/无资金入账及恢复。
 - payment-handler-browser失败，tpl07-1790822535629/report.json：经办fixture_role_pfl035_finance_user打开source1710时页面显示invalid contract v2 snapshot，actionContract.actionRuleList[4/5/6].visible must be an object，故生成按钮未出现。不是改换角色可解决的问题；需修P0有效动作可见性归一化，并核对该角色真实contract数据。UI角色标题显示“财务主管”不能当作实际登录身份权威，实际探针角色明确44。本次无create/open执行，finally恢复通过。
 - 下一步先修共享契约类型缺口及定向回归，再恢复正确角色浏览器；主管代建业务验收仍撤回。67目标active，无前端构建/新fixture/推送/合并/目标部署。
+
+### 53.228 单一运行时动作visible归一化与正确角色闭环
+
+- P0 shared assembler：无原生对应按钮时，runtime单一动作visible布尔值直通违反v2对象schema；merge最终统一为attrs.invisible静态对象，保留sourceTrace及visible-but-disabled语义。显式visible识别支持归一化形式，防重复merge把禁用动作误隐藏；新增true/false、disabled与重复merge回归。L1 action-visible-iteration PASS，v2.runtime **20+110=130PASS**及guard score6。提交c240a28cb，受管backend-up加载，前端9433不变，无升级/构建。
+- 正确角色浏览器tpl07-1790822771322：经办44创建199并提交、等待独立审核人，主管30从实际工作台审批到confirmed/validated、任务退出、finally恢复通过。该次与主管代建历史不同，正确角色业务结果均有实际请求/回读；未执行资金付款。整体browser退出失败，不能写全项PASS。
+- 最终失败为P4 getByText已确认 exact超时：failurePages完整页面文字实际为“状态：已确认”；官方详情data-state=ok与实际单据heading等待已通过，页面包括分类、来源、金额、账户及历史。不是产品状态未刷新。修正为限定finalDetail的状态标签匹配；该工具改动尚待L1/tools。双视口断言未到达，继续pending。不为截图单独重复创建/审批全链，下一次必要旅程复用修正后的观察步骤。67目标active，无推送/合并/目标部署。
+
+- 定位器修正后payment-final-label-iteration L1PASS、payment-final-label-unit64PASS；不重跑业务写入。视觉双视口仍pending，原业务和实际恢复证据复用。
