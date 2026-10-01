@@ -306,9 +306,9 @@ export function paymentSourceDraftWriteKind(role, body, scope) {
     || Object.keys(p).some(key => !['op', 'model', 'vals', 'context'].includes(key))) return null;
   const safeContext = c => c === undefined || (c && typeof c === 'object' && !Array.isArray(c)
     && Object.entries(c).every(([key, value]) => {
-      const fixed = { company_id: 8, allowed_company_ids: [8], lang: 'zh_CN', project_id: r.project_id,
+      const fixed = { company_id: 8, allowed_company_ids: [8, 9], lang: 'zh_CN', project_id: r.project_id,
         menu_id: 545, action_id: 775, default_type: 'pay', default_business_category_code: 'finance.payment.apply.pay',
-        search_default_type_pay: 1, search_default_group_by_project_id: 1 };
+        search_default_type_pay: 1, search_default_group_by_project_id: 1, allowed_business_category_codes: ['finance.payment.apply.pay'] };
       return Object.hasOwn(fixed, key) && (['menu_id', 'action_id'].includes(key) ? Number(value) === fixed[key] : isDeepStrictEqual(value, fixed[key]));
     }));
   if (p.context?.company_id !== 8 || Number(p.context.menu_id) !== 545 || Number(p.context.action_id) !== 775

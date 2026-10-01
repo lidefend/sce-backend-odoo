@@ -448,7 +448,9 @@ function paymentSourceFixture(kind = 'subcontract') {
   const scope = { receipt: r, source, marker, menuId: 545, actionId: 775, phase: 'create', id: null,
     dateRequest: '2026-10-01', businessCategoryId: 12, request: { op: 'create', model: 'payment.request',
       vals: { note: marker, project_id: r.project_id, [r.source_field]: 40, amount: 100, partner_id: 744, currency_id: 6, type: 'pay' },
-      context: { company_id: 8, allowed_company_ids: [8], menu_id: '545', action_id: '775', default_type: 'pay' } } };
+      context: { company_id: 8, allowed_company_ids: [8, 9], menu_id: '545', action_id: '775', default_type: 'pay',
+        default_business_category_code: 'finance.payment.apply.pay', allowed_business_category_codes: ['finance.payment.apply.pay'],
+        lang: 'zh_CN', search_default_type_pay: 1, search_default_group_by_project_id: 1 } } };
   return scope;
 }
 for (const kind of ['subcontract', 'rental']) test(`payment source ${kind}: exact ordinary finance create only`, () => {
@@ -478,7 +480,7 @@ test('payment source rejects forged captured values and carrier contexts', () =>
     const s = paymentSourceFixture(); s.request[carrier] = { context: { skip_validation_check: true } };
     assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null, carrier);
   }
-  for (const context of [{ company_id: 9 }, { allowed_company_ids: [8, 9] }, { default_state: 'approved' }, { skip_validation_check: true }]) {
+  for (const context of [{ company_id: 9 }, { allowed_company_ids: [8, 9, 10] }, { allowed_business_category_codes: ['finance.payment.apply.receive'] }, { default_state: 'approved' }, { skip_validation_check: true }]) {
     const s = paymentSourceFixture();
     assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request, context }, s), null);
     s.request.context = { ...s.request.context, ...context };
