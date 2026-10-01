@@ -4338,6 +4338,28 @@ class RedFlushContractBoundaryTests(unittest.TestCase):
         self.assertEqual(self._service()._evidence_gate(record), [])
 
 
+class PaymentNameSearchDeclarationTests(unittest.TestCase):
+    def test_contract_search_paths_resolve_to_real_contract_fields(self):
+        payment_tree = ast.parse(MODEL.read_text())
+        declaration = next(node for node in ast.walk(payment_tree) if isinstance(node, ast.Assign)
+                           and any(isinstance(target, ast.Name) and target.id == '_rec_names_search' for target in node.targets))
+        paths = ast.literal_eval(declaration.value)
+        contract_path = ROOT / 'addons/smart_construction_core/models/support/contract_center.py'
+        contract_class = next(node for node in ast.parse(contract_path.read_text()).body
+                              if isinstance(node, ast.ClassDef) and node.name == 'ConstructionContract')
+        fields = {target.id for node in contract_class.body if isinstance(node, ast.Assign)
+                  and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute)
+                  and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id == 'fields'
+                  for target in node.targets if isinstance(target, ast.Name)}
+        related_paths = [path for path in paths if path.startswith('contract_id.')]
+        self.assertIn('contract_id.name', related_paths)
+        self.assertIn('contract_id.subject', related_paths)
+        self.assertTrue(related_paths)
+        for path in related_paths:
+            self.assertIn(path.split('.', 1)[1], fields, 'native name_search must not reference a missing contract field')
+        self.assertTrue({'name', 'project_id.name', 'partner_id.name'}.issubset(paths))
+
+
 class PaymentCategoryDefaultTests(unittest.TestCase):
     def defaults(self, initial, context, requested):
         names = {'default_get', '_resolve_business_category_code', '_resolve_business_category_id'}

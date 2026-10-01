@@ -119,8 +119,7 @@ class PaymentRequest(models.Model):
         "payer_unit",
         "payment_account_name",
         "contract_id.subject",
-        "contract_id.legacy_contract_no",
-        "contract_id.legacy_document_no",
+        "contract_id.name",
     ]
     _sc_delete_guard_blocker_models = (
         "sc.material.rental.order",
