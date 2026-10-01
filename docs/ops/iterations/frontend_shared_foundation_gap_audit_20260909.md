@@ -9536,3 +9536,15 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - review-workspace-runtime **FAILED，5前置检查通过**：配置→PM提交→真实review；current-user-workspace-v2已经含管理层的版本待办（[1,0]）；来源route有效、最终approve契约有效；PM复用来源被拒绝。实际executive执行返回PERMISSION_DENIED：无sc.plan.version write ACL。finally **PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED**；failed/5 begin-record回执已记录，不报8项通过。
 - 新阻断归属P1审批资格与模型访问能力不一致：executive角色目前只继承project_read，版本write只授project_user/project_manager；既有付款另有executive专用read/write ACL。不能为通过验收赋予整套project_manager（含创建/删除）或在通用execute_button对业务方法sudo。下一步在既有角色/能力、记录写入和状态机边界中补齐合法审批所需最小权限，并回归草稿基准编辑/创建删除/跨公司不可扩权；同时确认配置岗位与执行资格一致。全业务单据统一原则保留，不能仅把管理层换成管理员规避。
 - 当前工作区尚有P4运行测试与run metadata待提交；产品三提交已本地记录。前端5180仍53.201构建index-B8XOfsg8.js，不能宣称新来源已在浏览器加载。32纯测及5运行前置只证明声明范围；真实审批通过/完成后移出/多角色UI仍未完成，67/detail.action-state保持contract_gap。无push/merge/目标部署，暂不进入构建/冻结/发布周期。
+
+
+### 53.204 原生审批访问级别与真实办理恢复
+
+- 79616c772 clean续跑。只追踪53.203明确失败的执行ACL与既有OCA直接实现，不重复全局权限/菜单扫描。重要纠正：OCA validate_tier/reject_tier以真实当前用户更新tier.review，既有base_tier_validation_server_action通过受控server action回调更新单据状态。审批不等同于编辑整张单据；53.203的失败源于通用execute_button默认一律要求单据write，而不是应该给管理层补整套项目能力。
+- P0 671942ce6让已验证的后端work-item provider返回严格结构的record_access_mode，只接受read/write；旧显式True仍保持write。每次来源新鲜校验、最终动作/状态授权后，由本次本地验证结果决定记录ACL/rule访问级别；客户端meta及动作契约伪造内部字段无效。普通动作、server action和没有有效work-item来源仍沿原权限。通用执行器没有sudo业务调用。
+- P1 9d3dbf74a在已有严格tier.review来源适配通过后声明read：仅validate_tier/reject_tier或路由读取，保留实际review分配、状态、can_review、模型/记录/公司/业务范围。实际review写权限与官方callback机制继续执行。不修改角色ACL、能力组、原生审批源码或业务状态机，不添加行业模型到P0，不给前端业务规则。
+- 新增伪造访问级别单测首次FAIL（review-action-access-unit.log）：测试调用action_confirm，但模拟对象只实现shared_action。曾错误发起passed回执并本地提交，已明确撤销其证据效力；尝试补记failed因pending已消费被工具拒绝，未绕过工具。421c6575f修正测试输入与失败详情，L1 review-action-access-test-fix-iteration PASS；重新begin后实际 **34 PASS**（review-action-access-test-fix-unit.log），新passed回执覆盖原错误结果。没有在失败期间运行L3或宣称验收通过。原失败日志保留。
+- 后端受管up绑定421c6575f；P4运行断言增加executive对版本write/create/unlink ACL均为False，之后真实执行approval。review-action-access-runtime **8 PASS、ROLLBACK VERIFIED**：config_admin配置→PM提交→管理层真实review→当前工作台可见/来源route及action契约有效→PM冒用来源拒绝→管理层实际approve成功、approved_by为真实审批人→完成来源重放拒绝→待办退出当前工作台。策略/临时父子记录/tier定义集合恢复核验。原5项失败被此新输入下结果替代，不报UI已验收。
+- ad4998360提交上述P4权限断言。原前端66和strict typecheck输入不变，继续复用53.203日志；本轮无XML、schema数据库字段/ACL变动，无模块升级。新增记录OCA直接依赖到同run运行输入列表；git diff 421c6575f HEAD -- 两个OCA源码为空，原运行时与当前依赖不变，沿原日志复用，不无理由重跑8项。
+- 一次构建/复用5180完成：clean base ad4998360421bc7e435084d8935281eb09d9cc0c；entry /assets/index-4-Unal7H.js，sha256 7c8a695aec989754b5a0997ed6a4e11e90f8412683028aef621a0f0128cf2a4d。review-workspace-build.log/review-workspace-preview.log；backend仍421c6575f，提交后仅P4测试/记录，不重启相同产品输入。新前端已成为候选，但尚未有配置审批浏览器证据。
+- 下一步仅扩展既有版本主从browser与精确恢复：配置前快照目标策略缺失、相关tier定义和回调server-action groups（策略同步会修改组）；普通config_admin配置executive，PM主从版本提交，executive在当前工作台打开、真实审批、回读/退出及已加载双视口。finally只清理本批精确事实/规则/定义并恢复配置基线，先补纯许可/清理测试再运行，不把新状态放进旧无审批清理豁免。总体67/detail.action-state仍contract_gap；无push/merge/目标部署/整体交付声明。

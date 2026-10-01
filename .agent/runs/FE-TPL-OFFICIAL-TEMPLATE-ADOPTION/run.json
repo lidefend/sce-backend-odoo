@@ -513,23 +513,14 @@
         "addons/smart_core/core/work_item_action_authority.py",
         "addons/smart_construction_core/services/review_work_item_service.py",
         "addons/smart_construction_core/core_extension.py",
-        "addons/smart_construction_core/__init__.py"
+        "addons/smart_construction_core/__init__.py",
+        "addons_external/oca_server_ux/base_tier_validation/models/tier_validation.py",
+        "addons_external/oca_server_ux/base_tier_validation_server_action/models/tier_validation.py"
       ]
     }
   },
-  "blockers": [
-    {
-      "owner": "P1 configured reviewer versus model access/state authority",
-      "status": "failed",
-      "stage": "cb7e896d4 + dirty scripts/verify/business_config_approval_runtime_smoke.py; backend cb7e896d4",
-      "command": "SC_APPROVAL_RUNTIME_SCOPE=plan-reviewer-entry make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local",
-      "log": "artifacts/frontend-web-fix-20260928/tpl52/review-workspace-runtime.log",
-      "completed_checks": 5,
-      "reason": "Current workspace now exposes assigned version review and new source/contract validation succeeds; PM reuse denied. Real executive approve fails sc.plan.version write ACL. All transient config/facts rollback VERIFIED.",
-      "next_layer": "P1 access/state ownership implementation then L1/L2; do not bypass with generic sudo or broad project-manager grants."
-    }
-  ],
-  "next_exact_step": "53.203 commits P1 ed27ea9e0/P0 221cb5528/web cb7e896d4 implement real review workspace/source authority. L1/authority32/frontend66/typecheck PASS. Backend cb7e896d4; runtime plan-reviewer-entry FAILED after5 prerequisites: executive assigned review appears in current workspace, route/approve contract valid, PM origin misuse denied; actual approval fails sc.plan.version write ACL. Rollback VERIFIED, failed receipt recorded. Next resolve P1 configured reviewer/model access/state-machine authority with least privilege; no project-manager blanket grant or generic executor sudo. Retain draft-baseline/create/delete/company boundaries. Run earliest affected L1/L2 then same runtime; only once L3 passes build frontend and extend existing exact recovery for multi-role UI. Frontend5180 remains old index-B8XOfsg8.js; do not claim new UI loaded. All67 remains incomplete; no push/merge/deploy.",
+  "blockers": [],
+  "next_exact_step": "53.204: native Tier review actions need record read, not blanket document edit; provider trusted access grant + fresh origin/contract checks implemented671942ce6/9d3dbf74a. First newunit test mock failed; original wrongly marked receipt invalid, corrected421c6575f test34 PASS/new receipt. Runtime review-action-access-runtime.log8 PASS/rollback verified incl configadmin->PM->executive, no general version write/create/unlink ACL, actual approval, replay denial, task removal. OCA dependencies added; source421/current ad499 unchanged files proven git diff empty, reuse original evidence. New clean frontend build ad4998360/index-4-Unal7H.js sha7c8a695aec989754b5a0997ed6a4e11e90f8412683028aef621a0f0128cf2a4d on5180; backend421c6575f. Next extend existing version browser + exact recovery to configured executive approval: snapshot absent policy/tier definitions/server-action groups BEFORE writes, config-admin configure, PM submit, executive current-workspace open/approve/readback/disappearance, loaded dualviewport; restore exact records/config baseline. Add focused permit/cleanup tests first; no fixture/env creation, no repeated ORM/unconfigured fulljourney. Overall67 still incomplete; no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

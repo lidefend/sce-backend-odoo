@@ -649,3 +649,8 @@ A rollback probe with the existing config-admin, PM and executive fixtures prove
 ### Segment53.203 — Review delivery implemented; reviewer model access still blocks
 
 Current workspace now includes assigned non-payment reviews under caller ACL/company/business scope; generic actions consume freshly verified work-item origin and retain current contract and execution checks. Authority32/frontend66/typecheck pass. Real rollback verification now reaches executive approval after proving task visibility, route/contract authority and submitter denial, but fails `sc.plan.version` write ACL. Five prerequisites pass; the complete runtime remains FAILED with rollback verified. Resolve the P1 mismatch between configured reviewer eligibility and record access without granting a whole project-manager role or sudoing methods in the generic executor. New frontend source has not yet been built/observed; configured approval and terminal UI remain open.
+
+
+### Segment53.204 — Native approval access restored without document edit grants
+
+The prior ACL diagnosis is refined: native Tier writes the assigned review as its reviewer and uses its existing state callback; generic execute_button incorrectly required document edit rights. The trusted work-item provider now declares read access for freshly authorized native review actions while ordinary writes keep their original checks. Authority34 and actual configured reviewer runtime8 pass, including no general document write/create/unlink permission, wrong-actor/replay denial, completed-item removal and verified rollback. Candidate ad4998360/index-4-Unal7H.js is built on5180. Configured multi-role browser handling and loaded terminal visuals remain unverified; do not close the whole ledger entry.
