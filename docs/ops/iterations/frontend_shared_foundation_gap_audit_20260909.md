@@ -9617,5 +9617,7 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - fca8f6d14 clean续跑，P4只扩展既有standard_page_type_browser只读分支TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT；入口从当前config_admin初始化授权取payment.request，不硬造菜单。保留deny-by-default写拦截，不把计划版本的写许可/恢复绑定改成任意模型。后端eae3dd5d2/前端fef7d73ef原候选复用，无ORM/升级/构建。
 - 初次published-approval-inspect-browser失败：新探针在点击期间的waitForResponse promise未及时挂接，超时导致未完整落盘。第二次改Promise.all并预存surface/截图；published-approval-capture-browser失败但tpl07-1790819919126保留现场，确认实际按钮为“配置审批规则”，工具误用“配置审批”。属于P4定位器问题，无配置或业务写入。纠正本探针及原计划配置步骤的同一错误名称，不改产品文案。
 - 每次工具变动先L1，再53项非零定向工具检查；最后published-approval-locator-iteration及locator-unit均PASS。原inspect begin/record53只绑定原工具输入，不冒充最后版本回执；最终53日志保留直接证据。published-approval-locator-browser退出0，tpl07-1790819988474/report.json **9 PASS**、forbiddenWrites=[]：真实config_admin授权付款入口、surface可用、审批配置读取成功、对象选择器可见、启用开关与后端一致、1440/390下可见及无页面异常/非法写入。
-- 有效surface声明付款申请和直接所属付款执行两个审批对象；本次打开的是付款申请。config.get回读policy.exists=false/id0、approval_required=false、runtime_approval_required=false。桌面/窄屏编辑器截图已检查，规则区域与对象选择正常；未验证所有操作按钮几何范围或子对象切换。界面“已配置3项”是surface范围计数，不能据此宣称当前付款策略存在。
+- 有效surface声明付款申请和直接所属付款执行两个审批对象；本次打开的是付款申请。config.get回读policy.exists=false/id0、approval_required=false、runtime_approval_required=false。窄屏截图的规则区域与对象选择可见；随后检查桌面截图发现明显布局缺陷：内容被挤入左侧约220px列，右侧大片空白。9项行为断言不覆盖此问题，桌面视觉验收不通过；未验证所有操作按钮几何范围或子对象切换。界面“已配置3项”是surface范围计数，不能据此宣称当前付款策略存在。
 - 下一步在同一已发布父页面验证子对象切换及配置基线，再扩展既有精确恢复机制承载配置→真实角色提交→审批→回读/恢复。必须核验相关公司策略/tier定义/callback groups，而不能仅凭policy.exists=false允许写入。当前只有读取呈现验收，不声称配置保存/审批闭环完成；计划未发布用户旅程仍pending，67条detail.action-state仍contract_gap。无推送/合并/目标部署。
+
+- 53.213桌面截图纠正：根因已定位style.css的.config-editor-panel把两列grid施加在ScCard根上；官方Card新增body承载内容，body被当成首个220px网格项。下一步先修共享配置面板内容布局与相关面板消费，再做必要类型/定向验证、一次构建、受影响双视口复验；不改TDesign内部DOM来迁就旧根级布局。
