@@ -26,24 +26,24 @@
  * 只读数据快照块包装（驾驶舱 page orchestration block）。
  *
  * 职责（共享层，无行业语义）：
- * - 从块契约 dataset（后端块投影）或路由 query 解析数据上下文 id；
+ * - 只消费块契约声明的 fetch_intent / fetch_params，不从路由补充参数；
  * - 通过块契约声明的专用 fetch intent 拉取快照，
  *   经 presentation Model 投影为四态视图模型；
  * - 渲染复用只读面板组件（无写操作入口）。
  * 行业标题与空态文案由后端块契约（dataset copy 字段）提供，
  * 本组件只保留通用 fallback。
  */
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onUnmounted, ref, watch } from 'vue';
+import { createReadonlyBlockLoader, readonlyBlockData } from '../../../app/readonlyBlockRequest';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import BoqImportPreviewPanel from '../../boq/BoqImportPreviewPanel.vue';
 import {
   fetchBoqImportPreview,
+  resolveBoqBlockRequest,
   type BoqImportPreviewIntentData,
 } from '../../../api/boqImportPreview';
 import {
   projectBoqImportPreview,
-  resolveBoqBlockProjectId,
   type BoqImportPreviewViewModel,
 } from '../../../app/presentation/boqImportPreview';
 
@@ -56,21 +56,20 @@ const props = defineProps<{
   dataset: unknown;
 }>();
 
-const route = useRoute();
 const phase = ref<'loading' | 'idle'>('idle');
 const viewModel = ref<BoqImportPreviewViewModel | null>(null);
 
-const projectId = computed(() => resolveBoqBlockProjectId(props.dataset, route.query));
+const blockData = computed(() => readonlyBlockData(props.dataset));
+const request = computed(() => resolveBoqBlockRequest(blockData.value));
 
 type BlockCopy = { loading: string; empty: string };
 
 const copy = computed<BlockCopy>(() => {
-  const source = (props.dataset && typeof props.dataset === 'object' ? props.dataset : {}) as Record<string, unknown>;
-  const data = (source.data && typeof source.data === 'object' ? source.data : {}) as Record<string, unknown>;
+  const data = blockData.value;
   const loading = typeof data.loading_message === 'string' && data.loading_message.trim()
     ? data.loading_message
     : GENERIC_LOADING;
-  const pick = projectId.value <= 0 ? 'empty_message_no_context' : 'empty_message';
+  const pick = request.value.status !== 'ready' ? 'empty_message_no_context' : 'empty_message';
   const datasetEmpty = typeof data[pick] === 'string' && (data[pick] as string).trim()
     ? (data[pick] as string)
     : '';
@@ -78,39 +77,24 @@ const copy = computed<BlockCopy>(() => {
   return { loading, empty };
 });
 
-async function loadPreview() {
-  const resolvedId = projectId.value;
-  viewModel.value = null;
-  if (resolvedId <= 0) {
-    phase.value = 'idle';
-    return;
-  }
-  phase.value = 'loading';
-  try {
-    const raw: BoqImportPreviewIntentData = await fetchBoqImportPreview({
-      projectId: resolvedId,
-    });
-    viewModel.value = projectBoqImportPreview(raw);
-  } catch (err) {
+const loader = createReadonlyBlockLoader<BoqImportPreviewIntentData>({
+  reset(loading) { viewModel.value = null; phase.value = loading ? 'loading' : 'idle'; },
+  success(raw) { viewModel.value = projectBoqImportPreview(raw); },
+  error(error) {
     viewModel.value = projectBoqImportPreview({
       ok: false,
-      error: {
-        code: 'BOQ_PREVIEW_FETCH_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-      },
-    } as BoqImportPreviewIntentData);
-  } finally {
-    phase.value = 'idle';
-  }
-}
-
-onMounted(() => {
-  void loadPreview();
+      error: { code: 'BOQ_PREVIEW_FETCH_FAILED',
+        message: error instanceof Error ? error.message : String(error), suggested_action: 'retry' },
+    });
+  },
+  settled() { phase.value = 'idle'; },
 });
 
-watch(projectId, () => {
-  void loadPreview();
-});
+watch(() => JSON.stringify(request.value), () => {
+  const resolved = request.value;
+  void loader.load(resolved.status === 'ready' ? () => fetchBoqImportPreview(resolved.request) : null);
+}, { immediate: true, flush: 'sync' });
+onUnmounted(() => loader.dispose());
 </script>
 
 <style scoped>

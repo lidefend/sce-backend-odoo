@@ -98,7 +98,7 @@ def validate() -> list[str]:
         "BoqImportPreviewPanel",
         "fetchBoqImportPreview",
         "projectBoqImportPreview",
-        "resolveBoqBlockProjectId",
+        "resolveBoqBlockRequest",
         'data-readonly="true"',
     ):
         if marker not in wrapper:
@@ -114,9 +114,13 @@ def validate() -> list[str]:
     if "boq_import_preview: BlockBoqImportPreview" not in registry:
         failures.append("pageBlockRegistry must register boq_import_preview block type")
 
-    # ── Model：项目上下文解析纯函数 ─────────────────────────
-    if "resolveBoqBlockProjectId" not in model:
-        failures.append("boq import preview model missing resolveBoqBlockProjectId")
+    # Block reads only the declared request, with invalidation across context changes.
+    for marker in ("createReadonlyBlockLoader", "readonlyBlockData", "loader.dispose()", "JSON.stringify(request.value)"):
+        if marker not in wrapper:
+            failures.append(f"BlockBoqImportPreview missing request lifecycle {marker}")
+    for forbidden in ("useRoute", "route.query", "resolveBoqBlockProjectId"):
+        if forbidden in wrapper or forbidden in model:
+            failures.append(f"BOQ block must not infer request context: {forbidden}")
 
     # ── 单测：四态覆盖 ──────────────────────────────────────
     for marker in (
@@ -128,7 +132,7 @@ def validate() -> list[str]:
         "MISSING_PARAMS",
         "projectBoqImportPreview",
         "formatBoqPreviewAmount",
-        "resolveBoqBlockProjectId",
+        "resolveBoqBlockRequest",
     ):
         if marker not in test:
             failures.append(f"boq import preview model test missing {marker}")

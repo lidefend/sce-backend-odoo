@@ -11,6 +11,17 @@ class BoqImportPreviewGuardTest(unittest.TestCase):
     def test_repository_contract_passes(self):
         self.assertEqual(validate(), [])
 
+    def test_route_context_fallback_and_missing_invalidation_fail(self):
+        real = Path.read_text
+        for added_route in (True, False):
+            def altered(path, *args, **kwargs):
+                value = real(path, *args, **kwargs)
+                if path.name == "BlockBoqImportPreview.vue":
+                    return value + "\nroute.query" if added_route else value.replace("loader.dispose()", "removed()")
+                return value
+            with patch("pathlib.Path.read_text", altered):
+                self.assertTrue(any("infer request context" in item or "request lifecycle" in item for item in validate()))
+
     def test_missing_intent_marker_fails(self):
         real = Path.read_text
 
