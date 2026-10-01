@@ -476,11 +476,11 @@
   gap: 0;
 }
 
-.contract-form-native-shell :deep(.native-container--sheet) {
+.contract-form-native-shell :deep(.native-container--sheet:not(.native-container--detail-card)) {
   gap: 0;
 }
 
-.contract-form-native-shell :deep(.native-container--group) {
+.contract-form-native-shell :deep(.native-container--group:not(.native-container--detail-card)) {
   gap: var(--sc-space-sm);
   padding: var(--sc-space-md) 0;
   border: 0;
@@ -492,7 +492,7 @@
 /* The section separator belongs to business sections only.  A layout wrapper
    (no anchor, no title) arranges columns and must never draw one, including
    when it is the following sibling of another group. */
-.contract-form-native-shell :deep(.native-container--group + .native-container--group:not(.native-container--group--layout)) {
+.contract-form-native-shell :deep(.native-container--group + .native-container--group:not(.native-container--group--layout):not(.native-container--detail-card)) {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-lg);
 }
@@ -719,11 +719,11 @@
   }
 
   .contract-form-native-shell :deep(.native-form-tree),
-  .contract-form-native-shell :deep(.native-container--sheet) {
+  .contract-form-native-shell :deep(.native-container--sheet:not(.native-container--detail-card)) {
     gap: 0;
   }
 
-  .contract-form-native-shell :deep(.native-container--group) {
+  .contract-form-native-shell :deep(.native-container--group:not(.native-container--detail-card)) {
     gap: var(--sc-field-row-gap);
     padding: var(--sc-space-md) 0;
   }
@@ -732,7 +732,7 @@
     padding-inline: var(--sc-space-sm);
   }
 
-  .contract-form-native-shell :deep(.native-container--group .native-container--group) {
+  .contract-form-native-shell :deep(.native-container--group .native-container--group:not(.native-container--detail-card)) {
     padding-inline: 0;
   }
 
@@ -784,13 +784,7 @@
 /* Readonly record-detail consumes independent official cards. Editing and the
    designer retain the native form canvas rules above. */
 .card.card--detail :deep(.native-form-tree),
-.card.card--detail :deep(.native-container--sheet) { gap: var(--sc-space-lg); }
-.card.card--detail :deep(.native-container.native-container--detail-card) {
-  padding: 0;
-  border: 0;
-  border-radius: var(--sc-product-panel-radius);
-  background: var(--sc-app-surface);
-}
+.card.card--detail :deep(.native-container--sheet:not(.native-container--detail-card)) { gap: var(--sc-space-lg); }
 .card.card--detail :deep(.native-container.native-container--detail-group) {
   padding-block: var(--sc-space-xs);
   border: 0;

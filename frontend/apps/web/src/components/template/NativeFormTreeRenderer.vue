@@ -1079,12 +1079,15 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container {
+  min-width: 0;
+  position: relative;
+}
+
+.native-container:not(.native-container--detail-card) {
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
   gap: 12px;
-  min-width: 0;
-  position: relative;
 }
 
 .native-container--header {
@@ -1092,18 +1095,18 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   padding-bottom: 12px;
 }
 
-.native-container--sheet {
+.native-container--sheet:not(.native-container--detail-card) {
   gap: 16px;
 }
 
-.native-container--group {
+.native-container--group:not(.native-container--detail-card) {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-sm);
 }
 
 /* Layout wrappers arrange columns only; the section separator belongs to
    business sections so nested wrappers never stack a duplicate border. */
-.native-container--group.native-container--group--layout {
+.native-container--group.native-container--group--layout:not(.native-container--detail-card) {
   border-top: none;
   padding-top: 0;
 }
