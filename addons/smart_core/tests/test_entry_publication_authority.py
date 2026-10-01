@@ -74,7 +74,12 @@ class EntryPublicationTest(unittest.TestCase):
         calls = []
         class Menus:
             def __init__(self, env): pass
-            def build_route_authority(self, surface): return tests.authority
+            def build_nav(self, **kwargs):
+                tests.nav_policy = kwargs
+                return [{"key": "published-navigation", "meta": {"action_id": 775}}]
+            def build_route_authority(self, surface, *, nav):
+                tests.consumed_navigation = nav
+                return tests.authority
             filter_route_authority_by_publication = staticmethod(tests.project)
         class Policies:
             def __init__(self, env): pass
@@ -100,6 +105,39 @@ class EntryPublicationTest(unittest.TestCase):
     def test_runtime_validator_keeps_published_action(self):
         result, _ = self.handler(775)
         self.assertTrue(result.ok); self.assertEqual(result.data["model"], "payment")
+
+    def test_runtime_validator_consumes_effective_published_navigation(self):
+        self.handler(775)
+        self.assertEqual(self.nav_policy["policy"]["product_key"], "construction.standard")
+        self.assertEqual(self.consumed_navigation[0]["key"], "published-navigation")
+        self.handler(775, fail_closed=True)
+        self.assertEqual(self.consumed_navigation, [])
+
+    def test_navigation_projection_preserves_release_keys(self):
+        path = ROOT / "delivery/menu_service.py"
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "MenuService")
+        method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "_nav_target_index")
+        method.decorator_list = []
+        menus = SimpleNamespace(_node_route_menu_id=lambda node: node.get("menu_id", 0))
+        scope = {"MenuService": menus}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), "exec"), scope)
+        menus._nav_target_index = scope[method.name]
+        node = {"key": "published.aggregate", "menu_id": 42, "meta": {"action_id": 775,
+                "business_category_options": [{"menu_id": 43, "menu_xmlid": "product.category"}]}}
+        target = menus._nav_target_index([node])[(42, 775)]
+        self.assertEqual(target["menu_key"], "published.aggregate")
+        self.assertEqual(target["business_category_options"], node["meta"]["business_category_options"])
+        # Execute the real publication key reader after route projection.
+        path = ROOT / "handlers/system_init.py"
+        key_reader = next(n for n in ast.parse(path.read_text()).body
+                          if isinstance(n, ast.FunctionDef) and n.name == "_node_release_gate_keys")
+        scope = {"_text": lambda value: str(value or "").strip()}
+        exec(compile(ast.Module(body=[key_reader], type_ignores=[]), str(path), "exec"), scope)
+        authority = {"primary_actions": [{"action_id": 775, "menu_id": 42, **target}]}
+        for release_key in ("published.aggregate", "product.category", "system.menu_43"):
+            result = self.project(authority, filter_nodes=lambda nodes: [
+                row for row in nodes if release_key in scope["_node_release_gate_keys"](row)])
+            self.assertEqual(len(result["primary_actions"]), 1, release_key)
 
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)

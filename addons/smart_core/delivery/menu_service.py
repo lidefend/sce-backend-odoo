@@ -502,7 +502,11 @@ class MenuService:
                 )
                 scene_key = str(node.get("scene_key") or meta.get("scene_key") or entry_target.get("scene_key") or "").strip()
                 route = str(node.get("route") or meta.get("route") or entry_target.get("route") or "").strip()
-                targets[pair] = {"scene_key": scene_key, "route": route, "entry_target": entry_target}
+                targets[pair] = {
+                    "scene_key": scene_key, "route": route, "entry_target": entry_target,
+                    "menu_key": str(meta.get("menu_key") or node.get("key") or "").strip(),
+                    "business_category_options": meta.get("business_category_options") or [],
+                }
             targets.update(MenuService._nav_target_index(node.get("children") or []))
         return targets
 
@@ -921,6 +925,9 @@ class MenuService:
                     entry["scene_key"] = target["scene_key"]
                 if target.get("entry_target"):
                     entry["entry_target"] = target["entry_target"]
+                for field in ("menu_key", "business_category_options"):
+                    if target.get(field):
+                        entry[field] = target[field]
 
         for bucket_name, bucket in buckets.items():
             deduped = {
