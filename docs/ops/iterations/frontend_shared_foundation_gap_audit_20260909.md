@@ -9500,3 +9500,15 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - P4 152cf9ecc沿原plan-state-authority：最终契约检查增加实际write能力；配置审批计划在提交前创建本事务内节点，真实批准后开始执行，主单line_ids更新节点到50%/执行中再100%/done，回读核验后完成计划。依然验证待审/已确认/执行中基准拒绝改写及终态锁定；无持久fixture或环境扩展。
 - 受管后端绑定152cf9ecc（plan-execution-backend-up.log），SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **24 PASS、ROLLBACK VERIFIED**（plan-execution-runtime.log）。该范围涉及审批/状态机实际变更，运行检查为必要相关验证，不是无关ORM扫描；未跑其他模型runtime或重复版本UI闭环。
 - 前端继续28d13c6a5/index-DMZOW5UN.js，关联版本保存/提交/返回33项及其精确恢复证据不变。下一步补计划执行阶段真实主从UI（节点保存→确认/开始→进度/状态保存→完成），须沿现有临时父计划工具注册精确写入/恢复，不直接放开旧report写许可。配置审批执行能力已由本轮24项后端/契约证明，不冒充普通角色UI验收。总体67/detail.action-state仍contract_gap；无推送、合并、目标部署。
+
+
+### 53.201 计划执行主从闭环与共享明细加载交互
+
+- 7ed411ffe起点，仅既有browser选择器dirty；复用run和53.200状态机24项，不重新扫描菜单/ORM。上一问答轮无代码进展，本轮恢复既有具体阻断。P4使用既有临时父计划精确许可/清理；P0 frontend X2ManyRelationRenderer负责通用加载反馈，非行业规则，不在P1/P2或前端新增审批语义。影响全部可编辑one2many加载阶段，readonly路径不变。
+- 原tpl07-1790814968067因节点名称为空阻止请求，非动作契约缺失。定向读取观察tpl07-1790815225138本次60项通过，但编辑前确实观察到空名称与可编辑进度同时出现；后端读取返回完整name。源代码确认已有行先显示、异步hydration随后执行，dirty整行跳过合并。因此偶然通过不能关闭时序问题。
+- P0共享明细在hydrating时展示既有ScInlineState，完成后才呈现编辑控件；保留必填校验、业务只读、身份和服务端权限。P4沿现有浏览器工具暂缓精确nodeId的read响应，断言加载阶段没有可编辑进度控件，再释放真实响应、检查完整只读名称并执行实际保存。不新增写许可/fixture/环境；状态选择器改用可见textbox及实际弹层文字。
+- L1 plan-node-loading-iteration PASS；verify.frontend.professional_detail_collection.unit PASS（matrix6、relation_domain7、dialog67、Python10+44，134计数；额外structured-domain6输出不重复计数）；strict typecheck PASS；standard_preview.unit48 PASS。原run relation_query_scope遗漏renderer/直接hydration及guard输入，本轮补齐并更新begin/record；补元数据不改变已测源码，复用本轮原始log。P1 runtime24、approval188输入未变，无升级/重启/无关ORM。
+- 一次构建：base7ed411ffe+明确dirty，index-B8XOfsg8.js，entry_sha256=5f15c35688073ae074d5a47507b51c045b702134de23224d3503b1e1e2d9d802，build-identity.json保留完整diff身份；复用5180，backend152cf9ecc不变。不是clean冻结候选。
+- plan-node-loading-browser.log / tpl07-1790815407363 **64 PASS**：PM32/company8，父计划80/节点11，真实新增节点→确认→开始→50%执行中→100%已完成→完成计划；所有6项真实写响应ok，权威回读一致，终态write=false。刻意延迟读取的两个阶段均不可提前编辑，释放后名称完整且只读。errors=[]、forbiddenWrites=[]，expense-cleanup-final.log精确恢复node11/parent80，status=restored。
+- 1440/390无溢出断言通过，但人工检查390终态截图仍为明细加载反馈，不能证明已加载节点视觉。工具已补终态节点名称等待，未仅为换截图重跑整条业务链；这条新增等待尚待下次相关UI执行。上述64行为结果仍按原工具输入引用，不称最终工具全部已跑。未改变产品源码或重建。
+- 本轮关闭计划执行主从真实办理及提前编辑时序缺陷；终态明细双视口、版本业务标题、配置审批多角色UI和其余67项职责仍有缺口。detail.action-state保持contract_gap。批次定向行为通过，整体验收未完成；无主线集成、目标部署或用户整体交付。下一步沿已登记计划/版本配置审批UI补终态观察，复用原状态机和已完成无配置链。

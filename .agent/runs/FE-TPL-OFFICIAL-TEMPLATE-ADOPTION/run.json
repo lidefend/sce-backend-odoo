@@ -400,7 +400,13 @@
         "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
         "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
         "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts"
       ]
     },
     "workflow_catalog_consumer": {
@@ -485,7 +491,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.200 P1 3ae4befd3 sc.plan field_editable_phases=[open] after native/model boundaries closed; version _rec_name=version_no. P4/backend152cf9ecc adds actual configured approval -> start -> parent line_ids progress50/100,state updates -> done; final contracts write=true onlydraft/execution, reviewed baseline locked. L1/approval188 PASS/receipt; plan-state-authority24 PASS/ROLLBACK VERIFIED (plan-execution-runtime.log). No frontend/XML/schema changes, no build/upgrade, frontend28d13c6a5 retained. Next bounded real plan execution UI through existing temp-parent tool and exact recovery (node save -> confirm/start -> update -> complete); do not reuse report/version write permit for new scope. Verify business version title when next observing relatedpage. Relation version browser33 retained. Overall67/detail.action-state remains gap; no push/merge/targetdeploy.",
+  "next_exact_step": "53.201: P0 shared editable x2many loading gate; L1/detail134/typecheck/tool48 PASS. Browser tpl07-1790815407363 64PASS with delayed real node reads and full plan create-confirm-start-progress50/100-done, exact node11/parent80 cleanup. Built base7ed411ffe+dirty index-B8XOfsg8.js; backend152cf9ecc unchanged. Terminal390 screenshot still loading: browser now waits for node name, this last observation-only change not yet run; do not claim loaded terminal visual. Next existing plan/version configured multi-role UI and version title/loaded terminal visuals; reuse P1 runtime24, no unrelated ORM or repeat full unconfigured flow merely for screenshot. Overall67/detail.action-state remains gap, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

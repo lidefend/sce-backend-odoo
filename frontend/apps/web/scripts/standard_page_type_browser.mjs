@@ -84,6 +84,7 @@ assert.ok(!planVersionSubmit || planVersionSave);
 const planExecution = process.env.TPL07_PLAN_EXECUTION === '1';
 assert.ok(!planExecution || (reportSaveSuccess && !planVersionInspect));
 let planSaveCapture = false;
+let planNodeReadGate = null;
 let versionSaveCapture = false;
 let reportSuccess = null;
 let reportCreateCapture = false;
@@ -118,6 +119,10 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (planNodeReadGate && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'read' && body.params.model === 'sc.plan.line'
+      && body.params.ids?.length === 1 && body.params.ids[0] === reportSuccess?.nodeId
+      && body.params.fields?.includes('name')) await planNodeReadGate;
     if (permitsExpensePolicyWrite(role, body, expensePolicyPermit)) {
       report.expensePolicyWrites ??= [];
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
@@ -294,6 +299,10 @@ async function login(role) {
     try {
       if (new URL(response.url()).pathname === '/api/v1/auth/page-contracts') report.publicAuthContract = await response.json();
       const body = response.request().postDataJSON();
+      if (process.env.TPL07_PLAN_EXECUTION === '1' && body?.intent === 'api.data' && body.params?.op === 'read' && body.params?.model === 'sc.plan.line') {
+        report.planNodeReads ??= [];
+        report.planNodeReads.push({ request: body.params, result: await response.json() });
+      }
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
@@ -1066,11 +1075,24 @@ try {
             await showNodes('plan-execution-confirmed', 'readonly');
             await action('plan-start', '开始执行', 'in_progress');
             for (const [phase, percent, stateLabel, state] of [['node-progress', 50, '执行中', 'in_progress'], ['node-done', 100, '已完成', 'done']]) {
-              await showNodes(`plan-execution-${phase}`);
+              let releaseRead;
+              planNodeReadGate = new Promise(resolve => { releaseRead = resolve; });
+              try {
+                await showNodes(`plan-execution-${phase}`);
+                await collection.getByText('正在加载关系记录', { exact: true }).waitFor();
+                check(`plan execution ${phase}: pending read cannot be edited`, await collection.getByRole('spinbutton', { name: '完成率(%)', exact: true }).count() === 0);
+              } finally {
+                planNodeReadGate = null;
+                releaseRead();
+              }
+              await collection.getByRole('textbox', { name: '节点名称', exact: true }).waitFor();
+              check(`plan execution ${phase}: baseline hydrated before editing`, await collection.getByRole('textbox', { name: '节点名称', exact: true }).inputValue() === nodeName);
+              report.planNodeBeforeEdit ??= [];
+              report.planNodeBeforeEdit.push({ phase, values: await collection.locator('input').evaluateAll(nodes => nodes.map(node => ({ label: node.getAttribute('aria-label'), value: node.value, disabled: node.disabled }))) });
               check(`plan execution ${phase}: baseline remains readonly`, await collection.getByRole('textbox', { name: '节点名称', exact: true }).isDisabled());
               await collection.getByRole('spinbutton', { name: '完成率(%)', exact: true }).fill(String(percent));
-              await collection.getByLabel('状态', { exact: true }).click();
-              await session.page.getByRole('option', { name: stateLabel, exact: true }).click();
+              await collection.getByRole('textbox', { name: '状态', exact: true }).click();
+              await session.page.getByText(stateLabel, { exact: true }).last().click();
               await saveNode(phase);
               const read = await api({ op: 'read', model: 'sc.plan.line', ids: [reportSuccess.nodeId], fields: ['id', 'state', 'progress_rate'], context: { company_id: 8 } });
               check(`plan execution ${phase}: node facts read back`, read.ok === true && read.data.records[0].state === state && read.data.records[0].progress_rate === percent);
@@ -1079,6 +1101,7 @@ try {
             await action('plan-done', '完成', 'done');
             await showNodes('plan-execution-completed', 'readonly');
             check('plan execution: terminal contract readonly', report.recordAuthority?.status?.effectiveRecordCapabilities?.write === false);
+            await collection.getByText(nodeName, { exact: true }).first().waitFor();
             for (const width of [1440, 390]) {
               await session.page.setViewportSize({ width, height: 950 });
               await collection.scrollIntoViewIfNeeded();
