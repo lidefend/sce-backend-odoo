@@ -10070,3 +10070,13 @@ X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺
 - 登记：`guard_registry` check 回执最终绑定 clean HEAD `397438b05`（10 例，log `l2-guard_registry-20261002-040847.log`，log_sha256 入回执）。
 - **gap 1 关闭**。登记过程两次受挫的教训已入 run.json `record_procedure_note`：① begin 与 record 之间不得变更声明输入（seed 改 registry.yaml 触发输入漂移拒绝）；② begin→验证→record 必须一气呵成（pending 文件被失败 record 消费后即缺）；③ 提交后再重记一次将回执绑定到 clean HEAD。
 - 状态：批次验收完成（本层）；run blockers 中 gap 1 条目已移除。剩余：create/edit 与 workbench 最小证据差额、owner 待决 `addons/smart_core/contract.schema.json` 空占位文件去留、部署/版本发布需 owner 显式授权（未触发）。
+
+## 2026-10-02 接替执行：create/edit 与 workbench 最小证据落地（run successor_step8）
+
+- 背景：`a7729e7bd..HEAD` 有 4 个前端产品文件变化（actionRuleAuthority.ts、contracts/v2/schema.ts、contractFormPresenter.ts、contractActionPresentation.ts——正是 create/edit 表面的表单呈现输入），故原在 `a7729e7bd` 上的两条浏览器车道回执已失效，须在当前候选上重跑。本批无产品/探针代码变更，纯证据补齐。
+- 运行态刷新（受管入口）：`make backend.acceptance.replace-stale` + `health` 将 18082 后端重建至 `1317c9db9`（无模块升级：addons 无增量）；`make frontend.standard.preview.build`（35.64s）+ `up`，5180 服务 clean 绑定构建 `base_sha=1317c9db9`（diff_sha256=e3b0c442 空树哈希，entry `/assets/index-CGKrPxOb.js`）。
+- **create/edit 车道**：`TPL07_SCOPE=create-edit make verify.frontend.standard_page_type.browser` → **48/48 断言 PASS**，errors []，forbiddenWrites []；create/edit 双表面（new 与 1845，声明 fixture 身份解析）各 8 sections、1 声明 one2many、声明可编辑字段成员一致，关系字段可见非只读，reload 保持成员与关系值，明暗×1440/390 受控。报告 `tpl07-1790885749220/report.json`（sha256 `7e5ef807…`）。
+- **workbench(home) 车道**：`TPL07_SCOPE=scene-entry TPL07_SCENE_SELECTION=home` → **20/20 断言 PASS**，errors []，forbiddenWrites []；限定 finance workspace.home 角色，`[data-role-home]` renderer=workspace-contract、单一 official-dashboard-workspace 组合、声明状态 ready、摘要数==min(声明 sections,4)、快捷链接可用。报告 `tpl07-1790885779047/report.json`（sha256 `3af28b0c…`）。
+- 登记：两条 check 回执（create_edit_scope、workspace_home_scope）均按 begin→车道→record 单脚本一气呵成登记，绑定 clean HEAD `1317c9db9`（日志 `l2-create_edit_scope-20261002-041543.log`、`l2-workspace_home_scope-20261002-041613.log`，log_sha256 入回执）。
+- **原清单证据差额关闭**：blocker 中该项移除，仅保留"部署后历史附件内容不可用、元数据呈现不恢复内容"的既定数据限制（数据限制声明，非恢复文件主张）。detail_style_scope 维持其原有身份的既有证据，不因本批改动。
+- 边界：本批仅覆盖当前候选上的 create/edit 与 workbench 最小证据；未发布场景表面、全量 action/字段覆盖与业务写入/审批回路仍在范围之外。剩余 owner 待决：`addons/smart_core/contract.schema.json` 空占位去留；部署/版本发布需显式授权（未触发）。

@@ -1022,10 +1022,10 @@
   "blockers": [
     "Deployment/version release not performed and not authorized: mainline integration, deployment and product acceptance stay separate statuses.",
     "Owner decision still open (not self-authorized): addons/smart_core/contract.schema.json is a tracked empty file no code references; keep as placeholder or remove in a separate P0 change.",
-    "Remaining original-list evidence delta: create/edit and workbench minimum evidence only, plus the retained post-deploy limit that historical attachment content is unavailable and metadata rendering does not restore it.",
+    "Retained post-deploy data limitation (not an evidence delta): historical attachment content is unavailable and metadata rendering does not restore it; this stays a data limitation, not a restored-file claim.",
     "Environment scope note (bounded, not a general 'environment all-pass'): the earlier DENY on volume sc_fe_r2_p1_01_odoo was that the rebuild entry demanded exactly one mount consumer while two declared consumers exist. Step (b) replaced the raw count with the declared topology (one non-oneoff compose carrier plus only the declared oneoff mounters) and acceptance.runtime.baseline_recovery.audit now PASSES with declared_consumers=2 for odoo. Foreign owners, undeclared oneoff mounters and non-odoo volumes are still DENY."
   ],
-  "next_exact_step": "L4 gap 1 closed at 397438b05: guard_registry_audit now requires a machine-checkable wire_or_retire disposition (file-consumed / wire-pending / retire-pending) for every unwired active script, seeds/retires stale dispositions for wired scripts, and exports the counts; all 183 unwired active guards are dispositioned file-consumed with zero undispositioned, audit PASS 1371 scripts, and the check receipt is recorded at the clean HEAD 397438b05 (10 unittest cases). Remaining: the create/edit and workbench minimum evidence delta, the owner decision on the addons/smart_core/contract.schema.json empty placeholder, and deployment/version release which still needs explicit owner authorization.",
+  "next_exact_step": "Create/edit and workbench minimum evidence landed at the clean HEAD 1317c9db9: the acceptance backend was recreated at 1317c9db9 (healthy) and the frontend standard preview rebuilt clean-bound to the same head (entry /assets/index-CGKrPxOb.js); the create-edit lane passed 48/48 assertions and the scene-entry home workbench lane passed 20/20 assertions with zero errors and zero forbidden writes, both receipts recorded at the clean head. The original-list evidence delta is closed; only the retained post-deploy attachment-content data limitation remains as a recorded limit. Remaining decisions stay with the owner: the addons/smart_core/contract.schema.json empty placeholder keep/remove and the deployment/version release which needs explicit owner authorization.",
   "completion": {
     "batch": "passed: declared-authority projection consumed by both action presenters with negative-first behavioural proof; targeted L2 and typecheck to be refreshed for this layer",
     "mainline": "completed for the prior candidate: PR #526 merged (squash) as c4ef5339475947f0ac4fda1350851148b8dc5942; origin/main tree is identical to the previous branch tip aeff26d78",
@@ -3001,6 +3001,40 @@
     "remaining": [
       "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
       "create/edit and workbench minimum evidence delta and the retained post-deploy attachment-content limit",
+      "deployment/version release needs explicit owner authorization"
+    ]
+  },
+  "successor_step8_create_edit_workbench_minimum_evidence_20261002": {
+    "stage": "original-list evidence delta closure: create/edit and workbench minimum browser evidence on the current candidate",
+    "candidate_identity": {
+      "head": "1317c9db9a23ac9f3358060fae2de5bfc2efff28",
+      "tree": "clean; no product or probe change was needed for this batch",
+      "input_delta_since_a7729e7bd": "frontend/apps/web/src/app/contracts/v2/actionRuleAuthority.ts, contracts/v2/schema.ts, presentation/contractFormPresenter.ts, pages/contractForm/contractActionPresentation.ts (the form-presentation inputs of the create/edit surface); addons product bytes unchanged"
+    },
+    "runtime_refresh": {
+      "backend": "make backend.acceptance.replace-stale + backend.acceptance.health recreated sc-backend-odoo-acceptance at revision 1317c9db9 on 18082 (no module upgrade: no addons delta)",
+      "frontend": "make frontend.standard.preview.build (35.64s) then frontend.standard.preview.up; 5180 serves the clean-bound build base_sha 1317c9db9, diff_sha256 e3b0c442 (empty-tree hash, clean), entry /assets/index-CGKrPxOb.js"
+    },
+    "create_edit_scope": {
+      "command": "TPL07_SCOPE=create-edit make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "result": "passed, 48/48 assertions, errors [], forbiddenWrites []",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790885749220/report.json",
+      "report_sha256": "7e5ef80747faa6b6e966db7a8a2fc867800a668f2dd51fb04f83c416f44d4719",
+      "surfaces": "create /f/payment.request/new and edit /f/payment.request/1845 resolved from the declared fixture identity; 8 sections, 1 declared one2many and the declared editable field membership on both surfaces, relation field present and not readonly, reload retains field membership and relation value, light/dark x 1440/390 contained",
+      "receipt": "recorded at clean HEAD 1317c9db9, 48 assertions, log .runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/l2-create_edit_scope-20261002-041543.log"
+    },
+    "workspace_home_scope": {
+      "command": "TPL07_SCOPE=scene-entry TPL07_SCENE_SELECTION=home make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "result": "passed, 20/20 assertions, errors [], forbiddenWrites []",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790885779047/report.json",
+      "report_sha256": "3af28b0c829ae97262738edc0f39dd691539f3d3bd3f7afaa59a7825067e38d3",
+      "surfaces": "bounded to the finance workspace.home role; [data-role-home] renderer workspace-contract, one official-dashboard-workspace composition, declared state ready, summary count == min(declared sections, 4), usable quick-link actions, light/dark x 1440/390 contained",
+      "receipt": "recorded at clean HEAD 1317c9db9, 20 assertions, log .runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/l2-workspace_home_scope-20261002-041613.log"
+    },
+    "scope_boundary": "this closes the create/edit and workbench minimum evidence on the current candidate only; the unpublished scene surfaces, full action/field coverage and business write/approval loops remain outside this scope, and detail_style_scope stays as previously recorded evidence with its own identity",
+    "remaining": [
+      "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
+      "retained post-deploy data limitation: historical attachment content is unavailable and metadata rendering does not restore it",
       "deployment/version release needs explicit owner authorization"
     ]
   }
