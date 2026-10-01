@@ -1129,3 +1129,97 @@ class PaymentSourcePrepProbeTest(unittest.TestCase):
             row[key] = original
         self.record._payment_unreserved_amount.return_value = 0
         with self.assertRaisesRegex(AssertionError, 'fully unreserved'): self.readback(self.record, spec, 'Marker', 71, 'confirmed')
+
+class PlanVersionDisplayProbeTest(unittest.TestCase):
+    def prepare(self, database='sc_frontend_acceptance', uid=32):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        import datetime
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        methods = [n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name.startswith('_plan_version_display_')]
+        for method in methods: method.body = [n for n in method.body if not isinstance(n, ast.ImportFrom)]
+        self.base = MagicMock(); self.base.cr.dbname = database
+        user = MagicMock(id=uid, share=False, company_id=SimpleNamespace(id=8), company_ids=SimpleNamespace(ids=[8]))
+        user.__len__.return_value = 1
+        self.base.__getitem__.return_value.sudo.return_value.search.return_value = user
+        self.actor = MagicMock(uid=32, su=False, company=SimpleNamespace(id=8))
+        self.base.return_value = self.actor
+        self.models = {}
+        self.actor.__getitem__.side_effect = lambda name: self.models.setdefault(name, MagicMock())
+        self.actor['project.project'].browse.return_value.read.return_value = [{'id': 10, 'company_id': [8, 'A']}]
+        self.actor['sc.plan'].create.return_value.id = 101
+        self.actor['sc.plan.version'].create.return_value.id = 102
+        self.cursor = MagicMock(); self.cursor.__enter__.return_value = self.cursor
+        self.base.registry.cursor.return_value = self.cursor
+        self.fresh = MagicMock(uid=32, su=False, company=SimpleNamespace(id=8))
+        self.api = SimpleNamespace(Environment=MagicMock(return_value=self.fresh))
+        self.handler = MagicMock()
+        self.ns = {'_env': lambda: self.base, 'json': json, 'datetime': datetime.datetime, 'timezone': datetime.timezone,
+            'api': self.api, 'UiContractV2Handler': self.handler}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), self.ns)
+        self.readback = self.ns['_plan_version_display_readback']
+        self.ns['_plan_version_display_readback'] = MagicMock(return_value={'display_name': 'verified'})
+        return self
+
+    def execute(self):
+        with patch('builtins.print') as output:
+            try: self.ns['_plan_version_display_checks']()
+            finally:
+                self.output = output
+                self.receipt = json.loads(next(c.args[0].split('=', 1)[1] for c in reversed(output.call_args_list)
+                    if c.args[0].startswith('PLAN_VERSION_DISPLAY=')))
+
+    def test_native_draft_only_and_committed_fresh_non_sudo_read(self):
+        self.prepare().execute()
+        self.assertEqual(self.receipt['status'], 'passed')
+        self.assertTrue(self.receipt['committed'])
+        self.assertFalse(self.receipt['published_user_journey'])
+        self.assertEqual(self.receipt['parent_id'], 101)
+        self.assertEqual(self.receipt['version_id'], 102)
+        marker = self.receipt['marker']
+        self.actor['sc.plan'].create.assert_called_once_with({'name': marker, 'project_id': 10})
+        self.actor['sc.plan.version'].create.assert_called_once_with({'plan_id': 101, 'version_no': marker})
+        for model in self.models.values():
+            model.sudo.assert_not_called()
+            model.create.return_value.action_submit.assert_not_called()
+        self.base.cr.commit.assert_called_once()
+        self.api.Environment.assert_called_once_with(self.cursor, 32, {'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'}, su=False)
+        self.assertIs(self.ns['_plan_version_display_readback'].call_args_list[1].args[0], self.fresh)
+
+    def test_wrong_database_role_project_or_elevated_actor_refuses_create(self):
+        for case in ('database', 'role', 'project', 'sudo'):
+            self.prepare(database='wrong' if case == 'database' else 'sc_frontend_acceptance', uid=1 if case == 'role' else 32)
+            if case == 'project': self.actor['project.project'].browse.return_value.read.return_value[0]['company_id'] = [9, 'Other']
+            if case == 'sudo': self.actor.su = True
+            with self.assertRaises(AssertionError): self.execute()
+            self.base.cr.commit.assert_not_called()
+            self.actor['sc.plan'].create.assert_not_called()
+            self.assertFalse(self.receipt['committed'])
+
+    def test_failed_pending_and_committed_readback_receipts_are_honest(self):
+        for after_commit in (False, True):
+            self.prepare()
+            self.ns['_plan_version_display_readback'].side_effect = [{}, AssertionError('fresh mismatch')] if after_commit else AssertionError('pending mismatch')
+            with self.assertRaises(AssertionError): self.execute()
+            self.assertEqual(self.receipt['status'], 'failed')
+            self.assertEqual(self.receipt['committed'], after_commit)
+            self.base.cr.rollback.assert_called_once()
+            self.assertFalse(any('SMOKE=PASS' in c.args[0] for c in self.output.call_args_list))
+
+    def test_final_contract_and_model_names_are_checked_independently(self):
+        self.prepare()
+        parent = {'id': 101, 'name': 'Marker', 'project_id': [10, 'P'], 'company_id': [8, 'A'], 'state': 'draft', 'create_uid': [32, 'PM']}
+        version = {'id': 102, 'plan_id': [101, 'Marker'], 'version_no': 'Marker', 'display_name': 'Marker',
+            'company_id': [8, 'A'], 'state': 'draft', 'create_uid': [32, 'PM']}
+        main = {'id': 102, 'version_no': 'Marker', 'display_name': 'Marker'}
+        self.actor['sc.plan'].browse.return_value.read.return_value = [parent]
+        self.actor['sc.plan.version'].browse.return_value.read.return_value = [version]
+        self.handler.return_value.handle.return_value = {'ok': True, 'data': {'dataContract': {'mainData': main}, 'pageInfo': {'pageName': '计划版本'}}}
+        result = self.readback(self.actor, 101, 102, 'Marker')
+        self.assertEqual(result['page_name'], '计划版本')
+        self.handler.assert_called_once_with(self.actor, su_env=self.actor)
+        for row, key, value in [(version, 'display_name', 'sc.plan.version,102'), (main, 'display_name', 'sc.plan.version,102'),
+            (main, 'id', 999), (version, 'plan_id', [999, 'Wrong']), (parent, 'create_uid', [1, 'Admin']), (version, 'state', 'approved')]:
+            old = row[key]; row[key] = value
+            with self.assertRaises(AssertionError): self.readback(self.actor, 101, 102, 'Marker')
+            row[key] = old

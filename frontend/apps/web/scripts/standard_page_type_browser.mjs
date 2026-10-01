@@ -1599,6 +1599,7 @@ try {
             void pending.catch(() => {});
             await session.page.locator(`[data-field-name="${field}"] input`).first().fill(search);
             const response = await pending, result = await response.json();
+            (report.paymentSourceQueries ??= []).push({ field, params: response.request().postDataJSON().params, result });
             check(`payment source: ${field} authorized relation query`, result.ok === true);
             return { params: response.request().postDataJSON().params, rows: result.data?.records || [] };
           };

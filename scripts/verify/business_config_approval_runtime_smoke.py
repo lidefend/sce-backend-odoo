@@ -4795,6 +4795,66 @@ def _ordinary_pm_capability_checks(scope):
         raise
 
 
+def _plan_version_display_readback(actor, parent_id, version_id, marker):
+    from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+    assert actor.uid == 32 and not actor.su and actor.company.id == 8, "plan display actor drift"
+    parent = actor["sc.plan"].browse(parent_id).read(["id", "name", "project_id", "company_id", "state", "create_uid"])[0]
+    version = actor["sc.plan.version"].browse(version_id).read(["id", "plan_id", "version_no", "display_name", "company_id", "state", "create_uid"])[0]
+    assert parent["id"] == parent_id and parent["name"] == marker and parent["project_id"][0] == 10
+    assert version["id"] == version_id and version["plan_id"][0] == parent_id
+    assert version["version_no"] == marker and version["display_name"] == marker, "native version display mismatch"
+    assert all(row["company_id"][0] == 8 and row["create_uid"][0] == 32 and row["state"] == "draft" for row in (parent, version))
+    result = UiContractV2Handler(actor, su_env=actor).handle({"model": "sc.plan.version", "record_id": version_id,
+        "view_type": "form", "render_profile": "edit"})
+    result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+    assert result.get("ok", True), "version final contract failed"
+    contract = result.get("data", {})
+    main = contract.get("dataContract", {}).get("mainData", {})
+    assert main.get("id") == version_id and main.get("display_name") == marker and main.get("version_no") == marker, "final contract version display mismatch"
+    return {"parent": parent, "version": version, "contract_main_data": main, "page_name": contract.get("pageInfo", {}).get("pageName")}
+
+
+def _plan_version_display_checks():
+    """Internal native draft/display capability; no published-route authority claim."""
+    from datetime import datetime, timezone
+    from odoo import api
+    base = _env()
+    receipt = {"scope": "plan-version-display", "status": "not_run", "committed": False,
+        "capability_only": True, "published_user_journey": False, "uid": 32, "sudo": False, "company_id": 8, "project_id": 10}
+    try:
+        assert base.cr.dbname == "sc_frontend_acceptance", "wrong plan display database"
+        users = base["res.users"].sudo().search([("login", "=", "fixture_role_pm"), ("active", "=", True)])
+        assert len(users) == 1 and users.id == 32 and not users.share and users.company_id.id == 8 and 8 in users.company_ids.ids, "PM identity drift"
+        context = {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"}
+        actor = base(user=32, su=False, context=context)
+        assert actor.uid == 32 and not actor.su and actor.company.id == 8, "plan display actor drift"
+        project = actor["project.project"].browse(10).read(["id", "company_id"])
+        assert len(project) == 1 and project[0]["id"] == 10 and project[0]["company_id"][0] == 8, "PM project prerequisite missing"
+        marker = "ITER-PM-PLAN-DISPLAY-" + datetime.now(timezone.utc).strftime("%m%d%H%M%S%f")
+        receipt.update(database=base.cr.dbname, marker=marker)
+        parent = actor["sc.plan"].create({"name": marker, "project_id": 10})
+        receipt["parent_id"] = parent.id
+        version = actor["sc.plan.version"].create({"plan_id": parent.id, "version_no": marker})
+        receipt["version_id"] = version.id
+        receipt["pending_readback"] = _plan_version_display_readback(actor, parent.id, version.id, marker)
+        actor.flush_all()
+        print("PLAN_VERSION_DISPLAY_PENDING=" + json.dumps(receipt, ensure_ascii=False, default=str))
+        base.cr.commit()
+        receipt["committed"] = True
+        with base.registry.cursor() as cursor:
+            fresh = api.Environment(cursor, 32, context, su=False)
+            receipt["readback"] = _plan_version_display_readback(fresh, parent.id, version.id, marker)
+            cursor.rollback()
+        receipt["status"] = "passed"
+        print("PLAN_VERSION_DISPLAY=" + json.dumps(receipt, ensure_ascii=False, default=str))
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=plan-version-display retained_development_samples=true capability_only=true")
+    except Exception as exc:
+        base.cr.rollback()
+        receipt.update(status="failed", error=str(exc))
+        print("PLAN_VERSION_DISPLAY=" + json.dumps(receipt, ensure_ascii=False, default=str))
+        raise
+
+
 def _payment_source_prep_spec(kind):
     assert kind in ("subcontract", "rental"), "unsupported payment source kind"
     return ({"model": "sc.subcontract.settlement", "project_id": 593, "other_project_id": 592,
@@ -4883,6 +4943,8 @@ def _payment_source_prep_checks(kind):
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "plan-version-display":
+        return _plan_version_display_checks()
     if scope in ("payment-source-subcontract", "payment-source-rental"):
         return _payment_source_prep_checks(scope.removeprefix("payment-source-"))
     if scope.startswith("ordinary-role-"):
