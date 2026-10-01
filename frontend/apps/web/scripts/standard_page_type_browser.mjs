@@ -922,6 +922,41 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {
+    // Read-only user observation; existing write interception remains deny-by-default.
+    const admin = await login('fixture_role_config_admin');
+    const entry = report.routeAuthority?.primary_actions?.find(row => row.model === 'payment.request');
+    check('published approval editor: payment entry authorized', Number.isInteger(entry?.action_id) && entry.action_id > 0);
+    const surfaceResponse = admin.page.waitForResponse(response => {
+      try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+    });
+    await admin.page.goto(`${base}/admin/business-config?model=payment.request&action_id=${entry.action_id}&menu_id=${entry.menu_id}`);
+    const surface = await (await surfaceResponse).json();
+    check('published approval editor: configuration surface available', surface.ok === true);
+    await admin.page.getByRole('tab', { name: '审批规则', exact: true }).click();
+    report.publishedApprovalInspection = { entry, surface: surface.data };
+    await fs.writeFile(path.join(out, 'published-approval-surface.json'), JSON.stringify(report.publishedApprovalInspection, null, 2));
+    await admin.page.screenshot({ path: path.join(out, 'published-approval-before-open.png') });
+    const [configResponse] = await Promise.all([
+      admin.page.waitForResponse(response => {
+        try { return response.request().postDataJSON()?.intent === 'sc.approval_policy.config.get'; } catch { return false; }
+      }, { timeout: 15000 }),
+      admin.page.getByRole('button', { name: '配置审批规则', exact: true }).click(),
+    ]);
+    const config = await configResponse.json();
+    check('published approval editor: policy loaded', config.ok === true);
+    const panel = admin.page.locator('.approval-panel');
+    await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
+    check('published approval editor: target selector visible', await panel.getByLabel('审批对象', { exact: true }).isVisible());
+    check('published approval editor: switch reflects backend', await panel.getByRole('checkbox', { name: '启用审批', exact: true }).isChecked() === Boolean(config.data?.policy?.approval_required));
+    report.publishedApprovalInspection = { entry, surface: surface.data, config: config.data };
+    for (const [width, height] of [[1440, 900], [390, 844]]) {
+      await admin.page.setViewportSize({ width, height });
+      await panel.getByLabel('审批对象', { exact: true }).scrollIntoViewIfNeeded();
+      check(`published approval editor: target visible at ${width}`, await panel.getByLabel('审批对象', { exact: true }).isVisible());
+      await admin.page.screenshot({ path: path.join(out, `published-approval-editor-${width}.png`) });
+    }
+    await admin.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_INSPECT === '1') {
     // Read only: establish the actual configuration and distinct reviewer entry
     // before extending the existing exact-write/recovery scope.
@@ -1083,7 +1118,7 @@ try {
             const admin = await login('fixture_role_config_admin');
             await admin.page.goto(`${base}/admin/business-config?model=sc.plan&action_id=${parentRequest.context.action_id}&menu_id=${parentRequest.context.menu_id}`);
             await admin.page.getByRole('tab', { name: '审批规则', exact: true }).click();
-            await admin.page.getByRole('button', { name: '配置审批', exact: true }).click();
+            await admin.page.getByRole('button', { name: '配置审批规则', exact: true }).click();
             const panel = admin.page.locator('.approval-panel');
             await panel.getByLabel('审批对象', { exact: true }).click();
             await admin.page.getByText('计划版本', { exact: true }).last().click();

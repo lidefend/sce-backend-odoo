@@ -9611,3 +9611,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - entry-normalization-iteration L1 PASS；entry-normalization-unit 10+2=12 PASS，begin/record非零回执。受管backend up/health装载eae3dd5d2；entry-normalization-runtime实际退出0，7 PASS/rollback verified，快照65不变，655拒绝、653/302/711可用。无schema/XML/ACL和前端修改，不升级模块/重建/重复浏览器。此前浏览器保持原候选只读证据，不升级成本次完整业务验收。
 - 更新既有67条台账detail.action-state的followUp，明确53.207错误放行的历史证据已被后续修复取代；status仍contract_gap。系统能力与发布/用户验收分别保留，不通过发布第90页或扩大配置目录绕过权限。总体目标未完成。
 - 当前已确认的发布不一致修复收敛，下一步回到共享配置编辑器和真实审批用户闭环：优先复用已发布业务入口与既有受管测试/恢复能力验证同一消费路径；计划未发布范围仍记录能力验证与发布后验收区别。先核对当前配置旅程工具能否复用发布入口及已有权限/恢复约束，再补必要工具能力，不重做全仓/菜单/ORM盘点。未发布父子配置预览若确需新权限须以显式契约定义，禁止绕开正式目录。
+
+### 53.213 已发布付款配置入口与共享审批编辑器
+
+- fca8f6d14 clean续跑，P4只扩展既有standard_page_type_browser只读分支TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT；入口从当前config_admin初始化授权取payment.request，不硬造菜单。保留deny-by-default写拦截，不把计划版本的写许可/恢复绑定改成任意模型。后端eae3dd5d2/前端fef7d73ef原候选复用，无ORM/升级/构建。
+- 初次published-approval-inspect-browser失败：新探针在点击期间的waitForResponse promise未及时挂接，超时导致未完整落盘。第二次改Promise.all并预存surface/截图；published-approval-capture-browser失败但tpl07-1790819919126保留现场，确认实际按钮为“配置审批规则”，工具误用“配置审批”。属于P4定位器问题，无配置或业务写入。纠正本探针及原计划配置步骤的同一错误名称，不改产品文案。
+- 每次工具变动先L1，再53项非零定向工具检查；最后published-approval-locator-iteration及locator-unit均PASS。原inspect begin/record53只绑定原工具输入，不冒充最后版本回执；最终53日志保留直接证据。published-approval-locator-browser退出0，tpl07-1790819988474/report.json **9 PASS**、forbiddenWrites=[]：真实config_admin授权付款入口、surface可用、审批配置读取成功、对象选择器可见、启用开关与后端一致、1440/390下可见及无页面异常/非法写入。
+- 有效surface声明付款申请和直接所属付款执行两个审批对象；本次打开的是付款申请。config.get回读policy.exists=false/id0、approval_required=false、runtime_approval_required=false。桌面/窄屏编辑器截图已检查，规则区域与对象选择正常；未验证所有操作按钮几何范围或子对象切换。界面“已配置3项”是surface范围计数，不能据此宣称当前付款策略存在。
+- 下一步在同一已发布父页面验证子对象切换及配置基线，再扩展既有精确恢复机制承载配置→真实角色提交→审批→回读/恢复。必须核验相关公司策略/tier定义/callback groups，而不能仅凭policy.exists=false允许写入。当前只有读取呈现验收，不声称配置保存/审批闭环完成；计划未发布用户旅程仍pending，67条detail.action-state仍contract_gap。无推送/合并/目标部署。
