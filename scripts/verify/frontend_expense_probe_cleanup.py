@@ -32,6 +32,37 @@ def validate_payment_review_probe_target(database, scope, row):
     assert -5 <= created - started <= 300
 
 
+def validate_payment_toggle_transition(baseline, current, *, disabled):
+    """Only policy18 and its existing tier definitions may reflect the toggle.
+
+    Successful restoration retains truthful audit timestamps; business facts,
+    unrelated policies, steps and callback permissions remain byte-equal.
+    """
+    before = json.loads(json.dumps(baseline))
+    after = json.loads(json.dumps(current))
+    policies = [row for row in before.get('policies', []) if row['id'] == 18]
+    assert len(policies) == 1
+    policy = policies[0]
+    assert policy['company_id'][0] == 8 and policy['target_model'] == 'sc.payment.execution'
+    assert policy['approval_required'] is True and policy['mode'] == 'single' and policy['active'] is True
+    steps = [row for row in before.get('steps', []) if row['policy_id'][0] == 18]
+    assert len(steps) == 1 and steps[0]['id'] == 2187 and steps[0]['active'] is True
+    definition_id = steps[0]['tier_definition_id'][0]
+    assert definition_id > 0 and steps[0]['approval_scope_key'] == 'finance_manager'
+    for snapshot in (before, after):
+        target = next(row for row in snapshot['policies'] if row['id'] == 18)
+        target.pop('write_date', None)
+        definitions = [row for row in snapshot['definitions'] if row['id'] == definition_id]
+        assert len(definitions) == 1
+        definitions[0].pop('write_date', None)
+    assert next(row for row in before['definitions'] if row['id'] == definition_id)['active'] is True
+    if disabled:
+        policy['approval_required'], policy['mode'] = False, 'none'
+        next(row for row in before['definitions'] if row['id'] == definition_id)['active'] = False
+    assert before == after, 'unexpected configuration, scope, source or financial mutation'
+    return definition_id
+
+
 def payment_review_baseline(env, exclude_ids=()):
     source = env['payment.request'].sudo().browse(1710).exists()
     assert source and source.company_id.id == 8 and source.type == 'pay' and source.state == 'approved'
@@ -50,10 +81,14 @@ def payment_review_baseline(env, exclude_ids=()):
     Policy = env['sc.approval.policy'].sudo().with_context(active_test=False)
     policies = Policy.search([('target_model', '=', 'sc.payment.execution'), ('company_id', 'in', [False, 8])], order='id')
     assert 18 in policies.ids
-    facts['policies'] = policies.read(['write_date', 'approval_required', 'active'])
-    facts['steps'] = policies.step_ids.sorted('id').read(['write_date', 'active'])
+    facts['policies'] = policies.read(['write_date', 'approval_required', 'mode', 'active', 'company_id',
+                                      'target_model', 'trigger', 'manager_scope_key', 'runtime_state', 'name', 'code'])
+    facts['steps'] = policies.step_ids.sorted('id').read(['write_date', 'active', 'policy_id', 'tier_definition_id',
+        'name', 'sequence', 'approval_scope_key', 'approve_group_id', 'amount_min', 'amount_max', 'condition_note', 'note'])
     facts['definitions'] = env['tier.definition'].sudo().with_context(active_test=False).search([
-        ('model', '=', 'sc.payment.execution')], order='id').read(['write_date'])
+        ('model', '=', 'sc.payment.execution')], order='id').read(['write_date', 'name', 'active', 'model', 'model_id',
+        'company_id', 'sequence', 'review_type', 'reviewer_group_id', 'definition_type', 'definition_domain',
+        'approve_sequence', 'server_action_id', 'rejected_server_action_id'])
     actions = [env.ref(ref).sudo() for ref in Policy._tier_server_action_xmlids('sc.payment.execution')]
     facts['callbacks'] = [{'id': action.id, 'groups': sorted(action.groups_id.ids)} for action in actions]
     return json.loads(json.dumps(facts, default=str))

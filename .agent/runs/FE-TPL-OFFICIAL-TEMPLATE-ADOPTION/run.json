@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.229: current publishedapproval readonly22PASS report1790822984087; parentpayment.request absent policy; childexecution policy18/step2187 required/finance_manager after upgrade. WEB-LC01/01B already complete; no repeat list change-set journeys. Next implement exact approval-toggle/config restore for existingpolicy18 using original baseline and governed cleanup (do NOT reuse plan missing-policy deletion). Validate disable/save→runtime_approval_required false→sameoperator create+submit auto-confirm (no reviews), restore original config/steps/definitions/callbackgroups and readback; preserve prior configured-review proof. Existing payment cleanup currently assumes unchanged policy and confirmed requires tier review, so first extend only declared toggle state with focused tests before writes. UI saves config immediately industry_policy_runtime; do not call this product publication. Ledger current followUp condensed to current blockers with original records referenced;67status unchanged.",
+  "next_exact_step": "53.230: enriched existing payment baseline policies/steps/tier definitions fields; pure validate_payment_toggle_transition accepts ONLY policy18 required/mode and linked definition active flip, ignores audit write_date ONLY those2, all source/otherpolicies/steps/callbackgroups unchanged. L1/tools66PASS withreceipt; governed readonly preflight payment-toggle-preflight.logPASS, helper accepts actual baseline linkeddefinition2187. NO config writes; validator not recovery-wired yet. Next wire approvalToggle opt-in to existing recover_payment_review: compare actual allowed disabled state before any cleanup; permit no-review auto-confirm only with authoritative disabled policy proof; delete ownoperator44 record; restore policy18 via nativewrite requiredtrue/modesingle; verify semantic baseline aftercommit while preserving audit timestamps. Add normal/failure restore mocks BEFORE live disable. Then browserconfigadmin toggle/save->operator samecreate/submit auto-confirm->UI/readback->restore. No full listLC repeat.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1635,6 +1635,16 @@
       "execution_policy": "18/step2187 required finance_manager",
       "evidence_reason": "module upgrade changed runtime inputs; fresh baseline required before configuration write",
       "completed_reused": "WEB-LC-01/01B standard-list configuration release loops"
+    },
+    "segment_53_230": {
+      "status": "toggle_scope_verified_not_wired",
+      "L1": "passed",
+      "tool_tests": 66,
+      "runtime": "readonly preflight passed",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-toggle-preflight.log",
+      "policy_id": 18,
+      "definition_id": 2187,
+      "config_writes": 0
     }
   }
 }

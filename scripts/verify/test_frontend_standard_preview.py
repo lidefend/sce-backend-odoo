@@ -375,6 +375,48 @@ class VersionReviewRecoveryIdentityTest(unittest.TestCase):
             validate_version_probe_target('sc_frontend_acceptance', {**scope, 'versionReviewProbe': False}, row, 32)
 
 
+class PaymentToggleTransitionTest(unittest.TestCase):
+    def setUp(self):
+        from copy import deepcopy
+        from scripts.verify.frontend_expense_probe_cleanup import validate_payment_toggle_transition
+        self.validate = validate_payment_toggle_transition
+        self.baseline = {'source': [{'id': 1710, 'amount': 2000}], 'execution_ids': [186], 'ledger': [],
+            'policies': [{'id': 18, 'company_id': [8, 'A'], 'target_model': 'sc.payment.execution',
+                          'approval_required': True, 'mode': 'single', 'active': True, 'write_date': 'old'},
+                         {'id': 20, 'active': True, 'write_date': 'unchanged'}],
+            'steps': [{'id': 2187, 'policy_id': [18, 'Policy'], 'active': True, 'tier_definition_id': [2187, 'Definition'],
+                       'approval_scope_key': 'finance_manager', 'write_date': 'unchanged'}],
+            'definitions': [{'id': 2187, 'active': True, 'company_id': [8, 'A'], 'write_date': 'old'},
+                            {'id': 10, 'active': False, 'write_date': 'unchanged'}],
+            'callbacks': [{'id': 507, 'groups': [93]}]}
+        self.disabled = deepcopy(self.baseline)
+        self.disabled['policies'][0].update(approval_required=False, mode='none', write_date='new')
+        self.disabled['definitions'][0].update(active=False, write_date='new')
+
+    def test_only_expected_disabled_configuration_is_accepted(self):
+        self.assertEqual(self.validate(self.baseline, self.disabled, disabled=True), 2187)
+        from copy import deepcopy
+        restored = deepcopy(self.baseline)
+        restored['policies'][0]['write_date'] = 'restored-now'
+        restored['definitions'][0]['write_date'] = 'restored-now'
+        self.assertEqual(self.validate(self.baseline, restored, disabled=False), 2187)
+        self.assertEqual(self.baseline['policies'][0]['write_date'], 'old')
+
+    def test_rejects_other_changes_and_wrong_phase(self):
+        from copy import deepcopy
+        for bucket, field, value in [('source', 'amount', 1), ('policies', 'company_id', [1, 'Other']),
+                                      ('steps', 'active', False), ('definitions', 'company_id', [1, 'Other']),
+                                      ('callbacks', 'groups', [])]:
+            changed = deepcopy(self.disabled)
+            changed[bucket][0][field] = value
+            with self.subTest(bucket=bucket), self.assertRaises(AssertionError):
+                self.validate(self.baseline, changed, disabled=True)
+        with self.assertRaises(AssertionError): self.validate(self.baseline, self.disabled, disabled=False)
+        changed = deepcopy(self.disabled)
+        changed['definitions'][1]['write_date'] = 'unrelated-change'
+        with self.assertRaises(AssertionError): self.validate(self.baseline, changed, disabled=True)
+
+
 class PaymentReviewRecoveryScopeTest(unittest.TestCase):
     def setUp(self):
         from scripts.verify.frontend_expense_probe_cleanup import validate_payment_review_probe_target

@@ -9738,3 +9738,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 更新原67条台账detail.action-state的followUp为当前索引，去除长串已过时阻断叙述，历史细节仍在本活记录及run原日志；不修改contract_gap，不新建覆盖表。正确角色证据与主管代建技术证据明确区分，最终详情双视口仍pending。无推送/合并/目标部署。
 
 - approval-index-iteration L1PASS，原台账/页面类型守卫15+13=28项PASS，67条/1个owned gap保持不变；仅followUp内容更新，保留原文件格式。
+
+### 53.230 审批开关限定差异与恢复基线
+
+- P4沿用payment baseline/cleanup工具；补policy角色/模式/公司/目标/触发与名称、步骤绑定/岗位/金额条件/说明、definition模型/公司/范围/审批组/回调等原事实。新增纯validate_payment_toggle_transition：仅policy18的required/mode、它的原step2187所绑定definition的active允许关闭差异；恢复必须原语义完全相等。只忽略这两个对象合法write_date更新，其他对象时间和内容不变；不伪造审计时间，不删除既有策略。
+- L1 payment-toggle-scope-iteration PASS，工具27Node+39Python=66PASS及begin/record回执；新增两项包含正常关闭/恢复、来源金额/公司/步骤/定义/回调/无关定义时间改变拒绝。静态基线输入不被修改。
+- 受管expense-browser-cleanup prepare只读preflight在原tpl52回执路径执行成功（payment-toggle-preflight.log），扩展字段均真实可读。用纯校验核对实际基线与自身通过，linkeddefinition2187；原execution186、policy18、step2187及callbacks[93]事实保留。没有配置保存/业务创建/删除；本次日志不证明实际恢复。
+- 下一步将纯校验接入原recover_payment_review的明确approvalToggle模式：实际配置关闭事实必须在清理前验证；无review的confirmed仅在关闭审批权威成立时允许；清理本次经办44记录后原生恢复policy18并回读语义基线，保留真实审计时间；补正常恢复与拒绝越界mock，再执行UI关闭/提交自动通过/恢复。未接线前不能开启配置写入。67目标active，无新环境/fixture/前端构建/推送/部署。
