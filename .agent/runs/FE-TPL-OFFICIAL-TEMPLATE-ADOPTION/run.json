@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
-  "branch": "feature/web-official-template-adoption",
+  "branch": "fix/daily-official-template-acceptance",
   "status": "verification_pending",
   "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
@@ -4829,6 +4829,11 @@
       "scene_diagnostic": "712f83eb9fd41e345d83d4bc4cfb485ad5f343a9",
       "structured_configuration_error": "d4eaadaab924e0fa4e3eaed4230bb23560303fff",
       "deployed": false
+    },
+    "followup_branch": {
+      "branch": "fix/daily-official-template-acceptance",
+      "original_merged_pr": 525,
+      "reason": "Published source branch was squash-merged; preserve source history and original goal/evidence while integrating post-deployment fixes through a new protected PR."
     }
   }
 }

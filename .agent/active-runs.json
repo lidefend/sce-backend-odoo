@@ -2,6 +2,6 @@
   "schema_version": 1,
   "branches": {
     "fix/agent-resume-mainline": ".agent/runs/P4-INCREMENTAL-RESUME/run.json",
-    "feature/web-official-template-adoption": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json"
+    "fix/daily-official-template-acceptance": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json"
   }
 }
