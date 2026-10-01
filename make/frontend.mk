@@ -999,6 +999,19 @@ verify.frontend.field_configuration_component.unit: guard.prod.forbid
 verify.contract.form_field_policy.unit: guard.prod.forbid
 	@python3 scripts/verify/test_form_field_policy.py
 
+# This target uses the registered preview, not exported .env.dev defaults.
+# Validate invocation origins before replacing defaults. DB origins were captured
+# by Makefile before the env include; never wash an explicit conflicting input.
+SC_LIST_PREVIEW_URL_KEYS := SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL SC_ACCEPTANCE_API_URL
+SC_LIST_PREVIEW_DB_KEYS := SC_ACCEPTANCE_DATABASE E2E_DB FRONTEND_ACCEPTANCE_DB
+# Arguments: diagnostic name, origin, value, exact registered value.
+define sc_list_preview_explicit_input
+$(if $(filter command line environment override,$(2)),$(if $(strip $(3)),$(if $(filter-out $(4),$(strip $(3))),$(error DENY standard list explicit $(1) mismatch),$(if $(filter-out 1,$(words $(3))),$(error DENY standard list explicit $(1) mismatch)))))
+endef
+
 .PHONY: verify.frontend.list_surface_structure.browser
 verify.frontend.list_surface_structure.browser: guard.prod.forbid
-	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
+	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
+	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),sc_frontend_acceptance))
+	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),sc_frontend_acceptance))
+	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=http://127.0.0.1:5180) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=sc_frontend_acceptance) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser

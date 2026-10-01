@@ -1269,15 +1269,33 @@ authority.containers=[];assert.equal(detailExpectedSections(authority).unknown.l
 
     def test_horizontal_geometry_and_missing_whole_section_fail_closed(self):
         self.run_js("""
-const metrics={cards:[{official:true,nested:false,display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:0,bottom:100}},{official:true,nested:false,display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],collectionInsideFacts:false,contained:true};
+const metrics={cards:[{official:true,nested:false,bodyCount:1,collapsed:false,body:{height:60},display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:0,bottom:100}},{official:true,nested:false,bodyCount:1,collapsed:false,body:{height:60},display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],collectionInsideFacts:false,contained:true};
 assert.deepEqual(detailGeometryFailures(metrics),[]);
 for(const patch of [{expectedCount:3},{expectedMatched:false},{unknownVisibility:['missing']},{collectionInsideFacts:true},{contained:false},{facts:[]},{descriptions:[{official:false,owned:true}]}]) assert.ok(detailGeometryFailures({...metrics,...patch}).length);
 for(const change of [m=>m.cards[1].rect.top=90,m=>m.cards[0].nested=true,m=>m.facts[0].label=null,m=>m.facts[0].value={left:0,right:90,top:40,bottom:60}]){const m=structuredClone(metrics);change(m);assert.ok(detailGeometryFailures(m).length);}
 """)
 
+    def test_expanded_card_requires_exact_owned_body_geometry(self):
+        self.run_js("""
+const card={official:true,nested:false,display:'block',rowGap:'normal',headerBodyGap:0,bodyCount:1,collapsed:false,body:{height:60},rect:{left:0,right:300,top:0,bottom:100}};
+const metrics={cards:[card,{...card,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],contained:true};
+assert.deepEqual(detailGeometryFailures(metrics),[]);
+for(const invalid of [{bodyCount:0,body:null,headerBodyGap:null},{bodyCount:2},{body:{height:0}},{body:{height:NaN}}]){
+ metrics.cards[0]={...card,...invalid};assert.ok(detailGeometryFailures(metrics).includes('expanded Card owned body geometry'));
+}
+metrics.cards[0]={...card,header:{height:40},headerBodyGap:null};assert.ok(detailGeometryFailures(metrics).includes('expanded Card header/body geometry'));
+metrics.cards[0]={...card,header:{height:0}};assert.ok(detailGeometryFailures(metrics).includes('expanded Card header/body geometry'));
+metrics.cards[0]={...card,header:{height:40},headerBodyGap:0};assert.deepEqual(detailGeometryFailures(metrics),[]);
+metrics.cards[0]={...card,collapsed:true,header:{height:40},bodyCount:0,body:null,headerBodyGap:null};assert.deepEqual(detailGeometryFailures(metrics),[]);
+metrics.cards[0].bodyCount=2;assert.ok(detailGeometryFailures(metrics).includes('expanded Card owned body geometry'));
+""")
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        self.assertIn("body.closest('.t-card')===node", source)
+        self.assertNotIn("querySelector(':scope > .t-card__body')", source)
+
     def test_native_grid_gap_cannot_masquerade_as_official_card_spacing(self):
         self.run_js("""
-const card={official:true,nested:false,display:'grid',rowGap:'12px',headerBodyGap:12,rect:{left:0,right:300,top:0,bottom:100}};
+const card={official:true,nested:false,bodyCount:1,collapsed:false,body:{height:60},display:'grid',rowGap:'12px',headerBodyGap:12,rect:{left:0,right:300,top:0,bottom:100}};
 const metrics={cards:[card,{...card,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],contained:true};
 assert.ok(detailGeometryFailures(metrics).includes('Card root spacing owned by official driver'));
 metrics.cards=metrics.cards.map(card=>({...card,display:'block',rowGap:'normal',headerBodyGap:0}));
@@ -1359,3 +1377,54 @@ node(){
     def test_explicit_matching_inputs_and_password_are_accepted(self):
         result = self.execute_adapter({'SC_ACCEPTANCE_PROFILE':'local','BASE_URL':'http://127.0.0.1:5180','E2E_DB':'sc_frontend_acceptance','E2E_PASSWORD':'synthetic-test-secret'})
         self.assertEqual(result.returncode, 0, result.stderr)
+
+
+class StandardListSurfaceMakeBoundaryTest(unittest.TestCase):
+    def invoke_make(self, overrides=None, arguments=()):
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            capture = Path(directory) / 'operation.json'
+            shim = Path(directory) / 'bash'
+            shim.write_text("""#!/usr/bin/python3
+import json, os, sys
+if sys.argv[1:] == ['scripts/dev/frontend_acceptance_operation_entry.sh', 'standard-list-surface-browser']:
+    keys = ['ACCEPTANCE_BASE_URL', 'BASE_URL', 'SC_ACCEPTANCE_FRONTEND_URL', 'DB_NAME', 'DB', 'E2E_DB', 'SC_ACCEPTANCE_DATABASE', 'SC_FRONTEND_RELEASE_CI_ENTRY']
+    with open(os.environ['SC_TEST_MAKE_CAPTURE'], 'w') as stream:
+        json.dump({key:os.environ.get(key) for key in keys}, stream)
+else:
+    os.execv('/bin/bash', ['/bin/bash', *sys.argv[1:]])
+""")
+            shim.chmod(0o755)
+            env = {'PATH': directory + ':' + os.environ['PATH'], 'HOME': os.environ['HOME'],
+                   'SC_TEST_MAKE_CAPTURE': str(capture), **(overrides or {})}
+            result = subprocess.run(['make', '--no-print-directory', 'SHELL=/bin/bash',
+                'verify.frontend.list_surface_structure.browser', *arguments], env=env,
+                capture_output=True, text=True, timeout=30)
+            return result, json.loads(capture.read_text()) if capture.exists() else None
+
+    def test_real_make_file_defaults_reach_registered_preview_adapter(self):
+        result, receipt = self.invoke_make()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIsNotNone(receipt)
+        for key in ['ACCEPTANCE_BASE_URL', 'BASE_URL', 'SC_ACCEPTANCE_FRONTEND_URL']:
+            self.assertEqual(receipt[key], 'http://127.0.0.1:5180')
+        for key in ['DB_NAME', 'DB', 'E2E_DB', 'SC_ACCEPTANCE_DATABASE']:
+            self.assertEqual(receipt[key], 'sc_frontend_acceptance')
+        self.assertEqual(receipt['SC_FRONTEND_RELEASE_CI_ENTRY'], '1')
+
+    def test_real_make_explicit_environment_and_command_inputs_cannot_be_washed(self):
+        for key, value in [('ACCEPTANCE_BASE_URL', 'http://127.0.0.1:18081'), ('BASE_URL', 'http://127.0.0.1:5175'),
+                           ('DB_NAME', 'sc_dev_demo'), ('DB', 'sc_dev_demo'), ('BD', 'sc_dev_demo')]:
+            for overrides, arguments in [({key:value}, ()), ({}, (key + '=' + value,))]:
+                with self.subTest(key=key, cli=bool(arguments)):
+                    result, receipt = self.invoke_make(overrides, arguments)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('DENY standard list explicit', result.stderr)
+                    self.assertIsNone(receipt)
+
+    def test_real_make_matching_explicit_values_are_retained_as_exact_identity(self):
+        result, receipt = self.invoke_make({'ACCEPTANCE_BASE_URL':'http://127.0.0.1:5180', 'DB_NAME':'sc_frontend_acceptance'},
+            ('BASE_URL=http://127.0.0.1:5180', 'DB=sc_frontend_acceptance'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(receipt['DB_NAME'], 'sc_frontend_acceptance')
+        self.assertEqual(receipt['BASE_URL'], 'http://127.0.0.1:5180')

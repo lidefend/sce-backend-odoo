@@ -87,6 +87,8 @@ function detailGeometryFailures(metrics) {
   if (metrics.unknownVisibility?.length) failures.push('section visibility authority');
   if (metrics.cards.length < 2 || metrics.expectedCount !== metrics.cards.length || !metrics.expectedMatched) failures.push('independent section/card coverage');
   if (metrics.cards.some(card => !card.official || card.nested)) failures.push('official nonnested Cards');
+  if (metrics.cards.some(card => card.bodyCount > 1 || (!card.collapsed && (card.bodyCount !== 1 || !card.body || !Number.isFinite(card.body.height) || card.body.height <= 0)))) failures.push('expanded Card owned body geometry');
+  if (metrics.cards.some(card => !card.collapsed && card.header && (!Number.isFinite(card.header.height) || card.header.height <= 0 || !Number.isFinite(card.headerBodyGap)))) failures.push('expanded Card header/body geometry');
   if (metrics.cards.some(card => ['grid','inline-grid'].includes(card.display) || (card.rowGap !== 'normal' && Number.parseFloat(card.rowGap) !== 0)
     || (card.headerBodyGap !== null && (!Number.isFinite(card.headerBodyGap) || Math.abs(card.headerBodyGap) > 1)))) failures.push('Card root spacing owned by official driver');
   for (let i=0; i<metrics.cards.length; i+=1) for (let j=i+1; j<metrics.cards.length; j+=1) {
@@ -797,7 +799,7 @@ async function detailStyleVisualScope(session, inspect) {
         const metrics = await page.evaluate(sections => {
           const root = document.querySelector('[data-detail-composition="official-standard-detail"]');
           const visible = node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
-          const rect = node => { const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}; };
+          const rect = node => { const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height}; };
           const containers = [...root.querySelectorAll('.native-container')].filter(visible);
           const expectedMatches = sections.expected.map(section => {
             const typed = containers.filter(node => (section.type === 'notebook' ? node.classList.contains('native-container--notebook') : node.classList.contains('native-container--group'))
@@ -822,7 +824,7 @@ async function detailStyleVisualScope(session, inspect) {
           const themeTokens={surface:getComputedStyle(probe).backgroundColor,text:getComputedStyle(probe).color};probe.remove();
           return {expectedCount:sections.expected.length, unknownVisibility:sections.unknown, expectedMatched:expectedMatches.every(nodes => nodes.length === 1 && cards.includes(nodes[0])) && new Set(expectedMatches.flat()).size === sections.expected.length,
             expectedSections:sections.expected,sectionMatches,themeTokens,
-            cards:cards.map(node=>{const style=getComputedStyle(node),header=node.querySelector(':scope > .t-card__header'),body=node.querySelector(':scope > .t-card__body');return {display:style.display,rowGap:style.rowGap,header:header ? rect(header) : null,body:body ? rect(body) : null,headerBodyGap:header&&body ? rect(body).top-rect(header).bottom : null,title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
+            cards:cards.map(node=>{const style=getComputedStyle(node),header=node.querySelector(':scope > .t-card__header'),bodies=[...node.querySelectorAll('.native-detail-card-body')].filter(body=>body.closest('.t-card')===node),body=bodies.length===1 ? bodies[0] : null;return {bodyCount:bodies.length,collapsed:node.getAttribute('data-collapsed')==='true',display:style.display,rowGap:style.rowGap,header:header ? rect(header) : null,body:body ? rect(body) : null,headerBodyGap:header&&body ? rect(body).top-rect(header).bottom : null,title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
               nested:Boolean(node.parentElement.closest('[data-detail-card="native-section"]')),rect:rect(node),background:style.backgroundColor,color:style.color};}),
             descriptions:descriptions.map(node=>({official:node.classList.contains('t-descriptions')&&node.getAttribute('data-semantic-component')==='ScDescriptions',owned:Boolean(node.closest('[data-detail-card="native-section"]'))})),
             facts, collectionInsideFacts:descriptions.some(node=>node.querySelector('[data-field-type="one2many"],[data-field-type="many2many"],[data-field-type="binary"]')),
