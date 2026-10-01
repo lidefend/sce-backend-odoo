@@ -1001,4 +1001,4 @@ verify.contract.form_field_policy.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.list_surface_structure.browser
 verify.frontend.list_surface_structure.browser: guard.prod.forbid
-	@node scripts/verify/frontend_list_surface_structure_browser.mjs
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser

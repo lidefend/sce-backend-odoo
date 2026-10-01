@@ -287,13 +287,39 @@ preflight() {
   echo "[acceptance.runtime.preflight] volumes db=$DB_DATA redis=$REDIS_DATA odoo=$ODOO_DATA"
 }
 
-load_profile
+# Exact existing standard-preview adapter inputs; checked before profile loading.
+validate_standard_list_surface_inputs() {
+  local key
+  for key in SC_ACCEPTANCE_RUNTIME_PROFILE SC_ACCEPTANCE_PROFILE; do
+    [[ -z "${!key:-}" || "${!key}" == local ]] || { echo "DENY: standard list requires local profile" >&2; return 2; }
+  done
+  for key in SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL SC_ACCEPTANCE_API_URL; do
+    [[ -z "${!key:-}" || "${!key}" == http://127.0.0.1:5180 ]] || { echo "DENY: standard list preview URL mismatch" >&2; return 2; }
+  done
+  for key in SC_ACCEPTANCE_DATABASE DB_NAME E2E_DB DB FRONTEND_ACCEPTANCE_DB; do
+    [[ -z "${!key:-}" || "${!key}" == sc_frontend_acceptance ]] || { echo "DENY: standard list database mismatch" >&2; return 2; }
+  done
+  [[ -z "${E2E_LOGIN:-}" || "$E2E_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_LOGIN:-}" || "$SC_ACCEPTANCE_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_OPERATION:-}" || "$SC_ACCEPTANCE_OPERATION" == readonly ]] || { echo "DENY: standard list is readonly" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_TARGET_MODE:-}" || "$SC_ACCEPTANCE_TARGET_MODE" == managed ]] || { echo "DENY: standard list uses managed preview" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_MANAGE_SERVICE:-}" || "$SC_ACCEPTANCE_MANAGE_SERVICE" == false ]] || { echo "DENY: standard list cannot manage services" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_STORAGE_STATE:-}" ]] || { echo "DENY: standard list requires fresh fixture login" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_BOOTSTRAP_SECRET:-}" ]] || { echo "DENY: standard list uses existing fixture password" >&2; return 2; }
+}
+# End standard list input validation.
+
 command="${1:-preflight}"
+if [[ "$command" == standard-list-surface-browser ]]; then
+  validate_standard_list_surface_inputs
+  standard_list_requested_password="${E2E_PASSWORD:-}"
+fi
+load_profile
 case "$command" in
   preflight)
     preflight
     ;;
-  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic)
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic)
     preflight
     validate_backend_resource_identity
     # Same unchanged-backend reuse rules as the preceding low-code batch.
@@ -370,6 +396,17 @@ PYPROBE
         [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
         python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" observed-identity >/dev/null
         node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
+        ;;
+      standard-list-surface-browser)
+        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ -z "$standard_list_requested_password" || "$standard_list_requested_password" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]] || { echo "DENY: standard list fixture password mismatch" >&2; exit 2; }
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
+          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
+          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+          SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_ROLE= SC_ACCEPTANCE_LOGIN=fixture_role_finance \
+          E2E_LOGIN=fixture_role_finance E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" SC_ACCEPTANCE_BOOTSTRAP_SECRET= \
+          node "$ROOT_DIR/scripts/verify/frontend_list_surface_structure_browser.mjs"
         ;;
       standard-page-browser)
         [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2

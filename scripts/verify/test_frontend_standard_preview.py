@@ -1231,3 +1231,121 @@ class PlanVersionDisplayProbeTest(unittest.TestCase):
             self.readback(self.actor, 101, 102, 'Marker')
         self.assertIn('ACL_DENIED', str(caught.exception))
         self.assertLessEqual(len(str(caught.exception)), 1231)
+
+
+class DetailStyleBrowserBoundaryTest(unittest.TestCase):
+    """Execute the browser tool's pure boundaries, without launching a browser."""
+    def run_js(self, body):
+        import subprocess
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        helper = source.split('// Bounded detail-style verification helpers', 1)[1].split('// End bounded detail-style verification helpers.', 1)[0]
+        helper = helper[helper.index('function detailStyleScopeIsolated'):]
+        completed = subprocess.run(['node', '--input-type=module', '-e', "import assert from 'node:assert/strict';\n" + helper + '\n' + body], text=True, capture_output=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_exact_readonly_scope_rejects_other_probes(self):
+        self.run_js("""
+const valid={TPL07_SCOPE:'style',TPL52_FAMILY:'detail'};
+assert.equal(detailStyleScopeIsolated(valid),true);
+for(const patch of [{TPL07_SCOPE:'approval-actions'},{TPL52_FAMILY:'all'},{TPL07_REPORT_SAVE_SUCCESS:'1'},{TPL07_PAYMENT_SOURCE_FLOW:'rental'},{TPL52_UNKNOWN:'x'}]) assert.equal(detailStyleScopeIsolated({...valid,...patch}),false);
+""")
+
+    def test_relation_requires_explicit_authority_and_nonempty_identity(self):
+        self.run_js("""
+const field={type:'field',name:'project_id',fieldInfo:{relation_entry:{can_read:true,can_open:true,model:'project.project',menu_id:12,action_id:34}}};
+const authority={mainData:{project_id:[10,'Project']},layout:{containerTree:[{children:[field]}]}};
+assert.equal(detailRelationCandidates(authority).length,1);
+for(const patch of [{can_open:false},{can_read:false},{menu_id:0},{action_id:'34'},{model:'bad/model'}]){const copy=structuredClone(authority);Object.assign(copy.layout.containerTree[0].children[0].fieldInfo.relation_entry,patch);assert.equal(detailRelationCandidates(copy).length,0);}
+for(const value of [false,[],[0,'Name'],[10,''],[true,'Name']]) assert.equal(detailRelationCandidates({...authority,mainData:{project_id:value}}).length,0);
+""")
+
+    def test_expected_sections_use_contract_boolean_visibility_and_card_ancestry(self):
+        self.run_js("""
+const authority={containers:[{containerId:'outer',visible:true},{containerId:'hidden',visible:false},{containerId:'book',visible:true}],layout:{containerTree:[{type:'sheet',children:[{type:'group',containerId:'outer',title:'Outer',children:[{type:'group',containerId:'inner',title:'Inner'}]},{type:'group',containerId:'hidden',title:'Hidden'},{type:'notebook',containerId:'book'}]}]}};
+assert.deepEqual(detailExpectedSections(authority).expected.map(row=>row.id),['outer','book']);
+assert.deepEqual(detailExpectedSections(authority).unknown,[]);
+authority.containers=[];assert.equal(detailExpectedSections(authority).unknown.length,3);
+""")
+
+    def test_horizontal_geometry_and_missing_whole_section_fail_closed(self):
+        self.run_js("""
+const metrics={cards:[{official:true,nested:false,rect:{left:0,right:300,top:0,bottom:100}},{official:true,nested:false,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],collectionInsideFacts:false,contained:true};
+assert.deepEqual(detailGeometryFailures(metrics),[]);
+for(const patch of [{expectedCount:3},{expectedMatched:false},{unknownVisibility:['missing']},{collectionInsideFacts:true},{contained:false},{facts:[]},{descriptions:[{official:false,owned:true}]}]) assert.ok(detailGeometryFailures({...metrics,...patch}).length);
+for(const change of [m=>m.cards[1].rect.top=90,m=>m.cards[0].nested=true,m=>m.facts[0].label=null,m=>m.facts[0].value={left:0,right:90,top:40,bottom:60}]){const m=structuredClone(metrics);change(m);assert.ok(detailGeometryFailures(m).length);}
+""")
+
+    def test_real_theme_and_navigation_wiring_preserves_write_denial(self):
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        scope = source.split('async function detailStyleVisualScope', 1)[1].split('async function styleScope', 1)[0]
+        self.assertIn("page.locator('.theme-switch:visible').click()", scope)
+        self.assertNotIn("setAttribute('data-sc-theme", scope)
+        self.assertIn('light.background!==dark.background&&light.color!==dark.color', scope)
+        self.assertIn('metrics.cards.every(card=>card.background===metrics.themeTokens.surface&&card.color===metrics.themeTokens.text)', scope)
+        self.assertIn('await setTheme(initialTheme.mode)', scope)
+        self.assertIn('previous?.target.contractResponseIndex ?? -1', scope)
+        self.assertIn('await page.goBack()', scope)
+        self.assertIn("node.getAttribute('data-section-source-identity')===section.id", scope)
+        self.assertIn("!node.getAttribute('data-section-source-identity')", scope)
+        self.assertIn('unique-title-and-type-fallback', scope)
+        self.assertIn("report.detailVisual.relations.push({ name, status: 'not_run'", scope)
+        self.assertIn("detailStyleScopeIsolated(process.env)) && ['execute_button', 'contract.action', 'file.upload']", source)
+
+
+class StandardListSurfaceAdapterTest(unittest.TestCase):
+    def execute_adapter(self, overrides=None, identity_passes=True, backend_passes=True):
+        import subprocess
+        source = Path('scripts/dev/frontend_acceptance_runtime.sh').read_text()
+        self.assertNotIn('\nload_profile\n', source.split('# Exact existing standard-preview adapter inputs;', 1)[0])
+        helper = source.split('# Exact existing standard-preview adapter inputs;', 1)[1].split('# End standard list input validation.', 1)[0]
+        helper = helper[helper.index('validate_standard_list_surface_inputs()'):]
+        dispatch = source.split('command="${1:-preflight}"', 1)[1].split('  standard-list-lowcode)', 1)[0]
+        mocks = r'''
+set -euo pipefail
+ROOT_DIR=/fixture
+PROFILE=local
+BACKEND_ACCEPTANCE_NAME=fixture
+load_profile(){ echo profile >&2; DB_NAME=sc_frontend_acceptance; BASE_URL=http://127.0.0.1:5175; SC_ACCEPTANCE_FIXTURE_PASSWORD=synthetic-test-secret; }
+preflight(){ echo preflight >&2; DB_NAME=sc_frontend_acceptance; SC_ACCEPTANCE_FIXTURE_PASSWORD=synthetic-test-secret; }
+validate_backend_resource_identity(){ echo backend >&2; BACKEND_RESULT; }
+container_env_value(){ if [[ "$2" == SC_SOURCE_REVISION ]]; then printf '%040d' 0; else printf '%040d\n' 0 | sha256sum | cut -d' ' -f1; fi; }
+git(){ return 0; }
+python3(){ [[ "$2" == identity ]]; echo identity >&2; IDENTITY_RESULT; }
+node(){
+ [[ "$1" == /fixture/scripts/verify/frontend_list_surface_structure_browser.mjs ]]
+ [[ "$SC_ACCEPTANCE_PROFILE" == local && "$SC_ACCEPTANCE_FRONTEND_URL" == http://127.0.0.1:5180 && "$BASE_URL" == "$SC_ACCEPTANCE_FRONTEND_URL" ]]
+ [[ "$SC_ACCEPTANCE_DATABASE" == sc_frontend_acceptance && "$E2E_LOGIN" == fixture_role_finance && "$E2E_PASSWORD" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]]
+ [[ "$SC_ACCEPTANCE_OPERATION" == readonly && "$SC_ACCEPTANCE_MANAGE_SERVICE" == false && -z "$SC_ACCEPTANCE_BOOTSTRAP_SECRET" ]]
+ echo browser >&2
+}
+'''.replace('BACKEND_RESULT', 'return 0' if backend_passes else 'return 2').replace('IDENTITY_RESULT', 'return 0' if identity_passes else 'return 2')
+        env = {'PATH': os.environ['PATH'], **(overrides or {})}
+        return subprocess.run(['bash', '-c', mocks + helper + '\ncommand=standard-list-surface-browser\n' + dispatch + '\nesac\n'], env=env, capture_output=True, text=True)
+
+    def test_registered_adapter_binds_preview_and_keeps_gate_order(self):
+        result = self.execute_adapter()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr.splitlines(), ['profile', 'preflight', 'backend', 'identity', 'browser'])
+        make = Path('make/frontend.mk').read_text()
+        target = make.split('verify.frontend.list_surface_structure.browser: guard.prod.forbid', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('frontend_acceptance_operation_entry.sh standard-list-surface-browser', target)
+        self.assertNotIn('@node ', target)
+
+    def test_conflicting_profiles_urls_databases_and_actor_fail_before_preflight(self):
+        for override in [{'SC_ACCEPTANCE_PROFILE':'production'}, {'SC_ACCEPTANCE_RUNTIME_PROFILE':'daily'}, {'BASE_URL':'http://127.0.0.1:5175'},
+                         {'SC_ACCEPTANCE_API_URL':'http://elsewhere'}, {'DB_NAME':'sc_dev_demo'}, {'E2E_LOGIN':'admin'}, {'SC_ACCEPTANCE_OPERATION':'isolated-write'},
+                         {'SC_ACCEPTANCE_BOOTSTRAP_SECRET':'unexpected'}, {'SC_ACCEPTANCE_MANAGE_SERVICE':'true'}, {'SC_ACCEPTANCE_STORAGE_STATE':'other-state'}]:
+            result = self.execute_adapter(override)
+            self.assertNotEqual(result.returncode, 0, override)
+            self.assertNotIn('\nprofile\n', '\n' + result.stderr)
+            self.assertNotIn('preflight', result.stderr)
+            self.assertNotIn('browser', result.stderr)
+
+    def test_wrong_password_or_failed_identity_never_starts_browser(self):
+        for result in [self.execute_adapter({'E2E_PASSWORD':'wrong'}), self.execute_adapter(identity_passes=False), self.execute_adapter(backend_passes=False)]:
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('browser', result.stderr)
+
+    def test_explicit_matching_inputs_and_password_are_accepted(self):
+        result = self.execute_adapter({'SC_ACCEPTANCE_PROFILE':'local','BASE_URL':'http://127.0.0.1:5180','E2E_DB':'sc_frontend_acceptance','E2E_PASSWORD':'synthetic-test-secret'})
+        self.assertEqual(result.returncode, 0, result.stderr)

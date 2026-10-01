@@ -42,12 +42,69 @@ function findSavedSearchAuthority(node, depth = 0) {
   }
   return null;
 }
+// Bounded detail-style verification helpers (pure; exercised by preview tests).
+function detailStyleScopeIsolated(env) {
+  return env.TPL07_SCOPE === 'style' && env.TPL52_FAMILY === 'detail'
+    && !Object.entries(env).some(([key, value]) => /^(TPL07_|TPL52_)/.test(key)
+      && !['TPL07_SCOPE', 'TPL52_FAMILY'].includes(key) && value && value !== '0');
+}
+function detailRelationCandidates(authority) {
+  const found = [];
+  const walk = (nodes) => { for (const node of nodes || []) {
+    const entry = node.fieldInfo?.relation_entry, value = authority.mainData?.[node.name];
+    if (node.type === 'field' && entry?.can_read === true && entry.can_open === true
+      && typeof entry.model === 'string' && /^[a-zA-Z0-9_.]+$/.test(entry.model)
+      && Number.isSafeInteger(entry.menu_id) && entry.menu_id > 0
+      && Number.isSafeInteger(entry.action_id) && entry.action_id > 0
+      && Array.isArray(value) && Number.isSafeInteger(value[0]) && value[0] > 0
+      && typeof value[1] === 'string' && value[1].trim()
+      && !found.some(row => row.field === node.name)) found.push({ field: node.name, entry, id: value[0], label: value[1] });
+    walk(node.children);
+  } };
+  walk(authority.layout?.containerTree);
+  return found;
+}
+function detailExpectedSections(authority) {
+  const expected = [], unknown = [];
+  const statuses = new Map((authority.containers || []).map(row => [row.containerId, row]));
+  const walk = nodes => { for (const node of nodes || []) {
+    if (node.type === 'field') continue;
+    const status = statuses.get(node.containerId);
+    if (node.visible === false || status?.visible === false) continue;
+    const raw = String(node.title || node.string || node.label || node.semanticTitle || '').trim();
+    const title = raw && !['group','page','notebook','sheet','container','header','footer'].includes(raw.toLowerCase())
+      && !(/^[a-z][a-z0-9_:. -]*$/i.test(raw) && /[_:.]/.test(raw)) ? raw : '';
+    if ((node.type === 'group' && title) || node.type === 'notebook') {
+      if (status?.visible !== true) unknown.push(node.containerId || node.type);
+      expected.push({id:node.containerId,title:node.type === 'notebook' ? '' : title,type:node.type,locator:node.nativeLocator});
+    } else walk(node.children);
+  } };
+  walk(authority.layout?.containerTree);
+  return {expected,unknown};
+}
+function detailGeometryFailures(metrics) {
+  const failures = [];
+  if (metrics.unknownVisibility?.length) failures.push('section visibility authority');
+  if (metrics.cards.length < 2 || metrics.expectedCount !== metrics.cards.length || !metrics.expectedMatched) failures.push('independent section/card coverage');
+  if (metrics.cards.some(card => !card.official || card.nested)) failures.push('official nonnested Cards');
+  for (let i=0; i<metrics.cards.length; i+=1) for (let j=i+1; j<metrics.cards.length; j+=1) {
+    const a=metrics.cards[i].rect, b=metrics.cards[j].rect;
+    if (Math.max(b.top-a.bottom,a.top-b.bottom,b.left-a.right,a.left-b.right) <= 0) failures.push('positive card spacing');
+  }
+  if (!metrics.descriptions.length || metrics.descriptions.some(row => !row.official || !row.owned)) failures.push('official Descriptions owner');
+  if (!metrics.facts.length || metrics.facts.some(row => !row.label || !row.value
+    || row.label.right > row.value.left + 1 || Math.min(row.label.bottom,row.value.bottom) <= Math.max(row.label.top,row.value.top))) failures.push('horizontal label/value cells');
+  if (metrics.collectionInsideFacts) failures.push('collection outside Descriptions');
+  if (!metrics.contained) failures.push('page containment');
+  return [...new Set(failures)];
+}
+// End bounded detail-style verification helpers.
 function findRecordAuthority(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 14) return null;
   if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
     return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
       deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData,
-      ...(['task-authority', 'approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract } : {}) };
+      ...(['task-authority', 'approval-actions', 'expense-policy', 'style'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract, containers: node.statusContract.containerStatus } : {}) };
   }
   for (const value of Object.values(node)) {
     const found = findRecordAuthority(value, depth + 1);
@@ -55,6 +112,7 @@ function findRecordAuthority(node, depth = 0) {
   }
   return null;
 }
+if (process.env.TPL07_SCOPE === 'style' && process.env.TPL52_FAMILY === 'detail') assert.ok(detailStyleScopeIsolated(process.env), 'detail style scope cannot combine probes or writes');
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
@@ -147,7 +205,7 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
-    if (process.env.TPL07_SCOPE === 'scene-entry' && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent)) {
+    if ((process.env.TPL07_SCOPE === 'scene-entry' || detailStyleScopeIsolated(process.env)) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, reason: 'scene entry scope is read-only' });
       return route.abort();
     }
@@ -438,7 +496,7 @@ async function login(role) {
             if (Array.isArray(nav)) nav.forEach(visit);
             report.planConfigurationNavigation = { type: Array.isArray(nav) ? 'array' : typeof nav, matches };
           }
-          if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) report.routeAuthority = result.data?.navigation?.route_authority;
+          if (['approval-actions', 'expense-policy', 'style'].includes(process.env.TPL07_SCOPE)) report.routeAuthority = result.data?.navigation?.route_authority;
         }
       }
       if (body?.intent === 'api.data' && body.params?.op === 'list') {
@@ -447,9 +505,9 @@ async function login(role) {
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
-        if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) {
+        if (['approval-actions', 'expense-policy', 'style'].includes(process.env.TPL07_SCOPE)) {
           report.contractResponses ??= [];
-          report.contractResponses.push({ intent: body.intent, model: body.params?.model, contract });
+          report.contractResponses.push({ intent: body.intent, model: body.params?.model, contract, ...(process.env.TPL07_SCOPE === 'style' ? {role,request:body.params} : {}) });
         }
         if (contract.meta?.projection_cache) {
           report.projectionCaches ??= [];
@@ -645,6 +703,156 @@ async function navigationScope() {
   await finance.ctx.close();
 }
 
+async function detailStyleVisualScope(session, inspect) {
+  const page = session.page;
+  const sourcePath = '/r/payment.request/1813?menu_id=545&action_id=775';
+  const themeState = () => page.evaluate(() => ({ mode: document.documentElement.getAttribute('data-sc-theme-mode'),
+    resolved: document.documentElement.getAttribute('data-sc-theme-resolved'), stored: localStorage.getItem('sc_theme') }));
+  const initialTheme = await themeState();
+  report.detailVisual = { initialTheme, samples: [], relations: [] };
+  async function setTheme(mode) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (let attempt=0; attempt<3; attempt+=1) {
+      if ((await themeState()).mode === mode && (await themeState()).stored === mode) break;
+      await page.locator('.theme-switch:visible').click();
+    }
+    await page.waitForFunction(mode => document.documentElement.getAttribute('data-sc-theme-mode') === mode
+      && localStorage.getItem('sc_theme') === mode && document.documentElement.getAttribute('data-sc-theme-resolved')
+        === (mode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode), mode);
+  }
+  async function relationRoundTrip(authority, name) {
+    const source = page.locator('[data-detail-composition="official-standard-detail"][data-form-model="payment.request"][data-form-record="1813"][data-state="ok"]');
+    const actionsSnapshot = () => source.locator('[data-action-key]').evaluateAll(nodes => nodes.map(node => ({
+      key: node.getAttribute('data-action-key'), label: node.textContent.trim(), enabled: node.getAttribute('data-action-enabled'),
+      allowed: node.getAttribute('data-action-allowed'), disabled: node.hasAttribute('disabled'),
+    })));
+    const beforeActions = await actionsSnapshot();
+    check(`${name}: source action identity available`, beforeActions.length > 0);
+    const candidates = detailRelationCandidates(authority);
+    let chosen;
+    for (const candidate of candidates) {
+      const controls = source.locator(`[data-field-name="${candidate.field}"] button:visible`).filter({ hasText: candidate.label });
+      if (await controls.count() === 1 && await controls.isEnabled()) { chosen = { ...candidate, control: controls }; break; }
+    }
+    if (!chosen) report.detailVisual.relations.push({ name, status: 'not_run', reason: 'no visible nonempty declared can_read/can_open relation' });
+    check(`${name}: qualified relation entry prerequisite`, Boolean(chosen));
+    const originUrl = page.url(), origin = new URL(originUrl);
+    const responseStart = (report.contractResponses || []).length;
+    await chosen.control.click();
+    await page.waitForURL(url => url.pathname.endsWith(`/${chosen.entry.model}/${chosen.id}`), {timeout:30000});
+    await page.locator(`[data-form-model="${chosen.entry.model}"][data-form-record="${chosen.id}"][data-state="ok"]`).waitFor();
+    // Navigation may reuse an already observed ui.contract for this exact identity.
+    // DOM must still enter that target; direct API reads cannot satisfy this check.
+    const contracts = report.contractResponses || [];
+    const matches = row => {const current=findRecordAuthority(row.contract);return row.role==='fixture_role_finance'&&current?.model===chosen.entry.model&&current.mainData?.id===chosen.id;};
+    let contractResponseIndex = contracts.findLastIndex((row,index)=>index>=responseStart&&matches(row));
+    const contractObservation = contractResponseIndex >= 0 ? 'navigation-response' : 'same-session-cache';
+    if (contractResponseIndex < 0) {
+      const previous=report.detailVisual.relations.find(row=>row.status==='passed'&&row.target.model===chosen.entry.model&&row.target.id===chosen.id
+        &&row.target.entry.menu_id===chosen.entry.menu_id&&row.target.entry.action_id===chosen.entry.action_id);
+      contractResponseIndex=previous?.target.contractResponseIndex ?? -1;
+    }
+    const target = contractResponseIndex >= 0 && matches(contracts[contractResponseIndex]) ? findRecordAuthority(contracts[contractResponseIndex].contract) : null;
+    check(`${name}: clicked target has exact same-session ui.contract authority`, Boolean(target));
+    const targetUrl = new URL(page.url());
+    check(`${name}: relation declared menu/action`, Number(targetUrl.searchParams.get('menu_id')) === chosen.entry.menu_id
+      && Number(targetUrl.searchParams.get('action_id')) === chosen.entry.action_id);
+    check(`${name}: relation exact return context`, decodeURIComponent(targetUrl.searchParams.get('return_url') || '') === `${origin.pathname}${origin.search}`
+      && targetUrl.searchParams.get('return_model') === 'payment.request' && targetUrl.searchParams.get('return_field') === chosen.field);
+    const targetProfile = target.status?.effectiveRenderProfile;
+    check(`${name}: relation target authoritative identity/profile`, target.model === chosen.entry.model && target.mainData.id === chosen.id
+      && ['readonly', 'edit', 'form'].includes(targetProfile));
+    await page.locator(targetProfile === 'readonly' ? '[data-detail-composition="official-standard-detail"][data-state="ok"]'
+      : '[data-form-composition="official-standard-form"][data-state="ok"]').waitFor();
+    check(`${name}: relation target renders declared fields`, await page.locator('[data-field-fail-closed]').count() === 0);
+    await page.goBack();
+    await page.waitForURL(originUrl);
+    await source.waitFor();
+    await source.locator(`[data-field-name="${chosen.field}"] button:visible`).filter({hasText: chosen.label}).waitFor();
+    check(`${name}: exact readonly source restored`, page.url() === originUrl && await source.count() === 1
+      && await source.locator('[data-semantic-component="ContractFormProductHeader"][data-state="readonly"]').count() === 1);
+    check(`${name}: source action/label restoration`, JSON.stringify(await actionsSnapshot()) === JSON.stringify(beforeActions));
+    report.detailVisual.relations.push({name,status:'passed',field:chosen.field,label:chosen.label,source:{url:originUrl,model:'payment.request',id:1813,profile:'readonly',actions:beforeActions},
+      target:{contractObservation,contractResponseIndex,url:targetUrl.href,model:target.model,id:target.mainData.id,profile:targetProfile,entry:chosen.entry}});
+  }
+  try {
+    const routeAuthority = report.routeAuthority;
+    check('detail visual: exact ordinary finance/company authority', routeAuthority?.principal_scope?.user_id === 30 && routeAuthority.principal_scope.company_id === 8);
+    const entries = ['primary_actions','contextual_actions','role_home_actions'].flatMap(key => routeAuthority[key] || []);
+    check('detail visual: published source menu/action authority', entries.some(entry => Number(entry.menu_id) === 545 && Number(entry.action_id) === 775));
+    for (const theme of ['light','dark']) {
+      await setTheme(theme);
+      for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
+        await page.setViewportSize(viewport);
+        const name = `detail-${theme}-${viewport.width}`;
+        await list(page, 545, `style-list-${theme}-${viewport.width}`);
+        await inspect(`shell-${theme}-${viewport.width}`, '.product-page-header h1', ['24px','600','32px']);
+        await form(page, sourcePath, `style-${name}`, 'readonly');
+        const authority = report.recordAuthority;
+        check(`${name}: record/company identity`, authority?.model === 'payment.request' && authority.mainData?.id === 1813 && authority.mainData.company_id?.[0] === 8);
+        check(`${name}: real theme persisted through navigation`, JSON.stringify(await themeState()) === JSON.stringify({mode:theme,resolved:theme,stored:theme}));
+        const sections = detailExpectedSections(authority);
+        const metrics = await page.evaluate(sections => {
+          const root = document.querySelector('[data-detail-composition="official-standard-detail"]');
+          const visible = node => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
+          const rect = node => { const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}; };
+          const containers = [...root.querySelectorAll('.native-container')].filter(visible);
+          const expectedMatches = sections.expected.map(section => {
+            const typed = containers.filter(node => (section.type === 'notebook' ? node.classList.contains('native-container--notebook') : node.classList.contains('native-container--group'))
+              && !node.parentElement.closest('[data-detail-card="native-section"]'));
+            const byIdentity=typed.filter(node=>node.getAttribute('data-section-source-identity')===section.id);
+            if (byIdentity.length) return byIdentity;
+            const byTitle=typed.filter(node=>section.type === 'notebook' || node.getAttribute('data-group-title')===section.title);
+            return byTitle.every(node=>!node.getAttribute('data-section-source-identity')) ? byTitle : [];
+          });
+          const sectionMatches=sections.expected.map((section,index)=>({expectedId:section.id,title:section.title,
+            matching:expectedMatches[index].map(node=>({sourceIdentity:node.getAttribute('data-section-source-identity')||null,
+              basis:node.getAttribute('data-section-source-identity') ? 'contract-container-identity' : 'unique-title-and-type-fallback'}))}));
+          const cards = [...root.querySelectorAll('[data-detail-card="native-section"]')].filter(visible);
+          const descriptions = [...root.querySelectorAll('[data-detail-facts="official-standard-detail"]')].filter(visible);
+          const facts = descriptions.flatMap(node => [...node.querySelectorAll('.detail-fact-value')].filter(value => visible(value)
+            && value.textContent.trim() && !['one2many','many2many','binary','html'].includes(value.getAttribute('data-field-type'))).map(value => {
+              const content = value.closest('.t-descriptions__content'), label = content?.previousElementSibling;
+              return {field:value.getAttribute('data-field-name'),text:value.textContent.trim(),labelText:label?.textContent.trim(),
+                label:label?.classList.contains('t-descriptions__label') ? rect(label) : null,value:content ? rect(content) : null};
+            }));
+          const probe=document.createElement('span');probe.style.backgroundColor='var(--td-bg-color-container)';probe.style.color='var(--td-text-color-primary)';document.body.append(probe);
+          const themeTokens={surface:getComputedStyle(probe).backgroundColor,text:getComputedStyle(probe).color};probe.remove();
+          return {expectedCount:sections.expected.length, unknownVisibility:sections.unknown, expectedMatched:expectedMatches.every(nodes => nodes.length === 1 && cards.includes(nodes[0])) && new Set(expectedMatches.flat()).size === sections.expected.length,
+            expectedSections:sections.expected,sectionMatches,themeTokens,
+            cards:cards.map(node=>({title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
+              nested:Boolean(node.parentElement.closest('[data-detail-card="native-section"]')),rect:rect(node),background:getComputedStyle(node).backgroundColor,color:getComputedStyle(node).color})),
+            descriptions:descriptions.map(node=>({official:node.classList.contains('t-descriptions')&&node.getAttribute('data-semantic-component')==='ScDescriptions',owned:Boolean(node.closest('[data-detail-card="native-section"]'))})),
+            facts, collectionInsideFacts:descriptions.some(node=>node.querySelector('[data-field-type="one2many"],[data-field-type="many2many"],[data-field-type="binary"]')),
+            contained:document.documentElement.scrollWidth<=innerWidth+1, bodyBackground:getComputedStyle(document.body).backgroundColor,bodyColor:getComputedStyle(document.body).color};
+        }, sections);
+        report.detailVisual.samples.push({name,theme,width:viewport.width,metrics});
+        check(`${name}: official independent cards and horizontal facts`, detailGeometryFailures(metrics).length === 0, {failures:detailGeometryFailures(metrics)});
+        check(`${name}: actual Card surface/text follow active theme tokens`, metrics.cards.every(card=>card.background===metrics.themeTokens.surface&&card.color===metrics.themeTokens.text));
+        await inspect(name, '.product-page-header h1', ['24px','600','32px']);
+        await relationRoundTrip(authority,name);
+        await page.screenshot({animations:'disabled',path:path.join(out,`${name}-relation-return.png`),fullPage:true});
+      }
+    }
+    for (const width of [1440,390]) {
+      const [light,dark]=['light','dark'].map(theme=>report.detailVisual.samples.find(row=>row.theme===theme&&row.width===width).metrics.cards[0]);
+      check(`detail-${width}: actual dark surface and text differ from light`,light.background!==dark.background&&light.color!==dark.color);
+    }
+    check('detail visual: no write or page errors', report.forbiddenWrites.length === 0 && report.errors.length === 0);
+  } catch (error) {
+    report.detailVisual.failure={url:page.url(),message:error.message,text:(await page.locator('body').innerText()).slice(0,8000)};
+    await page.screenshot({animations:'disabled',path:path.join(out,'detail-visual-failure.png'),fullPage:true});
+    throw error;
+  } finally {
+    try {
+      await setTheme(initialTheme.mode);
+      if (initialTheme.stored === null) await page.evaluate(() => localStorage.removeItem('sc_theme'));
+      const restored = await themeState(); report.detailVisual.restoredTheme = restored;
+      check('detail visual: original theme restored', restored.mode === initialTheme.mode && restored.resolved === initialTheme.resolved && restored.stored === initialTheme.stored);
+    } finally { await session.ctx.close(); }
+  }
+}
+
 async function styleScope() {
   const family = process.env.TPL52_FAMILY || 'all';
   assert.ok(['all', 'shell', 'collection', 'detail', 'form', 'overlay'].includes(family), 'known style family');
@@ -689,6 +897,7 @@ async function styleScope() {
     check(`${name}: page contained`, result.contained);
     await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`), fullPage: true });
   }
+  if (family === 'detail') return detailStyleVisualScope(finance, inspect);
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     if (family !== 'overlay') {
@@ -3373,7 +3582,7 @@ try {
 } catch (error) {
   report.status = 'failed';
   report.error = error.message;
-  if (['approval-actions', 'expense-policy', 'scene-entry'].includes(process.env.TPL07_SCOPE)) {
+  if (['approval-actions', 'expense-policy', 'scene-entry', 'style'].includes(process.env.TPL07_SCOPE)) {
     report.failurePages = [];
     for (const ctx of browser.contexts()) for (const page of ctx.pages()) {
       report.failurePages.push({ url: page.url(), text: (await page.locator('body').innerText()).slice(0, 8000),
