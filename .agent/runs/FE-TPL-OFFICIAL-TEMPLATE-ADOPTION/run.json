@@ -920,7 +920,7 @@
     "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Freeze metadata-aligned clean candidate; one exact-head Quick; bind GitHub base review/archive, make pr.push and protected GitHub PR required checks/merge. No Gitee PR or deployment.",
+  "next_exact_step": "Root receive final C P4 review, freeze.prepare and exact candidate commit/Quick as selected Github lane, then publish and inspect current-head required checks. No deployment.",
   "completion": {
     "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
@@ -3774,6 +3774,132 @@
         }
       ],
       "coverage_limit": "Manifest XML carrier/default and noupdate declarations tested without ORM; real loader upgrade remains root-owned pending. Payment seed unchanged. No A DB write."
+    },
+    "remote_frontend_parser_recovery": {
+      "layer": "P4",
+      "owner": "primitive adapter CSS verifier",
+      "source_head": "b485a84de749ef267e7d6c2a46a3e73239a32e36",
+      "scope": [
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_primitive_adapter_guard.py",
+        "scripts/verify/test_frontend_state_presentation_guard.py"
+      ],
+      "reason": "CSS comment text enters selector and false-matches native input; no product repaint found",
+      "plan": "Strip CSS comments preserving quoted strings before chrome rule parsing; keep all selector/property prohibitions and no path exceptions",
+      "validation": "ci.local.iteration then primitive_adapter.unit then existing pnpm -C frontend/apps/web test standard suite; no Quick/build/runtime/DB",
+      "reuse": "Product source/build/runtime unchanged; parser target and standard frontend suite invalidated only",
+      "status": "P4_fixes_L1_and_affected_standard_checks_passed",
+      "sibling_failure": {
+        "owner": "P4 negative injection target",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-standard-suite.log",
+        "status": "failed",
+        "reason": "test replaced first sync watcher, now relation invalidation rather than dirty publication. Production dirty guard is correct. Exact unique publication mutation replaces blanket first-sync mutation."
+      },
+      "validation_reuse": "First six standard targets except failed state_dashboard already passed in standard-suite log; after test-only correction rerun L1 and state_dashboard only. Remaining 7 independent targets collected with make -k, no retry of unchanged failure.",
+      "results": [
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-iteration.log"
+        },
+        {
+          "command": "make verify.frontend.primitive_adapter.unit",
+          "status": "passed",
+          "layer": "L2",
+          "counts": {
+            "components": 46,
+            "event_cases": 11,
+            "python_tests": 39
+          },
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-unit.log"
+        },
+        {
+          "command": "pnpm -C frontend/apps/web test",
+          "status": "failed",
+          "layer": "L2",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-standard-suite.log",
+          "owner": "P4 negative injection test",
+          "failure": "24 Python state/dashboard tests, 1 negative changed wrong watcher. Independent earlier targets passed and retained."
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "layer": "L1",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-iteration-final.log"
+        },
+        {
+          "command": "make verify.frontend.state_dashboard.unit",
+          "status": "passed",
+          "layer": "L2",
+          "counts": {
+            "python_tests": 25,
+            "js_cases": 53
+          },
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-state-dashboard-fixed.log"
+        },
+        {
+          "command": "make -k verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit",
+          "status": "passed_for_executed_checks",
+          "layer": "L2",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-standard-siblings.log",
+          "counts": {
+            "boq_mount": 22,
+            "boq_request": 27,
+            "boq_python": 10,
+            "chart_mount": 19,
+            "chart_request": 37,
+            "mobile_python": 7,
+            "intent_identity": 28,
+            "row_identity": 6,
+            "coalescing_reported_metrics": {
+              "coalesced": 1,
+              "distinct_keys": 3,
+              "paging": 2,
+              "ordering": 1,
+              "retry_after_failure": 1
+            }
+          },
+          "boundary": "professional.extensions grammar static PASS only; declared extension list empty targets=0, no extension nonzero-test claim. Extension test portion not_run/not applicable to this parser-only change."
+        }
+      ],
+      "standard_suite_coverage": {
+        "status": "passed_by_composed_scoped_recovery",
+        "front_segment_log": "artifacts/frontend-web-fix-20260928/final-integration/primitive-parser-standard-suite.log",
+        "front_segment_counts": {
+          "official_icon_semantic": 49,
+          "official_icon_python": 6,
+          "global_capability": 31,
+          "driver_python": 13,
+          "primitive_components": 46,
+          "primitive_event_cases": 11,
+          "primitive_python": 39,
+          "grid_mount": 29,
+          "scene_total_cases": 59,
+          "scene_python": [
+            12,
+            12,
+            4
+          ],
+          "navigation_model": 12,
+          "navigation_python": [
+            42,
+            3,
+            19
+          ]
+        },
+        "recovery": "Exact publication negative fixed in test only; state_dashboard rerun passed. Seven remaining independent targets completed with make -k. Earlier successful targets inputs unchanged; not rerun full suite for reassurance. Static-only empty extension hook never counted as tests."
+      },
+      "remote_snapshot": {
+        "head": "b485a84de749ef267e7d6c2a46a3e73239a32e36",
+        "public_guard": "passed",
+        "merge_policy_gate": "passed",
+        "frontend_release_gate": "failed",
+        "professional_quality_gate": "pending",
+        "source": "root platform observation; not checked by A"
+      },
+      "invalidation": "New P4 candidate requires root freeze/review and current-head remote checks. b485 remote successes and prior Quick are historical and not transferred. Product runtime/build inputs unchanged so no rebuild/browser needed for these P4-only changes.",
+      "writer": "root; A returned sole writer after targeted checks; no A commit/remote/runtime"
     }
   },
   "validation_cadence_correction": {

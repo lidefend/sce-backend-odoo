@@ -9,6 +9,7 @@ from scripts.verify.frontend_primitive_adapter_guard import (
     P3_CONSUMER_CHROME_EXEMPTION,
     PRIMITIVES,
     consumer_chrome_exempt,
+    css_without_comments,
     direct_root_visual_overrides,
     native_descendant_visual_overrides,
     validate,
@@ -329,6 +330,44 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
     def test_container_cannot_repaint_primitive_native_control(self) -> None:
         source = '<template><div class="legacy"><ScButton /></div></template><style>.legacy > button { width: 2rem; padding: 1rem; }</style>'
         self.assertEqual(native_descendant_visual_overrides(source), [".legacy > button"])
+
+    def test_shrink_layout_comment_is_not_a_native_selector(self) -> None:
+        source = '<template><div class="track"><ScInput /></div></template><style>/* text input must shrink */ .track :deep(.sc-input) { min-width: 0; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [])
+        self.assertEqual(direct_root_visual_overrides(source), [])
+        actual = Path('frontend/apps/web/src/components/product-list/ProductListHeader.vue').read_text()
+        self.assertEqual(native_descendant_visual_overrides(actual), [])
+
+    def test_commented_out_repaint_is_not_a_rule(self) -> None:
+        source = '<template><div class="legacy"><ScInput class="control" /></div></template><style>/* .legacy input { padding: 1rem; } .control { color: red; } */ .legacy { display: flex; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [])
+        self.assertEqual(direct_root_visual_overrides(source), [])
+
+    def test_comments_do_not_hide_real_native_repaint(self) -> None:
+        for css in ['/* input comment */ .legacy input { color: red; padding: 1rem; }',
+                    '.legacy /* comment */ input { /* reason */ min-width: 9rem; }',
+                    '.legacy input { /* reason */ width: 9rem; }']:
+            with self.subTest(css=css):
+                source = '<template><div class="legacy"><ScInput /></div></template><style>' + css + '</style>'
+                self.assertTrue(native_descendant_visual_overrides(source))
+
+    def test_comments_do_not_hide_root_or_deep_repaint(self) -> None:
+        source = '<template><ScInput class="control" /></template><style>/* why */ .control { /* reason */ color: red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ['control'])
+        root = self.make_root()
+        consumer = root / 'frontend/apps/web/src/pages/CommentedChrome.vue'
+        consumer.parent.mkdir(parents=True, exist_ok=True)
+        consumer.write_text('<style>/* why */ .legacy :deep(.sc-input) { /* reason */ border: 1px solid red; }</style>')
+        self.assertTrue(any('adapter appearance' in error for error in validate(root)))
+
+    def test_quoted_comment_marker_does_not_remove_later_rule(self) -> None:
+        css = '.hint::before { content: "/* not a comment */"; } .legacy input { color: red; }'
+        self.assertEqual(css_without_comments(css), css)
+        escaped = r'.hint { content: "escaped \" /* marker"; } .legacy input { padding: 1rem; }'
+        self.assertEqual(css_without_comments(escaped), escaped)
+        for value in (css, escaped):
+            source = '<template><div class="legacy"><ScInput /></div></template><style>' + value + '</style>'
+            self.assertTrue(native_descendant_visual_overrides(source))
 
     def write_p3_ownership(self, root: Path) -> None:
         ownership = root / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"

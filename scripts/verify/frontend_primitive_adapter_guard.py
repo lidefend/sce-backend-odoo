@@ -87,6 +87,16 @@ def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
     return set(owner.get("sources", [])), tuple(owner.get("prefixes", []))
 
 
+def css_without_comments(text: str) -> str:
+    """Remove comments before inspecting selectors/properties, preserving strings.
+
+    Quotes are consumed with escapes so a literal /* inside a CSS value cannot
+    swallow a later real rule. Comments contribute whitespace, never selectors.
+    """
+    token = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|/\*.*?(?:\*/|$)", re.DOTALL)
+    return token.sub(lambda match: " " if match.group().startswith("/*") else match.group(), text)
+
+
 def direct_root_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
     classes: set[str] = set()
     for tag in SC_ROOT_TAG.finditer(source_text):
@@ -99,7 +109,7 @@ def direct_root_visual_overrides(source_text: str, style_text: str | None = None
                 if value and value not in {"active", "selected", "disabled"} and not value.startswith("sc-"):
                     classes.add(value)
     findings = []
-    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+    for rule in STYLE_RULE.finditer(css_without_comments(style_text if style_text is not None else source_text)):
         if not VISUAL_CHROME_PROPERTY.search(rule.group("body")):
             continue
         selector = rule.group("selector")
@@ -119,7 +129,7 @@ def native_descendant_visual_overrides(source_text: str, style_text: str | None 
         if value and not value.startswith("sc-")
     }
     findings: list[str] = []
-    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+    for rule in STYLE_RULE.finditer(css_without_comments(style_text if style_text is not None else source_text)):
         selector = rule.group("selector")
         if "<style" in selector:
             selector = selector.rsplit("<style", 1)[1].split(">", 1)[-1]
@@ -218,7 +228,7 @@ def validate(root: Path = ROOT) -> list[str]:
                 continue
             if consumer_chrome_exempt(relative, p3_files, p3_prefixes):
                 continue
-            style_text = component_style_text(path, source_text)
+            style_text = css_without_comments(component_style_text(path, source_text))
             if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):
                 errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
             root_overrides = direct_root_visual_overrides(source_text, style_text)
