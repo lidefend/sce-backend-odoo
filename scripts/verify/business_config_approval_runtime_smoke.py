@@ -4445,7 +4445,7 @@ def _scene_entry_contract_checks():
                 "route_authority": {bucket: [row for row in entries if row.get("scene_key") == key
                     or row.get("entry_target", {}).get("scene_key") == key
                     or row.get("route") == "/s/" + key]
-                    for bucket, entries in result.data.get("route_authority", {}).items() if isinstance(entries, list)},
+                    for bucket, entries in result.data.get("navigation", {}).get("route_authority", {}).items() if isinstance(entries, list)},
                 "delivery_policy": result.data.get("nav_meta", {}).get("delivery_policy"),
                 "matched": [{"scene": row.get("scene"), "target": row.get("meta", {}).get("target")}
                             for row in matched]}, ensure_ascii=False, default=str))

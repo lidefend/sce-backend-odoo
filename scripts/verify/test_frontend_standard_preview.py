@@ -609,6 +609,7 @@ class SceneEntryRuntimeProbeTest(unittest.TestCase):
         base.__getitem__.return_value.sudo.return_value.search.side_effect = users
         handler = MagicMock()
         handler.return_value.handle.side_effect = [SimpleNamespace(ok=True, data={
+            'navigation': {'route_authority': {'primary_actions': [{'scene_key': key, 'action_id': 51}]}},
             'scene_ready_contract': {'scenes': [] if missing else [{'scene': {'key': key, 'title': 'Declared'},
                 'meta': {'target': {'intent': intent}}}]}})
             for key, intent in [('workspace.home', 'workspace.home.enter'),
@@ -617,8 +618,10 @@ class SceneEntryRuntimeProbeTest(unittest.TestCase):
         namespace = {'_env': lambda: base, 'SystemInitHandler': handler, 'json': json, 'load_scene_configs': lambda actor: []}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
         self.base, self.handler = base, handler
-        with patch('builtins.print'):
+        with patch('builtins.print') as output:
             namespace['_scene_entry_contract_checks']()
+        self.readbacks = [json.loads(call.args[0].split('=', 1)[1]) for call in output.call_args_list
+                          if call.args[0].startswith('SCENE_ENTRY_READBACK=')]
 
     def test_exact_role_scoped_readback_and_rollback(self):
         self.run_probe()
@@ -627,6 +630,12 @@ class SceneEntryRuntimeProbeTest(unittest.TestCase):
             self.assertEqual(call.kwargs['payload']['params']['scene_ready_mode'], 'full')
         self.base.cr.rollback.assert_called_once()
         self.base.cr.commit.assert_not_called()
+
+    def test_reads_canonical_navigation_authority(self):
+        self.run_probe()
+        self.assertEqual(len(self.readbacks), 3)
+        for row in self.readbacks:
+            self.assertEqual(row['route_authority']['primary_actions'], [{'scene_key': row['scene'], 'action_id': 51}])
 
     def test_missing_scene_fails_and_rolls_back(self):
         with self.assertRaises(AssertionError): self.run_probe(missing=True)
