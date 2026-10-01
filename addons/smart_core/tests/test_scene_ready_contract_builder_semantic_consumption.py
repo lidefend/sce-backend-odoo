@@ -77,6 +77,18 @@ target = _load_module(
 
 
 class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
+    def test_user_surface_keeps_entry_declarations_through_full_projection(self):
+        surface = _load_module("scene_entry_user_surface_test", CORE_DIR.parent /
+                               "utils/contract_governance_user_surface.py")
+        sanitized = surface.sanitize_scene_for_user({"code": "custom.scene", "name": "Declared",
+            "target": {"route": "/s/custom.scene", "intent": "custom.enter",
+                       "entry_intent": "custom.override", "debug_secret": "must-not-leak"}})
+        self.assertNotIn("debug_secret", sanitized["target"])
+        contract = target.build_scene_ready_contract(scenes=[sanitized], role_surface={})
+        projected = contract["scenes"][0]["meta"]["target"]
+        self.assertEqual(projected["intent"], "custom.enter")
+        self.assertEqual(projected["entry_intent"], "custom.override")
+
     def test_declared_entry_intent_survives_scene_ready_projection(self):
         for declaration in ({"intent": "custom.entry"}, {"entry_intent": "custom.override"}, {}):
             with self.subTest(declaration=declaration):

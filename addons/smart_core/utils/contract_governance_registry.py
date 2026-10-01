@@ -427,6 +427,8 @@ _USER_SCENE_KEYS = (
     "tags",
 )
 _USER_SCENE_TARGET_KEYS = (
+    "intent",
+    "entry_intent",
     "route",
     "action_id",
     "menu_id",
