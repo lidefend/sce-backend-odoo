@@ -1093,6 +1093,7 @@ const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
   validateSubmissionRequirements,
+  currentQuery: () => route.query,
   navigateCreatedRecord: (createdId, refreshPolicy, recovery) => navigateCreatedRecord({
     createdId, refreshPolicy, recovery,
     createdLabel: String(formData.display_name || formData.name || '').trim(),

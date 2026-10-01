@@ -378,6 +378,12 @@
       "kind": "offline",
       "inputs": [
         "frontend/apps/web/src/app/sceneMutationRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/relationActionOrigin.ts",
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/packages/schema/src/index.ts",
         "frontend/apps/web/scripts/create_record_user_journey_test.ts",
         "make/frontend.mk",
         "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts",

@@ -368,12 +368,14 @@ assert.deepEqual(editPayload, { title: 'Draft A revised' });
 
 const runtime = usePrimaryFormActionRuntime({
   actionId: () => 31,
+  currentQuery: () => ({ return_model: 'x.parent', return_record_id: '42', return_field: 'lines', return_action_id: '21', return_menu_id: '11' }),
   applyProjectionRefreshPolicy: async () => { events.push('refresh'); },
   busyKind: ref(null),
   confirmActionSafety: async () => { events.push('confirm'); return true; },
   errorMessage: ref(''),
   executeButtonRequest: async (request) => {
     events.push('submit');
+    assert.deepEqual(request.meta?.relation_origin, { model: 'x.parent', record_id: 42, field: 'lines', action_id: 21, menu_id: 11 });
     assert.equal(request.model, 'x.document');
     assert.equal(request.res_id, 501);
     assert.deepEqual(request.button, {

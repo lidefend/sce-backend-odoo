@@ -1,3 +1,4 @@
+import { relationActionOrigin } from './relationActionOrigin';
 import { nextTick, type Ref } from 'vue';
 import { executeButton } from '../../api/executeButton';
 import { sanitizeUiErrorMessage } from './fieldUtils';
@@ -20,6 +21,7 @@ export function usePrimaryFormActionRuntime(params: {
   recordId: Ref<number>;
   reload: () => Promise<void>;
   routeMenuId: () => unknown;
+  currentQuery?: () => Record<string, unknown>;
   saveRecord: (
     refreshPolicy?: ContractAction['refreshPolicy'],
     options?: { navigateAfterCreate?: boolean },
@@ -50,6 +52,7 @@ export function usePrimaryFormActionRuntime(params: {
         meta: {
           menu_id: Number(params.routeMenuId() || 0) || undefined,
           action_id: params.actionId() || undefined,
+          relation_origin: relationActionOrigin(params.currentQuery?.() || {}),
         },
       });
       const result = response?.result;

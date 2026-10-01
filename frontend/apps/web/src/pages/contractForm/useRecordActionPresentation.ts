@@ -1,3 +1,4 @@
+import { relationActionOrigin } from './relationActionOrigin';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
@@ -162,13 +163,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           meta: {
             menu_id: Number(route.query.menu_id || 0) || undefined,
             action_id: actionId.value || undefined,
-            relation_origin: route.query.return_record_id ? {
-              model: String(route.query.return_model || ''),
-              record_id: Number(route.query.return_record_id),
-              field: String(route.query.return_field || ''),
-              action_id: Number(route.query.return_action_id || 0),
-              menu_id: Number(route.query.return_menu_id || 0),
-            } : undefined,
+            relation_origin: relationActionOrigin(route.query),
           },
         });
         const result = response?.result;

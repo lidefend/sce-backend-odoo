@@ -1,3 +1,4 @@
+import { relationActionOrigin } from './relationActionOrigin';
 import type { Ref } from 'vue';
 import type { Router, LocationQueryRaw } from 'vue-router';
 import { executeButton } from '../../api/executeButton';
@@ -150,6 +151,7 @@ export function useFormActionRuntime(params: {
           meta: {
             menu_id: Number(params.routeMenuId() || 0) || undefined,
             action_id: params.actionId() || undefined,
+            relation_origin: relationActionOrigin(params.currentQuery()),
           },
         });
         const result = response?.result;
