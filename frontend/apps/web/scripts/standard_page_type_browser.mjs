@@ -362,7 +362,7 @@ async function login(role) {
       }
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
-        report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
+        report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data), ...(process.env.TPL07_SCOPE === 'scene-entry' ? { workspaceHome: Boolean(result.data?.workspace_home) } : {}) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
           if (process.env.TPL07_APPROVAL_CONFIG_SCOPE_INSPECT === '1') {
@@ -694,11 +694,20 @@ try {
       const { page, ctx } = await login(role);
       for (const [scene, intent] of entries) {
         const before = report.sceneEntryCalls?.length || 0;
+        const entryResponse = page.waitForResponse(response => response.request().postDataJSON()?.intent === (scene === 'workspace.home' ? 'my.work.summary' : intent), { timeout: 60000 });
         await page.goto(`${base}/s/${scene}${scene === 'project.management' ? '?project_id=10' : ''}`);
-        const surface = page.locator('[data-semantic-component="SceneContractBlockGridView"]');
+        const home = scene === 'workspace.home';
+        const surface = page.locator(`[data-semantic-component="${home ? 'HomeView' : 'SceneContractBlockGridView'}"]`);
         await surface.waitFor({ timeout: 60000 });
-        await page.waitForFunction(() => document.querySelector('[data-semantic-component="SceneContractBlockGridView"]')?.getAttribute('data-state') === 'idle', undefined, { timeout: 60000 });
-        check(`${scene}: declared entry succeeded`, (report.sceneEntryCalls || []).slice(before).some(row => row.role === role && row.intent === intent && row.success));
+        if (home) {
+          const response = await entryResponse;
+          const payload = await response.json();
+          check(`${scene}: workspace summary contract loaded`, payload.ok !== false && Boolean(payload.data?.product_workspace));
+        } else {
+          await entryResponse;
+          await page.waitForFunction(() => document.querySelector('[data-semantic-component="SceneContractBlockGridView"]')?.getAttribute('data-state') === 'idle', undefined, { timeout: 60000 });
+          check(`${scene}: declared entry succeeded`, (report.sceneEntryCalls || []).slice(before).some(row => row.role === role && row.intent === intent && row.success));
+        }
         check(`${scene}: one shared contract block renderer`, await surface.count() === 1);
         for (const width of [1440, 390]) {
           await page.setViewportSize({ width, height: 900 });
