@@ -10,9 +10,9 @@ import { parse, compileScript, registerTS } from 'vue/compiler-sfc';
 const require = createRequire(import.meta.url);
 registerTS(() => require('typescript'));
 const kind = process.argv[process.argv.indexOf('--kind') + 1];
-assert.ok(['chart', 'boq', 'grid'].includes(kind), '--kind chart|boq|grid required');
+assert.ok(['chart', 'boq', 'grid', 'attachment'].includes(kind), '--kind chart|boq|grid|attachment required');
 const root = process.cwd();
-const component = { chart: 'components/page/blocks/BlockChartDataset.vue', boq: 'components/page/blocks/BlockBoqImportPreview.vue', grid: 'views/SceneContractBlockGridView.vue' }[kind];
+const component = { attachment: 'components/template/X2ManyRelationRenderer.vue', chart: 'components/page/blocks/BlockChartDataset.vue', boq: 'components/page/blocks/BlockBoqImportPreview.vue', grid: 'views/SceneContractBlockGridView.vue' }[kind];
 const entry = `${root}/frontend/apps/web/src/${component}`;
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), `readonly-block-${kind}-`));
 const output = path.join(temporary, 'mounted.mjs');
@@ -40,9 +40,45 @@ async function runMounted({ Component, kind, createRenderer, h, ref, nextTick, c
   function find(type, from = rootNode) { return from.type === type ? from : from.children.map(child => find(type, child)).find(Boolean); }
   const tick = async () => { for (let i = 0; i < 6; i += 1) { await Promise.resolve(); await nextTick(); } };
   const waitCalls = async total => { for (let i = 0; calls.length < total && i < 20; i += 1) await tick(); equal(calls.length, total, 'actual transport call count'); };
-  const props = ref(kind === 'grid' ? { intent: 'example.entry', sceneKey: 'scene.a' } : { block: { key: 'test', title: 'Test' }, zoneKey: 'main', dataset: {} });
+  const selected = ref([{ id: 15, label: '#15' }]);
+  const attachmentProps = { field: { name: 'attachment_ids', type: 'many2many', readonly: true, descriptor: { relation: 'ir.attachment' } }, adapter: {
+    selectedRelationOptions: () => selected.value, prepareOne2manyColumns: () => [], visibleOne2manyRows: () => [], one2manyColumns: () => [],
+  } };
+  const props = ref(kind === 'attachment' ? attachmentProps : kind === 'grid' ? { intent: 'example.entry', sceneKey: 'scene.a' } : { block: { key: 'test', title: 'Test' }, zoneKey: 'main', dataset: {} });
   const app = renderer.createApp({ setup: () => () => h(Component, props.value) });
   app.mount(rootNode); await tick();
+  if (kind === 'attachment') {
+    const attachmentName = () => {
+      const search = n => n.props.class === 'attachment-name' ? n : n.children.map(search).find(Boolean);
+      return search(rootNode)?.text;
+    };
+    await waitCalls(1);
+    equal(calls[0].request, { intent: 'api.data', params: { op: 'read', model: 'ir.attachment', ids: [15], fields: ['id', 'name'], context: {} } }, 'name uses authorized metadata only');
+    // Historical content may be missing: rendering does not request it.
+    calls[0].resolve({ records: [{ id: 15, name: 'Historical document' }] }); await tick();
+    equal(attachmentName(), 'Historical document');
+    equal(calls.length, 1, 'no automatic download');
+    selected.value = [{ id: 15, label: 'Declared current label' }]; await tick();
+    equal(attachmentName(), 'Declared current label', 'declared label precedes cached metadata');
+    selected.value = [{ id: 16, label: 'Already named' }]; await tick();
+    equal([attachmentName(), calls.length], ['Already named', 1], 'known name is request-free');
+    selected.value = [{ id: 17, label: '#17' }]; await waitCalls(2);
+    calls[1].reject(new Error('metadata access denied')); await tick();
+    selected.value = [{ id: 17, label: '#17' }]; await tick();
+    equal([attachmentName(), calls.length], ['#17', 2], 'denied metadata neither retries nor downloads');
+    find('test-button').props.onClick(); await waitCalls(3);
+    equal(calls[2].request, { intent: 'file.download', params: { id: 17 } }, 'explicit download keeps original interface');
+    calls[2].reject(new Error('historical file missing')); await tick();
+    equal(find('test-state')?.props.label, 'historical file missing', 'explicit download error stays visible');
+    selected.value = [{ id: 18, label: '#18' }]; await waitCalls(4);
+    calls[3].resolve({ records: [{ id: 19, name: 'Wrong record' }] }); await tick();
+    equal(attachmentName(), '#18', 'unrelated metadata never supplies the name');
+    selected.value = [{ id: 20, label: '#20' }]; await waitCalls(5);
+    app.unmount(); calls[4].resolve({ records: [{ id: 20, name: 'Late' }] }); await tick();
+    equal(rootNode.children.length, 0, 'unmounted metadata response publishes nothing');
+    return checks;
+  }
+
   const state = () => find(kind === 'grid' ? 'section' : 'article')?.props['data-state'];
   const setProps = async patch => { props.value = { ...props.value, ...patch }; await tick(); };
   if (kind !== 'grid') {
@@ -141,6 +177,7 @@ async function runMounted({ Component, kind, createRenderer, h, ref, nextTick, c
 const boundary = `import { reactive } from 'vue';
 export const calls = [];
 export const route = reactive({query:{project_id:'99',record_id:'5'},fullPath:'/s/test?project_id=99&record_id=5'});
+export const intentRequestRaw = (...args) => intentRequest(...args);
 export function intentRequest(request) { return new Promise((resolve,reject)=>calls.push({request:JSON.parse(JSON.stringify(request)),resolve,reject})); }
 `;
 const harness = `import assert from 'node:assert/strict';
@@ -166,6 +203,12 @@ try {
         loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       builder.onLoad({ filter: /\.vue$/ }, args => {
         if (args.path !== entry) {
+          if (kind === 'attachment') {
+            assert.ok(/\/(ScButton|ScDisclosure|ScEmptyState|ScFileField|ScIcon|ScInput|ScInlineState|ScPopover|ScTable|ProfessionalManyToManySelect|One2ManyCellEditor)\.vue$/.test(args.path), `unexpected attachment stub ${args.path}`);
+            const tag = args.path.endsWith('/ScButton.vue') ? 'test-button' : args.path.endsWith('/ScInlineState.vue') ? 'test-state' : 'test-presentation';
+            return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({props:['label'],setup:(props,{attrs,slots})=>()=>h('${tag}',{...attrs,...props},slots.default?.())});`, loader: 'js', resolveDir: path.dirname(args.path) };
+          }
+
           if (args.path.endsWith('/ScCard.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {slots})=>()=>h('test-card',{},[slots.actions?.(),slots.default?.()])});`, loader: 'js', resolveDir: path.dirname(args.path) };
           assert.ok(/\/(ChartDatasetPanel|BoqImportPreviewPanel|PageRenderer|StatusPanel)\.vue$/.test(args.path), `unexpected stub ${args.path}`);
           const name = args.path.endsWith('/PageRenderer.vue') ? 'test-page' : args.path.endsWith('/StatusPanel.vue') ? 'test-status' : 'test-panel';

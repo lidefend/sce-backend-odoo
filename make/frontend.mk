@@ -285,6 +285,7 @@ verify.frontend.professional_business_value.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.professional_relation_field.unit
 verify.frontend.professional_relation_field.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind attachment
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_relation_field_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-relation-field-model-test.mjs >/dev/null
 	@node /tmp/professional-relation-field-model-test.mjs
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py
