@@ -37,7 +37,8 @@
     "scripts/ci/test_trusted_scan_scope.py",
     "scripts/ops/local_quick_evidence.py",
     "scripts/ci/secret_scan.py",
-    "scripts/ci/personal_data_scan.py"
+    "scripts/ci/personal_data_scan.py",
+    "scripts/ops/dev_acceptance_release_probe.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -922,14 +923,14 @@
     }
   },
   "blockers": [
-    "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
-    "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
+    "Affected daily record-only browser recheck pending after precise configuration repair.",
+    "Reviewed local scene diagnostic and structured configuration-error fixes not yet integrated/deployed; cannot claim full daily acceptance."
   ],
-  "next_exact_step": "Implement versioned scan coverage and exact proof lifecycle, L1 and nonzero scoped tests, independent review; root owns next Quick",
+  "next_exact_step": "Complete existing affected record-only daily browser; reuse passing login/navigation/home. Integrate reviewed P0 scene/config-error and P4 acceptance-tool fixes, deploy resulting main and recheck changed scene. No whole-environment or full matrix rerun.",
   "completion": {
-    "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
-    "mainline": "not_run",
-    "deployment": "not_run",
+    "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
+    "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
+    "deployment": "daily runtime upgrade complete; authenticated login and diagnostic canonical navigation 89/89 confirmed; formal release probe and browser preflight blocked, so no full version-release acceptance claim",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
     "l1": {
       "command": "make ci.local.iteration",
@@ -2883,7 +2884,7 @@
       "summary_status": "passed"
     },
     "approval_capability_batch": "passed: six original responsibilities reconciled, targeted tests and consolidated product review passed",
-    "user_acceptance": "not_run: target version and unpublished surfaces separate",
+    "user_acceptance": "not_complete: formal daily probe stale and browser credential preflight blocked; official-template rendering/interactions not reaccepted on daily server",
     "approval_capability_consolidated_review": {
       "candidate": "a386549ba42e682d7a004841a99b7de64d951ab9 + dirty docs/run/ledger",
       "status": "passed",
@@ -4485,5 +4486,349 @@
     },
     "base_reconciliation": "Gitee base23f is ancestor of GitHub mainfff; GitHub mainfff is ancestor of c945 candidate. New 604-path diff is subset of old636-path reviewed diff, no newly introduced review paths. No rebase, runtime invalidation or target overwrite.",
     "source_reviews": "No remaining scoped source blockers; exact runtime report hashes verified independently. Overall approval still requires current-source/current-base GitHub checks."
+  },
+  "daily_main_upgrade_20261001": {
+    "owner_authorization": "把最新主线升级到日常开发服务器",
+    "layer": "P4",
+    "target": "sc-root:/opt/projects/repos/sce-product-odoo",
+    "source_main": "2d164a1fed2066307774c82db2e65def80bff70d",
+    "old_runtime": "d36186b4fe2f42d2274d7ad1395e2e039eeae241",
+    "environment": {
+      "project": "sc-backend-odoo-dev",
+      "database": "sc_demo",
+      "dbfilter": "^sc_demo$",
+      "odoo_volume": "sc_dev_odoo_data",
+      "database_volume": "sc_dev_db_data",
+      "role": "platform_internal_daily_development_candidate",
+      "customer_tenant": false,
+      "platform_control": false,
+      "industry_catalog": false,
+      "fixture_reset": false
+    },
+    "status": "daily_config_repaired_browser_recheck_running",
+    "evidence": "artifacts/frontend-web-fix-20260928/final-integration/daily-upgrade",
+    "reuse": "PR525 exact source reviews/tests/CI; runtime checks required for changed daily environment",
+    "next_exact_step": "Complete existing affected record-only daily browser; reuse passing login/navigation/home. Integrate reviewed P0 scene/config-error and P4 acceptance-tool fixes, deploy resulting main and recheck changed scene. No whole-environment or full matrix rerun.",
+    "backup": {
+      "status": "cancelled",
+      "reason": "Owner standing instruction prioritizes development upgrade and says development data protection unnecessary; optional10GB export cancelled before runtime writes",
+      "result": "no paired backup claim",
+      "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-upgrade-backup.log",
+      "code_rollback_revision": "d36186b4fe2f42d2274d7ad1395e2e039eeae241"
+    },
+    "stage_identity": {
+      "server_head": "2d164a1fed2066307774c82db2e65def80bff70d",
+      "server_branch": "main",
+      "server_dirty": false,
+      "controller_head": "5dbf6d07467c77f04e300105fc9dd5626ea7b290",
+      "controller_dirty_scope": [
+        ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json"
+      ]
+    },
+    "results": {
+      "main_sync": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make main.sync",
+        "log": "daily-upgrade-main-sync.log"
+      },
+      "module_upgrade": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo CODEX_NEED_UPGRADE=1 make mod.upgrade MODULE=smart_core,smart_construction_core",
+        "log": "daily-upgrade-modules.log",
+        "note": "Installed dependencies reloaded; no demo module installation or fixture reset."
+      },
+      "restart": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make restart SC_SOURCE_REVISION=2d164a1fed2066307774c82db2e65def80bff70d",
+        "log": "daily-upgrade-restart.log",
+        "health": "healthy"
+      },
+      "frontend_build": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.frontend.build",
+        "log": "daily-upgrade-frontend.log",
+        "warnings": [
+          "existing chunk size warning"
+        ]
+      },
+      "runtime_and_customer_guard": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.daily_dev.runtime_repo.clean",
+        "log": "daily-upgrade-readback.log",
+        "note": "Actual registered guard and its customer subtarget both PASS. Combined invocation exited 2 only after these passed because an unnecessary additional target verify.customer.addons.topology does not exist; not counted as overall command success or retried."
+      },
+      "public_runtime_smoke": {
+        "status": "passed",
+        "command": "ENV=dev ENV_FILE=.env.dev DB_NAME=sc_demo make verify.dev.acceptance.release ACCEPTANCE_BASE_URL=http://127.0.0.1:18081 ACCEPTANCE_PROBE_OUTPUT=artifacts/backend/daily-main-2d164a1f-probe.json",
+        "log": "daily-upgrade-probe.log",
+        "report": "daily-upgrade-probe.json",
+        "assertions": "Exact source/database identity, frontend/index asset 200, DB binding, intent OPTIONS204/GET405, report schema",
+        "limitation": "login.enabled=false; not authenticated daily acceptance"
+      },
+      "static_readback": {
+        "status": "passed",
+        "report": "daily-upgrade-static-readback.json",
+        "assertions": "Served index and entry JS byte-equal to new dist; server main clean"
+      },
+      "authenticated_daily_acceptance": {
+        "status": "passed",
+        "command": "make verify.daily_dev.acceptance.readonly.probe with exact deployed SHA, scoped ephemeral confirmation and owner-supplied credentials",
+        "log": "daily-auth-fixed-probe.log",
+        "report": "daily-auth-fixed-probe.json",
+        "nav_action_count": 89,
+        "required_path_misses": 0,
+        "forbidden_label_hits": 0,
+        "schema_guard": "passed",
+        "prior_failure": "daily-auth-probe.log retained; stale nav path repaired"
+      },
+      "canonical_navigation_diagnostic": {
+        "status": "passed",
+        "gate_evidence": false,
+        "report": "daily-auth-canonical-diagnostic.json",
+        "note": "Read-only in-memory diagnostic substituted only canonical navigation field; no server file modification and not a repaired formal gate",
+        "nav_actions": 89,
+        "required_path_misses": 0,
+        "forbidden_label_hits": 0
+      },
+      "daily_browser_preflight": {
+        "status": "failed",
+        "log": "daily-auth-browser-preflight.log",
+        "classification": "credential_policy_block",
+        "reason": "Existing daily profile rejects user-supplied known default credential; browser did not launch; no bypass, credential reset or persistence"
+      }
+    },
+    "limitations": [
+      "No completed paired database backup: optional export cancelled under owner development-data instruction; code rollback anchor only.",
+      "Persistent .env.dev SC_SOURCE_REVISION remains stale; this deployment explicitly overrides it through Make. Future restarts must explicitly bind intended SHA until governed configuration is corrected.",
+      "Runtime frontend_build_sha256 is empty; served build identity proven separately by direct byte/hash readback."
+    ],
+    "tool_repair": {
+      "layer": "P4",
+      "target": "existing daily readonly acceptance tools",
+      "owner_authorization": "修复继续验证; explicit existing wutao credential supplied",
+      "scope": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/lib/frontend_acceptance_environment.mjs",
+        "scripts/verify/frontend_acceptance_environment_test.mjs",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "make/dev.mk",
+        "make/frontend.mk"
+      ],
+      "stage_identity": "5dbf6d07467c77f04e300105fc9dd5626ea7b290 plus declared P4 tools/tests/run dirty; deployed main remains 2d164a1fed2066307774c82db2e65def80bff70d",
+      "boundary": "Generic verification contract consumption and explicitly authorized daily readonly credential confirmation, no product behavior, database or account mutation; production policy unchanged",
+      "validation_plan": "L1 iteration + nonzero probe/environment/list-focused L2; L3 reuse existing runtime upgrade and identity; affected daily L4 readonly probe and representative browser; no unchanged build/Quick/CI repeat",
+      "collaboration": "A implementation sole product/tool writer, B readonly review, root controller/run metadata and governed checks",
+      "validation_results": {
+        "probe_environment": "L1 and registered environment guard passed; Python8 + confirmation15; daily-probe-tools-iteration-identity.log / daily-probe-tools-unit-identity.log",
+        "browser_tools": "final daily-declarations-node-iteration.log L1 passed; daily-declarations-node-unit.log Python11 passed; actual production resolver positive/negative checks",
+        "independent_source_review": "B concurrency_review source PASS; actual runtime pending",
+        "original_failures": [
+          {
+            "report": "daily-auth-browser.json",
+            "owner": "P4",
+            "reason": "assumed login landing was workspace home; actual role projects.list"
+          },
+          {
+            "report": "daily-auth-browser-landing-fixed.json",
+            "owner": "P4",
+            "reason": "default_route-only assumption omitted role_surface precedence"
+          }
+        ]
+      }
+    },
+    "product_repair": {
+      "layer": "P0",
+      "module": "frontend SceneView generic runtime diagnostic presentation",
+      "reason": "Live project list shows750records plus synthetic no-business-content diagnostic because empty facts produced fallback message",
+      "scope": [
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/app/sceneEntryContract.ts",
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts"
+      ],
+      "standard_vs_user_specific": "platform mechanism; no model/customer conditional",
+      "blast_radius": "Only selected scene runtime hint; genuine idle/loading/error/forbidden and embedded rendering unchanged",
+      "status": "source_and_tests_passed_not_deployed",
+      "tests": {
+        "L1": "scene-diagnostic-iteration.log passed",
+        "L2": "scene-diagnostic-unit.log:71 cumulative pure cases incl12 new diagnostics;29 mounted grid;12+12+4 Python existing checks",
+        "strict": "scene-diagnostic-strict.log dual vue-tsc passed",
+        "review": "B source PASS"
+      },
+      "revalidation": "Only affected default projects.list presentation after deployment; unchanged list/form internals reusable"
+    },
+    "configuration_error_repair": {
+      "layer": "P0",
+      "owner": "smart_core configuration compiler -> PageAssembler -> ui.contract.v2",
+      "scope": [
+        "addons/smart_core/core/form_configuration_compiler.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+      ],
+      "boundary": "Typed compile failures preserve reason/configuration/target, never minimal native fallback. No occurrence relaxation, customer semantics, database or remote writes. Other exceptions unchanged.",
+      "failure_report": "artifacts/frontend-web-fix-20260928/final-integration/daily-auth-record.json",
+      "backend_log": "artifacts/frontend-web-fix-20260928/final-integration/daily-record-backend-error.log",
+      "failure": "CONFIG_TARGET_STALE swallowed by PageAssembler, secondary missing native occurrence HTTP500",
+      "reused_observations": "daily-auth-browser-declared.json retains four completed landing/home observations; whole report remains FAILED",
+      "runtime_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
+      "local_scene_fix": "712f83eb9 not deployed",
+      "validation_plan": "L1 iteration then formal_list and hierarchical_worksheet registered nonzero L2; no browser until P0/P2 blockers closed",
+      "stage_identity": {
+        "head": "712f83eb9fd41e345d83d4bc4cfb485ad5f343a9",
+        "dirty_scope": [
+          "addons/smart_core/core/form_configuration_compiler.py",
+          "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+          "addons/smart_core/handlers/ui_contract_v2.py",
+          "addons/smart_core/tests/test_view_orchestrator.py",
+          "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+          "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+        ],
+        "frozen": false
+      },
+      "status": "L1_L2_passed_independent_review_pending",
+      "validation": [
+        {
+          "layer": "L1",
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/config-error-iteration.log"
+        },
+        {
+          "layer": "L2",
+          "command": "make verify.business_config.formal_list.unit",
+          "status": "passed",
+          "counts": [
+            122,
+            7,
+            51,
+            5
+          ],
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/config-error-formal-list.log"
+        },
+        {
+          "layer": "L2",
+          "command": "make verify.frontend.hierarchical_worksheet.unit",
+          "status": "passed",
+          "python_tests": 22,
+          "javascript_cases": 15,
+          "additional_domain_tab_assertions": "passed (existing runner does not print count)",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/config-error-page-assembler.log"
+        }
+      ],
+      "unchanged_layers": "Frontend source unchanged: existing strict/build evidence not rerun. No DB/runtime/browser/remote or commit; runtime awaits exact stale preference repair."
+    },
+    "configuration_repair": {
+      "layer": "P4",
+      "owner": "one-off ops repair of existing P2 label configuration, not runtime fallback",
+      "authority": "owner 修复继续验证; registered daily environment and odoo.shell.exec",
+      "script": "artifacts/frontend-web-fix-20260928/final-integration/daily-form-config-repair.py",
+      "script_sha256": "a428a9059792278280fe4f15e490559c9b365812aa28eda9383f2504052115dd",
+      "server_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
+      "identity": "configuration312/company1/action780/view0/role-empty; actor16; native form3539; old version6 and exact payload/definition/native hashes checked under row lock",
+      "change": "Only node_patches[0].target /form[1]/sheet[1]/group[2]/group[1]/field[18] -> field[20]; four label values and all remaining payload preserved",
+      "dry_run": {
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-form-config-dry-run-locked.log",
+        "result": {
+          "mode": "dry-run",
+          "configuration_id": 312,
+          "version": 7,
+          "payload_sha256": "cdbeff4b2366fa8578379442102e24d623ed5d0236877156cefdeefc2d660581",
+          "definition_sha256": "5d077a8acb782bac208f593b94cd0ee64183d1a8697865460ede015e02d4ecaa",
+          "native_arch_sha256": "99ef004a3b2f9faab9f812884ec9e13d32561f9abbe2305fef5e9e9b3ec4b97f",
+          "contract": {
+            "ok": true,
+            "actor_id": 16,
+            "record_id": 35555,
+            "effectiveRenderProfile": "readonly",
+            "pageInfo": {
+              "pageId": "payment.request.form",
+              "sceneKey": "payment.request.form",
+              "pageName": "付款申请",
+              "model": "payment.request",
+              "viewType": "form",
+              "layoutType": "form",
+              "renderMode": "governed",
+              "contractVersion": "2.2.0",
+              "clientType": "web_pc",
+              "deliveryProfile": "full"
+            }
+          },
+          "committed": false
+        }
+      },
+      "apply": {
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-form-config-apply.log",
+        "result": {
+          "mode": "apply",
+          "configuration_id": 312,
+          "version": 7,
+          "payload_sha256": "cdbeff4b2366fa8578379442102e24d623ed5d0236877156cefdeefc2d660581",
+          "definition_sha256": "5d077a8acb782bac208f593b94cd0ee64183d1a8697865460ede015e02d4ecaa",
+          "native_arch_sha256": "99ef004a3b2f9faab9f812884ec9e13d32561f9abbe2305fef5e9e9b3ec4b97f",
+          "contract": {
+            "ok": true,
+            "actor_id": 16,
+            "record_id": 35555,
+            "effectiveRenderProfile": "readonly",
+            "pageInfo": {
+              "pageId": "payment.request.form",
+              "sceneKey": "payment.request.form",
+              "pageName": "付款申请",
+              "model": "payment.request",
+              "viewType": "form",
+              "layoutType": "form",
+              "renderMode": "governed",
+              "contractVersion": "2.2.0",
+              "clientType": "web_pc",
+              "deliveryProfile": "full"
+            }
+          },
+          "committed": true
+        }
+      },
+      "independent_readback": {
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-form-config-readback.log",
+        "result": {
+          "mode": "readback",
+          "configuration_id": 312,
+          "version": 7,
+          "payload_sha256": "cdbeff4b2366fa8578379442102e24d623ed5d0236877156cefdeefc2d660581",
+          "definition_sha256": "5d077a8acb782bac208f593b94cd0ee64183d1a8697865460ede015e02d4ecaa",
+          "native_arch_sha256": "99ef004a3b2f9faab9f812884ec9e13d32561f9abbe2305fef5e9e9b3ec4b97f",
+          "contract": {
+            "ok": true,
+            "actor_id": 16,
+            "record_id": 35555,
+            "effectiveRenderProfile": "readonly",
+            "pageInfo": {
+              "pageId": "payment.request.form",
+              "sceneKey": "payment.request.form",
+              "pageName": "付款申请",
+              "model": "payment.request",
+              "viewType": "form",
+              "layoutType": "form",
+              "renderMode": "governed",
+              "contractVersion": "2.2.0",
+              "clientType": "web_pc",
+              "deliveryProfile": "full"
+            }
+          }
+        }
+      },
+      "independent_source_review": "concurrency_review PASS after adding before-compare row lock, canonical hashes and actual record/profile assertions",
+      "side_effects": "Normal publication version/audit rows; no payment/approval fact mutation. Dry runs rollback all transaction rows; sequence gaps possible.",
+      "recovery": "Original complete snapshot in apply log plus immutable published version6; any restoration must bind current exact configuration before replace_and_publish/restore_published_version. No blanket DB rollback."
+    },
+    "local_fix_commits": {
+      "scene_diagnostic": "712f83eb9fd41e345d83d4bc4cfb485ad5f343a9",
+      "structured_configuration_error": "d4eaadaab924e0fa4e3eaed4230bb23560303fff",
+      "deployed": false
+    }
   }
 }
