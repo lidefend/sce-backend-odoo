@@ -142,4 +142,34 @@ assertCrossParentDropRequiresAllowedParent();
 assertAcceptedDropMovesBranchAndDrafts();
 assertOfficialDropPositionMapping();
 assertExpansionFollowsCollapsedSet();
-console.log('[menu_config_tree_editor_behavior_guard] PASS');
+function assertSiblingInsideMovesParent() {
+  const h = createHarness({ enabled: true, allowedParentIds: [1, 3] });
+  const drop = { sourceId: 2, targetId: 3, position: menuDropPosition(0) };
+  assert.equal(h.editor.canDropTree(drop), true);
+  h.editor.applyTreeReorder(drop);
+  assert.deepEqual(h.tree.value.map(row => row.id), [3, 5]);
+  assert.equal(findMenu(h.tree.value, 3)?.children?.[0]?.id, 2);
+  assert.equal(findMenu(h.tree.value, 2)?.parent_id, 3);
+  assert.equal(findMenu(h.tree.value, 2)?.children?.[0]?.id, 4);
+  assert.equal(h.drafts[2].target_parent_menu_id, 3);
+}
+function assertRejectedDropDoesNotMutate() {
+  for (const options of [{ enabled: true }, { enabled: false, allowedParentIds: [3] }]) {
+    const h = createHarness(options);
+    const before = JSON.stringify({ tree: h.tree.value, drafts: h.drafts });
+    const drop = { sourceId: 2, targetId: 3, position: 'inside' as const };
+    assert.equal(h.editor.canDropTree(drop), false);
+    h.editor.applyTreeReorder(drop);
+    assert.equal(JSON.stringify({ tree: h.tree.value, drafts: h.drafts }), before);
+  }
+}
+function assertSiblingAfterStillReorders() {
+  const h = createHarness({ enabled: true });
+  h.editor.applyTreeReorder({ sourceId: 2, targetId: 3, position: 'after' });
+  assert.deepEqual(h.tree.value.map(row => row.id), [3, 2, 5]);
+  assert.equal(h.drafts[2].target_parent_menu_id, 1);
+}
+assertSiblingInsideMovesParent();
+assertRejectedDropDoesNotMutate();
+assertSiblingAfterStillReorders();
+console.log('[menu_config_tree_editor_behavior_guard] PASS cases=11');

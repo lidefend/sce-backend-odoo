@@ -16,8 +16,9 @@
  * and the server ORM.
  */
 import assert from 'node:assert/strict';
-import { createRenderer, defineComponent, h, nextTick, onErrorCaptured, ref } from 'vue';
+import { createRenderer, defineComponent, h, nextTick, onErrorCaptured, reactive, ref } from 'vue';
 
+import { beginContextTransition } from '../src/app/contextEpoch';
 import { useRecordFormActions } from '../src/pages/contractForm/useRecordFormActions';
 import { createStandardFormValidationRegistry } from '../src/pages/contractForm/standardFormCompositionRuntime';
 import { validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers';
@@ -175,6 +176,16 @@ let registry = createStandardFormValidationRegistry(() => ({ pageType: 'record-f
 let sectionGate = deferred();
 registry.register({ sectionId: 'section-a', ruleFieldNames: () => ['name'], validate: () => { validateCalls += 1; return sectionGate.promise; } });
 
+const canSave = ref(true);
+const session = reactive({ token: 'actor-A', user: { id: 30 }, recordContext: { company_id: 8 },
+  featureFlags: {}, loadAppInit: async () => {}, logout: async () => { logoutCalls += 1; },
+  recordIntentTrace: () => {}, updateActiveActivityDirty: () => {} });
+let logoutCalls = 0;
+let navigationCalls = 0;
+let focusCalls = 0;
+let inlineGate: ReturnType<typeof deferred<string[]>> | null = null;
+let tagCalls = 0;
+const route = reactive({ query: {} as Record<string, string>, params: { model: 'project.project', id: '10' }, path: '/f/project.project/10', name: 'model-form', meta: {} });
 const deps: Record<string, unknown> = {
   ApiError: TestApiError,
   actionId: ref(673),
@@ -183,7 +194,7 @@ const deps: Record<string, unknown> = {
   buildSaveRecordPayload: () => ({ name: formData.name }),
   busy: ref(false),
   busyKind,
-  canSave: ref(true),
+  canSave,
   clearIntakeAutosave: () => {},
   closeContractPromptAction: () => {},
   collectSceneValidationPrecheckErrors: () => [],
@@ -197,7 +208,7 @@ const deps: Record<string, unknown> = {
   executeProjectionRefresh: async (config?: { refreshScene?: () => Promise<void> }) => { await config?.refreshScene?.(); },
   fieldVisibilityDirtyKeys: {},
   fieldVisibilityDraft: {},
-  focusFirstValidationError: async () => {},
+  focusFirstValidationError: async () => { focusCalls += 1; },
   formConflict: ref(false),
   formData,
   formFields: ref([]),
@@ -232,14 +243,14 @@ const deps: Record<string, unknown> = {
     validationFieldErrors.value = {};
     retainedRouteIdentity.value = identity.value;
   },
-  resolvePendingInlineRelationCreates: async () => [],
-  resolvePendingMany2manyTagCreates: async () => [],
+  resolvePendingInlineRelationCreates: async () => inlineGate ? inlineGate.promise : [],
+  resolvePendingMany2manyTagCreates: async () => { tagCalls += 1; return []; },
   sanitizeUiErrorMessage: (message: unknown, fallback: string) => String(message || fallback),
   retainedRouteIdentity,
-  route: { query: {}, params: { model: 'project.project', id: '10' }, path: '/f/project.project/10', name: 'model-form', meta: {} },
+  route,
   routeIsOwned: () => true,
-  router: { push: async () => {}, replace: async () => {} },
-  session: { featureFlags: {}, loadAppInit: async () => {}, logout: async () => {}, recordIntentTrace: () => {}, updateActiveActivityDirty: () => {} },
+  router: { push: async () => {}, replace: async () => { navigationCalls += 1; } },
+  session,
   showOne2manyErrors: ref(false),
   snapshotOriginalFormValues: () => ({ ...formData }),
   status,
@@ -531,7 +542,94 @@ check(writes.length, 2, '6: the retry writes once more, for the corrected draft'
 writes.length = 0;
 creates.length = 0;
 
+// Same record identity is insufficient: visibility, authority and session
+// transitions invalidate even when they change back before the promise resolves.
+for (const [label, transition] of [
+  ['deactivation', () => { isComponentActive.value = false; isComponentActive.value = true; }],
+  ['permission', () => { canSave.value = false; canSave.value = true; }],
+  ['actor', () => { session.user.id = 31; session.user.id = 30; }],
+  ['context', () => { session.recordContext.company_id = 9; session.recordContext.company_id = 8; }],
+  ['context epoch', () => { beginContextTransition(); }],
+  ['readonly route', () => { route.query = { render_profile: 'readonly' }; route.query = {}; }],
+] as const) {
+  const gate = deferred();
+  stubSection(() => gate.promise);
+  const beforeWrites = writes.length, beforeFocus = focusCalls;
+  const saving = saveRecord();
+  await drain();
+  transition();
+  gate.resolve(['name']);
+  check(await saving, false, `7 ${label}: stale validation stops`);
+  check(writes.length, beforeWrites, `7 ${label}: no later write`);
+  check(focusCalls, beforeFocus, `7 ${label}: no stale error focus`);
+}
+// Losing owner between inline-create and tag-create stops the next mutation.
+immediateSection();
+inlineGate = deferred();
+const oldTags = tagCalls, oldWrites = writes.length;
+const creatingRelations = saveRecord();
+await drain();
+isComponentActive.value = false;
+inlineGate.resolve([]);
+check(await creatingRelations, false, '8: abandoned relation precheck stops');
+check(tagCalls, oldTags, '8: no subsequent tag create');
+check(writes.length, oldWrites, '8: no final record write');
+inlineGate = null;
+isComponentActive.value = true;
+// A request already sent is not cancelled. Its stale auth error has no UI effect.
+for (const statusCode of [401, 403]) {
+  immediateSection();
+  const writeGate = deferredVoid();
+  writeGates.push(writeGate);
+  nextWriteError = new TestApiError('old authority', statusCode);
+  const saving = saveRecord();
+  await drain();
+  session.user.id = 31;
+  session.user.id = 30;
+  const oldLogout = logoutCalls, oldNavigation = navigationCalls;
+  writeGate.resolve();
+  check(await saving, false, `9 ${statusCode}: late response abandoned`);
+  check(logoutCalls, oldLogout, `9 ${statusCode}: no logout`);
+  check(navigationCalls, oldNavigation, `9 ${statusCode}: no redirect`);
+}
+// An epoch-only transition is not reactive; single-flight must still split
+// owners and each finally may only release its own busy operation.
+immediateSection();
+const epochOldGate = deferredVoid(), epochNewGate = deferredVoid();
+writeGates.push(epochOldGate, epochNewGate);
+const epochOldSave = saveRecord();
+await drain();
+const epochWrites = writes.length;
+beginContextTransition();
+const epochNewSave = saveRecord();
+await drain();
+check(writes.length, epochWrites + 1, '9 epoch: new save does not join stale flight');
+epochOldGate.resolve();
+check(await epochOldSave, false, '9 epoch: stale completed write does not publish');
+check(busyKind.value, 'save', '9 epoch: old finally does not clear new busy');
+epochNewGate.resolve();
+check(await epochNewSave, true, '9 epoch: new current save succeeds');
+check(busyKind.value, null, '9 epoch: current finally releases busy');
+const epochOnlyGate = deferredVoid();
+writeGates.push(epochOnlyGate);
+const epochOnlySave = saveRecord();
+await drain();
+beginContextTransition();
+epochOnlyGate.resolve();
+check(await epochOnlySave, false, '9 epoch: stale solo response dropped');
+check(busyKind.value, null, '9 epoch: solo finally cannot leave busy stuck');
+const disposalGate = deferred();
+stubSection(() => disposalGate.promise);
+const disposingSave = saveRecord();
+await drain();
+const beforeDisposeWrites = writes.length, beforeDisposeFocus = focusCalls;
 app.unmount();
+disposalGate.resolve(['name']);
+check(await disposingSave, false, '10: disposed validation stops');
+check(writes.length, beforeDisposeWrites, '10: disposed cannot write');
+check(focusCalls, beforeDisposeFocus, '10: disposed cannot focus');
+check(await saveRecord(), false, '10: disposed hook cannot start new save');
+
 console.log(`[adopted_form_validation_identity] cases=${cases} failed=${fails.length} engine=shipped-save-chain host=real-vue-instance`);
 if (fails.length) {
   console.log('[adopted_form_validation_identity] DEFECT REPRODUCED:');

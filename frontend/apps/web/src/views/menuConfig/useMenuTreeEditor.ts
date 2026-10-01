@@ -64,9 +64,9 @@ export function useMenuTreeEditor(options: {
     if (!treeDragEnabled.value) return false;
     if (!sourceId || !targetId || sourceId === targetId) return false;
     if (isRuntimeMenuGroup(treeMenuById(sourceId))) return false;
-    if (areVisualSiblings(tree.value, sourceId, targetId)) return true;
     const allowedParentIds = parentOptionIds(sourceId);
     if (request.position === 'inside') return allowedParentIds.has(targetId);
+    if (areVisualSiblings(tree.value, sourceId, targetId)) return true;
     const targetMenu = menuById(targetId);
     return Boolean(targetMenu && allowedParentIds.has(Number(targetMenu.parent_id || 0)));
   }
@@ -195,8 +195,8 @@ export function useMenuTreeEditor(options: {
   }
 
   function applyTreeReorder(payload: { sourceId: number; targetId: number; position: DropPosition }) {
-    if (!payload.sourceId || !payload.targetId || payload.sourceId === payload.targetId) return;
-    if (!areVisualSiblings(tree.value, payload.sourceId, payload.targetId)) {
+    if (!canDropTree(payload)) return;
+    if (payload.position === 'inside' || !areVisualSiblings(tree.value, payload.sourceId, payload.targetId)) {
       const moved = payload.position === 'inside'
         ? moveTreeNodeToParent(payload.sourceId, payload.targetId)
         : moveTreeNodeRelative(payload.sourceId, payload.targetId, payload.position);

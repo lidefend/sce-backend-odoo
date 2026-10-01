@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ref, watch } from 'vue';
+import { getCurrentScope, onScopeDispose, ref, watch } from 'vue';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import { useRecordFormDesignerActions, type FormDesignerActionDependencies } from './useRecordFormDesignerActions';
 import { useRecordFormDesignerNavigation } from './useRecordFormDesignerNavigation';
 import type { ContractAction, LayoutNode } from './types';
@@ -123,18 +124,25 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   // and every save takes an operation id, so a resumed operation can prove it
   // still owns the surface before it writes an error, moves focus, sends a
   // write, paints feedback, or clears the busy flag.
-  const boundSurfaceKey = () => `${String(model.value ?? '')}\u0000${recordId.value ?? 'new'}`;
+  const boundSurfaceKey = () => JSON.stringify({
+    model: model.value, recordId: recordId.value ?? 'new', active: isComponentActive.value,
+    canSave: canSave.value, route: route.fullPath || route.path, query: route.query,
+    identity: formRouteIdentity(), owner: formRouteOwnerIdentity(),
+    token: session.token, user: session.user, context: session.recordContext,
+  });
+  let disposed = false;
   const surfaceEpoch = ref(0);
   let observedSurfaceKey = boundSurfaceKey();
   watch(boundSurfaceKey, (next) => {
     if (next === observedSurfaceKey) return;
     observedSurfaceKey = next;
     surfaceEpoch.value += 1;
+    if (busyOwnerOperationId) { busyOwnerOperationId = 0; busyKind.value = null; }
   }, { flush: 'sync' });
 
-  type SaveOperation = { id: number; epoch: number; model: string; recordId: number | null };
+  type SaveOperation = { id: number; epoch: number; contextEpoch: number; model: string; recordId: number | null };
   let saveOperationSequence = 0;
-  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, model: '', recordId: null };
+  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null };
   let busyOwnerOperationId = 0;
 
   const beginSaveOperation = (): SaveOperation => {
@@ -142,6 +150,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     activeSaveOperation = {
       id: saveOperationSequence,
       epoch: surfaceEpoch.value,
+      contextEpoch: currentContextEpoch(),
       model: String(model.value ?? ''),
       recordId: recordId.value ?? null,
     };
@@ -149,10 +158,14 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   };
 
   const saveOperationOwnsSurface = (operation: SaveOperation) =>
-    activeSaveOperation.id === operation.id
+    !disposed && isComponentActive.value && canSave.value
+    && activeSaveOperation.id === operation.id
+    && currentContextEpoch() === operation.contextEpoch
     && surfaceEpoch.value === operation.epoch
     && String(model.value ?? '') === operation.model
     && (recordId.value ?? null) === operation.recordId;
+
+  if (getCurrentScope()) onScopeDispose(() => { disposed = true; surfaceEpoch.value += 1; });
 
   async function discardChanges() {
     if (!hasChanges.value || busy.value) return;
@@ -357,7 +370,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     refreshPolicy?: ContractAction['refreshPolicy'],
     options: { navigateAfterCreate?: boolean } = {},
   ): Promise<boolean | number> {
-    if (!canSave.value || !model.value) return false;
+    if (disposed || !isComponentActive.value || !canSave.value || !model.value) return false;
     const operation = beginSaveOperation();
     submissionFeedback.value = null;
     validationErrors.value = [];
@@ -394,8 +407,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       one2manyIssues: one2manyValidation.value.issues,
       model: operation.model,
       recordId: operation.recordId,
-      resolvePendingInlineRelationCreates: () => resolvePendingInlineRelationCreates(),
-      resolvePendingMany2manyTagCreates: () => resolvePendingMany2manyTagCreates(),
+      resolvePendingInlineRelationCreates: () => saveOperationOwnsSurface(operation)
+        ? resolvePendingInlineRelationCreates() : Promise.resolve(['保存上下文已变化']),
+      resolvePendingMany2manyTagCreates: () => saveOperationOwnsSurface(operation)
+        ? resolvePendingMany2manyTagCreates() : Promise.resolve(['保存上下文已变化']),
     });
     // The precheck awaited the network for relation creates too, so the same
     // ownership and same-draft rules hold before anything is written.
@@ -539,9 +554,11 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     } finally {
       // Only the operation that took the busy flag may release it, so a
       // superseded save cannot switch off a newer save's loading state.
-      if (busyOwnerOperationId === operation.id) {
-        busyKind.value = null;
-        busyOwnerOperationId = 0;
+      if (!disposed) {
+        if (busyOwnerOperationId === operation.id) {
+          busyKind.value = null;
+          busyOwnerOperationId = 0;
+        }
       }
     }
     return false;
@@ -550,7 +567,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   // that belongs to another record or draft is never joined.
   const singleFlightSaveRecord = createSingleFlightSave(
     saveRecord,
-    () => `${surfaceEpoch.value}\u0000${boundSurfaceKey()}`,
+    () => `${currentContextEpoch()}\u0000${surfaceEpoch.value}\u0000${boundSurfaceKey()}`,
   );
 
   useFormPageLifecycleRuntime({
