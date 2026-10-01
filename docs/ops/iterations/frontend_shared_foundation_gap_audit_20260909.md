@@ -9563,3 +9563,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 共享审批编辑器消费对象列表；不再把父页面model固定当成审批目标。未声明对象拒绝读/写，未保存/处理中不能切换；保存绑定选择的模型，父页面变化后不再执行后续步骤写入或覆盖编辑器。完整规则链接消费所选对象的后端route。当前仅新增响应字段与服务代码，无持久字段/XML/ACL变更，不需模块升级；实际运行前需受管重绑后端并构建前端。
 - L1 version-config-targets-final-iteration.log PASS；verify.business_config.approval_targets.unit为26个surface+8个P1投影+6个真实composable测试，共40 PASS（final-unit.log）；既有preview工具53 PASS（preview-unit.log）；strict typecheck退出0（final-typecheck.log）。均在tpl52目录。独立纯测试不代替运行验收，配置浏览器尚未重跑。
 - P4浏览器改从真实sc.plan父入口进入，再在共享编辑器选择后端声明的计划版本；原有精确写许可/恢复基线保持。下一步本地分层提交、一次构建/复用5180、真实配置→PM提交→executive办理→回读/恢复。整体67未完成。
+
+### 53.207 真实配置入口复验与声明／目录不一致
+
+- 本地分层提交：P1 95c42f8a7、P0 1f159bb27、共享消费87fd7c254、P4与记录fef7d73ef。后端受管up替换旧SC_SOURCE_REVISION后health PASS。首次build入口与后端替换并行，前置退出1，未启动Vite；纠正为health恢复后顺序执行，实际一次Vite构建23.32s成功。构建/后端base=fef7d73ef34cc6add1d0c9c3b10ec3787241ba36；5180复用现有listener，entry=/assets/index-CtbYLDSU.js，sha256=f46ab11df33cd06be56a7b567c3f888b7b7382763a8e4ae7867c74e1291935eb。
+- P4浏览器补齐现有确认配置影响弹层的确认点击。confirm-iteration/confirm-unit PASS（53）；产品构建不受此工具变动影响，没有二次构建。version-config-targets-browser.log FAIL，tpl07-1790817916902：真实父模型sc.plan/action655/menu507配置页仍403，尚未进入配置写入或审批对象选择；final cleanup restored，临时业务记录/版本/父记录均为空。新子单据选择器尚不能报告界面验收通过。
+- 不继续重跑旅程。扩展既有只读配置inspect，仅config_admin读取同一surface请求；scope-inspect-iteration PASS、scope-inspect-unit53 PASS。version-config-scope-inspect-browser.log的3项PASS仅证明诊断执行，绝不是业务通过。tpl07-1790818046775报告取得权威拒绝：CONFIG_TARGET_UNAVAILABLE。同时同uid34/company8/role business_config_admin的system.init route_authority.primary_actions声明计划管理655/507可read，正式审批配置action711/menu412亦存在。不能据拒绝页面就判定角色没有计划权限。
+- 下一步只核对route.authority.validate655及初始化的对应发布导航节点；P0 _business_catalog当前仅遍历navigation.nav，须定位与route_authority声明不一致的原因，再修配置目录消费。保留发布范围/角色/公司约束，不追加ACL或伪造菜单身份。原目标不缩减为纯测试通过，67条/detail.action-state继续contract_gap。无远端操作/目标部署。

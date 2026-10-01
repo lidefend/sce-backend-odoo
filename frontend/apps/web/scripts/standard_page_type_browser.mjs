@@ -915,9 +915,12 @@ try {
     // Read only: establish the actual configuration and distinct reviewer entry
     // before extending the existing exact-write/recovery scope.
     report.planApprovalInspection = [];
-    for (const role of ['fixture_role_config_admin', 'fixture_role_pm', 'fixture_role_executive']) {
+    const scopeInspect = process.env.TPL07_APPROVAL_CONFIG_SCOPE_INSPECT === '1';
+    for (const role of scopeInspect ? ['fixture_role_config_admin'] : ['fixture_role_config_admin', 'fixture_role_pm', 'fixture_role_executive']) {
       const session = await login(role);
-      const request = role === 'fixture_role_config_admin'
+      const request = scopeInspect
+        ? { intent: 'ui.business_config.surface.get', params: { business_catalog: true, company_id: 8, model: 'sc.plan', action_id: 655 } }
+        : role === 'fixture_role_config_admin'
         ? { intent: 'sc.approval_policy.config.get', params: { model: 'sc.plan.version' } }
         : { intent: 'api.data', params: { op: 'list', model: 'sc.plan', domain: [['project_id', '=', 10]], fields: ['id', 'name', 'state'], limit: 1, context: { company_id: 8 } } };
       const result = await session.page.evaluate(async body => {
@@ -1072,6 +1075,7 @@ try {
             reportSuccess.phase = 'version-config';
             await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
             await panel.getByRole('button', { name: '保存审批设置', exact: true }).click();
+            await admin.page.getByRole('dialog', { name: '确认配置影响', exact: true }).getByRole('button', { name: '确认继续', exact: true }).click();
             await admin.page.getByText('审批设置已保存', { exact: true }).waitFor();
             check('version review: configuration and steps accepted', reportSuccess.phase === 'done' && report.versionReviewWrites?.length === 2);
             await admin.page.screenshot({ path: path.join(out, 'version-review-configured.png') });
