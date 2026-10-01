@@ -1822,4 +1822,10 @@ def smart_core_user_data_acceptance_nav_contract(env):
 
 def smart_core_authorize_work_item_origin(env, origin, **target):
     from .services.review_work_item_service import authorize_review_origin
-    return authorize_review_origin(env, origin, **target)
+    allowed = authorize_review_origin(env, origin, **target)
+    if allowed is True:
+        # Native Tier writes the assigned review under the reviewer identity;
+        # its existing server-action callback owns the document transition.
+        # This does not grant editing, creation or deletion of the document.
+        return {"allowed": True, "record_access_mode": "read"}
+    return allowed
