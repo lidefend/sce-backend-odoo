@@ -464,7 +464,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.195 P0 child default_get shared hydration implemented; L1 v5 PASS, create-default55/collection groups/preview42 PASS, strict typecheck v4 PASS (prior failures fixed). Next commit then one governed frontend build/up5180 and existing PLAN_VERSION_INSPECT probe asserting actual default_get draft and editable version_no; no version saved, original temporary parent cleanup. Only final context type assertion changed after55/42, runtime semantics unchanged. Backend d88433507 unchanged; no ORM. Then real version save/approval and P1 parent state/actual dates authority before enabling execution phase editing. Overall67 active; no push/merge/targetdeploy.",
+  "next_exact_step": "53.195 fa1f92993 frontend built once/up5180 entry index-s6eU2T-G.js sha256 3c6000a247bac665a75d3d245bb608b58a4f50d99fe4de5736cc3ca65e119f42. tpl07-1790812902986 19PASS: real child default_get returns draft/adjustment/date, version_no editable; screenshot checked, parent60 cleaned, no version/report saved. L1 v5/typecheck v4 PASS; hydration55, detail regression groups and tool42 PASS/reused per record. Next P1 parent state and actual_start/actual_finish model+native action authority before phase editing; then bounded real version save/approval UI loop. Backend d88433507 unchanged. Overall67/detail.action-state remains contract_gap, no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
