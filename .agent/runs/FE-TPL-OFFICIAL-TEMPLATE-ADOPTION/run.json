@@ -30,7 +30,8 @@
     "scripts/dev/frontend_standard_preview.py",
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     "frontend/packages/schema/src/actionSemantics.ts",
-    "addons/smart_construction_scene/profiles/scene_registry_content.py"
+    "addons/smart_construction_scene/profiles/scene_registry_content.py",
+    "contracts/generated/contract_structure_fingerprint.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -918,7 +919,7 @@
     "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Done this round: create/edit and published workspace/home evidence gaps closed, every scope family that consumed the stale hardcoded origin re-run, and the overlay declaration gap repaired. Next: (1) make ci.delivery.freeze.prepare, then one clean-HEAD make ci.local.quick on the frozen commit; (2) independent review against that exact frozen fingerprint; (3) push the candidate PR. Do NOT re-run the closed list matrix. The acceptance-volume mount audit PASS still belongs only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082; keep that lane's DENY scoped as recorded.",
+  "next_exact_step": "Independent final review and evidence archive, then governed exact-head Gitee PR publication, latest source/current main required checks, protected merge and readback. No deployment.",
   "completion": {
     "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
@@ -3966,14 +3967,40 @@
     },
     "scope_families_revalidated_20261001": {
       "reason": "This round replaced the remaining hardcoded origin in styleScope() (form/overlay/all), task-authority, detail-state and the default flow with the governed declaration resolver, so their probe inputs changed and each affected non-zero scope was re-run rather than carried forward.",
-      "task_authority": {"status": "passed", "assertions": 45, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850327636/report.json", "report_sha256": "c52b4c485bd166aef46f7e3816a58e5996248ac71b8d3bf24b742076a46d2625"},
-      "detail_state": {"status": "passed", "assertions": 30, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850341662/report.json", "report_sha256": "d113499569f0db3d767a52229516c2b341c0e9efda7a2d3d7e0a206dc82d2211"},
-      "style_form": {"status": "passed", "assertions": 34, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850371816/report.json", "report_sha256": "9d4195f622e7e9ac3d361b10ec661e83f8c055c8d34ff559e22b6d8b3bbd38bc"},
-      "style_overlay": {"status": "passed", "assertions": 34, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850905831/report.json", "report_sha256": "beb455485021562a22fcb6ed732702010113bd4c0ed0f0e57fb3f92e959d5bb8"},
-      "style_all": {"status": "passed", "assertions": 93, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850928588/report.json", "report_sha256": "627cdb3915a5cd4d83b638a28db0e5a5407f880d2cf6b9af2554ce451a142653"},
+      "task_authority": {
+        "status": "passed",
+        "assertions": 45,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850327636/report.json",
+        "report_sha256": "c52b4c485bd166aef46f7e3816a58e5996248ac71b8d3bf24b742076a46d2625"
+      },
+      "detail_state": {
+        "status": "passed",
+        "assertions": 30,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850341662/report.json",
+        "report_sha256": "d113499569f0db3d767a52229516c2b341c0e9efda7a2d3d7e0a206dc82d2211"
+      },
+      "style_form": {
+        "status": "passed",
+        "assertions": 34,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850371816/report.json",
+        "report_sha256": "9d4195f622e7e9ac3d361b10ec661e83f8c055c8d34ff559e22b6d8b3bbd38bc"
+      },
+      "style_overlay": {
+        "status": "passed",
+        "assertions": 34,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850905831/report.json",
+        "report_sha256": "beb455485021562a22fcb6ed732702010113bd4c0ed0f0e57fb3f92e959d5bb8"
+      },
+      "style_all": {
+        "status": "passed",
+        "assertions": 93,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850928588/report.json",
+        "report_sha256": "627cdb3915a5cd4d83b638a28db0e5a5407f880d2cf6b9af2554ce451a142653"
+      },
       "style_shell_and_collection": "covered by the style_all run above; not re-run separately",
       "default_flow": "not re-run this round: it contains the already-closed list matrix and the unpublished-scene surfaces, and its only input change was the shared resolved origin. Recorded as not_run, not as passed.",
-      "errors": 0, "forbiddenWrites": 0
+      "errors": 0,
+      "forbiddenWrites": 0
     },
     "overlay_first_run_confirmed_failure": {
       "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850397968/report.json",
@@ -4079,5 +4106,16 @@
       "evidence": "Only make/dev.mk (default + export), make/frontend.mk:78 and six make/runtime_ops.mk acceptance/scene entries changed. All target the frontend acceptance fixture on database sc_frontend_acceptance via db.frontend.acceptance.ensure / acceptance.frontend.fixture. No scripts/release, scripts/ops production, user_data, tenant or generic login default changed; their pre-existing random secrets are untouched.",
       "verification": "Live fixture re-applied; frontend_acceptance_login_probe PASS; every scenario in this round (list matrix, relation diagnostic, detail scope) authenticated with the same fixed password."
     }
+  },
+  "integration_finalization_20261001": {
+    "layer": "P4",
+    "target": "existing run scope and protected Gitee integration",
+    "owner_authorization": "User explicitly requests final review and mainline integration after supplied Quick PASS; supersedes prior root coordination-only restriction for this integration task. No deployment authorized.",
+    "source_head": "48f1b9ff0360d8eb02c4585ae5203bc86936cea0",
+    "target_main": "23f11f426880585ca307544545c9bf9c01245b42",
+    "scope_repair": "Register existing generated fingerprint path changed by authorized freeze.prepare commit f591c1e37; no product, test, runtime or generated file contents changed.",
+    "validation": "JSON and make agent.run.resume; independent final review and remote exact-source/base required gates. Supplied source Quick preserved, never relabel its head.",
+    "runtime_reuse": "No runtime mutation, browser rerun or DB upgrade: metadata-only input correction.",
+    "status": "review_pending"
   }
 }
