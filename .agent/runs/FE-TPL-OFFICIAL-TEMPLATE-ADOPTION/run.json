@@ -1021,13 +1021,12 @@
   },
   "blockers": [
     "L4 gap 1 OPEN: active verify guards with no reference from any make target or workflow still lack a wire-or-retire disposition; the registry reports them but does not require a disposition.",
-    "L4 gap 4 OPEN: the complete runtime contract is only available from the live POST /api/v1/intent ui.contract.v2 under the real actor; no governed offline-verifiable export artifact exists yet, so live custody cannot be reproduced without the runtime.",
     "Deployment/version release not performed and not authorized: mainline integration, deployment and product acceptance stay separate statuses.",
     "Owner decision still open (not self-authorized): addons/smart_core/contract.schema.json is a tracked empty file no code references; keep as placeholder or remove in a separate P0 change.",
     "Remaining original-list evidence delta: create/edit and workbench minimum evidence only, plus the retained post-deploy limit that historical attachment content is unavailable and metadata rendering does not restore it.",
     "Environment scope note (bounded, not a general 'environment all-pass'): the earlier DENY on volume sc_fe_r2_p1_01_odoo was that the rebuild entry demanded exactly one mount consumer while two declared consumers exist. Step (b) replaced the raw count with the declared topology (one non-oneoff compose carrier plus only the declared oneoff mounters) and acceptance.runtime.baseline_recovery.audit now PASSES with declared_consumers=2 for odoo. Foreign owners, undeclared oneoff mounters and non-odoo volumes are still DENY."
   ],
-  "next_exact_step": "Environment steps (a) and (b) are done and the declared-authority projection is now consumed by both frontend action presenters; see successor_step5_postmerge_env_and_l4_20261002. Next: land the L4 layer as layer-owned commits, then wire-or-retire the 183 active unreferenced guards (gap 1) and produce the complete offline-verifiable runtime contract export (gap 4). Deployment/version release still needs explicit owner authorization.",
+  "next_exact_step": "Offline custody landed at 3e23bd80a: the live probe persists the exact ui.contract.v2 response bytes (artifacts/backend/dev_acceptance_release_probe.contract.json) and the schema guard re-derives the byte digest, semantic sha256 and lifecycle declaration from those bytes without the runtime; the live lane was re-run on the 3e23bd80a backend with 11/11 contract checks PASS after a governed fixture credential reconcile and backend replace-stale. Next: wire-or-retire the 183 active unreferenced guards (gap 1; scoping shows all 183 are file-referenced under scripts/verify and none is a full orphan, so the disposition is a machine-checkable registry classification rather than mass retirement), then the remaining create/edit and workbench minimum evidence delta. Deployment/version release still needs explicit owner authorization.",
   "completion": {
     "batch": "passed: declared-authority projection consumed by both action presenters with negative-first behavioural proof; targeted L2 and typecheck to be refreshed for this layer",
     "mainline": "completed for the prior candidate: PR #526 merged (squash) as c4ef5339475947f0ac4fda1350851148b8dc5942; origin/main tree is identical to the previous branch tip aeff26d78",
@@ -2928,5 +2927,54 @@
       "live_divergence_evidence": "The live custody payload artifacts/backend/dev_acceptance_release_probe.json contains action rules where authorizationAllowed=true and businessAvailable=false while allowed=false/enabled=false/disabled=true (payment_approve, payment_reject, payment_done, payment_execution). The two declared dimensions therefore carry authority the folded flags do not, which is why the renderer consumes them directly.",
       "offline_receipt_note": "agent_run_context evaluates offline receipts as stale while the run declares environment.kind=runtime, so these results are recorded here as the run index rather than as reusable receipts."
     }
+  },
+  "successor_step6_offline_custody_landed_20261002": {
+    "stage": "L4 gap 4 closure: governed offline-verifiable runtime contract export",
+    "candidate_identity": {
+      "head": "3e23bd80a4db770d54074bcb3a569a30075fc14c",
+      "head_subject": "fix(verify): persist the exact live contract bytes as offline custody",
+      "tree": "clean; the four in-flight files were committed as one layer-owned P4 commit",
+      "superseded_diagnostic_run": "the 03:26 live run bound aeff26d78 with an explicit ACCEPTANCE_TARGET_SHA and was iteration evidence only; it never bound the then-current HEAD"
+    },
+    "implementation": {
+      "probe": "scripts/ops/dev_acceptance_release_probe.py persists the exact live response bytes to a lane-specific sibling (--contract-output, default <receipt stem>.contract.json) and adds the contract_custody_bytes_persisted check with a read-back comparison",
+      "guard": "scripts/verify/dev_acceptance_release_probe_schema_guard.py re-reads the persisted bytes, recomputes the byte digest, re-derives the semantic sha256 and lifecycle declaration from the bytes, and proves the persisted data equals the embedded snapshot; a re-serialized snapshot can never satisfy it",
+      "declaration": "config/acceptance/backend_contract_instance_v1.json adds contract_custody_bytes_persisted to required_checks",
+      "tests": "scripts/verify/test_dev_acceptance_release_identity.py covers persisted-bytes re-derivation, the no-output fail-closed path, and negative-first tamper cases (byte mutation, missing file, declared-length drift)"
+    },
+    "environment_recovery": {
+      "fixture_credential": "the /tmp/wf_check_fixture.env password was stale (AccessDenied); the governed operation entry 'fixture' reconciled the fixture dataset and restored the registered credential value (fixture_role_finance uid=30 verified); record_id moved 1845 -> 1847 through the reconcile and the stable xmlid resolution stayed unique",
+      "backend_refresh": "make backend.acceptance.replace-stale then backend.acceptance.health recreated sc-backend-odoo-acceptance at revision 3e23bd80a4db770d54074bcb3a569a30075fc14c on 18082"
+    },
+    "live_receipt_3e23bd80a": {
+      "command": "make verify.dev.acceptance.record_identity.resolve COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 && ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 make verify.dev.acceptance.contract (fixture credentials from the registered private env)",
+      "result": "contract PASS, 11/11 checks true, errors [], integrity ok, approved == recomputed semantic sha256 10c6b3e893fa8b827b71067c7e8293704cb237e755c415bf6c32a1b75c684ddb",
+      "custody": {
+        "response_path": "artifacts/backend/dev_acceptance_release_probe.contract.json",
+        "response_bytes": 1040113,
+        "response_sha256": "35a539fd13abbc49d913fdee28dfcd6b037c0b0001231b20a6a02246a42a97b3"
+      },
+      "offline_reproduction": "make verify.dev.acceptance.release.schema.guard PASS on the persisted bytes without the runtime (byte digest, semantic digest and lifecycle declaration all re-derived)",
+      "schema_asset": {
+        "sha256": "49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b",
+        "version": "2.2.0"
+      }
+    },
+    "recorded_checks": {
+      "backend_contract_instance_receipt": "verify.frontend.acceptance.environment.guard passed, 35 unittest cases (offline)",
+      "backend_contract_instance_live": "verify.dev.acceptance.contract passed, 11 contract checks (runtime; recorded at 3e23bd80a clean)",
+      "acceptance_record_identity_resolution": "verify.dev.acceptance.record_identity.resolve passed, 9 resolved targets (runtime)",
+      "frontend_contract_prerequisite": "verify.frontend.list_surface_search_contract.unit passed, 21 cases (offline)"
+    },
+    "gap_1_scoping": {
+      "counts": "registry 1371 scripts: 1284 active, 87 acknowledged orphans, 1 retired; 183 active scripts under scripts/verify have no make-target or workflow reference",
+      "key_fact": "all 183 unreferenced scripts are referenced by other files (tests/scripts); zero are full orphans, so the wire-or-retire disposition is a machine-checkable classification in the registry, not mass retirement",
+      "lines": "min=1 median=198 max=1561"
+    },
+    "remaining": [
+      "L4 gap 1 OPEN: the registry still does not require a disposition for the 183 unreferenced active guards",
+      "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
+      "create/edit and workbench minimum evidence delta and the retained post-deploy attachment-content limit"
+    ]
   }
 }
