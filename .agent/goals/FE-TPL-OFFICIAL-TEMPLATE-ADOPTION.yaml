@@ -64,3 +64,15 @@ goal:
     Reconcile them with existing business responsibilities and workflow profiles;
     required missing configuration/runtime support is a product gap. A passing
     payment test or a global method-name match never proves all-document coverage.
+
+  publication_alignment_owner_direction: >-
+    2026-10-01: Unify formal entry/configuration/action contract consumption with
+    existing product publication strategy. Reuse ProductPolicyService and
+    DeliveryEngine as effective publication authority, not a parallel catalog.
+    A role action declaration or native menu is not sufficient publication proof.
+    Distinguish runtime availability, administrator configuration editing and
+    recovery access through explicit existing policy/permission boundaries.
+    Preserve role/company/edition/channel and approved relation/work-item scope.
+    Do not fix a missing configuration entry by unioning unrestricted declared
+    actions, widening ACL, or treating hidden menus as automatically unpublished.
+    No remote publication, merge or target deployment is authorized by this rule.

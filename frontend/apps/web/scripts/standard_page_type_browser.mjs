@@ -328,6 +328,17 @@ async function login(role) {
         report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
+          if (process.env.TPL07_APPROVAL_CONFIG_SCOPE_INSPECT === '1') {
+            const nav = result.data?.navigation?.nav;
+            const matches = [];
+            const visit = (node) => {
+              if (!node || typeof node !== 'object') return;
+              if (Number(node.menu_id || node.meta?.menu_id) === 507 || Number(node.meta?.action_id || node.action_id) === 655) matches.push(node);
+              for (const child of node.children || []) visit(child);
+            };
+            if (Array.isArray(nav)) nav.forEach(visit);
+            report.planConfigurationNavigation = { type: Array.isArray(nav) ? 'array' : typeof nav, matches };
+          }
           if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) report.routeAuthority = result.data?.navigation?.route_authority;
         }
       }
@@ -930,6 +941,15 @@ try {
         })).json();
       }, request);
       report.planApprovalInspection.push({ role, request, result, routeAuthority: report.routeAuthority });
+      if (scopeInspect) {
+        report.planConfigurationRouteValidation = await session.page.evaluate(async () => {
+          const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+          return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+            body: JSON.stringify({ intent: 'route.authority.validate', params: { action_id: 655 } }),
+          })).json();
+        });
+      }
       check(`plan approval inspection ${role}: authenticated response`, typeof result.ok === 'boolean');
       await session.ctx.close();
     }

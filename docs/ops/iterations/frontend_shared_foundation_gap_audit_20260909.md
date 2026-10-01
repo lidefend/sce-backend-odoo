@@ -9570,3 +9570,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - P4浏览器补齐现有确认配置影响弹层的确认点击。confirm-iteration/confirm-unit PASS（53）；产品构建不受此工具变动影响，没有二次构建。version-config-targets-browser.log FAIL，tpl07-1790817916902：真实父模型sc.plan/action655/menu507配置页仍403，尚未进入配置写入或审批对象选择；final cleanup restored，临时业务记录/版本/父记录均为空。新子单据选择器尚不能报告界面验收通过。
 - 不继续重跑旅程。扩展既有只读配置inspect，仅config_admin读取同一surface请求；scope-inspect-iteration PASS、scope-inspect-unit53 PASS。version-config-scope-inspect-browser.log的3项PASS仅证明诊断执行，绝不是业务通过。tpl07-1790818046775报告取得权威拒绝：CONFIG_TARGET_UNAVAILABLE。同时同uid34/company8/role business_config_admin的system.init route_authority.primary_actions声明计划管理655/507可read，正式审批配置action711/menu412亦存在。不能据拒绝页面就判定角色没有计划权限。
 - 下一步只核对route.authority.validate655及初始化的对应发布导航节点；P0 _business_catalog当前仅遍历navigation.nav，须定位与route_authority声明不一致的原因，再修配置目录消费。保留发布范围/角色/公司约束，不追加ACL或伪造菜单身份。原目标不缩减为纯测试通过，67条/detail.action-state继续contract_gap。无远端操作/目标部署。
+
+### 53.208 所有者要求与产品发布策略统一
+
+- 本轮只读诊断config-catalog-inspect-browser.log / tpl07-1790818219893进一步确认：同uid34/company8，route.authority.validate655实际allowed=true、PRIMARY_NAV；navigation.nav为数组但没有menu507/action655对应节点。53项工具纯测试通过；3项诊断响应检查不代表配置业务验收。
+- 一度拟把principal一致的primary_actions补入配置目录；尚未提交、未运行该实现的L2/运行验收。所有者随后明确“这个与产品发布策略一起统一”，已完整撤回该P0实现和测试，当前不包含主入口集合并入目录的扩权修复。
+- 源码定位：DeliveryEngine通过ProductPolicyService.get_policy(enforce_release=True,enforce_access=True)获得有效策略；MenuService.build_route_authority仍能从role_surface原生菜单事实直接声明入口，RouteAuthorityValidateHandler也独立重建此声明。现有product_menu_release_flow_v1.md明确自定义前端以产品策略/DeliveryEngine为准，action或原生menu存在不是发布证明。
+- 统一方向写入既有contract-first决策和当前goal：复用同一有效发布策略，导航/路由/配置范围消费一致；同时明确运行开放、管理员配置编辑和配置恢复是不同职责，不能以菜单隐藏推断全部不可用，也不能以动作声明绕过发布。保留角色/公司/版本/渠道和主从/待办授权边界。
+- 计划入口的有效产品发布状态尚未读回，故不先判定应发布或应下架。下一步仅读取该产品/该入口的有效策略与来源，再修源层或共享消费层。已有40/53/typecheck、构建fef7d73ef及前次无写入恢复证据保留；不跑宽门禁/新建环境/推送/合并/目标部署。整体目标继续。
