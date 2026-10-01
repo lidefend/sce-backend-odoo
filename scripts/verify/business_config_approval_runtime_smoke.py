@@ -4045,6 +4045,78 @@ def _expense_create_request_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=expense-create-request")
 
 
+def _payment_review_entry_checks():
+    """Existing source/policy, distinct actors, no cash posting; rollback all work."""
+    from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkSummaryHandler
+    from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+    from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    actors = {}
+    for login in ("fixture_role_pfl035_finance_user", "fixture_role_finance"):
+        user = base["res.users"].search([("login", "=", login)])
+        assert len(user) == 1 and user.active and user.company_id.id == 8
+        actors[login] = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+    submitter, reviewer = actors.values()
+    source = reviewer["payment.request"].browse(1710)
+    source.check_access_rule("read")
+    assert source.company_id.id == 8 and source.type == "pay" and source.state == "approved"
+    fields = ["state", "amount", "paid_amount_total", "unpaid_amount", "terminal_cash_source_model", "terminal_cash_source_res_id"]
+    before_source = source.read(fields)
+    domain = [("payment_request_id", "=", source.id)]
+    before_executions = reviewer["sc.payment.execution"].search(domain).ids
+    before_ledger = reviewer["payment.ledger"].search(domain).ids
+    assert not reviewer["sc.payment.execution"].search_count(domain + [("state", "in", ["draft", "confirmed"])])
+    execution_id = None
+    try:
+        action = source.action_create_payment_execution()
+        assert action["res_model"] == "sc.payment.execution" and source.unpaid_amount > 0
+        execution = reviewer["sc.payment.execution"].with_context(action["context"]).create({
+            "payment_request_id": source.id, "paid_amount": min(source.unpaid_amount, 1.0),
+            "payment_account_name": "FE Company A Operating Account", "payment_bank_name": "FE Construction Bank",
+            "payment_account_no": "FE-PAYER-0001", "payment_method": "银行转账", "note": "Rollback published payment review probe",
+        })
+        execution_id = execution.id
+        execution = execution.with_env(submitter)
+        execution.action_confirm()
+        assert execution.state == "draft" and execution.validation_status in ("waiting", "pending")
+        assert reviewer.uid in execution.review_ids.mapped("reviewer_ids").ids
+        print("PAYMENT_REVIEW_CHECK=submission_waits_for_distinct_reviewer")
+        workspace = MyWorkSummaryHandler(reviewer).handle({"product_workspace": True, "company_id": 8})["data"]["product_workspace"]
+        item = next((item for section in workspace["sections"] for item in section["items"]
+                     if item.get("target", {}).get("model") == execution._name and item["target"].get("record_id") == execution.id), None)
+        assert item, "assigned payment execution absent from current workspace"
+        origin = item["target"]["work_item_origin"]
+        result = UiContractV2Handler(reviewer).handle({"model": execution._name, "record_id": execution.id, "view_type": "form"})
+        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        approve = next(row for row in result["data"]["actionContract"]["actionRuleList"]
+                       if row.get("actionSemantics", {}).get("purpose") == "approve")
+        payload = {"params": {"model": execution._name, "res_id": execution.id, "button": {
+            **approve["button"], "action_id": approve["actionId"], "backend_identity": approve["backendIdentity"],
+            "source_widget_id": approve["sourceWidgetId"]}}, "meta": {"work_item_origin": origin}}
+        assert ExecuteButtonHandler(submitter, payload=payload).handle().get("ok") is False
+        result = ExecuteButtonHandler(reviewer, payload=payload).handle()
+        assert result.get("ok") is True, result
+        execution.invalidate_recordset()
+        assert execution.state == "confirmed" and execution.validation_status == "validated"
+        assert reviewer["payment.ledger"].search(domain).ids == before_ledger
+        assert ExecuteButtonHandler(reviewer, payload=payload).handle().get("ok") is False
+        workspace = MyWorkSummaryHandler(reviewer).handle({"product_workspace": True, "company_id": 8})["data"]["product_workspace"]
+        assert not any(item.get("target", {}).get("model") == execution._name and item["target"].get("record_id") == execution.id
+                       for section in workspace["sections"] for item in section["items"])
+        print("PAYMENT_REVIEW_CHECK=real_contract_approval_and_replay_denial_no_cash_posting")
+    finally:
+        base.cr.rollback()
+        base.invalidate_all()
+        assert source.read(fields) == before_source
+        assert reviewer["sc.payment.execution"].search(domain).ids == before_executions
+        assert reviewer["payment.ledger"].search(domain).ids == before_ledger
+        if execution_id:
+            assert not reviewer["sc.payment.execution"].browse(execution_id).exists()
+        print("PAYMENT_REVIEW_ROLLBACK=VERIFIED")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=payment-review-entry rollback_verified=true")
+
+
 def _payment_review_preflight_checks():
     """Read only the existing PFL-035 actors, source and approval baseline."""
     base = _env()
@@ -4064,22 +4136,36 @@ def _payment_review_preflight_checks():
             actor["sc.payment.execution"].check_access_rights("read")
             actors[key] = {"uid": user.id, "login": user.login, "company_id": actor.company.id,
                            "create_allowed": actor["sc.payment.execution"].check_access_rights("create", raise_exception=False)}
-        source = base.ref(prefix + "fe_request_pfl035_001")
-        assert source.company_id == company and source.type == "pay", {
-            "source_id": source.id, "company_id": source.company_id.id,
-            "expected_company_id": company.id, "type": source.type, "state": source.state,
-        }
-        executions = base["sc.payment.execution"].sudo().with_context(active_test=False).search([
-            ("payment_request_id", "=", source.id)])
+        legacy = base.ref(prefix + "fe_request_pfl035_001")
+        candidates = {}
+        from odoo.exceptions import UserError, AccessError
+        for key, facts in actors.items():
+            actor = base(user=facts["uid"], context={"allowed_company_ids": [company.id], "company_id": company.id, "lang": "zh_CN"})
+            assert not actor.su
+            sources = actor["payment.request"].search([
+                ("company_id", "=", company.id), ("type", "=", "pay"), ("state", "=", "approved"),
+                ("terminal_cash_source_model", "=", False), ("project_id", "!=", False),
+                ("partner_id", "!=", False), ("amount", ">", 0),
+            ], order="id", limit=3)
+            candidates[key] = []
+            for source in sources:
+                executions = actor["sc.payment.execution"].search([("payment_request_id", "=", source.id)])
+                continuation = {}
+                try:
+                    action = source.action_create_payment_execution()
+                    continuation = {"allowed": True, "action_id": action["id"], "menu_id": action["menu_id"]}
+                except (UserError, AccessError) as error:
+                    continuation = {"allowed": False, "reason": str(error)}
+                candidates[key].append({"id": source.id, "state": source.state, "company_id": source.company_id.id,
+                    "continuation": continuation, "executions": [{"id": row.id, "state": row.state,
+                    "validation_status": row.validation_status} for row in executions]})
         policy = base.ref(prefix + "fe_pfl035_payment_execution_approval_policy")
         assert policy.target_model == "sc.payment.execution" and policy.company_id == company
         assert policy.active and policy.approval_required and policy.manager_scope_key == "finance_manager"
         print("PAYMENT_REVIEW_PREFLIGHT=" + json.dumps({
-            "actors": actors, "source": {"id": source.id, "state": source.state, "company_id": company.id},
-            "executions": [{"id": row.id, "state": row.state, "active": row.active,
-                            "validation_status": row.validation_status,
-                            "reviews": [{"id": review.id, "status": review.status, "reviewer_ids": review.reviewer_ids.ids}
-                                        for review in row.review_ids]} for row in executions],
+            "actors": actors, "candidates": candidates,
+            "historical_fixture_source": {"id": legacy.id, "company_id": legacy.company_id.id,
+                                           "matches_current_scope": legacy.company_id == company},
             "policy": {"id": policy.id, "mode": policy.mode, "step_ids": policy.step_ids.ids},
         }, ensure_ascii=False, default=str))
     finally:
@@ -4265,6 +4351,8 @@ def _plan_reviewer_entry_checks():
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "payment-review-entry":
+        return _payment_review_entry_checks()
     if scope == "payment-review-preflight":
         return _payment_review_preflight_checks()
     if scope == "plan-publication-entry":

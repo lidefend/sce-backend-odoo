@@ -9644,3 +9644,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - P4在既有approval_runtime增加payment-review-preflight只读scope，复用原registered profile/DB/凭据/入口，事务finally rollback。不创建数据或新环境。L1 payment-review-preflight-iteration PASS，profile unit11 PASS、py_compile/bash语法PASS。首个runtime在来源身份检查FAIL，无写入。
 - 增强同一断言的实际身份输出（P4 diagnostic输入改变），payment-review-identity-iteration PASS，复用未变wrapper/profile11；identity-runtime FAIL给出权威事实：既有fixture XML ID fe_request_pfl035_001当前指向payment.request30，公司1，type pay，state approved；本轮company fixture/经办/财务审批角色属于company8。不能按历史XML ID直接办理，不能绕过公司边界或为验收改写该记录。角色读取前置通过不代表来源/整个preflight通过，不记3 PASS。
 - 下一步用当前submitter正常权限，在公司8内按既有付款申请职责与可办理状态读取有限候选及执行占用事实，选择实际授权来源；保留历史XML ID不匹配证据，不新造持久fixture、不重置库、不跑全菜单或历史49项。不从readonly诊断升级为发布或整体交付。配置保存恢复和真实审批UI仍pending，67目标active，无远端操作/目标部署。
+
+### 53.217 当前授权来源与付款执行真实审批能力
+
+- c3a53de9b clean续跑；历史XMLID错配作为观察保留。P4改为submitter44/reviewer30各自正常权限、company8、approved/pay/未被终端现金对象占用且有项目客商的域，最多3条；不sudo扩大候选。payment-source-iteration PASS，复用未变profile11/syntax；payment-source-runtime **3项诊断PASS**：申请33缺收款账户，申请1710对manager允许继续(action777/menu547)、对普通经办拒绝；既有执行186为paid。此读回不是审批旅程通过。
+- 既有受管approval_runtime增加payment-review-entry：绑定source1710/company8、无draft/confirmed占用、当前真实用户、原执行集合/台账/申请金额状态基线；临时登记使用现有来源和策略，不创建fixture或改policy18/step2187。不执行action_paid。事务finally rollback并回读集合/金额/临时记录消失。
+- L1 payment-review-entry-final-iteration及owner-iteration PASS；profile11 PASS与py_compile，wrapper未变的后续角色修正复用11。第一次运行FAIL：虽普通经办模型create ACL为True，模型create仍要求财务确认业务权限；PAYMENT_REVIEW_ROLLBACK=VERIFIED。不是产品缺陷，不增ACL/不sudo执行。探针修为reviewer正常创建→submitter提交；权限与已读取业务源码一致。
+- payment-review-owner-runtime实际退出0，**6 PASS、ROLLBACK VERIFIED**：经办提交draft+waiting/pending、真正reviewer分配；当前product_workspace含实际付款执行待办；消费最终approve契约，submitter复用来源拒绝，reviewer审批成功到confirmed/validated；已完成来源重放拒绝、工作台待办退出、无资金台账新增；回滚后source、executions、ledger和临时执行不存在全部核验。此为系统能力/实际角色运行证据，不代替浏览器用户验收。
+- 下一步将同一source1710、create manager→submitter submit→manager work-item approve和只到confirmed的流程接入既有浏览器许可与精确恢复。清理必须绑定本次临时执行、真实创建人、source/公司/金额/marker、已验证阶段和tier.review，保护原paid186及资金台账；不得将旧plan或expense清理泛化成任意删除。前端9433/backendeae3产品输入未变，无构建/后端重启。67目标active；无远端/目标部署。
