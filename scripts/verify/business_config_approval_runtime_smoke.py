@@ -4117,6 +4117,42 @@ def _payment_review_entry_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=payment-review-entry rollback_verified=true")
 
 
+def _payment_flow_existing_checks():
+    """Read the retained sequential-flow failure; no record/configuration writes."""
+    from odoo.addons.smart_construction_core.services.review_work_item_service import authorize_review_origin
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    try:
+        record = base["sc.payment.execution"].sudo().browse(201).exists()
+        assert record and record.company_id.id == 8 and record.payment_request_id.id == 1710
+        assert record.create_uid.login == "fixture_role_pfl035_finance_user"
+        assert record.note == "TPL53-PAYMENT-REVIEW-1790824096177"
+        reviews = [{"id": review.id, "status": review.status, "sequence": review.sequence,
+                    "definition_id": review.definition_id.id, "definition_active": review.definition_id.active,
+                    "reviewer_ids": review.reviewer_ids.ids, "done_by": review.done_by.id,
+                    "reviewer_group": review.reviewer_group_id.display_name} for review in record.review_ids]
+        actors = []
+        for login in ("fixture_role_pfl035_finance_user", "fixture_role_finance", "fixture_role_executive"):
+            user = base["res.users"].sudo().search([("login", "=", login)])
+            assert len(user) == 1 and user.active and user.company_id.id == 8
+            env = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+            own = env[record._name].browse(record.id)
+            facts = {"login": login, "uid": user.id, "read_acl": own.check_access_rights("read", raise_exception=False)}
+            try:
+                own.check_access_rule("read")
+                facts.update(read_rule=True, can_review=own.can_review, validation_status=own.validation_status)
+                facts["origins"] = [{"id": review.id, "authorized": authorize_review_origin(env,
+                    {"source": "tier.review", "id": review.id}, model=record._name, record_id=record.id)} for review in record.review_ids]
+            except Exception as error:
+                facts["error"] = type(error).__name__ + ": " + str(error)
+            actors.append(facts)
+        print("PAYMENT_FLOW_EXISTING=" + json.dumps({"id": record.id, "state": record.state,
+              "reviews": reviews, "actors": actors}, ensure_ascii=False, default=str))
+    finally:
+        base.cr.rollback()
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=4 scope=payment-flow-existing rollback_verified=true diagnostic_only=true")
+
+
 def _payment_review_preflight_checks():
     """Read only the existing PFL-035 actors, source and approval baseline."""
     base = _env()
@@ -4351,6 +4387,8 @@ def _plan_reviewer_entry_checks():
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "payment-flow-existing":
+        return _payment_flow_existing_checks()
     if scope == "payment-review-entry":
         return _payment_review_entry_checks()
     if scope == "payment-review-preflight":
