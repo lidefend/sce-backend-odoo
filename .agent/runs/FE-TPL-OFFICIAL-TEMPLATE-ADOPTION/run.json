@@ -16,6 +16,7 @@
     "scripts/verify/",
     "make/",
     "config/ci/",
+    "config/acceptance/",
     "docs/frontend_productization/",
     "addons/smart_core/",
     "addons/smart_construction_core/",
@@ -920,14 +921,52 @@
         "config/contract/workflow_state_phase_dead_entries.v1.json",
         "make/ci.mk"
       ]
+    },
+    "backend_contract_instance_receipt": {
+      "kind": "offline",
+      "target": "verify.frontend.acceptance.environment.guard",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "make/dev.mk",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+      ]
+    },
+    "backend_contract_instance_live": {
+      "kind": "runtime",
+      "target": "verify.dev.acceptance.contract",
+      "inputs": [
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "make/dev.mk",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py"
+      ]
+    },
+    "acceptance_record_identity_resolution": {
+      "kind": "runtime",
+      "target": "verify.dev.acceptance.contract.identity_resolution",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+        "make/dev.mk",
+        "scripts/ops/odoo_shell_exec.sh"
+      ]
     }
   },
   "blockers": [
-    "Layered acceptance prerequisite not implemented: browser does not yet require a backend-approved exact-instance contract receipt/content binding.",
-    "Follow-up source is local only; Quick cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
+    "Step 3 frontend same-contract prerequisite not implemented: browser does not yet require the backend-exact-instance contract PASS receipt/content binding before DOM assertions.",
+    "Step 2 backend exact-instance PASS receipt uncommitted and not run live; the running 18082 image predates the schema-digest constant fix, so contract_schema_digest_bound legitimately fails until the backend rebuild in step 5/6.",
+    "Environment DENY retained: the two mounters belong to the same project and do not prove exclusive ownership; the non-current authorized mounter must be handled through the existing governed entry before audit reverts. Keep the in-use 18082.",
+    "Follow-up source is local only; Quick was cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
     "Post-deploy affected detail/scene acceptance pending; historical attachment content unavailable, metadata rendering does not restore it."
   ],
-  "next_exact_step": "Owner-assigned successor only: identity preflight + read this run + make agent.run.resume; implement backend-instance contract PASS receipt -> frontend same-contract conformance prerequisite as described in execution_handoff_20261001. Current executor must stop.",
+  "next_exact_step": "Implement step 3 of execution_handoff_20261001: the browser must consume a backend-exact-instance contract PASS receipt and reject missing/stale/mismatched prerequisites before any DOM assertion; open the receipt-approved record through its declared entry authority; then freeze and run one exact-head Quick (step 4).",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -5162,7 +5201,10 @@
       "enforcement_gap": "verify.backend.contract_lifecycle.authority was registered only inside verify.product.release.ready, never in ci.local.quick.run, so the P0 failure did not block the lane that gates merges and Quick passed while the guard exited 1.",
       "fix": "Corrected the constant to the schema file byte digest, which is the single rule the guard already enforces, and added verify.backend.contract_lifecycle.authority to ci.local.quick.run. No assertion was relaxed and no schema field was stripped.",
       "evidence": "make verify.backend.contract_lifecycle.authority -> exit 0, report p0Count=0 score=100 level=L4_governed_production_ready; make -n ci.local.quick.run -> exit 0 with the guard present in the recipe.",
-      "commits": ["f91c2df11", "f56684c91"]
+      "commits": [
+        "f91c2df11",
+        "f56684c91"
+      ]
     },
     "contract_export_reuse_decision": {
       "question": "Whether the governed contract export can serve as the complete runtime contract carrier for acceptance.",
@@ -5176,5 +5218,19 @@
       "conclusion": "The complete runtime contract does exist, but only on the live POST /api/v1/intent response (ui.contract.v2, delivery_profile=full) under data.meta.lifecycle, where the producer-side verifier verify_unified_page_contract_integrity() already operates. Step 2 must bind that live complete contract at the exact instance and emit the PASS receipt; the exported snapshot may be reused for request construction and semantic regression only, and must never be promoted into custody evidence."
     },
     "not_implemented_yet": "The backend exact-instance acceptance receipt (step 2) and the frontend same-contract prerequisite (step 3) are not implemented in this entry; the boundary above is the frozen input for them."
+  },
+  "successor_step2_backend_receipt_20261001": {
+    "stage": "step 2 of execution_handoff_20261001",
+    "status": "implemented_uncommitted_unlive",
+    "artifacts": [
+      "config/acceptance/backend_contract_instance_v1.json",
+      "scripts/ops/dev_acceptance_release_probe.py::probe_contract_acceptance",
+      "scripts/verify/dev_acceptance_release_probe_schema_guard.py::_check_contract",
+      "scripts/verify/test_dev_acceptance_release_identity.py (25 tests)",
+      "make/dev.mk::acceptance.record_identity.resolve,verify.dev.acceptance.contract"
+    ],
+    "contract_export_limit": "governed export (make contract.export_all) is request-construction and semantic-regression input only. Not the complete runtime contract: contractSha256 seals sha256(contract minus meta) so definition/generation/authority sit outside the seal; SC_CONTRACT_STABLE strips instance-custody fields and reorders lists. Complete custody/authority evidence must come from the live POST /api/v1/intent ui.contract.v2 (delivery_profile=full) data.meta.lifecycle read under the real actor.",
+    "live_status": "NOT yet run: running 18082 image predates the schema-digest constant fix, so contract_schema_digest_bound will legitimately FAIL until the backend is rebuilt/upgraded from this candidate; this is the step-6 backend verdict, not a defect to work around.",
+    "next": "commit step 2, resume iteration, then implement step 3 frontend prerequisite"
   }
 }

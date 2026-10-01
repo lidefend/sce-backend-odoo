@@ -7,13 +7,32 @@ import os
 from pathlib import Path
 import re
 import sys
+import importlib.util
 
 
 ROOT = Path(__file__).resolve().parents[2]
+CONTRACT_LIFECYCLE_PATH = ROOT / "addons/smart_core/core/contract_lifecycle.py"
 REPORT_JSON = ROOT / os.getenv(
     "ACCEPTANCE_PROBE_OUTPUT",
     "artifacts/backend/dev_acceptance_release_probe.json",
 )
+
+
+def _sha256_hex(value: object) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{64}", value))
+
+
+def _sha40_hex(value: object) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{40}", value))
+
+
+def _semantic_sha256(snapshot: dict) -> str:
+    """Recompute the approved semantic digest with the producer protocol itself."""
+    spec = importlib.util.spec_from_file_location("acceptance_guard_contract_lifecycle", CONTRACT_LIFECYCLE_PATH)
+    module = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(module)
+    return module.payload_sha256(module.contract_semantic_payload(snapshot))
 
 
 def _load_json(path: Path) -> dict:
@@ -176,6 +195,79 @@ def _check_login(value: object, errors: list[str]) -> str:
     return str(login.get("status") or "FAIL")
 
 
+def _check_contract(value: object, errors: list[str]) -> str:
+    """Validate the exact-instance receipt and re-derive its approved digest."""
+    contract = _check_status_block("contract", value, errors)
+    if not contract:
+        return "FAIL"
+    enabled = contract.get("enabled")
+    if not isinstance(enabled, bool):
+        errors.append("contract.enabled must be bool")
+        return "FAIL"
+    if enabled is False:
+        return "NOT_RUN"
+    status = contract.get("status")
+    if status not in {"PASS", "FAIL", "NOT_RUN"}:
+        errors.append("contract.status must be PASS, FAIL or NOT_RUN when enabled")
+        return "FAIL"
+    required = contract.get("required_checks")
+    if not isinstance(required, list) or not required or not all(isinstance(item, str) and item for item in required):
+        errors.append("contract.required_checks must be non-empty string list when enabled")
+        required = []
+    checks = contract.get("checks")
+    if not isinstance(checks, dict) or not checks:
+        errors.append("contract.checks must be non-empty object when enabled")
+        checks = {}
+    for name in required:
+        if name not in checks:
+            errors.append(f"contract.checks must contain declared required check {name}")
+    for name, result in checks.items():
+        if not isinstance(result, bool):
+            errors.append(f"contract.checks.{name} must be bool")
+    executed = [name for name in required if name in checks]
+    if status == "PASS":
+        if not executed:
+            errors.append("contract.status=PASS requires at least one executed required check")
+        for name in required:
+            if checks.get(name) is not True:
+                errors.append(f"contract.checks.{name} must be true when contract passes")
+        snapshot = contract.get("snapshot")
+        if not isinstance(snapshot, dict) or not snapshot:
+            errors.append("contract.snapshot must be non-empty object when contract passes")
+        approved = contract.get("approved_semantic_sha256")
+        if not _sha256_hex(approved):
+            errors.append("contract.approved_semantic_sha256 must be sha256 when contract passes")
+        elif isinstance(snapshot, dict) and snapshot:
+            if _semantic_sha256(snapshot) != approved:
+                errors.append("contract.approved_semantic_sha256 must match the embedded snapshot semantics")
+        if contract.get("recomputed_semantic_sha256") != approved:
+            errors.append("contract.recomputed_semantic_sha256 must equal approved_semantic_sha256")
+        identity = contract.get("identity")
+        if not isinstance(identity, dict) or not _sha40_hex(identity.get("served_sha")):
+            errors.append("contract.identity.served_sha must be full commit SHA when contract passes")
+        elif identity.get("served_sha") != identity.get("expected_sha"):
+            errors.append("contract.identity.served_sha must equal expected_sha")
+        request = contract.get("request")
+        if not isinstance(request, dict) or not isinstance(request.get("params"), dict) or not request.get("params"):
+            errors.append("contract.request.params must be non-empty object when contract passes")
+        elif not _sha256_hex(request.get("fingerprint_sha256")):
+            errors.append("contract.request.fingerprint_sha256 must be sha256 when contract passes")
+        resolution = contract.get("resolution")
+        if not isinstance(resolution, dict) or not isinstance(resolution.get("record_id"), int) or resolution.get("record_id") <= 0:
+            errors.append("contract.resolution.record_id must be positive int when contract passes")
+        elif not isinstance(resolution.get("stable_identifier"), str) or not resolution.get("stable_identifier"):
+            errors.append("contract.resolution.stable_identifier must be governed fixture id")
+        custody = contract.get("custody")
+        if not isinstance(custody, dict) or not _sha256_hex(custody.get("response_sha256")):
+            errors.append("contract.custody.response_sha256 must be sha256 when contract passes")
+        schema = contract.get("schema_asset")
+        if not isinstance(schema, dict) or not _sha256_hex(schema.get("sha256")):
+            errors.append("contract.schema_asset.sha256 must be sha256 when contract passes")
+        elif schema.get("sha256") != schema.get("declared_schema_sha256"):
+            errors.append("contract.schema_asset.sha256 must equal declared_schema_sha256")
+    return str(status)
+
+
 def _check_runtime_identity(value: object, errors: list[str]) -> str:
     identity = _check_status_block("runtime_identity", value, errors)
     if not identity:
@@ -210,9 +302,12 @@ def main() -> int:
             _check_frontend(payload.get("frontend"), errors),
             _check_login(payload.get("login"), errors),
         ]
+        contract_status = _check_contract(payload.get("contract"), errors) if "contract" in payload else None
+        if contract_status is not None and contract_status != "NOT_RUN":
+            statuses.append(contract_status)
         expected_status = "PASS" if all(status == "PASS" for status in statuses) else "FAIL"
         if payload.get("status") in {"PASS", "FAIL"} and payload.get("status") != expected_status:
-            errors.append("status must match backup/runtime_identity/frontend/login aggregate status")
+            errors.append("status must match backup/runtime_identity/frontend/login/contract aggregate status")
 
     if errors:
         print("[dev_acceptance_release_probe_schema_guard] FAIL")

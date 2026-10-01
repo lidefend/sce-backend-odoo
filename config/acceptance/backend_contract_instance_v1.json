@@ -1,0 +1,46 @@
+{
+  "schema": "acceptance.backend_contract_instance.v1",
+  "purpose": "Declared exact readonly instance scope for the backend contract acceptance receipt. The account, target contract and required checks are declared here; the record identity is resolved by the governed fixture resolver, never hard-coded.",
+  "database": "sc_frontend_acceptance",
+  "account": {
+    "login": "fixture_role_finance",
+    "role_code": "finance",
+    "company_name": "FE Company A"
+  },
+  "resolution": {
+    "governed_producer": "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+    "producer_output_key": "FRONTEND_DELIVERY_HARDENING_TARGETS_JSON",
+    "target_key": "payment_request",
+    "company_key": "a",
+    "stable_identifier_field": "record_xmlid",
+    "requires_unique_match": true
+  },
+  "request": {
+    "intent": "ui.contract.v2",
+    "view_type": "form",
+    "delivery_profile": "full",
+    "client_type": "web_pc",
+    "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x"],
+    "client_contract_capabilities": [
+      "container_tree.v2",
+      "data_source.v2",
+      "action_rule.v2",
+      "relation_entry.v2",
+      "status_contract.v2",
+      "form_layout.children_owner.v1"
+    ]
+  },
+  "schema_asset": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+  "required_checks": [
+    "identity_deployed_sha",
+    "identity_actor_uid",
+    "identity_role_code",
+    "identity_company",
+    "resolution_unique_target",
+    "request_target_binding",
+    "contract_integrity_self_consistent",
+    "contract_schema_digest_bound",
+    "contract_formal_schema_valid",
+    "contract_custody_captured"
+  ]
+}
