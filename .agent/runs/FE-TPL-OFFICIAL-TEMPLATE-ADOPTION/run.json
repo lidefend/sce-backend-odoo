@@ -957,16 +957,29 @@
         "make/dev.mk",
         "scripts/ops/odoo_shell_exec.sh"
       ]
+    },
+    "frontend_contract_prerequisite": {
+      "kind": "offline",
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/lib/acceptance_contract_receipt.mjs",
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "make/frontend.mk",
+        "scripts/ops/dev_acceptance_release_probe.py"
+      ]
     }
   },
   "blockers": [
-    "Step 3 frontend same-contract prerequisite not implemented: browser does not yet require the backend-exact-instance contract PASS receipt/content binding before DOM assertions.",
-    "Step 2 backend exact-instance PASS receipt uncommitted and not run live; the running 18082 image predates the schema-digest constant fix, so contract_schema_digest_bound legitimately fails until the backend rebuild in step 5/6.",
+    "Step 4 not started: independent review, frozen fingerprint and the single exact-head Quick are still pending.",
+    "Step 2/3 live verdicts pending: the running 18082 backend predates the schema-digest constant fix, so the contract receipt cannot reach PASS until the governed rebuild in step 5/6.",
     "Environment DENY retained: the two mounters belong to the same project and do not prove exclusive ownership; the non-current authorized mounter must be handled through the existing governed entry before audit reverts. Keep the in-use 18082.",
     "Follow-up source is local only; Quick was cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
     "Post-deploy affected detail/scene acceptance pending; historical attachment content unavailable, metadata rendering does not restore it."
   ],
-  "next_exact_step": "Implement step 3 of execution_handoff_20261001: the browser must consume a backend-exact-instance contract PASS receipt and reject missing/stale/mismatched prerequisites before any DOM assertion; open the receipt-approved record through its declared entry authority; then freeze and run one exact-head Quick (step 4).",
+  "next_exact_step": "Step 4: run L1 plus the affected nonzero L2 targets, obtain the independent review, freeze the clean tracked+untracked identity and run exactly one exact-head Quick; then step 5 integration and step 6 deployed-main backend+frontend verdicts.",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -5232,5 +5245,25 @@
     "contract_export_limit": "governed export (make contract.export_all) is request-construction and semantic-regression input only. Not the complete runtime contract: contractSha256 seals sha256(contract minus meta) so definition/generation/authority sit outside the seal; SC_CONTRACT_STABLE strips instance-custody fields and reorders lists. Complete custody/authority evidence must come from the live POST /api/v1/intent ui.contract.v2 (delivery_profile=full) data.meta.lifecycle read under the real actor.",
     "live_status": "NOT yet run: running 18082 image predates the schema-digest constant fix, so contract_schema_digest_bound will legitimately FAIL until the backend is rebuilt/upgraded from this candidate; this is the step-6 backend verdict, not a defect to work around.",
     "next": "commit step 2, resume iteration, then implement step 3 frontend prerequisite"
+  },
+  "successor_step3_frontend_prerequisite_20261001": {
+    "stage": "step 3 of execution_handoff_20261001",
+    "status": "implemented",
+    "artifacts": [
+      "scripts/verify/lib/acceptance_contract_receipt.mjs",
+      "scripts/verify/acceptance_contract_receipt_test.mjs",
+      "scripts/verify/frontend_list_surface_structure_browser.mjs",
+      "scripts/verify/test_frontend_list_surface_search_contract.py",
+      "make/frontend.mk"
+    ],
+    "gate": "the probe reads the backend receipt and the declared account before launching the browser; missing/unknown-schema/disabled/not-PASS/errors/unexecuted/failed checks, unbound identity, missing required SHA, stale served SHA, database/login/role/company mismatch, unverified semantics, unbound schema digest, invalid formal schema, missing custody, unexpected intent, incomplete resolution, request-target mismatch, unsealed snapshot or absent authority all stop the run before any DOM assertion.",
+    "execution": "approved record is opened by data-record-key (never the first row) through the declared page.row authority on the approved action/menu route; the approved request is replayed in-page under the real session and must carry the approved sealed semantic digest; the app's observed detail contract must match target, schema, authority and be reproducible from its own request.",
+    "declared_not_run": [
+      "other_roles_or_companies",
+      "per_button_authorization",
+      "backend_rejection_of_forbidden_write",
+      "submit_approval_lifecycle"
+    ],
+    "open": "live verdict is step 6; the running 18082 image still predates the schema-digest fix"
   }
 }

@@ -7,6 +7,8 @@ that the primitive consumes. This test fails when either side drops a declared
 hook, so the probe converges instead of accumulating per-symptom selector patches.
 """
 from pathlib import Path
+import importlib.util
+import json
 import unittest
 import subprocess
 
@@ -17,6 +19,8 @@ TOOLBAR = ROOT / 'frontend/apps/web/src/components/action/ActionSurfaceToolbar.v
 EMPTY_STATE = ROOT / 'frontend/apps/web/src/components/design-system/ScEmptyState.vue'
 HEADER = ROOT / 'frontend/apps/web/src/components/product-list/ProductListHeader.vue'
 LIST_PAGE = ROOT / 'frontend/apps/web/src/pages/ListPage.vue'
+FRONTEND_MAKE = ROOT / 'make/frontend.mk'
+CONTRACT_LIFECYCLE = ROOT / 'addons/smart_core/core/contract_lifecycle.py'
 
 EMPTY_CONTRACT = '[data-semantic-component="ScEmptyState"][data-state="empty"]'
 CONTENT_CONTRACT = '[data-collection-presentation="table"]'
@@ -40,6 +44,54 @@ def validate_search_probe(probe, toolbar, empty_state, header, list_page):
     assert 'data-semantic-component="ScEmptyState"' in empty_state, 'ScEmptyState must declare its semantic component'
     assert 'data-state="empty"' in empty_state, 'ScEmptyState must declare the empty state contract'
     assert 'data-collection-presentation="table"' in list_page, 'ListPage must declare the table presentation contract'
+
+
+def load_contract_lifecycle():
+    spec = importlib.util.spec_from_file_location('contract_lifecycle', CONTRACT_LIFECYCLE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def validate_acceptance_contract_consumption(probe, frontend_make):
+    """The probe must consume the backend-approved contract before it asserts anything."""
+    assert 'assertContractPrerequisite(' in probe, 'the probe must require the backend exact-instance contract receipt'
+    gate_at = probe.index('assertContractPrerequisite(')
+    for later in ('await login(page, navigation)', 'findPopulatedList(page, navigation)', 'captureState(page,'):
+        assert probe.index(later) > gate_at, f'{later} must run after the contract prerequisite gate, not before'
+    assert 'readContractReceipt(' in probe, 'the probe must read the declared receipt rather than invent an approval'
+    assert 'observedContractBinding(' in probe, 'the probe must bind the executed response to the approved contract'
+    assert 'page.locator(`[data-record-key="${approvedRecordId}"]`)' in probe, 'the approved record must be opened by its declared row identity'
+    assert 'approved_contract_binding' in probe, 'the record walk must report the approved-contract binding step'
+    assert 'SC_ACCEPTANCE_REQUIRE_CONTRACT=1' in frontend_make, 'the governed list browser lane must require the contract receipt'
+    assert 'SC_ACCEPTANCE_CONTRACT_RECEIPT' in frontend_make, 'the governed list browser lane must pass the contract receipt'
+    assert 'SC_ACCEPTANCE_REQUIRED_SHA' in frontend_make, 'the governed list browser lane must bind the required served revision'
+
+
+class AcceptanceContractConsumptionTest(unittest.TestCase):
+    """Lock that the browser consumes the backend contract, not a selector string."""
+
+    def test_probe_consumes_the_approved_contract_before_any_assertion(self):
+        validate_acceptance_contract_consumption(PROBE.read_text(), FRONTEND_MAKE.read_text())
+
+    def test_semantic_seal_parity_between_backend_and_frontend(self):
+        lifecycle = load_contract_lifecycle()
+        fixture = {
+            'pageInfo': {'model': 'payment.request', 'viewType': 'form'},
+            'fields': [{'name': 'amount_total', 'type': 'monetary'}, {'name': '公司', 'type': 'char'}],
+            'statusContract': {'globalStatus': {'modelRights': {'write': True}, 'effectiveRenderProfile': 'readonly'}},
+            'ratio': 0.5,
+            'counts': [1, 2, 3],
+            'meta': {'lifecycle': {'runtime': {'requestId': 'request.1'}}},
+        }
+        expected = lifecycle.payload_sha256(lifecycle.contract_semantic_payload(fixture))
+        program = (
+            "import { semanticSha256 } from './scripts/verify/lib/acceptance_contract_receipt.mjs';"
+            f"process.stdout.write(semanticSha256({json.dumps(fixture, ensure_ascii=False)}));"
+        )
+        result = subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), expected)
 
 
 class ListSurfaceSearchContractTest(unittest.TestCase):
@@ -146,10 +198,11 @@ assert.throws(()=>dailyContractEvidenceRef([],row),/not captured/);
     def test_record_checks_require_each_viewport_and_each_executed_step(self):
         self.run_record_probe_helpers("""
 const viewports=[{key:'1440'},{key:'390'}];
-const checks=viewports.flatMap(viewport=>['declared_entry_route','exact_record_contract','declared_renderer','return_to_source'].map(check=>({viewport:viewport.key,check,passed:true})));
-assert.deepEqual(dailyRecordCheckSummary(checks,viewports),{passed:8,total:8,complete:true});
+const steps=['declared_entry_route','exact_record_contract','approved_contract_binding','declared_renderer','return_to_source'];
+const checks=viewports.flatMap(viewport=>steps.map(check=>({viewport:viewport.key,check,passed:true})));
+assert.deepEqual(dailyRecordCheckSummary(checks,viewports),{passed:10,total:10,complete:true});
 assert(!dailyRecordCheckSummary([],viewports).complete);
-assert(!dailyRecordCheckSummary(checks.slice(0,7),viewports).complete);
+assert(!dailyRecordCheckSummary(checks.slice(0,9),viewports).complete);
 assert(!dailyRecordCheckSummary([...checks,checks[0]],viewports).complete);
 assert(!dailyRecordCheckSummary(checks.map((row,i)=>i===2?{...row,passed:false}:row),viewports).complete);
 assert(!dailyRecordCheckSummary(checks.map(row=>({...row,viewport:'1440'})),viewports).complete);

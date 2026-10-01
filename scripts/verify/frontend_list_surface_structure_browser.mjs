@@ -8,6 +8,7 @@ import { resolveAcceptanceEnvironment, verifyServedIdentity, redactedEnvironment
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
 import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+import { DEFAULT_RECEIPT_PATH, assertContractPrerequisite, observedContractBinding, readContractReceipt } from './lib/acceptance_contract_receipt.mjs';
 const DAILY = acceptance.profile === 'daily';
 const DAILY_OBSERVATION_SCOPE = process.env.LIST_SURFACE_DAILY_OBSERVATION_SCOPE || 'all';
 if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !['all', 'record-only', 'detail-only'].includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
@@ -37,11 +38,53 @@ const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
 const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || (DAILY ? '1440,390' : '')).split(',').filter(Boolean);
 if (requestedWidths.some(width => !DEFAULT_VIEWPORTS.some(viewport => viewport.key === width))) throw new Error('unknown LIST_SURFACE_VIEWPORTS');
 const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => requestedWidths.includes(viewport.key)) : DEFAULT_VIEWPORTS;
-const REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
+let REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
 if (REQUESTED_ROUTE && !/^\/a\/\d+\?menu_id=\d+$/.test(REQUESTED_ROUTE)) throw new Error('LIST_SURFACE_ROUTE must identify exact action/menu');
 
 if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
   throw new Error('acceptance login and password or isolated bootstrap secret are required');
+}
+
+// The list/detail probe must not assert anything about a contract the backend has
+// not certified at the served revision. Validate the declared prerequisite before
+// the browser is launched, i.e. before any DOM interaction or assertion.
+const CONTRACT_RECEIPT_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_RECEIPT || DEFAULT_RECEIPT_PATH);
+const CONTRACT_DECLARATION_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_DECLARATION || 'config/acceptance/backend_contract_instance_v1.json');
+const REQUIRE_CONTRACT = DAILY || ['1', 'true', 'yes'].includes(String(process.env.SC_ACCEPTANCE_REQUIRE_CONTRACT || '').toLowerCase());
+const contractGate = { required: REQUIRE_CONTRACT, status: REQUIRE_CONTRACT ? 'not_evaluated' : 'optional',
+  receipt: CONTRACT_RECEIPT_PATH, declaration: CONTRACT_DECLARATION_PATH,
+  approved: null, approved_request: null, approved_route: '', binding: null };
+if (REQUIRE_CONTRACT) {
+  let declaration;
+  try {
+    declaration = JSON.parse(await fs.readFile(CONTRACT_DECLARATION_PATH, 'utf8'));
+  } catch (error) {
+    throw new Error(`contract prerequisite failed: contract_declaration_unavailable (${CONTRACT_DECLARATION_PATH})`);
+  }
+  const account = declaration?.account && typeof declaration.account === 'object' ? declaration.account : {};
+  const { receipt, error: receiptError } = readContractReceipt(CONTRACT_RECEIPT_PATH);
+  const verdict = assertContractPrerequisite({
+    receipt, loadError: receiptError,
+    expectedSha: String(acceptance.provenance?.expectedSha || ''),
+    database: DATABASE, login: String(account.login || LOGIN || '').trim(),
+    roleCode: String(account.role_code || '').trim(), companyName: String(account.company_name || '').trim(),
+  });
+  contractGate.status = 'accepted';
+  contractGate.approved = verdict.approved;
+  contractGate.approved_request = verdict.approvedRequest;
+  contractGate.approved_semantic_sha256 = verdict.approvedSemanticSha256;
+  contractGate.approved_route = verdict.approved.route;
+  contractGate.schema_sha256 = verdict.schemaSha256;
+  contractGate.identity = verdict.identity;
+  if (!verdict.identity.login || String(LOGIN || '').trim() !== verdict.identity.login) {
+    throw new Error(`contract prerequisite failed: contract_receipt_actor_mismatch ${JSON.stringify({ receipt: verdict.identity.login, runtime: String(LOGIN || '').trim() })}`);
+  }
+  // The approved record is opened through the declared list authority; the probe
+  // must not drift to another list or to the first row of whatever renders.
+  if (REQUESTED_ROUTE && REQUESTED_ROUTE !== contractGate.approved_route) {
+    throw new Error(`LIST_SURFACE_ROUTE ${REQUESTED_ROUTE} does not match the approved contract target ${contractGate.approved_route}`);
+  }
+  REQUESTED_ROUTE = contractGate.approved_route;
 }
 await fs.mkdir(OUTPUT, { recursive: true });
 
@@ -731,7 +774,7 @@ function dailyRecordDomMatches(observed, declaration, expected) {
 }
 
 function dailyRecordCheckSummary(checks, viewports) {
-  const steps = ['declared_entry_route', 'exact_record_contract', 'declared_renderer', 'return_to_source'];
+  const steps = ['declared_entry_route', 'exact_record_contract', 'approved_contract_binding', 'declared_renderer', 'return_to_source'];
   const expected = viewports.flatMap(viewport => steps.map(check => `${viewport.key}:${check}`));
   const actual = checks.filter(row => row.passed === true).map(row => `${row.viewport}:${row.check}`);
   const complete = expected.length > 0 && expected.every(key => actual.filter(value => value === key).length === 1)
@@ -820,6 +863,25 @@ try {
     task.finally(() => responseTasks.delete(task)).catch(() => {});
   });
   await login(page, navigation);
+  if (contractGate.status === 'accepted') {
+    // Replay the backend-approved request through this real session. The approved
+    // contract must be reproducible at the served revision under the live actor;
+    // anything else is not the contract the acceptance claim was made about.
+    const approvedPayload = contractGate.approved_request;
+    const replay = await page.evaluate(async ({ url, payload }) => {
+      const response = await fetch(url, { method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      return { status: response.status, text: await response.text() };
+    }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: approvedPayload });
+    let replayEnvelope = {};
+    try { replayEnvelope = JSON.parse(replay.text); } catch {}
+    const binding = observedContractBinding({ envelope: replayEnvelope, receiptRequest: approvedPayload.params,
+      approved: contractGate, requestParams: approvedPayload.params });
+    contractGate.binding = { replay_http_status: replay.status, ...binding };
+    if (replay.status !== 200 || !binding.ok) {
+      throw new Error(`approved contract replay did not bind: status=${replay.status} ${binding.ok ? '' : `${binding.code} ${JSON.stringify(binding.detail || {})}`}`);
+    }
+  }
   if (DAILY) {
     actorContext = dailyActorContext(navigation.payload());
     if (!actorContext.user_id || !actorContext.company_id || !actorContext.role_codes.length) throw new Error('actual bootstrap actor context missing');
@@ -885,10 +947,22 @@ try {
       const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
       const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
       if (!listContract) throw new Error('current list authority contract missing');
-      const firstRecord = page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
+      // Open the contract-approved record through the row authority the list
+      // contract declares; never the first row that happens to render.
+      const approvedRecordId = contractGate.status === 'accepted' ? Number(contractGate.approved.record_id) : null;
+      const approvedRow = approvedRecordId
+        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator('.cell-primary-link, .collection-mobile-record-row__card') }).first()
+        : page.locator('[data-record-key]').filter({ has: page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible') }).first();
+      if (!await approvedRow.count()) {
+        throw new Error(approvedRecordId
+          ? `approved record ${approvedRecordId} is not reachable through the approved list authority`
+          : 'daily list contains no declared record opener');
+      }
+      const firstRecord = approvedRow.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
       if (!await firstRecord.count()) throw new Error('daily list contains no declared record opener');
-      const rowId = await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
+      const rowId = await approvedRow.getAttribute('data-record-key') || await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
       if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');
+      if (approvedRecordId && Number(rowId) !== approvedRecordId) throw new Error(`opened row ${rowId} is not the approved record ${approvedRecordId}`);
       const expectedDetail = dailyRecordEntry(listContract.response.data, { id: Number(rowId), model: listContract.response.data.pageInfo.model }, source);
       const contractStart = runtime.contracts.length;
       await firstRecord.click();
@@ -903,7 +977,33 @@ try {
       if (!newContracts.length) throw new Error('daily detail contract response was not captured');
       const contractEvidenceRef = dailyContractEvidenceRef(runtime.contracts, newContracts[newContracts.length - 1]);
       recordChecks.push({ viewport: viewport.key, check: 'exact_record_contract', passed: true, contract_evidence_ref: contractEvidenceRef });
-      const detailContract = newContracts[newContracts.length - 1].response.data;
+      const observedDetail = newContracts[newContracts.length - 1];
+      const detailContract = observedDetail.response.data;
+      if (contractGate.status === 'accepted') {
+        // The contract the browser actually executed must still be the approved one.
+        const appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
+          approved: contractGate, requestParams: observedDetail.params || {} });
+        contractGate.app_viewport_bindings = [...(contractGate.app_viewport_bindings || []), { viewport: viewport.key, ...appBinding }];
+        if (!appBinding.ok) throw new Error(`observed detail contract is not the approved contract: ${appBinding.code} ${JSON.stringify(appBinding.detail || {})}`);
+        // The contract the browser actually rendered must be reproducible from the
+        // request that produced it, under the same real session authority.
+        const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
+        const observedReplay = await page.evaluate(async ({ url, payload }) => {
+          const response = await fetch(url, { method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          return { status: response.status, text: await response.text() };
+        }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: observedPayload });
+        let observedEnvelope = {};
+        try { observedEnvelope = JSON.parse(observedReplay.text); } catch {}
+        const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
+        if (observedReplay.status !== 200 || observedDigest !== appBinding.observedSemanticSha256) {
+          throw new Error(`observed detail contract is not reproducible: status=${observedReplay.status} original=${appBinding.observedSemanticSha256} replay=${observedDigest}`);
+        }
+        recordChecks.push({ viewport: viewport.key, check: 'approved_contract_binding', passed: true, contract_evidence_ref: contractEvidenceRef,
+          approved_semantic_sha256: contractGate.approved_semantic_sha256, observed_semantic_sha256: appBinding.observedSemanticSha256,
+          exact_approved_request: appBinding.exact_approved_request, extra_request_params: appBinding.extra_request_params,
+          missing_request_params: appBinding.missing_request_params, reproducible: true });
+      }
       const declaration = dailyRecordPresentation(detailContract, expectedDetail);
       const profile = declaration.profile;
       const root = page.locator(declaration.rootSelector).filter({ has: page.locator(declaration.driverSelector) });
@@ -1007,6 +1107,7 @@ try {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
     source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity },
+    contract_prerequisite: contractGate,
     acceptance_scope: acceptanceScope,
     actor_context: actorContext,
     daily_observations: dailyObservations,
@@ -1040,6 +1141,7 @@ try {
   await fs.mkdir(path.dirname(REPORT), { recursive: true });
   await fs.writeFile(REPORT, JSON.stringify({ schema: 'frontend_list_surface_structure_browser.v1', passed: false,
     failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS), list_execution: detailOnly ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    contract_prerequisite: contractGate,
     source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
   process.exitCode = 1;
 } finally {

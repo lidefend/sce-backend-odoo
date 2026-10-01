@@ -1011,15 +1011,22 @@ $(if $(filter command line environment override,$(2)),$(if $(strip $(3)),$(if $(
 endef
 
 .PHONY: verify.frontend.list_surface_search_contract.unit verify.frontend.list_surface_structure.browser
+# The list/detail browser probe consumes the backend exact-instance contract
+# receipt: the approved record, target route and sealed semantics come from the
+# live ui.contract.v2 read, never from the first rendered row or a selector.
+SC_ACCEPTANCE_CONTRACT_RECEIPT ?= artifacts/backend/dev_acceptance_release_probe.json
+SC_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_v1.json
+SC_ACCEPTANCE_REQUIRED_SHA ?= $(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_SHA),$(shell git rev-parse HEAD))
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
+	@node scripts/verify/acceptance_contract_receipt_test.mjs
 verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
 	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),sc_frontend_acceptance))
 	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),sc_frontend_acceptance))
-	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=http://127.0.0.1:5180) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=sc_frontend_acceptance) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
+	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=http://127.0.0.1:5180) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=sc_frontend_acceptance) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_EXPECTED_SHA="$(SC_ACCEPTANCE_REQUIRED_SHA)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
 
 .PHONY: verify.daily_dev.list_surface.readonly.browser
 verify.daily_dev.list_surface.readonly.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
-	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/frontend_list_surface_structure_browser.mjs
+	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/frontend_list_surface_structure_browser.mjs
