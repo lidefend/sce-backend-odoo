@@ -101,6 +101,13 @@ async function waitForList(page) {
   await page.waitForTimeout(200);
 }
 
+const MOBILE_RECORD_ROW = '.mobile-record-list .collection-mobile-record-row';
+const MOBILE_RECORD_CARD = `${MOBILE_RECORD_ROW} .collection-mobile-record-row__card`;
+const ROW_SELECTION_CONTROL = '.collection-selection-control[data-selection-scope="row"]';
+const DESKTOP_ROW_SELECTION_CONTROL = `.table tbody ${ROW_SELECTION_CONTROL}`;
+const MOBILE_ROW_SELECTION_CONTROL = `${MOBILE_RECORD_ROW} ${ROW_SELECTION_CONTROL}`;
+// page.evaluate callbacks run in the browser, so they must inline these literals.
+
 async function findPopulatedList(page, navigation) {
   const routes = actionable(navigation.nav());
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
@@ -111,7 +118,7 @@ async function findPopulatedList(page, navigation) {
     const toolbar = page.locator('[data-list-query-action-bar]');
     if (!await toolbar.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) continue;
     await waitForList(page);
-    if (await page.locator('.table tbody tr, .mobile-record-card').count()) return target;
+    if (await page.locator(`.table tbody tr, ${MOBILE_RECORD_ROW}`).count()) return target;
   }
   throw new Error('no populated runtime list was discovered');
 }
@@ -153,13 +160,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         desktop_actions_query_aligned: width < 1440 || expectedState === 'batch' || Boolean(leading && query && leading.width > 0 && query.width > 0 && leading.right <= query.left + 1 && Math.min(leading.bottom, query.bottom) > Math.max(leading.top, query.top)),
       };
     };
-    const mobileCards = Array.from(document.querySelectorAll('[data-mobile-record-row], .mobile-record-card')).filter(visible);
+    const mobileCards = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row')).filter(visible);
     const mobileMode = mobileCards.length > 0;
-    const visibleMobileSelectors = Array.from(document.querySelectorAll('[data-mobile-record-select] input[type="checkbox"]')).filter(visible);
-    const visibleMobileSelectionTargets = visibleMobileSelectors
-      .map((control) => control.closest('[data-mobile-record-select]'))
-      .filter(visible);
-    const mobileSelectionTargetSizes = visibleMobileSelectionTargets.map((target) => {
+    const visibleMobileSelectionControls = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-selection-control[data-selection-scope="row"]')).filter(visible);
+    const mobileSelectionTargetSizes = visibleMobileSelectionControls.map((target) => {
       const rect = target.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     });
@@ -188,7 +192,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         if (!rowCenters.some((value) => Math.abs(value - center) <= 6)) rowCenters.push(center);
       }
       const tableContent = Array.from(document.querySelectorAll('.table > .sc-table-shell, .table > .grouped-table')).find(visible);
-      const cardContent = Array.from(document.querySelectorAll('.mobile-record-card')).find(visible);
+      const cardContent = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-mobile-record-row__card')).find(visible);
       const firstContent = tableContent || cardContent;
       const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
       return {
@@ -198,11 +202,11 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           batch_query_coexists: visible(contextualToolbar) && visible(toolbar) && toolbar.querySelectorAll('input[type="search"]').length === 1,
           toolbar_controls_within_header: controls.every(withinHeader),
           first_business_content_order: contentFollowsHeader(firstContent),
-          visible_mobile_selection_control: !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
-          selected_mobile_card_identifiable: !mobileMode || (selectedMobileCards.length > 0 && visibleMobileSelectors.some((control) => control.checked)),
+          visible_mobile_selection_control: !mobileMode || (visibleMobileSelectionControls.length > 0 && mobileSelectionTargetsMeetSize),
+          selected_mobile_card_identifiable: !mobileMode || (selectedMobileCards.length > 0 && visibleMobileSelectionControls.some((control) => control.getAttribute('data-selection-state') === 'checked')),
           mobile_batch_created_without_hidden_desktop_control: !mobileMode || selectionSource === 'visible_mobile',
           mobile_selection_does_not_open_detail: !mobileMode || selectionNavigationStable,
-          selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.mobile-record-card'))),
+          selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.collection-mobile-record-row__card'))),
           decision_trace_complete: expectedState === 'empty' || traceComplete,
         },
         metrics: {
@@ -211,7 +215,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           toolbar_visual_row_count: rowCenters.length,
           first_business_content_y: firstContentY,
           mobile_mode: mobileMode,
-          visible_mobile_selection_control_count: visibleMobileSelectors.length,
+          visible_mobile_selection_control_count: visibleMobileSelectionControls.length,
           mobile_selection_target_sizes: mobileSelectionTargetSizes,
           selected_mobile_card_count: selectedMobileCards.length,
           selection_source: selectionSource,
@@ -239,7 +243,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       && Math.abs(control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2 - columnCenter) <= 6
     ));
     const table = Array.from(document.querySelectorAll('.table > .sc-table-shell, .table > .grouped-table')).find(visible);
-    const firstCard = Array.from(document.querySelectorAll('.mobile-record-card')).find(visible);
+    const firstCard = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-mobile-record-row__card')).find(visible);
     const emptyState = document.querySelector('.sc-empty, .list-empty-state');
     const firstContent = expectedState === 'empty' ? emptyState : table || firstCard;
     const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
@@ -317,7 +321,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       toolbar_controls_within_header: controls.every(withinHeader),
       column_settings_standalone: !visible(columnButton) || columnPeers.length > 0,
       first_business_content_order: contentFollowsHeader(firstContent),
-      visible_mobile_selection_control: expectedState !== 'normal' || !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
+      visible_mobile_selection_control: expectedState !== 'normal' || !mobileMode || (visibleMobileSelectionControls.length > 0 && mobileSelectionTargetsMeetSize),
       decision_trace_complete: expectedState === 'empty' || traceComplete,
       column_count_not_visible: !visible(columnCountHint) && !visibleColumnCountText,
       empty_clear_semantics_unique: expectedState !== 'empty' || clearActions.length === 1,
@@ -341,7 +345,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         visible_home_title_canvas: visibleHomeHeader,
         clear_action_labels: clearActions.map((button) => String(button.textContent || '').replace(/\s+/g, '').trim()),
         mobile_mode: mobileMode,
-        visible_mobile_selection_control_count: visibleMobileSelectors.length,
+        visible_mobile_selection_control_count: visibleMobileSelectionControls.length,
         mobile_selection_target_sizes: mobileSelectionTargetSizes,
         toolbar_client_width: toolbar.clientWidth,
         toolbar_scroll_width: toolbar.scrollWidth,
@@ -475,16 +479,20 @@ async function captureState(page, target, viewport, state) {
     await search.press('Enter');
     await page.locator('.sc-empty, .list-empty-state').first().waitFor({ state: 'visible', timeout: 45_000 });
   } else if (state === 'batch') {
-    const mobileMode = await page.locator('[data-mobile-record-row]:visible, .mobile-record-card:visible').count() > 0;
-    const checkbox = mobileMode
-      ? page.locator('[data-mobile-record-select] input[type="checkbox"]:visible').first()
-      : page.locator('.table tbody input[type="checkbox"]:visible').first();
-    if (await checkbox.count()) {
+    const mobileMode = await page.locator(`${MOBILE_RECORD_ROW}:visible`).count() > 0;
+    // The official selection control is a label wrapping a hidden native input;
+    // clicking the input is intercepted, so drive the declared visible control.
+    const selectionControl = page.locator(`${mobileMode ? MOBILE_ROW_SELECTION_CONTROL : DESKTOP_ROW_SELECTION_CONTROL}:visible`).first();
+    if (await selectionControl.count()) {
       const pathBeforeSelection = page.url();
-      await checkbox.check();
+      await selectionControl.click();
       selectionNavigationStable = page.url() === pathBeforeSelection;
-      selectionSource = mobileMode ? 'visible_mobile' : 'visible_desktop';
-      await page.locator('.list-surface-contextual-toolbar').waitFor({ state: 'visible', timeout: 10_000 });
+      const toolbarVisible = await page.locator('.list-surface-contextual-toolbar')
+        .waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
+      const selectionState = toolbarVisible ? await selectionControl.getAttribute('data-selection-state') : null;
+      selectionSource = selectionState === 'checked'
+        ? (mobileMode ? 'visible_mobile' : 'visible_desktop')
+        : (mobileMode ? 'missing_visible_mobile' : 'missing_visible_desktop');
     } else {
       selectionSource = mobileMode ? 'missing_visible_mobile' : 'missing_visible_desktop';
     }

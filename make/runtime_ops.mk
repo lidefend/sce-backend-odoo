@@ -2399,6 +2399,10 @@ verify.frontend.standard_menu_config.browser: guard.prod.forbid
 verify.frontend.menu_navigation.diagnostic: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-menu-nav-diagnostic
 
+.PHONY: verify.frontend.relation_navigation.diagnostic
+verify.frontend.relation_navigation.diagnostic: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-nav-diagnostic
+
 .PHONY: frontend.standard.favorite_probe.recover
 frontend.standard.favorite_probe.recover: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-favorite-recovery
