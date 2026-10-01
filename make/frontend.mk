@@ -324,7 +324,7 @@ verify.frontend.professional_collaboration.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.contract_prompt_action_presentation.browser verify.frontend.low_code_field_create_dialog.unit verify.frontend.low_code_field_create_dialog.browser verify.frontend.overlay_lifecycle.unit verify.frontend.overlay_lifecycle.browser verify.frontend.collaboration_primitives.browser verify.frontend.state_dashboard.unit verify.frontend.state_dashboard.browser verify.frontend.rendering_detail_state.unit verify.frontend.rendering_detail_state.browser
 verify.frontend.professional_relation_lifecycle.unit: guard.prod.forbid
-	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-relation-lifecycle-model-test.mjs >/dev/null
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/professional-relation-lifecycle-model-test.mjs >/dev/null
 	@node /tmp/professional-relation-lifecycle-model-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_professional_relation_lifecycle_guard.py
 	@python3 scripts/verify/frontend_professional_relation_lifecycle_guard.py
