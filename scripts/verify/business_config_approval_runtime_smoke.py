@@ -4415,6 +4415,7 @@ def _plan_reviewer_entry_checks():
 def _scene_entry_contract_checks():
     """Read the actual scoped startup projection; never change publication or data."""
     from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
+    from odoo.addons.smart_core.core.scene_registry_provider import load_scene_configs
     base = _env()
     assert base.cr.dbname == "sc_frontend_acceptance"
     checks = 0
@@ -4427,6 +4428,9 @@ def _scene_entry_contract_checks():
             user = base["res.users"].sudo().search([("login", "=", login)])
             assert len(user) == 1 and user.id == uid and user.active and user.company_id.id == 8
             actor = base(user=uid, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+            registered = [row for row in load_scene_configs(actor)
+                          if (row.get("code") or row.get("key")) == key]
+            print("SCENE_ENTRY_REGISTERED=" + json.dumps({"scene": key, "targets": [row.get("target") for row in registered]}, ensure_ascii=False, default=str))
             result = SystemInitHandler(env=actor).handle(payload={"params": {
                 "scene": "web", "with_preload": False, "scene_ready_mode": "full",
                 "with": ["workspace_home"], "scene_key": key,

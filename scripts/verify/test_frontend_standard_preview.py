@@ -614,7 +614,7 @@ class SceneEntryRuntimeProbeTest(unittest.TestCase):
             for key, intent in [('workspace.home', 'workspace.home.enter'),
                                 ('dashboard.company', 'dashboard.company.enter'),
                                 ('project.management', 'project.dashboard.enter')]]
-        namespace = {'_env': lambda: base, 'SystemInitHandler': handler, 'json': json}
+        namespace = {'_env': lambda: base, 'SystemInitHandler': handler, 'json': json, 'load_scene_configs': lambda actor: []}
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
         self.base, self.handler = base, handler
         with patch('builtins.print'):
