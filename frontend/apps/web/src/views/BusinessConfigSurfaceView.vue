@@ -223,6 +223,7 @@ async function retryBusinessConfigSurface() {
 }
 const {
   approvalLoading,
+  approvalTargetModel,
   approvalAudit,
   approvalPanelOpen,
   approvalForm,
@@ -253,6 +254,7 @@ const {
   clearApprovalStepDrag,
 } = useBusinessConfigApprovalEditor({
   currentModel,
+  targetOptions: computed(() => approvalSection.value?.target_options || []),
   selectedPageLabel,
   error,
   setMessage,

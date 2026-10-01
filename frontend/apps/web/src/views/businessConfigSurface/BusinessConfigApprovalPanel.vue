@@ -9,6 +9,11 @@
         返回工作台
       </ScButton>
     </div>
+    <label>
+      <span>审批对象</span>
+      <ScSelect aria-label="审批对象" :model-value="targetModel" :options="targetOptions"
+        :disabled="loading || hasDraftChanges" @update:model-value="$emit('selectTarget', String($event))" />
+    </label>
     <aside class="approval-rule-panel" aria-label="审批规则设置">
       <div class="approval-guide">
         <strong>审批配置怎么生效</strong>
@@ -36,6 +41,7 @@
         <label>
           <span>默认审批岗位</span>
           <ScSelect
+            aria-label="默认审批岗位"
             :model-value="form.manager_scope_key"
             :disabled="!form.approval_required"
             :options="[{ value: '', label: '暂不指定' }, ...scopeOptions]"
@@ -161,6 +167,8 @@ type ApprovalStepDraft = {
 type Option = { value: string; label: string };
 
 defineProps<{
+  targetModel: string;
+  targetOptions: Option[];
   policyLabel: string;
   effectGuideText: string;
   runtimeText: string;
@@ -182,6 +190,7 @@ defineProps<{
 }>();
 
 defineEmits<{
+  selectTarget: [model: string];
   close: [];
   updateFormField: [field: keyof ApprovalForm, value: string | boolean];
   approvalRequiredChange: [];

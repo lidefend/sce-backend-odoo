@@ -20,6 +20,7 @@ export type ApprovalStepDraft = {
 
 type UseBusinessConfigApprovalEditorOptions = {
   currentModel: ComputedRef<string>;
+  targetOptions: ComputedRef<Array<{ value: string; label: string }>>;
   selectedPageLabel: Ref<string>;
   error: Ref<string>;
   setMessage: (text: string, detail?: string) => void;
@@ -31,6 +32,7 @@ type UseBusinessConfigApprovalEditorOptions = {
 
 export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprovalEditorOptions) {
   const approvalLoading = ref(false);
+  const approvalTargetModel = ref('');
   const approvalAudit = ref<ApprovalPolicyConfigPayload | null>(null);
   const approvalPanelOpen = ref(false);
   const approvalForm = ref({ approval_required: false, mode: 'none', manager_scope_key: '' });
@@ -164,13 +166,22 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     onApprovalRequiredChange();
   }
 
-  async function loadApprovalConfig() {
-    if (!options.currentModel.value) return;
+  async function loadApprovalConfig(requestedModel?: string) {
+    if (approvalLoading.value || hasApprovalDraftChanges.value) return;
+    const targets = options.targetOptions.value;
+    const model = requestedModel || targets.find((target) => target.value === options.currentModel.value)?.value || targets[0]?.value;
+    if (!model || !targets.some((target) => target.value === model)) {
+      options.error.value = '当前页面没有此审批配置对象。';
+      return;
+    }
+    const parentModel = options.currentModel.value;
     approvalLoading.value = true;
     options.error.value = '';
     options.clearMessage();
     try {
-      const result = await loadApprovalPolicyConfig({ model: options.currentModel.value });
+      const result = await loadApprovalPolicyConfig({ model });
+      if (parentModel !== options.currentModel.value) return;
+      approvalTargetModel.value = model;
       applyApprovalAudit(result);
       options.onOpenPanel();
       approvalPanelOpen.value = true;
@@ -183,7 +194,13 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   }
 
   async function saveApprovalConfig() {
-    if (!options.currentModel.value || !hasApprovalDraftChanges.value) return false;
+    const model = approvalTargetModel.value;
+    const parentModel = options.currentModel.value;
+    if (approvalLoading.value || !hasApprovalDraftChanges.value) return false;
+    if (!model || !options.targetOptions.value.some((target) => target.value === model)) {
+      options.error.value = '审批配置对象已变化，请重新读取。';
+      return false;
+    }
     if (approvalValidationMessage.value) {
       options.error.value = approvalValidationMessage.value;
       return false;
@@ -207,17 +224,19 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
         ? String(approvalForm.value.mode || 'single')
         : 'none';
       let result = await saveApprovalPolicyConfig({
-        model: options.currentModel.value,
+        model,
         approval_required: approvalForm.value.approval_required,
         mode: nextMode,
         manager_scope_key: approvalForm.value.manager_scope_key || '',
       });
+      if (parentModel !== options.currentModel.value) throw new Error('配置页面已变化，请重新读取审批设置。');
       if (stepDraftChanged) {
         result = await saveApprovalPolicySteps({
-          model: options.currentModel.value,
+          model,
           steps: approvalForm.value.approval_required ? stepPayload : [],
         });
       }
+      if (parentModel !== options.currentModel.value) throw new Error('配置页面已变化，请重新读取审批设置。');
       applyApprovalAudit(result);
       await options.loadSurface();
       options.setMessage('审批设置已保存', result.runtime_approval_required ? '当前业务提交后会进入审批。' : '当前业务提交后无需审批。');
@@ -311,6 +330,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   }
 
   return {
+    approvalTargetModel,
     approvalLoading,
     approvalAudit,
     approvalPanelOpen,

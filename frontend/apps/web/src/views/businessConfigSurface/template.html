@@ -206,6 +206,9 @@
 
     <BusinessConfigApprovalPanel
       v-if="approvalPanelOpen"
+      :target-model="approvalTargetModel"
+      :target-options="approvalSection?.target_options || []"
+      @select-target="loadApprovalConfig"
       :policy-label="approvalPolicyLabel"
       :effect-guide-text="approvalEffectGuideText"
       :runtime-text="approvalRuntimeText"
@@ -237,7 +240,7 @@
       @clear-step-drag="clearApprovalStepDrag"
       @save="confirmAndSaveApprovalConfig"
       @reset="resetApprovalDraft"
-      @open-full-rule="approvalSection && openApprovalConfig(approvalSection)"
+      @open-full-rule="approvalSection && openApprovalConfig({ ...approvalSection, route: approvalSection.target_options?.find(target => target.value === approvalTargetModel)?.route })"
     />
 
     <BusinessConfigVersionPanel
