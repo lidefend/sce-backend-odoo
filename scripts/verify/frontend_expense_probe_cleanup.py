@@ -32,6 +32,76 @@ def validate_payment_review_probe_target(database, scope, row):
     assert -5 <= created - started <= 300
 
 
+def payment_review_baseline(env, exclude_ids=()):
+    source = env['payment.request'].sudo().browse(1710).exists()
+    assert source and source.company_id.id == 8 and source.type == 'pay' and source.state == 'approved'
+    executions = env['sc.payment.execution'].sudo().with_context(active_test=False).search([
+        ('payment_request_id', '=', 1710), ('id', 'not in', list(exclude_ids))], order='id')
+    assert 186 in executions.ids
+    facts = {
+        'source': source.read(['state', 'company_id', 'project_id', 'partner_id', 'amount',
+                               'paid_amount_total', 'unpaid_amount', 'terminal_cash_source_model', 'terminal_cash_source_res_id']),
+        'execution_ids': executions.ids,
+        'executions': executions.read(['write_date', 'state', 'paid_amount', 'active']),
+        'reviews': env['tier.review'].sudo().search([('model', '=', 'sc.payment.execution'),
+                    ('res_id', 'in', executions.ids)], order='id').read(['write_date', 'status', 'done_by']),
+        'ledger': env['payment.ledger'].sudo().search([('payment_request_id', '=', 1710)], order='id').read(['write_date']),
+    }
+    Policy = env['sc.approval.policy'].sudo().with_context(active_test=False)
+    policies = Policy.search([('target_model', '=', 'sc.payment.execution'), ('company_id', 'in', [False, 8])], order='id')
+    assert 18 in policies.ids
+    facts['policies'] = policies.read(['write_date', 'approval_required', 'active'])
+    facts['steps'] = policies.step_ids.sorted('id').read(['write_date', 'active'])
+    facts['definitions'] = env['tier.definition'].sudo().with_context(active_test=False).search([
+        ('model', '=', 'sc.payment.execution')], order='id').read(['write_date'])
+    actions = [env.ref(ref).sudo() for ref in Policy._tier_server_action_xmlids('sc.payment.execution')]
+    facts['callbacks'] = [{'id': action.id, 'groups': sorted(action.groups_id.ids)} for action in actions]
+    return json.loads(json.dumps(facts, default=str))
+
+
+def recover_payment_review(env, scope, *, commit=True):
+    assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.payment.execution'
+    assert scope['source'] == {'id': 1710, 'company_id': 8}
+    assert re.fullmatch(r'TPL53-PAYMENT-REVIEW-\d{13}', scope['marker'])
+    for uid, login in ((30, 'fixture_role_finance'), (44, 'fixture_role_pfl035_finance_user')):
+        user = env['res.users'].sudo().browse(uid)
+        assert user.active and user.login == login and user.company_id.id == 8
+    records = env['sc.payment.execution'].sudo().with_context(active_test=False).search([('note', '=', scope['marker'])])
+    assert len(records) <= 1
+    if scope.get('baseline') is None:
+        assert scope['phase'] == 'prepare' and not records and not scope.get('id')
+        baseline = payment_review_baseline(env)
+        assert not any(row['state'] in ('draft', 'confirmed') for row in baseline['executions'])
+        print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'preflight', 'baseline': baseline}))
+        return baseline
+    baseline = scope['baseline']
+    assert payment_review_baseline(env, records.ids) == baseline, 'source/configuration/original financial facts changed'
+    ids = records.ids
+    for record in records:
+        row = {key: record[key] for key in ('id', 'note', 'state', 'paid_amount', 'source_origin', 'validation_status')}
+        row.update({key: record[key].id for key in ('payment_request_id', 'company_id', 'create_uid')})
+        row.update(create_date=str(record.create_date), review_ids=record.review_ids.ids,
+                   reviewer_ids=sorted(set(record.review_ids.filtered(lambda r: r.status == 'approved').mapped('done_by').ids)))
+        validate_payment_review_probe_target(env.cr.dbname, scope, row)
+        assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
+        definitions = {row['id'] for row in baseline['definitions']}
+        for review in record.review_ids:
+            assert review.model == record._name and review.res_id == record.id and review.requested_by.id == 44
+            assert review.definition_id.id in definitions and review.status in ('waiting', 'pending', 'approved')
+            assert not review.done_by or (review.status == 'approved' and review.done_by.id == 30)
+    # All ownership and unchanged-baseline checks precede deletion. Native unlink removes own tier reviews.
+    review_ids = records.mapped('review_ids').ids
+    records.unlink()
+    assert not records.exists() and not env['tier.review'].sudo().browse(review_ids).exists()
+    assert payment_review_baseline(env) == baseline
+    if commit:
+        env.cr.commit()
+        env.invalidate_all()
+        assert payment_review_baseline(env) == baseline
+        assert not env['sc.payment.execution'].sudo().browse(ids).exists()
+    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'record_ids': ids, 'review_ids': review_ids}))
+
+
 def validate_expense_probe_target(database, scope, row):
     assert database == 'sc_frontend_acceptance'
     marker = scope['request']['vals']['summary']
@@ -407,6 +477,8 @@ def recover_report(env, scope):
 
 
 def recover(env, scope):
+    if scope.get("model") == "sc.payment.execution":
+        return recover_payment_review(env, scope)
     if scope.get("model") == "sc.plan.report":
         return recover_report(env, scope)
     if scope.get("model") == "sc.contract.event":

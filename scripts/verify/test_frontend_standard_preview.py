@@ -408,3 +408,72 @@ class PaymentReviewRecoveryScopeTest(unittest.TestCase):
                       {'baseline': {'execution_ids': [186, 200]}}, {'source': {'id': 1710, 'company_id': 1}}):
             with self.subTest(patch=patch), self.assertRaises(AssertionError):
                 self.validate('sc_frontend_acceptance', {**self.scope, **patch}, self.row)
+
+
+class PaymentReviewRecoveryExecutionTest(unittest.TestCase):
+    def setUp(self):
+        PaymentReviewRecoveryScopeTest.setUp(self)
+        self.scope['baseline']['definitions'] = []
+
+    def fake_env(self, row_patch=None):
+        from unittest.mock import MagicMock
+        from types import SimpleNamespace
+        env = MagicMock()
+        env.cr.dbname = 'sc_frontend_acceptance'
+        row = {**self.row, 'state': 'draft', **(row_patch or {})}
+        record = MagicMock()
+        record._name = 'sc.payment.execution'
+        record.__getitem__.side_effect = lambda key: SimpleNamespace(id=row[key]) if key in ('payment_request_id', 'company_id', 'create_uid') else row[key]
+        record.id, record.create_date = row['id'], row['create_date']
+        for field in ('payment_request_id', 'company_id', 'create_uid'):
+            setattr(record, field, SimpleNamespace(id=row[field]))
+        record.review_ids.ids = []
+        record.review_ids.filtered.return_value.mapped.return_value.ids = []
+        record.review_ids.__iter__.return_value = iter([])
+        records = MagicMock()
+        records.ids = [row['id']]
+        records.__len__.return_value = 1
+        records.__iter__.side_effect = lambda: iter([record])
+        records.exists.return_value = False
+        records.mapped.return_value.ids = []
+        execution = MagicMock()
+        execution.sudo.return_value = execution
+        execution.with_context.return_value = execution
+        execution.search.return_value = records
+        execution.browse.return_value.exists.return_value = False
+        users = MagicMock()
+        users.sudo.return_value = users
+        users.browse.side_effect = lambda uid: SimpleNamespace(active=True, company_id=SimpleNamespace(id=8),
+            login={30: 'fixture_role_finance', 44: 'fixture_role_pfl035_finance_user'}[uid])
+        attachments = MagicMock()
+        attachments.sudo.return_value.search_count.return_value = 0
+        reviews = MagicMock()
+        reviews.sudo.return_value.browse.return_value.exists.return_value = False
+        env.__getitem__.side_effect = {'res.users': users, 'sc.payment.execution': execution,
+                                       'ir.attachment': attachments, 'tier.review': reviews}.__getitem__
+        return env, records
+
+    def test_native_cleanup_commits_only_after_owned_record_and_baseline_checks(self):
+        from scripts.verify.frontend_expense_probe_cleanup import recover_payment_review
+        env, records = self.fake_env()
+        with patch('scripts.verify.frontend_expense_probe_cleanup.payment_review_baseline', return_value=self.scope['baseline']) as baseline:
+            recover_payment_review(env, {**self.scope, 'phase': 'created'})
+        records.unlink.assert_called_once()
+        env.cr.commit.assert_called_once()
+        self.assertEqual(baseline.call_count, 3)
+
+    def test_paid_record_never_reaches_delete_or_commit(self):
+        from scripts.verify.frontend_expense_probe_cleanup import recover_payment_review
+        env, records = self.fake_env({'state': 'paid'})
+        with patch('scripts.verify.frontend_expense_probe_cleanup.payment_review_baseline', return_value=self.scope['baseline']):
+            with self.assertRaises(AssertionError): recover_payment_review(env, self.scope)
+        records.unlink.assert_not_called()
+        env.cr.commit.assert_not_called()
+
+    def test_changed_original_facts_never_reach_delete_or_commit(self):
+        from scripts.verify.frontend_expense_probe_cleanup import recover_payment_review
+        env, records = self.fake_env()
+        with patch('scripts.verify.frontend_expense_probe_cleanup.payment_review_baseline', return_value={'execution_ids': [186, 201]}):
+            with self.assertRaises(AssertionError): recover_payment_review(env, self.scope)
+        records.unlink.assert_not_called()
+        env.cr.commit.assert_not_called()

@@ -9659,3 +9659,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 恢复目标纯校验只接受本次标记/创建人30/公司8/source1710/金额1、5秒时钟容差和300秒创建窗口的draft或confirmed；排除原execution186、paid/legacy/未知阶段。confirmed还需本次review来源、validated及真实审批人30。尚未执行删除，校验本身不构成实际恢复证明。
 - payment-browser-scope-final-iteration L1 PASS；payment-browser-scope-unit **25 Node+34 Python=59 PASS**，standard_preview_tool begin/record非零回执登记。新增3写许可与3清理目标回归覆盖错误来源/金额/公司/角色/字段/状态、既有记录、审批来源及重放。只改测试工具，无产品构建、后端重启或ORM；上一段6项真实运行能力证据按未变产品输入保留。
 - 下一步将校验接入既有expense-browser-cleanup分派，先只读preflight快照source/execution/ledger/policy/tier事实，再精确检查和恢复本次执行；补正常清理与拒绝误清理的工具测试。随后才连接browser intercept和真实创建/提交/工作台审批旅程。当前两个helper尚未接线，不能报告浏览器写入安全闭环或用户验收完成。67目标active，无新fixture/远端/目标部署。
+
+### 53.219 精确恢复入口与当前基线回读
+
+- c08e1975b clean续跑；P4既有expense-browser-cleanup按sc.payment.execution分派到recover_payment_review。preflight只读source1710/company8、原执行/审批记录/资金台账、policy/step/definition write_date及callback groups，要求无draft/confirmed占用。实际恢复先比较排除本次候选后的完整基线，再校验创建身份/标记/金额/阶段、原生review请求人44及批准人done_by30、定义归属和无附件；全部检查通过才native unlink本次执行及own reviews。删除后与commit后均回读基线，commit=False只供后续事务内演练。
+- payment-recovery-final-iteration L1 PASS；首轮工具测试失败（25Node+40Python中2个error）：模拟关系字段返回int而真实Odoo返回记录。未进入运行清理。修正mock并去掉继承造成的重复测试，testfix-iteration PASS；testfix-unit **25+37=62 PASS**，failed及新passed begin/record均保留。新增实际恢复函数的mock执行测试验证正常unlink/commit、paid拒绝、原基线变化拒绝，所有拒绝均发生在删除前。
+- 使用既有受管scope和tpl52/expense-success-recovery.json prepare回执实际运行只读preflight，payment-recovery-preflight.log退出0/status=preflight。真实快照：source1710 approved/company8，execution_ids=[186]且原186为paid；无ledger，policy18/step2187；definitions10/2187；callbacks507/508 groups[93]。保留原事实，不改写历史金额/资金差异，不把现有paid记录算作本次业务产物。此次没有创建/删除临时记录，无实际恢复成功声明。
+- 下一步在standard_page_type_browser接入paymentReviewWriteKind、独立paymentReview scope和该恢复回执生命周期：preflight→经理生成并保存→经办提交→经理当前工作台实际approve→只读confirmed/任务退出→finally精确恢复。新浏览器run必须新marker重新取得基线，不能重用本段诊断marker。需要对失联创建回复、失败阶段与finally清理保持原约束。前后端产品未改，不构建/升级，原6项能力证据继续有效；67目标active，未远端/部署。
