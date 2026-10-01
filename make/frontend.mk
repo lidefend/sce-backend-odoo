@@ -135,6 +135,7 @@ verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 	@node /tmp/scene-entry-contract-test.mjs
 	@python3 addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py
 	@python3 addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py
+	@python3 addons/smart_core/tests/test_scene_provider_target_identity_merge.py
 
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit

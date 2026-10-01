@@ -446,9 +446,18 @@ def merge_missing_scenes_from_registry(env, scenes, warnings):
             scene["target"] = _refresh_target_ids_from_xmlid_identity(scene.get("target"))
         _ensure_minimal_route_target(scene, code)
 
+        registry_scene = registry_map.get(code) or {}
+        registry_target = registry_scene.get("target") or {}
+        # Entry declarations are defaults for every existing scene, not target
+        # identity overrides restricted to a hand-picked critical scene set.
+        # Keep explicit effective declarations and never add a scene here.
+        current_target = scene["target"]
+        for key in ("intent", "entry_intent"):
+            if current_target.get(key) in (None, "") and registry_target.get(key):
+                current_target[key] = registry_target[key]
+                reconciled.append(code)
         if code not in critical_target_overrides:
             continue
-        registry_scene = registry_map.get(code) or {}
         if _upgrade_target_identity_from_registry(scene, registry_scene):
             reconciled.append(code)
             if isinstance(scene.get("target"), dict):
