@@ -175,6 +175,11 @@
       />
       <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" :heading-level="4" data-readonly-relation-empty />
     </div>
+    <ScInlineState
+      v-else-if="adapter.isOne2manyHydrating(field.name)"
+      state="loading"
+      label="正在加载关系记录"
+    />
         <template v-else>
     <div class="o2m-card">
       <header class="o2m-toolbar" data-detail-collection-heading>
