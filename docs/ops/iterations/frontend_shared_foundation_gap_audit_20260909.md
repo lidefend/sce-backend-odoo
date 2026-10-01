@@ -9792,3 +9792,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - tpl07-1790825104760续办201：已进入execute_button处理，但原生服务端动作拒绝“您没有足够的访问权限运行此操作”。只读payment-flow-existing回读确认201仍draft、505仍pending，没有失败后部分审批提交，不重试该失败。
 - P4只扩展既有只读诊断输出callback组，L1及工具75PASS、诊断4项PASS。workitem-callback-inspect-runtime.log权威事实：504/505回调均507，groups仅[93]；管理层37真实review505授权/can_review为true但callback group交集false。Odoo ir_actions.py对应错误是动作groups检查。原策略恢复时sync仅采集active步骤，漏掉已停用definition6624仍在途的pending审核人，是P1回调同步缺口。
 - 下一步P1同步组并集需覆盖当前有效步骤及实际waiting/pending review所需组，保留模型边界、原记录授权和group-bound动作；配置变化不应截断已提交审批链。按所有者允许必要数据修正的原则，通过既有受管原生同步或公开配置接口修正当前policy18回调并回读，继续201，不新建或清理业务数据。不以整单写ACL、提权用户或前端绕过解决。终审仍pending，67目标active，无推送/合并/目标部署。
+
+### 53.237 配置恢复后的在途审批完成，付款流程闭环
+
+- P1共享approval_policy._sync_tier_server_action_groups将目标模型当前有效步骤组与实际waiting/pending review组取并集，配置停用步骤不再截断在途审批回调。保留组绑定与记录级授权，不扩大编辑/资金权限；后续同步时已无在途审批的旧组可收回。新增生产方法回归验证并集、模型/status筛选及在途结束后的收缩。首次测试仅缺api.model替身，补后L1与194项付款状态机测试PASS，并begin/record回执；工具75PASS。
+- P1提交e17a5b29e；P4提交7eb112bdc给既有诊断增加明确payment-flow-reconcile范围，仅原生同步policy18对应model的507/508组。受管环境核对201/source1710/company8/原marker，commit前后回读单据/审批/policy未变，管理层组可执行。inflight-callback-reconcile.log显示507/508由[93]变[93,112]，记录仍draft/505pending，未替用户审批。后端重绑7eb112bdc，不升级模块/构建前端。
+- 续办实际浏览器tpl07-1790825369575 **10PASS**：管理层37从真实my-work待办505打开201，执行审批成功，后端confirmed/validated，实际待办移除，官方详情1440/390 loaded/已确认/无溢出，截图已查看。记录201/PE2600196及两级历史保留，不清理。审批配置仍是已恢复的原active单级step2187；因此同时证明配置恢复后的在途审批可完成。没有重新创建或重跑经办/财务第一阶段，复用53.233原证据；无审批自动通过复用53.232的22项。
+- 更新原67台账detail.action-state followUp，去掉已关闭付款/双视口/配置阻断，但不自动升级contract_gap或整行业务矩阵。下一步依据原goal和原run逐项核对全业务单据范围、共享呈现消费与旧职责退出、能力/发布/用户验证三层证据；付款闭环不能替代全系统证明，未发布能力不等于发布用户验收，目标交付仍不在本地结论内。无推送/合并/目标部署，总体目标active。

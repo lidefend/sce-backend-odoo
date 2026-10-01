@@ -555,7 +555,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.236 P0 predispatch fixed8d9f70888 backendbound;37authorityPASS +75toolsPASS. Resume201 tpl07-1790825104760 passes gate then native server action group denies. Authoritative readback confirms rollback201draft/505pending (no partialapproval). Diagnostic shows callback507 groups[93], executive37 doesnotmatch though origin505/can_reviewtrue; definition6624 inactive since originalpolicy restored. NEXT P1 approval_policy._sync_tier_server_action_groups must union current active step groups with actual waiting/pending review reviewer groups for targetmodel, so configuration changes cannot cut off inflight chain. Keep record/ACL/handler checks and group-bound callbacks, no sudouser or editACL. Add focused regression active+pendinggroup/othermodel containment; reconcile existingpolicy18 through governed native method or published config API and readback (owner allowsnecessarydataupdates), then resume same201. Do not rebuild frontend or recreatebusinessjourney; retained history is evidence. Full67active.",
+  "next_exact_step": "53.237 payment sequential user loopCOMPLETE on retained201 confirmed/validated, executive37 actualtask505 approve+taskremoved+official detail1440/390,report1790825369575 10PASS. SharedP1 callbacksync e17a5b29e preserves active+waiting/pending reviewer groups;193+new1=194unitPASS,75toolsPASS. Native bounded reconcile507/508 groups[93,112] persisted with policy/document/reviews unchanged before actualapproval; backend7eb112bdc,frontendc6f3f9cbc unchanged. Originalactivepolicy18 single/step2187 remains;201/history retained. NEXT completion-audit original goal all-document approval scope,67ledger/sharedconsumer/legacy exits and capability/publication/user acceptance using existing result index; identify precise remaining owned gaps (do not treat payment as all-document evidence, no blanket scans/ORM/repeat journeys). detail.action-state followUp refreshed but statuscontract_gap not automatically closed. No newfixture/build/push/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1742,6 +1742,34 @@
       "actual_callback": "507 groups[93], executive37 group match false although review authorization true",
       "frontend": "unchanged c6f3f9cbc entryBrwUVS7o",
       "backend": "8d9f70888"
+    },
+    "segment_53_237": {
+      "status": "payment_configured_sequential_user_loop_passed",
+      "product_commit": "e17a5b29e",
+      "tool_commit": "7eb112bdc",
+      "L1": "passed",
+      "payment_tests": 194,
+      "tool_tests": 75,
+      "runtime_reconcile": "artifacts/frontend-web-fix-20260928/tpl52/inflight-callback-reconcile.log",
+      "reconciled_actions": {
+        "507": [
+          93,
+          112
+        ],
+        "508": [
+          93,
+          112
+        ]
+      },
+      "browser_report": "artifacts/frontend-web-fix-20260928/tpl07-1790825369575/report.json",
+      "browser_assertions": 10,
+      "retained_record": 201,
+      "final_state": "confirmed/validated",
+      "role": "executive37 actual my-work origin505 -> approval -> taskremoved",
+      "visual": "1440/390 official detail loaded; screenshots inspected",
+      "frontend": "unchanged c6f3f9cbc entryBrwUVS7o",
+      "backend": "7eb112bdc",
+      "initial_unit_failure": "test isolated api.model decorator mock missing; repaired before passing tests"
     }
   }
 }
