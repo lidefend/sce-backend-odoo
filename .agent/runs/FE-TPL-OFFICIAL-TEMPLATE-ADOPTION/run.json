@@ -554,7 +554,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.234 runtime readonly record201 proves executive37 is assigned pendingreview505 but record rule rejects read (ACLtrue). P1 adds same-company actual-review assignment READ ONLY rule with explicit review model discriminator, preserves write/create/unlink/cash authority. L1/193pure testsPASS; P4 existing read diagnostic+scope registered,75toolchecksPASS. Next governed module upgrade smart_construction_core with explicitflags, then payment-flow-existing readonly runtime should show executive can_review and authorized505. Continue existing201 through actual executive my-work, no recreate/delete; original policy restored previousbatch, definition6624 inactive but review pending. No frontend rebuild needed.",
+  "next_exact_step": "53.234 P1 c8adfea58 assigned-review read-only rule live upgraded; backend rebound c8adfea58. Existing201 now executive37 read_rule/can_review true and origin505 authorized; finance30 and operator44 cannot review. NEXT resume201 through actual executive my-work using existing browser tool bounded continuation (do not create source/record or reconfigure/restore again). Current201 draft/pending, review504 approved30,505 pending37, definition6624 inactive because53.233 restored original config; originalpolicy18 single step2187 active. Observe actual terminal approval and official detail, fix only newly evidenced owning-layer defect (e.g. no speculation about callbacks/config mutation). Retain201 and history per owner, frontendbuild9433fa515 unchanged. L1/193payment+75toolPASS, readonlyruntime4PASS; finalbrowserpending. No ORM/fullinventory/newfixture/push.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1692,6 +1692,24 @@
       "configuration": "original active policy18/step2187 restored via steps.set then config.get matching; new step retained inactive by native behavior",
       "recovery": "no business deletion per owner authorization",
       "classification": "runtime functional gap observed; actual reviewer assignment/can_review/ACL/scope cause not yet determined"
+    },
+    "segment_53_234": {
+      "status": "assigned_read_rule_fixed_runtime_verified_final_ui_pending",
+      "product_commit": "c8adfea58",
+      "diagnostic_commit": "b5eedac4a",
+      "L1": "passed",
+      "payment_tests": 193,
+      "tool_tests": 75,
+      "runtime_checks": 4,
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/payment-assigned-read-runtime.log",
+      "before_log": "artifacts/frontend-web-fix-20260928/tpl52/payment-flow-existing-runtime.log",
+      "record": 201,
+      "review": 505,
+      "uid": 37,
+      "result": "read_rule true; can_review true; origin505 authorized; operators44/30 false",
+      "upgrade": "passed existing smart_construction_core governed upgrade",
+      "backend": "rebound c8adfea58 on18082; frontend unchanged",
+      "runtime_writes": "module XML only; no new business record/no approval write"
     }
   }
 }

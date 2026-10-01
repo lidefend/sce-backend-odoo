@@ -9769,3 +9769,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - payment-flow-browser-iteration L1PASS，30Node+45Python=75PASS并记录回执。原受管环境运行tpl07-1790824095790：配置管理员UI将policy18改两级linear，经办44创建201并提交；经办页面无审批通过按钮，finance30实际待办打开并审批成功。第一步后仍draft+pending/waiting，不能直接完成第二级，且财务待办已移除。随后executive的my-work为0，没有201，旅程判failed，未尝试绕开实际待办或提权审批。
 - finally通过配置管理员恢复原启用step2187、single，并独立config.get与保存结果一致；新增步骤原生停用，历史保留。201保留为诊断现场，不清理。已有开关22PASS和原单级正确角色证据复用。没有第二次创建或重跑本旅程。
 - 已定向读取review_work_item_service：按真实reviewer_ids/status筛选，再检查读ACL/rule/can_review及公司业务范围；AccessError会使事项不进入列表。源码executive角色已含finance_read，付款登记也有该组读ACL，因此不能直接断言缺读权限或修改角色。下一步只读查201实际reviewer/status/can_review与用户组、范围，再归因产品/配置/数据并修复，继续已有记录。禁止用重建fixture或全ORM替代诊断。总体目标active；批次未通过，不宣称整体收口，无推送/合并/目标部署。
+
+### 53.234 已指派审批人的读取规则衔接
+
+- P4在原approval_runtime新增payment-flow-existing只读范围，精确核对201/company8/source1710/经办44及原marker，读取review与各角色权限，finally rollback。初次入口未登记scope被拒绝（未访问业务），补原wrapper枚举后工具75PASS、诊断4项运行通过。权威结果：504已由30审批；505 pending且reviewer_ids=[37]，不是分配错误；37模型读ACL为true但记录规则AccessError。44/30不可再审批。源码对应finance_read只许项目成员，不包含已指派审批人。
+- Formal Product Layer P1；Layer Target/Module smart_construction_core原生记录规则。标准付款登记审批读取范围应覆盖同公司实际指派人，不属客户特例/低代码绕过/前端权限推导。新增finance_read组read-only规则，AND company_ids、review_ids.model精确付款登记鉴别、实际reviewer_ids。明确不增加write/create/unlink及资金确认权限，保留原规则。193定向测试PASS（新增规则权限与多态模型边界），L1PASS；补原run依赖含sc_record_rules.xml并begin/record非零回执。
+- 本地分层提交b5eedac4a诊断、c8adfea58 P1修正。原受管MODULE=smart_construction_core升级完成（显式CODEX_NEED_UPGRADE/CODEX_MODULES）；首次后续读被旧容器source revision比较拦住，未运行诊断，不重试无变化失败。通过backend.acceptance.up绑定c8adfea58后运行payment-assigned-read-runtime：37 read_rule=true/can_review=true，仅origin505授权；44/30仍false。4项诊断通过，仅说明授权修正，不等于最终UI审批闭环完成。18082原环境healthy；5180前端build未变，无新增业务写入。
+- 下一步从真实管理层my-work续办现有201并验证终态/官方详情，不重跑创建，不再次恢复已恢复配置。当前definition6624因上一轮恢复而inactive，review505仍pending，保留该实际现场，若终态操作暴露进一步问题按事实归因。67目标active，审批最终旅程pending；无推送/合并/目标部署。
