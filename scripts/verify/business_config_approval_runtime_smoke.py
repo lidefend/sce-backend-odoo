@@ -4102,15 +4102,20 @@ def _plan_publication_entry_checks():
                          if row.get("source", "").startswith("role_surface.") and not row.get("context_requirements"))
         allowed = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": published["action_id"]}}).handle()
         assert allowed.ok and allowed.data["allowed"] and allowed.data["model"] == published["model"]
+        dynamic = next(row for row in authority["primary_actions"]
+                       if row.get("source") == "delivery_engine.nav" and not row.get("context_requirements"))
+        allowed = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": dynamic["action_id"]}}).handle()
+        assert allowed.ok and allowed.data["allowed"] and allowed.data["model"] == dynamic["model"], allowed.error
         recovery = next(row for row in authority["admin_actions"] if row.get("model") == "sc.approval.policy")
         allowed = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": recovery["action_id"]}}).handle()
         assert allowed.ok and allowed.data["allowed"]
         print("ENTRY_PUBLICATION_VERIFIED=" + json.dumps({"unpublished_action": action.id,
-              "published_action": published["action_id"], "configuration_recovery_action": recovery["action_id"],
+              "published_action": published["action_id"], "dynamic_action": dynamic["action_id"],
+              "configuration_recovery_action": recovery["action_id"],
               "snapshot_id": gate["snapshot_id"]}))
     finally:
         base.cr.rollback()
-    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=plan-publication-entry rollback_verified=true")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=7 scope=plan-publication-entry rollback_verified=true")
 
 
 def _plan_reviewer_entry_checks():
