@@ -4058,7 +4058,7 @@ def _payment_review_entry_checks():
         assert len(user) == 1 and user.active and user.company_id.id == 8
         actors[login] = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
     submitter, reviewer = actors.values()
-    source = reviewer["payment.request"].browse(1710)
+    source = submitter["payment.request"].browse(1710)
     source.check_access_rule("read")
     assert source.company_id.id == 8 and source.type == "pay" and source.state == "approved"
     fields = ["state", "amount", "paid_amount_total", "unpaid_amount", "terminal_cash_source_model", "terminal_cash_source_res_id"]
@@ -4071,7 +4071,7 @@ def _payment_review_entry_checks():
     try:
         action = source.action_create_payment_execution()
         assert action["res_model"] == "sc.payment.execution" and source.unpaid_amount > 0
-        execution = reviewer["sc.payment.execution"].with_context(action["context"]).create({
+        execution = submitter["sc.payment.execution"].with_context(action["context"]).create({
             "payment_request_id": source.id, "paid_amount": min(source.unpaid_amount, 1.0),
             "payment_account_name": "FE Company A Operating Account", "payment_bank_name": "FE Construction Bank",
             "payment_account_no": "FE-PAYER-0001", "payment_method": "银行转账", "note": "Rollback published payment review probe",

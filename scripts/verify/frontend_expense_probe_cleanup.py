@@ -16,7 +16,7 @@ def validate_payment_review_probe_target(database, scope, row):
     assert 186 in scope['baseline']['execution_ids']
     assert isinstance(row['id'], int) and row['id'] > 0 and row['id'] not in scope['baseline']['execution_ids']
     assert row['note'] == marker and row['payment_request_id'] == 1710
-    assert row['company_id'] == 8 and row['create_uid'] == 30 and row['paid_amount'] == 1
+    assert row['company_id'] == 8 and row['create_uid'] == 44 and row['paid_amount'] == 1
     assert row['source_origin'] != 'legacy' and row['state'] in ('draft', 'confirmed')
     if scope.get('id'):
         assert row['id'] == scope['id']

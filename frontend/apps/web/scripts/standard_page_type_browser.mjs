@@ -141,7 +141,7 @@ async function login(role) {
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
       return route.fulfill({ response });
     }
-    if (paymentReview?.phase === 'capture' && role === 'fixture_role_finance'
+    if (paymentReview?.phase === 'capture' && role === 'fixture_role_pfl035_finance_user'
       && body?.intent === 'api.data' && body.params?.op === 'create' && body.params.model === paymentReview.model) {
       report.paymentReviewCreateCapture = body;
       paymentReview.phase = 'captured';
@@ -958,7 +958,7 @@ try {
     paymentReview.baseline = preflight.baseline;
     paymentReview.phase = 'open';
     await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
-    const manager = await login('fixture_role_finance');
+    let manager = await login('fixture_role_pfl035_finance_user');
     await manager.page.goto(`${base}/r/payment.request/1710?action_id=775&menu_id=545`);
     await manager.page.getByRole('button', { name: '生成付款登记', exact: true }).click();
     await manager.page.waitForURL(url => url.pathname === '/f/sc.payment.execution/new');
@@ -980,7 +980,7 @@ try {
     ]);
     check('payment review: create request captured without write', response.status() === 503 && paymentReview.phase === 'captured' && Boolean(report.paymentReviewCreateCapture));
     check('payment review: actual capture satisfies native defaults and source baseline',
-      paymentReviewWriteKind('fixture_role_finance', report.paymentReviewCreateCapture, { ...paymentReview,
+      paymentReviewWriteKind('fixture_role_pfl035_finance_user', report.paymentReviewCreateCapture, { ...paymentReview,
         phase: 'create', request: report.paymentReviewCreateCapture?.params }) === 'create');
     await manager.page.screenshot({ path: path.join(out, 'payment-review-create-capture.png') });
     if (process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1') {
@@ -1016,7 +1016,7 @@ try {
       check('payment review: actual created ownership and draft readback', report.paymentReviewCreated.ok === true
         && created?.id === paymentReview.id && created.state === 'draft' && created.company_id?.[0] === 8
         && created.payment_request_id?.[0] === 1710 && created.paid_amount === 1 && created.note === paymentReview.marker);
-      const operator = await login('fixture_role_pfl035_finance_user');
+      const operator = manager;
       await operator.page.goto(`${base}/r/sc.payment.execution/${paymentReview.id}?action_id=803&menu_id=335`);
       await operator.page.getByRole('button', { name: '提交审批', exact: true }).waitFor();
       paymentReview.phase = 'submit';
@@ -1027,6 +1027,7 @@ try {
       const waiting = report.paymentReviewWaiting.data?.records?.[0];
       check('payment review: configured approval waits', waiting?.state === 'draft' && ['waiting', 'pending'].includes(waiting.validation_status));
       await operator.ctx.close();
+      manager = await login('fixture_role_finance');
       const [workspaceResponse] = await Promise.all([
         manager.page.waitForResponse(response => {
           try { const b = response.request().postDataJSON(); return b?.intent === 'my.work.summary' && b.params?.product_workspace === true; } catch { return false; }
@@ -1056,7 +1057,18 @@ try {
       check('payment review: completed item exits reviewer workspace', finalWorkspace.ok === true
         && !(finalWorkspace.data?.product_workspace?.sections || []).flatMap(section => section.items || [])
           .some(item => item.target?.model === paymentReview.model && item.target.record_id === paymentReview.id));
-      await manager.page.screenshot({ path: path.join(out, 'payment-review-approved.png') });
+      const finalDetail = manager.page.locator(`[data-form-model="sc.payment.execution"][data-form-record="${paymentReview.id}"][data-detail-composition="official-standard-detail"][data-state="ok"]`);
+      await finalDetail.waitFor();
+      await manager.page.getByRole('heading', { name: created.name, exact: true }).waitFor();
+      await manager.page.getByText('已确认', { exact: true }).first().waitFor();
+      check('payment review: refreshed official detail shows approved state', await finalDetail.count() === 1
+        && await manager.page.getByRole('button', { name: '审批通过', exact: true }).count() === 0);
+      for (const width of [1440, 390]) {
+        await manager.page.setViewportSize({ width, height: 950 });
+        check(`payment review ${width}: final detail no page overflow`,
+          await manager.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+        await manager.page.screenshot({ path: path.join(out, `payment-review-approved-${width}.png`), fullPage: true });
+      }
     }
     await manager.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {

@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.224: actual role UI workflow17PASS reporttpl07-1790822098738: manager creates197,operator44 submit waits,manager30 actualworkspace approves confirmed/validated,taskremoved; cleanup restored record197/review500 baseline unchanged. Preserve this business evidence. Final screenshot is loading skeleton, NOT final visual pass. Next add wait for refreshed official detail/head/title/contract confirmed status and inspect actual final UI, then proceed remaining published configuration change/publish/rollback loop using existing scoped restoration. First failedrun1790822043850 created196 but navigation destroyed evaluate; cleanup restored, tool now waits savedroute. No product change/rebuild. Full67 stillactive.",
+  "next_exact_step": "53.227: P1 committed122f735ae, native guard40 + units8/54PASS after Plan mock fixed; tools64PASS. Governed XML upgrade complete (explicit CODEX_NEED_UPGRADE=1/CODEX_MODULES), backend122f loaded. Correct sameoperator44 create+submit backendruntime6PASS rollback. Correct-role browser tpl07-1790822535629 fails loading source1710: invalid contract v2 snapshot actionRuleList[4],[5],[6].visible must be object. No creates; cleanuprestored. Next inspect captured operator contract and shared P0 normalization of action visibility, fix only owning mapper with regression; do not restore wrong manager workflow. Then necessary backend reload/runtime and affected browser. Pending P4 files correctrole/recovery/visualwait have unit64PASS; nofrontendbuild.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1569,7 +1569,7 @@
       "product_inputs": "unchangedcbf5c16c1/backend, frontend9433fa515"
     },
     "segment_53_224": {
-      "status": "role_business_loop_passed_final_render_pending",
+      "status": "technical_path_only_business_acceptance_rejected_by_owner",
       "tool_tests": 64,
       "L1": "passed",
       "browser_assertions": 17,
@@ -1580,7 +1580,39 @@
       "cleanup": "restored original baseline; record197/review500 removed",
       "visual": "screenshot taken during loading; pending refresh wait",
       "failed_report": "artifacts/frontend-web-fix-20260928/tpl07-1790822043850/report.json",
-      "first_failure": "tool evaluate raced save navigation; created196 cleanup restored"
+      "first_failure": "tool evaluate raced save navigation; created196 cleanup restored",
+      "owner_correction": "Manager creation followed by operator submission does not represent actual business flow; must revalidate correct initiator lifecycle."
+    },
+    "segment_53_226": {
+      "status": "source_verified_runtime_pending",
+      "layer": "P1",
+      "L1": "passed",
+      "tests": 192,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-handler-role-unit.log",
+      "scope": "readiness + native create/view buttons + action projection use finance handling; cash confirmation unchanged",
+      "runtime": "requires governed XML upgrade; not run",
+      "business_acceptance": "pending correct initiator lifecycle",
+      "native_gate": {
+        "status": "failed",
+        "static": "passed registered40",
+        "unit_count": 54,
+        "errors": 4,
+        "owner": "P4 stale Plan mock missing _write_document_state",
+        "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-handler-native-guard.log"
+      }
+    },
+    "segment_53_227": {
+      "status": "correct_role_backend_passed_contract_ui_failed",
+      "product_commit": "122f735ae",
+      "native_tests": 62,
+      "tools_tests": 64,
+      "runtime_checks": 6,
+      "rollback": "verified",
+      "upgrade": "passed",
+      "browser_report": "artifacts/frontend-web-fix-20260928/tpl07-1790822535629/report.json",
+      "error": "actionRuleList[4/5/6].visible must be object",
+      "business_writes": 0,
+      "cleanup": "restored"
     }
   }
 }

@@ -507,6 +507,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             def __iter__(self): return iter([self])
             def _check_business_anchor(self, **kwargs): pass
             def write(self, values): self.__dict__.update(values)
+            def _write_document_state(self, values): self.write(values)
         for state in ('draft', 'confirmed', 'in_progress', 'done', 'cancel', 'unknown'):
             with self.subTest(state=state):
                 executable = set()

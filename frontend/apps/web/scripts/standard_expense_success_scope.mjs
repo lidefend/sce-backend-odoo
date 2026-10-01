@@ -186,11 +186,11 @@ export function paymentReviewWriteKind(role, body, scope) {
     || !/^TPL53-PAYMENT-REVIEW-\d{13}$/.test(scope.marker)
     || !Array.isArray(scope.baseline?.execution_ids) || !scope.baseline.execution_ids.includes(186)) return null;
   const p = body?.params;
-  if (scope.phase === 'open' && role === 'fixture_role_finance' && body?.intent === 'execute_button'
+  if (scope.phase === 'open' && role === 'fixture_role_pfl035_finance_user' && body?.intent === 'execute_button'
     && p?.model === 'payment.request' && p.res_id === 1710 && p.button?.type === 'object'
     && p.button.name === 'action_create_payment_execution' && Number(body.meta?.action_id) === 775
     && Number(body.meta?.menu_id) === 545) return 'open';
-  if (scope.phase === 'create' && role === 'fixture_role_finance' && body?.intent === 'api.data'
+  if (scope.phase === 'create' && role === 'fixture_role_pfl035_finance_user' && body?.intent === 'api.data'
     && p?.op === 'create' && p.model === scope.model && isDeepStrictEqual(p, scope.request)
     && p.context?.company_id === 8 && Number(p.context?.action_id) === 803 && Number(p.context?.menu_id) === 335
     && paymentReviewCreateMatchesContract(p, scope)) return 'create';

@@ -9700,3 +9700,24 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - payment-success-flow L1及64工具测试PASS，首轮tpl07-1790822043850创建196成功后page.evaluate与保存导航竞争失败；finally原生清理成功，无遗留。修正为等待实际created form/record路由及DOM ready，navigation-iteration L1PASS、navigation-unit27Node+37Python=64PASS及回执登记。
 - payment-success-navigation-browser退出0，tpl07-1790822098738/report.json **17PASS**：实际创建197/PE2600192，source1710/company8/paid_amount1/marker/draft真实回读；经办提交后draft+waiting/pending；主管工作台含真实分配item，使用对应origin批准；最终confirmed/validated，任务退出，无未声明写入/页面异常。write序列仅open/create/submit/approve且全部成功。最终cleanup log确认record_ids[197]/review_ids[500]删除，源单/原执行186/资金台账/策略/定义/回调基线不变。此为验收环境实际角色业务证据，不冒充目标环境用户交付。
 - 已实际查看payment-review-approved.png：画面仍是刷新骨架，不能宣称最终详情视觉通过；17断言验证业务结果但未等待最终呈现。下一步补刷新完成后的官方详情/标题/状态观察，保留本轮业务和恢复证据；随后继续发布配置改变/生效/回滚闭环与剩余67条收口。前端9433/后端cbf5产品未变，无重建/模块升级/推送/合并/目标部署。
+
+### 53.225 所有者纠正办理职责，撤回上一轮业务验收口径
+
+- 所有者明确指出“主管创建、经办提交”不符合实际；53.224的17项保留为技术路径/恢复证据，撤回业务闭环验收通过口径。不得为了适配现有权限限制设计错误的人工作业分工。应由有权经办创建并提交，配置审批由指定审核人办理，无审批配置则提交自动通过；实际付款/财务确认独立保留。
+- 已停止旧角色旅程复验。本轮此前仅补final-render等待及L1PASS，未运行浏览器、未产生新业务写入，该截图完善不得优先于职责纠正。定向源码证据：finance_user对sc.payment.execution已有create/write ACL；payment_request._assert_payment_execution_ready(require_authorized_actor=True)硬要求finance_manager，而execution.create调用该限制，续接动作也受其限制。这是P1产品规则与既有经办权限不一致，不能归为fixture缺陷或通过换主管账号绕过。
+- 下一步P1核对并统一创建/查看续接、动作可用性和行业契约的经办能力，保留公司/记录权限、有效来源与资金执行职责；定向回归证明经办创建提交、只读/越权拒绝及审核权限不扩大。然后调整P4精确创建人/恢复绑定，按正确职责重验。总体目标active，无推送/合并/目标部署。
+
+### 53.226 财务经办创建与提交职责的P1修正
+
+- Formal Product Layer P1；Layer Target/Module smart_construction_core付款登记续接/行业原生按钮/动作契约；标准职责，不属客户特例或前端推导。经办与资金确认分离：payment_request readiness和view continuation改为既有finance_user，原生create/view按钮与financial_workspace_contract required_group/交接说明同步，legal_next_action_display提示财务办理。执行create已有调用共享readiness，因此直接创建与按钮续接一致；不新增ACL，不改变实际payment_execution._has_finance_confirm_access的manager要求、审批待办权威或业务来源校验。
+- 修改既有ORM测试从“经办被拒绝”到“经办创建归属本人且仍无付款确认能力”，未运行ORM；纯定向回归执行生产readiness证明approved经办通过、未批准及无经办权限拒绝，并核对两个原生按钮和契约角色、执行实际资金权限方法仍拒绝经办。payment-handler-role-iteration L1PASS，verify.payment.approval_state_machine.unit **192PASS**（payment-handler-role-unit.log），diff检查通过。
+- XML视图已改，运行验证前必须受管模块升级，不能仅重启后端。下一步同步P4 open/create/cleanup create_uid为经办44、保持reviewer30，后端回滚验收也从经办创建开始；修改工具后定向测试，受管升级后验证正确用户生命周期。上一轮主管创建证据不恢复业务验收资格。未执行新业务写入，67目标active，无推送/合并/目标部署。
+
+- 后续native_view.workflow_action_coverage：静态registered40通过，辅助8项通过，但54项配套测试中4个error，均因Plan测试替身缺少生产已使用的_write_document_state。归P4测试协作者滞后，不修改计划产品规则；下一步修测试替身并定向复验。该门禁failed，暂不进入升级/浏览器，不把付款192通过冒充整体前置门禁通过。
+
+### 53.227 正确经办职责运行通过，前端暴露动作契约类型缺口
+
+- P4 Plan替身补现有_write_document_state协作者，不改计划产品；payment-correct-role-iteration L1PASS，native静态registered40+8/54测试PASS，工具27Node+37Python=64PASS。付款open/create精确角色改44，清理create_uid改44并反例拒绝30；审批保持30。浏览器同一个经办session创建和提交，之后才登录审核人；回滚runtime也改经办创建。其他业务scope未改。
+- P1本地提交122f735ae。首次升级被fast模式拦截（缺显式升级声明，无升级发生）；因两处原生button XML变更，按受管入口补CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core，payment-handler-upgrade-explicit退出0。backend.acceptance.up绑定122f并PASS。payment-handler-runtime **6PASS rollback_verified**：经办创建并提交、独立审核、审批契约/重放拒绝/无资金入账及恢复。
+- payment-handler-browser失败，tpl07-1790822535629/report.json：经办fixture_role_pfl035_finance_user打开source1710时页面显示invalid contract v2 snapshot，actionContract.actionRuleList[4/5/6].visible must be an object，故生成按钮未出现。不是改换角色可解决的问题；需修P0有效动作可见性归一化，并核对该角色真实contract数据。UI角色标题显示“财务主管”不能当作实际登录身份权威，实际探针角色明确44。本次无create/open执行，finally恢复通过。
+- 下一步先修共享契约类型缺口及定向回归，再恢复正确角色浏览器；主管代建业务验收仍撤回。67目标active，无前端构建/新fixture/推送/合并/目标部署。

@@ -240,14 +240,14 @@ const paymentScope = { model: 'sc.payment.execution', marker: 'TPL53-PAYMENT-REV
       payment_account_no: 'FE-PAYER-0001', attachment_ids: [[6, 0, []]] } } };
 test('payment review create binds actor/source/amount/phase and rejects state injection', () => {
   const body = { intent: 'api.data', params: paymentScope.request };
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, paymentScope), 'create');
-  for (const role of ['fixture_role_pfl035_finance_user', 'fixture_role_config_admin'])
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, paymentScope), 'create');
+  for (const role of ['fixture_role_finance', 'fixture_role_config_admin'])
     assert.equal(paymentReviewWriteKind(role, body, paymentScope), null);
   for (const patch of [{ payment_request_id: 30 }, { paid_amount: 2 }, { state: 'confirmed' }, { company_id: 1 }, { review_ids: [123] }]) {
     const request = { ...paymentScope.request, vals: { ...paymentScope.request.vals, ...patch } };
-    assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, params: request }, { ...paymentScope, request }), null);
+    assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { ...body, params: request }, { ...paymentScope, request }), null);
   }
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, { ...paymentScope, phase: 'create_in_flight' }), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, { ...paymentScope, phase: 'create_in_flight' }), null);
 });
 test('payment review binds existing-record exclusion and blocks payment posting', () => {
   const scope = { ...paymentScope, phase: 'submit', id: 200 };
@@ -271,24 +271,24 @@ test('payment review continuation only opens the authorized source without grant
   const scope = { ...paymentScope, phase: 'open' };
   const body = { intent: 'execute_button', params: { model: 'payment.request', res_id: 1710,
     button: { type: 'object', name: 'action_create_payment_execution' } }, meta: { action_id: 775, menu_id: 545 } };
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), 'open');
-  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, scope), null);
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, params: { ...body.params, res_id: 30 } }, scope), null);
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, meta: { action_id: 803, menu_id: 335 } }, scope), null);
-  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, { ...scope, phase: 'open_in_flight' }), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, scope), 'open');
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { ...body, params: { ...body.params, res_id: 30 } }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { ...body, meta: { action_id: 803, menu_id: 335 } }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, { ...scope, phase: 'open_in_flight' }), null);
 });
 
 test('payment create binds native defaults and baseline even when captured request is replaced', () => {
   for (const patch of [{ default_payment_request_id: 30 }, { default_state: 'confirmed' }, { default_project_id: 99 },
     { default_company_id: 1 }, { default_business_category_id: 17 }]) {
     const request = { ...paymentScope.request, context: { ...paymentScope.request.context, ...patch } };
-    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
+    assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
   }
   for (const patch of [{ attachment_ids: [[6, 0, [1]]] }, { planned_amount: 1 }, { date_payment: '2020-01-01' },
     { document_no: 'other' }, { payment_account_no: 'other' }]) {
     const request = { ...paymentScope.request, vals: { ...paymentScope.request.vals, ...patch } };
-    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
+    assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
   }
   for (const patch of [{ continuation: null }, { baseline: { execution_ids: [186], source: [] } }])
-    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: paymentScope.request }, { ...paymentScope, ...patch }), null);
+    assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { intent: 'api.data', params: paymentScope.request }, { ...paymentScope, ...patch }), null);
 });
