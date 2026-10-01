@@ -4804,10 +4804,10 @@ def _plan_version_display_readback(actor, parent_id, version_id, marker):
     assert version["id"] == version_id and version["plan_id"][0] == parent_id
     assert version["version_no"] == marker and version["display_name"] == marker, "native version display mismatch"
     assert all(row["company_id"][0] == 8 and row["create_uid"][0] == 32 and row["state"] == "draft" for row in (parent, version))
-    result = UiContractV2Handler(actor, su_env=actor).handle({"model": "sc.plan.version", "record_id": version_id,
+    result = UiContractV2Handler(actor, su_env=actor["ir.model"].sudo().env).handle({"model": "sc.plan.version", "record_id": version_id,
         "view_type": "form", "render_profile": "edit"})
     result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
-    assert result.get("ok", True), "version final contract failed"
+    assert result.get("ok", True), "version final contract failed: " + json.dumps(result.get("error", {}), ensure_ascii=False, default=str)[:1200]
     contract = result.get("data", {})
     main = contract.get("dataContract", {}).get("mainData", {})
     assert main.get("id") == version_id and main.get("display_name") == marker and main.get("version_no") == marker, "final contract version display mismatch"

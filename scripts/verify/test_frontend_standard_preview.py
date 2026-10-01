@@ -1217,9 +1217,17 @@ class PlanVersionDisplayProbeTest(unittest.TestCase):
         self.handler.return_value.handle.return_value = {'ok': True, 'data': {'dataContract': {'mainData': main}, 'pageInfo': {'pageName': '计划版本'}}}
         result = self.readback(self.actor, 101, 102, 'Marker')
         self.assertEqual(result['page_name'], '计划版本')
-        self.handler.assert_called_once_with(self.actor, su_env=self.actor)
+        self.handler.assert_called_once_with(self.actor, su_env=self.actor["ir.model"].sudo.return_value.env)
+        self.actor["ir.model"].sudo.assert_called_once_with()
+        self.actor["sc.plan"].sudo.assert_not_called()
+        self.actor["sc.plan.version"].sudo.assert_not_called()
         for row, key, value in [(version, 'display_name', 'sc.plan.version,102'), (main, 'display_name', 'sc.plan.version,102'),
             (main, 'id', 999), (version, 'plan_id', [999, 'Wrong']), (parent, 'create_uid', [1, 'Admin']), (version, 'state', 'approved')]:
             old = row[key]; row[key] = value
             with self.assertRaises(AssertionError): self.readback(self.actor, 101, 102, 'Marker')
             row[key] = old
+        self.handler.return_value.handle.return_value = {'ok': False, 'error': {'code': 'ACL_DENIED', 'message': 'metadata denied' + 'x' * 2000}}
+        with self.assertRaises(AssertionError) as caught:
+            self.readback(self.actor, 101, 102, 'Marker')
+        self.assertIn('ACL_DENIED', str(caught.exception))
+        self.assertLessEqual(len(str(caught.exception)), 1231)
