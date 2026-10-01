@@ -949,7 +949,7 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
-  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_PAYMENT_REVIEW_CAPTURE === '1') {
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && (process.env.TPL07_PAYMENT_REVIEW_CAPTURE === '1' || process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1')) {
     paymentReview = { model: 'sc.payment.execution', source: { id: 1710, company_id: 8 },
       marker: `TPL53-PAYMENT-REVIEW-${Date.now()}`, phase: 'prepare' };
     await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
@@ -983,6 +983,81 @@ try {
       paymentReviewWriteKind('fixture_role_finance', report.paymentReviewCreateCapture, { ...paymentReview,
         phase: 'create', request: report.paymentReviewCreateCapture?.params }) === 'create');
     await manager.page.screenshot({ path: path.join(out, 'payment-review-create-capture.png') });
+    if (process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1') {
+      const persist = () => fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      const invoke = (page, intent, params) => page.evaluate(async ({ intent, params }) => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+          body: JSON.stringify({ intent, params }),
+        })).json();
+      }, { intent, params });
+      const read = page => invoke(page, 'api.data', { op: 'read', model: paymentReview.model, ids: [paymentReview.id],
+        fields: ['id', 'name', 'state', 'validation_status', 'company_id', 'payment_request_id', 'paid_amount', 'note'], context: { company_id: 8 } });
+      const clickAction = async (page, label, intent, predicate) => {
+        const [response] = await Promise.all([
+          page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === intent && predicate(body.params); } catch { return false; }
+          }, { timeout: 20000 }),
+          page.getByRole('button', { name: label, exact: typeof label === 'string' }).first().click(),
+        ]);
+        return response.json();
+      };
+      paymentReview.request = report.paymentReviewCreateCapture.params;
+      paymentReview.phase = 'create';
+      await persist();
+      report.paymentReviewSaved = await clickAction(manager.page, /^保存(?:草稿)?$/, 'api.data', p => p?.op === 'create' && p.model === paymentReview.model);
+      check('payment review: exact save succeeds once', report.paymentReviewSaved.ok === true && paymentReview.phase === 'created'
+        && Number.isInteger(paymentReview.id) && paymentReview.id > 0 && !paymentReview.baseline.execution_ids.includes(paymentReview.id));
+      await manager.page.waitForURL(url => ['/r/', '/f/'].some(prefix => url.pathname === `${prefix}sc.payment.execution/${paymentReview.id}`));
+      await manager.page.waitForLoadState('domcontentloaded');
+      report.paymentReviewCreated = await read(manager.page);
+      const created = report.paymentReviewCreated.data?.records?.[0];
+      check('payment review: actual created ownership and draft readback', report.paymentReviewCreated.ok === true
+        && created?.id === paymentReview.id && created.state === 'draft' && created.company_id?.[0] === 8
+        && created.payment_request_id?.[0] === 1710 && created.paid_amount === 1 && created.note === paymentReview.marker);
+      const operator = await login('fixture_role_pfl035_finance_user');
+      await operator.page.goto(`${base}/r/sc.payment.execution/${paymentReview.id}?action_id=803&menu_id=335`);
+      await operator.page.getByRole('button', { name: '提交审批', exact: true }).waitFor();
+      paymentReview.phase = 'submit';
+      await persist();
+      report.paymentReviewSubmitted = await clickAction(operator.page, '提交审批', 'execute_button', p => p?.model === paymentReview.model && p.res_id === paymentReview.id);
+      check('payment review: ordinary operator submitted', report.paymentReviewSubmitted.ok === true && paymentReview.phase === 'submitted');
+      report.paymentReviewWaiting = await read(operator.page);
+      const waiting = report.paymentReviewWaiting.data?.records?.[0];
+      check('payment review: configured approval waits', waiting?.state === 'draft' && ['waiting', 'pending'].includes(waiting.validation_status));
+      await operator.ctx.close();
+      const [workspaceResponse] = await Promise.all([
+        manager.page.waitForResponse(response => {
+          try { const b = response.request().postDataJSON(); return b?.intent === 'my.work.summary' && b.params?.product_workspace === true; } catch { return false; }
+        }),
+        manager.page.goto(`${base}/my-work`),
+      ]);
+      const workspace = await workspaceResponse.json();
+      const items = workspace.data?.product_workspace?.sections?.flatMap(section => section.items) || [];
+      const item = items.find(item => item.target?.model === paymentReview.model && item.target.record_id === paymentReview.id);
+      check('payment review: actual reviewer workspace contains assigned execution', Boolean(item?.target?.work_item_origin));
+      paymentReview.origin = item.target.work_item_origin;
+      report.paymentReviewWorkItem = item;
+      await persist();
+      const card = manager.page.locator('[data-work-item-key]').filter({ hasText: created.name });
+      await card.getByRole('button', { name: '打开详情', exact: true }).click();
+      await manager.page.waitForURL(url => url.pathname === `/r/sc.payment.execution/${paymentReview.id}`);
+      await manager.page.getByRole('button', { name: '审批通过', exact: true }).waitFor();
+      paymentReview.phase = 'approve';
+      await persist();
+      report.paymentReviewApproved = await clickAction(manager.page, '审批通过', 'execute_button', p => p?.model === paymentReview.model && p.res_id === paymentReview.id);
+      check('payment review: assigned reviewer approval succeeds', report.paymentReviewApproved.ok === true && paymentReview.phase === 'done');
+      report.paymentReviewFinal = await read(manager.page);
+      const approved = report.paymentReviewFinal.data?.records?.[0];
+      check('payment review: confirmed without cash posting', approved?.state === 'confirmed' && approved.validation_status === 'validated');
+      const finalWorkspace = await invoke(manager.page, 'my.work.summary', { product_workspace: true });
+      report.paymentReviewFinalWorkspace = finalWorkspace;
+      check('payment review: completed item exits reviewer workspace', finalWorkspace.ok === true
+        && !(finalWorkspace.data?.product_workspace?.sections || []).flatMap(section => section.items || [])
+          .some(item => item.target?.model === paymentReview.model && item.target.record_id === paymentReview.id));
+      await manager.page.screenshot({ path: path.join(out, 'payment-review-approved.png') });
+    }
     await manager.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {
     // Read-only user observation; existing write interception remains deny-by-default.
