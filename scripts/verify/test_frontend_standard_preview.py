@@ -1269,10 +1269,20 @@ authority.containers=[];assert.equal(detailExpectedSections(authority).unknown.l
 
     def test_horizontal_geometry_and_missing_whole_section_fail_closed(self):
         self.run_js("""
-const metrics={cards:[{official:true,nested:false,rect:{left:0,right:300,top:0,bottom:100}},{official:true,nested:false,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],collectionInsideFacts:false,contained:true};
+const metrics={cards:[{official:true,nested:false,display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:0,bottom:100}},{official:true,nested:false,display:'block',rowGap:'normal',headerBodyGap:0,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],collectionInsideFacts:false,contained:true};
 assert.deepEqual(detailGeometryFailures(metrics),[]);
 for(const patch of [{expectedCount:3},{expectedMatched:false},{unknownVisibility:['missing']},{collectionInsideFacts:true},{contained:false},{facts:[]},{descriptions:[{official:false,owned:true}]}]) assert.ok(detailGeometryFailures({...metrics,...patch}).length);
 for(const change of [m=>m.cards[1].rect.top=90,m=>m.cards[0].nested=true,m=>m.facts[0].label=null,m=>m.facts[0].value={left:0,right:90,top:40,bottom:60}]){const m=structuredClone(metrics);change(m);assert.ok(detailGeometryFailures(m).length);}
+""")
+
+    def test_native_grid_gap_cannot_masquerade_as_official_card_spacing(self):
+        self.run_js("""
+const card={official:true,nested:false,display:'grid',rowGap:'12px',headerBodyGap:12,rect:{left:0,right:300,top:0,bottom:100}};
+const metrics={cards:[card,{...card,rect:{left:0,right:300,top:120,bottom:200}}],expectedCount:2,expectedMatched:true,descriptions:[{official:true,owned:true}],facts:[{label:{left:0,right:90,top:10,bottom:30},value:{left:100,right:290,top:10,bottom:30}}],contained:true};
+assert.ok(detailGeometryFailures(metrics).includes('Card root spacing owned by official driver'));
+metrics.cards=metrics.cards.map(card=>({...card,display:'block',rowGap:'normal',headerBodyGap:0}));
+assert.deepEqual(detailGeometryFailures(metrics),[]);
+metrics.cards[0].headerBodyGap=12;assert.ok(detailGeometryFailures(metrics).includes('Card root spacing owned by official driver'));
 """)
 
     def test_real_theme_and_navigation_wiring_preserves_write_denial(self):

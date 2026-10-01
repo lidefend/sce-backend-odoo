@@ -87,6 +87,8 @@ function detailGeometryFailures(metrics) {
   if (metrics.unknownVisibility?.length) failures.push('section visibility authority');
   if (metrics.cards.length < 2 || metrics.expectedCount !== metrics.cards.length || !metrics.expectedMatched) failures.push('independent section/card coverage');
   if (metrics.cards.some(card => !card.official || card.nested)) failures.push('official nonnested Cards');
+  if (metrics.cards.some(card => ['grid','inline-grid'].includes(card.display) || (card.rowGap !== 'normal' && Number.parseFloat(card.rowGap) !== 0)
+    || (card.headerBodyGap !== null && (!Number.isFinite(card.headerBodyGap) || Math.abs(card.headerBodyGap) > 1)))) failures.push('Card root spacing owned by official driver');
   for (let i=0; i<metrics.cards.length; i+=1) for (let j=i+1; j<metrics.cards.length; j+=1) {
     const a=metrics.cards[i].rect, b=metrics.cards[j].rect;
     if (Math.max(b.top-a.bottom,a.top-b.bottom,b.left-a.right,a.left-b.right) <= 0) failures.push('positive card spacing');
@@ -820,8 +822,8 @@ async function detailStyleVisualScope(session, inspect) {
           const themeTokens={surface:getComputedStyle(probe).backgroundColor,text:getComputedStyle(probe).color};probe.remove();
           return {expectedCount:sections.expected.length, unknownVisibility:sections.unknown, expectedMatched:expectedMatches.every(nodes => nodes.length === 1 && cards.includes(nodes[0])) && new Set(expectedMatches.flat()).size === sections.expected.length,
             expectedSections:sections.expected,sectionMatches,themeTokens,
-            cards:cards.map(node=>({title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
-              nested:Boolean(node.parentElement.closest('[data-detail-card="native-section"]')),rect:rect(node),background:getComputedStyle(node).backgroundColor,color:getComputedStyle(node).color})),
+            cards:cards.map(node=>{const style=getComputedStyle(node),header=node.querySelector(':scope > .t-card__header'),body=node.querySelector(':scope > .t-card__body');return {display:style.display,rowGap:style.rowGap,header:header ? rect(header) : null,body:body ? rect(body) : null,headerBodyGap:header&&body ? rect(body).top-rect(header).bottom : null,title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
+              nested:Boolean(node.parentElement.closest('[data-detail-card="native-section"]')),rect:rect(node),background:style.backgroundColor,color:style.color};}),
             descriptions:descriptions.map(node=>({official:node.classList.contains('t-descriptions')&&node.getAttribute('data-semantic-component')==='ScDescriptions',owned:Boolean(node.closest('[data-detail-card="native-section"]'))})),
             facts, collectionInsideFacts:descriptions.some(node=>node.querySelector('[data-field-type="one2many"],[data-field-type="many2many"],[data-field-type="binary"]')),
             contained:document.documentElement.scrollWidth<=innerWidth+1, bodyBackground:getComputedStyle(document.body).backgroundColor,bodyColor:getComputedStyle(document.body).color};
