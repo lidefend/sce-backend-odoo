@@ -10036,3 +10036,8 @@ P0 真实呈现修复 `712f83eb9`：日常项目列表已有业务记录，却�
 
 真实日常环境付款详情失败的首因是已退役 flat 排列后保留的四条 P2 标签偏好中一条 native locator 失效；P0 PageAssembler 吞掉配置异常后制造无 occurrence 的次生 500。P0 六文件已提交 d4eaadaab，L1、185 项契约测试、22 项装配测试和 15 项交互检查通过，B 独立源码复核通过，尚未部署。
 P4 经既有 odoo.shell.exec 对 configuration312 做一次精确适配：绑定原版本/双 hash、真实账号原生视图 hash 和四个 occurrence，前置行锁防漂移，仅首 target field18 改为 field20，标签、其他策略及付款业务事实不变。加强 dry-run 回滚、版本7发布及独立连接完整只读记录契约回读均通过；版本和审计写属于正常发布副作用。原快照、命令结果、恢复约束及脚本 hash 仅索引于原 run 的 daily_main_upgrade_20261001.configuration_repair。浏览器受影响详情流程仍在复核；不将契约成功冒充完整产品交付。
+
+### 53.263 Contract-bound daily acceptance and metadata rendering (2026-10-01)
+
+验收契约先于浏览器执行：原 run 的 acceptance_authority.contract_to_execution_to_report 绑定真实账号/角色/公司、部署身份、生产契约与正式 DOM 声明，规定角色差异、pass/fail/not_run、责任层及依赖失效。daily record_checks 对应八个实际步骤并引用原契约响应；detail-only 不声称执行列表。89 条是本次发布产品策略与账号观测，不推广成任意角色的页面要求；前端兑现契约不替代独立 ACL 政策验证。工具17项定向测试及独立契约→执行→报告审核通过。
+X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺失干扰页面打开；现复用授权元数据 readRecord，保留已声明名称、单次失败和卸载边界，主动下载/上传路径不变。实际日常账号元数据读取通过，真实历史文件下载仍404且未伪造恢复。实际组件15项检查、关系矩阵/负例及 Python 定向测试、双严格类型检查通过。源码已独立复核；主线集成、部署及其后的受影响详情/场景验证尚未完成。

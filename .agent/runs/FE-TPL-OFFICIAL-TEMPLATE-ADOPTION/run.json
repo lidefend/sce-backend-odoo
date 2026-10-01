@@ -3,7 +3,7 @@
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "fix/daily-official-template-acceptance",
   "status": "verification_pending",
-  "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
+  "baseline_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
   "scope": [
@@ -923,10 +923,10 @@
     }
   },
   "blockers": [
-    "Affected daily record-only browser recheck pending after precise configuration repair.",
-    "Reviewed local scene diagnostic and structured configuration-error fixes not yet integrated/deployed; cannot claim full daily acceptance."
+    "Current follow-up candidate not yet integrated/deployed; post-deploy contract-bound affected detail/scene verification pending.",
+    "Historical attachment content remains unavailable; metadata rendering fix does not claim file recovery. Broader roles and business write acceptance remain outside this browser scope."
   ],
-  "next_exact_step": "Complete existing affected record-only daily browser; reuse passing login/navigation/home. Integrate reviewed P0 scene/config-error and P4 acceptance-tool fixes, deploy resulting main and recheck changed scene. No whole-environment or full matrix rerun.",
+  "next_exact_step": "Prepare generated evidence; freeze clean follow-up candidate; one exact-head Quick; independent frozen review/archive; protected GitHub PR integration; deploy resulting main with Python reload and frontend build; execute contract-bound detail-only plus affected scene observation. Reuse unchanged login/navigation/home/list evidence with explicit scope limits.",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -4505,10 +4505,10 @@
       "industry_catalog": false,
       "fixture_reset": false
     },
-    "status": "daily_config_repaired_browser_recheck_running",
+    "status": "reviewed_source_ready_for_mainline_integration_daily_reacceptance_pending",
     "evidence": "artifacts/frontend-web-fix-20260928/final-integration/daily-upgrade",
     "reuse": "PR525 exact source reviews/tests/CI; runtime checks required for changed daily environment",
-    "next_exact_step": "Complete existing affected record-only daily browser; reuse passing login/navigation/home. Integrate reviewed P0 scene/config-error and P4 acceptance-tool fixes, deploy resulting main and recheck changed scene. No whole-environment or full matrix rerun.",
+    "next_exact_step": "Prepare generated evidence; freeze clean follow-up candidate; one exact-head Quick; independent frozen review/archive; protected GitHub PR integration; deploy resulting main with Python reload and frontend build; execute contract-bound detail-only plus affected scene observation. Reuse unchanged login/navigation/home/list evidence with explicit scope limits.",
     "backup": {
       "status": "cancelled",
       "reason": "Owner standing instruction prioritizes development upgrade and says development data protection unnecessary; optional10GB export cancelled before runtime writes",
@@ -4833,7 +4833,192 @@
     "followup_branch": {
       "branch": "fix/daily-official-template-acceptance",
       "original_merged_pr": 525,
-      "reason": "Published source branch was squash-merged; preserve source history and original goal/evidence while integrating post-deployment fixes through a new protected PR."
+      "reason": "Published source branch was squash-merged; preserve source history and original goal/evidence while integrating post-deployment fixes through a new protected PR.",
+      "original_run_baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
+      "governed_sync_log": "artifacts/frontend-web-fix-20260928/final-integration/daily-followup-main-sync.log"
+    },
+    "detail_probe_repair": {
+      "layer": "P4",
+      "module": "existing frontend_list_surface_structure_browser and focused tests",
+      "scope": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py"
+      ],
+      "stage_identity": "7fdca04a9a09910fa725b39fda9a7beb753c8cc3 + these tools/run dirty",
+      "reason": "ordinary ContractFormPage uses driver host, native canvas only configuration branch; tool waited on absent canvas after successful readonly contract",
+      "standard_vs_user_specific": "generic declaration consumption, no customer/record-specific semantics",
+      "blast_radius": "daily record observation, safe failed HTTP diagnostics and partial evidence; no product/DB/credentials changes",
+      "failure_report": "artifacts/frontend-web-fix-20260928/final-integration/daily-auth-record-config-fixed.json",
+      "failure_owner": "P4 incorrect renderer assumption; separate HTTP404 owner pending exact request evidence",
+      "validation_plan": "L1 iteration then registered list_surface_search_contract.unit and node syntax; no runtime/build/browser here",
+      "scope_control": "detail-only skips list geometry/component/negative checks and declares not_run; prior list evidence referenced rather than asserted rerun",
+      "status": "L1_L2_and_independent_source_review_passed",
+      "validation": {
+        "L1": {
+          "status": "passed",
+          "command": "make ci.local.iteration",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-contract-attachment-iteration-final.log"
+        },
+        "L2": {
+          "status": "passed",
+          "command": "make verify.frontend.list_surface_search_contract.unit",
+          "tests": 17,
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-detail-declaration-unit-final.log"
+        },
+        "syntax": "node --check scripts/verify/frontend_list_surface_structure_browser.mjs PASS",
+        "diff": "git diff --check PASS",
+        "source_review": "C concurrency_review PASS"
+      },
+      "original_gate_failure": {
+        "logs": [
+          "daily-detail-declaration-resume.log",
+          "daily-detail-declaration-iteration.log"
+        ],
+        "reason": "migrated branch retained old nonancestor baseline510a; executor did not wait for resume result before initial edits",
+        "recovery": "root corrected baseline to deployed main2d164; old baseline retained historical field; daily-followup-baseline-resume.log PASS"
+      },
+      "runtime_entry": "Existing daily Make target with LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only; list execution not_run, eight required record steps across1440/390",
+      "additional_evidence": "actual system.init user.id/role_surface.role_codes/record_context.company_id plus exact captured contract response index/trace/version for record checks"
+    },
+    "acceptance_authority": {
+      "owner_instruction": "验收体系也必须契约化；日常角色页面可与开发管理员不同",
+      "identity": [
+        "served version",
+        "actual account/role",
+        "company",
+        "record/action/menu"
+      ],
+      "expected": "Actual final contract effectiveRenderProfile/capabilities/declared actions and route; no fixed admin canvas or button set",
+      "browser": "Observe permitted and denied behavior without changing permissions; bounded affected surfaces only",
+      "classification": [
+        "product",
+        "contract",
+        "probe",
+        "environment/data"
+      ],
+      "not_run": "Never PASS; reuse exact unchanged source evidence explicitly; no second schema/framework",
+      "scope_not_run": [
+        "other roles/companies",
+        "per-button authorization",
+        "backend forbidden-write rejection",
+        "submit/approval lifecycle"
+      ],
+      "policy_boundary": "Browser only verifies this actual account/company contract consumption. Existing ACL/contract tests are separate upstream policy evidence, not inferred from DOM matching response.",
+      "contract_to_execution_to_report": {
+        "identity": {
+          "applies_to": "This daily served SHA + authenticated system.init user.id/role_surface.role_codes/record_context.company_id only; source auth configuration is not proof of effective role",
+          "producer": "runtime identity endpoint + captured system.init",
+          "execution": "verifyServedIdentity before login; exact served database; shared-read lease; actor_context from captured bootstrap only",
+          "report": "source.servedIdentity, actor_context; missing actual actor/company/role fails"
+        },
+        "login_bootstrap": {
+          "producer": "canonical system.init data.navigation.nav; existing external readonly probe",
+          "execution": "identity before credential transmission; login and canonical navigation schema/path policy",
+          "report": "daily-auth-fixed-probe.json original PASS; 89 is this released product policy and observed wutao scope, not a universal count for every role"
+        },
+        "role_landing_home": {
+          "producer": "session.ts resolveLandingPath precedence: role landing_path, role landing_scene_key, permitted default route/scene; scene-ready registry; router / -> workspace.home; my.work.summary product_workspace true",
+          "execution": "dailyDeclaredLanding through production registry/route normalizers; declared landing URL and current contract; explicit home ready marker and fresh exact summary 12/4/page1/12/priority/desc; two-width screenshots",
+          "report": "daily_observations in daily-auth-browser-declared.json retain four completed observations; whole original report FAILED; detail-only does not rerun or upgrade them to a new global PASS"
+        },
+        "list": {
+          "producer": "captured released navigation exact action/menu; ui.contract.v2 collection columns/selection/search/action declarations; ListPage/ProductListHeader control hooks",
+          "execution": "normal/batch/empty geometry and visible controls under actual actor; no fixed admin button set; selection/search are UI-only",
+          "report": "rows[].measurement/checks/screenshots and list_execution; failed catch retains completed rows. detail-only marks list not_run, zero list-gated checks are not a list PASS"
+        },
+        "record": {
+          "producer": "list ui.contract.v2 actionContract.actionRuleList page.row -> production recordEntryContract resolver; target exact final ui.contract.v2 model/record/action/menu/effectiveRenderProfile",
+          "execution": "record_checks: declared_entry_route cites list contract, exact_record_contract cites matching target response, declared_renderer compares actual ContractFormPage identity + ContractFormDriverHost + Task/WorkspaceFormPattern data-render-profile, return_to_source binds source route; all four per viewport must pass uniquely",
+          "report": "actor_context plus each record_checks.contract_evidence_ref response_index/trace/version; eight required steps for1440/390, partial preserved on failure; readonly/edit/create differ by final declaration; create remains pure-test only, no live create journey"
+        },
+        "role_company_variation": {
+          "policy": "Readonly/final permission degradation is legitimate; /f may render readonly; /r cannot be treated as editable. No changes to role/ACL/data to make tests pass. No inherited development-admin layout/button assumptions."
+        },
+        "outcome": {
+          "passed": "All required actually executed scoped checks plus zero unexpected denied/HTTP/console/page errors; a consistent DOM is not independent proof of policy correctness",
+          "failed": "Actual criterion contradiction or required prerequisite absent; retain original evidence and completed substeps",
+          "not_run": "Skipped surfaces/other actors/companies/per-button policies/backend forbidden-write enforcement/submission and approval lifecycle; never counted PASS"
+        },
+        "failure_ownership": {
+          "probe": "wrong route/renderer/response binding or missing report evidence",
+          "contract": "missing/contradictory normalized declaration",
+          "product": "actual shared consumer violates valid declaration, e.g. automatic content download for a name",
+          "environment_data": "missing historical file on explicit download or unavailable target; do not silently ignore/repair data"
+        },
+        "evidence_invalidation": {
+          "P4": "Only checks whose selection/assertion/report logic changed are invalidated; previous list row/screenshot evidence remains inspectable but is not retroactively a new successful run",
+          "P0_attachment": "Requires new frontend build/deploy before affected detail observation; no browser against known old automatic-download behavior",
+          "P0_scene": "Requires deployed scene diagnostic fix before affected landing observation; other list/form internals unchanged",
+          "identity": "Role/company/record/action or contract revision change invalidates dependent expectations; observed same actor is not all-role coverage",
+          "upstream": "Existing ACL/contract policy tests are separate evidence, not replaced by browser response-to-DOM agreement"
+        }
+      }
+    },
+    "attachment_name_repair": {
+      "layer": "P0",
+      "module": "X2ManyRelationRenderer generic attachment metadata display",
+      "scope": [
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "make/frontend.mk"
+      ],
+      "standard_vs_user_specific": "generic authorized metadata consumption, not customer attachment repair",
+      "why_here": "renderer downloaded content merely to resolve a name; historical file missing triggered unsolicited404",
+      "why_not_elsewhere": "Do not delete legacy attachment or change its actual download/error/permissions; no new backend intent",
+      "blast_radius": "Attachment display name only; existing label priority, one metadata attempt per mounted component/id, explicit download unchanged",
+      "evidence": [
+        "daily-record-attachment-download-probe.log",
+        "daily-record-attachment-name-probe.log"
+      ],
+      "validation_plan": "L1 then existing professional_relation_field.unit including actual SFC custom-renderer mount/transport boundary; strict; no browser/DB/deploy",
+      "status": "L1_L2_strict_passed_final_review_pending",
+      "validation": {
+        "L1": "daily-contract-attachment-iteration-final.log PASS",
+        "L2": {
+          "entry": "make verify.frontend.professional_relation_field.unit",
+          "log": "attachment-name-relation-unit.log",
+          "actual_SFC_mounted_checks": 15,
+          "model_matrix": 18,
+          "model_counterexamples": 17,
+          "python_tests": [
+            10,
+            40
+          ]
+        },
+        "strict": {
+          "status": "passed",
+          "entry": "make verify.frontend.typecheck.strict",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/attachment-name-strict-fixed.log",
+          "coverage": "vue-tsc --noEmit and tsconfig.strict.json"
+        },
+        "original_command_error": "attachment-name-strict.log: unregistered typecheck.strict target, no compiler run; corrected entry above"
+      }
+    },
+    "browser_after_config_repair": {
+      "status": "failed",
+      "report": "artifacts/frontend-web-fix-20260928/final-integration/daily-auth-record-config-fixed.json",
+      "facts": "Actual record ui.contract.v2 succeeded and readonly detail was visibly rendered. Old probe incorrectly waited for configuration form-canvas; one automatic attachment-name download returned missing historical file404. No new browser after these causes were identified.",
+      "owners": {
+        "renderer_probe": "P4 corrected to effective role/profile/declared ordinary driver;17tests and independent contract-to-execution review passed",
+        "automatic_name_download": "P0 metadata read fix b14c52114; actual actor metadata API passed; missing historical file not fabricated/restored"
+      },
+      "not_pass_claim": "Six list screenshots are observations, not reconstructed lost gate measurements. Existing full list gate has its original bound source/environment."
+    },
+    "payment_form_sibling_audit": {
+      "status": "passed",
+      "log": "artifacts/frontend-web-fix-20260928/final-integration/payment-form-sibling-audit.log",
+      "scope": "10 active published payment configurations;2 node-patch forms;only312 uses impacted native3539, all4 identities match after repair;2017 uses different1701 and is outside changed-form scope"
+    },
+    "source_final_review": {
+      "status": "passed",
+      "reviewer": "concurrency_review",
+      "scope": "P0 scene/config exception/attachment metadata; P4 daily actor/contract/DOM execution/report boundaries",
+      "strict": "attachment-name-strict-fixed.log PASS dual vue-tsc",
+      "integration_review": "pending frozen full fingerprint"
+    },
+    "evidence_reuse": {
+      "sync": "Governed sync onto2d164 replayed only follow-up commits, generated evidence invalidated none; source-owned tests carried by unchanged relevant input bytes, not old remote statuses.",
+      "daily": "Existing server2d164 login/bootstrap89 and four landing/home observations retained; only config312changed, no new fixture, account or permission mutation. New frontend fixes require affected detail/scene observation after deployment."
     }
   }
 }
