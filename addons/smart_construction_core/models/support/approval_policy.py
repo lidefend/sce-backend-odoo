@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class ScApprovalPolicy(models.Model):
@@ -10,12 +10,44 @@ class ScApprovalPolicy(models.Model):
     _order = "sequence, id"
     _runtime_authority = "base_tier_validation"
     BUSINESS_MODEL_SELECTION = [
+        ("sc.project.document", "工程资料"),
+        ("tender.doc.purchase", "投标文件购买申请"),
+        ("tender.guarantee", "投标保证金"),
+        ("sc.output.invoice.adjustment", "销项变更登记"),
         ("project.project", "项目立项"),
         ("project.task", "项目任务"),
         ("construction.contract", "项目合同"),
         ("sc.general.contract", "一般合同（公司）"),
+        ("sc.contract.event", "合同履约事件"),
+        ("sc.plan", "计划"),
+        ("sc.plan.report", "计划汇报"),
+        ("sc.plan.version", "计划版本"),
+        ("sc.construction.diary", "施工日志"),
+        ("sc.tax.deduction.registration", "抵扣登记"),
         ("project.material.plan", "物资计划"),
         ("sc.material.outbound", "材料出库/损耗"),
+        ("sc.material.inbound", "材料入库"),
+        ("sc.material.acceptance", "材料验收"),
+        ("sc.material.purchase.request", "材料采购申请"),
+        ("sc.material.rfq", "材料询比价"),
+        ("sc.equipment.plan", "设备计划"),
+        ("sc.equipment.request", "设备申请"),
+        ("sc.labor.plan", "劳务计划"),
+        ("sc.subcontract.plan", "分包计划"),
+        ("sc.subcontract.request", "分包申请"),
+        ("sc.subcontract.settlement", "分包结算"),
+        ("sc.safety.plan", "安全施工方案"),
+        ("sc.safety.disclosure", "安全交底"),
+        ("sc.material.rental.plan", "材料租赁计划"),
+        ("sc.material.rental.order", "材料租赁单"),
+        ("sc.material.rental.settlement", "材料租赁结算"),
+        ("sc.labor.request", "劳务申请"),
+        ("sc.labor.settlement", "劳务结算"),
+        ("sc.labor.usage", "劳务用工"),
+        ("sc.attendance.checkin", "考勤记录"),
+        ("sc.equipment.usage", "机械台班登记"),
+        ("sc.equipment.settlement", "设备结算"),
+        ("sc.material.settlement", "材料结算"),
         ("purchase.order", "采购订单"),
         ("sc.settlement.order", "结算单"),
         ("payment.request", "付款/收款申请"),
@@ -301,6 +333,78 @@ class ScApprovalPolicy(models.Model):
         return bool(policy and policy.approval_required and policy.mode != "none")
 
     @api.model
+    def _start_submission_review(self, record):
+        """Route a checked submission; callers retain business transitions/audits.
+
+        Private server-side entry, called only after the document's submission
+        authorization and prerequisites. An existing live instance takes priority
+        over mutable policy configuration. No synthetic approval facts are created.
+        """
+        record.ensure_one()
+        company = record.company_id or record.env.company
+        record = record.with_company(company).with_context(allowed_company_ids=[company.id])
+        if record.review_ids:
+            if record.validation_status in ("waiting", "pending"):
+                raise UserError(_("单据仍在审批中，不能重新初始化或跳过当前审批。"))
+            record.restart_validation()
+            if record.review_ids:
+                raise UserError(_("旧审批实例未能重置，请检查单据提交状态。"))
+        if not self.is_approval_required(record._name, company=company):
+            return False
+        if not record.request_validation():
+            raise UserError(_("单据已启用审批，但没有匹配的审批规则，请检查业务审批配置。"))
+        return True
+
+    @api.model
+    def _approve_submission_review(self, record):
+        """Act on the existing instance, never re-evaluate mutable configuration."""
+        record.ensure_one()
+        if not record.review_ids:
+            raise UserError(_("单据没有审批实例，不能手工批准。"))
+        if record.validation_status == "validated":
+            return None
+        if record.validation_status not in ("waiting", "pending"):
+            raise UserError(_("当前审批实例不处于可批准状态。"))
+        if not record.can_review:
+            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
+        return record.validate_tier()
+
+    @api.model
+    def _reject_submission_review(self, record, reason=None):
+        """Use the native reviewer/wizard flow and preserve explicit comments."""
+        record.ensure_one()
+        if not record.review_ids or record.validation_status not in ("waiting", "pending"):
+            raise UserError(_("当前用户没有可驳回的审批步骤。"))
+        if not record.can_review:
+            raise AccessError(_("当前用户不是本审批步骤的审批人。"))
+        reason = str(reason or "").strip()
+        if not reason:
+            return record.reject_tier()
+        sequences = record._get_sequences_to_approve(record.env.user)
+        reviews = record.review_ids.filtered(
+            lambda review: review.sequence in sequences
+            and review.status in ("waiting", "pending")
+            and record.env.user in review.reviewer_ids
+        )
+        if not reviews:
+            raise AccessError(_("当前用户没有可驳回的审批步骤。"))
+        reviews.write({"comment": reason})
+        record._rejected_tier(reviews)
+        record._update_counter({"review_deleted": True})
+        return None
+
+    @api.model
+    def _assert_submission_approved(self, record, approved_states):
+        """Consume the completed submission, not today's configuration."""
+        record.ensure_one()
+        state_field = getattr(record, "_state_field", "state")
+        if getattr(record, state_field) not in approved_states:
+            raise UserError(_("请先提交单据并完成审批，再执行后续办理。"))
+        if record.review_ids and record.validation_status != "validated":
+            raise UserError(_("单据的审批实例尚未通过，不能执行后续办理。"))
+        return True
+
+    @api.model
     def next_state_after_submit(self, model_name, submitted_state, approved_state, company=None):
         return submitted_state if self.is_approval_required(model_name, company=company) else approved_state
 
@@ -326,14 +430,48 @@ class ScApprovalPolicy(models.Model):
     def _tier_sync_supported(self):
         self.ensure_one()
         return self.target_model in {
+            "sc.project.document",
+            "tender.doc.purchase",
+            "tender.guarantee",
+            "sc.output.invoice.adjustment",
+            "project.project",
+            "project.task",
             "project.material.plan",
             "sc.material.outbound",
+            "sc.material.inbound",
+            "sc.material.acceptance",
+            "sc.material.purchase.request",
+            "sc.material.rfq",
+            "sc.equipment.plan",
+            "sc.equipment.request",
+            "sc.labor.plan",
+            "sc.subcontract.plan",
+            "sc.subcontract.request",
+            "sc.subcontract.settlement",
+            "sc.safety.plan",
+            "sc.safety.disclosure",
+            "sc.material.rental.plan",
+            "sc.material.rental.order",
+            "sc.material.rental.settlement",
+            "sc.labor.request",
+            "sc.labor.settlement",
+            "sc.labor.usage",
+            "sc.attendance.checkin",
+            "sc.equipment.usage",
+            "sc.equipment.settlement",
+            "sc.material.settlement",
             "payment.request",
             "sc.expense.claim",
             "sc.settlement.order",
             "purchase.order",
             "construction.contract",
             "sc.general.contract",
+            "sc.contract.event",
+            "sc.plan",
+            "sc.plan.report",
+            "sc.plan.version",
+            "sc.construction.diary",
+            "sc.tax.deduction.registration",
             "sc.receipt.income",
             "sc.payment.execution",
             "sc.invoice.registration",
@@ -350,6 +488,142 @@ class ScApprovalPolicy(models.Model):
     @api.model
     def _tier_server_action_xmlids(self, target_model):
         mapping = {
+            "sc.labor.settlement": (
+                "smart_construction_core.server_action_labor_settlement_on_approved",
+                "smart_construction_core.server_action_labor_settlement_on_rejected",
+            ),
+            "sc.labor.usage": (
+                "smart_construction_core.server_action_labor_usage_on_approved",
+                "smart_construction_core.server_action_labor_usage_on_rejected",
+            ),
+            "sc.attendance.checkin": (
+                "smart_construction_core.server_action_attendance_checkin_on_approved",
+                "smart_construction_core.server_action_attendance_checkin_on_rejected",
+            ),
+            "sc.labor.request": (
+                "smart_construction_core.server_action_labor_request_on_approved",
+                "smart_construction_core.server_action_labor_request_on_rejected",
+            ),
+            "sc.subcontract.plan": (
+                "smart_construction_core.server_action_subcontract_plan_on_approved",
+                "smart_construction_core.server_action_subcontract_plan_on_rejected",
+            ),
+            "sc.subcontract.settlement": (
+                "smart_construction_core.server_action_subcontract_settlement_on_approved",
+                "smart_construction_core.server_action_subcontract_settlement_on_rejected",
+            ),
+            "sc.subcontract.request": (
+                "smart_construction_core.server_action_subcontract_request_on_approved",
+                "smart_construction_core.server_action_subcontract_request_on_rejected",
+            ),
+            "sc.safety.plan": (
+                "smart_construction_core.server_action_safety_plan_on_approved",
+                "smart_construction_core.server_action_safety_plan_on_rejected",
+            ),
+            "sc.safety.disclosure": (
+                "smart_construction_core.server_action_safety_disclosure_on_approved",
+                "smart_construction_core.server_action_safety_disclosure_on_rejected",
+            ),
+            "sc.labor.plan": (
+                "smart_construction_core.server_action_labor_plan_on_approved",
+                "smart_construction_core.server_action_labor_plan_on_rejected",
+            ),
+            "sc.material.rental.plan": (
+                "smart_construction_core.server_action_material_rental_plan_on_approved",
+                "smart_construction_core.server_action_material_rental_plan_on_rejected",
+            ),
+            "sc.material.rental.order": (
+                "smart_construction_core.server_action_material_rental_order_on_approved",
+                "smart_construction_core.server_action_material_rental_order_on_rejected",
+            ),
+            "sc.material.rental.settlement": (
+                "smart_construction_core.server_action_material_rental_settlement_on_approved",
+                "smart_construction_core.server_action_material_rental_settlement_on_rejected",
+            ),
+            "sc.equipment.settlement": (
+                "smart_construction_core.server_action_equipment_settlement_on_approved",
+                "smart_construction_core.server_action_equipment_settlement_on_rejected",
+            ),
+            "sc.equipment.usage": (
+                "smart_construction_core.server_action_equipment_usage_on_approved",
+                "smart_construction_core.server_action_equipment_usage_on_rejected",
+            ),
+            "sc.equipment.request": (
+                "smart_construction_core.server_action_equipment_request_on_approved",
+                "smart_construction_core.server_action_equipment_request_on_rejected",
+            ),
+            "sc.equipment.plan": (
+                "smart_construction_core.server_action_equipment_plan_on_approved",
+                "smart_construction_core.server_action_equipment_plan_on_rejected",
+            ),
+            "sc.material.settlement": (
+                "smart_construction_core.server_action_material_settlement_on_approved",
+                "smart_construction_core.server_action_material_settlement_on_rejected",
+            ),
+            "sc.material.rfq": (
+                "smart_construction_core.server_action_material_rfq_on_approved",
+                "smart_construction_core.server_action_material_rfq_on_rejected",
+            ),
+            "sc.material.purchase.request": (
+                "smart_construction_core.server_action_material_purchase_request_on_approved",
+                "smart_construction_core.server_action_material_purchase_request_on_rejected",
+            ),
+            "sc.material.acceptance": (
+                "smart_construction_core.server_action_material_acceptance_on_approved",
+                "smart_construction_core.server_action_material_acceptance_on_rejected",
+            ),
+            "sc.material.inbound": (
+                "smart_construction_core.server_action_material_inbound_on_approved",
+                "smart_construction_core.server_action_material_inbound_on_rejected",
+            ),
+            "sc.project.document": (
+                "smart_construction_core.server_action_project_document_on_approved",
+                "smart_construction_core.server_action_project_document_on_rejected",
+            ),
+            "sc.output.invoice.adjustment": (
+                "smart_construction_core.server_action_output_adjustment_on_approved",
+                "smart_construction_core.server_action_output_adjustment_on_rejected",
+            ),
+            "tender.guarantee": (
+                "smart_construction_core.server_action_tender_guarantee_on_approved",
+                "smart_construction_core.server_action_tender_guarantee_on_rejected",
+            ),
+            "tender.doc.purchase": (
+                "smart_construction_core.server_action_tender_purchase_on_approved",
+                "smart_construction_core.server_action_tender_purchase_on_rejected",
+            ),
+            "project.project": (
+                "smart_construction_core.server_action_project_on_approved",
+                "smart_construction_core.server_action_project_on_rejected",
+            ),
+            "project.task": (
+                "smart_construction_core.server_action_task_on_approved",
+                "smart_construction_core.server_action_task_on_rejected",
+            ),
+            "sc.tax.deduction.registration": (
+                "smart_construction_core.server_action_tax_deduction_on_approved",
+                "smart_construction_core.server_action_tax_deduction_on_rejected",
+            ),
+            "sc.construction.diary": (
+                "smart_construction_core.server_action_diary_on_approved",
+                "smart_construction_core.server_action_diary_on_rejected",
+            ),
+            "sc.plan.version": (
+                "smart_construction_core.server_action_plan_version_on_approved",
+                "smart_construction_core.server_action_plan_version_on_rejected",
+            ),
+            "sc.plan.report": (
+                "smart_construction_core.server_action_plan_report_on_approved",
+                "smart_construction_core.server_action_plan_report_on_rejected",
+            ),
+            "sc.plan": (
+                "smart_construction_core.server_action_plan_on_approved",
+                "smart_construction_core.server_action_plan_on_rejected",
+            ),
+            "sc.contract.event": (
+                "smart_construction_core.server_action_contract_event_on_approved",
+                "smart_construction_core.server_action_contract_event_on_rejected",
+            ),
             "project.material.plan": (
                 "smart_construction_core.server_action_material_plan_tier_approved",
                 "smart_construction_core.server_action_material_plan_tier_rejected",
@@ -447,6 +721,13 @@ class ScApprovalPolicy(models.Model):
                     ]
                 ).mapped("approve_group_id").ids
             )
+            # A configuration change affects future submissions, but must not
+            # remove callback access from an already assigned pending review.
+            group_ids.update(self.env["tier.review"].sudo().search([
+                ("model", "=", target_model),
+                ("status", "in", ["waiting", "pending"]),
+                ("reviewer_group_id", "!=", False),
+            ]).mapped("reviewer_group_id").ids)
             if not group_ids:
                 continue
             for xmlid in (approve_xmlid, reject_xmlid):
@@ -456,16 +737,36 @@ class ScApprovalPolicy(models.Model):
                 if action:
                     action.sudo().write({"groups_id": [(6, 0, sorted(group_ids))]})
 
-    def _tier_definition_domain(self, step):
-        domain = []
+    @api.model
+    def _amount_condition_authority(self, model):
+        """The existing business amount mapping owns both editor and tier domains."""
         amount_field_by_model = {
+            "tender.doc.purchase": "amount",
+            "tender.guarantee": "amount",
+            "sc.output.invoice.adjustment": "original_invoice_amount",
+            "project.task": "boq_amount_total",
+            "sc.tax.deduction.registration": "deduction_amount",
             "payment.request": "amount",
             "sc.expense.claim": "amount",
             "sc.material.outbound": "amount_total",
+            "sc.material.inbound": "amount_total",
+            "sc.material.purchase.request": "amount_total",
+            "sc.material.settlement": "amount_total",
+            "sc.labor.settlement": "amount_total",
+            "sc.labor.usage": "amount_total",
+            "sc.subcontract.plan": "estimated_amount",
+            "sc.subcontract.request": "estimated_amount",
+            "sc.subcontract.settlement": "amount_total",
+            "sc.material.rental.plan": "estimated_amount",
+            "sc.material.rental.order": "amount_total",
+            "sc.material.rental.settlement": "amount_total",
+            "sc.equipment.settlement": "amount_total",
+            "sc.equipment.usage": "amount",
             "sc.settlement.order": "amount_total",
             "purchase.order": "amount_total",
             "construction.contract": "amount_total",
             "sc.general.contract": "amount_total",
+            "sc.contract.event": "amount_impact",
             "sc.receipt.income": "amount",
             "sc.payment.execution": "paid_amount",
             "sc.invoice.registration": "amount_total",
@@ -473,7 +774,23 @@ class ScApprovalPolicy(models.Model):
             "sc.treasury.reconciliation": "confirmation_amount",
             "sc.settlement.adjustment": "amount",
         }
-        amount_field = amount_field_by_model.get(self.target_model)
+        amount_field = amount_field_by_model.get(model, "")
+        label = ""
+        if amount_field:
+            label = self.env[model].fields_get([amount_field]).get(amount_field, {}).get("string") or amount_field
+        return {
+            "supported": bool(amount_field),
+            "field": amount_field,
+            "label": label,
+            "reason_code": "amount_field_declared" if amount_field else "amount_field_not_declared",
+            "message": (_("金额条件按%s判断。") % label) if amount_field else _("当前业务未设置审批金额依据，可按审批岗位和顺序配置。"),
+        }
+
+    def _tier_definition_domain(self, step):
+        domain = []
+        amount_field = self._amount_condition_authority(self.target_model)["field"]
+        if not amount_field and (step.amount_min or step.amount_max):
+            raise ValidationError(_("该类单据尚未声明审批金额字段，不能配置金额条件。"))
         if amount_field and step.amount_min:
             domain.append((amount_field, ">=", step.amount_min))
         if amount_field and step.amount_max:
@@ -490,7 +807,9 @@ class ScApprovalPolicy(models.Model):
             "model": self.target_model,
             "company_id": self.company_id.id or self.env.company.id,
             "active": bool(self.active and self.approval_required and self.mode != "none" and step.active),
-            "sequence": step.sequence or self.sequence or 10,
+            # OCA consumes definitions in descending priority. Configuration
+            # uses ascending (sequence, id), including zero and tied positions.
+            "sequence": -(self.step_ids.sorted(lambda item: (item.sequence, item.id)).ids.index(step.id) + 1),
             "review_type": "group",
             "reviewer_group_id": step.approve_group_id.id,
             "definition_type": "domain",
@@ -503,7 +822,7 @@ class ScApprovalPolicy(models.Model):
     def sync_tier_definitions(self):
         TierDefinition = self.env["tier.definition"].sudo()
         synced = TierDefinition.browse()
-        for policy in self.sudo():
+        for policy in self.sudo().with_context(active_test=False):
             if not policy._tier_sync_supported():
                 for step in policy.step_ids.filtered("tier_definition_id"):
                     step.tier_definition_id.sudo().write({"active": False})

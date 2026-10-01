@@ -66,7 +66,7 @@ class ScWorkflowDef(models.Model):
             raise UserError(_("You do not have permission to manage workflows."))
 
     def _legacy_runtime_enabled(self):
-        if self.env.context.get(LEGACY_WORKFLOW_RUNTIME_CONTEXT):
+        if self.env.su and self.env.context.get(LEGACY_WORKFLOW_RUNTIME_CONTEXT):
             return True
         value = self.env["ir.config_parameter"].sudo().get_param(LEGACY_WORKFLOW_RUNTIME_PARAM, "0")
         return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
@@ -196,7 +196,7 @@ class ScWorkflowInstance(models.Model):
             raise UserError(_("You do not have permission to manage workflow instances."))
 
     def _legacy_runtime_enabled(self):
-        if self.env.context.get(LEGACY_WORKFLOW_RUNTIME_CONTEXT):
+        if self.env.su and self.env.context.get(LEGACY_WORKFLOW_RUNTIME_CONTEXT):
             return True
         value = self.env["ir.config_parameter"].sudo().get_param(LEGACY_WORKFLOW_RUNTIME_PARAM, "0")
         return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
@@ -284,6 +284,7 @@ class ScWorkflowInstance(models.Model):
         return inst
 
     def action_submit(self):
+        self._require_legacy_runtime_enabled()
         self._require_runtime_admin()
         for rec in self:
             if rec.state != "draft":
@@ -300,6 +301,7 @@ class ScWorkflowInstance(models.Model):
         return True
 
     def action_approve(self, note=None):
+        self._require_legacy_runtime_enabled()
         for rec in self:
             if rec.state != "running":
                 raise UserError(_("Only running workflow can be approved."))
@@ -330,6 +332,7 @@ class ScWorkflowInstance(models.Model):
         return True
 
     def action_reject(self, note=None):
+        self._require_legacy_runtime_enabled()
         for rec in self:
             if rec.state != "running":
                 raise UserError(_("Only running workflow can be rejected."))

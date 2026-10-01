@@ -285,6 +285,13 @@ class ScReceiptIncome(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
         legacy_authority = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
@@ -426,8 +433,24 @@ class ScReceiptIncome(models.Model):
         authoritative = self.env.context.get("sc_receipt_fact_authority_token") is _RECEIPT_FACT_AUTHORITY_TOKEN
         if "treasury_ledger_id" in vals and not authoritative:
             raise UserError(_("收款资金台账只能由正式收款动作绑定。"))
-        if not authoritative and (vals.get("state") in {"received", "legacy_confirmed"} or "finance_identity_state" in vals):
-            raise UserError(_("收款终态及财务身份只能由正式业务动作或迁移写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("收款状态、来源及财务身份只能由正式业务动作或迁移写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "currency_id", "partner_id", "contract_id",
+            "payment_request_id", "date_receipt", "amount", "document_no", "source_kind",
+            "business_category_id", "receipt_type", "income_category", "payment_method",
+            "receiving_account", "receiving_account_name", "receiving_account_no",
+            "receiving_bank_name", "bill_no", "invoice_ref", "deducted_invoice_amount",
+            "deducted_tax_amount", "settlement_amount", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state == "confirmed" or (
+                    rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已批准的收款内容不可改写；请按正式流程重新办理。"))
         if any(rec.state == "received" for rec in self) and not authoritative:
             forbidden_fields = set(vals) - self._received_surface_allowed_write_fields()
             if forbidden_fields:
@@ -485,9 +508,7 @@ class ScReceiptIncome(models.Model):
             before = rec._snapshot_audit_payload()
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
+            if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "receipt_income_submitted",
                     before,
@@ -495,7 +516,7 @@ class ScReceiptIncome(models.Model):
                     "action_confirm",
                 )
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "receipt_income_confirmed",
                     before,
@@ -516,8 +537,7 @@ class ScReceiptIncome(models.Model):
                 )
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("收款收入尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             with self.env.cr.savepoint():
                 rec._write_finance_authority({"state": "received"})
@@ -548,7 +568,7 @@ class ScReceiptIncome(models.Model):
                     reasons=[_("已收款、历史已确认或已取消的收款收入不能取消")],
                 )
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition(
                 "receipt_income_cancelled",
                 before,
@@ -628,17 +648,6 @@ class ScReceiptIncome(models.Model):
             if float_compare(rec.amount or 0.0, request.amount or 0.0, precision_rounding=rounding) == 1:
                 raise UserError(_("收款金额不能超过收款申请金额。"))
 
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("收款收入已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("收款收入已经在统一审批流程中，请等待审批完成。"))
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -654,15 +663,12 @@ class ScReceiptIncome(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "receipt_income_confirmed",
                     before,
@@ -672,6 +678,8 @@ class ScReceiptIncome(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
                 rec.with_context(skip_validation_check=True).write(

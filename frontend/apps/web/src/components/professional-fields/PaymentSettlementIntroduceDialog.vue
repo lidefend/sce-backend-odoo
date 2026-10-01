@@ -1,9 +1,9 @@
 <template>
   <ScDialog
-    data-dialog-purpose="payment-settlement-introduce"
+    :data-dialog-purpose="contract.purpose"
     :open="open"
-    title="从结算单引入明细"
-    description="选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细"
+    :title="contract.title"
+    :description="contract.description"
     size="wide"
     dismissible
     :busy="introduceBusy || previewLoading"
@@ -14,7 +14,7 @@
         <ScInput
           class="settle-search-input"
           :model-value="settleKeyword"
-          placeholder="搜索结算单号 / 名称"
+          :placeholder="contract.searchPlaceholder"
           @update:model-value="settleKeyword = $event"
           @keydown.enter.prevent="searchSettlements"
         />
@@ -24,13 +24,13 @@
           size="small"
           :disabled="settleSearching"
           @click="searchSettlements"
-        >搜索</ScButton>
+        >{{ contract.searchActionLabel }}</ScButton>
       </div>
       <ScInlineState v-if="introduceError" class="settle-error" state="error" :label="introduceError" />
 
       <div v-if="!previewData" class="settle-results" data-settle-results>
-        <ScInlineState v-if="settleSearching" class="settle-hint" state="loading" label="正在搜索结算单" />
-        <ScInlineState v-else-if="!settleResults.length" class="settle-hint" state="empty" label="未找到结算单，请输入关键词搜索" />
+        <ScInlineState v-if="settleSearching" class="settle-hint" state="loading" :label="contract.searchLoadingLabel" />
+        <ScInlineState v-else-if="!settleResults.length" class="settle-hint" state="empty" :label="contract.searchEmptyLabel" />
         <div
           v-for="s in settleResults"
           :key="s.id"
@@ -43,9 +43,9 @@
         >
           <span class="settle-option-name">{{ s.display_name || s.name }}</span>
           <span class="settle-option-meta">
-            <span v-if="s.contract_name">合同：{{ s.contract_name }}</span>
-            <span v-if="s.amount_total">金额：{{ fmtMoney(s.amount_total, s.currency) }}</span>
-            <span>明细 {{ s.line_count }} 行</span>
+            <span v-if="s.contract_name">{{ contract.resultContractLabel }}：{{ s.contract_name }}</span>
+            <span v-if="s.amount_total">{{ contract.resultAmountLabel }}：{{ fmtMoney(s.amount_total, s.currency) }}</span>
+            <span>{{ contract.resultLineCountLabel }} {{ s.line_count }} {{ contract.resultLineCountSuffix }}</span>
           </span>
         </div>
       </div>
@@ -54,9 +54,9 @@
         <div class="settle-preview-head">
           <div class="settle-preview-title">
             <strong>{{ previewData.settlement.display_name }}</strong>
-            <span class="settle-preview-sub" v-if="previewData.settlement.contract_name">合同：{{ previewData.settlement.contract_name }}</span>
+            <span class="settle-preview-sub" v-if="previewData.settlement.contract_name">{{ contract.resultContractLabel }}：{{ previewData.settlement.contract_name }}</span>
           </div>
-          <ScButton type="button" variant="ghost" size="small" @click="backToSettlementSearch">换一个结算单</ScButton>
+          <ScButton type="button" variant="ghost" size="small" @click="backToSettlementSearch">{{ contract.switchSourceLabel }}</ScButton>
         </div>
         <div class="settle-preview-toolbar">
           <ScCheckbox
@@ -64,19 +64,19 @@
             :disabled="!selectableLines.length"
             @update:model-value="toggleAllLines"
           />
-          <span class="settle-select-hint">全选未完全申请的行</span>
+          <span class="settle-select-hint">{{ contract.selectAllLabel }}</span>
           <span class="settle-spacer" />
-          <span class="settle-total-hint">选中 {{ selectedLines.length }} 行 · 结算金额 {{ fmtMoney(selectedLinesAmount) }} · 可申请 {{ fmtMoney(selectedLinesRemaining) }}</span>
+          <span class="settle-total-hint">{{ contract.summarySelectedPrefix }} {{ selectedLines.length }} {{ contract.summaryLineCountSuffix }} · {{ contract.summarySettlementAmountLabel }} {{ fmtMoney(selectedLinesAmount) }} · {{ contract.summaryApplicableAmountLabel }} {{ fmtMoney(selectedLinesRemaining) }}</span>
         </div>
         <div class="settle-lines" data-settle-lines>
           <div v-if="!previewLoading" class="settle-lines-head">
             <span class="settle-col-check"></span>
-            <span class="settle-col-name">名称</span>
-            <span class="settle-col-contract">合同</span>
-            <span class="settle-col-amount">结算金额</span>
-            <span class="settle-col-applied">已申请</span>
-            <span class="settle-col-remaining">可申请</span>
-            <span class="settle-col-state">状态</span>
+            <span class="settle-col-name">{{ contract.columnLabels.name }}</span>
+            <span class="settle-col-contract">{{ contract.columnLabels.contract }}</span>
+            <span class="settle-col-amount">{{ contract.columnLabels.settlementAmount }}</span>
+            <span class="settle-col-applied">{{ contract.columnLabels.applied }}</span>
+            <span class="settle-col-remaining">{{ contract.columnLabels.remaining }}</span>
+            <span class="settle-col-state">{{ contract.columnLabels.state }}</span>
           </div>
           <div
             v-for="line in previewData.lines"
@@ -97,23 +97,23 @@
             <span class="settle-col-applied">{{ fmtMoney(line.applied) }}</span>
             <span class="settle-col-remaining">{{ fmtMoney(line.remaining) }}</span>
             <span class="settle-col-state">
-              <span v-if="line.is_fully_applied" class="settle-state-done">已申请完</span>
-              <span v-else class="settle-state-open">可申请</span>
+              <span v-if="line.is_fully_applied" class="settle-state-done">{{ contract.stateAppliedLabel }}</span>
+              <span v-else class="settle-state-open">{{ contract.stateApplicableLabel }}</span>
             </span>
           </div>
           <ScInlineState
             v-if="!previewLoading && !selectableLines.length"
             class="settle-hint"
             state="info"
-            label="该结算单所有明细均已申请完毕"
+            :label="contract.allAppliedLabel"
           />
         </div>
 
         <div v-if="relatedPaymentRequests.length" class="settle-history" data-settle-history>
           <div class="settle-history-head" @click="historyExpanded = !historyExpanded">
-            <span class="settle-history-title">历史申请记录</span>
-            <span class="settle-history-count">{{ relatedPaymentRequests.length }} 笔</span>
-            <span class="settle-history-toggle">{{ historyExpanded ? '收起' : '展开' }}</span>
+            <span class="settle-history-title">{{ contract.historyTitle }}</span>
+            <span class="settle-history-count">{{ relatedPaymentRequests.length }} {{ contract.historyCountSuffix }}</span>
+            <span class="settle-history-toggle">{{ historyExpanded ? contract.historyCollapseLabel : contract.historyExpandLabel }}</span>
           </div>
           <div v-if="historyExpanded" class="settle-history-body">
             <div v-for="req in relatedPaymentRequests" :key="req.id" class="settle-history-row">
@@ -133,14 +133,14 @@
               size="small"
               :class="{ 'sc-apply-mode-active': applyMode === 'ratio' }"
               @click="applyMode = 'ratio'"
-            >按比例</ScButton>
+            >{{ contract.ratioModeLabel }}</ScButton>
             <ScButton
               type="button"
               variant="ghost"
               size="small"
               :class="{ 'sc-apply-mode-active': applyMode === 'amount' }"
               @click="applyMode = 'amount'"
-            >按总金额</ScButton>
+            >{{ contract.amountModeLabel }}</ScButton>
           </div>
           <div class="settle-apply-fields">
             <template v-if="applyMode === 'ratio'">
@@ -150,11 +150,11 @@
                 type="number"
                 min="0"
                 max="100"
-                placeholder="申请比例 %"
+                :placeholder="contract.ratioPlaceholder"
                 @update:model-value="applyRatio = Number($event)"
               />
               <span class="settle-apply-suffix">%</span>
-              <span class="settle-apply-hint">每行申请 = 可申请 * 比例</span>
+              <span class="settle-apply-hint">{{ contract.ratioHint }}</span>
             </template>
             <template v-else>
               <ScInput
@@ -163,32 +163,32 @@
                 type="number"
                 min="0"
                 :step="currencyInputStep"
-                placeholder="总申请金额"
+                :placeholder="contract.totalPlaceholder"
                 @update:model-value="applyTotal = Number($event)"
               />
               <span class="settle-apply-suffix">{{ currencyUnit }}</span>
-              <span class="settle-apply-hint">按各结算行可申请占比分配</span>
+              <span class="settle-apply-hint">{{ contract.amountHint }}</span>
             </template>
-            <span class="settle-apply-total">本次申请合计：<strong>{{ fmtMoney(selectedLinesApply) }}</strong></span>
+            <span class="settle-apply-total">{{ contract.applyTotalLabel }}：<strong>{{ fmtMoney(selectedLinesApply) }}</strong></span>
           </div>
         </div>
       </div>
     </div>
     <template #actions>
-      <ScButton type="button" variant="ghost" :disabled="introduceBusy" @click="$emit('close')">取消</ScButton>
+      <ScButton type="button" variant="ghost" :disabled="introduceBusy" @click="$emit('close')">{{ contract.cancelLabel }}</ScButton>
       <ScButton
         type="button"
         variant="primary"
         :disabled="!canConfirmIntroduce || introduceBusy"
         @click="confirmIntroduce"
-      >确认引入</ScButton>
+      >{{ contract.confirmLabel }}</ScButton>
     </template>
   </ScDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { FormSectionFieldSchema } from '../template/formSection.types';
+import type { SettlementIntroduceContract } from './paymentSettlementIntroduceDialogModel';
 import type { RelationFieldAdapter } from '../template/relationField.types';
 import ScButton from '../design-system/ScButton.vue';
 import ScCheckbox from '../design-system/ScCheckbox.vue';
@@ -203,30 +203,14 @@ import {
   roundSettlementCurrencyAmount,
 } from './paymentSettlementIntroduceModel';
 
-const props = defineProps<{ field: FormSectionFieldSchema; adapter: RelationFieldAdapter; open: boolean }>();
+const props = defineProps<{ contract: SettlementIntroduceContract; adapter: RelationFieldAdapter; open: boolean }>();
 const emit = defineEmits<{ close: []; introduced: []; 'busy-change': [busy: boolean] }>();
 
-const actionRefs = computed(() => {
-  const raw = props.field.componentConfig?.actionRefs;
-  const refs = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
-  return {
-    search: String(refs.search || '').trim(),
-    preview: String(refs.preview || '').trim(),
-    introduce: String(refs.introduce || '').trim(),
-  };
-});
-
-function requiredActionRef(key: 'search' | 'preview' | 'introduce') {
-  const value = actionRefs.value[key];
-  if (!value) throw new Error(`PAYMENT_SETTLEMENT_ACTION_REF_MISSING:${key}`);
-  return value;
-}
-
-// ===== 从结算单引入明细 =====
+// The dialog renders resolved contract semantics only: every term, action
+// identity and payload key was validated before the dialog was mounted.
 type SettleLineItem = {
   id: number;
   name: string;
-  contract_id?: number;
   contract_name?: string;
   qty?: number;
   price_unit?: number;
@@ -252,7 +236,6 @@ type SettlePreviewData = {
     id: number;
     name: string;
     display_name: string;
-    contract_id?: number;
     contract_name?: string;
     partner_id?: number;
     partner_name?: string;
@@ -315,10 +298,10 @@ async function searchSettlements() {
   settleSearching.value = true;
   try {
     const res = await intentRequest<{ settlements: Array<{ id: number; name: string; display_name: string; amount_total: number; currency: SettleCurrencyIdentity; contract_name: string; partner_name: string; line_count: number }> }>({
-      intent: requiredActionRef('search'),
+      intent: props.contract.actions.search,
       params: {
-        keyword: settleKeyword.value || '',
-        payment_request_id: props.adapter.currentRecordId || 0,
+        [props.contract.payloadFields.searchKeyword]: settleKeyword.value || '',
+        [props.contract.payloadFields.record]: props.adapter.currentRecordId || 0,
       },
     });
     settleResults.value = res?.settlements || [];
@@ -337,8 +320,8 @@ async function loadSettlementPreview(id: number) {
   previewLoading.value = true;
   try {
     const res = await intentRequest<SettlePreviewData>({
-      intent: requiredActionRef('preview'),
-      params: { settlement_id: id },
+      intent: props.contract.actions.preview,
+      params: { [props.contract.payloadFields.source]: id },
     });
     previewData.value = res;
     // 默认全选未完全申请的行
@@ -428,7 +411,7 @@ async function confirmIntroduce() {
   if (!canConfirmIntroduce.value) return;
   const recordId = props.adapter.currentRecordId;
   if (!recordId) {
-    introduceError.value = '请先保存付款申请后再引入明细';
+    introduceError.value = props.contract.recordRequiredMessage;
     return;
   }
   introduceBusy.value = true;
@@ -436,14 +419,14 @@ async function confirmIntroduce() {
   introduceError.value = '';
   try {
     await intentRequest({
-      intent: requiredActionRef('introduce'),
+      intent: props.contract.actions.introduce,
       params: {
-        payment_request_id: recordId,
-        settlement_id: selectedSettlementId.value,
-        settlement_line_ids: Array.from(selectedLineIds.value),
-        apply_mode: applyMode.value,
-        ratio: applyRatio.value,
-        total_amount: applyTotal.value,
+        [props.contract.payloadFields.record]: recordId,
+        [props.contract.payloadFields.source]: selectedSettlementId.value,
+        [props.contract.payloadFields.sourceLines]: Array.from(selectedLineIds.value),
+        [props.contract.payloadFields.applyMode]: applyMode.value,
+        [props.contract.payloadFields.ratio]: applyRatio.value,
+        [props.contract.payloadFields.totalAmount]: applyTotal.value,
       },
     });
     emit('introduced');
@@ -458,7 +441,7 @@ async function confirmIntroduce() {
 </script>
 
 <style scoped>
-/* ===== 从结算单引入明细 ===== */
+/* Introduce settlement lines; every semantic is contract supplied. */
 .o2m-introduce {
   margin-right: 8px;
 }
@@ -480,16 +463,16 @@ async function confirmIntroduce() {
 }
 
 .settle-error {
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-error);
-  font-size: 13px;
   background: color-mix(in srgb, var(--sc-color-error) 8%, transparent);
   border-radius: 6px;
   padding: 8px 12px;
 }
 
 .settle-hint {
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-text-3);
-  font-size: 13px;
   padding: 12px;
   text-align: center;
 }
@@ -522,16 +505,16 @@ async function confirmIntroduce() {
 }
 
 .settle-option-name {
-  font-weight: 600;
-  font-size: 14px;
+  font: var(--sc-font-mark-medium);
+
   color: var(--sc-color-text-1);
 }
 
 .settle-option-meta {
+  font: var(--sc-font-body-small);
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  font-size: 12px;
   color: var(--sc-color-text-3);
 }
 
@@ -555,20 +538,20 @@ async function confirmIntroduce() {
 }
 
 .settle-preview-title strong {
-  font-size: 15px;
+  font: var(--sc-font-title-medium);
   color: var(--sc-color-text-1);
 }
 
 .settle-preview-sub {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-preview-toolbar {
+  font: var(--sc-font-body-small);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
   color: var(--sc-color-text-3);
 }
 
@@ -577,7 +560,7 @@ async function confirmIntroduce() {
 }
 
 .settle-total-hint {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-2);
 }
 
@@ -593,12 +576,12 @@ async function confirmIntroduce() {
 
 .settle-lines-head,
 .settle-line {
+  font: var(--sc-font-body-medium);
   display: grid;
   grid-template-columns: 32px minmax(120px, 2fr) minmax(100px, 1.2fr) 110px 100px 100px 84px;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13px;
 }
 
 .settle-lines-head {
@@ -655,7 +638,7 @@ async function confirmIntroduce() {
 
 .settle-state-open,
 .settle-state-done {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -688,19 +671,19 @@ async function confirmIntroduce() {
 }
 
 .settle-history-title {
-  font-size: 13px;
-  font-weight: 600;
+  font: var(--sc-font-mark-medium);
+
   color: var(--sc-color-text-1);
 }
 
 .settle-history-count {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-history-toggle {
+  font: var(--sc-font-body-small);
   margin-left: auto;
-  font-size: 12px;
   color: var(--sc-color-brand);
 }
 
@@ -709,11 +692,11 @@ async function confirmIntroduce() {
 }
 
 .settle-history-row {
+  font: var(--sc-font-body-small);
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 6px 12px;
-  font-size: 12px;
 }
 
 .settle-history-row + .settle-history-row {
@@ -729,11 +712,11 @@ async function confirmIntroduce() {
 }
 
 .settle-history-state {
+  font: var(--sc-font-body-small);
   min-width: 52px;
   text-align: center;
   padding: 1px 6px;
   border-radius: 4px;
-  font-size: 11px;
   background: var(--sc-color-bg-2);
   color: var(--sc-color-text-3);
 }
@@ -795,23 +778,23 @@ async function confirmIntroduce() {
 }
 
 .settle-apply-suffix {
-  font-size: 13px;
+  font: var(--sc-font-body-medium);
   color: var(--sc-color-text-2);
 }
 
 .settle-apply-hint {
-  font-size: 12px;
+  font: var(--sc-font-body-small);
   color: var(--sc-color-text-3);
 }
 
 .settle-apply-total {
+  font: var(--sc-font-body-medium);
   margin-left: auto;
-  font-size: 13px;
   color: var(--sc-color-text-2);
 }
 
 .settle-apply-total strong {
-  font-size: 15px;
+  font: var(--sc-font-title-medium);
   color: var(--sc-color-primary);
   font-variant-numeric: tabular-nums;
 }

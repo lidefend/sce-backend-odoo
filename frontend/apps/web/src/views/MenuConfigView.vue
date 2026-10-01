@@ -4,6 +4,15 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
+import ScSelect from '../components/design-system/ScSelect.vue';
+import ScCheckbox from '../components/design-system/ScCheckbox.vue';
+import ScNumberInput from '../components/design-system/ScNumberInput.vue';
+import ScRadio from '../components/design-system/ScRadio.vue';
+import ScInlineState from '../components/design-system/ScInlineState.vue';
+import ScInput from '../components/design-system/ScInput.vue';
+import ScPageHeader from '../components/design-system/ScPageHeader.vue';
+import ScEmptyState from '../components/design-system/ScEmptyState.vue';
+import ScTable from '../components/design-system/ScTable.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import BusinessConfigImpactDialog from './businessConfigSurface/BusinessConfigImpactDialog.vue';
 import {
@@ -32,16 +41,15 @@ import { config } from '../config';
 import { BUSINESS_CONFIG_ROUTE_FLAGS } from '../app/businessConfigBoundaries';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
-import { createMenuConfigTree, type MenuConfigDropPosition } from './menuConfig/createMenuConfigTree';
+import { createMenuConfigTree } from './menuConfig/createMenuConfigTree';
 import { useMenuTreeEditor } from './menuConfig/useMenuTreeEditor';
 import { createMenuTreeAdapter, type RuntimeMenuConfigGroup } from './menuConfig/menuTreeAdapter';
-import { checkedValue, cloneDraft, defaultDraft, defaultDraftForEmpty, inputValue, normalizeDraft, numericValue, type DraftPolicy } from './menuConfig/menuDraftAdapter';
+import { cloneDraft, defaultDraft, defaultDraftForEmpty, normalizeDraft, type DraftPolicy } from './menuConfig/menuDraftAdapter';
 import { persistMenuSaveNotice, storedMenuSaveNotice } from './menuConfig/menuSaveNotice';
 type FlatRow = {
   menu: MenuConfigMenu;
   level: number;
 };
-type DropPosition = MenuConfigDropPosition;
 const pageContract = usePageContract('menu_config');
 const pageSectionEnabled = pageContract.sectionEnabled;
 const pageSectionStyle = pageContract.sectionStyle;
@@ -96,9 +104,6 @@ const selectedVersionNo = ref(0);
 const selectedMenuId = ref(0);
 const searchText = ref('');
 const menuStateFilter = ref<'all' | 'visible' | 'hidden' | 'unconfigured'>('all');
-const dragSourceMenuId = ref(0);
-const dragTargetMenuId = ref(0);
-const dragDropPosition = ref<DropPosition>('after');
 const onlyConfigured = ref(false);
 const showGuide = ref(false);
 const createPanelOpen = ref(false);
@@ -423,6 +428,34 @@ const filteredRows = computed(() => {
     return menuMatchesSearch(row.menu);
   });
 });
+
+/* The bulk maintenance grid renders through the shared official table; the row
+ * identity is the Odoo menu id, never the row position or the display label. */
+const bulkRows = computed(() => filteredRows.value.map((row) => ({ ...row, menuKey: `menu-${row.menu.id}` })));
+const BULK_COLUMN_WIDTHS: Record<string, number> = {
+  index: 36, name: 108, defaultLabel: 104, origin: 72, parent: 106, level: 42,
+  sequence: 54, moveTarget: 120, visible: 42, roleGroups: 220, note: 104,
+};
+const bulkColumns = [
+  { colKey: 'index', title: '#', width: BULK_COLUMN_WIDTHS.index, align: 'center' as const },
+  { colKey: 'name', title: '显示名称', width: BULK_COLUMN_WIDTHS.name },
+  { colKey: 'defaultLabel', title: '默认名称', width: BULK_COLUMN_WIDTHS.defaultLabel },
+  { colKey: 'origin', title: '来源', width: BULK_COLUMN_WIDTHS.origin },
+  { colKey: 'parent', title: '当前父级', width: BULK_COLUMN_WIDTHS.parent },
+  { colKey: 'level', title: '级别', width: BULK_COLUMN_WIDTHS.level, align: 'center' as const },
+  { colKey: 'sequence', title: '顺序', width: BULK_COLUMN_WIDTHS.sequence, align: 'center' as const },
+  { colKey: 'moveTarget', title: '移动到上级', width: BULK_COLUMN_WIDTHS.moveTarget },
+  { colKey: 'visible', title: '显示', width: BULK_COLUMN_WIDTHS.visible, align: 'center' as const },
+  { colKey: 'roleGroups', title: '可见业务角色', width: BULK_COLUMN_WIDTHS.roleGroups },
+  { colKey: 'note', title: '备注', width: BULK_COLUMN_WIDTHS.note },
+];
+const bulkTableContentWidth = computed(() => `${Object.values(BULK_COLUMN_WIDTHS).reduce((sum, width) => sum + width, 0)}px`);
+function bulkRowClassName({ row }: { row: FlatRow }) {
+  return [
+    row.menu.id === selectedMenuId.value ? 'selected' : '',
+    isDirty(row.menu.id) ? 'dirty' : '',
+  ].filter(Boolean).join(' ');
+}
 
 const dirtyCount = computed(() => Object.keys(drafts).filter((key) => isDirty(Number(key))).length);
 const treeSearchSummary = computed(() => {
@@ -937,18 +970,11 @@ function menuParentLabel(menu: MenuConfigMenu | null | undefined) {
 const {
   initializeTreeCollapse,
   toggleTreeNodeCollapse,
-  startTreeDrag,
-  updateTreeDragTarget,
-  moveTreeNodeOrder,
+  canDropTree,
   applyTreeReorder,
-  applyTreeDrop,
-  clearTreeDrag,
 } = useMenuTreeEditor({
   selectedMenuId,
   collapsedMenuIds,
-  dragSourceMenuId,
-  dragTargetMenuId,
-  dragDropPosition,
   treeDragEnabled,
   tree,
   message,
@@ -1034,6 +1060,7 @@ async function loadPanel(options: { preserveStatus?: boolean } = {}) {
       nextOriginal[menu.id] = cloneDraft(draft);
     });
     originalPolicies.value = nextOriginal;
+    error.value = '';
   } catch (err) {
     error.value = err instanceof Error ? err.message : '菜单配置加载失败';
   } finally {

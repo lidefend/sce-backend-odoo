@@ -135,6 +135,7 @@ export interface BusinessConfigListSearchAuditPayload {
   business_config_search_filters: string[];
   business_config_search_group_by: string[];
   suggested_list_columns?: string[];
+  suggested_list_column_labels?: Record<string, string>;
   suggested_search_filters?: string[];
   suggested_search_group_by?: string[];
   available_model_fields?: Array<{
@@ -237,6 +238,13 @@ export interface BusinessConfigAnalysisSetPayload {
 
 export interface ApprovalPolicyConfigPayload {
   model: string;
+  amount_condition?: {
+    supported: boolean;
+    field: string;
+    label: string;
+    reason_code: string;
+    message: string;
+  };
   policy: {
     id: number;
     name: string;
@@ -314,11 +322,14 @@ export interface BusinessConfigSurfacePayload {
     contract_count: number;
     intent: string;
     boundary: string;
+    target_options?: Array<{ value: string; label: string; relation_field: string;
+      route?: { path?: string; query?: Record<string, string> } }>;
     route?: {
       path?: string;
       query?: Record<string, string>;
     };
   }>;
+  boundary_labels?: Record<string, string>;
 }
 
 export interface BusinessConfigDeliveryReadinessPayload {
@@ -348,6 +359,7 @@ export interface BusinessConfigSnapshotSummaryPayload {
   overview_scope?: string;
   source_categories?: Record<string, string>;
   source_counts?: Record<string, { total: number; draft: number; published: number; disabled: number; saved: number }>;
+  source_category_labels?: Record<string, string>;
 }
 
 export interface BusinessConfigSnapshotComparePayload {

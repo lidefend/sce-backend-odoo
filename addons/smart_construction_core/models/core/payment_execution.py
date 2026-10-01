@@ -13,6 +13,9 @@ _logger = logging.getLogger(__name__)
 _PAYMENT_EXECUTION_BATCH_READY_TOKEN = object()
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScPaymentExecution(models.Model):
     _name = "sc.payment.execution"
     _description = "付款执行"
@@ -460,12 +463,18 @@ class ScPaymentExecution(models.Model):
             "sc.material.settlement",
             requests.mapped("material_settlement_id").ids,
         )
+        rental_settlements_by_id = self._caller_visible_payment_relations(
+            "sc.material.rental.settlement", requests.mapped("rental_settlement_id").ids,
+        )
+        subcontract_settlements_by_id = self._caller_visible_payment_relations(
+            "sc.subcontract.settlement", requests.mapped("subcontract_settlement_id").ids,
+        )
         contract_ids = (
             set(lines.mapped("contract_id").ids)
             | set(requests.mapped("contract_id").ids)
             | {
                 settlement.contract_id.id
-                for settlement in settlements_by_id.values()
+                for settlement in list(settlements_by_id.values()) + list(rental_settlements_by_id.values()) + list(subcontract_settlements_by_id.values())
                 if settlement.contract_id
             }
         )
@@ -514,6 +523,22 @@ class ScPaymentExecution(models.Model):
                     ]
                     if material_settlement.project_id != request.project_id:
                         raise ValidationError(_("付款申请材料结算项目与申请项目不一致。"))
+            if request.rental_settlement_id:
+                request._check_rental_settlement_consistency()
+                rental_settlement = rental_settlements_by_id[request.rental_settlement_id.id]
+                if rental_settlement.contract_id:
+                    rental_contract = contracts_by_id[rental_settlement.contract_id.id]
+                    if contracts and contracts != rental_contract:
+                        raise ValidationError(_("付款登记合同与租赁结算依据不一致。"))
+                    contracts |= rental_contract
+            if request.subcontract_settlement_id:
+                request._check_subcontract_settlement_consistency()
+                subcontract_settlement = subcontract_settlements_by_id[request.subcontract_settlement_id.id]
+                if subcontract_settlement.contract_id:
+                    subcontract_contract = contracts_by_id[subcontract_settlement.contract_id.id]
+                    if contracts and contracts != subcontract_contract:
+                        raise ValidationError(_("付款登记合同与分包结算依据不一致。"))
+                    contracts |= subcontract_contract
             if request.contract_id:
                 request_contract = contracts_by_id[request.contract_id.id]
                 if len(contracts) > 1:
@@ -608,6 +633,14 @@ class ScPaymentExecution(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         normalized_vals_list = []
         requests = self._assert_unique_request_anchors(
@@ -759,6 +792,8 @@ class ScPaymentExecution(models.Model):
         return True
 
     def write(self, vals):
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
         cancellation_metadata = {"cancellation_kind", "reversal_reason"}.intersection(vals)
         if cancellation_metadata and not self.env.context.get("allow_payment_cancel_metadata"):
             if "cancellation_kind" in vals:
@@ -818,6 +853,9 @@ class ScPaymentExecution(models.Model):
             return result
         return super().write(vals)
 
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     def action_confirm(self):
         self._assert_finance_handling_access()
         policy = self.env["sc.approval.policy"]
@@ -832,11 +870,8 @@ class ScPaymentExecution(models.Model):
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
-            else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+            if not policy._start_submission_review(rec):
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_paid(self):
         self._assert_finance_confirm_access()
@@ -860,9 +895,8 @@ class ScPaymentExecution(models.Model):
             rec._check_business_anchor_or_raise()
             rec._check_payment_request_scope_or_raise()
             rec._check_company_contractor_payment_responsibility_or_raise()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("付款执行尚未完成统一审批流程。"))
-            rec.state = "paid"
+            policy._assert_submission_approved(rec, ("confirmed",))
+            rec._write_document_state({"state": "paid"})
             rec._sync_payment_request_done()
             rec._message_post_non_blocking(_("付款登记已完成，付款申请、付款台账与审计状态已同步。"))
 
@@ -932,7 +966,7 @@ class ScPaymentExecution(models.Model):
                     _("取消付款执行"),
                     reasons=[_("历史已确认或已取消的付款执行不能取消")],
                 )
-            rec.with_context(allow_payment_cancel_metadata=True).write(
+            rec.with_context(allow_payment_cancel_metadata=True)._write_document_state(
                 {"state": "cancel", "cancellation_kind": "cancelled_before_payment"}
             )
 
@@ -996,7 +1030,7 @@ class ScPaymentExecution(models.Model):
             ledger.action_reverse(rec, reason=reversal_reason)
             if request.state == "done":
                 request.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-            rec.with_context(allow_payment_cancel_metadata=True).write(
+            rec.with_context(allow_payment_cancel_metadata=True)._write_document_state(
                 {"state": "cancel", "cancellation_kind": "payment_reversed"}
             )
             after = request._snapshot_audit_payload()
@@ -1172,17 +1206,6 @@ class ScPaymentExecution(models.Model):
                     hints=[_("打开公司-承包人责任余额，核对到款确认、自筹、拨付和扣款明细后再继续办理。")],
                 )
 
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("付款执行已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("付款执行已经在统一审批流程中，请等待审批完成。"))
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -1198,17 +1221,16 @@ class ScPaymentExecution(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write(
                     {"reject_reason": reason or rec._get_tier_reject_reason()}

@@ -65,6 +65,20 @@ class _FakeEnv:
 
 
 class TestSceneProviderTargetIdentityMerge(unittest.TestCase):
+    def test_noncritical_existing_scene_inherits_entry_without_overwriting(self):
+        from unittest.mock import patch
+        for current, expected in (({}, "registered.enter"), ({"intent": "configured.enter"}, "configured.enter")):
+            with self.subTest(current=current), \
+                 patch.object(target, "registry_load_scene_configs", return_value=[
+                     {"code": "custom.scene", "target": {"route": "/s/custom.scene", "intent": "registered.enter"}}]), \
+                 patch.object(target, "_resolve_scene_provider_payload", return_value={}), \
+                 patch.object(target, "call_extension_hook_first", return_value={}):
+                rows = target.merge_missing_scenes_from_registry(_FakeEnv(), [
+                    {"code": "custom.scene", "target": {"route": "/s/custom.scene", **current}}], [])
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]["target"]["intent"], expected)
+                self.assertNotIn("action_id", rows[0]["target"])
+
     def _provider_payload(self, scene_key, runtime_context=None):
         if scene_key != "projects.list":
             return {}

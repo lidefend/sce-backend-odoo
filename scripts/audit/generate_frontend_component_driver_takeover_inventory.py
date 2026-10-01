@@ -21,16 +21,18 @@ P3_PREFIXES = tuple(P3_OWNER.get("prefixes", []))
 
 INTERNAL_DIRS = {"_chunks", "common", "common-components", "config-provider", "locale", "style"}
 REQUIRED_DRIVERS = {
-    "alert", "auto-complete", "badge", "button", "card", "checkbox", "collapse", "date-picker",
+    "alert", "badge", "button", "card", "checkbox", "collapse", "date-picker",
     "descriptions", "dialog", "drawer", "dropdown", "empty", "form", "input", "input-number",
     "input-adornment", "layout", "list", "loading", "menu", "pagination", "progress", "radio", "select", "skeleton",
-    "space", "steps", "table", "tabs", "tag", "textarea", "timeline",
+    "space", "table", "tabs", "tag", "textarea", "timeline",
     "tooltip", "upload",
 }
 NOT_REQUIRED_DECISIONS = {
     "popconfirm": "Destructive business actions use the governed confirmation-dialog authority; a local popconfirm must not bypass it.",
     "switch": "Contract V2 exposes persisted boolean form values, represented by checkbox; it has no immediate-setting toggle semantic.",
     "time-picker": "Contract V2 exposes date and datetime fields, represented by DatePicker; it has no standalone time-only field type.",
+    "auto-complete": "Contract V2 declares no free-text-with-suggestions field type. Relation input is the official filterable combobox already served by ScRelationField, and every other field type resolves to a value control with an exact value, so a standalone AutoComplete driver would have to invent a suggestion source the contract never declared.",
+    "steps": "Contract V2 declares workflow state as a selection, not an ordered process. frontend_professional_workflow_guard.py forbids '<ScSteps' in the product status area precisely because a step indicator would imply an ordered topology the contract never declared, and the approval policy is an editable configuration list rather than a record process. No formal product surface declares an ordered-process presentation.",
 }
 CAPABILITY_ASSESSMENTS = {
     "dialog": {
@@ -150,16 +152,24 @@ def build_inventory() -> dict[str, object]:
                 if source == "frontend/apps/web/src/components/MenuTree.vue":
                     semantic_adapters.add("MenuTree")
                 adapter_rows.setdefault(driver, []).append({"source": source, "semanticAdapters": sorted(semantic_adapters)})
-            if not is_p3(source) and "/components/design-system/" not in source and source not in {
-                "frontend/apps/web/src/components/MenuTree.vue",
-                "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
-            }:
+            # Only the design-system adapter layer may own a native behavioural
+            # element, because realising a primitive is exactly its job.  Every
+            # other production surface -- including P3 low-code administration
+            # and the navigation-tree components -- owes the official
+            # composition.  Excluding them published raw=0 while three native
+            # surfaces still rendered on screen.
+            if "/components/design-system/" not in source:
                 tags = sorted(set(match.group(1).lower() for match in RAW_BEHAVIOR.finditer(text)))
                 api_text = re.sub(r"\b(?:async\s+)?function\s+(?:confirm|alert|prompt)\s*\(", "", text)
                 tags.extend(name for name, pattern in RAW_BEHAVIOR_APIS.items() if pattern.search(api_text))
                 tags = sorted(set(tags))
                 if tags:
-                    raw_surfaces.append({"source": source, "rawBehaviorTags": tags, "assessment": "unassessed"})
+                    raw_surfaces.append({
+                        "source": source,
+                        "productLayer": "P3" if is_p3(source) else "P0-P2/P4",
+                        "rawBehaviorTags": tags,
+                        "assessment": "unassessed",
+                    })
         for adapter in set(SC_TAG.findall(text)):
             if f"/{adapter}.vue" not in source:
                 consumer_counts[adapter] = consumer_counts.get(adapter, 0) + len(re.findall(fr"<{re.escape(adapter)}\b", text))
@@ -195,6 +205,16 @@ def build_inventory() -> dict[str, object]:
         })
 
     counts = {status: sum(1 for row in rows if row["status"] == status) for status in ("adapter_present", "adapter_unconsumed", "bridge_only", "missing", "not_required")}
+    # A required driver that is not fully adopted is a takeover the product still
+    # owes.  Unless one of the explicit capability assessments owns it, that
+    # takeover has no assessment at all, and the gap would be published as closed.
+    unassessed_required_takeovers = sum(
+        1
+        for row in rows
+        if row["requiredForCurrentProduct"]
+        and row["status"] != "adapter_present"
+        and row["officialComponent"] not in CAPABILITY_ASSESSMENTS
+    )
     capability_assessments = [
         {"officialComponent": component, **assessment}
         for component, assessment in sorted(CAPABILITY_ASSESSMENTS.items())
@@ -202,15 +222,54 @@ def build_inventory() -> dict[str, object]:
     return {
         "schemaVersion": "frontend-component-driver-takeover/v1",
         "authority": {"library": "tdesign-vue-next", "lockedVersion": package["version"], "publicEntrypoint": "tdesign-vue-next/es/<component>"},
-        "scope": "repository P0/P1 frontend production sources",
+        "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
         "inputDigest": digest(all_inputs, extra=f"tdesign-vue-next@{package['version']}"),
-        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": 0, "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
+        "summary": {**counts, "officialComponents": len(rows), "requiredDrivers": len(REQUIRED_DRIVERS), "auditedCapabilityCount": len(capability_assessments), "unassessedRequiredTakeovers": unassessed_required_takeovers, "directLibraryImportBypasses": len(direct_imports), "unassessedRawBehaviorSurfaces": len(raw_surfaces)},
         "components": rows,
         "capabilityAssessments": capability_assessments,
         "directLibraryImportBypasses": direct_imports,
         "rawBehaviorSurfaces": raw_surfaces,
         "completionRule": "missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0, directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0",
     }
+
+
+COMPLETION_RULE_CONDITIONS = (
+    ("missing", "a required official driver has no adapter"),
+    ("bridge_only", "a required official driver has a bridge export but no adapter"),
+    ("adapter_unconsumed", "a required official adapter has no production consumer"),
+    ("unassessedRequiredTakeovers", "a required driver is not fully adopted and carries no capability assessment"),
+)
+
+
+def completion_rule_failures(report: dict[str, object]) -> list[str]:
+    """Evaluate the rule the report publishes instead of only publishing it.
+
+    ``completionRule`` is part of the published inventory, but a rule that is
+    only written down is not a gate: as long as the JSON stayed current, a
+    violated condition passed as success.  ``adapter_unconsumed`` stayed
+    non-zero that way.  Every condition listed in ``completionRule`` is
+    therefore computed from this report, and ``--check`` fails when one is
+    violated.
+    """
+    summary = report.get("summary") or {}
+    failures = [
+        f"{key}={summary.get(key)} ({reason})"
+        for key, reason in COMPLETION_RULE_CONDITIONS
+        if summary.get(key)
+    ]
+    bypasses = report.get("directLibraryImportBypasses") or []
+    if bypasses:
+        failures.append(f"directLibraryImportBypasses={len(bypasses)} (a business source imports tdesign-vue-next directly)")
+    raw_surfaces = report.get("rawBehaviorSurfaces") or []
+    if raw_surfaces:
+        detail = ", ".join(
+            f"{surface.get('source')}({'+'.join(surface.get('rawBehaviorTags') or [])})"
+            for surface in raw_surfaces
+        )
+        failures.append(
+            f"unassessedRawBehaviorSurfaces={len(raw_surfaces)} (a raw behaviour surface has no assessment: {detail})"
+        )
+    return failures
 
 
 def main() -> int:
@@ -276,7 +335,20 @@ def main() -> int:
                     print(f"  (diff inspect failed: {exc})")
             return 1
         report = json.loads(payload)
-        print(f"[component_driver_takeover_inventory] PASS required={report['summary']['requiredDrivers']} missing={report['summary']['missing']} bridge_only={report['summary']['bridge_only']} raw={report['summary']['unassessedRawBehaviorSurfaces']}")
+        failures = completion_rule_failures(report)
+        if failures:
+            print("[component_driver_takeover_inventory] FAIL completion rule")
+            for failure in failures:
+                print(f" - {failure}")
+            return 1
+        summary = report["summary"]
+        print(
+            "[component_driver_takeover_inventory] PASS "
+            f"required={summary['requiredDrivers']} missing={summary['missing']} "
+            f"bridge_only={summary['bridge_only']} adapter_unconsumed={summary['adapter_unconsumed']} "
+            f"unassessedRequiredTakeovers={summary['unassessedRequiredTakeovers']} "
+            f"raw={summary['unassessedRawBehaviorSurfaces']}"
+        )
         return 0
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(payload, encoding="utf-8")

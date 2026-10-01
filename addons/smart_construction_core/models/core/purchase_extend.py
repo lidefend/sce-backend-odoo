@@ -38,22 +38,28 @@ class PurchaseOrder(models.Model):
     reject_reason = fields.Char(string="驳回原因", readonly=True, copy=False, tracking=True)
 
     def button_confirm(self):
+        to_confirm = self.browse()
+        requested = False
+        policy = self.env["sc.approval.policy"]
         for order in self:
+            if order.state not in ("draft", "sent"):
+                continue
             if order.project_id:
                 order.project_id._ensure_operation_allowed(
                     operation_label="确认采购订单",
                     blocked_states=("paused", "closed"),
                 )
-            if order._requires_purchase_approval() and order.validation_status != "validated":
-                order._request_purchase_validation()
+            if order.review_ids and order.validation_status == "validated":
+                to_confirm |= order
                 continue
-            policy = self.env["sc.approval.policy"].get_active_policy(order._name, company=order.company_id)
-            if policy and not order._requires_purchase_approval():
-                policy.assert_user_can_approve()
-        to_confirm = self.filtered(
-            lambda order: not order._requires_purchase_approval() or order.validation_status == "validated"
-        )
+            if policy._start_submission_review(order):
+                requested = True
+                order.with_context(skip_validation_check=True).write({"reject_reason": False})
+                continue
+            to_confirm |= order
         if not to_confirm:
+            if not requested:
+                return True
             return {
                 "type": "ir.actions.client",
                 "tag": "display_notification",
@@ -67,24 +73,6 @@ class PurchaseOrder(models.Model):
         res = super(PurchaseOrder, to_confirm).button_confirm()
         to_confirm._create_enabled_cost_ledger_entries()
         return res
-
-    def _requires_purchase_approval(self):
-        self.ensure_one()
-        return self.env["sc.approval.policy"].is_approval_required(self._name, company=self.company_id)
-
-    def _request_purchase_validation(self):
-        self.ensure_one()
-        if self.state not in ("draft", "sent"):
-            raise UserError(_("仅询价单/报价单可以提交采购审批。"))
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("采购订单已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("采购订单已经在统一审批流程中，请等待审批完成。"))
-        self.with_context(skip_validation_check=True).write({"reject_reason": False})
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -104,7 +92,7 @@ class PurchaseOrder(models.Model):
         for order in self:
             if order.state not in ("draft", "sent"):
                 continue
-            if order.validation_status != "validated":
+            if not order.review_ids or order.validation_status != "validated":
                 continue
             order.with_context(skip_validation_check=True).write({"reject_reason": False})
             orders_to_confirm |= order
@@ -114,7 +102,7 @@ class PurchaseOrder(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for order in self:
-            if order.state not in ("draft", "sent"):
+            if order.state not in ("draft", "sent") or not order.review_ids or order.validation_status != "rejected":
                 continue
             order.with_context(skip_validation_check=True).write(
                 {"reject_reason": reason or order._get_tier_reject_reason()}

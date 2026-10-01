@@ -128,6 +128,7 @@ def _load_handler():
         hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
+        project_workflow_action_semantics=lambda contract: contract,
     )
 
     def _trim_unified_page_contract_v2(contract, **kwargs):
@@ -504,6 +505,25 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                 self.assertEqual(model.values["partner_id"], 7)
                 self.assertEqual(model.values["lines"], lines)
                 self.assertNotIn("display_only", contract["dataContract"]["mainData"])
+
+    def test_create_modifier_dependencies_accept_new_request_identity(self):
+        model, contract = self._create_modifier_fixture()
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id="new", view_type="form")
+        self.assertIs(contract["dataContract"]["mainData"]["has_lines"], False)
+        self.assertIn("new", model.calls)
+
+    def test_create_modifier_dependencies_accept_json_equivalent_native_commands(self):
+        native = [(6, 0, [32])]
+        model, contract = self._create_modifier_fixture(lines=native)
+        contract["dataContract"]["mainData"]["lines"] = [[6, 0, [32]]]
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+        self.assertIs(contract["dataContract"]["mainData"]["has_lines"], True)
+        self.assertEqual(model.values["lines"], native)
+        model, contract = self._create_modifier_fixture(lines=native)
+        contract["dataContract"]["mainData"]["lines"] = [[6, 0, [33]]]
+        self.module.hydrate_final_modifier_dependencies({"x.document": model}, contract, model="x.document", record_id=None, view_type="form")
+        self.assertNotIn("has_lines", contract["dataContract"]["mainData"])
+        self.assertNotIn("new", model.calls)
 
     def test_create_modifier_dependencies_fail_closed_on_permission_or_compute(self):
         for deny, broken in [("create", None), ("read", None), ("field", None), (None, "defaults"), (None, "compute")]:
@@ -1116,6 +1136,95 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(rows["field.amount"]["visible"])
         self.assertEqual(rows["field.amount"]["auth"], "none")
 
+    def test_projection_does_not_invent_form_profile_for_undeclared_list_contract(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {"layoutType": "list"},
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.payment_basis_type",
+                        "visible": True,
+                        "readonly": True,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "read",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"payment_basis_type": {"visible_profiles": ["create"]}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(row["visible"])
+        self.assertEqual(row["auth"], "read")
+
+    def test_projection_keeps_absolute_policy_for_undeclared_list_contract(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {"layoutType": "list"},
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.internal_note",
+                        "visible": True,
+                        "readonly": False,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "edit",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"internal_note": {"visible": False}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(row["visible"])
+        self.assertEqual(row["auth"], "none")
+
+    def test_projection_keeps_implicit_edit_profile_for_native_form_without_declaration(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {
+                "layoutType": "form",
+                "containerTree": [
+                    {
+                        "type": "field",
+                        "containerType": "field",
+                        "fieldCode": "amount",
+                        "widgetId": "field.amount",
+                        "containerId": "field.amount",
+                    }
+                ],
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.amount",
+                        "visible": True,
+                        "readonly": False,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "edit",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"amount": {"readonly_profiles": ["edit"]}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(row["readonly"])
+        self.assertEqual(row["auth"], "read")
+        self.assertEqual(
+            set(row), {"widgetId", "visible", "readonly", "required", "disabled", "auth"}
+        )
+
     def test_projection_applies_field_policy_to_native_form_occurrences_without_legacy_status(self):
         handler = self.module.UiContractV2Handler(env=object())
         first = "field.amount.occ.first"
@@ -1725,6 +1834,7 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         handler = self.module.UiContractV2Handler(env=_Env({
             "ui.business.config.contract": _ConfigModel(),
         }))
+        handler._merge_user_list_preference_columns = lambda *_: self.fail("personal order must wait for final product constraints")
         source_contract = {
             "action_id": 856,
             "model": "sc.demo",
@@ -2683,6 +2793,24 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertTrue(profile["preference_policy"]["allow_order"])
         self.assertEqual(profile["preference_policy"]["must_request_columns"], ["name", "source_created_by"])
         self.assertEqual(profile["sourceAuthority"]["source_key"], "list_profile.business_config_contract_authoritative")
+
+    def test_business_list_config_preserves_explicit_preference_constraints(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        handler._merge_user_list_preference_columns = lambda *_: self.fail("locked order cannot consume personal preferences")
+        source = {"list_profile": {
+            "columns": ["name", "amount"], "fact_columns": ["name", "amount"],
+            "column_policy": {"reason": "business_list_config_contract_authoritative"},
+            "preference_policy": {"allow_visibility": False, "allow_order": False,
+                                  "allow_width": False, "locked_columns": ["name", "amount"]},
+        }}
+        contract = {"layoutContract": {"listProfile": {}}}
+        handler._enforce_business_list_config_projection(contract, source)
+        policy = contract["layoutContract"]["listProfile"]["preference_policy"]
+        self.assertFalse(policy["allow_visibility"])
+        self.assertFalse(policy["allow_order"])
+        self.assertFalse(policy["allow_width"])
+        self.assertEqual(policy["locked_columns"], ["name", "amount"])
+        self.assertEqual(policy["must_request_columns"], ["name", "amount"])
 
     def test_business_list_config_projection_preserves_native_collection_presentation(self):
         handler = self.module.UiContractV2Handler(env=object())
@@ -4995,6 +5123,86 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertNotIn("contract_payment_method_text", columns)
         self.assertNotIn("entry_time", columns)
         self.assertNotIn("form_structure_contract", source_contract)
+
+
+class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
+    def setUp(self):
+        from unittest.mock import MagicMock
+        self.handler_module = _load_handler()
+        self.business = MagicMock(uid=32, su=False, context={"company_id": 8})
+        self.business.user.id = 32
+        self.business.user.has_group.return_value = False
+        self.metadata = MagicMock(uid=32, su=True)
+        self.constructed = []
+        def environment(cr, uid, context, su=False):
+            result = types.SimpleNamespace(cr=cr, uid=uid, context=context, su=su)
+            self.constructed.append(result)
+            return result
+        self.api = types.SimpleNamespace(Environment=MagicMock(side_effect=environment))
+        sys.modules["odoo"].api = self.api
+        path = Path(__file__).resolve().parents[1] / "handlers/ui_contract_preview.py"
+        spec = importlib.util.spec_from_file_location("odoo.addons.smart_core.handlers._tested_ui_contract_preview", path)
+        self.preview = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.preview)
+
+    def test_actual_projection_preserves_separate_metadata_privilege_and_readonly_context(self):
+        for uid, elevated in ((32, True), (1, True), (37, False), (32, False)):
+            with self.subTest(metadata_uid=uid, metadata_su=elevated):
+                self.metadata.uid, self.metadata.su = uid, elevated
+                context = {"company_id": 8, "contract_projection_readonly": True}
+                actor, metadata = self.preview.build_projection_environments(self.business, self.metadata, {}, context)
+                self.assertEqual((actor.uid, actor.su), (32, False))
+                self.assertEqual((metadata.uid, metadata.su), (uid, elevated))
+                self.assertEqual(actor.context, context)
+                self.assertEqual(metadata.context, context)
+
+    def test_entry_resolution_preserves_environment_authorities(self):
+        from unittest.mock import MagicMock
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        downstream = MagicMock()
+        downstream.return_value.handle.return_value = {"ok": True, "data": {"model": "example.record"}}
+        original = self.handler_module.UiContractHandler
+        self.handler_module.UiContractHandler = downstream
+        try:
+            for elevated in (True, False):
+                self.metadata.su = elevated
+                handler._resolve_entry_contract({"entry": {"model": "example.record"}}, {}, {}, {})
+                actor = downstream.call_args.args[0]
+                metadata = downstream.call_args.kwargs["su_env"]
+                self.assertEqual((actor.uid, actor.su), (32, False))
+                self.assertEqual((metadata.uid, metadata.su), (32, elevated))
+                self.assertTrue(actor.context["contract_projection_readonly"])
+                self.assertTrue(metadata.context["contract_projection_readonly"])
+        finally:
+            self.handler_module.UiContractHandler = original
+
+    def test_unprivileged_preview_is_rejected_before_environment_construction(self):
+        with self.assertRaises(self.preview.PreviewAccessDenied):
+            self.preview.build_projection_environments(self.business, self.metadata, {"preview_token": "token"}, {})
+        self.api.Environment.assert_not_called()
+
+    def test_verified_preview_environment_failure_never_falls_back(self):
+        from unittest.mock import MagicMock
+        self.business.user.has_group.return_value = True
+        self.business.company.id = 8
+        self.business.cr.dbname = "test"
+        changeset = self.business.__getitem__.return_value.sudo.return_value.search.return_value
+        changeset.preview_expires_at = 20
+        changeset.role_key = "config_admin"
+        resolver = MagicMock()
+        resolver.return_value.resolve_role_code.return_value = "config_admin"
+        module_name = "odoo.addons.smart_core.identity.identity_resolver"
+        prior = sys.modules.get(module_name)
+        _install_module(module_name, IdentityResolver=resolver)
+        sys.modules["odoo"].fields = types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: 10))
+        self.api.Environment.side_effect = RuntimeError("environment rejected")
+        try:
+            with self.assertRaisesRegex(self.preview.PreviewAccessDenied, "无法建立"):
+                self.preview.build_projection_environments(self.business, self.metadata,
+                    {"preview_token": "token", "preview_role_key": "config_admin"}, {})
+        finally:
+            if prior is None: sys.modules.pop(module_name, None)
+            else: sys.modules[module_name] = prior
 
 
 if __name__ == "__main__":

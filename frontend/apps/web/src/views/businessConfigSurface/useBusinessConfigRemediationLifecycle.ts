@@ -1,7 +1,38 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { BusinessConfigCoverageScanItem, BusinessConfigRemediationAction } from '../../api/businessConfig';
 
-export function useBusinessConfigRemediationLifecycle(deps: Record<string, any>) {
+export type BusinessConfigRemediationLifecycleDependencies = {
+  focusScanRow: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['focusScanRow'];
+  loadAnalysisConfig: ReturnType<typeof import('./useBusinessConfigPublishLifecycle').useBusinessConfigPublishLifecycle>['loadAnalysisConfig'];
+  loadVersions: ReturnType<typeof import('./useBusinessConfigVersions').useBusinessConfigVersions>['loadVersions'];
+  setMessage: (text: string, detail?: string) => void;
+  openMenuConfig: ReturnType<typeof import('./useBusinessConfigNavigation').useBusinessConfigNavigation>['openMenuConfig'];
+  loadListSearchConfig: ReturnType<typeof import('./useBusinessConfigPublishLifecycle').useBusinessConfigPublishLifecycle>['loadListSearchConfig'];
+  rowBootstrapMissingViewTypes: typeof import('./formatters').rowBootstrapMissingViewTypes;
+  listSearchSaving: import('vue').Ref<boolean>;
+  error: import('vue').Ref<string>;
+  clearMessage: () => void;
+  bootstrapBusinessFormConfig: typeof import('../../api/businessConfig').bootstrapBusinessFormConfig;
+  coverageRowActionId: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['coverageRowActionId'];
+  coverageRowViewId: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['coverageRowViewId'];
+  scopeRole: Readonly<import('vue').Ref<string | undefined>>;
+  bootstrapBusinessListSearchConfig: typeof import('../../api/businessConfig').bootstrapBusinessListSearchConfig;
+  bootstrapBusinessAnalysisConfig: typeof import('../../api/businessConfig').bootstrapBusinessAnalysisConfig;
+  loadSurface: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['loadSurface'];
+  scanCurrentModel: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['scanCurrentModel'];
+  openFormConfig: ReturnType<typeof import('./useBusinessConfigNavigation').useBusinessConfigNavigation>['openFormConfig'];
+  coverageBatchBootstrapRows: Readonly<import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanItem[]>>;
+  openImpactDialog: ReturnType<typeof import('./useBusinessConfigImpactDialog').useBusinessConfigImpactDialog>['openImpactDialog'];
+  bootstrapCoverageMissingConfig: typeof import('../../api/businessConfig').bootstrapCoverageMissingConfig;
+  currentModel: Readonly<import('vue').Ref<string>>;
+  scopeView: Readonly<import('vue').Ref<number | undefined>>;
+  rootMenuXmlid: Readonly<import('vue').Ref<string>>;
+  coverageScan: import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanPayload | null>;
+  rescanCoverageAfterBootstrap: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['rescanCoverageAfterBootstrap'];
+  approvalImpactSummaryText: ReturnType<typeof import('./useBusinessConfigApprovalEditor').useBusinessConfigApprovalEditor>['approvalImpactSummaryText'];
+  saveApprovalConfig: ReturnType<typeof import('./useBusinessConfigApprovalEditor').useBusinessConfigApprovalEditor>['saveApprovalConfig'];
+};
+
+export function useBusinessConfigRemediationLifecycle(deps: BusinessConfigRemediationLifecycleDependencies) {
   const { focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, saveApprovalConfig } = deps;
   async function runRemediationAction(row: BusinessConfigCoverageScanItem, action: BusinessConfigRemediationAction) {
     await focusScanRow(row);

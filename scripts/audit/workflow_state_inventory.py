@@ -58,6 +58,7 @@ WORKFLOW_METHOD_NAMES = (
     "action_reset_to_draft",
     "action_set_running",
     "action_reset_draft",
+    "action_reopen",
     "action_cancel",
     "button_confirm",
     "button_draft",
@@ -155,7 +156,7 @@ def _button_rows(model_name):
 
 def _tier_definition_count(model_name):
     Tier = env.get("tier.definition")
-    if not Tier:
+    if Tier is None:
         return 0
     domain_candidates = [
         [("model", "=", model_name)],
@@ -171,7 +172,7 @@ def _tier_definition_count(model_name):
 
 def _business_category_profile(model_name):
     Category = env.get("sc.business.category")
-    if not Category:
+    if Category is None:
         return []
     rows = Category.sudo().search([])
     out = []

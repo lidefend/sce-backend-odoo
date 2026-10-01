@@ -29,6 +29,85 @@ RETIRED_COMPAT_PROJECTION = ROOT / "frontend/apps/web/src/app/runtime/unifiedPag
 RETIRED_CONTRACT_POLICIES = ROOT / "frontend/apps/web/src/app/contractPolicies.ts"
 
 
+ROW_PLACEMENT_WIDGET_ID = "page.row"
+
+
+def strip_js_comments(source: str) -> str:
+    """Remove JavaScript comments without touching string or template literals.
+
+    Placement words legitimately appear in explanatory comments; a raw substring
+    search would treat prose as evidence and prove nothing about the code.
+    """
+    out: list[str] = []
+    index = 0
+    length = len(source)
+    quote = ""
+    while index < length:
+        char = source[index]
+        if quote:
+            out.append(char)
+            if char == "\\" and index + 1 < length:
+                out.append(source[index + 1])
+                index += 2
+                continue
+            if char == quote:
+                quote = ""
+            index += 1
+            continue
+        if char in ("'", '"', "`"):
+            quote = char
+            out.append(char)
+            index += 1
+            continue
+        if char == "/" and index + 1 < length and source[index + 1] == "/":
+            while index < length and source[index] != "\n":
+                index += 1
+            continue
+        if char == "/" and index + 1 < length and source[index + 1] == "*":
+            index += 2
+            while index + 1 < length and not (source[index] == "*" and source[index + 1] == "/"):
+                index += 1
+            index += 2
+            continue
+        out.append(char)
+        index += 1
+    return "".join(out)
+
+
+def check_row_activation_identity(nav_source: str, errors: list[str]) -> None:
+    """Row activation identity must come from the declared row placement.
+
+    The navigation runtime may only treat an action rule as row-level when the
+    contract declares it on the row widget (``sourceWidgetId == 'page.row'``).
+
+    ``targetScope`` must never be used for this decision: the backend
+    ``normalize_target_scope`` collapses native placement (header / toolbar /
+    smart / row) into the closed V2 target-scope vocabulary, so header actions
+    also carry ``targetScope: 'page'`` and an over-broad match silently hands row
+    activation to a header action.  The legacy ``row_click`` trigger is rewritten
+    to ``click`` by ``normalize_trigger_type`` before the contract is decoded, so
+    asserting that literal string proves nothing about row identity.
+    """
+    code = strip_js_comments(nav_source)
+    if "resolveContractV2ActionRules" not in code:
+        errors.append("web row navigation runtime must derive default row open behavior from v2 list contracts")
+    if "sourceWidgetId" not in code or ROW_PLACEMENT_WIDGET_ID not in code:
+        errors.append(
+            "web row navigation runtime must resolve row activation from the declared row placement "
+            f"(sourceWidgetId '{ROW_PLACEMENT_WIDGET_ID}')"
+        )
+    if "targetScope" in code:
+        errors.append(
+            "web row navigation runtime must not infer row activation from targetScope; "
+            "normalize_target_scope collapses header and row placement into 'page'"
+        )
+    if "row_click" in code:
+        errors.append(
+            "web row navigation runtime must not test the retired 'row_click' trigger; "
+            "normalize_trigger_type rewrites it to 'click' before decoding"
+        )
+
+
 def main() -> int:
     source = WEB_CONTRACT_API.read_text(encoding="utf-8") if WEB_CONTRACT_API.exists() else ""
     client_source = WEB_CONTRACT_CLIENT.read_text(encoding="utf-8") if WEB_CONTRACT_CLIENT.exists() else ""
@@ -92,8 +171,7 @@ def main() -> int:
             errors.append(f"web v2 contract runtime missing token: {token}")
     if "resolveContractV2FieldWidgets" not in shape_source:
         errors.append("web action view shape runtime must consume canonical field widgets")
-    if "resolveContractV2ActionRules" not in nav_source or "row_click" not in nav_source:
-        errors.append("web row navigation runtime must derive default row open behavior from v2 list contracts")
+    check_row_activation_identity(nav_source, errors)
     if "resolveContractV2PrimaryDataSource" not in preflight_source:
         errors.append("web load preflight runtime must consume v2 primary dataSource")
     if "resolveContractV2PrimaryDataSource" not in load_request_source or "domain_raw" not in load_request_source or "context_raw" not in load_request_source:

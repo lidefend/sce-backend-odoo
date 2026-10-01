@@ -1,5 +1,55 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export function useBusinessConfigPublishLifecycle(deps: Record<string, any>) {
+export type BusinessConfigPublishLifecycleDependencies = {
+  currentModel: Readonly<import('vue').Ref<string>>;
+  listSearchBusy: import('vue').Ref<boolean>;
+  error: import('vue').Ref<string>;
+  clearMessage: () => void;
+  auditBusinessListSearchConfig: typeof import('../../api/businessConfig').auditBusinessListSearchConfig;
+  scopeAction: Readonly<import('vue').Ref<number | undefined>>;
+  scopeView: Readonly<import('vue').Ref<number | undefined>>;
+  scopeRole: Readonly<import('vue').Ref<string | undefined>>;
+  listSearchAudit: import('vue').Ref<import('../../api/businessConfig').BusinessConfigListSearchAuditPayload | null>;
+  namesToText: typeof import('./formatters').namesToText;
+  normalizeNamesText: typeof import('./formatters').normalizeNamesText;
+  listColumnsText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['listColumnsText'];
+  searchFiltersText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['searchFiltersText'];
+  searchGroupByText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['searchGroupByText'];
+  listSearchBase: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['listSearchBase'];
+  activeListSearchEditor: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['activeListSearchEditor'];
+  requestedListSearchTab: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['requestedListSearchTab'];
+  analysisPanelOpen: import('vue').Ref<boolean>;
+  approvalPanelOpen: import('vue').Ref<boolean>;
+  listSearchPanelOpen: import('vue').Ref<boolean>;
+  focusActiveEditorPanel: () => Promise<void>;
+  setMessage: (text: string, detail?: string) => void;
+  auditBusinessAnalysisConfig: typeof import('../../api/businessConfig').auditBusinessAnalysisConfig;
+  analysisAudit: import('vue').Ref<import('../../api/businessConfig').BusinessConfigAnalysisAuditPayload | null>;
+  pivotMeasuresText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['pivotMeasuresText'];
+  pivotDimensionsText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['pivotDimensionsText'];
+  graphMeasuresText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['graphMeasuresText'];
+  graphDimensionsText: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['graphDimensionsText'];
+  graphType: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['graphType'];
+  analysisBase: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['analysisBase'];
+  activeAnalysisEditor: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['activeAnalysisEditor'];
+  requestedAnalysisTab: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['requestedAnalysisTab'];
+  listSearchSaving: import('vue').Ref<boolean>;
+  hasListSearchDraftChanges: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['hasListSearchDraftChanges'];
+  parseNames: typeof import('./formatters').parseNames;
+  stageUnifiedDraftItem: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['stageItem'];
+  contractTargetKey: typeof import('./changeSetPayloads').contractTargetKey;
+  listContractPayload: typeof import('./changeSetPayloads').listContractPayload;
+  searchContractPayload: typeof import('./changeSetPayloads').searchContractPayload;
+  hasAnalysisDraftChanges: ReturnType<typeof import('./useBusinessConfigFieldEditors').useBusinessConfigFieldEditors>['hasAnalysisDraftChanges'];
+  analysisContractPayload: typeof import('./changeSetPayloads').analysisContractPayload;
+  previewDraft: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['previewDraft'];
+  openImpactDialog: ReturnType<typeof import('./useBusinessConfigImpactDialog').useBusinessConfigImpactDialog>['openImpactDialog'];
+  changeSet: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['changeSet'];
+  publishDraft: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['publishDraft'];
+  loadSurface: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['loadSurface'];
+  rollbackPublished: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['rollbackPublished'];
+  discardDraft: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['discardDraft'];
+};
+
+export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLifecycleDependencies) {
   const { currentModel, listSearchBusy, error, clearMessage, auditBusinessListSearchConfig, scopeAction, scopeView, scopeRole, listSearchAudit, namesToText, normalizeNamesText, listColumnsText, searchFiltersText, searchGroupByText, listSearchBase, activeListSearchEditor, requestedListSearchTab, analysisPanelOpen, approvalPanelOpen, listSearchPanelOpen, focusActiveEditorPanel, setMessage, auditBusinessAnalysisConfig, analysisAudit, pivotMeasuresText, pivotDimensionsText, graphMeasuresText, graphDimensionsText, graphType, analysisBase, activeAnalysisEditor, requestedAnalysisTab, listSearchSaving, hasListSearchDraftChanges, parseNames, stageUnifiedDraftItem, contractTargetKey, listContractPayload, searchContractPayload, hasAnalysisDraftChanges, analysisContractPayload, previewDraft, openImpactDialog, changeSet, publishDraft, loadSurface, rollbackPublished, discardDraft } = deps;
   async function loadListSearchConfig() {
     if (!currentModel.value) return;

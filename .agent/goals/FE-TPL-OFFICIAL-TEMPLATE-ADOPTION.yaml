@@ -1,0 +1,126 @@
+schema_version: 1
+goal:
+  id: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION
+  title: custom_frontend_rendering_and_interaction_return_to_official_template_compositions
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_contract_consumption_and_standard_page_compositions
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make
+    - docs/ops/iterations
+  baseline:
+    branch: feature/web-official-template-adoption
+    full_sha: 510a37d5f784b36f1e1ad4d7d02dbd1331f673f5
+    source: owner_confirmed_segment_52_handoff
+  objective: >-
+    Keep the custom web frontend rendering, interaction and page composition on
+    the official TDesign starter compositions, driven only by the effective
+    business contract, while the mainline (strategic) agent collaboration flow is
+    adopted for continuation.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      Official page compositions, contract consumption adapters and shared layouts
+      are generic frontend platform mechanisms; they must not encode
+      construction-industry or customer-specific business semantics.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics_in_frontend
+      - no_p3_low_code_editable_configuration_shortcut
+      - required_contract_producer_changes_stay_with_their_p0_p1_p2_owner
+      - no_new_fixture_or_environment_authority_and_no_target_release
+    blast_radius:
+      - standard_list_form_detail_and_master_detail_compositions
+      - contract_shaped_collection_and_form_adapters
+      - shell_breadcrumb_footer_and_scroll_owner
+      - targeted guard_and_unit_entries_under_scripts_verify
+  constraints:
+    - contract_is_the_only_authority_for_business_semantics
+    - frontend_owns_presentation_and_safe_interaction_only
+    - no_second_list_or_form_renderer_path
+    - tone_and_visual_tokens_never_enter_the_business_contract
+  next_exact_step: >-
+    Resume the original branch objective: formal frontend rendering and interaction
+    must return to official TDesign template compositions and be confirmed through
+    real browser effects. Reconcile existing page-type evidence, inspect actual
+    screenshots and interactions, repair deviations, and keep unverified surfaces
+    explicitly open. Code closure and mocked mounts do not complete this goal.
+
+  completion:
+    scope: prior_code_capability_milestone_only
+    overall_goal: incomplete
+    correction: Owner reconfirmed actual formal rendering and interaction as the original completion criterion; segment53.253 overall closure was premature.
+    code_head: de4d6b0607dc34d935e4967935b003e1393d223e
+    record: docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+    result_index: .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json
+    local_batch_acceptance: passed
+    publication_strategy: unchanged
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      Unpublished scene/family UI and plan terminal/configured multi-role UI remain
+      unaccepted. Mounted component evidence uses mocked transport and presentation
+      boundaries. Historical lexical findings are not claimed cleared; the known
+      behavioral ownership gaps were individually reconciled. No PR, Quick receipt,
+      frozen delivery identity or target-environment acceptance is implied.
+
+  approval_unification_decision: >-
+    Owner decisions53.17/53.19 apply to ALL business documents, not payment alone.
+    Reuse one shared approval mechanism and retire parallel per-model approval
+    routing. Authoritative state transitions consume existing
+    company-scoped user approval configuration. Submission auto-approves only
+    when approval is not configured; configured approval follows its real chain.
+    Missing enabled rules are errors, not permission to skip approval. Preserve
+    in-flight approval authority and business preconditions. Retire parallel
+    manual-approve logic rather than projecting every legacy button independently.
+
+  approval_scope_completion_rule: >-
+    The current approval configuration selection and tier-sync support list are
+    implementation coverage, not permission to shrink the business-document scope.
+    Reconcile them with existing business responsibilities and workflow profiles;
+    required missing configuration/runtime support is a product gap. A passing
+    payment test or a global method-name match never proves all-document coverage.
+
+  publication_alignment_owner_direction: >-
+    2026-10-01: Unify formal entry/configuration/action contract consumption with
+    existing product publication strategy. Reuse ProductPolicyService and
+    DeliveryEngine as effective publication authority, not a parallel catalog.
+    A role action declaration or native menu is not sufficient publication proof.
+    Distinguish runtime availability, administrator configuration editing and
+    recovery access through explicit existing policy/permission boundaries.
+    Preserve role/company/edition/channel and approved relation/work-item scope.
+    Do not fix a missing configuration entry by unioning unrestricted declared
+    actions, widening ACL, or treating hidden menus as automatically unpublished.
+    No remote publication, merge or target deployment is authorized by this rule.
+
+  capability_publication_user_acceptance_boundary: >-
+    2026-10-01 owner clarification: validate system capability independently of
+    whether a product version publishes it. Capability proof covers contracts,
+    official rendering/interactions and backend state-machine behavior using
+    governed test access; it does not grant runtime publication access. Validate
+    publication selection separately against the effective product version,
+    dependencies, entry enforcement and recovery scope. After publication,
+    validate the actual delivered version through target user identities and
+    their effective tenant/company/project/role permissions, including positive
+    business journeys and denied access. Administrator or direct backend success
+    is not user acceptance. Retain valid unpublished capability evidence; keep
+    required capability gaps open and published-user acceptance pending. Never
+    publish extra entries merely to pass a test. Local fixture acceptance proves
+    only its bound environment, not target-environment user delivery.
+
+  systemwide_convergence_owner_direction: >-
+    2026-10-01: Converge the custom frontend end to end as one system. Work units
+    are shared contract/bootstrap, renderer dispatch, official page composition,
+    primitive drivers, interaction lifecycles and theme/responsive ownership.
+    Specific pages are representative evidence, not isolated implementation goals.
+    Reuse the original run and valid evidence; actual effects and interaction remain
+    mandatory. A shared detail fix or a ledger marker is not overall completion.
+
+  execution_handoff_owner_direction: >-
+    2026-10-01: After the current round, root stops implementation and runtime
+    execution and coordinates only. The owner will assign the next executor.
+    Goal remains incomplete; the original run records the actual relation403
+    and list selector failures plus reusable evidence. No automatic next batch.

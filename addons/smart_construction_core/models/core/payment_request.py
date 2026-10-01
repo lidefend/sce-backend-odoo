@@ -15,6 +15,7 @@ _logger = logging.getLogger(__name__)
 _FUNDING_BINDING_TOKEN = object()
 _TERMINAL_CASH_SOURCE_CLAIM_TOKEN = object()
 _DETAIL_AMOUNT_SYNC_TOKEN = object()
+_AUTOMATIC_APPROVAL_TOKEN = object()
 
 PAYMENT_REQUEST_DOCUMENT_STATE_LABELS = {
     "-1": "已作废",
@@ -118,8 +119,7 @@ class PaymentRequest(models.Model):
         "payer_unit",
         "payment_account_name",
         "contract_id.subject",
-        "contract_id.legacy_contract_no",
-        "contract_id.legacy_document_no",
+        "contract_id.name",
     ]
     _sc_delete_guard_blocker_models = (
         "sc.material.rental.order",
@@ -259,6 +259,24 @@ class PaymentRequest(models.Model):
         tracking=True,
         ondelete="set null",
     )
+    rental_settlement_id = fields.Many2one(
+        "sc.material.rental.settlement",
+        string="租赁结算单",
+        domain="[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+        index=True,
+        tracking=True,
+        ondelete="restrict",
+        copy=False,
+    )
+    subcontract_settlement_id = fields.Many2one(
+        "sc.subcontract.settlement",
+        string="分包结算单",
+        domain="[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+        index=True,
+        tracking=True,
+        ondelete="restrict",
+        copy=False,
+    )
     settlement_currency_id = fields.Many2one(
         "res.currency",
         string="结算币种",
@@ -357,6 +375,8 @@ class PaymentRequest(models.Model):
             ("standard_settlement", "标准结算单"),
             ("line_settlement", "明细结算单"),
             ("material_settlement", "材料结算单"),
+            ("rental_settlement", "租赁结算单"),
+            ("subcontract_settlement", "分包结算单"),
             ("contract", "合同依据"),
             ("legacy_relation", "历史关联依据"),
             ("none", "无可解释依据"),
@@ -754,6 +774,8 @@ class PaymentRequest(models.Model):
             "contract_id",
             "settlement_id",
             "material_settlement_id",
+            "rental_settlement_id",
+            "subcontract_settlement_id",
             "partner_id",
             "currency_id",
             "amount",
@@ -1020,6 +1042,8 @@ class PaymentRequest(models.Model):
         "line_settlement_summary",
         "legacy_relation_summary",
         "material_settlement_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id",
         "contract_id",
         "payment_account_no",
         "legacy_payment_account_no",
@@ -1046,6 +1070,8 @@ class PaymentRequest(models.Model):
                     record.settlement_id,
                     record.line_settlement_summary,
                     record.material_settlement_id,
+                    record.rental_settlement_id,
+                    record.subcontract_settlement_id,
                     record.contract_id,
                 )
             )
@@ -1098,6 +1124,8 @@ class PaymentRequest(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        if "business_category_id" in fields_list and "business_category_id" not in res:
+            res["business_category_id"] = self._resolve_business_category_id(res)
         project_id = res.get("project_id") or self._context_project_id()
         if project_id and "project_id" in fields_list:
             res["project_id"] = project_id
@@ -1118,6 +1146,8 @@ class PaymentRequest(models.Model):
             "type",
             "settlement_id",
             "material_settlement_id",
+            "rental_settlement_id",
+            "subcontract_settlement_id",
             "contract_id",
             "partner_id",
         ):
@@ -1221,6 +1251,8 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id",
         "outflow_line_ids.settlement_id",
         "payment_account_name",
         "payment_bank_name",
@@ -1353,6 +1385,8 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id",
         "outflow_line_ids.settlement_id",
         "payee_account_completeness",
         "payment_execution_ids.state",
@@ -1388,7 +1422,7 @@ class PaymentRequest(models.Model):
             elif record.state == "approved" and record.type == "pay" and record.payee_account_completeness != "complete":
                 record.legal_next_action_display = _("补全收款账户")
             elif record.state == "approved" and record.type == "pay":
-                record.legal_next_action_display = _("生成付款登记") if can_manage else _("等待财务确认")
+                record.legal_next_action_display = _("生成付款登记") if user.has_group("smart_construction_core.group_sc_cap_finance_user") else _("等待财务办理")
             elif record.state == "approved":
                 record.legal_next_action_display = _("确认办结") if can_manage else _("等待财务确认")
             elif record.state == "done":
@@ -1407,6 +1441,14 @@ class PaymentRequest(models.Model):
             self.env["sc.material.settlement"].browse(vals.get("material_settlement_id")).exists()
             if vals.get("material_settlement_id")
             else False
+        )
+        rental_settlement = (
+            self.env["sc.material.rental.settlement"].browse(vals.get("rental_settlement_id")).exists()
+            if vals.get("rental_settlement_id") else False
+        )
+        subcontract_settlement = (
+            self.env["sc.subcontract.settlement"].browse(vals.get("subcontract_settlement_id")).exists()
+            if vals.get("subcontract_settlement_id") else False
         )
         contract = self.env["construction.contract"].browse(vals.get("contract_id")).exists() if vals.get("contract_id") else False
         partner = self.env["res.partner"].browse(vals.get("partner_id")).exists() if vals.get("partner_id") else False
@@ -1432,6 +1474,24 @@ class PaymentRequest(models.Model):
                 }
             )
             partner = material_settlement.supplier_id or partner
+        elif rental_settlement:
+            values.update({
+                "project_id": rental_settlement.project_id.id,
+                "contract_id": rental_settlement.contract_id.id,
+                "partner_id": rental_settlement.supplier_id.id,
+                "currency_id": rental_settlement.currency_id.id,
+                "amount": rental_settlement._payment_unreserved_amount(),
+            })
+            partner = rental_settlement.supplier_id
+        elif subcontract_settlement:
+            values.update({
+                "project_id": subcontract_settlement.project_id.id,
+                "contract_id": subcontract_settlement.contract_id.id,
+                "partner_id": subcontract_settlement.subcontractor_id.id,
+                "currency_id": subcontract_settlement.currency_id.id,
+                "amount": subcontract_settlement._payment_unreserved_amount(),
+            })
+            partner = subcontract_settlement.subcontractor_id
         elif contract:
             values.update(
                 {
@@ -1444,7 +1504,7 @@ class PaymentRequest(models.Model):
 
         if partner:
             values.update(self._partner_payment_defaults(partner, request_type=request_type))
-        return {key: value for key, value in values.items() if value not in (False, None, "")}
+        return {key: value for key, value in values.items() if value not in (False, None, "") or ((rental_settlement or subcontract_settlement) and key == "amount")}
 
     def _apply_payment_request_basis_values(self, values, *, only_empty=False):
         for field_name, value in values.items():
@@ -1454,13 +1514,15 @@ class PaymentRequest(models.Model):
                 continue
             setattr(self, field_name, value)
 
-    @api.onchange("settlement_id", "material_settlement_id", "contract_id", "partner_id", "type")
+    @api.onchange("settlement_id", "material_settlement_id", "rental_settlement_id", "subcontract_settlement_id", "contract_id", "partner_id", "type")
     def _onchange_payment_request_basis(self):
         for record in self:
             vals = {
                 "type": record.type,
                 "settlement_id": record.settlement_id.id,
                 "material_settlement_id": record.material_settlement_id.id,
+                "rental_settlement_id": record.rental_settlement_id.id,
+                "subcontract_settlement_id": record.subcontract_settlement_id.id,
                 "contract_id": record.contract_id.id,
                 "partner_id": record.partner_id.id,
             }
@@ -1479,10 +1541,10 @@ class PaymentRequest(models.Model):
                 raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
         self._assert_payment_execution_ready(require_authorized_actor=True)
         action = self.env.ref(
-            "smart_construction_core.action_sc_payment_execution_partner_payment"
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
         ).read()[0]
         action["menu_id"] = self.env.ref(
-            "smart_construction_core.menu_sc_partner_payment"
+            "smart_construction_core.menu_sc_payment_execution"
         ).id
         action["name"] = _("新建付款登记")
         action["view_mode"] = "form"
@@ -1537,21 +1599,21 @@ class PaymentRequest(models.Model):
         """Open the existing execution continuation for this request."""
         self.ensure_one()
         if not self.env.user.has_group(
-            "smart_construction_core.group_sc_cap_finance_manager"
+            "smart_construction_core.group_sc_cap_finance_user"
         ):
-            raise UserError(_("你没有查看付款登记续接页的财务确认权限。"))
+            raise UserError(_("你没有查看付款登记续接页的财务办理权限。"))
         executions = self.payment_execution_ids.filtered(
             lambda execution: execution.active and execution.state != "cancel"
         ).sorted(key=lambda execution: execution.id, reverse=True)
         if not executions:
             raise UserError(_("该付款申请尚未生成有效的付款登记。"))
         action = self.env.ref(
-            "smart_construction_core.action_sc_payment_execution_partner_payment"
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
         ).read()[0]
         action.update(
             {
                 "menu_id": self.env.ref(
-                    "smart_construction_core.menu_sc_partner_payment"
+                    "smart_construction_core.menu_sc_payment_execution"
                 ).id,
                 "name": _("查看付款登记"),
                 "view_mode": "form",
@@ -1565,6 +1627,8 @@ class PaymentRequest(models.Model):
     def _assert_payment_execution_ready(self, *, require_authorized_actor=False):
         """Fail closed before a payment request can anchor an execution record."""
         self._assert_unambiguous_posted_payment_history()
+        self._check_rental_settlement_remaining_amount()
+        self._check_subcontract_settlement_remaining_amount()
         for record in self:
             if record.type != "pay":
                 raise UserError(_("只有付款申请可以生成付款登记。"))
@@ -1575,9 +1639,9 @@ class PaymentRequest(models.Model):
             if record.payee_account_completeness != "complete":
                 raise UserError(_("收款户名、开户行和账号必须完整后才能生成付款登记。"))
             if require_authorized_actor and not self.env.user.has_group(
-                "smart_construction_core.group_sc_cap_finance_manager"
+                "smart_construction_core.group_sc_cap_finance_user"
             ):
-                raise UserError(_("你没有生成付款登记的财务确认权限。"))
+                raise UserError(_("你没有生成付款登记的财务办理权限。"))
         return True
 
     def unlink(self):
@@ -1992,7 +2056,33 @@ class PaymentRequest(models.Model):
         )
         return category.id if category else False
 
+    def _assert_rental_attribution_unchanged(self, vals):
+        if "rental_settlement_id" not in vals:
+            return
+        # Financial history, including cancelled executions and reversed
+        # ledgers, keeps its original obligation identity permanently.
+        for request in self.sudo().with_context(active_test=False):
+            current_id = request.rental_settlement_id.id or False
+            if (vals["rental_settlement_id"] or False) == current_id:
+                continue
+            if request.ledger_line_ids or request.payment_execution_ids:
+                raise UserError(_("付款申请已产生付款登记或台账历史，不可新增、更换或清除租赁结算归属。"))
+
+    def _assert_subcontract_attribution_unchanged(self, vals):
+        if "subcontract_settlement_id" not in vals:
+            return
+        # Financial history, including cancelled executions and reversed
+        # ledgers, keeps its original obligation identity permanently.
+        for request in self.sudo().with_context(active_test=False):
+            current_id = request.subcontract_settlement_id.id or False
+            if (vals["subcontract_settlement_id"] or False) == current_id:
+                continue
+            if request.ledger_line_ids or request.payment_execution_ids:
+                raise UserError(_("付款申请已产生付款登记或台账历史，不可新增、更换或清除分包结算归属。"))
+
     def write(self, vals):
+        self._assert_rental_attribution_unchanged(vals)
+        self._assert_subcontract_attribution_unchanged(vals)
         claim_fields = {"terminal_cash_source_model", "terminal_cash_source_res_id"}
         claim_authority = (
             self.env.context.get("_sc_terminal_cash_source_claim_token")
@@ -2039,17 +2129,8 @@ class PaymentRequest(models.Model):
             )
         if vals.get("state") == "done":
             self._check_can_done()
-        tier_validation_callback = self.env.context.get("tier_validation_callback")
-        if vals.get("state") in ("approved", "done") and not tier_validation_callback:
-            for rec in self:
-                if rec.validation_status != "validated":
-                    raise_guard(
-                        "P0_PAYMENT_STATE_BYPASS_BLOCKED",
-                        f"付款申请[{rec.display_name}]",
-                        "状态变更",
-                        reasons=["未完成审批流程"],
-                        hints=["请先完成审批后再进入已批准/已完成状态"],
-                    )
+        if "state" in vals:
+            self._check_approval_state_transition(vals["state"])
         res = super().write(vals)
         if (
             "amount" in vals
@@ -2059,6 +2140,26 @@ class PaymentRequest(models.Model):
         if any(key in vals for key in ("state", "type", "project_id", "amount")):
             self._enforce_funding_gate(vals)
         return res
+
+    def _check_approval_state_transition(self, target_state):
+        for rec in self:
+            ScStateMachine.assert_transition(self._name, rec.state, target_state, rec.display_name)
+        automatic_approval = self.env.context.get("_sc_automatic_approval_token") is _AUTOMATIC_APPROVAL_TOKEN
+        if target_state in ("approved", "done"):
+            for rec in self:
+                # Existing approved/done states already carry the approval outcome.
+                # A later policy edit cannot invalidate that outcome or approve an
+                # in-flight request. A boolean callback context is not authority.
+                if (rec.state not in ("approved", "done")
+                        and not automatic_approval
+                        and not (rec.review_ids and rec.validation_status == "validated")):
+                    raise_guard(
+                        "P0_PAYMENT_STATE_BYPASS_BLOCKED",
+                        f"付款申请[{rec.display_name}]",
+                        "状态变更",
+                        reasons=["未完成审批流程"],
+                        hints=["请先完成审批后再进入已批准/已完成状态"],
+                    )
 
     def _get_attachment_count(self):
         self.ensure_one()
@@ -2190,6 +2291,8 @@ class PaymentRequest(models.Model):
         "settlement_id",
         "line_settlement_count",
         "material_settlement_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id",
         "contract_id",
         "legacy_relation_count",
     )
@@ -2201,6 +2304,10 @@ class PaymentRequest(models.Model):
                 rec.payment_basis_type = "line_settlement"
             elif rec.material_settlement_id:
                 rec.payment_basis_type = "material_settlement"
+            elif rec.rental_settlement_id:
+                rec.payment_basis_type = "rental_settlement"
+            elif rec.subcontract_settlement_id:
+                rec.payment_basis_type = "subcontract_settlement"
             elif rec.contract_id:
                 rec.payment_basis_type = "contract"
             elif rec.legacy_relation_count:
@@ -2689,6 +2796,8 @@ class PaymentRequest(models.Model):
             self.contract_id
             or self.settlement_id
             or self.material_settlement_id
+            or self.rental_settlement_id
+            or self.subcontract_settlement_id
             or self.outflow_line_ids.filtered("settlement_id")
             or self.outflow_line_ids.filtered("settlement_line_id")
         )
@@ -2742,6 +2851,114 @@ class PaymentRequest(models.Model):
             if rec.state in ("submit", "approve", "approved", "done"):
                 rec._check_material_settlement_remaining_amount()
 
+    @api.constrains(
+        "rental_settlement_id",
+        "subcontract_settlement_id", "type", "project_id", "company_id",
+        "partner_id", "currency_id", "contract_id", "settlement_id",
+        "material_settlement_id", "outflow_line_ids",
+    )
+    def _check_rental_settlement_consistency(self):
+        for request in self:
+            settlement = request.rental_settlement_id
+            if not settlement:
+                continue
+            if request.type != "pay":
+                raise ValidationError(_("租赁结算只能作为付款申请依据。"))
+            if settlement.state not in ("confirmed", "paid"):
+                raise ValidationError(_("租赁结算必须先完成审批及确认才能作为付款依据。"))
+            if (not settlement.project_id or request.project_id != settlement.project_id
+                    or not settlement.company_id or request.company_id != settlement.company_id):
+                raise ValidationError(_("租赁结算与付款申请的项目及公司必须一致。"))
+            if not settlement.supplier_id or request.partner_id != settlement.supplier_id:
+                raise ValidationError(_("租赁结算供应商必须与付款申请收款方一致。"))
+            if not settlement.currency_id or request.currency_id != settlement.currency_id:
+                raise ValidationError(_("租赁结算与付款申请的币种必须一致。"))
+            if request.contract_id != settlement.contract_id:
+                raise ValidationError(_("付款申请合同必须与租赁结算的合同依据一致。"))
+            if request.settlement_id or request.material_settlement_id or request.subcontract_settlement_id:
+                raise ValidationError(_("租赁结算付款不能同时认领其他头部结算依据。"))
+            if request.outflow_line_ids.filtered(
+                lambda line: line.settlement_id or line.settlement_line_id
+                or (line.contract_id and line.contract_id != settlement.contract_id)
+            ):
+                raise ValidationError(_("租赁结算付款不能混入其他结算或合同的明细依据。"))
+
+    @api.constrains(
+        "rental_settlement_id",
+        "subcontract_settlement_id", "type", "project_id", "company_id",
+        "partner_id", "currency_id", "contract_id", "settlement_id",
+        "material_settlement_id", "outflow_line_ids",
+    )
+    def _check_subcontract_settlement_consistency(self):
+        for request in self:
+            settlement = request.subcontract_settlement_id
+            if not settlement:
+                continue
+            if request.type != "pay":
+                raise ValidationError(_("分包结算只能作为付款申请依据。"))
+            if settlement.state not in ("confirmed",):
+                raise ValidationError(_("分包结算必须先完成审批及确认才能作为付款依据。"))
+            if (not settlement.project_id or request.project_id != settlement.project_id
+                    or not settlement.company_id or request.company_id != settlement.company_id):
+                raise ValidationError(_("分包结算与付款申请的项目及公司必须一致。"))
+            if not settlement.subcontractor_id or request.partner_id != settlement.subcontractor_id:
+                raise ValidationError(_("分包结算供应商必须与付款申请收款方一致。"))
+            if not settlement.currency_id or request.currency_id != settlement.currency_id:
+                raise ValidationError(_("分包结算与付款申请的币种必须一致。"))
+            if request.contract_id != settlement.contract_id:
+                raise ValidationError(_("付款申请合同必须与分包结算的合同依据一致。"))
+            if request.settlement_id or request.material_settlement_id or request.rental_settlement_id:
+                raise ValidationError(_("分包结算付款不能同时认领其他头部结算依据。"))
+            if request.outflow_line_ids.filtered(
+                lambda line: line.settlement_id or line.settlement_line_id
+                or (line.contract_id and line.contract_id != settlement.contract_id)
+            ):
+                raise ValidationError(_("分包结算付款不能混入其他结算或合同的明细依据。"))
+
+    @api.constrains("rental_settlement_id", "amount", "state")
+    def _check_rental_settlement_remaining_amount(self):
+        requests = self.filtered(
+            lambda request: request.rental_settlement_id
+            and request.state not in ("draft", "rejected", "cancel")
+        )
+        if not requests:
+            return
+        requests.mapped("rental_settlement_id")._serialize_payment_reservation()
+        # Recheck identity under the source lock, including direct child-line
+        # mutations that do not trigger a parent @api.constrains call.
+        requests._check_rental_settlement_consistency()
+        for request in requests:
+            source = request.rental_settlement_id
+            reserved = source._payment_reserved_amount(exclude_request_id=request.id)
+            rounding = source.currency_id.rounding or 0.01
+            if float_compare(request.amount, 0.0, precision_rounding=rounding) <= 0:
+                raise ValidationError(_("租赁结算付款申请金额必须大于零。"))
+            available = source.amount_total - reserved
+            if float_compare(request.amount, available, precision_rounding=rounding) > 0:
+                raise ValidationError(_("租赁结算付款申请金额超过未占用额度。"))
+
+    @api.constrains("subcontract_settlement_id", "amount", "state")
+    def _check_subcontract_settlement_remaining_amount(self):
+        requests = self.filtered(
+            lambda request: request.subcontract_settlement_id
+            and request.state not in ("draft", "rejected", "cancel")
+        )
+        if not requests:
+            return
+        requests.mapped("subcontract_settlement_id")._serialize_payment_reservation()
+        # Recheck identity under the source lock, including direct child-line
+        # mutations that do not trigger a parent @api.constrains call.
+        requests._check_subcontract_settlement_consistency()
+        for request in requests:
+            source = request.subcontract_settlement_id
+            reserved = source._payment_reserved_amount(exclude_request_id=request.id)
+            rounding = source.currency_id.rounding or 0.01
+            if float_compare(request.amount, 0.0, precision_rounding=rounding) <= 0:
+                raise ValidationError(_("分包结算付款申请金额必须大于零。"))
+            available = source.amount_total - reserved
+            if float_compare(request.amount, available, precision_rounding=rounding) > 0:
+                raise ValidationError(_("分包结算付款申请金额超过未占用额度。"))
+
     @api.constrains("contract_id", "type")
     def _check_contract_direction(self):
         for rec in self:
@@ -2778,6 +2995,8 @@ class PaymentRequest(models.Model):
         "contract_id",
         "settlement_id",
         "material_settlement_id",
+        "rental_settlement_id",
+        "subcontract_settlement_id",
         "project_id",
         "outflow_line_ids",
     )
@@ -3020,109 +3239,58 @@ class PaymentRequest(models.Model):
         submitted_records = self.sudo()
         submitted_records.invalidate_recordset()
         for rec in submitted_records:
-            company = rec.company_id or self.env.company
-            rec.with_company(company).with_context(
-                allowed_company_ids=[company.id],
-            ).request_validation()
-        submitted_records._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
+            rec._route_submitted_approval()
         return {"warnings": advisory_result}
 
+    def _route_submitted_approval(self):
+        """Called only by submission after its access, scope and business checks."""
+        self.ensure_one()
+        if self.state != "submit":
+            raise UserError(_("只有已提交的付款/收款申请可以初始化审批。"))
+        company = self.company_id or self.env.company
+        record = self.with_company(company).with_context(allowed_company_ids=[company.id])
+        policy = self.env["sc.approval.policy"]
+        if policy._start_submission_review(record):
+            record._message_post_non_blocking(_("付款/收款申请已提交，进入审批流程。"))
+        else:
+            record.with_context(
+                _sc_automatic_approval_token=_AUTOMATIC_APPROVAL_TOKEN,
+            )._complete_payment_approval(automatic=True)
+
     def action_approve(self):
-        self._assert_finance_approve_access()
-        advisory_result = {}
-        for rec in self:
-            if rec.state != "submit":
-                continue
-            rec._check_detail_amount_consistency()
-            if rec.validation_status != "validated" and not rec.env.context.get("tier_validation_callback"):
-                raise_guard(
-                    "PAYMENT_TIER_INCOMPLETE",
-                    f"付款申请[{rec.display_name}]",
-                    "审批付款申请",
-                    reasons=["tier validation not complete"],
-                )
-            # R10: overpay handled as advisory via _handle_payment_advisories
-            rec._check_material_settlement_remaining_amount()
-            advisory_result[rec.id] = rec._handle_payment_advisories(
-                "审批付款申请",
-                rec._collect_payment_advisories("approve"),
-            )
-        result = None
-        for rec in self:
-            if rec.state != "submit":
-                continue
-            rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approve"})
-            action = rec.validate_tier()
-            if action:
-                result = action
-        return result or {"warnings": advisory_result}
+        """Compatibility entry; no independent state-changing approval path."""
+        return self.action_approval_decision()
 
     def action_approval_decision(self):
-        """Execute the current approval step without forcing the frontend to know tier state."""
+        """Approve the existing review chain; absent reviews never grant approval."""
         self._assert_finance_approve_access()
         result = None
-        advisory_result = {}
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
                 continue
             rec._check_detail_amount_consistency()
+            if not rec.review_ids:
+                raise UserError(_("当前申请没有有效审批实例，请检查审批配置并重新提交。"))
             if rec.validation_status in ("waiting", "pending"):
-                # R10: overpay handled as advisory via _handle_payment_advisories
+                if not rec.can_review:
+                    raise AccessError(_("当前用户不是本审批步骤的审批人。"))
                 rec._check_material_settlement_remaining_amount()
-                advisory_result[rec.id] = rec._handle_payment_advisories(
-                    "审批付款申请",
-                    rec._collect_payment_advisories("approve"),
-                )
-                action = rec.validate_tier()
-                if action:
-                    result = action
-                continue
-            if rec.validation_status == "validated":
-                return rec.action_approve()
-            if rec.validation_status in ("no", False) and not rec.review_ids:
-                # R10: overpay handled as advisory via _handle_payment_advisories
-                rec._check_material_settlement_remaining_amount()
-                advisory_result[rec.id] = rec._handle_payment_advisories(
-                    "审批付款申请",
-                    rec._collect_payment_advisories("approve"),
-                )
-                before = rec._snapshot_audit_payload()
-                rec.write({"validation_status": "validated"})
-                rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-                after = rec._snapshot_audit_payload()
-                rec._audit_transition("payment_approved", before, after, action_name="action_approval_decision")
-                continue
-            raise_guard(
-                "PAYMENT_TIER_INCOMPLETE",
-                f"付款申请[{rec.display_name}]",
-                "审批付款申请",
-                reasons=[f"validation_status={rec.validation_status}"],
-            )
-        return result or {"warnings": advisory_result}
-
-    def action_set_approved(self):
-        self._assert_finance_approve_access()
-        advisory_result = {}
-        result = None
-        for rec in self:
-            rec._check_detail_amount_consistency()
-            # R10: overpay handled as advisory via _handle_payment_advisories
-            rec._check_material_settlement_remaining_amount()
-            advisory_result[rec.id] = rec._handle_payment_advisories(
-                "批准付款申请",
-                rec._collect_payment_advisories("approve"),
-            )
-            if rec.state == "approve" and rec.validation_status == "validated":
-                before = rec._snapshot_audit_payload()
-                rec.with_context(allow_transition=True, payment_soft_gate=True).write({"state": "approved"})
-                after = rec._snapshot_audit_payload()
-                rec._audit_transition("payment_approved", before, after, action_name="action_set_approved")
-                continue
-            action = rec.validate_tier()
+                rec._handle_payment_advisories("审批付款申请", rec._collect_payment_advisories("approve"))
+            action = self.env["sc.approval.policy"]._approve_submission_review(rec)
             if action:
                 result = action
-                continue
-        return result or {"warnings": advisory_result}
+            # OCA may finish through its callback; this is also safe if that
+            # callback already advanced the record. Partial approval stays put.
+            if rec.validation_status == "validated":
+                rec._complete_payment_approval()
+            elif rec.validation_status not in ("waiting", "pending"):
+                raise_guard("PAYMENT_TIER_INCOMPLETE", f"付款申请[{rec.display_name}]",
+                            "审批付款申请", reasons=[f"validation_status={rec.validation_status}"])
+        return result or {}
+
+    def action_set_approved(self):
+        """Historical callers use the same approval decision as the product UI."""
+        return self.action_approval_decision()
 
     def action_done(self):
         has_finance_done_access = self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
@@ -3141,18 +3309,6 @@ class PaymentRequest(models.Model):
                     _(
                         "收款申请必须通过专业收款登记完成入账；请生成收款登记并由财务执行“登记收款”。"
                     )
-                )
-            approved_reviews = rec.review_ids.filtered(lambda review: review.status == "approved")
-            open_reviews = rec.review_ids.filtered(
-                lambda review: review.status not in ("approved", "rejected")
-            )
-            tier_callback_complete = bool(approved_reviews) and not open_reviews
-            if rec.validation_status != "validated" and not tier_callback_complete:
-                raise_guard(
-                    "PAYMENT_TIER_INCOMPLETE",
-                    f"付款申请[{rec.display_name}]",
-                    "完成付款申请",
-                    reasons=["tier validation not complete"],
                 )
             if rec.state != "approved":
                 raise_guard(
@@ -3410,15 +3566,19 @@ class PaymentRequest(models.Model):
         return base_ok or self.state == "submit"
 
     def action_on_tier_approved(self):
+        return self._complete_payment_approval()
+
+    def _complete_payment_approval(self, automatic=False):
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
                 continue
             rec._check_detail_amount_consistency()
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if automatic:
+                if self.env.context.get("_sc_automatic_approval_token") is not _AUTOMATIC_APPROVAL_TOKEN:
+                    raise AccessError(_("自动批准只能由已校验的提交状态转换执行。"))
+            elif not rec.review_ids or rec.validation_status != "validated":
+                # A callback can run after an intermediate tier. Only the full
+                # existing chain, never the current configuration, can finish it.
                 continue
             # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
@@ -3438,8 +3598,8 @@ class PaymentRequest(models.Model):
                 tier_validation_callback=True,
             ).write({"state": "approved"})
             after = rec._snapshot_audit_payload()
-            rec._audit_transition("payment_approved", before, after, action_name="action_on_tier_approved")
-            rec._message_post_non_blocking(_("付款/收款申请审批通过。"))
+            rec._audit_transition("payment_approved", before, after, action_name="action_submit" if automatic else "action_on_tier_approved")
+            rec._message_post_non_blocking(_("付款/收款申请提交自动通过（未配置审批）。") if automatic else _("付款/收款申请审批通过。"))
 
     def _get_tier_reject_reason(self):
         self.ensure_one()
@@ -3448,9 +3608,25 @@ class PaymentRequest(models.Model):
             return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
         return False
 
+    def action_approval_reject(self, reason=None):
+        """Record a real reviewer decision before advancing the business state."""
+        self._assert_finance_approve_access()
+        self.ensure_one()
+        reason = str(reason or "").strip()
+        if not reason:
+            raise UserError(_("审批驳回必须填写原因。"))
+        if self.state not in ("submit", "approve") or self.validation_status not in ("waiting", "pending"):
+            raise UserError(_("只有审批中的付款/收款申请可以驳回。"))
+        self.env["sc.approval.policy"]._reject_submission_review(self, reason=reason)
+        self.action_on_tier_rejected()
+        return {}
+
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
-            if rec.state != "submit":
+            if rec.state not in ("submit", "approve"):
+                continue
+            if not rec.review_ids or rec.validation_status != "rejected":
+                # A public callback is not permission to fabricate rejection.
                 continue
             reason = reason or rec._get_tier_reject_reason()
             if not reason:

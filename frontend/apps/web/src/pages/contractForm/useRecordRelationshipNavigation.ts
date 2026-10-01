@@ -162,6 +162,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
           return_url: encodeURIComponent(returnUrl),
           return_field: fieldName,
           return_model: model.value,
+          return_record_id: Number(route.params.id || 0) || undefined,
           return_action_id: actionId.value || undefined,
           return_menu_id: Number(route.query.menu_id || 0) || undefined,
         },

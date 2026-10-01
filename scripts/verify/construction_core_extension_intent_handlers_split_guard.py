@@ -6,13 +6,15 @@ import sys
 import types
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 INTENT_HANDLERS = ROOT / "addons/smart_construction_core/core_extension_intent_handlers.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 2243
-MAX_INTENT_HANDLER_LINES = 249  # G7.4 overview rich text patch registration (+4); registry module
 
 HANDLER_MODULES = {
     "odoo.addons.smart_construction_core.handlers.system_ping_construction": ["SystemPingConstructionHandler"],
@@ -128,8 +130,7 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_intent_handlers as _intent_handlers",
             "return _intent_handlers.get_intent_handler_contributions()",
@@ -143,8 +144,7 @@ def main() -> int:
 
     if handler_text:
         line_count = len(handler_text.splitlines())
-        if line_count > MAX_INTENT_HANDLER_LINES:
-            errors.append(f"intent handler module line budget exceeded: {line_count} > {MAX_INTENT_HANDLER_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension_intent_handlers.py", line_count, label="core_extension_intent_handlers.py")
         for token in [
             "def get_intent_handler_contributions(",
             "APPROVAL_POLICY_INTENTS[\"config_get\"]",

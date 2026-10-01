@@ -591,47 +591,31 @@ class ScSettlementOrder(models.Model):
         )
         policy = self.env["sc.approval.policy"].sudo()
         for rec in self:
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                rec._write_lifecycle("submit")
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(
-                    allowed_company_ids=[company.id],
-                ).request_validation()
-            else:
+            rec._write_lifecycle("submit")
+            if not policy._start_submission_review(rec):
                 rec._write_lifecycle("approve")
 
     def action_approve(self):
+        """Compatibility entry delegates to the current review instance."""
         self._assert_lifecycle_role("approve")
         self._lock_lifecycle_rows()
-        policy_model = self.env["sc.approval.policy"].sudo()
+        result = None
         for rec in self:
-            if rec.state not in ("draft", "submit"):
-                raise_guard(
-                    "SETTLEMENT_INVALID_TRANSITION",
-                    f"结算单[{rec.display_name}]",
-                    _("审批结算单"),
-                    reasons=[_("只有草稿或已提交状态的结算单可以审批")],
-                )
+            if rec.state == "approve":
+                continue
+            if rec.state != "submit":
+                raise UserError(_("只有已提交状态的结算单可以审批。"))
             rec._check_business_anchor_or_raise()
             rec._check_line_contracts_or_raise()
             rec._check_contract_consistency_or_raise(strict=True)
             rec._check_purchase_orders_or_raise(strict=True)
-            if policy_model.is_approval_required(rec._name, company=rec.company_id):
-                if rec.validation_status != "validated":
-                    raise_guard(
-                        "SETTLEMENT_TIER_INCOMPLETE",
-                        f"结算单[{rec.display_name}]",
-                        _("审批结算单"),
-                        reasons=[_("统一审批流程尚未完成")],
-                    )
-            else:
-                policy = policy_model.get_active_policy(rec._name, company=rec.company_id)
-                if policy:
-                    policy.assert_user_can_approve()
-        self.env["sc.data.validator"].validate_or_raise(
-            scope={"res_model": self._name, "res_ids": self.ids}
-        )
-        self._write_lifecycle("approve")
+            self.env["sc.data.validator"].validate_or_raise(
+                scope={"res_model": rec._name, "res_ids": rec.ids}
+            )
+            result = self.env["sc.approval.policy"]._approve_submission_review(rec)
+            if rec.validation_status == "validated":
+                rec.action_on_tier_approved()
+        return result
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -650,6 +634,8 @@ class ScSettlementOrder(models.Model):
         self._assert_lifecycle_role("approve")
         self._lock_lifecycle_rows()
         for rec in self:
+            if rec.state == "approve":
+                continue
             if rec.state not in ("submit", "approve"):
                 raise_guard(
                     "SETTLEMENT_INVALID_TRANSITION",
@@ -657,7 +643,7 @@ class ScSettlementOrder(models.Model):
                     _("审批通过结算单"),
                     reasons=[_("只有已提交或已批准状态的结算单可以执行审批通过回调")],
                 )
-            if rec.validation_status != "validated":
+            if not rec.review_ids or rec.validation_status != "validated":
                 if self.env.context.get("server_action_tier"):
                     # OCA base_tier_validation_server_action fires this
                     # callback after every approved level of a multi-level

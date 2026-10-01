@@ -517,6 +517,13 @@ BACKEND_ACCEPTANCE_PORT ?= 18082
 BACKEND_ACCEPTANCE_DB ?= sc_frontend_acceptance
 BACKEND_ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(BACKEND_ACCEPTANCE_PORT)
 SC_ACCEPTANCE_RUNTIME_PROFILE ?= local
+# Development/acceptance fixture login password.
+# The local acceptance tenant is an isolated synthetic database, so a fixed,
+# intentionally simple value keeps repeated verification reproducible instead
+# of rotating a secret on every run. Override explicitly when a distinct value
+# is required: `make <target> SC_ACCEPTANCE_FIXTURE_PASSWORD=<value>`.
+SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass
+export SC_ACCEPTANCE_FIXTURE_PASSWORD
 
 acceptance.runtime.preflight: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh preflight

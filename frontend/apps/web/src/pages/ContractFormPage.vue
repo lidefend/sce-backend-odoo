@@ -6,6 +6,11 @@
     data-product-page-mode="form" data-semantic-component="ContractFormPage"
     :data-state="status"
     :data-form-model="model"
+    :data-form-composition="standardFormComposition.decision.value.composition"
+    :data-form-composition-reason="standardFormComposition.decision.value.reason"
+    :data-detail-composition="standardDetailComposition.decision.value.composition"
+    :data-detail-composition-adopted="String(standardDetailComposition.adopted.value)"
+    :data-detail-composition-reason="standardDetailComposition.decision.value.reason"
     :data-form-record="recordId ? String(recordId) : 'new'"
     :data-form-action-id="String(actionId || '')"
     :data-form-menu-id="String(Number(route.query.menu_id || 0) || '')"
@@ -21,6 +26,8 @@
     :data-v2-shadow-error="v2ContractDecodeError || '-'"
   >
     <h1 v-if="initialFormLoading" class="sc-visually-hidden">{{ pageDisplayTitle }}</h1>
+    <ScInlineState v-if="recordId && primarySubmitAction && route.query.create_recovery === 'upload'" state="error" label="单据已保存，附件上传未完成。请在当前单据重新选择附件后提交。" />
+    <ScInlineState v-else-if="recordId && primarySubmitAction && route.query.create_recovery === 'submit'" state="error" label="单据已保存，提交未完成。请在当前单据核对后重试。" />
     <ContractFormProductHeader
       v-if="!initialFormLoading && !recordMissing && !renderErrorMessage && status !== 'error'"
       :title="pageDisplayTitle" :subtitle="pageDisplaySubtitle" :hide-title="!isConfigurationPreview && suppressPageHeaderTitle" :show-hud="showHud"
@@ -40,6 +47,9 @@
       @run-primary="runPrimaryFormAction" @run-action="runAction" @canonical-action="runCanonicalFormAction($event.actionRef)" @canonical-save="saveRecord()" @discard="discardChanges" @copy="copyContractJson" @export="exportContractJson" @reload="reload"
     >
       <template #notice>
+        <ScInlineState v-if="renderProfile === 'readonly' && !isConfigurationPreview && recordActionDenialMessages.length" data-record-action-denials>
+          <span v-for="message in recordActionDenialMessages" :key="message">{{ message }}</span>
+        </ScInlineState>
     <ScInlineState v-if="isConfigurationPreview" class="configuration-preview-banner" data-configuration-preview>
       <strong>未发布配置预览 · 不产生业务写入</strong>
       <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
@@ -55,29 +65,24 @@
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
-    <ScCard v-else :class="['card', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
-      :appearance="isIntakeCreateMode ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode"
+    <ScCard v-else :class="['card', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'card--detail': standardDetailComposition.adopted.value, 'is-refreshing': status === 'loading' }]"
+      :appearance="isIntakeCreateMode || standardDetailComposition.adopted.value ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode && !standardDetailComposition.adopted.value"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <ContractFormActionBlocks
         v-if="!isConfigurationPreview && !canonicalProductFloorplan?.decisionMode && ((pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div')))"
         :style="[pageSectionStyle('next_actions'), pageSectionStyle('stat_buttons')]"
-        :active-filter-key="activeFilterKey"
         :body-actions="bodyActions"
         :busy="busy"
         :is-intake-create-mode="isIntakeCreateMode"
-        :search-filters="searchFilters"
         :show-hud="showHud"
-        :show-search-filters="showSearchFilters"
         :strict-contract-defaults-summary="strictContractDefaultsSummary"
         :strict-contract-missing-summary="strictContractMissingSummary"
-        :suppress-action-blocks="suppressFormActionBlocks"
         :suppress-workflow-transitions="actionPlaceholderGate.suppressWorkflowTransitions"
         :suppress-body-actions="actionPlaceholderGate.suppressBodyActions"
         :use-native-form-tree="useNativeFormTree"
         :warnings="warnings"
         :workflow-evidence-gate-rows="workflowEvidenceGateRows"
         :workflow-transitions="workflowTransitions"
-        @open-filter="openFilter"
         @run-action="runAction"
       />
       <section v-if="pageSectionEnabled('details_fallback', true) && pageSectionTagIs('details_fallback', 'section')" class="form-grid" :class="{ 'form-grid--designer-workspace': showCurrentFormFieldConfigScope }" :style="pageSectionStyle('details_fallback')">
@@ -378,12 +383,12 @@ import {
   resolveContractV2ContainerTree,
   resolveContractV2Collaboration,
   resolveContractV2EffectiveFormCapabilities,
+  resolveContractV2RecordActionStates,
   resolveContractV2GlobalStatus,
   resolveContractV2MainData,
   resolveContractV2ActionRules,
   resolveContractV2FormFieldMap,
   resolveContractV2RuntimeContract,
-  resolveContractV2SearchContract,
   resolveContractV2WorkflowContract,
   loadActionContractV2,
   loadModelContractV2,
@@ -584,17 +589,8 @@ import {
   strictContractMissingSummary as strictContractMissingSummaryFromGuard,
 } from './contractForm/sceneValidation';
 import {
-  isWorkflowTransitionMethod,
-  normalizeWorkflowActionRows,
   normalizeWorkflowEvidenceGateRows,
-  normalizeNativeFormStatusbar,
-  normalizeWorkflowPhaseStatusbar,
-  resolveStatusbarSelectionValue,
   resolveWorkflowContractFromStore,
-  applyWorkflowAvailability,
-  shouldShowWorkflowAction,
-  workflowActionMethodAliases,
-  workflowActionRowForMethod,
 } from './contractForm/workflowContract';
 import {
   formUiLabelFromLabels,
@@ -636,22 +632,15 @@ import {
   ContractAccessPolicyError,
   type ContractAccessPolicy,
   type ContractAction,
-  type ContractFieldGovernanceAction,
-  type ContractFieldGovernanceRow,
   type FormRuntimeStateEvent,
   type LayoutNode,
-  type LowCodeFieldSize,
-  type NativeChatterAction,
-  type NativeStatusbarVm,
-  type One2ManyColumn,
-  type One2ManyInlineRow,
-  type RelationOption,
-  type RelationSearchColumn,
   type RelationSearchRow,
-  type RelationUiLabels,
-  type SubmissionFeedback,
 } from './contractForm/types';
 import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
+import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
+import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
+import { createStandardDetailCompositionRuntime } from './contractForm/standardDetailCompositionRuntime';
+import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import {
   applyIncomingFormFieldValue,
   snapshotOriginalFormValues,
@@ -659,6 +648,7 @@ import {
 } from './contractForm/recordHydration';
 import {
   useNativeAttachmentRuntime,
+  nativeAttachmentRefreshDecision,
   type NativeAttachmentViewerLike,
 } from './contractForm/useNativeAttachmentRuntime';
 import { useNativeChatterRuntime } from './contractForm/useNativeChatterRuntime';
@@ -672,6 +662,7 @@ import { useInlineFieldPolicyRuntime } from './contractForm/useInlineFieldPolicy
 import { useContractModeActionRuntime } from './contractForm/useContractModeActionRuntime';
 import { useActionResponseNavigation } from './contractForm/useActionResponseNavigation';
 import { usePrimaryFormActionRuntime } from './contractForm/usePrimaryFormActionRuntime';
+import { submissionRequirementErrors } from './contractForm/submissionRequirements';
 import { useFormActionRuntime } from './contractForm/useFormActionRuntime';
 import { useFormConfigSaveRuntime } from './contractForm/useFormConfigSaveRuntime';
 import { applyFormRuntimeStatusEvent } from './contractForm/runtimeStateApplier';
@@ -688,9 +679,7 @@ import { resolveFormActionPlaceholderGate } from './contractForm/formActionPlace
 import { resolveContractFormFieldLabels } from './contractForm/formFieldLabels';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from './contractForm/saveRecordHelpers';
 import {
-  executeRecordFormReturn,
-  hasInAppReturnHistory,
-  resolveRecordFormReturnFallbackRoute,
+  createRecordFormReturnHandler,
   resolveRelationCreateDialogCancelMessage,
   useCreatedRecordNavigationRuntime,
 } from './contractForm/useCreatedRecordNavigationRuntime';
@@ -729,7 +718,6 @@ import {
   buildRouteContractContext,
   buildContractFormPolicyContext,
   normalizeContractWarnings,
-  normalizeSearchFilters,
   resolveBusinessCategoryContext,
   resolveNativeStructureAuthority,
   resolveRuntimeRoleCode,
@@ -820,7 +808,6 @@ const {
   nativeLayoutCount: () => nativeFormLayoutNodes.value.length,
   layoutNodes: () => layoutNodes.value,
 });
-const activeFilterKey = ref('');
 const originalValues = ref<Record<string, unknown>>({});
 const recordVersionToken = ref('');
 const formData = reactive<Record<string, unknown>>({});
@@ -860,6 +847,7 @@ const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfi
 const nativeLayoutVisibilityRevision = ref(0);
 const advancedExpanded = ref(false);
 const {
+  clearRelationRuntime, invalidateRelationRequests, captureRelationRequest, relationRuntimeGeneration,
   relationOptions,
   relationFieldDescriptors,
   relationKeywords,
@@ -890,6 +878,7 @@ const onchangeModifiersPatch = ref<Record<string, Record<string, unknown>>>({});
 const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_code?: string }>>([]);
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
 const {
+  defaultsPending: one2manyDefaultsPending,
   rowsByField: one2manyRows,
   fieldRows: one2manyFieldRows,
   visibleRows: visibleOne2manyRows,
@@ -912,6 +901,9 @@ const {
   recordId: () => recordId.value,
   originalValues: () => originalValues.value,
   parentValues: () => formData,
+  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName),
+  createScope: () => v2ContractStore.value,
+  onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),
   onchangeLinePatches: () => onchangeLinePatches.value as Array<Record<string, unknown>>,
   resolveColumns: (fieldName) => one2manyColumns(fieldName),
   resolvePrimaryColumn: (fieldName) => one2manyPrimaryColumn(fieldName),
@@ -994,7 +986,12 @@ const {
   maxBytes: () => nativeAttachmentMaxBytes.value,
   canUpload: () => nativeAttachmentUploadEnabled.value,
   resolveLabel: (key, fallback) => resolveNativeAttachmentLabel(key, fallback),
-  reloadTimeline: loadNativeChatterTimeline,
+  reloadTimeline: async (resId = recordId.value, targetModel = model.value) => {
+    await loadNativeChatterTimeline(resId, targetModel);
+    const decision = nativeAttachmentRefreshDecision(targetModel, resId, model.value, recordId.value, hasChanges.value);
+    if (decision === 'refresh') await reload();
+    if (decision === 'deferred') submissionFeedback.value = { kind: 'warn', message: '附件已更新，请先保存当前修改以更新办理条件。' };
+  },
   viewerRef: attachmentViewerRef,
   onPendingUploadFailed: (message) => {
     validationErrors.value = [message];
@@ -1085,10 +1082,26 @@ const requestedSurface = computed<'user' | 'native' | 'hud'>(() => {
 const requestedSourceMode = computed(() => (
   requestedSurface.value === 'native' ? 'native_parser' : 'governance_pipeline'
 ));
-const busy = computed(() => busyKind.value !== null);
+const busy = computed(() => busyKind.value !== null || one2manyDefaultsPending.value);
+function validateSubmissionRequirements(action: ContractAction): boolean {
+  const errors = submissionRequirementErrors(action, resolveWorkflowContractFromStore(v2ContractStore.value),
+    formData, pendingNativeAttachments.value.length);
+  if (!errors.length) return true;
+  validationErrors.value = errors;
+  submissionFeedback.value = { kind: 'error', message: errors.join('；') };
+  return false;
+}
 const {
   runPrimaryFormAction,
 } = usePrimaryFormActionRuntime({
+  validateSubmissionRequirements,
+  currentQuery: () => route.query,
+  navigateCreatedRecord: (createdId, refreshPolicy, recovery) => navigateCreatedRecord({
+    createdId, refreshPolicy, recovery,
+    createdLabel: String(formData.display_name || formData.name || '').trim(),
+    nextSceneKey: String(sceneReadyFormSurface.value.nextSceneKey || '').trim(),
+    nextSceneRoute: String(sceneReadyFormSurface.value.nextSceneRoute || '').trim(),
+  }),
   actionId: () => actionId.value || 0,
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
@@ -1109,6 +1122,7 @@ const {
 const {
   runAction,
 } = useFormActionRuntime({
+  validateSubmissionRequirements,
   actionId: () => actionId.value || 0,
   applyClientMode: (mode, toggle) => applyClientMode(mode, toggle),
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
@@ -1144,7 +1158,6 @@ const {
 });
 const {
   cancelIntake,
-  openFilter,
   returnToIntakeList,
 } = useFormNavigationActionsRuntime({
   actionId: () => actionId.value || 0,
@@ -1153,10 +1166,6 @@ const {
   resolveLandingPath: (fallback) => session.resolveLandingPath(fallback),
   resolveWorkspaceContextQuery: () => readWorkspaceContext(route.query as Record<string, unknown>),
   router,
-  searchFilters: () => searchFilters.value,
-  setActiveFilterKey: (key) => {
-    activeFilterKey.value = key;
-  },
 });
 function recordVersionPolicy() {
   const raw = v2ContractStore.value?.snapshot.runtimeContract.recordVersionPolicy;
@@ -1185,17 +1194,53 @@ const renderProfile = computed<'create' | 'edit' | 'readonly'>(() => {
     requestedProfile: requestedRenderProfile.value,
   });
 });
+/**
+ * This page's own responsibility, read from the effective contract: the declared
+ * `pageInfo.viewType`/`layoutType` plus the effective render profile. It is the
+ * single classification the compositions below consume, so a page never decides
+ * from a route name, a model name or a renderer preference what it is.
+ */
+const contractPageType = computed<StandardPageTypeDecision>(() => resolveStandardPageTypeFromStore(
+  v2ContractStore.value,
+  { renderProfile: renderProfile.value },
+));
+/**
+ * Whether this page's standard form is served by the official composition, and
+ * the collected result of its generic validation. Presentation scope only: the
+ * adopted sections are asked one question before a write, and their answer joins
+ * the same error store the rest of the save chain uses.
+ */
+const standardFormComposition = createStandardFormCompositionRuntime(() => contractPageType.value);
+/** Official detail composition adoption for this page; presentation scope only. */
+const standardDetailComposition = createStandardDetailCompositionRuntime(() => contractPageType.value);
+/**
+ * The page's record authority snapshot, taken from the contract's declared
+ * record action states.  Delete therefore honours both the record capability and
+ * the delete policy's declared state gate, so a business document the contract
+ * declares non-deletable is never treated as deletable here.  Denied operations
+ * keep the reason the contract published; an undeclared page stays denied.
+ */
+const recordActionStates = computed(() => resolveContractV2RecordActionStates(v2ContractStore.value));
+const recordActionDenialMessages = computed(() => describeRecordActionDenials(recordActionStates.value));
 const rights = computed(() => {
   const globalStatus = resolveContractV2GlobalStatus(v2ContractStore.value);
   const pageAuth = String(globalStatus?.pageAuth || '').trim().toLowerCase();
+  const denied = { read: false, write: false, create: false, unlink: false, duplicate: false };
   if (globalStatus?.pageVisible === false || pageAuth === 'none') {
-    return { read: false, write: false, create: false, unlink: false, duplicate: false };
+    return denied;
   }
   const authoritative = resolveContractV2EffectiveFormCapabilities(v2ContractStore.value);
-  if (authoritative) {
-    return authoritative;
+  if (!authoritative) {
+    return denied;
   }
-  return { read: false, write: false, create: false, unlink: false, duplicate: false };
+  const unlinkState = recordActionStates.value.find((state) => state.operation === 'unlink');
+  return {
+    read: authoritative.read,
+    write: authoritative.write,
+    create: authoritative.create,
+    unlink: unlinkState ? unlinkState.allowed : authoritative.unlink,
+    duplicate: authoritative.duplicate,
+  };
 });
 const canSave = computed(() => (
   !isConfigurationPreview.value && (renderProfile.value === 'edit'
@@ -1525,7 +1570,6 @@ const workflowTransitions = computed(() => buildWorkflowTransitions({
   profile: renderProfile.value,
   showHud: showHud.value,
 }));
-const searchFilters = computed(() => normalizeSearchFilters(resolveContractV2SearchContract(v2ContractStore.value).filters));
 const nativeStructureAuthority = computed(() => resolveNativeStructureAuthority(v2ContractStore.value));
 // Record-list queries stay on the record list, and action placeholders close
 // only when their actions provably have another carrier (the native tree or
@@ -1544,16 +1588,9 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
   workflowTransitionActionKeys: workflowTransitions.value.map((item) => item.action?.key),
   bodyActionKeys: bodyActions.value.map((action) => action.key),
 }));
-const suppressFormActionBlocks = computed(() => actionPlaceholderGate.value.suppressSearchFilters);
-const showSearchFilters = computed(() => {
-  if (suppressFormActionBlocks.value) return false;
-  if (!v2ContractStore.value) return true;
-  if (renderProfile.value !== 'create') return true;
-  return true;
-});
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
-  one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
+  loadOne2manyCreateDefaults, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
   nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,
@@ -1564,6 +1601,7 @@ const {
   ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecord, canOpenRelationRecordForm, openRelationRecord, openRelationRecordForm,
   quickCreateRelation,
 } = useRecordRelationships({
+  captureRelationRequest, relationRuntimeGeneration,
   ApiError, actionId, clearedDynamicRelationFields,
   closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contract,
   contractFieldLabel: (...args: [string]) => contractFieldLabel(...args), createContractFormRecord, deniedRelationModels,
@@ -1625,7 +1663,7 @@ const {
   activeChatterMode, activityAssigneeId, activityDeadline,
   activityNote, activitySummary, activityUpdatingIds,
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
-  applyWorkflowAvailability, attachmentError, attachmentUploading, attachmentDeletingIds,
+  attachmentError, attachmentUploading, attachmentDeletingIds,
   messageDeletingIds,
   buildContractFormActions, busy, busyKind,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
@@ -1647,7 +1685,7 @@ const {
   many2oneValue, markFieldChanged, model,
   nativeFormDesignFieldKeys, nativeFormDesignFieldLabels, nativeLayoutVisibilityRevision,
   navigateActionResponseResult, normalizeActionKind, normalizeActionSafety,
-  normalizeRequiredParams, normalizeWorkflowActionRows, normalizeWorkflowEvidenceGateRows,
+  normalizeRequiredParams, normalizeWorkflowEvidenceGateRows,
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyEffectiveColumn,
@@ -1672,7 +1710,7 @@ const {
   session, setBooleanField: (...args: Parameters<typeof setBooleanField>) => setBooleanField(...args), setMany2oneField: (...args: Parameters<typeof setMany2oneField>) => setMany2oneField(...args),
   setOne2manyRowField, createContractFormRecord, setRelationIds: (...args: Parameters<typeof setRelationIds>) => setRelationIds(...args), setRelationKeyword,
   setRelationMultiField: (...args: Parameters<typeof setRelationMultiField>) => setRelationMultiField(...args), setSelectionField: (...args: Parameters<typeof setSelectionField>) => setSelectionField(...args), setTechnicalCompanionTextField: (...args: Parameters<typeof setTechnicalCompanionTextField>) => setTechnicalCompanionTextField(...args), setTextField: (...args: Parameters<typeof setTextField>) => setTextField(...args),
-  shouldShowWorkflowAction, showHud, showOne2manyErrors,
+  showHud, showOne2manyErrors,
   toDateInputValue, toDatetimeInputValue, toPositiveInt,
   updateNativeActivity: confirmAndUpdateNativeActivity, useRecordCollaborationPresentation, useRecordContractSemantics,
   useRecordFormFieldSchemas, useRecordFormLayout, v2ContractStore,
@@ -1783,6 +1821,7 @@ const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,
 } = useRecordPageLifecycle({
+  clearRelationRuntime, captureRelationRequest,
   resetPendingInlineRelationCreates,
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
   ErrorCodes, actionId, advancedExpanded,
@@ -1868,6 +1907,8 @@ const {
   selectedFormSettingsFieldRow, session, setInlineFieldPolicy,
   showOne2manyErrors, status, submissionFeedback,
   uploadPendingNativeAttachments, useFormPageLifecycleRuntime, v2ContractStore,
+  contractPageType: () => contractPageType.value,
+  validateAdoptedFormSections: () => standardFormComposition.validateAdoptedFields(),
   validateBeforeSaveRecord, validationErrors, validationFieldErrors,
   writeContractFormRecord,
 });
@@ -1875,21 +1916,16 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
   consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
     actionLabel: '离开页面', message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？' }) ?? false });
+// Route/actor/context ownership changes invalidate candidates, selected labels,
+// child hydration and dialog work before any queued response can publish.
+watch(() => [formRouteIdentity(), session.user?.id, session.roleSurface?.role_code,
+  JSON.stringify(session.recordContext), isComponentActive.value], invalidateRelationRequests, { flush: 'sync' });
 watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
-async function returnToPreviousPage() {
-  await unsavedFormGuard.navigateAfterConfirm(async () => {
-    await executeRecordFormReturn({
-      query: route.query as Record<string, unknown>,
-      relationModel: model.value,
-      embedded: window.parent !== window,
-      postCancel: (message) => window.parent.postMessage(message, window.location.origin),
-      navigateBack: () => router.back(),
-      hasInAppHistoryEntry: () => hasInAppReturnHistory(router.options.history?.state),
-      fallbackRoute: () => resolveRecordFormReturnFallbackRoute(currentRouteAuthority.value?.route),
-      navigateFallback: async (target) => { await router.replace(target as never); },
-    });
-  });
-}
+const returnToPreviousPage = createRecordFormReturnHandler({
+  route, router, model: () => model.value,
+  authorityRoute: () => currentRouteAuthority.value?.route,
+  navigateAfterConfirm: unsavedFormGuard.navigateAfterConfirm,
+});
 useFormAuxiliaryWatchersRuntime({
   autosaveSource: () => [
     intakeAutosaveKey.value,

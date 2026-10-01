@@ -16,7 +16,7 @@
  *   {ok:false, error} 重建并交给 presentation Model 投影为错误态，
  *   消费方不得白屏。
  */
-import { intentRequest } from './intents';
+import { resolveReadonlyBlockRequest, type ReadonlyBlockRequest } from '../app/readonlyBlockRequest';
 
 export const CHART_FETCH_INTENT = 'project.dashboard.chart.fetch';
 export const CHART_SCHEMA_VERSION = 'sc.visualization.chart.v1';
@@ -75,15 +75,16 @@ export type ChartDatasetIntentData = ChartDatasetData & {
  * 传输层异常（网络/协议）照常抛出；业务降级以原始结构化数据透传，
  * 由 presentation Model 投影。
  */
-export async function fetchChartDataset(params: {
-  chartKey: string;
-  projectId: number;
-}): Promise<ChartDatasetIntentData> {
+export function resolveChartBlockRequest(declaration: unknown) {
+  return resolveReadonlyBlockRequest(declaration, CHART_FETCH_INTENT, { chart_key: { kind: 'string', required: true }, project_id: { kind: 'id', required: true } });
+}
+
+export async function fetchChartDataset(request: ReadonlyBlockRequest): Promise<ChartDatasetIntentData> {
+  const resolved = resolveChartBlockRequest({ fetch_intent: request?.intent, fetch_params: request?.params });
+  if (resolved.status !== 'ready') throw new Error('Invalid readonly block request');
+  const { intentRequest } = await import('./intents');
   return intentRequest<ChartDatasetIntentData>({
     intent: CHART_FETCH_INTENT,
-    params: {
-      chart_key: params.chartKey,
-      project_id: params.projectId,
-    },
+    params: resolved.request.params,
   });
 }

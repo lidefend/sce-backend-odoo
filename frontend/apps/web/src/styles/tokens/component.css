@@ -15,6 +15,23 @@
   --sc-component-login-layer-base: var(--sc-base-z-index-base);
   --sc-component-login-layer-content: var(--sc-base-z-index-dropdown);
   --sc-component-login-layer-modal: var(--sc-base-z-index-modal);
+  --sc-component-overlay-local-action-z-index: 1;
   --sc-component-overlay-dropdown-z-index: var(--sc-base-z-index-dropdown);
   --sc-component-sticky-header-z-index: var(--sc-base-z-index-sticky);
+
+  /* Legacy dimensions: retire after callers use the named spacing/component roles. */
+  --sc-space-1: var(--sc-space-2xs);
+  --sc-space-2: var(--sc-space-xs);
+  --sc-space-3: var(--sc-space-sm);
+  --sc-space-4: var(--sc-space-md);
+  --sc-space-5: var(--sc-space-lg);
+  --sc-space-6: var(--sc-space-xl);
+  --sc-radius-sm: var(--sc-base-radius-sm);
+  --sc-radius-md: var(--sc-base-radius-md);
+  --sc-app-radius-md: var(--sc-base-radius-md);
+  --sc-motion-fast: var(--sc-base-motion-fast);
+  /* Legacy stacking aliases retire with the last overlay/content consumer. */
+  --sc-z-content: var(--sc-base-z-index-base);
+  --sc-z-content-raised: var(--sc-component-overlay-local-action-z-index);
+  --sc-z-overlay: var(--sc-base-z-index-modal);
 }

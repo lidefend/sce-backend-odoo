@@ -23,19 +23,20 @@
 }
 
 .collection-group-header__identity h3 {
+  font: var(--sc-font-mark-medium);
   min-width: 0;
   margin: 0;
   color: var(--sc-app-text-primary);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.4;
+
+
+
   overflow-wrap: anywhere;
 }
 
 .collection-group-header__identity span {
+  font: var(--sc-font-body-small);
   flex: 0 0 auto;
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
 }
 
 @media (max-width: 760px) {

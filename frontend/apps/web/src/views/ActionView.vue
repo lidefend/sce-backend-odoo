@@ -2,7 +2,7 @@
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
-      <template #actions>
+      <template v-if="!standardListOperationsInCard" #actions>
         <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
@@ -290,7 +290,6 @@
       :status-fields="kanbanStatusFields"
       :field-labels="kanbanFieldLabels"
       :field-selections="kanbanFieldSelections"
-      :field-tone-by-value="kanbanFieldToneByValue"
       :title-field="kanbanTitleField"
       :subtitle="vm.page.subtitle"
       :status-label="vm.page.statusLabel"
@@ -340,6 +339,9 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="customSearchCapabilities.favoriteSaveEnabled"
+          :favorite-save-visible="customSearchCapabilities.favoriteSaveVisible"
+          :favorite-shared-enabled="customSearchCapabilities.favoriteSharedEnabled"
+          :favorite-disabled-reason="customSearchCapabilities.favoriteDisabledReason"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -363,7 +365,9 @@
           @clear-group="clearGroupBy"
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
-          @save-favorite="handleSaveFavorite"
+          :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
+          :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
       </template>
@@ -406,6 +410,7 @@
       :selection-actions="selectionActions"
       :batch-message="batchMessage"
       :list-profile="listProfile"
+      :contract-page-type="contractPageType"
       :ui-labels="toolbarUiLabels"
       :show-plain-search="!showTopActionToolbar"
       :has-active-conditions="toolbarActiveConditionCount > 0"
@@ -448,6 +453,11 @@
       @column-widths-change="handleListColumnWidthsChange"
       @column-preferences-reset="handleListColumnPreferencesReset"
     >
+      <template #leading>
+        <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
+        <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
+        <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
+      </template>
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
@@ -484,6 +494,9 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="customSearchCapabilities.favoriteSaveEnabled"
+          :favorite-save-visible="customSearchCapabilities.favoriteSaveVisible"
+          :favorite-shared-enabled="customSearchCapabilities.favoriteSharedEnabled"
+          :favorite-disabled-reason="customSearchCapabilities.favoriteDisabledReason"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -509,7 +522,9 @@
           @custom-filter="applyCustomFilter"
           @clear-custom-filter="clearCustomFilter"
           @clear-all="clearAllListConditions"
-          @save-favorite="handleSaveFavorite"
+          :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
+          :favorite-context-key="String(actionId)"
           @create="openCreateRecord"
         />
       </template>
@@ -566,6 +581,9 @@
           :custom-group-label="customSearchCapabilities.groupLabel"
           :custom-group-fields="customGroupByChips"
           :favorite-save-enabled="false"
+          :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
+          :favorite-context-key="String(actionId)"
           :favorite-save-label="customSearchCapabilities.favoriteLabel"
           :active-custom-filter-label="activeCustomFilterLabel"
           :active-group-label="activeGroupByDisplayLabel || activeGroupByLabel"
@@ -649,6 +667,9 @@
           :custom-group-enabled="false"
           :custom-group-fields="[]"
           :favorite-save-enabled="false"
+          :submit-favorite="handleSaveFavorite"
+          :delete-favorite="handleDeleteFavorite"
+          :favorite-context-key="String(actionId)"
           :active-condition-count="0"
           :ui-labels="toolbarUiLabels"
           @switch-view="switchViewMode"
@@ -777,6 +798,7 @@ import { ErrorCodes } from '../app/error_codes';
 import { evaluateCapabilityPolicy } from '../app/capabilityPolicy';
 import { useStatus } from '../composables/useStatus';
 import { parseContractContextRaw, resolveContractAccessPolicy, resolveContractReadRight, resolveContractViewMode } from '../app/contractActionRuntime';
+import { resolveStandardPageTypeFromStore, type StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { detectObjectMethodFromActionKey, normalizeActionKind, toPositiveInt } from '../app/contractRuntime';
 import { findActionMeta, findMenuNode } from '../app/menu';
 import { getSceneByKey, type Scene, type SceneListProfile } from '../app/resolvers/sceneRegistry';
@@ -786,6 +808,7 @@ import { executeProjectionRefresh } from '../app/projectionRefreshRuntime';
 import { executeSceneMutation } from '../app/sceneMutationRuntime';
 import { useActionViewActionRuntime } from '../app/action_runtime/useActionViewActionRuntime';
 import { useActionViewSelectionRuntime } from '../app/action_runtime/useActionViewSelectionRuntime';
+import { useActionViewSelectionActionRuntime, type ActionBatchPolicy } from '../app/action_runtime/useActionViewSelectionActionRuntime';
 import { useActionViewTriggerRuntime } from '../app/action_runtime/useActionViewTriggerRuntime';
 import { useActionViewGroupedRowsRuntime } from '../app/action_runtime/useActionViewGroupedRowsRuntime';
 import { useActionViewRoutePresetRuntime } from '../app/action_runtime/useActionViewRoutePresetRuntime';
@@ -843,11 +866,10 @@ import { useActionViewLoadSuccessRuntime } from '../app/action_runtime/useAction
 import { useActionViewLoadSuccessPhaseRuntime } from '../app/action_runtime/useActionViewLoadSuccessPhaseRuntime';
 import { useActionViewLoadFacadeRuntime } from '../app/action_runtime/useActionViewLoadFacadeRuntime';
 import { useActionViewActionPresentationRuntime } from '../app/action_runtime/useActionViewActionPresentationRuntime';
+import { settleSavedSearchSubmission, settleSavedSearchDeletion } from '../app/runtime/savedSearchSubmission';
 import {
-  batchUpdateActionViewRecords,
   listActionViewRecordsRaw,
   saveActionViewSearchFavorite,
-  unlinkActionViewRecord,
   writeActionViewRecord,
 } from '../app/runtime/actionViewDataRuntime';
 import {
@@ -926,19 +948,6 @@ import {
   resolveContractActionSelectionBlockMessage,
   shouldNavigateContractAction,
 } from '../app/runtime/actionViewContractActionRuntime';
-import {
-  buildBatchUpdateRequest,
-  resolveBatchActionFailureMessage,
-  resolveBatchDeleteFailureMessage,
-  resolveBatchActionGuardMessage,
-  resolveBatchActionResultMessage,
-} from '../app/runtime/actionViewBatchRuntime';
-import {
-  resolveBatchActionGuardDecision,
-  resolveBatchDeleteExecutionSeed,
-  resolveBatchStandardExecutionSeed,
-} from '../app/runtime/actionViewBatchActionFlowRuntime';
-import { executeActionViewSelectionExport, resolveSelectionActions } from '../app/runtime/actionViewSelectionExportRuntime';
 import { applyActionViewLoadResetState } from '../app/runtime/actionViewLoadResetRuntime';
 import {
   resolveContractFlagApplyState,
@@ -1291,7 +1300,6 @@ const hasLedgerOverviewStrip = computed(() => String(scene.value?.layout?.kind |
 const listProfile = computed<SceneListProfile | null>(() => {
   return extractListProfile(actionContract.value);
 });
-type ActionBatchPolicy = NonNullable<SceneListProfile['batch_policy']>;
 const batchPolicy = computed<ActionBatchPolicy>(() => {
   const profilePolicy = listProfile.value?.batch_policy;
   if (profilePolicy && Array.isArray(profilePolicy.available_actions) && profilePolicy.available_actions.length > 0) {
@@ -1306,6 +1314,13 @@ const allowedBatchActions = computed(() =>
     ? batchPolicy.value.available_actions.map((item) => String(item || '').trim()).filter(Boolean)
     : [],
 );
+/**
+ * This page's own responsibility, read from the effective contract that the
+ * load preflight already resolved. It is the single classification the list
+ * surface publishes, so the surface never decides from a route name, a model
+ * name or a renderer preference what it is.
+ */
+const contractPageType = computed<StandardPageTypeDecision>(() => resolveStandardPageTypeFromStore(actionContract.value));
 const listColumnOptions = computed(() => resolveListColumnOptions(actionContract.value, listProfile.value));
 const listColumnVisibility = ref<Record<string, boolean>>({});
 const listColumnOrder = ref<string[]>([]);
@@ -1467,6 +1482,7 @@ const canCreateRecord = computed(() => {
   if (status.value === 'loading') return false;
   return resolveCreateRight(actionContract.value);
 });
+const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');
 const canRenderActionSurfaceToolbar = computed(() => isKanbanContent.value || vm.value.content.kind === 'list');
 const showViewSwitch = computed(() =>
@@ -1739,12 +1755,6 @@ const kanbanFieldSelections = computed<Record<string, Array<{ value: string; lab
     return acc;
   }, {}),
 );
-const kanbanFieldToneByValue = computed<Record<string, Record<string, string>>>(() =>
-  listColumnOptions.value.reduce<Record<string, Record<string, string>>>((acc, column) => {
-    if (column.toneByValue && Object.keys(column.toneByValue).length) acc[column.name] = column.toneByValue;
-    return acc;
-  }, {}),
-);
 const sortLabel = computed(() => sortValue.value || 'id asc');
 const {
   subtitle,
@@ -1945,140 +1955,6 @@ const {
   resolveContractActionPresentation,
   pageText,
 });
-
-const selectionActions = computed(() => {
-  return resolveSelectionActions(
-    allowedBatchActions.value, String(batchPolicy.value.delete_mode || 'none'), activeField.value, toolbarUiLabel,
-  );
-});
-function handleSelectionAction(key: string) {
-  if (key.startsWith('batch:')) {
-    const action = key.slice('batch:'.length);
-    if (action === 'export') {
-      void executeActionViewSelectionExport({
-        model: String(resolvedModelRef.value || model.value || '').trim(),
-        ids: [...selectedIds.value],
-        columns: columns.value,
-        columnOptions: listColumnOptions.value,
-        visibility: listColumnVisibility.value,
-        columnLabels: contractColumnLabels.value,
-        context: resolveEffectiveRequestContext(),
-        setBusy: (busy) => { batchBusy.value = busy; },
-        onSuccess: (count) => { clearSelection(); batchMessage.value = toolbarUiLabel('batch_msg_export_done', `已导出 ${count} 条记录`); },
-        onFailure: () => { batchMessage.value = toolbarUiLabel('batch_msg_export_failed', '导出失败，请稍后重试'); },
-      });
-      return;
-    }
-    if (action === 'archive' || action === 'activate' || action === 'delete') {
-      void runBatchPolicyAction(action);
-    }
-    return;
-  }
-  const target = contractActionButtons.value.find((action) => action.key === key);
-  if (!target || !target.enabled) return;
-  void runContractAction(target as ContractActionButton);
-}
-async function runBatchPolicyAction(action: 'archive' | 'activate' | 'delete') {
-  const targetModel = String(resolvedModelRef.value || model.value || '').trim();
-  const selected = [...selectedIds.value];
-  if (!allowedBatchActions.value.includes(action)) {
-    batchMessage.value = toolbarUiLabel('batch_msg_action_not_allowed', '当前场景不支持该批量操作');
-    return;
-  }
-  const guard = resolveBatchActionGuardDecision({
-    targetModel,
-    selectedCount: selected.length,
-    action,
-    hasActiveField: Boolean(activeField.value),
-    deleteMode: String(batchPolicy.value.delete_mode || 'none'),
-  });
-  if (!guard.ok) {
-    batchMessage.value = resolveBatchActionGuardMessage({
-      reason: guard.reason as 'missing_target_model' | 'missing_selection' | 'active_field_required' | 'delete_mode_unavailable',
-      text: toolbarUiLabel,
-    });
-    return;
-  }
-  if (action === 'delete') {
-    if (!await batchConfirmationRef.value?.confirm({ actionLabel: '批量删除', message: toolbarUiLabel('batch_confirm_delete', `确认删除选中的 ${selected.length} 条记录？`) })) {
-      return;
-    }
-    const seed = resolveBatchDeleteExecutionSeed({
-      selectedIds: selected,
-      buildIfMatchMap,
-      buildIdempotencyKey,
-    });
-    batchBusy.value = true;
-    try {
-      await unlinkActionViewRecord({
-        model: targetModel,
-        ids: selected,
-        context: resolveEffectiveRequestContext(),
-        idempotencyKey: seed.dryRunIdempotencyKey,
-        dryRun: true,
-      });
-      const result = await unlinkActionViewRecord({
-        model: targetModel,
-        ids: selected,
-        context: resolveEffectiveRequestContext(),
-        idempotencyKey: seed.idempotencyKey,
-      });
-      const resultMessage = resolveBatchActionResultMessage({
-        action,
-        idempotentReplay: result.idempotent_replay === true,
-        succeeded: Array.isArray(result.ids) ? result.ids.length : selected.length,
-        failed: 0,
-        text: toolbarUiLabel,
-      });
-      clearSelection();
-      await requestLoadPage();
-      batchMessage.value = resultMessage;
-    } catch (err) {
-      batchMessage.value = action === 'delete'
-        ? resolveBatchDeleteFailureMessage(err, toolbarUiLabel)
-        : resolveBatchActionFailureMessage({ action, text: toolbarUiLabel });
-    } finally {
-      batchBusy.value = false;
-    }
-    return;
-  }
-  const activeValue = action === 'activate'
-    ? batchPolicy.value.activate_value === true
-    : batchPolicy.value.archive_value === true;
-  const seed = resolveBatchStandardExecutionSeed({
-    action,
-    selectedIds: selected,
-    activeField: activeField.value,
-    activeValue,
-    buildIfMatchMap,
-    buildIdempotencyKey,
-  });
-  batchBusy.value = true;
-  try {
-    const result = await batchUpdateActionViewRecords(buildBatchUpdateRequest({
-      model: targetModel,
-      ids: selected,
-      action,
-      ifMatchMap: seed.ifMatchMap,
-      idempotencyKey: seed.idempotencyKey,
-      context: resolveEffectiveRequestContext(),
-    }) as Parameters<typeof batchUpdateActionViewRecords>[0]);
-    const resultMessage = resolveBatchActionResultMessage({
-      action,
-      idempotentReplay: result.idempotent_replay === true,
-      succeeded: Number(result.succeeded || 0),
-      failed: Number(result.failed || 0),
-      text: toolbarUiLabel,
-    });
-    clearSelection();
-    await requestLoadPage();
-    batchMessage.value = resultMessage;
-  } catch {
-    batchMessage.value = resolveBatchActionFailureMessage({ action, text: toolbarUiLabel });
-  } finally {
-    batchBusy.value = false;
-  }
-}
 
 const advancedRows = computed(() => {
   return records.value.slice(0, 20).map((row, idx) => {
@@ -2352,11 +2228,32 @@ function clearAllListConditions() {
   clearBusinessListQueryState({ composing: toolbarSearchComposing, searchDraft: toolbarSearchDraft, searchTerm, filterValue, contractFilterKey: activeContractFilterKey, showMoreContractFilters, savedFilterKey: activeSavedFilterKey, showMoreSavedFilters, customFilter: activeCustomFilter, groupByField: activeGroupByField, groupByLabel: activeGroupByDisplayLabel, listOffset, groupWindowOffset, clearSelection, syncRoute: () => syncRouteListState({ preset_filter: undefined }), reload: () => void requestLoadPage() });
 }
 
+async function handleDeleteFavorite(id: number) {
+  const chip = contractSavedFilterChips.value.find((row) => row?.deleteAction?.params.filter_id === id);
+  const action = chip?.deleteAction;
+  if (!action) return { deleted: false, message: '当前页面未允许删除此收藏，请刷新后重试。' };
+  const sourceActionId = actionId.value;
+  const sourceContract = actionContract.value;
+  return settleSavedSearchDeletion(async () => {
+    const result = await intentRequest<{ deleted: boolean; id: number }>({ intent: action.intent, params: action.params });
+    if (result.deleted !== true || result.id !== id) throw new Error('SAVED_SEARCH_DELETE_OUTCOME_MISMATCH');
+  }, async () => {
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    if (activeSavedFilterKey.value === chip.key) clearSavedFilter();
+    const refreshed = await loadActionContractStore(sourceActionId, { sceneKey: sceneKey.value || undefined, menuId: menuId.value || undefined });
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    actionContract.value = refreshed;
+    await requestLoadPage();
+  });
+}
+
 async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; isShared?: boolean }) {
   const targetModel = String(resolvedModelRef.value || model.value || '').trim();
   const name = String(payload.name || '').trim();
-  if (!targetModel || !name) return;
-  await saveActionViewSearchFavorite({
+  if (!targetModel || !name || !customSearchCapabilities.value.favoriteSaveEnabled) return { saved: false, message: '当前页面不允许保存收藏' };
+  const sourceActionId = actionId.value;
+  const sourceContract = actionContract.value;
+  return settleSavedSearchSubmission(() => saveActionViewSearchFavorite({
     model: targetModel,
     name,
     domain: resolveEffectiveFilterDomain(),
@@ -2364,13 +2261,17 @@ async function handleSaveFavorite(payload: { name: string; isDefault?: boolean; 
     order: sortValue.value,
     action_id: actionId.value,
     is_default: payload.isDefault === true,
-    is_shared: payload.isShared === true,
+    is_shared: payload.isShared === true && customSearchCapabilities.value.favoriteSharedEnabled,
+  }), async () => {
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    const refreshed = await loadActionContractStore(sourceActionId, {
+      sceneKey: sceneKey.value || undefined,
+      menuId: menuId.value || undefined,
+    });
+    if (actionId.value !== sourceActionId || actionContract.value !== sourceContract) return;
+    actionContract.value = refreshed;
+    await requestLoadPage();
   });
-  actionContract.value = await loadActionContractStore(actionId.value, {
-    sceneKey: sceneKey.value || undefined,
-    menuId: menuId.value || undefined,
-  });
-  await requestLoadPage();
 }
 
 const {
@@ -3033,10 +2934,26 @@ function onToolbarSearchCompositionStart(): void {
   toolbarSearchComposing.value = true;
 }
 
-function onToolbarSearchCompositionEnd(event: CompositionEvent): void {
+/**
+ * Resolves the committed composition text from a DOM `CompositionEvent` or a `{ e }`
+ * context wrapper. An unresolvable shape returns `null` so the draft is kept: a bad
+ * event must never clear text the user just committed.
+ */
+function toolbarCompositionCommittedValue(event: unknown): string | null {
+  if (typeof event === 'string') return event;
+  const record = (event ?? null) as { target?: unknown; e?: { target?: unknown } } | null;
+  for (const candidate of [record?.target, record?.e?.target]) {
+    if (candidate && typeof candidate === 'object' && typeof (candidate as HTMLInputElement).value === 'string') {
+      return (candidate as HTMLInputElement).value;
+    }
+  }
+  return null;
+}
+
+function onToolbarSearchCompositionEnd(event: unknown): void {
   toolbarSearchComposing.value = false;
-  const value = String((event.target as HTMLInputElement | null)?.value || '');
-  toolbarSearchDraft.value = value;
+  const value = toolbarCompositionCommittedValue(event);
+  if (value !== null) toolbarSearchDraft.value = value;
 }
 
 function submitToolbarSearch(): void {
@@ -3285,6 +3202,32 @@ const {
 });
 clearSelectionInvoker = selectionRuntimeClearSelection;
 
+const {
+  selectionActions,
+  handleSelectionAction,
+} = useActionViewSelectionActionRuntime({
+  allowedBatchActions,
+  batchPolicy,
+  activeField,
+  selectedIds,
+  batchBusy,
+  batchMessage,
+  batchConfirmationRef,
+  columns,
+  listColumnOptions,
+  listColumnVisibility,
+  contractColumnLabels,
+  contractActions: contractActionButtons,
+  text: toolbarUiLabel,
+  resolveTargetModel: () => resolvedModelRef.value || model.value || '',
+  resolveEffectiveRequestContext,
+  buildIfMatchMap,
+  buildIdempotencyKey,
+  clearSelection,
+  reload: () => requestLoadPage(),
+  runDeclaredAction: (action) => { void runContractAction(action); },
+});
+
 function findMenuNodeByLabel(nodes: Array<Record<string, unknown>>, label: string): Record<string, unknown> | null {
   const expected = String(label || '').trim();
   if (!expected || !Array.isArray(nodes)) return null;
@@ -3518,11 +3461,6 @@ function refreshForRecordContextChange(): void {
   gap: var(--sc-space-xs);
   width: 100%;
   box-sizing: border-box;
-}
-
-/* The routed page owns the gutter; its embedded list must not add it again. */
-.page .action-list-surface[data-product-page-mode='list'] {
-  padding-inline: 0;
 }
 
 @media (min-width: 761px) {

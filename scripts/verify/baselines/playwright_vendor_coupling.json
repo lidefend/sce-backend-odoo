@@ -1,0 +1,65 @@
+{
+  "metric": "playwright-vendor-coupling-v1",
+  "rules": {
+    "dom_api_playwright_pseudo": {
+      "files": {},
+      "mode": "zero",
+      "total": 0
+    },
+    "inline_geometry_assertion": {
+      "files": {
+        "frontend/apps/web/scripts/formal_form_representative_journey.mjs": 3,
+        "scripts/verify/frontend_all_list_visual_audit.mjs": 1,
+        "scripts/verify/frontend_density_baseline_audit.mjs": 10,
+        "scripts/verify/frontend_form_system_audit.mjs": 1,
+        "scripts/verify/frontend_full_product_audit.mjs": 1,
+        "scripts/verify/frontend_list_surface_structure_browser.mjs": 4,
+        "scripts/verify/frontend_product_design_system_audit.mjs": 1,
+        "scripts/verify/hierarchy_browser_layout_acceptance.mjs": 1,
+        "scripts/verify/list_search_group_usability_audit.js": 1,
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs": 7,
+        "scripts/verify/local_dev_project_profile_write_browser.mjs": 3
+      },
+      "mode": "decrease-only",
+      "total": 33
+    },
+    "transition_state_class": {
+      "files": {},
+      "mode": "zero",
+      "total": 0
+    },
+    "vendor_internal_selector": {
+      "files": {
+        "frontend/apps/web/scripts/formal_form_representative_journey.mjs": 4,
+        "frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs": 3,
+        "frontend/apps/web/scripts/standard_menu_config_browser.mjs": 2,
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs": 3,
+        "scripts/verify/form_relation_path_acceptance.js": 1,
+        "scripts/verify/frontend_density_baseline_audit.mjs": 7,
+        "scripts/verify/frontend_form_header_action_primitives_guard.py": 1,
+        "scripts/verify/frontend_form_system_audit.mjs": 1,
+        "scripts/verify/frontend_inline_state_guard.py": 2,
+        "scripts/verify/frontend_navigation_shell_guard.py": 1,
+        "scripts/verify/frontend_overlay_lifecycle_browser.mjs": 3,
+        "scripts/verify/frontend_rendering_detail_state_browser.mjs": 1,
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs": 31,
+        "scripts/verify/local_dev_payment_request_floorplan_readonly.mjs": 1,
+        "scripts/verify/local_dev_payment_request_floorplan_submit.mjs": 1,
+        "scripts/verify/local_dev_payment_request_native_parity_readonly.mjs": 1,
+        "scripts/verify/local_dev_personnel_authorization_browser.mjs": 2,
+        "scripts/verify/local_dev_project_create_contract_driver_probe.mjs": 1,
+        "scripts/verify/local_dev_project_profile_write_browser.mjs": 37,
+        "scripts/verify/test_frontend_form_header_action_primitives_guard.py": 1,
+        "scripts/verify/test_frontend_inline_state_guard.py": 2,
+        "scripts/verify/test_frontend_navigation_shell_guard.py": 1,
+        "scripts/verify/test_local_dev_candidate_frontend.py": 2
+      },
+      "mode": "decrease-only",
+      "total": 109
+    }
+  },
+  "scope": [
+    "frontend/apps/web/scripts",
+    "scripts/verify"
+  ]
+}

@@ -4,6 +4,7 @@ import json
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+_TENDER_PURCHASE_APPROVAL_TOKEN = object()
 _TENDER_GUARANTEE_AUTHORITY_TOKEN = object()
 _TENDER_AWARD_AUTHORITY_TOKEN = object()
 
@@ -556,7 +557,12 @@ class TenderBidLine(models.Model):
 class TenderDocPurchase(models.Model):
     _name = "tender.doc.purchase"
     _description = "投标文件购买申请"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["approved"]
+
+    company_id = fields.Many2one(related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text("驳回原因", readonly=True, copy=False)
 
     bid_id = fields.Many2one("tender.bid", string="投标", required=True, ondelete="cascade", tracking=True)
     project_id = fields.Many2one(related="bid_id.project_id", store=True, readonly=True)
@@ -671,6 +677,8 @@ class TenderDocPurchase(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(vals.get("state", self.env.context.get("default_state", "draft")) != "draft" for vals in vals_list):
+            raise UserError("状态必须通过提交和审批动作产生。")
         for vals in vals_list:
             partner_id = vals.get("receipt_partner_id")
             if partner_id:
@@ -682,6 +690,10 @@ class TenderDocPurchase(models.Model):
 
     def write(self, vals):
         vals = dict(vals or {})
+        if "state" in vals and self.env.context.get("sc_tender_purchase_approval_token") is not _TENDER_PURCHASE_APPROVAL_TOKEN:
+            raise UserError("状态必须通过提交和审批动作产生。")
+        if {"bid_id", "amount"}.intersection(vals) and any(record.state not in ("draft", "rejected") for record in self):
+            raise UserError("在审或已通过的申请不能修改投标来源或审批金额。")
         if "receipt_partner_id" in vals and vals.get("receipt_partner_id"):
             partner = self.env["res.partner"].browse(vals["receipt_partner_id"]).exists()
             for key, value in self._receipt_partner_snapshot_values(partner).items():
@@ -689,23 +701,43 @@ class TenderDocPurchase(models.Model):
                     vals[key] = value
         return super().write(vals)
 
+    def _write_approval_state(self, values):
+        return self.with_context(sc_tender_purchase_approval_token=_TENDER_PURCHASE_APPROVAL_TOKEN).write(values)
+
     def action_submit(self):
         for record in self:
-            if record.state != "draft":
-                raise UserError("只有草稿状态的投标报名费申请可以提交。")
-        self.write({"state": "submitted"})
+            if record.state not in ("draft", "submitted", "rejected"):
+                raise UserError("只有草稿、驳回或待重新提交的申请可以提交。")
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return self._processing_notification("已提交，建议继续完善资料")
 
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                reviews = record.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else "统一审批驳回（未填写原因）"
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "rejected", "reject_reason": reason})
+
     def action_approve(self):
-        self.write({"state": "approved"})
-        return True
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
 
     def action_reject(self):
-        self.write({"state": "rejected"})
-        return True
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._reject_submission_review(self)
 
     def action_reset_draft(self):
-        self.write({"state": "draft"})
+        if any(record.state != "rejected" for record in self):
+            raise UserError("只有已驳回申请可以重置草稿。")
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "draft"})
         return True
 
 
@@ -798,7 +830,11 @@ class TenderOpeningCompetitor(models.Model):
 class TenderGuarantee(models.Model):
     _name = "tender.guarantee"
     _description = "投标保证金"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["approved"]
+
+    reject_reason = fields.Text("驳回原因", readonly=True, copy=False)
 
     bid_id = fields.Many2one("tender.bid", string="投标", required=True, ondelete="restrict", tracking=True)
     legacy_fact_id = fields.Integer(related="bid_id.legacy_fact_id", string="历史投标事实ID", readonly=True)
@@ -817,6 +853,9 @@ class TenderGuarantee(models.Model):
     state = fields.Selection(
         [
             ("draft", "草稿"),
+            ("submitted", "待审批"),
+            ("approved", "已通过"),
+            ("rejected", "已驳回"),
             ("confirmed", "已确认"),
             ("cancel", "已取消"),
         ],
@@ -1063,8 +1102,8 @@ class TenderGuarantee(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("state") == "confirmed":
-                raise UserError(_("投标保证金不能直接创建为已确认，必须执行正式确认动作。"))
+            if vals.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                raise UserError(_("投标保证金必须从草稿提交审批，不能直接创建为后续状态。"))
             bid = self.env["tender.bid"].browse(vals.get("bid_id")).exists()
             if not bid or not bid.project_id or not bid.project_id.company_id or not bid.currency_id:
                 raise ValidationError(_("投标保证金必须关联公司与币种身份完整的有效投标。"))
@@ -1077,12 +1116,15 @@ class TenderGuarantee(models.Model):
 
     def write(self, vals):
         authoritative = self.env.context.get("sc_tender_guarantee_authority_token") is _TENDER_GUARANTEE_AUTHORITY_TOKEN
-        if not authoritative and (vals.get("state") == "confirmed" or "finance_identity_state" in vals):
+        if not authoritative and ("state" in vals or "finance_identity_state" in vals):
             raise UserError(_("保证金确认终态与财务身份只能由正式业务动作写入。"))
         if any(record.state == "confirmed" for record in self) and not authoritative:
             allowed = {"remark", "attachment_ids", "write_uid", "write_date"}
             if set(vals) - allowed:
                 raise UserError(_("已确认保证金事实只允许补充备注或附件。"))
+        reviewed_fields = {"bid_id", "project_id", "company_id", "partner_id", "currency_id", "type", "date", "amount", "receipt_bank_account_id", "bank_account_id", "treasury_ledger_id"}
+        if reviewed_fields.intersection(vals) and any(record.state not in ("draft", "rejected") for record in self) and not authoritative:
+            raise UserError(_("在审或已通过保证金不能修改审批内容与财务身份。"))
         if "bid_id" in vals:
             bid = self.env["tender.bid"].browse(vals.get("bid_id")).exists()
             if not bid or not bid.project_id or not bid.project_id.company_id or not bid.currency_id:
@@ -1122,31 +1164,58 @@ class TenderGuarantee(models.Model):
         self._write_finance_authority({"treasury_ledger_id": ledger.id})
         return ledger
 
-    def action_confirm(self):
+    def _check_submission_identity(self):
         for record in self:
-            if record.state != "draft":
-                raise UserError(_("只有草稿保证金可以确认。"))
             if not record.date or not record.amount or record.amount <= 0:
-                raise ValidationError(_("确认保证金前必须填写有效日期和正金额。"))
+                raise ValidationError(_("提交保证金前必须填写有效日期和正金额。"))
             if (
                 record.finance_identity_state != "normalized"
                 or record.company_id != record.project_id.company_id
                 or record.project_id != record.bid_id.project_id
                 or record.currency_id != record.bid_id.currency_id
             ):
-                raise ValidationError(_("保证金财务身份已与投标或项目失配，请重建草稿后再确认。"))
+                raise ValidationError(_("保证金财务身份已与投标或项目失配，请重建草稿后再提交。"))
+
+    def action_submit(self):
+        if any(record.state not in ("draft", "submitted", "rejected") for record in self):
+            raise UserError(_("只有草稿、驳回或待重新提交的保证金可以提交。"))
+        self._check_submission_identity()
+        self.with_context(skip_validation_check=True)._write_finance_authority({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_finance_authority({"state": "approved", "reject_reason": False})
+        return True
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._check_submission_identity()
+                record._write_finance_authority({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                reviews = record.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else "统一审批驳回（未填写原因）"
+                record.with_context(skip_validation_check=True)._write_finance_authority({"state": "rejected", "reject_reason": reason})
+
+    def action_confirm(self):
+        for record in self:
+            self.env["sc.approval.policy"]._assert_submission_approved(record, ("approved",))
+            record._check_submission_identity()
             record._write_finance_authority({"state": "confirmed"})
             record._ensure_treasury_ledger()
         return True
 
     def action_cancel(self):
-        if any(record.state != "draft" for record in self):
-            raise UserError(_("只有草稿保证金可以取消。"))
-        self.write({"state": "cancel"})
+        if any(record.state not in ("draft", "rejected") for record in self):
+            raise UserError(_("只有草稿或驳回保证金可以取消。"))
+        self.with_context(skip_validation_check=True)._write_finance_authority({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
-        if any(record.state == "confirmed" for record in self):
-            raise UserError(_("已确认保证金不可重置；错误事实必须走冲销流程。"))
-        self.write({"state": "draft"})
+        if any(record.state not in ("cancel", "rejected") for record in self):
+            raise UserError(_("只有取消或驳回保证金可以重置；已确认事实必须走冲销流程。"))
+        self.restart_validation()
+        self.with_context(skip_validation_check=True)._write_finance_authority({"state": "draft"})
         return True

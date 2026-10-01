@@ -153,6 +153,17 @@ values.project_id = 10;
 assert.notEqual(dependencyKey(), initialDependencyKey);
 
 const supportedDomain = { type: 'many2one', domain: "[('project_id', '=', parent.project_id)]" } as never;
+for (const domain of [[], [['project_id', '=', 9]], ['|', ['state', '=', 'confirmed'], ['id', 'in', [2, 3]]]]) {
+  const descriptor = { type: 'many2one', domain } as never;
+  assert.deepEqual(analyzeDynamicRelationDomain(descriptor), { supported: true, dependencies: [] });
+  assert.deepEqual(dynamicRelationDomainFromDescriptor({
+    descriptor,
+    resolveDependencyValue: () => { throw new Error('structured domains have no expression dependencies'); },
+    normalizeDependencyValue: (_field, value) => value,
+    currentFieldValue: () => false,
+  }), domain, 'structured relation domains must retain empty, conjunctive and prefix forms');
+}
+console.log('[professional_detail_collection] structured relation domains PASS count=6');
 assert.deepEqual(analyzeDynamicRelationDomain(supportedDomain), {
   supported: true,
   dependencies: ['parent.project_id'],

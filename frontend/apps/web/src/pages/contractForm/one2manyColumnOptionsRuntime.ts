@@ -1,8 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { one2manyRelationDependencyKey } from '../../components/template/one2manyRelationQuery';
 import type { RelationOption } from './types';
 
-type One2manyColumnOptionsDependencies = Record<string, any>;
+export type One2manyColumnOptionsDependencies = {
+  dynamicDomainDependencyFields: typeof import('./relationDescriptor').dynamicDomainDependencyFields;
+  dynamicRelationDomainFromDescriptor: typeof import('./relationDescriptor').dynamicRelationDomainFromDescriptor;
+  relationDomainFromDescriptor: typeof import('./relationDescriptor').relationDomainFromDescriptor;
+  relationEntry: typeof import('./relationDescriptor').relationEntry;
+  relationOptionsFromRecords: typeof import('./relationDescriptor').relationOptionsFromRecords;
+  relationOrder: typeof import('./relationDescriptor').relationOrder;
+  relationReadFields: typeof import('./relationDescriptor').relationReadFields;
+  relationModelFromDescriptor: typeof import('./relationDescriptor').relationModel;
+  fieldType: typeof import('./fieldUtils').fieldType;
+  normalizeRelationIds: typeof import('./fieldUtils').normalizeRelationIds;
+  formData: Record<string, unknown>;
+  route: Pick<import('vue-router').RouteLocationNormalizedLoaded, 'query'>;
+  pickContractNavQuery: typeof import('../../app/navigationContext').pickContractNavQuery;
+  listContractFormRecords: typeof import('../../app/runtime/contractFormDataRuntime').listContractFormRecords;
+  fetchRelationOptionsFromRuntime: ReturnType<typeof import('./useRelationRuntime').useRelationRuntime>['fetchRelationOptions'];
+  one2manyFieldRows: ReturnType<typeof import('./useOne2manyRuntime').useOne2manyRuntime>['fieldRows'];
+  ensureRelationFieldDescriptors: (fieldName: string) => Promise<void>;
+  one2manyRelationFieldDescriptor: (fieldName: string, columnName: string) => import('@sc/schema').FieldDescriptor | undefined;
+};
 
 export function createOne2manyColumnOptionsRuntime(
   dependencies: One2manyColumnOptionsDependencies,

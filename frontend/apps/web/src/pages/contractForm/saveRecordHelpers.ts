@@ -19,17 +19,61 @@ export type SaveRecordValidationResult = {
   submissionFeedback?: SubmissionFeedback;
 };
 
+/**
+ * Collapses concurrent calls onto a single in-flight promise.
+ *
+ * `scopeKey` is the identity of the business target the in-flight call belongs
+ * to (record, or unsaved draft). A call whose key differs from the in-flight
+ * one starts on its own: joining it would hand this caller another surface's
+ * result, which is exactly the "old operation took over the new context"
+ * failure. Without a key, the callers that are already scoped by construction
+ * keep the original collapse-everything behaviour.
+ */
 export function createSingleFlightSave<TArgs extends unknown[], T>(
   execute: (...args: TArgs) => Promise<T>,
+  scopeKey?: () => string,
 ): (...args: TArgs) => Promise<T> {
   let active: Promise<T> | null = null;
+  let activeScope: string | null = null;
   return (...args: TArgs) => {
-    if (active) return active;
-    active = execute(...args).finally(() => {
-      active = null;
+    const scope = scopeKey ? scopeKey() : '';
+    if (active && activeScope === scope) return active;
+    const started = execute(...args);
+    const tracked = started.finally(() => {
+      // Only the newest call may clear the slot: an older, superseded call that
+      // finishes later must not free a promise a newer call now owns.
+      if (active === tracked) {
+        active = null;
+        activeScope = null;
+      }
     });
-    return active;
+    active = tracked;
+    activeScope = scope;
+    return tracked;
   };
+}
+
+/**
+ * Canonical serialization of the values a save would submit.
+ *
+ * The save chain is only allowed to write values the official engine looked at.
+ * Comparing this string before and after an async validation proves the draft
+ * did not change underneath it: an edit that lands mid-validation changes the
+ * string and the save is abandoned instead of writing a value no rule saw. Key
+ * order is normalized so two reads of an unchanged draft compare equal.
+ */
+export function canonicalizeSubmissionValues(values: Record<string, unknown>): string {
+  const normalize = (input: unknown): unknown => {
+    if (input === null || input === undefined) return null;
+    if (typeof input !== 'object') return input;
+    if (Array.isArray(input)) return input.map(normalize);
+    const source = input as Record<string, unknown>;
+    return Object.keys(source).sort().reduce<Record<string, unknown>>((acc, key) => {
+      acc[key] = normalize(source[key]);
+      return acc;
+    }, {});
+  };
+  return JSON.stringify(normalize(values));
 }
 
 export async function validateBeforeSaveRecord(params: {
@@ -42,6 +86,13 @@ export async function validateBeforeSaveRecord(params: {
   normalizeFieldValue: (name: string, value: unknown) => unknown;
   one2manyFieldErrors: Record<string, BusinessFieldError>;
   one2manyIssues: string[];
+  /**
+   * Required positions whose generic rule is already executed by the official
+   * form engine on an adopted surface. They are skipped here so one save is
+   * never decided twice by two generic authorities; domain and server
+   * constraints are untouched.
+   */
+  excludedRequiredFieldNames?: readonly string[];
   /** Business model the saved values belong to; part of every error target. */
   model: string;
   recordId: number | null;
@@ -88,6 +139,7 @@ export async function validateBeforeSaveRecord(params: {
   const editableMap = params.collectWritableValues();
   {
     const requiredValidation = collectRequiredFieldValidation({
+      excludedFieldNames: params.excludedRequiredFieldNames,
       formData: params.formData,
       isWritableFieldVisible: params.isWritableFieldVisible,
       layoutNodes: params.layoutNodes,
@@ -127,6 +179,8 @@ export function collectRequiredFieldIssues(params: {
 }
 
 export function collectRequiredFieldValidation(params: {
+  /** Positions the official engine already decides; never re-decided here. */
+  excludedFieldNames?: readonly string[];
   formData: Record<string, unknown>;
   isWritableFieldVisible: (name: string) => boolean;
   layoutNodes: LayoutNode[];
@@ -138,8 +192,9 @@ export function collectRequiredFieldValidation(params: {
   values: Record<string, unknown>;
   submittedFieldsOnly?: boolean;
 }) {
+  const excluded = new Set(params.excludedFieldNames || []);
   const missing = params.layoutNodes
-    .filter((node) => node.kind === 'field' && !node.readonly && (
+    .filter((node) => node.kind === 'field' && !node.readonly && !excluded.has(node.name) && (
       params.submittedFieldsOnly
         ? Object.prototype.hasOwnProperty.call(params.values, node.name)
         : params.isWritableFieldVisible(node.name)
@@ -157,14 +212,29 @@ export function collectRequiredFieldValidation(params: {
       label: String(node.label || node.descriptor?.string || node.name).trim(),
     }))
     .filter((item) => Boolean(item.name && item.label));
-  if (!missing.length) return { messages: [], fieldErrors: {} };
+  return buildRequiredFieldErrorPayload(missing, { model: params.model, recordId: params.recordId });
+}
+
+/**
+ * Turn rejected business field codes into the one error shape the form uses.
+ *
+ * Shared so a field rejected by the precheck and a field rejected by the
+ * official form engine produce the same summary, the same per-field message and
+ * the same store key. A second producer must never mean a second message or a
+ * second authority over the same field.
+ */
+export function buildRequiredFieldErrorPayload(
+  missing: readonly { name: string; label: string }[],
+  scope: { model: string; recordId: number | null },
+) {
+  if (!missing.length) return { messages: [] as string[], fieldErrors: {} as Record<string, BusinessFieldError> };
   const unique = Array.from(new Map(missing.map((item) => [item.name, item])).values()).slice(0, 5);
   const message = `保存前请填写：${unique.map((item) => item.label).join('、')}`;
   const fieldErrors: Record<string, BusinessFieldError> = {};
   unique.forEach((item) => {
     const target = createBusinessErrorTarget({
-      model: params.model,
-      recordId: params.recordId,
+      model: scope.model,
+      recordId: scope.recordId,
       fieldCode: item.name,
       row: null,
     });

@@ -2,6 +2,33 @@ import unittest
 
 from scripts.verify.frontend_professional_base_field_guard import ROOT, validate
 
+# The search-keyword handler opens with the fail-closed guard today. These
+# fixtures re-wrap that exact opening without changing what it does, so the
+# assertion can be shown to bind to the statement rather than to the layout.
+HANDLER_OPEN = (
+    "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,"
+    "occurrenceKey?:string)=>{\n    if(!isFieldWritable(name,occurrenceKey))return;"
+)
+REWRAPPED_GUARDED = (
+    "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,"
+    "occurrenceKey?:string)=>\n  {\n"
+    "    // re-wrapped while keeping the same fail-closed opening\n"
+    "    if( !isFieldWritable( name, occurrenceKey ) ) return;"
+)
+REWRAPPED_UNGUARDED = (
+    "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,"
+    "occurrenceKey?:string)=>\n  {\n"
+    "    // re-wrapped and the fail-closed opening is gone\n"
+    "    const typedKeyword=resolveProfessionalMany2oneSearchInput(value);"
+)
+REWRAPPED_GUARD_MOVED = (
+    "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,"
+    "occurrenceKey?:string)=>\n  {\n"
+    "    // re-wrapped and the guard no longer opens the body\n"
+    "    const typedKeyword=resolveProfessionalMany2oneSearchInput(value);\n"
+    "    if(!isFieldWritable(name,occurrenceKey))return;"
+)
+
 
 class ProfessionalBaseFieldGuardTest(unittest.TestCase):
     def test_occurrence_authority_cannot_regress_to_field_name_only(self):
@@ -112,6 +139,34 @@ class ProfessionalBaseFieldGuardTest(unittest.TestCase):
             return value
 
         self.assertTrue(any("professional boolean field does not pass through" in failure for failure in validate(source)))
+
+    def test_rewrapped_handler_still_passes(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                self.assertIn(HANDLER_OPEN, value)
+                return value.replace(HANDLER_OPEN, REWRAPPED_GUARDED, 1)
+            return value
+
+        self.assertEqual(validate(source), [])
+
+    def test_rewrapped_handler_without_the_guard_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace(HANDLER_OPEN, REWRAPPED_UNGUARDED, 1)
+            return value
+
+        self.assertTrue(any("does not fail closed" in failure for failure in validate(source)))
+
+    def test_rewrapped_handler_that_does_not_open_with_the_guard_fails(self):
+        def source(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                return value.replace(HANDLER_OPEN, REWRAPPED_GUARD_MOVED, 1)
+            return value
+
+        self.assertTrue(any("does not fail closed" in failure for failure in validate(source)))
 
     def test_filename_companion_using_public_text_handler_fails(self):
         def source(path):

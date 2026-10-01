@@ -89,18 +89,20 @@ app_shell = require(
     'aria-controls="primary-sidebar"',
     ':aria-expanded="sidebarVisible"',
     '@close="closeMobileSidebar"',
-    "mobileViewport.value ? mobileSidebarOpen.value : !sidebarHidden.value",
+    "mobileViewport.value ? mobileSidebarOpen.value : true",
     "event.key !== 'Escape'",
     "sidebarToggleButton.value?.focus()",
 )
 require(
     "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue",
-    'v-if="visible"',
+    '<ScDrawer',
+    'v-if="mobile"',
+    ':open="visible"',
+    'appearance="navigation"',
+    'placement="left"',
+    'v-else-if="visible"',
     ':id="surfaceId"',
-    ":role=\"mobile ? 'dialog' : undefined\"",
-    ":aria-modal=\"mobile ? 'true' : undefined\"",
-    "useModalLifecycle",
-    '@keydown="onKeydown"',
+    "@close=\"emit('close')\"",
 )
 toggle_match = re.search(
     r"<ScButton\b(?=[^>]*\baria-controls=\"primary-sidebar\")"
@@ -112,6 +114,14 @@ if not toggle_match:
     raise SystemExit(
         "[frontend_delivery_hardening_guard] FAIL AppShell sidebar toggle must control "
         "primary-sidebar with the unified sidebarVisible state"
+    )
+# Desktop visibility and desktop width are two different official concepts: the
+# sidebar is always present (`t-layout__sider`) and only collapses to the compact
+# rail. Binding the drawer to the compact width would re-hide the aside.
+if re.search(r"const sidebarVisible = computed\(\(\) =>[^;]*sidebarCompact", app_shell):
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL AppShell sidebar visibility must not be "
+        "conflated with the desktop compact-width state"
     )
 client = require("frontend/apps/web/src/api/client.ts", "redirectForExpiredSession")
 require("frontend/apps/web/src/api/client.ts", "currentContextSignal()")
@@ -300,6 +310,24 @@ delivery_hardening_browser = require(
 if delivery_hardening_browser.index("performanceReport.scenarios.company_switch = stats(switchSamples);") > delivery_hardening_browser.index("[verify.frontend.delivery_hardening.performance_baseline] CAPTURED"):
     raise SystemExit("[frontend_delivery_hardening_guard] FAIL baseline capture must include company-switch samples")
 
+MODEL_SPECIFIC_SELECTOR_RE = re.compile(r"\.(?:project|contract|settlement|payment)[-_][\w-]+\s*\{")
+
+_base_source_cache: dict[str, str] = {}
+
+
+def _base_frontend_source(path: str) -> str:
+    """The base revision of a frontend path, or an empty string when absent."""
+    if path not in _base_source_cache:
+        result = subprocess.run(
+            ["git", "show", f"origin/main:{path}"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        _base_source_cache[path] = result.stdout if result.returncode == 0 else ""
+    return _base_source_cache[path]
+
+
 diff = subprocess.run(
     ["git", "diff", "--unified=0", "origin/main", "--", "frontend/apps/web/src"],
     cwd=ROOT,
@@ -308,6 +336,12 @@ diff = subprocess.run(
     text=True,
 ).stdout
 added_parts: list[str] = []
+# A re-organized rule prints a shared selector list as one removed and one
+# added line, so a selector that already exists on the base revision can be
+# reported as "added" without any new styling being introduced. The hardening
+# rule is about selectors that are new to the product, so novelty is decided
+# against the base revision rather than against the diff shape.
+new_model_selectors: list[str] = []
 current_path: str | None = None
 for line in diff.splitlines():
     if line.startswith("+++ b/"):
@@ -319,14 +353,28 @@ for line in diff.splitlines():
         if current_path and current_path.startswith("frontend/apps/web/src/styles/tokens/"):
             continue
         added_parts.append(line[1:])
+        if not current_path:
+            continue
+        matches = list(MODEL_SPECIFIC_SELECTOR_RE.finditer(line[1:]))
+        if not matches:
+            continue
+        base_source = _base_frontend_source(current_path)
+        for match in matches:
+            selector = match.group(0).rstrip().rstrip("{").rstrip()
+            if not re.search(re.escape(selector) + r"(?![\w-])", base_source):
+                new_model_selectors.append(f"{current_path}: {selector}")
 added = "\n".join(added_parts)
 for label, pattern in {
     "hard-coded color": r"#[0-9a-fA-F]{3,8}\b|rgba?\(",
     "page inline style": r"\sstyle=\"",
-    "model-specific CSS": r"\.(?:project|contract|settlement|payment)[-_][\w-]+\s*\{",
 }.items():
     if re.search(pattern, added):
         raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL new {label}")
+if new_model_selectors:
+    raise SystemExit(
+        "[frontend_delivery_hardening_guard] FAIL new model-specific CSS "
+        + ", ".join(sorted(set(new_model_selectors)))
+    )
 
 writers = []
 for path in SRC.rglob("*"):

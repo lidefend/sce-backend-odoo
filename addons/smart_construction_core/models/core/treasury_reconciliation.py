@@ -4,6 +4,9 @@ from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_is_zero
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScTreasuryReconciliation(models.Model):
     _name = "sc.treasury.reconciliation"
     _description = "资金对账"
@@ -116,6 +119,14 @@ class ScTreasuryReconciliation(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -126,11 +137,31 @@ class ScTreasuryReconciliation(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "currency_id", "source_kind", "date_document",
+            "document_no", "account_name", "bank_account_no", "confirmation_item_name",
+            "account_balance", "bank_balance", "system_difference", "daily_income",
+            "daily_expense", "confirmation_amount", "treasury_ledger_id", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state in ("confirmed", "reconciled") or (
+                    rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已确认或已对账的经济内容不可改写；请按正式流程重新办理。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"treasury_ledger_id", "note", "active", "write_uid", "write_date"}
             if set(vals) - allowed:
                 raise UserError(_("历史迁移资金对账单已确认，只允许补充资金台账关联和备注。"))
         return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -138,32 +169,44 @@ class ScTreasuryReconciliation(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的资金对账单可以确认。"))
             rec._check_reconcile_ready()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
-            else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+            if not policy._start_submission_review(rec):
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_reconcile(self):
         policy = self.env["sc.approval.policy"]
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的资金对账单可以完成对账。"))
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("资金对账尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             rec._check_reconcile_ready()
-            rec.state = "reconciled"
+            rec._write_document_state({"state": "reconciled"})
+
+    def _reconcile_readiness_errors(self):
+        self.ensure_one()
+        errors = []
+        if not self.project_id:
+            errors.append(("TREASURY_RECONCILIATION_MISSING_PROJECT", _("资金对账必须关联项目。")))
+        ledger = self.treasury_ledger_id
+        if not ledger:
+            errors.append(("TREASURY_RECONCILIATION_MISSING_LEDGER", _("请先关联资金台账后再完成对账。")))
+        else:
+            if ledger.state != "posted":
+                errors.append(("TREASURY_RECONCILIATION_LEDGER_NOT_POSTED", _("只能对已入账的资金台账完成对账。")))
+            if ledger.project_id != self.project_id:
+                errors.append(("TREASURY_RECONCILIATION_LEDGER_PROJECT_MISMATCH", _("资金台账项目与对账单项目不一致，不能完成对账。")))
+            if ledger.company_id != self.company_id:
+                errors.append(("TREASURY_RECONCILIATION_LEDGER_COMPANY_MISMATCH", _("资金台账公司与对账单公司不一致，不能完成对账。")))
+            if ledger.currency_id != self.currency_id:
+                errors.append(("TREASURY_RECONCILIATION_LEDGER_CURRENCY_MISMATCH", _("资金台账币种与对账单币种不一致，不能完成对账。")))
+        rounding = self.currency_id.rounding if self.currency_id else 0.01
+        if not float_is_zero(self.system_difference or 0.0, precision_rounding=rounding):
+            errors.append(("TREASURY_RECONCILIATION_DIFFERENCE_NOT_ZERO", _("银企差额未归零，不能完成资金对账。")))
+        return errors
 
     def _check_reconcile_ready(self):
-        self.ensure_one()
-        if not self.treasury_ledger_id:
-            raise UserError(_("请先关联资金台账后再完成对账。"))
-        if self.treasury_ledger_id.state != "posted":
-            raise UserError(_("只能对已入账的资金台账完成对账。"))
-        if self.treasury_ledger_id.project_id != self.project_id:
-            raise UserError(_("资金台账项目与对账单项目不一致，不能完成对账。"))
-        if not float_is_zero(self.system_difference, precision_rounding=self.currency_id.rounding):
-            raise UserError(_("银企差额未归零，不能完成资金对账。"))
+        errors = self._reconcile_readiness_errors()
+        if errors:
+            raise UserError(errors[0][1])
 
     def action_cancel(self):
         for rec in self:
@@ -171,18 +214,7 @@ class ScTreasuryReconciliation(models.Model):
                 raise UserError(_("历史迁移资金对账单不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的资金对账单可以取消。"))
-            rec.state = "cancel"
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("资金对账已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("资金对账已经在统一审批流程中，请等待审批完成。"))
+            rec._write_document_state({"state": "cancel"})
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -199,17 +231,17 @@ class ScTreasuryReconciliation(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec._check_reconcile_ready()
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write(
                     {"reject_reason": reason or rec._get_tier_reject_reason()}

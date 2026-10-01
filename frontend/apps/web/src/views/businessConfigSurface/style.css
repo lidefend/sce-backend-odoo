@@ -60,7 +60,6 @@ h1 {
 .status,
 .workbench-start,
 .scope-panel,
-.loading-state,
 .scan-panel {
   margin: 0;
 }
@@ -73,21 +72,10 @@ h1 {
   font-size: 13px;
 }
 
-.status small {
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
 .status.error {
   border: 1px solid var(--sc-app-danger-border);
   background: var(--sc-app-danger-bg);
   color: var(--sc-app-danger-text);
-}
-
-.status.ok {
-  border: 1px solid var(--sc-app-success-border);
-  background: var(--sc-app-success-bg);
-  color: var(--sc-app-success-text);
 }
 
 .workbench-start,
@@ -287,11 +275,6 @@ h1 {
   color: var(--sc-app-text-primary);
 }
 
-.loading-state {
-  padding: 18px;
-  color: var(--sc-app-text-secondary);
-}
-
 .scan-panel {
   display: grid;
   gap: 10px;
@@ -332,29 +315,8 @@ h1 {
 .page-type-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-bg);
-}
-
-.page-type-tabs button {
-  min-height: 28px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: transparent;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-}
-
-.page-type-tabs button.active {
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  box-shadow: 0 0 0 1px var(--sc-app-border);
+  gap: var(--sc-product-space-1);
+  min-width: 0;
 }
 
 .scan-toggle {
@@ -388,14 +350,6 @@ h1 {
   gap: 4px;
   border-top: 1px solid var(--sc-app-border);
   padding-top: 10px;
-}
-
-.workbench-status-empty {
-  border: 1px dashed var(--sc-app-border);
-  border-radius: 6px;
-  padding: 10px;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
 }
 
 .workbench-status-snapshot span,
@@ -862,6 +816,7 @@ h1 {
 }
 
 .config-editor-panel {
+  display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   column-gap: var(--sc-product-workspace-gap);
   row-gap: var(--sc-product-panel-gap);
@@ -963,6 +918,11 @@ h1 {
   font-size: 12px;
 }
 
+.approval-target-row {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 .approval-panel .approval-rule-summary {
   grid-column: auto;
   display: grid;
@@ -982,6 +942,13 @@ h1 {
   gap: 5px;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
+}
+
+/* Official selects size to the rule column, not their intrinsic input width. */
+.approval-config-grid .sc-select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .approval-config-grid select,
@@ -1028,8 +995,7 @@ h1 {
   font-size: 14px;
 }
 
-.approval-steps header span,
-.approval-step-empty {
+.approval-steps header span {
   color: var(--sc-app-text-secondary);
   font-size: 12px;
 }
@@ -1048,6 +1014,19 @@ h1 {
   gap: 8px;
   align-items: center;
   min-width: 760px;
+}
+
+.approval-amount-message {
+  margin: 0 0 12px;
+  color: var(--sc-app-text-secondary);
+}
+
+@media (min-width: 1201px) {
+  .approval-step-table--without-amount .approval-step-table-head,
+  .approval-step-table--without-amount .approval-step-row {
+    grid-template-columns: 44px minmax(180px, 1fr) minmax(180px, 1fr) 180px;
+    min-width: 0;
+  }
 }
 
 .approval-step-table-head {
@@ -1115,9 +1094,6 @@ h1 {
 }
 
 .approval-step-empty {
-  display: grid;
-  justify-items: start;
-  gap: 10px;
   border: 1px dashed var(--sc-app-border);
   border-radius: 8px;
   padding: 18px;
@@ -1220,10 +1196,8 @@ h1 {
   font-style: normal;
 }
 
-.empty-state {
+.version-panel-empty {
   padding: 10px 0;
-  color: var(--sc-app-text-secondary);
-  font-size: 13px;
 }
 
 .version-list {
@@ -1516,32 +1490,11 @@ h1 {
 }
 
 .field-chip-add {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.field-chip-add input {
-  width: 100%;
-  min-height: 32px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 0 9px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  font: inherit;
+  min-width: 0;
 }
 
 .field-option-search {
   width: 100%;
-  min-height: 30px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 6px;
-  padding: 0 9px;
-  background: var(--sc-app-panel);
-  color: var(--sc-app-text-primary);
-  font: inherit;
-  font-size: 12px;
 }
 
 .field-option-summary {
@@ -1791,14 +1744,5 @@ h1 {
   background: var(--sc-app-panel);
   border: 1px solid var(--sc-app-border);
   border-radius: var(--sc-radius-md);
-  overflow-x: auto;
+  min-width: 0;
 }
-.configuration-overview table { width: 100%; border-collapse: collapse; }
-.configuration-overview th, .configuration-overview td {
-  padding: var(--sc-product-space-2);
-  text-align: right;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-.configuration-overview th:first-child { text-align: left; }
-.configuration-overview thead { color: var(--sc-app-text-secondary); }

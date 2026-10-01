@@ -24,6 +24,9 @@ from odoo.addons.smart_core.handlers.reason_codes import (
     REASON_PERMISSION_DENIED,
     failure_meta_for_reason,
 )
+from odoo.addons.smart_construction_core.services.capability_registry import (
+    role_code_for_group,
+)
 
 
 class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
@@ -48,8 +51,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "action_semantics": {"kind": "business", "purpose": "approve", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "审批",
             "intent": "payment.request.approve",
-            "method": "action_approve",
-            "allowed_states": {"submit"},
+            "method": "action_approval_decision",
+            "allowed_states": {"submit", "approve"},
             "delivery_priority": 20,
             "presentation": {"tier": "primary", "semantic": "default"},
         },
@@ -58,14 +61,15 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "驳回",
             "intent": "payment.request.reject",
-            "method": "action_on_tier_rejected",
-            "allowed_states": {"submit"},
+            "method": "action_approval_reject",
+            "allowed_states": {"submit", "approve"},
             "required_params": ["reason"],
             "delivery_priority": 30,
             "presentation": {"tier": "secondary", "semantic": "destructive"},
         },
         {
             "key": "done",
+            "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "payment.request.available_actions"},
             "label": "完成",
             "intent": "payment.request.done",
             "method": "action_done",
@@ -76,8 +80,6 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     ]
     _EXECUTE_INTENT = "payment.request.execute"
     _NEXT_STATE_HINT = {
-        "submit": "submit",
-        "approve": "approved",
         "reject": "rejected",
         "done": "done",
     }
@@ -97,25 +99,21 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
     }
     _ACTION_ROLE_HINTS = {
         "submit": {
-            "required_role_key": "finance",
             "required_role_label": "财务",
             "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_user",
             "handoff_hint": "请由财务提交申请后进入审批链路。",
         },
         "approve": {
-            "required_role_key": "executive",
             "required_role_label": "管理层",
             "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
             "handoff_hint": "请由管理层执行审批决策。",
         },
         "reject": {
-            "required_role_key": "executive",
             "required_role_label": "管理层",
             "required_group_xmlid": "smart_construction_core.group_sc_role_executive",
             "handoff_hint": "请由管理层执行驳回并填写原因。",
         },
         "done": {
-            "required_role_key": "finance",
             "required_role_label": "财务",
             "required_group_xmlid": "smart_construction_core.group_sc_cap_finance_manager",
             "handoff_hint": "审批完成后由财务确认办结。",
@@ -142,7 +140,10 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         if key in {"approve", "reject"}:
             # R10-v2: stub records in work-item projections may not carry the
             # finance-approve helper; mirror the submit fallback semantics.
-            return bool(getattr(record, '_has_finance_approve_access', lambda: False)())
+            finance_allowed = bool(getattr(record, '_has_finance_approve_access', lambda: False)())
+            if str(getattr(record, "validation_status", "") or "") in ("waiting", "pending"):
+                return finance_allowed and bool(getattr(record, "can_review", False))
+            return finance_allowed
         if key == "done":
             return bool(
                 self.env.user.has_group(
@@ -183,8 +184,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             return True, REASON_OK
         if key == "approve":
             validation_status = str(record.validation_status or "").strip()
-            no_tier_review = validation_status in ("", "no") and not record.review_ids
-            if validation_status not in ("waiting", "pending", "validated") and not no_tier_review:
+            if not record.review_ids or validation_status not in ("waiting", "pending", "validated"):
                 return False, REASON_BUSINESS_RULE_FAILED
             resolved_advisories = (
                 advisories
@@ -198,6 +198,8 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
                 return False, str(blocking[0].get("reason_code") or REASON_BUSINESS_RULE_FAILED)
             return True, REASON_OK
         if key == "reject":
+            if not record.review_ids or record.validation_status not in ("waiting", "pending"):
+                return False, REASON_BUSINESS_RULE_FAILED
             return True, REASON_OK
         if key == "done":
             if str(record.type or "") == "pay":
@@ -256,6 +258,17 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "code": int(code),
             "meta": {"intent": self.INTENT_TYPE, "trace_id": trace_id, "source_authority": self.SOURCE_AUTHORITY},
         }
+
+    def _next_state_hint(self, record, action_key):
+        if action_key == "submit":
+            company = getattr(record, "company_id", None) or self.env.company
+            return self.env["sc.approval.policy"].next_state_after_submit(
+                "payment.request", "submit", "approved", company=company,
+            )
+        if action_key == "approve":
+            # A pending multi-tier decision does not promise full approval.
+            return "approved" if record.review_ids and record.validation_status == "validated" else ""
+        return self._NEXT_STATE_HINT.get(action_key, "")
 
     def _action_entry(self, record, spec: dict) -> dict:
         state = str(record.state or "")
@@ -330,7 +343,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "reason_code": reason_code,
             "state_required": sorted(list(spec.get("allowed_states") or [])),
             "current_state": state,
-            "next_state_hint": self._NEXT_STATE_HINT.get(action_key, ""),
+            "next_state_hint": self._next_state_hint(record, action_key),
             "allowed_by_state": bool(state_ok),
             "allowed_by_method": bool(method_ok),
             "allowed_by_precheck": bool(precheck_ok),
@@ -344,7 +357,7 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
             "advisory_reason_codes": advisory_reason_codes,
             "force_block_available": bool(advisories),
             "suggested_action": suggested_action,
-            "required_role_key": str(role_hint.get("required_role_key") or ""),
+            "required_role_key": role_code_for_group(required_group_xmlid),
             "required_role_label": str(role_hint.get("required_role_label") or ""),
             "required_group_xmlid": required_group_xmlid,
             "handoff_hint": str(role_hint.get("handoff_hint") or ""),

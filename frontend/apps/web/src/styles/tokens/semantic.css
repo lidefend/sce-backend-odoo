@@ -44,4 +44,42 @@
   --sc-app-info-border: var(--sc-semantic-state-info-border);
   --sc-app-info-text: var(--sc-semantic-state-info-text);
   --sc-app-text-inverse: var(--sc-semantic-text-on-interactive);
+
+  /* Legacy app/numbered-color aliases: remove each family after its last consumer
+   * migrates to semantic roles; never add palette values or new page-local roles. */
+  --sc-app-panel-muted: var(--sc-semantic-surface-panel-muted);
+  --sc-app-text: var(--sc-semantic-text-primary);
+  --sc-app-surface: var(--sc-semantic-surface-panel);
+  --sc-app-primary: var(--sc-semantic-surface-interactive);
+  --sc-app-error: var(--sc-semantic-state-danger);
+  --sc-app-error-bg: var(--sc-semantic-state-danger-bg);
+  --sc-app-primary-bg: var(--sc-semantic-surface-selected);
+  --sc-app-success: var(--sc-semantic-state-success);
+  --sc-app-warning: var(--sc-semantic-state-warning);
+  --sc-app-tag-bg: var(--sc-semantic-surface-subtle);
+  --sc-app-accent-soft: var(--sc-semantic-surface-selected);
+  --sc-app-accent-contrast: var(--sc-semantic-text-on-interactive);
+  --sc-app-border-default: var(--sc-semantic-border-default);
+  --sc-app-shadow-md: var(--sc-semantic-shadow-popover);
+  --sc-app-shadow-lg: var(--sc-semantic-shadow-modal);
+  --sc-color-text-1: var(--sc-semantic-text-primary);
+  --sc-color-text-2: var(--sc-semantic-text-secondary);
+  --sc-color-text-3: var(--sc-semantic-text-muted);
+  --sc-color-bg-1: var(--sc-semantic-surface-panel);
+  --sc-color-bg-2: var(--sc-semantic-surface-panel-muted);
+  --sc-color-border-2: var(--sc-semantic-border-default);
+  --sc-color-border-3: var(--sc-semantic-border-strong);
+  --sc-color-primary: var(--sc-semantic-surface-interactive);
+  --sc-color-brand: var(--sc-semantic-surface-interactive);
+  --sc-color-success: var(--sc-semantic-state-success);
+  --sc-color-error: var(--sc-semantic-state-danger);
+  /* Retire remaining pre-v1 role aliases when their last consumer migrates. */
+  --sc-color-bg-secondary: var(--sc-semantic-surface-subtle);
+  --sc-color-border-default: var(--sc-semantic-border-default);
+  --sc-app-danger: var(--sc-semantic-state-danger);
+  --sc-text-primary: var(--sc-semantic-text-primary);
+  --sc-text-secondary: var(--sc-semantic-text-secondary);
+  --sc-border-secondary: var(--sc-semantic-border-strong);
+  --sc-bg-container: var(--sc-semantic-surface-panel);
+  --sc-bg-secondary: var(--sc-semantic-surface-subtle);
 }

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { relationReadRouteRequest, validateRelationReadRoute } from '../src/app/relationReadRouteAuthority.ts';
 import { resolveCreateFormActivityRedirect } from '../src/app/recordFormActivityRoute.ts';
 import {
+  createRecordFormReturnHandler,
   executeRecordFormReturn,
   hasInAppReturnHistory,
   resolveRecordFormReturnFallbackRoute,
@@ -189,6 +192,88 @@ check('fallback is not used when no fallback handler is supplied', async () => {
   });
   assert.equal(mode, 'history');
   assert.deepEqual(calls, ['back']);
+});
+
+check('return handler consumes live authority only after unsaved confirmation', async () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const view = { parent: null as unknown, location: { origin: 'http://localhost' } };
+  view.parent = view;
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: view });
+  try {
+    let allow = false;
+    let authority = '/m/one';
+    const visits: string[] = [];
+    const params = {
+      route: { query: {} },
+      router: { options: { history: { state: {} } }, back: () => { visits.push('back'); },
+        replace: async (target: string) => { visits.push(target); } },
+      model: () => 'x.document', authorityRoute: () => authority,
+      navigateAfterConfirm: async (navigate: () => Promise<void>) => {
+        if (!allow) return false;
+        await navigate();
+        return true;
+      },
+    };
+    const navigate = createRecordFormReturnHandler(params as unknown as Parameters<typeof createRecordFormReturnHandler>[0]);
+    await navigate();
+    assert.deepEqual(visits, [], 'rejected confirmation must not navigate');
+    allow = true;
+    authority = '/m/two';
+    await navigate();
+    assert.deepEqual(visits, ['/m/two'], 'use current authority, not factory-time authority');
+  } finally {
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+    else Reflect.deleteProperty(globalThis, 'window');
+  }
+});
+
+const relationRoute = () => ({ name:'record', path:'/r/x.partner/56', params:{model:'x.partner',id:'56'},
+  query:{action_id:'324',menu_id:'164',return_model:'x.payment',return_record_id:'1813',return_field:'partner_id',return_action_id:'775',return_menu_id:'545'} });
+check('relation read navigation transports exact provenance without trusting can_open or return URL', async () => {
+  const route = relationRoute();
+  const params = relationReadRouteRequest(route)!;
+  assert.equal(params.access_mode, 'read'); assert.equal(params.render_profile, 'readonly');
+  assert.equal(params.relation_origin.record_id,1813);
+  assert.equal(await validateRelationReadRoute(route,()=> 'actor30/company8/epoch1',async request => ({...request,allowed:true})),true);
+  assert.deepEqual(route,relationRoute());
+});
+check('relation read receipt requires every target identity field and read mode', async () => {
+  const route = relationRoute();
+  for (const [key,value] of Object.entries({model:'x.other',record_id:57,action_id:325,menu_id:165,route_path:'/f/x.partner/56',access_mode:'write',render_profile:'edit',allowed:false})) {
+    assert.equal(await validateRelationReadRoute(route,()=> 'stable',async request=>({...request,allowed:true,[key]:value})),false,key);
+  }
+  assert.equal(await validateRelationReadRoute(route,()=> 'stable',async()=>({allowed:true})),false);
+  assert.equal(await validateRelationReadRoute(route,()=> 'stable',async()=>{throw new Error('revoked');}),false);
+});
+check('relation origin cannot authorize edit/list/create or coerced IDs', async () => {
+  const route=relationRoute();
+  for (const [name,path] of [['model-form','/f/x.partner/56'],['action','/a/324'],['record','/r/x.partner/new'],['record','/r/x.partner/57']]) {
+    let called=false;
+    assert.equal(await validateRelationReadRoute({...route,name,path},()=> 'stable',async()=>{called=true;return {allowed:true};}),false);
+    assert.equal(called,false);
+  }
+  for (const value of [true,56.5,[],{},'56.0','056','9007199254740992']) {
+    assert.equal(relationReadRouteRequest({...route,params:{...route.params,id:value}}),null);
+    assert.equal(relationReadRouteRequest({...route,query:{...route.query,return_record_id:value}}),null);
+  }
+});
+check('late relation receipt cannot cross actor/company/context lifetime', async () => {
+  for (const changed of ['actor31/company8/epoch1','actor30/company9/epoch1','actor30/company8/epoch2']) {
+    let scope='actor30/company8/epoch1';
+    let resolve!: (value:Record<string,unknown>)=>void;
+    const pending=validateRelationReadRoute(relationRoute(),()=>scope,()=>new Promise(done=>{resolve=done;}));
+    scope=changed; resolve({...relationReadRouteRequest(relationRoute()),allowed:true});
+    assert.equal(await pending,false);
+  }
+});
+check('router uses bounded read validator without mutating session authority; loader retains action and readonly', () => {
+  const router=readFileSync('frontend/apps/web/src/router/index.ts','utf8');
+  assert.match(router,/if \(!routeAuthority && to.name === 'record'\) \{[\s\S]*?validateRelationReadRoute\(to,[\s\S]*?currentContextEpoch\(\)/);
+  const bridge=router.split("if (!routeAuthority && to.name === 'record') {")[1].split("if (to.name === 'action'")[0];
+  assert.doesNotMatch(bridge,/setActionMeta|routeAuthority\s*=/);
+  const loader=readFileSync('frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts','utf8');
+  assert.match(loader,/loadActionContractV2\(actionId.value/);
+  assert.match(loader,/loadModelContractV2\(currentModel,[\s\S]*?actionId: actionId.value[\s\S]*?menuId: menuId.value[\s\S]*?\.\.\.profileOptions/);
 });
 
 for (const testCase of cases) {

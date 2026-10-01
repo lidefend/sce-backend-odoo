@@ -1,7 +1,26 @@
 #!/usr/bin/env python3
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+_LINE_COMMENT_RE = re.compile(r"//[^\n]*")
+
+
+def _compact(text: str) -> str:
+    """Bind an assertion to statements, not to layout or comments.
+
+    A handler body may be re-wrapped across lines or gain a comment without
+    changing behaviour (a search-keyword handler was reformatted exactly that
+    way). Dropping comments first keeps the binding statement-level: a
+    commented-out guard still disappears and fails the assertion, while an
+    unrelated comment no longer breaks it.
+    """
+    text = _BLOCK_COMMENT_RE.sub("", text)
+    text = _LINE_COMMENT_RE.sub("", text)
+    return re.sub(r"\s+", "", text)
 
 
 def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -> list[str]:
@@ -72,13 +91,17 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     for marker in ("presentationMode: field.presentationMode", "renderProfile: field.renderProfile"):
         if marker not in renderer:
             failures.append(f"canonical renderer missing profile projection {marker}")
+    compact_form_state = _compact(form_state)
     for marker in (
         "const setBooleanField=(name:string,checked:boolean,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
         "const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
         "const setSelectionField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
         "const setTextField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;",
     ):
-        if marker not in form_state:
+        # Whitespace-normalized on both sides: the assertion still requires the
+        # declaration signature to be immediately followed by the fail-closed
+        # guard as the first statement of the body.
+        if _compact(marker) not in compact_form_state:
             failures.append(f"base field handler does not fail closed: {marker}")
     if "setTechnicalCompanionTextField(filenameField, payload.fileName);" not in action_presentation:
         failures.append("binary filename companion does not use its narrow technical write path")

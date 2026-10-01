@@ -5,96 +5,98 @@
     :data-state="phase"
     :data-editable="view.canEdit ? 'true' : 'false'"
   >
-    <header class="block-rich-text-overview__header">
-      <h4>{{ block.title || titleFallback }}</h4>
-      <ScButton
-        v-if="view.canEdit && phase === 'idle'"
-        size="small"
-        variant="secondary"
-        data-action="begin-edit"
-        @click="beginEdit"
-      >
-        {{ copy.edit }}
-      </ScButton>
-    </header>
-
-    <!-- 只读态：内容为服务端净化后的受限 HTML（读取直渲染，净化权威在后端） -->
-    <div
-      v-if="phase === 'idle' || phase === 'saved'"
-      class="block-rich-text-overview__content"
-      data-state="readonly"
-      v-html="renderedContent"
-    ></div>
-    <p
-      v-if="(phase === 'idle' || phase === 'saved') && !renderedContent"
-      class="block-rich-text-overview__hint"
-      data-empty
-    >
-      {{ emptyMessage }}
-    </p>
-
-    <p
-      v-if="phase === 'saved' && savedMessage"
-      class="block-rich-text-overview__notice"
-      data-state="saved"
-      role="status"
-    >
-      {{ savedMessage }}
-      <ScButton
-        size="small"
-        variant="ghost"
-        class="block-rich-text-overview__link"
-        data-action="dismiss-saved"
-        @click="dismissSaved"
-      >
-        {{ copy.dismiss }}
-      </ScButton>
-    </p>
-
-    <!-- 编辑态：受限输入 + 会话状态机（保存中/错误/冲突） -->
-    <div v-if="phase === 'editing'" class="block-rich-text-overview__editor" data-state="editing">
-      <RestrictedHtmlEditor
-        v-model="draft"
-        :max-length="view.maxLength"
-        :disabled="session.state === 'saving'"
-      />
-      <p v-if="session.state === 'error' || session.state === 'conflict'" class="block-rich-text-overview__notice" data-state="error" role="alert">
-        {{ session.errorMessage }}
+    <ScCard class="block-card" :bordered="false" :title="block.title || titleFallback">
+      <template #actions>
         <ScButton
-          v-if="session.state === 'conflict'"
+          v-if="view.canEdit && phase === 'idle'"
+          size="small"
+          variant="secondary"
+          data-action="begin-edit"
+          @click="beginEdit"
+        >
+          {{ copy.edit }}
+        </ScButton>
+      </template>
+
+      <!-- 只读态：内容为服务端净化后的受限 HTML（读取直渲染，净化权威在后端） -->
+      <div
+        v-if="phase === 'idle' || phase === 'saved'"
+        class="block-rich-text-overview__content"
+        data-state="readonly"
+        v-html="renderedContent"
+      ></div>
+      <p
+        v-if="(phase === 'idle' || phase === 'saved') && !renderedContent"
+        class="block-rich-text-overview__hint"
+        data-empty
+      >
+        {{ emptyMessage }}
+      </p>
+
+      <p
+        v-if="phase === 'saved' && savedMessage"
+        class="block-rich-text-overview__notice"
+        data-state="saved"
+        role="status"
+      >
+        {{ savedMessage }}
+        <ScButton
           size="small"
           variant="ghost"
           class="block-rich-text-overview__link"
-          data-action="reload-baseline"
-          @click="reloadBaseline"
+          data-action="dismiss-saved"
+          @click="dismissSaved"
         >
-          {{ copy.reload }}
+          {{ copy.dismiss }}
         </ScButton>
       </p>
-      <div class="block-rich-text-overview__actions">
-        <ScButton
-          size="small"
-          data-action="save"
-          :disabled="session.state === 'saving' || !canSubmit"
-          @click="submitDraft"
-        >
-          {{ session.state === 'saving' ? copy.saving : copy.save }}
-        </ScButton>
-        <ScButton
-          size="small"
-          variant="secondary"
+
+      <!-- 编辑态：受限输入 + 会话状态机（保存中/错误/冲突） -->
+      <div v-if="phase === 'editing'" class="block-rich-text-overview__editor" data-state="editing">
+        <RestrictedHtmlEditor
+          v-model="draft"
+          :max-length="view.maxLength"
           :disabled="session.state === 'saving'"
-          data-action="cancel"
-          @click="cancelEdit"
-        >
-          {{ copy.cancel }}
-        </ScButton>
+        />
+        <p v-if="session.state === 'error' || session.state === 'conflict'" class="block-rich-text-overview__notice" data-state="error" role="alert">
+          {{ session.errorMessage }}
+          <ScButton
+            v-if="session.state === 'conflict'"
+            size="small"
+            variant="ghost"
+            class="block-rich-text-overview__link"
+            data-action="reload-baseline"
+            @click="reloadBaseline"
+          >
+            {{ copy.reload }}
+          </ScButton>
+        </p>
+        <div class="block-rich-text-overview__actions">
+          <ScButton
+            size="small"
+            data-action="save"
+            :disabled="session.state === 'saving' || !canSubmit"
+            @click="submitDraft"
+          >
+            {{ session.state === 'saving' ? copy.saving : copy.save }}
+          </ScButton>
+          <ScButton
+            size="small"
+            variant="secondary"
+            :disabled="session.state === 'saving'"
+            data-action="cancel"
+            @click="cancelEdit"
+          >
+            {{ copy.cancel }}
+          </ScButton>
+        </div>
       </div>
-    </div>
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 /**
  * 受限富文本内容块包装（页面编排 block）。
  *
@@ -266,6 +268,8 @@ function extractReasonCode(err: unknown): string {
 </script>
 
 <style scoped>
+.block { min-width: 0; }
+.block-card { min-width: 0; height: 100%; }
 .block-rich-text-overview {
   display: flex;
   flex-direction: column;
@@ -273,16 +277,7 @@ function extractReasonCode(err: unknown): string {
   min-width: 0;
 }
 
-.block-rich-text-overview__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
 
-.block-rich-text-overview__header h4 {
-  margin: 0;
-}
 
 .block-rich-text-overview__content {
   font-size: 14px;

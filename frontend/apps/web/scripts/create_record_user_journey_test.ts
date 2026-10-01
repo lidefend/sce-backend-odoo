@@ -1,3 +1,4 @@
+import { executeSceneMutation } from '../src/app/sceneMutationRuntime';
 import assert from 'node:assert/strict';
 import { reactive, ref } from 'vue';
 import { resolveCreateDefaults, resolveCreateRouteRelationLabels } from '../src/pages/contractForm/createDefaults.ts';
@@ -5,6 +6,8 @@ import { applyIncomingFormFieldValue } from '../src/pages/contractForm/recordHyd
 import { evaluateNativeModifierValue } from '../src/app/modifierEngine.ts';
 import { buildSaveRecordPayload, createSingleFlightSave, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers.ts';
 import { usePrimaryFormActionRuntime } from '../src/pages/contractForm/usePrimaryFormActionRuntime.ts';
+import { submissionRequirementErrors } from '../src/pages/contractForm/submissionRequirements';
+import { nativeAttachmentRefreshDecision } from '../src/pages/contractForm/useNativeAttachmentRuntime';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
@@ -365,12 +368,15 @@ assert.deepEqual(editPayload, { title: 'Draft A revised' });
 
 const runtime = usePrimaryFormActionRuntime({
   actionId: () => 31,
+  currentQuery: () => ({ work_item_source: 'tier.review', work_item_id: '9', return_model: 'x.parent', return_record_id: '42', return_field: 'lines', return_action_id: '21', return_menu_id: '11' }),
   applyProjectionRefreshPolicy: async () => { events.push('refresh'); },
   busyKind: ref(null),
   confirmActionSafety: async () => { events.push('confirm'); return true; },
   errorMessage: ref(''),
   executeButtonRequest: async (request) => {
     events.push('submit');
+    assert.deepEqual(request.meta?.relation_origin, { model: 'x.parent', record_id: 42, field: 'lines', action_id: 21, menu_id: 11 });
+    assert.deepEqual(request.meta?.work_item_origin, { source: 'tier.review', id: 9 });
     assert.equal(request.model, 'x.document');
     assert.equal(request.res_id, 501);
     assert.deepEqual(request.button, {
@@ -408,3 +414,97 @@ assert.deepEqual(events, ['save-draft', 'reopen-draft', 'save-edit', 'confirm', 
 assert.deepEqual(stored, { amount: 80, owner_id: 17, title: 'Draft A revised', id: 501, state: 'submit' });
 
 console.log('[create-record-user-journey] PASS checkpoints=defaults,single-flight-save,reopen,edit,submit,refresh');
+
+// Actual shared executor: transport success must not mask a blocked business result.
+let mutationChecks = 0;
+const mutationInput = { mutation: { intent: 'test.transition', params: { id: '$record_id' } }, actionKey: 'transition', recordId: 51 };
+for (const [data, expectedError] of [
+  [{ result: 'blocked', message: '任务正在审批中，请在任务详情查看审批进度，通过后再启动。' }, '任务正在审批中'],
+  [{ result: 'blocked' }, '当前操作未完成'],
+  [{ result: 'success', id: 51 }, ''],
+  [{ record_id: 51 }, ''],
+] as const) {
+  const request = async (payload: { intent: string; params: Record<string, unknown> }) => {
+    assert.deepEqual(payload, { intent: 'test.transition', params: { id: 51 } });
+    return { traceId: 'test-trace', data: { ...data } };
+  };
+  if (expectedError) {
+    await assert.rejects(executeSceneMutation(mutationInput, request), new RegExp(expectedError));
+  } else {
+    assert.deepEqual(await executeSceneMutation(mutationInput, request), { intent: 'test.transition', traceId: 'test-trace', data });
+  }
+  mutationChecks += 1;
+}
+console.log(`[scene-mutation-outcome] PASS cases=${mutationChecks}`);
+
+const requirementAction = { actionSemantics: { kind: 'business', purpose: 'submit', executor: 'contract.action' } } as never;
+const submissionRule = { kind: 'relation_required', field: 'documents', requiredWhen: { field: 'policy', equals: 'required' },
+  pendingSource: 'native_attachment', reasonCode: 'DOCUMENT_REQUIRED', message: '请先选择凭证' };
+const requirementWorkflow = { submissionRequirements: [submissionRule] };
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [] }, 0), ['请先选择凭证']);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [] }, 1), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required' }, 0), ['请先选择凭证']);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required' }, 1), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'required', documents: [12] }, 0), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, requirementWorkflow, { policy: 'recommended', documents: [] }, 0), []);
+assert.deepEqual(submissionRequirementErrors({ actionSemantics: { kind: 'system', purpose: 'save' } } as never, requirementWorkflow, {}, 0), []);
+assert.deepEqual(submissionRequirementErrors(requirementAction, {}, {}, 0), []);
+assert.equal(submissionRequirementErrors(requirementAction, requirementWorkflow, { documents: [] }, 0).length, 1);
+assert.equal(submissionRequirementErrors(requirementAction, { submissionRequirements: 'invalid' }, {}, 0).length, 1);
+assert.equal(submissionRequirementErrors(requirementAction, { submissionRequirements: [{ ...submissionRule, kind: 'unsupported' }] }, {}, 0).length, 1);
+assert.deepEqual(submissionRequirementErrors(requirementAction, { submissionRequirements: [{ ...submissionRule, pendingSource: undefined }] }, { policy: 'required', documents: [] }, 3), ['请先选择凭证']);
+for (const create of [true, false]) {
+  let writes = 0;
+  const guarded = usePrimaryFormActionRuntime({
+    primaryCreateFooterAction: () => create ? { ...requirementAction, enabled: true } : null,
+    primarySubmitAction: () => ({ ...requirementAction, enabled: true }),
+    validateSubmissionRequirements: () => false,
+    saveRecord: async () => { writes += 1; return 22; },
+    executeButtonRequest: async () => { writes += 1; return {}; },
+  } as never);
+  await guarded.runPrimaryFormAction();
+  assert.equal(writes, 0);
+}
+console.log('[create-record-user-journey] submission prerequisites PASS count=14');
+
+const createdSubmitEvents: string[] = [];
+const createdSubmitRuntime = usePrimaryFormActionRuntime({
+  primaryCreateFooterAction: () => ({ ...requirementAction, enabled: true, context: {}, methodName: 'action_submit' }),
+  saveRecord: async () => { createdSubmitEvents.push('create'); return 902; },
+  confirmActionSafety: async () => true,
+  busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
+  executeButtonRequest: async (request: { res_id: number }) => {
+    assert.equal(request.res_id, 902); createdSubmitEvents.push('submit'); return { result: { type: 'refresh', res_id: 902 } };
+  },
+  navigateActionResponseResult: async () => false,
+  navigateCreatedRecord: async (id: number) => { assert.equal(id, 902); createdSubmitEvents.push('open-created'); },
+  applyProjectionRefreshPolicy: async () => { createdSubmitEvents.push('refresh-new'); },
+  reload: async () => { createdSubmitEvents.push('reload-new'); },
+  recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
+} as never);
+await createdSubmitRuntime.runPrimaryFormAction();
+assert.deepEqual(createdSubmitEvents, ['create', 'submit', 'open-created']);
+console.log('[create-record-user-journey] created submit navigates generated identity PASS count=1');
+
+const failedSubmitEvents: string[] = [];
+const failedCreatedSubmitRuntime = usePrimaryFormActionRuntime({
+  primaryCreateFooterAction: () => ({ ...requirementAction, enabled: true, context: {}, methodName: 'action_submit' }),
+  saveRecord: async () => { failedSubmitEvents.push('create'); return 903; },
+  confirmActionSafety: async () => true,
+  busyKind: ref(null), modelName: () => 'x.document', routeMenuId: () => 31, actionId: () => 21,
+  executeButtonRequest: async () => { failedSubmitEvents.push('submit-failed'); throw new Error('Temporary refusal'); },
+  navigateCreatedRecord: async (id: number, _policy: unknown, recovery: string) => { failedSubmitEvents.push(`recover:${id}:${recovery}`); },
+  reload: async () => { failedSubmitEvents.push('reload-new'); },
+  recordId: ref(0), submissionFeedback: ref(null), validationErrors: ref([]), status: ref('ok'), errorMessage: ref(''),
+} as never);
+await failedCreatedSubmitRuntime.runPrimaryFormAction();
+assert.deepEqual(failedSubmitEvents, ['create', 'submit-failed', 'recover:903:submit']);
+console.log('[create-record-user-journey] failed created submit preserves generated identity PASS count=1');
+
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 903, false), 'refresh');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 903, true), 'deferred');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 904, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'y.document', 903, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 903, 'x.document', 0, false), 'different_record');
+assert.equal(nativeAttachmentRefreshDecision('x.document', 0, 'x.document', 0, false), 'different_record');
+console.log('[create-record-user-journey] attachment refresh ownership and dirty preservation PASS count=6');

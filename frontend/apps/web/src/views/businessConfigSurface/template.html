@@ -34,26 +34,15 @@
       </template>
     </BusinessConfigContextBar>
 
-    <section v-if="snapshotSummary?.source_counts" class="configuration-overview" data-configuration-overview aria-label="配置总览">
-      <h2>配置总览</h2>
-      <p>{{ snapshotSummary.overview_scope }}</p>
-      <p>草稿按配置记录状态统计；设计器未发布变更另见“待发布变更”。</p>
-      <table>
-        <thead><tr><th>来源</th><th>可见数量</th><th>草稿</th><th>已发布</th><th>已停用</th><th>已保存偏好</th></tr></thead>
-        <tbody><tr v-for="(counts, source) in snapshotSummary.source_counts" :key="source">
-          <th>{{ ({ product_default: '产品默认', enterprise_configuration: '企业配置（含共享偏好投影）', personal_preference: '个人偏好（本人）', unclassified: '来源待确认' })[source] || source }}</th>
-          <td>{{ counts.total }}</td><td>{{ counts.draft }}</td><td>{{ counts.published }}</td><td>{{ counts.disabled }}</td><td>{{ counts.saved }}</td>
-        </tr></tbody>
-      </table>
-    </section>
+    <BusinessConfigOverviewTable v-if="snapshotSummary?.source_counts" :snapshot-summary="snapshotSummary" />
     <ScErrorState v-if="surfaceError" data-business-config-surface-error="true" title="配置工作台读取失败" :description="surfaceError">
       <template #actions><ScButton variant="secondary" :disabled="loading" @click="retryBusinessConfigSurface">{{ loading ? '重试中...' : '重试读取' }}</ScButton></template>
     </ScErrorState>
-    <div v-else-if="error" class="status error">{{ error }}</div>
-    <div v-else-if="message.text" class="status ok">
+    <ScInlineState v-else-if="error" state="error" :label="error" />
+    <ScInlineState v-else-if="message.text" state="success">
       <span>{{ message.text }}</span>
       <small v-if="advancedPanelOpen && message.detail">{{ message.detail }}</small>
-    </div>
+    </ScInlineState>
 
     <BusinessConfigStartPanel
       v-if="!surfaceError && !coverageScan"
@@ -73,7 +62,6 @@
       :visible-delivery-readiness-progress-text="visibleDeliveryReadinessProgressText"
       :visible-delivery-readiness-items="visibleDeliveryReadinessItems"
       :section-task-kind-label="sectionTaskKindLabel"
-      :section-display-label="sectionDisplayLabel"
       :section-status-label="sectionStatusLabel"
       :section-primary-copy="sectionPrimaryCopy"
       :section-impact-text="sectionImpactText"
@@ -116,7 +104,7 @@
       <ScButton type="button" class="ghost small" :disabled="loading" @click="applyScopeAndLoad">读取配置对象</ScButton>
     </section>
 
-    <section v-if="loading" class="loading-state">正在读取配置能力...</section>
+    <ScInlineState v-if="loading" state="loading" label="正在读取配置能力..." />
     <BusinessConfigCoverageWorkspace
       v-if="!surfaceError && coverageScan"
       v-model:page-search="pageSearch"
@@ -164,7 +152,6 @@
       :overall-status-label="overallStatusLabel"
       :boundary-label="boundaryLabel"
       :section-task-kind-label="sectionTaskKindLabel"
-      :section-display-label="sectionDisplayLabel"
       :section-status-label="sectionStatusLabel"
       :section-primary-copy="sectionPrimaryCopy"
       :section-impact-text="sectionImpactText"
@@ -219,6 +206,9 @@
 
     <BusinessConfigApprovalPanel
       v-if="approvalPanelOpen"
+      :target-model="approvalTargetModel"
+      :target-options="approvalSection?.target_options || []"
+      @select-target="loadApprovalConfig"
       :policy-label="approvalPolicyLabel"
       :effect-guide-text="approvalEffectGuideText"
       :runtime-text="approvalRuntimeText"
@@ -228,6 +218,9 @@
       :steps="approvalSteps"
       :mode-options="approvalModeOptions"
       :scope-options="approvalScopeOptions"
+      :amount-supported="approvalAmountSupported"
+      :editable="approvalEditorReady"
+      :amount-message="approvalAmountMessage"
       :active-step-count="activeApprovalStepCount"
       :has-draft-changes="hasApprovalDraftChanges"
       :can-save-draft="canSaveApprovalDraft"
@@ -250,7 +243,7 @@
       @clear-step-drag="clearApprovalStepDrag"
       @save="confirmAndSaveApprovalConfig"
       @reset="resetApprovalDraft"
-      @open-full-rule="approvalSection && openApprovalConfig(approvalSection)"
+      @open-full-rule="approvalSection && openApprovalConfig({ ...approvalSection, route: approvalSection.target_options?.find(target => target.value === approvalTargetModel)?.route })"
     />
 
     <BusinessConfigVersionPanel

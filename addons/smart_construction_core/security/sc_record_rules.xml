@@ -764,6 +764,19 @@
             <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
         </record>
 
+        <!-- Assigned reviewers need the document even when not project members.
+             Keep the model discriminator: tier.review res_id is polymorphic. -->
+        <record id="rule_sc_assigned_reviewer_payment_execution_read" model="ir.rule">
+            <field name="name">SC Finance Read - assigned payment execution review</field>
+            <field name="model_id" ref="model_sc_payment_execution"/>
+            <field name="domain_force">[('company_id', 'in', company_ids), ('review_ids.model', '=', 'sc.payment.execution'), ('review_ids.reviewer_ids', 'in', [user.id])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]"/>
+        </record>
+
         <record id="rule_sc_finance_user_payment_execution" model="ir.rule">
             <field name="name">SC Finance User - sc.payment.execution by project member</field>
             <field name="model_id" ref="model_sc_payment_execution"/>

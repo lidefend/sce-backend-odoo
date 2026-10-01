@@ -11,8 +11,10 @@ _TAX_FACT_AUTHORITY_TOKEN = object()
 class ScTaxDeductionRegistration(models.Model):
     _name = "sc.tax.deduction.registration"
     _description = "抵扣登记"
-    _inherit = ["mail.thread", "mail.activity.mixin", "sc.company.contractor.responsibility.context.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "sc.company.contractor.responsibility.context.mixin", "tier.validation"]
     _order = "deduction_confirm_date desc, document_date desc, id desc"
+
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
 
     name = fields.Char(string="登记单号", required=True, default="新建", copy=False, index=True)
     source_origin = fields.Selection(
@@ -528,32 +530,65 @@ class ScTaxDeductionRegistration(models.Model):
         self.flush_recordset(list(vals))
         return result
 
-    def action_confirm(self):
+    def _prepare_approval_amounts(self):
+        # Preserve the existing invoice defaults, but resolve them before tier domains.
         for rec in self:
-            if rec.state != "draft":
-                raise UserError(_("只有草稿状态的抵扣登记可以确认。"))
-            before = rec._snapshot_audit_payload()
-            rec.write({"state": "confirmed"})
-            rec._audit_transition(
-                "tax_deduction_confirmed",
-                before,
-                rec._snapshot_audit_payload(),
-                action_name="action_confirm",
-            )
-
-    def action_deduct(self):
-        self._assert_finance_deduct_access()
-        for rec in self:
-            if rec.state not in ("draft", "confirmed"):
-                raise UserError(_("只有草稿或已确认状态的抵扣登记可以确认抵扣。"))
-            before = rec._snapshot_audit_payload()
             vals = {}
-            if not rec.deduction_confirm_date:
-                vals["deduction_confirm_date"] = fields.Date.context_today(rec)
             if not rec.deduction_amount and rec.invoice_amount_untaxed:
                 vals["deduction_amount"] = rec.invoice_amount_untaxed
             if not rec.deduction_tax_amount and rec.invoice_tax_amount:
                 vals["deduction_tax_amount"] = rec.invoice_tax_amount
+            if vals:
+                rec.write(vals)
+
+    def action_confirm(self):
+        for rec in self:
+            if rec.state != "draft":
+                raise UserError(_("只有草稿状态的抵扣登记可以确认。"))
+            rec._prepare_approval_amounts()
+            rec._check_deduct_ready(require_date=False)
+            rec._check_company_contractor_deduction_responsibility_or_raise()
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec._complete_registration_approval()
+
+    def _complete_registration_approval(self):
+        self.ensure_one()
+        before = self._snapshot_audit_payload()
+        self.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+        self._audit_transition(
+            "tax_deduction_confirmed", before, self._snapshot_audit_payload(),
+            action_name="action_confirm",
+        )
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_deduct_ready(require_date=False)
+                rec._check_company_contractor_deduction_responsibility_or_raise()
+                rec._complete_registration_approval()
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                before = rec._snapshot_audit_payload()
+                rec.with_context(skip_validation_check=True).write({"reject_reason": reason})
+                rec._audit_transition(
+                    "tax_deduction_rejected", before, rec._snapshot_audit_payload(),
+                    action_name="action_on_tier_rejected",
+                )
+
+    def action_deduct(self):
+        self._assert_finance_deduct_access()
+        for rec in self:
+            if rec.state != "confirmed":
+                raise UserError(_("只有已确认状态的抵扣登记可以确认抵扣。"))
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("confirmed",))
+            before = rec._snapshot_audit_payload()
+            vals = {}
+            if not rec.deduction_confirm_date:
+                vals["deduction_confirm_date"] = fields.Date.context_today(rec)
             if vals:
                 rec.write(vals)
             rec._check_deduct_ready()
@@ -573,7 +608,7 @@ class ScTaxDeductionRegistration(models.Model):
         if not self._has_finance_deduct_access():
             raise UserError(_("你没有确认抵扣的财务确认权限。"))
 
-    def _check_deduct_ready(self):
+    def _check_deduct_ready(self, require_date=True):
         for rec in self:
             if rec.source_origin != "legacy" and (
                 rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id
@@ -581,7 +616,7 @@ class ScTaxDeductionRegistration(models.Model):
                 raise UserError(_("抵扣登记财务身份已失配，请重建草稿后再办理。"))
             if not rec.invoice_no:
                 raise UserError(_("请先填写发票号码后再确认抵扣。"))
-            if not rec.deduction_confirm_date:
+            if require_date and not rec.deduction_confirm_date:
                 raise UserError(_("请先填写认证抵扣日期后再确认抵扣。"))
             rounding = rec.currency_id.rounding if rec.currency_id else 0.01
             if float_compare(rec.deduction_tax_amount or 0.0, 0.0, precision_rounding=rounding) <= 0:
@@ -641,6 +676,7 @@ class ScTaxDeductionRegistration(models.Model):
         self.ensure_one()
         return {
             "state": self.state,
+            "reject_reason": self.reject_reason,
             "source_origin": self.source_origin,
             "business_category_code": self.business_category_id.code,
             "deduction_scope": self.deduction_scope,

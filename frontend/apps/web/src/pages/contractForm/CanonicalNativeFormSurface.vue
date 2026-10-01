@@ -1,7 +1,7 @@
 <template>
   <article class="sc-native-contract-page" data-native-contract-structure>
     <FormSectionNavigation
-      v-if="sectionLinks.length > 1"
+      v-if="!detailComposition?.adopted.value && sectionLinks.length > 1"
       :items="sectionLinks"
       root-selector="[data-native-contract-structure]"
     />
@@ -34,7 +34,10 @@
         @field-action="emit('field-action', $event)"
       />
     </section>
-    <section
+    <component
+      :is="detailComposition?.adopted.value ? ScCard : 'section'"
+      :bordered="detailComposition?.adopted.value ? false : undefined"
+      :data-detail-card="detailComposition?.adopted.value ? 'collaboration' : undefined"
       v-if="showCollaborationPanel"
       class="sc-native-contract-collaboration"
       data-form-semantic-role="activity"
@@ -48,7 +51,7 @@
         :show-audit-timeline="true"
         v-on="collaborationPanelListeners || {}"
       />
-    </section>
+    </component>
     <CanonicalActionBar
       v-if="visibleActions.length && !actionsInHeader"
       :direct-actions="directActions"
@@ -60,6 +63,8 @@
 </template>
 
 <script setup lang="ts">
+import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
+import ScCard from '../../components/design-system/ScCard.vue';
 import type { CanonicalFormAction, CanonicalFormRenderMode } from '../../app/presentation/canonicalFormRenderModel';
 import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import NativeFormTreeRenderer from '../../components/template/NativeFormTreeRenderer.vue';
@@ -73,6 +78,8 @@ import NativeCollaborationPanel, {
 } from './NativeCollaborationPanel.vue';
 import type { CanonicalNativeFormBridge } from './canonicalNativeFormBridge';
 import type { WorkspaceSectionNavigationItem } from './nativeSectionNavigation';
+
+const detailComposition = useOptionalStandardDetailComposition();
 
 const props = defineProps<{
   nativeBridge: CanonicalNativeFormBridge | null;
@@ -101,6 +108,7 @@ function runNativeCanonicalAction(payload: Record<string, unknown>) {
 </script>
 
 <style scoped>
+.sc-native-contract-page { display: grid; gap: var(--sc-space-lg); }
 .sc-native-contract-page :deep([data-form-section-target]) {
   scroll-margin-top: calc(var(--sc-form-command-bar-height, 72px) + var(--sc-form-section-nav-height, 0px) + var(--sc-form-sticky-gap, 8px) * 2);
 }

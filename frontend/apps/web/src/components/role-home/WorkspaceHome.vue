@@ -1,13 +1,8 @@
 <template>
-  <div class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract" data-semantic-component="WorkspaceHome" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
-    <section class="role-home-surface__tasks" aria-labelledby="role-home-task-title">
-      <div class="role-home-surface__section-heading">
-        <div>
-          <p>当前事项</p>
-          <h2 id="role-home-task-title">待我处理</h2>
-        </div>
-        <ScButton type="button" variant="ghost" appearance="dashboard-action" @click="navigate('/my-work')">查看全部</ScButton>
-      </div>
+  <ProductWorkspaceSurface main-title="待我处理" summary-title="当前状态" secondary-title="常用入口与最近访问" class="role-home-surface" data-role-home data-role-home-renderer="workspace-contract" data-semantic-component="WorkspaceHome" :data-state="loading ? 'loading' : error ? 'error' : 'ready'" :aria-busy="loading || undefined">
+    <template #main-actions>
+      <ScButton type="button" variant="ghost" appearance="dashboard-action" @click="navigate('/my-work')">查看全部</ScButton>
+    </template>
       <ScInlineState v-if="loading" state="loading" label="正在加载当前事项。" />
       <ScInlineState v-else-if="error" state="error" :label="error">
         <template #actions><ScButton type="button" variant="secondary" @click="load">重试</ScButton></template>
@@ -32,15 +27,7 @@
         </article>
       </div>
       <ScInlineState v-else state="empty" label="当前没有待处理事项。" />
-    </section>
-
-    <section class="role-home-surface__overview" aria-labelledby="role-home-overview-title">
-      <div class="role-home-surface__section-heading">
-        <div>
-          <p>工作概览</p>
-          <h2 id="role-home-overview-title">当前状态</h2>
-        </div>
-      </div>
+    <template #summary>
       <div v-if="summaries.length" class="role-home-surface__summary-list">
         <article v-for="summary in summaries" :key="summary.key">
           <span class="role-home-surface__summary-label"><ScIcon :name="summaryIcon(summary.key)" :size="18" />{{ summary.label }}</span>
@@ -48,15 +35,8 @@
         </article>
       </div>
       <p v-else class="role-home-surface__state">当前没有可汇总事项。</p>
-    </section>
-
-    <section class="role-home-surface__access" aria-labelledby="role-home-access-title">
-      <div class="role-home-surface__section-heading">
-        <div>
-          <p>工作入口</p>
-          <h2 id="role-home-access-title">常用入口与最近访问</h2>
-        </div>
-      </div>
+    </template>
+    <template #secondary>
       <div class="role-home-surface__access-grid">
         <div>
           <h3>常用入口</h3>
@@ -82,12 +62,13 @@
           <p v-else class="role-home-surface__state">打开业务页面后，最近访问会显示在这里。</p>
         </div>
       </div>
-    </section>
-  </div>
+    </template>
+  </ProductWorkspaceSurface>
 </template>
 
 <script setup lang="ts">
 import { useWorkspaceHome } from '../../composables/shared-surface/useWorkspaceHome';
+import ProductWorkspaceSurface from '../product-page-patterns/ProductWorkspaceSurface.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
@@ -121,26 +102,8 @@ const {
 </script>
 
 <style scoped>
-.role-home-surface {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
-  gap: var(--sc-space-4, 16px);
-  width: 100%;
-  margin: 0;
-  min-width: 0;
-  align-items: start;
-}
 
-.role-home-surface__tasks,
-.role-home-surface__overview,
-.role-home-surface__access {
-  background: var(--sc-app-panel);
-  min-width: 0;
-}
-
-.role-home-surface__section-heading p,
-.role-home-surface__section-heading h2,
-.role-home-surface__access h3,
+.role-home-surface__access-grid h3,
 .role-home-surface__task-list h3,
 .role-home-surface__task-list p {
   margin: 0;
@@ -152,45 +115,14 @@ const {
   color: var(--sc-app-text-secondary);
 }
 
-.role-home-surface__tasks,
-.role-home-surface__overview,
-.role-home-surface__access {
-  padding: var(--sc-surface-padding);
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-product-radius-panel);
-}
-
-.role-home-surface__access { grid-column: 1 / -1; }
-
 @media (min-width: 961px) {
-  .role-home-surface__overview { grid-column: 2; }
-  .role-home-surface__access { grid-column: 1 / -1; }
+
   .role-home-surface__access-grid { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
   .role-home-surface__access-grid > div + div {
     padding-left: var(--sc-space-4, 16px);
     border-left: 1px solid var(--sc-app-border);
   }
   .role-home-surface__link-list--quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-.role-home-surface__section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sc-space-3, 12px);
-  margin-bottom: var(--sc-space-3, 12px);
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--sc-app-border);
-}
-
-.role-home-surface__section-heading p {
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
-
-.role-home-surface__section-heading h2 {
-  margin-top: 2px;
-  font-size: 17px;
 }
 
 .role-home-surface__task-list {
@@ -211,10 +143,7 @@ const {
 .role-home-surface__task-list article:first-child { padding-top: 0; }
 .role-home-surface__task-list article:last-child { padding-bottom: 0; border-bottom: 0; }
 
-.role-home-surface__task-list :deep(.sc-btn),
-.role-home-surface__section-heading :deep(.sc-btn) {
-  flex: none;
-}
+.role-home-surface__task-list :deep(.sc-btn) { flex: none; }
 
 .role-home-surface__task-copy { min-width: 0; flex: 1; }
 .role-home-surface__task-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -329,14 +258,6 @@ const {
 }
 
 @media (max-width: 960px) {
-  .role-home-surface {
-    grid-template-columns: 1fr;
-    gap: var(--sc-space-3, 12px);
-  }
-
-  .role-home-surface__tasks { order: 2; }
-  .role-home-surface__overview { order: 1; }
-  .role-home-surface__access { order: 3; }
 
   .role-home-surface__access-grid {
     grid-template-columns: 1fr;

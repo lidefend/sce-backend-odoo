@@ -1152,35 +1152,20 @@ class ConstructionContract(models.Model):
 
     # --- State transitions -------------------------------------------------
     def action_confirm(self):
+        policy = self.env["sc.approval.policy"]
         for contract in self:
-            old = contract.state
-            if contract.state == "draft":
-                if contract._requires_contract_approval() and contract.validation_status != "validated":
-                    contract._request_contract_validation()
-                    continue
-                policy = self.env["sc.approval.policy"].get_active_policy(contract._name, company=contract.company_id)
-                if policy and not contract._requires_contract_approval():
-                    policy.assert_user_can_approve()
-                contract.with_context(skip_validation_check=True).write(
-                    {"state": "confirmed", "reject_reason": False}
-                )
-                contract._post_contract_state_message("合同状态：草稿 → 已生效")
-
-    def _requires_contract_approval(self):
-        self.ensure_one()
-        return self.env["sc.approval.policy"].is_approval_required(self._name, company=self.company_id)
-
-    def _request_contract_validation(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("项目合同已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("项目合同已经在统一审批流程中，请等待审批完成。"))
-        self.with_context(skip_validation_check=True).write({"reject_reason": False})
+            if contract.state != "draft":
+                continue
+            if contract.review_ids and contract.validation_status == "validated":
+                contract.action_on_tier_approved()
+                continue
+            if policy._start_submission_review(contract):
+                contract.with_context(skip_validation_check=True).write({"reject_reason": False})
+                continue
+            contract.with_context(skip_validation_check=True).write(
+                {"state": "confirmed", "reject_reason": False}
+            )
+            contract._post_contract_state_message("合同状态：草稿 → 已生效")
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -1196,21 +1181,18 @@ class ConstructionContract(models.Model):
         return _("OCA审批驳回（未填写原因）")
 
     def action_on_tier_approved(self):
-        contracts_to_confirm = self.browse()
         for contract in self:
-            if contract.state != "draft":
+            if contract.state != "draft" or not contract.review_ids or contract.validation_status != "validated":
                 continue
-            if contract.validation_status != "validated":
-                continue
-            contract.with_context(skip_validation_check=True).write({"reject_reason": False})
-            contracts_to_confirm |= contract
-        if contracts_to_confirm:
-            return contracts_to_confirm.with_context(skip_validation_check=True).action_confirm()
+            contract.with_context(skip_validation_check=True).write(
+                {"state": "confirmed", "reject_reason": False}
+            )
+            contract._post_contract_state_message("合同状态：草稿 → 已生效")
         return True
 
     def action_on_tier_rejected(self, reason=None):
         for contract in self:
-            if contract.state != "draft":
+            if contract.state != "draft" or not contract.review_ids or contract.validation_status != "rejected":
                 continue
             contract.with_context(skip_validation_check=True).write(
                 {"reject_reason": reason or contract._get_tier_reject_reason()}
@@ -1231,8 +1213,7 @@ class ConstructionContract(models.Model):
     def action_set_running(self):
         for contract in self:
             old = contract.state
-            if contract.state not in ("draft", "confirmed"):
-                raise UserError("仅草稿/已生效的合同可置为执行中。")
+            self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed",))
             contract.state = "running"
             if old != contract.state:
                 contract._post_contract_state_message("合同状态：%s → 执行中" % ("已生效" if old == "confirmed" else "草稿"))
@@ -1242,6 +1223,7 @@ class ConstructionContract(models.Model):
             old = contract.state
             if contract.state not in ("confirmed", "running"):
                 raise UserError("仅已生效/执行中的合同可关闭。")
+            self.env["sc.approval.policy"]._assert_submission_approved(contract, ("confirmed", "running"))
             if not contract.line_ids:
                 raise UserError("无合同明细的合同不可关闭，请补充明细。")
             contract.state = "closed"

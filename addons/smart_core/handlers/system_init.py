@@ -1322,7 +1322,14 @@ def _filter_nav_for_user_data_acceptance_only(env, nav: list[dict], *, force: bo
     }
 
 
-def _append_user_data_acceptance_nav_group(nav: list[dict], acceptance_children: list[dict]) -> list[dict]:
+def _append_user_data_acceptance_nav_group(
+    nav: list[dict], acceptance_children: list[dict], acceptance_root_group_label: str
+) -> list[dict]:
+    """Append the user-data-acceptance group under the first branch that has children.
+
+    The group label belongs to the caller's acceptance contract, so it is passed in
+    rather than read from another function's local scope.
+    """
     if not isinstance(nav, list) or not acceptance_children:
         return nav if isinstance(nav, list) else []
 
@@ -2311,6 +2318,11 @@ class SystemInitHandler(BaseIntentHandler):
         _final_route_authority = delivery_engine.menu_service.build_route_authority(
             role_surface,
             nav=_final_navigation,
+        )
+        _final_route_authority = delivery_engine.menu_service.filter_route_authority_by_publication(
+            _final_route_authority,
+            filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
+                _filter_nav_by_release_gate(nodes, release_gate, env=env)[0],
         )
         # Startup overlays can reintroduce compatibility action nodes after
         # DeliveryEngine performed its first role-scoped projection. Reconcile

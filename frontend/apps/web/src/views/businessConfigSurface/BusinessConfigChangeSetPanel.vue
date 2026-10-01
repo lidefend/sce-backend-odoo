@@ -27,10 +27,9 @@
       <ScButton v-if="presentation.canRollback" variant="danger" :disabled="busy" @click="$emit('rollback')">按批次回滚</ScButton>
       <ScButton v-if="presentation.canDiscard" variant="ghost" :disabled="busy" @click="$emit('discard')">放弃草稿</ScButton>
     </div>
-    <details class="high-risk-boundary">
-      <summary>独立高风险操作</summary>
+    <ScDisclosure class="high-risk-boundary" title="独立高风险操作">
       <p>自定义字段、新增原生菜单、审批规则、批量补齐和跨环境整改不属于当前批量发布，需要单独确认。</p>
-    </details>
+    </ScDisclosure>
   </ScPanel>
   <BusinessConfigDraftPreview :preview="changeSet?.preview || null" @device="$emit('preview', $event)" />
 </template>
@@ -38,6 +37,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ScButton from '../../components/design-system/ScButton.vue';
+import ScDisclosure from '../../components/design-system/ScDisclosure.vue';
 import ScPanel from '../../components/design-system/ScPanel.vue';
 import ScStatusBadge from '../../components/design-system/ScStatusBadge.vue';
 import BusinessConfigDraftPreview from './BusinessConfigDraftPreview.vue';

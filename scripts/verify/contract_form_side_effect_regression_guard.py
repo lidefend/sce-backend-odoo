@@ -140,7 +140,10 @@ def main() -> int:
     else:
         validation_line = _line_for_token(save_body, "const validation = await validateBeforeSaveRecord({")
         save_busy_line = _line_for_token(save_body, "busyKind.value = 'save';")
-        finally_clear_line = _line_for_token(re.sub(r"\s+", "", save_body), "finally{busyKind.value=null;")
+        flat_save_body = re.sub(r"\s+", "", save_body)
+        busy_release_token = "if(busyOwnerOperationId===operation.id){busyKind.value=null;"
+        finally_match = re.search(r"}finally\{", flat_save_body)
+        finally_body = _function_body('function ownedFinally() {' + flat_save_body[finally_match.end():], 'ownedFinally') if finally_match else ''
         if validation_line < 0:
             errors.append("saveRecord must keep validateBeforeSaveRecord precheck")
         if save_busy_line < 0:
@@ -159,8 +162,8 @@ def main() -> int:
         ]:
             if token not in save_body:
                 errors.append(f"saveRecord missing side-effect boundary token: {token}")
-        if finally_clear_line < 0:
-            errors.append("saveRecord must clear save busy in finally")
+        if busy_release_token not in finally_body:
+            errors.append("saveRecord must clear save busy inside the finally block")
 
     onchange_body = _function_body(form_state_runtime, "runOnchangeRoundtrip")
     if not onchange_body:

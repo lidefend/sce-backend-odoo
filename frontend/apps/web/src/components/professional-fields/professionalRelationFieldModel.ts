@@ -48,13 +48,34 @@ export function resolveProfessionalMany2oneDisplayValue(
 }
 
 /**
- * Transient search keyword owned by the relation runtime. This is an explicit
- * state channel; it is never a field value and never a display name.
+ * The transient search keyword exactly as the user typed it.
+ *
+ * This text is the controlled value of the official Select's search input, so
+ * it must round-trip byte for byte. Normalizing it (for example trimming it)
+ * while it is still being typed deletes the character the user just entered:
+ * a fully controlled input whose stored keyword is trimmed turns the ``FE ``
+ * keystroke into ``FE``, so the next ``P`` lands as ``FEP`` and
+ * ``FE Project`` silently degrades to ``FEProject``. Normalization belongs to
+ * `resolveProfessionalMany2oneQueryKey`, i.e. the point where the keyword stops
+ * being typed text and becomes a request key.
  */
 export function resolveProfessionalMany2oneQueryKeyword(
   field: Pick<FormSectionFieldSchema, 'relationQueryKeyword'>,
 ): string {
-  return String(field.relationQueryKeyword ?? '').trim();
+  return resolveProfessionalMany2oneSearchInput(field.relationQueryKeyword);
+}
+
+/** The typed search keyword, preserved exactly (presentation/interaction state). */
+export function resolveProfessionalMany2oneSearchInput(keyword: unknown): string {
+  return String(keyword ?? '');
+}
+
+/**
+ * The search keyword as a request/comparison key. Only this projection is
+ * trimmed; it is never fed back into the controlled input.
+ */
+export function resolveProfessionalMany2oneQueryKey(keyword: unknown): string {
+  return String(keyword ?? '').trim();
 }
 
 /** Selected relation record id projected as a plain string, `''` when unset. */

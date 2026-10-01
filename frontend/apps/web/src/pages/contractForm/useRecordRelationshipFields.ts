@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
+import { defaultContractFormRecord } from '../../app/runtime/contractFormDataRuntime';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import { businessRowErrorKey } from '../../app/businessValidationError';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
@@ -12,8 +13,13 @@ type FieldDependencies = Record<string, any>;
 
 export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   const { ApiError, contractFieldLabel, deniedRelationModels, ensureOne2manyRows, fieldType, findNativeFieldNodeInTree, formData, isWritableFieldVisible, mergeHydratedOne2manyRecords, mergeRelationOptions, nativeFieldSubviewFromTree, nativeFormLayoutNodes, nativeNodeFieldDescriptorFromNode, normalizeRelationIds, one2manyCanCreateFromPolicies, one2manyCanInlineEditFromPolicies, one2manyCanUnlinkFromPolicies, one2manyColumnsFromSubview, one2manyCreateLabelFromPolicies, one2manyDraftSummary, one2manyFieldRows, one2manyPrimaryColumnFromColumns, one2manyRemovalLabelsFromPolicies, one2manyRowLabelFromPrimary, one2manySubviewPolicies, one2manyValidation, readContractFormRecord, relationEntry, relationFieldDescriptors, relationModel, relationOptions, relationOptionsForFieldFromRuntime, relationOptionsFromRecords, relationReadFields, selectOne2manySubview, selectedRelationOptionsFromRuntime, v2ContractStore } = dependencies;
+  const { captureRelationRequest, relationRuntimeGeneration } = dependencies;
   const formFields = () => resolveContractV2FormFieldMap(v2ContractStore.value) as Record<string, FieldDescriptor>;
   const one2manyHydrating = reactive<Record<string, boolean>>({});
+
+  watch(relationRuntimeGeneration, () => {
+    Object.keys(one2manyHydrating).forEach((name) => { delete one2manyHydrating[name]; });
+  }, { flush: 'sync' });
 
   function isOne2manyHydrating(name: string) {
     return one2manyHydrating[String(name || '').trim()] === true;
@@ -46,6 +52,13 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       if (entry?.canRead !== true) return;
       if (!relation || deniedRelationModels.has(relation)) return;
       const ids = relationIds(name);
+      const ownsRequest = captureRelationRequest(`selected:${name}`);
+      const context = resolveContractFormReadContext(v2ContractStore.value);
+      const contextIdentity = JSON.stringify(context);
+      const isCurrent = () => ownsRequest() && relationModel(name) === relation
+        && JSON.stringify(resolveContractFormReadContext(v2ContractStore.value)) === contextIdentity
+        && JSON.stringify(relationIds(name)) === JSON.stringify(ids);
+      if (!isCurrent()) return;
       if (!ids.length) return;
       const existingIds = new Set((relationOptions.value[name] || []).map((option) => option.id));
       const missingIds = ids.filter((id) => !existingIds.has(id));
@@ -55,11 +68,13 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
           model: relation,
           ids: missingIds,
           fields: relationReadFields(descriptor),
-          context: resolveContractFormReadContext(v2ContractStore.value),
+          context,
         });
+        if (!isCurrent()) return;
         const options = relationOptionsFromRecords(response.records, descriptor);
         if (options.length) mergeRelationOptions(name, options);
       } catch (err) {
+        if (!isCurrent()) return;
         if (err instanceof ApiError) {
           const denied = err.status === 403 || String(err.reasonCode || '').toUpperCase() === 'PERMISSION_DENIED';
           if (denied) deniedRelationModels.add(relation);
@@ -154,7 +169,26 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyDraftSummary(one2manyFieldRows(name));
   }
 
-  async function hydrateOne2manyRows(name: string) {
+  async function loadOne2manyCreateDefaults(name: string): Promise<Record<string, unknown>> {
+    const model = one2manyRelationModel(name);
+    if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
+    const fields = [...new Set(one2manyColumns(name).map((column: One2ManyColumn) => column.name))];
+    if (!fields.length) throw new Error('当前明细缺少字段契约');
+    const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
+    if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
+      throw new Error('明细默认值上下文尚未解析');
+    }
+    const result = await defaultContractFormRecord({ model, fields,
+      context: { ...resolveContractFormReadContext(v2ContractStore.value), ...(fieldContext as Record<string, unknown> | undefined) },
+    });
+    if (!result?.record || typeof result.record !== 'object' || Array.isArray(result.record)) {
+      throw new Error('未能取得明细默认值，请重试');
+    }
+    return Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+  }
+
+  async function hydrateOne2manyRows(name: string, ownsRequest = captureRelationRequest(`one2many:${name}`)) {
+    if (!ownsRequest()) return;
     const relation = one2manyRelationModel(name);
     if (!relation) return;
     const entry = relationEntry(formFields()[name]);
@@ -164,6 +198,13 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     }
     if (deniedRelationModels.has(relation)) return;
     const rows = ensureOne2manyRows(name).filter((row) => row.id && !row.isNew);
+    const rowIds = () => one2manyFieldRows(name).filter((row) => row.id && !row.isNew).map((row) => Number(row.id));
+    const ids = rows.map((row) => Number(row.id));
+    const context = resolveContractFormReadContext(v2ContractStore.value);
+    const contextIdentity = JSON.stringify(context);
+    const isCurrent = () => ownsRequest() && one2manyRelationModel(name) === relation
+      && JSON.stringify(resolveContractFormReadContext(v2ContractStore.value)) === contextIdentity
+      && JSON.stringify(rowIds()) === JSON.stringify(ids);
     if (!rows.length) return;
     const columns = one2manyColumns(name);
     if (!columns.length) return;
@@ -176,8 +217,9 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
         model: relation,
         ids: rows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0),
         fields,
-        context: resolveContractFormReadContext(v2ContractStore.value),
+        context,
       });
+      if (!isCurrent()) return;
       const records = Array.isArray(response.records) ? response.records : [];
       mergeHydratedOne2manyRecords(name, records as Array<Record<string, unknown>>);
     } catch {
@@ -198,10 +240,11 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function hydrateVisibleOne2manyRows() {
     const names = prepareVisibleOne2manyHydration();
     await Promise.all(names.map(async (name) => {
+      const isCurrent = captureRelationRequest(`one2many:${name}`);
       try {
-        await hydrateOne2manyRows(name);
+        await hydrateOne2manyRows(name, isCurrent);
       } finally {
-        one2manyHydrating[name] = false;
+        if (isCurrent()) one2manyHydrating[name] = false;
       }
     }));
   }
@@ -216,5 +259,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
+  return { loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
 }

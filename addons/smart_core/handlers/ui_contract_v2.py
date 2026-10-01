@@ -16,6 +16,7 @@ from ..core.unified_page_contract_v2_assembler import (
     hydrate_final_action_modifier_status,
     hydrate_final_layout_modifier_status,
     project_runtime_business_actions,
+    project_workflow_action_semantics,
 )
 from ..core.unified_page_contract_v2_client import (
     MOBILE_CLIENT_TYPES,
@@ -345,7 +346,9 @@ class UiContractV2Handler(BaseIntentHandler):
             columns = list(fact_columns)
         if not columns:
             return
-        columns = self._merge_user_list_preference_columns(source_contract, columns)
+        pref = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
+        if pref.get("allow_order") is not False:
+            columns = self._merge_user_list_preference_columns(source_contract, columns)
         locked_profile = deepcopy(profile)
         profile_labels = locked_profile.get("column_labels") if isinstance(locked_profile.get("column_labels"), dict) else {}
         locked_profile["column_labels"] = self._apply_legacy_visible_business_labels(
@@ -362,12 +365,13 @@ class UiContractV2Handler(BaseIntentHandler):
         ]
         pref = locked_profile.get("preference_policy") if isinstance(locked_profile.get("preference_policy"), dict) else {}
         locked_profile["preference_policy"] = {
-            **pref,
-            "scope": "business_config_contract",
-            "allow_visibility": True,
-            "allow_order": True,
-            "allow_width": bool(pref.get("allow_width", True)),
-            "locked_columns": [],
+            **(pref or {
+                "scope": "business_config_contract",
+                "allow_visibility": True,
+                "allow_order": True,
+                "allow_width": True,
+                "locked_columns": [],
+            }),
             "must_request_columns": list(locked_profile.get("fact_columns") or columns),
         }
         self._project_v2_source_policies(contract, {
@@ -382,6 +386,10 @@ class UiContractV2Handler(BaseIntentHandler):
             source_authority["source_key"] = "list_profile.business_config_contract_authoritative"
 
     def _merge_user_list_preference_columns(self, source_contract: dict[str, Any], columns: list[str]) -> list[str]:
+        profile = source_contract.get("list_profile") if isinstance(source_contract.get("list_profile"), dict) else {}
+        preference = profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}
+        if preference.get("allow_order") is False:
+            return columns
         action_id = self._source_action_id(source_contract)
         if action_id <= 0 or "sc.user.view.preference" not in self.env:
             return columns
@@ -668,6 +676,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 str(request_id),
                 trace_id,
                 client_type,
+                action_id=action_id,
             )
             return IntentExecutionResult(
                 ok=True,
@@ -906,6 +915,11 @@ class UiContractV2Handler(BaseIntentHandler):
         self._ensure_native_layout_widget_status_visible(contract_v2)
         finalize_hook_at = time.monotonic()
         contract_v2 = project_runtime_business_actions(contract_v2)
+        # The workflow authority declares a purpose per available action.  Bind
+        # it to the native occurrence that declares the same method, so the Web
+        # consumes a declared purpose instead of inferring one from a method
+        # name or a button caption.
+        contract_v2 = project_workflow_action_semantics(contract_v2)
         runtime_actions_projected_at = time.monotonic()
         hydrate_final_modifier_dependencies(
             self.env,
@@ -951,7 +965,7 @@ class UiContractV2Handler(BaseIntentHandler):
             )
         assembled_cache_stored_at = time.monotonic()
         contract_v2 = _authority.seal_runtime_contract(
-            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type
+            self, contract_v2, source_contract, runtime_source_type, str(request_id), trace_id, client_type, action_id=action_id
         )
         runtime_sealed_at = time.monotonic()
         assembler_stages.update({
@@ -3032,7 +3046,10 @@ class UiContractV2Handler(BaseIntentHandler):
         if not columns:
             return
 
-        columns = self._merge_user_list_preference_columns(source_contract, columns)
+        # Configured columns meet final product constraints before personal order.
+        # The final enforcement step applies allowed preferences exactly once.
+        if not direct_orchestration_columns:
+            columns = self._merge_user_list_preference_columns(source_contract, columns)
         labels = profile.get("column_labels") if isinstance(profile.get("column_labels"), dict) else {}
         view_column_labels = {}
         for row in [*raw_columns, *tree_schema_rows]:
@@ -3171,12 +3188,12 @@ class UiContractV2Handler(BaseIntentHandler):
                 name for name in policy_cross_device_critical if name in columns
             ],
             "preference_policy": {
-                **(profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}),
                 "scope": "ui_only",
                 "allow_visibility": True,
                 "allow_order": True,
                 "allow_width": True,
                 "locked_columns": [],
+                **(profile.get("preference_policy") if isinstance(profile.get("preference_policy"), dict) else {}),
                 "must_request_columns": columns,
             },
             "selection_policy": {
@@ -4059,8 +4076,8 @@ class UiContractV2Handler(BaseIntentHandler):
         projection_context["contract_projection_readonly"] = True
         try:
             from odoo import api
-            projection_env = api.Environment(self.env.cr, self.env.uid, projection_context)
-            projection_su_env = api.Environment(self.su_env.cr, self.su_env.uid, projection_context)
+            projection_env = api.Environment(self.env.cr, self.env.uid, projection_context, su=bool(getattr(self.env, "su", False)))
+            projection_su_env = api.Environment(self.su_env.cr, self.su_env.uid, projection_context, su=bool(getattr(self.su_env, "su", False)))
         except Exception:
             projection_env = self.env
             projection_su_env = self.su_env

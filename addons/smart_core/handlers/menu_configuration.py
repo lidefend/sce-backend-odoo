@@ -742,8 +742,12 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
         return out
 
     def _runtime_role_surface(self) -> dict:
+        from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+
+        resolver = IdentityResolver(self.env)
+        surface = resolver.build_role_surface(resolver.user_group_xmlids(self.env.user), [], set())
         return {
-            "role_code": "business_config_admin" if self.env.user.has_group(BUSINESS_CONFIG_GROUP) else "",
+            **surface,
             "is_platform_admin": bool(self.env.user.has_group(PLATFORM_ADMIN_GROUP)),
             "is_business_config_admin": bool(self.env.user.has_group(BUSINESS_CONFIG_GROUP)),
         }

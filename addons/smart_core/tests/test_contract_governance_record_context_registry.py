@@ -201,6 +201,23 @@ class ContractGovernanceRecordContextRegistryTests(unittest.TestCase):
             ],
         )
 
+    def test_standard_list_profile_shape_carries_no_status_tone(self):
+        # A status colour is presentation, so the profile shape must not carry
+        # a value-to-tone map even when a profile tries to declare one.
+        self.contract_governance.register_legacy_standard_list_profile(
+            {
+                "profile_key": "project.project.list",
+                "model_name": "project.project",
+                "columns_order": ["name"],
+                "row_primary": "name",
+                "status_field": "lifecycle_state",
+                "tone_by_value": {"draft": "warning", "closed": "success"},
+            }
+        )
+
+        registered = self.contract_governance._LEGACY_STANDARD_LIST_PROFILE_REGISTRY[-1]
+        self.assertNotIn("tone_by_value", registered)
+
     def test_business_kanban_row_actions_must_be_registered_explicitly(self):
         self.contract_governance.register_legacy_kanban_row_action(
             "project.project",

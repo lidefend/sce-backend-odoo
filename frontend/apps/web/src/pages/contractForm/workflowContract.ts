@@ -2,16 +2,8 @@ import { parseMaybeJsonRecord } from '../../app/contractRuntime';
 import { dictOrEmpty } from './recordUtils';
 import type { FieldDescriptor } from '@sc/schema';
 import { resolveContractV2WorkflowContract, type ContractV2NormalizedStore } from '../../app/contracts/v2';
-import type { ContractAction, NativeStatusbarVm, StatusbarState } from './types';
-import {
-  isWorkflowTransitionMethod,
-  resolveWorkflowActionAvailability,
-  workflowActionMethodAliases,
-  workflowActionRows,
-  workflowActionRowForMethod,
-} from '../../app/contracts/v2/workflowActionAvailability';
-
-export { isWorkflowTransitionMethod, workflowActionMethodAliases, workflowActionRowForMethod };
+import type { NativeStatusbarVm, StatusbarState } from './types';
+import { workflowActionRows } from '../../app/contracts/v2/workflowActionAvailability';
 
 export type NativeFormStatusbarInput = {
   recordId: number;
@@ -157,37 +149,4 @@ export function resolveWorkflowContractFromStore(
   store: ContractV2NormalizedStore | null,
 ): Record<string, unknown> {
   return resolveContractV2WorkflowContract(store);
-}
-
-export function applyWorkflowAvailability(params: {
-  action: ContractAction;
-  workflow: Record<string, unknown>;
-  recordId: number;
-  blockingMessage: string;
-}): ContractAction {
-  const { action, workflow } = params;
-  if (!params.recordId || !action.methodName || !isWorkflowTransitionMethod(workflow, action.methodName)) return action;
-  const availability = resolveWorkflowActionAvailability(workflow, {
-    actionKey: action.key,
-    methodName: action.methodName,
-    backendIdentity: action.backendIdentity,
-  });
-  if (availability.kind === 'unmanaged') return action;
-  if (availability.kind === 'error') {
-    return { ...action, enabled: false, hint: availability.message };
-  }
-  if (!availability.enabled) {
-    return {
-      ...action,
-      enabled: false,
-      hint: availability.message || params.blockingMessage || availability.reasonCode,
-    };
-  }
-  return action;
-}
-
-export function shouldShowWorkflowAction(workflow: Record<string, unknown>, recordId: number, methodName: string) {
-  const method = String(methodName || '').trim();
-  if (!recordId || !method || !Array.isArray(workflow.availableActions) || !isWorkflowTransitionMethod(workflow, method)) return true;
-  return Boolean(workflowActionRowForMethod(workflow, method));
 }

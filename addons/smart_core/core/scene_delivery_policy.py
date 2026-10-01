@@ -472,6 +472,21 @@ def filter_delivery_scenes(
         if mode == DELIVERY_MODE_DEMO and not _is_demo_surface(normalized_surface):
             _exclude(code, REASON_SCENE_DEMO_ONLY)
             continue
+        # Entry authorization applies to both navigation and deep links.
+        access = scene.get("access") if isinstance(scene.get("access"), dict) else {}
+        if isinstance(access, dict) and "allowed" in access and not _to_bool(access.get("allowed"), True):
+            _exclude(code, REASON_SCENE_ROLE_PRUNED)
+            continue
+
+        required_caps = scene.get("required_capabilities")
+        if isinstance(required_caps, list) and required_caps and isinstance(role_surface, dict):
+            allowed_caps = role_surface.get("capabilities")
+            if isinstance(allowed_caps, list):
+                allowed_set = {str(item or "").strip() for item in allowed_caps if str(item or "").strip()}
+                if not all(str(cap or "").strip() in allowed_set for cap in required_caps):
+                    _exclude(code, REASON_SCENE_CAPABILITY_BLOCKED)
+                    continue
+
         if mode == DELIVERY_MODE_DEEP_LINK_ONLY:
             _exclude(code, REASON_SCENE_DELIVERY_DEEP_LINK_ONLY)
             if _scene_entry_allowed(scene):
@@ -492,20 +507,6 @@ def filter_delivery_scenes(
                 if _scene_entry_allowed(scene):
                     _append_deep_link(scene)
                 continue
-
-        access = scene.get("access") if isinstance(scene.get("access"), dict) else {}
-        if isinstance(access, dict) and "allowed" in access and not _to_bool(access.get("allowed"), True):
-            _exclude(code, REASON_SCENE_ROLE_PRUNED)
-            continue
-
-        required_caps = scene.get("required_capabilities")
-        if isinstance(required_caps, list) and required_caps and isinstance(role_surface, dict):
-            allowed_caps = role_surface.get("capabilities")
-            if isinstance(allowed_caps, list):
-                allowed_set = {str(item or "").strip() for item in allowed_caps if str(item or "").strip()}
-                if not all(str(cap or "").strip() in allowed_set for cap in required_caps):
-                    _exclude(code, REASON_SCENE_CAPABILITY_BLOCKED)
-                    continue
 
         # Rule: visibility refines delivery only after delivery_mode passes.
         if not _scene_nav_visible(scene):

@@ -391,5 +391,86 @@ class ProfessionalDetailCollectionGuardTests(unittest.TestCase):
         self.assertTrue(any("do not fail closed" in item for item in validate(read_text)))
 
 
+    def test_declared_dialog_vocabulary_shortened_in_normalizer_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("core_extension_contract_normalizers.py"):
+                return value.replace('"allAppliedLabel": "该结算单所有明细均已申请完毕",\n', "")
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("drifted from the declared vocabulary" in item for item in failures))
+
+    def test_dialog_requirement_list_hand_shortened_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("paymentSettlementIntroduceDialogModel.ts"):
+                return value.replace(
+                    "  `${DIALOG_CONFIG_KEY}.payloadFields.sourceLines`,\n",
+                    "",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("drifted from the declared vocabulary" in item for item in failures))
+
+    def test_dialog_hardcoded_payload_key_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("PaymentSettlementIntroduceDialog.vue"):
+                return value.replace(
+                    "[props.contract.payloadFields.record]: recordId,",
+                    "settlement_id: recordId,",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("undeclared business semantic" in item for item in failures))
+
+    def test_dialog_action_ref_guess_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("PaymentSettlementIntroduceDialog.vue"):
+                return value + "\nfunction requiredActionRef(key: string) { return key; }\n"
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("undeclared business semantic requiredActionRef" in item for item in failures))
+
+    def test_collection_without_fail_closed_gate_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("PaymentSettlementDetailCollectionControl.vue"):
+                return value.replace("introduceReady", "true").replace(
+                    'data-contract-semantic-gap', 'data-gap-removed',
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("does not fail closed" in item for item in failures))
+
+    def test_collection_without_missing_semantic_surface_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("PaymentSettlementDetailCollectionControl.vue"):
+                return value.replace("introduceMissing", "[]").replace(
+                    "introduceMissing", "[]",
+                )
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("does not surface the missing introduce semantics" in item for item in failures))
+
+    def test_collection_without_contract_injection_fails(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("PaymentSettlementDetailCollectionControl.vue"):
+                return value.replace(':contract="introduceContract"', ':field="field"')
+            return value
+
+        failures = validate(read_text)
+        self.assertTrue(any("does not inject the resolved contract" in item for item in failures))
+
+
 if __name__ == "__main__":
     unittest.main()

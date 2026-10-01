@@ -54,6 +54,29 @@ RAW_INTERACTIVE_CONTROL = re.compile(r"<(?:button|input|select|textarea|table)(?
 SC_DIALOG_CONSUMER = re.compile(r"<ScDialog\b(?P<attrs>[^>]*)>", re.DOTALL)
 
 
+# Declared authority boundary.  Consumer *visual chrome* rules are scoped to
+# the formal P0/P1 business surfaces; P3 low-code administration/designer
+# styling is intentionally out of scope for this rule (the same boundary is
+# recorded in the official-design-alignment inventory excludedScopes entry
+# "P3 low-code designer styling").  The native-control and dialog-semantic
+# rules above must keep running before this exemption: moving this skip above
+# them would silently exempt P3 administration surfaces from a
+# layer-independent policy boundary while the rule text still claims coverage.
+P3_CONSUMER_CHROME_EXEMPTION = (
+    "declared P0/P1 authority: P3 low-code administration/designer styling is out of scope "
+    "for consumer primitive visual chrome rules (native control and dialog semantic rules stay repo-wide)"
+)
+
+
+def consumer_chrome_exempt(
+    relative: str, p3_files: set[str], p3_prefixes: tuple[str, ...]
+) -> str | None:
+    """Return the declared exemption reason, or None when the chrome rule applies."""
+    if relative in p3_files or relative.startswith(p3_prefixes):
+        return P3_CONSUMER_CHROME_EXEMPTION
+    return None
+
+
 def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
     path = root / OWNERSHIP.relative_to(ROOT)
     if not path.is_file():
@@ -62,6 +85,16 @@ def p3_scope(root: Path) -> tuple[set[str], tuple[str, ...]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     owner = payload.get("owners", {}).get("p3-low-code-administration", {})
     return set(owner.get("sources", [])), tuple(owner.get("prefixes", []))
+
+
+def css_without_comments(text: str) -> str:
+    """Remove comments before inspecting selectors/properties, preserving strings.
+
+    Quotes are consumed with escapes so a literal /* inside a CSS value cannot
+    swallow a later real rule. Comments contribute whitespace, never selectors.
+    """
+    token = re.compile(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|/\*.*?(?:\*/|$)", re.DOTALL)
+    return token.sub(lambda match: " " if match.group().startswith("/*") else match.group(), text)
 
 
 def direct_root_visual_overrides(source_text: str, style_text: str | None = None) -> list[str]:
@@ -76,7 +109,7 @@ def direct_root_visual_overrides(source_text: str, style_text: str | None = None
                 if value and value not in {"active", "selected", "disabled"} and not value.startswith("sc-"):
                     classes.add(value)
     findings = []
-    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+    for rule in STYLE_RULE.finditer(css_without_comments(style_text if style_text is not None else source_text)):
         if not VISUAL_CHROME_PROPERTY.search(rule.group("body")):
             continue
         selector = rule.group("selector")
@@ -96,7 +129,7 @@ def native_descendant_visual_overrides(source_text: str, style_text: str | None 
         if value and not value.startswith("sc-")
     }
     findings: list[str] = []
-    for rule in STYLE_RULE.finditer(style_text if style_text is not None else source_text):
+    for rule in STYLE_RULE.finditer(css_without_comments(style_text if style_text is not None else source_text)):
         selector = rule.group("selector")
         if "<style" in selector:
             selector = selector.rsplit("<style", 1)[1].split(">", 1)[-1]
@@ -109,6 +142,28 @@ def native_descendant_visual_overrides(source_text: str, style_text: str | None 
                 findings.append(selector.strip())
                 break
     return sorted(set(findings))
+
+
+EXTERNAL_TEMPLATE_SRC = re.compile(r"""<template\s+src\s*=\s*['"](?P<value>[^'"]+)['"]""")
+
+
+def external_template_text(path: Path, source_text: str) -> str:
+    """Resolve ``<template src="...">`` so the scanned source is the component's
+    real rendering surface.  Judging an external-template component from the
+    ``.vue`` script alone would let a native control render undetected."""
+    chunks = []
+    for match in EXTERNAL_TEMPLATE_SRC.finditer(source_text):
+        target = (path.parent / match.group("value")).resolve()
+        if not target.is_file():
+            raise FileNotFoundError(f"external component template is missing: {target}")
+        chunks.append(target.read_text(encoding="utf-8"))
+    return "\n".join(chunks)
+
+
+def component_source_text(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    external = external_template_text(path, text)
+    return f"{text}\n{external}" if external else text
 
 
 def component_style_text(path: Path, source_text: str) -> str:
@@ -164,16 +219,16 @@ def validate(root: Path = ROOT) -> list[str]:
             relative = path.relative_to(root).as_posix()
             if "/components/design-system/" in f"/{relative}":
                 continue
-            source_text = path.read_text(encoding="utf-8")
+            source_text = component_source_text(path)
             if RAW_INTERACTIVE_CONTROL.search(source_text):
                 errors.append(f"business surface bypasses the professional primitive adapter: {relative}")
             if any('data-semantic-component=' in match.group("attrs") for match in SC_DIALOG_CONSUMER.finditer(source_text)):
                 errors.append(f"ScDialog consumer must use data-dialog-purpose instead of overriding primitive semantic identity: {relative}")
             if relative in PROFESSIONAL_COMPOSITE_OWNERS:
                 continue
-            if relative in p3_files or relative.startswith(p3_prefixes):
+            if consumer_chrome_exempt(relative, p3_files, p3_prefixes):
                 continue
-            style_text = component_style_text(path, source_text)
+            style_text = css_without_comments(component_style_text(path, source_text))
             if any(VISUAL_CHROME_PROPERTY.search(match.group("body")) for match in CONSUMER_PRIMITIVE_CHROME.finditer(style_text)):
                 errors.append(f"consumer primitive visual chrome must move to an adapter appearance: {relative}")
             root_overrides = direct_root_visual_overrides(source_text, style_text)
@@ -443,7 +498,7 @@ def validate(root: Path = ROOT) -> list[str]:
 
     visual_projection_markers = (
         "--td-bg-color-specialcomponent: var(--sc-semantic-surface-input)",
-        "--td-text-color-placeholder: var(--sc-semantic-text-secondary)",
+        "--td-text-color-placeholder: var(--sc-semantic-text-muted)",
         "--td-border-level-2-color: var(--sc-semantic-border-strong)",
         ".sc-btn.t-button",
         ".sc-btn.t-button.sc-btn-primary[data-status='default']",

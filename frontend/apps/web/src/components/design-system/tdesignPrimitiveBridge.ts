@@ -18,8 +18,11 @@ export {
   TDesignInputAdornment,
   TDesignLayout,
   TDesignAside,
+  TDesignBreadcrumb,
+  TDesignBreadcrumbItem,
   TDesignHeader,
   TDesignContent,
+  TDesignFooter,
   TDesignInputNumber,
   TDesignLoading,
   TDesignMenu,
@@ -52,5 +55,6 @@ export {
   TDesignTextarea,
   TDesignTooltip,
   TDesignUpload,
+  TDesignTree,
 } from '@sc/ui/primitives';
 export type { TDesignGlobalConfigProvider, TDesignTableRowAttributes, TDesignTableRowData } from '@sc/ui/primitives';

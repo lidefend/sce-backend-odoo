@@ -12,7 +12,7 @@ from odoo.addons.smart_core.handlers.reason_codes import REASON_IDEMPOTENCY_CONF
 @tagged("sc_smoke", "api_data_batch_backend")
 class TestApiDataWriteUnlinkIdempotencyBackend(TransactionCase):
     def _ensure_audit_model(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
 
     def test_api_data_write_same_key_same_payload_is_deduplicated(self):

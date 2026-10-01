@@ -131,6 +131,26 @@ verify.business_config.config_workbench_operation_acceptance: guard.prod.forbid
 verify.business_config.change_set_acceptance: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_change_set_acceptance.mjs
 
+.PHONY: verify.business_config.standard_list_loop verify.business_config.standard_list_loop.unit
+verify.business_config.standard_list_loop: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-lowcode
+
+verify.business_config.standard_list_loop.unit: guard.prod.forbid
+	@node --test frontend/apps/web/scripts/standard_list_lowcode_loop_test.mjs
+	@bash -n scripts/dev/frontend_acceptance_runtime.sh
+
+.PHONY: frontend.standard.preview.build frontend.standard.preview.up verify.frontend.standard_page_type.browser verify.frontend.standard_preview.unit
+frontend.standard.preview.build: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-build
+frontend.standard.preview.up: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-up
+verify.frontend.standard_page_type.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-browser
+verify.frontend.standard_preview.unit: guard.prod.forbid
+	@node --test frontend/apps/web/scripts/standard_project_save_scope_test.mjs
+	@python3 -m unittest scripts.verify.test_frontend_standard_preview
+	@bash -n scripts/dev/frontend_acceptance_runtime.sh
+
 verify.business_config.safe_open_acceptance: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_safe_open_acceptance.mjs
 
@@ -191,8 +211,13 @@ verify.business_config.low_code_menu_navigation_alignment: guard.prod.forbid
 verify.business_config.low_code_global_stability: guard.prod.forbid
 	@cd frontend/apps/web && BASE_URL=$(WORKFLOW_CONTRACT_FRONTEND_URL) DB_NAME=$(DB_NAME) E2E_LOGIN=$${E2E_LOGIN:-wutao} E2E_PASSWORD=$${E2E_PASSWORD:-123456} node scripts/low_code_global_stability_acceptance.mjs
 
-verify.business_config.approval_runtime: guard.prod.forbid check-compose-project check-compose-env
+verify.business_config.approval_runtime: guard.prod.forbid
+ifeq ($(SC_ACCEPTANCE_RUNTIME_PROFILE),local)
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE=local bash scripts/dev/frontend_acceptance_operation_entry.sh standard-approval-runtime
+else
+	@$(MAKE) --no-print-directory check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/business_config_approval_runtime_smoke.py
+endif
 
 verify.business_config.full_acceptance: verify.business_config.guard_inventory verify.business_config.unit verify.frontend.build verify.business_config.coverage verify.business_config.list_config_boundary verify.full_product_capability_scope verify.business_config.snapshot verify.business_config.approval_runtime verify.business_config.browser_acceptance verify.product.navigation_boundary verify.business_config.low_code_acceptance verify.business_config.config_workbench_operation_acceptance verify.business_config.change_set_acceptance verify.business_config.safe_open_acceptance verify.business_config.workbench_product_acceptance verify.business_config.workbench_fault_acceptance verify.business_config.low_code_runtime_consistency verify.business_config.low_code_group_matrix verify.business_config.low_code_layout_runtime verify.business_config.low_code_menu_navigation_alignment verify.business_config.low_code_global_stability verify.user_menu.reachability.guard
 
@@ -1775,19 +1800,19 @@ acceptance.frontend.release_snapshot: guard.prod.forbid
 
 acceptance.frontend.core_record_form.journeys: guard.prod.forbid
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; \
 	export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh core-record-form-journeys
 
 .PHONY: acceptance.frontend.activity_surface.browser verify.frontend.activity_surface.browser.internal
 acceptance.frontend.activity_surface.browser: guard.prod.forbid
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh activity-surface-browser
 
 verify.frontend.activity_surface.browser.internal: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -1851,7 +1876,7 @@ verify.frontend.navigation.access: guard.prod.forbid check-compose-project check
 
 verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -1984,7 +2009,7 @@ verify.frontend.delivery_hardening.browser: guard.prod.forbid check-compose-proj
 verify.frontend.delivery_hardening.release.performance_probe: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.performance_probe: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -2004,7 +2029,7 @@ verify.frontend.delivery_hardening.release.performance_probe: guard.prod.forbid 
 verify.frontend.delivery_hardening.release.browser: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -2327,3 +2352,57 @@ verify.nav.pro01r.route_authority.http: guard.prod.forbid
 verify.nav.pro01r.route_authority.browser: guard.prod.forbid
 	@test -n "$(NAV_PRO_PASSWORD)" || { echo "NAV_PRO_PASSWORD is required"; exit 2; }
 	@DB_NAME=$(DB_NAME) FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:$(NGINX_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" node scripts/verify/nav_pro_01r_route_authority_browser.mjs
+
+.PHONY: verify.business_config.formal_list.unit
+.PHONY: verify.product.entry_publication.unit
+verify.product.entry_publication.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_entry_publication_authority.py
+	@python3 addons/smart_core/tests/test_system_init_final_route_authority_static.py
+
+.PHONY: verify.business_config.approval_targets.unit
+verify.business_config.approval_targets.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_business_config_surface.py
+	@python3 addons/smart_construction_core/tests/test_approval_configuration_targets.py
+	@node --test frontend/apps/web/scripts/business_config_approval_target_test.mjs
+
+verify.business_config.formal_list.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
+	@python3 addons/smart_core/tests/test_load_contract_response_cache.py
+	@python3 addons/smart_core/tests/test_view_orchestrator.py
+	@python3 scripts/verify/test_formal_list_configuration_baseline.py
+
+.PHONY: verify.frontend.standard_bootstrap.inventory
+verify.frontend.standard_bootstrap.inventory: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-inventory
+
+.PHONY: verify.frontend.bootstrap_inventory.unit
+verify.frontend.bootstrap_inventory.unit: guard.prod.forbid
+	@node --test frontend/apps/web/scripts/bootstrap_inventory_policy_test.mjs
+
+.PHONY: verify.frontend.standard_bootstrap.browser
+verify.frontend.standard_bootstrap.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-page-bootstrap
+
+.PHONY: verify.frontend.standard_public_auth.browser
+verify.frontend.standard_public_auth.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-public-auth-browser
+
+.PHONY: verify.frontend.standard_config_field.browser
+verify.frontend.standard_config_field.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-config-field-browser
+
+.PHONY: verify.frontend.standard_menu_config.browser
+verify.frontend.standard_menu_config.browser: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-menu-config-browser
+
+.PHONY: verify.frontend.menu_navigation.diagnostic
+verify.frontend.menu_navigation.diagnostic: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-menu-nav-diagnostic
+
+.PHONY: verify.frontend.relation_navigation.diagnostic
+verify.frontend.relation_navigation.diagnostic: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-nav-diagnostic
+
+.PHONY: frontend.standard.favorite_probe.recover
+frontend.standard.favorite_probe.recover: guard.prod.forbid
+	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-favorite-recovery

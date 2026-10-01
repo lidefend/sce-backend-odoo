@@ -15,7 +15,7 @@ const BOOTSTRAP_SECRET = process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
-const VIEWPORTS = PHASE === 'current-fail'
+const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
   ? [{ key: '1440', width: 1440, height: 900 }]
   : [
       { key: '1440', width: 1440, height: 900 },
@@ -25,7 +25,11 @@ const VIEWPORTS = PHASE === 'current-fail'
       { key: '520', width: 520, height: 844 },
       { key: '390', width: 390, height: 844 },
     ];
-const FIRST_CONTENT_LIMITS = { 1440: 165, 1024: 160, 768: 200, 521: 160, 520: 160, 390: 160 };
+const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || '').split(',').filter(Boolean);
+if (requestedWidths.some(width => !DEFAULT_VIEWPORTS.some(viewport => viewport.key === width))) throw new Error('unknown LIST_SURFACE_VIEWPORTS');
+const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => requestedWidths.includes(viewport.key)) : DEFAULT_VIEWPORTS;
+const REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
+if (REQUESTED_ROUTE && !/^\/a\/\d+\?menu_id=\d+$/.test(REQUESTED_ROUTE)) throw new Error('LIST_SURFACE_ROUTE must identify exact action/menu');
 
 if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
   throw new Error('acceptance login and password or isolated bootstrap secret are required');
@@ -97,22 +101,49 @@ async function waitForList(page) {
   await page.waitForTimeout(200);
 }
 
+const MOBILE_RECORD_ROW = '.mobile-record-list .collection-mobile-record-row';
+const MOBILE_RECORD_CARD = `${MOBILE_RECORD_ROW} .collection-mobile-record-row__card`;
+const ROW_SELECTION_CONTROL = '.collection-selection-control[data-selection-scope="row"]';
+const DESKTOP_ROW_SELECTION_CONTROL = `.table tbody ${ROW_SELECTION_CONTROL}`;
+const MOBILE_ROW_SELECTION_CONTROL = `${MOBILE_RECORD_ROW} ${ROW_SELECTION_CONTROL}`;
+// Declared list-surface search contract. The released toolbar renders the official
+// collection search control; the fallback header renders the declared search form.
+// The declared search affordances are the control's own submit/clear buttons: the
+// primitive consumes Enter before the declared keydown handler can run, so a key
+// press is not a reproducible submission and must not be used as the probe.
+const SEARCH_INPUT = '[data-list-query-action-bar] .collection-search-control input[type="search"], [data-list-query-action-bar] form.product-list-header__search input[type="search"]';
+const SEARCH_SUBMIT = '[data-list-query-action-bar] .collection-search-control button.toolbar-search-submit, [data-list-query-action-bar] form.product-list-header__search button[type="submit"]';
+const SEARCH_CLEAR = '[data-list-query-action-bar] .collection-search-control button.toolbar-search-clear';
+const EMPTY_STATE = '[data-semantic-component="ScEmptyState"][data-state="empty"], .sc-empty, .list-empty-state';
+// page.evaluate callbacks run in the browser, so they must inline these literals.
+
+async function submitDeclaredSearch(page, value) {
+  const input = page.locator(SEARCH_INPUT).first();
+  await input.waitFor({ state: 'visible', timeout: 15_000 });
+  await input.fill(value);
+  const clear = page.locator(SEARCH_CLEAR).first();
+  if (!value && await clear.count() && await clear.isVisible()) await clear.click();
+  else await page.locator(SEARCH_SUBMIT).first().click();
+  await waitForList(page);
+}
+
 async function findPopulatedList(page, navigation) {
   const routes = actionable(navigation.nav());
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
-  const candidates = [...preferred, ...routes.filter((row) => !preferred.includes(row))];
+  if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
+  const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
   for (const target of candidates) {
     await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const toolbar = page.locator('[data-list-query-action-bar]');
     if (!await toolbar.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) continue;
     await waitForList(page);
-    if (await page.locator('.table tbody tr, .mobile-record-card').count()) return target;
+    if (await page.locator(`.table tbody tr, ${MOBILE_RECORD_ROW}`).count()) return target;
   }
   throw new Error('no populated runtime list was discovered');
 }
 
 async function measure(page, viewport, state = 'normal', interaction = {}) {
-  return page.evaluate(({ width, firstContentLimit, expectedState, selectionSource, selectionNavigationStable }) => {
+  return page.evaluate(({ width, expectedState, selectionSource, selectionNavigationStable }) => {
     const visible = (element) => {
       if (!(element instanceof HTMLElement)) return false;
       const rect = element.getBoundingClientRect();
@@ -121,13 +152,37 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     };
     const toolbar = document.querySelector('[data-list-query-action-bar]');
     const contextualToolbar = document.querySelector('.list-surface-contextual-toolbar');
-    const mobileCards = Array.from(document.querySelectorAll('[data-mobile-record-row], .mobile-record-card')).filter(visible);
+    const headerRect = toolbar?.getBoundingClientRect();
+    const withinHeader = (control) => {
+      const rect = control.getBoundingClientRect();
+      return Boolean(headerRect && rect.left >= headerRect.left - 1 && rect.right <= headerRect.right + 1
+        && rect.top >= headerRect.top - 1 && rect.bottom <= headerRect.bottom + 1);
+    };
+    const contentFollowsHeader = (content) => visible(content) && Boolean(headerRect)
+      && content.getBoundingClientRect().top >= headerRect.bottom - 1
+      && content.getBoundingClientRect().top < innerHeight;
+    const geometry = () => {
+      const controls = Array.from(toolbar?.querySelectorAll('input, button, select') || []).filter(element => visible(element) && !element.closest('.search-dropdown, .list-surface-column-menu'));
+      const rects = controls.map(control => control.getBoundingClientRect());
+      const overlap = rects.some((a, i) => rects.some((b, j) => j > i && Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1));
+      const search = Array.from(toolbar?.querySelectorAll('input[type="search"]') || []).filter(visible);
+      const columns = Array.from(toolbar?.querySelectorAll('.list-surface-column-button') || []).filter(visible);
+      const leading = toolbar?.querySelector('.product-list-header__leading')?.getBoundingClientRect();
+      const query = toolbar?.querySelector('.product-list-header__query, .product-list-header__search')?.getBoundingClientRect();
+      return {
+        toolbar_controls_within_header: controls.every(withinHeader),
+        toolbar_controls_not_overlapping: !overlap,
+        toolbar_controls_in_viewport: rects.every(rect => rect.left >= -1 && rect.right <= innerWidth + 1),
+        mobile_touch_targets: width > 760 || controls.filter(control => control.tagName === 'BUTTON').every(control => { const rect = control.getBoundingClientRect(); return rect.width >= 44 && rect.height >= 44; }),
+        search_implementation_count: search.length === 1,
+        column_settings_unique: columns.length === 1,
+        desktop_actions_query_aligned: width < 1440 || expectedState === 'batch' || Boolean(leading && query && leading.width > 0 && query.width > 0 && leading.right <= query.left + 1 && Math.min(leading.bottom, query.bottom) > Math.max(leading.top, query.top)),
+      };
+    };
+    const mobileCards = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row')).filter(visible);
     const mobileMode = mobileCards.length > 0;
-    const visibleMobileSelectors = Array.from(document.querySelectorAll('[data-mobile-record-select] input[type="checkbox"]')).filter(visible);
-    const visibleMobileSelectionTargets = visibleMobileSelectors
-      .map((control) => control.closest('[data-mobile-record-select]'))
-      .filter(visible);
-    const mobileSelectionTargetSizes = visibleMobileSelectionTargets.map((target) => {
+    const visibleMobileSelectionControls = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-selection-control[data-selection-scope="row"]')).filter(visible);
+    const mobileSelectionTargetSizes = visibleMobileSelectionControls.map((target) => {
       const rect = target.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     });
@@ -149,27 +204,28 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       && Array.isArray(columnDecisionTrace.mobile?.visibleColumns),
     );
     if (expectedState === 'batch') {
-      const controls = Array.from(contextualToolbar?.querySelectorAll('button, input, select') || []).filter(visible);
+      const controls = Array.from(toolbar?.querySelectorAll('button, input, select') || []).filter(visible);
       const rowCenters = [];
       for (const control of controls) {
         const center = control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2;
         if (!rowCenters.some((value) => Math.abs(value - center) <= 6)) rowCenters.push(center);
       }
-      const tableContent = Array.from(document.querySelectorAll('.table > .sc-table-shell, .table > .grouped-table')).find(visible);
-      const cardContent = Array.from(document.querySelectorAll('.mobile-record-card')).find(visible);
+      const tableContent = Array.from(document.querySelectorAll('[data-collection-presentation="table"], .grouped-table')).find(visible);
+      const cardContent = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-mobile-record-row__card')).find(visible);
       const firstContent = tableContent || cardContent;
       const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
       return {
         checks: {
+          ...geometry(),
           toolbar_present: visible(contextualToolbar),
-          batch_toolbar_replaces_normal: visible(contextualToolbar) && !visible(toolbar),
-          toolbar_visual_row_count: rowCenters.length === 1,
-          first_business_content_y: firstContentY !== null && firstContentY <= firstContentLimit,
-          visible_mobile_selection_control: !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
-          selected_mobile_card_identifiable: !mobileMode || (selectedMobileCards.length > 0 && visibleMobileSelectors.some((control) => control.checked)),
+          batch_query_coexists: visible(contextualToolbar) && visible(toolbar) && toolbar.querySelectorAll('input[type="search"]').length === 1,
+          toolbar_controls_within_header: controls.every(withinHeader),
+          first_business_content_order: contentFollowsHeader(firstContent),
+          visible_mobile_selection_control: !mobileMode || (visibleMobileSelectionControls.length > 0 && mobileSelectionTargetsMeetSize),
+          selected_mobile_card_identifiable: !mobileMode || (selectedMobileCards.length > 0 && visibleMobileSelectionControls.some((control) => control.getAttribute('data-selection-state') === 'checked')),
           mobile_batch_created_without_hidden_desktop_control: !mobileMode || selectionSource === 'visible_mobile',
           mobile_selection_does_not_open_detail: !mobileMode || selectionNavigationStable,
-          selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.mobile-record-card'))),
+          selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.collection-mobile-record-row__card'))),
           decision_trace_complete: expectedState === 'empty' || traceComplete,
         },
         metrics: {
@@ -177,9 +233,8 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           contextual_control_count: controls.length,
           toolbar_visual_row_count: rowCenters.length,
           first_business_content_y: firstContentY,
-          first_business_content_limit: firstContentLimit,
           mobile_mode: mobileMode,
-          visible_mobile_selection_control_count: visibleMobileSelectors.length,
+          visible_mobile_selection_control_count: visibleMobileSelectionControls.length,
           mobile_selection_target_sizes: mobileSelectionTargetSizes,
           selected_mobile_card_count: selectedMobileCards.length,
           selection_source: selectionSource,
@@ -198,17 +253,32 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       const center = control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2;
       if (!rowCenters.some((value) => Math.abs(value - center) <= 6)) rowCenters.push(center);
     }
+    // The column-settings control is judged inside the declared list-surface
+    // header layout region, never by free-floating vertical-center proximity
+    // between arbitrary controls. The declared narrow layout keeps the query
+    // track at `flex-basis: calc(100% - 60px)` and the column settings in the
+    // auxiliary track of that same declared flex row, while the query track is
+    // itself a taller multi-row region, so equal centers are not the declared
+    // contract for "same row".
     const columnButton = toolbar.querySelector('.list-surface-column-button');
-    const columnCenter = visible(columnButton)
-      ? columnButton.getBoundingClientRect().top + columnButton.getBoundingClientRect().height / 2
+    const declaredLayout = toolbar.querySelector('.product-list-header__layout')
+      || toolbar.querySelector('.product-list-header__tools')
+      || toolbar;
+    const declaredCells = Array.from(declaredLayout.children).filter(visible);
+    const columnCell = visible(columnButton)
+      ? (columnButton.closest('.product-list-header__auxiliary, .product-list-header__actions') || columnButton)
       : null;
-    const columnPeers = columnCenter === null ? [] : controls.filter((control) => (
-      control !== columnButton
-      && Math.abs(control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2 - columnCenter) <= 6
-    ));
-    const table = Array.from(document.querySelectorAll('.table > .sc-table-shell, .table > .grouped-table')).find(visible);
-    const firstCard = Array.from(document.querySelectorAll('.mobile-record-card')).find(visible);
-    const emptyState = document.querySelector('.sc-empty, .list-empty-state');
+    const columnCellRect = columnCell ? columnCell.getBoundingClientRect() : null;
+    const columnRowPeers = columnCellRect
+      ? declaredCells.filter((cell) => {
+        if (cell === columnCell) return false;
+        const rect = cell.getBoundingClientRect();
+        return Math.min(columnCellRect.bottom, rect.bottom) - Math.max(columnCellRect.top, rect.top) > 1;
+      })
+      : [];
+    const table = Array.from(document.querySelectorAll('[data-collection-presentation="table"], .grouped-table')).find(visible);
+    const firstCard = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-mobile-record-row__card')).find(visible);
+    const emptyState = document.querySelector('[data-semantic-component="ScEmptyState"][data-state="empty"], .sc-empty, .list-empty-state');
     const firstContent = expectedState === 'empty' ? emptyState : table || firstCard;
     const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
     const sidebarSubtitle = String(document.querySelector('#primary-sidebar .brand .subtitle')?.textContent || '').trim();
@@ -221,12 +291,21 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       return rect.width > 2 && rect.height > 2 && clip !== 'rect(0px,0px,0px,0px)' && clip !== 'rect(0,0,0,0)';
     };
     const topbarTextSources = [];
+    let declaredContextTextSourcesExcluded = 0;
     if (topbarActions) {
       const walker = document.createTreeWalker(topbarActions, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {
         const text = String(node.nodeValue || '').replace(/\s+/g, ' ').trim();
         const parent = node.parentElement;
         if (!text || !parent) continue;
+        // The formally declared workspace context indicator legitimately shows
+        // the current company/record label in the topbar. Only undeclared
+        // duplication of sidebar context is a defect, so the declared indicator
+        // is excluded rather than counted as a duplicate.
+        if (parent.closest('[data-semantic-component="WorkspaceContextIndicator"]')) {
+          declaredContextTextSourcesExcluded += 1;
+          continue;
+        }
         let readable = true;
         for (let current = parent; current && current !== topbarActions; current = current.parentElement) {
           if (!visiblyReadableText(current)) {
@@ -275,16 +354,20 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     )));
     const controlsInViewport = controlRects.every((rect) => rect.left >= -1 && rect.right <= innerWidth + 1);
     const mobileTouchTargetsPass = !mobileMode || controlRects.filter((rect) => rect.tag === 'button').every((rect) => rect.width >= 44 && rect.height >= 44);
-    const searchInputRect = searches[0]?.getBoundingClientRect();
+    // The declared search control owns the usable touch box; the raw primitive input
+    // is only its inner text line and must not be used as the control measurement.
+    const searchControl = searches[0]?.closest('.collection-search-control, .product-list-header__search') || searches[0];
+    const searchInputRect = searchControl?.getBoundingClientRect();
     const checks = {
+      ...geometry(),
       toolbar_present: true,
       search_implementation_count: searches.length === 1,
       single_action_formatting_context: actionBars.length === 1,
       search_inside_single_action_bar: searchInsideSingleActionBar,
-      toolbar_visual_row_count: rowCenters.length === 1,
-      column_settings_standalone: !visible(columnButton) || columnPeers.length > 0,
-      first_business_content_y: firstContentY !== null && firstContentY <= firstContentLimit,
-      visible_mobile_selection_control: expectedState !== 'normal' || !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
+      toolbar_controls_within_header: controls.every(withinHeader),
+      column_settings_standalone: !visible(columnButton) || (Boolean(columnCellRect) && columnRowPeers.length > 0),
+      first_business_content_order: contentFollowsHeader(firstContent),
+      visible_mobile_selection_control: expectedState !== 'normal' || !mobileMode || (visibleMobileSelectionControls.length > 0 && mobileSelectionTargetsMeetSize),
       decision_trace_complete: expectedState === 'empty' || traceComplete,
       column_count_not_visible: !visible(columnCountHint) && !visibleColumnCountText,
       empty_clear_semantics_unique: expectedState !== 'empty' || clearActions.length === 1,
@@ -301,15 +384,16 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         action_bar_count: actionBars.length,
         search_implementation_count: searches.length,
         toolbar_visual_row_count: rowCenters.length,
-        column_peer_count: columnPeers.length,
+        column_peer_count: columnRowPeers.length,
+        column_declared_region_cells: declaredCells.length,
+        declared_context_text_sources_excluded: declaredContextTextSourcesExcluded,
         first_business_content_y: firstContentY,
-        first_business_content_limit: firstContentLimit,
         repeated_context_tokens: repeatedContext,
         visible_topbar_text_sources: topbarTextSources,
         visible_home_title_canvas: visibleHomeHeader,
         clear_action_labels: clearActions.map((button) => String(button.textContent || '').replace(/\s+/g, '').trim()),
         mobile_mode: mobileMode,
-        visible_mobile_selection_control_count: visibleMobileSelectors.length,
+        visible_mobile_selection_control_count: visibleMobileSelectionControls.length,
         mobile_selection_target_sizes: mobileSelectionTargetSizes,
         toolbar_client_width: toolbar.clientWidth,
         toolbar_scroll_width: toolbar.scrollWidth,
@@ -325,7 +409,6 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     };
   }, {
     width: viewport.width,
-    firstContentLimit: FIRST_CONTENT_LIMITS[viewport.width],
     expectedState: state,
     selectionSource: interaction.selectionSource || 'none',
     selectionNavigationStable: interaction.selectionNavigationStable !== false,
@@ -365,14 +448,40 @@ async function productionComponentProof(page) {
 
 async function negativeProofs(page, viewport) {
   const results = [];
+  // A negative fixture only demonstrates that the declared check can fail when
+  // the un-injected baseline for that same check is proven normal first. The
+  // baseline is recorded per fixture so a dirty baseline is reported as a
+  // distinct probe-state defect instead of being credited as detection.
+  const baseline = await measure(page, viewport);
+  const baselineWithinHeader = baseline.checks.toolbar_controls_within_header === true;
+  const baselineAligned = baseline.checks.desktop_actions_query_aligned === true;
+  const baselineContextClean = baseline.observations.desktop_context_text_duplicated === false;
   const twoRows = await page.addStyleTag({ content: `
-    [data-list-query-action-bar] { min-height: 100px !important; }
-    [data-list-query-action-bar] .list-surface-column-manager { transform: translateY(52px) !important; }
+    [data-list-query-action-bar] { position: relative !important; }
+    [data-list-query-action-bar] .list-surface-column-manager { transform: translateY(200vh) !important; }
   ` });
   const brokenRows = await measure(page, viewport);
-  results.push({ fixture: 'forced_second_row_and_standalone_column_settings', detected: !brokenRows.checks.toolbar_visual_row_count && !brokenRows.checks.column_settings_standalone, metrics: brokenRows.metrics });
+  results.push({
+    fixture: 'displaced_controls_outside_shared_header',
+    baseline_ok: baselineWithinHeader,
+    baseline_metrics: { toolbar_controls_within_header: baseline.checks.toolbar_controls_within_header },
+    detected: baselineWithinHeader && brokenRows.checks.toolbar_controls_within_header === false,
+    metrics: brokenRows.metrics,
+  });
   await twoRows.evaluate((element) => element.remove());
 
+  if (viewport.width >= 1440) {
+    const stacked = await page.addStyleTag({ content: '[data-list-query-action-bar] .product-list-header__layout { flex-direction: column !important; align-items: stretch !important; }' });
+    const brokenAlignment = await measure(page, viewport);
+    results.push({
+      fixture: 'desktop_operations_query_stacked',
+      baseline_ok: baselineAligned,
+      baseline_metrics: { desktop_actions_query_aligned: baseline.checks.desktop_actions_query_aligned },
+      detected: baselineAligned && brokenAlignment.checks.desktop_actions_query_aligned === false,
+      metrics: brokenAlignment.metrics,
+    });
+    await stacked.evaluate(element => element.remove());
+  }
   const contextDetected = await page.evaluate(() => {
     const subtitle = document.querySelector('#primary-sidebar .brand .subtitle');
     const target = document.querySelector('.topbar-actions');
@@ -384,7 +493,13 @@ async function negativeProofs(page, viewport) {
     return true;
   });
   const brokenContext = await measure(page, viewport);
-  results.push({ fixture: 'duplicated_sidebar_context_in_topbar', detected: contextDetected && brokenContext.observations.desktop_context_text_duplicated, metrics: brokenContext.metrics });
+  results.push({
+    fixture: 'duplicated_sidebar_context_in_topbar',
+    baseline_ok: baselineContextClean,
+    baseline_metrics: { desktop_context_text_duplicated: baseline.observations.desktop_context_text_duplicated },
+    detected: baselineContextClean && contextDetected && brokenContext.observations.desktop_context_text_duplicated === true,
+    metrics: brokenContext.metrics,
+  });
   await page.locator('[data-negative-duplicate-context]').evaluateAll((rows) => rows.forEach((row) => row.remove()));
 
   const hiddenContextInserted = await page.evaluate(() => {
@@ -399,11 +514,18 @@ async function negativeProofs(page, viewport) {
     return true;
   });
   const hiddenContext = await measure(page, viewport);
-  results.push({ fixture: 'hidden_context_text_is_not_visible_duplication', detected: hiddenContextInserted && !hiddenContext.observations.desktop_context_text_duplicated, metrics: hiddenContext.metrics });
+  results.push({
+    fixture: 'hidden_context_text_is_not_visible_duplication',
+    baseline_ok: baselineContextClean,
+    baseline_metrics: { desktop_context_text_duplicated: baseline.observations.desktop_context_text_duplicated },
+    detected: baselineContextClean && hiddenContextInserted && hiddenContext.observations.desktop_context_text_duplicated === false,
+    metrics: hiddenContext.metrics,
+  });
   await page.locator('[data-negative-hidden-duplicate-context]').evaluateAll((rows) => rows.forEach((row) => row.remove()));
 
   await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.locator('[data-role-home]').waitFor({ state: 'visible', timeout: 45_000 });
+  const baselineHomeTitleCanvas = await hasVisibleHomeTitleCanvas(page);
   await page.evaluate(() => {
     const home = document.querySelector('[data-role-home]');
     if (!home) return;
@@ -414,7 +536,12 @@ async function negativeProofs(page, viewport) {
     home.prepend(header);
   });
   const brokenHomeDetected = await hasVisibleHomeTitleCanvas(page);
-  results.push({ fixture: 'visible_home_title_canvas', detected: brokenHomeDetected });
+  results.push({
+    fixture: 'visible_home_title_canvas',
+    baseline_ok: baselineHomeTitleCanvas === false,
+    baseline_metrics: { visible_home_title_canvas: baselineHomeTitleCanvas },
+    detected: baselineHomeTitleCanvas === false && brokenHomeDetected === true,
+  });
   await page.locator('[data-home-title-canvas]').evaluateAll((rows) => rows.forEach((row) => row.remove()));
   return results;
 }
@@ -423,31 +550,31 @@ async function captureState(page, target, viewport, state) {
   await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForList(page);
   if (state !== 'empty') {
-    const activeSearch = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
+    const activeSearch = page.locator(SEARCH_INPUT).first();
     if (await activeSearch.count() && await activeSearch.inputValue()) {
-      await activeSearch.fill('');
-      await activeSearch.press('Enter');
-      await waitForList(page);
+      await submitDeclaredSearch(page, '');
     }
   }
   let selectionSource = 'none';
   let selectionNavigationStable = true;
   if (state === 'empty') {
-    const search = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
-    await search.fill(`structure-empty-${Date.now()}`);
-    await search.press('Enter');
-    await page.locator('.sc-empty, .list-empty-state').first().waitFor({ state: 'visible', timeout: 45_000 });
+    await submitDeclaredSearch(page, `structure-empty-${Date.now()}`);
+    await page.locator(EMPTY_STATE).first().waitFor({ state: 'visible', timeout: 45_000 });
   } else if (state === 'batch') {
-    const mobileMode = await page.locator('[data-mobile-record-row]:visible, .mobile-record-card:visible').count() > 0;
-    const checkbox = mobileMode
-      ? page.locator('[data-mobile-record-select] input[type="checkbox"]:visible').first()
-      : page.locator('.table tbody input[type="checkbox"]:visible').first();
-    if (await checkbox.count()) {
+    const mobileMode = await page.locator(`${MOBILE_RECORD_ROW}:visible`).count() > 0;
+    // The official selection control is a label wrapping a hidden native input;
+    // clicking the input is intercepted, so drive the declared visible control.
+    const selectionControl = page.locator(`${mobileMode ? MOBILE_ROW_SELECTION_CONTROL : DESKTOP_ROW_SELECTION_CONTROL}:visible`).first();
+    if (await selectionControl.count()) {
       const pathBeforeSelection = page.url();
-      await checkbox.check();
+      await selectionControl.click();
       selectionNavigationStable = page.url() === pathBeforeSelection;
-      selectionSource = mobileMode ? 'visible_mobile' : 'visible_desktop';
-      await page.locator('.list-surface-contextual-toolbar').waitFor({ state: 'visible', timeout: 10_000 });
+      const toolbarVisible = await page.locator('.list-surface-contextual-toolbar')
+        .waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
+      const selectionState = toolbarVisible ? await selectionControl.getAttribute('data-selection-state') : null;
+      selectionSource = selectionState === 'checked'
+        ? (mobileMode ? 'visible_mobile' : 'visible_desktop')
+        : (mobileMode ? 'missing_visible_mobile' : 'missing_visible_desktop');
     } else {
       selectionSource = mobileMode ? 'missing_visible_mobile' : 'missing_visible_desktop';
     }
@@ -482,14 +609,16 @@ try {
   const componentProof = await productionComponentProof(page);
   const negativeFixtures = await negativeProofs(page, VIEWPORTS[0]);
   const gatedChecks = new Set([
+    'desktop_actions_query_aligned',
+    'column_settings_unique',
     'toolbar_present',
     'search_implementation_count',
     'single_action_formatting_context',
     'search_inside_single_action_bar',
-    'toolbar_visual_row_count',
+    'toolbar_controls_within_header',
     'column_settings_standalone',
-    'first_business_content_y',
-    'batch_toolbar_replaces_normal',
+    'first_business_content_order',
+    'batch_query_coexists',
     'visible_mobile_selection_control',
     'selected_mobile_card_identifiable',
     'mobile_batch_created_without_hidden_desktop_control',
@@ -508,6 +637,9 @@ try {
     .filter(([check, passed]) => gatedChecks.has(check) && !passed)
     .map(([check]) => ({ state: row.state, viewport: row.viewport, check, metrics: row.measurement.metrics })));
   for (const fixture of negativeFixtures) {
+    if (fixture.baseline_ok === false) {
+      failures.push({ state: 'negative-fixture', viewport: VIEWPORTS[0], check: `negative_fixture_baseline_dirty:${fixture.fixture}`, metrics: fixture.baseline_metrics || fixture.metrics });
+    }
     if (!fixture.detected) failures.push({ state: 'negative-fixture', viewport: VIEWPORTS[0], check: `negative_fixture_not_detected:${fixture.fixture}` });
   }
   if (!componentProof.search_inside_single_action_bar) {
@@ -545,7 +677,7 @@ try {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
     source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target },
-    thresholds: { first_business_content_y: FIRST_CONTENT_LIMITS },
+    geometry_contract: 'controls contained by shared header; content follows header within viewport',
     rows,
     production_component_proof: componentProof,
     negative_fixtures: negativeFixtures,

@@ -60,6 +60,10 @@ class ProjectExecutionResponseBuilder:
         extra_data: Dict[str, Any] | None = None,
         source_authority: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
+        approval_messages = {
+            "EXECUTION_TASK_APPROVAL_REQUIRED": "任务尚未提交审批，请打开任务详情提交，审批通过后再启动。",
+            "EXECUTION_TASK_APPROVAL_PENDING": "任务正在审批中，请在任务详情查看审批进度，通过后再启动。",
+        }
         data = {
             "result": "blocked",
             "project_id": int(project_id or 0),
@@ -69,6 +73,8 @@ class ProjectExecutionResponseBuilder:
             "suggested_action": dict(suggested_action or {}),
             "lifecycle_hints": dict(lifecycle_hints or {}),
         }
+        if reason_code in approval_messages:
+            data["message"] = approval_messages[reason_code]
         if isinstance(suggested_action_payload, dict) and suggested_action_payload:
             data["suggested_action_payload"] = dict(suggested_action_payload)
         if isinstance(extra_data, dict) and extra_data:

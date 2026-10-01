@@ -43,8 +43,8 @@ def build_projection_environments(env, su_env, params: dict, projection_context:
         })
     try:
         return (
-            api.Environment(env.cr, env.uid, projection_context),
-            api.Environment(su_env.cr, su_env.uid, projection_context),
+            api.Environment(env.cr, env.uid, projection_context, su=bool(getattr(env, "su", False))),
+            api.Environment(su_env.cr, su_env.uid, projection_context, su=bool(getattr(su_env, "su", False))),
         )
     except Exception as exc:
         if preview_token:

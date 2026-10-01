@@ -57,10 +57,11 @@
 }
 
 .collection-mobile-record-row__identity {
+  font: var(--sc-font-title-medium);
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 15px;
-  line-height: 1.35;
+
+
   overflow-wrap: anywhere;
 }
 
@@ -90,25 +91,26 @@
 }
 
 .collection-mobile-record-row__fact small {
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-secondary);
-  font-size: 11px;
 }
 
 .collection-mobile-record-row__fact b {
+  font: var(--sc-font-mark-medium);
   color: var(--sc-app-text-primary);
-  font-size: 13px;
-  font-weight: 600;
+
+
   overflow-wrap: anywhere;
 }
 
 .collection-mobile-record-row__open {
+  font: var(--sc-font-mark-small);
   display: inline-flex;
   align-items: center;
   gap: var(--sc-space-2xs);
   justify-self: end;
   color: var(--sc-app-info-text);
-  font-size: 12px;
-  font-weight: 700;
+
 }
 
 @media (prefers-reduced-motion: reduce) {

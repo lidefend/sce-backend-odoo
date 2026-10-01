@@ -4,8 +4,8 @@ import {
   resolveContractV2FormFieldMap,
   resolveContractV2VisibleFieldCodes,
 } from '../../app/contracts/v2/store';
-import type { RelationOption, RelationSearchColumn, RelationSearchRow } from './types';
-import { createOne2manyColumnOptionsRuntime } from './one2manyColumnOptionsRuntime';
+import type { LayoutNode, RelationOption, RelationSearchColumn, RelationSearchRow } from './types';
+import { createOne2manyColumnOptionsRuntime, type One2manyColumnOptionsDependencies } from './one2manyColumnOptionsRuntime';
 import {
   settleRelationSelectionContextSwitch,
   switchRelationOptionContext,
@@ -13,7 +13,9 @@ import {
 import { useRecordRelationshipFields } from './useRecordRelationshipFields';
 import { useRecordRelationshipNavigation } from './useRecordRelationshipNavigation';
 
-type RelationshipDependencies = Record<string, any>;
+type RelationshipDependencies = Record<string, any>
+  & Omit<One2manyColumnOptionsDependencies, 'ensureRelationFieldDescriptors' | 'one2manyRelationFieldDescriptor'>
+  & { layoutNodes: Readonly<import('vue').Ref<LayoutNode[]>> };
 
 /** Owns relation discovery, access-aware navigation, and inline relation editing. */
 export function useRecordRelationships(dependencies: RelationshipDependencies) {
@@ -135,6 +137,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyPrimaryColumn,
     one2manyRowLabel,
     one2manySummary,
+    loadOne2manyCreateDefaults,
     hydrateOne2manyRows,
     prepareVisibleOne2manyHydration,
     hydrateVisibleOne2manyRows,
@@ -142,6 +145,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyRowErrors,
     one2manyCellError,
   } = useRecordRelationshipFields({
+    captureRelationRequest: dependencies.captureRelationRequest,
+    relationRuntimeGeneration: dependencies.relationRuntimeGeneration,
     ApiError,
     contractFieldLabel,
     deniedRelationModels,
@@ -460,7 +465,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
 
   function setMany2oneOption(fieldName: string, option: RelationOption) {
     const canonicalWritable = canonicalFieldWritable(fieldName);
-    const layoutField = layoutNodes.value.find((node: any) => node.kind === 'field' && node.name === fieldName);
+    const layoutField = layoutNodes.value.find((node) => node.kind === 'field' && node.name === fieldName);
     if (canonicalWritable === false || (canonicalWritable !== true && (!layoutField || layoutField.readonly))) return;
     const previousValue = formData[fieldName];
     const previousKeyword = relationKeywords[fieldName] || '';
@@ -594,6 +599,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyPrimaryColumn,
     one2manyRowLabel,
     one2manySummary,
+    loadOne2manyCreateDefaults,
     hydrateOne2manyRows,
     prepareVisibleOne2manyHydration,
     hydrateVisibleOne2manyRows,

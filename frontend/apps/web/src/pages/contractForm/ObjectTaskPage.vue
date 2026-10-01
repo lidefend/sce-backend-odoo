@@ -10,7 +10,7 @@
     data-canonical-form-zones
   >
     <FormSectionNavigation
-      v-if="sectionLinks.length > 1"
+      v-if="!detailComposition?.adopted.value && sectionLinks.length > 1"
       :items="sectionLinks"
       root-selector="[data-object-task-page]"
     />
@@ -362,6 +362,7 @@
 </template>
 
 <script setup lang="ts">
+import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
 import { computed } from 'vue';
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
@@ -377,6 +378,8 @@ import {
   governedFormStructureSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
+
+const detailComposition = useOptionalStandardDetailComposition();
 
 const props = defineProps<{
   summaryNodes: CanonicalFormNode[];
@@ -571,8 +574,8 @@ const sectionLinks = computed(() => uniqueSectionLinks([
 }
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .readonly-value),
 .object-task-page__summary-grid :deep([data-value-emphasis='monetary'] .contract-readonly-value) {
-  font-size: 18px;
-  font-weight: 700;
+  font: var(--sc-font-title-large);
+
   font-variant-numeric: tabular-nums;
 }
 .object-task-page__summary-grid :deep(.canonical-form-node:last-child) { border-right:0; }

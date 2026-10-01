@@ -1,45 +1,49 @@
 <template>
   <article class="block block-entry-grid">
-    <header class="block-header">
-      <h4>{{ block.title || '入口' }}</h4>
-      <div class="block-header-actions">
-        <ScButton
-          v-for="action in actions"
-          :key="`entry-action-${action.key}`"
-          size="small"
-          variant="ghost"
-          @click="emitAction(action.key, {})"
-        >
-          {{ action.label || action.key }}
-        </ScButton>
-      </div>
-    </header>
-
-    <div v-if="items.length" class="entry-grid">
-      <component
-        :is="item.actionable ? 'button' : 'article'"
-        v-for="item in items"
-        :key="item.id"
-        :type="item.actionable ? 'button' : undefined"
-        class="entry-item"
-        :class="{ 'entry-item--readonly': !item.actionable }"
-        @click="item.actionable ? emitAction(item.actionKey || 'open_scene', item.raw) : undefined"
-      >
-        <p class="entry-title">{{ item.title }}</p>
-        <p class="entry-hint">{{ item.hint }}</p>
-        <div v-if="item.metaRows.length" class="entry-meta">
-          <span v-for="meta in item.metaRows" :key="`${item.id}-${meta.label}`" class="entry-meta-chip">
-            {{ meta.label }} {{ meta.value }}
-          </span>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '入口'">
+      <template #actions>
+        <div class="block-header-actions">
+          <ScButton
+            v-for="action in actions"
+            :key="`entry-action-${action.key}`"
+            size="small"
+            variant="ghost"
+            @click="emitAction(action.key, {})"
+          >
+            {{ action.label || action.key }}
+          </ScButton>
         </div>
-      </component>
-    </div>
+      </template>
 
-    <ScEmptyState v-else density="compact" :heading-level="5" title="当前无可用入口" />
+      <div v-if="items.length" class="entry-grid">
+        <component
+          :is="item.actionable ? ScButton : 'article'"
+          v-for="item in items"
+          :key="item.id"
+          :variant="item.actionable ? 'ghost' : undefined"
+          :appearance="item.actionable ? 'structured-content' : undefined"
+          :type="item.actionable ? 'button' : undefined"
+          class="entry-item"
+          :class="{ 'entry-item--readonly': !item.actionable }"
+          @click="item.actionable ? emitAction(item.actionKey || 'open_scene', item.raw) : undefined"
+        >
+          <p class="entry-title">{{ item.title }}</p>
+          <p class="entry-hint">{{ item.hint }}</p>
+          <div v-if="item.metaRows.length" class="entry-meta">
+            <span v-for="meta in item.metaRows" :key="`${item.id}-${meta.label}`" class="entry-meta-chip">
+              {{ meta.label }} {{ meta.value }}
+            </span>
+          </div>
+        </component>
+      </div>
+
+      <ScEmptyState v-else density="compact" :heading-level="5" title="当前无可用入口" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
@@ -107,24 +111,8 @@ function emitAction(actionKey: string, item: Record<string, unknown>) {
 </script>
 
 <style scoped>
-.block {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 14px;
-  height: 100%;
-}
-.block-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.block-header h4 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .block-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -188,7 +176,6 @@ article.entry-item {
   background: var(--sc-app-info-bg);
 }
 @container (max-width: 480px) {
-  .block-header { align-items: flex-start; flex-direction: column; }
   .entry-grid { grid-template-columns: 1fr; }
 }
 </style>

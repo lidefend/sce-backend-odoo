@@ -32,7 +32,7 @@
             <div class="config-card-head">
               <div>
                 <span>{{ sectionTaskKindLabel(section.key) }}</span>
-                <h2>{{ sectionDisplayLabel(section.key, section.label) }}</h2>
+              <h2>{{ section.label }}</h2>
               </div>
               <strong class="config-status-badge" :class="{ 'config-status--empty': !section.contract_count }">{{ sectionStatusLabel(section.key, section.contract_count) }}</strong>
             </div>
@@ -133,7 +133,7 @@
           <em>{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
-      <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
+      <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />
     </aside>
   </ScCard>
 </template>
@@ -142,6 +142,7 @@
 import type { BusinessConfigSurfacePayload } from '../../api/businessConfig';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScCard from '../../components/design-system/ScCard.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];
@@ -163,7 +164,6 @@ defineProps<{
   visibleDeliveryReadinessProgressText: string;
   visibleDeliveryReadinessItems: DeliveryItem[];
   sectionTaskKindLabel: (sectionKey: string) => string;
-  sectionDisplayLabel: (sectionKey: string, fallback: string) => string;
   sectionStatusLabel: (sectionKey: string, contractCount: number) => string;
   sectionPrimaryCopy: (sectionKey: string) => string;
   sectionImpactText: (sectionKey: string) => string;

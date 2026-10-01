@@ -24,6 +24,31 @@ DELIVERY_CAPABILITIES = (
     ("capability_boundary_and_coverage", "覆盖检查", "coverage"),
 )
 
+# Declared source categories for the configuration snapshot summary. The keys
+# are the authoritative projection categories; the values are the display labels
+# carried by the contract so views never have to invent their own mapping.
+CONFIG_SOURCE_CATEGORIES = (
+    ("product_default", "产品默认"),
+    ("enterprise_configuration", "企业配置（含共享偏好投影）"),
+    ("personal_preference", "个人偏好（本人）"),
+    ("unclassified", "来源待确认"),
+)
+
+# Declared names for the configuration-boundary codes carried by the workbench
+# payloads. The codes are the authoritative vocabulary; the names travel with
+# the contract so a view never has to translate an unknown code itself.
+CONFIG_BOUNDARY_LABELS = (
+    ("ui_only", "仅页面设置"),
+    ("business_contract", "业务默认配置"),
+    ("business_contract_not_user_preference", "业务默认配置"),
+    ("business_contract_with_policy_runtime", "菜单显示规则"),
+    ("business_contract_version", "版本记录"),
+    ("coverage_guard", "覆盖检查"),
+    ("industry_policy_runtime", "行业业务规则"),
+    ("not_a_source", "非偏好来源"),
+    ("not_user_preference", "非偏好配置"),
+)
+
 
 def _to_int(value: Any) -> int:
     try:
@@ -215,10 +240,15 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
             }
         action_id = self._xmlid_record_id(_to_text(refs.get("action_xmlid")))
         menu_id = self._xmlid_record_id(_to_text(refs.get("menu_xmlid")))
+        targets = call_extension_hook_first(
+            self.env, "smart_core_business_config_approval_targets", self.env, model
+        ) or []
         count = 0
         if "sc.approval.policy" in self.env:
             domain = [("active", "=", True)]
-            if model:
+            if targets:
+                domain.append(("target_model", "in", [target["value"] for target in targets]))
+            elif model:
                 domain.append(("target_model", "=", model))
             try:
                 count = int(self.env["sc.approval.policy"].sudo().search_count(domain))
@@ -230,9 +260,18 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
         if model:
             route_query["target_model"] = model
             route_query["domain_raw"] = "[('target_model', '=', '%s')]" % model.replace("'", "\\'")
+        target_options = []
+        for target in targets:
+            target_model = target["value"]
+            target_options.append({**target, "route": {
+                "path": "/a/%s" % action_id if action_id else "",
+                "query": {**route_query, "target_model": target_model,
+                          "domain_raw": "[('target_model', '=', '%s')]" % target_model.replace("'", "\\'")},
+            }})
         return {
             "key": "approval",
             "label": "审批规则",
+            "target_options": target_options,
             "contract_count": count,
             "intent": "sc.approval.policy",
             "boundary": "industry_policy_runtime",
@@ -255,7 +294,7 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
         rows = self._visible_configuration_rows()
         status_counts, view_type_counts, source_categories = {}, {}, {}
         source_counts = {key: dict(total=0, draft=0, published=0, disabled=0, saved=0)
-                         for key in ("product_default", "enterprise_configuration", "personal_preference", "unclassified")}
+                         for key, _label in CONFIG_SOURCE_CATEGORIES}
         role_scope_count = action_scope_count = 0
         for rec in rows:
             status = "disabled" if not getattr(rec, "active", True) else (_to_text(rec.status) or "unknown")
@@ -285,6 +324,7 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
             "role_scope_count": role_scope_count, "action_scope_count": action_scope_count,
             "overview_scope": "当前公司及共享配置，按当前账号读取权限；个人偏好仅本人。记录状态不代表当前页面实际应用。",
             "source_counts": source_counts, "source_categories": source_categories,
+            "source_category_labels": dict(CONFIG_SOURCE_CATEGORIES),
         }
 
     def _snapshot_contract_row(self, rec) -> dict:
@@ -479,7 +519,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
         sections = [
             {
                 "key": "form",
-                "label": "表单配置",
+                "label": "表单字段与布局",
                 "contract_count": self._contract_count(
                     model=model,
                     view_type="form",
@@ -492,7 +532,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
             },
             {
                 "key": "list_search",
-                "label": "列表/搜索配置",
+                "label": "列表与搜索",
                 "contract_count": (
                     self._contract_count(
                         model=model,
@@ -517,14 +557,14 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
         if analysis_contract_count or action_view_types.intersection(ANALYSIS_VIEW_TYPES):
             sections.append({
                 "key": "analysis",
-                "label": "分析视图配置",
+                "label": "分析视图",
                 "contract_count": analysis_contract_count,
                 "intent": BUSINESS_CONFIG_INTENTS["contract_versions"],
                 "boundary": "business_contract",
             })
         sections.append({
             "key": "menu",
-            "label": "菜单配置",
+            "label": "菜单入口",
             "contract_count": self._contract_count(model="ir.ui.menu", role_key=role_key),
             "intent": MENU_CONFIG_INTENTS["audit"],
             "boundary": "business_contract_with_policy_runtime",
@@ -540,6 +580,7 @@ class BusinessConfigSurfaceGetHandler(_BusinessConfigSurfaceBase):
                 "role_key": role_key,
                 "sections": sections,
                 "snapshot_summary": snapshot_summary,
+                "boundary_labels": dict(CONFIG_BOUNDARY_LABELS),
                 "delivery_readiness": self._delivery_readiness(sections, snapshot_summary),
             },
             "meta": {

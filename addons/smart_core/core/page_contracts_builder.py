@@ -1789,3 +1789,53 @@ def build_page_contracts(_data: Dict[str, Any]) -> Dict[str, Any]:
         page_orchestration = apply_page_contract_parser_semantic_bridge(page_orchestration, safe_data)
         page["page_orchestration"] = apply_page_contract_semantic_orchestration_bridge(page_orchestration)
     return payload
+
+
+def build_public_auth_page_contracts() -> Dict[str, Any]:
+    """Anonymous projection. Never accept caller context, profiles or identity."""
+    source = build_page_contracts({})["pages"]
+    pages = {}
+    for key in ("login", "account_activation", "password_recovery"):
+        page = source[key]
+        # Public actions come from the same canonical action/target definitions.
+        required = {"open_account_activation", "open_password_recovery"} if key == "login" else {"open_login"}
+        actions = [action for action in _default_page_actions(key) if action.get("key") in required]
+        if {action["key"] for action in actions} != required:
+            raise ValueError("Missing canonical public auth actions")
+        actions = [{field: action[field] for field in ("key", "label", "intent")} for action in actions]
+        safe_actions = {
+            action["key"]: {
+                "label": action["label"], "intent": action["intent"],
+                "target": _action_target(action["key"], key),
+            }
+            for action in actions
+        }
+        orchestration = page["page_orchestration"]
+        zones = []
+        referenced_sources = set()
+        for zone in orchestration["zones"]:
+            blocks = []
+            for block in zone["blocks"]:
+                projected = {field: block[field] for field in ("key", "section_key", "data_source", "priority")}
+                projected["payload"] = {field: block["payload"][field] for field in ("tag", "enabled", "open")}
+                referenced_sources.add(block["data_source"])
+                blocks.append(projected)
+            zones.append({"key": zone["key"], "blocks": blocks})
+        data_sources = {
+            name: {field: orchestration["data_sources"][name][field]
+                   for field in ("source_type", "provider", "page_key", "section_key", "section_tag")
+                   if field in orchestration["data_sources"][name]}
+            for name in sorted(referenced_sources)
+        }
+        pages[key] = {
+            "schema_version": page["schema_version"],
+            "texts": page["texts"],
+            "sections": page["sections"],
+            "page_orchestration": {
+                "page": {"global_actions": actions},
+                "action_schema": {"actions": safe_actions},
+                "zones": zones,
+                "data_sources": data_sources,
+            },
+        }
+    return {"schema_version": "1.0.0", "pages": pages}

@@ -89,11 +89,11 @@ class ScStateMachine:
     ]
     PAYMENT_REQUEST_TRANSITIONS = {
         "draft": {"submit", "cancel"},
-        "submit": {"approve", "rejected", "cancel"},
+        "submit": {"approve", "approved", "rejected", "cancel"},
         "approve": {"approved", "rejected", "cancel"},
         "approved": {"done", "cancel"},
-        "rejected": {"draft", "cancel"},
-        "done": set(),
+        "rejected": {"draft", "submit", "cancel"},
+        "done": {"approved"},  # Existing guarded payment reversal restores approval.
         "cancel": set(),
     }
 

@@ -3,10 +3,13 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScConstructionDiary(models.Model):
     _name = "sc.construction.diary"
     _description = "施工日志"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
     _order = "date_diary desc, id desc"
 
     name = fields.Char(string="日志编号", required=True, default="新建", copy=False)
@@ -30,6 +33,8 @@ class ScConstructionDiary(models.Model):
         required=True,
         index=True,
     )
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, index=True)
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True)
     date_diary = fields.Datetime(string="日志日期", default=fields.Datetime.now, index=True)
     report_period_start = fields.Date(string="报表期间开始", index=True)
@@ -92,6 +97,14 @@ class ScConstructionDiary(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
@@ -136,7 +149,35 @@ class ScConstructionDiary(models.Model):
         parts = [item for item in (project_name, date_label, diary_type) if item]
         return " - ".join(parts) or _("施工日志")
 
+    def _check_allow_write_under_validation(self, vals):
+        self.ensure_one()
+        if self.state == "draft" and self.validation_status == "rejected" and not {"state", "source_origin"}.intersection(vals):
+            return True
+        return super()._check_allow_write_under_validation(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "name", "project_id", "company_id", "date_diary", "report_period_start", "report_period_end",
+            "document_no", "title", "diary_type", "category", "construction_unit", "project_manager",
+            "weather", "manpower_count", "attendance_equipment", "quality_name", "handler_name",
+            "description", "material_inspection_note", "design_change_note", "test_block_note",
+            "safety_note", "hidden_acceptance_note", "next_plan", "header_description", "note",
+            "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state in ("confirmed", "done", "cancel") or (
+                    rec.state == "draft" and getattr(rec, "validation_status", "") in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已确认或已结束的施工日志内容不可改写；请按正式流程办理。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"note", "attendance_equipment", "active", "attachment_ids", "write_uid", "write_date"}
             if set(vals) - allowed:
@@ -172,14 +213,29 @@ class ScConstructionDiary(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的施工日志可以确认。"))
             rec._check_business_ready()
-            rec.state = "confirmed"
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_done(self):
         for rec in self:
-            if rec.state not in ("draft", "confirmed"):
-                raise UserError(_("只有草稿或已确认状态的施工日志可以完成。"))
+            if rec.state != "confirmed":
+                raise UserError(_("只有已确认状态的施工日志可以完成。"))
             rec._check_business_ready()
-            rec.state = "done"
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("confirmed",))
+            rec._write_document_state({"state": "done"})
+
+    def action_on_tier_approved(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_business_ready()
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "draft" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True).write({"reject_reason": reason})
 
     def _check_business_ready(self):
         self.ensure_one()
@@ -212,4 +268,4 @@ class ScConstructionDiary(models.Model):
                 raise UserError(_("历史迁移施工日志不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的施工日志可以取消。"))
-            rec.state = "cancel"
+            rec._write_document_state({"state": "cancel"})

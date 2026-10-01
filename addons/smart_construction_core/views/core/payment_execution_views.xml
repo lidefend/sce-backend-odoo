@@ -104,6 +104,7 @@
                                 groups="smart_construction_core.group_sc_cap_finance_manager"
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <button name="action_reverse_payment" string="撤销付款" type="object" class="btn-secondary"
+                                confirm="确认冲销此笔已付款记录？系统将冲销对应付款台账，并将已完成的付款申请退回已批准状态。"
                                 groups="smart_construction_core.group_sc_cap_finance_manager"
                                 invisible="state != 'paid'"/>
                         <field name="validation_status" invisible="1"/>

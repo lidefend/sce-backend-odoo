@@ -191,7 +191,7 @@
 
 **WEB-UAT-01A 付款申请定点补证（`menu_sc_user_payment_apply`）——页面级证据已补齐，但明细职责存在未修复阻断，状态由 `passed` 改回 `partial_passed`。** 补齐项（均为**页面点击**，非直接 API）：①附件经页面真实上传控件 `setInputFiles`→`file.upload` 200→列表显示→刷新仍可见（附件 1091，65B）→点击下载→`file.download` 200 且产生真实浏览器下载事件，下载字节 sha256 与上传一致（15/15）；②分页经可见「每页 10 条」选择器→点下一页→页码与记录集合变化→打开第二页详情→返回后仍在第二页且行集合与筛选保持（11/11）。明细职责范围按视图与运行时子视图契约核定：`outflow_line_ids` 内联可编辑、自由新增被禁（`create=false`）但存在受控新增路径「从结算单引入」、允许删除；`receipt_invoice_line_ids` 因 `type != 'receive'` 在本入口不渲染；`ledger_line_ids` 只读且不在本入口渲染面。**据此不再把明细整体写为「不适用」。**
 
-**未修复阻断（本入口无法取得「编辑已有明细行后保存」证据）**：多行付款申请（经正常 UI 由结算单引入、`source_line_type` 全部为常量「结算单明细」）在编辑任一明细单元格后保存，前端不发写请求并提示 `outflow_line_ids 存在重复行值：结算单明细`／`主值重复：结算单明细`（证据 `uat01a-raw/uat01a_line_dup_block.txt`）。根因：`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:521-549` 的 `collectOne2manyDraftValidationFromRows` 以 `one2manyPrimaryColumnFromColumns`（**首个业务列**）作行身份，而本子视图首列为 `source_line_type`，导入处理器 `addons/smart_construction_core/handlers/payment_request_settlement_introduce.py:526` 给每行写同常量，于是两行以上互相判重；对照实验（两行 `source_line_type` 取值不同）同一编辑保存即可成功。属既有行为（文件最后修改于 `de9a230d`/`0b47763`，非 `19b2d290`/`c0b9a62e` 引入）。最小修法（**未实施**）：对已持久化行改以记录 id 作行身份，而非主列标签；因该断言被全局 one2many 校验共用，改动语义面较大，故保留为待批准的阻断 + 修法建议，不在本轮改动。
+**~~未修复阻断~~ → 已关闭（FE-TPL-05A，2026-09-29；见文末）**（原文保留：本入口无法取得「编辑已有明细行后保存」证据）**：多行付款申请（经正常 UI 由结算单引入、`source_line_type` 全部为常量「结算单明细」）在编辑任一明细单元格后保存，前端不发写请求并提示 `outflow_line_ids 存在重复行值：结算单明细`／`主值重复：结算单明细`（证据 `uat01a-raw/uat01a_line_dup_block.txt`）。根因：`frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:521-549` 的 `collectOne2manyDraftValidationFromRows` 以 `one2manyPrimaryColumnFromColumns`（**首个业务列**）作行身份，而本子视图首列为 `source_line_type`，导入处理器 `addons/smart_construction_core/handlers/payment_request_settlement_introduce.py:526` 给每行写同常量，于是两行以上互相判重；对照实验（两行 `source_line_type` 取值不同）同一编辑保存即可成功。属既有行为（文件最后修改于 `de9a230d`/`0b47763`，非 `19b2d290`/`c0b9a62e` 引入）。最小修法（**未实施**）：对已持久化行改以记录 id 作行身份，而非主列标签；因该断言被全局 one2many 校验共用，改动语义面较大，故保留为待批准的阻断 + 修法建议，不在本轮改动。 **→ 已关闭（FE-TPL-05A，2026-09-29）。** 该断言已改为按**行身份**判重（`id:<record>` / `key:<draft key>`），列值只作显示、不承担业务唯一性；修法与本段建议一致，但落在 adapter 自身拥有的不变量上而非新增业务规则。真实页面复验：付款申请草稿从两张结算单引入 2 行（`source_line_type` 同为常量）→ 编辑其一 → 保存 → 刷新回读，被编辑行正确、其他行未串位、无重复创建、来源关联正确，且发出真实写请求；`adopted_form_validation_identity` 46/46、`collection_view_semantics` PASS、`typecheck.strict` exit 0。详见同目录文末《FE-TPL-05A：付款申请主从办理接管》。
 
 **发现二（治理元数据，非产品缺陷）：矩阵 `role_authority` 无法表达 role-surface 暴露层。** `project.project` 三条入口的 Odoo 菜单/动作组绑定实测为：`menu_sc_product_project_edit_v1`（菜单 680/动作 861）＝`group_sc_cap_project_user+group_sc_cap_project_manager`；`menu_sc_project_initiation`（374/708）＝**同一对组**；`menu_sc_product_project_lifecycle_v1`（681/863）＝`group_sc_cap_project_manager`。`fixture_role_pm` 同时持有 manager 与 user 组，但其运行时路由面（`system.init`→`navigation.route_authority`，`primary_actions`）**只含 861，不含 708/863**，故 SPA 对 708/863 返回 `NAVIGATION_AUTHORITY_DENIED`（`router/index.ts` 的 `NAVIGATION_AUTHORITY_DENIED` 分支）；列表路由与建单路由结论一致，非路由形态问题。来源为声明式角色面策略 `addons/smart_construction_core/core_extension_policy_maps.py`→`ROLE_SURFACE_OVERRIDES["pm"].primary_menu_xmlids`：列了 `menu_sc_product_project_edit_v1`，未列另两者。**矩阵 role_authority 单元格只录 Odoo 组链、不含该层**，故对 pm 会预测可进 708/863 而运行时被拒——已在三条入口的 `gap` 单元格如实记录，**未**擅自改写组链为猜测值，交治理方复核。
 
@@ -389,3 +389,9638 @@ P4修复：现有 `refresh.generated_reports` 仅改变 complexity_budget_report
 
 唯一 89 入口矩阵分母和状态保持不变。其他历史分支分类与本地同步结果见
 [本轮记录](local_iteration_sync_20260928.md)。
+
+### FE-TPL-01 官方标准表单首次接管（2026-09-28）
+
+专题分支 `feature/web-official-template-adoption`，从 `main`/`23f11f42` 切出，不再复用已合并的
+修复分支。官方参考快照固定为 `Tencent/tdesign-vue-next-starter@aeed57076217f7777158b905f353d73585bad1c4`
+（参考基线，不是依赖升级）。本地库身份仍为 `tdesign-vue-next@1.20.5`
+（`frontend/packages/ui`，由 component-driver 清单回读）。来源→接管位置的映射写入既有
+[Product Page Patterns v1](../../frontend_productization/product-page-patterns-v1.md)，未新建治理体系。
+
+**接管范围与提交**：能力接线 `82ab559d`（`standardFormComposition` 策略、`scFormContract`、
+`ScForm`/`ScFormItem` 实例与 props 透传、`contractFormValidationRules`、
+`standardFormCompositionRuntime`、81 例单测、make 目标与 quick gate）。真实页面接管 `fb6a778e`
+（`FormSection.vue` 落入官方组合并注册通用校验、`buildRequiredFieldErrorPayload` 抽出、
+`runAdoptedFormValidation` 接入 `saveRecord()` 前置、`ContractFormPage.vue` 提供 runtime）。
+未采纳范围由 `bare` 保持原 DOM，同一页面不会同时运行两套组合。
+
+**试点入口与运行来源**：入口 `menu_sc_product_project_edit_v1`（`/m/680` → `/f/project.project/10`），
+角色 `fixture_role_pm`。环境：`sc-backend-odoo-acceptance` `127.0.0.1:18082`、生产模式
+vite preview `127.0.0.1:5175`、隔离库 `sc_frontend_acceptance`。前端产物由本次源码重建
+（`dist-release/assets/ContractFormPage-BxZsuyWO.js`，源码最后修改 20:19:48 早于构建 20:21:54）。
+截图与 journey JSON：`artifacts/frontend-web-fix-20260928/tpl01/`（仓外未跟踪）。
+
+**结构证据**：6 个 section form；`24/24` 行渲染为 `t-form__item`、旧行 `0`；`1440×900` 与
+`390×844` 结论一致，窄屏 `scrollWidth === clientWidth === 390`，无横向溢出。
+
+**行为与业务证据**：清空「项目名称」并写入草稿标记后保存被拒——当次 0 次写入、唯一 invalid 字段、
+`role="alert"`、`aria-describedby` 指向该控件、摘要「请检查以下内容 / 项目名称不能为空」，
+草稿标记保留。纠正后保存 2xx 且错误清零，刷新回读 `name`/`location` 与期望一致，随后 fixture 已还原。
+
+**本轮实测检查**：`vue-tsc --noEmit` 0 error；页面模式/专业组件注册/原语适配/表单画布四个守门脚本 PASS；
+`standard_form_composition` 81 例、`contract_error_business_ownership` 92 例、
+`contract_field_occurrence_identity`、`contract_form_save_failure_recovery` 通过；
+`component_driver_takeover` 清单按新源文件刷新后 PASS（required=35 missing=0 bridge_only=0 raw=0）。
+
+**口径限制（不得夸大）**：
+- 只能宣布「官方标准表单接管到 `project.project` 的菜单 680 表单」；列表、详情、应用外壳、
+  主从办理组合均未接管，89 入口矩阵分母与状态不变，未批量升级任何行。
+- 「官方引擎结果参与保存判定」由 shipped 调用顺序断言、registry 单测与页面结构证据共同支持；
+  生产构建不暴露组件实例，未能在浏览器中把「官方引擎拒绝」与「既有 precheck 拒绝」两条同形输出分离。
+  两条路径按设计共用 `isRequiredFieldEmptyByType` 与同一错误载荷，本轮未观察到二者结果不一致。
+- 本环境 `vue-tsc` 未复现历史 31 项错误，因此不能作为「同基线、零新增」的对照，只能报告本次 0 新增。
+- 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。
+
+### FE-TPL-02 第二业务模型复用（2026-09-28）
+
+同一专题分支，基线 `main`/`23f11f42`，开工前 HEAD `0ca84329`。目标是证明标准表单组合可被第二个业务模型通过
+**契约差异**复用，而不是又做一次项目专用改版。
+
+**选型**：沿唯一矩阵选 `menu_sc_p1_daily_contract`（日常合同，action `action_sc_general_contract`，
+模型 `sc.general.contract`），入口 `rendering_path` 已声明 `form:form_structure [structural]`，与试点同一条渲染链。
+该模型在 ORM 层无业务 x2many（仅 chatter/附件），属普通标量表单。写权限按真实角色判定：
+`fixture_role_contract_operator` 与 `fixture_role_project_a_member`/`activity_accounting`/`config_admin` 可写，
+`fixture_role_pm` 只读（`check_access_rights(write)=false`），`fixture_role_finance` 无模型访问。
+角色公司域为 `FE Company A`（`allowed_company_ids=[8]`），因此可见记录 `GC2600011`(confirmed)/`GC2600010`(signed) 均为只读，
+唯一可写的既有草稿 `GC2600012` 属 `FE Company B`，不在该角色数据域内——写路径因此走**新建**表单模式。
+
+**复用证据是结构性的**：采用开关按 **model** 判定（`STANDARD_FORM_COMPOSITION_PILOT_MODELS`），
+而真正渲染的两个调用点 `components/template/FormSection.vue` 与 `pages/ContractFormPage.vue`
+**都不出现任何模型名**。因此本轮生产代码改动只有「作用域清单 + 其单测」，
+既没有复制保存函数、错误摘要，也没有按模型名写主按钮逻辑或第二套字段布局循环。
+
+**运行来源与结果**：`feature/web-official-template-adoption`，前端由本轮源码重建后
+`vite preview` 提供（`dist-release`）。角色 `fixture_role_contract_operator`，
+`/f/sc.general.contract/new?menu_id=662&action_id=673`。
+
+- 结构：新建表单 `official=4 legacy=0 sections=2`；已有草稿表单 `official=31 legacy=0 sections=10 editable=23`；
+  非草稿只读表单 `official=13 legacy=0 editable=0` 且无保存动作；`1440×900` 与 `390×844` 均无横向溢出。
+- 校验拒绝：清空「合同名称」后保存被拒——**当次 0 次写入**（合同数 3→3）、摘要「请检查以下内容合同名称不能为空」、
+  字段级「合同名称不能为空」、`data-field-state=invalid`、`aria-describedby` 指向该控件、金额草稿保留。
+- 办理闭环：纠正后保存草稿 → 记录创建（`GC2600015`，`state=draft`，`amount_total=123456`）→ 页面跳到该记录；
+  在既有草稿上改金额 `123456→654321` 保存 → 刷新回读一致；随后删除恢复基线（3→3）。
+- 删除需能力角色：业务角色 `unlink` 被拒（「允许对以下组进行此操作：合同中心审批」），清理以
+  `fixture_role_config_admin` 执行。**这是权限事实，不是缺陷。**
+
+**同轮收口的 TPL-01 遗留（本轮发现并修复）**：开工核对时 `verify.frontend.quick.gate` 在 TPL-01 的 HEAD 上
+**并未通过**——`FormSection.vue` 的两条样式规则直接命中 TDesign 内部类
+（`.field-control-row.t-form__item`、`.field-control-row .t-form__controls/.t-form__controls-content`），
+被 `internalVendorSelectorGapCount` 记为 1；同时三份生成清单（component-professionalization、visual-projection、
+official-design-alignment）在 TPL-01 改源后未刷新。修复：改用项目自有选择器
+`.field-control-row[data-semantic-component='ScFormItem']`（该身份本就由 `ScFormItem` 适配器写入，天然只覆盖已接管行），
+并移除对 TDesign 内部后代的耦合——不需要的规则就不写，而不是换一种写法继续穿透内部结构。
+对照 `1440×900` 下项目编辑页 24 行与合同只读页 13 行的逐行矩形，**几何零差异**；TPL-01 与 TPL-02 的浏览器
+旅程在修复后各自 8/8 通过。刷新三份清单后 `verify.frontend.quick.gate` 全绿（本次实测退出码 0）。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error；`standard_form_composition` 96 例
+（由 81 例扩展，新增第二模型作用域、跨模型不泄漏、调用点不含模型名、作用域只有一处声明）；
+`component_driver_takeover`（required=35 missing=0）、`product_page_pattern`、`contract_error_business_ownership`（92 例）PASS；
+三份渲染清单 `--check` PASS；`verify.frontend.quick.gate` 整体 PASS。
+
+**口径限制（不得夸大）**：
+- 只能宣布「官方标准表单接管到 `project.project`（菜单 680）与 `sc.general.contract`（action 673 的菜单 662/353）」；
+  列表、详情、应用外壳、主从办理组合仍未接管，89 入口矩阵分母不变，未按模型批量标绿。
+- 第二模型的业务证据只覆盖 `fixture_role_contract_operator` 一个角色、新建与编辑两种表单模式；
+  **未运行**提交审批等流转动作、该入口的列表查询/筛选/分页/详情返回上下文、附件上传下载、以及其余角色的权限矩阵。
+- 托管矩阵行 `menu_sc_p1_daily_contract` 按真实证据回填为 `partial_passed`，缺口逐项写明；
+  同 action 的 `menu_sc_general_contract` **不是**矩阵行，只记录其结构探测结果。
+- 矩阵若干行引用的 `artifacts/frontend-web-fix-20260928/evidence.md`、`uat01a-raw/`、`uat02-raw/` 在本轮核对时
+  **不存在**（该目录下仅有 `tpl01/`、`tpl02/`）。本轮只如实报告，未重建、未改写引用。
+- 专题内不推送、不合并、不部署；模板接管通过不等于该入口全部业务职责通过。
+
+### FE-TPL-02 补证：校验结果接管保存判定 · 跨模型复用确认（2026-09-28 续）
+
+同一专题分支，基线 `main`/`23f11f42`，上一段收口 HEAD `0ca84329`。上一轮只做到“结构接管 +
+调用顺序断言”，留了两点白：官方校验的返回值是否**控制**保存、同一组合能否接管第二个真实模型。
+本段把这两点补成**运行证据**，不重做结构审计。
+
+**校验责任边界（沿真实链核对，不是按文件名猜）**：
+- 已由官方引擎执行（通用规则）：adopted section 内、`displayFields ∩ rules` 命中位置的必填/类型规则，
+  经 `ScForm/ScFormItem` → `standardFormCompositionRuntime` → `runAdoptedFormValidation` →
+  TDesign `Form.validate()`。
+- 未接管能力：非 pilot 模型（`adopted=false`）整页走旧路径；adopted 页面里未渲染、或未声明规则的位置。
+- 领域与后端约束：`collectSceneValidationPrecheckErrors`、one2many 行错误、后端 ORM 约束全部保留。
+- 旧 precheck 是否重复：**是** —— `validateBeforeSaveRecord` 的必填 precheck 会对同一组通用规则再判一次。
+  修复取最小口：官方引擎**真正评估过**的位置（`coveredFieldNames`）从该次 precheck 中排除，
+  其余位置保持原判定。没有删除 `saveRecordHelpers`，也没有把“某个 section 已采纳”扩大成
+  “所有校验都可跳过”。
+
+**真实引擎运行证据（非替身）**：新增
+`frontend/apps/web/scripts/adopted_form_engine_decision_test.ts`（make 目标
+`verify.frontend.adopted_form_engine_decision.unit`）。用 Vue `createRenderer` 挂载**真实**
+`TDesignForm`/`TDesignFormItem`，不 stub 官方校验、不在生产构建里暴露调试实例：
+- 真实必填规则失败 → 官方校验返回非成功 → 错误进入既有统一存储 → **保存调用次数 0**；
+- 同一字段纠正 → 官方校验成功 → 既有领域校验与保存链继续 → **保存调用次数 1**；
+- 已接管位置不再被旧 precheck 独立否决（共用 `isRequiredFieldEmptyByType` 与同一错误载荷，
+  但通用权威只有一处）；
+- 校验未完成不得提前保存；结果不可读按失败处理（fail closed），不解释成通过。
+- 实测：`PASS cases=67 engine=real-tdesign-vue-next writes=counted`。
+
+**fail-closed 边界修复（最小）**：
+- `contractFormValidationRules.failedAdoptedFieldNames` 改为 `string[] | null`：`true`→`[]`，
+  对象→键集合，缺失/原始值/数组→`null`（fail closed）。
+- `FormSection.validateAdoptedSection`：已采纳且声明了规则却没有引擎实例 → 抛错；结果读到 `null` → 抛错。
+- `useRecordFormActions.runAdoptedFormValidation` 返回 `{ ok, coveredFieldNames }` 并区分三种边界：
+  **A** 未采纳页面不要求存在官方 runtime，保持既有合法路径；**B** 已采纳、契约声明了必填可写位置
+  而覆盖为空 → 阻止保存、保留草稿、给统一反馈，不静默跳过、不伪造字段业务错误；
+  **C** 按有效契约确实无待校验规则 → 合法空集合，不误判为故障。
+- `saveRecord` 用 `if (!adoptedValidation.ok) return false;`，并把 `coveredFieldNames` 作为
+  `excludedRequiredFieldNames` 传给 precheck。
+
+**跨模型复用确认**：第二模型 `sc.general.contract`（日常合同）本段**没有新增任何模型专属分支**——
+生产改动只有作用域清单已含该项（`STANDARD_FORM_COMPOSITION_PILOT_MODELS`）与共享运行时修复。
+三个实测点：
+- **真实应用路由隔离**：项目编辑 →（脏表单「确认离开页面」保护）→ 合同 → 返回项目编辑。
+  `project.project` 与 `sc.general.contract` 各渲染 `24`/`13` 行官方行、旧行 `0`；模型、字段集合、
+  section 注册、错误、动作身份互不沿用（草稿文本只出现在侧栏面包屑，不进入合同表单面）。
+- **第二模型视口**：`1440×900` 与 `390×844` 下 `official=13 legacy=0 labels=13`，
+  `scrollWidth === clientWidth`，无横向溢出，未混用新旧普通表单行。
+- **项目 HTML 富文本字段最小回归**：经实际编辑面输入普通文本 → 保存 → 刷新回读正文一致
+  （存为 `<p>…</p>`，允许编辑器对 HTML 正常规范化）→ 按受管规则还原。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error；`standard_form_composition` 114 例、
+`adopted_form_engine_decision` 67 例、`contract_form_save_failure_recovery`、
+`contract_error_business_ownership` 92 例、`j13_required_value_semantics` 110 例、
+`contract_field_occurrence_identity`、`cross_model_action_navigation` 全 PASS；`ci.local.iteration` PASS；
+前端产物重建后 TPL02（第二模型旅程）8/8、TPL02B（跨模型隔离 + HTML 字段回归 + 双视口）8/8。
+
+**本轮发现（真实，非 TPL 引入）**：`project.project.name` 是**可翻译字段**（JSONB `{en_US, zh_CN}`）。
+上一轮“还原”只写了 `en_US`，`zh_CN` 槽仍留草稿名；zh-CN 页面读到的正是 `zh_CN` 槽，
+因此表现为“接口读到陈旧值”，实为**翻译上下文不一致**，不是缓存或代理缺陷。
+按 `en_US` + `zh_CN` 双槽还原后两语言一致。记录以免下一轮误判。
+
+**口径限制（不得夸大）**：
+- 只宣布「官方标准表单接管 + 校验结果控制保存」到 `project.project`（菜单 680）与
+  `sc.general.contract`（action 673 / 菜单 662）；列表、详情、应用外壳、主从办理组合、付款明细、
+  合同全流程（R7R9/R5）本段均**未运行**。
+- 第二模型只覆盖 `fixture_role_contract_operator`（新建/编辑）与 `fixture_role_pm`（只读边界）；
+  未跑提交审批流转、附件、其余角色权限矩阵。
+- `vue-tsc --noEmit` 的准确口径是“**该命令在本次环境与候选上通过，0 错误**”；
+  不代表历史 31 项已分别修复，也不以历史错误数作默认豁免。
+- 89 入口唯一分母不变；托管行按真实证据回填，未因模板复用通过就整体标绿。
+- 专题内不推送、不合并、不部署目标环境。
+
+### FE-TPL-02R 异步身份修复与只读探测适配（2026-09-29）
+
+同一专题分支。目标：把 TPL-02 收口到**一个固定候选**上——修复已确认的异步身份缺陷、让既有跨模型探测
+跟上 TPL-03 的只读呈现、并用同一份构建补齐双视口证据。**不进入 TPL-04，不验收 TPL-03。**
+
+**已确认缺陷（收口阻断项）**：一次已采纳的保存要 await 官方校验、关系创建往返与写请求。此前调用链只在
+await **之后**读取 `model`/`recordId`，因此当页面在等待期间切走（包括切回曾经看过的记录）时，
+迟到的校验结果会**给下一个记录标红**、**为从未校验的记录报成功**、甚至**把一个记录的值写到另一个记录**；
+其 `finally` 还会清掉更新操作的 loading。复现反例（修复前源码 + 本轮测试）：
+`cases=46 failed=17`，其中
+`observed stray write: model=sc.general.contract ids=[11] vals={"name":"A draft"}`（记录 10 的值写到记录 11）。
+
+**修复（提交 `f017d42d`，父提交 `bffc4b7e`）**：一次保存在**第一次 await 之前**建立归属，并在**每个真实
+副作用之前**复核归属；`finally` 只释放自己持有的忙碌标记。
+
+- 归属身份：`useRecordFormActions.ts:157` 的 `boundSurfaceKey()`（`model` + `recordId|new`）+
+  `:158` 的 `surfaceEpoch`（绑定面每次变化自增，`model`/`recordId` 相同也不复用同一会话）+
+  `:166` 的 `SaveOperation`（`id`/`epoch`/`model`/`recordId`）。
+- 复核点：`:182` `saveOperationOwnsSurface`；校验结果写入错误/摘要之前（`runAdoptedFormValidation` 内，
+  即副作用发生处，不是只在外层返回后）；precheck 错误写入前 `:607`；发写请求前 `:651`；写目标记录固定为
+  `operation.recordId`（不再读当前页面）；反馈与导航前 `:657/:660/:680/:683/:704`；`finally` 只在
+  `busyOwnerOperationId === operation.id` 时释放（`:739`）。
+- “校验的数据就是提交的数据”：`:575` 在官方校验前取 `canonicalizeSubmissionValues(collectWritableValues())`
+  快照，`:580` 在写之前再比一次；期间草稿被改则保留草稿、结束本次保存并提示重新保存，**不**用旧成功结果放行新值。
+- 单飞按面收敛：`saveRecordHelpers.ts:32` 的 `createSingleFlightSave(execute, scopeKey)`，
+  调用点 `useRecordFormActions.ts:750` 以 `surfaceEpoch` + `boundSurfaceKey` 为键；更旧的调用不得清掉
+  更新调用占用的槽位。
+
+**请求发出前后的边界（如实声明）**：本轮修复的是“**校验等待期间失效、尚未发出写请求**”，失效后旧操作
+**零写入**。若真实写请求**已发出**后才切换页面，前端只能丢弃响应、不重绘/不导航/不清理新页面、不自动重试；
+`useRecordFormActions.ts:651-655` 的注释即此口径——**不**声称数据库已回滚。未改后端事务来绕开前端身份问题。
+
+**回归覆盖（`adopted_form_validation_identity_test.ts`，46 例，进出写边界计数）**：
+A 校验延迟失败→切 B→A 返回（B 不标红、草稿不丢、不发写请求）；B 校验延迟成功→切 B（不得读 B 的数据继续保存）；
+A→B→回 A（同 `model`+`recordId` 也不复活旧草稿会话，且覆盖空 `recordId` 新建草稿）；
+同一记录较新操作先完成、旧操作后完成（旧结果与 `finally` 都不覆盖新错误/新 loading/新结果）；
+校验期间草稿被改（未校验的新值不放行）；正常路径（真失败不写、纠正单次写、服务端拒绝保留草稿可重试）。
+测试用可控完成时机的 Promise 门（40 微任务 `drain()`，**无固定 sleep**）；真实 Vue 实例承载**shipped** 的
+`useRecordFormActions`/registry/`validateBeforeSaveRecord`，只有写/创建边界被计数。
+`adopted_form_engine_decision_test.ts` 增补真实 TDesign 用例（引擎 item 错误实例绑定；记录变更 re-key 后
+挂载新树、旧错误文本消失），现 **74 例**，引擎仍为真实 `TDesignForm`/`TDesignFormItem`。
+
+**只读探测适配（探测脚本，非产品改动）**：TPL-02 时代的 TPL02B 探测把“只读详情成立”绑定在**可编辑网格**
+`.template-form-section-grid > .field[data-field-name] > .field-control-row` 上；TPL-03 的只读详情改用
+`ScDescriptions`（`[data-detail-facts="official-standard-detail"]`），探测因此在 S2 直接失败。适配后探测
+**按页面模式分支**：可编辑面仍断言官方网格行（`official>0 legacy=0`）；只读面改为断言**当前记录的业务事实**
+（`t-descriptions` 的 标签=值 对，与 ORM 读到的 `contract_name`/`amount_total` 对比），**然后**才断言记录区域
+内无可见编辑控件、无保存动作、旧网格行为 0。草稿泄漏判定**限定在记录区域**（`[data-form-model]`），
+不整页搜文本——页签里保留草稿标题是正常行为。没有“找不到就跳过”、没有把 FATAL 改 PASS、没有 try/catch 吞断言、
+没有硬编码记录值、没有恢复旧 grid 或隐藏假输入。
+**口径**：探测脚本历来是**会话本地、未入库**的验收探针（含凭据与环境假设），本轮按既有方式把它保存到
+`artifacts/frontend-web-fix-20260928/tpl02r/tools/` 并在此记录其适配，**未新增**入库 harness，也未新增治理体系。
+
+**固定候选与产物绑定（一次构建）**：
+- 候选 `f017d42d`（工作树干净），离仓构建到
+  `/home/lidefend/workspace/sce-offrepo/artifacts/fe-tpl02b2-20260929/dist`；`index.html`
+  sha256 `0163d514…f3488`，入口 `/assets/index-CdKU6vab.js` sha256 `9725be9c…3d4c3`，
+  `runtime-config.js` sha256 `0a69250f…d77bbc`（值为 `{}`，无凭据）。入口文件名与上一轮
+  （`bffc4b7e` 的 `/assets/index-BtjlhXBV.js`）**不同**，旧 bundle 不能替用。
+- 服务：`release_static_server.mjs` pid 2166107 @ `127.0.0.1:5176`，`STATIC_ROOT` 指向上面的构建目录。
+  停旧进程前先核对 cmdline/cwd/env（旧 pid 988564 与报告一致），未按陈旧 pid 直接 kill。
+  `served-bundle-identity.json` 逐文件经 HTTP 取回并哈希：**100/100 与本地构建逐字节一致**。
+
+**结果（均绑定上述候选与产物）**：
+- `adopted_form_validation_identity.unit`：修复前 17/46 失败（反例见上），修复后 **46/46 通过**。
+- `adopted_form_engine_decision.unit`：`PASS cases=74 engine=real-tdesign-vue-next writes=counted`。
+- `contract_field_occurrence_identity`、`contract_error_business_ownership`（92）、
+  `contract_form_save_failure_recovery`：PASS；`verify.frontend.typecheck.strict`：退出码 0。
+- 跨模型 + 只读 + 项目富文本（`TPL02B-20260928204024`）：**8/8**。项目入口 `official=24 legacy=0`；
+  脏表单保护 → 合同只读详情（`official-standard-detail`，事实 `合同名称=FE-B General Contract`、
+  `合同金额=¥985,000.00`，无可见编辑控件、无保存动作，项目草稿文本不出现在记录区域）；返回项目互不串用；
+  项目 HTML description 实际编辑→保存→刷新回读→还原；项目双视口 `official=24 legacy=0` 无溢出；
+  合同只读双视口事实正确、无溢出；无残留。
+- 单模型正向回归（`TPL02-20260928204248`）：**8/8**。必填拒绝**零写入**（3→3）且草稿保留
+  （`amount 123456.00`）→ 纠正保存（`id 19`）→ 刷新回读 → `/f/…/11` 只读事实 → 清理 3→3。
+- 合同**编辑面**正常/错误态双视口（`TPL02C-20260928204429`）：**2/2**，拒绝写入 0（3→3）。
+- 保留为记录：`TPL02B-20260928203759` 首次运行 S5b 失败——原因是**本轮探测自身的缺陷**
+  （`saveActions` 存成了数字却按 `.length` 断言），非产品回归；已修并在下一次运行通过。
+
+**数据恢复**：`project.project` 10 的 description 经受管富文本面改后清回，存为 `<p><br></p>`
+（空文本等价，编辑器对 HTML 规范化；上一轮同样落在此值），名称不变；`project.project` 11 与
+`sc.general.contract` 11 未变；正向回归创建的合同 `id 19` 由其自身清理删除（3→3）。
+运行前先确认样本可复用：`project.project` 10、`sc.general.contract` 11 均可读；
+已删除的记录 18 **不假定**仍存在。
+
+**收口结论**：异步身份修复通过（修复前 17/46 失败 → 修复后 46/46）、既有跨模型探测完整执行
+（`TPL02B-20260928204024` 8/8）、当前候选双视口补证完成（`TPL02C-20260928204429` 2/2 + 项目/合同双视口）
+——三条件同时满足，**FE-TPL-02 在当前整合候选 `f017d42d` 上收口**。`cc0eee7b` 历史 bundle 对应关系
+仍不可追溯，作为历史限制保留，**不阻塞**本次收口。
+
+**口径限制（不得夸大）**：
+- 只宣布 TPL-02 能力在**当前整合候选** `f017d42d` 上的验收结果；`cc0eee7b` 的历史浏览器产物对应关系
+  仍不可完整追溯，作为历史限制保留，**不倒填**。
+- 探测脚本虽经过新详情页，**不**代表 TPL-03 整体通过；本轮未运行 89 入口全量、未跑发布门禁、
+  未调整业务矩阵状态；不推送、不合并、不部署。
+
+### FE-TPL-03 官方列表与只读详情接管（2026-09-28/29）
+
+同一专题分支，基线 `main`/`23f11f42`，开工 HEAD `0ca84329`（本轮提交后 `dfd2f324` + 本轮实现提交）。
+目标：把 TPL-01/TPL-02 的同一套采纳机制扩展到**标准查询列表**与**标准只读详情**，且**不新增第二套页面实现**。
+
+**结论先行——本轮的“配置级采纳 vs 暴露的共享能力缺口”**：
+
+- 列表侧：**仅配置级采纳**。生产改动是新增纯策略模块
+  `app/presentation/standardListComposition.ts`（显式试点清单 + `{composition, adopted, reason}`）、
+  官方容器 `components/product-list/ProductListSurface.vue`、`pages/ListPage.vue` 的组装与两个 `data-*` 标识，
+  以及 `ProductListHeader.vue` 搜索框的官方图标槽。**未触碰**列、记录、动作或权限。
+- 详情侧：**同一处共享复用**，不是按模型的特例。改动落在既有 `components/template/FormSection.vue`
+  内新增只读事实分支（`ScDescriptions`=`t-descriptions`），对**所有**已采纳只读页生效；
+  `pages/ContractFormPage.vue` 只新增 runtime 创建与两个 `data-*` 标识。
+- **没有新增任何模型专属校验、保存或错误逻辑**，因此跨模型复用成立：采纳由 `model` 决定，
+  渲染调用点**不出现任何模型名**，错误仍进既有统一存储，保存仍走既有链。
+
+**两处共享修复（非模型专属）**：
+
+1. 官方容器原来用 `:deep(.t-card__body)` 去掉卡片内边距，被
+   `official-design-alignment-inventory` 记为 `legacy_override_gap`（对厂商内部的后代选择器耦合）。
+   改为使用项目自有 `ScCard appearance="table"`——零内边距由外观本身承载，**不写后代选择器**。
+2. `FormSection.vue` 需要按视口把只读事实收敛为单列，但
+   `frontend_professional_component_registry_guard` 禁止该组件触碰全局对象（已被守卫锁定的
+   fail-closed 谓词所在对象）。新增 `composables/useNarrowViewport.ts` 承载 `matchMedia`，
+   组件只消费其响应式结果——能力补齐在共享 composable，而不是在组件里开一个局部后门。
+
+**真实组件集成证据（沿用 TPL-02 的 `createRenderer` 宿主，不 stub 官方引擎、不在生产构建暴露实例）**：
+`frontend/apps/web/scripts/standard_collection_composition_test.ts`（make 目标
+`verify.frontend.standard_collection_composition.unit`，**64 例**，并已接入 `verify.frontend.quick.gate`）：
+策略纯函数真值表与幂等、两个试点模型复用同一组合、非试点保持旧组合、
+无关输入不触发采纳、调用点不含模型名、shipped 源码确实渲染采纳标识。
+
+**真实页面旅程证据（绑定本轮实际 `HEAD` 与实际 `dist-release` bundle）**：
+`artifacts/frontend-web-fix-20260928/tpl03/`——
+- `tpl03-journey-results.json`：**30/30**。采纳的合同列表 `/m/662`（`official-standard-list`，卡片含查询行 +
+  表格 + 分页 + 选择 + 列设置，`1440×900` 与 `390×844` 横向溢出 0）、采纳的合同只读详情 `/r/sc.general.contract/11`
+  （`official-standard-detail`，7 个 section 全部以 `t-descriptions` 呈现、共 13 项、旧网格 `0`、关系入口保留、
+  双视口无溢出）、采纳的项目列表 `/m/680`；对照项 `/a/713?menu_id=414` 旧列表、`/r/res.partner/1` 旧详情
+  （`outside-pilot-scope`）、`/f/sc.general.contract/10` 与 `/f/sc.general.contract/new`
+  （`not-a-readonly-profile`，网格与输入框原样保留）。
+- `tpl03-switch-results.json`：**7/7**。采纳列表 → 采纳详情 → 旧详情 → 旧列表 → 回采纳详情 → 回采纳列表，
+  每步 `detailFacts`/官方卡片/`grids` 归零，无状态跨模型残留，全程横向溢出 0。
+
+**本轮实测检查**：`verify.frontend.typecheck.strict` 0 error（口径：**该命令在本次环境与候选上通过、0 错误**，
+不代表历史 31 项已分别修复）；`standard_collection_composition` 64 例、`standard_form_composition` 114 例、
+`adopted_form_engine_decision` 67 例、`rendering_detail_state`、`page_pattern_reference_parity`、
+`product_page_pattern`、`primitive_adapter`、`collection_action_toolbar`、`canonical_form_presenter`（177 例）、
+`contract_render_profile`、`native_form_structure_responsibility`、`mobile_viewport`、
+`professional_component_registry`、`professional_detail_collection`、`detail_form_productization.guard` 全 PASS；
+`ci.local.iteration` PASS（L1）；`ci.generated_reports.guard` PASS、`architecture.complexity_baseline_lock` PASS（checked=11）。
+
+**已知前置失败（非本轮引入，基线 HEAD 即存在，未修复）**：
+`verify.product.page_structure`（基线 `PageHeader.vue` 即无 `sc-product-page-header`）与
+`verify.frontend.style_system.guard`（`ScRelationField.vue` 新 z-index、`ContractFormPage.vue` > 1900 行等）。
+本轮未据其推翻成果，也不将其计入本轮新增。
+
+**口径限制（不得夸大）**：
+- 只宣布「官方列表 + 只读详情组合接管到 `project.project`、`sc.general.contract`（列表）与
+  `sc.general.contract`（只读详情）」；**未运行** 列表/详情之外的接管、应用外壳（TPL-04）、主从办理组合（TPL-05）、
+  付款明细、合同全流程（R7R9/R5）。
+- 官方详情页的 `t-steps` 时间线**未采纳**：本仓已有更丰富的审计/协作时间线，替换会丢业务能力而非改表达。
+- 89 入口唯一分母不变；本轮只验证标准组合复用，**未**因模板复用通过就把任何业务职责标为 passed。
+- 专题内不推送、不合并、不部署目标环境。
+
+### FE-TPL-03 列表/只读详情证据再绑定到当前整合候选（2026-09-29）
+
+同一专题分支。**不是**新一轮 TPL-03 验收、不新增页面实现、不调整业务矩阵。目的：把已实现的
+列表/只读详情采纳证据，从“浏览器产物已被覆盖、无法追溯对应关系的 `bffc4b7e` 历史 bundle”
+改为绑定在**当前整合候选**上的一次可追溯运行。历史记录
+`artifacts/frontend-web-fix-20260928/tpl03/` **保持原样、不回填**。
+
+**输入**：源码候选 `f017d42d`（即 TPL-02R 修复提交；其上的 `9fd6a4b6` 仅动 `docs/`），离仓构建
+`/home/lidefend/workspace/sce-offrepo/artifacts/fe-tpl02b2-20260929/dist`（`index.html`
+sha256 `0163d514…f3488`，入口 `/assets/index-CdKU6vab.js` sha256 `9725be9c…3d4c3`），由
+`release_static_server.mjs` pid 2166107 @ `127.0.0.1:5176` 服务（`04:42:40` 起），100/100 文件经
+HTTP 取回校验逐字节一致。
+
+**结果**（均绑定上述候选/产物，运行于 `06:32–06:33`，`loadedScripts` 含被服务的入口
+`/assets/index-CdKU6vab.js`）：
+
+- `artifacts/frontend-web-fix-20260928/tpl03r/tpl03-journey-results.json`：**30/30**。采纳合同列表
+  `/m/662`（`official-standard-list`，1 官方卡片，分页/选择/列设置齐备）、采纳合同只读详情
+  `/r/sc.general.contract/11`（`official-standard-detail`，`facts/readonlySections/descriptions=7`、
+  `items=13`、`legacyGrids=0`、`relationEntries=4`）、采纳项目列表 `/m/680`，均 `1440×900`/`390×844`
+  无横向溢出；旧列表 `/a/713?menu_id=414`、旧详情 `/r/res.partner/1` 保持 `legacy-*-surface`；
+  编辑/新建表单保持旧网格（`not-a-readonly-profile`）。
+- `.../tpl03r/tpl03-switch-results.json`：**7/7**。采纳列表→采纳详情→旧详情→旧列表→回采纳详情→
+  回采纳列表，每步 `facts`/官方卡片/`grids` 归零，全程横向溢出 0。
+- 响应式（加载时）：`detail-contract-1440.png` 事实 2 列/行，`detail-contract-390.png` 1 列/行，
+  由 `composables/useNarrowViewport.ts`（`matchMedia` + `change` 监听）驱动。
+
+**边界（不得夸大）**：
+
+- switch 的“旧详情”一步落在 `/r/res.partner/1`，该页在本验收环境为**既有**的“记录详情 · 加载失败”
+  （`invalid contract v2 snapshot: …editable auth conflicts with readonly occurrence status`），
+  与 `bffc4b7e` 历史运行**完全一致** → 既有/环境问题，**非本候选引入**。该步因此只证明“采纳组合未
+  泄漏到旧详情面”，不是在可正常渲染的旧详情页上取得。补充参照：`/r/project.project/10` 在
+  `fixture_role_pm` 下渲染为 `legacy-detail-surface` 且旧网格 `legacyGrids=4`
+  （`tpl03r/legacy-detail-r_project.project_10-pm.png`）；在 `operator` 角色下为 `无权访问`
+  （预期读权限边界，非采纳副作用）。
+- “跨断点拖拽 resize（不重载）”本轮**未**在浏览器验证，仅有代码层 `matchMedia` 响应式救济。
+- 本轮**不**代表 TPL-03 整体通过：未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细、合同全流程
+  （R7R9/R5）；89 入口唯一分母不变；未调整业务矩阵状态；不推送、不合并、不部署目标环境。
+
+### FE-TPL-03 验收结论（2026-09-29）
+
+对已实现的列表/只读详情接管（代码提交 `308a85a6`）在**当前整合候选** `f017d42d` 上做验收。
+逐项判定如下，每项给出实现位置与原始证据；**未**下放新的列表/详情开发任务，**未**进入 TPL-04。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 采纳由显式策略驱动，不由外观、名称或角色推断 | PASS | `standardListComposition.ts:40`（`STANDARD_LIST_COMPOSITION_PILOT_MODELS`）、`:45` `resolveStandardListComposition`；`standardDetailComposition.ts:43/:47`；策略为纯函数（无 Vue/DOM/TDesign）。调用点只传 `model`（+只读面的 `renderProfile`）：`ListPage.vue:526`、`ContractFormPage.vue:1199`。 |
+| 2 | 同一组合被复用，不是第二套页面实现 | PASS | 列表只有 `ProductListSurface.vue` 一个官方容器（两个试点列表共用）；只读事实只有 `FormSection.vue` 内**一个** `ScDescriptions` 分支（`:26-58`，由 `:488` `adoptedDetailFactLayout` 守卫），对所有已采纳只读页生效；决策由页面 provide（`standardDetailCompositionRuntime.ts`），section 只消费。**未复制**表单渲染循环、保存链、错误存储或工具栏主次逻辑。 |
+| 3 | 非采纳面保持旧组合，无双重容器/半转换 | PASS | `ProductListSurface.vue:12` 未采纳时 `v-else` 直通插槽；`FormSection.vue:488-496` 需同时满足 adopted+`preferReadonlyFacts`+`allFieldsReadonly`+非选择/非配置编辑+有字段。证据：旧列表 `/a/713?menu_id=414`、旧详情 `/r/res.partner/1` 保持 `legacy-*-surface`，编辑 `/f/sc.general.contract/10` 与新建 `/f/…/new` 保持旧网格。 |
+| 4 | 采纳列表真实渲染（官方容器/卡片/分页/选择/列设置，双视口） | PASS | `tpl03r/tpl03-journey-results.json`：`/m/662`、`/m/680` = `official-standard-list`，`card=1 queryRow=1 table=1`、`pagination=2 selection=5 columnSettings=7`，`1440×900`/`390×844` 溢出 0。 |
+| 5 | 采纳只读详情真实渲染（逐项 label/value、关系入口保留、无编辑能力，双视口） | PASS | 同上：`/r/sc.general.contract/11` = `official-standard-detail`，`facts/readonlySections/descriptions=7`、`items=13`、`legacyGrids=0`、`relationEntries=4`；`detail-contract-1440.png`（2 列/行）与 `detail-contract-390.png`（1 列/行）。 |
+| 6 | 跨模型与 section 生命周期隔离 | PASS | `tpl03r/tpl03-switch-results.json`：采纳列表→采纳详情→旧详情→旧列表→回采纳详情→回采纳列表，每步 `facts`/官方卡片/`grids` 归零，溢出 0。 |
+| 7 | 响应式：加载时与**不重载 resize** 均视口正确 | PASS | `tpl03r/logs/resize-no-reload.log`：`/r/sc.general.contract/11` 首行单元格数 `1440→4`（2 列）、`setViewportSize(390)` 不重载 `→2`（1 列）、回到 `1440→4`；断点 640（500→1 列、700→2 列），由 `useNarrowViewport.ts` 的 `matchMedia` + `change` 监听驱动。上一轮登记的该风险已关闭。 |
+| 8 | 源码—产物—证据绑定同一候选 | PASS | 候选 `f017d42d`；离仓构建 `fe-tpl02b2-20260929/dist`（`index.html` sha256 `0163d514…`，入口 `index-CdKU6vab.js` sha256 `9725be9c…`）；`release_static_server.mjs` pid 2166107 @ `:5176`，100/100 文件 HTTP 逐字节一致；旅程 JSON 的 `loadedScripts` 含该入口。 |
+| 9 | 派生的生成清单与当前源码一致 | **FAIL → 已修复** | 验收初查 `verify.frontend.component_driver_takeover.unit` 报 `stale`（committed 生成于 `dfd2f324`，早于 `308a85a6`/`f017d42d` 的源码改动，`source_files=702`）。用仓库自带生成器刷新（提交 `3f3a48fe`）：无 schema/词汇变化，仅派生计数与摘要变化；`ScDescriptions` 首次获得生产消费者，一个适配器 `adapter_unconsumed → adapter_present`（present 32→33、unconsumed 3→2）。现 `PASS required=35 missing=0 bridge_only=0 raw=0`。**这是本轮验收发现的唯一确认缺陷**，按最小方式修复，未改产品行为。 |
+| 10 | 相关 L2 单元/结构门禁 | PASS | `logs/tpl03-gates-run.log`：`standard_collection_composition` `cases=64`、`mobile_viewport` PASS、`product_page_pattern` `cases=12`+guard `patterns=4`、`professional_component_registry` `cases=137`、`page_pattern_reference_parity` `surfaces=15`、`rendering_detail_state`（58 tests，含三份 inventory `--check`）PASS、`native_form_structure_responsibility` `cases=10`；日志中 `[frontend_official_design_alignment_inventory] FAIL incomplete=…` 是生成器**负向测试**（`test_generate_frontend_official_design_alignment_inventory.py:54`）的预期输出，该目标退出码 0。 |
+
+**验收结论**：列表与只读详情接管**在当前整合候选上验收通过**（第 9 项为过程缺陷、已按仓库机制修复）。
+`TPL-03` 的“官方列表 + 只读详情”范围就此收口。
+
+**边界（不得夸大）**：
+
+- switch 的旧详情一步落在既有加载失败的 `/r/res.partner/1`（见上一节），只证明“采纳组合未泄漏”；
+  可正常渲染的旧详情参照为 `fixture_role_pm` 下的 `/r/project.project/10`。
+- 只宣布已采纳范围（列表 `project.project` + `sc.general.contract`；只读详情 `sc.general.contract`）；
+  未运行应用外壳（TPL-04）、主从办理（TPL-05）、付款明细与合同全流程（R7R9/R5）。
+- 89 入口唯一分母不变，未调整业务矩阵状态；不推送、不合并、不部署目标环境。
+
+### FE-TPL-04 官方应用外壳采纳验收（2026-09-29）
+
+同一专题分支 `feature/web-official-template-adoption`。把应用外壳的**采纳范围**从内联的
+route-meta 比较，提升为显式、按 layout 限定的呈现策略，并把外壳样式层从组件本地别名块收敛到
+权威令牌。**纯呈现改动**：不删除任何外壳能力、不新增业务语义。候选
+`b2fa65b6be864c271d8859a743cb49ab34fa2783`（工作树 clean），本轮提交：
+`1bf2d783`（采纳实现）与 `b2fa65b6`（仅派生清单刷新）。逐项判定如下，每项给出实现位置与原始证据。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 采纳由显式策略驱动，不由外观、名称或角色推断 | PASS | `frontend/apps/web/src/app/presentation/standardShellComposition.ts:46`（`STANDARD_SHELL_COMPOSITION_LAYOUTS`）、`:50` `resolveStandardShellComposition`；纯函数（无 Vue/DOM/TDesign/model/menu/action/role 输入）。调用点只传 `route.meta.layout` 与内嵌弹窗标记：`App.vue:50-53`。 |
+| 2 | 外壳门与对外发布的采纳身份同源，不会漂移 | PASS | `frontend/apps/web/src/App.vue:5-7`：`v-if="shellComposition.adopted"` 与 `:data-shell-composition`/`:data-shell-composition-reason` 都取自同一次 `resolveStandardShellComposition` 决策。 |
+| 3 | 未采纳路由与内嵌关系弹窗保持旧呈现，无双重外壳/半转换 | PASS | `standardShellComposition.ts:55-57`（非采纳 layout → `legacy-shell-surface`/`not-a-shell-layout`）、`:58-60`（内嵌关系弹窗 → `legacy-shell-surface`/`embedded-relation-dialog`）；此处直接渲染页面组件。 |
+| 4 | 官方组合在真实页面被采纳（双视口） | PASS | `artifacts/frontend-web-fix-20260928/tpl04b/shell-parity-results.json` 的 `after-5178-b2fa65b6` 运行：`1440×900` 与 `390×844` 均为 `official-standard-shell`/`shell-layout-adopted`，`compositionMarkerCount=1`，`layoutDriver=tdesign`；参照构建 `f017d42d` 无标记（`null`）。 |
+| 5 | 采纳前后呈现值等价，无视觉回归 | PASS | 同上：`diffs = []` —— 15 项实测计算值在**两个构建、两个视口**完全一致（`shell.color` `rgb(46,49,51)`、`topbar.minHeight` `52px`/`0px`、`sidebar.width` `232px`、分隔线 `rgb(226,232,240)`、触控目标 `44px` …）。 |
+| 6 | 组件本地别名收敛到权威令牌且取值不变 | PASS | `frontend/apps/web/src/layouts/AppShell.css:7`（`--sc-semantic-text-primary`）、`:54/:235/:263/:369`（`--sc-semantic-border-default`）、`:455`（`--sc-semantic-surface-panel`）、`:555`（`--sc-semantic-text-secondary`）、`:976-979/:1143-1144`（`--sc-touch-target-min`）；6 个本地别名实测由 hex 变为空串（已移除，非遮蔽）。`--sc-semantic-text-primary` 与旧 `--ink` 解析值完全相同。 |
+| 7 | 外壳能力无回退 | PASS | 同上 JSON：桌面折叠 `hidden false→true→false` 且侧栏随之存在/消失；390px 打开抽屉 `{sidebar: true, role: "dialog", backdrop: true}`；two 构建均 `consoleErrors: []`，均无横向溢出。 |
+| 8 | 参考一致性门禁与结构门禁扩展 | PASS | `scripts/verify/frontend_page_pattern_reference_parity_guard.py` 新增 4 条 AppShell.css 要求 + `App.vue` 条目（`surfaces` 15→16）；`test_frontend_page_pattern_reference_parity_guard.py` 新增 2 条负向测试（共 15 tests OK）。 |
+| 9 | 派生清单与当前源码一致 | PASS | `b2fa65b6` 用仓库自带生成器刷新 4 份派生清单：仅摘要变化，无计数/状态/词汇变化（`component-professionalization` `surfaces=169 gaps=0`、`official-design-alignment` `internalVendorSelectorGapCount=0`）。 |
+| 10 | 相关 L2 单元/结构门禁 | PASS | `artifacts/frontend-web-fix-20260928/tpl04b/logs/tpl04b-gates-run.log`：`standard_shell_composition` `cases=69 layouts=1`、`page_pattern_reference_parity` `surfaces=16`、`navigation_shell` 19 tests/`components=5`、`rendering_detail_state` 58 tests（含 `shell_density_contracts=2` 与三份 inventory `--check`）、`component_driver_takeover` `required=35 missing=0`、`product_page_pattern` `cases=12`/`patterns=4`；全部 `exit=0`。 |
+| 11 | 相关类型检查 | PASS | `.../tpl04b/logs/tpl04b-typecheck.log`：`make verify.frontend.typecheck.strict` 运行 `vue-tsc --noEmit` 与 `tsc.strict` 两份配置，`exit=0`、0 错误。 |
+| 12 | 源码—产物—证据绑定同一候选 | PASS | 候选 `b2fa65b6`；离仓构建 `.../fe-tpl04b-20260929/dist`（`index.html` sha256 `74f58f11…9eac`，入口 `/assets/index-Dnkap0aw.js` sha256 `b3b16f06…06bb`），`release_static_server.mjs` pid 3174598 @ `:5178`；`served-bundle-identity.json` HTTP 取回 **100/100** 文件逐字节一致（`mismatches: 0`）；探针 `loadedScripts` 含该入口。 |
+
+**验收结论**：应用外壳的官方组合采纳**在当前候选上验收通过**，且采纳前后外壳呈现值完全等价。
+`TPL-04` 的“官方应用外壳”范围就此收口；不据此宣布 TPL-05 或整个前端模板接管通过。
+
+**边界（不得夸大）**：
+
+- 本轮的浏览器证据是**只读角色 `fixture_role_pm` 对外壳的观测**，不是业务旅程：该角色可见外壳但无业务顶栏，
+  `rail.borderRightColor`/`footer.borderTopColor` 仅在 `1440×900` 测得（窄屏下栏隐藏）；未触发任何保存链或权限边界。
+- `verify.frontend.style_system.guard`（`scripts/audit/design_token_system.py`）仍报**既有**问题：
+  `ScRelationField.vue` 的新 z-index 未登记，以及 `ContractFormPage.vue`（1932>1900）、
+  `useRecordActionPresentation.ts`（505>500）、`useRecordFormActions.ts`（804>619）超长。
+  **非本轮引入**，属范围外，未在本轮处理。
+- 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
+  **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`）及其构建目录保持原样。
+
+### FE-TPL-04 scope A 官方外壳对齐验收（2026-09-29）
+
+范围：把 `artifacts/frontend-web-fix-20260928/shell-official-comparison/COMPARISON.md`
+§三 列出的 4 项“可对齐且不损失产品能力”的不一致，改为消费官方 TDesign 组合。
+本轮只做呈现与组合对齐；不新增业务语义、不删除外壳能力。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 高度由令牌权威驱动、与官方 `t-header` 带同值 | PASS | `frontend/packages/design-tokens/tokens/component.json`：`shell.topbar_height` 48→56、`shell.sidebar_collapsed_width` 56→64（dist 令牌已重建，`verify_tokens.py` PASS）；`frontend/apps/web/src/styles/tokens/pattern.css:44-46` 的 `--sc-shell-topbar-height` / `--sc-shell-sidebar-collapsed-width` 成为真实消费者。实测解析值 `tokenXxxl=56px`、`shellTokenValue=56px`。 |
+| 2 | 页头回到官方 `t-header` 带（非本地高度覆盖） | PASS | `frontend/apps/web/src/layouts/AppShell.css:456-457`（`.topbar` `min-height: var(--sc-shell-topbar-height)`，桌面块内 `height` 同值）；`AppShell.vue:193`（`ScHeader` → `t-header`）。实测 `header.height` 52px → **56px**（1440×900），窄屏 `minHeight` 0px → 56px。 |
+| 3 | 面包屑使用官方 `t-breadcrumb`，无本地仿制与并存旧行 | PASS | `frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue`：渲染 `TDesignBreadcrumb :max-item-width="'150'"` + `TDesignBreadcrumbItem`，scoped CSS 仅保留槽位（本地字号/分隔符规则已删除）。实测 `crumbs.present` false → true、`itemCount` 0→1、`legacyCrumbNodes` 两侧均为 0（旧 `.crumb` 未与新组件并存）。 |
+| 4 | 侧栏折叠回到官方 64px 紧凑栏，入口在侧栏底部 | PASS | `MenuTree.vue`（`t-menu :collapsed`）、`ProductSideNavigation.vue`（`:collapsed`）、`ProductShellSidebarFooter.vue`（`sidebar-compact-toggle`，`aria-controls="primary-sidebar"`）、`AppShell.css:1160-1180`（紧凑栏块）。实测 `shell--sidebar-hidden` → `shell--sidebar-compact`；`sider.box.w` → **64**、`flexBasis` `64px`、`menuCollapsed true`；`bottomCollapseControl` false → **true**、`topbarTogglePresent` true → **false**、`aria-expanded` `true→false→true`。 |
+| 5 | 内容列挂载真实 `t-footer` 并采用官方页脚几何 | PASS | 新增 `frontend/apps/web/src/components/design-system/ScFooter.vue`（`TDesignFooter` 原语）与 `product-shell/ProductShellContentFooter.vue`；`AppShell.vue:379` 挂载于内容列；`AppShell.css:435-447` 采用官方 `*-footer-layout` 语义（零内边距 + 一个 24px 偏移）与居中说明文字。实测 `content.footerPresent` false → true、`footerTag` → `FOOTER`、`footerPadding` → **0px**、`footerInsideContent true`。 |
+| 6 | 未采纳面与产品扩展不回退 | PASS | 移动抽屉 `{sidebar: true, role: "dialog", backdrop: true}`（390×844）；工作空间/公司/记录范围面板、活动页签、导航搜索、退出登录均保留（`AppShell.vue`、`ProductShellSidebarFooter.vue`）。两构建两视口 `consoleErrors: []`、无横向溢出。 |
+| 7 | 源码—产物—证据绑定同一候选，且构建可复现 | PASS | 候选 `fed15486`/`c3e29246`/`ed14d7bd`；离仓构建 `.../fe-tpl04d-20260929/dist`（`index.html` sha256 `b61b92de…7577`，入口 `/assets/index-DJ44umQ0.js` sha256 `174d4e35…3547`），`release_static_server.mjs` pid 4007259 @ `:5180`；`served-bundle-identity.json` HTTP 取回 **100/100** 文件逐字节一致（`mismatches: 0`）；同源码二次构建逐字节一致（100/100 文件、`contentDiffCount: 0`）。探针记录的入口与 `index.html` 一致。 |
+| 8 | 派生清单与当前源码一致 | PASS | `ed14d7bd` 用仓库自带生成器刷新 4 份清单：`component-driver-takeover` `required=35 missing=0 bridge_only=0 raw=0`（`breadcrumb` 首次获得 `bridgeExports`+适配源）、`rendering-detail` `surfaces=169 gaps=0`、`official-design-alignment` `internalVendorSelectorGapCount=0`/`visualLiteralGapCount=0`、`visual-projection` 新增 3 个源。两个 refresh 目标均为幂等（重复运行文件字节不变）。 |
+| 9 | 相关 L2 单元/结构门禁 | PASS | `standard_shell_composition` `cases=71 layouts=1`、`navigation_shell` 19 tests/`components=5`、`page_pattern_reference_parity` `surfaces=16`、`rendering_detail_state` 58 tests（`surfaces=95`、`shell_density_contracts=2`、三份 inventory `--check` PASS）、`component_driver_takeover` `required=35 missing=0`、`product_page_pattern` `patterns=4`、`delivery_hardening.guard` PASS（`async_epoch=enabled axe=4.10.2`）；全部 `exit=0`。日志中 `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}` 是生成器**负向测试**的预期输出，该目标退出码 0、正式检查输出 `internalVendorSelectorGapCount=0`。 |
+| 10 | 相关类型检查 | PASS | `make verify.frontend.typecheck.strict`：`vue-tsc --noEmit` 与 `tsconfig.strict.json` 两份配置，`exit=0`、0 错误（在本轮最后一次源码改动之后重跑）。 |
+
+**验收结论**：COMPARISON.md §三 的 4 项“纯呈现/交互不一致”**在本轮候选上已完成官方组合对齐并实测通过**；
+对齐后内容列页脚几何、面包屑组件、侧栏紧凑栏与页头高度均与官方模板取值一致。
+本结论不覆盖下方“仍未对齐”项，也不据此宣布 TPL-05 或整个前端模板接管通过。
+
+**对齐后仍未对齐（本轮未改动，不得当作已一致）**：
+
+- **页脚位置**：我方是内容列内的页脚带（贴列底部），官方把 `t-footer` 放在内容列的滚动容器内，
+  内容短时官方页脚紧跟内容。改动会牵动全站单一滚动属主（`.shell-content-surface` → `.router-host`），
+  本轮只对齐官方 `*-footer-layout` 的几何与文字处理，未迁移滚动属主。
+- **面包屑位置**：我方在页头工具条内渲染 `t-breadcrumb`，官方把 `<l-breadcrumb>` 置于 `t-content` 首行。
+  本轮只完成组件采纳，未迁移位置。
+- **移动端无官方基准**：官方模板 `src/style/layout.less:36-41` 对内容列强制 `min-width: 760px`，
+  不存在 390px 官方呈现；我方窄屏页头为两行产品组合，实测 78px，只保证不低于官方 56px 下限。
+- **官方一侧为源码级比对**：未运行官方模板本体，未做像素级截图对比。
+
+**边界（不得夸大）**：
+
+- 浏览器证据是**只读角色 `fixture_role_pm` 对外壳的观测**，不是业务旅程：未触发保存链、权限边界或合同业务办理；
+  截图只证明可见呈现，不证明写入与回读。
+- `verify.frontend.style_system.guard`（`scripts/audit/design_token_system.py`）仍报**既有**问题：
+  `ScRelationField.vue` 的新 z-index 未登记，以及 `ContractFormPage.vue`（1932>1900）、
+  `useRecordActionPresentation.ts`（505>500）、`useRecordFormActions.ts`（804>619）超长。
+  **非本轮引入**，属范围外，未在本轮处理。
+- 未运行 89 入口矩阵、全站浏览器验收与发布门禁；89 入口唯一分母不变；未调整业务矩阵状态；
+  **未**进入 TPL-05；不推送、不合并、不部署目标环境；参照服务（`:5176`/`:5178`/`:5179`）
+  及其构建目录保持原样，历史失败记录未被覆盖。
+
+### FE-TPL-04 scope B 内容区布局收口验收（2026-09-29）
+
+范围：按所有者决策只处理两项内容层级——面包屑迁入内容区首行，页脚迁入**现有**主内容滚动区域，
+随内容自然滚动。不为复制官方 DOM 更换全站滚动属主；移动端继续使用我方窄屏适配，
+**不**照搬官方 `min-width: 760px`，也不把“移动端无官方样板”记为欠账。
+本节关闭 scope A 记录中“面包屑位置”“页脚位置”两条仍未对齐项；组件采纳（scope A）结论不回退。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 面包屑在内容区首行，且只有一份 | PASS | `frontend/apps/web/src/layouts/AppShell.vue:196-201`（页头标题行只剩 `h1`，面包屑与 `:minimal`/`:compact` 传参一并移除）；`:334-336` 新增 `content-breadcrumb-row`，位于 `ScContent` 内、`StatusPanel`/`main.router-host` 之前；`AppShell.css:454-458`（`flex:0 0 auto` + `padding: var(--sc-space-xs) var(--sc-page-padding) 0`，与页面栅格同槽位）；死规则 `.topbar--single-heading .topbar-breadcrumb` 已删除（保留 `.eyebrow` 半边）。实测 `inTopbar:false` / `inContentArea:true` / `inContentRow:true` / `insideRouter:false`，行内边距桌面 24px、窄屏 12px，`itemCount=3`，导航来源、路由身份与权限均未改（沿用同一 `displayBreadcrumb` 与 `NavigationBreadcrumb`/`t-breadcrumb`）。 |
+| 2 | 页脚进入现有单一滚动属主，随内容滚动 | PASS | `AppShell.vue:365-368`：`ProductShellContentFooter` 由 `ScLayout` 列内兄弟节点移入 `<main class="router-host">` 末尾、`<slot />` 之后；`AppShell.css:441-452` 沿用官方 `*-footer-layout` 几何；`AppShell.css:559-576`：`.router-host` 改 `display:flex; flex-direction:column; flex:1 1 auto`（仍是唯一 `overflow-y:auto`），新增 `.router-host > * { flex-shrink:0 }`；`styles/product-patterns.css:45-55`：`.router-host > :is(.sc-page-frame,.sc-product-page-frame)` 由 `min-height:100%` 改 `flex:1 0 auto`。实测页脚 `insideRouter:true`、`position:static`；长页 `scrollDelta=44`（改动前同为 44）、长详情 `scrollDelta=760`（改动前同为 760）、短页 `scrollDelta=0` 无幻影滚动；每页纵向属主恒为 `router-host` 单一个。**未**新增第二个滚动容器、未改路由滚动恢复、未改表头固定偏移。 |
+| 3 | 桌面长/短页与窄屏可用 | PASS | `scopeB-layout-results.json`（stamp `20260929032437`，只读角色 `fixture_role_pm`）**15/15 PASS**：长页/长详情页脚紧跟内容无重叠、短页无空白占位与额外滚动、390×844 无横向溢出且抽屉 `role=dialog` 可用、两视口 `consoleErrors: []`。 |
+| 4 | 一条既有页面往返与错误定位 | PASS | `scopeB-write-results.json`（stamp `20260929032225`，`fixture_role_contract_operator`）**9/9 PASS**：列表→详情(11)→编辑(10)→返回，列表查询上下文保持、每步单属主+内容区面包屑；必填拒绝时错误定位到真实控件（`controlBelowHeader`、`controlInViewport` 均 true）且**零写请求**，草稿放弃后记录回读不变；`consoleErrors: []`。 |
+| 5 | 相关 L1/L2 与构建 | PASS | `verify.frontend.workspace_content_alignment.guard`（`entries=31`）、`standard_list_scroll_contract.guard`（`vertical_owner=router-host`）、`standard_shell_composition.unit`（`cases=71`）、`navigation_shell.unit`、`product_page_pattern.unit`、`rendering_detail_state.unit`、`component_driver_takeover.unit`（`required=35 missing=0`）、`page_pattern_reference_parity.unit`（`surfaces=16`）、`verify.frontend.typecheck.strict` 全部 `exit=0`（`AppShell.vue` 1597 行，上限 1600）；单次构建见下。 |
+
+**候选与产物**：被测产品源 `fb5934b7`（薄派生 HEAD `69da338f` 仅刷新清单），工作树干净；
+离仓单次构建 `…/fe-tpl04e-20260929/dist`，`index.html` sha256 `a1d049b9…10ea`、
+入口 `/assets/index-CGFvSmxS.js` sha256 `11da9347…5dbfd`、`runtime-config.js` 值 `{}` 无凭据；
+`release_static_server.mjs` pid 60945 @ `:5180` 服务该目录，HTTP 取回的 `index.html` 与入口块
+与构建产物**逐字节哈希相同**，探针记录的加载入口即该入口块。历史产物与失败记录未被覆盖；
+`:5176`/`:5178`/`:5179` 三个旧预览进程本轮未清理。
+
+**本轮内的测试维护（非产品缺陷）**：首次写入探针使用 `sc.general.contract` **12**，
+该记录属 `FE Project C`/`FE Company B`（id 9），不在这两个角色的范围（`FE Company A`/id 8），
+`PROJECT_SCOPE_DENIED → /access-denied` 是既有的项目范围契约按设计生效，不是布局回归；
+探针改用范围内的 **11（详情）** 与 **10（编辑）**。`/f/…/11` 对已确认记录呈现只读详情，
+故可编辑表单步骤必须使用记录 10；详情(11)→编辑(10) 返回时回到打开它的详情条目即为正确历史语义。
+
+**仍未对齐 / 保留的差异（不得当作已一致）**：
+
+- `/`（角色首页）本身无面包屑轨迹（导航态面包屑 0 项），故 `v-if` 守卫下不渲染该行——与本轮之前一致。
+- 移动端为**我方窄屏组合**（两行页头实测 78px），非官方呈现；官方一侧仍为源码级比对，未运行官方模板本体。
+- `verify.frontend.style_system.guard` 仍报**既有** 4 项（`ScRelationField.vue` 未登记 z-index、
+  `ContractFormPage.vue` 1932>1900、`useRecordActionPresentation.ts` 505>500、`useRecordFormActions.ts` 804>619），非本轮引入、未处理。
+- 历史 `cc0eee7b` 产物被覆盖的缺口继续登记为历史限制，不倒填、不追溯。
+
+**边界（不得夸大）**：页脚与面包屑是**按我方适配**迁移到官方位置，不写成“与官方完全一致”；
+未运行 89 入口矩阵、全站浏览器验收与发布门禁（本轮差异无关）；89 入口唯一分母不变；
+未调整业务矩阵状态；**未**进入 TPL-05，也不据此宣布 TPL-03 通过；不推送、不合并、不部署目标环境。
+本轮未创建/修改/删除任何业务数据：写入探针拒绝后放弃编辑，`sc.general.contract` 记录 10
+前后逐字段一致、记录总数 3 不变。
+
+### FE-TPL-03 列表与详情定向验收（2026-09-29）
+
+范围：确认**已实现**的官方列表与只读详情不仅完成结构替换，而且正确消费真实服务端查询、
+记录身份与业务动作。不重新开发列表/详情，不继续外壳对齐，不处理四项 `style_system` 欠账，
+不进入 TPL-05。已完成的 TPL-04B 外壳结论直接复用，不重复采集几何。
+
+**候选与运行来源（复用，未重建）**：被测 HEAD `9e240dc4`（薄派生提交，产品源 `fb5934b7`，
+两者间无产品源码差异），工作树干净；沿用已固定的 `:5180`（`scripts/release/release_static_server.mjs`
+pid **60945**，`STATIC_ROOT=…/sce-offrepo/artifacts/fe-tpl04e-20260929/dist`，经 `/proc/60945/environ` 核实），
+`index.html` sha256 `a1d049b9…10ea`；后端 `127.0.0.1:18082`、库 `sc_frontend_acceptance`；
+写入角色 `fixture_role_contract_operator`。产品源未变，故不重建、不新增端口、不重跑 HTTP 全文件比对。
+权威运行记录：`artifacts/frontend-web-fix-20260928/tpl03closeout/tpl03-closeout-results.json`
+（stamp `20260929035002`），探针 `tools/tpl03_closeout_probe.mjs`，日志 `logs/tpl03-closeout-probe.log`。
+
+| # | 验收项 | 判定 | 实现位置 / 原始证据 |
+|---|---|---|---|
+| 1 | 官方列表承担呈现与通用交互，真实服务端查询/身份/授权仍由原链路控制 | PASS | 采纳为**前端**切换：`frontend/apps/web/src/app/presentation/standardListComposition.ts`（`STANDARD_LIST_COMPOSITION_PILOT_MODELS=['project.project','sc.general.contract']`，标记 `data-list-composition="official-standard-list"` / `reason=pilot-model-adopted`）。探针绑定真实 `POST /api/v1/intent` `op:list` 请求+响应，非仅 DOM。 |
+| 2 | 查询发往服务端并改变结果集 | PASS | 搜索 `GC2600011` 携带 **`params.search_term`**，服务端 `total 2→1`、`共 1 条 1`；非前端数组过滤。清除后恢复 `total=2`。 |
+| 3 | 排序由服务端语义控制 | PASS | 点击列头 `contract_name` 发送 `order:"contract_name asc"`（基线 `contract_date desc, id desc`），行序随之变化；无第二套本地排序。 |
+| 4 | 分页为真实请求 | PASS（含 1 项证据缺口） | 每页选项 `10/20/50 条/页`；选择 10 发送真实 `limit:10 offset:0`。**真实下一页**在受管数据上不可达（最小页长 10 仍只 1 页，最大在职集合仅 2/4 行），记为 `kind: evidence_gap` 并附实测数字，不写成通过。 |
+| 5 | 无结果与恢复；接口失败不伪装成“没有数据” | PASS | 不命中查询得 `共 0 条` + `.list-empty-surface`（“没有符合当前条件的记录…”）、`alerts: []`；清除后恢复 `total=2`。 |
+| 6 | 只读详情事实与模式正确 | PASS | `/r/sc.general.contract/10` = `official-standard-detail`，0 可编辑控件、0 保存动作；事实 `FE-A General Contract`/`GHT2600010`/`FE Project A` 与记录一致。`/r/…/11` = `FE-B General Contract`/`GHT2600011`/`FE Project B`，0 编辑/0 保存/0 旧 grid 行。`/f/…/10` 才是同记录可编辑面（23 可编辑、`保存草稿`）。 |
+| 7 | 同记录往返不串位 | PASS | 列表 10 → 详情 10 → 编辑 10 → 返回：详情与“从编辑返回”均为 `/r/…/10`；回到列表 `/a/673…order=contract_name+asc…` 且 **保留 `search=GC2600010`**，行回读 `GC2600010`/`GHT2600010`/`FE Project A`。 |
+| 8 | 代表视口可用 | PASS | 390×844 列表与详情：无横向溢出、纵向属主恒为 `router-host` 单一个、详情仍只读；`consoleErrors: []`。 |
+
+**本轮内的测试维护（探针缺陷，非产品缺陷）**：
+
+- 列表搜索词是 `params.search_term`（非 `search`）；run1 读错键导致 `L2` 假失败。提交按钮文案为 `搜索`，
+  清除为 `清除`。
+- 事实标签映射：`合同编号`→`contract_no`（`GHT…`，非 `name` 的 `GC…`）、`合同名称`→`contract_name`、
+  `关联项目`→`project_id[1]`；run1 误用 `name` 断言 `合同编号`，导致 `R2`/`D1` 假失败。
+- 从编辑表单返回需沿打开它的详情条目回退；`R4` 改为循环 pop 历史直至 `/a/673` 再断言 `search=GC2600010` 保留。
+  上述修正只改探针定位/取值方式，**未降低断言、未吞失败、未改产品迎合探针**。
+
+**范围与边界（不得夸大）**：
+
+- 记录 11 为**独立只读核验**，不是同记录闭环；`/r/11` 与 `/r/10` 是同一只读机制，可编辑步骤必须使用记录 10，
+  **禁止**把“详情 11 → 编辑 10”写成同记录办理闭环。
+- 记录 12 的 `PROJECT_SCOPE_DENIED` 是项目范围契约**按设计生效**（记录 12 ∈ `FE Company B`/id 9，
+  角色范围 `FE Company A`/id 8）；保留为正常权限拒绝，未改角色或业务域来消除它。
+- 分页下一页为**证据缺口**，已附实测数字，不静默转成通过。
+- `verify.frontend.style_system.guard` 四项欠账（`ScRelationField.vue` 未登记 z-index、
+  `ContractFormPage.vue` 1932>1900、`useRecordActionPresentation.ts` 505>500、`useRecordFormActions.ts` 804>619）
+  仍保持**真实 FAIL**，放入独立合并前清理批次；未放宽阈值/忽略文件/压缩行数/改退出码；`AppShell.vue` 1597/1600，
+  未在其中新增业务职责。
+- 已确认的**异步身份漏洞**保持其既有阻断状态，不因本轮布局/列表验收自动消项，本轮也未重新开启排查。
+- 历史 `cc0eee7b` 产物缺口继续登记为历史限制，不倒填、不追溯。
+- **TPL-03 结论：PASS（含 1 项受管数据不可达的分页证据缺口）**，限于上述已核验的列表职责、只读详情、
+  同记录往返与代表视口；不代表 89 入口矩阵或所有路由/所有模型均已验收。业务矩阵状态不因模板验收升级；
+  未重跑 89 入口、全站发布验收与发布门禁；**未**进入 TPL-05；不推送、不合并、不部署目标环境。
+- 本轮未创建/修改/删除任何业务数据（未执行保存）；`sc.general.contract` 记录总数保持 3。
+
+### FE-TPL-03 收口后的两个真实缺陷修复（2026-09-29）
+
+用户在实际页面上报两个问题，均为**产品缺陷**，已定位根因、修复并定向复验；不重开 TPL-03 全量验收。
+
+**候选与运行来源**：修复提交 `1087d708`（IME）、`fd581cb9`（表单体快捷筛选）之上 HEAD 为 `fd581cb9`，
+工作树干净。同批次构建一次：`scripts/dev/frontend_static_build.sh` →
+`sce-offrepo/artifacts/fe-tpl03fix-20260929/dist`，`index.html` sha256
+`cee31a23e6b353dce8524cb6885170e0d3d6a024f9c31456d7f934e8eec3354f`，入口 `/assets/index-jnbV95D6.js`。
+旧 `:5180`（pid 60945，服务 `fe-tpl04e-20260929/dist`）经核实后停止，同一端口改由新进程
+（pid **608525**，`STATIC_ROOT=…/fe-tpl03fix-20260929/dist`）服务；`/api/`、`/web/` 仍代理到 `:18082`。
+历史产物 `fe-tpl04e-20260929/dist` 与历史 `tpl03closeout/tpl03-closeout-results.json`（stamp `20260929035002`）
+**保留未覆盖**，不因新运行倒填。
+
+| 缺陷 | 根因 | 修复位置 | 复验证据 |
+|---|---|---|---|
+| 列表搜索框中文（IME）输入丢失 | `ScInput.vue` 未声明/透传 `compositionstart|end`；TDesign 走自身 `(value, context)` 签名且此处 `value` 陈旧，调用方读 `event.target.value` 得到 `""`，每次合成上屏清空草稿 | `frontend/apps/web/src/components/design-system/ScInput.vue`（透传真实 `CompositionEvent`）；`pages/ListPage.vue`、`views/ActionView.vue`（容错读取 `target.value` / `{e:{target}}` / 字符串，无法解析则**保留**草稿） | `tools/tpl03_search_ime_probe.mjs` 真实 CDP 合成：`commit-合同 → value="合同"`、`SEARCH_REQ {"search":"合同"}`（修复前 `value=""`、`search: undefined`） |
+| 「快捷筛选」（列表查询预设）泄漏到表单体 | `formActionPlaceholderGate` 仅对 `useNativeFormTree || nativeAuthority` 关闭预设；已采纳的 `sc.general.contract` / `project.project` 表单体两者皆否，故泄漏 | `pages/contractForm/formActionPlaceholderGate.ts` 新增 `officialFormComposition`（仅关闭 `suppressSearchFilters`；流转/体动作仍只看结构归属）；`pages/ContractFormPage.vue` 传入 `standardFormComposition.adopted` | `hasQF:false`、`hasQuickFilterChips:false`、表单字段与页签在位、`CONSOLE_ERRORS []`；截图 `tpl03closeout/fix-1440-form10.png` |
+
+**回归与门禁**：`make verify.frontend.native_form_structure_responsibility.unit` → `PASS cases=10`（新增
+`officialFormComposition` 两例）；`make verify.frontend.typecheck.strict` → exit 0。修复后在**新候选**上重采
+TPL-03 探针：`artifacts/frontend-web-fix-20260928/tpl03fix-20260929/`（stamp `20260929045101`），
+**16 PASS / 1 GAP**（分页下一页仍为受管数据不可达的证据缺口）、`consoleErrors: []`；列表查询/排序/清除、
+详情 10/11 只读、同记录往返、390×844 全部无回退。旧 `tpl03closeout` 结果保持不变，两次运行分别注明候选。
+本轮未创建/修改/删除业务数据（未执行保存），记录总数保持 3。
+
+**边界（不得夸大）**：历史 `cc0eee7b` 产物缺口与异步身份漏洞的既有阻断状态**均未因此消项**；
+四项 `style_system.guard` 欠账仍为真实 FAIL、独立记账；不重跑 89 入口/全站发布门禁；
+不修改业务矩阵；不推送、不合并、不部署；**未**进入 TPL-05。
+
+### BOUNDARY-01：契约边界硬化与验收缺口闭合（2026-09-29）
+
+本节**取代**上文"FE-TPL-03 收口后的两个真实缺陷修复"中对"快捷筛选"修复方式的描述：
+当时先落地的 `officialFormComposition` 开关（判断"是否官方组合"再关掉预设块）**只是补丁**——它把
+"表单正文不该承载列表查询面"这条业务职责边界交给了一个渲染承载标志。现改为按职责边界直接删除该职责，
+并补上代码依赖与门禁级执行。原有提交与复验记录保留，不倒填、不改写。
+
+**权威运行标识（本批权威证据）**
+
+- 候选源码：本轮提交（见下 `fix(web)` 三笔）；`artifacts/` 为 gitignored，证据不入库。
+- 产物：`sce-offrepo/artifacts/fe-tpl03boundary-20260929/dist`，`index.html` sha256
+  `092486e77ac4535a050def56094d03ce5683d82d29eb303e12ec7acf3e389a16`，入口 `/assets/index-BMkF2JIf.js`。
+- 服务：`127.0.0.1:5180`（pid 796716，`scripts/release/release_static_server.mjs`，`STATIC_ROOT` 指向上述产物，
+  `/api/`、`/web/` 代理 `:18082`）。停旧进程前已核对 PID、命令行与 `STATIC_ROOT`；旧
+  `fe-tpl03fix-20260929/dist`（`index.html` sha256 `4fd1050f…b5612`）与 `fe-tpl04e/tpl04b/tpl04c` 产物**均未覆盖**。
+- 运行记录：`artifacts/frontend-web-fix-20260928/tpl03boundary-20260929/`（stamp `20260929052308`，
+  **19 PASS / 1 GAP / 0 deviation / consoleErrors []**）；同目录 `run1-prenavrule/`（stamp `20260929051816`）
+  保留为导航标签修复前的同候选运行，不倒填。
+- 库与角色：`sc_frontend_acceptance`，`fixture_role_contract_operator`。本轮**未执行任何保存**，
+  记录总数保持 3（`GC2600010/11`、记录 18 已删除），无数据创建或删除，无需恢复动作。
+
+**根本原因（产品）**
+
+| 缺陷 | 根本原因 | 修复 |
+|---|---|---|
+| "快捷筛选"（列表查询预设）出现在表单正文 | 表单页自行消费记录列表搜索契约并渲染查询块；提前落地的修复只把它与"是否官方组合"绑定 | 直接删除该职责：`ContractFormPage.vue` 不再 import/消费列表搜索契约，`ContractFormActionBlocks.vue` 删除查询块与相关 props，`useFormNavigationActionsRuntime`/`contractFormMetaLine` 同步清理 |
+| 列表搜索框中文（IME）丢失 | `ScInput` 未按共享适配器约定透传组合事件，调用方又读不到 TDesign 的取值路径 | `ScInput` 复用共享 `resolvePrimitiveNativeEvent`；`primitive_adapter_contract_test.ts` 扩到 6 个事件用例并断言真实 `CompositionEvent` 取值 |
+| 记录表单分区标题全部塌缩为占位名 | `NativeFormTreeRenderer.semanticSectionTitle()` 用**前端硬编码的语义角色→中文业务标签表**兜底；且"空角色 == 空继承角色"的抑制条件把有契约标题的首个分区也一起吃掉 | 分区标题改为契约解析：统一走 `resolveNativeSectionHeading()`（原生锚点 → 契约 `string/label` → 契约 `semanticTitle`），删除该硬编码表；`nativeSectionNavigation.SECTION_LABELS` 同源治理 |
+| 列表/详情承接方式变化后边界失效 | 判断入口是"是否原生树"而不是"是否业务职责" | `formActionPlaceholderGate.ts` 引入 `FormActionPlaceholderBodyKind` 穷尽表（`Record<Union,…>`：新增承载种类不补分类即编译失败），只有结构自有正文才可关闭动作入口 |
+
+**验收体系为什么没有发现（缺口分析与闭合）**
+
+| 缺口 | 为什么漏掉 | 闭合方式 |
+|---|---|---|
+| 只有正向断言 | 探针只检查"该有的存在"（标签、值、条数、请求），从不检查"不该有的不存在"，泄漏的列表查询面因此不可见 | 新增**否定断言** `F1-form-body-hosts-no-record-list-query-presets`（`[data-form-body-action-block="search-filters"]` 计数为 0 且正文无"快捷筛选"） |
+| 只到字段层，没到分区层 | 只断言字段标签与取值，分区层级从未被观察；渲染器内的兜底在生产里生效而单测喂的是合成节点，一直绿 | 新增 `F2-form-section-heads-are-contract-authored-titles`：每个渲染出的标题必须等于其容器自己的契约标题、不得是 `默认分组 N` 包装名、不得画在 layout 包装上；并由 `resolveNativeSectionHeading` 的纯函数用例覆盖（`role alone → 无标题`） |
+| 用 `fill()` 测输入 | Playwright `fill()` 直接赋值、**不触发 `compositionend`**，IME 缺陷在任何既有探针下都复现不了 | 新增 `L2b` 走真实 CDP `Input.imeSetComposition` + `Input.insertText`，断言上屏值 `合同` 进入搜索请求 |
+| 守卫把违规机制钉成标准 | `render_semantic_ready_guard` 原先把 `showSearchFilters` 计算属性列为 **required** token——等于要求违规存在；旧探针又依赖 `.template-form-section-grid > .field-control-row` 这类易变 DOM | 改为 forbidden-token 块（`resolveContractV2SearchContract`/`showSearchFilters`/`快捷筛选`）并新增 `form_body_excludes_list_query_contract` 摘要；新增入侵守卫规则阻止渲染层/导航层发明业务标签（并在修复前源码上验证守卫会真的失败，确保非空断言） |
+| 采纳范围按 model 配置，影响面按入口数被低估 | 采纳策略命中整个模型，只验一个入口会低估影响面 | 记录影响面口径：边界按**职责**而非入口数量执行；共享实现以代表模型验证，语义有差异才补验 |
+
+**执行方式**：`make verify.frontend.native_form_structure_responsibility.unit` → `PASS cases=11`；
+`make verify.frontend.native_section_navigation.unit` → PASS；`make verify.frontend.primitive_adapter.unit` → PASS components=46；
+`make verify.frontend.canonical_form_presenter.unit` → PASS cases=177；`make verify.frontend.standard_form_composition.unit` → PASS cases=114；
+`make verify.frontend.form_header_action_primitives.unit` → PASS；`make verify.frontend.typecheck.strict` → exit 0；
+`frontend_contract_consumer_intrusion_guard.py` → PASS files_scanned=8。
+
+**已登记未处理（明确不在本批）**
+
+- `render_semantic_ready_guard.py` 仍有一条**既有、与本批无关**的失败：
+  `contract_governance missing token: data["render_profile"] = _resolve_render_profile(data)`。
+  已核实该文件（`addons/smart_core/utils/contract_governance.py`）本轮未改动，且该字面量在 HEAD 上已不存在——
+  属于守卫期望滞后于后端重构，独立记账，不并入本批。
+- `verify.frontend.no_new_any_guard`、`make verify.list.surface.clean` 两项仍为既有失败，需在干净 HEAD 上复核后
+  另批处理，不归属本次改动。
+- 四项 `style_system.guard` 欠账与异步身份漏洞的既有阻断状态**均未消项**。
+- 仍未治理的旧推断（登记，不扩面）：`X2ManyRelationRenderer` 等处的 `Record<string,string>` 业务字典、
+  `formConfigHelpers` 的原生标签缓存。按"触及范围逐步清理"，新代码不得新增。
+
+**边界四类反例的落点**（规范 §14.2 要求的最小反例，落在既有测试入口，不新建框架）
+
+| 反例类别 | 抓什么 | 现有入口与本批结果 |
+|---|---|---|
+| 删除关键契约语义 → 明确报缺口或停止 | 静默补齐 | `verify.frontend.native_form_structure_responsibility.unit`（`role alone → 无标题`，cases=11）、`verify.frontend.native_section_navigation.unit`（role-only 分区不给导航项）|
+| 换标题/标签/列顺序 → 身份与授权不变 | 文案猜测 | `verify.frontend.adopted_form_validation_identity.unit`（cases=46 failed=0，无跨身份泄漏）、`verify.frontend.contract_error_business_ownership.unit`（92 cases passed）|
+| 只改契约规则、不改页面 → 消费随规则变化 | 契约不消费 | `verify.frontend.adopted_form_engine_decision.unit`（cases=74，真实 TDesign 引擎 + 计数写入）、`verify.frontend.standard_form_composition.unit`（cases=114）|
+| 只改模板/布局、不改契约 → 输入语义与结果不变 | 模板越权 | `verify.frontend.standard_collection_composition.unit`（cases=64）、`verify.frontend.standard_shell_composition.unit`（cases=71）、`verify.frontend.cross_model_action_navigation.unit` |
+
+`F2` 之所以比"结构计数"更强：它把**渲染出来的分区标题**与**该容器自己的契约标题**逐一比对；
+旧的全绿测试只喂合成节点，渲染层兜底在生产里生效也照样通过。
+
+**边界（不得夸大）**：本批是**契约边界硬化 + 验收缺口闭合**，不等于 89 入口矩阵或所有模型已验收；
+不重跑 89 入口与全站发布门禁；不修改业务矩阵状态；不推送、不合并、不部署；**未**进入 TPL-05。
+
+### FE-TPL-05A：付款申请主从办理接管（2026-09-29）
+
+**A｜异步保存旧阻断——关闭。** 旧漏洞（校验等待期间切换记录/草稿，旧异步结果污染新上下文）的实现
+已在真实保存链上：`frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts` 的
+`surfaceEpoch` / `SaveOperation` / `saveOperationOwnsSurface`。本轮不重复修复，只补关闭依据：
+`make verify.frontend.adopted_form_validation_identity.unit` → `cases=46 failed=0`、
+`no cross-identity leak observed`（真实 Vue 实例 + 真实保存链），覆盖 A 校验晚失败、A 校验晚成功读 B、
+A→B→A 同身份重入、旧 `finally` 不清理新操作、校验期间草稿被改等反例。
+
+**B/C｜master/detail 由有效契约驱动。** 入口 `menu_sc_user_payment_apply`（menu 545 / action 775 /
+`payment.request`），角色 `fixture_role_finance`，DB `sc_frontend_acceptance`。主单沿用官方表单与规则适配；
+明细 `outflow_line_ids` 的契约 `subview.policies={can_create:false, can_unlink:true, inline_edit:true}`：
+自由新增被禁，受控路径为 `从结算单引入`（`actionRefs.introduce=payment.request.add.settlement.lines`）。
+
+本轮修复两个**真实缺陷**（独立提交）：
+
+| 缺陷 | 根因 | 修复 |
+|---|---|---|
+| 明细行「主值重复」误判、保存被拦且零写请求 | `one2manyUtils.collectOne2manyDraftValidationFromRows` 以**首个业务列**（此处 `source_line_type`，导入处理器写同常量「结算单明细」）作行身份，两行以上互相判重 | 改按**行身份**判重（`one2manyRowCollectionIdentity`：`id:N` / `key:K`）；列值只作显示，业务唯一性只能来自契约或存储模型；消息改为 `存在重复明细行：…` |
+| 关系字段搜索吞掉空格 | `ProfessionalMany2oneFieldControl.vue` 把 `.trim()` 后的 keyword 作为**受控** `:query-value` 回填输入框，`FE Project` 尾随空格逐字符被删 → `FEProject`，请求亦发规范化键 | 拆成「输入文本（原样回填）」`resolveProfessionalMany2oneSearchInput` 与「请求键（trim）」`resolveProfessionalMany2oneQueryKey`；`useRecordFormState.queryMany2oneInline` 分别存储 |
+
+**主从办理链（真实页面，一次性 49/49 PASS，0 FAIL）**：
+`artifacts/frontend-web-fix-20260928/tpl05a-20260929/chain-masterdetail-20260929064307.json`
+
+- 主单草稿：真实关系选择（项目/往来单位/业务分类）→ 金额直填 → 保存 → RPC 回读 `state=draft`。
+- 受控引入：两张结算单各引 1 行 → 2 行；无自由新增控件；主单金额由明细合计重绑（300）。
+- 编辑一行 → 保存 → 刷新回读：被编辑行正确、其他行未串位、无重复创建、`settlement_line_id` 来源关联正确、
+  来源结算单头未变、`applied_amount` 随引入变化（结算行 15→200、14→40）。
+- 删除一行 → 保存 → 刷新回读：行消失、`applied_amount` 复原（14→0）。
+- 拒绝与恢复：导入对话框把超额申请 clamp 到可申请余额（`9999 → 100`）；同一规则由后端
+  `payment.request.add.settlement.lines` 强制（`AMOUNT_EXCEEDS_REMAINING`，且**全量校验后才创建 = 零写入**）；
+  主单必填被清空 → 保存被拦（`writesDuring:0`）、明细草稿保留 → 纠正后保存并回读成功。
+- 附件：页面文件控件上传 → 刷新可见（`ir.attachment`）→ 下载字节 sha256 与上传一致。
+- 受限操作：已批准申请为只读——无 `从结算单引入`、无 `保存草稿`、无可编辑明细输入。
+- 窄屏 390×844：无整页横向溢出、单一纵向滚动属主、主操作与明细（移动卡片式）可用。
+
+**唯一控制台报错是正确行为**：`/api/v1/intent` 返回 409 `RECORD_VERSION_CONFLICT`（phase `F-attachment`：
+附件上传后立即保存，乐观并发守卫拒绝过期写入），附件已持久化、记录收敛，记为
+`Z1b-conflict-recovered-without-loss` PASS；未捕获 JS 异常 0。
+
+**D｜真实下一页，不造数据。** 复用本批受管样本，在已有真实数据的付款申请列表 `/m/545` 完成：
+`nextpage-20260929065605.json`，6/6 PASS——每页 10（真实请求 `{limit:10, offset:10}`）→ 下一页 →
+第 2 页为**不同记录集合** → 打开该页记录（URL 携带 `list_offset=10`）→ 返回后仍第 2 页、记录集合与请求
+`{limit:10, offset:10}` 保持。**未创建任何记录。** 已接管试点列表 `sc.general.contract` / `project.project`
+在验收角色下受管可见记录仅 3 / 2 行，最小页长 10 仍单页；该缺口在试点列表上仍受**受管数据量**限制，
+记录为限制（不作产品缺陷，也不为它造 7–9 条业务数据）。
+
+**范围必须读准**：`payment.request` **不在** `STANDARD_LIST_COMPOSITION_PILOT_MODELS`
+（`frontend/apps/web/src/app/presentation/standardListComposition.ts`）内，该列表当前仍由
+`legacy-list-surface` 承载；因此上面这次真实翻页证明的是**共享列表分页/返回上下文链路**，
+**不等于官方列表组合的分页已取证**。官方组合的真实下一页仍受试点列表受管数据量限制（单页），
+保持 `NEEDS_EVIDENCE`；是否把 `payment.request` 纳入试点（并随之重新构建、对官方组合复验）
+留作后续批次决定，本轮不动源码、不重建候选。
+
+**双视口证据**：`tpl05a-masterdetail-desktop.png`、`tpl05a-masterdetail-narrow.png`（含 `-detail.png`
+元素截图：申请金额页签、明细 2 条、移动卡片明细）。
+
+**候选与运行来源**：HEAD `196bbcd3` + 两笔缺陷修复提交；`artifacts/` gitignored。产物
+`sce-offrepo/artifacts/tpl05a-20260929/dist`（入口 `/assets/index-BwDHt7Yf.js`，磁盘 sha256 == 服务端
+`cfddd84c…`）；`:5180` pid `1009190`（`STATIC_ROOT=…/tpl05a-20260929/dist`，代理 `:18082`），
+`:5176/:5178/:5179` 未变动。全部改动源码 mtime 早于构建时间，无漂移，故未重复构建。
+
+**回归**：`adopted_form_validation_identity` 46/46、`collection_view_semantics` PASS、
+`professional_relation_field` PASS、`typecheck.strict` exit 0。
+
+**数据恢复**：本轮新建的付款申请草稿经 `unlink` 删除（无孤儿 `payment.request.line`）；结算行
+`applied_amount` 全部回到 0；既有草稿 1813 未变（`amount=33`、行 `[1,2]`）。删除=新草稿、恢复=结算行
+applied、保留=1813 与结算单 13/14/15，分别记录。
+
+**边界（不得夸大）**：四项 `style_system.guard` 欠账与 `render_semantic_ready_guard.py`、
+`verify.list.surface.clean`、`no_new_any_guard` 仍独立记账，未处理；业务矩阵未升级整行（只关闭上述
+一条既有未修复阻断的记录）；未重跑 89 入口/全站发布门禁；不推送、不合并、不部署；下一批为 WEB-LC-01。
+
+---
+
+## FE-TPL-06A：标准列表推广首例——付款申请（2026-09-29）
+
+**目标**：让付款申请列表采用已实现的官方标准列表组合，与已完成的付款表单/主从办理形成一致体验，
+并在同一稳定候选上完成官方组合的真实下一页验证。只本地提交；不推送、不合并、不部署。
+
+### 接管了什么
+
+| 项 | 变化 |
+|---|---|
+| 列表组合 | `payment.request` 加入 `STANDARD_LIST_COMPOSITION_PILOT_MODELS`（`standardListComposition.ts`），列表改由官方容器 `ProductListSurface`（`t-card.list-card-container` 形态，`bordered=false`，零 body padding 来自 primitive 的 `table` appearance）承载查询行与表格 |
+| 呈现路径 | 同一次运行只有一条列表呈现路径：`data-list-composition="official-standard-list"`、`data-list-composition-reason="pilot-model-adopted"`、`data-list-card-container="official"` 包裹表格，列表 surface 仍不出现任何模型名 |
+| 查询/排序/分页 | 仍走原链路：服务端 `api.data` 查询域、服务端 `order`、服务端 `limit/offset`，未新增第二份查询状态，也未在服务端分页之外叠加本地分页 |
+
+**旧路径退出**：付款列表不再以 `legacy-list-surface`（无官方容器）承载该范围的 DOM 与交互。
+未接管的普通列表仍按原实现渲染（明确登记，不是静默回退）。
+
+### 顺带修掉的共享适配缺口（本轮发现的真实缺陷）
+
+**排序点击被静默忽略**：付款列表“申请付款金额”列在契约里声明 `sort_field: "amount"`
+（`request_amount_display` → `amount`），表头据此提供排序；但请求侧的排序白名单
+（`collectContractOrderFields`）只收集字段码与 primary/search 候选，**没有收集契约声明的
+`sort_field`**，于是 `amount asc` 被静默丢弃、请求继续沿用 `id desc`。用户看到排序已应用（URL 带
+`order=amount+asc`），服务端顺序却没变——属于「契约已表达、前端未消费」的静默空操作，不是明确拒绝。
+
+- 修法：白名单同样收集每个 widget 声明的 `sort_field`，使表头可供排序的字段与请求放行字段
+  读**同一份契约声明**；反方向仍是 fail-closed（未声明的字段、非标识符、未知方向一律丢弃）。
+- 反例测试：`frontend/apps/web/scripts/list_order_field_contract_test.ts`
+  （`make verify.frontend.list_order_field_contract.unit`，14 cases）。**去掉修复即失败**，修复后通过。
+
+### 定向验证（同一候选，一次运行）
+
+`artifacts/frontend-web-fix-20260928/tpl05a-20260929/tpl06a-list-after-*.json`（**17/17 PASS，0 FAIL**）：
+
+- A 接管：官方组合身份 + 官方容器包裹表格 + 列表 surface 唯一（1 条）。
+- B 查询：输入 `PRQ` → 真实请求带 `search_term`（域仍含 `business_category_id.code` 业务域）
+  且 16→12 行；清除后恢复 16 行。
+- C 排序：点“申请付款金额” → 真实请求 `order: "amount asc"`，首行金额 0.00/5.00/10.00/12.00
+  实际升序（修复前同一操作被静默丢弃）。
+- D 真实翻页：每页 10（真实 `{limit:10, offset:10, order:"amount asc"}`）→ 第 2 页为不同记录集合
+  → 打开该页记录（URL 携带 `list_offset=10`）→ 返回后仍第 2 页、记录集合一致。
+- E 窄屏 390×844：官方组合与官方容器仍在；无整页横向溢出（表格未被迫横滚）；单一纵向滚动属主
+  （`MAIN.router-host`）；分页/页脚可用；未捕获 JS 异常 0。
+
+**旧路径基线**：`tpl06a-list-before-*.json`（改造前的同一旅程）记录旧状态：
+`data-list-composition="legacy-list-surface"`、无官方容器，且 C1/C2 复现上面的静默排序缺陷。
+旧结果保留，不覆盖。
+
+**回归**：`standard_collection_composition`（65 cases，含新增的 `payment.request` 用例）、
+`list_order_field_contract`（14）、`collection_view_semantics`、`product_page_pattern`、
+`page_pattern_reference_parity`、`collection_action_toolbar`、`adopted_form_validation_identity`
+（46/46）、`verify.frontend.typecheck.strict`（exit 0）全部通过；`make ci.local.iteration` PASS。
+
+### 候选与运行来源
+
+- 源码：HEAD `8adfff9e`（`27098f36` 排序契约修复 → `8adfff9e` 付款列表接管）。
+- 产物：`sce-offrepo/artifacts/tpl06a-20260929/dist`，入口 `/assets/index-D84RQvtG.js`
+  （sha256 `57ad4572…`）；构建时间 15:25 晚于最新源码 mtime（15:23），无漂移，只构建一次。
+- 运行：`:5180` pid `1532369`（`STATIC_ROOT=…/tpl06a-20260929/dist`，代理 `:18082`），
+  替换上一候选的 `tpl05a-20260929` 服务（未新增端口、未删除旧产物）；`:5176/5178/5179` 未动。
+
+### 剩余缺口（不得夸大）
+
+- **官方组合的分页只在本入口取证**；试点列表 `project.project` / `sc.general.contract` 在验收角色下
+  受管可见记录 3/2 行，最小页长 10 仍单页——该缺口保持**受管数据量**限制，未造数据。
+- **付款表单仍非官方表单组合**：`payment.request` 不在 `STANDARD_FORM_COMPOSITION_PILOT_MODELS`，
+  表单侧仍 `legacy-form-section`。同一业务流程目前是“官方列表 + 旧表单组合”，已登记为有意的范围不一致，
+  不写成“全流程已接管”。
+- 排序白名单的其余宽松处（例如无 `sort_field` 声明的显示列仍会被当作可排序字段发出请求）保持原状，
+  未在本轮扩大处理范围。
+- 四项 `style_system.guard` 欠账、`render_semantic_ready_guard.py`、`verify.list.surface.clean`、
+  `no_new_any_guard` 仍独立记账；业务矩阵未升级整行；未重跑 89 入口/全站发布门禁。
+
+## WEB-LC-01：标准列表配置闭环（2026-09-29，窄范围批次验收完成）
+
+以下准备阶段记录保留；最终续跑结果与限制见本节末尾，不将历史阻断视为当前状态。
+
+续跑基线 `e877afcc18cd7b5d2556e8053a64c4f93bda3e1b`，分支
+`feature/web-official-template-adoption`，开始时工作区干净。本增量只准备定向工具，
+**尚未取得真实配置发布、生效、恢复的浏览器结果**，不进入页面类型下一批推广。
+
+- Formal Product Layer / Layer Target / Module：P4，既有低代码变更集浏览器验收入口、
+  `frontend_acceptance_runtime.sh` 与 `make/runtime_ops.mk`。配置本身属于 P3 的临时验收配置；
+  不沉淀客户偏好，不修改 P0/P1 产品实现或业务事实。Why Here：绑定既有环境并验证现有 API；
+  Why Not Elsewhere：验证脚本不得成为配置或页面呈现的产品权威。
+- 范围：付款申请 menu 545 / action 775 / `payment.request` 普通列表，当前公司下
+  `fixture_role_config_admin` / `business_config_admin`，只改变 `name` 列标签，
+  经既有 change-set stage/validate/publish/rollback 完成闭环。旧配置不覆盖；独立临时 target key
+  和 token 在发布前保存，回滚停用本次新增配置，保留平台审计历史。权限及有效契约仍由后端决定。
+- 身份：内部隔离验收租户（非生产客户库、非控制库、非行业目录），local acceptance profile，
+  project `sc-fe-r2-p1-01`，DB `sc_frontend_acceptance`，filter `^sc_frontend_acceptance$`，
+  filestore `sc_fe_r2_p1_01_odoo:/var/lib/odoo/filestore/sc_frontend_acceptance`；
+  不新建 fixture、账号、凭据、数据库、端口或卷。既有 fixture 只读复用，禁止业务 create/write/unlink。
+- 后端证据复用：容器 source `23f11f426880585ca307544545c9bf9c01245b42`；
+  原 clean source fingerprint 与当前 `addons` 输入相同，经入口确定性核对，不改写旧回执。
+  前端复用 TPL-06A 的 5180 产物；核对现有 listener/proxy、入口摘要及源码差异，
+  不重新构建、不全文件 HTTP 比对。测试脚本变化不影响已有产品产物。
+
+### 本批结果索引
+
+| 层 | 命令/观察 | 结果 | 归因/下一步 |
+|---|---|---|---|
+| L0 | preflight、`git diff 23f11f4 HEAD -- addons`、既有 5180 listener | passed；clean 起点，后端产品输入无差异 | 后续 dirty scope 仅 P4 工具及本记录 |
+| L1 | `make ci.local.iteration` | passed；策略测试 16，L1 only，无交付回执 | 工具变更不扩大产品回归 |
+| L1 | `node --check frontend/apps/web/scripts/standard_list_lowcode_loop.mjs`、`bash -n`、`git diff --check` | passed | 定向工具可解析 |
+| L2 | `make verify.business_config.standard_list_loop.unit` | passed，7 tests | 发布不确定先回读；冲突不强制覆盖；未尝试发布的失败草稿清理；在途发布即使读到旧 ready 也不得 discard |
+| L3 前提 | `make acceptance.runtime.preflight`；定向入口 resource/source 核验 | passed | profile、精确 DB/filter/卷、后端输入可复用 |
+| L3/L4 | `make verify.business_config.standard_list_loop` | failed，凭据前置拒绝；浏览器及配置写入 not_run | environment prerequisite：缺少既有 `SC_ACCEPTANCE_FIXTURE_PASSWORD`，未重试、未重置 fixture |
+| L5 | Quick、发布、远端 CI、合并、部署 | not_run | 本地迭代范围；闭环未完成，禁止生成交付结论 |
+
+定向工具默认只读，显式 `WEB_LC_APPLY=1` 才执行已授权临时配置写入。凭据从既有私有权威注入，
+不得写进仓库或报告。报告位于既有 `artifacts/frontend-web-fix-20260928/web-lc-01-<run>/report.json`
+（目录 0700、报告 0600；包含精确恢复 token，禁止公开上传）。请求失败先回读同一变更集状态，
+已发布走同一幂等回滚请求，仅未尝试发布的本次草稿可放弃；发出发布请求后即使读到旧 ready，
+也不能据此推断事务未提交。未知状态/冲突/恢复失败均保留恢复身份并报告，不推测性 discard。
+验证有效契约标签、真实表头、服务端查询和返回记录摘要，恢复后与基线比较；不以配置存储成功代替页面验证。
+
+独立 B 线复核发现“发布失联但读到旧 ready 时 discard”的恢复竞态；工具已增加
+持久化 `publish_attempted` 标记并拒绝此类推测性清理，新增第 7 项失败注入测试通过。
+本次 L2 仅 7 项工具测试，不计作真实页面用例；产品源码未变，沿用上一批产物和页面证据，
+这些证据不代替本批尚未执行的配置闭环。
+
+下一步：既有验收凭据就绪后先运行默认只读入口，再用 `WEB_LC_APPLY=1` 运行同一入口；
+只有真实生效、恢复回读及独立复核通过后才能记为批次验收完成。
+回滚代码：撤回本 P4 增量；运行时恢复：仅本次变更集 token 的平台 rollback/discard，
+不得删除其他草稿或直接改配置表。批次未完成｜主线未集成｜目标环境未部署｜用户交付未验收。
+
+### 凭据补齐后续跑与收口
+
+用户提供既有 `/tmp/wf_check_fixture.env` 权威来源后，以环境变量注入口令；不记录口令、不建凭据文件、
+不重置 fixture。执行基线 `e41e25e1b7c71ddb24885859385db5da7b814daa` 加本批工具 dirty scope；
+产品源码和 TPL-06A 产物不变，继续使用 5180 → 18082。修改仅限工具的配置作用域、
+业务事实比较和截图留存，原 L1 的产品/环境输入不变；修订后非零 L2 8 项全部通过。
+
+| 原始证据（均在 `artifacts/frontend-web-fix-20260928/`） | 结果与归因 |
+|---|---|
+| `web-lc-01-d3f6c76d-44e9-44d7-b93a-b979fc64b0cd/report.json` | 默认只读 passed；真实 fixture_role_config_admin 登录及 system.init/contract 启动链、官方列表身份通过，无配置写入 |
+| `web-lc-01-1534cbcc-d95e-4630-b6ca-5b3d383ba3bc/report.json` | failed / rolled_back；P4 工具误把登录角色当成目标 role_key，普通列表配置未被选择；有效契约标签恢复回读通过 |
+| `web-lc-01-ab7da385-ded3-418a-8202-72d570b4b2da/report.json` | failed / rolled_back；标签已在契约与页面生效，但 P4 比较了整个显示投影摘要，不能据此判定业务事实变化；恢复通过 |
+| `web-lc-01-93fc22b0-578f-460c-9d2f-03a27b387c17/report.json` | **passed / rolled_back，10/10 具名断言**，另有记录 ID、固定业务字段、查询上下文和恢复深比较全部通过；浏览器异常 0 |
+
+修复依据：现有 `ViewOrchestrator.compose` 的普通列表路径未传角色限定，配置工作台的角色范围
+也不同于登录身份。定向工具改为公司 8 / action 775 的普通列表覆盖，`role_key=''`，仍由配置管理员
+认证并由平台执行配置权限；不扩展业务授权。第二处修复将显示响应与业务事实分开：同一业务域、
+公司/allowed_company_ids、排序和分页下，前后返回 **20 条相同有序 ID**；额外通过真实 `api.data`
+固定读取 `id/name/amount/state/write_date`，摘要一致，任何缺失字段、空集、非法/重复 ID 均失败。
+
+最终运行命令：从既有私有环境加载口令后执行
+`WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`。
+每次失败均先完成恢复，再依据具体工具输入修复重跑；未重试相同失败。无业务写入、无模块升级、
+无新构建或服务替换。三张截图位于最终证据目录的 `before.png`、`published.png`、`restored.png`；
+发布时编号表头为本次唯一标记，恢复后为“单据编号”。恢复后契约标签与原基线深比较一致，
+页面表头、查询上下文、有序记录 ID、固定业务字段摘要也与原基线一致。
+
+独立 B 线复核已读取最终及两次失败报告、核对当前工具代码，结论为窄范围内未发现阻断。
+**范围限制**：这是现有配置 API → 有效契约 → 官方列表消费 → 回滚闭环；不是配置工作台 UI
+编辑操作验收，不是角色定向列表配置、全角色权限或全部低代码能力验收。发布期间有效投影还出现
+selection 标签与未呈现字段数量差异，不能声称“整个契约结构不变”或“所有必要能力均已验证”。
+该范围差异留给后续页面类型推广的能力核对，不用静默回退或修改规则掩盖。
+
+下一批按既有 `product-page-patterns-v1.md` 推进页面职责/能力分组采纳与旧路径退出；
+不再新增模型专属列表。本批窄范围验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## FE-TPL-07：按页面类型默认接管（2026-09-29，本地批次收口）
+
+基线 `fc0afcb32cd7864f4495f5c60322ac7d26193391`，既有专题分支与工作树，开始 clean。
+P0 / frontend renderer / 标准呈现采纳机制：平台通用页面职责决定组合，不承载施工、客户或角色业务规则。
+P4 仅补既有 acceptance 入口的固定 5180 预览生命周期及只读定向探针。既有 local profile、
+sc-fe-r2-p1-01 / sc_frontend_acceptance / 精确过滤器与固定卷、fixture 权威和 18082 后端全部复用。
+不改 P1/P2/P3 数据或配置，不升级模块；当前候选身份为上述 HEAD 加显式 dirty scope，不称 frozen。
+
+边界与实施：三个 standard composition selector 改收页面职责，删除模型白名单；
+ListPage 有数据/空态共用 ProductListSurface，旧透传 DOM 分支退出；ContractFormPage 的主表、
+主从办理共用既有官方表单引擎和一次保存校验。只读详情增加 section 能力判断：集合、附件、
+专用 renderer、未知类型及设计模式保留原控件并记录 reason，不能降为文字或计作 descriptions 接管。
+影响普通列表和通用记录页；专用工作表/层级规划/看板不因名称相似自动接管。
+
+先决诊断：独立 B 线确认 WEB-LC 列减少为 P4 输入语义问题：`tree.columns=[name]` 在 V2
+是完整列权威（`ui_contract_v2.py:2961`），并非单字段 patch。可选隐藏列当时确实退出配置候选，
+原探针已回滚恢复。因此不扩大旧“标签闭环”结论；不改后端既有完整替换规则。
+无运行时配置变化的页面类型推广与该输入独立，可以继续；今后标签安全性须完整列能力比较。
+
+验证顺序：L0 身份 → L1 iteration/语法 → L2 采纳策略、真实官方引擎、异步身份、集合/动作及严格类型
+→ 一次定向构建与 L4 代表页。L3 模块升级/fixture reset 不适用（产品后端和数据未改）；
+L5 Quick/发布/远端 CI 不运行（本地迭代）。L1 iteration 已通过；L2 当前通过：form 94、collection 69、
+真实引擎 74、异步保存身份 46；集合语义 18+36、动作 6+11、页面模式 12+5、模板对齐 15；
+strict typecheck 通过。P4 固定预览身份测试 5 通过。保留原始终端输出及 `/tmp/tpl07-iteration.log`，
+后续只重验被实际修订影响的结果。
+
+本批登记的增量 Make 入口：`frontend.standard.preview.build`、`frontend.standard.preview.up`、
+`verify.frontend.standard_page_type.browser`、`verify.frontend.standard_preview.unit`。
+仅复用已授权 5180 → 18082；构建至既有仓外证据根下 `tpl07-20260929/dist`，保存 build-identity.json，
+绑定源 HEAD/dirty frontend 输入及入口摘要；源码未变重用产物。替换预览前核验唯一 PID、所属用户、
+static-server 命令、旧 tpl06a/current tpl07 目录、端口和 proxy；未知 listener 拒绝停止。
+旧产物保留，新启动失败尝试恢复旧目录。5175/5176/5178/5179 与数据库生命周期均不触及。
+
+代表页结果在下表统一收口；回滚为本批 P0 提交及保留的先前预览产物。
+全部入口与目标环境交付不在本批证据范围。
+
+TPL07 代表页审查修订：原生 readonly slot 是通用格式化呈现，不能整体列为专用能力。
+仅透传该 slot 至 descriptions 普通值分支，保留关系/HTML/办理动作优先级和集合、附件等排除；
+付款详情旧截图未证明 facts 接管，修订使该结果失效，需定向补验。为保留首轮产物与证据，
+修订候选构建登记为 `tpl07-20260929-r2/dist`，仅替换已验证的 `tpl07-20260929/dist` listener。
+这是一次具体缺陷修复所需重建，不重跑列表、编辑或全旅程；首次付款/合同列表与客户空态证据沿用。
+
+### TPL07 统一结果索引与证据复用
+
+原始报告均在 `artifacts/frontend-web-fix-20260928/`，失败报告不重标通过：
+
+| 原始报告 | 结果与本批使用范围 |
+|---|---|
+| `tpl07-1790668835237/report.json` | 探针 failed，锁定数据库构建只有两个可编辑登录输入，第三输入定位超时；尚未进入产品断言 |
+| `tpl07-1790668884648/report.json` | 20 项通过后探针因客户菜单被误认为 link 而 failed；沿用付款真实第二页/返回同集、主从引擎与明细、合同列表结果；旧详情结果由 r2 代替 |
+| `tpl07-1790669007131/report.json` | 修正为真实菜单搜索，additional 分支 passed 3 项；非旧试点 res.partner 客户空列表采用官方卡片，无业务写入 |
+| `tpl07-1790669293555/report.json` | r2 详情探针 failed：7 项已过，公司字段所在 mixed section 是专用控件扩展，探针错误要求其进入 descriptions；未改产品，只修正该定位断言 |
+| `tpl07-1790669324381/report.json` | **r2 detail passed 15 项**；付款非零 facts 与非零明细、明细扩展隔离、原公司值、窄屏；合同非零 facts；异常与业务写入均 0 |
+
+r2 事实文本回读包括既有往来单位户名、开户行、账号及匹配提示，slot 格式与取值保留。
+付款事实/专用混合 section 保留整节扩展，未把 page marker 当作整页 descriptions 完成。
+原列表、编辑、空态测试所依赖的代码与 backend/profile/fixture 输入未变；r2 仅修改 readonly
+事实普通值插槽及能力判断，故明确沿用首轮相应检查，不宣称整个 failed 报告通过。
+
+L1：`make ci.local.iteration` passed，`/tmp/tpl07-iteration.log`；后续只读插槽小修未改变
+该静态策略输入。L2 修订后 `make verify.frontend.standard_collection_composition.unit
+verify.frontend.standard_preview.unit verify.frontend.typecheck.strict` passed（69 + 5，strict typecheck），
+日志 `/tmp/tpl07-detail-check.log`；其他前述非零 L2 输入未变，沿用本批原结果。
+L4：`make frontend.standard.preview.build` 初次产物与 r2 保留，日志 `/tmp/tpl07-build.log`、
+`/tmp/tpl07-r2-build.log`；`make frontend.standard.preview.up` r2 成功，
+`TPL07_SCOPE=detail make verify.frontend.standard_page_type.browser` passed，
+日志 `/tmp/tpl07-detail-browser-r2.log`。5180 当前入口 `/assets/index-R2g4OV5o.js`，
+SHA256 `fabee65071492ce6409578f74758de5625e34861c5fe148251f3a0152540f444`，
+源基线仍为 `fc0afcb32cd7864f4495f5c60322ac7d26193391` 加本批 frontend dirty scope；
+后续仅提交不会改变相对该基线的构建输入摘要。build-identity.json 为真实构建身份，不伪写新 SHA。
+
+B 线独立复核当前同一范围：未见新增保存授权/双引擎/集合吞控件阻断，已核验 live listener
+绑定与非零能力断言。代码退出范围：标准列表旧透传容器及三个模型白名单删除；详情普通事实
+使用官方组合，集合/附件/专用控件仍由同一契约扩展承担，设计编辑及专用页面仍明确除外。
+本批未验证全部 89 入口、全部写入或每种专用能力；未升级业务矩阵整行。
+
+既有 style_system 4 项、render_semantic_ready 旧期望、no_new_any/list.surface.clean 待收口项继续
+保留在此结果索引，禁止据本批结果宣称发布门禁全部通过。低代码完整列能力比较进入下一批；
+无本批数据库配置或业务写入，无推送/合并/目标部署。
+**批次验收完成（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。**
+
+## WEB-LC-01B：完整列能力保留（2026-09-29，进行中）
+
+基线 `bc630039` clean。P4 / 既有配置验收工具，修正临时测试配置输入和预发布检查；
+不更改 P0 full-list 替换语义，不把测试标签固化为 P1/P2 默认。复用同一受管库与 fixture，
+数据库角色/卷/过滤器沿用 TPL07；配置写入串行，仅拥有本批 token，可权威回读及 rollback/discard。
+先只读采集完整 normalized baseline，再新增预发布全能力比较与非零失败注入测试；
+未知语义差异必须在 publish 之前关闭，不以成功回滚证明发布安全。
+初始诊断阶段禁用 APPLY，随后改为完整预发布比较决定是否允许 publish；只读入口复用 TPL07 真实构建身份。
+L1 节点语法、L2 定向工具测试 → L4 只读基线；后续配置候选预览受上述检查阻挡。
+产品源码不变，不构建；不升级模块/fixture，不重复已过业务旅程。
+
+### LC01B 定向执行结果（保留真实阻断）
+
+P4 改为完整 profile 列全集+独立非零 sequence，只为 name 写 label；不写 visible，避免
+`false` 删除字段、`true` 强制展开。完整 table widgets 顺序必须与 profile 一致，拒绝空集、
+重复、隐藏/事实列不覆盖，不取并集掩盖权威冲突。比较完整 page/layout/status/action/data/runtime/search
+及 meta 的版本/authority/trim，只规范明确的请求ID/摘要和顶层 name table widget、descriptor、
+listProfile.column_labels.name 标签；嵌套同名字段不豁免。
+
+L1 `make ci.local.iteration` passed（`/tmp/lc01b-iteration.log`）；L2
+`make verify.business_config.standard_list_loop.unit` **13 tests passed**（`/tmp/lc01b-unit-final.log`），
+新增完整列/顺序/隐藏映射/权限与未知结构漂移/嵌套同标签拒绝测试。节点语法与 diff check passed。
+B 线复核预览 token 的 owner/company/database/action/menu/view/role 绑定及完整投影比较，没有发现
+阻断本次受管草稿验证的缺陷；采纳其建议收窄标签豁免范围。所有配置操作均串行。
+
+| 原始证据（既有 artifacts/frontend-web-fix-20260928 下） | 结果 |
+|---|---|
+| `web-lc-01-ba094467-4d94-483c-be03-ba1f37ecfab6/report.json` | readonly_passed / not_needed；3项，无配置写入；baseline-contract.json 留存完整基线 |
+| `web-lc-01-69db0ba3-0ab1-4046-8c5d-0da45a8f9379/report.json` | **failed / discarded**；到预览6项通过，完整能力比较拒绝后续 publish；没有 publish_attempted，完整有效契约回读与基线一致 |
+
+命令分别为 `make verify.business_config.standard_list_loop` 与
+`WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`，既有私有 env 注入口令。
+后者日志 `/tmp/lc01b-preview.log`；失败后没有原样重跑，未发布到有效配置，未修改业务记录。
+新证据绑定 `bc630039` 加本批 P4 dirty scope，前端仍为 TPL07-r2，未重建/重启后端。
+
+**实际阻断**：完整22列、13隐藏列已保留，但草稿令
+`preference_policy.allow_visibility/allow_order` 从 false→true，locked_columns 从22列→空；
+还注入 nativeWidget/cell_role/tone_by_value 与 column_policy，部分 selection 从tuple变object。
+其中显隐/顺序权限及锁定列变化具有行为意义，不能统一当作“正常投影”豁免。
+责任定位为 P0 `ui_contract_v2.py::_enforce_business_list_config_projection` 的强制 preference
+覆盖及业务列表投影对 schema 的补写；需独立收口完整配置与标签修改的语义边界，不能在 P4
+放宽断言或前端绕过。当前工具已具备发布前阻断与恢复保护，但 **LC01B 业务验收未完成**。
+既有 TPL07 页面类型批次结果不受影响，普通列表/表单默认接管保持；后续最早有效步骤为
+P0 定向语义修复/契约测试，禁止直接重复浏览器或宣称总接管完成。
+
+本批工具修正完成，配置完整能力闭环 blocked｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+B 线进一步定位：P1 `smart_construction_core/core_extension.py:1342` 见权威列表配置即提前返回，
+跳过正式 action-bound 原生 schema 及其 :1467 的锁策略；P0 `ui_contract_v2.py:3174` 与 :364
+又两次强制开启列偏好。`view_orchestrator.py:801` 不消费 tree.preference_policy/columns_schema，
+因此补 payload 不能解决。下一机制批次须保留 P0 全量列集选择语义，同时让 P1 标准 schema/锁策略
+先形成稳定基线，配置只覆盖显式职责；先后端定向测试，后受管预览，不再试错式发布。
+
+## WEB-LC-02：配置与正式列表基线交接（2026-09-29，进行中）
+
+基线 c8ad8d66 clean，沿用已有分支/工作树/验收资源。本批唯一目标：全量配置列集仍权威，
+未声明改变的正式原生列语义和个人偏好锁不因配置存在而退出。P0 smart_core 最终投影负责保留
+已有策略；P1 smart_construction_core 正式列表既有 hook 提供 action-bound 原生基线，再调用
+现有 ViewOrchestrator 应用显式覆盖并按权威列集精准裁剪。施工金额/锁策略仍在 P1；P4与前端
+不实现语义。影响已登记正式 list action + 权威配置路径，无配置正式列表和非正式列表应保持。
+不新增 public intent/字段/schema、不修改模型/权限/fixture；仅 Python handler/hook 修复，
+运行时需重启清除进程缓存，不需数据库 -u 或数据迁移。P0/P1 提交分开，回滚按相反依赖顺序。
+L0身份→L1语法/iteration→L2非零P0/P1定向测试→受管后端重启→既有草稿预览。
+前置未通过不得运行浏览器；前端产物未变不重建。发布/主线/目标交付均未执行。
+
+LC02 开发验证：L1 iteration passed `/tmp/lc02-iteration.log`；L2
+`make verify.business_config.formal_list.unit` passed **111 P0 + 51 composer + 5 P1 hook tests**，
+`/tmp/lc02-unit-r2.log`。P1 测试执行真实 shipped hook 与真实 composer，ORM仅作有界替身；
+完整 Odoo TransactionCase suite 未运行，不把纯测试冒称数据库集成。Python语法/diff check passed。
+首次P1测试暴露 visible:true 未传为optional-show，已由P0列策略就地修复；未声明显隐仍继承native。
+B线发现个人顺序在锁前进入fact_columns，已将direct配置个人偏好处理推迟至最终约束之后。
+合法非native扩展schema（sort/value/readonly/required/selection）保留及显式覆盖均有非零测试。
+
+本次运行库判定：TARGET_DATABASE_ROLE=isolated_acceptance_tenant；TARGET_TENANT_ID=sc_frontend_acceptance；
+TARGET_ENVIRONMENT_ID=sc-fe-r2-p1-01/local；非platform-control/industry-catalog，隔离模拟客户租户；
+不允许真实客户业务数据，允许既有fixture。精确dbfilter `^sc_frontend_acceptance$`，filestore为
+受管 `sc_fe_r2_p1_01_odoo` 卷内该库目录；每次入口重新验证身份，不新建/复制/reset库或卷。
+受管后端仅重启Python，不做模块升级；前端5180/TPL07-r2原产物复用。运行态验证pending。
+
+LC02 首次运行：P0 `41737a8a`、P1 `e37cd160`、测试 `7be3cce8`；工作树clean后
+`make backend.acceptance.up` 成功替换旧revision后端（`/tmp/lc02-backend-up.log`），库/卷未改。
+`WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`：
+`web-lc-01-06b41f95-ec23-4ed3-97f2-759c09ab35dd/report.json` failed/discarded，无publish_attempted，
+恢复全契约一致。此前229叶节点差异消除，剩余仅listProfile的精确strict配置来源column_policy及
+sourceAuthority.source_key。原所有显隐/顺序/锁/schema/selection/映射/actions/data/runtime等深比较一致。
+后续必须证明来源标记允许差异边界；不能丢弃任意policy、sourceAuthority或profile再比较。
+
+### LC02 真实闭环收口
+
+来源差异审计：column_policy在后端确有strict列投影意义，不能称作任意无行为元数据。
+本次仅draft/published允许精确 `{mode: strict, reason: business_list_config_contract_authoritative,
+owner_layer: ui.business.config.contract.view_orchestration}` 三键对象及对应source_key，
+验证后规范为相同基线以比较所有有效能力；未知值/额外键拒绝。
+baseline/restored必须无该policy、source_key为list_profile，配置来源残留即恢复失败。
+P4失败注入测试新增阶段隔离、额外键/其他mode/错误来源拒绝，
+`make verify.business_config.standard_list_loop.unit` **14 tests passed**（`/tmp/lc02-tool-unit.log`）。
+未改变P0/P1后端代码，未重启第二次、未新建前端构建。
+
+最终命令 `WEB_LC_APPLY=1 make verify.business_config.standard_list_loop`，日志
+`/tmp/lc02-loop-final.log`；原始报告：
+`artifacts/frontend-web-fix-20260928/web-lc-01-bb8af700-b57b-4832-8a65-458a5b1f0810/report.json`。
+**passed / rolled_back，13具名断言通过**；此外草稿、正式发布、恢复有效契约严格比较均通过。
+原22列、13隐藏列、显隐/顺序禁用和锁定集合、widget/selection/金额映射、actions/status/
+query/domain/context/权限及runtime能力保留；发布期间仅目标标签与精确配置来源发生预期变化。
+20条有序ID、固定id/name/amount/state/write_date摘要、实际查询上下文相同，browser errors=0。
+回滚后完整能力/原生来源以及可见表头、请求、记录集与原基线一致；所有配置已恢复，无业务写入。
+`before.png`、`published.png`、`restored.png`保存在同一原始目录；保留首次failed/discarded证据。
+
+真实后端绑定 clean `7be3cce84ba10a05e5e0240bc176a62cfd6b4a62`，最终工具运行身份为该HEAD+
+本批P4工具dirty scope；前端为已验证TPL07-r2，原build receipt不改写。后续工具/文档提交不改变
+本次产品输入，不需为换SHA重跑。风险回滚：P1后P0逆序撤回相关提交，受管backend重启；无schema/
+数据迁移。先前LC01B的行为漂移阻断已由本批关闭，但历史失败报告不改写为passed。
+
+范围：配置API→有效契约→官方标准列表→完整回滚已验证；不是配置工作台UI全旅程、全部模型/
+全部角色配置能力或全89入口验收。TPL07标准页面默认接管不变；原style_system等强制门禁仍待
+各自收口，不能据本批宣称总体官方接管/发布/交付全部完成。
+**批次验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。**
+
+LC02 最终B线已核对同一候选报告及阶段化来源比较：范围内无剩余阻断，正常和异常恢复均不豁免配置来源残留。
+
+## WEB-GATE-01：强制门禁检查点校正（2026-09-29，进行中）
+
+基线 ebd069bf clean；P4 / scripts.verify / 门禁有效性。目标仅修正已迁移契约消费者后的
+两个失效字面检查，并验证破坏真实链路仍失败。产品层无改动：列表现消费canonical V2 store，
+表单render-profile需经能力约束；守卫不得要求已退役API或旧的直接赋值。
+不删除检查、不增加白名单/阈值、不更新any或尺寸基线。L0身份→L1 iteration/语法→L2守卫
+失败注入与真实门禁。无产品输入变化，跳过构建、运行态/数据库/浏览器，沿用已有LC02/TPL07证据。
+clean HEAD下首次复核 no_new_any：19文件超基线（`/tmp/web-gate-any-baseline.log`），包含注释误计及
+真实新增any，后续必须分别修正计数与类型；当前不改该门禁、不宣称通过。
+
+WEB-GATE-01收口：`make ci.local.iteration` passed（`/tmp/web-gate-01-iteration.log`）；
+`make verify.page_contract_gate_wiring.unit verify.list.surface.clean verify.render.semantic.ready`
+全部passed（`/tmp/web-gate-01-results.log`），6项测试，生成的既有两份报告同步。
+B线复核无放宽：AST检查请求→能力→只读fallback及委托，列表检查真实canonical调用并拒绝旧resolver。
+行为测试仅证明编排（能力函数替身），不冒称权限计算运行态验收。产品及构建/数据库输入未变，
+沿用TPL07/LC02原证据。本批两项门禁已关闭；no_new_any及style_system仍待收口。
+批次验收完成（两项守卫）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+后续类型诊断（只读，不计通过）：用现有TypeScript AST只统计script内AnyKeyword，原19项中
+实际超过现有数值基线的为6个文件：one2manyColumnOptionsRuntime、useRecordCollaborationPresentation、
+useBusinessConfigPublishLifecycle、useBusinessConfigRemediationLifecycle、useBusinessConfigScopeLifecycle、
+useBusinessConfigWorkbenchBootstrap。其余报告主要来自注释/禁用注释的词法误计。
+此诊断未改guard或baseline，不能替代no_new_any门禁。下一步需为6个真实依赖边界补明确类型，
+再处理词法计数对注释的误判；禁止把Record<string, any>机械替成不安全断言或提高基线。
+
+## WEB-TYPE-01：真实类型依赖与扫描语义（2026-09-29）
+
+基线 b43572ec clean。P0/frontend renderer：只补6个边界的精确依赖类型，复用API/事件/组合返回类型，
+不改变业务处理与授权；P4扫描只计算显式类型语法，不把注释/字符串中的词当作类型。
+不提高基线额度，不增加unknown索引签名/断言来替代类型。范围为上述6文件、必要显式调用传参、
+扫描工具及负例测试。L1 iteration/语法→L2严格类型与影响范围非零测试；若运行时代码未变，
+以擦除类型后的等价性复用页面证据，不为纯类型变更构建/写配置。风险回滚本批提交即可。
+
+WEB-TYPE-01复核修正：B线发现旧regex额度包含注释，不能直接当作AST额度使用。
+以原baseline提交 ea0170d2652188083146c5423ed9dcbb20a170d7 的源码重算，逐文件取
+min(原额度, 原源码AST计数)，同一baseline总额度55→36；记录metric/source_commit。
+没有从当前源码刷新额度；第6项扫描测试逐项验证来源和收紧值，并覆盖“历史只有注释、
+当前新增真实any必须超限”。首次负例路径误写pages而非app，修正测试路径后6/6通过。
+收紧后揭示useRecordRelationships布局回调还有一处真实any，已接入既有LayoutNode类型；
+父级历史Record<string, any>仍保留，不宣称完全无any。B线复核原额度阻断已关闭。
+
+结果索引（候选 b43572ec + 本节P0/P4 dirty范围）：
+- L1 `make ci.local.iteration` passed，`/tmp/web-type01-iteration-final.log`。
+- L2 `make verify.frontend.explicit_any.unit` passed 6/6，`/tmp/web-type01-any-final.log`；
+  同日志随后旧候选guard发现关系回调超限，是实际失败，已由上述类型修复解决。
+- L2 `make verify.frontend.no_new_any_guard verify.frontend.typed_dependencies.unit verify.frontend.typecheck.strict`
+  全部passed，`/tmp/web-type01-types-final2.log`；guard检查698文件、显式any25、剩余历史额度11；
+  依赖类型负例6项。首次类型负例执行器因/tmp配置不能定位node/vite类型而失败，
+  已改为复用仓库已安装的绝对类型路径，未改变产品类型检查规则。
+- L2 `make verify.frontend.native_collaboration_presentation.unit verify.frontend.professional_detail_collection.unit`
+  passed，`/tmp/web-type01-behavior.log`：协作呈现断言、集合matrix=6/domain=7、Python 10+37测试。
+- 7个修改TS文件类型擦除后与源HEAD逐字节一致，`/tmp/web-type01-runtime-equivalence.json`；
+  Vue调用只删除被调函数从未读取的replaceWorkbenchQuerySilently参数。
+  最后关系布局类型修正重新核验7文件等价，行为测试可沿用。
+- L3/L4不运行：无服务端/数据库变更，前端执行逻辑未变，不重复构建或浏览器旅程。
+  5180仍为TPL07-r2原构建，保留其原receipt身份；不冒称已加载当前源码版本。
+  TPL07/LC02页面证据按上述输入影响分析沿用。L5未进入，无推送/合并/部署。
+
+剩余强制门禁：style_system既有4项（关系选择z-index、表单与两处action文件尺寸），
+后续按所属呈现职责处理，不增加尺寸阈值。本批不升级89入口业务矩阵或整体交付状态。
+
+WEB-TYPE-01批次验收完成（类型边界与同口径no-new-any）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## WEB-STYLE-01：共享表单职责与样式门禁（2026-09-29）
+
+基线 cb06a004 clean。Formal Product Layer=P0；Layer Target=frontend generic form renderer；
+Module=frontend/apps/web。平台通用呈现职责，不属于P1业务/P2偏好/P3配置内容/P4业务补丁。
+目标：配置字段交互退出保存处理器；原生动作状态映射归入既有动作适配器；页面返回接线归入既有导航运行时；
+关系选择局部层级使用受管令牌。范围仅对应文件、直接类型/测试/令牌，不改变契约、权限、保存epoch、
+数据身份、字段顺序、回退策略。不增加尺寸基线。L0身份→L1 iteration/style→L2严格类型、
+保存身份/失败恢复、字段事件和返回导航相关回归；先验证代码再决定必要页面复核。无数据库写入。
+
+实现收口：14个配置选择/显隐/拖放交互移到useRecordFormDesignerActions，明确36项依赖，
+原保存owner612行。动作状态映射复用contractActionPresentation，避免牵动字段分发链；
+页面返回接线进入useCreatedRecordNavigationRuntime，仍先确认未保存内容再读取实时路由/权威。
+清理Page中11个已无消费者的类型导入。关系弹层底部操作令牌计算值保持1。
+P0职责退出：原保存owner不再实现设计交互，Page不再重复返回接线；无第二状态或业务执行链。
+尺寸/颜色/类型基线均未提高。
+
+验证索引（cb06a004 + 上述P0实现及P4测试dirty范围）：
+- L1 `make ci.local.iteration` passed，`/tmp/web-style01-iteration-final.log`。
+- L1/L2 `make verify.frontend.style_system.guard verify.frontend.no_new_any_guard verify.frontend.typecheck.strict`
+  passed，`/tmp/web-style01-final-static.log`；样式/token PASS，699文件显式any仍25，严格类型PASS。
+  第一次style检查Page1901行失败；移除真实未使用的类型导入后通过，未提高1900限制。
+- L2 `make verify.frontend.form_designer_actions.unit` passed6项，`/tmp/web-style01-designer.log`。
+- L2 保存失败恢复首次failed（`/tmp/web-style01-behavior.log`）：旧harness未接已默认启用的
+  官方校验入口，写次数为0。P4修正为真实createStandardFormValidationRegistry的合法无必填空集；
+  未更改产品保存判定。`make verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.record_form_return.unit`
+  passed，`/tmp/web-style01-recovery.log`：4种失败恢复场景及13项返回测试（含确认拒绝和实时权威）。
+- L2 独立受影响回归 `/tmp/web-style01-independent.log`：adopted_form_validation_identity46、
+  adopted_form_engine_decision74、contract_error_business_ownership92、canonical_form_presenter177+10、
+  professional_relation_field18+17及Python10+36全部passed；对应入口均为`make verify.frontend.<name>.unit`。
+  同日志的旧12项return结果被上述13项替代，不重复计数。
+- 确定性影响复核 `/tmp/web-style01-equivalence.json`：14函数正文、保存核心/返回对象、save epoch
+  保护逐字一致。B线独立AST比较同样通过，无阻断。返回接线和动作映射有直接定向回归，token值同1。
+  L3跳过：无后端/DB/配置变化。L4复用TPL07/LC02原页面观察，不重新构建/浏览器全程；
+  当前源码不同于5180的TPL07-r2原构建，运行预览身份仍按原receipt，不冒称本批已加载。
+  L5未进入：仍是本地迭代，无推送/合并/目标环境部署。
+
+- L2 `make verify.frontend.standard_form_composition.unit verify.frontend.standard_collection_composition.unit verify.frontend.native_form_action_presentation.unit`
+  passed94/69/16，`/tmp/web-style01-compositions.log`。普通页面职责仍选择同一标准组合，旧路径未重启。
+WEB-STYLE-01批次验收完成｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+已知list/render/no-new-any/style阻断已逐项关闭，不等同未运行的完整发布门禁通过。
+下一阶段：统一候选的必要集成门禁与受管预览复核；专用页面例外继续按page-patterns登记，
+不把专用层级/工作表强塞普通列表，不以模板接管比例替代正式89入口的业务交付验收。
+
+## WEB-BOOT-01：由真实初始化契约驱动接管盘点（2026-09-29，进行中）
+
+基线 ef346859 clean。用户明确扩大到登录→system.init→授权导航→页面类型的系统盘点与补齐。
+P4只读观察复用验收库sc_frontend_acceptance、既有profile/fixture角色/5180→18082及构建receipt；
+先观察已登记旧预览，不将source不一致的观察算当前候选验收。不创建环境/数据，不写业务或配置。
+P0修复范围由实际契约与源码判定：登录呈现与初始化后共享页面，保留认证、权限、默认路由真源。
+L0身份→L1/P4探针及非零单测→真实启动链观察→P0缺口修复→定向L2→一次稳定候选构建/复核。
+
+WEB-BOOT-01真实来源：`bootstrap-inventory-1790671776437/report.json`首次取得三角色登录/system.init，
+finance/contract_operator落`/s/workspace.home`；config_admin落projects.list，和role_surface.landing_path一致。
+导航叶15/3/86，去重87，不把它替换正式89业务矩阵。旧登录form=1、officialForms=0；外壳均official。
+按授权导航扩大后的`bootstrap-inventory-1790672013759/report.json`观察104个角色×菜单入口：
+91个official-standard-list、6个official-standard-form标记、6个collection专用候选、1个配置工作台。
+该文件是旧TPL07-r2诊断，不是当前候选验收：偏好读取、6次创建默认值读取和1次配置surface读取曾被
+只读允许表拒绝，所致错误不归产品；usage.track也被阻止。菜单335/663的实际listProfile明确
+hierarchical_worksheet/sheet_groups，454明确kanban；不是普通列表的旧实现遗漏。
+完整观察已落盘，但外层Make最终failed：执行中的shell入口被本轮编辑，恢复读取时语法位置失效；
+当前`bash -n`通过。保留观察原件、不把此命令记为passed，后续只定向复核工具限制和受影响页面。
+
+P4探针修正轨迹：最初response事件读取body遭浏览器缓存逐出（failed），改route.fetch持有实际响应；
+随后精确路径未匹配带query的API导致init缺失（failed），改匹配API路径并解析实际pathname。
+独立复核指出写intent黑名单不足，旧全扫主动中止；采用明确read allowlist，未知请求fail-closed，
+6项负例包含配置stage/discard/validate、非intentAPI和写操作拒绝。读取默认值、个人偏好、配置surface
+分别核对后端handler后登记；候选启动另明确允许既有usage.track访问计数，业务/配置写仍不允许。
+observed-identity仅允许原构建观察，仍验证登记listener/代理和产物摘要；candidate入口保持源码匹配检查。
+
+P0落位：LoginView采用官方Login.vue的Form/FormItem/Input提交组合；Home/MyWork采用共享
+ProductWorkspaceSurface的summary/query/main/actions/secondary卡片区域。参考仍为固定Starter快照，
+未引入示例统计、模拟数据或角色推导。原业务适配/办理动作及登录→init→权威路由未改；旧Home私有
+panel/header及MyWork外层编排退出。B线确认槽职责保留，发现的残留CSS逗号已修复为按钮flex:none。
+相关guard以共享槽接线代替旧section类名，8项正反例；ScPanel检查迁到仍真实消费它的ApiKey页；
+两个旧home guard对display_role的子串误判改词边界，真实role/role_code推导仍拒绝。
+
+验证日志索引：
+- L1 iteration最终基于r3记录`/tmp/web-boot01-iteration-r3.log`；早期iteration因已清理的空白失败保留。
+- L2 strict typecheck/auth credential/auth surface：`/tmp/web-boot01-auth-feedback.log`passed。
+- L2 workspace接线8例、home职责/编排/my-work/shared semantic/style/no-any：
+  `/tmp/web-boot01-workspace2.log`的旧误判failed由`/tmp/web-boot01-remaining-guards.log`和
+  `/tmp/web-boot01-tool-final.log`的passed替代；700源码文件显式any仍25，无额度增加。
+- L2状态/事项呈现、活动页键盘/身份/保留、page-pattern12+5、真实表单引擎74：
+  `/tmp/web-boot01-behavior.log`passed。P4预览6例及允许表6例、布局8例有各自日志。
+- L4首次boot01产物在必填语义复核前未启用，保留；r2启用后空凭据真实检查failed：引擎阻断但
+  错误信息未显示。`bootstrap-inventory-1790672596362`与`1790672664978`保留failure，后者DOM确认
+  novalidate/required均有效，错误显示开关缺失。修复仅Login明确showErrorMessage=true，未更改共享
+  wrapper默认和业务表单摘要策略；因此有依据构建r3，而非重复同一失败。构建日志
+  `/tmp/web-boot01-build.log`、`/tmp/web-boot01-build-r2.log`、`/tmp/web-boot01-build-r3.log`分别保留。
+
+- r3构建与L1/预览6项已passed，P0提交`b3d918bf`，加载entry `index-CWMKjz2r.js`，
+  SHA256 `8cdd39c1fce3521e5e943da0885ece5973a6ede6189203d3d544f19fee169cc5`。
+  `/tmp/web-boot01-up-r3.log`确认5180切换成功，后续仅P4/docs变动，不重建。
+- r3首跑探针在关闭时出现route.fetch context disposed，未形成终态；保留
+  `bootstrap-inventory-1790672966925`为未完成，不算passed。P4补异常脱敏与收尾等待；
+  r3b到合同角色后无有界定位等待，主动中止，`bootstrap-inventory-1790673027623`亦非passed。
+  已有财务桌面/390截图显示共享工作台可用，但不替代整轮结果。后续P4明确15秒定位/30秒导航
+  超时、阶段日志、收尾前落盘，继续定位而非宣称产品通过。无业务写入、无新增构建。
+
+- r3c `bootstrap-inventory-1790673173453`明确failed：合同角色普通列表容器已出现，
+  但ui.contract.v2尚未完成时即断言。P4补networkidle后验证真实契约、route.fetch 15秒上限，
+  防止异步请求无限拖住收尾；不修改产品契约消费。r3c终态已落盘，收尾进程中止。
+  后续定向候选日志`/tmp/web-boot01-browser-r3d.log`；不得混用旧failed为成功证据。
+
+### WEB-BOOT-01收口（本地批次）
+
+- L4 r3d `bootstrap-inventory-1790673243161/report.json`保留整体failed，原因仅管理员
+  `ui.business_config.coverage.scan`被只读探针拒绝。财务/合同分角色终态均零页面/请求错误、
+  零拦截；登录官方必填提示→真实init→权威落地→标准列表→Home/MyWork双宽检查通过。
+  各自本次列表菜单334/414均有唯一新增成功V2响应，终态复核与独立B线确认可复用。
+- P4核对`BusinessConfigCoverageScanHandler`为查询投影后精确放行；bootstrap修复写仍拒绝。
+  B线发现的收尾竞态一并修正：先等待回调，再断言errors；异常route主动abort；列表响应绑定
+  本次导航新增契约和menu_id。工具策略6例passed `/tmp/web-boot01-policy-final.log`。
+- 仅管理员受影响补验 `make verify.frontend.standard_bootstrap.browser`，环境
+  `BOOTSTRAP_ROLES=fixture_role_config_admin`，`/tmp/web-boot01-browser-admin-final.log` passed，
+  `bootstrap-inventory-1790673383007/report.json`：1角色登录/初始化/权威落地、当前列表326、
+  Home/MyWork × 1440/390、10个定向导航；零未登记请求、零页面/请求异常。
+  10页落盘另核对零alerts/item.error，所有专用renderer为ready。417重定向到真实
+  `/admin/business-config`；其coverage扫描可能超过4秒观察窗口，未据此声称配置写流程已验收。
+- 此次13个角色×定向页面与旧104入口观察分开：6个创建页官方表单；335/663层级工作表，
+  454流程看板，702/703透视表；417专用P3工作台。它们有明确类型和职责，没有作为普通列表
+  静默回退。授权导航仍为87去重入口，不升级正式89行业务矩阵。
+- L1最终 `make ci.local.iteration` passed `/tmp/web-boot01-iteration-tools-final.log`；
+  共享接线8例/布局guard及策略6例passed `/tmp/web-boot01-final-tools.log`（策略最终以上一日志为准）。
+  类型、真实表单引擎、状态/事项/返回行为及预览6项复用上文成功结果，产品输入未再变。
+  B线最终只读复核无代码阻断。P4/docs变化不改变r3产品输入，不重新构建。
+- 当前预览5180为b3d918bf产品候选；本地后续工具/文档提交不改变产物。无业务/配置写入，
+  无推送/合并/目标环境部署。登录会话和既有usage.track访问计数为已声明启动副作用。
+
+WEB-BOOT-01批次验收完成（上述分角色有效证据组合），主线未集成、目标环境未部署、整体用户交付未验收。
+已补登录和共享工作台呈现缺口，普通列表/表单/详情沿用TPL07标准路径。公共激活/找回挑战流程、
+专用设计器/配置编辑器仍是明确保留范围，未冒称整个前端所有特殊页面已完成官方接管。
+
+提交后预览复核：误直接调用identity被既有Make入口保护拒绝（无变更、非验收）；
+随后使用`make frontend.standard.preview.up` passed，日志`/tmp/web-boot01-final-preview-reuse.log`
+确认REUSED current 5180 listener，不重建、不重启。
+
+## WEB-AUTH-02：公共激活表单接管（进行中）
+
+基线91278229 clean；P0 frontend renderer / AccountActivationView。两处原生form迁已有
+ScForm/ScFormItem，官方成功校验事件接原start/finish；保留原required/minlength语义（官方规则承接，novalidate避免双引擎）、
+禁用/清理/上下文链。仅呈现所有权，非P1行业规则或P3配置变动。PasswordRecovery仅说明和返回，
+不为接管伪造恢复写流程。范围不含专用设计器。L1 iteration→L2类型/auth/真实表单引擎及
+受影响接线检查；无后端或DB写，L3升级跳过。L4仅在稳定候选按受管入口检验受影响页面，
+不重复87导航或三角色矩阵。L5发布不进入；沿用单写者/B线只读复核。
+
+WEB-AUTH-02当前结果：P0提交e58b9969；L1 iteration passed `/tmp/web-auth02-iteration-final.log`。
+L2严格类型passed `/tmp/web-auth02-type-final.log`；auth surface/credential及表单引擎74例passed
+`/tmp/web-auth02-focused.log`；本批实际官方引擎+源码规则/提交接线12行为例passed
+`/tmp/web-auth02-engine.log`。start/finish/unmount逐字等价 `/tmp/web-auth02-equivalence.json`。
+P4预览6例passed `/tmp/web-auth02-preview.log`。唯一构建22.47秒 `/tmp/web-auth02-build.log`，
+受管up passed `/tmp/web-auth02-up.log`，5180加载auth02候选，旧boot01-r3保留可回退。
+
+L4 `make verify.frontend.standard_public_auth.browser` **failed**：
+`public-auth-1790673764790/report.json`，13项UI检查已通过，包括激活两阶段、短密码阻断、
+模拟服务拒绝清空、双宽无溢出、成功后移除secret及恢复说明；最终返回登录超时。
+所有API被拦截，零真实账号写；零pageerror/未登记请求。B线建议的短密码等待已限定到对应
+ScFormItem的错误消息（不命中常驻说明）。不把模拟成功称真实激活验收。
+
+新发现P0公共契约引导缺口：冷启动session.pageContracts={}，仅登录后的system.init填充；
+AccountActivation/PasswordRecovery却依赖usePageContract中的open_login target。后端
+`action_target_schema.resolve_action_target`正式定义了/login，但匿名阶段未投影到前端；
+按钮因此无动作。不是本次表单替换造成，也不能以前端硬编码目标掩盖契约缺失。
+本批保持verification_pending，不进入发布收口，不把已有13项改写为整轮passed。
+下一最早步骤为P0公共页面匿名契约的生产/消费边界修复（仅公开页面、不得暴露授权导航/角色），
+再对返回链定向补验；不重做74/12不受影响用例、87入口盘点或激活真实写入。
+
+## WEB-AUTH-03：匿名公共契约引导（进行中）
+基线c2a852c7 clean。P0 smart_core公共页面投影/前端session消费，修复匿名返回链；
+既有builder/action target为唯一权威，只公开三页，不接收调用者profile/context，不开放system.init。
+GET /api/v1/auth/page-contracts → {ok,data:{schema_version:1.0.0,pages}}；pages沿用PageContract。
+无schema/model/data改变，不需-u；测试后只以backend.acceptance.up更新受管后端代码。
+原sc-fe-r2-p1-01/sc_frontend_acceptance/18082/5180/filestore不变，不改fixture或账号。
+P4复用public-auth探针，公共契约GET改用真实响应；激活写响应继续模拟。L1→非零backend/frontend
+定向L2→clean后端身份/受管重启→单次构建/定向匿名浏览器；远端/发布未进入。
+
+WEB-AUTH-03验证索引：
+- 初始backend public投影测试failed，发现原page_orchestration_data_provider未登记激活/恢复open_login，
+  落到refresh；在该唯一provider补齐，builder中的共享target继续决定目的地。非前端fallback。
+- L1 `make ci.local.iteration` passed `/tmp/web-auth03-iteration-ready.log`及后续
+  `/tmp/web-auth03-iteration-zones.log`；L2严格类型/auth surface passed `/tmp/web-auth03-ready.log`。
+  `make verify.frontend.public_auth_bootstrap.unit`最终7后端+8前端并发/失败/缺失动作例passed
+  `/tmp/web-auth03-zones-final.log`。P4 public GET允许表7例/预览6例passed
+  `/tmp/web-auth03-focused-final.log`。新增API仍拒绝POST及其它匿名写。
+- P0 82664f30、P4 376e5a06后clean；受管`backend.acceptance.up`与health通过，
+  `/tmp/web-auth03-backend-up.log`、`/tmp/web-auth03-backend-health.log`。旧容器源码身份不符按
+  既有入口替换；相同库/profile/端口/filestore，不升级模块、不写fixture或账号。
+- 前端auth03一次构建21.96秒 `/tmp/web-auth03-build.log`，up通过。真实匿名公共契约GET和
+  真实恢复status、首次公共GET模拟503→重试、模拟激活两阶段→两条返回login16项passed：
+  `public-auth-1790674299932/report.json`，不冒称真实密码写闭环。
+- 随后P0补canonical zones/data_sources安全投影（3aa76af6）：原consumer不读旧sections，
+  不能只给actions后继续布局fallback。保留区块身份/priority/tag/enabled/open和数据源身份字段，
+  去掉role/visibility/context；7后端例含结构等价。后端受管再次up，未重建前端；16项定向复核
+  passed `public-auth-1790674367302/report.json`、`/tmp/web-auth03-browser-final.log`，绑定新后端。
+- 真实finance启动回归 `BOOTSTRAP_ROLES=fixture_role_finance make verify.frontend.standard_bootstrap.browser`
+  passed `/tmp/web-auth03-login-final.log`，`bootstrap-inventory-1790674371809/report.json`：
+  登录/真实init/权威落地/334列表契约、335工作表、698/699表单、Home/MyWork双宽，零错误/拦截。
+- 截图复核发现最后字段错误提示挤压提交按钮：行为16项通过不等于视觉通过。6ea88c6a仅把两处
+  裸submit纳入ScFormItem，保留既有grid/gap布局；12项引擎及类型passed
+  `/tmp/web-auth03-spacing-tests.log`、L1 `/tmp/web-auth03-spacing-iteration.log`。B线确认行为未变，
+  finance证据输入不受影响可复用；P4新增两宽度错误底部<=按钮顶部断言。由实际视觉缺陷触发
+  r2修正构建，原auth03保留；不称无依据重复构建。
+
+WEB-AUTH-03最终结果：r2构建21.83秒 `/tmp/web-auth03-build-r2.log`，受管up
+`/tmp/web-auth03-up-r2.log`，18/18公共页面检查passed `/tmp/web-auth03-browser-r2.log`及
+`public-auth-1790674497445/report.json`（含新增双宽反馈间距）；390截图复核无重叠。
+前端产物base `6ea88c6ab978b027d96589e3fd1aed031bf3cdad`，entry `index-B23jnz4I.js`，
+SHA256 `4da0248faec09b715ca92902d030ac65afc32f991cb1b1eab265ec8d192c0655`；后端3aa76af6
+及相同addons输入。P4/docs后续提交不改变产品输入，不重跑finance。
+公共契约实际响应随报告保存，版本1.0.0，三页动作来自后端；失败重试通过。激活请求全被模拟，
+未真实激活/重置账号；恢复status和公共契约真实读取。B线最终复核无代码阻断。
+WEB-AUTH-02返回链阻断由WEB-AUTH-03关闭，两批范围内批次验收完成；主线未集成、目标环境未部署、
+整体用户交付未验收。5180保留r2候选，旧auth02/auth03产物可回退。专用设计器/配置编辑器仍需按
+已登记页面职责推进，未自动升级正式89入口业务矩阵或宣称整体官方接管完成。
+
+## WEB-CONFIG-01：专用编辑器通用输入收口（进行中）
+基线aae185d9 clean。P0 frontend renderer共享LowCodeFieldChipEditor与直接style；
+覆盖列表列、搜索筛选/分组、透视/图表字段配置七种消费。P3目录、添加/排序/删除草稿与发布
+逻辑不变。修复ScInput旧value接线并接入ScForm/Item；退出原生form提交及重画input边框的CSS。
+普通列表组合不承接树/画布专用编排。不修改账号、业务或配置数据，不推送/合并/部署。
+L1 iteration→非零组件输入/表单及既有配置行为L2→受影响呈现验证；L3跳过无后端变化。
+
+
+WEB-CONFIG-01结果（批次验收完成）：
+- P0提交46196f195ccb474aa16f3652942a0f47c3b859d5；P4仅扩展既有Make、受管验收包装和探针，
+  无新环境/端口/凭据权威。页面类型范围在既有page-patterns同步。P0为通用契约控件消费，
+  非行业/客户规则；P3业务逻辑不迁入前端。未改后端，L3跳过；L5发布流程本批未进入。
+- L1 `make ci.local.iteration` passed `/tmp/web-config01-iteration-final.log`。
+  L2 `make verify.frontend.field_configuration_component.unit` 14项passed，严格类型检查及
+  `make verify.business_config.unit` passed，见 `/tmp/web-config01-tests-final.log`；包含配置草稿、
+  发布边界及后端配置回归。14项为真实SFC/官方组件SSR及提交接线，不冒称浏览器输入事件测试。
+- P4组件工具初次失败为compiler导入、server-renderer解析、mjs扩展及SSR空value属性假设，
+  分别修正工具后重试，日志 `/tmp/web-config01-tests.log` 与r2/r3/r4；不是产品运行失败。
+  允许表8项、预览工具6项passed `/tmp/web-config01-tools.log`；只放行严格resume_only=true且
+  非fresh的草稿读取及两项audit，创建/保存/发布仍拦截。
+- `make verify.frontend.lint.src` passed（0 errors、56 warnings） `/tmp/web-config01-lint.log`；
+  `make verify.frontend.style_system.guard` passed `/tmp/web-config01-style.log`。
+- 唯一构建20.15秒 `/tmp/web-config01-build.log`，受管up `/tmp/web-config01-up.log`。
+  5180加载config01-20260929；base为46196f19加明确P4/docs dirty scope，非冻结交付身份。
+  entry index-CmcaSee3.js，SHA256 7ccc3986dc000491645129165b375aa8ae6500099ddf3fa7c4c1bf1badfcc753；
+  后端继续3aa76af6及不变addons，sc-fe-r2-p1-01/sc_frontend_acceptance/18082不变。
+- `make verify.frontend.standard_config_field.browser` 初次failed：登录页数据库框缺席时探针
+  等待isEnabled超时，修正count检查。第二次10项passed（config-field-1790675036110），
+  截图取景落在覆盖列表，补scroll/表单边界及局部截图后定向重验，非产品修改或重复构建。
+  最终12/12 passed `/tmp/web-config01-browser-final.log`，原始结果
+  `artifacts/frontend-web-fix-20260928/config-field-1790675091316/report.json`。
+  真实config_admin登录→system.init→配置工作台，输入/清空、Enter/按钮提交、搜索、排序恢复、
+  1440/390无溢出通过，零页面错误及未登记请求；390局部截图复核通过。
+  id可能已存在，结果只证明提交/清空链，不宣称新增配置字段成功。
+- 草稿读取权威返回created=false，无配置保存/发布；局部未保存状态随浏览器关闭丢弃。
+  不宣称后端零写（登录session和usage.track仍允许）。B线只读复核无阻断，明确七种组件消费
+  不等于七条浏览器旅程。既有AUTH/BOOT业务输入未变，证据复用，不重跑87入口盘点。
+- 后续P4/docs提交不改构建产品输入，沿用上述产物与页面证据。旧auth03-r2产物保留可回退。
+  批次验收完成；主线未集成、目标环境未部署、整体用户交付未验收。剩余菜单配置树/编辑控件
+  及专用设计器继续按页面职责收口；不自动升级正式89入口矩阵。
+
+
+## WEB-CONFIG-02：菜单配置页头与文本输入接管（进行中）
+基线5962350b clean；P0 frontend renderer，Module MenuConfigView/menuConfig模板与直接样式。
+通用呈现机制由P0负责，非P1行业规则、P2偏好或P3配置语义；后端、schema、store不变。
+复用ScPageHeader/ScInput，覆盖新增、单条、批量及树搜索文本输入；旧header/input自绘职责退出。
+树、数字/选择/复选控件、发布/版本逻辑继续明确保留，不冒称完整专用编辑器接管。
+风险为受控输入和响应式布局，L0身份→L1 iteration→L2严格类型/primitive/header/配置回归，
+再决定受影响L4；L3无后端改动跳过，L5远端发布不进入。沿用既有受管验收环境。
+
+WEB-CONFIG-02新增阻断：L1、L2通过后e5eee791构建一次21.83秒，真实panel.get返回空runtime.tree，
+页面正确拒绝旧树回退。两次探针0项超时，第二次仅补定位阶段/失败截图，见menu-config-1790675429611。
+受管只读诊断固定uid34/验收库，SET TRANSACTION READ ONLY并finally rollback，确认
+异常delivery_navigation_empty。相同actor仅替换为正式IdentityResolver得到非空树，
+`/tmp/web-config02-nav-canonical.log`；不是权限放宽或业务数据修复。
+
+## WEB-CONFIG-03：菜单配置复用正式身份投影（进行中）
+P0 smart_core handler，现有IdentityResolver/扩展identity profile为唯一角色曝光权威。
+停止前端改动，仅把菜单handler三字段自造role_surface替换为正式解析结果，保留平台/配置管理员
+能力标志；DeliveryEngine与权限过滤不动。无模型/schema/注册/data变化，不需-u，仅受管后端重启。
+单独P0提交及非零菜单单测，L1→L2→clean后端身份→L3 up/health→复用CONFIG02产物定向L4。
+不新增环境或凭据、不修改配置/账号，不重跑无关付款旅程。
+
+WEB-CONFIG-02/03合并结果索引（页面最终补验中）：
+- CONFIG02 L1 iteration passed `/tmp/web-config02-iteration-final.log`；L2严格类型、primitive
+  11事件例、页头28模型例及adapter/guard、配置回归passed `/tmp/web-config02-tests.log`。
+  style guard passed `/tmp/web-config02-style.log`；lint 0 errors/56 warnings `/tmp/web-config02-lint.log`。
+  允许表9例及预览6例passed `/tmp/web-config02-policy.log`、`/tmp/web-config02-preview.log`。
+- CONFIG03 P0 ba6478f2；L1 `/tmp/web-config03-iteration.log` passed；
+  `make verify.business_config.unit` passed `/tmp/web-config03-tests.log`，菜单专项49例含新增
+  多角色、曝光/拒绝透传断言。无模型变更跳过-u；不触及P1规则或数据库数据。
+- P4 14e9db7c形成clean后端候选，`make backend.acceptance.up`及health passed
+  `/tmp/web-config03-backend-up.log`、`/tmp/web-config03-health.log`，原容器旧源码身份被受管替换。
+  相同project/库/端口/volume。前端复用唯一config02产物base e5eee791，entry index-DznGOp-O.js，
+  SHA256 8a52fe645d3339e54fcddf6d788f3679ef0e33ed9b1b736a864735d1a97fc0e2。
+- 后端修复后浏览器通过前三项搜索/文本检查，随后因三个同名批量按钮strict定位失败，
+  `menu-config-1790675688914/report.json`。截图确认树/单条编辑已恢复。P4仅将定位限定到既有
+  菜单摘要面板，产品与产物不变后重试；不把此前失败改写为通过。
+- B线当前修复无阻断：不放宽DeliveryEngine过滤，不提升平台权限。当前安装identity profile与
+  startup override provider使用同一ROLE_SURFACE_OVERRIDES；未承诺未来多provider场景等价。
+
+
+WEB-CONFIG-02/03最终结果：12/12 passed `/tmp/web-config03-browser-final.log`，原始报告
+`artifacts/frontend-web-fix-20260928/menu-config-1790675716958/report.json`；errors/blocked均空。
+真实config_admin登录/init→菜单panel→搜索/清空→中文名称→单条与批量同步/清空/恢复→
+新增草稿名称及空值禁用→1440/390无水平溢出。390截图复核文本输入与编辑区可用。
+本地草稿恢复并关闭浏览器，无菜单保存/创建/发布/回滚请求，登录session及usage遥测除外。
+CONFIG02空树阻断由CONFIG03关闭，两批范围内批次验收完成。最终定位器修改只影响P4浏览器选择，
+node语法/diff检查及对应真实12项已重验；产品L1/L2及构建输入未变复用，文档不使页面证据失效。
+旧config01产物保留；5180继续config02，后端14e9db7c。后续文档/探针提交无addons变化。
+主线未集成、目标环境未部署、整体用户交付未验收。后续仍需专用配置页数字/选择/复选、
+反馈与树/设计器通用交互接管；不把103个可配置菜单节点当作正式89入口业务通过数。
+
+
+## WEB-CONFIG-04：菜单配置通用选择控件接管（进行中）
+基线6bd1c8eb clean；P0 frontend renderer MenuConfigView/menuConfig template与直接CSS。
+ScSelect/NumberInput/Checkbox/Radio替代原生控件，选项/草稿/语义继续现有P3权威，非P1/P2规则。
+DOM event改值协议；ID显式Number，数字清空仍0，复选boolean；旧input边框退出，树及批量表格保留。
+L0→L1 iteration→L2严格类型/primitive/配置回归→一次构建及受管菜单定向L4；无后端改动跳过L3，
+L5远端发布未进入。复用14e9db7c后端/sc_frontend_acceptance/5180，不保存配置或新建环境。
+首次编辑脚本匹配无span标签失败，文件未写入；修正标签转换后继续，非产品验证失败。
+
+
+WEB-CONFIG-04验证索引：
+- P0 cfc9e6b0，L1 `/tmp/web-config04-iteration-fixed.log`及final passed；编辑器转换产生空白尾空格，
+  diff检查发现后清理，初始iteration不作通过依据。严格类型、primitive 11事件例及配置回归
+  passed `/tmp/web-config04-tests.log`；style/预览6例/lint通过 `/tmp/web-config04-quality.log`
+  （lint仍0 errors/56 warnings）。共享单测不替代实际浏览器交互。
+- B线指出新增复选框会被.create-form label布局覆盖，已在初次构建前排除.sc-checkbox；
+  同时详情区排除对应根label，原生标签嵌套退出。无改变已验证业务回调。
+- 首次构建21.79秒 `/tmp/web-config04-build.log`，受管up；浏览器14项通过后下拉option角色
+  定位超时，原始 `menu-config-1790676000863/report.json`。截图证实选项可见；P4改为
+  可见.t-popup范围内的用户文案定位，避免全页同名当前值。数字窄列加减按钮挤压数值为真实
+  视觉缺陷，f80cbffd仅采用官方theme=normal，非重建控件或修改值语义。
+- r2 L1 `/tmp/web-config04-r2-iteration.log` passed；严格类型及primitive回归passed
+  `/tmp/web-config04-r2-tests.log`。仅主题变化，之前配置业务回归输入不变复用。
+  r2修正构建20.47秒 `/tmp/web-config04-build-r2.log`，受管up `/tmp/web-config04-up-r2.log`。
+- 版本handler可能由allow_bootstrap/allowBootstrap/bootstrap触发初始化；探针只读白名单拒绝
+  三别名真值，10例passed `/tmp/web-config04-policy-final.log`。版本响应必须HTTP成功、ok=true、
+  versions数组及bootstrapped=false，失败不冒称空数据；0/1版本显式标明相应覆盖限制。
+  不执行保存/创建/回滚；登录session及usage遥测仍允许。最终浏览器补验进行中。
+
+
+WEB-CONFIG-04 r2页面结果：24/24 passed `/tmp/web-config04-browser-final.log`，
+`artifacts/frontend-web-fix-20260928/menu-config-1790676155504/report.json`。数字输入/清空/恢复、
+单条-批量显示同步、角色文字切换恢复、父级0选项、两宽弹层边界及页面无溢出均通过。
+versions真实读取成功、bootstrapped=false、现有0版本，版本单选运行交互明确未覆盖；无新增fixture。
+截图处在关闭动画中，P4增加等待可见弹层隐藏后取景；仅采集工具改变，未重建产品。
+前端base f80cbffd63051180944fd691335f0d557047a2ad加明确P4/docs dirty scope，非冻结身份；
+entry index-Bax7D-I5.js，SHA256 80ca1ab6a1339e377c1c0e3aad45c732b8cbf545b9b1803e7d09bb9fb5c3d8d6。
+后端14e9db7c/addons不变，既有profile/库/端口/volume不变。B线值协议与样式修正无阻断，
+P4版本响应严格校验及可见popup范围已采纳。之前无关AUTH/BOOT/付款证据复用。
+
+最终采集24/24 passed `/tmp/web-config04-browser-capture.log`及
+`artifacts/frontend-web-fix-20260928/menu-config-1790676189351/report.json`；390截图复核正常，
+零页面错误/未登记请求。就本批控件读写草稿范围批次验收完成，版本单选无数据的运行覆盖限制保留。
+未保存/发布/创建/回滚菜单，浏览器关闭丢弃未保存状态；主线未集成、目标环境未部署、整体用户
+交付未验收。后续仅P4/docs提交不改变产品/后端输入，复用本次证据。旧config04/config02产物保留。
+
+
+## WEB-CONFIG-05：菜单配置反馈组合接管（进行中）
+基线588b6881 clean。P0 frontend renderer共享ScInlineState增加官方success主题；菜单页错误、成功、
+加载及版本说明改用共享状态。旧状态边框/背景/加载样式退出。错误优先、提示来源、刷新方法不变。
+非P1行业规则/P2偏好/P3配置语义，无新接口、schema、store或后端。L0→L1→L2类型/状态/组件→
+单次构建/受管定向L4；L3无后端改动跳过、L5远端未进入。仅P4扩展原探针模拟读失败和会话提示，
+不称真实保存，不新增fixture，环境及后端14e9db7c不变。
+
+状态缺口同批修复：loadPanel已有保存提示时不清旧error，成功刷新仍可能显示失败。
+只在完整面板装载成功后清error，异常路径继续保留错误，不改变保存提示或丢弃草稿规则。
+P4受控拦截首次panel读取为失败，校验loading/错误优先/既有刷新恢复/成功提示；模拟会话提示
+在当前浏览器内生成，未调用真实保存。后续panel和版本查询仍真实读取。
+
+L2 rendering_detail_state发现5项失败，停止构建。归因3个旧绑定：ActionBlocks锁3按钮、MyWork
+锁ScPanel、WorkspaceHome锁div，均在已完成官方组合后过时。P4原inventory就地改为工作区
+精确导入+状态/忙碌绑定、两类动作各自循环/disabled/执行绑定，新增破坏绑定反向测试；
+不是降低按钮数或放宽未知组件。design_alignment打印的gap1来自负例，当前独立inventory为0。
+
+
+WEB-CONFIG-05门禁收敛：inventory完整复核另有App公共状态与ProductListSurface两处未登记，
+与三个旧绑定共同形成5个source gap。已在既有ownership登记，检查真实组件/条件/动作/slot；
+没有新建平行覆盖表。P4消费绑定规则增加精确composition导入路径和同节点attribute_groups，
+7处反向破坏测试覆盖拒绝错误导入、忙碌状态丢失、动作禁用丢失、重试/卡片职责丢失。
+- L1 `/tmp/web-config05-ready-iteration.log` passed；严格类型、state_dashboard先前通过
+  `/tmp/web-config05-tests.log`。rendering59测试/状态guard通过后旧生成清单stale，原始结果
+  `/tmp/web-config05-tests-final.log`；使用 `make refresh.frontend.rendering_detail.inventory` 后，
+  `make verify.frontend.rendering_detail_state.unit verify.frontend.primitive_adapter.unit` 全通过
+  `/tmp/web-config05-tests-ready.log`，含59测试、11输入事件及31 primitive guard测试、生成一致性。
+  负例中故意输出的design_alignment FAIL不代表当前清单失败，最终--check通过。
+- style/预览6例/lint passed `/tmp/web-config05-quality.log`，lint 0 errors/56 warnings。
+  后续P4规则不改变产品lint输入。B线复核无放宽门禁；工作区内部实现不变，沿用既有组合验证，
+  不把静态消费绑定59测试称运行页面验收。产品P0 dfc7a615，无后端变化。
+
+
+WEB-CONFIG-05最终结果：本批范围批次验收完成。
+- 单次构建21.11秒 `/tmp/web-config05-build.log`，受管up `/tmp/web-config05-up.log`；5180加载
+  config05-20260929，base dfc7a6152672556d198041ca78ed23e7c5cb466e加明确P4/docs dirty scope，
+  非冻结交付身份。entry index-9ng9XRoC.js，SHA256
+  6faee2e922755100ca36701931237e9be6a647b5dc59825888e61dbbce24f204。
+- `make verify.frontend.standard_menu_config.browser` 33/33 passed `/tmp/web-config05-browser.log`；
+  原始 `artifacts/frontend-web-fix-20260928/menu-config-1790676629976/report.json`，errors/blocked空。
+  首次panel读取及已保存文案明确模拟；loading aria-busy、error alert优先于success、既有刷新真实
+  读取恢复后error隐藏及success status保留、双宽反馈边界均通过。390错误红色/成功绿色截图复核。
+  后续文本/数字/选择草稿及弹层检查沿用同一旅程，未执行真实保存/创建/发布/回滚。
+- 版本真实读取仍0历史版本，单选运行交互保持uncovered；无fixture新增。浏览器关闭即丢弃模拟
+  会话提示和局部草稿。后端14e9db7c及addons输入未变，原profile/库/端口/volume复用。
+- 最终P4/docs提交不改已验产品与环境输入，继续复用本次页面证据及原始记录。旧config04-r2保留。
+  主线未集成、目标环境未部署、整体用户交付未验收；零静态状态gap不等于89入口业务完成。
+  菜单通用输入/反馈已接管，专用树/批量编排及设计器后续按必要职责收口，不再另造通用状态实现。
+
+
+## MENU-TREE-01：菜单专用树接管与探针层 vendor 耦合硬化（2026-09-29，本地批次）
+
+### 层级、范围与身份
+
+- `Formal Product Layer`：P0 平台内核产品（原语导出/桥接）+ P4 运维交付工具（验证脚本与门禁）。
+- `Layer Target`：`frontend/packages/ui` 原语导出、`frontend/apps/web` 菜单配置视图、
+  `scripts/verify` 探针门禁、`scripts/verify/baselines` 基线。
+- `Module`：`frontend/packages/ui/src/primitives.ts`、`frontend/apps/web/src/views/menuConfig/*`、
+  `frontend/apps/web/src/views/MenuConfigView.vue`、`scripts/verify/playwright_vendor_coupling_guard.py`。
+- `Reason`：菜单树是首个“页面类型”接管；通用交互必须回到官方组合，探针不得继续锁死私有 DOM。
+- `Why Not Elsewhere`：不新增业务功能、不重构模板体系、不改后端事务，也不把业务语义放进前端。
+- 本地提交（未推送/未合并/未部署目标环境）：`fc04b09c3`（树接管）→ `a114ffe0f`（拖拽契约守卫）
+  → `b2ad32f33`（派生清单刷新）→ `c5f08314b`（节点展开语义标识）→ `d3bc7b45d`（探针断言官方交互契约）
+  → `3c1d4e70a`（按可见文案定位选项）→ `1d155b257`（探针层 vendor 耦合门禁与基线）。
+
+### 本次提交的权威边界回答
+
+- 业务语义来源：菜单身份、层级、可删除性仍来自菜单配置契约的运行时投影；前端只决定呈现与交互。
+- 前端自主范围：节点标签插槽、`data-menu-id`/`data-menu-expandable`/`data-menu-expanded` 语义标识、
+  展开集合跟随编辑器折叠状态、拖拽可落点判定 `canDropTree`。
+- 未做静默补齐：删除的私有键盘微步重排不再由前端另造；父级移动与顺序重排仍走显式编辑器输入。
+
+### 定向验证
+
+- L1 `make ci.local.iteration` passed `/tmp/menu-tree-11-iteration.log`。
+- L2 定向：`verify.menu_config_tree_editor.behavior`（`/tmp/menu-tree-12-tree-guard.log`）、
+  `verify.frontend.primitive_adapter.unit`、`verify.frontend.component_driver_takeover.unit`、
+  `verify.frontend.rendering_detail_state.unit`、`verify.frontend.navigation_shell.unit`
+  （`/tmp/menu-tree-12-l2.log`、`/tmp/menu-tree-12-l2b.log`）；产品源码改动使
+  `component-driver-takeover-inventory-v1.json` stale，用既有生成器刷新后通过。
+- 类型检查 `scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck` passed
+  `/tmp/menu-tree-12-typecheck.log`；`make ci.generated_reports.guard` passed
+  `/tmp/menu-tree-12-generated.log`。
+- 受管浏览器：`make verify.frontend.standard_menu_config.browser` 46/46 passed，
+  errors/blocked 空，uncovered 仅“版本单选：现有数据无历史版本，不新增fixture”。
+  原始 `artifacts/frontend-web-fix-20260928/menu-config-1790679481731/report.json`
+  （`/tmp/menu-tree-16-browser.log`）。新增断言：面板只由官方树渲染（旧 `.config-tree-list`/
+  `.branch-marker` 计数为 0）、每节点恰有一个官方展开交互槽、展开/收起跟随折叠集合、
+  按菜单身份而非列表位置驱动业务面板。
+
+### 全局硬化：探针层 vendor 耦合门禁
+
+根因：只接管产品渲染不够。探针若用 vendor 内部类名、过渡状态类或像素几何断言，仍能报绿，
+于是验收体系跟随标记而不跟随业务事实，官方组件一变就掩盖真实回退。
+
+- `scripts/verify/playwright_vendor_coupling_guard.py`，扫描 `frontend/apps/web/scripts` 与
+  `scripts/verify`：
+  - 零容忍：过渡/动画状态类（`--enter-active`、`v-enter` 等）、
+    `querySelector`/`querySelectorAll` 内使用 Playwright 专属选择器语法（`:visible`、`:has-text(`、`:text=`）。
+  - 只减不增：非 `Sc` 根下的 vendor 内部类选择器（复用产品侧 official-design 规则口径）、
+    `getBoundingClientRect().width/height` 内联几何断言。
+- 基线 `scripts/verify/baselines/playwright_vendor_coupling.json` 登记既有债务
+  （vendor 23 文件/109 处，几何 11 文件/33 处），只允许减少；**本轮不清偿既有债务**。
+- 规则自身带反例：`scripts/verify/test_playwright_vendor_coupling_guard.py` 证明四类规则非空跑；
+  规则定义文件与反例文件按精确路径排除，不用目录或通配符。
+- 挂载：`verify.frontend.playwright_vendor_coupling.guard`，并接入 `verify.frontend.quick.gate`
+  与 `ci.professional.backend.shard-verify`，使远端必需检查覆盖该规则。
+- 顺带合规：`standard_menu_config_browser.mjs` 的移动选项定位由 `.t-popup:visible` 改为可见文案，
+  使 vendor 内部类选择器由 109 降至 107（其余 22 文件为已登记既有债务）。
+
+### 候选与运行来源
+
+- 单次构建 `make frontend.standard.preview.build` `/tmp/menu-tree-13-build.log`，
+  `base_sha=d3bc7b45df98adc5cfd368ba0fba9b71a5be734f`、`dirty_scope` 为空，
+  `index_sha256=a593c0411ce8e12629a6d3bf094130130c8ee2ddf0970e710feecf95811eeb3a`、
+  `entry=/assets/index-CaZN7DlL.js`。
+- 复用受管 5180 预览（pid 2669621，`config05-20260929/dist`，Odoo
+  `sc-backend-odoo-acceptance` / `sc_frontend_acceptance` / `SC_SOURCE_REVISION=14e9db7c`），
+  HTTP 回读 index 与 entry 哈希一致。旧冻结产物与历史 identity 存档保留。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账，本轮不动）：`verify.guard.registry` 报
+  `test_frontend_standard_preview.py`、`test_workspace_composition_wiring.py` 为未登记孤儿；
+  两者全仓零引用且不在本批 diff 中，本批改动经 diff 证明为纯增量，未移除任何引用。
+- 非阻断：探针层 vendor 内部类选择器既有债务 22 文件/107 处、几何断言 11 文件/33 处仍未清偿。
+- 非阻断：菜单历史版本单选项因无数据仍 uncovered；未新增 fixture。
+- 未执行：真实保存/发布/回滚，89 入口矩阵，发布门禁，设计器与批量编排职责。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+
+## OFFICIAL-RENDER-ALIGN-01：契约边界硬化与工作台官方呈现收口（2026-09-29，本地批次）
+
+### 层级、范围与身份
+
+- `Formal Product Layer`：P0 平台内核产品（契约边界与端侧消费）+ P4 运维交付工具（验证脚本与门禁）。
+- `Layer Target`：`smart_core` 契约投影载荷、`frontend/apps/web` 配置工作台视图、`scripts/verify` 边界门禁。
+- `Module`：`addons/smart_core/handlers/business_config_surface.py`、
+  `frontend/apps/web/src/views/businessConfigSurface/*`、`frontend/apps/web/src/views/BusinessConfigSurfaceView.vue`、
+  `scripts/verify/backend_contract_boundary_guard.py`、`scripts/verify/low_code_workbench_product_guard.py`。
+- `Reason`：工作台此前保留了一份与契约并行的业务名称词表，契约边界此前只有文字、没有可执行约束。
+- `Why Not Elsewhere`：不新增业务功能、不重构模板体系、不改后端事务、不把业务语义放进前端。
+- 本地提交（未推送/未合并/未部署目标环境）：`26ed7116e`（配置总览走官方表格）→ `10622e54f`（菜单批量维护与配置页签走官方原语）
+  → `612dca581`（配置工作台名称由契约声明）→ `a6c949c7a`（契约/外观职责边界首次可执行）
+  → `41a3853d3`（受管布局通道显式合法）→ `66202b629`（终端投影合法、语义分叉禁止）。
+
+### 本次边界回答（四问）
+
+- 本次涉及什么业务语义：配置分区与边界码的**人类可读名称**，以及契约可以表达/不可以表达什么。
+- 权威来源与契约路径：名称由 `ui.business_config.surface.get` 的 `data.sections[].label` /
+  `data.boundary_labels` / `data.source_category_labels` 声明；布局语义走 `unified_page_contract_v2.layoutContract`
+  与 `view_orchestration.views.form`；终端差异走 `unified_page_contract_v2_client.py` 的按终端投影。
+- 前端只决定了什么：组件选择与组合、章节/按钮/帮助文案、可访问性、瞬时交互状态。
+- 必要语义缺失时会怎样：`test_business_config_surface.py` 要求契约必须为它发出的每个分区、每个边界码和每个来源类别声明名称；
+  工作台不得保留第二份词表。
+
+### 关键纠正：三条边界一次说清（原先的写法是错的）
+
+最初把边界写成“契约不表达外观”，随后又写成“契约必须终端无关”。第二条**与仓库既有实现冲突**，
+已改正，不倒填、不保留错误口径：
+
+| 边界 | 正确口径 | 执行位置 |
+|---|---|---|
+| 外观 | 契约不表达原始视觉值、DOM/CSS 通道、设计系统内部取值、客户端可访问性属性 | `backend_contract_boundary_guard.CONTRACT_APPEARANCE_PATTERNS` |
+| 布局 | **布局是合法的一层契约**：`layoutContract`／`layoutType`／`layoutHints`／`view_orchestration.views.form` 表达顺序、分组、显隐、列集合与受管尺寸档位 | `MANAGED_LAYOUT_CHANNEL_KEYS` + 自检（外观规则永不误伤布局） |
+| 终端 | **投影可终端化，语义不可分叉**：一份语义契约驱动 `web_pc`／`wx_mini`／`harmony_h5`，允许不同详细程度；终端身份只有一个受管入口 `pageInfo.clientType`，少投必须记账 | `TERMINAL_PROJECTION_CHANNEL_KEYS` + 自检；语义一致性由既有 `find_client_semantic_drift` 与 `make verify.unified_page_contract.v2.client` 执行，本批不重造 |
+
+裁剪记账的既有权威是 `unified_page_contract_v2_client.py` 的 `omitted = original - delivered`，
+门禁同时断言 `mobile_compact` 必须报出 `omitted.widgets`；因此“未投递”不会被写成“不存在／不适用／无权”。
+
+### 验收体系为什么没有发现（本批缺口与闭合）
+
+| 缺口 | 为什么漏掉 | 闭合方式 |
+|---|---|---|
+| 契约边界只有文字 | 没有门禁时，前端可以保留一份与契约并行的业务名称词表，页面照样“看起来可用” | `low_code_workbench_product_guard` 新增：工作台不得重新声明契约已声明的名称，不得再绑定页面自有的章节标题；`*.html` 边车模板一并扫描；两条新规则各带反例自检 |
+| 反向边界没有约束 | 只有“前端不得发明业务语义”，没有“契约不得携带外观” | `backend_contract_boundary_guard` 新增外观规则并覆盖 8 个契约写入者；反例测试证明非空跑 |
+| 新规则可能误伤既有契约层 | 规则只按“看起来像外观”写，会连带把布局契约和终端投影判为违规 | 两个通道登记为合法并由自检保证永不误伤；`layoutContract`、`spanClass`、`field_size`、`clientType`、`deliveryProfile`、`omitted` 等逐一断言 |
+| 工作台名称可被前端覆盖 | 契约已声明 `sections[].label`，但页面曾用自有词表覆盖（`表单配置`／`列表`／`搜索配置`） | 删除 `sectionDisplayLabel` 与 `BUSINESS_FIELD_LABEL_OVERRIDES`；`BusinessConfigSurfaceView.vue` 改为只消费契约名称 |
+
+### 定向验证
+
+- L1 `make ci.local.iteration` → `PASS change_state=clean coverage=L1_only`（`/tmp/align01-iter4.log`）。
+- L1/L2 边界守卫：`python3 scripts/verify/backend_contract_boundary_guard.py` → `error_count=0`
+  （8 个契约写入者零误报；`appearance=0`、`semantic_fork=0`、两条通道自检为空）；
+  `python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py` → `Ran 10 tests OK`。
+- L2 工作台：`make verify.business_config.product_guard` → `PASS assertions=29 scanned_files=36`；
+  `make verify.business_config.guard_inventory` → `PASS assertions=151`；`make verify.business_config.unit` → OK。
+- L2 既有终端权威：`make verify.unified_page_contract.v2.client` → `passed: clients=3`
+  （三终端语义签名一致 + `mobile_compact` 必须报 `omitted.widgets`）。
+- 受管浏览器（5180，`fixture_role_config_admin`，`sc_frontend_acceptance`）：
+  8/8 通过，`consoleErrors []`。断言为“渲染出的页签名 == 契约声明的 `sections[].label`”，
+  实测 `["表单字段与布局","列表与搜索","菜单入口","审批规则"]` 完全一致；旧页面自有的
+  `表单配置／列表配置／搜索配置` 计数为 0；官方表格与 `[role=tab]` 语义存在；390×844 无整页横向溢出。
+  原始结果 `sce-offrepo/artifacts/align01-boundary/report.json`，截图同目录 `shots/`。
+
+### 候选与运行来源
+
+- 后端验收容器 `sc-backend-odoo-acceptance`：`SC_SOURCE_REVISION=66202b629`（`make backend.acceptance.replace-stale` PASS）。
+- 前端产物 `sce-offrepo/artifacts/config05-20260929/dist`：`base_sha=a6c949c7a`、`dirty_scope` 为空、
+  `index_sha256=e868f1e6490a9c45dcc7d320b34bf7cebf3adb1969fb8bdbf00264250d754935`、`entry=/assets/index-lnyQ5gBG.js`。
+  本批后三笔提交只改 `scripts/verify`、`addons/**/tests` 与文档，前端产品源码无变化，因此不重建、不二次比对。
+- 5180 运行现场：pid `2669621`，`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=<config05-20260929/dist>`，`/api/`、`/web/` 代理 `127.0.0.1:18082`（调整前已核对 PID、命令行与目录）。
+  5175/5176/5178/5179 旧预览与本批无关，未清理。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账，本轮不动）：`style_system.guard` 四项欠账；`verify.guard.registry` 两个孤儿测试文件；
+  探针层 vendor 内部类选择器与内联几何断言的历史债务；菜单配置历史版本单选因无数据仍 uncovered。
+- 未执行：真实保存/发布/回滚，89 入口矩阵，全站发布门禁，TPL-05 之后的目标环境交付。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+  本批不把“模板接管通过”写成业务矩阵整行升级。
+
+## 契约动作语义投影：把声明的 purpose 绑到它声明的 occurrence（2026-09-29，FE-CONTRACT-ACTIONSEM-01）
+
+### 问题
+
+`workflowContract.availableActions[].action_semantics` 与 `runtimeContract.businessActions[].action_semantics`
+都已声明业务目的，但 `actionContract.actionRuleList` 没把它送到消费位置：**声明存在，语义缺席**，
+前端只能靠方法名或按钮文案推断。
+
+修复前实测（`sc_frontend_acceptance`，后端 `66202b629` 运行现场）：
+
+| 记录 | 权威声明 | 交付的 action rule |
+|---|---|---|
+| `sc.general.contract` 12（draft） | `submit → method action_confirm` | `action_confirm` → `actionSemantics: null` |
+| `sc.general.contract` 11/10 | 仅 `cancel → action_cancel` | 三条 native 按钮全部 `actionSemantics: null` |
+| `payment.request` 1787 | `approve → validate_tier` | `payment_approve.2/.3` 无语义 |
+
+修复后同一批记录：`contract 12 action_confirm → {"kind":"business","purpose":"submit","executor":"contract.action","origin":"workflow.contract.service"}`；
+`payment.request` 新增 `payment_approve.2/.3 → approve`、`action_cancel → cancel_record`；6 个记录合计 `conflicts=0`。
+
+### 分层归属（四问）
+
+- `Formal Product Layer`：P0 平台内核（`smart_core`）。
+- `Layer Target`：`unified_page_contract_v2` 投影 + `ui.contract.v2` 动作装配。
+- `Module`：`smart_core`。
+- `Standard vs User-Specific`：平台机制（已发布词汇表的校验 + 绑定投影）。业务目的本身由 P1 行业模块声明。
+- `Why Here`：把“某个方法的业务目的是什么”绑定到消费它的 occurrence，是终端无关的投影机制，任何模型都成立。
+- `Why Not Elsewhere`：不在 `smart_construction_core` 写通用绑定（否则行业模块承担平台职责）；
+  不在前端按方法名/按钮文案推断（那正是本批修掉的缺陷）；不新增全局状态或并发框架。
+- `Blast Radius`：所有 form 契约的 `actionRuleList`。实测 6 个受管记录零冲突，`record.save` 平台语义不被覆盖。
+
+### 实现
+
+- `declared_action_semantics`：按 schema `$defs.actionRule.actionSemantics` 校验声明；越界词汇**丢弃**，
+  使动作保持“可见地未声明”，不把未批准的语义当已批准语义投递；`{"conflict": true}` 原样保留。
+- `declared_action_meaning`：只比较业务含义（kind/purpose/executor/operation），**不比较 provenance**。
+- `project_workflow_action_semantics`：`availableActions[].method` ↔ `button.name`（`button.type` 必须为 `object`）绑定；
+  同一方法真正的语义分歧保留 `{"conflict": true}`；平台 `record.save` 语义永不覆盖。
+- `_row_declared_action_semantics`：声明随 occurrence 走（policy / row / 其 business action）时同样经词汇表校验后投递。
+- `handlers/ui_contract_v2.py` 在 `project_runtime_business_actions` 之后调用。
+
+### 中途发现并修正的假冲突
+
+首版实现按“整份声明”比较，导致 `payment_submit` 变成 `{"conflict": true}`：
+`workflow.contract.service` 与 `payment.request.available_actions` 对同一方法声明了**相同目的、不同 origin**。
+改为只比较业务含义后恢复为 `purpose: submit`，并保留既有 origin；新增反例
+`test_corroborated_purposes_from_two_authorities_are_not_a_conflict` 固定该行为。
+
+### 前端边界硬化（同批，独立提交）
+
+`resolveSelectionActions` 原先硬编码 `['export','archive','activate','delete']`：**由客户端决定有哪些批量动作**。
+改为消费契约的 `execution_intents` → 客户端执行器表（按 intent 而非动作名索引）：
+
+- 契约声明的每个动作都保留（隐藏等于前端否决契约）；
+- 声明了策略但被策略禁止的 → 可见但禁用；
+- 本构建无法解析执行方式的 → 显式报为未解析，不静默丢弃；
+- 启用条件仍来自声明的 `delete_mode` / `active_field`。
+
+### 未闭合的缺口（必须显现，不得猜测补齐）
+
+| 缺口 | 定性 | 归属 |
+|---|---|---|
+| `payment.request` 的 `done/action_done`、`payment_execution/action_create_payment_execution` 无语义声明 | 表达缺口（业务含义存在，契约未表达） | P1 行业模块 + schema 词汇表 |
+| workflow registry 的 `activate/complete/reopen/reactivate` 无语义声明 | 同上 | P1 行业模块 + schema 词汇表 |
+| 词汇表 `purpose` 无非 `submit/approve/reject/cancel_record` 之外的“完成/开始执行”取值 | 表达缺口 | contract 定义（schema） |
+
+本轮**不猜**这些目的：未声明即保持未声明，前端应显式报缺口而不是按方法名推断。
+补齐需要业务权威决定，属下一批，不在本批越权填入。
+
+### 定向验证
+
+- 后端：`addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` → `Ran 101 tests OK`。
+- 契约守卫 5 项：`verify.unified_page_contract.v2.runtime/action/assembler/schema/intent` 全 PASS。
+- 实测对照：6 个受管记录（contract 10/11/12、payment 1787/1813）修复前后差异如上，`TOTAL_CONFLICTS 0`。
+- 前端：`verify.frontend.typecheck.strict` PASS；`standard_collection_composition.unit`（84→89 cases）、
+  `standard_form_composition`（93）、`standard_shell_composition`（71）、`adopted_form_engine_decision`（74，真实 TDesign）、
+  `adopted_form_validation_identity`（46）、`contract_form_save_failure_recovery` 全 PASS；`make verify.frontend.build` PASS。
+- 既有守卫：`list_batch_action_closure_guard`（按新语义改写断言）PASS；`frontend_contract_consumer_intrusion_guard` PASS；
+  `frontend.collection_action_toolbar` / `page_pattern_reference_parity` / `contract_header_action` PASS。
+- `make ci.local.iteration` → `PASS coverage=L1_only`。
+- 受管浏览器（5180，`sc_frontend_acceptance`）：
+  付款列表 `/a/775?menu_id=545` → 呈现 `official-standard-list`（reason `contract-collection-view`），
+  选中 2 行后批量动作完整：行内「导出所选」+「更多批量操作」内「导出所选／批量归档／批量激活／批量删除」，
+  按钮身份以 `data-action-key="batch:*"` 暴露，`console/pageerror` 为空；
+  合同记录 11 → 只读详情 `data-detail-composition-reason=contract-readonly-record-view`；
+  付款表单 1815 → 动作身份来自契约（`form.save` / `payment_submit` / `action_cancel`）。
+  裸路由 `/a/775` 被 `NAVIGATION_AUTHORITY_DENIED` 拦住，导航授权仍由契约控制（符合预期，非缺陷）。
+- 未通过且**与本批无关**：`verify.guard.registry` 仍报既有两个孤儿测试文件（`test_frontend_standard_preview.py`、
+  `test_workspace_composition_wiring.py`），与上一批相同，本批未新增。
+
+### 候选与运行来源
+
+- 提交：`dfeecdd3d`（平台契约投影）、`95137138d`（前端批量声明消费 + 守卫/测试维护），HEAD `95137138dc9915d1fec8d9c19549bfb9bd04c154`。
+- 前端产物 `sce-offrepo/artifacts/sem01-20260929/dist`：以 `VITE_ODOO_DB=sc_frontend_acceptance VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance` 构建一次，
+  `entry=/assets/index-qp_wz1lo.js`、`entry_sha256=4bfc4ef6a4802be1e5805e9a4eb0a3aab68e5aa3ccf68c70f07ac49f11787c12`、
+  `index_sha256=b5f204d70e0f3971e61740c451d6d5384968e063c0437ff365cd518e4dcc7d64`。
+- 5180 运行现场：pid `3612724`，`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=<sem01-20260929/dist>`，`/api/`、`/web/` 代理 `127.0.0.1:18082`；
+  旧候选 `config05-20260929/dist` 保留未覆盖。
+- 后端验收容器 `sc-backend-odoo-acceptance`：以**保留容器身份**的方式重启加载工作树源码；
+  容器声明的 `SC_SOURCE_REVISION` 仍为 `66202b629`，实际加载的是本批提交的源码（开发态，未冻结）。
+
+### 剩余阻断与非阻断
+
+- 非阻断（既有，独立记账）：`style_system.guard` 四项；`verify.guard.registry` 两个孤儿测试文件；
+  探针层 vendor 内部类选择器历史债务；菜单配置历史版本单选无数据。
+- 本批未关闭的表达缺口见上表（付款 `done`/`payment_execution`、workflow `activate/complete/reopen/reactivate`），
+  按“缺口必须显现”处理，**不视为本批失败**，也不以猜测补齐。
+- 状态边界：本批**批次验收完成**；主线未集成、目标环境未部署、整体用户交付未验收。
+
+## 契约词汇表单一权威与后端自证完备性（2026-09-29，FE-CONTRACT-VOCAB-01）
+
+### 问题
+
+声明过的动作语义词汇表 `(kind, purpose, executor)` 在四处各写一份：后端装配器、schema、前端
+`actionSemantics.ts`、守卫脚本。于是生产者可以发布 `business + return + client.back` 这种**每个终端都会
+丢弃的组合**，四处副本一致地“看起来正常”，缺口被永久隐藏。同一批还暴露了两处同类越界：
+
+- `sc.partner.import.review` 是客户模块拥有的模型，却被 P1 行业模块当成自有 profile 登记，
+  `test_profile_methods_resolve_to_existing_model_methods` 在 `sc_dev_demo` 直接红。
+- 付款入口与财务工作台对同一字段用了两个词：`finance` 与 `finance_manager`，把角色码写成了第二份声明。
+
+### 分层归属（七问）
+
+- `Formal Product Layer`：P0 平台内核（`smart_core`）为权威；P1（`smart_construction_core`）只声明行业语义；P2（客户模块）只登记自己拥有的模型。
+- `Layer Target`：`smart_core.core.action_semantics_vocabulary`、`unified_page_contract_v2_assembler`、`contract_governance` 注册表；`smart_construction_core` 的 workflow 投影服务与能力注册表。
+- `Module`：`smart_core`、`smart_construction_core`、`sce_customer_<tenant_key>_legacy`（属主侧）。
+- `Standard vs User-Specific`：词汇表与注册机制是平台标准；行业 profile 是行业标准；`sc.partner.import.review` 是客户专属，属 P2。
+- `Why Here`：词汇表的单位是 `(kind, executor)` 对而非三个独立集合——独立校验会接受所有终端都丢弃的组合，而生产者确实会发布它。
+- `Why Not Elsewhere`：不在前端重述业务子集（那是本次修掉的漂移源）；不在 P1 为不属于本层的模型写 profile；
+  不给角色码再加一份字面量；不靠禁止导航/刷新/清空草稿来掩盖身份问题。
+- `Blast Radius`：所有 form 契约的 `actionRuleList`、workflow `availableActions`、付款动作的 `required_role_key`。
+  实测 `examples=4`、`profiles=65 reachable_actions=9 payment_specs=4 role_gates=4 verdict_covers=4 roles=11 vocabulary=10`。
+
+### 实现
+
+- `addons/smart_core/core/action_semantics_vocabulary.py`（新）：`DECLARATIONS = {kind: {executor: frozenset(purposes)}}`，
+  派生 `KINDS/EXECUTORS/PURPOSES/OPERATIONS/BUSINESS_PURPOSES/NON_BUSINESS_PURPOSES` 与 `is_declared(kind, purpose, executor)`。
+- `unified_page_contract_v2_assembler.py`：删除本地四个 `DECLARED_ACTION_SEMANTICS_*` 字面量，改为消费权威；
+  组合越界即 `return None`，保持“可见地未声明”。
+- `frontend/packages/schema/src/actionSemantics.ts`：`DECLARED_BUSINESS_PURPOSES` 改为从 `ACTION_PURPOSES` 过滤派生，不再重述清单。
+- `unified_page_contract_v2_schema_guard.py`：四个 enum 对权威比对，禁止装配器再出现本地副本，
+  并要求前端业务子集必须是派生表达式；负例 ×3 均按预期 FAIL。
+- `contract_governance_registry.py` / `contract_governance.py`：新增 `register_workflow_contract_profile(model, profile, source=)`；
+  结构缺键即拒绝注册（缺口不降级为半份投影），读者拿隔离副本。
+- `workflow_contract_service.py`：`profile_by_model()` 合并 P1 自有 profile 与外部注册；
+  模型或其声明的方法在本 registry 解析不了时**不发布**该动作并留 warning，`describe_record`/`is_model_supported`/`supported_model_names` 统一走合并结果。
+- `capability_registry.role_code_for_group()`：角色码从门禁组 xmlid 派生；付款入口与财务工作台删除各自字面量。
+- `scripts/verify/workflow_action_semantics_completeness_guard.py`（新，已接入 `verify.workflow_contract.backend`）：
+  静态求值 profile/ACTIONS/`_ACTION_ROLE_HINTS`，校验可达动作的 purpose 落在 schema 词汇表内、
+  被提供的 payment spec 都有 role gate、role gate 不重述 `required_role_key`、gate 指向真实 `res.groups`，
+  以及 `approval_actions` 必须被 `can_review` 消费（否则 Web 会成为唯一决定者）。负例 ×4 均按预期 FAIL。
+- `scripts/audit/workflow_state_inventory.py`：`WORKFLOW_METHOD_NAMES` 补 `action_reopen`（注册表已交付该方法，清单缺失使守卫在 HEAD 即红）。
+
+### 定向验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.unified_page_contract.v2.schema` | PASS（examples=4） |
+| `verify.unified_page_contract.v2.{assembler,runtime,action,intent,client,web_consumer,web_architecture}` | 全部 PASS |
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | 104 tests OK（含本批新增的运行时通道配对回归） |
+| `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | 4 tests OK（缺键拒绝/空名拒绝/隔离副本） |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS profile_methods=29 inventory_methods=41 |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS allowed_standard_uncovered=account.move,purchase.order,stock.picking |
+| `TestWorkflowContractBackend`（`sc_dev_demo`，注册 env） | **0 failed**，7 error(s) of 28 tests |
+| `make verify.frontend.contract_header_action.unit` | PASS |
+| `make verify.frontend.typecheck.strict` | PASS |
+| `make verify.frontend.build`（`VITE_ODOO_DB=sc_frontend_acceptance`） | 成功，`dist-dev` |
+
+修复前 `TestWorkflowContractBackend` 为 **2 failed**（`test_profile_methods_resolve_to_existing_model_methods`
+报 `sc.partner.import.review not found in registry`），现已归零。
+
+七条 error 全部是**开发库环境数据**类：`费用与扣款单据必须关联已归属公司的有效项目`、
+`自筹办理必须关联已归属公司的有效项目`、`收款归集关系不存在或当前用户无权访问`、
+`[SC_GUARD:P0_PAYMENT_STATE_BYPASS_BLOCKED] 未完成审批流程`。按“开发阶段关注功能而非环境数据”口径
+**不作为本批阻断**，也不以造数掩盖；修复前后的 error 集合逐条一致，未新增。
+
+### 候选与运行来源
+
+- 提交：`e7a523cca`（P0 词汇表权威 + 注册表）、`8890d5f0f`（P1 行业语义与角色派生 + 完备性守卫）、
+  `7ec3bbf16`（前端派生）；HEAD 见下方批次记录。
+- P2 属主侧提交：`sce-customer-<tenant_key>-odoo` `bfbc736`（`fix/native-form-preference-upgrade`），
+  `runtime_registration.py` 注册 `sc.partner.import.review` profile。
+- 后端测试现场：`ENV_FILE=.env.dev DB_NAME=sc_dev_demo MODULE=smart_construction_core` 经 `scripts/test/test_safe.sh`。
+- 前端产物：`VITE_ODOO_DB=sc_frontend_acceptance VITE_ODOO_DB_LOCKED=1 VITE_APP_ENV=acceptance make verify.frontend.build`，
+  输出 `frontend/apps/web/dist-dev`（开发态，未冻结、未替换 5180 服务目录）。
+
+### 剩余阻断与非阻断
+
+- 非阻断：`docs/audit/workflow_state_inventory_sc_demo.md` 仍为历史 `sc_demo` 基线。
+  当前注册库 `sc_dev_demo` 生成会得到空清单，`sc_demo` 未装模块，故**本批不重生成**；
+  `verify.workflow_contract.backend` 的 `audit.workflow_state.inventory` 前置步骤在具备已装模块的 `sc_demo` 前不要单独跑。
+- 非阻断：`style_system.guard` 三项文件长度、探针层 vendor 选择器历史债务（均独立记账，未触碰）。
+  `verify.guard.registry` 的两个 false-orphan 已在本批收口，见下方 `FE-GUARD-REGISTRY-01`。
+- 未闭合：约 80 处未声明的原生按钮 occurrence 仍需按“权威侧缺失 / 原生未登记”逐类定性；
+  `construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端 presentation 可达性缺口，非契约缺陷。
+- 状态边界：本批**批次验收完成**；未推送、未合并、未部署目标环境，整体用户交付未验收。
+
+### 独立复核与同批修复（2026-09-29）
+
+对本批四个提交（`c4b419878..21df11b45`）与跨仓 `bfbc736` 做了一次**只读独立复核**，
+结论 `REQUEST_CHANGES`，无 S0/S1，两条 S2，均在本批内收口：
+
+- **S2-1 运行时业务动作通道绕过权威校验**：`_append_actions` 的复制表把 `action_semantics` 原样搬运，
+  该通道（`project_runtime_business_actions`，P1 财务工作台正用）仍可发布“所有终端都会丢弃”的组合，
+  与“组合越界即丢弃”的表述不符。修复：该键从复制表移除，改为经 `declared_action_semantics` 投影。
+  复核者的原始探针（`business+return+client.back`）现返回 `contract actionRuleList actionSemantics: [None]`，
+  合法声明 `business+start_execution+contract.action` 仍原样发布。
+- **S2-2 守卫与 schema 只有逐维枚举、无配对校验**：把 `ACTIONS["activate"]` 的 executor 改成 `client.back`
+  时，新守卫仍 PASS。修复：schema 的 `actionSemantics` 声明分支新增 `allOf[].oneOf` 配对约束
+  （4 个 `(kind, executor)` 对，各自的 purpose 集合）；`unified_page_contract_v2_schema_guard`
+  新增“schema 配对 == 权威 `DECLARATIONS`”比对；`workflow_action_semantics_completeness_guard`
+  改为用权威 `is_declared` 做配对校验。负例实测：executor 漂移 → FAIL；schema 少一个 pair → FAIL；
+  schema 放宽某 pair 的 purpose → FAIL。
+
+**同批收口**：`verify.unified_page_contract.v2.stable_projection` 原为基线即红
+（`frontend_v2_policy_projection_guard` 报 `types.ts` 的 `actionSemanticsInvalid` 不在严格白名单内；
+三处相关文件在本批 diff 中字节未变，该标识由基线祖先 `22ee5391b` 引入）。
+该字段是端侧对“后端发布了越界声明”的拒收标记：`canonicalFormActionExecutor` 与
+`contractFormHeaderCanonicalActions` 真实读取它，删掉会把“缺口可见”退化回静默丢弃。
+处理方式不是放宽白名单，而是把它登记为 `ContractV2ActionRule` 唯一允许的端侧扩展字段，
+并补两条 fail-closed 约束：白名单字段必须被声明的消费者读取，且后端 schema 不得发布它。
+负例实测：消费者不再读取 → FAIL；schema 发布该键 → FAIL。收口后
+`verify.unified_page_contract.v2`（含前端构建）与 `verify.unified_page_contract.v2.professional_backend`
+均 `exit=0`，该红项不再阻塞聚合门禁。
+
+复核者登记的非阻断后续（`POST_MERGE_FOLLOWUP`，本批未处理）：
+`register_workflow_contract_profile` 重复注册为静默覆盖；
+`method_by_action` 值类型未校验（非字符串会 `TypeError`，被 `core_extension` 的 `try/except` 兜住）；
+`schema_guard` 的 `ts_derives_business_list` 只校验派生表达式形状、不比对结果集合；
+`completeness_guard` 的 `can_review` 消费判定是存在性代理；
+本段落的 v2 定向验证表未列 `stable_projection`（已在上方补登）。
+
+复核者未能独立复核的部分：其运行环境无 `odoo` 模块，故 `TestWorkflowContractBackend`
+的 `0 failed / 7 error` 由其未复核；本批在注册环境（`sc_dev_demo`）自行跑过该套件，结论见上文表格。
+
+## 守卫注册表 false-orphan 收口（2026-09-29，FE-GUARD-REGISTRY-01）
+
+### 定性：既有失败，非本批引入
+
+`verify.guard.registry`（属 `ci.professional.backend` 专业质量门禁）在本批开工前即报两条：
+
+```text
+✗ orphan script 'test_frontend_standard_preview.py' is not acknowledged in registry.yaml
+✗ orphan script 'test_workspace_composition_wiring.py' is not acknowledged in registry.yaml
+```
+
+按“是否既有应对照实际专题基线判断”，用不可变对象核对，而不是只跑一遍看它也红：
+
+| 证据 | 结果 |
+|---|---|
+| 两个脚本是否在本批 diff（`c4b419878..fb51e465b`）内 | 否 |
+| 基线 `c4b419878` 是否存在这两个脚本 | 是 |
+| 基线 `c4b419878` 的 `registry.yaml` 是否已承认二者 | 否 |
+| 基线 `c4b419878` 的引用正则与 HEAD 是否一致 | 一致（`SCRIPT_REFERENCE_RE` / `IMPORT_REFERENCE_RE` 字节相同） |
+| 基线 make 是否已以同一形式引用二者 | 是（`make/runtime_ops.mk:150`、`make/frontend.mk:929`） |
+
+⇒ 基线必然 FAIL。属既有失败，与本批契约改动无关。
+
+### 根因：引用检测不覆盖点分模块调用形式
+
+`guard_registry_audit.py` 的引用判定只用两类证据：脚本文件名（含 `.py`/`.sh`）与 Python import 语句。
+这两个脚本在 make 中的真实引用形式是
+
+```make
+python3 -m unittest scripts.verify.test_frontend_standard_preview
+python3 -m unittest scripts.verify.test_workspace_composition_wiring
+```
+
+既无 `.py` 后缀，也不是 import，于是被判为 orphan —— **false orphan**，脚本其实有消费者。
+
+### 处理：跟随仓库既有登记惯例
+
+registry.yaml 里**已有同类先例**：`test_frontend_system_state_recovery_guard.py`、
+`test_frontend_page_pattern_reference_parity_guard.py`、`test_form_structure_authority_unification.py`、
+`test_gitee_ci_acceptance.py` / `_checks` / `_incremental_update` 等条目都是 `status: orphan`，
+`reason` 写明 “invoked by make/… through Python unittest module notation; registry static scan does not
+recognize that invocation form”。本批按完全相同的体例补两条，保持 registry 文本单行风格：
+
+```yaml
+- script: test_frontend_standard_preview.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/runtime_ops.mk through Python unittest module notation (scripts.verify.test_frontend_standard_preview); registry static scan does not recognize that invocation form
+```
+
+```yaml
+- script: test_workspace_composition_wiring.py
+  status: orphan
+  owner: platform-team
+  date: '2026-09-29'
+  review_by: '2026-09-30'
+  reason: invoked by make/frontend.mk through Python unittest module notation (scripts.verify.test_workspace_composition_wiring); registry static scan does not recognize that invocation form
+```
+
+`guard_registry_audit.py` 与 `docs/audit/guard_registry/guard_registry.json` 均未改动：前者不必为本批
+改判定语义，后者无任何 make/CI 消费者、且在本批之前已落后于 registry 多次变更（`counts` 差 6 active /
+2 orphan），不为它引入 117 行无关刷新噪声。
+
+### 为什么不改引用正则
+
+把 `-m unittest/pytest <dotted.module>` 纳入检测会让 **33 个脚本**从 orphan 翻转为 active
+（`test_gitee_*.py` 一系、`test_product_*_wave1_guard.py` 一系、`test_local_dev_*.py` 等）。
+其中 11 个当前以 `orphan` 登记、10 个未登记，其余已 active。翻转后这些 `orphan` 条目立刻变成
+guard 自身定义下的 stale，需一并重写 registry 的三十余条状态。那是一次注册表治理重写，
+超出本轮“最小定向修复”范围，因此不动引用正则。
+
+### 顺带发现的 guard 缺陷（登记，不在本批修）
+
+guard 的 docstring 把 `active-dynamic` 指定为这类 false orphan 的承认方式，但实测该分支实现与文档相反：
+
+```python
+if entry and entry.get("status") == STATUS_ACTIVE_DYNAMIC and item["status"] != STATUS_ACTIVE:
+    failures.append("claims active-dynamic but no static reference exists and it is not orphan-acknowledged")
+```
+
+判定要求脚本“静态可见”，而该状态的语义恰是“静态看不见但确有引用”，于是 `active-dynamic`
+在任何情况下都不可用（registry 中 0 条使用印证）。这是 guard 自身的实现缺陷，属 P4 ops 工具治理，
+**不在本批（契约词汇表）范围**，不引入首例状态语义变化，登记为后续项。
+
+### 定向验证
+
+| 命令 | 结果 |
+|---|---|
+| `python3 scripts/verify/guard_registry_audit.py` | **PASS** `1342 scripts (1218 referenced, 124/124 orphans acknowledged, 1 retired)`，`exit=0` |
+| `python3 -m unittest scripts.verify.test_guard_registry_audit` | 2 tests OK |
+| `python3 -m unittest scripts.verify.test_registry_audit_environment` | 18 tests OK |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+改动前后 `orphan` 承认数由 122 增至 124，与新增两条登记一致；`referenced` 1218 不变，
+说明未把任何真实脚本误判成“有引用”。
+
+### 与 style_system.guard 的边界
+
+`verify.frontend.style_system.guard` 实测 3 项，均为文件长度超限：
+
+```text
+- frontend/apps/web/src/pages/ContractFormPage.vue exceeds 1900 lines: 1903
+- frontend/apps/web/src/views/ActionView.vue exceeds 3800 lines: 3803
+- record runtime exceeds 619 lines: frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts=621
+```
+
+三文件在本批 diff 中未触及，且基线 `c4b419878` 与 HEAD 行数完全一致（1903/1903、3803/3803、621/621），
+未扩大。按既有口径独立保留，不靠放宽阈值、压缩行数或忽略文件消红。
+（此前记录中的“四项”含 `ScRelationField.vue` 的 z-index 一项，该标识现已不在仓库中，故本轮实测为 3 项。）
+
+### 候选与运行来源
+
+- 本段收口只动 `scripts/verify/registry.yaml`（+12 行）与本记录。
+- 未重跑 89 入口、全站发布验收或四项必需检查的其余部分；未推送、未合并、未部署目标环境。
+
+### 状态
+
+本批**批次验收完成**。`verify.guard.registry` 红项关闭；`style_system.guard` 三项为明确的既有非阻断债务；
+guard 自身 `active-dynamic` 分支缺陷已登记，未在本批扩大处理。
+
+## 后端自证完备性：复核登记的 followup 收口（2026-09-29，FE-CONTRACT-SELFPROOF-01）
+
+上一批独立复核在 `FE-CONTRACT-VOCAB-01` 段落登记了四项 `POST_MERGE_FOLLOWUP`。本段逐项收口，
+不重开该批已通过的结论，只关闭这四条。
+
+### 1. 重复注册静默覆盖（P0 注册表）
+
+`register_workflow_contract_profile` 对同一 model 的第二次不同声明直接改写 `_WORKFLOW_CONTRACT_PROFILE_REGISTRY`，
+于是“哪个 owner 生效”取决于模块导入顺序。
+
+处理：第二次声明不再覆盖。
+
+- 内容与已注册项相同 → 幂等 `True`（允许重复 import / 热加载）；
+- 内容不同 → 拒绝 `False`，追加一条 `_WORKFLOW_CONTRACT_PROFILE_CONFLICTS` 记录
+  （`model` + `existing_source` + `incoming_source`）并输出 warning；第一个声明保留。
+
+经 `contract_governance` facade 暴露 `workflow_contract_profile_conflicts()`，让冲突可见而不是靠导入顺序解决。
+反例测试 `test_a_second_different_profile_for_the_same_model_is_refused` 同时断言“拒绝 + 保留第一份 + 冲突留痕”。
+
+### 2. `method_by_action` 值类型未校验（P0 注册表）
+
+原注册只做 truthy 检查。`{"submit": 123}` 能注册成功，直到 `_profile_is_executable` 调用
+`hasattr(model, 123)` 抛 `TypeError`，被 `core_extension` 的 `try/except` 兜住 → **整个 profile 静默消失**。
+
+处理：注册处校验 `method_by_action` 必须是 dict，键必须是去空白后的非空字符串，值必须是字符串或 `None`
+（`None` 表示“声明为无方法”）。`_profile_is_executable` 增加同层防御：非字符串名直接判为不可执行，
+不再依赖调用方的 `try/except`。
+
+反例测试：非字符串值（`123` / dict / list / `True`）与非字符串键都被拒绝；`None` 值仍被接受。
+
+### 3. `ts_derives_business_list` 只校验派生形状（前端派生守卫）
+
+原实现只匹配 `Object.freeze(\s*ACTION_PURPOSES\.filter(`。把谓词改成
+`... && purpose !== 'submit'` 后，形状仍匹配、两个数组字面量仍与权威相等，但派生结果集少一个 purpose。
+
+处理：谓词固定为唯一的受控补集形式
+`ACTION_PURPOSES.filter((x) => !(NON_BUSINESS_PURPOSES as readonly string[]).includes(x))`。
+配合原本已校验的两个字面量（`ACTION_PURPOSES` / `NON_BUSINESS_PURPOSES` == 权威），结果集由此完全确定。
+
+负例实测：加入额外谓词 → `verify.unified_page_contract.v2.schema` **FAIL**（
+`the web business purpose list must be derived from ACTION_PURPOSES and NON_BUSINESS_PURPOSES`），恢复后 PASS。
+
+### 4. `can_review` 消费判定是存在性代理（授权绑定守卫）
+
+原 `references_marker` 只要求 `_available_actions` 函数体内**出现** `"can_review"` 常量，
+因此只把 verdict 写进日志、或写成永不成立的分支，都能通过“运行时审批裁决被消费”这条检查。
+
+处理：marker 必须出现在 `if` / `while` / 三元表达式的 **test** 内，且该 test 不能本身是字面常量。
+真实实现 `if not bool(getattr(record, "can_review", False)): keys.remove(...)` 仍是合格形态。
+
+负例实测：把两处 `getattr(record, "can_review", ...)` 换成别的名字、只保留一行
+`_marker_only = "can_review"` 提及 → guard **FAIL**（
+`workflow profiles publish approval actions without consulting the runtime approval verdict`），恢复后 PASS。
+
+### 固化进现有测试
+
+两个守卫此前没有回归测试，本次反例只存在于一次性探针里。新增两个单测文件并接到各自的 make target：
+
+- `scripts/verify/test_unified_page_contract_v2_schema_guard.py`（3 tests）→ 接入 `verify.unified_page_contract.v2.schema`
+- `scripts/verify/test_workflow_action_semantics_completeness_guard.py`（4 tests）→ 接入 `verify.workflow_contract.backend`
+
+这样“代理检查”无法悄悄回归。
+
+### 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py` | 9 tests OK（新增 5 个反例） |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65 … verdict_covers=4` |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS `profile_methods=29 inventory_methods=41` |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS（见下方基线说明） |
+| `python3 scripts/verify/contract_governance_registry_split_guard.py` | PASS |
+| `make verify.unified_page_contract.v2.schema` / `.assembler` / `.action` | 均 PASS |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `TestWorkflowContractBackend`（`sc_dev_demo`） | `0 failed, 7 error(s) of 28`，**error 集合与 stash 基线逐条一致**（全为环境数据类） |
+| `make ci.local.iteration` | PASS `change_state=dirty` |
+
+后端套件的 7 个 error 用 `git stash` 前后各跑一次逐条比对：改动前后测试名完全一致，
+确认非本段引入。
+
+### 踩到并还原的一次基线覆盖
+
+`verify.workflow_contract.backend` 的前置 `audit.workflow_state.inventory` 会以注册库 `sc_dev_demo`
+重新生成 `docs/audit/workflow_state_inventory_sc_demo.md`，覆盖这份历史 `sc_demo` 基线；
+被覆盖后 `workflow_contract_custom_coverage_guard` 会报 13 个“意外未覆盖模型”。
+
+本次已 `git checkout` 还原该文件，未把覆盖结果带入提交。**该 target 在当前注册库下不能整条直接跑**；
+需要时按上面的清单逐条执行，跳过 inventory 前置。这是既有环境限制，非本段改动引入
+（`git stash` 后同一 target 同样如此，因为 stash 一并还原了被覆盖的基线文件）。
+
+### 未处理（保持登记）
+
+- `docs/audit/workflow_state_inventory_sc_demo.md` 需在具备已装模块的 `sc_demo` 环境重新生成，本段不重生成。
+- 跨仓 P2 注册（`sce-customer-<tenant_key>-odoo` `bfbc736`，`sc.partner.import.review`）本次未跨仓运行验证；
+  新语义下同内容重复注册仍是幂等 `True`，不影响其现有调用形态。
+
+### 状态
+
+本段**批次验收完成**。四项 followup 全部关闭；未推送、未合并、未部署目标环境。
+
+## 原生按钮 occurrence 覆盖收口：把未声明的 workflow 按钮显式登记（2026-09-29，FE-CONTRACT-NATIVEBTN-01）
+
+上一段 `FE-CONTRACT-VOCAB-01` 登记了一项未闭合：「约 80 处未声明的原生按钮 occurrence 仍需按
+『权威侧缺失 / 原生未登记』逐类定性」。本段把这条口径固定到可复算的范围内并闭合它，
+不重开该批结论，不猜测任何业务语义。
+
+### 1. 口径收敛：80 → 25 是收紧，不是问题消失
+
+重枚举口径（可复算）：
+
+- 扫 `addons/**/views/**/*.xml` 中 `model="ir.ui.view"` 记录里 `type="object"` 的 `<button>`；
+- 按钮所属 `model` 必须**已有 workflow profile**（`workflow_contract_service.PROFILE_BY_MODEL`，共 **40** 个）；
+- 按钮 `name` 必须**未被任何 profile 声明**（所有 `method_by_action` 取值合并收集，共 **29** 个）。
+
+第三条是故意保守的：跨 profile 合并收集只会**少报**（一个模型声明了某方法，会顺带遮蔽另一个模型上同名按钮），
+它不会凭空造出一个缺口。按模型精确判定需要执行各 profile builder，超出静态守卫的职责，不做。
+
+结果：未声明 occurrence **25 处**，去重 **24 条 `(model, method)`**，覆盖 **16 个模型**、**17 个去重方法名**。
+方法与模型的差来自两处一对多：`action_generate_lines_from_budget` 出现在 3 个模型、
+`action_view_company_contractor_responsibility_summary` 出现在 6 个模型。
+
+与旧登记的「约 80 处」相比，这是**口径收敛**：旧口径没有限定到被接管模型，也没有扣除跨 profile 已声明的同名方法。
+每个被移除的 occurrence 都落在「不是被接管模型」或「方法已有声明」两类之一。
+
+### 2. 登记分类（`config/contract/native_view_undeclared_actions.v1.json`，24 条）
+
+| class | 条数 | 含义 |
+|---|---|---|
+| `navigation` | 11 | 打开关联记录／视图，不改变状态 |
+| `document_helper` | 9 | 生成／加载／创建业务内容，不改变状态 |
+| `state_transition_undeclared` | **4** | 真实改变记录状态，且没有任何 profile 声明承担它 |
+
+前两类是「原生未登记」：它们不写状态，缺的只是显式登记，不是权威侧缺口。
+第三类是「权威侧缺失」，逐条经过实现确认。
+
+### 3. 四条 `state_transition_undeclared` 逐条定性
+
+| model | method | 实测状态变化 | 定性 |
+|---|---|---|---|
+| `payment.request` | `action_set_approved` | `approve → approved`，`with_context(allow_transition=True, payment_soft_gate=True)`，两侧有 `_assert_finance_approve_access` | 该模型另有 `action_approve` 承担 `approve`，此第二条批准入口尚无声明 |
+| `sc.general.contract` | `action_signed` | `draft/confirmed → signed` | profile 声明了 `signed` phase，却没有把任何动作投影进该 phase，签署在被接管页不可达 |
+| `sc.payment.execution` | `action_reverse_payment` | `paid → ` 冲销，有 `_assert_finance_cancel_access` 且 `raise_guard("PAYMENT_EXECUTION_REVERSAL_INVALID_STATE")`，**未**用 `allow_transition` 绕过 | 无 profile 动作覆盖冲销 |
+| `sc.project.document` | `action_reset_to_draft` | `state='draft'` 重置 | 该模型未声明 `reopen` 类动作 |
+
+四条**都不擅自补 purpose**。是否要为原生转移补一条声明，是业务权威的判断，不是守卫或适配器能自行发明的。
+本段只把它们从「静默消失」变成「显式登记」，让缺口可见。
+
+### 4. 守卫机制与 fail-closed 四类（`scripts/verify/native_view_workflow_action_coverage_guard.py`）
+
+守卫只做「显式登记 + 双向往返」，不提议任何含义。四类检查全部 fail-closed：
+
+1. 接管模型上的原生 object 按钮既未被声明、也不在登记表 → **FAIL**（新缺口无法静默进入）；
+2. 登记条目已不再对应任何原生按钮 → **FAIL**（stale，登记不能留存过期的缺口）；
+3. 登记条目对应的方法现在已被 profile 声明 → **FAIL**（登记不得比它记录的缺口活得更久）；
+4. 条目缺 `reason` 或 `class` 不在 `{state_transition_undeclared, navigation, document_helper}` → **FAIL**。
+
+### 5. 与 `workflow_action_semantics_completeness_guard` 的口径关系
+
+两个守卫口径起点相同（「原生呈现 vs 契约声明」），方向互补，不是重复：
+
+- `completeness_guard` 从**声明侧**出发：profile 声明了某 `(kind, executor, purpose)` 组合，端上是否有真实消费者；
+- 本守卫从**原生呈现侧**出发：原生视图里真实存在一个 object 按钮，契约侧是否有任何声明承担它。
+
+一个抓「声明了没人用」，一个抓「存在了没人声明」。合起来才是双向闭合。
+
+### 6. 修正一条旧说法
+
+旧登记里写着「`construction.contract` 的 `activate/complete` 只读详情面不渲染 header 动作，属前端
+presentation 可达性缺口」。本轮实测确认：`construction.contract` 的 profile **有** `state_actions`
+（`draft: submit/cancel`、`confirmed: activate/complete/cancel`、`running: complete/cancel`、`cancel: reopen`），
+且 `activate → action_set_running`、`complete → action_close` 均已声明；原生 `contract_views.xml` 里这两个
+object 按钮也真实存在。因此它们**不在**本守卫的未声明集合内，此前若把它读成契约缺口是不准确的。
+
+它是「已声明，端上是否渲染」的 presentation 面，本段不改变该登记、也不以本守卫覆盖它。
+
+### 7. 接入现有门禁（不新建治理体系）
+
+- 新 target `verify.native_view.workflow_action_coverage`：`py_compile` + 守卫 + 8 个单测；
+- 登记进 `verify.unified_page_contract.v2` 与 `verify.unified_page_contract.v2.professional_backend` 两个聚合
+  （与 `verify.unified_page_contract.v2.action` 相邻，同族）；
+- 同步登记进 `scripts/verify/unified_page_contract_v2_guard_inventory.py` 的 `OFFLINE_TARGETS`，
+  否则该 inventory guard 会报聚合依赖漂移；
+- `scripts/verify/guard_registry_audit.py` 因脚本已被 make 引用，不再是 orphan，无需 registry.yaml 条目。
+
+### 8. 负例实测（全部按预期 FAIL）
+
+| 人造偏差 | 期望 | 实测 |
+|---|---|---|
+| baseline 原样 | PASS | PASS `registered=24 document_helper=9 navigation=11 state_transition_undeclared=4` |
+| 删掉一条登记条目 | FAIL | FAIL（`no native form view uses it anymore` 之外的未登记缺口被报出） |
+| 登记一条幽灵条目（原生不存在） | stale FAIL | FAIL |
+| 登记一条已被 profile 声明的方法 | stale FAIL | FAIL |
+| 条目去掉 `reason` | FAIL | FAIL |
+| 条目 `class` 改成非法值 | FAIL | FAIL |
+
+### 9. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.native_view.workflow_action_coverage` | PASS（守卫 + 8 tests OK） |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1346 scripts (1222 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make verify.unified_page_contract.v2.professional_backend` | **exit=0**（inventory PASS、web_architecture PASS debt_lock findings=0 等） |
+| `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会污染历史
+`sc_demo` 基线，属既有环境限制（见上一段说明），与本次改动无关。
+
+### 10. 七问
+
+- **Formal Product Layer**：守卫与登记表属 **P4 ops/verify 工具**（`scripts/verify`、`config/contract` 的显式登记）；
+  被扫描的契约声明属 **P0 平台机制**（`smart_core` 动作语义词汇表）+ **P1 行业标准**（`smart_construction_core`
+  的 workflow profile）。不引入任何新的业务层语义。
+- **Layer Target**：`scripts/verify/native_view_workflow_action_coverage_guard.py`、
+  `scripts/verify/test_native_view_workflow_action_coverage_guard.py`、
+  `config/contract/native_view_undeclared_actions.v1.json`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`scripts/verify`（守卫/测试）+ 仓库级 `make` 门禁；被扫描对象是 `smart_construction_core` 的
+  workflow profile 与各模块原生视图。
+- **Standard vs User-Specific**：平台机制层——「原生呈现 vs 契约声明」的覆盖口径对每个部署一致，非客户偏好。
+- **Why Here**：登记表落在 `config/contract/`，与其它契约侧登记同址；守卫落在 `scripts/verify`，与
+  `workflow_action_semantics_completeness_guard` 同址；接入现有 v2 聚合，不新增体系。
+- **Why Not Elsewhere**：不改 `workflow_contract_service.py` 去补 purpose——那会由守卫发明业务语义；
+  不改前端渲染去隐藏按钮——那是让缺口更不可见；不新增独立门禁平台——现有 v2 聚合已覆盖同族口径。
+- **Blast Radius**：新增一个只读静态守卫 + 一张登记表 + 两处聚合依赖登记。不改业务模型、不改契约投影、
+  不改前端渲染、不改权限。受影响面仅为 `verify.unified_page_contract.v2*` 门禁，已验证 `exit=0`。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+四条 `state_transition_undeclared` 保持为**权威侧待决**，不是本轮阻断项，也不因本段自动消项。
+
+## 契约接管模型集口径修正：把 helper 生成的 profile 纳入扫描（2026-09-29，FE-CONTRACT-NATIVEBTN-02）
+
+上一段 `FE-CONTRACT-NATIVEBTN-01` 的守卫用正则从源码文本里抓「被接管模型」，
+结果只认内联字面量，漏掉了通过 helper 调用生成的 profile。本段修掉这个口径，
+并把它暴露的缺口补齐。
+
+### 1. 根因：正则只看得见一半注册表
+
+上一段 `adopted_models()` 的匹配式是
+`"\n        \"<model>\": \{\n            \"state_field\""` —— 它要求 model 键**紧跟**一个内联的
+`state_field`。而 `PROFILE_BY_MODEL` 里还有另一类条目：
+
+```python
+**_simple_approval_profiles(("sc.equipment.plan", "sc.labor.plan", ...)),
+**_close_issue_profiles(("sc.quality.issue", "sc.safety.issue")),
+**_submit_confirm_profiles((...)), **_in_progress_done_profiles((...)), **_confirm_done_profiles((...)),
+```
+
+这些 helper 每个都返回**完整的 profile**（含 `state_field` / `state_phase` /
+`state_actions` / `method_by_action`），但它们在源码里不是内联字面量，正则抓不到。
+
+实测口径差：
+
+| 口径 | 被接管模型 |
+|---|---|
+| 上一段正则（内联字面量） | 40 |
+| 静态求值 `PROFILE_BY_MODEL`（含 helper 展开） | **65** |
+
+被漏掉的 25 个模型：`sc.dashboard.cockpit.fact`、`sc.document.admin.document`、
+`sc.equipment.plan/request/settlement/usage`、`sc.fund.account.operation`、
+`sc.hr.payroll.document`、`sc.labor.plan/request/settlement/usage`、
+`sc.material.purchase.request`、`sc.material.rental.plan`、`sc.material.settlement`、
+`sc.office.admin.document`、`sc.plan`、`sc.quality.issue`、`sc.safety.disclosure/issue/plan`、
+`sc.subcontract.plan/request/settlement`、`sc.workbench.item`。
+
+### 2. 影响：7 条未声明原生按钮从未被检查
+
+把这 25 个模型纳入扫描后，原「24 条登记」之外多出 7 条未声明按钮：
+
+| model | method | class | 实测行为 |
+|---|---|---|---|
+| `sc.material.purchase.request` | `action_create_rfq` | `document_helper` | `create` `sc.material.rfq`，不改自身状态 |
+| `sc.material.purchase.request` | `action_create_purchase_order` | `document_helper` | `create` `purchase.order`，不改自身状态 |
+| `sc.material.purchase.request` | `action_view_rfqs` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.material.purchase.request` | `action_view_purchase_orders` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.material.settlement` | `action_create_remaining_payment_request` | `document_helper` | `create` `payment.request`，自身状态不变 |
+| `sc.material.settlement` | `action_open_payment_request` | `navigation` | 返回 `ir.actions.act_window` |
+| `sc.plan` | `action_start` | **`state_transition_undeclared`** | `write({"state": "in_progress"})`，`confirmed → in_progress` |
+
+登记表因此从 24 条 / 25 occurrence / 16 模型变为 **31 条 / 32 occurrence / 19 模型**
+（`navigation` 11→14、`document_helper` 9→12、`state_transition_undeclared` 4→5）。
+
+### 3. `sc.plan.action_start` 同时是一条相位可达性缺口
+
+`sc.plan` 的 profile（经 `_confirm_done_profiles` 生成）声明了
+`state_phase = {draft, confirmed, in_progress, done, cancel, cancelled, legacy_confirmed}`，
+但 `state_actions` 的 `confirmed` 只有 `["complete", "reopen", "cancel"]` ——
+**没有任何声明动作能进入 `in_progress`**。原生视图里 `action_start` 正是那个入口
+（`invisible="state != 'confirmed'"`，`string="开始执行"`）。
+
+这与 `sc.general.contract.action_signed` 是同一类问题：**phase 声明了，进入它的动作没有声明**。
+本段仍按既定口径处理——登记、定性，不擅自补 purpose。
+
+### 4. 验收体系为什么没发现
+
+上一段的 8 个单测全部只做一件事：**验证守卫与它自己的登记表自洽**
+（登记一致、移除条目 FAIL、幽灵条目 stale、缺 reason FAIL……）。
+它们没有一条独立断言 **「守卫扫描的模型集 == 契约实际注册的模型集」**。
+于是「正则少抓 25 个模型」和「登记表也少 24 条」可以同时成立，两边互相印证，测试全绿。
+
+这正是「静默补齐」的镜像：不是前端补了业务语义，而是**验收工具静默缩小了自己的作用域**。
+
+### 5. 修复：用静态求值替代模式匹配，并把范围断言钉进单测
+
+新增 `scripts/verify/workflow_contract_profile_loader.py`：
+
+- 用 AST 求值 `PROFILE_BY_MODEL` 表达式，支持内联字面量、helper 调用、`**` 展开、`_()` 标记；
+- 只接受字面量表达式的白名单；遇到不支持的结构（推导式、模块属性、条件表达式……）
+  **抛 `ProfileSourceError` 而不是返回部分结果** —— 消费者永远不该静默扫一个子集；
+- 空注册表、非 dict 的 profile 条目同样拒绝。
+
+`native_view_workflow_action_coverage_guard.py` 的 `adopted_models()` /
+`declared_methods()` 改为调用该 loader；读不到注册表时守卫以 exit 1 fail-closed。
+
+补的单测：
+
+- `test_workflow_contract_profile_loader.py`（8 tests）：真实注册表读全、helper 生成的
+  `sc.plan` 在内、helper 绑定的方法计入声明集、`**` 展开、以及四类 fail-closed
+  （不支持的表达式 / 缺注册表 / 空注册表 / 非 profile 条目）；
+- `test_native_view_workflow_action_coverage_guard.py` 新增 2 tests（共 10）：
+  `test_helper_built_profiles_are_scanned_too` 断言几个 helper 生成的模型确实在扫描集里；
+  `test_a_helper_built_model_transition_must_be_registered` 断言移除 `action_start`
+  登记后守卫会 FAIL。
+
+### 6. 七问
+
+- **Formal Product Layer**：P4 ops/verify 工具（`scripts/verify`、`config/contract` 登记）。
+  不引入业务语义。
+- **Layer Target**：`scripts/verify/workflow_contract_profile_loader.py`、
+  `scripts/verify/native_view_workflow_action_coverage_guard.py`、
+  `scripts/verify/test_workflow_contract_profile_loader.py`、
+  `scripts/verify/test_native_view_workflow_action_coverage_guard.py`、
+  `config/contract/native_view_undeclared_actions.v1.json`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`scripts/verify` + 仓库级 `make` 门禁；被扫描对象仍是 `smart_construction_core`
+  的 workflow profile 与各模块原生视图。
+- **Standard vs User-Specific**：平台机制层——「契约声明 vs 原生呈现」的覆盖口径对每个部署一致。
+- **Why Here**：loader 与守卫同址；登记表与其它契约侧登记同址；仍挂在既有 v2 聚合下。
+- **Why Not Elsewhere**：不改 `workflow_contract_service.py` 去补 purpose（那是发明业务语义，
+  仍由业务权威决定）；不改前端渲染去隐藏按钮；不为了迁就旧正则而恢复内联写法。
+- **Blast Radius**：新增一个只读静态模块与两个单测；登记表 31 条；两处聚合依赖不变。
+  不改业务模型、契约投影、前端渲染、权限。受影响面仅为 `verify.unified_page_contract.v2*`，已验证 exit=0。
+
+### 7. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.native_view.workflow_action_coverage` | PASS（`registered=31 document_helper=12 navigation=14 state_transition_undeclared=5`；8 + 10 tests OK） |
+| 口径反证：回填旧正则模型集 | `models=40 undeclared=24 has_action_start=False`；求值口径 `models=65 undeclared=31 has_action_start=True` |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1348 scripts (1224 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make ci.generated_reports.guard` | PASS（test inventory 1416 entries 等全部 current） |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make verify.unified_page_contract.v2.professional_backend` | **exit=0** |
+| `make ci.local.iteration` | PASS `change_state=dirty` |
+
+### 8. 剩余（显式登记，不在本段）
+
+- **phase 覆盖完备性**尚未守卫：`state_phase` 是否覆盖该模型 `state` selection 的全部取值。
+  已验证 34/40 内联模型可直接 AST 解析、其余 6 个经 `ScStateMachine.selection(...)`；
+  当前已知一处真实缺口：`sc.general.contract` 的 `legacy_confirmed` 未在 `state_phase` 中声明
+  （同类模型如 `sc.expense.claim`、`sc.payment.execution` 都声明了该相位）。这是**投影缺口**，
+  应改契约投影；本段不顺手改，避免把两个口径混在一笔里。
+- **phase 可达性**：`sc.plan.in_progress`、`sc.general.contract.signed` 已通过
+  `state_transition_undeclared` 登记显式化；是否补声明由业务权威决定。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## 相位覆盖完备性守卫：把 `state_phase` 的取值集双向钉死（2026-09-29，FE-CONTRACT-PHASECOV-01）
+
+上一段 `FE-CONTRACT-NATIVEBTN-02` 第 8 节登记了「`state_phase` 是否覆盖该模型 `state`
+selection 的全部取值」尚未守卫，并明确本轮不顺手改。本段收口这一项：补掉登记里那处真实缺口，
+并把覆盖口径做成静态守卫。
+
+### 1. 先确认 `state_phase` 是真实运行语义，不是装饰
+
+`state_phase` 在前端源码里没有任何字面引用，容易被读成「只为展示的映射表」。实际消费链在
+`addons/smart_construction_core/models/support/workflow_contract_service.py`：
+
+```python
+business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")   # 第 976 行
+```
+
+`business_phase` 随后驱动三处判定并发布到端上：
+
+| 派生结果 | 位置 | 未映射时的行为 |
+|---|---|---|
+| `editability` | `_editability()`（第 1028 行） | 用 raw token 去比 `field_editable_phases` / `TERMINAL_PHASES` / `editable_phases` |
+| `approvalPhase` | `_approval_phase()`（第 1012 行） | 只对 `approved/done/legacy_confirmed` 等已知相位生效 |
+| `statusbar` / `businessPhase` | `_statusbar_projection()`（第 991 行） | 把 raw token 当相位发布，并落 `STATUSBAR_EXTRA_LABELS` 兜底标签 |
+
+所以缺一条映射不是「显示少了几个字」：**一个真实业务相位会走兜底分支**，而兜底恰好返回相同字符串时
+一切看起来都对——这正是这类缺口能长期存活的原因。
+
+### 2. 状态集的权威来源：源码静态解析，不是生成报告
+
+`docs/audit/workflow_state_inventory_sc_demo.md` 是运行时快照，但它对
+`construction.contract.expense/income` 只能渲染成 `<callable>`（这两个模型经
+`_inherits` 委派到 `construction.contract`），对静态解析不到的模型无法给结论。用它当守卫权威，
+等于把「静默跳过」写进守卫本身。
+
+改用源码静态解析，解析不到就 FAIL：
+
+| 形态 | 解析方式 |
+|---|---|
+| `state = fields.Selection([...])` | 字面量表求值（含 `_()` 包裹） |
+| `ScStateMachine.selection(ScStateMachine.X)` | 解析 `state_machine.py` 的 `X_STATES`（5 个：`CONTRACT`/`PAYMENT_REQUEST`/`SETTLEMENT`/`SETTLEMENT_ORDER`/`PROJECT`） |
+| `_inherits = {"construction.contract": ...}` | 跟随委派基类 |
+| `_inherit = ["sc.business.fact.mixin", ...]` | 跟随 mixin |
+
+解析结果是**并集**：只可能多报（可见的 FAIL），不可能少报（静默 PASS）。
+
+对 63 个快照可枚举的模型做交叉校验：**静态解析结果与运行时快照 63/63 完全一致**，0 处差异 ——
+证明解析器没有少解析，也没有把 mixin 使用者的取值并进被复用模型。
+
+### 3. 实测缺口与修复
+
+| model | 缺口 | 定性 |
+|---|---|---|
+| `sc.general.contract` | `legacy_confirmed` 未在 `state_phase` | **投影缺口**，P1 行业标准层 |
+
+`sc.general.contract` 的 selection 是 `draft/confirmed/signed/legacy_confirmed/cancel`；
+`legacy_confirmed` 在模型里是真实状态（`general_contract.py:23-30`），又被
+`TERMINAL_PHASES`、`_approval_phase()`、`STATUSBAR_EXTRA_LABELS` 三处按相位名识别，
+但 profile 忘了声明它。同型模型（`sc.expense.claim`、`sc.payment.execution`、
+`sc.invoice.registration`、`sc.settlement.adjustment`）都声明了该相位。
+
+修复是 `state_phase` 补一行 `"legacy_confirmed": "legacy_confirmed"`。
+
+**诚实说明**：本例兜底返回值与映射值同为 `legacy_confirmed`，所以今天的
+`businessPhase` / `editability` / `approvalPhase` 用户可见结果**没有变化**。这是**潜在**缺口
+（下一个加入 selection 的取值就不会这么幸运），不是已发生的用户故障。按「缺口必须显现」登记并修复，
+不按「已经出事了」夸大。
+
+### 4. 反向口径：死条目必须有登记，不能静默存在
+
+同一个查找键方向还有反向问题：profile 声明了 `Selection` 永远产生不了的 key。
+扫描实测 **12 个模型**有这种情况，全部来自共享 helper 模板的防御性别名：
+
+| 来源模板 | 模型 | 死条目 |
+|---|---|---|
+| `_simple_approval_profiles` | `sc.equipment.plan/request`、`sc.labor.plan/request`、`sc.material.purchase.request`、`sc.material.rental.plan`、`sc.safety.disclosure/plan`、`sc.subcontract.plan/request` | `phase:submit`、`phase:rejected`、`actions:submit`、`actions:rejected` |
+| `_confirm_done_profiles` | `sc.fund.account.operation` | `phase:cancel`、`phase:in_progress`、`phase:legacy_confirmed`、`actions:cancel`、`actions:in_progress` |
+| `_confirm_done_profiles` | `sc.plan` | `phase:cancelled`、`phase:legacy_confirmed`、`actions:cancelled` |
+
+模板按 `payment.request` 的取值集写成（那里真有 `submit`），不是每个成员模型都有。
+运行期无害（查找键是记录的真实 raw state），但**profile 与模型在互相矛盾**。
+
+本段不改这 12 个 profile（那是对 12 个模型做配置编辑，不在授权范围），改为登记进
+`config/contract/workflow_state_phase_dead_entries.v1.json`，键集精确匹配、必须带 reason、
+登记表过期同样 FAIL。
+
+### 5. 守卫与 fail-closed
+
+`scripts/verify/workflow_state_phase_coverage_guard.py`：
+
+- 覆盖缺口 → FAIL（无可豁免通道：补映射或改模型，二选一）；
+- 未登记死条目 → FAIL；登记表 stale / 键集不符 / 缺 reason → FAIL；
+- 某模型 selection 解析不到 → FAIL 并单独报该模型（**不跳过**）；
+- profile 注册表读不全（复用 `workflow_contract_profile_loader`）→ FAIL；
+- 扫描数不等于 profile 数 → FAIL（防止守卫自身缩小作用域）。
+
+复用 `workflow_contract_profile_loader`，不再写第二套注册表读取。
+
+### 6. 负例实测（真实仓库，全部按预期 FAIL）
+
+| 人造偏差 | 期望 | 实测 |
+|---|---|---|
+| 移除 `sc.general.contract` 的 `legacy_confirmed` 映射 | FAIL | FAIL `raw state ['legacy_confirmed'] is absent from state_phase` |
+| 删掉 `sc.plan` 死条目登记 | FAIL | FAIL `sc.plan: ['actions:cancelled', 'phase:cancelled', 'phase:legacy_confirmed'] ... register it` |
+| 登记一个没有死条目的模型 | stale FAIL | FAIL `registered ... but none were found` |
+| 死条目去掉 reason | FAIL | FAIL `registered without a reason` |
+| 后端断言：移除映射后跑真实 Odoo 检验 | FAIL | FAIL `AssertionError: None != 'legacy_confirmed'` |
+
+### 7. 验收体系为什么之前没发现
+
+上一段的 8+10 个单测只验证「守卫与它自己的登记表自洽」。相位覆盖这一类**根本没有断言**，
+所以 `state_phase` 缺一条 key、以及 12 个模型的死条目可以长期存在而全套门禁全绿。
+与上一段同一病根：**工具没有声明自己的作用域**。本段把作用域断言直接钉进守卫
+（`scanned != len(profiles)` 即 FAIL），并把它挂进既有 v2 聚合。
+
+### 8. 七问
+
+- **Formal Product Layer**：被修的 `state_phase` 属 **P1 行业标准产品**
+  （`smart_construction_core` 的 workflow profile 与状态机，每个标准部署一致继承）；
+  守卫与登记表属 **P4 ops/verify 工具**。
+- **Layer Target**：`addons/smart_construction_core/models/support/workflow_contract_service.py`、
+  `scripts/verify/workflow_state_phase_coverage_guard.py`、
+  `scripts/verify/test_workflow_state_phase_coverage_guard.py`、
+  `config/contract/workflow_state_phase_dead_entries.v1.json`、
+  `addons/smart_construction_core/tests/test_workflow_contract_backend.py`、`make/ci.mk`、
+  `scripts/verify/unified_page_contract_v2_guard_inventory.py`。
+- **Module**：`smart_construction_core`（契约投影 + 后端断言）；`scripts/verify`（守卫/测试）。
+- **Standard vs User-Specific**：标准——`state_phase` 是行业标准的生命周期投影，
+  不是客户偏好，不进 `smart_construction_custom`，也不进低代码运行时。
+- **Why Here**：相位投影与状态机同在 `smart_construction_core`；覆盖口径与 loader 同址；
+  登记表与其它契约侧登记同址；仍挂在既有 `verify.unified_page_contract.v2*` 聚合下。
+- **Why Not Elsewhere**：不改前端去兜底相位猜测（那正是要禁止的「前端发明业务语义」）；
+  不把 12 个 profile 顺手改掉（配置编辑超出本轮授权，改为登记）；不新建治理文档或门禁平台。
+- **Blast Radius**：1 行 profile 声明 + 1 个静态守卫 + 1 张登记表 + 1 条后端断言；
+  不改业务模型、不改状态机、不改前端渲染、不改权限。
+  受影响面为 `verify.unified_page_contract.v2`、`.professional_backend` 及其新 target。
+
+### 9. 验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.workflow_state_phase_coverage` | PASS `models=65 covered=65 dead_registered=12`；16 tests OK |
+| `make verify.native_view.workflow_action_coverage` | PASS（相邻守卫未受影响，10 tests OK） |
+| 后端单方法（`TEST_TAGS=/smart_construction_core:TestWorkflowContractBackend.test_general_contract_legacy_confirmed_phase_is_declared`，DB `sc_dev_demo`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65` |
+| `make verify.unified_page_contract.v2.guard_inventory` | PASS |
+| `make verify.unified_page_contract.v2.professional_backend` | PASS |
+| `make verify.unified_page_contract.v2`（含前端构建） | **exit=0** |
+| `make refresh.generated_reports` + `make ci.generated_reports.guard` | PASS（test inventory 1418 entries） |
+| `make architecture.complexity_baseline_lock` | PASS `checked=11` |
+| `python3 scripts/verify/guard_registry_audit.py` | AUDIT PASS `1350 scripts (1226 referenced, 124/124 orphans acknowledged, 1 retired)` |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会用注册库
+覆盖历史 `sc_demo` 基线，属既有环境限制（见 `FE-CONTRACT-NATIVEBTN-01` 说明），与本段改动无关。
+本段以「守卫 + 单测 + 一条真实 Odoo 断言」覆盖同一口径，不重复整条门禁。
+
+### 10. 剩余（显式登记，不在本段）
+
+- 12 个模型的死条目仍留在 profile 里（已登记，未删）。删除是对 12 个业务模型做配置编辑，
+  应与相位语义复核一起做，不在本轮授权范围。
+- `state_transition_undeclared` 五条（`payment.request.action_set_approved`、
+  `sc.general.contract.action_signed`、`sc.payment.execution.action_reverse_payment`、
+  `sc.plan.action_start`、`sc.project.document.action_reset_to_draft`）仍为**权威侧待决**，
+  不因本段消项。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+---
+
+## FE-CONTRACT-DEADPHASE-01：共享审批模板的不可达相位收口
+
+起点 HEAD `119e1ea50`（干净）。本段只删除**没有成员能取到的相位/动作**，并让对应原生按钮在模型真正接受的状态出现。
+不新增业务动作、不改状态机语义、不重写模板体系。
+
+### 1. 七问
+
+- **Formal Product Layer**：P1 建筑行业标准产品（`sc.*` 计划/申请族的共享审批语义）。
+- **Layer Target**：`smart_construction_core`，`models/support/workflow_contract_service.py`
+  的 `_simple_approval_profiles()` 模板 + 五个原生 form 的 `action_reset_draft` 可见性。
+- **Module**：`smart_construction_core`。
+- **Standard vs User-Specific**：行业标准。10 个成员的 `state` Selection 都是
+  `draft/submitted/approved/cancel`，这是产品标准，不是客户偏好；因此修正落在标准模块而不是
+  `smart_construction_custom` 或低代码运行时。
+- **Why Here**：模板与原生视图同属该族标准定义处，删除残留与修正按钮可见性都在此层闭环。
+- **Why Not Elsewhere**：不放前端（前端只消费契约，不能替契约删状态）、不放低代码配置
+  （不是运行期偏好）、不放 ops 脚本（不是一次性修复）。
+- **Blast Radius**：10 个模型的 `describe_record` 相位表与 form 头部按钮；由
+  `verify.workflow_state_phase_coverage`（65/65）与新增后端用例共同证明收敛。
+
+### 2. 真实缺陷
+
+`_simple_approval_profiles` 是 10 个计划/申请模型共用的模板，长期带着一组**成员取不到的键**：
+
+- `state_phase` 里的 `submit` / `rejected`：10 个成员无一含这两个 Selection 值，也无一继承
+  `tier.validation`（`validation_status` 不可能为 `rejected`）；`_approval_phase()` 的 `under_review`
+  分支要求 `raw_state in ("submit","approve")`，`submitted` 不命中。**纯复制残留，删除零行为变化。**
+- `state_actions` 把 `reopen` 挂在 `submitted` / `submit` 上：`action_reset_draft` 在 8/10 成员上
+  仅接受 `cancel`，于是页面渲染出**只可能抛 UserError 的按钮**，而模型真正接受的 `cancel`
+  反而没有任何回退入口。
+
+同一缺陷在原生侧重复出现：8 个 form 的 `退回草稿` 按钮写成
+`invisible="state != 'submitted'"`，与模型接受的状态正好相反。
+
+本段同时把 `config/contract/workflow_state_phase_dead_entries.v1.json` 的登记条目从 **12 条降到 2 条**
+（仅剩 `sc.fund.account.operation`、`sc.plan`）——登记集重新变得有信息量。
+
+### 3. 负例（先证明测试真的会失败）
+
+| 负例 | 结果 |
+|---|---|
+| A：把旧模板（含 `submit`/`rejected`）还原回去 | **FAIL 如预期**：`['approved','cancel','draft','rejected','submit','submitted'] != [...]` |
+| B：对 `HEAD` 的旧 XML 施加新的 arch 断言 | 5 个 form **FAIL 如预期**（`state != 'submitted'`） |
+
+新增用例 `test_the_shared_approval_family_declares_only_reachable_states` 从 helper 自身读模板，
+按 `state_actions`/`state_phase` 全等**自动派生** 10 个成员名单——编辑手工映射无法收窄检查范围。
+它同时断言：模板相位键恰为四值、每个成员 `reopen` 只在 `cancel`、`method_by_action["reopen"]`
+指向 `action_reset_draft`、`fields_get(['state'])` 的 Selection 键一致，以及**从 `ir.ui.view` 读回**
+的每个 form 里 `action_reset_draft` 按钮的 `invisible` ⊆ `{"state != 'cancel'"}`（无按钮的 form 跳过：
+契约可以领先原生头，但不得提供模型拒绝的控件）。
+
+### 4. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.workflow_state_phase_coverage` | PASS `models=65 covered=65 dead_registered=2`；16 tests OK |
+| 后端单方法（新用例，DB `sc_dev_demo`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| 后端单方法（`test_general_contract_legacy_confirmed_phase_is_declared`） | PASS `0 failed, 0 error(s) of 1 tests` |
+| `TestWorkflowContractBackend` 全类 | 30 tests，7 errors — **与 `HEAD` 基线完全一致**（stash 对拍：HEAD 亦 7 errors / 29 tests），属既有环境缺陷，非本批引入 |
+| `python3 scripts/verify/workflow_inventory_profile_method_guard.py` | PASS `profile_methods=29 inventory_methods=41` |
+| `python3 scripts/verify/workflow_contract_custom_coverage_guard.py` | PASS |
+| `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | PASS `profiles=65` |
+| `make verify.native_view.workflow_action_coverage` | PASS `registered=31` |
+| `addons/smart_core/tests/test_workflow_contract_profile_registry.py` | PASS 9 tests |
+| `make refresh.generated_reports` + `make ci.generated_reports.guard` | PASS（全部 current） |
+| `make verify.unified_page_contract.v2.professional_backend` | PASS（含 `verify.workflow_state_phase_coverage`） |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+| `CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core MODULE=smart_construction_core make mod.upgrade` | 成功（78 modules，registry 重新加载 view 后 arch 断言拿到真实结果） |
+
+未运行 `verify.workflow_contract.backend` 整条：其 `audit.workflow_state.inventory` 前置会用注册库
+覆盖历史 `sc_demo` 基线（既有环境限制，见 `FE-CONTRACT-NATIVEBTN-01`），与本段无关。本段以
+「守卫 + 单测 + 一条真实 Odoo arch 断言」覆盖同一口径。
+
+### 5. 剩余（显式登记，不在本段）
+
+- `sc.safety.disclosure` / `sc.safety.plan` 的原生 form header **完全没有** workflow 按钮（契约有、arch 无）：
+  按「契约可以领先 arch，但不得提供模型拒绝的控件」本段不扩大处理。
+- `sc.fund.account.operation`、`sc.plan` 两条死条目仍登记在册（权威侧待复核）。
+- `state_transition_undeclared` 五条仍为权威侧待决，不因本段消项。
+- `style_system.guard` 文件长度四项欠账独立保留；本段 `workflow_contract_service.py` 由 1488 → 1490 行，
+  仍在既有 warning 档，未跨过 split-plan 阈值。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+---
+
+## FE-CONTRACT-WORKFLOW-AUTHORITY-01：工作流可用性收敛为单一权威
+
+起点 HEAD `6cabe3067`（干净）。本段只删除**没有消费方**的重复门禁与死接线，并给被删的 fail-open 默认留下回归钉子。
+不改业务动作、不改状态机、不改原生视图。
+
+### 1. 七问
+
+- **Formal Product Layer**：P0 平台内核产品（统一页面契约 v2 的通用消费行为）。
+- **Layer Target**：`frontend/apps/web` 的 `app/contracts/v2/workflowActionAvailability.ts`（权威）与
+  `pages/contractForm/workflowContract.ts`（页面适配）、`pages/ContractFormPage.vue`（组装）。
+- **Module**：前端 Web 渲染层，不涉及 Odoo 模块。
+- **Standard vs User-Specific**：平台机制。动作可用性判定不是客户偏好，也不是低代码可配置项。
+- **Why Here**：契约已经声明动作与按钮状态，前端只需要**一处**把它换算成"能不能点"；重复的第二处必然漂移。
+- **Why Not Elsewhere**：不放后端（后端已给出 `enabled`/`disabled`/`entitlementEvaluated` 事实），
+  不放低代码（不是呈现偏好），不放原生视图（按钮可见性由 arch modifier 表达）。
+- **Blast Radius**：仅合同表单的动作可用性判定路径；由 present 单测（177 例）＋严格类型检查＋一次前端构建证明收敛。
+
+### 2. 真实缺陷：两处门禁，其中一处还默认放行
+
+合同表单的动作可用性实际由 `contractFormPresenter.ts` 单点判定：读 `resolveWorkflowActionAvailability`，
+`error` 与 `managed && !enabled` 都产出 `enabled: false`（fail-closed，已有活体断言）。
+
+同时，页面侧长期带着第二个实现：
+
+| 死符号 | 位置 | 问题 |
+|---|---|---|
+| `applyWorkflowAvailability` | `pages/contractForm/workflowContract.ts` | presenter 同一判定的第二份拷贝；页面把它当依赖传入，消费方从未解构使用 |
+| `shouldShowWorkflowAction` | 同上 | 已知转移 + `availableActions` 存在但**不是数组**时直接 `return true` —— 读不懂的载体照样渲染出工作流控件 |
+| `isWorkflowTransitionMethod` / `workflowActionMethodAliases` / `workflowActionRowForMethod` | 页面导入 | 仅再导出，页面未使用 |
+| `normalizeWorkflowActionRows` / `normalizeWorkflowPhaseStatusbar` / `normalizeNativeFormStatusbar` / `resolveStatusbarSelectionValue` | 页面导入 | 前两者**只被测试引用**（测试保留，页面接线删除）；后两者由 `useRecordFormLayout` 直接导入，页面导入是纯冗余 |
+
+也就是说：**"未知判为允许"的默认值真实存在于代码里，只是恰好没有消费者。** 一旦有人按名字去调用它，
+按钮就会出现；而这条路径从来不在验收视野内，因为页面上看不到差异。
+
+### 3. 负例（先证明回归抓得住）
+
+`/tmp/deleted_helper_negative.ts`（一次性，未入库）逐字复制被删助手，对同一输入做对拍：
+
+| 输入 | 被删助手 | 现权威 |
+|---|---|---|
+| `{ availableActions: 'unreadable' }` + `action_submit` | `true`（渲染按钮，**fail-open**） | `kind: 'error'`（不可用，fail-closed） |
+| `{ availableActions: 'unreadable' }` + 未登记方法 | `true` | `kind: 'unmanaged'`（不扩大权威范围） |
+
+`[deleted_helper_negative] PASS: the removed helper failed open, the authority reports an error`
+
+新入库回归：`canonical_form_presenter_test.ts` 用 `resolveWorkflowActionAvailability` 直接断言上述两种输入，
+并保留原有 7 条语义（非布尔 `enabled`、畸形 `target`、合法禁用行、孤立畸形行不误伤、非工作流动作不越界、
+同标签不同身份合法、已声明转移无行时 fail-closed）。
+
+### 4. 修正既有记录的一处口径
+
+`form_structure_consumption_stabilization_20260917.md:4284/4425/4877` 把 `shouldShowWorkflowAction=true`
+记为 `reactivate` 降级的"后果/批次 C 探针实测值"。**该助手的真实消费方为零**，实测的是函数返回值，
+不是渲染出来的页面；当时真正的拦截来自交付状态契约的 `enabled` + 原生 modifier + 后端拒绝。
+结论方向（fail-closed 成立）不变，但"页面会渲染出该按钮"的表述应视为**函数级代理指标**。
+本段删除该助手后，该口径不再有歧义。
+
+### 5. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `make verify.frontend.canonical_form_presenter.unit` | PASS `cases=177`（含新增 fail-closed 回归） |
+| 负例对拍（一次性脚本） | PASS：被删助手 = fail-open，现权威 = error |
+| `make verify.frontend.adopted_form_validation_identity.unit` | PASS `cases=46 failed=0 host=real-vue-instance` |
+| `make verify.frontend.contract_form_save_failure_recovery.unit` | PASS（edit-retry / single-flight / create-retry / permission-denial） |
+| `make verify.frontend.contract_error_business_ownership.unit` | PASS `92 cases` |
+| `make verify.frontend.standard_form_composition.unit` | PASS `93 cases` |
+| `make verify.frontend.contract_field_occurrence_identity.unit` | PASS |
+| `make verify.frontend.lint.src` | PASS `0 errors`（57 warning 为既有 vue 属性换行风格项） |
+| `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` 两套配置） |
+| `make verify.frontend.no_new_any_guard` | PASS `files_checked=703 total_any=25` |
+| `make verify.frontend.build` | PASS（`ContractFormPage-*.js` 948.98 kB） |
+| `python3 -m unittest scripts.verify.test_product_view_capability_ledger` | PASS 22 tests（该测试文件同时是能力台账交互证据源，已确认守卫引用的符号未被触及） |
+| `make ci.local.iteration` | PASS `change_state=dirty coverage=L1_only` |
+
+### 6. 剩余（显式登记，不在本段）
+
+- `normalizeWorkflowActionRows`、`normalizeWorkflowPhaseStatusbar` 目前**只被测试引用**。二者语义 fail-closed，
+  暂不删除；若后续仍无消费方，与对应测试一并清理。
+- 合同表单仍有 `standardFormComposition.ts`（官方组合）与 `legacy-form-section` 两条渲染器：
+  后者是**契约未声明为 record-form 时的 fail-closed 兜底**，不是遗漏。真正要补的是
+  "哪些在册入口的契约没有声明 `pageInfo`"，属契约投影侧，不在本段。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 状态
+
+本段**批次验收完成**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## FE-CONTRACT-PAGE-INFO-01（已更正）：装配器的视图类型边界与平台既有约定对齐
+
+> **更正声明（2026-09-29，本段自查后重写）**：本段初次提交把该问题写成"现网产品缺陷，
+> 导致前端退回旧渲染器、并静默丢弃看板行动作"。**该结论不成立，现予撤回。**
+> 决定性证据：拼接串确实由 `page_assembler` 产生，但在到达任何消费者之前，
+> 已被平台既有规范化函数处理（见 §2）。因此**没有任何现网页面因此被误分类**，
+> 本段代码是**边界防御性收口 + 补齐缺失的枚举守卫**，不是缺陷修复。
+> 下面的分类、证据与剩余项均按此更正；机制描述与判定链条保持可复核。
+
+起点 HEAD `56150df42`（干净）。本段只改 `_assemble_ui_contract` 的视图类型解析，
+让装配器在**收到视图列表**时按平台既有约定解析出唯一活动视图，再进入闭合枚举。
+
+### 1. 七问
+
+- **Formal Product Layer**：P0 平台内核产品（`ui.contract.v2` 装配属平台机制）。
+- **Layer Target**：`smart_core`，`addons/smart_core/core/unified_page_contract_v2_assembler.py`
+  的 `_assemble_ui_contract()` 视图类型解析。
+- **Module**：`smart_core`。
+- **Standard vs User-Specific**：平台标准。视图列表 → 单一页面身份的映射与行业/客户无关。
+- **Why Here**：`pageInfo` 是 page 级契约，schema 已把 `viewType`/`layoutType` 定为闭合枚举，
+  归一化职责应落在写出该字段的边界函数上。
+- **Why Not Elsewhere**：不改 `page_assembler`（发布 `head.view_type` 列表是它作为 action 级
+  source 的既有语义，且已被下游规范化消费）；不放松 schema（枚举是权威）；不改前端
+  （`standardPageType.ts` 对未枚举/冲突输入判 `specialized` 是**正确的 fail-closed**）。
+- **Blast Radius**：仅 `ui.contract` 装配的 `pageInfo.viewType/layoutType` 与其派生的 `pageId`、
+  看板行动作注册表查找键。输入为单值 token 时行为不变（由既有 105 例 + 新增 1 例共同证明）。
+
+### 2. 机制判定链（本段更正的核心）
+
+拼接串的产生与消除：
+
+1. `app_config_engine/services/assemblers/page_assembler.py:621` 发布
+   `head["view_type"] = ",".join(view_types)`。**这是真实存在的列表形态。**
+2. `core/native_view_contract_projection.py:44-45` 的 `resolve_primary_view_type` 取
+   **首项**：`head_view_type.split(",")[0].strip()`。注释也明确"请求的视图列表 → 活动视图"。
+3. `handlers/ui_contract.py:_finalize_projected_contract` → `inject_primary_view_projection`
+   （`native_view_contract_projection.py:94-97`）把 `data["view_type"]` 与
+   **`head["view_type"]` 双双重写为该单一 token**。
+4. `handlers/ui_contract_v2.py:602` 解析 `view_type`：
+   `params.view_type or ui_data.view_type or ui_meta.view_type or "form"`；
+   第 744-745 行把它写回 `source_contract["view_type"]`，即装配器读到的那个键。
+
+**活体实测（只读，`127.0.0.1:8070`）**：`op=action_open`（**不传 `view_type`**）：
+
+| 入口 | 声明 `view_mode` | legacy `ui.contract` 的 `head.view_type` | legacy 顶层 `view_type` |
+|---|---|---|---|
+| `product.packaging`（action 185） | `tree,form` | `tree` | `tree` |
+| `tier.review`（action 579） | `tree,form` | `tree` | `tree` |
+
+即：**第 3 步已经把列表收敛成单值**，装配器收到的不是拼接串。本段因此不是现网缺陷修复。
+
+### 3. 本段代码与它现在承担的作用
+
+装配器是对外可调用的公共入口（`assemble_unified_page_contract_v2(source, ...)`），
+其 `source.view_type` 是调用方给出的契约字段。原本该入口对"列表形态输入"不做归一化，
+一旦有调用方按 `page_assembler` 的既有形态传入 `"tree,form"`，就会写出 schema 枚举之外
+的 token，并被前端判为 `specialized → legacy-form-section`。
+本段按平台**已有**约定（首项）在此边界补齐归一化，使两条约定一致，而不是新增第三套规则：
+
+```python
+raw_view_type = _text(source.get("view_type") or ui.get("view_type"), "form").split(",")[0].strip()
+view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
+```
+
+- `list → tree` 归一只影响 `pageId` 与内部视图查找键（`_view_field_names` 本就对两者互相回退），
+  输出仍由第 823 行既有改写给出 `viewType="list"`，**不改变单值输入的任何对外结果**。
+- **不动**"缺失 → `form`"的现状（属另一类缺口，登记在 §6）。
+
+修复后实测（单元级，输入 → 输出）：
+
+| 输入 `view_type` | `viewType` | `layoutType` | `pageId` |
+|---|---|---|---|
+| 缺失 | `form` | `form` | `x.document.form` |
+| `tree,form` | `list` | `table` | `x.document.tree` |
+| `form,tree` | `form` | `form` | `x.document.form` |
+| `kanban,tree,form` | `kanban` | `kanban` | `x.document.kanban` |
+| `tree` / `list` | `list` | `table` | `x.document.tree` |
+
+`pageId` 在 `list`/`tree` 两种拼法下统一为 `x.document.tree`（同一页面责任一个身份）；
+这是本段唯一的对外身份变化，活体可达入口的 `pageInfo` 值未变（§5.1）。
+
+### 4. 回撤此前两处不成立的表述
+
+- 撤回"**前端因此退回 `legacy-form-section`**"：前端只在拿到未枚举/互相冲突的 token 时
+  才这么做，而第 3 步已保证它拿到的是单值 token。
+- 撤回"**`project.project` 看板行动作被静默丢弃**"：`_append_registered_kanban_row_action`
+  收到的是装配器内的 `view_type`，其来源即 §2 第 3-4 步的单一 token；
+  修复前实取值为 `kanban`，注册键 `("project.project","kanban")` 命中。
+  （一次性探针中我直接调用装配器并传入 `"kanban,tree,form"`，那是**合成输入**，
+  被我误当作现网路径，属本次自查发现的方法错误。）
+
+### 5. 验证
+
+| 命令 | 结果 |
+|---|---|
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | PASS 106 tests（新增"枚举守卫"+"与 `resolve_primary_view_type` 约定一致性"两例） |
+| `make verify.unified_page_contract.v2.schema` | PASS `examples=4` + 3 tests |
+| `make verify.unified_page_contract.v2.assembler` | PASS `sources=4`（映射快照未漂移） |
+| `make verify.unified_page_contract.v2.runtime` | PASS `score=6`（含 106 例） |
+| `make verify.unified_page_contract.v2.action / .data / .status / .client` | PASS `actions=7` / `dataSources=2` / `widgets=4 buttons=2` / `clients=3` |
+| `make verify.unified_page_contract.v2.intent` | PASS（`ui.contract.v2` 仍是唯一终态入口） |
+| `make verify.unified_page_contract.v2.web_consumer` | PASS（5 tests + 双守卫） |
+| `make verify.unified_page_contract.v2.guard_inventory` | PASS |
+| `make verify.frontend.canonical_form_presenter.unit` | PASS `cases=177` |
+| `make verify.frontend.product_page_pattern.unit` | PASS `patterns=4` |
+| `make verify.frontend.page_pattern_reference_parity.unit` | PASS `surfaces=16` |
+| `make verify.frontend.typecheck.strict` | PASS（两套 `vue-tsc --noEmit`） |
+| `make ci.local.iteration` | PASS `change_state=clean coverage=L1_only` |
+| `make verify.unified_page_contract.v2.regression_audit.host` | **not_run（环境）**：需 `127.0.0.1` + `DB=sc_demo` 活体实例，当前返回 HTTP 500，未进入装配逻辑 |
+
+### 5.1 活体可达入口的页面类型（只读核对）
+
+`sc-local-dev-odoo-1` 的 `addons_path` 含 `/mnt/source-addons`，即本仓库 `addons/` 的 bind mount。
+
+| 入口 | `view_mode` | `pageInfo.viewType` | `pageInfo.layoutType` |
+|---|---|---|---|
+| `product.packaging`（185） | `tree,form` | `list` | `table` |
+| `tier.review`（579） | `tree,form` | `list` | `table` |
+
+**环境限制（如实登记，非产品缺口）**：`admin` 账号对 `sc.general.contract`（687）、
+`payment.request`（688）无读权限，`ui.contract.v2` 返回 500
+（日志：`You are not allowed to access … records`）。业务角色登录在本库也不可用：
+`res_users.password` 用 pbkdf2-sha512 校验 `sc_test_admin` + `SC_DEMO_USER_PASSWORD` = **False**，
+而同一方法校验 `admin` + `ADMIN_PASSWD` = **True**（方法有效）。
+恢复该口令属 P4 数据动作，需单独授权；中文业务入口的逐条运行时取证待其恢复后进行。
+
+### 6. 剩余（显式登记，不在本段）
+
+- **缺失 `view_type` 仍默认 `form`**：缺口应显现而非猜测。让缺失走既有诊断/显式类型属另一类缺口，
+  本段不扩张。
+- `page_assembler` 发布 action 级视图列表、`resolve_primary_view_type` 负责收敛，是**既有正确分工**；
+  本段只让装配器边界与后者一致。
+- 前端 `standardPageType.ts` 的 `specialized` 兜底与 "冲突即 specialized" 规则**保留**：
+  它是契约未声明可渲染页面类型时的 fail-closed 答案。
+- 本地 `sc_dev_demo` 的 demo 业务角色口令与 `SC_DEMO_USER_PASSWORD` 不一致（见 5.1）。
+- `style_system.guard` 文件长度四项欠账独立保留，本段未触及。
+
+### 7. 验收机制补强（本次偏差的直接成因）
+
+本次偏差不是"看漏了一个页面"，而是**方法错误**：我用手写 dict 调用装配器，
+把合成输入的结果当成现网路径的证据，因此把"边界健壮性"写成了"现网缺陷"。
+对应的验收缺口是：**没有任何回归钉住"消费前已收敛为单值 token"这一不变式**，
+所以这类错判只能靠事后人工复核发现。
+
+补强（本段新增，已入库）：
+
+| 回归 | 钉住的不变式 | 负例验证 |
+|---|---|---|
+| `test_legacy_finalizer_publishes_one_active_view_for_the_consumer` | `inject_primary_view_projection` 必须把 `head.view_type` 与顶层 `view_type` 双双重写为单一 token；消费方（含 `_assemble_ui_contract`）**永远看不到列表** | 临时移除该双重重写 → 本回归 `FAILED (failures=3)`（`'form,tree' != 'form'`）；恢复后 `Ran 107 tests ... OK` |
+| `test_assembler_active_view_resolution_agrees_with_the_native_view_finalizer` | 装配器边界归一化必须与平台既有 `resolve_primary_view_type` 同一约定（取首项） | 约定漂移即失败（对 `tree,form` / `form,tree` / `kanban,tree,form` / `tree,form,pivot,graph` / `tree` / `list` / `form` / 缺失 逐一断言） |
+| `test_joined_view_type_cannot_publish_a_token_the_schema_does_not_enumerate` | 装配器输出必须落在 schema 枚举内，且 `layoutContract.layoutType == pageInfo.layoutType` | 见 §4 |
+
+效果：如果将来有人移掉规范化，或让两条约定分叉，**本地定向回归先失败**，
+不会再以"某个页面变成 specialized"这种远端表现才被发现。
+
+### 状态
+
+本段**批次验收完成（含自查更正）**。未推送、未合并、未部署目标环境；业务矩阵状态不变。
+
+## FE-TPL-07 续：只读记录页的官方详情事实不可达（2026-09-30，已修复）
+
+分支 `feature/web-official-template-adoption`；修复前候选 HEAD `35d1f4d13`；修复后候选 `25b31e714`。
+本段是 `## FE-TPL-07`（2026-09-29）同一职责范围的续段，不新建专题、不改业务矩阵。
+
+### 1. 七问
+
+- Formal Product Layer：P0 平台通用前端表达（页面类型 → 组合采纳的消费边界）。
+- Layer Target：`app/presentation/standardDetailComposition.ts`、`components/template/FormSection.vue`；
+  只读探针 `frontend/apps/web/scripts/standard_page_type_browser.mjs`。
+- Standard vs User-Specific：跨模型通用机制，不含行业字段语义、客户偏好或管理员配置。
+- Why Here：「页面级采纳」与「section 是否有资格作为事实呈现」是两个判断，此前被折成一个恒假的合取。
+- Why Not Elsewhere：不涉及后端字段、事务或权限；也不需要每个页面各自决定，边界属于呈现组合层。
+- Blast Radius：所有 `preferReadonlyFacts` 的只读记录页（合同、付款、项目等）；可编辑表单页不受影响。
+
+### 2. 真实缺陷（先有运行证据，再改代码）
+
+修复前候选 `35d1f4d13` 在 5180 生产模式实测 `/r/payment.request/1813`（受管角色 `fixture_role_finance`）：
+
+| 观察 | 值 |
+|---|---|
+| `data-detail-composition` / `-reason` | `official-standard-detail` / `contract-readonly-record-view`（页面级采纳为**真**） |
+| `[data-detail-facts="official-standard-detail"]` | **0** |
+| `[data-semantic-component="ScDescriptions"]` | **0**；旧网格 `.template-form-section-grid` **10** 行 |
+| 10 个 section 的 `data-detail-section-reason` | 全部 `outside-standard-detail` |
+
+缺陷表达式（`FormSection.vue`）：`standardDetailComposition.adopted && standardFormComposition.adopted`。
+两者在 `20781fe2d` 之后同源于 `standardPageType.ts` 对同一页面的**单一**分类——`record-form`
+或 `record-detail`，互斥——因此该合取恒假，**官方只读详情在任何页面都不可能被渲染**。
+
+引入与可见窗口（已用 git 核实，不依赖推断）：
+
+- `308a85a60` 引入该合取：当时 form 采纳来自**模型试点表**、detail 采纳来自「试点模型 + readonly profile」，
+  两者可同时为真，`sc.general.contract` 只读页的 facts 可见（与本文件 TPL-03 记录的 record 11 `facts=7` 一致）。
+- `7f7392584` 把该合取搬进 `resolveStandardDetailSection`，同时加入 section 字段资格
+  （含专用控件的 section 不得降级为纯文本）。
+- `20781fe2d` 让两个采纳项都由**同一** `StandardPageTypeDecision` 推导 → 合取变为恒假。
+  **本文件此前记录的只读详情事实结论（`fc0afcb32` 及更早候选、含 `tpl07-1790669324381` 的
+  「付款非零 facts」）都不属于包含 `20781fe2d` 的候选，不能沿用。**
+
+### 3. 修复
+
+新增 `resolveStandardDetailFactLayout(decision, section)`：页面级采纳**只取** detail 决策，section 资格
+（设计模式、非只读、空 section、关系/附件集合、专用控件、未知类型）保持独立。`ScForm :bare` 仍跟随
+form 组合，因此只读页用官方事实呈现，但**不**借用可编辑表单的容器与规则；可编辑记录表单因页面级
+detail 采纳为假而继续走控件。`standardFormComposition.ts` 的注释同步更正（不再声称非采纳 section
+没有 facts 布局）。未改任何业务规则：字段、取值与读权限仍来自有效契约与后端。
+
+### 4. 负例（先证明回归真的抓得住）
+
+临时把合取写回 `FormSection.vue` → `verify.frontend.standard_collection_composition.unit`
+**FAIL**（源码守卫 `actual: true, expected: false`）；恢复后 **PASS cases=113**（原 102）。
+新增行为断言以 `StandardPageTypeDecision` 为输入、以 section 渲染结论为输出：
+契约声明的 readonly record 采纳 facts；可编辑记录表单 / 集合页 / 无 page 决策 / 编辑 section /
+设计器 / 关系集合分别落在 `outside-standard-detail` / `editable-section` / `configuration-editor` /
+`relation-collection-extension`。此前只有「采纳策略纯函数」和「源码里有某个守卫」两类断言，
+**页面级采纳能否在 section 看见**从无覆盖——这是本缺陷得以存活的直接原因。
+
+### 5. 探测适配（不降低断言）
+
+`form()` 的就绪条件原先恒为 `[data-form-composition="official-standard-form"][data-state="ok"]`；
+在只读页这要求一个契约不可能同时声明的模式，只读步骤只能**超时**，于是失败表现为「超时」而不是
+「事实缺失」。改为按契约声明的模式等待，并把只读断言**加强**为：只读模式已发布、
+可编辑表单组合**未**挂载、官方事实非零、关系/附件集合留在 facts 布局之外。不恢复旧 DOM 迎合探针。
+
+另补一条：**「引擎未挂载」不等于「记录没有被呈现为可编辑」**——只读记录仍可能被可编辑 section 框住而无需挂载官方引擎。
+因此只读步骤改为直接断言 section 自身状态（`[data-detail-section-reason][data-state="editable"]` 计数为 0），
+不再用组合身份代理记录的可编辑性。
+
+### 6. 验证（同一候选 `25b31e714`，一次构建）
+
+- L1：`make ci.local.iteration` PASS（dirty 阶段，`coverage=L1_only`）；`git diff --check` 干净。
+- L2：`standard_collection_composition` 113、`standard_form_composition` 97、
+  `adopted_form_engine_decision` 74（真实 TDesign 引擎）、`adopted_form_validation_identity` 46/46、
+  `product_page_pattern` 4 patterns、`page_pattern_reference_parity` 16 surfaces、
+  `canonical_form_presenter` 177 + 10、`collection_action_toolbar`、`primitive_adapter` 46、
+  `navigation_shell`、`standard_preview` 6、`verify.frontend.typecheck.strict`（vue-tsc ×2）全部 PASS。
+- L4：`make frontend.standard.preview.build` + `.up`；`verify.frontend.standard_page_type.browser`
+  三个 scope 全 PASS（`default` 32/32、`TPL07_SCOPE=detail` 19/19、`TPL07_SCOPE=additional` 3/3），
+  `forbiddenWrites=[]`、`pageErrors=[]`：
+  - `/r/payment.request/1813`：facts=2；section = 2×`standard-readonly-facts` + 2×`relation-collection-extension`
+    + 6×`dedicated-control-extension`；事实值回读 `FE-A Counterparty` / `FE Acceptance Bank A` / `FE-ACCEPTANCE-A-001`。
+  - `/r/sc.general.contract/11`：6×`standard-readonly-facts` + 1×`dedicated-control-extension`。
+  - 可编辑 `/f/payment.request/1813` **未受影响**：facts=0、8×`outside-standard-detail`、6 editable + 2 readonly
+    section、`official-standard-form`。
+  - 真实第二页（offset 10 → ids `[1803,1795,1794,1787,1710,33]`）与返回同集、组合原因、窄屏 containment 均通过。
+- 只读能力边界定向核对（`/r/payment.request/1813`、`/r/sc.general.contract/11`）：10 / 7 个 section 全部
+  `data-state="readonly"`；页面内唯一的可输入控件是外壳菜单搜索与集合/关系搜索（`inFacts=false`）；
+  无记录字段可编辑、无保存/提交草稿动作。页面上出现的 `提交审批` 是契约声明的**业务动作**（action bar，
+  草稿态可用），`删除` 只属于 chatter 消息（`native-chatter-message-delete`）与附件
+  （`native-attachment-delete`），不是记录或明细行的写入能力——业务只读与业务动作属不同层，不得混为一谈。
+- 「6 facts + 1 dedicated-control」**不是静默降级**：含专用控件的 section 按 `resolveStandardDetailSection`
+  的既有资格判定保留专用控件，而不是被压成纯文本；这是 `7f7392584` 起有意为之的 fail-closed 规则，
+  先前「7 个 section 全部进入 descriptions」的观察早于该资格判定。
+
+提交（本地，未推送）：`841b2e9f8 fix(web): render a readonly record's facts through the detail composition`、
+`25b31e714 test(web): wait for the mode the contract declared, not an assumed one`、
+`108fa3f60 test(web): assert the readonly record has no editable section, not just no engine`。
+产物 `sce-offrepo/artifacts/config05-20260929`（`build-identity.json`：`base_sha=25b31e714…`、`dirty_scope=""`、
+`entry=/assets/index-CNrigT9d.js`、`entry_sha256=4d80190b…`）；旧候选按既有约定改名保留为
+`config05-20260929-prev-35d1f4d13`（不是覆盖）。5180 监听 `pid=802966`，`STATIC_ROOT` 指向该 dist，
+端口 5180、proxy `http://127.0.0.1:18082` 与后端 `sc-backend-odoo-acceptance` 一致。
+
+### 7. 两处口径更正（回撤此前不成立的表述）
+
+- `legacy-detail-surface`（见 `### FE-TPL-03 列表/只读详情证据再绑定到当前整合候选`）与
+  `legacy-list-surface`（见 `### FE-TPL-05A`）：这两个 token 名为「未采纳」的回退渲染器，但本项目
+  只发布**一个**列表面和**一个**只读记录面，不存在第二渲染器。把它们写成渲染器身份是把「未采纳」
+  误报成实现事实。列表侧在 `20781fe2d` 收敛为单值，详情侧在 `eb479cedb` 收敛为单值；
+  相应表述更正为：**回退的答案是「未采纳」，不是另一个渲染器。**
+- 只读详情事实结论的有效窗口：`fc0afcb32` 及更早候选成立，`20781fe2d` 之后失效，
+  本候选 `25b31e714` 重新取得（不是回填历史报告）。
+
+### 8. 验收体系为什么之前没发现
+
+1. **页面级采纳与 section 渲染之间没有回归**。既有断言只覆盖「采纳规则纯函数」和「源码守卫」，
+   缺少「页面级采纳在 section 可见」的链路断言；补强见 §4，断言以「决策 → 渲染结论」为口。
+2. **探测把假设写进了就绪条件**。`form()` 恒等可编辑组合，使只读步骤在任何业务断言之前超时，
+   失败形态从「事实缺失」变成「定位超时」，掩盖了缺陷本相。
+3. **上游输入变化后没有重跑受影响的旅程**。`20781fe2d` 改的是「页面类型推导」这一上游输入，
+   但只读详情旅程未随该提交重跑，失效的通过结论被继续引用（连同 r2 的 facts 证据）。
+   由此固定一条规则：**页面类型/组合采纳这类上游输入变化，必须重跑受影响的只读与可编辑旅程，
+   不得沿用旧证据。** 本段即按该规则重跑，并保留旧报告不重标通过。
+
+### 9. 剩余（显式登记，不在本段）
+
+- `sc.safety.disclosure` / `sc.safety.plan` 原生 form header 无 workflow 按钮（契约有、arch 无）。
+- 缺失 `view_type` 仍默认 `form`（显式化属另一类缺口）。
+- 五条 `state_transition_undeclared`（权威侧待决，见 `### FE-CONTRACT-NATIVEBTN-01`）。
+- `style_system.guard` 四项文件长度欠账（本段未触及）。
+- 只读页仍发布 `data-form-composition="legacy-form-section"`：该页的 form 组合确实未采纳
+  （section 以 bare 呈现、无引擎规则），与 `data-detail-composition` 采纳并存是设计结果，不是矛盾。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## FE-TPL-07 三续：验收门禁抓到后端未定义名缺陷，并修正只读事实计数口径（2026-09-30）
+
+分支 `feature/web-official-template-adoption`；本段起点 HEAD `41b765559`（工作树仅一份派生清单待提交）；
+收口 HEAD `1c95d4a74`。延续 `## FE-TPL-07 续` 的同一职责范围，不新建专题、不改业务矩阵、不进入下一批。
+
+### 1. 七问（本段的后端修复）
+
+- Formal Product Layer：P1 建筑行业标准产品。
+- Layer Target：`addons/smart_construction_core/handlers/payment_request_available_actions.py`。
+- Module：`smart_construction_core`。
+- Standard vs User-Specific：行业标准产品的动作面；不含客户偏好，不含管理员配置。
+- Why Here：角色码与授权组的关系由行业能力注册表 `capability_registry.role_code_for_group` 单点拥有，
+  `8890d5f0f2` 已把该关系收敛到那里；本 handler 只是消费方，缺的是**导入**，不是规则。
+- Why Not Elsewhere：不在前端补一份角色→按钮映射（那是把授权语义复制到端侧）；不在 `smart_core`
+  平台内核新增行业能力表；也不改后端事务绕过前端问题。
+- Blast Radius：`payment.request.available_actions` 意图，以及复用其 `_action_entry` 的
+  `payment_request_work_item_service`（财务「我的工作」的工作项投影）。
+
+### 2. 失败定性：不是探测失配，是真实产品缺陷
+
+`verify.frontend.standard_bootstrap.browser` 在本段起点为 FAIL：
+
+```
+locator.waitFor: Timeout 15000ms exceeded — waiting for locator('[data-workspace-composition="official-dashboard-workspace"]')
+```
+
+按「先定性、不草率下结论」的要求逐层核对：
+
+1. 源码字面值确认：`ProductWorkspaceSurface.vue` 根节点确为
+   `data-workspace-composition="official-dashboard-workspace"`（**探针期望值没有过期**，可排除上一种
+   「旧选择器失效」的假设；这一点必须亲自读文件，不能凭 `rg` 的显示下结论）。
+2. 目标复现：`/s/workspace.home` 正常渲染该标记（`markerCount=1`）；失败发生在 `/my-work`。
+3. `/my-work` 的状态是 `data-my-work-renderer="product-workspace" data-state="error"`，页面文本为
+   「操作未完成 / 当前无法读取工作事项，请检查网络后重试。」——`MyWorkApprovalWorkspace` 因此根本没有
+   挂载，探针等待的标记自然不存在。
+4. 请求级证据：`POST /api/v1/intent` 的 `my.work.summary` 对 `fixture_role_finance` 返回 **HTTP 500
+   INTERNAL_ERROR**（`trace_id=b024072b-146d-4a5a-a5dd-bdb7ea693064`）。
+5. 后端堆栈（容器内 `odoo.log`）：
+
+```
+File ".../smart_construction_core/services/payment_request_work_item_service.py", line 264, in _todo
+    actions = self._allowed_actions(record)
+File ".../smart_construction_core/handlers/payment_request_available_actions.py", line 344, in _action_entry
+    "required_role_key": role_code_for_group(required_group_xmlid),
+NameError: name 'role_code_for_group' is not defined
+```
+
+**根因**：`8890d5f0f2`（`fix(workflow): derive the role code and own only the industry projection`，2026-09-29 21:37）
+把每条动作的硬编码 `required_role_key`（`"finance"` / `"executive"`）改为由授权组派生，但**没有导入**
+`role_code_for_group`。该符号只在 `handlers/payment_request_available_actions.py:344` 被使用，文件内
+无定义、无导入。
+
+**回归窗口（git 坐实，不靠推断）**：
+
+| 候选 | 时间 | `role_code_for_group` 使用 | `verify.frontend.standard_bootstrap.browser` |
+|---|---|---|---|
+| `376e5a064592` | 2026-09-29 17:30 | 该文件无 | PASS（`bootstrap-inventory-1790674371809`） |
+| `8890d5f0f2` | 2026-09-29 21:37 | 引入第 344 行 | — |
+| `25b31e714a4e` | 2026-09-30 00:14 | 仍在 | FAIL（`bootstrap-inventory-1790702186688`，仅走到 `-home-*.png`，未产出 `-work-*.png`） |
+
+通过报告与本段失败报告的差异恰好落在 `/my-work` 这一步：前者有 `fixture_role_finance-work-1440.png` /
+`-work-390.png`，后者只有 `-home-1440.png` / `-home-390.png`。
+
+### 3. 修复（最小，且先有负例）
+
+`addons/smart_construction_core/handlers/payment_request_available_actions.py` 增补导入：
+
+```python
+from odoo.addons.smart_construction_core.services.capability_registry import (
+    role_code_for_group,
+)
+```
+
+角色码值不变（`group_sc_cap_finance_user` → `finance`、`group_sc_role_executive` → `executive`），
+既有断言无需改动；改的是「名字有没有被绑定」，不是业务规则。
+
+负例先行 / 修复后对照（同一门禁，`make local.dev.test MODULE=smart_construction_core`）：
+
+| 阶段 | 命令标签 | 结果 |
+|---|---|---|
+| 修复前 | `TEST_TAGS='payment_request_available_actions_backend'` | **`0 failed, 4 error(s) of 6 tests`**，4 条均为同一 `NameError` |
+| 修复后 | 同上 | **`0 failed, 0 error(s) of 6 tests`** |
+
+同层兄弟测试一并收口：`payment_request_available_actions_backend,payment_request_action_surface_backend,
+workflow_contract_backend` 合并运行得出 `0 failed, 7 error(s) of 42 tests`。这 7 条**与本修复无关且为既有失败**
+（同门禁在无本改动的纯净工作树上复跑得到完全相同的 7 条）：
+
+- 5 条测试夹具自身违反领域约束：`expense_claim` / `self_funding_registration` 抛
+  「必须关联已归属公司的有效项目」、`receipt_income` 抛「收款归集关系不存在或当前用户无权访问」。
+- 1 条 `payment.request.write` 被状态守卫拒绝：`[SC_GUARD:P0_PAYMENT_STATE_BYPASS_BLOCKED]`。
+
+### 4. 验收后端身份必须随代码刷新（不然门禁会正确拒绝）
+
+`addons/` 是 bind mount，容器跑的是**当前工作树**，但容器在启动时记录了 `SC_SOURCE_REVISION`；
+前端门禁会校验 `git diff <该修订> -- addons` 为空。因此改完后端后**必须**走受管入口刷新身份：
+
+- 刷新前：容器 `SC_SOURCE_REVISION=eb479cedb60ab7c63bf37c775a32d919d00237f7`。
+- `make backend.acceptance.replace-stale` → `PASS backend=sc-backend-odoo-acceptance revision=1c95d4a7457f9f63d07073f1a52a7eb0efc1c3ca`。
+- `git diff eb479cedb6 1c95d4a74 -- addons` = 仅本文件 `3 insertions(+)`，确认后端修订区间内**没有**其他代码漂移。
+- 副作用：**所有依赖该后端容器的浏览器证据都随之失效**，必须复跑（见 §5），不得沿用旧容器实例的结论。
+
+### 5. 复跑后的门禁结果（当前候选 + 当前后端）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L2 | `make local.dev.test MODULE=smart_construction_core TEST_TAGS='payment_request_available_actions_backend,payment_request_action_surface_backend'` | PASS（付款两项；工作流契约那 7 条为既有失败，见 §3） |
+| L4 | `verify.frontend.standard_bootstrap.browser` | **PASS `roles=3`**（`fixture_role_finance` / `fixture_role_contract_operator` / `fixture_role_config_admin` 三个角色均到达 `/s/workspace.home` 与 `/my-work`） |
+| L4 | `verify.frontend.standard_page_type.browser`（`default` / `detail` / `additional`） | PASS **32 / 19 / 3**；`forbiddenWrites=[]`、`pageErrors=[]` |
+| L4 | `verify.frontend.standard_config_field.browser` | PASS `checks=12` |
+| L4 | `verify.frontend.standard_public_auth.browser` | PASS `checks=18` |
+| L4 | `verify.frontend.standard_menu_config.browser` | PASS `checks=46` |
+
+### 6. 跨模型只读详情复核（当前候选 + 当前后端，全部 `data-state=ok` 后取值）
+
+| 目标 | 角色 | facts | section 数 | section 归属 | 可编辑 section |
+|---|---|---|---|---|---|
+| `/r/payment.request/1813` | `fixture_role_finance` | 34 | 51 | 34 facts + 16 dedicated-control + 1 relation-collection | **0** |
+| `/r/sc.general.contract/11` | `fixture_role_contract_operator` | 6 | 7 | 6 facts + 1 dedicated-control | **0** |
+| `/r/sc.general.contract/10` | `fixture_role_contract_operator` | 6 | 7 | 6 facts + 1 dedicated-control | **0** |
+| `/r/project.project/10` | `fixture_role_finance` | 4 | 5 | 4 facts + 1 relation-collection | **0** |
+| `/r/project.project/10` | `fixture_role_pm` | 2 | 4 | 2 facts + 2 relation-collection | **0** |
+| `/f/payment.request/1813`（可编辑） | `fixture_role_finance` | 0 | 44 | 44 `outside-standard-detail` | 17 |
+
+`pageErrors=0`。结论不变且更强：**只读详情按 `contract-readonly-record-view` 采纳，跨模型无特例；
+可编辑记录表单不被 facts 布局侵占。**
+
+**口径更正（本段发现，回撤 §6 的计数）**：上一段的 `facts=2、10 section` 是**加载过程中**的快照。
+固定延时（1500ms）在冷启动后端上会取到 `data-state=loading` 的中间态（本段先复现过 `facts=0、
+sectionCount=0`）。本段改为轮询到 `data-state=ok` 再取值，稳定得到上表数字；同一脚本在修复前
+后端上也返回过 `2 / 10`，说明那是**测量口径**差异而非契约差异。由此固定规则：**只读事实/分区计数
+必须在页面声明加载结束后读取，不得用固定 sleep 取数**——这与「等待绑定明确状态、不用固定延时掩盖
+渲染未完成」是同一条规则。
+
+### 7. 同族缺陷登记（同类未定义名，本段**不修**）
+
+同一类「名字被使用但从未绑定」的缺陷在仓库另有 5 处。它们不是本次失败的原因，也不在本段范围内，
+但必须显式登记，因为它们证明**这类缺陷没有静态防线**：
+
+| 位置 | 未绑定名 | 现状与影响 |
+|---|---|---|
+| `addons/smart_core/handlers/login.py:429` | `request` | 文件未导入 `odoo.http.request`。位于 `try` 中，`NameError` 被 `except Exception` 吞掉 → Cookie session 永不登出，只有一条 debug 日志。**静默降级。** |
+| `addons/smart_core/handlers/load_contract.py:463` | `_logger` | 全文件仅此一处，无 `logging` 导入。位于 `except` 内的日志语句 → 一旦 `fields_get(missing)` 失败，会在处理异常时再抛 `NameError`。 |
+| `addons/smart_construction_core/controllers/pack_controller.py:190` | `Usage` | `Usage` 从未赋值（对照 `platform_ops_controller.py:89` 的 `Usage = env.get("sc.usage.counter")`）。pack 安装成功后会 `NameError`。 |
+| `addons/smart_construction_core/models/support/scene_orchestration.py:694` | `Usage` | 同上；场景发布成功后会 `NameError`。**后续低代码发布闭环（WEB-LC-01 方向）若要经过此路径，需先修。** |
+| `addons/smart_core/handlers/system_init.py:1325` | `acceptance_root_group_label` | 死代码：`_append_user_data_acceptance_nav_group` 自 `401bcb3bd` 起**无任何调用点**，其函数体引用了另一个函数的局部变量。当前不可达，属潜伏缺陷。 |
+
+本段的处理是**登记 + 保留真实状态**，不是顺手全仓清理。建议单列一批（后端 P0/P1，需走
+`sc_smoke` 后端 lane 与验收后端身份刷新）。
+
+### 8. 验收体系为什么这次是靠浏览器门禁才发现的
+
+1. **后端单测 lane 没有随该后端提交运行。** `8890d5f0f2` 改的是 Python，但当日只跑了前端门禁；
+   `sc_smoke`（`make local.dev.test MODULE=smart_construction_core TEST_TAGS=sc_smoke…`）本可**直接**
+   抓住它——本段修复前的负例正是这条 lane 报的 `4 error(s) of 6 tests`。
+2. **没有未定义名的静态检查。** 仓库无 `flake8` / `ruff` 配置，`ci.local.iteration` 只做 L1 静态
+   （`git diff --check`、增量计划、可信扫描范围），不解析 Python 名字绑定。用一个 30 行的
+   `symtable` 扫描即可在本段复现该类缺陷（`addons/**/*.py` 1255 个文件 → 7 个疑似命中，经人工分类
+   得到上表 5 处真缺陷；本段触及的模块扫描结果为 0）。
+3. **前端门禁反而成了唯一防线**，因为「财务角色能不能读我的工作」是跨模型浏览器旅程里的一条断言。
+   这说明跨模型旅程本身有价值，但**不能让它承担后端静态缺陷的兜底**。
+
+由此固定两条规则：
+
+- **改动 `addons/` 后必须至少跑一次受影响模块的非零后端测试**（按 `sc_smoke`/`sc_gate` 标签选择，
+  不是全量），再进入浏览器层。
+- **浏览器层失败必须先定位到「契约/后端/前端/探针」哪一层**，本段即是「先怀疑探针失配、实测为后端
+  500」的反例；没有 §2 的第 1~5 步逐层证据，就会把产品缺陷误修成选择器适配。
+
+### 9. 本段提交
+
+- `bd898fb35 fix(payment): import the role-code helper the action entry calls`（产品修复）
+- `1c95d4a74 chore(docs): refresh the component-driver takeover inventory digest`（派生清单跟随源码刷新；
+  该刷新在修复前即为既有失败，`required=35 missing=0 bridge_only=0 raw=0`）
+
+运行来源：源码 HEAD `1c95d4a74`；前端产物仍为 `sce-offrepo/artifacts/config05-20260929/dist`
+（`base_sha=25b31e714…`、`entry=/assets/index-CNrigT9d.js`、`entry_sha256=4d80190b…`）——
+本段 `frontend/` 无源码变化，`identity` 校验通过，故**不重建、不新增端口**；5180 仍为 `pid=802966`。
+验收后端已从 `eb479cedb6` 刷新到 `1c95d4a74`。
+
+### 10. 剩余（显式登记，不在本段）
+
+- §7 的 5 处同族未定义名缺陷（含 1 处会影响场景发布路径）。
+- `workflow_contract_backend` 的 7 条既有失败（测试夹具/状态守卫，与 Mock 或数据基线相关，未在本段定性）。
+- 上一段已登记项继续有效：`sc.safety.disclosure` / `sc.safety.plan` 原生 header 无 workflow 按钮；
+  缺失 `view_type` 仍默认 `form`；五条 `state_transition_undeclared`；`style_system.guard` 四项文件长度欠账。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## FE-CONTRACT-UNDEFINED-NAME（续）：名字未绑定族收口 + `env.get` 真值陷阱清理（2026-09-30）
+
+### 1. 七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P0 平台内核（`smart_core`）+ P1 行业标准（`smart_construction_core`），运维/校验脚本属 P4 |
+| `Layer Target` | 写动作审计落库、用量计数、能力可见性报告、登录登出、契约加载器、场景发布、工作流状态盘点；`make/ci.mk` 的 L1 入口 |
+| `Module` | `smart_core`、`smart_construction_core`、`scripts/`、`make/` |
+| `Standard vs User-Specific` | 平台机制缺陷（名字绑定、`env.get` 语义、审计/计数/去重落库），不含任何行业或客户偏好 |
+| `Why Here` | 缺陷就在这些模块的调用链上；`env.get` 真值判断是 Odoo 平台语义误用，必须由平台内核与行业标准模块承担 |
+| `Why Not Elsewhere` | 不在前端兜底（前端无法感知后端未落审计）、不改后端事务、不新建治理文档、不做全仓重构或顺手拆文件 |
+| `Blast Radius` | 审计落库恢复写入、用量计数恢复累加、能力报告恢复返回真实 payload；受影响写动作的幂等/去重响应字段口径须重新核对（见 §5） |
+
+### 2. 上一段 §7 登记的同族缺陷：已全部修复
+
+| 位置 | 未绑定名 | 修复方式 | 运行期影响 |
+|---|---|---|---|
+| `smart_core/handlers/login.py` | `request` | 补 `from odoo.http import request` | logout 分支不再静默 `NameError`（此前被 `except` 吞掉 → Cookie session 永不登出） |
+| `smart_core/handlers/load_contract.py` | `_logger` | 补 `import logging` + `_logger` | 异常分支不再在处理异常时二次抛 `NameError` |
+| `smart_core/handlers/system_init.py:1325` | `acceptance_root_group_label` | 改为形参传入 | 函数体恢复自洽；**仍无调用点**，性质仍是"潜伏死代码" |
+| `smart_construction_core/controllers/pack_controller.py` | `Usage` | 补 `Usage = env.get("sc.usage.counter")` | pack 安装成功后不再 `NameError` |
+| `smart_construction_core/models/support/scene_orchestration.py` | `Usage` | 同上 | 场景发布成功后不再 `NameError`；新增运行时回归（§7） |
+| `smart_construction_core/models/support/sc_data_validator.py` | `_` | `from odoo import _, api, fields, models` | 校验器取用翻译函数不再 `NameError` |
+| `smart_core/tests/test_contract_governance_project_form.py` | `visible_fields` | `out.get("visible_fields") or []` | 断言读取真实字段；`NameError` 变为真实断言结果（§8） |
+| `scripts/verify/{ops_batch_smoke,subscription_smoke}.py` | `_load_env_value_from_file` | 改用已 import 的 `load_env_value_from_file` | DB 名回退路径恢复 |
+| `scripts/verify/product_hardening_schema_guard.py` | `EXPECTED_INTENTS` | 改用 `REQUIRED_INTENTS | OPTIONAL_INTENTS` | 校验失败信息恢复，不再二次 `NameError` |
+
+### 3. 本段真正的产品缺陷：`env.get("<model>")` 真值判断恒假
+
+Odoo `Environment.get(model)`：
+
+- 模型**存在** → 返回**空 recordset**，`bool()` 为 `False`；
+- 模型**不存在** → 返回 `None`，同样 `False`。
+
+所以 `if env.get("sc.audit.log"):` 与 `if not env.get(...):` **永远走假分支**，而作者本意是"模型是否可用"。
+这不是代码风格问题，是**静默禁用功能**。仓库里已有正确对照（团队早已踩坑，附中文注释）：
+`addons/smart_core/utils/idempotency.py` 的 `if Audit is None: ...`。
+
+按 `is None` 修正、从而**恢复**的能力：
+
+| 位置 | 此前被静默禁用的能力 |
+|---|---|
+| `smart_core/handlers/api_data_write.py` | `api.data.write` 幂等审计**从不落库** |
+| `smart_core/handlers/api_data_unlink.py` | `api.data.unlink` 幂等审计**从不落库** |
+| `smart_core/handlers/api_data_batch.py` | `api.data.batch` 幂等审计**从不落库**（连带"重放窗口"永远判不出来） |
+| `smart_construction_core/handlers/my_work_complete.py`（两处） | 批量完成审计不落库；`todo_remaining` 恒为 0 |
+| `smart_construction_core/handlers/payment_request_approval.py` | 付款审批审计不落库 |
+| `smart_construction_core/handlers/capability_visibility_report.py` | 能力可见性报告**恒返回空 payload** |
+| `smart_construction_core/controllers/pack_controller.py` | `packs_installed` 从不累加 |
+| `smart_construction_core/models/support/scene_orchestration.py` | `scenes_published` 从不累加 |
+| `smart_core/controllers/platform_ops_controller.py`（3 处） | 权益/用量/订阅查询恒走空分支 |
+| `scripts/audit/workflow_state_inventory.py`（2 处） | tier / business-category 统计恒为 0 |
+| 7 处测试 `if not self.env.get(...): skipTest(...)` | **测试长期被静默跳过**（见 §6） |
+
+### 4. 静态门禁：`scripts/verify/python_name_binding_guard.py`
+
+新增两族静态检查（`symtable` 语义，不需要运行环境）：
+
+1. **名字被读但从未绑定**（`F821` 语义）→ 运行期 `NameError`；
+2. **`env.get("<model>")` 结果参与真值判断**（含 `if/while/三元/assert/assertTrue/assertFalse/变量间接`）。
+
+豁免按"显式命名单条、无通配目录"实现：builtins/dunder、`import *` 与 `globals()`（跳过并计数）、
+行内 `# noqa`（含既有 `# noqa: F821` 拼法）、`scripts/` 下的 `env`/`odoo`（`odoo shell < script.py` 注入；
+`addons/` 不豁免）。
+
+- 正例：**2844 文件 / 0 违反**（59 个动态绑定模块显式计数跳过）。
+- 负例（先证明抓得住）：把本段修复逐个回退后，门禁精确报出 **4 个名字缺陷 + 8 个 `env.get` 真值缺陷**。
+- 自测 `scripts/verify/test_python_name_binding_guard.py`：**19 用例全通过**。
+- 接入：`make verify.python_name_binding`，并作为 `make test.unit` 依赖。
+
+### 5. 三处"测试 vs 产品语义"冲突：按规则冲突流程核清权威依据
+
+激活被静默跳过的测试后暴露 3 处失败。**不由测试或页面自行选一方**，先找已发布契约：
+
+- `contracts/domain/write-idempotency.yaml`：
+  `replay_window_expired` = "信息性标记（记录权威路径下 replay 不受窗口限制——键即逻辑操作，永久可重放；
+  窗口仅保留信封可观测语义）。审计投影回退路径仍按窗口截断。"
+  `fallback` = "`sc.idempotency.record` 缺席时回退既有审计投影路径（`resolve_idempotency_decision` 窗口语义不变）。"
+- `smart_core/utils/idempotency.py` G7 段注释同义；`write_idempotency_source_authority_contract()` 输出
+  `replay_policy=permanent_for_key`、`window_semantics=informational_only`。
+- `smart_core/tests/test_write_idempotency_claim.py::test_done_beyond_window_still_replays_with_expired_flag` 已固化该语义。
+
+结论：**测试假设陈旧，不是产品缺陷。** 三条断言写于 `401bcb3bd`（审计通道时代），G7 `7e622c35a`
+迁移到记录去重权威后未同步，又因静默跳过而无人发现。修正断言，**不触碰产品语义**：
+
+| 测试 | 陈旧假设 | 修正后的断言 |
+|---|---|---|
+| `test_my_work_backend.test_batch_idempotent_replay_returns_same_contract` | 重放证据来自审计行（`replay_from_audit_id > 0`） | 记录通道证据 `replay_from_record_id > 0` |
+| `test_my_work_backend.test_batch_idempotent_window_expired_no_replay` → 更名 `test_batch_replay_is_permanent_regardless_of_window` | 「window=0 即过期，故不重放」 | window=0 表示"无窗口限制"→ **仍然重放**且信息标记为假；把记录 `created_at` 拨到窗口外 → **仍然重放**且信息标记为真 + `REPLAY_WINDOW_EXPIRED` |
+| `test_api_data_batch_contract_backend.test_replay_window_expired_is_exposed_in_contract` | 用 window=0 制造过期 | 该通道是**审计投影回退路径**（窗口语义保留）：把审计 `ts` 拨到窗口外，确定性地得到"不重放 + 标注过期" |
+
+**测量教训（固化）**：`window = 0 ⇒ 过期` 这个直觉在**两个通道上都不成立**——记录通道是"永久重放"，
+审计通道是"秒级精度，同一秒内仍算窗口内"。窗口类断言必须**显式构造时间差**，不能靠把窗口置 0。
+
+### 6. 验收体系为什么长期没发现（本段真正的机制缺口）
+
+1. **`skip` 被当成"通过"。** 7 处 `if not self.env.get("sc.audit.log"): self.skipTest(...)` 因真值陷阱
+   **永久跳过**：报告里是 `skip`，CI 只看 "0 failed" 就放行。改为 `is None` 后这些用例**首次真正执行**，
+   并立刻暴露 3 处语义漂移（§5）。
+2. **没有名字绑定静态检查。** `scripts/ci/python_syntax_check.py` 只建 AST、不做绑定解析；仓库无
+   `flake8`/`ruff` 配置。本段新增门禁补上这一层。
+3. **大量测试文件未接入任何 lane。** `addons/smart_core/tests/` 160 个测试文件中 **117 个无 `@tagged`**，
+   默认标签是 `at_install`，而仓库所有 lane 都用显式自定义标签（`sc_smoke`/`sc_gate`/业务标签）或
+   `post_install` 标签；`at_install` 只在"该模块正在安装/升级"时执行，而迭代 lane 传 `-d` 不带 `-u`，
+   因此这些文件**平时根本不跑**——与已登记的"121 个未接入测试文件"是同一件事。
+
+新增固定规则：
+
+- 判"测试通过"必须同时看 **test count 非零** 与 **skip 数**；`skip` 不得等价于 `pass`。
+- 新增/修正静态门禁必须**先给负例**（回退修复能精确报出），再给正例。
+- 测试与产品语义冲突时，先找**已发布契约/权威常量**；找不到权威依据才升级为产品缺陷，
+  **不允许改产品去迎合测试**。
+
+### 7. 定向验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make verify.python_name_binding` | PASS（2844 文件 0 违反；自测 19 用例 OK） |
+| L1 | `make test.unit` | PASS（含 `verify.python_name_binding` 前置） |
+| L1 | `make verify.guard.registry` | PASS（`AUDIT PASS: 1352 scripts`） |
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only`；`frontend/` 无源码变化 → 不选前端 L2 |
+| L2 | `local.dev.test MODULE=smart_construction_core TEST_TAGS='api_data_batch_backend,my_work_backend,capability_contract_backend'` | **PASS 46 tests, 0 failed**（修复前 3 failed） |
+| L2 | `local.dev.test MODULE=smart_construction_core TEST_TAGS='scene_publish_usage_backend'` | **PASS 1 test, 0 failed**（新增回归：发布后 `scenes_published` 真实累加） |
+| L4 | `verify.frontend.standard_page_type.browser`（`default` / `detail` / `additional`） | PASS **32 / 19 / 3**；`forbiddenWrites=[]`、`errors=[]` |
+| L4 | `verify.frontend.standard_bootstrap.browser` | PASS `roles=3` |
+
+L4 全部绑定的验收后端为 `d66182a91`（`make backend.acceptance.replace-stale` 刷新所得）。
+`frontend/` 本段无源码变化 → 5180 复用既有产物（`pid=802966`），**未重建、未新增端口**。
+
+### 8. 既有失败对照实验（证明与本段无关）
+
+`smart_core` 整模块跑出 `2 failed, 11 errors of 408`。用 `git stash`（含未跟踪文件）把本段**全部**改动移出后
+重跑，失败身份**完全一致**：
+
+- `TestOdooNativeAlignmentBoundaries.test_explicit_form_view_preserves_mixed_text_and_field_order`
+  （`'电话' != 'Phone'`，DB 本地化漂移）；
+- `TestUmP1OwnershipVisibilityContractOrm.test_real_registry_preserves_record_rule_topology_and_explicit_gaps`
+  （记录规则域文本与注册表现状漂移）；
+- `TestUmP2ReceiptRelationAggregationOrm` ×4（`could not serialize access due to concurrent update`，DB 并发）；
+- `TestUmP1{Payment,CostLedger}Visibility...` / `TestUmP2PaymentRelation...` / `TestUmP3...` 的 `setUpClass`
+  （**测试夹具绑定了会漂移的演示数据/能力状态**，如"付款申请必须处于已批准状态"、
+  `TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED`）。
+
+另单独对照 `tenant_extension`：`0 failed, 1 error of 0 tests`（`setUpClass` 能力门禁），同样与本段无关。
+
+**结论：13 条全部是既有失败或环境数据漂移；本段未新增失败、未扩大失败面。**
+
+`test_contract_governance_project_form.py` 独立执行对照（`odoo shell` 直接跑该文件）：
+
+- 修复前 `7 failures + 2 errors / 21`；
+- 修复后 `8 failures + 1 error / 21`。
+
+非通过总数不变（9 → 9）：本段把 1 个 `NameError` 变成真实断言失败，**未引入回归**。该文件 9 条非通过为
+**既有**，且属"未接入 lane 的测试文件"，本段只登记不修。
+
+### 9. 提交
+
+- `90e1c456f fix(backend): restore writes disabled by unbound names and env.get truthiness`
+- `e493a441f test(guard): detect unbound names and env.get truthiness statically`
+- `d66182a91 chore(docs): refresh generated reports for the name-binding guard`
+
+### 10. 剩余（显式登记，不在本段）
+
+- §6.3 的 117 个无 `@tagged` 测试文件（与已登记的"121 个未接入测试文件"合并计账）；
+- `test_contract_governance_project_form.py` 的 9 条既有非通过；
+- `smart_core` 整模块 13 条既有失败（含 6 条夹具/数据漂移类）；
+- `system_init.py:_append_user_data_acceptance_nav_group` 仍无调用点（死代码，本段只恢复自洽）；
+- `make verify.docs.product_boundary` 既有失败：`modules documented but not present under addons: smart_construction_demo`。
+  已核对：`addons/smart_construction_demo` 在 `7a963bbb7` 与本段 HEAD **均不存在**，且引用它的文档
+  （`docs/demo/*`、`docs/planning/.../G7_LAUNCH_SCOPING.md` 等）本段**未触碰** → 与本段无关。
+  `verify.docs.inventory` / `docs.links` / `docs.temp_guard` / `docs.contract_sync` 均 PASS；
+  `verify.docs.all` 只因 product_boundary 这一项中断。
+- 上一段已登记项继续有效：`workflow_contract_backend` 7 条既有失败、`sc.safety.disclosure` /
+  `sc.safety.plan` 原生 header 无 workflow 按钮、缺失 `view_type` 仍默认 `form`、五条
+  `state_transition_undeclared`、`style_system.guard` 四项文件长度欠账。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+
+## FE-CONTRACT-TAKEOVER-RULE-01：把接管清单"对外声明"的完成规则变成"实际被求值"（2026-09-30）
+
+分支 `feature/web-official-template-adoption`；本段起点 HEAD `e3412b370`（工作树干净）。
+延续前端接管专题的验收体系收口，不新建专题、不改业务矩阵、不进入下一批业务接管。
+
+### 1. 七问
+
+- **Formal Product Layer**：P4 ops/verify 工具（`scripts/audit` 的接管清单生成器与其单测、派生清单），
+  以及被清单描述的前端渲染面（P1 行业标准产品的前端呈现层）。不新增业务语义。
+- **Layer Target**：`scripts/audit/generate_frontend_component_driver_takeover_inventory.py`、
+  `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py`、
+  `docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json`
+  及三件指纹绑定派生清单。
+- **Module**：无 Odoo 模块改动；不改 `smart_core` / `smart_construction_core` / 前端产品源码。
+- **Standard vs User-Specific**：属平台级验收约定（每条正式产品线共用同一清单契约），非客户或行业特例。
+- **Why Here**：完成规则由该清单自己发布，因此只能由该清单自己的 `--check` 求值；放在别处就会出现
+  "第二份口径"，正是本段要消除的东西。
+- **Why Not Elsewhere**：不改前端产品源码——`ScSteps` / `ScAutoComplete` 的必需性判定是**契约层**结论，
+  不能用"删掉适配器"或"随便找一处塞进去"来消灭条目。
+- **Blast Radius**：仅接管清单的必需驱动集（35 → 33）与其 `--check` 行为；前端渲染、契约、权限、
+  后端事务、数据库、业务矩阵均不变。
+
+### 2. 真实缺陷（先有运行证据，再改代码）
+
+本段起点的门禁是**绿**的：
+
+```
+$ make verify.frontend.component_driver_takeover.unit
+[component_driver_takeover_inventory] PASS required=35 missing=0 bridge_only=0 raw=0
+```
+
+但同一份清单在 JSON 里对外发布了一条完成规则：
+
+```
+missing=0, bridge_only=0, adapter_unconsumed=0, unassessedRequiredTakeovers=0,
+directLibraryImportBypasses=0, unassessedRawBehaviorSurfaces=0
+```
+
+实测这份清单**违反**其中两项：
+
+- `adapter_unconsumed` 实际为 **2**——`ScAutoComplete`、`ScSteps` 的适配器存在、`productionConsumerCount=0`；
+- `unassessedRequiredTakeovers` 在 `summary` 里是**硬编码常量 `0`**，从未由行数据推导，因此不可被证伪。
+
+也就是说：**清单对外声明了一条完成规则，而门禁只验证"JSON 是否与生成器一致"，规则本身从未被计算。**
+只要 JSON 与生成器同步，规则被违反也照样报绿。这与上一段 `env.get` 真值判断同属一类：
+**口径比事实松，缺口被静默。**
+
+对照：同一目录下的 `generate_frontend_official_design_alignment_inventory.py` 的 `--check` **确实**对真实报告
+逐项求值（`unknownProjectTokenOverrideCount` 等四项非 0 即 `FAIL incomplete=...`）。
+正确模式就在隔壁，接管清单缺的正是这一步。
+
+### 3. 负例（先证明回归真的抓得住）
+
+**端到端负例**（把 `steps` 加回 `REQUIRED_DRIVERS`，再重新生成——即 JSON 与生成器**一致且最新**）：
+
+```
+$ python3 scripts/audit/generate_frontend_component_driver_takeover_inventory.py --check
+[component_driver_takeover_inventory] FAIL completion rule
+ - adapter_unconsumed=1 (a required official adapter has no production consumer)
+ - unassessedRequiredTakeovers=1 (a required driver is not fully adopted and carries no capability assessment)
+exit=1
+```
+
+"最新但违规"必然失败——这正是旧门禁放行的那种状态。负例执行后已恢复。
+
+**入册单测负例**：`test_required_driver_without_consumer_fails_the_completion_rule`、
+`test_unassessed_takeover_is_derived_from_rows_not_hardcoded`；
+另有 `test_published_completion_rule_is_evaluated_and_clean` 正向锁定当前仓库为零违反。
+
+### 4. 修复
+
+1. `--check` 新增 `completion_rule_failures(report)`：对 `completionRule` 声明的**每一项**求值
+   （summary 的四个计数 + 两个列表），非 0 / 非空即 `FAIL completion rule` 并逐项打印。
+2. 成功行补齐它此前漏印的两项：`adapter_unconsumed=`、`unassessedRequiredTakeovers=`。
+3. `unassessedRequiredTakeovers` 改为**由行数据推导**：必需驱动中"未完全采纳且没有能力评估归属"的条数。
+4. 按第 5 节的契约依据，把 `steps` / `auto-complete` 从 `REQUIRED_DRIVERS` 移入
+   `NOT_REQUIRED_DECISIONS`（必需驱动集 35 → 33）。
+
+### 5. 两项 `adapter_unconsumed`：按"契约是否声明该语义"裁决，不是把红改绿
+
+| driver | 裁决 | 依据（已发布契约 / 仓库自身权威） |
+|---|---|---|
+| `auto-complete` | `not_required` | Contract V2 **没有**"自由文本 + 建议"字段类型。关系输入是官方可过滤组合框（`ProfessionalRelationFieldControl` → `ScRelationField` → `TDesignSelect filterable`）；其余字段类型全部落入取值确定的 value 控件（`professionalComponentRegistry.ts` 的 `REGISTRATIONS` 字段类型集：`char/text/html/integer/float/monetary/selection/boolean/date/datetime/binary/many2one/many2many/one2many/action`）。独立 AutoComplete 必须**自造**一个契约未声明的建议源。 |
+| `steps` | `not_required` | Contract V2 把工作流状态声明为**选择（selection）**，不是有序流程；仓库自己的守卫 `scripts/verify/frontend_professional_workflow_guard.py` 明确禁止状态区出现 `<ScSteps` 或 `native-statusbar-track`——原文即 "selection status must not imply ordered workflow topology"；审批策略是**可编辑配置列表**，不是记录流程。 |
+
+并留下"没有遗漏面"的证据：全仓检索无任何自造步骤指示器（只有可编辑审批表
+`BusinessConfigApprovalPanel.vue` 与一处上下文条 `contract-form-design-strip`，后者是三列信息条而非序列），
+也没有任何页面的自由文本建议控件；因此不存在"应改用官方 Steps/AutoComplete 却用了自造实现"的遗漏面。
+
+**适配器本身保留**：bridge 与适配器仍在 `primitives.ts` / `tdesignPrimitiveBridge.ts` / `primitiveAdapter.ts`，
+仍受 `frontend_primitive_adapter_guard.py`、`frontend_rendering_detail_state_guard.py` 约束；
+变的只是"当前正式产品的**必需驱动集**"。若将来产品声明了有序流程面或建议输入面，
+该条必须从 `NOT_REQUIRED_DECISIONS` 退回 `REQUIRED_DRIVERS`，而不是让页面自造实现。
+
+### 6. 验收体系为什么长期没发现（本段真正的机制缺口）
+
+1. **成功行漏印关键项**。门禁 PASS 行只打印 `required/missing/bridge_only/raw`，
+   恰好漏掉 `adapter_unconsumed` 与 `unassessedRequiredTakeovers`——报绿的信息量小于它宣称的范围。
+2. **断言了规则的文本，没断言规则本身**。既有单测
+   `test_completion_rule_cannot_hide_unassessed_raw_behavior` 只断言 `completionRule` 字符串里**包含**
+   `adapter_unconsumed=0`，从未断言这个等式**成立**。
+3. **常量冒充推导值**。`unassessedRequiredTakeovers` 以字面量 0 写进 summary，使它天然不可被证伪。
+
+固化规则（本段起适用）：**凡清单/报告对外发布的 `completionRule`，其每一项都必须在同一 `--check` 内被求值，
+且成功行必须逐项打印实际值；字符串包含关系不作为通过依据。**
+
+**同类缺口的全仓收敛核对（本段已执行）**：
+
+- 生成器侧：`rg completionRule scripts/` 只有两处发布者——
+  `generate_frontend_official_design_alignment_inventory.py`（其 `--check` **本就**对真实报告求值，正确模式）
+  与 `generate_frontend_component_driver_takeover_inventory.py`（本段修好）。两者现已全部强制求值。
+- 报告侧：扫描 `docs/**/*.json` 中 `completionRule` 含 `=0` 字样的报告，命中**恰为上述两件**。
+- 单测侧：其余 `assertIn(..., rules)` 命中都是记录规则 XML 的**内容**断言（如 `tenant_product_payload_boundary_guard`、
+  `tax_certificate_formal_contract`），不是"规则文本通过即视为规则成立"，不属同类缺陷。
+
+即：这一类"发布规则但不计算规则"的缺口在本段之后**全仓为零**，并有本节判据可供后续复查。
+
+### 7. 顺带收口：两件陈旧派生清单（既有，先取基线证明与本段无关）
+
+`make verify.frontend.rendering_detail_state.unit` 在本段起点即为**红**：
+
+```
+[frontend_rendering_detail_inventory] FAIL stale=.../component-professionalization-inventory-v1.json
+```
+
+**归属判定**：把本段三处改动 `git stash`（含生成物）后复跑，失败身份**完全一致** → 与本段无关。
+根因：`26ed7116e refactor(web): render the configuration overview with the official table` 新增 P3 面
+`BusinessConfigOverviewTable.vue`，但未按注册目标刷新指纹绑定生成物。
+
+按既有恢复动作 `make refresh.frontend.rendering_detail.inventory` 刷新 3 件。
+逐件核对差异，**无内容漂移**：
+
+- `component-professionalization`：`inputDigest`/`sourceIdentity` 变化 + **1 条真实新增 P3 surface**
+  （`surfaces` 171→172、`summary.p3_out_of_scope` 18→19），即那个新文件本身；
+- `visual-projection`：`currentInputDigest` 变化 + `currentSourceCount` 225→226、`changedSourceCount` 207→208，
+  以及跟随的逐源 digest；
+- `official-design-alignment`：`inputDigest` 变化 + `section-tab` 一项消费方清单跟随真实源码。
+
+复跑 `make verify.frontend.rendering_detail_state.unit` **PASS**
+（59 测 OK；`rendering_detail_inventory PASS surfaces=172 gaps=0`、`visual_projection PASS`、
+`official_design_alignment PASS summary={... internalVendorSelectorGapCount: 0 ...}`）。
+（输出里那行 `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}`
+是单测 `test_check_fails_closed_when_completion_rule_has_gaps` 的**预期负例输出**，不是失败。）
+
+### 8. 验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（含 `tracked generated reports are current`） |
+| L1 | `make test.unit` | PASS（Python 语法 1170 文件、名字绑定 2844 文件 0 违反） |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | **PASS 10 tests**（原 7）；`PASS required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessedRequiredTakeovers=0 raw=0` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 59 tests** + 3 件清单 `--check` 全 PASS（起点为红，见 §7） |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS `components=46 eventCases=11` |
+
+未运行 L4 浏览器旅程：本段**未改前端产品源码**，页面呈现、交互与请求路径均未变化，
+按分层规则不触发受影响浏览器复验（`frontend/` 无源码变动 → 5180 复用既有产物，未重建、未新增端口）。
+
+### 9. 提交
+
+- `fix(guard): evaluate the published component takeover completion rule`（生成器 + 单测 + 清单）
+- `chore(web): refresh the stale rendering-detail inventories`（3 件派生清单，§7）
+
+### 10. 剩余（显式登记，不在本段）
+
+- 本段**新登记**：`frontend_primitive_adapter_guard.py` 的 `PRIMITIVES` 与
+  `primitive_adapter_contract_test.ts` 仍把 `ScSteps` / `ScAutoComplete` 列为**必须存在且合规**的适配器。
+  这是有意的：适配器保留，只是"当前正式产品必需驱动"集不含它们；两处清单口径不矛盾，但需在文档中并存说明。
+- 承接上一段全部登记项：`state_transition_undeclared` 五条（权威侧待决）、
+  `sc.safety.disclosure` / `sc.safety.plan` 原生 header 无 workflow 按钮、缺失 `view_type` 仍默认 `form`、
+  `workflow_contract_backend` 7 条既有失败、`style_system.guard` 四项文件长度欠账、
+  117 个无 `@tagged` 而未接入 lane 的 `smart_core` 测试文件、
+  `test_contract_governance_project_form.py` 9 条既有非通过、`smart_core` 整模块 13 条既有失败
+  （含 6 条夹具/数据漂移类）、`verify.docs.product_boundary` 既有失败（`smart_construction_demo`）、
+  `playwright_vendor_coupling` 探针层既有债务（vendor 内部类 22 文件 / 几何断言 11 文件）。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 28｜低代码管理面的原生行为面盲区（P3 契约外观边界，2026-09-30）
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 契约结构与守卫）＋ P4（前端呈现适配），不新增业务层 |
+| **Layer Target** | `scripts/audit/generate_frontend_component_driver_takeover_inventory.py`；`frontend/apps/web/src/views/SceneHealthView.vue`、`ScenePackagesView.vue`、`views/businessConfigSurface/BusinessConfigChangeSetPanel.vue` |
+| **Module** | `smart_core`（契约/守卫）；`frontend/apps/web`（消费） |
+| **Standard vs User-Specific** | 平台标准：**"原生行为元素只能存在于设计系统适配层"** 是通用呈现规则，不属任何行业或客户语义 |
+| **Why Here** | 只有这里同时掌握"契约声明的分区角色"和"页面实际渲染的元素"；判定必须发生在能同时看到两者的守卫里，页面自身不能自证 |
+| **Why Not Elsewhere** | 不放后端：后端不渲染 DOM，无法判断页面是否用原生元素；不新增治理文档：既有接管清单本就是该规则的发布者；不改契约 `tag`：`tag` 是**布局角色**（呈现策略），不是组件指定，且已被 `frontend_page_contract_boundary_guard.py` 固定 |
+| **Blast Radius** | 接管清单评估范围由「非 P3 且非设计系统」扩到「全部产品前端，除设计系统适配层」；3 个 P3 页面改为官方组件；4 件派生清单刷新。菜单/模型/后端/请求载荷零变化 |
+
+### 2. 已确认缺口：发布规则却在**评估范围上留洞**
+
+前一段修掉了"发布 `completionRule` 但从不求值"。本段在同类检查里发现第二层：
+
+```python
+if not is_p3(source) and "/components/design-system/" not in source and source not in {
+    "frontend/apps/web/src/components/MenuTree.vue",
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+}:
+    ... 收集 rawBehaviourSurfaces ...
+```
+
+`not is_p3(source)` 把**整个低代码管理面（P3）**排除在原生行为扫描之外。
+于是规则文本写着 `unassessedRawBehaviorSurfaces=0`，实际生产面上仍有原生行为在渲染。
+`scope` 字段自称 `repository P0/P1 frontend production sources`，与实现共同把缺口包装成"范围之外"。
+
+**让缺口显现**（只计算、不落盘，改动生成器后第一次求值）：
+
+```
+raw surfaces:
+  views/SceneHealthView.vue                        ['details', 'window.confirm']
+  views/ScenePackagesView.vue                      ['window.confirm']
+  views/businessConfigSurface/BusinessConfigChangeSetPanel.vue  ['details']
+completion failures:
+  unassessedRawBehaviorSurfaces=3 (...)
+```
+
+三项全部落在 P3。这正是"契约缺口必须显现"的反面教材：**看板绿，页面红**。
+
+### 3. 裁定：`tag="details"` 不是契约越界
+
+对 `page_contracts_builder.py` / `workspace_home_contract_builder.py` 的 `sections[].tag` 逐值统计：
+`section`×68、`header`×8、`div`×5、`details`×4。裁定如下，**本段不重命名 tag 词表**：
+
+- `tag` 表达的是**布局角色**（结构语义），属"受管呈现策略"，不是组件指定，也不声明授权、状态迁移、业务唯一性或计算公式；
+- 词表取 HTML5 **语义元素名**（`header`/`section`/`div`/`details`），四者同级，不是把某个 TDesign 组件写进契约；
+- 因此契约给角色，**前端负责选择实现组件**：`header`/`section`/`div` → 原生语义容器；`details` → **官方 `ScDisclosure`**（TDesign Collapse），不再是原生 `<details>`；
+- 守卫只把**带行为语义**的原生元素（`button|input|select|textarea|table|dialog|details` 与 `window.confirm/alert/prompt`）计为缺口；纯布局容器（`header`/`section`/`div`）允许原生。这条口径写进本段并由此守卫执行；
+- 重命名 `details` 会牵动 `SectionTag` 联合类型、`sectionLayout.ts`、`pageContract.ts` 与 4 处消费点，且 `page_contract_boundary_guard` 已把 `"tag": "details", "open": True` 固定为必需契约文本——**无收益、有回归面**，不在本段。
+
+`window.confirm` 则无争议：仓库其余全部位置都走受管确认权威 `IntentConfirmationDialog`（`ScDialog` + 嵌套遮罩焦点/滚动恢复），这两处是**唯一的例外**。
+
+### 4. 修复
+
+产品侧（`fc38e62f6`）：
+
+- `SceneHealthView`：3 处原生 `<details>/<summary>` → `<ScDisclosure :title="..." :open=... :style=...>`，保留 `pageSectionTagIs(..., 'details')` 角色守卫与 `pageSectionOpenDefault` 默认展开；作用域样式 `details`/`summary` 选择器改为 `.health-details`（不再样式化原生元素）；
+- `SceneHealthView`（rollback）、`ScenePackagesView`（import）：`window.confirm` → `await ref.confirm({actionLabel, message})`，**确认放在 `busy = true` 之前**，取消不再闪现 loading，也不再需要 `busy=false` 回滚写；
+- `BusinessConfigChangeSetPanel`：`.high-risk-boundary` 原生 `<details>` → `<ScDisclosure>`。
+
+守卫侧（`0cd4d0a03`）：
+
+- 去掉 `not is_p3(source)` 与两个**惰性**名称排除（`MenuTree.vue`、`CanonicalNavigationMenuNode.vue` 实测无任何原生行为，排除只留未来盲点）；**设计系统适配层排除保留**，因为在适配层实现 primitive 正是它的职责；
+- `scope` 更正为 `repository P0-P4 frontend production sources except the design-system adapter layer`；
+- 失败信息由"只有一个计数"改为**逐源可定位**：`unassessedRawBehaviorSurfaces=3 (... SceneHealthView.vue(details+window.confirm), ...)`；
+- 新增 `productLayer` 字段，失败时能直接判断是 P3 还是主产品面。
+
+### 5. 负例（先证明门禁会红）
+
+`0cd4d0a03` 之前先用**未修复的真实源码**求值，得到 §2 的三项失败（非构造样本）。
+另有入册单测三条（`scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py`，10 → 13 测）：
+
+- `test_raw_behavior_surface_inside_p3_administration_is_evaluated`：把含 `<details>` 的临时文件放进 P3 前缀目录，必须被计入且 `productLayer=P3`；**若有人把 `not is_p3(source)` 加回去，这条立即失败**；
+- `test_native_confirmation_api_is_a_raw_behavior_surface`：`window.confirm` 必须被计入（覆盖非 P3 通用路径）；
+- `test_design_system_adapter_layer_may_own_native_elements`：设计系统层内的 `<button>` 必须**不**计为缺口（正向对照，防止守卫扩大化）。
+
+### 6. 验证（分层结果）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=dirty scope=unclassified_by_design coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | **PASS 13 tests**（原 10）；`PASS required=33 missing=0 bridge_only=0 adapter_unconsumed=0 unassessedRequiredTakeovers=0 raw=0` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 59 tests** + 3 件清单 `--check` 全 PASS（`rendering_detail_inventory surfaces=172 gaps=0`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0`） |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS `components=46 eventCases=11` |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` 两套配置） |
+| L2 | `verify.frontend.state_dashboard.unit` / `scene_component_bridge.unit` / `scene_component_bridge.guard` / `global_component_capability.unit` | 全 PASS（`blocks=9 formal_gaps=0`、`checks=129`、`tests=31`） |
+| L2 | 6 条契约消费/边界守卫（`page_contract_boundary`、`orchestration_consumption`、`product.contract_consumption`、`scene_governance_consumption`、`section_tag_coverage`、`section_style_coverage`） | 全 PASS（`checked_pages=17 checked_sections=85`） |
+
+L4（受管 5180，一次构建、一次定向检查）：
+
+- `make frontend.standard.preview.build` 单次构建 22.73s，产物替换 `sce-offrepo/artifacts/config05-20260929/dist`
+  （旧候选另存 `config05-20260929-prev-8feb2ee0d`，未覆盖）。`build-identity.json`：
+  `base_sha=640a97eb7`、`dirty_scope=""`、`entry=/assets/index-Clm_Nfe3.js`、`entry_sha256=fc1ee8d0…`。
+  5180 监听进程仍为 `pid=802966`（`STATIC_ROOT` 指向同一路径，故**无需重启、未新增端口**），
+  HTTP 回读 `index`/`entry` 的 SHA-256 与身份文件逐一相符。
+- 定向探针 `artifacts/frontend-web-fix-20260928/p3-official-components/`：以受管角色
+  `fixture_role_config_admin` 登录，1440×950 与 390×844 两个视口。
+
+| 检查 | 结果 |
+|---|---|
+| `/admin/business-config` `.high-risk-boundary` | `data-semantic-component=ScDisclosure`、`data-disclosure-trigger` 标签为「独立高风险操作」、可展开收起、正文完整；页面 `details/summary` 计数 **0** |
+| 两视口横向溢出 | 1440 与 390 均 `scrollWidth-clientWidth <= 1` |
+| 写请求 | 仅 `login`；**零业务写**（`ui.business_config.*` 均为读/扫描） |
+| `window.confirm` | 全程未触发原生对话框（`page.on('dialog')` 零命中） |
+
+`ScDisclosure` 本身的渲染由同一次运行中的项目列表行（4 个实例）与上述 boundary（1 个实例）共同证明。
+
+### 7. 未取得的证据（明确登记，不扩大权限凑证据）
+
+`/admin/scene-health` 与 `/admin/scene-packages` 的路由守卫要求 `session.user.is_platform_admin === true`
+（`router/index.ts` `adminOnly`），而受管验收环境**没有 platform-admin 夹具账号**
+（`config/frontend/acceptance_environments_v1.json` 的 `role_bindings` 只有 finance / project_member /
+project_manager / owner / contract_operator / config_admin）。实际访问被重定向到 `/s/projects.list`。
+
+**不为此扩大角色或权限**：这是既有的授权边界，不是本段缺陷。因此这两个页面的页面级浏览器证据
+**本轮未取得**，其改动依据为：同一官方组件在本次运行中的 5 个实例、两套 `vue-tsc` 类型检查、
+以及 6 条契约消费/边界守卫。按分层规则记为 `not_run`，不写成通过。
+
+### 8. 提交
+
+- `fc38e62f6 fix(web): render administration disclosure and confirmation with official components`
+- `0cd4d0a03 fix(guard): evaluate raw behaviour surfaces in administration sources`
+- `640a97eb7 chore(web): refresh the derived inventories for the administration takeover`
+- 本段记录（文档）
+
+### 9. 剩余（显式登记，不在本段）
+
+- 承接上一段全部登记项（`state_transition_undeclared` 五条、`workflow_contract_backend` 7 条既有失败、
+  `style_system.guard` 四项文件长度欠账、117 个未接入 lane 的 `smart_core` 测试文件、
+  `test_contract_governance_project_form.py` 9 条、`smart_core` 整模块 13 条、
+  `verify.docs.product_boundary`、`playwright_vendor_coupling` 探针层债务），本段未触碰。
+- 本段**新登记（非阻断）**：`MenuTree.vue` / `CanonicalNavigationMenuNode.vue` 的名称排除已删除，
+  两文件当前无任何原生行为；若将来需要豁免，必须给出与设计系统同级的理由，不能只写文件名。
+- 本段**新登记（非阻断）**：`/admin/*` 管理面在受管验收环境无 platform-admin 夹具，
+  这三条管理路由的页面级回归目前只能靠组件级＋契约级证据；需要页面级证据时应单独申请夹具授权，
+  不得用放宽 `adminOnly` 解决。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 29｜"范围排除"的同类盲区复查：层级无关的策略边界不得被层级延迟吞掉（2026-09-30）
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 共享契约/守卫的判定范围）＋ P4（`scripts/audit`、`scripts/verify` 的前端守卫与其单测、派生清单） |
+| **Layer Target** | `scripts/audit/generate_frontend_rendering_detail_inventory.py`；`scripts/verify/frontend_primitive_adapter_guard.py` 及两份单测 |
+| **Module** | `smart_core`（守卫与清单归属）；不触及 `frontend/apps/web` 与 `frontend/packages/ui` 任何源码 |
+| **Standard vs User-Specific** | 平台标准：**"层级无关的策略边界（原生控件、原生行为）必须对全产品层生效，层级延迟只能延后所有权声明，不能吞掉策略边界"** —— 与行业/客户语义无关 |
+| **Why Here** | 只有生成器与守卫里能同时看到"对外声明的作用域"和"实际被求值的集合"；单测是唯一能把两者锁成不变量的地方 |
+| **Why Not Elsewhere** | 不放后端：后端不渲染 DOM；不放页面：页面不能自证；不删 `is_p3` 整体：会把 19 个 P3 所有权欠账一次性变成阻断，属扩大范围；不改业务矩阵：矩阵只随已证明职责升级 |
+| **Blast Radius** | 清单 `completionPolicy` 增加 `nativeControlScope`、新增 `p3OwnershipDeferred` 登记块、P3 面 `reason` 文本更新；判定顺序改变但**今日输出零差异**（P3 内原生控件命中 0）。菜单/模型/契约/请求载荷零变化 |
+
+### 2. 为什么上一轮验收体系没发现这个偏差（根因）
+
+段 28 修掉的是"**发布 `completionRule` 但从不求值**"。那是一次性缺陷，修完就没了。本段复查发现更根本的一层：
+
+> **守卫的"对外口径"（`scope` / `completionPolicy` / 错误文本）与"实际被求值的集合"是两处彼此独立的声明，没有任何机器把二者绑在一起。**
+> 因此任意一个提前 `return` / `continue` 都能悄悄缩窄求值集合，而对外口径不变，看板依旧全绿。
+
+具体到三个失效环节：
+
+1. **判定顺序无约束**：`is_p3` 提前 `return` 写在原生控件检查之前，读代码时两行都"正确"，只有把两者**组合**起来看才知道策略规则被吞掉。
+2. **`--check` 只证明确定性，不证明覆盖**：清单的 `--check` 只比对"生成结果与磁盘是否一致"，不做"声明范围 ⊇ 求值范围"的语义比对。生成器与清单一致地"少检查一块"，`--check` 恒绿。
+3. **单测只锁样例，不锁作用域**：既有单测断言的是具体正例/负例（某文件必须是 `gap`、某文件必须是 `governed_primitive`），没有一条断言"某条策略规则的作用域必须覆盖它声明的层级"。
+
+**本轮的补齐方式**（对应上面三条）：
+
+- (1) 把层级无关的策略边界移到**任何层级延迟之前**，并在原位留注释说明顺序是规则的一部分；
+- (2) 让口具有可校验的形状：`completionPolicy.nativeControlScope` 显式写出覆盖层，`p3OwnershipDeferred` 让"延后"本身变成**被计数、被登记**的数据，而不是一句字符串；
+- (3) 新增断言"作用域不变量"的负例测试，并**先证明旧行为会红**。
+
+### 3. 复查方法（D = 声明范围 − 求值范围）
+
+对 `scripts/audit/generate_frontend_*.py`（5 件）与 `scripts/verify/frontend_*guard*.py`／`*audit*.py`
+逐一检查"是否存在按 P3／路径前缀的排除"，并与该文件**对外声明的范围**对照：
+
+| 文件 | 是否有范围排除 | 对外声明的作用域 | 一致？ |
+|---|---|---|---|
+| `generate_frontend_component_driver_takeover_inventory.py` | 曾有 `is_p3`（段 28 已修） | `repository P0-P4 frontend production sources except the design-system adapter layer` | ✅ |
+| `generate_frontend_rendering_detail_inventory.py` | `is_p3` 提前 return，**吞掉原生控件规则** | `scope` = 全部正式产品前端；`completionPolicy.nativeControlRequiresExplicitCompositeOwnership` 无限定层 | ❌ **本段修复** |
+| `generate_frontend_visual_projection_inventory.py` | `consumer_primitive_visual_chrome` 排除 P3 | `scope` = `repository formal P0/P1 frontend source projection` | ✅ 声明的本来就是 P0/P1 |
+| `verify/frontend_primitive_adapter_guard.py` | 原生控件规则全仓；呈现 chrome 规则排除 P3 | 文件内**无声明**，且是裸 `continue` | ⚠️ **本段改为具名声明** |
+| `generate_frontend_official_design_alignment_inventory.py` | `excludedScopes` 显式含 `P3 low-code designer styling` | 已声明 | ✅ |
+| `generate_frontend_professionalization_baseline.py` | `EXCLUDED_SCOPES` 已声明，无 P3 跳过 | 已声明 | ✅ |
+| 其余前端守卫（约 30 处 `continue`） | 按文件后缀／diff 行过滤 | 与作用域无关 | ✅ |
+
+结论：与 P3 有关的排除共 4 处 —— 1 处已在段 28 修复、**1 处本段修复**、1 处声明本就一致、1 处本段改为具名声明。不存在需要继续扩张的第二个同类盲区。
+
+### 4. 已确认缺口 A：`rendering-detail` 清单的原生控件边界被 P3 延迟吞掉
+
+```python
+def classify(source, text):
+    if "/components/design-system/" in source:
+        return "governed_primitive", ...
+    if is_p3(source):                       # ← 提前 return，吞掉下面全部规则
+        return "p3_out_of_scope", "... handled by a separate P3 batch"
+    if source in DELIBERATE_NATIVE_COMPOSITES: ...
+    raw_controls = [...]                     # ← 层级无关的策略边界，反而在延迟之后
+    if raw_controls:
+        return "gap", f"formal P0/P1 surface bypasses governed adapters: ..."
+```
+
+两处不一致同时存在：
+
+- `completionPolicy.nativeControlRequiresExplicitCompositeOwnership = True` 写的是**无限定层**的规则，
+  实现上 P3 却被静默豁免；
+- `reason` 声称 `handled by a separate P3 batch`，但**没有任何被登记的 P3 批次** —— 这正是"缺口必须显现"的反面。
+
+### 5. 已确认缺口 B：原生适配守卫的 P3 呈现豁免是裸 `continue`
+
+```python
+if RAW_INTERACTIVE_CONTROL.search(source_text):        # 全仓规则，正确地在前面
+    errors.append(...)
+...
+if relative in p3_files or relative.startswith(p3_prefixes):
+    continue                                            # ← 裸 continue，无具名理由
+```
+
+豁免本身**是可辩护的**（`official-design-alignment` 已把 `P3 low-code designer styling` 声明为范围外），
+但豁免在**使用点**上没有声明，读者只能靠推断；一旦有人把这一行上移，全仓的原生控件规则会被一起吞掉。
+
+### 6. 修复
+
+**A（`generate_frontend_rendering_detail_inventory.py`）**
+
+- 与层级无关的原生控件边界移到 `is_p3` 延迟**之前**；
+- `reason` 按实际层命名：`formal P3 surface bypasses governed adapters: …` / `formal P0/P1 …`；
+- 新增 `layer_of(source)`，`formalProductLayer` 由 `"P3" if status == "p3_out_of_scope" else "P0"`
+  改为 `"P3" if is_p3(source) else "P0"` —— P3 面即使在 `gap` 状态下也**不会**被错标成 P0；
+- `completionPolicy` 新增 `nativeControlScope = "every formal-product surface (P0-P4) except the design-system adapter layer"`；
+- 新增 `p3OwnershipDeferred`：把"延后"变成显式、被计数的登记块
+  （`deferred/register/reason/surfaceCount/surfaces`，当前 `surfaceCount=19`）。
+
+**B（`frontend_primitive_adapter_guard.py`）**
+
+- 新增具名常量 `P3_CONSUMER_CHROME_EXEMPTION`（写明基准与理由）与函数
+  `consumer_chrome_exempt(relative, p3_files, p3_prefixes)`；使用点改为调用该函数，
+  并在常量注释中固定"原生控件/对话框语义规则必须先于该豁免运行"。
+
+**不动的东西**：`DELIBERATE_NATIVE_COMPOSITES` 的优先级、`STATE_PATTERNS`、
+`STATUS_VALUES` 词表、前端任何 `.vue` / `.ts`、业务矩阵、`.agent`。
+
+### 7. 负例（先证明会红，再声称修复）
+
+| 负例 | 变异 | 期望 | 实测 |
+|---|---|---|---|
+| `test_p3_surface_cannot_bypass_the_repo_wide_native_control_boundary` | 把 `is_p3` 延迟**移回**原生控件检查之前 | 必须红 | 变异后 `classify(P3, '<button>')` 返回 `p3_out_of_scope` → **断言失败，盲区复现** |
+| `test_p3_administration_consumer_chrome_is_a_declared_exemption` | 让 `consumer_chrome_exempt` 恒返回 `None`（撤销豁免） | 必须红 | 报出 `consumer primitive visual chrome must move to an adapter appearance: …LegacyPanel.vue` → **断言失败** |
+| `test_p3_administration_surface_cannot_bypass_native_control_boundary` | 把 P3 豁免上移到原生控件检查之前 | 必须红 | 变异后 P3 面的 `<input>` 不再报错 → **盲区复现** |
+
+新增不变量断言（正向锁）：`p3OwnershipDeferred.surfaceCount == len(p3_out_of_scope 面)`、
+`nativeControlScope` 同时含 `P0-P4` 与 `design-system adapter layer`、`layer_of` 分层正确。
+
+### 8. 验证（分层结果）
+
+改动只落在 `scripts/audit`、`scripts/verify` 与 `docs/` 派生清单，**未触及 `frontend/` 源码**，
+因此 L4 浏览器层与 `verify.frontend.typecheck.strict` 不因本段失效，不重跑（沿用段 28 同一候选）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only next=risk_selected_non_zero_L2_targets_required` |
+| L1 | `make verify.guard.registry` | PASS `AUDIT PASS: 1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（含 `tracked generated reports are current`） |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 64 tests**（原 59，+5）；`rendering_detail_inventory PASS surfaces=172 gaps=0`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0`、`rendering_detail_state_guard PASS surfaces=97` |
+| L2 | `make verify.frontend.primitive_adapter.unit` | **PASS 33 tests**（原 31，+2）；`components=46 eventCases=11`、`frontend_primitive_adapter_guard PASS components=46` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS 13 tests；`required=33 missing=0 raw=0`（同类规则未回退） |
+
+派生清单刷新：`make refresh.frontend.rendering_detail.inventory` 后仅
+`component-professionalization-inventory-v1.json` 变化（49+/21−：`sourceIdentity`/`generatorDigest`、
+19 条 P3 `reason`、`completionPolicy.nativeControlScope`、新键 `p3OwnershipDeferred`）；
+`visual-projection-inventory-v1.json` 与 `official-design-alignment-inventory-v1.json` **逐字节不变**，
+证明改动未外溢到相邻清单。
+
+### 9. 显式登记（不在本段范围）
+
+- **P3 状态原语所有权欠账（非阻断，独立台账）**：`p3OwnershipDeferred.surfaceCount = 19`
+  （P3 共 20 个 `.vue`，1 个无相关词汇不入清单）；其中 **17 个有状态词汇但无
+  `ScLoading`/`ScEmptyState`/`ScErrorState` 原语**。这是真实的 P3 欠账，需单独的 P3 所有权批次建立声明；
+  **不通过删掉 `is_p3` 让 19 个 `gap` 一次性冒出并阻断 P0/P1 收口**。
+- `scale` 延后口径：P3 面判定为 `p3_out_of_scope` 时 `reason` 指向 `p3OwnershipDeferred`，
+  未来 P3 批次应把该块改为 `deferred: false` 并补齐所有权声明。
+- 承接段 28 全部登记项（含 `/admin/*` 无 platform-admin 夹具的页面级证据缺口、
+  `MenuTree.vue`/`CanonicalNavigationMenuNode.vue` 名称豁免移除后需同等理由才能恢复），本段未触碰。
+
+### 10. 提交
+
+- `fix(guard): evaluate the layer-independent native control boundary before the P3 deferral`
+- `chore(web): refresh the derived inventory for the layer-independent native control policy`
+- 本段记录（文档）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+---
+
+## 段 30｜求值集合 ≠ 渲染面：外置模板与状态原语词表（2026-09-30）
+
+段 29 的复查结论是"P3 只残留所有权欠账，无第二处同类盲区"。本段在同一批生成器/守卫上继续追问
+"求值集合是否等于被声明的面"，又发现两处，其中一处会浮现**真实的 P0 所有权缺口**。
+
+### 1. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| **Formal Product Layer** | P0（`smart_core` 共享守卫的求值集合与所有权登记）＋ P4（`scripts/audit`、`scripts/verify`） |
+| **Layer Target** | `scripts/audit/generate_frontend_rendering_detail_inventory.py`、`scripts/verify/frontend_primitive_adapter_guard.py`、`docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json` |
+| **Module** | `smart_core`（守卫与所有权归属）；未改 `frontend/apps/web` 任何源码 |
+| **Standard vs User-Specific** | 平台标准：**"被求值的源必须等于该组件真实渲染面"**、**"状态原语词表必须与治理该原语的守卫一致"** —— 与行业/客户语义无关 |
+| **Why Here** | 只有守卫/清单能同时看到"声明的源集合"与"实际扫描的文件集合"；只有所有权登记能表达"这个面由谁负责" |
+| **Why Not Elsewhere** | 不放页面：页面不能自证被扫描到；不改后端；不放宽门禁阈值；不改业务矩阵 |
+| **Blast Radius** | 新增 2 个外置模板进入 `input_digest`；状态原语词表 +`ScInlineState`；`ObjectTaskPage.vue` 进入既有 P0 完成批次与所有权登记。菜单/模型/契约/请求载荷零变化；`frontend/` 源码零变化 |
+
+### 2. 同类根因的第三次显形
+
+段 28 修的是"发布规则但不求值"，段 29 修的是"层级延迟吞掉层级无关边界"。本段发现第三种形式：
+
+> **求值集合被"文件边界"和"词汇表"两处静默裁剪，而对外声明的面（组件 / 状态原语）并没有变小。**
+
+### 3. 缺口 A：外置 `<template src>` 不在求值集合
+
+仓库有 2 个正式产品组件把模板放在外部文件：
+
+```
+frontend/apps/web/src/views/MenuConfigView.vue            -> views/menuConfig/template.html (27,674 B)
+frontend/apps/web/src/views/BusinessConfigSurfaceView.vue -> views/businessConfigSurface/template.html (16,996 B)
+```
+
+而两处扫描都只看 `.vue` 本身：
+
+- `frontend_primitive_adapter_guard.py`：`frontend_root.rglob("*.vue"/"*.ts"/"*.js"/"*.mjs")` —— `.html` 模板**不在扫描集合内**；
+- `generate_frontend_rendering_detail_inventory.py`：`text = path.read_text()` —— 只读 `.vue`，外置模板内容**不参与任何判定**。
+
+后果是**双向**的：
+
+1. **漏报**：外置模板里的原生 `<button>`／`<input>` 完全不被 `RAW_INTERACTIVE_CONTROL` 看见；
+   而该模板正是这些组件真正的渲染面。这是一个可以长期潜伏的守卫空洞。
+2. **误判**：`MenuConfigView` 的状态呈现全靠外置模板里的 `<ScInlineState>`（4 处），
+   但清单只看到 `.vue`，于是把它的 `governedStatePrimitives` 记为"空"。
+
+今日两处外置模板恰好没有原生控件（实测 `<button|<input|<select|<textarea>` 命中 **0**），
+所以这是**结构性空洞**而非既发缺陷——但"今天没踩到"不能作为保留空洞的理由。
+
+### 4. 缺口 B：状态原语词表漏 `ScInlineState`，浮现真实 P0 所有权缺口
+
+清单的 `GOVERNED_STATE_PRIMITIVES = (ScLoading, ScEmptyState, ScErrorState)`，
+但仓库**另有** `frontend_inline_state_guard` 明确治理 3 个原语：
+`ScInlineState` / `ScEmptyState` / `ScErrorState`（该守卫逐项断言其 TDesign 驱动、语义身份与无障碍属性）。
+
+**清单的词表与治理该原语的守卫不一致**：`ScInlineState` 明明受治理，却不被清单识别为"状态原语已接管"。
+由于清单的纳入条件之一是 `governed_primitives` 非空，只用 `ScInlineState` 呈现状态的面
+会**整体从清单里消失**——不是判为缺口，而是**根本不出现**。
+
+补齐词表后立即浮现 **1 个真实的 P0 所有权缺口**：
+
+```
+frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue
+  status=gap  reason=relevant state or native interaction has no explicit professionalization ownership declaration
+```
+
+该组件是 `ContractFormDriverHost` 渲染的"当前任务"页（`ObjectTaskPage`，含 1 处 `ScInlineState`、
+多个 `ScCard`），并且**已被另外 5 个守卫治理**：
+
+- `frontend_professional_audit_guard.py`
+- `frontend_form_canvas_wide_grid_guard.py`
+- `frontend_page_pattern_reference_parity_guard.py`
+- `frontend_product_page_pattern_guard.py`
+- `frontend_scene_component_bridge_guard.py`
+
+也就是说：它并不缺专业实现，**缺的是在本清单的所有权登记**——长期不可见，因为词表根本没把它纳入。
+这正是"静默缺口"最危险的一种形态：不是判错，而是**看不到**。
+
+**没有通过放宽阈值或删除词表来消除它**：按既有机制把它登记进 `p0-inline-full-state-completion-v1`
+批次，并给出机器可校验的绑定（`ScInlineState` + `state="info"` + `density="compact"` ≥1），
+同时在 `rendering-surface-ownership-v1.json` 声明该源归属同一 P0 所有者。
+
+### 5. 修复
+
+**A（外置模板进入求值集合）**
+
+- 新增 `EXTERNAL_TEMPLATE_SRC` 与 `external_template_paths()` / `resolve_source_text()`
+  （清单）、`external_template_text()` / `component_source_text()`（守卫）；
+- 解析失败**失败关闭**（`ValueError` / `FileNotFoundError`），不允许"文件找不到就只判 `.vue`"；
+- 清单把外置模板并入 `input_digest`，`scope` 明确写为
+  `… including external <template src> files`，并在 `p3OwnershipDeferred.externalTemplateCount` 计数。
+
+**B（词表对齐 + 登记真实缺口）**
+
+- `GOVERNED_STATE_PRIMITIVES` 增加 `ScInlineState`，并注明与 `frontend_inline_state_guard` 对齐；
+- `BATCH_BINDINGS["p0-inline-full-state-completion-v1"]` 增加
+  `ObjectTaskPage.vue: {"scinlinestate": {"states": {"info"}, "attrs": {"density": "compact"}, "minimum": 1}}`；
+- `rendering-surface-ownership-v1.json` 的同一 P0 所有者 `sources` 增加 `ObjectTaskPage.vue`
+  （`ownership_binding_failures()` 要求批次的每个绑定源都有正式所有者，缺失即失败关闭）。
+
+### 6. 负例（先证明会红）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_external_component_template_cannot_hide_a_native_control` | 让 `component_source_text` 退化为纯读 `.vue` | 外置模板里的 `<button>` 逃过守卫 → **断言失败** |
+| `test_external_template_joins_the_evaluated_source` | 取消 `resolve_source_text` 的模板拼接 | 组合文本不再含 `<ScInlineState` → **断言失败** |
+| `test_object_task_page_binding_fails_closed_when_state_changes` | 把 `state="info"` 改成 `state="empty"` | 绑定失配 → `classify()` 返回 `gap` → **断言失败** |
+| （登记前实测） | 只补词表、不登记所有权 | `gap=1`、`nextBatch` 非空 → 缺口确实显现，未被吞掉 |
+
+### 7. 验证（分层结果）
+
+改动只落在 `scripts/`（audit/verify）与 `docs/` 派生清单，**`frontend/` 源码零变化**，
+因此 L4 浏览器层与 `verify.frontend.typecheck.strict` 不因本段失效，不重跑（沿用同一 5180 候选）。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 70 tests**（段 29 后 64，+6）；`rendering_detail_inventory PASS surfaces=173 gaps=0`、`rendering_detail_state_guard PASS surfaces=98`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0` |
+| L2 | `make verify.frontend.primitive_adapter.unit` | **PASS 34 tests**（+1）；`components=46 eventCases=11` |
+
+### 8. 对段 29 数字的更正（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变）；
+- "有状态词汇但无状态原语"的 P3 面：段 29 记为 **17**，本段词表对齐后实际为 **16**
+  （`MenuConfigView`、`BusinessConfigSurfaceView` 已确证使用受治理状态原语）；
+- 清单总面数：172 → **173**（`ObjectTaskPage.vue` 由不可见变为可见并有归属）；
+- `governed_composite`：112 → **113**。
+
+### 9. 显式登记（不在本段范围）
+
+- **未解析外置模板的相邻扫描**：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`。
+  这两个规则面向组件自身的 `<style>` 块与容器 class，外置模板不含样式块；
+  且它已把 P3 排除在外（段 29 已定性为"声明的就是 P0/P1"）。
+  记录为**已知不等价**：若将来把外置模板用于非 P3 组件且在该模板内挂容器 class，需一并解析。
+- 承接段 28/29 全部登记项，本段未触碰。
+
+### 10. 提交
+
+- `fix(guard): evaluate external component templates and align the governed state vocabulary`
+- `chore(web): refresh the derived inventory for the external-template and vocabulary alignment`
+- 本段记录（文档）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 31｜P3 状态带所有权：把手写状态标记换回受治理原语，并让转换可被机器复核（2026-09-30）
+
+### 1. 本段目标与边界
+
+P3（低代码设计器／管理台）状态的**所有权延迟**在段 29/30 已显式化，但一直只是"欠账计数"：
+登记表说这些面"有状态词汇、没有专业化所有权声明"，却没有任何东西记录**哪一面已经真的把状态带交给了设计系统**。
+本段做两件事：
+
+1. 把 P3 面上**语义最容易出错、风险最低**的手写状态标记，真正换成受治理状态原语；
+2. 给这批转换加一份**失败关闭**的登记（`p3OwnershipDeferred.stateBandOwned`），
+   让"已转成受治理原语"这件事可被机器验证，且删除原语／改掉字面状态就会立刻回退为延迟。
+
+**不做**：不放开 P3 的 `p3_out_of_scope` 不变量（`test_p3_surfaces_do_not_masquerade_as_p0_completion`
+仍要求 P3 面保持延迟状态），不重构低代码设计器，不动后端契约，不动其他守卫欠账。
+
+### 2. 产品渲染收口（4 面 / 5 处）
+
+| 文件 | 原来（手写） | 现在（受治理原语） | 判定依据 |
+|---|---|---|---|
+| `views/businessConfigSurface/BusinessConfigVersionPanel.vue` | `<div class="empty-state">{{ emptyText }}</div>` | `<ScEmptyState :title="emptyText" … />` | 真正的空结果带 |
+| `views/businessConfigSurface/BusinessConfigStartPanel.vue` | `<div class="workbench-status-empty">状态读取中</div>` | `<ScInlineState state="loading" label="状态读取中" />` | **类名说"空"、文案说"读取中"**，语义错位；同一组件的 `deliveryReadinessStatusText` 也把该条件判为"读取中"，故按 loading 呈现是行为保持 |
+| `views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue` | 同上 | 同上 | 同上 |
+| `views/ReleaseOperatorView.vue` | 两处 `<p class="release-operator__empty">{{ … }}</p>` | 两处 `<ScEmptyState :title="…" … />` | 真正的空结果带 |
+
+配套清理（避免死样式）：
+`style.css` 的 `.empty-state` 改为 `.version-panel-empty`（保留原纵向节奏），删除已无消费者的 `.workbench-status-empty`。
+
+### 3. 失败关闭的转换登记
+
+`generate_frontend_rendering_detail_inventory.py` 新增：
+
+- `P3_STATE_BAND_OWNERSHIP`：`source -> ("Primitive:state", …)`，只登记**实际渲染**的原语/状态对；
+- `rendered_state_bands(text)`：从**解析后的源**（含外置模板）取
+  `ScLoading:loading` / `ScEmptyState:empty` / `ScErrorState:error` 与 `<ScInlineState state="…">` 的字面状态；
+- `p3_state_band_ownership_failures(deferred_sources)`：四条失败关闭检查——
+  声明源必须是 P3 面、必须仍在延迟登记表内、文件必须存在、**每一条声明必须真的被渲染**；
+- `build_inventory()` 在求值完 `surfaces` 后调用该检查，**失败即 `ValueError` 抛出**（不是打印告警）。
+
+报告新增 `p3OwnershipDeferred.stateBandOwned` / `stateBandOwnedCount` / `stateBandOwnershipRule`。
+`p3OwnershipDeferred.surfaces`（source 列表）保持不变，既有断言与外部消费不受影响。
+
+当前登记：
+
+```
+stateBandOwnedCount = 4
+ReleaseOperatorView.vue                -> ScEmptyState:empty
+BusinessConfigCoverageWorkspace.vue    -> ScEmptyState:empty, ScInlineState:loading
+BusinessConfigStartPanel.vue           -> ScInlineState:loading
+BusinessConfigVersionPanel.vue         -> ScEmptyState:empty
+```
+
+`p3OwnershipDeferred.surfaceCount` 仍为 **19**（不变量未放开），其中 **4** 面已进入"状态带已受治"登记，
+剩余 **15** 面仍为纯延迟。
+
+### 4. 负例（先证明会红，再证明会绿）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_p3_state_band_ownership_fails_closed_when_a_claim_stops_rendering` | 把 `BusinessConfigVersionPanel` 的 `<ScEmptyState` 换成裸 `<div>` | 断言失败（`ScEmptyState:empty` 未被渲染） |
+| （端到端实测） | 给 `BusinessConfigVersionPanel` 追加一条 `ScInlineState:loading` 声明 | `build_inventory()` 抛 `ValueError: … declared P3 state band is not rendered …` |
+| `test_p3_state_band_ownership_rejects_a_non_p3_declaration` | 把未渲染的 `SceneHealthView.vue` 登记进来 | 断言失败 |
+| `test_p3_state_band_ownership_claims_are_rendered` | 登记表与报告字段／延迟登记表一致性 | 通过 |
+
+### 5. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/views/**`（4 个 Vue + 1 个 CSS）+ `scripts/audit/**`（生成器与单测）+ `docs/**` 派生清单。
+影响层：L1 静态/生成物、L2 前端定向单测；风险类：呈现与守卫登记（非持久化、非授权）。
+最早必需层 L2；跳过项及理由见下。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（其中 `complexity_budget_report` 因本段文件尺寸变化先过期，已按提示重新生成） |
+| L1 | `python3 scripts/verify/docs_inventory.py` + `make verify.docs.links` | PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | **PASS 73 tests**（段 30 后 70，+3）；`rendering_detail_inventory PASS surfaces=173 gaps=0`、`rendering_detail_state_guard PASS surfaces=98`、`visual_projection PASS`、`official_design_alignment PASS internalVendorSelectorGapCount=0` |
+| L2 | `scripts/audit/test_generate_frontend_rendering_detail_inventory` | **PASS 37 tests** |
+| L2 | `make verify.frontend.primitive_adapter.unit` | PASS 34 tests；`components=46 eventCases=11` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS 13 tests；`required=33 missing=0 raw=0`（清单已刷新：alert 54→56、empty 24→27、loading 50→52） |
+| L2 | `make verify.business_config.guard_inventory` / `.product_guard` / `.publish_boundary_guard` | PASS（`design_system_usages=130`、`raw_controls=0`） |
+| L2 | `verify.frontend.official_icon.unit` / `.global_component_capability.unit` / `.low_code_field_create_dialog.unit` / `.page_pattern_reference_parity.unit` / `.product_page_pattern.unit` | PASS |
+| L2 | `make verify.frontend.typecheck.strict` | PASS |
+| L4 | 5180 新候选双视口定向观察 | 见第 6 节 |
+
+**跳过项与理由**：不重跑 89 入口、全站发布验收、后端模块升级与夹具重置——本段未改后端模型、权限或数据契约。
+
+### 6. 候选、运行身份与浏览器观察
+
+- 旧产物保留：`config05-20260929` → `config05-20260929-prev-640a97eb7`（base_sha `640a97eb7…`，未覆盖）。
+- 新候选（最终冻结）：`config05-20260929/dist`，`base_sha=013770d18…`（本段 4 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-C53ItXQV.js`。
+  过程序：先在 `e01137026` + dirty 树上构建一次用于观察，提交后在干净 HEAD 上重建；
+  两次构建的入口与 `entry_sha256` **逐字节一致**（`d8faca02…`），因此前面的观察证据对冻结候选同样成立。
+  另保留 dirty 构建为 `config05-20260929-prev-e01137026`（未覆盖）。
+- 5180 监听进程在操作前后均为 `pid=802966`（`scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`）；
+  静态服务按请求读盘且 `index.html` 为 `no-cache`，同路径替换产物即对新内容生效，**未新增常驻端口**。
+- 身份自校验：`SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1 DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 python3 scripts/dev/frontend_standard_preview.py identity` → PASS。
+- 实际服务入口：`/assets/index-C53ItXQV.js`，已用 HTTP 回读核对与 `build-identity.json` 一致，
+  且回读字节的 sha256 等于 `entry_sha256`。
+
+定向浏览器观察（受管角色 `fixture_role_config_admin`，`sc_frontend_acceptance`，全程零写入；
+下表为**对冻结候选复采**的结果，两个视口均为 `scan-row=60`）：
+
+| 检查 | 1440×900 | 390×844 |
+|---|---|---|
+| `/admin/business-config` 可达 | 是（`scan-row=60`） | 是 |
+| 手写状态标记 `.workbench-status-empty` | **0** | **0** |
+| 遗留 `.empty-state` | **0** | **0** |
+| 受治理 `[data-semantic-component="ScEmptyState"]` | **1** | **1** |
+| 页面级横向溢出 `scrollWidth/clientWidth` | 1440/1440 | 390/390 |
+| console error | 0 | 0 |
+
+`/admin/release-operator` 为 `adminOnly`，受管环境**无 platform-admin 夹具** → 记录为
+`not_run`（不放宽 `adminOnly`、不换管理员证明业务可用）。该面的源码级证据来自失败关闭登记。
+
+**未覆盖（如实记录，不当作通过）**：版本记录面板的"空结果带"未在浏览器里被驱动出来
+（本次运行中三列工作台的版本触发入口未激活），因此
+`release-operator` 与版本面板空态目前只有**源码级失败关闭登记**，没有页面级截图证明。
+
+**环境差异（非本段引入）**：带 `model=construction.contract&action_id=1002` 的工作台入口在
+`sc_frontend_acceptance` 返回"动作 1002 不存在"——该样本属于 demo 库，本段改用无动作参数入口，
+未修改任何业务数据。
+
+### 7. 对段 30 数字的补充（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变）；
+- 其中 `stateBandOwnedCount`：**4**；剩余纯延迟：**15**；
+- `governed_composite`：**113**（不变，P3 面未跨状态）；
+- 清单总面数：**173**（不变）；
+- `component-driver-takeover` 消费者计数：alert 54→**56**、empty 24→**27**、loading 50→**52**。
+
+### 8. 显式登记（不在本段范围）
+
+- `views/businessConfigSurface/template.html` 仍有 2 处手写状态带
+  （`<div class="status error">`、`<section class="loading-state">`）。
+  转换需要在 `BusinessConfigSurfaceView.vue` 增加一行 import，而该文件**正好卡在
+  `low_code_workbench_product_guard` 的 600 行路由装配上限**（当前 600 行）。
+  **有意保留**：先拆装配职责再转换，不在本段用"删一行凑数"的方式绕过上限。
+- `BusinessConfigApprovalPanel.vue` 的 `approval-step-empty` 是带内联动作的虚线框布局，
+  换原语会改变对齐方式，登记为后续面。
+- `MenuConfigView` 的 `menu-selected-panel--empty` 是"未选菜单"引导面板（含标题与说明），
+  不是瞬时状态带，登记为布局面而非状态带。
+- 承接段 28–30 全部登记项：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`（已知不等价）；
+  `/admin/scene-health`、`/admin/scene-packages` 无 platform-admin 夹具；
+  `style_system.guard` 四项文件长度欠账；`state_transition_undeclared` 五条等。
+  本段未触碰，未新增越界。
+
+### 9. 提交
+
+- `refactor(web): render P3 administration state bands through governed primitives`
+- `fix(guard): fail closed on P3 state-band ownership claims`
+- 派生清单与段记录
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 32｜设计器与专用树的状态带收口：把剩余 P3 手写状态标记换回受治理原语，并扩表失败关闭（2026-09-30）
+
+### 1. 本段目标与边界
+
+段 31 把 P3 面上"语义最容易出错、风险最低"的 4 面状态带换成了受治理原语，并在
+`p3OwnershipDeferred.stateBandOwned` 建立失败关闭登记；但在段 31 §8 显式登记里，
+设计器、专用菜单树、审批面板三面被登记为"后续面"，工作台壳的两处状态带被
+`low_code_workbench_product_guard` 的 **600 行路由装配上限**挡住。
+
+本段承接这批登记，只做三件事：
+
+1. 把这三面 + 工作台壳（含外置模板）的**手写状态带**真正换成受治理状态原语；
+2. 把这 4 个新来源加进**失败关闭**登记（`P3_STATE_BAND_OWNERSHIP` 4 → 8），
+   让"已转成受治理原语"这件事继续可被机器验证——删原语、改字面状态立刻回退为延迟；
+3. 维护因退役类名而失配的探针（`configuration_center_batch_journey.mjs`），
+   **保留等待意图，不降断言**。
+
+**不做**：不放开 P3 的 `p3_out_of_scope` 不变量（`test_p3_surfaces_do_not_masquerade_as_p0_completion`
+仍要求 P3 面保持延迟状态）；不重构设计器；不动后端契约；**不拆**
+`BusinessConfigSurfaceView.vue` 的装配职责（见 §9）；不动四项 `style_system` 欠账。
+
+### 2. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P3 —— 低代码配置产品（设计器／管理台呈现面） |
+| `Layer Target` | 前端渲染层：`frontend/apps/web/src`（设计系统原语消费），非平台机制、非行业默认 |
+| `Module` | `frontend/apps/web`（Vue 呈现）+ `scripts/audit`（失败关闭登记与单测） |
+| `Standard vs User-Specific` | 平台机制级：状态**呈现**统一走受治理原语；与业务默认、客户偏好、管理员配置无关 |
+| `Why Here` | 状态带是**呈现**，归端侧设计系统；P3 面仍是 P3，本段只换承载原语，不改低代码语义与权限 |
+| `Why Not Elsewhere` | 不落后端契约（契约不表达外观）；不落 `smart_core`/`smart_construction_core`（非业务语义）；不落模板派生配置（非客户偏好） |
+| `Blast Radius` | 仅 `businessConfigSurface`、`menuConfig`、`contractForm` 设计器面与管理台壳的**瞬时状态带 DOM**；不动查询域、记录身份、授权、动作绑定。验证：既有 L1/L2 定向单测 + 失败关闭登记 + 一次浏览器观察 |
+
+### 3. 产品渲染收口（5 面 / 8 处）
+
+| 文件 | 原来（手写） | 现在（受治理原语） | 判定依据 |
+|---|---|---|---|
+| `pages/contractForm/CurrentFormFieldSettingsPanel.vue` | `<p class="contract-form-field-search-empty">没有匹配字段</p>` | `<ScEmptyState density="compact" :heading-level="5" title="没有匹配字段" />` | 真正的空结果带 |
+| 同上 | `<div class="contract-field-selection-empty">…`（含标题与说明） | `<ScEmptyState class="contract-field-selection-empty" density="compact" :heading-level="5" … />` | 空态引导，按 empty 语义；保留类名作外层框架 |
+| 同上 | `<p class="contract-form-operation-log-empty">暂无操作记录</p>` | `<ScEmptyState density="compact" :heading-level="6" title="暂无操作记录" />` | 真正的空结果带 |
+| `views/MenuConfigView.vue` + `views/menuConfig/template.html` | `<section class="menu-selected-panel menu-primary-panel menu-selected-panel--empty">…<h2>全部菜单</h2><p>…</p></section>` | `<ScEmptyState class="menu-empty-panel menu-primary-panel" :heading-level="2" title="全部菜单" … />` | "未选菜单"引导面板，empty 语义 |
+| `views/businessConfigSurface/BusinessConfigApprovalPanel.vue` | `<div class="approval-step-empty">…<ScButton>…</div>` | `<ScEmptyState class="approval-step-empty" density="compact" :heading-level="4" …><template #actions><ScButton … /></template></ScEmptyState>` | 空结果带 + 带内联主操作；动作经 `#actions` 槽保持同一业务意图 |
+| `views/BusinessConfigSurfaceView.vue` + `views/businessConfigSurface/template.html` | `<div v-else-if="error" class="status error">{{ error }}</div>` | `<ScInlineState v-else-if="error" state="error" :label="error" />` | 瞬时错误带 |
+| 同上 | `<div v-else-if="message.text" class="status ok">…</div>` | `<ScInlineState v-else-if="message.text" state="success">…</ScInlineState>` | 瞬时成功带 |
+| 同上 | `<section v-if="loading" class="loading-state">正在读取配置能力...</section>` | `<ScInlineState v-if="loading" state="loading" label="正在读取配置能力..." />` | 瞬时加载带 |
+
+配套清理（避免死样式）：
+- `CurrentFormFieldSettingsPanel.css`：删孤儿 `.contract-form-field-search-empty`、`.contract-form-operation-log-empty`；
+  把 `.contract-field-selection-empty` 从与 `.contract-field-selection-card` 的群组选择器拆出，独立保留边框/内边距/背景。
+- `menuConfig/table.css`：删 `.menu-selected-panel--empty` 及其 h2/p 规则；`.menu-empty-panel` 进面板边框群组 + `padding: 14px` 框架规则（注释说明只接管框架）。
+- `businessConfigSurface/style.css`：删孤儿 `.status.ok`、`.status small`、`.loading-state`；`.status`/`.loading-state` 从 margin 群组移除。
+- `BusinessConfigSurfaceView.vue`：新增一行 `import ScInlineState`，同时删除经核实**确属未用**的 `type BusinessConfigRemediationAction`
+  （唯一被削的阴影导入，**不是"删行凑数"**——该类型在文件内无任何引用；文件仍**恰好 600 行**）。
+
+### 4. 失败关闭的转换登记扩展
+
+`scripts/audit/generate_frontend_rendering_detail_inventory.py` 的 `P3_STATE_BAND_OWNERSHIP` 由 4 项扩到 **8 项**：
+
+```
+CurrentFormFieldSettingsPanel.vue            -> ScEmptyState:empty
+MenuConfigView.vue                           -> ScEmptyState:empty
+BusinessConfigApprovalPanel.vue              -> ScEmptyState:empty
+BusinessConfigSurfaceView.vue                -> ScErrorState:error, ScInlineState:error,
+                                                ScInlineState:loading, ScInlineState:success
+```
+
+检查逻辑沿用段 31：声明源必须是 P3 面、必须仍在延迟登记表内、文件必须存在、
+**每一条声明必须真的被渲染**（从解析后的源含外置模板取字面状态），
+`build_inventory()` 失败即 `ValueError` 抛出（不是打印告警）。
+
+### 5. 负例（先证明会红）
+
+| 负例 | 变异 | 实测 |
+|---|---|---|
+| `test_p3_designer_and_tree_bands_are_owned_by_governed_primitives` | 显式断言退役类名（`.contract-field-selection-empty`、`menu-selected-panel--empty`、`.approval-step-empty` 的旧 div、`.status ok`、`.loading-state`）**不再渲染**，且对应原语已在位 | 通过 |
+| `test_p3_state_band_ownership_fails_closed_on_a_dropped_designer_band` | 把设计器某一 `<ScEmptyState` 换成裸 `<div>` | 断言失败（声明未被渲染 → 登记回退为延迟） |
+| `test_p3_state_band_ownership_fails_closed_on_a_changed_inline_state` | 改工作台壳 `<ScInlineState state="…">` 的字面状态 | 断言失败 |
+
+单测模块：`python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory` → **40 tests OK**（段 31 为 37）。
+
+### 6. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/**`（5 个 Vue/HTML + 3 个 CSS + 1 个探针），
+`scripts/audit/**`（生成器与单测），`docs/**` 派生清单。
+影响层：L1 静态/生成物、L2 前端定向单测；风险类：呈现与守卫登记（非持久化、非授权、非契约）。
+最早必需层 L2；L3/L4 跳过项及理由见 §7。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `change_state=clean coverage=L1_only receipt=none` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（`complexity_budget_report` 随本段 `MenuConfigView.vue` 行为刷新，已在校验前重生成） |
+| L1 | `python3 -m unittest scripts.audit.test_generate_frontend_rendering_detail_inventory` | PASS `40 tests OK` |
+| L2 | `make verify.frontend.rendering_detail_state.unit` | PASS `76 tests OK`；`rendering_detail_inventory PASS surfaces=173 gaps=0` |
+| L2 | `make verify.frontend.component_driver_takeover.unit` | PASS `13 tests OK`；`required=33 missing=0` |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（先修过 `heading-level="5"` 类型错误 → `:heading-level="5"`） |
+| L2 | `make verify.business_config.guard_inventory / .product_guard / .publish_boundary_guard` | 全 PASS |
+| L2 | `make verify.frontend.primitive_adapter.unit / navigation_shell.unit / form_designer_actions.unit / low_code_field_create_dialog.unit / page_pattern_reference_parity.unit` | 34 / 19 / cases=6 / 6 / 15 全 PASS |
+| L2 | `bash scripts/verify/menu_config_tree_editor_behavior_guard.sh` | PASS |
+
+**L3 跳过**：未改后端模型、权限、数据契约 → 不做模块升级与夹具重置。
+**L4**：一次定向浏览器观察（见 §7），非完整发布门禁。
+
+### 7. 候选、运行身份与浏览器观察
+
+- 旧产物保留：`config05-20260929` → `config05-20260929-prev-6cd68a909`（base_sha `013770d18…`，**未覆盖**）。
+- 新候选：`config05-20260929/dist`，`base_sha=3da37f767…`（本段 3 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-XdKv-Cj_.js`，
+  `entry_sha256=425f40ee523e8c52d3dad3056ad5087a86091ca1b5b1fc048fd7fc5a2a45e03c`，
+  `index_sha256=d421f8da30e382985336f3ba1f334769280cce3d4d8fba81b7e6392237cf9970`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （构建前须先移走旧目录，否则 `REUSED unchanged build`）。
+- 5180 监听进程在操作前后均**未变**：`pid=802966`，`node scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`。
+  静态服务按请求读盘 → 同路径替换产物即对新内容生效，**未新增常驻端口**。
+- 身份自校验：HTTP 回读 `index.html` 与入口 JS，`index_sha256` / `entry_sha256` 与 `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，db `sc_frontend_acceptance`），
+  受管角色 `fixture_role_config_admin`，凭据仅取 `SC_ACCEPTANCE_FIXTURE_PASSWORD`。**全程零写入**。
+- 证据目录：`sce-offrepo/artifacts/seg32-p3-designer-tree/`（`observation.json`、`designer-probe2.json`、
+  `approval-probe2.json`、`approval-mobile.json` 及截图）。
+
+定向浏览器观察（两个视口，受管角色，全程零写入）：
+
+| 检查 | `/admin/business-config` 1440×900 | 同 390×844 | `/admin/menu-config` 1440×900 | 同 390×844 |
+|---|---|---|---|---|
+| 可达（`scan-row`） | 是（60） | 是 | 是 | 是 |
+| 手写状态标记 `.status.ok/.status.error/.loading-state` | 0 | 0 | 0 | 0 |
+| 退役类名 `.workbench-status-empty` / `.empty-state` | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 专用树 `.menu-selected-panel--empty` → `.menu-empty-panel` | — | — | **0 → 1** | **0 → 1** |
+| 受治理 `[data-semantic-component="ScEmptyState"]` | 1（"选择一个业务页面…"） | 1 | 1（"全部菜单…"） | 1 |
+| `ScInlineState state="loading"` | 采集到（"正在读取配置能力..."） | 采集到 | 采集到 | 采集到 |
+| 页面级横向溢出 `scrollWidth/clientWidth` | 1440/1440 | 390/390 | 1440/1440 | 390/390 |
+| console error | 0 | 0 | 0 | 0 |
+
+审批空态：由工作台"付款申请（`payment.request`，`action_id=775`）→ 配置审批规则"驱动出来，
+断言 `approvalEmpty=1`、DOM `data-semantic-component="ScEmptyState"`、
+文本"当前没有审批步骤 启用审批后可添加办理节点。启用并添加步骤"；1440 与 390 均无横向溢出，console error 0。
+
+**未覆盖（如实记录，不当作通过）**：设计器面 `CurrentFormFieldSettingsPanel`（本段改造的三处之一）
+在本次运行中**未被渲染**——该路由 `/f/payment.request/new?…&config_mode=business_config_lowcode`
+当前由 `data-bound-form-designer[data-ready=true]` 接管（`boundDesigner=1 boundReady=1`），
+因此设计器面登记为 **`not_run`**；其证据来自源码级失败关闭登记（§4/§5），
+**未放宽任何条件去凑出页面级证据**。该次设计器探针另记录到一次 `404` console error（资源未找到），
+本段未改动相关链路，如实登记、不作归因。
+
+`/admin/release-operator`、`/admin/scene-health`、`/admin/scene-packages` 为 `adminOnly`，
+受管环境**无 platform-admin 夹具** → 保持 `not_run`（不放宽 `adminOnly`、不换管理员证明业务可用）。
+
+### 8. 对段 31 数字的补充（附录义，不回改历史记录）
+
+- `p3OwnershipDeferred.surfaceCount`：**19**（不变量未放开）；
+- 其中 `stateBandOwnedCount`：**4 → 8**；剩余纯延迟：**15 → 11**；
+- `governed_composite`：**113**（不变）；`governed_primitive`：**41**（不变）；
+- 清单总面数：**173**（不变），`gap=0`；
+- `component-driver-takeover` 消费者计数：empty **27 → 31**（+4），alert **56**（不变），loading **52**（不变）。
+
+### 9. 显式登记（不在本段范围）
+
+- `views/BusinessConfigSurfaceView.vue` 的**路由装配 600 行上限**仍需后续按职责拆分。
+  本段只删除了一个经核实确未使用的类型导入（`BusinessConfigRemediationAction`），
+  **没有**用"删一行凑数"的方式绕过上限，也没有把装配职责搬进 `AppShell`。
+- `views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue` 的 `page-config-selection-empty`：
+  已被 `ScEmptyState` 包在 `ScCard v-else` 框架内，属**布局框架**而非状态带 → 登记为后续面。
+- `views/businessConfigSurface/BusinessConfigStartPanel.vue` 的 `config-status--empty` 是**徽标修饰符**（非状态带）→ 登记。
+- 承接段 28–31 全部登记项：`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`（已知不等价）；
+  `/admin/scene-health`、`/admin/scene-packages` 无 platform-admin 夹具；
+  `style_system.guard` 四项文件长度欠账；`state_transition_undeclared` 五条等。
+  本段未触碰，未新增越界。
+
+### 10. 提交
+
+- `refactor(web): render the remaining P3 designer and tree state bands through governed primitives`
+- `fix(guard): extend the fail-closed P3 state-band register to the designer and tree`
+- `chore(web): refresh the derived inventories for the designer and tree state bands`
+- 段记录（本文件）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 33｜把工作台的路由装配从视图里拆出来：解除 600 行上限对后续收口的阻塞（2026-09-30）
+
+### 1. 本段目标与边界
+
+段 32 §9 显式登记了 `views/BusinessConfigSurfaceView.vue` **恰好卡在
+`low_code_workbench_product_guard` 的 600 行路由装配上限**（600 行，`>600` 即失败），
+并明确"先拆装配职责再转换，不用删行凑数"。本段执行这次拆分。
+
+**只拆装配，不改行为**：URL→业务范围、`business_config` 页契约门控、真实页面运行目标
+这三块内聚职责移出视图，落到该目录既有的 composable 形态里（同目录已有 15 个 `use*`）。
+视图保留编排与绑定，**不新增第二个业务数据源、不改任何契约消费逻辑、不动后端**。
+
+### 2. 边界七问
+
+| 项 | 结论 |
+|---|---|
+| `Formal Product Layer` | P3 —— 低代码配置产品（管理台工作台的装配层） |
+| `Layer Target` | 前端呈现层：`frontend/apps/web/src/views/businessConfigSurface`（路由装配编排） |
+| `Module` | `frontend/apps/web`（Vue 呈现 + composable 拆分） |
+| `Standard vs User-Specific` | 平台机制级：装配边界属于端侧实现组织，与行业默认、客户偏好、管理员配置无关 |
+| `Why Here` | 该目录已经是 `business_config` 工作台的装配归属地；拆出的三块都是它的装配职责 |
+| `Why Not Elsewhere` | 不落后端契约（契约不表达装配）；不落 `smart_core`（非平台机制语义）；不进 `AppShell`（路由装配不属于外壳，且外壳已有自己的上限约束） |
+| `Blast Radius` | 仅 `BusinessConfigSurfaceView.vue` 与其同目录 3 个新 `.ts`；**对外暴露的 setup 绑定名全部保持不变**，因此模板、子组件 props、守卫 token 都不受影响。验证：类型检查 + 该目录全部守卫 + 派生清单复核 + 一次受管浏览器冒烟 |
+
+### 3. 产品改动
+
+新增（均在同目录，沿用既有 `useX(options)` 形态）：
+
+| 新文件 | 承接的职责 |
+|---|---|
+| `useBusinessConfigSurfaceScopeParams.ts` | URL query → 业务范围：`numericQuery`、`entryModel`、`scopeModel/scopeActionId/scopeViewId/scopeRoleKey/selectedPageLabel`、`rootMenuXmlid`、四个 `shouldOpen*` 意图位，以及派生的 `currentModel/scopeAction/scopeView/scopeRole/currentModelIsRuntimeConfig` |
+| `useBusinessConfigSurfacePageContract.ts` | `business_config` 页契约：`sectionEnabled/sectionStyle/sectionTagIs`、`pageSectionsReady`、`pageSectionContractValid`、`pageSectionsFingerprint`、`pageGlobalActions` 与 `executeGlobalPageAction` |
+| `useBusinessConfigSurfaceRuntimeRoute.ts` | 真实页面运行目标：`runtimeRouteTarget`、`runtimeRouteHref`（扫描行无 runtime route 时回落到 scope action，**不会指向操作者没有选择的页面**） |
+
+视图侧只保留解构调用与编排：`BusinessConfigSurfaceView.vue` **600 → 554 行**。
+
+同时删掉 4 个因移出而**确实不再使用**的导入
+（`usePageContract`、`executePageContractAction`、`findActionMeta`、
+`BUSINESS_CONFIG_ROUTE_FLAGS`/`isBusinessConfigRuntimeModel`）。
+这不是"删行凑数"：四个符号在视图内已无任何引用，`BUSINESS_CONFIG_INTENTS` 保留（仍在用）。
+
+`executeGlobalPageAction` 现在通过 `refresh: () => loadSurface()` 取得刷新回调。
+该闭包在 setup 期只被创建、不被调用，因此不产生 `const` 暂时性死区问题；
+运行时已由浏览器冒烟确认（见 §5）。
+
+### 4. 守卫为何不需要扩展
+
+段 31/32 的失败关闭登记解决的是"**声明把状态带交给设计系统、实际却没渲染**"。
+本段没有新增任何状态带声明，也没有新增可被伪造的语义声明——拆分是同一份代码的物理搬迁，
+因此**没有新建台账项**。守卫继续以原有方式失败关闭：
+
+- `low_code_workbench_product_guard`：视图行数 600 → **554**（回到上限内），
+  设计系统用量、contract 声明名、`section-display-label` 绑定等 29 条断言全部保持；
+- `low_code_publish_boundary_guard`：新 `.ts` 落在既有扫描根内，
+  仍禁止 `publishBusinessConfigChangeSet` 越权导入与编辑器内 `publish:true`
+  （扫描文件 39，AST 节点 44258，errors 空）。
+
+### 5. 验证（分层结果）
+
+**声明**：改动路径 = `frontend/apps/web/src/views/**`（1 个 Vue + 3 个新 `.ts`），
+`docs/**` 派生清单。影响层：L1 静态/生成物、L2 前端定向单测与守卫；风险类：
+纯重构（非持久化、非授权、非契约语义）。最早必需层 L2；L3/L4 见下。
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS `coverage=L1_only` |
+| L1 | `make verify.guard.registry` | PASS `1352 scripts` |
+| L1 | `make ci.generated_reports.guard` | PASS（刷新后） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（`vue-tsc --noEmit` + strict 工程） |
+| L2 | `eslint src/views/BusinessConfigSurfaceView.vue` + 3 个新文件 | PASS（0 问题） |
+| L2 | `make verify.business_config.product_guard / .publish_boundary_guard / .guard_inventory` | 全 PASS |
+| L2 | `make verify.business_config.unit` | PASS（9 组，多套用例全绿） |
+| L2 | `make verify.frontend.page_contract.key_consistency.guard / .orchestration_consumption.guard` | PASS（keys=18 / source_files=707；orchestration PASS） |
+| L2 | `make verify.frontend.navigation_shell.unit / primitive_adapter.unit / page_pattern_reference_parity.unit / low_code_field_create_dialog.unit` | 19/34/15/6 全 PASS |
+| L2 | `make verify.frontend.rendering_detail_state.unit / component_driver_takeover.unit` | PASS（`surfaces=173 gaps=0`；`required=33 missing=0`） |
+| L4 | 受管角色浏览器冒烟（见 §6） | PASS |
+
+**L3 跳过**：未改后端模型、权限、数据契约、迁移 → 不做模块升级与夹具重置。
+
+派生清单按既有方式刷新（未新增归档工具）：
+`make refresh.frontend.rendering_detail.inventory`、
+`make refresh.frontend.component_driver_takeover.inventory`、
+`python3 scripts/ci/generate_complexity_budget_report.py --write`。
+
+### 6. 候选、运行身份与浏览器冒烟
+
+- 旧产物归档保留（**未覆盖**）：`config05-20260929` → `config05-20260929-prev-3da37f767`
+  （其 `base_sha` 即 `3da37f767…`，即段 32 的候选）。
+- 新候选：`config05-20260929/dist`，`base_sha=e25a8e6ae…`（本段 2 笔提交后的干净 HEAD），
+  `dirty_scope=""`，`entry=/assets/index-jJZSUKRZ.js`，
+  `entry_sha256=c8a76a6e4512be2556f96547363604188b6e68c97a3471fbfe114ebd1119b296`，
+  `index_sha256=6cbe3902ef0367f5f35f0d286e3f63c49fb6c4b0ef3a5c184cdc6ff2b2599ca8`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （单次构建；构建前先移走旧目录，否则会 `REUSED unchanged build`）。
+- 5180 监听进程**未变**：`pid=802966`，`node scripts/release/release_static_server.mjs`，
+  `STATIC_ROOT=…/config05-20260929/dist`，`STATIC_PORT=5180`。按请求读盘 → 替换产物即生效，
+  **未新增常驻端口，未重启服务**。
+- 身份自校验：HTTP 回读 `index.html` 与入口 JS，`index_sha256`/`entry_sha256` 与
+  `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，
+  db `sc_frontend_acceptance`），受管角色 `fixture_role_config_admin`。**全程零写入**。
+- 证据目录：`sce-offrepo/artifacts/seg33-route-assembly/`（`route-assembly-smoke.json` + 2 张截图）。
+
+冒烟结果（同一受管角色，两视口，POST 写请求计数 **0**）：
+
+| 检查 | 工作台（无范围参数）1440×900 | 工作台（`model=payment.request&action_id=775`）1440×900 | 同 390×844 |
+|---|---|---|---|
+| `data-page-sections-ready`（页契约门控） | `true` | `true` | `true` |
+| `data-contract-sections`（指纹绑定） | `[true,{},{},{},{}]` | 同 | 同 |
+| `data-runtime-route`（抽离后的运行目标） | `''`（未选范围） | **`/a/775`** | `/a/775` |
+| 业务页面目录 `.scan-row` | 60 | 60 | 60 |
+| 页头契约动作按钮 | 2 | 2 | 2 |
+| 页面级横向溢出 | 无（1440/1440） | 无 | 无（390/390） |
+| console error | 0 | 0 | 0 |
+| POST 写请求 | — | 0 | 0 |
+
+### 7. 本段发现并登记的既有失败（非本段引入，独立记账）
+
+| 失败项 | 定性 | 证据 |
+|---|---|---|
+| `verify.frontend.config_workbench_navigation_boundary.guard` FAIL | **既有守卫/验收脚本漂移** | 守卫要求 `product_navigation_boundary_acceptance.mjs` 含 `product_configuration_entry_count === 1` 等 3 个 token；该脚本**在 HEAD 提交内也不含**（`git show HEAD:…` 计数为 0），两文件本段均未修改。漂移起点指向 `2ef14ff65 Merge PR #372`：该合并把验收脚本改成 TDesign 选择器（`:scope > .t-submenu__title` 等）后，守卫期望的旧 token 从未补回 |
+| `verify.business_config.coverage` FAIL | **独立的数据覆盖状态** | 失败信息为 `低代码业务配置覆盖验收未通过：system_root, user:admin, user:wutao`；`scripts/verify/business_config_coverage_gate.py` **不含任何前端引用**，本段前端改动不可能影响它 |
+
+两项都**未修复、未放宽、未改写成通过**，按既有规则独立保留（不扩大本段范围）。
+
+### 8. 显式登记（不在本段范围）
+
+- 承接段 28–32 全部登记项：`BusinessConfigCoverageWorkspace` 的
+  `page-config-selection-empty`（布局框架）、`BusinessConfigStartPanel` 的
+  `config-status--empty`（徽标修饰符）、`/admin/release-operator` 与
+  `scene-health`/`scene-packages` 无 platform-admin 夹具、`style_system.guard` 四项文件长度欠账、
+  `state_transition_undeclared` 五条、`generate_frontend_visual_projection_inventory.py` 的
+  `consumer_primitive_visual_chrome` / `direct_root_visual_overrides` 仍只读 `.vue`。
+- 本段**未新增**任何越界，也未新增守卫欠账。
+
+### 9. 提交
+
+- `refactor(web): extract the workbench route assembly out of its view`
+- `chore(web): refresh the derived inventories after the route assembly split`
+- 段记录（本文件）
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 34｜导航边界守卫漂移：把断言重新绑到真实配置入口，并修掉被它挡住的缓存场景视图越权派发（2026-09-30）
+
+段 33 登记的 `verify.frontend.config_workbench_navigation_boundary.guard` FAIL，本段定向收口。
+裁决：**升级验收脚本把断言重新绑到当前真实入口；不改守卫、不降断言、不恢复旧 DOM 迎合测试。**
+
+### 1. 漂移定性
+
+守卫 `scripts/verify/frontend_config_workbench_navigation_boundary_guard.py` 对验收脚本
+`frontend/apps/web/scripts/product_navigation_boundary_acceptance.mjs` 要求 3 个 token：
+
+- `product_configuration_entry_count === 1`
+- `legacy_configuration_entry_count === 0`
+- `getByRole("heading", { name: "菜单配置", exact: true })`（语义：配置入口必须**真实可达**）
+
+`2ef14ff65 Merge PR #372` 把验收脚本改成 TDesign 内部选择器（`.t-submenu__title` 等）后，
+3 个 token 全部消失，守卫从此长期红。守卫本身要表达的业务边界（唯一「产品配置」入口、
+拒绝旧「配置中心」、配置入口真实可达）**没有被推翻**，只是验收脚本的定位方式与入口事实
+同时失效，所以按「保留断言含义、替换定位方式」处理。
+
+### 2. 本段实测的真实入口（不再假设历史菜单分支）
+
+- 导航树当前发布 `产品配置`（唯一）→ `表单配置`(menu 417/action 720)、`流程审批配置`(711)、`字段管理`(732)。
+- **没有** `低代码系统配置`/`菜单配置` 节点；`legacy_configuration_entry_count = 0`。
+  菜单 `smart_construction_core.menu_ui_menu_config_policy_business_config` 处于 `active=False`，
+  故「产品配置 → 菜单配置」这条旧分支已不发布，验收不得再靠它证明可达。
+- 真实可达路径：`产品配置 → 表单配置` → `/admin/business-config`（工作台）
+  → `选择业务页面` → 选择一条业务页面（本次 `account.account` / action 302）
+  → 工作台发布 `导航入口` 任务卡 → `配置菜单` → `/admin/menu-config` → `H1 菜单配置`。
+- 该路径为只读：`选择` 与 `配置菜单` 只产生
+  `ui.business_config.surface.get` / `coverage.scan` / `change_set.open`，**无 create/write/unlink/execute_button/upload**。
+
+### 3. 被这条路径挡住的真实产品缺陷（根因修复）
+
+修复前，沿上述真实用户路径点击 `表单配置` 后，页面会发出
+`POST /api/v1/intent {"intent":"handling", ...}` → `404 INTENT_NOT_FOUND: Unknown intent: handling`，
+并在浏览器留下 console error。
+
+根因（非猜测，逐层查实）：
+
+1. `表单配置` 的菜单/动作入口带业务契约字段 `entry_intent=handling`
+   （`addons/smart_construction_core/models/support/product_policy_sync.py` 的 `entry_intent_label='办理'`），
+   落地 URL 为 `/admin/business-config?…&entry_intent=handling&…`。
+2. `App.vue` 用 `<KeepAlive :max="6">` 缓存业务视图；被缓存的 `SceneView` 的 watcher
+   仍随**全局 route 变化**继续触发。
+3. `SceneView.vue` 用 `route.query.entry_intent` 直接当**场景入口意图**派发
+   （`sceneContractEntryIntent`），于是把「业务办理处置值」当成「场景意图」发出去。
+
+`entry_intent` 是**两个契约共用的一列参数**：业务入口契约用 `handling/query/analysis/config/master_data/source_fact`，
+而打开场景的行动作（如 `_PROJECT_DASHBOARD_ROW_ACTION`）用它携带 `project.dashboard.enter`
+这类**已声明场景意图**。所以判定依据只能是「谁拥有这条路由」，**不能是取值形状**（不做字符串启发式猜测业务语义）。
+
+修复（最小、契约正确）：
+
+- 新增 `frontend/apps/web/src/app/sceneEntryContract.ts`：`ownsSceneRoute()` + `resolveSceneContractEntryIntent()`
+  （非 `scene` 路由一律返回空意图；`scene` 路由继续接受查询里的已声明场景意图，否则回落到场景契约自声明表）。
+- `SceneView.resolveScene()` 首行先校验路由归属；`SceneView.vue` 不再各自持有意图映射表。
+- **未**通过禁止导航、全屏刷新、清空草稿或改后端来绕开。
+
+### 4. 验收体系为什么没发现这个偏差（缺口与补齐）
+
+| 缺口 | 为什么漏 | 本段补齐 |
+|---|---|---|
+| 只读页/工作台入口漂移 | 守卫只校验验收脚本**是否含 token**，不校验该断言是否仍指向**真实可达**路径；token 缺失时长期红也无人跟进 | 验收脚本改为走真实入口（选择业务页面 → 配置菜单），守卫 token 原样保留 |
+| 缓存视图越权派发无确定性验证 | 没有场景路由归属的单元测试；浏览器验收也从不从场景页进入业务配置页 | 新增 `verify.frontend.scene_entry_contract.unit`（40 例），覆盖 `handling/query/analysis/config/master_data/source_fact` 在非归属路由上**必须为空** |
+| 改动 `SceneView.vue` 只会落到通用兜底 | `scripts/verify/frontend_dev_incremental.py` 的 RULES 无 `SceneView.vue` 规则 → 只推荐 `verify.frontend.typecheck.strict` | 新增规则：`/views/SceneView.vue`、`/app/sceneEntryContract.ts` → `verify.frontend.scene_entry_contract.unit` + `verify.frontend.navigation_shell.unit`，并加对应单测 |
+| 只读详情呈现结构 | 已有 `data-navigation-toggle="submenu"` 第一方语义锚点替代已消失的 `.t-submenu__title`/`aria-expanded` | 沿用段 33 已落地的锚点，不再依赖 TDesign 内部类名 |
+
+### 5. 分层验证（L0→L5）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L0 | `git diff --check` / 工作树与 HEAD 身份 | PASS |
+| L1 | `make ci.local.iteration` | PASS（`change_state=dirty coverage=L1_only`） |
+| L1 | `make verify.guard.registry` | PASS（1352 scripts / 124 孤儿已登记） |
+| L1 | `make ci.generated_reports.guard` | PASS（含 complexity / split-plan 派生刷新） |
+| L2 | `make verify.frontend.scene_entry_contract.unit`（新增） | PASS `cases=40` |
+| L2 | `make verify.frontend.navigation_shell.unit` | PASS（含新增前置依赖） |
+| L2 | `python3 -m unittest scripts.verify.test_frontend_dev_incremental` | PASS 12 |
+| L2 | `make verify.frontend.config_workbench_navigation_boundary.guard` | **PASS**（段 33 的 FAIL 关闭） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS |
+| L2 | `make verify.frontend.lint.src` | PASS（0 error / 57 既有 warning） |
+| L2 | 三份派生清单 `--check` | PASS |
+| L4 | `make verify.product.navigation_boundary`（受管角色 + 5180 真实候选） | **PASS**（desktop + mobile，`errors=[]`、`mutations=0`） |
+
+**L3 跳过**：未改后端模型、权限、数据、契约投影或迁移 → 不做模块升级与夹具重置。
+
+### 6. 候选、运行身份与环境
+
+- 旧产物保留（**未覆盖**，按序归档）：
+  `config05-20260929-prev-221b5ba5b`（07:48 构建）、
+  `config05-20260929-prev-221b5ba5b-navdrift`（验收脚本重绑版）、
+  `config05-20260929-prev-221b5ba5b-sceneown-v1`（仅含第一次场景修复版）。
+- 新候选：`config05-20260929/dist`，`base_sha=221b5ba5b…`，`dirty_scope` 见
+  `config05-20260929/build-identity.json`，`entry=/assets/index-D-WZIX_H.js`，
+  `entry_sha256=7ee7724b0b344fc38f8a2dcad1ac8e31c89314e1a666fa8933a42317374a41d3`，
+  `index_sha256=18127f6813ec84740d01ad505dba6984aa37fdd6184aa16e4ac02536d378fb53`，
+  `diff_sha256=28027a581ee8df80046346e3162b072184952fff2e60301784acdbb048fac91b`。
+  构建命令：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （单次构建；构建前先移走旧目录，否则 `REUSED unchanged build`）。
+  **未二次构建、未做全文件 HTTP 比对。**
+- 5180 监听进程**未变、未重启、未新增端口**：`pid=802966`，
+  `node scripts/release/release_static_server.mjs`，`STATIC_ROOT=…/config05-20260929/dist`，
+  `STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`。按请求读盘 → 替换产物即生效。
+- 身份自校验：HTTP 回读 `index.html` 与新入口 JS，`index_sha256`/`entry_sha256` 与
+  `build-identity.json` **逐字节一致**。
+- 受管后端容器 `sc-backend-odoo-acceptance`（healthy，`127.0.0.1:18082→8069`，
+  db `sc_frontend_acceptance`），受管角色 `fixture_role_config_admin`。
+  **本轮全部浏览器操作 mutations=0，零业务写入、零数据恢复动作。**
+
+### 7. 验收结果（`make verify.product.navigation_boundary`，5180 真实候选）
+
+| 项 | 1440×900 desktop | 390×844 mobile |
+|---|---|---|
+| 旅程 | 项目中心深链→刷新→折叠持久→前进后退→产品配置→表单配置→选业务页面→配置菜单→`H1 菜单配置` | Drawer `role=dialog`/`aria-modal`、Esc 关闭并归还焦点、横向溢出 0 |
+| `errors`（console/pageerror/≥400 API） | 0 | 0 |
+| `mutations` | 0 | 0 |
+| 绑定身份 | menu 680 / action 861；配置对象 `account.account` / action 302 | — |
+| 守卫 token 事实 | `product_configuration_entry_count=1`、`legacy_configuration_entry_count=0`、`menuConfigurationHeadingText=菜单配置` | — |
+
+### 8. 提交
+
+- `fix(web): keep the cached scene runtime inside the route it owns`（产品代码 + 反例单测）
+- `chore(verify): rebind the navigation boundary acceptance to the published config entry`（验收脚本 + 派生清单 + 复杂度/分片派生 + 增量映射规则）
+
+### 9. 显式登记（**不在本段范围，继续独立记账**）
+
+- `verify.business_config.coverage` FAIL（`低代码业务配置覆盖未通过：system_root, user:admin, user:wutao`）——
+  数据覆盖状态，脚本无前端引用，本段未触及。
+- `BusinessConfigCoverageWorkspace` 的 `page-config-selection-empty`、`BusinessConfigStartPanel` 的
+  `config-status--empty`、`/admin/release-operator`、`scene-health`/`scene-packages` 无 platform-admin 夹具。
+- `style_system.guard` 四项文件长度欠账（本段未放宽阈值、未压行数消红）；
+  `SceneView.vue` 行数保持 1708（**未增长**）。
+- `state_transition_undeclared` 五条；`generate_frontend_visual_projection_inventory.py` 仍只读 `.vue`。
+- 工作台「选择业务页面」目录加载约 13–15 s 才出现（既有性能观感问题，本段只作等待条件，未改实现）。
+
+### 10. 补记｜页面契约覆盖守卫的扫描范围与段 33 抽取结果失配（同段收口）
+
+段 33 把 `BusinessConfigSurfaceView.vue` 的页面契约消费抽到同名伴随目录
+`frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigSurfacePageContract.ts`
+（其中调用 `usePageContract('business_config')`）。四个页面契约守卫长期红，本段查实根因并定向收口。
+
+**根因（非猜测）**：四个守卫的 `_find_page_consumers()` / `usePageContract(` 扫描只覆盖
+`views/*.vue` + `pages/*.vue`。抽取后 `usePageContract(` 落在 `views/businessConfigSurface/*.ts`，
+不在扫描集合内 → 该页从消费者集合消失，覆盖断言随之报缺。
+
+**五问边界**：`Formal Product Layer` = P0 平台内核产品（验证/Gate 工具层，非业务层）；
+`Layer Target` = `scripts/verify/frontend_page_contract_*`；`Module` = 验证脚本；
+`Standard vs User-Specific` = 平台机制；`Why Here` = 断言集合的**取值来源**就是扫描范围，范围错口径就错；
+`Why Not Elsewhere` = 不能改 `usePageContract(` 的调用位置去迎合守卫，也不能给该页加豁免；
+`Blast Radius` = 仅四个守卫的候选文件集合，产品代码、契约、渲染路径零改动。
+
+**修复（放宽的是断言的"广度"而非"强度"）**：
+
+- 三个 section 覆盖守卫（`sections_coverage` / `section_tag_coverage` / `section_style_coverage`）：
+  `candidates` 扩展为 `views/*.vue`、`views/*/*.vue`、`views/*/*.ts`、`pages/**` 同形集合，
+  注释写明「视图可把抽出的部件放在同名伴随目录，仍属同一页面契约消费范围」。
+- `frontend_page_contract_boundary_guard.py`：新增
+  `view_module_scopes = {"BusinessConfigSurfaceView.vue": "businessConfigSurface"}`，
+  并对伴随目录做 `usePageContract(` 兜底检查（目录不存在也报错），不把检查放宽到无关模块。
+
+**反例验伪（证明检查真在求值，不是阈值放宽）**：把
+`useBusinessConfigSurfacePageContract.ts` 里的 `usePageContract('business_config')` 改成
+`usePageContractNeutralized(...)` 后，四项守卫**全部 FAIL**；`git restore` 复原后四项 **PASS**。
+
+**分层验证**：L0 `git status` 干净；L1 `make verify.guard.registry` PASS、`make ci.generated_reports.guard` PASS；
+L2 四项守卫 + `verify.frontend.page_contract.key_consistency.guard` **全部 PASS**
+（`checked_pages=17, checked_sections=85`；`keys=18, source_files=708`）。
+产品布局未变 → 产物与 5180 候选**无需重建**（`base_sha` 仍为 `221b5ba5b…`）。
+
+**提交**：`fix(guard): let the page-contract coverage guards see extracted companion modules`
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 35｜尺寸门禁越限收口：把受限文件里的职责拆出去，并补上增量路由缺口（2026-09-30）
+
+### 1. 本轮触发与真实起点
+
+- 起点 HEAD `3e46b5649`（段 34 收口），工作树干净，分支 `feature/web-official-template-adoption`。
+- 实测当前强制门禁，`verify.frontend.style_system.guard` **FAIL**，其余通过：
+  - `frontend/apps/web/src/views/ActionView.vue exceeds 3800 lines: 3803`
+  - `record runtime exceeds 619 lines: frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts=621`
+  - `verify.frontend.no_new_any_guard` PASS（709 文件 / 25 any / 11 余额）。
+
+### 2. 越限溯源（按实际 git 历史核对，未按行号猜改）
+
+| 文件 | 越限前 | 越限提交 | 越限后 | 阈值 |
+|---|---|---|---|---|
+| `views/ActionView.vue` | `20781fe2d` = 3795 | `95137138d` *refactor(web): execute the declared batch intent instead of naming actions* | **3803** | 3800 |
+| `pages/contractForm/useRecordFormActions.ts` | `97f5ff0fe` = 612 | `20781fe2d` *feat(web): derive the page type from the contract, not from a business model* | **621** | 619 |
+
+两条都是**业务驱动的真实重构**（声明式批量意图、由契约派生页面类型）把文件推过棘轮，
+不是无意义代码增长；因此本轮只拆职责，不放宽阈值、不压行数消红。
+
+### 3. 验收体系为什么没发现（用户明确要求先补缺口）
+
+`scripts/verify/frontend_dev_incremental.py` 的 `RULES` **从不指向** `verify.frontend.style_system.guard`：
+`views/ActionView.vue` 与 `pages/contractForm/*.ts` 只落到兜底 `verify.frontend.typecheck.strict`。
+于是日常增量迭代对这两个文件**只做类型检查**，尺寸棘轮只有在有人手工全量跑守卫时才暴露——
+这正是它们能连续越限的直接原因。尺寸规则的唯一执行点在人工路径上，不在迭代路径上。
+
+### 4. 修复 A｜批量选择行为退出 `ActionView.vue`（3803 → 3672）
+
+- 新增 `frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts`（225 行）：
+  承载 `selectionActions`、`handleSelectionAction`、`runBatchPolicyAction`，并导出 `ActionBatchPolicy`。
+- `ActionView.vue` 只保留组合，删除本地 `ActionBatchPolicy` 及
+  `actionViewBatchRuntime` / `actionViewBatchActionFlowRuntime` / `actionViewSelectionExportRuntime` 导入。
+- **行为等价搬运**：同一份声明式批量策略、同一批 execution intents、同一守卫与确认决策、
+  同一 `unlinkActionViewRecord` / `batchUpdateActionViewRecords` 调用与同一 `finally` 清理。
+
+### 5. 修复 B｜设计器导航退出保存属主（621 → 599）
+
+- 新增 `frontend/apps/web/src/pages/contractForm/useRecordFormDesignerNavigation.ts`（117 行）：
+  `lowCodeApplyBaseParams` / `lowCodeReturnQuery` / `previewLowCodeConfiguredPage` /
+  `previewCurrentFormConfiguration` / `returnToBusinessConfigDesigner`。
+- `useRecordFormActions.ts` 在已组合设计器动作处组合该导航，**函数体逐行等价**：
+  同一路由标志、同一「有草稿先保存再预览」判断、同一业务配置设计器返回路径。
+
+### 6. 修复 C｜把尺寸门禁接回增量路由，并给路由本身加自检
+
+- `frontend_dev_incremental.py` 新增两条 `Rule`：
+  `layouts/AppShell.vue` / `pages/ListPage.vue` / `pages/ContractFormPage.vue` /
+  `pages/ContractFormRoute.vue` / `views/ActionView.vue` → `verify.frontend.style_system.guard`；
+  `pages/contractForm/` + `components/template/` **追加**该守卫（既有目标一个不减）。
+- 新增单测 `test_size_ratcheted_files_route_to_the_size_guard`：直接读取守卫的
+  `SIZE_LIMITS` 与 `RECORD_RUNTIME_SIZE_LIMITS`，断言**每条**受限路径都被路由到尺寸门禁。
+  这样扩展棘轮而漏扩路由会立刻失败，而不是再次静默兜底。
+- 实测增量入口对这两个文件已经调用尺寸门禁：
+  `make verify.frontend.dev.incremental FRONTEND_DEV_CHANGED_PATHS="…/ActionView.vue …/useRecordFormActions.ts"`
+  → `frontend_style_system_guard PASS` + `[frontend.dev.incremental] PASSED returncode=0`。
+
+### 7. 守卫探测位置维护（保留断言含义，未放宽）
+
+`scripts/verify/list_batch_action_closure_guard.py` 三条断言原扫描 `ActionView.vue`，行为抽出后失效。
+处理原则同段 34：**跟随行为到新属主，并保留「视图确实消费该属主」的反向断言**。
+
+- 新增 `selection_action_runtime` 读取抽出的运行时；
+- `ActionView` 必须组合 `useActionViewSelectionActionRuntime(` 且仍传 `contractActions: contractActionButtons`；
+- `resolveSelectionActions(` + `execution_intents`、`unlinkActionViewRecord`、`batchUpdateActionViewRecords`
+  三条在生产该行为的模块内断言。
+
+### 8. 反例验伪（证明检查真在求值）
+
+- 把 `ActionView.vue` 中的 `useActionViewSelectionActionRuntime(` 改名 →
+  `verify.list_batch_action.closure_guard` **FAIL**；复原 → **PASS**。
+- 删掉新增的尺寸路由 → `test_size_ratcheted_files_route_to_the_size_guard` **FAILED (failures=5)**；
+  复原 → **OK (13 tests)**。
+
+### 9. 分层验证结果
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.frontend.style_system.guard` | **PASS**（`hardcoded_color_refs_max=0`，两条尺寸越限关闭） |
+| L1 | `make verify.frontend.no_new_any_guard` | PASS |
+| L1 | `make ci.local.iteration` | PASS（`coverage=L1_only`） |
+| L1 | `make verify.guard.registry` | PASS（1352 scripts / 124 orphans） |
+| L1 | `py_compile` + `python3 -m unittest scripts.verify.test_frontend_dev_incremental` | OK（**13 tests**） |
+| L2 | `make verify.list_batch_action.closure_guard` | PASS |
+| L2 | `make verify.frontend.standard_collection_composition.unit` | PASS（`cases=113`） |
+| L2 | `make verify.frontend.form_designer_actions.unit` | PASS（`cases=6`） |
+| L2 | `make verify.frontend.contract_form_save_failure_recovery.unit` | PASS（edit-retry / single-flight / create-retry / permission-denial） |
+| L2 | `make verify.frontend.adopted_form_validation_identity.unit` | PASS（`cases=46 failed=0 engine=shipped-save-chain host=real-vue-instance`） |
+| L2 | `make verify.frontend.record_form_return.unit` | PASS（`cases=13`） |
+| L2 | `make verify.frontend.typecheck.strict` | PASS（抽离前后各一次） |
+| L4 | `make verify.frontend.standard_preview.unit` | OK（6 tests） |
+| L4 | `make verify.frontend.standard_page_type.browser`（5180 真实候选） | **passed assertions=32**，`errors=[]`、`forbiddenWrites=[]` |
+| — | `make ci.generated_reports.guard` | PASS（先刷新复杂度/分片派生，再复检） |
+
+说明：`scripts/verify/test_frontend_dev_incremental.py` 在托管环境**无 pytest**，
+按仓库既有入口用 `python3 -m unittest` 运行（与 `make verify.frontend.dev.incremental.unit` 一致）。
+
+### 10. 候选、运行身份与产物归档
+
+- 旧产物保留（**未覆盖**，按序归档）：
+  `config05-20260929-prev-221b5ba5b-sizesplit-v1`（本轮起点候选，
+  `entry=/assets/index-D-WZIX_H.js`，`entry_sha256=7ee7724b…`，`index_sha256=18127f68…`）。
+- 新候选：`config05-20260929/dist`，`base_sha=3e46b5649…`，
+  `entry=/assets/index-DShCtG8D.js`，
+  `entry_sha256=cc73042cdab8684bedc572cba22d7d73943e041ccb1c370c318b886ee7c5b891`，
+  `index_sha256=4c236bf058f4b866449dda73f7b9d49230195e6e4c7d374c21eb332c00380555`，
+  `diff_sha256=483c0f4e1cd4d23eab5a188f510f524cfaf578f5d18837e44d3ab625ea62d0f1`。
+  **单次构建**：`SC_ACCEPTANCE_RUNTIME_PROFILE=local DB_NAME=sc_frontend_acceptance COMPOSE_PROJECT_NAME=sc-fe-r2-p1-01 make frontend.standard.preview.build`
+  （构建前先归档旧目录，否则入口按设计拒绝：`preview build inputs changed`）。
+- 5180 监听进程**未变、未重启、未新增端口**：`pid=802966`，
+  `node scripts/release/release_static_server.mjs`，`STATIC_ROOT=…/config05-20260929/dist`，
+  `STATIC_PORT=5180`，`API_PROXY_TARGET=http://127.0.0.1:18082`；`preview.up` 返回
+  `REUSED current 5180 listener`（按请求读盘，替换产物即生效）。
+- 浏览器断言已绑定当前候选：报告内 `build.entry_sha256` 与上文 `entry_sha256` 一致。
+- **未二次构建、未做全文件 HTTP 比对、未新增常驻端口**；本轮浏览器操作 `mutations=0`。
+
+### 11. 提交
+
+- `refactor(web): move the list batch-selection behaviour out of ActionView`（新运行时 + 视图 + 探测位置维护）
+- `refactor(web): move the designer navigation out of the save owner`（新运行时 + 保存属主 + 复杂度/分片/三份渲染清单派生刷新）
+- `fix(verify): route size-ratcheted frontend files to the size guard`（增量路由 + 路由自检单测）
+
+### 12. 显式登记（**不在本段范围，继续独立记账**）
+
+- `verify.business_config.coverage` FAIL（`system_root, user:admin, user:wutao`）——数据覆盖状态，脚本无前端引用。
+- `BusinessConfigCoverageWorkspace` 的 `page-config-selection-empty`、`BusinessConfigStartPanel` 的
+  `config-status--empty`、`/admin/release-operator`、`scene-health`/`scene-packages` 无 platform-admin 夹具。
+- `style_system.guard` 四项欠账中**尺寸两项本段关闭**，其余（z-index 等）保留；
+  `state_transition_undeclared` 五条保留。**未放宽阈值、未改退出码。**
+- `verify.unified_page_contract.v2` 的 `payment.request` 表达缺口
+  （`done`/`payment_execution`、workflow `activate/complete/reopen/reactivate`）仍待 P1 权威补声明，**不得猜测补齐**。
+- 工作台「选择业务页面」目录约 13–15 s 才出现（既有性能观感问题）。
+- 本段未触及 `.agent/`、未触碰业务矩阵；`AppShell.vue` 未新增业务职责。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+## 段 36｜前端门禁聚合由红转绿：两条守卫的真实缺陷（探针与源码布局耦合、探针与 diff 形状耦合）（2026-09-30）
+
+### 1. 本轮触发
+
+段 35 收口后，在 clean HEAD 上第一次跑完整**前端门禁聚合** `verify.frontend.quick.gate`
+（45 个子目标），得到 **一条真实 FAIL**：`verify.frontend.professional_base_field.unit`。
+继续扫权威门禁面，又得到第二条真实 FAIL：`verify.frontend.delivery_hardening.guard`。
+两条都不是产品行为缺陷，而是**探针自身的判定方式与源码形式耦合**——正是段 34/35 反复处理的同一类漂移。
+
+### 2. 修复 A｜`professional_base_field` 守卫：断言绑定到语句，而不是源码布局
+
+**现象**：clean HEAD 上 `[frontend_professional_base_field_guard] FAIL base field handler does not fail closed`，
+指向 `useRecordFormState.ts` 的 `queryMany2oneInline`。
+
+**根因（查实，非猜测）**：`030a189b9 fix(web): keep the exact typed text in the relation search input`
+把该 handler 改成多行、并在声明前加了一段注释（**行为未变，仍然 fail-closed**）。
+守卫把「非可写即返回」写成**整行字面量**，于是换行/注释一变即失配——
+报告的是一个**仍然 fail-closed 的 handler**“没有 fail-closed”。同文件另外三个 handler 仍是一行，故未触发。
+
+**修复（保留断言含义，替换定位方式）**：新增 `_compact()`，**先去注释（行/块）再去空白**，两侧同时规范化。
+于是绑定变成「声明签名后面**紧跟** fail-closed 守卫，且它仍是函数体的第一条语句」：
+
+- 换行重排 + 无关注释 → 不再误报；
+- 守卫被注释掉 → 注释被剥离后消失 → **仍然 FAIL**；
+- 守卫被移到别的语句之后 → 前缀不再紧邻 → **仍然 FAIL**。
+
+**新增回归（`test_frontend_professional_base_field_guard.py` 13 → 16 项）**：
+`test_rewrapped_handler_still_passes`（重排+内联注释仍通过）、
+`test_rewrapped_handler_without_the_guard_fails`、`test_rewrapped_handler_that_does_not_open_with_the_guard_fails`。
+
+**真实源码反例验伪**：临时删除真实 `useRecordFormState.ts` 里那一句守卫 → 守卫 **FAIL**；
+原样恢复 → **PASS**；`git diff` 对该产品文件为空（确认原样恢复、产品零改动）。
+
+### 3. 修复 B｜`delivery_hardening` 守卫：按基线修订判定“新增”，而不是按 diff 形状
+
+**现象**：clean HEAD 上 `[frontend_delivery_hardening_guard] FAIL new model-specific CSS`。
+
+**根因（查实）**：该规则在 `git diff --unified=0 origin/main -- frontend/apps/web/src` 的**新增行**里
+匹配 `\.(?:project|contract|settlement|payment)[-_][\w-]+\s*\{`。
+而 `CurrentFormFieldSettingsPanel.css` 里原有一条**共享选择器规则**：
+
+```css
+-.contract-field-selection-card,
+-.contract-field-selection-empty {
++.contract-field-selection-card {
+```
+
+共享选择器列表被拆开后，git 把**保留下来的那个选择器**重新输出为一条新增行。
+于是 `.contract-field-selection-card` 这个**在 `origin/main` 早已存在**的选择器被当成新增模型专用 CSS。
+换言之：**零新增模型专用样式，却报了一条新增违规**——判定绑定到了 diff 形状，而不是“是否是新产品语义”。
+
+**修复（保留断言含义，替换定位方式）**：新增 `MODEL_SPECIFIC_SELECTOR_RE` 与
+`_base_frontend_source(path)`（按路径缓存 `git show origin/main:<path>`）。
+新增行里命中的选择器，只有在**基线修订中不存在**时才计为违规；比较带边界
+（`re.escape(selector) + r"(?![\w-])"`，避免长名满足短名）。
+真正新增的模型专用选择器依旧 FAIL，并且报出精确路径与选择器。
+
+**反例验伪**：临时向 `CurrentFormFieldSettingsPanel.css` 追加
+`.payment-brand-new-banner { … }` → 守卫 **FAIL**
+`… : .payment-brand-new-banner`；移除后 → **PASS**；产品文件 `git diff` 为空。
+
+**回归**：`test_frontend_delivery_hardening_guard.py` 新增 `NewModelSpecificCssTest`，
+锁定“按基线判定新增”的实现（含 `git show origin/main:{path}` 与边界检查），并断言
+“只看新增行的旧字典键”不再存在，防止退回 diff 形状判定。
+
+> 说明：该守卫的基线引用是 `origin/main`。本轮先执行了一次 `git fetch origin main`，
+> 使远端跟踪引用与实际 `origin/main` 一致，比较才有意义（只更新 remote-tracking ref，
+> 未改工作树、分支、也未推送）。
+
+### 4. 本轮实测的门禁现状（HEAD，全部为真实运行）
+
+| 层 | 入口 | 结果 |
+|---|---|---|
+| L1 | `make ci.local.iteration` | PASS（`change_state=clean`、`coverage=L1_only`） |
+| L1 | `make ci.generated_reports.guard` | PASS（复杂度/分片/remote plan/fingerprint 全部 current） |
+| L2 | `make verify.frontend.quick.gate`（45 子目标） | **由 FAIL 转 PASS（exit=0）** |
+| L2 | `make verify.frontend.pr.unit` | PASS |
+| L2 | `make verify.frontend.release.unit` | PASS |
+| L2 | `make verify.frontend.delivery_hardening.guard` | **由 FAIL 转 PASS** `/ PASS error_states=12 title_writers=1 async_epoch=enabled axe=4.10.2` |
+| L2 | `make verify.frontend.professional_base_field.unit` | **由 FAIL 转 PASS**（13 → **16 tests**） |
+| L2 | `make verify.frontend.style_system.guard` / `no_new_any_guard` / `typecheck.strict` | PASS |
+| L2 | `make verify.frontend.lint.src` | PASS（**0 error / 57 warning**，exit 0） |
+| L2 | `make verify.frontend.release_navigation_policy.guard`、`page_width_contract.guard`、`page_identity` | PASS |
+
+### 5. 本轮新登记的欠账（**不靠放宽消红**）
+
+- **`verify.frontend.industry_agnostic.guard`：FAIL，`files=747 findings=127`。**
+  这是**收敛型门禁**：脚本自身声明 `FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1`
+  “intended for the release gate after convergence”，报告 `policy.target=zero`、
+  `policy.baseline_approval=forbidden`。它**未接入任何聚合目标，也不在
+  `.github/workflows/frontend_release_gate.yml` 的任何 lane**里。
+  逐类计数：`industry_text_anywhere` 37、`industry_behavior_identifier` 36、
+  `business_field_inference` 32、`industry_literal` 12、`industry_model_or_xmlid` 5、
+  `industry_regex_inference` 3、`industry_asset` 2；
+  集中在 `components/professional-fields/PaymentSettlementIntroduceDialog.vue`(31)、
+  `api/overviewRichTextPatch.ts`(13)、`components/page/blocks/BlockChartDataset.vue`(11) 等。
+  **本轮只登记准确数字，不展开全仓行业语义清理，也不允许靠删基线/放宽判定消红。**
+- `verify.frontend.all_list_visual.audit` 需要 `E2E_PASSWORD`（浏览器凭据）→ 本轮 **not_run**（前置缺失，非门禁失败）。
+
+### 6. 验收体系为什么没及时发现（本轮的直接教训）
+
+这两条守卫有一条共同特征：**它们不在这条专题日常会跑的路径上**。
+`quick.gate` 直到本段才第一次在前端专题里运行；`professional_base_field` 的失配自
+`030a189b9`（09-29）起潜伏，期间所有前端批次都不会碰到它。
+段 35 已把「尺寸棘轮」接回增量路由；本段暴露的是同一类问题在**聚合层**的版本：
+**单一入口的守卫失配不会被任何日常路径发现，只有聚合门禁才会暴露。**
+因此本段的两条修复各自的回归都随提交保存，且 `quick.gate` 可以作为后续批次的一条低成本聚合检查。
+
+### 7. 边界七问
+
+`Formal Product Layer` = P0 平台内核（验证/Gate 工具层）；`Layer Target` =
+`scripts/verify/frontend_professional_base_field_guard.py`、`scripts/verify/frontend_delivery_hardening_guard.py`
+及其单测；`Module` = 验证脚本；`Standard vs User-Specific` = 平台机制；
+`Why Here` = 两条断言都在声称“某行为必须成立”，而它们实际判定的是源码**形式**；
+`Why Not Elsewhere` = **不**改产品去迎合探针（本段产品源码零改动）、**不**放宽阈值、
+**不**给 `industry_agnostic` 加豁免；`Blast Radius` = 仅两个守卫脚本与其单测。
+
+### 8. 候选与运行身份
+
+本段**无产品源码改动**（仅 `scripts/verify/*`）→ 按既有证据失效规则，
+段 35 的 5180 候选继续有效，**不重建、不重启、不新增端口**：
+`base_sha=3e46b5649…`、`entry=/assets/index-DShCtG8D.js`、`entry_sha256=cc73042c…`、
+`index_sha256=4c236bf0…`；监听仍为 `pid=802966`。
+
+### 9. 提交
+
+- `fix(verify): bind the base-field fail-closed assertion to statements, not layout`
+- `fix(verify): decide new model-specific CSS against the base revision`
+
+### 10. 显式登记（**不在本段范围，继续独立记账**）
+
+- 段 35 全部登记项不变（`verify.business_config.coverage` 数据覆盖、
+  platform-admin 夹具缺口、`state_transition_undeclared` 五条、
+  `payment.request` 契约表达缺口需 P1 权威补声明、工作台目录 13–15 s 观感）。
+- 新增：`industry_agnostic.guard` 127 项（见 §5）；`all_list_visual.audit` 凭据前置缺失。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+
+## 段 37｜把「从结算单引入」弹窗的行业词汇收回 P1 契约，并让前端在契约缺口处失败关闭（2026-09-30）
+
+### 1. 本轮触发
+
+`verify.frontend.industry_agnostic.guard`（收敛门禁，`policy.target=zero`）报告里，
+`components/professional-fields/PaymentSettlementIntroduceDialog.vue` 是**单一最大命中点（31/127）**。
+逐条看下去，这不是「行业词汇恰好出现在通用组件里」，而是更严重的形态：
+**弹窗自带一整套行业文案与载荷键名，因此即使有效契约什么都不声明，它仍然能凭本地硬编码
+拼出一个看起来可用的办理流程——契约缺口被永久隐藏。** 这正是本专题要消掉的形态。
+
+### 2. 权威归属（先定边界，再改代码）
+
+| 事项 | 权威 | 本轮处理 |
+|---|---|---|
+| 弹窗标题/描述/占位/列头/状态/历史/模式/按钮文案 | P1 施工行业标准（`smart_construction_core`） | 由既有 normalizer 经 `componentConfig` 声明 |
+| 载荷键名（`payment_request_id`/`settlement_id`/…） | 后端真实参数名，同样属 P1 契约面 | 由契约声明，前端只按声明取值 |
+| 如何呈现、何时启用入口、缺口如何显现 | 端侧适配 | 前端负责，且必须 fail-closed |
+
+这**不是新发明**：同一组件家族早已用 `introduceLabel` / `optionalDetails` / `amountBinding` /
+`actionRefs` 驱动前端，并有既有测试断言。本段只是把「引入弹窗」这一块补进同一模式。
+
+### 3. 改动
+
+**A. P1 契约声明**（`addons/smart_construction_core/core_extension_contract_normalizers.py`）
+在既有 `introduceLabel` / `actionRefs` 之外新增 `introduceDialog` 块（36 个叶子键：
+文案、列头、状态、历史、模式、提示、`payloadFields` 七个真实参数名）。
+`actionRefs` 三个动作身份保持不变（`payment.request.settlement.search` / `.preview` /
+`payment.request.add.settlement.lines`）。
+
+**B. 前端消费 + 失败关闭**
+- 新增 `paymentSettlementIntroduceDialogModel.ts`：`SETTLEMENT_INTRODUCE_REQUIRED_PATHS`（44 条），
+  `resolveSettlementIntroduceContract()` 逐路径解析；**空白值也算缺口**；**无任何默认值**；
+  `requireSettlementIntroduceContract()` 为调用方提供失败关闭入口。
+- `PaymentSettlementDetailCollectionControl.vue`：契约就绪才渲染入口按钮并挂载弹窗；
+  不就绪则**不渲染入口、不挂载弹窗**，只渲染禁用按钮 + 缺口提示（点名缺失路径）。
+- `PaymentSettlementIntroduceDialog.vue`：全部模板文案、三个 intent 身份、七个载荷键改为
+  `contract.*`；删除 `requiredActionRef` 猜测函数与 `contract_id` 字段。
+  弹窗内 `付款|结算|合同|明细|名称|状态|取消|搜索|引入` 命中数 = **0**。
+
+**C. 守卫与反例**
+- `frontend_professional_detail_collection_guard.py`：AST 解析 normalizer 声明的叶子路径，
+  与前端 `REQUIRED_*` 数组**两侧比对**（`unrequired=` / `undeclared=` 分别报），
+  并禁止弹窗内出现载荷键/动作猜测/行业词。单测 43 → **44 项**。
+- 新增 `payment_settlement_introduce_dialog_contract_test.ts`（**67 例**）：
+  逐条 44 个必需路径单独删除/置空都必须失败关闭并点名。
+
+**D. 派生清单**（生成器权威输出，非放宽阈值）
+`generate_frontend_rendering_detail_inventory.py` 的期望条目由字面 `data-dialog-purpose`
+改为契约绑定的 `:data-dialog-purpose="contract.purpose"`；三份清单 digest 按实际源码刷新。
+
+**E. 浏览器定向断言**（复用既有 `standard_page_type_browser.mjs`，不新建 harness）
+从**有效契约响应**里取出声明词汇，再断言页面渲染的就是声明值：
+入口标签 == `introduceLabel`、弹窗标题 == `introduceDialog.title`、
+确认按钮 == `introduceDialog.confirmLabel`、页面上无 `data-contract-semantic-gap`。
+
+**F. 后端组件测试**：`test_core_extension_v2_finalize.py` 补 `introduceDialog` 全量断言
+（purpose/title/cancel/confirm/recordRequiredMessage/`columnLabels` 全字典/`payloadFields` 全字典/键全集），
+声明被截短时后端套件先失败。
+
+### 4. 本轮踩到的真实缺陷（前端类型层，值得记录）
+
+实现完成后 `vue-tsc` 报 3 处 `TS2339: Property 'missing' does not exist`。
+根因**不是**写法错误，而是本仓库 `frontend/apps/web/tsconfig.json` 是 `"strict": false`
+（`strictNullChecks` 关闭），**布尔判别式无法窄化联合类型**（已用最小复现确认：
+同一段代码 `--strict` 通过、非严格模式报错）。
+处理方式：模型与消费点改用 `in` 检查选择变体（`'missing' in resolved` / `'contract' in …`），
+**没有降低契约、没有引入 `any`、也没有把断言改成字符串**。
+
+### 5. 定向验证
+
+| 层 | 命令/入口 | 结果 |
+|---|---|---|
+| L1 | `scripts/verify/frontend_industry_agnostic_audit.py` | **127 → 97 findings**（files 748） |
+| L1 | `ci.local.iteration` | PASS（dirty / L1_only / 524 changed paths） |
+| L1 | `pnpm -C frontend/apps/web typecheck` | PASS（修复 `in` 检查后 0 error） |
+| L2 | `verify.frontend.professional_detail_collection.unit` | PASS（守卫 44 + 弹窗契约 67） |
+| L2 | `verify.frontend.rendering_detail_state.unit` | PASS（76 项；其中一行 `FAIL incomplete=` 是 fail-closed 反例测试的预期输出） |
+| L2 | `collection_action_toolbar / primitive_adapter / product_page_pattern / professional_component_registry / style_system.guard` | PASS |
+| 活契约 | `/api/v1/intent`（`ui.contract.v2`, `payment.request` form, `fixture_role_finance` uid 30） | 变更前 `introduceDialog` **不存在**；重建容器后 **存在**，36 键，`payloadFields` 与声明一致 |
+| L4 | `verify.frontend.standard_page_type.browser` | **passed assertions=38**（原 32，本轮 +6） |
+
+浏览器本轮新增断言全部通过：契约已发布到页面、入口标签 == 声明值、无缺口标记、
+弹窗标题 == 声明值、确认按钮 == 声明值；`errors=[]`、`forbiddenWrites=[]`。
+证据：`artifacts/frontend-web-fix-20260928/tpl07-1790739384227/`（含 `payment-introduce-dialog.png`）。
+
+### 6. 缺口处理规则（本轮落地形态）
+
+**契约缺失 → 入口禁用 + 弹窗不挂载 + 点名缺失路径；已确认安全的读取不受影响。**
+即「禁止未知语义被默认为允许」，而不是遇到一个缺口就停掉整页。
+
+### 7. 候选与运行身份
+
+- 源码：`15351d632`（本段三笔代码提交之后）+ 本轮记录提交。
+- 后端：受管容器按新修订重建（`make backend.acceptance.up`），
+  `SC_SOURCE_REVISION` 与实际 `addons` 一致——**这是构建预览的前置**：
+  `standard-page-build` 会拒绝 `git diff` 与容器记录修订不一致的候选。
+- 5180：新产物 `entry=/assets/index-BlsrCAPY.js`、`entry_sha256=db3b259f…`、
+  `index_sha256=ab5602d9…`；监听仍为 `pid=802966`（同路径替换产物，服务按请求读盘，
+  无需重启）；旧产物按序归档为 `config05-20260929-prev-introduce-contract`。
+  HTTP 回读确认服务端 entry 与 `build-identity.json` 完全一致。
+
+### 8. 边界七问
+
+`Formal Product Layer` = P1 施工行业标准（契约声明）+ 端侧契约消费；
+`Layer Target` = `smart_construction_core` 的 `core_extension_contract_normalizers.py` 与
+`components/professional-fields/*` 的引入弹窗/集合控制；
+`Module` = `smart_construction_core` + `frontend/apps/web`；
+`Standard vs User-Specific` = 行业标准（任何标准施工部署都应继承同一引入词汇）；
+`Why Here` = 词汇与载荷键名是**业务语义**，只能由有效契约声明；
+`Why Not Elsewhere` = **不**在前端按模型名/列名/按钮文案重建（本轮删除的正是这条路径）、
+**不**把契约缺口的判断放进页面、**不**用默认值兜底；
+`Blast Radius` = 付款申请表单的「从结算单引入」入口与弹窗、其守卫与派生清单；
+读取链路、其他模型与其他弹窗不受影响。
+
+### 9. 提交
+
+- `fix(web): consume the declared introduce-dialog contract instead of guessing`
+- `feat(construction): declare the settlement introduce vocabulary in the contract`
+- `fix(verify): bind the introduce-dialog gap to the declared contract vocabulary`
+- 记录与派生清单随本段单独提交。
+
+### 10. 显式登记（**不在本段范围**）
+
+- `industry_agnostic.guard` **127 → 97**：剩余集中在 `overviewRichTextPatch`(13+9)、
+  `BlockChartDataset.vue`(11)、`SceneContractBlockGridView.vue`(9)、`productPageHeaderAdapters.ts`(8)、
+  `boqImportPreview`(7+6)、`chartFetch.ts`(5) 等；仍不靠删基线/放宽判定消红。
+- 该弹窗残留 1 条**假阳性**（`settlement.contract_name` 被 `sc.(project|contract|…)` 正则命中）
+  与集合组件键 `sc.payment.settlement_detail_collection` 1 条，均在既有登记内。
+- 段 35/36 全部登记项不变（`verify.business_config.coverage`、platform-admin 夹具缺口、
+  `state_transition_undeclared`、`payment.request` 契约表达缺口、`render_semantic_ready_guard` 滞后、
+  `all_list_visual.audit` 凭据前置、工作台目录 13–15 s 观感）。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 38｜把「动作语义完备性」守卫扩到第三条真实权威：财务工作区的对象方法动作不再能静默存在（2026-09-30）
+
+### 1. 本轮触发
+
+上一步顺着段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」复核。
+**活契约实测先推翻了这个旧登记**（见 §2）：八类业务动作的语义全部已声明，缺口并不存在。
+但同一轮复核暴露了真正的问题——**它本来就不该只靠人工核对活契约才能发现**：
+
+`scripts/verify/workflow_action_semantics_completeness_guard.py` 此前只读两条权威
+（`workflow_contract_service.py` 的 `PROFILE_BY_MODEL`/`ACTIONS`、`payment_request_available_actions.py`
+的 `_ACTION_SPECS`），**完全没有覆盖第三条真实权威** `services/financial_workspace_contract.py`。
+该文件里 `view_payment_execution`（L731-775）以对象方法 `action_view_payment_execution` 执行，
+**没有任何语义声明**，守卫却看不见它。
+
+这就是本专题反复出现的形态：**不是「某个词写错了」，而是「一条真实执行路径从未进入验收射程」。**
+缺的不是再核对一遍活契约，而是**让这类动作一旦新增就必须被分类，否则门禁失败**。
+
+### 2. 活契约实测（先证伪旧登记，再定位真实缺口）
+
+`/api/v1/intent`（`ui.contract.v2`，`model=payment.request`，`view_type=form`，`record_id=1813`，
+`fixture_role_finance` uid 30）返回 **11 个动作**，业务动作语义**全部已声明**：
+
+| 动作 key | method | `action_semantics` |
+|---|---|---|
+| `payment_submit` | `action_submit` | `business/submit/contract.action` |
+| `payment_approve`（3 变体） | `action_approve*` | `business/approve/contract.action` |
+| `payment_reject`（2 变体） | `action_reject*` | `business/reject/contract.action` |
+| `payment_done` | `action_done` | `business/complete/contract.action` |
+| `payment_execution` | `action_create_payment_execution` | `business/start_execution/contract.action` |
+| `cancel` | `action_cancel` | `business/cancel_record/contract.action` |
+| `save_draft` | `data.write` | 平台持久化例外（`PLATFORM_PERSISTENCE_KEYS`），正确 |
+
+即段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」**实际已闭合**；
+`action_semantics_vocabulary.py` 已含 `start_execution`/`complete`/`reopen`，
+`workflow_contract_service.py` L876-888 八个动作全部映射。**旧登记在本段更正，不再挂账**（见 §9）。
+
+顺带确认前端执行链**没有**按方法名猜意图：`canonicalFormActionExecutor.ts` 的
+`resolveCanonicalFormActionExecution()` 明确按 `backendIdentity` 精确匹配（不按标签/方法/模型/角色/状态推断），
+`actionExecutionPlan.ts` 按显式 `intent`/`kind`/`methodName` 分派。**前端这一侧是干净的，缺口在验收体系。**
+
+### 3. 权威归属
+
+| 事项 | 权威 | 本轮处理 |
+|---|---|---|
+| 一个可被 Web 执行的动作属于什么业务目的 | 已发布的动作语义词汇表 + 各契约权威的显式声明 | 守卫扩到第三条权威 |
+| 财务工作区的动作列表如何组装 | `financial_workspace_contract.py`（P1 行业标准） | 静态读取其字面声明 |
+| 导航类动作（读取关联记录、不做状态迁移） | 显式登记表 + 理由 + 硬化条件 | 新增 `NAVIGATION_METHOD_ACTIONS` |
+| 方法名/文案能否决定业务意图 | **不能** | 守卫以「是否声明语义」判定，不看方法名 |
+
+### 4. 改动（仅验证体系，产品源码零改动）
+
+**A. `scripts/verify/workflow_action_semantics_completeness_guard.py`**
+- 新增 `FINANCIAL_WORKSPACE` 常量与 `--financial-workspace` 参数。
+- 新增 `NAVIGATION_METHOD_ACTIONS`：带理由的导航豁免登记表（当前仅 `view_payment_execution`）。
+- 新增 `financial_workspace_action_declarations(path)`：AST 扫 `actions.append({...})` 与 `return [ {...} ]`，
+  用既有 `eval_node` 静态求值。**必须用 `eval_node` 才能读到嵌套 `action_semantics`**
+  （最初只读 `ast.Constant` 导致误报——这一段本身也是「校验器必须先能被反例打穿」的证明）。
+  `binds_method` 表示「存在 `method` 键（即使值不可解析）」；`propagates_semantics` 表示该 dict 用
+  `**(action_semantics=...)` 从 workflow registry 行传播语义（由既有 `validate()` 覆盖，跳过）。
+- 新增 `validate_navigation_exception(key, item)`（硬化）：豁免**不得**用于 `required_params` 非空、
+  `requires_reason` 为真、或 `action_safety.classification ∈ {danger, destructive}` 的动作。
+- 新增 `validate_financial_workspace_actions(...)`：绑定方法的动作必须
+  (a) 声明已发布 purpose 且落在已发布 (kind, purpose, executor) 三元组内，或
+  (b) 在导航登记表内并通过硬化检查；另检「登记 key 必须仍被声明」「登记项必须有理由」；
+  declarations 为空 → 报 vacuous 失败（**零读取等于失败，不是通过**）。
+
+**B. 单测 `scripts/verify/test_workflow_action_semantics_completeness_guard.py`：4 → 15 项**
+新增 `FinancialWorkspaceActionClassificationTest` 11 项：已声明通过、无 purpose 失败、词汇表外 purpose 失败、
+未发布三元组失败、registry 传播不重判、导航豁免覆盖通过、豁免 key 消失失败、豁免无理由失败、
+**豁免用于带输入动作失败**、**豁免用于破坏性动作失败**、空读取 vacuous 失败。
+
+### 5. 验证（L0→L5，风险类：验收体系正确性）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `python3 scripts/verify/workflow_action_semantics_completeness_guard.py` | **PASS**：`profiles=65 reachable_actions=9 payment_specs=4 workspace_actions=3 role_gates=4 verdict_covers=4 roles=11 vocabulary=10` |
+| L1 | `PYTHONPATH=scripts/verify python3 -m unittest test_workflow_action_semantics_completeness_guard` | **Ran 15 tests, OK** |
+| L1 | `make verify.native_view.workflow_action_coverage` | **PASS**（单测 8 + 10 项；`registered=31 navigation=14 state_transition_undeclared=5`） |
+| L1 | `make verify.workflow_state_phase_coverage` | **PASS**（16 项） |
+| L1 | `make ci.local.iteration` | **PASS**（`coverage=L1_only`，`change_state=dirty`） |
+
+**真实源码反例验伪**（对 `financial_workspace_contract.py` 本身，非构造输入）：
+
+1. 临时删除 `payment_execution` 的 `action_semantics` 行 → 守卫 **exit 1**，点名
+   `financial workspace action 'payment_execution' binds method 'action_create_payment_execution'
+   without a declared action purpose and is not a registered navigation action ['view_payment_execution']`。
+2. 临时注入 `{"key":"some_new_object_action","method":"action_some_new_thing"}` → **exit 1**，点名该 key。
+3. 两次恢复后 `git diff --stat` 均为空 → 守卫 **exit 0**。**产品文件零改动得到证明。**
+
+### 5b. 接线收口：让守卫真的会被自动运行
+
+写完 §4 后核查守卫是否进入任何自动门禁，发现同一形态的第二处实例：
+
+`workflow_action_semantics_completeness_guard` 只挂在 `verify.workflow_contract.backend` 下，
+而该目标仅被 `verify.workflow_contract` 引用，**后者不被任何 CI lane 引用**
+（`grep -rn "verify.workflow_contract\b" make/ .github/workflows/` 只命中定义自身）。
+即：**守卫此前只在我手动运行时生效，从不进入自动门禁**——正是本段主题：
+「一条真实路径从未进入验收射程」，只不过这次是守卫自己。
+
+**收口**（只改 `make/ci.mk`，产品代码零改动）：
+
+- 新增轻量目标 `verify.workflow_action_semantics.guard`（`py_compile` + 守卫 + 15 项单测），
+  **不依赖容器**与 `audit.workflow_state.inventory`。
+- 接入 `verify.unified_page_contract.v2` 与 `verify.unified_page_contract.v2.professional_backend`
+  （两者已有 `verify.native_view.workflow_action_coverage`、`verify.workflow_state_phase_coverage`）。
+- `verify.workflow_contract.backend` 改为依赖该新目标并移除重复调用，保持**单一接线权威**。
+
+**验证**：
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| L1 | `make verify.workflow_action_semantics.guard` | **PASS**（守卫 + 15 项单测） |
+| L1 | `make -n verify.unified_page_contract.v2` | 命中该守卫 **3** 次调用（py_compile/守卫/单测） |
+| L1 | `make -n ci.local.quick.run` | 同样命中 **3** 次 → **Quick/交付 lane 会执行它** |
+| L1 | `make ci.local.iteration` | **PASS** |
+
+### 6. 缺口处理规则（本段落地形态）
+
+**一条可被 Web 执行的对象方法动作，要么声明已发布语义，要么以带理由的导航豁免登记并满足硬化条件；
+两者都不满足时门禁失败。** 新动作不能靠「没被扫描到」而静默存在。
+
+### 7. 候选与运行身份
+
+- 源码：`4da430d50`（本段第一笔）+ 接线提交（`make/ci.mk`）。
+- 本轮**未改 `addons`**，容器 `sc-backend-odoo-acceptance` 仍绑 `SC_SOURCE_REVISION=15351d632…`
+  （`SC_SOURCE_FINGERPRINT=4a3c77c5…`），无需重建。
+- 本轮**未构建前端**；5180 仍为段 37 产物（`pid=802966`，`127.0.0.1:5180` 监听），
+  入口 `entry=/assets/index-BlsrCAPY.js`；后端 `127.0.0.1:18082` 正常监听。
+
+### 8. 边界七问
+
+`Formal Product Layer` = P0 平台内核（动作语义词汇表/守卫）+ P1 行业标准（财务工作区契约）；
+`Layer Target` = `scripts/verify` 的验收守卫与单测，不触碰 `smart_core`/`smart_construction_core` 产品代码；
+`Module` = 验收体系（`scripts/verify`）；
+`Standard vs User-Specific` = 平台机制（动作语义的完备性校验规则）；
+`Why Here` = 「哪些执行路径必须被分类」是**验收体系的职责**，不是某个业务模块的；
+`Why Not Elsewhere` = **不**在产品契约里补声明来让门禁变绿（那会掩盖路径）、
+**不**在前端按方法名猜意图（前端已按 `backendIdentity` 精确匹配）、
+**不**放宽守卫判定或加无理由豁免；
+`Blast Radius` = `workflow_action_semantics_completeness_guard.py` 及其单测；
+其他契约权威、其他模型、前端渲染与业务办理不受影响。
+
+### 9. 显式登记（**不在本段范围**）
+
+- **更正**：段 28 登记的「`payment.request` 的 `done`/`payment_execution` 表达缺口」经活契约实测**已闭合**
+  （`complete`/`start_execution` 均有声明与三元组），本段从挂账中移除。
+- 段 32/35/36/37 全部登记项不变：`industry_agnostic.guard` 127→97（收敛门禁，未接入聚合目标）、
+  弹窗 1 条 `sc.*` 正则假阳性 + 集合组件键 1 条、`style_system.guard` z-index、
+  `state_transition_undeclared` 五条、`render_semantic_ready_guard` 滞后、
+  `verify.business_config.coverage` FAIL（数据覆盖）、platform-admin 夹具缺口、
+  `verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`、工作台目录 13–15 s 观感。
+- 新增观察（**未处理，仅记录**）：未跟踪的前端文件必须先 `git add` 才能被
+  `frontend_standard_preview.py` 的 `inputs()` 计入构建身份，而 `git add` 又会让暂存内容进入
+  `git diff` 计算 → **构建身份可能被暂存内容污染**。规避方式：构建前保持工作树干净。是否属缺陷待后续判定。
+- 未推送、未合并、未部署目标环境；业务矩阵状态不变；`.agent` 未改。
+
+### 10. 提交
+
+- `fix(verify): prove the financial workspace action authority is classified`（守卫 + 15 项单测）
+- `fix(ci): run the workflow action semantics guard from the contract lanes`（`make/ci.mk` 接线）
+- 本段记录随这两笔提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 39｜整体收口：把离线必需门禁从红恢复为绿（2026-09-30）
+
+### 1. 本轮触发
+
+段 38 把守卫接进了 `verify.unified_page_contract.v2`，但当时没有跑该聚合本身。
+本轮按「整体收口」要求，从聚合门禁而不是单点守卫出发，逐个确认必需检查的真实状态。
+结果：**发现三处真实红灯，全部修绿**，其中一处自 2026-09-29 起就已存在。
+
+### 2. 收口一：接线未同步清单，契约主 lane 被我弄红
+
+`make verify.unified_page_contract.v2` 第一次运行即失败：
+
+```
+[unified_page_contract_v2_guard_inventory] FAIL
+- verify.unified_page_contract.v2 aggregate dependencies drifted; extra=['verify.workflow_action_semantics.guard'] missing=[]
+```
+
+**原因**：该聚合有自己的权威清单 `OFFLINE_TARGETS`，`unified_page_contract_v2_guard_inventory.py`
+会比对聚合依赖集合与清单是否一致。段 38 只改了 `make/ci.mk`，没有同步清单。
+
+**修复**：把 `verify.workflow_action_semantics.guard` 及其两个脚本加入 `OFFLINE_TARGETS`
+（同步权威清单，**不是**放宽判定）。提交 `498cd38b8`。
+
+**顺带的结论**：这个清单守卫正是「接线完整性」的既有权威，它拦住了段 38 的疏漏。
+段 38 §5b 关于「守卫不被任何 lane 调用」的发现仍然成立——清单检查的是聚合依赖一致性，
+不检查守卫是否真的进入了某个 lane。
+
+### 3. 收口二：离线聚合门禁自 2026-09-29 起为红（记录里的客户品牌引用）
+
+`make ci.professional.backend.shard-verify` 失败：
+
+```
+[tenant_product_payload_boundary_guard] FAIL
+- rule=customer_identity_or_brand_reference path=docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+FIXED_CUSTOMER_IDENTIFIERS=1
+```
+
+**原因**：更早的段落记录里直接写入了 P2 属主侧的真实客户品牌模块名与仓库名
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`）。
+这些字符串由 `21df11b45`（2026-09-29 记录提交）引入；
+守卫的 `CUSTOMER_IDENTITY_TOKENS` 从 `401bcb3bd`（clean product baseline）起就包含该品牌 token，
+**因此该必需门禁自那笔记录提交起一直是红的，只是没有以这种聚合形态跑过。**
+
+**修复**：把三处引用改写为仓库既有占位形式
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`），
+**不改守卫、不加豁免**。被记录的事实（哪一层拥有该模块、注册哪个动作、哪个提交）完整保留。
+提交 `c9135c13d`。
+
+**判定**：这是「文档里固化了客户身份」，属真实违约，不是假阳性；
+用占位符修正是它本就应有的形态。
+
+### 4. 收口三：复杂度生成报告过期
+
+`make ci.professional.backend.shard-reports` 失败：
+
+```
+[ERROR] complexity report is stale. Run: python3 scripts/ci/generate_complexity_budget_report.py --write
+```
+
+**原因**：段 38 把 `workflow_action_semantics_completeness_guard.py` 扩到 819 行，
+进入报告的尺寸分档；扫描数 4504→4505、超预警阈值文件 98→99。
+
+**修复**：经权威生成器 `generate_complexity_budget_report.py --write` 重新生成
+（**不手工编辑报告**）。提交 `818d7c7fe`。
+
+### 5. 整体验证矩阵（本轮实测）
+
+| 门禁 | 结果 |
+|---|---|
+| `make verify.unified_page_contract.v2`（含一次前端构建） | **PASS** |
+| `make ci.professional.backend.shard-verify` | **PASS** |
+| `make ci.professional.backend.shard-reports` | **PASS**（8 份生成报告 current；`complexity_baseline_lock checked=11`） |
+| `make ci.professional.backend.shard-tests` | **PASS**（name-binding 2844 文件、Python 语法 1170 文件、Node 语法 364 文件、E2E 预检） |
+| `make verify.repository.clean_history` | **PASS** |
+| `make verify.product.release.version` | **PASS** |
+| `make verify.tenant.product_payload_boundary` | **PASS**（`FIXED_CUSTOMER_IDENTIFIERS=0`） |
+| `make verify.frontend.typecheck.strict` | **PASS** |
+| `make verify.frontend.lint.src` | **PASS**（0 errors，57 warnings） |
+| `make verify.guard.registry` | **PASS**（1352 scripts，1228 referenced，124 orphans acknowledged） |
+| `make verify.contract.structure_lock` / `architecture.complexity_baseline_lock` | **PASS**（domains=14；checked=11） |
+| `make ci.local.iteration` | **PASS** |
+
+即 `ci.professional.backend` 的三个 shard 合起来已全绿，`public_guard` 与
+`merge_policy_gate` 的本地对应目标也全绿。
+
+### 6. 未在本轮范围
+
+- `verify.frontend.industry_agnostic.guard` 仍为 **FAIL（97 条）**，`policy.target=zero`，
+  **未接入任何聚合/CI lane**，本轮不接入、不处理。按规则实测的真实分布（按文件）：
+
+  | 文件 | 条数 | 规则 |
+  |---|---|---|
+  | `views/SceneContractBlockGridView.vue` | 6+3 | `business_field_inference` / `industry_behavior_identifier` |
+  | `api/overviewRichTextPatch.ts` | 6+4+3 | `industry_behavior_identifier` / `business_field_inference` / `industry_text_anywhere` |
+  | `components/page/blocks/BlockChartDataset.vue` | 6+5 | 同上两类 |
+  | `app/presentation/boqImportPreview.ts` | 5+2 | `business_field_inference` / 行业文案 |
+  | `app/presentation/productPageHeaderAdapters.ts` | 4+4 | `industry_literal` / `industry_text_anywhere` |
+  | 其余 12 个文件 | 各 1–5 | 混合 |
+
+  **判定口径（不臆断）**：`api/*` 的多为后端契约参数名/路径绑定（`project_id`、`contract_id`、
+  `boq*`），属「消费契约」形态；`views/*`、`components/page/blocks/*` 与
+  `app/presentation/*` 需要逐条判定是「消费契约」还是「按字段名/行业词推断行为」——
+  后者才是真正需要消掉的越界。**这需要一次专项（审计器语义细化 + 前端改造），本轮不做。**
+- `verify.business_config.coverage` 仍 FAIL，原因是验收数据库缺少 `system_root`/`user:admin`/`user:wutao`
+  三个身份的数据覆盖，属**环境数据**问题，非代码缺陷。
+- `verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`，not_run。
+- 段 38 §9 的其余登记项不变。
+
+### 7. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `make/ci.mk`、`scripts/verify/*`、生成报告与活记录；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 三处红灯都是「验收/交付体系自身的状态不对」，不属于任何业务模块；
+`Why Not Elsewhere` = **不**放宽守卫、**不**加豁免、**不**手工编辑生成报告、
+**不**把客户品牌留在记录里换取门禁变绿；
+`Blast Radius` = 契约 lane 接线清单、活记录文档、复杂度报告；
+产品代码零改动，业务渲染与办理不受影响。
+
+### 8. 提交
+
+- `fix(verify): register the action semantics guard in the contract lane inventory`
+- `fix(docs): replace the customer brand reference in the iteration log with the tenant placeholder`
+- `chore(reports): refresh the complexity budget report after the guard change`
+- 本段记录随第三笔提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 40｜把「列表状态色调」从平台内核收回声明方：内核不再替业务决定哪个状态算成功（2026-09-30）
+
+### 1. 本轮触发与分支主目标的关系
+
+分支主目标：**前端所有渲染与交互由有效契约驱动，并回到组件官方模板组合逻辑**。
+前面几段处理的是「前端自行推断业务语义」，本轮顺着同一条往前查了一层权威：
+**平台内核自己也在替业务层发明语义。**
+
+`addons/smart_core/utils/contract_governance_list_surface.py` 里硬编码了一份
+业务状态 → 色调映射（`draft / in_progress / paused / done / closing / warranty / closed`），
+并且**对所有带 `status_field` 的列表档案无条件生效**。
+结果是：内核替 P1/P2 决定了「哪个业务状态算成功、哪个算警告」，
+而这本来只能由拥有该模型的层声明。契约没有表达的东西被内核补齐了，缺口因此被永久隐藏。
+
+### 2. 问题定位
+
+- 映射写死在内核（`contract_governance_list_surface.py`），与具体模型无关却对全部档案生效；
+- 前端消费方 `collectionStatusPresentation.ts` 在无 `tone_by_value` 时回退 `neutral`，
+  本身是**正确的**（不猜），但内核总是给出映射，回退分支实际永不触发；
+- 部分档案的状态值（如 `payment.request` 的 `submit/approve/rejected/cancel`）根本不在映射内，
+  于是「已声明状态」和「未声明状态」被同一份内核默认值混在一起，**缺口不可见**。
+
+判定：这是**内核越界发明业务语义**，属分支主目标要清的口子。
+
+### 3. 修复：权威搬回声明方（行为保持的搬迁，非扩权）
+
+内核侧：
+
+- 只保留**投影**职责。新增 `STATUS_TONE_VOCABULARY =
+  frozenset({neutral, info, success, warning, danger})` 与
+  `normalize_status_tone_by_value(raw)`；
+- **无声明 → 完全不写 `tone_by_value`**，由前端按其既有规则回退 `neutral`；
+- `contract_governance.py`（facade）与 `contract_governance_registry.py` 只透传/整形，
+  不再发明任何语义。
+
+声明侧（P1，`addons/smart_construction_core/core_extension.py`）：
+
+| 档案 | 声明内容 | 值来源 |
+|---|---|---|
+| `project.project.list` | 全量 7 值（`draft/in_progress/paused/done/closing/warranty/closed`） | `ScStateMachine.PROJECT_STATES` |
+| `payment.request.list` | `{draft: neutral, done: success}` | `PAYMENT_REQUEST_STATES` |
+| `project.material.plan.list` | `{draft: neutral, done: success}` | 模型 `state` 选择项 |
+| `project.task.list` | `{draft: neutral, in_progress: info, done: success}` | 模型 `sc_state` 选择项 |
+| `tax_deduction_registration.list` | **仍不声明** | 旧映射唯一重叠值 `draft` 原本即 neutral，无行为变化 |
+
+**关键判定：这是行为保持的搬迁。**
+`payment.request` 的 `submit/approve/rejected/cancel` 在旧内核映射里本来就没有条目
+（只覆盖 `draft/done`），搬迁后**同样没有**，仍渲染中性——**没有借机扩权**。
+这些状态该用什么色调属 P1 产品决策，已登记为**显式产品缺口**（缺口必须显现）。
+
+### 4. 顺带修复：段 39 记录正文自己把客户品牌写回，聚合门禁自那笔提交起为红
+
+写本段记录时复跑 `scripts/verify/tenant_product_payload_boundary_guard.py`，发现它在 HEAD
+（`26c32476f`）**本身就是红的**：
+
+```
+[tenant_product_payload_boundary_guard] FAIL
+- rule=customer_identity_or_brand_reference path=docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+FIXED_CUSTOMER_IDENTIFIERS=1
+```
+
+`git log -S` 定位：命中由 **`382d37e35`（段 39 的「离线门禁恢复」记录提交）** 引入。
+段 39 在「原因」段落里为说明问题，把被判红的真实客户品牌模块名与仓库名**照着写了一遍**，
+于是 `c9135c13d` 的修正只覆盖了更早的三处，**记录自身又新增了第四处**，
+守卫从 `382d37e35` 起一直为红——这与段 39「聚合 PASS」的结论并不矛盾，
+因为那段结论是在更早的 `c9135c13d` 时刻取得的。
+
+**这暴露的是验收体系缺口，不是本段的副作用**：
+记录文本是在**之后那一笔记录提交**里才写下的，
+而那笔提交**没有复跑被它自己改变的文件所参与的守卫**。
+「记录/文档提交同样要复跑该文档参与的门禁」此前不是硬规则，本段起按此执行。
+
+**修复**：把该处改写为仓库既有占位形式
+（`sce_customer_<tenant_key>_legacy`、`sce-customer-<tenant_key>-odoo`），
+**不改守卫、不加豁免、不删已记录事实**。复跑后 `FIXED_CUSTOMER_IDENTIFIERS=0`、PASS。
+
+### 5. 守卫：`scripts/verify/contract_governance_list_surface_split_guard.py`
+
+挂在 `ci.local.quick.run`（`make/ci.mk:919`），双向 fail-closed，均已用注入实验证明有牙齿：
+
+1. **内核不得出现任何业务状态字面量**（`draft`…`closed`）。
+   注入 `_LEGACY_TONE_SEED = {"draft": …}` 即 FAIL；
+2. **声明方 profile 必须拥有映射**。删掉 P1 声明即 FAIL
+   （`project.project.list must own its status tone map; the kernel no longer supplies one`）；
+3. **泛化到所有声明档案**：色调必须落在已发布词表内、键非空、逐字投影；
+4. **`STATUS_VALUE_SOURCES`**：每个声明档案必须登记其状态值来源；
+   守卫用 AST 读取 `ScStateMachine` 状态表或模型 `fields.Selection` 首元素，
+   声明了模型不存在的值即 FAIL（注入 `"nope": "danger"` 报
+   `declares values the model does not define`）。
+   **新增声明档案必须同步补 `STATUS_VALUE_SOURCES`，否则 FAIL。**
+
+### 6. 实测（按 L0→L5 分层；零测试即失败）
+
+- **L1（静态/守卫，离线）**：`contract_governance_list_surface_split_guard` PASS；
+  `_responsibility_map_guard`、`_registry_split_guard`、`_determinism_guard`、`_coverage` PASS；
+  `construction_core_extension_{intent_handlers,hook_facts,capability_rows,project_layout}_split_guard` PASS；
+  `navigation_contract_boundary_guard` PASS；`owner_industry_isolation_probe` PASS；
+  `make ci.local.iteration` PASS；`tenant_product_payload_boundary_guard` 由红转 PASS
+  （`FIXED_CUSTOMER_IDENTIFIERS=0`，见 §4）。
+  四个派生清单 `--check` 全部 CHECK-OK
+  （`rendering_detail` PASS surfaces=173 gaps=0；`component_driver_takeover` required=33 missing=0；
+  `visual_projection` PASS；`official_design_alignment` PASS）。
+- **L2（后端单测，受管容器内）**：
+  `odoo.addons.smart_core.tests.test_contract_governance_record_context_registry`
+  → **Ran 21 tests OK（0F/0E）**，含新增
+  `test_standard_list_profile_keeps_the_declared_status_tone_map`；
+  `test_contract_governance_kanban_profile_registry`、
+  `test_contract_governance_task_form_profile_registry`、
+  `scripts/verify/test_formal_list_configuration_baseline.py` 均 PASS。
+  L2 前端 16 项 collection/list 目标（`verify.frontend.collection_*.unit`、
+  `standard_collection_composition.unit`、`page_pattern_reference_parity.unit`、
+  `product_page_pattern.unit`、`scene_entry_contract.unit`、`primitive_adapter.unit`、
+  `professional_detail_collection.unit`）全 PASS。
+- **L3（受管运行时）**：容器 `sc-backend-odoo-acceptance`，库 `sc_frontend_acceptance`，
+  `127.0.0.1:18082`，`SC_SOURCE_REVISION=26c32476ff60a21fbc009a108b82bad4d189a448`（==HEAD），
+  `/web/login` HTTP 200。运行时探针结论：4 个声明档案的每个键都解析到模型真实状态；
+  `project.project` 列表契约投影出 `cell_role=status` + 完整 `tone_by_value`；
+  `payment.request` 契约投影 `cell_role=status` 且**无** `tone_by_value`；
+  `tax_deduction_registration.list` 记为 undeclared。
+
+### 7. 判定
+
+内核不再替业务决定语义，声明方成为唯一权威，缺口以「无声明 → 中性」的形式可见。
+前端未被改动，仍是纯呈现 + 中性回退，符合「缺语义不得猜测补齐」。
+
+### 8. 本段登记项（未处理，仅记录）
+
+- `payment.request` 的 `submit/approve/rejected/cancel` 色调**未声明**，
+  属 P1 产品决策，需业务确认后补声明（不代拟）。
+- `verify.frontend.industry_agnostic.guard` 仍 FAIL（97 条，`policy.target=zero`，
+  未接入任何聚合 lane）——需专项（审计器语义细化 + 前端改造）。
+- `verify.business_config.coverage` FAIL（验收库缺 `system_root`/`user:admin`/`user:wutao`，
+  环境数据）；`verify.frontend.all_list_visual.audit` 需 `E2E_PASSWORD`（not_run）。
+- `state_transition_undeclared` 5 条仍在 `config/contract/native_view_undeclared_actions.v1.json`。
+- `style_system.guard` z-index 与四项文件长度欠账不变。
+- **P1 `core_extension.py` 行数预算守卫此前即红**（改动前 1830 已超 1787/1809/1820），
+  本段新增 P1 声明后为 1842。**已确认非本段引入**，属预存量技术债；
+  本段已把声明压到最小行数（净增 2 行/档案）。
+- `test_contract_governance_project_form.py` 在容器内仍 8F+1E（既有登记的非通过，
+  失败信息与色调无关）。
+
+### 9. 边界七问
+
+`Formal Product Layer` = P0 平台内核（搬运方）+ P1 建筑行业标准（声明方）；
+`Layer Target` = `smart_core/utils/contract_governance_list_surface.py`（投影）、
+`smart_construction_core/core_extension.py`（声明）、验收守卫；
+`Module` = `smart_core` / `smart_construction_core`；
+`Standard vs User-Specific` = 平台机制（投影）+ 行业标准默认（状态色调默认）；
+`Why Here` = 投影是内核机制，色调是行业模型的业务默认，二者必须分层；
+`Why Not Elsewhere` = **不**把业务状态留在内核、**不**把投影逻辑下放到 P1、
+**不**让前端从中文标签猜色调、**不**靠降低词表或加豁免消红；
+`Blast Radius` = 列表契约 `tone_by_value` 投影路径、4 个声明档案、契约守卫与单测。
+未声明档案的契约投影由「内核默认映射」变为「无映射」，前端回退中性，行为不变。
+
+### 10. 提交
+
+- `fix(contract): own the list status tone in the declaring profile`（内核搬迁 + P1 声明 + 守卫 + 单测）
+- `fix(contract): declare the remaining list status tones in the owning profiles`（其余档案补声明 + 守卫泛化）
+- `fix(verify): require declared tones to name real model states`（守卫新增状态值来源校验）
+- `docs(web): record segment 40 and reclaim the brand reference the boundary guard caught`
+  （活记录段 40；段 39 记录正文的客户品牌回写修正，守卫由红恢复为绿；
+  `page-pattern-reference-contract-gaps-v1.md` 与 `...-detail-ledger-v1.json`
+  仅 `collection.semantic-tones` 一条改述）。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 41｜主线契约 lane 在 HEAD 整体核验，并给行业语义审计加「角色」维度让缺口可见（2026-09-30）
+
+### 1. 本轮触发
+
+分支主目标：**前端所有渲染与交互由契约驱动，并使用组件官方模板组合逻辑**。
+段 40 收口了「列表状态色调」的权威归属；本轮回到主目标本体，做两件事：
+
+1. 在 HEAD 上**完整核验主目标的契约 lane**（不再逐入口试点证明）；
+2. 处理行业语义审计「把**消费契约**与**发明语义**压成同一个数字」的**验收体系缺口**。
+
+### 2. 主目标契约 lane 在 HEAD 的整体核验
+
+- `make verify.unified_page_contract.v2.professional_backend` **PASS**，包含
+  `unified_page_contract_v2_guard_inventory`、`_schema`、`_assembler`、`_status`、`_action`、
+  `native_view.workflow_action_coverage`、`workflow_state_phase_coverage`、
+  `workflow_action_semantics_completeness_guard`、`_data`、`_runtime`、`_client`、`_intent`、
+  `_web_consumer`、`_web_architecture`、`_stable_projection`；
+  单测 16 / 15 / 20 / 107 / 5 例全部 OK。
+- `make verify.unified_page_contract.v2.frontend_static` **PASS**
+  （`verify.frontend.typecheck.strict` + `verify.frontend.build`，21.29 s）。
+- 派生清单 `--check` 全绿：`frontend_rendering_detail_inventory` PASS surfaces=173 gaps=0；
+  `component_driver_takeover_inventory` required=33 missing=0 bridge_only=0 adapter_unconsumed=0；
+  `visual_projection_inventory` PASS；`official_design_alignment_inventory` PASS。
+- 组件专业化清单 173 个表面 **gap=0**（governed_composite 113 / governed_primitive 41 / p3_out_of_scope 19）。
+- 列表组合唯一：`standardListComposition.ts` 只有 `official-standard-list` 一个取值，
+  `legacy-list-surface` 已不存在。
+
+**结论：主目标的「契约驱动渲染 + 官方组合」在 HEAD 的结构与静态层没有缺口。**
+
+### 3. 缺口：行业语义审计把「消费契约」与「发明语义」压成一个数字
+
+`scripts/verify/frontend_industry_agnostic_audit.py` 是纯文本正则审计，`policy.target=zero`，
+当前 97 条命中，**未接入任何 lane**。它无法区分三类完全不同的东西：
+
+| 类别 | 例子 | 是否越界 |
+|---|---|---|
+| 注释/文档里的行业词 | `// 入参与后端 handler 对齐：project_id` | 否 |
+| 传输参数名、属性名、登记键 | `project_id: params.projectId`、`'sc.payment.settlement_detail_collection'` | 否（**消费契约**必然出现） |
+| 在比较/三元/过滤里用行业名选行为 | `key === 'project.management' ? '项目驾驶舱'` | **是** |
+
+三者被合并成一个 97：既不能据以收口，也不能据此判定达标。这是**验收体系缺口**，
+不是产品缺陷——它让「缺口不可见」。
+
+### 4. 改动：新增「角色」维度，不改判定、不改计数
+
+- `Finding` 增加 `role`，取值 `documentation | string_literal | code_identifier | code_conditional`。
+  由 `lexical_role(text, start, matched)` 按**词法位置**判定：从行首走到命中点，
+  跟踪 `//` 行注释、`/* */` 与 `<!-- -->` 块注释、引号字面量与转义（引号内出现未闭合的
+  `'` 不会吞掉后续代码）；命中点仍落在代码区、且该行含比较/三元/`.filter(` 等分支标记时，
+  记为 `code_conditional`，否则记为 `code_identifier`。
+- **保持历史口径**：仍是「每规则每行一条」，去重键与旧实现一致。
+  实测 `finding_count` 与各规则计数与改动前**逐一致**：97；28 / 2 / 36 / 5 / 3 / 2 / 21。
+- **不改 `policy.target`，不改 ENFORCE 语义**：`FRONTEND_INDUSTRY_AGNOSTIC_ENFORCE=1` 下仍 rc=1。
+  本段不是消红，而是让报告第一次可以用于收口判定。
+- 报告新增 `role_counts`；14 例自测固定在
+  `scripts/verify/test_frontend_industry_agnostic_audit.py`，
+  入口 `make verify.frontend.industry_agnostic.audit.unit`，
+  并成为 `verify.frontend.industry_agnostic.guard` 的依赖；
+  脚本按 `active` 登记进 `scripts/verify/registry.yaml`，
+  `make verify.guard.registry` **PASS**（1353 scripts / 1229 referenced / 124 orphans acknowledged / 1 retired）。
+
+### 5. 角色分布与逐条判定
+
+97 条角色分布：`documentation` 21、`string_literal` 17、`code_identifier` 48、`code_conditional` 11。
+
+`code_conditional` 11 条已**逐条查看**（分布在 4 个文件）：
+
+- `api/boqImportPreview.ts:100`、`views/SceneContractBlockGridView.vue:153,161`：
+  按 `id > 0` 决定是否把**声明参数**放进请求载荷（传输整形）；
+- `app/presentation/boqImportPreview.ts:141`：类型保护式强制转换；
+- `components/page/blocks/BlockBoqImportPreview.vue:73`、`BlockChartDataset.vue:90,108`：
+  判断**上下文是否存在**，然后在契约声明的
+  `empty_message` / `empty_message_no_context` 两个键中择一。
+
+**未发现「按行业名字发明业务规则」**：择一的对象是契约已声明的键集，文案本身来自块契约。
+
+`code_identifier` 48 与 `string_literal` 17：按首次抽查为传输参数名/属性名/登记键（消费契约形态），
+**未逐条复核**，本段不作结论。
+
+**因此本段不宣布审计清零、不调整 `policy.target`、不动 ENFORCE。**
+把目标从「零行业词」改为「零发明语义」并据此重写规则，属独立专项，
+必须建立在本段的角色数据之上，**不得借收口顺手放宽**。
+
+### 6. 另一个确认的陈旧规则（登记，不在本段改）
+
+`industry_asset` 的 2 条命中是**按文件名**拦截：
+`components/role-home/WorkspaceHome.vue`、`composables/shared-surface/useWorkspaceHome.ts`。
+两者**仍在使用**（`views/HomeView.vue` 引用），且**按通用 `workspace_home` 契约渲染**
+（`data-role-home-renderer="workspace-contract"`，任务/摘要/入口全部来自契约），
+不是行业专用页面；原 11 个被拦文件中 9 个已删除。
+按路径而非按行为判定与「消费与发明分离」的原则相反，登记为专项内处理项。
+
+### 7. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `scripts/verify/frontend_industry_agnostic_audit.py`、
+`scripts/verify/test_frontend_industry_agnostic_audit.py`、`scripts/verify/registry.yaml`、`make/frontend.mk`；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 审计无法区分「消费」与「发明」，是审计自身能力的缺口，不属于任何业务模块；
+`Why Not Elsewhere` = **不**改前端去迎合审计、**不**放宽阈值、**不**删命中、
+**不**把 `target` 从 `zero` 换一个数字、**不**把 97 拆成「可忽略」；
+`Blast Radius` = 审计报告结构（只增字段）、新增自测与登记项。
+**产品源码与前端的渲染/交互零改动**，因此本轮无渲染影响面。
+
+### 8. 提交
+
+- `feat(verify): classify industry-agnostic findings by lexical role`
+  （角色分类 + 14 例自测 + make 入口 + registry 登记 + 报告重导出）
+- 本段记录随该提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 42｜把「reference 明细账」自带的完成规则做成机检：缺口必须有主、有出口（2026-09-30）
+
+### 1. 本轮触发
+
+段 41 把行业语义审计的角色维度补齐后，回头核查主目标依赖的第二本账：
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`。
+它自己声明了完成规则：
+
+> `No needs_work item may remain when this PR is declared visually complete. Contract gaps require an authoritative owner, evidence, and follow-up target.`
+
+但**没有任何门禁读它**。21 条 `contract_gap` 里多数只有一段描述性文字，没有
+`owner`，也没有明确的关闭出口。这正是本轮要消除的验收体系缺口：
+规则写在文件里，却由人工记得执行，等于没有边界。
+
+### 2. 改动：新增 ledger 守卫（fail-closed，只加校验）
+
+- 新增 `scripts/verify/page_pattern_reference_ledger_guard.py`，执行 ledger **自带的**
+  `completionRule`，不引入第二套判定：
+  - `needs_work` 不得残留（声明为 complete 的账本里出现即 FAIL）；
+  - 每条 `contract_gap` 必须同时具备 `authority`、`owner`（`^(P[0-4]\b|evidence\b)` 正则，
+    即 P0–P4 分层或 evidence）、`followUp`（≥12 字符，必须是可关闭的具体目标）；
+  - 校验 `status` 词表、`surface` 白名单、`key` 唯一；
+  - 非对象条目、缺 `completionRule`、`details` 非非空数组均 FAIL。
+- 新增 13 例自测 `scripts/verify/test_page_pattern_reference_ledger_guard.py`，
+  含 9 类反例：无 owner、伪造 owner（`P9`）、无 followUp、无 authority、
+  残留 needs_work、未知 status、重复 key、未知 surface、缺 completionRule、非对象条目。
+- **有牙齿验证**：补 `owner` 之前运行守卫 → FAIL 46 条；就地补全后 → PASS，
+  证明它拦的是真实缺口而不是空跑。
+- 接线：`make/frontend.mk` 的 `verify.frontend.page_pattern_reference_parity.unit`
+  追加两行（自测 + 守卫）；两脚本以 `active` 登记进 `scripts/verify/registry.yaml`。
+
+### 3. 缺口归属就地补全（只加字段，不改判定、不消红）
+
+给全部 21 条 `contract_gap` 就地补 `owner` / `followUp`（紧凑行内注入，`details` 仍为 67 条）：
+
+- `P0 smart_core`：`login.*`（4）、`shell.*`（2）、`collection.favorite`、
+  `collection.settings-export`、`collection.record-action`、`detail.*`（9）；
+- `P1 smart_construction_core`：`collection.semantic-tones`、`task.field-grid`、
+  `task.slot-coverage`；
+- `evidence`：`responsive.reference-mobile`（缺认证态 390px 参考截图，由证据补齐，非产品缺陷）。
+
+**没有把任何 `contract_gap` 改成 `aligned`，没有删条目，没有放宽词表。**
+`docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md`
+新增 `## Ownership enforcement` 节，说明该配对是强制而非建议。
+
+### 4. 边界七问
+
+`Formal Product Layer` = 验收与交付门禁（跨 P0/P1 的仓库治理层）；
+`Layer Target` = `scripts/verify/page_pattern_reference_ledger_guard.py`、
+`scripts/verify/test_page_pattern_reference_ledger_guard.py`、`scripts/verify/registry.yaml`、
+`make/frontend.mk`、reference 明细账与其 contract-gaps 说明；
+`Module` = 验收体系（非产品代码）；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 「缺口必须有主有出口」是账本自带的完成规则，理应由读该账本的门禁执行，
+不属于任何业务模块；
+`Why Not Elsewhere` = **不**把 `contract_gap` 降级为 `aligned`、**不**删条目、
+**不**靠人工记忆维持、**不**把守卫降级为「提示」；
+`Blast Radius` = ledger JSON 只增 `owner`/`followUp` 字段、新增守卫与自测、make 接线、
+registry 登记、guard_registry 重导出。
+**产品源码与前端渲染/交互零改动**，本轮无渲染影响面。
+
+### 5. 验证
+
+- `python3 scripts/verify/page_pattern_reference_ledger_guard.py` → `PASS entries=67 owned_gaps=21`（rc=0）；
+- `python3 scripts/verify/test_page_pattern_reference_ledger_guard.py` → 13 tests OK（rc=0）；
+- `make verify.guard.registry` → `AUDIT PASS: 1355 scripts (1231 referenced, 124/124 orphans acknowledged, 1 retired)`；
+- `make verify.frontend.page_pattern_reference_parity.unit` → parity 15 tests OK + surfaces=16；
+  ledger 13 tests OK + `PASS entries=67 owned_gaps=21`（三步都在同一入口内跑通，验证接线）；
+- `python3 scripts/verify/tenant_product_payload_boundary_guard.py` → PASS
+  `FIXED_CUSTOMER_IDENTIFIERS=0`（文档改动复查）；
+- `make ci.local.iteration` → PASS `scope=unclassified_by_design coverage=L1_only`
+  `next=risk_selected_non_zero_L2_targets_required`。
+
+### 6. 提交
+
+- `feat(verify): enforce the reference ledger completion rule`
+  （守卫 + 13 例自测 + make 接线 + registry 登记 + ledger 归属补全 + contract-gaps 说明 + guard_registry 重导出）
+- 本段记录随该提交保存。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 43｜色调回归前端呈现层：契约不再承载颜色，并把「文件行数」从阻断降为优化方向提示（2026-09-30）
+
+### 1. 本段要解决的问题
+
+段 40 已经认定「内核不能替业务决定哪个状态算成功」，但当时的修正方向是**让声明方在
+profile 里声明 `tone_by_value`**。这在边界上是错的：`tone_by_value` 是颜色（呈现），
+不是业务含义。于是本段把它彻底移出契约，并把方向掉转过来——
+**契约只给权威状态值与原生标签，颜色由前端呈现层唯一决定。**
+
+同时在执行中发现第二类「机械」问题：守卫把**文件行数**当作阻断点，且同一个文件被十几个
+守卫各自用不同的历史快照盯着（`core_extension.py` 同时挂着 1787/1809/1820/1830/1858/
+2065/2120/2243/3145/3763/4180/4241 十二个上限）。按本段确认的口径：
+**行数是代码优化方向的提示依据，不是功能迭代的阻断点。**
+
+### 2. 改了什么
+
+**(A) 色调退出契约（后端）**
+
+- `addons/smart_core/utils/contract_governance_list_surface.py`：删除 `STATUS_TONE_VOCABULARY`
+  与 `normalize_status_tone_by_value()`；`govern_standard_list_for_user` 去掉
+  `status_tone_by_value` 参数。状态列只写 `schema["cell_role"]="status"`。模块内不再出现
+  任何业务状态值字面量（`"draft"`/`"in_progress"`/`"closed"` …）。
+- `addons/smart_core/utils/contract_governance.py`：去掉调用点/签名/转发三处 `status_tone_by_value`。
+- `addons/smart_core/utils/contract_governance_registry.py`：profile 形状不再归一化 `tone_by_value`。
+- `addons/smart_construction_core/core_extension.py`：4 个 profile
+  （`project.project.list` / `project.task.list` / `payment.request.list` /
+  `project.material.plan.list`）删除 `tone_by_value` 声明（1842 → 1830 行）。
+
+**(B) 前端承接色调，且只有一份权威**
+
+- 新增 `frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts`：
+  `STATUS_TONE_POLICY` 以**权威状态值**为键（不是中文显示标签），覆盖共享生命周期与通用
+  进度/风险值，未声明 → `neutral`；导出 `resolveStatusTone(value)` 与
+  `resolveCollectionStatusPresentation({value, selection})`。
+- 消费方改为单一入口，删除各自的 `toneByValue`：
+  `pages/listPage/listCellPresentation.ts`、`utils/semantic.ts`（`statusTone()` 转发）、
+  `pages/ListPage.vue`、`pages/KanbanPage.vue`、`views/ActionView.vue`、
+  `app/action_runtime/useActionViewCollectionMetricRuntime.ts`、
+  `app/action_runtime/useActionViewContractShapeRuntime.ts`。
+- 色调依据是**我们自己的每日前端参考快照**（`审批中` = TDesign warning-1 `#FFF1E9`，
+  故 `approve → warning`），不是从契约反推。
+
+**(C) 行数锁定统一并降级为非阻断**
+
+- 新增 `scripts/verify/line_budgets.py`：**唯一权威**的行数登记表（17 个受监控文件），
+  规则只有一条 `guidance budget = 登记基线 + 统一余量(60)`；未登记文件 fail closed。
+- 36 个守卫改为向该登记表取预算；`action_view_responsibility_map_guard`、
+  `ui_contract_v2_responsibility_map_guard`、`low_code_workbench_product_guard`、
+  `frontend_style_system_guard` 的内联阈值一并收口。
+- **超预算不再 FAIL**：改为打印 `[size-advisory] <file> is N lines, M over the ...guidance
+  budget; consider splitting before the next structural change`，退出码不变。
+  守卫真正的阻断断言（模块归属、split token、禁止依赖）全部保留。
+- 新增元守卫 `scripts/verify/file_line_budget_uniform_guard.py`：禁止守卫再次写死数值预算、
+  禁止再出现 `line budget exceeded` 这类阻断措辞、校验登记表完整性；已接入 `make/ci.mk`。
+
+**(D) 顺带维护的两处**（均为既有红，非本段引入）
+
+- `action_view_responsibility_map_guard.py`：`runBatchPolicyAction` 已由该视图迁到
+  `frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts`，
+  守卫改为断言**新归属模块**持有该职责，并禁止视图内再本地实现（保留原业务断言）。
+- `docs/verify/frontend_native_list_alignment_batch_20260430.md`：为其中的
+  `tone_by_value` 条款加「已被取代」说明，避免它继续被读成现行规格。
+
+### 3. 未被本段更改的同名落点（已分类登记）
+
+| 落点 | 定性 | 处置 |
+| --- | --- | --- |
+| `addons/smart_construction_core/services/scene_block_schema.py`（`metric_card(...tone=)`） | **场景呈现载荷**（P1 编排输出），词表已限定 `{success,warning,danger,info,neutral}`，不含业务状态枚举 | 属呈现载体，**不是业务契约越界**，不改 |
+| `addons/smart_construction_core/services/insight/project_insight_service.py`（`tone: gentle/ready/ok_to_continue`） | hero 的**语气标记**，与「颜色」只是同名 | 命名债，登记不改 |
+| `addons/smart_construction_core/services/project_next_actions_builder.py`（`tone: info/neutral`） | 同上，场景/首页呈现载荷 | 登记不改 |
+
+判断依据：业务契约不得承载呈现，但**编排/首页呈现载荷本身**就是呈现载体的数据格式；
+本段要清除的是「业务状态值 → 颜色」被写进业务契约，这三处不属于该路径。
+
+### 4. 边界七问
+
+`Formal Product Layer` = P0 平台内核（契约投影与呈现边界）+ 验收体系（行数口径）；
+`Layer Target` = `smart_core.utils.contract_governance*`、`smart_construction_core.core_extension`
+声明档案、`frontend/apps/web` 呈现层、`scripts/verify/*`；
+`Module` = 契约内核 / 前端呈现 / 验收工具，三类各自归属；
+`Standard vs User-Specific` = 平台机制；
+`Why Here` = 「什么算业务含义、什么算呈现」是内核与呈现层的通用边界，不属于任何行业或客户；
+`Why Not Elsewhere` = **不**把颜色词表留在契约里（内核越界）、**不**在前端按中文标签猜状态
+（呈现越界）、**不**靠放宽/忽略守卫消红（把机械约束伪装成通过）；
+`Blast Radius` = 列表契约状态列投影、4 个行业 profile、7 个前端消费点、36 个守卫的预算来源、
+ci.local.quick 新增一条元守卫；**产品业务规则、校验、动作、权限零改动**。
+
+### 5. 验证（分层）
+
+- L0 身份：开工 HEAD `afdffcd4d` + 显式 dirty scope；收口提交 `0a6cd0a98`（提交后工作区干净，
+  `git status --short` 空）；
+- L2（本段直接受影响面）：
+  - 40 个受影响的 `*_guard.py` 全 PASS（`ran=40 fails=0`）；
+  - `python3 -m unittest scripts.verify.test_frontend_dev_incremental` → 13 tests OK
+    （`SIZE_LIMITS` / `RECORD_RUNTIME_SIZE_LIMITS` 形状与路由断言保持有效）；
+  - `make verify.frontend.collection_status_presentation.unit` → `PASS cases=15`；
+  - `make verify.frontend.page_pattern_reference_parity.unit` → parity 15 tests OK +
+    ledger 13 tests OK + `PASS entries=67 owned_gaps=20`；
+  - `make verify.frontend.typecheck.strict` → `vue-tsc` 两遍均过；
+  - 容器内 `test_contract_governance_record_context_registry` → `RAN=21 FAIL=0 ERR=0`；
+- **反向注入**（证明新守卫有效，不是空转）：
+  - 往守卫写死 `MAX_GOVERNANCE_LINES = 9999` → `file_line_budget_uniform_guard` FAIL；
+  - 往守卫塞回 `"line budget exceeded"` → 同上 FAIL；恢复后 PASS；
+- 提交后干净态复跑：`make ci.local.iteration` → `PASS change_state=clean coverage=L1_only`；
+  41 个受影响守卫 `ran=41 fails=0`；`make verify.guard.registry` → `AUDIT PASS: 1357 scripts
+  (1233 referenced, 124/124 orphans acknowledged, 1 retired)`；`make verify.frontend.build`
+  → `✓ built in 21.46s`（唯一一次构建；后续未做同源码二次构建或逐文件比对）。
+- 未执行：浏览器旅程、全量 Quick（按规则 `ci.local.quick` 只在最终冻结 HEAD 跑一次）、
+  100 文件 HTTP 比对。理由：本段无产品渲染逻辑变更，只有呈现层颜色取值来源与验收工具，
+  派生产物按既有方式保留。
+- 已知与本段无关的既有红：`scripts/verify/frontend_product_design_system_metrics.py` 因克隆
+  缺少基线 ref `86f9b29eb…`（`fatal: not a tree object`）无法运行——该脚本只输出指标、
+  不设门禁，非本段引入，未扩大处理。
+
+### 6. 提交
+
+- 单笔本地提交：`fix(contract): return the list status tone to the frontend presentation layer and make line budgets advisory`
+  （契约去色 + 前端单一色调权威 + 边界守卫双向检查 + `.mjs` 自测接线 + ledger 归属 +
+  `line_budgets.py` + 36 个守卫预算收口 + 元守卫 + ci.mk 接线 + 两处文档加注 + 本段记录）。
+- **为什么合成一笔**：色调守卫（`contract_governance_list_surface_split_guard.py`）同时承载
+  边界断言与预算取数；拆成两笔会让任一笔处于「守卫引用了尚不存在的登记表」或
+  「守卫仍写死预算」的临时不一致状态。按职责拆提交不以制造中间坏状态为代价，
+  故本段按实际依赖合并提交，不做机械拆分。
+
+### 状态
+
+本段**批次验收完成**（上述范围）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 44｜主线移植（GitHub 恢复）与协作流程接入（2026-09-30）
+
+### 1. 触发与目标
+
+`origin`（GitHub `lidefend/sce-backend-odoo`）恢复可用，`origin/main` 前进到 `fff226d7b`
+（PR #524）。本段目标：把本专题分支移植到最新主线继续迭代，并接入主线新增的
+**统一执行器续接入口**（`.agent/active-runs.json` + `make agent.run.resume`）以提高迭代效率。
+不改变产品行为，不推送、不合并、不部署。
+
+### 2. 移植方式与结果
+
+- 移植前：`HEAD=33c3b553f`，`origin/main=fff226d7b`，本地 `main=23f11f426`（落后 8 个提交）；
+- 方式：**merge，不用 rebase**（不改写已交付历史）：`git fetch origin` 后
+  `git merge origin/main` → **合并提交 `dc460758c`**；合并前 `23f11f426` 正是本分支直接基点，
+  8 个主线提交干净并入，无历史重建；
+- 合并后：领先 `origin/main` 196 / 落后 0；工作区干净。
+
+主线新增能力（本分支自此遵循）：
+
+- `AGENTS.md` → **Unified Executor Resume Entry (2026-09-30)**：首次变更前经
+  `.agent/active-runs.json` 解析当前分支并跑 `make agent.run.resume`；新任务须先注册
+  一个 goal 与 `.agent/runs/<goal-id>/run.json`（此元数据 bootstrap 允许在 resume 通过前完成）；
+  续接复用当前 run 与证据索引，只 reconcile 变更过的输入/依赖/环境，**不重复全仓盘点**；
+- `make/codex.mk` 新增 `agent.run.resume` / `agent.run.begin` / `agent.run.record` /
+  `verify.agent.resume.unit` / `verify.trusted_scan.unit` / `verify.ci.orm_selection.unit`；
+- `make ci.local.iteration` 现在先跑 `scripts/ops/agent_run_context.py`，status 非 `resolved`
+  即整条入口失败（`outside_scope` 非空也算）；新增
+  `config/ci/risk_tiering_v1.json`、`scripts/ci/trusted_scan_scope.py`（增量扫描复用）；
+- `ci.local.quick.run` 新增 `python3 -m unittest scripts.verify.test_construction_create_default_hooks`。
+
+**冲突解法（已提交，勿回退）**：`make/ci.mk` 保留双方条目
+（`file_line_budget_uniform_guard.py` 与 `test_construction_create_default_hooks`）；
+5 个生成型收敛报告取主线版（随后由重生成覆盖为合并后真实值）。
+
+`core_extension.py` 行数算术自洽：base 1807 → 本分支 1830（-23 色调移除，含压缩空行）
+→ 主线 1784（+23 create-default 代码）→ **合并 1807**；双方改动位于不同区域，语义无丢失，
+`py_compile` 通过。
+
+### 3. 本段实际交付
+
+1. **注册本分支运行记录**（主线新流程要求）：
+   - `.agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml`（七问边界 + 约束 + 下一步）；
+   - `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`（baseline = 合并提交 `dc460758c`，
+     scope 8 条有界目录，3 个离线 check 及显式 inputs）；
+   - `.agent/active-runs.json` 增加本分支映射（**不动** 主线自己的 `fix/agent-resume-mainline` 条目）；
+   - `make agent.run.resume` → `status=resolved`、`outside_scope=[]`。
+2. **重生成漂移的生成型报告**（合并提交导致基线漂移，主线 gate 因此会红）：
+   - `make refresh.generated_reports`：`test_inventory.{csv,summary.md}`（1400→1427 资产）、
+     `complexity_budget_report.md`、`split_plan_queue.md`（55→57 文件）、
+     `e2e_journey_matrix.md`、`module_dependency_map.md`、`github_remote_execution_plan.*`、
+     `contracts/generated/contract_structure_fingerprint.json`（内容未变）；
+   - `make refresh.contract_form_split_evidence`：`ContractFormPage.vue` 证据行
+     1918（主线值）→ **1894（合并后真实值）**，与 `scripts/verify/line_budgets.py`
+     登记基线一致；
+   - `make refresh.frontend.component_driver_takeover.inventory`：
+     `inputDigest` 随合并后前端源码更新（`rendering-surface-ownership` 等源 SHA 同步）。
+
+### 4. 验证（分层，按简化口径）
+
+- L0 身份：开工 `HEAD=dc460758c` 干净；本段提交后工作区干净；
+- L1 `make ci.local.iteration` → `PASS change_state=clean coverage=L1_only receipt=none`，
+  且 `agent_run_context` 输出 `status=resolved`；
+- L1 `make ci.generated_evidence.preflight` → `PASS all content-bound generated evidence is current`
+  （含 `tracked generated reports are current`、`split plan queue is current`、
+  `contract structure fingerprint is current`、component-driver takeover `required=33 missing=0`、
+  `contract_form_split_evidence PASS lines=1894`）；
+- L2（**run 内声明并已记账**，`.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/*.log`）：
+  - `verify.agent.resume.unit` → `Ran 30 tests OK`（`source_head=f0894221b`，status=reusable）；
+  - `verify.frontend.collection_status_presentation.unit` → `PASS cases=15`；
+  - `verify.frontend.page_pattern_reference_parity.unit` → 15 + 13 tests OK、
+    `PASS surfaces=16`、`PASS entries=67 owned_gaps=20`；
+- L2 主线新增单测：`verify.ci.orm_selection.unit` OK（14 tests）、
+  `verify.trusted_scan.unit` OK（10 tests）、
+  `python3 -m unittest scripts.verify.test_construction_create_default_hooks` → `Ran 4 tests OK`；
+- L2 段 43 受影响面复跑：`contract_governance_*_split_guard` /
+  `construction_core_extension_*_split_guard` / `*_responsibility_map_guard` /
+  `file_line_budget_uniform_guard` 共 **`ran=37 fails=0`**
+  （行数登记 `registered_files=17 headroom=60 consumers=36 blocking_line_checks=0`）；
+- L2 `make verify.frontend.typecheck.strict` → `vue-tsc` 两遍均过；
+- L4 一次构建：`make verify.frontend.build` → `✓ built in 21.06s`（唯一一次，无二次构建比对）；
+- 未执行（按规则显式跳过）：浏览器旅程（本段无产品渲染/交互变更）、`ci.local.quick`
+  （只在最终干净冻结 HEAD 跑一次）、100 文件 HTTP 比对、89 入口、全站发布验收。
+
+### 5. 继承缺口（非本段引入，登记不改）
+
+- `make verify.guard.registry` → `AUDIT FAIL`：`test_construction_create_default_hooks.py` 与
+  `test_frontend_v2_policy_projection_guard.py` **未被 registry.yaml 承认**。
+  证据：两个脚本在 `origin/main` 已存在，且 `origin/main:scripts/verify/registry.yaml` 同样
+  没有这两个条目 → **主线自身即红**，非本分支引入；
+  远端必需检查走 `ci.professional.backend.shard-*`，不含 `verify.guard.registry`，
+  故不阻断本轮；合并前统一门禁批次再处理（可用 `make guard.registry.seed` 记账）。
+- 段 43 已登记的其余欠账（`industry_agnostic.guard` 97 条、`state_transition_undeclared` 5 条、
+  z-index 项、`p4_p0_03` 之外的旧产物缺口等）状态不变，本段未扩大处理。
+
+### 6. 提交
+
+- `c230cdb5d` `chore(agent): register the web official template adoption run for mainline resume entry`
+- `aa0c9f615` `chore(convergence): refresh generated reports after the mainline port`
+- `f0894221b` `chore(agent): include the rendering-detail inventory in the run scope`
+- 本段记录（本节）单独一笔随记录文件提交。
+
+### 状态
+
+本段**批次验收完成**（移植 + 协作流程接入 + 生成型证据一致）｜主线未集成｜目标环境未部署｜
+整体用户交付未验收。**段 44 曾把下一步写成「FE-TPL-06A → WEB-LC-01」，那是照抄一份过期交接摘要，
+与仓库事实不符：这两批在 2026-09-29 已完成并收口（`bb14bff52`、`196bbcd38` 等均为当前 HEAD 的祖先）。
+真实下一步见段 45。**
+## 段 45｜移植后的候选复位：前端门禁转绿、验收后端重绑、5180 当前候选与 38 项定向浏览器证据（2026-09-30）
+
+### 1. 本段要解决的问题
+
+段 44 完成了主线移植与协作流程接入，但没有检查移植对**前端派生产物**和**运行候选**的影响。
+本段把移植后的候选重新恢复到可用、可看、可复核的状态，并纠正段 44 对下一步的误述。
+
+**事实纠正（先说清楚，避免继续误传）**：`FE-TPL-06A`（付款申请标准列表首例）、`WEB-LC-01`（标准列表
+配置闭环）、`FE-TPL-07`（按页面类型默认接管、删除三个模型白名单）、`WEB-LC-01B` 均已在
+2026-09-29 完成并写进本记录；`bb14bff52`、`196bbcd38`、`9e240dc46`、`fb5934b77`、`d92ebf9c9`
+等提交都是当前 HEAD 的祖先（`git merge-base --is-ancestor` 已核）。因此不存在"再去接一次付款列表"
+的待办；`standardListComposition.ts` 现在只剩一条 `official-standard-list`，`legacy-list-surface` 已不存在。
+
+### 2. 改了什么
+
+**(A) 前端渲染明细清单过期 → 按既有入口重生成**
+
+`make verify.frontend.quick.gate` 在移植后为红，根因是两条受源码摘要绑定的生成型清单过期：
+
+- `docs/frontend_productization/rendering-detail/component-professionalization-inventory-v1.json`
+- `docs/frontend_productization/rendering-detail/visual-projection-inventory-v1.json`
+
+`make refresh.frontend.rendering_detail.inventory` 后 **diff 只有 `sourceIdentity` / `inputDigest` /
+逐文件 `digest`，无语义条目增删**（`ListPage.vue` / `ActionView.vue` / `KanbanPage.vue` 因移植而变摘要）。
+`official-design-alignment-inventory` 内容不变（`internalVendorSelectorGapCount=0` 保持）。
+
+> 说明：`verify.frontend.rendering_detail_state.unit` 的 unittest 阶段会**故意**打印一行
+> `[frontend_official_design_alignment_inventory] FAIL incomplete={'internalVendorSelectorGapCount': 1}`
+> 作为反向用例，随后 `--check` 才是真判定（`PASS ...GapCount': 0`）。不要把这行当成红。
+
+**(B) 验收后端容器重绑到当前修订**
+
+容器仍绑定旧修订 `SC_SOURCE_REVISION=26c32476f`，`addons` 与 HEAD 有差异（段 40–43 的契约改动 +
+主线 create-default 代码），浏览器候选入口会以 `exit 2` 拒绝。按既有治理入口
+`make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 重绑 →
+`SC_SOURCE_REVISION=626bac24430731b695f100a5922065e820c85c12`（= 当时 HEAD），容器 healthy。
+
+**(C) 5180 当前候选重建，不新增常驻端口**
+
+`make frontend.standard.preview.build SC_ACCEPTANCE_RUNTIME_PROFILE=local`：
+旧候选目录 `config05-20260929` 先以 **`config05-20260929-prev-15351d632`** 保留（不覆盖历史），
+再重建到同一路径。新 `build-identity.json`：
+
+- `base_sha = 626bac24430731b695f100a5922065e820c85c12`，`dirty_scope` 空
+- 入口 `/assets/index-DTvz9KvJ.js`，`entry_sha256 = a50ea83c…`，`index_sha256 = f05d4244…`
+
+`make frontend.standard.preview.up` → `REUSED current 5180 listener`（pid 802966 未变，`STATIC_ROOT`
+指向新产物，代理 `http://127.0.0.1:18082`）。
+
+**(D) 两处受治理文档与已发布决策对齐（不再自相矛盾）**
+
+本段复查时发现两处文档会**把人引回已经废止的做法**，就地修正，不新建治理文档：
+
+1. `docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md`：
+   把 "Collection semantic tones" 从 **P0 contract gaps** 里移出，改为新的
+   **"Closed boundary decisions (no longer gaps)"** 段落，写明：状态徽标颜色是呈现决策、
+   由前端呈现层唯一拥有，任何契约层和 profile 都不得声明状态→色调映射，
+   前端只按**权威状态值**解析（`collectionStatusPresentation.ts`），
+   并由 `contract_governance_list_surface_split_guard.py` 双向钉死。
+   保留该条是为了防止旧措辞被重新引入——它不是生产侧缺口。
+2. `docs/frontend_productization/product-page-patterns-v1.md`：
+   - "Adoption switch" 里"解析一个模型、拥有 pilot scope 清单"的描述改为
+     **按页面职责解析、不读模型名、不持有 scope 清单**（TPL-07 删除了
+     `STANDARD_FORM_COMPOSITION_PILOT_MODELS` 及列表/详情同名机制），
+     唯一输入是 `standardPageType.ts`；
+   - "Adopted scope" 小节标注为 **historical / superseded**；
+   - 采纳表里 "Master-detail handling page … not adopted yet (planned TPL-05)" 更正为
+     **已由共享记录表单组合（TPL-05A）+ 页面职责选择（TPL-07）采纳**；
+   - 原"付款表单仍是 `legacy-form-section`"的段落标注 **superseded**，并注明当前候选的浏览器
+     断言（`payment-master-detail: official form engine mounted`）已经推翻该结论。
+
+### 3. 定向验证
+
+- **L4 浏览器（当前候选）**：`TPL07_SCOPE` 默认全量，
+  `make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local`
+  → `passed assertions=38`，报告
+  `artifacts/frontend-web-fix-20260928/tpl07-1790755616473/report.json`，
+  `forbiddenWrites=[]`、`errors=[]`、`calls=6`。关键断言：
+  付款列表 `standard type` / `one container`、**服务端下一页**（`ids=[1803,1795,1794,1787,1710,33]`）、
+  打开记录身份与点击行一致（`openedRecordKey=1803`）、返回上下文与页码集合保持、
+  主从页 `official form engine mounted` + 扩展保留、引入契约已发布且无缺口渲染、
+  只读页 `readonly mode published`。截图：`payment-list.png`、`payment-master-detail.png`、
+  `payment-readonly.png`、`payment-readonly-narrow.png`（390px）等 9 张。
+- **L2 采纳单测（移植后的合并树）**：
+  - `verify.frontend.standard_form_composition.unit`、`verify.frontend.adopted_form_engine_decision.unit` PASS；
+  - `verify.frontend.standard_collection_composition.unit` → `PASS cases=113 scope=page-types`
+    （模型白名单删除后，用例由"模型试点"改为"页面职责"）；
+  - `verify.frontend.standard_shell_composition.unit` → `PASS cases=71 layouts=1`；
+  - `verify.frontend.adopted_form_validation_identity.unit` → `cases=46 failed=0
+    engine=shipped-save-chain host=real-vue-instance`，且打印
+    `no cross-identity leak observed`；**这是异步身份保护的现成关闭依据**（实现与反例都在真实保存链上），
+    按既定口径补记即可，不再重复实现或重开排查；
+  - `verify.frontend.standard_preview.unit` → 6 tests OK。
+- **L1**：`make ci.local.iteration` PASS（见段 44 记录，本段未改动其输入）。
+- 未执行：全量 Quick、发布门禁、89 入口、目标环境验证——本段是本地候选复位，不是发布。
+
+### 4. 剩余缺口（不得夸大，也不得据本段消项）
+
+- **前端已到契约边界**：`page-pattern-reference-detail-ledger-v1.json` 现为
+  `entries=67 aligned=46 contract_gap=20 not_applicable=1`，无 `needs_work`。三条列表项
+  （`collection.favorite` / `collection.settings-export` / `collection.record-action`）与认证、壳、
+  上下文抽屉等其余缺口，`followUp` 都写明是**产品/契约决策**（"按模型决定是否声明显式行动作"、
+  "为支持导出的动作声明导出能力"），不是前端可自行消项；按既定边界不猜测补齐。
+- 两处受治理文档的过期口径**已在本段 (D) 收口**（色调边界、已删除的模型白名单、
+  "付款表单仍未接管"的事实错误）；两条 `PILOT_MODELS` 残留字样只出现在"已被删除/历史"的说明句中。
+- 390×844 官方参考截图证据缺口、主线继承的 `verify.guard.registry` 两条 orphan 记账、
+  四项 `style_system` 欠账状态均不变。
+
+### 5. 提交
+
+- `626bac244` `chore(convergence): refresh the render-detail inventories after the mainline port`
+- `docs(frontend): align the governed reference docs with the shipped tone and page-type decisions`
+  （两处文档对齐 + 本段记录）
+
+### 状态
+
+本段**批次验收完成**（候选复位 + 定向补验）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+
+## 段 46｜主线现状复核 + 守卫登记审计的根因修复：`python3 -m unittest scripts.verify.<mod>` 不再被误判为孤儿（2026-09-30）
+
+### 1. 主线复核（本轮起点）
+
+- GitHub 恢复后实际核对：`origin` = `https://github.com/lidefend/sce-backend-odoo.git`，
+  `origin/main` = `fff226d7be72878ea6861cfab2ce13d990cee806`（2026-09-30 15:32，`Merge PR #524`），
+  与 `git ls-remote origin main` 一致；`git merge-base HEAD origin/main` = `fff226d7b`，
+  即**主线最新提交已在 `dc460758c` 并入本分支，无新增待移植内容**（领先 202 / 落后 0）。
+- `gitee-mirror/main` = `23f11f426` 为另一条发布镜像线，`git rev-list --left-right --count
+  gitee-mirror/main...HEAD` = `0 210`，已完全包含于本分支；本轮不改动其方向。
+- 主线新增协作流程已可用并被本轮实际使用：`make agent.run.resume`（本节）、
+  `agent.run.begin AGENT_CHECK=<id>`、`agent.run.record ...`、`verify.agent.resume.unit`。
+
+### 2. 未决项的实际根因（不是"缺登记"，是审计漏识别）
+
+移植后 `make verify.guard.registry` 报两条孤儿：
+`test_construction_create_default_hooks.py`、`test_frontend_v2_policy_projection_guard.py`。
+
+复核结论（推翻"只是登记没同步"的判断）：
+
+- 两条脚本**都已被 make 引用**——`make/ci.mk:951`、`make/ci.mk:1099`
+  （`python3 -m unittest scripts.verify.test_construction_create_default_hooks`）与
+  `make/ci.mk:417`（`python3 -m unittest scripts.verify.test_frontend_v2_policy_projection_guard`）。
+- 漏识别根因：`scripts/verify/guard_registry_audit.py` 的引用索引只认两种形态——
+  `.py` 文件名字符串（`SCRIPT_REFERENCE_RE`）与 `import/from` 语句（`IMPORT_REFERENCE_RE`）。
+  `-m unittest scripts.verify.<module>` 这种**点号模块调用**两种都不匹配，于是真实被测脚本被判孤儿。
+- 影响面不止两条：把点号形态纳入识别后，**37 条历史 orphan 登记**（`test_gitee_*`、`test_local_dev_*`、
+  `test_frontend_standard_preview.py` 等）实际都被引用，属长期误登记。逐条核对命中来源确为真实引用
+  （`make/codex.mk`、`make/ci.mk`、`scripts/verify/test_native_view_capability_taxonomy.py` 等）。
+
+判定：这是**门禁的真实性缺陷**，不是"红项需要消红"。按"门禁检查真实边界、不用放宽阈值或改退出码"的原则，
+修审计而不是补假登记。
+
+### 3. 修复内容
+
+- `scripts/verify/guard_registry_audit.py`：
+  - 新增 `MODULE_INVOCATION_REFERENCE_RE = \bscripts\.verify\.([A-Za-z_][A-Za-z0-9_]*)\b`；
+  - `build_reference_index()` 增加 `module_hits`（返回三元组），`resolve_external_hits()` 接受并合并该索引
+    （新增参数带默认值，调用方兼容）；`_reference_patterns()` 增加点号模块形态的正则；
+  - 模块文档串同步说明"文件名 / import / `scripts.verify.<module>` 模块调用"三种静态引用形态。
+- `scripts/verify/test_guard_registry_audit.py`：既有两例随三元组签名更新，并新增
+  `test_resolve_external_hits_matches_module_invocation`（命中 `make/dev.mk`，不命中 `scripts.verify.unrelated`）。
+- `scripts/verify/registry.yaml`：`make guard.registry.seed` 丢弃 37 条失效登记，**129 → 92 条**；
+  结构化比对确认"仅删除这 37 条，无新增、无字段改动"（`removed=37 added=0 changed=0`）。
+- `docs/audit/guard_registry/guard_registry.json`：按既有 `make guard.registry.export` 重生成，
+  counts `active 1231 / orphan 124 / retired 1` → `active 1273 / orphan 87 / retired 1`，脚本 1355 → 1360。
+- `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`：scope 增加 `docs/audit/guard_registry/`。
+
+### 4. 验证
+
+- **L2（定向，非零）**：`python3 -m unittest scripts.verify.test_guard_registry_audit` → 3 tests OK。
+- **L2（审计本体）**：`make verify.guard.registry` →
+  `AUDIT PASS: 1360 scripts (1273 referenced, 87/87 orphans acknowledged, 1 retired)`。
+- **L1**：`make ci.local.iteration` PASS（`status=resolved`，`outside_scope=[]`）。
+  期间观察到主线新流程的实际约束：派生导出件落在 scope 外时 run 状态为 `reconcile`、
+  L1 退出码 2（fail closed）；把派生目录正确定位进 scope 后恢复 `resolved`——**这是流程在起作用，
+  不是被绕过**。
+- 未执行：全量 Quick、发布门禁、89 入口、浏览器旅程（本段只动审计脚本与登记，不影响产品面）。
+
+### 5. 提交
+
+- `fix(guard): recognize module-invocation references in the guard registry audit`
+  （审计脚本 + 单测 + registry.yaml + 派生导出件 + run scope）
+- `docs(iteration): record 段 46`（本段）
+
+### 6. 剩余缺口与下一步
+
+- 前端采纳仍在**契约边界**：`page-pattern-reference-detail-ledger-v1.json` =
+  `entries=67 aligned=46 contract_gap=20 not_applicable=1`。其中 **17 条归 P0 `smart_core`、2 条归 P1
+  `smart_construction_core`**，都是"原生事实已有、契约未投影/未声明能力"的**投影缺口**，
+  按用户口径"契约不满足就先完善契约"应转为主线工作项：行详情动作、导出能力、收藏归属与可变性、
+  复制/删除能力与禁用原因、区块条目计数、上下文抽屉呈现授权等。
+- 四项 `style_system` 欠账、合并前门禁批次、390×844 官方参考截图证据缺口不变。
+
+### 状态
+
+本段**批次验收完成**（审计修复 + 登记复位）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 47｜契约侧投影缺口收口（一）：`collection.favorite` 的收藏能力改为按 `ir.filters` 权威判定，不再硬编码 `True`（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- `origin/main`（GitHub 已恢复）经 `git fetch origin main` 复核 = `fff226d7be72878ea6861cfab2ce13d990cee806`
+  （`Merge PR #524`），与 `git ls-remote` 一致；`merge-base HEAD origin/main` = `fff226d7b`，
+  `git rev-list --left-right --count origin/main...HEAD` = `0 204` → **主线已是本分支祖先，无待移植内容**。
+- 主线新协作流程本轮**实际使用**：`make agent.run.resume` 已按 `.agent/active-runs.json` 直接解析
+  （`resume=30 / status_presentation=15` reusable；`page_pattern_parity` 因本段 ledger 变更判 `stale`），
+  `make agent.run.begin/record` 用于候选取证，`change_state` 与 `outside_scope` 作为 fail-closed 约束。
+
+### 2. 缺口定位（先核对"原生事实是否已有、契约是否只是没投影"）
+
+选中 `collection.favorite`（P0 `smart_core`）。原缺口描述"payload 未一致投影收藏归属与可变性"经查**准确**：
+
+- `addons/smart_core/app_config_engine/models/app_search_config.py` 的
+  `_build_custom_search_contract()` 把 `favorites.save_enabled` **无条件写成 `True`**——
+  这是模型级 `search_def` 缓存里的**非权威常量**，对任何用户/权限都返回同一结果；
+  行内也没有 `owned_by_current_user / writable / deletable`。
+- 属**投影缺口**（原生事实在 `ir.filters` ACL + record rule + `check_access_rights` 里已有），
+  按用户口径"契约不满足就先完善契约"应由契约侧补投影，而不是让前端猜。
+
+### 3. 修复内容（P0 `smart_core`，唯一权威来源 = Odoo 17 `ir.filters`）
+
+`addons/smart_core/app_config_engine/models/app_search_config.py`：
+
+1. `_build_custom_search_contract()` 静态块：**移除硬编码 `save_enabled: True`**，只声明用户无关的静态语义
+   + 保守默认（`owner_scope: "current_user"`、`shared_enabled: False`、`save_enabled: False`），
+   避免把用户相关能力写进 model 级 `search_def` 缓存。
+2. `get_search_contract()` 先构造 `contract`，再 `return self._project_saved_search_capability(contract, self.model)`。
+3. 新增 `_saved_search_save_capability(model_name)`：按 Odoo 17 权威规则判定——
+   `base.group_user` 内部用户、目标模型 `check_access_rights("read", raise_exception=False)`、
+   `ir.filters.check_access_rights("create", raise_exception=False)`；共享收藏由既有
+   `core/search_favorite_policy` 固定 `False`；任何异常 → 保守 `False`（fail closed）。
+   `disabled_reason` ∈ {`SAVED_SEARCH_AUTHORITY_UNAVAILABLE`, `SAVED_SEARCH_REQUIRES_INTERNAL_USER`,
+   `SAVED_SEARCH_MODEL_UNAVAILABLE`, `SAVED_SEARCH_MODEL_READ_DENIED`, `SAVED_SEARCH_CREATE_DENIED`}，成功为空串。
+4. 新增 `_project_saved_filter_mutation_rows(rows, uid)`：用
+   `env["ir.filters"].browse(ids)._filter_access_rules("write"/"unlink").ids` **实算**行级可变性，
+   归属用 `ir.filters.user_id` 业务身份字段比对 `uid`，判定不了保守 `False`；
+   注入 `owned_by_current_user / writable / deletable`。
+5. 新增 `_project_saved_search_capability(contract, model_name)` 完成投影（保留静态 `label`/`intent`）。
+
+### 4. 反例与验证（L2 定向，非零）
+
+新增 `addons/smart_core/tests/test_saved_search_capability_projection.py`（**9 tests OK**），
+关键是"同一 model 级缓存下不同用户/权限必须得到不同 `save_enabled`"——**常量实现无法同时满足**：
+
+- 内部用户判定；模型 read 拒绝；缺 authority fail-closed；
+- 静态保守默认 vs 运行时投影；私收藏行不外泄（仅本人 + 共享）；跨用户行能力拒绝；
+- `_filter_access_rules` 异常 fail-closed。
+
+`make/frontend.mk` 新增 `verify.frontend.saved_search_capability.unit`，并纳入 `verify.frontend.quick.gate` prereq。
+
+既有回归同步复核（全绿）：
+
+- `make verify.frontend.saved_search_capability.unit` → 9 tests OK
+- `make verify.frontend.page_pattern_reference_parity.unit` → 15 tests OK；`ledger PASS entries=67 owned_gaps=20`
+- `make verify.frontend.search_groupby_savedfilters.guard` → PASS
+- `python3 addons/smart_core/tests/test_search_favorite_handler_boundaries.py` → 8 tests OK
+- `python3 addons/smart_core/tests/test_contract_projection_json_boundaries.py` → 4 tests OK
+
+**真实环境能力判定链只读探针**（`docker exec -i sc-backend-odoo-acceptance ... odoo shell -d sc_frontend_acceptance`）：
+`uid=1 internal=True`、`ir_filters_create=True`、`config_found=False`（该库尚无 `app.search.config` 记录）、
+`portal_has_users=False`。→ 链路可用，但 `cap=False` 差异场景现场不可观察（无 portal 用户、无配置记录），
+已用行为级单测覆盖并**如实记录为环境限制**。
+
+### 5. 文档
+
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`：
+`collection.favorite` 条目更新为**准确剩余状态**（仍 `contract_gap`）——
+`authority` 改为 saved search contract（runtime capability from `ir.filters` record rules plus the
+`search.favorite.set` write-proxy gate）；`gap` 改为"契约已投影 save 能力与行归属/可变性，
+但采纳的 collection surface 尚未渲染该动作，能力暂无消费者"；`followUp` 改为
+"在采纳的 list 工具栏搜索菜单暴露该能力并给浏览器证据，或记录差异为 accepted"。
+（该文件为 67 行单行 JSON 数组格式，精确替换按整行字符串进行。）
+
+### 6. 提交
+
+- `fix(contract): project saved-search capability from ir.filters authority instead of a constant`
+- `docs(iteration): record 段 47`（本段）
+
+### 7. 剩余缺口与下一步
+
+- 前端采纳契约边界现状：`entries=67 aligned=46 contract_gap=20 not_applicable=1`；
+  **17 条归 P0 `smart_core`、2 条归 P1 `smart_construction_core`**，均为投影缺口，按序收口：
+  行详情动作（`collection.record-action` 需要**通用规则**，不得按模型名硬编码）、
+  导出能力（`collection.settings-export`，先核对是行级/工具栏声明缺口还是前端消费缺陷）、
+  复制/删除能力与禁用原因（`detail.action-state`）、区块条目计数（`detail.section-heading`）、
+  上下文抽屉呈现授权、`detail.primary-tabs`/`secondary-tabs`。
+- 保留不并入：四项 `style_system` 欠账、`industry_agnostic.guard` 97 条、
+  `state_transition_undeclared` 5 条、390×844 官方参考截图证据缺口、合并前门禁批次。
+
+### 状态
+
+本段**批次验收完成**（契约投影修复 + 定向回归）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 48｜契约侧投影缺口收口（二）：被拒绝的记录操作必须声明「是哪一层拒绝的」，不再让终端自己编理由（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- `git fetch origin main` 复核 = `fff226d7be72878ea6861cfab2ce13d990cee806`（`Merge PR #524`）；
+  `merge-base HEAD origin/main` = `fff226d7b`，`git rev-list --left-right --count origin/main...HEAD` = `0 206`
+  → **主线仍是本分支祖先，本段无待移植内容**（与段 47 结论一致，主线移植已完成）。
+- 主线协作流程本段继续实跑：`make agent.run.begin/record` 记录 `record_denied_reason`(25)、
+  `contract_record_action_state`(19)、`page_pattern_parity`(28)；`make agent.run.resume` → `status=resolved`、
+  `outside_scope=[]`。
+  **本段新增改动路径越出原 scope**（`addons/smart_core/`、`addons/smart_construction_core/`），
+  已按 fail-closed 语义先把两路径补进 `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json` 的 `scope`，
+  再进入实现；否则 `ci.local.iteration` 会判 `reconcile`（退出码 2）。
+
+### 2. 缺口定位（先核对"原生事实是否已有、契约是否只是没投影"）
+
+选中 ledger 条目 `detail.action-state`（`edit/copy/delete reflect explicit capability and disabled reason`）。
+原缺口描述"Copy/delete and disabled-reason authority are not consistently present in the current record contract"
+经查**部分准确、部分需要修正**：
+
+- **能力本身已投影**：详情契约 `statusContract.globalStatus.effectiveRecordCapabilities`
+  在传 `record_id` 时可用（早期探针漏传 `record_id` 导致误读为全 `false`，已修正）。
+- **真正的缺口**：任何被拒绝的记录操作**只有一个布尔值，没有权威原因**。
+  `statusContract.globalStatus` 原有
+  `modelRights/recordRights/viewCapabilities/entryCapabilities/effectiveRecordCapabilities/effectiveRenderProfile`，
+  **没有 `recordDeniedReasons`**；终端只能拿 `false` 去猜"是没权限、还是记录不允许、还是状态不允许"——
+  这正是"缺少必要业务语义时前端会猜着补"的典型入口。
+- **第二个缺口（P1 侧）**：`actionContract.deletePolicy` 已表达**模型级**状态门
+  （`policy_kind: state_limited_business_document`、`state_field`、`allowed_states`、
+  `reason_code: DRAFT_BUSINESS_DOCUMENT_DELETE_ALLOWED`），但**没有"当前记录状态不允许删除"的拒绝原因**；
+  且 `frontend/apps/web/src/pages/ContractFormPage.vue` 的删除权**只读 `rights.unlink`，完全忽略该状态门**——
+  `state=signed/confirmed` 的合同在页面上仍被当作"可删除"（属**消费缺陷**）。
+
+### 3. 修复内容（按层落位，前端只做消费）
+
+**P0 `smart_core`——投影"是哪一层拒绝的"（只读事实，不解析异常文本）**
+
+`addons/smart_core/app_config_engine/services/assemblers/page_assembler.py`：
+
+1. 新增 denial 词表常量：`MODEL_ACCESS_DENIED / RECORD_RULE_DENIED / RECORD_NOT_FOUND / RECORD_AUTHORITY_UNRESOLVED`。
+2. 新增 `_model_access_allows(env, model, op)`（`check_access_rights(..., raise_exception=False)`）与
+   `_record_rule_allows(env, model, record_id, op)`（`browse(id)._filter_access_rules(op)`）——
+   **只看 Odoo 自身的判定结果，不看异常文本**。
+3. 新增 `_record_rule_denied_reasons(...)`：对每个被拒操作判定 ACL 层 / record-rule 层；
+   记录不存在 → `RECORD_NOT_FOUND`；两层都放行但权限仍为假 → `RECORD_AUTHORITY_UNRESOLVED`（不猜）；
+   `duplicate` 视为 read+create 并按同一口径归因。
+4. 新增 `_record_capability_block(env, model, record_id)` → `{rights, record_id, denied_reason}`，
+   两处权限根（原 `:550` 附近与 `:3994` 附近）改为经它产出，保持 `record_id` 既有语义。
+5. `addons/smart_core/core/unified_page_contract_v2_assembler.py`：把
+   `source.permissions.record.denied_reason` 投影为
+   `statusContract.globalStatus.recordDeniedReasons`（**非空才写**，空则不materialize 成空对象）。
+
+**P1 `smart_construction_core`——状态门的拒绝原因由业务声明**
+
+6. `addons/smart_core/utils/delete_policy.py`：新增 `DELETE_POLICY_STATE_DENIED`；
+   `_normalize_policy` 透传 `denied_reason_code / denied_message`，并**强制**"声明了
+   `allowed_states`/`blocked_states` 却没声明 `denied_reason_code` 的策略自动补
+   `DELETE_POLICY_STATE_DENIED`"——状态门带原因成为不可省略的契约形状（没有状态门的策略**不补**，不发明）。
+7. `addons/smart_construction_core/core_extension_policy_maps.py`：`_state_unlink_policy` 增加
+   `denied_reason_code: BUSINESS_DOCUMENT_STATE_NOT_DELETABLE` 与业务化 `denied_message`
+   （"该{业务对象}已形成业务事实，仅未提交状态可删除。"）。
+
+**前端（P0 契约消费，不重造规则）**
+
+8. `frontend/apps/web/src/app/contracts/v2/types.ts` + `schema.ts`：`ContractV2GlobalStatus` 增
+   `recordDeniedReasons`，在 `rejectUnknownKeys` 白名单与 `optionalRecord` 解码中登记——
+   **仍是 fail-closed**（数组/未声明键照样报错）。
+9. `frontend/apps/web/src/app/contracts/v2/store.ts`：`resolveContractV2GlobalStatus` 透传
+   `recordDeniedReasons`；新增 `resolveContractV2RecordActionStates(store)`，把
+   `effectiveRecordCapabilities` 与 `actionContract.deletePolicy` 的状态门**做与运算**，
+   每个操作给出 `{operation, allowed, reasonCode}`；**契约没声明的原因保持空串，绝不编造**。
+10. `frontend/apps/web/src/pages/ContractFormPage.vue`：`rights.unlink` 改由
+    `resolveContractV2RecordActionStates` 的 `unlink.allowed` 决定，因此**尊重 deletePolicy 声明的状态门**；
+    未声明 record 能力时保持全 `false`（fail closed）。
+
+### 4. 反例与验证（L2 定向，非零；读写分离）
+
+**行为级反例（后端，新增 `addons/smart_core/tests/test_record_denied_reason_projection.py`，15 tests OK）**
+
+- ACL 层拒绝 → `MODEL_ACCESS_DENIED`；record rule 拒绝 → `RECORD_RULE_DENIED`；
+  记录不存在 → `RECORD_NOT_FOUND`；两层放行却仍为假 → `RECORD_AUTHORITY_UNRESOLVED`。
+- **关键反例（常量实现必失败）**：`acl_rights == unresolved_rights`（同一 operation、同一 `False`），
+  但归因**必须不同** → 证明原因来自"实际观测到的权威层"，不是常量。
+- `duplicate` 跟随 read 权威（ACL 与 record-rule 两种）；`create` **永不**被报成记录级拒绝；
+  ACL 权威不可用 → fail closed 到 `MODEL_ACCESS_DENIED`；`record_id ∈ {None,0,"abc",""}` → 不产原因。
+- **真实调用链**：直接调 `_assemble_ui_contract` 断言 `recordDeniedReasons` 进入已发布契约、
+  允许的记录与无 record 块的契约**都不出现该键**。
+
+**行为级反例（删除策略，新增 `addons/smart_core/tests/test_delete_policy_denied_reason.py`，10 tests OK）**
+
+- 声明状态门未声明原因 → 自动补 `DELETE_POLICY_STATE_DENIED`；
+  显式原因保留；无状态门 → **不产生** `denied_reason_code`；空白声明值不当作原因。
+- 端到端：P1 策略表经 `resolve_unlink_policy` 后 `payment.request` 得到
+  `BUSINESS_DOCUMENT_STATE_NOT_DELETABLE` + 含"付款申请"的业务文案；**未登记模型仍只给模型级
+  `DELETE_POLICY_DENIED`，不发明状态原因**。
+
+**行为级反例（前端消费，新增 `scripts/verify/frontend_contract_record_action_state.test.mjs`，19 cases PASS）**
+
+- 解码：`recordDeniedReasons` 保留；未声明键与数组形态**照样 fail closed**；缺省不 materialize。
+- 投影：无原因时 `allowed:false` 且 `reasonCode:''`（**不猜**）；有原因时原样透出；
+  状态门 `state=approved` → 用声明的 `denied_reason_code`；`state=draft` → 允许；
+  `mainData` 没有该状态字段 → **不当作被阻止**；状态门**不外溢**到其他操作；
+  策略整体禁止用 `reason_code`；状态门无声明原因 → 拒绝但原因为空；
+  `store=null` → 五项全拒且原因为空；已允许操作上出现的陈旧原因不翻转结论。
+- 接线：`ContractFormPage.vue` 必须 import 该 resolver，且 `unlink` 必须取自解析结果。
+
+**真实运行环境只读探针**（`sc-backend-odoo-acceptance` → `sc_frontend_acceptance`，日志
+`.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/record_denied_reason_runtime_probe.log`）：
+
+- P1→P0 链路：`resolve_unlink_policy(env,'sc.general.contract')` →
+  `denied_reason_code=BUSINESS_DOCUMENT_STATE_NOT_DELETABLE`、
+  `denied_message="该综合合同已形成业务事实，仅未提交状态可删除。"`。
+- 归因可区分（同模型不同用户）：`uid=31`（项目成员）→
+  `{'read':'RECORD_RULE_DENIED','write':'RECORD_RULE_DENIED','duplicate':'RECORD_RULE_DENIED'}`；
+  `uid=1/30/33/37` → `{}`（无拒绝）→ **不是常量**。
+- 契约链：`sc.general.contract` 记录 11（`state=confirmed`）经 `UiContractV2Handler` →
+  `statusContract.globalStatus.recordDeniedReasons` 为 `uid=31` 时真实发布；
+  `effectiveRecordCapabilities` 与 `actionContract.deletePolicy` 的
+  `policy_kind/state_field/allowed_states/denied_reason_code` 同时到端。
+- **本修复的可观察行为变化**：`uid=1` 对记录 10（`signed`）/11（`confirmed`）的
+  `effectiveRecordCapabilities.unlink` 仍为 `true`（ACL 层事实），但删除策略声明的状态门只允许
+  `cancel/cancelled/draft` → 页面解析出的删除态由"可删除"变为
+  `allowed=false, reasonCode=BUSINESS_DOCUMENT_STATE_NOT_DELETABLE`；记录 12（`draft`）仍可删除。
+
+**受影响的既有门禁（全绿，未新增失败）**
+
+- `make ci.local.iteration` → `PASS change_state=dirty coverage=L1_only`（5 个已登记检查全 reusable）。
+- `make verify.frontend.typecheck.strict` → PASS；`make verify.unified_page_contract.v2.frontend_static`（typecheck + 一次构建）→ PASS。
+- `verify.unified_page_contract.v2.{schema,guard_inventory,assembler,status,action,data,runtime,client,intent,web_consumer,web_architecture,stable_projection}` → 全 PASS。
+- `verify.frontend.style_system.guard` → **PASS**（`hardcoded_color_refs_max=0`）；
+  `verify.frontend.delivery_hardening.guard`、`verify.frontend.search_groupby_savedfilters.guard`、
+  `verify.contract.operation_gateway.guard`、`verify.list_batch_action.closure_guard` → PASS。
+- `make verify.frontend.page_pattern_reference_parity.unit` → 15 + 13 tests OK；
+  `[page_pattern_reference_ledger_guard] PASS entries=67 owned_gaps=20`。
+
+**守卫按设计拦住本段新增面（真 fail closed，未放宽门禁）**
+
+`verify.unified_page_contract.v2.stable_projection` 先报
+`frontend_v2_policy_projection_guard` FAIL：`store.ts` 新读入的 6 个 snake_case 契约键
+（`allowed_states/denied_reason_code/policy_kind/reason_code/state_field/state_limited_business_document`）
+不在白名单。处理方式不是放宽，而是**把白名单绑定到真实生产者**：新增
+`ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS` + `DELETE_POLICY_PRODUCERS`，
+逐个断言这些键必须由 `smart_core.utils.delete_policy` 或
+`smart_construction_core.core_extension_policy_maps` **真实声明**，并补负例单测
+（`test_delete_policy_token_must_have_a_backend_producer`）→ 4 tests OK，白名单无法漂移成"发明的别名"。
+
+**已存在且与本段无关的失败（如实登记，不顺手修）**
+
+`make verify.user_delete_data.closure_guard` FAIL 三条：
+"ActionView batch delete must preflight with dryRun" / "…must still execute real unlink after preflight" /
+"ActionView batch policy must fall back to surface policy when list_profile has no executable actions"。
+证据：该守卫读取的 `ActionView.vue` / `ListPage.vue` / `api/data.ts` /
+`actionViewBatchActionFlowRuntime.ts` / `useActionViewContractShapeRuntime.ts` /
+`ui_contract_v2_projection.py` **在本段 diff 中为空**，`ActionView.vue` 当前也确实不含 `dryRun: true`
+→ 属**先前既有**的守卫期望漂移，独立保留。
+
+### 5. 文档
+
+`docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json`
+（67 行单行 JSON 数组，精确替换按整行字符串）：
+
+`detail.action-state` 条目 `authority` 改为"`statusContract.globalStatus.effectiveRecordCapabilities`
++ 指明拒绝层的 `recordDeniedReasons` + `actionContract.deletePolicy` 状态门及其 `denied_reason_code`"；
+`gap` 改为**准确剩余状态**——契约侧（能力 + 拒绝层 + 状态门 + 业务拒绝原因）与
+表单页删除权消费均已到位，**仍缺的是只读详情面把声明的禁用原因呈现给操作者、以及
+`duplicate` 能力在该面的可用入口**；`followUp` 相应改为
+"在采纳的 readonly-detail 面渲染声明的禁用原因并在契约声明 `duplicate` 时提供复制入口，
+或把该 reference 差异记录为 accepted"。状态仍为 `contract_gap`（未宣称超前）。
+
+### 6. 提交
+
+- `fix(contract): declare the authority that denied a record operation`
+- `docs(iteration): record 段 48`（本段）
+
+### 7. 剩余缺口与下一步
+
+- 前端采纳契约边界现状不变：`entries=67 aligned=46 contract_gap=20 not_applicable=1`
+  （**17 条 P0 `smart_core`、2 条 P1 `smart_construction_core`**）。本段关闭其中
+  `detail.action-state` 的**契约侧**部分，剩余为只读详情面的呈现消费。
+- 仍待收口的 P0 投影缺口（按序）：`collection.record-action`（行详情动作需要**通用规则**，
+  不得按模型名硬编码；付款列表实测已含 `action.open_form`，需据实判断剩余是行级/工具栏声明还是消费）、
+  `collection.settings-export`（`batch_policy.available_actions` 已含 `export`，同上）、
+  `detail.section-heading`（区块条目计数）、上下文抽屉呈现授权一族
+  （`detail.container/header/primary-tabs/secondary-tabs/description-grid/loading-skeleton`）、
+  `login.*`、`shell.global-search`、`shell.footer-version`。
+- 事实更正：段 47 曾把"四项 `style_system` 欠账"列为待独立处理，本段实测
+  `make verify.frontend.style_system.guard` **PASS**（该项已不再失败）；`industry_agnostic.guard` 97 条、
+  `state_transition_undeclared` 5 条、390×844 官方参考截图证据缺口仍独立保留。
+- `user_delete_data.closure_guard` 的 3 条既有失败（见 §4）独立保留，作为合并前清理批次的输入。
+
+### 状态
+
+本段**批次验收完成**（契约投影修复 + 定向回归 + 真实环境只读证据）｜主线未集成｜目标环境未部署｜整体用户交付未验收。
+
+## 段 49｜把"能静默失效的守卫"修回来：批量删除预检门的定位漂移、按序列重绑与自证伪（2026-09-30）
+
+### 1. 主线与运行上下文
+
+- 分支 `feature/web-official-template-adoption`，开工 HEAD `6cf886bcb`、工作区 clean。
+- 主线移植**已完成且无需再动**：`origin/main = fff226d7b`（`Merge PR #524`，2026-09-30 15:32 +0800）
+  已是本分支祖先（`git rev-list --left-right --count origin/main...HEAD` = `0 208`），
+  且含本轮要复用的协作流程提交 `81788ca9a`（统一 agent resume 与增量证据复用）、
+  `8b44ce536`（跨登记工作树复用已校验的主线扫描）、`b6ea04f0d`（按运行影响选择 ORM 校验）。
+- 协作流程按主线新规范消费：`make agent.run.resume` 直接解析本分支唯一 run（不再全量扫描 goals）；
+  检查按 `make agent.run.begin` → 执行 → `make agent.run.record` 留回执。
+- Formal Product Layer：P0（平台内核的**验收工具**与通用前端消费契约）/ P4（执行与证据机制）。
+  Layer Target：`scripts/verify` 的删除数据闭包守卫、对应 Make 入口、`.agent/runs` 检查声明。
+  Module：`scripts/verify`、`make`、`.agent`。Standard vs User-Specific：通用工程机制，不含行业或客户语义。
+  Why Here：守卫定位方式与自证伪属于平台工程机制。Why Not Elsewhere：不向产品契约、前端呈现或数据库加入规则。
+  Blast Radius：一个前端写路径守卫的**可证伪性**；不改任何前端/后端产品行为、不放宽门禁、不写数据库。
+
+### 2. 先定性：这是产品缺陷还是守卫漂移？
+
+段 48 §4 把 `make verify.user_delete_data.closure_guard` 的 3 条失败记为"先前既有的守卫期望漂移"独立保留。
+本段按要求"对照实际专题基线判断，不凭'当前 HEAD 也会失败'就认定无关"，沿真实调用链核对**行为**：
+
+| 守卫断言 | 当前代码事实 | 定性 |
+| --- | --- | --- |
+| `ActionView.vue` 必须含 `dryRun: true` | 该调用已迁至 `app/action_runtime/useActionViewSelectionActionRuntime.ts` | **定位漂移** |
+| `ActionView.vue` 必须含 `const result = await unlinkActionViewRecord` | 同上 | **定位漂移** |
+| `ActionView.vue` 必须含 `resolveUnifiedPageContractV2SurfacePolicies(actionContract.value)` | 页面现持**归一化 store**，调用 `resolveContractV2SurfacePolicies`；语义相同，解析入口不同 | **符号漂移** |
+
+行为链核对（`useActionViewSelectionActionRuntime.ts`）：`resolveBatchActionGuardDecision` 前置校验
+→ 删除二次确认 → `resolveBatchDeleteExecutionSeed` 产出**两个不同**幂等键
+（`delete.dry_run` 与 `delete`）→ `await unlinkActionViewRecord({ dryRun: true, idempotencyKey: seed.dryRunIdempotencyKey })`
+→ `const result = await unlinkActionViewRecord({ idempotencyKey: seed.idempotencyKey })`，两者同一 `try`，
+`catch` 内**不再发出**真实删除。后端 `api_data_unlink.py` 在 `dry_run` 下仍执行
+`_check_record_delete_policy` + `check_access_rights("unlink")` + `check_access_rule("unlink")`，仅跳过 `recs.unlink()`。
+
+结论：**产品行为正确、预检确实在闸住真实写入**；失败的只是守卫的定位方式。
+但更严重的问题在定性之外——**该门禁已经停止证明任何东西**：
+它盯着的文件里不再有这些调用点，因此"预检被删掉"与"代码被搬迁"在守卫看来完全一样。
+这正是"验收体系为什么没有发现偏差"的同一类缺口，必须补。
+
+### 3. 修复：按序列重绑，并让守卫自证伪
+
+`scripts/verify/user_delete_data_closure_guard.py::_probe_frontend_delete_flow`：
+
+- 改为读**拥有该流程的模块** `useActionViewSelectionActionRuntime.ts`，断言从"某文件里有某个字符串"
+  升级为**业务序列**：
+  1. `dryRun: true` 预检必须存在；
+  2. 真实 `const result = await unlinkActionViewRecord` 必须存在；
+  3. **预检必须排在真实写入之前**（`preflight_at < destructive_at`）；
+  4. 两次调用必须使用**不同**幂等键（`seed.dryRunIdempotencyKey` vs `seed.idempotencyKey`）；
+  5. 预检与真实写入之间**不得**出现 `catch`/`finally`（否则失败可能被吞掉后继续写）；
+  6. `ActionView.vue` 必须**委派**给 `useActionViewSelectionActionRuntime` 且**不得**出现
+     `await unlinkActionViewRecord`（禁止页面长出第二条删除路径）。
+- 契约面策略回退改为**顺序断言**：`list_profile.batch_policy` 优先、`SurfacePolicies(actionContract.value)`
+  兜底，且 `list_profile_at < surface_policy_at`；同时保留"空 `available_actions` 视为未声明可执行动作"。
+- `_probe_frontend_delete_flow(errors, read=_read)` 增加可注入 reader，使守卫可被无容器自证伪。
+
+新增 `scripts/verify/test_user_delete_data_closure_guard.py`（8 项）：
+对**真实出厂源码**断言守卫成立（绑定测试），再用受控源码逐一证明守卫仍可被证伪——
+删预检、删真实写入、**颠倒顺序**、预检后插 `catch`、两次调用共用幂等键、去掉契约面策略回退、
+页面新增第二条删除路径，七种都必须被拒。
+新入口 `make verify.user_delete_data.closure_guard.self_test`（`make/dev_test.mk`）。
+
+登记：`docs/audit/guard_registry/guard_registry.json` 按既有生成方式
+（`make guard.registry.export`）刷新，`make verify.guard.registry` → **AUDIT PASS: 1361 scripts
+（1274 referenced, 87/87 orphans acknowledged, 1 retired）**。
+同次导出顺带收敛了此前未重导的登记行数（`frontend_v2_policy_projection_guard.py` 795→827 等），
+属生成物追平，非本次改动范围扩大。
+
+### 4. 定向验证
+
+L0：分支/HEAD/工作区已记录，开工 clean。L1：`make ci.local.iteration` PASS（scope=dirty，L1-only）。
+L2（非零，逐项留原始日志于 `.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/`）：
+
+| 目标 | 结果 | 计数 |
+| --- | --- | --- |
+| `verify.user_delete_data.closure_guard` | PASS | —（守卫本体） |
+| `verify.user_delete_data.closure_guard.self_test` | PASS | 8 |
+| `verify.guard.registry` | PASS | 1（AUDIT PASS，1361 scripts） |
+| `verify.frontend.style_system.guard` | PASS | `hardcoded_color_refs_max=0` |
+
+`make agent.run.resume`：7 项检查全部 `reusable`（`resume` 30 / `status_presentation` 15 /
+`page_pattern_parity` 28 / `record_denied_reason` 25 / `contract_record_action_state` 19 /
+`user_delete_guard` 8 / `guard_registry` 1），`blockers=[]`。
+L3/L4：本次只改守卫/工具/生成登记，未改前端或后端产品代码、未改运行环境
+→ 数据库、浏览器与服务目录**不适用**，不重跑构建与业务旅程（按影响分析，非跳过真实失败）。
+L5：未推送、未合并，远端门禁不在本段范围。
+
+### 5. 边界与剩余
+
+- **不改产品代码**去迎合旧选择器：前端与后端删除链一行未动；修的是守卫的定位方式与可证伪性。
+- 段 48 §4 的"独立保留"到此**关闭**：三条失败经定性为守卫漂移并已修复，不再是合并前清理批次的输入。
+- 真正独立保留的项不变：`industry_agnostic.guard` 97 条、`state_transition_undeclared` 5 条、
+  390×844 官方参考截图证据缺口、`style_system` 历史记账（本段实测已 PASS）。
+- 契约 ledger 现状不变：`entries=67 aligned=46 contract_gap=20 not_applicable=1`；
+  下一步仍按段 48 §7 的顺序收口 P0 投影缺口。
+
+### 提交
+
+- `fix(guard): bind the batch-delete preflight gate to the module that owns the flow`（守卫 + 自检 + Make + 登记）
+
+### 状态
+
+本段**批次验收完成**（守卫修复 + 自证伪回归）｜主线已并入（`fff226d7b` 为祖先，无待移植提交）｜
+目标环境未部署｜整体用户交付未验收。
+
+## 段 50｜行激活身份回到契约声明的行位：`targetScope` 不再冒充行级动作，并把"守卫只验字面量"这个缺口一起补上（2026-09-30）
+
+### 0. 主线移植状态（本段开工前先确认，不重复劳动）
+
+- `origin/main = fff226d7b`（Merge PR #524）**已是本分支祖先**：
+  `git rev-list --left-right --count origin/main...HEAD` = `0 210`。
+  `git fetch` 后未出现新主线提交 → **无需移植、无需再动**。
+- 主线协作流程优化已在祖先链上并被本段直接消费：`81788ca9a`（统一 agent resume + 增量证据复用）、
+  `8b44ce536`（跨登记工作树复用主线扫描）、`b6ea04f0d`（按运行影响选择 ORM 校验）。
+  本段按 `make agent.run.begin` → 执行 → `make agent.run.record` 留回执，未再全量扫 goals。
+- 开工 HEAD `ec268dee0`，工作区干净。
+
+### 1. 本段目标与边界
+
+段 48 §7 定的顺序是"先 `collection.record-action`、再 `collection.settings-export`"。
+本段的目标不是"再实现一个行级动作"，而是把这条**契约缺口按真实事实核清并收口**：
+
+| 对象 | 本段结论 | 依据 |
+| --- | --- | --- |
+| `collection.record-action` | 台账原文**已过期**；同时发现一个真实前端身份缺陷 | 受管环境 120 个列表契约实测 |
+| `collection.settings-export` | 台账原文**已过期**（能力已声明且已被消费） | 三个入口契约实测 + 前端消费链 |
+
+边界：不改业务动作、不改后端投影、不改外壳；只修"前端用错身份信号"这一处消费缺陷，
+并把因此失灵的守卫换回**能真的验到东西**的检查。
+
+七问：`Formal Product Layer = P0 platform kernel product`｜`Layer Target = frontend renderer /
+action runtime + smart_core contract V2 action contract`｜`Module = smart_core`（契约侧只读）+
+`frontend/apps/web`｜`Standard vs User-Specific = platform mechanism`（行位声明是契约通用能力，
+不属于某个模型/客户）｜`Why Here = 行位身份由契约的 sourceWidgetId 声明，消费方就是导航运行时`｜
+`Why Not Elsewhere = 不改后端投影去迎合前端、不在页面按模型名补规则`｜
+`Blast Radius = 列表行点击的目标解析 + 一个前端守卫 + 两条台账文字`。
+
+### 2. 用真实契约核清两条台账（推翻过期表述）
+
+只读探针 `odoo shell -d sc_frontend_acceptance`（`UiContractV2Handler`，`record_id` 非必需）：
+
+**行级动作声明（`actionRuleList`）** —— 三个采样入口：
+
+| action_id | 模型 | 行级动作 | 行位 | 表头/根动作 |
+| --- | --- | --- | --- | --- |
+| 675 | `payment.request` | `action.open_form`（`view_type=form`） | `page.row` | 10 条 `page.header` |
+| 673 | `sc.general.contract` | `action.open_form`（`view_type=form`） | `page.row` | 5 条 `page.header` |
+| 348 | `project.project` | `action.action_view_tasks.2` | `page.row` | 15 条 `page.header`/`page.root` |
+
+扩样到 **60 个真实列表契约**：**60/60 都声明了 `page.row` 行级动作**，且
+**60/60 的行级动作都带非空 `label`**。故台账原文
+"Some current collections only declare row activation and do not provide an explicit labelled detail action"
+**不成立**（`action.open_form` 本身即"带标签的详情动作声明"，`target.view_type="form"`）。
+
+**导出能力** —— 三个入口均声明（`layoutContract.listProfile.batch_policy` 与
+`actionContract.surfacePolicies.batch_policy` 双处）：
+
+```
+batch_policy.available_actions            = ["export"]
+batch_policy.execution_intents.export     = "api.data"
+batch_policy.execution_operations.export  = "export_csv"
+```
+
+前端确有消费：`useActionViewSelectionActionRuntime` 的 `resolveSelectionActions(...)` 从
+`available_actions` + `execution_intents` 映射执行器，`action === 'export'` 分支调用
+`executeActionViewSelectionExport`。故 `collection.settings-export` 的
+"the current action does not declare export capability" **不成立**。
+
+### 3. 顺带定位到的真实产品缺陷：行级身份用错信号
+
+`useActionViewNavigationRuntime.ts::resolveRowOpenAction()` 原判定为三者取或：
+
+```ts
+triggerType === 'row_click'  ||  sourceWidgetId === 'page.row'  ||  targetScope === 'page'
+```
+
+两个分支都站不住：
+
+1. `triggerType === 'row_click'` **永不可能成立**：后端 `normalize_trigger_type`
+   （`core/unified_page_contract_v2_action.py:75`）把 `row_click` 归一为 `click`，前端
+   `decodeTriggerType` 也只接受闭合词表 → 解码后的契约里不存在该字面量。
+2. `targetScope === 'page'` **过宽**：后端 `normalize_target_scope`（同文件 `:92`）的文档明确写
+   "Native action placement values such as header, toolbar, smart and row are presentation facts.
+   They must never leak into the closed V2 target-scope vocabulary"，而表头动作的实际
+   `target_scope` 默认值就是"row"→被归一成 `page`。于是**表头动作也满足该分支**，
+   而 `actionRuleList` 里表头动作排在行级动作**之前**（`_append_ui_contract_actions` 早于
+   `_append_actions(..., source_widget_id="page.row")`）→ `.find()` 会先命中表头动作。
+
+本源可追：`c0a6e9e2c` 把该分支从 `'row'` 改成 `'page'`（因为归一化把它变成了 `page`），
+从此行级判定就失去意义。
+
+**实际影响面（据实说明，不夸大）**：对 120 个列表契约做"命中位置是否携带可用跳转目标"的
+模拟统计 → **120/120 命中位置都不可跳转**（表头动作 `target` 基本为 `{}`），随后走既有兜底
+`buildActionViewRowClickTarget`，**因此当前没有可见的用户故障**。但身份规则是错的：
+一旦某个表头动作携带 `route`/`entry_target`/`record_entry`，行点击就会跳到表头动作的目标。
+属于**latent 缺陷 + 可复现反例**，不是"看起来能用就不用修"。
+
+### 4. 修复
+
+**产品代码（唯一改动点）**：`frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts`
+
+- 新增 `ROW_PLACEMENT_WIDGET_ID = 'page.row'` 与 `isRowPlacementAction(action)`，
+  行级判定**只认契约声明的行位** `sourceWidgetId === 'page.row'`；
+- 删除 `targetScope === 'page'` 兜底与已失效的 `row_click` 字面量；
+- 保留原结构（无行级声明时返回 `undefined`，由既有兜底路径处理，不按模型名猜）；
+- 注释写明"为什么不能用 `targetScope`/`row_click` 推断行位"及其后端依据。
+
+**验收体系缺口（本段重点）**：`scripts/verify/web_unified_page_contract_v2_guard.py` 原来只断言
+`"resolveContractV2ActionRules" in nav_source or "row_click" in nav_source` —— 它**只验字面量是否出现**，
+所以"把行位判定删掉、换成 targetScope"这种退化它根本看不见（`row_click` 在旧实现里一直存在，
+在正确实现里反而消失）。这属于与段 49 同类的"守卫在盯不存在的证据"。
+
+改为 `check_row_activation_identity(nav_source, errors)`：
+
+1. 必须消费 `resolveContractV2ActionRules`（仍来自 v2 列表契约）；
+2. 必须存在行位声明 `sourceWidgetId` + `page.row`；
+3. **不得出现 `targetScope`**（禁止再用 target scope 推断行位）；
+4. **不得出现 `row_click`**（不得回头检已退役触发器）；
+5. 判定前先 `strip_js_comments()` 剥离注释 —— 否则我自己写的说明注释会让守卫假阳/假阴，
+   正对应"不要把说明文字当作越界证据"。
+
+新增 `scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py`（**6 项**）：
+出厂源码必须通过，再加受控变异逐一证明守卫仍可被证伪 —— 用 `targetScope` 推断行位、
+把常量退回 `row_click`、去掉行位比较、不消费 v2 动作规则、以及**只用注释写规则**，五种都必须被拒。
+
+新增前端行为级定向测试
+`frontend/apps/web/scripts/collection_row_action_identity_test.ts`（**6 项**，真实执行生产函数）：
+- `isRowPlacementAction` 对 `page.header` / `page.row` / `null` / 空白的判定；
+- **缺陷反例**：表头动作带 `route:/f/other.model/999` 且排在行级动作之前时，行点击**不得**
+  继承表头目标，必须落到被点击记录（修复前实测会跳到 `/f/other.model/999`）；
+- 行级动作自己声明的 `route` 仍被尊重并做行值物化（`menu_id`/`action_id` 保持）；
+- 只有表头动作时**不得**解析出行级动作（fail-closed）；
+- `viewType` 非集合视图时不解析行级动作。
+
+入口：`make verify.frontend.collection_row_action_identity.unit`（`make/frontend.mk`），
+并纳入 `.PHONY`、`verify.frontend.quick.gate`、`verify.frontend.pr.unit`、`verify.frontend.release.unit`；
+守卫自检纳入 `make/ci.mk` 的 `verify.unified_page_contract.v2.web_consumer` 与
+`verify.workflow_contract.frontend`。
+
+### 5. 台账按事实更新（不是"为过守卫"删条目）
+
+- `page-pattern-reference-detail-ledger-v1.json`：
+  `collection.settings-export` 与 `collection.record-action` 由 `contract_gap` 改为 `aligned`，
+  并各带 `resolution` 说明关闭依据与实测口径；`owned_gaps 20 → 18`（守卫 PASS entries=67）。
+- `page-pattern-reference-contract-gaps-v1.md`：把两条已关闭结论移入
+  "Closed boundary decisions (no longer gaps)"（沿用该文件既有先例），
+  并把仍在开放的部分（copy/delete 的 disabled reason、view-switch/settings 的 capability-bound 规则）
+  收窄保留，不趁机重开新缺口。
+
+### 6. 定向验证
+
+L0：`origin/main` 关系已核（`0 210`），HEAD `ec268dee0`，开工 clean。
+L1：`make ci.local.iteration` PASS（`change_state=dirty`，L1-only，`scopeSource=.agent/runs/.../run.json`；
+未分类路径按设计不阻断）。
+L2（非零，逐项原始日志在 `.runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/`）：
+
+| 检查 | 结果 | 计数 |
+| --- | --- | --- |
+| `resume`（`verify.agent.resume.unit`） | PASS | 30 |
+| `row_action_identity`（新） | PASS | 6 |
+| `page_pattern_parity` | PASS | 28（15+13） |
+| `record_denied_reason` | PASS | 25（10+15） |
+| `contract_record_action_state` | PASS | 19 |
+| `guard_registry` | PASS | 1（AUDIT PASS: 1362 scripts / 1275 referenced / 87/87 orphans / 1 retired） |
+| `status_presentation`（复用） | reusable | 15 |
+| `user_delete_guard`（复用） | reusable | 8 |
+
+另跑：`make verify.frontend.typecheck.strict` PASS；
+`make verify.frontend.style_system.guard` PASS（`hardcoded_color_refs_max=0`）；
+`make verify.unified_page_contract.v2.web_consumer` PASS；
+`make verify.workflow_contract.frontend` PASS（含 `verify.frontend.build` 一次最终构建）。
+
+`make agent.run.resume`：**8/8 reusable，`blockers=[]`，`outside_scope=[]`**。
+`make guard.registry.export` 已刷新登记（新增脚本计入 `active`）。
+L3/L4：本段未改后端业务代码、未改运行环境、未改数据库 → 模块升级/夹具/数据库**不适用**；
+浏览器旅程不在本段目标内（行点击目标解析已由行为级单测 + 真实契约探针覆盖），按影响分析记录而非跳过真实失败。
+L5：未推送、未合并、未部署。
+
+### 7. 剩余
+
+- 台账剩余缺口不变：`entries=67 aligned=48 contract_gap=18 not_applicable=1`
+  （17 条 P0、1 条 evidence 归属等），下一步仍按段 48 §7 顺序，优先
+  `detail.section-heading`、上下文抽屉呈现授权一族，以及 `detail.action-state` 的
+  copy/delete disabled-reason 呈现。
+- 真正独立保留项不变：`industry_agnostic.guard`、`state_transition_undeclared`、
+  390×844 官方参考截图证据缺口、合并前必要门禁批次。
+- 本段未触碰 `style_system.guard` 四项历史记账（实测仍 PASS）。
+
+### 提交
+
+- `fix(web): resolve row activation from the declared row placement`（产品修复 + 定向单测 + 守卫与自检 + Make + 登记导出）
+- `docs(iteration): record 段 50`（台账、缺口文档、专题记录、run.json）
+
+### 状态
+
+本段**批次验收完成**（行位身份修复 + 守卫可证伪 + 台账据实更新）｜主线已并入
+（`fff226d7b` 为祖先，无待移植提交；`0 210`）｜目标环境未部署｜整体用户交付未验收。
+
+
+## 52. 官方模板共享样式收口（2026-09-30，进行中）
+
+- 起点：`510a37d5f784b36f1e1ad4d7d02dbd1331f673f5`，接管时 clean；以下实施阶段显式 dirty，不作冻结候选。
+- P0 / frontend tokens and shared presentation；平台通用样式，不属于 P1 行业、P2 客户或 P3 配置规则；不修改业务契约。P4 仅在现有验收工具确需补充定向探针时介入。
+- 裁决：外壳标题 18px/600/26px；Inter 优先为产品有意差异；兼容别名集中修复并登记退出条件，中心调用采用规范语义名。
+- 顺序：断链 token → 外壳/弹层标题 → 共享页面族 → 既有台账按实际证据更新。ProductPageHeader 的等价官方 24/600/32 保持不变。
+- 验证从 L1 静态开始，L2 token 非零测试及相关呈现守卫，稳定后受管 5180 候选和双视口；复用 18082 验收库及原 fixture 权威，不新增数据。L3 ORM/模块升级跳过（无后端或数据库变化）；全业务矩阵、Quick、远端与目标部署跳过（本轮仅本地呈现批次）。
+- 旧 run 基线 dc460758 的合同检查回执保留，样式阶段基线更新为 510a37d5f；未变合同输入不重跑。旧 next-step 已被本次明确授权替代。
+
+### 52.1 断链修复实施
+
+- semantic/component 兼容族集中补齐，每族附最后消费者退出条件；额外发现并修复 8 个 pre-v1 旧名，作用域 scene 变量不冒充全局缺失。浅/深 disabled 使用既有调色板引用，生成四份 dist。
+- placeholder 桥接 secondary → muted；对应 primitive guard 的旧 marker 同步纠正。NativeFormTreeRenderer 原有直接厂商 token 引用违反桥接边界，改用等价共享角色，官方字体定义仍只在 theme.css 消费。
+- L1 `make ci.local.iteration` passed；token build/verify passed；token 构建单测 5/5；style_system.guard、contract_consumer_intrusion.guard、typecheck.strict passed。日志 `/tmp/tpl52-iteration.log`、`/tmp/tpl52-tokens.log`、`/tmp/tpl52-static.log`。
+- primitive adapter 初次失败原因为守卫锁定旧 placeholder 映射，修复后 11 个事件案例及 34 个 Python 测试通过；最终回执待共享样式稳定后登记。首次 begin 的任意命令/依赖目录符号链接均被工具拒绝，已改用注册 Make target 和源码依赖范围，未绕过检查。
+- 运行时断链检查与下一批标题双视口共用一次候选构建；本节为代码提交，浏览器验收仍 pending，不提前宣称批次通过。
+
+### 52.2 标题梯队与真实双视口
+
+- 外壳及 compact/mobile 标题规则统一 title-large；ScDialog/ScDrawer 标题统一 title-medium，副标题 body-small；caption/xs 兼容别名完成。ProductPageHeader 保持守卫锁定值。
+- 定向检查：primitive adapter 11 事件 + 34 单测，ProductPageHeader 70 单测及适配器契约、style_system 均 passed。`agent.run.begin/record` primitive_adapter 已登记 45 非零案例，日志 `artifacts/frontend-web-fix-20260928/tpl52/headings.log`。
+- 单次受管构建 21.85s，复用 5180 监听，入口 `/assets/index--AkVL68O.js`；候选 base `66d4386bc` + 显式样式 dirty 范围。原 510a37 候选保留 `sce-offrepo/artifacts/config05-20260929-prev-510a37d5f-tpl52`。
+- 既有浏览器工具增加 `TPL07_SCOPE=style`，真实 login/system.init + 有效合同读取，1440×900、390×844 付款列表/表单/详情/引入弹层，无业务写入，58/58 passed。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764766851/report.json`。全局兼容 token 链在实际 CSS 中全部解析，placeholder=muted，弹层标题 16/600/24；两视口无整页横向溢出。
+- 第一次探针错误地要求普通列表出现外壳 headline（该页依法由内容区标题负责，外壳不渲染）；已修正探针为实际内容标题 24/600/32，另测 title-large 角色 18/600/26。仅探针变化，复用同一构建，未重建。失败报告 `tpl07-1790764734192/report.json` 保留。
+- 图像复核覆盖窄屏弹层及列表；官方只读基线仍为 aeed5707，已有官方双视口原图复用，不新增演示业务数据。抽屉标题与弹层共享改动，但上下文抽屉的业务契约缺口未因此关闭。
+
+### 52.3 页面族：外壳
+
+- 导航/上下文/标签/账户等文字采用官方 body-small/body-medium、mark 与 title-medium 共享角色；品牌图形和关闭图标尺寸保留为几何用途。补充 mark/headline 桥接角色供后续共享族消费。
+- navigation_shell 单测 19 个及组件契约通过，style_system passed（`tpl52/shell.log`）；一次构建 22.27s。
+- `TPL07_SCOPE=style TPL52_FAMILY=shell` 两视口 18/18 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790764883387/report.json`。未重跑付款业务办理；沿用前批 modal/合同结果。
+
+### 52.4 页面族：列表共享部件
+
+- 行/移动记录/分组/汇总/看板/分页的文字统一消费官方梯队；收藏星形等图标几何以及隐藏选择器 font-size:0 保持。列标题 14/600/22，移动记录身份 16/600/24。
+- standard_collection_composition 113 案例 + style_system passed；一次构建。定向双视口 28/28 passed，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765049108/report.json`。
+- 首次探针依赖当前契约未采用的 status-badge 单元格类型而超时；改为当前实际列标题和移动身份，复用构建，失败报告 `tpl07-1790764971580/report.json` 保留。不据此宣称未展示的看板/分组数据已做业务验收。
+- 所有者再次明确：本轮完整目标是全系统契约驱动的官方渲染/交互，样式修复只是基础批次；后续仍按既有页面类型核对唯一组合及旧职责退出，不能以字号修复代替整体接管。
+
+### 52.5 页面族：详情、表单、任务共享渲染与弹层正文
+
+- FormSection / NativeFormTreeRenderer / ContractFormPage 共享文字角色统一：区块 title-medium、记录 headline-small、正文 body-medium、辅助 body-small；readonly value 不再使用 550 字重。任务 monetary 强调保留，字体采用 title-large。记录标题输入桥接采用 headline-small。
+- 付款引入领域扩展保留全部业务输入/输出与动作，只更新呈现字体；同时纠正 ListPage 父级覆盖，防止共享部件对齐后再次被父级字号覆盖。
+- L2：standard_form_composition 97、product_page_pattern 12+5、page_pattern_reference_parity 15+13；style_system passed。日志 `artifacts/frontend-web-fix-20260928/tpl52/record-families.log`。无 TS/模板/业务逻辑变化，严格类型结果沿用 52.1 的同源脚本与类型输入。
+- 单次合并候选构建 21.65s，同一候选检查受影响列表、现有表单、只读详情、引入弹层；双视口 91/91 passed，包含浅/深两种 token 解析及禁用态。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765202063/report.json`。任务专用独立旅程未在本轮重跑，不把共享事实渲染证据扩大为全部任务业务验收。
+- 视觉复核发现过渡动画让弹层截图仍呈半透明，探针改为禁用截图动画并等待列表加载结束；同一构建只补弹层两视口 30/30，稳定截图 `artifacts/frontend-web-fix-20260928/tpl07-1790765261313/dialog-390.png` 等。之前 91 项的合同/数据/字体输入未变，继续复用。无额外构建。
+
+### 52.6 样式基础批次收口与总体目标边界
+
+- 官方参考台账明确 aeed5707 为权威、旧日快照为历史；不再混用两个实现的视觉义务。390px 官方原图已存在，旧 missing-evidence 条目改为不适用像素对齐（保留产品窄屏可用性责任），其余 16 项能力缺口未擅自关闭。
+- 最终 primitive_adapter 回执 45、page_pattern_parity 回执 28 均 passed；日志与 begin/record 在 `artifacts/frontend-web-fix-20260928/tpl52/`。前一类型检查、未变业务合同回执复用；未运行 ORM、模块升级、Quick 或全旅程。
+- 加载候选：构建基线 `825a3795c6aac8ffc7f45e9034123d29075c6e80` 加构建回执所列样式 dirty 输入，代码已收进 `c0623fb18`；入口 `/assets/index-DzCJIgmD.js`，entry SHA256 `e60ddb0ccfe637175da3f46d41eb11890390c1457de7c948a84277607e51cd74`。浏览器已核对实际 HTTP entry。之后仅文档/记录变更，不重建或伪装 clean 构建。
+- 样式基础批次验收完成；总体官方页面/交互接管继续。主线未集成、目标环境未部署、整体用户交付未验收。所有提交仅本地。
+- 下一步复用本 run 与台账，处理仍由旧共享实现承担的呈现/交互职责；已确认的候选、角色、数据和原始报告均复用，不重新执行菜单/环境全量盘点。
+
+## 53. 全系统渲染与交互体系闭环（2026-09-30，进行中）
+
+所有者明确：本轮不仅完成样式，应完整建立契约驱动的官方渲染和交互体系，包含已确认业务职责所缺的契约；contract_gap 不是永久豁免。
+
+- 复用现有 67 条台账、16 项剩余职责及其 owner/followUp，不另建覆盖表、不重新全仓/菜单盘点。
+- 前端共性呈现、组合及模态生命周期由 P0 frontend 拥有；缺失的通用能力投影由 P0 smart_core，行业标准结构由 P1 smart_construction_core；不把视觉义务塞进业务契约，也不让模板演示创造新的业务要求。
+- 已确认移动导航仍用 ScAside + 手写遮罩/位移 + 独立生命周期，拟复用 ScDrawer 官方驱动并退出对应旧职责；同时继续已有 collection.favorite、detail.action-state 等声明能力的消费/生产闭环。
+- 后端未修改前不运行 ORM；一旦实际修改契约生产者，只运行受影响的非零契约测试及必要受管运行时检查，按层推进。无新环境、凭据或 fixture；不推送、合并或部署目标环境。
+
+### 53.1 移动导航官方 Drawer 接管
+
+- P0 / shared shell overlay：ProductMobileNavigationDrawer 在移动端只消费 ScDrawer，桌面只消费 ScAside。ScDrawer 增加通用 placement 和 navigation appearance；官方驱动统一负责遮罩、位移动画，既有共享生命周期负责焦点/滚动锁。菜单和上下文内容继续是同一契约消费者。
+- 旧职责退出：删除导航自己的 backdrop 节点、位移动画样式和 useModalLifecycle 实例；不保留双路径或第二份开关状态。旧 guard 从锁定导航自管生命周期修正为要求共享 ScDrawer，并加入拒绝私有遮罩/生命周期回流的负例。
+- L1/L2：navigation_shell 全链 40+12+42+19 个案例，primitive adapter 11+34；overlay lifecycle 12（新增两类负例），delivery_hardening、style_system、typecheck.strict 全部 passed。日志 `tpl52/navigation-takeover.log`、`tpl52/navigation-lifecycle.log`（同一批次证据目录继续复用，不再复制原始日志）。
+- 单次构建 21.11s，base `904b3fa65` + 明确导航 dirty 范围；5180 原 listener 复用，之前 c062 样式候选保留。
+- `TPL07_SCOPE=navigation` 真实 finance login/system.init →付款列表，1440/390 两视口 16/16 passed：一个官方导航模态、无私有遮罩、授权菜单保留、Tab 焦点在模态内、Escape 还原 opener、路由保持、滚动锁释放、官方遮罩可关闭、回桌面唯一导航。无业务写入。报告 `artifacts/frontend-web-fix-20260928/tpl07-1790765698870/report.json`，窄屏截图已实际复核。
+- 后端/数据库未变，ORM 不运行。下一项复用段47/48生产者修复证据，核对 collection.favorite 与 detail.action-state 的实际共享消费者。
+
+
+### 53.2 收藏能力按有效契约消费
+
+- P0 / frontend generic collection consumer，平台共享行为；不在 P1/P2/P3 或模型白名单定义权限。复用段47已有生产者，影响 ActionView 的共享搜索菜单，未改后端，L3 ORM/升级不适用。
+- 修复缺省 `save_enabled !== false` 放行、缺失 intent 自动补写、无条件展示共享选项三个消费偏差。现在只接受显式 true 及现有适配器支持的 search.favorite.set；共享必须单独明确授权，提交时再次限制。声明拒绝时保留禁用入口及原因，未声明不制造权限。
+- L1 intrusion guard、strict typecheck passed；L2 collection_action_toolbar 16 纯逻辑 + 11 守卫测试 passed，begin/record 回执27。日志 `artifacts/frontend-web-fix-20260928/tpl52/favorite-static.log`。既有生产者输入未变，复用原证据，无 ORM。
+- 一次构建21.31s，base d1da61c0f + 上述 dirty 范围，5180 原 listener 复用。真实 finance login/system.init/ui.contract，1440/390 收藏入口、显式不共享、表单可用、取消、Escape、无横向溢出19/19 passed：`artifacts/frontend-web-fix-20260928/tpl07-1790766225490/report.json`。
+- 首次17项报告 `tpl07-1790766188416/report.json` 已通过；图像复核发现窄屏截图未展示保存操作，探针增加滚动到操作并核对其进入视口，仅补验相同受影响收藏范围，复用构建。不是产品失败或第二次构建。
+- collection.favorite 台账仅关闭“声明控制项已呈现”的职责；没有点击保存，不宣称写入/刷新/失败恢复已验收。下一步继续这些交互及 detail.action-state；整体目标进行中，主线未集成、目标未部署、整体用户验收未完成。
+
+
+### 53.3 收藏异步结果与失败恢复（进行中）
+
+- P0 / shared collection interaction；沿用 ui.contract 的已有权限和写入口，schema/store 不新增业务语义。提交从无返回值事件改为可等待的共享回调；等待期间禁止重复保存和修改输入，失败保留名称/默认选项，成功后收起输入并反馈；已写入但刷新失败独立提示，不误报写入失败。路由/合同切换后不覆盖新页面合同。
+- L1 `ci.local.iteration` passed；L2 collection toolbar 19+11 passed、strict typecheck passed，回执30。首次类型检查发现两处禁用收藏的工具栏缺少新增接口，已补齐并定向复验，原失败日志保留 `favorite-feedback-static.log`，最终 `favorite-feedback-static-fixed.log`。
+- 单次构建21.21s，base 7f8c38288 + 收藏交互 dirty 范围。后续只改浏览器探针/恢复工具，未重复构建。
+- P4 探针缺陷：原 `**/api/v1/intent` 未匹配带 `?db=` 的实际请求。首次失败注入 `tpl07-1790766458924/report.json` 未拦截保存，不计通过；只读回读 `tpl07-1790766553758/report.json` 确认误建 ir.filters 7（finance 30/payment.request/action775/非默认）。工具匹配修为 `intent*`，并阻断 search.favorite.set 及独立 create/write/unlink intent；不得继续把旧 guard 的零记录当作写入未发生的充分证据。
+- 最小 P4 恢复沿用 acceptance profile/preflight/容器与 filestore 校验，专用 Make 入口锁定该记录全部身份。首次因 HTTP create_date 去掉微秒而 fail closed，诊断确认 ORM 精度后绑定完整时间 2026-09-30 11:07:45.676133；没有放宽匹配条件。恢复工具9项测试通过，精确删除并提交后回读 remaining=0，日志 `tpl52/favorite-recovery-restored.log`。不重置 fixture、不升级模块、不运行无关 ORM 测试。该脚本只用于本次对象恢复，不是通用删除入口。
+
+- 修正拦截后第二次探针已截获请求，但等待态的可访问名称包含“处理中”，精确“保存”定位超时（`tpl07-1790766654026/report.json`）；只修正定位，复用同一构建。最终受控网络失败29/29 passed：`tpl07-1790766709771/report.json`，两个视口均验证 pending 防重复、输入保留、恢复重试、共享不越权、取消与焦点。失败注入不经过后端写入；不冒充真实成功写入旅程。随后取消已完成请求的探针超时计时器，消除多余等待，语法检查通过。
+- 恢复工具提交后的 ORM 回读 remaining=0；独立 HTTP 回读 `tpl07-1790766734559/report.json` 却仍返回 id=7 一条记录，同候选菜单截图也仍呈现该收藏。数据库直接回读与 HTTP 读路径矛盾，需要诊断缓存或读写载体一致性；不能宣称 HTTP 恢复确认完成。该发现是下一项真实闭环阻断，不能把本节宣布为收藏完整验收。
+- 下一步 P0 契约生产者：沿 ui_contract_v2 缓存命中路径确认 saved_filters 的用户/action 运行事实何时重投影；修复后定向契约测试及必要受管装载，不通过前端过滤不存在记录或强制刷新兜底。后端真正变化时才执行相关层验证。
+
+
+### 53.4 收藏运行事实缓存边界与恢复纠正
+
+- 纠正53.3的初步归因：后续 HTTP 记录是新建 id=8（11:11:30.981759），不是已清理 id=7。此前只看数量导致误判，不能据此声称 api.data 缓存故障。id=8 来自等待态探针超时退出阶段；工具现在先中止全部悬挂拦截请求，再关闭浏览器，防止退出时请求继续。
+- P4 精确恢复 id=8，完整身份与 fixture 用户绑定，9项工具测试通过，提交后 ORM remaining=0。修正后的失败恢复29项 passed，报告 `tpl07-1790766965631/report.json`；随后 HTTP 查询 records=[]，但搜索菜单仍显示该收藏，报告 `tpl07-1790766975287/report.json`。此时才获得真正的“HTTP事实已删除、合同菜单仍旧”的分层证据。
+- P0 / smart_core / 搜索运行事实投影：缓存是页面结构权威，不能缓存用户收藏事实。沿现有 app.search.config 生产者补 refresh_saved_search_runtime，在统一 runtime seal 前重投影 searchContract 的 saved_filters 和收藏能力；冷源、缓存源和 assembled cache 都经过同一边界，显式传 action_id；不重写过滤器/分组/配置结构，不新增业务契约字段，不替前端造权限。scene_contract 维持原职责，不人为接入模型收藏。
+- L1 ci.local.iteration、Python语法通过；L2 saved_search_capability 13项通过，涵盖删除后空集合、action scope、用户隔离、权限变化、查询失败不交付旧结果、先刷新再封装。登记 begin/record13。生命周期守卫发现既有 nested_form_relation.json 哈希漂移，确认文件在起点HEAD未变；只按现有语义内容重算 contractSha256，不修改示例语义或降低守卫。
+- 模块加载评估：没有字段、XML、注册或 manifest 变化，无需 -u。纯 Python 代码需通过既有 backend.acceptance.up 重载；复用原验收库、卷与端口，不做安装/fixture/全量ORM回归。前端构建输入未变，继续使用53.3候选；受影响实际合同/菜单验证待重载后完成。
+
+- 生命周期首次报告同时存在 definition/schema 哈希和 validation/示例哈希两项漂移；首次修复只处理了报告末尾的示例错误，遗漏 definition，未达到完整通过。3de6778a2 的后端重载已发生，但没有在该失败状态继续浏览器验收。现已按原 schema 文件实际字节 SHA256 同步 runtime 常量与四份示例，不改 schema 或示例业务内容；完整守卫最终8/8维度、p0Count=0，5+10单测通过，日志 `tpl52/favorite-runtime-lifecycle-final.log`。后续只因这次运行常量变化再次受管重载，不重建前端。
+
+- 受管后端最终加载8128f14b5，18082健康；5180仍复用53.3构建，没有第二次前端构建。修复后只读恢复7/7 passed (`tpl07-1790767270036/report.json`)；增加同一页面重新加载并检查缓存命中交付，9/9 passed (`tpl07-1790767317777/report.json`)：HTTP精确查询空集合、首次和缓存命中菜单都无测试收藏，实际 projection_cache hot/persisted 由报告保留。恢复阻断关闭。
+- 本节验证了缓存后运行事实投影及测试对象恢复；不把失败注入或误建对象当成经过设计的收藏成功/刷新业务闭环。整体目标继续，仍需完成相应成功路径及详情动作状态。官方基线再次确认 detail/base 与 detail/advanced 是 Card+Descriptions 的独立页面，后续不得把旧日快照的右侧抽屉义务误当官方模板必须具备的业务契约。
+
+
+### 53.5 只读详情的声明限制反馈与官方参考收敛
+
+- P0 / frontend shared readonly header；沿既有 schema→store 的 recordActionStates 只解释明确拒绝，不改变权限/状态判定。通用 reason code 映射用户提示，未知原因只给中性说明；不因 capability boolean 生成执行动作。复用 ScInlineState 的官方 TDesign Alert，旧“有拒绝原因但不显示”职责退出，无新私有提示系统。
+- L2 contract_record_action_state 26/26、strict typecheck通过，begin/record26；前后端生产者未变，复用53.4生产者结果，L3不运行。一次受管构建21.85s，base533519b47 + 本节前端 dirty 范围，5180复用，原收藏候选保留。
+- 第一次实际样本1813是草稿，验证允许态不捏造限制（15/15报告 `tpl07-1790767535920/report.json`）。进一步按该契约声明的 state_field/allowed_states，在同一project/company和finance授权范围中只读选取现有记录1710 approved；双视口29/29通过 `tpl07-1790767599788/report.json`。实际显示“不可删除：当前业务状态不允许删除”，同一官方 Alert 驱动，窄屏可读且无整页横向溢出；无业务写入。截图已复核。
+- 官方 pinned aeed5707 的 detail/base 与 detail/advanced 源码是 standalone Card/Descriptions，并非日快照右侧抽屉。既有 FormSection/standardDetailCompositionRuntime 与段52实际详情证据已覆盖容器、共享页头、事实网格；对应3条改aligned。强制两级tab与抽屉loading几何是旧参考义务，3条改not_applicable；不豁免契约声明的 notebook/关系/协作/加载与返回职责，不为历史截图新造drawer契约。
+- 原67条台账保留，9项待处理；detail.action-state只关闭声明拒绝反馈，复制动作是否属于确认职责及执行契约仍待解决，不因 duplicate=true 前端补一个按钮。page_pattern_reference_parity 28测试通过，原样式/页型/返回链证据不重跑；无推送、合并、目标部署或整体交付声明。
+
+
+### 53.6 公开登录契约复用与共享页脚版本消费
+
+- P0 / schema→session→shared shell：system.init_payload_builder 已调用 runtime_product_identity，版本由部署配置/产品VERSION产生；补齐 AppInitResponse 已有字段的类型声明，session productVersion getter 映射既有 initMeta，侧栏页脚显示真实版本。展开桌面及移动导航显示，折叠栏保留操作空间；无来源时不造版本，不暴露源码SHA。没有后端/schema-wire语义或数据库变化，L3/ORM不运行。
+- L1 ci.local.iteration passed；L2 navigation_shell 40+12+42+19 =113，strict typecheck passed（`tpl52/shell-version-static.log`）。单次构建22.43s，base4d32e3f3a + 明确本节前端dirty范围，复用5180。浏览器真实public auth→login→system.init→付款列表→移动导航23/23 passed，报告 `tpl07-1790767915401/report.json`；版本值匹配实际system.init，移动页脚可见且不溢出。截图已复核，未写业务数据。
+- 公开契约现有 build_public_auth_page_contracts 声明激活/恢复目标，LoginView 已消费，并非台账所写“未声明”。本次核对实际登录标题和入口，复用早前public-auth18项（模拟激活无账号写入），不重复账号业务验收。
+- 按所有者“不复制官方演示业务”边界，纠正历史义务：官方 Header.vue 无fullscreen；Login.vue 的remember checkbox未绑定持久化；Search.vue 仅管理focus/text，未实现全局结果查询。不能为这些演示或旧参考控件新增凭据保留、三方登录或跨模型搜索。对应项记not_applicable，保留将来明确功能需契约先行的边界；没有删去已确认的登录、激活/恢复、授权菜单检索职责。
+- 67条台账结构不变，剩余3项：复制记录执行职责、任务字段几何、任务事实slot覆盖。复制权限bool不等于动作声明；后两项继续定位P1有效视图/结构生产者。另保留计划中的收藏成功/刷新/恢复闭环，不能用失败注入替代。总体仍进行中，主线/部署/整体用户验收均未完成。
+
+
+### 53.7 任务页实际权威与响应式布局核对
+
+- 候选 aedbd1f95 + P4 `standard_page_type_browser.mjs` dirty；产品源码/后端/构建输入未变，复用53.6候选与5180。L1 node syntax、ci.local.iteration通过；L2 native_form_structure_responsibility 11/11（tpl52/task-authority-static.log）。不运行ORM、升级、构建或fixture写入。
+- 新增既有探针的task-authority只读范围。首次报告tpl07-1790768213033为validation_tool_defect：关系附件响应覆盖单一recordAuthority。按模型保留观察结果后13/13通过（tpl07-1790768237871）；进一步补充实际字段坐标而非容器CSS猜测，15/15通过（tpl07-1790768273395，tpl52/task-authority-geometry.log）。所有请求只读，无业务写入；同一启动链及既有finance/1813身份。
+- 实际action775/view2145使用container_tree_authority、native_authority、slots=[]，契约组cols=2与显式cols=1并存。项目/往来单位实际桌面同排双列，390窄屏同列上下排列；无整页横向溢出。桌面截图已复核。task.field-grid关闭，不能再为旧“单列”记录重写P1。
+- task.slot-coverage仍未关闭，但纠正为必要业务事实覆盖核对：原生字段树、语义锚点、条件字段及关系/页签是当前权威，不能恢复旧slot路径。67条保留，剩余2项（事实职责覆盖、复制执行职责）；另有收藏成功/刷新/恢复闭环及总体完成审计待执行，不宣称整体完成。
+
+
+### 53.8 复用P1字段职责矩阵核对任务事实
+
+- 候选5c47cf263 + P4既有browser探针dirty；P0/P1产品输入未变，复用53.7的11项native structure定向结果及53.6构建，不运行ORM/模块升级/重构建。读既有config/p1_payment_request_field_completeness_v1.json作为41项edit/create_edit职责来源，不新增覆盖矩阵。
+- 原生view_payment_request_pay_form已明确移除payment_flow_label重复摘要，name/state由页头承载，legal_next_action_display与payment_blocking_reason_display由动作/反馈承载。历史slot不足记录不能作为恢复重复正文的依据。41项矩阵声明检查使用原生字段节点、语义锚点与页头数据；显式记录payment_flow_label的P1退役依据，不能把该摘要当新业务输入。
+- 首次探针使用旧dataMeta.fields位置，报告tpl07-1790768422213为validation_tool_defect，并非41项业务字段全部缺失；修复当前V2投影采集后23/23通过（tpl07-1790768458153/report.json，tpl52/task-facts-browser-fixed.log）。已证明4项always required输入可见、附件输入可见、追溯区可展开、双视口几何保留，41项职责无未解释的声明缺失；无业务写入。
+- task.slot-coverage继续保留：上述声明完整与代表字段可见不能直接证明每项条件字段/追溯页签事实均可消费。下一步只补条件字段与追溯页签的实际交互证据，复用TPL05A49项业务闭环，不重做办理；复制职责与收藏成功/刷新/恢复仍待收口。整体目标保持active。
+
+
+### 53.9 条件事实及追溯页签闭环，参考台账收敛
+
+- P4探针；候选2c1c9ca6e + browser script dirty，无产品/后端变化。复用53.7 L2 11项与53.6静态候选，node syntax和diff通过；无ORM、构建或业务写入。
+- 现有finance1813同时有合同/结算依据，按原P1矩阵核对适用事实。首轮tpl07-1790768539759在付款记录tab定位超时；追加有界DOM/screenshot诊断tpl07-1790768605198证明页签存在，官方Tabs没有role=tab。分类validation_tool_defect，改用可见标签，无产品改动。最终tpl07-1790768656354/report.json（tpl52/task-conditional-final.log）43/43通过：合同/结算条件字段、付款记录关系、历史金额只读与声明空文本、切回结算事实、双视口布局。诊断截图已复核。
+- task.slot-coverage关闭：41项既有P1职责及当前原生投影、代表/条件事实/关系切换证据共同证明本条呈现责任；条件性权限/审批等业务闭环仍引用原TPL05A49结果，不宣称本次重跑或自动升级业务矩阵。
+- detail.action-state关闭剩余范围判断：duplicate是权限交集，不是动作；实际actionRuleList没有copy，既有P1职责矩阵与pinned官方detail均不要求copy。禁止仅据boolean新增端侧执行，未来明确业务要求需正式执行契约。既有编辑/删除拒绝反馈沿用53.5。
+- 67条参考台账无开放项不等于整体目标完成。下一项是收藏成功保存→有效契约刷新→恢复原配置闭环，之后核对原整体计划、必要门禁与现有证据；不推送/合并/目标部署。
+
+
+### 53.10 收藏删除/管理登记为产品缺口（所有者纠正）
+
+- 在af7620ea3上准备收藏成功验证时发现产品只有保存，没有删除/管理入口。原拟添加P4精确恢复工具，已进行纯测试14项；所有者明确指出应登记产品缺口。该判断采纳：不能用恢复工具替代产品删除职责或宣称闭环完成。
+- 本轮临时工具、Make接线和浏览器写入分支全部撤回，未提交；没有调用prepare/restore，没有执行收藏保存、删除或其他数据库写入。纯工具日志仅为已撤回方案的历史记录，不计产品验收证据。
+- 既有67条台账中collection.favorite重开为P0 contract_gap；P0 smart_core拥有权限/执行及投影，通用前端仅消费明确能力与动作，不按角色或过滤器名称猜权限。下一步补齐删除执行、私有收藏所有权/ACL边界、共享菜单入口及成功/失败反馈，再通过产品入口验证保存→刷新→删除→刷新。维持单一主路径，不另建收藏管理页面。
+- 53.9的67条无开放项仅代表当时已确认范围，现已被本次产品缺口裁决修正；整体目标一直未宣布完成。其他67条的既有通过证据不失效。
+
+
+### 53.11 收藏删除的P0执行与契约投影
+
+- 候选913d71a99 + smart_core收藏handler/投影/定向测试、make/frontend.mk dirty。Formal Product Layer=P0，Layer Target=通用收藏权限与执行；不涉及行业/客户规则，不在前端推导归属。沿既有handler模块自动发现增加search.favorite.delete，无模型字段/XML变更，不需要模块升级；待共享消费完成后受管重载及运行态验证。
+- 删除显式绑定id/model/action_id，内部用户、目标模型read、ir.filters read/unlink ACL和记录规则均由后端检查；查询强制user_id=当前用户，拒绝共享与他人私有收藏，全程无sudo。响应明确deleted结果，重复/不存在对象不伪报删除成功。
+- saved_filters逐项增加delete_action（intent/label/enabled/disabled_reason/params）；可删除要求当前所有者、模型read及过滤器read/unlink ACL/record-rule。沿53.4每次有效契约刷新投影，不从缓存继承旧权限。无create权限不影响已获授权的删除。
+- L1 ci.local.iteration及py_compile通过；L2现有saved_search_capability入口扩展执行handler边界测试，16+13=29项通过（tpl52/favorite-delete-backend-final.log），agent.run.begin/record29。覆盖共享/他人/错模型/错action、ACL/rule拒绝、非法身份类型、不能提权、删除不要求create等。纯测试不是运行态ORM证明。
+- collection.favorite保持contract_gap：尚待共享菜单消费删除动作、确认/反馈/失败恢复，以及真实保存→刷新→删除→刷新闭环。当前未重载后端、未构建、未执行配置写入，不宣称产品缺口关闭。其余页面证据不受本次后端范围影响。
+
+
+### 53.12 收藏删除共享消费与反馈
+
+- P0 generic frontend contract consumption；候选0c9915e43 + shared search runtime/VM/toolbar/ActionView与定向测试dirty。没有模型/角色专属分支：只接受显式enabled=true、已知search.favorite.delete及严格id/model/action_id参数。修复中间ChipVM适配丢弃删除动作的缺口，同一共享菜单供现有列表/看板宿主使用。
+- 收藏项使用独立删除按钮与现有ScDialog官方弹窗，清晰说明仅删除收藏不删除业务记录；确认期间阻止重复提交和关闭。执行前从当前契约按记录id重取授权动作，不用显示名称推导执行；页面上下文变化不把旧结果写入新页面。
+- 删除失败保留确认面与可重试反馈；删除成功后刷新有效契约和列表，当前选中收藏同步清除。删除成功但刷新失败明确告知无需再次删除，关闭删除确认，不以刷新失败重发删除请求。
+- L1 ci.local.iteration passed；L2 collection_action_toolbar 31+11=42通过（tpl52/favorite-delete-ui-receipt-tests.log，begin/record42），包含严格动作参数、VM动作透传、删除失败/刷新失败区分；strict typecheck、style_system.guard、contract_consumer_intrusion.guard通过（tpl52/favorite-delete-consumer-types.log）。中途类型检查期间仅helper/adapter收紧，最终再跑stable typecheck，使用最终日志。无ORM/构建/数据库写入。
+- 下一步受管重载后端至本批代码、稳定后一次构建，复用5180完成真实收藏保存→刷新→取消删除确认→确认删除→刷新回读，补失败与窄屏定向检查。collection.favorite仍为开放产品缺口，静态通过不能代替真实闭环。
+
+
+### 53.13 收藏闭环实测暴露并修复请求身份冲突
+
+- 候选faffa6cd6已受管backend.acceptance.up重载，原静态候选保留，构建22.20s并复用5180。真实私有收藏保存生成ir.filters id9（finance uid30、payment.request/action775、非默认、名称FE-TPL53-私有收藏闭环），服务端回读一致。新删除入口、双视口确认/取消及注入失败保留记录已通过。
+- 实际删除失败报告tpl07-1790769469765/report.json：INTENT_NOT_FOUND“记录[9]不存在”。P0 product_defect：请求model=payment.request与通用id=9触发路由前置业务记录检查，错误地把收藏ID当付款记录ID。不能修改/绕过通用权限保护；修正为明确filter_id，由收藏handler按ir.filters归属/ACL/record-rule执行。响应id仍是删除结果身份。
+- 生产者/consumer/handler及定向反例同步改filter_id；29项后端、42项前端及strict typecheck通过（tpl52/favorite-filter-identity-fix.log）。浏览器新增精确续验模式，只接受原报告所见id9及完整私有对象身份，不重建收藏；恢复只走产品删除入口。
+- 此处提交是修复候选，真实删除/恢复待新代码受管重载及构建后续验。既有id9仍须恢复，不能把失败或工具清理计作闭环完成。第二次构建属于已定位产品缺陷后的必要重验，不是无变化重建。
+
+
+### 53.14 收藏真实产品闭环完成
+
+- 0d2c6190a修复候选受管重载后端，必要重建21.79s，旧静态候选保留，5180复用同一产物。首次失败中的成功保存/回读不失效：仅续验精确私有收藏id9，tpl07-1790769636566/report.json（tpl52/favorite-lifecycle-resumed.log）25项通过。产品确认删除成功、api.data回读空集、有效契约刷新与再次reload均无旧收藏；未调用P4恢复工具。390确认截图已复核。
+- 为补“删除当前选中的收藏”的独立状态责任，通过相同产品入口保存私有非默认配置id10；应用后URL与菜单/条件标签均已选中。首次tpl07-1790769721849为validation_tool_defect：探针假定只有一个aria-pressed控件，实际两个选中控件均正确。修复为断言所有匹配控件均选中，不改产品、不重建；绑定原报告精确id10续验，tpl07-1790769758359/report.json（tpl52/favorite-active-delete-resumed.log）24项通过。删除后saved_filter路由清除、服务器空集、reload无残留。
+- 允许的写入只有fixture finance本人、payment.request/action775指定名称私有收藏的保存/删除；一次失败通过受控abort注入，记录未被删除且可重试。付款业务记录与共享配置未修改，未创建业务fixture。临时收藏9和10均由产品正常删除。
+- collection.favorite重新关闭，67条参考台账0开放项。29后端/42前端纯测试和strict types沿53.13修复证据复用；本节只改验收工具与记录，未变产品输入不再编译/构建。下一步执行总体完成核验，检查页面类型、旧路径退出、配置闭环及强制门禁，不能用台账0缺口代替总体完成。
+
+
+### 53.15 总体收口发现既有状态动作产品缺口，先补日常合同签署声明
+
+- 起点e1325df02 clean；前一回复仅状态确认，本节恢复实际产品推进。复用段45中TPL06A/LC01/TPL07/LC01B已完成事实，不重接付款列表、不重跑49项办理。段51注册表已PASS，段52已有官方390参考；run中旧注册表失败与goal中16项缺口数字已纠正，历史通过不是当前全量门禁通过。
+- 完成审计发现native_view_undeclared_actions仍登记5条真实状态变更。它们是P1产品投影缺口，不能长期“权威侧待决”后退出总体范围。既有67条中的detail.action-state重开（1个聚合产品缺口），保留53.5拒绝反馈和53.9复制范围裁决的有效证据；不另建覆盖表。
+- Formal Product Layer=P1；Layer Target=workflow contract profile；Module=smart_construction_core；Standard vs User-Specific=行业标准。原生general_contract_views.xml已声明合同经理签署按钮、draft/confirmed来源状态，general_contract.action_signed已执行业务锚点校验并从draft走action_confirm；审批未完成时不签署。这里补生产者方法声明，不在P0发明行业规则、不在P2/P3写运行偏好、不在前端猜方法/权限。Blast Radius仅sc.general.contract现有签署动作及其声明覆盖测试。
+- 复用现有complete业务动作语义，明确label=已签署、method=action_signed，在draft/confirmed声明；完成的是该业务操作，不把signed重命名为done。原生动作身份/组授权、execute_button重新加载有效actionRule并检查allowed/enabled/entitlement的执行链保持。未改模型方法、原生视图、schema词汇或前端。去除已经声明的唯一登记项，其余4项仍登记；这不是运行态验收关闭。
+- L1首次ci.local.iteration失败为run范围未登记config/contract路径；明确登记本次已有契约清单路径后重跑PASS（general-sign-iteration-final.log）。未用全量Quick排错。L2 native_view.workflow_action_coverage 8+17=25通过（general-sign-coverage-final.log；begin/record25），真实运行生产_available_actions与action_signed函数，覆盖合法来源、终态拒绝、审批未完成不签署、必要业务锚点、reviewer动作不可冒领。workflow_action_semantics.guard 15项通过（general-sign-contract.log）；page_pattern_reference_parity 28通过，67条/1开放项（general-sign-ledger.log）。台账随后仅恢复原紧凑格式，JSON语义逐值相等，不重跑相同断言。
+- 上述函数级测试不等于ORM权限或真实页面执行证明。L3受管后端重载、L4现有角色有效契约/实际动作定向验收仍待执行；无字段/XML/manifest变更，不需要模块升级，前端构建输入不变，不重建5180。当前未写业务数据库，未创建fixture。下一步补运行态身份/授权证据，再处理付款审批、付款冲销、计划启动、文档回草稿四条。行业无关审计97词法命中亦保留，需按现有分类证据处理，不能假称97业务缺陷或直接豁免。
+- 状态：本节实现及纯测试完成，产品缺口verification_pending；整体目标active。主线未集成、目标未部署、整体用户验收未完成。回滚为本节P1声明与覆盖登记的同批回退，不涉及数据恢复。
+
+
+### 53.16 同族补齐计划启动与文档回草稿
+
+- d88ae3e41 clean起步，沿53.15 P1/workflow contract范围。核对原业务方法和原生按钮后，为sc.plan声明confirmed→action_start（activate/start_execution），为sc.project.document的review/done/cancel声明action_reset_to_draft（reopen）。未改P0词汇、业务方法或端侧规则。
+- 计划不再继承与模型前置条件冲突的通用完成/回草稿状态：完成仅in_progress，回草稿仅cancel；不向sc.fund.account.operation推广计划专属动作。原生计划视图仍有confirmed显示完成、非draft显示重置的旧宽条件，当前有效workflow声明不再赋予这些无效操作语义；原生视图一致性及运行态效果仍待定向收口，不能据单测宣布完整关闭。
+- L1 ci.local.iteration PASS。L2 native coverage 8+21=29通过（native-state-contract.log，begin/record29）；同一次命令的state_phase guard发现sc.plan旧dead-state登记已失效，分类为随产品修复而过期的证据登记。移除该精确条目后phase16、semantics15通过（native-state-phases-final.log）。无全量ORM、fixture写入、前端重建。后端运行态重载仍待执行。
+- 已知登记内未声明状态动作5→3（含53.15签署则剩2）：付款action_set_approved、付款执行action_reverse_payment；签署/计划/文档的运行态验收未闭合，67条中的detail.action-state继续开放。源码同时发现native coverage把各模型方法名汇成全局集合，存在同名方法跨模型误覆盖的验证工具缺陷；目前计数只代表已登记集合，不证明全系统仅余2个缺口。下一步必须按(model,method)验证，补可证伪测试，不能以全局方法存在消项。
+- 本批P1声明及纯测试完成，整体继续active；不推送、合并或目标部署。
+
+
+### 53.17 所有者裁决：审批由状态机和用户配置统一驱动
+
+- 所有者明确要求：配置审批则走审批，未配置审批则提交自动通过，统一由状态机控制。此裁决调整53.15/53.16后续顺序：不再逐个给旧批准按钮补平行声明；先收敛既有业务执行，再同步有效契约和原生入口。签署、计划启动、付款冲销等审批之外的业务转换仍保留各自状态/权限/数据前置条件，不把自动审批扩大为自动签署或自动付款。
+- 已定位权威：sc.approval.policy.is_approval_required(model, company)以及next_state_after_submit已经存在；费用action_submit、结算action_submit已按该权威分流。payment.request.action_submit却固定写submit并request_validation，action_approval_decision还把“validation_status=no且无review”当人工通过，形成不一致的第二套判断。此为P1执行缺陷，不是前端模板职责。
+- 修复要求：公司范围内的有效用户审批策略决定提交走向；启用审批但没有可匹配规则必须报配置错误，不能视同未配置。已在审批中的单据不得仅因当前策略改变或review集合为空被自动批准；需明确在途配置/审批实例权威。多级审批只在最后完成时推进一次，拒绝/重提/重复调用有稳定结果；审计记录区分提交自动通过与人工审批通过，不能伪造审批人或把no改成validated充当审批事实。
+- 统一入口应复用既有状态转换与审批策略机制，不新建工作流引擎；旧action_approve/action_set_approved与回调只能委托同一转换裁决，不能各自实现放行规则。前端消费最终状态/可执行动作，不判断是否配置审批。原生按钮与共享官方动作栏使用同一合法动作集合。
+- 本节为裁决与直接实现定位，未修改付款执行代码、未运行数据库写入、不宣称统一完成。下一批从付款提交/审批回调/写入守卫/执行handler一起做最小闭环，定向覆盖无审批、配置单级/多级、规则缺失、错误审批人、在途配置变化和重复回调；使用现有环境与配置恢复机制。模型绑定覆盖守卫缺陷继续登记，不因调整优先级消失。
+
+
+### 53.18 付款审批执行收敛到状态机与公司审批配置
+
+- c4cfd498a clean起步。Formal Product Layer=P1，Layer Target=payment request transitions/approval policy consumption，Module=smart_construction_core；P4仅补同层函数执行回归。行业执行规则放P1，不在P0通用前端/模板、P2客户规则或P3临时配置中复制。Blast Radius为付款提交、批准回调、批准兼容入口、后续结清状态校验及其动作投影/原生按钮；非付款业务方法未改。
+- 提交的原有权限、对象/公司范围、依据/金额/资金门禁、锁与审计保留。提交后由既有公司sc.approval.policy判定：无需审批经私有提交身份推进approved，不伪写validation_status、不制造review；已配置则调用原生request_validation，缺匹配规则抛错。同一重提先用既有restart_validation重置上次审批尝试。未新建工作流引擎或数据字段。
+- action_approve/action_set_approved只委托action_approval_decision；等待/待处理要求真实review和当前can_review，已有完整validated链统一调用_complete_payment_approval。回调也调用同一完成逻辑；未完成多级不推进，重复回调不重复审计。无review不再成为人工放行条件，在途判断不读取后续变更的策略。自动路径是不可伪造的本地对象token，不接受布尔回调标记；原先tier_validation_callback=True绕过完成检查的逻辑退出。
+- write接入已有ScStateMachine.assert_transition，状态机补齐已经真实存在的submit→approved、rejected→submit以及受付款冲销执行保护的done→approved。approved/done是已经取得批准的业务事实，后续办理不再要求虚构审批记录；现金结清/来源/角色门禁仍先于done状态变更。未把自动批准扩展成自动付款。
+- 原生表单移除validate_tier/action_approve/action_set_approved三条重复批准入口，只保留action_approval_decision，保留财务经理组、当前审批人和待审批状态条件。available_actions绑定同一方法，拒绝无review批准，校验当前审批人，提交状态提示调用既有next_state_after_submit；待处理多级不承诺最终approved。删除已经退出原生面的action_set_approved登记，不给旧按钮新增平行语义。
+- L1 ci.local.iteration PASS（approval-unification-iteration-final.log）；L2新增verify.payment.approval_state_machine.unit稳定22项，执行真实生产方法与状态机，含原生/动作描述绑定、无配置自动通过、有配置等待、规则缺失、错误审批人、部分审批、完整审批、重复回调、旧入口统一、金额校验、伪造token/布尔回调拒绝和审批后配置变化。原native coverage 29与semantics15同次通过，日志approval-unification-stable.log；begin/record22。新脚本Make与registry登记、guard.registry.export同步。函数级测试不证明ORM事务回滚/真实权限/模块升级效果。
+- 本批改XML，L3必须通过既有acceptance.module.upgrade针对smart_construction_core升级；当前尚未升级/重载，没有执行任何业务数据库写入。前端输入未变，5180继续复用原产物，不需构建。L4真实配置切换/多级链/返回反馈仍待同一受管环境验证。既有TPL05A49项只作未变范围基线，本次审批变化不能继承其审批结果。
+- 已知未完：拒绝/重提的完整ORM链、审批策略配置变化的运行验证、费用/结算旧批准入口一致性，以及native coverage全局方法名误覆盖缺陷。登记中仍余付款冲销1项不代表全系统只剩1项；模型绑定的只读比较已发现5个隐藏方法（付款action_approve/validate_tier本批退役，另外sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve仍需按所有者统一规则处置）。签署/计划/文档运行验证仍保留，不宣称完整收口。
+- 当前为实现与纯测试完成，批次产品验收verification_pending，整体active；本地提交，不推送、合并或目标部署。
+
+
+### 53.19 审批范围明确为所有业务单据；付款驳回先退出直改状态路径
+
+- 所有者补充强制范围：审批统一逻辑覆盖所有业务单据，付款仅首个修复点，不是最终架构。后续必须复用现有状态机、sc.approval.policy和base_tier_validation的共同机制，不能逐模型复制付款私有审批编排；业务单据各自合法状态、权限、输入校验和审批后执行职责仍由行业/用户契约拥有。配置审批走真实链，无配置提交自动通过，已启用而无规则不放行。
+- 本节已完成P1付款驳回执行修复：payment.request.reject改调action_approval_reject，验证财务权限、当前can_review、实际reviewer及当前sequence；先写review意见，交给原生_rejected_tier记录真实驳回，再由action_on_tier_rejected推进业务状态。回调没有rejected审批事实时不推进，重复回调不重复审计。原生reject_tier仍走相同审批运行时及事实回调，未增加第二套审批引擎。
+- 定向回归verify.payment.approval_state_machine.unit稳定28项、workflow_action_semantics.guard15项通过（approval-rejection-stable.log，begin/record28），L1 ci.local.iteration通过（approval-rejection-iteration.log）。覆盖错误审批人/错误步骤、缺意见、伪造回调、真实意见先于状态推进及专用intent方法绑定。HTTP dispatcher已按失败结果显式rollback，未为猜测另改事务框架。函数测试不等于ORM/数据库恢复验证。
+- 精确读取现有权威清单发现：sc.approval.policy.BUSINESS_MODEL_SELECTION仅17类，_tier_sync_supported仅15类，而workflowContract已有65个profile。它们职责并非等价，不能简单相减或把17类当用户确认的全范围。配置可用范围、审批运行时接入和状态动作投影需要按既有业务职责清单逐项关联；未接入但属于必要业务单据的部分登记产品缺口，不静默采用“不能配置，所以无审批”。不建立平行模型白名单来定义业务规则。
+- 下一步优先共同机制与必要业务单据覆盖，统一提交/通过/拒绝/重提/回调/动作投影，并消除旧并行路径；复用既有workflow/审批配置清单和67条台账。先前付款已通过的函数结果只证明付款范围，不能外推全系统。native coverage按全局方法名误覆盖的问题继续保留，必须绑定model+method再作为全范围证据。
+- 当前未执行模块升级、运行配置写入或业务写入，受管验收仍待。目标由所有者明确为全系统审批一致性，整体接管保持active；不推送、合并、部署。
+
+
+### 53.20 覆盖守卫按模型绑定，显式保留全单据审批缺口
+
+- 3f48ef47c clean起步，上一轮已提交53.19。Formal Product Layer=P4，Layer Target=原生动作覆盖验证，Module=scripts/verify；P1仅更新既有缺口登记，不改变业务语义。将declared_methods从全局方法集合改为(model, method)，复用既有profile loader。新增同名方法跨模型反例，验证另一模型声明不能覆盖本模型按钮，也不能错误判定本模型缺口登记已过期。
+- 修正首次运行准确暴露sc.contract.event.action_reject、sc.expense.claim.action_approve、sc.settlement.order.action_approve三条此前隐藏路径；读取对应真实方法确认都是状态变更，在原native_view_undeclared_actions登记P1产品缺口。已登记状态动作1→4，不是新增业务缺陷，也不是批准旧路径永久保留。67条台账detail.action-state继续开放，范围仍是所有业务单据。
+- L1 make ci.local.iteration PASS（model-bound-coverage-iteration.log）；L2 make verify.native_view.workflow_action_coverage 8+22=30项通过（model-bound-coverage-tests.log），begin/record30。覆盖守卫通过只证明缺口被完整登记于本工具已采用模型范围，不能证明审批全系统接入。付款28项输入未变，复用既有证据。
+- L3/L4未运行：本批仅验证工具/登记，未改产品或数据库，无需模块升级、重建或浏览器矩阵。之前审批XML升级和真实业务验收仍待，不因本节工具通过而关闭。下一步将付款私有提交编排收敛到共享审批机制，推广必要单据并逐项退出登记中的旧并行入口；不复制模型专属审批引擎。
+
+
+### 53.21 提交审批分流收敛为共享策略服务
+
+- 755453829 clean起步。Formal Product Layer=P1，Layer Target=sc.approval.policy私有提交编排，Module=smart_construction_core；行业单据共享执行责任，不放入前端、P2配置或P4脚本。复用现有审批策略及base_tier_validation，不新增引擎、模型、字段或审批事实。各单据仍负责入口权限、业务校验、状态机转换和审计。
+- 新增_start_submission_review(record)，按单据公司读取配置：未配置返回自动通过分支；已配置调用原生request_validation，匹配为空抛配置错误。已有waiting/pending实例禁止重建或自动通过；终结实例经原生restart_validation重置后必须确实清空，否则失败。调用为私有服务，不能由RPC直接发起，提交前置条件由调用单据验证。
+- 付款、费用、结算三条提交路径已实际消费共同机制，删除各自重复的配置/创建review逻辑。费用和结算统一先进入原有submit状态，再由服务决定保持审批中或转各自approved/approve；保留原有业务校验、结算锁和数据验证、费用审计，不伪造validated。付款原有自动批准私有token与金额/状态守卫继续生效。
+- L1 ci.local.iteration PASS（shared-approval-route-iteration.log）。L2 verify.payment.approval_state_machine.unit稳定33项（shared-approval-route-tests.log，begin/record33）：执行实际共享服务，跨模型配置分流、在途配置改变不绕过、原生重置失败拒绝；执行真实费用/结算action_submit，核对业务校验、锁/数据验证、原状态名与审计。新增测试后只重跑受影响目标，不重复其他页面证据。
+- 这是共同机制首次落地，不是全单据完成：其他单据提交消费者、费用/结算旧批准和回调的在途实例权威仍须继续统一，原四项状态动作缺口未关闭。未执行ORM事务/真实多级配置验收，不能把函数测试等同运行验收。此前付款XML仍需受管模块升级，稳定批次统一进行；前端产物不变、不重建、不推送/合并/目标部署。
+
+
+### 53.22 费用/结算旧批准入口退出配置重判放行
+
+- 785094a7f clean起步，P1 smart_construction_core审批执行；共享策略服务新增私有_approve_submission_review，只读取真实review、当前审批状态及can_review，委托原生validate_tier并保留评论向导返回值。无实例/驳回/非当前审批人拒绝，不再以当前策略关闭为在途放行依据。
+- 费用与结算action_approve委托共同决定，再由原审批完成回调执行业务转换。保留费用业务准备检查、财务权限和审计，结算角色、锁、合同/采购严格校验及数据验证。结算草稿不能直接批准；无审批应走已统一的提交路径。费用批准回调要求真实review，费用驳回回调要求rejected事实；终态重复批准回调不重复审计或业务转换。多级审批未完成保持submit。
+- L1 make ci.local.iteration PASS（shared-approval-decision-iteration.log）；L2 verify.payment.approval_state_machine.unit 38项PASS（shared-approval-decision-tests.log，begin/record38）。新增真实共享方法与费用/结算生产方法执行回归，覆盖配置变更不读取、缺实例/错误审批人、评论向导返回、重复完成、部分审批与草稿批准拒绝。函数测试不证明ORM事务或真实审批人权限链。
+- 原生按钮/契约投影尚未统一，四项状态动作登记保持开放；付款已有实例保护，但批准决定尚有局部编排，后续同样消费共享服务。其他业务单据仍须接入，不将两类旧入口修复外推为全系统完成。未重建前端、未写数据库、未运行无关ORM；受管升级和多级审批运行闭环仍待稳定批次执行。
+
+
+### 53.23 费用/结算原生重复批准按钮退出
+
+- 3973fc041 clean起步。P1 smart_construction_core原生视图与现有workflow契约一致性；费用两个表单、结算一个表单移除action_approve重复按钮。既有契约和原生validate_tier/reject_tier均保留，当前审批人及waiting/pending约束保留；action_done作为审批之后的业务办理仍保留。后台兼容action_approve已在53.22委托真实审批实例，本节不删除兼容方法。
+- 原登记的费用/结算action_approve因按钮退出而移除，原生状态动作登记4→2（合同履约事件驳回、付款执行冲销）。这是旧呈现职责退出，不是通过给按钮随意补语义来消项；全单据审批接入与运行态验收未完成，detail.action-state继续开放。
+- L1 ci.local.iteration PASS；L2 native_view.workflow_action_coverage 8+23=31通过，新增解析真实XML和profile的回归，确认三个表单审批方法一致、无重复批准且业务完成动作保留。日志approval-native-exit-iteration.log/approval-native-exit-tests.log，begin/record31。编辑脚本首次正则无匹配、断言在写入前退出，修正后才产生本批变更；最终L1绑定修改后作用域。
+- 未改业务方法，53.22的38项结果输入不变复用。XML需要smart_construction_core受管模块升级，尚未执行；前端无需重建，不跑无关ORM。源代码退出不等于已加载运行候选退出，待稳定后统一升级及定向页面验证。
+
+
+### 53.24 财务单据族成组接入共享提交分流
+
+- 4e8ffeebe clean起步，P1 smart_construction_core：收款收入、付款执行、发票、融资借款、自筹办理、资金对账、结算调整七类action_confirm共同消费sc.approval.policy._start_submission_review。删除七份_request_document_approval及各提交入口重复的公司/策略分支，保留原权限、业务锚点/来源校验、审计、confirmed状态和批准后的独立业务执行。
+- 原七份实现的rejected分支只restart_validation而未重新request_validation；共享路径重置后确认清空并建立真实新链。审批等待期间即使关闭配置也不能直接确认；无配置直接confirmed，不制造review/validated。七类原有draft承载审批中状态保持，以真实review区分，不重建状态框架。
+- L1 ci.local.iteration PASS（finance-family-submit-iteration.log）；L2 verify.payment.approval_state_machine.unit 39项PASS（finance-family-submit-tests.log，begin/record39）。新增参数化执行七个真实action_confirm，每个覆盖无配置、有配置、驳回重提，并检查有配置后的在途关闭拒绝。首次测试失败为测试替身缺payment_execution._assert_finance_handling_access；补该协作者并断言它先执行，生产权限代码未改，失败日志finance-family-submit-tests-initial.log保留。
+- 该族尚未整体关闭：完成/付款/入账入口仍读取当前配置，部分批准回调还需真实实例事实约束，继续列为P1产品工作。下一步统一这些执行边界后再扩展其余业务单据；不能用提交路径测试代替整个生命周期。未写数据库、未重建前端；受管升级与真实多级审批/恢复验收仍待。
+
+
+### 53.25 财务单据按既有批准事实执行，回调不再自行放行
+
+- 891859fb4 clean起步；P1 smart_construction_core审批结果消费。新增共享_assert_submission_approved：后续业务办理要求已确认业务状态，已有review必须validated；未创建review的自动批准仍有效，不受后来配置启用影响。六个后续入口（收款、付款、发票登记、融资完成、自筹完成、资金对账）改消费该门禁，不再重新读取当前策略。资金来源、角色、金额、合同及账务同步逻辑保留。结算调整确认本身即该单据的审批结果，不新增执行步骤。
+- 七类批准/驳回回调均要求真实review及对应validated/rejected结果；中间层审批或伪造直接回调不推进、不产生审计。批准仍只从draft推进confirmed，重复批准不重复推进。驳回原生事实与意见逻辑保持；未宣称重复驳回审计全局幂等已验证。
+- 收款、自筹、融资、对账四类workflow profile退出draft complete，原生完成按钮同步仅confirmed；不让前端猜是否需要审批，也不把审批通过自动变成付款/入账。用户须先提交，无配置时提交自动确认，再执行业务办理。
+- L1 ci.local.iteration PASS（finance-outcome-iteration.log）；L2付款/共享审批41、native coverage8+24=32、semantics15全部PASS（finance-outcome-tests.log，begin/record41）。测试执行七类真实回调，含缺review、pending及真实终结；共享门禁覆盖草稿拒绝、自动批准后启用配置仍可办理、在途关闭仍拒绝；生产动作投影及真实XML验证四类草稿无完成动作。首次测试替身缺发票业务锚点协作者，补齐后重跑受影响目标，产品校验未删除。
+- 这是源码与函数级验证，尚无真实ORM交易/多级审批恢复证据。XML增加四处变更，需与前批统一受管模块升级；必要定向ORM须验证真实权限、事务与旧调用方对“先提交”的适应，不以既有TPL05A49项替代。仍有其他单据族接入、付款批准局部编排、合同履约事件及付款冲销投影等缺口；总体目标保持active，无推送/合并/目标部署。
+
+
+### 53.26 合同族提交/审批回调收敛
+
+- 48d6c25ad clean起步；P1 smart_construction_core的一般合同与项目合同。action_confirm共同使用已有共享提交服务，删除两份申请审批助手及项目合同局部配置判断助手；保留一般合同业务锚点、项目合同状态消息与原confirmed业务状态。不调整签署或执行语义。
+- 已有真实validated链可完成其回调；其他提交走共享分流，无配置自动确认、配置审批建立真实链、驳回重提重建。两类回调要求实际review与对应结果，仅从draft推进，终态重复回调无副作用，不重读策略、不再次发起审批。一般合同原回调循环结束后无条件action_confirm会让部分审批重新进入提交路径，本节删除该递归编排。
+- L1 ci.local.iteration PASS（contract-approval-iteration.log）。L2共享审批42、native coverage8+24=32通过（contract-approval-tests.log，begin/record42），执行两类真实提交与回调，覆盖有/无配置、重提、部分审批后配置关闭、完整回调和缺review反例；既有签署回归随native目标通过。无ORM/数据库写入，无前端重建。
+- 采购button_confirm仍按可变配置过滤执行集合，物资计划仍固定申请审批并有直接批准路径，已读取直接方法明确后续责任；不是重新全仓盘点。合同后续执行入口前置条件、其余单据族与付款局部审批编排仍须收敛；两项原生状态动作缺口、受管模块升级和真实业务验收继续保留。总体active，不推送/合并/目标部署。
+
+
+### 53.27 采购确认集合按真实审批结果形成
+
+- 85e1bff94 clean起步；P1 smart_construction_core.purchase_extend。button_confirm复用_start_submission_review，新提交无配置或已有review且validated才进入to_confirm；不再第二次读取当前策略来过滤集合。保留项目暂停/关闭校验、原生super采购确认及已有成本台账调用。删除重复_requires_purchase_approval/_request_purchase_validation。
+- 审批中关闭配置无法确认；驳回重提建立新链；批准/驳回回调都要求真实review结果。非draft/sent重复确认不触发原生确认或台账，也不误提示“已提交审批”。该状态分流不替代原生采购数量、供应商、权限、双重验证及账务规则。
+- L1 ci.local.iteration PASS（purchase-approval-iteration.log），L2 verify.payment.approval_state_machine.unit 43项PASS（purchase-approval-tests.log，begin/record43）。新增真实button_confirm执行，隔离原生父类与台账协作者，覆盖无配置、有配置、驳回重提、validated、在途关闭及重复确认；这不证明真实原生采购/成本台账ORM行为，相关集成验收仍必要。
+- 不重建前端、不写验收业务数据；物资计划固定审批/直接批准、其余单据类型、付款局部编排和合同执行前置条件继续待收敛，两项原生动作产品缺口未关闭。后续仍需受管模块升级和真实配置/业务闭环，不把函数测试外推为总体完成。
+
+
+### 53.28 物资计划提交/批准/驳回接入共享机制
+
+- 36fa7a954 clean起步；P1 smart_construction_core物资计划生命周期。提交保留发起权限、业务锚点、单位归一、编号、提交人/时间及审计，改用共享配置分流。无配置直接approved，approved_by=False，不伪造人工批准人或validated；自动结果使用material_plan_approved审计且action_submit来源。
+- action_approve委托已有共享真实审批决定，action_reject委托新增共享_reject_submission_review；有显式意见时核对真实reviewer/sequence后写意见并走原生_rejected_tier，无意见保留原生驳回向导。旧动作不再直接写批准/驳回状态。回调要求review及对应validated/rejected，只有submit可推进，部分/重复回调不再触发错误状态变更。保留物资经理限制、待办清理及审计；原生驳回回调从真实review取意见。
+- L1 ci.local.iteration通过（material-approval-iteration.log）；最终补回两处原有待办清理后定向生产方法编译及45项测试通过（material-approval-tests.log，begin/record45），未变架构/路径规则沿用L1结论。测试覆盖真实物资提交/批准与回调、自动批准人为空、部分审批、完整/重复批准、缺事实驳回，以及共享驳回的实际审批人、意见与向导返回。真实ORM权限/事务/多级运行仍待，函数协作者不能替代该验收。
+- 未改前端/XML、不重建、不写业务数据。尚待付款局部批准/驳回也复用共享服务、出库和其他未接入业务单据范围、合同执行前置条件、两项原生动作缺口及受管升级/真实业务验收。总体active，不推送/合并/目标部署。
+
+
+### 53.29 付款批准/驳回消费共享决定服务
+
+- b20352338 clean起步，P1 smart_construction_core付款适配。action_approval_decision改调共享_approve_submission_review；action_approval_reject删除本地review筛选/写意见/原生驳回编排，改调共享_reject_submission_review。财务权限、金额一致性、余额/提示、驳回必填原因、付款完成状态守卫保留，不把领域规则移入共享服务。
+- 共享当前审批人/步骤权限失败使用AccessError，缺实例或不合法审批状态仍为业务错误；付款既有错误审批人拒绝语义未降级。原生意见向导action完整返回，尚未提交意见时付款保持submit。
+- L1 ci.local.iteration PASS（payment-shared-decisions-iteration.log），L2 verify.payment.approval_state_machine.unit最终46项PASS（payment-shared-decisions-tests.log，begin/record46），既有付款真实方法回归现在经过共同服务；新增付款原生向导返回及不提前状态变更反例。无模型字段/XML变化，不重建前端，运行态重载与前批XML升级统一待执行。
+- 此处完成已接入付款消费者的重复编排退出；不等于所有业务单据已覆盖。下一步材料出库、既有配置/运行支持缺口及合同执行边界仍按原产品范围收敛；两条原生状态动作登记和真实ORM/浏览器审批闭环保持未完成。
+
+
+### 53.30 材料出库审批与实际出库分离
+
+- 1b62c67f4 clean起步；P1 smart_construction_core材料出库生命周期。原action_issue仅对loss读取配置，批准回调直接_complete_issue写库存/成本；不符合提交统一分流及审批不代替业务执行。新增approved（已批准）状态，submitted明确审批中；提交对issue/return/transfer/loss共同调用共享服务，无配置直接approved、有配置等待真实review。启用审批却规则只覆盖部分类型仍按共享服务报缺规则，不静默放行其他类型。
+- 审批回调要求真实review结果，通过仅submitted→approved，驳回submitted→draft并记录原因/审计；删除loss专属配置/申请编排。实际action_issue要求approved且共享批准事实门禁通过，再调用原_complete_issue。项目成本、退回数量锁、调拨入库、库存执行逻辑未改，审批不执行它们。主单与明细修改/删除锁加入approved，取消可从approved进入cancel。
+- workflow profile和原生页面同步新增approved，只在approved暴露确认出库；新增真实can_review/validation_status批准驳回按钮。顺带修正直接相关旧不一致：reset模型只接受cancel，契约/原生旧submitted重置入口改为cancel；不改重置业务方法。
+- L1 ci.local.iteration PASS（outbound-approval-iteration.log）；L2共享审批47、native32、semantics15通过（outbound-approval-tests.log，begin/record47），state_phase16通过（outbound-phase-tests.log，65模型状态覆盖）。新增执行四类出库真实提交/回调/出库入口，确认有/无配置均不会在审批阶段触发_complete_issue，未批准拒绝执行、批准后仅显式办理才调用。库存/台账协作者隔离，真实ORM业务验收仍待。
+- 新增selection值和XML必须受管模块升级；不自动将既有submitted数据认作approved。既有无审批实例submitted记录需要在验收/迁移时逐项处理，现有受控cancel→draft→重新提交可用，不偷偷批量改历史数据。已在审批中的真实validated回调可完成批准；已issued事实不改。未执行数据库写入或前端重建。
+- 配置选择17类/运行支持15类不等于全业务单据完成；后续继续既有职责范围内必要接入、合同执行边界、两项原生动作缺口与受管升级/真实验证。总体active，不推送/合并/目标部署。
+
+
+### 53.31 项目合同执行入口与既有批准契约对齐
+
+- 665245103 clean起步。P1 smart_construction_core项目合同生命周期及三张原生合同表单。workflow已仅confirmed声明activate，但action_set_running及原生按钮仍接受draft。本批执行入口改用共享_assert_submission_approved(confirmed)，关闭入口在原confirmed/running状态限制和明细检查外，同样要求既有实例通过。不读取当前配置推翻自动批准，不允许草稿直接执行。
+- 三张原生合同表单开始执行按钮改为confirmed条件，保留合同经理组。有效契约既有状态职责不变；原始models、收入合同、支出合同投影均验证只有confirmed提供action_set_running。保留原运行/关闭状态消息和无明细不能关闭的业务校验。
+- L1 ci.local.iteration PASS（contract-execution-iteration.log），L2共享审批48、native8+25=33通过（contract-execution-tests.log，begin/record48）。执行真实开始/关闭方法，覆盖草稿包括有validated实例也拒绝、自动批准后配置变化可执行、pending拒绝、完整review通过，以及关闭明细检查；解析实际XML核对三张表单与三类profile动作。
+- XML仍待统一受管升级，真实权限/运行尚未验证；无数据库写入、无前端重建。后续需要对既有审批支持清单之外的必要业务单据确认有效契约接入，处理两项原生动作产品缺口，并运行已积累改动的受管升级/定向ORM和真实业务闭环。总体目标继续active，不据这81项窄测试宣称全系统完成。
+
+
+### 53.32 累计审批改动受管升级与付款只读页面验证
+
+- 4b8c4397e clean候选。P4执行既有受管入口验证P1累计模型/XML，不新建环境。目标角色=内部隔离验收租户，tenant/environment=sc_frontend_acceptance/local；非平台控制库、非行业目录、非客户生产库，既有fixture允许，客户生产数据不进入本次操作。preflight确认project=sc-fe-r2-p1-01、dbfilter=^sc_frontend_acceptance$，db/redis/filestore分别sc_fe_r2_p1_01_db/redis/odoo。日志approval-runtime-preflight.log。
+- L3 make acceptance.module.upgrade SC_ACCEPTANCE_RUNTIME_PROFILE=local MODULE=smart_construction_core CODEX_MODE=gate CODEX_NEED_UPGRADE=1成功，真实registry加载66.793秒并正常退出（approval-module-upgrade.log）。升级初始日志目录不可创建后回退stdout，完整日志已留存；不是模块加载失败。受管入口重建其登记redis容器，未更换数据库或卷。
+- make backend.acceptance.up受管识别旧SC_SOURCE_REVISION后替换旧后端，重新加载4b8c4397e2a0de6b24749f2a1826e8c7bc13629f；source fingerprint=12831d00b85a6886cb51fd23ae21641362e6f5d724e2f067eb20532664d0dfb6。backend.acceptance.health PASS，端口18082；日志approval-backend-up.log/approval-backend-health.log。此为本地验收更新，不是目标环境部署或主线集成。
+- L4复用原5180静态产物，TPL07_SCOPE=detail-state make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local，29项PASS（approval-detail-state-browser.log；tpl07-1790772544286/report.json）。既有finance角色读取付款1710 approved，双视口官方详情状态限制反馈通过，errors=[]、forbiddenWrites=[]，无业务写入。build.base_sha仍0d2c6190a6df7dcbd90f5f1dad23a18fea3fdfff，entry=/assets/index-BEqhG955.js，entry_sha256=4d954cbf38b86a8ab8e4c9cf383229dd7f70908b09743c7802f0dd32c1084aa5；端侧输入不变所以不构建。
+- 该29项只证明共享页面消费已加载契约，不证明审批办理闭环。现有business_config_approval_runtime_smoke允许validation_status=no，finance_document_tier_runtime_smoke通过SQL/_set_validated伪造结果，均不能直接用于本次真实审批验收；后续应在现有工具上修正真实review执行及配置恢复，不新增fixture权威。未运行这些不适用工具，不以旧证据冒充新规则通过。
+- 已完成本候选L3升级与所述只读页面验证；全单据覆盖、两项原生产品动作、审批开关/多级链/异常回滚和真实业务办理等仍未完成，总体active。无推送、合并或目标环境部署。
+
+
+### 53.33 既有审批smoke改为真实review并完成受管运行
+
+- 9bf7c6e9b clean起步；P4验证工具，业务产品输入沿4b8c4397e加载版本不变。复用business_config_approval_runtime_smoke与现有verify.business_config.approval_runtime：显式SC_ACCEPTANCE_RUNTIME_PROFILE=local时经现有operation_entry→standard-approval-runtime，复用preflight和backend代码身份检查后在受管后端执行。其他原入口保留，未组装新环境/凭据/fixture体系。
+- smoke不再接受no审批状态：启用配置必须有真实review且waiting/pending；修改为无需审批后，待办实例不能通过回调放行；遍历真实reviewer_ids，以with_user用户身份和can_review选择当前审批人调用validate_tier，要求每次真实review状态推进，最多32步。完成后业务approved且全部review approved；另验证无配置提交approved、无review且validation_status=no。不写SQL或validated字段，不强制调用审批完成回调冒充审批成功。
+- 保留原工具事务内创建项目/客商/费用及附件方案，不新增持久fixture；finally回滚，invalidate缓存后回读原策略字段/步骤身份一致，并核对临时项目/客商/费用不存在。PASS仅在恢复核对后输出。目标仍sc_frontend_acceptance内部隔离验收租户、精确filter与既有filestore，沿53.32身份；无付款/入账操作。
+- L1 ci.local.iteration通过（real-review-smoke-iteration.log），工具py_compile/bash语法通过；L2既有standard_preview.unit9通过（real-review-wrapper-tests.log）。首次真实运行失败：原项目helper未设置company_id，现行费用创建校验拒绝；ROLLBACK=VERIFIED，归因P4旧测试数据契约漂移（real-review-runtime-project-failure.log）。补项目company_id=_env().company.id，未改产品校验；脚本编译后受管定向重跑。
+- make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local真实运行5项PASS、ROLLBACK=VERIFIED（real-review-runtime.log）。这是费用单代表审批运行证据；不能外推全单据、多级指定顺序、错误审批人、缺规则、驳回重提、浏览器操作或付款/库存事务均已完成。未重载未变后端、未升级第二次、未构建前端。
+- 下一步沿同一工具补必要异常/多级和恢复断言，同时继续全单据有效契约缺口及两项原生动作收口。批次局部验证通过，总体active，无推送/合并/目标部署。
+
+
+### 53.34 真实缺规则拒绝与驳回重提闭环
+
+- b65d1c839 clean起步，P4仅扩展同一business_config_approval_runtime_smoke。沿53.33受管验收身份，backend4b8c4397e及前端输入不变，不重载/升级/构建。L1 ci.local.iteration通过（approval-exceptions-iteration.log），脚本编译通过；受管封装输入未变，9项封装证据复用，不重跑无关测试。
+- 临时将已有有效步骤金额下限置高于测试费用，配置仍启用。提交在保存点内失败，错误为缺匹配规则，回读仍draft且无review；随后恢复原步骤金额条件。不是删除规则或绕过产品验证。
+- 真实当前审批人经共享驳回服务与原生_rejected_tier执行，业务回draft，驳回原因保留，sc.audit.log的expense_claim_rejected恰好1条。原生tier.validation在submit→draft时删除本次review，validation_status回no；首次断言错误要求rejected持久存在而失败，回滚仍VERIFIED（approval-exceptions-native-reset-failure.log）。核对原生_allow_to_remove_reviews后修正工具断言，未为测试修改产品。
+- 重提创建新的真实review IDs，与旧ID不相交，再由真实审批人validate_tier完成approved/validated。保存原策略和步骤active/sequence/group/amount/tier_definition身份，最终rollback后回读完全一致，临时项目/客商/费用不存在。
+- make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终8项PASS、ROLLBACK=VERIFIED（approval-exceptions-runtime.log）。其中原5项随着同一配置事务复验，新3项是缺规则保存点回滚、驳回原因/审计及新链重提。仍仅费用代表路径，不代表指定多级顺序/越权/所有业务模型及前端办理均通过。总体active；两项原生动作缺口、全单据必要能力及剩余真实业务验收继续推进，无远端或目标部署。
+
+
+### 53.35 多级运行发现停用步骤未撤销定义，修复共同同步
+
+- 7819842e7 clean起步，P4原smoke增加两级linear与现有fixture非审批人拒绝场景，事务结束核对原策略/步骤恢复。首次配置创建遗漏必填approval_scope_key，补既有组到岗位映射（approval-linear-scope-failure.log），未改约束。第二次发现实际生成3条review；定向诊断确认两条新linear步骤之外仍有旧“财务中心审核”active定义，approve_sequence=False（approval-linear-runtime.log）。所有失败均ROLLBACK=VERIFIED。
+- 归因P1产品缺陷：sc.approval.policy.sync_tier_definitions默认active_test隐藏停用step，无法把旧tier.definition.active同步为False，也无法更新其模式。修复为在既有同步流程使用active_test=False遍历完整步骤；不扩大模型范围、不删除审批实例、不新增引擎。新增执行实际同步方法的回归：停用步骤必须向旧定义写active=False。
+- L1 ci.local.iteration PASS（approval-inactive-sync-iteration.log）；L2共享审批49项PASS（approval-inactive-sync-tests.log）。当前提交是待运行复验候选，需受管重载后端后再次运行同一多级场景；无字段/XML变化，不需再次模块升级或前端构建。总体目标保持active，不能把定位或纯测试当作多级运行已通过。
+
+
+### 53.36 停用定义修复运行通过，两步与非审批人拒绝验证
+
+- 4880989f8候选经backend.acceptance.up受管重载成功（approval-inactive-backend-up.log），无模块再次升级、无前端构建。原失败完整日志保留approval-linear-stale-definition-failure.log；未改配置绕过旧定义缺陷。
+- 同一受管verify.business_config.approval_runtime最终12项PASS、ROLLBACK=VERIFIED（approval-linear-runtime.log）。新证据为正好两条linear review、既有非审批fixture角色被AccessError拒绝且无review推进、一次validate_tier仅完成一级且业务仍submit、第二次完成后才approved。原8项随同一事务仍通过，策略/步骤含approval_scope_key回读恢复、临时单据不存在。
+- 覆盖边界：两个步骤复用同一合资格审批组，证明分次推进而非两个不同人的岗位流转；非审批人拒绝可能发生于对象访问或审批能力层，不宣称覆盖所有权限层。尚未断言配置sequence10先于20的精确方向；此前诊断显示原生review排序与配置序号需要进一步核对，不能把本12项当作配置顺序完全一致。下一步补绑定definition/step的顺序断言，再处理必要全单据与两条原生业务动作缺口。总体active，未推送/合并/目标部署。
+
+
+### 53.37 全单据共同审批适配修正配置步骤顺序
+
+- dbcb0545f clean起步，沿用所有业务单据统一审批决策；已有17类配置/15类运行支持不是范围上限。P1 smart_construction_core共同审批适配，P4既有rollback smoke补definition绑定断言；非用户专属规则，不在前端或测试工具实现审批语义。
+- 新断言在现有受管sc_frontend_acceptance/local环境实证失败：实际definition顺序[4983,4982]，配置10→20对应[4982,4983]；ROLLBACK=VERIFIED（approval-order-runtime-failure.log）。OCA request_validation固定sequence desc，而配置按sequence,id升序。共同适配改用配置排序位置的负值作为原生优先级，保证零值、负值和并列序号也保持配置顺序；不修改OCA，不重排在途review实例。
+- L1 ci.local.iteration PASS（approval-order-iteration.log）；L2 verify.payment.approval_state_machine.unit 50项PASS（approval-order-tests.log，begin/record50）。新增执行真实_tier_definition_vals的方法测试，按原生降序恢复配置顺序。方法改动无需模块升级，提交后受管重载及真实顺序复验待执行；前端输入未变，不构建/不跑浏览器矩阵。
+- 既有持久tier.definition需通过原配置同步机制重新投影才应用新顺序；本轮不擅自批量改租户配置。在途实例不迁移。全单据缺失接入、不同审批人流转及两项原生业务动作仍为产品缺口；总体active。
+
+
+### 53.38 配置顺序修复真实运行通过
+
+- 7c3667740 clean候选经backend.acceptance.up受管重载，沿用sc_frontend_acceptance/local既有身份（approval-order-backend-up.log）。未再次升级模块、构建前端或运行无关ORM。
+- verify.business_config.approval_runtime 12项PASS、ROLLBACK=VERIFIED（approval-order-runtime.log）：配置10→20对应definition与实际review.sequence升序完全一致；首次真实validate_tier批准的definition明确是第10步，业务仍submit；最后一步才approved。启用、关闭、在途配置变化、缺规则、驳回重提、非审批人拒绝同事务仍通过，原策略/步骤回读一致、临时单据清理已核对。
+- 本批配置顺序缺陷定向验收完成；复用同一组审批人，不声称不同岗位链或全业务单据已验收。持久旧定义重新同步、支持清单外必要单据、两项原生业务动作仍按既有产品缺口推进。总体active；主线未集成、目标未部署、全产品用户验收未完成。
+
+
+### 53.39 付款执行状态动作与既有领域契约对齐
+
+- 34c4777b8 clean起步；P1 smart_construction_core工作流契约投影，非客户配置、非前端推断。只读取既有两项登记缺口及直接模型/原生视图/领域契约。payment-execution.yaml已声明paid独立reverse_payment→cancel，而profile仍给paid错误action_cancel、给draft提前action_paid。本批按权威领域边界修正：draft提交/取消，confirmed付款/取消，paid独立撤销付款；新增reverse_payment动作键绑定既有action_reverse_payment，标签撤销付款。
+- purpose沿既有cancel_record表示目标取消事实，但key/method明确区分付款前取消与已付款冲销；不改台账、冲销原因、财务授权或cancellation_kind。登记中错误paid→reversed说明随已解决条目退出；实际状态是cancel/payment_reversed。合同履约事件尚缺共享审批接入，继续为产品缺口，不通过直接补action_reject投影掩盖。
+- L1 make ci.local.iteration PASS（payment-reversal-contract-iteration.log）。L2 native coverage 8+26=34（payment-reversal-contract-tests.log，begin/record34），workflow_action_semantics15（payment-reversal-semantics-tests.log），payment approval50（payment-reversal-approval-tests.log）全部PASS。新增实际_available_actions执行覆盖六种状态及target/label/purpose，与原生财务组、付款/冲销状态条件核对。注册27项=12helper+14navigation+1state gap。
+- 方法常量变化无字段/XML变化，无需模块升级或前端构建；后端受管重载及有效契约/浏览器冲销入口仍待验证，不以离线测试宣称资金冲销业务验收通过。不重新执行费用审批12项（输入无依赖变化）。仍需全单据必要接入、持久审批定义同步及相关实际业务验证。总体active，未推送、合并、目标部署。
+
+
+### 53.40 合同履约事件接入共同审批，原生未声明状态动作归零
+
+- 747d380ef clean起步。P1 smart_construction_core合同履约事件；现有直接状态批准/驳回且无配置支持属于已确认全单据产品缺口。新增tier.validation继承、project公司相关字段、驳回原因；审批配置选择、同步支持、OCA可选模型、金额影响条件及既有回调XML共同接入。复用已登记finance_document_tier_actions.xml，未新建模块或审批引擎。
+- action_submit保留日期/合同项目校验，在submitted调用共同_start_submission_review；无配置批准但不完成事件。兼容action_approve/action_reject委托共同实际review决策；通过/驳回回调要求submitted及真实review最终结果，驳回保留意见；完成要求原approved条件与共同批准事实门禁。原生按钮改validate_tier/reject_tier并受can_review/validation_status约束，驳回后可重提。profile同步审批动作、重提，去掉模型不允许的approved取消；原生取消同样限draft/submitted/rejected。
+- L1 ci.local.iteration PASS（contract-event-approval-iteration.log）。L2审批51、native8+27=35、semantics15 PASS（contract-event-approval-tests.log）。新增实际方法测试覆盖有/无配置分流、共同审批委托、伪造/中间回调拒绝、真实通过与独立完成、业务anchor失败；新增实际契约当前审批人/重提/完成动作与原生入口一致性测试。补登记新直接输入后旧begin回执被正确拒绝，按新输入重新begin并执行51项后record（contract-event-approval-final-*）；不冒用旧身份。
+- 最后补原生驳回原因字段显示，XML解析通过，无业务方法再改。登记剩余合同事件直接action_reject按钮已退出，native registry=26（12helper+14navigation），state_transition_undeclared=0只表示当前登记缺口已编码，不能证明全单据覆盖或运行正确。detail.action-state继续open。
+- 新字段/继承/selection/XML需受管模块升级与后端重载；本提交尚未执行，必须先完成再做真实事件审批/拒绝/重提验证。同批付款冲销有效契约仍需运行核对。前端不变，不构建；不以纯测试宣称全系统接管或审批验收完成。总体active，无推送、合并或目标部署。
+
+
+### 53.41 合同履约事件受管升级与真实审批通过
+
+- b985a026b候选，P4运行验证P1新增模型能力；既有内部隔离验收tenant/database=sc_frontend_acceptance，profile=local，project=sc-fe-r2-p1-01，精确filter=^sc_frontend_acceptance$及sc_fe_r2_p1_01_db/redis/odoo卷复用。acceptance.module.upgrade MODULE=smart_construction_core CODEX_MODE=gate CODEX_NEED_UPGRADE=1成功，registry66.151秒（contract-event-module-upgrade.log）；backend.acceptance.up受管重载完成（contract-event-backend-up.log）。前端输入不变，无构建。
+- P4在原business_config_approval_runtime_smoke同一回滚事务增加合同事件5项，不新增环境/fixture权威。不覆盖已有事件策略：精确公司/全局范围内如已有策略（含停用）即拒绝。先验证不存在配置时submit→approved且无review、不自动done；再事务内创建策略/步骤，复用已有审批组，真实request_validation及with_user审批人validate_tier→approved，显式action_done后才done。
+- 新事件真实审批人经共同拒绝服务→原生驳回→业务rejected，原因一致；重提新review IDs与旧链不相交，真实批准到approved。临时事件/策略和原项目/客商/费用统一登记，finally rollback后均不存在；原费用策略/步骤完整回读一致。
+- L1 ci.local.iteration PASS、py_compile通过（contract-event-runtime-iteration.log）。受管verify.business_config.approval_runtime最终17项PASS、ROLLBACK=VERIFIED（contract-event-runtime.log）：既有费用12项及新增事件5项。这是本次新增tier/config/callback真实运行检查，不是全模块ORM扫描；封装未变，复用原9项wrapper证据。最后仅修改脚本说明为实际两类覆盖，不失效执行证据。
+- 本轮证明合同事件所述模型审批链，但尚未验证合同事件的最终ui.contract/浏览器办理、不同审批岗位以及全部业务单据；付款冲销有效契约/真实执行仍待。登记state gap归零不代表全系统交付，detail.action-state继续open。主线未集成、目标未部署、用户整体验收未完成，总体active。
+
+
+### 53.42 已付款官方详情动作验证，合同事件缺可用页面记录
+
+- 45ec5095f clean起步，P4在既有standard_page_type_browser新增approval-actions只读范围；复用受管入口/5180产物/fixture登录，api.data只查询现有记录，不创建业务数据、不执行资金冲销。受限TPL07_APPROVAL_MODEL仅允许合同事件或付款执行，用于独立未覆盖面的检查，未知模型拒绝。L1 ci.local.iteration PASS（approval-actions-browser-iteration.log），新增分支node --check通过；后续模型选择增量语法通过。
+- 首次合同操作员fixture_role_contract_operator查询sc.contract.event成功但当前公司8作用域内records=[]，断言失败（approval-actions-browser.log；tpl07-1790773719865/report.json），errors=[]、forbiddenWrites=[]。这是当前授权范围缺可用浏览器验收记录，不证明全库为空，也不是已通过。未换高权限角色绕过、未造额外fixture；合同事件UI验收保持pending。
+- 独立执行TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.payment.execution受管browser，finance在原授权范围读取现有paid记录186，16项PASS（payment-reversal-browser.log；tpl07-1790773738989/report.json）。有效ui.contract模型/state一致，actionRuleList中的action_reverse_payment为原生object动作、label撤销付款、actionSemantics=business/cancel_record/contract.action；页面该按钮恰好1，取消/已付款按钮0。官方readonly详情单一路径且有非零facts，1440/390无溢出，截图在同一目录，errors=[]、forbiddenWrites=[]。
+- 复用原静态build身份和已加载b985a026b后端（后续仅工具/记录变化），未构建/升级/重载。该16项证明冲销入口呈现及有效契约，不证明真实资金冲销成功；不点击按钮制造资金副作用。工具捕获的actionSafety仍标safe，后续需核对既有资金动作确认规则归属，不能从本次只读页面通过推出执行安全已验收。
+- 总体active：合同事件页面数据前提、资金冲销实际办理、不同审批人/必要全单据覆盖等继续；登记归零不关闭detail.action-state。未推送、合并或目标部署。
+
+
+### 53.43 付款冲销由原生契约声明执行前确认
+
+- 02722f3d1 clean起步，P1原生payment_execution视图；P4定向验证。追踪既有parser→actionSafety→contractActionConfirmationPrompt→共享IntentConfirmationDialog，确认能力已存在，缺的是冲销原生按钮confirm声明。原生补后果说明：冲销对应台账并将已完成付款申请退回已批准，不给前端增加模型判断或词法猜测。
+- L1 ci.local.iteration PASS（payment-reversal-confirm-iteration.log），L2 native8+28=36 PASS（payment-reversal-confirm-tests.log，begin/record36）。新增执行实际parser安全投影方法，读取真实XML并断言danger/requires_confirm/准确文案。浏览器定向分支增加有效契约确认断言、点击打开后取消，沿既有拦截禁止业务写入；node --check通过。
+- 本候选XML需受管升级后验证页面，未以静态测试宣称确认框已运行通过。前端源码/产物未改，无需构建。全单据审批及合同事件页面数据前提等原缺口保留；总体active，无远端/目标部署。
+
+
+### 53.44 付款冲销确认框真实页面验证通过
+
+- 20f359069经受管acceptance.module.upgrade及backend.acceptance.up成功，日志payment-reversal-confirm-upgrade.log/payment-reversal-confirm-backend.log；沿用sc_frontend_acceptance/local、精确过滤与原卷，无新环境。既有5180静态产物不变。
+- TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.payment.execution受管browser19项PASS（payment-reversal-confirm-browser.log；tpl07-1790773977925/report.json）。finance既有paid186有效契约requires_confirm=true/classification=danger，点击撤销付款打开共享确认弹层，后果文案与契约一致，点击取消后关闭且forbiddenWrites=[]，errors=[]。原双视口/单一官方详情/入口状态检查继续通过。未执行实际台账冲销，未改付款数据。
+- 该声明与共享消费闭环完成，合同事件页面无授权范围数据的前提仍未变化，不重试；全部业务单据审批覆盖与真实资金事务未由本次通过推定。下一步沿已登记必要业务缺口继续收敛，包括sc.plan原生状态条件旧不一致及现有配置支持之外的单据；不重新全仓审计。总体active，主线/目标部署/整体验收未完成。
+
+
+### 53.45 计划原生按钮与状态机/契约对齐
+
+- d97d8bc45 clean起步，P1 sc.plan原生视图。复用53.16登记缺口，只核对plan_management.py、原生视图及既有workflow profile。模型完成仅in_progress、重置仅cancel、取消仅draft/confirmed/in_progress；原生此前分别额外允许confirmed、所有非draft、所有非done/cancel。按模型现有规则修正三个invisible表达式，profile已正确不再修改。
+- L1 ci.local.iteration PASS（plan-state-iteration.log）；L2 native8+29=37 PASS（plan-state-tests.log，begin/record37）。新增测试执行模型五个实际动作，隔离日期/业务anchor协作者，逐draft/confirmed/in_progress/done/cancel/unknown比较可执行方法、实际XML可见集合和实际_available_actions输出一致。测试不是按标签或方法名称推导许可。新增相关模型/视图及前轮parser实际依赖至原native_action_coverage输入登记。
+- 本批只修正呈现状态边界；sc.plan尚无tier继承/审批配置支持，仍直接确认，按所有业务单据统一规则这是必要产品缺口，不计作自动审批已接入。下一步在同一产品批次补既有共同审批适配后统一受管升级与真实验证，不为本次三个视图属性单独升级/浏览器矩阵。既有付款19项及审批17项不因本次无依赖变更重跑。
+- XML待受管升级，不能宣称已加载；前端产物不变。总体active，主线未集成、目标未部署、整体验收未完成。
+
+
+### 53.46 计划单接入共享审批配置与运行机制
+
+- 222b47903 clean起步；P1 smart_construction_core的sc.plan业务能力，遵循所有业务单据统一审批要求。复用tier.validation与sc.approval.policy，新增配置选择/同步支持/OCA模型名单和既有回调XML；公司字段沿用原模型，不新增公司权威。新增reject_reason保存驳回意见。非客户特例，不由前端或工具决定审批分流。
+- action_confirm保留draft和日期/节点前置校验，调用共同_start_submission_review；配置审批则保持draft由原生validation_status表达审批进度，未配置则confirmed。真实review validated回调检查计划条件后confirmed，伪造/中间结果不推进；真实rejected回调保存原因，重提依共同服务重置旧链。开始/完成继续独立执行，在既有状态/日期/节点校验之外加入共同批准事实门禁。
+- 原生视图添加can_review/validation_status与validate_tier/reject_tier，审批中不重复显示确认；profile声明同一审批动作。上一轮完成/取消/重置条件继续保持。兼容原draft/confirmed/in_progress/done/cancel状态，没有新状态或自动迁移已有业务记录。
+- L1 ci.local.iteration PASS（plan-approval-iteration.log）；L2审批52、native8+29=37、semantics15 PASS（plan-approval-tests.log，begin/record52）。新增执行实际确认/回调/开始/完成方法，验证配置分流、伪造/中间结果拒绝、通过不自动开始、独立开始/完成及节点完成校验仍调用；视图状态测试使用无配置协作者继续校对原动作状态边界。新增模型/视图输入注册于原审批检查。
+- 新字段/tier继承/selection/XML需统一受管升级，53.45视图亦随本批加载。下一步扩展同一rollback smoke验证计划有/无配置、真实审批/驳回重提及独立开始/完成，再做相关有效契约消费；本次尚无真实ORM通过证据。前端输入不变，无构建；总体active，未推送、合并或目标部署。
+
+
+### 53.47 计划单共享审批真实运行通过
+
+- 478215ca4候选，P4复用既有受管acceptance.module.upgrade与backend.acceptance.up验证P1累计53.45/46字段/原生视图/回调。sc_frontend_acceptance/local内部隔离验收租户、sc-fe-r2-p1-01、精确filter及原db/redis/filestore卷不变。升级registry68.600秒成功（plan-approval-upgrade.log），后端重载成功（plan-approval-backend.log）；前端未构建。
+- 原rollback smoke扩展计划5项，创建记录和策略全部在原事务登记，若公司/全局已有计划策略（含停用）则拒绝覆盖。无配置确认到confirmed、无review、无实际开始日期；配置下draft且真实review pending/waiting，action_start在savepoint明确拒绝，无开始日期。实际审批人validate_tier通过后仅confirmed，显式action_start才in_progress并写actual_start，显式action_done才done并写actual_finish。
+- 真实审批人经共同拒绝服务驳回，draft保留原因；重提review IDs与旧链不相交，原生批准后confirmed且原因清空。finally rollback回读原费用策略/步骤一致，所有临时计划/事件/策略/项目/客商/费用不存在。没有直接写审批结果，没有新环境或持久fixture。
+- L1 ci.local.iteration/py_compile PASS（plan-approval-runtime-iteration.log）。受管verify.business_config.approval_runtime22项PASS、ROLLBACK=VERIFIED（plan-approval-runtime.log），其中费用12+事件5沿同一事务验证、计划新增5。封装不变，原wrapper9证据复用；不以22项代表全部业务单据或浏览器完成。
+- 计划有效契约/浏览器、不同审批岗位、实际金融冲销与总体必要单据覆盖继续待验。沿已有profile顺序定向核对下一项sc.construction.diary：模型仅mail继承、直接action_confirm/action_done，profile draft仍包含complete，未接共享审批，是既有正式单据的后续产品缺口；本轮未改日志模型，不新建盘点表。总体active，无远端/目标部署。
+
+
+### 53.48 施工日志共享审批接入，关闭草稿直接完成
+
+- 75834d4a1 clean起步，P1 smart_construction_core施工日志正式业务能力。原模型无tier继承、配置无支持且draft可直接done，属于全单据统一审批缺口。新增tier继承、项目公司相关字段、驳回原因，配置选择/同步支持/OCA模型列表及原回调XML纳入sc.construction.diary。沿既有机制，不新建审批引擎或前端业务分流。
+- 确认保留日期、标题、日志类型、非负人数及至少一项内容检查；调用共同_start_submission_review，配置审批保持draft等原生review结果，无配置校验后confirmed。通过回调只接受真实validated且重新校验内容；驳回保留真实意见，重提复用共同重置。完成仅confirmed且共同批准事实校验通过，保留内容校验，不由审批自动完成。
+- 原生增加真实审核按钮及can_review/validation_status，profile同一审批动作，draft移除complete；完成仅confirmed。原生取消此前误显示于done，按模型原draft/confirmed范围对齐，legacy取消拒绝业务规则未改。已有legacy_confirmed状态/历史数据未迁移。
+- L1 ci.local.iteration PASS（diary-approval-iteration.log）。L2审批53、native8+30=38、semantics15 PASS（diary-approval-tests.log，begin/record53）。实际方法测试验证无/有配置、草稿/审批中不能完成、伪造/部分回调不推进、真实通过后独立完成、内容不满足拒绝；实际投影与原生完成/取消/审核人条件一致。新模型/视图加入既有输入登记。
+- 字段/继承/XML仍需受管升级、真实日志审批/拒绝重提验证，尚未执行。本次不重建前端、不重跑无关浏览器；不能以纯测试宣称全系统完成。总体active，未推送、合并、目标部署。
+
+
+### 53.49 施工日志真实审批闭环验证通过
+
+- cbd60bd63候选经既有acceptance.module.upgrade与backend.acceptance.up受管升级/重载成功（diary-approval-upgrade.log/diary-approval-backend.log）。继续复用内部隔离sc_frontend_acceptance/local、sc-fe-r2-p1-01、精确dbfilter及原卷；前端产物不变，不构建。
+- P4原rollback smoke将计划的共同确认/审批/拒绝/重提检查复用于施工日志，模型限定为sc.plan/sc.construction.diary，只在创建字段与独立执行动作上区分。先拒绝覆盖该公司/全局任何既有策略，再创建事务内策略及业务记录，均进入原created恢复清单；不增加持久fixture权威。
+- 新日志5项真实通过：无配置confirmed无review且不done；配置审批draft+真实review，savepoint内action_done明确拒绝；实际审批人validate_tier完成后confirmed，显式action_done才done；真实驳回保留意见；重提新review IDs与旧链不交集，通过后清空旧原因。没有SQL伪造审批结果或强制回调冒充审批。
+- L1 ci.local.iteration和py_compile PASS（diary-runtime-iteration.log）。受管verify.business_config.approval_runtime27项PASS、ROLLBACK=VERIFIED（diary-approval-runtime.log），包括费用12、事件5、计划5、日志5；计划与日志共享工具改变，因此同事务复验相关链。原策略/步骤回读一致，临时项目/客商/单据/策略不存在。受管封装不变，原9项证据复用。
+- 这证明所述模型审批循环，不证明项目经理角色端到端权限、最终页面契约及整个业务单据集合完成。下一步将计划/日志加入现有只读页面验收范围核对有效契约消费，按现有授权角色查已有记录；合同事件公司8无记录前提不变不重试。总体active，未推送、合并或目标部署。
+
+
+### 53.50 计划/日志页面定向检查发现实际消费阻断
+
+- b7d554d45 clean起步，P4扩展既有approval-actions浏览器范围，仅fixture_role_pm的sc.plan/sc.construction.diary；原backend cbd60bd63及5180产物不变。L1 ci.local.iteration PASS（plan-diary-browser-iteration.log），新增分支node --check通过。无写入/新数据/新环境。
+- 两类现有记录查询均ok=true、公司8授权范围records=[]：plan-browser.log对应tpl07-1790774584870/report.json，diary-browser.log对应tpl07-1790774597249/report.json。不能称全库无数据，不改权限换角色取证，详情验收pending。
+- 单独新增TPL07_APPROVAL_VIEW=create明确打开未保存新建表单，不是自动回退或替代详情验收。计划首次timeout（plan-create-browser.log；tpl07-1790774631462/report.json），已收到sc.plan/create且create=true有效契约，不能据presentationMode=workspace就认作工具等待错误。追加有界失败现场捕获（当前页正文/语义surface/截图），只重跑受影响计划并独立检查日志。
+- 计划诊断失败（plan-create-diagnostic.log；tpl07-1790774686651/report.json）：实际data-form-composition=official-standard-form但data-state=error，页面“网络连接异常”；契约已到达，需继续定位后续失败请求。日志失败（diary-create-browser.log；tpl07-1790774692654/report.json）：明确invalid contract v2 snapshot，layoutContract.containerTree若干children仍含不允许的field_info，页面拒绝契约；该处属于P0有效契约/规范投影缺口，不放宽前端schema。两者errors=[]，但页面错误不能以JS无异常算通过。
+- 当前已知早层阻断，不继续广泛浏览器/发布门禁。直接源码定位现有assembler _normalize_native_layout_nodes已有field_info→fieldInfo归一化，而_native_field_node仍deepcopy输入；尚未证明真实泄漏路径，未盲改或重复全仓扫描。下一步捕获该ui.contract的精确布局投影链并修正产生层，及计划失败请求；修复后只重验受影响页面。既有27项ORM只证明审批模型，不覆盖这些页面阻断。总体active，未推送/合并/目标部署。
+
+
+### 53.51 新建页双故障分层定位，计划通过，日志重复后处理仍阻断
+
+- fef872276起步。P4查原失败report发现计划forbiddenWrites实际含api.data/default_get；53.50“无写入”应解读未发生业务写入，不能描述为未拦截请求。api_data将default_get明确定义为读操作，工具白名单补此op，其他写入继续拦截。计划新建双视口12项PASS（plan-create-defaults.log；tpl07-1790774808335/report.json），无需产品修复；记录详情无数据仍pending，不混记。
+- 现有失败诊断补当前ui.contract完整响应（仅approval-actions本地受限验收），日志再次捕获tpl07-1790774814944/report.json，确认不是P0归一化缺失：P1 core_extension_contract_normalizers.normalize_construction_diary_form在规范化之后为所有字段重复添加field_info。修复该行保留fieldInfo并移除旧别名，关系/必填/组件信息保留。L1 ci.local.iteration PASS（diary-alias-iteration.log），native8+31=39 PASS（diary-alias-tests.log，begin/record39），实际后处理方法回归覆盖别名不泄漏与信息保留。
+- 338d5253f受管backend.acceptance.up重载（diary-alias-backend.log），无模型字段/XML变更不升级/构建。日志复验仍失败（diary-create-fixed.log；tpl07-1790774968894/report.json），field_info已不再报错，但runtimeContract.containerTree/widgetStatus/governancePatches及meta.governance_patches不允许，formStructureContract.slots引用name等字段未投影。证明同一重复行业后处理还有结构性冲突，不能据39单测称页面完成。
+- 下一步核对并退役日志的重复布局重组/兼容投影路径，让原生视图及有效配置保有完整字段/结构；不继续逐个放宽schema或增加别名。计划误阻断关闭，日志页面阻断保持open，早层失败禁止广泛浏览器/发布门禁。审批27项只证明业务模型，不能替代此处消费。总体active，无远端/目标部署。
+
+
+### 53.52 施工日志重复布局退出，官方新建表单通过
+
+- c62e25241 clean起步。P1核对原生施工日志视图已完整承载主信息、期间经办、现场、正文、附件及驳回原因；标准合成契约已有对应formStructure。旧normalize_construction_diary_form按固定清单重建布局、向runtime/meta投兼容属性并裁掉字段，与权威合成冲突。删除core_extension最终调用和包装、删除105行独立重组实现；不再为这条路径逐项补别名，不改schema。
+- 原拆分守卫从强制保留旧函数/compat治理字段改为禁止已退役路径复活，其他normalizer检查保留。测试执行实际最终处理函数，隔离工作流/无关财务协作者，确认注入审批动作后layout、formStructure、runtime/meta以及配置扩展字段保持原样，输入不被修改。新增直接生产依赖到原native检查输入，按最终输入begin/record39。
+- L1 ci.local.iteration PASS（diary-native-exit-iteration.log）；native8+31=39 PASS（diary-native-exit-final-tests.log），normalizers_split_guard PASS（diary-native-exit-guard.log）。30ca72d76经受管backend.acceptance.up重载（diary-native-exit-backend.log），无模型/XML变化，不升级、不构建前端。
+- 既有受管approval-actions diary/create浏览器12项PASS（diary-native-create-browser.log；tpl07-1790775130070/report.json）。PM公司8未保存新建页有效契约/官方ScForm、无未知字段渲染、无未保存审批/完成入口、1440/390无溢出，errors=[]、forbiddenWrites=[]。回读有效布局31字段节点，name/reject_reason/report_period_start/report_period_end/attachment_ids/header_description均保留。53.50/51日志新建页面阻断实质关闭；此前计划create12证据输入不变复用。
+- 仍不等于已有记录办理验收：计划/日志/合同事件公司8无现有记录的详情前提未变化，真实审批27项只覆盖事务模型。下一步继续原工作流职责中的必要单据覆盖与配置/权限/页面组合缺口；总目标active，detail.action-state整体不升级。未推送、合并或目标部署。
+
+
+### 53.53 抵扣登记执行边界与原生/契约对齐
+
+- 69e1d4648 clean起步，P1税款抵扣登记，沿现有workflow下一个未接共享审批的正式单据定向核对，不扫描全仓。模型action_deduct、原生按钮及profile均允许draft直接deducted。先关闭该明确绕过确认边界：模型仅confirmed允许，profile draft移除complete，原生已抵扣仅confirmed。原生取消从原“非cancel/legacy”收紧到模型原draft/confirmed，防止deducted错误出现取消。
+- 财务权限、默认抵扣日期/金额、_check_deduct_ready、公司承包人责任校验、_write_finance_authority、审计顺序保留；未改终态token保护、财务身份或历史规则。未新增自动抵扣。
+- L1 ci.local.iteration PASS（tax-execution-state-iteration.log）；native8+32=40 PASS（tax-execution-state-tests.log，begin/record40）。执行实际action_deduct，覆盖五状态，只有confirmed走finance→ready→responsibility→authority→audit，其余在资金动作前拒绝；隔离余额协作者，不宣称真实台账通过。同一测试核对实际profile与原生条件。
+- sc.tax.deduction.registration仍未tier/config接入，是后续必要产品缺口，不把confirmed状态条件当作审批接入完成。直接发现审批金额前提：deduction_amount/deduction_tax_amount在action_deduct才从发票金额默认补值；共享审批接入需先明确/复用金额准备职责，不能拿未补出的0作为金额阈值事实或静默忽略配置条件。下一步继续该直接适配。
+- 模型/XML待受管升级，与后续完整审批适配合并运行验收；不为本次窄条件单独构建/升级/浏览器矩阵。已有日志新建12和审批27证据无依赖改变继续复用。总体active，未推送、合并、目标部署。
+
+
+### 53.54 抵扣登记接入统一审批配置与真实审批链
+
+- a8e36c9b7 clean起步。沿用所有业务单据统一审批目标，支持名单不作为范围上限。P1 smart_construction_core负责税务单据校验与动作；复用既有sc.approval.policy/OCA机制，P3用户配置决定是否审批；前端不增加业务分支。P4只扩展既有事务回滚验收脚本，不新增环境或fixture权威。
+- 税务登记增加tier.validation、驳回原因、真实审批回调、配置可选模型/同步支持/服务端动作；原生及workflow统一validate_tier/reject_tier，等待时不重复提交。金额阈值绑定deduction_amount；沿用原有发票金额默认准备，但前移至提交前，先校验财务身份、发票、税额上限及责任余额，再启动审批。无配置只confirmed；有配置保持draft等待真实review；启用无匹配规则沿用共享fail-closed。
+- 审批完成仅确认登记并保留确认审计；驳回保留原因及新审计事件。抵扣执行校验共享审批事实后才走原财务权限、日期、责任余额、私有财务token及审计。认证抵扣日期仍在实际执行时默认，不在提交时伪造；已审批金额不在执行时重新补值。历史状态与既有财务身份保护不变。
+- L1 ci.local.iteration PASS（tax-approval-iteration.log）；相关生产方法隔离协作者回归55 PASS（tax-approval-tests.log，begin/record55），native8+32=40 PASS（tax-native-tests.log，begin/record40），workflow语义15 PASS（tax-workflow-tests.log）。测试覆盖默认金额在策略调用前就绪、显式金额不覆盖、无配置/配置/未完成回调边界与财务执行顺序；不把隔离测试当真实ORM验收。
+- 既有runtime脚本增加7项税务事务检查：无配置、金额阈值、等待禁止抵扣、真实审批不抵扣、驳回审计、重提新链、启用无匹配拒绝。脚本语法通过，待运行。受管preflight已确认local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷；内部验收租户库，沿用既有全事务rollback和配置回读。
+- 下一步提交后受管升级模块/重载，再执行34项集中审批运行验证。新增字段/XML需要升级；前端未改，不构建、不重跑未受影响日志/计划新建浏览器。实际抵扣财务写入和税务浏览器仍未覆盖；总体active，未推送、合并或目标部署。
+
+- 运行回读：0a85b8168已通过受管acceptance.module.upgrade、backend.acceptance.up与health；原审批运行脚本34项PASS，其中税务7项全部PASS。实际tier review证明金额默认值在阈值匹配前就绪，真实审批仅confirmed未抵扣，驳回原因/审计和重提新链成立，启用但金额无匹配拒绝。末尾ROLLBACK=VERIFIED，原配置/步骤回读一致、临时对象不存在。日志tax-approval-{upgrade,backend,health,runtime}.log（同tpl52目录）。
+- 状态：本批代码及真实模型审批链验证通过，税务浏览器与实际财务抵扣仍未验收，不称全部业务接管完成；主线未集成、目标环境未部署、用户整体验收未完成。继续既有职责中剩余project.project/project.task配置与运行支持差距及其他必要单据，支持名单只记录覆盖进度。
+
+
+### 53.55 统一审批状态字段及任务执行真实回读
+
+- 02ee7299a clean起步，上一轮有实际税务接入/运行证据，归类progress。仅核对剩余项目/任务直接实现，未全仓盘点。P1 shared approval及project execution service负责状态消费，行业模型仍是业务权威；不向前端/P3配置写入硬编码状态语义。
+- 发现共享_assert_submission_approved固定record.state，不适用于task.sc_state/project.lifecycle_state。改为使用现有OCA tier声明的_state_field，兼容缺省state；审批实例仍须validated，不重新查询当前策略。生产方法测试覆盖两种字段与相矛盾state值、无审批/真实通过/等待/驳回，防止借另一状态字段放行。
+- task执行服务准备后原来直接假设ready、启动后假设in_progress；恢复/完成不论真实状态返回True。改为回读sc_state，只在真实目标状态才成功，并使用既有失败码。测试执行三个实际服务方法，覆盖正常推进与方法返回但未推进；待审批式draft停留不会继续调用start，不虚报恢复/完成。
+- L1 ci.local.iteration PASS（approval-state-field-iteration.log），后续直接服务变更py_compile及diff check通过；L2原审批注册目标57项PASS并begin/record57（approval-state-field-tests.log/receipt.log）。未改变视图/schema/前端，不构建或升级。当前运行仍0a85b8168，已有34项是该来源运行证据，不冒称本候选运行证明；税务等现有模型_state_field=state，逻辑分支等价，未受task service影响，不为安心重跑其旅程。
+- 项目/任务完整审批仍未完成：task_extend.action_prepare_task直接draft->ready；project_core.action_sc_submit直接draft->in_progress，write还集中校验生命周期权限与迁移。下一步任务tier配置/回调与执行服务等待响应共同接入；项目必须分开立项审批与实际启动，不能让统一审批自动启动项目。中央workflow未含这两模型，后续沿直接契约生产者/处理器适配，不复制渲染。
+- 总目标active；本次是必要共享前提与执行错误修复，不称全部单据接管。主线/目标部署/用户整体验收均未完成；无推送或合并。
+
+
+### 53.56 项目任务接入共享审批与显式执行边界
+
+- 7e5c5dce7 clean起步。P1 task_extend、共享审批适配、原生view/workflow及现有任务执行服务；P4只扩展已有事务回滚检查。任务使用OCA _state_field=sc_state，draft->ready、cancelled；提交先沿用原readiness阻断/缺失检查，无配置ready、有配置等待真实review。通过回调重新校验就绪后ready，驳回保留原因及审计，重提沿用共享重建review。开始/完成消费已完成审批事实，原取消权限/直接状态写保护保留。
+- 原BUSINESS_MODEL_SELECTION已有project.task，补齐tier支持、回调与原生可选模型；金额条件使用现有BOQ汇总boq_amount_total。原生任务表单增加提交/真实审批/启动/完成，workflow新增同一sc_state配置，无前端模型分支；审批不自动启动任务。
+- 直接服务发现执行推进处于原子savepoint，返回未完成会回滚新review。因此执行服务不隐式在该事务提交审批，先调用模型_execution_approval_block：待提交配置审批返回EXECUTION_TASK_APPROVAL_REQUIRED，真实在审返回EXECUTION_TASK_APPROVAL_PENDING；保持执行失败回滚边界，单独的提交动作承载审批事务。前端等待提示/跳转尚待页面验收，不宣称工作区闭环。
+- L1 iteration PASS（task-approval-iteration.log），P4扩展语法通过；审批58 PASS（task-approval-tests.log，begin/record58），native8+33=41 PASS（task-native-tests.log，最终inputs重绑begin/record41），workflow15 PASS/66 profiles（task-workflow-tests.log）。新增契约测试五状态及can_review真权限；生产方法隔离测试证明无配置/配置/回调只ready，未启动。
+- 既有rollback runtime工具新增task5项，整体预期39：无配置就绪、等待禁止启动、真实批准后显式启动、驳回原因、重提新链。待受管模块升级/重载后运行；不是已验收结果。无需前端构建；不新建环境或fixture，不做整体验收矩阵。项目project.project审批与启动拆分仍待完成，整体目标active。
+
+- 运行回读：fef68d390受管preflight/模块升级/后端重载/health通过，身份仍local/sc-fe-r2-p1-01/sc_frontend_acceptance、精确dbfilter及既有三卷。approval_runtime39 PASS，新增任务5项全部通过；真实review校验draft等待、通过仅ready、显式start才in_progress，驳回/重提新链保留正确状态与原因。最终ROLLBACK=VERIFIED，原审批配置/步骤回读一致、临时对象不存在。日志task-approval-{preflight,upgrade,backend,health,runtime}.log。
+- 阶段状态：任务模型/配置审批链验证通过，页面与工作区审批提示尚未验收；本轮未构建前端、未推送/合并/目标部署，整体验收未完成。下一步继续任务契约/页面及可操作等待提示，再推进项目立项审批与启动拆分。
+
+
+### 53.57 任务官方新建页验收与记录办理前提
+
+- 5227e572f clean起步，上轮任务配置/真实review39属于progress。P4扩展既有standard_page_type_browser approval-actions支持project.task，使用PM角色、sc_state字段读取，不新建脚本/环境/fixture；不改变产品模型、前端运行代码或权限。沿用已有受管5180候选与fef68d390后端，未构建/升级/重载。
+- L1 iteration及node --check通过（task-page-iteration.log）；原preview wrapper9通过，登记到本run既有checks机制standard_preview_tool并begin/record9（task-page-wrapper-tests.log、task-page-tool-receipt.log）。该测试证明工具包装，不替代浏览器结果。
+- PM任务create12 PASS（task-create-browser.log；tpl07-1790776268742/report.json）：login/system.init后有效契约project.task、官方共享表单、未保存无审批通过/驳回/完成、1440/390无页溢出；errors=[]、forbiddenWrites=[]，截图沿用报告目录。表单包含后端原生审批动作声明，由现有创建态消费控制显示。
+- 任务详情前置查询api.data fields=[id,sc_state]返回ok=true、records=[]（task-detail-browser.log；tpl07-1790776285320/report.json）。不是页面渲染失败，已有记录办理未运行；不反复重查、不扩权、不造数据，把数据前提保留为缺口。
+- 执行等待提示尚未闭环：当前project_execution_advance._blocked_response建议仍是刷新next-actions；仅加原因码不能算可操作UI完成。定向查询未发现前端直接按project.execution.advance/suggested_action_payload命名消费，后续必须沿共享动作结果链核实实际契约形状，不能凭空添加无人消费的字段/导航。此项与项目审批/启动拆分继续保留。
+- 总目标active；本轮完成任务新建共享消费证据，不自动升级detail.action-state台账整行。主线未集成、目标未部署、用户整体未验收；既有模型39运行证据依赖不变复用。
+
+
+### 53.58 共享场景动作拒绝将业务阻断报告为成功
+
+- 8c3ee0cec clean起步，上轮task/create12构成新增有效证据。沿直接消费链定位：普通原生按钮经execute_button/intent envelope处理失败；场景mutation经sceneMutationRuntime→intentRequestRaw只检查envelope.ok。project执行阻断明确返回ok=true,data.result=blocked，原场景调用者在await返回后固定显示操作完成，可能误报业务结果。
+- P0通用前端消费修正：共享sceneMutationRuntime只识别生产者明确result=blocked，抛出后端message或通用未完成提示，让现有表单/列表异常反馈承接，不依赖模型/按钮名/状态猜测。请求参数模板、trace和未声明业务结果的兼容响应保持。P1 project_execution_response_builder为审批待提交/审批中提供中文办理提示，保留task_id及原状态，不把失败当成已启动；不改审批或回滚逻辑。
+- L1 iteration PASS（scene-outcome-iteration.log）；实际共享执行器4例PASS：blocked自带文案、blocked无文案、显式success、原无result响应；原create_record_user_journey同时PASS（scene-outcome-tests.log，begin/record4仅计新增场景例）。P1响应生产方法测试加入审批目标，总59 PASS（scene-outcome-backend-tests.log，begin/record59）。verify.frontend.typecheck.strict双配置PASS（scene-outcome-typecheck.log）。
+- 已确认这是共享结果消费修复，不把未消费的legacy原因码文本当UI完成。当前无授权任务记录，真实执行阻断浏览器旅程仍待验证；这次单元测试不伪装真实请求。下一步一次构建/复用5180并后端重载，定向复核官方任务create；不重跑未变审批39，不升级模块（无字段/XML变化）。项目立项审批/启动拆分及全部台账仍active。
+
+- 候选更新事实：b06c8a2f7首次frontend.standard.preview.build在addons相对已加载后端不一致处退出（scene-outcome-build.log），未进入编译。受管backend.acceptance.up已重载b06c8a2f7（scene-outcome-backend-load.log）。因这一前置恢复后再运行build，进入frontend_standard_preview.py发现旧receipt存在且inputs改变，identity()拒绝（scene-outcome-build-loaded.log）；同样未调用编译。两次不同前置失败均保留，未重复编译。
+- P4确定性缺口：现有build分支只有旧产物复用/首次构建，缺少源码变化后的安全候选更新。5180仍服务0d2c6190a旧前端，不能声称本轮前端修复已加载。下一步在既有工具内补齐保留上一dist/receipt、暂存构建、成功切换及失败恢复，沿用同端口/代理/环境身份；不直接删receipt解除锁。当前前端产品复核待候选更新，整体仍active，主线/部署/整体验收无升级。
+
+
+### 53.59 既有预览工具支持安全更新候选
+
+- 13a3ec8ac clean起步，上一轮共享动作修复及前置失败定位属于progress。本轮P4精确范围scripts/dev/frontend_standard_preview.py及既有测试/记录；不新环境、端口、数据库、凭据或fixture。复用固定OUTPUT/DIST/5180/18082及既有Make入口。
+- build先核对旧回执与产物：输入不变复用，旧产物损坏拒绝；源码改变时在同一artifact目录的临时候选目录构建，编译期间旧dist不变。构建前后输入一致才生成新回执；切换前再次核对旧候选，保留旧dist及原回执到previous-*目录，再提升新候选并验证identity。提升或验证异常恢复旧dist/receipt并回读验证，处理KeyboardInterrupt等BaseException；进程强杀恢复不在单元测试覆盖中，旧产物保留可供恢复，不宣称零停机原子部署。
+- 既有入口增加文件锁串行build/up/identity，原监听进程归属、STATIC_ROOT、端口/代理检查及不明候选拒绝保持。没有删除回执绕过输入校验，也没有两次编译。静态入口首次因run缺少精确工具路径reconcile退出（preview-refresh-iteration.log），补登记本批已授权P4路径后PASS（preview-refresh-iteration-scoped.log）；不扩大整个scripts/dev权限范围。
+- 既有preview测试从9增至16：未变不编译、变化只编译一次且旧产物保留、编译失败保持旧候选、编译中源码漂移拒绝、旧产物损坏拒绝、回执提升失败恢复、切换后身份失败恢复。最终L1之后begin/record16 PASS（preview-refresh-tests.log/receipt.log），首次L1前的测试仅诊断，不替代最后回执。
+- 下一步提交后实际一次构建/复用5180，再绑定加载entry复核任务create。后端仍b06c8a2f7，本轮未改addons，不重载/升级。审批39与模型证据输入无变化继续复用；前端共享结果修复仍待候选加载，不宣称真实阻断任务旅程已完成。
+
+- 实际候选更新已完成：fed2dfcc234565d8e48a644e38cff702c5c56c7b仅编译一次，23.45s（preview-refresh-build.log），旧候选保留于既有OUTPUT/previous-avuxmhgu（dist及原build-identity.json）。受管up复用5180监听进程，新首页HTTP hash与回执一致（preview-refresh-observed.json）；entry=/assets/index-C9RBIxc0.js，entry_sha256=3c9d155557f1dcb45d85a45be8dd0db457025fb23ed190c17efd1c434fa25fc4，index_sha256=8bf961230df3aa181e8963a125b630e69d99d1bac3c72b35999e02b6f5df9a3e。不做全文件HTTP比对。
+- 新候选PM任务create12 PASS（preview-refresh-task-browser.log，tpl07-1790776830481/report.json），官方共享表单和双视口加载正常。53.58共享阻断消费代码已实际进入当前前端；真实审批中任务操作UI仍无现有授权记录，不能用create12代替该旅程。无字段/XML改动，不升级；审批39输入不变复用，不重复ORM。
+- 53.58预览工具阻断关闭。本轮P4批次验证通过；总体目标未完成、主线未集成、目标环境未部署、用户整体验收未完成。下一步继续project.project审批/启动分离及原67台账的生产者/消费者/旧职责退出缺口，不再停留在预览更新。
+
+
+### 53.60 项目立项审批与生命周期启动分离
+
+- cdb10b1e1 clean起步，复用已加载前端fed2dfcc2。P1项目立项是独立审批事实，不把批准等同在建。新增同模块project_initiation_approval模型扩展，复用tier.validation/_state_field=sc_approval_state；原project_core.action_sc_submit实现移出并改为提交审批，原启动/提示行为由action_sc_start承接，没有两份提交编排。
+- 提交保留原项目角色门禁，校验草稿/名称/公司，无配置仅立项approved，有配置等待真实review。通过回调重验前提仅approved；驳回保留原因和消息，重提沿共享restart新链。立项状态只能私有对象token写入，create不能伪造approved，bool/string上下文不能绕过。实际启动调用原集中生命周期权限/状态机；集中_validate_lifecycle_transition拦住draft->in_progress及draft->paused绕行，历史在建/暂停项目原生命周期继续，不生成历史审批。
+- 原生通用项目表单/总览/启停管理拆分提交与启动并声明真实审批按钮；项目信息编辑仍只承担提交，不吸收生命周期操作，增加审批事实字段。总览提交不再把资料完备度当硬门槛，与既有advisory模型边界一致。配置增加project.project tier支持和回调注册。项目审批金额尚无确认业务权威，不猜合同额/预算额：共享适配遇无amount映射且配置金额条件时明确ValidationError，普通无金额规则可用；该必要配置能力保留产品缺口。
+- L1 iteration PASS（project-approval-iteration.log）；审批63 PASS（project-approval-tests.log，begin/record63），包括无配置/配置/真实回调与显式启动、集中绕行拦截、私有状态写保护、无金额权威禁止忽略条件。已有native8+33=41回归PASS（project-native-tests.log），仅覆盖现有profile集合，不声称项目中央profile完整。当前项目仍须核对原生到有效契约的状态/动作消费，不以模型通过代替页面。
+- P4既有回滚脚本新增项目6项（总45），所有新项目/策略加入原created清理回读；语法通过，待运行。下一步提交、受管模块升级与后端重载，再运行45。新字段/XML需升级；前端未改不构建，不重跑任务/付款全旅程。整体active，未推送/合并/目标部署。
+
+- 运行回读：4a3e08ffa受管acceptance.module.upgrade、backend.acceptance.up/health均通过（project-approval-{upgrade,backend,health}.log）。集中真实审批45项PASS，新增项目6项全部通过：直接写批准/直接draft启动及暂停绕行拒绝，无配置仅批准未启动，真实在审不启动，真实review通过后显式start，驳回原因与重提新链。ROLLBACK=VERIFIED，原策略/步骤回读一致、临时项目/单据/策略不存在（project-approval-runtime.log）。
+- 阶段：模型与配置执行链验证成立，项目有效动作/状态契约和页面仍待核对；未将native41外推到未加入中央profile的project.project。金额条件权威缺口登记到原contract-gaps文档，保留detail.action-state未完成。前端候选fed2dfcc2未变；不构建、不推送、不合并、不部署目标环境。总体active。
+
+
+### 53.61 项目进入统一动作契约与生命周期语义
+
+- ed723870b clean起步。P4 probe扩展project.project/lifecycle_state及独立sc_approval_state读取，PM现有授权项目10（draft/draft）只读详情18 PASS（project-detail-browser.log；tpl07-1790777366552/report.json，errors/forbiddenWrites为空）。回读原生提交/审批/启动存在但actionSemantics缺失，18项只证明原生呈现与未批准不启动，不能据此宣称办理完成。
+- P1将project.project加入既有workflow profile，生命周期为主状态、审批事实保持独立；声明提交/审批/启动/暂停/恢复/竣工/结算/保修/关闭真实方法和状态范围。用既有Odoo filtered_domain承接profile.action_domains，提交与启动根据sc_approval_state及真实validation_status筛选，不新增前端模型分支。历史活跃/后续阶段元数据保持field_editable_phases范围；草稿审批阶段继续标准工作流只读约束。
+- P0只增加通用pause_execution、advance_phase、close_record词汇，恢复使用已有start_execution；项目结算/保修等行业名称与方法只在P1。同步权威词汇、schema与TS消费投影，不把暂停当取消、阶段推进当最终完成。既有native登记表增记项目12个导航和2个BOQ辅助方法，不将它们伪装状态迁移、不建平行覆盖表；项目状态方法均由profile声明。
+- L1首次精确TS消费文件未登记导致reconcile（project-contract-iteration.log），补入既有scope后PASS（project-contract-iteration-scoped.log）；早期诊断不充当最终回执。L2 native8+34=42 PASS并begin/record42（project-contract-native-tests.log），语义15 PASS/67 profiles/13词汇（project-contract-semantics-tests.log）；实际表单header链及新增3合法/3非法配对PASS（project-contract-header-tests-final.log），严格双tsconfig PASS（project-contract-typecheck.log）。一次误用不存在的header测试目标未执行测试，改用既有verify.frontend.contract_header_action.unit，日志分开保留。
+- Probe增加edit只读观察模式与四动作语义断言；下一步提交/后端重载/一次新前端候选构建，仍查同一现有项目，不执行业务写入、不造fixture。无字段/XML变更，无模块升级；既有45真实审批输入不变复用。整体仍active，项目金额权威及跨状态用户办理未覆盖保留。
+
+
+### 53.62 完整动作声明与当前可用性分离（进行中）
+
+候选 51f470eb9 + 本段 dirty。53.61 浏览器报告 `artifacts/frontend-web-fix-20260928/tpl07-1790777792498/report.json` 超时：有效契约 viewCapabilities.write=false / effectiveRenderProfile=readonly，页面实际采用 official-standard-detail，测试误等 official-standard-form。四个原生动作均存在，只有当前可用 submit 具有 actionSemantics；start/approve/reject 缺失。
+
+P1 smart_construction_core workflow.contract.service 的完整动作目录通过既有 workflowContract.actions 输出，仅声明方法与含义，不携带 enabled/target；availableActions 保持当前状态、审批人与证据约束。P0 既有投影无需业务特例。范围为该生产器与两项现有纯测试；不改权限、状态机、原生视图或前端业务逻辑。L0 已确认当前分支、工作区原本 clean；L1 iteration → L2 native coverage 与有效契约投影纯测试 → L3 后端重载 → L4 复用现有构建核对只读入口。没有模型/XML变化，不升级模块；没有前端源变化，不重建；既有45项审批运行时输入不变，复用，不跑无关 ORM。
+
+L1 `action-catalog-iteration.log` PASS；L2 `action-catalog-native.log` 8+35=43 PASS，begin/record43 回执 `action-catalog-receipt.log`。投影首次新增用例缺必填 origin 导致1错误（产品正确拒绝不完整声明）；纠正测试输入后 `action-catalog-projection-fixed.log` 20+108=128 PASS，runtime guard score6。未改变生产投影校验；首次失败日志保留。待后端重载与实际契约核对。
+
+实际运行完成：后端 `e14519cb1` 受管重载成功；5180 复用 `51f470eb9` 的 `/assets/index-C5E0xYhV.js`，SHA256 `86ff6b206abb70d2e56716f2ce6b1bc7df0aabc6f8b7b495bdc328d1d3b56b18`，前端构建输入无变动、未重建。PM/公司8/project10 的官方只读详情浏览器22项 PASS，报告 `artifacts/frontend-web-fix-20260928/tpl07-1790778081937/report.json`：submit/start/approve/reject 均有正确语义，未审批无启动，审批事实与生命周期分离，双视口、errors=[]、forbiddenWrites=[]。这是只读入口与契约验收，不证明信息编辑入口或真实提交操作已验收。
+
+后续已定位共享消费者 `workflowActionAvailability.ts` 仍使用方法名别名和固定 knownKeys；应以完整声明目录识别受管动作，退出名称推导，不能因 unavailableActions 不含动作就漏掉新声明的暂停/阶段推进等动作约束。本段未改变该消费者，不声称全系统收口；67条/所有业务单据目标继续，金额权威与数据不足旅程仍保留原缺口。无推送、合并、目标环境部署。
+
+
+### 53.63 共享动作消费退出名称推导（进行中）
+
+候选1c6a76b18 + dirty；P0 frontend/apps/web 共享 workflowActionAvailability 消费 workflowContract.actions/availableActions，不添加业务规则。删除固定 knownKeys 与方法别名表；方法身份优先精确匹配，声明但缺可用项禁用，冲突/损坏契约报错。无目录的旧契约仍仅精确消费显式可用项，不再猜测未知方法含义。L1 iteration → L2 canonical presenter 非零回归与严格类型 → L4 单次构建、既有项目记录浏览器。后端源、模型与45项审批执行输入未变，跳过ORM/模块升级；后端运行身份仅在受管入口要求时重绑。目标为退出共享旧推导，不以单页通过宣称67条已完成。
+
+L1 `catalog-consumer-iteration.log` PASS；L2 `catalog-consumer-tests-final.log` 原有177+10与新增10项 PASS（含真实 presenter 禁用未知命名但已声明的不可用动作），回执绑定新增10项 `catalog-consumer-receipt-final.log`；`catalog-consumer-typecheck.log` 严格双配置类型检查 PASS。只读检查既有所有 profile 的 method_by_action 无重复方法；未修改映射。最后新增仅测试用例，生产输入未变，复用已通过类型结果。等待构建与定向浏览器。
+
+构建7915f3bb9一次24.37s完成。首次项目浏览器 `tpl07-1790778275644/report.json` 11断言处失败：P4最后响应观测被 project.responsibility 子契约覆盖，主响应project.project/id10已存在；页面无错误。修复既有审批检查脚本按本次导航的model+id选择契约，保留首次失败报告。仅工具变动，不失效生产构建或已通过前端类型/纯测试；node语法检查后重跑定向页面。
+
+最终运行：前端7915f3bb9，entry `/assets/index-DHbyXOXT.js`，SHA256 `88b2bf54f30cca97c91fac0942c83b883079245460594ac380f02f4b0c14e865`；原候选保留 previous-5rbtrx0q。后端源e14519cb1未改，工具接受相关addon输入不变。修正probe的L1 `catalog-consumer-probe-iteration.log` PASS；项目 `tpl07-1790778322370/report.json` 22 PASS，付款执行 `tpl07-1790778337439/report.json` 19 PASS，双视口/errors=[]/forbiddenWrites=[]。确认取消不派发写入；未执行财务撤销，不增加fixture。同步既有detail.action-state后续说明及缺口文档，不升级整行状态。批次定向验证完成，原总体目标仍active；无主线集成/目标部署/完整交付声明。
+
+
+### 53.64 项目信息编辑入口定向验收（进行中）
+
+候选a8a5ccc4c + P4 probe dirty；复用53.63全部产品测试/构建。原生独立编辑菜单/action/view职责为资料保存+提交立项，不含审批/启动。验收扩展按当前PM system.init.route_authority查正式menu XMLID取得菜单与动作ID，携带真实入口上下文打开现有project10；无业务写入、无fixture。L1 iteration与node语法检查后运行单次定向浏览器；产品输入无变化，不运行ORM/类型检查/重建。
+
+首次入口检查4项处失败：新增probe误读旧顶层route_authority；当前system.init正式路径为data.navigation.route_authority（system_init.py生产器明确移除顶层carrier）。按正式路径纠正，仅P4输入变化；首份报告tpl07-1790778448035保留，不记产品失败。
+
+最终报告 `artifacts/frontend-web-fix-20260928/tpl07-1790778468464/report.json` 16 PASS，errors=[]、forbiddenWrites=[]。当前PM初始化route authority正式菜单680/action861，project10，独立入口effectiveRenderProfile=edit、write=true、create=false、unlink=false。动作契约只有平台save_draft/write与P1 submit；无启动/审批动作注入。双视口官方表单正常。源与构建沿用7915f3bb9/backend e14519cb1，无新构建、模块升级或ORM。该结果关闭入口职责/官方渲染验证，不是实际保存、提交和审批办理验收。原始失败仅新增probe旧字段路径错误，已纠正，不放宽契约。
+
+
+### 53.65 物资链统一审批前的状态契约纠偏（进行中）
+
+候选e5405a983+dirty。P1 smart_construction_core.workflow.contract.service：按既有模型权威纠正材料验收/入库 reset与cancel可用源状态；不放在前端/P3，不改模型授权与执行，不新增状态框架。验收取消仅draft/submitted，重置cancel/rejected；入库重置仅cancel。原契约错将提交态发布reset、遗漏cancel态reset，并允许rejected验收cancel。四项新回归从模型实际状态guard提取权威，再执行共享投影逐状态比较，包含unknown。L1 iteration→L2现有native coverage；未改数据库结构/XML，跳过升级和无关ORM，运行时验证尚待完成。
+
+下一项已定位的必要P1缺口：材料验收、入库均未继承tier.validation，也未进入sc.approval.policy支持；action_submit直接变submitted。入库实际action_receive改变received，出库调拨_sync_transfer_inbound_after_issue会sudo生成→提交→接收并强制received，否则回滚整个出库。统一审批不能只改按钮或静默跳过入库审批，必须处理该关联链与审批/实际执行分离。保留产品缺口，不将现有支持列表当全业务范围。
+
+L1 material-state-iteration.log PASS；L2 material-state-tests.log 8+39=47 PASS，begin/record47 material-state-receipt.log。本段仅源代码/纯投影完成，运行时候选未加载此改动，保持verification_pending；下一步补入库审批时合并一次受管升级/加载，不为两处profile改动重复构建和跑页面。此前前端7915f3bb9、后端e14519cb1的页面结果仍仅证明此前声明范围。
+
+
+### 53.66 材料入库统一审批与调拨关联链（进行中）
+
+P1 smart_construction_core：复用sc.approval.policy/OCA tier，无配置submitted→approved、有配置真实review，审批回调只到approved；独立action_receive要求approved和有效审批事实。新增company关联、拒绝原因、approved状态与私有写令牌；配置金额绑定既有amount_total。原生动作/中心profile同源；现有submitted无审批事实可再次提交，不能自动回填审批。调拨自动生成入库在configured pending时保留关联，不再强制received回滚；无review且自动通过保留既有显式调拨执行中的自动接收。审批回调不执行接收。
+
+涉及模型/schema/XML，必须先L1+审批/native L2，再受管升级及真实审批/调拨检查，之后才页面验收。当前尚未升级，无运行时完成声明。旧前端构建未变可复用；此次backend/配置/领域输入改变，需要定向新增入库回归，非无关ORM。不新建环境fixture。
+
+源码L1 inbound-approval-iteration.log PASS，审批纯测试66（含新增入库/写令牌/调拨3项）inbound-approval-tests.log PASS；native8+39=47 inbound-native-tests.log PASS，两个begin/record非零回执已登记；2份XML解析PASS。当前verification_pending：未升级模块、未实际跑入库审批/驳回重提/调拨，不宣称批次验收完成。下一步扩展现有rollback审批smoke，审查新增状态保护与原有直接状态写入的兼容后再升级；复用旧前端构建，无需重建。
+
+
+### 53.67 入库统一审批受管运行验证（进行中）
+
+P4扩展既有business_config_approval_runtime_smoke.py，使用同一rollback事务、已有仓库和材料，新增8项：禁止外部状态写、无配置审批与独立接收、有金额配置真实review/禁止早接收、配置变动不绕过进行中review、真实审批后显式接收、驳回重提、调拨关联入库保留审批与回调不接收、无配置调拨保持既有自动接收。调拨项调用既有内部关联生成链，不能当完整出库办理验收。全部临时单据/政策加入原恢复检查；不建立新fixture或环境。
+
+数据库角色平台内部验收租户，local profile/sc-fe-r2-p1-01，sc_frontend_acceptance，精确filter及sc_fe_r2_p1_01固定卷沿用已登记预检；非客户生产/控制库。此次P1新字段/state/XML需要smart_construction_core受管升级；先L1、复用未变66/47定向输入结果（唯一变化为P4 smoke及文档），随后一次升级、后端重绑与实际53项。当前仅脚本编译通过，未开始数据库写入。
+
+受管升级61facd29b成功（Registry72.023s），后端重载成功。全量现有45检查通过且rollback verified，新增入库因不存在非服务材料前置失败。P4现有入口增加SC_APPROVAL_RUNTIME_SCOPE=all|inbound白名单（默认all），复用身份预检，不新增环境；inbound只运行8项，不再重复45。已有仓库有效，最小消耗材料仅在同一rollback事务临时建立，product/template均纳入消失回读，无fixture基线或持久测试数据。
+
+入库前5项实际通过后，驳回重提触发OCA旧tier记录状态写锁；报告inbound-only-material-runtime.log，rollback verified。P1修复只在私有token保护的提交方法内skip_validation_check跨过旧锁，shared router随后重建review，外部状态写仍拒绝。新增重提纯回归，L1 inbound-resubmit-iteration.log PASS；67审批tests PASS及非零回执。仅Python改动，无第二次模块升级/前端构建，待后端重载后仅8项重验。
+
+实际结果：后端f5e771c03，inbound-only-runtime-fixed.log 8/8 PASS；ROLLBACK VERIFIED确认原配置/步骤恢复，临时入库/出库/项目/材料及product.template均不存在。此前inbound-approval-runtime.log中原有45项成功有效，后续修复只影响入库动作，P4只新增scope/临时材料协作者，按输入独立性复用45不重跑。新增8项全部真实Odoo执行；调拨仅关联生成与接收链，仍不等于完整出库角色旅程。未重建前端。入库有效页面与角色办理仍pending，材料验收等全单据范围继续开放。
+
+
+### 53.68 入库官方页面消费（进行中）
+
+P4仅扩展现有standard_page_type_browser审批范围支持sc.material.inbound。PM既有角色包含cap_material_manager，沿用公司/项目授权；先不保存创建表单，再查询已有记录做只读契约/状态观察，没有记录明确pending。沿用前端7915f3bb9、后端f5e771c03；无产品源改动，不重建/升级/重跑8项ORM。L1 iteration、node语法→本次受影响页面观察。
+
+结果：inbound-page-iteration.log L1 PASS；创建报告tpl07-1790779258521/report.json 13 PASS，官方表单、未保存无审批/确认入库、双视口、errors=[]、forbiddenWrites=[]。既有记录报告tpl07-1790779275827/report.json查询ok=true/records=[]，2项处停止；这是授权数据前置不足，不是记录页通过。不扩权、不新增fixture、不重试相同查询。实际记录UI审批/确认入库继续pending；后端8项及创建13项保持各自证据范围。
+
+
+### 53.69 材料验收统一审批与质量结果分离（进行中）
+
+P1 smart_construction_core模型/策略/tier/native/profile。审批提交→submitted/approved，无配置自动approved；真实tier决定只approved或驳回draft。quality action_accept/action_reject从approved执行，继续校验数量/质量不通过原因，分别accepted/rejected；reject_reason审批原因与rejection_reason质量原因分离，审批拒绝审计使用独立event。私有状态令牌拒绝外部state写；历史submitted无review可重提，不自动补审批。已审批阶段需填写质量事实，field_editable_phases显式保留approved。
+
+配置接入已有政策/tier callback，未声明材料验收金额来源；金额条件继续由既有编译器拒绝，不能猜采购单金额。原生审批按钮/质量按钮与契约分别绑定；两个质量结果均属完成验收（complete），不借approve/reject代替质量结果，无新前端业务规则。L1 iteration→L2审批/native/semantics→受管模块升级/真实运行；本段先源码定向，不重建前端，不跑旧全量ORM。
+
+源码验证：L1 acceptance-approval-iteration.log PASS；68审批纯测试 PASS；native8+40=48 PASS；semantics15 PASS（67 profiles/17 reachable_actions/13 vocabulary），2份XML解析PASS。非零回执已登记。运行时未升级/未验收，保持verification_pending。下一步扩展现有acceptance-only回滚范围，无须重跑入库8及独立共享45或前端构建。
+
+
+### 53.70 材料验收审批真实运行（进行中）
+
+P4扩展现有受管rollback工具scope=acceptance（白名单，默认all）。新增8项分别验证外部状态保护、无配置自动审批与独立质量决定、未声明金额条件拒绝、pending禁止两类质量结果、真实审批后仍执行数量校验、质量不通过原因、审批驳回不变质量不通过、重提新审批链且不自动质量通过。无环境/fixture基线新增，材料协作者沿用原回滚策略，产品/模板和单据均校验消失。
+
+L1 iteration/py_compile/bash-n，复用上批68审批/48native/15语义未变产品输入；之后受管smart_construction_core升级、后端加载、只跑acceptance8，不重跑inbound8/shared45，不重建前端。数据库角色/租户/profile/精确filter/固定卷沿用53.67受管身份；仅平台内部验收库，不触及客户生产库。
+
+模块升级与后端3d2118bd9加载成功，acceptance-only-runtime.log 8/8 PASS、rollback verified（配置/步骤恢复，单据与临时材料/模板均不存在）。未重跑独立inbound8/shared45。继续P4扩展既有审批浏览器范围支持材料验收：当前PM物资经理角色、创建页未保存无质量结果按钮、既有记录精确契约；未改产品代码/构建。
+
+页面结果：acceptance-page-iteration.log L1 PASS；tpl07-1790779649769/report.json 官方创建14 PASS，未保存无审批/质量决定、双视口、errors=[]/forbiddenWrites=[]。现有记录tpl07-1790779666048/report.json在第2项停止，api.data ok=true records=[]，PM授权范围数据不足；不是记录页通过。保留范围：后端真实审批/质量结果8，创建页14，实际记录UI办理pending。继续剩余全业务单据，不升级detail.action-state整行。无前端重建、fixture基线新增、推送、合并或目标部署。
+
+
+### 53.71 采购申请统一审批及动作授权（进行中）
+
+P1 / smart_construction_core / 采购申请行业标准。复用共享sc.approval.policy+tier机制：未配置提交自动approved，已配置提交进入真实review；旧action_approve仅委托真实审批，保留评论wizard。审批callback只变更审批状态，不生成询价/采购订单。既有下游生成入口继续保留，在原状态/数量校验外增加审批事实校验；金额条件仅使用既有amount_total。私有状态token拒绝外部state写，驳回重提沿用受保护过渡与共享review重建。此规则不属于P0平台业务默认或前端，也不是P2偏好/P3临时配置。
+
+动作契约修正：历史submitted且无review仅提供提交/取消；通过/驳回仅由pending审批事实和can_review产生，不因state字符串声明直接授予。native按钮采用真实tier动作，保留生成询价、采购订单职责；无第二前端实现。Blast radius为采购申请模型/配置选择/tier callback/native/profile，共享路由实现未改。
+
+候选c8d837e3e+本段dirty（6个P1文件、2个定向测试、既有记录/run）。风险为审批状态及下游业务写入，最早L1。purchase-request-iteration.log L1 PASS；purchase-request-approval-unit.log 72 PASS（新增4项：配置分流/待审禁止下游、旧入口保留wizard、外部token拒绝、驳回重提）；purchase-request-native.log 8+41=49 PASS（新增真实状态守卫和review授权投影）；purchase-request-semantics.log 15 PASS；2份XML标准库解析PASS，diff --check PASS。初次XML探针lxml不可用属本机工具依赖，改用标准库完成语法检查，未安装依赖。
+
+L3升级/运行验证尚未执行：tier继承/公司字段及XML需要受管smart_construction_core升级，之后仅扩展并运行采购申请rollback范围，验证真实配置、审批和下游职责。L4前端源码未变故无需重建；实际角色页面办理仍pending。L5不在本批本地实现范围，不运行Quick/发布；无推送合并部署。既有独立入库8/验收8/共享45结果按未变方法与输入复用，不重跑。不升级67条detail.action-state整行；总体目标继续active。
+
+
+### 53.72 采购申请真实审批与独立生成验证（进行中）
+
+P4扩展已有business_config_approval_runtime_smoke及受管wrapper，新增白名单purchase-request范围8项，默认all纳入该范围。无新环境或fixture基线。检查外部状态拒绝、无配置审批不生成下游、金额条件/待审拒绝下游、配置变化不绕过在途审批、真实审批不生成下游、显式生成RFQ/草稿订单及幂等、拒绝回草稿、重提新review。临时材料/模板/供应商/申请/RFQ/订单及配置均归入既有rollback消失核验。
+
+候选3d7810ce6+P4 dirty；L1 purchase-request-runtime-iteration.log PASS，py_compile/bash-n PASS。上一段72/49/15源与测试输入未变，复用其原日志和回执，不重跑。目标平台内部验收租户sc_frontend_acceptance，非平台控制/行业目录/客户生产库；local profile、sc-fe-r2-p1-01项目、^sc_frontend_acceptance$过滤及sc_fe_r2_p1_01固定卷沿用预检。L3受管smart_construction_core升级及后端重绑后运行本范围；L4前端构建不受影响复用7915f3bb9；L5不在当前本地迭代范围。结果待运行，不算批次验收完成。
+
+受管模块升级及后端d3db44188重绑成功。首次purchase-request-runtime.log前三项通过、rollback verified；第4项脚本误期待pending再次提交正常返回，实际共享路由按规则拒绝重新初始化。归因P4测试预期，修为denied(required.action_submit)，不修改产品保护。L1 purchase-request-runtime-tool-fix.log后仅重跑当前8项，无需再次升级/构建。
+
+实际purchase-request-runtime-fixed.log 8/8 PASS，ROLLBACK VERIFIED；配置和步骤恢复，临时申请、RFQ、采购订单、材料/模板及供应商消失。后端产品d3db44188，执行工具e8617cd20（仅P4预期修正，无新增产品变动）。显式生成两次结果相同，采购订单保持draft；审批本身不生成下游。官方页面消费及实际角色办理待验证；本运行使用sudo建立事务单据+真实reviewer审批，不替代角色全旅程。总体detail.action-state仍contract_gap，无主线集成/目标部署。
+
+
+### 53.73 采购申请官方页面消费与新增契约缺口（进行中）
+
+P4仅扩展既有approval-actions浏览器范围，PM物资经理角色、真实登录/初始化/契约、只读已有记录及不保存创建。L1 purchase-request-page-iteration.log PASS、node --check PASS；前端7915f3bb9/后端产品d3db44188复用，不构建、不升级、不重跑采购8或独立ORM。
+
+创建报告tpl07-1790780248705/report.json 14项PASS：官方表单、有效model、未保存无审批/询价/订单动作、双视口无页面横向溢出，errors=[]、forbiddenWrites=[]。已有记录报告tpl07-1790780263093/report.json api.data ok=true records=[]，第2项数据前置失败；不造fixture、不扩权、不重试相同查询，实际记录角色办理pending。
+
+截图人工复核发现额外产品缺口：创建页“申请单号”显示为必填可编辑输入。有效契约fieldInfo.required=true/readonly=false且原生XML field name=name没有修饰；P1模型create已有序列生成，前端忠实消费了不完整producer。14项通过不覆盖此缺陷，不能称本批页面完整验收。归属P1原生视图/系统生成字段契约，下一步对该字段建立创建隐藏、已有记录只读的权威声明并验证有效契约，不以CSS或前端模型特判修补。已完成后端8项继续有效。detail.action-state及总体目标仍未完成。
+
+
+### 53.74 采购申请系统编号创建态契约修正（进行中）
+
+P1原生采购申请表单name添加readonly=1/invisible=not id，沿用模型既有序列生成，不引入前端模型规则。P4既有创建观察增加编号输入不可见断言。L1 purchase-request-number-iteration.log PASS，native49 PASS并记录回执，node语法/XML声明解析PASS。模型方法与approval policy未变，复用72审批纯测/8真实运行；不重复ORM，不重建前端。原生XML需受管smart_construction_core升级后重绑，随后只重验受影响创建页；不重试已确认空记录查询。
+
+验收环境与53.72一致：平台内部sc_frontend_acceptance租户、local/sc-fe-r2-p1-01、精确^sc_frontend_acceptance$及固定卷；非客户生产/控制库。只升级既有视图，无业务数据写入或fixture创建。L3/L4结果pending，不称缺口已闭合。
+
+受管升级及后端41d692abe重绑成功。tpl07-1790780449473/report.json创建15 PASS，errors=[]、forbiddenWrites=[]，双视口无页面溢出；390截图复核编号已不显示，有效契约modifiers.readonly=true、invisible为not(field_truthy id)。源字段readonly=false仍是ORM元信息，native modifiers才是该视图只读权威；不改前端猜测。创建编号缺口已修复，已有记录只读有XML/契约声明证据但暂无角色记录页面证据，仍pending。复用采购审批8，无重复ORM/前端构建/空记录查询。
+
+
+### 53.75 询比价统一审批与独立定价（进行中）
+
+P1 smart_construction_core。询比价属于行业业务标准，不放P0或前端；沿用既有共享policy/tier。提交无配置自动approved（待定价），有配置submitted等实际review，审批回调只approved或驳回draft，不选择供应商、不生成订单；配置选择和tier回调注册同步。未定义唯一金额口径，不把多家报价相加当审批金额，金额条件继续由已有policy编译器拒绝。公司权威来自项目，外部state写受私有token保护。
+
+action_select从approved执行并检查审批事实，保留至少一条报价等原校验；approved契约保留字段编辑以处理选价。生成订单原本没有状态检查，新增selected+审批事实检查，杜绝待审/未定价直接生成。未改变其按供应商分组生成方式，幂等行为不在此宣称。原生按钮、状态栏及契约同步：pending才有审批人动作；cancel才有reset，修复原submitted错误投影；定价后才显示生成订单。系统编号原生创建隐藏/只读，复用上一段已验证消费机制。
+
+L1 rfq-approval-iteration.log PASS；rfq-approval-unit.log 74 PASS（新增审批不定价、无报价不能定价、外部状态写拒绝、未定价或审批未通过不能生成订单）；rfq-native.log 8+42=50 PASS；rfq-semantics.log 15 PASS；2份XML解析、diff --check PASS，相关非零回执登记。最后仅追加生成订单纯回归，生产输入未再改，复用此前L1与native/semantics。候选501a4ea06+本段dirty，不是冻结交付。
+
+L3未运行：tier继承/字段/state/XML需要一次受管升级。下一步扩展现有回滚工具rfq范围，真实验证审批、拒绝重提、独立定价及订单生成、未定义金额拒绝，并确认配置/数据恢复；再做受影响页面消费。L4不重建未变前端，不重查已空采购申请；L5不在本地批次。现有采购申请8等未变业务方法证据复用，总体67及detail.action-state保持未完成。不推送合并部署。
+
+
+### 53.76 询比价真实审批和定价验证（进行中）
+
+P4既有rollback工具新增rfq白名单范围8项：外部state/草稿订单拒绝、无配置审批不定价、未定义金额条件拒绝、pending与配置变化保护、实际审批仍需选价、显式选价再生成草稿订单、拒绝回草稿、重提新review。默认all纳入，沿用原配置恢复/临时记录消失校验；无新环境/持久fixture。
+
+L1 rfq-runtime-iteration.log与py_compile/bash-n PASS；74/50/15生产与测试输入未改，复用53.75原证据。受管升级复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤及固定存储卷由入口预检；非客户生产/控制库。需一次smart_construction_core升级后重绑，再只执行rfq8。运行及页面尚pending，前端未变不重建，不跑旧独立ORM。
+
+
+53.76实际结果：受管模块升级/后端a3379822c成功，rfq-runtime.log 8/8 PASS，ROLLBACK VERIFIED（配置/步骤恢复，临时RFQ/订单/材料模板/供应商消失）。运行使用真实tier reviewer，建单及独立执行使用事务sudo，不替代角色全旅程。未重跑独立旧ORM。
+
+P4扩展既有approval-actions页面范围sc.material.rfq，L1 rfq-page-iteration.log与node语法PASS；创建tpl07-1790780849651/report.json 15 PASS，官方组合/有效契约/未保存无定价或订单/系统编号隐藏/双视口无溢出，errors=[]、forbiddenWrites=[]，390截图人工复核一致。已有记录tpl07-1790780863288/report.json查询ok=true records=[]，第2项数据前置失败，不算记录页通过、不新增fixture、不重复空查询。前端7915f3bb9复用未重建，后端a3379822c；实际角色审批定价页面仍pending。总体detail.action-state及67条接管继续开放。
+
+
+### 53.77 材料结算审批与成本确认分离（进行中）
+
+P1 smart_construction_core材料结算行业标准，复用共享policy/tier；非P0业务默认、P2偏好或前端推导。实际action_confirm会生成成本台账和付款申请，因此新增approved待确认状态：提交无配置自动approved，有配置真实review；callback只审批，不触发_sync_downstream_after_confirm。显式确认从approved校验审批事实，再执行原confirmed及类别控制的成本/付款同步。生成剩余付款申请也校验审批事实；不改原金额与幂等/剩余额度规则。
+
+保留既有_COST_SOURCE_STATE_TOKEN，不重复实现状态保护。结算头及明细原submitted/confirmed不可变范围增加approved，防止审批后修改/删除事实；驳回回draft、重新提交新review沿用共享机制。金额条件使用既有amount_total，公司由项目提供。native/profile真实审批、独立确认complete、cancel/reset对齐；序列编号创建隐藏已有只读，前端没有新业务分支。
+
+L1 material-settlement-iteration.log PASS；material-settlement-approval-unit.log 76 PASS（新增审批不产生成本/付款、确认独立、审批后头/明细不可变）；material-settlement-native.log 8+43=51 PASS；material-settlement-semantics.log 15 PASS；2XML解析/diff --check PASS，非零回执登记。源码候选852221422+本段dirty；不是冻结交付。
+
+L3未执行：tier/company/reason/approved状态/native XML需要一次受管模块升级。下一步扩展既有rollback范围material-settlement，实际确认成本台账和付款申请仍按配置执行、approval不执行、金额/明细保护、拒绝重提及恢复。L4前端源码未改不重建，后续只查受影响页面；L5不在本地迭代范围。已完成其他单据证据按未变方法输入复用，不重扫/重复ORM；总体67仍未完成。
+
+
+### 53.78 材料结算真实审批及确认下游（进行中）
+
+P4既有回滚工具新增material-settlement scope8，默认all纳入。验证状态绕过/提前确认拒绝、无配置审批无下游、金额规则待审阻断、实际审批不记成本付款、approved事实/明细不可变、显式确认按现有类别配置产生台账/草稿申请、拒绝回draft、重提新review。所有新建测试单据/生成台账/付款申请纳入既有rollback消失回读，不新增环境或fixture基线。
+
+L1 material-settlement-runtime-iteration.log、py_compile/bash-n PASS；P1源/测试未变，复用76/51/15。后续受管smart_construction_core升级/后端重绑，仅执行本范围8项。环境沿用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01，精确过滤与固定卷由入口预检；非客户生产/控制库。L3及L4尚pending，前端未变不重建，L5不在本地任务范围。
+
+
+53.78实际：受管升级及后端7a6adbe17加载成功，material-settlement-runtime.log 8/8 PASS，ROLLBACK VERIFIED。审批阶段无成本/付款，approved头及明细修改删除拒绝，显式确认按现有类别配置检查下游金额与草稿付款状态，重复确认拒绝；拒绝重提新review且不确认。此运行建单/确认使用事务sudo，审批用实际reviewer，不等同完整角色业务旅程。
+
+P4既有浏览器范围增加sc.material.settlement；material-settlement-page-iteration.log L1/node语法PASS。创建tpl07-1790781211021/report.json 15 PASS，官方表单/有效契约、编号隐藏、未保存无确认或剩余付款、双视口，errors=[]/forbiddenWrites=[]，390截图复核。已有记录tpl07-1790781226628/report.json api.data ok=true records=[]，数据前置不足；不重复查询，不新建fixture，不升级全业务行。前端7915f3bb9复用未重建；真实角色记录办理仍pending。总体目标与detail.action-state继续开放。
+
+
+### 53.79 设备计划与设备申请成组接入统一审批（进行中）
+
+P1 smart_construction_core / equipment_management，行业标准计划申请职责。两类原确认无执行副作用，提交统一policy/tier：无配置自动approved，有配置实际review；旧action_approve仅委托真实审批保留wizard。保留明细及申请业务锚点校验，项目公司为配置归属；私有状态token拒绝外部直接写。回调只在真实review终态推进，拒绝回draft并保留原因，重提走共享review重建。设备使用登记确认记成本，未混入本组，后续需独立审批与执行。
+
+原生视图真实tier按钮/profile/配置选择/回调统一，系统编号创建隐藏只读。回调沿用同文件已注册数据载体，设备权限为既有internal_user，实际reviewer由tier保护，不借材料经理身份决定设备业务。无前端业务条件。设备申请amount_total为固定0展示边界字段，非真实审批金额；两模型不登记金额权威，金额条件应由现有编译器拒绝。
+
+L1 equipment-plan-request-iteration.log PASS；equipment-plan-request-unit.log 77 PASS（一个参数化测试覆盖两模型配置分流/回调事实/兼容wizard/外部token与来源校验）；equipment-plan-request-native.log 8+44=52 PASS；equipment-plan-request-semantics.log 15 PASS；2份XML解析/diff --check PASS，检查输入预登记与非零回执完成。候选0ccc41db0+本批dirty，非冻结交付。
+
+L3未执行：tier/company/reason/native XML需一次受管升级。下一步用现有rollback工具单独equipment-plan-request范围真实验证两模型配置、金额拒绝、来源计划关联、审批/驳回重提及恢复。L4仅后续受影响页面，不重建前端；L5不在本地范围。成本用量/设备结算尚未接入，67条和角色实际办理不能据此完成。
+
+
+### 53.80 设备计划与申请成组真实审批验证（进行中）
+
+P4已有rollback工具新增equipment-plan-request白名单范围14：每模型6项（外部state保护、无配置自动审批、无金额权威拒绝金额条件、pending配置变更保护、真实review通过、驳回重提），另2项申请引用未批计划/跨项目计划拒绝。默认all纳入，沿用原配置恢复和临时记录消失回读，无新环境或持久fixture。
+
+L1 equipment-plan-request-runtime-iteration.log/py_compile/bash-n PASS，P1及纯回归输入未改，复用77/52/15。一次受管smart_construction_core升级/reload后仅本范围14；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产或控制库。运行尚pending，前端未改不重建；角色页面随后按真实数据检查，不重跑旧单据ORM。
+
+
+53.80结果：受管升级/reload859c761ad成功；equipment-plan-request-runtime.log 14/14 PASS，ROLLBACK VERIFIED，两模型配置恢复、临时单据/项目消失。真实reviewer执行审批，建单使用事务sudo；非完整角色办理证明。未重跑旧ORM/前端构建。
+
+P4页面范围扩展两模型，equipment-plan-request-page-iteration.log L1/node语法PASS。设备计划创建tpl07-1790781561410/report.json 14 PASS。设备申请首次tpl07-1790781570251在模型断言失败：report.recordAuthority被后到达的sc.equipment.request.line覆盖，主表response存在，归因P4观察器。创建分支改为本次导航响应中按主模型及非正整数记录身份选择；equipment-create-observation-fix.log L1 PASS，设备申请复验tpl07-1790781615748/report.json 14 PASS。原计划保存authority确为sc.equipment.plan/NewId，选择修复不改变其证据；不因测试工具改动重跑独立业务。两者errors=[]/writes=[]，双视口，系统编号与旧直接审批入口不出现，申请390截图人工复核。
+
+PM记录查询：计划tpl07-1790781578831、申请tpl07-1790781623019均ok=true records=[]，数据前置不足，角色实际记录办理pending；不造fixture、不扩权、不重试相同空查询。前端7915f3bb9/后端859c761ad，detail.action-state与全系统目标保持开放。
+
+
+### 53.81 设备使用与结算审批／确认职责分离（进行中）
+
+P1 smart_construction_core设备使用及结算，复用policy/tier。两模型新增approved待确认：无配置提交自动approved，有配置真实review；callback不执行确认。使用登记action_confirm继续项目经理、来源申请/事实校验，新增审批事实检查后才写confirmed并_sync_project_cost_ledger。既有成本状态令牌/非draft事实保护不重建，取消approved要求项目经理，草稿仍操作员；设备结算保留来源usage同项目/供应商且confirmed的业务校验，再显式确认。
+
+审批金额分别绑定已有usage.amount与settlement.amount_total，公司来自项目；不借其付款展示字段执行付款。原生状态栏/tier按钮/确认可见性与workflow profile同步，系统编号创建隐藏只读；前端无新增业务逻辑。模型/配置/回调均属P1行业标准，非P0通用业务默认或P2客户偏好。保持原有ACL/record rules。
+
+L1 equipment-execution-iteration.log PASS；equipment-execution-unit.log79 PASS（参数化两模型审批不执行、确认副作用/来源校验、usage经理取消边界）；equipment-execution-native.log8+45=53 PASS；equipment-execution-semantics.log15 PASS；2XML解析/diff --check PASS，非零回执登记。候选8a82256ae+本批dirty，不是冻结交付。
+
+L3未运行：tier/新字段/state/XML需一次受管升级，下一步既有rollback工具设备执行范围真实验证使用成本台账、金额审批、权限/不可变、结算引用已确认使用及拒绝重提。L4产品前端未改不重建，仅受影响页面后验；L5不在本地范围，不重复旧ORM。实际角色办理及总体67仍未完成。
+
+
+### 53.82 设备使用与结算真实执行验证（进行中）
+
+P4现有rollback工具新增equipment-execution scope14：两模型各6（外部状态/提前确认、无配置只审批、金额规则pending、真实审批不执行、显式确认/重复确认拒绝、驳回重提），另usage事实不可改/经理确认取消边界、settlement未确认usage拒绝。使用现有finance fixture验证非经理方法保护，不新增账号/权限；临时项目/供应商/单据及台账均进入原回滚核验。建单使用sudo、审批实际reviewer，不替代角色全旅程。
+
+L1 equipment-execution-runtime-iteration.log及py_compile/bash-n PASS；P1及纯测试输入未变，复用79/53/15。一次受管smart_construction_core升级/reload后只本scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01、精确filter/固定卷由入口预检，无新环境或持久fixture。L3运行待定，前端未改不重建，L5不在本地范围。
+
+
+53.82结果：受管升级/reload a1e371b5f成功，equipment-execution-runtime.log 14/14 PASS，ROLLBACK VERIFIED。审批无成本副作用，真实确认ledger qty=2/source_amount=20，approved事实修改/删除拒绝，既有finance非经理确认/取消拒绝；结算使用来源confirmed，未confirmed来源拒绝。实际reviewer+事务sudo建单/执行不替代完整角色业务旅程。
+
+P4既有approval-actions支持usage/settlement；equipment-execution-page-iteration.log L1/node语法PASS。创建报告usage tpl07-1790781953996、settlement tpl07-1790781964386各14 PASS，编号隐藏/未保存无确认/有效契约/官方组合/双视口，errors=[]、forbiddenWrites=[]，390截图复核。已有记录usage tpl07-1790781971414、settlement tpl07-1790781978203均api.data ok=true records=[]，数据前置不足，不能算记录办理通过，不扩权/造fixture/重试空查询。前端7915f3bb9复用未构建，后端a1e371b5f；总体67和detail.action-state未完成。
+
+
+### 53.83 劳务计划／申请统一审批及状态边界（进行中）
+
+P1 smart_construction_core/labor_management行业计划申请职责，复用shared policy/tier而非前端猜测。两模型原提交/确认/取消/重置缺少来源状态守卫，现按既有native按钮职责补齐：提交draft/历史submitted，cancel draft/submitted，reset仅cancel，approved不允许直接重提/取消/重置；外部state写拒绝。旧approve委托真实review，callback只在review终态推进，拒绝回draft带原因。保留明细数量/日期约束，不臆造不存在的来源计划关系。
+
+配置/tier/native/profile成组接入，项目公司为配置归属，系统编号创建隐藏只读；申请amount_total固定0仅展示边界，不登记审批金额权威。平台机制/前端保持无劳务规则，P4工具不是业务真源。原ACL/record rules沿用。
+
+L1 labor-plan-request-iteration.log PASS；labor-plan-request-unit.log80 PASS（参数化两模型配置分流、真实review、wizard、token、approved非法逆转及正常cancel/reset）；labor-plan-request-native.log8+46=54 PASS；labor-plan-request-semantics.log15 PASS；2XML解析/重复id检查、diff --check PASS。输入预登记与非零回执完成，候选e269d3b67+本段dirty，不是冻结交付。
+
+L3未运行：tier/新字段/XML需受管升级，下一步扩展既有rollback劳务计划申请范围验证真实配置、无金额权威拒绝、审批/驳回重提及状态边界恢复；随后同组官方页面。L4未改前端不重建，L5非本地迭代范围。不重跑材料/设备独立ORM。考勤、劳务用工与结算等剩余职责及实际角色记录办理继续开放，总体67未完成。
+
+
+### 53.84 劳务计划／申请真实审批与状态保护（进行中）
+
+P4现有rollback工具新增labor-plan-request scope16，两模型各8：外部状态、无配置自动通过、缺失金额权威拒绝、pending配置变更保护、真实审批、approved禁止非法逆转、cancel正常reset、驳回重提。没有复制设备来源计划关系。默认all纳入，原配置恢复与临时单据消失校验保持；无新环境/持久fixture。
+
+L1 labor-plan-request-runtime-iteration.log与py_compile/bash-n PASS，P1/纯测试未变复用80/54/15。一次受管smart_construction_core升级/reload后只该scope；平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter及固定卷沿用入口预检。L3尚pending，前端未改不构建，L5不在本地范围；旧材料/设备ORM不重跑。
+
+
+53.84实际：受管升级/reload387fb8f3c成功，labor-plan-request-runtime.log16/16 PASS、ROLLBACK VERIFIED。两模型审批/拒绝重提/配置变更/金额拒绝及approved非法逆转均通过，原配置与临时记录回滚。真实reviewer审批+事务sudo建单不替代角色办理全旅程。
+
+P4复用计划申请页面检查，两模型仅扩展允许范围；labor-plan-request-page-iteration.log L1/node语法PASS。创建计划tpl07-1790782297631、申请tpl07-1790782307029各14 PASS：官方组合/有效契约/编号隐藏/旧直接审批退出/双视口，errors=[]、forbiddenWrites=[]，390截图复核。PM已有记录计划tpl07-1790782315231、申请tpl07-1790782320423均ok=true records=[]，数据前置不足；不扩权/造fixture/重复空查询。前端7915f3bb9未重建，后端387fb8f3c。实际角色记录办理、剩余劳务职责及总体67仍开放。
+
+
+### 53.85 考勤／劳务用工／结算审批与确认分离（进行中）
+
+P1 smart_construction_core/labor_management三类确认职责成组接入shared policy/tier。提交无配置只自动approved待确认，有配置真实review；回调只审批，显式action_confirm校验审批事实后沿用原确认。劳务用工继续成本状态令牌/非草稿事实锁/项目操作员与经理权限，取消approved仍经理；结算来源项目/劳务单位/未结算状态校验不变，不引入设备结算的来源规则。
+
+company权威统一项目公司，usage/settlement金额均用各自amount_total；考勤不具金额权威，未注册金额字段。原生tier动作、编号创建隐藏只读、approved状态栏、workflow确认complete同步。考勤reset从原错误submitted投影修为cancel，与后端既有守卫一致。所有业务语义在P1，不加前端模型条件；外部状态直接写保护补至考勤/结算，用工原机制复用。
+
+L1 labor-execution-iteration.log PASS；labor-execution-unit.log81 PASS（参数化三模型审批不确认、配置分流、真实review事实、confirmed不能逆转、用工经理权限）；labor-execution-native.log8+47=55 PASS；labor-execution-semantics.log15 PASS；2XML解析/重复ID、diff --check PASS，非零回执登记。候选a1a9bb85e+本段dirty，非冻结交付。
+
+L3尚未运行：tier/新字段/state/XML需要一次受管升级。下一步现有rollback scope劳务执行三模型，验证金额/无金额条件、审批与确认、用工事实锁/经理权限、结算来源限制、拒绝重提及回滚。L4前端未改不构建，只受影响页面后验；L5非本地范围。其他已完成单据不重验；实际角色记录及总体67仍未完成。
+
+
+### 53.86 考勤／劳务执行真实审批验证（进行中）
+
+P4现有rollback新增labor-execution scope25：三模型各7（状态保护、无配置只审批、金额权威、pending配置变化保护、实际审批、显式确认、拒绝重提），另用工事实锁/非经理边界、结算跨项目/劳务单位不符/已结算来源3拒绝。全部复用内部验收租户及既有fixture角色，不新建环境/持久fixture；原配置及临时记录回滚核验保持。
+
+L1 labor-execution-runtime-iteration.log及py_compile/bash-n PASS，P1纯回归输入未变复用81/55/15。一次受管smart_construction_core升级/reload后只本scope；sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter与固定卷由入口预检，非客户生产/控制库。L3尚pending；前端未变不重建，L5不在本地迭代范围。
+
+首次labor-execution-runtime.log考勤7/用工8及结算前3通过后，结算重复引用同一用工被既有line约束拒绝，ROLLBACK VERIFIED。归因P4数据安排，不改P1唯一性。工具为各正常结算单单独创建并真实审批确认一个事务用工来源；负例跨项目/单位断言包含创建阶段（既有约束会更早拒绝）。所有协作者仍纳入同一rollback回读，无持久fixture。L1 labor-execution-source-scope-fix.log/py_compile后仅当前scope重验，不重复升级/重建。
+
+复验labor-execution-runtime-fixed.log25/25 PASS，ROLLBACK VERIFIED，原配置/步骤恢复且临时项目/劳务单位/考勤/用工/结算全部消失。后端产品1c18db880，工具25c468e15仅P4修正；未再次升级。实际角色全旅程未证明（建单/确认使用事务sudo，审批真实reviewer，非经理拒绝现有finance）；三模型官方创建/已有记录页面下一步，不能以本运行关闭detail.action-state或总体67。
+
+
+### 53.87 劳务执行官方创建页面与必要输入缺口
+
+P4既有standard_page_type_browser扩展考勤/用工/结算，复用执行类断言，不新增产品模型规则。候选58d7f66ab+脚本dirty，L1 labor-execution-page-iteration.log/node --check/diff --check PASS；P1输入未变复用81/55/15与runtime25，后端1c18db880、前端7915f3bb9未升级/重建。
+
+创建报告考勤tpl07-1790782907395、用工tpl07-1790782916765、结算tpl07-1790782924026各14 PASS：有效父契约、官方表单、编号隐藏、无提前确认/审批、1440/390无溢出、errors/forbiddenWrites为空。390截图复核发现结算创建缺少原生表单project_id/contractor_id等必要输入，日期显示为文本。故14项仅证明其明确断言，不能证明结算可创建；新增产品缺口，下一步沿现有响应structure/layout与原生字段追查，不新增fixture。
+
+已有记录报告考勤tpl07-1790782932490、用工tpl07-1790782937288、结算tpl07-1790782942305均api.data ok=true records=[]，2项处数据前置失败；不能计为动作办理通过，不重复空查询。全业务状态机/67条台账及detail.action-state继续开放。L5未执行，无推送/合并/目标部署。
+
+
+### 53.88 劳务结算创建输入契约修正（进行中）
+
+复用53.87响应定位：native字段存在且模型可编辑，但P1发布sc_labor_settlement_p1_form_business_facts_v1把project_id/contractor_id/settlement_date/note无条件readonly，导致官方共享消费显示为事实而非输入。P1行业标准发布载体移除四项无条件只读，继承原生约束；付款/计算/来源事实只读保持。不向P0或前端写业务规则，不改ACL/审批/确认状态机。
+
+候选73e9a538f+本段dirty，L1 labor-settlement-input-iteration.log PASS、XML通过测试解析、diff/node检查PASS；L2 labor-settlement-input-unit.log82 PASS并登记非零回执，新增测试证明输入策略与付款事实分离。浏览器工具增加四字段契约及可见性断言，尚待升级后执行；运行时25不受业务逻辑变化影响，不重跑。原生动作55/语义15输入不变复用。下一步仅受管模块升级发布XML并复验结算创建；前端构建7915f3bb9复用，L5未运行。
+
+
+53.88运行：bfcc36599受管升级/reload成功（labor-settlement-input-upgrade.log/reload.log），前端构建未变。首次tpl07-1790783153713项目契约可编辑断言通过、精确label失败；截图实际项目/单位/日期已恢复输入。P4标签正则重试tpl07-1790783207949仍不匹配实际控件标签，不作为产品失败证据。改以关系输入placeholder及日期authority值绑定控件，tpl07-1790783233663证明项目/单位/日期契约与控件存在，note契约可编辑但无textarea，止于第15项，不能宣布页面通过。无errors/业务写。
+
+剩余产品缺口已缩小为说明字段共享消费：契约note role=activity，slots collaboration，普通文本框未呈现。下一步追查canonicalFormFloorplan/共享协作区域，不在前端添加劳务模型规则，不重复升级/XML修复或既有空记录查询。L3契约加载成功，L4仍failed，保持detail.action-state开放。
+
+
+### 53.89 高级分组不得隐式隐藏创建字段（进行中）
+
+复用tpl07-1790783233663离线presenter重放：note布局readonly=false，但statusContract.widgetStatus visible=false/auth=none，故53.88“共享渲染缺口”归因修正为P0字段策略缺口。contract_governance_form_fields.build_form_field_policies把自动advanced分组隐藏于create；该布局分组不是权限/可见性权威。移除该隐式隐藏，保留原生modifier/字段访问、readonly及显式project create_hidden政策，前端不改。适用于通用契约，不含劳务模型规则。
+
+候选c45594611+本段dirty；L1 form-field-policy-iteration.log PASS、原split guard PASS；新增既有Make体系定向pure target验证4项：可选/必填advanced输入仍可见、只读事实不变、显式隐藏保留。首次unit空descriptor被已有忽略逻辑过滤，P4测试改成真实selection descriptor后form-field-policy-unit-fixed.log4 PASS，非零回执登记。不触发ORM/schema升级，仅源码reload后重验结算页面；前端7915f3bb9复用不构建。总体业务办理/67尚未完成。
+
+
+53.89结果：4eb114313受管reload成功，结算tpl07-1790783437117 22 PASS、errors/forbiddenWrites空，390截图说明textarea及项目/单位/经办人/日期输入恢复。关闭53.87–88输入丢失本身，不代表已保存/提交。首次agent.run.record因测试输入修正后旧begin失效拒收，重新begin绑定4eb114313运行4项并record成功（/tmp/tpl89-record-fixed.log），未绕过回执。
+
+共享影响代表页项目create tpl07-1790783460002失败，随后考勤/用工未运行。错误为日期date/date_start status disabled=true reason=NATIVE_MODIFIER_UNRESOLVED却auth=edit；date另visible=false。前端schema正确拒收“editable auth conflicts with readonly occurrence status”，不放宽校验。日期原生required依赖date_start/date在新建默认缺失；需查assembler的未解析modifier状态及projection auth同步。这是当前L4阻断，不能宣称本批验收完成；先修P0对应状态投影/默认值语义，再恢复代表页检查。不重复结算后端审批ORM或模块升级。
+
+
+### 53.90 修饰条件状态授权一致性与新建关系默认值（进行中）
+
+P0通用契约：occurrence初始/最终状态隐藏auth=none、未解析disabled或readonly时auth=read；policy合并同样不为disabled授edit，前端schema保留。项目日期缺失的另一路根因是native relation commands tuple与JSON list形状差异使create dependency hydration整批退出，比较仅递归统一list/tuple形状，仍用native defaults构造new且内容差异/权限/compute失败继续fail-closed，不猜False。
+
+候选88c9ecfae+dirty。modifier-authority-iteration.log L1 PASS；runtime unit20+mobile109=129 PASS、guard6 PASS，非零回执。边界新用例验证JSON等价默认命令被接受、不同ID拒绝；原stub缺少既有project_workflow_action_semantics导出导致首次112加载错误，仅测试替身补齐，modifier-dependencies-unit-fixed.log112+51+5=168 PASS。无ORM/数据库写/新增fixture；下一步Python源码reload与定向页面，前端未变不构建。总体67/真实办理仍开放。
+
+
+53.90复验与归因校正：d987f83f7 reload后tpl07-1790783702476 schema冲突消失，但探针仍因官方可编辑表单未挂载失败。补齐record_id=new身份支持，新增用例，modifier-create-identity-unit.log113+51+5=169 PASS，0b8da3b04 reload后tpl07-1790783758165同样停止第4项。最终回读globalStatus确认该直接/f/project.project/new实际解析到viewCapabilities.create=false、effective create=false、FORM_CREATE_NOT_ALLOWED；因此依赖不补齐是权限保护，不能将本入口当授权创建旅程。前述JSON tuple/list和new身份是纯测试证实的通用缺陷修正，不是本次受拒入口日期缺失的已证明原因。项目创建应绑定system.init的真实授权立项入口，不扩权/不修改视图权限。
+
+独立劳务代表页恢复验证：后端0b8da3b04、前端7915f3bb9，考勤tpl07-1790783794807 14 PASS，用工tpl07-1790783802116 14 PASS，结算tpl07-1790783809986 22 PASS。均双视口、真实契约、无业务写；结算输入已恢复。项目错误探针不算通过，旧已有记录空查询不重试。下一步先纠正项目入口验收身份，再依67台账剩余业务族推进。总体交付未完成、无推送/合并/目标部署。
+
+
+### 53.91 项目立项验收绑定授权入口
+
+P4既有browser probe捕获当前角色system.init.route_authority，project create只能使用menu_sc_project_initiation的真实menu/action上下文；未授权时停止，不再直接/f/project.project/new选默认事实视图。源码menu.xml确有专用action_project_initiation/view_project_create_form，但不是当前用户授权的证明。L1 project-initiation-entry-iteration.log/node/diff PASS，产品源码与构建/后端未变，复用53.90纯测试及劳务页面。
+
+实测tpl07-1790783889835在第3项“one authorized initiation entry”失败：PM route_authority有23 primary、17 contextual，但无立项menu/action，项目仅台账/编辑/看板等已授权入口。这是入口/角色验收前置不足，不能直接断言应扩权或该角色必须可立项；不猜数字ID、不扩权、不新建账号/fixture、不重试无上下文路径。入口解析诊断继续附着原报告。下一步可独立推进既有台账剩余业务族；项目创建回到授权角色/正式入口职责核对后再恢复，不能算通过。总体67仍开放。
+
+
+### 53.92 材料租赁计划接入统一审批（源码阶段）
+
+P1 smart_construction_core材料租赁计划，行业标准职责复用现有policy/tier；不在P0或前端加入模型审批规则。公司来自项目、金额权威estimated_amount。原action_submit直接submitted/action_approve直接approved改为统一配置分流：无配置自动approved，有配置真实review；历史submitted可受控重新提交；真实review回调推进/驳回回draft，旧action_approve委托真实审批保留wizard结果。状态直接create/write保护使用私有令牌，cancel仍仅draft/submitted、reset仅cancel。合同项目/供应商、明细数量/天数/价格校验沿用，租赁执行/归还/结算未被审批隐式触发。
+
+原生view移除直接确认按钮，公布tier审批/驳回和提交状态域，编号创建隐藏只读；workflow从简单审批配置迁到真实review动作投影，policy/tier模型选择及callback同批注册。未改ACL。租赁单及租赁结算另有执行职责，仍待后续同族统一，不能以计划代表全族完成。
+
+候选feb78e3c0+dirty；L1 rental-plan-iteration.log PASS；L2 rental-plan-unit.log82 PASS（既有劳务状态机用例新增租赁计划参数，覆盖配置分流、实际review回调/wizard、approved非法逆转、cancel/reset、外部state拒绝），rental-plan-native.log8+47=55 PASS（新增租赁参数验证reviewer差异/动作投影），rental-plan-semantics.log15 PASS，2XML解析/重复ID与diff --check PASS；非零回执登记。未重复无关ORM。
+
+L3尚未运行：新tier/字段/XML需一次受管smart_construction_core升级，下一步扩展既有rollback scope验证租赁计划estimated_amount阈值、合同/供应商限制、真实审批驳回重提、配置恢复；随后同族官方页面。前端未变不重建，L5无推送/合并/目标部署，整体67及实际角色旅程未完成。
+
+
+### 53.93 租赁计划真实审批定向验收（进行中）
+
+P4既有rollback工具新增rental-plan scope10：无配置自动通过、状态直接写拒绝、estimated_amount门槛、启用但未匹配拒绝、空明细拒绝、pending配置变化保护、真实review审批、approved逆转拒绝、cancel/reset、驳回重提。复用既有租户/角色/环境与事务恢复，不新增持久fixture。合同/供应商锚点源码保持，但本工具尚不宣称真实合同关联负例覆盖。
+
+L1 rental-plan-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用82/55/15。平台内部验收sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确dbfilter及固定卷由受管入口核验；需一次模块升级/reload后只当前scope。建单sudo+真实reviewer验证不替代完整角色业务旅程。前端未变不构建，L5未执行。
+
+
+53.93结果：一次受管模块升级/reload f9b24b174成功；rental-plan-runtime.log10/10 PASS、ROLLBACK VERIFIED，原配置/步骤恢复及全部临时记录消失。建单sudo、真实reviewer，不扩大为实际角色全业务旅程。
+
+P4 browser计划类允许范围扩至租赁计划，rental-plan-page-iteration.log/node检查PASS。创建tpl07-1790784243489 14 PASS：有效契约/官方表单/编号隐藏/旧直接确认退出/双视口/无错误及业务写，390截图项目/计划日期/进退场/用途/供应商/合同输入可见。已有记录tpl07-1790784253465 PM api.data ok=true records=[]，停第2项，记录办理数据前置不足；不造fixture/扩权/重复空查询。前端7915f3bb9复用未构建，后端f9b24b174。合同/供应商真实关联负例及完整角色保存办理未证明；租赁执行/结算与安全/分包等剩余职责继续推进，detail.action-state/总体67保持开放。
+
+
+### 53.94 租赁单审批与执行职责分离（源码阶段）
+
+P1材料租赁单复用shared policy/tier，项目公司及amount_total为配置权威。新增submitted/approved，提交无配置自动approved、有配置真实review；回调只审批不启用。action_activate仅approved+审批事实后执行，action_return仍active、action_settle仍returned，各自保留业务锚点校验。状态写私有令牌，非draft直接create拒绝；历史active后的执行不被重新审批配置反向解释。cancel保留既有active可取消，新增pending/approved可取消，returned/settled不可取消。
+
+原native/schema把action_settle当approve及returned可取消的漂移纠正：approve/reject仅真实tier，activate=start_execution，return_rental及complete=complete；返回与结算各有精确方法身份。native提交/tier/状态栏/编号同步，表单不加入模型猜测。新增P1动作声明return_rental复用既有complete语义，不新增前端词汇。
+
+L1 rental-order-iteration.log PASS；首次unit新增测试括号错误，修正后rental-order-unit-fixed.log83 PASS（新增完整submit→approve→activate→return→settle及重复/提前操作边界）；rental-order-native.log8+48=56 PASS，rental-order-semantics.log15 PASS，XML2解析/重复ID及diff PASS；非零回执登记。尚未模块升级/运行/页面验收，需下一批一次受管升级及scope验证；不重验租赁计划10或其他独立ORM，前端未改不构建。
+
+额外明确P1产品缺口：租赁结算action_paid只把confirmed改paid，没有读取实际支付事实；当前payment_request_id检查仅项目与收款方一致，不能证明已付款。审批接入不能把该动作视为真实付款闭环，应在租赁结算职责批次补齐支付事实权威或保留明确未交付状态，不能用按钮/状态变更冒充实际支付。总体67仍开放。
+
+
+### 53.95 租赁单真实审批与执行验收（进行中）
+
+P4既有rollback工具扩展rental-order13项：外部状态/提前启用拒绝、无配置只审批、金额权威/未匹配拒绝/空明细、pending配置变更保护、实际review、显式启用→退还→结算及重复/returned取消拒绝、approved显式取消、驳回重提，来源计划未审批拒绝/已审批可用/跨项目拒绝。复用平台内部sc_frontend_acceptance/local/sc-fe-r2-p1-01/精确filter和固定卷，既有fixture reviewer、事务sudo建单，恢复校验保持；不代表完整角色旅程。
+
+L1 rental-order-runtime-iteration.log/py_compile/bash-n/diff PASS，P1输入未变复用83/56/15；下一步一次受管模块升级/reload只本scope，前端未改不构建，无新环境/持久fixture/L5。
+
+
+53.95结果：一次受管升级/reload1f5c6bca3成功，rental-order-runtime.log13/13 PASS、ROLLBACK VERIFIED，真实review后显式activate/return/settle、来源未审批/跨项目拒绝及已审批接受均通过，原配置/临时记录恢复。建单sudo，非完整角色旅程。
+
+P4 browser新增order明确提交/审批/启用/退还/结算职责检查，rental-order-page-iteration.log/node PASS。创建tpl07-1790784586492 16项明确断言PASS（官方组合/有效契约/编号隐藏/未保存无执行/双视口），但390截图发现项目/供应商输入未显示、日期为只读文本，因此不能认定可建单。既有P1 sc_material_rental_order_p1_form_business_facts_v1为直接待核对策略源，下一步复用响应定位并修复字段权威，补强输入断言，不能以16项关闭缺口。已有记录tpl07-1790784596167 PM ok=true records=[]，角色办理前置不足，不重试/造fixture。前端7915f3bb9未重建。租赁结算支付事实缺口继续开放。
+
+
+### 53.96 租赁单输入策略归位（进行中）
+
+复用53.95响应确认project/supplier/rental_date/contract/owner/note readonly=true来自P1 sc_material_rental_order_p1_form_business_facts_v1。发布载体按职责移除14项用户输入的无条件readonly（项目/供应商/合同/日期/计划退还/使用单位/押金与各费用/附件/备注/经办人），继承原生和tier约束；state/name/actual_return_date/汇总数量金额/settlement_amount/create_date只读保持，非前端模型特殊处理。
+
+L1 rental-order-input-iteration.log/node/diff PASS，rental-order-input-unit.log84 PASS并登记回执，新增纯测试分离14输入与9事实。浏览器增加4输入有效契约及控件可见性8断言，防止只凭原16项判定可建单。下一步仅XML受管升级/reload及创建页复验；P1审批/执行方法未变，复用runtime13/原生56/语义15，已有记录空查询不重跑。前端未改不构建，不做L5/持久fixture。
+
+
+53.96结果：2d7eab703受管升级/reload成功，rental-order-input-page.log对应tpl07-1790784797476 24 PASS，4字段可编辑契约及项目/供应商/日期/说明控件可见，1440/390无溢出、errors/forbiddenWrites为空，390截图复核。关闭53.95创建输入缺失；不声称实际save/submit/角色全旅程已证明。前端7915f3bb9仍未重建，原runtime13依赖的审批执行代码未变复用，不重跑已有空记录查询。下一步租赁结算审批/执行与支付事实缺口，整体67保持开放。
+
+
+### 53.97 租赁结算动作声明补齐审批执行契约（源码阶段）
+
+候选b6cd0cfcd+明确dirty，原工作区干净。P1 smart_construction_core材料租赁结算行业标准职责，复用现有policy/tier；P0/前端不接收租赁业务判断，P3配置只选择审批路线。直接影响material_rental settlement、policy/tier/callback注册、workflow及native view，未变更ACL、启动链或前端。动作有声明不代表执行契约完整：旧approve指向确认结算、旧paid仅写状态，两者均为P1缺口。
+
+源码加入项目公司、真实amount_total配置权威、submitted/approved分离、私有状态写保护和真实review回调；无配置提交自动approved，有配置走review，approved后显式action_confirm才confirmed。新增confirm_settlement动作身份复用complete语义；approve/reject只真实tier，原生按钮与状态栏同步。生成编号创建隐藏只读。原payment_request关联校验、明细及来源租赁单校验保留。
+
+支付调查结论：payment.request._canonical_payment_paid_amount_map是精确申请的posted ledger权威，但不是租赁结算分摊/归属证据；_claim_terminal_cash_source仅支持receipt.income/expense.claim，属于终态现金来源认领，不能把租赁结算直接当现金来源套入。action_paid现有缺陷仍开放，未通过简单is_fully_paid或强加一对一业务规则冒充解决；下一步补支付依据、归属、金额/币种与冲销语义，不能以本次审批通过关闭支付缺口。
+
+L1 rental-settlement-iteration.log PASS，XML2解析/重复ID及diff检查PASS。L2 rental-settlement-unit.log85 PASS（新增配置分流、真实审批/驳回重提、直接state写拒绝、审批不执行确认、重复确认拒绝）；rental-settlement-native.log8+49=57 PASS（reviewer动作差异/确认独立于审批和支付）；rental-settlement-semantics.log15 PASS。非零run回执已记录。这些纯测试不证明真实tier/database行为。
+
+L3/L4 not_run：支付事实缺口需先补齐，新增字段/XML需一次受管升级后再跑租赁结算scope及官方页面；不提前升级不完整候选。后端仍2d7eab703，前端7915f3bb9未变不构建。未重跑独立租赁计划/订单或无关ORM。L5不适用当前迭代，无推送/合并/目标部署。台账detail.action-state保持contract_gap，总体67与实际角色旅程未完成。
+
+
+### 53.98 租赁支付缺口显式阻断（非支付交付）
+
+候选b55b568d5+dirty，P1 smart_construction_core租赁结算模型与既有workflow evidenceGate。直接核对payment_request的付款依据：standard settlement/material settlement/contract/line settlement存在，rental settlement尚无正式依据载体。单向payment_request_id及其canonical posted paid total不能证明租赁结算归属；终态现金认领另属receipt/expense，不应混用。下一步正式依据必须支持结算到付款申请的明确身份、项目/公司/供应商/币种一致、金额分配及冲销后事实恢复，不强加“一张结算只能一张申请”。
+
+本次先修复已知虚假结果：模型_payment_confirmation_blocker明确返回RENTAL_PAYMENT_ATTRIBUTION_UNAVAILABLE；action_paid直接调用同样拒绝，仍保留方法/动作声明，workflow evidenceGate只禁用confirmed下的complete并提供中文原因。审批/确认结算不受此缺口门禁影响。前端复用既有enabled/reason_code/blocked_message，不隐藏功能或加入模型分支。退出条件是正式付款归属与冲销权威及定向验收齐备，不能把禁用付款当作功能完成。
+
+L1 rental-payment-gap-iteration.log及diff PASS；L2 rental-payment-gap-unit.log86 PASS：新增无关联/关联足额付款申请均不能制造paid事实；rental-payment-gap-native.log8+50=58 PASS：执行真实evidenceGate和availableActions，支付保留声明但禁用且原因非空，确认结算不被阻断。支付事实、冲销、实际权限仍未验收。非零回执登记。前端未改不构建，受管后端仍2d7eab703，L3/L4尚未执行，L5不在本轮；无环境变动/持久fixture/无关ORM/推送合并部署。整体67及支付缺口继续开放，下一步建设正式租赁付款依据，不停在临时阻断。
+
+
+### 53.99 正式租赁付款归属载体及身份约束（源码进行中）
+
+候选af220f0e2+dirty；P1 smart_construction_core付款申请/租赁结算行业业务依据，不属于P0机制、P2客户偏好或前端推导。payment.request新增rental_settlement_id（restrict删除、copy=False），纳入既有_business_fact_fields审批后业务事实写保护；结算新增payment_request_ids反向一对多。旧payment_request_id保持兼容但不自动迁移为归属权威，不把终态现金claim改名套用。
+
+约束核对付款方向、来源已确认/历史已支付、项目及公司/供应商/币种/合同精确一致；不能同时认领其他标准/材料结算头部，也不能混入其他结算或不同合同明细。一张结算可有多张申请，同合同明细和无合同但其他身份一致的结算不被错误排除。paid来源允许保持已有归属，不等同于允许再次占用金额；额度守卫尚待实现。
+
+L1 rental-payment-basis-iteration.log及diff PASS；L2 rental-payment-basis-unit.log89 PASS，新增三组真实模型方法纯执行：身份缺失/不一致和未确认来源拒绝，重复业务依据拒绝，同源多申请/同合同明细/无合同/非租赁路径接受。记录非零回执。没有真实ORM/并发验证，本组不声称完整付款依据可用。
+
+下一依赖：金额占用与并发锁、来源批准后金额/身份保护、付款basis/default_get/onchange/native契约及execution contract读取、实际posted ledger汇总和冲销回读；子明细变更后的执行前重验亦须覆盖。当前新增依据字段尚未接通_has_payment_basis，不可将新增字段宣称可付款；53.98 blocker继续有效。源码阶段暂不L3/L4，schema/XML在链路收敛后一次受管升级验收，后端仍2d7eab703/前端7915f3bb9，不构建/新fixture/推送/合并/目标部署。detail.action-state及整体67保持开放。
+
+
+### 53.100 租赁结算已提交事实保护（源码进行中）
+
+候选2949fa31f+dirty。P1 smart_construction_core租赁结算父/子模型，金额依据完整性归属行业模型，不在前端/P3配置实现。_lock_payment_basis按真实ID排序FOR UPDATE并失效缓存，提交及事实编辑复用同一父单锁。_assert_business_facts_editable只允许draft（包括实际驳回后的draft）。提交后项目/供应商/合同/币种/来源租赁单/结算日期/明细及汇总金额禁止直接改写，说明note不额外锁定。
+
+明细create同时覆盖显式settlement_id和default_settlement_id；write对事实字段检查原父及目标父，不能从已批准单移出或移入；unlink同样检查父状态。source模型的approval token仅用于状态写，不授权改写业务事实。没有改其他租赁计划/订单逻辑，没有新增前端模型分支。
+
+L1 rental-source-lock-iteration.log/diff PASS；L2 rental-source-lock-unit.log92 PASS并登记非零回执：父单10字段/5非draft状态拒绝、note允许、驳回draft恢复、serialization point后重新查state；直接明细修改/删除/双向迁移及context新增阻断。既有配置审批/身份依据测试同目标执行通过。纯测试未证明真实SQL并发、ORM计算缓存或批量明细command行为，L3仍not_run；金额额度/支付执行/冲销尚未接通，不能以事实锁定宣称财务闭环。
+
+下一步复用父锁实现租赁付款额度检查与执行前重验，再接basis/defaults/native及posted金额/冲销链，一次受管升级后定向验收。未改workflow声明/前端，沿用53.98动作语义证据，不重复无关门禁/ORM/构建。后端2d7eab703、前端7915f3bb9未改变；无推送合并目标部署，整体67继续开放。
+
+
+### 53.101 租赁付款额度与历史归属保护（源码进行中）
+
+候选054080df5+dirty，P1 smart_construction_core租赁结算及payment.request。按既有材料结算口径排除draft/rejected/cancel申请，其余同源申请金额占用结算额度；非正/超额金额拒绝，支持多张分次申请。约束在rental_settlement_id/amount/state变化时运行，先序列化源再核对身份/明细依据。后续执行前仍需显式复验，以覆盖直接子明细变更，不宣称本约束单独覆盖完整执行链。
+
+租赁源新增只读copy=False payment_allocation_revision，create/write禁止外部设置。_serialize_payment_reservation先用53.100父行锁，再私有写递增版本，避免REPEATABLE READ仅行锁但聚合仍旧快照的竞态；内部版本更新限于sudo，财务消费可读结算不需获得修改结算业务事实权限。事务冲突重试及实际ORM表现尚待运行验证，不凭代码声明并发通过。
+
+payment.request.write在任何租赁归属变化前用sudo+active_test=False读取财务历史；已有付款登记（含取消）或台账（含冲销）时，不得补绑/换绑/清除归属，保留同值写及无历史修改，防历史支付被重新归因。现有审批后事实锁继续生效。
+
+L1 rental-reservation-final-iteration.log PASS；最后counter sudo范围修正后仅相关py_compile/diff复核PASS，其余L1输入未变。L2 rental-reservation-counter-unit.log96 PASS并登记：额度恰好用满/超额/非正边界，未入流程和非租赁不计占用，先锁再版本写与外部版本写拒绝，历史财务归属不可重绑。初版95及中间96日志保留，不当最终结果混写。
+
+下一步basis/default_get/onchange/native契约与execution读取、执行前额度/身份重验、canonical posted汇总和冲销，检查来源取消与现存付款责任一致性；然后一次受管升级及真实并发/ORM/角色定向验收。L3/L4尚未运行，支付blocker仍在，不将纯测试扩大为真实付款闭环。后端2d7eab703/前端7915f3bb9未改变，无新fixture/无关ORM/推送合并目标部署。整体67继续开放。
+
+
+### 53.102 租赁付款依据接通现有消费链（源码阶段）
+
+候选051176dd7+dirty，P1 smart_construction_core租赁/付款申请/付款执行及原生view。统一_payment_reserved_amount供额度约束和创建剩余额度默认值使用；default_get seed/onchange、_has_payment_basis、payment_basis_type及正式关联展示接入rental_settlement_id，零可申请额显式保留，不因false过滤消失。原生付款依据区公开租赁结算选择、沿用草稿/驳回编辑规则及模型domain，不新增前端解释。
+
+付款执行_payment_basis_contracts_map通过既有caller-visible resolver读取租赁结算与合同，复验来源身份，不sudo跳过来源可见性；可无合同但有合法租赁结算依据。request._assert_payment_execution_ready调用租赁额度/身份校验，直接明细变更不能只靠旧父约束结果办理。原执行依据约束依赖新增租赁字段。剩余额度仅提供默认建议，最终受53.101版本锁校验。
+
+租赁取消先锁源，sudo读取所有归属申请及有效posted台账；在途/办结申请或有效付款事实拒绝取消，已取消且全冲销历史不单独阻止取消。付款依据消费与结算付款确认仍有区别，53.98 blocker继续保留，canonical paid汇总与反向冲销状态尚未完成。
+
+L1 rental-basis-wire-iteration.log PASS；补依赖/测试后相关py_compile/XML parse/diff PASS。L2首轮rental-basis-wire-unit.log99有1 error：新纯测试将空Odoo line model模拟为SimpleNamespace，缺mapped；仅修复替身，fixed99 PASS。最终rental-basis-wire-final-unit.log100 PASS并登记回执，覆盖真实执行合同解析调用及不可见来源拒绝、无合同依据、零默认额、额度查询复用、取消责任边界。纯测试不等同于实际ORM/权限/浏览器。
+
+L3/L4尚未运行：下一步canonical posted汇总、冲销后事实/状态回读及确认支付guard，再一次受管升级和租赁结算rollback scope、代表官方页面验收。原审批链及财务权限守卫保留；不重复付款49或其他无关ORM。后端2d7eab703、前端7915f3bb9未变化，无构建/持久fixture/推送合并目标部署。整体67未完成。
+
+
+### 53.103 租赁支付事实与冲销回读（源码阶段）
+
+候选2195c991e+dirty，P1 smart_construction_core租赁结算与受控payment.ledger reversal。新增只读payment_paid_amount/payment_remaining_amount，按明确归属payment_request_ids调用现有_canonical_payment_paid_amount_map汇总；不按request取消状态丢弃仍有效的现金事实，也不把旧payment_request_id或其他申请金额算入。原生结算form声明两个只读金额，前端无模型分支。
+
+_payment_confirmation_blocker由临时UNAVAILABLE替换成真实门禁：无归属MISSING、非正结算金额INVALID、有效台账身份异常AMBIGUOUS、不足额NOT_FULLY_PAID分别明确原因；足额且事实有效才允许显式action_paid。确认前同源行锁及缓存失效确保重新读取。受控ledger.write成功冲销后调用租赁_refresh_payment_confirmation，始终推进源版本；paid但不再满足金额门禁回confirmed，不回滚审批也不自动再次标paid。触及源版本用于避免冲销发现confirmed就不写源而留下旧快照竞态；实际数据库事务/重试仍需运行证据。
+
+L1 rental-paid-facts-iteration.log、py_compile、rental XML及diff PASS。L2 rental-paid-facts-unit.log104 PASS：明确归属canonical汇总（未归属不计、取消申请有效事实仍计）、足额显式确认、部分/异常/零金额拒绝、冲销回confirmed/补付不自动确认、ledger真实write方法先写冲销事实再回读及重复冲销拒绝；rental-paid-facts-native.log8+50=58 PASS，真实evidenceGate消费新的明确缺因。非零回执登记。没有凭纯测试宣称DB原子性或实际财务闭环。
+
+下一步扩展已有rollback scope覆盖租赁结算实际review/付款依据/额度/posted/reversal/ORM缓存与明细保护，随后一次受管模块升级/reload及官方页面。也需核对验收范围旧paid记录是否缺正式归属，不自动给历史paid制造现金事实；数据修复不得取代权威。L3/L4尚未执行，后端仍2d7eab703，前端7915f3bb9未改不构建。无持久fixture/新环境/无关ORM/推送合并目标部署，整体67及角色旅程保持开放。
+
+
+### 53.104 租赁结算受管事务验收（进行中）
+
+P4既有business_config_approval_runtime_smoke新增rental-settlement scope，第一阶段12项：私有state拒绝、无配置只审批、父/直接明细保护、显式确认、无支付事实拒绝、付款默认值与无合同依据、申请身份/状态守卫、金额未匹配拒绝、pending配置变更保护、真实review后确认、驳回修改重提、空明细/取消。沿用既有事务rollback、基线配置恢复、临时记录消失校验；sudo建单+实际reviewer不替代角色全旅程。付款入账/冲销/并发仍需继续扩展同scope，12项通过不能替代财务闭环。
+
+L1 rental-settlement-runtime-iteration.log、py_compile/bash-n/diff PASS；P1源码未变，复用53.103 104/58及原语义证据。受管local profile/sc-fe-r2-p1-01/sc_frontend_acceptance/精确dbfilter与固定卷复用；下一步一次smart_construction_core升级/reload后仅运行当前scope。前端7915f3bb9未改不构建，无新环境/持久fixture/推送合并目标部署。
+
+
+53.104升级首轮fc5864270失败（rental-settlement-upgrade.log，exit255）：P1 rental settlement原生按钮modifier依赖validation_status但header漏声明，Odoo view验证拒绝，未加载候选；停止后续runtime/browser。修复仅补隐藏依赖字段，新增三类租赁header表达式Name必须有view字段的纯回归。并核对同页P1 published field policy，移除project/supplier两项无条件readonly；编号/状态/附件计数/来源事实只读保持，防已知创建输入缺陷延迟到浏览器。
+
+恢复L1 rental-upgrade-recovery-iteration.log/diff PASS，rental-upgrade-recovery-unit.log105 PASS（新增2输入/5事实策略回归），rental-view-dependency-native.log8+51=59 PASS，非零回执登记。仅源输入修复后允许重新升级，不能无变化重试旧失败；首轮失败不计成功升级，尚无数据库业务验收结论。
+
+
+53.104恢复结果：ef7889f78受管模块升级成功（rental-settlement-upgrade-recovery.log），backend.acceptance.up已加载该revision，18082；首轮失败保留，不混写。rental-settlement-runtime.log12/12 PASS、ROLLBACK VERIFIED，真实review、驳回后修改重提、父子事实锁及付款默认值/依据在ORM成立；配置基线与全部临时记录恢复。仍未覆盖真实入账、冲销、额度竞争或完整角色写链。
+
+P4 browser既有approval-actions范围增加rental settlement，复用rental order输入断言，不新建旅程框架。rental-settlement-page-iteration.log/node/diff PASS。创建tpl07-1790786611844 23 PASS：有效契约、官方表单、4输入可编辑/可见、生成编号隐藏、未保存无结算/付款执行、1440/390及无错误/业务写；390截图人工复核输入及明细入口。前端7915f3bb9未变不构建。已有记录tpl07-1790786669074在第2项失败，fixture_role_pm api.data ok=true records=[]，明确是角色数据前置不足，不扩权/造fixture/重复空查询；既有详情、支付只读金额呈现及实际办理未证明。
+
+下一步继续扩展同rental-settlement rollback scope验证真实付款申请提交/付款执行/posted台账/部分及足额/冲销和版本竞争；必要配置仍须基线恢复，不能伪写approved或直接制造paid事实。总体67仍开放，不升级整行业务交付结论，无推送/合并/目标部署。
+
+
+### 53.105 租赁实际支付/冲销事务验收（进行中）
+
+P4同rollback工具新增rental-settlement-cash独立定向scope（拟10组），用既有fixture_role_finance及其公司，assert非sudo actor；仅准备源结算、资金基线等用事务内sudo builder。资金基线走draft→action_activate，申请/付款登记走真实动作与实际reviewer，不改组/公司权限、配置门禁或伪写审批/支付状态。付款账户完整新输入，不用legacy账号字段；附件使用record.env保持同公司。原12/创建23有效，不重复空PM查询。
+
+前两次工具前提失败均ROLLBACK VERIFIED：rental-settlement-cash-runtime.log将with_company误用于Environment；fixed.log将产品提交权限的OR误写成AND。恢复为记录集环境与产品_has_submit_access/原生finance权限断言。authority.log已通过前4组，在执行审批因旧helper选中无当前公司访问权的reviewer失败；helper现只从实际reviewer_ids筛选有单据公司权限者，限定该公司再调用原生validate_tier，不扩权。
+
+company.log仍前4组通过，真正支付入账失败：P1 payment.ledger._check_request_state遗漏rental_settlement，已有申请/执行承认但ledger不承认。rollback VERIFIED，无支付残留。就地补rental依据分支：必须confirmed，调用现有租赁身份及额度校验；补ledger.action_open_settlement返回租赁源，避免入账后导航断链。未改旧basis类型语义。
+
+L1 rental-ledger-basis-iteration.log/py_compile/bash-n/diff PASS；L2 rental-ledger-basis-unit.log106 PASS并登记：真实ledger guard接受合法confirmed，未确认/已paid/取消/申请未批/超额拒绝，来源导航精确绑定。前端未变，创建23无需重跑；模型Python变更只需受管reload，不做重复模块升级。下一步加载新提交再运行现金scope；实际入账/冲销尚未证明，不宣称财务闭环。
+
+
+53.105结果：受管Python reload2fef6a71c成功（rental-cash-ledger-reload.log）。rental-settlement-cash-runtime-ledger.log10/10 PASS、ROLLBACK VERIFIED：fixture_role_finance非sudo完成申请/付款登记动作，真实配置reviewer处理审批，资金基线真实activate；申请额度拒绝1元超额，20+40分别产生posted ledger及正确来源导航，20时拒绝paid、60后显式paid，冲销40后confirmed/paid20/unpaid40，全部冲销后paid0/unpaid60，历史归属仍拒绝清除，申请取消释放责任后源取消成功。原配置及临时记录恢复，无权限/门禁改动。该结果替代前四轮失败，不抹除失败证据。
+
+边界：源结算与资金计划仍是sudo事务准备；现金动作是实际finance身份的ORM路径，不等同于浏览器全旅程或真实双事务竞争。当前fixture_role_pm已有结算空查询不重跑，既有详情支付金额呈现待数据前提。前端7915f3bb9未改变、创建23和原审批12按未变产品输入复用。
+
+下一步动作可用性契约需补齐取消阻断：模型已拒绝在途付款责任下取消，但workflow rental evidenceGate目前只投影支付阻断，应复用同一业务谓词给cancel明确原因，不仅依赖点击后报错。并继续既有67台账剩余安全/分包等页面族，不将租赁财务事务通过升级为全系统交付；并发验证继续保留未验证状态。无推送/合并/目标部署。
+
+### 53.106 取消执行与动作契约共用业务谓词（进行中）
+
+候选基于2ada3eb5e，显式dirty为material_rental、workflow_contract_service及两项定向测试；P1 smart_construction_core拥有租赁取消责任约束，非客户偏好/P3配置，不放入P0或前端。抽取_payment_cancellation_blocker，取消执行仍先锁定来源再调用；workflow evidenceGate调用同一谓词给cancel返回在途申请/有效台账原因。支付动作自身gate保持独立，权限及财务规则不变。
+
+L1 rental-cancel-contract-iteration.log通过；L2 rental-cancel-contract-unit.log106、rental-cancel-contract-native.log8+52=60通过并登记非零回执；真实方法回归覆盖在途申请/posted ledger阻断及责任释放恢复。P4既有rollback工具增加rental-cancellation-contract窄scope，复用finance真实申请准备，只检查契约禁用及申请取消后契约恢复/实际取消，6组；不重跑10组支付冲销。工具L1 rental-cancel-runtime-tool-iteration.log、py_compile/bash-n/diff通过。
+
+复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与固定filestore/卷，所有临时记录事务rollback。仅Python改动需reload，不升级；前端7915f3bb9未改不构建，不重复创建23/空PM查询。运行时契约尚待验证，整体detail.action-state与67条目标仍开放；真实双事务竞争/角色浏览器详情未证明。无推送合并目标部署。
+
+53.106结果：4dc443ee0受管reload成功（rental-cancel-contract-reload.log），rental-cancel-contract-runtime.log6/6 PASS、ROLLBACK VERIFIED。真实finance申请经提交/实际review后，describe_record.availableActions的cancel明确disabled/RENTAL_PAYMENT_OBLIGATIONS_ACTIVE/非空原因/精确record id；同事务执行取消拒绝。申请action_cancel后重新读取契约cancel enabled且reason为空，源action_cancel成功。源准备仍sudo，不宣称普通角色源办理权限或浏览器详情通过。此前10项现金证据继续作为未变支付规则基线，当前6项只证明取消投影与执行一致性。下一步按既有67台账安全/分包页面族补必要契约，继续保留并发与角色详情缺口。
+
+### 53.107 安全方案/交底统一审批与动作契约（进行中）
+
+ab3347596 clean续跑，只读安全两模型/原生view/现有workflow与审批注册，发现旧action_approve直接写通过、无配置仍固定submitted，交底无header。P1 smart_construction_core拥有行业单据审批默认及业务校验，P0共享审批机制沿用，非P2偏好/P3临时数据，前端不推断。两模型接入tier.validation/project company/reject_reason；共享_start_submission_review、实际review回调、外部state create/write拒绝；保留既有业务anchor/取消重置范围。workflow approve/reject使用真实tier方法及pending域，原生header声明全部动作和modifier依赖，body state只读。
+
+L1 safety-approval-iteration.log通过，L2 safety-approval-unit.log106（同项扩展两模型无配置/配置/实际回调/状态伪造与终态动作）、safety-approval-native.log8+52=60通过并登记。run输入登记新增安全模型/view，避免错误复用。P4既有回滚工具新增safety-approval scope16组：自动通过/业务anchor/状态保护/配置未命中/真实review契约/pending配置切换/实际通过/驳回重提；default all计数215但本轮只跑安全scope。safety-approval-tool-iteration.log及语法/diff通过。
+
+需要一次受管模块升级（新增字段/继承/XML），复用local sc-fe-r2-p1-01/sc_frontend_acceptance、精确filter固定卷；临时policy和记录同事务rollback，不新建fixture/环境/权限。尚未运行ORM或安全浏览器，不宣称页面族验收完成。前端7915f3bb9未改，跳过构建及无关支付回归/全矩阵/Quick/发布；总体67与detail.action-state仍开放。
+
+53.107结果：18182a6af受管升级成功（safety-approval-upgrade.log），bf175ec6d reload成功。首轮safety-approval-runtime.log前三组通过后P4测试配置错误：安全单据未声明金额权威，金额步骤被产品正确拒绝，ROLLBACK VERIFIED。9b4040225仅修改验证工具：先验证金额配置拒绝，再用inactive step制造启用但未匹配；产品不添加虚构金额。safety-runtime-recovery-iteration.log/语法/diff通过，safety-approval-runtime-recovery.log16/16 PASS、ROLLBACK VERIFIED：两模型无配置自动批准、anchor/状态保护、配置未匹配拒绝、pending契约真实review、配置变更不能绕过在途审核、实际审核通过、驳回重提新review。事务builder为sudo、审批为真实reviewer，不等同普通角色全办理。
+
+P4标准browser复用approval-actions扩展两安全模型create，safety-page-iteration.log/node/diff通过。fixture_role_pm创建页：tpl07-1790787889137安全方案15 PASS、tpl07-1790787909071安全交底16 PASS；有效字段契约3/4项editable、官方表单、未保存无批准/完成动作、1440/390无横向溢出，errors/forbiddenWrites均空。两390截图人工核对名称/项目输入及操作区。frontend7915f3bb9复用，无构建。已有记录实际角色办理/保存审批未验证，不将创建检查当作办理验收。下一步既有67分包计划/申请统一审批，并保留安全详情角色链和其他已登记未覆盖点。无新环境/持久fixture/推送/合并/目标部署。
+
+### 53.108 分包计划/申请统一审批及父子事实保护（进行中）
+
+9f02fb0f5 clean续跑，只核对现有分包两模型/原生view/审批服务。P1 smart_construction_core拥有行业标准项目合同/分包单位/来源计划/明细约束；共享审批机制不变，非P2偏好/P3临时配置，前端不承接语义。两模型接入tier/company/reject_reason，配置金额权威为既有estimated_amount；提交保留全部anchor/非空明细/数值检查，真实通过回调再次检查anchor/明细。外部create（含default_state）/write状态拒绝，原生approve直写退出，统一真实review或无配置自动批准；workflow/原生header补真实tier批准驳回及完整modifier依赖。
+
+父单事实、unlink只允许draft；直接子明细create含default父键、write旧新父、unlink均校验父状态，防在途/通过审核金额被子接口改写。纯测试执行真实方法验证父单及直接子路径；真实并发未验证，不作锁竞争结论。L1 subcontract-approval-iteration.log；L2 subcontract-approval-unit.log108、subcontract-approval-native.log8+52=60 PASS并登记回执。输入登记新增分包模型/view。P4既有工具新增subcontract-approval16组，实际金额阈值/配置切换/真实review/驳回重提/父子保护，default all计数231，本轮仅定向scope；工具L1/语法/diff通过。
+
+下一步一次受管模块升级并reload（新增字段继承/XML），local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；事务数据/配置必须rollback。运行时尚未验证，前端7915f3bb9未变不构建，不重复安全/租赁业务或全矩阵。已有角色办理、总体67及其他未完成职责保持开放，无新环境/持久fixture/推送合并目标部署。
+
+53.108增量：首轮3d9d11b70升级成功。升级期间只读直接生效form policy发现分包申请6输入被P1 blanket readonly：project/date/scope/建议单位/note/attachments，属于创建职责缺陷。等待既有升级进程完成后再修XML，保留9项编号/状态/计算/来源事实只读；新增纯回归109 PASS（subcontract-input-unit.log），L1 subcontract-input-iteration.log/diff PASS。因实际XML输入改变需要加载新配置，再次升级属于输入修复后的必要重载，不重复无变化验收。首轮候选未启动浏览器。P4 browser既有approval-actions新增两分包create与3输入/编号/旧直批动作检查，subcontract-page-iteration.log/node PASS。下一步新候选upgrade/reload后一次定向runtime及create；此时仍未证明运行时业务。
+
+53.108运行时：6f3f0220b升级/reload成功，subcontract-approval-runtime.log16 PASS、ROLLBACK VERIFIED；真实金额100/阈值200未匹配拒绝、实际tier审批/驳回重提及pending切换、父子事实锁成立。无真实双事务竞争证明。首轮create：plan tpl07-1790788333437工具报17 PASS，但390截图发现计划单号可输入，精确文本断言被必填标记绕过，编号结论作废；request tpl07-1790788346665第9项编号隐藏失败。两者同一P1原生name未声明创建隐藏，非前端补丁。
+
+修复两view name readonly=1/invisible=not id；P4测试改为包含必填标签的可见文本，并直接检查有效contract的name隐藏。新增原生字段回归，subcontract-number-unit.log110 PASS，L1 subcontract-number-iteration.log/node/diff通过。此变更只使两创建页证据失效，真实审批16输入未变可复用；不重复ORM，需加载实际新XML后只重跑两create。待完成，不沿用截图矛盾的旧通过结论。
+
+53.108最终定向结果：7446f6a11编号XML升级/reload成功。plan恢复首轮tpl07-1790788497038在第6项因P4测试仅认静态true而拒绝有效not-id modifier，实际contract结构化not(field_truthy id)已正确；8d69165e7修验证工具，接受精确create modifier且保留真实DOM标签检查，subcontract-number-probe-iteration.log/node/diff通过。产品无额外变化，无再次升级。
+
+最终plan tpl07-1790788531035 18 PASS，request tpl07-1790788542137 18 PASS：3输入契约、生成编号effective modifier及实际隐藏、旧直接批准动作退出、未保存记录动作边界、1440/390无横向溢出，errors/forbiddenWrites空。两390截图复核编号不再出现，项目/分包单位/明细入口可见。计划390图上可选开始/结束日期标签与输入排布异常，登记为共享日期呈现待核对，不以无横向溢出代替视觉完成。真实创建保存/已有角色全办理仍未证明。审批runtime16按P1状态机/工具输入未变复用6f3f0220b原日志，未重复ORM。当前只完成两模型审批机制和创建契约定向验证，不升级整体67/业务矩阵行。
+
+下一步先定位本次日期呈现异常的共享消费路径及分包申请必需输入实际可操作性，再接续分包结算等剩余审批职责；不重复安全/租赁全旅程，不新建fixture/环境，不推送合并目标部署。
+
+### 53.109 分包创建输入/日期几何与交互定向核验（完成本项验证）
+
+8e692a864 clean续跑，先定位共享FormSection/ScFormItem/ProfessionalBaseFieldControl/ScDateField，仅P4 standard_page_type_browser变更。有效ui.contract/前端消费无业务推断；原日期异常尚无P0缺陷证据，不直接改CSS。通过既有data-field-name及label/input真实geometry测量，1440/390日期label底与input顶间隔7px；新截图无重叠。分包申请project/scope/request_date均实际渲染（窄屏后两项在折叠区下方）；原input readonly是官方日期picker的文本输入方式，不等于disabled。
+
+工具增加viewport后两帧布局等待，记录createInputGeometry、实际输入存在/未禁用/标签分离断言；范围字段只填入未保存测试文本再清空，不发业务写。日期检查点击真实input，等待可见周标题证明calendar打开，点击外部标题并等待隐藏证明关闭。首轮tpl07-1790788702760日期即时isVisible失败，failure图显示展开中；修复为等待可见，不改产品。可见检查plan42/request34分别1790788731669/1790788742875通过；再补关闭等待，最终plan44 tpl07-1790788768456/request36 tpl07-1790788780077 PASS、errors/forbiddenWrites均空。最终390图复核可选日期标签与控件正常、弹层已关闭。旧异常归因于取证时机的推断获得本轮稳定geometry/截图/交互支持，未证明持久产品排布缺陷。
+
+L1 subcontract-geometry-iteration.log及subcontract-input-geometry-check-iteration.log、最终node语法/diff通过；本轮P4改动不影响P1审批runtime16或前端7915f3bb9/backend7446f6a11，跳过ORM、upgrade、build、全矩阵/Quick。此项收口仅证明创建输入可操作及日期开关，不代表日期选择保存、关系选择/明细创建、真实单据提交全旅程。下一步接续分包结算剩余必要审批契约，已有角色全办理与总体67继续开放，无新环境/fixture/推送/合并/目标部署。
+
+### 53.110 分包结算审批与确认分离（进行中）
+
+b55e6b480 clean续跑，只核对分包结算及既有登记/金额/数量authority。P1 smart_construction_core拥有业务审批/确认职责，不置于P0或前端；继承tier、company/reject_reason、新approved状态。提交无配置自动approved、有配置真实review；action_confirm只接受approved且调用共享审批断言，原confirmed累计数量/金额约束不改变，不把审批当结算确认。外部create（含default_state）/write状态保护、父子业务事实freeze与明细默认父键校验；既有内部登记权威同步token和累计校验保留。原生header真实tier批准驳回/确认/取消/重置，生成单号创建隐藏；published policy恢复project/subcontractor/note三输入，财务/来源显示继续只读。
+
+L1 subcontract-settlement-iteration.log通过，首轮L2发现确认调用漏传approved_states（真实签名缺参，非环境），就地补参数后signature-iteration.log通过；unit-recovery.log111 PASS，native.log8+52=60 PASS，回执登记。既有纯边界tests直接运行：金额4、累计数量5、登记结算authority9 PASS（subcontract-settlement-*-boundaries.log），未跑无关ORM。P4既有rollback工具新增subcontract-settlement8组及default all239，真实审批/金额未匹配/父子保护/显式确认，tool-iteration.log/语法/diff通过。需要一次受管升级，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；runtime尚未证明，无新fixture/环境/推送/合并/目标部署。
+
+另确认产品缺口：_compute_payment_boundary_amounts仍把paid/requested固定0、unpaid/unrequested固定amount_total，不能代表实际付款事实。仅登记必要P1财务归属/汇总契约缺口，前端不得推断或将只读数字当真实支付闭环。本批审批完成不关闭该项，后续需检视付款依据与真实ledger归属。
+
+53.110结果：5b4c13e73受管模块升级成功（subcontract-settlement-upgrade.log），44b05f03b reload成功。subcontract-settlement-runtime.log8/8 PASS、ROLLBACK VERIFIED：无配置自动approved后显式confirmed，配置金额未匹配拒绝、pending契约真实tier/pending配置切换保护、父单/直接子明细冻结、真实review后显式确认/重复确认拒绝、驳回重提新review均成立。事务单据builder为sudo、审核用实际reviewer；本scope未绑定正式登记合同，既有登记来源/累计约束18项是纯回归，不能将此作为真实formal登记并发/现金验收。
+
+P4 browser既有approval-actions新增settlementcreate，subcontract-settlement-page-iteration.log/node/diff通过。fixture_role_pm create tpl07-1790789142069 21 PASS：3输入有效契约及真实控件、编号创建隐藏、未保存无确认动作、1440/390无横向溢出，errors/forbiddenWrites空。390图核对项目/单位/明细入口/结算日期，frontend7915f3bb9复用不构建。未跑已有角色保存/正式登记选择全旅程。
+
+下一步按已登记产品缺口核对分包结算实际付款依据/请求/posted ledger映射，补齐真实财务汇总，不得将固定0视为事实。总体67/角色全办理/并发仍未完成。无新fixture环境/推送/合并/目标部署。
+
+### 53.111 分包结算显式付款归属及真实汇总（进行中）
+
+151c4f547 clean续跑，仅核对payment request/line/execution/ledger和已确认分包结算。无既有分包归属，不能按合同/单位猜测。P1增加payment.request.subcontract_settlement_id（restrict/copyFalse），同公司/项目/收款方/币种/合同与confirmed来源约束、头部依据互斥、明细不得混其他结算；明确归属进入默认值/有效事实/付款依据分类/执行校验/ledger及来源导航。存在登记或台账历史（包括冲销/取消）不能新增、更换、清除归属。来源共享行锁+私有版本更新用于占额串行化，未声称真实并发已验。
+
+分包source payment_request_ids提供反向权威关联，paid只取既有canonical posted付款映射；requested仅在途/已完成申请占额；取消申请不抹除仍有效posted事实；4汇总改为非存储实时计算。财务申请可写私有sudo占额计数，不能改来源业务事实。无新前端业务规则，native payment basis只新增声明字段。既有历史数据不猜测回填，历史无显式归属仍需迁移/核对，不能声称全历史金额完整。
+
+初轮L2四项旧替身漏新字段，补实际模型形状；新测试另发现零剩余额度被default filter丢弃，P1修为两专用来源都保留0。工具测试的paid状态/局部变量问题已修复，不改变分包confirmed生命周期。最终L1 subcontract-payment-final-iteration.log、L2 unit-final.log122 PASS、native.log8+52=60 PASS并登记；身份/额度/历史冻结/同源拆分/零余额/执行可见性/ledger导航/规范汇总含冲销得到纯回归。
+
+P4既有rollback工具新增subcontract-settlement-cash10组，复用finance非sudo申请/执行与真实reviewer、sudo事务来源/资金基线准备，default all249；工具L1 subcontract-cash-tool-iteration.log/语法/diff通过。下一步一次受管模块升级（新字段/关系/非存储汇总/native XML）+reload，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷；只跑新cash scope，审批8/create21/前端7915f3bb9暂按未变页面消费复用，金融关系选择尚需另验。不新建fixture/环境，不推送/合并/目标部署，整体67仍开放。
+
+53.111结果：0b329c68d受管模块升级/reload成功（subcontract-payment-upgrade.log/reload.log）。首轮cash-runtime.log前2项通过，在真实finance读取来源时被record rule正确拒绝，ROLLBACK VERIFIED。窄查既有规则是owner/project user/follower，P4事务准备的source默认owner为管理员；cf65295c6仅把临时source owner指定为finance并增加非sudo search可见性断言，不改组/权限/record rules。只证明既有本人经办范围，不能外推所有财务可见。
+
+subcontract-payment-cash-owner.log10/10 PASS、ROLLBACK VERIFIED，finance非sudo申请/付款执行、真实reviewer，资金基线真实activate，source单据sudo事务准备并走实际审批确认；申请60占额拒绝超额1，20+40分别真实posted台账且准确返回source，paid/unpaid由20/40→60/0，requested/unrequested60/0；冲销40后20/40、再冲销20后0/60，来源仍confirmed，付款历史归属始终不可清除，申请取消后reserved0/available60。配置基线和临时记录恢复，无权限扩张。失败原日志保留不混写成功。
+
+本轮把P1固定0汇总替换为显式归属的真实聚合，但未证明历史无归属行的完整性、其他角色范围、正式登记合同现金链、浏览器选源与真实双事务竞争；不将10项升为整行业务完成。下一步在已有台账中接续必要关系选择/角色范围及其他未收口契约，付款49/租赁10/安全等既有独立证据不重跑；无前端build/新fixture环境/推送合并目标部署。
+
+
+### 53.112 付款关系选源与共享字段约束消费（进行中）
+
+候选3c2a2ffc3，续接既有P4 standard_page_type_browser未提交改动。finance付款create tpl07-1790789752812报15 PASS、无错误/业务写；但仅证明分包来源声明/控件/打开与双视口，实际source api.data list domain=[]，不能作为选源范围正确的证据。原生fieldInfo/fieldDescriptor均声明同项目且confirmed；现有源数据空，不补fixture，不宣称存在实际越权数据读取。
+
+P0共享v2/store.ts确认字段描述domain/context只在componentConfig声明时才投影，descriptor-only声明丢失。修为与其他字段相同的显式组件配置优先、否则消费字段描述；空数组/空对象显式覆盖仍保留。该规则属通用契约消费，不置于P1模型条件/P2偏好/P3临时配置。既有schema已承载domain/context，无扩schema/前端业务推断。增加4项存储映射回归；此缺口与当前浏览器请求的完整因果链仍须加载候选后核验，不以单元测试代替浏览器关闭。
+
+P4同一browser记录domain_raw并等待精确source响应，增加未选项目时domain必须id=-1的断言，避免下拉可打开假通过。L1 relation-scope-final-iteration.log、node语法/diff通过；L2 relation-scope-final-unit.log201 PASS（既有177+10+10及新增4），已登记workflow_catalog_consumer非零回执。严格类型检查relation-scope-typecheck.log运行中，后续不得越过失败结果启动build/browser。
+
+受影响为ui.contract→V2 store→共享关系消费，风险是多表单关系范围；继续复用P1支付122/native60和cash10，模型与数据库输入未变，跳过ORM/upgrade/全矩阵/Quick。前端仍7915f3bb9，需实现稳定后一次受管preview build/up与finance受影响请求验收；无新环境/持久fixture/推送合并目标部署。67及detail.action-state仍开放。
+
+53.112增量结果：strict typecheck PASS，受管preview一次构建及up通过（relation-scope-build.log/preview.log），候选base3c2a2ffc3+上述显式dirty，entry /assets/index-CdI4m-Va.js，entry SHA25616af7711251ce0e3d6349e4b4c38b9c10d3d1e83b2cdc63acd2dc0c9f66675d5。tpl07-1790790192414/report.json16 PASS，source请求实际domain=[["id","=",-1]]，domain_raw为空，errors/forbiddenWrites为空；证明修复后未选项目阻断生效。后端0b329c68d及cash10输入未变，未运行ORM。
+
+该结果不证明选定项目时confirmed+project候选限制、切换项目清理与搜索更多弹层均正确；下一步使用既有授权项目选择验证这些共享交互，不增加来源fixture。空source数据不能用于宣称成功选中/保存真实来源。当前批次仍进行中，67整体验收与主线/目标交付未完成。
+
+
+### 53.113 结构化关系域及选定项目范围（进行中）
+
+94fa1a2f9 clean续跑，先复用5180 CdI4m-Va候选扩P4现有付款create验证，未保存选择现有项目并检验来源/搜索更多范围。L1 relation-project-scope-iteration.log通过；tpl07-1790790266483在项目可选数据前提失败：实际project.project请求domain=id=-1，非权限失败证据。原生字段明确domain=[]且can_read=true。已确认P0 relationDescriptor把所有非string域视为unsupported，新增store完整保留域后暴露该旧缺陷。
+
+P0通用解析器修复：数组域已结构化，不再当表达式解析，保留[]/普通条件/前缀逻辑；原字符串动态依赖/未支持表达式阻断规则不变。无业务模型特判、不改ACL、不补fixture。P4既有browser选源范围检查保持，失败日志保留。L1 relation-array-iteration.log、语法/diff通过；L2 relation-array-unit.log140 PASS（6新增数组断言、6矩阵、7域、67引入契约、10+44纯守卫），回执relation_query_scope已登记；strict typecheck PASS。Python均纯检查，无ORM、upgrade。
+
+产品输入确有变化，需一次受管preview build/up后续跑finance单个create scope。前次16只证明未选项目来源阻断，不证明项目可选；此前独立P1财务/审批证据复用。总体67/detail.action-state仍开放，未推送合并目标部署。
+
+53.113结果：受管build/up通过，候选base94fa1a2f9+显式dirty，entry /assets/index-CrYkOCxc.js，SHA2562ba74b063f3166446689f68b4dcd5201429a93121a2ecda2f2b33af7ab10a3fa（relation-array-build.log/preview.log）。首轮browser在搜索更多处工具误定位option而实际为button，等待响应未及时处理导致退出；relation-array-browser.log保留。P4改getByRole(button)并Promise.all绑定点击/响应，无产品更改、不重建；L1 relation-search-probe-iteration.log通过，tpl07-1790790482571 19 PASS。
+
+再补既有第二项目切换检查，L1 relation-project-change-iteration.log/node/diff通过；最终tpl07-1790790517718/report.json21 PASS：finance现有项目464/463可选（project domain=[]，仍受后端授权），来源未选项目id=-1、选464保留project464+confirmed、搜索更多limit120同范围、切换463自动更新为project463+confirmed。其他付款依据的联动请求亦见报告，仅本次分包范围有直接断言。双视口无横向溢出，390截图人工核对表单/项目已切换；errors/forbiddenWrites为空，未保存业务记录。
+
+结构化域误阻断已修复，当前选源范围/项目变化请求已证明；源结果为空，不能证明旧来源值清理、非空候选选择及保存。保留数据前提缺口，不造fixture或重复空查询。下一步复用既有67台账接续必要动作契约/通用交互剩余项；P1现金/审批已有证据不重跑。整体接管/全部业务办理未完成，无推送合并目标部署。
+
+
+### 53.114 项目立项创建默认值状态保护（完成本项验证）
+
+983a44770 clean续跑，复用67台账唯一未关闭detail.action-state，不重扫仓库/空页面。项目审批金额权威仍无确认口径，已向用户异步确认；在回复前继续拒绝金额条件，不猜测合同额/预算额，不影响普通审批。只读项目审批源码发现create校验遗漏context.default_sc_approval_state，可绕过显式vals检查。
+
+P1 smart_construction_core拥有项目立项状态，修create按显式vals优先、其次context默认值、最后draft检查；非P0平台/前端/P3配置。既有真实方法纯测试补默认approved/unknown/False及混合批创建拒绝。L1 project-default-state-iteration.log PASS，L2 project-default-state-unit.log122 PASS并登记payment_approval_state_machine；不改字段/XML，跳过upgrade，不改前端，复用CrYkOCxc构建及上轮关系证据。
+
+P4既有rollback工具增加project-creation-state独立5项scope，default all计数254但本轮未执行all。只测试非法创建默认值拒绝、显式draft覆盖不安全默认值、合法draft默认值；scope复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter和固定卷，事务sudo builder验证模型状态边界，不替代普通角色办理。L1 project-default-tool-iteration.log/py_compile/bash-n/diff PASS。源910d8e214、工具7ad71c3bd本地提交，受管Python reload成功（project-default-state-reload.log），project-default-state-runtime.log5 PASS、ROLLBACK VERIFIED：配置原样恢复、临时记录不存在。没有新fixture/环境/模块升级/前端构建/无关ORM。
+
+本项仅关闭项目创建上下文绕过，不升级detail.action-state或总体67。金额口径、项目信息实际保存/审批用户闭环，以及已登记其他角色办理/数据前提保持开放。下一步继续既有台账的已授权实际保存/动作消费缺口，复用本轮及前序原证据；无推送合并目标部署。
+
+
+### 53.115 项目信息编辑真实保存与恢复（完成本项验证）
+
+0c697055c clean续跑，复用53.64已授权PM/项目10/公司8/正式项目信息编辑入口。仅P4标准browser扩TPL07_PROJECT_SAVE=1精确scope，沿system.init.route_authority取得当前菜单动作，现有项目name临时附加本轮标记，通过官方保存按钮写入并权威回读。单次permit仅放行PM/api.data write/project.project/ids[10]/唯一name精确值；错角色/记录/多ID/模型/操作/额外审批字段均拒绝，8项纯测试+既有preview16=24 PASS并登记standard_preview_tool输入/回执。写前保存独立恢复记录，finally回读仅允许当前原名或本轮标记，遇第三方改变拒绝覆盖；恢复后比较全部基线业务字段。
+
+L1 project-save-scope-iteration.log、语法/diff PASS；L2 project-save-scope-unit.log24 PASS。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter固定卷，后端7ad71c3bd，前端CrYkOCxc产品输入未变；无build/upgrade/ORM复跑。运行project-information-save-browser.log，tpl07-1790790862553/report.json23 PASS：真实UI保存FE Project A [TPL53保存验证]，服务端read回读正确，company8/立项draft/lifecycle draft均保持；同用户原接口恢复FE Project A并再次回读一致，official form reload显示原名、未修改，双视口无横溢出，390截图人工核对。仅两次精确name写入（保存/恢复），errors=[]/forbiddenWrites=[]，project-save-recovery.json restored=true。审计元数据/日志可能保留真实保存痕迹，不声称数据库字节级回滚。
+
+随后将通用断言文字改为no undeclared business writes attempted，条件仍为forbiddenWrites.length===0；不改变执行/判定，沿用原browser证据不为文字重复业务写。本次关闭项目信息资料保存缺口，不等于立项提交/真实审核/启动已由角色浏览器验收。金额口径异步问题仍未得到回复，保持缺口；全系统detail.action-state及总体67仍开放，无新增fixture/环境/推送合并目标部署。
+
+
+### 53.116 真实PM项目审批执行身份（完成本项定向验证）
+
+a1f1a09ff clean续跑。现有项目10尚无经过验证的立项审批回退动作，不为浏览器验收推进后伪写状态恢复。P4沿用既有事务回滚项目六项检查，新增project-role-approval scope与可选actor_env；源项目/策略仅事务sudo builder准备，项目提交/启动/重提由现有fixture_role_pm本人公司8环境执行且assert非sudo，owner字段绑定该经办人并非sudo search验证可见。不改任何组/ACL/record rules，不新建持久fixture或环境。真实reviewer仍由review实例选取。
+
+L1 project-role-iteration.log与py_compile/bash-n/diff通过；仅P4身份参数变化，既有P1单元122/创建状态5/项目保存browser23的产品输入均未变复用，不重建、不升级、不reload、无关ORM跳过。第一次project-role-runtime.log前4项通过，驳回helper未按公司筛reviewer触发公司访问拒绝，ROLLBACK VERIFIED；此为工具角色环境错误，不修改产品权限。只在项目helper筛选实际reviewer且具有项目公司访问权、绑定allowed_company_ids，同现有批准helper一致。L1 project-role-reviewer-iteration.log/语法/diff通过后重试具有明确输入修复依据。
+
+最终project-role-reviewer-runtime.log6 PASS、ROLLBACK VERIFIED：真实非sudo PM不能直写approved/越级启动；无配置提交只批准不启动；配置审批在审禁止启动；真实review通过后PM显式启动；驳回保留原因，PM重提生成新review链并实际通过。复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，后端7ad71c3bd未变。策略/步骤基线一致、临时记录消失。该证据属于实际角色ORM办理，不是浏览器提交/审核人页面闭环；仍保留金额口径、浏览器办理和其他已登记缺口，detail.action-state不升整行。无推送合并目标部署。
+
+
+### 53.117 投标文件购买申请统一审批（进行中）
+
+254b2af53 clean续跑，仅对照现有policy支持清单和workflow声明，确认tender.doc.purchase是遗漏业务审批：草稿直接approve、提交固定submitted、任意reset，不受统一配置。P1 smart_construction_core拥有行业单据及金额amount权威，非P0/前端规则、非P2偏好/P3临时数据。接入现有tier/company/reject_reason，policy支持/amount域/真实回调注册/native header/workflow同步；未配置提交自动approved，已配置真实review，compat approve/reject委托共享实例。外部state create含context默认值/write保护，在审/approved的bid和amount不可改；reset仅rejected，拒绝直接approved回草稿。原资料完整性建议保留，不把日期/金额/账户建议变硬门槛。
+
+L1 tender-purchase-iteration.log通过；L2 tender-purchase-unit.log124 PASS、native.log8+52=60 PASS并登记，验证无配置/配置/实际回调/旧直批退出/终态与金额及上下文状态保护。P4既有rollback工具新增tender-purchase8组，复用事务bid/申请/策略，实际reviewer；新增scope默认all计数262但本轮只跑scope。工具L1 tender-purchase-contract-tool-iteration.log/py_compile/bash-n/diff通过。
+
+需要一次受管模块升级（新增tier继承/字段/XML）并reload，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，所有临时业务/配置同事务恢复。运行时/角色浏览器尚未证明，不关闭整体detail.action-state；其他尚未接入业务不能因现有policy清单而豁免。前端CrYkOCxc未变不构建，不重复已通过项目/付款ORM，无新环境/持久fixture/推送合并目标部署。
+
+53.117结果：7b3e4273e受管模块升级/reload成功（tender-purchase-upgrade.log/reload.log）。tender-purchase-runtime.log8 PASS、ROLLBACK VERIFIED：外部状态/默认值/无实例直批拒绝，无配置自动approved且资料仍advisory，批准金额/重置保护，amount100阈值200未匹配拒绝，真实review及完整workflow方法语义，pending配置关闭不能绕过，真实批准回调，驳回原因及重提新review均通过。事务bid/申请/策略是sudo准备，审核是实际reviewer；不是普通角色完整创建保存旅程。
+
+P4同一approval-actions新增PM tender.doc.purchase create，tender-purchase-page-iteration.log/node/diff通过。tpl07-1790791472547/report.json19 PASS，3输入bid/apply_date/amount的有效可编辑契约和真实输入均存在，草稿新建无直接通过按钮，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核实际金额/投标/日期和保存提交区。前端CrYkOCxc未变不构建。真实选投标/保存/角色提交审核仍未验证，不能将创建检查升级整行办理。
+
+本批限定现有支持表之外的真实审批单据接管首例，不把支持表当业务覆盖边界。已在同一workflow清单看到sc.project.document仍以action_approve归档、tender.guarantee确认及sc.output.invoice.adjustment红冲等职责需继续按实际模型区分审批与业务执行；尚未读取它们完整模型/契约，不能直接判为已统一或直接套审批。下一步优先项目文档的提交/归档职责，沿既有67/detail.action-state记录，不创建第二覆盖表。金额口径问题仍待用户。无新环境/持久fixture/推送合并目标部署。
+
+
+### 53.118 工程资料审批与归档职责分离（进行中）
+
+392babd2d clean续跑，只读document_center/native view/workflow/policy：旧action_approve实际归档且draft可直达done，提交固定review，任意状态可reset。P1 smart_construction_core接入共享tier及approved中间状态/reject_reason，policy/callback/native/profile统一；无配置提交仅approved，有配置真实review，action_archive显式done。旧action_approve兼容调用同一归档校验，不再作为审批决策。保留项目paused/closed业务限制，核验资料公司与项目一致；状态create含default_state/write保护，审核内容在非draft锁定；归档/作废后显式重新办理重启review，不允许在审直接reset。工程资料无金额权威，不虚构金额条件。
+
+L1 project-document-iteration.log通过；L2 unit.log126 PASS。首轮native旧测试期望review可重置，与修正后防绕行边界冲突；改为done/cancel可reset并核对仅approved发布归档且purpose=complete，action-iteration.log通过，native-recovery.log8+52=60 PASS。非放宽测试，新增归档边界断言，旧失败日志保留。非零回执登记。P4同一rollback工具新增project-document8组，已有doc_type字典为前提，不造字典fixture；default all270但本批仅scope。tool-iteration.log/语法/diff通过。
+
+需一次受管模块升级（tier/字段/XML）与reload，沿local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，事务数据/策略恢复；尚未运行runtime/browser，不将源代码接入算已完成办理。前端CrYkOCxc未变不构建，无新环境/持久fixture/推送合并目标部署。
+
+53.118运行前提阻断：9573da065受管模块升级/reload成功（project-document-upgrade.log/reload.log）。project-document-runtime.log在首项前发现existing doc_type查询为空，明确AssertionError existing document classification required；ROLLBACK VERIFIED。这是可用分类数据前提缺失，不是审批执行通过，也不证明inactive记录不存在。未造字典/fixture，未重复同失败。已向用户异步请求工程资料大类的确认名称/代码或既有配置来源。
+
+P4 PM create检查已准备，project-document-page-iteration.log/node/diff通过，但因上游运行前提未满足不执行browser，保持not_run。本批P1源码/纯回归126+native60完成，运行时和普通角色办理未完成；不得把前序家族证据覆盖本模型。字段doc_type必填来自原模型，不能删掉职责换取通过。前端CrYkOCxc不变。下一步等待分类权威并通过既有配置机制解决；同时可推进互不依赖的既有workflow剩余模型职责，禁止重复空分类检查。无推送合并目标部署。
+
+### 53.119 投标保证金动作契约与资金执行语义校正
+
+fbb45a857 dirty两文件续跑，复用上轮已完成日志，不重复执行。P1 smart_construction_core workflow投影拥有行业动作语义；非前端推断、非用户偏好。现有action_confirm实际校验日期/正金额/固化财务身份并生成posted资金台账，因此purpose由submit纠正为complete，confirmed phase由approved纠正为done。已确认记录退出cancel/reopen投影；草稿确认与取消、取消后重置保持实际模型边界。本次不修改资金执行方法、不声称统一审批已接入。
+
+L1 guarantee-action-iteration.log PASS；L2 guarantee-action-native.log 8+53=61 PASS，新增draft/confirmed/cancel/unknown动作边界和确认purpose断言，agent.run.begin/record登记61。L0 HEAD+dirty已核对；本次中等风险P1契约投影，最早L1。无字段/XML变更不需模块升级；模型执行输入不变，不跑无关ORM。前端源未变，复用CrYkOCxc不构建；后端仍9573da065，本修正尚未加载，L3/L4本轮not_run，不宣称运行时已接管。L5非发布阶段不运行Quick/推送。
+
+明确产品缺口：tender.guarantee已有动作方法及部分契约，但尚无统一审批。下一步复用tier与company-scoped policy，补提交/在审/批准/驳回职责，并将批准与确认入账分开；金额权威来自既有amount，必须保留财务身份冻结及已确认不可取消/重置约束。涉及模型/字段后再执行必要定向模型回归、受管升级和事务恢复验证。工程资料分类仍待确认，禁止重复同一阻断或造fixture。detail.action-state继续contract_gap，不升级整体状态，无推送合并目标部署。
+
+### 53.120 投标保证金统一审批与显式入账（进行中）
+
+83fb064b4 clean续跑。P1 smart_construction_core拥有保证金金额amount及财务状态，新增tier/submitted/approved/rejected/reject_reason，policy支持、金额映射、真实回调和native/workflow一致接管。无配置提交自动approved但不入账；配置审批消费真实review，approved后独立action_confirm生成原有posted台账。提交和确认均检查日期/正金额/财务身份；外部create含默认状态/write不能写后续状态，审核内容在submitted/approved锁定，confirmed冻结不变。仅draft/rejected可取消，仅cancel/rejected可reset并重启review，不能在审取消/重置绕过。旧确认方法保留但须先批准，这是统一审批边界修正。
+
+L1 guarantee-approval-contract-iteration.log PASS；L2 guarantee-approval-unit.log128 PASS、native.log8+53=61 PASS，非零回执登记。新增实际生产方法纯回归覆盖无配置/配置审批不入账、独立入账及重复/终态拒绝、外部默认值/金额/账户保护；不是ORM证据。首次自检发现phase写pending，改成既有under_review后重新L1，再执行L2；最终日志为上述版本。
+
+P4既有事务回滚工具扩展tender-guarantee10组，复用local/sc-fe-r2-p1-01/sc_frontend_acceptance与现有审核岗位，不新建环境或持久fixture，临时单据/策略/台账全事务恢复。tool-iteration.log/py_compile/bash-n/diff通过；default all280仅清单计数，未执行全量。需受管模块升级（tier/字段/XML）和reload后执行本scope；运行时及角色页面尚未通过，detail.action-state保持缺口。前端CrYkOCxc源码未变不构建，不重跑其他业务ORM，无推送合并目标部署。
+
+53.120结果：源码975348a91/P4 fe880cb8a受管upgrade/reload成功，后端已绑定fe880cb8a。guarantee-approval-runtime.log10 PASS、ROLLBACK VERIFIED：外部状态及未批入账拒绝、无配置批准不入账、批准金额保护、显式posted台账及终态拒绝、金额阈值未匹配拒绝、实际review契约、在审配置关闭不绕过、真实审核回调、审核后显式入账、驳回原因及新review重提全部通过。事务源单/策略与提交是sudo builder，审核为实际reviewer；不是普通角色浏览器办理，也未覆盖退回方向全旅程。
+
+P4现有approval-actions新增PM tender.guarantee create，page-iteration.log/node/diff通过。tpl07-1790792456049/report.json20 PASS：bid/date/amount有效可编辑契约及真实输入、草稿无直接审批/入账，1440/390无横溢出，errors/forbiddenWrites为空；390截图复核投标/类型/日期/金额/账户与保存提交区。前端CrYkOCxc不变，未构建。保留实际选投标保存/普通角色提交审批入账与退回方向验证缺口，不能以创建页检查升级全旅程。下一步仍沿已有workflow责任清单处理红冲等未统一职责，不做全仓再盘点；工程资料分类和项目金额权威仍待确认。
+
+### 53.121 销项红冲统一审批与原票快照保护（进行中）
+
+2145214d0 clean续跑，限定已登记sc.output.invoice.adjustment职责。P1 smart_construction_core拥有全额红冲行业规则，旧草稿action_confirm直接生成registered负数发票而workflow误标submit。新增tier/company/submitted/approved/rejected/reject_reason，policy金额来自原票original_invoice_amount，注册真实回调/native/workflow；未配置自动批准、有配置真实review，approved后独立确认红冲。保留原生成负数登记票的业务职责，不由前端重新解释。外部状态create含默认值/write保护，审核内容在审/通过后不可改；执行不再静默重取原票覆盖审批快照，先比较金额/税额/票号/来源/项目等身份，变化拒绝。已确认仍冻结，仅draft/rejected可取消。
+
+L1 red-flush-approval-iteration.log PASS，L2 unit.log131 PASS、native.log8+54=62 PASS。新增生产方法纯测试验证审批不生成票、显式生成/终态拒绝、外部状态/审核内容保护及原票金额/项目/票号变化拒绝。旧ORM红冲行为测试同步先submit，未运行全模块ORM。P4既有回滚工具新增red-flush11组，复用临时收款发票来源和SQL ledger，不建持久fixture；default all291不是本轮实际执行。tool-iteration.log/语法/diff通过。
+
+本批需模块升级与reload（tier/字段/XML），计划只跑red-flush scope及受影响角色创建页。运行时尚未证明；原票变化后的重新办理、并发重复红冲和生成登记票与通用登记权限/审批的关系仍需后续核对，不把本批纯测试当全部职责完成。保持detail.action-state与整体目标开放，前端CrYkOCxc未变不构建，无推送合并目标部署。
+
+53.121运行结果：7e50d623e源码/4c564ef94后端受管upgrade/reload成功。red-flush-runtime.log首项前因工具未提供收款发票正式合同拒绝，ROLLBACK VERIFIED；补合同后red-flush-source-runtime.log因验收公司缺默认销售9%税率停止，ROLLBACK VERIFIED。不编造税率或重复失败。改用本模型明确支持的另一原票来源sc.invoice.registration，保留收款发票来源未验证；registration-tool-iteration.log通过。red-flush-registration-runtime.log11 PASS、ROLLBACK VERIFIED：外部状态/未批执行拒绝、无配置批准不出票、审核金额保护、显式负数registered票与终态拒绝、阈值未匹配拒绝、真实review、在审配置关闭不绕过、真实回调、审核后出票、驳回重提、原票金额变化拒绝均通过。源票/策略/提交为sudo事务准备，实际审核人来自review，不能当普通角色闭环。
+
+财务create页面tpl07-1790792904864/report.json20 PASS，原票/变更日期/红冲票号为有效可编辑契约及真实输入，新建无直接批准/确认红冲，1440/390无横溢出，errors/forbiddenWrites为空，390截图复核。前端CrYkOCxc复用未构建。工具page-iteration与final-tool-iteration通过；旧ORM同号测试改在submit断言明确业务错误，终态测试先submit，未运行完整ORM，收款来源测试前提不宣称已修复。
+
+尚未完成：收款发票来源的合同税率前提、原票变动后重新办理、并发重复红冲、实际角色全流程，以及生成registered票与通用发票审批/登记权限的衔接。下一步优先在同一业务链收口invoice_registration.create/write和红冲生成的状态权威，不能因本scope通过转而忽略直写终态的缺口。不新开覆盖表、不升级detail.action-state整行，不推送合并目标部署。
+
+### 53.122 发票状态权限及红冲生成登记入口（进行中）
+
+3583a8d56 clean续跑。P1 smart_construction_core收口invoice_registration create/write直接终态缺口；仅内部对象令牌可写状态，普通创建仅draft，历史legacy_confirmed仅source_origin=legacy且env.su迁移保留，普通角色不能声明历史来源。红冲归属含context默认值不可外部伪造。在审/已批准/已登记手工票的审批内容冻结，在审取消拒绝。action_confirm/register/cancel及真实tier回调使用内部状态入口，原权限/业务锚点/audit保留。
+
+红冲生成改用私有_create_registered_red_flush：核对已批准原变更单、未生成、原票快照、业务前提、绑定身份，并复用通用财务登记权限；workflow对无权限的complete发布明确denied gate，发票在审cancel同样阻断。不是前端增加模型规则，也不是将配置当授权。无字段/XML变更，不需模块升级，但需reload并更新受影响运行证据。
+
+L1 invoice-state-iteration.log通过，初轮unit.log134中1个error来自旧finance-family替身缺新内部写状态方法，未放宽断言；test-iteration.log后unit-recovery.log134 PASS。native.log8+54=62 PASS，后续仅测试替身/P4变化不重跑未变native输入。P4同一red-flush scope源票改走正式action_confirm/实际review/action_register；使用既有财务登记人及sudo数据准备，不宣称普通角色数据权限闭环。新增直接注册/令牌伪造拒绝、非登记角色PM拒绝红冲。原票金额现在冻结，末项检查改为拒绝篡改；原票快照变化纯测试仍有效，旧runtime11因产品输入变化不继续算当前通过。permission-tool-iteration/语法/diff通过后才reload/runtime。
+
+运行验证仍待执行，前端CrYkOCxc未改不构建；既有create截图仅外观可复用，不证明新权限语义。收款来源税率、普通角色完整办理、源变化恢复/并发及其他已登记业务仍未收口。无新环境/持久fixture/推送合并目标部署。
+
+53.122结果：源码467b78d01/P4 8a7d13cf0，受管backend.acceptance.up重绑8a7d13cf0成功，无字段变化未升级。invoice-state-runtime.log11 PASS、ROLLBACK VERIFIED。与53.121相比，源票正式提交（存在review则真实审核）后由既有财务登记人登记，再作为红冲依据；直接create registered、write state、布尔令牌伪造拒绝，既有fixture_role_pm非登记人确认红冲拒绝，有登记权角色完成生成，已登记源票金额修改拒绝。真实角色用于权限判断，源记录数据访问仍sudo准备；不是普通角色端到端数据权限验收。原策略/步骤恢复、临时票据/生成票消失。
+
+纯134/native62与新runtime11成立；既有create20源渲染输入未变，只复用外观/输入检查，不声明该页面证明登记权限。未新建fixture/环境、未构建前端、未跑无关ORM。下一步继续同链：有效原票资格（草稿/取消源票不得被当正式可红冲事实）、原票变化后的可恢复办理及并发重复红冲，保留收款来源税率/普通角色完整办理缺口；生成票的通用登记权限与状态直写缺口本轮已补并定向验证。整体detail.action-state不升级。
+
+### 53.123 红冲原票资格贯通契约与执行（进行中）
+
+442c8990e clean续跑，P1 sc.output.invoice.adjustment维护原票资格：必须存在、有效且normal，sc.invoice.registration来源仅registered/legacy_confirmed，收款发票来源保留原有语义不猜历史状态文字。字段domain同步限定，_original_invoice_eligibility_blocker被执行校验和workflow denied gate共同消费，避免前端能选草稿票且后端也直接出票。L1 red-source-eligibility-iteration.log通过；pure unit.log135 PASS、native.log8+54=62 PASS。新生产方法纯回归覆盖draft/confirmed/registered/legacy/cancel/unknown/False、失效/删除/红冲来源。
+
+P4现有red-flush scope扩展12组，增加草稿/取消原票真实提交拒绝及契约reason；现有browser财务create增加原票关系请求域断言，不造记录或税率。tool-iteration/py_compile/node/diff通过。无新增列/XML，只需reload域与Python，前端构建不变；运行及关系请求尚未证明。保留异常恢复/并发及角色全旅程，整体不升行，无推送合并目标部署。
+
+53.123结果：源码294c4aa28/后端dc677c589受管reload成功。red-source-runtime.log12 PASS、ROLLBACK VERIFIED，草稿/取消原票的提交拒绝及workflow reason实际成立，原11组审批/登记/权限保护继续通过。财务browser tpl07-1790793430354/report.json21 PASS：新增实际api.data list/sc.output.invoice.ledger请求域精确包含active/normal及注册来源registered/legacy_confirmed条件；无errors/forbiddenWrites。前端CrYkOCxc不变，不构建；外观沿53.121截图，新增证据证明查询域而非造数据或完整办理。
+
+本项原票资格已贯通字段关系域、共享官方关系选择实际请求、动作拒绝提示及服务端执行。仍未证明收款发票历史状态口径、普通角色选票保存审核办理、原票变动恢复、并发重复红冲；下一步处理同一原票并发执行保护和批准后未出票的恢复通路，保持审批记录和已生成票不可回退边界。所有结果沿原67台账/detail.action-state记录，不扩大为全部业务完成。无推送合并目标部署。
+
+### 53.124 未出票取消恢复与数据库唯一约束（进行中）
+
+ec8dcf987 clean续跑，P1红冲业务恢复：approved且未generated、无pending review允许正式cancel，不重置/删除原审批。修正后新建申请重新审批，已出票、在审及已取消不可此路径回退。native/workflow同步可用动作。现有业务语义是一张原票一次全额红冲；新增存储计算confirmed_source_key仅confirmed写入source_model:source_record_id，UNIQUE约束避免两个申请同时越过搜索检查。多份草稿/批准允许NULL，不以票号显示文案作唯一身份；外部create/write不能传唯一键，真实状态仍私有入口。
+
+L1 red-recovery-identity-iteration.log PASS；pure unit.log137 PASS、native.log8+54=62 PASS，验证恢复保留review/不restart、生成票拒绝、技术来源模型/ID唯一键仅执行后存在。P4 red-flush扩至15组：保留原12、取消保留审批、新申请新review后执行、pg_constraint安装存在和实际重复键拒绝。数据库重复键检查通过savepoint内私有状态写触发，明确不是两个并发会话验收。tool/contract-tool-iteration及语法/diff通过。
+
+目标沿用隔离fixture验收租户sc_frontend_acceptance/local/sc-fe-r2-p1-01，非控制库/行业库/生产，精确filter与固定filestore sc_fe_r2_p1_01_odoo由受管preflight核验。新增存储字段/SQL约束/native XML需一次受管upgrade/reload；历史若有冲突不得清数据或豁免约束，运行检查必须确认pg_constraint真实存在。尚未升级/runtime，前端CrYkOCxc未改不构建。普通角色全旅程及真正双会话并发证据仍未完成；不推送合并目标部署。
+
+53.124结果：88774a406受管upgrade/reload成功，初次red-recovery-runtime.log原12组通过后，取消保留review断言失败，ROLLBACK VERIFIED。直接检查OCA _allow_to_remove_reviews确认默认cancel会unlink审核记录；不是工具误报。P1红冲通过既有扩展点仅对cancel返回False保留历史，其他流转委托super，不修改第三方模块、不重建审批框架。history-iteration.log通过，history-unit.log138 PASS。native62绑定未变profile/header及动作投影输入复用；新增私有审核清理hook不影响其断言，实际语义由单元与runtime重验。
+
+3fb696152受管reload成功（仅Python修复不再次升级）。red-recovery-history-runtime.log15 PASS、ROLLBACK VERIFIED：已批准未出票cancel状态正确且review IDs/validated原样保留，新建同源申请须新的review并真实审核后出票，pg_constraint确认约束安装且实际第二个confirmed source key写入触发预期唯一约束拒绝，原12组继续通过。SQL重复检查在独立savepoint触发私有状态写，仅验证数据库兜底，不是双会话请求实测；本轮不声明并发负载验收。已有已出票事实不撤销，不删除原批准记录。
+
+前端CrYkOCxc未改不构建；原create21仅复用未变输入/查询域，新增approved取消由真实workflow可用动作和模型结果证明，普通角色已批准详情页面尚未验。下一步转实际非sudo角色办理与对应官方详情动作，复用现有数据/受管回滚工具，不重复全仓盘点或原创建页。工程资料分类/项目金额权威/收款发票税率仍待既有缺口处理；整体67不升行，无推送合并目标部署。
+
+### 53.125 非sudo财务角色红冲办理（完成本项模型验证）
+
+b55ea375e clean续跑，P4只扩展既有rollback工具可选actor_env及red-flush-role scope，wrapper白名单同步。复用fixture_role_finance（既有finance_manager角色）、公司/项目范围，不改ACL或组、不创建账号。事务项目manager/user为财务角色，非sudo查询证明可见；红冲Document.create、提交、取消、重提/新申请、confirm均同一非sudo环境并assert。源票/策略仍sudo准备，审核为实际reviewer，SQL唯一兜底探针仍为工具私有写，边界明确。
+
+L1 red-role-tool-iteration.log/py_compile/bash-n/diff PASS；red-role-runtime.log16 PASS、ROLLBACK VERIFIED；新check red_flush_role_runtime在原run结果索引登记begin/record16，kind=runtime需环境核对不能自动当离线可复用。纯138/native62的P1输入未改，沿53.124复用，不重跑、不升级、不reload、不构建。后端仍3fb696152，前端CrYkOCxc。
+
+为现存详情做一次定向只读browser：tpl07-1790794142106/report.json在existing authorized record断言失败；finance对sc.output.invoice.adjustment list返回ok=true、records=[]、count=0，errors/forbiddenWrites为空。属于当前角色可用数据前提，不证明其他角色/全库无记录；无已批准详情可验证，不重复查询、不为截图造fixture。模型办理16不能升级为浏览器完整保存审核出票旅程。
+
+仅沿已有workflow剩余项阅读sc_workflow.py：sc.workflow.instance/def明确为历史实例/定义，正常审批权威已有base_tier_validation；create_instance/publish受legacy runtime开关约束，但action_submit/approve/reject没有相同开关检查，workflow profile仍发布普通动作。下一步核对并收口历史恢复例外的动作契约和执行边界，不把该技术实例当新业务审批实现，更不引入第二框架。保留原67/detail.action-state及分类/项目金额/税率等既有缺口，无推送合并目标部署。
+
+### 53.126 历史流程运行关闭边界（本批定向验证完成）
+
+481182127 clean续跑。P1 sc_workflow是明确标记的历史兼容运行实例，正常业务审批仍base_tier_validation。本批补submit/approve/reject统一_require_legacy_runtime_enabled检查，默认关闭时不得继续历史流转。Definition/Instance上下文开关仅env.su内部恢复可用，普通调用者不能凭allow_legacy_workflow_runtime=True开启；显式受管参数仍保留。取消旧实例是管理员清理动作，保留原权限与执行，不将其当新业务审批。workflow evidenceGate给submit/approve/reject明确关闭原因，无前端专用规则、不修改旧数据。
+
+L1 legacy-runtime-iteration.log PASS；unit.log140 PASS、native.log8+54=62 PASS。生产方法纯回归证明上下文信任边界、配置权威及关闭时在任何流转前拒绝。P4沿已有受管事务工具新增legacy-workflow5组，不创建业务项目/实例，只在事务内切换指定参数，finally回读原参数key/value记录一致；wrapper白名单同步。tool-iteration/py_compile/bash-n/diff通过。需Python reload无需模块升级/前端构建，runtime尚未运行。历史恢复启用后完整节点办理不作为新业务标准；管理员/节点组既有权限保留，取消为明确兼容例外。整体不升行，无新环境/fixture/推送合并目标部署。
+
+
+53.126结果回填：backend acceptance reload至a9b73cdb1920dec1193d6aa0341e82942fe97e4c，legacy-runtime-smoke.log为5 PASS、ROLLBACK VERIFIED，参数原始key/value回读一致；覆盖普通上下文不可开启、关闭时三类动作拒绝、契约阻断一致、开启不授予管理员权限、取消仍需管理员。未验证开启后的完整历史节点旅程，不将历史引擎计作标准审批。unit140/native62原日志与输入未变，make agent.run.resume确认可复用。第一次native receipt因提交改变HEAD被拒绝（legacy-runtime-native-receipt.log）；固定a9b后重新begin/record成功（legacy-runtime-native-reconcile-receipt.log），没有重跑测试或将失败回执计为通过。后续回执完成前不得并行移动HEAD。前端CrYkOCxc未变，不重建、不重复浏览器。
+
+### 53.127 财务组状态写入与动作契约一致性（已确认缺口，待实现）
+
+a9b73cdb1 clean定向读取既有finance-family测试关联模型，不做全仓盘点。P1/Layer Target=单据状态写入权威/Module=smart_construction_core；行业标准，非P2客户偏好、非P3可配置绕过，前端不补语义。结算调整与资金对账的create/write只保护legacy_confirmed既有历史记录，未阻止普通新建或写入confirmed；收款write保护received/legacy_confirmed、自筹write保护done，但未保护confirmed审批状态。此为源码确认的执行边界缺口，不能因actions/availableActions已输出就算完整契约闭环；尚未用ORM证明利用路径。
+
+下一步按同一财务组复用既有私有状态写入与共享policy/tier机制，先补普通create/context默认值/write绕过的生产方法回归，再使正式动作与真实审核回调成为状态入口。保留明确受控历史迁移、财务事实身份及执行权限，禁止用sudo或客户端布尔context充当普通审批授权。关联融资/付款执行/费用报销已有保护须先核对，不能统一覆盖掉既有权威。字段快照冻结、在审取消与动作阻断需按实际依赖核对，不宣称本轮已修。
+
+本次仅P4记录更新：L0身份、JSON解析、diff检查；复用53.126 L1/L2/L3原始证据，因生产/测试/运行输入未变，不重新运行ORM、构建、浏览器或Quick。原67条detail.action-state继续contract_gap；分类/项目金额/收款税率及实际角色浏览器等未覆盖项保留，无推送、合并或目标部署。
+
+
+53.127实现推进（3f86ece10 + 两模型/定向测试dirty）：结算调整、资金对账普通create仅草稿，显式及context默认状态同检；只有env.su且legacy/legacy_confirmed保留受控历史创建。普通write禁止state/source_origin，私有object token仅正式确认、真实tier通过回调、取消/对账动作使用；客户端布尔token不成立。未新增字段/schema、未改审批配置路由或前端，需Python reload、不需模块升级/前端构建。L1 finance-state-final-iteration.log PASS；L2 finance-state-unit.log142 PASS，finance-state-native.log8+54=62 PASS；覆盖直写/默认值/伪造上下文拒绝、共享审批确认和真实回调、私有写入token及历史创建前置。纯测试不能替代实际ORM历史导入与动作办理。
+
+本次仅两个模型状态入口收口，仍待受管运行验证；其他财务模型、审核期间内容冻结、取消行为和有效契约反馈按依赖继续补齐，不宣称整族或总体完成。下一步在既有business_config_approval_runtime_smoke扩展有界scope，复用既有项目/资金台账/合同准备与事务回滚设施，验证真实无配置确认、有配置等待/审核、直写拒绝及独立对账；先检查既有数据准备，不新建环境或持久fixture。后端尚未加载本dirty；前端CrYkOCxc继续复用。
+
+53.127回执：初次record漏传AGENT_CHECK_STATUS被参数解析拒绝；修正为passed后，两项重新begin/record成功，原142/62测试日志未重跑。finance-state-{unit,native}-reconcile-receipt.log保留准确结果；失败回执不算通过。
+
+
+53.127受管运行尝试：P4新增finance-state-authority scope（计划8组，非通过计数），复用fixture finance公司范围，以只读选取现有合同/posted资金台账作为来源；不新建来源、税率或持久fixture。现有同公司策略临时停用/恢复，配置审批时复用已有公司策略或事务创建，真实审核调用既有reviewer；扩展finally回读两模型原策略/步骤。L1 finance-state-tool-iteration.log及后续py_compile/bash-n/diff通过，P1 pure142/native62输入未变复用。工具95d771097已提交并受管reload，preflight确认local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。
+
+finance-state-runtime.log FAILED在首个业务检查之前：同一finance公司内合同和已入账资金台账未同时存在；原assert未区分是哪一个缺失，不能擅自报告两者都没有。ROLLBACK VERIFIED：策略/步骤恢复、临时记录不存在。业务通过数0，不作为运行门禁通过；不重试相同数据前提。后续工具错误消息细化为分别报告contract/posted_ledger存在性，未为日志文字再次执行业务。保留来源前提缺口，不能拿已通过142/62替代真实ORM办理。未运行浏览器或构建、未升级模块、未推送合并目标部署。
+
+下一步继续同一财务组已确认的收款/自筹confirmed审批状态保护，复用各自既有财务事实私有token，不改已完成的财务身份规则；融资/付款/费用保护按既有代码核对。两模型真实运行在授权范围来源满足或既有受管准备路径确认后再恢复；不得猜造税率、扩大公司授权范围或把0检查说成通过。总体67/detail.action-state仍开放。
+
+
+### 53.128 收款、自筹审批状态入口保护（源码验证通过，运行待验证）
+
+1df551c45 clean起点。P1 smart_construction_core收款/自筹行业单据状态权威，非客户偏好或前端逻辑。沿用既有_RECEIPT_FACT_AUTHORITY_TOKEN/_SELF_FUNDING_AUTHORITY_TOKEN和_write_finance_authority，不新增状态框架、schema或token。普通create的显式state及context.default_state只允许draft；来源显式/default_source_origin为legacy必须经过原私有迁移载体。普通write阻止state/source_origin/finance_identity_state；确认、取消和真实tier通过回调改用已有私有方法；原终态事实、财务身份及历史迁移规则保留。无字段/XML变更，后续只需Python reload，不升级模块、不构建前端。
+
+L1 receipt-self-state-iteration.log PASS；L2 receipt-self-state-unit.log143 PASS、receipt-self-state-native.log8+54=62 PASS，begin/record回执非零完成。测试生产create/write拒绝显式及上下文审批状态、伪造布尔token、来源/身份写入；原共享提交/真实回调与财务权限测试通过。尚未运行受管真实单据审批执行或页面办理，不把纯测试当闭环。旧finance-state-authority来源缺口未恢复，不重跑；前端CrYkOCxc未变。
+
+同一已登记finance-family定向续读：financing_loan.write主要保护legacy历史记录；expense_claim.write只保护done/legacy_confirmed和身份；payment_execution有付款依据/账户快照/业务事实保护，其状态入口还需连同实际付款及冲销方法核对，不能覆盖现有财务约束。下一步成组收口剩余融资/费用/付款执行的状态create/write入口，复用现有方法与权限，不重做已完成付款申请审批/财务身份；受影响真实运行仍需补证。总体67/detail.action-state不升整行，无推送合并目标部署。
+
+
+### 53.129 财务组剩余状态入口（源码验证通过，整组运行待验证）
+
+03e464376 clean起点。P1 smart_construction_core融资/费用/付款执行行业状态权威。融资、付款执行按现有invoice/adjustment模式加入模块内私有object状态token；普通create及context默认值仅draft，受控sudo legacy/legacy_confirmed创建保留；普通state/source_origin写入拒绝。正式确认、执行、取消、真实tier回调使用私有方法；付款paid及原冲销/撤销流程也通过此入口，不改付款申请权威、资金台账冲销、付款依据及账户快照保护。费用沿用原财务token，提交/自动批准/审核批准/驳回回草稿/取消使用原_write_finance_authority，默认状态与来源绕过拒绝。无字段/XML或前端改动，后续Python reload即可。
+
+L1 finance-family-state-iteration.log PASS。首次L2 finance-family-state-unit.log失败7例：测试整文件AST抓取同时包含费用主单与扣款明细，明细create覆盖主单create；属于测试归属错误。限定到主单类后finance-family-state-unit-fixed.log143 PASS，finance-family-state-native.log8+54=62 PASS；两项begin/record成功。新增模型通过扩展已有测试参数覆盖，143为测试函数数而非只测143个状态组合。测试检查显式/default状态/来源拒绝、伪造token、共享审批确认回调；不是实际付款/冲销或迁移重放证明。
+
+下一步优先整组受影响运行验证及历史迁移兼容核对，不继续只堆源码通过记录。现有finance-state-authority在财务公司来源缺失前提阻断，未恢复不重跑；须定位缺少的准确来源或复用已登记有权威来源的受管准备路径，不能造税率/扩大公司范围。费用驳回重提、实际付款/冲销及融资完成的ORM行为尚待证明，历史同步若写入state需核对受控入口，不能以新增guard当兼容通过。前端CrYkOCxc未变，不构建；整体67/detail.action-state保持开放，无推送合并目标部署。
+
+
+### 53.130 费用状态权威真实审批回归（12项通过）
+
+3e218b1b5 clean起点。P4仅将既有business_config_approval_runtime_smoke默认all的费用11项检查开放为expense-state-authority独立scope，原主体复用不复制；该scope额外检查真实记录state直写/布尔token伪造/终态create/default_state拒绝。其余业务族调用仅all执行，all295计数不变。原项目/往来方/_expense准备和finally事务回滚复用，不新增环境或持久fixture。L1 expense-state-tool-iteration.log/py_compile/bash-n/diff通过；P1 pure143/native62相关源未改复用。
+
+工具6fe68cc25提交并受管backend reload，expense-state-runtime.log12 PASS、ROLLBACK VERIFIED。local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。真实enabled提交生成review、关配置不绕过在审、实际审核人完成、未配置自动批准、启用无匹配拒绝、驳回草稿保留原因/审计、重提新review、线性两步按顺序、非审核人拒绝、首步不结束及末步批准均通过。文档准备和提交仍sudo，审核人真实非sudo；不宣称普通财务浏览器全流程或费用最终付款/完成通过。财务组其他模型runtime继续开放，前端不构建，无升级模块/推送合并目标部署。
+
+后续依赖核对：self_funding.action_done既有正式动作生成自筹资金台账；可在同一受管回滚链验证真实自筹审批/完成后，再用其真实生成的posted台账验证资金对账，避免凭空造台账或重复现有空来源查询。需要沿用附件/账户证据准备、公司/承包人身份及实际资金责任，验证后回滚；不能以这个替代结算调整的合同来源缺口。融资完成及付款/冲销仍待实际验证。旧Make引用scripts/migration路径在当前树不存在，本轮未执行迁移或扩大成迁移审计，历史重放兼容不计通过。
+
+
+### 53.131 自筹入账到对账的真实来源链（10项通过）
+
+1fe977d8e clean起点，P4既有回滚工具新增self-funding-reconciliation scope，扩展_finance_state_authority_checks接受同事务正式生成的source_ledger；此分支只验资金对账，不借机绕过结算调整合同来源。复用fixture finance公司、既有审批岗位、项目/往来方/附件准备与既有业务动作，不手写posted台账。临时策略/步骤/项目/单据/附件/资金台账全部rollback，finally回读自筹及对账原策略/步骤一致、created记录全部消失。L1 self-funding-chain-iteration.log及py_compile/bash-n/diff通过，P1 pure143/native62输入未改复用；backend6fe68cc25与前端CrYkOCxc不变，无reload/构建/升级。
+
+第一轮self-funding-chain-runtime.log10 PASS、ROLLBACK VERIFIED：自筹直写/default/假token拒绝；无配置确认不入账，显式完成生成posted；有配置在审不能完成、真实审批通过不自动入账、显式完成绑定真实project/company/amount台账；该台账作为资金对账来源，验证直写拒绝、无配置确认、配置后等待审核、真实审核后显式reconcile。真实来源改变了先前资金对账缺少posted数据的前提，所以属于有依据的运行恢复，不是重试原空查询。
+
+随后只将自筹document创建/提交/完成改用fixture_role_finance非sudo并断言actor，准备项目归该角色manager/user，提升权限保留在源准备、附件载体、配置和结果查证。self-funding-chain-role-runtime.log10 PASS、ROLLBACK VERIFIED；审核仍使用实际reviewer。对账document办理仍sudo，不能声称整链普通角色或浏览器验收；自筹refund/余额责任未覆盖。首次10项是提升权限基线，第二次10项是变更actor后的受影响复验，不相加称20项独立职责。
+
+下一步补对账普通角色或已有正式页面消费，继续融资/收款/付款执行及结算调整已登记缺口；自筹金额/内容在审冻结、退回及权限边界也不得因这10项而隐去。总体67/detail.action-state保持contract_gap，无推送合并目标部署。
+
+
+### 53.132 普通财务角色对账与官方创建页（定向通过）
+
+a7cba573c clean起点，P4复用_finance_state_authority_checks增加显式actor参数；self-funding-reconciliation传入fixture finance，Document.with_user并断言非sudo。reconciliation-role-iteration.log L1 PASS，reconciliation-role-runtime.log10 PASS、ROLLBACK VERIFIED：同一真实自筹生成台账链中的自筹及对账创建/提交/执行均普通财务角色，真实审核人审批。配置/源准备/附件和财务结果查证仍提升权限，不宣称完全无sudo系统链。backend6fe68cc25与前端CrYkOCxc未改，不reload/build。
+
+既有standard_page_type_browser扩展这两个模型的approval-actions/create范围，复用官方表单/有效契约/双视口检查。自筹初次tpl07-1790795655360失败在project_id输入：字段在非活动页签；第二次tpl07-1790795696883按tab角色定位超时，页面未暴露该角色。截图和有效layout证明字段位于项目与承包人/自筹金额页签。工具按契约page层级的可见名称点击，不改产品或降级字段断言，node --check/diff通过。两次失败保留，不计通过；页签可访问性语义本轮未修，不以探针改动宣称其已符合ARIA。
+
+最终自筹tpl07-1790795749295、对账tpl07-1790795762666分别20 PASS；各errors=[]/forbiddenWrites=[]。关键关系/金额输入可用，未保存单据无审批通过/执行动作；1440和390无整页溢出。仅创建页/只读导航，没有新增持久单据，不证明保存后浏览器审核/执行。前序ORM10项与创建页20项分开记录、不升级总体67/detail.action-state。自筹退回/余额、已审核内容冻结、其他财务模型以及合同来源缺口仍开放。下一步回到必要财务执行/契约一致性未覆盖项，不重跑本批通过页面。无推送合并目标部署。
+
+
+### 53.133 自筹审批内容与只读契约一致（144纯测/11运行通过）
+
+54f251d50 clean起点。P1 self_funding_registration原write只有done终态保护，而workflowContract已对waiting/pending/approved发布readonly。补普通write关键业务字段保护：审批中draft(waiting/pending/validated)或confirmed不可改金额、项目/公司/承包人、币种、办理类型、分类、日期/来源号、账户、摘要、附件及有效性。沿用私有财务token，不动原历史迁移/已完成后允许补充备注附件规则；备注仍非审批金额/身份，不扩大成全部字段冻结。无schema/XML/frontend变更。
+
+L1 self-funding-freeze-iteration.log PASS；self-funding-freeze-unit.log144 PASS并begin/record非零成功。原生动作名称/状态映射/XML及consumer均未改，复用已有62项声明证据但不将其当新增write guard证据；144纯测与实际运行负责证明本改动。源码9bb5435b0受管reload后self-funding-freeze-runtime.log11 PASS/ROLLBACK VERIFIED：实际fixture finance在审关键内容改写拒绝，批准金额修改拒绝，describe_record.editability只读，显式完成仍按100原金额生成台账并完成对账。原策略/步骤恢复与临时记录消失均回读。env local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷不变。
+
+前序两个创建页20项依赖的布局/输入/动作声明未变，沿原报告复用，不重新浏览器或构建。这里只关闭自筹已审核内容直接字段写入与共享只读契约一致性；附件底层内容/外部关联记录变化、refund余额、保存后浏览器及其他财务单据未覆盖项仍开放。下一步继续同组其他单据必要执行/审核内容边界，优先融资完成/真实审批、收款与付款冲销运行；不得将本项11通过升级总体67/detail.action-state。无推送合并目标部署。
+
+
+### 53.134 融资贷款登记真实角色审批（8项通过）
+
+b9d4f607f clean起点，P4仅扩展既有rollback工具financing-approval scope。fixture finance非sudo创建/提交/完成loan_registration+financing_in；同公司临时项目/往来方及策略/步骤准备提升权限，原配置回读恢复。贷款登记按既有业务规则不生成内部往来台账，不把该范围冒充借款台账验证。L1 financing-approval-iteration.log及py_compile/bash-n/diff通过；P1源未改复用pure144，backend9bb5435b0/前端CrYkOCxc不变，不reload/build。
+
+首轮financing-approval-runtime.log前7项成立后驳回阶段AccessError，finally回滚验证通过。归因P4候选审核人未按公司授权过滤；改为与_approve_existing_reviews一致的active/non-share/company_ids过滤及明确allowed_company_ids，不改产品权限。修复后financing-approval-runtime-fixed.log8 PASS/ROLLBACK VERIFIED：显式/default/假token状态绕过拒绝、无配置批准不完成、显式完成保持该类别无台账语义、在审不得完成、真实审核只批准、非财务负责人完成被拒绝、财务角色显式完成、真实驳回原因及重提新review均成立。第一次失败不能当通过；第二次有明确工具输入变更，非盲目重试。
+
+验证范围仅loan_registration/financing_in，借款分类生成台账/资金责任、已批准及已完成的内容冻结、历史重放、保存后浏览器仍未覆盖。下一步优先同一融资模型已审核/终态经济内容保护，与workflow readonly/locked一致；保留收款、付款冲销、结算调整合同来源及既有全局缺口。不扩展为全系统完成，不重复已通过页面，无推送合并目标部署。
+
+
+### 53.135 融资已审核与终态内容保护（145纯测/9运行通过）
+
+046c95aba clean起点。P1 financing_loan普通新系统单据审批中、confirmed/done的正式业务字段与规范字段集合，以及项目/公司/往来方/币种/方向/分类/来源号/利率/有效性等经济内容不可改写；复用两组既有字段常量和私有状态token，保留历史legacy专属补录规则。融资write仅在实际涉及正式业务字段时调用_prepare_formal_business_values，避免状态/备注写入隐式补默认贷款类型显示。该限制不新增schema、字段、前端规则或审批机制。
+
+L1 financing-freeze-iteration.log PASS；financing-freeze-unit.log145 PASS并begin/record非零成功。源码6e76e65bd受管reload，financing-freeze-runtime.log9 PASS/ROLLBACK VERIFIED：普通finance在审金额不能改，confirmed金额不能改且workflow readonly；done金额/正式金额别名/方向/有效性不能改且workflow locked；允许备注补充仍保留amount100和贷款类型显示，真实审核/完成/驳回重提原链仍通过。配置/步骤恢复、临时记录消失；local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，前端CrYkOCxc不变。
+
+未改动作名称、XML、状态映射和前端输入，旧声明/创建页证据只按未变输入复用，未重跑浏览器或构建。历史重放及外部关联对象变化不是本轮证明范围；保留原67/detail.action-state。下一步借款分类实际资金台账与普通角色办理/官方页面消费，随后收款、付款冲销及结算调整来源等仍开放职责；不能将贷款登记9项替代两个借款类别台账。无推送合并目标部署。
+
+
+### 53.136 两类借款资金事实通过，融资官方创建页发现消费缺口
+
+78ed4628a clean起点，P4复用_financing_approval_checks增加financing-borrowing scope；不重复贷款登记9项。现有finance.loan.contractor_project_borrow/out与finance.loan.project_borrow_company/in分类权威，普通fixture finance创建/提交/完成，真实审核人审批。financing-borrowing-iteration.log L1/py_compile/bash-n/diff通过；financing-borrowing-runtime.log6 PASS、ROLLBACK VERIFIED。两类各验证在审不能完成/真实审批不入账、显式完成生成唯一正确方向/项目/公司/往来方/币种/金额100的interfund台账、重复业务完成拒绝且私有台账写入幂等不新增，完成金额不能变。非双事务并发测试，不宣称资金责任汇总全部验证。backend6e76e65bd及前端CrYkOCxc未变，不reload/build。
+
+P4既有创建页探针扩展sc.financing.loan（复用同一财务字段/契约页签检查）。financing-create-browser.log/tpl07-1790796266377 FAILED：有效契约存在，project_id在layout.containerTree的项目与借款方page且可编辑，但实际页面仅基本资料/协作记录，找不到契约页签。截图真实显示正式申请金额/实际金额等输入，未展示该原生页签。不同于前序自筹只是未点击活动页签，不能删除项目/往来方/金额检查来通过。页面无业务写入；该页面不能计通过。
+
+有界归因线索：form_structure_contract为business_task_form/task/entry_semantic_surface，包含project_id/partner_id/amount语义slots；sourceAuthority关联已发布业务配置116(sc_financing_loan_form_sections_v1,v2)、139(sc_financing_loan_p1_form_business_facts_v1,v2)，包含LEGACY_STRUCTURE_KEY_OVERRIDE诊断。P1 data/p1_daily_business_form_orchestration_contract_data.xml有该事实展示编排；前端pages/contractForm/ObjectTaskPage.vue在contextNodes缺少sectionLinks时回退基本资料。尚未断定是生产者丢布局还是消费者选错路径，不能先改业务配置或前端加模型分支。
+
+下一步优先修复该融资正式创建职责缺口：沿本次有效契约与共享canonical presenter/entry_semantic_surface选择核对必需项目/往来方/金额落点，按拥有层修复并定向复验此页；不继续绕过该问题增加其他绿色ORM。整体67/detail.action-state继续开放，保留其他已登记缺口，无推送合并目标部署。
+
+
+### 53.137 融资创建页归因纠正与有效契约回放（通过，无生产改动）
+
+d617fe07c clean起点。沿tpl07-1790796266377原捕获定位：必须选sc.financing.loan主契约，最后一条响应是ir.attachment子契约，不可混用。主契约globalStatus.effectiveRenderProfile=create，project_id/partner_id/amount可见可编辑。P4现有canonical_form_presenter_test通过可选SC_CANONICAL_CAPTURE/MODEL/FIELDS回放原捕获，presentContractV2Form+composeCanonicalFormFloorplan在create/task模式保留项目与往来方于relationNodes，金额于postRelationInputNodes。生产presenter/floorplan与5180候选相关输入未漂移；未发现字段被丢弃。
+
+因此纠正53.136“产品呈现缺口”的初判：探针错误地要求task投影必须保留native notebook页签文字。共享测试先检查实际输入，只有输入未呈现时才导航契约页签，然后继续严格断言输入可见并滚动到输入；不删除必需字段检查，不新增模型专属生产分支。原生布局page与已声明task语义分区不是同一导航承诺。修复验证假设后financing-create-browser-inputs.log/tpl07-1790796559683 20 PASS，errors=[]/forbiddenWrites=[]、1440/390无整页溢出。该创建页消费缺口已消除，原失败保留为工具归因证据，不宣称本轮修复了生产渲染。
+
+L1 financing-probe-iteration.log PASS；financing-presenter-replay.log基线201项PASS（177+10+10+4）并登记workflow_catalog_consumer201非零回执，另有原始捕获3字段可编辑投影断言通过。捕获3项只绑定本地原报告，不并入可跨捕获复用的201计数。可选回放要求非零SC_CANONICAL_CAPTURE_FIELDS，仅输出模型/计数，不写库或创建fixture。仅P4测试文件改动；backend6e76e65bd/frontendCrYkOCxc不变，无reload/build。
+
+下一步回到尚未验证的收款/付款执行与冲销真实角色链及契约消费，优先使用现有已通过业务准备与实际数据，不重验已关闭付款申请49项。结算调整来源、自筹退回、已保存页面办理、关联事实变化等原67/detail.action-state未覆盖项保留。无推送合并目标部署。
+
+
+### 53.138 付款状态入口现金链复验与收款审核内容保护
+
+aaac6ca27 clean起点。上一轮已启动的payment-state-cash-runtime.log已终结：rental-settlement-cash10 PASS，ROLLBACK VERIFIED；复用原普通finance准备与执行链，覆盖两笔20/40付款、台账、完整结算、两次冲销、归属不可改及义务释放后取消。backend6e76e65bd，local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷。此结果补验53.129付款执行状态入口变更，不重跑付款申请49项，不证明收款或浏览器已保存办理。
+
+沿收款直接依赖发现P1 receipt_income.write仅保护状态和终态，在审/confirmed经济内容缺少保护。现复用私有finance token，保护普通非legacy收款单在draft且waiting/pending/validated或confirmed时的金额、身份、合同/申请来源、分类、日期、账户、抵扣/结算及附件关联和有效性。备注补充、草稿/驳回后编辑、正式内部收款写入保留；历史迁移与received原有边界不变。不新增schema/XML、配置或前端模型分支。
+
+L1 receipt-freeze-iteration.log PASS；L2 receipt-freeze-unit.log147 PASS，生产方法隔离执行验证拒绝伪造布尔token改写和正常允许路径。首次回执因begin早于编辑而拒收，未将拒收计成功；稳定输入重新begin、执行147并record成功，receipt-freeze-receipt.log。已有native62/前端201输入未变，按原证据复用；无构建、模块升级、fixture或目标部署。此处代码尚未加载运行态，不能宣称收款闭环通过。
+
+下一步先受管加载该P1修复，再用现有合法合同与已批准receive申请准备验证实际收款及契约readonly一致性；不得伪造税率或无来源收款。必要来源缺失保持产品/数据前提缺口。审批声明、有效动作契约、后端执行约束分别核对，detail.action-state及整体67条目标仍开放。无推送合并。
+
+
+### 53.139 收款真实审批/入账与官方创建页通过
+
+7ea346a4b clean起点，P4扩展既有business_config_approval_runtime_smoke及frontend_acceptance_runtime白名单receipt-income；业务权威仍为P1原状态机。复用实际fixture finance/company8能看到的已批准receive申请及合法合同，不新造合同、税率或fixture。旧income_contract_receipt_invoice_closure_audit有直接设置审核结果路径，未使用它冒充真实统一审批。受管backend.acceptance.up加载7ea346a4b，身份检查发现旧SC_SOURCE_REVISION后由原入口替换；local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter固定卷，前端CrYkOCxc保持。
+
+L1 receipt-runtime-tool-iteration.log、Python编译、bash/node语法和diff通过；P1前轮147纯测输入未变复用。receipt-income-runtime.log6 PASS：普通非sudo finance创建/提交/执行，配置准备及附件工具sudo，真实reviewer审核；无配置自动批准不入账，配置审批中不能收款，金额/申请/账户/附件关联不可改，审核后readonly且不入账，显式收款产生真实posted台账并使来源申请done，终态不能重复执行/改金额/取消而允许备注。原申请字段及审批配置/步骤readback恢复、临时记录消失，RECEIPT_SOURCE_ROLLBACK和总ROLLBACK均VERIFIED。未验证部分金额收款、双会话并发、外部关联事实变化、历史重放。
+
+P4既有approval-actions创建页范围增加sc.receipt.income，检查项目/收款申请/往来方/金额契约可编辑及真实输入，未保存不显示已收款/审批通过。receipt-create-browser.log与tpl07-1790797082686报告22 PASS，errors=[]、forbiddenWrites=[]；1440/390截图人工查看，桌面两列/窄屏单列、字段与金额输入保留，无整页溢出。没有浏览器保存或已批准记录页面办理，因此不能把创建页22+运行6称为保存后完整浏览器旅程。无生产前端改动或构建。
+
+下一步利用此处已有合法收款来源继续核对结算调整既有合同前提及有效动作消费，避免把先前“缺少posted ledger”失败误写为合同一定不存在；若选择调整，应独立核对其合同类型/权限/状态要求，不能借收款来源推定适用。既有全部67/detail.action-state仍开放；已保存浏览器、其他未覆盖职责和原产品缺口保持，不推送合并目标部署。
+
+
+### 53.140 结算调整审批内容保护与角色边界验证
+
+bb04a82b0 clean起点。P1 settlement_adjustment在审批中及confirmed禁止普通写金额、方向、合同/结算/项目/往来方/币种/事项/账户/日期及active，私有状态动作、草稿/驳回后编辑、备注、历史补录原边界保留。不新增schema/XML或前端业务规则。L1 adjustment-iteration.log PASS，adjustment-unit.log148 PASS及begin/record成功；源提交21137a593受管加载，前端CrYkOCxc不变。
+
+P4复用_finance_state_authority_checks增加settlement-adjustment选择，只核对调整合同，解除无关posted ledger前置，原finance-state-authority/self-funding-reconciliation分支不变。首次adjustment-runtime.log在创建时AccessError（0业务检查），ROLLBACK VERIFIED：fixture finance只有读取权限，不是产品必须给财务创建权。依既有fixture定义改为fixture_role_project_a_member（业务发起），显式检查create/write权限与同公司合同可见性；不改角色/权限、不sudo办理。调整工具输入后adjustment-initiator-runtime.log5 PASS及rollback：禁止伪造状态、无配置自动确认、有配置真实审核等待、在审/已确认内容保护且契约readonly、备注允许且金额100/影响-100保持、正式取消通过。配置准备sudo、业务办理普通initiator、真实reviewer审批，未冒称全部无sudo。
+
+P4创建页范围使用同一initiator，检查项目/合同/调整事项/金额可编辑契约与实际输入；adjustment-create-browser.log、tpl07-1790797303482共22 PASS，errors=[]、forbiddenWrites=[]。1440/390截图查看：桌面两列/窄屏单列，页签与输入可用，无整页溢出。未构建或升级schema，当前P1加载21137a593、工具dirty仅本批角色及探针。
+
+结算调整旧“来源前提未验证”已由实际可见合同解决，不能继续以缺少对账台账阻断该职责。未覆盖关联结算单汇总生效/取消恢复、跨项目或币种锚点一致性、已保存浏览器办理及关联外部事实变化，不能升级为整个业务闭环完成。下一步沿调整与结算直接关系核对上述必要约束和汇总，优先静态定位/现有定向入口，其他整体67/detail.action-state缺口保持。无推送合并目标部署。
+
+
+### 53.141 结算调整来源一致性、汇总及来源变化审批保护
+
+74a560b18 clean起点。P1 settlement_adjustment._business_anchor_errors集中返回既有事项/正金额/来源缺失及新增项目/币种/往来方/双锚点合同不一致原因；_check_business_anchor消费同一结果，workflow evidenceGate复用并绑定submit/approve。往来方未填仍遵循原可选字段，填入时须与来源一致。审批完成回调再次执行来源检查，防止来源在审核期间变化；不新增前端业务判断，不重写金额计算。源ed6adcf7a已受管加载，无schema/XML升级或前端构建。
+
+L1 adjustment-anchor-iteration.log PASS；初次adjustment-anchor-unit.log149中1error为隔离执行漏去Odoo装饰器（NameError api），修复测试提取后adjustment-anchor-unit-fixed.log149 PASS并begin/record成功，未在L2失败时运行运行态。新增纯测覆盖项目/币种/往来方/合同错配及同原因投影到submit/approve；既有未变前端创建页22证据保留，不证明新拒绝原因已经浏览器展示。
+
+P4既有settlement-adjustment工具使用实际可见合同，由非sudo业务发起角色临时创建1000结算及调整，原事务回滚。adjustment-anchor-runtime.log7 PASS：扣款确认900/取消1000，在审不汇总，真实审核通过后生效，调增1100/取消1000，正式备注/取消和内容冻结保持。进一步新增直接来源变化断言后adjustment-anchor-source-runtime.log8 PASS：将临时来源结算往来方改为既有不同伙伴，effective evidenceGate给PARTNER_MISMATCH且阻止approve，实际reviewer审批拒绝并保持draft/未validated/汇总0；恢复原伙伴后原审核链正常完成。总ROLLBACK VERIFIED，配置与临时记录恢复。非并发测试，不证明批准后所有外部事实变更全局封锁。
+
+已保存记录浏览器adjustment-record-browser.log/tpl07-1790797536087未通过：支持模型检查通过，但现有角色授权查询无记录；errors=[]/forbiddenWrites=[]。未创建持久数据或扩大权限，不能计作页面通过或重复空查询。合同/临时运行态事实已足够验证本次约束，不是已保存浏览器验收的替代。整体67/detail.action-state保持开放，下一步接续尚未覆盖的对账审核内容/来源完整性与共享动作消费，复用本轮收款/调整证据；后续已保存浏览器需要已有授权记录或正式业务执行产生的数据，不新建fixture。无推送合并目标部署。
+
+
+### 53.142 对账审核内容与来源身份统一保护
+
+6c26fd9d5 clean起点。P1 treasury_reconciliation普通在审/confirmed/reconciled经济内容保护：项目/公司/币种、余额/差额/收入支出/确认金额、来源台账、账户、日期/来源分类、附件关联和有效性不可普通写入；草稿/驳回后修改、备注和内部正式流转保留，原legacy补录边界不变。_reconcile_readiness_errors集中台账存在/posted/项目/公司/币种/零差额原因，提交、审核完成、显式对账和workflow evidenceGate共用；不把业务判断下放前端。无schema/XML变更。
+
+L1 reconciliation-integrity-iteration.log PASS；reconciliation-integrity-unit.log151 PASS及begin/record成功。新增生产方法纯测覆盖审核/终态拒绝与允许路径、来源状态/项目/公司/币种及差额错误和同原因契约投影。源235dc4c78受管加载，backend与现有local/sc-fe-r2-p1-01/sc_frontend_acceptance固定filter/卷一致。P4只给原self-funding-reconciliation范围增加对账内容断言，未重跑其他财务/浏览器矩阵。
+
+reconciliation-integrity-runtime.log13 PASS，ROLLBACK VERIFIED：普通finance生成真实自筹posted台账后办理对账，真实reviewer审批，检查在审不可改余额/差额/来源/附件关联，confirmed readonly且差额不可改；显式reconcile后确认金额/银行余额/台账/active不可改、不可取消，备注仍可补充且来源posted100与差额0保持。配置/步骤及临时记录恢复。运行13包括因来源依赖而复用的原自筹链，不是13个新增业务职责；来源公司/币种错配为151纯测覆盖，尚非真实多公司错配运行证明。
+
+无前端生产改动或构建，原对账创建页20只按未变布局/输入复用，不证明本轮新拒绝原因已经在已保存页面呈现。新代码不使所有外部关联对象不可变，仍保留外部事实变化/并发及已保存浏览器缺口。下一步回到共享动作契约在已保存财务页面的消费，以既有授权记录进行只读观察；无记录则复用已登记缺口，不无限空查询或制造fixture。整体67/detail.action-state继续开放，无推送合并目标部署。
+
+
+### 53.143 已付款详情的动作前置提示按当前动作范围投影
+
+e66acd8d5 clean起点。收款已保存只读探针receipt-record-browser.log/tpl07-1790797726118授权查询为空（1支持检查通过、记录前提失败），无page errors或业务写入；不计通过、不重复查询，已异步询问可复用记录ID/角色并继续独立工作。随后既有paid执行186（FE-A2-PE-001）payment-execution-record-browser.log/tpl07-1790797780389 19项通过，但390截图发现业务呈现缺口：只有冲销动作的已付款页仍显示必须填写付款账户的付款前置提示。19项原断言未覆盖此错误，不能据绿灯称页面无缺口。
+
+有界归因：P1 describe_record用全部evidenceGate正确计算availableActions，但将其他阶段actionKeys的条件也返回给页面。修复仅在可用动作计算后投影evidenceGate：保留actionKeys与当前动作键相交的条件，含当前disabled动作拒绝；无actionKeys全局提示保留。动作可用性仍接收全部原始条件，不减弱后端校验。无前端模型分支，不把特定账户规则硬写入渲染器。
+
+L1 workflow-gate-scope-iteration.log PASS，workflow-gate-scope-unit.log152 PASS并begin/record成功。新增生产describe_record纯测覆盖reverse-only、disabled-submit及无动作的条件投影和完整输入保留。源d26bfec63受管加载，P4在原已付款浏览器断言增加无关账户提示不出现；payment-execution-record-fixed-browser.log/tpl07-1790797886406 20 PASS，errors=[]/forbiddenWrites=[]，1440/390无整页溢出，390前后截图人工核对。冲销入口、危险操作确认及声明后果仍显示，打开后取消确认不写入；删除限制提示正常保留。未实际冲销本记录，实际冲销结果继续引用53.138受管现金链10。
+
+前端CrYkOCxc未变，无重建。此次只读页面证据覆盖该已付款记录的动作与确认取消，不等于收款/对账/调整已保存办理或全业务交付。其他未变页面/运行证据按依赖复用；新gate投影可能影响其他阶段的提示，纯测覆盖选择逻辑，实际页面代表仅paid。整体67/detail.action-state及原业务缺口保留。下一步继续既有有效契约和可用记录的共享消费收口，优先当前可验证职责；缺记录不扩权/不新建fixture。无推送合并目标部署。
+
+
+### 53.144 官方只读关系值多行裁切修复
+
+a6c29167b clean起点。沿53.143已付款截图定位P0 FormSection两处只读关系入口：文字允许换行，但ScButton使用官方固定高度，桌面及窄屏均裁切。首次P4探针错误假设accessible name为打开付款申请（tpl07-1790798033160），改为按有效契约mainData关系显示值定位，不改产品标签。正确基线readonly-relation-baseline-browser.log/tpl07-1790798095646实测1440按钮36px、三行文字越出上下边界。
+
+第一次局部scoped高度样式未影响真实按钮，候选index-CDnaYfp4.js在tpl07-1790798251213仍失败；未计成功，旧候选及报告保留。正式修复将readonly-relation作为既有ScButton外观，在TDesign theme桥接层定义auto高度、现有SC控制最小高度、最大宽度及换行；FormSection官方描述及另一既有只读关系槽共用，不新增渲染器或模型规则、不改变关系导航/权限。局部失败样式移除。
+
+L1 readonly-relation-iteration/bridge-iteration PASS。readonly-main-data-coverage14 PASS；首轮style失败为组件直接引用TDesign高度token（不允许在bridge外），改为既有SC token。最终readonly-relation-bridge-checks.log：primitive adapter11事件case、Python34tests PASS（components46为登记数，不当测试数），style_system/contract_consumer_intrusion/严格类型检查PASS。P0生产仅ScButton/FormSection/theme，P4仅原浏览器工具；无后端/ORM/fixture改动。
+
+发生两次构建：首次局部样式候选实测失败，修复拥有层并完成定向检查后必要重建；不是为刷新SHA重跑。最终readonly-relation-bridge-build/preview及browser日志、tpl07-1790798391223 26 PASS，errors=[]/forbiddenWrites=[]。1440文字3行完整在66px按钮内，390文字5行完整在110px按钮内；390截图人工查看，冲销确认取消/删除限制及无整页溢出仍通过。未实际点击关系跳转或冲销，导航事件逻辑未变。
+
+当前5180入口/assets/index-irmVWfdy.js，entry_sha256=aeabd7ab54a6c29df03b60102592709c6301a29854cb890adc048091e3523196；index_sha256=85acb940109b93157919e2dc4ee5955eed64d4e7975de6f4b212c7f6d50371ff。构建绑定a6c29167b加当时四个frontend文件dirty，diff_sha256=2d791821a7b90f48434a1bfeebda00a27e3ac0f613111a8fe6e30d8253b22d63；backend仍d26bfec63。记录的是迭代候选，不冒称clean冻结交付。旧未变输入证据按影响复用，已知空授权记录不重复。整体67/detail.action-state等未验证业务职责保持开放，无推送合并目标部署。
+
+
+### 53.145 只读关系导航真实打开与返回闭环
+
+起点42e59c902，延续三个已归属frontend dirty文件。P0共享useRecordFormState将打开已有关系记录从字段写入守卫之前分派给既有关系导航；导航仍由relation_entry.canRead/canOpen、真实记录ID和声明menu/action控制。创建、搜索选择、清空及改值仍受字段可写/occurrence约束，不引入模型业务分支或第二份状态。P4仅扩展现有standard_page_type_browser；无后端/数据库变更，不升级ORM。
+
+实际缺陷基线tpl07-1790798526248：按钮呈现但readonly写保护吞掉导航。修复后目标契约已返回，探针先后暴露三项错误假设：按请求model筛选遗漏action型请求；浏览器返回缓存页不一定再次请求契约；ScStatusBadge包含无障碍“状态：”前缀，精确裸文本“已付款”无法匹配。对应失败报告1790798741052/1790798813105/1790798883838/1790798935868保留，不算通过。最后一项先前误判为时序，现按组件源与失败日志纠正为定位器错误；改查业务状态区域中的既有title，未调整产品状态或增加固定延时。
+
+L1 readonly-relation-open-iteration及final-iteration PASS；open-checks中的关系入口guard、create journey（必填10/scene mutation4）、严格类型PASS按未变生产依赖复用。新增只读open/四种写操作拒绝5case，保留原occurrence身份反例；final-unit PASS，已用正确注册的readonly_relation_navigation完成begin/record非零回执。首次误用未登记check被拒，未签成功；随后误选form_field_policy仅begin未record，不计其验证证据。
+
+产品修复稳定后一次构建readonly-relation-open-build/preview，5180加载/assets/index-CVVwVIuW.js，entry_sha256=3f6670d2851a1b2c0cbc473fee0f4f8279f2c39da98a8bfa0ee2dd1dae152f4f，index_sha256=1e2a5368cd7e5b8b11b36309c350e49fbc005717620bd0b83632043503846491；build base42e59c902加当时三个frontend dirty，diff_sha256=836ca2dc832cf24b533c49e40120d0a55e2f1e2c0e1deb2740b0c59cce282bd1。其后仅探针修正，不重建；backend仍d26bfec63。现有local/sc-fe-r2-p1-01/sc_frontend_acceptance身份由浏览器前置验证。
+
+readonly-relation-final-browser.log / tpl07-1790799185906：33 PASS，errors=[]、forbiddenWrites=[]。既有finance执行186经关系值打开payment.request1710，声明menu545/action775、来源return_url/model/field及目标readonly官方详情验证通过；browser back恢复原URL/模型/记录、可见已付款徽标和唯一撤销付款入口，没有重复付款按钮。1440/390原关系换行及确认取消检查继续通过；返回390截图人工核对当前标签为执行单、标题状态一致。此处没有实际冲销或业务写入，实际现金/冲销证据仍引用53.138运行10。
+
+动作声明actions与当前可执行availableActions不可混淆；本记录确有目标ID/方法/enabled等执行契约，本缺陷属于消费链。只读关系旧的误用写权限拦截已退出；原只读编辑保护保持。总体67/detail.action-state及空授权收款/调整已保存办理等缺口仍开放，不自动升级业务矩阵。无推送、合并或目标部署。
+
+
+### 53.146 费用/扣款审批内容保护与契约一致性
+
+e3eb950f3 clean起点，沿既有detail.action-state财务职责缺口定向核对expense_claim：workflow已声明在审/批准只读，但write仅保护done/legacy_confirmed，直接ORM/API可改在审或批准内容；明细独立CRUD同样只保护终态。此为P1标准业务审核事实缺口，不能通过前端readonly隐藏。源1e3989bdc仅smart_construction_core既有费用模型和定向测试/P4探针，不改schema/XML/manifest依赖或前端。
+
+新增_reviewed_content_is_frozen统一父单与明细判定：非legacy submit/approved及draft的waiting/pending/validated冻结审核内容，done/legacy_confirmed保持终态保护。父单经济身份、金额、付款关联、扣款明细、账户及附件关联拒绝普通改写（布尔伪造私有token无效）；备注、草稿/驳回修改、私有正式状态动作保留。子明细create包含default_claim_id，write同时检查原父单与目的父单，unlink检查所属父单，不能移动明细绕过；legacy既有补录边界不扩权。附件文件内容本身及外部关联事实的不可变性不由本检查证明。
+
+L1 expense-content-iteration/tool-iteration PASS；expense-content-unit.log154 PASS、payment_approval_state_machine begin/record非零回执成功。新增生产方法测试验证审核内容冻结、草稿恢复、备注/私有动作和明细默认父单/原父单/目标父单入口。定向语法/diff通过。P4在原expense-state-authority增加2项组断言，其他scope不扩大。无模块升级；backend.acceptance.up受管替换旧SC_SOURCE_REVISION为1e3989bdc，既有local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份验证通过。
+
+expense-content-runtime.log14 PASS，ROLLBACK VERIFIED：实际配置审批实例、关闭配置不绕过在审、真实reviewer完成、无配置自动通过、无匹配拒绝、真实驳回重提、两步线性审批和非审核人拒绝继续通过；新增在审/批准金额、批准金额、账户、附件关联、明细关系、active拒绝，备注可写且原金额/附件保持。准备与提交沿原工具sudo，审核人真实非sudo；不夸称普通财务全办理或费用最终执行。明细独立CRUD/跨父单移动由纯测覆盖，本次真实运行只验证父单O2M写入口，不冒充真实明细CRUD验收。
+
+前端index-CVVwVIuW.js未变，不构建/重拍；既有共享readonly消费证据按未变输入复用，不代表本拒绝原因已做浏览器验收。总体67/detail.action-state保持开放，下一步继续该财务组已确认职责与实际角色的动作/内容消费闭环；已知无授权记录的模型不重复空查询、不新建fixture。无推送、合并或目标部署。
+
+
+### 53.147 扣款明细真实审核生命周期验证
+
+c1a5ad736 clean起点，生产1e3989bdc内容保护及154纯测按未变输入复用。P4仅在原expense-state-authority末尾追加真实扣款分类的主从审核验证，不改产品规则或创建持久fixture。3ba16be0a工具源经现有backend.acceptance.up重绑SC_SOURCE_REVISION；local/sc-fe-r2-p1-01/sc_frontend_acceptance18082/dbfilter/卷沿原身份，事务串行。L1 expense-lines-iteration PASS，py_compile/diff PASS；不因工具改动重跑无关纯测、前端构建或浏览器矩阵。
+
+expense-lines-runtime.log17 PASS、ROLLBACK VERIFIED。新增真实finance.deduction.bill分类扣款单（100元主单与真实100元明细），已注册temporary created并随原finally核对不存在。启用真实审批后，明细显式claim_id创建、context默认claim_id创建、金额修改、删除、从在审父单移出和从草稿父单移入均因内容保护拒绝；每次savepoint恢复，原明细ID/父单/金额与草稿归属回读不变。真实reviewer驳回到草稿后可改明细名称、增删临时明细；重提且真实审核完成后同组拒绝再验证。原14项同时通过。准备/提交/明细操作沿既有工具sudo，reviewer真实非sudo；不宣称普通用户ACL或浏览器办理。这里17为总计3项新增组，不是17个新增业务职责。
+
+同一路径定向读取发现明确产品缺口：expense_claim._check_business_ready中的R10-v2历史分支为旧spec测试保留“仅warning”，允许缺必需申请关联、现金往来单位/账户；_check_attachment_policy_or_raise对业务分类required附件也仅warning。workflow_contract_service._expense_claim_evidence_gate却将这些条件投影为blocking门禁。此为P1执行与契约不一致，不能通过模板按钮禁用代替服务端拒绝；下一步集中复用业务校验为唯一来源，保护共享审批配置/真实执行，移除为裸测试开通的生产放行。尚未实际修复，登记为detail.action-state具体阻断，不以本轮17通过覆盖。其他领域及外部关联/附件内容/并发不扩充证明。
+
+前端index-CVVwVIuW.js未变。原整体67和普通角色已保存办理/费用最终执行仍开放。无推送、合并或目标部署。
+
+
+### 53.148 费用动作契约与后端必要条件统一
+
+b50c9d25d clean起点，直接处理53.147登记的P1生产放行缺口。25406c8df将原workflow费用evidenceGate中的项目/往来单位/金额/付款申请/扣款明细/附件策略/现金账户条件移入expense_claim._business_readiness_errors，返回原因码与消息；workflow仅映射为原gate结构，保持原因码和动作范围。_check_business_ready消费同一结果并UserError拒绝，提交、实际审批回调和显式done原有调用链沿用；附件独立check也复用此来源。移除为裸spec测试保留的warning-only放行，不让前端承担执行校验。财务身份、保证金退回余额、责任余额及付款关联一致性等既有专用验证保留；legacy已确认门禁豁免和原受管历史办理边界不扩大。无新字段/XML/前端规则。
+
+L1 expense-readiness-iteration/tool-iteration及修正探针iteration PASS；expense-readiness-unit.log155 PASS、begin/record成功。新增生产方法纯测覆盖6种必要条件（申请、往来、出款收款账户、入款账户、必需附件）的独立原因、投影一致和执行拒绝，以及完整输入、可选附件、历史确认边界。非本范围ORM/浏览器/前端构建不跑，既有154未变部分按依赖承接，相关新纯测实际执行。
+
+首次expense-readiness-runtime.log：原17项及缺申请真实提交拒绝通过，但探针错误把项目还公司款interfund当作现金账户场景，AssertionError interfund，ROLLBACK VERIFIED；不计整轮通过。d5605cd68仅修P4，改用本轮已有现金报销记录检查往来/账户，不修改产品分类。受管backend.acceptance.up重绑精确源，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份验证，无模块升级。
+
+expense-readiness-fixed-runtime.log19 PASS、ROLLBACK VERIFIED：原配置/无配置、真实reviewer、拒绝重提、两步审批、审核内容/明细保护17项保留；新增真实报销缺付款申请提交拒绝，原因与契约gate一致且无state/reviews残留；缺往来单位和付款账户同样真实拒绝、消息与契约一致。该报销始终缺付款申请，后两项是多条件拒绝证据，不能冒充单一账户/往来条件独立运行证明；独立反例由155纯测覆盖。必需附件运行配置未改，只做生产方法纯测，普通role/浏览器/最终费用现金执行仍开放。准备/提交沿原工具sudo，不伪称finance全旅程。
+
+本轮关闭的是已确认必要条件的warning-only执行缺口；契约availability与真实执行不再为这些条件维护两份语义。现有67/detail.action-state保持开放，下一步普通finance角色费用动作与最终执行的实际职责验证，复用已存在数据和受管回滚；如前提不足记录具体原因，不重复空查询或制造持久fixture。前端index-CVVwVIuW.js未变，未重建。无推送、合并或目标部署。
+
+
+### 53.149 普通财务费用执行与已保存页面前提
+
+e21b3da97 clean起点，P4仅在既有standard_page_type_browser注册sc.expense.claim的finance非legacy已保存只读观察（未注册create）；原生submit/approve/reject/complete动作语义及非approved无完成按钮、双视口沿原工具。expense-record-browser-iteration静态/语法通过；expense-record-browser.log/tpl07-1790799758516：受管登录及api.data返回ok、records=[]，2项中记录前提失败，errors=[]、forbiddenWrites=[]。因此没有实际页面/动作验收，不重复查询，不扩大角色或改查legacy冒充新业务。
+
+随后P4在原expense-state-authority事务追加真实finance往来款执行，09185ccff工具源经backend.acceptance.up重绑，local/sc-fe-r2-p1-01/sc_frontend_acceptance身份保持。L1 expense-role-iteration PASS、py_compile/diff PASS；P1生产未改，155纯测按未变输入复用，前端index-CVVwVIuW.js不构建。
+
+expense-role-runtime.log22 PASS、ROLLBACK VERIFIED（原19+新增3组）：fixture_role_finance显式非sudo、同公司可见项目与往来单位、create/write权限前提核对，实际创建project_company_repay、普通角色提交、普通角色action_done。无配置提交后approved/no reviews且无资金台账，显式完成才done并生成唯一posted台账，核对公司/项目/往来单位/币种/方向/100金额；普通角色重复完成、取消及改金额拒绝，备注可补充，台账仍唯一。主单和台账登记created，原finally回读临时记录不存在及策略/步骤恢复。附件准备沿既有sudo工具；不声称附件普通角色上传或真实银行出款。
+
+这是费用模型下“项目还公司款”职责的普通角色最终执行证据，不是报销申请/保证金/扣款退回现金链，也不是configured审批同角色全旅程。原配置链的准备/提交sudo限制仍按53.148记录。保存页数据前提明确为空，剩余浏览器及其他职责保持detail.action-state开放。下一步继续普通角色配置审批/有效契约消费的必要缺口，并保留已明确缺少记录的页面前提，不反复扫同一数据。整体67不升级整行，无推送合并目标部署。
+
+
+### 53.150 公司范围配置审批的普通财务执行闭环
+
+4462a61df clean起点，P4复用既有费用普通finance往来款文档工厂，补配置审批消费与执行，无P1生产变化，155纯测原输入复用。49cf8bc59第一次runtime失败：旧_set_policy按模型取首条配置而未按实际finance公司定位，configured未进入预期submit。expense-role-configured-runtime.log保留失败、ROLLBACK VERIFIED，不把其22个前置通过算配置链完成。此为工具配置作用域错误，不改产品policy选择逻辑。
+
+352e98a9f修正工具：按finance.company_id定位当前公司/全局配置，自动链关闭实际可用范围；配置链使用当前公司政策及现有审核组，已有步骤暂时停用，新步骤仅事务内创建，使用get_active_policy回读精确命中。原finance_policies基线纳入费用，finally回读所有相关策略/步骤恢复；新策略/步骤/单据/台账均登记created并核验不存在。复用既有配置验收方式，不新增环境或持久fixture。
+
+expense-role-configured-iteration/scope-iteration L1、py_compile、diff PASS；源352e98a9f经backend.acceptance.up受管重绑，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-role-configured-fixed-runtime.log25 PASS，ROLLBACK VERIFIED。原22项承接同事务，新增3组：实际finance非sudo创建/提交，有配置生成真实review、pending契约readonly且无complete，提前完成/改金额拒绝且无台账；实际reviewer完成后approved/validated，契约readonly但complete enabled，仍无台账；普通finance显式done后唯一posted台账，核对公司/项目/往来/币种/方向/100金额，完成动作从可用契约退出。此单与无配置自动链台账彼此独立。
+
+本次覆盖的是expense模型“项目还公司款”职责的有/无配置普通角色运行闭环，附件准备仍既有sudo工具。费用报销/保证金等不同现金职责、用户浏览器配置与已保存办理不能外推；53.149无授权非legacy记录事实保持，不重复空查。前端index-CVVwVIuW.js未变，未构建。下一步对照既有职责及可用来源，继续现金费用的申请关联、执行结果及官方页面消费收口；总体67/detail.action-state保持开放，无推送合并目标部署。
+
+
+### 53.151 普通财务现金费用与真实付款申请执行链
+
+945cb86de clean起点，P4沿expense-state-authority最后追加现金报销执行，源d9f229b0f，无生产变更。使用fixture_role_finance非sudo、精确公司，按type=pay/state=approved/terminal_cash_source_model空及正金额/完整项目往来条件选择现有可见申请；要求无既有付款台账，不放宽条件或新建申请。新报销主单只在原回滚事务内创建，绑定实际申请项目/往来/币种/金额，附件准备沿既有工具sudo。相关审批配置按真实公司范围处理。L1 expense-cash-iteration、py_compile/diff PASS；155纯测源未变复用，无前端构建。
+
+受管backend.acceptance.up重绑d9f229b0f，local/sc-fe-r2-p1-01/sc_frontend_acceptance18082身份通过。expense-cash-runtime.log27 PASS（原25+新增2组）。普通finance提交现金报销后approved，来源申请仍approved、未认领且没有付款台账；显式action_done后报销及申请均done，terminal_cash_source_model/res_id确指本报销，唯一payment.ledger为posted、金额等于申请，并核对公司/项目/往来/币种。重复完成及解除申请关联拒绝，台账仍一条。原申请只在该受管事务中暂时变化；helper finally rollback后逐字段比对原state/身份/金额/认领字段及原台账ID集合，EXPENSE_CASH_SOURCE_ROLLBACK=VERIFIED；主finally配置/步骤/全部临时对象复核BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。请求对象由同次受限查询所得recordset直接绑定并前后回读；本日志未输出请求具体ID，不将其作为精确对象发布归档回执，后续最终证据需要补齐可读身份绑定。
+
+此次关闭现金费用普通finance无配置批准→实际执行→付款申请/台账衔接的运行缺口，不新增第二套付款业务实现。配置审批角色链沿53.150同模型往来款证明，不外推现金报销配置链、部分付款、真实并发、保证金及退款。已保存expense浏览器查询为空事实沿53.149保留，无页面办理通过声明。整体67/detail.action-state仍开放，下一步回到费用官方页面可用能力与缺少保存数据的清晰边界，并补最终证据可读对象身份；不重复无关矩阵、fixture或付款49。无推送合并目标部署。
+
+
+### 53.152 报销创建契约初始化缺口修复
+
+638ec3b43 clean起点，从已捕获finance system.init route_authority复用授权费用报销菜单xmlid，P4读取当次实际menu/action而非硬编数字。现有探针新增create入口观察，未重查已知为空的保存记录。expense-create-browser.log/tpl07-1790800143905在第13断言失败：有效契约保留payment_request_id但页面无输入；截图/契约mainData显示business_category_code正确，business_category_id缺失、financial_flow缺失、payment_anchor_policy错误回落interfund_no_request，导致报销入口隐藏必需付款申请。无page异常/业务写入，不删除该职责以求兼容。
+
+P1 expense_claim.default_get此前只初始化项目/往来，category仅create解析，无法提供页面初始化所需语义。6fccee039补business_category_id缺省解析，保留已有显式类别默认；direction/handling_kind/business_axis/financial_flow/payment_anchor_policy/claim_flow_label从未持久化候选的既有模型compute读取，排除旧派生默认输入，按fields_list投影。不在P0/frontend复制行业规则、不引入新字段/XML/模块升级。P4仅原浏览器工具，P1新增default_get生产方法回归。
+
+expense-defaults-iteration L1 PASS；expense-defaults-unit.log156 PASS并begin/record成功，新增类别解析、显式默认保留、派生值不自引用和无关字段不计算反例。backend.acceptance.up加载6fccee039，原local/sc-fe-r2-p1-01/sc_frontend_acceptance身份保持，前端index-CVVwVIuW.js未变无需构建。
+
+expense-create-fixed-browser.log/tpl07-1790800235183：23 PASS，errors=[]/forbiddenWrites=[]。当次授权menu564/action758；mainData类别[18,报销申请]、handling_kind=expense_reimbursement、financial_flow=cash_out、payment_anchor_policy=pay_request_required、direction=outflow。官方表单保留项目/往来/付款申请/金额/账户，后四项有实际input，未保存不出现审批通过/驳回/完成；1440/390无整页溢出，390截图人工核对正确口径。未执行空表提交/保存/关系选择，不能将字段呈现证明升级为提交校验或业务创建完成。
+
+default_get影响真实create，故有依据重验既有费用27范围：expense-defaults-runtime.log27 PASS，EXPENSE_CASH_SOURCE_ROLLBACK及BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK VERIFIED。现金/往来分类、配置与无配置审批、真实finance执行/唯一台账及原来源恢复保持，未重验其他领域或付款49。最终对象可读ID日志限制沿53.151保留。总体67/detail.action-state仍开放，下一步是该创建入口的必填反馈和实际关系交互共享消费，不重复盘点/空查询。无推送合并目标部署。
+
+
+### 53.153 新建页提交动作语义与共享执行链收口
+
+247b4cb48 clean起点，P4在原报销create探针点击空表提交并等待必填反馈。expense-validation-browser.log/tpl07-1790800345071失败：点击成功但无反馈、无业务写入。定向追踪证实P1 _sc_inject_workflow_contract对record_id<=0直接返回，新建页原生action_submit声明有按钮/权限，却无submit语义；不能将不写入误判为正确校验。
+
+d9334ec26补P1 describe_model_actions稳定目录及新建页注入，不构造记录、不假造审批状态/可用动作；158纯测和begin/record通过。仅此修复后的tpl07-1790800516166再次失败：P0将声明目录误当记录可用性，按钮因WORKFLOW_ACTION_AVAILABILITY_INVALID禁用。进一步定位共享先创建再提交入口只支持footer或page.root向导，遗漏明确submit语义的page.header原生动作。
+
+0bda7f8e0补P0通用消费：目录显式availabilityScope=declaration_only，在无record_id且无availableActions时不提供记录级可用性；错误/有歧义目录、已保存记录缺可用性继续拒绝。ContractAction保留经@sc/schema校验的actionSemantics，原resolvePrimaryCreateFooterAction纳入已声明business/submit/contract.action的header动作，仍要求唯一候选、authorizationAllowed及既有记录条件，只复用原saveRecord→executePrimarySubmitAction链。不按方法名/标签/模型推导语义，不授予新权限、不新增保存实现。scope为P1契约声明和P0共用消费者，无业务状态/schema字段/数据库升级。
+
+L1 create-action-catalog/consumer-iteration PASS；backend158纯测PASS；contract_header_action新增4反例、canonical_form_presenter新增3反例及原用例PASS；严格类型PASS，create_record_user_journey原默认/单飞保存/关系意图/必填10/scene mutation4等定向回归PASS（create-action-consumer-checks/regression.log）。已保存记录describe_record和业务执行未变，原费用27运行证据按依赖复用，不重验ORM。此处目录影响所有登记工作流新建表单，覆盖来自通用纯测和报销代表；不外推所有入口已实际创建/提交完成。
+
+实现稳定后一次受管构建/5180预览，base0bda7f8e051cb6f68446dc89daf996c135e4a32f clean，entry/assets/index-Ddc2GXJe.js，entry_sha256=aca7c83804cfae8752bb7058f3c8420eadac4046df0bce13ba35263a225a6cc2，index_sha256=7eabdae4e07fc36a4395729dca871f628ff68361272f31667f40b68b4f365451，backend同源。expense-validation-consumer-browser.log/tpl07-1790800755234：25 PASS、errors=[]/forbiddenWrites=[]，空表提交显示统一必填反馈、仍在/f/sc.expense.claim/new，1440/390无整页溢出；390截图人工核对金额/项目错误及提示。未保存/执行真实业务动作，填完后的保存提交链仅共享回归支持，不能冒称本报销已走完整用户办理。
+
+付款申请关系查询范围及选择仍待定向验证，本次未提前判通过；已保存非legacy费用数据为空及最终现金来源日志ID限制沿既有记录保留。总体67/detail.action-state继续开放。新建动作目录与记录可用性职责明确，旧的无语义原生提交静默无效路径在已覆盖提交范围退出。无推送合并目标部署。
+
+
+### 53.154 报销关系真实查询、选择与项目切换
+
+fc2b16113 clean起点，P4只扩展原expense create探针，不改生产或运行环境。expense-relation-iteration/switch-iteration L1、node语法/diff PASS。先expense-relation-browser.log/tpl07-1790800850900 28 PASS确认真实查询：finance在授权menu564/action758新建报销，项目输入搜索FE Project A、选择实际返回project10，付款申请查询api.data/list domain=[[project_id,=,10]]、返回真实授权候选。
+
+追加实际选择及失效依赖检查后，expense-relation-switch-browser.log/tpl07-1790800914871 33 PASS，errors=[]/forbiddenWrites=[]。选择返回id1815、display_name为付款申请/FE Project A/FE-A Counterparty/999/PRQ2600347，输入保留其展示值；再查询选择授权FE Project B/id11，旧申请输入清空，下一次真实付款申请请求domain切为[[project_id,=,11]]。原空表必填及1440/390无整页溢出保持通过。所选ID来自返回候选，未保存或发送业务执行，不能将展示值检查当作持久化ID写入证明；既有技术行身份/主从保存证据不重验。
+
+发现明确P1候选范围缺口：现金流出报销的有效payment_request_id域只约束project_id，实际project10候选包含id32、display_name“收款申请 / FE Project A / FE-A Counterparty / ¥30.00 / FE-PFL035-RECEIVE-001”。现有模型_expected_payment_request_type和_check_payment_request_scope_or_raise已经校验方向，前端不应自行从文案或模型名推导过滤。下一步在既有关系契约适配/原生字段域声明与财务方向一致的候选范围，并用本查询链验证；不把当前33PASS当候选业务适配全部完成，也不因后端最终拒绝而忽略选择体验缺口。
+
+前端index-Ddc2GXJe.js/backend0bda7f8e0生产未变，158纯测/创建及费用运行27按依赖复用，无构建、模块升级、额外ORM或保存记录查询。旧项目关系值的依赖失效路径实测可用。整体67/detail.action-state、已保存数据前提、填完提交及最终可读源ID证据仍开放。无推送合并目标部署。
+
+
+### 53.155 费用申请候选方向契约收口
+
+f74b4f525 clean起点，P1 smart_construction_core原生费用关系域缺少既有现金方向约束。共享解析器仅支持直接字段依赖/字面量，不支持Python条件表达式；未扩建解析框架或在前端推导业务。c0cbdf7a7新增非存储只读payment_request_types，由_expected_payment_request_type执行权威计算（cash_out→[pay]、cash_in→[receive]；非现金/往来/追溯保留原有两类关联范围），字段域同时约束project_id与type in payment_request_types。两处原生表单补隐藏依赖，新建default_get从同一模型计算投影。审批/入账/权限和后端最终scope校验不改，前端生产代码不改。
+
+L1 expense-direction-iteration/final-iteration PASS；payment_approval_state_machine 160项纯测PASS，新增现金双向及其余流向、原生域/依赖检查并扩充default_get测试；begin/record非零回执已写。node语法及diff通过。运行需要字段注册和XML视图更新：首次升级因未声明CODEX_NEED_UPGRADE被入口拒绝，未执行；补齐CODEX_NEED_UPGRADE=1、CODEX_MODULES=smart_construction_core后，原受管acceptance.module.upgrade成功，随后backend.acceptance.up重载c0cbdf7a7。日志expense-direction-upgrade/backend.log；仍是local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter和原卷，无新环境/fixture。前端继续index-Ddc2GXJe.js，不构建。
+
+expense-direction-browser.log / tpl07-1790801331397：35 PASS，errors=[]、forbiddenWrites=[]。finance授权menu564/action758的新建报销实测query domain=[[project_id,=,10],[type,in,[pay]]]，返回15条（原16条中的收款标签id32退出），选择id1815显示值保留；项目10→11清空旧选择，新query保留type in [pay]且项目11。空提交必填反馈、原双视口检查保持通过。方向限制由实际请求证明，不通过显示文案过滤。cash_in的receive映射为纯测证据，未声称对应浏览器办理完成。
+
+原158纯测由160替代；生产消费者及保存/审批执行输入未改，费用27业务执行证据按依赖复用，无额外ORM/重跑付款49。53.154候选方向缺口关闭；整体67/detail.action-state继续开放。完整填表提交、非legacy已保存费用数据前提及最终可读来源ID证据仍待完成。仅本地提交，无推送、合并或目标部署；本批方向候选定向验收通过不等于全系统交付。
+
+
+### 53.156 报销完整字段保存失败恢复与真实请求事务回放
+
+7a5f2e028 clean起点。本批P4扩展原standard_page_type_browser和business_config_approval_runtime_smoke，不改生产。财务角色create/write但无unlink，故不创建无法自行清理的持久验收记录，也不提升角色。TPL07_EXPENSE_SAVE_PROBE=1在既有create范围填入真实来源1815的project10/partner56/amount999及测试账户，创建请求在网络边界注入503，任何contract.action拦截拒绝。expense-save-probe-browser.log / tpl07-1790801474585：45 PASS；两次点击各一次真实create请求，技术关系ID、金额、menu564/action758及公司上下文一致，错误可见、输入保留、仍为new、无业务执行。记录保存的是被拦截请求，不声称浏览器保存成功。
+
+复用verify.business_config.approval_runtime新增expense-create-request窄范围，不重跑费用27或全领域。入口只读取既有artifacts树的成功报告，核对两次请求相等、finance登录及无未声明写入；绑定报告SHA256。纯校验限制模型/op/可写字段/上下文，拒绝state、sudo、回调上下文及附件修改；运行核对sc_frontend_acceptance、financeuid30、company8、可用公司、实际菜单/动作/分类、来源字段。真实ApiDataHandler以普通finance处理原payload，整个transaction最终rollback，来源/台账/临时单据/临时附件均回读。未新增环境/凭据/fixture系统。
+
+首个回放在任何写入前因ORM tuple与HTTP array表示不同拒绝；修正为同一JSON边界比较后，真实create成功但submit因缺必需附件拒绝，ROLLBACK VERIFIED（expense-create-replay-normalized-runtime.log）。这是业务输入不完整，不是放宽后端校验的理由。后续探针以reasonCode绑定既有evidenceGate，修正一次误用code键的工具错误（expense-create-attachment-runtime.log，已回滚）。最终expense-create-attachment-contract-runtime.log：3 PASS，创建身份一致；缺附件的错误与保存后契约一致、仍draft；复用原_attach在事务内补附件后submit→approved/validation_status=no，契约readonly，没有付款/来源认领。报告hash b9b04b4f8f687d87732c2941586a927cc911cd4fca5c2e0bede7721aafab178d，临时expense162、来源1815，最终EXPENSE_CREATE_PROBE_ROLLBACK VERIFIED。附件由运行探针补充，不是浏览器上传，不能合并称完整浏览器办理闭环；调用真实create handler+模型submit，不声称经过HTTP动作路由。
+
+L1 expense-save-probe-iteration / expense-create-replay-final-iteration PASS；语法/diff PASS；既有standard_preview_tool检查扩充输入，最终8 Node+19 Python=27测试PASS（含3组payload范围测试），begin/record非零。初期误以standard_preview命名登记，随即删除重复项并沿用原standard_preview_tool，无平行检查保留。生产addons和前端产物未改，160纯测/既有费用27运行/方向browser35沿依赖复用，无构建/升级。
+
+确认产品缺口：本报告新建attachment_ids fieldInfo required=false/help为空；有效分类却在提交/审批/完成要求附件。保存后evidenceGate正确，缺口是新建契约及共享动作校验中的“提交必需、草稿可缺”职责，不能简单改字段required而阻断草稿保存。登记既有gap文档，下一步补该动作阶段契约并验证待上传文件、保存失败/上传失败恢复与真实提交衔接。总体67/detail.action-state、保存后浏览器及其余缺口仍开放。仅本地，无推送/合并/目标部署。
+
+
+### 53.157 提交阶段附件契约与共享消费
+
+c2843dbe1 clean起点。P1 expense增加非存储只读related字段submission_attachment_policy，直接取business_category_id.attachment_policy；两处原生表单隐藏依赖，default_get沿既有模型计算投影。workflow profile声明submission_requirements，describe_model_actions和describe_record均投影submissionRequirements：relation_required、字段attachment_ids、requiredWhen政策值required、pendingSource=native_attachment、reasonCode/message。不赋予记录执行权限、不改状态机或后端提交校验。P0 v2 schema补加可选提交要求结构；既有共享primary/form action runtime在明确business/submit语义下调用同一校验，普通save不调用。缺依赖/错误声明拒绝；空关系/尚无默认键均视为缺值；待上传native附件可满足前置条件，之后仍走原save→upload→submit链、上传失败保持原阻断。没有模型/文案分支或新保存引擎。
+
+生产实现c71b5f58d；P4 1fae2361a补失败探针对实际execute_button及file.upload的拦截（此前只拦contract.action不足以证明HTTP动作未调用，本轮以实际intent补强）。L1 submission-requirements-iteration/final-iteration PASS；161 backend纯测PASS，新增草稿附件非必填/原生策略依赖，扩充default_get；create_record_user_journey新增14提交前置案例、原共享动作回归及strict类型PASS。早期两项新测试自身取样错误（未更新default stub、对带字典展开的全profile literal_eval）修正后通过；begin/record因测试输入变化拒绝一次，最终稳定输入重新begin→161→record成功，未继承旧回执。
+
+受管smart_construction_core升级、backend.acceptance.up和一次前端build/up均通过；日志submission-requirements-{upgrade,backend,build,preview}.log。候选base1fae2361a984c0d9b8b33f0136486fa009aee5f2，entry/assets/index-akeNgEn3.js，entry_sha256=a4312fd004f1f7ccd57db4ad6f4e2190e531844f1bbe34750b4940c3ec0b5a14，index_sha256=3c8dfbc987e5875fd540feeb645e904ee93c96bcea7fb6c9bdd71abcc6f8889b；后端同源，仍复用local/sc-fe-r2-p1-01/sc_frontend_acceptance及原卷/5180。无新环境/fixture。
+
+submission-requirements-browser.log / tpl07-1790802321792：48 PASS，errors=[]、forbiddenWrites=[]。新建mainData.submission_attachment_policy=required；空表或填齐基本字段但无附件，点击提交显示分类附件要求且无create。无附件点击保存草稿仍实际发出create（由探针503拦截）。随后使用官方附件选择控件加入tpl53-submission-requirement.txt待上传，再点击提交/重试，各发一次create；ID、金额、菜单/公司上下文及输入保留。附件仍待上传，execute_button/file.upload均未发出；没有业务创建/附件持久写入。1440/390检查通过，390截图人工核对动作可用和布局。原关系project10→11及方向过滤保持。新前置契约改变空表提示顺序，本轮替代53.153对应旧提示观察，不重跑付款49。
+
+53.156缺少“提交必需、草稿可缺”的新建契约消费已补；本轮覆盖默认required及泛型纯测的recommended/空值/未知声明，真实分类切换/onchange尚未单独实测。既有费用执行27/实际请求回放3的业务执行路径未改，按依赖复用，不重跑ORM。完整成功上传→保存→提交→保存后详情的浏览器闭环仍开放，不能将本轮503注入当作成功办理；下一步复用P4范围约束，准备精确对象清理能力后推进该闭环（finance无unlink，不能无清理写入，也不扩角色权限）。总体67/detail.action-state和其余产品缺口继续开放。无推送/合并/目标部署。
+
+
+### 53.158 真实创建、附件上传、提交与官方只读详情闭环
+
+22343a730 clean起点，P4复用原standard_page_type_browser及verify.business_config.approval_runtime，增加expense-browser-cleanup窄范围和单次写入状态约束（8d84538bc）。先写expense-success-recovery.json；preflight核对既有DB/profile/后端身份及fixturefinance30/company8、来源1815原字段/无认领/无付款台账。创建仅放行当前精确payload及唯一TPL53-EXPENSE-SUCCESS时间标识；收到创建ID后仅允许该记录/精确内容的一次上传，再仅允许同ID/入口action_submit。无角色扩权、无新环境或fixture系统。finally无论失败/成功都经原Make执行P4清理：精确匹配创建人、公司、来源、金额、账户、摘要、创建时间和允许的非终态；存在资金事实则拒绝；删除本次临时单据及其附件，提交后回读对象缺失、来源不变。正常业务审计保留，不声称数据库全量回滚或序列恢复。
+
+首轮expense-success-browser.log / tpl07-1790802613205证明真实create163、file.upload1287、execute_button/action_submit均成功，随后页面仍/new且重载为空。这是P0新建提交成功后错误刷新未保存路由，独立于既有TPL03异步身份保护。8d4b9d088修复usePrimaryFormActionRuntime：后端显式导航优先；若本次由新建生成记录，普通refresh成功后复用navigateCreatedRecord进入生成ID，不再refresh/reload/new；原已保存记录刷新逻辑不变。共享create journey新增生成ID导航断言，原用例/14提交要求/严格类型均通过（expense-success-navigation-unit.log），L1导航及最终检查PASS。
+
+因P0生产改动，一次受管build/up替换此前复用候选；base8d4b9d08847ddde2562a1f49a74698959334dff3，entry/assets/index-DN9Q0KvX.js，entry_sha256=20c132e83677b822ff927fc864fa1793fc51169c19f67d245f4e62b3642c7015，index_sha256=96086094a9a50cb0a547dc6a3333360e2c6b2091b51622de26a0279ed4b89c9a。后端继续1fae2361a，addons未变，不升级或重跑ORM。
+
+后续tpl07-1790802785905已实际进入164且回读approved/附件1288，但探针错误等待editable form；第一次修正使用了错误profile字符串detail，tpl07-1790802853210因此仍失败（165/1289）。改用既有readonly参数后，tpl07-1790802912308的官方只读7项检查通过，但全局最后契约被ir.attachment子响应覆盖，父记录判定误失败（166/1290）。按模型+mainData.id选择费用契约，并先从旧报告核对166 readonly后重跑。以上每次均有最终restored回执，163–166及1287–1290已删除、来源1815保持；未修改业务来迎合探针。
+
+最终expense-success-bound-browser.log / tpl07-1790802961499：57 PASS，errors=[]/forbiddenWrites=[]。创建167、真实上传1291、提交均恰好一次；普通finance回读approved、project10/partner56/payment_request1815、amount999、一条附件和唯一摘要。浏览器实际进入生成记录，消费该记录readonly契约、官方detail，1440/390无整页溢出，390截图人工核对已批准/记录号/禁止删除提示/只读事实。final cleanup回执restored record_ids=[167],attachment_ids=[1291],source_id=1815；无付款或资金事实。工具33项（11Node+22Python）及begin/record通过，新增精确范围/错角色/重放/错文件/错数据库/终态/旧对象反例；最终L1/diff通过。
+
+关闭报销本次无配置审批的“真实创建→上传→提交→进入官方只读详情”成功链缺口，不能外推所有业务/配置审批或财务完成。下一步核对创建已经成功、后续上传或提交失败时的已生成记录恢复与重试，当前成功链不证明这些路径不会重复创建；限定此多步骤办理，不重开已关闭的旧TPL03。真实分类策略切换及整体67/detail.action-state仍开放。无持久验收业务记录，无推送/合并/目标环境部署；批次成功链验收通过，主线/部署/用户整体交付未升级。
+
+
+### 53.159 已创建记录的上传/提交失败恢复与契约刷新
+
+7079b2706 clean起点，P0限定既有多步骤create/upload/submit链，不重开TPL03。源码确认create成功后upload失败直接false、新建submit失败仅报错，均会留在/new；后续重试没有已生成ID的页面身份。d409455e5修复：两类失败均复用navigateCreatedRecord打开已生成记录；recovery模式跳过关系弹层回传/快速录入返回列表，保留记录路由与原导航上下文；固定create_recovery枚举在可继续提交的单据上提示上传/提交未完成。上传失败需重新选择文件，不宣称跨刷新保留File对象。保存/提交原授权、后端校验及已有save surface ownership不改。
+
+L1 expense-recovery-iteration/final-iteration PASS；contract_form_save_failure_recovery新增已创建/upload失败不提交而导航原ID的检查，create_record_user_journey新增已创建/submit失败导航原ID检查，原回归及strict类型PASS（expense-recovery-unit.log）。原P4写入范围增加一次503注入upload或submit，仍逐阶段只允许一条实际create/精确文件/该ID提交，finally精确清理。候选d409455e5构建后，expense-submit-recovery-browser.log / tpl07-1790803342206：58 PASS，创建168、上传1292后注入submit503，实际进入168草稿带恢复提示，重试真正submit并回读approved及官方readonly，两视口可用、无未声明写入，清理168/1292、来源1815保持。
+
+expense-upload-recovery-browser.log / tpl07-1790803374298发现独立P0缺口：创建169后upload503，正确进入同一草稿；重新上传1293成功，但页面契约未刷新，submit仍disabled/EXPENSE_ATTACHMENT_REQUIRED。失败已清理169/1293，无付款事实。dbc39c9a8修复共享native附件回读：即时上传绑定开始时model/id，原timeline回读后只在当前model/id相同且无未保存编辑时reload记录契约；dirty时保留输入并提示先保存以更新办理条件；新建待上传目标ID与/new不同，仍不提前刷新。新增6个同记录/dirty/跨记录/跨模型/未保存身份反例及strict通过（expense-upload-refresh-unit.log）；未重新实现附件或状态引擎。
+
+因新确认的生产缺口，dbc39c9a883ba73132d05320c031367a12865f62受管构建/预览替换d409候选；entry/assets/index-DlvbGtIp.js，entry_sha256=e3d8c682c1f8e98f3c7dba753622bc7dad8334a15e85d34b2a88ebfa61608df9，index_sha256=7fed76fa45c24fc33df37961dea9848b65a75cf4537d5ba34becadba0708c027。backend1fae2361a与addons不变，不升级/重跑ORM。expense-upload-refresh-browser.log / tpl07-1790803536320：58 PASS，upload503后仍为170，提示重新选择；实际重新上传1294后契约更新、提交恢复可用，再submit批准并显示官方readonly，两视口及无异常/无未声明写入通过。清理170/1294及来源1815回读均restored；仅一次实际create/upload/submit。
+
+submit恢复58按依赖复用到dbc候选：其上传走创建后pending队列，目标新ID/currentID0的分支继续不刷新；本次改动的是已有记录即时上传分支，恢复导航和submit执行代码未变。工具33及begin/record通过（expense-recovery-tool-unit/receipt.log），无需重复成功57或付款49。覆盖单个附件、一次明确503失败；不外推多文件部分成功、服务端已提交但响应丢失、dirty编辑与上传并行的浏览器行为（dirty有纯测）、所有业务单据审批。
+
+报销代表成功链及这两条失败恢复收口；下一步回到总体契约/配置目标，复用既有P3工具验证分类附件策略required/recommended变化的有效契约与共享消费/恢复，先核对现有配置权限和入口，不新建工具体系或再盘点菜单。总体67/detail.action-state仍开放，其他已登记职责及目标环境条件不升级。本轮仅本地，无推送/合并/目标部署。
+
+
+### 53.160 配置生效验证在初始化入口契约处发现缺口
+
+候选7961669dc+P4三个既有browser/scope/test文件。复用受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/5180，生产frontend dbc39c9a8与backend1fae2361a未改；本批不重建、不升级、不跑ORM。P4新增expense-policy窄范围：仅configadmin对精确分类ID的attachment_policy required/recommended写入；拒绝其他角色、模型、ID、额外字段、create及业务动作。计划通过既有官方表单修改、finance新建契约与提交反馈观察、finally权威回读恢复；这是原生业务配置即时保存，不是低代码变更集发布。
+
+L1 expense-policy-iteration.log PASS；L2 expense-policy-tool.log 34 PASS（12Node+22Python），begin/record回执expense-policy-receipt.log。运行expense-policy-browser.log / tpl07-1790803918645失败：configadmin uid34初始化route_authority的primary/role_home/contextual/admin均无smart_construction_core.menu_sc_business_category，入口解析0条。尚未读取或写入分类，assertions=0，不能算配置闭环通过；无配置恢复负担，未创建业务数据。
+
+已确认源码原生menu/action具有business_config_admin组，模型ACL允许该组维护，product_policy_sync将该菜单列为CONFIG_CENTER_BUSINESS_BASE_MENU_XMLIDS；但core_extension_policy_maps的business_config_admin.admin_menu_xmlids没有该项。这是P1角色入口与有效初始化契约的候选断点，需沿既有菜单授权/投影链确认并补齐，不能在P4硬编码菜单ID或绕过初始化授权。下一步仅修该必要配置入口及非零定向回归，然后受管后端刷新再续required→recommended→required；不重复全部菜单扫描。67/detail.action-state及总体目标保持开放，无推送、合并或目标部署。
+
+
+### 53.161 配置入口与新建默认值缓存修复，附件策略生效闭环
+
+53.160后沿已定位链处理：P1 core_extension_policy_maps在business_config_admin.admin_menu_xmlids补业务分类，原MenuFactService用户可见菜单交集和原生ACL保留，不硬编码前端路由或提高其他角色权限。2f93034b6提交，category-entry-iteration PASS，navigation_shell.unit 115 PASS（40场景+12导航+42菜单+2新增角色边界+19guard测试），begin/record记录configuration_entry。无字段/XML变更，仅backend.acceptance.up受管更新身份，未升级模块/跑ORM。
+
+expense-policy-entry-browser.log / tpl07-1790804060994证实入口已可用（menu411/action710），configadmin实际通过官方表单将分类18 required→recommended且权威回读成功；finance随后新建契约仍required。元数据从miss变为同一source_ref的hot_cache_hit，确定P0运行时源缓存错误复用了包含default_get实时业务事实的新建源。finally精确恢复required并回读通过；这次失败不算配置验收。
+
+6fd0123cd修复P0 load_contract_response_cache.projection_base_params：render_profile/renderProfile=create或记录身份new属于动态源，沿现有动态投影路径重算，不将实时默认值当作静态结构缓存。已保存记录和列表仍沿现有记录无关缓存。无行业字段名/分类规则进入P0；增加6种新建身份反例及列表/已有记录缓存边界测试。create-source-cache-iteration PASS；formal_list.unit 176 PASS（113投影+7cache+51编排+5基线），configuration_projection begin/record完成。受管backend.up刷新到6fd0123cd，frontend继续dbc39c9a8/index-DlvbGtIp.js，无新构建。新建源重新投影的耗时高于热缓存，这是正确性修复；未引入新缓存或分页框架。
+
+expense-policy-fresh-browser.log / tpl07-1790804200300配置范围21项全通过：普通configadmin对既有分类18官方表单保存recommended；finance相同授权报销入口重新打开后契约recommended，提交从附件阻断进入金额/项目普通必填反馈；再通过官方配置表单恢复required，finance契约与附件阻断恢复；最终分类id/code/policy与基线完全一致。两个实际写入均只涉及attachment_policy；没有单据创建、审批执行或附件写入。人工核对changed-feedback截图为官方共享表单的必填错误及提示。三次新建契约均dynamic_request bypass，证明未靠TTL等候生效。
+
+该报告总58 PASS含额外默认付款旅程：P4新scope分支未与后续if/else链互斥。进程正常结束后已改else if，node语法及工具34项通过（expense-policy-scope-unit/receipt.log）。配置分支本体与断言、产品及环境未变，复用原21项与恢复证据，不为范围调度修正再次写配置；额外付款结果不计本批验收，也不覆盖旧证据。
+
+本次关闭业务分类入口缺失和新建默认值缓存导致配置不即时生效的代表缺口。验证是原生配置即时保存，不是WEB-LC变更集发布/回滚；不外推其它类别字段或全部业务单据。67/detail.action-state、其余已登记业务责任与配置发布证据继续开放。下一步复用既有WEB-LC记录核对版本化配置发布/恢复尚缺的具体链，再在同一共享消费路径补齐，不重跑全菜单/付款49/ORM。无推送、合并、目标部署。
+
+
+### 53.162 工作台发布旅程定位配置目标角色误用操作者身份
+
+复用LC02最终报告bb8af700-b57b-4832-8a65-458a5b1f0810：API发布→完整列表能力→恢复已完成，不重新登记为缺口。本批补的是UI发布/回滚，非UI字段编辑。P4扩展原standard_list_lowcode_loop，WEB_LC_UI_PUBLISH=1显式模式仍由原API暂存精确标签/比较完整草稿，再通过工作台按钮发布/恢复；已有目标草稿冲突停止，scope/owner token严格匹配，发出UI publish前持久化request id和attempted，异常复用原权威回读/恢复。15工具测试及configuration_ui_publish begin/record通过，L1 PASS；不新增环境或fixture。
+
+三次受管运行均在发布前停止并discarded、完整能力恢复核对通过：dbf0b1a1-d4fa-4f50-839f-318fe933b5d3为P4快捷browser.newPage不允许第二页，改显式context；4f8d806e-2f98-45d3-b043-4242f0e10d5e为草稿恢复响应身份不符，收紧匹配目标；0475510d-766f-4515-a302-54ce6fbbfac2绑定payment.request/action775后仍失败，报告uiResume明确请求role_key=business_config_admin，API暂存目标role_key为空，返回无草稿。未发布，无业务写入。私有report保存恢复凭据，禁止公开上传；后续诊断仅记录身份是否匹配，不把token输出为断言值。
+
+P0根因BusinessConfigSurfaceView用scopeRole || session.roleSurface.role_code作为DraftSession目标范围；操作者身份被当作目标角色，与stageItem的scopeRole为空不一致。现改为scopeRole || ''，认证与后端权限保持；已有表面读取的角色上下文未改变。回归从真实View提取绑定，再执行DraftSession恢复/校验/发布，确认未限定及显式finance均不被admin覆盖；原8竞态+稳定目标9扩为11。verify.business_config.unit先被两处已有用户术语文案阻断（ActionView收藏拒绝、recordActionDenialPresentation）；仅把“当前契约未允许”改“当前页面未允许”，保持拒绝规则及原因。重跑入口223项通过（JS39+Python184），日志lc-target-role-unit-final；严格类型lc-target-role-types PASS，随后只有两个字符串字面量变化，按类型输入结构不变复用。
+
+本批P0源码已验证，生产前端仍dbc39c9a8，尚未加载目标角色修复。下一步一次受管前端构建/5180更新，再执行同一UI模式，确认发布及回滚而非只看API成功。后端仍6fd0123cd、addons未改，无需重启或ORM。总体67/detail.action-state保持open，无推送、合并、目标部署。
+
+
+### 53.163 工作台按钮发布与按批次回滚真实闭环
+
+559cc3c927ef9849e2a5e7e021f42f94eb91bbab clean，复用53.162的223定向/严格类型及P4工具15结果，frontend.standard.preview.build/up受管构建一次并更新5180。entry/assets/index-D2WwqVPC.js，entry_sha256=ff91782bac7e0867fa14882e321e486c3b6d6524fa90407378f2ec6e2aa4136e，index_sha256=3422c4d9588debb9c3e5c68f4d3c5382e0108a2c23922d3e7eb5b299879e36d6。后端6fd0123cd/addons不变，入口确定性复用，无重启/ORM/升级。日志lc-target-role-build/preview/browser.log。
+
+WEB_LC_APPLY=1 WEB_LC_UI_PUBLISH=1 make verify.business_config.standard_list_loop SC_ACCEPTANCE_RUNTIME_PROFILE=local：web-lc-01-75d6913b-63fc-4d4f-8c04-33a410a38d91/report.json passed/rolled_back，15具名检查通过。UI恢复请求role_key为空、model payment.request/action775，回读ready且token精确匹配本次自有草稿；点击发布全部可逆配置/确认继续，UI实际publish成功并权威回读verified；官方标准列表显示本次唯一label，完整能力比较、有序记录ID、固定业务字段摘要和query/context保持。点击UI按批次回滚，返回发布恢复批次verified；原完整契约/配置来源、表头/请求/记录/业务摘要均与基线相同。errors=[]。无业务写入，不覆盖他人配置或草稿，保留正常配置审计。原私有报告含恢复token，不公开上传。
+
+人工核对workbench-published截图：显示1项配置已发布、未限定角色及按批次回滚按钮；页面头部/配置能力仍在reload中，不能作为整页稳定摘要验收。列表before/published/restored与请求/契约深比较证明生效/恢复；不能将工作台瞬时截图外推UI编辑器全旅程。
+
+关闭本次P0操作者身份误作配置目标角色导致草稿恢复不一致的缺口及UI发布/回滚代表链。API暂存+草稿预览不冒充UI字段编辑；下一步只补仍缺的工作台UI编辑→暂存链，并核对刷新后目标范围/摘要，复用本次发布恢复证据与现有配置工具保护，不再从API发布起点重做。67/detail.action-state与其它业务职责继续open，未进行主线集成、目标部署或总体交付声明。
+
+
+### 53.164 工作台配置目标摘要与UI编辑暂存（运行验证待完成）
+
+1107aff52 clean起点；P0 useBusinessConfigProductExperience原workbenchRoleLabel取操作者role_label，同时供适用角色和影响确认弹窗，造成空目标仍显示管理员。改消费scopeRole：空值未限定角色，显式目标仅在身份匹配时复用后端已给标签，否则保留目标标识；不推导权限或改变发布行为。共享configurationTargetRoleLabel新增5反例/匹配检查，business_config.unit228及严格类型PASS（lc-role-summary-*）。
+
+P4复用standard_list_lowcode_loop新增WEB_LC_UI_STAGE=1：已有草稿冲突停止，建立本次自有基线草稿后UI恢复；UI交换前两列、保存列表与搜索，只有同token/目标payment.request/775/tree/精确完整列payload可stage，禁止publish；权威get必须一条同项目及精确顺序，正式契约保持基线；UI放弃草稿并核对页面/业务摘要，异常仍走原恢复。自有基线由API暂存，不声称UI创建空草稿；测试的是实际UI编辑和更新暂存。工具16/当前begin-record及node语法通过。尚未构建加载、未运行本新模式；发布/回滚53.163不重跑。
+
+
+53.164运行续记：f395a086a34a66de640ffed1eea3dde8e7c3eeae受管构建/up一次，entry/assets/index-BBNttmRb.js，sha256=2209bc3bde4a54c97f2737b16bce6a6ed8f3a6866f64f4093014817531c8dde9；后端6fd0123cd不变。WEB_LC_APPLY=1 WEB_LC_UI_STAGE=1运行web-lc-01-11628ad0-62f5-42e2-835b-89e3fbc99d3e，UI正确恢复本次未限定角色草稿，但编辑器21列而有效列表22列，保存前停止；recovery=discarded，正式完整契约恢复/未变化，不宣称UI暂存通过。
+
+扩充原工具只读editorBaseline观察（16测试及新begin/record通过，lc-editor-baseline-*），不再次写入运行WEB_LC_UI_STAGE=1默认readonly：web-lc-01-6421bd04-8548-4087-84bf-113087e72d80 readonly_passed，list_search.audit建议列与最终22列差集精确missing=[attachment_ids],extra=[]。P0 form_field_configuration._suggested_columns经_business_field_name_set/_available_lowcode_model_fields过滤，而正式列表支持附件关系列；需补齐配置能力与最终消费的一致性，并核对stage字段校验，不可放宽断言或删正式列。当前已加载目标角色摘要修复，但尚无稳定截图确认，因此不把纯测当整页呈现验证。下一步仅修配置字段能力/定向测试，再续同一UI编辑暂存，避免重复发布链。
+
+
+### 53.165 原生集合列保留、UI暂存闭环与官方Card内容布局修复
+
+8275b665f起点。P0 form_field_configuration._suggested_columns将“新增候选”标量筛选误当作原生列表能力全集。e4ca948b0只保留当前用户fields_get可读、原生列表已声明、且非技术名称/标签的one2many/many2many列；不扩大通用搜索/分组候选，不注入付款/附件业务名称。新增反例覆盖技术message_ids、binary、缺失权限描述字段继续排除，以及原生集合保留。BusinessConfigChangeSet的stage/validate按实际模型字段存在性处理，无同样类型裁剪。L1 PASS，business_config.unit229 PASS（lc-native-collections-unit）。无字段/XML变化，受管backend.up到e4ca948b0，无模块升级或ORM。
+
+同一WEB_LC_UI_STAGE真实运行报告web-lc-01-f94d83c7-7855-40ce-aedf-29aa39d66530 passed/discarded，12具名断言：editorBaseline无缺列/额外列；UI22列完整，交换前两列并点击保存列表与搜索，普通configadmin权威get一条同项目且顺序精确匹配；正式完整契约不变；UI放弃草稿，正式表头/query/有序记录/业务摘要不变。publish_attempted=false，errors=[]。保留“API建立本次基线草稿、UI编辑并更新暂存”的准确边界，不声称UI从空草稿创建或再次发布。53.163发布恢复证据继续复用。
+
+人工截图发现真实布局缺陷：BusinessConfigEditorPanels把220px+内容两列grid放在ScCard外层，官方Card唯一body落进首列，桌面标题说明竖排。c13a95f92经官方body-class-name把config-editor-panel网格移至内容层，根edit-panel不再两列；不增加vendor内部选择器或并行卡片渲染。L1/229业务配置测试/node语法通过。生产前端变化故一次受管build/up：base c13a95f92bd8a8c5dd78bb2aa4a4c813bf1cb14f，entry/assets/index-py5qUVzP.js，sha256=0f136ae80862ed7d5ed1cae24049b3d7af9a97b6491cbcadd43d7e03f6a283f7。后端e4ca948b0复用。
+
+原只读standard_config_field.browser扩标题可读尺寸断言，config-field-1790805468208/report.json14 PASS，1440/390标题与按钮可读、表单/整页无横向溢出；截图人工核对，不再竖排。该探针本地添加id用于既有重复输入检查，因此截图23列不是配置变更，未保存发布/创建草稿。UI暂存12证据按CSS/卡片内容层变更不影响动作payload与后端能力复用，不重写配置。
+
+剩余精确缺口：截图中attachment_ids虽完整保留，却只显示技术名。available_model_fields仍是窄新增候选，fieldDisplayLabel缺少已选原生集合列的元数据；应补建议列/已选列标签契约，不能在前端写附件字段字典或放宽搜索候选。目标角色摘要已有纯测和候选，顶部稳定显示尚未单独截图。下一步仅该描述契约及稳定摘要观察；不重跑已闭合发布/暂存业务。67/detail.action-state与其它已登记业务责任继续open，无推送/合并/目标部署。
+
+
+### 53.166 建议列描述契约与稳定配置范围摘要收口
+
+P0 ba1d18e595f04c84875e54ddeab3688ce1a01846：list_search.audit新增可选suggested_list_column_labels，只为已确定建议列投影模型标签/原生视图标签；前端has_business_list_config选择已配置或建议标签映射，保存仍使用字段身份，不新增业务字典/搜索候选/第二套列状态。回归确认many2many建议列具中文标签，标签键集等于建议列集，该字段仍不在可新增模型字段中。business_config.unit229及strict/L1通过（lc-column-labels-*）。
+
+后端受管刷新ba1d18e59，无字段/XML变化不升级/ORM；一次受管前端build/up，entry/assets/index-DsM2C-7X.js，sha256=8c47636f9fa8d26722c21e6aafec3b4f66dbd4f9c37847854cb6af116b80c858。standard_config_field.browser config-field-1790805723804/report.json16 PASS：从同次audit拿到attachment_ids标签“附件”，实际选中chip唯一匹配；适用角色显示未限定角色；1440/390标题/表单/整页宽度保持；errors/blocked空，所有编辑本地未保存。人工核对target-scope.png已加载付款申请、未限定角色、默认配置及版本来源，不再引用53.163加载中截图作为稳定摘要。新增id为原只读探针本地输入测试，关闭丢弃，无正式配置或业务写入。
+
+本次新增显示元数据不改变列集/序列、stage、发布/回滚、业务读写，按输入依赖复用53.163发布回滚15与53.165UI编辑暂存12，不因换SHA再次配置写入。配置代表链已具原生即时策略变化/恢复、API完整能力发布恢复、UI发布回滚、UI编辑更新暂存与放弃、官方布局及描述证据；不外推所有低代码职责或从空草稿创建。下一步回到原67/detail.action-state未完成业务责任，按既有记录选择尚缺的实际处理链，不能把配置局部完成改写成全系统交付。无推送/合并/目标部署。
+
+
+### 53.167 多附件部分失败的共享队列恢复（代码验证完成，运行验证待续）
+
+4a315f10f起点，既有未提交范围为useNativeAttachmentRuntime、新增native_attachment_partial_failure_test、make/frontend.mk及原run输入声明。P0通用前端附件执行器：逐项uploadFile成功返回后立即从待上传队列移除，以快照遍历剩余项；后续失败不重传已确认文件。没有模型专属规则，不改变审批状态机、附件业务要求、上传权限或已关闭的异步身份保护；P1/P2/P3无变化。风险是共享上传恢复行为，回滚范围为该hook与定向测试入口。
+
+L1 make ci.local.iteration已通过，复用attachment-partial-iteration.log，不重复执行。L2 verify.frontend.create_record_user_journey.unit已终止且通过，具名计数66（旧明确计数62+新增Node4，checkpoints摘要不另计）；实际hook测试覆盖第二项上传失败后仅重试失败/未尝试项、文件转换失败、首项失败以及全部成功后时间线读取失败不重排队。agent.run.begin/record scene_mutation_outcome完成，日志attachment-partial-begin/unit/receipt。verify.frontend.typecheck.strict进程正常退出0，日志attachment-partial-types。候选为4a315f10f+上述dirty范围，不称冻结身份。
+
+本次是共享消费/执行恢复缺陷，不是动作契约缺失。动作声明、有效执行契约和真实处理验收须分别判断；detail.action-state中的未验证责任不得全部改称无契约。现有业务状态机/配置证据输入未改，复用53.161/163/165/166。L3后端/ORM/模块升级不适用；L4真实多附件部分失败与恢复尚未运行，5180仍ba1d18e59/index-DsM2C-7X.js，不宣称修复已加载；L5非本次集成阶段不运行Quick/发布。
+
+下一步仅扩展现有受管expense探针及精确清理的两附件范围，在第二份上传注入明确失败，验证首份保留、恢复同一单据且不重复创建，再构建一次并检查实际浏览器。测试工具必须绑定两个准确文件名、内容及创建身份，不能泛化附件清理。当前纯测不证明网络响应丢失后的服务端去重，也不证明整页跳转保留File对象；已有恢复导航要求重新选择失败文件。总体67/detail.action-state继续开放，无推送、合并、目标部署。
+
+
+### 53.168 双附件部分失败真实恢复与精确清理
+
+P4 e31e51c59在现有expense-success探针增加显式TPL07_EXPENSE_PARTIAL_UPLOAD=1，只允许success/save-probe/upload失败组合。按uploadIndex依次放行两份精确name/data/record请求，第二份注入503；首份成功后禁止重传，最终只能create/upload/upload/submit。清理保持原单据创建人、公司、源申请、账户、时间及无资金事实边界，并核对附件创建人、准确文件名、内容checksum、数量及无重复名；原单附件范围仍支持。L1 PASS、工具36 PASS（13 Node+23 Python），standard_preview_tool begin/record完成，日志attachment-partial-tool-*。没有创建新环境或fixture。
+
+受管frontend.standard.preview.build/up一次：e31e51c59b3194537760df6f25000a701f7d17ae，entry/assets/index-7JTLfH1Y.js，entry_sha256=873521e97165f0d28c507d85d5f51e069b3c6c18d697293eea17c7191e50c0bb；5180加载，后端ba1d18e59保持。生产仅53.167通用hook改动，66定向与strict复用，P4测试变化不影响其输入；后端/ORM/升级不适用。日志attachment-partial-build/preview/browser。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.expense.claim TPL07_APPROVAL_VIEW=create TPL07_EXPENSE_SAVE_PROBE=1 TPL07_EXPENSE_SAVE_SUCCESS=1 TPL07_EXPENSE_FAILURE_STAGE=upload TPL07_EXPENSE_PARTIAL_UPLOAD=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local：tpl07-1790806247599/report.json passed，59断言，errors/forbiddenWrites为空。普通finance创建171，第一份tpl53-submission-requirement.txt→1295成功、第二份明确503；恢复到同一171，第一份可见，仅重新选择tpl53-partial-second.txt→1296，随后submit成功。权威回读approved/附件1295+1296/源1815/金额999。成功请求恰好create/upload/upload/submit，无重复create。1440/390只读官方详情截图人工核对，批准状态与禁止删除提示一致。
+
+finally精确删除171/1295/1296，cleanup-final权威回读restored，源1815原字段不变、无资金执行。正常审计/序列不回退，不声称整库回滚。同队列已确认项不重传由53.167真实hook纯测证明；浏览器跨页后重新选择失败文件，两类证据不能混写为File对象跨导航保留。明确失败恢复代表链闭合，不证明服务端已保存但响应丢失的去重；不因该未验证场景重开已闭合单附件/异步身份边界。
+
+总体67/detail.action-state仍开放。下一步回到原已登记任务/事件/计划/日志处理责任，读取对应既有记录与动作契约，准确区分缺少契约、消费缺陷、仅缺真实处理证据后选择下一项，不重跑配置/付款或全仓盘点。无推送、合并、目标部署。
+
+
+### 53.169 施工日志状态写入保护（代码验证完成，运行待续）
+
+0774aeb98 clean起点，沿既有任务/事件/计划/日志责任读取53.56–63原证据，不重复任务空查询。施工日志已有workflow动作目录、当前可用动作及统一policy/tier分流，缺口不属于“只有声明没有契约”。实际模型create/write仍允许外部直接写confirmed/done/source_origin，可绕过正式状态机。归属P1 smart_construction_core/models/core/construction_diary.py，行业标准单据事实保护，不放前端或低代码配置；本批只修这一模型，不做全仓审计。
+
+沿用现有结算调整的内部_DOCUMENT_STATE_TOKEN机制：普通create及default_state只能draft，受管sudo历史导入legacy/legacy_confirmed例外保留；普通write拒绝state/source_origin（含伪造布尔token和skip_validation_check），正式确认、真实审批回调、完成、取消统一经私有_write_document_state。原历史日志可补充字段限制保留，审批业务条件/状态含义/契约目录未变。不是新增审批框架，未更改其它业务模型。
+
+L1 make ci.local.iteration PASS（diary-state-iteration）；L2 verify.payment.approval_state_machine.unit163 PASS（diary-state-unit），新增实际create/write方法反例，既有无配置/真实回调/显式完成用例保留并适配内部写入方法；begin/record payment_approval_state_machine完成，日志diary-state-begin/receipt。git diff --check通过。生产无字段/XML改动，无需模块升级；前端不变、已加载e31e51c59证据复用，不构建。L3真实模型运行待补，后端仍ba1d18e59，不能把纯测称为运行闭环。
+
+下一步给既有approval_runtime增加仅施工日志的scope，复用_draft_confirmation_checks与原配置/临时对象rollback，加入实际外部create/write拒绝与合法动作后回读；不要为一模型跑all/旧无关ORM。随后一次受管backend重载并执行该scope。审批后内容保护、日志角色浏览器办理及其它业务责任仍未由本次证明，总体67/detail.action-state开放。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.170 施工日志状态机受管运行验证
+
+35fa989cd在原approval_runtime及受管shell白名单增加diary-state-authority，仅调用新日志状态边界检查和既有_draft_confirmation_checks，不进入all/费用/其他单据链。P4复用原验收环境、审批组、事务临时项目/日志/配置与finally回滚，不新建环境或持久fixture。新增3组检查：直接create终态与default_state拒绝；普通/伪造token/skip_validation_check写state/source_origin拒绝且草稿回读不变；草稿编辑与正式取消可执行。原5组无配置确认、pending不得执行、实际review后显式完成、驳回原因、重提新链原样复用。
+
+L1 diary-runtime-iteration PASS，py_compile/bash-n/diff通过；工具standard_preview.unit36 PASS及begin/record完成（diary-runtime-tool-*），这36仅是原工具回归，不冒充模型运行测试。P1 163纯测输入不变复用53.169；无字段/XML变化，不升级模块，前端e31e51c59/index-7JTLfH1Y.js保持，不重建。
+
+backend.acceptance.up在原local/sc-fe-r2-p1-01/sc_frontend_acceptance18082重绑35fa989cd，精确dbfilter/原卷预检通过。SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：diary-runtime-smoke.log终止0、8具名检查全部通过，BUSINESS_CONFIG_APPROVAL_RUNTIME_ROLLBACK=VERIFIED。配置/步骤原值及全部登记临时对象不存在的回读通过。创建和业务动作采用原事务sudo，审批调用真实reviewer；不能写成普通PM浏览器全办理。
+
+53.169状态绕过代表缺口关闭，审批后内容保护和普通角色真实保存/办理仍未覆盖。动作目录及前端生产输入未变化，不重跑只读创建页作为无意义证明。下一步同族合同履约事件的状态写入边界（先检查直接生产调用及已有证据，不全仓扫描），同时保留既有日志角色旅程待验证责任；不得将已配置审批模型覆盖等同全系统用户交付。总体67/detail.action-state开放，无推送、合并、目标部署。
+
+
+### 53.171 合同履约事件状态权威与真实审批链
+
+787236f0d clean续跑，复用合同事件已有统一审批与workflow动作目录。直接模型缺create/write状态保护；P1 0eaeab072在contract_event.py加入私有状态令牌写入方法，普通create及default_state仅draft，普通write拒绝state；submit/审批回调/拒绝回调/完成/取消经内部方法。不新增前端动作规则或第二审批框架，不改业务锚点/审批金额权威/原状态含义。状态字段的公开可写性由模型执行层真正约束，而非依赖按钮隐藏。
+
+L1 event-state-iteration PASS；payment.approval_state_machine.unit164 PASS、begin/record完成（event-state-begin/unit/receipt）。新增实际create/write生产方法反例覆盖submitted/approved/rejected/done/cancel、default_state、伪造token与skip_validation_check，保留草稿普通编辑及内部迁移；原配置/无配置/回调/显式完成回归适配内部方法继续通过。P4 adcb9a5f6仅原approval_runtime/shell白名单新增contract-event-state-authority，3状态边界检查+原_contract_event_checks5项。event-runtime-iteration/py_compile/bash-n/diff通过，产品164输入不变复用；不将原wrapper36冒充新范围执行证据。
+
+受管backend.acceptance.up加载adcb9a5f6，仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter与原卷。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-runtime-smoke.log 8具名PASS，ROLLBACK VERIFIED（原审批配置/步骤回读及全部登记临时对象不存在）。真实检查直接终态create/defaults拒绝、普通/伪造上下文write拒绝且draft保持、草稿编辑/正式cancel、无配置只批准、有配置真实review、实际批准后独立完成、驳回原因及重提新链。创建/办理沿原事务sudo，review由真实审核人，不冒充普通合同操作员UI全旅程。
+
+无字段/XML变化不升级模块；前端e31e51c59/index-7JTLfH1Y.js未变，不构建或重跑创建页。事件状态绕过缺口关闭；审批后业务内容冻结、普通角色浏览器保存办理及同族计划职责仍未由本次覆盖。下一步核对既有sc.plan的状态权威边界，复用其动作/审批证据，不扩全仓扫描或重跑已闭合领域。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。
+
+
+### 53.172 计划主单状态权威与独立执行验证
+
+c936ef0f0 clean起点，P1 167d6a637仅sc.plan主单：普通create/default_state只能draft，普通write不能写state；正式确认、真实审批回调、启动、完成、取消、重置通过既有私有状态令牌模式。计划节点/版本/汇报不是本批状态职责，不随主单一起禁用。原日期/节点完成检查、统一审批配置分流、独立执行及实际起止日期记录保持；前端不补业务规则。
+
+L1 plan-state-iteration、py_compile/bash-n/diff PASS；payment.approval_state_machine.unit165 PASS及begin/record完成（plan-state-begin/unit/receipt），覆盖直接终态create/defaults/write、伪造token/skip_validation_check拒绝，草稿编辑和内部状态写入可用；原计划配置与无配置审批/显式启动完成回归继续通过。P4 06a6f5985在既有approval_runtime/shell白名单增加plan-state-authority，3项状态边界检查+复用_draft_confirmation_checks5项；不新增环境或fixture工具。
+
+受管backend.acceptance.up加载06a6f5985；SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：plan-runtime-smoke.log8具名PASS，ROLLBACK VERIFIED。实际外部状态写入及默认状态拒绝且草稿/实际日期不变；草稿编辑→正式取消→重置回草稿；无配置确认不启动；等待审批不能执行；真实批准后启动、完成分别发生；驳回原因与重提新审批链正确。原配置/步骤回读一致、登记临时对象均不存在。采用原事务sudo创建和业务动作、真实reviewer审批，不冒充PM浏览器证据。环境仍local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
+
+无字段/XML变化不升级；前端e31e51c59/index-7JTLfH1Y.js无变化不重建。日志、事件、计划主单直接状态绕过均有独立代码/运行证据，不能外推审批后内容冻结、子单据办理或全部89入口。下一步回到本组普通角色真实页面保存/提交缺口，沿现有受管浏览器及精确临时对象恢复机制补施工日志代表办理；不重复后台已过8项/配置/付款旅程，不造持久fixture。总体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.173 施工日志普通角色新建字段契约修复与真实请求验证
+
+897fb0ab4起点，P4沿原standard_page_type_browser添加显式TPL07_DIARY_SAVE_PROBE，限定approval-actions/sc.construction.diary/create，PM从system.init正式route_authority解析menu_sc_construction_diary，不硬编码角色菜单。填项目/标题/内容后保存草稿与提交分别截取api.data create并明确503，禁止后续动作/上传、无真实业务写。原工具36/L1/node语法通过（diary-form-tool-*）。首轮tpl07-1790806893091因项目输入不存在、预注册waitForResponse先超时触发未处理拒绝，未产完整report；原创建截图显示项目/标题/内容只读。P4增加必需输入存在的前置断言，保留完整报告；诊断tpl07-1790806959283在第7项project_id输入缺失失败，未发送创建，无forbiddenWrites。
+
+P1根因p1_daily_business_form_orchestration_contract_data.xml的sc_construction_diary_p1_form_business_facts_v1(priority88)将所有业务字段readonly=True；有效节点fieldInfo/componentConfig readonly=True覆盖原生条件state == legacy_confirmed，前端正确消费错误契约。f2606fa15只移除该模型业务字段无条件readonly，保留state/name/create_date系统只读与全部字段顺序，原生历史只读条件保持；不在P0或前端解锁、不替换布局。新增XML回归核对业务可编辑与系统/历史条件，payment_approval_state_machine166 PASS及begin/record（diary-form-contract-*）。探针bdeead8ab提交。受管CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core make acceptance.module.upgrade MODULE=smart_construction_core SC_ACCEPTANCE_RUNTIME_PROFILE=local成功，backend.acceptance.up加载bdeead8ab，环境仍local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter/原卷；生产前端e31e51c59不变不构建。日志diary-form-upgrade/backend。
+
+修复后tpl07-1790807124659项目/标题/内容输入与PM项目10候选均通过，保存实际payload只含project_id/title/description；P4错误要求未修改默认date_diary也在增量payload而失败。改为核对有效mainData默认日期存在、若发送日期则与默认一致，保留用户改动字段/入口身份严格断言；产品输入不改，不重复构建/升级。diary-form-payload-iteration/node/diff通过，原wrapper36的执行/断言依赖未改复用，不把它当新日期语义证据。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_APPROVAL_VIEW=create TPL07_DIARY_SAVE_PROBE=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local最终tpl07-1790807163178/report.json26 PASS，两个实际create请求被明确503截住；project_id=10、title/description精确、menu414/action713/company8/context/default_diary_type保持；默认日期来自有效契约；保存草稿和提交失败均留在new且输入未丢失，无后续审批或业务写。1440/390共享表单检查通过，填充截图人工复核。前端标题/内容恢复可输入，错误契约缺口关闭，不声称真实创建或提交成功。
+
+下一步沿这份真实最小payload及PM入口，扩展原受管临时单据恢复机制为精确日志model/title/actor/company/project/时间范围，先绑定恢复回执再放行create+action_confirm，权威回读并最终清理。没有持久fixture/业务数据前提需要新建；历史只读记录补充职责与审批后内容保护另保持开放。后台日志runtime8输入未改复用，不重复ORM。总体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.174 施工日志普通PM真实创建、提交与官方详情闭环
+
+P4 b7d89df9c沿现有standard_page_type_browser、standard_expense_success_scope及frontend_expense_probe_cleanup增加显式TPL07_DIARY_SAVE_SUCCESS范围；仅与diary-save-probe/approval-actions/diary/create组合，不能与expense-success并用。写前将原失败捕获的精确增量request持久化到既有expense-success-recovery.json（沿用受管恢复入口的历史文件名，scope.model明确diary，不混计费用业务）。仅fixture_role_pm可依次create、对返回正整数ID action_confirm；in-flight防重复，其他模型/ID/角色/动作/上下文拒绝。清理只识别本次唯一title、固定project10/company8、真实PM创建人、内容一致、300秒创建窗口、draft/confirmed、无review/附件；已有有效日志审批配置则preflight停止而非改配置。原费用恢复逻辑保持。
+
+L1 diary-success-tool-iteration/node语法/py_compile/diff PASS；standard_preview.unit38 PASS（14Node+24Python），begin/record日志diary-success-tool-*。新增许可反例和清理目标反例，受管实测证明恢复执行。P0/P1产品输入未改，166纯测、日志后台8及已有前端证据复用；没有构建、后端重载、模块升级或新fixture，后端bdeead8ab/前端e31e51c59 index-7JTLfH1Y.js保持。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.construction.diary TPL07_APPROVAL_VIEW=create TPL07_DIARY_SAVE_PROBE=1 TPL07_DIARY_SAVE_SUCCESS=1 make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local：diary-success-browser.log / tpl07-1790807320202/report.json33 PASS，errors/forbiddenWrites为空。普通PM(uid32/company8)沿正式menu414/action713，真实项目候选10；先验证保存/提交503保留输入，再实际点击提交审批，成功请求严格create→confirm各一次，生成日志20/CD2600020，状态confirmed。普通PM权威read项目/公司/标题/内容/日期/类型/来源匹配；默认日期、施工单位、经理和经办人由后端生成，前端不注入业务默认值。自动审批不执行完成，官方只读详情仍有独立完成动作。
+
+1440/390官方详情截图人工核对，确认状态、内容/项目/经办人、完成按钮及无页溢出；仅查看完成动作，未点击，不把动作可见性计为完成办理。finally受管精确删除日志20，cleanup-final回读restored/model sc.construction.diary/actor32，无持久记录/附件；正常序列与审计不回退，不声称全库事务回滚。使用既有平台内部验收库local/sc-fe-r2-p1-01/sc_frontend_acceptance精确filter与原卷，不触及目标环境。
+
+关闭53.173实际创建与无配置提交的代表缺口，普通PM不再只有新建可达证据；有配置多角色浏览器链、审批后内容写入保护与其它业务仍未覆盖。下一步处理本组既有“已审批页面只读与后端内容可写”的明确边界，复用主单状态/审批证据，避免重跑已闭合创建与配置旅程。总体67/detail.action-state保持开放，无推送/合并/目标部署。
+
+
+### 53.175 施工日志审批内容保护及真实驳回后修改
+
+b53da823c起点，核对既有workflow._editability后区分三类职责：日志draft+pending/approved及confirmed/done/cancel只读，计划in_progress映射open还涉及节点执行，不一刀切禁止。P1 41aba128e仅日志write冻结项目/日期/标题/正文/现场事实/附件关系/归档等业务字段，覆盖draft等待或validated、confirmed/done/cancel；内部状态令牌动作保留，legacy_confirmed沿原补充字段白名单。未把审批规则放前端或P4，未改变新建/普通草稿输入。167纯测及L1/receipt通过（diary-content-*），P4 96e755e76沿原diary scope追加pending/approved/done实际内容拒绝及rejected正文修改检查，共计划12项；all计数随新增4调整但不执行all。
+
+首轮受管backend96e755e76运行diary-content-runtime.log在真实驳回后正文write失败：OCA tier_validation._tier_validation_check_write_allowed将仍有review_ids的rejected draft当作under-validation拒绝正文。已完成的冻结检查通过，整体运行失败且ROLLBACK VERIFIED；不重试未变输入、不把纯测当真实通过。该问题使契约可编辑草稿无法修改重提，是P1审批插件适配缺口。
+
+8df806f4e通过插件既有_check_allow_write_under_validation扩展点，仅state=draft且validation_status=rejected且不写state/source_origin时允许普通内容修改，其余返回父实现；不向调用方暴露通用跳过开关，原模型状态与内容保护仍先执行。新增方法反例覆盖pending/waiting/validated、错误业务状态、状态/来源写入拒绝委托；168纯测/L1/receipt PASS（diary-rejected-*）。无字段/XML，不升级模块；受管backend.up加载8df806f4e，前端e31e51c59未变不构建。
+
+SC_APPROVAL_RUNTIME_SCOPE=diary-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local最终diary-rejected-runtime.log12具名PASS、ROLLBACK VERIFIED。原直接状态拒绝/自动确认/真实审核后独立完成/取消保持；pending、approved、done修改标题/正文/项目/补充内容/active均拒绝且权威read与原值一致；真实驳回后正文可改、随后重提形成新review并批准。沿原事务sudo创建与业务执行、真实reviewer，不冒充PM多角色浏览器；环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082/精确filter/原卷。配置/步骤原值及临时对象恢复确认。
+
+53.174 PM创建自动确认33证据按未变create/草稿/确认语义及前端输入复用，不再次造临时日志；本次变化证明审批后内容边界及拒绝后修改，不改变原页面结果。日志已确认只读与后端主记录内容保护代表缺口关闭；关联附件独立接口、跨角色配置审批UI不由本次证明。合同事件rejected编辑策略、计划执行中内容职责待独立处理，总体67/detail.action-state开放。无推送/合并/目标部署。
+
+
+### 53.176 合同履约事件驳回编辑契约与审批内容保护
+
+fbe20aa24 clean起点，P1 77c5b2308：合同事件workflow profile已有rejected→submit/cancel动作却缺editable_phases rejected，造成允许重提但不可修正；补为[draft,rejected]，仍受审批waiting/pending/approved优先拒绝。模型write对submitted/approved/done/cancel及draft/rejected仍在等待或validated的主单业务字段冻结，覆盖项目/合同/相对方/金额/币种/说明/依据/附件关系等；内部状态令牌仍可正式迁移。未改前端、行业动作词汇或统一审批机制，也不将计划执行中字段一刀切冻结。
+
+L1 event-content-iteration/py_compile/diff PASS；payment.approval_state_machine.unit169 PASS及begin/record完成（event-content-begin/unit/receipt）。新增执行实际write与_editability方法，证明驳回可编辑、pending/approved不可编辑且关键业务字段拒绝普通/伪造上下文写。P4 4822a34a5仅原contract-event专用scope扩4项：pending/approved/done业务write拒绝后原字段回读一致，以及真实rejected修改并describe_record.editability=editable。原状态、审批、独立完成链继续执行；all预期计数相应+4但未运行all。
+
+受管backend.up加载4822a34a5，无字段/XML变化不升级，前端e31e51c59/index-7JTLfH1Y.js不变不构建。SC_APPROVAL_RUNTIME_SCOPE=contract-event-state-authority make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local：event-content-runtime.log12具名PASS、ROLLBACK VERIFIED。无配置只批准、有配置真实审批、独立完成、驳回修改和新review重提成立；实际reviewed写金额/项目/正文/纳入结算均被拒绝且read与原值相同。原审批配置/步骤与全部临时对象恢复确认，环境沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter/原卷。
+
+本次事件rejected不需日志的tier写入例外：事件_state_from=submitted，真实rejected已退出under-validation业务状态；运行已证明普通write可修正。创建/业务执行仍原事务sudo、审核由真实reviewer，不能算普通合同操作员UI全旅程。关闭主记录内容保护与驳回契约代表缺口，子附件独立接口、角色UI及计划执行内容职责继续开放。下一步回到合同事件普通角色官方表单消费，核对实际入口/必要字段和声明动作，复用已过后台12，不以新建可达替代办理。总体67/detail.action-state开放，无推送/合并/目标部署/新fixture。
+
+
+### 53.177 合同操作员事件入口及官方表单失败恢复
+
+P1 5b27d52e3补齐project_member contextual_menu_xmlids中的原生合同事件入口；保留原生菜单组与ACL交集，不扩权限、不把业务动作放导航声明。navigation_shell.unit116通过（event-entry-unit.log）；P4 981aeb2ec沿既有standard_page_type_browser增加事件表单定向探针。backend981aeb2ec，frontend e31e51c59/index-7JTLfH1Y.js不变，未重建或升级模块。
+
+981aeb2ec+dirty单文件standard_page_type_browser.mjs：最初FE Project A查询ok但为空，不能误报无项目权限；清空搜索后同角色/company8返回现有项目464、463。本批选择实际返回的464，不创建fixture、不调整授权。tpl07-1790808129776证明该查询与必需输入存在，但定位设计变更失败；截图证明可见选项已渲染，故归类P4定位错误，将getByRole(option)改为精确可见文本。有效契约本身含design_change/设计变更，不改产品选择规则。
+
+L1 event-selection-iteration.log PASS，standard_preview.unit38 PASS及begin/record完成（event-project-scope-begin/unit/receipt.log）。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter与卷执行event-selection-browser.log，tpl07-1790808209564/report.json共25断言PASS：uid33原生menu470/action672，新建有效契约、name/project_id/event_type/description输入、授权项目选择；保存草稿及提交均捕获真实create payload，project_id=464、design_change、名称/正文与company8/menu/action上下文保持。两次create在浏览器注入503，页面保持new和输入，无后续动作、无业务数据库写。截图event-filled-save-failure.png。
+
+动作声明不等于记录级可执行契约：导航只提供入口，workflow提供状态/动作/可编辑性，执行仍由后端统一状态机控制。复用53.176后台12项，不将本次失败恢复25项表述为普通角色真实创建/提交成功。下一步沿同一现有工具补齐精确目标及清理约束后验证普通角色真实创建提交；整体detail.action-state/67条接管及计划执行等未完成。无推送、合并、目标部署。
+
+
+### 53.178 合同操作员事件真实创建、自动审批及只读详情
+
+7a1d40fab clean起点；P4 5d6731bfb只扩既有standard_page_type_browser、standard_expense_success_scope与frontend_expense_probe_cleanup及其测试，不增加业务规则或新环境。事件成功开关要求精确approval-actions/model/create场景，角色fixture_role_contract_operator，实际选择项目ID与捕获create请求绑定；唯一TPL53-EVENT-SAVE时间标记、company8、同记录action_submit及菜单/action上下文，in-flight阶段禁止重放。沿既有recovery文件和Make cleanup入口，写入前落恢复范围并预检无当前审批配置；不修改审批设置。
+
+临时记录清理校验验收库、实际actor、项目公司、精确四字段、名称/正文/事件类型、创建时间窗口、草稿或approved状态；拒绝合同关联、纳入结算、legacy来源、review或附件，按精确名称与返回ID核对删除并提交后回读不存在。审计与序列不回滚，不冒充全库恢复。数据库身份沿local/sc-fe-r2-p1-01/sc_frontend_acceptance，平台内部隔离验收租户，公司8，^sc_frontend_acceptance$，原sc_fe_r2_p1_01_odoo filestore；非平台控制库/行业目录/客户生产库，不新建fixture。
+
+L1 event-success-iteration.log PASS；standard_preview.unit40（15Node+25Python）PASS，event-success-begin/unit/receipt完整；新增错角色、记录、模型、动作、内容及清理数据库/项目/创建人/时间反例。产品后端981aeb2ec、前端e31e51c59未变，未升级/构建。TPL07_EVENT_SAVE_PROBE=1 TPL07_EVENT_SAVE_SUCCESS=1沿受管browser入口，event-success-browser.log及tpl07-1790808338023/report.json32断言PASS。
+
+uid33真实create sc.contract.event30，project464/company8/name TPL53-EVENT-SAVE-1790808342545/design_change，execute_button action_submit一次成功，普通角色api.data权威回读state=approved；未配置审批自动通过，未触发完成或结算。官方只读详情已接管、无可编辑表单，1440/390无页面溢出，截图event-success-1440/390.png；1440观察当前状态已审批、完成独立动作、删除按契约禁用提示。无未声明写入/页面异常；expense-cleanup-final.log确认record_ids[30]/actor33 restored且权威不存在。
+
+本批补齐普通合同操作员创建提交代表闭环，复用53.176配置审批后台12项，不冒充配置审批多角色UI、附件独立接口或全部67项完成。detail.action-state保持contract_gap；下一步处理既有计划执行中内容职责与状态机/动作契约一致性，避免继续重复事件与日志已过场景。无推送/合并/目标部署。
+
+
+### 53.179 计划真实驳回后的内容修正
+
+65ec2fbbe clean起点，限定读取sc.plan主单/line/version/report、原生视图及workflow profile。主单in_progress映射open而仍带validated审批时_editability返回readonly；节点/汇报/版本存在独立可写职责，不能用整单冻结替代字段与子模型执行边界。本批先补确切缺失的驳回修改验证，后续主单基准与节点执行契约仍开放。
+
+P4沿原plan-state-authority scope在真实驳回后增加note修改及回读，未新建环境/fixture；plan-rejected-probe-runtime.log首次失败：tier_validation拒绝草稿rejected的说明写入，ROLLBACK VERIFIED，证明可编辑契约与后端执行不一致。P1 d5f21e16c采用已有_check_allow_write_under_validation扩展点，仅draft+rejected且不含state时允许内容修正，其余调用父实现；原state令牌保护保持，未开放pending/validated、未修改审批配置或前端推导。
+
+payment.approval_state_machine.unit170 PASS（plan-rejected-unit.log），L1及begin/receipt完整；新增实际hook方法反例覆盖错误状态、pending/waiting/validated及状态写入仍委托。P4 136adf4bb保留新增真实修改检查，scope9项（all计数+1但不执行all）。backend.acceptance.up加载136adf4bb，纯Python无模块升级；前端e31e51c59无变更不构建。受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082、原精确filter与卷，plan-rejected-runtime.log9项PASS、ROLLBACK VERIFIED：真实拒绝后说明可改，重提产生新review并批准，原无配置确认不执行、审核后独立开始/完成及状态拒绝保持。
+
+闭合计划驳回修正这一明确缺口，不将事务sudo执行与真实reviewer证据冒充普通角色UI。主单审批内容保护、执行中字段/节点/汇报/版本契约及子模型状态职责尚未闭合；下一步应在既有契约上表达分字段与子记录可用能力并绑定后端保护，不能仅改前端只读或绕过审批。detail.action-state及整体67仍开放。无推送/合并/目标部署。
+
+
+### 53.180 执行字段例外不得覆盖进行中的审批
+
+64cf749f9 clean起点，追踪计划分字段执行所需既有机制：workflow._editability的field_editable_phases用于保留审批后执行字段，已被项目、材料验收、询价等profile消费。原函数先命中该例外即返回editable，后判断waiting/pending，导致例外阶段可遮蔽正在进行的审批。P1共享契约投影修正：waiting/pending优先readonly；审批后approved/none仍保留原字段级例外，未改变动作执行、模型权限、项目终态字段例外或前端实现。
+
+新增实际函数与实际profile参数化测试，field-phase-pending-before.log在171测试中复现18个失败组合；修正后field-phase-pending-unit.log171 PASS，L1及begin/receipt通过。范围仅workflow_contract_service.py与定向测试：L0日常HEAD/dirty；L1静态、L2真实纯方法覆盖所有现有field_editable_phases，含审批后例外保留与普通草稿/批准/终态反例。未改变schema/XML，跳过模块升级；前端未变不构建，未跑ORM或全浏览器。此处是确定性投影修正，不声称已新增实际业务审批UI证据。原plan/diary/event没有field_editable_phases，已有运行结果依赖分支行为不变，沿用53.179 runtime9与事件32证据。
+
+计划主单与子执行边界仍待完整接线：此项只消除复用执行字段例外的共享先决缺陷，不能据此开放整张计划或标记计划接管完成。下一步需在P1提供主单基准字段及子节点执行字段原生策略和后端限制，再通过既有表单契约投影。总体detail.action-state保持contract_gap，无推送/合并/目标部署。
+
+
+### 53.181 计划主单审批基准内容保护
+
+a1b1f8bc3 clean起点，P1 49e78190a在sc.plan.write冻结主单定义字段：名称/类型/项目/公司/责任人部门/分期/模板与编制方式/版本阶段/汇报周期/计划日期/说明/附件关系。非draft或waiting/pending/validated禁止直接改写，伪造状态令牌/skip_validation_check不绕过；内部正式动作保持。line_ids/report_ids/version_ids及其子模型职责没有被主单冻结逻辑一并锁死，尚需单独落地，不能据此宣称节点基准已保护或执行契约已开放。
+
+L1 plan-definition-iteration.log、payment.approval_state_machine.unit172及begin/receipt通过；纯测明确主单多状态拒绝、驳回修正、子执行命令交由下层与内部完成动作保留。P4 a3f24f6e0在原plan-state-authority增加pending/approved/in_progress/done基准写拒绝及原字段read不变，复用日记检查结构而未改日记断言语义。backend.acceptance.up加载a3f24f6e0，无字段/XML变化不升级，前端e31e51c59不变不构建。
+
+受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082原filter和卷，plan-definition-runtime.log13具名PASS、ROLLBACK VERIFIED。真实审批/驳回修正/重提/独立开始完成保持；各阶段name/project/note/planned_finish伪造上下文写均拒绝且read原值一致。原事务sudo创建执行与真实reviewer，不冒充角色浏览器。单据主基准接口缺口收口；节点基准及执行字段/汇报/版本状态、原生字段策略和共享表单接线仍待完成，detail.action-state总体保持开放，无推送/合并/目标部署。
+
+
+### 53.182 计划节点基准与执行写入边界
+
+a6c7ef8de clean起点，P1 2b300b3bb给sc.plan.line补create/write/unlink保护：定义字段及增删/移入移出只允许父计划draft且非waiting/pending/validated；执行字段actual_start/actual_finish/progress_rate/state/deliverable_attachment_ids只允许父计划in_progress且无活动审批。节点state沿既有原生执行状态输入，未冒充独立审批单据；汇报、版本的独立审批职责仍待处理。P0/P3/前端不推断规则，也未提前全局解锁父表单。
+
+首轮173纯测有2错误，原因旧test_plan_external_state_and_defaults_cannot_bypass_actions从整文件收集同名方法导致被新增ScPlanLine覆盖，已限定ScPlan类。最初误写passed回执已即时更正failed（plan-node-failed-receipt.log），未据此运行后续验收。修正后plan-node-fixed-iteration L1、plan-node-fixed-unit173 PASS，重新begin/record，保留原失败证据。纯测覆盖审批中/确认/执行/终态定义保护与草稿驳回修正、执行记录开放。
+
+P4 aa7717fb4扩原plan-state-authority为15项：真实节点在确认后拒绝直接名称写、父line_ids计划日期写、删除、新增和未开始时进度写，回读基准一致；正式开始后父line_ids更新进度50/执行状态成功，直接改基准仍拒绝，完成节点与计划后进度改写拒绝。plan-node-runtime.log15具名PASS、ROLLBACK VERIFIED。沿local/sc-fe-r2-p1-01/sc_frontend_acceptance/18082精确filter原卷，backend aa7717fb4；纯Python不升级，前端e31e51c59未变不构建。原配置审批/驳回修正/重提仍通过；本次新增节点执行示例为无配置确认分支，不扩大为配置审批多角色UI。
+
+下一步原生主单/子节点字段readonly与创建删除能力需消费上述后端边界；汇报/版本还未统一状态机，因此尚未打开plan open的field_editable_phases。现有只读详情/整体detail.action-state仍不能标为计划执行完整接管。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.183 计划原生字段策略进入有效契约
+
+40f2615be clean起点；P1 900ae9b92给view_sc_plan_form主单定义字段增加state/validation_status readonly，节点基准采用parent.state/parent.validation_status，节点progress_rate/state仅执行中且无活动审批可改。复用既有one2many父值解析，无前端业务分支。入口construction_plan_productized_form_v1仍有entry_semantic_surface手工结构，未盲目删除字段配置；不因此宣称重复结构退出。
+
+首轮L2发现XML表达式转义错误，修正后174通过；首轮受管升级失败于XML schema：视图元数据field name也被误加readonly。2487a4831精确移除元数据属性，并在既有测试增加所有record直接field不能携带readonly的检查。plan-native-schema-iteration/unit174及begin/receipt通过；plan-native-schema-upgrade.log受管升级smart_construction_core成功（原plan-native-policy-upgrade失败日志保留），backend.acceptance.up加载2487a4831。环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082、原filter与卷；无新环境/fixture。前端e31e51c59未变不构建。
+
+TPL07_SCOPE=approval-actions TPL07_APPROVAL_MODEL=sc.plan TPL07_APPROVAL_VIEW=create原browser入口：plan-native-create-browser.log，tpl07-1790809196461/report.json12项PASS，PM官方新建form engine、有效契约、无新单审批通过/驳回/完成、1440/390无溢出及无异常/业务写。回读approvalPages.authority确认name/planned_finish规范modifiers含state与validation_status；line_ids内name/planned_finish及progress_rate携带parent.*规范表达式。此为新建页和契约投影证据，不证明执行页输入、增删能力或配置审批UI。
+
+继续待办：退出入口重复结构；子表增删/新增初始执行值与状态约束；汇报/版本审批统一；准备完成后再开放执行中父表单字段例外并验证普通角色办理。既有计划后端15、事件32等按未变执行依赖复用。整体detail.action-state/67条仍未完成，无推送/合并/目标部署。
+
+
+### 53.184 计划入口重复结构退出与默认关系显示待修
+
+edfd3de14 clean起点；P1 37af7959f把construction_plan_productized_form_v1从entry_semantic_surface字段/分组镜像改为仅title+native_semantic_surface，priority800，按既有noupdate同记录function write升级重放。原29字段保留于原生arch，补actual_start/actual_finish及legacy/source追溯/active，保留字段输入职责。L1/175纯测及receipt PASS，受管升级plan-native-adoption-upgrade.log成功，backend37af7959f，前端e31e51c59不构建。
+
+首次通用新建页tpl07-1790809415350通过12项，但无menu/action上下文不足证明入口配置；P4修改既有探针从system.init routeAuthority取得PM授权menu507/action655，工具40/L1/receipt PASS（plan-entry-probe-*）。入口浏览器tpl07-1790809477312通过13项，authority.structure.mode=native_structured_form/layoutPolicy=container_tree_authority，29字段来源未丢失。但人工截图观察公司/责任人显示#8/#32，不能以13项通过忽略可用性问题；计划入口批次产品验收仍未完成。
+
+对照两份原始报告mainData均为company_id[8,FE Company A]、owner_id[32,Acceptance Fixture PM]，不是后端关系名称缺失或权限拒绝。共享createDefaults.loadAuthoritativeCreateDefaults再调用api.data/default_get，原mergeAuthoritativeCreateDefaults直接覆盖；api_data._op_default_get按ORM返回数字ID，故同身份标签丢失。下一步P0通用消费修复须显式many2one类型且ID一致才保留原标签，值变化/清空不可沿用旧名，补定向反例和实际入口观察。无新增fixture/业务写，尚不宣称计划执行完成。节点初始执行值、增删能力、汇报/版本审批仍开放，无推送/合并/目标部署。
+
+
+### 53.185 共享新建默认关系标签合并修复
+
+1e7897f3e clean起点，P0 e19eb1e16修复createDefaults合并：仅显式fieldTypes many2one、权威新值为正整数且与原[id,label]身份完全一致、原标签非空时保留标签副本。新ID、false/null/0/空串、新标签及非关系类型全部以新响应为准，不改变记录身份或权限。useRecordPageLifecycle从既有formFields类型映射传入；无模型专属业务推断，不额外查库。既有run增加create_default_hydration定向结果项，仍复用同一结果索引。
+
+relation-default-label-unit39 PASS（原28+11标签/换ID/清空/类型/加载路径检查）、typecheck.strict PASS，L1 final-iteration PASS；工具40及begin/receipt通过，P4原计划入口探针新增company_id/owner_id输入值必须等于有效契约标签的两项断言。产品稳定后仅一次frontend.standard.preview.build，preview.up复用5180 listener；候选e19eb1e16063fa75691e61c3b2a34a1de90f77b2，entry/assets/index-BHjcel_-.js，sha256 d8a1de1dbef0102ed4cd2dfc79ef095f815c65e423449829f6addb5749d9ab5b，旧预览保留previous-xokzgzdh。后端37af7959f未变，不升级/重跑ORM。
+
+relation-default-label-browser.log及tpl07-1790809740513/report.json15项PASS，授权PM/menu507/action655，截图1440观察公司FE Company A/责任人Acceptance Fixture PM，390无溢出；两项标签明确通过，无异常或业务写。浏览器工具校验实际entry摘要与候选一致。53.184默认显示阻断关闭，计划入口重复字段布局退出与新建页面呈现代表范围通过；不扩大为计划执行全旅程或整体67验收。节点创建初始执行值、增删能力、汇报/版本审批仍开放。无推送/合并/目标部署。
+
+
+### 53.186 计划节点初始执行值绕过关闭
+
+6d342b816 clean起点；P1 95997e57a在sc.plan.line.create同时校验显式值与default_*上下文：新节点只能draft/零进度/无实际开始完成日期，不能先以已完成节点绕过执行中write限制；显式合法值优先于上下文，保留原草稿节点创建与执行中更新。未改前端/配置审批/附件独立接口，也未放宽历史导入权限。
+
+plan-node-initial-iteration L1、payment.approval_state_machine.unit176及begin/receipt PASS；新增实际create方法反例含state、progress与actual日期直接值和上下文。P4 614fd1fdd在原plan-state-authority增非法创建/默认值拒绝与无节点残留readback，runtime16 PASS/ROLLBACK VERIFIED（plan-node-initial-runtime.log），正常创建→确认→开始→节点进度更新→完成和审批驳回链仍通过。受管backend614fd1fdd、local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter原卷；无schema/XML不升级，前端e19eb1e16不变不构建，复用新建入口15证据。
+
+节点初始状态/进度/日期缺口关闭；动态新增删除能力契约、汇报/版本统一审批、执行中普通角色页面仍开放，整体67未完成。无新环境/fixture、推送、合并或目标部署。
+
+
+### 53.187 计划节点结构能力投影与运行证据缺口
+
+12dc60d5c clean起点；P1 e47ba113c沿既有smart_core_finalize_projected_contract_data，在ui.contract.v2完成record snapshot后对sc.plan form调用restrict_plan_node_structure。已有记录仅draft且非waiting/pending/validated可维护节点结构，can_create/can_unlink与原生策略取交集，不提升false权限、不改inline_edit或报告关系；无记录ID的新建契约保留原生策略。只改P1归一化和既有扩展接线，无P0/P3新框架或前端状态推断。
+
+L1/177纯测及receipt PASS（plan-node-capability-*），真实方法覆盖draft/rejected/pending/validated/confirmed/in_progress/done/未知state，原输入不变及无权限不提升。补齐当前测试已引用的plan/diary/event/XML/normalizer/hook依赖到既有run结果索引，防止未来错误复用；为新依赖绑定重记begin/177/receipt（plan-capability-dependencies-*），不扩全仓扫描。backend.acceptance.up加载e47ba113c，前端e19eb1e16不变不构建，无schema不升级。
+
+实际PM既有记录浏览器plan-node-capability-browser.log失败于数据前置：tpl07-1790810099823/report.json api.data list sc.plan ok=true/records=[]，未进入记录详情，无业务写。不能把纯测替代最终契约/按钮证据；不重复空查询、不扩大授权或新增fixture。下一步沿现有plan-state-authority事务回滚工具补真实ui.contract.v2投影检查，再补普通角色办理；本次能力投影尚非批次验收完成。动态结构之外，汇报/版本统一审批、执行中父表单开放和整体67仍未完成，无推送/合并/目标部署。
+
+
+### 53.188 计划节点真实统一契约能力验证
+
+91e166f5e+dirty仅P4原business_config_approval_runtime_smoke新增_plan_node_contract_check，直接调用真实UiContractV2Handler.handle（sc.plan/action_sc_plan/form/edit/实际record_id），检查最终layoutContract中line_ids fieldInfo/subview的can_create/can_unlink，不只调用P1归一化函数。沿原plan-state-authority事务对象检查draft=true、confirmed=false、in_progress=false、pending=false，共新增4项；不新增环境/fixture或持久记录，不重复PM空列表查询。
+
+L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复用53.187 177纯测及已登记依赖receipt。受管plan-capability-v2-runtime.log进程终态exit0、20具名PASS/ROLLBACK VERIFIED，四次实际统一契约均返回节点策略且与后端写入边界一致；原节点执行更新、主单内容保护、真实审批与驳回重提继续通过。产品backend e47ba113c，frontend e19eb1e16无变更，不重载/升级/构建。环境local/sc-fe-r2-p1-01/sc_frontend_acceptance18082精确filter与原卷。
+
+关闭53.187最终契约投影缺少运行证据的问题。此链仍是原事务sudo创建/执行与实际reviewer，不能替代普通PM浏览器办理；全局父表单编辑仍未开放。下一步统一计划汇报/版本审批职责，再开放具备后端约束的执行页并做普通角色临时办理/精确清理。整体67/detail.action-state开放，无推送/合并/目标部署。
+
+
+### 53.189 计划汇报补齐动作执行与契约（运行验收待执行）
+
+- 候选：`4e8396de8` + 本段明确 dirty 范围；上一轮为动作缺口定位证据，当前继续实现。P1 `smart_construction_core` 拥有计划汇报状态机、公司归属及原生视图；P4 只扩展既有事务回滚验收范围，不承载业务规则。
+- `sc.plan.report` 复用 tier.validation 和公司审批配置。草稿/退回提交，无配置自动 accepted，有配置必须完成真实审批；拒绝外部直接写状态/审核结果，审批中及已确认内容锁定。人工审核人来自真实 tier.review.done_by，自动确认不伪造人工审核人。不自动改写计划或节点进度。
+- 工作流契约声明提交/审批/退回，原生表单提供条件按钮及只读规则；入口镜像退役为 native_semantic_surface，并保留原有来源字段与升级重放。前端共享消费实现不增加业务特判。
+- L1 `make ci.local.iteration` PASS（plan-report-iteration-v2.log）；L2 `make verify.payment.approval_state_machine.unit` 182 PASS（plan-report-unit-v2.log）。首次182项中1项失败属测试提取范围问题：ScPlan测试整文件提取同名回调，现限定类；原失败receipt已如实记录，修复后再登记通过。
+- P4 `plan-report` 是现有审批 rollback 工具的精确范围；复用同一 project/database/profile/凭据，不创建环境或fixture。`make verify.acceptance.runtime.baseline_rebuild.unit` 44 PASS，环境源守卫 PASS（plan-report-runtime-tool-unit.log）。回滚工具语法及 shell 语法通过。
+- 所有日志沿用 `artifacts/frontend-web-fix-20260928/tpl52/`。L3 模块升级、运行验收、有效页面契约及普通角色浏览器尚未执行，因此不认定批次验收完成；既有前端 e19eb1e16 未变，不重建，不运行 Quick/发布门禁。
+
+
+53.189 运行结果补记：P1提交 `ffc75513d`，P4提交 `7670465a1`；受管 `acceptance.module.upgrade` 成功（plan-report-upgrade.log），`backend.acceptance.up` 识别旧revision后按受管入口替换并成功（plan-report-backend.log），后端7670465a1/18082。`SC_APPROVAL_RUNTIME_SCOPE=plan-report make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local` **10 PASS / ROLLBACK VERIFIED**（plan-report-runtime.log）：直接状态/审核结果及默认值绕过拒绝、草稿有效提交契约、无配置自动确认且不改父计划、有配置真实审批/实际审核人、内容锁定、真实退回及修改后重提。使用原 sc-fe-r2-p1-01 / sc_frontend_acceptance / 精确filter及原三个卷；无持久测试单据与配置残留。结果只证明此后端/工作流契约范围，最终 UiContractV2 页面契约及普通PM浏览器待验，不升级整行台账。前端构建 e19eb1e16 原样复用。批次持续推进；未推送、合并或部署目标环境。
+
+
+### 53.190 计划汇报最终契约与普通 PM 官方新建页
+
+- `b073a727d` clean起点，上一轮完成产品实现及运行验收，属progress；本轮仅P4现有 `standard_page_type_browser.mjs` 和 `business_config_approval_runtime_smoke.py` 定向扩展。产品后端7670465a1、前端e19eb1e16复用，未升级或重建。
+- 浏览器新增计划汇报模型选择与普通PM授权入口解析，仍由login/system.init返回真实菜单，不硬编码权限或借管理员开页。`tpl07-1790810928967/report.json` **13 PASS**：menu508/action656、新建官方表单、有效契约、无未保存审批执行按钮、1440/390无横向溢出、无页面异常与业务写入。已查看两张截图：汇报人正常标签、审核人/日期只读展示。最终结构 `native_structured_form` / `container_tree_authority`，原入口镜像不再拥有body。
+- 浏览器首调在启动前因未导出受管fixture口令退出2，未生成浏览器证据；载入既有 `/tmp/wf_check_fixture.env` 后重试，未建立新凭据或改环境。原日志 `plan-report-ui-browser.log` 保留，成功为 `plan-report-ui-browser-v2.log`。
+- L1 iteration两次均PASS（后一次仅新增最终契约探针）；P4 `verify.frontend.standard_preview.unit` 15 Node+25 Python=40 PASS（plan-report-ui-tool-unit.log），脚本syntax/diff通过。182项产品测试输入不变，复用上轮证据；不重复计划节点/付款业务流程。
+- 既有 `plan-report` 回滚范围扩展四种实际记录状态的 `UiContractV2Handler.handle` 检查：草稿/退回write=true，审批中/已确认write=false；submit/approve/reject动作语义以及审核字段readonly modifier仍进入最终layout。**14 PASS / ROLLBACK VERIFIED**（plan-report-final-contract-runtime.log），不是只查workflow service。复用原受管DB/profile/精确filter/卷；未改变产品输入，后端身份仍7670465a1，dirty仅P4两个工具文件。
+- 未覆盖：普通PM实际保存、提交、详情返回、角色间审批UI，以及计划版本职责。已有PM授权计划列表为空的证据仍有效，不重复空查询或造fixture；下一步扩展既有精确临时记录恢复机制。保持整体 `detail.action-state=contract_gap`，不宣布完整接管。未推送、合并、目标部署。
+
+
+### 53.191 普通 PM 计划汇报保存、提交、详情返回闭环
+
+- 起点 `3edb39255`，本轮P4扩展既有标准页浏览器、写入许可helper及精确清理工具和两份测试。无产品后端/前端构建变更；继续复用后端7670465a1、前端e19eb1e16、原受管local/sc-fe-r2-p1-01/sc_frontend_acceptance环境与凭据。
+- 仅本次标记、PM角色、公司8、授权项目10，允许一条临时计划（父计划创建通过同角色正式API，不计作计划表单UI验收）和一条汇报；精确请求/ID/入口身份及in-flight阶段控制防止扩大写入或自动重放。先验证保存503保留输入，再通过官方表单提交创建+正式action_submit，各执行一次；不改审批配置。恢复先核对父子记录、创建人/公司/时间窗口/内容，无节点/版本/预警/审批/附件等额外依赖，先删汇报再删计划并提交后回读不存在。
+- 最终有序证据：`report-handling-final-iteration.log` L1 PASS；`report-handling-final-unit.log` **16 Node+26 Python=42 PASS**，对应agent.run.begin/record非零回执；`report-handling-final-browser.log` 指向 **tpl07-1790811348619/report.json 27 PASS**。PM uid32创建父计划52/汇报10，原生提交后state=accepted、确认日期存在、无虚构人工审批人；官方只读详情1440/390、返回 `/a/656?menu_id=508` 官方列表，真实查询model=sc.plan.report/company8/menu508/order=report_date desc,id desc/offset0/limit20返回id10。截图已检查；final清理回执同时记录report10/parent52已恢复。
+- 诊断与修正如实保留：首次25项运行 `tpl07-1790811187626`；新增返回检查 `tpl07-1790811247678` 因未等待异步列表响应、页签同名文本提前满足而失败（最终响应实际包含id8），改为等待对应响应和表格行；`tpl07-1790811296771` 27项通过但仅保留诊断。执行器漏拦了此前L1 `test_frontend_standard_preview.py` EOF空行失败，不能拿这些运行代替顺序门禁；修正后重新按L1→L2→浏览器运行上面的最终证据，所有诊断运行的临时对象也均已清理。不得把之前L1称为通过。
+- 本次仅关闭无审批配置的普通角色汇报办理闭环；53.189/190有配置真实审批与最终契约14项沿用，未据此声称多角色审批UI完成。计划版本当前仅draft/approved字段和审核字段、没有正式动作，继续作为P1产品缺口补齐。整体67条台账仍在推进，未推送/合并/目标部署。
+
+
+### 53.192 计划版本正式确认及审批契约（运行验收待执行）
+
+- `16cca4bee` clean起点。P1 smart_construction_core版本业务职责：保留draft/approved状态，复用tier.validation和公司审批配置，未配置提交自动确认，有配置完成真实审批才确认；审核人取真实review.done_by，自动确认不伪造审核人。禁止直接写状态/审核结果、审批中或确认后的内容修改与删除，退回草稿可修订重提；基准版本须同计划且非自身，既有(plan_id,version_no)唯一约束保留。
+- 工作流profile、审批配置目标/同步回调和原生独立版本form接线；原父计划内版本tree的审核字段及state只读，内容依审批状态限制。版本说明/差异说明语义不变，不新增快照生成、不自动改写父计划或执行节点，前端无业务特判。P4仅新增既有rollback工具 `plan-version` 范围，不新建环境/fixture。
+- L1 `plan-version-iteration.log`/`plan-version-tool-iteration.log` PASS；业务定向 `plan-version-unit.log` **186 PASS**，agent.run.begin/record已登记；受管运行工具 `plan-version-tool-unit.log` **44 PASS**及environment source guard PASS。产品变更需要模块升级，L3/最终页面/browser尚未执行；前端e19eb1e16未变不构建。已有汇报27/14证据保留。
+
+
+53.192运行结果补记：P1 `a710ad74a`、P4 `7594a9bf7`；受管模块升级成功（plan-version-upgrade.log），backend.acceptance.up绑定7594a9bf7/18082（plan-version-backend.log）。原受管验收scope `plan-version` **10 PASS / ROLLBACK VERIFIED**（plan-version-runtime.log）：伪造创建/default/直接写审核结果拒绝，无配置自动确认且父计划不执行；有配置真实审批，pending改写/删除/重提/伪回调拒绝，实际审核人记录，真实退回后编辑重提新链，最终UiContractV2已确认write=false且三类动作语义保留。公司/数据库/卷身份均沿原local验收配置；没有测试单据或配置残留。
+
+本段只证明版本模型、审批及最终契约；版本在父计划主从页面的实际入口/普通角色办理尚待验。直接version.unlink锁定已验证，父计划cascade删除对已审核版本的保护尚未覆盖，后续收口必须单独核对，不夸大为所有删除入口已受保护。未改变前端构建，复用汇报PM27证据，不据此认定整体67条完成。未推送、合并、目标部署。
+
+
+### 53.193 父计划级联删除与有效删除契约一致
+
+- `8caa2d823` clean起点。P1 `7300ef1e7`：ScPlan._plan_unlink_denial由后端同时判断父计划自身审批/执行事实，以及版本、汇报审批/确认事实；ScPlan.unlink在SQL cascade之前阻断。沿现有P1工作流投影，将同一模型返回原因写入最终actionContract.deletePolicy并收窄effectiveRecordCapabilities.unlink，不新增前端业务判断或并行删除框架。原可删除草稿（包括可修订子单据）保持可删除；本次不改汇报直接unlink/既有精确临时清理路径。
+- P4 `d88433507`扩展原plan-version/plan-report rollback范围：pending子单据使用单独父计划，避免其他已确认兄弟记录替代触发断言。实际parent.unlink拒绝后回读父子exists；真实UiContractV2输出unlink=false，删除原因与模型相同。
+- L1 plan-cascade-iteration/tool-iteration PASS；业务定向 **187 PASS**（plan-cascade-unit.log），agent.run.begin/record非零回执。P4新增只有原脚本函数和调用，py_compile通过；复用上轮44工具测试，其shell/profile/test工具输入未变，不重复环境测试。无schema/XML变化，不模块升级；backend.acceptance.up绑定d88433507成功，前端e19eb1e16未变不构建。
+- **plan-version 12 PASS、plan-report 16 PASS，均ROLLBACK VERIFIED**（plan-cascade-version-runtime.log、plan-cascade-report-runtime.log），原受管local/sc-fe-r2-p1-01/sc_frontend_acceptance/精确filter/原卷，无持久测试记录或配置残留。自动确认/真实审批/退回重提与最终契约仍通过。
+- 本段关闭已知父计划cascade绕过，不扩大全仓删除审计。版本主从入口/普通PM实际办理及父计划执行UI继续待验；汇报PM27在未变化的保存/提交/详情返回范围复用，未声称新增删除提示已有浏览器证明。整体67条维持未完成；未推送、合并、目标部署。
+
+
+### 53.194 计划版本主从新增链定位：共享默认值消费缺口
+
+- `2c5d23e44` clean起点，P4仅扩展既有浏览器 `TPL07_PLAN_VERSION_INSPECT=1`，必须受原reportSaveSuccess精确开关约束；复用既有PM临时父计划创建与清理，只观察父计划原生版本区并新增未保存行，不创建版本/汇报持久事实。未做全仓/菜单/环境盘点。
+- L1 version-inspect-iteration/v2 PASS；工具42项通过及begin/record（version-inspect-unit.log）。随后定位修正仅把页签访问从不存在的role=tab改成用户可见“版本”文本，测试模块及其执行输入未变，复用42原证据；当前run receipt可能保守判为stale，不冒充重跑回执。
+- 首次 `tpl07-1790812075760` 在版本字段可见性等待失败：探针未切原生页签，不是页面缺失。PM临时parent58已清理。修正后 `tpl07-1790812163551` **17项观察PASS**：授权parent59表单、版本区“添加计划版本”、未保存新增行、最终parent清理成功；两张截图已检查。17项只检查存在性与观察，不证明可编辑/可保存/可审批。
+- 实质P0缺口：`useOne2manyRuntime.addRow`直接调用`createOne2manyDraftRow`，后者将所有列置空/false且全部dirty；subview没有defaults/default_values。真实新增版本行version_no/revision_type/version_date/state均空，原生own-row readonly `state != draft`据此成立，版本定义字段不能正常编辑；`buildOne2manyCommandValue`对isNew提交全部row.values，空state也会与已收口的后端状态创建规则冲突。应补共享后端default_get消费与新行提交字段规则，不给sc.plan.version前端硬编码draft，不放松后端状态保护，也不复制版本专用表单。
+- 另一个已见P1边界：父计划头部state仍为可编辑选择，actual_start/actual_finish仍为输入；在启用执行阶段field_editable_phases之前须补原生只读及模型动作权威。现阶段没有启用该profile例外，没有把缺口页面算作接管完成。
+- 后端d88433507/前端e19eb1e16保持不变，无构建/升级。汇报PM27与版本/汇报审批及cascade12/16证据继续按范围复用。未推送、合并或目标部署。
+
+### 53.195 主从新增默认值共享消费（P0，新增行定向验证完成）
+
+- 769398acc起点及已归属dirty六个前端文件；前一问答轮无代码进展，本轮复用53.194定位及现有run继续，不重新扫描菜单/环境。P0 frontend renderer负责通用default_get消费、行条件及序列化；不在P1/P2或前端写版本业务默认值，不调整审批状态机。P4只加强原未保存版本行探针。
+- 关系字段模块以有效relation/subview列/can_create及已解析context调用既有defaultContractFormRecord；默认值失败不追加空行，未解析context明确报错。共享runtime复用请求revision及clearRows生命周期，阻止重复新增及旧响应污染；加载期间既有busy禁止保存。新行保留后端默认状态供modifier/onchange，write仅包含可写默认字段和显式编辑；不把只读状态/审核空值覆盖后端。原记录增量写保持。
+- L1 child-default-iteration-v2/v3/v4/v5均PASS。L2 child-default-unit-v3.log **55 PASS**并登记；后续仅context类型断言修正，执行逻辑及专项用例依赖未变，复用该结果。共享明细child-default-collection.log所有分组PASS（模型matrix6/domain7、付款67、Python10/44）；后续只导出接线及context类型，未改其输入。预览工具child-default-preview-tool.log **42 PASS**并登记。
+- 严格类型首轮发现导出缺失及FieldDescriptor.context类型，修正后两轮发现unknown展开；最终显式运行时校验后类型收窄，child-default-typecheck-v4.log终态exit0 PASS。未掩盖早期失败，未在失败时构建/运行浏览器。最后类型断言只影响静态类型，55/42及明细纯测复用，不重复无关ORM。
+- 浏览器原planVersionInspect增加真实default_get响应state=draft及版本号实际输入断言；仍不保存版本/汇报，使用原精确临时父计划清理。当前尚未构建和运行新候选，因此不宣称运行验收/版本办理完成。下一步一次受管build/up5180后该定向探针；后端d88433507不变，不升级。
+- 动作声明不等于有效动作契约；detail.action-state仍为产品契约缺口，版本真实保存/审批、父计划state/actual日期动作权威及67条总体收口继续待办。无推送、合并、目标部署。
+
+- 运行补证：产品候选fa1f9299368e33804f63c7194a17be7db525f479，一次build/up5180成功（child-default-build/preview-up.log），entry `/assets/index-s6eU2T-G.js`、sha256 `3c6000a247bac665a75d3d245bb608b58a4f50d99fe4de5736cc3ca65e119f42`；原候选由工具保留可回退。后端d88433507保持，无模块升级。
+- child-default-browser.log / `tpl07-1790812902986/report.json` **19 PASS**。真实PM32/company8/父计划60/menu507/action655：新增版本请求default_get sc.plan.version，返回revision_type=adjustment/version_date=2026-10-01/state=draft；版本号可实际输入TPL53-UNSAVED-VERSION。已检查截图；errors=[]、forbiddenWrites=[]；finally权威清理父计划60成功，未保存版本/汇报。此前“空状态使新增定义只读”的运行缺口已关闭；写入字段排除由55专项证明，不冒充浏览器保存证明。
+- 下一步仍为父计划state/actual_start/actual_finish的P1动作权威，再完成真实版本保存/审批界面闭环；既有67台账不升级整行。此次批次仅新增行范围定向验证完成，主线集成/目标部署/整体用户交付均未完成。
+
+### 53.196 父计划状态与实际日期回归业务动作权威
+
+- 66c52af91 clean起点，上一轮P0实现和19项页面验证属progress。继续既有run/67台账，只读取计划模型、原生视图和直接测试。P1 smart_construction_core拥有主单执行事实；不在前端、P2或配置层实现规则，不改节点执行记录既有可写边界，不启用field_editable_phases。
+- 产品3fb12f549：ScPlan.state/actual_start/actual_finish为只读、copy=False；创建拒绝真实日期及default_actual_*注入，write只接受进程内业务动作token，布尔伪造token/skip_validation_check无效。原action_start/action_done继续写实际日期；原生主表单状态栏及两个日期readonly=1。无新增字段/intent，无变更业务动作名称。
+- L1 plan-date-authority-iteration及tool-iteration/v2 PASS；verify.payment.approval_state_machine.unit **187 PASS**，plan-date-authority-unit.log及begin/record已登记。专项增加日期注入、默认值/伪造上下文、合法动作写及XML只读断言；后续只改P4运行探针，复用P1结果，不重跑无关前端类型/构建/付款流程。
+- P4 c7f3674b1及dirty单文件business_config_approval_runtime_smoke：沿原plan-state-authority范围，增加日期创建/写入拒绝与权威回读；原最终契约检查加入主单state/actual日期只读断言，保留line_ids能力检查。运行前依据原tpl07-1790812902986实际契约修正fieldInfo.subview读取位置，未将探针结构误判归咎产品。
+- 受管backend.acceptance.up绑定c7f3674b1；acceptance.module.upgrade smart_construction_core一次成功，registry加载终态exit0（plan-date-backend-up/module-upgrade.log），环境复用sc-fe-r2-p1-01/sc_frontend_acceptance/exactfilter及原卷。SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **22 PASS、ROLLBACK VERIFIED**（plan-date-authority-runtime.log）：草稿/确认/执行/审批中最终契约、拒绝外部日期、正式动作日期回读、真实审批/驳回/重新提交均通过。
+- 前端保持fa1f92993/index-s6eU2T-G.js，无重建。既有未保存版本行浏览器tpl07-1790813184944 **19 PASS**（plan-date-authority-browser.log）；已查看截图，父计划状态仅展示、实际日期为只读文本，版本号仍可填写。errors/forbiddenWrites为空，临时父计划65最终清理，未创建版本持久事实。
+- 本批主单动作事实保护及只读投影范围验收完成；版本真实保存/审批界面闭环和执行阶段编辑仍未完成，detail.action-state整体不升级。下一步沿现有精确临时父计划探针补版本保存回读、动作契约消费及恢复检查；不扩大环境/fixture。无推送、合并、目标部署，整体产品交付仍active。
+
+### 53.197 计划版本真实主从保存与精确恢复
+
+- b3550f886 clean起点，上一轮P1状态/日期事实及只读契约验证属progress。本批P4 9fe6bad70沿原report临时父计划/planVersionInspect工具扩展，不改生产、不新建环境/fixture。新增显式TPL07_PLAN_VERSION_SAVE必须同时满足原inspect/report-save/approval-actions/model/view范围。
+- 写许可仅fixture_role_pm、已登记父计划正整数ID、company8、api.data write的精确已捕获request；唯一version_ids创建命令、字段仅version_no/revision_type/version_date，marker及后端默认日期绑定，不允许状态、审核字段、更新旧版本或在途重复写。恢复预先登记原recovery文件，逐一核对父/子创建人32、company8/project10、唯一marker/ID/300秒窗口、草稿、无review/审核事实/附件/基准引用/其他依赖；全部核验后删除版本再父计划、提交回读。仍拒绝清理approved版本，未为取证绕过审批保护。
+- L1 version-save-tool-iteration PASS；verify.frontend.standard_preview.unit **44 PASS**（Node17/Python27，version-save-tool-unit.log）并begin/record。测试覆盖错误角色/父身份/额外写字段/原有行命令/在途重放及恢复的数据库、创建人、状态、时间窗和版本身份拒绝。产品输入未变，前后端原证据复用，不跑ORM/升级/构建。
+- version-save-browser.log / tpl07-1790813377873 **27 PASS**。PM普通表单父计划66：第一次保存注入503，版本号输入保留；重试单次write仅version_ids [[0,0,{revision_type:adjustment,version_date:2026-10-01,version_no:TPL53-VERSION-SAVE-1790813382525}]]、company8/if_match；后端普通角色回读版本7，draft/正确父ID/默认值、approved_by和approved_date为空。重新打开父表单已显示持久版本行，实际行操作为“打开/删除”。errors=[]、forbiddenWrites=[]。
+- 最终精确恢复回执version_ids=[7]/parent_ids=[66]/actor32/restored，无残留。桌面截图已检查；390宽页面溢出断言通过，但该截图停在长表单上部，不能证明窄屏版本行操作可用，下一次定向运行须滚动版本区后复核，不冒充完整双视口旅程。
+- Backend c7f3674b1、frontend fa1f92993/index-s6eU2T-G.js保持；下一步沿真实行“打开”入口消费版本动作契约，完成提交与返回；该动作实际运行前须扩展精确恢复以覆盖确认为本轮产生的自动通过版本，不能默许删除任何已审批记录。已配置审批分支复用原运行验证，页面办理尚未关闭。总体67/action-state保持缺口，不推送/合并/目标部署。
+
+### 53.198 关联记录办理链：响应式导航已修，动作执行权威缺口实证
+
+- 98af044c5起点，上一轮真实保存/恢复属progress。本批P4 549ace2b2扩展原版本探针，实际行打开、提交、返回及窄屏操作；46工具测试（Node18/Python28）及L1 PASS/begin/record（version-submit-tool-*）。恢复仅本次ID/marker/company8/PM32/300秒创建窗口、无版本审批配置、无review/真实审核人/依赖的自动通过版本；全部核验后以既有私有状态写恢复草稿再删除，保留审计、不更改生产删除规则。未通过提交的记录仍按原草稿路径清理。
+- 首次tpl07-1790813551290 FAIL（version-submit-browser.log）：桌面打开按钮可用，390卡片没有打开，停在scroll等待；尚未提交、最终恢复成功。源码定位X2ManyRelationRenderer仅编辑桌面有打开，编辑窄屏及只读呈现均遗漏；不把产品缺口归咎定位器。
+- P0 0d87f591f：共享渲染器三处遗漏补同一one2manyCanOpenRow/openOne2manyRow处理；只读表仅有授权行时加操作列，未保存行/无权限仍无入口。归属通用renderer，不加模型规则、不以字段只读代替记录导航授权。L1 relation-open-responsive-iteration PASS、professional_detail_collection全部分组PASS、typecheck.strict PASS（同前缀日志）。未改生产后端，复用原状态机/契约证据。
+- 一次受管build/up：frontend0d87f591f3e2d6e235986fb38f9c9af39b476a8f，entry /assets/index-CupTz5YF.js，sha256 fc80d0134b384f60e81201fff5dc45d9e540537fca4cdd25092f14079cee4282；backend c7f3674b1保持，无模块升级。
+- 第二次tpl07-1790813730296仍FAIL（version-submit-browser-v2.log，29断言中提交断言失败，不报29 PASS）。版本保存/回读、1440/390打开可用与无页面溢出、行打开实际sc.plan.version动作契约已通过；390截图已检查，版本卡片真正显示打开。沿实际入口打开的URL仅有view_mode及return_url/return_field/return_model/return_action_id/return_menu_id，无自身menu_id/action_id；child契约正常含submit语义并显示提交。点击真实submit后execute_button返回403 ACTION_CONTRACT_AUTHORITY_MISSING，随后错误页面。未发生审批通过；parent68/version9最终精确清理，errors/forbiddenWrites=[]。
+- 已确认P0契约闭环缺口：execute_button._authorize_contract_action强制当前menu_id/action_id和按钮身份；关联页允许通过授权relation_entry打开且有动作声明，但无自身菜单/action时不能执行。page_assembler._relation_entry_authority_pair_error又要求menu/action/target model严格对应，不能借用父菜单冒充子模型入口。下一步检查并补既有关系来源授权链到动作执行契约（父入口、关系字段、实际关联记录、当前ACL/记录规则/动作身份均由服务端核验），不放宽现有直达菜单守卫，不新增模型白名单或假菜单，只为通过验收而补入口。
+- 另见子版本标题仍为技术display_name sc.plan.version,9，属于模型显示权威不足；与动作修复分层处理，不由前端拼业务标题。自动通过/返回尚未闭环，已配置审批复用原运行证据但不报界面完成；只读分支新增导航尚无代表页面运行证据，不升整项台账。整体67及detail.action-state仍contract_gap；无推送、合并、目标部署。
+
+### 53.199 关联来源动作权威闭环（P0，真实版本提交与返回通过）
+
+- 462c73086 clean起点，上一轮响应式修复和失败定位属progress。只追踪既有导航/表单三种动作执行器/execute_button/route.authority.validate；P0平台机制，无模型白名单、假菜单或业务审批分支，无新环境/fixture。保留直接菜单动作及按钮身份、状态、权限和记录域验证。
+- fa6a094a5/96df3cc09引入结构化relation_origin与共享core验证：当前父入口、父read ACL/record rule/字段权限、真实关系comodel与子ID成员关系、父最终契约的可打开关系字段均重新读取；不能利用嵌套同名字段/隐藏入口，关系移除即失效。然后加载子模型当前契约，继续原按钮稳定身份/来源/执行类型/entitlement/status校验，以及子模型ACL/record rule/business scope。缺失或不完整来源仍拒绝，未把导航信息本身视作授权。
+- 首次tpl07-1790814062817仍失败AUTHORITY_MISSING（relation-action-authority-browser.log）：导航已有return_record_id，实际主提交执行器未接来源；纠正为28d13c6a5三种表单执行器共同消费relationActionOrigin，主提交回归直接断言发送meta。L1及typecheck通过；create_record_user_journey相关**66 PASS**（relation-primary-authority-unit.log及扩展inputs/begin/record），后端初始22 PASS。
+- 第二次tpl07-1790814233916失败ACTION_RELATION_ENTRY_DENIED（relation-primary-authority-browser.log）：此前错误复用原生菜单关系校验器，与system.init正式role_surface.primary_menu_xmlids route authority口径不同。f0bf22ce1改为调用现有RouteAuthorityValidateHandler，并以新增返回的action_id/menu_id/model校验精确父入口；不绕过正式路由、不接受父菜单与子模型伪配。新增执行器集成测试覆盖父入口模型/菜单/动作/allowed拒绝，并证明父授权不能绕过子动作entitlement。L1 relation-route-authority-iteration/v2及**23授权测试PASS**/begin/record。
+- 产品后端f0bf22ce1经backend.acceptance.up受管更新，无模型/XML变更故无模块升级。前端28d13c6a51bdc65bdcc74e615576825287903ee4，entry /assets/index-DMZOW5UN.js，sha256 0ac6e1b517c2d6edb259c6daf28812df5173f6a95fd59103e7b997967d0506c6；首次候选96df3cc09构建后真实失败，因遗漏主执行器修复重建为28d13c6a5；最终仅后端纠正时复用前端，不做无输入变化的重建/失败重试。每次失败均先清理临时数据。
+- relation-route-authority-browser.log / **tpl07-1790814393391 33 PASS**：PM32/company8临时父计划71创建版本12；主从保存失败恢复/重试、1440/390行打开可用、真实打开版本原生表单与submit契约、实际execute_button提交成功、普通角色回读approved/approved_date2026-10-01/approved_by=False、真实返回父计划71原menu507/action655。最后两个子契约已为approved/readonly/approved，errors=[]、forbiddenWrites=[]。自动通过仅因无配置，未伪造审核人；已配置审批分支复用原版本runtime12证明，不报本次浏览器覆盖了配置审批。
+- finally精确恢复version12/parent71、actor32/restored成功，批准后清理路径已实测。approved截图抓到刷新骨架，不能作为终态视觉证据；终态由普通角色回读和最终两份approved/readonly契约证明，返回按钮实际可用。下次相关页面观察等待已加载字段再截图，不单为补截图重跑业务链。
+- 本批已关闭单层正式父入口关联子记录动作执行断点，未宣称多级无菜单父链或全部业务入口完成。版本技术标题仍待P1 _rec_name纠正；计划执行阶段编辑及配置审批页面、其他67台账职责继续收口。总体detail.action-state保留contract_gap，无推送/合并/目标部署。
+
+### 53.200 计划审批后执行字段消费契约
+
+- cdb91de3d clean起点，上一轮关联动作33项真实办理闭环属progress；复用既有run/证据，仅核对sc.plan workflow profile、节点原生字段规则及直接测试。P1 smart_construction_core负责行业计划执行语义，不在前端推导审批阶段。P0关系执行及前端源码不改。
+- 3ae4befd3将sc.plan.field_editable_phases声明为[open]，对应in_progress；继续由现有字段modifier/后端ScPlan及ScPlanLine限制可写内容，审批waiting/pending优先readonly、confirmed无执行写例外、done locked。计划基准、主单state和实际日期保持只读；节点结构不可增删，执行进度/状态通过原主从写处理。版本_rec_name=version_no，显示名由模型权威提供，未在前端拼接。
+- L1 plan-execution-iteration PASS；verify.payment.approval_state_machine.unit **188 PASS**，plan-execution-unit.log及begin/record。新增具体阶段断言、保留所有配置审批/状态保护回归；无前端或XML变动，类型/前端构建和模块升级均不需要重跑。版本_rec_name纯测已覆盖，业务标题的实际页面观察仍待下一次相关页面验证。
+- P4 152cf9ecc沿原plan-state-authority：最终契约检查增加实际write能力；配置审批计划在提交前创建本事务内节点，真实批准后开始执行，主单line_ids更新节点到50%/执行中再100%/done，回读核验后完成计划。依然验证待审/已确认/执行中基准拒绝改写及终态锁定；无持久fixture或环境扩展。
+- 受管后端绑定152cf9ecc（plan-execution-backend-up.log），SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **24 PASS、ROLLBACK VERIFIED**（plan-execution-runtime.log）。该范围涉及审批/状态机实际变更，运行检查为必要相关验证，不是无关ORM扫描；未跑其他模型runtime或重复版本UI闭环。
+- 前端继续28d13c6a5/index-DMZOW5UN.js，关联版本保存/提交/返回33项及其精确恢复证据不变。下一步补计划执行阶段真实主从UI（节点保存→确认/开始→进度/状态保存→完成），须沿现有临时父计划工具注册精确写入/恢复，不直接放开旧report写许可。配置审批执行能力已由本轮24项后端/契约证明，不冒充普通角色UI验收。总体67/detail.action-state仍contract_gap；无推送、合并、目标部署。
+
+
+### 53.201 计划执行主从闭环与共享明细加载交互
+
+- 7ed411ffe起点，仅既有browser选择器dirty；复用run和53.200状态机24项，不重新扫描菜单/ORM。上一问答轮无代码进展，本轮恢复既有具体阻断。P4使用既有临时父计划精确许可/清理；P0 frontend X2ManyRelationRenderer负责通用加载反馈，非行业规则，不在P1/P2或前端新增审批语义。影响全部可编辑one2many加载阶段，readonly路径不变。
+- 原tpl07-1790814968067因节点名称为空阻止请求，非动作契约缺失。定向读取观察tpl07-1790815225138本次60项通过，但编辑前确实观察到空名称与可编辑进度同时出现；后端读取返回完整name。源代码确认已有行先显示、异步hydration随后执行，dirty整行跳过合并。因此偶然通过不能关闭时序问题。
+- P0共享明细在hydrating时展示既有ScInlineState，完成后才呈现编辑控件；保留必填校验、业务只读、身份和服务端权限。P4沿现有浏览器工具暂缓精确nodeId的read响应，断言加载阶段没有可编辑进度控件，再释放真实响应、检查完整只读名称并执行实际保存。不新增写许可/fixture/环境；状态选择器改用可见textbox及实际弹层文字。
+- L1 plan-node-loading-iteration PASS；verify.frontend.professional_detail_collection.unit PASS（matrix6、relation_domain7、dialog67、Python10+44，134计数；额外structured-domain6输出不重复计数）；strict typecheck PASS；standard_preview.unit48 PASS。原run relation_query_scope遗漏renderer/直接hydration及guard输入，本轮补齐并更新begin/record；补元数据不改变已测源码，复用本轮原始log。P1 runtime24、approval188输入未变，无升级/重启/无关ORM。
+- 一次构建：base7ed411ffe+明确dirty，index-B8XOfsg8.js，entry_sha256=5f15c35688073ae074d5a47507b51c045b702134de23224d3503b1e1e2d9d802，build-identity.json保留完整diff身份；复用5180，backend152cf9ecc不变。不是clean冻结候选。
+- plan-node-loading-browser.log / tpl07-1790815407363 **64 PASS**：PM32/company8，父计划80/节点11，真实新增节点→确认→开始→50%执行中→100%已完成→完成计划；所有6项真实写响应ok，权威回读一致，终态write=false。刻意延迟读取的两个阶段均不可提前编辑，释放后名称完整且只读。errors=[]、forbiddenWrites=[]，expense-cleanup-final.log精确恢复node11/parent80，status=restored。
+- 1440/390无溢出断言通过，但人工检查390终态截图仍为明细加载反馈，不能证明已加载节点视觉。工具已补终态节点名称等待，未仅为换截图重跑整条业务链；这条新增等待尚待下次相关UI执行。上述64行为结果仍按原工具输入引用，不称最终工具全部已跑。未改变产品源码或重建。
+- 本轮关闭计划执行主从真实办理及提前编辑时序缺陷；终态明细双视口、版本业务标题、配置审批多角色UI和其余67项职责仍有缺口。detail.action-state保持contract_gap。批次定向行为通过，整体验收未完成；无主线集成、目标部署或用户整体交付。下一步沿已登记计划/版本配置审批UI补终态观察，复用原状态机和已完成无配置链。
+
+
+### 53.202 配置审批真实角色与当前工作台断点
+
+- fc9243092 clean续跑，53.201已修复并验证共享明细加载属progress。只复用同run及受管acceptance；本次P4既有浏览器/回滚运行工具扩展，目标sc.plan.version、PM/config_admin/executive、company8/project10，不创建环境或持久fixture，不变更P0/P1产品源码。数据库角色仍本地验收库sc_frontend_acceptance，原project/dbfilter/filestore保持不变。
+- TPL07_SCOPE=approval-actions TPL07_APPROVAL_CONFIG_INSPECT=1通过既有浏览器入口：tpl07-1790815595470 **5 PASS**（响应观察，非审批办理验收）。config_admin34读取版本审批无现存规则，提供executive等有效岗位；PM与executive可查询项目10的计划（当前无记录）。PM初始化提供计划menu507/action655，executive不提供计划入口。没有配置写入，没有创建临时数据，前端构建/后端绑定均复用。
+- 既有SC_APPROVAL_RUNTIME_SCOPE新增plan-reviewer-entry。精确验收库与3角色company8、项目10访问校验后，使用config_admin实际config.set/steps.set创建事务内executive单级版本审批；PM实际创建父计划/版本并提交，校验真实reviewer包含executive且can_review，不伪造审批结果。已有策略包括停用策略存在则拒绝覆盖。finally rollback并回读临时记录不存在、策略为空、原tier.definition集合一致；不提交事务，无手工DB/credential/Compose。
+- L1 plan-reviewer-entry-iteration PASS，standard_preview.unit48 PASS（plan-reviewer-entry-tool-unit.log）；首次plan-reviewer-entry-runtime FAILED：旧聚合确有真实待办、记录最终契约approve/reject已授权，但target没有action/menu，route.authority.validate为ROUTE_ACTION_REQUIRED；ROLLBACK VERIFIED。这是产品入口授权链问题，不是状态机失败。
+- 随后检查前端实际消费发现MyWorkView仅消费product_workspace；my.work.summary的该分支直接PaymentRequestWorkItemService，MODEL固定payment.request。旧tier.review聚合并不是当前页面消费源，不能用旧路径证明待办可见。改定向工具为同时输出/断言实际product_workspace，减少动作日志到必要身份/能力摘要；因诊断输入变化而运行一次，未无变更重试。
+- L1 plan-reviewer-workspace-iteration PASS；plan-reviewer-workspace-runtime **FAILED**：3前置检查通过，真实临时版本14分配给executive；当前product_workspace版本payment-request-workspace-v1，assigned_version_visible=false，sections[0,0]。最终断言actual product workspace omits the assigned non-payment review失败；PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED。工具原始日志是唯一证据，不冒称运行验收通过。新增纯读观察不影响原48项许可/清理纯测，但最终新增诊断断言不由旧纯测代替。
+- 明确产品缺口分两层：P1行业工作台应将真实非付款审批任务投影到现有共享工作台契约并与付款结果统一聚合；P0动作执行应接受后端重新验证的真实待办来源（来源对象、目标绑定、当前用户/公司/记录ACL及当前审批资格），继续校验新鲜动作契约/状态，前端只传递契约声明来源。不临时加菜单、不借用管理员审批、不前端猜审批模型或按钮、不重新建立工作台框架。先补以上拥有层，再复跑该回滚检查，通过后才执行受管配置多角色UI。
+- 本轮为诊断进展，非批次验收完成；没有构建/升级/发布周期，没有推送、合并、目标部署。已有计划执行64、状态机24结果保留，其覆盖范围不包含新发现工作台缺口。67条台账detail.action-state仍contract_gap，终态视觉和版本业务标题也未升级为通过。
+
+
+### 53.203 当前工作台审批投影与待办来源动作授权
+
+- 5fc0a6d8d clean续跑；复用53.202明确失败，不重新盘点。P1 ed27ea9e0将当前product_workspace改由CurrentWorkItemService组合原PaymentRequestWorkItemService与实际assigned tier.review；原付款动作/发起/完成职责保留，不新增渲染器或模型白名单。审批记录使用调用者ACL/rules、选定公司、业务范围及can_review，按记录去重，count/total从实际返回项派生；记录入口声明work_item_origin，操作在共享详情办理。
+- P0 221cb5528新增纯来源校验函数，复用既有extension hook解析器，由P1提供tier.review权威适配。严格要求source/id、目标模型/id及当前源与记录绑定；P1只认可当前用户尚可审批的waiting/pending review，执行只允许validate_tier/reject_tier。route.authority.validate支持同一来源，不生成假menu/action；execute_button每次重新校验来源后仍读取新鲜动作契约、button状态、entitlement及原执行ACL/业务scope。无sudo执行业务动作，无权限回退。
+- P0前端cb7e896d4：三个共享动作路径统一传输声明work_item_source/id，schema显式meta类型，保留relation_origin。界面不推导审批模型/状态，不新建工作台框架。原旧聚合未被用作当前工作台结果；其他旧API消费者未在本轮删除。
+- L1 review-workspace-final-static PASS；verify.execute_button.authority.unit **32 PASS**（review-workspace-authority-final-unit.log及begin/record），新增来源格式/目标、每次重新授权、错人、错记录、过期、公司/业务scope、非审批方法、ACL/rules和can_review回归。前端user_journey **66 PASS**，实际primary executor带正确来源；strict typecheck PASS。前端结果复用到当前提交，因为其后仅改后端目标校验与相关测试/运行工具。
+- 后端受管up绑定cb7e896d4（review-workspace-backend-up.log），只Python机制变更无需模块升级；不重建前端、不运行浏览器，先验证已知L3阻断。扩展原plan-reviewer-entry回滚测试，改用当前工作台来源执行真实approve并核对非审批人拒绝、重放拒绝与待办退出。
+- review-workspace-runtime **FAILED，5前置检查通过**：配置→PM提交→真实review；current-user-workspace-v2已经含管理层的版本待办（[1,0]）；来源route有效、最终approve契约有效；PM复用来源被拒绝。实际executive执行返回PERMISSION_DENIED：无sc.plan.version write ACL。finally **PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED**；failed/5 begin-record回执已记录，不报8项通过。
+- 新阻断归属P1审批资格与模型访问能力不一致：executive角色目前只继承project_read，版本write只授project_user/project_manager；既有付款另有executive专用read/write ACL。不能为通过验收赋予整套project_manager（含创建/删除）或在通用execute_button对业务方法sudo。下一步在既有角色/能力、记录写入和状态机边界中补齐合法审批所需最小权限，并回归草稿基准编辑/创建删除/跨公司不可扩权；同时确认配置岗位与执行资格一致。全业务单据统一原则保留，不能仅把管理层换成管理员规避。
+- 当前工作区尚有P4运行测试与run metadata待提交；产品三提交已本地记录。前端5180仍53.201构建index-B8XOfsg8.js，不能宣称新来源已在浏览器加载。32纯测及5运行前置只证明声明范围；真实审批通过/完成后移出/多角色UI仍未完成，67/detail.action-state保持contract_gap。无push/merge/目标部署，暂不进入构建/冻结/发布周期。
+
+
+### 53.204 原生审批访问级别与真实办理恢复
+
+- 79616c772 clean续跑。只追踪53.203明确失败的执行ACL与既有OCA直接实现，不重复全局权限/菜单扫描。重要纠正：OCA validate_tier/reject_tier以真实当前用户更新tier.review，既有base_tier_validation_server_action通过受控server action回调更新单据状态。审批不等同于编辑整张单据；53.203的失败源于通用execute_button默认一律要求单据write，而不是应该给管理层补整套项目能力。
+- P0 671942ce6让已验证的后端work-item provider返回严格结构的record_access_mode，只接受read/write；旧显式True仍保持write。每次来源新鲜校验、最终动作/状态授权后，由本次本地验证结果决定记录ACL/rule访问级别；客户端meta及动作契约伪造内部字段无效。普通动作、server action和没有有效work-item来源仍沿原权限。通用执行器没有sudo业务调用。
+- P1 9d3dbf74a在已有严格tier.review来源适配通过后声明read：仅validate_tier/reject_tier或路由读取，保留实际review分配、状态、can_review、模型/记录/公司/业务范围。实际review写权限与官方callback机制继续执行。不修改角色ACL、能力组、原生审批源码或业务状态机，不添加行业模型到P0，不给前端业务规则。
+- 新增伪造访问级别单测首次FAIL（review-action-access-unit.log）：测试调用action_confirm，但模拟对象只实现shared_action。曾错误发起passed回执并本地提交，已明确撤销其证据效力；尝试补记failed因pending已消费被工具拒绝，未绕过工具。421c6575f修正测试输入与失败详情，L1 review-action-access-test-fix-iteration PASS；重新begin后实际 **34 PASS**（review-action-access-test-fix-unit.log），新passed回执覆盖原错误结果。没有在失败期间运行L3或宣称验收通过。原失败日志保留。
+- 后端受管up绑定421c6575f；P4运行断言增加executive对版本write/create/unlink ACL均为False，之后真实执行approval。review-action-access-runtime **8 PASS、ROLLBACK VERIFIED**：config_admin配置→PM提交→管理层真实review→当前工作台可见/来源route及action契约有效→PM冒用来源拒绝→管理层实际approve成功、approved_by为真实审批人→完成来源重放拒绝→待办退出当前工作台。策略/临时父子记录/tier定义集合恢复核验。原5项失败被此新输入下结果替代，不报UI已验收。
+- ad4998360提交上述P4权限断言。原前端66和strict typecheck输入不变，继续复用53.203日志；本轮无XML、schema数据库字段/ACL变动，无模块升级。新增记录OCA直接依赖到同run运行输入列表；git diff 421c6575f HEAD -- 两个OCA源码为空，原运行时与当前依赖不变，沿原日志复用，不无理由重跑8项。
+- 一次构建/复用5180完成：clean base ad4998360421bc7e435084d8935281eb09d9cc0c；entry /assets/index-4-Unal7H.js，sha256 7c8a695aec989754b5a0997ed6a4e11e90f8412683028aef621a0f0128cf2a4d。review-workspace-build.log/review-workspace-preview.log；backend仍421c6575f，提交后仅P4测试/记录，不重启相同产品输入。新前端已成为候选，但尚未有配置审批浏览器证据。
+- 下一步仅扩展既有版本主从browser与精确恢复：配置前快照目标策略缺失、相关tier定义和回调server-action groups（策略同步会修改组）；普通config_admin配置executive，PM主从版本提交，executive在当前工作台打开、真实审批、回读/退出及已加载双视口。finally只清理本批精确事实/规则/定义并恢复配置基线，先补纯许可/清理测试再运行，不把新状态放进旧无审批清理豁免。总体67/detail.action-state仍contract_gap；无push/merge/目标部署/整体交付声明。
+
+### 53.205 配置审批浏览器前置与子单据配置入口缺口
+
+- 候选7ab298323加5个P4工具文件dirty。扩展既有version browser：配置管理员配置、PM提交、真实审批人工作台办理；写入许可绑定角色/模型/单据/来源/阶段。恢复绑定配置缺失基线、tier定义及callback groups，禁止宽泛清理。尚未提交，不视为冻结候选。
+- L1 version-review-ui-tool-final-static.log PASS；L2 version-review-ui-tool-unit.log实际退出0，Node22+Python31=53 PASS，已记录standard_preview_tool。产品输入未变，复用既有backend421/frontend ad499，不升级模块或重建。
+- 定向浏览器version-review-ui-browser.log FAIL（tpl07-1790817279890/report.json）。10项已有断言不代表旅程通过。config_admin访问计划版本配置页后落入access-denied/PERMISSION_DENIED，等待审批规则tab超时；没有进入配置保存/业务创建，forbiddenWrites为空。前置读回实际reviewer uid37、策略/定义缺失、两个callback groups为空；expense-cleanup-final.log权威回读restored，临时记录/版本/父记录均为空。
+- 初步称路由拒绝，源码进一步定位配置surface加载403也会触发同一拒绝页（useBusinessConfigScopeLifecycle）；不能仅凭页面断定路由guard。下一步仅追踪ui.business_config.surface.get对子单据模型的配置范围授权，确认现有合法入口或补齐所属层契约。禁止伪造菜单/动作或扩大角色ACL来通过验收。整体67/detail.action-state未关闭；无推送、合并、目标部署。
+
+### 53.206 父页面下的子单据审批配置契约
+
+- 53.205根因已确认：ui.business_config.surface.get在business_catalog模式下要求真实正式action与model匹配，sc.plan.version没有独立导航。保留这一边界；不构造虚假action/menu，不给角色追加记录写权限。
+- P1 smart_construction_core新增审批对象投影：既有sc.approval.policy目标选择是资格来源，父模型直接one2many是归属来源，普通模型read ACL进一步约束；不递归、不开many2one旁路、不新增模型白名单。已有目标选择之外的必要单据仍是既有产品缺口，不因本实现自动关闭。P0通过扩展hook把target_options及每个对象的完整规则route纳入surface.sections.approval，计数覆盖声明对象。
+- 共享审批编辑器消费对象列表；不再把父页面model固定当成审批目标。未声明对象拒绝读/写，未保存/处理中不能切换；保存绑定选择的模型，父页面变化后不再执行后续步骤写入或覆盖编辑器。完整规则链接消费所选对象的后端route。当前仅新增响应字段与服务代码，无持久字段/XML/ACL变更，不需模块升级；实际运行前需受管重绑后端并构建前端。
+- L1 version-config-targets-final-iteration.log PASS；verify.business_config.approval_targets.unit为26个surface+8个P1投影+6个真实composable测试，共40 PASS（final-unit.log）；既有preview工具53 PASS（preview-unit.log）；strict typecheck退出0（final-typecheck.log）。均在tpl52目录。独立纯测试不代替运行验收，配置浏览器尚未重跑。
+- P4浏览器改从真实sc.plan父入口进入，再在共享编辑器选择后端声明的计划版本；原有精确写许可/恢复基线保持。下一步本地分层提交、一次构建/复用5180、真实配置→PM提交→executive办理→回读/恢复。整体67未完成。
+
+### 53.207 真实配置入口复验与声明／目录不一致
+
+- 本地分层提交：P1 95c42f8a7、P0 1f159bb27、共享消费87fd7c254、P4与记录fef7d73ef。后端受管up替换旧SC_SOURCE_REVISION后health PASS。首次build入口与后端替换并行，前置退出1，未启动Vite；纠正为health恢复后顺序执行，实际一次Vite构建23.32s成功。构建/后端base=fef7d73ef34cc6add1d0c9c3b10ec3787241ba36；5180复用现有listener，entry=/assets/index-CtbYLDSU.js，sha256=f46ab11df33cd06be56a7b567c3f888b7b7382763a8e4ae7867c74e1291935eb。
+- P4浏览器补齐现有确认配置影响弹层的确认点击。confirm-iteration/confirm-unit PASS（53）；产品构建不受此工具变动影响，没有二次构建。version-config-targets-browser.log FAIL，tpl07-1790817916902：真实父模型sc.plan/action655/menu507配置页仍403，尚未进入配置写入或审批对象选择；final cleanup restored，临时业务记录/版本/父记录均为空。新子单据选择器尚不能报告界面验收通过。
+- 不继续重跑旅程。扩展既有只读配置inspect，仅config_admin读取同一surface请求；scope-inspect-iteration PASS、scope-inspect-unit53 PASS。version-config-scope-inspect-browser.log的3项PASS仅证明诊断执行，绝不是业务通过。tpl07-1790818046775报告取得权威拒绝：CONFIG_TARGET_UNAVAILABLE。同时同uid34/company8/role business_config_admin的system.init route_authority.primary_actions声明计划管理655/507可read，正式审批配置action711/menu412亦存在。不能据拒绝页面就判定角色没有计划权限。
+- 下一步只核对route.authority.validate655及初始化的对应发布导航节点；P0 _business_catalog当前仅遍历navigation.nav，须定位与route_authority声明不一致的原因，再修配置目录消费。保留发布范围/角色/公司约束，不追加ACL或伪造菜单身份。原目标不缩减为纯测试通过，67条/detail.action-state继续contract_gap。无远端操作/目标部署。
+
+### 53.208 所有者要求与产品发布策略统一
+
+- 本轮只读诊断config-catalog-inspect-browser.log / tpl07-1790818219893进一步确认：同uid34/company8，route.authority.validate655实际allowed=true、PRIMARY_NAV；navigation.nav为数组但没有menu507/action655对应节点。53项工具纯测试通过；3项诊断响应检查不代表配置业务验收。
+- 一度拟把principal一致的primary_actions补入配置目录；尚未提交、未运行该实现的L2/运行验收。所有者随后明确“这个与产品发布策略一起统一”，已完整撤回该P0实现和测试，当前不包含主入口集合并入目录的扩权修复。
+- 源码定位：DeliveryEngine通过ProductPolicyService.get_policy(enforce_release=True,enforce_access=True)获得有效策略；MenuService.build_route_authority仍能从role_surface原生菜单事实直接声明入口，RouteAuthorityValidateHandler也独立重建此声明。现有product_menu_release_flow_v1.md明确自定义前端以产品策略/DeliveryEngine为准，action或原生menu存在不是发布证明。
+- 统一方向写入既有contract-first决策和当前goal：复用同一有效发布策略，导航/路由/配置范围消费一致；同时明确运行开放、管理员配置编辑和配置恢复是不同职责，不能以菜单隐藏推断全部不可用，也不能以动作声明绕过发布。保留角色/公司/版本/渠道和主从/待办授权边界。
+- 计划入口的有效产品发布状态尚未读回，故不先判定应发布或应下架。下一步仅读取该产品/该入口的有效策略与来源，再修源层或共享消费层。已有40/53/typecheck、构建fef7d73ef及前次无写入恢复证据保留；不跑宽门禁/新建环境/推送/合并/目标部署。整体目标继续。
+
+### 53.209 系统能力、发布策略与发布后用户验收分离
+
+- 所有者进一步明确三类证明必须分开：系统能力验证契约、官方呈现交互和业务状态机；发布策略验证实际版本开放范围、依赖、入口执行约束与恢复；发布后用户验收使用目标用户身份及有效租户/公司/项目/权限，从登录初始化到实际业务办理与权威回读。管理员配置成功、直接后端调用成功均不能代替用户验收。验收库fixture只证明绑定的本地范围，不能冒充目标环境交付。
+- 本轮P4治理记录完善，复用contract-first决策、当前goal/run和本活记录，不新增平行台账。未发布不等于能力缺失，也不豁免总体目标要求的能力补齐；保留已有有效能力证据，发布后用户验收单列待完成。发布策略调整本身不构成发布/部署授权，不为通过测试扩大发布范围。
+- 承接53.208的定向读回：必须以startup delivery identity construction.standard/construction/standard查询，不能把服务默认platform.standard当成当前产品。有效发布快照65（frontend-audit-b214aba61e9b，89页）经既有release filter排除计划action655/menu507。plan-publication-identity-runtime.log的3项是诊断证明；此前默认identity诊断不作为实际产品状态证据。计划审批已有运行能力证据保留，当前正式入口不应绕过有效发布范围。
+- 当前HEAD 89715a468加已声明P0/P4 dirty：共享发布过滤已接入system.init和route.authority.validate；entry-publication-unit.log为9 PASS，entry-publication-final-iteration.log为L1 PASS。扩展运行探针尚未装载验证，不能报告绕过缺陷已关闭。下一步先完成既有代码复核与责任提交，受管重绑后端，再运行plan-publication-entry的6项定向检查及受影响用户入口观察。前端无变动，不重复构建。整体67项、主线集成、目标部署、用户交付均未因本规则更新而完成。
+- 本次增量仅治理文档和run续跑信息；相关产品/测试输入未变，复用上述L1/L2原日志。校验YAML/JSON解析及diff格式；不运行ORM、业务写入、浏览器或完整发布门禁来验证文档。
+
+### 53.210 有效发布范围的路由执行验证
+
+- P0 ee8d6b3f2：MenuService共享发布投影用于system.init最终route_authority及route.authority.validate，复用既有发布过滤和配置恢复例外；未发布声明返回PRODUCT_ENTRY_NOT_RELEASED。P4/治理a1a21ca63：绑定既有验收身份的只读运行探针与三层验收规则。本地提交，无推送/合并/目标部署。
+- 复用entry-publication-final-iteration L1 PASS、entry-publication-unit 9 PASS：产品/测试输入未变，本轮治理文档只经YAML/JSON解析和git diff --check。backend.acceptance.up替换旧revision，health PASS，受管后端装载a1a21ca63；无schema/XML/ACL改动，不运行模块升级。5180仍fef7d73ef前端，前端源码不变，无重复构建。
+- entry-publication-runtime.log实际退出0，6 PASS、事务rollback verified：construction.standard有效快照65保持89页；未发布计划655在初始化允许集消失且路由明确拒绝，已发布代表入口653和配置恢复711均保持allowed。只证明本探针范围，不证明全89入口或全部发布策略变体。
+- entry-publication-browser.log退出0，tpl07-1790819407559/report.json：真实config_admin登录后的route validation655返回403/PRODUCT_ENTRY_NOT_RELEASED，原始响应与运行态一致；3项断言仅为认证响应、无页面异常、无未声明写入（forbiddenWrites=[]），不是审批业务旅程验收。已确认的计划入口绕过问题得到代码、运行和用户会话响应证据。
+- 仍待补齐：发布入口中分类合并/动态导航目标的身份保真、无活动快照与版本选择时的统一策略消费，以及后续目标用户业务旅程。现实现仅关闭已确认的活动快照绕过，不能声称发布体系全部闭环。计划能力证据保留；不为验收自动新增第90个发布入口。67条总体接管继续active，detail.action-state等未闭合项不升级。
+- 下个最早步骤：沿现有MenuService的发布导航→route entry投影与release-key读取检查必要字段是否丢失，以定向纯测试验证分类/动态入口；仅有证据表明缺陷时修P0，再做受影响的运行复验。复用原run及本段证据，不重复菜单/ORM盘点。
+
+### 53.211 发布导航身份保真与动态路由
+
+- 56ebf00b3 clean续跑，仅检查上段标明的共享转换依赖。发现_nav_target_index丢失导航key及business_category_options，而现有release-key读取器正使用这两类身份；route.authority.validate还只从role_surface重建授权，没有消费有效policy导航。归P0共享契约消费，不通过行业白名单补救。
+- P0 df66655b2保留menu_key与分类来源到route entry；直接验证先由同一有效policy构造导航，经原release filter后传给build_route_authority。原角色/动作/记录/公司检查保留。新增纯回归执行真实导航索引、发布key读取及发布投影，检查聚合key/分类xmlid/分类menu_id仍可匹配；验证handler消费有效导航及fail_closed空导航。P4 c31db6351为既有只读运行探针增加真实dynamic入口断言。
+- entry-projection-iteration及final-iteration L1 PASS；entry-projection-unit实际9+2=11 PASS，begin/record非零回执已存。后续仅P4探针变化，纯测试输入不变复用；py_compile、diff检查PASS。backend.acceptance.up/health通过并绑定c31db6351，无schema/XML/ACL变动、不升级模块；前端未改，不构建。
+- entry-projection-runtime.log实际退出0，7 PASS、rollback verified：发布快照65保持89；未发布655拒绝、普通已发布653可用、动态发布302可用、配置恢复711可用。上一段浏览器日志保留为原候选证据，不改写成新候选页面验收；本段新增动态能力为后端实际运行证据。
+- 尚未证明全部分类/场景目标、无活动快照和版本选择的一致性，亦未替代目标用户发布后业务验收。下一步复用既有DeliveryEngine归一化及startup identity相关实现，核对直接路由路径是否遗漏有效版本/scene引用归一化；只补对应纯测试/实现，不扩大成全仓发布审计。67条总体目标保持active，detail.action-state不升级，无推送/合并/目标部署。
+
+### 53.212 共用引用归一化与回到业务闭环
+
+- 7e036f417 clean续跑，沿上一段依赖确认：DeliveryEngine.build在build_nav后执行_normalize_delivery_nav_refs，直接route验证遗漏该步骤。P0 eae3dd5d2复用原方法，不另建引用解释器；测试执行真实归一化的三方法，证明动作/menu当前引用、scene路由保留和compatibility_refs同步。run检查输入新增DeliveryEngine源文件，避免依赖漏记。
+- 当前Web源码没有delivery_product_key/delivery_edition_key/delivery_base_product_key传参；本候选默认身份沿同一startup extension，不据假设新增版本选择机制。_load_platform_release_gate已明确production无快照fail_closed、非production允许能力验证。本轮保留该规则，不把开发能力验证等同于发布授权。未来自选版本消费者仍需一致传递与验收，当前不宣称已支持。
+- entry-normalization-iteration L1 PASS；entry-normalization-unit 10+2=12 PASS，begin/record非零回执。受管backend up/health装载eae3dd5d2；entry-normalization-runtime实际退出0，7 PASS/rollback verified，快照65不变，655拒绝、653/302/711可用。无schema/XML/ACL和前端修改，不升级模块/重建/重复浏览器。此前浏览器保持原候选只读证据，不升级成本次完整业务验收。
+- 更新既有67条台账detail.action-state的followUp，明确53.207错误放行的历史证据已被后续修复取代；status仍contract_gap。系统能力与发布/用户验收分别保留，不通过发布第90页或扩大配置目录绕过权限。总体目标未完成。
+- 当前已确认的发布不一致修复收敛，下一步回到共享配置编辑器和真实审批用户闭环：优先复用已发布业务入口与既有受管测试/恢复能力验证同一消费路径；计划未发布范围仍记录能力验证与发布后验收区别。先核对当前配置旅程工具能否复用发布入口及已有权限/恢复约束，再补必要工具能力，不重做全仓/菜单/ORM盘点。未发布父子配置预览若确需新权限须以显式契约定义，禁止绕开正式目录。
+
+### 53.213 已发布付款配置入口与共享审批编辑器
+
+- fca8f6d14 clean续跑，P4只扩展既有standard_page_type_browser只读分支TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT；入口从当前config_admin初始化授权取payment.request，不硬造菜单。保留deny-by-default写拦截，不把计划版本的写许可/恢复绑定改成任意模型。后端eae3dd5d2/前端fef7d73ef原候选复用，无ORM/升级/构建。
+- 初次published-approval-inspect-browser失败：新探针在点击期间的waitForResponse promise未及时挂接，超时导致未完整落盘。第二次改Promise.all并预存surface/截图；published-approval-capture-browser失败但tpl07-1790819919126保留现场，确认实际按钮为“配置审批规则”，工具误用“配置审批”。属于P4定位器问题，无配置或业务写入。纠正本探针及原计划配置步骤的同一错误名称，不改产品文案。
+- 每次工具变动先L1，再53项非零定向工具检查；最后published-approval-locator-iteration及locator-unit均PASS。原inspect begin/record53只绑定原工具输入，不冒充最后版本回执；最终53日志保留直接证据。published-approval-locator-browser退出0，tpl07-1790819988474/report.json **9 PASS**、forbiddenWrites=[]：真实config_admin授权付款入口、surface可用、审批配置读取成功、对象选择器可见、启用开关与后端一致、1440/390下可见及无页面异常/非法写入。
+- 有效surface声明付款申请和直接所属付款执行两个审批对象；本次打开的是付款申请。config.get回读policy.exists=false/id0、approval_required=false、runtime_approval_required=false。窄屏截图的规则区域与对象选择可见；随后检查桌面截图发现明显布局缺陷：内容被挤入左侧约220px列，右侧大片空白。9项行为断言不覆盖此问题，桌面视觉验收不通过；未验证所有操作按钮几何范围或子对象切换。界面“已配置3项”是surface范围计数，不能据此宣称当前付款策略存在。
+- 下一步在同一已发布父页面验证子对象切换及配置基线，再扩展既有精确恢复机制承载配置→真实角色提交→审批→回读/恢复。必须核验相关公司策略/tier定义/callback groups，而不能仅凭policy.exists=false允许写入。当前只有读取呈现验收，不声称配置保存/审批闭环完成；计划未发布用户旅程仍pending，67条detail.action-state仍contract_gap。无推送/合并/目标部署。
+
+- 53.213桌面截图纠正：根因已定位style.css的.config-editor-panel把两列grid施加在ScCard根上；官方Card新增body承载内容，body被当成首个220px网格项。下一步先修共享配置面板内容布局与相关面板消费，再做必要类型/定向验证、一次构建、受影响双视口复验；不改TDesign内部DOM来迁就旧根级布局。
+
+### 53.214 审批编辑器官方卡片内容布局
+
+- P0通用前端呈现，Layer Target frontend renderer，Module BusinessConfigApprovalPanel/style.css；不涉及行业规则或配置写入。对照直接同类消费者发现分析/列表编辑器已用body-class-name，只有审批面板把config-editor-panel两列grid施加到ScCard根。326488e81改用官方Card已支持的body class，把审批对象行设为全宽；没有依赖TDesign内部DOM选择器或改契约。
+- approval-layout-iteration L1 PASS；approval-layout-unit 26+8+6=40 PASS；strict typecheck实际退出0。浏览器增加选择行与步骤区域实际宽度断言，覆盖旧“内容挤入220px列”缺陷；不为CSS改动运行ORM/模块升级。
+- 一次构建23.47s成功，base326488e818d9ffeaae1fdf995692a7a7ddaa55e8 clean；entry /assets/index-Bbk89tq4.js，sha25619c266c40a3ac8a8d9b9a587dbe13400e870f1eb6b921ebd9c53f569d3779fad。既有5180 listener复用；后端eae3dd5d2产品输入不变，不重启。
+- approval-layout-browser退出0，tpl07-1790820189146/report.json **13 PASS**，仍只读。1440/390截图均实际检查：桌面body已全宽、审批对象横跨、左规则右步骤；窄屏单列。已确认根级grid造成的窄列问题修复。截图仍显示左侧审批方式/默认岗位下拉控件略超出220px规则列，尚未完成整体编辑器视觉验收，不因13项通过掩盖该剩余问题。当前图只覆盖上半区域，全部保存操作和子对象切换尚需后续定向检查。
+- 下一步沿同一面板修正下拉控件对列宽的约束并补控件边界断言，合并验证后端声明的付款执行对象切换/基线读取与保存操作可达性；再进入精确配置写恢复和真实多角色审批。不重跑历史矩阵。总体67仍active，未推送/合并/目标部署。
+
+### 53.215 审批控件边界、子对象选择和真实规则读取
+
+- 8e5636f3e clean续跑；P0frontend在共享审批规则区给ScSelect公开根类width/max-width/min-width约束，避免intrinsic input宽度溢出220px列。不选择TDesign内部DOM、不改契约或策略。P4既有只读probe增加边界/保存可达性、付款执行对象选择及回读断言。9433fa515本地提交。
+- approval-bounds-iteration L1 PASS，approval-bounds-unit 22+31=53 PASS，standard_preview_tool begin/record回执已登记。只有CSS和browser脚本变化，53.214配置纯测试40和strict类型输入不变，复用原结果；无ORM/模块升级/后端重启。一次构建24.03s，base9433fa515e1d3fe5c1ffe3178214438235fb218c clean，entry/assets/index-BD1uERDW.js，sha2564f5c94ef304937d1a8232b2f33109faf0be8f39c99d20df23471efffa5549b7a；5180复用。
+- approval-bounds-browser退出0，tpl07-1790820354040/report.json **22 PASS**：1440/390选择器位于规则列内、保存按钮滚动可达且未改设置不能保存；真实点击契约声明的付款执行对象，config.get目标为sc.payment.execution且规则开关与回读一致。桌面与子对象窄屏截图已实际查看，上一段下拉框溢出消失。无配置/业务写入。
+- 明确基线：payment.request policy.exists=false/runtimeapproval=false；sc.payment.execution已有policy18“PFL-035 付款执行审批”，单级finance_manager、活动step2187、runtimeapproval=true。不能把父对象无策略推广为子对象也无策略，也不能用计划版本“策略不存在”恢复逻辑覆盖此既有子规则。
+- 下一步复用既有付款/付款执行办理工具与PFL-035角色事实，选真实经办及现有审批人，确认受管来源、请求许可和精确清理是否可承载共享工作台审批。配置编辑器切换及只读呈现已验证，但保存/恢复、真实提交/审批仍不因此自动通过。优先沿现有业务数据和规则闭环，不重复旧49项或新造持久fixture。67条目标及detail.action-state仍未完成，无推送/合并/目标部署。
+
+### 53.216 付款执行真实审批旅程的来源身份阻断
+
+- 2a7e812c4 clean续跑，仅读取既有PFL-035验收工具/角色绑定及本轮付款执行办理/恢复直接依赖。既有PFL-035全旅程会实际付款并生成资金事实，不直接重跑；当前standard-page的付款执行旅程仅付后撤销弹窗取消和关系返回，不含真实提交审批。现有expense清理不支持任意付款执行，不能复用成宽泛删除工具。
+- P4在既有approval_runtime增加payment-review-preflight只读scope，复用原registered profile/DB/凭据/入口，事务finally rollback。不创建数据或新环境。L1 payment-review-preflight-iteration PASS，profile unit11 PASS、py_compile/bash语法PASS。首个runtime在来源身份检查FAIL，无写入。
+- 增强同一断言的实际身份输出（P4 diagnostic输入改变），payment-review-identity-iteration PASS，复用未变wrapper/profile11；identity-runtime FAIL给出权威事实：既有fixture XML ID fe_request_pfl035_001当前指向payment.request30，公司1，type pay，state approved；本轮company fixture/经办/财务审批角色属于company8。不能按历史XML ID直接办理，不能绕过公司边界或为验收改写该记录。角色读取前置通过不代表来源/整个preflight通过，不记3 PASS。
+- 下一步用当前submitter正常权限，在公司8内按既有付款申请职责与可办理状态读取有限候选及执行占用事实，选择实际授权来源；保留历史XML ID不匹配证据，不新造持久fixture、不重置库、不跑全菜单或历史49项。不从readonly诊断升级为发布或整体交付。配置保存恢复和真实审批UI仍pending，67目标active，无远端操作/目标部署。
+
+### 53.217 当前授权来源与付款执行真实审批能力
+
+- c3a53de9b clean续跑；历史XMLID错配作为观察保留。P4改为submitter44/reviewer30各自正常权限、company8、approved/pay/未被终端现金对象占用且有项目客商的域，最多3条；不sudo扩大候选。payment-source-iteration PASS，复用未变profile11/syntax；payment-source-runtime **3项诊断PASS**：申请33缺收款账户，申请1710对manager允许继续(action777/menu547)、对普通经办拒绝；既有执行186为paid。此读回不是审批旅程通过。
+- 既有受管approval_runtime增加payment-review-entry：绑定source1710/company8、无draft/confirmed占用、当前真实用户、原执行集合/台账/申请金额状态基线；临时登记使用现有来源和策略，不创建fixture或改policy18/step2187。不执行action_paid。事务finally rollback并回读集合/金额/临时记录消失。
+- L1 payment-review-entry-final-iteration及owner-iteration PASS；profile11 PASS与py_compile，wrapper未变的后续角色修正复用11。第一次运行FAIL：虽普通经办模型create ACL为True，模型create仍要求财务确认业务权限；PAYMENT_REVIEW_ROLLBACK=VERIFIED。不是产品缺陷，不增ACL/不sudo执行。探针修为reviewer正常创建→submitter提交；权限与已读取业务源码一致。
+- payment-review-owner-runtime实际退出0，**6 PASS、ROLLBACK VERIFIED**：经办提交draft+waiting/pending、真正reviewer分配；当前product_workspace含实际付款执行待办；消费最终approve契约，submitter复用来源拒绝，reviewer审批成功到confirmed/validated；已完成来源重放拒绝、工作台待办退出、无资金台账新增；回滚后source、executions、ledger和临时执行不存在全部核验。此为系统能力/实际角色运行证据，不代替浏览器用户验收。
+- 下一步将同一source1710、create manager→submitter submit→manager work-item approve和只到confirmed的流程接入既有浏览器许可与精确恢复。清理必须绑定本次临时执行、真实创建人、source/公司/金额/marker、已验证阶段和tier.review，保护原paid186及资金台账；不得将旧plan或expense清理泛化成任意删除。前端9433/backendeae3产品输入未变，无构建/后端重启。67目标active；无远端/目标部署。
+
+### 53.218 付款审批浏览器写入与恢复目标边界
+
+- 77584dec2 clean续跑；P4扩展既有standard_expense_success_scope及frontend_expense_probe_cleanup的纯校验，不新建执行框架。写入绑定company8/source1710、原execution186基线、本次TPL53-PAYMENT-REVIEW时间标记、金额1、actor/阶段/action777/menu547和精确请求。字段仅允许本次登记所需七项，拒绝状态/公司/review注入；submit仅普通财务经办、approve仅财务审核人且实际tier.review来源一致；action_paid/cancel/unlink及阶段重放均无许可。
+- 恢复目标纯校验只接受本次标记/创建人30/公司8/source1710/金额1、5秒时钟容差和300秒创建窗口的draft或confirmed；排除原execution186、paid/legacy/未知阶段。confirmed还需本次review来源、validated及真实审批人30。尚未执行删除，校验本身不构成实际恢复证明。
+- payment-browser-scope-final-iteration L1 PASS；payment-browser-scope-unit **25 Node+34 Python=59 PASS**，standard_preview_tool begin/record非零回执登记。新增3写许可与3清理目标回归覆盖错误来源/金额/公司/角色/字段/状态、既有记录、审批来源及重放。只改测试工具，无产品构建、后端重启或ORM；上一段6项真实运行能力证据按未变产品输入保留。
+- 下一步将校验接入既有expense-browser-cleanup分派，先只读preflight快照source/execution/ledger/policy/tier事实，再精确检查和恢复本次执行；补正常清理与拒绝误清理的工具测试。随后才连接browser intercept和真实创建/提交/工作台审批旅程。当前两个helper尚未接线，不能报告浏览器写入安全闭环或用户验收完成。67目标active，无新fixture/远端/目标部署。
+
+### 53.219 精确恢复入口与当前基线回读
+
+- c08e1975b clean续跑；P4既有expense-browser-cleanup按sc.payment.execution分派到recover_payment_review。preflight只读source1710/company8、原执行/审批记录/资金台账、policy/step/definition write_date及callback groups，要求无draft/confirmed占用。实际恢复先比较排除本次候选后的完整基线，再校验创建身份/标记/金额/阶段、原生review请求人44及批准人done_by30、定义归属和无附件；全部检查通过才native unlink本次执行及own reviews。删除后与commit后均回读基线，commit=False只供后续事务内演练。
+- payment-recovery-final-iteration L1 PASS；首轮工具测试失败（25Node+40Python中2个error）：模拟关系字段返回int而真实Odoo返回记录。未进入运行清理。修正mock并去掉继承造成的重复测试，testfix-iteration PASS；testfix-unit **25+37=62 PASS**，failed及新passed begin/record均保留。新增实际恢复函数的mock执行测试验证正常unlink/commit、paid拒绝、原基线变化拒绝，所有拒绝均发生在删除前。
+- 使用既有受管scope和tpl52/expense-success-recovery.json prepare回执实际运行只读preflight，payment-recovery-preflight.log退出0/status=preflight。真实快照：source1710 approved/company8，execution_ids=[186]且原186为paid；无ledger，policy18/step2187；definitions10/2187；callbacks507/508 groups[93]。保留原事实，不改写历史金额/资金差异，不把现有paid记录算作本次业务产物。此次没有创建/删除临时记录，无实际恢复成功声明。
+- 下一步在standard_page_type_browser接入paymentReviewWriteKind、独立paymentReview scope和该恢复回执生命周期：preflight→经理生成并保存→经办提交→经理当前工作台实际approve→只读confirmed/任务退出→finally精确恢复。新浏览器run必须新marker重新取得基线，不能重用本段诊断marker。需要对失联创建回复、失败阶段与finally清理保持原约束。前后端产品未改，不构建/升级，原6项能力证据继续有效；67目标active，未远端/部署。
+
+### 53.220 付款浏览器接线与发布边界断点
+
+- e6f8ea263+既有三份P4脚本dirty接续；只更新原run/活记录，不另建覆盖表。加入精确source1710/company8/manager角色的只读生成入口许可、capture-only创建拦截与finally恢复。L1 payment-ui-action-iteration PASS，payment-ui-action-unit 26 Node+37 Python=63 PASS；日志均在原tpl52目录。产品源码、前端9433fa515和后端eae3dd5d2未变，复用已有能力证据，不构建/升级/无关ORM。
+- 首轮tpl07-1790821170071失败是工具把preflight回执误当restored；修正按阶段判断。第二轮tpl07-1790821228980失败是旧按钮DOM标记；改为实际可见“生成付款登记”。两轮均未创建业务记录；第二轮finally恢复回读通过。
+- 最后tpl07-1790821308281/report.json失败：按钮执行成功，但浏览器转到access-denied。读取该次system.init明确action777/menu547在denied_actions，reason_code=PRODUCT_ENTRY_NOT_RELEASED；不是定位器超时根因或前端误判。付款申请1710仍返回未发布付款登记的导航结果，属于动作契约/执行导航与发布策略衔接缺口。不能通过扩大发布范围、权限或跳过路由守卫获得通过。最终恢复断言通过，无本次创建；3项断言仅为preflight/基线/恢复，不能算业务验收。
+- Formal Product Layer：本次记录/探针P4，后续缺口P0；Layer Target：smart_core共享动作契约与导航发布约束，行业只声明业务动作和必要依赖。平台有效发布权威应一致作用于动作可用性和导航结果；前端只消费，不按模型特判发布。检查必须保留系统能力、发布策略、发布后实际用户三层结果；53.217的6项后端能力和53.215配置只读22项仍有效，但均不能替代本次用户办理链。下一步定向核对共享归一化/执行结果及动作声明目标的发布约束；先L1/L2，再受影响运行验证。67条总体目标仍active，不升级台账完成状态，无推送/合并/目标部署。
+
+### 53.221 付款续接修正为正式实付登记入口
+
+- 对53.220进一步定向诊断：同一次system.init已授权sc.payment.execution的实付登记803/menu335，menu_product_finance_wave1.xml将该入口明确设为标准财务职责，原生表单配置actual_outflow与partner条目共用同一表单。故本例直接根因是P1两个续接方法仍指向旧partner777/547；不能把它泛化为P0发布守卫错误。一般动作依赖/发布契约缺口仍保留，不宣称本次已统一所有动作发布约束。
+- Formal Product Layer P1；Layer Target/Module smart_construction_core payment.request；Standard vs User-Specific为行业标准续接绑定。create/view均改为action_sc_payment_execution_actual_outflow和menu_sc_payment_execution，保留实际业务分类partner、source/request上下文、财务权限、足额付款及业务校验、现有执行记录选择。不按运行时发布状态挑选替代入口，不修改发布集合/ACL/通用前端。Blast Radius仅付款申请生成/查看执行的目标引用；P0无需吸收行业菜单选择。
+- L1 payment-canonical-entry-iteration PASS，L2 verify.payment.approval_state_machine.unit实际190项PASS，含两个新增纯方法执行测试：创建目标和来源分类保留，查看目标/原记录及无权限拒绝；同步既有ORM两处结果断言，未执行ORM。diff --check通过。当前e6f8ea263+明确dirty；产品Python变更不涉及模型字段/数据XML，运行验证需受管后端重新加载，无需模块升级或前端构建。
+- 下一步本地提交责任改动，更新受管后端，并同步P4精确scope/运行断言从旧目标到803/335（不能放宽任意action）；先定向测试，再从capture-only浏览器失败步骤续验。旧浏览器失败记录保留，用户旅程仍未通过；67目标active，无推送/合并/目标部署。
+
+### 53.222 正式付款续接实际页面与创建请求捕获
+
+- P1修正本地提交cbf5c16c1；受管backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local替换旧源码身份后PASS，继续同验收库/18082/既有卷；无模块升级。前端9433候选未变，不构建。P4精确创建/提交目标及对应测试更新为803/335，保留source1710/company8/actor/阶段/marker约束。
+- payment-entry-binding-iteration L1PASS；payment-entry-binding-unit 26Node+37Python=63PASS，begin/record已登记。初次record命令误用AGENT_STATUS，参数拒绝，无通过回执；纠正为AGENT_CHECK_STATUS后记录原日志，不重复执行测试。
+- payment-canonical-capture-browser退出0，tpl07-1790821686860/report.json **7PASS**：manager真实来源按钮进入/f/sc.payment.execution/new，创建请求capture-only返回503，未转发create，无非法业务写入/页面异常，finally基线恢复回读通过。此前777未发布导致的续接断链已在正式803路径消除；不代表保存/提交/审批完整旅程通过。
+- 实际vals为business_category_id16、date_payment、paid_amount1、planned_amount2000、payment_method、document_no、note、本次付款账户和attachment_ids[[6,0,[]]]；payment_request_id未在vals，由context.default_payment_request_id1710传入。既有仅七字段许可尚不能执行真实请求，不能直接放宽：下一步绑定原生动作默认值及当前preflight基线，允许契约实际必要字段并拒绝来源覆盖/状态/公司/review注入，再做真实保存和用户审批闭环。已有恢复只在零创建情况下运行，尚无本次临时记录实际清理证明。67目标active，无远端集成/目标部署。
+
+### 53.223 创建请求绑定原生默认与来源基线
+
+- fbe9fc637 clean续跑；P4只修改既有scope、浏览器和定向测试。创建许可从旧七字段假设改为真实表单payload：原生action803/menu335/model一致，默认来源1710/company8与preflight approved来源核对，项目/伙伴/计划金额一致；全部default_*与原生动作逐项匹配，拒绝额外默认状态/公司。vals精确等于日期、分类16、金额1、原计划金额/单号、marker、本次账户、转账方式及空附件关系，不接受来源字段覆盖、状态/review/附件注入。保留角色/阶段/原记录排除/精确request校验。
+- 新增一项多反例定向测试；payment-create-contract及bound L1PASS，工具27Node+37Python=64PASS并登记非零回执。第一轮live tpl07-1790821848209失败：date picker文本框readonly，P4误用fill；在创建前失败，finally restored。产品控件无须改变。改为读取有效默认日期，payment-create-date-iteration PASS、date-unit64PASS并登记，date-browser退出0，tpl07-1790821929730 **9PASS**，真实capture通过新增scope校验，无创建/非法写入/页面异常，finally恢复。
+- 尚未转发真实create，不能报告实际删除恢复、经办提交或审核人审批完成。下一步在同一分支增加success开关：有效capture后持久化request和create阶段，再UI重试保存一次；读取返回id并真实回读，然后ordinary44提交、manager30实际工作台item/origin审批到confirmed、任务退出与finally精确清理。前后端产品源码未变，复用cbf5后端/9433前端，无构建/升级/fixture。67目标active，不推送/合并/目标部署。
+
+### 53.224 真实角色付款保存、提交与待办审批
+
+- 6c55e32cf clean续跑，P4在既有capture流程加入TPL07_PAYMENT_REVIEW_SUCCESS：校验通过后只放行同一请求一次，manager创建，实际普通财务经办44提交，manager30从my-work返回的当前tier.review来源打开并批准，最终read回读与任务退出；finally仍执行既有精确清理。不启用action_paid，不改配置/权限/产品代码，不新建fixture。
+- payment-success-flow L1及64工具测试PASS，首轮tpl07-1790822043850创建196成功后page.evaluate与保存导航竞争失败；finally原生清理成功，无遗留。修正为等待实际created form/record路由及DOM ready，navigation-iteration L1PASS、navigation-unit27Node+37Python=64PASS及回执登记。
+- payment-success-navigation-browser退出0，tpl07-1790822098738/report.json **17PASS**：实际创建197/PE2600192，source1710/company8/paid_amount1/marker/draft真实回读；经办提交后draft+waiting/pending；主管工作台含真实分配item，使用对应origin批准；最终confirmed/validated，任务退出，无未声明写入/页面异常。write序列仅open/create/submit/approve且全部成功。最终cleanup log确认record_ids[197]/review_ids[500]删除，源单/原执行186/资金台账/策略/定义/回调基线不变。此为验收环境实际角色业务证据，不冒充目标环境用户交付。
+- 已实际查看payment-review-approved.png：画面仍是刷新骨架，不能宣称最终详情视觉通过；17断言验证业务结果但未等待最终呈现。下一步补刷新完成后的官方详情/标题/状态观察，保留本轮业务和恢复证据；随后继续发布配置改变/生效/回滚闭环与剩余67条收口。前端9433/后端cbf5产品未变，无重建/模块升级/推送/合并/目标部署。
+
+### 53.225 所有者纠正办理职责，撤回上一轮业务验收口径
+
+- 所有者明确指出“主管创建、经办提交”不符合实际；53.224的17项保留为技术路径/恢复证据，撤回业务闭环验收通过口径。不得为了适配现有权限限制设计错误的人工作业分工。应由有权经办创建并提交，配置审批由指定审核人办理，无审批配置则提交自动通过；实际付款/财务确认独立保留。
+- 已停止旧角色旅程复验。本轮此前仅补final-render等待及L1PASS，未运行浏览器、未产生新业务写入，该截图完善不得优先于职责纠正。定向源码证据：finance_user对sc.payment.execution已有create/write ACL；payment_request._assert_payment_execution_ready(require_authorized_actor=True)硬要求finance_manager，而execution.create调用该限制，续接动作也受其限制。这是P1产品规则与既有经办权限不一致，不能归为fixture缺陷或通过换主管账号绕过。
+- 下一步P1核对并统一创建/查看续接、动作可用性和行业契约的经办能力，保留公司/记录权限、有效来源与资金执行职责；定向回归证明经办创建提交、只读/越权拒绝及审核权限不扩大。然后调整P4精确创建人/恢复绑定，按正确职责重验。总体目标active，无推送/合并/目标部署。
+
+### 53.226 财务经办创建与提交职责的P1修正
+
+- Formal Product Layer P1；Layer Target/Module smart_construction_core付款登记续接/行业原生按钮/动作契约；标准职责，不属客户特例或前端推导。经办与资金确认分离：payment_request readiness和view continuation改为既有finance_user，原生create/view按钮与financial_workspace_contract required_group/交接说明同步，legal_next_action_display提示财务办理。执行create已有调用共享readiness，因此直接创建与按钮续接一致；不新增ACL，不改变实际payment_execution._has_finance_confirm_access的manager要求、审批待办权威或业务来源校验。
+- 修改既有ORM测试从“经办被拒绝”到“经办创建归属本人且仍无付款确认能力”，未运行ORM；纯定向回归执行生产readiness证明approved经办通过、未批准及无经办权限拒绝，并核对两个原生按钮和契约角色、执行实际资金权限方法仍拒绝经办。payment-handler-role-iteration L1PASS，verify.payment.approval_state_machine.unit **192PASS**（payment-handler-role-unit.log），diff检查通过。
+- XML视图已改，运行验证前必须受管模块升级，不能仅重启后端。下一步同步P4 open/create/cleanup create_uid为经办44、保持reviewer30，后端回滚验收也从经办创建开始；修改工具后定向测试，受管升级后验证正确用户生命周期。上一轮主管创建证据不恢复业务验收资格。未执行新业务写入，67目标active，无推送/合并/目标部署。
+
+- 后续native_view.workflow_action_coverage：静态registered40通过，辅助8项通过，但54项配套测试中4个error，均因Plan测试替身缺少生产已使用的_write_document_state。归P4测试协作者滞后，不修改计划产品规则；下一步修测试替身并定向复验。该门禁failed，暂不进入升级/浏览器，不把付款192通过冒充整体前置门禁通过。
+
+### 53.227 正确经办职责运行通过，前端暴露动作契约类型缺口
+
+- P4 Plan替身补现有_write_document_state协作者，不改计划产品；payment-correct-role-iteration L1PASS，native静态registered40+8/54测试PASS，工具27Node+37Python=64PASS。付款open/create精确角色改44，清理create_uid改44并反例拒绝30；审批保持30。浏览器同一个经办session创建和提交，之后才登录审核人；回滚runtime也改经办创建。其他业务scope未改。
+- P1本地提交122f735ae。首次升级被fast模式拦截（缺显式升级声明，无升级发生）；因两处原生button XML变更，按受管入口补CODEX_NEED_UPGRADE=1 CODEX_MODULES=smart_construction_core，payment-handler-upgrade-explicit退出0。backend.acceptance.up绑定122f并PASS。payment-handler-runtime **6PASS rollback_verified**：经办创建并提交、独立审核、审批契约/重放拒绝/无资金入账及恢复。
+- payment-handler-browser失败，tpl07-1790822535629/report.json：经办fixture_role_pfl035_finance_user打开source1710时页面显示invalid contract v2 snapshot，actionContract.actionRuleList[4/5/6].visible must be an object，故生成按钮未出现。不是改换角色可解决的问题；需修P0有效动作可见性归一化，并核对该角色真实contract数据。UI角色标题显示“财务主管”不能当作实际登录身份权威，实际探针角色明确44。本次无create/open执行，finally恢复通过。
+- 下一步先修共享契约类型缺口及定向回归，再恢复正确角色浏览器；主管代建业务验收仍撤回。67目标active，无前端构建/新fixture/推送/合并/目标部署。
+
+### 53.228 单一运行时动作visible归一化与正确角色闭环
+
+- P0 shared assembler：无原生对应按钮时，runtime单一动作visible布尔值直通违反v2对象schema；merge最终统一为attrs.invisible静态对象，保留sourceTrace及visible-but-disabled语义。显式visible识别支持归一化形式，防重复merge把禁用动作误隐藏；新增true/false、disabled与重复merge回归。L1 action-visible-iteration PASS，v2.runtime **20+110=130PASS**及guard score6。提交c240a28cb，受管backend-up加载，前端9433不变，无升级/构建。
+- 正确角色浏览器tpl07-1790822771322：经办44创建199并提交、等待独立审核人，主管30从实际工作台审批到confirmed/validated、任务退出、finally恢复通过。该次与主管代建历史不同，正确角色业务结果均有实际请求/回读；未执行资金付款。整体browser退出失败，不能写全项PASS。
+- 最终失败为P4 getByText已确认 exact超时：failurePages完整页面文字实际为“状态：已确认”；官方详情data-state=ok与实际单据heading等待已通过，页面包括分类、来源、金额、账户及历史。不是产品状态未刷新。修正为限定finalDetail的状态标签匹配；该工具改动尚待L1/tools。双视口断言未到达，继续pending。不为截图单独重复创建/审批全链，下一次必要旅程复用修正后的观察步骤。67目标active，无推送/合并/目标部署。
+
+- 定位器修正后payment-final-label-iteration L1PASS、payment-final-label-unit64PASS；不重跑业务写入。视觉双视口仍pending，原业务和实际恢复证据复用。
+
+### 53.229 配置基线与当前阻断索引收敛
+
+- e594f07d9 clean续跑。复用段45已纠正事实：WEB-LC-01/01B标准列表配置发布/回滚已完成，不重新打开旧批次。当前剩余是审批规则改变→正确用户行为→恢复，不等同于再跑页面change-set发布。直接源码确认approval editor config.set/steps.set按industry_policy_runtime保存生效，不能标为产品版本发布；能力、发布范围、用户验收仍分别记录。
+- 因53.227模块升级改变运行基线，使用已有只读published approval inspect重新读取，并非无变化重复取证。approval-current-baseline-browser退出0，tpl07-1790822984087 **22PASS**、无写入：parent payment.request无policy/requiredfalse，childexecution policy18/PFL-035、step2187财务审核、requiredtrue/modesingle/trigger submit；双视口编辑器和target切换通过。无需新建fixture、环境或前端构建。
+- 现有payment recovery刻意要求配置基线不变，confirmed也要求真实tier.review；因此不能直接复用它来关闭审批后自动通过并删除。下一步在同一受管恢复工具限定policy18已有策略的开关与恢复状态，验证原步骤/定义/callbackgroups保持、最终原配置恢复；不得借用计划“原策略不存在”的删除路径。完成工具定向检查后，实际关闭审批→同经办创建/提交自动确认→恢复配置；配置审批路径复用53.228正确角色证据。
+- 更新原67条台账detail.action-state的followUp为当前索引，去除长串已过时阻断叙述，历史细节仍在本活记录及run原日志；不修改contract_gap，不新建覆盖表。正确角色证据与主管代建技术证据明确区分，最终详情双视口仍pending。无推送/合并/目标部署。
+
+- approval-index-iteration L1PASS，原台账/页面类型守卫15+13=28项PASS，67条/1个owned gap保持不变；仅followUp内容更新，保留原文件格式。
+
+### 53.230 审批开关限定差异与恢复基线
+
+- P4沿用payment baseline/cleanup工具；补policy角色/模式/公司/目标/触发与名称、步骤绑定/岗位/金额条件/说明、definition模型/公司/范围/审批组/回调等原事实。新增纯validate_payment_toggle_transition：仅policy18的required/mode、它的原step2187所绑定definition的active允许关闭差异；恢复必须原语义完全相等。只忽略这两个对象合法write_date更新，其他对象时间和内容不变；不伪造审计时间，不删除既有策略。
+- L1 payment-toggle-scope-iteration PASS，工具27Node+39Python=66PASS及begin/record回执；新增两项包含正常关闭/恢复、来源金额/公司/步骤/定义/回调/无关定义时间改变拒绝。静态基线输入不被修改。
+- 受管expense-browser-cleanup prepare只读preflight在原tpl52回执路径执行成功（payment-toggle-preflight.log），扩展字段均真实可读。用纯校验核对实际基线与自身通过，linkeddefinition2187；原execution186、policy18、step2187及callbacks[93]事实保留。没有配置保存/业务创建/删除；本次日志不证明实际恢复。
+- 下一步将纯校验接入原recover_payment_review的明确approvalToggle模式：实际配置关闭事实必须在清理前验证；无review的confirmed仅在关闭审批权威成立时允许；清理本次经办44记录后原生恢复policy18并回读语义基线，保留真实审计时间；补正常恢复与拒绝越界mock，再执行UI关闭/提交自动通过/恢复。未接线前不能开启配置写入。67目标active，无新环境/fixture/前端构建/推送/部署。
+
+### 53.231 审批开关恢复路径接线与失败保护
+
+- Formal Product Layer P4；Layer Target/Module 既有frontend_expense_probe_cleanup及standard_preview定向测试。该逻辑只限定验收恢复，不承载P0/P1审批语义、不修改前端业务推导。候选25d8eb071加上述两文件dirty；仅影响本次payment-review恢复。实际审批产品、构建、环境和既有正确角色证据输入未变，复用53.228；L3升级/ORM、L4构建/浏览器本步不运行，L5非本地迭代范围。
+- 明确approvalToggle模式先验证实际policy18与原definition2187的限定关闭差异，再允许无review且validation_status=no的本次经办44 confirmed记录清理；scope标记本身不能授权。原审批路径继续要求真实review与审核人30。清理后原生policy.write恢复requiredtrue/modesingle，并在commit前后核对语义基线，保留真实write_date。配置请求失败、尚未创建记录时同样可恢复；外部事实变化必须在删除/写配置前拒绝。
+- L1初次仅尾部空行失败，修正后payment-toggle-recovery-iteration PASS；现有工具27Node+45Python=72PASS并记录begin/record回执。新增6项覆盖正常自动确认恢复、仅scope标记拒绝、其他事实变化拒绝、关闭请求未生效无需配置写入、关闭后创建前失败恢复、原生恢复回读失败不得commit。测试使用替身，不能冒充数据库实际恢复证据。
+- 本轮没有运行时配置或业务写入。下一步在既有payment-review浏览器分支接配置管理员关闭/保存的精确请求许可，补拒绝越界测试后运行同经办创建提交自动通过、详情双视口、原策略恢复。标准列表WEB-LC既有发布闭环不重跑；总体67目标仍active，无推送/合并/目标部署。
+
+### 53.232 关闭审批后同经办自动通过的实际闭环
+
+- P4在既有payment-review旅程增加TPL07_PAYMENT_APPROVAL_TOGGLE受控分支；管理员34通过已发布付款申请配置入口选择付款执行，仅关闭policy18，步骤不变；仍由44同一会话创建和提交。精确许可绑定原policy/company、config.get实际请求context及唯一config.set参数，禁止改步骤/岗位/目标或重复保存。所有未匹配approval_policy.*.set现在默认拒绝，避免漏判落入通用放行。恢复工具只增加无记录阶段许可，沿用53.231的权威差异/原生恢复。
+- 首次tpl07-1790823585676停在官方复选框input被可见外壳遮挡，无保存；改点可见文字并断言checked。第二次tpl07-1790823673886实际保存关闭但工具漏记：统一请求层注入context导致精确匹配失败，旧拦截器只在计划分支拒绝审批写入。本次没有创建记录，既有恢复权威回读PASS。修复默认拒绝与实际context绑定后才再次执行。两次原报告保留，不算通过。
+- payment-toggle-browser-iteration L1PASS、28Node+45Python=73PASS及begin/record回执。受管profile local/project sc-fe-r2-p1-01/db sc_frontend_acceptance原环境身份通过；未重建/升级。最终payment-toggle-context-browser日志、tpl07-1790823767946/report.json **22PASS**：config_disable/open/create/submit均唯一成功；经办44创建200/PE2600195并提交，后端confirmed/no；没有审批review，也没有资金入账。1440/390官方详情loaded/已确认/无审批按钮/无横向溢出通过，截图已查看。原生恢复删除200，原policy18/step2187/definition2187及source/ledger/其他策略事实保持，commit前后权威回读restored。
+- 所有者补充“审批流程本身也是可配置内容，一起验证更加充分”：下一步需验证步骤、审批岗位与顺序配置实际改变待办和办理权限，包含非指定用户拒绝及恢复原流程；开关22PASS不代表这部分已完成。先定向读取steps.set的更新/删除语义和已有角色，在同一恢复工具补精确步骤恢复测试后再写配置，不新建fixture。该配置保存是industry_policy_runtime立即生效，不是产品版本发布；目标用户/环境交付仍未宣称。
+- 复用53.228原配置正确经办→审核人闭环、段45标准列表WEB-LC证据。本轮证据对应f6c120ad5加工具dirty；产品源码/前端build9433fa515、后端c240a28cb未变。67目标active，不升级整行、不推送/合并/目标部署。
+
+- 所有者进一步明确开发阶段可以创建/修改数据，以证明功能正常为主。后续普通办理记录可保留并绑定验证用途，不再以逐记录精确删除为默认前置；公共审批配置记录原值/最终状态与必要恢复，避免干扰后续结果。此项替代上文“先扩展精确步骤清理工具”的默认顺序；不放宽既有数据库、公司、权限、生产隔离边界，不新建环境或fixture体系。
+
+### 53.233 审批流程配置实际暴露第二级待办缺口
+
+- 按所有者最新数据原则，P4复用payment-review流程增加两级配置与按角色处理，正常办理记录保留，不新增精确清理工具。现有steps.set按数组顺序生成sequence，省略步骤原生停用；恢复通过原公开steps.set及config.get回读，保留历史，不直接写数据库。精确许可仅原step2187财务复核加管理层终审，绑定角色/公司上下文、顺序/参数/真实work-item-origin，并允许恢复原启用步骤。新增2项配置顺序/恢复与第二级角色测试。
+- payment-flow-browser-iteration L1PASS，30Node+45Python=75PASS并记录回执。原受管环境运行tpl07-1790824095790：配置管理员UI将policy18改两级linear，经办44创建201并提交；经办页面无审批通过按钮，finance30实际待办打开并审批成功。第一步后仍draft+pending/waiting，不能直接完成第二级，且财务待办已移除。随后executive的my-work为0，没有201，旅程判failed，未尝试绕开实际待办或提权审批。
+- finally通过配置管理员恢复原启用step2187、single，并独立config.get与保存结果一致；新增步骤原生停用，历史保留。201保留为诊断现场，不清理。已有开关22PASS和原单级正确角色证据复用。没有第二次创建或重跑本旅程。
+- 已定向读取review_work_item_service：按真实reviewer_ids/status筛选，再检查读ACL/rule/can_review及公司业务范围；AccessError会使事项不进入列表。源码executive角色已含finance_read，付款登记也有该组读ACL，因此不能直接断言缺读权限或修改角色。下一步只读查201实际reviewer/status/can_review与用户组、范围，再归因产品/配置/数据并修复，继续已有记录。禁止用重建fixture或全ORM替代诊断。总体目标active；批次未通过，不宣称整体收口，无推送/合并/目标部署。
+
+### 53.234 已指派审批人的读取规则衔接
+
+- P4在原approval_runtime新增payment-flow-existing只读范围，精确核对201/company8/source1710/经办44及原marker，读取review与各角色权限，finally rollback。初次入口未登记scope被拒绝（未访问业务），补原wrapper枚举后工具75PASS、诊断4项运行通过。权威结果：504已由30审批；505 pending且reviewer_ids=[37]，不是分配错误；37模型读ACL为true但记录规则AccessError。44/30不可再审批。源码对应finance_read只许项目成员，不包含已指派审批人。
+- Formal Product Layer P1；Layer Target/Module smart_construction_core原生记录规则。标准付款登记审批读取范围应覆盖同公司实际指派人，不属客户特例/低代码绕过/前端权限推导。新增finance_read组read-only规则，AND company_ids、review_ids.model精确付款登记鉴别、实际reviewer_ids。明确不增加write/create/unlink及资金确认权限，保留原规则。193定向测试PASS（新增规则权限与多态模型边界），L1PASS；补原run依赖含sc_record_rules.xml并begin/record非零回执。
+- 本地分层提交b5eedac4a诊断、c8adfea58 P1修正。原受管MODULE=smart_construction_core升级完成（显式CODEX_NEED_UPGRADE/CODEX_MODULES）；首次后续读被旧容器source revision比较拦住，未运行诊断，不重试无变化失败。通过backend.acceptance.up绑定c8adfea58后运行payment-assigned-read-runtime：37 read_rule=true/can_review=true，仅origin505授权；44/30仍false。4项诊断通过，仅说明授权修正，不等于最终UI审批闭环完成。18082原环境healthy；5180前端build未变，无新增业务写入。
+- 下一步从真实管理层my-work续办现有201并验证终态/官方详情，不重跑创建，不再次恢复已恢复配置。当前definition6624因上一轮恢复而inactive，review505仍pending，保留该实际现场，若终态操作暴露进一步问题按事实归因。67目标active，审批最终旅程pending；无推送/合并/目标部署。
+
+### 53.235 无菜单待办详情接通，暴露前置动作权限不一致
+
+- P4新增现有浏览器旅程的201续办入口，仅从原保留回执取得身份，使用管理层真实api.read与my-work origin505，然后允许终审动作；无创建、配置或清理。工具75PASS及回执。tpl07-1790824689921证明读取/实际待办已通过，但外壳因菜单为空拦住详情（不是缺审批按钮契约），没有发出审批请求。
+- P0共享前端actionRoutePolicy/AppShell增加结构有效的work-item记录路由空菜单承载，作用仅允许请求后端契约，不授予读写或审批。模型/正整数记录与review标识、record/model-form类型受结构约束；后端依旧验证真实分配、ACL、规则和can_review。路由现有检查+config10/return2+新12边界PASS，L1与strict双类型检查PASS。P4提交0f60d615f，P0提交c6f3f9cbc。
+- 稳定后仅构建一次，5180复用原listener：base c6f3f9cbc8a08026009d78d771537ef2307ba206、entry /assets/index-BrwUVS7o.js、sha256 9c58c533abb3d14c9942c001769324a839c7d675585868c2b7e4524a9e73273a，旧候选保留previous-yzehqxpw。后端仍c8adfea58，addons未改，无升级/ORM。
+- tpl07-1790824901661：管理层实际待办可见、官方详情可打开、审批按钮可点击；execute_button请求被前置intent_permission拒绝“用户无权以write访问模型sc.payment.execution”。因此终审未成功，不计闭环通过。源码handler已用validate_work_item_action_origin及P1hook回传read授权；前置security/intent_permission仍依据通用intent分类write，早于handler检查而拒绝。这是P0授权入口不一致，不能授予管理层整单写ACL来绕过。
+- 下一步让前置门禁复用同一新鲜work-item来源验证取得record_access_mode，严格绑定object方法/单记录/实际授权，不改变write-intent分类和预览写禁令；添加伪造来源/角色/模型/方法反例，后端重绑后续办201。记录和审批配置均保留，不再创建/清理。67目标active，无推送/合并/目标部署。
+
+### 53.236 前置待办授权统一与在途回调权限缺口定位
+
+- P0 work_item_request_access_mode复用现有validate_work_item_action_origin和扩展授权器，只针对execute_button带明确work_item_origin的object单res_id请求；拒绝多目标/别名冲突、非法方法或来源。intent_permission在用户/库身份核对后据新鲜服务器返回read/write选择记录ACL级别，不改变通用write-intent分类、预览限制或执行层重复授权。未提供来源保持write，授权拒绝转AccessError，不能跳过ACL。原relation_action_authority输入登记permission文件。
+- L1 PASS；verify.execute_button.authority.unit 37PASS并begin/record回执，包括真实check_intent_permission函数执行的read grant/拒绝/普通write行为、歧义目标不得到达provider。提交8d9f70888，既有后端受管重绑，前端c6f3f9cbc未变、无构建/模块升级。
+- tpl07-1790825104760续办201：已进入execute_button处理，但原生服务端动作拒绝“您没有足够的访问权限运行此操作”。只读payment-flow-existing回读确认201仍draft、505仍pending，没有失败后部分审批提交，不重试该失败。
+- P4只扩展既有只读诊断输出callback组，L1及工具75PASS、诊断4项PASS。workitem-callback-inspect-runtime.log权威事实：504/505回调均507，groups仅[93]；管理层37真实review505授权/can_review为true但callback group交集false。Odoo ir_actions.py对应错误是动作groups检查。原策略恢复时sync仅采集active步骤，漏掉已停用definition6624仍在途的pending审核人，是P1回调同步缺口。
+- 下一步P1同步组并集需覆盖当前有效步骤及实际waiting/pending review所需组，保留模型边界、原记录授权和group-bound动作；配置变化不应截断已提交审批链。按所有者允许必要数据修正的原则，通过既有受管原生同步或公开配置接口修正当前policy18回调并回读，继续201，不新建或清理业务数据。不以整单写ACL、提权用户或前端绕过解决。终审仍pending，67目标active，无推送/合并/目标部署。
+
+### 53.237 配置恢复后的在途审批完成，付款流程闭环
+
+- P1共享approval_policy._sync_tier_server_action_groups将目标模型当前有效步骤组与实际waiting/pending review组取并集，配置停用步骤不再截断在途审批回调。保留组绑定与记录级授权，不扩大编辑/资金权限；后续同步时已无在途审批的旧组可收回。新增生产方法回归验证并集、模型/status筛选及在途结束后的收缩。首次测试仅缺api.model替身，补后L1与194项付款状态机测试PASS，并begin/record回执；工具75PASS。
+- P1提交e17a5b29e；P4提交7eb112bdc给既有诊断增加明确payment-flow-reconcile范围，仅原生同步policy18对应model的507/508组。受管环境核对201/source1710/company8/原marker，commit前后回读单据/审批/policy未变，管理层组可执行。inflight-callback-reconcile.log显示507/508由[93]变[93,112]，记录仍draft/505pending，未替用户审批。后端重绑7eb112bdc，不升级模块/构建前端。
+- 续办实际浏览器tpl07-1790825369575 **10PASS**：管理层37从真实my-work待办505打开201，执行审批成功，后端confirmed/validated，实际待办移除，官方详情1440/390 loaded/已确认/无溢出，截图已查看。记录201/PE2600196及两级历史保留，不清理。审批配置仍是已恢复的原active单级step2187；因此同时证明配置恢复后的在途审批可完成。没有重新创建或重跑经办/财务第一阶段，复用53.233原证据；无审批自动通过复用53.232的22项。
+- 更新原67台账detail.action-state followUp，去掉已关闭付款/双视口/配置阻断，但不自动升级contract_gap或整行业务矩阵。下一步依据原goal和原run逐项核对全业务单据范围、共享呈现消费与旧职责退出、能力/发布/用户验证三层证据；付款闭环不能替代全系统证明，未发布能力不等于发布用户验收，目标交付仍不在本地结论内。无推送/合并/目标部署，总体目标active。
+
+
+## 53.238 完成范围核销：关闭过期迁移阻断，定位场景入口双重权威
+
+- 阶段身份：`feature/web-official-template-adoption@7a7dbded3`，开始 clean；本段仅 P4 结果索引/记录改动。沿用原 run、67 项台账及原始证据，不另建覆盖表。
+- `make ci.local.iteration` PASS（L1）；`make verify.native_view.workflow_action_coverage` PASS：模型绑定扫描剩余 26 navigation +14 document_helper，未声明状态迁移为零；8 loader +54 guard tests =62 PASS。原始日志为 `artifacts/frontend-web-fix-20260928/tpl52/completion-scope-iteration.log`、`completion-native-coverage.log`。因此原索引“两项状态迁移未声明”已过期，予以核销；不据此推断全部单据运行态或发布后用户验收完成。
+- 复用历史 97 命中报告定位源码（未重跑、未宣称当前数量仍为97）：`app/sceneEntryContract.ts` 仍用三项静态映射选择调用；`SceneView.vue:fallbackSceneFromEntryIntent` 仍按 scene key 生成行业标题/页面。这是具体 P0 契约消费缺口，不能通过词法豁免关闭。此前对11条条件表达式的局部判读不能证明整条消费链无重复权威。
+- 已核对生产者：`addons/smart_construction_scene/profiles/scene_registry_content.py` 中 workspace.home/dashboard.company 已声明 target.intent；project.management 的场景 target 尚未声明 intent，但 `smart_construction_core/core_extension.py` 行动作已有 entry_intent。下一步按 P1 声明 +P0 通用投影/消费修复，不简单删除映射造成直达入口断链。图表/BOQ 的固定上下文绑定仍待按生产者-消费者链判定，不一概认作缺陷或豁免。
+- 本段不改产品/工具/环境，复用53.237实际审批、官方详情双视口证据；L3/L4 不运行（无相关输入变化），L5 不运行（仍有明确产品缺口，且无远端发布任务）。未改守卫、未降低零业务推导目标。
+- 下一步固定为场景入口声明传递链及缓存路由隔离定向回归；之后继续按现有业务职责核对全单据，不重跑付款、不做无关ORM或全仓盘点。
+
+
+## 53.239 场景入口由生产者声明，退出前端静态映射（运行态待验）
+
+- 候选：`7a7dbded3` +本段 dirty；沿用53.238索引改动。P1 `smart_construction_scene/profiles/scene_registry_content.py` 补项目驾驶舱 target.intent；P0 `smart_core` scene-ready投影保留 intent/entry_intent，Web注册表及SceneView保留并消费同一声明。标准/客户边界：这是行业默认与平台消费机制，不属于客户偏好或临时配置；前端不得补业务语义。影响仅场景入口，不改审批、列表、权限、数据库或发布范围。
+- 删除 `SCENE_CONTRACT_ENTRY_INTENTS` 及 `fallbackSceneFromEntryIntent`，不再凭三项前端白名单生成调用/行业标题/仪表盘。无有效场景先按现有 hydration 取契约，仍缺失则返回明确错误。保留行动作路由声明、缓存页面route ownership隔离；当前scene identity匹配后才消费其target，防止旧场景引用泄漏。
+- L1首次因run遗漏P1声明文件被outside_scope拒绝；只登记这一精确文件后，`make ci.local.iteration` PASS。日志 `tpl52/scene-entry-iteration.log` / `scene-entry-iteration-recovered.log`（均在既有 `artifacts/frontend-web-fix-20260928/` 下）。
+- L2 `make verify.frontend.scene_entry_contract.unit` PASS：47实际计数前端断言（任意新场景、无声明不补造、scene-ready投影、异路由隔离）+11后端测试（含生产者默认声明与投影保留/缺失），日志 `tpl52/scene-entry-unit.log`。复用同一Make入口增加既有离线后端测试，不启动ORM。`make verify.frontend.typecheck.strict` PASS，日志 `tpl52/scene-entry-types.log`。
+- L3/L4尚未运行：代码默认的registry merge_missing会补缺失属性，但实际发布快照能否将入口声明传至当前角色的scene-ready必须回读。下一步提交后绑定受管backend、定向回读，确认后才构建一次/使用5180验受影响场景及缓存路由切换。无XML/schema改动，不需要模块升级；不重跑付款、不重置fixture，不推送/合并/目标部署。本段不是运行态验收完成。
+
+
+## 53.240 场景入口实际回读：声明在有效启动链仍缺失
+
+- P4扩展既有 `standard-approval-runtime` 的 `scene-entry-contract` 只读范围，固定验收库、公司8、finance30/executive37及三个目标；不创建fixture、不改发布或数据，finally回滚。提交 `1d429d2cd`。L1 PASS；`verify.frontend.standard_preview.unit` 30 Node +48 Python =78 PASS，新增错误库拒绝、缺失场景拒绝/回滚及三个角色目标请求用例。原始日志 `tpl52/scene-entry-probe-{iteration,unit,receipt}.log`，沿用 `artifacts/frontend-web-fix-20260928/`。
+- `make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` PASS，替换原后端源码身份并绑定1d429d2cd，受管库/dbfilter/volumes不变；无XML/schema改动，不升级模块。日志 `tpl52/scene-entry-backend.log`。
+- `make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **FAILED**，日志 `tpl52/scene-entry-runtime.log`。finance30 / company8 / workspace.home 已有有效场景及标题“角色首页”，但 `meta.target` 实际只有 `/s/workspace.home` 路由，intent丢失。finally已执行回滚；后两个目标因前置失败未运行。该结果不是工具通过或页面验收。
+- 当前定位范围：P1默认已声明、完整scene-ready投影单测已通过；仍须核对实际scene源、delivery过滤、platform stub/快照与资产绑定之后的输入。另已确认registry轻量投影 `_build_scene_ready_registry_contract` 未保留intent字段，需要P0修复及回归。不得通过前端硬编码、P0行业映射或扩大发布范围掩盖缺口。
+- L4构建与浏览器 **not_run**，保留原静态候选c6f3f9cbc；付款闭环证据不受本次工具改动影响。下一步只追踪这条声明链并修复归属层，恢复后复验相同范围，不重跑全菜单/ORM矩阵。
+
+
+## 53.241 场景入口传递链实际关闭：用户模式裁剪保留声明
+
+- P0 `e537d5f6b` 补registry轻量投影的intent/entry_intent；`7e52553a0` 对已有非关键场景补齐缺失注册入口声明，保留显式配置且不引入动作身份/新入口；`81f4d262d` 修复实际根因：用户模式 `_USER_SCENE_TARGET_KEYS` 未包含这两个字段，将合法声明剔除。新增sanitize→完整投影回归，同时验证未声明调试字段仍被剔除。P4 `9ecff8615` 只增强原定向工具注册源回读。
+- 中间失败保留：`tpl52/scene-registry-entry-runtime.log`、`scene-entry-default-runtime.log`、`scene-entry-source-runtime.log`。最终一份明确证据显示注册源有 `workspace.home.enter` 而effective_source没有，因此没有继续靠猜测或前端回退解决。以上日志均位于原 `artifacts/frontend-web-fix-20260928/`。
+- L1各责任改动PASS。`make verify.frontend.scene_entry_contract.unit` 最终47前端 +12完整投影 +6启动表面 +4合成 =69 PASS（`tpl52/scene-entry-sanitize-unit.log`）。工具30 Node +48 Python =78 PASS（`tpl52/scene-entry-source-unit.log`）。补全run对新增测试/裁剪工具的依赖登记；不把此前遗漏依赖的旧建议回执当当前复用证明。前端自262b38b2e未变，严格类型结果沿用53.239。
+- `make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 已绑定9ecff8615。`make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **9 PASS**：finance30/company8/workspace.home 与 executive37/company8/dashboard.company、project.management，实际system.init effective_source和scene_ready.meta.target均保留声明，标题来自契约，finally回滚。日志 `tpl52/scene-entry-sanitize-runtime.log`。原53.240声明丢失阻断由此关闭。
+- 状态边界：这证明三个角色绑定入口的有效契约，不等于浏览器或全单据验收。L4未运行；保留旧静态候选c6f3f9cbc，待现有浏览器工具准备定向scene-entry范围后一次构建/5180复核。审批/付款证据原样复用；无发布策略修改、数据库fixture写入、模块升级、推送或目标部署。
+
+
+## 53.242 场景浏览器验证：首页通过，驾驶舱被空菜单外壳阻断
+
+- P4扩展既有 `standard_page_type_browser.mjs` 的scene-entry只读范围，工具78测试/L1/语法PASS。构建一次并复用5180：base `8c10eee6feec25ca2d69977c8fd4648996431503`，entry `/assets/index-CHLSVTp_.js`，SHA256 `9a18318911ccb8e0e9532e172091e9db02685a213dc78c075e0ddf12efd3a9a6`，原候选保留 `previous-8nir5g9k`。后续仅工具定位/失败收据修改，不二次构建；静态输入校验复用通过。
+- 原始失败明确保留：tpl07-1790826725183误将HomeView视为通用场景块，0项失败；tpl07-1790826852408首页已截图，但后续响应等待未捕获拒绝导致无最终report，不计通过。修复为首页真实 `my.work.summary/product_workspace` 消费断言、可见窄屏“我的工作”按钮及受控异步失败收据。最后工具提交757475521。
+- 有效最终失败收据 `artifacts/frontend-web-fix-20260928/tpl07-1790826953288/report.json`：首页6项PASS（真实工作台契约、唯一HomeView、1440/390无页面横向溢出、实际按钮离开/停止场景调用、启动成功）。已查看上一运行同候选首页390截图；后续仍需完整产品复核。
+- **产品阻断**：executive37进入 `/s/dashboard.company` 后外壳显示“菜单树为空，请尝试刷新初始化”，未挂载SceneView、未发出dashboard.company.enter；不是后端9项契约回读失效。startup存在有效home/project.management声明；公司场景尚未完成完整hydration。project.management后续用例未运行。无业务写入；总状态failed，不能将6项子集升级为全部通过。
+- 下一步P0：核对AppShell allow-empty-menu、已有work-item例外和实际场景发布/权限边界，修复授权入口被菜单存在性阻断的问题；不通过换角色、前端行业白名单或全部scene放行规避。不重新运行审批/付款。若前端产品修改，再按输入变化合理构建新候选并仅复验受影响场景；现有日志 `tpl52/scene-browser-{build,preview,runtime,home-runtime,receipt-runtime}.log` 保留。
+
+
+## 53.243 所有者指定单写入者接管
+
+- 所有者明确要求当前交互执行器全面接管并停止其他执行者。已核对竞争CLI进程3504238/3504248的cwd、可执行文件、UID及子进程，仅对这两个当前仓库进程发送SIGTERM，随后ps回读均已退出；协作工具仅有/root。保留共享app-server、后端18082与前端5180服务，不终止其他仓库或运行环境。
+- 接管身份为`58238c48b9ba6b68cd9345d2f953c69a5d21031a`，承接53.242及其原始失败证据。当前未提交的P4改动仅给scene-entry浏览器范围排除无关客户列表末尾检查，加本段及原run索引；没有覆盖竞争执行者提交。
+- 本执行器L1与78项工具测试通过，原日志scene-entry-scope-iteration.log、scene-entry-scope-tool.log保留；期间发生HEAD并发变化，因此不冒称冻结候选证据。浏览器入口因未导出既有fixture口令而拒绝，未运行页面；既有权威来源仍为/tmp/wf_check_fixture.env，不重置账号或创建凭据。
+- 已重新运行agent.run.resume；下一步沿用53.242：核对空菜单外壳与有效场景发布授权，P0修复须保持后端授权边界，再做受影响定向检查和场景浏览器验证。当前仅完成单写入者接管，不声明场景、整体批次、主线、部署或用户交付完成。
+
+
+## 53.244 场景入口过滤边界修复与最终授权核对
+
+- 接管候选58238c48b及既有三处dirty；原run/日志/67项台账沿用。P0 smart_core场景投影与通用前端外壳：标准平台机制，不放入P1行业规则、P2偏好或P3发布配置；P4只扩展既有只读诊断。影响system.init场景表面及空菜单承载，不改业务模型/XML/发布范围。L0身份通过后从L1/L2开始；L3无需升级，L4须先确认最终授权，L5因产品阻断未收口而不运行。
+- 独立B线复核确认：requested_scene_key会把策略排除项加回，未知key甚至生成stub；deep_link_only及surface deep_link提前continue跳过access/capabilities。P0提交fb8fb6360删除无条件回填，仅从已过滤delivery恢复registry预加载遗漏，权限检查移至两类深链接分支之前。首页平台机制保留。不把catalog/scene-ready存在视为发布授权。
+- L1 PASS，场景L2 47+12+12+4=75 PASS，原日志scene-entry-boundary-final-unit.log与begin/record回执位于tpl52。首次失败scene-entry-boundary-unit.log来自旧测试要求伪造未知场景；改为拒绝且不绑定资产后复验。独立审查无新增阻断，并补了具备所需capability的深链正例。没有忽略旧失败或以零测试通过。
+- P4提交9924ee61c扩展只读场景回读，受管backend绑定同SHA；project sc-fe-r2-p1-01/database sc_frontend_acceptance/dbfilter精确/filestore sc_fe_r2_p1_01_odoo原样复用，隔离fixture验收租户、公司8，非客户生产/控制库，无业务写入/升级/fixture重建。scene-entry-authority-runtime.log明确公司场景因无条件回填退出而missing；首页/项目仍存在。工具初版误读顶层route_authority，已改为navigation.route_authority并补工具断言；79工具测试PASS，后续回读另存原索引。
+- P0前端接线只消费final route_authority：scene identity/action/menu tuple和上下文匹配才可空菜单承载，拒绝仅凭scene存在或任意action query放行。route_authority_guard_test最终57实际断言PASS（新增场景16）；strict双类型检查PASS。此时尚未构建/浏览器，不声称运行态闭环。原付款等独立证据继续引用，主线/部署/用户验收未发生。
+
+- 最终只读回读scene-entry-canonical-authority-runtime.log：读取正确navigation.route_authority后，三个目标匹配桶均空；公司matched=0，首页/项目matched=1。原positive scope保留FAILED，不把缺失发布授权改为产品通过。工具错读载体属于P4，纠正后49Python+30Node=79PASS；第二次运行是输入已修复的定向回读，非无变化重试。
+- B线指出裸scene的本地query形状校验不能替代fresh record授权。当前helper明确仅shell承载；含required_query、record_query或selected_record_query的入口保持拒绝并继续既有action路由。新增entry_target/route正例和record拒绝后57断言、严格类型、L1再次PASS，最终B线只读复核无新增阻断。
+- 暂保持发布选择，未授权扩大范围；已向所有者提示可选本地验收策略。L4正向构建/浏览器不执行，因为真实授权前提不成立。继续原全单据责任核销，67台账仍57 aligned/9 not_applicable/1 contract_gap，不能因本轮边界修复宣称总体完成。
+
+
+## 53.245 原全单据职责的有限核销与交接
+
+- B线按原记录53.87–53.237及已有支持清单只读复核，没有重跑全仓/菜单/运行矩阵。现审批选择与tier支持集合49项一致，历史17/15数字过期；53.126 legacy-runtime-smoke 5PASS已关闭旧引擎普通上下文启用及关闭时流转绕过，保留受控历史恢复不等于标准并行审批。53.238未声明状态迁移为零、53.237付款真实审批闭环原证据继续复用。
+- 具体待办与原章节唯一汇总到run.completion.remaining_responsibility_review_53_245，独立原始复核存tpl52/scene-boundary-independent-review.json。缺口为工程资料分类前提、项目金额口径、租赁/分包选源与双事务、部分业务族普通角色实际保存办理、红冲并发/页面、计划终态及多角色配置呈现。未以49项支持表充当业务全覆盖，未将空来源查询或唯一约束当真实办理/并发证明。
+- 所有者已收到分类与金额口径问题；发布选择未有新指令，继续保持当前范围，不创建分类、不补猜金额、不额外发布入口。本轮代码提交fb8fb6360/6cbe65e30及工具9924ee61c/550fa5f5e均为本地责任提交；代码75、路由57、工具79及strict类型PASS，当前正向scene runtime保留FAILED。前端仍旧构建8c10eee6f；不以clean commit宣称冻结或验收完成。
+- 批次仍in_progress；主线集成、目标部署、用户验收均未执行。无Quick/远端推送/合并。下一步由原run继续，明确数据/口径后只补受影响用例；否则先准备既有受管工具内的并发断言，不重复付款或无变化失败。
+
+
+### 53.246 开发数据授权、三域真实并发与工程资料运行闭环（2026-10-01）
+
+当前身份：`98bf30edebf98e33449e00ca72b5e984dcebde72` + P4 工具、测试、run 的未提交改动，非冻结候选。原 run 是唯一结果索引；完整命令、对象 ID、日志及边界见 `completion.segment_53_246`。
+
+所有者明确允许适配并保留开发验收数据。沿用 `local/sc-fe-r2-p1-01/sc_frontend_acceptance/company8`，以实际财务角色原生动作建立隔离样本；未创建环境或凭据。租赁、分包、红冲分别 6 项 PASS：真实双事务锁冲突、赢家提交、全新事务业务拒绝、权威回读。未宣称覆盖 HTTP 自动重试或等待者跨提交恢复。工程资料原 scope 8 项 PASS，事务回滚已验证；开发分类 `ITER-DOC-TYPE` 已明确为测试数据而非行业默认。
+
+A 线新增工程资料真实 UI 闭环工具；35 Node +60 Python =95 项通过，浏览器尚未执行。B 线保持独立只读。代码单写者通过显式 token 交接，结果不另建台账。资料 UI、各普通角色办理及金额能力配置缺口仍需完成；本节不代表批次验收、主线集成、部署或用户交付完成。
+
+
+### 53.247 审批金额能力契约与共享编辑器收口（2026-10-01）
+
+本地分层提交：P1 `fe598596e`、P0 `9d04210ae`、P4 `53a8bad56`。原 32 项业务金额映射逐项保持，统一能力投影供配置和 tier 域消费；项目仍未声明金额依据。步骤整批结构、ID、归属和金额验证在首次写入前完成。前端按能力显示金额列，不支持时保留岗位／步骤编辑；加载未知／失败／对象切换不沿用旧能力，已有金额条件不静默清零。
+
+L1 通过；业务配置190、状态机194、对象／编辑器44、验收工具97项通过，strict typecheck通过。最终 ID 边界补充的 handler9项通过；未重复无关测试。两条 B 线分别审查产品与资料写许可，已关闭实际可消费的 context 别名旁路；只读金额观察不允许配置写入。详细路径、日志和审查摘要统一在原 run 的 `completion.segment_53_247`。
+
+后端已通过既有 `backend.acceptance.replace-stale` 刷新到 `53a8bad56`；无 schema 改变，未运行模块升级。前端构建与定向资料／金额页面验收继续执行。开发阶段身份含 dirty run/docs，不冒称冻结、主线集成、部署或产品交付。
+
+
+53.247 实测补记：金额能力只读页面17项 PASS（report `tpl07-1790830221403`）；工程资料 PM 真实保存—提交自动批准—显式归档33项 PASS（report `tpl07-1790830734303`），最终记录6、company8/project10/doc_type21、state=done。表单遵循 draft/edit → approved/readonly → done/readonly；桌面和窄屏通过，已查看归档窄屏及金额配置截图。配置链未被此自动批准 UI 覆盖，原资料8项原生审批测试单独保留。资料试跑3/4/5号开发记录按所有者授权保留；各失败、原始证据与修复事实均在 run.L4 索引，不重新构建未变产品。
+
+本轮合并产品复核为上述两个受影响面，结论是该范围验收完成。当前 PM 最终入口无安全/劳务/分包/租赁/标书购买条目；后续普通角色能力验证和发布用户验收严格分开。整体目标保持 active，原67项账本未冒进升级。
+
+
+### 53.248 五类普通角色原生办理能力（2026-10-01）
+
+P4 工具83582d923，L1通过、工具108项及B独立复核通过。复用原隔离验收环境，以PM32/company8/project10、env.su=false真实创建/保存/提交，提交后新游标回读父子记录及计算金额：安全计划8、标书购买5（原生新增投标3）、劳务计划5、分包计划6分别approved，租赁订单8显式activate后active。五范围各6项，共30项PASS；日志、marker、命令与记录身份唯一索引在run.completion.segment_53_248。全部实际自动审批；既有配置审批原生测试单独复用，不虚构本次reviewer路径。当前PM正式发布入口无这五类，结论为原生能力，不是已发布用户UI验收。
+
+### 53.249 红冲显示与最终动作否决一致性（2026-10-01）
+
+P1 7e30e294f修复台账_rec_name=invoice_no，并抽取原生同源已确认判据供workflow使用，原唯一索引/权限/调用顺序不变。L1、状态机197项、B复核通过。首次受影响页面tpl07-1790831467024通用13项通过，但专项回读发现workflow已拒绝、最终actionRuleList仍放行；明确登记P0失败，未以13项掩盖。
+
+P0 636a359d0在最终modifier hydration后、主动作选择前，按同模型/记录/object方法单向投影明确workflow否决到rule/status，不反向授权、不改保存/窗口动作。L1、统一契约136项、B独立复核通过。P4 cd3fd26d2新增互斥的只读红冲专项7项硬断言；B指出条件跳过及探针组合吞目标两处工具风险后已纠正，工具108项通过。后端受管刷新636a359d0，前端53a8构建输入未变故复用。
+
+最终TPL07_RED_FLUSH_DENIAL_INSPECT=1，tpl07-1790832083132共20项PASS：ledger105显示真实发票号，adjustment43确认按钮rule/status/DOM均禁用且原因RED_FLUSH_SOURCE_ALREADY_CONFIRMED，原说明可见，取消仍可用；1440/390无溢出、无页面异常/业务写入。已查看加载完成390截图。原三域并发及原生执行拒绝证据复用，不重复执行红冲。该局部缺口收口，整体detail.action-state继续开放。
+
+下一有限范围是财务正式付款入口menu545/action775的非空租赁/分包来源选择与保存；当前PM是否发布不能代替finance权限。旧并发来源余额已满，按所有者开发数据授权在既有受管环境用原生动作准备新来源，保留样本，不重复现金或审批链。计划终态write=false既有53.200/201证据继续复用；未发布页面视觉/多角色验收单列pending。无远端发布、主线集成、部署或整体用户验收。
+
+### 53.250 财务付款非空来源选择与真实保存（2026-10-01）
+
+沿用原run与隔离验收环境；P4原生准备分包来源9/project593、租赁来源12/project592，各6项通过。租赁准备明确使用限定sudo，财务普通角色回读；不将来源准备称为普通角色创建能力。实际浏览器始终finance30/company8正式menu545/action775，开发样本按所有者授权保留。
+
+首次分包保存揭示P1 default_get未把行动作业务分类代码转成必需ID；795a350c0复用既有分类解析器并保留显式默认值，L1/200测试/B通过。工具第二次因未覆盖实际已授权company列表及付款分类上下文拒绝保存，86b11dc61按准确既有作用域修复，负例仍拒绝第三公司/收款分类，L1/118测试/B通过。最终分包report tpl07-1790832921003共34项通过，payment1841保存及刷新回读一致。
+
+租赁关键词查询暴露payment.request名称搜索引用不存在的合同历史字段；准确后端trace归因后，P1 fef4d468d改用实际contract.name并保留subject，L1/201测试/B通过。原日志读取曾因后端SHA不符被拒，已明确记为not_run，随后受管重绑取得异常，不以拒绝当无错误。修复后report tpl07-1790833651974共34项通过：项目592来源12、切593排除/清空旧源、切回重选、普通财务真实保存payment1842并刷新回读，金额100、draft、create_uid30，无页面异常或越界写入。已查看刷新截图。原三域并发、现金与审批证据复用；未声称本次草稿预占余额或新增窄屏验收。
+
+日志唯一索引为run.completion.source_selection_next，原始目录artifacts/frontend-web-fix-20260928/tpl52。P1与P4按上述提交独立回滚；无模型schema、模块升级、前端构建或发布策略改变，前端仍53a8bad56。未推送、合并或部署。
+
+### 53.251 计划版本显示回读与投射环境权限保持（2026-10-01）
+
+P4 8d2b86c29扩展既有plan-version-display范围，PM32/company8/project10原生草稿及新事务回读；初次错误将普通actor同时作为metadata环境，e5375cda7改为生产约定，L1/122测试/B通过。复验仍失败，精确后端异常证明P0投射上下文重建丢弃原su标记。a386549ba分别保留业务和元数据原环境su，覆盖preview及关联视图两条路径，不换UID、不强制提权、不扩大ACL。真实函数边界回归及既有formal_list共180项、L1、独立B复核通过；两个失败均committed=false并回滚，原日志保留。
+
+受管后端刷新a386549ba后，原scope最终6项PASS，原始日志tpl52/plan-version-display-final-runtime.log：parent87/version19由普通PM创建，提交后新游标回读一致；原生及final mainData的display_name/version_no均为真实版本标记，page_name回读为“计划版本”。这是显示数据能力，不宣称未发布页面的可见记录标题、加载完成终态双视口或配置多角色UI通过。既有计划执行24/主从64与终态write=false证据复用。开发样本保留，修复可按P4/P0提交分别回滚；无schema升级、前端重建或远端操作。
+
+本地全单据已确认职责按53.245六项在原run逐项核销，旧引擎禁用5、模型绑定零未声明状态迁移、实际付款配置审批、资料/金额/五族办理/三域并发/红冲拒绝/选源保存证据共同支撑，不以49支持清单替代业务覆盖。当前目标仍active：图表及BOQ两块尚未完全消费后端fetch_intent/fetch_params，且上下文异步竞态待修；独立B已确认下一有限P0范围。未发布场景正向UI、五族发布UI及计划剩余视觉验收单列not_run；本地能力收口不代表主线集成、版本部署或目标用户交付。
+
+### 53.252 图表、BOQ 与场景延迟块的声明消费（2026-10-01）
+
+P0 cc0ce2b6e：两个专用只读适配器验证并消费后端fetch_intent/fetch_params，保留现有intent协议边界；BOQ支持指定批次、项目及两者同时声明，图表无项目为空态。拒绝非法ID/额外请求载体，不从路由或重复顶层字段补业务参数。旧BOQ路由解析helper及测试退出。共享loader隔离旧成功、错误与finally，声明失效和卸载清除旧请求权限。P1三个builder已完整声明，不改行业模型、ACL或发布。
+
+B沿原97词法报告逐文件有限核对，进一步确认通用grid会产生params项目B/context项目A；其余专用协议字段、组件登记及明确服务端事实消费不据词法命中判为新功能缺陷。此为责任核对，不是新扫描或“97清零”。P0 9324a24cd让延迟请求完整消费hint.params/context及嵌套值，仅保留捕获的通用scene_key，显式context优先；入口既有参数传输不扩改。entry与hydration共用loader/current判定，旧循环失效后不再发后续块请求，局部失败仍允许其余块完成。
+
+P4 de4d6b060在既有三个unit入口编译实际SFC、Vue挂载及props/watch/unmount，保留API/resolver/loader，仅模拟intent传输及展示边界。真实挂载图表19、BOQ22、grid29项通过；grid证据止于PageRenderer props，子renderer为stub，不称HTTP、布局或已发布UI验收。新增请求断言37/27、scene总59（包含原47）、Python10及12/12/4全部通过，既有模型断言与守卫通过，L1与strict两vue-tsc通过。首次grid挂载发现同步watch在一次多prop更新内发送混合身份请求，改默认pre批处理后原断言通过；首次strict发现context spread类型窄化缺失，补明确对象守卫后通过。失败日志与恢复事实原样保留在run.completion.readonly_block_request，日志统一tpl52/readonly-grid-*；chart/BOQ未变分支结果复用。
+
+两条B线分别独立审P0边界与P4测试真实性并核对非零日志，A按明确执行单持唯一代码token，root独占run及受管运行/提交，交接后A停止写入。三个责任提交可独立回滚；无数据写入、schema升级或发布变更。一次受影响构建及最终本地产品复核结果随后记入同一run，不创建并行覆盖表或新环境。
+
+### 53.253 本地功能目标收口与后续交接边界（2026-10-01）
+
+当前产品候选de4d6b060，最后仅run/文档未提交。受管frontend.standard.preview.build一次通过（24.17秒），原5180 listener复用并核验新构建；base de4d6b0607dc34d935e4967935b003e1393d223e、entry /assets/index-DgdbKjpy.js、entry SHA256 e5ae85218eb9780c96486e1229283467299bc1a40a7dc69cb884ff6f62886e46，回滚构建保留在既有config05目录previous-_251w582。构建/preview日志为tpl52/readonly-block-final-{build,preview}.log；后端仍a386549ba，后续仅前端/P4/文档输入改变，无需重复刷新。
+
+一次集中本地产品复核覆盖53.245六项真实业务职责、有效发布边界与本轮三组件70项实际挂载；复用未变共享展示、付款配置审批、资料/金额、五族原生办理、选源、并发及拒绝反馈证据。受影响旧entry/旧block返回、失效、卸载、局部失败与一致上下文均通过。既有67台账58 aligned/9 not_applicable，无待修契约条目；B有限历史词法核对没有再发现未关闭的具体本地功能缺陷，但不称词法审计清零或49项完整浏览器覆盖。A实现、B独立审查、root运行/产品复核/文档同步按原run完成，未建立平行任务记录。
+
+结论为本地功能目标及此范围批次验收完成。原goal/run在最终记录核验后标记completed；续跑入口应返回closed，不能让其他执行体重放已完成写入。主线集成、版本部署和目标用户交付均未发生。未发布场景正向UI、五族正式用户UI、计划加载终态视觉/配置多角色UI保留not_run，属于后续选定版本的发布与目标用户验收，不为通过检查扩大发布。此次未运行Quick/最终冻结/远端PR或发布流程：任务限定本地迭代；现有证据不充当这些交付门禁。后续新任务须独立登记明确目标，复用原证据并仅复验变化的依赖。
+
+### 53.254 所有者重申原目标，纠正提前关闭（2026-10-01）
+
+所有者明确本分支目标是“正式渲染与交互回到官方模板”，并追问实际效果是否全部确认。53.253把代码/契约能力阶段完成提升成原goal完成，范围过窄，现予纠正；原goal/run恢复active，不另建目标或证据表。已有代码修复、真实浏览器结果及构建保持有效；58 aligned/9不适用、纯测试及模拟传输组件挂载不再作为全量实际效果完成的依据。
+
+当前P4只修正任务元数据并核对已有页面类型证据；root唯一元数据写入者，A只读准备现有受管浏览器范围，B独立核对官方参考、实际截图与交互证明。按正式列表、创建/编辑、详情、主从、工作台、导航/弹层及桌面/窄屏识别尚未确认的具体效果，随后按归属修复并定向验证。未验证或因发布边界不可访问的表面必须保持开放，不能改列为本目标之外后宣称全部完成；也不通过扩大ACL/发布策略制造验收结果。继续保持本地-only，不自动重放任何业务写入。
+
+### 53.255 官方模板实际详情与列表偏差修复（2026-10-01，进行中）
+
+沿同一run恢复实际效果验收。当前已构建de4d6b060，后端a386549ba，现有finance30/company8/menu545/action775/payment1813只读观察report tpl07-1790835439881：44项技术断言通过，实际1440/390截图却仍为单大表单卡、生成章节锚点及纵向标签。root与B对照归档官方base/advanced参考后确认P0偏差；2项详情台账重开。实际列表同报告显示卡片缺少官方内边距，操作/查询仍为旧组合，另2项列表台账重开。当前为54 aligned/9 not_applicable/4 needs_work；这些分类不能替代实际验收。
+
+P0当前执行单只修共享record-detail渲染：契约section独立Card，支持的只读事实及专用值使用横向Descriptions，原字段顺序/分组含义/notebook、关系入口、集合、附件及动作权限保持。A独占产品代码token，root仅写同一run/文档，B只读复核。B在进行中发现分段grid仍以全局字段索引计算orphan span，已交A修复，未经修复验证不进入浏览器。L1随后按静态入口，L2使用既有standard_form_composition/native_form_structure/professional_business_value非零测试及strict，再受管构建与实际双视口效果。无后端/schema改变，跳过升级；无业务写入、无重跑全量矩阵或交付冻结。
+
+列表下一有限范围已定位共享ProductListSurface/Card padding与ListPage/ListSurfaceHeader/ProductListHeader操作-查询组合，保留现有action权限/身份/handler，并使选择后的批量动作与查询共存；不复制样例业务、不把官方窄屏溢出当目标。当前尚未实施该范围。所有结果和原始日志仍以run为唯一索引，本段随本轮结果收敛更新；整体目标未完成，未推送、合并或部署。
+
+### 53.256 自定义前端端到端体系收口执行计划（2026-10-01）
+
+**批次与目标。** 继续同一FE-TPL-OFFICIAL-TEMPLATE-ADOPTION产品结果，所有者明确要求体系收口，页面仅为代表验收样本。唯一目标是正式自定义前端从契约输入、职责选择、组合/组件到交互及主题的官方模板接管。P0前端共享机制，P4验证与记录；不改变行业/客户业务语义、权限、发布策略，不新增环境，不以全量菜单逐页修补推进。本节取代53.255“详情后直接列表”的局部执行顺序；已完成2a7e5c86c/090bd0023及受管构建保留，未完成视觉项保持开放。
+
+**权威链。** 复用既有架构、渲染职责、组件driver及主题清单，有限核对实际调用：public合同/登录→system.init→路由权限→ui.contract decoder/normalized store→契约pageType/presenter→声明的task/native、standard/dedicated collection、workspace/scene出口→共享Sc/@sc/ui适配器→TDesign driver。task与native、层级/看板/工作台属于声明职责差异，不能仅因多出口删除；legacyLayoutNormalizer仍是decoder输入兼容，不等于旧renderer；普通表单/f与/r只装配同一ContractFormPage。配置编辑、诊断与正式业务分别验证，不借统一模板越过配置/发布边界。
+
+**Step 1：确认共享责任及缺口。** A渲染可达图、B交互与B样式只读核对，由root合并到原run.completion.formal_effect_review.system_scope_correction。输出是有限机制执行单，不增加新全局配置框架或并行清单。进入下一步要求每个修改有真实可达证据、明确owner及非零验证入口。已确认：官方marker/primitive存在不足以证明组合；共享列表/详情组合有实际偏差；密度/表头规则跨工作区泄漏；关系异步结果发布缺身份隔离。shell当前未发现新结构缺陷，稳定全宽画布、产品色彩/Inter和移动端可用性保持已有权威。
+
+**Step 2：共享关系交互生命周期。** P0 useRelationRuntime、useRecordRelationshipFields、useRecordPageLifecycle及唯一页面装配接线；把记录/上下文重载、失活/卸载、字段搜索代际、selected与one2many补充加载的结果发布归到一致生命周期。只读关联打开继续走read权限，写入继续受既有字段/动作权限。输出为迟到成功、迟到403、补充加载和finally均不污染新身份的公共实现。验收为真实生产函数的延迟Promise反例、正常选择/加载恢复及装配接线断言；通过L1、非零relation lifecycle/hydration/关系守卫和strict后才能下游验收。禁止只修未接入的clear函数而漏正式reload。
+
+**Step 3：共享官方组合及样式责任。** P0正式record/collection/workspace组合拥有区域、间距、标题、操作与查询位置；primitive只处理公开props/events和值适配，token/主题层拥有颜色字体，页面不再叠加抵消公共规则。复用已完成detail共享修复；collection统一现有操作/选择计数与查询共存、官方Card内边距，保留动作身份、权限与handler；缩小跨工作区dense/table规则，保留合法专用表格与手机布局。输出为同一职责唯一组合责任，不能靠marker或新增局部CSS声称完成。验收为实际挂载区域/唯一操作/选择后查询、computed spacing/theme与跨family不泄漏；旧强制批量替换查询断言改成官方共存的正反例，不删权限/键盘约束。
+
+**Step 4：补实际渲染驱动整链证明。** P4优先复用existing test harness及Make入口，覆盖pageType/adopted/实际outlet、PageRenderer→BlockRenderer→真实wrapper/driver，而非在子renderer stub处结束。传输可以受控模拟，但必须明确证据止点；模板整链失败归P0 owning layer修复。启动/decoder/store、动作权限、官方表单引擎、overlay focus/scroll/exact-once、已有请求竞态证据仅在输入等价时复用，不为追求次数重跑。
+
+**Step 5：一次体系产品复核。** 在前置层全部通过后，以渲染出口和交互能力选取受管真实1440/390代表旅程，覆盖light/dark、列表查询/选择/分页/返回、create/edit/readonly及主从、关系/弹层、workspace/scene加载与错误恢复。沿现有工具/数据库/权限执行，发布不可达或未验证能力明确开放；模拟测试不替代真实可见效果。通过条件是共享机制证据、代表效果、已知缺口全部核销，B独立复核，不是台账绿色数量；mainline/deployment/user delivery单独报告。
+
+**验证与回滚。** 每个执行单先L0身份和声明dirty范围、ci.local.iteration L1，再风险选择非零L2与strict，必要时受管构建/浏览器。restricted沿现有轻量入口，不额外跑全量verify.restricted；无契约schema/后端变更则不重造snapshot、不升级数据库，复用原role/version/contract权限证据。后端若出现明确契约缺口先按所属层单独修复，不能前端推导。P0/P4责任提交分开、同一run；共享候选构建有既有rollback目录。失败阻断依赖步骤，仅修owner并复验受影响输入；不因无关失败重跑全矩阵，不执行本地-only以外的PR/部署。
+
+### 53.257 共享关系交互的生命周期隔离（2026-10-01）
+
+按53.256 Step2执行，非业务页面补丁。A中断后root接回唯一代码token，B独立只读复核。现有useRelationRuntime统一请求代次与按字段所有权，真实reload先清理并失效；保留页停用仅取消请求/计时器/弹窗，保留已加载标签与草稿，恢复后沿原生命周期补齐辅助数据。迟到查询返回空结果并不污染选项或拒绝缓存；selected与one2many补充加载在merge/catch/finally前校验当前请求、relation、固定context及ID集合。B发现外层辅助链恢复后仍可能续发及浅拷贝嵌套context漏判，root补auxiliary owner和请求时context序列化，两项独立复核已通过。
+
+既有relation lifecycle入口新增真实生产函数的22个生命周期断言，含真实reload、真实ensureFormInitialReload恢复、旧403、嵌套context变动、旧child finally、卸载与计时器取消；连同原18及Python7通过。create_defaults55、relation field18+17/Python10+40通过并按未变输入复用。首次新测试导入实际生命周期模块暴露P4 bundler未定义import.meta.env，既有Make入口加与其他测试相同的空Vite测试环境后恢复，原失败日志保留，不涉及运行环境或凭证。L1与结果详见原run system_scope_correction.relation_implementation；strict两套vue-tsc通过，P0提交21b5203f2、P4提交abb6b7f1b；B限定复核通过。尚未为此改动构建或运行代表场景，本轮不宣称可见效果或整体完成。
+
+### 53.258 共享弹层生命周期及体系组合推进（2026-10-01）
+
+P0 0a021211c 将初始聚焦和关闭后焦点恢复绑定生命周期代次与捕获目标，重开/卸载使旧回调失效；滚动锁仅释放一次。P4 b166c6ffb 在既有 overlay.unit 增加真实 Vue hook/调度的27项反例，浏览器宿主明确模拟。L1、27+Python12、双strict、B三文件源码复核通过；原受管 overlay.browser 实际Dialog/Drawer焦点、嵌套恢复、滚动锁、Esc/Tab通过且无console错误。快速重开/卸载竞态尚只由hook证明，不扩大浏览器结论。原日志和命令索引在run的overlay_implementation。
+
+按53.256 Step3继续同一体系收口：A独占代码写入，root元数据，B/C只读复核。共享列表移除内层ScPage及抵消样式，外层ActionView保持唯一画布；操作/批量选择与查询、列设置在同一官方Card内共存，保持权限/handler与合法专用出口。Card负责内边距，列表密度限定真实列表区域。先现有L1/L2/guard/strict，后真实浏览器复核；不把源码或标记变更提升为四项开放视觉缺口完成。
+
+同一体系核对继续确认scene正式可达链的容器缺口：PageRenderer页头、ZoneRenderer区域、registry block三层分别自绘外框；12个唯一block外壳需统一，不能只把两个样本换ScCard后称整体完成。后续P0责任已确定为每block一个官方borderless Card、zone仅保留语义与声明grid/stack、page页头取消重复卡框；不按today_focus等key猜布局。保留priority/data_source/权限/事件与Accordion折叠。当前仅记录确认缺口，尚未实施；P4须补真实子renderer/driver链，原grid29保持其stub边界，不改称整链证据。
+
+Step3独立廉价检查先收集同层失败：collection toolbar31+Python11、scroll guard、strict通过；新SSR首跑因测试导入未直接依赖的@vue/server-renderer失败，改复用已安装Vue公开入口。style guard定位此前detail已无生成导航却残留nav-height变量；删除该无用P0声明，不扩大Token白名单。alignment guard定位readonly-value布局被连续文本匹配误判，P4改精确selector内声明验证并加缺失/错误/跨selector反例。原system-collection-{composition,style,alignment}.log保留，后续修复回执独立命名；依赖的构建与浏览器保持pending，不能忽略失败后继续。B另指出SSR画布定位和真实toolbar覆盖、桌面左右几何断言缺口，同步补正。
+
+Step3已收敛为P0 b488ff1f5/P4 61833c169：实际ListPage/Header/ActionSurfaceToolbar/TDesign/AttachmentViewer六组合76项、pure124通过，工具只允许精确组件host origin且禁止业务请求、零console/page错误。停止SSR适配分支并保留全部失败日志；最终证据来自真实组件浏览器，不是SSR。toolbar31+Python11、alignment12+7+5及31条目、style、scroll、双strict按未变输入复用，C最终限定源码复核通过。正式ActionView权限链与后端页面几何尚未由此fixture证明，四项视觉needs_work不更新。下一单为共享scene14文件组合及真实driver证明，随后集中受管构建/代表复核，不每子修改重跑矩阵。
+
+### 53.259 共享场景组合与真实驱动链（2026-10-01）
+
+P0 159903c23统一PageRenderer/ZoneRenderer及registry12类块的容器责任：透明article保留身份/状态，每块一个borderless ScCard，zone只管契约分组/grid/stack，去按key定制的色块/阴影/比例。标题、数据、排序、权限、事件及Accordion折叠不变；Entry复用已注册browser-structured按钮适配，明确为专用结构化内容扩展。P4 39b76249d保留原mounted transport测试边界，并在既有组件host新增真实PageRenderer→Zone→registry→Sc/TDesign scope。L1、scene29/59/Python12+12+4、chart19+37/model、BOQ22+27/Python10/model、富文本模型断言、双strict、style通过。实际组件browser76项通过，零errors/越界请求；B产品和C工具独立复核通过。
+
+上述不是正式后端场景验收：图表/BOQ此次是empty，富文本readonly，transport未执行；此前模型/生命周期证据分别复用。唯一索引在run.scene_implementation。后续P4限定扩style/detail已有入口：真实主题按钮、1440/390双主题、实际Card/Descriptions几何与契约授权关系open/back，随后一次受管构建及合并代表复核。仍不凭标记或组件fixture关闭四项实际视觉缺口。
+
+### 53.260 实际体系复核与阻断归因（2026-10-01）
+
+P4 1afe2a0fc补style/detail真实明暗主题、1440/390、契约可见section与Card/Descriptions几何、关系open/back；新增受管列表入口绑定既有5180预览与finance身份。随后B源码发现原生grid/gap仍污染Card根：P0 65bc8946f隔离native布局及页级sheet/group覆盖，移除页面Card外框补偿，内部body布局和编辑/设计器保持；P4 b98e59e6f加computed根布局与grid12拒绝反例。L1、form121、native12、preview42+90、style/syntax通过；CSS-only且template/script逐字未变，复用strict。B独立四文件复核通过。
+
+受管build23.30秒完成，产品输入b98e59e6f，原五个元数据文件dirty；入口index-h7E8_9qC.js，构建身份及rollback引用原run.consolidated_preview_after_card_spacing。后台addons未变，沿原资源身份复用。首次实际detail报告tpl07-1790839601227：light1440六个Card与契约可见section匹配、横向Descriptions和主题检查通过；实际点击契约can_read/can_open的partner56（menu164/action324）被NAVIGATION_AUTHORITY_DENIED拒绝，因此整体failed，其余组未运行，原主题已恢复，不能声称关系或完整视觉验收通过。另真实Card body度量全null，定位器需按实际vendorDOM纠正并拒绝未度量假通过。
+
+独立列表入口尚未进浏览器即拒绝：Make的全局export把开发默认ACCEPTANCE_BASE_URL/DB_NAME带入新adapter，被视为调用者冲突。归P4入口边界，不手拼URL/数据库规避。原日志与报告保存在唯一run索引；只在owner修复和定向测试通过后重验受影响部分。A/B只读交叉诊断关系授权，未发布菜单、扩大权限或写数据。
+
+体系范围仍包含create/edit与主从关系的真实效果、正式workspace/scene及声明专用出口。原保存/审批回读和未变机制测试可复用；组件host76项不能替代正式场景加载。未发布入口保留能力/正式验收边界，不减少目标范围。当前整体goal仍active，四项视觉needs_work未关闭；主线集成、部署和目标用户交付均未执行。
+
+53.260 调度纠正：所有者指出验证反复，root承担调度责任。停止“每个小修复后构建/页面重验”的推进方式，三个已知阻断集中修复并收集同层定向结果：P0精确只读关联导航桥、P4 Make输入来源、P4真实Card正文几何。原run.remaining_acceptance按四组实际责任记录可复用证据、失效输入、缺项与前置；提前准备创建/编辑关系恢复和已发布workspace所需的最小工具，不等首组页面跑完再另起工具循环。全部必需前层通过与独立审查完成后，一次受管后端刷新/前端构建、一次代表场景复核；后续仅按真实变化复验失败项，无关文档/提交不触发重验。保持单代码writer，A实现、B/C独立审查、root统一准入及结果索引。
+
+53.260 本轮交接（所有者要求随后仅调度）：P0关系桥411027d46、P4入口/几何7e3fe8188已提交；L1、入口16+2、动作37、前端18、preview42+94、双strict及B/C独立源码复核通过。后端按7e3fe8188受管刷新并健康回读，前端一次构建23.62秒，entry index-CIOBQ4xV.js；无升级、业务写入、发布、推送或部署。所有命令、原日志、身份与rollback归原run.current_round_final_observation。
+
+实际复核仍FAILED，不宣称三个问题全部关闭或批次验收完成：detail报告tpl07-1790840569671的light1440真实六Card/body匹配，五个展开Card header/body gap=0、折叠卡明确无header，30个已完成断言通过；随后1813→partner56仍被route.authority.validate实际HTTP403拒绝，trace e983ad9b-f00e-4ee3-8e06-95f52e247619，工具没有采集结构化拒绝阶段，其余明暗/窄屏组未执行。下一执行器先定位该精确请求的拒绝原因，不凭unit通过推断运行通过，不重跑未改变的完整浏览器。
+
+列表Make身份入口已恢复，抵达既定action775/menu545并采集normal1440截图；批量检查直接check官方checkbox input，被所属CollectionSelectionControl label拦截后超时。失败日志system-converged-list-browser.log；异常发生在最终report写入之前，因此没有最终JSON，不能当通过。下一执行器仅修P4可见控件定位与相应正反例，不force-click输入或改产品样式迁就测试；产品输入未变可复用当前构建。选中/空态/手机组尚未验收，原四项视觉needs_work保持。
+
+root完成本轮证据交接后立即暂停代码与运行验证，仅负责调度；A已归还唯一写入权，B/C任务结束，当前无实现writer，等待所有者安排执行器。创建/编辑及workspace新scope只有只读方案、未写代码，连同合法专用出口证据核销保留在原run.remaining_acceptance。整体goal为incomplete/run verification_pending；当前本地提交不等于冻结交付，主线集成、部署、目标用户交付均not_run。后续先读原run、认领单写入权并复用有效证据，不重建目标或平行台账。

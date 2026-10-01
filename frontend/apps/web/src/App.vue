@@ -1,7 +1,18 @@
 <template>
   <TDesignConfigProvider :global-config="tdesignGlobalConfig">
+    <ScPanel v-if="isPublicAuthPage && !session.token && session.publicPageContractStatus === 'error'" role="alert">
+      账号入口配置加载失败，请重试。
+      <ScButton @click="session.loadPublicPageContracts(true)">重试加载</ScButton>
+    </ScPanel>
+    <ScPanel v-else-if="isPublicAuthPage && !session.token && session.publicPageContractStatus === 'loading'" role="status">
+      正在加载账号入口…
+    </ScPanel>
     <RouterView v-slot="{ Component, route }">
-      <AppShell v-if="route.meta?.layout === 'shell' && !isEmbeddedRelationDialog(route)">
+      <AppShell
+        v-if="shellComposition.adopted"
+        :data-shell-composition="shellComposition.composition"
+        :data-shell-composition-reason="shellComposition.reason"
+      >
         <KeepAlive :max="6">
           <component
             :is="Component"
@@ -21,12 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { RouteLocationNormalizedLoaded } from 'vue-router';
+import { computed, ref, watch } from 'vue';
+import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
+import { resolveStandardShellComposition } from './app/presentation/standardShellComposition';
 import { PRODUCT_APP_TITLE } from './app/pageIdentity';
 import { usePageIdentityRuntime } from './app/pageIdentityRuntime';
 import { TDesignConfigProvider } from './components/design-system/tdesignPrimitiveBridge';
 import AppShell from './layouts/AppShell.vue';
+import ScPanel from './components/design-system/ScPanel.vue';
+import ScButton from './components/design-system/ScButton.vue';
 import { useSessionStore } from './stores/session';
 import { tdesignGlobalConfig } from './styles/tdesignGlobalConfig';
 import { useThemeApplicationRuntime } from './styles/themeApplicationRuntime';
@@ -36,6 +50,20 @@ const pageIdentity = usePageIdentityRuntime();
 const retainedActivityActorId = ref(0);
 
 useThemeApplicationRuntime();
+
+const route = useRoute();
+const isPublicAuthPage = computed(() => ['login', 'platform-admin-login', 'account-activation', 'password-recovery'].includes(String(route.name || '')));
+watch([isPublicAuthPage, () => session.token], ([isPublic, token]) => {
+  if (isPublic && !token) void session.loadPublicPageContracts();
+}, { immediate: true });
+
+// The shell adoption decision is a pure presentation policy, resolved here so
+// the shell gate and its published identity cannot drift apart. A route that is
+// not adopted renders its page component exactly as it did before.
+const shellComposition = computed(() => resolveStandardShellComposition({
+  layout: route.meta?.layout,
+  embeddedRelationDialog: isEmbeddedRelationDialog(route),
+}));
 
 watch(
   () => positiveInteger(session.user?.id),

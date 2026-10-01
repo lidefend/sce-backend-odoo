@@ -336,6 +336,10 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         model: model.value,
         fieldNames,
         baseDefaults,
+        fieldTypes: Object.fromEntries(fieldNames.map((name) => {
+          const field = formFields()[name];
+          return [name, String(field?.type || field?.ttype || '')];
+        })),
         fetchDefaults: defaultContractFormRecord,
       });
       fieldNames.forEach((name) => {
@@ -420,6 +424,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     const run = (async () => {
       const reloadToken = activeReloadToken + 1;
       activeReloadToken = reloadToken;
+      dependencies.clearRelationRuntime();
       renderErrorMessage.value = '';
       Object.assign(loadError, { status: null, reason: '', trace: '' });
       recordMissing.value = false;
@@ -495,7 +500,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
   function ensureFormInitialReload() {
     const identity = formRouteIdentity();
     if (!identity) return;
-    if (identity === retainedRouteIdentity.value && status.value === 'ok') return;
+    if (identity === retainedRouteIdentity.value && status.value === 'ok') {
+      // Keep the retained draft; resume auxiliary reads cancelled on deactivation.
+      void preloadFormAuxiliaryData(activeReloadToken);
+      return;
+    }
     if (status.value === 'loading' || !contract.value) {
       void reload();
     }
@@ -504,6 +513,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
   async function preloadFormAuxiliaryData(reloadToken: number) {
     try {
       if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+      const ownsAuxiliaryLoad = dependencies.captureRelationRequest('auxiliary');
       // Relation candidates are interaction-time data. Eagerly enumerating all
       // writable relations here leaves requests in flight across route/actor
       // changes and probes models the user never opened. Both create defaults
@@ -511,7 +521,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       // so labels render correctly (e.g. many2many tag fields).
       if (renderProfile.value !== 'readonly') {
         await hydrateSelectedRelationOptions();
-        if (!isComponentActive.value || reloadToken !== activeReloadToken) return;
+        if (!ownsAuxiliaryLoad() || !isComponentActive.value || reloadToken !== activeReloadToken) return;
       }
       await hydrateVisibleOne2manyRows();
     } catch {

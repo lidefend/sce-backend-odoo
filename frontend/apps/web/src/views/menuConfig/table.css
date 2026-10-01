@@ -1,5 +1,6 @@
 .menu-selected-panel,
-.menu-bulk-panel {
+.menu-bulk-panel,
+.menu-empty-panel {
   min-width: 0;
   border: 1px solid var(--sc-app-border);
   border-radius: 8px;
@@ -12,12 +13,15 @@
   padding: 14px;
 }
 
-.menu-primary-panel {
-  min-height: 360px;
+/* Frame for the governed empty state that replaces the retired hand-written
+   band.  The panel layout (grid/gap) stays on .menu-selected-panel; the
+   primitive keeps its own flex layout, so only the frame is claimed here. */
+.menu-empty-panel {
+  padding: 14px;
 }
 
-.menu-selected-panel--empty {
-  color: var(--sc-app-text-secondary);
+.menu-primary-panel {
+  min-height: 360px;
 }
 
 .menu-selected-head {
@@ -103,14 +107,12 @@
   font-size: 12px;
 }
 
-.menu-selected-head h2,
-.menu-selected-panel--empty h2 {
+.menu-selected-head h2 {
   margin: 0;
   font-size: 16px;
 }
 
-.menu-selected-head p,
-.menu-selected-panel--empty p {
+.menu-selected-head p {
   margin: 4px 0 0;
   color: var(--sc-app-text-secondary);
   font-size: 12px;
@@ -149,7 +151,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(88px, 0.35fr) minmax(112px, 0.4fr);
 }
 
-.menu-detail-grid label {
+.menu-detail-grid > label:not(.sc-checkbox) {
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -158,7 +160,6 @@
 }
 
 .menu-visible-toggle {
-  grid-template-columns: auto 1fr;
   align-content: end;
   align-items: center;
   box-sizing: border-box;

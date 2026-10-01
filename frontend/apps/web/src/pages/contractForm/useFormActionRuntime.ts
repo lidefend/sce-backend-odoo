@@ -1,3 +1,4 @@
+import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import type { Ref } from 'vue';
 import type { Router, LocationQueryRaw } from 'vue-router';
 import { executeButton } from '../../api/executeButton';
@@ -36,9 +37,11 @@ export function useFormActionRuntime(params: {
   saveRecord: (refreshPolicy?: ContractAction['refreshPolicy']) => Promise<boolean | number>;
   status: Ref<UiStatus>;
   submissionFeedback: Ref<SubmissionFeedback>;
+  validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
   async function runAction(action: ContractAction) {
     if (!action.enabled) return;
+    if (params.validateSubmissionRequirements?.(action) === false) return;
     if (!await params.confirmActionSafety(action)) return;
     const plan = buildFormActionExecutionPlan({
       action,
@@ -148,6 +151,8 @@ export function useFormActionRuntime(params: {
           meta: {
             menu_id: Number(params.routeMenuId() || 0) || undefined,
             action_id: params.actionId() || undefined,
+            relation_origin: relationActionOrigin(params.currentQuery()),
+            work_item_origin: workItemActionOrigin(params.currentQuery()),
           },
         });
         const result = response?.result;

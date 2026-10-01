@@ -1,47 +1,49 @@
 <template>
   <article class="block block-todo-list">
-    <header class="block-header">
-      <h4>{{ block.title || '待办' }}</h4>
-      <div class="block-header-actions">
-        <ScButton
-          v-for="action in actions"
-          :key="`block-action-${action.key}`"
-          size="small"
-          variant="ghost"
-          @click="emitAction(action.key, {})"
-        >
-          {{ action.label || action.key }}
-        </ScButton>
-      </div>
-    </header>
-
-    <div v-if="items.length" class="todo-list">
-      <article
-        v-for="item in items"
-        :key="item.id"
-        class="todo-item"
-        :class="[`tone-${item.tone || 'info'}`, { actionable: Boolean(item.actionKey) }]"
-      >
-        <div>
-          <p class="todo-title">
-            <span>{{ item.title }}</span>
-            <span v-if="item.status === 'urgent'" class="todo-urgent">紧急</span>
-            <span class="todo-source" :class="`source-${item.source}`">{{ item.sourceLabel }}</span>
-          </p>
-          <p class="todo-desc">{{ item.description }}</p>
-          <p v-if="item.pendingCount > 0" class="todo-meta">待处理 {{ item.pendingCount }}</p>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '待办'">
+      <template #actions>
+        <div class="block-header-actions">
+          <ScButton
+            v-for="action in actions"
+            :key="`block-action-${action.key}`"
+            size="small"
+            variant="ghost"
+            @click="emitAction(action.key, {})"
+          >
+            {{ action.label || action.key }}
+          </ScButton>
         </div>
-        <ScButton size="small" variant="primary" class="todo-open-btn" @click.stop="emitAction(item.actionKey || 'open_scene', item.raw)">
-          {{ item.buttonText }}
-        </ScButton>
-      </article>
-    </div>
+      </template>
 
-    <ScEmptyState v-else density="compact" :heading-level="5" title="当前暂无待办" />
+      <div v-if="items.length" class="todo-list">
+        <article
+          v-for="item in items"
+          :key="item.id"
+          class="todo-item"
+          :class="[`tone-${item.tone || 'info'}`, { actionable: Boolean(item.actionKey) }]"
+        >
+          <div>
+            <p class="todo-title">
+              <span>{{ item.title }}</span>
+              <span v-if="item.status === 'urgent'" class="todo-urgent">紧急</span>
+              <span class="todo-source" :class="`source-${item.source}`">{{ item.sourceLabel }}</span>
+            </p>
+            <p class="todo-desc">{{ item.description }}</p>
+            <p v-if="item.pendingCount > 0" class="todo-meta">待处理 {{ item.pendingCount }}</p>
+          </div>
+          <ScButton size="small" variant="primary" class="todo-open-btn" @click.stop="emitAction(item.actionKey || 'open_scene', item.raw)">
+            {{ item.buttonText }}
+          </ScButton>
+        </article>
+      </div>
+
+      <ScEmptyState v-else density="compact" :heading-level="5" title="当前暂无待办" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScButton from '../../design-system/ScButton.vue';
@@ -114,24 +116,8 @@ function normalizeSource(value: unknown) {
 </script>
 
 <style scoped>
-.block {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 14px;
-  height: 100%;
-}
-.block-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.block-header h4 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .block-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -218,7 +204,7 @@ function normalizeSource(value: unknown) {
   background: var(--sc-app-warning-bg);
 }
 @container (max-width: 480px) {
-  .block-header, .todo-item { align-items: stretch; flex-direction: column; }
+  .todo-item { align-items: stretch; flex-direction: column; }
   .block-header-actions { width: 100%; }
   .todo-open-btn { width: 100%; }
 }

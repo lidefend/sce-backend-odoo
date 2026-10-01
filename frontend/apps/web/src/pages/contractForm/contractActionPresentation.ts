@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import type { ContractV2ButtonStatus } from '../../app/contracts/v2/types';
 import { routeAuthorityContextAllowed, type RouteAuthorityEntry } from '../../app/routeAuthority';
 import { detectObjectMethodFromActionKey, normalizeActionKind, parseMaybeJsonRecord, toPositiveInt } from '../../app/contractRuntime';
@@ -106,6 +107,7 @@ export function buildContractFormActions(params: {
         authorityActionId: String(row.actionId || row.action_id || '').trim(),
         backendIdentity: String(row.backendIdentity || row.backend_identity || '').trim() || undefined,
         nativeIdentity,
+        actionSemantics: row.actionSemantics,
         label: String(row.label || key).trim() || key,
         kind: ['ui.local_mode', 'ui.mode'].includes(String(row.intent || '').trim())
           ? 'client'
@@ -261,6 +263,7 @@ export function buildContractFormActions(params: {
       domainRaw: String(payload.domain_raw || '').trim(),
       target: String(payload.target || targetRaw.target || '').trim(),
       url: openUrl,
+      actionSemantics: normalizeActionSemantics({ actionId: authorityActionId, backendIdentity, actionSemantics: row.actionSemantics }),
       enabled,
       authorizationAllowed,
       requiresSavedRecord,
@@ -302,4 +305,10 @@ export function isUnifiedSubmitMethod(methodName: string) {
 
 export function isUnifiedSubmitAction(action: ContractAction | null | undefined) {
   return Boolean(action && isUnifiedSubmitMethod(action.methodName));
+}
+
+/** Native occurrences borrow availability only from the resolved contract action. */
+export function resolveNativeContractActionState(action: ContractAction | null, busy: boolean) {
+  if (!action) return {};
+  return { disabled: busy || !action.enabled, title: action.hint || '' };
 }

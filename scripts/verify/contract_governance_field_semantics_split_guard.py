@@ -4,12 +4,17 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
 FIELD_SEMANTICS = ROOT / "addons/smart_core/utils/contract_governance_field_semantics.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_GOVERNANCE_LINES = 3453
 
 
 def _read(path: Path) -> str:
@@ -38,8 +43,7 @@ def main() -> int:
 
     if governance_text:
         line_count = len(governance_text.splitlines())
-        if line_count > MAX_GOVERNANCE_LINES:
-            errors.append(f"contract_governance.py line budget exceeded: {line_count} > {MAX_GOVERNANCE_LINES}")
+        line_budgets.advise_size("addons/smart_core/utils/contract_governance.py", line_count, label="contract_governance.py")
         for token in [
             "def _load_field_semantics_module()",
             "contract_governance_field_semantics.py",

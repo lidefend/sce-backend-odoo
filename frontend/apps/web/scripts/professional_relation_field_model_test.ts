@@ -4,8 +4,10 @@ import {
   isProfessionalRelationField,
   relationFieldAuthority,
   resolveProfessionalMany2oneDisplayValue,
+  resolveProfessionalMany2oneQueryKey,
   resolveProfessionalMany2oneQueryKeyword,
   resolveProfessionalMany2oneRecordValue,
+  resolveProfessionalMany2oneSearchInput,
 } from '../src/components/professional-fields/professionalRelationFieldModel';
 
 const modes = ['task', 'workspace'] as const;
@@ -56,9 +58,31 @@ assert.equal(resolveProfessionalMany2oneRecordValue({ inputValue: false }), '');
 assert.equal(resolveProfessionalMany2oneRecordValue({ inputValue: 'false' }), '');
 assert.equal(resolveProfessionalMany2oneRecordValue({ inputValue: null }), '');
 assert.equal(resolveProfessionalMany2oneRecordValue({ inputValue: undefined }), '');
-// Query keyword channel never falls back to the display projection.
-assert.equal(resolveProfessionalMany2oneQueryKeyword({ relationQueryKeyword: '  客户B  ' }), '客户B');
+// Query keyword channel never falls back to the display projection, and it is
+// the exact typed text: it is the controlled value of the official Select's
+// search input, so normalizing it deletes characters that are still in flight.
+assert.equal(resolveProfessionalMany2oneQueryKeyword({ relationQueryKeyword: '  客户B  ' }), '  客户B  ');
 assert.equal(resolveProfessionalMany2oneQueryKeyword({ relationQueryKeyword: '' }), '');
 assert.equal(resolveProfessionalMany2oneQueryKeyword({}), '');
 
-console.log(`[professional_relation_field_model_test] PASS matrix=${matrix} counterexamples=13`);
+// Counterexample (defect 2026-09-29): a controlled search input whose stored
+// keyword is trimmed loses the space the moment it is typed, so a multi-word
+// keyword degrades to a single word and the request can never match
+// "FE Project". Replay the keystrokes through the projections that own each side.
+let displayedKeyword = '';
+let requestKeyword = '';
+for (const character of 'FE Project A') {
+  const typed = `${displayedKeyword}${character}`;
+  // The Select is fully controlled by the stored keyword, so the next keystroke
+  // lands on whatever the previous projection published.
+  displayedKeyword = resolveProfessionalMany2oneSearchInput(typed);
+  requestKeyword = resolveProfessionalMany2oneQueryKey(typed);
+}
+assert.equal(displayedKeyword, 'FE Project A');
+assert.equal(requestKeyword, 'FE Project A');
+assert.equal(resolveProfessionalMany2oneQueryKeyword({ relationQueryKeyword: 'FE ' }), 'FE ');
+assert.equal(resolveProfessionalMany2oneSearchInput('FE Project'), 'FE Project');
+assert.equal(resolveProfessionalMany2oneQueryKey('  FE Project  '), 'FE Project');
+assert.equal(resolveProfessionalMany2oneQueryKey('   '), '');
+
+console.log(`[professional_relation_field_model_test] PASS matrix=${matrix} counterexamples=17`);

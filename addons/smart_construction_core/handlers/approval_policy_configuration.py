@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import re
 from typing import Any
 
@@ -54,6 +55,8 @@ def _float_or_false(value: Any):
         parsed = float(text)
     except Exception:
         raise ValidationError("审批金额条件无效。")
+    if not math.isfinite(parsed):
+        raise ValidationError("审批金额条件必须是有限数值。")
     if parsed < 0:
         raise ValidationError("审批金额条件不能小于 0。")
     return parsed
@@ -227,6 +230,7 @@ class ApprovalPolicyConfigGetHandler(BaseIntentHandler):
         return {
             "model": model,
             "policy": self._serialize_policy(Policy, policy, model),
+            "amount_condition": Policy._amount_condition_authority(model),
             "runtime_approval_required": required,
             "mode_options": self._selection_options(Policy, "mode"),
             "trigger_options": self._selection_options(Policy, "trigger"),
@@ -379,28 +383,43 @@ class ApprovalPolicyStepsSetHandler(ApprovalPolicyConfigSetHandler):
         Policy = self._policy_model()
         Step = self._step_model()
         policy = self._find_policy(Policy, model)
-        if not policy:
-            policy = self._create_policy(Policy, model, {
-                "approval_required": True,
-                "mode": "linear" if len(steps) > 1 else "single",
-                "active": True,
-            })
-        existing = {_ref_id(step): step for step in self._sorted_steps(policy) if _ref_id(step)}
+        existing = {_ref_id(step): step for step in self._sorted_steps(policy) if _ref_id(step)} if policy else {}
+        amount_condition = Policy._amount_condition_authority(model)
+        prepared = []
         seen_ids = set()
         active_count = 0
+        # Validate the entire submitted collection before the first policy/step mutation.
         for index, raw in enumerate(steps):
             if not isinstance(raw, dict):
                 raise ValidationError("审批步骤配置无效。")
-            step_id = _to_int(raw.get("id"))
+            raw_id = raw.get("id")
+            if isinstance(raw_id, (bool, float)) or (raw_id not in (None, 0, "") and not (
+                isinstance(raw_id, int) and raw_id > 0
+                or isinstance(raw_id, str) and re.fullmatch(r"[1-9][0-9]*", raw_id)
+            )):
+                raise ValidationError("审批步骤标识无效。")
+            step_id = _to_int(raw_id)
+            if step_id and (step_id not in existing or step_id in seen_ids):
+                raise ValidationError("审批步骤不属于当前规则或已重复。")
             vals = self._step_vals(Policy, raw, (index + 1) * 10)
+            if not amount_condition["supported"] and (vals["amount_min"] or vals["amount_max"]):
+                raise ValidationError(amount_condition["message"])
             if vals["active"]:
                 active_count += 1
-            if step_id and step_id in existing:
+            if step_id:
                 seen_ids.add(step_id)
+            prepared.append((step_id, vals))
+        if not policy:
+            policy = self._create_policy(Policy, model, {
+                "approval_required": active_count > 0,
+                "mode": "none" if active_count == 0 else ("linear" if active_count > 1 else "single"),
+                "active": True,
+            })
+        for step_id, vals in prepared:
+            if step_id:
                 self._step_writer(existing[step_id]).write(vals)
-                continue
-            create_vals = dict(vals, policy_id=_ref_id(policy))
-            Step.create(create_vals)
+            else:
+                Step.create(dict(vals, policy_id=_ref_id(policy)))
         for step_id, step in existing.items():
             if step_id not in seen_ids:
                 self._step_writer(step).write({"active": False})

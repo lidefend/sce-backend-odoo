@@ -2,6 +2,7 @@
 """Guard the full-width business form canvas and contract-driven responsive grid."""
 
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / "frontend/apps/web/src"
@@ -50,11 +51,17 @@ for required in (
     ".template-form-section-grid--columns-1 > .field {\n  grid-column: 1 / -1;",
     ".field--wide,\n  .field--full {\n    grid-column: 1 / -1;",
     ".field-control-main {\n  flex: 1 1 auto;\n  display: grid;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
-    ".readonly-value {\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
     "white-space: pre-wrap;\n  overflow-wrap: anywhere;\n  word-break: break-word;",
 ):
     if required not in section:
         fail(f"responsive field grid contract missing: {required}")
+readonly_block = re.search(r"(?m)^\.readonly-value\s*\{([^{}]*)\}", section)
+if not readonly_block:
+    fail("readonly value selector missing")
+readonly_declarations = dict(re.findall(r"([\w-]+)\s*:\s*([^;]+);", readonly_block.group(1)))
+for name, expected in {"box-sizing": "border-box", "display": "grid", "align-items": "center", "width": "100%", "max-width": "100%", "min-width": "0"}.items():
+    if readonly_declarations.get(name, "").strip() != expected:
+        fail(f"readonly value declaration missing or invalid: {name}")
 for forbidden in ("fieldName", "description", "remark", "address", "location"):
     if forbidden in mapper:
         fail(f"field span guesses from business name/label: {forbidden}")

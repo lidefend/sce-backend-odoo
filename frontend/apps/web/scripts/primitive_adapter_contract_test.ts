@@ -71,13 +71,18 @@ assert.equal(resolveModalKeyboardAction({ key: 'Tab', shiftKey: true, focusableC
 assert.equal(resolveModalKeyboardAction({ key: 'Tab', shiftKey: false, focusableCount: 2, activeIndex: 1, surfaceActive: false }), 'focus-first');
 assert.equal(resolveModalKeyboardAction({ key: 'Enter', shiftKey: false, focusableCount: 2, activeIndex: 1, surfaceActive: false }), 'none');
 
-const eventCases = ['focus', 'blur', 'keydown', 'keyup'];
+// `compositionstart`/`compositionend` are in this list on purpose: an IME commit is
+// read from the DOM event (`target.value`), so the driver payload must resolve to the
+// real `CompositionEvent`. A primitive that re-derives `context.e` locally instead of
+// calling this helper drops the committed text (the official list search box did).
+const eventCases = ['focus', 'blur', 'keydown', 'keyup', 'compositionstart', 'compositionend'];
 for (const type of eventCases) {
   const native = new Event(type);
-  Object.defineProperty(native, 'target', { value: { value: 'Selected relation', id: 'relation-control' } });
+  const committed = type.startsWith('composition') ? '合同' : 'Selected relation';
+  Object.defineProperty(native, 'target', { value: { value: committed, id: 'relation-control' } });
   const normalized = resolvePrimitiveNativeEvent({ e: native, value: 'Selected relation' });
   assert.equal(normalized, native, `${type} must preserve the driver native event identity`);
-  assert.equal((normalized?.target as unknown as { value: string }).value, 'Selected relation');
+  assert.equal((normalized?.target as unknown as { value: string }).value, committed);
   assert.equal(resolvePrimitiveNativeEvent(native), native);
 }
 for (const invalid of [undefined, null, {}, { value: 'Selected relation' }, { e: null }]) {

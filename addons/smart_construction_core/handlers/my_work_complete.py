@@ -217,7 +217,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
 
     def _write_batch_audit(self, *, trace_id, source, ids, note, idem_key, idem_fingerprint, result, duration_ms):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             return
         try:
             after_payload = self._build_audit_payload(
@@ -339,7 +339,7 @@ class MyWorkCompleteBatchHandler(BaseIntentHandler):
             retry_ids=failed_retry_ids,
             note=note,
         )
-        todo_remaining = self.env["mail.activity"].search_count([("user_id", "=", self.env.user.id)]) if self.env.get("mail.activity") else 0
+        todo_remaining = self.env["mail.activity"].search_count([("user_id", "=", self.env.user.id)]) if self.env.get("mail.activity") is not None else 0
         data = apply_idempotency_identity(
             {
                 "execution_mode": execution_mode,

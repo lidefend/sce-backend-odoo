@@ -28,8 +28,8 @@ from odoo.exceptions import AccessError
 from odoo.addons.smart_construction_core.services.project_execution_item_projection_service import (
     ProjectExecutionItemProjectionService,
 )
-from odoo.addons.smart_construction_core.services.payment_request_work_item_service import (
-    PaymentRequestWorkItemService,
+from odoo.addons.smart_construction_core.services.review_work_item_service import (
+    CurrentWorkItemService,
 )
 from odoo.addons.smart_construction_scene.services.my_work_scene_targets import (
     build_my_work_section_rows,
@@ -713,7 +713,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         params = params if isinstance(params, dict) else {}
         self._current_project_scope_id = selected_project_id_from_context(params, context)
         if bool(params.get("product_workspace")):
-            product_workspace = PaymentRequestWorkItemService(
+            product_workspace = CurrentWorkItemService(
                 self.env,
                 params=params,
                 context=context,
@@ -899,7 +899,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
             ),
             "visibility": visibility,
             "source_authority": self._source_authority_contract(),
-            "product_workspace": PaymentRequestWorkItemService(
+            "product_workspace": CurrentWorkItemService(
                 self.env,
                 params=params,
                 context=self.context if isinstance(self.context, dict) else {},

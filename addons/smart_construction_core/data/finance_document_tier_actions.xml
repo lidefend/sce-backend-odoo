@@ -186,5 +186,217 @@ if target_records:
 ]]></field>
         </record>
 
+
+        <record id="server_action_contract_event_on_approved" model="ir.actions.server">
+            <field name="name">合同履约事件审批通过回调</field>
+            <field name="model_id" ref="model_sc_contract_event"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_contract_event_on_rejected" model="ir.actions.server">
+            <field name="name">合同履约事件审批驳回回调</field>
+            <field name="model_id" ref="model_sc_contract_event"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_version_on_approved" model="ir.actions.server">
+            <field name="name">计划版本审批通过回调</field>
+            <field name="model_id" ref="model_sc_plan_version"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_version_on_rejected" model="ir.actions.server">
+            <field name="name">计划版本审批驳回回调</field>
+            <field name="model_id" ref="model_sc_plan_version"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_report_on_approved" model="ir.actions.server">
+            <field name="name">计划汇报审批通过回调</field>
+            <field name="model_id" ref="model_sc_plan_report"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_report_on_rejected" model="ir.actions.server">
+            <field name="name">计划汇报审批驳回回调</field>
+            <field name="model_id" ref="model_sc_plan_report"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_on_approved" model="ir.actions.server">
+            <field name="name">计划审批通过回调</field>
+            <field name="model_id" ref="model_sc_plan"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_plan_on_rejected" model="ir.actions.server">
+            <field name="name">计划审批驳回回调</field>
+            <field name="model_id" ref="model_sc_plan"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+
+        <record id="server_action_diary_on_approved" model="ir.actions.server">
+            <field name="name">施工日志审批通过回调</field>
+            <field name="model_id" ref="model_sc_construction_diary"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_diary_on_rejected" model="ir.actions.server">
+            <field name="name">施工日志审批驳回回调</field>
+            <field name="model_id" ref="model_sc_construction_diary"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+        <record id="server_action_tax_deduction_on_approved" model="ir.actions.server">
+            <field name="name">抵扣登记审批通过回调</field>
+            <field name="model_id" ref="model_sc_tax_deduction_registration"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+
+        <record id="server_action_tax_deduction_on_rejected" model="ir.actions.server">
+            <field name="name">抵扣登记审批驳回回调</field>
+            <field name="model_id" ref="model_sc_tax_deduction_registration"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+
+        <record id="server_action_task_on_approved" model="ir.actions.server">
+            <field name="name">任务审批通过回调</field>
+            <field name="model_id" ref="project.model_project_task"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+        <record id="server_action_task_on_rejected" model="ir.actions.server">
+            <field name="name">任务审批驳回回调</field>
+            <field name="model_id" ref="project.model_project_task"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+        <record id="server_action_project_on_approved" model="ir.actions.server">
+            <field name="name">项目立项审批通过回调</field>
+            <field name="model_id" ref="project.model_project_project"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+        <record id="server_action_project_on_rejected" model="ir.actions.server">
+            <field name="name">项目立项审批驳回回调</field>
+            <field name="model_id" ref="project.model_project_project"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+        <record id="server_action_tender_guarantee_on_approved" model="ir.actions.server">
+            <field name="name">投标保证金审批通过回调</field>
+            <field name="model_id" ref="model_tender_guarantee"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+        <record id="server_action_tender_guarantee_on_rejected" model="ir.actions.server">
+            <field name="name">投标保证金审批驳回回调</field>
+            <field name="model_id" ref="model_tender_guarantee"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
+        <record id="server_action_output_adjustment_on_approved" model="ir.actions.server">
+            <field name="name">销项变更审批通过回调</field>
+            <field name="model_id" ref="model_sc_output_invoice_adjustment"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_approved()
+]]></field>
+        </record>
+        <record id="server_action_output_adjustment_on_rejected" model="ir.actions.server">
+            <field name="name">销项变更审批驳回回调</field>
+            <field name="model_id" ref="model_sc_output_invoice_adjustment"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+target_records = records or record
+if target_records:
+    target_records.action_on_tier_rejected()
+]]></field>
+        </record>
     </data>
 </odoo>

@@ -375,9 +375,10 @@ export function createOne2manyDraftRow(params: {
   key: string;
   primary: string;
   columns: One2ManyColumn[];
+  defaults?: Record<string, unknown>;
 }): One2ManyInlineRow {
   const values = params.columns.reduce<Record<string, unknown>>((acc, column) => {
-    acc[column.name] = column.ttype === 'boolean' ? false : '';
+    acc[column.name] = Object.hasOwn(params.defaults || {}, column.name) ? params.defaults![column.name] : column.ttype === 'boolean' ? false : '';
     return acc;
   }, {});
   return {
@@ -386,7 +387,7 @@ export function createOne2manyDraftRow(params: {
     isNew: true,
     removed: false,
     dirty: true,
-    dirtyFields: Array.from(new Set(params.columns.map((column) => column.name))),
+    dirtyFields: Object.keys(params.defaults || {}).filter(name => params.columns.some(column => column.name === name)),
     values: { ...values, [params.primary]: values[params.primary] ?? '' },
   };
 }
@@ -407,9 +408,10 @@ export function appendOne2manyDraftRow(params: {
   key: string;
   primary: string;
   columns: One2ManyColumn[];
+  defaults?: Record<string, unknown>;
 }) {
   const rows = ensureOne2manyRows(params.rowsByField, params.fieldName);
-  rows.push(createOne2manyDraftRow({ key: params.key, primary: params.primary, columns: params.columns }));
+  rows.push(createOne2manyDraftRow({ key: params.key, primary: params.primary, columns: params.columns, defaults: params.defaults }));
 }
 
 export function setOne2manyDraftRowField(params: {
@@ -511,6 +513,27 @@ export function initOne2manyRowsFromRelationSource(params: {
   }));
 }
 
+/**
+ * The identity of a row inside its own collection.
+ *
+ * A row is identified by its own stable parts: the persisted record id once the
+ * row exists, and the draft row key while it is unsaved. The rendered value of a
+ * column is display text, never identity.
+ *
+ * A shared column value is therefore not a duplicate: two rows showing the same
+ * ``来源类型``/``名称`` are still two different business rows. A value-based
+ * uniqueness rule is a business rule, so it can only come from the contract (or
+ * from the model that stores the row); this adapter never invents one. What the
+ * adapter can state on its own is the invariant it actually owns: the same row
+ * identity must not be collected twice.
+ */
+export function one2manyRowCollectionIdentity(row: One2ManyInlineRow): string {
+  const id = Math.trunc(Number(row?.id) || 0);
+  if (id > 0) return `id:${id}`;
+  const key = String(row?.key ?? '').trim();
+  return key ? `key:${key}` : '';
+}
+
 export function collectOne2manyDraftValidationFromRows(params: {
   rowsByField: Record<string, One2ManyInlineRow[]>;
   /** Business model that owns the parent record the rows belong to. */
@@ -529,7 +552,7 @@ export function collectOne2manyDraftValidationFromRows(params: {
     if (params.recordId && !hasTouchedRows) return;
     const primary = params.resolvePrimaryColumn(fieldName);
     const columns = params.resolveColumns(fieldName);
-    const labels = new Set<string>();
+    const seenRowIdentities = new Set<string>();
     rows.forEach((row, index) => {
       if (row.removed) return;
       const rowKey = `${fieldName}:${row.key}`;
@@ -572,14 +595,19 @@ export function collectOne2manyDraftValidationFromRows(params: {
           issues.push(`${fieldName} 第${index + 1}行${column.label}不能为空`);
         }
       });
-      const label = String(row.values?.[primary] ?? row.values?.name ?? '').trim();
-      if (label) {
-        const key = label.toLowerCase();
-        if (labels.has(key)) {
-          perRow.push(`主值重复：${label}`);
-          issues.push(`${fieldName} 存在重复行值：${label}`);
+      // Duplicate detection is identity-based. A column value is display text,
+      // so two rows that share it are still two different rows; keying on the
+      // first business column used to reject legitimate collections whose first
+      // column is a constant (e.g. a payment request whose imported lines all
+      // read 来源类型=结算单明细). Only the same row identity twice is a defect.
+      const identity = one2manyRowCollectionIdentity(row);
+      if (identity) {
+        if (seenRowIdentities.has(identity)) {
+          const label = String(row.values?.[primary] ?? row.values?.name ?? '').trim();
+          perRow.push(label ? `明细行重复：${label}` : '明细行重复');
+          issues.push(`${fieldName} 存在重复明细行${label ? `：${label}` : ''}`);
         } else {
-          labels.add(key);
+          seenRowIdentities.add(identity);
         }
       }
       if (perRow.length) {
@@ -594,6 +622,8 @@ export function buildOne2manyCommandValue(
   original: unknown,
   rows: One2ManyInlineRow[],
   mode: 'onchange' | 'write',
+  columns?: One2ManyColumn[],
+  parentValues: Record<string, unknown> = {},
 ) {
   return buildOne2ManyInlineCommands({
     original,
@@ -602,9 +632,13 @@ export function buildOne2manyCommandValue(
       isNew: row.isNew,
       removed: row.removed,
       dirty: row.dirty,
-      values: row.isNew
+      values: row.isNew && mode === 'onchange'
         ? row.values || {}
-        : Object.fromEntries((row.dirtyFields || []).map((key) => [key, row.values?.[key]])),
+        : Object.fromEntries((row.dirtyFields || []).filter(key => {
+          if (!row.isNew || !columns) return true;
+          return columns.some(column => column.name === key
+            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}).readonly);
+        }).map((key) => [key, row.values?.[key]])),
     })),
     mode,
   });

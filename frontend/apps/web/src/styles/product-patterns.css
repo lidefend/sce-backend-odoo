@@ -43,13 +43,15 @@
 [aria-busy="true"] { cursor: progress; }
 
 .router-host {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   width: 100%;
   min-height: 100%;
 }
 
 .router-host > :is(.sc-page-frame, .sc-product-page-frame) {
-  min-height: 100%;
+  flex: 1 0 auto;
 }
 
 .sc-page-frame,
@@ -114,13 +116,13 @@
   box-shadow: none;
 }
 
-.sc-product-workspace-stack :is(table, .data-table, .list-table) th {
+[data-list-card-container='official'] :is(table, .data-table, .list-table) th {
   color: var(--sc-app-text-secondary);
   font-size: var(--sc-product-text-sm);
   font-weight: 600;
 }
 
-.sc-product-workspace-stack :is(table, .data-table, .list-table) td {
+[data-list-card-container='official'] :is(table, .data-table, .list-table) td {
   min-height: var(--sc-product-table-row-height);
   font-size: var(--sc-product-text-body);
 }

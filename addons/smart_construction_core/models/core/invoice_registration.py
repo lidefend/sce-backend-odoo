@@ -4,6 +4,9 @@ from odoo.exceptions import AccessError, UserError
 from odoo.tools.float_utils import float_compare
 
 
+_INVOICE_STATE_TOKEN = object()
+
+
 class ScInvoiceRegistration(models.Model):
     _name = "sc.invoice.registration"
     _description = "发票登记"
@@ -390,6 +393,17 @@ class ScInvoiceRegistration(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_invoice_state_token") is _INVOICE_STATE_TOKEN
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史发票只能由受管迁移导入。"))
+            if state != "draft" and not authoritative and not historical_import:
+                raise UserError(_("发票状态必须通过提交审批和登记动作产生。"))
+            if any(values.get(field, self.env.context.get("default_" + field)) for field in ("red_flush_adjustment_id", "red_flush_origin_source_model", "red_flush_origin_source_record_id", "red_flush_origin_invoice_no")) and not authoritative:
+                raise UserError(_("红冲发票只能由批准后的红冲动作生成。"))
         seq = self.env["ir.sequence"]
         normalized_values = []
         for original_vals in vals_list:
@@ -502,6 +516,14 @@ class ScInvoiceRegistration(models.Model):
         return set()
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_invoice_state_token") is _INVOICE_STATE_TOKEN
+        if not authoritative and {"state", "source_origin", "red_flush_adjustment_id", "red_flush_origin_source_model", "red_flush_origin_source_record_id", "red_flush_origin_invoice_no"}.intersection(vals):
+            raise UserError(_("发票状态和红冲归属只能通过正式业务动作写入。"))
+        reviewed = {"project_id", "partner_id", "contract_id", "settlement_id", "currency_id", "source_kind", "direction", "invoice_no", "invoice_date", "invoice_issue_company", "amount_total", "amount_no_tax", "tax_amount", "surcharge_amount", "document_date", "business_category_id"}
+        if not authoritative and reviewed.intersection(vals) and any(
+            rec.source_origin != "legacy" and (rec.state != "draft" or rec.validation_status in ("waiting", "pending", "validated")) for rec in self
+        ):
+            raise UserError(_("在审、已批准或已登记发票不能修改审批内容。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {
                 "partner_id",
@@ -558,6 +580,22 @@ class ScInvoiceRegistration(models.Model):
             """
         )
 
+    def _write_invoice_state(self, values):
+        return self.with_context(sc_invoice_state_token=_INVOICE_STATE_TOKEN).write(values)
+
+    @api.model
+    def _create_registered_red_flush(self, adjustment, values):
+        adjustment.ensure_one()
+        if adjustment._name != "sc.output.invoice.adjustment" or adjustment.generated_invoice_id:
+            raise UserError(_("红冲登记来源无效或已生成发票。"))
+        self.env["sc.approval.policy"]._assert_submission_approved(adjustment, ("approved",))
+        self._assert_finance_register_access()
+        adjustment._assert_original_snapshot_unchanged()
+        adjustment._validate_red_flush_ready()
+        if values.get("red_flush_adjustment_id") != adjustment.id or values.get("state") != "registered":
+            raise UserError(_("红冲登记必须绑定已审批的原变更单。"))
+        return self.with_context(sc_invoice_state_token=_INVOICE_STATE_TOKEN).create(values)
+
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
         for rec in self:
@@ -565,13 +603,11 @@ class ScInvoiceRegistration(models.Model):
                 raise UserError(_("只有草稿发票登记可以确认。"))
             rec._check_business_anchor()
             before = rec._snapshot_audit_payload()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
+            if policy._start_submission_review(rec):
                 rec.invalidate_recordset()
                 rec._audit_transition("invoice_submitted", before, rec._snapshot_audit_payload(), action_name="action_confirm")
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_invoice_state({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition("invoice_confirmed", before, rec._snapshot_audit_payload(), action_name="action_confirm")
 
     def action_register(self):
@@ -581,10 +617,9 @@ class ScInvoiceRegistration(models.Model):
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认发票登记可以登记。"))
             rec._check_business_anchor()
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("发票登记尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "registered"})
+            rec._write_invoice_state({"state": "registered"})
             rec._audit_transition("invoice_registered", before, rec._snapshot_audit_payload(), action_name="action_register")
 
     def _has_finance_register_access(self):
@@ -600,8 +635,10 @@ class ScInvoiceRegistration(models.Model):
                 raise UserError(_("历史迁移发票登记不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认发票登记可以取消。"))
+            if rec.review_ids and rec.validation_status in ("waiting", "pending"):
+                raise UserError(_("审批中的发票不能取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_invoice_state({"state": "cancel"})
             rec._audit_transition("invoice_cancelled", before, rec._snapshot_audit_payload(), action_name="action_cancel")
 
     def _snapshot_audit_payload(self):
@@ -698,17 +735,6 @@ class ScInvoiceRegistration(models.Model):
                     }
                 )
 
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("发票登记已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("发票登记已经在统一审批流程中，请等待审批完成。"))
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -724,21 +750,20 @@ class ScInvoiceRegistration(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state != "draft":
                 raise UserError(_("只有草稿发票登记可以完成统一审批回调。"))
             rec._check_business_anchor()
             before = rec._snapshot_audit_payload()
-            rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+            rec.with_context(skip_validation_check=True)._write_invoice_state({"state": "confirmed", "reject_reason": False})
             rec._audit_transition("invoice_confirmed", before, rec._snapshot_audit_payload(), action_name="action_on_tier_approved")
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state != "draft":
                 raise UserError(_("只有草稿发票登记可以驳回。"))
             before = rec._snapshot_audit_payload()

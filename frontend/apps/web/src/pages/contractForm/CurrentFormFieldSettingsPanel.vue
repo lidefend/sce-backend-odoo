@@ -93,7 +93,7 @@
                 <em>{{ item.groupTitle }}</em>
               </ScButton>
             </div>
-            <p v-else class="contract-form-field-search-empty">没有匹配字段</p>
+            <ScEmptyState v-else density="compact" :heading-level="5" title="没有匹配字段" />
           </section>
           <section class="contract-form-field-navigator" aria-label="字段分组导航">
             <header>
@@ -266,10 +266,14 @@
                 </section>
               </div>
             </ScCard>
-            <div v-else class="contract-field-selection-empty">
-              <strong>选择字段后开始配置</strong>
-              <span>在下方表单点选字段后，可在这里调整显示、隐藏、顺序和分组。</span>
-            </div>
+            <ScEmptyState
+              v-else
+              class="contract-field-selection-empty"
+              density="compact"
+              :heading-level="5"
+              title="选择字段后开始配置"
+              description="在下方表单点选字段后，可在这里调整显示、隐藏、顺序和分组。"
+            />
           </section>
           <section class="contract-form-operation-log" aria-label="本次操作记录">
             <header>
@@ -299,7 +303,7 @@
                 <span>{{ formatOperationSummary(entry.summary) }}</span>
               </li>
             </ol>
-            <p v-else class="contract-form-operation-log-empty">暂无操作记录</p>
+            <ScEmptyState v-else density="compact" :heading-level="6" title="暂无操作记录" />
           </section>
         </aside>
       </div>
@@ -330,6 +334,7 @@ import ScButton from '../../components/design-system/ScButton.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScRadio from '../../components/design-system/ScRadio.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
 import type {
   ContractFieldGovernanceRow,
   FormConfigAuditResult,

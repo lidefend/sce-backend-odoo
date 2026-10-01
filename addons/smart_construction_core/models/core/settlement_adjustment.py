@@ -3,6 +3,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScSettlementAdjustment(models.Model):
     _name = "sc.settlement.adjustment"
     _description = "结算调整"
@@ -86,6 +89,14 @@ class ScSettlementAdjustment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if vals.get("name", "新建") == "新建":
@@ -99,11 +110,30 @@ class ScSettlementAdjustment(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if not authoritative and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "settlement_id", "contract_id", "partner_id",
+            "adjustment_type", "date_adjustment", "item_name", "account_name",
+            "amount", "currency_id", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state == "confirmed" or (
+                    rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+                )
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已确认的结算调整内容不可改写；请按正式流程重新办理。"))
         if any(rec.source_origin == "legacy" and rec.state == "legacy_confirmed" for rec in self):
             allowed = {"settlement_id", "contract_id", "partner_id", "note", "active", "write_uid", "write_date"}
             if set(vals) - allowed:
                 raise UserError(_("历史迁移调整已确认，只允许补充业务锚点和备注。"))
         return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -111,11 +141,8 @@ class ScSettlementAdjustment(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿状态的结算调整可以确认。"))
             rec._check_business_anchor()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
-            else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+            if not policy._start_submission_review(rec):
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_cancel(self):
         for rec in self:
@@ -123,27 +150,35 @@ class ScSettlementAdjustment(models.Model):
                 raise UserError(_("历史迁移调整不能在新系统取消。"))
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的结算调整可以取消。"))
-        self.write({"state": "cancel"})
+        self._write_document_state({"state": "cancel"})
+
+    def _business_anchor_errors(self):
+        self.ensure_one()
+        errors = []
+        if not self.item_name:
+            errors.append(("SETTLEMENT_ADJUSTMENT_MISSING_ITEM", _("结算调整确认前必须维护调整事项。")))
+        if (self.amount or 0.0) <= 0:
+            errors.append(("SETTLEMENT_ADJUSTMENT_INVALID_AMOUNT", _("结算调整确认前调整金额必须大于 0。")))
+        if not self.settlement_id and not self.contract_id:
+            errors.append(("SETTLEMENT_ADJUSTMENT_MISSING_ANCHOR", _("结算调整确认前必须关联结算单或合同。")))
+        for source in (self.settlement_id, self.contract_id):
+            if not source:
+                continue
+            if self.project_id != source.project_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_PROJECT_MISMATCH", _("结算调整项目必须与来源项目一致。")))
+            if self.currency_id != source.currency_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_CURRENCY_MISMATCH", _("结算调整币种必须与来源币种一致。")))
+            if self.partner_id and self.partner_id != source.partner_id:
+                errors.append(("SETTLEMENT_ADJUSTMENT_PARTNER_MISMATCH", _("结算调整往来单位必须与来源往来单位一致。")))
+        if self.settlement_id and self.contract_id and self.contract_id != self.settlement_id.contract_id:
+            errors.append(("SETTLEMENT_ADJUSTMENT_CONTRACT_MISMATCH", _("结算调整合同必须与来源结算单合同一致。")))
+        return errors
 
     def _check_business_anchor(self):
         for rec in self:
-            if not rec.item_name:
-                raise UserError(_("结算调整确认前必须维护调整事项。"))
-            if rec.amount <= 0:
-                raise UserError(_("结算调整确认前调整金额必须大于 0。"))
-            if not rec.settlement_id and not rec.contract_id:
-                raise UserError(_("结算调整确认前必须关联结算单或合同。"))
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("结算调整已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("结算调整已经在统一审批流程中，请等待审批完成。"))
+            errors = rec._business_anchor_errors()
+            if errors:
+                raise UserError(errors[0][1])
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -160,17 +195,17 @@ class ScSettlementAdjustment(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec._check_business_anchor()
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 rec.with_context(skip_validation_check=True).write(
                     {"reject_reason": reason or rec._get_tier_reject_reason()}

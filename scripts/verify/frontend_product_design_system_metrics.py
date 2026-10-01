@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# NOTE: line-threshold-reporting-only -- these thresholds are reported, never gated.
 from __future__ import annotations
 
 import json

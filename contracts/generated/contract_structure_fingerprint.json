@@ -572,16 +572,21 @@
             "cancel",
             "done"
           ],
+          "done": [
+            "approved"
+          ],
           "draft": [
             "cancel",
             "submit"
           ],
           "rejected": [
             "cancel",
-            "draft"
+            "draft",
+            "submit"
           ],
           "submit": [
             "approve",
+            "approved",
             "cancel",
             "rejected"
           ]

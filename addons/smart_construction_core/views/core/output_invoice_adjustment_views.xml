@@ -55,19 +55,22 @@
             <field name="arch" type="xml">
                 <form string="销项变更登记">
                     <header>
-                        <button name="action_confirm" string="确认红冲" type="object" class="btn-primary"
-                                invisible="state != 'draft'"/>
-                        <button name="action_cancel" string="取消" type="object"
-                                invisible="state != 'draft'"/>
-                        <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,cancel"/>
+                        <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ['draft', 'submitted', 'rejected'] or validation_status in ['waiting', 'pending', 'validated']"/>
+                        <button name="validate_tier" string="通过" type="object" invisible="state != 'submitted' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                        <button name="reject_tier" string="驳回" type="object" invisible="state != 'submitted' or not can_review or validation_status not in ['waiting', 'pending']"/>
+                        <button name="action_confirm" string="确认红冲" type="object" class="btn-primary" invisible="state != 'approved'"/>
+                        <button name="action_cancel" string="取消" type="object" invisible="state not in ['draft', 'rejected', 'approved'] or validation_status in ['waiting', 'pending']"/>
+                        <field name="state" readonly="1" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
+                        <field name="validation_status" invisible="1"/>
+                        <field name="can_review" invisible="1"/>
                     </header>
                     <sheet>
                         <group>
                             <group>
                                 <field name="name" readonly="1"/>
-                                <field name="adjustment_type" readonly="state != 'draft'"/>
-                                <field name="adjustment_date" readonly="state != 'draft'"/>
-                                <field name="original_ledger_id" readonly="state != 'draft'"/>
+                                <field name="adjustment_type" readonly="state not in ['draft', 'rejected']"/>
+                                <field name="adjustment_date" readonly="state not in ['draft', 'rejected']"/>
+                                <field name="original_ledger_id" readonly="state not in ['draft', 'rejected']"/>
                                 <field name="generated_invoice_id" readonly="1"/>
                             </group>
                             <group>
@@ -89,14 +92,15 @@
                             <field name="original_surcharge_amount"/>
                         </group>
                         <group string="红冲销项票">
-                            <field name="red_flush_invoice_no" readonly="state != 'draft'"/>
+                            <field name="red_flush_invoice_no" readonly="state not in ['draft', 'rejected']"/>
                             <field name="red_flush_invoice_amount"/>
                             <field name="red_flush_amount_no_tax"/>
                             <field name="red_flush_tax_amount"/>
                             <field name="red_flush_surcharge_amount"/>
                         </group>
                         <group>
-                            <field name="reason" readonly="state != 'draft'"/>
+                            <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                            <field name="reason" readonly="state not in ['draft', 'rejected']"/>
                             <field name="note"/>
                         </group>
                     </sheet>

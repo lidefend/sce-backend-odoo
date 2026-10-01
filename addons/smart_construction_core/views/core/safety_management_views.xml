@@ -84,9 +84,14 @@
         <field name="arch" type="xml">
             <form string="安全施工方案">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="审批通过" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved" readonly="1"/>
                 </header>
                 <sheet>
                     <group>
@@ -137,6 +142,16 @@
         <field name="model">sc.safety.disclosure</field>
         <field name="arch" type="xml">
             <form string="安全交底">
+                <header>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved" readonly="1"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -149,7 +164,7 @@
                         <group>
                             <field name="owner_id"/>
                             <field name="copied_user_ids" widget="many2many_tags"/>
-                            <field name="state"/>
+                            <field name="state" readonly="1"/>
                         </group>
                     </group>
                     <notebook>

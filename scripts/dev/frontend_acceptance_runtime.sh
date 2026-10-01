@@ -287,11 +287,158 @@ preflight() {
   echo "[acceptance.runtime.preflight] volumes db=$DB_DATA redis=$REDIS_DATA odoo=$ODOO_DATA"
 }
 
-load_profile
+# Exact existing standard-preview adapter inputs; checked before profile loading.
+validate_standard_list_surface_inputs() {
+  local key
+  for key in SC_ACCEPTANCE_RUNTIME_PROFILE SC_ACCEPTANCE_PROFILE; do
+    [[ -z "${!key:-}" || "${!key}" == local ]] || { echo "DENY: standard list requires local profile" >&2; return 2; }
+  done
+  for key in SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_BASE_URL BASE_URL SC_ACCEPTANCE_API_URL; do
+    [[ -z "${!key:-}" || "${!key}" == http://127.0.0.1:5180 ]] || { echo "DENY: standard list preview URL mismatch" >&2; return 2; }
+  done
+  for key in SC_ACCEPTANCE_DATABASE DB_NAME E2E_DB DB FRONTEND_ACCEPTANCE_DB; do
+    [[ -z "${!key:-}" || "${!key}" == sc_frontend_acceptance ]] || { echo "DENY: standard list database mismatch" >&2; return 2; }
+  done
+  [[ -z "${E2E_LOGIN:-}" || "$E2E_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_LOGIN:-}" || "$SC_ACCEPTANCE_LOGIN" == fixture_role_finance ]] || { echo "DENY: standard list actor mismatch" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_OPERATION:-}" || "$SC_ACCEPTANCE_OPERATION" == readonly ]] || { echo "DENY: standard list is readonly" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_TARGET_MODE:-}" || "$SC_ACCEPTANCE_TARGET_MODE" == managed ]] || { echo "DENY: standard list uses managed preview" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_MANAGE_SERVICE:-}" || "$SC_ACCEPTANCE_MANAGE_SERVICE" == false ]] || { echo "DENY: standard list cannot manage services" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_STORAGE_STATE:-}" ]] || { echo "DENY: standard list requires fresh fixture login" >&2; return 2; }
+  [[ -z "${SC_ACCEPTANCE_BOOTSTRAP_SECRET:-}" ]] || { echo "DENY: standard list uses existing fixture password" >&2; return 2; }
+}
+# End standard list input validation.
+
 command="${1:-preflight}"
+if [[ "$command" == standard-list-surface-browser ]]; then
+  validate_standard_list_surface_inputs
+  standard_list_requested_password="${E2E_PASSWORD:-}"
+fi
+load_profile
 case "$command" in
   preflight)
     preflight
+    ;;
+  standard-approval-runtime|standard-favorite-recovery|standard-page-build|standard-page-up|standard-page-browser|standard-list-surface-browser|standard-page-inventory|standard-page-bootstrap|standard-public-auth-browser|standard-config-field-browser|standard-menu-config-browser|standard-menu-nav-diagnostic|standard-relation-nav-diagnostic)
+    preflight
+    validate_backend_resource_identity
+    # Same unchanged-backend reuse rules as the preceding low-code batch.
+    backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+    [[ "$backend_revision" =~ ^[0-9a-f]{40}$ ]] || exit 2
+    [[ "$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_FINGERPRINT)" == "$(printf '%s\n' "$backend_revision" | sha256sum | cut -d' ' -f1)" ]] || exit 2
+    git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons
+    [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
+    case "$command" in
+      standard-approval-runtime)
+        case "${SC_APPROVAL_RUNTIME_SCOPE:-all}" in all|plan-version-display|payment-source-subcontract|payment-source-rental|ordinary-role-safety-plan|ordinary-role-tender-purchase|ordinary-role-labor-plan|ordinary-role-subcontract-plan|ordinary-role-rental-order|rental-concurrency|subcontract-concurrency|red-flush-concurrency|concurrency-source-preflight|scene-entry-contract|payment-review-entry|payment-review-preflight|payment-flow-existing|payment-flow-reconcile|plan-publication-entry|plan-reviewer-entry|plan-version|plan-report|plan-state-authority|contract-event-state-authority|diary-state-authority|expense-browser-cleanup|expense-create-request|settlement-adjustment|receipt-income|financing-borrowing|financing-approval|self-funding-reconciliation|expense-state-authority|finance-state-authority|legacy-workflow|red-flush-role|red-flush|tender-guarantee|project-document|tender-purchase|project-role-approval|project-creation-state|inbound|acceptance|purchase-request|rfq|material-settlement|equipment-plan-request|equipment-execution|labor-plan-request|labor-execution|rental-plan|rental-order|rental-settlement|rental-settlement-cash|rental-cancellation-contract|safety-approval|subcontract-approval|subcontract-settlement|subcontract-settlement-cash) ;; *) echo "unsupported approval runtime scope" >&2; exit 2 ;; esac
+        if [[ "${SC_APPROVAL_RUNTIME_SCOPE:-all}" == "expense-browser-cleanup" ]]; then
+          : "${SC_EXPENSE_CREATE_REPORT:?exact browser recovery receipt required}"
+          expense_cleanup_json="$(python3 - "$ROOT_DIR" "$SC_EXPENSE_CREATE_REPORT" <<'PYCLEANUP'
+import json, sys
+from pathlib import Path
+root, receipt = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
+assert receipt.is_relative_to(root / 'artifacts/frontend-web-fix-20260928') and receipt.name == 'expense-success-recovery.json'
+print(json.dumps(json.loads(receipt.read_text())))
+PYCLEANUP
+)"
+          docker exec -i -e SC_EXPENSE_CREATE_PROBE_JSON="$expense_cleanup_json" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_expense_probe_cleanup.py"
+          exit $?
+        fi
+        expense_create_probe_json=""
+        if [[ "${SC_APPROVAL_RUNTIME_SCOPE:-all}" == "expense-create-request" ]]; then
+          : "${SC_EXPENSE_CREATE_REPORT:?existing successful browser capture report required}"
+          expense_create_probe_json="$(python3 - "$ROOT_DIR" "$SC_EXPENSE_CREATE_REPORT" <<'PYPROBE'
+import hashlib, json, sys
+from pathlib import Path
+root = Path(sys.argv[1]).resolve()
+report = Path(sys.argv[2]).resolve()
+assert report.is_relative_to(root / 'artifacts/frontend-web-fix-20260928') and report.name == 'report.json'
+raw = report.read_bytes()
+data = json.loads(raw)
+assert data.get('status') == 'passed' and not data.get('errors') and not data.get('forbiddenWrites')
+assert len(data.get('expenseSaveAttempts', [])) == 2
+assert data['expenseSaveAttempts'][0] == data['expenseSaveAttempts'][1]
+assert any(row.get('role') == 'fixture_role_finance' and row.get('intent') == 'system.init' and row.get('success') for row in data['startup'])
+print(json.dumps({'request': data['expenseSaveAttempts'][0], 'source': data['expenseSaveSource'], 'report_sha256': hashlib.sha256(raw).hexdigest()}))
+PYPROBE
+)"
+        fi
+        docker exec -i -e SC_APPROVAL_RUNTIME_SCOPE="${SC_APPROVAL_RUNTIME_SCOPE:-all}" -e SC_EXPENSE_CREATE_PROBE_JSON="$expense_create_probe_json" "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/business_config_approval_runtime_smoke.py"
+        ;;
+      standard-page-build) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" build ;;
+      standard-page-up) python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" up ;;
+      standard-favorite-recovery)
+        docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_favorite_probe_recovery.py"
+        ;;
+      standard-menu-nav-diagnostic)
+        docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_menu_navigation_diagnostic.py"
+        ;;
+      standard-relation-nav-diagnostic)
+        docker exec -i "$BACKEND_ACCEPTANCE_NAME" odoo shell -d "$BACKEND_ACCEPTANCE_DB" -c /var/lib/odoo/odoo.conf < "$ROOT_DIR/scripts/verify/frontend_relation_navigation_diagnostic.py"
+        ;;
+      standard-menu-config-browser)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_menu_config_browser.mjs"
+        ;;
+      standard-config-field-browser)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_config_field_browser.mjs"
+        ;;
+      standard-public-auth-browser)
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_public_auth_browser.mjs"
+        ;;
+      standard-page-bootstrap)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        BOOTSTRAP_SCOPE=candidate-startup node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
+        ;;
+      standard-page-inventory)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" observed-identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_bootstrap_inventory.mjs"
+        ;;
+      standard-list-surface-browser)
+        [[ "$PROFILE" == local && "$DB_NAME" == sc_frontend_acceptance && -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        [[ -z "$standard_list_requested_password" || "$standard_list_requested_password" == "$SC_ACCEPTANCE_FIXTURE_PASSWORD" ]] || { echo "DENY: standard list fixture password mismatch" >&2; exit 2; }
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        SC_ACCEPTANCE_PROFILE=local SC_ACCEPTANCE_FRONTEND_URL=http://127.0.0.1:5180 SC_ACCEPTANCE_API_URL=http://127.0.0.1:5180 \
+          FRONTEND_URL=http://127.0.0.1:5180 ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 BASE_URL=http://127.0.0.1:5180 \
+          SC_ACCEPTANCE_DATABASE=sc_frontend_acceptance DB_NAME=sc_frontend_acceptance E2E_DB=sc_frontend_acceptance DB=sc_frontend_acceptance \
+          SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_MANAGE_SERVICE=false SC_ACCEPTANCE_TARGET_MODE=managed SC_ACCEPTANCE_ROLE= SC_ACCEPTANCE_LOGIN=fixture_role_finance \
+          E2E_LOGIN=fixture_role_finance E2E_PASSWORD="$SC_ACCEPTANCE_FIXTURE_PASSWORD" SC_ACCEPTANCE_BOOTSTRAP_SECRET= \
+          node "$ROOT_DIR/scripts/verify/frontend_list_surface_structure_browser.mjs"
+        ;;
+      standard-page-browser)
+        [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || exit 2
+        python3 "$ROOT_DIR/scripts/dev/frontend_standard_preview.py" identity >/dev/null
+        node "$ROOT_DIR/frontend/apps/web/scripts/standard_page_type_browser.mjs"
+        ;;
+    esac
+    ;;
+  standard-list-lowcode)
+    preflight
+    validate_backend_resource_identity
+    [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == true ]] || exit 2
+    # Iteration evidence can reuse an unchanged backend. Prove both the original
+    # clean identity and the current addon inputs; never rewrite its receipt.
+    backend_revision="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+    [[ "$backend_revision" =~ ^[0-9a-f]{40}$ ]] || exit 2
+    git -C "$ROOT_DIR" cat-file -e "$backend_revision^{commit}"
+    [[ "$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_FINGERPRINT)" == "$(printf '%s\n' "$backend_revision" | sha256sum | cut -d' ' -f1)" ]] || {
+      echo "DENY: original backend was not a clean addon candidate" >&2; exit 2;
+    }
+    git -C "$ROOT_DIR" diff --quiet "$backend_revision" -- addons
+    [[ -z "$(git -C "$ROOT_DIR" ls-files --others --exclude-standard -- addons)" ]] || exit 2
+    [[ -n "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]] || {
+      echo "DENY: existing SC_ACCEPTANCE_FIXTURE_PASSWORD is required; no fixture reset" >&2; exit 2;
+    }
+    export WEB_LC_BACKEND_REVISION="$backend_revision"
+    export CHANGE_SET_STANDARD_LIST_LOOP=1
+    cd "$ROOT_DIR/frontend/apps/web"
+    node scripts/low_code_change_set_acceptance.mjs
     ;;
   backend-up)
     preflight

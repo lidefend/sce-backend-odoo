@@ -1,7 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { nextTick, onMounted } from 'vue';
 
-export function useBusinessConfigWorkbenchBootstrap(deps: Record<string, any>) {
+export type BusinessConfigWorkbenchBootstrapDependencies = {
+  shouldOpenPageList: Readonly<import('vue').Ref<boolean>>;
+  shouldOpenFormConfig: Readonly<import('vue').Ref<boolean>>;
+  shouldOpenListSearch: Readonly<import('vue').Ref<boolean>>;
+  shouldOpenAnalysis: Readonly<import('vue').Ref<boolean>>;
+  loadSurface: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['loadSurface'];
+  surface: import('vue').Ref<import('../../api/businessConfig').BusinessConfigSurfacePayload | null>;
+  route: import('vue-router').RouteLocationNormalizedLoaded;
+  loadChangeSetSafely: () => Promise<void>;
+  coverageScan: import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanPayload | null>;
+  scanSystemRootCoverage: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['scanSystemRootCoverage'];
+  currentModel: Readonly<import('vue').Ref<string>>;
+  scopeAction: Readonly<import('vue').Ref<number | undefined>>;
+  clearConsumedOpenIntent: (keys: string[]) => Promise<void>;
+  coverageRowMatchesScope: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['coverageRowMatchesScope'];
+  focusScanRow: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['focusScanRow'];
+  loadListSearchConfig: ReturnType<typeof import('./useBusinessConfigPublishLifecycle').useBusinessConfigPublishLifecycle>['loadListSearchConfig'];
+  loadAnalysisConfig: ReturnType<typeof import('./useBusinessConfigPublishLifecycle').useBusinessConfigPublishLifecycle>['loadAnalysisConfig'];
+};
+
+export function useBusinessConfigWorkbenchBootstrap(deps: BusinessConfigWorkbenchBootstrapDependencies) {
   const {
     shouldOpenPageList,
     shouldOpenFormConfig,

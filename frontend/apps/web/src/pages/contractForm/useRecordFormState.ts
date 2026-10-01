@@ -13,6 +13,9 @@ import { buildOnchangeDraftSnapshot, createOnchangeRoundtripTicket, onchangeReco
 import {
   hasAmbiguousRelationMatches, relationEntry, relationInlineCreate, resolveRelationQuickFillOption,
 } from './relationDescriptor';
+import {
+  resolveProfessionalMany2oneQueryKey, resolveProfessionalMany2oneSearchInput,
+} from '../../components/professional-fields/professionalRelationFieldModel';
 import { MANY2ONE_CREATE_OPTION, MANY2ONE_OPEN_RECORD_OPTION, MANY2ONE_SEARCH_MORE_OPTION, type LayoutNode, type RelationOption } from './types';
 import type { BusinessFieldError } from '../../app/businessValidationError';
 import type { FieldOccurrenceDecision } from './fieldOccurrenceWritability';
@@ -59,12 +62,25 @@ export function useRecordFormState(context: {
     onchangeTimer=setTimeout(()=>void runOnchangeRoundtrip(),300);context.setOnchangeTimer(onchangeTimer);};
   const persistNativeFavoriteField=async(name:string,checked:boolean,previous:unknown)=>{try{await writeContractFormRecord({model:context.model.value,ids:[context.recordId.value],vals:{[name]:checked},context:{}});context.originalValues.value={...context.originalValues.value,[name]:checked};context.changedFieldSet.delete(name);context.dirtyFieldSet.delete(name);}catch{context.formData[name]=previous;context.submissionFeedback.value={kind:'error',message:'保存失败，请稍后重试。'};}};
   const setBooleanField=(name:string,checked:boolean,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const previous=context.formData[name];context.formData[name]=checked;if(context.isNativeFavoriteField(name)&&context.recordId.value&&context.rights.value.write){void persistNativeFavoriteField(name,checked,previous);return;}markFieldChanged(name);};
-  const setMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const normalized=String(value||'').trim();if(!normalized){forgetPendingInlineCreate(name);context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
-    if(normalized===MANY2ONE_CREATE_OPTION){void context.openRelationCreateForm(name,descriptor);return;}if(normalized===MANY2ONE_SEARCH_MORE_OPTION){void context.openRelationSearchDialog(name,descriptor);return;}if(normalized===MANY2ONE_OPEN_RECORD_OPTION){void context.openRelationRecordForm(name,descriptor);return;}
+  const setMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{const normalized=String(value||'').trim();if(normalized===MANY2ONE_OPEN_RECORD_OPTION){void context.openRelationRecordForm(name,descriptor);return;}if(!isFieldWritable(name,occurrenceKey))return;if(!normalized){forgetPendingInlineCreate(name);context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
+    if(normalized===MANY2ONE_CREATE_OPTION){void context.openRelationCreateForm(name,descriptor);return;}if(normalized===MANY2ONE_SEARCH_MORE_OPTION){void context.openRelationSearchDialog(name,descriptor);return;}
     const id=Number(normalized);if(!Number.isFinite(id)||id<=0){context.formData[name]=false;context.relationKeywords[name]='';context.clearDynamicRelationDependents(name);markFieldChanged(name);return;}
     const normalizedId=Math.trunc(id);forgetPendingInlineCreate(name);context.formData[name]=normalizedId;const selected=context.relationOptionsForField(name).find(option=>option.id===normalizedId);if(selected){context.relationKeywords[name]=selected.label;void context.switchFormByRelationOption(name,selected);}context.clearDynamicRelationDependents(name);markFieldChanged(name);};
-  const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;const keyword=String(value||'').trim();if(keyword&&context.clearedDynamicRelationFields[name]){delete context.clearedDynamicRelationFields[name];delete context.invalidatedRelationKeywords[name];}
-    if(keyword&&context.invalidatedRelationKeywords[name]===keyword&&!context.formData[name]){context.relationKeywords[name]='';return;}if(keyword&&context.invalidatedRelationKeywords[name]&&context.invalidatedRelationKeywords[name]!==keyword)delete context.invalidatedRelationKeywords[name];context.relationKeywords[name]=keyword;if(!keyword){void context.queryRelationOptions(name,'');return;}context.setRelationKeyword(name,keyword);};
+  // The search keyword is the controlled value of the official Select's input, so
+  // the text the user typed must be stored exactly as typed: normalizing it here
+  // would delete the character in flight (typing ``FE Project`` would degrade to
+  // ``FEProject``). Only the request/comparison key is normalized.
+  const queryMany2oneInline=(name:string,_descriptor:FieldDescriptor|undefined,value:string,occurrenceKey?:string)=>{
+    if(!isFieldWritable(name,occurrenceKey))return;
+    const typedKeyword=resolveProfessionalMany2oneSearchInput(value);
+    const keyword=resolveProfessionalMany2oneQueryKey(value);
+    if(keyword&&context.clearedDynamicRelationFields[name]){delete context.clearedDynamicRelationFields[name];delete context.invalidatedRelationKeywords[name];}
+    if(keyword&&context.invalidatedRelationKeywords[name]===keyword&&!context.formData[name]){context.relationKeywords[name]='';return;}
+    if(keyword&&context.invalidatedRelationKeywords[name]&&context.invalidatedRelationKeywords[name]!==keyword)delete context.invalidatedRelationKeywords[name];
+    context.relationKeywords[name]=typedKeyword;
+    if(!keyword){void context.queryRelationOptions(name,'');return;}
+    context.setRelationKeyword(name,typedKeyword);
+  };
   // A search keyword is never a create request. Only the explicit create
   // action stages an intent, bound to this record and reset by the authoritative draft lifecycle.
   // A staged create intent records the keyword to create and the relation value

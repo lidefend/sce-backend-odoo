@@ -44,6 +44,45 @@ target = _load_module(
 
 
 class TestPageContractsBuilderBoundaries(unittest.TestCase):
+    def test_public_auth_projection_is_bounded_and_canonical(self):
+        public = target.build_public_auth_page_contracts()
+        self.assertEqual(set(public), {"schema_version", "pages"})
+        self.assertEqual(set(public["pages"]), {"login", "account_activation", "password_recovery"})
+        for key, page in public["pages"].items():
+            self.assertEqual(set(page), {"schema_version", "texts", "sections", "page_orchestration"})
+            self.assertEqual(set(page["page_orchestration"]), {"page", "action_schema", "zones", "data_sources"})
+            for name, action in page["page_orchestration"]["action_schema"]["actions"].items():
+                self.assertEqual(action["target"], target._action_target(name, key))
+                self.assertEqual(action["target"]["kind"], "route.path")
+                self.assertIn(action["target"]["path"], {"/login", "/activate-account", "/password-recovery"})
+        self.assertEqual(public["pages"]["password_recovery"]["page_orchestration"]["action_schema"]["actions"]["open_login"]["target"]["path"], "/login")
+
+    def test_public_projection_has_no_identity_or_private_page_data(self):
+        def check(value):
+            if isinstance(value, dict):
+                self.assertFalse(set(value) & {"role_code", "role_source_code", "role_variant", "navigation", "company_id", "user_id", "context", "diagnostics"})
+                for item in value.values():
+                    check(item)
+            elif isinstance(value, list):
+                for item in value:
+                    check(item)
+        check(target.build_public_auth_page_contracts())
+
+    def test_public_sections_keep_the_canonical_consumption_structure(self):
+        for page in target.build_public_auth_page_contracts()["pages"].values():
+            orchestration = page["page_orchestration"]
+            blocks = [block for zone in orchestration["zones"] for block in zone["blocks"]]
+            self.assertEqual({block["section_key"] for block in blocks}, {section["key"] for section in page["sections"]})
+            for block in blocks:
+                self.assertTrue(orchestration["data_sources"][block["data_source"]]["source_type"])
+                section = next(row for row in page["sections"] if row["key"] == block["section_key"])
+                self.assertEqual(block["payload"]["enabled"], section["enabled"])
+                self.assertEqual(block["payload"]["tag"], section["tag"])
+
+    def test_public_projection_has_no_caller_context_parameter(self):
+        with self.assertRaises(TypeError):
+            target.build_public_auth_page_contracts({"role_code": "owner"})
+
     def test_page_contract_builder_declares_projection_source(self):
         source = target.source_authority_contract()
 

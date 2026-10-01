@@ -332,6 +332,7 @@ verify.native_view.ecosystem.readiness: guard.prod.forbid
 .PHONY: verify.unified_page_contract.v2.schema
 verify.unified_page_contract.v2.schema: guard.prod.forbid
 	@python3 scripts/verify/unified_page_contract_v2_schema_guard.py --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json --examples docs/architecture/unified_page_contract_v2/examples
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_unified_page_contract_v2_schema_guard.py
 
 .PHONY: verify.unified_page_contract.v2.guard_inventory
 verify.unified_page_contract.v2.guard_inventory: guard.prod.forbid
@@ -352,6 +353,24 @@ verify.unified_page_contract.v2.status: guard.prod.forbid
 verify.unified_page_contract.v2.action: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_action.py scripts/verify/unified_page_contract_v2_action_guard.py
 	@python3 scripts/verify/unified_page_contract_v2_action_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/action_contract_source.json --patch-fixture docs/architecture/unified_page_contract_v2/fixtures/action_patch_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+
+.PHONY: verify.payment.approval_state_machine.unit
+verify.payment.approval_state_machine.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_construction_core/models/core/payment_request.py addons/smart_construction_core/models/support/state_machine.py
+	@python3 scripts/verify/test_payment_approval_state_machine.py
+
+.PHONY: verify.native_view.workflow_action_coverage
+verify.native_view.workflow_action_coverage: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/workflow_contract_profile_loader.py scripts/verify/native_view_workflow_action_coverage_guard.py
+	@python3 scripts/verify/native_view_workflow_action_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_contract_profile_loader.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_native_view_workflow_action_coverage_guard.py
+
+.PHONY: verify.workflow_state_phase_coverage
+verify.workflow_state_phase_coverage: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/workflow_state_phase_coverage_guard.py scripts/verify/test_workflow_state_phase_coverage_guard.py
+	@python3 scripts/verify/workflow_state_phase_coverage_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_state_phase_coverage_guard.py
 
 .PHONY: verify.unified_page_contract.v2.data
 verify.unified_page_contract.v2.data: guard.prod.forbid
@@ -386,8 +405,9 @@ verify.unified_page_contract.v2.regression_audit.host: guard.prod.forbid
 
 .PHONY: verify.unified_page_contract.v2.web_consumer
 verify.unified_page_contract.v2.web_consumer: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/js_contract_consumer_markers.py scripts/verify/test_js_contract_consumer_markers.py scripts/verify/unified_page_contract_v2_web_consumer_guard.py scripts/verify/web_unified_page_contract_v2_guard.py
+	@python3 -m py_compile scripts/verify/js_contract_consumer_markers.py scripts/verify/test_js_contract_consumer_markers.py scripts/verify/unified_page_contract_v2_web_consumer_guard.py scripts/verify/web_unified_page_contract_v2_guard.py scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_js_contract_consumer_markers.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py
 	@python3 scripts/verify/unified_page_contract_v2_web_consumer_guard.py
 	@python3 scripts/verify/web_unified_page_contract_v2_guard.py
 
@@ -418,11 +438,23 @@ audit.workflow_state.inventory: guard.prod.forbid
 	@mkdir -p "$$(dirname "$(WORKFLOW_CONTRACT_INVENTORY_OUT)")"
 	@$(RUN_ENV) DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" bash scripts/ops/odoo_shell_exec.sh < scripts/audit/workflow_state_inventory.py > "$(WORKFLOW_CONTRACT_INVENTORY_OUT)"
 
+# Action semantics completeness reads only source trees and runs its unit
+# tests in-process.  Keeping it as its own target lets the contract lanes
+# consume it without pulling in the container-backed inventory audit that
+# verify.workflow_contract.backend needs, so the guard can no longer exist
+# without any automatic lane calling it.
+.PHONY: verify.workflow_action_semantics.guard
+verify.workflow_action_semantics.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/workflow_action_semantics_completeness_guard.py
+	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
+
 .PHONY: verify.workflow_contract.backend
-verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory
-	@python3 -m py_compile addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py
+verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard
+	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
+	@python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestWorkflowContractBackend' bash scripts/test/test_safe.sh
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines' bash scripts/test/test_safe.sh
 
@@ -449,19 +481,20 @@ verify.workflow_contract.browser.host: verify.workflow_contract.browser.expense_
 .PHONY: verify.workflow_contract.frontend
 verify.workflow_contract.frontend: verify.contract.page_v1_zero_residue.guard verify.frontend.typecheck.strict verify.unified_page_contract.v2.web_architecture verify.frontend.build
 	@python3 -m py_compile scripts/verify/web_unified_page_contract_v2_guard.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py
 	@python3 scripts/verify/web_unified_page_contract_v2_guard.py
 
 .PHONY: verify.workflow_contract
 verify.workflow_contract: verify.workflow_contract.backend verify.workflow_contract.frontend verify.workflow_contract.browser.host
 
 .PHONY: verify.unified_page_contract.v2
-verify.unified_page_contract.v2: verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection verify.unified_page_contract.v2.frontend_static
+verify.unified_page_contract.v2: verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.native_view.workflow_action_coverage verify.workflow_state_phase_coverage verify.workflow_action_semantics.guard verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection verify.unified_page_contract.v2.frontend_static
 
 # The professional backend lane verifies every contract carrier and frontend
 # policy projection without duplicating the install/typecheck/build authority of
 # frontend_release_gate.
 .PHONY: verify.unified_page_contract.v2.professional_backend
-verify.unified_page_contract.v2.professional_backend: verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection
+verify.unified_page_contract.v2.professional_backend: verify.contract.page_v1_zero_residue.guard verify.unified_page_contract.v2.guard_inventory verify.unified_page_contract.v2.schema verify.unified_page_contract.v2.assembler verify.unified_page_contract.v2.status verify.unified_page_contract.v2.action verify.native_view.workflow_action_coverage verify.workflow_state_phase_coverage verify.workflow_action_semantics.guard verify.unified_page_contract.v2.data verify.unified_page_contract.v2.runtime verify.unified_page_contract.v2.client verify.unified_page_contract.v2.intent verify.unified_page_contract.v2.web_consumer verify.unified_page_contract.v2.web_architecture verify.unified_page_contract.v2.stable_projection
 
 .PHONY: verify.unified_page_contract.lite.api_onchange_interface verify.unified_page_contract.lite.api_onchange_intent.container verify.unified_page_contract.lite.startup_negative.container verify.unified_page_contract.lite.load_contract_negative.container verify.unified_page_contract.lite.load_contract_preview_interface verify.unified_page_contract.lite.load_contract_preview_intent.container verify.unified_page_contract.lite.load_contract_preview_matrix.container verify.unified_page_contract.lite.frontend_runtime_negative verify.unified_page_contract.lite.frontend_pilot_implementation verify.unified_page_contract.lite.frontend_pilot_browser.host verify.unified_page_contract.lite.all_tree_browser.host verify.unified_page_contract.lite.all_tree_legacy_browser.host verify.unified_page_contract.lite.all_tree_matrix_browser.host verify.unified_page_contract.lite.all_tree_acceptance_browser.host verify.unified_page_contract.lite.api_onchange_live_scope.container verify.unified_page_contract.lite.load_contract_live_scope.container verify.unified_page_contract.lite.runtime_scope_closure verify.unified_page_contract.lite.phase1_closure verify.unified_page_contract.lite.phase2_candidate_plan verify.unified_page_contract.lite.phase2_load_contract_gate verify.unified_page_contract.lite.phase3_ui_contract_risk verify.unified_page_contract.lite.frontend_pilot_readiness verify.unified_page_contract.lite.contract_freeze_v2_0 verify.unified_page_contract.lite.mainline_absorption verify.unified_page_contract.lite.rollout_switch verify.unified_page_contract.lite.mainline_readiness verify.unified_page_contract.lite.terminal_client_parity verify.unified_page_contract.lite.terminal_coverage_matrix verify.unified_page_contract.lite.terminal_consumer_boundary verify.unified_page_contract.lite.wx_mini_renderer_input_pilot.host verify.unified_page_contract.lite.harmony_h5_renderer_input_pilot.host verify.unified_page_contract.lite.wx_mini_ui_renderer_pilot.host verify.unified_page_contract.lite.harmony_h5_ui_renderer_pilot.host verify.unified_page_contract.lite.wx_mini_page_integration_pilot.host verify.unified_page_contract.lite.harmony_h5_page_integration_pilot.host verify.unified_page_contract.lite.wx_mini_runtime_mount_pilot.host verify.unified_page_contract.lite.harmony_h5_runtime_mount_pilot.host verify.unified_page_contract.lite.wx_mini_compile_pilot.host verify.unified_page_contract.lite.wx_mini_real_compile_pilot.host verify.unified_page_contract.lite.wx_mini_runtime_acceptance_pilot.host verify.unified_page_contract.lite.wx_mini_device_acceptance_pilot.host verify.unified_page_contract.lite.harmony_h5_compile_pilot.host verify.unified_page_contract.lite.harmony_h5_runtime_acceptance_pilot.host verify.unified_page_contract.lite.harmony_h5_device_acceptance_pilot.host verify.unified_page_contract.lite
 verify.unified_page_contract.lite.api_onchange_interface: guard.prod.forbid
@@ -693,7 +726,7 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 # v1.1 Engineering Convergence quality entries
 # ----------------------------------------------------------------------
-.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
+.PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.run ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history verify.python_name_binding verify.menu_config_tree_editor.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
 verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 -m py_compile scripts/verify/frontend_release_gate.py scripts/verify/test_frontend_release_gate.py scripts/verify/ci_artifact_host_write_guard.py scripts/verify/test_ci_artifact_host_write_guard.py
@@ -718,7 +751,7 @@ ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.
 	@echo "[OK] professional backend/static quality gate passed"
 
 # Shard 1: verification and security checks
-ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend
+ci.professional.backend.shard-verify: guard.prod.forbid verify.contract.page_v1_zero_residue.guard verify.guard.registry security.legacy_credential_guard verify.repository.clean_history verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard
 	@echo "[OK] professional backend shard-verify passed"
 
 # Shard 2: generated reports and architecture checks
@@ -921,6 +954,7 @@ ci.local.quick.run: guard.prod.forbid ci.generated_evidence.preflight verify.con
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/construction_core_extension_service_builders_split_guard.py
 	@python3 scripts/verify/construction_core_extension_actor_roles_split_guard.py
+	@python3 scripts/verify/file_line_budget_uniform_guard.py
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
 	@python3 scripts/verify/construction_core_extension_responsibility_map_guard.py
 	@python3 scripts/verify/ui_contract_v2_responsibility_map_guard.py
@@ -944,7 +978,12 @@ test.frontend: guard.prod.forbid verify.menu_config_tree_editor.behavior
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web typecheck:strict
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web build
 
-test.unit: guard.prod.forbid
+verify.python_name_binding: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/python_name_binding_guard.py scripts/verify/test_python_name_binding_guard.py
+	@python3 scripts/verify/test_python_name_binding_guard.py
+	@python3 scripts/verify/python_name_binding_guard.py
+
+test.unit: guard.prod.forbid verify.python_name_binding
 	@python3 scripts/ci/python_syntax_check.py addons/smart_core addons/smart_construction_core scripts/ci scripts/audit scripts/common scripts/e2e
 	@python3 scripts/ci/test_node_syntax_check.py
 	@python3 scripts/test_render_odoo_conf.py

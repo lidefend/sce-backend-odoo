@@ -38,18 +38,22 @@
         <ScButton type="button" title="移除" :aria-label="`移除${fieldDisplayLabel(name)}`" @click="$emit('removeName', name)">移除</ScButton>
       </span>
     </div>
-    <form v-if="advancedPanelOpen" class="field-chip-add" @submit.prevent="$emit('addName')">
+    <ScForm v-if="advancedPanelOpen" class="field-chip-add" :data="{ draftValue }" layout="inline"
+      :prevent-submit-default="true" :show-error-message="true" data-editor-composition="official-field-configuration"
+      @submit="onAddValidated">
+      <ScFormItem name="draftValue" :show-error-message="true">
       <ScInput
-        :value="draftValue"
+        :model-value="draftValue"
         type="text"
         placeholder="输入字段名"
         @update:model-value="$emit('update:draftValue', $event)"
       />
-      <ScButton type="submit" class="ghost small">添加</ScButton>
-    </form>
+      </ScFormItem>
+      <ScFormItem><ScButton type="submit" class="ghost small">添加</ScButton></ScFormItem>
+    </ScForm>
     <ScInput
       v-if="fieldOptions.length || searchValue"
-      :value="searchValue"
+      :model-value="searchValue"
       class="field-option-search"
       type="search"
       placeholder="搜索可选字段"
@@ -84,6 +88,8 @@
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
+import ScForm from '../../components/design-system/ScForm.vue';
+import ScFormItem from '../../components/design-system/ScFormItem.vue';
 
 const graphTypeOptions = [
   { value: 'bar', label: '柱状图' },
@@ -117,7 +123,7 @@ defineProps<{
   isDropTarget: (name: string) => boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   'update:searchValue': [value: string];
   'update:draftValue': [value: string];
   'update:graphType': [value: string];
@@ -130,4 +136,8 @@ defineEmits<{
   drop: [name: string];
   clearDrag: [];
 }>();
+
+function onAddValidated(result: { validateResult: unknown }) {
+  if (result.validateResult === true) emit('addName');
+}
 </script>

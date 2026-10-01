@@ -24,32 +24,12 @@
             <field name="model">sc.plan</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_plan"/>
-            <field name="priority">700</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
-                    'views': {
-                        'form': {
-                            'title': '计划管理',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
-                            'sections': [
-                                {'title': '计划主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'name', 'plan_type', 'project_id', 'phase_name', 'company_id']},
-                                {'title': '责任与编制', 'sequence': 20, 'columns': 2, 'fields': ['owner_id', 'department_id', 'template_name', 'creation_method', 'version_stage', 'report_cycle']},
-                                {'title': '进度目标', 'sequence': 30, 'columns': 2, 'fields': ['planned_start', 'planned_finish', 'actual_start', 'actual_finish', 'progress_rate', 'attainment_state']},
-                                {'title': '计划节点与汇报', 'sequence': 40, 'columns': 1, 'fields': ['line_ids', 'report_ids']},
-                                {'title': '版本与附件', 'sequence': 50, 'columns': 1, 'fields': ['version_ids', 'attachment_ids', 'note']},
-                                {'title': '来源追溯', 'sequence': 60, 'columns': 2, 'fields': ['legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'source_created_by', 'source_created_at', 'active']}
-                            ],
-                            'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20}, {'name': 'plan_type', 'sequence': 30}, {'name': 'project_id', 'sequence': 40}, {'name': 'phase_name', 'sequence': 50}, {'name': 'company_id', 'sequence': 60}, {'name': 'owner_id', 'sequence': 70}, {'name': 'department_id', 'sequence': 80}, {'name': 'template_name', 'sequence': 90}, {'name': 'creation_method', 'sequence': 100}, {'name': 'version_stage', 'sequence': 110}, {'name': 'report_cycle', 'sequence': 120}, {'name': 'planned_start', 'sequence': 130}, {'name': 'planned_finish', 'sequence': 140}, {'name': 'actual_start', 'sequence': 150}, {'name': 'actual_finish', 'sequence': 160}, {'name': 'progress_rate', 'sequence': 170, 'readonly': True}, {'name': 'attainment_state', 'sequence': 180, 'readonly': True}, {'name': 'line_ids', 'sequence': 190}, {'name': 'report_ids', 'sequence': 200}, {'name': 'version_ids', 'sequence': 210}, {'name': 'attachment_ids', 'sequence': 220}, {'name': 'note', 'sequence': 230}, {'name': 'legacy_fact_model', 'sequence': 240, 'readonly': True}, {'name': 'legacy_fact_id', 'sequence': 250, 'readonly': True}, {'name': 'legacy_fact_type', 'sequence': 260, 'readonly': True}, {'name': 'source_created_by', 'sequence': 270, 'readonly': True}, {'name': 'source_created_at', 'sequence': 280, 'readonly': True}, {'name': 'active', 'sequence': 290}]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '计划管理', 'composition_mode': 'native_semantic_surface'}}}}"/>
         </record>
 
         <record id="business_config_contract_construction_diary_productized_form_v1" model="ui.business.config.contract">
@@ -80,31 +60,12 @@
             <field name="model">sc.plan.report</field>
             <field name="view_type">form</field>
             <field name="action_id" ref="smart_construction_core.action_sc_plan_report"/>
-            <field name="priority">700</field>
+            <field name="priority">800</field>
             <field name="company_id" eval="False"/>
             <field name="active" eval="True"/>
             <field name="status">published</field>
             <field name="version_no">1</field>
-            <field name="contract_json" eval="{
-                'view_orchestration': {
-                    'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'},
-                    'views': {
-                        'form': {
-                            'title': '计划汇报',
-                            'composition_mode': 'entry_semantic_surface',
-                            'columns': 2,
-                            'sections': [
-                                {'title': '汇报主信息', 'sequence': 10, 'columns': 2, 'fields': ['state', 'name', 'plan_id', 'line_id', 'report_type', 'source_channel']},
-                                {'title': '汇报办理', 'sequence': 20, 'columns': 2, 'fields': ['report_date', 'reporter_id', 'progress_rate', 'approver_id', 'approved_date']},
-                                {'title': '完成与风险', 'sequence': 30, 'columns': 1, 'fields': ['summary', 'risk_note', 'reject_reason']},
-                                {'title': '成果附件', 'sequence': 40, 'columns': 1, 'fields': ['attachment_ids']},
-                                {'title': '来源追溯', 'sequence': 50, 'columns': 2, 'fields': ['legacy_fact_model', 'legacy_fact_id', 'legacy_fact_type', 'source_created_by', 'source_created_at', 'active']}
-                            ],
-                            'fields': [{'name': 'state', 'sequence': 10, 'readonly': True}, {'name': 'name', 'sequence': 20}, {'name': 'plan_id', 'sequence': 30}, {'name': 'line_id', 'sequence': 40}, {'name': 'report_type', 'sequence': 50}, {'name': 'source_channel', 'sequence': 60}, {'name': 'report_date', 'sequence': 70}, {'name': 'reporter_id', 'sequence': 80}, {'name': 'progress_rate', 'sequence': 90}, {'name': 'approver_id', 'sequence': 100}, {'name': 'approved_date', 'sequence': 110}, {'name': 'summary', 'sequence': 120}, {'name': 'risk_note', 'sequence': 130}, {'name': 'reject_reason', 'sequence': 140}, {'name': 'attachment_ids', 'sequence': 150}, {'name': 'legacy_fact_model', 'sequence': 160, 'readonly': True}, {'name': 'legacy_fact_id', 'sequence': 170, 'readonly': True}, {'name': 'legacy_fact_type', 'sequence': 180, 'readonly': True}, {'name': 'source_created_by', 'sequence': 190, 'readonly': True}, {'name': 'source_created_at', 'sequence': 200, 'readonly': True}, {'name': 'active', 'sequence': 210}]
-                        }
-                    }
-                }
-            }"/>
+            <field name="contract_json" eval="{'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '计划汇报', 'composition_mode': 'native_semantic_surface'}}}}"/>
         </record>
     </data>
     <!-- U-C4 G10: `business_config_contract_construction_diary_productized_form_v1`（库内 245）
@@ -118,5 +79,15 @@
     <function model="ui.business.config.contract" name="write">
         <value eval="[ref('smart_construction_core.business_config_contract_construction_diary_productized_form_v1')]"/>
         <value eval="{'priority': 800, 'contract_json': {'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '施工日志', 'composition_mode': 'native_semantic_surface'}}}}}"/>
+    </function>
+    <!-- Retire the plan entry mirror on upgrades as well as clean installation. -->
+    <function model="ui.business.config.contract" name="write">
+        <value eval="[ref('smart_construction_core.business_config_contract_construction_plan_productized_form_v1')]"/>
+        <value eval="{'priority': 800, 'contract_json': {'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '计划管理', 'composition_mode': 'native_semantic_surface'}}}}}"/>
+    </function>
+    <!-- Report layout and modifiers have one native authority, including upgrades. -->
+    <function model="ui.business.config.contract" name="write">
+        <value eval="[ref('smart_construction_core.business_config_contract_construction_plan_report_productized_form_v1')]"/>
+        <value eval="{'priority': 800, 'contract_json': {'view_orchestration': {'context': {'source': 'smart_construction_core.product_release', 'source_status': 'product_release'}, 'views': {'form': {'title': '计划汇报', 'composition_mode': 'native_semantic_surface'}}}}}"/>
     </function>
 </odoo>

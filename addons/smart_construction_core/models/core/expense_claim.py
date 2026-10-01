@@ -210,12 +210,18 @@ class ScExpenseClaim(models.Model):
         required=True,
         default=lambda self: self.env.ref("base.CNY", raise_if_not_found=False).id or self.env.company.currency_id.id,
     )
+    submission_attachment_policy = fields.Selection(
+        related="business_category_id.attachment_policy", readonly=True,
+    )
+    payment_request_types = fields.Json(
+        string="申请方向候选", compute="_compute_payment_request_types", readonly=True,
+    )
     payment_request_id = fields.Many2one(
         "payment.request",
         string="付款/收款申请",
         index=True,
         ondelete="set null",
-        domain="[('project_id', '=', project_id)]",
+        domain="[('project_id', '=', project_id), ('type', 'in', payment_request_types)]",
     )
     legacy_source_model = fields.Char(string="历史来源模型", index=True, readonly=True)
     legacy_source_table = fields.Char(string="历史来源表", index=True, readonly=True)
@@ -445,6 +451,14 @@ class ScExpenseClaim(models.Model):
             return "pay"
         return False
 
+    @api.depends("financial_flow")
+    def _compute_payment_request_types(self):
+        for rec in self:
+            expected = rec._expected_payment_request_type()
+            # Non-cash/reference links retain their existing scope. Only cash
+            # directions constrain candidates, using the execution authority.
+            rec.payment_request_types = [expected] if expected else ["pay", "receive"]
+
     @api.onchange("amount")
     def _onchange_amount(self):
         for rec in self:
@@ -568,10 +582,31 @@ class ScExpenseClaim(models.Model):
         partner_id = res.get("partner_id") or self._context_partner_id()
         if partner_id and "partner_id" in fields_list:
             res["partner_id"] = partner_id
+        if "business_category_id" in fields_list and "business_category_id" not in res:
+            res["business_category_id"] = self._resolve_business_category_id(res)
+        # The create contract consumes default_get before any onchange. Project
+        # the same model-computed semantics used after persistence, so a cash
+        # entry cannot initially hide its required payment-request anchor.
+        semantic_fields = {
+            "direction", "handling_kind", "business_axis", "financial_flow",
+            "payment_anchor_policy", "claim_flow_label", "payment_request_types", "submission_attachment_policy",
+        }
+        requested = semantic_fields.intersection(fields_list)
+        if requested:
+            candidate = self.new({key: value for key, value in res.items() if key not in semantic_fields})
+            for name in requested:
+                res[name] = candidate[name]
         return res
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         legacy_authority = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
         for vals in vals_list:
@@ -677,15 +712,33 @@ class ScExpenseClaim(models.Model):
     def _history_surface_allowed_write_fields(self):
         return {"attachment_ids"}
 
+    def _reviewed_content_is_frozen(self):
+        self.ensure_one()
+        return self.state in {"done", "legacy_confirmed"} or (
+            self.source_origin != "legacy"
+            and (self.state in {"submit", "approved"} or (
+                self.state == "draft" and self.validation_status in {"waiting", "pending", "validated"}
+            ))
+        )
+
     def write(self, vals):
         authoritative = self.env.context.get("sc_expense_fact_authority_token") is _EXPENSE_FACT_AUTHORITY_TOKEN
-        if not authoritative and (vals.get("state") in {"done", "legacy_confirmed"} or "finance_identity_state" in vals):
-            raise UserError(_("费用与扣款终态及财务身份只能由正式业务动作或迁移写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("费用与扣款状态、来源及财务身份只能由正式业务动作或迁移写入。"))
         terminal_business_fields = {
             "project_id", "company_id", "currency_id", "partner_id", "business_category_id",
             "claim_type", "date_claim", "amount", "approved_amount", "paid_amount", "active",
             "payment_request_id", "deduction_line_ids",
         }
+        reviewed_fields = terminal_business_fields | {
+            "attachment_ids", "expense_type", "guarantee_type", "payment_method",
+            "clearing_method", "payee", "receipt_account_name", "payee_account",
+            "payee_bank", "payment_account_name", "payer_account", "payer_bank",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and rec._reviewed_content_is_frozen() for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已完成的费用与扣款单据不可改写审核内容、账户或附件关联。"))
         if any(rec.state in {"done", "legacy_confirmed"} for rec in self) and not authoritative:
             blocked_terminal = set(vals) & terminal_business_fields
             if blocked_terminal:
@@ -902,12 +955,8 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("只有草稿状态的费用/保证金单据可以提交。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                rec.write({"state": "submit", "reject_reason": False})
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(
-                    allowed_company_ids=[company.id],
-                ).request_validation()
+            rec._write_finance_authority({"state": "submit", "reject_reason": False})
+            if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "expense_claim_submitted",
                     before,
@@ -915,7 +964,7 @@ class ScExpenseClaim(models.Model):
                     "action_submit",
                 )
             else:
-                rec.write({"state": "approved", "reject_reason": False})
+                rec._write_finance_authority({"state": "approved", "reject_reason": False})
                 rec._audit_transition(
                     "expense_claim_approved",
                     before,
@@ -924,27 +973,19 @@ class ScExpenseClaim(models.Model):
                 )
 
     def action_approve(self):
+        """Compatibility entry delegates the real review decision."""
         self._assert_finance_approve_access()
-        policy_model = self.env["sc.approval.policy"]
+        result = None
         for rec in self:
+            if rec.state == "approved":
+                continue
             if rec.state != "submit":
                 raise UserError(_("只有已提交的费用/保证金单据可以批准。"))
-            before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            if policy_model.is_approval_required(rec._name, company=rec.company_id):
-                if rec.validation_status != "validated":
-                    raise UserError(_("请先完成统一审批流程后再批准费用/保证金单据。"))
-            else:
-                policy = policy_model.get_active_policy(rec._name, company=rec.company_id)
-                if policy:
-                    policy.assert_user_can_approve()
-            rec.write({"state": "approved", "reject_reason": False})
-            rec._audit_transition(
-                "expense_claim_approved",
-                before,
-                rec._snapshot_audit_payload(),
-                "action_approve",
-            )
+            result = self.env["sc.approval.policy"]._approve_submission_review(rec)
+            if rec.validation_status == "validated":
+                rec.action_on_tier_approved()
+        return result
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -961,9 +1002,11 @@ class ScExpenseClaim(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
+            if rec.state == "approved":
+                continue
             if rec.state != "submit":
                 raise UserError(_("只有已提交的费用/保证金单据可以完成统一审批回调。"))
-            if rec.validation_status != "validated":
+            if not rec.review_ids or rec.validation_status != "validated":
                 if self.env.context.get("server_action_tier"):
                     # OCA base_tier_validation_server_action fires this
                     # callback after every approved level of a multi-level
@@ -974,7 +1017,7 @@ class ScExpenseClaim(models.Model):
                 raise UserError(_("费用/保证金单据尚未完成统一审批流程。"))
             before = rec._snapshot_audit_payload()
             rec._check_business_ready()
-            rec.write({"state": "approved", "reject_reason": False})
+            rec._write_finance_authority({"state": "approved", "reject_reason": False})
             rec._audit_transition(
                 "expense_claim_approved",
                 before,
@@ -985,9 +1028,11 @@ class ScExpenseClaim(models.Model):
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
             if rec.state != "submit":
-                raise UserError(_("只有已提交的费用/保证金单据可以驳回。"))
+                continue
+            if not rec.review_ids or rec.validation_status != "rejected":
+                raise UserError(_("费用/保证金单据没有已驳回的审批事实。"))
             before = rec._snapshot_audit_payload()
-            rec.write(
+            rec._write_finance_authority(
                 {
                     "state": "draft",
                     "reject_reason": reason or rec._get_tier_reject_reason(),
@@ -1028,74 +1073,81 @@ class ScExpenseClaim(models.Model):
         if not self._has_finance_confirm_access():
             raise UserError(_("你没有批准费用/保证金单据的权限。"))
 
+    def _business_readiness_errors(self):
+        self.ensure_one()
+        record = self
+        if getattr(record, "source_origin", "") == "legacy" and getattr(record, "state", "") == "legacy_confirmed":
+            return []
+        gates = []
+        def error(code, message):
+            return (code, _(message))
+        if not record.project_id:
+            gates.append(error("EXPENSE_MISSING_PROJECT", "费用/扣款/保证金单据必须关联项目。"))
+        if not record.partner_id:
+            gates.append(error("EXPENSE_MISSING_PARTNER", "费用/扣款/保证金单据必须选择往来单位。"))
+        if (record.amount or 0.0) <= 0:
+            gates.append(error("EXPENSE_INVALID_AMOUNT", "费用/扣款/保证金金额必须大于 0。"))
+        if (record.approved_amount or 0.0) < 0:
+            gates.append(error("EXPENSE_INVALID_APPROVED_AMOUNT", "批准金额不能为负数。"))
+        expected = record.approved_amount or record.amount or 0.0
+        if (record.paid_amount or 0.0) < 0:
+            gates.append(error("EXPENSE_INVALID_PAID_AMOUNT", "已付款金额不能为负数。"))
+        elif (record.paid_amount or 0.0) > expected:
+            gates.append(error("EXPENSE_PAID_AMOUNT_OVER_EXPECTED", "已付款金额不能超过批准/申请金额。"))
+        if record.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not record.payment_request_id:
+            gates.append(error("EXPENSE_MISSING_PAYMENT_REQUEST", "现金办理必须关联付款/收款申请。"))
+        is_noncash_deduction = record._is_noncash_deduction_bill()
+        if is_noncash_deduction:
+            if record.payment_request_id:
+                gates.append(error("DEDUCTION_BILL_SHOULD_NOT_LINK_PAYMENT_REQUEST", "扣款单是非现金责任清分事实，不应关联付款/收款申请。"))
+            lines = record.deduction_line_ids
+            if not lines:
+                gates.append(error("DEDUCTION_BILL_MISSING_LINES", "扣款登记必须填写至少一条扣款单明细后才能提交、批准或完成。"))
+            else:
+                if any(not (line.item_name or "").strip() for line in lines):
+                    gates.append(error("DEDUCTION_BILL_LINE_MISSING_ITEM", "扣款单明细必须填写扣款事项。"))
+                if any((line.amount or 0.0) <= 0 for line in lines):
+                    gates.append(error("DEDUCTION_BILL_LINE_INVALID_AMOUNT", "扣款单明细金额必须大于 0。"))
+                total = sum(lines.mapped("amount"))
+                rounding = record.currency_id.rounding if record.currency_id else 0.01
+                if float_compare(total, expected, precision_rounding=rounding) != 0:
+                    gates.append(
+                        error(
+                            "DEDUCTION_BILL_LINE_TOTAL_MISMATCH",
+                            "扣款单明细金额合计必须等于本次扣款金额。当前明细合计：%s，本次扣款金额：%s。" % (total, expected),
+                        )
+                    )
+        category = record.business_category_id
+        if category and category.attachment_policy == "required" and not record.attachment_ids:
+            gates.append(error("EXPENSE_ATTACHMENT_REQUIRED", "当前业务分类要求上传附件后才能提交、批准或完成。"))
+        if record.financial_flow == "cash_out":
+            payee_account = record.payee_account or record.receipt_account_name or record.payee
+            payer_account = record.payer_account or record.payment_account_name
+            if not payee_account:
+                gates.append(error("EXPENSE_MISSING_PAYEE_ACCOUNT", "现金流出办理必须填写收款账户信息。"))
+            if not payer_account:
+                gates.append(error("EXPENSE_MISSING_PAYER_ACCOUNT", "现金流出办理必须填写付款账户信息。"))
+        elif record.financial_flow == "cash_in":
+            receiving_account = record.payer_account or record.payment_account_name
+            if not receiving_account:
+                gates.append(error("EXPENSE_MISSING_RECEIVING_ACCOUNT", "现金流入办理必须填写收款账户信息。"))
+        return gates
+
     def _check_business_ready(self):
         for rec in self:
             if rec.source_origin == "legacy":
                 continue
             if rec.finance_identity_state != "normalized" or rec.company_id != rec.project_id.company_id:
                 raise UserError(_("费用与扣款单据财务身份已失配，请重建草稿后再办理。"))
-            if not rec.project_id:
-                raise UserError(_("费用/保证金单据必须关联项目。"))
+            errors = rec._business_readiness_errors()
+            if errors:
+                raise UserError("\n".join(message for _code, message in errors))
             if rec._is_interfund_repayment() and rec.payment_request_id:
                 raise UserError(_("往来款办理应与经营收付款申请分开，不应关联付款/收款申请。"))
-            if rec._is_noncash_deduction_bill() and rec.payment_request_id:
-                raise UserError(_("扣款单是扣款登记中的代扣列支明细，表达公司与项目/承包人之间的责任清分事实，不应关联付款/收款申请；扣款实缴或退回请使用对应现金办理入口。"))
-            # R10-v2: anchor requirement downgraded from hard UserError to a
-            # logged advisory — spec tests drive bare expense claims through
-            # submit/done without a payment request (state-machine coverage).
-            # Cash anchoring is still enforced where it matters: the payment
-            # ledger only closes requests that are actually linked.
-            if rec.payment_anchor_policy in ("pay_request_required", "receive_request_required") and not rec.payment_request_id:
-                _logger.warning(
-                    "sc.expense.claim %s (policy=%s) handled without payment request link",
-                    rec.display_name,
-                    rec.payment_anchor_policy,
-                )
-            # R10-v2: partner on cash-flow claims is advisory at the state
-            # machine layer — the workflow-contract projection surfaces the
-            # missing-partner gate to the frontend, and spec tests drive bare
-            # claims through submit/done without a partner.
-            if rec.financial_flow in ("cash_in", "cash_out") and not rec.partner_id:
-                _logger.warning(
-                    "sc.expense.claim %s (flow=%s) handled without partner",
-                    rec.display_name,
-                    rec.financial_flow,
-                )
-            if (rec.amount or 0.0) <= 0:
-                raise UserError(_("费用/保证金申请金额必须大于 0。"))
-            if (rec.approved_amount or 0.0) < 0:
-                raise UserError(_("费用/保证金批准金额不能为负数。"))
-            expected = rec.approved_amount or rec.amount or 0.0
-            if (rec.paid_amount or 0.0) < 0:
-                raise UserError(_("费用/保证金已付款金额不能为负数。"))
-            if (rec.paid_amount or 0.0) > expected:
-                raise UserError(_("费用/保证金已付款金额不能超过批准/申请金额。"))
-            if rec._is_noncash_deduction_bill():
-                rec._check_deduction_bill_lines_or_raise()
-            rec._check_attachment_policy_or_raise()
             rec._check_deposit_refund_balance_or_raise()
             if rec._is_noncash_deduction_bill():
                 rec._check_company_contractor_deduction_responsibility_or_raise()
                 continue
-            if rec.financial_flow == "cash_out":
-                payee_account = rec.payee_account or rec.receipt_account_name or rec.payee
-                payer_account = rec.payer_account or rec.payment_account_name
-                # R10-v2: account completeness is surfaced by the
-                # workflow-contract projection gates (EXPENSE_MISSING_*_ACCOUNT);
-                # the state machine stays permissive so bare spec records can
-                # complete, mirroring the projection layer's authority.
-                if not payee_account or not payer_account:
-                    _logger.warning(
-                        "sc.expense.claim %s (flow=cash_out) handled without complete account info",
-                        rec.display_name,
-                    )
-            elif rec.financial_flow == "cash_in":
-                receiving_account = rec.payer_account or rec.payment_account_name
-                if not receiving_account:
-                    _logger.warning(
-                        "sc.expense.claim %s (flow=cash_in) handled without receiving account",
-                        rec.display_name,
-                    )
             rec._check_payment_request_scope_or_raise()
 
     def _check_deposit_refund_balance_or_raise(self):
@@ -1195,17 +1247,9 @@ class ScExpenseClaim(models.Model):
 
     def _check_attachment_policy_or_raise(self):
         self.ensure_one()
-        category = self.business_category_id
-        # R10-v2: attachment completeness is enforced by the workflow-contract
-        # projection gate (frontend), mirroring the product's per-category
-        # policy. The state machine stays permissive so spec-driven bare
-        # records can traverse submit/done; the policy is logged for audit.
-        if category and category.attachment_policy == "required" and not self.attachment_ids:
-            _logger.warning(
-                "sc.expense.claim %s (category=%s, policy=required) handled without attachments",
-                self.display_name,
-                category.code,
-            )
+        for code, message in self._business_readiness_errors():
+            if code == "EXPENSE_ATTACHMENT_REQUIRED":
+                raise UserError(message)
 
     def _sync_payment_request_done(self):
         for rec in self:
@@ -1296,7 +1340,7 @@ class ScExpenseClaim(models.Model):
             if rec.state not in ("draft", "submit", "approved"):
                 raise UserError(_("只有草稿、已提交或已批准的费用/保证金单据可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition(
                 "expense_claim_cancelled",
                 before,
@@ -1403,21 +1447,21 @@ class ScExpenseClaimDeductionLine(models.Model):
             if vals.get("claim_id") or default_claim_id
         ]
         terminal_claims = self.env["sc.expense.claim"].browse(claim_ids).exists().filtered(
-            lambda claim: claim.state in {"done", "legacy_confirmed"}
+            lambda claim: claim._reviewed_content_is_frozen()
         )
         if terminal_claims:
-            raise UserError(_("终态扣款事实的明细不可新增；更正必须形成独立冲销事实。"))
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可新增。"))
         return super().create(vals_list)
 
     def write(self, vals):
         target_claims = self.mapped("claim_id")
         if vals.get("claim_id"):
             target_claims |= self.env["sc.expense.claim"].browse(vals["claim_id"]).exists()
-        if target_claims.filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
-            raise UserError(_("终态扣款事实的明细不可修改；更正必须形成独立冲销事实。"))
+        if target_claims.filtered(lambda claim: claim._reviewed_content_is_frozen()):
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可修改。"))
         return super().write(vals)
 
     def unlink(self):
-        if self.mapped("claim_id").filtered(lambda claim: claim.state in {"done", "legacy_confirmed"}):
-            raise UserError(_("终态扣款事实的明细不可删除；更正必须形成独立冲销事实。"))
+        if self.mapped("claim_id").filtered(lambda claim: claim._reviewed_content_is_frozen()):
+            raise UserError(_("审批中、已批准或终态扣款事实的明细不可删除。"))
         return super().unlink()

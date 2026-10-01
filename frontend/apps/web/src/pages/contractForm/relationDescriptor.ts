@@ -273,6 +273,7 @@ export function analyzeDynamicRelationDomain(descriptor?: FieldDescriptor) {
   if (raw === undefined || raw === null || raw === '' || raw === false) {
     return { supported: true, dependencies: [] as string[] };
   }
+  if (Array.isArray(raw)) return { supported: true, dependencies: [] as string[] };
   if (typeof raw !== 'string') return { supported: false, dependencies: [] as string[] };
   const text = raw.trim();
   if (!text || text === '[]') return { supported: true, dependencies: [] as string[] };
@@ -333,6 +334,7 @@ export function dynamicRelationDomainFromDescriptor(params: {
   const raw = (params.descriptor as Record<string, unknown> | undefined)?.domain;
   const analysis = analyzeDynamicRelationDomain(params.descriptor);
   if (!analysis.supported) return [['id', '=', -1]];
+  if (Array.isArray(raw)) return [...raw];
   if (typeof raw !== 'string' || !raw.trim()) return [];
   const out: unknown[] = [];
   const text = raw.trim();

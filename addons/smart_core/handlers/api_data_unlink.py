@@ -137,7 +137,7 @@ class ApiDataUnlinkHandler(BaseIntentHandler):
 
     def _write_idempotency_audit(self, *, trace_id: str, model: str, ids: List[int], idem_key: str, idem_fingerprint: str, result: Dict[str, Any]):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             return
         try:
             Audit.write_event(

@@ -4,22 +4,18 @@ import type {
   BusinessConfigSurfacePayload,
 } from '../../api/businessConfig';
 
-const BUSINESS_FIELD_LABEL_OVERRIDES: Record<string, string> = {
-  can_review: '可审批',
-};
-
 const ANALYSIS_VIEW_TYPES = new Set(['pivot', 'graph', 'calendar', 'dashboard']);
 
-export function boundaryLabel(boundary: unknown) {
+/* Boundary codes are contract vocabulary; their names travel with the payload.
+ * The view only falls back to the raw code, never invents a business name. */
+export function boundaryLabel(boundary: unknown, labels?: Record<string, string>) {
   const value = String(boundary || '').trim();
-  if (value === 'ui_only') return '仅页面设置';
-  if (value === 'business_contract') return '业务默认配置';
-  if (value === 'business_contract_not_user_preference') return '业务默认配置';
-  if (value === 'business_contract_with_policy_runtime') return '菜单显示规则';
-  if (value === 'business_contract_version') return '版本记录';
-  if (value === 'coverage_guard') return '覆盖检查';
-  if (value === 'industry_policy_runtime') return '行业业务规则';
-  return value || '未声明来源';
+  if (!value) return '未声明来源';
+  return labels?.[value] || value;
+}
+
+export function createBoundaryLabel(readLabels: () => Record<string, string>) {
+  return (boundary: unknown) => boundaryLabel(boundary, readLabels());
 }
 
 export function sectionHelpLabel(sectionKey: string) {
@@ -29,15 +25,6 @@ export function sectionHelpLabel(sectionKey: string) {
   if (sectionKey === 'menu') return '菜单入口、显示范围、发布状态';
   if (sectionKey === 'approval') return '启用审批、审批方式、审批岗位';
   return '业务配置';
-}
-
-export function sectionDisplayLabel(sectionKey: string, fallback: string) {
-  if (sectionKey === 'form') return '表单字段与布局';
-  if (sectionKey === 'list_search') return '列表与搜索';
-  if (sectionKey === 'analysis') return '分析视图';
-  if (sectionKey === 'menu') return '菜单入口';
-  if (sectionKey === 'approval') return '审批规则';
-  return fallback || '业务配置';
 }
 
 export function sectionPrimaryCopy(sectionKey: string) {
@@ -264,8 +251,6 @@ export function normalizeNamesText(raw: string) {
 
 export function cleanBusinessFieldLabel(name: unknown, label: unknown) {
   const fieldName = String(name || '').trim();
-  const override = BUSINESS_FIELD_LABEL_OVERRIDES[fieldName];
-  if (override) return override;
   const text = String(label || fieldName || '').trim();
   return text || fieldName;
 }

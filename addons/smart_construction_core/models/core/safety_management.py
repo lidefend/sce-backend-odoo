@@ -3,10 +3,17 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
+_SAFETY_APPROVAL_STATE_TOKEN = object()
+
+
 class ScSafetyPlan(models.Model):
     _name = "sc.safety.plan"
     _description = "安全施工方案"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
     _order = "plan_date desc, id desc"
 
     name = fields.Char(string="方案名称", required=True, tracking=True)
@@ -35,33 +42,64 @@ class ScSafetyPlan(models.Model):
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
 
-    def action_submit(self):
-        for plan in self:
-            if plan.state != "draft":
-                raise UserError(_("只有草稿状态的安全施工方案可以提交。"))
-            plan._check_business_anchor()
-        self.write({"state": "submitted"})
-        return True
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_safety_approval_state_token") is not _SAFETY_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_safety_approval_state_token=_SAFETY_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
 
     def action_approve(self):
-        for plan in self:
-            if plan.state != "submitted":
-                raise UserError(_("只有已提交状态的安全施工方案可以审批。"))
-        self.write({"state": "approved"})
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
+
+    def action_submit(self):
+        for record in self:
+            if record.state not in ("draft", "submitted"):
+                raise UserError(_("只有草稿或待重新提交的安全施工方案可以提交。"))
+            record._check_business_anchor()
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_cancel(self):
-        for plan in self:
-            if plan.state not in ("draft", "submitted"):
+        for record in self:
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或已提交状态的安全施工方案可以取消。"))
-        self.write({"state": "cancel"})
+        self._write_approval_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
-        for plan in self:
-            if plan.state != "cancel":
+        for record in self:
+            if record.state != "cancel":
                 raise UserError(_("只有已取消状态的安全施工方案可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_approval_state({"state": "draft"})
         return True
 
     def _check_business_anchor(self):
@@ -73,7 +111,11 @@ class ScSafetyPlan(models.Model):
 class ScSafetyDisclosure(models.Model):
     _name = "sc.safety.disclosure"
     _description = "安全交底"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["draft", "submitted"]
+    _state_to = ["approved"]
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, readonly=True)
+    reject_reason = fields.Text(string="审批驳回原因", readonly=True, copy=False)
     _order = "disclosure_date desc, id desc"
 
     name = fields.Char(string="交底主题", required=True, tracking=True)
@@ -97,33 +139,64 @@ class ScSafetyDisclosure(models.Model):
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
 
-    def action_submit(self):
-        for disclosure in self:
-            if disclosure.state != "draft":
-                raise UserError(_("只有草稿状态的安全交底可以提交。"))
-            disclosure._check_business_anchor()
-        self.write({"state": "submitted"})
-        return True
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and self.env.context.get("sc_safety_approval_state_token") is not _SAFETY_APPROVAL_STATE_TOKEN:
+            raise UserError(_("状态必须通过办理动作产生。"))
+        return super().write(vals)
+
+    def _write_approval_state(self, vals):
+        return self.with_context(sc_safety_approval_state_token=_SAFETY_APPROVAL_STATE_TOKEN).write(vals)
+
+    def _get_tier_reject_reason(self):
+        self.ensure_one()
+        reviews = self.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+        if reviews:
+            return reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[0].comment
+        return _("统一审批驳回（未填写原因）")
+
+    def action_on_tier_approved(self):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "validated":
+                record._write_approval_state({"state": "approved", "reject_reason": False})
+
+    def action_on_tier_rejected(self, reason=None):
+        for record in self:
+            if record.state == "submitted" and record.review_ids and record.validation_status == "rejected":
+                record.with_context(skip_validation_check=True)._write_approval_state({"state": "draft", "reject_reason": reason or record._get_tier_reject_reason()})
 
     def action_approve(self):
-        for disclosure in self:
-            if disclosure.state != "submitted":
-                raise UserError(_("只有已提交状态的安全交底可以确认。"))
-        self.write({"state": "approved"})
+        self.ensure_one()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
+
+    def action_submit(self):
+        for record in self:
+            if record.state not in ("draft", "submitted"):
+                raise UserError(_("只有草稿或待重新提交的安全交底可以提交。"))
+            record._check_business_anchor()
+        self.with_context(skip_validation_check=True)._write_approval_state({"state": "submitted"})
+        for record in self:
+            if not self.env["sc.approval.policy"]._start_submission_review(record):
+                record._write_approval_state({"state": "approved", "reject_reason": False})
         return True
 
     def action_cancel(self):
-        for disclosure in self:
-            if disclosure.state not in ("draft", "submitted"):
+        for record in self:
+            if record.state not in ("draft", "submitted"):
                 raise UserError(_("只有草稿或已提交状态的安全交底可以取消。"))
-        self.write({"state": "cancel"})
+        self._write_approval_state({"state": "cancel"})
         return True
 
     def action_reset_draft(self):
-        for disclosure in self:
-            if disclosure.state != "cancel":
+        for record in self:
+            if record.state != "cancel":
                 raise UserError(_("只有已取消状态的安全交底可以重置为草稿。"))
-        self.write({"state": "draft"})
+        self._write_approval_state({"state": "draft"})
         return True
 
     def _check_business_anchor(self):

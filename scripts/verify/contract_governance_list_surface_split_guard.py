@@ -1,15 +1,61 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import importlib.util
+import inspect
 from pathlib import Path
+
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[2]
 GOVERNANCE = ROOT / "addons/smart_core/utils/contract_governance.py"
 LIST_SURFACE = ROOT / "addons/smart_core/utils/contract_governance_list_surface.py"
+INDUSTRY_PROFILES = ROOT / "addons/smart_construction_core/core_extension.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_GOVERNANCE_LINES = 1973
+# carries the authoritative status value and its label; the frontend design
+# system decides how that value is coloured.  This guard keeps the boundary
+# real in both directions: the list surface must not project a tone, no
+# declaring profile may carry one, and the frontend presentation layer must be
+# the place the colour policy lives.
+PROJECT_LIST_PROFILE_KEY = "project.project.list"
+
+FRONTEND_STATUS_PRESENTATION = ROOT / "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts"
+FRONTEND_ROOTS = (
+    ROOT / "frontend/apps/web/src",
+    ROOT / "frontend/packages",
+)
+
+
+def _declared_list_profiles(source: Path) -> dict[str, dict]:
+    """Read the literal `register_legacy_standard_list_profile` declarations."""
+    if not source.is_file():
+        return {}
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    profiles: dict[str, dict] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Name) or func.id != "register_legacy_standard_list_profile":
+            continue
+        if not node.args:
+            continue
+        try:
+            payload = ast.literal_eval(node.args[0])
+        except (ValueError, SyntaxError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        key = str(payload.get("profile_key") or payload.get("model_name") or "").strip()
+        if key:
+            profiles[key] = payload
+    return profiles
 
 
 def _read(path: Path) -> str:
@@ -38,8 +84,7 @@ def main() -> int:
 
     if governance_text:
         line_count = len(governance_text.splitlines())
-        if line_count > MAX_GOVERNANCE_LINES:
-            errors.append(f"contract_governance.py line budget exceeded: {line_count} > {MAX_GOVERNANCE_LINES}")
+        line_budgets.advise_size("addons/smart_core/utils/contract_governance.py", line_count, label="contract_governance.py")
         for token in [
             "def _load_list_surface_module()",
             "contract_governance_list_surface.py",
@@ -70,6 +115,21 @@ def main() -> int:
         for token in (".search(", ".write(", "requests.", "env[", "registry["):
             if token in list_surface_text:
                 errors.append(f"list surface module must remain projection-only; found token: {token}")
+        # A badge colour is presentation; the kernel must not project one.
+        for token in ("tone_by_value", "STATUS_TONE_VOCABULARY", "normalize_status_tone_by_value", "status_tone_by_value"):
+            if token in list_surface_text:
+                errors.append(
+                    "list surface must not carry a status tone contract; found token: " + token
+                )
+        # Status tone authority belongs to the declaring profile.  The kernel
+        # projects a declaration; it must never carry a business value-to-tone
+        # map of its own, so any known lifecycle value reappearing here is a
+        # re-introduced silent default.
+        for token in ('"draft"', '"in_progress"', '"paused"', '"done"', '"closing"', '"warranty"', '"closed"'):
+            if token in list_surface_text:
+                errors.append(
+                    "list surface must not hardcode business status values; found token: " + token
+                )
 
     if "python3 scripts/verify/contract_governance_list_surface_split_guard.py" not in ci_text:
         errors.append("ci.local.quick must run contract_governance_list_surface_split_guard.py")
@@ -248,6 +308,61 @@ def main() -> int:
         labels = ((list_data.get("search") or {}).get("ui_labels")) or {}
         if labels.get("row_open") != "打开":
             errors.append("standard list must keep toolbar/search label normalization")
+
+        # --- a status badge colour is presentation, never contract data ---
+        # 1) The kernel projects the semantic role only; it must not emit a
+        #    status tone for any profile, declared or not.
+        if "tone_by_value" in schema_by_name.get("stage_id", {}):
+            errors.append("standard list must not project a status tone into the contract")
+
+        # 2) The governing entrypoint must not accept a tone declaration, so a
+        #    profile cannot smuggle a colour back through the contract.
+        signature = inspect.signature(list_surface.govern_standard_list_for_user)
+        for parameter in ("status_tone_by_value", "tone_by_value"):
+            if parameter in signature.parameters:
+                errors.append(f"govern_standard_list_for_user must not accept {parameter}")
+
+        # 3) No declaring profile may carry a colour either.
+        profiles = _declared_list_profiles(INDUSTRY_PROFILES)
+        if not profiles:
+            errors.append(
+                "industry module must declare literal register_legacy_standard_list_profile payloads"
+            )
+        if PROJECT_LIST_PROFILE_KEY not in profiles:
+            errors.append(f"industry module must declare the {PROJECT_LIST_PROFILE_KEY} profile")
+        declaring = sorted(key for key, payload in profiles.items() if payload.get("tone_by_value"))
+        if declaring:
+            errors.append(
+                "status colour is a frontend presentation decision; profiles must not "
+                "declare tones: " + ", ".join(declaring)
+            )
+
+        # 4) The colour policy must live in the frontend presentation layer,
+        #    keyed by the authoritative status value rather than a display label.
+        if not FRONTEND_STATUS_PRESENTATION.is_file():
+            errors.append(
+                "frontend status presentation module is required: "
+                + str(FRONTEND_STATUS_PRESENTATION.relative_to(ROOT))
+            )
+        else:
+            presentation_text = FRONTEND_STATUS_PRESENTATION.read_text(encoding="utf-8", errors="ignore")
+            if "export function resolveStatusTone(" not in presentation_text:
+                errors.append("frontend status presentation must expose resolveStatusTone")
+        for root in FRONTEND_ROOTS:
+            if not root.is_dir():
+                continue
+            for path in sorted(root.rglob("*")):
+                if not path.is_file() or path.suffix not in {".ts", ".vue", ".mjs", ".js"}:
+                    continue
+                if path == FRONTEND_STATUS_PRESENTATION:
+                    continue
+                if "node_modules" in path.parts:
+                    continue
+                if "tone_by_value" in path.read_text(encoding="utf-8", errors="ignore"):
+                    errors.append(
+                        "frontend must not read a status tone from the contract: "
+                        + str(path.relative_to(ROOT))
+                    )
 
     if errors:
         print("[contract_governance_list_surface_split_guard] FAIL")

@@ -194,6 +194,103 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 self.assertEqual(contract["pageInfo"]["layoutType"], view_type)
                 self.assertEqual(contract["layoutContract"]["layoutType"], view_type)
 
+    def test_joined_view_type_cannot_publish_a_token_the_schema_does_not_enumerate(self):
+        """A declared view list must resolve to the one active view type.
+
+        `page_assembler` publishes `head.view_type` as the requested list
+        (`"tree,form"`) because a model carries several views.  A page contract
+        declares one page, and `pageInfo.viewType` is enumerated by the schema.
+        Emitting the joined string produced a token the schema does not hold and
+        left `layoutType` describing a different page kind (`form`) than the
+        `viewType` it was paired with.
+        """
+        schema = json.loads(
+            (
+                REPO_ROOT
+                / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+            ).read_text(encoding="utf-8")
+        )
+        page_info = schema["$defs"]["pageInfo"]["properties"]
+        for declared, expected_view, expected_layout in (
+            ("tree,form", "list", "table"),
+            ("form,tree", "form", "form"),
+            ("tree", "list", "table"),
+            ("form", "form", "form"),
+        ):
+            with self.subTest(view_type=declared):
+                contract = assembler.assemble_unified_page_contract_v2(
+                    {"model": "x.document", "view_type": declared, "fields": {}},
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.joined.view.{declared}",
+                )
+                self.assertEqual(contract["pageInfo"]["viewType"], expected_view)
+                self.assertEqual(contract["pageInfo"]["layoutType"], expected_layout)
+                self.assertIn(contract["pageInfo"]["viewType"], page_info["viewType"]["enum"])
+                self.assertIn(contract["pageInfo"]["layoutType"], page_info["layoutType"]["enum"])
+                self.assertEqual(
+                    contract["layoutContract"]["layoutType"],
+                    contract["pageInfo"]["layoutType"],
+                )
+
+    def test_legacy_finalizer_publishes_one_active_view_for_the_consumer(self):
+        """The invariant the assembler boundary relies on must stay pinned.
+
+        Chain: `page_assembler` publishes `head.view_type` as the requested view
+        list -> `resolve_primary_view_type` takes the first token ->
+        `inject_primary_view_projection` rewrites both the head and the top-level
+        field to that single token.  If that rewrite is ever dropped, consumers
+        (including `_assemble_ui_contract`) start seeing the joined list, so this
+        test fails here instead of surfacing as a misclassified page.
+        """
+        projection = _load_module(
+            "smart_core_native_view_contract_projection",
+            CORE_DIR / "native_view_contract_projection.py",
+        )
+        for published, expected in (("tree,form", "tree"), ("kanban,tree,form", "kanban"), ("form,tree", "form")):
+            with self.subTest(published=published):
+                data = {
+                    "head": {"view_type": published},
+                    "views": {"form": {"layout": []}, "tree": {"layout": []}, "kanban": {"layout": []}},
+                }
+                projection.inject_primary_view_projection(data, requested_view_type=None)
+                self.assertEqual(data["head"]["view_type"], expected)
+                self.assertEqual(data["view_type"], expected)
+
+    def test_assembler_active_view_resolution_agrees_with_the_native_view_finalizer(self):
+        """One active-view convention, not two.
+
+        `native_view_contract_projection.resolve_primary_view_type` is the
+        platform's existing rule: a requested view list (`"tree,form"`, what
+        `page_assembler` publishes in `head.view_type`) resolves to its first
+        token.  The legacy `ui.contract` finalizer already applies it, so a page
+        does not publish the joined list today.  The assembler's own boundary
+        normalization must agree with that rule instead of inventing a second
+        one, and must still produce a schema-enumerated page token.
+        """
+        projection = _load_module(
+            "smart_core_native_view_contract_projection",
+            CORE_DIR / "native_view_contract_projection.py",
+        )
+        for declared in ("tree,form", "form,tree", "kanban,tree,form", "tree,form,pivot,graph", "tree", "list", "form", ""):
+            with self.subTest(view_type=declared):
+                head = {"view_type": declared} if declared else {}
+                first_token = declared.split(",")[0].strip()
+                self.assertEqual(
+                    projection.resolve_primary_view_type(declared or None, head, {}),
+                    first_token or "form",
+                )
+                contract = assembler.assemble_unified_page_contract_v2(
+                    {"model": "x.document", "view_type": declared, "fields": {}},
+                    source_type="ui.contract",
+                    client_type="web_pc",
+                    request_id=f"test.active.view.parity.{declared}",
+                )
+                self.assertEqual(
+                    contract["pageInfo"]["viewType"],
+                    "list" if first_token in {"tree", "list"} else (first_token or "form"),
+                )
+
     def test_mobile_compact_preserves_create_business_context_outside_compat(self):
         source = {
             "model": "project.project",
@@ -699,10 +796,16 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         assembler.project_runtime_business_actions(contract)
         actions = contract["actionContract"]["actionRuleList"]
         purposes = {row["actionSemantics"]["purpose"] for row in actions if row.get("actionSemantics")}
-        self.assertEqual(purposes, {"save_draft", "submit", "approve", "reject"})
+        self.assertEqual(purposes, {"save_draft", "submit", "approve", "reject", "complete"})
         submit = next(row for row in actions if row.get("actionSemantics", {}).get("purpose") == "submit")
         self.assertEqual(submit["button"]["name"], "action_submit")
         self.assertEqual(submit["actionSemantics"]["executor"], "contract.action")
+        finished = next(row for row in actions if row.get("actionSemantics", {}).get("purpose") == "complete")
+        self.assertEqual(finished["button"]["name"], "action_done")
+        self.assertEqual(finished["actionSemantics"], {
+            "kind": "business", "purpose": "complete", "executor": "contract.action",
+            "origin": "payment.request.available_actions",
+        })
         duplicate = deepcopy(submit)
         duplicate["actionSemantics"]["purpose"] = "approve"
         actions.append(duplicate)
@@ -710,6 +813,25 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         merged = next(row for row in contract["actionContract"]["actionRuleList"] if row["backendIdentity"] == submit["backendIdentity"])
         self.assertEqual(merged["actionSemantics"], {"conflict": True})
         self.assertEqual(merged["button"]["name"], "action_submit")
+
+    def test_runtime_visibility_booleans_normalize_without_native_counterpart(self):
+        for visible in (True, False):
+            with self.subTest(visible=visible):
+                contract = {"actionContract": {"actionRuleList": [{
+                    "actionId": "action.review", "actionKey": "review", "button": {"type": "object", "name": "review"},
+                    "visible": visible, "allowed": False, "enabled": False,
+                }], "dependencyGraph": {}}, "statusContract": {"buttonStatus": [{
+                    "btnId": "btn.review", "visible": visible, "disabled": True,
+                }]}}
+                assembler._merge_action_rules_by_backend_identity(contract)
+                rule = contract["actionContract"]["actionRuleList"][0]
+                self.assertEqual(rule["visible"], {"attrs": {"invisible": {"kind": "static", "value": not visible}}})
+                self.assertFalse(rule["allowed"])
+                self.assertEqual(contract["statusContract"]["buttonStatus"][0]["visible"], visible)
+                self.assertTrue(contract["statusContract"]["buttonStatus"][0]["disabled"])
+                assembler._merge_action_rules_by_backend_identity(contract)
+                self.assertEqual(contract["actionContract"]["actionRuleList"][0]["visible"], rule["visible"])
+                self.assertEqual(contract["statusContract"]["buttonStatus"][0]["visible"], visible)
 
     def test_ui_contract_v2_readonly_form_never_publishes_save(self):
         full = assembler.assemble_unified_page_contract_v2(
@@ -1213,6 +1335,65 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             if row.get("actionKey") == "open_followup"
         ]
         self.assertEqual(len(promoted_again), 1)
+
+    def test_a_runtime_declared_purpose_is_projected_through_the_pairing(self):
+        """The runtime action channel is a producer too, so it is checked too.
+
+        Copying `action_semantics` verbatim let this channel publish a
+        `(kind, purpose, executor)` combination every terminal drops: the rule
+        looked declared while nothing could read it.  A declaration outside the
+        pairing must stay undeclared; one inside it must survive unchanged.
+        """
+        contract = assembler.assemble_unified_page_contract_v2(
+            {"model": "x.document", "view_type": "form", "views": {"form": {"layout": []}}},
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.runtime.business.action.semantics.pairing",
+        )
+        contract["runtimeContract"]["businessActions"] = [
+            {
+                "key": "probe_dropped",
+                "label": "Probe dropped",
+                "kind": "mutation",
+                "method": "action_probe_dropped",
+                "allowed": True,
+                "enabled": True,
+                "action_semantics": {
+                    "kind": "business",
+                    "purpose": "return",
+                    "executor": "client.back",
+                    "origin": "runtime.row.probe",
+                },
+            },
+            {
+                "key": "probe_published",
+                "label": "Probe published",
+                "kind": "mutation",
+                "method": "action_probe_published",
+                "allowed": True,
+                "enabled": True,
+                "action_semantics": {
+                    "kind": "business",
+                    "purpose": "start_execution",
+                    "executor": "contract.action",
+                    "origin": "runtime.row.probe",
+                },
+            },
+        ]
+
+        assembler.project_runtime_business_actions(contract)
+        rules = {row["actionKey"]: row for row in contract["actionContract"]["actionRuleList"]}
+
+        self.assertNotIn("actionSemantics", rules["probe_dropped"])
+        self.assertEqual(
+            rules["probe_published"]["actionSemantics"],
+            {
+                "kind": "business",
+                "purpose": "start_execution",
+                "executor": "contract.action",
+                "origin": "runtime.row.probe",
+            },
+        )
 
     def test_runtime_business_action_without_explicit_permission_fails_closed(self):
         contract = assembler.assemble_unified_page_contract_v2(
@@ -2357,6 +2538,26 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertFalse(first["required"])
         self.assertFalse(second["readonly"])
         self.assertTrue(second["required"])
+
+    def test_unresolved_required_modifier_never_grants_edit_auth(self):
+        for hidden in (False, True):
+            with self.subTest(hidden=hidden):
+                contract = {
+                    "layoutContract": {"containerTree": [{
+                        "type": "field", "name": "date_start", "widgetId": "field.date_start.occ.test",
+                        "modifiers": {"invisible": hidden, "required": {"kind": "field_truthy", "field": "date"}},
+                    }]},
+                    "statusContract": {"widgetStatus": [{"widgetId": "field.date_start.occ.test"}]},
+                    "dataContract": {"mainData": {}},
+                }
+                assembler.hydrate_final_layout_modifier_status(contract)
+                status = contract["statusContract"]["widgetStatus"][0]
+                self.assertTrue(status["disabled"])
+                self.assertEqual(status["auth"], "none" if hidden else "read")
+                contract["dataContract"]["mainData"]["date"] = False
+                assembler.hydrate_final_layout_modifier_status(contract)
+                self.assertFalse(status["disabled"])
+                self.assertEqual(status["auth"], "none" if hidden else "edit")
 
     def test_final_layout_modifier_hydration_fails_closed_for_unknown_field_modifier(self):
         contract = {
@@ -4008,6 +4209,393 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                 source,
                 source_type="native_form_projection",
             )
+
+
+    # ------------------------------------------------------------------
+    # A declared action purpose is bound to the occurrence that declares the
+    # same method.  The platform carries the declaration; it never derives one.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _semantics_contract(available: list, rules: list) -> dict:
+        return {
+            "workflowContract": {"availableActions": available},
+            "actionContract": {"actionRuleList": rules},
+        }
+
+    @staticmethod
+    def _method_rule(method: str, semantics: dict | None = None, button_type: str = "object") -> dict:
+        rule = {"actionKey": method, "button": {"name": method, "type": button_type}}
+        if semantics is not None:
+            rule["actionSemantics"] = semantics
+        return rule
+
+    def test_declared_workflow_purpose_binds_to_the_occurrence_declaring_the_method(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm"), self._method_rule("validate_tier")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        bound, undeclared = contract["actionContract"]["actionRuleList"]
+        self.assertEqual(bound["actionSemantics"], {
+            "kind": "business", "purpose": "submit",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        })
+        self.assertNotIn("actionSemantics", undeclared)
+
+    def test_undeclared_method_is_never_given_a_purpose_by_resemblance(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_set_approved")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+    def test_unavailable_declared_action_keeps_semantics_without_changing_availability(self):
+        rule = self._method_rule("action_sc_start")
+        rule.update({"enabled": False, "visible": False})
+        contract = self._semantics_contract([], [rule])
+        contract["workflowContract"]["actions"] = [{
+            "method": "action_sc_start",
+            "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"},
+        }]
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(rule["actionSemantics"]["purpose"], "start_execution")
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule["visible"])
+        self.assertEqual(contract["workflowContract"]["availableActions"], [])
+
+    def test_disagreeing_conflicting_declarations_stay_explicit(self):
+        approve = {
+            "kind": "business", "purpose": "approve",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        }
+        contract = self._semantics_contract(
+            [
+                {"key": "approve", "method": "validate_tier", "action_semantics": approve},
+                {"key": "reject", "method": "validate_tier", "action_semantics": {
+                    "kind": "business", "purpose": "reject",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                }},
+            ],
+            [self._method_rule("validate_tier")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {"conflict": True},
+        )
+
+    def test_an_occurrence_declaring_another_purpose_is_not_overwritten(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm", {
+                "kind": "business", "purpose": "approve",
+                "executor": "contract.action", "origin": "other.authority",
+            })],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {"conflict": True},
+        )
+
+    def test_corroborated_purposes_from_two_authorities_are_not_a_conflict(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_submit",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_submit", {
+                "kind": "business", "purpose": "submit",
+                "executor": "contract.action", "origin": "payment.request.available_actions",
+            })],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"],
+            {
+                "kind": "business", "purpose": "submit",
+                "executor": "contract.action", "origin": "payment.request.available_actions",
+            },
+        )
+        self.assertEqual(
+            assembler.declared_action_meaning(
+                {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "a"}
+            ),
+            assembler.declared_action_meaning(
+                {"kind": "business", "purpose": "submit", "executor": "contract.action", "origin": "b"}
+            ),
+        )
+
+    def test_platform_persistence_keeps_the_purpose_the_platform_declared(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_submit",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [{
+                "actionKey": "form.save",
+                "button": {},
+                "actionSemantics": {
+                    "kind": "persistence", "purpose": "save_draft",
+                    "executor": "record.save", "origin": "platform_form_action",
+                    "operation": "write",
+                },
+            }],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertEqual(
+            contract["actionContract"]["actionRuleList"][0]["actionSemantics"]["purpose"],
+            "save_draft",
+        )
+
+    def test_a_declaration_outside_the_published_vocabulary_is_not_carried(self):
+        self.assertIsNone(assembler.declared_action_semantics({
+            "kind": "business", "purpose": "approve_v2",
+            "executor": "contract.action", "origin": "workflow.contract.service",
+        }))
+        self.assertIsNone(assembler.declared_action_semantics({
+            "kind": "business", "purpose": "submit", "executor": "contract.action",
+        }))
+        self.assertEqual(
+            assembler.declared_action_semantics({"conflict": True}),
+            {"conflict": True},
+        )
+        self.assertEqual(
+            assembler.declared_action_semantics({
+                "kind": "persistence", "purpose": "save_draft",
+                "executor": "record.save", "origin": "platform_form_action",
+                "operation": "write",
+            }),
+            {
+                "kind": "persistence", "purpose": "save_draft",
+                "executor": "record.save", "origin": "platform_form_action",
+                "operation": "write",
+            },
+        )
+
+    def test_a_non_method_button_is_not_bound_by_a_shared_name(self):
+        contract = self._semantics_contract(
+            [{
+                "key": "submit",
+                "method": "action_confirm",
+                "action_semantics": {
+                    "kind": "business", "purpose": "submit",
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            }],
+            [self._method_rule("action_confirm", button_type="server_action")],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+    def test_lifecycle_purposes_are_published_for_the_declaring_owner(self):
+        """`start_execution` / `complete` / `reopen` are declarable, not inferred.
+
+        A lifecycle transition that carries no published purpose used to reach the
+        Web as an undeclared action.  These three purposes stay declarations: each
+        one is accepted only when the owning module states it, and each one still
+        binds to the method that owner declared.
+        """
+        for purpose in ("start_execution", "complete", "reopen"):
+            self.assertEqual(
+                assembler.declared_action_semantics({
+                    "kind": "business", "purpose": purpose,
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                }),
+                {
+                    "kind": "business", "purpose": purpose,
+                    "executor": "contract.action", "origin": "workflow.contract.service",
+                },
+            )
+        contract = self._semantics_contract(
+            [
+                {"key": "activate", "method": "action_set_running", "action_semantics": {
+                    "kind": "business", "purpose": "start_execution",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+                {"key": "complete", "method": "action_close", "action_semantics": {
+                    "kind": "business", "purpose": "complete",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+                {"key": "reopen", "method": "action_reset_draft", "action_semantics": {
+                    "kind": "business", "purpose": "reopen",
+                    "executor": "contract.action", "origin": "workflow.contract.service"}},
+            ],
+            [
+                self._method_rule("action_set_running"),
+                self._method_rule("action_close"),
+                self._method_rule("action_reset_draft"),
+                self._method_rule("action_done"),
+            ],
+        )
+        assembler.project_workflow_action_semantics(contract)
+        rules = contract["actionContract"]["actionRuleList"]
+        self.assertEqual(
+            [rule.get("actionSemantics", {}).get("purpose") for rule in rules],
+            ["start_execution", "complete", "reopen", None],
+        )
+
+    def test_a_lifecycle_method_reaching_an_undeclared_owner_stays_undeclared(self):
+        for method in ("action_set_running", "action_done", "action_close", "action_reopen"):
+            contract = self._semantics_contract([], [self._method_rule(method)])
+            assembler.project_workflow_action_semantics(contract)
+            self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
+
+
+    @staticmethod
+    def _workflow_denial_contract():
+        def rule(method):
+            return {
+                "actionId": "action." + method, "actionKey": method,
+                "backendIdentity": "button:object:" + method,
+                "button": {"type": "object", "name": method},
+                "sourceChannel": "native_form_header",
+                "nativeIdentity": {"native_locator": "/form[1]/header[1]/" + method},
+                "allowed": True, "enabled": True, "disabled": False,
+                "authorizationAllowed": True, "entitlementEvaluated": True,
+                "sourceTrace": [{"authorizationAllowed": True, "entitlementEvaluated": True}],
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "approved"}}},
+            }
+        return {
+            "pageInfo": {"model": "test.document"},
+            "dataContract": {"mainData": {"id": 43, "state": "approved"}},
+            "workflowContract": {"model": "test.document", "record_id": 43, "availableActions": [{
+                "method": "action_confirm", "enabled": False, "reason_code": "SOURCE_ALREADY_COMPLETED",
+                "blocked_message": "来源已完成办理。", "target": {"model": "test.document", "id": 43, "method": "action_confirm"},
+                "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"},
+            }]},
+            "actionContract": {"actionRuleList": [rule("action_confirm"), rule("action_cancel")]},
+            "statusContract": {"buttonStatus": [
+                {"btnId": "btn.action_confirm", "visible": True, "disabled": False},
+                {"btnId": "btn.action_cancel", "visible": True, "disabled": False},
+            ]},
+        }
+
+    def test_workflow_veto_survives_semantics_and_final_visible_native_hydration(self):
+        contract = self._workflow_denial_contract()
+        assembler.project_workflow_action_semantics(contract)
+        assembler.hydrate_final_action_modifier_status(contract)
+        rule, other = contract["actionContract"]["actionRuleList"]
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["businessAvailable"])
+        self.assertTrue(rule["disabled"])
+        self.assertTrue(rule["authorizationAllowed"])
+        self.assertEqual(rule["reasonCode"], "SOURCE_ALREADY_COMPLETED")
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], rule["reasonCode"])
+        self.assertTrue(other["enabled"])
+        effective_primary = [row for row in contract["actionContract"]["actionRuleList"]
+                             if row.get("enabled") and row.get("presentation", {}).get("tier") == "primary"]
+        self.assertEqual(effective_primary, [other])
+        self.assertEqual(contract["workflowContract"]["availableActions"][0]["blocked_message"], "来源已完成办理。")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertFalse(rule["enabled"])
+        self.assertEqual(rule["reasonCode"], "SOURCE_ALREADY_COMPLETED")
+
+    def test_workflow_denial_preserves_stricter_acl_reason_and_visibility(self):
+        for workflow_enabled in (False, True):
+            contract = self._workflow_denial_contract()
+            contract["workflowContract"]["availableActions"][0]["enabled"] = workflow_enabled
+            rule = contract["actionContract"]["actionRuleList"][0]
+            rule.update(allowed=False, enabled=False, disabled=True, authorizationAllowed=False, reasonCode="ACL_DENIED")
+            rule["sourceTrace"] = [{"authorizationAllowed": False, "entitlementEvaluated": True}]
+            status = contract["statusContract"]["buttonStatus"][0]
+            status.update(disabled=True, reasonCode="ACL_DENIED")
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertFalse(rule["enabled"])
+            self.assertFalse(rule["authorizationAllowed"])
+            self.assertEqual(rule["reasonCode"], "ACL_DENIED")
+            self.assertTrue(status["disabled"])
+            self.assertEqual(status["reasonCode"], "ACL_DENIED")
+
+    def test_cross_record_or_unknown_workflow_identity_cannot_restrict_this_record(self):
+        for patch in [{"model": "other.document"}, {"record_id": 44}, {"record_id": 43.5}, {"record_id": None}]:
+            with self.subTest(patch=patch):
+                contract = self._workflow_denial_contract()
+                contract["workflowContract"].update(patch)
+                assembler.hydrate_final_action_modifier_status(contract)
+                self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        for record_id in (None, False, 0, "43"):
+            contract = self._workflow_denial_contract()
+            contract["dataContract"]["mainData"]["id"] = record_id
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+
+    def test_workflow_veto_requires_exact_object_method_and_matching_target(self):
+        for patch in [{"type": "action"}, {"type": "server_action"}, {"type": ""}, {"name": "action_confirm_other"}]:
+            contract = self._workflow_denial_contract()
+            rule = contract["actionContract"]["actionRuleList"][0]
+            rule["button"].update(patch)
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(rule["enabled"])
+        for owner in ("declaration", "rule"):
+            for target in [{"model": "other.document"}, {"id": 44}, {"id": 43.5}, {"method": "another_method"}]:
+                contract = self._workflow_denial_contract()
+                rule = contract["actionContract"]["actionRuleList"][0]
+                item = rule if owner == "rule" else contract["workflowContract"]["availableActions"][0]
+                item["target"] = target
+                assembler.hydrate_final_action_modifier_status(contract)
+                self.assertTrue(rule["enabled"])
+
+    def test_workflow_catalog_absence_unknown_flags_and_record_save_do_not_change_authority(self):
+        for enabled in (True, None, "false", 0):
+            contract = self._workflow_denial_contract()
+            contract["workflowContract"]["availableActions"][0]["enabled"] = enabled
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["actions"] = contract["workflowContract"].pop("availableActions")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        contract = self._workflow_denial_contract()
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule["actionSemantics"] = {"executor": "record.save"}
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertTrue(rule["enabled"])
+
+    def test_workflow_duplicate_allow_cannot_cancel_a_declared_denial_and_missing_status_is_sealed(self):
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["availableActions"].insert(0, {"method": "action_confirm", "enabled": True})
+        contract["statusContract"]["buttonStatus"] = []
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule.pop("visible")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertFalse(rule["enabled"])
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row["btnId"] == "btn.action_confirm")
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "SOURCE_ALREADY_COMPLETED")
 
 
 if __name__ == "__main__":

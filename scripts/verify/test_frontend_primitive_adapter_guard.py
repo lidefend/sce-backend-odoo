@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import tempfile
 import unittest
 
-from scripts.verify.frontend_primitive_adapter_guard import PRIMITIVES, direct_root_visual_overrides, native_descendant_visual_overrides, validate
+from scripts.verify.frontend_primitive_adapter_guard import (
+    P3_CONSUMER_CHROME_EXEMPTION,
+    PRIMITIVES,
+    consumer_chrome_exempt,
+    css_without_comments,
+    direct_root_visual_overrides,
+    native_descendant_visual_overrides,
+    validate,
+)
 
 
 class PrimitiveAdapterGuardTest(unittest.TestCase):
@@ -48,7 +57,7 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
         theme.write_text(
             ":root {\n"
             "  --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);\n"
-            "  --td-text-color-placeholder: var(--sc-semantic-text-secondary);\n"
+            "  --td-text-color-placeholder: var(--sc-semantic-text-muted);\n"
             "  --td-border-level-2-color: var(--sc-semantic-border-strong);\n"
             "}\n"
             ".sc-btn.t-button { height: calc(var(--sc-component-button-height-md) * 1px); }\n"
@@ -321,6 +330,111 @@ class PrimitiveAdapterGuardTest(unittest.TestCase):
     def test_container_cannot_repaint_primitive_native_control(self) -> None:
         source = '<template><div class="legacy"><ScButton /></div></template><style>.legacy > button { width: 2rem; padding: 1rem; }</style>'
         self.assertEqual(native_descendant_visual_overrides(source), [".legacy > button"])
+
+    def test_shrink_layout_comment_is_not_a_native_selector(self) -> None:
+        source = '<template><div class="track"><ScInput /></div></template><style>/* text input must shrink */ .track :deep(.sc-input) { min-width: 0; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [])
+        self.assertEqual(direct_root_visual_overrides(source), [])
+        actual = Path('frontend/apps/web/src/components/product-list/ProductListHeader.vue').read_text()
+        self.assertEqual(native_descendant_visual_overrides(actual), [])
+
+    def test_commented_out_repaint_is_not_a_rule(self) -> None:
+        source = '<template><div class="legacy"><ScInput class="control" /></div></template><style>/* .legacy input { padding: 1rem; } .control { color: red; } */ .legacy { display: flex; }</style>'
+        self.assertEqual(native_descendant_visual_overrides(source), [])
+        self.assertEqual(direct_root_visual_overrides(source), [])
+
+    def test_comments_do_not_hide_real_native_repaint(self) -> None:
+        for css in ['/* input comment */ .legacy input { color: red; padding: 1rem; }',
+                    '.legacy /* comment */ input { /* reason */ min-width: 9rem; }',
+                    '.legacy input { /* reason */ width: 9rem; }']:
+            with self.subTest(css=css):
+                source = '<template><div class="legacy"><ScInput /></div></template><style>' + css + '</style>'
+                self.assertTrue(native_descendant_visual_overrides(source))
+
+    def test_comments_do_not_hide_root_or_deep_repaint(self) -> None:
+        source = '<template><ScInput class="control" /></template><style>/* why */ .control { /* reason */ color: red; }</style>'
+        self.assertEqual(direct_root_visual_overrides(source), ['control'])
+        root = self.make_root()
+        consumer = root / 'frontend/apps/web/src/pages/CommentedChrome.vue'
+        consumer.parent.mkdir(parents=True, exist_ok=True)
+        consumer.write_text('<style>/* why */ .legacy :deep(.sc-input) { /* reason */ border: 1px solid red; }</style>')
+        self.assertTrue(any('adapter appearance' in error for error in validate(root)))
+
+    def test_quoted_comment_marker_does_not_remove_later_rule(self) -> None:
+        css = '.hint::before { content: "/* not a comment */"; } .legacy input { color: red; }'
+        self.assertEqual(css_without_comments(css), css)
+        escaped = r'.hint { content: "escaped \" /* marker"; } .legacy input { padding: 1rem; }'
+        self.assertEqual(css_without_comments(escaped), escaped)
+        for value in (css, escaped):
+            source = '<template><div class="legacy"><ScInput /></div></template><style>' + value + '</style>'
+            self.assertTrue(native_descendant_visual_overrides(source))
+
+    def write_p3_ownership(self, root: Path) -> None:
+        ownership = root / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
+        ownership.parent.mkdir(parents=True, exist_ok=True)
+        ownership.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": "rendering-surface-ownership/v1",
+                    "owners": {
+                        "p3-low-code-administration": {
+                            "formalProductLayer": "P3",
+                            "sources": ["frontend/apps/web/src/views/SceneHealthView.vue"],
+                            "prefixes": ["frontend/apps/web/src/views/businessConfigSurface/"],
+                        }
+                    },
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+    def test_p3_administration_surface_cannot_bypass_native_control_boundary(self) -> None:
+        root = self.make_root()
+        self.write_p3_ownership(root)
+        source = root / "frontend/apps/web/src/views/businessConfigSurface/LegacyPanel.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text('<template><input value="x" /></template>\n', encoding="utf-8")
+        self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
+
+    def test_p3_administration_consumer_chrome_is_a_declared_exemption(self) -> None:
+        root = self.make_root()
+        self.write_p3_ownership(root)
+        source = root / "frontend/apps/web/src/views/businessConfigSurface/LegacyPanel.vue"
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            "<style scoped>.legacy :deep(.sc-input) { border: 1px solid red; }</style>\n",
+            encoding="utf-8",
+        )
+        self.assertEqual([error for error in validate(root) if "LegacyPanel" in error], [])
+        self.assertEqual(
+            consumer_chrome_exempt(
+                "frontend/apps/web/src/views/businessConfigSurface/LegacyPanel.vue",
+                {"frontend/apps/web/src/views/SceneHealthView.vue"},
+                ("frontend/apps/web/src/views/businessConfigSurface/",),
+            ),
+            P3_CONSUMER_CHROME_EXEMPTION,
+        )
+        self.assertIsNone(
+            consumer_chrome_exempt(
+                "frontend/apps/web/src/pages/ContractList.vue",
+                {"frontend/apps/web/src/views/SceneHealthView.vue"},
+                ("frontend/apps/web/src/views/businessConfigSurface/",),
+            )
+        )
+
+    def test_external_component_template_cannot_hide_a_native_control(self) -> None:
+        root = self.make_root()
+        view = root / "frontend/apps/web/src/views/ExternalTemplateView.vue"
+        view.parent.mkdir(parents=True, exist_ok=True)
+        view.write_text(
+            '<template src="./externalTemplateView/template.html"></template>\n<script setup lang="ts"></script>\n',
+            encoding="utf-8",
+        )
+        template_dir = view.parent / "externalTemplateView"
+        template_dir.mkdir(parents=True, exist_ok=True)
+        (template_dir / "template.html").write_text('<button type="button">Save</button>\n', encoding="utf-8")
+        self.assertTrue(any("bypasses the professional primitive adapter" in error for error in validate(root)))
 
     def test_external_component_style_cannot_repaint_primitive_root(self) -> None:
         root = self.make_root()

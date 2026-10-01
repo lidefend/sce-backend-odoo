@@ -5,17 +5,87 @@
     data-component="FormSection"
     data-semantic-component="FormSection"
     :data-state="allFieldsReadonly ? 'readonly' : 'editable'"
+    :data-detail-section-composition="detailSectionDecision.adopted ? 'official-standard-detail' : 'contract-field-extension'"
+    :data-detail-section-reason="detailSectionDecision.reason"
     :title="undefined"
     :appearance="preferReadonlyFacts ? 'fact' : 'form-section'"
   >
     <template v-if="showHead && $slots.action" #actions><slot name="action" /></template>
     <p v-if="hint" class="template-form-section-hint">{{ hint }}</p>
-    <div :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
+    <ScForm
+      ref="sectionFormRef"
+      :bare="!adoptedComposition"
+      class="template-form-section-form"
+      label-align="top"
+      :rules="adoptedRules"
+      :show-error-message="false"
+    >
+    <!-- 已采纳的只读详情：官方 detail 组合，t-card(:bordered="false") 内以
+         t-descriptions 逐项呈现该 section 的契约字段事实（label = 字段标签，
+         值槽复用与事实网格同一份只读取值：关系入口、富文本、办理动作、纯文本）。
+         可编辑与明细控制不在只读事实的适用范围内，因此这里不复制它们。 -->
+    <template v-for="(segment, segmentIndex) in detailFieldSegments" :key="segmentIndex">
+    <ScDescriptions
+      v-if="segment.facts"
+      class="template-form-section-descriptions"
+      data-detail-facts="official-standard-detail"
+      :bordered="false"
+      :column="detailFactColumns"
+      :items="segment.fields"
+      layout="horizontal"
+      item-layout="horizontal"
+    >
+      <template #item="{ item }">
+        <div class="detail-fact-value"
+          :data-field-name="detailFactField(item).name"
+          :data-field-key="detailFactField(item).key"
+          :data-field-type="detailFactField(item).type"
+          :data-widget-type="detailFactField(item).widget || undefined"
+          :data-component-renderer="detailFactField(item).componentRenderer || undefined"
+          :data-native-locator="detailFactField(item).nativeLocator || undefined"
+          :data-source-position="detailFactField(item).sourcePosition ?? undefined">
+        <ProfessionalBusinessValueControl
+          v-if="usesProfessionalBusinessValue(detailFactField(item))"
+          :field="detailFactField(item)"
+          :control-id="fieldControlId(detailFactField(item))"
+          :placeholder="detailFactField(item).inputPlaceholder || businessValuePlaceholderText(detailFactField(item))"
+          @update:value="emitFieldChange(detailFactField(item), $event)"
+        />
+        <ScButton
+          v-else-if="detailFactRelationEntry(item)"
+          type="button"
+          appearance="readonly-relation"
+          variant="ghost"
+          :title="readonlyText(detailFactField(item))"
+          :aria-label="detailFactField(item).many2oneOpenLabel || `打开${detailFactField(item).label}`"
+          @click="emitFieldChange(detailFactField(item), detailFactField(item).many2oneOpenToken)"
+        ><span class="readonly-relation-label">{{ readonlyText(detailFactField(item)) }}</span></ScButton>
+        <div
+          v-else-if="detailFactField(item).type === 'html'"
+          class="readonly-value readonly-value--html"
+          v-html="readonlyHtml(detailFactField(item))"
+        />
+        <div
+          v-else-if="taskActionFor(detailFactField(item))"
+          role="button"
+          tabindex="0"
+          class="readonly-value readonly-value--action"
+          :aria-label="`${taskActionLabel(detailFactField(item))}（办理动作）`"
+          @click="taskActionRun(detailFactField(item))"
+          @keydown.enter.prevent="taskActionRun(detailFactField(item))"
+        >{{ taskActionLabel(detailFactField(item)) }}</div>
+        <slot v-else name="readonly" :field="detailFactField(item)">
+          <span class="readonly-value">{{ readonlyText(detailFactField(item)) }}</span>
+        </slot>
+        </div>
+      </template>
+    </ScDescriptions>
+    <div v-else :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="displayFields.length">
         <div
-          v-for="(field, index) in displayFields"
+          v-for="(field, index) in segment.fields"
           :key="field.key"
-          :class="fieldClass(field, index)"
+          :class="fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
           :data-field-name="field.name"
           :data-validation-target="fieldValidationTarget(field)"
           :data-field-key="field.key"
@@ -78,7 +148,14 @@
               />
             </div>
           </div>
-          <div :class="['field-control-row', { 'field-control-row--favorite': field.favoriteToggle }]">
+          <ScFormItem
+            :bare="!adoptedComposition"
+            :class="['field-control-row', { 'field-control-row--favorite': field.favoriteToggle }]"
+            :name="field.name"
+            :rules="adoptedRules[field.name]"
+            :status="field.invalid ? 'error' : undefined"
+            :show-error-message="false"
+          >
             <ScIconButton
               v-if="field.favoriteToggle"
               class="field-favorite-toggle"
@@ -160,7 +237,7 @@
                   <ScButton
                     v-if="field.many2oneOpenToken && !fieldHasEmptyValue(field)"
                     type="button"
-                    appearance="auth-link"
+                    appearance="readonly-relation"
                     variant="ghost"
                     :title="readonlyText(field)"
                     :aria-label="field.many2oneOpenLabel || `打开${field.label}`"
@@ -293,22 +370,33 @@
                 />
               </template>
             </div>
-          </div>
+          </ScFormItem>
           <p v-if="field.helpText" :id="fieldHelpId(field)" class="field-supporting-text">{{ field.helpText }}</p>
           <p v-if="field.errorText" :id="fieldErrorId(field)" class="field-error-text" role="alert">{{ field.errorText }}</p>
         </div>
       </template>
       <slot v-else />
     </div>
+    </template>
+    </ScForm>
   </ScCard>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, useId, useSlots } from 'vue';
+import { computed, inject, onBeforeUnmount, onMounted, ref, useId, useSlots } from 'vue';
+import { useNarrowViewport } from '../../composables/useNarrowViewport';
 import { businessErrorKey } from '../../app/businessValidationError';
 import { fieldHasEmptyValue, readonlyFactIsPresentable } from './formSection.mapper';
 import { SceneFieldControl, useOptionalSceneUiKit } from '@sc/ui/form';
 import ScCard from '../design-system/ScCard.vue';
+import ScDescriptions from '../design-system/ScDescriptions.vue';
+import ScForm from '../design-system/ScForm.vue';
+import ScFormItem from '../design-system/ScFormItem.vue';
+import type { ScFormInstance } from '../design-system/scFormContract';
+import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
+import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
+import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
+import { resolveStandardDetailFactLayout, partitionStandardDetailFields } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -402,7 +490,116 @@ const props = withDefaults(defineProps<{
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
+const standardFormComposition = useOptionalStandardFormComposition();
+const standardDetailComposition = useOptionalStandardDetailComposition();
+const sectionFormRef = ref<unknown>(null);
+const sectionId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
+/**
+ * Adopted sections render through the official form composition; every other
+ * section keeps the composition it had. `bare` makes the adapters transparent
+ * rather than emulated, so an unadopted surface is not silently half-adopted.
+ */
+const adoptedComposition = computed(() => standardFormComposition?.adopted.value === true && !props.fieldSelectionMode && !props.fieldConfigEditable);
+const adoptedRules = computed(() => (adoptedComposition.value ? buildContractFormRules(props.fields) : {}));
+/**
+ * Whether this readonly section's facts render through the official detail
+ * composition.
+ *
+ * The page-level term is the page's own readonly-record adoption, not the form
+ * composition's: `record-detail` and `record-form` are the two halves of one
+ * contract classification, so a page is never both and folding them together
+ * would leave the facts layout unreachable. `bare` above still follows the form
+ * composition, so a readonly page renders the facts without borrowing the
+ * editable form's container or its rules.
+ */
+const detailSectionDecision = computed(() => resolveStandardDetailFactLayout(
+  standardDetailComposition?.decision.value,
+  {
+    configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
+    readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
+    fields: displayFields.value.map(detailFieldCapability),
+  },
+));
+function detailFieldCapability(field: FormSectionFieldSchema) {
+  return {
+    type: field.type,
+    dedicatedControl: Boolean(field.favoriteToggle)
+      || declaresUnknownComponentRenderer(field)
+      || usesPaymentSettlementDetailCollection(field)
+      || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl', 'ProfessionalBusinessValueControl'].includes(field.componentRenderer)),
+  };
+}
+const detailFieldSegments = computed(() => partitionStandardDetailFields(
+  displayFields.value,
+  (field) => resolveStandardDetailFactLayout(standardDetailComposition?.decision.value, {
+    configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
+    readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
+    fields: [detailFieldCapability(field)],
+  }).adopted,
+));
+
+/**
+ * The official detail page arranges its facts in a label/value table. A narrow
+ * viewport keeps one fact per row so a long business value cannot be squeezed
+ * into half a phone screen; the contract's own column count is kept elsewhere.
+ */
+const narrowDetailFactViewport = useNarrowViewport(640);
+const detailFactColumns = computed(() => (
+  narrowDetailFactViewport.value ? 1 : Math.max(1, Math.min(3, Number(props.columns) || 2))
+));
 const formSectionDomId = `form-section-${useId().replace(/[^A-Za-z0-9_-]/g, '-')}`;
+
+/**
+ * Generic validation of this section, reported as business field codes.
+ *
+ * The official engine decides when its rules run and how a failure is
+ * summarised; the caller decides what a rejected business field means. No
+ * second draft is kept: the rules read the values the page already holds.
+ */
+async function validateAdoptedSection(): Promise<string[]> {
+  if (!adoptedComposition.value) return [];
+  const instance = (sectionFormRef.value as ScFormInstance | null) || null;
+  if (!instance) {
+    // A section that hands rules to the engine but has no engine to run them
+    // cannot answer "passed"; it must not be read as one.
+    if (adoptedRuleFieldNames().length) {
+      throw new Error('adopted form section has no engine instance for its declared rules');
+    }
+    return [];
+  }
+  const rejected = failedAdoptedFieldNames(await instance.validate());
+  if (rejected === null) {
+    throw new Error('adopted form engine returned an unrecognised validation result');
+  }
+  return rejected;
+}
+
+/**
+ * Positions this section really hands to the official engine.
+ *
+ * Only a rendered position has a form item, and the engine evaluates rules for
+ * registered items only. Reporting the rendered-and-ruled set keeps the save
+ * chain honest: a required position that is not rendered here is *not* covered,
+ * so the page-level precheck must keep deciding it.
+ */
+function adoptedRuleFieldNames(): string[] {
+  if (!adoptedComposition.value) return [];
+  const rules = adoptedRules.value;
+  return displayFields.value
+    .map((field) => String(field.name || '').trim())
+    .filter((name) => Boolean(name && rules[name]));
+}
+
+onMounted(() => {
+  standardFormComposition?.register({
+    sectionId,
+    ruleFieldNames: adoptedRuleFieldNames,
+    validate: validateAdoptedSection,
+  });
+});
+onBeforeUnmount(() => {
+  standardFormComposition?.unregister(sectionId);
+});
 
 const emit = defineEmits<{
   (e: 'field-change', payload: FormSectionFieldChange): void;
@@ -593,7 +790,7 @@ function fieldSpanUnits(spanClass: string): number {
   return FIELD_SPAN_UNITS[spanClass] ?? 12;
 }
 
-function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
+function fieldSpanClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
   const explicitSpan = field.spanClass || '';
   const configuredBase = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
     ? 'field--full'
@@ -608,12 +805,12 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   // spans the full row. Widen such a field to span the full row (24 units).
   let units = 0;
   for (let i = 0; i < index; i++) {
-    const prev = props.fields[i];
+    const prev = gridFields[i];
     const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
     units += fieldSpanUnits(prevSpan);
   }
-  const isLast = index === props.fields.length - 1;
-  const next = props.fields[index + 1];
+  const isLast = index === gridFields.length - 1;
+  const next = gridFields[index + 1];
   const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
   const nextIsFullRow = nextSpan === 'field--full';
   if (units % 24 === 0 && (isLast || nextIsFullRow)) {
@@ -622,12 +819,12 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   return base;
 }
 
-function fieldClass(field: FormSectionFieldSchema, index: number) {
+function fieldClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
   const fieldKey = fieldIdentity(field);
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
     'field',
-    fieldSpanClass(field, index),
+    fieldSpanClass(field, index, gridFields),
     fieldWidgetClass(field),
     {
       'field--order-editable': props.fieldOrderEditable,
@@ -742,6 +939,21 @@ function taskActionRun(field: FormSectionFieldSchema) {
 
 function readonlyHtml(field: FormSectionFieldSchema) {
   return sanitizeReadonlyHtml(field.value);
+}
+
+/**
+ * The descriptions slot hands back one item; the item *is* the contract field
+ * the entry was built from, so the value is read from the same object the fact
+ * grid reads and stays reactive. The cast exists only because the primitive's
+ * slot payload is generic.
+ */
+function detailFactField(item: unknown): FormSectionFieldSchema {
+  return item as FormSectionFieldSchema;
+}
+
+function detailFactRelationEntry(item: unknown): boolean {
+  const field = detailFactField(item);
+  return Boolean(field.many2oneOpenToken && !fieldHasEmptyValue(field));
 }
 
 function fieldActionsFor(field: FormSectionFieldSchema) {
@@ -926,16 +1138,16 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section-hint {
+  font: var(--sc-font-body-small);
   margin: -4px 0 10px;
-  font-size: var(--sc-product-text-sm);
   color: var(--sc-app-text-primary);
 }
 
 .field-supporting-text,
 .field-error-text {
+  font: var(--sc-font-body-small);
   margin: 6px 0 0;
-  font-size: var(--sc-product-text-sm);
-  line-height: 1.45;
+
 }
 
 .field-supporting-text {
@@ -947,11 +1159,11 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-fail-closed {
+  font: var(--sc-font-body-small);
   padding: 6px 8px;
   border: 1px solid var(--sc-app-danger-text);
   border-radius: var(--sc-radius-sm, 4px);
-  font-size: var(--sc-product-text-sm);
-  line-height: 1.45;
+
   color: var(--sc-app-danger-text);
 }
 
@@ -1101,9 +1313,8 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .label {
-  font-size: var(--sc-product-text-sm);
+  font: var(--sc-font-mark-small);
   color: var(--sc-app-text-primary);
-  font-weight: 600;
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -1170,12 +1381,12 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-inline-actions {
+  font: var(--sc-font-body-small);
   display: inline-flex;
   align-items: center;
   gap: var(--sc-pattern-task-form-inline-actions-gap, 8px);
   color: var(--sc-semantic-text-muted);
-  font-size: 12px;
-  line-height: 1;
+
 }
 
 .field-control-row {
@@ -1194,17 +1405,24 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
   min-width: 0;
 }
 
+/* 官方 detail 组合：只读事实以 t-descriptions 的 label/value 表格呈现。
+   取值沿用同一份只读呈现样式（.readonly-value / 关系入口 / 富文本），因此
+   这里只负责表格自身的容器约束，不对厂商内部元素做后代选择器覆盖。 */
+.template-form-section-descriptions {
+  width: 100%;
+  min-width: 0;
+}
+
 .readonly-value {
+  font: var(--sc-font-body-medium);
   box-sizing: border-box;
   display: grid;
   align-items: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  font-size: var(--sc-product-text-body);
   color: var(--sc-app-text-primary);
   min-height: 32px;
-  line-height: 22px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1245,7 +1463,7 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 
 .readonly-value--html {
   display: block;
-  line-height: 1.65;
+  font: var(--sc-font-body-medium);
 }
 
 .readonly-value--html :deep(ul),
@@ -1259,15 +1477,15 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .readonly-value {
+  font: var(--sc-font-body-medium);
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly :deep(.contract-readonly-value) {
+  font: var(--sc-font-body-medium);
   min-height: 28px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
 }
 
 .template-form-section--readonly .template-form-section-grid {
@@ -1300,17 +1518,17 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .template-form-section--readonly .label {
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-secondary);
-  font-size: var(--sc-product-text-sm);
-  font-weight: 500;
+
 }
 
 .template-form-section--readonly .readonly-value,
 .template-form-section--readonly :deep(.contract-readonly-value) {
+  font: var(--sc-font-body-medium);
   min-height: 24px;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-product-text-body);
-  font-weight: 550;
+
 }
 
 @media (max-width: 760px) {
@@ -1362,15 +1580,14 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .native-date-range__label {
+  font: var(--sc-font-mark-small);
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
+
 }
 
 .native-date-range-separator {
+  font: var(--sc-font-body-medium);
   color: var(--sc-semantic-text-muted);
-  font-size: 13px;
 }
 
 .input[type='date'] {
@@ -1395,9 +1612,34 @@ function emitFieldSelect(field: FormSectionFieldSchema, event?: Event) {
 }
 
 .field-currency-label {
+  font: var(--sc-font-body-medium);
   color: var(--sc-app-text-secondary);
-  font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Official composition adoption (TPL-01).
+   The official form owns section composition and generic validation. These
+   rules only stop its own chrome from competing with the contract-driven field
+   grid, which stays the authority for label, identity and error association.
+
+   The adopted row is selected by the primitive identity this project already
+   puts on the adapter (`ScFormItem`), never by a vendor class: a TDesign class
+   is allowed on an Sc root, but its internal descendants stay uncoupled, so
+   swapping the installed version cannot silently change what this styles. */
+.template-form-section-form {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.template-form-section-form :deep(.field-control-row[data-semantic-component='ScFormItem']) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 </style>

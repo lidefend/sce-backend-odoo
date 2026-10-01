@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "description": "Native type=object form buttons on workflow-adopted models that no contract profile declares. The adopted model set is the evaluated PROFILE_BY_MODEL registry, so helper-built profiles count too. Each entry records the nature of the button so the uncovered set is explicit; it grants no meaning and does not replace a declared purpose.",
+  "registry_rule": "A native object button must be declared by its own model profile or be listed here. Same-named methods on other models do not cover it. Registration records an unresolved gap and does not prove product completion.",
+  "classes": {
+    "state_transition_undeclared": "the button changes record state; the missing declaration is an authority-side gap",
+    "navigation": "opens a related record or view; no state change",
+    "document_helper": "generates/loads/creates business content; no state change"
+  },
+  "entries": [
+    {
+      "model": "construction.contract",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "construction.contract.expense",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "construction.contract.income",
+      "method": "action_generate_lines_from_budget",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_create_payment_execution",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "payment.request",
+      "method": "action_view_payment_execution",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_create_purchase_request",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_lines",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_orders",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.material.plan",
+      "method": "action_view_purchase_requests",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.expense.claim",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 2,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.material.acceptance",
+      "method": "action_load_purchase_order_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.acceptance",
+      "method": "action_load_purchase_request_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.inbound",
+      "method": "action_load_acceptance_lines",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.outbound",
+      "method": "action_open_transfer_inbound",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_create_purchase_order",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_create_rfq",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_view_purchase_orders",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
+    },
+    {
+      "model": "sc.material.purchase.request",
+      "method": "action_view_rfqs",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
+    },
+    {
+      "model": "sc.material.rfq",
+      "method": "action_create_purchase_order",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.settlement",
+      "method": "action_create_remaining_payment_request",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "generates, loads or creates business lines/documents without a state transition"
+    },
+    {
+      "model": "sc.material.settlement",
+      "method": "action_open_payment_request",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; no state change"
+    },
+    {
+      "model": "sc.payment.execution",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.receipt.income",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.self.funding.registration",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "sc.tax.deduction.registration",
+      "method": "action_view_company_contractor_responsibility_summary",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related record or view; it changes no record state"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_project_budgets",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_project_contracts",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_tasks",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "project_update_all_action",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_wbs",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_boq_import",
+      "class": "navigation",
+      "occurrences": 2,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_cost_ledger",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_progress_entries",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_boq_versions",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_open_wbs_planning",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_stage_requirements",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_view_my_tasks",
+      "class": "navigation",
+      "occurrences": 1,
+      "reason": "opens a related view or wizard without a lifecycle transition"
+    },
+    {
+      "model": "project.project",
+      "method": "action_rebuild_boq_hierarchy",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "validates or rebuilds BOQ hierarchy without changing project lifecycle"
+    },
+    {
+      "model": "project.project",
+      "method": "action_validate_boq",
+      "class": "document_helper",
+      "occurrences": 1,
+      "reason": "validates or rebuilds BOQ hierarchy without changing project lifecycle"
+    }
+  ]
+}

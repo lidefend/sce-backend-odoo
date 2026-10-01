@@ -796,6 +796,49 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "最后一次明细合计会保留",
             nodes[0]["componentConfig"]["optionalDetails"]["lastRowRemovalMessage"],
         )
+        dialog = nodes[0]["componentConfig"]["introduceDialog"]
+        self.assertEqual(dialog["purpose"], "payment-settlement-introduce")
+        self.assertEqual(dialog["title"], "从结算单引入明细")
+        self.assertEqual(dialog["cancelLabel"], "取消")
+        self.assertEqual(dialog["confirmLabel"], "确认引入")
+        self.assertEqual(dialog["recordRequiredMessage"], "请先保存付款申请后再引入明细")
+        self.assertEqual(
+            dialog["columnLabels"],
+            {
+                "name": "名称",
+                "contract": "合同",
+                "settlementAmount": "结算金额",
+                "applied": "已申请",
+                "remaining": "可申请",
+                "state": "状态",
+            },
+        )
+        self.assertEqual(
+            dialog["payloadFields"],
+            {
+                "record": "payment_request_id",
+                "source": "settlement_id",
+                "sourceLines": "settlement_line_ids",
+                "applyMode": "apply_mode",
+                "ratio": "ratio",
+                "totalAmount": "total_amount",
+                "searchKeyword": "keyword",
+            },
+        )
+        self.assertEqual(
+            sorted(dialog),
+            sorted((
+                "purpose", "title", "description", "searchPlaceholder", "searchActionLabel",
+                "searchLoadingLabel", "searchEmptyLabel", "resultContractLabel", "resultAmountLabel",
+                "resultLineCountLabel", "resultLineCountSuffix", "switchSourceLabel", "selectAllLabel",
+                "summarySelectedPrefix", "summaryLineCountSuffix", "summarySettlementAmountLabel",
+                "summaryApplicableAmountLabel", "columnLabels", "stateAppliedLabel", "stateApplicableLabel",
+                "allAppliedLabel", "historyTitle", "historyCountSuffix", "historyExpandLabel",
+                "historyCollapseLabel", "ratioModeLabel", "amountModeLabel", "ratioPlaceholder",
+                "totalPlaceholder", "ratioHint", "amountHint", "applyTotalLabel", "cancelLabel",
+                "confirmLabel", "recordRequiredMessage", "payloadFields",
+            )),
+        )
         self.assertEqual(
             projected["layoutContract"]["componentRegistry"]["sc.payment.settlement_detail_collection"]["adapter"]["web_pc"],
             "PaymentSettlementDetailCollectionControl",
@@ -1001,7 +1044,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         data = {
             "model": "project.material.plan",
             "view_type": "tree",
-            "action_id": 525,
+            "action_id": self.env.ref("smart_construction_core.action_project_material_plan").id,
             "list_profile": {
                 "columns": [
                     "legacy_visible_01",
@@ -1024,7 +1067,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
 
         projected = core_extension.smart_core_finalize_projected_contract_data(self.env, data, {"view_type": "tree"})
 
-        self.assertIsNone(projected)
+        self.assertIsInstance(projected, dict)
+        self.assertEqual(projected["views"]["tree"]["columns"], data["list_profile"]["columns"])
+        self.assertFalse(projected["list_profile"]["preference_policy"]["allow_order"])
+        self.assertEqual(projected["list_profile"]["preference_policy"]["locked_columns"], data["list_profile"]["columns"])
 
     def test_payment_request_formal_list_projects_page_and_total_amount_semantics(self):
         action = self.env.ref(

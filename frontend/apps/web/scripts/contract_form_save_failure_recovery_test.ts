@@ -5,6 +5,7 @@ import { ApiError } from '../src/api/client';
 import { buildSaveRecordPayload, validateBeforeSaveRecord } from '../src/pages/contractForm/saveRecordHelpers';
 import { snapshotOriginalFormValues } from '../src/pages/contractForm/recordHydration';
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils';
+import { createStandardFormValidationRegistry } from '../src/pages/contractForm/standardFormCompositionRuntime';
 import { useRecordFormActions } from '../src/pages/contractForm/useRecordFormActions';
 import type { BusinessFieldError } from '../src/app/businessValidationError';
 
@@ -39,6 +40,7 @@ function buildHarness(options: {
   formData: Record<string, unknown>;
   originalValues: Record<string, unknown>;
   dirty: string[];
+  uploadFails?: boolean;
 }): Harness {
   const calls: Harness['calls'] = { writes: [], creates: [], reloads: 0, created: [], redirects: [] };
 
@@ -88,7 +90,7 @@ function buildHarness(options: {
     isWritableFieldVisible: () => true,
     layoutNodes: ref([]),
     model: ref('x.document'),
-    navigateCreatedRecord: async () => true,
+    navigateCreatedRecord: async (target: unknown) => { calls.redirects.push(target); return true; },
     normalizeFieldValue: (_name: string, value: unknown) => value,
     onErrorCaptured: () => undefined,
     one2manyValidation: ref({ cellErrors: {}, issues: [] }),
@@ -108,9 +110,11 @@ function buildHarness(options: {
     snapshotOriginalFormValues,
     status: ref('ok'),
     submissionFeedback,
-    uploadPendingNativeAttachments: async () => true,
+    uploadPendingNativeAttachments: async () => !options.uploadFails,
     v2ContractStore: ref({ snapshot: { pageInfo: { pageName: '付款申请' } } }),
     useFormPageLifecycleRuntime: () => undefined,
+    // This harness has no required fields; use the real adopted empty registry.
+    validateAdoptedFormSections: createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' } as const)).validateAdoptedFields,
     validateBeforeSaveRecord,
     validationErrors,
     validationFieldErrors: ref<Record<string, BusinessFieldError>>({}),
@@ -234,3 +238,14 @@ const businessRejection = () => new ApiError('金额必须大于零', 422, 'trac
 }
 
 console.log('[contract-form-save-failure-recovery] PASS: edit-retry, single-flight, create-retry, permission-denial');
+
+{
+  const harness = buildHarness({ recordId: null, formData: { title: 'Created before upload failure' }, originalValues: {}, dirty: ['title'], uploadFails: true });
+  const outcome = await harness.actions.saveRecord(undefined, { navigateAfterCreate: false });
+  assert.equal(outcome, false, 'upload failure must not proceed to submission');
+  assert.deepEqual(harness.calls.created, [900]);
+  assert.equal(harness.calls.creates.length, 1);
+  assert.deepEqual(harness.calls.redirects, [{ createdId: 900, nextSceneKey: '', nextSceneRoute: '', refreshPolicy: undefined, recovery: 'upload' }]);
+  assert.equal(harness.calls.reloads, 0, 'never reload the empty new route');
+}
+console.log('[contract-form-save-failure-recovery] post-create upload failure opens generated record PASS count=1');

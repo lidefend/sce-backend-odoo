@@ -1,11 +1,11 @@
 .collection-aggregate-footer th,
 .collection-aggregate-footer td {
+  font: var(--sc-font-mark-small);
   background: var(--sc-app-muted-bg);
   border-top: 1px solid var(--sc-app-border-strong);
   color: var(--sc-app-text-primary);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
+
+
 }
 
 .collection-aggregate-row[data-aggregate-scope='total'] th,
@@ -14,10 +14,11 @@
 }
 
 .collection-aggregate-label {
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-primary);
   padding-inline: 12px;
-  font-size: 12px;
-  line-height: 1.35;
+
+
   text-align: left;
   white-space: nowrap;
 }
@@ -63,10 +64,11 @@
   }
 
   .collection-aggregate-summary-label {
+  font: var(--sc-font-mark-medium);
     align-self: center;
     color: var(--sc-app-text-primary);
-    font-size: 13px;
-    font-weight: 700;
+
+
   }
 
   .collection-aggregate-summary-value {
@@ -77,14 +79,16 @@
   }
 
   .collection-aggregate-summary-value > dt {
+  font: var(--sc-font-body-small);
     color: var(--sc-app-text-secondary);
-    font-size: 12px;
+
   }
 
   .collection-aggregate-summary-value > dd {
+  font: var(--sc-font-mark-medium);
     margin: 0;
     color: var(--sc-app-text-primary);
-    font-size: 13px;
-    font-weight: 700;
+
+
   }
 }

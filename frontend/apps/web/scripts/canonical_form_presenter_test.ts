@@ -52,11 +52,12 @@ import { normalizeContractFieldValue } from '../src/pages/contractForm/valueUtil
 import { relationCreateMode } from '../src/pages/contractForm/relationDescriptor';
 import { resolveContractFormExitPresentation } from '../src/pages/contractForm/contractFormExitPresentation';
 import {
-  applyWorkflowAvailability,
+  resolveWorkflowActionAvailability,
+  workflowActionRowForMethod,
+} from '../src/app/contracts/v2/workflowActionAvailability';
+import {
   normalizeNativeFormStatusbar,
   normalizeWorkflowActionRows,
-  workflowActionMethodAliases,
-  workflowActionRowForMethod,
 } from '../src/pages/contractForm/workflowContract';
 import {
   buildContractFormActions,
@@ -613,13 +614,13 @@ const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
 
-const workflowAction = {
-  key: 'action_submit', label: 'Submit', kind: 'object', level: 'header', selection: 'none' as const,
-  actionId: null, methodName: 'action_submit', targetModel: 'x.document', context: {}, domainRaw: '',
-  target: '', url: '', enabled: true, hint: '', intent: 'server.object', semantic: '',
-  sourceWidgetId: 'page.header', clientMode: '', visibleProfiles: ['edit', 'readonly'] as Array<'edit' | 'readonly'>,
-  requiredParams: [], requiresReason: false,
-};
+// The page used to carry its own `applyWorkflowAvailability` / `shouldShowWorkflowAction`
+// pair beside the presenter's decision.  No consumer ever read them, and the visibility
+// helper answered `true` for a known transition whenever `availableActions` was present
+// but unreadable, so a carrier it could not parse still produced a workflow control.
+// The authority is `resolveWorkflowActionAvailability`, asserted here directly and,
+// end to end, through `presentContractV2Form` below.
+const submitIdentity = { actionKey: 'action_submit', methodName: 'action_submit' };
 const duplicateWorkflowRows = {
   availableActions: [
     { key: 'submit', method: 'action_submit', enabled: true },
@@ -632,13 +633,11 @@ assert.equal(
   'multiple rows claiming one executable method must fail closed instead of selecting the first row',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  false,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', method: 'action_submit', enabled: 'yes' }] },
+    submitIdentity,
+  ).kind,
+  'error',
   'a non-boolean enabled value must not grant executable authority',
 );
 assert.equal(
@@ -649,66 +648,66 @@ assert.equal(
   'invalid workflow rows must not be projected into executable contract actions',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', target: [], enabled: true }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  false,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', method: 'action_submit', target: [], enabled: true }] },
+    submitIdentity,
+  ).kind,
+  'error',
   'a malformed row that claims the requested action must fail that action closed',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: { availableActions: [{ key: 'submit', method: 'action_submit', enabled: false, reason_code: 'WAIT' }] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(
+    { availableActions: [{ key: 'submit', method: 'action_submit', enabled: false, reason_code: 'WAIT' }] },
+    submitIdentity,
+  ).enabled,
   false,
   'a valid disabled row must retain the existing fail-closed behavior',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: {
+  resolveWorkflowActionAvailability(
+    {
       availableActions: [
         'isolated malformed row',
         { key: 'submit', method: 'action_submit', enabled: true },
       ],
     },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+    submitIdentity,
+  ).enabled,
   true,
   'an unidentifiable malformed row must not disable an unrelated valid action',
 );
 assert.equal(
-  applyWorkflowAvailability({
-    action: { ...workflowAction, key: 'action_preview', methodName: 'action_preview' },
-    workflow: { availableActions: ['isolated malformed row'] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
-  true,
+  resolveWorkflowActionAvailability(
+    { availableActions: ['isolated malformed row'] },
+    { actionKey: 'action_preview', methodName: 'action_preview' },
+  ).kind,
+  'unmanaged',
   'an unrelated non-workflow action must remain outside workflow authority',
 );
-// 575 `已关闭 -> 已登记` 是独立键 `reactivate`（`reopen` 在本平台语义是 `已取消 -> 草稿`）。
-// 未登记该键时，合同无对应行会回落为 `unmanaged`、按钮保持可用（fail-open）。
-assert.deepEqual(
-  workflowActionMethodAliases('reactivate'),
-  ['action_reopen'],
-  'the closed -> active transition must keep its own key bound to action_reopen',
-);
 assert.equal(
-  applyWorkflowAvailability({
-    action: { ...workflowAction, key: 'reactivate', methodName: 'action_reopen' },
-    workflow: { availableActions: [] },
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(
+    { actions: [{ key: 'reactivate', method: 'action_reopen' }], availableActions: [] },
+    { actionKey: 'reactivate', methodName: 'action_reopen' },
+  ).enabled,
   false,
   'a declared managed transition must fail closed when the contract serves no row for it',
+);
+
+// The deleted visibility helper answered `true` here: a known transition over a carrier
+// it could not read still rendered a control.  The single authority reports an error,
+// without inferring authority from a method-name registry.
+assert.equal(
+  resolveWorkflowActionAvailability({ availableActions: 'unreadable' }, submitIdentity).kind,
+  'error',
+  'a known transition over an unreadable carrier must never resolve to an allowed action',
+);
+assert.equal(
+  resolveWorkflowActionAvailability(
+    { availableActions: 'unreadable' },
+    { methodName: 'action_not_a_registered_transition' },
+  ).kind,
+  'error',
+  'unreadable workflow authority must fail closed without guessing method names',
 );
 
 const legalSameLabelRows = {
@@ -731,12 +730,7 @@ const unrelatedMalformedClaim = {
   ],
 };
 assert.equal(
-  applyWorkflowAvailability({
-    action: workflowAction,
-    workflow: unrelatedMalformedClaim,
-    recordId: 7,
-    blockingMessage: 'Workflow authority unavailable',
-  }).enabled,
+  resolveWorkflowActionAvailability(unrelatedMalformedClaim, submitIdentity).enabled,
   true,
   'a malformed row claimed by a different action must remain isolated',
 );
@@ -1577,6 +1571,24 @@ assert.deepEqual(
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
 const descriptorWidgetOptionsSnapshot = snapshot();
+const relationScopeSnapshot = snapshot();
+const relationScopeWidget = relationScopeSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
+relationScopeWidget.fieldDescriptor = {
+  name: 'name', type: 'many2one', relation: 'x.source',
+  domain: "[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
+  context: { active_test: false },
+};
+const declaredRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
+assert.equal(declaredRelationScope.domain, relationScopeWidget.fieldDescriptor.domain,
+  'field descriptor query restrictions must survive store projection without component overrides');
+assert.deepEqual(declaredRelationScope.context, { active_test: false },
+  'declared relation context must survive store projection');
+relationScopeWidget.componentConfig.domain = [];
+relationScopeWidget.componentConfig.context = {};
+const overriddenRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
+assert.deepEqual(overriddenRelationScope.domain, [], 'explicit empty component domain retains precedence');
+assert.deepEqual(overriddenRelationScope.context, {}, 'explicit empty component context retains precedence');
+console.log('[canonical_form_presenter] relation descriptor domain/context projection PASS count=4');
 descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
   no_create: true,
   no_quick_create: true,
@@ -3441,3 +3453,49 @@ assert.equal(childPopulated.sectionLinks.some((item) => item.label === 'Source f
 emptySectionModel.identity.mode = 'create';
 assert.equal(buildCanonicalNativeFormBridge(emptySectionModel).primaryNodes[0].visible, true, 'create controls retained');
 console.log('[canonical_form_presenter] readonly empty/populated section and navigation: 10 cases passed');
+
+// Complete declarations govern arbitrary business methods without name inference.
+const declaredPause = { actions: [{ key: 'pause', method: 'transition_42' }], availableActions: [] };
+assert.equal(resolveWorkflowActionAvailability(declaredPause, { methodName: 'transition_42' }).enabled, false);
+assert.equal(resolveWorkflowActionAvailability(declaredPause, { methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ actions: declaredPause.actions }, { methodName: 'transition_42' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, actions: 'broken' }, { methodName: 'transition_42' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, actions: [...declaredPause.actions, ...declaredPause.actions] }, { methodName: 'transition_42' }).reasonCode, 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS');
+assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'submit', method: 'different_method', enabled: true }] }, { actionKey: 'submit', methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'submit', method: 'action_submit', target: { method: 'different_method' }, enabled: true }] }, submitIdentity).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ actions: [], availableActions: [{ key: 'submit', method: 'action_submit', enabled: true }] }, submitIdentity).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, availableActions: [{ key: 'pause', method: 'transition_42', enabled: true }] }, { methodName: 'transition_42' }).enabled, true);
+const unavailableDeclaredSnapshot = snapshot();
+unavailableDeclaredSnapshot.actionContract.actionRuleList[0].button = { type: 'object', name: 'transition_42' };
+unavailableDeclaredSnapshot.workflowContract = declaredPause;
+assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unavailableDeclaredSnapshot)), 'edit').actionBar[0].enabled, false,
+  'the shared presenter must disable a declared unavailable method regardless of its name');
+console.log('[canonical_form_presenter] complete declaration identity cases PASS count=10');
+
+// Optional replay of an existing browser capture through the shared presenter.
+// This does not create fixtures or claim runtime/browser behavior.
+if (process.env.SC_CANONICAL_CAPTURE) {
+  const { readFileSync } = await import('node:fs');
+  const captured = JSON.parse(readFileSync(process.env.SC_CANONICAL_CAPTURE, 'utf8'));
+  const expected = (process.env.SC_CANONICAL_CAPTURE_FIELDS || '').split(',').map((value) => value.trim()).filter(Boolean);
+  assert.ok(expected.length, 'capture replay requires non-zero expected fields');
+  const response = captured.contractResponses.find((row: any) => row.contract?.data?.pageInfo?.model === process.env.SC_CANONICAL_CAPTURE_MODEL);
+  assert.ok(response, 'requested captured model exists');
+  const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(response.contract.data)), 'create');
+  const floorplan = composeCanonicalFormFloorplan(model);
+  function fieldsIn(nodes: any[]): any[] {
+    return nodes.flatMap((node) => [...node.fields.filter((field: any) => field.visible), ...fieldsIn(node.children)]);
+  }
+  const visibleFields = Object.entries(floorplan).filter(([key, value]) => key.endsWith('Nodes') && Array.isArray(value))
+    .flatMap(([, nodes]) => fieldsIn(nodes as any[]));
+  for (const code of expected) {
+    assert.ok(visibleFields.some((field) => field.fieldCode === code && !field.readonly && !field.disabled), `captured editable field retained: ${code}`);
+  }
+  console.log(`CAPTURE_FIELDS_PASS model=${model.identity.model} count=${expected.length}`);
+}
+
+const declarationOnlyWorkflow = { availabilityScope: 'declaration_only', actions: [{ key: 'submit', method: 'action_submit' }] };
+assert.equal(resolveWorkflowActionAvailability(declarationOnlyWorkflow, { methodName: 'action_submit' }).kind, 'unmanaged');
+assert.equal(resolveWorkflowActionAvailability({ ...declarationOnlyWorkflow, record_id: 7 }, { methodName: 'action_submit' }).kind, 'error');
+assert.equal(resolveWorkflowActionAvailability({ actions: declarationOnlyWorkflow.actions }, { methodName: 'action_submit' }).kind, 'error');
+console.log('[declaration-only-workflow] PASS cases=3');

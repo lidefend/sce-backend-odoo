@@ -39,6 +39,6 @@ const dialogZIndex = Number.parseInt(getComputedStyle(document.documentElement).
 </script>
 <style scoped>
 .sc-design-dialog__header{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-product-space-2);margin-bottom:var(--sc-product-space-3);padding-bottom:var(--sc-product-space-3);border-bottom:1px solid var(--sc-app-border)}
-.sc-design-dialog__heading{min-width:0}.sc-design-dialog__heading h2{margin:0;font-size:var(--sc-product-text-section);line-height:1.35}.sc-design-dialog__heading p{margin:var(--sc-product-space-1) 0 0;color:var(--sc-app-text-secondary);font-size:var(--sc-product-text-caption)}
+.sc-design-dialog__heading{min-width:0}.sc-design-dialog__heading h2{margin:0;font:var(--sc-font-title-medium)}.sc-design-dialog__heading p{margin:var(--sc-product-space-1) 0 0;color:var(--sc-app-text-secondary);font:var(--sc-font-body-small)}
 .sc-design-dialog__header-actions{display:flex;align-items:center;gap:var(--sc-product-space-2)}.sc-design-dialog__actions{justify-content:flex-end;margin-top:var(--sc-product-space-3);padding-top:var(--sc-product-space-3);border-top:1px solid var(--sc-app-border)}
 </style>

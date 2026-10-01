@@ -1,4 +1,7 @@
+import { toChipVM } from '../src/app/assemblers/action/actionPageAdapters';
+import { settleSavedSearchSubmission, settleSavedSearchDeletion, resolveSavedSearchDeleteAction } from '../src/app/runtime/savedSearchSubmission';
 import assert from 'node:assert/strict';
+import { resolveSavedSearchMutationCapability as favorite } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import { resolveCollectionBatchActionSettlement } from '../src/app/presentation/collectionActionSettlement';
 
 const actions = [
@@ -19,4 +22,46 @@ assert.throws(
   () => resolveCollectionBatchActionSettlement([{ key: '', label: '无身份', enabled: true }]),
   /COLLECTION_BATCH_ACTION_IDENTITY_REQUIRED/,
 );
-console.log('[collection_action_settlement_test] PASS cases=6');
+const grant = { save_enabled: true, shared_enabled: false, intent: 'search.favorite.set' };
+assert.equal(favorite(undefined).saveEnabled, false);
+assert.equal(favorite({}).declared, false);
+assert.equal(favorite({ ...grant, save_enabled: 'true' }).saveEnabled, false);
+assert.equal(favorite(grant).saveEnabled, true);
+assert.equal(favorite(grant).sharedEnabled, false);
+assert.equal(favorite({ ...grant, shared_enabled: true }).sharedEnabled, true);
+assert.equal(favorite({ ...grant, save_enabled: false, shared_enabled: true }).sharedEnabled, false);
+assert.equal(favorite({ ...grant, intent: '' }).saveEnabled, false);
+assert.equal(favorite({ ...grant, intent: 'other.write' }).saveEnabled, false);
+assert.equal(favorite({ ...grant, save_enabled: false, disabled_reason: 'SAVED_SEARCH_CREATE_DENIED' }).disabledReason, '没有保存收藏的权限');
+let writes = 0;
+let refreshes = 0;
+const success = await settleSavedSearchSubmission(async () => { writes++; }, async () => { refreshes++; });
+assert.equal(success.saved, true);
+assert.equal(writes, 1);
+assert.equal(refreshes, 1);
+const writeFailure = await settleSavedSearchSubmission(async () => { throw new Error('denied'); }, async () => { refreshes++; });
+assert.equal(writeFailure.saved, false);
+assert.equal(refreshes, 1);
+const refreshFailure = await settleSavedSearchSubmission(async () => { writes++; }, async () => { throw new Error('offline'); });
+assert.equal(refreshFailure.saved, true);
+assert.match(refreshFailure.message, /无需再次保存/);
+assert.equal(writes, 2);
+
+
+const deleteGrant = { intent: 'search.favorite.delete', enabled: true, label: '删除收藏', params: { filter_id: 17, model: 'x.demo', action_id: 31 } };
+assert.deepEqual(resolveSavedSearchDeleteAction(deleteGrant), deleteGrant);
+for (const malformed of [undefined, {}, { ...deleteGrant, enabled: false }, { ...deleteGrant, intent: 'api.data.unlink' }, { ...deleteGrant, params: { ...deleteGrant.params, filter_id: true } }, { ...deleteGrant, params: { ...deleteGrant.params, action_id: '31' } }, { ...deleteGrant, params: { ...deleteGrant.params, model: '' } }]) {
+  assert.equal(resolveSavedSearchDeleteAction(malformed), null);
+}
+assert.deepEqual(toChipVM({ key: 'favorite', label: ' renamed ', deleteAction: deleteGrant })?.deleteAction, deleteGrant);
+let deletionRefreshes = 0;
+const deleted = await settleSavedSearchDeletion(async () => {}, async () => { deletionRefreshes++; });
+assert.equal(deleted.deleted, true);
+assert.equal(deletionRefreshes, 1);
+const deniedDelete = await settleSavedSearchDeletion(async () => { throw new Error('denied'); }, async () => { deletionRefreshes++; });
+assert.equal(deniedDelete.deleted, false);
+assert.equal(deletionRefreshes, 1);
+const deleteRefreshFailure = await settleSavedSearchDeletion(async () => {}, async () => { throw new Error('offline'); });
+assert.equal(deleteRefreshFailure.deleted, true);
+assert.match(deleteRefreshFailure.message, /无需再次删除/);
+console.log('[collection_action_settlement_test] PASS cases=31');

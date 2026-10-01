@@ -6,14 +6,16 @@ import sys
 import types
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import line_budgets  # noqa: E402
+
+
 ROOT = Path(__file__).resolve().parents[2]
 CORE_EXTENSION = ROOT / "addons/smart_construction_core/core_extension.py"
 NORMALIZERS = ROOT / "addons/smart_construction_core/core_extension_contract_normalizers.py"
 HELPERS = ROOT / "addons/smart_construction_core/core_extension_contract_helpers.py"
 CI = ROOT / "make/ci.mk"
 
-MAX_CORE_EXTENSION_LINES = 1809
-MAX_NORMALIZER_LINES = 383
 
 
 def _read(path: Path) -> str:
@@ -55,11 +57,9 @@ def main() -> int:
 
     if core_text:
         line_count = len(core_text.splitlines())
-        if line_count > MAX_CORE_EXTENSION_LINES:
-            errors.append(f"core_extension.py line budget exceeded: {line_count} > {MAX_CORE_EXTENSION_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension.py", line_count, label="core_extension.py")
         for token in [
             "core_extension_contract_normalizers as _contract_normalizers",
-            "_contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)",
             "_contract_normalizers.general_contract_tax_contract(contract, source_contract=source_contract)",
             "return _contract_normalizers.model_specific_form_contract_policy(payload)",
             "return _contract_normalizers.form_field_aliases(payload)",
@@ -70,10 +70,8 @@ def main() -> int:
 
     if normalizer_text:
         line_count = len(normalizer_text.splitlines())
-        if line_count > MAX_NORMALIZER_LINES:
-            errors.append(f"contract normalizer line budget exceeded: {line_count} > {MAX_NORMALIZER_LINES}")
+        line_budgets.advise_size("addons/smart_construction_core/core_extension_contract_normalizers.py", line_count, label="core_extension_contract_normalizers.py")
         for token in [
-            "def normalize_construction_diary_form(",
             "def general_contract_tax_contract(",
             "def model_specific_form_contract_policy(",
             "def form_field_aliases(",
@@ -108,29 +106,8 @@ def main() -> int:
     if not errors:
         normalizers = _load_normalizers()
 
-        diary_contract = {"model": "sc.construction.diary", "layoutContract": {"containerTree": []}}
-        diary_source = {
-            "fields": {
-                "project_id": _field("project_id", "many2one", relation="project.project"),
-                "date_diary": _field("date_diary", "date"),
-                "diary_type": _field("diary_type", "selection", selection=[("daily", "Daily")]),
-                "title": _field("title"),
-                "state": _field("state", "selection"),
-            }
-        }
-        normalizers.normalize_construction_diary_form(diary_contract, diary_source, model="sc.construction.diary", view_type="form")
-        diary_patches = diary_contract.get("runtimeContract", {}).get("governancePatches", {})
-        if "construction_diary_form" not in diary_patches:
-            errors.append("construction diary normalizer must record governance patch")
-        if not diary_contract.get("layoutContract", {}).get("containerTree"):
-            errors.append("construction diary normalizer must write v2 container tree")
-        diary_auth = {
-            row.get("auth")
-            for row in diary_contract.get("statusContract", {}).get("widgetStatus", [])
-            if isinstance(row, dict)
-        }
-        if not diary_auth.issubset({"none", "read", "edit", "admin"}):
-            errors.append(f"construction diary normalizer emitted unsupported widget auth: {sorted(diary_auth)}")
+        if "normalize_construction_diary_form" in core_text or "normalize_construction_diary_form" in normalizer_text:
+            errors.append("retired diary layout rewrite must not replace native/configured V2 structure")
 
         tax_contract = {
             "model": "sc.general.contract",

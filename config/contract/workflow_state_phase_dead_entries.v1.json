@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "description": "workflow contract profile keys that the model's own state Selection can never produce. state_phase and state_actions are read with the record's raw state as the key, so these entries are dead configuration: harmless at runtime, but they hide the fact that the profile and the model disagree. The guard refuses an unregistered dead entry and a stale registration, so the set is explicit and cannot grow unnoticed.",
+  "registry_rule": "A state_phase or state_actions key that the model's state Selection cannot produce must be listed here with its exact key set and a reason, or removed from the profile. Entries go stale when the computed set changes.",
+  "keys": {
+    "phase:<raw_state>": "an unreachable key in state_phase",
+    "actions:<raw_state>": "an unreachable key in state_actions"
+  },
+  "entries": [
+    {
+      "model": "sc.fund.account.operation",
+      "keys": [
+        "actions:cancel",
+        "actions:in_progress",
+        "phase:cancel",
+        "phase:in_progress",
+        "phase:legacy_confirmed"
+      ],
+      "reason": "the shared _confirm_done_profiles template declares both cancel/cancelled and legacy_confirmed; this model's Selection cannot produce the listed keys, so the entries are unreachable"
+    }
+  ]
+}

@@ -12,7 +12,7 @@
  *   Model 投影为错误态，消费方不得白屏。
  * - preview_payload 非对象时后端已降级为空快照，前端渲染空态。
  */
-import { intentRequest } from './intents';
+import { resolveReadonlyBlockRequest, type ReadonlyBlockRequest } from '../app/readonlyBlockRequest';
 
 export const BOQ_IMPORT_PREVIEW_FETCH_INTENT = 'project.boq.import.preview.fetch';
 export const BOQ_IMPORT_PREVIEW_SCHEMA = 'sc.boq.import.preview.v1';
@@ -89,15 +89,16 @@ export type BoqImportPreviewIntentData = BoqImportPreviewData & {
  * （取该项目最新批次）。传输层异常（网络/协议）照常抛出；
  * 业务降级以原始结构化数据透传，由 Model 投影。
  */
-export async function fetchBoqImportPreview(params: {
-  batchId?: number;
-  projectId?: number;
-}): Promise<BoqImportPreviewIntentData> {
+export function resolveBoqBlockRequest(declaration: unknown) {
+  return resolveReadonlyBlockRequest(declaration, BOQ_IMPORT_PREVIEW_FETCH_INTENT, { batch_id: { kind: 'id' }, project_id: { kind: 'id' } });
+}
+
+export async function fetchBoqImportPreview(request: ReadonlyBlockRequest): Promise<BoqImportPreviewIntentData> {
+  const resolved = resolveBoqBlockRequest({ fetch_intent: request?.intent, fetch_params: request?.params });
+  if (resolved.status !== 'ready') throw new Error('Invalid readonly block request');
+  const { intentRequest } = await import('./intents');
   return intentRequest<BoqImportPreviewIntentData>({
     intent: BOQ_IMPORT_PREVIEW_FETCH_INTENT,
-    params: {
-      ...(params.batchId && params.batchId > 0 ? { batch_id: params.batchId } : {}),
-      ...(params.projectId && params.projectId > 0 ? { project_id: params.projectId } : {}),
-    },
+    params: resolved.request.params,
   });
 }

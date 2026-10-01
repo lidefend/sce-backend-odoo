@@ -1,3 +1,4 @@
+import { resolveStatusTone } from '../app/presentation/collectionStatusPresentation.ts';
 import {
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
@@ -38,14 +39,15 @@ const STATUS_TEXT: Record<string, string> = {
   high_risk: '高风险',
 };
 
+/**
+ * There is exactly one status-colour authority in the web app: the
+ * design-system policy in ``app/presentation/collectionStatusPresentation.ts``.
+ * This helper only forwards to it so a second value-to-tone table cannot drift
+ * away from the first.  Colour is presentation, so it never comes from the
+ * business contract.
+ */
 export function statusTone(value: unknown): SemanticTone {
-  const raw = String(value || '').trim().toLowerCase();
-  if (!raw) return 'neutral';
-  if (['done', 'approved', 'paid', 'completed', 'normal'].includes(raw)) return 'success';
-  if (['warning', 'pending', 'unpaid', 'to_do', 'todo'].includes(raw)) return 'warning';
-  if (['high_risk', 'risk', 'blocked', 'overdue', 'cancel', 'cancelled', 'rejected'].includes(raw)) return 'danger';
-  if (['open', 'active', 'in_progress', '01_in_progress'].includes(raw)) return 'info';
-  return 'neutral';
+  return resolveStatusTone(value);
 }
 
 export function semanticStatus(value: unknown): SemanticCell {

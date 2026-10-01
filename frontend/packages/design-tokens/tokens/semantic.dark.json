@@ -32,7 +32,8 @@
     "inverse": "{color.gray_900}",
     "on_interactive": "{color.gray_900}",
     "link": "#67d8ff",
-    "selected": "#67d8ff"
+    "selected": "#67d8ff",
+    "disabled": "{color.slate_600}"
   },
   "focus": {
     "ring": "{color.cyan_500}"

@@ -19,6 +19,12 @@ def _as_dict(value: Any) -> dict:
     return dict(value) if isinstance(value, dict) else {}
 
 
+# A status badge colour is presentation, not business meaning: the contract
+# carries the authoritative status value and its label, and the frontend's
+# design system decides how that value is coloured.  The kernel therefore
+# projects no tone here, and no profile may declare one (see
+# contract_governance_list_surface_split_guard).
+
 def apply_standard_search_toolbar_labels(data: dict) -> None:
     search = _as_dict(data.get("search"))
     labels = _as_dict(search.get("ui_labels"))
@@ -276,16 +282,9 @@ def govern_standard_list_for_user(
             if isinstance(presentation.get("mutation"), dict) and presentation["mutation"]:
                 schema["mutation"] = deep_clone_json_like(presentation["mutation"])
         if name == status_field:
+            # Mark the semantic role only.  The colour of the badge is resolved
+            # by the frontend presentation layer, never by the contract.
             schema["cell_role"] = "status"
-            schema["tone_by_value"] = {
-                "draft": "neutral",
-                "in_progress": "info",
-                "paused": "warning",
-                "done": "success",
-                "closing": "warning",
-                "warranty": "info",
-                "closed": "neutral",
-            }
         if isinstance(field.get("selection"), list) and not isinstance(schema.get("selection"), list):
             schema["selection"] = [
                 {"value": item[0], "label": item[1]}

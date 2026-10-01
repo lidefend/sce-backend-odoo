@@ -10,6 +10,13 @@ from typing import Any
 
 _logger = logging.getLogger(__name__)
 
+from .action_semantics_vocabulary import (
+    EXECUTORS as ACTION_SEMANTICS_EXECUTORS,
+    KINDS as ACTION_SEMANTICS_KINDS,
+    OPERATIONS as ACTION_SEMANTICS_OPERATIONS,
+    PURPOSES as ACTION_SEMANTICS_PURPOSES,
+    is_declared as action_semantics_purpose_is_declared,
+)
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
@@ -801,7 +808,12 @@ def _assemble_ui_contract(
     ui = _dict(source)
     head = _dict(source.get("head") or ui.get("head"))
     model = _text(source.get("model") or ui.get("model"))
-    view_type = _text(source.get("view_type") or ui.get("view_type"), "form")
+    # `head.view_type` carries the requested view list ("tree,form") because a
+    # model holds several views, and `pageInfo` is an enumerated single page.
+    # Resolve the active view first so the joined string never reaches the
+    # closed enums; `list` normalizes to `tree` as in the native toolbar resolver.
+    raw_view_type = _text(source.get("view_type") or ui.get("view_type"), "form").split(",")[0].strip()
+    view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
     record_id = _positive_int(source.get("record_id") or source.get("recordId") or ui.get("record_id") or ui.get("recordId"), 0)
     collection_layout_types = {
         "form", "kanban", "pivot", "graph", "calendar", "gantt", "activity", "dashboard"
@@ -1101,6 +1113,16 @@ def _assemble_ui_contract(
         verdict = _dict(form_capabilities.get(key))
         if verdict:
             contract["statusContract"]["globalStatus"][key] = deepcopy(verdict)
+    record_denied_reasons = _dict(
+        _dict(_dict(source.get("permissions")).get("record")).get("denied_reason")
+    )
+    if record_denied_reasons:
+        # The producer observed which authority denied a record operation (model
+        # ACL or record rules).  Publishing it lets the terminal name a disabled
+        # record action instead of inventing a business reason for it.
+        contract["statusContract"]["globalStatus"]["recordDeniedReasons"] = deepcopy(
+            record_denied_reasons
+        )
     effective_render_profile = _text(
         form_capabilities.get("effectiveRenderProfile") or render_profile
     ).lower()
@@ -3383,7 +3405,7 @@ def _field_status(
         "readonly": readonly_value,
         "required": required_value,
         "disabled": unresolved,
-        "auth": "read" if readonly_value else "edit",
+        "auth": "none" if not visible else "read" if readonly_value or unresolved else "edit",
         **({"reasonCode": "NATIVE_MODIFIER_UNRESOLVED"} if unresolved else {}),
     }
 
@@ -3447,7 +3469,6 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             ("visible_profiles", "visibleProfiles"),
             ("presentation", "presentation"),
             ("action_safety", "actionSafety"),
-            ("action_semantics", "actionSemantics"),
             ("refresh_policy", "refreshPolicy"),
             ("allowed", "allowed"),
             ("enabled", "enabled"),
@@ -3459,6 +3480,13 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
         ):
             if row.get(source_key) is not None:
                 action_rule[target_key] = deepcopy(row.get(source_key))
+        # A runtime-declared purpose goes through the same single authority as a
+        # policy declaration.  Copying the declaration verbatim would let this
+        # channel publish a `(kind, purpose, executor)` combination every
+        # terminal drops, looking declared while nothing can read it.
+        declared_semantics = declared_action_semantics(row.get("action_semantics"))
+        if declared_semantics is not None:
+            action_rule["actionSemantics"] = declared_semantics
         contract["actionContract"]["actionRuleList"].append(action_rule)
         contract["actionContract"]["dependencyGraph"].setdefault(source_id, []).append(action_id)
         allowed = row.get("allowed") is not False
@@ -3533,6 +3561,89 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
                 projected.append(runtime_action)
         _append_actions(contract, projected, source_widget_id="page.header")
         _merge_action_rules_by_backend_identity(contract)
+    return contract
+
+
+def _action_rule_declared_method(rule: dict[str, Any]) -> str:
+    button = _dict(rule.get("button"))
+    return _text(button.get("name") or button.get("method") or rule.get("method_name"))
+
+
+def declared_action_meaning(semantics: Any) -> tuple[str, ...]:
+    """The business meaning a declaration carries, without its provenance.
+
+    Two authorities naming the same purpose for the same method agree, even when
+    they sign the declaration with their own `origin`.  Only a difference in what
+    the action *does* is a conflict; comparing provenance would turn a corroborated
+    purpose into a false ambiguity.
+    """
+    declared = _dict(semantics)
+    return tuple(
+        _text(declared.get(key)).lower()
+        for key in ("kind", "purpose", "executor", "operation")
+    )
+
+
+def project_workflow_action_semantics(contract: dict[str, Any]) -> dict[str, Any]:
+    """Bind each declared purpose to the native occurrence that declares the method.
+
+    A business owner declares, per available action, both the purpose
+    (`action_semantics`) and the Odoo method that purpose belongs to (`method`).
+    The native occurrence declares the same method in `button.name`.  Binding the
+    two is a projection: it carries a declaration onto the rule the Web consumes.
+
+    The platform never derives a purpose here.  A method no authority declared
+    keeps no semantics, and a genuine disagreement is marked `{"conflict": true}`
+    so the consumer sees the ambiguity instead of a guess.  A purpose the platform
+    itself declared (`record.save`) is never overwritten.
+    """
+    workflow = _dict(contract.get("workflowContract"))
+    declared: dict[str, dict[str, Any]] = {}
+    ambiguous: set[str] = set()
+    for row in _list(workflow.get("availableActions")) + _list(workflow.get("actions")):
+        if not isinstance(row, dict):
+            continue
+        method = _text(row.get("method") or row.get("method_name"))
+        semantics = declared_action_semantics(
+            row.get("action_semantics") or row.get("actionSemantics")
+        )
+        if not method or not semantics:
+            continue
+        current = declared.get(method)
+        if current is None:
+            declared[method] = semantics
+        elif declared_action_meaning(current) != declared_action_meaning(semantics):
+            ambiguous.add(method)
+    if not declared and not ambiguous:
+        return contract
+    action_contract = _dict(contract.get("actionContract"))
+    rules = _list(action_contract.get("actionRuleList"))
+    if not isinstance(rules, list):
+        return contract
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        existing = rule.get("actionSemantics")
+        # Platform persistence keeps the purpose the platform declared for it.
+        if _dict(existing).get("executor") == "record.save":
+            continue
+        button = _dict(rule.get("button"))
+        if _text(button.get("type"), "object").lower() != "object":
+            continue
+        method = _action_rule_declared_method(rule)
+        if not method:
+            continue
+        if method in ambiguous:
+            rule["actionSemantics"] = {"conflict": True}
+            continue
+        semantics = declared.get(method)
+        if not semantics:
+            continue
+        declared_meaning = declared_action_meaning(semantics)
+        if existing is None:
+            rule["actionSemantics"] = deepcopy(semantics)
+        elif _dict(existing).get("conflict") is not True and declared_action_meaning(existing) != declared_meaning:
+            rule["actionSemantics"] = {"conflict": True}
     return contract
 
 
@@ -3641,6 +3752,11 @@ def _bind_native_layout_action_references(contract: dict[str, Any]) -> None:
         }
 
 
+def _action_explicitly_visible(rule: dict[str, Any]) -> bool:
+    visible = rule.get("visible")
+    return visible is True or visible == {"attrs": {"invisible": {"kind": "static", "value": False}}}
+
+
 def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
     visible = _dict(rule.get("visible"))
     visible_attrs = _dict(visible.get("attrs"))
@@ -3649,7 +3765,7 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
         if value not in (None, False, "", 0):
             return deepcopy(value)
     if (
-        (rule.get("allowed") is False and rule.get("visible") is not True)
+        (rule.get("allowed") is False and not _action_explicitly_visible(rule))
         or rule.get("visible") is False
     ):
         return {"kind": "static", "value": True}
@@ -3900,7 +4016,7 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         )
         if denied:
             status["visible"] = (
-                True if rule.get("visible") is True
+                True if _action_explicitly_visible(rule)
                 else status.get("visible", True) is not False and rule.get("allowed") is not False
             )
             status["disabled"] = True
@@ -3916,6 +4032,11 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             if _text(status.get("reasonCode")) in {"", "OK"}:
                 status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
     contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
+    # A singleton runtime action must obey the same schema as a merged native
+    # action. Keep boolean source facts in sourceTrace, not the final rule.
+    for row in merged:
+        if isinstance(row.get("visible"), bool):
+            row["visible"] = {"attrs": {"invisible": {"kind": "static", "value": not row["visible"]}}}
     _enforce_single_effective_primary_action(contract)
 
 
@@ -4084,6 +4205,73 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
     }
 
 
+def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
+    """Carry explicit same-record workflow vetoes after native visibility resolves.
+
+    Visibility and authorization are separate authorities. An available-action
+    denial may only narrow executability; catalog absence or enabled=True cannot
+    grant it. The original workflow retains its user-facing explanation.
+    """
+    workflow = _dict(contract.get("workflowContract"))
+    model = _text(_dict(contract.get("pageInfo")).get("model"))
+    record_id = _dict(_dict(contract.get("dataContract")).get("mainData")).get("id")
+    if (not model or type(record_id) is not int or record_id <= 0
+            or _text(workflow.get("model")) != model
+            or type(workflow.get("record_id")) is not int or workflow["record_id"] != record_id):
+        return
+
+    def matches_record(target: Any, method: str) -> bool:
+        target = _dict(target)
+        return (not target.get("model") or _text(target.get("model")) == model) and (
+            target.get("id") is None or type(target.get("id")) is int and target["id"] == record_id
+        ) and (not target.get("method") or _text(target.get("method")) == method)
+
+    denied = {}
+    for available in _list(workflow.get("availableActions")):
+        if not isinstance(available, dict):
+            continue
+        method = _text(available.get("method") or available.get("method_name"))
+        explicit_deny = available.get("enabled") is False or available.get("allowed") is False or available.get("disabled") is True
+        if method and explicit_deny and matches_record(available.get("target"), method):
+            denied.setdefault(method, available)
+    if not denied:
+        return
+    status_contract = _dict(contract.get("statusContract"))
+    statuses = _list(status_contract.get("buttonStatus"))
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict) or _dict(rule.get("actionSemantics")).get("executor") == "record.save":
+            continue
+        if _text(_dict(rule.get("button")).get("type")).lower() != "object":
+            continue
+        method = _action_rule_declared_method(rule)
+        declaration = denied.get(method)
+        if not declaration or not matches_record(rule.get("target"), method):
+            continue
+        identity = _text(rule.get("backendIdentity"))
+        btn_id = "btn." + _text(rule.get("actionKey"))
+        matches = [status for status in statuses if isinstance(status, dict) and (
+            bool(identity) and _text(status.get("backendIdentity")) == identity
+            or not status.get("backendIdentity") and status.get("btnId") == btn_id
+        )]
+        if not matches:
+            status = {"btnId": btn_id}
+            if identity:
+                status["backendIdentity"] = identity
+            statuses.append(status)
+            matches = [status]
+        reason = _text(declaration.get("reason_code") or declaration.get("reasonCode"), "WORKFLOW_ACTION_NOT_AVAILABLE")
+        was_denied = rule.get("allowed") is False or rule.get("enabled") is False or rule.get("disabled") is True
+        if not was_denied or _text(rule.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+            rule["reasonCode"] = reason
+        rule.update({"businessAvailable": False, "allowed": False, "enabled": False, "disabled": True})
+        for status in matches:
+            if status.get("disabled") is not True or _text(status.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+                status["reasonCode"] = rule.get("reasonCode") or reason
+            status["disabled"] = True
+    status_contract["buttonStatus"] = statuses
+    contract["statusContract"] = status_contract
+
+
 def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     """Seal action visibility after late modifier dependencies are hydrated."""
     action_contract = _dict(contract.get("actionContract"))
@@ -4227,6 +4415,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                     status.pop("reasonCode", None)
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract
+    _tighten_workflow_action_denials(contract)
     _enforce_single_effective_primary_action(contract)
 
 
@@ -4296,7 +4485,7 @@ def hydrate_final_layout_modifier_status(contract: dict[str, Any]) -> None:
                 status["readonly"] = readonly is not False
                 status["required"] = required is not False
                 status["disabled"] = unresolved
-                status["auth"] = "read" if status["readonly"] else "edit"
+                status["auth"] = "none" if not status["visible"] else "read" if status["readonly"] or unresolved else "edit"
                 if unresolved:
                     status["reasonCode"] = "NATIVE_MODIFIER_UNRESOLVED"
                 elif not status["visible"]:
@@ -4711,9 +4900,80 @@ def _append_ui_contract_actions(
                     "native_contract",
                 ),
                 "native_identity": deepcopy(native_identity),
+                "action_semantics": _row_declared_action_semantics(row, policy),
             }
         )
     _append_actions(contract, normalized, source_widget_id=source_widget_id)
+
+
+# The published vocabulary of a declared action purpose
+# (`docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json`,
+# `$defs.actionRule.actionSemantics`).  The platform only *carries* a business
+# owner's declaration; it never derives a purpose from a method name, a label or
+# a button position.
+# The declared action-semantics vocabulary has exactly one authority
+# (`action_semantics_vocabulary`); the published schema and the Web consumer are
+# projections a guard compares against it.  A local copy here would re-create
+# the drift that import removes.
+DECLARED_ACTION_SEMANTICS_KINDS = ACTION_SEMANTICS_KINDS
+DECLARED_ACTION_SEMANTICS_PURPOSES = ACTION_SEMANTICS_PURPOSES
+DECLARED_ACTION_SEMANTICS_EXECUTORS = ACTION_SEMANTICS_EXECUTORS
+DECLARED_ACTION_SEMANTICS_OPERATIONS = ACTION_SEMANTICS_OPERATIONS
+
+
+def declared_action_semantics(value: Any) -> dict[str, Any] | None:
+    """Return a schema-valid declared action purpose, or ``None``.
+
+    A declaration outside the published vocabulary is dropped so the action
+    stays visibly undeclared.  It must never enter the delivered contract as if
+    it were an approved business meaning, and the platform must not fill the gap
+    with a guess of its own.
+    """
+    declared = _dict(value)
+    if declared.get("conflict") is True:
+        return {"conflict": True}
+    kind = _text(declared.get("kind")).lower()
+    purpose = _text(declared.get("purpose")).lower()
+    executor = _text(declared.get("executor")).lower()
+    origin = _text(declared.get("origin"))
+    if (
+        kind not in DECLARED_ACTION_SEMANTICS_KINDS
+        or purpose not in DECLARED_ACTION_SEMANTICS_PURPOSES
+        or executor not in DECLARED_ACTION_SEMANTICS_EXECUTORS
+        or not action_semantics_purpose_is_declared(kind, purpose, executor)
+        or not origin
+    ):
+        # A combination outside the vocabulary is dropped here instead of being
+        # published: it would look declared while every terminal discards it,
+        # which is precisely the silent gap this has to expose.
+        return None
+    semantics = {"kind": kind, "purpose": purpose, "executor": executor, "origin": origin}
+    operation = _text(declared.get("operation")).lower()
+    if operation in DECLARED_ACTION_SEMANTICS_OPERATIONS:
+        semantics["operation"] = operation
+    return semantics
+
+
+def _row_declared_action_semantics(
+    row: dict[str, Any],
+    policy: dict[str, Any],
+) -> dict[str, Any] | None:
+    """The purpose the action's owner declared for this occurrence.
+
+    The declaration travels either as a direct row field or inside the declared
+    business action that the owning module attached to the same native button.
+    Both are declarations by the same authority; neither is inferred here.
+    """
+    business_action = _dict(row.get("business_action") or row.get("businessAction"))
+    for candidate in (
+        policy.get("action_semantics") or policy.get("actionSemantics"),
+        row.get("action_semantics") or row.get("actionSemantics"),
+        business_action.get("action_semantics") or business_action.get("actionSemantics"),
+    ):
+        declared = declared_action_semantics(candidate)
+        if declared:
+            return declared
+    return None
 
 
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:

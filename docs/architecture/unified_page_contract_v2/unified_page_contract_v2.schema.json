@@ -39,7 +39,33 @@
       "$ref": "#/$defs/searchContract"
     },
     "workflowContract": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "submissionRequirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "field", "requiredWhen", "reasonCode", "message"],
+            "properties": {
+              "kind": { "const": "relation_required" },
+              "field": { "type": "string", "minLength": 1 },
+              "requiredWhen": {
+                "type": "object",
+                "required": ["field", "equals"],
+                "properties": {
+                  "field": { "type": "string", "minLength": 1 },
+                  "equals": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              "pendingSource": { "const": "native_attachment" },
+              "reasonCode": { "type": "string", "minLength": 1 },
+              "message": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
     },
     "meta": {
       "$ref": "#/$defs/meta"
@@ -1219,7 +1245,7 @@
         "refreshMode"
       ],
       "properties": {
-        "actionSemantics": {"description": "Terminal-independent declared purpose and existing executor binding; grants no authority. Conflicting source declarations retain an explicit conflict marker.", "oneOf": [{"type": "object", "additionalProperties": false, "required": ["kind", "purpose", "executor", "origin"], "properties": {"kind": {"enum": ["persistence", "business", "interaction"]}, "purpose": {"enum": ["save_draft", "submit", "approve", "reject", "cancel_record", "discard_changes", "return"]}, "executor": {"enum": ["record.save", "contract.action", "client.back", "client.discard"]}, "origin": {"type": "string", "minLength": 1}, "operation": {"enum": ["create", "write"]}}}, {"type": "object", "additionalProperties": false, "required": ["conflict"], "properties": {"conflict": {"const": true}}}]},
+        "actionSemantics": {"description": "Terminal-independent declared purpose and existing executor binding; grants no authority. Conflicting source declarations retain an explicit conflict marker.", "oneOf": [{"type": "object", "additionalProperties": false, "required": ["kind", "purpose", "executor", "origin"], "properties": {"kind": {"enum": ["persistence", "business", "interaction"]}, "purpose": {"enum": ["save_draft", "submit", "approve", "reject", "cancel_record", "start_execution", "pause_execution", "advance_phase", "close_record", "complete", "reopen", "discard_changes", "return"]}, "executor": {"enum": ["record.save", "contract.action", "client.back", "client.discard"]}, "origin": {"type": "string", "minLength": 1}, "operation": {"enum": ["create", "write"]}}, "allOf": [{"oneOf": [{"properties": {"kind": {"const": "persistence"}, "executor": {"const": "record.save"}, "purpose": {"enum": ["save_draft"]}}}, {"properties": {"kind": {"const": "business"}, "executor": {"const": "contract.action"}, "purpose": {"enum": ["advance_phase", "approve", "cancel_record", "close_record", "complete", "pause_execution", "reject", "reopen", "start_execution", "submit"]}}}, {"properties": {"kind": {"const": "interaction"}, "executor": {"const": "client.back"}, "purpose": {"enum": ["return"]}}}, {"properties": {"kind": {"const": "interaction"}, "executor": {"const": "client.discard"}, "purpose": {"enum": ["discard_changes"]}}}]}]}, {"type": "object", "additionalProperties": false, "required": ["conflict"], "properties": {"conflict": {"const": true}}}]},
         "actionId": {
           "$ref": "#/$defs/id"
         },

@@ -1,5 +1,4 @@
 import {
-  resolveContractV2SearchContract,
   resolveContractV2WorkflowContract,
   type ContractV2NormalizedStore,
 } from '../../app/contracts/v2';
@@ -59,7 +58,6 @@ export function resolveContractFormMetaLine(input: ContractFormMetaLineInput): s
   const mode = String(input.contractMeta?.contract_mode || '-');
   const surface = String(input.contractMeta?.contract_surface || '-');
   const viewType = String(input.store.snapshot.pageInfo.viewType || '-');
-  const filters = countArray(resolveContractV2SearchContract(input.store).filters);
   const transitions = countArray(resolveContractV2WorkflowContract(input.store).transitions);
   const permissionLabels = [
     input.rights.read ? '可查看' : '',
@@ -68,5 +66,5 @@ export function resolveContractFormMetaLine(input: ContractFormMetaLineInput): s
     input.rights.unlink ? '可删除' : '',
   ].filter(Boolean);
   const profileLabel = PROFILE_LABELS[input.renderProfile] || input.renderProfile;
-  return `配置模式：${labeledValue(mode, CONTRACT_MODE_LABELS)} · 承载界面：${labeledValue(surface, CONTRACT_SURFACE_LABELS)} · 视图类型：${labeledValue(viewType, VIEW_TYPE_LABELS)} · 页面状态：${profileLabel} · 筛选项：${filters} · 流转项：${transitions} · 操作权限：${permissionLabels.join('、') || '无可用权限'}`;
+  return `配置模式：${labeledValue(mode, CONTRACT_MODE_LABELS)} · 承载界面：${labeledValue(surface, CONTRACT_SURFACE_LABELS)} · 视图类型：${labeledValue(viewType, VIEW_TYPE_LABELS)} · 页面状态：${profileLabel} · 流转项：${transitions} · 操作权限：${permissionLabels.join('、') || '无可用权限'}`;
 }

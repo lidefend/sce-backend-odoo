@@ -20,7 +20,7 @@
     </ScPageHeader>
     <dl class="business-config-context__facts">
       <div><dt>适用公司</dt><dd>{{ companyLabel || '当前公司' }}</dd></div>
-      <div><dt>适用角色</dt><dd>{{ roleLabel || '当前管理员角色' }}</dd></div>
+      <div><dt>适用角色</dt><dd>{{ roleLabel || '未限定角色' }}</dd></div>
       <div><dt>当前页面实际应用配置</dt><dd>{{ versionLabel }}</dd></div>
       <div>
         <dt>编辑状态</dt>

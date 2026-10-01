@@ -625,5 +625,277 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["message"], "ACTION_CONTRACT_AUTHORITY_MISSING")
 
 
+class RelationActionOriginTest(unittest.TestCase):
+    def setUp(self):
+        path = Path(__file__).resolve().parents[1] / 'core/relation_action_authority.py'
+        spec = importlib.util.spec_from_file_location('relation_action_authority_test_target', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.validate = module.validate_relation_action_origin
+        self.calls = []
+        calls = self.calls
+        class Parent:
+            _fields = {'lines': types.SimpleNamespace(type='one2many', comodel_name='x.child')}
+            ids = [3]
+            def browse(self, record_id):
+                calls.append(('browse', record_id))
+                return self
+            def exists(self): return self
+            def check_access_rights(self, mode): calls.append(('acl', mode))
+            def check_access_rule(self, mode): calls.append(('rule', mode))
+            def check_field_access_rights(self, mode, names): calls.append(('fields', mode, names))
+            def __getitem__(self, name): return types.SimpleNamespace(ids=self.ids)
+        self.parent = Parent()
+        self.origin = dict(model='x.parent', record_id=2, field='lines', action_id=41, menu_id=51)
+        self.entry = dict(model='x.child', can_read=True, can_open=True)
+        self.contract = {'statusContract': {'globalStatus': {'effectiveRecordCapabilities': {'read': True}}},
+                         'layoutContract': {'children': [{'type': 'field', 'name': 'lines', 'fieldInfo': {'relation_entry': self.entry}}]}}
+
+    def run_origin(self, origin=None, entry_error=''):
+        return self.validate({'x.parent': self.parent}, self.origin if origin is None else origin,
+                             model='x.child', record_id=3, load_contract=lambda **kw: self.contract,
+                             validate_entry=lambda action, menu, model: entry_error)
+
+    def test_current_parent_and_field_access_checked(self):
+        self.run_origin()
+        self.assertEqual(self.calls, [('browse', 2), ('acl', 'read'), ('rule', 'read'), ('fields', 'read', ['lines'])])
+
+    def test_incomplete_or_mismatched_origin_is_denied(self):
+        for patch in ({'record_id': 0}, {'record_id': True}, {'menu_id': 0}, {'field': 'other'}):
+            with self.subTest(patch=patch), self.assertRaises(ValueError): self.run_origin({**self.origin, **patch})
+        with self.assertRaisesRegex(ValueError, 'ENTRY_DENIED'): self.run_origin(entry_error='DENIED')
+        self.parent._fields = {'lines': types.SimpleNamespace(type='char', comodel_name='x.child')}
+        with self.assertRaisesRegex(ValueError, 'FIELD_MISMATCH'): self.run_origin()
+
+    def test_removed_link_is_not_an_execution_authority(self):
+        self.parent.ids = [99]
+        with self.assertRaisesRegex(ValueError, 'RECORD_MISMATCH'): self.run_origin()
+
+    def test_revoked_acl_or_open_contract_is_denied(self):
+        self.entry['can_open'] = False
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+        self.entry['can_open'] = True
+        self.parent.check_access_rule = lambda _mode: (_ for _ in ()).throw(PermissionError('revoked'))
+        with self.assertRaises(PermissionError): self.run_origin()
+
+    def test_hidden_or_nested_occurrence_does_not_grant_access(self):
+        node = self.contract['layoutContract']['children'][0]
+        node['modifiers'] = {'invisible': True}
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+        node.pop('modifiers')
+        self.contract['layoutContract'] = {'type': 'field', 'name': 'other', 'children': [node]}
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+
+
+    def test_handler_uses_delivered_entry_and_retains_child_action_verdict(self):
+        from unittest.mock import patch
+        module = _load_handler()
+        child_contract = _authorized_contract()
+        handler = _authority_handler(module, child_contract)
+        handler.env = {'x.parent': self.parent}
+        handler.payload['meta'] = {'relation_origin': self.origin}
+        handler._load_current_action_contract = lambda **kw: self.contract if kw['model'] == 'x.parent' else child_contract
+        result = {'ok': True, 'data': {'allowed': True, 'action_id': 41, 'menu_id': 51, 'model': 'x.parent'}}
+        route_module = types.ModuleType('odoo.addons.smart_core.handlers.route_authority_validate')
+        route_module.RouteAuthorityValidateHandler = lambda *args, **kwargs: types.SimpleNamespace(handle=lambda: result)
+        def authorize():
+            return handler._authorize_contract_action(_authority_button(), model='x.child', record_id=3,
+                                                      method_name='action_confirm', button_type='object')
+        with patch.dict(sys.modules, {route_module.__name__: route_module}):
+            authorize()
+            for key, value in (('allowed', False), ('menu_id', 99), ('model', 'x.other'), ('action_id', 99)):
+                original = result['data'][key]
+                result['data'][key] = value
+                with self.subTest(key=key), self.assertRaisesRegex(module.AccessError, 'ENTRY_DENIED'): authorize()
+                result['data'][key] = original
+            child_contract['actionContract']['actionRuleList'][0]['entitlementEvaluated'] = False
+            with self.assertRaises(module.AccessError): authorize()
+
+
+class WorkItemActionOriginTest(unittest.TestCase):
+    def setUp(self):
+        path = Path(__file__).resolve().parents[1] / 'core/work_item_action_authority.py'
+        spec = importlib.util.spec_from_file_location('work_item_authority_test_target', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.validate = module.validate_work_item_action_origin
+        self.request_mode = module.work_item_request_access_mode
+
+    def test_request_mode_revalidates_target_and_preserves_other_intents(self):
+        payload = {'params': {'model': 'x.record', 'res_id': 7, 'button': {'type': 'object', 'name': 'validate_tier'}},
+                   'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}}
+        calls = []
+        def authorize(origin, **target):
+            calls.append((origin, target))
+            return {'allowed': True, 'record_access_mode': 'read'}
+        self.assertEqual(self.request_mode('execute_button', payload, authorize=authorize), 'read')
+        self.assertEqual(calls[0][1], {'model': 'x.record', 'record_id': 7, 'method_name': 'validate_tier'})
+        self.assertIsNone(self.request_mode('api.data', payload, authorize=authorize))
+        self.assertIsNone(self.request_mode('execute_button', {'params': payload['params']}, authorize=authorize))
+        self.assertEqual(len(calls), 1)
+
+    def test_request_mode_rejects_ambiguous_target_before_provider(self):
+        good = {'model': 'x.record', 'res_id': 7, 'button': {'type': 'object', 'name': 'validate_tier'}}
+        for patch in ({'res_ids': [7, 8]}, {'ids': [8]}, {'id': 8}, {'res_id': True},
+                      {'model': ''}, {'button': {'type': 'server', 'name': 'validate_tier'}},
+                      {'button': {'type': 'object', 'name': ''}}):
+            with self.subTest(patch=patch), self.assertRaises(ValueError):
+                self.request_mode('execute_button', {'params': {**good, **patch},
+                    'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}},
+                    authorize=lambda *a, **kw: self.fail('ambiguous target must not reach provider'))
+
+    def test_predispatch_uses_fresh_read_grant_without_changing_default_write_acl(self):
+        import ast
+        from unittest.mock import Mock
+        path = Path(__file__).resolve().parents[1] / 'security/intent_permission.py'
+        node = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'check_intent_permission')
+        model = Mock()
+        env = {}
+        user = types.SimpleNamespace(id=37)
+        hook = Mock(return_value={'allowed': True, 'record_access_mode': 'read'})
+        namespace = {'AccessError': PermissionError, 'MissingError': LookupError,
+            'get_user_from_token': lambda: user, '_sync_authenticated_identity': lambda *a: env,
+            '_permission_env_for_params': lambda *a: (env, user, None),
+            '_param_value': lambda p, key: p.get(key, p.get('params', {}).get(key)),
+            'access_mode_for_intent': lambda *a: 'write', 'work_item_request_access_mode': self.request_mode,
+            'call_extension_hook_first': hook, '_resolve_model': lambda *a: model,
+            '_is_ui_only_config_intent': lambda *a: False, '_model_acl_policy': lambda *a, **kw: {},
+            '_record_ids': lambda *a: [], '_capability_key': lambda *a: '', '_find_capability': lambda *a: None}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), namespace)
+        payload = {'intent': 'execute_button', 'params': {'model': 'x.record', 'res_id': 7,
+            'button': {'type': 'object', 'name': 'validate_tier'}}, 'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}}
+        ctx = types.SimpleNamespace(params=payload, user=user, principal=None)
+        self.assertTrue(namespace['check_intent_permission'](ctx))
+        model.check_access_rights.assert_called_once_with('read')
+        model.reset_mock()
+        hook.return_value = False
+        with self.assertRaises(PermissionError): namespace['check_intent_permission'](ctx)
+        model.check_access_rights.assert_not_called()
+        payload.pop('meta')
+        self.assertTrue(namespace['check_intent_permission'](ctx))
+        model.check_access_rights.assert_called_once_with('write')
+
+    def run_origin(self, origin, authorize):
+        return self.validate(origin, model='x.record', record_id=7, method_name='validate_tier', authorize=authorize)
+
+    def test_valid_origin_rechecks_exact_target_each_time(self):
+        calls = []
+        def authorize(origin, **target):
+            calls.append((origin, target))
+            return len(calls) == 1
+        self.run_origin({'source': 'review', 'id': 3}, authorize)
+        with self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+            self.run_origin({'source': 'review', 'id': 3}, authorize)
+        self.assertEqual(calls[0][1], {'model': 'x.record', 'record_id': 7, 'method_name': 'validate_tier'})
+
+    def test_malformed_origin_never_reaches_provider(self):
+        for origin in (None, {}, {'source': 'review', 'id': True}, {'source': 'review', 'id': '3'},
+                       {'source': '', 'id': 3}, {'source': 'review', 'id': -1}, {'source': 'review', 'id': 3, 'allowed': True}):
+            with self.subTest(origin=origin), self.assertRaisesRegex(ValueError, 'ORIGIN_INVALID'):
+                self.run_origin(origin, lambda *a, **kw: self.fail('must not call provider'))
+
+    def test_only_explicit_provider_authority_is_accepted(self):
+        for response in (None, False, 1, 'true', {'allowed': True}):
+            with self.subTest(response=response), self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+                self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: response)
+
+    def test_missing_target_cannot_be_authorized_by_provider(self):
+        for model, record_id in (('', 7), ('x.record', 0), ('x.record', True)):
+            with self.assertRaisesRegex(ValueError, 'TARGET_INVALID'):
+                self.validate({'source': 'review', 'id': 3}, model=model, record_id=record_id,
+                              method_name=None, authorize=lambda *a, **kw: True)
+
+    def test_contract_cannot_forge_validated_access_level(self):
+        module = _load_handler()
+        model = _ButtonModel()
+        handler = module.ExecuteButtonHandler(env=_Env({'x.model': model}), payload={
+            'params': {'model': 'x.model', 'record_id': 3, 'button': _authority_button(method='shared_action')},
+            'meta': {'action_id': 41, 'menu_id': 51, 'record_access_mode': 'read'},
+        })
+        contract = _authorized_contract(method='shared_action')
+        contract['actionContract']['actionRuleList'][0]['_validated_work_item_access_mode'] = 'read'
+        handler._load_current_action_contract = lambda **kw: contract
+        result = handler.handle()
+        self.assertTrue(result['ok'], result)
+        self.assertEqual(model.access_modes, ['write'])
+
+    def test_record_access_level_must_come_from_exact_backend_grant(self):
+        for mode in ('read', 'write'):
+            self.assertEqual(self.run_origin({'source': 'review', 'id': 3},
+                lambda *a, **kw: {'allowed': True, 'record_access_mode': mode}), mode)
+        self.assertEqual(self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: True), 'write')
+        for grant in ({'allowed': True, 'record_access_mode': 'sudo'},
+                      {'allowed': 1, 'record_access_mode': 'read'},
+                      {'allowed': True, 'record_access_mode': 'read', 'skip_acl': True}):
+            with self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+                self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: grant)
+
+
+class ReviewWorkItemOriginTest(unittest.TestCase):
+    def setUp(self):
+        import ast
+        path = Path(__file__).resolve().parents[2] / 'smart_construction_core/services/review_work_item_service.py'
+        function = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'authorize_review_origin')
+        self.scope_allowed = True
+        namespace = {'record_in_business_scope': lambda *a: (self.scope_allowed, {})}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+        self.authorize = namespace['authorize_review_origin']
+        self.review = types.SimpleNamespace(id=3, model='x.record', res_id=7, status='pending', reviewer_ids=types.SimpleNamespace(ids=[34]))
+        self.review.exists = lambda: self.review
+        company = object()
+        self.access = []
+        self.record = types.SimpleNamespace(_fields={'company_id': True, 'review_ids': True}, company_id=company,
+            review_ids=types.SimpleNamespace(ids=[3]), can_review=True,
+            check_access_rights=lambda mode: self.access.append(('acl', mode)),
+            check_access_rule=lambda mode: self.access.append(('rule', mode)))
+        self.record.exists = lambda: self.record
+        review, record = self.review, self.record
+        class Env:
+            uid = 34
+            context = {}
+            def __contains__(self, name): return name == 'x.record'
+            def __getitem__(self, name):
+                target = review if name == 'tier.review' else record
+                model = types.SimpleNamespace(browse=lambda _id: target)
+                model.sudo = lambda: model
+                return model
+        self.env = Env()
+        self.env.company = company
+
+    def check_origin(self, **kwargs):
+        return self.authorize(self.env, {'source': 'tier.review', 'id': 3}, model='x.record', record_id=7, **kwargs)
+
+    def test_assigned_review_requires_record_acl_rules_and_current_scope(self):
+        self.assertIs(self.check_origin(method_name='validate_tier'), True)
+        self.assertEqual(self.access, [('acl', 'read'), ('rule', 'read')])
+        self.scope_allowed = False
+        self.assertIs(self.check_origin(method_name='validate_tier'), False)
+
+    def test_wrong_actor_or_expired_review_is_denied(self):
+        self.env.uid = 35
+        self.assertIs(self.check_origin(), False)
+        self.env.uid = 34
+        self.review.status = 'approved'
+        self.assertIs(self.check_origin(), False)
+
+    def test_wrong_target_or_company_is_denied(self):
+        self.review.res_id = 8
+        self.assertIs(self.check_origin(), False)
+        self.review.res_id = 7
+        self.record.company_id = object()
+        self.assertIs(self.check_origin(), False)
+
+    def test_review_origin_cannot_authorize_other_business_actions(self):
+        self.assertIs(self.check_origin(method_name='action_done'), False)
+        self.assertIs(self.check_origin(method_name='reject_tier'), True)
+
+    def test_current_review_membership_and_can_review_are_required(self):
+        self.record.can_review = False
+        self.assertIs(self.check_origin(), False)
+        self.record.can_review = True
+        self.record.review_ids.ids = [4]
+        self.assertIs(self.check_origin(), False)
+
+
 if __name__ == "__main__":
     unittest.main()

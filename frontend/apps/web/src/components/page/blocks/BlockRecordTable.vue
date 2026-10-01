@@ -1,17 +1,17 @@
 <template>
   <article class="block block-record-table">
-    <header class="block-header">
-      <h4>{{ block.title || '表格' }}</h4>
-    </header>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '表格'">
 
-    <div v-if="rows.length" class="table-wrap">
-      <ScTable class="mini-table" :label="block.title || '表格'" :data="rows" :columns="tableColumns" row-key="__rowKey" size="small" stripe />
-    </div>
-    <ScEmptyState v-else density="compact" :heading-level="5" :title="emptyMessage" />
+      <div v-if="rows.length" class="table-wrap">
+        <ScTable class="mini-table" :label="block.title || '表格'" :data="rows" :columns="tableColumns" row-key="__rowKey" size="small" stripe />
+      </div>
+      <ScEmptyState v-else density="compact" :heading-level="5" :title="emptyMessage" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
@@ -67,8 +67,8 @@ function stringify(value: unknown) {
 </script>
 
 <style scoped>
-.block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; min-height: 170px; }
-.block-header h4 { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .table-wrap { max-width: 100%; overflow: auto; }
 .mini-table { min-width: 560px; }
 

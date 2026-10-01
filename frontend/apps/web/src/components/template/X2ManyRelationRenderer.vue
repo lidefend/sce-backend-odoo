@@ -104,6 +104,18 @@
                 {{ readonlyCellValue(row[column.name]) }}
               </span>
             </template>
+            <template #_action="{ row }">
+            <ScButton
+              v-if="adapter.one2manyCanOpenRow(field.name, row._row)"
+              class="o2m-row-open"
+              type="button"
+              variant="ghost"
+              size="small"
+              :aria-label="`打开${adapter.one2manyRowLabel(field.name, row._row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.openOne2manyRow(field.name, row._row)"
+            >打开</ScButton>
+            </template>
           </ScTable>
         </div>
       </div>
@@ -113,6 +125,16 @@
           :key="row.key"
           class="o2m-readonly-row"
         >
+            <ScButton
+              v-if="adapter.one2manyCanOpenRow(field.name, row)"
+              class="o2m-row-open"
+              type="button"
+              variant="ghost"
+              size="small"
+              :aria-label="`打开${adapter.one2manyRowLabel(field.name, row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.openOne2manyRow(field.name, row)"
+            >打开</ScButton>
           <p class="o2m-readonly-state">
             第 {{ (one2manyPage - 1) * one2manyPageSize + rowIndex + 1 }} 条
           </p>
@@ -153,6 +175,11 @@
       />
       <ScEmptyState v-else class="relation-readonly-empty" density="compact" title="暂无可展示记录" :heading-level="4" data-readonly-relation-empty />
     </div>
+    <ScInlineState
+      v-else-if="adapter.isOne2manyHydrating(field.name)"
+      state="loading"
+      label="正在加载关系记录"
+    />
         <template v-else>
     <div class="o2m-card">
       <header class="o2m-toolbar" data-detail-collection-heading>
@@ -271,6 +298,16 @@
             <strong class="o2m-mobile-row-identity" :title="adapter.one2manyRowLabel(field.name, row)">{{ adapter.one2manyRowLabel(field.name, row) }}</strong>
             <span class="o2m-state-badge">行变更：{{ adapter.one2manyRowStateLabel(row) }}</span>
             <span v-if="o2mRowHasMessages(row)" class="o2m-mobile-row-status">需要检查</span>
+            <ScButton
+              v-if="adapter.one2manyCanOpenRow(field.name, row)"
+              class="o2m-row-open"
+              type="button"
+              variant="ghost"
+              size="small"
+              :aria-label="`打开${adapter.one2manyRowLabel(field.name, row)}`"
+              :disabled="adapter.busy"
+              @click="adapter.openOne2manyRow(field.name, row)"
+            >打开</ScButton>
             <ScButton
               v-if="adapter.one2manyCanUnlink(field.name)"
               type="button"
@@ -486,6 +523,8 @@ const readonlyO2mTableColumns = computed(() => {
       title: column.label,
       ...detailCollectionColumnPresentation(column, columnIndex, true),
     })),
+    ...(one2manyRows.value.some(row => props.adapter.one2manyCanOpenRow(props.field.name, row))
+      ? [{ colKey: '_action', title: '操作', width: 80, fixed: 'right' }] : []),
   ];
 });
 

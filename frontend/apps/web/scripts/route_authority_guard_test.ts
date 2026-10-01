@@ -176,3 +176,42 @@ assert.equal(configReturn.action_id, '666');
 assert.equal(configReturn.view_id, '1703');
 assert.equal(buildLowCodeReturnQuery({ routeQuery: { menu_id: '356' }, modelName: 'test.document', actionId: 666, openPagesFlag: 'open_pages' }).menu_id, '356');
 console.log('[route_authority_guard_test] host/target return cases=2 PASS');
+
+import { isRecordWorkItemNavigation } from '../src/services/actionRoutePolicy';
+const reviewParams = { model: 'sc.payment.execution', id: '201' };
+const reviewQuery = { work_item_source: 'tier.review', work_item_id: '505' };
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, reviewQuery), true);
+assert.equal(isRecordWorkItemNavigation('model-form', reviewParams, reviewQuery), true);
+assert.equal(isRecordWorkItemNavigation('action', reviewParams, reviewQuery), false);
+for (const id of ['new', '0', '-1', '1.5', ''])
+  assert.equal(isRecordWorkItemNavigation('record', { ...reviewParams, id }, reviewQuery), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, {}), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, { ...reviewQuery, work_item_source: 'anything' }), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, { ...reviewQuery, work_item_id: '0' }), false);
+assert.equal(isRecordWorkItemNavigation('record', { ...reviewParams, model: '' }, reviewQuery), false);
+console.log('[work_item_empty_menu_shell] PASS cases=12 authorization=backend');
+
+
+import { isAuthorizedSceneNavigation } from '../src/services/actionRoutePolicy';
+const sceneGrant = { ...contract.admin_actions[0], scene_key: 'custom.scene', route: '/s/custom.scene' };
+const sceneAuthority = { ...contract, admin_actions: [sceneGrant] };
+const sceneInput = { routeName: 'scene', sceneKey: 'custom.scene', authority: sceneAuthority, query: {}, companyId: 3 };
+assert.equal(isAuthorizedSceneNavigation(sceneInput), true);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: null }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, sceneKey: 'unknown.scene' }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, routeName: 'action' }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, sceneKey: ['custom.scene'] }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, query: { action_id: '999' } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, query: { menu_id: '999' } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [], denied_actions: [sceneGrant] } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, allowed_operation: '' }] } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, scene_key: 'other.scene' }] } }), false);
+const scopedScene = { ...sceneGrant, context_requirements: { required_query: ['company_id'], company_query: 'company_id' } };
+const scopedInput = { ...sceneInput, authority: { ...sceneAuthority, admin_actions: [scopedScene] } };
+assert.equal(isAuthorizedSceneNavigation(scopedInput), false);
+assert.equal(isAuthorizedSceneNavigation({ ...scopedInput, query: { company_id: '4' } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...scopedInput, query: { company_id: '3' } }), false);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, scene_key: undefined, route: '', entry_target: { scene_key: 'custom.scene' } }] } }), true);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, scene_key: undefined }] } }), true);
+assert.equal(isAuthorizedSceneNavigation({ ...sceneInput, authority: { ...sceneAuthority, admin_actions: [{ ...sceneGrant, context_requirements: { record_query: 'record_id' } }] }, query: { record_id: '999' } }), false);
+console.log('[scene_empty_menu_shell] PASS cases=16 authority=final_route_contract');

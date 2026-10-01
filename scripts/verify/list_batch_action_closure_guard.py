@@ -328,6 +328,13 @@ def _probe_frontend_sources(errors: list[str]) -> None:
     list_page = _read("frontend/apps/web/src/pages/ListPage.vue")
     action_view = _read("frontend/apps/web/src/views/ActionView.vue")
     batch_flow = _read("frontend/apps/web/src/app/runtime/actionViewBatchActionFlowRuntime.ts")
+    # The batch selection surface keeps its behaviour in the runtime ActionView
+    # composes, so the assertions below are bound to the owner that actually
+    # performs them - plus a check that the view still consumes that owner, so
+    # moving the behaviour out cannot silently make these pass.
+    selection_action_runtime = _read(
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts"
+    )
 
     _assert(
         "props.selectionEnabled !== false" in list_page,
@@ -339,20 +346,42 @@ def _probe_frontend_sources(errors: list[str]) -> None:
         "ActionView must consume the backend selection policy without model branches",
         errors,
     )
+    selection_runtime = _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts")
     _assert(
-        "resolveSelectionActions(" in action_view
-        and "action === 'export' || (action === 'delete' ? deleteMode === 'unlink' : Boolean(activeField))" in _read("frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts"),
-        "ActionView must enable export while guarding delete/archive from backend policy",
+        "useActionViewSelectionActionRuntime(" in action_view and "contractActions: contractActionButtons" in action_view,
+        "ActionView must compose the selection-action runtime that executes the declared batch policy",
         errors,
     )
     _assert(
-        "const result = await unlinkActionViewRecord" in action_view,
-        "ActionView batch delete must call unlinkActionViewRecord",
+        "resolveSelectionActions(" in selection_action_runtime
+        and "execution_intents" in selection_action_runtime,
+        "the batch selection surface must read the declared batch policy instead of naming batch actions",
         errors,
     )
     _assert(
-        "const result = await batchUpdateActionViewRecords" in action_view,
-        "ActionView archive/activate must call batchUpdateActionViewRecords",
+        # The client maps a *declared* intent onto a client executor; it never
+        # decides which batch actions exist.  A declared action whose intent this
+        # build cannot execute must be offered unresolved, not hidden.
+        "DECLARED_BATCH_EXECUTORS" in selection_runtime
+        and "intents[action]" in selection_runtime
+        and "'api.data': 'export_csv'" in selection_runtime
+        and "'api.data.unlink': 'unlink'" in selection_runtime
+        and "'api.data.batch': 'batch_write'" in selection_runtime
+        and "executor === 'export_csv'" in selection_runtime
+        and "String(declaration.deleteMode" in selection_runtime
+        and "String(declaration.activeField" in selection_runtime
+        and ".filter((action) =>" not in selection_runtime,
+        "batch selection must execute the declared intent, guard delete/archive from the declared policy, and never whitelist actions by name",
+        errors,
+    )
+    _assert(
+        "const result = await unlinkActionViewRecord" in selection_action_runtime,
+        "the batch selection surface must delete through unlinkActionViewRecord",
+        errors,
+    )
+    _assert(
+        "const result = await batchUpdateActionViewRecords" in selection_action_runtime,
+        "the batch selection surface must archive/activate through batchUpdateActionViewRecords",
         errors,
     )
     _assert(

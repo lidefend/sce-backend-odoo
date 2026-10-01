@@ -32,6 +32,9 @@ FINANCING_LOAN_FORMAL_CANONICAL_FIELDS = {
 }
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScFinancingLoan(models.Model):
     _name = "sc.financing.loan"
     _description = "融资与借款登记"
@@ -508,6 +511,14 @@ class ScFinancingLoan(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for values in vals_list:
+            state = values.get("state", self.env.context.get("default_state", "draft"))
+            origin = values.get("source_origin", self.env.context.get("default_source_origin", "manual"))
+            historical_import = self.env.su and origin == "legacy" and state == "legacy_confirmed"
+            if origin == "legacy" and not self.env.su:
+                raise UserError(_("历史单据只能由受管迁移导入。"))
+            if state != "draft" and not historical_import:
+                raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             project_id = self._context_project_id()
@@ -547,6 +558,18 @@ class ScFinancingLoan(models.Model):
         return set()
 
     def write(self, vals):
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and {"state", "source_origin"}.intersection(vals):
+            raise UserError(_("单据状态与来源只能由正式业务动作写入。"))
+        protected_fields = FINANCING_LOAN_FORMAL_BUSINESS_FIELDS | FINANCING_LOAN_FORMAL_CANONICAL_FIELDS | {
+            "project_id", "company_id", "partner_id", "currency_id", "direction", "business_category_id",
+            "document_no", "rate_label", "extra_ref", "extra_label", "active",
+        }
+        if self.env.context.get("sc_document_state_token") is not _DOCUMENT_STATE_TOKEN and protected_fields.intersection(vals) and any(
+            rec.source_origin != "legacy" and (
+                rec.state in ("confirmed", "done") or rec.validation_status in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已完成的融资内容不可改写，请按正式流程重新办理。"))
         if vals.get("project_id"):
             self._require_visible_company_project(vals["project_id"])
         if (
@@ -569,7 +592,13 @@ class ScFinancingLoan(models.Model):
                     blocked.remove(field_name)
             if blocked:
                 raise UserError(_("历史迁移融资/借款单据已确认，只允许补充正式业务字段、往来单位、备注和历史录入审计事实。"))
-        return super().write({**self._prepare_formal_business_values(vals), **vals})
+        formal_values = self._prepare_formal_business_values(vals) if (
+            FINANCING_LOAN_FORMAL_BUSINESS_FIELDS | FINANCING_LOAN_FORMAL_CANONICAL_FIELDS
+        ).intersection(vals) else {}
+        return super().write({**formal_values, **vals})
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
 
     def action_confirm(self):
         policy = self.env["sc.approval.policy"]
@@ -578,9 +607,7 @@ class ScFinancingLoan(models.Model):
                 raise UserError(_("只有草稿状态的融资借款可以确认。"))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
+            if policy._start_submission_review(rec):
                 rec._audit_transition(
                     "financing_loan_submitted",
                     before,
@@ -588,7 +615,7 @@ class ScFinancingLoan(models.Model):
                     "action_confirm",
                 )
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_document_state({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "financing_loan_confirmed",
                     before,
@@ -602,11 +629,10 @@ class ScFinancingLoan(models.Model):
             rec._assert_finance_completion_access()
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的融资借款可以完成。"))
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("融资借款尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
-            rec.write({"state": "done"})
+            rec._write_document_state({"state": "done"})
             rec._ensure_interfund_cash_ledger()
             rec._audit_transition(
                 "financing_loan_done",
@@ -747,24 +773,13 @@ class ScFinancingLoan(models.Model):
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的融资借款可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_document_state({"state": "cancel"})
             rec._audit_transition(
                 "financing_loan_cancelled",
                 before,
                 rec._snapshot_audit_payload(),
                 "action_cancel",
             )
-
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("融资借款已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("融资借款已经在统一审批流程中，请等待审批完成。"))
 
     def _check_state_from_condition(self):
         self.ensure_one()
@@ -781,15 +796,12 @@ class ScFinancingLoan(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition(
                     "financing_loan_confirmed",
                     before,
@@ -799,6 +811,8 @@ class ScFinancingLoan(models.Model):
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
                 rec.with_context(skip_validation_check=True).write(

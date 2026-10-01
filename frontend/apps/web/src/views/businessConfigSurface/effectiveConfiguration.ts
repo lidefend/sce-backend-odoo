@@ -23,3 +23,10 @@ export function effectiveConfigurationLabel(contract: unknown, viewType: string,
     return `${label} #${item.id} · v${item.version_no ?? '未知'}`;
   }).join('；')}${legacyOverlay ? '；另有字段策略覆盖（版本未提供）' : ''}`;
 }
+
+/** A configuration target is independent of the authenticated operator. */
+export function configurationTargetRoleLabel(target: string | undefined, actorCode: string | undefined, actorLabel: string | undefined): string {
+  const role = String(target || '').trim();
+  if (!role) return '未限定角色';
+  return role === String(actorCode || '').trim() ? String(actorLabel || '').trim() || role : role;
+}

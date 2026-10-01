@@ -273,7 +273,7 @@ defineExpose({
 .sc-relation-field__panel-actions {
   position: sticky;
   bottom: 0;
-  z-index: 1;
+  z-index: var(--sc-component-overlay-local-action-z-index);
   display: grid;
   gap: 4px;
   padding: 4px 0 0;

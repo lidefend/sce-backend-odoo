@@ -42,7 +42,44 @@ RAW_CONTROL_PATTERNS = {
     "select": re.compile(r"<select\b"),
     "textarea": re.compile(r"<textarea\b"),
 }
-GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScEmptyState", "ScErrorState")
+# Governed inline-state vocabulary.  Kept aligned with the dedicated
+# frontend_inline_state_guard (ScInlineState / ScEmptyState / ScErrorState) plus
+# the loading primitive; a surface that renders any of these owns its state
+# presentation through the design system.
+GOVERNED_STATE_PRIMITIVES = ("ScLoading", "ScInlineState", "ScEmptyState", "ScErrorState")
+EXTERNAL_TEMPLATE_SRC = re.compile(r"""<template\s+src\s*=\s*['"](?P<value>[^'"]+)['"]""")
+
+# P3 administration/designer surfaces whose transient state bands are already
+# rendered by governed state primitives, with the exact primitive/state pairs
+# they render.  This is the reduction ledger for the P3 ownership deferral: the
+# deferral itself stays unconditional, but a conversion is recorded here and
+# verified against the source.  Verification is fail-closed, so deleting the
+# primitive or changing its literal state re-opens the deferral instead of
+# leaving a green "owned" claim behind.
+P3_STATE_BAND_OWNERSHIP: dict[str, tuple[str, ...]] = {
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigStartPanel.vue": ("ScInlineState:loading",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue": (
+        "ScEmptyState:empty",
+        "ScInlineState:loading",
+    ),
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/MenuConfigView.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue": ("ScEmptyState:empty",),
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue": (
+        "ScErrorState:error",
+        "ScInlineState:error",
+        "ScInlineState:loading",
+        "ScInlineState:success",
+    ),
+}
+DEDICATED_STATE_PRIMITIVE = {
+    "ScLoading": "loading",
+    "ScEmptyState": "empty",
+    "ScErrorState": "error",
+}
+SC_INLINE_STATE_LITERAL = re.compile(r"""<ScInlineState\b[^>]*?\bstate\s*=\s*"([a-z]+)\"""")
 
 OWNERSHIP_PATH = ROOT / "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json"
 OWNERSHIP = json.loads(OWNERSHIP_PATH.read_text(encoding="utf-8"))
@@ -70,6 +107,14 @@ KNOWN_GOVERNED_COMPOSITES = {
 
 BATCH_BINDINGS = {
     "p0-inline-full-state-completion-v1": {
+    "frontend/apps/web/src/App.vue": {
+        "scpanel": {"import": "ScPanel", "attribute_groups": [
+            {"v-if": "isPublicAuthPage && !session.token && session.publicPageContractStatus === 'error'", "role": "alert"},
+            {"v-else-if": "isPublicAuthPage && !session.token && session.publicPageContractStatus === 'loading'", "role": "status"},
+        ]},
+        "scbutton": {"import": "ScButton", "attrs": {"@click": "session.loadPublicPageContracts(true)"}},
+        "routerview": {"attrs": {"v-slot": "{ Component, route }"}},
+    },
     "frontend/apps/web/src/layouts/AppShell.vue": {"scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4}},
     "frontend/apps/web/src/components/GlobalMessagePanel.vue": {"scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
     "frontend/apps/web/src/components/action/UnsupportedActionSurface.vue": {"scerrorstate": {"minimum": 1}},
@@ -79,8 +124,10 @@ BATCH_BINDINGS = {
     "frontend/apps/web/src/pages/contractForm/NativeCollaborationPanel.vue": {"scinlinestate": {"states": {"empty", "error"}, "minimum": 2}},
     "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationTimeline.vue": {"scinlinestate": {"states": {"loading", "empty"}, "minimum": 1}},
     "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue": {"scinlinestate": {"states": {"error"}, "attrs": {"state": "error"}, "minimum": 5}},
+    "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue": {"scinlinestate": {"states": {"info"}, "attrs": {"density": "compact"}, "minimum": 1}},
     },
     "p0-collection-state-control-completion-v1": {
+        "frontend/apps/web/src/components/product-list/ProductListSurface.vue": {"sccard": {"attrs": {"appearance": "table", ":bordered": "false", "data-list-card-container": "official", "data-semantic-component": "ProductListSurface"}}, "slot": {}},
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue": {"scbutton": {"minimum": 1}, "sccheckbox": {"minimum": 1}, "scselect": {"minimum": 1}},
         "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue": {"scbutton": {"minimum": 1}, "sciconbutton": {"minimum": 1}},
@@ -125,7 +172,7 @@ BATCH_BINDINGS = {
             "slot": {"attrs": {":adapter": "guardedAdapter"}},
         },
         "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue": {"div": {"attrs": {"data-semantic-component": "PaymentSettlementDetailCollectionControl"}}},
-        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "payment-settlement-introduce"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue": {"scdialog": {"attrs": {":data-dialog-purpose": "contract.purpose"}}, "scinlinestate": {"states": {"loading", "empty", "error", "info"}, "minimum": 4}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue": {"professionalrelationfieldcontrol": {"attrs": {"data-semantic-component": "ProfessionalMany2oneFieldControl"}}},
         "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue": {"div": {"attrs": {"data-semantic-component": "ProfessionalManyToManySelect"}}},
         "frontend/apps/web/src/components/template/FormSection.vue": {"sccard": {"attrs": {"data-semantic-component": "FormSection"}}},
@@ -139,7 +186,10 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/pages/ContractFormPage.vue": {"layoutshell": {"attrs": {"data-semantic-component": "ContractFormPage", ":data-state": "status"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue": {"nav": {"attrs": {"data-semantic-component": "CanonicalActionBar"}}},
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue": {"section": {"attrs": {"data-semantic-component": "CanonicalFormNodeRenderer"}}},
-        "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue": {"scbutton": {"import": "ScButton", "minimum": 3}},
+        "frontend/apps/web/src/pages/contractForm/ContractFormActionBlocks.vue": {"scbutton": {"import": "ScButton", "attribute_groups": [
+            {"v-for": "item in workflowTransitions", ":disabled": "busy || !item.action", "@click": "item.action && $emit('run-action', item.action)"},
+            {"v-for": "action in bodyActions", ":disabled": "busy || !action.enabled", "@click": "$emit('run-action', action)"},
+        ]}},
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue": {"section": {"attrs": {"data-semantic-component": "ContractFormNativeCanvas", ":data-state": "mode"}}},
         "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue": {"pageheadertemplate": {"attrs": {"data-semantic-component": "ContractFormProductHeader"}}},
         "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue": {"nav": {"attrs": {"data-semantic-component": "FormSectionNavigation"}}, "scbutton": {"attrs": {"appearance": "section-tab"}, "minimum": 1}},
@@ -152,12 +202,12 @@ BATCH_BINDINGS = {
     "p0-shared-utility-scene-completion-v1": {
         "frontend/apps/web/src/components/DevContextPanel.vue": {"aside": {"attrs": {"data-semantic-component": "DevContextPanel"}}},
         "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue": {"scdialog": {"attrs": {"data-dialog-purpose": "intent-confirmation"}}},
-        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"scpanel": {"attrs": {"data-semantic-component": "MyWorkApprovalWorkspace"}}},
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue": {"productworkspacesurface": {"import": "ProductWorkspaceSurface", "import_path": "../product-page-patterns/ProductWorkspaceSurface.vue", "attrs": {"data-semantic-component": "MyWorkApprovalWorkspace", ":aria-busy": "busy || undefined", ":data-state": "busy ? 'loading' : 'ready'"}}},
         "frontend/apps/web/src/components/page/PageRenderer.vue": {"section": {"attrs": {"data-semantic-component": "PageRenderer"}}},
         "frontend/apps/web/src/components/page/ZoneRenderer.vue": {"section": {"attrs": {"data-semantic-component": "ZoneRenderer"}}},
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue": {"header": {"attrs": {"data-semantic-component": "ProductPageHeader"}}},
         "frontend/apps/web/src/components/product-shell/ProductIdentity.vue": {"div": {"attrs": {"data-semantic-component": "ProductIdentity"}}},
-        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue": {"div": {"attrs": {"data-semantic-component": "WorkspaceHome", ":aria-busy": "loading || undefined"}}, "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue": {"productworkspacesurface": {"import": "ProductWorkspaceSurface", "import_path": "../product-page-patterns/ProductWorkspaceSurface.vue", "attrs": {"data-semantic-component": "WorkspaceHome", ":aria-busy": "loading || undefined", ":data-state": "loading ? 'loading' : error ? 'error' : 'ready'"}}, "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3}},
         "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue": {"section": {"attrs": {"data-semantic-component": "SceneBlocksRenderer"}}},
         "frontend/apps/web/src/views/AccessDeniedView.vue": {"scpage": {"attrs": {"data-semantic-component": "AccessDeniedView", "data-state": "error"}}},
         "frontend/apps/web/src/views/AccountActivationView.vue": {"main": {"attrs": {"data-semantic-component": "AccountActivationView"}}},
@@ -276,7 +326,12 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
     failures: list[str] = []
     for tag, rule in requirements.items():
         expected_import = rule.get("import") or COMPONENT_IMPORTS.get(tag)
-        if expected_import and expected_import not in imports:
+        import_path = rule.get("import_path")
+        if import_path:
+            pattern = rf"import\s+{re.escape(expected_import)}\s+from\s+['\"]{re.escape(import_path)}['\"]"
+            if not re.search(pattern, script):
+                failures.append(f"missing composition import {expected_import} from {import_path}")
+        elif expected_import and expected_import not in imports:
             failures.append(f"missing design-system import {expected_import}")
         nodes = [attrs for node_tag, attrs in parser.elements if node_tag == tag]
         if len(nodes) < rule.get("minimum", 1):
@@ -284,6 +339,9 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
         for name, value in rule.get("attrs", {}).items():
             if not any(attrs.get(name) == value for attrs in nodes):
                 failures.append(f"{expected_import or tag} missing template attribute {name}={value}")
+        for group in rule.get("attribute_groups", []):
+            if not any(all(attrs.get(name) == value for name, value in group.items()) for attrs in nodes):
+                failures.append(f"{expected_import or tag} missing bound action {group}")
         states = set()
         for attrs in nodes:
             if "state" in attrs:
@@ -300,6 +358,58 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
+def external_template_paths(path: Path, text: str) -> list[Path]:
+    """Resolve ``<template src="...">`` targets so the evaluated source set is
+    the component's real rendering surface.  A component that keeps its template
+    in an external file must not be judged from the ``.vue`` script alone: doing
+    so hides raw controls and governed state primitives that actually render."""
+    resolved = []
+    for match in EXTERNAL_TEMPLATE_SRC.finditer(text):
+        target = (path.parent / match.group("value")).resolve()
+        if not target.is_file():
+            raise ValueError(f"external component template is missing: {rel(path)} -> {match.group('value')}")
+        resolved.append(target)
+    return resolved
+
+
+def resolve_source_text(path: Path) -> tuple[str, list[Path]]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    externals = external_template_paths(path, text)
+    for target in externals:
+        text += "\n" + target.read_text(encoding="utf-8", errors="replace")
+    return text, externals
+
+
+def rendered_state_bands(text: str) -> set[str]:
+    """State bands a surface actually renders through a governed primitive."""
+    bands: set[str] = set()
+    for primitive, state in DEDICATED_STATE_PRIMITIVE.items():
+        if f"<{primitive}" in text:
+            bands.add(f"{primitive}:{state}")
+    for literal in SC_INLINE_STATE_LITERAL.findall(text):
+        bands.add(f"ScInlineState:{literal}")
+    return bands
+
+
+def p3_state_band_ownership_failures(deferred_sources: set[str] | None = None) -> list[str]:
+    """Fail closed when a declared P3 state-band ownership claim is no longer true."""
+    failures: list[str] = []
+    for source, declared in sorted(P3_STATE_BAND_OWNERSHIP.items()):
+        if not is_p3(source):
+            failures.append(f"declared P3 state-band owner is not a P3 surface: {source}")
+        if deferred_sources is not None and source not in deferred_sources:
+            failures.append(f"declared P3 state-band owner left the deferral register: {source}")
+        path = ROOT / source
+        if not path.is_file():
+            failures.append(f"declared P3 state-band owner is missing: {source}")
+            continue
+        rendered = rendered_state_bands(resolve_source_text(path)[0])
+        for claim in declared:
+            if claim not in rendered:
+                failures.append(f"declared P3 state band is not rendered: {source} -> {claim}")
+    return failures
+
+
 def digest(paths: list[Path]) -> str:
     result = hashlib.sha256()
     for path in sorted(paths):
@@ -314,16 +424,32 @@ def is_p3(source: str) -> bool:
     return source in P3_FILES or source.startswith(P3_PREFIXES)
 
 
+def layer_of(source: str) -> str:
+    return "P3" if is_p3(source) else "P0/P1"
+
+
+P3_OWNERSHIP_DEFERRAL_REASON = (
+    "low-code or administration product surface; state-primitive ownership is deferred by the "
+    "declared P3 register (report key p3OwnershipDeferred), not by a silent scope exclusion"
+)
+
+
 def classify(source: str, text: str) -> tuple[str, str]:
     if "/components/design-system/" in source:
         return "governed_primitive", "design-system primitive source"
-    if is_p3(source):
-        return "p3_out_of_scope", "low-code or administration product surface; handled by a separate P3 batch"
     if source in DELIBERATE_NATIVE_COMPOSITES:
         return "deliberate_native_composite", DELIBERATE_NATIVE_COMPOSITES[source]
+    # Layer-independent policy boundary.  A native control bypasses the governed
+    # primitive adapter no matter which formal product layer owns the surface, so
+    # this rule is evaluated before any layer deferral.  Placing a deferral above
+    # it would silently shrink the evaluated set while the reported policy still
+    # claims native-control coverage -- the exact blind spot this guard must not
+    # reproduce.
     raw_controls = sorted(name for name, pattern in RAW_CONTROL_PATTERNS.items() if pattern.search(text))
     if raw_controls:
-        return "gap", f"formal P0/P1 surface bypasses governed adapters: {', '.join(raw_controls)}"
+        return "gap", f"formal {layer_of(source)} surface bypasses governed adapters: {', '.join(raw_controls)}"
+    if is_p3(source):
+        return "p3_out_of_scope", P3_OWNERSHIP_DEFERRAL_REASON
     if source in KNOWN_GOVERNED_COMPOSITES:
         return "governed_composite", "state/dashboard or overlay guard owns this composite"
     if source in OWNED_BINDINGS:
@@ -343,8 +469,10 @@ def build_inventory() -> dict[str, Any]:
         raise ValueError("invalid rendering ownership bindings: " + "; ".join(binding_failures))
     vue_files = sorted((ROOT / "frontend/apps/web/src").rglob("*.vue"))
     surfaces: list[dict[str, Any]] = []
+    template_files: set[Path] = set()
     for path in vue_files:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text, externals = resolve_source_text(path)
+        template_files.update(externals)
         state_types = [name for name, pattern in STATE_PATTERNS.items() if pattern.search(text)]
         raw_controls = {name: len(pattern.findall(text)) for name, pattern in RAW_CONTROL_PATTERNS.items()}
         raw_controls = {name: count for name, count in raw_controls.items() if count}
@@ -357,7 +485,7 @@ def build_inventory() -> dict[str, Any]:
             raise ValueError(f"invalid status for {source}: {status}")
         surfaces.append({
             "source": source,
-            "formalProductLayer": "P3" if status == "p3_out_of_scope" else "P0",
+            "formalProductLayer": "P3" if is_p3(source) else "P0",
             "status": status,
             "reason": reason,
             "stateTypes": state_types,
@@ -365,6 +493,10 @@ def build_inventory() -> dict[str, Any]:
             "governedStatePrimitives": governed_primitives,
             "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
         })
+    deferred_sources = {item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"}
+    deferral_failures = p3_state_band_ownership_failures(deferred_sources)
+    if deferral_failures:
+        raise ValueError("invalid P3 state-band ownership declarations: " + "; ".join(deferral_failures))
     counts = Counter(item["status"] for item in surfaces)
     p0_p1_raw_bypass_surfaces = [
         item for item in surfaces
@@ -383,7 +515,7 @@ def build_inventory() -> dict[str, Any]:
     }
     generator_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     ownership_digest = hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest()
-    input_digest = digest(vue_files + [OWNERSHIP_PATH])
+    input_digest = digest(vue_files + sorted(template_files) + [OWNERSHIP_PATH])
     source_identity = hashlib.sha256(
         f"{generator_digest}:{ownership_digest}:{input_digest}".encode("utf-8")
     ).hexdigest()
@@ -393,7 +525,7 @@ def build_inventory() -> dict[str, Any]:
         "generatorDigest": generator_digest,
         "ownershipDigest": ownership_digest,
         "inputDigest": input_digest,
-        "scope": "repository formal-product frontend Vue rendering-detail sources",
+        "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
         "statusVocabulary": sorted(STATUS_VALUES),
         "excludedScopes": [
             "demo_addons",
@@ -413,9 +545,32 @@ def build_inventory() -> dict[str, Any]:
         "completionPolicy": {
             "formalP0P1UntreatedGapTarget": 0,
             "formalP0P1RawControlBypassTarget": 0,
+            "nativeControlScope": "every formal-product surface (P0-P4) except the design-system adapter layer",
             "gapIsFailClosed": True,
             "nativeControlRequiresExplicitCompositeOwnership": True,
             "p3DoesNotBlockP0P1Completion": True,
+        },
+        "p3OwnershipDeferred": {
+            "deferred": True,
+            "register": "p3-low-code-administration state-primitive ownership",
+            "reason": (
+                "P3 administration/designer surfaces carry state and interaction vocabulary but no "
+                "professionalization ownership declaration yet.  The deferral is declared here and "
+                "counted below so it stays auditable instead of disappearing behind a scope filter."
+            ),
+            "externalTemplateCount": len(template_files),
+            "surfaceCount": sum(1 for item in surfaces if item["status"] == "p3_out_of_scope"),
+            "surfaces": sorted(item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"),
+            "stateBandOwnershipRule": (
+                "a surface is listed under stateBandOwned only with the exact primitive:state pairs it "
+                "renders; every claim is re-verified against the resolved source and the register fails "
+                "closed when a claim stops being rendered"
+            ),
+            "stateBandOwnedCount": len(P3_STATE_BAND_OWNERSHIP),
+            "stateBandOwned": [
+                {"source": source, "stateBands": sorted(P3_STATE_BAND_OWNERSHIP[source])}
+                for source in sorted(P3_STATE_BAND_OWNERSHIP)
+            ],
         },
     }
 

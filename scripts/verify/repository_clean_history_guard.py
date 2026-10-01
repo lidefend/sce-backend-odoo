@@ -239,7 +239,7 @@ def trusted_incremental_revision_args(root: Path, trusted_base: str) -> tuple[st
         raise ValueError("trusted base commit is unavailable")
     if run_git(root, "merge-base", "--is-ancestor", trusted_base, "HEAD", check=False).returncode != 0:
         raise ValueError("trusted base must be an ancestor of HEAD")
-    return ("HEAD", f"^{trusted_base}")
+    return (*public_revision_args(), f"^{trusted_base}")
 
 
 def incremental_authority_paths(rules: dict[str, object]) -> set[str]:
@@ -564,9 +564,12 @@ def main(argv: list[str] | None = None) -> int:
             errors.add(Finding("RH004", f"object:{commit_id[:12]}", "OLD_COMMIT_IMPORTED"))
 
     scan_rows = ([ObjectRow(oid, "blob", size, path)
-                  for oid, path, size in trusted_scan_scope.candidate_blobs(root, trusted_base)]
+                  for oid, path, size in trusted_scan_scope.candidate_blobs(root, trusted_base, publication_revisions)]
                  if scope and scope.base and scan_mode == "trusted_base_incremental"
                  else object_rows(root, scan_revisions))
+    if scan_mode != "trusted_base_incremental":
+        scan_rows.extend(ObjectRow(oid, "blob", size, path) for oid, path, size in
+                         trusted_scan_scope.candidate_blobs(root, None, publication_revisions))
     if scan_mode == "trusted_base_incremental":
         scan_rows.extend(current_changed_tree_rows(root, trusted_base))
     for row in sorted(
@@ -586,7 +589,16 @@ def main(argv: list[str] | None = None) -> int:
 
     oversized_exceptions = rules.get("_oversized_blob_exceptions", set())
     used_oversized_exceptions = rules.get("_used_oversized_blob_exceptions", set())
-    if scan_mode != "trusted_base_incremental" and isinstance(oversized_exceptions, set) and isinstance(used_oversized_exceptions, set):
+    if isinstance(oversized_exceptions, set) and isinstance(used_oversized_exceptions, set):
+        if scan_mode == "trusted_base_incremental" and oversized_exceptions:
+            # Reachability/path/size is mutable even when content rules did not
+            # change. Revalidate all exceptions using metadata, not blob contents.
+            metadata = set(trusted_scan_scope.candidate_blobs(root, None, publication_revisions))
+            metadata.update((row.object_id, row.path, row.size) for row in object_rows(root, publication_revisions)
+                            if row.object_type == "blob")
+            maximum = int(rules.get("maximum_blob_bytes", 0))
+            reachable = {(oid, path) for oid, path, size in metadata if maximum and size > maximum}
+            used_oversized_exceptions.update(row for row in oversized_exceptions if (row[2], row[1]) in reachable)
         for _rule_id, path, object_id, _classification in sorted(
             oversized_exceptions - used_oversized_exceptions
         ):
@@ -618,6 +630,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         print("sensitive_values_recorded=false", file=sys.stderr)
         return 1
+    if not args.trusted_base and args.policy.resolve() == POLICY_PATH.resolve():
+        trusted_scan_scope.record_scan_success(root, "history", trusted_base if scan_mode == "trusted_base_incremental" else None)
     print(
         f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan={scan_mode} "
         f"local_hygiene={args.local_hygiene} reflog_only={hygiene['reflog_only']} "

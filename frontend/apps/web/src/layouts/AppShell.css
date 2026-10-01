@@ -1,20 +1,12 @@
 .shell {
-  --surface: var(--sc-semantic-surface-page);
-  --ink: var(--sc-semantic-text-primary);
-  --muted: var(--sc-semantic-text-secondary);
-  --accent: var(--sc-semantic-surface-interactive);
-  --panel: var(--sc-semantic-surface-panel);
-  --layout-divider: var(--sc-app-border);
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
   display: flex;
   background: var(--sc-app-bg);
-  color: var(--ink);
+  color: var(--sc-semantic-text-primary);
   font-family: var(--sc-semantic-font-family-sans);
 }
-
-.shell--sidebar-hidden { display: flex; }
 
 .shell--configuration .content {
   padding: 8px 14px 14px;
@@ -57,7 +49,7 @@
   gap: 6px;
   min-width: 0;
   padding: 10px 6px;
-  border-right: 1px solid var(--layout-divider);
+  border-right: 1px solid var(--sc-semantic-border-default);
   background: color-mix(in srgb, var(--sc-navigation-bg) 90%, var(--sc-app-subtle-bg));
 }
 
@@ -94,8 +86,8 @@
 }
 
 .workspace-sidebar-panel :deep(.brand .title) {
+  font: var(--sc-font-title-medium);
   color: var(--sc-app-text-primary);
-  font-size: 16px;
 }
 
 .workspace-scope-panel {
@@ -124,15 +116,15 @@
 }
 
 .workspace-scope-panel h2 {
+  font: var(--sc-font-title-medium);
   color: var(--sc-app-text-primary);
-  font-size: 15px;
-  line-height: 22px;
+
 }
 
 .workspace-scope-panel header small,
 .workspace-scope-panel > header > span {
+  font: var(--sc-font-body-small);
   color: var(--sc-app-text-muted);
-  font-size: 11px;
 }
 
 .workspace-scope-panel header small {
@@ -144,11 +136,11 @@
 }
 
 .workspace-scope-search {
+  font: var(--sc-font-body-small);
   box-sizing: border-box;
   width: 100%;
   height: 34px;
   padding: 0 9px;
-  font-size: 12px;
 }
 
 .workspace-scope-options {
@@ -161,8 +153,8 @@
 }
 
 .workspace-scope-clear {
+  font: var(--sc-font-body-small);
   padding: 2px 0;
-  font-size: 11px;
   cursor: pointer;
 }
 
@@ -173,16 +165,15 @@
   padding: 1px 2px 6px;
 }
 
-.mobile-sidebar-close,
-.shell :deep(.mobile-sidebar-backdrop) {
+.mobile-sidebar-close {
   display: none;
 }
 
 .enterprise-line {
+  font: var(--sc-font-body-small);
   margin: 0;
   padding: 0 2px;
-  font-size: 12px;
-  font-weight: 500;
+
   color: var(--sc-app-text-secondary);
 }
 
@@ -200,16 +191,15 @@
 }
 
 .title {
-  font-weight: 700;
-  font-size: 16px;
-  line-height: 1.1;
+  font: var(--sc-font-title-medium);
+
   margin: 0;
   color: var(--sc-app-text-primary);
 }
 
 .subtitle {
+  font: var(--sc-font-body-small);
   margin: 0;
-  font-size: 11px;
   color: var(--sc-app-text-secondary);
 }
 
@@ -227,18 +217,18 @@
 }
 
 .search input {
+  font: var(--sc-font-body-medium);
   width: 100%;
   padding: 9px 10px;
   border-radius: 6px;
   border: 1px solid var(--sc-app-border);
   background: var(--sc-app-input-bg);
-  font-size: 13px;
   color: var(--sc-app-text-primary);
 }
 
 .role-surface {
   padding: 8px 4px 10px;
-  border-bottom: 1px solid var(--layout-divider);
+  border-bottom: 1px solid var(--sc-semantic-border-default);
   border-radius: 0;
   border-left: 0;
   border-right: 0;
@@ -256,35 +246,35 @@
 }
 
 .record-context-empty {
+  font: var(--sc-font-body-small);
   margin: 0;
   padding: 8px;
   color: var(--sc-semantic-text-muted);
-  font-size: 12px;
 }
 
 .published-apps {
   display: grid;
   gap: 6px;
   padding: 0 0 8px;
-  border-bottom: 1px solid var(--layout-divider);
+  border-bottom: 1px solid var(--sc-semantic-border-default);
   min-width: 0;
 }
 
 .published-apps__header {
+  font: var(--sc-font-mark-small);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 0 2px;
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
+
 }
 
 .published-apps__header small {
+  font: var(--sc-font-body-small);
   color: var(--sc-semantic-text-muted);
-  font-size: 11px;
-  font-weight: 500;
+
 }
 
 .published-apps__list {
@@ -334,15 +324,16 @@
 }
 
 .published-app__label {
+  font: var(--sc-font-mark-small);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  font-weight: 600;
+
 }
 
 .published-apps__list small {
+  font: var(--sc-font-mark-small);
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -352,8 +343,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-  font-size: 10px;
-  font-weight: 700;
+
 }
 
 .menu {
@@ -372,21 +362,21 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  border-top: 1px solid var(--layout-divider);
+  border-top: 1px solid var(--sc-semantic-border-default);
   padding-top: 6px;
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
   background: transparent;
 }
 
 .ghost {
+  font: var(--sc-font-body-small);
   min-height: 30px;
   padding: 5px 8px;
   border-radius: 4px;
   border: 0;
   background: transparent;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
+
   color: var(--sc-app-text-secondary);
 }
 
@@ -440,6 +430,31 @@
   padding: 0;
 }
 
+/* Official `*-footer-layout` treatment, applied to the footer as the last item of
+ * the shell's single vertical scroll owner: the vendored `.t-layout__footer` band
+ * ships a 24px padding, while the official starter overrides it to zero padding
+ * and offsets the caption by one 24px margin step. Mirror those values through the
+ * SC token authority; the caption keeps the official muted tone / 20px line box /
+ * centred alignment. */
+.shell-content-footer {
+  flex: 0 0 auto;
+  margin-bottom: var(--sc-space-lg);
+  padding: 0;
+  color: var(--sc-semantic-text-muted);
+  line-height: 20px;
+  text-align: center;
+}
+
+/* Content-area first row: the breadcrumb opens the content surface, directly
+ * above the routed page body, instead of sharing the topbar toolbar. It takes the
+ * same inline gutter as the page frames below it and stays out of the scrolling
+ * region, so a long page never pushes it under a sticky table header. */
+.content-breadcrumb-row {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: var(--sc-space-xs) var(--sc-page-padding) 0;
+}
+
 @media (min-width: 761px) {
   .shell:not(.shell--configuration) > .content {
     padding-top: 0;
@@ -458,7 +473,7 @@
   align-items: center;
   flex-wrap: wrap;
   min-width: 0;
-  background: var(--panel);
+  background: var(--sc-semantic-surface-panel);
   border-radius: 0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel);
   padding: 6px 12px;
   border: 1px solid var(--sc-app-border);
@@ -483,8 +498,8 @@
 }
 
 .scene-anchor-line {
+  font: var(--sc-font-body-small);
   margin: 0;
-  font-size: 12px;
   color: var(--sc-semantic-text-muted);
 }
 
@@ -495,17 +510,14 @@
   min-width: 0;
 }
 
-.topbar--compact .breadcrumb {
-  display: none;
-}
-
 .topbar--compact .headline {
-  font-size: 20px;
+  font: var(--sc-font-title-large);
 }
 
 .topbar--minimal {
+  font: var(--sc-font-body-medium);
   align-items: center;
-  min-height: 46px;
+  min-height: var(--sc-shell-topbar-height);
   background: var(--sc-app-panel);
   box-shadow: none;
   border-radius: 0;
@@ -515,111 +527,48 @@
   width: 100%;
   margin-inline-start: 0;
   padding: var(--sc-space-xs) var(--sc-page-inline-padding);
-  font-size: 13px;
-  line-height: 20px;
-}
 
-.topbar--minimal .breadcrumb {
-  margin: 0;
-  gap: 6px;
-}
-
-.topbar--minimal .crumb {
-  padding: 3px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  line-height: 20px;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--sc-app-text-secondary);
-}
-
-.topbar--minimal .crumb.active {
-  border-color: transparent;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  font-weight: 500;
-}
-
-.topbar--minimal .crumb:not(:last-child)::after {
-  content: '/';
-  margin-left: 6px;
-  color: var(--sc-app-text-muted);
-  font-weight: 400;
 }
 
 .eyebrow {
+  font: var(--sc-font-mark-small);
   margin: 0;
-  font-size: 11px;
-  font-weight: 600;
+
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--sc-semantic-text-secondary);
 }
 
 .headline {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.15;
-  font-weight: 700;
+  font: var(--sc-font-title-large);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .headline-subtitle {
+  font: var(--sc-font-body-small);
   margin: 2px 0 0;
-  font-size: 11px;
   color: var(--sc-semantic-text-muted);
-}
-
-.breadcrumb {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-
-.crumb {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 1px 5px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--sc-app-text-secondary);
-  cursor: pointer;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.crumb.active {
-  border-color: var(--sc-app-selected-border);
-  background: var(--sc-app-selected-bg);
-  color: var(--sc-app-selected-text);
-  font-weight: 700;
-}
-
-.crumb:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 
 .router-host {
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
+}
+
+/* Children of the scroll owner keep their own size: a long page overflows into the
+ * scrollbar instead of being squeezed by flex shrinking. */
+.router-host > * {
+  flex-shrink: 0;
 }
 
 .shell:not(.shell--configuration) .router-host {
@@ -662,13 +611,13 @@
 }
 
 .topbar-scope {
+  font: var(--sc-font-body-small);
   min-width: 0;
   max-width: 300px;
   display: flex;
   align-items: center;
   gap: var(--sc-toolbar-gap);
   color: var(--sc-app-text-muted);
-  font-size: 12px;
 }
 
 .topbar--minimal .topbar-context-trigger strong {
@@ -677,14 +626,13 @@
 }
 
 .topbar--minimal .topbar-actions :deep(.global-message__trigger) {
+  font: var(--sc-font-body-medium);
   min-height: 32px;
   height: 32px;
   padding: 0 10px;
   border-radius: var(--sc-product-radius-control);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
+
 }
 
 .topbar-account {
@@ -816,10 +764,10 @@
 }
 
 .activity-tab-main {
+  font: var(--sc-font-body-small);
   padding: 0 4px;
   text-align: left;
-  font-size: 12px;
-  font-weight: 500;
+
 }
 
 .activity-tab.active .activity-tab-main {
@@ -858,8 +806,7 @@
 }
 
 @media (max-width: 960px) {
-  .topbar--single-heading .eyebrow,
-  .topbar--single-heading .topbar-breadcrumb {
+  .topbar--single-heading .eyebrow {
     display: none;
   }
 
@@ -868,31 +815,6 @@
     height: 100dvh;
     min-height: 100vh;
     overflow: hidden;
-  }
-  .shell :deep(.sidebar) {
-    display: flex;
-    position: fixed;
-    z-index: 90;
-    inset: 0 auto 0 0;
-    width: min(340px, calc(100vw - 44px));
-    height: 100dvh;
-    box-sizing: border-box;
-    border-right: 1px solid var(--sc-app-border);
-    background: var(--sc-app-panel);
-    box-shadow: var(--sc-semantic-shadow-modal);
-    transform: translateX(-104%);
-    transition: transform 180ms ease;
-  }
-  .shell--mobile-sidebar-open :deep(.sidebar) {
-    transform: translateX(0);
-  }
-  .shell :deep(.mobile-sidebar-backdrop) {
-    display: block;
-    position: fixed;
-    z-index: 80;
-    inset: 0;
-    border: 0;
-    background: var(--sc-app-overlay);
   }
   .mobile-sidebar-close {
     display: grid;
@@ -936,15 +858,8 @@
     gap: 4px;
   }
   .topbar .headline {
-    font-size: 21px;
-    line-height: 1.2;
+    font: var(--sc-font-title-large);
     overflow-wrap: anywhere;
-  }
-  .breadcrumb .crumb:not(:nth-last-child(-n + 2)) {
-    display: none;
-  }
-  .breadcrumb .crumb.active {
-    display: none;
   }
   .topbar-actions {
     width: 100%;
@@ -963,7 +878,6 @@
   }
 
   .topbar--minimal {
-    min-height: 0;
     padding-block: 4px 5px;
     gap: 2px;
   }
@@ -972,17 +886,12 @@
     min-height: 22px;
   }
 
-  .topbar--minimal .breadcrumb,
-  .topbar--minimal .crumb {
-    line-height: 18px;
-  }
-
   .topbar--minimal .topbar-actions :is(.sc-btn, .topbar-context),
   .topbar--minimal .topbar-actions :deep(.global-message__trigger) {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
+    width: var(--sc-touch-target-min);
+    min-width: var(--sc-touch-target-min);
+    height: var(--sc-touch-target-min);
+    min-height: var(--sc-touch-target-min);
     padding: 0;
     justify-content: center;
   }
@@ -1036,13 +945,6 @@
     background: var(--sc-app-bg);
   }
 
-  /* Keep this more specific than the desktop shell rule: the aside is not
-   * rendered in the hidden state, so reserving its track creates a dead 312px
-   * column and makes every routed page calculate against the wrong viewport. */
-  .shell.shell--sidebar-hidden {
-    display: flex;
-  }
-
   .shell :deep(.sidebar) {
     inline-size: var(--sc-shell-sidebar-width);
     min-inline-size: var(--sc-shell-sidebar-width);
@@ -1084,9 +986,9 @@
   }
 
   .workspace-sidebar-panel :deep(.brand .title) {
+  font: var(--sc-font-title-medium);
     color: var(--sc-app-text-primary);
-    font-size: 17px;
-    font-weight: 750;
+
     letter-spacing: -0.02em;
   }
 
@@ -1105,22 +1007,13 @@
   }
 
   .topbar--minimal {
-    min-height: 52px;
+    min-height: var(--sc-shell-topbar-height);
     width: 100%;
     margin-inline-start: 0;
     padding: var(--sc-space-2xs) var(--sc-page-inline-padding);
     border-bottom: 1px solid transparent;
     background: var(--sc-app-bg);
     box-shadow: none;
-  }
-
-  .topbar--minimal .crumb {
-    font-size: 13px;
-  }
-
-  .topbar--minimal .crumb.active {
-    color: var(--sc-app-text-primary);
-    font-weight: 650;
   }
 
   .topbar--minimal .topbar-actions {
@@ -1146,8 +1039,8 @@
   }
 
   .topbar--minimal :is(.sidebar-toggle, .theme-switch) {
-    width: 44px;
-    min-width: 44px;
+    width: var(--sc-touch-target-min);
+    min-width: var(--sc-touch-target-min);
     padding: 0;
     justify-content: center;
   }
@@ -1214,6 +1107,58 @@
   .shell:not(.shell--configuration) .router-host > [data-product-page-mode] {
     padding-inline-start: var(--sc-product-list-inline-start);
     padding-inline-end: var(--sc-product-list-inline-end);
+  }
+
+  /* Official t-header band: one row at the shared header height. */
+  .topbar {
+    height: var(--sc-shell-topbar-height);
+  }
+
+  /* Official t-layout__sider compact rail. The aside keeps its track and only
+   * narrows, exactly like the reference starter's `-sidebar-compact` state, so
+   * a collapsed shell never re-measures routed pages against a different
+   * viewport. `--sc-shell-sidebar-collapsed-width` is the official 64px
+   * t-menu collapsed width. */
+  .shell--sidebar-compact :deep(.sidebar) {
+    inline-size: var(--sc-shell-sidebar-collapsed-width);
+    min-inline-size: var(--sc-shell-sidebar-collapsed-width);
+    flex: 0 0 var(--sc-shell-sidebar-collapsed-width);
+  }
+
+  /* Collapsed rail content: the identity keeps only its mark and the scope
+   * panels leave the 64px column; the canonical t-menu keeps its icon rail. */
+  .shell--sidebar-compact .workspace-sidebar-panel {
+    padding: 8px 6px;
+  }
+
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand) {
+    min-height: 0;
+    margin: 0 0 2px;
+    padding: 1px 0 6px;
+    justify-content: center;
+  }
+
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand)::before,
+  .shell--sidebar-compact .workspace-sidebar-panel :deep(.brand > div:not(.logo)),
+  .shell--sidebar-compact .workspace-sidebar-panel .workspace-scope-panel {
+    display: none;
+  }
+
+  .shell--sidebar-compact .shell-sidebar-footer {
+    flex-direction: column;
+  }
+
+  /* The official compact sider keeps icon operations only; the accessible name
+   * stays on the button so the 64px rail never grows a text label. */
+  .shell--sidebar-compact .shell-sidebar-footer :deep(.shell-sidebar-footer__label) {
+    display: none;
+  }
+
+  .shell--sidebar-compact .shell-sidebar-footer :deep(.sc-btn) {
+    inline-size: var(--sc-touch-target-min);
+    min-inline-size: var(--sc-touch-target-min);
+    padding: 0;
+    justify-content: center;
   }
 }
 

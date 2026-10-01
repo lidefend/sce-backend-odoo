@@ -1,5 +1,5 @@
 <template>
-  <section v-if="!designerMode && (showDefaultSectionTitle || mode === 'create')" class="native-default-section-head">
+  <section v-if="!adoptedDetail && !designerMode && (showDefaultSectionTitle || mode === 'create')" class="native-default-section-head">
     <div>
       <h3>{{ mode === 'create' ? '填写业务信息' : mode === 'edit' ? '编辑业务信息' : '基本信息' }}</h3>
       <p v-if="mode !== 'readonly'">
@@ -25,7 +25,7 @@
       <em>{{ rootColumns }} 栏布局</em>
     </header>
     <div
-      v-if="sectionItems.length > 2"
+      v-if="!adoptedDetail && sectionItems.length > 2"
       class="form-section-nav-shell"
       :class="{ 'has-more-before': sectionHasMoreBefore, 'has-more-after': sectionHasMoreAfter }"
     >
@@ -62,6 +62,7 @@
       :key="layoutVisibilityRevision"
       class="contract-form-canvas-body"
       :nodes="layoutNodes"
+      :prefer-readonly-facts="adoptedDetail"
       :field-schemas-for-nodes="fieldSchemasForNodes"
       :is-node-visible="isNodeVisible"
       :button-label-resolver="buttonLabelResolver"
@@ -107,11 +108,14 @@
         </div>
       </template>
       <template #chatter>
+        <component :is="adoptedDetail ? ScCard : 'div'" v-if="showCollaborationPanel"
+          :bordered="adoptedDetail ? false : undefined" :data-detail-card="adoptedDetail ? 'collaboration' : undefined">
         <NativeCollaborationPanel
           v-if="showCollaborationPanel"
           v-bind="collaborationPanelProps"
           v-on="collaborationPanelListeners"
         />
+        </component>
       </template>
     </NativeFormTreeRenderer>
   </section>
@@ -119,6 +123,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue';
+import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
+import ScCard from '../../components/design-system/ScCard.vue';
 import FieldValue from '../../components/FieldValue.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScSelect from '../../components/design-system/ScSelect.vue';
@@ -139,6 +145,9 @@ import NativeCollaborationPanel, {
 
 type NativeColumns = 1 | 2 | 3;
 type FieldOrderPlacement = 'before' | 'after' | '';
+
+const detailComposition = useOptionalStandardDetailComposition();
+const adoptedDetail = computed(() => detailComposition?.adopted.value === true && !props.designerMode);
 
 const props = defineProps<{
   mode: 'create' | 'edit' | 'readonly';

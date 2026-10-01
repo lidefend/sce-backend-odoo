@@ -40,8 +40,82 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             code=403,
         )
 
+    def _load_relation_contract(self, *, model, record_id, action_id, menu_id):
+        # Same fresh readonly native projection as execute_button's authority
+        # reader. Neither metadata elevation nor the origin grants data rights.
+        from .ui_contract_v2 import UiContractV2Handler
+        result = UiContractV2Handler(
+            self.env, su_env=self.su_env, request=self.request, context=self.context,
+            payload={"params": {"op": "model", "model": model, "record_id": record_id,
+                "action_id": action_id, "menu_id": menu_id, "view_type": "form",
+                "render_profile": "readonly", "delivery_profile": "full", "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"], "client_contract_capabilities": [
+                    "container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]}},
+        ).handle()
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        if not isinstance(envelope, dict) or envelope.get("ok") is not True or not isinstance(envelope.get("data"), dict):
+            raise ValueError("ROUTE_RELATION_CONTRACT_UNAVAILABLE")
+        return envelope["data"]
+
+    def _validate_relation_parent_entry(self, action_id, menu_id, model):
+        # Do not forward untrusted query/context from the child. Contextual
+        # parents requiring additional query authority therefore fail closed.
+        result = type(self)(self.env, su_env=self.su_env, request=self.request, context=self.context,
+                           payload={"params": {"action_id": action_id}}).handle()
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+        return not (isinstance(envelope, dict) and envelope.get("ok") is True
+                    and data.get("allowed") is True and data.get("action_id") == action_id
+                    and data.get("menu_id") == menu_id and data.get("model") == model)
+
+    def _validate_relation_route(self, params):
+        from ..core.relation_action_authority import positive_relation_id, validate_relation_action_origin
+        model = params.get("model")
+        record_id = positive_relation_id(params.get("record_id"))
+        action_id = positive_relation_id(params.get("action_id"))
+        menu_id = positive_relation_id(params.get("menu_id"))
+        if (not isinstance(model, str) or model not in self.env or not record_id or not action_id or not menu_id
+                or params.get("access_mode") != "read" or params.get("render_profile") != "readonly"
+                or params.get("route_path") != f"/r/{model}/{record_id}"
+                or params.get("work_item_origin") is not None):
+            return self._deny("ROUTE_RELATION_READ_RECORD_REQUIRED")
+        try:
+            validate_relation_action_origin(
+                self.env, params["relation_origin"], model=model, record_id=record_id,
+                target_action_id=action_id, target_menu_id=menu_id,
+                load_contract=self._load_relation_contract, validate_entry=self._validate_relation_parent_entry,
+            )
+            child = self.env[model].browse(record_id).exists()
+            if not child:
+                return self._deny("ROUTE_RELATION_CHILD_NOT_FOUND")
+            child.check_access_rights("read")
+            child.check_access_rule("read")
+            child.check_field_access_rights("read", None)
+            contract = self._load_relation_contract(model=model, record_id=record_id, action_id=action_id, menu_id=menu_id)
+            if contract.get("statusContract", {}).get("globalStatus", {}).get("effectiveRecordCapabilities", {}).get("read") is not True:
+                return self._deny("ROUTE_RELATION_CHILD_CONTRACT_DENIED")
+        except Exception:
+            return self._deny("ROUTE_RELATION_ORIGIN_DENIED")
+        return IntentExecutionResult(ok=True, data={"allowed": True, "model": model, "record_id": record_id,
+            "action_id": action_id, "menu_id": menu_id, "access_mode": "read", "render_profile": "readonly",
+            "route_path": params["route_path"]})
+
     def handle(self, payload=None, ctx=None):
         params = self._params(payload)
+        if params.get("relation_origin") is not None:
+            return self._validate_relation_route(params)
+        if params.get("work_item_origin") is not None:
+            from ..core.work_item_action_authority import validate_work_item_action_origin
+            from ..utils.extension_hooks import call_extension_hook_first
+            model, record_id = str(params.get("model") or ""), _positive_int(params.get("record_id"))
+            try:
+                validate_work_item_action_origin(params["work_item_origin"], model=model, record_id=record_id, method_name=None,
+                    authorize=lambda origin, **target: call_extension_hook_first(
+                        self.env, "smart_core_authorize_work_item_origin", self.env, origin, **target))
+            except ValueError as error:
+                return self._deny(str(error))
+            return IntentExecutionResult(ok=True, data={"allowed": True, "model": model, "record_id": record_id,
+                "work_item_origin": params["work_item_origin"]})
         action_id = _positive_int(params.get("action_id"))
         if not action_id:
             return self._deny("ROUTE_ACTION_REQUIRED")
@@ -52,7 +126,26 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             [],
             {"workspace.home"},
         )
-        authority = MenuService(self.env).build_route_authority(surface)
+        menu_service = MenuService(self.env)
+        from .system_init import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
+        from ..delivery.product_policy_service import ProductPolicyService
+        from ..delivery.delivery_engine import DeliveryEngine
+        identity = _resolve_startup_delivery_identity(self.env, {})
+        policy = ProductPolicyService(self.env).get_policy(
+            **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
+            role_code=surface.get("role_code"), enforce_release=True, enforce_access=True,
+        )
+        release_gate = _load_platform_release_gate(self.env, product_key=policy["product_key"])
+        navigation = menu_service.build_nav(policy=policy, role_surface=surface)
+        navigation = DeliveryEngine(self.env)._normalize_delivery_nav_refs(navigation)
+        navigation = [] if release_gate.get("fail_closed") else _filter_nav_by_release_gate(
+            navigation, release_gate, env=self.env,
+        )[0]
+        authority = menu_service.build_route_authority(surface, nav=navigation)
+        authority = MenuService.filter_route_authority_by_publication(
+            authority, filter_nodes=lambda nodes: [] if release_gate.get("fail_closed") else
+                _filter_nav_by_release_gate(nodes, release_gate, env=self.env)[0],
+        )
         entries = [
             row
             for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
@@ -60,6 +153,9 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             if isinstance(row, dict) and _positive_int(row.get("action_id")) == action_id
         ]
         if len(entries) != 1:
+            if any(_positive_int(row.get("action_id")) == action_id and row.get("reason_code") == "PRODUCT_ENTRY_NOT_RELEASED"
+                   for row in authority.get("denied_actions") or []):
+                return self._deny("PRODUCT_ENTRY_NOT_RELEASED")
             return self._deny("ROUTE_ACTION_NOT_AUTHORIZED")
         entry = entries[0]
         requirements = entry.get("context_requirements") if isinstance(entry.get("context_requirements"), dict) else {}
@@ -99,6 +195,9 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             status="success",
             data={
                 "allowed": True,
+                "action_id": action_id,
+                "menu_id": _positive_int(entry.get("menu_id")),
+                "model": str(entry.get("model") or ""),
                 "action_xmlid": str(entry.get("action_xmlid") or ""),
                 "route_kind": str(entry.get("route_kind") or ""),
             },

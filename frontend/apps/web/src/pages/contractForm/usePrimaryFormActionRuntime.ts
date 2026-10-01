@@ -1,3 +1,4 @@
+import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import { nextTick, type Ref } from 'vue';
 import { executeButton } from '../../api/executeButton';
 import { sanitizeUiErrorMessage } from './fieldUtils';
@@ -14,11 +15,13 @@ export function usePrimaryFormActionRuntime(params: {
   hasChanges: () => boolean;
   modelName: () => string;
   navigateActionResponseResult: (result: unknown) => Promise<boolean>;
+  navigateCreatedRecord?: (id: number, policy?: ContractAction['refreshPolicy'], recovery?: 'submit') => Promise<unknown>;
   primaryCreateFooterAction: () => ContractAction | null;
   primarySubmitAction: () => ContractAction | null;
   recordId: Ref<number>;
   reload: () => Promise<void>;
   routeMenuId: () => unknown;
+  currentQuery?: () => Record<string, unknown>;
   saveRecord: (
     refreshPolicy?: ContractAction['refreshPolicy'],
     options?: { navigateAfterCreate?: boolean },
@@ -26,8 +29,9 @@ export function usePrimaryFormActionRuntime(params: {
   status: Ref<UiStatus>;
   submissionFeedback: Ref<SubmissionFeedback>;
   validationErrors: Ref<string[]>;
+  validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
-  async function executePrimarySubmitAction(action: ContractAction, resId: number) {
+  async function executePrimarySubmitAction(action: ContractAction, resId: number, created = false) {
     if (!action.enabled) return;
     if (!await params.confirmActionSafety(action)) return;
     params.busyKind.value = 'action';
@@ -48,6 +52,8 @@ export function usePrimaryFormActionRuntime(params: {
         meta: {
           menu_id: Number(params.routeMenuId() || 0) || undefined,
           action_id: params.actionId() || undefined,
+          relation_origin: relationActionOrigin(params.currentQuery?.() || {}),
+          work_item_origin: workItemActionOrigin(params.currentQuery?.() || {}),
         },
       });
       const result = response?.result;
@@ -56,6 +62,10 @@ export function usePrimaryFormActionRuntime(params: {
         return;
       }
       params.submissionFeedback.value = { kind: 'success', message: '提交成功' };
+      if (created && params.navigateCreatedRecord) {
+        await params.navigateCreatedRecord(resId, action.refreshPolicy);
+        return;
+      }
       await params.applyProjectionRefreshPolicy(action.refreshPolicy || { on_success: ['scene_projection'] });
       await params.reload();
     } catch (err) {
@@ -67,6 +77,9 @@ export function usePrimaryFormActionRuntime(params: {
         transaction: 'primaryAction',
         status: 'error',
       });
+      if (created && params.navigateCreatedRecord) {
+        await params.navigateCreatedRecord(resId, action.refreshPolicy, 'submit');
+      }
     } finally {
       params.busyKind.value = null;
     }
@@ -76,6 +89,7 @@ export function usePrimaryFormActionRuntime(params: {
     const footerAction = params.primaryCreateFooterAction();
     if (footerAction) {
       if (!footerAction.enabled) return;
+      if (params.validateSubmissionRequirements?.(footerAction) === false) return;
       const saved = await params.saveRecord(
         footerAction.refreshPolicy,
         { navigateAfterCreate: false },
@@ -92,7 +106,7 @@ export function usePrimaryFormActionRuntime(params: {
         });
         return;
       }
-      await executePrimarySubmitAction(footerAction, submittedRecordId);
+      await executePrimarySubmitAction(footerAction, submittedRecordId, true);
       return;
     }
     const submitAction = params.primarySubmitAction();
@@ -101,6 +115,7 @@ export function usePrimaryFormActionRuntime(params: {
       return;
     }
     if (!submitAction.enabled) return;
+    if (params.validateSubmissionRequirements?.(submitAction) === false) return;
     let submittedRecordId = params.recordId.value;
     if (params.hasChanges()) {
       const saved = await params.saveRecord(submitAction.refreshPolicy);

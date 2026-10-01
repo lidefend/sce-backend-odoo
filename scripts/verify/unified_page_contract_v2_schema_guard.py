@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 import copy
+import importlib.util
 import json
 import re
 import sys
@@ -398,6 +399,182 @@ def validate_schema_rejects_compatibility_aliases(
             fail(errors, f"{path}: schema must reject compatibility alias {alias_path}")
 
 
+ACTION_SEMANTICS_ASSEMBLER = "addons/smart_core/core/unified_page_contract_v2_assembler.py"
+ACTION_SEMANTICS_AUTHORITY = "addons/smart_core/core/action_semantics_vocabulary.py"
+ACTION_SEMANTICS_TS = "frontend/packages/schema/src/actionSemantics.ts"
+PAIRING_CHECK_ALIAS = "action_semantics_purpose_is_declared"
+LOCAL_VOCABULARY_TARGETS = {
+    "DECLARED_ACTION_SEMANTICS_KINDS",
+    "DECLARED_ACTION_SEMANTICS_PURPOSES",
+    "DECLARED_ACTION_SEMANTICS_EXECUTORS",
+    "DECLARED_ACTION_SEMANTICS_OPERATIONS",
+}
+
+
+def load_semantics_authority(root: Path):
+    """Import the single vocabulary authority (it imports nothing itself)."""
+    path = root / ACTION_SEMANTICS_AUTHORITY
+    if not path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("action_semantics_vocabulary", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ts_literal_list(source: str, name: str) -> set[str]:
+    pattern = rf"export const {name} = Object\.freeze\(\[(.*?)\] as const\);"
+    match = re.search(pattern, source, re.S)
+    if not match:
+        return set()
+    return set(re.findall(r"'([A-Za-z_][A-Za-z0-9_]*)'", match.group(1)))
+
+
+TS_BUSINESS_DERIVATION_RE = re.compile(
+    r"export const DECLARED_BUSINESS_PURPOSES\s*=\s*Object\.freeze\(\s*"
+    r"ACTION_PURPOSES\.filter\(\s*\(\s*(?P<item>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*=>\s*"
+    r"!\s*\(\s*NON_BUSINESS_PURPOSES\s+as\s+readonly\s+string\[\]\s*\)\s*"
+    r"\.includes\(\s*(?P=item)\s*\)\s*\)\s*,?\s*\)",
+    re.S,
+)
+
+
+def ts_derives_business_list(source: str) -> bool:
+    """The business subset must be the exact complement of the non-business one.
+
+    Matching only ``ACTION_PURPOSES.filter(`` would accept an extra predicate
+    (``... && purpose !== 'start_execution'``) that silently drops a purpose
+    from the derived set while the shape still reads as "derived".  The filter
+    is therefore pinned to the one controlled predicate, so the two literal
+    lists checked next to it fully determine the result set.
+    """
+    return bool(TS_BUSINESS_DERIVATION_RE.search(source))
+
+
+def validate_declared_action_semantics_vocabulary(schema: dict[str, Any], errors: list[str]) -> None:
+    """One published vocabulary, with every other appearance a checked projection.
+
+    The vocabulary is defined once (``action_semantics_vocabulary``).  The
+    published schema, the contract assembler and the Web consumer are compared
+    against it here, including the ``(kind, executor)`` pairing: validating the
+    three sets independently would accept a combination every terminal discards,
+    which the producer would then publish as if it were declared.
+    """
+    root = Path(__file__).resolve().parents[2]
+    authority = load_semantics_authority(root)
+    if authority is None:
+        fail(errors, f"the action semantics authority {ACTION_SEMANTICS_AUTHORITY} is missing")
+        return
+
+    branches = dict_path(schema, "$defs.actionRule.properties.actionSemantics.oneOf")
+    declaration_branch = None
+    for branch in branches if isinstance(branches, list) else []:
+        if isinstance(branch, dict) and "purpose" in (branch.get("properties") or {}):
+            declaration_branch = branch
+            break
+    if declaration_branch is None:
+        fail(errors, "schema must publish the actionSemantics declaration branch")
+        return
+
+    properties = declaration_branch.get("properties") or {}
+    for dimension, expected in (
+        ("kind", set(authority.KINDS)),
+        ("purpose", set(authority.PURPOSES)),
+        ("executor", set(authority.EXECUTORS)),
+        ("operation", set(authority.OPERATIONS)),
+    ):
+        published = set((properties.get(dimension) or {}).get("enum") or [])
+        if not published:
+            fail(errors, f"schema must publish the actionSemantics.{dimension} enum")
+        elif published != expected:
+            fail(
+                errors,
+                f"declared {dimension} vocabulary drifted: schema {sorted(published)} != "
+                f"{ACTION_SEMANTICS_AUTHORITY} {sorted(expected)}",
+            )
+
+    published_pairs: dict[tuple[str, str], set[str]] = {}
+    for group in declaration_branch.get("allOf") or []:
+        for branch in (group.get("oneOf") if isinstance(group, dict) else []) or []:
+            branch_properties = (branch or {}).get("properties") or {}
+            pair_kind = (branch_properties.get("kind") or {}).get("const")
+            pair_executor = (branch_properties.get("executor") or {}).get("const")
+            if pair_kind and pair_executor:
+                published_pairs[(str(pair_kind), str(pair_executor))] = set(
+                    (branch_properties.get("purpose") or {}).get("enum") or []
+                )
+    expected_pairs = {
+        (str(pair_kind), str(pair_executor)): set(pair_purposes)
+        for pair_kind, kind_map in authority.DECLARATIONS.items()
+        for pair_executor, pair_purposes in kind_map.items()
+    }
+    if not published_pairs:
+        fail(errors, "schema must publish the actionSemantics (kind, executor) pairing")
+    elif published_pairs != expected_pairs:
+        missing = sorted(set(expected_pairs) - set(published_pairs))
+        extra = sorted(set(published_pairs) - set(expected_pairs))
+        drifted = sorted(
+            pair
+            for pair in set(expected_pairs) & set(published_pairs)
+            if expected_pairs[pair] != published_pairs[pair]
+        )
+        fail(
+            errors,
+            f"schema actionSemantics pairing drifted: missing={missing} extra={extra} purposes={drifted}",
+        )
+
+    assembler_path = root / ACTION_SEMANTICS_ASSEMBLER
+    tree = ast.parse(assembler_path.read_text(encoding="utf-8"), filename=str(assembler_path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in LOCAL_VOCABULARY_TARGETS:
+                if isinstance(node.value, ast.Call):
+                    fail(
+                        errors,
+                        f"{ACTION_SEMANTICS_ASSEMBLER} re-declares {target.id}; the vocabulary "
+                        f"authority {ACTION_SEMANTICS_AUTHORITY} is the only place it may live",
+                    )
+    imported = any(
+        isinstance(node, ast.ImportFrom) and str(node.module or "").endswith("action_semantics_vocabulary")
+        for node in ast.walk(tree)
+    )
+    if not imported:
+        fail(errors, f"{ACTION_SEMANTICS_ASSEMBLER} must import the vocabulary authority")
+    uses_pairing = any(
+        isinstance(node, ast.Name) and node.id == PAIRING_CHECK_ALIAS for node in ast.walk(tree)
+    )
+    if not uses_pairing:
+        fail(
+            errors,
+            f"{ACTION_SEMANTICS_ASSEMBLER} must validate a declaration with "
+            f"{PAIRING_CHECK_ALIAS}, not only the three sets independently",
+        )
+
+    ts_source = (root / ACTION_SEMANTICS_TS).read_text(encoding="utf-8")
+    consumed = ts_literal_list(ts_source, "ACTION_PURPOSES")
+    if consumed != set(authority.PURPOSES):
+        fail(
+            errors,
+            f"declared purpose vocabulary drifted: web consumer {sorted(consumed)} != "
+            f"{ACTION_SEMANTICS_AUTHORITY} {sorted(authority.PURPOSES)}",
+        )
+    non_business = ts_literal_list(ts_source, "NON_BUSINESS_PURPOSES")
+    if non_business != set(authority.NON_BUSINESS_PURPOSES):
+        fail(
+            errors,
+            f"web non-business purpose list drifted: {sorted(non_business)} != "
+            f"{ACTION_SEMANTICS_AUTHORITY} {sorted(authority.NON_BUSINESS_PURPOSES)}",
+        )
+    if not ts_derives_business_list(ts_source):
+        fail(
+            errors,
+            "the web business purpose list must be derived from ACTION_PURPOSES and "
+            "NON_BUSINESS_PURPOSES instead of restating the vocabulary",
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--schema", required=True, type=Path)
@@ -410,6 +587,7 @@ def main() -> int:
     registry = load_json(args.enum_registry)
     validate_schema(schema, registry, errors)
     validate_runtime_producer_keys(schema, errors)
+    validate_declared_action_semantics_vocabulary(schema, errors)
     validator = Draft202012Validator(schema)
 
     example_paths = sorted(args.examples.glob("*.json"))

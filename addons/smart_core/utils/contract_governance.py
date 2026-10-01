@@ -15,6 +15,9 @@ _REGISTRY_EXPORTS = (
     "LEGACY_RECORD_CONTEXT_CLEAR_MODELS",
     "LEGACY_DELETE_ONLY_MODELS",
     "_LEGACY_STANDARD_LIST_PROFILE_REGISTRY",
+    "_WORKFLOW_CONTRACT_PROFILE_REGISTRY",
+    "_WORKFLOW_CONTRACT_PROFILE_SOURCES",
+    "_WORKFLOW_CONTRACT_PROFILE_CONFLICTS",
     "_LEGACY_FIELD_PRESENTATION_REGISTRY",
     "_LEGACY_PROJECT_FORM_GOVERNANCE_MODELS",
     "_LEGACY_PROJECT_FORM_PROFILE_REGISTRY",
@@ -363,6 +366,22 @@ def register_legacy_standard_list_profile(profile: dict[str, Any]) -> None:
 
 def register_tier_review_list_nav_action_prefix(prefix: str) -> None:
     _registry.register_tier_review_list_nav_action_prefix(prefix)
+
+
+def register_workflow_contract_profile(model_name: str, profile: dict[str, Any], *, source: str = "") -> bool:
+    return _registry.register_workflow_contract_profile(model_name, profile, source=source)
+
+
+def workflow_contract_profiles() -> dict[str, dict[str, Any]]:
+    return _registry.workflow_contract_profiles()
+
+
+def workflow_contract_profile_sources() -> dict[str, str]:
+    return _registry.workflow_contract_profile_sources()
+
+
+def workflow_contract_profile_conflicts() -> list[dict[str, Any]]:
+    return _registry.workflow_contract_profile_conflicts()
 
 
 def register_legacy_record_context_clear_model(model_name: str) -> None:

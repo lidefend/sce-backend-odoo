@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import copy
 import hashlib
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -40,7 +41,7 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
     def test_collection_batch_sources_have_machine_proven_completion(self) -> None:
         batch = "p0-collection-state-control-completion-v1"
         sources = INVENTORY.BATCH_BINDINGS[batch]
-        self.assertEqual(len(sources), 19)
+        self.assertEqual(len(sources), 20)
         for source in sources:
             self.assertIn(source, self.by_source)
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
@@ -78,6 +79,23 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertIn(source, self.by_source)
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
+    def test_official_workspace_and_action_bindings_fail_closed(self):
+        cases = [
+            ('App.vue', '@click="session.loadPublicPageContracts(true)"', '@click="noop"'),
+            ('components/product-list/ProductListSurface.vue', 'appearance="table"', 'appearance="section"'),
+            ('components/role-home/WorkspaceHome.vue', '../product-page-patterns/ProductWorkspaceSurface.vue', '../Fake.vue'),
+            ('components/role-home/WorkspaceHome.vue', ':aria-busy="loading || undefined"', ':aria-busy="false"'),
+            ('components/business/MyWorkApprovalWorkspace.vue', ':aria-busy="busy || undefined"', ':aria-busy="false"'),
+            ('pages/contractForm/ContractFormActionBlocks.vue', ':disabled="busy || !item.action"', ':disabled="false"'),
+            ('pages/contractForm/ContractFormActionBlocks.vue', ':disabled="busy || !action.enabled"', ':disabled="false"'),
+        ]
+        for suffix, before, after in cases:
+            source = 'frontend/apps/web/src/' + suffix
+            text = (ROOT / source).read_text(encoding='utf-8')
+            with self.subTest(source=source, binding=before):
+                self.assertIn(before, text)
+                self.assertEqual(INVENTORY.classify(source, text.replace(before, after))[0], 'gap')
 
     def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
         self.assertEqual(self.report["summary"]["gap"], 0)
@@ -155,6 +173,204 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
                 self.assertEqual(self.by_source[source]["formalProductLayer"], "P3")
         low_code = "frontend/apps/web/src/pages/contractForm/LowCodeFieldCreateDialog.vue"
         self.assertEqual(self.by_source[low_code]["status"], "p3_out_of_scope")
+
+    def test_p3_surface_cannot_bypass_the_repo_wide_native_control_boundary(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        self.assertTrue(INVENTORY.is_p3(source))
+        status, reason = INVENTORY.classify(source, '<template><button type="button">保存</button></template>')
+        self.assertEqual(status, "gap")
+        self.assertIn("formal P3 surface bypasses governed adapters", reason)
+
+    def test_p3_layer_label_survives_a_native_control_violation(self) -> None:
+        source = "frontend/apps/web/src/views/SceneHealthView.vue"
+        status, _ = INVENTORY.classify(source, "<template><select></select></template>")
+        self.assertEqual(status, "gap")
+        self.assertEqual(INVENTORY.layer_of(source), "P3")
+        self.assertEqual(INVENTORY.layer_of("frontend/apps/web/src/pages/Foo.vue"), "P0/P1")
+
+    def test_p3_state_primitive_ownership_deferral_stays_declared(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        status, reason = INVENTORY.classify(source, "<template><div>loading 加载中</div></template>")
+        self.assertEqual(status, "p3_out_of_scope")
+        self.assertEqual(reason, INVENTORY.P3_OWNERSHIP_DEFERRAL_REASON)
+
+    def test_p3_ownership_deferral_is_declared_and_counted(self) -> None:
+        deferred = self.report["p3OwnershipDeferred"]
+        self.assertTrue(deferred["deferred"])
+        self.assertTrue(deferred["register"].strip())
+        self.assertTrue(deferred["reason"].strip())
+        expected = sorted(
+            item["source"] for item in self.report["surfaces"] if item["status"] == "p3_out_of_scope"
+        )
+        self.assertEqual(deferred["surfaces"], expected)
+        self.assertEqual(deferred["surfaceCount"], len(expected))
+        self.assertGreater(len(expected), 0)
+
+    def test_native_control_policy_scope_is_declared_and_covers_every_layer(self) -> None:
+        policy = self.report["completionPolicy"]
+        self.assertIn("P0-P4", policy["nativeControlScope"])
+        self.assertIn("design-system adapter layer", policy["nativeControlScope"])
+        self.assertTrue(policy["nativeControlRequiresExplicitCompositeOwnership"])
+        self.assertTrue(policy["p3DoesNotBlockP0P1Completion"])
+
+    def test_external_template_joins_the_evaluated_source(self) -> None:
+        source = "frontend/apps/web/src/views/MenuConfigView.vue"
+        vue_text = (ROOT / source).read_text(encoding="utf-8")
+        text, externals = INVENTORY.resolve_source_text(ROOT / source)
+        self.assertEqual(
+            [path.relative_to(ROOT).as_posix() for path in externals],
+            ["frontend/apps/web/src/views/menuConfig/template.html"],
+        )
+        # The rendered state primitive exists only in the external template.
+        self.assertNotIn("<ScInlineState", vue_text)
+        self.assertIn("<ScInlineState", text)
+
+    def test_missing_external_template_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            orphan = root / "Orphan.vue"
+            orphan.write_text('<template src="./missing.html"></template>\n', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                INVENTORY.resolve_source_text(orphan)
+
+    def test_object_task_page_is_owned_and_machine_bound(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        self.assertIn(source, self.by_source)
+        item = self.by_source[source]
+        self.assertEqual(item["status"], "governed_composite")
+        self.assertEqual(item["targetBatch"], "p0-inline-full-state-completion-v1")
+        self.assertEqual(item["governedStatePrimitives"], ["ScInlineState"])
+
+    def test_object_task_page_binding_fails_closed_when_state_changes(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue"
+        text = (ROOT / source).read_text(encoding="utf-8")
+        mutated = text.replace('state="info"', 'state="empty"')
+        self.assertNotEqual(text, mutated)
+        self.assertEqual(INVENTORY.classify(source, mutated)[0], "gap")
+
+    def test_governed_state_primitive_vocabulary_covers_the_inline_state_guard(self) -> None:
+        from scripts.verify.frontend_inline_state_guard import FILES as INLINE_STATE_FILES
+
+        governed = {path.stem for path in INLINE_STATE_FILES.values()}
+        self.assertTrue(governed.issubset(set(INVENTORY.GOVERNED_STATE_PRIMITIVES)))
+        self.assertIn("ScLoading", INVENTORY.GOVERNED_STATE_PRIMITIVES)
+
+    def test_p3_state_band_ownership_claims_are_rendered(self) -> None:
+        self.assertTrue(INVENTORY.P3_STATE_BAND_OWNERSHIP)
+        self.assertEqual(INVENTORY.p3_state_band_ownership_failures(), [])
+        deferred = self.report["p3OwnershipDeferred"]
+        self.assertEqual(
+            deferred["stateBandOwned"],
+            [
+                {"source": source, "stateBands": sorted(INVENTORY.P3_STATE_BAND_OWNERSHIP[source])}
+                for source in sorted(INVENTORY.P3_STATE_BAND_OWNERSHIP)
+            ],
+        )
+        self.assertEqual(deferred["stateBandOwnedCount"], len(INVENTORY.P3_STATE_BAND_OWNERSHIP))
+        self.assertTrue(deferred["stateBandOwnershipRule"].strip())
+        deferred_sources = set(deferred["surfaces"])
+        for entry in deferred["stateBandOwned"]:
+            self.assertIn(entry["source"], deferred_sources)
+
+    def test_p3_state_band_ownership_fails_closed_when_a_claim_stops_rendering(self) -> None:
+        source = "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigVersionPanel.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace("<ScEmptyState", "<div data-dropped-governed-primitive")
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScEmptyState:empty" in failure for failure in failures),
+            failures,
+        )
+
+    def test_p3_state_band_ownership_rejects_a_non_p3_declaration(self) -> None:
+        source = "frontend/apps/web/src/views/SceneHealthView.vue"
+        self.assertTrue(INVENTORY.is_p3(source))
+        INVENTORY.P3_STATE_BAND_OWNERSHIP[source] = ("ScEmptyState:empty",)
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            del INVENTORY.P3_STATE_BAND_OWNERSHIP[source]
+        self.assertTrue(any(source in failure for failure in failures), failures)
+
+    def test_p3_designer_and_tree_bands_are_owned_by_governed_primitives(self) -> None:
+        """The designer and the dedicated tree render their empty bands through
+        the governed primitive instead of a hand-written class, and the record
+        names those exact surfaces."""
+        retired = {
+            "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue": (
+                'class="contract-form-field-search-empty"',
+                '<div v-else class="contract-field-selection-empty">',
+                'class="contract-form-operation-log-empty"',
+            ),
+            "frontend/apps/web/src/views/MenuConfigView.vue": ("menu-selected-panel--empty",),
+            "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigApprovalPanel.vue": (
+                'class="approval-step-empty">',
+            ),
+        }
+        for source, gone in retired.items():
+            self.assertTrue(INVENTORY.is_p3(source), source)
+            self.assertIn(source, INVENTORY.P3_STATE_BAND_OWNERSHIP)
+            text, _ = INVENTORY.resolve_source_text(ROOT / source)
+            self.assertIn("ScEmptyState:empty", INVENTORY.rendered_state_bands(text), source)
+            for fragment in gone:
+                self.assertNotIn(fragment, text, f"{source} still renders {fragment}")
+        self.assertEqual(
+            INVENTORY.P3_STATE_BAND_OWNERSHIP["frontend/apps/web/src/views/BusinessConfigSurfaceView.vue"],
+            ("ScErrorState:error", "ScInlineState:error", "ScInlineState:loading", "ScInlineState:success"),
+        )
+
+    def test_p3_state_band_ownership_fails_closed_on_a_dropped_designer_band(self) -> None:
+        source = "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace("<ScEmptyState", "<p data-dropped-governed-primitive")
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScEmptyState:empty" in failure for failure in failures),
+            failures,
+        )
+
+    def test_p3_state_band_ownership_fails_closed_on_a_changed_inline_state(self) -> None:
+        source = "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue"
+        original = INVENTORY.resolve_source_text
+
+        def mutated(path: Path) -> tuple[str, list[Path]]:
+            text, externals = original(path)
+            if ROOT / source == path:
+                text = text.replace('state="success"', 'state="info"')
+            return text, externals
+
+        INVENTORY.resolve_source_text = mutated
+        try:
+            failures = INVENTORY.p3_state_band_ownership_failures()
+        finally:
+            INVENTORY.resolve_source_text = original
+        self.assertTrue(
+            any(source in failure and "ScInlineState:success" in failure for failure in failures),
+            failures,
+        )
+
+    def test_external_template_sources_are_counted(self) -> None:
+        self.assertEqual(self.report["p3OwnershipDeferred"]["externalTemplateCount"], 2)
 
     def test_report_binds_generator_and_all_vue_inputs(self) -> None:
         self.assertNotIn("sourceCommit", self.report)

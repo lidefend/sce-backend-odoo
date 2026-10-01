@@ -281,6 +281,22 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_approval_section_projects_provider_targets_without_fake_action(self):
+        from unittest.mock import patch
+        targets = [{"value": "child.document", "label": "子单据", "relation_field": "line_ids"}]
+        calls = []
+        def provider(env, name, *args):
+            calls.append((name, args))
+            return targets if name == "smart_core_business_config_approval_targets" else None
+        env = _Env({})
+        with patch.object(self.module, "call_extension_hook_first", provider):
+            result = self.module.BusinessConfigSurfaceGetHandler(env=env)._approval_policy_section("parent.document")
+        self.assertEqual(result["target_options"][0]["value"], "child.document")
+        self.assertEqual(result["target_options"][0]["route"]["query"]["target_model"], "child.document")
+        self.assertEqual(targets, [{"value": "child.document", "label": "子单据", "relation_field": "line_ids"}])
+        self.assertIn(("smart_core_business_config_approval_targets", (env, "parent.document")), calls)
+        self.assertNotIn("action_id", result["target_options"][0])
+
     def test_surface_reports_business_config_sections(self):
         env = _Env({
             "sc.approval.policy": _ApprovalPolicyModel([
@@ -329,6 +345,42 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertEqual(readiness_items["menu"]["boundary"], "business_contract_with_policy_runtime")
         self.assertEqual(readiness_items["version"]["contract_count"], 7)
         self.assertEqual(readiness_items["coverage"]["action"], "coverage_scan")
+
+    def test_surface_declares_every_name_the_workbench_renders(self):
+        env = _Env({
+            "ui.business.config.contract": _ContractModel([]),
+        })
+        handler = self.module.BusinessConfigSurfaceGetHandler(env=env, params={"model": "res.partner"})
+
+        result = handler.handle()
+
+        sections = {row["key"]: row for row in result["data"]["sections"]}
+        # The contract is the only authority for a section's business name, so
+        # every emitted section must carry one and the view must not shadow it.
+        for key, row in sections.items():
+            self.assertTrue(str(row.get("label") or "").strip(), f"section {key} declares no label")
+        boundary_labels = result["data"]["boundary_labels"]
+        self.assertTrue(boundary_labels)
+        for key, row in sections.items():
+            self.assertIn(
+                row["boundary"],
+                boundary_labels,
+                f"section {key} emits an undeclared boundary code: {row['boundary']}",
+            )
+        readiness = result["data"]["delivery_readiness"]
+        for item in readiness["items"]:
+            self.assertIn(
+                item["boundary"],
+                boundary_labels,
+                f"delivery item {item['id']} emits an undeclared boundary code: {item['boundary']}",
+            )
+        summary = result["data"]["snapshot_summary"]
+        for source_key in summary["source_counts"]:
+            self.assertIn(
+                source_key,
+                summary["source_category_labels"],
+                f"snapshot summary emits an unlabelled source category: {source_key}",
+            )
 
     def test_surface_delivery_readiness_marks_empty_authoring_sections_pending(self):
         env = _Env({
@@ -408,6 +460,15 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
         self.assertEqual(rows.context, {"active_test": False})
         self.assertEqual(result["source_counts"]["product_default"]["published"], 1)
         self.assertEqual(result["source_counts"]["unclassified"]["disabled"], 1)
+        # The contract carries the declared display labels so views consume them
+        # instead of re-deriving configuration source categories.
+        self.assertEqual(result["source_category_labels"], {
+            "product_default": "产品默认",
+            "enterprise_configuration": "企业配置（含共享偏好投影）",
+            "personal_preference": "个人偏好（本人）",
+            "unclassified": "来源待确认",
+        })
+        self.assertEqual(set(result["source_counts"]), set(result["source_category_labels"]))
 
     def test_personal_preferences_use_own_principal_and_saved_not_published(self):
         class OwnPreferences:

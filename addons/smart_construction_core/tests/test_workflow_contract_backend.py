@@ -5,6 +5,9 @@ from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_construction_core.models.support.workflow_contract_service import (
+    _simple_approval_profiles,
+)
 
 # The delivered `退回草稿` rule: `reopen` maps to `action_reset_draft`, and each of
 # these models accepts that method only on a cancelled record.  The map carries the
@@ -183,6 +186,130 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["editability"], "editable")
         self.assertIn("submit", {row["key"] for row in contract["availableActions"]})
 
+    def test_general_contract_legacy_confirmed_phase_is_declared(self):
+        """`legacy_confirmed` is a real `sc.general.contract` state.
+
+        The profile omitted the key, so `describe_record` answered with the raw
+        token through its fallback.  That fallback happens to return the same
+        string here - which is exactly why the omission survived: the statusbar
+        and the editability verdict were right by accident, and the next value
+        added to the Selection would not be.  The declaration is asserted
+        directly so the fallback cannot stand in for it again.
+        """
+        profile = self.service.profile_by_model()["sc.general.contract"]
+        self.assertEqual(profile["state_phase"].get("legacy_confirmed"), "legacy_confirmed")
+
+        contract_record = self.env["sc.general.contract"].create(
+            {
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_name": "Workflow Contract Legacy Confirmed",
+                "contract_type": "材料采购",
+                "amount_total": 100.0,
+                "state": "legacy_confirmed",
+            }
+        )
+        contract = self.service.describe_record(contract_record)
+
+        self.assertEqual(contract["rawState"], "legacy_confirmed")
+        self.assertEqual(contract["businessPhase"], "legacy_confirmed")
+        self.assertEqual(contract["editability"], "locked")
+        self.assertEqual(contract["availableActions"], [])
+        self.assertIn(
+            {"value": "legacy_confirmed", "label": "历史确认"},
+            contract["statusbar"]["states"],
+        )
+
+    def test_the_shared_approval_family_declares_only_reachable_states(self):
+        """The shared approval template must not carry states its members lack.
+
+        The template shipped `submit`/`rejected` next to `submitted`.  No member's
+        Selection can produce either token and none of them inherits
+        `tier.validation`, so `describe_record`'s phase lookup never read those
+        keys: pure copy residue that the dead-entry registry had to carry for ten
+        models, which is how a registration set stops being informative.
+
+        It also declared `reopen` in 已提交, where `action_reset_draft` refuses on
+        eight of the ten members - a button whose only outcome is a UserError -
+        while 已取消, the state the model accepts, published no way back at all.
+        The member list is read from the helper itself so this check cannot be
+        narrowed by editing a hand-written map.
+        """
+        template = _simple_approval_profiles(("probe.model",))["probe.model"]
+        self.assertTrue(template, "the helper must return its profile for a probed model")
+
+        profiles = self.service.profile_by_model()
+        family = sorted(
+            model for model, profile in profiles.items()
+            if profile.get("state_actions") == template["state_actions"]
+            and profile.get("state_phase") == template["state_phase"]
+        )
+        self.assertEqual(
+            family,
+            [
+                "sc.equipment.plan",
+                "sc.equipment.request",
+                "sc.labor.plan",
+                "sc.labor.request",
+                "sc.material.purchase.request",
+                "sc.material.rental.plan",
+                "sc.safety.disclosure",
+                "sc.safety.plan",
+                "sc.subcontract.plan",
+                "sc.subcontract.request",
+            ],
+        )
+
+        self.assertEqual(
+            sorted(template["state_phase"]), ["approved", "cancel", "draft", "submitted"],
+            "the template must map exactly the states its members can hold",
+        )
+        for model_name in family:
+            profile = profiles[model_name]
+            with self.subTest(model=model_name):
+                self.assertEqual(
+                    sorted(profile["state_phase"]), ["approved", "cancel", "draft", "submitted"],
+                )
+                declared = {
+                    state for state, actions in profile["state_actions"].items()
+                    if "reopen" in actions
+                }
+                self.assertEqual(
+                    declared, {"cancel"},
+                    "%s may offer 退回草稿 only from 已取消, the state it accepts" % model_name,
+                )
+                self.assertEqual(profile["method_by_action"].get("reopen"), "action_reset_draft")
+                selection = dict(
+                    self.env[model_name].fields_get(["state"])["state"]["selection"]
+                )
+                self.assertEqual(
+                    sorted(selection), ["approved", "cancel", "draft", "submitted"],
+                    "%s declares phases for states its Selection does not hold" % model_name,
+                )
+
+        # The native header carried the same defect: eight of the ten forms
+        # rendered 退回草稿 in 已提交, where `action_reset_draft` refuses, and hid
+        # it in 已取消, the state it accepts.  The forms are read from the model,
+        # so a new form cannot reintroduce the dead control unnoticed.  A form
+        # without the button is left alone: the contract may be ahead of the
+        # native header, it may never offer a control the model rejects.
+        for model_name in family:
+            forms = self.env["ir.ui.view"].search(
+                [("model", "=", model_name), ("type", "=", "form")]
+            )
+            self.assertTrue(forms, "%s must have a form view" % model_name)
+            gates = set()
+            for view in forms:
+                buttons = etree.fromstring(view.arch.encode("utf-8")).xpath(
+                    ".//button[@name='action_reset_draft']"
+                )
+                gates |= {button.get("invisible") for button in buttons}
+            with self.subTest(model=model_name, surface="arch"):
+                self.assertLessEqual(
+                    gates, {"state != 'cancel'"},
+                    "%s renders 退回草稿 outside 已取消: %s" % (model_name, sorted(gates)),
+                )
+
     def test_profile_methods_resolve_to_existing_model_methods(self):
         profiles = self.service.PROFILE_BY_MODEL
         self.assertTrue(profiles)
@@ -197,6 +324,56 @@ class TestWorkflowContractBackend(TransactionCase):
                     hasattr(model, method_name),
                     "%s workflow action %s points to missing method %s" % (model_name, action_key, method_name),
                 )
+
+    def test_industry_layer_owns_no_profile_for_a_foreign_model(self):
+        """A user/product module publishes its own workflow projection.
+
+        `sc.partner.import.review` is owned by a customer module, so the
+        industry layer must not declare its states, actions or methods.  The
+        owning module registers the profile through the P0 registry and this
+        service merges it; a model that is absent from the current registry
+        keeps its actions undeclared instead of being back-filled here.
+        """
+        service = self.env["sc.workflow.contract.service"]
+        industry_models = set(service.PROFILE_BY_MODEL)
+        external = service._external_profile_by_model()
+        self.assertTrue(
+            industry_models.isdisjoint(set(external)),
+            "the industry layer must not declare a profile for a foreign model",
+        )
+        effective = service.profile_by_model()
+        self.assertTrue(industry_models.issubset(set(effective)))
+        for model_name in sorted(external):
+            with self.subTest(model=model_name):
+                if model_name in self.env.registry:
+                    self.assertIn(model_name, effective)
+                else:
+                    self.assertNotIn(model_name, effective)
+                    self.assertFalse(service.is_model_supported(model_name))
+
+    def test_an_external_profile_whose_methods_do_not_resolve_stays_undeclared(self):
+        """Registration alone must not publish an action the model cannot run."""
+        from odoo.addons.smart_core.utils import contract_governance
+        from odoo.addons.smart_core.utils import contract_governance_registry
+
+        registered = contract_governance.register_workflow_contract_profile(
+            "res.partner",
+            {
+                "state_field": "state",
+                "state_phase": {"draft": "draft"},
+                "state_actions": {"draft": ["submit"]},
+                "method_by_action": {"submit": "action_that_does_not_exist"},
+            },
+            source="unit.test",
+        )
+        self.assertTrue(registered)
+        try:
+            service = self.env["sc.workflow.contract.service"]
+            self.assertNotIn("res.partner", service.profile_by_model())
+            self.assertFalse(service.is_model_supported("res.partner"))
+        finally:
+            contract_governance_registry._WORKFLOW_CONTRACT_PROFILE_REGISTRY.pop("res.partner", None)
+            contract_governance_registry._WORKFLOW_CONTRACT_PROFILE_SOURCES.pop("res.partner", None)
 
     def test_supported_model_contract_schema_is_frontend_stable(self):
         expense_contract_wrapper = self.env["construction.contract.expense"].search(

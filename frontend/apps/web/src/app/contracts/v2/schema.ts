@@ -1860,13 +1860,15 @@ function decodeGlobalStatus(source: ContractV2Dictionary, issues: DecodeIssue[])
   const path = 'statusContract.globalStatus';
   rejectUnknownKeys(source, [
     'pageVisible', 'pageAuth', 'reasonCode', 'modelRights', 'recordRights', 'viewCapabilities',
-    'entryCapabilities', 'effectiveRecordCapabilities', 'effectiveRenderProfile', 'workflowPhase', 'approvalPhase',
+    'entryCapabilities', 'effectiveRecordCapabilities', 'recordDeniedReasons', 'effectiveRenderProfile',
+    'workflowPhase', 'approvalPhase',
   ], path, issues);
   const modelRights = optionalRecord(source, 'modelRights', path, issues);
   const recordRights = optionalRecord(source, 'recordRights', path, issues);
   const viewCapabilities = optionalRecord(source, 'viewCapabilities', path, issues);
   const entryCapabilities = optionalRecord(source, 'entryCapabilities', path, issues);
   const effectiveRecordCapabilities = optionalRecord(source, 'effectiveRecordCapabilities', path, issues);
+  const recordDeniedReasons = optionalRecord(source, 'recordDeniedReasons', path, issues);
   return {
     pageVisible: optionalBooleanField(source, 'pageVisible', 'statusContract.globalStatus', issues),
     ...(optionalString(source, 'pageAuth') ? { pageAuth: optionalString(source, 'pageAuth') } : {}),
@@ -1878,6 +1880,7 @@ function decodeGlobalStatus(source: ContractV2Dictionary, issues: DecodeIssue[])
     ...(viewCapabilities && Object.keys(viewCapabilities).length ? { viewCapabilities } : {}),
     ...(entryCapabilities && Object.keys(entryCapabilities).length ? { entryCapabilities } : {}),
     ...(effectiveRecordCapabilities && Object.keys(effectiveRecordCapabilities).length ? { effectiveRecordCapabilities } : {}),
+    ...(recordDeniedReasons && Object.keys(recordDeniedReasons).length ? { recordDeniedReasons } : {}),
     ...(optionalString(source, 'effectiveRenderProfile')
       ? { effectiveRenderProfile: optionalString(source, 'effectiveRenderProfile') }
       : {}),

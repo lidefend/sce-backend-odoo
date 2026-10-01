@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "7fc9ac63fea3cf818ac7952acd3bbd52d2345d9ce88b1623b3c2de15f3e5ba89",
+  "inputDigest": "019db41b89e02fc6564f7ab3abebcaff96eca5b78776a5b8e368d41bd0789f4b",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -87,8 +87,7 @@
     {
       "appearance": "breadcrumb-item",
       "consumers": [
-        "frontend/apps/web/src/components/design-system/ScButton.vue",
-        "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='breadcrumb-item']",
@@ -370,6 +369,7 @@
         "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue",
         "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
         "frontend/apps/web/src/components/product-shell/ProductIdentity.vue",
+        "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
         "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/views/LoginView.vue",
@@ -479,7 +479,8 @@
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
         "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
-        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue"
+        "frontend/apps/web/src/pages/contractForm/FormSectionNavigation.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigCoverageWorkspace.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='section-tab']",
@@ -656,7 +657,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 216,
+    "formalStyleSourceCount": 218,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

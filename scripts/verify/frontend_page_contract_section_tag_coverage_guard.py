@@ -42,7 +42,17 @@ def _load_builder_module(path: Path) -> ModuleType:
 def _find_page_consumers() -> dict[str, list[Path]]:
     consumers: dict[str, list[Path]] = {}
     marker = "usePageContract('"
-    candidates = [*VIEWS_DIR.glob("*.vue"), *PAGES_DIR.glob("*.vue")]
+    # A view or page may keep its extracted parts in a companion module directory
+    # of the same name (for example `views/businessConfigSurface/`); that directory
+    # stays inside the same page-contract consumer scope.
+    candidates = [
+        *VIEWS_DIR.glob("*.vue"),
+        *VIEWS_DIR.glob("*/*.vue"),
+        *VIEWS_DIR.glob("*/*.ts"),
+        *PAGES_DIR.glob("*.vue"),
+        *PAGES_DIR.glob("*/*.vue"),
+        *PAGES_DIR.glob("*/*.ts"),
+    ]
     for view in sorted(candidates):
         text = _read(view)
         if not text:

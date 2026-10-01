@@ -133,6 +133,14 @@ def main() -> int:
         "MyWorkView.vue",
     }
 
+    # A view may keep its extracted parts in a companion module directory of the
+    # same name. The page contract must still be consumed inside that boundary,
+    # so the directory counts as part of the view's scope instead of widening the
+    # check to unrelated modules.
+    view_module_scopes = {
+        "BusinessConfigSurfaceView.vue": "businessConfigSurface",
+    }
+
     for view in view_files:
         text = _read(view)
         rel = view.relative_to(ROOT).as_posix()
@@ -140,7 +148,22 @@ def main() -> int:
         if not text:
             errors.append(f"{rel}: unreadable")
             continue
-        if "usePageContract(" not in text and view.name not in page_contract_exempt_views:
+        companion_scope = view_module_scopes.get(view.name)
+        companion_text = ""
+        if companion_scope:
+            companion_dir = VIEWS_DIR / companion_scope
+            if not companion_dir.is_dir():
+                errors.append(f"{rel}: missing companion module directory: {companion_scope}")
+            else:
+                companion_text = "".join(
+                    _read(path)
+                    for path in sorted([*companion_dir.glob("*.vue"), *companion_dir.glob("*.ts")])
+                )
+        if (
+            "usePageContract(" not in text
+            and "usePageContract(" not in companion_text
+            and view.name not in page_contract_exempt_views
+        ):
             errors.append(f"{rel}: missing token: usePageContract(")
         _check_forbidden(text, global_forbidden_tokens, rel, errors)
         if view.name != "ActionView.vue":

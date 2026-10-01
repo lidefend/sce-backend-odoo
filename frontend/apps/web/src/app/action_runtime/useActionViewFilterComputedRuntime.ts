@@ -1,3 +1,4 @@
+import { resolveSavedSearchDeleteAction } from '../runtime/savedSearchSubmission';
 import { computed, type Ref } from 'vue';
 import {
   resolveContractV2SearchContract,
@@ -7,6 +8,30 @@ import {
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
+
+/** Consume explicit saved-search authority; an absent grant is never a grant. */
+export function resolveSavedSearchMutationCapability(value: unknown) {
+  const favorites = value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
+  const intent = String(favorites.intent || '').trim();
+  const saveEnabled = favorites.save_enabled === true && intent === 'search.favorite.set';
+  const reasonCode = String(favorites.disabled_reason || '').trim();
+  const reasonLabels: Record<string, string> = {
+    SAVED_SEARCH_AUTHORITY_UNAVAILABLE: '暂时无法确认收藏权限',
+    SAVED_SEARCH_REQUIRES_INTERNAL_USER: '当前账号不支持保存收藏',
+    SAVED_SEARCH_MODEL_UNAVAILABLE: '当前数据暂不可用',
+    SAVED_SEARCH_MODEL_READ_DENIED: '没有当前数据的读取权限',
+    SAVED_SEARCH_CREATE_DENIED: '没有保存收藏的权限',
+  };
+  return {
+    declared: typeof favorites.save_enabled === 'boolean',
+    saveEnabled,
+    sharedEnabled: saveEnabled && favorites.shared_enabled === true,
+    intent,
+    reasonCode,
+    disabledReason: saveEnabled ? '' : reasonLabels[reasonCode] || '当前页面暂不支持保存收藏',
+  };
+}
+
 
 type UseActionViewFilterComputedRuntimeOptions = {
   actionContract: Ref<ContractV2NormalizedStore | null>;
@@ -117,7 +142,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const context = options.parseContractContextRaw(raw.context_raw);
         const isDefault = raw.default === true || raw.is_default === true;
         const isShared = raw.is_shared === true;
-        return { key, label, domain, domainRaw, context, contextRaw, isDefault, isShared };
+        return { key, label, domain, domainRaw, context, contextRaw, isDefault, isShared, deleteAction: resolveSavedSearchDeleteAction(raw.delete_action) };
       })
       .filter(Boolean)
       .slice(0, 12);
@@ -219,6 +244,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
     const filters = (custom?.filters || {}) as Dict;
     const groups = (custom?.group_by || {}) as Dict;
     const favorites = (custom?.favorites || {}) as Dict;
+    const favoriteAuthority = resolveSavedSearchMutationCapability(favorites);
     const customLabels = (custom?.ui_labels || {}) as Dict;
     const uiLabels = { ...searchLabels, ...customLabels };
     const label = (key: string, fallback: string) => String(uiLabels[key] || fallback);
@@ -228,9 +254,12 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       filterLabel: String(filters.label || label('custom_filter', '添加自定义筛选')),
       groupEnabled: groups.enabled !== false && customGroupByChips.value.length > 0,
       groupLabel: String(groups.label || label('custom_group', '添加自定义分组')),
-      favoriteSaveEnabled: favorites.save_enabled !== false,
+      favoriteSaveEnabled: favoriteAuthority.saveEnabled,
+      favoriteSaveVisible: favoriteAuthority.declared,
+      favoriteSharedEnabled: favoriteAuthority.sharedEnabled,
+      favoriteDisabledReason: favoriteAuthority.disabledReason,
       favoriteLabel: String(favorites.label || label('favorite_save', '加入收藏')),
-      favoriteIntent: String(favorites.intent || 'search.favorite.set'),
+      favoriteIntent: favoriteAuthority.intent,
       uiLabels,
     };
   });

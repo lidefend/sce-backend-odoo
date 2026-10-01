@@ -1,7 +1,9 @@
 <template>
-  <ScPage
+  <section
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
+    :data-list-composition="listComposition.composition"
+    :data-list-composition-reason="listComposition.reason"
     :aria-busy="loading || undefined"
   >
     <ProductLoadingSkeleton
@@ -24,66 +26,78 @@
       variant="error"
       :on-retry="onReload"
     />
-    <template v-else-if="status === 'empty'">
-      <ListSurfaceHeader
-        :loading="loading"
-        :show-search="showFallbackPlainSearch"
-        :search-value="plainSearchDraft"
-        :search-label="uiLabel('search_submit', '搜索')"
-        :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
-        :columns="columnChoices"
-        :visible-columns="enabledColumns"
-        :last-visible-column="lastVisibleColumnName"
-        :column-disabled-reasons="columnVisibilityDisabledReasons"
-        :column-settings-message="columnVisibilityMessage"
-        :save-status="columnSaveStatus"
-        :save-status-text="columnSaveStatusText"
-        :show-fallback-create="showFallbackCreateButton"
-        :create-label="createLabelText"
-        @search-input="onPlainSearchInput"
-        @search-submit="submitPlainSearch"
-        @search-clear="clearPlainSearch"
-        @composition-start="plainSearchComposing = true"
-        @composition-end="onPlainSearchCompositionEnd"
-        @column-visibility-change="onColumnVisibilityToggle"
-        @column-reset="resetColumnVisibility"
-        @create="onCreate"
-      >
-        <slot name="toolbar"></slot>
-      </ListSurfaceHeader>
-      <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
-        <template #actions>
-          <ScButton
-            v-if="hasActiveConditions"
-            variant="primary"
-            :disabled="loading"
-            @click="clearActiveConditions"
-          >
-            清除查询条件
-          </ScButton>
-          <ScButton variant="secondary" :disabled="loading" @click="onReload">
-            {{ uiLabel('empty_retry', '刷新') }}
-          </ScButton>
-        </template>
-      </ScEmptyState>
-      <CollectionPaginationFooter
-        mode="count"
-        :record-count-text="listRecordCountText"
-        :loading="loading"
-        :can-previous="false"
-        :can-next="false"
-        page-text=""
-        :page-jump-value="pageJumpInput"
-        :page-limit-value="pageLimitInput"
-        :list-limit="listLimit"
-        :total-pages="totalPages"
-        :current-page="currentPage"
-        :total-records="listRecordTotal"
-        :page-limit-options="pageLimitOptions"
-        :labels="collectionPaginationLabels"
-      />
-    </template>
+    <section
+      v-else-if="status === 'empty'"
+      class="sc-product-main-surface list-empty-region"
+      data-workspace-primary-content
+      data-semantic-component="ListPage"
+      :data-list-status="status"
+      role="region"
+      aria-label="业务列表，可横向滚动"
+    >
+      <ProductListSurface>
+        <ListSurfaceHeader
+          :loading="loading"
+          :show-search="showFallbackPlainSearch"
+          :search-value="plainSearchDraft"
+          :search-label="uiLabel('search_submit', '搜索')"
+          :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+          :columns="columnChoices"
+          :visible-columns="enabledColumns"
+          :last-visible-column="lastVisibleColumnName"
+          :column-disabled-reasons="columnVisibilityDisabledReasons"
+          :column-settings-message="columnVisibilityMessage"
+          :save-status="columnSaveStatus"
+          :save-status-text="columnSaveStatusText"
+          :show-fallback-create="showFallbackCreateButton"
+          :create-label="createLabelText"
+          @search-input="onPlainSearchInput"
+          @search-submit="submitPlainSearch"
+          @search-clear="clearPlainSearch"
+          @composition-start="plainSearchComposing = true"
+          @composition-end="onPlainSearchCompositionEnd"
+          @column-visibility-change="onColumnVisibilityToggle"
+          @column-reset="resetColumnVisibility"
+          @create="onCreate"
+        >
+          <template v-if="$slots.leading" #leading><slot name="leading" /></template>
+          <slot name="toolbar"></slot>
+        </ListSurfaceHeader>
+        <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
+          <template #actions>
+            <ScButton
+              v-if="hasActiveConditions"
+              variant="primary"
+              :disabled="loading"
+              @click="clearActiveConditions"
+            >
+              清除查询条件
+            </ScButton>
+            <ScButton variant="secondary" :disabled="loading" @click="onReload">
+              {{ uiLabel('empty_retry', '刷新') }}
+            </ScButton>
+          </template>
+        </ScEmptyState>
+        <CollectionPaginationFooter
+          mode="count"
+          :record-count-text="listRecordCountText"
+          :loading="loading"
+          :can-previous="false"
+          :can-next="false"
+          page-text=""
+          :page-jump-value="pageJumpInput"
+          :page-limit-value="pageLimitInput"
+          :list-limit="listLimit"
+          :total-pages="totalPages"
+          :current-page="currentPage"
+          :total-records="listRecordTotal"
+          :page-limit-options="pageLimitOptions"
+          :labels="collectionPaginationLabels"
+        />
+      </ProductListSurface>
+    </section>
     <template v-else>
+      <ProductListSurface>
       <ListSurfaceHeader
         :loading="loading"
         :show-search="showFallbackPlainSearch"
@@ -109,6 +123,7 @@
         @column-reset="resetColumnVisibility"
         @create="onCreate"
       >
+        <template v-if="$slots.leading" #leading><slot name="leading" /></template>
         <slot name="toolbar"></slot>
         <template #contextual>
           <CollectionBatchActionBar
@@ -281,11 +296,12 @@
         @page-select="selectPage"
       />
     </section>
+      </ProductListSurface>
 
     </template>
     <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
     <AttachmentViewer ref="attachmentViewerRef" />
-  </ScPage>
+  </section>
 </template>
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
@@ -305,11 +321,13 @@ import CollectionRowCell, { type CollectionRowCellKind } from '../components/pro
 import CollectionSelectionControl from '../components/product-list/CollectionSelectionControl.vue';
 import CollectionSummaryStrip from '../components/product-list/CollectionSummaryStrip.vue';
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
+import ProductListSurface from '../components/product-list/ProductListSurface.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
-import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
+import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
+import type { StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
 import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
@@ -371,7 +389,6 @@ type ColumnOption = {
   filterField?: string;
   exportField?: string;
   selection?: Array<{ value: string; label: string }>;
-  toneByValue?: Record<string, string>;
 };
 type GroupSortDirection = 'asc' | 'desc';
 
@@ -414,6 +431,12 @@ const props = defineProps<{
   enableSummaryStrip?: boolean;
   enableGroupedRows?: boolean;
   listProfile?: SceneListProfile | null;
+  /**
+   * This page's contract-derived responsibility, resolved by the surface that
+   * read the effective contract. The list composition never re-derives it from
+   * a route name, a model name or a renderer preference.
+   */
+  contractPageType?: StandardPageTypeDecision | null;
   columnLabels?: Record<string, string>;
   onFilter: (value: 'all' | 'active' | 'archived') => void;
   summaryItems?: Array<{ key: string; label: string; value: string; tone?: string }>;
@@ -517,6 +540,11 @@ const errorCopy = computed(() =>
   ),
 );
 const emptyCopy = computed(() => resolveEmptyCopy('list'));
+// Presentation scope only: which containers this already-authorized list is
+// composed from. It never decides columns, records, actions or permissions.
+const listComposition = computed(() => resolveStandardListComposition(
+  props.contractPageType ?? { pageType: 'specialized', reason: 'contract-view-not-classified' },
+));
 const createLabelText = computed(() => props.createLabel || uiLabel('create', '新建'));
 const hasActiveConditions = computed(() =>
   props.hasActiveConditions === true
@@ -547,7 +575,7 @@ const emptyStateMessage = computed(() =>
 const showPlainSearch = computed(() => props.showPlainSearch !== false);
 const hasToolbarSlot = computed(() => Boolean(slots.toolbar));
 const showFallbackPlainSearch = computed(() => showPlainSearch.value && !hasToolbarSlot.value);
-const showFallbackCreateButton = computed(() => props.showFallbackCreate === true && !hasToolbarSlot.value);
+const showFallbackCreateButton = computed(() => props.showFallbackCreate === true && !hasToolbarSlot.value && !slots.leading);
 const hasRetainedContent = computed(() => props.records.length > 0 && props.columns.length > 0);
 const groupedRows = computed(() =>
   Array.isArray(props.groupedRows) ? props.groupedRows : [],
@@ -722,7 +750,6 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     trueText: uiLabel('boolean_true', FIELD_VALUE_TRUE_TEXT),
     falseText: uiLabel('boolean_false', FIELD_VALUE_FALSE_TEXT),
     numeric: isNumericDisplayColumn(field),
-    toneByValue: option?.toneByValue,
   });
 }
 function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
@@ -1256,9 +1283,27 @@ function onPlainSearchInput(value: string) {
   plainSearchDraft.value = String(value || '');
 }
 
-function onPlainSearchCompositionEnd(event: CompositionEvent) {
+/**
+ * Reads the committed text of a composition from the shapes a carrier may hand over:
+ * a DOM `CompositionEvent` (`event.target.value`), a `{ e }` context wrapper, or the
+ * committed value itself. An unresolvable shape returns `null` so the caller keeps the
+ * draft instead of clearing it — a bad event must never wipe what the user just typed.
+ */
+function compositionCommittedValue(event: unknown): string | null {
+  if (typeof event === 'string') return event;
+  const record = (event ?? null) as { target?: unknown; e?: { target?: unknown } } | null;
+  for (const candidate of [record?.target, record?.e?.target]) {
+    if (candidate && typeof candidate === 'object' && typeof (candidate as HTMLInputElement).value === 'string') {
+      return (candidate as HTMLInputElement).value;
+    }
+  }
+  return null;
+}
+
+function onPlainSearchCompositionEnd(event: unknown) {
   plainSearchComposing.value = false;
-  plainSearchDraft.value = String((event.target as HTMLInputElement | null)?.value || '');
+  const committed = compositionCommittedValue(event);
+  if (committed !== null) plainSearchDraft.value = committed;
 }
 
 function submitPlainSearch() {

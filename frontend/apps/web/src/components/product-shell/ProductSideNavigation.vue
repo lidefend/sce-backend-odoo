@@ -1,5 +1,10 @@
 <template>
-  <nav class="product-side-navigation" aria-label="业务导航" data-semantic-component="ProductSideNavigation">
+  <nav
+    class="product-side-navigation"
+    :class="{ 'product-side-navigation--collapsed': collapsed }"
+    aria-label="业务导航"
+    data-semantic-component="ProductSideNavigation"
+  >
     <label class="product-side-navigation__search">
       <span class="sr-only">搜索菜单</span>
       <ScInput
@@ -17,6 +22,7 @@
     <div class="product-side-navigation__tree" tabindex="0" aria-label="业务菜单树">
       <MenuTree
         :nodes="nodes"
+        :collapsed="collapsed"
         :active-menu-id="activeMenuId"
         :expanded-keys="expandedKeys"
         :search-active="Boolean(search.trim())"
@@ -39,9 +45,11 @@ withDefaults(defineProps<{
   activeMenuId?: number;
   expandedKeys?: string[];
   search: string;
+  collapsed?: boolean;
 }>(), {
   activeMenuId: undefined,
   expandedKeys: () => [],
+  collapsed: false,
 });
 
 const emit = defineEmits<{
@@ -59,6 +67,16 @@ const emit = defineEmits<{
   gap: var(--sc-nav-row-gap);
   min-height: 0;
   min-width: 0;
+}
+
+/* Compact rail parity with the official t-menu collapsed state: a search field
+ * has no room in the 64px rail, so the tree owns the whole column. */
+.product-side-navigation--collapsed {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.product-side-navigation--collapsed .product-side-navigation__search {
+  display: none;
 }
 
 .product-side-navigation__search {

@@ -121,7 +121,7 @@ def _check_performance_row(row: object, idx: int, errors: list[str]) -> None:
         return
     intent = str(row.get("intent") or "").strip()
     if intent not in REQUIRED_INTENTS | OPTIONAL_INTENTS:
-        errors.append(f"{prefix}.intent must be one of {sorted(EXPECTED_INTENTS)}")
+        errors.append(f"{prefix}.intent must be one of {sorted(REQUIRED_INTENTS | OPTIONAL_INTENTS)}")
     for key in ("iterations", "max_payload_bytes", "threshold_payload_bytes"):
         if not isinstance(row.get(key), int) or row.get(key) < 1:
             errors.append(f"{prefix}.{key} must be positive int")

@@ -58,8 +58,19 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
         self.assertTrue(any("non-tab close button" in error for error in validate(sources)))
 
     def test_activity_draft_dirty_state_must_publish_synchronously(self):
-        sources = self.altered("contract_form", "flush: 'sync'", "flush: 'post'")
+        publication = ("session.updateActiveActivityDirty(dirty); }, "
+                       "{ immediate: true, flush: 'sync' });")
+        self.assertEqual(self.sources["contract_form"].count(publication), 1)
+        sources = self.altered("contract_form", publication, publication.replace("flush: 'sync'", "flush: 'post'"))
         self.assertTrue(any("published synchronously" in error for error in validate(sources)))
+
+    def test_dirty_publication_check_does_not_claim_other_watcher_ownership(self):
+        # This guard proves dirty publication only. Relation lifecycle tests own
+        # the independent invalidation watcher; this is not permission to defer it.
+        relation = "invalidateRelationRequests, { flush: 'sync' });"
+        self.assertEqual(self.sources["contract_form"].count(relation), 1)
+        sources = self.altered("contract_form", relation, relation.replace("flush: 'sync'", "flush: 'post'"))
+        self.assertFalse(any("published synchronously" in error for error in validate(sources)))
 
 
 if __name__ == "__main__":

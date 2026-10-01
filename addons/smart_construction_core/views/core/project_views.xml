@@ -109,7 +109,14 @@
                 <field name="lifecycle_state" widget="statusbar" statusbar_visible="draft,in_progress,paused,done,closing,warranty,closed" />
             </xpath>
             <xpath expr="//form/header" position="inside">
-                <button name="action_sc_submit" type="object" string="提交立项" class="btn-primary" invisible="lifecycle_state != 'draft'" />
+                <field name="sc_approval_state" readonly="1"/>
+                <field name="validation_status" invisible="1"/>
+                <field name="can_review" invisible="1"/>
+                <field name="reject_reason" invisible="not reject_reason" readonly="1"/>
+                <button name="validate_tier" type="object" string="审批通过" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="reject_tier" type="object" string="审批驳回" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                <button name="action_sc_start" type="object" string="启动项目" invisible="lifecycle_state != 'draft' or sc_approval_state != 'approved'"/>
+                <button name="action_sc_submit" type="object" string="提交立项" class="btn-primary" invisible="lifecycle_state != 'draft' or sc_approval_state != 'draft' or validation_status in ('waiting', 'pending', 'validated')" />
             </xpath>
             <xpath expr="//sheet/div[@name='button_box']" position="replace">
                 <div class="oe_button_box" name="button_box">
@@ -134,7 +141,7 @@
                 <field name="message_needaction" invisible="1" />
                 <field name="display_name" invisible="1" />
                 <div class="alert alert-info" role="alert" invisible="lifecycle_state != 'draft'">
-                    当前为草稿。请使用“保存修改”保存资料；“提交立项”用于推进项目状态并执行完整校验。
+                    当前为草稿。请使用“保存修改”保存资料；“提交立项”用于完成立项审批，通过后使用“启动项目”开始执行。
                 </div>
             </xpath>
             <xpath expr="//sheet/div[@name='button_box']" position="after">

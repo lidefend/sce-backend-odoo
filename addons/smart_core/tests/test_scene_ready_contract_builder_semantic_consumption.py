@@ -77,6 +77,40 @@ target = _load_module(
 
 
 class TestSceneReadyContractBuilderSemanticConsumption(unittest.TestCase):
+    def test_user_surface_keeps_entry_declarations_through_full_projection(self):
+        surface = _load_module("scene_entry_user_surface_test", CORE_DIR.parent /
+                               "utils/contract_governance_user_surface.py")
+        sanitized = surface.sanitize_scene_for_user({"code": "custom.scene", "name": "Declared",
+            "target": {"route": "/s/custom.scene", "intent": "custom.enter",
+                       "entry_intent": "custom.override", "debug_secret": "must-not-leak"}})
+        self.assertNotIn("debug_secret", sanitized["target"])
+        contract = target.build_scene_ready_contract(scenes=[sanitized], role_surface={})
+        projected = contract["scenes"][0]["meta"]["target"]
+        self.assertEqual(projected["intent"], "custom.enter")
+        self.assertEqual(projected["entry_intent"], "custom.override")
+
+    def test_declared_entry_intent_survives_scene_ready_projection(self):
+        for declaration in ({"intent": "custom.entry"}, {"entry_intent": "custom.override"}, {}):
+            with self.subTest(declaration=declaration):
+                contract = target.build_scene_ready_contract(
+                    scenes=[{"code": "custom.dashboard", "name": "Configured title",
+                             "target": {"route": "/s/custom.dashboard", **declaration}}],
+                    role_surface={},
+                )
+                projected = contract["scenes"][0]["meta"]["target"]
+                for key in ("intent", "entry_intent"):
+                    self.assertEqual(projected.get(key), declaration.get(key))
+
+    def test_industry_dashboard_entries_declare_their_own_intents(self):
+        content = _load_module("scene_entry_default_test_content", CORE_DIR.parents[1] /
+                               "smart_construction_scene/profiles/scene_registry_content.py")
+        entries = {row["code"]: row for row in content.list_scene_entries()}
+        for key, intent in {"workspace.home": "workspace.home.enter",
+                            "dashboard.company": "dashboard.company.enter",
+                            "project.management": "project.dashboard.enter"}.items():
+            with self.subTest(key=key):
+                self.assertEqual(entries[key]["target"]["intent"], intent)
+
     def test_scene_ready_promotes_provider_delivery_handoff_surface(self):
         original = target._resolve_scene_provider_payload
         target._resolve_scene_provider_payload = lambda _scene_key, _runtime_ctx=None: {

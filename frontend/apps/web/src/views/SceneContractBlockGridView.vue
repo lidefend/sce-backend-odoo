@@ -12,11 +12,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics.ts';
 import { useRoute, useRouter } from 'vue-router';
 import type { NavNode } from '@sc/schema';
 import { intentRequest } from '../api/intents';
+import { createReadonlyBlockLoader } from '../app/readonlyBlockRequest';
+import { resolveSceneRuntimeFetchRequest } from '../app/sceneRuntimeFetchContract';
 import StatusPanel from '../components/StatusPanel.vue';
 import PageRenderer from '../components/page/PageRenderer.vue';
 import { useSessionStore } from '../stores/session';
@@ -126,78 +128,37 @@ const blocks = computed<SceneBlock[]>(() => {
   return [...summaryBlocks, ...stubBlocks];
 });
 
-type RuntimeFetchHint = {
-  intent?: string;
-  params?: Record<string, unknown>;
-  project_id?: number;
-  block_key?: string;
-};
-
 const runtimeBlocks = ref<Record<string, Record<string, unknown>>>({});
 
-function asHint(value: unknown): RuntimeFetchHint | null {
-  if (!value || typeof value !== 'object') return null;
-  return value as RuntimeFetchHint;
-}
-
-async function fetchRuntimeBlock(
-  key: string,
-  hint: RuntimeFetchHint | null,
-): Promise<Record<string, unknown> | null> {
-  const intent = String(hint?.intent || '').trim();
-  if (!intent) return null;
-  const projectId = Number(hint?.project_id || 0) || positiveRouteInt('project_id') || 0;
-  const blockKey = String(hint?.block_key || key).trim() || key;
-  const params: Record<string, unknown> = {
-    block_key: blockKey,
-    ...(projectId > 0 ? { project_id: projectId } : {}),
-    ...(hint?.params || {}),
-  };
-  const data = await intentRequest<{ block?: Record<string, unknown> }>({
-    intent,
-    params,
-    context: {
-      scene_key: props.sceneKey,
-      ...(projectId > 0 ? { project_id: projectId } : {}),
-    },
-  });
-  return data?.block && typeof data.block === 'object' ? data.block : null;
-}
-
-async function hydrateDeferredBlocks(): Promise<void> {
-  runtimeBlocks.value = {};
-  const contract = rawContract.value;
-  if (!contract) return;
-  const hints = (contract.runtime_fetch_hints &&
-    typeof contract.runtime_fetch_hints === 'object' &&
-    (contract.runtime_fetch_hints as Record<string, unknown>).blocks &&
-    typeof (contract.runtime_fetch_hints as Record<string, unknown>).blocks === 'object'
-  ) ? (contract.runtime_fetch_hints as Record<string, unknown>).blocks as Record<string, unknown> : {};
+async function hydrateDeferredBlocks(contract: SceneContract, isCurrent: () => boolean, capturedSceneKey: string) {
+  const hydrated: Record<string, Record<string, unknown>> = {};
+  const hints = contract.runtime_fetch_hints?.blocks || {};
   const entries = Array.isArray(contract.blocks) ? contract.blocks : [];
   for (const block of entries) {
+    if (!isCurrent()) break;
     const key = asText(block?.key);
     if (!key) continue;
     const state = asText(block?.state).toLowerCase();
     if (state && state !== 'deferred') continue;
-    const hint = asHint(hints[key]);
-    if (!hint) continue;
+    const request = resolveSceneRuntimeFetchRequest(hints[key]);
+    if (!request) continue;
     try {
-      const payload = await fetchRuntimeBlock(key, hint);
-      if (payload) {
-        runtimeBlocks.value = { ...runtimeBlocks.value, [key]: payload };
-      }
-    } catch (err) {
-      // Fail-soft: a missing runtime block must not break the rest of the
-      // scene contract rendering. Surface it under the entry's stub title.
-      runtimeBlocks.value = { ...runtimeBlocks.value, [key]: {
-        block_key: String(hint?.block_key || key),
-        block_type: 'runtime_block_error',
-        title: asText(block?.title) || key,
-        state: 'error',
-        error: err instanceof Error ? { message: err.message } : { message: 'fetch failed' },
-      } };
+      const data = await intentRequest<{ block?: Record<string, unknown> }>({
+        ...request, context: { scene_key: capturedSceneKey, ...request.context },
+      });
+      if (!isCurrent()) break;
+      if (data?.block && typeof data.block === 'object') hydrated[key] = data.block;
+    } catch (error) {
+      if (!isCurrent()) break;
+      // A current block failure is local to its declared stub, not the entire scene.
+      hydrated[key] = {
+        block_key: key, block_type: 'runtime_block_error',
+        title: asText(block?.title) || key, state: 'error',
+        error: { message: error instanceof Error ? error.message : 'fetch failed' },
+      };
     }
   }
+  return hydrated;
 }
 
 function mergeRuntimeBlock(stub: SceneBlock, payload: Record<string, unknown> | undefined): SceneBlock {
@@ -393,38 +354,55 @@ async function handleAction(event: PageBlockActionEvent) {
   await openTarget((target || {}) as Record<string, unknown>);
 }
 
-async function loadContract() {
-  try {
-    status.value = 'loading';
+const loader = createReadonlyBlockLoader<{
+  contract: SceneContract;
+  hydrated: Record<string, Record<string, unknown>>;
+}>({
+  reset(loading) {
+    status.value = loading ? 'loading' : 'idle';
     errorMessage.value = '';
-    const data = await intentRequest<SceneContract>({
-      intent: props.intent,
-      params: {
-        record_id: positiveRouteInt('record_id') || undefined,
-        project_id: positiveRouteInt('project_id') || undefined,
-      },
-      context: {
-        scene_key: props.sceneKey,
-        record_id: positiveRouteInt('record_id') || undefined,
-        project_id: positiveRouteInt('project_id') || undefined,
-      },
-    });
-    rawContract.value = (data && typeof data === 'object') ? data : {};
-    await hydrateDeferredBlocks();
-    status.value = 'idle';
-  } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : 'unknown error';
+    rawContract.value = null;
+    runtimeBlocks.value = {};
+  },
+  success({ contract, hydrated }) {
+    rawContract.value = contract;
+    runtimeBlocks.value = hydrated;
+  },
+  error(error) {
+    errorMessage.value = error instanceof Error ? error.message : 'unknown error';
     status.value = 'error';
-  }
+  },
+  settled() { if (status.value === 'loading') status.value = 'idle'; },
+});
+
+function loadContract() {
+  // Route parameters belong to the entry request only. Deferred hints are complete declarations.
+  const entryRequest = {
+    intent: props.intent,
+    params: {
+      record_id: positiveRouteInt('record_id') || undefined,
+      project_id: positiveRouteInt('project_id') || undefined,
+    },
+    context: {
+      scene_key: props.sceneKey,
+      record_id: positiveRouteInt('record_id') || undefined,
+      project_id: positiveRouteInt('project_id') || undefined,
+    },
+  };
+  return loader.load(entryRequest.intent.trim() ? async isCurrent => {
+    const data = await intentRequest<SceneContract>(entryRequest);
+    const contract = data && typeof data === 'object' ? data : {};
+    const hydrated = isCurrent() ? await hydrateDeferredBlocks(contract, isCurrent, entryRequest.context.scene_key) : {};
+    return { contract, hydrated };
+  } : null);
 }
 
 watch(
   () => [props.intent, props.sceneKey, route.fullPath],
-  () => {
-    void loadContract();
-  },
+  () => { void loadContract(); },
   { immediate: true },
 );
+onUnmounted(() => loader.dispose());
 </script>
 
 <style scoped>

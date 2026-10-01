@@ -263,6 +263,13 @@ def static_projection_request(params):
 def projection_base_params(params):
     """Return the record-independent request used to build a reusable base."""
     source = dict(params or {})
+    # A create source contains default_get facts (including live configuration
+    # and related values), not only reusable view structure. Rebuild it through
+    # the existing dynamic path; source tokens do not describe those facts.
+    if str(source.get("render_profile") or source.get("renderProfile") or "").strip().lower() == "create":
+        return None
+    if any(str(source.get(key) or "").strip().lower() == "new" for key in ("record_id", "recordId", "res_id", "resId")):
+        return None
     hard_dynamic_keys = {
         "current_project_id",
         "default_project_id",

@@ -77,7 +77,7 @@ assert.equal(published.canDiscard, false);
 
 console.log('[business_config_change_set_presentation_test] PASS cases=7');
 
-import { effectiveConfigurationLabel } from '../src/views/businessConfigSurface/effectiveConfiguration';
+import { effectiveConfigurationLabel, configurationTargetRoleLabel } from '../src/views/businessConfigSurface/effectiveConfiguration';
 const effective = (rows: unknown[]) => ({ formStructureContract: { sourceAuthority: { governance_source: { businessConfigContracts: rows } } } });
 assert.match(effectiveConfigurationLabel(effective([]), 'form'), /使用默认配置/);
 assert.equal(effectiveConfigurationLabel(effective([{ id: 7, version_no: 2 }, { id: 8, version_no: 15 }]), 'form'), '表单新建态：配置 #7 · v2；配置 #8 · v15');
@@ -88,3 +88,10 @@ const legacy = effective([]);
 Object.assign(legacy.formStructureContract.sourceAuthority.governance_source, { legacyFieldPolicyOverlay: true });
 assert.match(effectiveConfigurationLabel(legacy, 'form'), /字段策略覆盖/);
 console.log('[configuration_summary] PASS cases=6');
+
+assert.equal(configurationTargetRoleLabel(undefined, 'admin', '管理员'), '未限定角色');
+assert.equal(configurationTargetRoleLabel('  ', 'admin', '管理员'), '未限定角色');
+assert.equal(configurationTargetRoleLabel('finance', 'admin', '管理员'), 'finance');
+assert.equal(configurationTargetRoleLabel('admin', 'admin', '管理员'), '管理员');
+assert.equal(configurationTargetRoleLabel('admin', 'admin', ''), 'admin');
+console.log('[configuration_target_role] PASS cases=5');

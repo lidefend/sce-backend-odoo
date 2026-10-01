@@ -1,11 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { BusinessConfigCoverageScanItem } from '../../api/businessConfig';
 import { isBusinessConfigRuntimeModel } from '../../app/businessConfigBoundaries';
 import { onBeforeRouteUpdate } from 'vue-router';
 import { findActionMeta } from '../../app/menu';
 import { ApiError } from '../../api/client';
 
-export function useBusinessConfigScopeLifecycle(deps: Record<string, any>) {
+export type BusinessConfigScopeLifecycleDependencies = {
+  scopeAction: Readonly<import('vue').Ref<number | undefined>>;
+  currentModel: Readonly<import('vue').Ref<string>>;
+  scopeView: Readonly<import('vue').Ref<number | undefined>>;
+  message: import('vue').Ref<{ text: string; detail: string }>;
+  surfaceLoadSeq: import('vue').Ref<number>;
+  loading: import('vue').Ref<boolean>;
+  error: import('vue').Ref<string>;
+  surfaceError: import('vue').Ref<string>;
+  withSurfaceLoadTimeout: typeof import('./workbenchUtils').withSurfaceLoadTimeout;
+  loadBusinessConfigSurface: typeof import('../../api/businessConfig').loadBusinessConfigSurface;
+  SURFACE_LOAD_TIMEOUT_MS: number;
+  scopeRole: Readonly<import('vue').Ref<string | undefined>>;
+  session: ReturnType<typeof import('../../stores/session').useSessionStore>;
+  router: import('vue-router').Router;
+  route: import('vue-router').RouteLocationNormalizedLoaded;
+  surface: import('vue').Ref<import('../../api/businessConfig').BusinessConfigSurfacePayload | null>;
+  scanLoading: import('vue').Ref<boolean>;
+  coverageScan: import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanPayload | null>;
+  scanBusinessConfigCoverage: typeof import('../../api/businessConfig').scanBusinessConfigCoverage;
+  rootMenuXmlid: Readonly<import('vue').Ref<string>>;
+  selectedPageLabel: import('vue').Ref<string>;
+  scopeModel: import('vue').Ref<string>;
+  scopeActionId: import('vue').Ref<number>;
+  scopeViewId: import('vue').Ref<number>;
+  selectedRuntimeRoute: import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanItem['runtime_route'] | null>;
+  focusSelectedConfigPanelOnMobile: () => Promise<void>;
+  resetEditorPanels: () => void;
+  runtimeReturnQuery: ReturnType<typeof import('./useBusinessConfigNavigation').useBusinessConfigNavigation>['buildRuntimeReturnQuery'];
+  confirmScopeChange: () => Promise<boolean>;
+  hasUnsavedEdits: () => boolean;
+  resetScopeDrafts: () => void;
+  scopeRoleKey: import('vue').Ref<string>;
+  scopeBusy: () => boolean;
+};
+
+export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecycleDependencies) {
   const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery, confirmScopeChange, hasUnsavedEdits, resetScopeDrafts } = deps;
   onBeforeRouteUpdate(async (to) => {
     const actionId = Number(to.query.action_id || 0);

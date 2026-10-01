@@ -100,16 +100,20 @@
         <field name="arch" type="xml">
             <form string="劳务计划">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认计划" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="plan_date"/>
                             <field name="start_date"/>
@@ -143,6 +147,7 @@
                     </notebook>
                 </sheet>
                 <chatter/>
+
             </form>
         </field>
     </record>
@@ -189,16 +194,20 @@
         <field name="arch" type="xml">
             <form string="劳务申请">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认申请" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="request_date"/>
                             <field name="required_date"/>
@@ -231,6 +240,7 @@
                     </notebook>
                 </sheet>
                 <chatter/>
+
             </form>
         </field>
     </record>
@@ -263,16 +273,21 @@
         <field name="arch" type="xml">
             <form string="考勤记录">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认考勤" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_confirm" string="确认考勤" type="object" class="btn-primary" invisible="state != 'approved'"/>
+                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="attendance_date"/>
                             <field name="labor_team"/>
@@ -356,11 +371,16 @@
         <field name="arch" type="xml">
             <form string="劳务用工">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
-                    <button name="action_confirm" string="确认用工" type="object" class="btn-primary" invisible="state != 'submitted'" groups="smart_construction_core.group_sc_cap_project_manager"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
+                    <button name="action_confirm" string="确认用工" type="object" class="btn-primary" invisible="state != 'approved'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'" groups="smart_construction_core.group_sc_cap_project_manager"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')" groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
                 </header>
                 <sheet>
                     <!-- U-C4 G09: 原生 arch 持有本入口的章节身份。 两个概览组带稳定
@@ -374,7 +394,7 @@
                          `note`／`attachment_ids` 是随时可补的依据类事实，故不设状态锁（与 570 一致）。 -->
                     <group name="labor_usage_overview">
                         <group name="labor_usage_processing_main" data-sc-anchor="labor_usage_processing_main" string="用工主信息">
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id" readonly="state != 'draft'"/>
                             <field name="usage_date" readonly="state != 'draft'"/>
                             <field name="usage_type" readonly="state != 'draft'"/>
@@ -464,16 +484,21 @@
         <field name="arch" type="xml">
             <form string="劳务结算">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'submitted'"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <field name="reject_reason" readonly="1" invisible="not reject_reason"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'approved'"/>
                     <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
                     <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="contractor_id"/>
                             <field name="settlement_date"/>

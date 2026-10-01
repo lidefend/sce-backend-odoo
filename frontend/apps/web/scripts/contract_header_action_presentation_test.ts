@@ -1,3 +1,4 @@
+import { normalizeActionSemantics } from '@sc/schema';
 import assert from 'node:assert/strict';
 
 import { buildContractFormActions, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget } from '../src/pages/contractForm/contractActionPresentation';
@@ -939,5 +940,37 @@ print(json.dumps(rows))
     if (execution.kind === 'contract-action') assert.equal(execution.action, binding);
     assert.equal(adapt([action]).direct[0].actionRef, action.actionRef);
   }
-  console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5');
+  // Lifecycle purposes are consumed, not inferred: a forward step keeps its
+  // declared emphasis, a reversal is never auto-promoted, and a purpose outside
+  // the published vocabulary stays visibly undeclared.
+  const activate = command('action_set_running', 'start_execution');
+  const complete = command('action_complete', 'complete');
+  const reopen = command('action_reopen', 'reopen');
+  assert.equal(activate.actionRef.actionSemantics?.purpose, 'start_execution');
+  assert.equal(activate.actionRef.actionSemanticsInvalid, undefined);
+  assert.equal(adapt([activate]).direct[0].tier, 'primary');
+  assert.equal(adapt([complete]).direct[0].tier, 'primary');
+  assert.equal(adapt([reopen]).direct[0].tier, 'secondary');
+  assert.equal(adapt([complete, activate]).direct.filter(a => a.tier === 'primary').length, 0);
+  const unpublished = command('action_unpublished', 'approve_v2');
+  assert.equal(unpublished.actionRef.actionSemanticsInvalid, true);
+  assert.equal(adapt([unpublished]).direct[0].tier, 'secondary');
+  console.log('[contract_action_business_boundaries] PASS confirmation=1 primary_conflict=1 destructive=2 unknown=1 disabled_reason=1 unchanged_bindings=5 lifecycle_purposes=4 undeclared_purpose=1');
 }
+
+for (const purpose of ['pause_execution', 'advance_phase', 'close_record'] as const) {
+  const declaration = { kind: 'business', purpose, executor: 'contract.action', origin: 'workflow.contract.service' };
+  assert.deepEqual(normalizeActionSemantics({ actionId: purpose, backendIdentity: 'native:declared', actionSemantics: declaration }), declaration);
+  assert.equal(normalizeActionSemantics({ actionId: purpose, backendIdentity: 'native:declared', actionSemantics: { ...declaration, executor: 'client.back' } }), undefined);
+}
+console.log('[project-lifecycle-semantics] PASS declared_pairs=3 rejected_pairs=3');
+
+const declaredHeaderSubmitRule = { ...allowedCreateRule, sourceWidgetId: 'page.header',
+  actionSemantics: { kind: 'business', purpose: 'submit', executor: 'contract.action', origin: 'workflow.contract.service' } };
+const declaredHeaderSubmit = buildContractFormActions({ model: 'sc.expense.claim', recordId: 0, renderProfile: 'create',
+  sceneReadyActions: [], v2ButtonStatus: explicitStatuses(declaredHeaderSubmitRule), v2ActionRuleList: [declaredHeaderSubmitRule] });
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit })?.enabled, true);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit.map(action => ({ ...action, authorizationAllowed: false })) }), null);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: declaredHeaderSubmit.map(action => ({ ...action, actionSemantics: undefined })) }), null);
+assert.equal(resolvePrimaryCreateFooterAction({ actions: [...declaredHeaderSubmit, ...declaredHeaderSubmit] }), null);
+console.log('[declared-header-create-submit] PASS cases=4');

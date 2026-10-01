@@ -94,12 +94,20 @@ export function mergeAuthoritativeCreateDefaults(params: {
   baseDefaults: Record<string, unknown>;
   authoritativeDefaults: unknown;
   fieldNames: string[];
+  fieldTypes?: Record<string, string>;
 }): Record<string, unknown> {
   const allowedFields = new Set(params.fieldNames.map((name) => String(name || '').trim()).filter(Boolean));
   const authoritative = createDefaultsDictionary(params.authoritativeDefaults);
   const merged = { ...params.baseDefaults };
   Object.entries(authoritative).forEach(([name, value]) => {
-    if (allowedFields.has(name)) merged[name] = value;
+    if (!allowedFields.has(name)) return;
+    const previous = params.baseDefaults[name];
+    // Keep presentation for the same authoritative relation identity only.
+    const sameRelation = params.fieldTypes?.[name] === 'many2one'
+      && typeof value === 'number' && Number.isInteger(value) && value > 0
+      && Array.isArray(previous) && previous.length === 2 && previous[0] === value
+      && typeof previous[1] === 'string' && previous[1].trim().length > 0;
+    merged[name] = sameRelation ? [value, previous[1]] : value;
   });
   return merged;
 }
@@ -109,6 +117,7 @@ export async function loadAuthoritativeCreateDefaults(params: {
   model: string;
   fieldNames: string[];
   baseDefaults: Record<string, unknown>;
+  fieldTypes?: Record<string, string>;
   fetchDefaults: (request: CreateDefaultGetRequest) => Promise<{ record?: Record<string, unknown> }>;
 }): Promise<Record<string, unknown>> {
   const request = resolveCreateDefaultGetRequest(params);
@@ -121,6 +130,7 @@ export async function loadAuthoritativeCreateDefaults(params: {
     baseDefaults: params.baseDefaults,
     authoritativeDefaults: result?.record,
     fieldNames: params.fieldNames,
+    fieldTypes: params.fieldTypes,
   });
 }
 

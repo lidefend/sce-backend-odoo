@@ -1,23 +1,23 @@
 <template>
   <article class="block block-progress-summary">
-    <header class="block-header">
-      <h4>{{ block.title || '进展' }}</h4>
-    </header>
-    <p v-if="summaryText" class="summary-text">{{ summaryText }}</p>
-    <div class="progress-list">
-      <article v-for="item in rows" :key="item.key" class="progress-item" :class="`kind-${item.kind}`">
-        <div class="progress-line">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}{{ item.unit }}</strong>
-        </div>
-        <ScProgress v-if="item.kind === 'rate'" class="progress-track" :percentage="item.value" status="active" />
-      </article>
-    </div>
-    <ScEmptyState v-if="!rows.length" density="compact" :heading-level="5" title="当前暂无进度数据" />
+    <ScCard class="block-card" :bordered="false" :title="block.title || '进展'">
+      <p v-if="summaryText" class="summary-text">{{ summaryText }}</p>
+      <div class="progress-list">
+        <article v-for="item in rows" :key="item.key" class="progress-item" :class="`kind-${item.kind}`">
+          <div class="progress-line">
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}{{ item.unit }}</strong>
+          </div>
+          <ScProgress v-if="item.kind === 'rate'" class="progress-track" :percentage="item.value" status="active" />
+        </article>
+      </div>
+      <ScEmptyState v-if="!rows.length" density="compact" :heading-level="5" title="当前暂无进度数据" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
@@ -66,8 +66,8 @@ const summaryText = computed(() => {
 </script>
 
 <style scoped>
-.block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 12px; height: 100%; }
-.block-header h4 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .summary-text { margin: 0 0 10px; color: var(--sc-app-text-secondary); font-size: 13px; line-height: 1.5; }
 .progress-list { display: grid; gap: 10px; }
 .progress-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 10px; background: var(--sc-app-info-bg); min-height: 66px; }

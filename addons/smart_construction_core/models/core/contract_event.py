@@ -3,10 +3,16 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 
+_DOCUMENT_STATE_TOKEN = object()
+
+
 class ScContractEvent(models.Model):
     _name = "sc.contract.event"
     _description = "合同履约事件"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
+    _state_from = ["submitted"]
+    _state_to = ["approved"]
+
     _order = "event_date desc, id desc"
 
     name = fields.Char(string="事件名称", required=True, tracking=True)
@@ -28,6 +34,8 @@ class ScContractEvent(models.Model):
         tracking=True,
     )
     project_id = fields.Many2one("project.project", string="项目", required=True, index=True, tracking=True)
+    company_id = fields.Many2one("res.company", related="project_id.company_id", store=True, index=True)
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
     contract_id = fields.Many2one("construction.contract", string="合同", index=True, tracking=True)
     partner_id = fields.Many2one("res.partner", string="相对方/供应商", index=True)
     cost_code_id = fields.Many2one("project.cost.code", string="成本科目", index=True)
@@ -58,6 +66,34 @@ class ScContractEvent(models.Model):
     legacy_fact_key = fields.Char(string="来源业务键", index=True)
     legacy_fact_type = fields.Char(string="来源业务类型", index=True)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                raise UserError(_("合同履约事件必须从草稿通过正式审批和业务动作流转。"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
+        if "state" in vals and not authoritative:
+            raise UserError(_("合同履约事件状态只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "name", "event_type", "project_id", "company_id", "contract_id", "partner_id", "cost_code_id",
+            "event_no", "source_channel", "event_date", "applicant_id", "department_id", "amount_impact",
+            "tax_excluded_amount", "currency_id", "tax_amount", "change_limit_amount", "limit_control_result",
+            "settlement_included", "attachment_ids", "description", "basis", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.state in ("submitted", "approved", "done", "cancel") or (
+                rec.state in ("draft", "rejected") and getattr(rec, "validation_status", "") in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中、已批准或已结束的合同履约事件内容不可改写；请按正式流程办理。"))
+        return super().write(vals)
+
+    def _write_document_state(self, values):
+        return self.with_context(sc_document_state_token=_DOCUMENT_STATE_TOKEN).write(values)
+
     @api.constrains("amount_impact", "tax_amount")
     def _check_amounts(self):
         for rec in self:
@@ -69,37 +105,51 @@ class ScContractEvent(models.Model):
             if rec.state not in ("draft", "rejected"):
                 raise UserError(_("只有草稿或已驳回的合同履约事件可以提交。"))
             rec._check_business_anchor()
-            rec.write({"state": "submitted"})
+            rec._write_document_state({"state": "submitted", "reject_reason": False})
+            if not self.env["sc.approval.policy"]._start_submission_review(rec):
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "approved"})
         return True
 
     def action_approve(self):
-        for rec in self:
-            if rec.state != "submitted":
-                raise UserError(_("只有已提交的合同履约事件可以审批。"))
-            rec._check_business_anchor()
-            rec.write({"state": "approved"})
-        return True
+        self.ensure_one()
+        if self.state != "submitted":
+            raise UserError(_("只有已提交的合同履约事件可以审批。"))
+        self._check_business_anchor()
+        return self.env["sc.approval.policy"]._approve_submission_review(self)
 
     def action_reject(self):
+        self.ensure_one()
+        if self.state != "submitted":
+            raise UserError(_("只有已提交的合同履约事件可以驳回。"))
+        return self.env["sc.approval.policy"]._reject_submission_review(self)
+
+    def action_on_tier_approved(self):
         for rec in self:
-            if rec.state != "submitted":
-                raise UserError(_("只有已提交的合同履约事件可以驳回。"))
-            rec.write({"state": "rejected"})
-        return True
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "validated":
+                rec._check_business_anchor()
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "approved"})
+
+    def action_on_tier_rejected(self):
+        for rec in self:
+            if rec.state == "submitted" and rec.review_ids and rec.validation_status == "rejected":
+                reviews = rec.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                rec.with_context(skip_validation_check=True)._write_document_state({"state": "rejected", "reject_reason": reason})
 
     def action_done(self):
         for rec in self:
             if rec.state != "approved":
                 raise UserError(_("只有已审批的合同履约事件可以完成。"))
             rec._check_business_anchor()
-            rec.write({"state": "done"})
+            self.env["sc.approval.policy"]._assert_submission_approved(rec, ("approved",))
+            rec._write_document_state({"state": "done"})
         return True
 
     def action_cancel(self):
         for rec in self:
             if rec.state not in ("draft", "submitted", "rejected"):
                 raise UserError(_("只有草稿、已提交或已驳回的合同履约事件可以取消。"))
-            rec.write({"state": "cancel"})
+            rec._write_document_state({"state": "cancel"})
         return True
 
     def _check_business_anchor(self):

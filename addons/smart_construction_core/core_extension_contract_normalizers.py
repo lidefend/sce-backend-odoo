@@ -71,6 +71,59 @@ def normalize_payment_settlement_detail_component(
                     "preview": "payment.request.settlement.preview",
                     "introduce": "payment.request.add.settlement.lines",
                 },
+                "introduceDialog": {
+                    "purpose": "payment-settlement-introduce",
+                    "title": "从结算单引入明细",
+                    "description": "选择结算单，勾选结算行并设置申请金额，确认后引入为付款申请明细",
+                    "searchPlaceholder": "搜索结算单号 / 名称",
+                    "searchActionLabel": "搜索",
+                    "searchLoadingLabel": "正在搜索结算单",
+                    "searchEmptyLabel": "未找到结算单，请输入关键词搜索",
+                    "resultContractLabel": "合同",
+                    "resultAmountLabel": "金额",
+                    "resultLineCountLabel": "明细",
+                    "resultLineCountSuffix": "行",
+                    "switchSourceLabel": "换一个结算单",
+                    "selectAllLabel": "全选未完全申请的行",
+                    "summarySelectedPrefix": "选中",
+                    "summaryLineCountSuffix": "行",
+                    "summarySettlementAmountLabel": "结算金额",
+                    "summaryApplicableAmountLabel": "可申请",
+                    "columnLabels": {
+                        "name": "名称",
+                        "contract": "合同",
+                        "settlementAmount": "结算金额",
+                        "applied": "已申请",
+                        "remaining": "可申请",
+                        "state": "状态",
+                    },
+                    "stateAppliedLabel": "已申请完",
+                    "stateApplicableLabel": "可申请",
+                    "allAppliedLabel": "该结算单所有明细均已申请完毕",
+                    "historyTitle": "历史申请记录",
+                    "historyCountSuffix": "笔",
+                    "historyExpandLabel": "展开",
+                    "historyCollapseLabel": "收起",
+                    "ratioModeLabel": "按比例",
+                    "amountModeLabel": "按总金额",
+                    "ratioPlaceholder": "申请比例 %",
+                    "totalPlaceholder": "总申请金额",
+                    "ratioHint": "每行申请 = 可申请 * 比例",
+                    "amountHint": "按各结算行可申请占比分配",
+                    "applyTotalLabel": "本次申请合计",
+                    "cancelLabel": "取消",
+                    "confirmLabel": "确认引入",
+                    "recordRequiredMessage": "请先保存付款申请后再引入明细",
+                    "payloadFields": {
+                        "record": "payment_request_id",
+                        "source": "settlement_id",
+                        "sourceLines": "settlement_line_ids",
+                        "applyMode": "apply_mode",
+                        "ratio": "ratio",
+                        "totalAmount": "total_amount",
+                        "searchKeyword": "keyword",
+                    },
+                },
             })
             value["componentConfig"] = config
             changed = True
@@ -92,110 +145,6 @@ def normalize_payment_settlement_detail_component(
     }
     layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
-
-def normalize_construction_diary_form(contract: dict[str, Any], source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
-    if model != "sc.construction.diary" or view_type != "form":
-        return
-    groups: list[tuple[str, list[str]]] = [
-        ("项目与日志", ["project_id", "date_diary", "diary_type", "title"]),
-        ("现场情况", ["weather", "construction_unit", "project_manager", "manpower_count", "attendance_equipment"]),
-        ("施工内容", ["description", "material_inspection_note", "hidden_acceptance_note", "next_plan"]),
-        ("质量安全", ["quality_name", "safety_note", "test_block_note", "design_change_note"]),
-        ("办理信息", ["handler_name", "note"]),
-    ]
-    ordered_fields = [name for _title, names in groups for name in names]
-    labels = {
-        "date_diary": "日志日期",
-        "diary_type": "日志类型",
-        "title": "日志标题",
-        "description": "今日施工内容",
-        "material_inspection_note": "材料进场/送检",
-        "hidden_acceptance_note": "隐蔽工程验收",
-        "next_plan": "下步计划",
-        "quality_name": "质量事项",
-        "safety_note": "安全情况",
-        "test_block_note": "试块制作",
-        "design_change_note": "设计变更/技术核定",
-        "handler_name": "经办人",
-    }
-    required = {"project_id", "date_diary", "diary_type"}
-    readonly = {"name", "document_no", "source_origin", "state"}
-    field_map = source_contract.get("fields") if isinstance(source_contract.get("fields"), dict) else {}
-    layout_contract = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
-    existing: dict[str, dict[str, Any]] = {}
-    _sc_collect_field_nodes(layout_contract.get("containerTree"), existing)
-
-    def descriptor(name: str) -> dict[str, Any]:
-        raw = field_map.get(name) if isinstance(field_map.get(name), dict) else {}
-        label = labels.get(name) or raw.get("string") or raw.get("label") or name
-        return {
-            "name": name,
-            "label": label,
-            "string": label,
-            "type": raw.get("type") or raw.get("ttype") or "char",
-            "required": name in required,
-            "readonly": name in readonly or bool(raw.get("readonly")),
-            "domain": raw.get("domain") if isinstance(raw.get("domain"), list) else [],
-            "context": raw.get("context") if isinstance(raw.get("context"), dict) else {},
-            **({"relation": raw.get("relation")} if raw.get("relation") else {}),
-            **({"selection": raw.get("selection")} if isinstance(raw.get("selection"), list) else {}),
-        }
-
-    def normalize_node(name: str) -> dict[str, Any]:
-        node = deepcopy(existing.get(name) or {"type": "field", "name": name, "children": [], "widgetList": []})
-        info = descriptor(name)
-        label = _sc_text(info.get("label")) or name
-        node.update({"type": "field", "name": name, "string": label, "label": label, "widgetId": f"field.{name}"})
-        node["fieldInfo"] = {**(node.get("fieldInfo") if isinstance(node.get("fieldInfo"), dict) else {}), **info}
-        node["field_info"] = {**(node.get("field_info") if isinstance(node.get("field_info"), dict) else {}), **info}
-        config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
-        config.update({"fieldType": info.get("type"), "required": name in required, "readonly": bool(info.get("readonly"))})
-        if info.get("selection"):
-            config["selection"] = info.get("selection")
-        if info.get("relation"):
-            config["relation"] = info.get("relation")
-        node["componentConfig"] = config
-        return node
-
-    container_tree: list[dict[str, Any]] = [{
-        "type": "header",
-        "name": "status",
-        "children": [normalize_node("state")] if "state" in field_map or "state" in existing else [],
-        "widgetList": [],
-    }]
-    for index, (title, names) in enumerate(groups, start=1):
-        children = [normalize_node(name) for name in names if name in field_map or name in existing]
-        if not children:
-            continue
-        container_tree.append({
-            "type": "group",
-            "name": "construction_diary_%s" % index,
-            "string": title,
-            "label": title,
-            "children": children,
-            "widgetList": [],
-        })
-    _sc_set_v2_container_tree(contract, container_tree)
-    _sc_set_v2_widget_status(
-        contract,
-        [
-            {
-                "widgetId": f"field.{name}",
-                "visible": True,
-                "readonly": name in readonly,
-                "required": name in required,
-                "disabled": name in readonly,
-                "auth": "read" if name in readonly else "edit",
-            }
-            for name in ["state"] + ordered_fields
-        ],
-    )
-    _sc_set_v2_governance_patch(contract, "construction_diary_form", {
-        "applied": True,
-        "model": model,
-        "visible_fields": ordered_fields,
-        "hidden_reason": "construction_diary_handling_projection",
-    })
 
 def general_contract_tax_contract(contract: dict[str, Any], source_contract: dict[str, Any] | None = None) -> None:
     if not isinstance(contract, dict):
@@ -344,3 +293,39 @@ def form_field_aliases(payload: dict[str, Any] | None) -> dict[str, str] | None:
     if model == "sc.general.contract" and "tax_id" in fields_map:
         return {"tax_rate": "tax_id"}
     return None
+
+
+def restrict_plan_node_structure(data: dict[str, Any]) -> dict[str, Any]:
+    """Restrict native relation capabilities from the hydrated parent facts."""
+    record = data.get("record") if isinstance(data.get("record"), dict) else {}
+    if not record.get("id"):
+        return data
+    allowed = record.get("state") == "draft" and record.get("validation_status") not in ("waiting", "pending", "validated")
+    projected = deepcopy(data)
+
+    def restrict(subview):
+        if not isinstance(subview, dict):
+            return
+        policies = subview.get("policies")
+        if not isinstance(policies, dict):
+            return
+        for key in ("can_create", "can_unlink"):
+            policies[key] = policies.get(key) is True and allowed
+        if not allowed:
+            policies["reason_code"] = "PLAN_NODE_BASELINE_LOCKED"
+
+    def visit(value):
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+        elif isinstance(value, dict):
+            if value.get("name") == "line_ids":
+                restrict(value.get("subview"))
+            if isinstance(value.get("line_ids"), dict):
+                restrict(value["line_ids"])
+                restrict(value["line_ids"].get("subview"))
+            for item in value.values():
+                visit(item)
+
+    visit(projected)
+    return projected

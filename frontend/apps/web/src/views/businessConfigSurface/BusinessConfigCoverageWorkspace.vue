@@ -10,7 +10,11 @@
         v-for="option in pageTypeOptions"
         :key="option.key"
         type="button"
-        :class="{ active: pageTypeFilter === option.key }"
+        variant="ghost"
+        size="small"
+        appearance="section-tab"
+        :aria-pressed="pageTypeFilter === option.key"
+        :aria-current="pageTypeFilter === option.key ? 'location' : undefined"
         @click="$emit('update:pageTypeFilter', option.key)"
       >
         {{ option.label }}
@@ -132,12 +136,16 @@
         <ScButton
           v-for="section in visibleConfigSections"
           :key="`tab-${section.key}`"
-          :variant="activeSectionKey === section.key ? 'primary' : 'ghost'"
+          type="button"
+          variant="ghost"
+          size="small"
+          appearance="section-tab"
           role="tab"
           :aria-selected="activeSectionKey === section.key"
+          :aria-current="activeSectionKey === section.key ? 'location' : undefined"
           @click="$emit('update:activeSectionKey', section.key)"
         >
-          {{ sectionDisplayLabel(section.key, section.label) }}
+          {{ section.label }}
         </ScButton>
       </div>
       <div v-if="activeSection" class="section-grid section-grid--active" data-lowcode-config-task-grid="v1">
@@ -145,7 +153,7 @@
           <div class="config-card-head">
             <div>
               <span>{{ sectionTaskKindLabel(activeSection.key) }}</span>
-              <h2>{{ sectionDisplayLabel(activeSection.key, activeSection.label) }}</h2>
+              <h2>{{ activeSection.label }}</h2>
             </div>
             <ScStatusBadge
               :label="sectionStatusLabel(activeSection.key, activeSection.contract_count)"
@@ -251,7 +259,7 @@
           <em>{{ deliveryReadinessItemMetaText(item) }}</em>
         </ScButton>
       </div>
-      <div v-if="!visibleDeliveryReadinessItems.length" class="workbench-status-empty">状态读取中</div>
+      <ScInlineState v-if="!visibleDeliveryReadinessItems.length" state="loading" label="状态读取中" />
       <div v-if="advancedPanelOpen && snapshotSummary" class="workbench-status-snapshot">
         <span>配置快照</span>
         <strong>{{ snapshotSummary.contract_count }}</strong>
@@ -278,6 +286,7 @@ import ScSelect from '../../components/design-system/ScSelect.vue';
 import ScInput from '../../components/design-system/ScInput.vue';
 import ScCheckbox from '../../components/design-system/ScCheckbox.vue';
 import ScEmptyState from '../../components/design-system/ScEmptyState.vue';
+import ScInlineState from '../../components/design-system/ScInlineState.vue';
 
 type SurfaceSection = BusinessConfigSurfacePayload['sections'][number];
 type DeliveryItem = NonNullable<BusinessConfigSurfacePayload['delivery_readiness']>['items'][number];
@@ -331,7 +340,6 @@ const props = defineProps<{
   overallStatusLabel: (status: string) => string;
   boundaryLabel: (boundary: unknown) => string;
   sectionTaskKindLabel: (sectionKey: string) => string;
-  sectionDisplayLabel: (sectionKey: string, fallback: string) => string;
   sectionStatusLabel: (sectionKey: string, contractCount: number) => string;
   sectionPrimaryCopy: (sectionKey: string) => string;
   sectionImpactText: (sectionKey: string) => string;
@@ -347,6 +355,7 @@ const activeSection = computed(() => (
   || props.visibleConfigSections[0]
   || null
 ));
+
 
 const emit = defineEmits<{
   'update:pageSearch': [value: string];

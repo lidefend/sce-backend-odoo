@@ -10,6 +10,7 @@ REDUCER = ROOT / "frontend/apps/web/src/pages/contractForm/runtimeStateReducer.t
 APPLIER = ROOT / "frontend/apps/web/src/pages/contractForm/runtimeStateApplier.ts"
 TYPES = ROOT / "frontend/apps/web/src/pages/contractForm/types.ts"
 PAGE = ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue"
+PAGE_STATE = ROOT / "frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts"
 SAVE_HELPER = ROOT / "frontend/apps/web/src/pages/contractForm/saveRecordHelpers.ts"
 ACTION_RUNTIME = ROOT / "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts"
 PRIMARY_RUNTIME = ROOT / "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts"
@@ -33,6 +34,7 @@ def main() -> int:
     applier = _read(APPLIER)
     types = _read(TYPES)
     page = _read(PAGE)
+    page_state = _read(PAGE_STATE)
     save_helper = _read(SAVE_HELPER)
     action_runtime = _read(ACTION_RUNTIME)
     primary_runtime = _read(PRIMARY_RUNTIME)
@@ -181,7 +183,10 @@ def main() -> int:
         errors.append("ContractFormPage.vue still declares submissionFeedback inline")
 
     required_consumers = [
-        (page, "type SubmissionFeedback,", "ContractFormPage.vue"),
+        # SubmissionFeedback ownership moved to the page-state composable; the page
+        # only consumes the ref it returns, so the shared-protocol type import is
+        # required on the owner and the page keeps its no-local-declaration check.
+        (page_state, "import type { BusyKind, SubmissionFeedback, UiStatus } from './types';", "useContractFormPageState.ts"),
         (page, "import { applyFormRuntimeStatusEvent } from './contractForm/runtimeStateApplier';", "ContractFormPage.vue"),
         (save_helper, "import type { LayoutNode, SubmissionFeedback } from './types';", "saveRecordHelpers.ts"),
         (action_runtime, "import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';", "useFormActionRuntime.ts"),

@@ -18,17 +18,17 @@
 }
 
 .collection-summary-strip__label {
+  font: var(--sc-font-body-small);
   margin: 0;
   color: var(--sc-app-text-secondary);
-  font-size: 12px;
 }
 
 .collection-summary-strip__value {
+  font: var(--sc-font-title-extra-large);
   margin: var(--sc-space-xs) 0 0;
   color: var(--sc-app-text-primary);
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.25;
+
+
 }
 
 .collection-summary-strip__item--danger {
@@ -77,7 +77,8 @@
   }
 
   .collection-summary-strip__value {
-    font-size: 18px;
+  font: var(--sc-font-title-large);
+
   }
 }
 

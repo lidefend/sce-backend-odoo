@@ -1,48 +1,59 @@
 <template>
+  <ScDrawer
+    v-if="mobile"
+    :open="visible"
+    title="主导航"
+    appearance="navigation"
+    placement="left"
+    @close="emit('close')"
+  >
+    <ScAside
+      :id="surfaceId"
+      v-bind="$attrs"
+      width="100%"
+      class="product-mobile-navigation-surface"
+      data-semantic-component="ProductMobileNavigationDrawer"
+      data-navigation-driver="official-drawer"
+    >
+      <slot />
+    </ScAside>
+  </ScDrawer>
   <ScAside
-    v-if="visible"
+    v-else-if="visible"
     :id="surfaceId"
-    ref="surface"
     v-bind="$attrs"
     data-semantic-component="ProductMobileNavigationDrawer"
-    :role="mobile ? 'dialog' : undefined"
-    :aria-modal="mobile ? 'true' : undefined"
-    :tabindex="mobile ? -1 : undefined"
-    @keydown="onKeydown"
+    data-navigation-driver="official-aside"
   >
     <slot />
   </ScAside>
-  <ScButton
-    v-if="mobile && visible"
-    class="mobile-sidebar-backdrop"
-    type="button"
-    variant="ghost"
-    aria-label="关闭导航遮罩"
-    @click="emit('close')"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useModalLifecycle } from '../../composables/useModalLifecycle';
-import ScButton from '../design-system/ScButton.vue';
 import ScAside from '../design-system/ScAside.vue';
+import ScDrawer from '../design-system/ScDrawer.vue';
 
 defineOptions({ inheritAttrs: false });
-
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   visible: boolean;
   mobile: boolean;
   surfaceId?: string;
-}>(), {
-  surfaceId: 'primary-sidebar',
-});
-
+}>(), { surfaceId: 'primary-sidebar' });
 const emit = defineEmits<{ (event: 'close'): void }>();
-const surface = ref<HTMLElement | null>(null);
-const { onKeydown } = useModalLifecycle({
-  open: () => props.mobile && props.visible,
-  surface,
-  close: () => emit('close'),
-});
 </script>
+
+<style scoped>
+.product-mobile-navigation-surface {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--sc-navigation-bg);
+}
+.product-mobile-navigation-surface :deep(.workspace-sidebar-panel) {
+  flex: 1;
+  min-height: 0;
+}
+</style>

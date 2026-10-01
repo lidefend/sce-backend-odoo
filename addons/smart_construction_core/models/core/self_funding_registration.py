@@ -141,6 +141,13 @@ class ScSelfFundingRegistration(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
+        if not authoritative:
+            for values in vals_list:
+                if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
+                    raise UserError(_("单据必须从草稿通过正式审批和业务动作流转。"))
+                if values.get("source_origin", self.env.context.get("default_source_origin", "manual")) == "legacy":
+                    raise UserError(_("历史财务事实只能由受治理迁移载体创建。"))
         seq = self.env["ir.sequence"]
         legacy_authority = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
         for vals in vals_list:
@@ -177,8 +184,19 @@ class ScSelfFundingRegistration(models.Model):
 
     def write(self, vals):
         authoritative = self.env.context.get("sc_self_funding_authority_token") is _SELF_FUNDING_AUTHORITY_TOKEN
-        if not authoritative and (vals.get("state") == "done" or "finance_identity_state" in vals):
-            raise UserError(_("自筹终态与财务身份只能由正式业务动作写入。"))
+        if not authoritative and {"state", "source_origin", "finance_identity_state"}.intersection(vals):
+            raise UserError(_("自筹状态、来源与财务身份只能由正式业务动作写入。"))
+        reviewed_fields = {
+            "project_id", "company_id", "partner_id", "funding_type", "business_category_id",
+            "amount", "currency_id", "document_date", "document_no", "payment_account_name",
+            "partner_account_name", "bank_name", "bank_account", "summary", "attachment_ids", "active",
+        }
+        if not authoritative and reviewed_fields.intersection(vals) and any(
+            rec.state == "confirmed" or (
+                rec.state == "draft" and rec.validation_status in ("waiting", "pending", "validated")
+            ) for rec in self
+        ):
+            raise UserError(_("审批中或已批准的自筹内容不可改写；请按正式流程重新办理。"))
         if any(rec.state == "done" for rec in self) and not authoritative:
             allowed = {"note", "attachment_ids", "source_created_by", "source_created_at", "write_uid", "write_date"}
             blocked = set(vals) - allowed
@@ -203,12 +221,10 @@ class ScSelfFundingRegistration(models.Model):
                 raise UserError(_("只有草稿状态的自筹办理可以提交。"))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
-            if policy.is_approval_required(rec._name, company=rec.company_id):
-                company = rec.company_id or self.env.company
-                rec.with_company(company).with_context(allowed_company_ids=[company.id])._request_document_approval()
+            if policy._start_submission_review(rec):
                 event_code = "self_funding_submitted"
             else:
-                rec.write({"state": "confirmed", "reject_reason": False})
+                rec._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 event_code = "self_funding_confirmed"
             rec._audit_transition(event_code, before, rec._snapshot_audit_payload(), "action_confirm")
 
@@ -217,8 +233,7 @@ class ScSelfFundingRegistration(models.Model):
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的自筹办理可以完成。"))
-            if policy.is_approval_required(rec._name, company=rec.company_id) and rec.validation_status != "validated":
-                raise UserError(_("自筹办理尚未完成统一审批流程。"))
+            policy._assert_submission_approved(rec, ("confirmed",))
             before = rec._snapshot_audit_payload()
             rec._check_done_ready()
             rec._write_finance_authority({"state": "done"})
@@ -230,7 +245,7 @@ class ScSelfFundingRegistration(models.Model):
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认状态的自筹办理可以取消。"))
             before = rec._snapshot_audit_payload()
-            rec.write({"state": "cancel"})
+            rec._write_finance_authority({"state": "cancel"})
             rec._audit_transition("self_funding_cancelled", before, rec._snapshot_audit_payload(), "action_cancel")
 
     def _check_done_ready(self):
@@ -300,17 +315,6 @@ class ScSelfFundingRegistration(models.Model):
             else:
                 Ledger._create_authoritative(values)
 
-    def _request_document_approval(self):
-        self.ensure_one()
-        if self.review_ids and self.validation_status == "rejected":
-            self.restart_validation()
-        elif not self.review_ids or self.validation_status == "no":
-            reviews = self.request_validation()
-            if not reviews:
-                raise UserError(_("自筹办理已启用审批，但没有匹配的统一审批规则，请检查业务审批配置。"))
-        else:
-            raise UserError(_("自筹办理已经在统一审批流程中，请等待审批完成。"))
-
     def _check_state_from_condition(self):
         self.ensure_one()
         parent = getattr(super(), "_check_state_from_condition", None)
@@ -319,19 +323,18 @@ class ScSelfFundingRegistration(models.Model):
 
     def action_on_tier_approved(self):
         for rec in self:
-            if self.env.context.get("server_action_tier") and rec.validation_status != "validated":
-                # OCA base_tier_validation_server_action fires this callback
-                # after every approved level of a multi-level linear chain;
-                # a mid-chain invocation must not advance the record. The
-                # completed chain re-fires the callback and finishes it.
+            if not rec.review_ids or rec.validation_status != "validated":
+                # Intermediate or forged callbacks cannot create approval facts.
                 continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
-                rec.with_context(skip_validation_check=True).write({"state": "confirmed", "reject_reason": False})
+                rec.with_context(skip_validation_check=True)._write_finance_authority({"state": "confirmed", "reject_reason": False})
                 rec._audit_transition("self_funding_confirmed", before, rec._snapshot_audit_payload(), "action_on_tier_approved")
 
     def action_on_tier_rejected(self, reason=None):
         for rec in self:
+            if not rec.review_ids or rec.validation_status != "rejected":
+                continue
             if rec.state == "draft":
                 before = rec._snapshot_audit_payload()
                 rec.with_context(skip_validation_check=True).write({"reject_reason": reason or _("统一审批驳回")})

@@ -19,6 +19,10 @@ export type NativeBusinessSectionMatch<T extends NativeBusinessSectionNode> = {
   identity: NativeBusinessSectionIdentity;
 };
 
+export type NativeSectionHeadingNode = NativeBusinessSectionNode & {
+  semanticTitle?: unknown;
+};
+
 export type GovernedFormStructureSectionNode = NativeBusinessSectionNode & {
   nodeId?: unknown;
   semanticSlot?: unknown;
@@ -59,6 +63,37 @@ export function nativeBusinessSectionIdentity(
   const anchor = text(node.attributes?.['data-sc-anchor']);
   const label = readableTitle(node.title || node.string || node.label);
   return anchor && label ? { anchor, label } : null;
+}
+
+/**
+ * Resolve the visible heading of a form-body section.
+ *
+ * Authority order (contract-first):
+ *  1. an explicit released native opt-in (`data-sc-anchor` + readable title),
+ *  2. the contract-authored section title: the released native view
+ *     `string`/`label`, or the governed form-structure `semanticTitle` written
+ *     by the backend semantic standardizer.
+ *
+ * The renderer has no authority to invent a heading. It used to translate the
+ * semantic *role* into a hard-coded Chinese business label, which collapsed
+ * every distinct contract section onto the same placeholder heading
+ * ("基本资料") and hid the missing contract title instead of surfacing it.
+ * A section without a contract-authored title therefore renders no heading;
+ * "missing" must stay distinguishable from "declared".
+ */
+export function resolveNativeSectionHeading(
+  node: NativeSectionHeadingNode | null | undefined,
+  options: { fieldConfigEditable?: boolean } = {},
+): string {
+  if (options.fieldConfigEditable) return '';
+  // Only a group container owns a business section heading; other containers
+  // (sheet/div/notebook/...) render through their own presentation rules.
+  if (nodeKind(node) !== 'group') return '';
+  const identity = nativeBusinessSectionIdentity(node);
+  if (identity) return identity.label;
+  const authored = readableTitle(node?.title || node?.string || node?.label);
+  if (authored) return authored;
+  return text(node?.semanticTitle);
 }
 
 /**

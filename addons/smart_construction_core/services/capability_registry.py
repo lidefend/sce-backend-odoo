@@ -202,6 +202,26 @@ def _resolve_role_codes_for_user(user) -> set[str]:
     return roles
 
 
+def role_code_for_group(group_xmlid: str) -> str:
+    """Resolve the published role code one group grants, or ``""`` when unknown.
+
+    The group is the authorization gate; the role code only labels the handoff
+    hint.  Deriving it here keeps a single authority for the group -> role
+    relation, so a gate and the role a terminal is told about cannot drift into
+    two vocabularies (a role-group suffix and a capability-group role).
+    """
+    text = str(group_xmlid or "").strip()
+    if not text:
+        return ""
+    mapped = CAPABILITY_GROUP_ROLE_MAP.get(text)
+    if mapped:
+        return str(mapped)
+    if text.startswith(ROLE_GROUP_PREFIX_CORE):
+        suffix = text[len(ROLE_GROUP_PREFIX_CORE):]
+        return str(ROLE_SUFFIX_MAP.get(suffix, suffix))
+    return ""
+
+
 def _normalize_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value

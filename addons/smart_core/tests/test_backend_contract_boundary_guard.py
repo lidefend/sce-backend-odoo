@@ -56,6 +56,113 @@ class BackendContractBoundaryGuardTests(unittest.TestCase):
             self.assertTrue(callable(rule["predicate"]))
             self.assertTrue(rule["allowed"])
 
+    def test_contract_appearance_rule_rejects_client_structure(self):
+        leaks = guard.scan_contract_appearance(
+            'payload = {"sections": [{"label": "表单字段与布局", "appearance": "section-tab"}]}',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+        dom_leaks = guard.scan_contract_appearance(
+            'row = {"role": "tab", "aria-label": "配置类型"}\nmarkup = "<div class=\'x\'></div>"',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+        clean = guard.scan_contract_appearance(
+            'row = {"label": "表单字段与布局", "boundary": "business_contract"}',
+            "addons/smart_core/handlers/business_config_surface.py",
+        )
+
+        self.assertEqual(len(leaks), 1)
+        self.assertEqual(leaks[0]["line"], 1)
+        self.assertTrue(dom_leaks)
+        self.assertEqual(clean, [])
+
+    def test_managed_layout_channel_is_not_outlawed_by_the_appearance_rule(self):
+        # 布局契约是合法的一层：arch 投影与低代码呈现配置用它表达顺序、分组、显隐、
+        # 列集合和受管尺寸档位。外观规则不得把它当成外观。
+        for key in guard.MANAGED_LAYOUT_CHANNEL_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual(
+                    guard.scan_contract_appearance('"%s": 1,' % key, "managed-layout-channel"),
+                    [],
+                )
+        self.assertEqual(guard.managed_layout_channel_conflicts(), [])
+        self.assertEqual(
+            guard.scan_contract_appearance(
+                'section = {"group_title": "结算信息", "visible": True, "sequence": 10, '
+                '"columns": 2, "cols": 2, "field_size": "wide"}\n'
+                'layout = {"layoutType": "form", "layoutHints": {"group_title": "结算信息"}}\n'
+                'contract = {"layoutContract": {"containerTree": [{"class": "o_group"}]}, '
+                '"listProfile": {}, "pivotProfile": {}}',
+                "addons/smart_core/handlers/form_field_configuration.py",
+            ),
+            [],
+        )
+        # 受管布局通道放行，不等于外观规则失效：设计系统内部取值仍被拦下。
+        self.assertTrue(
+            guard.scan_contract_appearance('hint = {"density": "compact"}', "managed-layout-channel")
+        )
+
+    def test_terminal_projection_is_not_outlawed(self):
+        # 多终端按不同详细程度投递是既有设计：一份语义契约 + 每终端一个投影。
+        for key in guard.TERMINAL_PROJECTION_CHANNEL_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual(
+                    guard.scan_semantic_fork_by_terminal('"%s": 1,' % key, "terminal-projection"),
+                    [],
+                )
+        self.assertEqual(guard.terminal_projection_channel_conflicts(), [])
+        self.assertEqual(
+            guard.scan_semantic_fork_by_terminal(
+                'page_info = {"clientType": "wx_mini", "deliveryProfile": "mobile_compact"}\n'
+                'layout = {"adaptMode": "mobile", "layoutHints": {"columns": 1}}\n'
+                'meta = {"deliveryTrim": {"compact": True, "limits": {"widgets": 8}, '
+                '"original": {"widgets": 20}, "delivered": {"widgets": 8}, "omitted": {"widgets": 12}}}',
+                "addons/smart_core/core/unified_page_contract_v2_client.py",
+            ),
+            [],
+        )
+
+    def test_semantic_fork_by_terminal_is_rejected(self):
+        # 终端身份必须走 pageInfo.clientType；另外出现终端标识键、按终端覆盖语义、
+        # 或把终端取值写进载荷，都是在语义层分叉。
+        forked = guard.scan_semantic_fork_by_terminal(
+            'payload = {"render_target": "form"}\n'
+            'brand = {"terminal_overrides": {"mobile": 1}}\n'
+            'scope = {"platform": "mobile"}',
+            "addons/smart_core/handlers/form_field_configuration.py",
+        )
+
+        # "platform": "mobile" 同时命中「终端标识键」与「终端取值写进载荷」两条，符合预期。
+        self.assertEqual(
+            sorted((row["line"], row["message"].split("by terminal: ", 1)[-1]) for row in forked),
+            sorted([
+                (1, '"render_target":'),
+                (2, '"terminal_overrides":'),
+                (3, '"platform":'),
+                (3, '"platform": "mobile"'),
+            ]),
+        )
+        # 配置工作台的草稿预览设备是 runtime carrier，不是契约里的终端维度。
+        self.assertEqual(
+            guard.scan_semantic_fork_by_terminal(
+                'preview = {"device": _text(params.get("device")) if _text(params.get("device"))'
+                ' in {"desktop", "tablet", "mobile"} else "desktop"}',
+                "addons/smart_core/handlers/business_config_change_set.py",
+            ),
+            [],
+        )
+
+    def test_multi_terminal_boundary_is_declared_and_clean(self):
+        report = guard.build_report()
+
+        self.assertEqual(report["managed_layout_channel_conflicts"], [])
+        self.assertEqual(report["terminal_projection_channel_conflicts"], [])
+        self.assertEqual(report["semantic_fork_by_terminal_errors"], [])
+        self.assertIn("layoutContract", report["managed_layout_channel_keys"])
+        self.assertIn("field_size", report["managed_layout_channel_keys"])
+        self.assertIn("clientType", report["terminal_projection_channel_keys"])
+        self.assertIn("deliveryProfile", report["terminal_projection_channel_keys"])
+        self.assertIn("omitted", report["terminal_projection_channel_keys"])
+
     def test_report_keys_match_declared_rules(self):
         report = guard.build_report()
 

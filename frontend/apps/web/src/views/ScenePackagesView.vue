@@ -100,6 +100,7 @@
         <pre v-if="exportResult">{{ JSON.stringify(exportResult, null, 2) }}</pre>
       </article>
     </section>
+    <IntentConfirmationDialog ref="importConfirmationRef" />
   </section>
 </template>
 
@@ -111,6 +112,7 @@ import ScButton from '../components/design-system/ScButton.vue';
 import ScInput from '../components/design-system/ScInput.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTextarea from '../components/design-system/ScTextarea.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import {
@@ -133,6 +135,7 @@ const importStrategyOptions = [
 ];
 
 const busy = ref(false);
+const importConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const errorText = ref('');
 const traceId = ref('');
 const packages = ref<readonly ScenePackageInfo[]>([]);
@@ -212,15 +215,15 @@ async function runImport() {
     errorText.value = pageText('error_reason_required', 'reason is required for import');
     return;
   }
+  const confirmed = await importConfirmationRef.value?.confirm({
+    actionLabel: '导入 Scene 能力包',
+    message: '确认导入该 Scene 能力包？导入会变更当前场景已安装的能力集合。',
+  });
+  if (!confirmed) return;
   busy.value = true;
   errorText.value = '';
   try {
     const pkg = parsePackageJson();
-    const ok = window.confirm('Confirm import scene package?');
-    if (!ok) {
-      busy.value = false;
-      return;
-    }
     const res = await scenePackageImport({ package: pkg, strategy: importStrategy.value, reason });
     traceId.value = res.traceId || '';
     await loadPackages();

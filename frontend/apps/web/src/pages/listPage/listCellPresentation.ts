@@ -1,4 +1,5 @@
 import { resolveLocalizedDisplayValue } from '../../utils/display.ts';
+import { resolveStatusTone } from '../../app/presentation/collectionStatusPresentation.ts';
 import {
   COLLECTION_NUMERIC_EMPTY_TEXT,
   FIELD_VALUE_EMPTY_TEXT,
@@ -33,7 +34,6 @@ type CellPresentationInput = {
   trueText?: string;
   falseText?: string;
   numeric?: boolean;
-  toneByValue?: Record<string, ListStatusTone | string>;
 };
 
 function normalized(input: unknown) {
@@ -73,7 +73,6 @@ export function presentListCell(input: CellPresentationInput) {
     trueText = FIELD_VALUE_TRUE_TEXT,
     falseText = FIELD_VALUE_FALSE_TEXT,
     numeric = false,
-    toneByValue = {},
   } = input;
   const displayRaw = resolveLocalizedDisplayValue(raw, { emptyText });
   const temporalText = formatListTemporalValue(displayRaw, column);
@@ -86,9 +85,8 @@ export function presentListCell(input: CellPresentationInput) {
   else if ((displayRaw === false || rawText.trim() === FIELD_VALUE_EMPTY_TEXT) && numeric) text = COLLECTION_NUMERIC_EMPTY_TEXT;
   else if (typeof displayRaw === 'boolean') text = fieldType === 'boolean' ? (displayRaw ? trueText : falseText) : emptyText;
   else text = attachmentText || temporalText || numericText || String(displayRaw);
-  const toneKey = normalized(displayRaw);
-  const tone = isListStatusColumn(column)
-    ? (toneByValue[toneKey] || 'neutral')
-    : 'neutral';
+  // A status badge colour is a frontend presentation decision, resolved from
+  // the authoritative status value rather than from the displayed label.
+  const tone = isListStatusColumn(column) ? resolveStatusTone(raw) : 'neutral';
   return { text, tone };
 }

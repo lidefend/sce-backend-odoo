@@ -177,6 +177,27 @@ FORBIDDEN_STRICT_STORE_META_EXTENSION_TOKENS = (
     "requiredCapabilities",
 )
 
+# `actionContract.deletePolicy` is a free-form object in the published schema, so
+# its key vocabulary is owned by the two delete-policy producers rather than by
+# the frontend.  These tokens are read from that governed payload; they are not
+# accepted as compatibility aliases, and the producer check below binds every
+# one of them to a real declaration so the whitelist cannot drift into an
+# invented alias.
+ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS = {
+    "allowed_states",
+    "denied_reason_code",
+    "policy_kind",
+    "reason_code",
+    "state_field",
+    "state_limited_business_document",
+}
+
+# The delete-policy producers own the payload vocabulary the strict store reads.
+DELETE_POLICY_PRODUCERS = (
+    ROOT / "addons/smart_core/utils/delete_policy.py",
+    ROOT / "addons/smart_construction_core/core_extension_policy_maps.py",
+)
+
 ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # ContractV2ValueSource.kind; not a payload field read.
     "main_data",
@@ -184,6 +205,8 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     "relation_entry",
     "relation_field",
     "widget_options",
+    # Declared delete-policy vocabulary, bound to its producers below.
+    *ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS,
 }
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
@@ -628,6 +651,15 @@ def main() -> int:
         if token in strict_store_source:
             violations.append(
                 f"{_relative(STRICT_STORE)}: strict V2 store must not read schema-external meta extension {token}"
+            )
+    delete_policy_producer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in DELETE_POLICY_PRODUCERS
+    )
+    for token in sorted(ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS):
+        if token not in delete_policy_producer_source:
+            violations.append(
+                f"{_relative(STRICT_STORE)}: delete policy token {token} is not declared by the backend "
+                "delete policy producers, so the strict store must not read it"
             )
     strict_store_snake_tokens = _snake_case_tokens(strict_store_source)
     if strict_store_snake_tokens != ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS:

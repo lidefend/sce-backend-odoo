@@ -4,6 +4,7 @@ from odoo import api
 from odoo.http import request
 from odoo.exceptions import AccessError, MissingError
 from ..core.intent_operation_policy import access_mode_for_intent, nested_params
+from ..core.work_item_action_authority import work_item_request_access_mode
 from ..core.request_identity import identity_id
 from ..utils.backend_contract_boundaries import APPROVAL_POLICY_INTENTS, BUSINESS_CONFIG_INTENTS
 from ..utils.extension_hooks import call_extension_hook_first
@@ -311,6 +312,14 @@ def check_intent_permission(ctx):
         action_id = _param_value(ctx_params, "action_id")
         action_type = _param_value(ctx_params, "action_type") or _param_value(ctx_params, "type")
         access_mode = access_mode_for_intent(intent_name, ctx_params)
+        try:
+            work_access_mode = work_item_request_access_mode(intent_name, ctx_params,
+                authorize=lambda origin, **target: call_extension_hook_first(
+                    env, "smart_core_authorize_work_item_origin", env, origin, **target))
+        except ValueError as error:
+            raise AccessError(str(error)) from error
+        if work_access_mode:
+            access_mode = work_access_mode
 
 
         # ✅ 校验模型访问权限

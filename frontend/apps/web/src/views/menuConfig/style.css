@@ -4,33 +4,9 @@
   min-height: 100%;
 }
 
-.menu-config-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--sc-app-border);
-  background: var(--sc-app-panel);
-}
 
-.eyebrow {
-  margin: 0 0 4px;
-  color: var(--sc-app-text-secondary);
-  font-size: 12px;
-}
 
-h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
 .dirty-count {
   color: var(--sc-app-warning-text);
@@ -46,12 +22,6 @@ h1 {
   background: var(--sc-app-danger-bg);
 }
 
-.status {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-}
 
 .guide-panel {
   display: grid;
@@ -101,17 +71,7 @@ h1 {
   line-height: 1.45;
 }
 
-.status.error {
-  border: 1px solid var(--sc-app-danger-border);
-  background: var(--sc-app-danger-bg);
-  color: var(--sc-app-danger-text);
-}
 
-.status.ok {
-  border: 1px solid var(--sc-app-success-border);
-  background: var(--sc-app-success-bg);
-  color: var(--sc-app-success-text);
-}
 
 .audit-panel {
   margin: 0;
@@ -188,13 +148,6 @@ h1 {
   overflow: auto;
 }
 
-.version-empty {
-  padding: 8px;
-  border: 1px dashed var(--sc-app-border);
-  border-radius: 6px;
-  color: var(--sc-app-text-secondary);
-  background: var(--sc-app-muted-bg);
-}
 
 .version-item {
   min-width: 0;
@@ -294,7 +247,7 @@ h1 {
   gap: 10px;
 }
 
-.create-form label {
+.create-form > label:not(.sc-checkbox) {
   display: grid;
   gap: 6px;
   color: var(--sc-app-text-secondary);
@@ -302,10 +255,8 @@ h1 {
 }
 
 .create-check {
-  grid-template-columns: auto 1fr;
-  align-items: end;
-  align-content: end;
-  min-height: 58px;
+  align-self: end;
+  min-height: 32px;
 }
 
 .create-panel-footer {
@@ -371,13 +322,6 @@ h1 {
   border-bottom: 1px solid var(--sc-app-border);
 }
 
-.tree-search input {
-  width: 100%;
-  min-height: calc(var(--sc-component-input-height-md) * 1px);
-  border: 1px solid var(--sc-app-border);
-  border-radius: var(--sc-component-input-radius);
-  padding: 0 10px;
-}
 
 .tree-search-summary {
   min-height: 26px;
@@ -453,40 +397,21 @@ h1 {
   padding: 6px;
 }
 
-:deep(.config-tree-list) {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tree-node {
-  width: 100%;
-  min-height: 30px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  background: transparent;
-  color: var(--sc-app-text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
+/* Hierarchy, expansion, hover, active and drag feedback come from the official
+   tree composition; only our own node content is styled here. */
+.tree-node,
 :deep(.tree-node) {
   width: 100%;
-  min-height: 30px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--sc-app-text-primary);
+  color: inherit;
   text-align: left;
-  cursor: pointer;
 }
 
-:deep(.tree-node > span:nth-child(2)) {
+.tree-node-label,
+:deep(.tree-node-label) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -502,65 +427,13 @@ h1 {
   padding: 8px 12px;
   border-radius: 4px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .tree-node.active {
   background: var(--sc-app-info-bg);
   color: var(--sc-app-info-text);
   font-weight: 600;
-}
-
-:deep(.tree-node.active) {
-  background: var(--sc-app-info-bg);
-  color: var(--sc-app-info-text);
-  font-weight: 600;
-}
-
-:deep(.tree-node.draggable) {
-  cursor: grab;
-  user-select: none;
-}
-
-:deep(.tree-node.draggable:hover) {
-  background: var(--sc-app-muted-bg);
-}
-
-:deep(.tree-node.dragging) {
-  cursor: grabbing;
-  opacity: 0.45;
-}
-
-:deep(.tree-node.drop-before) {
-  box-shadow: inset 0 2px 0 var(--sc-semantic-surface-interactive);
-}
-
-:deep(.tree-node.drop-after) {
-  box-shadow: inset 0 -2px 0 var(--sc-semantic-surface-interactive);
-}
-
-:deep(.tree-node.drop-inside) {
-  background: var(--sc-app-info-bg);
-  box-shadow: inset 0 0 0 1px var(--sc-semantic-surface-interactive);
-}
-
-.branch-marker {
-  width: 12px;
-  flex: 0 0 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-:deep(.branch-marker) {
-  width: 12px;
-  flex: 0 0 12px;
-  color: var(--sc-app-text-secondary);
-}
-
-:deep(.branch-marker.toggleable) {
-  cursor: pointer;
-}
-
-:deep(.branch-marker.toggleable:hover) {
-  color: var(--sc-app-text-primary);
 }
 
 .menu-config-editor {
@@ -575,4 +448,9 @@ h1 {
   padding: 12px;
   background: var(--sc-app-panel);
   box-shadow: var(--sc-app-shadow);
+}
+
+.menu-text-input {
+  width: 100%;
+  min-width: 0;
 }

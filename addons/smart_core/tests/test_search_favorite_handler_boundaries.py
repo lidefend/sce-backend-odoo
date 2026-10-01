@@ -223,5 +223,71 @@ class TestSearchFavoriteHandlerBoundaries(unittest.TestCase):
         self.assertEqual(filters.search_domains, [])
 
 
+class TestSearchFavoriteDeleteBoundaries(unittest.TestCase):
+    def setup_handler(self, *, owner=42, action=31, model="x.model", internal=True, denied=None):
+        module = _load_handler()
+        error = sys.modules["odoo.exceptions"].AccessError
+        record = types.SimpleNamespace(id=17, deleted=False)
+        def check_rule(operation):
+            if denied == "rule":
+                raise error("record rule denied")
+        record.check_access_rule = check_rule
+        record.unlink = lambda: setattr(record, "deleted", True)
+        class Filters:
+            def check_access_rights(self, operation):
+                if operation == denied:
+                    raise error("ACL denied")
+            def search(self, domain, limit=None):
+                self.domain = domain
+                values = dict((key, value) for key, _, value in domain)
+                return record if values == {"id":17,"user_id":owner,"model_id":model,"action_id":action} else False
+            def sudo(self):
+                raise AssertionError("deletion must never elevate")
+        filters = Filters()
+        target = _Model()
+        if denied == "model_read":
+            target.check_access_rights = lambda operation: (_ for _ in ()).throw(error("model denied"))
+        env = _Env({"x.model":target,"ir.filters":filters})
+        env.user = types.SimpleNamespace(has_group=lambda group: internal)
+        handler = module.SearchFavoriteDeleteHandler(env=env, payload={"filter_id":17,"model":"x.model","action_id":31})
+        return handler, record, filters, error
+
+    def test_owner_can_delete_exact_private_filter_without_elevation(self):
+        handler, record, filters, _ = self.setup_handler()
+        result = handler.handle()
+        self.assertTrue(result["ok"])
+        self.assertTrue(record.deleted)
+        self.assertEqual(result["meta"]["intent"], "search.favorite.delete")
+        self.assertIn(("user_id", "=", 42), filters.domain)
+
+    def test_shared_foreign_and_wrong_scope_filters_are_not_deleted(self):
+        for kwargs in ({"owner":False},{"owner":99},{"action":32},{"model":"other"}):
+            with self.subTest(kwargs=kwargs):
+                handler, record, _, _ = self.setup_handler(**kwargs)
+                self.assertFalse(handler.handle()["ok"])
+                self.assertFalse(record.deleted)
+
+    def test_acl_rule_and_model_denials_never_delete(self):
+        for denied in ("read","unlink","rule","model_read"):
+            with self.subTest(denied=denied):
+                handler, record, _, error = self.setup_handler(denied=denied)
+                with self.assertRaises(error):
+                    handler.handle()
+                self.assertFalse(record.deleted)
+
+    def test_noninternal_user_is_denied(self):
+        handler, record, _, _ = self.setup_handler(internal=False)
+        self.assertEqual(handler.handle()["error"]["code"], 403)
+        self.assertFalse(record.deleted)
+
+    def test_invalid_id_and_action_types_are_rejected(self):
+        for key, value in (("filter_id",True),("filter_id",0),("filter_id","17"),("action_id",True),("action_id",-1),("action_id","31")):
+            with self.subTest(key=key,value=value):
+                handler, record, _, _ = self.setup_handler()
+                handler.payload[key] = value
+                self.assertEqual(handler.handle()["error"]["code"],400)
+                self.assertFalse(record.deleted)
+
+
 if __name__ == "__main__":
     unittest.main()

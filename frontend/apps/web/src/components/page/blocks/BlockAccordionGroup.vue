@@ -1,18 +1,21 @@
 <template>
   <article class="block block-accordion-group">
-    <ScDisclosure :title="block.title || '详情'" open>
-      <div class="accordion-content">
-        <ScEmptyState v-if="rows.length === 0" density="compact" :heading-level="5" title="暂无数据" />
-        <article v-for="item in rows" :key="item.key" class="accordion-item">
-          <p class="accordion-title">{{ item.title }}</p>
-          <p class="accordion-desc">{{ item.description }}</p>
-        </article>
-      </div>
-    </ScDisclosure>
+    <ScCard class="block-card" :bordered="false">
+      <ScDisclosure :title="block.title || '详情'" open>
+        <div class="accordion-content">
+          <ScEmptyState v-if="rows.length === 0" density="compact" :heading-level="5" title="暂无数据" />
+          <article v-for="item in rows" :key="item.key" class="accordion-item">
+            <p class="accordion-title">{{ item.title }}</p>
+            <p class="accordion-desc">{{ item.description }}</p>
+          </article>
+        </div>
+      </ScDisclosure>
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
@@ -46,7 +49,8 @@ const rows = computed(() => {
 </script>
 
 <style scoped>
-.block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; height: 100%; }
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .accordion-content { margin-top: 8px; display: grid; gap: 8px; }
 .accordion-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 8px; background: var(--sc-app-muted-bg); }
 .accordion-title { margin: 0; font-size: 13px; font-weight: 600; }

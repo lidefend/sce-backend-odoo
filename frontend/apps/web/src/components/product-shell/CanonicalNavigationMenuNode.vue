@@ -15,7 +15,11 @@
   >
     <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <template #title>
-      <span class="navigation-node__label" :title="blockedTitle || node.label">{{ node.label }}</span>
+      <span
+        class="navigation-node__label"
+        data-navigation-toggle="submenu"
+        :title="blockedTitle || node.label"
+      >{{ node.label }}</span>
       <span v-if="badge" class="navigation-node__badge">{{ badge }}</span>
     </template>
     <CanonicalNavigationMenuNode

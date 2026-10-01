@@ -1,39 +1,40 @@
 <template>
-  <ScCard appearance="section" class="block block-alert-panel">
-    <header class="block-header">
-      <h4>{{ block.title || '提醒' }}</h4>
-      <div class="block-header-actions">
-        <ScButton
-          v-for="action in actions"
-          :key="`alert-action-${action.key}`"
-          size="small"
-          variant="ghost"
-          @click="emitAction(action.key, {})"
-        >
-          {{ action.label || action.key }}
-        </ScButton>
-      </div>
-    </header>
+  <article class="block block-alert-panel">
+    <ScCard class="block-card" :bordered="false" :title="block.title || '提醒'">
+      <template #actions>
+        <div class="block-header-actions">
+          <ScButton
+            v-for="action in actions"
+            :key="`alert-action-${action.key}`"
+            size="small"
+            variant="ghost"
+            @click="emitAction(action.key, {})"
+          >
+            {{ action.label || action.key }}
+          </ScButton>
+        </div>
+      </template>
 
-    <div v-if="items.length" class="alert-list">
-      <article
-        v-for="item in items"
-        :key="item.id"
-        class="alert-item"
-        :class="`tone-${item.tone || 'danger'}`"
-      >
-        <p class="alert-title">
-          <span>{{ item.title }}</span>
-          <span class="alert-source" :class="`source-${item.source}`">{{ item.sourceLabel }}</span>
-        </p>
-        <p class="alert-desc">{{ item.description }}</p>
-        <ScButton size="small" variant="primary" class="alert-open-btn" @click="emitAction(item.actionKey || 'open_scene', item.raw)">
-          {{ item.buttonText }}
-        </ScButton>
-      </article>
-    </div>
-    <ScEmptyState v-else density="compact" :heading-level="5" title="当前无风险提醒" />
-  </ScCard>
+      <div v-if="items.length" class="alert-list">
+        <article
+          v-for="item in items"
+          :key="item.id"
+          class="alert-item"
+          :class="`tone-${item.tone || 'danger'}`"
+        >
+          <p class="alert-title">
+            <span>{{ item.title }}</span>
+            <span class="alert-source" :class="`source-${item.source}`">{{ item.sourceLabel }}</span>
+          </p>
+          <p class="alert-desc">{{ item.description }}</p>
+          <ScButton size="small" variant="primary" class="alert-open-btn" @click="emitAction(item.actionKey || 'open_scene', item.raw)">
+            {{ item.buttonText }}
+          </ScButton>
+        </article>
+      </div>
+      <ScEmptyState v-else density="compact" :heading-level="5" title="当前无风险提醒" />
+    </ScCard>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -99,24 +100,8 @@ function normalizeSource(value: unknown) {
 </script>
 
 <style scoped>
-.block {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 14px;
-  height: 100%;
-}
-.block-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.block-header h4 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .block-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -180,7 +165,6 @@ function normalizeSource(value: unknown) {
   box-shadow: 0 10px 20px var(--sc-app-shadow);
 }
 @container (max-width: 480px) {
-  .block-header { align-items: flex-start; flex-direction: column; }
   .block-header-actions { width: 100%; }
 }
 </style>

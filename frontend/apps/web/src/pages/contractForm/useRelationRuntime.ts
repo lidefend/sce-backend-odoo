@@ -1,5 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
-import { reactive, ref } from 'vue';
+import { getCurrentScope, onScopeDispose, reactive, ref } from 'vue';
 import type { RelationSearchDialogState } from './RelationSearchDialog.vue';
 import {
   closedRelationSearchDialogState,
@@ -20,6 +20,20 @@ export function useRelationRuntime() {
   const relationSearchDialog = reactive<RelationSearchDialogState>(closedRelationSearchDialogState());
   const deniedRelationModels = new Set<string>();
   const relationQueryTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+  const relationRuntimeGeneration = ref(0);
+  const requestOwners = new Map<string, object>();
+  let disposed = false;
+  function captureRelationRequest(key: string): () => boolean {
+    const generation = relationRuntimeGeneration.value;
+    const owner = {};
+    requestOwners.set(key, owner);
+    return () => !disposed && relationRuntimeGeneration.value === generation && requestOwners.get(key) === owner;
+  }
+  if (getCurrentScope()) onScopeDispose(() => {
+    disposed = true;
+    invalidateRelationRequests();
+  });
 
   function relationKeyword(name: string) {
     return String(relationKeywords[name] || '');
@@ -60,8 +74,20 @@ export function useRelationRuntime() {
     };
   }
 
+  // Leaving a retained page cancels pending work without discarding its settled
+  // labels or draft. A real record reload additionally clears those caches.
+  function invalidateRelationRequests() {
+    relationRuntimeGeneration.value += 1;
+    requestOwners.clear();
+    Object.keys(relationQueryTimers).forEach((key) => {
+      clearTimeout(relationQueryTimers[key]);
+      delete relationQueryTimers[key];
+    });
+    closeRelationSearchDialog();
+  }
+
   function clearRelationRuntime() {
-    searchGeneration += 1;
+    invalidateRelationRequests();
     Object.keys(relationKeywords).forEach((key) => {
       delete relationKeywords[key];
     });
@@ -70,10 +96,6 @@ export function useRelationRuntime() {
     });
     Object.keys(clearedDynamicRelationFields).forEach((key) => {
       delete clearedDynamicRelationFields[key];
-    });
-    Object.keys(relationQueryTimers).forEach((key) => {
-      clearTimeout(relationQueryTimers[key]);
-      delete relationQueryTimers[key];
     });
     relationOptions.value = {};
     relationFieldDescriptors.value = {};
@@ -200,9 +222,6 @@ export function useRelationRuntime() {
     await params.openCreateForm(fieldName, descriptor);
   }
 
-  // Latest-issued query token per field; see queryRelationOptions.
-  const relationQueryTokens: Record<string, number> = {};
-  let relationQueryTokenSeq = 0;
 
   async function queryRelationOptions(params: {
     fieldName: string;
@@ -214,6 +233,8 @@ export function useRelationRuntime() {
     fetchOptions: (keyword: string, limit: number) => Promise<RelationOption[]>;
     isDeniedError: (error: unknown) => boolean;
   }): Promise<RelationOption[]> {
+    const isCurrent = captureRelationRequest(`query:${params.fieldName}`);
+    if (!isCurrent()) return [];
     const relation = String(params.relation || '').trim();
     if (!relation) return [];
     if (!params.canRead) {
@@ -230,11 +251,9 @@ export function useRelationRuntime() {
     // responses can settle out of order, and different keywords are separate
     // requests now, so a late response for an earlier keyword must neither
     // repaint the panel nor become selectable.
-    const queryToken = (relationQueryTokenSeq += 1);
-    relationQueryTokens[params.fieldName] = queryToken;
     try {
       const mapped = await params.fetchOptions(search, search ? 40 : 80);
-      if (relationQueryTokens[params.fieldName] !== queryToken) return mapped;
+      if (!isCurrent()) return [];
       if (search && !mapped.length && params.hasDynamicFallback) {
         return queryRelationOptions({ ...params, keyword: '' });
       }
@@ -246,7 +265,7 @@ export function useRelationRuntime() {
       }
       return mapped;
     } catch (err) {
-      if (params.isDeniedError(err)) deniedRelationModels.add(relation);
+      if (isCurrent() && params.isDeniedError(err)) deniedRelationModels.add(relation);
       return [];
     }
   }
@@ -290,5 +309,8 @@ export function useRelationRuntime() {
     queryRelationOptions,
     fetchRelationOptions,
     clearRelationRuntime,
+    invalidateRelationRequests,
+    captureRelationRequest,
+    relationRuntimeGeneration,
   };
 }

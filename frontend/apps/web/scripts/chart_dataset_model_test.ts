@@ -254,3 +254,67 @@ assert.equal(pieOption.tooltip.trigger, 'item');
 assert.equal(pieOption.xAxis, undefined);
 
 console.info('[chart-dataset-model-test] all assertions passed');
+
+// Declared requests are the sole context authority; only the dedicated read intent is allowed.
+import { resolveChartBlockRequest, fetchChartDataset } from '../src/api/chartFetch';
+import { createReadonlyBlockLoader, readonlyBlockData } from '../src/app/readonlyBlockRequest';
+const chartDeclaration = { fetch_intent: 'project.dashboard.chart.fetch', fetch_params: { chart_key: 'project.cost.structure', project_id: 7 } };
+let declarationChecks = 0;
+function chartCheck(actual: unknown, expected: unknown) { assert.deepEqual(actual, expected); declarationChecks += 1; }
+chartCheck(resolveChartBlockRequest(chartDeclaration), { status: 'ready', request: { intent: chartDeclaration.fetch_intent, params: chartDeclaration.fetch_params } });
+chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: { ...chartDeclaration.fetch_params, project_id: '7' }, title: 'Backend title', chart_registered: true, readonly: true }), resolveChartBlockRequest(chartDeclaration));
+chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: { ...chartDeclaration.fetch_params, project_id: 0 } }), { status: 'empty' });
+chartCheck(resolveChartBlockRequest({ project_id: 7, chart_key: 'project.cost.structure' }), { status: 'empty' });
+chartCheck(resolveChartBlockRequest(readonlyBlockData({ data: chartDeclaration, project_id: 99 })), resolveChartBlockRequest(chartDeclaration));
+for (const id of [true, false, [], [7], {}, 1.5, -1, Number.MAX_SAFE_INTEGER + 1, '07', ' 7', '7.0', '1e3']) {
+  chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: { ...chartDeclaration.fetch_params, project_id: id } }), { status: 'invalid' });
+}
+for (const chartKey of [{}, [], 7, true, '']) {
+  chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: { ...chartDeclaration.fetch_params, chart_key: chartKey } }), { status: 'invalid' });
+}
+for (const carrier of ['context', 'data', 'params', 'args', 'payload']) {
+  chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: { ...chartDeclaration.fetch_params, [carrier]: {} } }), { status: 'invalid' });
+}
+chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_intent: 'api.data' }), { status: 'invalid' });
+chartCheck(resolveChartBlockRequest({ ...chartDeclaration, readonly: false }), { status: 'invalid' });
+chartCheck(resolveChartBlockRequest({ ...chartDeclaration, fetch_params: [] }), { status: 'invalid' });
+await assert.rejects(fetchChartDataset({ intent: 'api.data', params: { project_id: 7, chart_key: 'project.cost.structure' } }), /Invalid readonly/);
+declarationChecks += 1;
+
+function deferredChart<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+let chartValue: string | null = null;
+let chartLoading = false;
+let chartErrors = 0;
+let chartSettled = 0;
+const chartLoader = createReadonlyBlockLoader<string>({
+  reset(loading) { chartValue = null; chartLoading = loading; },
+  success(value) { chartValue = value; },
+  error() { chartErrors += 1; },
+  settled() { chartSettled += 1; chartLoading = false; },
+});
+const oldChart = deferredChart<string>(), newChart = deferredChart<string>();
+const oldChartRun = chartLoader.load(() => oldChart.promise), newChartRun = chartLoader.load(() => newChart.promise);
+newChart.resolve('new'); await newChartRun;
+oldChart.resolve('old'); await oldChartRun;
+chartCheck([chartValue, chartLoading, chartSettled], ['new', false, 1]);
+const failingOldChart = deferredChart<string>(), latestChart = deferredChart<string>();
+const failingRun = chartLoader.load(() => failingOldChart.promise), latestRun = chartLoader.load(() => latestChart.promise);
+failingOldChart.reject(new Error('stale')); await failingRun;
+chartCheck([chartValue, chartLoading, chartErrors, chartSettled], [null, true, 0, 1]);
+latestChart.resolve('latest'); await latestRun;
+chartCheck(chartValue, 'latest');
+const removedChart = deferredChart<string>(); const removedRun = chartLoader.load(() => removedChart.promise);
+await chartLoader.load(null); removedChart.resolve('removed'); await removedRun;
+chartCheck([chartValue, chartLoading, chartSettled], [null, false, 2]);
+const disposedChart = deferredChart<string>(); const disposedRun = chartLoader.load(() => disposedChart.promise);
+chartLoader.dispose(); disposedChart.reject(new Error('unmounted')); await disposedRun;
+chartCheck([chartErrors, chartSettled], [0, 2]);
+let afterDisposeFetches = 0;
+await chartLoader.load(async () => { afterDisposeFetches += 1; return 'forbidden'; });
+chartCheck(afterDisposeFetches, 0);
+console.info(`[chart-block-request-test] PASS checks=${declarationChecks}`);

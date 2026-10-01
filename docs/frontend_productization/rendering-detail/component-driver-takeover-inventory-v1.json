@@ -118,7 +118,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 54,
+      "productionConsumerCount": 61,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -150,9 +150,9 @@
       ],
       "officialComponent": "auto-complete",
       "productionConsumerCount": 0,
-      "requiredForCurrentProduct": true,
-      "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 declares no free-text-with-suggestions field type. Relation input is the official filterable combobox already served by ScRelationField, and every other field type resolves to a value control with an exact value, so a standalone AutoComplete driver would have to invent a suggestion source the contract never declared.",
+      "status": "not_required"
     },
     {
       "adapterKeys": [],
@@ -197,8 +197,16 @@
     },
     {
       "adapterKeys": [],
-      "adapterSources": [],
-      "bridgeExports": [],
+      "adapterSources": [
+        {
+          "semanticAdapters": [],
+          "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+        }
+      ],
+      "bridgeExports": [
+        "TDesignBreadcrumb",
+        "TDesignBreadcrumbItem"
+      ],
       "officialComponent": "breadcrumb",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -230,7 +238,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 424,
+      "productionConsumerCount": 436,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -268,7 +276,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 62,
+      "productionConsumerCount": 79,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -337,7 +345,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 412,
+      "productionConsumerCount": 428,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -413,10 +421,10 @@
         "TDesignDescriptionsItem"
       ],
       "officialComponent": "descriptions",
-      "productionConsumerCount": 0,
+      "productionConsumerCount": 1,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "status": "adapter_present"
     },
     {
       "adapterKeys": [
@@ -438,7 +446,7 @@
         "TDesignDialog"
       ],
       "officialComponent": "dialog",
-      "productionConsumerCount": 96,
+      "productionConsumerCount": 105,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -473,7 +481,7 @@
         "TDesignDrawer"
       ],
       "officialComponent": "drawer",
-      "productionConsumerCount": 84,
+      "productionConsumerCount": 93,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -515,7 +523,7 @@
         "TDesignEmpty"
       ],
       "officialComponent": "empty",
-      "productionConsumerCount": 24,
+      "productionConsumerCount": 31,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -524,12 +532,15 @@
       "adapterKeys": [
         "ScForm",
         "ScFormField",
-        "ScFormItem"
+        "ScFormItem",
+        "ScFormItemProps",
+        "ScFormProps"
       ],
       "adapterSources": [
         {
           "semanticAdapters": [
-            "ScForm"
+            "ScForm",
+            "ScFormProps"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScForm.vue"
         },
@@ -541,7 +552,8 @@
         },
         {
           "semanticAdapters": [
-            "ScFormItem"
+            "ScFormItem",
+            "ScFormItemProps"
           ],
           "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue"
         }
@@ -551,7 +563,7 @@
         "TDesignFormItem"
       ],
       "officialComponent": "form",
-      "productionConsumerCount": 8,
+      "productionConsumerCount": 26,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -624,7 +636,7 @@
         "TDesignInputNumber"
       ],
       "officialComponent": "input",
-      "productionConsumerCount": 60,
+      "productionConsumerCount": 61,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -753,7 +765,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 50,
+      "productionConsumerCount": 57,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -788,7 +800,7 @@
         "TDesignMenuItem"
       ],
       "officialComponent": "menu",
-      "productionConsumerCount": 66,
+      "productionConsumerCount": 74,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -976,7 +988,7 @@
         "TDesignSelect"
       ],
       "officialComponent": "select",
-      "productionConsumerCount": 43,
+      "productionConsumerCount": 44,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1076,9 +1088,9 @@
       ],
       "officialComponent": "steps",
       "productionConsumerCount": 0,
-      "requiredForCurrentProduct": true,
-      "requirementDecision": "required_current_semantic",
-      "status": "adapter_unconsumed"
+      "requiredForCurrentProduct": false,
+      "requirementDecision": "Contract V2 declares workflow state as a selection, not an ordered process. frontend_professional_workflow_guard.py forbids '<ScSteps' in the product status area precisely because a step indicator would imply an ordered topology the contract never declared, and the approval policy is an editable configuration list rather than a record process. No formal product surface declares an ordered-process presentation.",
+      "status": "not_required"
     },
     {
       "adapterKeys": [],
@@ -1143,7 +1155,7 @@
         "TDesignTableRowData"
       ],
       "officialComponent": "table",
-      "productionConsumerCount": 103,
+      "productionConsumerCount": 112,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1175,7 +1187,7 @@
         "TDesignTabs"
       ],
       "officialComponent": "tabs",
-      "productionConsumerCount": 490,
+      "productionConsumerCount": 510,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1315,7 +1327,9 @@
     {
       "adapterKeys": [],
       "adapterSources": [],
-      "bridgeExports": [],
+      "bridgeExports": [
+        "TDesignTree"
+      ],
       "officialComponent": "tree",
       "productionConsumerCount": 0,
       "requiredForCurrentProduct": false,
@@ -1367,7 +1381,7 @@
         "TDesignUpload"
       ],
       "officialComponent": "upload",
-      "productionConsumerCount": 409,
+      "productionConsumerCount": 421,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1384,20 +1398,20 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "cf1df7db3249c6ec9ba4d0a5ea1b118ac7c7c71eaff457e62ea2ad496015bb99",
+  "inputDigest": "d859d4286c0a3858d1660d0f88b438c50941b1edc2269a832adb8284f82a2cec",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
-  "scope": "repository P0/P1 frontend production sources",
+  "scope": "repository P0-P4 frontend production sources except the design-system adapter layer",
   "summary": {
-    "adapter_present": 32,
-    "adapter_unconsumed": 3,
+    "adapter_present": 33,
+    "adapter_unconsumed": 0,
     "auditedCapabilityCount": 5,
     "bridge_only": 0,
     "directLibraryImportBypasses": 0,
     "missing": 0,
-    "not_required": 36,
+    "not_required": 38,
     "officialComponents": 71,
-    "requiredDrivers": 35,
+    "requiredDrivers": 33,
     "unassessedRawBehaviorSurfaces": 0,
     "unassessedRequiredTakeovers": 0
   }

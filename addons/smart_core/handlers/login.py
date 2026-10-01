@@ -5,6 +5,7 @@ from dataclasses import replace
 from typing import Dict, Any
 
 from odoo import SUPERUSER_ID, api
+from odoo.http import request
 from odoo.modules.registry import Registry
 from ..core.base_handler import BaseIntentHandler
 from ..security.auth import authenticate_user, generate_token, get_token_exp_seconds, get_user_from_token

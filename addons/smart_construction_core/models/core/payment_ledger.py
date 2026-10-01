@@ -431,6 +431,18 @@ class PaymentLedger(models.Model):
         if not request or request.state != "approved":
             raise UserError("付款申请未处于已批准状态，不能登记付款。")
         basis_type = request.payment_basis_type or "none"
+        if basis_type == "rental_settlement":
+            if not request.rental_settlement_id or request.rental_settlement_id.state != "confirmed":
+                raise UserError("租赁结算单未确认或已完成支付，不能登记付款。")
+            request._check_rental_settlement_consistency()
+            request._check_rental_settlement_remaining_amount()
+            return
+        if basis_type == "subcontract_settlement":
+            if not request.subcontract_settlement_id or request.subcontract_settlement_id.state != "confirmed":
+                raise UserError("分包结算单未确认或已完成支付，不能登记付款。")
+            request._check_subcontract_settlement_consistency()
+            request._check_subcontract_settlement_remaining_amount()
+            return
         if basis_type == "material_settlement":
             if request.material_settlement_id.state == "confirmed":
                 return
@@ -982,7 +994,9 @@ class PaymentLedger(models.Model):
                 raise UserError(_("付款台账受控状态只能变更为已冲销。"))
             if any(record.state != "posted" for record in self):
                 raise UserError(_("只有有效付款台账可以冲销。"))
-            return super().write(vals)
+            result = super().write(vals)
+            self.mapped("payment_request_id.rental_settlement_id")._refresh_payment_confirmation()
+            return result
         raise AccessError(
             _("付款台账是不可变现金事实，不允许修改；请通过受控冲销保留审计链。")
         )
@@ -1029,6 +1043,28 @@ class PaymentLedger(models.Model):
 
     def action_open_settlement(self):
         self.ensure_one()
+        rental_settlement = self.payment_request_id.rental_settlement_id
+        if rental_settlement:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("租赁结算"),
+                "res_model": "sc.material.rental.settlement",
+                "res_id": rental_settlement.id,
+                "view_mode": "form",
+                "target": "current",
+                "context": {"default_project_id": rental_settlement.project_id.id},
+            }
+        subcontract_settlement = self.payment_request_id.subcontract_settlement_id
+        if subcontract_settlement:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("分包结算"),
+                "res_model": "sc.subcontract.settlement",
+                "res_id": subcontract_settlement.id,
+                "view_mode": "form",
+                "target": "current",
+                "context": {"default_project_id": subcontract_settlement.project_id.id},
+            }
         material_settlement = self.payment_request_id.material_settlement_id
         if material_settlement:
             return {

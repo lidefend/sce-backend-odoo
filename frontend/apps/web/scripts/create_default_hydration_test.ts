@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {
   createRouteDefaultsFingerprint,
   loadAuthoritativeCreateDefaults,
+  mergeAuthoritativeCreateDefaults,
   resolveCreateDefaultGetRequest,
   resolveCreateDefaults,
   resolveCreateRouteRelationLabels,
@@ -166,4 +167,68 @@ assert.ok(
   'default_get consumption remains inside the create-only branch',
 );
 
-console.log('[create-default-hydration] PASS cases=28');
+const relationBase = { owner_id: [17, 'Authorized owner'] };
+const mergeRelation = (value: unknown, type = 'many2one') => mergeAuthoritativeCreateDefaults({
+  baseDefaults: relationBase, authoritativeDefaults: { owner_id: value },
+  fieldNames: ['owner_id'], fieldTypes: { owner_id: type },
+}).owner_id;
+assert.deepEqual(mergeRelation(17), [17, 'Authorized owner']);
+assert.notEqual(mergeRelation(17), relationBase.owner_id, 'do not mutate shared mainData tuples');
+for (const value of [18, false, null, 0, '', [17, 'Fresh label']]) {
+  assert.deepEqual(mergeRelation(value), value, 'new authority or cleared identity must win');
+}
+assert.equal(mergeRelation(17, 'integer'), 17, 'tuple shape alone is not relation authority');
+assert.equal(mergeAuthoritativeCreateDefaults({baseDefaults: relationBase,
+  authoritativeDefaults: {owner_id: 17}, fieldNames: ['owner_id']}).owner_id, 17);
+const relationLoaded = await loadAuthoritativeCreateDefaults({primaryDataSource,
+  model: 'x.document', fieldNames: ['owner_id'], baseDefaults: relationBase,
+  fieldTypes: {owner_id: 'many2one'}, fetchDefaults: async () => ({record: {owner_id: 17}})});
+assert.deepEqual(relationLoaded.owner_id, [17, 'Authorized owner']);
+// The same child runtime serves every contract-declared collection.
+const { useOne2manyRuntime } = await import('../src/pages/contractForm/useOne2manyRuntime');
+const columns = [
+  { name: 'name', label: 'Name', ttype: 'char', required: true, modifiers: { readonly: { kind: 'field_compare', field: 'state', operator: '!=', value: 'draft' } } },
+  { name: 'state', label: 'State', ttype: 'selection', required: false, readonly: true },
+  { name: 'approved_by', label: 'Approved by', ttype: 'many2one', required: false, readonly: true },
+  { name: 'quantity', label: 'Quantity', ttype: 'float', required: false },
+  { name: 'active', label: 'Active', ttype: 'boolean', required: false },
+  { name: 'note', label: 'Note', ttype: 'char', required: false },
+];
+let resolveChild!: (values: Record<string, unknown>) => void;
+let rejectChild!: (error: unknown) => void;
+let requests = 0, changes = 0, errors = 0;
+let owner: unknown = {};
+const child = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 10, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => columns, resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [],
+  markFieldChanged: () => { changes += 1; }, createScope: () => owner,
+  loadDefaults: () => { requests += 1; return new Promise((resolve, reject) => { resolveChild = resolve; rejectChild = reject; }); },
+  onCreateError: () => { errors += 1; },
+});
+const adding = child.addRow('lines');
+assert.equal(child.defaultsPending.value, true);
+assert.equal(child.visibleRows('lines').length, 0, 'no half-initialized row while defaults load');
+await child.addRow('lines'); assert.equal(requests, 1, 'duplicate clicks cannot start parallel draft creation');
+resolveChild({ state: 'draft', approved_by: false, quantity: 0, active: false }); await adding;
+const draft = child.visibleRows('lines')[0]!;
+assert.equal(draft.values.state, 'draft');
+assert.equal(child.effectiveColumn('lines', draft, columns[0]!).readonly, false);
+child.setRowField('lines', draft.key, columns[0]!, 'Entered name');
+assert.deepEqual(child.buildCommandValue('lines', 'write'), [[0, 0, { quantity: 0, active: false, name: 'Entered name' }]], 'readonly audit/state and untouched empty note are not writes');
+child.setRowField('lines', draft.key, columns[5]!, '');
+assert.equal((child.buildCommandValue('lines', 'write') as any)[0][2].note, '', 'explicit empty user edit remains a write');
+assert.equal((child.buildCommandValue('lines', 'onchange') as any)[0][2].state, 'draft', 'onchange sees full defaults including readonly state');
+const failed = child.addRow('lines'); rejectChild(new Error('temporary failure')); await failed;
+assert.equal(errors, 1); assert.equal(child.visibleRows('lines').length, 1, 'failure cannot append empty row');
+assert.equal(child.defaultsPending.value, false);
+const stale = child.addRow('lines'); child.clearRows(); owner = {}; resolveChild({ state: 'draft' }); await stale;
+assert.equal(child.visibleRows('lines').length, 0, 'old response cannot append to another draft');
+const old = child.addRow('lines'); const oldResolve = resolveChild; child.clearRows();
+const newest = child.addRow('lines'); const newestResolve = resolveChild;
+oldResolve({ state: 'approved' }); await old;
+assert.equal(child.defaultsPending.value, true, 'old completion cannot clear new busy owner');
+newestResolve({ state: 'draft' }); await newest;
+assert.equal(child.visibleRows('lines').length, 1);
+assert.equal(child.visibleRows('lines')[0]!.values.state, 'draft');
+assert.equal(changes, 4, 'only accepted rows and explicit edits dirty the parent');
+console.log('[create-default-hydration] PASS cases=55');

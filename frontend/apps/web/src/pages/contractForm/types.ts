@@ -1,4 +1,4 @@
-import type { FieldDescriptor } from '@sc/schema';
+import type { ActionSemantics, FieldDescriptor } from '@sc/schema';
 
 export type {
   FormRuntimeBusyKind as BusyKind,
@@ -16,6 +16,7 @@ export const MANY2ONE_OPEN_RECORD_OPTION = '__open_record__';
 export const RECORD_CONTEXT_CHANGED_EVENT = 'sc:record-context-changed';
 
 export type ContractAction = {
+  actionSemantics?: ActionSemantics;
   key: string;
   authorityActionId?: string;
   backendIdentity?: string;

@@ -9,7 +9,14 @@ from .state_guard import raise_guard
 
 class ProjectTask(models.Model):
     _name = "project.task"
-    _inherit = ["project.task", "sc.delete.guard.mixin"]
+    _inherit = ["project.task", "sc.delete.guard.mixin", "tier.validation"]
+
+    _state_field = "sc_state"
+    _state_from = ["draft"]
+    _state_to = ["ready"]
+    _cancel_state = "cancelled"
+
+    reject_reason = fields.Text(string="驳回原因", readonly=True, copy=False)
 
     sc_state = fields.Selection(
         [
@@ -203,6 +210,13 @@ class ProjectTask(models.Model):
                     "Prepare",
                     reasons=["sc_state must be draft"],
                 )
+            task._check_approval_readiness()
+            if not self.env["sc.approval.policy"]._start_submission_review(task):
+                task._complete_task_approval()
+        return True
+
+    def _check_approval_readiness(self):
+        for task in self:
             missing_fields, blockers = task._get_readiness_state()
             if blockers:
                 raise_guard(
@@ -218,10 +232,37 @@ class ProjectTask(models.Model):
                     "Prepare",
                     reasons=missing_fields,
                 )
-            before_state = task.sc_state
-            task.with_context(allow_transition=True).write({"sc_state": "ready"})
-            task._audit_transition("task_ready", "action_prepare_task", before_state, "ready")
-        return True
+
+    def _complete_task_approval(self):
+        self.ensure_one()
+        before_state = self.sc_state
+        self.with_context(allow_transition=True, skip_validation_check=True).write({"sc_state": "ready", "reject_reason": False})
+        self._audit_transition("task_ready", "action_prepare_task", before_state, "ready")
+
+    def action_on_tier_approved(self):
+        for task in self:
+            if task.sc_state == "draft" and task.review_ids and task.validation_status == "validated":
+                task._check_approval_readiness()
+                task._complete_task_approval()
+
+    def action_on_tier_rejected(self):
+        for task in self:
+            if task.sc_state == "draft" and task.review_ids and task.validation_status == "rejected":
+                reviews = task.review_ids.filtered(lambda review: review.status == "rejected" and review.comment)
+                reason = reviews.sorted(lambda review: review.write_date or review.create_date, reverse=True)[:1].comment if reviews else False
+                task.with_context(skip_validation_check=True).write({"reject_reason": reason})
+                task._audit_transition("task_rejected", "action_on_tier_rejected", "draft", "draft", reason=reason)
+
+    def _execution_approval_block(self):
+        """Do not create a review inside an execution savepoint that will roll back."""
+        self.ensure_one()
+        if self.review_ids and self.validation_status in ("waiting", "pending"):
+            return "EXECUTION_TASK_APPROVAL_PENDING"
+        if self.sc_state == "draft" and self.env["sc.approval.policy"].is_approval_required(
+            self._name, company=self.company_id or self.env.company
+        ):
+            return "EXECUTION_TASK_APPROVAL_REQUIRED"
+        return False
 
     def action_start_task(self):
         for task in self:
@@ -240,6 +281,7 @@ class ProjectTask(models.Model):
                         "Start",
                         reasons=["project is paused/closed"],
                     )
+            self.env["sc.approval.policy"]._assert_submission_approved(task, ("ready",))
             before_state = task.sc_state
             task.with_context(allow_transition=True).write({"sc_state": "in_progress"})
             task._audit_transition("task_started", "action_start_task", before_state, "in_progress")
@@ -254,6 +296,7 @@ class ProjectTask(models.Model):
                     "Complete",
                     reasons=["sc_state must be in_progress"],
                 )
+            self.env["sc.approval.policy"]._assert_submission_approved(task, ("in_progress",))
             progress = task._get_progress_ratio()
             if progress is not None and progress < 1.0:
                 raise_guard(

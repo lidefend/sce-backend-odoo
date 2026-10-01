@@ -59,6 +59,26 @@ def _load_handler():
 
 
 class TestFormFieldConfigurationParams(unittest.TestCase):
+    def test_native_list_collections_survive_scalar_picker_filter(self):
+        metadata = {
+            "name": {"type": "char", "string": "Name"},
+            "documents": {"type": "many2many", "string": "Documents"},
+            "lines": {"type": "one2many", "string": "Lines"},
+            "message_ids": {"type": "one2many", "string": "Messages"},
+            "raw_file": {"type": "binary", "string": "File"},
+        }
+        class Model:
+            def fields_get(self, names):
+                return {name: metadata[name] for name in names if name in metadata}
+        handler = self.module.BusinessConfigListSearchAuditHandler(env={"x.document": Model()})
+        handler._business_field_name_set = lambda model: {"name"}
+        handler._runtime_view_contract = lambda **kwargs: {
+            "columns": ["name", "documents", "lines", "message_ids", "raw_file", "restricted_collection"],
+        }
+        self.assertEqual(handler._suggested_columns(model="x.document", action_id=12, view_id=0),
+                         ["name", "documents", "lines"])
+        self.assertFalse(self.module._is_lowcode_business_field_candidate("documents", "many2many", "Documents"))
+
     def setUp(self):
         self.module = _load_handler()
 
@@ -2072,19 +2092,21 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
                 "state": object(),
                 "partner_id": object(),
                 "manager_id": object(),
+                "documents": object(),
                 "user_id": object(),
                 "legacy_source_created_by": object(),
                 "access_token": object(),
                 "activity_state": object(),
             }
 
-            def fields_get(self):
+            def fields_get(self, names=None):
                 return {
                     "name": {"string": "名称", "type": "char"},
                     "email": {"string": "邮箱", "type": "char"},
                     "state": {"string": "状态", "type": "selection"},
                     "partner_id": {"string": "往来单位", "type": "many2one"},
                     "manager_id": {"string": "项目经理", "type": "many2one"},
+                    "documents": {"string": "单据资料", "type": "many2many"},
                     "user_id": {"string": "Project Manager", "type": "many2one"},
                     "legacy_source_created_by": {"string": "原始录入人", "type": "char"},
                     "access_token": {"string": "Security Token", "type": "char"},
@@ -2119,6 +2141,7 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
                             "name",
                             {"name": "email"},
                             "manager_id",
+                            "documents",
                             "user_id",
                             "legacy_source_created_by",
                             "access_token",
@@ -2164,9 +2187,12 @@ class TestFormFieldConfigurationParams(unittest.TestCase):
         self.assertEqual(data["business_config_list_columns"], [])
         self.assertEqual(data["business_config_search_filters"], [])
         self.assertEqual(data["business_config_search_group_by"], [])
-        self.assertEqual(data["suggested_list_columns"], ["name", "email", "manager_id"])
+        self.assertEqual(data["suggested_list_columns"], ["name", "email", "manager_id", "documents"])
         self.assertEqual(data["suggested_search_filters"], ["state"])
         self.assertEqual(data["suggested_search_group_by"], ["partner_id"])
+        self.assertEqual(data["suggested_list_column_labels"]["documents"], "单据资料")
+        self.assertEqual(set(data["suggested_list_column_labels"]), set(data["suggested_list_columns"]))
+        self.assertNotIn("documents", [field["name"] for field in data["available_model_fields"]])
         self.assertFalse(data["has_business_list_config"])
         self.assertFalse(data["has_business_search_config"])
 

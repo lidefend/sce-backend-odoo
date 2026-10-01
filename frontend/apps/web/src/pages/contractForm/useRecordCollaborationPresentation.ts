@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, type ComputedRef, type Ref } from 'vue';
 import { resolveContractV2Collaboration, type ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeChatterAction } from './types';
@@ -63,21 +62,21 @@ export function useRecordCollaborationPresentation(context: {
   attachmentUploading: MutableRef<boolean>;
   attachmentDeletingIds: MutableRef<number[]>;
   pendingNativeAttachments: MutableRef<PendingNativeAttachment[]>;
-  onNativeAttachmentSelected: (...args: any[]) => unknown;
-  closeNativeChatterComposer: (...args: any[]) => unknown;
-  loadCollaborationUsers: (...args: any[]) => unknown;
-  openNativeChatterAction: (...args: any[]) => unknown;
-  openNativeAttachment: (...args: any[]) => unknown;
-  deleteNativeAttachment: (...args: any[]) => unknown;
-  deleteNativeMessage: (...args: any[]) => unknown;
-  removeMentionUser: (...args: any[]) => unknown;
-  removePendingNativeAttachment: (...args: any[]) => unknown;
-  selectMentionUser: (...args: any[]) => unknown;
-  sendNativeChatter: (...args: any[]) => unknown;
-  replyNativeChatter: (...args: any[]) => unknown;
-  updateNativeActivity: (...args: any[]) => unknown;
-  loadMoreNativeChatterTimeline: (...args: any[]) => unknown;
-  updateNativeFollower: (...args: any[]) => unknown;
+  onNativeAttachmentSelected: NativeCollaborationPanelListeners['attachment-selected'];
+  closeNativeChatterComposer: NativeCollaborationPanelListeners['close-composer'];
+  loadCollaborationUsers: NativeCollaborationPanelListeners['load-users'];
+  openNativeChatterAction: NativeCollaborationPanelListeners['open-action'];
+  openNativeAttachment: NativeCollaborationPanelListeners['open-attachment'];
+  deleteNativeAttachment: NativeCollaborationPanelListeners['delete-attachment'];
+  deleteNativeMessage: NativeCollaborationPanelListeners['delete-message'];
+  removeMentionUser: NativeCollaborationPanelListeners['remove-mention-user'];
+  removePendingNativeAttachment: NativeCollaborationPanelListeners['remove-pending-attachment'];
+  selectMentionUser: NativeCollaborationPanelListeners['select-mention-user'];
+  sendNativeChatter: NativeCollaborationPanelListeners['send-chatter'];
+  replyNativeChatter: NativeCollaborationPanelListeners['reply'];
+  updateNativeActivity: NativeCollaborationPanelListeners['update-activity'];
+  loadMoreNativeChatterTimeline: NativeCollaborationPanelListeners['load-more-timeline'];
+  updateNativeFollower: NativeCollaborationPanelListeners['update-follower'];
 }) {
   const runtimeCollaborationContract = computed(() => resolveContractV2Collaboration(context.v2ContractStore.value));
   const nativeChatterContract = computed(() => resolveNativeChatterContract(

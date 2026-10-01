@@ -7,7 +7,6 @@ import {
   BOQ_IMPORT_PREVIEW_VIEW_READONLY,
   formatBoqPreviewAmount,
   projectBoqImportPreview,
-  resolveBoqBlockProjectId,
   type BoqImportPreviewIntentData,
 } from '../src/app/presentation/boqImportPreview';
 
@@ -253,27 +252,48 @@ assert.equal(stringyStats.get('item_count')?.value, '40');
 // 非法日期原样透传，不产生 null 崩溃
 assert.equal(stringyCounts.batch?.importedAtLabel, 'not-a-date');
 
-// ── resolveBoqBlockProjectId：驾驶舱块项目上下文解析（G3.3）──
-// dataset 投影（builder data.project_id）优先
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: 7 } }, null), 7);
-// dataset 顶层 project_id 兜底
-assert.equal(resolveBoqBlockProjectId({ project_id: 9 }, {}), 9);
-// dataset 缺失时回落路由 query
-assert.equal(resolveBoqBlockProjectId(null, { project_id: '12' }), 12);
-assert.equal(resolveBoqBlockProjectId({}, { project_id: 15 }), 15);
-// 两者均缺失 → 0（无项目上下文空态）
-assert.equal(resolveBoqBlockProjectId(null, {}), 0);
-assert.equal(resolveBoqBlockProjectId(undefined, undefined), 0);
-// dataset 优先级高于路由
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: 3 } }, { project_id: 99 }), 3);
-// 非法值防御：0/负数/NaN/对象
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: 0 } }, { project_id: 0 }), 0);
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: -5 } }, { project_id: -1 }), 0);
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: 'abc' } }, { project_id: {} }), 0);
-// 浮点截断
-assert.equal(resolveBoqBlockProjectId({ data: { project_id: 3.7 } }, null), 3);
-// dataset 非对象防御
-assert.equal(resolveBoqBlockProjectId('nope', { project_id: 4 }), 4);
-assert.equal(resolveBoqBlockProjectId([], { project_id: 4 }), 4);
-
 console.info('[boq-import-preview-model-test] all assertions passed');
+
+import { resolveBoqBlockRequest, fetchBoqImportPreview } from '../src/api/boqImportPreview';
+import { createReadonlyBlockLoader, readonlyBlockData } from '../src/app/readonlyBlockRequest';
+const boqIntent = 'project.boq.import.preview.fetch';
+let boqRequestChecks = 0;
+function boqCheck(actual: unknown, expected: unknown) { assert.deepEqual(actual, expected); boqRequestChecks += 1; }
+for (const params of [{ batch_id: 12 }, { project_id: 3 }, { batch_id: 12, project_id: 3 }, { batch_id: 12, project_id: 0 }]) {
+  boqCheck(resolveBoqBlockRequest({ fetch_intent: boqIntent, fetch_params: params }), { status: 'ready', request: { intent: boqIntent, params } });
+}
+boqCheck(resolveBoqBlockRequest({ fetch_intent: boqIntent, fetch_params: { batch_id: '12', project_id: '3' }, readonly: true, batch_count: 4, title: 'Declared' }),
+  { status: 'ready', request: { intent: boqIntent, params: { batch_id: 12, project_id: 3 } } });
+boqCheck(resolveBoqBlockRequest({ fetch_intent: boqIntent, fetch_params: { project_id: 0 } }), { status: 'empty' });
+boqCheck(resolveBoqBlockRequest(readonlyBlockData({ data: { project_id: 3 }, project_id: 99 })), { status: 'empty' });
+for (const id of [true, [], {}, [12], 1.5, -1, Number.MAX_SAFE_INTEGER + 1, '012', '12.0']) {
+  boqCheck(resolveBoqBlockRequest({ fetch_intent: boqIntent, fetch_params: { batch_id: id } }), { status: 'invalid' });
+}
+for (const params of [[], null, { project_id: 3, context: {} }, { project_id: 3, args: {} }, { project_id: 3, payload: {} }, { project_id: 3, data: {} }]) {
+  boqCheck(resolveBoqBlockRequest({ fetch_intent: boqIntent, fetch_params: params }), { status: 'invalid' });
+}
+boqCheck(resolveBoqBlockRequest({ fetch_intent: 'api.data', fetch_params: { batch_id: 12 } }), { status: 'invalid' });
+await assert.rejects(fetchBoqImportPreview({ intent: 'api.data', params: { batch_id: 12 } }), /Invalid readonly/);
+boqRequestChecks += 1;
+
+let previewValue: string | null = null, previewLoading = false, previewErrors = 0, previewSettled = 0;
+const previewLoader = createReadonlyBlockLoader<string>({
+  reset(loading) { previewValue = null; previewLoading = loading; },
+  success(value) { previewValue = value; },
+  error() { previewErrors += 1; },
+  settled() { previewLoading = false; previewSettled += 1; },
+});
+let resolveFirst!: (value: string) => void, rejectSecond!: (error: unknown) => void;
+const firstPreview = previewLoader.load(() => new Promise<string>(resolve => { resolveFirst = resolve; }));
+const secondPreview = previewLoader.load(() => new Promise<string>((_, reject) => { rejectSecond = reject; }));
+resolveFirst('stale batch'); await firstPreview;
+boqCheck([previewValue, previewLoading, previewSettled], [null, true, 0]);
+// A declaration becoming invalid empties immediately and invalidates the pending error/finally.
+await previewLoader.load(null);
+rejectSecond(new Error('obsolete batch')); await secondPreview;
+boqCheck([previewValue, previewLoading, previewErrors, previewSettled], [null, false, 0, 0]);
+let resolveUnmounted!: (value: string) => void;
+const unmountedPreview = previewLoader.load(() => new Promise<string>(resolve => { resolveUnmounted = resolve; }));
+previewLoader.dispose(); resolveUnmounted('unmounted'); await unmountedPreview;
+boqCheck([previewValue, previewSettled], [null, 0]);
+console.info(`[boq-block-request-test] PASS checks=${boqRequestChecks}`);

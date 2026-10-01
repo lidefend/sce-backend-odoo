@@ -34,16 +34,19 @@
         <field name="arch" type="xml">
             <form string="分包计划">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认计划" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved" readonly="1"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="contract_id"/>
                             <field name="plan_date"/>
@@ -144,16 +147,19 @@
         <field name="arch" type="xml">
             <form string="分包申请">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="确认申请" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('approved', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved" readonly="1"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="plan_id"/>
                             <field name="contract_id"/>
@@ -399,16 +405,20 @@
         <field name="arch" type="xml">
             <form string="分包结算">
                 <header>
-                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'submitted'"/>
-                    <button name="action_reset_draft" string="退回草稿" type="object" invisible="state != 'cancel'"/>
-                    <button name="action_cancel" string="取消" type="object" invisible="state in ('confirmed', 'cancel')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed"/>
+                    <field name="validation_status" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+                    <button name="action_submit" string="提交" type="object" class="btn-primary" invisible="state not in ('draft', 'submitted') or validation_status in ('waiting', 'pending', 'validated')"/>
+                    <button name="validate_tier" string="审批通过" type="object" invisible="not can_review"/>
+                    <button name="reject_tier" string="驳回" type="object" invisible="not can_review"/>
+                    <button name="action_confirm" string="确认结算" type="object" class="btn-primary" invisible="state != 'approved'"/>
+                    <button name="action_cancel" string="取消" type="object" invisible="state not in ('draft', 'submitted', 'approved')"/>
+                    <button name="action_reset_draft" string="重置草稿" type="object" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,confirmed" readonly="1"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" invisible="not id"/>
                             <field name="project_id"/>
                             <field name="register_id" readonly="1"/>
                             <field name="contract_id"/>

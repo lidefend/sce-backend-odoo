@@ -544,7 +544,6 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
-    _sc_normalize_construction_diary_form(out, source, model=model, view_type=view_type)
     _contract_normalizers.normalize_payment_settlement_detail_component(
         out,
         model=model,
@@ -662,10 +661,6 @@ def _sc_set_v2_governance_patch(contract: dict[str, Any], key: str, patch: dict[
     _contract_helpers.sc_set_v2_governance_patch(contract, key, patch)
 
 
-def _sc_normalize_construction_diary_form(contract: dict[str, Any], source_contract: dict[str, Any], *, model: str, view_type: str) -> None:
-    _contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)
-
-
 def _sc_replace_contract_content(contract: dict[str, Any], replacement: dict[str, Any]) -> None:
     _contract_helpers.sc_replace_contract_content(contract, replacement)
 
@@ -700,10 +695,13 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
         record_id = int(record_id or 0)
     except Exception:
         record_id = 0
-    if record_id <= 0:
-        return
     try:
         if model not in env.registry:
+            return
+        if record_id <= 0:
+            catalog = env["sc.workflow.contract.service"].describe_model_actions(model)
+            if catalog:
+                contract["workflowContract"] = catalog
             return
         record = env[model].browse(record_id).exists()
         if not record:
@@ -715,6 +713,19 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
     if not isinstance(workflow_contract, dict) or not workflow_contract:
         return
     contract["workflowContract"] = workflow_contract
+    if model == "sc.plan":
+        denial = record._plan_unlink_denial()
+        if denial:
+            delete_policy = dict((contract.get("actionContract") or {}).get("deletePolicy") or {})
+            delete_policy.update({
+                "allowed": False, "delete_mode": "none",
+                "reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "message": denial,
+                "denied_reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "denied_message": denial,
+            })
+            contract.setdefault("actionContract", {})["deletePolicy"] = delete_policy
+            capabilities = (contract.get("statusContract") or {}).get("globalStatus", {}).get("effectiveRecordCapabilities")
+            if isinstance(capabilities, dict):
+                capabilities["unlink"] = False
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
     global_status = status.get("globalStatus") if isinstance(status.get("globalStatus"), dict) else {}
     editability = _sc_text(workflow_contract.get("editability"))
@@ -1283,6 +1294,8 @@ def smart_core_finalize_projected_contract_data(env, data, context):
     head = data.get("head") if isinstance(data.get("head"), dict) else {}
     model = str(data.get("model") or head.get("model") or "").strip()
     view_type = str(data.get("view_type") or head.get("view_type") or (context or {}).get("view_type") or "").strip().lower()
+    if model == "sc.plan" and view_type == "form":
+        return _contract_normalizers.restrict_plan_node_structure(data)
     if model == "project.project" and (view_type == "form" or isinstance((data.get("views") or {}).get("form") if isinstance(data.get("views"), dict) else None, dict)):
         if _sc_explicit_source_view_id(data, head, context):
             return None
@@ -1316,8 +1329,11 @@ def smart_core_finalize_projected_contract_data(env, data, context):
         action_id = 0
     list_profile = data.get("list_profile") if isinstance(data.get("list_profile"), dict) else {}
     column_policy = list_profile.get("column_policy") if isinstance(list_profile.get("column_policy"), dict) else {}
-    if str(column_policy.get("reason") or "").strip() == "business_list_config_contract_authoritative":
-        return None
+    configured_columns = (
+        list(list_profile.get("fact_columns") or list_profile.get("columns") or [])
+        if str(column_policy.get("reason") or "").strip() == "business_list_config_contract_authoritative"
+        else None
+    )
     if not action_id or action_id not in _user_confirmed_formal_list_action_ids(env):
         return None
     action = env["ir.actions.act_window"].sudo().browse(action_id)
@@ -1402,6 +1418,26 @@ def smart_core_finalize_projected_contract_data(env, data, context):
     if locked_order:
         tree["order"] = locked_order
         tree["default_order"] = locked_order
+    if configured_columns is not None:
+        # Reapply only declared display changes over the formal native baseline.
+        # The existing P0 orchestration remains the configuration interpreter.
+        from odoo.addons.smart_core.core.view_orchestrator import ViewOrchestrator
+
+        native_names = {row.get("name") for row in tree.get("columns_schema") or [] if isinstance(row, dict)}
+        prior_tree = views.get("tree") or views.get("list") or {}
+        tree["columns_schema"] = list(tree.get("columns_schema") or []) + [
+            dict(row) for row in prior_tree.get("columns_schema") or []
+            if isinstance(row, dict) and row.get("name") in configured_columns and row.get("name") not in native_names
+        ]
+        tree = ViewOrchestrator(env).compose(
+            tree, model_name=action.res_model, view_type="tree", action_id=action_id,
+        )
+        schema_by_name = {
+            str(row.get("name") or ""): row
+            for row in tree.get("columns_schema") or [] if isinstance(row, dict)
+        }
+        tree["columns"] = configured_columns
+        tree["columns_schema"] = [schema_by_name[name] for name in configured_columns if name in schema_by_name]
     governance = dict(tree.get("governance") if isinstance(tree.get("governance"), dict) else {})
     governance["user_confirmed_formal_list_lock"] = {
         "applied": True,
@@ -1522,6 +1558,11 @@ def smart_core_business_config_form_settings_refs(env):
 def smart_core_business_config_approval_policy_refs(env):
     del env
     return _hook_facts.business_config_approval_policy_refs()
+
+
+def smart_core_business_config_approval_targets(env, model):
+    from .services.approval_configuration_targets import approval_configuration_targets
+    return approval_configuration_targets(env, model)
 
 
 def smart_core_native_config_root_menu_xmlid(env):
@@ -1782,3 +1823,14 @@ def smart_core_scene_entry_orchestrator_specs(env):
 def smart_core_user_data_acceptance_nav_contract(env):
     del env
     return _hook_facts.user_data_acceptance_nav_contract()
+
+
+def smart_core_authorize_work_item_origin(env, origin, **target):
+    from .services.review_work_item_service import authorize_review_origin
+    allowed = authorize_review_origin(env, origin, **target)
+    if allowed is True:
+        # Native Tier writes the assigned review under the reviewer identity;
+        # its existing server-action callback owns the document transition.
+        # This does not grant editing, creation or deletion of the document.
+        return {"allowed": True, "record_access_mode": "read"}
+    return allowed

@@ -42,25 +42,7 @@ function hasOwn(row: ContractV2Dictionary, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(row, key);
 }
 
-export function workflowActionMethodAliases(key: string): string[] {
-  const normalized = text(key);
-  if (normalized === 'submit') return ['action_submit', 'action_submit_progress', 'action_confirm', 'button_confirm'];
-  if (normalized === 'approve') return ['action_approval_decision', 'validate_tier', 'action_approve', 'button_approve'];
-  if (normalized === 'reject') return ['action_reject', 'reject_tier', 'button_reject'];
-  if (normalized === 'activate') return ['action_set_running'];
-  if (normalized === 'complete') {
-    return [
-      'action_done', 'action_complete', 'action_close', 'action_paid', 'action_received',
-      'action_register', 'action_reconcile', 'button_done',
-    ];
-  }
-  if (normalized === 'cancel') return ['action_cancel', 'button_cancel'];
-  if (normalized === 'reopen') return ['action_reset_draft', 'button_draft'];
-  if (normalized === 'reactivate') return ['action_reopen'];
-  return [];
-}
-
-function inspectWorkflowRow(value: unknown, index: number): InspectedWorkflowRow | null {
+function inspectWorkflowRow(value: unknown, index: number, declaration = false): InspectedWorkflowRow | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const row = value as ContractV2Dictionary;
   const target = record(row.target);
@@ -76,23 +58,24 @@ function inspectWorkflowRow(value: unknown, index: number): InspectedWorkflowRow
     issue = `availableActions[${index}].target must be an object`;
   } else if (hasOwn(target, 'method') && typeof target.method !== 'string') {
     issue = `availableActions[${index}].target.method must be a string`;
+  } else if (directMethod && targetMethod && directMethod !== targetMethod) {
+    issue = `actions[${index}] method conflicts with target.method`;
   } else if (!key && !method) {
     issue = `availableActions[${index}] identity is missing`;
-  } else if (typeof row.enabled !== 'boolean') {
+  } else if (!declaration && typeof row.enabled !== 'boolean') {
     issue = `availableActions[${index}].enabled must be boolean`;
   }
   return { row, key, method, issue };
 }
 
 function rowMatchesIdentity(row: Pick<InspectedWorkflowRow, 'key' | 'method'>, actionKey: string, methodName: string) {
-  return (Boolean(methodName) && (
-    row.method === methodName || workflowActionMethodAliases(row.key).includes(methodName)
-  )) || (Boolean(actionKey) && row.key === actionKey);
+  // A supplied executable method is authoritative; a coincident key cannot
+  // redirect it to another method. Key-only callers use the declared key.
+  return methodName ? row.method === methodName : Boolean(actionKey) && row.key === actionKey;
 }
 
-function isKnownTransition(actionKey: string, methodName: string) {
-  const knownKeys = ['submit', 'approve', 'reject', 'activate', 'complete', 'cancel', 'reopen', 'reactivate'];
-  return knownKeys.includes(actionKey) || knownKeys.some((key) => workflowActionMethodAliases(key).includes(methodName));
+function invalidAvailability(): WorkflowActionAvailability {
+  return { kind: 'error', reasonCode: 'WORKFLOW_ACTION_AVAILABILITY_INVALID', message: '当前流程操作配置无效' };
 }
 
 export function resolveWorkflowActionAvailability(
@@ -102,23 +85,29 @@ export function resolveWorkflowActionAvailability(
   const actionKey = text(identity.actionKey);
   const methodName = text(identity.methodName);
   if (!actionKey && !methodName) return { kind: 'unmanaged' };
-  if (!hasOwn(workflow, 'availableActions')) return { kind: 'unmanaged' };
-  if (!Array.isArray(workflow.availableActions)) {
-    return isKnownTransition(actionKey, methodName)
-      ? {
-        kind: 'error',
-        reasonCode: 'WORKFLOW_ACTION_AVAILABILITY_INVALID',
-        message: '当前流程操作配置无效',
-      }
-      : { kind: 'unmanaged' };
+  const hasCatalog = hasOwn(workflow, 'actions');
+  if (hasCatalog && !Array.isArray(workflow.actions)) return invalidAvailability();
+  const catalog = hasCatalog
+    ? (workflow.actions as unknown[]).map((value, index) => inspectWorkflowRow(value, index, true))
+    : [];
+  if (catalog.some((row) => !row || row.issue)) return invalidAvailability();
+  const declarations = catalog.filter((row): row is InspectedWorkflowRow => Boolean(row))
+    .filter((row) => rowMatchesIdentity(row, actionKey, methodName));
+  if (declarations.length > 1) {
+    return { kind: 'error', reasonCode: 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS', message: '流程操作身份不唯一' };
   }
+  if (!hasOwn(workflow, 'availableActions')) {
+    if (workflow.availabilityScope === 'declaration_only' && !Number(workflow.record_id || 0)) return { kind: 'unmanaged' };
+    return declarations.length ? invalidAvailability() : { kind: 'unmanaged' };
+  }
+  if (!Array.isArray(workflow.availableActions)) return invalidAvailability();
 
   const matchingRows = workflow.availableActions
     .map((value, index) => inspectWorkflowRow(value, index))
     .filter((row): row is InspectedWorkflowRow => Boolean(row))
     .filter((row) => rowMatchesIdentity(row, actionKey, methodName));
   if (!matchingRows.length) {
-    return isKnownTransition(actionKey, methodName)
+    return declarations.length > 0
       ? {
         kind: 'managed',
         enabled: false,
@@ -128,7 +117,7 @@ export function resolveWorkflowActionAvailability(
       }
       : { kind: 'unmanaged' };
   }
-  if (matchingRows.some((row) => row.issue)) {
+  if ((hasCatalog && !declarations.length) || matchingRows.some((row) => row.issue)) {
     return {
       kind: 'error',
       reasonCode: 'WORKFLOW_ACTION_AVAILABILITY_INVALID',
@@ -178,6 +167,5 @@ export function workflowActionRowForMethod(
 export function isWorkflowTransitionMethod(workflow: ContractV2Dictionary, methodName: string): boolean {
   const method = text(methodName);
   if (!method) return false;
-  if (resolveWorkflowActionAvailability(workflow, { methodName: method }).kind !== 'unmanaged') return true;
-  return isKnownTransition('', method);
+  return resolveWorkflowActionAvailability(workflow, { methodName: method }).kind !== 'unmanaged';
 }

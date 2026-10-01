@@ -131,8 +131,49 @@ class ExecuteButtonHandler(BaseIntentHandler):
         authority_action_id = str(button.get("action_id") or button.get("actionId") or "").strip()
         backend_identity = str(button.get("backend_identity") or button.get("backendIdentity") or "").strip()
         source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
-        if not action_id or not menu_id or not authority_action_id or not backend_identity or not source_widget_id:
+        if not authority_action_id or not backend_identity or not source_widget_id:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+        work_access_mode = None
+        work_origin = meta.get("work_item_origin")
+        if work_origin is not None:
+            from ..core.work_item_action_authority import validate_work_item_action_origin
+            from ..utils.extension_hooks import call_extension_hook_first
+            try:
+                work_access_mode = validate_work_item_action_origin(work_origin, model=model, record_id=record_id, method_name=method_name,
+                    authorize=lambda origin, **target: call_extension_hook_first(
+                        self.env, "smart_core_authorize_work_item_origin", self.env, origin, **target))
+            except ValueError as error:
+                raise AccessError(str(error)) from error
+            action_id = menu_id = 0
+        elif not action_id or not menu_id:
+            origin = meta.get("relation_origin")
+            if not origin:
+                raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+            from ..core.relation_action_authority import validate_relation_action_origin
+            from .route_authority_validate import RouteAuthorityValidateHandler
+
+            def validate_entry(parent_action_id, parent_menu_id, parent_model):
+                result = RouteAuthorityValidateHandler(
+                    self.env, su_env=self.su_env, request=self.request, context=self.context,
+                    payload={"params": {"action_id": parent_action_id}},
+                ).handle()
+                envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+                data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                return not (envelope.get("ok") is True and data.get("allowed") is True
+                            and data.get("action_id") == parent_action_id
+                            and data.get("menu_id") == parent_menu_id and data.get("model") == parent_model)
+
+            try:
+                validate_relation_action_origin(
+                    self.env, origin, model=model, record_id=record_id,
+                    load_contract=self._load_current_action_contract,
+                    validate_entry=validate_entry,
+                )
+            except ValueError as error:
+                raise AccessError(str(error)) from error
+            # The validated parent proves navigation only. The child's fresh
+            # contract and existing execution ACL/state checks remain authoritative.
+            action_id = menu_id = 0
 
         contract = self._load_current_action_contract(
             model=model,
@@ -211,7 +252,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         status = status_matches[0]
         if status.get("visible") is not True or status.get("disabled") is not False:
             raise AccessError(str(status.get("reasonCode") or "ACTION_STATUS_NOT_AUTHORIZED"))
-        return rule
+        return {**rule, "_validated_work_item_access_mode": work_access_mode}
 
     def handle(self, payload=None, ctx=None):
         params = self.params if isinstance(self.params, dict) else {}
@@ -285,7 +326,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 if normalized_button_type == "server"
                 else "read"
                 if normalized_button_type == "action"
-                else self._button_access_mode(env_model, method_name)
+                else authorized_rule.get("_validated_work_item_access_mode") or self._button_access_mode(env_model, method_name)
             )
             env_model.check_access_rights(access_mode)
 

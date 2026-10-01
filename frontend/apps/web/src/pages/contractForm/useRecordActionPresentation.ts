@@ -1,3 +1,4 @@
+import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed } from 'vue';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
@@ -7,7 +8,7 @@ import type { FormSectionFieldChange } from '../../components/template/formSecti
 import type { RelationFieldAdapter, RelationFieldColumn, RelationFieldRow } from '../../components/template/relationField.types';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { ContractAction } from './types';
-import { isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
+import { resolveNativeContractActionState, isUnifiedSubmitAction, isUnifiedSubmitMethod, resolveAuthorizedWindowActionTarget, resolveContractActionForNativeOccurrence } from './contractActionPresentation';
 import { fieldType } from './fieldUtils';
 
 type PresentationDependencies = Record<string, any>;
@@ -109,14 +110,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     return resolveContractActionForNativeOccurrence(contractActions.value, row);
   }
 
-  function resolveNativeActionState(row: Record<string, unknown>) {
-    const action = contractActionFromNativeRow(row);
-    if (!action) return {};
-    return {
-      disabled: busy.value || !action.enabled,
-      title: action.hint || '',
-    };
-  }
+  const resolveNativeActionState = (row: Record<string, unknown>) =>
+    resolveNativeContractActionState(contractActionFromNativeRow(row), busy.value);
 
   const primarySubmitAction = computed<ContractAction | null>(() => {
     if (isIntakeCreateMode.value) return null;
@@ -168,6 +163,8 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           meta: {
             menu_id: Number(route.query.menu_id || 0) || undefined,
             action_id: actionId.value || undefined,
+            relation_origin: relationActionOrigin(route.query),
+            work_item_origin: workItemActionOrigin(route.query),
           },
         });
         const result = response?.result;

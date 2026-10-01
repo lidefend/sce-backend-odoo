@@ -4,6 +4,17 @@
  * from leaking into the scene contract or page components.
  */
 :root {
+  /* Shared typography roles consume the official ladder only at this bridge. */
+  --sc-font-title-extra-large: var(--td-font-title-extraLarge);
+  --sc-font-title-large: var(--td-font-title-large);
+  --sc-font-title-medium: var(--td-font-title-medium);
+  --sc-font-title-small: var(--td-font-title-small);
+  --sc-font-body-large: var(--td-font-body-large);
+  --sc-font-body-medium: var(--td-font-body-medium);
+  --sc-font-body-small: var(--td-font-body-small);
+  --sc-font-mark-small: var(--td-font-mark-small);
+  --sc-font-mark-medium: var(--td-font-mark-medium);
+  --sc-font-headline-small: var(--td-font-headline-small);
   --td-brand-color: var(--sc-semantic-surface-interactive);
   --td-brand-color-hover: var(--sc-semantic-surface-interactive-hover);
   --td-brand-color-active: var(--sc-semantic-surface-interactive-hover);
@@ -28,7 +39,7 @@
   --td-bg-color-specialcomponent: var(--sc-semantic-surface-input);
   --td-text-color-primary: var(--sc-semantic-text-primary);
   --td-text-color-secondary: var(--sc-semantic-text-secondary);
-  --td-text-color-placeholder: var(--sc-semantic-text-secondary);
+  --td-text-color-placeholder: var(--sc-semantic-text-muted);
   --td-text-color-disabled: var(--sc-semantic-text-disabled);
   --td-text-color-anti: var(--sc-semantic-text-on-interactive);
   --td-border-level-1-color: var(--sc-semantic-border-default);
@@ -358,7 +369,7 @@
 .sc-icon-button[data-appearance='activity-rail'].active { background: var(--sc-navigation-active-bg); color: var(--sc-app-selected-text); box-shadow: inset var(--sc-component-shell-activity-active-indicator-width) 0 0 var(--sc-app-accent); }
 .sc-icon-button[data-appearance='activity-rail']:disabled { opacity: .45; }
 .sc-icon-button[data-appearance='activity-tab-close'] { display: inline-grid; width: var(--sc-component-button-activity-tab-close-size); min-width: var(--sc-component-button-activity-tab-close-size); height: var(--sc-component-button-activity-tab-close-size); min-height: var(--sc-component-button-activity-tab-close-size); flex: 0 0 var(--sc-component-button-activity-tab-close-size); padding: 0; border: 0; border-radius: var(--sc-product-radius-control); background: transparent; color: var(--sc-app-text-secondary); font: inherit; line-height: 1; place-items: center; }
-.sc-icon-button[data-appearance='activity-tab-close']:hover:not(:disabled) { background: var(--sc-app-hover-bg); color: var(--sc-app-text); }
+.sc-icon-button[data-appearance='activity-tab-close']:hover:not(:disabled) { background: var(--sc-app-hover-bg); color: var(--sc-semantic-text-primary); }
 .sc-icon-button[data-appearance='activity-tab-close']:focus-visible { outline: var(--sc-component-button-focus-ring-width) solid var(--sc-app-focus-ring); outline-offset: var(--sc-component-button-activity-tab-close-focus-offset); }
 .sc-btn[data-appearance='scope-option'] { min-width: 0; width: 100%; border: var(--sc-component-panel-border-width) solid transparent; border-radius: var(--sc-component-button-scope-radius); padding: var(--sc-component-button-scope-padding); display: grid; gap: var(--sc-component-button-scope-gap); background: transparent; color: var(--sc-app-text-primary); text-align: left; }
 .sc-btn[data-appearance='scope-option']:hover:not(:disabled) { border-color: var(--sc-app-border); background: var(--sc-app-hover-bg); color: var(--sc-app-text-primary); }
@@ -384,7 +395,9 @@
 .sc-btn[data-appearance='structured-content'] { color: inherit; }
 .sc-btn[data-appearance='context-action'] { border: 0; background: transparent; color: var(--sc-app-text-secondary); }
 .sc-btn[data-appearance='context-action']:hover { color: var(--sc-app-accent); }
-.sc-btn[data-appearance='auth-link'] { border: 0; background: transparent; color: var(--sc-app-info-text); }
+.sc-btn[data-appearance='auth-link'],
+.sc-btn[data-appearance='readonly-relation'] { border: 0; background: transparent; color: var(--sc-app-info-text); }
+.sc-btn[data-appearance='readonly-relation'] { height: auto; min-height: var(--sc-product-control-height); max-width: 100%; white-space: normal; }
 .sc-btn[data-semantic-cell-kind='primary'] { width: 100%; max-width: 100%; min-width: 0; padding-inline: 0; font: inherit; text-align: left; }
 .sc-btn[data-semantic-cell-kind='primary'] .sc-btn__content { display: block; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-btn[data-appearance='primary-submit'] { border-color: var(--sc-app-accent); background: var(--sc-app-accent); color: var(--sc-semantic-text-on-interactive); }
@@ -464,6 +477,19 @@
   max-height: var(--sc-component-input-form-height);
   width: var(--sc-component-input-form-height);
 }
+@media (max-width: 760px) {
+  /* The compact height above keeps the toggle aligned with the desktop search
+     row. On the narrow layout the declared touch target wins for every toolbar
+     control, so the same declared control keeps its reachable size instead of
+     inheriting the desktop alignment height. The media block follows the rule
+     it overrides, so the declared surface size resolves deterministically. */
+  .collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle'] {
+    width: var(--sc-component-button-touch-target);
+    height: var(--sc-component-button-touch-target);
+    min-height: var(--sc-component-button-touch-target);
+    max-height: var(--sc-component-button-touch-target);
+  }
+}
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
 .product-list-header__search .sc-btn {
   height: var(--sc-component-input-form-height);
@@ -536,7 +562,7 @@
   border: 0;
   background: transparent;
   color: var(--sc-app-text-primary);
-  font-size: var(--sc-component-input-record-title-font-size);
+  font: var(--sc-font-headline-small);
   font-weight: 600;
 }
 .sc-input[data-appearance='record-title']:focus-within { box-shadow: inset 0 calc(-1 * var(--sc-component-button-focus-ring-width)) 0 var(--sc-semantic-surface-interactive); }
@@ -657,4 +683,16 @@
   outline: var(--sc-component-button-focus-ring-width) solid var(--sc-semantic-focus-ring);
   outline-offset: var(--sc-component-button-focus-offset);
   box-shadow: none;
+}
+
+/* The navigation adapter uses the official drawer's overlay and animation.
+ * Public padding variables keep its single navigation scroll owner flush. */
+.sc-design-drawer--navigation {
+  --td-comp-paddingTB-l: 0px;
+  --td-comp-paddingLR-l: 0px;
+  border-radius: 0;
+}
+.sc-design-drawer--navigation [data-semantic-component='ScDrawer'] {
+  height: 100%;
+  padding: 0;
 }

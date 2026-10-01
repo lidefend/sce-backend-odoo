@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import json
+from datetime import timedelta
 
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.handlers.reason_codes import (
@@ -62,7 +64,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
 
     def test_find_latest_audit_entry_extra_domain_applies(self):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             self.skipTest("sc.audit.log not available")
         key = "req-audit-domain-1"
         self._create_audit(
@@ -91,7 +93,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
 
     def test_find_latest_audit_entry_enforces_actor_and_company(self):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             self.skipTest("sc.audit.log not available")
         key = "req-audit-scope-1"
         other_user = self.env["res.users"].sudo().search([("id", "!=", self.env.user.id)], limit=1)
@@ -114,7 +116,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
 
     def test_has_latest_fingerprint_match_enforces_scope(self):
         Audit = self.env.get("sc.audit.log")
-        if not Audit:
+        if Audit is None:
             self.skipTest("sc.audit.log not available")
         key = "req-fingerprint-scope-1"
         other_user = self.env["res.users"].sudo().search([("id", "!=", self.env.user.id)], limit=1)
@@ -241,7 +243,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
         self.assertEqual(row.get("suggested_action"), "reload_then_retry")
 
     def test_replay_window_expired_is_exposed_in_contract(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         partner = self.env["res.partner"].create({"name": "Batch Replay Window"})
         handler = ApiDataBatchHandler(self.env, payload={})
@@ -255,12 +257,19 @@ class TestApiDataBatchContractBackend(TransactionCase):
         }
         first = handler.handle(payload)
         self.assertTrue(first.get("ok"))
-        original_window = handler.IDEMPOTENCY_WINDOW_SECONDS
-        try:
-            handler.IDEMPOTENCY_WINDOW_SECONDS = 0
-            second = handler.handle(payload)
-        finally:
-            handler.IDEMPOTENCY_WINDOW_SECONDS = original_window
+        # api.data.batch 走审计投影去重通道：窗口过期 = 不重放，但信封必须如实标注。
+        # 不能用 window=0 制造“已过期”——审计 ts 为秒级精度，同一秒内仍算窗口内；
+        # 这里把审计时间拨到窗口之外，确定性地触发过期分支。
+        first_trace_id = str((first.get("meta") or {}).get("trace_id") or "")
+        audit_rows = self.env["sc.audit.log"].sudo().search(
+            [("event_code", "=", "API_DATA_BATCH"), ("trace_id", "=", first_trace_id)]
+        )
+        self.assertTrue(audit_rows, "batch 审计未落库，幂等窗口语义无法成立")
+        stale_ts = fields.Datetime.to_string(
+            fields.Datetime.from_string(fields.Datetime.now()) - timedelta(hours=1)
+        )
+        audit_rows.write({"ts": stale_ts})
+        second = handler.handle(payload)
         self.assertTrue(second.get("ok"))
         data = second.get("data") or {}
         self.assertFalse(bool(data.get("idempotent_replay")))
@@ -268,7 +277,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
         self.assertEqual(data.get("idempotency_replay_reason_code"), REASON_REPLAY_WINDOW_EXPIRED)
 
     def test_idempotent_replay_includes_replay_evidence(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         partner = self.env["res.partner"].create({"name": "Batch Replay Evidence"})
         handler = ApiDataBatchHandler(self.env, payload={})
@@ -291,7 +300,7 @@ class TestApiDataBatchContractBackend(TransactionCase):
         self.assertTrue(int(data.get("replay_age_ms") or 0) >= 0)
 
     def test_idempotency_conflict_returns_409(self):
-        if not self.env.get("sc.audit.log"):
+        if self.env.get("sc.audit.log") is None:
             self.skipTest("sc.audit.log not available")
         handler = ApiDataBatchHandler(self.env, payload={})
         first = handler.handle(

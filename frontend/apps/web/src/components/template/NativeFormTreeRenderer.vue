@@ -2,8 +2,13 @@
 <template>
   <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
-      <section
+      <component
+        :is="isDetailCard(node) ? ScCard : 'section'"
         v-if="isContainerNode(node)"
+        :bordered="isDetailCard(node) ? false : undefined"
+        :title="isDetailCard(node) && !isCollapsibleContainer(node) ? (semanticSectionTitle(node) || containerTitle(node) || undefined) : undefined"
+        :body-class-name="isDetailCard(node) ? 'native-detail-card-body' : undefined"
+        :data-detail-card="isDetailCard(node) ? 'native-section' : undefined"
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
@@ -16,7 +21,7 @@
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
-        <header v-if="semanticSectionTitle(node) || containerTitle(node)" class="native-container-head">
+        <header v-if="(!isDetailCard(node) || isCollapsibleContainer(node)) && (semanticSectionTitle(node) || containerTitle(node))" class="native-container-head">
           <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
@@ -112,6 +117,7 @@
               :field-selection-mode="fieldSelectionMode"
               :selected-field-key="selectedFieldKey"
               :prefer-readonly-facts="preferReadonlyFacts"
+              :inside-detail-card="insideDetailCard || isDetailCard(node)"
               :columns="nodeColumns(node)"
               :inherited-semantic-role="semanticFormRole(node)"
               :authoritative-business-section-mode="authoritativeBusinessSectionMode"
@@ -187,6 +193,7 @@
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
+            :inside-detail-card="insideDetailCard || isDetailCard(node)"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
             :authoritative-business-section-mode="authoritativeBusinessSectionMode"
@@ -320,6 +327,7 @@
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
+            :inside-detail-card="insideDetailCard || isDetailCard(node)"
             :columns="nodeColumns(node)"
             :authoritative-business-section-mode="authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
@@ -347,7 +355,7 @@
           </NativeFormTreeRenderer>
           </template>
         </template>
-      </section>
+      </component>
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
@@ -430,6 +438,8 @@ import FormSection from './FormSection.vue';
 import { nativeChildSegments } from './nativeChildSequence';
 import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
+import ScCard from '../design-system/ScCard.vue';
+import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
@@ -440,7 +450,7 @@ import { canonicalFormActionIconClass } from '../../pages/contractForm/canonical
 import { nativeSectionNavigationRole } from '../../pages/contractForm/nativeSectionNavigation';
 import { resolveNativeTextPresentation } from './nativeTextPresentation';
 import { isLayoutOnlyGroupContainer } from '../../pages/contractForm/nativeLayoutUtils';
-import { collectNativeBusinessSections, nativeBusinessSectionIdentity } from '../../pages/contractForm/nativeBusinessSection';
+import { collectNativeBusinessSections, nativeBusinessSectionIdentity, resolveNativeSectionHeading } from '../../pages/contractForm/nativeBusinessSection';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -517,6 +527,7 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode?: boolean;
   selectedFieldKey?: string;
   preferReadonlyFacts?: boolean;
+  insideDetailCard?: boolean;
   inheritedSemanticRole?: string;
   authoritativeBusinessSectionMode?: boolean;
   columns?: 1 | 2 | 3;
@@ -549,6 +560,14 @@ function hasAuthoritativeBusinessSection(nodes: NativeFormLayoutNode[]): boolean
 const authoritativeBusinessSectionMode = computed(() => (
   props.authoritativeBusinessSectionMode ?? hasAuthoritativeBusinessSection(props.nodes)
 ));
+
+const detailComposition = useOptionalStandardDetailComposition();
+const adoptedDetail = computed(() => detailComposition?.adopted.value === true
+  && props.preferReadonlyFacts && !props.fieldConfigEditable && !props.fieldSelectionMode);
+function isDetailCard(node: NativeFormLayoutNode) {
+  return adoptedDetail.value && !props.insideDetailCard
+    && (Boolean(semanticSectionTitle(node)) || nodeType(node) === 'notebook');
+}
 
 const emit = defineEmits<{
   (event: 'field-change', payload: FormSectionFieldChange): void;
@@ -680,20 +699,11 @@ function sectionSourceIdentity(node: NativeFormLayoutNode) {
 }
 
 function semanticSectionTitle(node: NativeFormLayoutNode) {
-  if (props.fieldConfigEditable) return '';
-  const businessSection = nativeBusinessSectionIdentity(node);
-  if (businessSection) return businessSection.label;
-  if (authoritativeBusinessSectionMode.value) return '';
-  if (semanticFormRole(node) === String(props.inheritedSemanticRole || '').trim().toLowerCase()) return '';
-  return ({
-    summary: '概览',
-    task: '办理信息',
-    context: '基本资料',
-    risk: '风险与提示',
-    relation: '关系明细',
-    activity: '协作记录',
-    audit: '历史审计',
-  } as Record<string, string>)[semanticFormRole(node)] || '';
+  // Contract-first: the heading is resolved by the shared section-identity
+  // module (released native opt-in, then the contract-authored title). The
+  // renderer must not invent a business label from a semantic role, otherwise
+  // distinct contract sections collapse onto one placeholder heading.
+  return resolveNativeSectionHeading(node, { fieldConfigEditable: props.fieldConfigEditable });
 }
 
 function isReadablePolicyTitle(value: unknown) {
@@ -935,6 +945,8 @@ function containerClass(node: NativeFormLayoutNode) {
         && containerPolicyTitle(node),
       ),
       'native-container--group--layout': isLayoutOnlyGroup(node),
+      'native-container--detail-card': isDetailCard(node),
+      'native-container--detail-group': adoptedDetail.value && props.insideDetailCard,
     },
   ];
 }
@@ -1067,12 +1079,15 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container {
+  min-width: 0;
+  position: relative;
+}
+
+.native-container:not(.native-container--detail-card) {
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
   gap: 12px;
-  min-width: 0;
-  position: relative;
 }
 
 .native-container--header {
@@ -1080,23 +1095,23 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   padding-bottom: 12px;
 }
 
-.native-container--sheet {
+.native-container--sheet:not(.native-container--detail-card) {
   gap: 16px;
 }
 
-.native-container--group {
+.native-container--group:not(.native-container--detail-card) {
   border-top: 1px solid var(--sc-app-border);
   padding-top: var(--sc-space-sm);
 }
 
 /* Layout wrappers arrange columns only; the section separator belongs to
    business sections so nested wrappers never stack a duplicate border. */
-.native-container--group.native-container--group--layout {
+.native-container--group.native-container--group--layout:not(.native-container--detail-card) {
   border-top: none;
   padding-top: 0;
 }
 
-.native-container[data-collapsed='true'] > :not(.native-container-head) {
+.native-container:not(.native-container--detail-card)[data-collapsed='true'] > :not(.native-container-head) {
   display: none;
 }
 
@@ -1116,16 +1131,23 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   padding-left: 0;
 }
 
-.native-container--group > .native-container-head h3 {
-  font-size: 15px;
-  line-height: 1.35;
-}
-
+/* Official section-title typography: ``--sc-font-title-medium`` (16px / 24px,
+ * weight 600) is the TDesign title the official detail and form compositions
+ * print for a section head, and it is the same value the task/canonical section
+ * heading already renders. The heading is presentation only - it carries no
+ * contract meaning - so its type comes from the official token instead of a
+ * locally invented size. */
 .native-container-head h3 {
   margin: 0;
-  font-size: 14px;
+  font: var(--sc-font-title-medium);
   color: var(--sc-app-text-primary);
-  font-weight: 600;
+}
+
+/* The collapsible heading is the same section head as the plain one, so it
+ * carries the same official title typography; only its toggle behaviour is ours. */
+.native-container-head > .sc-btn[data-appearance='context-action'] {
+  font: var(--sc-font-title-medium);
+  color: var(--sc-app-text-primary);
 }
 
 .native-container-head {
@@ -1136,6 +1158,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-container-drop-strip {
+  font: var(--sc-font-body-small);
   min-height: 44px;
   display: grid;
   place-items: center;
@@ -1143,7 +1166,6 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   border-radius: 6px;
   margin-bottom: 8px;
   color: var(--sc-app-text-muted);
-  font-size: 12px;
   pointer-events: auto;
 }
 
@@ -1159,9 +1181,9 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-static-text {
+  font: var(--sc-font-body-medium);
   margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
+
   overflow-wrap: anywhere;
 }
 
@@ -1232,14 +1254,14 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 }
 
 .native-ribbon {
+  font: var(--sc-font-mark-small);
   justify-self: end;
   max-width: 100%;
   border-radius: 4px;
   background: var(--sc-app-danger-text);
   color: var(--sc-semantic-text-on-interactive);
   padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
+
   overflow-wrap: anywhere;
 }
 
@@ -1304,8 +1326,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-action-label {
   min-width: 0;
   overflow-wrap: anywhere;
-  line-height: 1.25;
-  font-weight: inherit;
+  font: var(--sc-font-body-medium);
 }
 
 .native-title-row {
@@ -1329,17 +1350,16 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
 .native-title-input {
   flex: 1 1 auto;
   min-width: 0;
-  line-height: 1.25;
+  font: var(--sc-font-headline-small);
   padding: 2px 0;
   letter-spacing: 0;
 }
 
 .native-title-text {
+  font: var(--sc-font-headline-small);
   margin: 0;
   color: var(--sc-app-text-primary);
-  font-size: 27px;
-  font-weight: 600;
-  line-height: 1.25;
+
   overflow-wrap: break-word;
   line-break: strict;
   text-wrap: balance;
@@ -1349,6 +1369,21 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   .native-title-row { align-items: flex-start; gap: 8px; }
   .native-title-favorite { flex: 0 0 auto; margin-top: 2px; font-size: 23px; }
   .native-title-input,
-  .native-title-text { font-size: 24px; line-height: 1.3; }
+  .native-title-text {
+  font: var(--sc-font-headline-small);   }
+}
+/* Card body is an adapter-owned public hook, not a vendor DOM selector. */
+.native-container--detail-card :deep(.native-detail-card-body) {
+  display: grid;
+  gap: var(--sc-space-md);
+  min-width: 0;
+}
+.native-container--detail-card[data-collapsed='true'] :deep(.native-detail-card-body) > :not(.native-container-head) {
+  display: none;
+}
+.native-container--detail-group > .native-container-head h3,
+.native-container--detail-group > .native-container-head > .sc-btn[data-appearance='context-action'] {
+  font: var(--sc-font-body-medium);
+  font-weight: 600;
 }
 </style>

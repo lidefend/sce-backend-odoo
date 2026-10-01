@@ -130,13 +130,28 @@ States:
 
 Transitions:
 - draft -> submit | cancel
-- submit -> approve | rejected | cancel
+- submit -> approve | approved | rejected | cancel
 - approve -> approved | rejected | cancel
 - approved -> done | cancel
-- rejected -> draft | cancel
+- rejected -> draft | submit | cancel
+- done -> approved (existing guarded payment reversal only)
 
 Triggers:
-- action_submit, action_approve, action_on_tier_approved, action_on_tier_rejected
+- action_submit, action_approval_decision, action_on_tier_approved, action_on_tier_rejected
+- action_approve/action_set_approved are compatibility delegates, not separate transitions.
+
+Approval routing:
+- Submission preserves access, company scope and business guards, then reads the existing
+  company-scoped `sc.approval.policy` authority.
+- No configured approval: submission advances through submit to approved in one transaction,
+  with an automatic-submission audit; it does not fabricate tier reviews or validation status.
+- Configured approval: create a real matching review chain; missing rules fail the transaction.
+- In-flight approval requires its existing chain to finish, regardless of later configuration edits.
+- Only complete reviews advance the state; duplicate callbacks are inert. A context boolean is
+  not approval authority. Native Web exposes one review action bound to the same decision.
+- Approved business state owns downstream execution eligibility; policy edits do not revoke
+  an already obtained approval. Payment/receipt completion still requires its cash facts.
+
 
 ## Code location
 

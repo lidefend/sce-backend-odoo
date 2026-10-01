@@ -1,29 +1,29 @@
 <template>
   <article class="block block-activity-feed">
-    <header class="block-header">
-      <h4>{{ block.title || '动态' }}</h4>
-    </header>
-    <ul v-if="rows.length" class="feed-list">
-      <li
-        v-for="item in rows"
-        :key="item.key"
-        class="feed-item"
-        :class="{ actionable: Boolean(item.actionKey) }"
-        :tabindex="item.actionKey ? 0 : undefined"
-        :role="item.actionKey ? 'button' : undefined"
-        @click="emitAction(item.actionKey, item.raw)"
-        @keydown.enter.prevent="emitAction(item.actionKey, item.raw)"
-        @keydown.space.prevent="emitAction(item.actionKey, item.raw)"
-      >
-        <p class="feed-title">{{ item.title }}</p>
-        <p class="feed-desc">{{ item.description }}</p>
-      </li>
-    </ul>
-    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无动态" />
+    <ScCard class="block-card" :bordered="false" :title="block.title || '动态'">
+      <ul v-if="rows.length" class="feed-list">
+        <li
+          v-for="item in rows"
+          :key="item.key"
+          class="feed-item"
+          :class="{ actionable: Boolean(item.actionKey) }"
+          :tabindex="item.actionKey ? 0 : undefined"
+          :role="item.actionKey ? 'button' : undefined"
+          @click="emitAction(item.actionKey, item.raw)"
+          @keydown.enter.prevent="emitAction(item.actionKey, item.raw)"
+          @keydown.space.prevent="emitAction(item.actionKey, item.raw)"
+        >
+          <p class="feed-title">{{ item.title }}</p>
+          <p class="feed-desc">{{ item.description }}</p>
+        </li>
+      </ul>
+      <ScEmptyState v-else density="compact" :heading-level="5" title="暂无动态" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
@@ -65,8 +65,8 @@ function emitAction(actionKey: string, item: Record<string, unknown>) {
 </script>
 
 <style scoped>
-.block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; }
-.block-header h4 { margin: 0 0 8px; font-size: 14px; }
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .feed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .feed-item { border: 1px solid var(--sc-app-border); border-radius: 8px; padding: 8px; background: var(--sc-app-muted-bg); }
 .feed-item.actionable { cursor: pointer; }
