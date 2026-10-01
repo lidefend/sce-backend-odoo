@@ -9491,3 +9491,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - relation-route-authority-browser.log / **tpl07-1790814393391 33 PASS**：PM32/company8临时父计划71创建版本12；主从保存失败恢复/重试、1440/390行打开可用、真实打开版本原生表单与submit契约、实际execute_button提交成功、普通角色回读approved/approved_date2026-10-01/approved_by=False、真实返回父计划71原menu507/action655。最后两个子契约已为approved/readonly/approved，errors=[]、forbiddenWrites=[]。自动通过仅因无配置，未伪造审核人；已配置审批分支复用原版本runtime12证明，不报本次浏览器覆盖了配置审批。
 - finally精确恢复version12/parent71、actor32/restored成功，批准后清理路径已实测。approved截图抓到刷新骨架，不能作为终态视觉证据；终态由普通角色回读和最终两份approved/readonly契约证明，返回按钮实际可用。下次相关页面观察等待已加载字段再截图，不单为补截图重跑业务链。
 - 本批已关闭单层正式父入口关联子记录动作执行断点，未宣称多级无菜单父链或全部业务入口完成。版本技术标题仍待P1 _rec_name纠正；计划执行阶段编辑及配置审批页面、其他67台账职责继续收口。总体detail.action-state保留contract_gap，无推送/合并/目标部署。
+
+### 53.200 计划审批后执行字段消费契约
+
+- cdb91de3d clean起点，上一轮关联动作33项真实办理闭环属progress；复用既有run/证据，仅核对sc.plan workflow profile、节点原生字段规则及直接测试。P1 smart_construction_core负责行业计划执行语义，不在前端推导审批阶段。P0关系执行及前端源码不改。
+- 3ae4befd3将sc.plan.field_editable_phases声明为[open]，对应in_progress；继续由现有字段modifier/后端ScPlan及ScPlanLine限制可写内容，审批waiting/pending优先readonly、confirmed无执行写例外、done locked。计划基准、主单state和实际日期保持只读；节点结构不可增删，执行进度/状态通过原主从写处理。版本_rec_name=version_no，显示名由模型权威提供，未在前端拼接。
+- L1 plan-execution-iteration PASS；verify.payment.approval_state_machine.unit **188 PASS**，plan-execution-unit.log及begin/record。新增具体阶段断言、保留所有配置审批/状态保护回归；无前端或XML变动，类型/前端构建和模块升级均不需要重跑。版本_rec_name纯测已覆盖，业务标题的实际页面观察仍待下一次相关页面验证。
+- P4 152cf9ecc沿原plan-state-authority：最终契约检查增加实际write能力；配置审批计划在提交前创建本事务内节点，真实批准后开始执行，主单line_ids更新节点到50%/执行中再100%/done，回读核验后完成计划。依然验证待审/已确认/执行中基准拒绝改写及终态锁定；无持久fixture或环境扩展。
+- 受管后端绑定152cf9ecc（plan-execution-backend-up.log），SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **24 PASS、ROLLBACK VERIFIED**（plan-execution-runtime.log）。该范围涉及审批/状态机实际变更，运行检查为必要相关验证，不是无关ORM扫描；未跑其他模型runtime或重复版本UI闭环。
+- 前端继续28d13c6a5/index-DMZOW5UN.js，关联版本保存/提交/返回33项及其精确恢复证据不变。下一步补计划执行阶段真实主从UI（节点保存→确认/开始→进度/状态保存→完成），须沿现有临时父计划工具注册精确写入/恢复，不直接放开旧report写许可。配置审批执行能力已由本轮24项后端/契约证明，不冒充普通角色UI验收。总体67/detail.action-state仍contract_gap；无推送、合并、目标部署。
