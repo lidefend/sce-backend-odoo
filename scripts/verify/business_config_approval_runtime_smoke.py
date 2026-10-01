@@ -4462,8 +4462,174 @@ def _scene_entry_contract_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=scene-entry-contract rollback_verified=true" % checks)
 
 
+def _concurrency_source_preflight():
+    """Read committed candidates under the existing finance identity; no fixture writes."""
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance", "wrong concurrency database"
+    try:
+        user = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)])
+        assert len(user) == 1 and user.id == 30 and user.company_id.id == 8, "finance identity drift"
+        actor = base(user=30, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        report = {"database": base.cr.dbname, "uid": 30, "company_id": 8, "sources": {}}
+        for model in ("sc.material.rental.settlement", "sc.subcontract.settlement"):
+            records = actor[model].search([("company_id", "=", 8), ("state", "=", "confirmed")], limit=10, order="id")
+            report["sources"][model] = [{"id": row.id, "project_id": row.project_id.id,
+                "amount_total": row.amount_total, "unreserved": row._payment_unreserved_amount(),
+                "payment_allocation_revision": row.payment_allocation_revision} for row in records]
+        invoices = actor["sc.output.invoice.ledger"].search([
+            ("project_id.company_id", "=", 8), ("active", "=", True), ("adjustment_kind", "=", "normal"),
+            ("invoice_document_state", "in", ["registered", "legacy_confirmed"]),
+        ], limit=10, order="id")
+        report["sources"]["sc.output.invoice.ledger"] = [{"id": row.id, "project_id": row.project_id.id,
+            "source_model": row.source_model, "source_record_id": row.source_record_id,
+            "amount": row.invoice_amount,
+            "confirmed_adjustments": actor["sc.output.invoice.adjustment"].search_count([
+                ("original_ledger_id", "=", row.id), ("state", "=", "confirmed")])} for row in invoices]
+        print("CONCURRENCY_SOURCE_PREFLIGHT=" + json.dumps(report, ensure_ascii=False))
+    finally:
+        base.cr.rollback()
+    print("CONCURRENCY_SOURCE_PREFLIGHT=READ_ONLY_COMPLETE rollback=true; not_a_concurrency_pass")
+
+
+def _prove_committed_business_conflict(base, model, record_ids, action, expected_tables, retry_reason):
+    """Two real transactions contend, then a committed winner excludes a fresh retry."""
+    from odoo import api
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    assert len(record_ids) == 2 and len(set(record_ids)) == 2
+    result = {"model": model, "ids": record_ids, "action": action}
+    with base.registry.cursor() as first_cr, base.registry.cursor() as second_cr:
+        first = api.Environment(first_cr, 30, {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        second = api.Environment(second_cr, 30, {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        assert not first.su and not second.su
+        first_cr.execute("SET LOCAL statement_timeout = '15000ms'")
+        second_cr.execute("SET LOCAL lock_timeout = '700ms'")
+        second_cr.execute("SET LOCAL statement_timeout = '15000ms'")
+        one, two = first[model].browse(record_ids[0]), second[model].browse(record_ids[1])
+        getattr(one, action)()
+        first.flush_all()
+        try:
+            getattr(two, action)()
+            second.flush_all()
+        except Exception as exc:
+            sql = (getattr(second_cr._obj, "query", b"") or b"").decode("utf-8", errors="replace")
+            context = str(getattr(getattr(exc, "diag", None), "context", "") or "")
+            assert getattr(exc, "pgcode", None) == "55P03", "unexpected concurrency failure: %s" % exc
+            assert any(table in sql or table in context for table in expected_tables), "blocked on unrelated resource: %s %s" % (sql, context)
+            result.update({"blocked_sql": sql, "blocked_context": context, "sqlstate": "55P03"})
+            second_cr.rollback()
+        else:
+            raise AssertionError("second conflicting business operation was not blocked")
+        first_cr.commit()
+        result["winner_committed"] = record_ids[0]
+    with base.registry.cursor() as retry_cr:
+        retry = api.Environment(retry_cr, 30, {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        retry_cr.execute("SET LOCAL statement_timeout = '15000ms'")
+        try:
+            getattr(retry[model].browse(record_ids[1]), action)()
+            retry.flush_all()
+        except UserError as exc:
+            assert retry_reason in str(exc), "unexpected retry refusal: %s" % exc
+            result["fresh_retry_denied"] = str(exc)
+        else:
+            raise AssertionError("fresh retry accepted conflicting committed business result")
+        finally:
+            retry_cr.rollback()
+    print("COMMITTED_BUSINESS_CONFLICT=" + json.dumps(result, ensure_ascii=False))
+    return result
+
+
+def _iteration_concurrency_checks(kind):
+    """Owner-authorized persistent development samples, through native business actions."""
+    from datetime import datetime, timezone
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance", "wrong concurrency database"
+    assert kind in ("rental", "subcontract", "red-flush")
+    finance = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)])
+    assert len(finance) == 1 and finance.id == 30 and finance.company_id.id == 8
+    actor = base(user=30, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+    marker = "ITER-%s-%s" % (kind.upper(), datetime.now(timezone.utc).strftime("%m%d%H%M%S%f"))
+    project = actor["project.project"].sudo().create({"name": marker, "code": marker,
+        "company_id": 8, "manager_id": 30, "funding_enabled": True})
+    supplier = actor["res.partner"].sudo().create({"name": marker + " supplier", "supplier_rank": 1})
+    # This is an isolated development classification, not a new P1 business default.
+    dictionary = actor["sc.dictionary"].sudo().search([("type", "=", "doc_type"), ("code", "=", "ITER-DOC-TYPE")])
+    if not dictionary:
+        dictionary = actor["sc.dictionary"].sudo().create({"type": "doc_type", "code": "ITER-DOC-TYPE", "name": "迭代验收资料"})
+    if kind in ("rental", "subcontract"):
+        today = fields.Date.context_today(project)
+        baseline = actor["project.funding.baseline"].sudo().create({"project_id": project.id, "total_amount": 1000,
+            "period_start": today - timedelta(days=1), "period_end": today + timedelta(days=30),
+            "line_ids": [(0, 0, {"name": marker, "planned_amount": 1000})]})
+        baseline.action_activate()
+        model, field = (("sc.material.rental.settlement", "rental_settlement_id") if kind == "rental"
+                        else ("sc.subcontract.settlement", "subcontract_settlement_id"))
+        values = {"name": marker, "project_id": project.id}
+        values.update({"supplier_id": supplier.id, "line_ids": [(0, 0, {"material_name": marker, "qty": 1, "rental_days": 1, "daily_price": 100})]}
+                      if kind == "rental" else {"subcontractor_id": supplier.id, "owner_id": 30,
+                          "line_ids": [(0, 0, {"work_scope": marker, "qty": 1, "unit_price": 100})]})
+        source = actor[model].sudo().create(values)
+        source.action_submit()
+        if source.review_ids: _approve_existing_reviews(source)
+        source.action_confirm()
+        assert source.state == "confirmed" and source.amount_total == 100
+        requests = actor["payment.request"].browse()
+        for suffix in ("A", "B"):
+            request = actor["payment.request"].create({"type": "pay", field: source.id, "amount": 100,
+                "payment_account_name": marker, "payment_bank_name": "Iteration bank", "payment_account_no": marker + suffix,
+                "payer_unit": marker})
+            _attach(request, marker + suffix)
+            requests |= request
+        ids = requests.ids
+        target_model, action = "payment.request", "action_submit"
+        expected_tables, refusal = ("project_project", source._table), "未占用额度"
+    else:
+        source = actor["sc.invoice.registration"].create({"project_id": project.id, "partner_id": supplier.id,
+            "direction": "output", "source_kind": "output_invoice_tax", "invoice_no": marker, "amount_total": 100, "amount_no_tax": 100})
+        source.action_confirm()
+        if source.review_ids: _approve_existing_reviews(source)
+        source.action_register()
+        source.flush_recordset()
+        ledger = actor["sc.output.invoice.ledger"].search([("source_model", "=", source._name), ("source_record_id", "=", source.id)])
+        assert len(ledger) == 1
+        adjustments = actor["sc.output.invoice.adjustment"].browse()
+        for suffix in ("A", "B"):
+            record = actor["sc.output.invoice.adjustment"].create({"name": marker + suffix, "original_ledger_id": ledger.id,
+                "red_flush_invoice_no": marker + suffix, "reason": "迭代并发验收"})
+            record.action_submit()
+            if record.review_ids: _approve_existing_reviews(record)
+            assert record.state == "approved"
+            adjustments |= record
+        ids = adjustments.ids
+        target_model, action = "sc.output.invoice.adjustment", "action_confirm"
+        expected_tables, refusal = ("confirmed_source_unique",), "该销项票已在变更登记"
+    actor.flush_all()
+    print("ITERATION_CONCURRENCY_SEED=" + json.dumps({"marker": marker, "project_id": project.id,
+        "source_model": source._name, "source_id": source.id, "target_model": target_model, "ids": ids,
+        "doc_type_id": dictionary.id, "database": base.cr.dbname, "company_id": 8, "actor": 30}, ensure_ascii=False), flush=True)
+    base.cr.commit()
+    _prove_committed_business_conflict(base, target_model, ids, action, expected_tables, refusal)
+    base.cr.rollback()
+    base.invalidate_all()
+    records = actor[target_model].browse(ids)
+    if kind in ("rental", "subcontract"):
+        assert records[0].state in ("submit", "approved") and records[1].state == "draft"
+        assert source._payment_reserved_amount() == 100 and source._payment_unreserved_amount() == 0
+        assert len(actor["payment.request"].search([(field, "=", source.id)])) == 2
+    else:
+        assert records[0].state == "confirmed" and records[1].state == "approved"
+        assert records[0].confirmed_source_key == "%s:%s" % (source._name, source.id)
+        generated = actor["sc.invoice.registration"].search([("red_flush_adjustment_id", "in", ids)])
+        assert len(generated) == 1 and generated.red_flush_adjustment_id.id == ids[0]
+        assert generated.state == "registered" and generated.amount_total == -100
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=%s-concurrency retained_development_samples=true" % kind)
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope in ("rental-concurrency", "subcontract-concurrency", "red-flush-concurrency"):
+        return _iteration_concurrency_checks(scope.removesuffix("-concurrency"))
+    if scope == "concurrency-source-preflight":
+        return _concurrency_source_preflight()
     if scope == "scene-entry-contract":
         return _scene_entry_contract_checks()
     if scope == "payment-flow-reconcile":

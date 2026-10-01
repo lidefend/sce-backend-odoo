@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { paymentReviewOriginalSteps, paymentReviewFlowSteps, paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { documentFlowWriteKind, paymentReviewOriginalSteps, paymentReviewFlowSteps, paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -66,6 +66,13 @@ const pendingProbeAborts = new Set();
 let favoriteWritePermit = null;
 let projectWritePermit = null;
 let expenseCreateCapture = false;
+const documentFlow = process.env.TPL07_DOCUMENT_FLOW === '1';
+assert.ok(!documentFlow || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.project.document' && process.env.TPL07_APPROVAL_VIEW === 'create'));
+assert.ok(!documentFlow || !Object.entries(process.env).some(([key, value]) => key.startsWith('TPL07_')
+  && !['TPL07_DOCUMENT_FLOW', 'TPL07_SCOPE', 'TPL07_APPROVAL_MODEL', 'TPL07_APPROVAL_VIEW'].includes(key) && value && value !== '0'),
+  'document flow must not combine another probe or write scope');
+let documentSuccess = null;
+let documentCreateCapture = false;
 const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
 assert.ok(!diarySaveProbe || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.construction.diary' && process.env.TPL07_APPROVAL_VIEW === 'create'));
 const eventSaveProbe = process.env.TPL07_EVENT_SAVE_PROBE === '1';
@@ -225,6 +232,28 @@ async function login(role) {
       report.reportSaveAttempts.push(body.params);
       return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'TPL53_REPORT_CAPTURE', message: '计划汇报定向保存失败验证' } }) });
     }
+    const documentKind = documentFlowWriteKind(role, body, documentSuccess);
+    if (documentFlow && documentKind) {
+      documentSuccess.phase = `${documentKind}_in_flight`;
+      await fs.writeFile(path.join(out, 'document-flow-recovery.json'), JSON.stringify(documentSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.documentWrites ??= [];
+      report.documentWrites.push({ kind: documentKind, result });
+      if (result.ok === true) {
+        if (documentKind === 'create') documentSuccess.id = result.data?.id;
+        documentSuccess.phase = 'readback';
+      }
+      await fs.writeFile(path.join(out, 'document-flow-recovery.json'), JSON.stringify(documentSuccess, null, 2));
+      return route.fulfill({ response });
+    }
+    if (documentFlow && documentCreateCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'sc.project.document') {
+      documentCreateCapture = false;
+      report.documentCreateAttempt = body.params;
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false,
+        error: { code: 'TPL53_DOCUMENT_CAPTURE', message: '工程资料定向载荷捕获，请重试保存' } }) });
+    }
     const eventKind = eventProbeWriteKind(role, body, eventSuccess);
     if (eventKind) {
       eventSuccess.phase = `${eventKind}_in_flight`;
@@ -338,7 +367,7 @@ async function login(role) {
         return permit.abort ? route.abort('failed') : route.continue();
       }
     }
-    if ((reportSaveSuccess && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
+    if (((reportSaveSuccess || documentFlow) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
       || (/^sc\.approval_policy\..*\.set$/.test(body?.intent || ''))
       || (body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
       || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
@@ -1257,6 +1286,51 @@ try {
       }
     }
     await manager.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_AMOUNT_INSPECT === '1') {
+    report.amountCapabilityInspection = [];
+    for (const spec of [{ model: 'payment.request', supported: true },
+      { model: 'project.project', supported: false, menu: 'smart_construction_core.menu_sc_project_initiation' }]) {
+      const admin = await login('fixture_role_config_admin');
+      const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+        .flatMap(key => report.routeAuthority?.[key] || []);
+      const entry = entries.find(row => row.model === spec.model && (!spec.menu || row.menu_xmlid === spec.menu));
+      check(`amount ${spec.model}: actual published configuration entry`, Number.isInteger(entry?.action_id) && entry.action_id > 0 && Number(entry.menu_id) > 0);
+      const surfaceResponse = admin.page.waitForResponse(response => {
+        try { return response.request().postDataJSON()?.intent === 'ui.business_config.surface.get'; } catch { return false; }
+      });
+      await admin.page.goto(`${base}/admin/business-config?model=${spec.model}&action_id=${entry.action_id}&menu_id=${entry.menu_id}`);
+      const surface = await (await surfaceResponse).json();
+      check(`amount ${spec.model}: configuration surface available`, surface.ok === true);
+      await admin.page.getByRole('tab', { name: '审批规则', exact: true }).click();
+      const configResponse = admin.page.waitForResponse(response => {
+        try { const body = response.request().postDataJSON(); return body?.intent === 'sc.approval_policy.config.get' && body.params?.model === spec.model; } catch { return false; }
+      });
+      await admin.page.getByRole('button', { name: '配置审批规则', exact: true }).click();
+      const config = await (await configResponse).json();
+      const capability = config.data?.amount_condition;
+      check(`amount ${spec.model}: authoritative capability`, config.ok === true && config.data?.model === spec.model
+        && capability?.supported === spec.supported && Boolean(capability.field) === spec.supported && Boolean(capability.message));
+      const panel = admin.page.locator('.approval-panel');
+      await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
+      await panel.locator('.approval-amount-message').getByText(capability.message, { exact: true }).waitFor();
+      // Unsaved local editing demonstrates usable controls; all configuration writes remain intercepted.
+      const enabled = panel.getByRole('checkbox', { name: '启用审批', exact: true });
+      if (!(await enabled.isChecked())) await enabled.check();
+      if (!(await panel.locator('.approval-step-row').count())) await panel.getByRole('button', { name: '添加步骤', exact: true }).click();
+      check(`amount ${spec.model}: reviewer steps remain editable`, await panel.getByLabel('第1步名称', { exact: true }).isEnabled()
+        && await panel.getByLabel('第1步审批岗位', { exact: true }).isEnabled());
+      check(`amount ${spec.model}: inputs follow capability`, await panel.getByLabel('第1步金额下限', { exact: true }).count() === Number(spec.supported)
+        && await panel.getByLabel('第1步金额上限', { exact: true }).count() === Number(spec.supported));
+      for (const width of [1440, 390]) {
+        await admin.page.setViewportSize({ width, height: 950 });
+        await panel.locator('.approval-amount-message').scrollIntoViewIfNeeded();
+        check(`amount ${spec.model} ${width}: no page overflow`, await admin.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+        await admin.page.screenshot({ path: path.join(out, `amount-${spec.model}-${width}.png`) });
+      }
+      report.amountCapabilityInspection.push({ model: spec.model, entry, config: config.data, unsavedOnly: true });
+      await admin.ctx.close();
+    }
+    check('amount capability inspection: no writes', report.forbiddenWrites.length === 0);
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {
     // Read-only user observation; existing write interception remains deny-by-default.
     const admin = await login('fixture_role_config_admin');
@@ -1432,10 +1506,10 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
-        if (diarySaveProbe || eventSaveProbe || ['sc.plan', 'sc.plan.report'].includes(spec.model)) {
+        if (documentFlow || diarySaveProbe || eventSaveProbe || ['sc.plan', 'sc.plan.report'].includes(spec.model)) {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
             .flatMap(key => report.routeAuthority?.[key] || []);
-          const entryXmlid = spec.model === 'sc.plan.report' ? 'smart_construction_core.menu_sc_plan_report'
+          const entryXmlid = documentFlow ? 'smart_construction_core.menu_sc_project_documents' : spec.model === 'sc.plan.report' ? 'smart_construction_core.menu_sc_plan_report'
             : spec.model === 'sc.plan' ? 'smart_construction_core.menu_sc_plan'
             : eventSaveProbe ? 'smart_construction_core.menu_sc_contract_event' : 'smart_construction_core.menu_sc_construction_diary';
           const matches = entries.filter(row => row.menu_xmlid === entryXmlid);
@@ -1458,6 +1532,119 @@ try {
               && typeof value[1] === 'string' && value[1].length > 0
               && await session.page.locator(`[data-field-name="${field}"] input`).first().inputValue() === value[1]);
           }
+        }
+        if (documentFlow) {
+          const api = params => session.page.evaluate(async params => {
+            const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+            return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+              body: JSON.stringify({ intent: 'api.data', params }),
+            })).json();
+          }, params);
+          const classification = await api({ op: 'list', model: 'sc.dictionary',
+            domain: [['code', '=', 'ITER-DOC-TYPE'], ['type', '=', 'doc_type']],
+            fields: ['id', 'name', 'code', 'type'], limit: 2, context: { company_id: 8 } });
+          check('document: PM reads one authorized development classification by code', classification.ok === true
+            && classification.data?.records?.length === 1 && classification.data.records[0].code === 'ITER-DOC-TYPE');
+          const docType = classification.data.records[0];
+          const selectRelation = async (field, model, search, expectedId) => {
+            const response = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === model && JSON.stringify(body.params).includes(search); } catch { return false; }
+            });
+            await session.page.locator(`[data-field-name="${field}"] input`).first().fill(search);
+            const result = await (await response).json();
+            const selected = result.data?.records?.find(row => expectedId ? row.id === expectedId : Number(row.id) > 0);
+            check(`document: ${field} returned by PM relation query`, result.ok === true && Boolean(selected));
+            await session.page.getByRole('option', { name: String(selected.display_name || selected.name), exact: true }).click();
+            return selected;
+          };
+          const project = await selectRelation('project_id', 'project.project', 'FE Project A');
+          await selectRelation('doc_type_id', 'sc.dictionary', docType.name, docType.id);
+          const marker = `TPL53-DOCUMENT-FLOW-${Date.now()}`;
+          await session.page.locator('[data-field-name="name"] input').first().fill(marker);
+          documentCreateCapture = true;
+          const captured = session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'create'
+              && body.params.model === spec.model; } catch { return false; }
+          });
+          await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+          await captured;
+          await session.page.getByText('工程资料定向载荷捕获，请重试保存', { exact: true }).first().waitFor();
+          const responsible = authority.mainData?.responsible_id;
+          documentSuccess = { model: spec.model, marker, projectId: project.id, docTypeId: docType.id,
+            menuId: Number(report.approvalCreateEntry.menu_id), actionId: Number(report.approvalCreateEntry.action_id),
+            responsibleId: Array.isArray(responsible) ? responsible[0] : responsible,
+            request: structuredClone(report.documentCreateAttempt), phase: 'create', id: null };
+          check('document: exact captured request contains only selected values and unchanged defaults',
+            documentFlowWriteKind(spec.role, { intent: 'api.data', params: documentSuccess.request }, documentSuccess) === 'create');
+          report.documentScope = { marker, projectId: project.id, docTypeId: docType.id, entry: report.approvalCreateEntry,
+            retainedDevelopmentData: true, configuredApprovalCoverage: 'only if observed on this document' };
+          const saved = session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'create'
+              && body.params.model === spec.model; } catch { return false; }
+          });
+          await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+          check('document: actual PM save succeeds', (await (await saved).json()).ok === true && Number(documentSuccess.id) > 0);
+          const read = async label => {
+            const result = await api({ op: 'read', model: spec.model, ids: [documentSuccess.id],
+              fields: ['id', 'name', 'state', 'project_id', 'doc_type_id', 'company_id', 'validation_status'], context: { company_id: 8 } });
+            report.documentReadbacks ??= [];
+            report.documentReadbacks.push({ label, result });
+            const row = result.data?.records?.[0];
+            check(`document ${label}: authoritative identity readback`, result.ok === true && row?.id === documentSuccess.id
+              && row.name === marker && row.project_id[0] === project.id && row.doc_type_id[0] === docType.id && row.company_id[0] === 8);
+            return row;
+          };
+          check('document: saved separately as draft', (await read('saved')).state === 'draft');
+          const perform = async (page, phase, label) => {
+            documentSuccess.phase = phase;
+            const response = page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'execute_button'
+                && body.params?.model === spec.model && body.params.res_id === documentSuccess.id; } catch { return false; }
+            });
+            await page.getByRole('button', { name: label, exact: true }).click();
+            check(`document: ${phase} succeeds through visible action`, (await (await response).json()).ok === true
+              && report.documentWrites.filter(row => row.kind === phase && row.result.ok === true).length === 1);
+          };
+          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-saved', 'readonly');
+          await perform(session.page, 'submit', '提交审批');
+          let submitted = await read('submitted');
+          if (submitted.state === 'review') {
+            const reviewer = await login('fixture_role_executive');
+            const summary = reviewer.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'my.work.summary' && body.params?.product_workspace === true; } catch { return false; }
+            });
+            await reviewer.page.goto(`${base}/my-work`);
+            const workspace = await (await summary).json();
+            const item = workspace.data?.product_workspace?.sections?.flatMap(section => section.items)
+              .find(item => item.target?.model === spec.model && item.target.record_id === documentSuccess.id);
+            check('document: actual executive workspace grants this document review', Boolean(item?.target?.work_item_origin));
+            documentSuccess.approvalOrigin = item.target.work_item_origin;
+            report.documentReviewTarget = item.target;
+            await reviewer.page.locator('[data-work-item-key]').filter({ hasText: marker })
+              .getByRole('button', { name: '打开详情', exact: true }).click();
+            await reviewer.page.waitForURL(url => url.pathname === `/r/${spec.model}/${documentSuccess.id}`);
+            await perform(reviewer.page, 'approve', '审批通过');
+            await reviewer.ctx.close();
+            submitted = await read('reviewed');
+          } else {
+            report.documentScope.configuredApprovalCoverage = 'not exercised: actual submission auto-approved; backend configured-review evidence is separate';
+          }
+          check('document: approval precedes explicit archive', submitted.state === 'approved');
+          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-approved', 'readonly');
+          await perform(session.page, 'archive', '归档');
+          check('document: explicit archive reaches done', (await read('archived')).state === 'done');
+          documentSuccess.phase = 'done';
+          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-archived', 'readonly');
+          for (const width of [1440, 390]) {
+            await session.page.setViewportSize({ width, height: 950 });
+            check(`document archived ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+            await session.page.screenshot({ path: path.join(out, `document-archived-${width}.png`) });
+          }
+          check('document: no out-of-scope mutation', report.forbiddenWrites.length === 0);
+          await session.ctx.close();
+          continue;
         }
         if (reportSaveSuccess) {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']

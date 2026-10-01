@@ -339,3 +339,95 @@ test('payment workflow second review is bound to the executive and real work-ite
   assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), null);
   assert.equal(paymentReviewWriteKind('fixture_role_executive', body, { ...scope, reviewStage: 1 }), null);
 });
+
+import { documentFlowWriteKind } from './standard_expense_success_scope.mjs';
+const documentScope = { model: 'sc.project.document', marker: 'TPL53-DOCUMENT-FLOW-1790807163178',
+  projectId: 10, docTypeId: 21, menuId: 412, actionId: 700, responsibleId: 29, phase: 'create', id: 123,
+  request: { op: 'create', model: 'sc.project.document',
+    vals: { name: 'TPL53-DOCUMENT-FLOW-1790807163178', project_id: 10, doc_type_id: 21, document_kind: 'site', responsible_id: 29 },
+    context: { company_id: 8, menu_id: 412, action_id: 700 } } };
+test('document create binds exact PM values and dynamically selected project/classification', () => {
+  const body = { intent: 'api.data', params: documentScope.request };
+  assert.equal(documentFlowWriteKind('fixture_role_pm', body, documentScope), 'create');
+  const scope = structuredClone(documentScope);
+  scope.projectId = scope.request.vals.project_id = 27;
+  scope.docTypeId = scope.request.vals.doc_type_id = 36;
+  assert.equal(documentFlowWriteKind('fixture_role_pm', { intent: 'api.data', params: scope.request }, scope), 'create');
+  for (const role of ['fixture_role_config_admin', 'fixture_role_finance', 'fixture_role_executive']) {
+    assert.equal(documentFlowWriteKind(role, body, documentScope), null);
+  }
+  for (const patch of [{ phase: 'create_in_flight' }, { marker: 'other' }, { projectId: 11 }, { docTypeId: 22 }, { menuId: 413 }, { actionId: 701 }]) {
+    assert.equal(documentFlowWriteKind('fixture_role_pm', body, { ...documentScope, ...patch }), null);
+  }
+});
+test('document captured request cannot authorize extra business fields, identity drift or context bypass', () => {
+  for (const vals of [{ state: 'approved' }, { responsible_id: 1 }, { company_id: 9 }, { document_kind: 'archive' },
+    { attachment_ids: [[6, 0, [1]]] }, { contract_id: 12 }, { name: 'arbitrary' }]) {
+    const scope = structuredClone(documentScope);
+    Object.assign(scope.request.vals, vals);
+    assert.equal(documentFlowWriteKind('fixture_role_pm', { intent: 'api.data', params: scope.request }, scope), null);
+  }
+  for (const context of [{ company_id: 9 }, { menu_id: 1 }, { action_id: 1 }, { default_state: 'approved' }, { skip_validation_check: true }, { sudo: true }]) {
+    const scope = structuredClone(documentScope);
+    Object.assign(scope.request.context, context);
+    assert.equal(documentFlowWriteKind('fixture_role_pm', { intent: 'api.data', params: scope.request }, scope), null);
+  }
+});
+for (const [phase, name] of [['submit', 'action_submit'], ['archive', 'action_archive']]) {
+  test(`document ${phase} permits only one bound record, PM entry and exact action`, () => {
+    const scope = { ...documentScope, phase };
+    const body = { intent: 'execute_button', params: { model: scope.model, res_id: scope.id, button: { name, type: 'object' } },
+      meta: { menu_id: 412, action_id: 700 } };
+    assert.equal(documentFlowWriteKind('fixture_role_pm', body, scope), phase);
+    assert.equal(documentFlowWriteKind('fixture_role_config_admin', body, scope), null);
+    assert.equal(documentFlowWriteKind('fixture_role_pm', body, { ...scope, phase: `${phase}_in_flight` }), null);
+    for (const patch of [{ res_id: 124 }, { model: 'sc.plan' }, { args: [[124]] }, { kwargs: { context: { sudo: true } } },
+      { button: { name: 'action_approve', type: 'object' } }]) {
+      assert.equal(documentFlowWriteKind('fixture_role_pm', { ...body, params: { ...body.params, ...patch } }, scope), null);
+    }
+    assert.equal(documentFlowWriteKind('fixture_role_pm', { ...body, meta: { menu_id: 413, action_id: 700 } }, scope), null);
+    assert.equal(documentFlowWriteKind('fixture_role_pm', { ...body, meta: {} }, scope), null);
+  });
+}
+test('document review requires actual tier work item and bound executive record; done cannot replay', () => {
+  const scope = { ...documentScope, phase: 'approve', approvalOrigin: { source: 'tier.review', id: 456 } };
+  const body = { intent: 'execute_button', params: { model: scope.model, res_id: scope.id, button: { name: 'validate_tier', type: 'object' } },
+    meta: { work_item_origin: scope.approvalOrigin } };
+  assert.equal(documentFlowWriteKind('fixture_role_executive', body, scope), 'approve');
+  assert.equal(documentFlowWriteKind('fixture_role_pm', body, scope), null);
+  assert.equal(documentFlowWriteKind('fixture_role_executive', { ...body, meta: { work_item_origin: { source: 'tier.review', id: 457 } } }, scope), null);
+  assert.equal(documentFlowWriteKind('fixture_role_executive', body, { ...scope, phase: 'done' }), null);
+  assert.equal(documentFlowWriteKind('fixture_role_pm', { ...body, params: { ...body.params, button: { type: 'object' } }, meta: { menu_id: 412, action_id: 700 } }, { ...scope, phase: 'done' }), null);
+});
+
+test('document permit rejects outer and nested context overrides at every write phase', () => {
+  for (const phase of ['create', 'submit', 'archive', 'approve']) {
+    const scope = { ...documentScope, phase, approvalOrigin: { source: 'tier.review', id: 456 } };
+    const role = phase === 'approve' ? 'fixture_role_executive' : 'fixture_role_pm';
+    const body = phase === 'create' ? { intent: 'api.data', params: structuredClone(scope.request) }
+      : { intent: 'execute_button', params: { model: scope.model, res_id: scope.id,
+        button: { name: { submit: 'action_submit', archive: 'action_archive', approve: 'validate_tier' }[phase], type: 'object' } },
+        meta: { menu_id: 412, action_id: 700, work_item_origin: scope.approvalOrigin } };
+    assert.equal(documentFlowWriteKind(role, { ...body, context: { company_id: 8, allowed_company_ids: [8] } }, scope), phase);
+    for (const context of [{ default_state: 'approved' }, { skip_validation_check: true }, { company_id: 9 },
+      { allowed_company_ids: [8, 9] }, { project_id: 11 }, { operation_strategy: 'sudo' }]) {
+      assert.equal(documentFlowWriteKind(role, { ...body, context }, scope), null);
+      const altered = structuredClone(body);
+      altered.params.context = { ...altered.params.context, ...context };
+      const captured = phase === 'create' ? { ...scope, request: altered.params } : scope;
+      assert.equal(documentFlowWriteKind(role, altered, captured), null);
+    }
+  }
+});
+
+test('document create rejects alternate nested parameter carriers and action button contexts', () => {
+  for (const key of ['data', 'params', 'args', 'payload', 'context_raw']) {
+    const scope = structuredClone(documentScope);
+    scope.request[key] = { context: { skip_validation_check: true } };
+    assert.equal(documentFlowWriteKind('fixture_role_pm', { intent: 'api.data', params: scope.request }, scope), null);
+  }
+  const scope = { ...documentScope, phase: 'archive' };
+  const body = { intent: 'execute_button', params: { model: scope.model, res_id: scope.id,
+    button: { name: 'action_archive', type: 'object', context: { company_id: 9 } } }, meta: { menu_id: 412, action_id: 700 } };
+  assert.equal(documentFlowWriteKind('fixture_role_pm', body, scope), null);
+});

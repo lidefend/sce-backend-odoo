@@ -645,3 +645,129 @@ class SceneEntryRuntimeProbeTest(unittest.TestCase):
     def test_wrong_database_never_calls_startup(self):
         with self.assertRaises(AssertionError): self.run_probe(wrong_database=True)
         self.handler.assert_not_called()
+
+
+class ConcurrencySourcePreflightTest(unittest.TestCase):
+    def run_probe(self, *, database='sc_frontend_acceptance', uid=30):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        method = next(n for n in ast.parse(path.read_text()).body
+                      if isinstance(n, ast.FunctionDef) and n.name == '_concurrency_source_preflight')
+        base = MagicMock()
+        base.cr.dbname = database
+        user = MagicMock(id=uid, company_id=SimpleNamespace(id=8))
+        user.__len__.return_value = 1
+        base.__getitem__.return_value.sudo.return_value.search.return_value = user
+        namespace = {'_env': lambda: base, 'json': json}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        self.base = base
+        with patch('builtins.print') as output:
+            namespace['_concurrency_source_preflight']()
+        self.output = output
+
+    def test_read_only_does_not_promote_empty_sources_to_concurrency_pass(self):
+        self.run_probe()
+        self.base.cr.rollback.assert_called_once()
+        self.base.cr.commit.assert_not_called()
+        self.base.assert_called_once_with(user=30, context={'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'})
+        self.assertIn('not_a_concurrency_pass', self.output.call_args.args[0])
+        for name in ('create', 'write', 'unlink'):
+            getattr(self.base.return_value.__getitem__.return_value, name).assert_not_called()
+
+    def test_wrong_database_refused_before_any_access(self):
+        with self.assertRaisesRegex(AssertionError, 'wrong concurrency database'):
+            self.run_probe(database='other')
+        self.base.__getitem__.assert_not_called()
+
+    def test_changed_role_identity_refused_and_rolled_back(self):
+        with self.assertRaisesRegex(AssertionError, 'finance identity drift'):
+            self.run_probe(uid=99)
+        self.base.assert_not_called()
+        self.base.cr.rollback.assert_called_once()
+
+
+class CommittedBusinessConflictProbeTest(unittest.TestCase):
+    def prepare(self, *, pgcode='55P03', sql=b'SELECT id FROM project_project FOR UPDATE', retry_message='exhausted', block=True):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        method = next(n for n in ast.parse(path.read_text()).body
+                      if isinstance(n, ast.FunctionDef) and n.name == '_prove_committed_business_conflict')
+        method.body = [n for n in method.body if not isinstance(n, ast.ImportFrom)]
+        class BusinessError(Exception): pass
+        blocked = Exception('bounded conflict')
+        blocked.pgcode = pgcode
+        blocked.diag = SimpleNamespace(context='')
+        self.base = MagicMock()
+        self.base.cr.dbname = 'sc_frontend_acceptance'
+        self.cursors = [MagicMock() for _ in range(3)]
+        self.actors = [MagicMock(su=False) for _ in range(3)]
+        for cursor in self.cursors:
+            cursor.__enter__.return_value = cursor
+            cursor._obj.query = sql
+        self.base.registry.cursor.side_effect = self.cursors
+        if block:
+            self.actors[1].__getitem__.return_value.browse.return_value.action_submit.side_effect = blocked
+        self.actors[2].__getitem__.return_value.browse.return_value.action_submit.side_effect = BusinessError(retry_message)
+        namespace = {'api': SimpleNamespace(Environment=MagicMock(side_effect=self.actors)), 'UserError': BusinessError, 'json': json}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        self.probe = namespace['_prove_committed_business_conflict']
+        return self
+
+    def execute(self):
+        with patch('builtins.print') as output:
+            result = self.probe(self.base, 'payment.request', [10, 11], 'action_submit', ('project_project',), 'exhausted')
+        self.output = output
+        return result
+
+    def test_committed_winner_then_fresh_retry_denied(self):
+        self.prepare()
+        result = self.execute()
+        self.assertEqual(result['winner_committed'], 10)
+        self.assertEqual(result['sqlstate'], '55P03')
+        self.assertEqual(result['fresh_retry_denied'], 'exhausted')
+        self.cursors[0].commit.assert_called_once()
+        self.cursors[1].rollback.assert_called_once()
+        self.cursors[2].rollback.assert_called_once()
+        self.cursors[1].commit.assert_not_called()
+        self.cursors[2].commit.assert_not_called()
+        self.assertEqual(self.base.registry.cursor.call_count, 3)
+
+    def test_unblocked_second_writer_refuses_commit(self):
+        self.prepare(block=False)
+        with self.assertRaisesRegex(AssertionError, 'was not blocked'): self.execute()
+        self.cursors[0].commit.assert_not_called()
+
+    def test_other_sql_failure_refuses_commit(self):
+        self.prepare(pgcode='23503')
+        with self.assertRaisesRegex(AssertionError, 'unexpected concurrency failure'): self.execute()
+        self.cursors[0].commit.assert_not_called()
+
+    def test_unrelated_lock_refuses_commit(self):
+        self.prepare(sql=b'SELECT id FROM ir_sequence FOR UPDATE')
+        with self.assertRaisesRegex(AssertionError, 'unrelated resource'): self.execute()
+        self.cursors[0].commit.assert_not_called()
+
+    def test_wrong_retry_business_reason_is_not_success(self):
+        self.prepare(retry_message='permission denied')
+        with self.assertRaisesRegex(AssertionError, 'unexpected retry refusal'): self.execute()
+        self.cursors[2].rollback.assert_called_once()
+
+    def test_wrong_database_refused_before_cursor(self):
+        self.prepare()
+        self.base.cr.dbname = 'production'
+        with self.assertRaises(AssertionError): self.execute()
+        self.base.registry.cursor.assert_not_called()
+
+    def test_same_record_cannot_masquerade_as_distinct_transactions(self):
+        self.prepare()
+        with self.assertRaises(AssertionError):
+            self.probe(self.base, 'payment.request', [10, 10], 'action_submit', ('project_project',), 'exhausted')
+        self.base.registry.cursor.assert_not_called()
+
+    def test_elevated_actor_refused(self):
+        self.prepare()
+        self.actors[0].su = True
+        with self.assertRaises(AssertionError): self.execute()
+        self.cursors[0].commit.assert_not_called()

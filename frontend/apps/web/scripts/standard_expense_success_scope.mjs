@@ -1,5 +1,41 @@
 import { isDeepStrictEqual } from 'node:util';
 
+export function documentFlowWriteKind(role, body, scope) {
+  const r = scope?.request;
+  if (!scope || scope.model !== 'sc.project.document' || !/^TPL53-DOCUMENT-FLOW-\d{13}$/.test(scope.marker)
+    || ![scope.projectId, scope.docTypeId, scope.menuId, scope.actionId].every(id => Number.isInteger(id) && id > 0)
+    || r?.model !== scope.model || r.op !== 'create' || r.vals?.name !== scope.marker
+    || Object.keys(r).some(key => !['op', 'model', 'vals', 'context'].includes(key))
+    || r.vals.project_id !== scope.projectId || r.vals.doc_type_id !== scope.docTypeId
+    || r.context?.company_id !== 8 || Number(r.context.menu_id) !== scope.menuId || Number(r.context.action_id) !== scope.actionId
+    || Object.keys(r.context).some(key => key.startsWith('default_') || /sudo|force|skip|token/i.test(key))) return null;
+  const safeContext = context => context === undefined || (context && typeof context === 'object' && !Array.isArray(context)
+    && Object.entries(context).every(([key, value]) => {
+      const expected = { company_id: 8, allowed_company_ids: [8], project_id: scope.projectId,
+        menu_id: scope.menuId, action_id: scope.actionId, active_model: scope.model,
+        active_id: scope.id, active_ids: scope.id ? [scope.id] : [] };
+      return Object.hasOwn(expected, key) && (['menu_id', 'action_id'].includes(key)
+        ? Number(value) === expected[key] : isDeepStrictEqual(value, expected[key]));
+    }));
+  if (!safeContext(r.context) || !safeContext(body?.context) || !safeContext(body?.params?.context)) return null;
+  const defaults = { document_kind: 'site', company_id: 8, responsible_id: scope.responsibleId, is_mandatory: false, attachment_ids: [[6, 0, []]] };
+  const empty = ['wbs_id', 'task_id', 'contract_id', 'doc_subtype_id', 'date_doc', 'version', 'note'];
+  if (Object.entries(r.vals).some(([key, value]) => !['name', 'project_id', 'doc_type_id'].includes(key)
+    && !(Object.hasOwn(defaults, key) && defaults[key] !== undefined && isDeepStrictEqual(value, defaults[key]))
+    && !(empty.includes(key) && [false, null, ''].includes(value)))) return null;
+  const p = body?.params;
+  if (scope.phase === 'create' && role === 'fixture_role_pm' && body?.intent === 'api.data' && isDeepStrictEqual(p, r)) return 'create';
+  if (!Number.isInteger(scope.id) || scope.id <= 0 || body?.intent !== 'execute_button'
+    || p?.model !== scope.model || p.res_id !== scope.id || p.button?.type !== 'object'
+    || Object.keys(p).some(key => !['model', 'res_id', 'button', 'context'].includes(key))
+    || (p.button.context !== undefined && !isDeepStrictEqual(p.button.context, {}))) return null;
+  if (scope.phase === 'approve' && role === 'fixture_role_executive' && p.button.name === 'validate_tier'
+    && scope.approvalOrigin?.source === 'tier.review' && Number.isInteger(scope.approvalOrigin.id) && scope.approvalOrigin.id > 0
+    && isDeepStrictEqual(body.meta?.work_item_origin, scope.approvalOrigin)) return 'approve';
+  if (role !== 'fixture_role_pm' || Number(body.meta?.menu_id) !== scope.menuId || Number(body.meta?.action_id) !== scope.actionId) return null;
+  return ['submit', 'archive'].includes(scope.phase) && ({ submit: 'action_submit', archive: 'action_archive' })[scope.phase] === p.button.name ? scope.phase : null;
+}
+
 export function permitsExpensePolicyWrite(role, body, permit) {
   const p = body?.params;
   return Boolean(permit && role === 'fixture_role_config_admin' && body?.intent === 'api.data'
