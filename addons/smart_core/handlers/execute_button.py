@@ -133,12 +133,13 @@ class ExecuteButtonHandler(BaseIntentHandler):
         source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
         if not authority_action_id or not backend_identity or not source_widget_id:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+        work_access_mode = None
         work_origin = meta.get("work_item_origin")
         if work_origin is not None:
             from ..core.work_item_action_authority import validate_work_item_action_origin
             from ..utils.extension_hooks import call_extension_hook_first
             try:
-                validate_work_item_action_origin(work_origin, model=model, record_id=record_id, method_name=method_name,
+                work_access_mode = validate_work_item_action_origin(work_origin, model=model, record_id=record_id, method_name=method_name,
                     authorize=lambda origin, **target: call_extension_hook_first(
                         self.env, "smart_core_authorize_work_item_origin", self.env, origin, **target))
             except ValueError as error:
@@ -251,7 +252,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         status = status_matches[0]
         if status.get("visible") is not True or status.get("disabled") is not False:
             raise AccessError(str(status.get("reasonCode") or "ACTION_STATUS_NOT_AUTHORIZED"))
-        return rule
+        return {**rule, "_validated_work_item_access_mode": work_access_mode}
 
     def handle(self, payload=None, ctx=None):
         params = self.params if isinstance(self.params, dict) else {}
@@ -325,7 +326,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 if normalized_button_type == "server"
                 else "read"
                 if normalized_button_type == "action"
-                else self._button_access_mode(env_model, method_name)
+                else authorized_rule.get("_validated_work_item_access_mode") or self._button_access_mode(env_model, method_name)
             )
             env_model.check_access_rights(access_mode)
 

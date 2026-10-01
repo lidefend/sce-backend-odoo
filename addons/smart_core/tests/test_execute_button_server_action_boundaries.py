@@ -750,6 +750,31 @@ class WorkItemActionOriginTest(unittest.TestCase):
                 self.validate({'source': 'review', 'id': 3}, model=model, record_id=record_id,
                               method_name=None, authorize=lambda *a, **kw: True)
 
+    def test_contract_cannot_forge_validated_access_level(self):
+        module = _load_handler()
+        model = _ButtonModel()
+        handler = module.ExecuteButtonHandler(env=_Env({'x.model': model}), payload={
+            'params': {'model': 'x.model', 'record_id': 3, 'button': _authority_button()},
+            'meta': {'action_id': 41, 'menu_id': 51, 'record_access_mode': 'read'},
+        })
+        contract = _authorized_contract()
+        contract['actionContract']['actionRuleList'][0]['_validated_work_item_access_mode'] = 'read'
+        handler._load_current_action_contract = lambda **kw: contract
+        result = handler.handle()
+        self.assertTrue(result['ok'])
+        self.assertEqual(model.access_modes, ['write'])
+
+    def test_record_access_level_must_come_from_exact_backend_grant(self):
+        for mode in ('read', 'write'):
+            self.assertEqual(self.run_origin({'source': 'review', 'id': 3},
+                lambda *a, **kw: {'allowed': True, 'record_access_mode': mode}), mode)
+        self.assertEqual(self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: True), 'write')
+        for grant in ({'allowed': True, 'record_access_mode': 'sudo'},
+                      {'allowed': 1, 'record_access_mode': 'read'},
+                      {'allowed': True, 'record_access_mode': 'read', 'skip_acl': True}):
+            with self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+                self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: grant)
+
 
 class ReviewWorkItemOriginTest(unittest.TestCase):
     def setUp(self):
