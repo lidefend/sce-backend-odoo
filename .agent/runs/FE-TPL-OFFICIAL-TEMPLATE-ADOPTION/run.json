@@ -31,7 +31,8 @@
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     "frontend/packages/schema/src/actionSemantics.ts",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
-    "contracts/generated/contract_structure_fingerprint.json"
+    "contracts/generated/contract_structure_fingerprint.json",
+    "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml"
   ],
   "environment": {
     "kind": "runtime",
@@ -919,7 +920,7 @@
     "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Independent final review and evidence archive, then governed exact-head Gitee PR publication, latest source/current main required checks, protected merge and readback. No deployment.",
+  "next_exact_step": "Commit reviewed layer-owned fixes; governed acceptance backend refresh/build, affected Home/create-edit/menu browser; archive exact candidate and publish protected Gitee PR. No deployment.",
   "completion": {
     "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
@@ -3617,55 +3618,162 @@
     "writer": "owner-assigned executor (this session)"
   },
   "current_execution_order": {
-    "formal_product_layer": "P0",
-    "supporting_layer": "P4",
-    "layer_target": "exact readonly relation navigation authority bridge and existing acceptance tool repairs",
-    "module": "smart_core route_authority_validate/relation_action_authority; generic frontend router; existing scoped tests and P4 preview tools",
-    "standard_vs_user_specific": "platform mechanism; no industry/customer semantics",
-    "why_here": "Actual declared readable relation is rejected because router has no parent-authorized record read bridge. Existing server relation authority already owns parent publication/read/membership; reuse with exact target binding. Two observed P4 failures belong to adapter and geometry measurement.",
-    "why_not_elsewhere": "Do not publish target menu/list/create, change ACL, infer client authorization, erase target IDs, or alter P1/P2 business rules. Existing child ui.contract loader preserves target action/menu/readonly and ACL, no extra loader bypass/protocol needed.",
-    "blast_radius": "Only missing-authority readonly record routes with complete source context; default published routes and work-item branches retained. P4 scope only existing list preview and detail measurements.",
+    "formal_product_layer": "P1/P0/P4",
+    "layer_target": "Six evidenced final review findings",
+    "module": "industry native create guards; shared menu tree editor; existing acceptance tools",
+    "standard_vs_user_specific": "industry state machine / generic editor / verification tooling; no customer preference",
+    "why_here": "Fix each finding at its existing owner without compensating permissions or evidence claims",
+    "why_not_elsewhere": "No ACL/publication/environment/business data changes",
+    "blast_radius": "16 new native create guards; existing four token guards regression only; menu inside drop; precise tool assertions",
     "scope": [
-      "frontend/apps/web/src/router/index.ts",
-      "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
-      "addons/smart_core/handlers/route_authority_validate.py",
-      "addons/smart_core/core/relation_action_authority.py",
-      "existing frontend navigation and backend entry/relation authority test files + affected Make unit registration",
-      "make/frontend.mk",
-      "scripts/dev/frontend_acceptance_runtime.sh (only if required)",
+      "addons/smart_construction_core/models/core/labor_management.py",
+      "addons/smart_construction_core/models/core/safety_management.py",
+      "addons/smart_construction_core/models/core/equipment_management.py",
+      "addons/smart_construction_core/models/core/material_acceptance.py",
+      "addons/smart_construction_core/models/core/material_rental.py",
+      "scripts/verify/test_payment_approval_state_machine.py",
+      "frontend/apps/web/src/views/menuConfig/useMenuTreeEditor.ts",
+      "scripts/verify/menu_config_tree_editor_behavior_guard.ts",
+      "scripts/verify/contract_form_side_effect_regression_guard.py",
       "frontend/apps/web/scripts/standard_page_type_browser.mjs",
-      "scripts/verify/test_frontend_standard_preview.py"
+      "scripts/verify/test_frontend_standard_preview.py",
+      "addons/smart_construction_core/tests/test_approval_policy_toggle_backend.py",
+      "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+      "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
+      "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml"
     ],
-    "source_head": "b98e59e6f",
-    "dirty_scope": "original five metadata files plus A P4 tool repair in progress",
-    "writer": "root owns current-round finalization; A returned token and stopped; no queued native/home writes occurred",
-    "status": "implemented_targeted_checks_and_independent_reviews_passed",
-    "implementation": "route.authority.validate relation_origin read-only branch validates published parent with required context failclosed, fresh parent visible field and exact target model/id/action/menu, actual persisted membership, child ACL/rule and fresh read capability. Frontend only /r record, complete strict-positive source/target IDs; exact read response and unchanged actor/company/session context required, never writes global route authority. Existing execute_button relation behavior retained by optional exact-target constraint. No client can_open authorization fallback.",
-    "validation": "Collect independent L1/L2 failures once for consolidated scope. Nonzero existing entry-publication/relation-action tests, focused actual frontend route decision tests, preview tools; strict when TS stable; B/C independent review. Then responsibility commits and one governed backend refresh+frontend build followed by bounded representative review. No browser/build after each fix.",
-    "odoo_lifecycle": "Existing handler registered; no model/field/XML/manifest/dependency or data change. No -u upgrade. Governed backend.acceptance.replace-stale + health required after checks/commits. Same registered isolated acceptance tenant/company8/dbfilter/filestore, no DB fixture writes.",
-    "public_contract": "No intent rename. route.authority.validate additive relation_origin request branch and exact readonly record receipt; existing ordinary/work-item responses retained. No ui.contract schema or decoder/store change.",
-    "skips": "No snapshots for unchanged ui.contract schema, no fixture/reset/DB write, no full menu/browser matrix/Quick/publication/deployment. Unchanged earlier test evidence reused by input set, not HEAD alone.",
-    "rollback": "P0 authority bridge and P4 tools separate responsibility commits; prior managed preview/backend identity preserved.",
-    "queued_P4_acceptance_preparation": {
-      "status": "deferred_to_owner_assigned_executor_unless_already_started_report_exact_scope",
-      "layer": "P4 existing standard_page_type_browser.mjs and test_frontend_standard_preview.py only; no new harness/environment",
-      "scope": "native-form-interaction isolated no-write finance30/company8 payment1813 /f then /f/new menu545/action775; scene-entry exact workspace.home selector (unset preserves historical default)",
-      "why": "Existing scope lacks remaining shared interaction effects; prepare once before runtime instead of successive tool/browser cycles",
-      "native_requirements": [
-        "Capture exact root field/modifier/structure authority; choose genuinely editable scalar/relation from actual current contract; no hardcoded assumed edit permission",
-        "One actual existing relation option selection/query/label; declared master-detail expand/table/empty; no create-child/save/submit/upload",
-        "Shared real theme-button helper reused by detail and new scopes; light/dark1440/390 visual samples, each interaction once not four repeated workflows",
-        "Fail closed unexpected authority or write attempt; unmet capability prerequisite reported explicitly, not test pass",
-        "Minimal SPA unsaved cancel/discard normal behavior and actual create/edit/relations; reuse existing actual hook races/retained-resume tests, no new browser race matrix."
+    "source_head": "f06940eaaab3ef36a57545d631216648083993c9",
+    "writer": "root; sole writer returned by execution agent",
+    "status": "implemented_targeted_checks_and_delta_source_review_passed",
+    "validation": "ci.local.iteration then verify.payment.approval_state_machine.unit, verify.menu_config_tree_editor.behavior, verify.frontend.standard_preview.unit, strict; no runtime/DB/Quick/remote writes; verify.frontend.adopted_form_validation_identity.unit; native ORM representative method prepared but not run by A",
+    "invalidation": "Prior frozen review is historical. P1 create tests and menu behavior/build invalidated; tool Home/create-edit evidence assertions invalidated. Independent detail/list unchanged assertions reusable by exact input dependency. Root coordinates affected browser later.",
+    "existing_cost_source_boundary": "Four preexisting token-controlled create methods remain unchanged, distinct methods from sixteen new guards; not claimed closed by this patch",
+    "local_environment_observation": "Root local.dev.ready PASS; local.dev.health failed frontend_http403 only, not blanket health PASS. Native test.safe has no frontend HTTP dependency, root coordinates separately.",
+    "implementation": {
+      "P1": "Sixteen newly added native create guards validate explicit state or context default_state before sequence/defaults/super. Four preexisting token-controlled cost-source methods remain outside fix scope. Real native ORM representative method prepared for root, not run by A.",
+      "P0": "Menu inside drop admission precedes sibling shortcut and mutation rechecks shared admission. Save owner binds active/permission/route/session and context epoch, invalidates synchronously and on scope dispose; each relation-precreate stage verifies owner; stale auth errors cannot redirect/logout; busy finally remains operation-owned and epoch separates single-flight.",
+      "P4": "finally release must reside in brace-matched body with before/after/missing/unconditional negatives. Home tracks request initiation identity and consumer signature; MyWork distinct. Create/edit compares nonempty input value against exact root record relation tuple before/after reload."
+    },
+    "results": [
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "failed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-iteration.log",
+        "owner": "P4",
+        "reason": "trailing whitespace in guard; removed before retry"
+      },
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-iteration-fixed.log"
+      },
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-iteration-final.log",
+        "reason": "final epoch-only single-flight/busy correction and counterexamples included"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.payment.approval_state_machine.unit",
+        "status": "passed",
+        "count": 202,
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-approval-unit.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.menu_config_tree_editor.behavior",
+        "status": "passed",
+        "count": 11,
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-menu-unit.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.frontend.standard_preview.unit",
+        "status": "passed",
+        "count": {
+          "node": 42,
+          "python": 105
+        },
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-preview-unit.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.frontend.adopted_form_validation_identity.unit",
+        "status": "passed",
+        "count": 84,
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-save-unit.log"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.frontend.typecheck.strict",
+        "status": "passed",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-strict.log",
+        "coverage": "vue-tsc --noEmit and strict config"
+      },
+      {
+        "layer": "L1",
+        "command": "node --check frontend/apps/web/scripts/standard_page_type_browser.mjs; git diff --check",
+        "status": "passed",
+        "log": "executor tool receipt, exit 0"
+      },
+      {
+        "layer": "L3",
+        "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestApprovalPolicyToggleBackend.test_native_create_context_state_guard",
+        "status": "failed",
+        "count": 1,
+        "owner": "environment/schema prerequisite",
+        "reason": "sc_dev_demo existing project_project missing sc_approval_state, UndefinedColumn during project setup before product guard assertions",
+        "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-native-orm.log",
+        "executor": "root",
+        "retry_condition": "Root governed local.dev.upgrade must establish schema recovery before same test retry; A no DB mutation"
+      }
+    ],
+    "stage_identity": "f06940eaaab3ef36a57545d631216648083993c9 plus explicit 15-path dirty scope (14 code/test paths + this run); not frozen",
+    "native_orm": "root separately executes governed existing local.dev.test narrow TestApprovalPolicyToggleBackend.test_native_create_context_state_guard; A no DB execution",
+    "skips": "No Quick/full matrix/DB/runtime/remote writes by A. Remote four required checks remain new-candidate requirements; remote standard backend does not itself prove ORM. Root coordinates one menu-affected build and bounded affected observations.",
+    "runtime_dependencies": "P1 addon diff invalidates standard preview backend source identity; root must backend.acceptance.replace-stale + health before browser. This P1 patch has no schema change, no acceptance upgrade required. Pure L1/L2 pass remains valid despite local.dev schema prerequisite failure.",
+    "demo_upgrade_recovery": {
+      "layer": "P4",
+      "target": "existing smart_construction_demo carriers",
+      "reason": "Governed local.dev.upgrade exposed XML terminal document writes rejected by new strict P1 guard; protected content must also not be rewritten on existing non-draft records.",
+      "scope": [
+        "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml",
+        "scripts/verify/test_payment_approval_state_machine.py"
       ],
-      "home_requirements": [
-        "Exact finance published workspace.home only; canonical route authority/startup+real my.work.summary.product_workspace",
-        "Compare real declared nonempty/empty data with actual HomeView/WorkspaceHome, official Cards/theme/containment; no arbitrary payload injection",
-        "Actual declared navigation/view-all target then return; record real summary requests so lifecycle check not empty-list tautology",
-        "Reuse existing request/error lifecycle mechanism proof; do not add new transport fault injection for this convergence. Actual bounded home normal data/actions/theme still required."
+      "status": "implemented_L1_and_203_L2_passed_pending_root_upgrade",
+      "failure_log": "artifacts/frontend-web-fix-20260928/final-integration/local-dev-schema-upgrade.log",
+      "semantics": "Two document records under standard noupdate, no state field: existing contents and state preserved on upgrade; new records use native draft default. No model bypass.",
+      "validation": "ci.local.iteration then existing verify.payment.approval_state_machine.unit; independent frontend/menu/save/P4 test inputs unchanged and reused",
+      "manifest_inventory": "5 XML state declarations reviewed plus 2 declared functions. Document done/review only new-guard blocker; BOQ imported/material plan draft are noupdate, tender submitted unaffected new guard. Cockpit payment seed unchanged after independent scope correction.",
+      "scope_correction": "Independent review confirms payment.create has no new full-state guard, so payment seed and its proposed test reverted before final validation; no runtime executed. Only 2 document records affected.",
+      "results": [
+        {
+          "layer": "L1",
+          "status": "failed",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/demo-recovery-iteration.log",
+          "owner": "run metadata",
+          "reason": "New demo paths absent from top-level run scope; added exact s60 XML path before rerun, initial attempt finished before scope correction"
+        },
+        {
+          "layer": "L1",
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/demo-recovery-iteration-fixed.log"
+        },
+        {
+          "layer": "L2",
+          "command": "make verify.payment.approval_state_machine.unit",
+          "status": "passed",
+          "count": 203,
+          "increment": 1,
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/demo-recovery-approval-unit.log"
+        }
       ],
-      "validation": "Add focused scope-isolation/write-denial/authority/pure geometry negatives under existing preview unit. All tool changes prepared before one consolidated L1/L2/review/build/runtime phase; production build ignores scripts so no tool-only rebuild. Existing saved business and backend state-machine proof reused.",
-      "owner_latest_precision": "Owner asks precise iteration and fast closure; close only confirmed deltas, reuse existing valid evidence, no broadened framework/full matrix."
+      "coverage_limit": "Manifest XML carrier/default and noupdate declarations tested without ORM; real loader upgrade remains root-owned pending. Payment seed unchanged. No A DB write."
     }
   },
   "validation_cadence_correction": {
@@ -4115,7 +4223,42 @@
     "target_main": "23f11f426880585ca307544545c9bf9c01245b42",
     "scope_repair": "Register existing generated fingerprint path changed by authorized freeze.prepare commit f591c1e37; no product, test, runtime or generated file contents changed.",
     "validation": "JSON and make agent.run.resume; independent final review and remote exact-source/base required gates. Supplied source Quick preserved, never relabel its head.",
-    "runtime_reuse": "No runtime mutation, browser rerun or DB upgrade: metadata-only input correction.",
-    "status": "review_pending"
+    "runtime_reuse": "Six review findings repaired; 16 create guards plus two demo XML records, generic menu/save lifecycle and existing P4 probes. Prior unchanged evidence reused by input scope. local.dev schema upgrade required after observed missing column and demo incompatibility; native ORM now passes. Acceptance backend refresh and frontend build required by actual addons/frontend deltas.",
+    "status": "targeted_checks_passed_runtime_browser_pending",
+    "writer": "root; execution agent returned single-writer token",
+    "current_source_head": "f06940eaaab3ef36a57545d631216648083993c9",
+    "dirty_scope": "Reviewed P1/P0/P4 fixes and original run metadata; not frozen",
+    "reviews": [
+      "artifacts/frontend-web-fix-20260928/final-integration/review-backend.md",
+      "artifacts/frontend-web-fix-20260928/final-integration/review-frontend.md",
+      "artifacts/frontend-web-fix-20260928/final-integration/review-verification.md"
+    ],
+    "native_orm": {
+      "layer": "L3",
+      "command": "make local.dev.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestApprovalPolicyToggleBackend.test_native_create_context_state_guard",
+      "status": "passed",
+      "test_count": 1,
+      "models": [
+        "sc.labor.plan",
+        "sc.material.rental.order"
+      ],
+      "authority": "ordinary project-manager actor; with_user, no sudo business creation; explicit readback and TransactionCase rollback",
+      "log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-native-orm-recovered.log",
+      "prior_failed_log": "artifacts/frontend-web-fix-20260928/final-integration/fixes-native-orm.log",
+      "recovery": "Governed local.dev.upgrade MODULE=smart_construction_core CODEX_NEED_UPGRADE=1; exact existing sc-local-dev/sc_dev_demo/^sc_dev_demo$/sc_local_dev_odoo_data; isolated internal development tenant, no customer/control-plane data or environment creation; schema and demo authority readback PASS",
+      "upgrade_log": "artifacts/frontend-web-fix-20260928/final-integration/local-dev-schema-upgrade-fixed.log",
+      "prior_upgrade_failure": "artifacts/frontend-web-fix-20260928/final-integration/local-dev-schema-upgrade.log",
+      "limitation": "Two representative native ORM models, not 16-model ORM or user acceptance; development frontend HTTP403 remains outside this dependency."
+    },
+    "local_checks": {
+      "L1": "demo-recovery-iteration-fixed.log PASS",
+      "approval_unit": "203 PASS; demo-recovery-approval-unit.log",
+      "menu_behavior": "11 PASS; fixes-menu-unit.log",
+      "save_identity": "84 PASS; fixes-save-unit.log",
+      "preview_tools": "42 Node + 105 Python PASS; fixes-preview-unit.log",
+      "strict": "dual vue-tsc exit0; fixes-strict.log",
+      "base_path": "artifacts/frontend-web-fix-20260928/final-integration"
+    },
+    "quick_policy": "Original 48f1 receipt remains historical. New ordinary Gitee candidate follows latest owner local/remote division: iteration and affected nonzero targeted tests plus exact-source/current-base four required remote gates; do not relabel old receipt or repeat full local Quick solely for a new SHA."
   }
 }

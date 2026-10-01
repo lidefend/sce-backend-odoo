@@ -1367,6 +1367,36 @@ for(const patch of [{TPL07_SCOPE:'style'},{TPL52_FAMILY:'all'},{TPL07_EXPENSE_SA
         self.assertIn("createEditScopeIsolated(process.env) && body?.intent === 'api.data'", source)
         self.assertIn("['create', 'write', 'unlink'].includes(body?.params?.op)", source)
 
+    def test_relation_retention_checks_nonempty_input_value(self):
+        self.run_js("""
+assert.equal(retainedRelationValue('Supplier A','Supplier A'),true);
+for(const pair of [['',''],['  ','  '],['Supplier A','Supplier B'],['Supplier A',''],[null,null]]) assert.equal(retainedRelationValue(...pair),false);
+""")
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        scope = source.split('async function createEditScope', 1)[1].split('\ntry {', 1)[0]
+        self.assertIn("locator('input').first().inputValue()", scope)
+        self.assertIn("row?.model === 'payment.request' && row.mainData?.id === origin.id", scope)
+        self.assertIn('JSON.stringify(selectedPartner(reloadResponseStart)) === JSON.stringify(partnerBefore)', scope)
+        self.assertNotIn('relation.innerText()', scope)
+
+    def test_home_request_owner_is_bound_before_response(self):
+        self.run_js("""
+const home={intent:'my.work.summary',params:{product_workspace:true,limit:12,limit_each:4,page_size:12,sort_by:'priority'}};
+const work={intent:'my.work.summary',params:{product_workspace:true,limit:80,limit_each:80,page_size:80,sort_by:'write_date'}};
+assert.equal(sceneRequestOwner(home,'http://example/s/workspace.home'),'workspace.home');
+assert.equal(sceneRequestOwner(home,'http://example/my-work'),'workspace.home'); // leaked old owner remains detectable
+assert.equal(sceneRequestOwner(work,'http://example/my-work'),'my-work');
+assert.equal(sceneRequestOwner({intent:'my.work.summary',params:{product_workspace:true}},'http://example/s/workspace.home'),'workspace.home-unclassified');
+assert.equal(sceneRequestOwner({intent:'api.data'},'http://example/s/workspace.home'),null);
+""")
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        request = source.split("page.on('request', (request) => {", 1)[1].split("page.route(", 1)[0]
+        self.assertIn('const startedUrl = page.url()', request)
+        self.assertIn('sceneRequests.set(request, row)', request)
+        self.assertIn('sceneRequests.get(response.request())', source)
+        self.assertIn('actual owned request observed', source)
+        self.assertIn('ownedCalls().length === after', source)
+
     def test_scene_entry_home_selection_is_bounded(self):
         source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
         scope = source.split("if (process.env.TPL07_SCOPE === 'scene-entry') {", 1)[1].split("process.env.TPL07_SCOPE === 'expense-policy'", 1)[0]
@@ -1398,6 +1428,27 @@ for(const patch of [{TPL07_SCOPE:'style'},{TPL52_FAMILY:'all'},{TPL07_EXPENSE_SA
         self.assertIn("getAttribute('data-state') === 'collapsed'", source)
         self.assertIn("data-disclosure-trigger][data-state=\"expanded\"", source)
         self.assertIn('declared entry is consumed or the gap is explicit', source)
+
+
+class SaveFinallyGuardTest(unittest.TestCase):
+    def test_release_must_be_within_finally_body(self):
+        import contextlib
+        import io
+        import runpy
+        guard_ns = runpy.run_path('scripts/verify/contract_form_side_effect_regression_guard.py')
+        main = guard_ns['main']
+        namespace = main.__globals__
+        original_read = namespace['_read']
+        original = original_read(namespace['SAVE_RUNTIME'])
+        release = "if (busyOwnerOperationId === operation.id) {\n          busyKind.value = null;\n          busyOwnerOperationId = 0;\n        }"
+        self.assertIn(release, original)
+        variants = {'valid': original, 'missing': original.replace(release, ''),
+            'unconditional': original.replace(release, 'busyKind.value = null;'),
+            'before': original.replace(release, '').replace('    } finally {', release + '\n    } finally {', 1),
+            'after': original.replace(release, '').replace('    return false;\n  }\n  // Collapse', release + '\n    return false;\n  }\n  // Collapse', 1)}
+        for name, source in variants.items():
+            with self.subTest(name=name), patch.dict(namespace, {'_read': lambda path: source if path == namespace['SAVE_RUNTIME'] else original_read(path)}), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(), 0 if name == 'valid' else 1)
 
 
 class StandardListSurfaceAdapterTest(unittest.TestCase):

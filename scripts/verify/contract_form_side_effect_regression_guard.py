@@ -142,9 +142,8 @@ def main() -> int:
         save_busy_line = _line_for_token(save_body, "busyKind.value = 'save';")
         flat_save_body = re.sub(r"\s+", "", save_body)
         busy_release_token = "if(busyOwnerOperationId===operation.id){busyKind.value=null;"
-        finally_clear_line = _line_for_token(flat_save_body, busy_release_token)
-        finally_open_index = flat_save_body.find("}finally{")
-        finally_clear_index = flat_save_body.find(busy_release_token)
+        finally_match = re.search(r"}finally\{", flat_save_body)
+        finally_body = _function_body('function ownedFinally() {' + flat_save_body[finally_match.end():], 'ownedFinally') if finally_match else ''
         if validation_line < 0:
             errors.append("saveRecord must keep validateBeforeSaveRecord precheck")
         if save_busy_line < 0:
@@ -163,9 +162,7 @@ def main() -> int:
         ]:
             if token not in save_body:
                 errors.append(f"saveRecord missing side-effect boundary token: {token}")
-        if finally_clear_line < 0:
-            errors.append("saveRecord must clear save busy in finally")
-        elif finally_open_index < 0 or finally_clear_index < finally_open_index:
+        if busy_release_token not in finally_body:
             errors.append("saveRecord must clear save busy inside the finally block")
 
     onchange_body = _function_body(form_state_runtime, "runOnchangeRoundtrip")

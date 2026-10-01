@@ -154,6 +154,20 @@ async function dismissTransientOverlays(page) {
   await page.mouse.move(0, 0);
   await page.locator('.t-popup.t-tooltip').first().waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
 }
+// Bind ownership when the request starts; response-time URLs are not authority.
+function sceneRequestOwner(body, startedUrl) {
+  if (body?.intent === 'my.work.summary' && body.params?.product_workspace === true) {
+    const p = body.params;
+    if (p.limit === 12 && p.limit_each === 4 && p.page_size === 12 && p.sort_by === 'priority') return 'workspace.home';
+    if (p.limit === 80 && p.limit_each === 80 && p.page_size === 80 && p.sort_by === 'write_date') return 'my-work';
+    return new URL(startedUrl).pathname === '/s/workspace.home' ? 'workspace.home-unclassified' : 'summary-unclassified';
+  }
+  return ({ 'workspace.home.enter': 'workspace.home', 'dashboard.company.enter': 'dashboard.company',
+    'project.dashboard.enter': 'project.management' })[body?.intent] || null;
+}
+function retainedRelationValue(before, after) {
+  return typeof before === 'string' && before.trim().length > 0 && before === after;
+}
 // End bounded detail-style verification helpers.
 function findRecordAuthority(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 14) return null;
@@ -260,6 +274,20 @@ async function login(role) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, locale: 'zh-CN' });
   const page = await ctx.newPage();
   page.on('pageerror', (error) => report.errors.push(error.message));
+  const sceneRequests = new WeakMap();
+  page.on('request', (request) => {
+    if (process.env.TPL07_SCOPE !== 'scene-entry') return;
+    let body;
+    try { body = request.postDataJSON(); } catch { return; }
+    const startedUrl = page.url();
+    const owner = sceneRequestOwner(body, startedUrl);
+    if (!owner) return;
+    report.sceneEntryCalls ??= [];
+    const row = { id: report.sceneEntryCalls.length + 1, role, owner, intent: body.intent,
+      startedUrl, params: body.params, success: null };
+    report.sceneEntryCalls.push(row);
+    sceneRequests.set(request, row);
+  });
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
     if ((process.env.TPL07_SCOPE === 'scene-entry' || detailStyleScopeIsolated(process.env)) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent)) {
@@ -539,10 +567,10 @@ async function login(role) {
         report.planNodeReads ??= [];
         report.planNodeReads.push({ request: body.params, result: await response.json() });
       }
-      if (process.env.TPL07_SCOPE === 'scene-entry' && ['workspace.home.enter', 'dashboard.company.enter', 'project.dashboard.enter'].includes(body?.intent)) {
+      const sceneRequest = sceneRequests.get(response.request());
+      if (sceneRequest) {
         const result = await response.json();
-        report.sceneEntryCalls ??= [];
-        report.sceneEntryCalls.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
+        sceneRequest.success = result.ok !== false && Boolean(result.data);
       }
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
@@ -569,7 +597,7 @@ async function login(role) {
       }
       if (typeof body?.intent === 'string' && body.intent.startsWith('ui.contract')) {
         const contract = await response.json();
-        if (['approval-actions', 'expense-policy', 'style'].includes(process.env.TPL07_SCOPE)) {
+        if (['approval-actions', 'expense-policy', 'style', 'create-edit'].includes(process.env.TPL07_SCOPE)) {
           report.contractResponses ??= [];
           report.contractResponses.push({ intent: body.intent, model: body.params?.model, contract, ...(process.env.TPL07_SCOPE === 'style' ? {role,request:body.params} : {}) });
         }
@@ -1133,6 +1161,7 @@ async function createEditScope() {
 
   // Edit surface: the declared editable composition for the published record,
   // its declared relation field and declared child collection.
+  const editResponseStart = report.contractResponses?.length || 0;
   await page.goto(`${base}/f/payment.request/${origin.id}?menu_id=545&action_id=775`);
   const editSurface = await inspectSurface('edit-surface', origin.id);
   const relation = page.locator('[data-field-name="partner_id"]').first();
@@ -1145,13 +1174,23 @@ async function createEditScope() {
 
   // Reload retention: re-entering the same declared route must re-render the same
   // bound record, composition and rendered field membership, not a stale draft.
-  const relationBefore = (await relation.innerText()).trim();
+  const selectedPartner = (start) => (report.contractResponses || []).slice(start)
+    .map(row => findRecordAuthority(row.contract))
+    .filter(row => row?.model === 'payment.request' && row.mainData?.id === origin.id).at(-1)?.mainData?.partner_id;
+  const partnerBefore = selectedPartner(editResponseStart);
+  check('edit-surface: exact source contract declares selected relation', Array.isArray(partnerBefore)
+    && Number.isSafeInteger(partnerBefore[0]) && partnerBefore[0] > 0 && typeof partnerBefore[1] === 'string' && Boolean(partnerBefore[1].trim()), { partnerBefore });
+  const relationBefore = await relation.locator('input').first().inputValue();
+  check('edit-surface: input matches declared relation label', retainedRelationValue(partnerBefore[1], relationBefore));
+  check('edit-surface: relation has a nonempty selected value before reload', retainedRelationValue(relationBefore, relationBefore), { value: relationBefore });
+  const reloadResponseStart = report.contractResponses?.length || 0;
   await page.reload();
   const reloaded = await inspectSurface('edit-surface-reload', origin.id);
   check('edit-surface: reload keeps the declared field membership',
     JSON.stringify(reloaded.fields) === JSON.stringify(editSurface.fields), { before: editSurface.fields, after: reloaded.fields });
+  check('edit-surface: reload keeps exact declared relation identity', JSON.stringify(selectedPartner(reloadResponseStart)) === JSON.stringify(partnerBefore));
   check('edit-surface: reload keeps the relation value',
-    (await page.locator('[data-field-name="partner_id"]').first().innerText()).trim() === relationBefore);
+    retainedRelationValue(relationBefore, await page.locator('[data-field-name="partner_id"]').first().locator('input').first().inputValue()));
   await reviewBothThemes('edit-surface');
 
   check('create-edit: real startup authority present', report.startup.some((row) => row.role === 'fixture_role_finance' && row.intent === 'system.init' && row.success));
@@ -1230,12 +1269,15 @@ try {
           check(`${scene}: usable viewport ${width}`, !overflow);
           await page.screenshot({ animations: 'disabled', path: path.join(out, `scene-${scene}-${width}.png`), fullPage: true });
         }
+        const ownedCalls = () => (report.sceneEntryCalls || []).filter(row => row.role === role && row.owner === scene);
+        check(`${scene}: actual owned request observed`, ownedCalls().some(row => row.success === true
+          && (!home || row.intent === 'my.work.summary')), ownedCalls());
+        const after = ownedCalls().length;
         await page.getByRole('button', { name: '我的工作', exact: true }).click();
         await page.waitForURL(url => url.pathname === '/my-work');
         await surface.waitFor({ state: 'hidden' });
-        const after = report.sceneEntryCalls?.length || 0;
         await page.waitForTimeout(700);
-        check(`${scene}: cached scene stops after leaving route`, (report.sceneEntryCalls?.length || 0) === after);
+        check(`${scene}: cached scene stops after leaving route`, ownedCalls().length === after, { before: after, after: ownedCalls().length });
       }
       check(`${role}: real startup loaded`, report.startup.some(row => row.role === role && row.intent === 'system.init' && row.success));
       await ctx.close();

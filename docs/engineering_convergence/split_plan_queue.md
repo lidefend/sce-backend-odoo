@@ -19,7 +19,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 5154 | Platform owner | `addons/smart_core/core/unified_page_contract_v2_assembler.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 4979 | DevOps owner | `scripts/verify/local_dev_candidate_visual_smoke.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 4602 | Platform owner | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
-| P1 | 4424 | DevOps owner | `scripts/verify/test_payment_approval_state_machine.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P1 | 4492 | DevOps owner | `scripts/verify/test_payment_approval_state_machine.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 4358 | Platform owner | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 4139 | Platform owner | `addons/smart_core/handlers/ui_contract_v2.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 3708 | Frontend owner | `frontend/apps/web/src/views/ActionView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
@@ -67,8 +67,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1621 | Construction backend owner | `addons/smart_construction_core/models/core/settlement_order.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1618 | DevOps owner | `scripts/ops/registry_audit_environment.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1608 | Frontend owner | `frontend/apps/web/src/layouts/AppShell.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
+| P2 | 1561 | DevOps owner | `scripts/verify/test_frontend_standard_preview.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1542 | Construction backend owner | `addons/smart_construction_core/models/support/product_policy_sync.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
-| P2 | 1510 | DevOps owner | `scripts/verify/test_frontend_standard_preview.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 672 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 599 | DevOps owner | `scripts/audit/smoke_role_matrix.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 551 | DevOps owner | `scripts/ops/audit_project_actions.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |

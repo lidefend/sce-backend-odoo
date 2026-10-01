@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 5154 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4979 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4602 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 4424 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
+| 4492 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4358 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4139 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3708 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -64,10 +64,10 @@ Generated from repository source files. This report is informational during the 
 | 1621 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1608 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1561 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1553 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1519 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1510 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 672 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -196,7 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 5154 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 4979 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4602 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 4424 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
+| 4492 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 4358 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4139 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 3708 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -243,11 +243,11 @@ Generated from repository source files. This report is informational during the 
 | 1621 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1608 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1561 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1557 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1553 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1542 | split_plan_required | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1519 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1510 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1497 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1488 | warning | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1484 | warning | Python source | `scripts/release/release_publication.py` |
