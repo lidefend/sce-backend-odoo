@@ -572,7 +572,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.239 source +58 focused tests +strict types PASS; runtime pending. Commit layer-owned changes, bind governed acceptance backend exact commit, use existing bounded runtime entry to verify effective system.init/scene-ready meta.target intent for workspace.home/dashboard.company/project.management under permitted roles and publication scope. Existing DB scene registry merge_missing can supply defaults but published snapshot behavior needs authoritative readback. Do not build or claim runtime closure until normalized target survives actual chain. Then one frontend build/5180 and affected scene/cache-route browser checks. No module upgrade (no XML/schema), no fixture, no repeated payment. Continue block context/all-document completion after scene closure.",
+  "next_exact_step": "53.240 real system.init scene-entry-contract FAILED at finance30 workspace.home: scene title present but meta.target only route /s/workspace.home. Do not build/browser or restore frontend hardcode. Trace bounded startup source scene target -> delivery filter -> scene-ready input -> output, using existing readback scope if needed (extend diagnostic only, no data writes). Source defaults include intent but actual effective source may be platform stub/snapshot; _build_scene_ready_registry_contract also drops intent keys (independent confirmed P0 projection gap). Preserve publication authority, never union unpublished scenes or put industry intent map into P0. Fix owning producer/projection and focused tests, then rebind backend and re-run only invalidated scene probe. Existing payment/user evidence unchanged. Goal remains active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1816,6 +1816,21 @@
         "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-types.log"
       ],
       "legacy_exit": "Removed SCENE_CONTRACT_ENTRY_INTENTS and fallbackSceneFromEntryIntent; missing effective scene now hydrates contract or reports missing, never fabricates domain title/dashboard."
+    },
+    "segment_53_240": {
+      "status": "runtime_failed_product_projection",
+      "stage_head": "1d429d2cd",
+      "tool_tests": "30 Node +48 Python =78 PASS; L1 PASS",
+      "backend": "governed acceptance rebound to1d429d2cd; sc_frontend_acceptance company8 unchanged",
+      "runtime": "scene-entry-contract failed: finance30 workspace.home actual scene exists with title but meta.target only route /s/workspace.home; no intent. Transaction rolled back in finally. Other two cases not_run after fail-fast.",
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-probe-iteration.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-probe-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-backend.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-runtime.log"
+      ],
+      "owner": "P0 effective startup scene projection / P1 effective default source; exact loss point not yet proven",
+      "not_run": "frontend build/browser; current static c6f3f9cbc retained"
     }
   }
 }

@@ -9818,3 +9818,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1首次因run遗漏P1声明文件被outside_scope拒绝；只登记这一精确文件后，`make ci.local.iteration` PASS。日志 `tpl52/scene-entry-iteration.log` / `scene-entry-iteration-recovered.log`（均在既有 `artifacts/frontend-web-fix-20260928/` 下）。
 - L2 `make verify.frontend.scene_entry_contract.unit` PASS：47实际计数前端断言（任意新场景、无声明不补造、scene-ready投影、异路由隔离）+11后端测试（含生产者默认声明与投影保留/缺失），日志 `tpl52/scene-entry-unit.log`。复用同一Make入口增加既有离线后端测试，不启动ORM。`make verify.frontend.typecheck.strict` PASS，日志 `tpl52/scene-entry-types.log`。
 - L3/L4尚未运行：代码默认的registry merge_missing会补缺失属性，但实际发布快照能否将入口声明传至当前角色的scene-ready必须回读。下一步提交后绑定受管backend、定向回读，确认后才构建一次/使用5180验受影响场景及缓存路由切换。无XML/schema改动，不需要模块升级；不重跑付款、不重置fixture，不推送/合并/目标部署。本段不是运行态验收完成。
+
+
+## 53.240 场景入口实际回读：声明在有效启动链仍缺失
+
+- P4扩展既有 `standard-approval-runtime` 的 `scene-entry-contract` 只读范围，固定验收库、公司8、finance30/executive37及三个目标；不创建fixture、不改发布或数据，finally回滚。提交 `1d429d2cd`。L1 PASS；`verify.frontend.standard_preview.unit` 30 Node +48 Python =78 PASS，新增错误库拒绝、缺失场景拒绝/回滚及三个角色目标请求用例。原始日志 `tpl52/scene-entry-probe-{iteration,unit,receipt}.log`，沿用 `artifacts/frontend-web-fix-20260928/`。
+- `make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` PASS，替换原后端源码身份并绑定1d429d2cd，受管库/dbfilter/volumes不变；无XML/schema改动，不升级模块。日志 `tpl52/scene-entry-backend.log`。
+- `make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **FAILED**，日志 `tpl52/scene-entry-runtime.log`。finance30 / company8 / workspace.home 已有有效场景及标题“角色首页”，但 `meta.target` 实际只有 `/s/workspace.home` 路由，intent丢失。finally已执行回滚；后两个目标因前置失败未运行。该结果不是工具通过或页面验收。
+- 当前定位范围：P1默认已声明、完整scene-ready投影单测已通过；仍须核对实际scene源、delivery过滤、platform stub/快照与资产绑定之后的输入。另已确认registry轻量投影 `_build_scene_ready_registry_contract` 未保留intent字段，需要P0修复及回归。不得通过前端硬编码、P0行业映射或扩大发布范围掩盖缺口。
+- L4构建与浏览器 **not_run**，保留原静态候选c6f3f9cbc；付款闭环证据不受本次工具改动影响。下一步只追踪这条声明链并修复归属层，恢复后复验相同范围，不重跑全菜单/ORM矩阵。
