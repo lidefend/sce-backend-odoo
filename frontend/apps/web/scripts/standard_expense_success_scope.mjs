@@ -278,3 +278,52 @@ export function paymentReviewFlowSteps(scope) {
     amount_min: false, amount_max: false, condition_note: '', note: '',
   }];
 }
+
+export function paymentSourceReceiptValid(r, source = r?.readback?.record) {
+  const spec = { subcontract: [593, 592, 'sc.subcontract.settlement', 'subcontract_settlement_id', 'subcontractor_id'],
+    rental: [592, 593, 'sc.material.rental.settlement', 'rental_settlement_id', 'supplier_id'] }[r?.kind];
+  return Boolean(spec && r.status === 'passed' && r.committed === true && r.database === 'sc_frontend_acceptance'
+    && r.uid === 30 && r.company_id === 8 && r.readback_uid === 30 && r.readback_sudo === false
+    && r.source_preparation_only === true && r.ordinary_role_create_proof === false
+    && r.preparation_uid === 30 && r.preparation_sudo === (r.kind === 'rental')
+    && r.project_id === spec[0] && r.other_project_id === spec[1] && r.source_model === spec[2] && r.source_field === spec[3]
+    && [r.source_id, r.partner_id, r.currency_id].every(id => Number.isInteger(id) && id > 0)
+    && new RegExp(`^ITER-PAYMENT-SOURCE-${r.kind.toUpperCase()}-\\d{16}$`).test(r.marker)
+    && source?.id === r.source_id && source.name === r.marker && source.state === 'confirmed'
+    && source.project_id?.[0] === r.project_id && source.company_id?.[0] === 8 && source.create_uid?.[0] === 30
+    && source[spec[4]]?.[0] === r.partner_id && source.currency_id?.[0] === r.currency_id && source.amount_total === 100
+    && r.readback?.unreserved_amount === 100);
+}
+
+export function paymentSourceDraftWriteKind(role, body, scope) {
+  const r = scope?.receipt, p = scope?.request;
+  if (role !== 'fixture_role_finance' || scope?.phase !== 'create' || scope.id
+    || !paymentSourceReceiptValid(r) || !paymentSourceReceiptValid(r, scope.source)
+    || !/^TPL53-PAYMENT-SOURCE-(SUBCONTRACT|RENTAL)-\d{13}$/.test(scope.marker)
+    || !scope.marker.includes(r.kind.toUpperCase()) || scope.menuId !== 545 || scope.actionId !== 775
+    || body?.intent !== 'api.data' || p?.op !== 'create' || p.model !== 'payment.request'
+    || Object.keys(body).some(key => !['intent', 'params', 'context', 'meta'].includes(key))
+    || Object.keys(p).some(key => !['op', 'model', 'vals', 'context'].includes(key))) return null;
+  const safeContext = c => c === undefined || (c && typeof c === 'object' && !Array.isArray(c)
+    && Object.entries(c).every(([key, value]) => {
+      const fixed = { company_id: 8, allowed_company_ids: [8], lang: 'zh_CN', project_id: r.project_id,
+        menu_id: 545, action_id: 775, default_type: 'pay', default_business_category_code: 'finance.payment.apply.pay',
+        search_default_type_pay: 1, search_default_group_by_project_id: 1 };
+      return Object.hasOwn(fixed, key) && (['menu_id', 'action_id'].includes(key) ? Number(value) === fixed[key] : isDeepStrictEqual(value, fixed[key]));
+    }));
+  if (p.context?.company_id !== 8 || Number(p.context.menu_id) !== 545 || Number(p.context.action_id) !== 775
+    || !safeContext(p.context) || !safeContext(body.context) || !safeContext(body.params?.context)) return null;
+  const v = p.vals;
+  if (!v || v.note !== scope.marker || v.project_id !== r.project_id || v[r.source_field] !== r.source_id || v.amount !== 100) return null;
+  const fixed = { note: scope.marker, project_id: r.project_id, [r.source_field]: r.source_id, amount: 100,
+    company_id: 8, partner_id: r.partner_id, currency_id: r.currency_id, type: 'pay', state: 'draft',
+    date_request: scope.dateRequest, business_category_id: scope.businessCategoryId, attachment_ids: [[6, 0, []]],
+    actual_payee_unit: scope.source[r.kind === 'rental' ? 'supplier_id' : 'subcontractor_id']?.[1] };
+  const empty = ['contract_id', 'settlement_id', 'material_settlement_id', 'accepted_amount_uppercase', 'rental_settlement_id', 'subcontract_settlement_id', 'expense_claim_id',
+    'payer_unit', 'actual_payee_unit', 'payment_account_name', 'payment_bank_name', 'payment_account_no'];
+  if (Object.entries(v).some(([k, value]) => !(Object.hasOwn(fixed, k) && fixed[k] !== undefined && isDeepStrictEqual(value, fixed[k]))
+    && !(empty.includes(k) && k !== r.source_field && [false, null, ''].includes(value)))) return null;
+  if (v.date_request !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(scope.dateRequest)) return null;
+  if (v.business_category_id !== undefined && (!Number.isInteger(scope.businessCategoryId) || scope.businessCategoryId <= 0)) return null;
+  return isDeepStrictEqual(body.params, p) ? 'create' : null;
+}

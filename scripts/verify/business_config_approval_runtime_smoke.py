@@ -4795,8 +4795,96 @@ def _ordinary_pm_capability_checks(scope):
         raise
 
 
+def _payment_source_prep_spec(kind):
+    assert kind in ("subcontract", "rental"), "unsupported payment source kind"
+    return ({"model": "sc.subcontract.settlement", "project_id": 593, "other_project_id": 592,
+        "legacy_id": 8, "partner_field": "subcontractor_id", "source_field": "subcontract_settlement_id"}
+        if kind == "subcontract" else {"model": "sc.material.rental.settlement", "project_id": 592,
+            "other_project_id": 593, "legacy_id": 11, "partner_field": "supplier_id", "source_field": "rental_settlement_id"})
+
+
+def _payment_source_prep_readback(record, spec, marker, partner_id, state):
+    assert record.env.uid == 30 and not record.env.su and record.env.company.id == 8, "payment source reader identity drift"
+    record.invalidate_recordset()
+    row = record.read(["id", "name", "project_id", "company_id", spec["partner_field"], "currency_id", "amount_total", "state", "create_uid"])[0]
+    assert row["id"] == record.id and row["name"] == marker and row["state"] == state
+    assert row["project_id"][0] == spec["project_id"] and row["company_id"][0] == 8 and row["create_uid"][0] == 30
+    assert row[spec["partner_field"]][0] == partner_id and row["currency_id"][0] > 0 and row["amount_total"] == 100
+    expected_line = ({"work_scope": marker, "qty": 1, "unit_price": 100}
+        if spec["model"] == "sc.subcontract.settlement" else {"material_name": marker, "qty": 1, "rental_days": 1, "daily_price": 100})
+    assert len(record.line_ids) == 1
+    line = record.line_ids.read(["id", "create_uid", *expected_line])[0]
+    assert line["create_uid"][0] == 30 and all(line[key] == value for key, value in expected_line.items())
+    assert record._payment_unreserved_amount() == 100, "new source is not fully unreserved"
+    return {"record": row, "line": line, "unreserved_amount": 100}
+
+
+def _payment_source_prep_checks(kind):
+    """Create one fresh native settlement on the two registered iteration projects."""
+    from datetime import datetime, timezone
+    from odoo import api
+    base = _env()
+    receipt = {"kind": kind, "status": "not_run", "committed": False, "database": base.cr.dbname, "uid": 30, "company_id": 8}
+    try:
+        assert base.cr.dbname == "sc_frontend_acceptance", "wrong payment source database"
+        spec = _payment_source_prep_spec(kind)
+        user = base["res.users"].sudo().search([("login", "=", "fixture_role_finance"), ("active", "=", True)])
+        assert len(user) == 1 and user.id == 30 and not user.share and user.company_id.id == 8 and 8 in user.company_ids.ids, "finance identity drift"
+        actor = base(user=30, su=False, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        assert not actor.su and actor.uid == 30 and actor.company.id == 8
+        actor.cr.execute("SET LOCAL statement_timeout = '30000ms'")
+        projects = actor["project.project"].browse([spec["project_id"], spec["other_project_id"]]).read(["id", "name", "company_id"])
+        assert len(projects) == 2 and {row["id"] for row in projects} == {592, 593}
+        assert all(row["company_id"][0] == 8 for row in projects), "source project company drift"
+        old = actor[spec["model"]].browse(spec["legacy_id"]).read(["id", "project_id", "company_id", spec["partner_field"]])[0]
+        assert old["id"] == spec["legacy_id"] and old["project_id"][0] == spec["project_id"] and old["company_id"][0] == 8, "registered source identity drift"
+        partner_id = old[spec["partner_field"]][0]
+        assert actor["res.partner"].browse(partner_id).read(["id"])[0]["id"] == partner_id
+        marker = "ITER-PAYMENT-SOURCE-%s-%s" % (kind.upper(), datetime.now(timezone.utc).strftime("%m%d%H%M%S%f"))
+        line = ({"work_scope": marker, "qty": 1, "unit_price": 100} if kind == "subcontract"
+            else {"material_name": marker, "qty": 1, "rental_days": 1, "daily_price": 100})
+        # Rental source preparation reuses the bounded P4 fixture builder; finance has read-only rental ACL.
+        builder = actor[spec["model"]].sudo() if kind == "rental" else actor[spec["model"]]
+        receipt.update({"source_preparation_only": True, "ordinary_role_create_proof": False,
+            "preparation_uid": 30, "preparation_sudo": kind == "rental", "readback_uid": 30, "readback_sudo": False})
+        record = builder.create({"name": marker, "project_id": spec["project_id"], spec["partner_field"]: partner_id,
+            "line_ids": [(0, 0, line)]})
+        receipt.update({"source_model": spec["model"], "source_field": spec["source_field"], "source_id": record.id,
+            "project_id": spec["project_id"], "other_project_id": spec["other_project_id"], "projects": projects,
+            "partner_id": partner_id, "marker": marker})
+        receipt["draft"] = _payment_source_prep_readback(record.with_env(actor), spec, marker, partner_id, "draft")
+        record.action_submit()
+        record.invalidate_recordset()
+        assert record.state in ("submitted", "approved"), "source submission prerequisite unresolved"
+        receipt["reviews"] = _ordinary_pm_assigned_review(base, record.with_env(actor)) if record.state == "submitted" else []
+        receipt["approved"] = _payment_source_prep_readback(record.with_env(actor), spec, marker, partner_id, "approved")
+        record.action_confirm()
+        receipt["confirmed"] = _payment_source_prep_readback(record.with_env(actor), spec, marker, partner_id, "confirmed")
+        actor.flush_all()
+        print("PAYMENT_SOURCE_PENDING=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        base.cr.commit()
+        receipt["committed"] = True
+        with base.registry.cursor() as fresh_cr:
+            fresh = api.Environment(fresh_cr, 30, {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"}, su=False)
+            fresh_cr.execute("SET LOCAL statement_timeout = '30000ms'")
+            receipt["readback"] = _payment_source_prep_readback(fresh[spec["model"]].browse(record.id), spec, marker, partner_id, "confirmed")
+            assert receipt["readback"]["line"]["id"] == receipt["confirmed"]["line"]["id"], "committed source line identity drift"
+            fresh_cr.rollback()
+        receipt["currency_id"] = receipt["readback"]["record"]["currency_id"][0]
+        receipt["status"] = "passed"
+        print("PAYMENT_SOURCE_PREP=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=payment-source-%s retained_development_samples=true" % kind)
+    except Exception as exc:
+        base.cr.rollback()
+        receipt.update({"status": "failed", "error": str(exc), "pending_transaction_rolled_back": True})
+        print("PAYMENT_SOURCE_PREP=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        raise
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope in ("payment-source-subcontract", "payment-source-rental"):
+        return _payment_source_prep_checks(scope.removeprefix("payment-source-"))
     if scope.startswith("ordinary-role-"):
         return _ordinary_pm_capability_checks(scope)
     if scope in ("rental-concurrency", "subcontract-concurrency", "red-flush-concurrency"):

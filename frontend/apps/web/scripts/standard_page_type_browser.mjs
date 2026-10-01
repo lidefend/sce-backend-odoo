@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { documentFlowWriteKind, paymentReviewOriginalSteps, paymentReviewFlowSteps, paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { paymentSourceReceiptValid, paymentSourceDraftWriteKind, documentFlowWriteKind, paymentReviewOriginalSteps, paymentReviewFlowSteps, paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -77,6 +77,15 @@ assert.ok(!documentFlow || (process.env.TPL07_SCOPE === 'approval-actions' && pr
 assert.ok(!documentFlow || !Object.entries(process.env).some(([key, value]) => key.startsWith('TPL07_')
   && !['TPL07_DOCUMENT_FLOW', 'TPL07_SCOPE', 'TPL07_APPROVAL_MODEL', 'TPL07_APPROVAL_VIEW'].includes(key) && value && value !== '0'),
   'document flow must not combine another probe or write scope');
+const paymentSourceFlow = process.env.TPL07_PAYMENT_SOURCE_FLOW || '';
+assert.ok(!paymentSourceFlow || (['subcontract', 'rental'].includes(paymentSourceFlow)
+  && process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'payment.request'
+  && process.env.TPL07_APPROVAL_VIEW === 'create' && process.env.TPL07_PAYMENT_SOURCE_REPORT));
+assert.ok(!paymentSourceFlow || !Object.entries(process.env).some(([key, value]) => key.startsWith('TPL07_')
+  && !['TPL07_PAYMENT_SOURCE_FLOW', 'TPL07_PAYMENT_SOURCE_REPORT', 'TPL07_SCOPE', 'TPL07_APPROVAL_MODEL', 'TPL07_APPROVAL_VIEW'].includes(key)
+  && value && value !== '0'), 'payment source scope must be isolated');
+let paymentSourceSuccess = null;
+let paymentSourceCapture = false;
 let documentSuccess = null;
 let documentCreateCapture = false;
 const diarySaveProbe = process.env.TPL07_DIARY_SAVE_PROBE === '1';
@@ -238,6 +247,24 @@ async function login(role) {
       report.reportSaveAttempts.push(body.params);
       return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'TPL53_REPORT_CAPTURE', message: '计划汇报定向保存失败验证' } }) });
     }
+    if (paymentSourceFlow && paymentSourceDraftWriteKind(role, body, paymentSourceSuccess)) {
+      paymentSourceSuccess.phase = 'create_in_flight';
+      const recovery = path.join(out, 'payment-source-recovery.json');
+      await fs.writeFile(recovery, JSON.stringify(paymentSourceSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.paymentSourceWrite = result;
+      if (result.ok === true) { paymentSourceSuccess.id = result.data?.id; paymentSourceSuccess.phase = 'readback'; }
+      await fs.writeFile(recovery, JSON.stringify(paymentSourceSuccess, null, 2));
+      return route.fulfill({ response });
+    }
+    if (paymentSourceFlow && paymentSourceCapture && role === 'fixture_role_finance' && body?.intent === 'api.data'
+      && body.params?.op === 'create' && body.params.model === 'payment.request') {
+      paymentSourceCapture = false;
+      report.paymentSourceAttempt = body.params;
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false,
+        error: { code: 'TPL53_PAYMENT_SOURCE_CAPTURE', message: '付款来源定向载荷捕获，请重试保存' } }) });
+    }
     const documentKind = documentFlowWriteKind(role, body, documentSuccess);
     if (documentFlow && documentKind) {
       documentSuccess.phase = `${documentKind}_in_flight`;
@@ -373,7 +400,7 @@ async function login(role) {
         return permit.abort ? route.abort('failed') : route.continue();
       }
     }
-    if (((reportSaveSuccess || documentFlow) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
+    if (((reportSaveSuccess || documentFlow || paymentSourceFlow) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
       || (/^sc\.approval_policy\..*\.set$/.test(body?.intent || ''))
       || (body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
       || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
@@ -1512,6 +1539,14 @@ try {
           report.approvalCreateEntry = matches[0];
           createContext = `?menu_id=${Number(matches[0].menu_id)}&action_id=${Number(matches[0].action_id)}`;
         }
+        if (paymentSourceFlow) {
+          const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
+            .flatMap(key => report.routeAuthority?.[key] || []);
+          const matches = entries.filter(row => row.model === 'payment.request' && Number(row.menu_id) === 545 && Number(row.action_id) === 775);
+          check('payment source: one published finance payment entry', matches.length === 1);
+          report.approvalCreateEntry = matches[0];
+          createContext = '?menu_id=545&action_id=775';
+        }
         if (documentFlow || diarySaveProbe || eventSaveProbe || ['sc.plan', 'sc.plan.report'].includes(spec.model)) {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
             .flatMap(key => report.routeAuthority?.[key] || []);
@@ -1538,6 +1573,104 @@ try {
               && typeof value[1] === 'string' && value[1].length > 0
               && await session.page.locator(`[data-field-name="${field}"] input`).first().inputValue() === value[1]);
           }
+        }
+        if (paymentSourceFlow) {
+          const receiptLines = (await fs.readFile(process.env.TPL07_PAYMENT_SOURCE_REPORT, 'utf8')).split('\n')
+            .filter(line => line.startsWith('PAYMENT_SOURCE_PREP='));
+          check('payment source: unique completed preparation receipt', receiptLines.length === 1);
+          const receipt = JSON.parse(receiptLines[0].slice('PAYMENT_SOURCE_PREP='.length));
+          check('payment source: exact bounded preparation', receipt.kind === paymentSourceFlow && paymentSourceReceiptValid(receipt));
+          const api = params => session.page.evaluate(async params => {
+            const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+            return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+              body: JSON.stringify({ intent: 'api.data', params }),
+            })).json();
+          }, params);
+          const sourceResult = await api({ op: 'read', model: receipt.source_model, ids: [receipt.source_id],
+            fields: Object.keys(receipt.readback.record), context: { company_id: 8 } });
+          const source = sourceResult.data?.records?.[0];
+          check('payment source: finance authoritative source identity', sourceResult.ok === true && paymentSourceReceiptValid(receipt, source));
+          const relationQuery = async (field, model, search) => {
+            const pending = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'list'
+                && body.params.model === model && JSON.stringify(body.params).includes(search); } catch { return false; }
+            });
+            void pending.catch(() => {});
+            await session.page.locator(`[data-field-name="${field}"] input`).first().fill(search);
+            const response = await pending, result = await response.json();
+            check(`payment source: ${field} authorized relation query`, result.ok === true);
+            return { params: response.request().postDataJSON().params, rows: result.data?.records || [] };
+          };
+          const select = async (field, model, search, id) => {
+            const queried = await relationQuery(field, model, search);
+            const row = queried.rows.find(row => row.id === id && String(row.display_name || row.name).includes(search));
+            check(`payment source: ${field} exact ID and rendered label`, Boolean(row));
+            await session.page.getByRole('option', { name: String(row.display_name || row.name), exact: true }).click();
+            return queried;
+          };
+          const project = receipt.projects.find(row => row.id === receipt.project_id);
+          const other = receipt.projects.find(row => row.id === receipt.other_project_id);
+          check('payment source: both governed project labels', Boolean(project?.name && other?.name));
+          await select('project_id', 'project.project', project.name, project.id);
+          const selected = await select(receipt.source_field, receipt.source_model, receipt.marker, receipt.source_id);
+          const hasDomain = (params, projectId) => JSON.stringify(params.domain).includes(JSON.stringify(['project_id', '=', projectId]))
+            && JSON.stringify(params.domain).includes(JSON.stringify(['state', '=', 'confirmed']));
+          check('payment source: nonempty confirmed source domain bound to selected project', hasDomain(selected.params, project.id));
+          await select('project_id', 'project.project', other.name, other.id);
+          check('payment source: changing project clears previous source',
+            await session.page.locator(`[data-field-name="${receipt.source_field}"] input`).first().inputValue() === '');
+          const changed = await relationQuery(receipt.source_field, receipt.source_model, receipt.marker);
+          check('payment source: changed project excludes old source', hasDomain(changed.params, other.id)
+            && !changed.rows.some(row => row.id === receipt.source_id));
+          await session.page.keyboard.press('Escape');
+          await select('project_id', 'project.project', project.name, project.id);
+          await select(receipt.source_field, receipt.source_model, receipt.marker, receipt.source_id);
+          const partner = source[paymentSourceFlow === 'rental' ? 'supplier_id' : 'subcontractor_id'];
+          const partnerInput = session.page.locator('[data-field-name="partner_id"] input').first();
+          if (!(await partnerInput.inputValue())) await select('partner_id', 'res.partner', partner[1], partner[0]);
+          await session.page.locator('[data-field-name="amount"] input').first().fill('100');
+          const marker = `TPL53-PAYMENT-SOURCE-${paymentSourceFlow.toUpperCase()}-${Date.now()}`;
+          await session.page.locator('[data-field-name="note"] textarea, [data-field-name="note"] input').first().fill(marker);
+          const waitCreate = () => session.page.waitForResponse(response => {
+            try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'create'
+              && body.params.model === 'payment.request'; } catch { return false; }
+          });
+          paymentSourceCapture = true;
+          const captured = waitCreate();
+          void captured.catch(() => {});
+          await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+          await captured;
+          await session.page.getByText('付款来源定向载荷捕获，请重试保存', { exact: true }).first().waitFor();
+          const category = authority.mainData?.business_category_id;
+          paymentSourceSuccess = { receipt, source, marker, menuId: 545, actionId: 775, phase: 'create', id: null,
+            dateRequest: authority.mainData?.date_request, businessCategoryId: Array.isArray(category) ? category[0] : category,
+            request: structuredClone(report.paymentSourceAttempt) };
+          check('payment source: captured payload obeys exact bounded save permit', paymentSourceDraftWriteKind(spec.role,
+            { intent: 'api.data', params: paymentSourceSuccess.request }, paymentSourceSuccess) === 'create');
+          const saved = waitCreate();
+          void saved.catch(() => {});
+          await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+          check('payment source: actual ordinary finance draft save', (await (await saved).json()).ok === true && Number(paymentSourceSuccess.id) > 0);
+          await session.page.waitForURL(url => url.pathname === `/f/payment.request/${paymentSourceSuccess.id}`, { waitUntil: 'domcontentloaded' });
+          const readback = async label => {
+            const result = await api({ op: 'read', model: 'payment.request', ids: [paymentSourceSuccess.id],
+              fields: ['id', 'note', 'state', 'type', 'project_id', 'company_id', 'partner_id', 'currency_id', 'amount', 'create_uid',
+                'rental_settlement_id', 'subcontract_settlement_id'], context: { company_id: 8 } });
+            const row = result.data?.records?.[0];
+            report.paymentSourceReadbacks ??= []; report.paymentSourceReadbacks.push({ label, result });
+            check(`payment source ${label}: persisted draft identity and source`, result.ok === true && row?.id === paymentSourceSuccess.id
+              && row.note === marker && row.state === 'draft' && row.type === 'pay' && row.amount === 100
+              && row.project_id?.[0] === receipt.project_id && row.company_id?.[0] === 8 && row.partner_id?.[0] === receipt.partner_id
+              && row.currency_id?.[0] === receipt.currency_id && row.create_uid?.[0] === 30 && row[receipt.source_field]?.[0] === receipt.source_id
+              && !row[paymentSourceFlow === 'rental' ? 'subcontract_settlement_id' : 'rental_settlement_id']);
+          };
+          await readback('saved');
+          await form(session.page, `/f/payment.request/${paymentSourceSuccess.id}${createContext}`, 'payment-source-refresh');
+          await readback('refreshed');
+          report.paymentSourceScope = { ...paymentSourceSuccess, retainedDevelopmentData: true };
+          await session.ctx.close();
+          continue;
         }
         if (documentFlow) {
           const api = params => session.page.evaluate(async params => {

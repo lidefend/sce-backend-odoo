@@ -431,3 +431,64 @@ test('document create rejects alternate nested parameter carriers and action but
     button: { name: 'action_archive', type: 'object', context: { company_id: 9 } } }, meta: { menu_id: 412, action_id: 700 } };
   assert.equal(documentFlowWriteKind('fixture_role_pm', body, scope), null);
 });
+
+import { paymentSourceReceiptValid, paymentSourceDraftWriteKind } from './standard_expense_success_scope.mjs';
+function paymentSourceFixture(kind = 'subcontract') {
+  const rental = kind === 'rental';
+  const r = { kind, status: 'passed', committed: true, database: 'sc_frontend_acceptance', uid: 30, company_id: 8,
+    readback_uid: 30, readback_sudo: false, source_preparation_only: true, ordinary_role_create_proof: false,
+    preparation_uid: 30, preparation_sudo: rental, project_id: rental ? 592 : 593, other_project_id: rental ? 593 : 592,
+    source_model: rental ? 'sc.material.rental.settlement' : 'sc.subcontract.settlement',
+    source_field: rental ? 'rental_settlement_id' : 'subcontract_settlement_id', source_id: 40, partner_id: 744, currency_id: 6,
+    marker: `ITER-PAYMENT-SOURCE-${kind.toUpperCase()}-1001052602491413` };
+  const source = { id: 40, name: r.marker, state: 'confirmed', project_id: [r.project_id, 'Project'], company_id: [8, 'Company'],
+    create_uid: [30, 'Finance'], [rental ? 'supplier_id' : 'subcontractor_id']: [744, 'Supplier'], currency_id: [6, 'CNY'], amount_total: 100 };
+  r.readback = { record: source, unreserved_amount: 100 };
+  const marker = `TPL53-PAYMENT-SOURCE-${kind.toUpperCase()}-1790802321792`;
+  const scope = { receipt: r, source, marker, menuId: 545, actionId: 775, phase: 'create', id: null,
+    dateRequest: '2026-10-01', businessCategoryId: 12, request: { op: 'create', model: 'payment.request',
+      vals: { note: marker, project_id: r.project_id, [r.source_field]: 40, amount: 100, partner_id: 744, currency_id: 6, type: 'pay' },
+      context: { company_id: 8, allowed_company_ids: [8], menu_id: '545', action_id: '775', default_type: 'pay' } } };
+  return scope;
+}
+for (const kind of ['subcontract', 'rental']) test(`payment source ${kind}: exact ordinary finance create only`, () => {
+  const s = paymentSourceFixture(kind), b = { intent: 'api.data', params: s.request };
+  assert.equal(paymentSourceReceiptValid(s.receipt), true);
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', b, s), 'create');
+  for (const role of ['fixture_role_pm', 'fixture_role_config_admin']) assert.equal(paymentSourceDraftWriteKind(role, b, s), null);
+  for (const phase of ['capture', 'create_in_flight', 'readback']) assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', b, { ...s, phase }), null);
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', b, { ...s, id: 10 }), null);
+});
+test('payment source rejects forged receipt identity, readback and amount', () => {
+  for (const [key, value] of [['database', 'sc_dev_demo'], ['uid', 1], ['company_id', 9], ['project_id', 10], ['source_id', 41],
+    ['partner_id', 1], ['currency_id', 1], ['committed', false], ['readback_sudo', true], ['preparation_sudo', true], ['kind', 'unknown']]) {
+    const s = paymentSourceFixture(); s.receipt[key] = value;
+    assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null, key);
+  }
+  const s = paymentSourceFixture(); s.source = { ...s.source, amount_total: 99 };
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null);
+});
+test('payment source rejects forged captured values and carrier contexts', () => {
+  for (const [key, value] of [['project_id', 592], ['amount', 1], ['subcontract_settlement_id', 9], ['partner_id', 1], ['currency_id', 1],
+    ['company_id', 9], ['state', 'approved'], ['note', 'forged'], ['context', { skip_validation_check: true }], ['rental_settlement_id', 12]]) {
+    const s = paymentSourceFixture(); s.request.vals[key] = value;
+    assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null, key);
+  }
+  for (const carrier of ['data', 'params', 'args', 'payload']) {
+    const s = paymentSourceFixture(); s.request[carrier] = { context: { skip_validation_check: true } };
+    assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null, carrier);
+  }
+  for (const context of [{ company_id: 9 }, { allowed_company_ids: [8, 9] }, { default_state: 'approved' }, { skip_validation_check: true }]) {
+    const s = paymentSourceFixture();
+    assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request, context }, s), null);
+    s.request.context = { ...s.request.context, ...context };
+    assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { intent: 'api.data', params: s.request }, s), null);
+  }
+});
+test('payment source rejects wrong entry, action intent and changed request', () => {
+  const s = paymentSourceFixture(), b = { intent: 'api.data', params: s.request };
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', b, { ...s, menuId: 462 }), null);
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', b, { ...s, actionId: 588 }), null);
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { ...b, intent: 'execute_button' }, s), null);
+  assert.equal(paymentSourceDraftWriteKind('fixture_role_finance', { ...b, params: { ...s.request, vals: { ...s.request.vals, amount: 1 } } }, s), null);
+});

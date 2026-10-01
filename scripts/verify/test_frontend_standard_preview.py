@@ -996,3 +996,136 @@ class OrdinaryRoleCapabilityProbeTest(unittest.TestCase):
         self.base.cr.rollback.assert_called_once()
         self.assertEqual(self.receipt['submitted']['record']['state'], 'submitted')
         self.assertFalse(self.receipt['committed'])
+
+
+class PaymentSourcePrepProbeTest(unittest.TestCase):
+    def prepare(self, kind='subcontract', database='sc_frontend_acceptance', uid=30, fail_confirm=False, fail_fresh=False):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        import datetime
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        methods = [node for node in ast.parse(path.read_text()).body if isinstance(node, ast.FunctionDef) and node.name.startswith('_payment_source_prep_')]
+        for method in methods: method.body = [node for node in method.body if not isinstance(node, ast.ImportFrom)]
+        self.base = MagicMock()
+        self.base.cr.dbname = database
+        user = MagicMock(id=uid, share=False, company_id=SimpleNamespace(id=8), company_ids=SimpleNamespace(ids=[8]))
+        user.__len__.return_value = 1
+        self.base.__getitem__.return_value.sudo.return_value.search.return_value = user
+        self.actor = MagicMock(uid=30, su=False, company=SimpleNamespace(id=8))
+        self.actor.cr = self.base.cr
+        self.base.return_value = self.actor
+        self.models = {}
+        self.actor.__getitem__.side_effect = lambda name: self.models.setdefault(name, MagicMock())
+        self.actor['project.project'].browse.return_value.read.return_value = [
+            {'id': 592, 'name': 'Rental', 'company_id': [8, 'A']}, {'id': 593, 'name': 'Subcontract', 'company_id': [8, 'A']}]
+        self.actor['res.partner'].browse.return_value.read.return_value = [{'id': 71}]
+        self.record = MagicMock(id=801, state='draft', env=self.actor)
+        self.record.with_env.return_value = self.record
+        self.record.action_submit.side_effect = lambda: setattr(self.record, 'state', 'approved')
+        def confirm():
+            if fail_confirm: raise AssertionError('confirmation denied')
+            self.record.state = 'confirmed'
+        self.record.action_confirm.side_effect = confirm
+        self.cursor = MagicMock()
+        self.cursor.__enter__.return_value = self.cursor
+        self.base.registry.cursor.return_value = self.cursor
+        self.fresh = MagicMock(uid=30, su=False, company=SimpleNamespace(id=8))
+        self.fresh_record = MagicMock(id=801, env=self.fresh)
+        self.fresh.__getitem__.return_value.browse.return_value = self.fresh_record
+        self.api = SimpleNamespace(Environment=MagicMock(return_value=self.fresh))
+        self.ns = {'_env': lambda: self.base, 'json': json, 'datetime': datetime.datetime, 'timezone': datetime.timezone,
+            'api': self.api, '_ordinary_pm_assigned_review': MagicMock()}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), self.ns)
+        self.kind = kind
+        if kind not in ('subcontract', 'rental'): return self
+        spec = self.ns['_payment_source_prep_spec'](kind)
+        self.actor[spec['model']].browse.return_value.read.return_value = [{'id': spec['legacy_id'], 'project_id': [spec['project_id'], 'Project'],
+            'company_id': [8, 'A'], spec['partner_field']: [71, 'Supplier']}]
+        self.actor[spec['model']].create.return_value = self.record
+        self.actor[spec['model']].sudo.return_value.create.return_value = self.record
+        self.readback = self.ns['_payment_source_prep_readback']
+        def observed(record, spec, marker, partner, state):
+            if fail_fresh and record is self.fresh_record: raise AssertionError('fresh mismatch')
+            if record is self.record: self.assertEqual(record.state, state)
+            return {'record': {'id': 801, 'currency_id': [7, 'CNY'], 'name': marker, 'state': state}, 'line': {'id': 901}, 'unreserved_amount': 100}
+        self.ns['_payment_source_prep_readback'] = MagicMock(side_effect=observed)
+        return self
+
+    def execute(self):
+        with patch('builtins.print') as output:
+            try: self.ns['_payment_source_prep_checks'](self.kind)
+            finally:
+                self.output = output
+                self.receipt = json.loads(next(call.args[0].split('=', 1)[1] for call in reversed(output.call_args_list)
+                    if call.args[0].startswith('PAYMENT_SOURCE_PREP=')))
+
+    def test_both_sources_use_fixed_projects_native_finance_actions_and_fresh_readback(self):
+        for kind, project in [('subcontract', 593), ('rental', 592)]:
+            with self.subTest(kind=kind):
+                self.prepare(kind).execute()
+                self.assertEqual(self.receipt['project_id'], project)
+                self.assertEqual(self.receipt['source_id'], 801)
+                self.assertEqual(self.receipt['status'], 'passed')
+                self.assertTrue(self.receipt['committed'])
+                self.assertEqual(self.receipt['currency_id'], 7)
+                self.record.action_submit.assert_called_once()
+                self.record.action_confirm.assert_called_once()
+                self.base.cr.commit.assert_called_once()
+                self.api.Environment.assert_called_once_with(self.cursor, 30, {'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'}, su=False)
+                for name, model in self.models.items():
+                    if kind == 'rental' and name == 'sc.material.rental.settlement': model.sudo.assert_called_once_with()
+                    else: model.sudo.assert_not_called()
+                self.assertEqual(self.receipt['preparation_sudo'], kind == 'rental')
+                self.assertFalse(self.receipt['ordinary_role_create_proof'])
+                self.assertFalse(self.receipt['readback_sudo'])
+                self.actor['project.project'].create.assert_not_called()
+                self.actor['res.partner'].create.assert_not_called()
+
+    def test_invalid_environment_role_or_kind_never_commits(self):
+        for options in [{'database': 'production'}, {'uid': 1}, {'kind': 'other'}]:
+            with self.subTest(options=options):
+                self.prepare(**options)
+                with self.assertRaises(AssertionError): self.execute()
+                self.base.cr.commit.assert_not_called()
+                for model in self.models.values(): model.create.assert_not_called()
+                self.assertFalse(self.receipt['committed'])
+
+    def test_registered_project_or_old_source_drift_refuses_creation(self):
+        for source in (False, True):
+            self.prepare()
+            if source:
+                self.actor['sc.subcontract.settlement'].browse.return_value.read.return_value[0]['project_id'] = [999, 'Other']
+            else:
+                self.actor['project.project'].browse.return_value.read.return_value[0]['company_id'] = [9, 'Other']
+            with self.assertRaises(AssertionError): self.execute()
+            self.actor['sc.subcontract.settlement'].create.assert_not_called()
+            self.base.cr.commit.assert_not_called()
+
+    def test_native_failure_rolls_back_but_postcommit_failure_retains_honest_identity(self):
+        for options in [{'fail_confirm': True}, {'fail_fresh': True}]:
+            with self.subTest(options=options):
+                self.prepare(**options)
+                with self.assertRaises(AssertionError): self.execute()
+                self.assertEqual(self.receipt['status'], 'failed')
+                self.assertEqual(self.receipt['source_id'], 801)
+                self.assertEqual(self.receipt['committed'], options.get('fail_fresh', False))
+                self.base.cr.rollback.assert_called_once()
+                self.assertFalse(any('SMOKE=PASS' in call.args[0] for call in self.output.call_args_list))
+
+    def test_readback_rejects_wrong_owner_values_and_consumed_balance(self):
+        from unittest.mock import MagicMock
+        self.prepare()
+        spec = self.ns['_payment_source_prep_spec']('subcontract')
+        row = {'id': 801, 'name': 'Marker', 'state': 'confirmed', 'project_id': [593, 'P'], 'company_id': [8, 'A'],
+            'create_uid': [30, 'Finance'], 'subcontractor_id': [71, 'S'], 'currency_id': [7, 'CNY'], 'amount_total': 100}
+        self.record.read.return_value = [row]
+        self.record.line_ids.__len__.return_value = 1
+        self.record.line_ids.read.return_value = [{'id': 901, 'create_uid': [30, 'Finance'], 'work_scope': 'Marker', 'qty': 1, 'unit_price': 100}]
+        self.record._payment_unreserved_amount.return_value = 100
+        self.readback(self.record, spec, 'Marker', 71, 'confirmed')
+        for key, value in [('create_uid', [1, 'Admin']), ('project_id', [592, 'Other']), ('amount_total', 99)]:
+            original = row[key]; row[key] = value
+            with self.assertRaises(AssertionError): self.readback(self.record, spec, 'Marker', 71, 'confirmed')
+            row[key] = original
+        self.record._payment_unreserved_amount.return_value = 0
+        with self.assertRaisesRegex(AssertionError, 'fully unreserved'): self.readback(self.record, spec, 'Marker', 71, 'confirmed')
