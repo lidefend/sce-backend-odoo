@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4542`
+- Scanned files: `4544`
 - Files requiring split plan: `59`
-- Files above warning threshold: `110`
+- Files above warning threshold: `111`
 
 ## Split Plan Required
 
@@ -110,6 +110,7 @@ Generated from repository source files. This report is informational during the 
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1174 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
+| 1161 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1147 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -124,10 +125,10 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
-| 1047 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1040 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
+| 1029 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1023 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1013 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
