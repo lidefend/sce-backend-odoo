@@ -9595,3 +9595,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - entry-publication-browser.log退出0，tpl07-1790819407559/report.json：真实config_admin登录后的route validation655返回403/PRODUCT_ENTRY_NOT_RELEASED，原始响应与运行态一致；3项断言仅为认证响应、无页面异常、无未声明写入（forbiddenWrites=[]），不是审批业务旅程验收。已确认的计划入口绕过问题得到代码、运行和用户会话响应证据。
 - 仍待补齐：发布入口中分类合并/动态导航目标的身份保真、无活动快照与版本选择时的统一策略消费，以及后续目标用户业务旅程。现实现仅关闭已确认的活动快照绕过，不能声称发布体系全部闭环。计划能力证据保留；不为验收自动新增第90个发布入口。67条总体接管继续active，detail.action-state等未闭合项不升级。
 - 下个最早步骤：沿现有MenuService的发布导航→route entry投影与release-key读取检查必要字段是否丢失，以定向纯测试验证分类/动态入口；仅有证据表明缺陷时修P0，再做受影响的运行复验。复用原run及本段证据，不重复菜单/ORM盘点。
+
+### 53.211 发布导航身份保真与动态路由
+
+- 56ebf00b3 clean续跑，仅检查上段标明的共享转换依赖。发现_nav_target_index丢失导航key及business_category_options，而现有release-key读取器正使用这两类身份；route.authority.validate还只从role_surface重建授权，没有消费有效policy导航。归P0共享契约消费，不通过行业白名单补救。
+- P0 df66655b2保留menu_key与分类来源到route entry；直接验证先由同一有效policy构造导航，经原release filter后传给build_route_authority。原角色/动作/记录/公司检查保留。新增纯回归执行真实导航索引、发布key读取及发布投影，检查聚合key/分类xmlid/分类menu_id仍可匹配；验证handler消费有效导航及fail_closed空导航。P4 c31db6351为既有只读运行探针增加真实dynamic入口断言。
+- entry-projection-iteration及final-iteration L1 PASS；entry-projection-unit实际9+2=11 PASS，begin/record非零回执已存。后续仅P4探针变化，纯测试输入不变复用；py_compile、diff检查PASS。backend.acceptance.up/health通过并绑定c31db6351，无schema/XML/ACL变动、不升级模块；前端未改，不构建。
+- entry-projection-runtime.log实际退出0，7 PASS、rollback verified：发布快照65保持89；未发布655拒绝、普通已发布653可用、动态发布302可用、配置恢复711可用。上一段浏览器日志保留为原候选证据，不改写成新候选页面验收；本段新增动态能力为后端实际运行证据。
+- 尚未证明全部分类/场景目标、无活动快照和版本选择的一致性，亦未替代目标用户发布后业务验收。下一步复用既有DeliveryEngine归一化及startup identity相关实现，核对直接路由路径是否遗漏有效版本/scene引用归一化；只补对应纯测试/实现，不扩大成全仓发布审计。67条总体目标保持active，detail.action-state不升级，无推送/合并/目标部署。
