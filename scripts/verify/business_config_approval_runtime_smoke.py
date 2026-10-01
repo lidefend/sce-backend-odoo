@@ -4435,6 +4435,8 @@ def _scene_entry_contract_checks():
             rows = result.data.get("scene_ready_contract", {}).get("scenes", [])
             matched = [row for row in rows if row.get("scene", {}).get("key") == key]
             print("SCENE_ENTRY_READBACK=" + json.dumps({"uid": uid, "company_id": 8, "scene": key,
+                "effective_source": [{"code": row.get("code"), "target": row.get("target")}
+                    for row in result.data.get("scenes", []) if (row.get("code") or row.get("key")) == key],
                 "matched": [{"scene": row.get("scene"), "target": row.get("meta", {}).get("target")}
                             for row in matched]}, ensure_ascii=False, default=str))
             assert len(matched) == 1, "effective scene missing or ambiguous: " + key

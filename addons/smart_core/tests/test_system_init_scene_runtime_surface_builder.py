@@ -57,6 +57,15 @@ class _Env:
 
 
 class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
+    def test_registry_preserves_declared_entry_without_inventing_one(self):
+        for declared in ({"intent": "custom.enter"}, {"entry_intent": "custom.override"}, {}):
+            with self.subTest(declared=declared):
+                row = builder._build_scene_ready_registry_contract([
+                    {"code": "custom.scene", "target": {"route": "/s/custom.scene", **declared}}
+                ])["scenes"][0]
+                for key in ("intent", "entry_intent"):
+                    self.assertEqual(row["meta"]["target"].get(key), declared.get(key))
+
     def test_full_mode_uses_complete_delivery_scene_set(self):
         delivery_scenes = [
             {"code": "workspace.home", "target": {"route": "/"}},

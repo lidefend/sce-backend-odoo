@@ -68,7 +68,7 @@ def _build_scene_ready_registry_contract(
         target = scene_row.get("target") if isinstance(scene_row.get("target"), dict) else {}
         route = str(target.get("route") or scene_row.get("route") or f"/s/{scene_key}").strip()
         target_payload = {"route": route}
-        for key in ("action_xmlid", "menu_xmlid", "model", "view_mode"):
+        for key in ("action_xmlid", "menu_xmlid", "model", "view_mode", "intent", "entry_intent"):
             value = str(target.get(key) or scene_row.get(key) or "").strip()
             if value:
                 target_payload[key] = value
