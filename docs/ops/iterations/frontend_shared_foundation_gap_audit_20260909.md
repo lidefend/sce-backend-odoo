@@ -10046,3 +10046,37 @@ X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺
 
 所有者要求记录计划目标后停止，由其他执行器执行。原 run 的 execution_handoff_20261001 是唯一执行计划：先固定语义摘要与元数据边界，再补后端具体实例契约验收 PASS 回执、浏览器同契约前置及一致性检查；完成定向测试/独立审查后才冻结、受保护主线集成、日常部署，最后先后端后前端给出限定范围产品结论。不得用运行时契约与 DOM 相等自证权限政策，不以开发管理员形态约束其他角色，不通过删元数据或重放响应凑 hash 一致。
 交接源码 HEAD08ea5b5cd745b366e644a1a18e68b5bc3d09a41a，分支 fix/daily-official-template-acceptance，基线2d164a1fed2066307774c82db2e65def80bff70d；本次仅计划/goal/run 文档为未提交改动。Quick 已按所有者要求终止，exit143、无 receipt，部分通过输出不得作为成功门禁。未推送、未建 PR、未集成或部署本轮修复。原源审查/定向证据、日常配置312版本7及权威回读继续保留。所有实现、验证、浏览器、运行时与发布工作均已停止。
+
+## 2026-10-02 接替执行：L4 gap 4 离线 custody 落地（run successor_step6）
+
+- 接替执行器经 `.agent/active-runs.json` 解析本分支 run 后继续 `next_exact_step`。上一轮留下的 4 个 dirty 文件（probe 持久化 live 响应字节、schema guard 离线重推导、声明与单测）验证后作为单个 layer-owned P4 提交落地：`3e23bd80a fix(verify): persist the exact live contract bytes as offline custody`。
+- 离线验证：`make ci.local.iteration` PASS（L1）；`make verify.frontend.acceptance.environment.guard` PASS（35 例，含新增持久化重推导正例与防篡改负例）；`make verify.frontend.list_surface_search_contract.unit` PASS（21 例）。
+- 环境恢复（environment_defect，非产品缺陷）：`/tmp/wf_check_fixture.env` 凭据已失效（AccessDenied），经受管 operation entry `fixture` 幂等 reconcile 恢复登记凭据值（fixture_role_finance uid=30 验证通过）；reconcile 使 record_id 1845→1847，稳定 xmlid 解析仍唯一。`make backend.acceptance.replace-stale` + `health` 将 18082 后端重建至 `3e23bd80a`。
+- live 车道（绑定新 HEAD）：resolve（compose 项目覆盖 sc-fe-r2-p1-01）+ `ACCEPTANCE_BASE_URL=http://127.0.0.1:5180 make verify.dev.acceptance.contract` → contract PASS **11/11**，errors []，approved==recomputed 语义摘要 `10c6b3e8…`；custody 字节 `artifacts/backend/dev_acceptance_release_probe.contract.json`（1,040,113 字节，sha256 `35a539fd…`）。
+- **gap 4 关闭**：`make verify.dev.acceptance.release.schema.guard` 在无运行态下从持久化字节重推导字节摘要、语义摘要与生命周期声明，全部一致；回执、check 记录（backend_contract_instance_receipt/live、acceptance_record_identity_resolution、frontend_contract_prerequisite）均绑定 `3e23bd80a` clean。
+- 前一轮 03:26 的 live 运行绑定显式 `ACCEPTANCE_TARGET_SHA=aeff26d78`，属迭代诊断证据，从未绑定当时 HEAD；本轮已在正确身份上重做，不沿用其结论。
+- gap 1 盘点（未实施）：registry 1371 脚本中 183 个活跃脚本无 make/workflow 引用，**全部**有文件级引用（无完全孤儿，全部位于 scripts/verify，行数 min=1/median=198/max=1561）——disposition 应为 registry 内机器可校验的分类登记，而非批量退役。留作下一批。
+- 状态：批次验收完成（本层）；主线集成/版本发布/产品交付维持各自状态，未触发部署。
+
+## 2026-10-02 接替执行：L4 gap 1 wire-or-retire disposition 落地（run successor_step7）
+
+- 目标：registry 对"无 make/workflow 引用的活跃守卫"（183 个，全部有文件级引用）要求机器可校验的 `wire_or_retire` 分类，而非批量退役。
+- 实现（4 文件，提交 `397438b05 fix(verify): require a wire-or-retire disposition for unwired active guards`）：
+  - `scripts/verify/guard_registry_audit.py`：新增 `disposition_failures()`——unwired 活跃脚本缺 disposition 即 audit FAIL；合法值 `file-consumed` / `wire-pending` / `retire-pending`；`file-consumed` 须有文件引用；`wire-pending`/`retire-pending` 须有 `review_by` 期限；wired 脚本携带 stale disposition 同样 FAIL（提示 re-seed）。`cmd_seed()` 为有文件引用的 unwired 活跃脚本补默认 `file-consumed`、清除 wired 脚本的 stale disposition；`cmd_export()` 条目并入 `wire_or_retire` 且 counts 增加 `unwired` / `unwired_undispositioned` / `wire_or_retire` 分布。
+  - `scripts/verify/test_guard_registry_audit.py`：新增 `GuardRegistryDispositionTest` 7 例（缺 disposition 失败、file-consumed 有引用通过、wired 无需、wired stale 失败、wire-pending 需 review_by、未知值失败、file-consumed 无引用失败）。
+  - `scripts/verify/registry.yaml`：seed 后新增 183 条 `file-consumed`（总 entries 275）。
+  - `docs/audit/guard_registry/guard_registry.json`：export 刷新，counts `{active:1284, orphan:87, retired:1, unwired:183, unwired_undispositioned:0, wire_or_retire:{file-consumed:183, wire-pending:0, retire-pending:0}}`。
+- 验证：单测 **10 例 OK**；audit `[guard-registry] AUDIT PASS: 1371 scripts (1284 referenced, 87/87 orphans acknowledged, 1 retired, 183/183 unwired dispositioned)`；负例探针（剥掉一条 disposition → audit FAIL → re-seed 恢复 → PASS）；`make ci.local.iteration` L1 PASS。
+- 登记：`guard_registry` check 回执最终绑定 clean HEAD `397438b05`（10 例，log `l2-guard_registry-20261002-040847.log`，log_sha256 入回执）。
+- **gap 1 关闭**。登记过程两次受挫的教训已入 run.json `record_procedure_note`：① begin 与 record 之间不得变更声明输入（seed 改 registry.yaml 触发输入漂移拒绝）；② begin→验证→record 必须一气呵成（pending 文件被失败 record 消费后即缺）；③ 提交后再重记一次将回执绑定到 clean HEAD。
+- 状态：批次验收完成（本层）；run blockers 中 gap 1 条目已移除。剩余：create/edit 与 workbench 最小证据差额、owner 待决 `addons/smart_core/contract.schema.json` 空占位文件去留、部署/版本发布需 owner 显式授权（未触发）。
+
+## 2026-10-02 接替执行：create/edit 与 workbench 最小证据落地（run successor_step8）
+
+- 背景：`a7729e7bd..HEAD` 有 4 个前端产品文件变化（actionRuleAuthority.ts、contracts/v2/schema.ts、contractFormPresenter.ts、contractActionPresentation.ts——正是 create/edit 表面的表单呈现输入），故原在 `a7729e7bd` 上的两条浏览器车道回执已失效，须在当前候选上重跑。本批无产品/探针代码变更，纯证据补齐。
+- 运行态刷新（受管入口）：`make backend.acceptance.replace-stale` + `health` 将 18082 后端重建至 `1317c9db9`（无模块升级：addons 无增量）；`make frontend.standard.preview.build`（35.64s）+ `up`，5180 服务 clean 绑定构建 `base_sha=1317c9db9`（diff_sha256=e3b0c442 空树哈希，entry `/assets/index-CGKrPxOb.js`）。
+- **create/edit 车道**：`TPL07_SCOPE=create-edit make verify.frontend.standard_page_type.browser` → **48/48 断言 PASS**，errors []，forbiddenWrites []；create/edit 双表面（new 与 1845，声明 fixture 身份解析）各 8 sections、1 声明 one2many、声明可编辑字段成员一致，关系字段可见非只读，reload 保持成员与关系值，明暗×1440/390 受控。报告 `tpl07-1790885749220/report.json`（sha256 `7e5ef807…`）。
+- **workbench(home) 车道**：`TPL07_SCOPE=scene-entry TPL07_SCENE_SELECTION=home` → **20/20 断言 PASS**，errors []，forbiddenWrites []；限定 finance workspace.home 角色，`[data-role-home]` renderer=workspace-contract、单一 official-dashboard-workspace 组合、声明状态 ready、摘要数==min(声明 sections,4)、快捷链接可用。报告 `tpl07-1790885779047/report.json`（sha256 `3af28b0c…`）。
+- 登记：两条 check 回执（create_edit_scope、workspace_home_scope）均按 begin→车道→record 单脚本一气呵成登记，绑定 clean HEAD `1317c9db9`（日志 `l2-create_edit_scope-20261002-041543.log`、`l2-workspace_home_scope-20261002-041613.log`，log_sha256 入回执）。
+- **原清单证据差额关闭**：blocker 中该项移除，仅保留"部署后历史附件内容不可用、元数据呈现不恢复内容"的既定数据限制（数据限制声明，非恢复文件主张）。detail_style_scope 维持其原有身份的既有证据，不因本批改动。
+- 边界：本批仅覆盖当前候选上的 create/edit 与 workbench 最小证据；未发布场景表面、全量 action/字段覆盖与业务写入/审批回路仍在范围之外。剩余 owner 待决：`addons/smart_core/contract.schema.json` 空占位去留；部署/版本发布需显式授权（未触发）。

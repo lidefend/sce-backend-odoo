@@ -11,8 +11,11 @@ tool provides:
 * ``--audit``    Fail (exit 1) when a script on disk is referenced nowhere
                  (an "orphan") yet is not acknowledged in
                  scripts/verify/registry.yaml, when a registry entry points
-                 at a missing script, or when a retired script is still
-                 referenced by make/CI.
+                 at a missing script, when a retired script is still
+                 referenced by make/CI, or when an active script that no
+                 make target/workflow references ("unwired") lacks a
+                 machine-checkable ``wire_or_retire`` disposition
+                 (file-consumed / wire-pending / retire-pending).
 * ``--seed``     Merge missing orphan acknowledgements into registry.yaml
                  with default review metadata (first-round onboarding).
 * ``--retire``   Move a script into scripts/verify/retired/ and mark it
@@ -64,6 +67,57 @@ STATUS_ACTIVE = "active"
 STATUS_ACTIVE_DYNAMIC = "active-dynamic"
 STATUS_ORPHAN = "orphan"
 STATUS_RETIRED = "retired"
+
+# Wire-or-retire disposition for active scripts that no make target and no CI
+# workflow references ("unwired"). The disposition is machine-checkable:
+#
+# * ``file-consumed``   the script is consumed only by other scripts/tests
+#                       (referenced_by_files non-empty); it stays active as a
+#                       library/helper without its own governed entry.
+# * ``wire-pending``    an owner intends to wire it to a make target/workflow;
+#                       requires a ``review_by`` deadline.
+# * ``retire-pending``  an owner intends to retire it; requires ``review_by``.
+WIRE_OR_RETIRE_VALUES = ("file-consumed", "wire-pending", "retire-pending")
+
+
+def disposition_failures(name: str, entry: dict | None, item: dict) -> list[str]:
+    """Validate the wire-or-retire disposition of one classified script.
+
+    ``item`` is a classify() inventory entry; ``entry`` is the matching
+    registry.yaml entry (or None). Returns a list of audit failure strings.
+    """
+    wired = bool(
+        item.get("referenced_by_make_targets") or item.get("referenced_by_workflows")
+    )
+    disposition = (entry or {}).get("wire_or_retire")
+    if wired:
+        if disposition:
+            return [
+                f"'{name}' carries wire_or_retire '{disposition}' but is wired to "
+                f"make/CI (stale entry: run make guard.registry.seed)"
+            ]
+        return []
+    if not disposition:
+        return [
+            f"unwired active script '{name}' lacks a wire-or-retire disposition "
+            f"(run: make guard.registry.seed, then review)"
+        ]
+    if disposition not in WIRE_OR_RETIRE_VALUES:
+        return [f"registry entry '{name}' has unknown wire_or_retire '{disposition}'"]
+    failures: list[str] = []
+    if disposition == "file-consumed" and not item.get("referenced_by_files"):
+        failures.append(
+            f"'{name}' claims file-consumed but no file reference exists "
+            f"(classify as orphan instead)"
+        )
+    if disposition in ("wire-pending", "retire-pending") and not (entry or {}).get(
+        "review_by"
+    ):
+        failures.append(
+            f"registry entry '{name}' wire_or_retire '{disposition}' lacks a "
+            f"review_by deadline"
+        )
+    return failures
 
 
 def load_registry() -> dict:
@@ -239,16 +293,38 @@ def classify(scripts: list[Path]) -> list[dict]:
 def cmd_export() -> int:
     scripts = collect_scripts()
     inventory = classify(scripts)
+    registry = load_registry()
+    entries = {e["script"]: e for e in registry.get("entries", [])}
+    for item in inventory:
+        entry = entries.get(item["script"])
+        if entry and entry.get("wire_or_retire"):
+            item["wire_or_retire"] = entry["wire_or_retire"]
     retired = sorted(
         p.name
         for pattern in ("*.py", "*.sh")
         for p in RETIRED_DIR.glob(pattern)
         if p.is_file()
     ) if RETIRED_DIR.exists() else []
+    unwired = [
+        e
+        for e in inventory
+        if e["status"] == STATUS_ACTIVE
+        and not e["referenced_by_make_targets"]
+        and not e["referenced_by_workflows"]
+    ]
+    disposition_counts = {
+        value: sum(1 for e in unwired if e.get("wire_or_retire") == value)
+        for value in WIRE_OR_RETIRE_VALUES
+    }
     counts = {
         STATUS_ACTIVE: sum(1 for e in inventory if e["status"] == STATUS_ACTIVE),
         STATUS_ORPHAN: sum(1 for e in inventory if e["status"] == STATUS_ORPHAN),
         STATUS_RETIRED: len(retired),
+        "unwired": len(unwired),
+        "unwired_undispositioned": sum(
+            1 for e in unwired if not e.get("wire_or_retire")
+        ),
+        "wire_or_retire": disposition_counts,
     }
     EXPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -263,7 +339,9 @@ def cmd_export() -> int:
     )
     print(
         f"[guard-registry] export: {counts[STATUS_ACTIVE]} active, "
-        f"{counts[STATUS_ORPHAN]} orphan, {counts[STATUS_RETIRED]} retired "
+        f"{counts[STATUS_ORPHAN]} orphan, {counts[STATUS_RETIRED]} retired, "
+        f"{counts['unwired']} unwired "
+        f"({counts['unwired_undispositioned']} undispositioned) "
         f"-> {EXPORT_PATH.relative_to(ROOT)}"
     )
     return 0
@@ -332,6 +410,8 @@ def cmd_audit() -> int:
                 f"orphan script '{name}' is not acknowledged in registry.yaml "
                 f"(run: make guard.registry.seed, then review)"
             )
+        if item["status"] == STATUS_ACTIVE:
+            failures.extend(disposition_failures(name, entry, item))
         if entry and entry.get("status") == STATUS_RETIRED and item["status"] != STATUS_RETIRED:
             failures.append(
                 f"'{name}' is marked retired in registry.yaml but still lives in "
@@ -374,6 +454,19 @@ def cmd_audit() -> int:
     acked = sum(
         1 for e in inventory if e["status"] == STATUS_ORPHAN and e["script"] in entries
     )
+    unwired = sum(
+        1
+        for e in inventory
+        if e["status"] == STATUS_ACTIVE
+        and not e["referenced_by_make_targets"]
+        and not e["referenced_by_workflows"]
+    )
+    dispositioned = sum(
+        1
+        for e in inventory
+        if e["status"] == STATUS_ACTIVE
+        and (entries.get(e["script"]) or {}).get("wire_or_retire")
+    )
     if failures:
         print("[guard-registry] AUDIT FAIL:")
         for failure in failures:
@@ -382,7 +475,8 @@ def cmd_audit() -> int:
     print(
         f"[guard-registry] AUDIT PASS: {total} scripts "
         f"({total - orphans} referenced, {acked}/{orphans} orphans acknowledged, "
-        f"{len(retired_files)} retired)"
+        f"{len(retired_files)} retired, {dispositioned}/{unwired} unwired "
+        f"dispositioned)"
     )
     return 0
 
@@ -395,6 +489,8 @@ def cmd_seed() -> int:
     referenced = {e["script"] for e in inventory if e["status"] == STATUS_ACTIVE}
     added = 0
     dropped = 0
+    dispositions_added = 0
+    dispositions_dropped = 0
     for item in inventory:
         if item["status"] == STATUS_ORPHAN and item["script"] not in known:
             entries.append(
@@ -412,6 +508,46 @@ def cmd_seed() -> int:
                 }
             )
             added += 1
+    # Wire-or-retire dispositions for unwired active scripts (machine-checkable).
+    entry_by_name = {e["script"]: e for e in entries}
+    for item in inventory:
+        name = item["script"]
+        if item["status"] != STATUS_ACTIVE:
+            continue
+        wired = bool(
+            item["referenced_by_make_targets"] or item["referenced_by_workflows"]
+        )
+        entry = entry_by_name.get(name)
+        if wired:
+            if entry and entry.get("wire_or_retire"):
+                entry.pop("wire_or_retire")
+                dispositions_dropped += 1
+            continue
+        if entry and entry.get("wire_or_retire"):
+            continue
+        if entry is None:
+            entry = {
+                "script": name,
+                "status": STATUS_ACTIVE,
+                "owner": "platform-team",
+                "date": subprocess.run(
+                    ["git", "log", "-1", "--format=%as", "--", item["path"]],
+                    cwd=ROOT, capture_output=True, text=True,
+                ).stdout.strip()
+                or "unknown",
+            }
+            entries.append(entry)
+            entry_by_name[name] = entry
+        # An active script always has at least one file reference (otherwise
+        # classify() would have marked it orphan), so the default disposition
+        # is file-consumed; wire-pending/retire-pending are deliberate manual
+        # classifications that must carry their own review_by deadline.
+        entry["wire_or_retire"] = "file-consumed"
+        entry.setdefault(
+            "reason",
+            "consumed only by scripts/tests; no governed make/workflow entry",
+        )
+        dispositions_added += 1
     # Drop stale orphan acknowledgements whose scripts are referenced again.
     kept = []
     for entry in entries:
@@ -426,7 +562,9 @@ def cmd_seed() -> int:
     save_registry(doc)
     print(
         f"[guard-registry] seed: +{added} orphan acknowledgements, "
-        f"-{dropped} stale entries -> {REGISTRY_PATH.relative_to(ROOT)}"
+        f"-{dropped} stale entries, +{dispositions_added} wire-or-retire "
+        f"dispositions, -{dispositions_dropped} stale dispositions "
+        f"-> {REGISTRY_PATH.relative_to(ROOT)}"
     )
     return 0
 

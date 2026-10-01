@@ -3,6 +3,7 @@ import type { ContractV2ButtonStatus } from '../../app/contracts/v2/types';
 import { routeAuthorityContextAllowed, type RouteAuthorityEntry } from '../../app/routeAuthority';
 import { detectObjectMethodFromActionKey, normalizeActionKind, parseMaybeJsonRecord, toPositiveInt } from '../../app/contractRuntime';
 import { normalizeSceneActionProtocol } from '../../app/sceneActionProtocol';
+import { declaredActionAuthorityDenial } from '../../app/contracts/v2/actionRuleAuthority';
 import {
   normalizeActionLabel,
   normalizeActionSafety,
@@ -155,6 +156,8 @@ export function buildContractFormActions(params: {
         action_safety: row.actionSafety ?? row.action_safety,
         refresh_policy: row.refreshPolicy ?? row.refresh_policy,
         entitlementEvaluated: row.entitlementEvaluated ?? row.entitlement_evaluated,
+        authorizationAllowed: row.authorizationAllowed ?? row.authorization_allowed,
+        businessAvailable: row.businessAvailable ?? row.business_available,
       });
   });
 
@@ -235,7 +238,10 @@ export function buildContractFormActions(params: {
     const contractEnabled = row.enabled === true;
     const contractDisabled = row.disabled === true;
     const needRecord = ['object', 'server', 'action', 'mutation'].includes(effectiveKind) || ['row', 'smart'].includes(level);
-    const authorizationAllowed = contractAllowed && contractEnabled && !contractDisabled
+    // The declared actor-authorization / business-availability deny is
+    // authoritative on its own; the folded flags are only a producer shortcut.
+    const declaredDenial = declaredActionAuthorityDenial(row);
+    const authorizationAllowed = declaredDenial === '' && contractAllowed && contractEnabled && !contractDisabled
       && status.disabled !== true;
     const requiresSavedRecord = needRecord && !params.recordId;
     const enabled = authorizationAllowed && !requiresSavedRecord;
@@ -271,9 +277,11 @@ export function buildContractFormActions(params: {
         ? status.reasonCode || 'disabled_by_status_contract'
         : needRecord && !params.recordId
           ? 'requires record id'
-          : contractAllowed
-            ? String(row.warning_message || '').trim()
-            : String(row.blocked_message || row.reason || row.reason_code || '').trim(),
+          : declaredDenial
+            ? declaredDenial
+            : contractAllowed
+              ? String(row.warning_message || '').trim()
+              : String(row.blocked_message || row.reason || row.reason_code || '').trim(),
       intent: String(row.intent || '').trim(),
       semantic: presentationSemantic,
       sourceWidgetId,

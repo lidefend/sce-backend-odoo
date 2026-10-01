@@ -542,6 +542,15 @@ def _hash_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def _relative_to_root(path: Path) -> str:
+    """Report an evidence path relative to the repo when it lives inside it."""
+    resolved = path.resolve()
+    root = ROOT.resolve()
+    if resolved == root or root in resolved.parents:
+        return resolved.relative_to(root).as_posix()
+    return str(resolved)
+
+
 _STABLE_IDENTIFIER_RE = re.compile(r"[A-Za-z0-9_]+\.[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*\Z")
 
 
@@ -637,6 +646,7 @@ def probe_contract_acceptance(
     lifecycle: Any = None,
     session: Any = None,
     password: str = "",
+    contract_output: Path | None = None,
 ) -> dict[str, Any]:
     """Produce the exact-instance backend contract receipt, fail-closed on any gap."""
     receipt: dict[str, Any] = {"schema": CONTRACT_RECEIPT_SCHEMA, "enabled": True, "status": "FAIL", "errors": []}
@@ -819,6 +829,22 @@ def probe_contract_acceptance(
     if not checks["contract_custody_captured"]:
         errors.append("contract_custody_not_captured")
 
+    # Offline custody: persist the exact live response bytes and read them back, so
+    # an independent verifier can reproduce response_sha256 without the runtime and
+    # re-derive the whole contract from the bytes rather than from a re-serialization.
+    contract_bytes = contract_body.encode("utf-8")
+    custody_path = ""
+    if contract_output is not None and checks["contract_custody_captured"]:
+        target_output = Path(contract_output)
+        target_output.parent.mkdir(parents=True, exist_ok=True)
+        target_output.write_bytes(contract_bytes)
+        checks["contract_custody_bytes_persisted"] = target_output.read_bytes() == contract_bytes
+        custody_path = _relative_to_root(target_output)
+    else:
+        checks["contract_custody_bytes_persisted"] = False
+    if checks["contract_custody_captured"] and not checks["contract_custody_bytes_persisted"]:
+        errors.append("contract_custody_bytes_not_persisted")
+
     lifecycle = lifecycle or load_contract_lifecycle()
     meta = contract.get("meta") if isinstance(contract.get("meta"), dict) else {}
     lifecycle_evidence = meta.get("lifecycle") if isinstance(meta.get("lifecycle"), dict) else {}
@@ -914,8 +940,10 @@ def probe_contract_acceptance(
                 "formal_schema_errors": schema_errors,
             },
             "custody": {
-                "response_sha256": _hash_bytes(contract_body.encode("utf-8")),
-                "response_bytes": len(contract_body.encode("utf-8")),
+                "response_sha256": _hash_bytes(contract_bytes),
+                "response_bytes": len(contract_bytes),
+                "response_path": custody_path,
+                "response_encoding": "utf-8",
             },
             "integrity_reason": reason,
             "snapshot": contract,
@@ -945,6 +973,7 @@ def main() -> int:
     parser.add_argument("--schema-asset", default=os.getenv("ACCEPTANCE_SCHEMA_ASSET", ""))
     parser.add_argument("--require-contract", action="store_true", default=os.getenv("ACCEPTANCE_REQUIRE_CONTRACT", "") not in ("", "0", "false"))
     parser.add_argument("--output", default=os.getenv("ACCEPTANCE_PROBE_OUTPUT", str(DEFAULT_ARTIFACT)))
+    parser.add_argument("--contract-output", default=os.getenv("ACCEPTANCE_PROBE_CONTRACT_OUTPUT", ""))
     args = parser.parse_args()
 
     backup_dir = Path(args.backup_dir).resolve() if args.backup_dir else None
@@ -996,6 +1025,14 @@ def main() -> int:
     elif runtime_identity.get("status") != "PASS":
         report["contract"] = {"enabled": True, "status": "NOT_RUN", "reason": "runtime_identity_not_verified"}
     else:
+        # The persisted raw contract is the offline custody artifact; keep it as a
+        # lane-specific sibling of the receipt so distinct lanes never overwrite.
+        receipt_output = Path(args.output)
+        contract_output = (
+            Path(args.contract_output)
+            if args.contract_output
+            else receipt_output.with_name(receipt_output.stem + ".contract.json")
+        )
         report["contract"] = probe_contract_acceptance(
             args.base_url,
             args.db_name,
@@ -1007,6 +1044,7 @@ def main() -> int:
             resolution_errors=resolution_errors,
             schema_path=Path(args.schema_asset) if args.schema_asset else None,
             password=args.password,
+            contract_output=contract_output,
         )
     statuses = [
         report["backup"].get("status", "PASS"),

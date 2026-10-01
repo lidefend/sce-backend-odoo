@@ -116,22 +116,63 @@ require_no_database_clients() {
   echo "[acceptance.baseline.backup] database_clients_stopped=true"
 }
 
-require_volume_mount_scope() {
-  local volume="$1" expected_service="$2" container_id project service
-  local -a consumers=()
-  mapfile -t consumers < <(docker ps -aq --filter "volume=$volume")
-  [[ "${#consumers[@]}" -eq 1 ]] || {
-    deny "volume=$volume expected one mount consumer service=$expected_service actual=${#consumers[@]}"
-    return
-  }
-  container_id="${consumers[0]}"
+# Resolve a mount consumer's declared Compose identity as
+# "project<TAB>service<TAB>oneoff<TAB>name"; returns non-zero when the
+# container cannot be inspected.
+mount_consumer_identity() {
+  local container_id="$1" project service oneoff name
   project="$(docker inspect "$container_id" --format '{{index .Config.Labels "com.docker.compose.project"}}')" || return 1
   service="$(docker inspect "$container_id" --format '{{index .Config.Labels "com.docker.compose.service"}}')" || return 1
-  [[ "$project" == "$EXPECTED_PROJECT" && "$service" == "$expected_service" ]] || {
-    deny "volume=$volume mount owner mismatch project=$project service=$service"
+  oneoff="$(docker inspect "$container_id" --format '{{index .Config.Labels "com.docker.compose.oneoff"}}')" || return 1
+  name="$(docker inspect "$container_id" --format '{{.Name}}')" || return 1
+  printf '%s\t%s\t%s\t%s\n' "$project" "$service" "$oneoff" "${name#/}"
+}
+
+# The local acceptance profile declares exactly two owners of the Odoo filestore
+# volume: the Compose carrier service (one-off=false) and the managed acceptance
+# backend container (one-off=true, exact declared name). Exclusive ownership is
+# proven against that declaration, so the acceptance runtime may hold both
+# declared consumers while any third or undeclared carrier still fails closed.
+require_volume_mount_scope() {
+  local volume="$1" expected_service="$2"
+  local container_id identity project service oneoff name consumers=0 carriers=0
+  local -a ids=()
+  mapfile -t ids < <(docker ps -aq --filter "volume=$volume")
+  [[ "${#ids[@]}" -ge 1 ]] || {
+    deny "volume=$volume has no mount consumer service=$expected_service"
     return
   }
-  echo "[acceptance.baseline.precheck] volume=$volume owner_project=$project owner_service=$service"
+  for container_id in "${ids[@]}"; do
+    identity="$(mount_consumer_identity "$container_id")" || return 1
+    IFS=$'\t' read -r project service oneoff name <<<"$identity"
+    [[ "$project" == "$EXPECTED_PROJECT" && "$service" == "$expected_service" ]] || {
+      deny "volume=$volume mount owner mismatch project=$project service=$service"
+      return
+    }
+    if [[ "$expected_service" == "odoo" ]]; then
+      if [[ "$oneoff" == "True" ]]; then
+        [[ "$name" == "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}" ]] || {
+          deny "volume=$volume undeclared one-off mount consumer name=$name"
+          return
+        }
+      else
+        carriers=$((carriers + 1))
+      fi
+    fi
+    consumers=$((consumers + 1))
+  done
+  if [[ "$expected_service" == "odoo" ]]; then
+    [[ "$carriers" -eq 1 ]] || {
+      deny "volume=$volume expected one compose carrier service=$expected_service actual=$carriers"
+      return
+    }
+  else
+    [[ "$consumers" -eq 1 ]] || {
+      deny "volume=$volume expected one mount consumer service=$expected_service actual=$consumers"
+      return
+    }
+  fi
+  echo "[acceptance.baseline.precheck] volume=$volume owner_project=$project owner_service=$service declared_consumers=$consumers"
 }
 
 require_carrier_scope() {

@@ -119,6 +119,14 @@ NON_VISUAL = {
     "actionRule.sourceChannel": "source channel identity",
     "actionRule.permissionConstraints": "server permission evidence",
     "actionRule.entitlementEvaluated": "server authorization proof",
+    "actionRule.authorizationAllowed": (
+        "declared actor-authorization evidence, decoded and consumed by the action-state projection, "
+        "which denies when it is explicitly false"
+    ),
+    "actionRule.businessAvailable": (
+        "declared business-state availability evidence, independent of actor authorization, decoded and "
+        "consumed by the action-state projection, which denies when it is explicitly false"
+    ),
     "sourceContext.context": "data request context",
     "sourceContext.domain": "data request domain",
     "sourceContext.contextRaw": "source context trace",
@@ -148,14 +156,6 @@ NON_VISUAL = {
 }
 
 DECODED_RUNTIME_GAPS = {
-    "actionRule.authorizationAllowed": (
-        "declared so a produced action-rule payload validates against the strict actionRule definition "
-        "(additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it"
-    ),
-    "actionRule.businessAvailable": (
-        "declared so a produced action-rule payload validates against the strict actionRule definition "
-        "(additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it"
-    ),
 }
 
 NON_VISUAL_DEFINITIONS = {

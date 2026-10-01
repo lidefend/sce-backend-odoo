@@ -28,6 +28,7 @@ import { resolveContractV2SelectorStatus } from '../contracts/v2/store';
 import { evaluateNativeModifierValue } from '../modifierEngine';
 import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
+import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -577,8 +578,12 @@ function presentAction(
     : action.modifiers?.readonly;
   const definitionInvisible = evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
   const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
-  const allowed = explicitAuthority && action.allowed === true;
-  const enabled = action.enabled === true && action.disabled !== true
+  // A declared actor-authorization or business-availability deny is honoured
+  // directly, not just through the producer's folded allowed/enabled/disabled.
+  const declaredDenial = declaredActionAuthorityDenial(action);
+  const declaredAuthority = declaredDenial === '';
+  const allowed = declaredAuthority && explicitAuthority && action.allowed === true;
+  const enabled = declaredAuthority && action.enabled === true && action.disabled !== true
     && status?.disabled !== true && !definitionDisabled;
   if (!text(action.actionId) || !text(action.backendIdentity)) {
     throw new Error('CANONICAL_FORM_ACTION_REFERENCE_MISSING');
@@ -594,7 +599,8 @@ function presentAction(
       && status?.visible !== false
       && !(mode === 'readonly' && (action.actionSemantics || normalizeActionSemantics(action))?.kind === 'persistence'),
     enabled: allowed && enabled,
-    reasonCode: text(status?.reasonCode || action.reasonCode) || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
+    reasonCode: text(status?.reasonCode || action.reasonCode) || declaredDenial
+      || (!allowed || !enabled ? 'ACTION_NOT_ALLOWED' : ''),
     visibleProfiles: profiles,
     safety: Object.freeze({ ...(action.actionSafety || {}) }),
     actionRef: action,

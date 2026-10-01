@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -43,6 +44,74 @@ def _load_json(path: Path) -> dict:
     except Exception:
         return {}
     return payload if isinstance(payload, dict) else {}
+
+
+def _resolve_receipt_path(value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def _check_persisted_custody(contract: dict, errors: list[str]) -> None:
+    """Prove the exact live bytes are persisted and re-derivable without the runtime.
+
+    The receipt only carries the parsed contract; this guard re-reads the persisted
+    raw response, recomputes its byte digest, and re-derives the declared semantic
+    digest and lifecycle declaration from those bytes. A re-serialized snapshot can
+    never satisfy this, so custody is reproducible offline instead of asserted.
+    """
+    custody = contract.get("custody")
+    if not isinstance(custody, dict):
+        errors.append("contract.custody must be object when contract passes")
+        return
+    declared_sha = custody.get("response_sha256")
+    if not _sha256_hex(declared_sha):
+        errors.append("contract.custody.response_sha256 must be sha256 when contract passes")
+        return
+    response_bytes = custody.get("response_bytes")
+    if not isinstance(response_bytes, int) or isinstance(response_bytes, bool) or response_bytes <= 0:
+        errors.append("contract.custody.response_bytes must be positive int when contract passes")
+        return
+    path_value = custody.get("response_path")
+    if not isinstance(path_value, str) or not path_value:
+        errors.append("contract.custody.response_path must be non-empty string when contract passes")
+        return
+    path = _resolve_receipt_path(path_value)
+    if not path.is_file():
+        errors.append("contract.custody.response_path must resolve to an existing file when contract passes")
+        return
+    raw = path.read_bytes()
+    if len(raw) != response_bytes:
+        errors.append("contract.custody.response_bytes must equal the persisted byte length")
+    if hashlib.sha256(raw).hexdigest() != declared_sha:
+        errors.append("contract.custody.response_sha256 must equal the persisted byte digest")
+        return
+    try:
+        envelope = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        errors.append("contract.custody.response_path must decode as utf-8 json")
+        return
+    data = envelope.get("data") if isinstance(envelope, dict) else None
+    if not isinstance(data, dict):
+        errors.append("contract.custody.response_path envelope must carry a data object")
+        return
+    if data != contract.get("snapshot"):
+        errors.append("contract.custody.response_path data must equal the embedded snapshot")
+        return
+    approved = contract.get("approved_semantic_sha256")
+    if _sha256_hex(approved) and _semantic_sha256(data) != approved:
+        errors.append("contract.custody.response_path semantics must match approved_semantic_sha256")
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    lifecycle = meta.get("lifecycle") if isinstance(meta.get("lifecycle"), dict) else {}
+    if not lifecycle:
+        errors.append("contract.custody.response_path data must carry meta.lifecycle")
+        return
+    definition = lifecycle.get("definition") if isinstance(lifecycle.get("definition"), dict) else {}
+    integrity = lifecycle.get("integrity") if isinstance(lifecycle.get("integrity"), dict) else {}
+    schema = contract.get("schema_asset") if isinstance(contract.get("schema_asset"), dict) else {}
+    if schema.get("sha256") and definition.get("schemaSha256") != schema.get("sha256"):
+        errors.append("contract.custody.response_path definition.schemaSha256 must equal schema_asset.sha256")
+    if integrity.get("contractSha256") != approved:
+        errors.append("contract.custody.response_path integrity.contractSha256 must equal approved_semantic_sha256")
 
 
 def _string_list(value: object) -> bool:
@@ -270,6 +339,8 @@ def _check_contract(value: object, errors: list[str]) -> str:
         custody = contract.get("custody")
         if not isinstance(custody, dict) or not _sha256_hex(custody.get("response_sha256")):
             errors.append("contract.custody.response_sha256 must be sha256 when contract passes")
+        else:
+            _check_persisted_custody(contract, errors)
         schema = contract.get("schema_asset")
         if not isinstance(schema, dict) or not _sha256_hex(schema.get("sha256")):
             errors.append("contract.schema_asset.sha256 must be sha256 when contract passes")

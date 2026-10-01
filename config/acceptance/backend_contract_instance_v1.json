@@ -41,6 +41,7 @@
     "contract_integrity_self_consistent",
     "contract_schema_digest_bound",
     "contract_formal_schema_valid",
-    "contract_custody_captured"
+    "contract_custody_captured",
+    "contract_custody_bytes_persisted"
   ]
 }

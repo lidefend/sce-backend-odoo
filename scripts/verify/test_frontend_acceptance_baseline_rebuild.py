@@ -41,6 +41,43 @@ def run_library(body: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_volume_scope(
+    rows: dict[str, tuple[str, str, str, str]],
+    volume: str,
+    service: str,
+) -> subprocess.CompletedProcess[str]:
+    table = "\n".join(
+        f'STUB_ROWS[{cid}]="{project}|{svc}|{oneoff}|{name}"'
+        for cid, (project, svc, oneoff, name) in rows.items()
+    )
+    ids = " ".join(rows)
+    return run_library(f"""
+        declare -A STUB_ROWS
+        {table}
+        STUB_IDS="{ids}"
+        docker() {{
+          if [[ "$1" == "ps" ]]; then
+            [[ -n "$STUB_IDS" ]] && printf '%s\\n' $STUB_IDS
+            return 0
+          fi
+          if [[ "$1" == "inspect" ]]; then
+            local fmt="$4" row="${{STUB_ROWS[$2]}}"
+            IFS='|' read -r project service oneoff name <<<"$row"
+            case "$fmt" in
+              *'com.docker.compose.project'*) echo "$project" ;;
+              *'com.docker.compose.service'*) echo "$service" ;;
+              *'com.docker.compose.oneoff'*) echo "$oneoff" ;;
+              *'.Name'*) echo "/$name" ;;
+              *) echo "" ;;
+            esac
+            return 0
+          fi
+          return 0
+        }}
+        require_volume_mount_scope "{volume}" "{service}"
+    """)
+
+
 class FrontendAcceptanceBaselineRebuildContractTest(unittest.TestCase):
     def test_scope_is_exact_and_does_not_accept_overrides(self) -> None:
         for marker in (
@@ -262,6 +299,72 @@ class FrontendAcceptanceBaselineRebuildContractTest(unittest.TestCase):
             SCRIPT,
         )
         self.assertIn("post_action=make_db_ensure_then_fixture_snapshot_and_release_gate", SCRIPT)
+
+    def test_declared_odoo_consumers_are_accepted_together(self) -> None:
+        result = run_volume_scope(
+            {
+                "cid-carrier": ("sc-fe-r2-p1-01", "odoo", "False", "sc-fe-r2-p1-01-odoo-1"),
+                "cid-backend": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance"),
+            },
+            "sc_fe_r2_p1_01_odoo",
+            "odoo",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("declared_consumers=2", result.stdout)
+
+    def test_undeclared_one_off_odoo_consumer_blocks(self) -> None:
+        result = run_volume_scope(
+            {
+                "cid-carrier": ("sc-fe-r2-p1-01", "odoo", "False", "sc-fe-r2-p1-01-odoo-1"),
+                "cid-backend": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance"),
+                "cid-rogue": ("sc-fe-r2-p1-01", "odoo", "True", "sc-rogue-odoo-9"),
+            },
+            "sc_fe_r2_p1_01_odoo",
+            "odoo",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("undeclared one-off mount consumer name=sc-rogue-odoo-9", result.stdout)
+
+    def test_foreign_odoo_mount_owner_blocks(self) -> None:
+        result = run_volume_scope(
+            {
+                "cid-foreign": ("sc-some-other-project", "odoo", "False", "foreign-odoo-1"),
+            },
+            "sc_fe_r2_p1_01_odoo",
+            "odoo",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "mount owner mismatch project=sc-some-other-project service=odoo", result.stdout
+        )
+
+    def test_missing_compose_carrier_blocks(self) -> None:
+        result = run_volume_scope(
+            {
+                "cid-backend": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance"),
+            },
+            "sc_fe_r2_p1_01_odoo",
+            "odoo",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected one compose carrier service=odoo actual=0", result.stdout)
+
+    def test_empty_odoo_mount_scope_blocks(self) -> None:
+        result = run_volume_scope({}, "sc_fe_r2_p1_01_odoo", "odoo")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("has no mount consumer service=odoo", result.stdout)
+
+    def test_database_volume_still_requires_exactly_one_consumer(self) -> None:
+        result = run_volume_scope(
+            {
+                "cid-db": ("sc-fe-r2-p1-01", "db", "", "sc-fe-r2-p1-01-db-1"),
+                "cid-db2": ("sc-fe-r2-p1-01", "db", "", "sc-fe-r2-p1-01-db-2"),
+            },
+            "sc_fe_r2_p1_01_db",
+            "db",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected one mount consumer service=db actual=2", result.stdout)
 
     def test_registered_make_entry_routes_through_governed_operation(self) -> None:
         self.assertIn("acceptance.runtime.baseline_recovery.audit:", MAKE)

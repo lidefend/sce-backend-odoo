@@ -2087,7 +2087,17 @@ verify.backend.contract_lifecycle.authority: guard.prod.forbid
 		scripts/verify/backend_contract_lifecycle_authority_guard.py
 	@python3 addons/smart_core/tests/test_contract_lifecycle.py
 	@python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py
+	@python3 scripts/verify/contract_schema_declaration_sync.py --check
+	@python3 -m unittest scripts.verify.test_contract_schema_declaration_sync
 	@python3 scripts/verify/backend_contract_lifecycle_authority_guard.py
+
+.PHONY: contract.schema.declaration.sync verify.contract.schema.declaration.sync
+contract.schema.declaration.sync: guard.prod.forbid
+	@python3 scripts/verify/contract_schema_declaration_sync.py
+
+verify.contract.schema.declaration.sync: guard.prod.forbid
+	@python3 scripts/verify/contract_schema_declaration_sync.py --check
+	@python3 -m unittest scripts.verify.test_contract_schema_declaration_sync
 
 .PHONY: verify.backend.contract_lifecycle.runtime
 verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-project check-compose-env
