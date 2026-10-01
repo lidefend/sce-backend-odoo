@@ -464,7 +464,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.195 fa1f92993 frontend built once/up5180 entry index-s6eU2T-G.js sha256 3c6000a247bac665a75d3d245bb608b58a4f50d99fe4de5736cc3ca65e119f42. tpl07-1790812902986 19PASS: real child default_get returns draft/adjustment/date, version_no editable; screenshot checked, parent60 cleaned, no version/report saved. L1 v5/typecheck v4 PASS; hydration55, detail regression groups and tool42 PASS/reused per record. Next P1 parent state and actual_start/actual_finish model+native action authority before phase editing; then bounded real version save/approval UI loop. Backend d88433507 unchanged. Overall67/detail.action-state remains contract_gap, no push/merge/targetdeploy.",
+  "next_exact_step": "53.196 P1 3fb12f549 parent plan state/actual dates action-owned; P4 c7f3674b1 + exact helper correction. L1 PASS, approval187 PASS/record; backend c7f3674b1 bound and one governed module upgrade PASS. plan-state-authority22 PASS/rollback verified with final readonly contract across phases. tpl07-1790813184944 browser19 PASS, screenshot state/date controls removed, defaults still editable, parent65 cleaned; frontend fa1f92993 unchanged/no build. Next bounded real version save/readback and approval action UI through existing temp-parent/recovery mechanism; then execution phase editing with valid field contracts. No persistent version created yet. Overall67/detail.action-state remains active gap; no push/merge/targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

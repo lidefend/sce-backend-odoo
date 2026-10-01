@@ -9451,3 +9451,13 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 运行补证：产品候选fa1f9299368e33804f63c7194a17be7db525f479，一次build/up5180成功（child-default-build/preview-up.log），entry `/assets/index-s6eU2T-G.js`、sha256 `3c6000a247bac665a75d3d245bb608b58a4f50d99fe4de5736cc3ca65e119f42`；原候选由工具保留可回退。后端d88433507保持，无模块升级。
 - child-default-browser.log / `tpl07-1790812902986/report.json` **19 PASS**。真实PM32/company8/父计划60/menu507/action655：新增版本请求default_get sc.plan.version，返回revision_type=adjustment/version_date=2026-10-01/state=draft；版本号可实际输入TPL53-UNSAVED-VERSION。已检查截图；errors=[]、forbiddenWrites=[]；finally权威清理父计划60成功，未保存版本/汇报。此前“空状态使新增定义只读”的运行缺口已关闭；写入字段排除由55专项证明，不冒充浏览器保存证明。
 - 下一步仍为父计划state/actual_start/actual_finish的P1动作权威，再完成真实版本保存/审批界面闭环；既有67台账不升级整行。此次批次仅新增行范围定向验证完成，主线集成/目标部署/整体用户交付均未完成。
+
+### 53.196 父计划状态与实际日期回归业务动作权威
+
+- 66c52af91 clean起点，上一轮P0实现和19项页面验证属progress。继续既有run/67台账，只读取计划模型、原生视图和直接测试。P1 smart_construction_core拥有主单执行事实；不在前端、P2或配置层实现规则，不改节点执行记录既有可写边界，不启用field_editable_phases。
+- 产品3fb12f549：ScPlan.state/actual_start/actual_finish为只读、copy=False；创建拒绝真实日期及default_actual_*注入，write只接受进程内业务动作token，布尔伪造token/skip_validation_check无效。原action_start/action_done继续写实际日期；原生主表单状态栏及两个日期readonly=1。无新增字段/intent，无变更业务动作名称。
+- L1 plan-date-authority-iteration及tool-iteration/v2 PASS；verify.payment.approval_state_machine.unit **187 PASS**，plan-date-authority-unit.log及begin/record已登记。专项增加日期注入、默认值/伪造上下文、合法动作写及XML只读断言；后续只改P4运行探针，复用P1结果，不重跑无关前端类型/构建/付款流程。
+- P4 c7f3674b1及dirty单文件business_config_approval_runtime_smoke：沿原plan-state-authority范围，增加日期创建/写入拒绝与权威回读；原最终契约检查加入主单state/actual日期只读断言，保留line_ids能力检查。运行前依据原tpl07-1790812902986实际契约修正fieldInfo.subview读取位置，未将探针结构误判归咎产品。
+- 受管backend.acceptance.up绑定c7f3674b1；acceptance.module.upgrade smart_construction_core一次成功，registry加载终态exit0（plan-date-backend-up/module-upgrade.log），环境复用sc-fe-r2-p1-01/sc_frontend_acceptance/exactfilter及原卷。SC_APPROVAL_RUNTIME_SCOPE=plan-state-authority **22 PASS、ROLLBACK VERIFIED**（plan-date-authority-runtime.log）：草稿/确认/执行/审批中最终契约、拒绝外部日期、正式动作日期回读、真实审批/驳回/重新提交均通过。
+- 前端保持fa1f92993/index-s6eU2T-G.js，无重建。既有未保存版本行浏览器tpl07-1790813184944 **19 PASS**（plan-date-authority-browser.log）；已查看截图，父计划状态仅展示、实际日期为只读文本，版本号仍可填写。errors/forbiddenWrites为空，临时父计划65最终清理，未创建版本持久事实。
+- 本批主单动作事实保护及只读投影范围验收完成；版本真实保存/审批界面闭环和执行阶段编辑仍未完成，detail.action-state整体不升级。下一步沿现有精确临时父计划探针补版本保存回读、动作契约消费及恢复检查；不扩大环境/fixture。无推送、合并、目标部署，整体产品交付仍active。

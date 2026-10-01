@@ -249,6 +249,10 @@ def _plan_node_contract_check(record, expected, phase):
                 if value.get("name") in ("state", "actual_start", "actual_finish"):
                     action_fields.append(value)
                 if value.get("name") in ("line_ids", "version_ids", "report_ids"):
+                    if value.get("name") == "line_ids":
+                        subview = (value.get("fieldInfo") or {}).get("subview")
+                        if isinstance(subview, dict):
+                            policies.append(subview.get("policies", {}))
                     return
             for item in value.values():
                 visit(item)
