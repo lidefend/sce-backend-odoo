@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Reuse a verified main tree; scan candidate occurrences, never just final diff.
+"""Reuse proved ancestor scan coverage, never infer historical proof from a tree.
 
-Local Quick receipts are existing governed evidence. A squash merge can reuse a
-receipt only when its complete tree equals origin/main. Missing evidence or
-changed scanner authority selects full scanning, never a successful skip.
+Legacy Quick receipts remain exact-head evidence but cannot skip scanning.
 """
 from __future__ import annotations
 
-import ast
 import hashlib
 import json
 import os
@@ -17,17 +14,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 AUTHORITY = {
-    'secrets': ('scripts/ci/secret_scan.py',),
+    'secrets': ('scripts/ci/secret_scan.py', 'config/security/legacy_credential_fingerprints.json'),
     'personal': ('scripts/ci/personal_data_scan.py', 'scripts/ci/personal_data_false_positives.json'),
     'history': ('scripts/verify/repository_clean_history_guard.py',
                 'config/security/repository_clean_history_policy.v1.json',
                 'config/security/repository_oversized_blob_exceptions.v1.json',
                 'scripts/ci/personal_data_false_positives.json', '.github/workflows/public_guard.yml'),
 }
-COMMON_AUTHORITY = ('scripts/ops/local_quick_evidence.py',)
+COMMON_AUTHORITY = ('scripts/ops/local_quick_evidence.py', 'scripts/ci/trusted_scan_scope.py',
+                    'scripts/dev/local_dev_frontend_quick.py', 'Makefile')
 SHA = re.compile(r'^[0-9a-f]{40}$')
-# Only this reviewed lookup migration may preserve old scan results.
-EVIDENCE_SELECTION_MIGRATIONS = frozenset([('8c8938e55d5b97306b51429453ffa0f13aff04f6334d2fde1770cff64701b277', 'b3ed3da94595dcd4b078a681c38685b74860468fa993542d89a328e82c187e05')])
+COVERAGE_PROTOCOL = 'quick-scan-occurrences-v1'
+COVERAGE_ENV = 'SC_QUICK_SCAN_COVERAGE_DIR'
+PRODUCER = 'atomic-ci-local-quick-runner-v2'
+
+
+def revision_args(kind: str) -> tuple[str, ...]:
+    return ('HEAD', '--branches', '--tags', '--remotes') if kind == 'history' else ('HEAD', '--all')
 
 
 def git(root: Path, *args: str) -> str:
@@ -73,82 +76,92 @@ def receipt_directories(root: Path, common: Path) -> list[Path]:
     return sorted(directories)
 
 
-def scan_semantics(source: bytes) -> str:
-    """Compare the whole helper except explicitly reviewed evidence-selection code.
-
-    All coverage functions, imports, scanner authority and unclassified globals
-    remain in the comparison, including future dependencies. This is not a
-    general exemption for helper changes. A changed producer is compared in full.
-    """
-    tree = ast.parse(source)
-    selection = {'select_scope', 'receipt_directories', 'scan_semantics',
-                 'make_scan_authority', 'source_at', 'main',
-                 'selection_digest', 'helper_authority_equal'}
-    kept = []
-    for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in selection:
-            continue
-        if isinstance(node, ast.Assign) and all(isinstance(t, ast.Name) and t.id in ('COMMON_AUTHORITY', 'EVIDENCE_SELECTION_MIGRATIONS') for t in node.targets):
-            continue
-        if isinstance(node, ast.Import) and len(node.names) == 1 and node.names[0].name in ('ast', 'hashlib') and node.names[0].asname is None:
-            continue
-        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-            continue
-        kept.append(node)
-    return ast.dump(ast.Module(body=kept, type_ignores=[]), include_attributes=False)
+def authority_digest(root: Path, kind: str, revision: str | None = None) -> str:
+    """Bind the entire execution chain, including added/deleted Make includes."""
+    names = (git(root, 'ls-tree', '-r', '--name-only', '-z', revision).split('\0') if revision else
+             (git(root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z')).split('\0'))
+    paths = set(COMMON_AUTHORITY + AUTHORITY[kind])
+    paths.update(name for name in names if name.startswith('make/') and name.endswith('.mk'))
+    rows = []
+    for relative in sorted(paths):
+        data = source_at(root, revision, relative) if revision else (root / relative).read_bytes()
+        rows.append((relative, hashlib.sha256(data).hexdigest()))
+    return hashlib.sha256(json.dumps(rows, separators=(',', ':')).encode()).hexdigest()
 
 
-def selection_digest(source: bytes) -> str:
-    # Bind all source structure (including excluded selection functions), except
-    # the migration registry itself to avoid a self-referential digest.
-    tree = ast.parse(source)
-    tree.body = [node for node in tree.body if not (
-        isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and
-        t.id == 'EVIDENCE_SELECTION_MIGRATIONS' for t in node.targets))]
-    return hashlib.sha256(ast.dump(tree, include_attributes=False).encode()).hexdigest()
+def ref_snapshot(root: Path, kind: str) -> list[list[str]]:
+    rows = [['HEAD', git(root, 'rev-parse', 'HEAD').strip(), 'commit']]
+    for line in git(root, 'for-each-ref', '--format=%(refname)%00%(objectname)%00%(objecttype)').splitlines():
+        name, oid, object_type = line.split('\0')
+        if kind != 'history' or name.startswith(('refs/heads/', 'refs/tags/', 'refs/remotes/')):
+            rows.append([name, oid, object_type])
+    # --all includes registered worktree HEADs; publication revisions do not.
+    if kind != 'history':
+        worktree = ''
+        for line in git(root, 'worktree', 'list', '--porcelain', '-z').split('\0'):
+            if line.startswith('worktree '): worktree = line[9:]
+            elif line.startswith('HEAD '): rows.append(['worktree:' + worktree, line[5:], 'commit'])
+    return sorted(rows)
 
 
-def helper_authority_equal(old: bytes, current: bytes) -> bool:
-    if old == current:
-        return True
-    # The registry is executable authority too: allow only identical registry
-    # declarations or the exact legacy(no registry)->reviewed current transition.
-    def registry(source):
-        return [ast.dump(n, include_attributes=False) for n in ast.parse(source).body
-                if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and
-                t.id == 'EVIDENCE_SELECTION_MIGRATIONS' for t in n.targets)]
-    previous, present = registry(old), registry(current)
-    expected_registry = registry(('EVIDENCE_SELECTION_MIGRATIONS = frozenset('
-                                  + repr(sorted(EVIDENCE_SELECTION_MIGRATIONS)) + ')').encode())
-    if present != expected_registry:
+def coverage_snapshot(root: Path) -> dict:
+    return {'protocol': COVERAGE_PROTOCOL, 'scanners': {
+        kind: {'authority': authority_digest(root, kind), 'refs': ref_snapshot(root, kind),
+               'revisions': list(revision_args(kind))} for kind in AUTHORITY}}
+
+
+def valid_coverage(root: Path, coverage: object, head: str) -> bool:
+    if not isinstance(coverage, dict) or set(coverage) != {'protocol', 'scanners'} or coverage['protocol'] != COVERAGE_PROTOCOL:
         return False
-    digests = (selection_digest(old), selection_digest(current))
-    if previous == present and digests[0] == digests[1]:
-        return True
-    return (not previous and len(present) == 1
-            and digests in EVIDENCE_SELECTION_MIGRATIONS
-            and scan_semantics(old) == scan_semantics(current))
+    scanners = coverage['scanners']
+    if not isinstance(scanners, dict) or set(scanners) != set(AUTHORITY): return False
+    for kind, row in scanners.items():
+        if not isinstance(row, dict) or set(row) != {'authority', 'refs', 'revisions'}: return False
+        if row['revisions'] != list(revision_args(kind)) or row['authority'] != authority_digest(root, kind, head): return False
+        refs = row['refs']
+        if not isinstance(refs, list) or not refs or ['HEAD', head, 'commit'] not in refs: return False
+        if any(not isinstance(ref, list) or len(ref) != 3 or not all(isinstance(v, str) for v in ref)
+               or not SHA.fullmatch(ref[1]) for ref in refs): return False
+        if len({ref[0] for ref in refs}) != len(refs) or sorted(refs) != refs: return False
+        for name, oid, typ in refs:
+            if name != 'HEAD' and not name.startswith(('refs/', 'worktree:')): return False
+            if kind == 'history' and name != 'HEAD' and not name.startswith(('refs/heads/', 'refs/tags/', 'refs/remotes/')): return False
+            if git(root, 'cat-file', '-t', oid).strip() != typ: return False
+    return True
 
 
-def make_scan_authority(source: bytes) -> bytes:
-    """Ignore only the known daily L1 rule, which Quick does not execute.
+def equivalent_coverage(root: Path, saved: dict, current: dict) -> bool:
+    """Ref aliases may change without changing any scanned reachable object.
 
-    Keep every other recipe, dependency, variable, include and condition exactly.
-    Unknown/duplicate/dynamic L1 definitions fail closed; no candidate Make runs.
+    Deleting unique reachability is deliberately not equivalent: exception
+    registry staleness is also part of the successful scan result.
     """
-    lines = source.decode().splitlines(keepends=True)
-    starts = [i for i, line in enumerate(lines) if line.startswith('ci.local.iteration:')]
-    if len(starts) != 1:
-        raise ValueError('one static daily iteration rule required')
-    start = starts[0]
-    if not re.fullmatch(r'ci\.local\.iteration: [A-Za-z0-9_. -]+\n?', lines[start]):
-        raise ValueError('dynamic daily iteration prerequisites')
-    end = start + 1
-    while end < len(lines) and (lines[end].startswith('\t') or not lines[end].strip()):
-        end += 1
-    # Do not exempt a newly introduced Quick -> daily-iteration dependency:
-    # every other line, including the Quick dependency list, stays compared.
-    return ''.join(lines[:start] + ['ci.local.iteration: <daily-only>\n'] + lines[end:]).encode()
+    if saved['protocol'] != current['protocol']: return False
+    for kind in AUTHORITY:
+        old, new = saved['scanners'][kind], current['scanners'][kind]
+        if old['authority'] != new['authority'] or old['revisions'] != new['revisions']: return False
+        def objects(row):
+            tips = sorted({ref[1] for ref in row['refs']})
+            return set(git(root, 'rev-list', '--objects', '--no-object-names', *tips, '--').splitlines())
+        if objects(old) != objects(new): return False
+    return True
+
+
+def record_scan_success(root: Path, kind: str, base: str | None = None) -> None:
+    """Optional per-run handshake; standalone scans create no persistent evidence."""
+    directory = os.environ.get(COVERAGE_ENV)
+    if not directory: return
+    folder = Path(directory)
+    launch = json.loads((folder / 'launch.json').read_text())
+    if str(root.resolve()) != launch['root']: return  # isolated scanner unit fixtures
+    expected = launch['coverage']['scanners'][kind]
+    actual = coverage_snapshot(root)['scanners'][kind]
+    if actual != expected or git(root, 'rev-parse', 'HEAD').strip() != launch['head']:
+        raise ValueError('scan coverage identity changed')
+    proof = {'protocol': COVERAGE_PROTOCOL, 'kind': kind, 'head': launch['head'], 'tree': launch['tree'], 'coverage': actual, 'mode': 'incremental' if base else 'full', 'base': base}
+    temporary = folder / (kind + '.tmp')
+    temporary.write_text(json.dumps(proof, sort_keys=True))
+    temporary.replace(folder / (kind + '.json'))
 
 
 def source_at(root: Path, base: str, relative: str) -> bytes:
@@ -156,81 +169,89 @@ def source_at(root: Path, base: str, relative: str) -> bytes:
 
 
 def select_scope(root: Path, kind: str) -> Scope:
-    if kind not in AUTHORITY:
-        raise ValueError('unknown scan kind')
-    if os.environ.get('GITHUB_EVENT_NAME') == 'schedule':
-        return Scope(None, 'scheduled_full_audit')
+    if kind not in AUTHORITY: raise ValueError('unknown scan kind')
+    if os.environ.get('GITHUB_EVENT_NAME') == 'schedule': return Scope(None, 'scheduled_full_audit')
     try:
-        remote = git(root, 'remote', 'get-url', 'origin').strip()
-        if remote not in ('https://github.com/lidefend/sce-backend-odoo.git',
-                           'git@github.com:lidefend/sce-backend-odoo.git'):
+        if git(root, 'remote', 'get-url', 'origin').strip() not in (
+            'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lidefend/sce-backend-odoo.git'):
             return Scope(None, 'untrusted_origin')
-        base = git(root, 'rev-parse', '--verify', 'refs/remotes/origin/main^{commit}').strip()
-        git(root, 'merge-base', '--is-ancestor', base, 'HEAD')
-        tree = git(root, 'rev-parse', f'{base}^{{tree}}').strip()
-        directory = Path(git(root, 'rev-parse', '--path-format=absolute', '--git-common-dir').strip())
-        evidence = None
-        for path in sorted(path for folder in receipt_directories(root, directory) for path in folder.glob('*.json')):
-            try:
-                if path.is_symlink() or path.parent.resolve() != path.parent:
-                    continue
-                payload = json.loads(path.read_text())
-                head = payload['head']
-                if not isinstance(head, str) or not SHA.fullmatch(head) or path.stem != head:
-                    continue
-                expected = dict(schema_version=2, suite='ci.local.quick',
-                                producer='atomic-ci-local-quick-runner-v1', head=head, tree=tree)
-                if payload != expected or git(root, 'rev-parse', f'{head}^{{tree}}').strip() != tree:
-                    continue
-                evidence = str(path)
-                break
-            except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
-                continue
-        if not evidence:
-            return Scope(None, 'main_tree_evidence_missing')
-        try:
-            if not helper_authority_equal(source_at(root, base, 'scripts/ci/trusted_scan_scope.py'),
-                                          (root / 'scripts/ci/trusted_scan_scope.py').read_bytes()):
-                return Scope(None, 'authority_changed:scripts/ci/trusted_scan_scope.py')
-        except (OSError, ValueError, SyntaxError, subprocess.CalledProcessError):
-            return Scope(None, 'authority_unprovable:scripts/ci/trusted_scan_scope.py')
-        for relative, projection in (('make/ci.mk', make_scan_authority),):
-            try:
-                if projection(source_at(root, base, relative)) != projection((root / relative).read_bytes()):
-                    return Scope(None, f'authority_changed:{relative}')
-            except (OSError, ValueError, SyntaxError, subprocess.CalledProcessError):
-                return Scope(None, f'authority_unprovable:{relative}')
-        for relative in COMMON_AUTHORITY + AUTHORITY[kind]:
-            old = subprocess.run(['git', '-C', str(root), 'show', f'{base}:{relative}'],
-                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-            path = root / relative
-            if old.returncode or not path.is_file() or path.read_bytes() != old.stdout:
-                return Scope(None, f'authority_changed:{relative}')
-        return Scope(base, 'verified_main_tree_unchanged_authority', evidence)
-    except (OSError, subprocess.CalledProcessError):
-        return Scope(None, 'main_identity_unavailable_or_not_ancestor')
+        main = git(root, 'rev-parse', '--verify', 'refs/remotes/origin/main^{commit}').strip()
+        git(root, 'merge-base', '--is-ancestor', main, 'HEAD')
+        if git(root, 'rev-parse', '--is-shallow-repository').strip() != 'false':
+            return Scope(None, 'shallow_history')
+        for _, oid, _ in ref_snapshot(root, kind):
+            try: git(root, 'cat-file', '-e', oid + '^{commit}')
+            except subprocess.CalledProcessError: return Scope(None, 'noncommit_ref_requires_full')
+        order = {head: index for index, head in enumerate(git(root, 'rev-list', '--topo-order', 'HEAD').splitlines())}
+        common = Path(git(root, 'rev-parse', '--path-format=absolute', '--git-common-dir').strip())
+        candidates = []
+        for folder in receipt_directories(root, common):
+            for path in folder.glob('*.json'):
+                try:
+                    if path.is_symlink() or path.parent.resolve() != path.parent: continue
+                    payload = json.loads(path.read_text())
+                    if not isinstance(payload, dict) or set(payload) != {'schema_version', 'suite', 'producer', 'head', 'tree', 'coverage'}: continue
+                    head = payload['head']
+                    if not isinstance(head, str) or not SHA.fullmatch(head) or path.stem != head or head not in order: continue
+                    if payload['schema_version'] != 3 or payload['suite'] != 'ci.local.quick' or payload['producer'] != PRODUCER: continue
+                    if payload['tree'] != git(root, 'rev-parse', head + '^{tree}').strip(): continue
+                    if not valid_coverage(root, payload['coverage'], head): continue
+                    candidates.append((order[head], str(path), head, payload))
+                except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError): continue
+        if not candidates: return Scope(None, 'verified_coverage_receipt_missing')
+        current = authority_digest(root, kind)
+        for _, path, base, payload in sorted(candidates):
+            if payload['coverage']['scanners'][kind]['authority'] != current: continue
+            # Endpoint equality cannot hide an intervening authority modification.
+            commits = git(root, 'rev-list', '--full-history', base + '..HEAD', '--', *COMMON_AUTHORITY, *AUTHORITY[kind], 'make/').splitlines()
+            if any(authority_digest(root, kind, commit) != current for commit in commits): continue
+            return Scope(base, 'verified_ancestor_coverage_unchanged_authority', path)
+        return Scope(None, 'scan_authority_changed')
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return Scope(None, 'coverage_identity_unprovable')
 
 
-def candidate_blobs(root: Path, base: str) -> list[tuple[str, str, int]]:
-    """All added/modified occurrences in every candidate commit, including deletes later.
+def candidate_blobs(root: Path, base: str | None, revisions: tuple[str, ...] = ('HEAD',)) -> list[tuple[str, str, int]]:
+    """Every committed path/blob occurrence; merges inspect each parent.
 
-    Enumerating commit diffs rather than only newly allocated objects also catches
-    an existing blob moved into a path with stricter rules or different exemptions.
+    Raw NUL-delimited diffs avoid one Git process per commit and preserve paths,
+    including old blobs reused at new paths and files deleted in later commits.
     """
-    rows: set[tuple[str, str, int]] = set()
-    for commit in git(root, 'rev-list', '--reverse', f'{base}..HEAD').splitlines():
-        paths = git(root, 'diff-tree', '--root', '-m', '--no-commit-id', '--no-renames',
-                    '--name-only', '-r', '-z', '--diff-filter=ACMRT', commit).split('\0')
-        paths = sorted(set(filter(None, paths)))
-        for start in range(0, len(paths), 100):
-            for row in git(root, 'ls-tree', '-r', '-l', '-z', commit, '--', *paths[start:start+100]).split('\0'):
-                if not row:
-                    continue
-                metadata, path = row.split('\t', 1)
-                _mode, kind, oid, size = metadata.split()
-                if kind == 'blob':
-                    rows.add((oid, path, int(size)))
-    return sorted(rows)
+    if '--all' in revisions or '--tags' in revisions:
+        kind = 'secrets' if '--all' in revisions else 'history'
+        for name, oid, _ in ref_snapshot(root, kind):
+            result = subprocess.run(['git', '-C', str(root), 'cat-file', '-e', oid + '^{commit}'],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if result.returncode:
+                raise ValueError('unsupported noncommit scan reference: ' + name)
+    arguments = [*revisions, *(['^' + base] if base else [])]
+    raw = git(root, 'log', '--raw', '-z', '--format=', '--no-abbrev', '--no-renames', '--root', '-m',
+              '--diff-filter=ACMRT', *arguments, '--')
+    tokens = raw.split('\0')
+    occurrences = set()
+    index = 0
+    while index < len(tokens):
+        header = tokens[index].lstrip('\n')
+        index += 1
+        if not header: continue
+        match = re.fullmatch(r':([0-7]{6}) ([0-7]{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) ([ACMRT])', header)
+        if not match or index >= len(tokens) or not tokens[index]: raise ValueError('malformed occurrence diff')
+        path = tokens[index]; index += 1
+        if match[2] == '160000': continue  # submodule commit, not a blob
+        occurrences.add((match[4], path))
+    if not occurrences: return []
+    oid_set = {oid for oid, _ in occurrences}
+    oids = sorted(oid_set)
+    result = subprocess.run(['git', '-C', str(root), 'cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'],
+                            input='\n'.join(oids) + '\n', text=True, capture_output=True, check=True)
+    sizes = {}
+    for row in result.stdout.splitlines():
+        parts = row.split()
+        if len(parts) != 3 or parts[0] not in oid_set or parts[1] != 'blob' or not parts[2].isdigit():
+            raise ValueError('unreadable occurrence blob')
+        sizes[parts[0]] = int(parts[2])
+    if set(sizes) != set(oids): raise ValueError('incomplete blob metadata')
+    return sorted((oid, path, sizes[oid]) for oid, path in occurrences)
 
 
 def main() -> int:

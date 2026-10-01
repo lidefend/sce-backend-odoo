@@ -140,6 +140,24 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("SECRET_MATERIAL", result.stderr)
 
+    def test_trusted_base_covers_new_public_side_branch(self) -> None:
+        self.git("checkout", "-b", "side")
+        self.write("unsafe.txt", "ghp_" + "A" * 36)
+        self.commit("side secret")
+        self.git("checkout", "main")
+        result = self.run_guard("--trusted-base", self.base)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SECRET_MATERIAL", result.stderr)
+
+    def test_incremental_still_checks_stale_oversized_exception(self) -> None:
+        self.register_oversized_blob_exception(path="contracts/generated/missing.json", blob_id="a" * 40)
+        base = self.commit("stale registry baseline")
+        self.write("change.txt", "clean")
+        self.commit("candidate")
+        result = self.run_guard("--trusted-base", base)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("RH021", result.stderr)
+
     def test_trusted_base_rejects_invalid_or_unavailable_identity(self) -> None:
         for value in ("abc123", "f" * 40):
             with self.subTest(value=value):

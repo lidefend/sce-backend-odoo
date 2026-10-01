@@ -165,7 +165,7 @@ def worktree_findings(base: str | None = None) -> list[Finding]:
 
 def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
     if base:
-        return trusted_scan_scope.candidate_blobs(ROOT, base)
+        return trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.revision_args('personal'))
     if not (ROOT / ".git").exists():
         return []
     rev_list = git("rev-list", "--objects", "--all", check=False)
@@ -187,7 +187,8 @@ def history_objects(base: str | None = None) -> list[tuple[str, str, int]]:
         parts = line.split(" ", 3)
         if len(parts) == 4 and parts[1] == "blob" and parts[2].isdigit() and parts[3]:
             objects.append((parts[0], parts[3], int(parts[2])))
-    return objects
+    objects.extend(trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.revision_args('personal')))
+    return sorted(set(objects))
 
 
 def read_blob(blob_id: str) -> bytes:
@@ -261,6 +262,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         print("personal_data_values_recorded=false", file=sys.stderr)
         return 1
+    if args.scope == "all":
+        trusted_scan_scope.record_scan_success(ROOT, "personal", scope.base)
     print(
         f"[personal_data_scan] PASS confirmed_matches=0 "
         f"suppressed_false_positives={suppressed} values_recorded=false"

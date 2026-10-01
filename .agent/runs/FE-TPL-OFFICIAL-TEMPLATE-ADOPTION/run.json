@@ -32,7 +32,12 @@
     "frontend/packages/schema/src/actionSemantics.ts",
     "addons/smart_construction_scene/profiles/scene_registry_content.py",
     "contracts/generated/contract_structure_fingerprint.json",
-    "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml"
+    "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml",
+    "scripts/ci/trusted_scan_scope.py",
+    "scripts/ci/test_trusted_scan_scope.py",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ci/secret_scan.py",
+    "scripts/ci/personal_data_scan.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -920,7 +925,7 @@
     "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Root receive final C P4 review, freeze.prepare and exact candidate commit/Quick as selected Github lane, then publish and inspect current-head required checks. No deployment.",
+  "next_exact_step": "Implement versioned scan coverage and exact proof lifecycle, L1 and nonzero scoped tests, independent review; root owns next Quick",
   "completion": {
     "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
@@ -3900,6 +3905,81 @@
       },
       "invalidation": "New P4 candidate requires root freeze/review and current-head remote checks. b485 remote successes and prior Quick are historical and not transferred. Product runtime/build inputs unchanged so no rebuild/browser needed for these P4-only changes.",
       "writer": "root; A returned sole writer after targeted checks; no A commit/remote/runtime"
+    },
+    "versioned_scan_coverage": {
+      "layer": "P4",
+      "source_head": "703f551991976dfda0e34a99eeede825a75e6b49",
+      "scope": [
+        "scripts/ci/trusted_scan_scope.py",
+        "scripts/ci/test_trusted_scan_scope.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py",
+        "scripts/ci/secret_scan.py",
+        "scripts/ci/personal_data_scan.py",
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/verify/test_repository_clean_history_guard.py"
+      ],
+      "status": "targeted_validation_passed_waiting_final_independent_review",
+      "authority": "Owner authorizes bounded versioned scan coverage reuse; root/C/B design reviewed",
+      "plan": "schema3 Quick actual scanner proofs + exact authority and ref snapshots; legacy schema2 exact Quick verification only, no history reuse. Same scanner ref scope minus ancestor coverage, all commit path/blob occurrences, global history checks and RH021 preserved. No migration exemption.",
+      "validation": {
+        "stage": "703f551991976dfda0e34a99eeede825a75e6b49 + explicit 8 P4 files and this run dirty",
+        "L1": {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-iteration-noncommit-final.log"
+        },
+        "L2": [
+          {
+            "command": "make security.online_capture.unit",
+            "status": "passed",
+            "counts": {
+              "scope": 30,
+              "secret": 10
+            },
+            "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-secret-unit-noncommit.log"
+          },
+          {
+            "command": "make security.personal_data.unit",
+            "status": "passed",
+            "count": 6,
+            "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-personal-unit-noncommit.log"
+          },
+          {
+            "command": "make verify.repository.clean_history.unit",
+            "status": "passed",
+            "count": 37,
+            "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-history-unit-noncommit.log"
+          },
+          {
+            "command": "make verify.branch.governance.consistency",
+            "status": "passed",
+            "counts": {
+              "producer": 17,
+              "branch_governance": 16
+            },
+            "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-producer-unit-final.log"
+          }
+        ],
+        "selection": {
+          "command": "python3 scripts/ci/trusted_scan_scope.py",
+          "status": "passed",
+          "observed": "All three kinds full / verified_coverage_receipt_missing; schema2 b485 not coverage; cancelled703f not selected",
+          "log": "artifacts/frontend-web-fix-20260928/final-integration/scan-coverage-actual-selection.log"
+        },
+        "reuse": "Producer17+branch16 retained after final noncommit change: only occurrence enumeration refuses unsupported refs; producer signing/equivalence/Make-option logic and its direct test inputs unchanged. Three scanner targets re-run after this changed dependency. No product/build/runtime inputs changed; existing runtime evidence unaffected.",
+        "not_run": [
+          "actual repository scans",
+          "Quick",
+          "remote CI",
+          "runtime/build/browser/DB"
+        ]
+      },
+      "cancelled_quick": "703f Quick root cancelled exit130; no PASS/receipt; b485 successful schema2 historical only",
+      "runtime": "No business runtime/DB/environment changes. Linked existing env passthrough reused; no wrapper changes planned.",
+      "proof_boundary": "Schema3 requires three actual successful complete scanner proofs, exact clean HEAD and strict in-run authority/ref snapshots. Exact-head verification allows ref aliases only when full per-scope reachable object sets remain equal. Ancestor delta covers respective full ref scopes minus base ancestors; schema2 never authorizes history skip. New candidate remote checks remain required.",
+      "next_exact_step": "B/C final source review, root freeze preparation/commit, one first-protocol full Quick; do not inherit schema2 coverage or old remote checks.",
+      "noncommit_boundary": "Full three scanner main entrypoints abort on blob/tree ref targets (explicit unsupported noncommit reference), covered with actual temporary Git refs. No unsupported-ref PASS or proof. No pathless blob exception semantics introduced."
     }
   },
   "validation_cadence_correction": {

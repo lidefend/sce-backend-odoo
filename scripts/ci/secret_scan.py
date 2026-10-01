@@ -164,7 +164,7 @@ def is_scanned_path(path: str) -> bool:
 def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
     if base:
         paths: dict[str, list[str]] = {}
-        for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, base):
+        for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, base, trusted_scan_scope.revision_args('secrets')):
             if size <= 8 * 1024 * 1024 and is_scanned_path(path):
                 paths.setdefault(oid, []).append(path)
         return paths
@@ -201,7 +201,10 @@ def history_blob_paths(base: str | None = None) -> dict[str, list[str]]:
         if int(parts[2]) > 8 * 1024 * 1024 or not is_scanned_path(parts[3]):
             continue
         paths.setdefault(parts[0], []).append(parts[3])
-    return paths
+    for oid, path, size in trusted_scan_scope.candidate_blobs(ROOT, None, trusted_scan_scope.revision_args('secrets')):
+        if size <= 8 * 1024 * 1024 and is_scanned_path(path):
+            paths.setdefault(oid, []).append(path)
+    return {oid: sorted(set(names)) for oid, names in paths.items()}
 
 
 def history_findings(base: str | None = None) -> list[str]:
@@ -417,6 +420,8 @@ def main(argv: list[str] | None = None) -> int:
         for item in findings:
             print(item, file=sys.stderr)
         return 1
+    if args.scope == "all":
+        trusted_scan_scope.record_scan_success(ROOT, "secrets", scope.base)
     print(f"[OK] high-confidence secret scan passed scope={args.scope} confirmed_matches=0")
     return 0
 

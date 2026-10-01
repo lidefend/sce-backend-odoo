@@ -28,6 +28,7 @@ class TrustedScopeTests(unittest.TestCase):
         ambient_event.start()
         self.addCleanup(ambient_event.stop)
         os.environ.pop('GITHUB_EVENT_NAME', None)
+        os.environ.pop(scope.COVERAGE_ENV, None)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
@@ -45,8 +46,8 @@ class TrustedScopeTests(unittest.TestCase):
         self.git('update-ref', 'refs/remotes/origin/main', self.base)
         self.receipt = self.root / '.git/codex/evidence/ci.local.quick' / (self.base + '.json')
         self.receipt.parent.mkdir(parents=True)
-        self.receipt.write_text(json.dumps(dict(schema_version=2, suite='ci.local.quick',
-            producer='atomic-ci-local-quick-runner-v1', head=self.base,
+        self.receipt.write_text(json.dumps(dict(schema_version=3, suite='ci.local.quick',
+            producer=scope.PRODUCER, head=self.base, coverage=scope.coverage_snapshot(self.root),
             tree=self.git('rev-parse', 'HEAD^{tree}').strip())))
         self.git('switch', '-c', 'fix/scoped')
 
@@ -61,6 +62,21 @@ class TrustedScopeTests(unittest.TestCase):
     def commit(self, message):
         self.git('add', '--all')
         self.git('commit', '-m', message)
+
+    def test_scanner_proof_requires_complete_actual_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            launch = {'root': str(self.root), 'head': self.git('rev-parse', 'HEAD').strip(),
+                      'tree': self.git('rev-parse', 'HEAD^{tree}').strip(), 'coverage': scope.coverage_snapshot(self.root)}
+            (folder / 'launch.json').write_text(json.dumps(launch))
+            with mock.patch.dict(os.environ, {scope.COVERAGE_ENV: directory}), mock.patch.object(secrets, 'ROOT', self.root), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(secrets.main(['--scope', 'worktree']), 0)
+                self.assertFalse((folder / 'secrets.json').exists())
+                self.assertEqual(secrets.main(['--scope', 'all']), 0)
+                proof = json.loads((folder / 'secrets.json').read_text())
+                self.assertEqual(proof['mode'], 'full')
+                self.assertIsNone(proof['base'])
+                self.assertEqual(proof['coverage'], launch['coverage']['scanners']['secrets'])
 
     def test_verified_main_ignores_unrelated_product_change(self):
         self.write('product.py', 'product = True\n')
@@ -94,62 +110,55 @@ class TrustedScopeTests(unittest.TestCase):
         self.receipt.symlink_to(fake)
         self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
 
-    def test_unrelated_daily_rule_change_reuses_but_scan_changes_invalidate(self):
-        path = self.root / 'make/ci.mk';original = path.read_text()
-        path.write_text(original.replace('ci.local.iteration: guard.prod.forbid',
-                                        'ci.local.iteration: guard.prod.forbid agent.run.resume'))
-        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
-        for changed in (original.replace('--scope all', '--scope worktree'),
-                        original + 'SCANNER_MODE = unsafe\n',
-                        original + 'ci.local.iteration: second\n',
-                        original.replace('ci.local.iteration: guard.prod.forbid', 'ci.local.iteration: $(DYNAMIC)'),
-                        original + 'ci.local.quick.run: ci.local.iteration\n'):
+    def test_make_execution_authority_changes_invalidate(self):
+        path = self.root / 'make/ci.mk'; original = path.read_text()
+        for changed in (original + 'SCANNER_MODE = unsafe\n',
+                        original.replace('--scope all', '--scope worktree')):
             path.write_text(changed)
             self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
-
-    def test_unreviewed_selection_refactor_and_coverage_changes_invalidate(self):
-        path = self.root / 'scripts/ci/trusted_scan_scope.py';original = path.read_text()
-        path.write_text(original.replace("return Scope(None, 'main_tree_evidence_missing')",
-                                         "return Scope(None, 'evidence_lookup_missing')"))
+        path.write_text(original)
+        self.write('make/new-include.mk', 'injected = true\n')
         self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
-        for changed in (original.replace("'--reverse'", "'--first-parent'"),
-                        original.replace("'--no-renames', '--name-only'", "'--name-only'"),
-                        original + '\nUNKNOWN_SCAN_DEPENDENCY = True\n',
-                        original + '\ndef new_scan_helper():\n    return True\n'):
-            path.write_text(changed)
-            self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
 
-    def test_trust_checks_and_registry_changes_invalidate(self):
-        path = self.root / 'scripts/ci/trusted_scan_scope.py';original = path.read_text()
-        for changed in (
-            original.replace("git(root, 'merge-base', '--is-ancestor', base, 'HEAD')", 'pass'),
-            original.replace('payload != expected', 'False'),
-            original.replace('owner != common.resolve()', 'False'),
-            original.replace("COMMON_AUTHORITY = ('scripts/ops/local_quick_evidence.py',)", 'COMMON_AUTHORITY = ()'),
-            original.replace('EVIDENCE_SELECTION_MIGRATIONS = frozenset(', 'EVIDENCE_SELECTION_MIGRATIONS = set('),
-        ):
-            path.write_text(changed)
+    def test_selector_and_producer_changes_invalidate(self):
+        for relative in scope.COMMON_AUTHORITY:
+            path = self.root / relative; original = path.read_text()
+            path.write_text(original + '\n# authority changed\n')
             self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+            path.write_text(original)
 
-    def test_exact_reviewed_legacy_transition_not_future_refactors(self):
-        import re
-        current = Path(scope.__file__).read_text()
-        old = re.sub(r'^EVIDENCE_SELECTION_MIGRATIONS = .*\n', '', current, flags=re.M)
-        old = old.replace("'main_tree_evidence_missing'", "'legacy_lookup_missing'")
-        pair = (scope.selection_digest(old.encode()), scope.selection_digest(current.encode()))
-        current = re.sub(r'^EVIDENCE_SELECTION_MIGRATIONS = .*$',
-                         'EVIDENCE_SELECTION_MIGRATIONS = frozenset(' + repr([pair]) + ')', current, flags=re.M)
-        with mock.patch.object(scope, 'EVIDENCE_SELECTION_MIGRATIONS', frozenset([pair])):
-            self.assertTrue(scope.helper_authority_equal(old.encode(), current.encode()))
-            changed = current.replace("git(root, 'merge-base', '--is-ancestor', base, 'HEAD')", 'pass')
-            self.assertFalse(scope.helper_authority_equal(old.encode(), changed.encode()))
+    def test_legacy_schema2_is_not_coverage(self):
+        payload = json.loads(self.receipt.read_text())
+        payload.pop('coverage'); payload.update(schema_version=2, producer='atomic-ci-local-quick-runner-v1')
+        self.receipt.write_text(json.dumps(payload))
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        self.assertIsNone(scope.select_scope(self.root, 'history').base)
+
+    def test_closest_valid_ancestor_not_filename_or_modification_time(self):
+        self.write('new.txt', 'safe'); self.commit('closer ancestor')
+        closer = self.git('rev-parse', 'HEAD').strip()
+        path = self.receipt.with_name(closer + '.json')
+        path.write_text(json.dumps(dict(schema_version=3, suite='ci.local.quick', producer=scope.PRODUCER,
+            head=closer, tree=self.git('rev-parse', 'HEAD^{tree}').strip(), coverage=scope.coverage_snapshot(self.root))))
+        self.write('next.txt', 'next'); self.commit('candidate')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, closer)
+        payload = json.loads(path.read_text()); payload['producer'] = 'forged'
+        path.write_text(json.dumps(payload))
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, self.base)
+
+    def test_intermediate_authority_change_then_restore_is_full(self):
+        path = self.root / 'scripts/ci/secret_scan.py'; original = path.read_text()
+        path.write_text('weakened'); self.commit('change scanner')
+        path.write_text(original); self.commit('restore scanner')
+        self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
+        self.assertEqual(scope.select_scope(self.root, 'personal').base, self.base)
 
     def test_missing_or_tampered_receipt_falls_back(self):
         for payload in ('{}', '{broken', '[]'):
             self.receipt.write_text(payload)
             self.assertIsNone(scope.select_scope(self.root, 'secrets').base)
         self.receipt.unlink()
-        self.assertEqual(scope.select_scope(self.root, 'secrets').reason, 'main_tree_evidence_missing')
+        self.assertEqual(scope.select_scope(self.root, 'secrets').reason, 'verified_coverage_receipt_missing')
 
     def test_wrong_receipt_tree_falls_back(self):
         payload = json.loads(self.receipt.read_text());payload['tree'] = 'a' * 40
@@ -187,7 +196,7 @@ class TrustedScopeTests(unittest.TestCase):
         self.git('commit', '--allow-empty', '-m', 'squash equivalent tree')
         merged = self.git('rev-parse', 'HEAD').strip()
         self.git('update-ref', 'refs/remotes/origin/main', merged)
-        self.assertEqual(scope.select_scope(self.root, 'secrets').base, merged)
+        self.assertEqual(scope.select_scope(self.root, 'secrets').base, source)
         self.assertEqual(json.loads(self.receipt.read_text())['head'], source)
 
     def test_intermediate_deleted_content_is_scanned(self):
@@ -260,8 +269,75 @@ class TrustedScopeTests(unittest.TestCase):
                 with mock.patch.object(history, 'load_policy', return_value=rules), mock.patch.object(history, 'incremental_authority_changed', return_value=True), mock.patch.object(history, 'object_rows', wraps=history.object_rows) as full_scan, mock.patch.object(scope, 'candidate_blobs', wraps=scope.candidate_blobs) as incremental, contextlib.redirect_stdout(io.StringIO()):
                     self.assertEqual(history.main(args), 0)
                     full_scan.assert_called_once()
-                    incremental.assert_not_called()
+                    self.assertTrue(all(call.args[1] is None for call in incremental.call_args_list))
 
+
+    def test_nonancestor_same_tree_receipt_never_proves_history(self):
+        self.git('switch', '-c', 'side', self.base); self.git('commit', '--allow-empty', '-m', 'side')
+        side = self.git('rev-parse', 'HEAD').strip()
+        payload = dict(schema_version=3, suite='ci.local.quick', producer=scope.PRODUCER,
+            head=side, tree=self.git('rev-parse', 'HEAD^{tree}').strip(), coverage=scope.coverage_snapshot(self.root))
+        self.receipt.unlink(); self.receipt.with_name(side + '.json').write_text(json.dumps(payload))
+        self.git('switch', 'fix/scoped')
+        self.assertIsNone(scope.select_scope(self.root, 'history').base)
+
+    def test_public_sidebranch_and_stash_scope_occurrences(self):
+        self.git('switch', '-c', 'side', self.base)
+        self.write('side secret.txt', 'gh' + 'p_' + 'S' * 36); self.commit('add side sensitive')
+        self.git('rm', 'side secret.txt'); self.commit('remove side sensitive')
+        self.git('tag', 'side-tag')
+        self.git('switch', 'fix/scoped')
+        for kind in scope.AUTHORITY:
+            rows = scope.candidate_blobs(self.root, self.base, scope.revision_args(kind))
+            self.assertIn('side secret.txt', [row[1] for row in rows])
+        with mock.patch.object(secrets, 'ROOT', self.root):
+            self.assertTrue(any('side secret.txt@' in row for row in secrets.history_findings(self.base)))
+        self.write('stash-only.txt', 'safe stash'); self.git('add', 'stash-only.txt'); self.git('stash', 'push')
+        self.assertIn('stash-only.txt', [row[1] for row in scope.candidate_blobs(self.root, self.base, scope.revision_args('secrets'))])
+        self.assertNotIn('stash-only.txt', [row[1] for row in scope.candidate_blobs(self.root, self.base, scope.revision_args('history'))])
+
+    def test_batched_occurrences_equal_per_commit_oracle(self):
+        self.git('switch', '-c', 'side', self.base)
+        self.write('space side.txt', 'branch'); self.commit('side')
+        self.git('switch', 'fix/scoped')
+        self.git('mv', 'old.txt', 'renamed file.txt'); self.commit('move reused blob')
+        self.write('temporary.txt', 'temporary'); self.commit('add')
+        self.git('rm', 'temporary.txt'); self.commit('remove')
+        self.git('merge', '--no-ff', 'side', '-m', 'merge')
+        expected = set()
+        for commit in self.git('rev-list', self.base + '..HEAD').splitlines():
+            paths = self.git('diff-tree', '--root', '-m', '--no-commit-id', '--no-renames', '--name-only', '-r', '-z', '--diff-filter=ACMRT', commit).split('\0')
+            for path in filter(None, paths):
+                for row in self.git('ls-tree', '-r', '-l', '-z', commit, '--', path).split('\0'):
+                    if not row: continue
+                    meta, name = row.split('\t', 1); _, typ, oid, size = meta.split()
+                    if typ == 'blob': expected.add((oid, name, int(size)))
+        self.assertEqual(set(scope.candidate_blobs(self.root, self.base)), expected)
+
+    def test_full_scanners_fail_closed_on_noncommit_blob_and_tree_tags(self):
+        content = 'gh' + 'p_' + 'Z' * 36 + '\nphone=' + '139' + '1234' + '5678'
+        oid = subprocess.check_output(['git', '-C', str(self.root), 'hash-object', '-w', '--stdin'], input=content, text=True).strip()
+        tree = subprocess.check_output(['git', '-C', str(self.root), 'mktree'], input='100644 blob ' + oid + '\tunsafe.txt\n', text=True).strip()
+        for target in (oid, tree):
+            with self.subTest(target=target):
+                self.git('update-ref', 'refs/tags/noncommit-fixture', target)
+                for module, args in ((secrets, ['--scope', 'all']), (personal, ['--scope', 'all'])):
+                    with mock.patch.object(module, 'ROOT', self.root), contextlib.redirect_stdout(io.StringIO()):
+                        with self.assertRaisesRegex(ValueError, 'unsupported noncommit scan reference'):
+                            module.main(args)
+                rules = {'allowed_remotes': {'origin': 'https://github.com/lidefend/sce-backend-odoo.git'}}
+                with mock.patch.object(history, 'load_policy', return_value=rules), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaisesRegex(ValueError, 'unsupported noncommit scan reference'):
+                        history.main(['--root', str(self.root)])
+
+    def test_noncommit_tag_requires_full_and_proof_tampering_rejected(self):
+        oid = self.git('rev-parse', 'HEAD:old.txt').strip(); self.git('tag', 'blob-tag', oid)
+        self.assertIsNone(scope.select_scope(self.root, 'history').base)
+        self.git('tag', '-d', 'blob-tag')
+        payload = json.loads(self.receipt.read_text())
+        payload['coverage']['scanners']['history']['authority'] = 'a' * 64
+        self.receipt.write_text(json.dumps(payload))
+        self.assertIsNone(scope.select_scope(self.root, 'history').base)
 
 if __name__ == '__main__':
     unittest.main()
