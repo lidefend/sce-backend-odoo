@@ -47,6 +47,16 @@ class DemoMixinUser(models.Model):
     _inherit = ["demo.mixin", "mail.thread"]
 
 
+class DemoLifecycle(models.Model):
+    _name = "demo.lifecycle"
+
+    lifecycle_state = fields.Selection(
+        ScStateMachine.selection(ScStateMachine.DEMO),
+        string="项目状态",
+        default="alpha",
+    )
+
+
 class DemoBase(models.Model):
     _name = "demo.base"
 
@@ -131,6 +141,17 @@ class ResolverTests(GuardCase):
 
     def test_unknown_model_resolves_to_nothing(self) -> None:
         self.assertEqual(self.resolve("demo.absent"), set())
+
+    def test_profile_declared_state_field_is_honored(self) -> None:
+        # The profile declares the state field name. A model whose selection is
+        # not literally called ``state`` must still resolve, or the guard silently
+        # narrows its own coverage to ``state``-only models.
+        self.assertEqual(
+            guard._resolve_state_keys("demo.lifecycle", guard._model_index(), guard._state_machine_states(),
+                                      field="lifecycle_state"),
+            {"alpha", "beta"},
+        )
+        self.assertEqual(self.resolve("demo.lifecycle"), set())
 
 
 class ValidateTests(GuardCase):

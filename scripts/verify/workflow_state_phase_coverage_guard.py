@@ -172,7 +172,7 @@ def _selection_keys(node: ast.AST, consts: dict[str, Any], machine: dict[str, li
     return keys
 
 
-def _state_keys_from_class(cls: ast.ClassDef, machine: dict[str, list[str]]) -> list[str]:
+def _state_keys_from_class(cls: ast.ClassDef, machine: dict[str, list[str]], field: str = "state") -> list[str]:
     consts: dict[str, Any] = {}
     for stmt in cls.body:
         if isinstance(stmt, ast.Assign):
@@ -183,7 +183,7 @@ def _state_keys_from_class(cls: ast.ClassDef, machine: dict[str, list[str]]) -> 
     for stmt in cls.body:
         if not isinstance(stmt, ast.Assign):
             continue
-        if not any(getattr(target, "id", None) == "state" for target in stmt.targets):
+        if not any(getattr(target, "id", None) == field for target in stmt.targets):
             continue
         keys = _selection_keys(stmt.value, consts, machine)
         if keys:
@@ -240,6 +240,7 @@ def _resolve_state_keys(
     index: tuple[dict[str, list[ast.ClassDef]], dict[str, list[ast.ClassDef]]],
     machine: dict[str, list[str]],
     seen: frozenset[str] | None = None,
+    field: str = "state",
 ) -> set[str]:
     """All raw state values ``model``'s ``state`` field can hold.
 
@@ -255,7 +256,7 @@ def _resolve_state_keys(
     found: set[str] = set()
     bases: list[str] = []
     for cls in direct:
-        found |= set(_state_keys_from_class(cls, machine))
+        found |= set(_state_keys_from_class(cls, machine, field))
         for stmt in cls.body:
             if not isinstance(stmt, ast.Assign):
                 continue
@@ -271,7 +272,7 @@ def _resolve_state_keys(
     for base in bases:
         if base == model:
             continue
-        found |= _resolve_state_keys(base, index, machine, seen)
+        found |= _resolve_state_keys(base, index, machine, seen, field)
     return found
 
 
@@ -292,7 +293,7 @@ def scan(profiles: dict[str, dict[str, Any]]) -> tuple[list[str], dict[str, list
     for model in sorted(profiles):
         profile = profiles[model]
         field = str(profile.get("state_field") or "state")
-        keys = _resolve_state_keys(model, index, machine)
+        keys = _resolve_state_keys(model, index, machine, field=field)
         if not keys:
             errors.append(
                 f"{model}: the {field!r} selection could not be resolved from the addon sources; "
