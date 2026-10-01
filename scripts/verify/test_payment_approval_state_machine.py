@@ -1405,8 +1405,12 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_unmapped_approval_amount_constraints_are_not_ignored(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_domain')
         namespace = {'ValidationError': ValueError, '_': lambda text: text}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
-        policy = types.SimpleNamespace(target_model='project.project')
+        authority = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_amount_condition_authority')
+        authority.decorator_list = []
+        namespace.update({'ValidationError': ValueError, '_': lambda text: text})
+        exec(compile(ast.Module(body=[authority, method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        policy = types.SimpleNamespace(target_model='project.project', env={})
+        policy._amount_condition_authority = lambda model: namespace['_amount_condition_authority'](policy, model)
         for lower, upper in [(100, 0), (0, 100)]:
             with self.assertRaisesRegex(ValueError, '金额字段'):
                 namespace['_tier_definition_domain'](policy, types.SimpleNamespace(amount_min=lower, amount_max=upper))
@@ -3653,9 +3657,14 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
     def test_tax_threshold_domain_uses_prepared_deduction_amount(self):
         method = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_tier_definition_domain')
         namespace = {}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        authority = next(n for n in ast.walk(ast.parse(POLICY.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_amount_condition_authority')
+        authority.decorator_list = []
+        namespace.update({'ValidationError': ValueError, '_': lambda text: text})
+        exec(compile(ast.Module(body=[authority, method], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        policy = types.SimpleNamespace(target_model='sc.tax.deduction.registration', env={'sc.tax.deduction.registration': types.SimpleNamespace(fields_get=lambda names: {'deduction_amount': {'string': '抵扣金额'}})})
+        policy._amount_condition_authority = lambda model: namespace['_amount_condition_authority'](policy, model)
         domain = namespace['_tier_definition_domain'](
-            types.SimpleNamespace(target_model='sc.tax.deduction.registration'),
+            policy,
             types.SimpleNamespace(amount_min=50, amount_max=150))
         self.assertEqual(ast.literal_eval(domain), [('deduction_amount', '>=', 50), ('deduction_amount', '<=', 150)])
 

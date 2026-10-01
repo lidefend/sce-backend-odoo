@@ -737,8 +737,9 @@ class ScApprovalPolicy(models.Model):
                 if action:
                     action.sudo().write({"groups_id": [(6, 0, sorted(group_ids))]})
 
-    def _tier_definition_domain(self, step):
-        domain = []
+    @api.model
+    def _amount_condition_authority(self, model):
+        """The existing business amount mapping owns both editor and tier domains."""
         amount_field_by_model = {
             "tender.doc.purchase": "amount",
             "tender.guarantee": "amount",
@@ -773,7 +774,21 @@ class ScApprovalPolicy(models.Model):
             "sc.treasury.reconciliation": "confirmation_amount",
             "sc.settlement.adjustment": "amount",
         }
-        amount_field = amount_field_by_model.get(self.target_model)
+        amount_field = amount_field_by_model.get(model, "")
+        label = ""
+        if amount_field:
+            label = self.env[model].fields_get([amount_field]).get(amount_field, {}).get("string") or amount_field
+        return {
+            "supported": bool(amount_field),
+            "field": amount_field,
+            "label": label,
+            "reason_code": "amount_field_declared" if amount_field else "amount_field_not_declared",
+            "message": (_("金额条件按%s判断。") % label) if amount_field else _("当前业务未设置审批金额依据，可按审批岗位和顺序配置。"),
+        }
+
+    def _tier_definition_domain(self, step):
+        domain = []
+        amount_field = self._amount_condition_authority(self.target_model)["field"]
         if not amount_field and (step.amount_min or step.amount_max):
             raise ValidationError(_("该类单据尚未声明审批金额字段，不能配置金额条件。"))
         if amount_field and step.amount_min:

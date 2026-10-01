@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import ast
 import importlib.util
 import sys
 import types
@@ -163,6 +164,16 @@ class _PolicyModel:
         self.rows.append(record)
         self.created.append(dict(vals))
         return record
+
+    def _amount_condition_authority(self, model):
+        path = Path(__file__).resolve().parents[1] / "models/support/approval_policy.py"
+        method = next(node for node in ast.walk(ast.parse(path.read_text()))
+                      if isinstance(node, ast.FunctionDef) and node.name == "_amount_condition_authority")
+        method.decorator_list = []
+        namespace = {"_": lambda text: text}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), "exec"), namespace)
+        registry = {model: types.SimpleNamespace(fields_get=lambda names: {name: {"string": "单据金额"} for name in names})}
+        return namespace["_amount_condition_authority"](types.SimpleNamespace(env=registry), model)
 
     def is_approval_required(self, model, company=None):
         del company
@@ -343,6 +354,74 @@ class ApprovalPolicyConfigurationHandlerTests(unittest.TestCase):
         self.assertEqual(result["data"]["policy"]["steps"][0]["id"], 12)
         self.assertEqual(result["data"]["policy"]["steps"][1]["id"], 11)
         self.assertTrue(policy.synced)
+
+
+    def test_amount_capability_is_returned_without_a_policy_and_on_both_writes(self):
+        for model, supported, field in [("payment.request", True, "amount"), ("project.project", False, ""), ("sc.project.document", False, "")]:
+            Policy = _PolicyModel()
+            env = _Env({"sc.approval.policy": Policy, "sc.approval.step": _StepModel(Policy)})
+            for handler_cls, params in [
+                (self.module.ApprovalPolicyConfigGetHandler, {}),
+                (self.module.ApprovalPolicyConfigSetHandler, {"approval_required": False, "mode": "none"}),
+                (self.module.ApprovalPolicyStepsSetHandler, {"steps": []}),
+            ]:
+                with self.subTest(model=model, handler=handler_cls.__name__):
+                    result = handler_cls(env=env, params={"model": model, **params}).handle()
+                    capability = result["data"]["amount_condition"]
+                    self.assertEqual(capability["supported"], supported)
+                    self.assertEqual(capability["field"], field)
+                    self.assertTrue(capability["message"])
+                    self.assertEqual(capability["reason_code"], "amount_field_declared" if supported else "amount_field_not_declared")
+
+    def test_invalid_later_step_never_mutates_existing_or_creates_missing_policy(self):
+        valid = {"name": "审核", "approval_scope_key": "executive", "active": True}
+        for missing in [False, True]:
+            for bad in [None, {**valid, "amount_min": 1}, {**valid, "amount_max": "nan"},
+                        {**valid, "amount_max": "inf"}, {**valid, "amount_min": -1},
+                        {**valid, "amount_min": 2, "amount_max": 1}, {**valid, "id": 987},
+                        {**valid, "approval_scope_key": "invalid"}]:
+                with self.subTest(missing=missing, bad=bad):
+                    step = _StepRecord(id=21)
+                    policy = _PolicyRecord(target_model="project.project", step_ids=[step])
+                    Policy = _PolicyModel([] if missing else [policy])
+                    Step = _StepModel(Policy)
+                    env = _Env({"sc.approval.policy": Policy, "sc.approval.step": Step})
+                    first = dict(valid, **({} if missing else {"id": 21}))
+                    with self.assertRaises(self.module.ValidationError):
+                        self.module.ApprovalPolicyStepsSetHandler(env=env, params={"model": "project.project", "steps": [first, bad]}).handle()
+                    self.assertEqual(Policy.created, [])
+                    self.assertEqual(Step.created, [])
+                    self.assertEqual(policy.write_calls, [])
+                    self.assertEqual(step.write_calls, [])
+
+    def test_duplicate_step_identity_fails_before_first_write(self):
+        step = _StepRecord(id=21)
+        policy = _PolicyRecord(step_ids=[step])
+        Policy = _PolicyModel([policy])
+        Step = _StepModel(Policy)
+        env = _Env({"sc.approval.policy": Policy, "sc.approval.step": Step})
+        raw = {"id": 21, "name": "审核", "approval_scope_key": "executive"}
+        with self.assertRaises(self.module.ValidationError):
+            self.module.ApprovalPolicyStepsSetHandler(env=env, params={"model": "payment.request", "steps": [raw, raw]}).handle()
+        self.assertEqual(step.write_calls, [])
+        self.assertEqual(policy.write_calls, [])
+        self.assertEqual(Step.created, [])
+
+
+    def test_step_identity_rejects_boolean_fraction_and_noncanonical_strings_without_write(self):
+        for bad_id in [True, False, 0.0, 1.5, 1.0, "1.5", " 1", "01", -1]:
+            step = _StepRecord(id=1)
+            policy = _PolicyRecord(step_ids=[step])
+            Policy = _PolicyModel([policy])
+            Step = _StepModel(Policy)
+            env = _Env({"sc.approval.policy": Policy, "sc.approval.step": Step})
+            with self.subTest(id=bad_id), self.assertRaises(self.module.ValidationError):
+                self.module.ApprovalPolicyStepsSetHandler(env=env, params={"model": "payment.request", "steps": [
+                    {"id": bad_id, "name": "审核", "approval_scope_key": "executive"},
+                ]}).handle()
+            self.assertEqual(step.write_calls, [])
+            self.assertEqual(policy.write_calls, [])
+            self.assertEqual(Step.created, [])
 
 
 if __name__ == "__main__":
