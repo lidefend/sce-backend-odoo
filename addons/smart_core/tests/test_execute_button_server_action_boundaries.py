@@ -754,14 +754,14 @@ class WorkItemActionOriginTest(unittest.TestCase):
         module = _load_handler()
         model = _ButtonModel()
         handler = module.ExecuteButtonHandler(env=_Env({'x.model': model}), payload={
-            'params': {'model': 'x.model', 'record_id': 3, 'button': _authority_button()},
+            'params': {'model': 'x.model', 'record_id': 3, 'button': _authority_button(method='shared_action')},
             'meta': {'action_id': 41, 'menu_id': 51, 'record_access_mode': 'read'},
         })
-        contract = _authorized_contract()
+        contract = _authorized_contract(method='shared_action')
         contract['actionContract']['actionRuleList'][0]['_validated_work_item_access_mode'] = 'read'
         handler._load_current_action_contract = lambda **kw: contract
         result = handler.handle()
-        self.assertTrue(result['ok'])
+        self.assertTrue(result['ok'], result)
         self.assertEqual(model.access_modes, ['write'])
 
     def test_record_access_level_must_come_from_exact_backend_grant(self):
