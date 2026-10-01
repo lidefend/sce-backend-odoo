@@ -149,6 +149,38 @@ export function versionReviewWriteKind(role, body, scope) {
   return null;
 }
 
+// The native continuation is captured before permitting any business write.
+function paymentReviewCreateMatchesContract(p, scope) {
+  const action = scope.continuation;
+  const defaults = action?.context;
+  const source = scope.baseline?.source?.[0];
+  if (action?.id !== 803 || action?.menu_id !== 335 || action?.res_model !== scope.model
+    || defaults?.default_payment_request_id !== 1710 || defaults?.company_id !== 8
+    || source?.id !== 1710 || source?.company_id?.[0] !== 8 || source?.state !== 'approved'
+    || source.unpaid_amount < 1 || defaults.default_planned_amount !== source.amount
+    || defaults.default_project_id !== source.project_id?.[0]
+    || defaults.default_partner_id !== source.partner_id?.[0]) return false;
+  const context = p.context || {};
+  const defaultKeys = Object.keys(context).filter(key => key.startsWith('default_'));
+  if (!defaultKeys.includes('default_payment_request_id')
+    || defaultKeys.some(key => !Object.hasOwn(defaults, key) || !isDeepStrictEqual(context[key], defaults[key]))
+    || Object.keys(defaults).filter(key => key.startsWith('default_')).some(key => !isDeepStrictEqual(context[key], defaults[key]))) return false;
+  const vals = p.vals || {};
+  const expected = {
+    business_category_id: defaults.default_business_category_id,
+    date_payment: scope.paymentDate,
+    paid_amount: 1, planned_amount: source.amount, payment_method: '银行转账',
+    document_no: defaults.default_document_no, note: scope.marker,
+    payment_account_name: 'FE Company A Operating Account', payment_bank_name: 'FE Construction Bank',
+    payment_account_no: 'FE-PAYER-0001', attachment_ids: [[6, 0, []]],
+  };
+  return defaults.default_business_category_id === 16
+    && defaults.default_business_category_code === 'finance.payment.execution.partner'
+    && /^\d{4}-\d{2}-\d{2}$/.test(scope.paymentDate || '')
+    && typeof defaults.default_document_no === 'string' && Boolean(defaults.default_document_no)
+    && isDeepStrictEqual(vals, expected);
+}
+
 export function paymentReviewWriteKind(role, body, scope) {
   if (scope?.model !== 'sc.payment.execution' || scope.source?.id !== 1710 || scope.source?.company_id !== 8
     || !/^TPL53-PAYMENT-REVIEW-\d{13}$/.test(scope.marker)
@@ -161,9 +193,7 @@ export function paymentReviewWriteKind(role, body, scope) {
   if (scope.phase === 'create' && role === 'fixture_role_finance' && body?.intent === 'api.data'
     && p?.op === 'create' && p.model === scope.model && isDeepStrictEqual(p, scope.request)
     && p.context?.company_id === 8 && Number(p.context?.action_id) === 803 && Number(p.context?.menu_id) === 335
-    && p.vals?.payment_request_id === 1710 && p.vals?.paid_amount === 1 && p.vals?.note === scope.marker
-    && Object.keys(p.vals).every(key => ['payment_request_id', 'paid_amount', 'note', 'payment_account_name',
-      'payment_bank_name', 'payment_account_no', 'payment_method'].includes(key))) return 'create';
+    && paymentReviewCreateMatchesContract(p, scope)) return 'create';
   if (!Number.isInteger(scope.id) || scope.id <= 0 || scope.baseline.execution_ids?.includes(scope.id)
     || body?.intent !== 'execute_button' || p?.model !== scope.model || p.res_id !== scope.id || p.button?.type !== 'object') return null;
   if (scope.phase === 'submit' && role === 'fixture_role_pfl035_finance_user' && p.button.name === 'action_confirm'

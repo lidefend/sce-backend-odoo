@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.222: P1 cbf5c16c1 loaded via governed backend.acceptance.up; front9433 reused. Capture tpl07-1790821686860 7PASS, formal803/335 continuation works; no writes, cleanup restored. Next extend exact P4 create scope from captured request: vals business_category_id16/date_payment/currentdate/paid_amount1/planned_amount2000/payment_method/document_no/note/accounts/attachment_ids[[6,0,[]]]; source1710 is context.default_payment_request_id, not vals. Bind these to current preflight source and native action defaults, reject conflicting source/state/company/review values. Then full manager create->submitter44 submit->manager30 workitem approve->confirmed readback->exact recovery. Preserve publication/user acceptance distinctions; capture not business-loop pass. No rebuild/push/deploy.",
+  "next_exact_step": "53.223: real capture satisfies exact native defaults+preflight source validator; tpl07-1790821929730 9PASS, tools64PASS. Next add TPL07_PAYMENT_REVIEW_SUCCESS branch to existing capture flow: after valid capture persist request/phasecreate, UI retry save exactly once; ensure response id extraction and authoritative source/company/state readback; ordinary44 submit via803/335 then manager30 /my-work actualitem origin approve, confirmed/validated/taskgone; finally native exact recovery. Use current contract labels, not stale DOM. Defaultdate input readonly: read inputValue, do not fill. Productcbf5/backend unchanged/front9433 reuse. No create actually forwarded yet; recovery after real temporaryrecord still unproven.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1555,6 +1555,18 @@
       "writes": 0,
       "recovery": "restored",
       "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/payment-canonical-backend.log"
+    },
+    "segment_53_223": {
+      "status": "exact_create_scope_verified_live_capture",
+      "tool_tests": 64,
+      "L1": "passed",
+      "browser_assertions": 9,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790821929730/report.json",
+      "writes": 0,
+      "recovery": "restored",
+      "failed_report": "artifacts/frontend-web-fix-20260928/tpl07-1790821848209/report.json",
+      "failure_owner": "P4 tried fill on readonly date picker input; fixed to consume default",
+      "product_inputs": "unchangedcbf5c16c1/backend, frontend9433fa515"
     }
   }
 }

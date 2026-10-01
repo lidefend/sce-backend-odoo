@@ -9687,3 +9687,9 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - payment-entry-binding-iteration L1PASS；payment-entry-binding-unit 26Node+37Python=63PASS，begin/record已登记。初次record命令误用AGENT_STATUS，参数拒绝，无通过回执；纠正为AGENT_CHECK_STATUS后记录原日志，不重复执行测试。
 - payment-canonical-capture-browser退出0，tpl07-1790821686860/report.json **7PASS**：manager真实来源按钮进入/f/sc.payment.execution/new，创建请求capture-only返回503，未转发create，无非法业务写入/页面异常，finally基线恢复回读通过。此前777未发布导致的续接断链已在正式803路径消除；不代表保存/提交/审批完整旅程通过。
 - 实际vals为business_category_id16、date_payment、paid_amount1、planned_amount2000、payment_method、document_no、note、本次付款账户和attachment_ids[[6,0,[]]]；payment_request_id未在vals，由context.default_payment_request_id1710传入。既有仅七字段许可尚不能执行真实请求，不能直接放宽：下一步绑定原生动作默认值及当前preflight基线，允许契约实际必要字段并拒绝来源覆盖/状态/公司/review注入，再做真实保存和用户审批闭环。已有恢复只在零创建情况下运行，尚无本次临时记录实际清理证明。67目标active，无远端集成/目标部署。
+
+### 53.223 创建请求绑定原生默认与来源基线
+
+- fbe9fc637 clean续跑；P4只修改既有scope、浏览器和定向测试。创建许可从旧七字段假设改为真实表单payload：原生action803/menu335/model一致，默认来源1710/company8与preflight approved来源核对，项目/伙伴/计划金额一致；全部default_*与原生动作逐项匹配，拒绝额外默认状态/公司。vals精确等于日期、分类16、金额1、原计划金额/单号、marker、本次账户、转账方式及空附件关系，不接受来源字段覆盖、状态/review/附件注入。保留角色/阶段/原记录排除/精确request校验。
+- 新增一项多反例定向测试；payment-create-contract及bound L1PASS，工具27Node+37Python=64PASS并登记非零回执。第一轮live tpl07-1790821848209失败：date picker文本框readonly，P4误用fill；在创建前失败，finally restored。产品控件无须改变。改为读取有效默认日期，payment-create-date-iteration PASS、date-unit64PASS并登记，date-browser退出0，tpl07-1790821929730 **9PASS**，真实capture通过新增scope校验，无创建/非法写入/页面异常，finally恢复。
+- 尚未转发真实create，不能报告实际删除恢复、经办提交或审核人审批完成。下一步在同一分支增加success开关：有效capture后持久化request和create阶段，再UI重试保存一次；读取返回id并真实回读，然后ordinary44提交、manager30实际工作台item/origin审批到confirmed、任务退出与finally精确清理。前后端产品源码未变，复用cbf5后端/9433前端，无构建/升级/fixture。67目标active，不推送/合并/目标部署。

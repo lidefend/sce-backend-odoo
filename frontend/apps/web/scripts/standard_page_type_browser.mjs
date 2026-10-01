@@ -134,6 +134,7 @@ async function login(role) {
       report.paymentReviewWrites ??= [];
       report.paymentReviewWrites.push({ kind: paymentKind, request: body, result });
       if (result.ok === true) {
+        if (paymentKind === 'open') paymentReview.continuation = result.data?.result?.raw_action;
         if (paymentKind === 'create') paymentReview.id = Number(result.data?.id || result.data?.record?.id);
         paymentReview.phase = { open: 'opened', create: 'created', submit: 'submitted', approve: 'done' }[paymentKind];
       }
@@ -962,6 +963,8 @@ try {
     await manager.page.getByRole('button', { name: '生成付款登记', exact: true }).click();
     await manager.page.waitForURL(url => url.pathname === '/f/sc.payment.execution/new');
     check('payment review: native continuation opened', paymentReview.phase === 'opened');
+    paymentReview.paymentDate = await manager.page.locator('[data-field-name="date_payment"] input').first().inputValue();
+    check('payment review: contract date default is present', /^\d{4}-\d{2}-\d{2}$/.test(paymentReview.paymentDate));
     const values = { paid_amount: '1', payment_account_name: 'FE Company A Operating Account',
       payment_bank_name: 'FE Construction Bank', payment_account_no: 'FE-PAYER-0001', payment_method: '银行转账', note: paymentReview.marker };
     for (const [field, value] of Object.entries(values)) {
@@ -976,6 +979,9 @@ try {
       manager.page.getByRole('button', { name: /^保存(?:草稿)?$/ }).first().click(),
     ]);
     check('payment review: create request captured without write', response.status() === 503 && paymentReview.phase === 'captured' && Boolean(report.paymentReviewCreateCapture));
+    check('payment review: actual capture satisfies native defaults and source baseline',
+      paymentReviewWriteKind('fixture_role_finance', report.paymentReviewCreateCapture, { ...paymentReview,
+        phase: 'create', request: report.paymentReviewCreateCapture?.params }) === 'create');
     await manager.page.screenshot({ path: path.join(out, 'payment-review-create-capture.png') });
     await manager.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {

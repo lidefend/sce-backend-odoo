@@ -225,10 +225,19 @@ test('version review action permit binds actual review origin and actor without 
 });
 
 import { paymentReviewWriteKind } from './standard_expense_success_scope.mjs';
+const paymentDefaults = { company_id: 8, default_payment_request_id: 1710, default_project_id: 10,
+  default_partner_id: 56, default_planned_amount: 2000, default_document_no: 'FE-A-PR-003',
+  default_business_category_id: 16, default_business_category_code: 'finance.payment.execution.partner' };
 const paymentScope = { model: 'sc.payment.execution', marker: 'TPL53-PAYMENT-REVIEW-1790816000000',
-  source: { id: 1710, company_id: 8 }, baseline: { execution_ids: [186] }, phase: 'create',
-  request: { op: 'create', model: 'sc.payment.execution', context: { company_id: 8, action_id: 803, menu_id: 335 },
-    vals: { payment_request_id: 1710, paid_amount: 1, note: 'TPL53-PAYMENT-REVIEW-1790816000000' } } };
+  source: { id: 1710, company_id: 8 }, baseline: { execution_ids: [186], source: [{ id: 1710, company_id: [8, 'A'],
+    project_id: [10, 'Project'], partner_id: [56, 'Partner'], amount: 2000, unpaid_amount: 2000, state: 'approved' }] },
+  phase: 'create', paymentDate: '2026-10-01',
+  continuation: { id: 803, menu_id: 335, res_model: 'sc.payment.execution', context: paymentDefaults },
+  request: { op: 'create', model: 'sc.payment.execution', context: { ...paymentDefaults, action_id: 803, menu_id: 335 },
+    vals: { business_category_id: 16, date_payment: '2026-10-01', paid_amount: 1, planned_amount: 2000,
+      payment_method: '银行转账', document_no: 'FE-A-PR-003', note: 'TPL53-PAYMENT-REVIEW-1790816000000',
+      payment_account_name: 'FE Company A Operating Account', payment_bank_name: 'FE Construction Bank',
+      payment_account_no: 'FE-PAYER-0001', attachment_ids: [[6, 0, []]] } } };
 test('payment review create binds actor/source/amount/phase and rejects state injection', () => {
   const body = { intent: 'api.data', params: paymentScope.request };
   assert.equal(paymentReviewWriteKind('fixture_role_finance', body, paymentScope), 'create');
@@ -267,4 +276,19 @@ test('payment review continuation only opens the authorized source without grant
   assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, params: { ...body.params, res_id: 30 } }, scope), null);
   assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, meta: { action_id: 803, menu_id: 335 } }, scope), null);
   assert.equal(paymentReviewWriteKind('fixture_role_finance', body, { ...scope, phase: 'open_in_flight' }), null);
+});
+
+test('payment create binds native defaults and baseline even when captured request is replaced', () => {
+  for (const patch of [{ default_payment_request_id: 30 }, { default_state: 'confirmed' }, { default_project_id: 99 },
+    { default_company_id: 1 }, { default_business_category_id: 17 }]) {
+    const request = { ...paymentScope.request, context: { ...paymentScope.request.context, ...patch } };
+    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
+  }
+  for (const patch of [{ attachment_ids: [[6, 0, [1]]] }, { planned_amount: 1 }, { date_payment: '2020-01-01' },
+    { document_no: 'other' }, { payment_account_no: 'other' }]) {
+    const request = { ...paymentScope.request, vals: { ...paymentScope.request.vals, ...patch } };
+    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: request }, { ...paymentScope, request }), null);
+  }
+  for (const patch of [{ continuation: null }, { baseline: { execution_ids: [186], source: [] } }])
+    assert.equal(paymentReviewWriteKind('fixture_role_finance', { intent: 'api.data', params: paymentScope.request }, { ...paymentScope, ...patch }), null);
 });
