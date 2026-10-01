@@ -706,9 +706,7 @@ try {
           check(`${scene}: usable viewport ${width}`, !overflow);
           await page.screenshot({ animations: 'disabled', path: path.join(out, `scene-${scene}-${width}.png`), fullPage: true });
         }
-        await page.setViewportSize({ width: 1440, height: 900 });
-        const link = page.locator('a[href="/my-work"]').first();
-        await link.click();
+        await page.getByRole('button', { name: '我的工作', exact: true }).click();
         await page.waitForURL(url => url.pathname === '/my-work');
         await surface.waitFor({ state: 'hidden' });
         const after = report.sceneEntryCalls?.length || 0;
