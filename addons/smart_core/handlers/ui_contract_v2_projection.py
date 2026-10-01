@@ -63,12 +63,18 @@ def ensure_business_policy_layout_fields_visible(
 
 
 def _stable_container_id(value: Any, fallback: str) -> str:
+    """Return a formal container identity (``$defs.id``).
+
+    The V2 identity grammar is ASCII (``^[a-zA-Z][a-zA-Z0-9_.:-]*$``), so a
+    localized label that reaches this boundary is display copy and must be
+    replaced by the caller-provided structural identifier.
+    """
     raw = str(value or fallback or "container").strip()
     normalized = "".join(
-        char if char.isalnum() or char in "_.:-" else "." if char in " /" else ""
+        char if char.isascii() and (char.isalnum() or char in "_.:-") else "." if char in " /" else ""
         for char in raw
     ).strip(".") or fallback or "container"
-    return normalized if normalized[0].isalpha() else f"id.{normalized}"
+    return normalized if normalized[0].isascii() and normalized[0].isalpha() else f"id.{normalized}"
 
 
 def normalize_post_projected_container_tree(
@@ -89,11 +95,25 @@ def normalize_post_projected_container_tree(
         if isinstance(status_contract.get("containerStatus"), list)
         else []
     )
-    status_ids = {
-        str(row.get("containerId") or "").strip()
-        for row in container_status
-        if isinstance(row, dict) and str(row.get("containerId") or "").strip()
-    }
+    # A projection may register a verdict before the node identity is
+    # normalized (for example a raw native button name).  Reconcile the
+    # registry first so each container keeps exactly one formal identity and no
+    # row survives beside the node it describes.
+    reconciled_status: list[Any] = []
+    status_ids: set[str] = set()
+    for row in container_status:
+        if not isinstance(row, dict):
+            continue
+        raw_id = str(row.get("containerId") or "").strip()
+        if not raw_id:
+            continue
+        container_id = _stable_container_id(raw_id, "container")
+        if container_id in status_ids:
+            continue
+        row["containerId"] = container_id
+        status_ids.add(container_id)
+        reconciled_status.append(row)
+    container_status = reconciled_status
     seen_ids: set[str] = set()
 
     def normalize(nodes: list[Any], parent_id: str) -> list[Any]:

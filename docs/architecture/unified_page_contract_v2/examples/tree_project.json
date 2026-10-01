@@ -141,7 +141,7 @@
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
         "schemaVersion": "2.2.0",
-        "schemaSha256": "4c926a2fa3164974bf53109244ffdd695c74eafc5015f086f909af50b29a8a17",
+        "schemaSha256": "49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b",
         "contractVersion": "2.2.0",
         "normativeStatus": "stable"
       },

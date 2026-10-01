@@ -45,17 +45,22 @@ def _bool_or_none(value: Any) -> bool | None:
 
 
 def _stable_id(value: Any, fallback: str) -> str:
+    """Return a formal identity (``$defs.id``), never display copy.
+
+    The V2 identity grammar is ASCII (``^[a-zA-Z][a-zA-Z0-9_.:-]*$``), so a
+    localized label degrades to the caller-provided structural fallback.
+    """
     raw = _text(value, fallback)
     out = []
     for char in raw:
-        if char.isalnum() or char in "_.:-":
+        if char.isascii() and (char.isalnum() or char in "_.:-"):
             out.append(char)
         elif char in " /":
             out.append(".")
     normalized = "".join(out).strip(".")
     if not normalized:
         normalized = fallback
-    if not normalized[0].isalpha():
+    if not (normalized[0].isascii() and normalized[0].isalpha()):
         normalized = f"id.{normalized}"
     return normalized
 

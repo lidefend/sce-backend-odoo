@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 from copy import deepcopy
+from datetime import datetime
 from hashlib import sha256
 from typing import Any
 
@@ -12,9 +13,31 @@ LIFECYCLE_VERSION = "1.0.0"
 HASH_ALGORITHM = "sha256"
 UNIFIED_PAGE_SCHEMA_ID = "smart_core.unified_page_contract_v2"
 UNIFIED_PAGE_SCHEMA_VERSION = "2.2.0"
-UNIFIED_PAGE_SCHEMA_SHA256 = "4c926a2fa3164974bf53109244ffdd695c74eafc5015f086f909af50b29a8a17"
+UNIFIED_PAGE_SCHEMA_SHA256 = "49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b"
 UNIFIED_PAGE_NORMATIVE_STATUS = "stable"
 _PROTOCOL_ID_INVALID = re.compile(r"[^a-zA-Z0-9_.:-]+")
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def _delivery_default(value: Any) -> Any:
+    """Serialize a non JSON-native value the way the delivery layer does.
+
+    The integrity digest must stay recomputable from the bytes the client
+    receives.  Odoo shrinks datetimes to whole seconds on delivery
+    (``fields.Datetime.to_string``), so hashing the raw in-memory value, which
+    can carry microseconds, would make the seal unverifiable from the response.
+    Delegate to the delivery serializer when it is importable and keep a
+    dependency-free fallback for standalone use.
+    """
+    try:
+        from odoo.tools import date_utils
+
+        return date_utils.json_default(value)
+    except Exception:
+        pass
+    if isinstance(value, datetime):
+        return value.strftime(DATETIME_FORMAT)
+    return str(value)
 
 
 def canonical_json(value: Any) -> str:
@@ -23,7 +46,7 @@ def canonical_json(value: Any) -> str:
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
-        default=str,
+        default=_delivery_default,
     )
 
 

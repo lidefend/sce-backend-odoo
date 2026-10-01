@@ -1368,6 +1368,12 @@
         "entitlementEvaluated": {
           "type": "boolean"
         },
+        "authorizationAllowed": {
+          "type": "boolean"
+        },
+        "businessAvailable": {
+          "type": "boolean"
+        },
         "allowed": {
           "type": "boolean"
         },
