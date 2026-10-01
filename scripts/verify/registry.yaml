@@ -1,10 +1,23 @@
 version: 1
 entries:
-- script: test_payment_approval_state_machine.py
+- script: __init__.py
   status: active
   owner: platform-team
-  date: '2026-09-30'
-  reason: targeted production approval state-machine execution and bypass regressions
+  date: '2026-07-20'
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+  wire_or_retire: file-consumed
+- script: agent_context_lint.py
+  status: active
+  owner: platform-team
+  date: '2026-08-18'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: agent_context_verify.py
+  status: active
+  owner: platform-team
+  date: '2026-08-18'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: auth_xpath_guard.sh
   status: retired
   owner: platform-team
@@ -23,18 +36,42 @@ entries:
   date: '2026-08-10'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: business_action_coverage_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: business_category_dictionary_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: business_data_model_write_flow_probe.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: business_fact_backfill_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: business_fact_residual_gap_classifier.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: business_flow_closure_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: business_form_historical_logic_coverage_audit.py
   status: orphan
   owner: platform-team
@@ -65,18 +102,102 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: business_real_user_browser_assert.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: business_real_user_browser_cleanup.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: business_real_user_browser_setup.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: capability_lint.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: capability_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: collection_view_semantics_runtime_ids.py
   status: orphan
   owner: platform-team
   date: '2026-08-07'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: company_contractor_responsibility_context_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: construction_diary_visible_fields_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_business_category_action_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_business_category_binding_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: contract_form_handling_policy_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: contract_form_semantic_identity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: contract_settlement_payment_closure_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: controller_allowlist_policy.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: core_document_processing_gate.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: design_token_system.py
+  status: active
+  owner: platform-team
+  date: '2026-08-24'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: direct_acceptance_formal_surface_parity_probe.py
   status: orphan
   owner: platform-team
@@ -95,24 +216,108 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: field_operation_action_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_business_category_action_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-08-16'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_business_category_runtime_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_downstream_traceability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_expense_approval_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_expense_category_handling_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: finance_expense_claim_entry_context_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: finance_handling_browser_setup.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: finance_handling_entry_catalog_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: finance_handling_evidence_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: finance_handling_menu_structure_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: finance_interfund_category_handling_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_interfund_handling_entry_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_legacy_cash_ledger_backfill_readiness_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_legacy_source_less_ledger_reconciliation_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_relation_required_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: finance_role_permission_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: form_layout_governance_guard.py
   status: orphan
   owner: platform-team
@@ -137,18 +342,42 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: form_structure_standardization_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: form_structure_standardization_runtime_audit.sh
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: frontend_build_fingerprint.sh
+  status: active
+  owner: platform-team
+  date: '2026-07-29'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: frontend_color_role_contract_test.py
   status: orphan
   owner: platform-team
   date: '2026-08-11'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: frontend_expense_probe_cleanup.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: frontend_favorite_probe_recovery.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: frontend_form_loading_continuity_guard.py
   status: orphan
   owner: platform-team
@@ -161,12 +390,30 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: frontend_menu_navigation_diagnostic.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: frontend_page_identity_runtime_metadata.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: frontend_product_design_system_metrics.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: frontend_relation_navigation_diagnostic.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: generate_field_arch_p0_02_evidence.py
   status: orphan
   owner: platform-team
@@ -185,6 +432,90 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: income_contract_receipt_invoice_closure_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: intent_smoke_utils.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: interfund_account_loan_closure_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: interfund_financing_loan_partner_candidate_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: interfund_treasury_ledger_backfill_readiness_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_business_category_action_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_business_category_runtime_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_category_binding_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_downstream_traceability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_handling_evidence_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_partner_anchor_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: invoice_tax_role_permission_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: labor_settlement_candidate_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: labor_usage_legacy_settlement_projection_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: legacy_attachment_surface_inventory.py
   status: orphan
   owner: platform-team
@@ -197,48 +528,408 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: legacy_custom_column_retirement.py
+  status: active
+  owner: platform-team
+  date: '2026-07-30'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: legacy_direct_acceptance_attachment_label_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: line_budgets.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_accounting_center_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_administration_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_base_configuration_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_candidate_visual_smoke.sh
+  status: active
+  owner: platform-team
+  date: '2026-09-10'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_collaboration_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_collaboration_fixture_cleanup.py
+  status: active
+  owner: platform-team
+  date: '2026-09-03'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_cost_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_finance_center_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_form_lowcode_scope.py
+  status: active
+  owner: platform-team
+  date: '2026-09-21'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_material_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-09-16'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_payment_attachment_m2m_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-09-15'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_payment_request_approval_chain.py
+  status: active
+  owner: platform-team
+  date: '2026-09-08'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_payment_request_full_chain_facts.py
+  status: active
+  owner: platform-team
+  date: '2026-09-08'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_payment_request_native_parity_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-09-08'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_payment_settlement_component_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-09-15'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_personnel_authorization_fixture.py
+  status: active
+  owner: platform-team
+  date: '2026-09-13'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_project_create_contract_action_scope.py
+  status: active
+  owner: platform-team
+  date: '2026-09-03'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_project_profile_write_fixture.py
+  status: active
+  owner: platform-team
+  date: '2026-09-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_quality_safety_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_reporting_center_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_settlement_domain_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_tax_center_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_tender_award_fixture.py
+  status: active
+  owner: platform-team
+  date: '2026-09-15'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: local_dev_workbench_center_ids.py
+  status: active
+  owner: platform-team
+  date: '2026-08-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: locked_fact_formal_model_continuity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: low_code_product_surface_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: make_source_inventory.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: marketplace_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_business_category_action_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_business_category_binding_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_business_category_runtime_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_cost_trigger_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_cross_document_traceability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_downstream_traceability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_handling_evidence_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_loss_approval_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_outbound_derivative_strategy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_plan_purchase_request_traceability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_plan_visible_note_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_purchase_request_downstream_strategy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_rfq_source_coverage_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_role_permission_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_settlement_payment_execution_approval_policy_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_settlement_payment_reversal_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: material_settlement_split_payment_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: mechanical_settlement_partner_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: menu_governance_inventory.py
+  status: active
+  owner: platform-team
+  date: '2026-08-07'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: native_parser_capability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: native_parser_capability_audit.sh
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: native_view_capability_taxonomy_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: navigation_contract_boundary_guard.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: operation_strategy_contract_surface_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: ops_batch_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: p1_business_relationship_gap_report.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: p1_formal_relationship_continuity_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: p1_formal_relationship_scope_block_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: p1_locked_fact_mapping_candidate_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: p1_locked_fact_mapping_candidate_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: p1_payment_request_capability_contract_v1.py
   status: orphan
   owner: platform-team
   date: '2026-08-16'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: p1_payment_request_field_completeness_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-16'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: p1_relationship_review_queue_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: p1_relationship_suggestion_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: page_pattern_reference_ledger_guard.py
   status: active
   owner: platform-team
   date: '2026-09-30'
   reason: enforces the ledger completion rule (owner + follow-up for every contract
     gap); run by make/frontend.mk as part of verify.frontend.page_pattern_reference_parity.unit
+- script: payment_execution_request_anchor_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: payment_request_visible_surface_alignment_audit.py
   status: orphan
   owner: platform-team
@@ -251,6 +942,30 @@ entries:
   date: '2026-08-16'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: platform_config_fixture.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: platform_init_preflight.sh
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: product_customer_runtime_decoupling_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: project_budget_legacy_material_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: project_master_business_fact_coverage_classifier.py
   status: orphan
   owner: platform-team
@@ -263,6 +978,36 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: python_http_smoke_utils.py
+  status: active
+  owner: platform-team
+  date: '2026-08-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: receipt_income_partner_anchor_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: receipt_invoice_source_document_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: scene_admin_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: scene_audit_disclosure_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: scene_governance_payment_entry_branch_closure_export.py
   status: orphan
   owner: platform-team
@@ -275,24 +1020,54 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: scene_legacy_assertions.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: serve_frontend_acceptance.py
   status: orphan
   owner: platform-team
   date: '2026-08-06'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: settlement_contract_surface_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: startup_chain_mainline_guard.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: subcontract_request_contract_anchor_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: subscription_smoke.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: tax_deduction_visible_surface_alignment_audit.py
   status: orphan
   owner: platform-team
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: tenant_payload_permission_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: terminal_shell_v2_contract_guard.py
   status: orphan
   owner: platform-team
@@ -311,12 +1086,36 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_construction_create_default_hooks.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_contract_export_resume.py
   status: orphan
   owner: platform-team
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_contract_form_semantic_identity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_contract_probe_routing.py
+  status: active
+  owner: platform-team
+  date: '2026-08-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_contract_schema_declaration_sync.py
+  status: active
+  owner: platform-team
+  date: '2026-10-02'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_contract_snapshot_case_actors.py
   status: orphan
   owner: platform-team
@@ -341,36 +1140,204 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_daily_dev_customer_addons_runtime_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-06'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_design_token_system.py
   status: orphan
   owner: platform-team
   date: '2026-08-24'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_dev_acceptance_release_identity.py
+  status: active
+  owner: platform-team
+  date: '2026-10-02'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_env_external_topology_precedence.sh
   status: orphan
   owner: platform-team
   date: '2026-08-13'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_form_structure_authority_unification.py
+  status: active
+  owner: platform-team
+  date: '2026-09-16'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_formal_action_runtime_drift_audit.py
   status: orphan
   owner: platform-team
   date: '2026-08-11'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_acceptance_baseline_rebuild.py
+  status: active
+  owner: platform-team
+  date: '2026-10-02'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_acceptance_runtime_profile.py
+  status: active
+  owner: platform-team
+  date: '2026-09-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_chart_engine_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-10'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_form_canvas_wide_grid_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_frontend_industry_agnostic_audit.py
   status: active
   owner: platform-team
   date: '2026-09-30'
   reason: self-test for the industry-agnostic lexical-role classifier; wired into
     make/frontend.mk as verify.frontend.industry_agnostic.audit.unit
+- script: test_frontend_inline_state_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-19'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_list_surface_search_contract.py
+  status: active
+  owner: platform-team
+  date: '2026-10-02'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_official_icon_resource_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-11'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_page_pattern_reference_parity_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_primitive_adapter_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_frontend_productization_fixture_upsert.py
   status: orphan
   owner: platform-team
   date: '2026-09-01'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_frontend_rendering_detail_state_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-10'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_standard_preview.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_system_state_recovery_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-11'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_frontend_v2_policy_projection_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_ci_acceptance.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_ci_checks.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_ci_incremental_update.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_formal_executor.py
+  status: active
+  owner: platform-team
+  date: '2026-09-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_formal_pr.py
+  status: active
+  owner: platform-team
+  date: '2026-09-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_formal_queue.py
+  status: active
+  owner: platform-team
+  date: '2026-09-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_formal_worker.py
+  status: active
+  owner: platform-team
+  date: '2026-09-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_frontend_cache.py
+  status: active
+  owner: platform-team
+  date: '2026-09-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_frontend_cache_install.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_gate_plan.py
+  status: active
+  owner: platform-team
+  date: '2026-09-25'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_pr_identity.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_gitee_publication_scope.py
+  status: active
+  owner: platform-team
+  date: '2026-09-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_guard_registry_audit.py
   status: orphan
   owner: platform-team
@@ -390,6 +1357,13 @@ entries:
   review_by: '2026-09-30'
   reason: referenced by the governed candidate frontend target and form structure
     regression suite
+  wire_or_retire: file-consumed
+- script: test_local_dev_frontend_quick.py
+  status: active
+  owner: platform-team
+  date: '2026-09-13'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_local_dev_personnel_authorization_fixture.py
   status: orphan
   owner: platform-team
@@ -403,6 +1377,18 @@ entries:
   date: '2026-09-13'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_local_dev_tender_award_fixture.py
+  status: active
+  owner: platform-team
+  date: '2026-09-15'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_local_development_lifecycle.py
+  status: active
+  owner: platform-team
+  date: '2026-09-15'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_menu_governance_inventory.py
   status: orphan
   owner: platform-team
@@ -438,6 +1424,29 @@ entries:
   owner: platform-team
   date: '2026-09-30'
   reason: self-test for the ledger guard; wired into the same make target
+- script: test_payment_approval_state_machine.py
+  status: active
+  owner: platform-team
+  date: '2026-09-30'
+  reason: targeted production approval state-machine execution and bypass regressions
+- script: test_playwright_vendor_coupling_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_product_customer_runtime_decoupling_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_product_view_capability_ledger.py
+  status: active
+  owner: platform-team
+  date: '2026-09-03'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_product_view_capability_ledger_schema.py
   status: orphan
   owner: platform-team
@@ -468,6 +1477,24 @@ entries:
   date: '2026-08-12'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_scene_audit_disclosure_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-27'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_scene_company_access_preflight_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-23'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_scene_company_snapshot_collect.py
+  status: active
+  owner: platform-team
+  date: '2026-09-08'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: test_tax_certificate_formal_contract.py
   status: orphan
   owner: platform-team
@@ -498,6 +1525,24 @@ entries:
   date: '2026-08-04'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_view_type_render_coverage_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-09-03'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: test_workspace_composition_wiring.py
+  status: active
+  owner: platform-team
+  date: '2026-10-01'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: um_p1_ownership_visibility_contract_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: um_p2_interfund_relation_aggregation_guard.py
   status: orphan
   owner: platform-team
@@ -528,6 +1573,54 @@ entries:
   date: '2026-07-28'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: um_p3_core035_s07ac_confirmation_generate.py
+  status: active
+  owner: platform-team
+  date: '2026-07-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: um_p3_core035_s07ac_confirmation_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: um_p3_core_domain_authority_baseline_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-28'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: user_business_data_portrait.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: user_business_productization_baseline_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: user_confirmed_62_business_entry_integration_matrix.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: user_confirmed_menu_surface_guard.py
+  status: active
+  owner: platform-team
+  date: '2026-08-12'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
+- script: user_confirmed_settlement_usability_audit.py
+  status: active
+  owner: platform-team
+  date: '2026-07-20'
+  wire_or_retire: file-consumed
+  reason: consumed only by scripts/tests; no governed make/workflow entry
 - script: user_module_data_rebaseline_contract_guard.py
   status: orphan
   owner: platform-team

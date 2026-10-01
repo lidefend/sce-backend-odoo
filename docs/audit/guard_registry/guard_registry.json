@@ -3,7 +3,14 @@
   "counts": {
     "active": 1284,
     "orphan": 87,
-    "retired": 1
+    "retired": 1,
+    "unwired": 183,
+    "unwired_undispositioned": 0,
+    "wire_or_retire": {
+      "file-consumed": 183,
+      "wire-pending": 0,
+      "retire-pending": 0
+    }
   },
   "scripts": [
     {
@@ -26,7 +33,8 @@
         "scripts/verify/test_industry_module_product_boundary_guard.py",
         "scripts/verify/user_module_product_boundary_guard.py"
       ],
-      "lines": 1
+      "lines": 1,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "__manifest__.py",
@@ -161,7 +169,8 @@
         "scripts/ops/codex_preflight.sh",
         "scripts/verify/test_codex_preflight.py"
       ],
-      "lines": 42
+      "lines": 42,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "agent_context_verify.py",
@@ -173,7 +182,8 @@
         "scripts/ops/codex_preflight.sh",
         "scripts/verify/test_codex_preflight.py"
       ],
-      "lines": 44
+      "lines": 44,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "app_config_engine_boundary_guard.py",
@@ -654,7 +664,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_action_coverage.sh"
       ],
-      "lines": 491
+      "lines": 491,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_capability_baseline_report.py",
@@ -704,7 +715,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_category_dictionary.sh"
       ],
-      "lines": 548
+      "lines": 548,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_config_approval_runtime_smoke.py",
@@ -838,7 +850,8 @@
       "referenced_by_files": [
         "scripts/verify/industry_module_product_boundary_guard.py"
       ],
-      "lines": 737
+      "lines": 737,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_fact_residual_gap_classifier.py",
@@ -871,7 +884,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_flow_closure.sh"
       ],
-      "lines": 438
+      "lines": 438,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_form_historical_logic_coverage_audit.py",
@@ -1009,7 +1023,8 @@
       "referenced_by_files": [
         "scripts/verify/business_real_user_browser_closure.sh"
       ],
-      "lines": 82
+      "lines": 82,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_real_user_browser_cleanup.py",
@@ -1020,7 +1035,8 @@
       "referenced_by_files": [
         "scripts/verify/business_real_user_browser_closure.sh"
       ],
-      "lines": 86
+      "lines": 86,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_real_user_browser_closure.sh",
@@ -1045,7 +1061,8 @@
       "referenced_by_files": [
         "scripts/verify/business_real_user_browser_closure.sh"
       ],
-      "lines": 494
+      "lines": 494,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "business_scope_context_runtime_probe.py",
@@ -1160,7 +1177,8 @@
       "referenced_by_files": [
         "scripts/verify/capability_lint.sh"
       ],
-      "lines": 44
+      "lines": 44,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "capability_lint.sh",
@@ -1249,7 +1267,8 @@
       "referenced_by_files": [
         "scripts/verify/capability_smoke.sh"
       ],
-      "lines": 126
+      "lines": 126,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "capability_smoke.sh",
@@ -1384,7 +1403,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_company_contractor_responsibility_context.sh"
       ],
-      "lines": 412
+      "lines": 412,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "company_contractor_responsibility_fact_audit.py",
@@ -1635,7 +1655,8 @@
         "scripts/ops/validate_construction_diary_visible_fields.sh",
         "scripts/ops/validate_formal_business_release_gate.sh"
       ],
-      "lines": 151
+      "lines": 151,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "construction_product_menu_release_audit.py",
@@ -1715,7 +1736,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_contract_business_categories.sh"
       ],
-      "lines": 134
+      "lines": 134,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "contract_business_category_binding_audit.py",
@@ -1726,7 +1748,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_contract_business_category_binding.sh"
       ],
-      "lines": 129
+      "lines": 129,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "contract_catalog_determinism_guard.py",
@@ -1918,7 +1941,8 @@
         "scripts/verify/frontend_scene_component_bridge_guard.py",
         "scripts/verify/test_contract_form_semantic_identity_guard.py"
       ],
-      "lines": 159
+      "lines": 159,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "contract_form_side_effect_regression_guard.py",
@@ -2401,7 +2425,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_contract_settlement_payment_closure.sh"
       ],
-      "lines": 320
+      "lines": 320,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "contract_v2_render_authority_matrix.py",
@@ -2414,7 +2439,7 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 299
+      "lines": 305
     },
     {
       "script": "contract_version_evolution_drill.py",
@@ -2467,7 +2492,8 @@
         "scripts/verify/controller_delegate_guard.py",
         "scripts/verify/controller_route_policy_guard.py"
       ],
-      "lines": 25
+      "lines": 25,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "controller_allowlist_routes_guard.py",
@@ -2544,7 +2570,8 @@
         "scripts/e2e/e2e_settlement_approval_preflight.py",
         "scripts/ops/validate_core_document_processing_gate.sh"
       ],
-      "lines": 483
+      "lines": 483,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "core_history_field_physical_boundary_audit.py",
@@ -2854,7 +2881,8 @@
         "scripts/verify/frontend_style_system_guard.py",
         "scripts/verify/test_design_token_system.py"
       ],
-      "lines": 215
+      "lines": 215,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "dev_acceptance_release_probe_schema_guard.py",
@@ -2871,7 +2899,7 @@
         "make/dev.mk",
         "scripts/verify/test_dev_acceptance_release_identity.py"
       ],
-      "lines": 332
+      "lines": 403
     },
     {
       "script": "direct_acceptance_engineering_settlement_income_projection_audit.py",
@@ -3108,7 +3136,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_field_operation_actions.sh"
       ],
-      "lines": 451
+      "lines": 451,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "file_line_budget_uniform_guard.py",
@@ -3133,7 +3162,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_business_categories.sh"
       ],
-      "lines": 511
+      "lines": 511,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_business_category_runtime_audit.py",
@@ -3144,7 +3174,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_business_category_runtime.sh"
       ],
-      "lines": 627
+      "lines": 627,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_business_fact_projection_audit.py",
@@ -3225,7 +3256,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_downstream_traceability.sh"
       ],
-      "lines": 433
+      "lines": 433,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_expense_approval_policy_audit.py",
@@ -3236,7 +3268,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_expense_approval_policy.sh"
       ],
-      "lines": 262
+      "lines": 262,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_expense_category_handling_policy_audit.py",
@@ -3247,7 +3280,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_expense_category_handling_policy.sh"
       ],
-      "lines": 779
+      "lines": 779,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_expense_claim_entry_context_audit.py",
@@ -3267,7 +3301,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_browser_acceptance.sh"
       ],
-      "lines": 422
+      "lines": 422,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_handling_entry_catalog_audit.py",
@@ -3287,7 +3322,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_handling_evidence.sh"
       ],
-      "lines": 480
+      "lines": 480,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_handling_http_surface_smoke.py",
@@ -3320,7 +3356,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_interfund_category_handling_policy.sh"
       ],
-      "lines": 338
+      "lines": 338,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_interfund_handling_entry_audit.py",
@@ -3331,7 +3368,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 571
+      "lines": 571,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_interfund_position_bundle_summary.py",
@@ -3381,7 +3419,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_legacy_cash_ledger_backfill_readiness.sh"
       ],
-      "lines": 322
+      "lines": 322,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_legacy_source_less_ledger_reconciliation_audit.py",
@@ -3392,7 +3431,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_legacy_source_less_ledger_reconciliation.sh"
       ],
-      "lines": 377
+      "lines": 377,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_p0_currency_default_audit.py",
@@ -3457,7 +3497,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_relation_required.sh"
       ],
-      "lines": 308
+      "lines": 308,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "finance_role_permission_audit.py",
@@ -3468,7 +3509,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_finance_role_permissions.sh"
       ],
-      "lines": 445
+      "lines": 445,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "foreign_tax_certificate_visible_surface_alignment_audit.py",
@@ -3583,7 +3625,8 @@
       "referenced_by_files": [
         "scripts/verify/form_structure_standardization_runtime_audit.sh"
       ],
-      "lines": 625
+      "lines": 625,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "form_structure_standardization_runtime_audit.sh",
@@ -4079,7 +4122,8 @@
         "scripts/verify/frontend_release_ci_guard.py",
         "scripts/verify/frontend_static_release_audit.py"
       ],
-      "lines": 27
+      "lines": 27,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_chart_engine_guard.py",
@@ -4601,7 +4645,8 @@
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/verify/test_frontend_standard_preview.py"
       ],
-      "lines": 590
+      "lines": 590,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_favorite_probe_recovery.py",
@@ -4613,7 +4658,8 @@
         "scripts/dev/frontend_acceptance_runtime.sh",
         "scripts/verify/test_frontend_standard_preview.py"
       ],
-      "lines": 38
+      "lines": 38,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_finance_center_browser.sh",
@@ -4921,7 +4967,8 @@
       "referenced_by_files": [
         "scripts/dev/frontend_acceptance_runtime.sh"
       ],
-      "lines": 34
+      "lines": 34,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_mobile_viewport_guard.py",
@@ -5255,7 +5302,8 @@
         "scripts/release/tenant_rc_runtime_acceptance.sh",
         "scripts/verify/test_frontend_release_local_entry.py"
       ],
-      "lines": 16
+      "lines": 16,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_page_legacy_renderer_residue_guard.py",
@@ -5824,7 +5872,8 @@
       "referenced_by_files": [
         "scripts/dev/frontend_acceptance_runtime.sh"
       ],
-      "lines": 177
+      "lines": 177,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "frontend_relational_action_primitives_guard.py",
@@ -6729,7 +6778,7 @@
         "make/guards.mk",
         "scripts/verify/test_guard_registry_audit.py"
       ],
-      "lines": 516
+      "lines": 654
     },
     {
       "script": "hierarchy_browser_architecture_guard.py",
@@ -6784,7 +6833,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_income_contract_receipt_invoice_closure.sh"
       ],
-      "lines": 390
+      "lines": 390,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "income_contract_settlement_surface_cutover_audit.py",
@@ -7132,7 +7182,8 @@
         "scripts/verify/unified_page_contract_lite_startup_chain_negative_smoke.py",
         "scripts/verify/workbench_extraction_hit_rate_report.py"
       ],
-      "lines": 9
+      "lines": 9,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "intent_write_runtime_smoke.py",
@@ -7169,7 +7220,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_interfund_account_loan_closure.sh"
       ],
-      "lines": 478
+      "lines": 478,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "interfund_borrow_classification_gap_audit.py",
@@ -7193,7 +7245,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_interfund_financing_loan_partner_candidate.sh"
       ],
-      "lines": 261
+      "lines": 261,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "interfund_movement_fact_audit.py",
@@ -7231,7 +7284,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_interfund_treasury_ledger_backfill_readiness.sh"
       ],
-      "lines": 266
+      "lines": 266,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "interfund_user_data_full_coverage_audit.py",
@@ -7268,7 +7322,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_business_categories.sh"
       ],
-      "lines": 199
+      "lines": 199,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_business_category_runtime_audit.py",
@@ -7279,7 +7334,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_business_category_runtime.sh"
       ],
-      "lines": 206
+      "lines": 206,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_category_binding_audit.py",
@@ -7290,7 +7346,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_category_binding.sh"
       ],
-      "lines": 195
+      "lines": 195,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_downstream_traceability_audit.py",
@@ -7301,7 +7358,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_downstream_traceability.sh"
       ],
-      "lines": 332
+      "lines": 332,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_handling_evidence_audit.py",
@@ -7312,7 +7370,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_handling_evidence.sh"
       ],
-      "lines": 318
+      "lines": 318,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_partner_anchor_audit.py",
@@ -7323,7 +7382,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_partner_anchor.sh"
       ],
-      "lines": 225
+      "lines": 225,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "invoice_tax_role_permission_audit.py",
@@ -7334,7 +7394,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_invoice_tax_role_permissions.sh"
       ],
-      "lines": 272
+      "lines": 272,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "js_contract_consumer_markers.py",
@@ -7387,7 +7448,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_labor_settlement_candidate.sh"
       ],
-      "lines": 183
+      "lines": 183,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "labor_usage_legacy_settlement_projection_audit.py",
@@ -7398,7 +7460,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_labor_usage_legacy_settlement_projection.sh"
       ],
-      "lines": 133
+      "lines": 133,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "ledger_reconciliation_trend.py",
@@ -7506,7 +7569,8 @@
       "referenced_by_files": [
         "scripts/verify/test_legacy_custom_column_retirement.py"
       ],
-      "lines": 198
+      "lines": 198,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "legacy_direct_acceptance_attachment_label_audit.py",
@@ -7617,7 +7681,8 @@
         "scripts/verify/low_code_workbench_product_guard.py",
         "scripts/verify/ui_contract_v2_responsibility_map_guard.py"
       ],
-      "lines": 142
+      "lines": 142,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "list_batch_action_closure_guard.py",
@@ -7682,7 +7747,8 @@
         "scripts/verify/frontend_accounting_center_browser.sh",
         "scripts/verify/test_frontend_accounting_center_rollout.py"
       ],
-      "lines": 35
+      "lines": 35,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_administration_domain_ids.py",
@@ -7694,7 +7760,8 @@
         "scripts/verify/frontend_administration_domain_browser.sh",
         "scripts/verify/test_frontend_administration_domain_rollout.py"
       ],
-      "lines": 45
+      "lines": 45,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_base_configuration_domain_ids.py",
@@ -7706,7 +7773,8 @@
         "scripts/verify/frontend_base_configuration_domain_browser.sh",
         "scripts/verify/test_frontend_base_configuration_domain_rollout.py"
       ],
-      "lines": 47
+      "lines": 47,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_candidate_visual_smoke.sh",
@@ -7719,7 +7787,8 @@
         "scripts/dev/local_dev_candidate_frontend.py",
         "scripts/verify/test_local_dev_candidate_frontend.py"
       ],
-      "lines": 28
+      "lines": 28,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_collaboration_domain_ids.py",
@@ -7731,7 +7800,8 @@
         "scripts/verify/frontend_collaboration_domain_browser.sh",
         "scripts/verify/test_frontend_collaboration_domain_rollout.py"
       ],
-      "lines": 58
+      "lines": 58,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_collaboration_fixture_cleanup.py",
@@ -7743,7 +7813,8 @@
         "scripts/verify/local_dev_project_create_contract_action_scope.sh",
         "scripts/verify/test_local_development_lifecycle.py"
       ],
-      "lines": 57
+      "lines": 57,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_cost_domain_ids.py",
@@ -7754,7 +7825,8 @@
       "referenced_by_files": [
         "scripts/verify/frontend_cost_domain_browser.sh"
       ],
-      "lines": 71
+      "lines": 71,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_finance_center_ids.py",
@@ -7766,7 +7838,8 @@
         "scripts/verify/frontend_finance_center_browser.sh",
         "scripts/verify/test_frontend_finance_center_rollout.py"
       ],
-      "lines": 37
+      "lines": 37,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_form_lowcode_browser.sh",
@@ -7790,7 +7863,8 @@
       "referenced_by_files": [
         "scripts/verify/local_dev_form_lowcode_browser.sh"
       ],
-      "lines": 693
+      "lines": 693,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_material_domain_ids.py",
@@ -7802,7 +7876,8 @@
         "scripts/verify/frontend_material_domain_browser.sh",
         "scripts/verify/test_frontend_material_domain_rollout.py"
       ],
-      "lines": 253
+      "lines": 253,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_attachment_m2m_ids.py",
@@ -7814,7 +7889,8 @@
         "scripts/verify/local_dev_payment_attachment_m2m_journey.sh",
         "scripts/verify/test_local_development_lifecycle.py"
       ],
-      "lines": 71
+      "lines": 71,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_attachment_m2m_journey.sh",
@@ -7840,7 +7916,8 @@
         "scripts/verify/local_dev_payment_request_full_chain.sh",
         "scripts/verify/test_local_development_lifecycle.py"
       ],
-      "lines": 86
+      "lines": 86,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_request_floorplan_readonly.sh",
@@ -7893,7 +7970,8 @@
       "referenced_by_files": [
         "scripts/verify/local_dev_payment_request_full_chain.sh"
       ],
-      "lines": 48
+      "lines": 48,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_request_native_parity_ids.py",
@@ -7909,7 +7987,8 @@
         "scripts/verify/local_dev_payment_request_native_parity_readonly.sh",
         "scripts/verify/test_local_development_lifecycle.py"
       ],
-      "lines": 257
+      "lines": 257,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_request_native_parity_readonly.sh",
@@ -7934,7 +8013,8 @@
         "scripts/verify/local_dev_payment_settlement_component_journey.sh",
         "scripts/verify/test_local_development_lifecycle.py"
       ],
-      "lines": 100
+      "lines": 100,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_payment_settlement_component_journey.sh",
@@ -7974,7 +8054,8 @@
         "scripts/verify/local_dev_personnel_authorization_fixture.sh",
         "scripts/verify/test_local_dev_personnel_authorization_fixture.py"
       ],
-      "lines": 312
+      "lines": 312,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_personnel_authorization_fixture.sh",
@@ -7999,7 +8080,8 @@
       "referenced_by_files": [
         "scripts/verify/local_dev_project_create_contract_action_scope.sh"
       ],
-      "lines": 561
+      "lines": 561,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_project_create_contract_action_scope.sh",
@@ -8039,7 +8121,8 @@
         "scripts/verify/local_dev_project_profile_write_fixture.sh",
         "scripts/verify/test_local_dev_project_profile_write_fixture.py"
       ],
-      "lines": 468
+      "lines": 468,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_project_profile_write_fixture.sh",
@@ -8065,7 +8148,8 @@
         "scripts/verify/frontend_quality_safety_domain_browser.sh",
         "scripts/verify/test_frontend_quality_safety_domain_rollout.py"
       ],
-      "lines": 72
+      "lines": 72,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_reporting_center_ids.py",
@@ -8077,7 +8161,8 @@
         "scripts/verify/frontend_reporting_center_browser.sh",
         "scripts/verify/test_frontend_reporting_center_rollout.py"
       ],
-      "lines": 47
+      "lines": 47,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_settlement_domain_ids.py",
@@ -8088,7 +8173,8 @@
       "referenced_by_files": [
         "scripts/verify/frontend_settlement_domain_browser.sh"
       ],
-      "lines": 68
+      "lines": 68,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_systemwide_public_metric_ids.py",
@@ -8115,7 +8201,8 @@
         "scripts/verify/frontend_tax_center_browser.sh",
         "scripts/verify/test_frontend_tax_center_rollout.py"
       ],
-      "lines": 35
+      "lines": 35,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_tender_award_browser.sh",
@@ -8141,7 +8228,8 @@
         "scripts/verify/local_dev_tender_award_fixture.sh",
         "scripts/verify/test_local_dev_tender_award_fixture.py"
       ],
-      "lines": 368
+      "lines": 368,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "local_dev_tender_award_fixture.sh",
@@ -8181,7 +8269,8 @@
         "scripts/verify/frontend_workbench_center_browser.sh",
         "scripts/verify/test_frontend_workbench_center_rollout.py"
       ],
-      "lines": 33
+      "lines": 33,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "locked_fact_formal_model_continuity_guard.py",
@@ -8192,7 +8281,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 264
+      "lines": 264,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "low_code_product_surface_audit.py",
@@ -8367,7 +8457,8 @@
         "scripts/verify/business_config_guard_inventory.py",
         "scripts/verify/lowcode_config_boundary_guard.py"
       ],
-      "lines": 59
+      "lines": 59,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "management_viewer_readonly_guard.py",
@@ -8392,7 +8483,8 @@
         "scripts/verify/legacy_scene_endpoint_guard.py",
         "scripts/verify/marketplace_smoke.sh"
       ],
-      "lines": 81
+      "lines": 81,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "marketplace_smoke.sh",
@@ -8442,7 +8534,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_business_categories.sh"
       ],
-      "lines": 177
+      "lines": 177,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_business_category_binding_audit.py",
@@ -8453,7 +8546,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_business_category_binding.sh"
       ],
-      "lines": 181
+      "lines": 181,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_business_category_runtime_audit.py",
@@ -8464,7 +8558,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_business_category_runtime.sh"
       ],
-      "lines": 304
+      "lines": 304,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_cost_trigger_policy_audit.py",
@@ -8475,7 +8570,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_cost_trigger_policy.sh"
       ],
-      "lines": 269
+      "lines": 269,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_cross_document_traceability_audit.py",
@@ -8486,7 +8582,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_cross_document_traceability.sh"
       ],
-      "lines": 287
+      "lines": 287,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_downstream_traceability_audit.py",
@@ -8497,7 +8594,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_downstream_traceability.sh"
       ],
-      "lines": 293
+      "lines": 293,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_handling_evidence_audit.py",
@@ -8508,7 +8606,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_handling_evidence.sh"
       ],
-      "lines": 415
+      "lines": 415,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_loss_approval_policy_audit.py",
@@ -8519,7 +8618,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_loss_approval_policy.sh"
       ],
-      "lines": 205
+      "lines": 205,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_outbound_derivative_strategy_audit.py",
@@ -8530,7 +8630,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_outbound_derivative_strategy.sh"
       ],
-      "lines": 255
+      "lines": 255,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_plan_purchase_request_traceability_audit.py",
@@ -8541,7 +8642,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_plan_purchase_request_traceability.sh"
       ],
-      "lines": 212
+      "lines": 212,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_plan_visible_note_audit.py",
@@ -8553,7 +8655,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_material_plan_visible_note.sh"
       ],
-      "lines": 229
+      "lines": 229,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_product_projection_probe.py",
@@ -8577,7 +8680,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_purchase_request_downstream_strategy.sh"
       ],
-      "lines": 280
+      "lines": 280,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_rfq_source_coverage_audit.py",
@@ -8589,7 +8693,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_material_rfq_source_coverage.sh"
       ],
-      "lines": 304
+      "lines": 304,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_role_permission_audit.py",
@@ -8600,7 +8705,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_role_permissions.sh"
       ],
-      "lines": 441
+      "lines": 441,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_settlement_payment_execution_approval_policy_audit.py",
@@ -8611,7 +8717,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_settlement_payment_execution_approval_policy.sh"
       ],
-      "lines": 239
+      "lines": 239,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_settlement_payment_execution_traceability_audit.py",
@@ -8637,7 +8744,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_settlement_payment_reversal.sh"
       ],
-      "lines": 207
+      "lines": 207,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "material_settlement_split_payment_audit.py",
@@ -8648,7 +8756,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_material_settlement_split_payment.sh"
       ],
-      "lines": 231
+      "lines": 231,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "mechanical_settlement_partner_audit.py",
@@ -8659,7 +8768,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_mechanical_settlement_partner.sh"
       ],
-      "lines": 145
+      "lines": 145,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "menu_config_tree_editor_behavior_guard.sh",
@@ -8683,7 +8793,8 @@
       "referenced_by_files": [
         "scripts/verify/test_menu_governance_inventory.py"
       ],
-      "lines": 735
+      "lines": 735,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "menu_governance_m4_closure.py",
@@ -8832,7 +8943,8 @@
       "referenced_by_files": [
         "scripts/verify/native_parser_capability_audit.sh"
       ],
-      "lines": 657
+      "lines": 657,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "native_parser_capability_audit.sh",
@@ -8865,7 +8977,8 @@
       "referenced_by_files": [
         "scripts/verify/test_native_view_capability_taxonomy.py"
       ],
-      "lines": 69
+      "lines": 69,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "native_view_coverage_report.py",
@@ -9147,7 +9260,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_operation_strategy_contract_surface.sh"
       ],
-      "lines": 126
+      "lines": 126,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "ops_batch_smoke.py",
@@ -9159,7 +9273,8 @@
         "scripts/ci/generate_test_inventory.py",
         "scripts/verify/ops_batch_smoke.sh"
       ],
-      "lines": 75
+      "lines": 75,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "ops_batch_smoke.sh",
@@ -9347,7 +9462,8 @@
         "scripts/ci/generate_test_inventory.py",
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 423
+      "lines": 423,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_formal_relationship_scope_block_smoke.py",
@@ -9359,7 +9475,8 @@
         "scripts/ci/generate_test_inventory.py",
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 232
+      "lines": 232,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_locked_fact_mapping_candidate_guard.py",
@@ -9370,7 +9487,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 98
+      "lines": 98,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_locked_fact_mapping_candidate_probe.py",
@@ -9381,7 +9499,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 408
+      "lines": 408,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_payment_request_capability_contract_v1.py",
@@ -9401,7 +9520,8 @@
       "referenced_by_files": [
         "scripts/verify/test_p1_payment_request_field_completeness_guard.py"
       ],
-      "lines": 265
+      "lines": 265,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_relationship_review_queue_audit.py",
@@ -9412,7 +9532,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 84
+      "lines": 84,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "p1_relationship_suggestion_audit.py",
@@ -9423,7 +9544,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 86
+      "lines": 86,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "page_contract_action_schema_semantics_guard.py",
@@ -9619,7 +9741,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_payment_execution_request_anchor.sh"
       ],
-      "lines": 196
+      "lines": 196,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "payment_request_approval_chain_summary.py",
@@ -9758,7 +9881,8 @@
         "scripts/verify/kernel_immutable_guard.py",
         "scripts/verify/platform_multi_domain_ready_report.py"
       ],
-      "lines": 92
+      "lines": 92,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "platform_distribution_ready_report.py",
@@ -9784,7 +9908,8 @@
         "scripts/deploy/prod_sim_fresh_replay.sh",
         "scripts/deploy/prod_sim_oneclick.sh"
       ],
-      "lines": 20
+      "lines": 20,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "platform_kernel_baseline_guard.py",
@@ -10205,7 +10330,8 @@
         "scripts/verify/tenant_product_payload_boundary_guard.py",
         "scripts/verify/test_product_customer_runtime_decoupling_guard.py"
       ],
-      "lines": 47
+      "lines": 47,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "product_delivery_action_closure_smoke.py",
@@ -10790,7 +10916,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_project_budget_legacy_material.sh"
       ],
-      "lines": 148
+      "lines": 148,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "project_context_selector_product_boundary_guard.py",
@@ -11233,7 +11360,8 @@
         "scripts/verify/visibility_filter_verification.py",
         "scripts/verify/workbench_extraction_hit_rate_report.py"
       ],
-      "lines": 203
+      "lines": 203,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "python_name_binding_guard.py",
@@ -11258,7 +11386,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_receipt_income_partner_anchor.sh"
       ],
-      "lines": 175
+      "lines": 175,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "receipt_income_type_mapping_guard.py",
@@ -11283,7 +11412,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_receipt_invoice_source_document.sh"
       ],
-      "lines": 119
+      "lines": 119,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "relation_access_policy_consistency_audit.py",
@@ -11822,7 +11952,8 @@
         "scripts/verify/legacy_scene_endpoint_guard.py",
         "scripts/verify/scene_admin_smoke.sh"
       ],
-      "lines": 198
+      "lines": 198,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "scene_admin_smoke.sh",
@@ -11861,7 +11992,8 @@
         "scripts/verify/frontend_scene_component_bridge_guard.py",
         "scripts/verify/test_scene_audit_disclosure_guard.py"
       ],
-      "lines": 52
+      "lines": 52,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "scene_base_contract_asset_coverage_guard.py",
@@ -12431,7 +12563,8 @@
         "scripts/verify/scene_legacy_auth_smoke.py",
         "scripts/verify/scene_legacy_deprecation_smoke.py"
       ],
-      "lines": 25
+      "lines": 25,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "scene_legacy_auth_smoke.py",
@@ -13109,7 +13242,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_settlement_contract_surface.sh"
       ],
-      "lines": 239
+      "lines": 239,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "side_effect_intent_policy_guard.py",
@@ -13329,7 +13463,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_subcontract_request_contract_anchor.sh"
       ],
-      "lines": 137
+      "lines": 137,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "subscription_smoke.py",
@@ -13341,7 +13476,8 @@
         "scripts/ci/generate_test_inventory.py",
         "scripts/verify/subscription_smoke.sh"
       ],
-      "lines": 176
+      "lines": 176,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "subscription_smoke.sh",
@@ -13745,7 +13881,8 @@
       "referenced_by_files": [
         "scripts/tenant_payload/run_permission_probe.sh"
       ],
-      "lines": 62
+      "lines": 62,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "tenant_product_fresh_install.py",
@@ -14011,7 +14148,8 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 64
+      "lines": 64,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_construction_diary_p2_extraction_migration.py",
@@ -14070,7 +14208,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 115
+      "lines": 115,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_contract_probe_routing.py",
@@ -14081,7 +14220,8 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 69
+      "lines": 69,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_contract_schema_declaration_sync.py",
@@ -14092,7 +14232,8 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 66
+      "lines": 66,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_contract_snapshot_case_actors.py",
@@ -14178,7 +14319,8 @@
       "referenced_by_files": [
         "make/guards.mk"
       ],
-      "lines": 127
+      "lines": 127,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_design_token_system.py",
@@ -14198,7 +14340,8 @@
       "referenced_by_files": [
         "make/guards.mk"
       ],
-      "lines": 492
+      "lines": 559,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_env_external_topology_precedence.sh",
@@ -14270,7 +14413,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 228
+      "lines": 228,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_formal_action_runtime_drift_audit.py",
@@ -14342,7 +14486,8 @@
       "referenced_by_files": [
         "make/dev.mk"
       ],
-      "lines": 378
+      "lines": 378,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_acceptance_login_probe.py",
@@ -14366,7 +14511,8 @@
       "referenced_by_files": [
         "make/dev.mk"
       ],
-      "lines": 225
+      "lines": 225,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_accounting_center_rollout.py",
@@ -14442,7 +14588,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 43
+      "lines": 43,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_collaboration_domain_rollout.py",
@@ -14675,7 +14822,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 40
+      "lines": 40,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_form_header_action_primitives_guard.py",
@@ -14712,7 +14860,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 61
+      "lines": 61,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_intent_channel_guard.py",
@@ -14736,7 +14885,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 339
+      "lines": 339,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_low_code_field_create_dialog_guard.py",
@@ -14812,7 +14962,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 68
+      "lines": 68,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_overlay_lifecycle_guard.py",
@@ -14836,7 +14987,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 133
+      "lines": 133,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_payment_domain_rollout.py",
@@ -14860,7 +15012,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 449
+      "lines": 449,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_product_page_header_guard.py",
@@ -15177,7 +15330,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 107
+      "lines": 107,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_reporting_center_rollout.py",
@@ -15214,7 +15368,8 @@
       "referenced_by_files": [
         "make/runtime_ops.mk"
       ],
-      "lines": 1561
+      "lines": 1561,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_state_presentation_guard.py",
@@ -15238,7 +15393,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 64
+      "lines": 64,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_systemwide_coverage_audit.py",
@@ -15288,7 +15444,8 @@
       "referenced_by_files": [
         "make/ci.mk"
       ],
-      "lines": 54
+      "lines": 54,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_frontend_workbench_center_rollout.py",
@@ -15338,7 +15495,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 241
+      "lines": 241,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_ci_checks.py",
@@ -15350,7 +15508,8 @@
         "make/codex.mk",
         "scripts/verify/test_gitee_formal_queue.py"
       ],
-      "lines": 154
+      "lines": 154,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_ci_incremental_update.py",
@@ -15361,7 +15520,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 204
+      "lines": 204,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_formal_executor.py",
@@ -15372,7 +15532,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 227
+      "lines": 227,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_formal_pr.py",
@@ -15383,7 +15544,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 100
+      "lines": 100,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_formal_queue.py",
@@ -15394,7 +15556,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 308
+      "lines": 308,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_formal_worker.py",
@@ -15405,7 +15568,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 145
+      "lines": 145,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_frontend_cache.py",
@@ -15416,7 +15580,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 131
+      "lines": 131,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_frontend_cache_install.py",
@@ -15427,7 +15592,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 44
+      "lines": 44,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_frontend_reuse.py",
@@ -15451,7 +15617,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 120
+      "lines": 120,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_pr_bot.py",
@@ -15475,7 +15642,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 157
+      "lines": 157,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_publication_scope.py",
@@ -15486,7 +15654,8 @@
       "referenced_by_files": [
         "make/codex.mk"
       ],
-      "lines": 42
+      "lines": 42,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_gitee_to_github_mirror.py",
@@ -15544,7 +15713,7 @@
       "referenced_by_make_targets": [],
       "referenced_by_workflows": [],
       "referenced_by_files": [],
-      "lines": 78
+      "lines": 154
     },
     {
       "script": "test_hr_payroll_document_p2_extraction_migration.py",
@@ -15629,7 +15798,8 @@
       "referenced_by_files": [
         "scripts/verify/test_form_structure_authority_unification.py"
       ],
-      "lines": 430
+      "lines": 430,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_local_dev_frontend_quick.py",
@@ -15640,7 +15810,8 @@
       "referenced_by_files": [
         "make/dev.mk"
       ],
-      "lines": 328
+      "lines": 328,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_local_dev_personnel_authorization_fixture.py",
@@ -15669,7 +15840,8 @@
       "referenced_by_files": [
         "make/dev.mk"
       ],
-      "lines": 91
+      "lines": 91,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_local_development_lifecycle.py",
@@ -15680,7 +15852,8 @@
       "referenced_by_files": [
         "make/dev.mk"
       ],
-      "lines": 712
+      "lines": 712,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_local_quick_evidence.py",
@@ -15894,7 +16067,8 @@
         "make/frontend.mk",
         "scripts/verify/playwright_vendor_coupling_guard.py"
       ],
-      "lines": 89
+      "lines": 89,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_product_administration_center_wave1_guard.py",
@@ -15970,7 +16144,8 @@
       "referenced_by_files": [
         "scripts/verify/tenant_product_payload_boundary_guard.py"
       ],
-      "lines": 31
+      "lines": 31,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_product_delivery_action_closure_smoke.py",
@@ -16111,7 +16286,8 @@
       "referenced_by_files": [
         "make/contract.mk"
       ],
-      "lines": 522
+      "lines": 522,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_product_view_capability_ledger_schema.py",
@@ -16268,7 +16444,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 66
+      "lines": 66,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_scene_company_access_preflight_guard.py",
@@ -16279,7 +16456,8 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 158
+      "lines": 158,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_scene_company_snapshot_collect.py",
@@ -16290,7 +16468,8 @@
       "referenced_by_files": [
         "make/dev_test.mk"
       ],
-      "lines": 326
+      "lines": 326,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_scene_inventory_freeze_guard.py",
@@ -16517,7 +16696,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 102
+      "lines": 102,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "test_web_unified_page_contract_v2_guard_row_identity.py",
@@ -16584,7 +16764,8 @@
       "referenced_by_files": [
         "make/frontend.mk"
       ],
-      "lines": 29
+      "lines": 29,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "ui_contract_v2_contract_boundary_guard.py",
@@ -16636,7 +16817,8 @@
       "referenced_by_files": [
         "scripts/verify/test_um_p1_ownership_visibility_contract_guard.py"
       ],
-      "lines": 450
+      "lines": 450,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "um_p2_interfund_relation_aggregation_guard.py",
@@ -16692,7 +16874,8 @@
       "referenced_by_files": [
         "scripts/verify/um_p3_core035_s07ac_confirmation_guard.py"
       ],
-      "lines": 421
+      "lines": 421,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "um_p3_core035_s07ac_confirmation_guard.py",
@@ -16704,7 +16887,8 @@
         "scripts/verify/test_um_p3_core035_s07ac_confirmation_guard.py",
         "scripts/verify/um_p3_core_domain_authority_baseline_guard.py"
       ],
-      "lines": 363
+      "lines": 363,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "um_p3_core_domain_authority_baseline_guard.py",
@@ -16715,7 +16899,8 @@
       "referenced_by_files": [
         "scripts/verify/test_um_p3_core_domain_authority_baseline_guard.py"
       ],
-      "lines": 671
+      "lines": 671,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "unified_page_contract_lite_acceptance_checklist_guard.py",
@@ -17693,7 +17878,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 452
+      "lines": 452,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "user_business_productization_baseline_guard.py",
@@ -17704,7 +17890,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 208
+      "lines": 208,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "user_confirmed_62_business_entry_integration_matrix.py",
@@ -17715,7 +17902,8 @@
       "referenced_by_files": [
         "scripts/ops/validate_business_capability_productization_p1.sh"
       ],
-      "lines": 445
+      "lines": 445,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "user_confirmed_menu_surface_guard.py",
@@ -17727,7 +17915,8 @@
         "scripts/ops/validate_business_capability_productization_p1.sh",
         "scripts/ops/validate_formal_business_release_gate.sh"
       ],
-      "lines": 508
+      "lines": 508,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "user_confirmed_settlement_usability_audit.py",
@@ -17739,7 +17928,8 @@
         "scripts/ops/validate_formal_business_release_gate.sh",
         "scripts/ops/validate_user_confirmed_settlement_usability.sh"
       ],
-      "lines": 102
+      "lines": 102,
+      "wire_or_retire": "file-consumed"
     },
     {
       "script": "user_data_migration_closure_gate.py",
