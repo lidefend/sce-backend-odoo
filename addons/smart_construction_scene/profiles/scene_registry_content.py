@@ -72,6 +72,7 @@ def list_scene_entries() -> List[Dict[str, Any]]:
                 "menu_xmlid": "smart_construction_core.menu_sc_project_dashboard",
                 "action_xmlid": "smart_construction_core.action_project_dashboard",
                 "route": "/s/project.management",
+                "intent": "project.dashboard.enter",
             },
         },
         {
