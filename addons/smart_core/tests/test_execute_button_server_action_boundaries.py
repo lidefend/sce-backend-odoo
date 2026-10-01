@@ -625,5 +625,67 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertEqual(result["error"]["message"], "ACTION_CONTRACT_AUTHORITY_MISSING")
 
 
+class RelationActionOriginTest(unittest.TestCase):
+    def setUp(self):
+        path = Path(__file__).resolve().parents[1] / 'core/relation_action_authority.py'
+        spec = importlib.util.spec_from_file_location('relation_action_authority_test_target', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.validate = module.validate_relation_action_origin
+        self.calls = []
+        calls = self.calls
+        class Parent:
+            _fields = {'lines': types.SimpleNamespace(type='one2many', comodel_name='x.child')}
+            ids = [3]
+            def browse(self, record_id):
+                calls.append(('browse', record_id))
+                return self
+            def exists(self): return self
+            def check_access_rights(self, mode): calls.append(('acl', mode))
+            def check_access_rule(self, mode): calls.append(('rule', mode))
+            def check_field_access_rights(self, mode, names): calls.append(('fields', mode, names))
+            def __getitem__(self, name): return types.SimpleNamespace(ids=self.ids)
+        self.parent = Parent()
+        self.origin = dict(model='x.parent', record_id=2, field='lines', action_id=41, menu_id=51)
+        self.entry = dict(model='x.child', can_read=True, can_open=True)
+        self.contract = {'statusContract': {'globalStatus': {'effectiveRecordCapabilities': {'read': True}}},
+                         'layoutContract': {'children': [{'type': 'field', 'name': 'lines', 'fieldInfo': {'relation_entry': self.entry}}]}}
+
+    def run_origin(self, origin=None, entry_error=''):
+        return self.validate({'x.parent': self.parent}, self.origin if origin is None else origin,
+                             model='x.child', record_id=3, load_contract=lambda **kw: self.contract,
+                             validate_entry=lambda action, menu, model: entry_error)
+
+    def test_current_parent_and_field_access_checked(self):
+        self.run_origin()
+        self.assertEqual(self.calls, [('browse', 2), ('acl', 'read'), ('rule', 'read'), ('fields', 'read', ['lines'])])
+
+    def test_incomplete_or_mismatched_origin_is_denied(self):
+        for patch in ({'record_id': 0}, {'record_id': True}, {'menu_id': 0}, {'field': 'other'}):
+            with self.subTest(patch=patch), self.assertRaises(ValueError): self.run_origin({**self.origin, **patch})
+        with self.assertRaisesRegex(ValueError, 'ENTRY_DENIED'): self.run_origin(entry_error='DENIED')
+        self.parent._fields = {'lines': types.SimpleNamespace(type='char', comodel_name='x.child')}
+        with self.assertRaisesRegex(ValueError, 'FIELD_MISMATCH'): self.run_origin()
+
+    def test_removed_link_is_not_an_execution_authority(self):
+        self.parent.ids = [99]
+        with self.assertRaisesRegex(ValueError, 'RECORD_MISMATCH'): self.run_origin()
+
+    def test_revoked_acl_or_open_contract_is_denied(self):
+        self.entry['can_open'] = False
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+        self.entry['can_open'] = True
+        self.parent.check_access_rule = lambda _mode: (_ for _ in ()).throw(PermissionError('revoked'))
+        with self.assertRaises(PermissionError): self.run_origin()
+
+    def test_hidden_or_nested_occurrence_does_not_grant_access(self):
+        node = self.contract['layoutContract']['children'][0]
+        node['modifiers'] = {'invisible': True}
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+        node.pop('modifiers')
+        self.contract['layoutContract'] = {'type': 'field', 'name': 'other', 'children': [node]}
+        with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
+
+
 if __name__ == "__main__":
     unittest.main()

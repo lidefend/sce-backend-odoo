@@ -131,8 +131,25 @@ class ExecuteButtonHandler(BaseIntentHandler):
         authority_action_id = str(button.get("action_id") or button.get("actionId") or "").strip()
         backend_identity = str(button.get("backend_identity") or button.get("backendIdentity") or "").strip()
         source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
-        if not action_id or not menu_id or not authority_action_id or not backend_identity or not source_widget_id:
+        if not authority_action_id or not backend_identity or not source_widget_id:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+        if not action_id or not menu_id:
+            origin = meta.get("relation_origin")
+            if not origin:
+                raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+            from ..core.relation_action_authority import validate_relation_action_origin
+            from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+            try:
+                validate_relation_action_origin(
+                    self.env, origin, model=model, record_id=record_id,
+                    load_contract=self._load_current_action_contract,
+                    validate_entry=PageAssembler(self.env, self.su_env)._relation_entry_authority_pair_error,
+                )
+            except ValueError as error:
+                raise AccessError(str(error)) from error
+            # The validated parent proves navigation only. The child's fresh
+            # contract and existing execution ACL/state checks remain authoritative.
+            action_id = menu_id = 0
 
         contract = self._load_current_action_contract(
             model=model,

@@ -36,6 +36,18 @@
     "authority": "existing local Make tools; no database or service access"
   },
   "checks": {
+    "relation_action_authority": {
+      "target": "verify.execute_button.authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/core/relation_action_authority.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "make/codex.mk"
+      ]
+    },
     "create_default_hydration": {
       "target": "verify.frontend.create_default_hydration.unit",
       "kind": "offline",
