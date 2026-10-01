@@ -639,3 +639,8 @@ P0 now opens the generated record after upload or submit failure, with a bounded
 ### Segment53.201 — Plan execution hydration and real handling
 
 Shared editable collections now hold editing until authoritative existing-row hydration completes. The bounded plan browser passed64 checks including held real reads, node creation, confirm/start, progress50/100, completion and exact node11/parent80 cleanup. Backend configured-approval runtime24 remains reusable. Terminal narrow screenshot still showed loading; the tool now waits for the node name but this additional wait has not yet run. Configured multi-role UI, loaded terminal visuals and remaining document responsibilities keep `detail.action-state` open.
+
+
+### Segment53.202 — Configured reviews absent from the consumed workspace
+
+A rollback probe with the existing config-admin, PM and executive fixtures proves that configured plan-version submission creates a real assigned review with available approve/reject contract actions. However, the frontend consumes `product_workspace`, currently built only by PaymentRequestWorkItemService; the assigned version is absent. The legacy review target also has no action/menu execution authority. Runtime verification FAILED; all records/configuration were rolled back and absence/baseline readback verified. Required closure: P1 real review projection into the existing workspace contract, plus P0 freshness-checked work-item-origin execution authority and shared frontend transport. Do not claim the legacy aggregate proves current UI completion, add temporary menus, or substitute an administrator reviewer.

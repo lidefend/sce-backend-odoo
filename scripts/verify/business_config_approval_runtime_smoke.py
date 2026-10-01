@@ -4045,8 +4045,90 @@ def _expense_create_request_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=expense-create-request")
 
 
+def _plan_reviewer_entry_checks():
+    """Actual fixture actors and policy handlers; all facts/config roll back."""
+    from odoo.addons.smart_construction_core.handlers.approval_policy_configuration import ApprovalPolicyConfigSetHandler, ApprovalPolicyStepsSetHandler
+    from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkSummaryHandler
+    from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
+    from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    actors = {}
+    for role in ("config_admin", "pm", "executive"):
+        user = base["res.users"].sudo().search([("login", "=", "fixture_role_" + role)])
+        assert len(user) == 1 and user.active and user.company_id.id == 8
+        actors[role] = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+    pm, admin, reviewer = actors["pm"], actors["config_admin"], actors["executive"]
+    assert pm.uid != reviewer.uid and admin.uid != reviewer.uid
+    project = pm["project.project"].browse(10)
+    project.check_access_rights("read")
+    project.check_access_rule("read")
+    assert project.company_id.id == 8
+    Policy = base["sc.approval.policy"].sudo().with_context(active_test=False)
+    domain = [("target_model", "=", "sc.plan.version"), ("company_id", "in", [False, 8])]
+    assert not Policy.search_count(domain), "do not replace an existing policy"
+    definitions = base["tier.definition"].sudo().with_context(active_test=False)
+    definition_domain = [("model", "=", "sc.plan.version")]
+    before_definitions = definitions.search(definition_domain).ids
+    ids = {}
+    try:
+        def configure(handler, params):
+            result = handler(admin, payload={"params": params}).handle()
+            assert result["ok"] is True
+            return result["data"]
+        config = configure(ApprovalPolicyConfigSetHandler, {"model": "sc.plan.version", "approval_required": True, "mode": "single", "manager_scope_key": "executive"})
+        config = configure(ApprovalPolicyStepsSetHandler, {"model": "sc.plan.version", "steps": [{"name": "Rollback version executive review", "approval_scope_key": "executive", "active": True}]})
+        assert config["runtime_approval_required"] and config["policy"]["step_count"] == 1
+        print("APPROVAL_CHECK=version_policy_configured_by_fixture_config_admin")
+        plan = pm["sc.plan"].create({"name": "Rollback reviewer entry parent", "project_id": project.id})
+        ids["sc.plan"] = plan.id
+        version = pm["sc.plan.version"].create({"plan_id": plan.id, "version_no": "Rollback reviewer entry version"})
+        ids["sc.plan.version"] = version.id
+        version.action_submit()
+        assert version.state == "draft" and version.validation_status in ("waiting", "pending")
+        assert reviewer.uid in version.review_ids.mapped("reviewer_ids").ids
+        assert not version.approved_by and version.with_env(reviewer).can_review
+        print("APPROVAL_CHECK=version_pm_submission_waits_for_distinct_real_reviewer")
+        items = MyWorkSummaryHandler(reviewer)._load_tier_review_items(reviewer.user, 100)
+        item = next((row for row in items if row.get("model") == version._name and row.get("record_id") == version.id), None)
+        assert item, "assigned version review is missing from my-work"
+        target = item["target"]
+        print("PLAN_REVIEWER_TARGET=" + json.dumps(target, ensure_ascii=False))
+        print("APPROVAL_CHECK=version_reviewer_receives_real_my_work_item")
+        workspace_result = MyWorkSummaryHandler(reviewer).handle({"product_workspace": True, "company_id": 8})
+        workspace = workspace_result.get("data", {}).get("product_workspace", {})
+        visible_items = [row for section in workspace.get("sections", []) for row in section.get("items", [])]
+        visible = next((row for row in visible_items if row.get("target", {}).get("model") == version._name
+                        and row.get("target", {}).get("record_id") == version.id), None)
+        print("PLAN_REVIEWER_PRODUCT_WORKSPACE=" + json.dumps({"version": workspace.get("version"),
+            "assigned_version_visible": bool(visible), "section_counts": [len(s.get("items", [])) for s in workspace.get("sections", [])]}, ensure_ascii=False))
+        route = RouteAuthorityValidateHandler(reviewer).handle({"model": version._name, "record_id": version.id,
+            "action_id": target.get("action_id", 0), "menu_id": target.get("menu_id", 0)})
+        route = route.to_legacy_dict() if hasattr(route, "to_legacy_dict") else route
+        result = UiContractV2Handler(reviewer).handle({"model": version._name, "record_id": version.id,
+            "view_type": "form", "action_id": target.get("action_id", 0), "menu_id": target.get("menu_id", 0)})
+        result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        actions = result.get("data", {}).get("actionContract", {}).get("actionRuleList", [])
+        print("PLAN_REVIEWER_ENTRY=" + json.dumps({"route": route, "contract_ok": result.get("ok"),
+            "actions": [{k: a.get(k) for k in ("actionId", "allowed", "enabled", "actionSemantics", "backendIdentity")} for a in actions]}, ensure_ascii=False, default=str))
+        assert visible, "actual product workspace omits the assigned non-payment review"
+        assert route.get("ok") is True, "assigned reviewer target has no executable route authority"
+        assert result.get("ok", True) and any(a.get("actionSemantics", {}).get("purpose") == "approve" for a in actions)
+        print("APPROVAL_CHECK=version_reviewer_target_has_executable_action_contract")
+    finally:
+        base.cr.rollback()
+        base.invalidate_all()
+        assert all(not base[model].sudo().browse(record_id).exists() for model, record_id in ids.items())
+        assert not Policy.search_count(domain)
+        assert definitions.search(definition_domain).ids == before_definitions
+        print("PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=4 scope=plan-reviewer-entry")
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "plan-reviewer-entry":
+        return _plan_reviewer_entry_checks()
     if scope == "expense-create-request":
         return _expense_create_request_checks()
     assert scope in ("plan-version", "plan-report", "plan-state-authority", "contract-event-state-authority", "diary-state-authority", "settlement-adjustment", "receipt-income", "financing-borrowing", "financing-approval", "self-funding-reconciliation", "expense-state-authority", "finance-state-authority", "legacy-workflow", "red-flush-role", "red-flush", "tender-guarantee", "project-document", "tender-purchase", "project-role-approval", "project-creation-state", "all", "inbound", "acceptance", "purchase-request", "rfq", "material-settlement", "equipment-plan-request", "equipment-execution", "labor-plan-request", "labor-execution", "rental-plan", "rental-order", "rental-settlement", "rental-settlement-cash", "rental-cancellation-contract", "safety-approval", "subcontract-approval", "subcontract-settlement", "subcontract-settlement-cash"), "unsupported approval runtime scope"

@@ -488,10 +488,39 @@
         "scripts/dev/frontend_acceptance_runtime.sh",
         "make/runtime_ops.mk"
       ]
+    },
+    "plan_reviewer_entry_runtime": {
+      "target": "verify.business_config.approval_runtime",
+      "kind": "runtime",
+      "scope": "SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=plan-reviewer-entry",
+      "inputs": [
+        "scripts/verify/business_config_approval_runtime_smoke.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "addons/smart_construction_core/handlers/approval_policy_configuration.py",
+        "addons/smart_construction_core/handlers/my_work_summary.py",
+        "addons/smart_construction_core/services/payment_request_work_item_service.py",
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_core/handlers/route_authority_validate.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "frontend/apps/web/src/api/myWork.ts",
+        "frontend/apps/web/src/views/MyWorkView.vue"
+      ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "53.201: P0 shared editable x2many loading gate; L1/detail134/typecheck/tool48 PASS. Browser tpl07-1790815407363 64PASS with delayed real node reads and full plan create-confirm-start-progress50/100-done, exact node11/parent80 cleanup. Built base7ed411ffe+dirty index-B8XOfsg8.js; backend152cf9ecc unchanged. Terminal390 screenshot still loading: browser now waits for node name, this last observation-only change not yet run; do not claim loaded terminal visual. Next existing plan/version configured multi-role UI and version title/loaded terminal visuals; reuse P1 runtime24, no unrelated ORM or repeat full unconfigured flow merely for screenshot. Overall67/detail.action-state remains gap, no push/merge/deploy.",
+  "blockers": [
+    {
+      "owner": "P1 current product workspace + P0 work-item action authority",
+      "status": "failed",
+      "stage": "fc9243092 + dirty scripts/verify/business_config_approval_runtime_smoke.py, scripts/dev/frontend_acceptance_runtime.sh, frontend/apps/web/scripts/standard_page_type_browser.mjs",
+      "command": "SC_APPROVAL_RUNTIME_SCOPE=plan-reviewer-entry make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/plan-reviewer-workspace-runtime.log",
+      "completed_checks": 3,
+      "reason": "Configured version review assigned to executive exists, but actual payment-only product_workspace omits it; legacy record target has no action/menu authority. All transaction writes rolled back and verified.",
+      "next_layer": "L1 owning-layer implementation and focused tests before runtime/browser"
+    }
+  ],
+  "next_exact_step": "53.202 runtime FAILED with rollback VERIFIED; see blockers original log. Current MyWorkView fetches product_workspace=true -> PaymentRequestWorkItemService only, omits real executive plan-version review. Legacy tier.review target exists but no action/menu; final approve/reject contract allowed. Next implement P1 review projection/aggregation into existing product workspace and P0 validated work-item action origin + shared frontend transport. Validate fresh review assignment/current record ACL/company/state; no menu forgery/admin substitute/frontend model rules. Start focused L1/L2, then same plan-reviewer-entry rollback runtime, only then configured multi-role UI. Reuse prior plan64/runtime24, no unchanged retry, no build/upgrade until affected product requires it, no push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

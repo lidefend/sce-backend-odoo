@@ -9512,3 +9512,15 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - plan-node-loading-browser.log / tpl07-1790815407363 **64 PASS**：PM32/company8，父计划80/节点11，真实新增节点→确认→开始→50%执行中→100%已完成→完成计划；所有6项真实写响应ok，权威回读一致，终态write=false。刻意延迟读取的两个阶段均不可提前编辑，释放后名称完整且只读。errors=[]、forbiddenWrites=[]，expense-cleanup-final.log精确恢复node11/parent80，status=restored。
 - 1440/390无溢出断言通过，但人工检查390终态截图仍为明细加载反馈，不能证明已加载节点视觉。工具已补终态节点名称等待，未仅为换截图重跑整条业务链；这条新增等待尚待下次相关UI执行。上述64行为结果仍按原工具输入引用，不称最终工具全部已跑。未改变产品源码或重建。
 - 本轮关闭计划执行主从真实办理及提前编辑时序缺陷；终态明细双视口、版本业务标题、配置审批多角色UI和其余67项职责仍有缺口。detail.action-state保持contract_gap。批次定向行为通过，整体验收未完成；无主线集成、目标部署或用户整体交付。下一步沿已登记计划/版本配置审批UI补终态观察，复用原状态机和已完成无配置链。
+
+
+### 53.202 配置审批真实角色与当前工作台断点
+
+- fc9243092 clean续跑，53.201已修复并验证共享明细加载属progress。只复用同run及受管acceptance；本次P4既有浏览器/回滚运行工具扩展，目标sc.plan.version、PM/config_admin/executive、company8/project10，不创建环境或持久fixture，不变更P0/P1产品源码。数据库角色仍本地验收库sc_frontend_acceptance，原project/dbfilter/filestore保持不变。
+- TPL07_SCOPE=approval-actions TPL07_APPROVAL_CONFIG_INSPECT=1通过既有浏览器入口：tpl07-1790815595470 **5 PASS**（响应观察，非审批办理验收）。config_admin34读取版本审批无现存规则，提供executive等有效岗位；PM与executive可查询项目10的计划（当前无记录）。PM初始化提供计划menu507/action655，executive不提供计划入口。没有配置写入，没有创建临时数据，前端构建/后端绑定均复用。
+- 既有SC_APPROVAL_RUNTIME_SCOPE新增plan-reviewer-entry。精确验收库与3角色company8、项目10访问校验后，使用config_admin实际config.set/steps.set创建事务内executive单级版本审批；PM实际创建父计划/版本并提交，校验真实reviewer包含executive且can_review，不伪造审批结果。已有策略包括停用策略存在则拒绝覆盖。finally rollback并回读临时记录不存在、策略为空、原tier.definition集合一致；不提交事务，无手工DB/credential/Compose。
+- L1 plan-reviewer-entry-iteration PASS，standard_preview.unit48 PASS（plan-reviewer-entry-tool-unit.log）；首次plan-reviewer-entry-runtime FAILED：旧聚合确有真实待办、记录最终契约approve/reject已授权，但target没有action/menu，route.authority.validate为ROUTE_ACTION_REQUIRED；ROLLBACK VERIFIED。这是产品入口授权链问题，不是状态机失败。
+- 随后检查前端实际消费发现MyWorkView仅消费product_workspace；my.work.summary的该分支直接PaymentRequestWorkItemService，MODEL固定payment.request。旧tier.review聚合并不是当前页面消费源，不能用旧路径证明待办可见。改定向工具为同时输出/断言实际product_workspace，减少动作日志到必要身份/能力摘要；因诊断输入变化而运行一次，未无变更重试。
+- L1 plan-reviewer-workspace-iteration PASS；plan-reviewer-workspace-runtime **FAILED**：3前置检查通过，真实临时版本14分配给executive；当前product_workspace版本payment-request-workspace-v1，assigned_version_visible=false，sections[0,0]。最终断言actual product workspace omits the assigned non-payment review失败；PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED。工具原始日志是唯一证据，不冒称运行验收通过。新增纯读观察不影响原48项许可/清理纯测，但最终新增诊断断言不由旧纯测代替。
+- 明确产品缺口分两层：P1行业工作台应将真实非付款审批任务投影到现有共享工作台契约并与付款结果统一聚合；P0动作执行应接受后端重新验证的真实待办来源（来源对象、目标绑定、当前用户/公司/记录ACL及当前审批资格），继续校验新鲜动作契约/状态，前端只传递契约声明来源。不临时加菜单、不借用管理员审批、不前端猜审批模型或按钮、不重新建立工作台框架。先补以上拥有层，再复跑该回滚检查，通过后才执行受管配置多角色UI。
+- 本轮为诊断进展，非批次验收完成；没有构建/升级/发布周期，没有推送、合并、目标部署。已有计划执行64、状态机24结果保留，其覆盖范围不包含新发现工作台缺口。67条台账detail.action-state仍contract_gap，终态视觉和版本业务标题也未升级为通过。

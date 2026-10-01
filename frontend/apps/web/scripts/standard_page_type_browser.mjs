@@ -891,6 +891,25 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_INSPECT === '1') {
+    // Read only: establish the actual configuration and distinct reviewer entry
+    // before extending the existing exact-write/recovery scope.
+    report.planApprovalInspection = [];
+    for (const role of ['fixture_role_config_admin', 'fixture_role_pm', 'fixture_role_executive']) {
+      const session = await login(role);
+      const request = role === 'fixture_role_config_admin'
+        ? { intent: 'sc.approval_policy.config.get', params: { model: 'sc.plan.version' } }
+        : { intent: 'api.data', params: { op: 'list', model: 'sc.plan', domain: [['project_id', '=', 10]], fields: ['id', 'name', 'state'], limit: 1, context: { company_id: 8 } } };
+      const result = await session.page.evaluate(async body => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' }, body: JSON.stringify(body),
+        })).json();
+      }, request);
+      report.planApprovalInspection.push({ role, request, result, routeAuthority: report.routeAuthority });
+      check(`plan approval inspection ${role}: authenticated response`, typeof result.ok === 'boolean');
+      await session.ctx.close();
+    }
   } else if (process.env.TPL07_SCOPE === 'approval-actions') {
     report.approvalPages = [];
     check('approval scope: supported model selection', !process.env.TPL07_APPROVAL_MODEL || ['sc.expense.claim', 'sc.settlement.adjustment', 'sc.receipt.income', 'sc.financing.loan', 'sc.self.funding.registration', 'sc.treasury.reconciliation', 'sc.output.invoice.adjustment', 'tender.guarantee', 'sc.project.document', 'tender.doc.purchase', 'payment.request', 'sc.contract.event', 'sc.payment.execution', 'sc.plan', 'sc.plan.report', 'sc.construction.diary', 'project.task', 'project.project', 'sc.material.inbound', 'sc.material.acceptance', 'sc.material.purchase.request', 'sc.material.rfq', 'sc.material.settlement', 'sc.equipment.plan', 'sc.equipment.request', 'sc.equipment.usage', 'sc.equipment.settlement', 'sc.labor.plan', 'sc.labor.request', 'sc.material.rental.plan', 'sc.material.rental.order', 'sc.material.rental.settlement', 'sc.safety.plan', 'sc.safety.disclosure', 'sc.subcontract.plan', 'sc.subcontract.request', 'sc.subcontract.settlement', 'sc.attendance.checkin', 'sc.labor.usage', 'sc.labor.settlement'].includes(process.env.TPL07_APPROVAL_MODEL));
