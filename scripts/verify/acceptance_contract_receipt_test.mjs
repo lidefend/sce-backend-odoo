@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  RECEIPT_SCHEMA, canonicalJson, semanticSha256, contractPrerequisite,
+  RECEIPT_SCHEMA, CanonicalJsonUnsupported, canonicalJson, semanticSha256, contractPrerequisite,
   assertContractPrerequisite, readContractReceipt, observedContractBinding,
 } from './lib/acceptance_contract_receipt.mjs';
 
@@ -109,6 +109,10 @@ assert.equal(missing.receipt, null);
 assert.match(missing.error, /contract_receipt_unavailable/);
 
 const observedEnvelope = envelope => envelope;
+const envelopeWith = ({ digest = SEMANTIC, schema = SCHEMA, authorities = AUTHORITIES, model = 'payment.request', viewType = 'form', id = 1813, ok = true } = {}) => ({
+  ok, data: { pageInfo: { model, viewType }, dataContract: { mainData: { id } },
+    meta: { lifecycle: { integrity: { contractSha256: digest }, definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0', schemaSha256: schema }, authority: { authorities } } } },
+});
 const okBinding = observedContractBinding({
   envelope: observedEnvelope({ ok: true, data: { pageInfo: { model: 'payment.request', viewType: 'form' },
     dataContract: { mainData: { id: 1813 } },
@@ -132,15 +136,31 @@ assert.equal(extraParamBinding.ok, true, 'a wider client request may still bind 
 assert.equal(extraParamBinding.exact_approved_request, false);
 assert.deepEqual(extraParamBinding.extra_request_params, ['render_profile']);
 
+// A wider or narrower request never excuses a divergent seal: request-shape
+// equality is only a hint, the backend-sealed semantic digest is the binding.
+const widerDiverged = observedContractBinding({
+  envelope: envelopeWith({ digest: 'f'.repeat(64) }),
+  receiptRequest: accepted.approvedRequest.params,
+  approved: accepted,
+  requestParams: { ...accepted.approvedRequest.params, render_profile: 'readonly' },
+});
+assert.equal(widerDiverged.ok, false, 'a wider request with a divergent seal must be rejected');
+assert.equal(widerDiverged.code, 'observed_semantics_diverged');
+const { delivery_profile: _dropped, ...narrowerRequest } = accepted.approvedRequest.params;
+const narrowerDiverged = observedContractBinding({
+  envelope: envelopeWith({ digest: 'f'.repeat(64) }),
+  receiptRequest: accepted.approvedRequest.params,
+  approved: accepted,
+  requestParams: narrowerRequest,
+});
+assert.equal(narrowerDiverged.ok, false, 'a narrower request with a divergent seal must be rejected');
+assert.equal(narrowerDiverged.code, 'observed_semantics_diverged');
+
 const bindingRejected = (code, envelope, requestParams = accepted.approvedRequest.params) => {
   const verdict = observedContractBinding({ envelope, receiptRequest: accepted.approvedRequest.params, approved: accepted, requestParams });
   assert.equal(verdict.ok, false, `${code} must be rejected`);
   assert.equal(verdict.code, code, `expected ${code}, got ${verdict.code}`);
 };
-const envelopeWith = ({ digest = SEMANTIC, schema = SCHEMA, authorities = AUTHORITIES, model = 'payment.request', viewType = 'form', id = 1813, ok = true } = {}) => ({
-  ok, data: { pageInfo: { model, viewType }, dataContract: { mainData: { id } },
-    meta: { lifecycle: { integrity: { contractSha256: digest }, definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0', schemaSha256: schema }, authority: { authorities } } } },
-});
 bindingRejected('observed_envelope_not_ok', envelopeWith({ ok: false }));
 bindingRejected('observed_contract_unsealed', envelopeWith({ digest: '' }));
 bindingRejected('observed_schema_digest_mismatch', envelopeWith({ schema: 'f'.repeat(64) }));
@@ -156,5 +176,13 @@ assert.equal(canonicalJson({ b: 1, a: [2, { d: 'x', c: null }] }), '{"a":[2,{"c"
 assert.equal(canonicalJson({ zh: '施工合同' }), '{"zh":"施工合同"}');
 assert.equal(semanticSha256({ meta: { lifecycle: { traceId: 'a' } }, page: 1 }), semanticSha256({ page: 1 }));
 assert.notEqual(semanticSha256({ page: 1 }), semanticSha256({ page: 2 }));
+
+// The JS mirror only covers the domain Python's canonical_json renders identically.
+// Anything outside it must refuse to produce a digest instead of fabricating one.
+assert.throws(() => canonicalJson({ ratio: 0.5 }), CanonicalJsonUnsupported);
+assert.throws(() => canonicalJson({ big: 2 ** 53 }), CanonicalJsonUnsupported);
+assert.throws(() => canonicalJson({ weird: Number.NaN }), CanonicalJsonUnsupported);
+assert.equal(semanticSha256({ meta: {}, ratio: 0.5 }), '', 'an unsupported payload must not yield a comparable digest');
+assert.notEqual(semanticSha256({ meta: {}, ratio: 0.5 }), SEMANTIC);
 
 process.stdout.write('[acceptance_contract_receipt_test] PASS\n');

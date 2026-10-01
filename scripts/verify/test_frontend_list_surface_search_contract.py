@@ -57,7 +57,10 @@ def validate_acceptance_contract_consumption(probe, frontend_make):
     """The probe must consume the backend-approved contract before it asserts anything."""
     assert 'assertContractPrerequisite(' in probe, 'the probe must require the backend exact-instance contract receipt'
     gate_at = probe.index('assertContractPrerequisite(')
-    for later in ('await login(page, navigation)', 'findPopulatedList(page, navigation)', 'captureState(page,'):
+    # Match the call sites, not the function definitions: a definition that appears
+    # earlier in the file would otherwise satisfy the ordering assertion while the
+    # real call drifted above the gate.
+    for later in ('await login(page, navigation)', 'await findPopulatedList(page, navigation)', 'await captureState(page'):
         assert probe.index(later) > gate_at, f'{later} must run after the contract prerequisite gate, not before'
     assert 'readContractReceipt(' in probe, 'the probe must read the declared receipt rather than invent an approval'
     assert 'observedContractBinding(' in probe, 'the probe must bind the executed response to the approved contract'
@@ -66,6 +69,12 @@ def validate_acceptance_contract_consumption(probe, frontend_make):
     assert 'SC_ACCEPTANCE_REQUIRE_CONTRACT=1' in frontend_make, 'the governed list browser lane must require the contract receipt'
     assert 'SC_ACCEPTANCE_CONTRACT_RECEIPT' in frontend_make, 'the governed list browser lane must pass the contract receipt'
     assert 'SC_ACCEPTANCE_REQUIRED_SHA' in frontend_make, 'the governed list browser lane must bind the required served revision'
+    # The declared instance receipt names one exact runtime; the daily profile
+    # resolves a different declared environment, so it must not be bound to that
+    # receipt implicitly nor silently skip it when it is explicitly required.
+    assert "DAILY || ['1', 'true', 'yes']" not in probe, 'the daily profile must not implicitly require the acceptance-instance receipt'
+    assert 'SC_ACCEPTANCE_REQUIRE_CONTRACT="$(SC_ACCEPTANCE_REQUIRE_CONTRACT)"' in frontend_make, 'the daily lane must pass the contract requirement explicitly'
+    assert 'not_required_for_profile' in probe, 'the probe must report why a profile is not contract-bound'
 
 
 class AcceptanceContractConsumptionTest(unittest.TestCase):
@@ -80,7 +89,6 @@ class AcceptanceContractConsumptionTest(unittest.TestCase):
             'pageInfo': {'model': 'payment.request', 'viewType': 'form'},
             'fields': [{'name': 'amount_total', 'type': 'monetary'}, {'name': '公司', 'type': 'char'}],
             'statusContract': {'globalStatus': {'modelRights': {'write': True}, 'effectiveRenderProfile': 'readonly'}},
-            'ratio': 0.5,
             'counts': [1, 2, 3],
             'meta': {'lifecycle': {'runtime': {'requestId': 'request.1'}}},
         }
@@ -92,6 +100,21 @@ class AcceptanceContractConsumptionTest(unittest.TestCase):
         result = subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), expected)
+
+    def test_semantic_seal_refuses_payloads_outside_the_mirrored_domain(self):
+        """Python renders floats/bigints; the JS mirror must refuse rather than diverge."""
+        lifecycle = load_contract_lifecycle()
+        fixture = {'meta': {}, 'ratio': 0.5, 'tiny': 1e-05, 'big': 2 ** 53}
+        backend_expected = lifecycle.payload_sha256(lifecycle.contract_semantic_payload(fixture))
+        self.assertTrue(backend_expected)
+        program = (
+            "import { semanticSha256 } from './scripts/verify/lib/acceptance_contract_receipt.mjs';"
+            f"process.stdout.write(semanticSha256({json.dumps(fixture, ensure_ascii=False)}));"
+        )
+        result = subprocess.run(['node', '--input-type=module', '-e', program], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), '', 'an unmirrorable payload must not yield a comparable digest')
+        self.assertNotEqual(result.stdout.strip(), backend_expected)
 
 
 class ListSurfaceSearchContractTest(unittest.TestCase):

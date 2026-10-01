@@ -16,14 +16,22 @@ export const REQUIRED_INTENT = 'ui.contract.v2';
 
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 
+export class CanonicalJsonUnsupported extends Error {}
+
 // Mirrors smart_core.core.contract_lifecycle.canonical_json:
-// sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str.
+// sort_keys=True, separators=(",", ":"), ensure_ascii=False.
+// Python renders floats (1.0 -> "1.0", 1e-05) and ints beyond 2**53 with reprs
+// JavaScript cannot reproduce, so this refuses that domain instead of silently
+// producing a different digest. Compare with stableJson() when order-insensitive
+// structural equality is needed rather than the seal protocol.
 export function canonicalJson(value) {
   if (value === null || value === undefined) return 'null';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'number') {
-    if (!Number.isFinite(value)) return 'null';
-    return Number.isInteger(value) ? String(value) : JSON.stringify(value);
+    if (!Number.isFinite(value)) throw new CanonicalJsonUnsupported('non-finite number');
+    if (!Number.isInteger(value)) throw new CanonicalJsonUnsupported(`floating point value ${value}`);
+    if (!Number.isSafeInteger(value)) throw new CanonicalJsonUnsupported(`integer beyond 2**53: ${value}`);
+    return String(value);
   }
   if (typeof value === 'string') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
@@ -31,15 +39,33 @@ export function canonicalJson(value) {
     const keys = Object.keys(value).filter(key => value[key] !== undefined).sort();
     return `{${keys.map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
   }
-  return JSON.stringify(String(value));
+  throw new CanonicalJsonUnsupported(`unsupported type ${typeof value}`);
 }
 
-// sha256 over the sealed semantic payload (contract minus meta).
+// Order-insensitive structural equality for request comparison. Uses native
+// JSON number rendering, so every JSON value is comparable; never used for the seal.
+export function stableJson(value) {
+  if (value === null || value === undefined) return 'null';
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (typeof value === 'object') {
+    const keys = Object.keys(value).filter(key => value[key] !== undefined).sort();
+    return `{${keys.map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+// sha256 over the sealed semantic payload (contract minus meta). Returns '' when
+// the contract leaves the mirrored domain, so a caller can never treat an
+// unverifiable payload as matching.
 export function semanticSha256(contract) {
   if (!contract || typeof contract !== 'object' || Array.isArray(contract)) return '';
   const payload = { ...contract };
   delete payload.meta;
-  return sha256(canonicalJson(payload));
+  try {
+    return sha256(canonicalJson(payload));
+  } catch (error) {
+    return '';
+  }
 }
 
 function positiveInt(value) {
@@ -221,17 +247,21 @@ export function observedContractBinding({ envelope, receiptRequest = {}, approve
   const extraParams = observedKeys.filter(key => !approvedKeys.includes(key));
   const missingParams = approvedKeys.filter(key => !observedKeys.includes(key));
   const conflictingParams = approvedKeys.filter(key => observedKeys.includes(key)
-    && canonicalJson(requestParams[key]) !== canonicalJson(approvedParams[key]));
+    && stableJson(requestParams[key]) !== stableJson(approvedParams[key]));
   if (conflictingParams.length) {
     return fail('observed_request_conflict', { conflicting_params: conflictingParams });
   }
   const exact = !extraParams.length && !missingParams.length
-    && approvedKeys.every(key => canonicalJson(requestParams[key]) === canonicalJson(approvedParams[key]));
+    && approvedKeys.every(key => stableJson(requestParams[key]) === stableJson(approvedParams[key]));
   const sameAsApproved = observedDigest === text(approved.approvedSemanticSha256);
-  if (exact && !sameAsApproved) {
+  // The executed contract must reproduce the approved seal whether or not the
+  // request is identical: an equal request shape alone is never sufficient, and a
+  // wider/narrower request is only acceptable while the sealed semantics match.
+  if (!sameAsApproved) {
     return fail('observed_semantics_diverged', { observed: observedDigest, approved: text(approved.approvedSemanticSha256) });
   }
   return { ok: true, observedSemanticSha256: observedDigest, approvedSemanticSha256: text(approved.approvedSemanticSha256),
+    request_scope: exact ? 'approved_request_exact' : 'wider_or_narrower_request_semantically_equal',
     exact_approved_request: exact, same_as_approved: sameAsApproved,
     extra_request_params: extraParams, missing_request_params: missingParams, conflicting_request_params: [] };
 }

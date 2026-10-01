@@ -50,8 +50,14 @@ if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
 // the browser is launched, i.e. before any DOM interaction or assertion.
 const CONTRACT_RECEIPT_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_RECEIPT || DEFAULT_RECEIPT_PATH);
 const CONTRACT_DECLARATION_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_DECLARATION || 'config/acceptance/backend_contract_instance_v1.json');
-const REQUIRE_CONTRACT = DAILY || ['1', 'true', 'yes'].includes(String(process.env.SC_ACCEPTANCE_REQUIRE_CONTRACT || '').toLowerCase());
-const contractGate = { required: REQUIRE_CONTRACT, status: REQUIRE_CONTRACT ? 'not_evaluated' : 'optional',
+// The declared instance receipt names one exact runtime (config/acceptance/
+// backend_contract_instance_v1.json: database + fixture account). The daily
+// profile resolves to its own declared environment (config/frontend/
+// acceptance_environments_v1.json profiles.daily), so it must never be bound to
+// that receipt implicitly: a lane is contract-bound only when it explicitly
+// declares the requirement and a receipt for its own runtime.
+const REQUIRE_CONTRACT = ['1', 'true', 'yes'].includes(String(process.env.SC_ACCEPTANCE_REQUIRE_CONTRACT || '').toLowerCase());
+const contractGate = { required: REQUIRE_CONTRACT, profile: acceptance.profile, status: REQUIRE_CONTRACT ? 'not_evaluated' : 'not_required_for_profile',
   receipt: CONTRACT_RECEIPT_PATH, declaration: CONTRACT_DECLARATION_PATH,
   approved: null, approved_request: null, approved_route: '', binding: null };
 if (REQUIRE_CONTRACT) {

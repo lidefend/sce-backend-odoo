@@ -951,7 +951,7 @@
     },
     "acceptance_record_identity_resolution": {
       "kind": "runtime",
-      "target": "verify.dev.acceptance.contract.identity_resolution",
+      "target": "verify.dev.acceptance.record_identity.resolve",
       "inputs": [
         "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
         "make/dev.mk",
@@ -5234,7 +5234,9 @@
   },
   "successor_step2_backend_receipt_20261001": {
     "stage": "step 2 of execution_handoff_20261001",
-    "status": "implemented_uncommitted_unlive",
+    "status": "implemented_committed_unlive",
+    "committed": "d06ffe915",
+    "fix_round_20261002": "the probe's checks are now tri-state (absent = not evaluated, never a silent False), --require-contract fails closed as contract_required_but_undeclared when no declaration is declared, and resolution_unique_target proves uniqueness (governed producer, external-id stable identifier equal to record_xmlid, single matching resolved target, declaration requires_unique_match). The daily probe/release lanes now write DAILY_ACCEPTANCE_PROBE_OUTPUT so a daily run cannot overwrite the instance receipt, and the identity-resolution make entry was renamed to the registered verify.dev.acceptance.record_identity.resolve.",
     "artifacts": [
       "config/acceptance/backend_contract_instance_v1.json",
       "scripts/ops/dev_acceptance_release_probe.py::probe_contract_acceptance",
@@ -5248,7 +5250,32 @@
   },
   "successor_step3_frontend_prerequisite_20261001": {
     "stage": "step 3 of execution_handoff_20261001",
-    "status": "implemented",
+    "status": "fix_round_complete_pending_independent_rereview",
+    "independent_review": {
+      "reviewer": "B (read-only independent review)",
+      "verdict": "blocked on commit 31c64a61d",
+      "blocker_1": "P2 scripts/verify/lib/acceptance_contract_receipt.mjs: semantic equality was required only when the request was identical, so a divergent backend seal passed for any wider or narrower request.",
+      "blocker_2": "P3 make/frontend.mk + make/dev.mk: verify.daily_dev.list_surface.readonly.browser demanded a receipt whose request.database equals the daily DB_NAME while the only contract-enabled producer writes the acceptance runtime receipt, and the daily probe/release lanes wrote the same ACCEPTANCE_PROBE_OUTPUT without a declaration, so a daily run could both fail unsatisfiably and clobber a good instance receipt.",
+      "verified_sound": "gate ordering before launch/login/list/capture; the approved record cannot degrade to the first row; the route override cannot be ignored; both replays use the real session and pass the daily readonly guard; expectedSha + staleness are real; required_checks is non-vacuous; the guard independently recomputes snapshot semantics; schema-digest binding is real; authority comparison is stable; env reaches node on both lanes."
+    },
+    "fix_round_20261002": {
+      "blocker_1_resolution": "observedContractBinding now fails observed_semantics_diverged whenever the observed seal differs from the approved seal, identical request or not; request-shape overlap only records extra/missing/conflicting params. Locked by acceptance_contract_receipt_test.mjs cases widerDiverged/narrowerDiverged. The undeclared-extension strictness considered during the fix round was deliberately not shipped: no evidence showed real client keys outside the declaration, and an unproven strictness could false-fail the deployed verdict; the seal, not the request shape, is the binding.",
+      "blocker_2_resolution": "the contract requirement is no longer forced by the daily profile (frontend_list_surface_structure_browser.mjs REQUIRE_CONTRACT is an explicit lane decision, reported as contract_prerequisite.status=not_required_for_profile); the daily lane passes the requirement explicitly and only then binds a receipt, which still fails closed on contract_receipt_database_mismatch; daily probe/release lanes write DAILY_ACCEPTANCE_PROBE_OUTPUT (artifacts/backend/daily_dev_acceptance_probe.json) so the instance receipt can no longer be clobbered.",
+      "also_fixed": [
+        "probe checks are tri-state: an unevaluated required check is absent from checks, listed in not_run_checks, and can never pass; the guard enforces agreement between checks/executed_checks/not_run_checks",
+        "--require-contract is now effective: a required contract without a declaration fails closed as contract_required_but_undeclared",
+        "resolution_unique_target now proves uniqueness: governed producer match, external-id stable identifier equal to record_xmlid, complete positive target keys, single matching resolved target, and declaration requires_unique_match",
+        "canonicalJson refuses payloads outside the mirrored Python domain (floats, bigints, non-finite) instead of fabricating a divergent digest; semanticSha256 returns '' for those; stableJson is used for order-insensitive request comparison",
+        "ordering assertions in test_frontend_list_surface_search_contract.py now match call sites (await findPopulatedList(/await captureState() instead of the function definitions",
+        "run.json check acceptance_record_identity_resolution.target now names the real target verify.dev.acceptance.record_identity.resolve (the previous label did not exist); the make entry was renamed to match"
+      ],
+      "evidence": {
+        "frontend_contract_prerequisite": "verify.frontend.list_surface_search_contract.unit: 20 unittest cases + node acceptance_contract_receipt_test lock, log .runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/frontend_contract_prerequisite.log, receipt recorded at head 31c64a61d test_count 21",
+        "backend_contract_instance_receipt": "verify.frontend.acceptance.environment.guard: 28 unittest cases, log .runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/backend_contract_instance_receipt.log, receipt recorded at head 31c64a61d test_count 28",
+        "supporting": "make ci.local.iteration PASS (L1, dirty), make verify.dev.acceptance.release.schema.guard py_compile PASS, make verify.guard.registry AUDIT PASS, make verify.unified_page_contract.v2.schema PASS",
+        "receipt_index_limit": "both recorded offline receipts evaluate as stale with reason 'runtime evidence requires authoritative environment readback' because this run declares environment.kind=runtime, so the offline-reuse branch can never match; this is structural to the run's own declared environment (confirmed in scripts/ops/agent_run_context.py), pre-existing at baseline, and is not a regression or a product verdict."
+      }
+    },
     "artifacts": [
       "scripts/verify/lib/acceptance_contract_receipt.mjs",
       "scripts/verify/acceptance_contract_receipt_test.mjs",

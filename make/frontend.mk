@@ -1027,6 +1027,14 @@ verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.fronten
 	@$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(key)=http://127.0.0.1:5180) $(foreach key,$(SC_LIST_PREVIEW_DB_KEYS) DB_NAME DB BD,$(key)=sc_frontend_acceptance) SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_EXPECTED_SHA="$(SC_ACCEPTANCE_REQUIRED_SHA)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-list-surface-browser
 
 .PHONY: verify.daily_dev.list_surface.readonly.browser
+# The declared instance receipt names one exact runtime (config/acceptance/
+# backend_contract_instance_v1.json). This lane resolves the daily profile
+# (config/frontend/acceptance_environments_v1.json profiles.daily), which is a
+# different declared environment, so the instance contract is enforced only when
+# the caller explicitly requires it:
+#   SC_ACCEPTANCE_REQUIRE_CONTRACT=1 [DB_NAME=<receipt runtime>] make <this target>
+# A receipt supplied for another runtime still fails closed on the database
+# binding; this lane never silently skips a declared prerequisite.
 verify.daily_dev.list_surface.readonly.browser: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
-	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT=1 SC_ACCEPTANCE_CONTRACT_RECEIPT="$(SC_ACCEPTANCE_CONTRACT_RECEIPT)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/frontend_list_surface_structure_browser.mjs
+	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_OPERATION=readonly SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_API_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" SC_ACCEPTANCE_REQUIRE_CONTRACT="$(SC_ACCEPTANCE_REQUIRE_CONTRACT)" SC_ACCEPTANCE_CONTRACT_RECEIPT="$(if $(filter command line environment override,$(origin SC_ACCEPTANCE_REQUIRE_CONTRACT)),$(SC_ACCEPTANCE_CONTRACT_RECEIPT),)" SC_ACCEPTANCE_CONTRACT_DECLARATION="$(SC_ACCEPTANCE_CONTRACT_DECLARATION)" LIST_SURFACE_VIEWPORTS=1440,390 node scripts/verify/frontend_list_surface_structure_browser.mjs
