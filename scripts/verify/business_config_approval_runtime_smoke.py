@@ -4102,8 +4102,10 @@ def _plan_reviewer_entry_checks():
                         and row.get("target", {}).get("record_id") == version.id), None)
         print("PLAN_REVIEWER_PRODUCT_WORKSPACE=" + json.dumps({"version": workspace.get("version"),
             "assigned_version_visible": bool(visible), "section_counts": [len(s.get("items", [])) for s in workspace.get("sections", [])]}, ensure_ascii=False))
+        assert visible, "actual product workspace omits the assigned non-payment review"
+        target = visible["target"]
         route = RouteAuthorityValidateHandler(reviewer).handle({"model": version._name, "record_id": version.id,
-            "action_id": target.get("action_id", 0), "menu_id": target.get("menu_id", 0)})
+            "work_item_origin": target["work_item_origin"]})
         route = route.to_legacy_dict() if hasattr(route, "to_legacy_dict") else route
         result = UiContractV2Handler(reviewer).handle({"model": version._name, "record_id": version.id,
             "view_type": "form", "action_id": target.get("action_id", 0), "menu_id": target.get("menu_id", 0)})
@@ -4111,10 +4113,29 @@ def _plan_reviewer_entry_checks():
         actions = result.get("data", {}).get("actionContract", {}).get("actionRuleList", [])
         print("PLAN_REVIEWER_ENTRY=" + json.dumps({"route": route, "contract_ok": result.get("ok"),
             "actions": [{k: a.get(k) for k in ("actionId", "allowed", "enabled", "actionSemantics", "backendIdentity")} for a in actions]}, ensure_ascii=False, default=str))
-        assert visible, "actual product workspace omits the assigned non-payment review"
         assert route.get("ok") is True, "assigned reviewer target has no executable route authority"
         assert result.get("ok", True) and any(a.get("actionSemantics", {}).get("purpose") == "approve" for a in actions)
         print("APPROVAL_CHECK=version_reviewer_target_has_executable_action_contract")
+        from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
+        approve = next(a for a in actions if a.get("actionSemantics", {}).get("purpose") == "approve")
+        payload = {"params": {"model": version._name, "res_id": version.id, "button": {
+            **approve["button"], "action_id": approve["actionId"], "backend_identity": approve["backendIdentity"],
+            "source_widget_id": approve["sourceWidgetId"]}}, "meta": {"work_item_origin": target["work_item_origin"]}}
+        denied = ExecuteButtonHandler(pm, payload=payload).handle()
+        assert denied.get("ok") is False and version.state == "draft", denied
+        print("APPROVAL_CHECK=version_submitter_cannot_reuse_review_origin")
+        approved = ExecuteButtonHandler(reviewer, payload=payload).handle()
+        assert approved.get("ok") is True, approved
+        version.invalidate_recordset()
+        assert version.state == "approved" and version.approved_by.id == reviewer.uid and version.approved_date
+        print("APPROVAL_CHECK=version_actual_reviewer_executes_fresh_contract_action")
+        replay = ExecuteButtonHandler(reviewer, payload=payload).handle()
+        assert replay.get("ok") is False, replay
+        print("APPROVAL_CHECK=version_completed_review_origin_replay_denied")
+        after = MyWorkSummaryHandler(reviewer).handle({"product_workspace": True, "company_id": 8})["data"]["product_workspace"]
+        assert not any(row["target"]["model"] == version._name and row["target"]["record_id"] == version.id
+                       for section in after["sections"] for row in section["items"])
+        print("APPROVAL_CHECK=version_completed_review_exits_current_workspace")
     finally:
         base.cr.rollback()
         base.invalidate_all()
@@ -4122,7 +4143,7 @@ def _plan_reviewer_entry_checks():
         assert not Policy.search_count(domain)
         assert definitions.search(definition_domain).ids == before_definitions
         print("PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED")
-    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=4 scope=plan-reviewer-entry")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=8 scope=plan-reviewer-entry")
 
 
 def main():

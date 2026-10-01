@@ -9524,3 +9524,15 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 plan-reviewer-workspace-iteration PASS；plan-reviewer-workspace-runtime **FAILED**：3前置检查通过，真实临时版本14分配给executive；当前product_workspace版本payment-request-workspace-v1，assigned_version_visible=false，sections[0,0]。最终断言actual product workspace omits the assigned non-payment review失败；PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED。工具原始日志是唯一证据，不冒称运行验收通过。新增纯读观察不影响原48项许可/清理纯测，但最终新增诊断断言不由旧纯测代替。
 - 明确产品缺口分两层：P1行业工作台应将真实非付款审批任务投影到现有共享工作台契约并与付款结果统一聚合；P0动作执行应接受后端重新验证的真实待办来源（来源对象、目标绑定、当前用户/公司/记录ACL及当前审批资格），继续校验新鲜动作契约/状态，前端只传递契约声明来源。不临时加菜单、不借用管理员审批、不前端猜审批模型或按钮、不重新建立工作台框架。先补以上拥有层，再复跑该回滚检查，通过后才执行受管配置多角色UI。
 - 本轮为诊断进展，非批次验收完成；没有构建/升级/发布周期，没有推送、合并、目标部署。已有计划执行64、状态机24结果保留，其覆盖范围不包含新发现工作台缺口。67条台账detail.action-state仍contract_gap，终态视觉和版本业务标题也未升级为通过。
+
+
+### 53.203 当前工作台审批投影与待办来源动作授权
+
+- 5fc0a6d8d clean续跑；复用53.202明确失败，不重新盘点。P1 ed27ea9e0将当前product_workspace改由CurrentWorkItemService组合原PaymentRequestWorkItemService与实际assigned tier.review；原付款动作/发起/完成职责保留，不新增渲染器或模型白名单。审批记录使用调用者ACL/rules、选定公司、业务范围及can_review，按记录去重，count/total从实际返回项派生；记录入口声明work_item_origin，操作在共享详情办理。
+- P0 221cb5528新增纯来源校验函数，复用既有extension hook解析器，由P1提供tier.review权威适配。严格要求source/id、目标模型/id及当前源与记录绑定；P1只认可当前用户尚可审批的waiting/pending review，执行只允许validate_tier/reject_tier。route.authority.validate支持同一来源，不生成假menu/action；execute_button每次重新校验来源后仍读取新鲜动作契约、button状态、entitlement及原执行ACL/业务scope。无sudo执行业务动作，无权限回退。
+- P0前端cb7e896d4：三个共享动作路径统一传输声明work_item_source/id，schema显式meta类型，保留relation_origin。界面不推导审批模型/状态，不新建工作台框架。原旧聚合未被用作当前工作台结果；其他旧API消费者未在本轮删除。
+- L1 review-workspace-final-static PASS；verify.execute_button.authority.unit **32 PASS**（review-workspace-authority-final-unit.log及begin/record），新增来源格式/目标、每次重新授权、错人、错记录、过期、公司/业务scope、非审批方法、ACL/rules和can_review回归。前端user_journey **66 PASS**，实际primary executor带正确来源；strict typecheck PASS。前端结果复用到当前提交，因为其后仅改后端目标校验与相关测试/运行工具。
+- 后端受管up绑定cb7e896d4（review-workspace-backend-up.log），只Python机制变更无需模块升级；不重建前端、不运行浏览器，先验证已知L3阻断。扩展原plan-reviewer-entry回滚测试，改用当前工作台来源执行真实approve并核对非审批人拒绝、重放拒绝与待办退出。
+- review-workspace-runtime **FAILED，5前置检查通过**：配置→PM提交→真实review；current-user-workspace-v2已经含管理层的版本待办（[1,0]）；来源route有效、最终approve契约有效；PM复用来源被拒绝。实际executive执行返回PERMISSION_DENIED：无sc.plan.version write ACL。finally **PLAN_REVIEWER_ENTRY_ROLLBACK=VERIFIED**；failed/5 begin-record回执已记录，不报8项通过。
+- 新阻断归属P1审批资格与模型访问能力不一致：executive角色目前只继承project_read，版本write只授project_user/project_manager；既有付款另有executive专用read/write ACL。不能为通过验收赋予整套project_manager（含创建/删除）或在通用execute_button对业务方法sudo。下一步在既有角色/能力、记录写入和状态机边界中补齐合法审批所需最小权限，并回归草稿基准编辑/创建删除/跨公司不可扩权；同时确认配置岗位与执行资格一致。全业务单据统一原则保留，不能仅把管理层换成管理员规避。
+- 当前工作区尚有P4运行测试与run metadata待提交；产品三提交已本地记录。前端5180仍53.201构建index-B8XOfsg8.js，不能宣称新来源已在浏览器加载。32纯测及5运行前置只证明声明范围；真实审批通过/完成后移出/多角色UI仍未完成，67/detail.action-state保持contract_gap。无push/merge/目标部署，暂不进入构建/冻结/发布周期。
