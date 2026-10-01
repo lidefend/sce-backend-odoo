@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -103,6 +103,7 @@ assert.ok(['', 'upload', 'submit'].includes(expenseFailureStage));
 const expensePartialUpload = process.env.TPL07_EXPENSE_PARTIAL_UPLOAD === '1';
 assert.ok(!expensePartialUpload || (expenseSaveSuccess && expenseSaveProbe && expenseFailureStage === 'upload'));
 let expenseSuccess = null;
+let paymentReview = null;
 let expensePolicyPermit = null;
 const expenseRecoveryPath = path.join(out, 'expense-success-recovery.json');
 async function expenseCleanup(stage) {
@@ -111,8 +112,10 @@ async function expenseCleanup(stage) {
     env: { ...process.env, SC_APPROVAL_RUNTIME_SCOPE: 'expense-browser-cleanup', SC_EXPENSE_CREATE_REPORT: expenseRecoveryPath },
   });
   await fs.writeFile(path.join(out, `expense-cleanup-${stage}.log`), output);
-  check(`expense cleanup: ${stage} authoritative restoration`, output.includes('EXPENSE_BROWSER_CLEANUP=') && output.includes('"status": "restored"'));
-  return JSON.parse(output.split('\n').find(line => line.startsWith('EXPENSE_BROWSER_CLEANUP=')).slice('EXPENSE_BROWSER_CLEANUP='.length));
+  const receipt = JSON.parse(output.split('\n').find(line => line.startsWith('EXPENSE_BROWSER_CLEANUP=')).slice('EXPENSE_BROWSER_CLEANUP='.length));
+  const expected = stage === 'preflight' && paymentReview?.phase === 'prepare' ? 'preflight' : 'restored';
+  check(`expense cleanup: ${stage} authoritative ${expected}`, receipt.status === expected);
+  return receipt;
 }
 const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
@@ -122,6 +125,29 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    const paymentKind = paymentReviewWriteKind(role, body, paymentReview);
+    if (paymentKind) {
+      paymentReview.phase = `${paymentKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.paymentReviewWrites ??= [];
+      report.paymentReviewWrites.push({ kind: paymentKind, request: body, result });
+      if (result.ok === true) {
+        if (paymentKind === 'create') paymentReview.id = Number(result.data?.id || result.data?.record?.id);
+        paymentReview.phase = { open: 'opened', create: 'created', submit: 'submitted', approve: 'done' }[paymentKind];
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      return route.fulfill({ response });
+    }
+    if (paymentReview?.phase === 'capture' && role === 'fixture_role_finance'
+      && body?.intent === 'api.data' && body.params?.op === 'create' && body.params.model === paymentReview.model) {
+      report.paymentReviewCreateCapture = body;
+      paymentReview.phase = 'captured';
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      return route.fulfill({ status: 503, contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: { code: 'TPL53_CAPTURE_ONLY', message: '验收只读捕获：未创建记录' } }) });
+    }
     const reviewKind = versionReviewWriteKind(role, body, reportSuccess);
     if (reviewKind) {
       reportSuccess.phase = `${reviewKind}_in_flight`;
@@ -922,6 +948,36 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_PAYMENT_REVIEW_CAPTURE === '1') {
+    paymentReview = { model: 'sc.payment.execution', source: { id: 1710, company_id: 8 },
+      marker: `TPL53-PAYMENT-REVIEW-${Date.now()}`, phase: 'prepare' };
+    await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+    const preflight = await expenseCleanup('preflight');
+    check('payment review: exact current baseline captured', preflight.status === 'preflight' && preflight.baseline.execution_ids.includes(186));
+    paymentReview.baseline = preflight.baseline;
+    paymentReview.phase = 'open';
+    await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+    const manager = await login('fixture_role_finance');
+    await manager.page.goto(`${base}/r/payment.request/1710?action_id=775&menu_id=545`);
+    await manager.page.getByRole('button', { name: '生成付款登记', exact: true }).click();
+    await manager.page.waitForURL(url => url.pathname === '/f/sc.payment.execution/new');
+    check('payment review: native continuation opened', paymentReview.phase === 'opened');
+    const values = { paid_amount: '1', payment_account_name: 'FE Company A Operating Account',
+      payment_bank_name: 'FE Construction Bank', payment_account_no: 'FE-PAYER-0001', payment_method: '银行转账', note: paymentReview.marker };
+    for (const [field, value] of Object.entries(values)) {
+      await manager.page.locator(`[data-field-name="${field}"] input, [data-field-name="${field}"] textarea`).first().fill(value);
+    }
+    paymentReview.phase = 'capture';
+    await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+    const [response] = await Promise.all([
+      manager.page.waitForResponse(response => {
+        try { const b = response.request().postDataJSON(); return b?.intent === 'api.data' && b.params?.op === 'create' && b.params.model === paymentReview.model; } catch { return false; }
+      }, { timeout: 15000 }),
+      manager.page.getByRole('button', { name: /^保存(?:草稿)?$/ }).first().click(),
+    ]);
+    check('payment review: create request captured without write', response.status() === 503 && paymentReview.phase === 'captured' && Boolean(report.paymentReviewCreateCapture));
+    await manager.page.screenshot({ path: path.join(out, 'payment-review-create-capture.png') });
+    await manager.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_PUBLISHED_INSPECT === '1') {
     // Read-only user observation; existing write interception remains deny-by-default.
     const admin = await login('fixture_role_config_admin');
@@ -2675,7 +2731,7 @@ try {
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
   await browser.close();
-  if (expenseSuccess || diarySuccess || eventSuccess || reportSuccess) {
+  if (expenseSuccess || diarySuccess || eventSuccess || reportSuccess || paymentReview?.baseline) {
     try { await expenseCleanup('final'); }
     catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
   }

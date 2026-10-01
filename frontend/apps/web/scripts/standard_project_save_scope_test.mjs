@@ -227,7 +227,7 @@ test('version review action permit binds actual review origin and actor without 
 import { paymentReviewWriteKind } from './standard_expense_success_scope.mjs';
 const paymentScope = { model: 'sc.payment.execution', marker: 'TPL53-PAYMENT-REVIEW-1790816000000',
   source: { id: 1710, company_id: 8 }, baseline: { execution_ids: [186] }, phase: 'create',
-  request: { op: 'create', model: 'sc.payment.execution', context: { company_id: 8, action_id: 777, menu_id: 547 },
+  request: { op: 'create', model: 'sc.payment.execution', context: { company_id: 8, action_id: 803, menu_id: 335 },
     vals: { payment_request_id: 1710, paid_amount: 1, note: 'TPL53-PAYMENT-REVIEW-1790816000000' } } };
 test('payment review create binds actor/source/amount/phase and rejects state injection', () => {
   const body = { intent: 'api.data', params: paymentScope.request };
@@ -242,7 +242,7 @@ test('payment review create binds actor/source/amount/phase and rejects state in
 });
 test('payment review binds existing-record exclusion and blocks payment posting', () => {
   const scope = { ...paymentScope, phase: 'submit', id: 200 };
-  const body = { intent: 'execute_button', params: { model: scope.model, res_id: 200, button: { name: 'action_confirm', type: 'object' } }, meta: { action_id: 777, menu_id: 547 } };
+  const body = { intent: 'execute_button', params: { model: scope.model, res_id: 200, button: { name: 'action_confirm', type: 'object' } }, meta: { action_id: 803, menu_id: 335 } };
   assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, scope), 'submit');
   assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), null);
   for (const name of ['action_paid', 'action_cancel', 'unlink'])
@@ -256,4 +256,15 @@ test('payment review approval binds actual origin and denies replay', () => {
   assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, scope), null);
   assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, meta: { work_item_origin: { source: 'tier.review', id: 124 } } }, scope), null);
   assert.equal(paymentReviewWriteKind('fixture_role_finance', body, { ...scope, phase: 'done' }), null);
+});
+
+test('payment review continuation only opens the authorized source without granting arbitrary actions', () => {
+  const scope = { ...paymentScope, phase: 'open' };
+  const body = { intent: 'execute_button', params: { model: 'payment.request', res_id: 1710,
+    button: { type: 'object', name: 'action_create_payment_execution' } }, meta: { action_id: 775, menu_id: 545 } };
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), 'open');
+  assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, params: { ...body.params, res_id: 30 } }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', { ...body, meta: { action_id: 803, menu_id: 335 } }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, { ...scope, phase: 'open_in_flight' }), null);
 });

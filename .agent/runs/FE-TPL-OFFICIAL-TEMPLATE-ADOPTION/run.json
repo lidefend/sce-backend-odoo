@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.219: recover_payment_review wired to existing expense-browser-cleanup. Baseline compares source1710/execution186/reviews/ledger/policy18/step2187/definitions/callbackgroups before deletion and after commit; ownership/review checks before nativeunlink. First mock tests failed relation ints; fixed, deduped ->62PASS with failed+passed receipts, L1PASS. Real readonly preflight passed payment-recovery-preflight.log; NOT actual temporary deletion proof. NEXT wire browser paymentReview scope + exact intercept + finally recovery, fresh marker/preflight per run; manager create from source1710,submitter44 submits,manager30 currentworkspace approve,confirmed/taskremoved/readback,cleanup exactown. Preserve paid186/policy18/step2187; noaction_paid or fixturecreate. Existing source has no ledger though186paid; preserve baseline,do not repair as side task. Product inputs/build unchanged;67open/no push/merge/deploy.",
+  "next_exact_step": "53.222: P1 cbf5c16c1 loaded via governed backend.acceptance.up; front9433 reused. Capture tpl07-1790821686860 7PASS, formal803/335 continuation works; no writes, cleanup restored. Next extend exact P4 create scope from captured request: vals business_category_id16/date_payment/currentdate/paid_amount1/planned_amount2000/payment_method/document_no/note/accounts/attachment_ids[[6,0,[]]]; source1710 is context.default_payment_request_id, not vals. Bind these to current preflight source and native action defaults, reject conflicting source/state/company/review values. Then full manager create->submitter44 submit->manager30 workitem approve->confirmed readback->exact recovery. Preserve publication/user acceptance distinctions; capture not business-loop pass. No rebuild/push/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1518,6 +1518,43 @@
       "rollback": "verified",
       "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/labor-execution-runtime-fixed.log",
       "tool_fix": "separate usage sources per settlement; early create rejection included"
+    },
+    "segment_53_220": {
+      "status": "published_user_journey_failed",
+      "head": "e6f8ea263c1e8ddccaf97f12642ed30ceacc708e",
+      "dirty_scope": [
+        "frontend/apps/web/scripts/standard_expense_success_scope.mjs",
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs"
+      ],
+      "tool_tests": 63,
+      "L1": "passed",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790821308281/report.json",
+      "reason": "action777 explicitly PRODUCT_ENTRY_NOT_RELEASED; source button returns navigation to it",
+      "recovery": "final authoritative restored; no creation",
+      "capability_evidence": "carry forward53.217 backend6; product inputs unchanged",
+      "user_acceptance": "not passed"
+    },
+    "segment_53_221": {
+      "status": "source_verified_runtime_pending",
+      "layer": "P1",
+      "L1": "passed",
+      "targeted_tests": 190,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-canonical-entry-unit.log",
+      "change": "payment.request create/view continuation uses formal actual_outflow action/menu; category unchanged",
+      "runtime": "not_run; backend must load changed Python",
+      "frontend_build": "reuse9433fa515; unchanged"
+    },
+    "segment_53_222": {
+      "status": "continuation_and_capture_passed_full_write_pending",
+      "backend_source": "cbf5c16c1",
+      "frontend_source": "9433fa515",
+      "tool_tests": 63,
+      "browser_assertions": 7,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790821686860/report.json",
+      "writes": 0,
+      "recovery": "restored",
+      "runtime_log": "artifacts/frontend-web-fix-20260928/tpl52/payment-canonical-backend.log"
     }
   }
 }

@@ -9666,3 +9666,24 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - payment-recovery-final-iteration L1 PASS；首轮工具测试失败（25Node+40Python中2个error）：模拟关系字段返回int而真实Odoo返回记录。未进入运行清理。修正mock并去掉继承造成的重复测试，testfix-iteration PASS；testfix-unit **25+37=62 PASS**，failed及新passed begin/record均保留。新增实际恢复函数的mock执行测试验证正常unlink/commit、paid拒绝、原基线变化拒绝，所有拒绝均发生在删除前。
 - 使用既有受管scope和tpl52/expense-success-recovery.json prepare回执实际运行只读preflight，payment-recovery-preflight.log退出0/status=preflight。真实快照：source1710 approved/company8，execution_ids=[186]且原186为paid；无ledger，policy18/step2187；definitions10/2187；callbacks507/508 groups[93]。保留原事实，不改写历史金额/资金差异，不把现有paid记录算作本次业务产物。此次没有创建/删除临时记录，无实际恢复成功声明。
 - 下一步在standard_page_type_browser接入paymentReviewWriteKind、独立paymentReview scope和该恢复回执生命周期：preflight→经理生成并保存→经办提交→经理当前工作台实际approve→只读confirmed/任务退出→finally精确恢复。新浏览器run必须新marker重新取得基线，不能重用本段诊断marker。需要对失联创建回复、失败阶段与finally清理保持原约束。前后端产品未改，不构建/升级，原6项能力证据继续有效；67目标active，未远端/部署。
+
+### 53.220 付款浏览器接线与发布边界断点
+
+- e6f8ea263+既有三份P4脚本dirty接续；只更新原run/活记录，不另建覆盖表。加入精确source1710/company8/manager角色的只读生成入口许可、capture-only创建拦截与finally恢复。L1 payment-ui-action-iteration PASS，payment-ui-action-unit 26 Node+37 Python=63 PASS；日志均在原tpl52目录。产品源码、前端9433fa515和后端eae3dd5d2未变，复用已有能力证据，不构建/升级/无关ORM。
+- 首轮tpl07-1790821170071失败是工具把preflight回执误当restored；修正按阶段判断。第二轮tpl07-1790821228980失败是旧按钮DOM标记；改为实际可见“生成付款登记”。两轮均未创建业务记录；第二轮finally恢复回读通过。
+- 最后tpl07-1790821308281/report.json失败：按钮执行成功，但浏览器转到access-denied。读取该次system.init明确action777/menu547在denied_actions，reason_code=PRODUCT_ENTRY_NOT_RELEASED；不是定位器超时根因或前端误判。付款申请1710仍返回未发布付款登记的导航结果，属于动作契约/执行导航与发布策略衔接缺口。不能通过扩大发布范围、权限或跳过路由守卫获得通过。最终恢复断言通过，无本次创建；3项断言仅为preflight/基线/恢复，不能算业务验收。
+- Formal Product Layer：本次记录/探针P4，后续缺口P0；Layer Target：smart_core共享动作契约与导航发布约束，行业只声明业务动作和必要依赖。平台有效发布权威应一致作用于动作可用性和导航结果；前端只消费，不按模型特判发布。检查必须保留系统能力、发布策略、发布后实际用户三层结果；53.217的6项后端能力和53.215配置只读22项仍有效，但均不能替代本次用户办理链。下一步定向核对共享归一化/执行结果及动作声明目标的发布约束；先L1/L2，再受影响运行验证。67条总体目标仍active，不升级台账完成状态，无推送/合并/目标部署。
+
+### 53.221 付款续接修正为正式实付登记入口
+
+- 对53.220进一步定向诊断：同一次system.init已授权sc.payment.execution的实付登记803/menu335，menu_product_finance_wave1.xml将该入口明确设为标准财务职责，原生表单配置actual_outflow与partner条目共用同一表单。故本例直接根因是P1两个续接方法仍指向旧partner777/547；不能把它泛化为P0发布守卫错误。一般动作依赖/发布契约缺口仍保留，不宣称本次已统一所有动作发布约束。
+- Formal Product Layer P1；Layer Target/Module smart_construction_core payment.request；Standard vs User-Specific为行业标准续接绑定。create/view均改为action_sc_payment_execution_actual_outflow和menu_sc_payment_execution，保留实际业务分类partner、source/request上下文、财务权限、足额付款及业务校验、现有执行记录选择。不按运行时发布状态挑选替代入口，不修改发布集合/ACL/通用前端。Blast Radius仅付款申请生成/查看执行的目标引用；P0无需吸收行业菜单选择。
+- L1 payment-canonical-entry-iteration PASS，L2 verify.payment.approval_state_machine.unit实际190项PASS，含两个新增纯方法执行测试：创建目标和来源分类保留，查看目标/原记录及无权限拒绝；同步既有ORM两处结果断言，未执行ORM。diff --check通过。当前e6f8ea263+明确dirty；产品Python变更不涉及模型字段/数据XML，运行验证需受管后端重新加载，无需模块升级或前端构建。
+- 下一步本地提交责任改动，更新受管后端，并同步P4精确scope/运行断言从旧目标到803/335（不能放宽任意action）；先定向测试，再从capture-only浏览器失败步骤续验。旧浏览器失败记录保留，用户旅程仍未通过；67目标active，无推送/合并/目标部署。
+
+### 53.222 正式付款续接实际页面与创建请求捕获
+
+- P1修正本地提交cbf5c16c1；受管backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local替换旧源码身份后PASS，继续同验收库/18082/既有卷；无模块升级。前端9433候选未变，不构建。P4精确创建/提交目标及对应测试更新为803/335，保留source1710/company8/actor/阶段/marker约束。
+- payment-entry-binding-iteration L1PASS；payment-entry-binding-unit 26Node+37Python=63PASS，begin/record已登记。初次record命令误用AGENT_STATUS，参数拒绝，无通过回执；纠正为AGENT_CHECK_STATUS后记录原日志，不重复执行测试。
+- payment-canonical-capture-browser退出0，tpl07-1790821686860/report.json **7PASS**：manager真实来源按钮进入/f/sc.payment.execution/new，创建请求capture-only返回503，未转发create，无非法业务写入/页面异常，finally基线恢复回读通过。此前777未发布导致的续接断链已在正式803路径消除；不代表保存/提交/审批完整旅程通过。
+- 实际vals为business_category_id16、date_payment、paid_amount1、planned_amount2000、payment_method、document_no、note、本次付款账户和attachment_ids[[6,0,[]]]；payment_request_id未在vals，由context.default_payment_request_id1710传入。既有仅七字段许可尚不能执行真实请求，不能直接放宽：下一步绑定原生动作默认值及当前preflight基线，允许契约实际必要字段并拒绝来源覆盖/状态/公司/review注入，再做真实保存和用户审批闭环。已有恢复只在零创建情况下运行，尚无本次临时记录实际清理证明。67目标active，无远端集成/目标部署。
