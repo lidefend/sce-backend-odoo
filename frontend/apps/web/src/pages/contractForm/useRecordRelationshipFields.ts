@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive } from 'vue';
+import { defaultContractFormRecord } from '../../app/runtime/contractFormDataRuntime';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import { businessRowErrorKey } from '../../app/businessValidationError';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
@@ -154,6 +155,24 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     return one2manyDraftSummary(one2manyFieldRows(name));
   }
 
+  async function loadOne2manyCreateDefaults(name: string): Promise<Record<string, unknown>> {
+    const model = one2manyRelationModel(name);
+    if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
+    const fields = [...new Set(one2manyColumns(name).map((column: One2ManyColumn) => column.name))];
+    if (!fields.length) throw new Error('当前明细缺少字段契约');
+    const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
+    if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
+      throw new Error('明细默认值上下文尚未解析');
+    }
+    const result = await defaultContractFormRecord({ model, fields,
+      context: { ...resolveContractFormReadContext(v2ContractStore.value), ...(fieldContext as Record<string, unknown> | undefined) },
+    });
+    if (!result?.record || typeof result.record !== 'object' || Array.isArray(result.record)) {
+      throw new Error('未能取得明细默认值，请重试');
+    }
+    return Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
+  }
+
   async function hydrateOne2manyRows(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
@@ -216,5 +235,5 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }
 
 
-  return { relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
+  return { loadOne2manyCreateDefaults, relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor, nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId, one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows, prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError };
 }

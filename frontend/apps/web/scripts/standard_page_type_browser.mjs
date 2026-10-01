@@ -993,7 +993,19 @@ try {
             await session.page.screenshot({ path: path.join(out, 'plan-version-parent-inspection.png') });
             const add = collection.getByRole('button').filter({ hasText: /新增|添加/ }).first();
             check('plan version: shared collection exposes creation', await add.count() === 1 && await add.isEnabled());
+            const defaultsResponse = session.page.waitForResponse(response => {
+              try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'
+                && body.params?.op === 'default_get' && body.params?.model === 'sc.plan.version'; } catch { return false; }
+            });
             await add.click();
+            const defaults = await defaultsResponse;
+            const defaultsResult = await defaults.json();
+            report.planVersionInspection.defaults = { request: defaults.request().postDataJSON(), result: defaultsResult };
+            check('plan version: backend default state drives new row', defaultsResult.ok === true && defaultsResult.data?.record?.state === 'draft');
+            const versionInput = collection.getByRole('textbox', { name: '版本号', exact: true });
+            await versionInput.waitFor();
+            await versionInput.fill('TPL53-UNSAVED-VERSION');
+            check('plan version: definition editable after default hydration', await versionInput.inputValue() === 'TPL53-UNSAVED-VERSION');
             report.planVersionInspection.afterAdd = await collection.innerText();
             report.planVersionInspection.inputs = await collection.locator('input,textarea').evaluateAll(nodes => nodes.map(n => ({ label: n.getAttribute('aria-label'), placeholder: n.getAttribute('placeholder'), value: n.value })));
             check('plan version: draft row has inputs', report.planVersionInspection.inputs.length > 0);

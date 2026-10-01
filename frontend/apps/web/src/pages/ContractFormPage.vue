@@ -876,6 +876,7 @@ const onchangeModifiersPatch = ref<Record<string, Record<string, unknown>>>({});
 const onchangeWarnings = ref<Array<{ title?: string; message?: string; reason_code?: string }>>([]);
 const onchangeLinePatches = ref<OnchangeLinePatch[]>([]);
 const {
+  defaultsPending: one2manyDefaultsPending,
   rowsByField: one2manyRows,
   fieldRows: one2manyFieldRows,
   visibleRows: visibleOne2manyRows,
@@ -898,6 +899,9 @@ const {
   recordId: () => recordId.value,
   originalValues: () => originalValues.value,
   parentValues: () => formData,
+  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName),
+  createScope: () => v2ContractStore.value,
+  onCreateError: (error) => applyPageStatusEvent({ kind: 'status', transaction: 'runAction', status: 'error', errorMessage: error instanceof Error ? error.message : '明细默认值加载失败' }),
   onchangeLinePatches: () => onchangeLinePatches.value as Array<Record<string, unknown>>,
   resolveColumns: (fieldName) => one2manyColumns(fieldName),
   resolvePrimaryColumn: (fieldName) => one2manyPrimaryColumn(fieldName),
@@ -1076,7 +1080,7 @@ const requestedSurface = computed<'user' | 'native' | 'hud'>(() => {
 const requestedSourceMode = computed(() => (
   requestedSurface.value === 'native' ? 'native_parser' : 'governance_pipeline'
 ));
-const busy = computed(() => busyKind.value !== null);
+const busy = computed(() => busyKind.value !== null || one2manyDefaultsPending.value);
 function validateSubmissionRequirements(action: ContractAction): boolean {
   const errors = submissionRequirementErrors(action, resolveWorkflowContractFromStore(v2ContractStore.value),
     formData, pendingNativeAttachments.value.length);
@@ -1583,7 +1587,7 @@ const actionPlaceholderGate = computed(() => resolveFormActionPlaceholderGate({
 }));
 const {
   relationIds, selectedRelationOptions, many2oneValue, relationOptionsForField, hydrateSelectedRelationOptions,
-  one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
+  loadOne2manyCreateDefaults, one2manyRelationModel, one2manyRelationFieldDescriptor, nativeNodeFieldDescriptor, findNativeFieldNode, effectiveFieldDescriptor,
   nativeFieldSubview, one2manyColumns, one2manyPolicies, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink, one2manyRowRecordId,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyPrimaryColumn, one2manyRowLabel, one2manySummary, hydrateOne2manyRows,
   prepareVisibleOne2manyHydration, hydrateVisibleOne2manyRows, isOne2manyHydrating, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, setRelationKeyword, filteredRelationOptions, relationModel,

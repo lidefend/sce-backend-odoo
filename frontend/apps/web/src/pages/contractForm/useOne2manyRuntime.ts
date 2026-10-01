@@ -1,4 +1,5 @@
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
+import { createOne2manyRelationRequestAuthority } from '../../components/template/one2manyRelationQuery';
 import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
 import {
   appendOne2manyDraftRow,
@@ -28,8 +29,14 @@ export function useOne2manyRuntime(params: {
   resolveRelationOptions: (fieldName: string) => RelationOption[];
   parentValues: () => Record<string, unknown>;
   markFieldChanged: (fieldName: string) => void;
+  loadDefaults?: (fieldName: string) => Promise<Record<string, unknown>>;
+  createScope?: () => unknown;
+  onCreateError?: (error: unknown) => void;
 }) {
   const rowsByField = reactive<Record<string, One2ManyInlineRow[]>>({});
+  const requests = createOne2manyRelationRequestAuthority();
+  const loadingDefaults = reactive<Record<string, boolean>>({});
+  const defaultsPending = computed(() => Object.values(loadingDefaults).some(Boolean));
 
   function fieldRows(name: string) {
     return Array.isArray(rowsByField[name]) ? rowsByField[name] : [];
@@ -49,19 +56,35 @@ export function useOne2manyRuntime(params: {
 
   function clearRows() {
     Object.keys(rowsByField).forEach((key) => {
+      requests.invalidate(key);
+      loadingDefaults[key] = false;
       delete rowsByField[key];
     });
   }
 
-  function addRow(name: string) {
-    appendOne2manyDraftRow({
-      rowsByField,
-      fieldName: name,
-      key: makeOne2manyKey(),
-      primary: params.resolvePrimaryColumn(name),
-      columns: params.resolveColumns(name),
-    });
-    params.markFieldChanged(name);
+  async function addRow(name: string) {
+    if (loadingDefaults[name]) return;
+    ensureRows(name);
+    const revision = requests.begin(name);
+    const scope = params.createScope?.();
+    const model = params.model();
+    const recordId = params.recordId();
+    const ownsRequest = () => requests.isCurrent(name, revision) && params.model() === model
+      && params.recordId() === recordId && params.createScope?.() === scope;
+    loadingDefaults[name] = true;
+    try {
+      const defaults = params.loadDefaults ? await params.loadDefaults(name) : {};
+      if (!ownsRequest()) return;
+      appendOne2manyDraftRow({
+        rowsByField, fieldName: name, key: makeOne2manyKey(),
+        primary: params.resolvePrimaryColumn(name), columns: params.resolveColumns(name), defaults,
+      });
+      params.markFieldChanged(name);
+    } catch (error) {
+      if (ownsRequest()) params.onCreateError?.(error);
+    } finally {
+      if (requests.isCurrent(name, revision)) loadingDefaults[name] = false;
+    }
   }
 
   function setRowField(fieldName: string, rowKey: string, column: One2ManyColumn, value: unknown) {
@@ -112,7 +135,7 @@ export function useOne2manyRuntime(params: {
   }
 
   function buildCommandValue(name: string, mode: 'onchange' | 'write') {
-    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode);
+    return buildOne2manyCommandValue(params.originalValues()[name], fieldRows(name), mode, params.resolveColumns(name), params.parentValues());
   }
 
   function collectValidation() {
@@ -156,6 +179,7 @@ export function useOne2manyRuntime(params: {
           ...(row.values || {}),
           ...(patch as Record<string, unknown>),
         };
+        if (row.isNew) row.dirtyFields = [...new Set([...row.dirtyFields, ...Object.keys(patch)])];
       }
       const modifierPatch = line.modifiers_patch;
       if (modifierPatch && typeof modifierPatch === 'object' && !Array.isArray(modifierPatch)) {
@@ -168,6 +192,7 @@ export function useOne2manyRuntime(params: {
   }
 
   return {
+    defaultsPending,
     rowsByField,
     fieldRows,
     visibleRows,

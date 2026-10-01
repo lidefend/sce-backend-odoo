@@ -375,9 +375,10 @@ export function createOne2manyDraftRow(params: {
   key: string;
   primary: string;
   columns: One2ManyColumn[];
+  defaults?: Record<string, unknown>;
 }): One2ManyInlineRow {
   const values = params.columns.reduce<Record<string, unknown>>((acc, column) => {
-    acc[column.name] = column.ttype === 'boolean' ? false : '';
+    acc[column.name] = Object.hasOwn(params.defaults || {}, column.name) ? params.defaults![column.name] : column.ttype === 'boolean' ? false : '';
     return acc;
   }, {});
   return {
@@ -386,7 +387,7 @@ export function createOne2manyDraftRow(params: {
     isNew: true,
     removed: false,
     dirty: true,
-    dirtyFields: Array.from(new Set(params.columns.map((column) => column.name))),
+    dirtyFields: Object.keys(params.defaults || {}).filter(name => params.columns.some(column => column.name === name)),
     values: { ...values, [params.primary]: values[params.primary] ?? '' },
   };
 }
@@ -407,9 +408,10 @@ export function appendOne2manyDraftRow(params: {
   key: string;
   primary: string;
   columns: One2ManyColumn[];
+  defaults?: Record<string, unknown>;
 }) {
   const rows = ensureOne2manyRows(params.rowsByField, params.fieldName);
-  rows.push(createOne2manyDraftRow({ key: params.key, primary: params.primary, columns: params.columns }));
+  rows.push(createOne2manyDraftRow({ key: params.key, primary: params.primary, columns: params.columns, defaults: params.defaults }));
 }
 
 export function setOne2manyDraftRowField(params: {
@@ -620,6 +622,8 @@ export function buildOne2manyCommandValue(
   original: unknown,
   rows: One2ManyInlineRow[],
   mode: 'onchange' | 'write',
+  columns?: One2ManyColumn[],
+  parentValues: Record<string, unknown> = {},
 ) {
   return buildOne2ManyInlineCommands({
     original,
@@ -628,9 +632,13 @@ export function buildOne2manyCommandValue(
       isNew: row.isNew,
       removed: row.removed,
       dirty: row.dirty,
-      values: row.isNew
+      values: row.isNew && mode === 'onchange'
         ? row.values || {}
-        : Object.fromEntries((row.dirtyFields || []).map((key) => [key, row.values?.[key]])),
+        : Object.fromEntries((row.dirtyFields || []).filter(key => {
+          if (!row.isNew || !columns) return true;
+          return columns.some(column => column.name === key
+            && !resolveOne2manyRowColumnBehavior(column, row.values, parentValues, row.modifierPatches || {}).readonly);
+        }).map((key) => [key, row.values?.[key]])),
     })),
     mode,
   });
