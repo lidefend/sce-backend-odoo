@@ -4419,6 +4419,7 @@ def _scene_entry_contract_checks():
     base = _env()
     assert base.cr.dbname == "sc_frontend_acceptance"
     checks = 0
+    errors = []
     try:
         for login, uid, key, expected in (
             ("fixture_role_finance", 30, "workspace.home", "workspace.home.enter"),
@@ -4441,15 +4442,23 @@ def _scene_entry_contract_checks():
             print("SCENE_ENTRY_READBACK=" + json.dumps({"uid": uid, "company_id": 8, "scene": key,
                 "effective_source": [{"code": row.get("code"), "target": row.get("target")}
                     for row in result.data.get("scenes", []) if (row.get("code") or row.get("key")) == key],
+                "route_authority": {bucket: [row for row in entries if row.get("scene_key") == key
+                    or row.get("entry_target", {}).get("scene_key") == key
+                    or row.get("route") == "/s/" + key]
+                    for bucket, entries in result.data.get("route_authority", {}).items() if isinstance(entries, list)},
+                "delivery_policy": result.data.get("nav_meta", {}).get("delivery_policy"),
                 "matched": [{"scene": row.get("scene"), "target": row.get("meta", {}).get("target")}
                             for row in matched]}, ensure_ascii=False, default=str))
-            assert len(matched) == 1, "effective scene missing or ambiguous: " + key
+            if len(matched) != 1:
+                errors.append("effective scene missing or ambiguous: " + key)
+                continue
             projected = matched[0].get("meta", {}).get("target", {})
             assert (projected.get("entry_intent") or projected.get("intent")) == expected, "entry declaration lost: " + key
             assert matched[0]["scene"].get("title"), "effective title missing"
             checks += 3
     finally:
         base.cr.rollback()
+    assert not errors, "; ".join(errors)
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=scene-entry-contract rollback_verified=true" % checks)
 
 
