@@ -9603,3 +9603,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - entry-projection-iteration及final-iteration L1 PASS；entry-projection-unit实际9+2=11 PASS，begin/record非零回执已存。后续仅P4探针变化，纯测试输入不变复用；py_compile、diff检查PASS。backend.acceptance.up/health通过并绑定c31db6351，无schema/XML/ACL变动、不升级模块；前端未改，不构建。
 - entry-projection-runtime.log实际退出0，7 PASS、rollback verified：发布快照65保持89；未发布655拒绝、普通已发布653可用、动态发布302可用、配置恢复711可用。上一段浏览器日志保留为原候选证据，不改写成新候选页面验收；本段新增动态能力为后端实际运行证据。
 - 尚未证明全部分类/场景目标、无活动快照和版本选择的一致性，亦未替代目标用户发布后业务验收。下一步复用既有DeliveryEngine归一化及startup identity相关实现，核对直接路由路径是否遗漏有效版本/scene引用归一化；只补对应纯测试/实现，不扩大成全仓发布审计。67条总体目标保持active，detail.action-state不升级，无推送/合并/目标部署。
+
+### 53.212 共用引用归一化与回到业务闭环
+
+- 7e036f417 clean续跑，沿上一段依赖确认：DeliveryEngine.build在build_nav后执行_normalize_delivery_nav_refs，直接route验证遗漏该步骤。P0 eae3dd5d2复用原方法，不另建引用解释器；测试执行真实归一化的三方法，证明动作/menu当前引用、scene路由保留和compatibility_refs同步。run检查输入新增DeliveryEngine源文件，避免依赖漏记。
+- 当前Web源码没有delivery_product_key/delivery_edition_key/delivery_base_product_key传参；本候选默认身份沿同一startup extension，不据假设新增版本选择机制。_load_platform_release_gate已明确production无快照fail_closed、非production允许能力验证。本轮保留该规则，不把开发能力验证等同于发布授权。未来自选版本消费者仍需一致传递与验收，当前不宣称已支持。
+- entry-normalization-iteration L1 PASS；entry-normalization-unit 10+2=12 PASS，begin/record非零回执。受管backend up/health装载eae3dd5d2；entry-normalization-runtime实际退出0，7 PASS/rollback verified，快照65不变，655拒绝、653/302/711可用。无schema/XML/ACL和前端修改，不升级模块/重建/重复浏览器。此前浏览器保持原候选只读证据，不升级成本次完整业务验收。
+- 更新既有67条台账detail.action-state的followUp，明确53.207错误放行的历史证据已被后续修复取代；status仍contract_gap。系统能力与发布/用户验收分别保留，不通过发布第90页或扩大配置目录绕过权限。总体目标未完成。
+- 当前已确认的发布不一致修复收敛，下一步回到共享配置编辑器和真实审批用户闭环：优先复用已发布业务入口与既有受管测试/恢复能力验证同一消费路径；计划未发布范围仍记录能力验证与发布后验收区别。先核对当前配置旅程工具能否复用发布入口及已有权限/恢复约束，再补必要工具能力，不重做全仓/菜单/ORM盘点。未发布父子配置预览若确需新权限须以显式契约定义，禁止绕开正式目录。
