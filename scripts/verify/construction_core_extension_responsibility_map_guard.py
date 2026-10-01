@@ -150,8 +150,8 @@ def main() -> int:
             errors.append("core_extension.py must delegate api data search fields")
         if "core_extension_contract_normalizers as _contract_normalizers" not in core:
             errors.append("core_extension.py must import contract normalizers module")
-        if "_contract_normalizers.normalize_construction_diary_form(contract, source_contract, model=model, view_type=view_type)" not in core:
-            errors.append("core_extension.py must delegate construction diary normalizer")
+        if "normalize_construction_diary_form" in core:
+            errors.append("core_extension.py must not reintroduce the retired construction diary layout rewrite")
         if "_contract_normalizers.general_contract_tax_contract(contract, source_contract=source_contract)" not in core:
             errors.append("core_extension.py must delegate general contract tax normalizer")
         if "return _contract_normalizers.model_specific_form_contract_policy(payload)" not in core:
