@@ -148,3 +148,24 @@ export function versionReviewWriteKind(role, body, scope) {
     && isDeepStrictEqual(body.meta?.work_item_origin, scope.approvalOrigin)) return 'version-approve';
   return null;
 }
+
+export function paymentReviewWriteKind(role, body, scope) {
+  if (scope?.model !== 'sc.payment.execution' || scope.source?.id !== 1710 || scope.source?.company_id !== 8
+    || !/^TPL53-PAYMENT-REVIEW-\d{13}$/.test(scope.marker)
+    || !Array.isArray(scope.baseline?.execution_ids) || !scope.baseline.execution_ids.includes(186)) return null;
+  const p = body?.params;
+  if (scope.phase === 'create' && role === 'fixture_role_finance' && body?.intent === 'api.data'
+    && p?.op === 'create' && p.model === scope.model && isDeepStrictEqual(p, scope.request)
+    && p.context?.company_id === 8 && Number(p.context?.action_id) === 777 && Number(p.context?.menu_id) === 547
+    && p.vals?.payment_request_id === 1710 && p.vals?.paid_amount === 1 && p.vals?.note === scope.marker
+    && Object.keys(p.vals).every(key => ['payment_request_id', 'paid_amount', 'note', 'payment_account_name',
+      'payment_bank_name', 'payment_account_no', 'payment_method'].includes(key))) return 'create';
+  if (!Number.isInteger(scope.id) || scope.id <= 0 || scope.baseline.execution_ids?.includes(scope.id)
+    || body?.intent !== 'execute_button' || p?.model !== scope.model || p.res_id !== scope.id || p.button?.type !== 'object') return null;
+  if (scope.phase === 'submit' && role === 'fixture_role_pfl035_finance_user' && p.button.name === 'action_confirm'
+    && Number(body.meta?.action_id) === 777 && Number(body.meta?.menu_id) === 547) return 'submit';
+  if (scope.phase === 'approve' && role === 'fixture_role_finance' && p.button.name === 'validate_tier'
+    && scope.origin?.source === 'tier.review' && Number.isInteger(scope.origin.id) && scope.origin.id > 0
+    && isDeepStrictEqual(body.meta?.work_item_origin, scope.origin)) return 'approve';
+  return null;
+}

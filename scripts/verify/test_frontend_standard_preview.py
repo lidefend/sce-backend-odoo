@@ -373,3 +373,38 @@ class VersionReviewRecoveryIdentityTest(unittest.TestCase):
                 validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
         with self.assertRaises(AssertionError):
             validate_version_probe_target('sc_frontend_acceptance', {**scope, 'versionReviewProbe': False}, row, 32)
+
+
+class PaymentReviewRecoveryScopeTest(unittest.TestCase):
+    def setUp(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_payment_review_probe_target
+        from datetime import datetime, timezone
+        self.validate = validate_payment_review_probe_target
+        stamp = 1790816000000
+        marker = f'TPL53-PAYMENT-REVIEW-{stamp}'
+        self.scope = {'model': 'sc.payment.execution', 'source': {'id': 1710, 'company_id': 8},
+                      'marker': marker, 'id': 200, 'baseline': {'execution_ids': [186]}, 'phase': 'done',
+                      'origin': {'source': 'tier.review', 'id': 123}}
+        self.row = {'id': 200, 'note': marker, 'payment_request_id': 1710, 'company_id': 8,
+                    'create_uid': 30, 'paid_amount': 1, 'source_origin': 'manual', 'state': 'confirmed',
+                    'validation_status': 'validated', 'review_ids': [123], 'reviewer_ids': [30],
+                    'create_date': datetime.fromtimestamp(stamp / 1000, tz=timezone.utc).isoformat()}
+
+    def test_owned_confirmed_execution_is_recoverable(self):
+        self.validate('sc_frontend_acceptance', self.scope, self.row)
+
+    def test_existing_paid_other_actor_source_or_amount_rejected(self):
+        for patch in ({'id': 186}, {'state': 'paid'}, {'create_uid': 44}, {'company_id': 1},
+                      {'payment_request_id': 30}, {'paid_amount': 2}, {'source_origin': 'legacy'},
+                      {'reviewer_ids': [44]}, {'review_ids': [124]}, {'validation_status': 'pending'},
+                      {'note': 'pre-existing'}, {'create_date': '2000-01-01T00:00:00'}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                self.validate('sc_frontend_acceptance', self.scope, {**self.row, **patch})
+
+    def test_unknown_scope_or_phase_cannot_authorize_cleanup(self):
+        with self.assertRaises(AssertionError):
+            self.validate('sc_dev_demo', self.scope, self.row)
+        for patch in ({'phase': 'created'}, {'origin': {'source': 'tier.review', 'id': 124}},
+                      {'baseline': {'execution_ids': [186, 200]}}, {'source': {'id': 1710, 'company_id': 1}}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                self.validate('sc_frontend_acceptance', {**self.scope, **patch}, self.row)

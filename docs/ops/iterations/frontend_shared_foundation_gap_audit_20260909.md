@@ -9652,3 +9652,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 payment-review-entry-final-iteration及owner-iteration PASS；profile11 PASS与py_compile，wrapper未变的后续角色修正复用11。第一次运行FAIL：虽普通经办模型create ACL为True，模型create仍要求财务确认业务权限；PAYMENT_REVIEW_ROLLBACK=VERIFIED。不是产品缺陷，不增ACL/不sudo执行。探针修为reviewer正常创建→submitter提交；权限与已读取业务源码一致。
 - payment-review-owner-runtime实际退出0，**6 PASS、ROLLBACK VERIFIED**：经办提交draft+waiting/pending、真正reviewer分配；当前product_workspace含实际付款执行待办；消费最终approve契约，submitter复用来源拒绝，reviewer审批成功到confirmed/validated；已完成来源重放拒绝、工作台待办退出、无资金台账新增；回滚后source、executions、ledger和临时执行不存在全部核验。此为系统能力/实际角色运行证据，不代替浏览器用户验收。
 - 下一步将同一source1710、create manager→submitter submit→manager work-item approve和只到confirmed的流程接入既有浏览器许可与精确恢复。清理必须绑定本次临时执行、真实创建人、source/公司/金额/marker、已验证阶段和tier.review，保护原paid186及资金台账；不得将旧plan或expense清理泛化成任意删除。前端9433/backendeae3产品输入未变，无构建/后端重启。67目标active；无远端/目标部署。
+
+### 53.218 付款审批浏览器写入与恢复目标边界
+
+- 77584dec2 clean续跑；P4扩展既有standard_expense_success_scope及frontend_expense_probe_cleanup的纯校验，不新建执行框架。写入绑定company8/source1710、原execution186基线、本次TPL53-PAYMENT-REVIEW时间标记、金额1、actor/阶段/action777/menu547和精确请求。字段仅允许本次登记所需七项，拒绝状态/公司/review注入；submit仅普通财务经办、approve仅财务审核人且实际tier.review来源一致；action_paid/cancel/unlink及阶段重放均无许可。
+- 恢复目标纯校验只接受本次标记/创建人30/公司8/source1710/金额1、5秒时钟容差和300秒创建窗口的draft或confirmed；排除原execution186、paid/legacy/未知阶段。confirmed还需本次review来源、validated及真实审批人30。尚未执行删除，校验本身不构成实际恢复证明。
+- payment-browser-scope-final-iteration L1 PASS；payment-browser-scope-unit **25 Node+34 Python=59 PASS**，standard_preview_tool begin/record非零回执登记。新增3写许可与3清理目标回归覆盖错误来源/金额/公司/角色/字段/状态、既有记录、审批来源及重放。只改测试工具，无产品构建、后端重启或ORM；上一段6项真实运行能力证据按未变产品输入保留。
+- 下一步将校验接入既有expense-browser-cleanup分派，先只读preflight快照source/execution/ledger/policy/tier事实，再精确检查和恢复本次执行；补正常清理与拒绝误清理的工具测试。随后才连接browser intercept和真实创建/提交/工作台审批旅程。当前两个helper尚未接线，不能报告浏览器写入安全闭环或用户验收完成。67目标active，无新fixture/远端/目标部署。

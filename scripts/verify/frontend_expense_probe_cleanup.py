@@ -7,6 +7,31 @@ import re
 from datetime import datetime, timezone
 
 
+def validate_payment_review_probe_target(database, scope, row):
+    """Authorize only this run's pre-cash execution for eventual recovery."""
+    assert database == 'sc_frontend_acceptance' and scope['model'] == 'sc.payment.execution'
+    assert scope['source'] == {'id': 1710, 'company_id': 8}
+    marker = scope['marker']
+    assert re.fullmatch(r'TPL53-PAYMENT-REVIEW-\d{13}', marker)
+    assert 186 in scope['baseline']['execution_ids']
+    assert isinstance(row['id'], int) and row['id'] > 0 and row['id'] not in scope['baseline']['execution_ids']
+    assert row['note'] == marker and row['payment_request_id'] == 1710
+    assert row['company_id'] == 8 and row['create_uid'] == 30 and row['paid_amount'] == 1
+    assert row['source_origin'] != 'legacy' and row['state'] in ('draft', 'confirmed')
+    if scope.get('id'):
+        assert row['id'] == scope['id']
+    assert scope['phase'] in ('create_in_flight', 'created', 'submit', 'submit_in_flight',
+                              'submitted', 'approve', 'approve_in_flight', 'done')
+    if row['state'] == 'confirmed':
+        assert scope['phase'] in ('approve_in_flight', 'done')
+        assert row['validation_status'] == 'validated'
+        assert scope['origin']['source'] == 'tier.review' and scope['origin']['id'] in row['review_ids']
+        assert row['reviewer_ids'] == [30]
+    started = int(marker.rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
 def validate_expense_probe_target(database, scope, row):
     assert database == 'sc_frontend_acceptance'
     marker = scope['request']['vals']['summary']
