@@ -973,13 +973,14 @@
     }
   },
   "blockers": [
-    "Step 4 not started: independent review, frozen fingerprint and the single exact-head Quick are still pending.",
-    "Step 2/3 live verdicts pending: the running 18082 backend predates the schema-digest constant fix, so the contract receipt cannot reach PASS until the governed rebuild in step 5/6.",
-    "Environment DENY retained: the two mounters belong to the same project and do not prove exclusive ownership; the non-current authorized mounter must be handled through the existing governed entry before audit reverts. Keep the in-use 18082.",
-    "Follow-up source is local only; Quick was cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
-    "Post-deploy affected detail/scene acceptance pending; historical attachment content unavailable, metadata rendering does not restore it."
+    "Independent review pending on the frozen candidate 97cfb7c09; the existing approved verdict binds 557e5d22b only and 97cfb7c09 carries a product delta (contract_lifecycle, v2 assembler/status/projection, schema, frontend types), so the review anchor no longer covers the candidate.",
+    "Single exact-head Quick pending on the frozen clean HEAD; the last recorded Quick receipt is 51a3a9eb8 and does not cover the product fix.",
+    "pr.push and the remote required checks pending; no PR, merge or deployment for this candidate.",
+    "Environment DENY retained and bounded: volume sc_fe_r2_p1_01_odoo reports two mount consumers, sc-backend-odoo-acceptance (port 18082, the in-use candidate backend) and sc-fe-r2-p1-01-odoo-1 (port 19083, the sc-fe-r2-p1-01 compose service declared as SC_ACCEPTANCE_CREDENTIAL_CONTAINER). Both belong to project sc-fe-r2-p1-01, so same-project membership does not prove exclusive ownership and the one-mount rule is structurally unsatisfiable without an owner-coordinated platform change. Keep 18082; handle the other mounter only through that project's existing governed entry, never raw docker. Bound to make acceptance.runtime.baseline_recovery.audit; it is NOT a general 'environment all-pass'.",
+    "Schema-declaration decision reported to the owner, not self-authorized: $defs.actionRule now declares authorizationAllowed/businessAvailable (both already generated and already consumed) and the schema digest moved 4c926a2f -> 49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b. Choose (a) accept the drift correction as the current schema, or (b) declare a living schema and defer the declaration to the next version. Not a candidate blocker.",
+    "Remaining original-list evidence delta: create/edit and workbench minimum evidence only, plus the retained post-deploy limit that historical attachment content is unavailable and metadata rendering does not restore it."
   ],
-  "next_exact_step": "Step 3 fix round 3: re-request the independent review (B) on the new exact HEAD; on a clean verdict proceed to step 4 (L1 plus the affected nonzero L2 targets, freeze the clean tracked+untracked identity, run exactly one exact-head Quick), then step 5 integration and step 6 deployed-main backend+frontend verdicts.",
+  "next_exact_step": "Independent review of 97cfb7c09 -> one exact-head Quick on the frozen clean HEAD (make ci.local.quick) -> make pr.push -> remote required checks; afterwards close the create/edit and workbench minimum evidence delta. Do not rerun the closed list matrix.",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -5333,6 +5334,111 @@
       "frontend_lane": "make verify.frontend.list_surface_structure.browser is the contract-enabled local lane (url 5180, DB_NAME sc_frontend_acceptance, SC_ACCEPTANCE_REQUIRE_CONTRACT=1)",
       "detail_lane": "the daily detail lane needs an explicit ACCEPTANCE_TARGET_SHA and LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only, which is read only from the environment",
       "schema_guard_prerequisite": "make verify.dev.acceptance.release.schema.guard cannot pass before the live lane writes artifacts/backend/dev_acceptance_release_probe.json; recorded as not_run with a missing live prerequisite, never as a failure"
+    }
+  },
+  "successor_step4_projection_convergence_20261002": {
+    "stage": "step 4 of execution_handoff_20261001: the root causes behind the two still-failing acceptances were fixed once at their owning layer, then re-verified on one frozen candidate",
+    "candidate_identity": {
+      "head": "97cfb7c09f7239a38547e815c2d4deca3a757bbb",
+      "head_subject": "fix(contract): keep v2 projection identity structural and delivery digest serializable",
+      "tree": "clean; tracked, staged and untracked scope committed",
+      "baseline_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
+      "fingerprint_sha256": "1af9b37c58a774302e7289896039103f648c04564a7fd2318111b3c96aa67fe8",
+      "fingerprint_path_count": 7760,
+      "fingerprint_file": ".runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/fingerprint_97cfb7c09.json",
+      "superseded_identity": "c6fde8b6 was the pre-fix dirty-tree digest and is not a candidate identity"
+    },
+    "five_root_causes": [
+      {
+        "class": "A. field/display visibility projection (0.1 bug per the owner list; P0 rendering mechanism plus the P1 projection consumer)",
+        "symptom": "the read-only detail projected pay_basis (sc_payment_request_pay_basis, 付款依据) as visible:false with auth:'none' although the record contract grants it",
+        "method": "pinned the first place the wrong value is created, not the last place it is read",
+        "defects": [
+          "container identity: a label-only native group (name empty) used its localized caption (付款依据) as containerId, so 14 containers carried display copy as identity",
+          "orphan status row: the raw native id 619 was pre-registered but never reconciled to id.619, leaving one row outside the projected tree",
+          "delivery digest: the delivery serializer truncated datetimes to whole seconds while the seal kept microseconds, so dataContract.mainData.create_date could not be recomputed",
+          "schema drift: $defs.actionRule omitted authorizationAllowed/businessAvailable although both are already generated and already consumed"
+        ],
+        "fixes": {
+          "container_identity": "addons/smart_core/core/unified_page_contract_v2_assembler.py derives the structural id f'{node_type}.{node_path}' whenever the formal container-id pattern ^[a-zA-Z][a-zA-Z0-9_.:-]*$ rejects the label; string/label/title nodes keep the caption",
+          "orphan_status_row": "addons/smart_core/core/unified_page_contract_v2_status.py and addons/smart_core/handlers/ui_contract_v2_projection.py normalize_post_projected_container_tree remap every containerId through the ASCII-strict _stable_container_id and de-duplicate",
+          "delivery_digest": "addons/smart_core/core/contract_lifecycle.py _delivery_default() delegates to odoo.tools.date_utils.json_default so seal and delivery share one serializer",
+          "schema_drift": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json declares both booleans; the digest moved 4c926a2f -> 49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b across the schema, the four canonical examples, the structure fingerprint and the generator"
+        },
+        "consumer": "frontend/apps/web/src/app/contracts/v2/types.ts now declares the same two optional action-rule booleans (type-only; no runtime change)",
+        "boundary_kept": "no ACL compensation, no payment-model special case, no assertion relaxation: the projection follows the declared contract, and a field the contract really hides stays hidden",
+        "evidence": "make verify.dev.acceptance.contract @97cfb7c09 -> status PASS, 10/10 checks true, errors [], integrity ok, formal schema valid, approved == recomputed semantic sha256 27b66dc3bd06ab034aef9a9934fa85e102b93b8bec1c8630973fa53e962c95db; custody 1040140 bytes / sha256 47dda8602cd272a7d21763775c334ce8832ceae1143dd876524972248de96b3e; detail lane lists sc_payment_request_pay_basis in expectedSections with expectedMatched=true at 1440 and 390 in both themes"
+      },
+      {
+        "class": "B. empty-state clear entry (P0 frontend rendering mechanism)",
+        "root_cause": "ListPage.vue rendered the empty branch outside a declared list-empty region, so the clear surface was not bound to the declared layout contract",
+        "fix": "section.list-empty-region[data-workspace-primary-content][data-semantic-component=ListPage][data-list-status] in frontend/apps/web/src/pages/ListPage.vue, with ListPage.css rebound to .page [data-list-status='empty']",
+        "evidence": "list lane resume-20261001 108/108 gated; the entry is judged by real behaviour, not by the selector string"
+      },
+      {
+        "class": "C. mobile search-button touch target (P0 frontend rendering mechanism)",
+        "root_cause": "the narrow media query collapsed the collection search toolbar-menu-toggle below the declared touch target",
+        "fix": "frontend/packages/ui/src/kits/tdesign/theme.css restores width/height/min-height/max-height to the declared var(--sc-component-button-touch-target) for .collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle'] under max-width:760px",
+        "evidence": "the probe measures real rendered geometry; the declared token, not a literal 44px string, is the authority"
+      },
+      {
+        "class": "D. list probe conformance (P4 verification tool)",
+        "root_causes": [
+          "the column-settings control was judged by free-floating vertical-centre proximity between arbitrary controls instead of the declared list-surface header layout region and same declared flex row",
+          "duplicate context was counted from undeclared indicators instead of the formally declared ones",
+          "a negative fixture was trusted without first proving the un-injected baseline was normal"
+        ],
+        "fix": "scripts/verify/frontend_list_surface_structure_browser.mjs binds the control inside the declared header layout region and excludes non-declared indicators; every negative case asserts the clean baseline before the injection",
+        "evidence": "list lane negative_fixtures 5/5 detected with runtime_errors 0; L2 verify.frontend.list_surface_search_contract.unit rc=0 with non-zero cases"
+      },
+      {
+        "class": "E. record identity managed resolution (P4 verification tool, governed)",
+        "root_cause": "the probe identity was tied to a hardcoded record id instead of the fixture's declared stable identifier",
+        "fix": "scripts/verify/frontend_delivery_hardening_runtime_ids.py plus config/acceptance/backend_contract_instance_v1.json resolve the fixture from the stable identifier (record_xmlid) and require a unique match, binding the model, the company and the expected business state. No literal 1813 remains and 1843 was not re-bound.",
+        "evidence": "resolution_unique_target @97cfb7c09: stable_identifier smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a, model payment.request, record_id 1845, action_id 775, menu_id 545, companies 8/9, distinct_claiming_identifiers 1, competing_identifiers [], requires_unique_match true; make verify.dev.acceptance.record_identity.resolve rc=0, artifact sha 97cfb7c09"
+      }
+    ],
+    "layer_attribution_correction": "generic list/detail display behaviour in frontend/apps/web/src/pages/ListPage.css, frontend/packages/ui/src/kits/tdesign/theme.css and frontend/apps/web/src/components/product-list/ProductListHeader.vue is P0 frontend rendering mechanism, not P1 construction-industry product. The correction is recorded in this index only; no commit history was rewritten for a label.",
+    "runtime_identity_97cfb7c09": {
+      "backend": "sc-backend-odoo-acceptance on 127.0.0.1:18082; make backend.acceptance.replace-stale then backend.acceptance.health PASS at revision 97cfb7c09",
+      "frontend": "make frontend.standard.preview.build then frontend.standard.preview.up; 5180 serves the 97cfb7c09 build (probe asset /assets/index-Dr5zqLTP.js)",
+      "database": "sc_frontend_acceptance, dbfilter ^sc_frontend_acceptance$, company 8",
+      "module_upgrade": "not required for this branch: git diff --name-only 2d164a1fe..HEAD changes no addons XML/data/views, only Python under addons/smart_core plus its tests, so the container recreate picks up the delta"
+    },
+    "lane_results_97cfb7c09": {
+      "detail": {"command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser", "result": "139/139 assertions PASS", "report": "artifacts/frontend-web-fix-20260928/tpl07-1790874271309/report.json", "coverage": "1440 and 390, light and dark, expectedMatched=true, errors 0, forbiddenWrites 0, theme restored", "relation": "one real click payment.request/1845 -> res.partner/56 -> return; exact readonly source restored and source action/label restoration asserted in all four combinations, with screenshots detail-*-relation-return.png"},
+      "create_edit": {"command": "TPL07_SCOPE=create-edit make verify.frontend.standard_page_type.browser", "result": "48/48 assertions PASS", "report": "artifacts/frontend-web-fix-20260928/tpl07-1790874364506/report.json"},
+      "workbench": {"command": "TPL07_SCOPE=scene-entry TPL07_SCENE_SELECTION=home make verify.frontend.standard_page_type.browser", "result": "20/20 assertions PASS", "report": "artifacts/frontend-web-fix-20260928/tpl07-1790874396141/report.json", "detail": "workspace.home sections todo 3 / initiated 10, total 13, quick_links 1"},
+      "l2_targeted": {"log": ".runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/l2_targeted_97cfb7c09.log", "result": "all affected targets rc=0 with non-zero case counts", "targets": ["verify.unified_page_contract.v2", "verify.unified_page_contract.v2.runtime", "verify.unified_page_contract.v2.client", "verify.unified_page_contract.v2.data", "verify.unified_page_contract.v2.stable_projection", "verify.backend.contract_lifecycle.authority", "verify.business_config.formal_list.unit", "verify.frontend.list_surface_search_contract.unit", "verify.dev.acceptance.release.schema.guard", "ui_contract_v2_responsibility_map_guard.py"]}
+    },
+    "list_lane_remaining_failures": {
+      "lane_not_rerun": "the owner closed the list scope for this round; the matrix was not rerun",
+      "reused_evidence": "artifacts/frontend-web-fix-20260928/resume-20261001/list.json",
+      "gated": "108/108 passed, 0 failed",
+      "negative_fixtures": "5/5 detected",
+      "runtime_errors": 0,
+      "failures": [],
+      "remaining_failures": "none in the reused report; the only open items are the create/edit and workbench minimum evidence delta and the post-deploy attachment-content limit"
+    },
+    "environment_audit_conclusion": {
+      "command": "make acceptance.runtime.baseline_recovery.audit",
+      "result": "rc=2 DENY volume=sc_fe_r2_p1_01_odoo expected one mount consumer service=odoo actual=2",
+      "consumers": ["sc-backend-odoo-acceptance (governed verification backend, 18082, in use by this candidate)", "sc-fe-r2-p1-01-odoo-1 (sc-fe-r2-p1-01 compose service, 19083, declared SC_ACCEPTANCE_CREDENTIAL_CONTAINER)"],
+      "conclusion": "same-project membership is not proof of exclusive ownership, so the one-mount rule cannot be satisfied by this candidate alone and the DENY is retained as a rebuild/snapshot-lane blocker bound to the real entrypoint plus this audit. Keep 18082; any handling of the other mounter must go through that project's existing governed entry, never raw docker. Do not generalise this to an environment-wide pass.",
+      "log": ".runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/env_audit_baseline_recovery_97cfb7c09.log"
+    },
+    "evidence_reuse_02d28a06d_to_6f07ff09a": {
+      "difference": "02d28a06d..6f07ff09a is three commits on the earlier feature/web-official-template-adoption line: 8fddb1f14 (frontend list-surface layout: ProductListHeader.vue, ListPage.css, ListPage.vue, theme.css), 146e47a2d (probe/tooling: make/dev.mk, make/frontend.mk, make/runtime_ops.mk, frontend_list_surface_structure_browser.mjs, frontend_relation_navigation_diagnostic.py, test_frontend_list_surface_search_contract.py), 6f07ff09a (run.json metadata only)",
+      "product_bytes": "all four frontend product files of 8fddb1f14 are byte-identical at HEAD, so no frontend rebuild was needed for them and they are already inside the current 5180 build",
+      "backend_and_build_impact": "none from these three commits: no addons/ or build-input file is among their product bytes, and 6f07ff09a is metadata only",
+      "probe_changes": "runtime_ops.mk and frontend_relation_navigation_diagnostic.py are byte-identical at HEAD; dev.mk, frontend.mk, frontend_list_surface_structure_browser.mjs and test_frontend_list_surface_search_contract.py differ because HEAD is the later contract-gated superset. Those probe deltas are covered by this round's L2 verify.frontend.list_surface_search_contract.unit run and by the contract receipt lane, so no rebuild was made solely because HEAD differed.",
+      "conclusion": "HEAD does not need to inherit 6f07ff09a as a commit; its product effect is already present byte-for-byte and its probe effect is superseded and covered by this report"
+    },
+    "schema_declaration_decision": {
+      "state": "reported to the owner for a decision; implementation is applied but the decision is not self-authorized",
+      "option_a": "accept the drift correction as the current schema: $defs.actionRule declares authorizationAllowed and businessAvailable, both already generated and already consumed, with the digest moved to 49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b",
+      "option_b": "declare a living schema and defer the field declaration to the next version",
+      "note": "this is a declaration of already-produced and already-consumed fields, not a new capability, and it tightens rather than relaxes any assertion"
     }
   }
 }
