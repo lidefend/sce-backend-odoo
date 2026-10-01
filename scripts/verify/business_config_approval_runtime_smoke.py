@@ -4117,8 +4117,8 @@ def _payment_review_entry_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=payment-review-entry rollback_verified=true")
 
 
-def _payment_flow_existing_checks():
-    """Read the retained sequential-flow failure; no record/configuration writes."""
+def _payment_flow_existing_checks(*, reconcile=False):
+    """Inspect retained flow; explicit reconcile only syncs native callback groups."""
     from odoo.addons.smart_construction_core.services.review_work_item_service import authorize_review_origin
     base = _env()
     assert base.cr.dbname == "sc_frontend_acceptance"
@@ -4127,6 +4127,28 @@ def _payment_flow_existing_checks():
         assert record and record.company_id.id == 8 and record.payment_request_id.id == 1710
         assert record.create_uid.login == "fixture_role_pfl035_finance_user"
         assert record.note == "TPL53-PAYMENT-REVIEW-1790824096177"
+        if reconcile:
+            policy = base['sc.approval.policy'].sudo().browse(18).exists()
+            assert policy and policy.company_id.id == 8 and policy.target_model == record._name
+            assert record.state == 'draft' and record.review_ids.filtered(lambda r: r.id == 505).status == 'pending'
+            actions = [base.ref(ref).sudo() for ref in policy._tier_server_action_xmlids(record._name)]
+            assert [action.id for action in actions] == [507, 508]
+            before = {'state': record.state, 'reviews': record.review_ids.read(['status', 'done_by']),
+                      'policy': policy.read(['approval_required', 'mode', 'write_date'])}
+            policy._sync_tier_server_action_groups([record._name])
+            executive = base['res.users'].sudo().search([('login', '=', 'fixture_role_executive')])
+            assert len(executive) == 1 and executive.id == 37 and executive.company_id.id == 8
+            assert all(action.groups_id & executive.groups_id for action in actions)
+            assert before == {'state': record.state, 'reviews': record.review_ids.read(['status', 'done_by']),
+                              'policy': policy.read(['approval_required', 'mode', 'write_date'])}
+            base.cr.commit()
+            base.invalidate_all()
+            assert all(action.groups_id & executive.groups_id for action in actions)
+            assert before == {'state': record.state, 'reviews': record.review_ids.read(['status', 'done_by']),
+                              'policy': policy.read(['approval_required', 'mode', 'write_date'])}
+            print('PAYMENT_FLOW_CALLBACK_RECONCILED=' + json.dumps({
+                'actions': [{'id': action.id, 'groups': action.groups_id.ids} for action in actions],
+                'retained_record': record.id, 'business_state_unchanged': True}))
         reviews = [{"id": review.id, "status": review.status, "sequence": review.sequence,
                     "definition_id": review.definition_id.id, "definition_active": review.definition_id.active,
                     "reviewer_ids": review.reviewer_ids.ids, "done_by": review.done_by.id,
@@ -4154,7 +4176,8 @@ def _payment_flow_existing_checks():
               "reviews": reviews, "actors": actors}, ensure_ascii=False, default=str))
     finally:
         base.cr.rollback()
-    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=4 scope=payment-flow-existing rollback_verified=true diagnostic_only=true")
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=4 scope=" +
+          ("payment-flow-reconcile committed_callback_groups=true" if reconcile else "payment-flow-existing rollback_verified=true diagnostic_only=true"))
 
 
 def _payment_review_preflight_checks():
@@ -4391,6 +4414,8 @@ def _plan_reviewer_entry_checks():
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "payment-flow-reconcile":
+        return _payment_flow_existing_checks(reconcile=True)
     if scope == "payment-flow-existing":
         return _payment_flow_existing_checks()
     if scope == "payment-review-entry":
