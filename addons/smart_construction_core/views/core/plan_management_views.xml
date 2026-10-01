@@ -50,7 +50,7 @@
                     <field name="validation_status" invisible="1"/>
                     <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                     <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
+                    <field name="state" readonly="1" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
                 </header>
                 <sheet>
                     <field name="reject_reason" invisible="not reject_reason"/>
@@ -71,8 +71,8 @@
                             <field name="report_cycle" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                             <field name="planned_start" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                             <field name="planned_finish" readonly="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
-                            <field name="actual_start"/>
-                            <field name="actual_finish"/>
+                            <field name="actual_start" readonly="1"/>
+                            <field name="actual_finish" readonly="1"/>
                             <field name="progress_rate" readonly="1"/>
                             <field name="attainment_state" readonly="1"/>
                         </group>

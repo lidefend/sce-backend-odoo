@@ -3118,12 +3118,21 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 with self.assertRaises(ValueError): ns['create'](row, [{'state': state}])
             row.env.context = {'default_state': state}
             with self.assertRaises(ValueError): ns['create'](row, [{}])
+        for name in ('actual_start', 'actual_finish'):
+            for context in ({}, {'sc_document_state_token': True}, {'skip_validation_check': True}):
+                row.env.context = context
+                with self.assertRaises(ValueError): ns['write'](row, {name: '2026-10-01'})
+                with self.assertRaises(ValueError): ns['create'](row, [{name: '2026-10-01'}])
+            row.env.context = {'default_' + name: '2026-10-01'}
+            with self.assertRaises(ValueError): ns['create'](row, [{}])
         self.assertEqual(calls, [])
         row.env.context = {}
         self.assertTrue(ns['create'](row, [{'name': 'draft'}]))
         self.assertTrue(ns['write'](row, {'description': 'editable draft'}))
         row.env.context = {'sc_document_state_token': token}
         self.assertTrue(ns['write'](row, {'state': 'confirmed'}))
+        self.assertTrue(ns['write'](row, {'state': 'in_progress', 'actual_start': '2026-10-01'}))
+        self.assertTrue(ns['write'](row, {'state': 'done', 'actual_finish': '2026-10-01'}))
 
     def test_contract_event_reviewed_content_and_rejected_editability_agree(self):
         path = MODEL.with_name('contract_event.py')
@@ -3394,6 +3403,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         for name in ('name', 'plan_type', 'project_id', 'company_id', 'owner_id', 'planned_start', 'planned_finish', 'note', 'attachment_ids'):
             field = form.find(".//field[@name='%s']" % name)
             self.assertEqual(field.get('readonly'), definition)
+        for name in ('state', 'actual_start', 'actual_finish'):
+            self.assertEqual(form.find(".//field[@name='%s']" % name).get('readonly'), '1')
         tree = form.find(".//field[@name='line_ids']/tree")
         for name in ('name', 'planned_start', 'planned_finish', 'owner_id', 'parent_id'):
             self.assertEqual(tree.find("field[@name='%s']" % name).get('readonly'),

@@ -67,8 +67,8 @@ class ScPlan(models.Model):
     )
     planned_start = fields.Date(string="计划开始", index=True)
     planned_finish = fields.Date(string="计划完成", index=True)
-    actual_start = fields.Date(string="实际开始", index=True)
-    actual_finish = fields.Date(string="实际完成", index=True)
+    actual_start = fields.Date(string="实际开始", readonly=True, copy=False, index=True)
+    actual_finish = fields.Date(string="实际完成", readonly=True, copy=False, index=True)
     state = fields.Selection(
         [
             ("draft", "草稿"),
@@ -78,6 +78,8 @@ class ScPlan(models.Model):
             ("cancel", "已取消"),
         ],
         string="状态",
+        readonly=True,
+        copy=False,
         default="draft",
         required=True,
         index=True,
@@ -105,12 +107,14 @@ class ScPlan(models.Model):
         for values in vals_list:
             if values.get("state", self.env.context.get("default_state", "draft")) != "draft":
                 raise UserError(_("计划必须从草稿通过正式审批和业务动作流转。"))
+            if any(values.get(name, self.env.context.get("default_" + name)) for name in ("actual_start", "actual_finish")):
+                raise UserError(_("计划实际起止日期只能由开始执行和完成动作产生。"))
         return super().create(vals_list)
 
     def write(self, vals):
         authoritative = self.env.context.get("sc_document_state_token") is _DOCUMENT_STATE_TOKEN
-        if "state" in vals and not authoritative:
-            raise UserError(_("计划状态只能由正式业务动作写入。"))
+        if {"state", "actual_start", "actual_finish"}.intersection(vals) and not authoritative:
+            raise UserError(_("计划状态及实际起止日期只能由正式业务动作写入。"))
         # Child execution is governed separately; these are the reviewed plan facts.
         definition_fields = {
             "name", "plan_type", "project_id", "company_id", "owner_id", "department_id",
