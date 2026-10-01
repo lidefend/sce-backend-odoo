@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FE-TPL-OFFICIAL-TEMPLATE-ADOPTION
   title: custom_frontend_rendering_and_interaction_return_to_official_template_compositions
-  status: active
+  status: completed
   formal_product_layer: P0
   supporting_layer: P4
   layer_target: frontend_contract_consumption_and_standard_page_compositions
@@ -42,11 +42,28 @@ goal:
     - no_second_list_or_form_renderer_path
     - tone_and_visual_tokens_never_enter_the_business_contract
   next_exact_step: >-
-    Complete the full-system contract-driven official rendering and interaction
-    system, including missing contracts for confirmed business responsibilities.
-    Reuse the existing 67-entry ledger and current owned product gaps; close producer and consumer
-    responsibilities together, retire duplicate legacy paths, and verify real loops.
-    Template demo features do not invent business requirements. Keep local-only delivery.
+    Local-only functional goal completed at segments53.252-53.253 after targeted
+    checks, actual component mounting, one governed build and consolidated review.
+    No pending implementation or write replay remains. A future publication,
+    selected-version or target-user acceptance task must register its own goal
+    and reuse only evidence whose affected inputs remain valid.
+
+  completion:
+    scope: local_functional_capability_only
+    code_head: de4d6b0607dc34d935e4967935b003e1393d223e
+    record: docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md
+    result_index: .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json
+    local_batch_acceptance: passed
+    publication_strategy: unchanged
+    mainline_integration: not_run
+    deployment: not_run
+    target_user_delivery: not_run
+    limits: >-
+      Unpublished scene/family UI and plan terminal/configured multi-role UI remain
+      unaccepted. Mounted component evidence uses mocked transport and presentation
+      boundaries. Historical lexical findings are not claimed cleared; the known
+      behavioral ownership gaps were individually reconciled. No PR, Quick receipt,
+      frozen delivery identity or target-environment acceptance is implied.
 
   approval_unification_decision: >-
     Owner decisions53.17/53.19 apply to ALL business documents, not payment alone.

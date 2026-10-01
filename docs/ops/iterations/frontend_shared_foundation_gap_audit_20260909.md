@@ -9930,3 +9930,21 @@ P4 8d2b86c29扩展既有plan-version-display范围，PM32/company8/project10原�
 受管后端刷新a386549ba后，原scope最终6项PASS，原始日志tpl52/plan-version-display-final-runtime.log：parent87/version19由普通PM创建，提交后新游标回读一致；原生及final mainData的display_name/version_no均为真实版本标记，page_name回读为“计划版本”。这是显示数据能力，不宣称未发布页面的可见记录标题、加载完成终态双视口或配置多角色UI通过。既有计划执行24/主从64与终态write=false证据复用。开发样本保留，修复可按P4/P0提交分别回滚；无schema升级、前端重建或远端操作。
 
 本地全单据已确认职责按53.245六项在原run逐项核销，旧引擎禁用5、模型绑定零未声明状态迁移、实际付款配置审批、资料/金额/五族办理/三域并发/红冲拒绝/选源保存证据共同支撑，不以49支持清单替代业务覆盖。当前目标仍active：图表及BOQ两块尚未完全消费后端fetch_intent/fetch_params，且上下文异步竞态待修；独立B已确认下一有限P0范围。未发布场景正向UI、五族发布UI及计划剩余视觉验收单列not_run；本地能力收口不代表主线集成、版本部署或目标用户交付。
+
+### 53.252 图表、BOQ 与场景延迟块的声明消费（2026-10-01）
+
+P0 cc0ce2b6e：两个专用只读适配器验证并消费后端fetch_intent/fetch_params，保留现有intent协议边界；BOQ支持指定批次、项目及两者同时声明，图表无项目为空态。拒绝非法ID/额外请求载体，不从路由或重复顶层字段补业务参数。旧BOQ路由解析helper及测试退出。共享loader隔离旧成功、错误与finally，声明失效和卸载清除旧请求权限。P1三个builder已完整声明，不改行业模型、ACL或发布。
+
+B沿原97词法报告逐文件有限核对，进一步确认通用grid会产生params项目B/context项目A；其余专用协议字段、组件登记及明确服务端事实消费不据词法命中判为新功能缺陷。此为责任核对，不是新扫描或“97清零”。P0 9324a24cd让延迟请求完整消费hint.params/context及嵌套值，仅保留捕获的通用scene_key，显式context优先；入口既有参数传输不扩改。entry与hydration共用loader/current判定，旧循环失效后不再发后续块请求，局部失败仍允许其余块完成。
+
+P4 de4d6b060在既有三个unit入口编译实际SFC、Vue挂载及props/watch/unmount，保留API/resolver/loader，仅模拟intent传输及展示边界。真实挂载图表19、BOQ22、grid29项通过；grid证据止于PageRenderer props，子renderer为stub，不称HTTP、布局或已发布UI验收。新增请求断言37/27、scene总59（包含原47）、Python10及12/12/4全部通过，既有模型断言与守卫通过，L1与strict两vue-tsc通过。首次grid挂载发现同步watch在一次多prop更新内发送混合身份请求，改默认pre批处理后原断言通过；首次strict发现context spread类型窄化缺失，补明确对象守卫后通过。失败日志与恢复事实原样保留在run.completion.readonly_block_request，日志统一tpl52/readonly-grid-*；chart/BOQ未变分支结果复用。
+
+两条B线分别独立审P0边界与P4测试真实性并核对非零日志，A按明确执行单持唯一代码token，root独占run及受管运行/提交，交接后A停止写入。三个责任提交可独立回滚；无数据写入、schema升级或发布变更。一次受影响构建及最终本地产品复核结果随后记入同一run，不创建并行覆盖表或新环境。
+
+### 53.253 本地功能目标收口与后续交接边界（2026-10-01）
+
+当前产品候选de4d6b060，最后仅run/文档未提交。受管frontend.standard.preview.build一次通过（24.17秒），原5180 listener复用并核验新构建；base de4d6b0607dc34d935e4967935b003e1393d223e、entry /assets/index-DgdbKjpy.js、entry SHA256 e5ae85218eb9780c96486e1229283467299bc1a40a7dc69cb884ff6f62886e46，回滚构建保留在既有config05目录previous-_251w582。构建/preview日志为tpl52/readonly-block-final-{build,preview}.log；后端仍a386549ba，后续仅前端/P4/文档输入改变，无需重复刷新。
+
+一次集中本地产品复核覆盖53.245六项真实业务职责、有效发布边界与本轮三组件70项实际挂载；复用未变共享展示、付款配置审批、资料/金额、五族原生办理、选源、并发及拒绝反馈证据。受影响旧entry/旧block返回、失效、卸载、局部失败与一致上下文均通过。既有67台账58 aligned/9 not_applicable，无待修契约条目；B有限历史词法核对没有再发现未关闭的具体本地功能缺陷，但不称词法审计清零或49项完整浏览器覆盖。A实现、B独立审查、root运行/产品复核/文档同步按原run完成，未建立平行任务记录。
+
+结论为本地功能目标及此范围批次验收完成。原goal/run在最终记录核验后标记completed；续跑入口应返回closed，不能让其他执行体重放已完成写入。主线集成、版本部署和目标用户交付均未发生。未发布场景正向UI、五族正式用户UI、计划加载终态视觉/配置多角色UI保留not_run，属于后续选定版本的发布与目标用户验收，不为通过检查扩大发布。此次未运行Quick/最终冻结/远端PR或发布流程：任务限定本地迭代；现有证据不充当这些交付门禁。后续新任务须独立登记明确目标，复用原证据并仅复验变化的依赖。

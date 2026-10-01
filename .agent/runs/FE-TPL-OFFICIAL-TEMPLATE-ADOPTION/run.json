@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "feature/web-official-template-adoption",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
@@ -33,8 +33,20 @@
     "addons/smart_construction_scene/profiles/scene_registry_content.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing local Make tools; no database or service access"
+    "kind": "runtime",
+    "authority": "Existing owner-authorized isolated local acceptance runtime via governed Make; offline targeted tests reuse workspace dependencies",
+    "runtime_profile": "local",
+    "project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_role": "isolated synthetic acceptance tenant, not production",
+    "dbfilter": "^sc_frontend_acceptance$",
+    "company_id": 8,
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "ports": {
+      "backend": 18082,
+      "frontend": 5180
+    },
+    "inventory": "reuse original registered inventory and original evidence; no new environment or credential authority"
   },
   "checks": {
     "relation_action_authority": {
@@ -573,7 +585,14 @@
         "addons/smart_core/utils/contract_governance_registry.py",
         "addons/smart_core/utils/contract_governance_user_surface.py",
         "addons/smart_core/core/scene_delivery_policy.py",
-        "addons/smart_core/utils/extension_hooks.py"
+        "addons/smart_core/utils/extension_hooks.py",
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+        "frontend/apps/web/src/app/sceneRuntimeFetchContract.ts",
+        "frontend/apps/web/src/app/readonlyBlockRequest.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/api/intents.ts",
+        "addons/smart_core/orchestration/base_scene_entry_orchestrator.py",
+        "addons/smart_construction_core/services/project_context_contract.py"
       ]
     },
     "scene_shell_authority": {
@@ -589,15 +608,65 @@
         "frontend/apps/web/package.json",
         "frontend/pnpm-lock.yaml"
       ]
+    },
+    "readonly_chart_request": {
+      "target": "verify.frontend.chart_dataset.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/readonlyBlockRequest.ts",
+        "frontend/apps/web/src/api/chartFetch.ts",
+        "frontend/apps/web/src/api/boqImportPreview.ts",
+        "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue",
+        "frontend/apps/web/scripts/chart_dataset_model_test.ts",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_payment_chart_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_boq_preview_builder.py",
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_chart_engine_guard.py",
+        "frontend/packages/ui/src",
+        "frontend/packages/schema/src"
+      ]
+    },
+    "readonly_boq_request": {
+      "target": "verify.frontend.boq_import_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/readonlyBlockRequest.ts",
+        "frontend/apps/web/src/api/chartFetch.ts",
+        "frontend/apps/web/src/api/boqImportPreview.ts",
+        "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue",
+        "frontend/apps/web/scripts/chart_dataset_model_test.ts",
+        "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "scripts/verify/frontend_boq_import_preview_guard.py",
+        "scripts/verify/test_frontend_boq_import_preview_guard.py",
+        "make/frontend.mk",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_chart_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_payment_chart_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_boq_preview_builder.py",
+        "frontend/apps/web/src/app/presentation/boqImportPreview.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src"
+      ]
     }
   },
-  "blockers": [
-    "Chart/BOQ declared readonly request consumption and context request lifetime remain required local goal work.",
-    "Publication/user acceptance: executive scenes, five ordinary families and plan terminal/configured multi-role UI not_run; no extra publication authorized."
-  ],
-  "next_exact_step": "Implement bounded chart/BOQ declared readonly request consumption and stale-response protection after docs/ledger targeted check; reuse original run and unchanged capability evidence.",
+  "blockers": [],
+  "next_exact_step": "Completed local-only goal: do not replay writes or continue this historical run. Any future publication/version/target-user acceptance work requires a new explicitly scoped goal and reuse analysis.",
   "completion": {
-    "batch": "in_progress: confirmed approval capability batch accepted; chart/BOQ contract-consumption scope remains",
+    "batch": "passed: local functional scope and consolidated product review complete",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
@@ -625,8 +694,7 @@
       "note": "built in 21.06s; single build"
     },
     "inherited_gaps": [
-      "Scene hardcoded entry/title ownership repaired in53.239-244; positive executive scene UI not_run because publication route_authority absent.",
-      "Chart/BOQ blocks ignore declared fetch_intent/params and allow old async results to overwrite new context; next bounded P0 scope. Historical97 lexical findings are not current behavioral proof or blanket exemption."
+      "Previously confirmed scene entry and chart/BOQ/grid contract ownership defects closed in53.239-244/252. Historical lexical97 was finitely reconciled, not rescanned or claimed zero."
     ],
     "presentation_segment_52": {
       "status": "passed",
@@ -2568,7 +2636,139 @@
       ],
       "reuse": "metadata preservation does not change existing HTTP metadata suTrue or ordinary businessFalse; no duplicate source, redflush, document, configured payment matrix",
       "not_run": "Quick/PR/deploy: local iteration only; unpublished user acceptance remains separate"
-    }
+    },
+    "readonly_block_request": {
+      "status": "passed",
+      "stage_head": "6c3c66ab0",
+      "metadata_resume_failure": "combined target name invalid; split exact registered chart/BOQ check entries and resume passed; no product write before recovery",
+      "resume_log": "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-resume-fixed.log",
+      "review_plan": "B scene pre-review passed with batch-only, zero context and stale completion constraints",
+      "next_confirmed_scope": {
+        "owner": "P0",
+        "path": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+        "defect": "deferred block request invents project context from route while authoritative hint.params may supply another project",
+        "producer": "BaseSceneEntryOrchestrator.build_entry154-164 and P1 project_context_contract61-71 already declare exact params",
+        "next": "consume declaration without route project fill; check async invalidation and reuse shared request lifetime helper",
+        "review": "B concurrency finite original97 report reconciliation; not a new scan or blanket exemption",
+        "other_groups": "dedicated protocol adapters, registry identities, server-bound inline editing, declared copy and general field type/navigation transport reviewed; no additional confirmed behavior defect from this historical report",
+        "status": "closed by9324a24cd and mounted29"
+      },
+      "commit": "cc0ce2b6e",
+      "L1": "passed",
+      "L2": {
+        "chart_new_assertions": 37,
+        "boq_new_assertions": 27,
+        "boq_guard_tests": 10,
+        "existing_projection_assertions": "passed; not numerically restated"
+      },
+      "strict": "passed",
+      "review": "B scene final PASS; 10file manifest8ea35c566ee4d29ffe1ac6defa57e54034f0679c25364d981a66e394f1405712",
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-iteration.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-chart-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-boq-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-strict.log"
+      ],
+      "grid_commit": "9324a24cd",
+      "component_test_commit": "de4d6b060",
+      "final_checks": {
+        "L1": "passed",
+        "L2": {
+          "mounted_chart": 19,
+          "mounted_boq": 22,
+          "mounted_grid": 29,
+          "chart_request_assertions": 37,
+          "boq_request_assertions": 27,
+          "scene_total_assertions": 59,
+          "python": [
+            10,
+            12,
+            12,
+            4
+          ],
+          "existing_model_assertions": "passed, count not restated"
+        },
+        "strict": "passed two vue-tsc",
+        "logs": [
+          "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-iteration.log",
+          "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-scene-unit.log",
+          "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-chart-unit.log",
+          "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-boq-unit.log",
+          "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-strict.log"
+        ],
+        "B_P0": "concurrency_review final PASS",
+        "B_P4": "scene_boundary_review source and nonzero logs PASS",
+        "boundary": "actual SFC mount + real API/resolver/loader; intent transport and presentation mocked; grid child renderer stubbed, no HTTP or published UI claim",
+        "stage": "cc0ce2b6e + declared P0/P4 dirty; source now committed9324a24cd/de4d6b060 unchanged"
+      },
+      "failures": [
+        {
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-scene-unit-first.log",
+          "status": "failed",
+          "owner": "P0 sync watcher emits mixed-identity request during same multi-prop update",
+          "recovery": "default pre batches consistent props; original call-count assertion retained and passes"
+        },
+        {
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/readonly-grid-strict-first.log",
+          "status": "failed",
+          "owner": "P0 optional context spread not narrowed for TS2698",
+          "recovery": "explicit isPlainRecord context branch; scene tests and strict pass"
+        }
+      ],
+      "reuse": "chart/BOQ final branches, loader and adapters unchanged by grid watch/context type fix; retain their passing mounted/unit logs. Backend and earlier approval business inputs unchanged.",
+      "build": {
+        "status": "passed",
+        "command": "make frontend.standard.preview.build SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+        "base_sha": "de4d6b0607dc34d935e4967935b003e1393d223e",
+        "entry": "/assets/index-DgdbKjpy.js",
+        "entry_sha256": "e5ae85218eb9780c96486e1229283467299bc1a40a7dc69cb884ff6f62886e46",
+        "index_sha256": "1824ea197d3245900e584e1101553c196946b77bf90a4b3226ee01857cf02b47",
+        "duration_seconds": 24.17,
+        "log": "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-final-build.log",
+        "rollback": "/home/lidefend/workspace/sce-offrepo/artifacts/config05-20260929/previous-_251w582",
+        "preview": "passed existing5180 identity/listener reused",
+        "preview_log": "artifacts/frontend-web-fix-20260928/tpl52/readonly-block-final-preview.log"
+      },
+      "dependency_correction": {
+        "status": "corrected",
+        "fact": "B found missing actual guard/model and Python producer inputs; merged scene scope into existing scene_entry_contract check rather than duplicate target index; readonly chart includes full current guard source roots web/src and packages ui/src/schema/src; BOQ includes actual web consumers",
+        "impact": "metadata only; tested source, tools, runtime and commands unchanged from original logs, no rerun required. Future package source-root additions require dependency set reconciliation; local receipts advisory only."
+      }
+    },
+    "local_product_review": {
+      "status": "passed",
+      "candidate": "de4d6b060 + dirty run/docs",
+      "scope": "original six approval responsibilities + declared chart/BOQ/scene block requests and lifecycle",
+      "evidence": "reuse original53.245-251 results; actual component70, focused L2, strict and one build in53.252/253",
+      "reviewers": [
+        "root product/evidence coordinator",
+        "B concurrency_review P0 and final scope",
+        "B scene_boundary_review P4 and responsibility review"
+      ],
+      "limits": "not full49 browser matrix, not lexical zero, grid child renderer/transport stubbed; no target-user or remote gate claim"
+    },
+    "remaining_delivery": {
+      "status": "not_run",
+      "surfaces": [
+        "unpublished executive scene positive UI",
+        "five ordinary business families published user UI",
+        "plan loaded terminal visual and configured multi-role UI"
+      ],
+      "authority": "unchanged effective publication; do not publish entries to pass checks",
+      "target_user_delivery": "not_run",
+      "mainline": "not_run",
+      "deployment": "not_run",
+      "formal_candidate_gates": "not_run local-only scope; do not reuse iteration checks as PR/Quick receipt"
+    },
+    "final_record_check": {
+      "L1": "passed",
+      "command": "make ci.local.iteration",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/local-goal-closeout-iteration.log",
+      "diff_check": "passed",
+      "impact": "final docs and dependency metadata only; original nonzero L2/runtime/mounted/build evidence remains input-equivalent; no new gate receipt claimed",
+      "resume": "resolved/exit0 after dependency corrections; artifacts/frontend-web-fix-20260928/tpl52/local-goal-final-resume.log"
+    },
+    "local_goal": "completed: local functional capability only"
   },
   "owner_iteration_authority_20261001": {
     "instruction": "开发期间验收数据可以随时适配，开发数据保护不作为前置；持续迭代直到本分支目标达成；必须遵守智能体协作流程",
@@ -2578,35 +2778,37 @@
   },
   "collaboration": {
     "coordinator_and_single_writer": "/root",
-    "implementation": "root owns writer for consolidated evidence; A/B code idle",
+    "implementation": "All A/B tasks complete, A write token returned; root completed final records. No active code or runtime writer.",
     "read_only_reviewers": {
       "concurrency_review": "P4 two-transaction business conflict code/test review",
       "scene_boundary_review": "remaining P1/P0 business responsibility and browser execution order review"
     },
     "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
     "workflow": ".agent/workflows/runtime-fixture.yaml",
-    "stage_identity": "a386549ba + dirty run/docs/ledger; daily evidence, not frozen",
-    "handoff": "each executor resume resolves same goal/run; no new writer, no runtime write replay from saved next step"
+    "stage_identity": "de4d6b060 + dirty final docs/run; local batch identity, not frozen delivery candidate",
+    "handoff": "Current branch maps to this completed run; resume reports closed. Original evidence remains the single index; no external operation or database write is authorized by this handoff."
   },
   "current_execution_order": {
-    "objective": "Preserve supplied metadata superuser state during contract projection",
-    "formal_product_layer": "P0",
-    "layer_target": "smart_core projection context environment rebuild",
-    "module": "smart_core",
-    "standard_vs_user_specific": "generic platform metadata/business environment separation",
-    "why_here": "projection reconstructs metadata Environment and loses caller supplied su state",
-    "why_not_elsewhere": "no PM ACL changes, no P4 superuser substitution, no industry semantics",
-    "blast_radius": "native forms and related view projections receiving sudo metadata with ordinary uid",
+    "objective": "Finish declared scene block request consumption and verify actual component lifecycle wiring",
+    "formal_product_layer": "P0 with P4 test support",
+    "layer_target": "SceneContractBlockGridView declaration and entry/hydration lifetime; existing frontend test entrypoints",
+    "module": "frontend/apps/web",
+    "standard_vs_user_specific": "generic renderer consumes existing P1 runtime_fetch_hints; no industry defaults",
+    "why_here": "grid synthesizes route project context and publishes old entry/block responses",
+    "why_not_elsewhere": "P1 already declares full params; do not change ACL/publication or backend, do not add missing readonly requirement",
+    "blast_radius": "scene block grid entry/deferred fetch; shared readonly loader backward-compatible current predicate",
     "scope": [
-      "addons/smart_core/handlers/ui_contract_preview.py",
-      "addons/smart_core/handlers/ui_contract_v2.py",
-      "addons/smart_core/tests/test_ui_contract_v2_boundaries.py"
+      "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+      "frontend/apps/web/src/app/sceneRuntimeFetchContract.ts",
+      "frontend/apps/web/src/app/readonlyBlockRequest.ts",
+      "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+      "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+      "make/frontend.mk"
     ],
-    "writer": "root; A returned token",
-    "risk": "authority preservation; must not elevate previously non-sudo environment",
-    "validation": "L1 iteration; L2 formal_list unit with true/false metadata and preview failure tests; B review; backend refresh then plan runtime",
-    "skips": "no frontend build/schema upgrade; no broad browser matrix; unchanged rental/subcontract evidence reused",
-    "status": "completed",
-    "next": "P4 consolidated record complete; next bounded P0 chart/BOQ order must be registered before code"
+    "writer": "root after A returned token",
+    "risk": "nested params/context authority and request lifecycle; readonly transport only",
+    "validation": "L1; scene_entry_contract + chart_dataset + boq_import_preview including actual SFC mount with mocked transport; strict; B; single affected build after convergence",
+    "skips": "no DB writes/backendupgrade; published scene positive browser blocked by existing route_authority, not bypassed; no approval matrix/Quick/remote",
+    "status": "completed"
   }
 }

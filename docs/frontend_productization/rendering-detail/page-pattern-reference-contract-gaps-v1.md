@@ -2,6 +2,21 @@
 
 This ledger records reference details that cannot be implemented safely from the current authoritative payload. They are not permission to infer values in the frontend.
 
+## Current local capability status (2026-10-01, segments 53.245–53.252)
+
+The detail ledger now has 58 aligned and 9 not-applicable entries. `detail.action-state`
+is aligned for the confirmed local capability scope after the original six business
+responsibilities, shared approval execution and legacy retirement were reconciled in
+the existing run. The earlier chronological gap notes below are retained as history;
+their current disposition and original evidence remain in
+`.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`, not a second coverage table.
+
+Chart/BOQ declared request consumption and scene deferred-request context/lifetime
+were repaired in segment 53.252 with real Vue component mounting at mocked transport
+boundaries. Unpublished scene/family UI, plan terminal visuals and configured multi-role
+UI remain unaccepted. Local capability alignment does not imply all49 end-to-end
+coverage, a clean lexical audit, mainline integration, deployment or target-user delivery.
+
 ## P0 contract gaps
 
 
