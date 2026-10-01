@@ -5151,5 +5151,30 @@
     ],
     "next_command_after_owner_assignment": "pwd; git rev-parse --show-toplevel; git branch --show-current; git status --short; read this original run; make agent.run.resume (do not execute until assigned).",
     "stop_status": "Current executor stopped implementation, tests, browser, runtime writes and publication. Only this handoff metadata was written after stop request."
+  },
+  "successor_step1_contract_freeze_20261001": {
+    "scope": "Step 1 of execution_handoff_20261001.plan: freeze the layered acceptance contract before implementation.",
+    "semantic_vs_transport_boundary": "Producer reuse confirmed, not redefined: contract_semantic_payload() drops only 'meta', and integrity.contractSha256 hashes exactly that remainder. Semantic content = the full non-meta payload (status/action/layout/field/native-occurrence structures). Transport/custody metadata = meta (etag, snapshotId, traceId, requestId, sourceType, lifecycle).",
+    "boundary_gap_identified": "definition (schemaId/schemaVersion/schemaSha256/normativeStatus), generation (generator/generatorVersion/sourceType/sourceSha256) and authority (actor/company copy) all live inside meta, so contractSha256 does not cover them. Semantic-hash agreement alone can never prove schema, source or identity binding; those three bindings must be carried and checked independently.",
+    "p0_producer_defect_proven": {
+      "finding": "contract_lifecycle.UNIFIED_PAGE_SCHEMA_SHA256 declared 0b9be5e259fd5305de7d0069a3ce98c49e88cfd21e9083c4c060f9f850084364, which matches no file in the repository and does not match the previous schema revision either (11109fb7b842dc7a4f6c64b111aa6a00c313778497f57eacc5f7267deab3a443). The normative schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json hashes to 4c926a2fa3164974bf53109244ffdd695c74eafc5015f086f909af50b29a8a17. Every sealed contract therefore published a false schema-provenance claim.",
+      "provenance": "The schema gained 28 lines in 2d164a1fe while the constant was authored in the same commit without binding; scripts/verify/backend_contract_lifecycle_authority_guard.py check_definition() has been returning P0 'schema SHA-256 is not bound to runtime lifecycle constant' (guard exit 1) since that commit.",
+      "enforcement_gap": "verify.backend.contract_lifecycle.authority was registered only inside verify.product.release.ready, never in ci.local.quick.run, so the P0 failure did not block the lane that gates merges and Quick passed while the guard exited 1.",
+      "fix": "Corrected the constant to the schema file byte digest, which is the single rule the guard already enforces, and added verify.backend.contract_lifecycle.authority to ci.local.quick.run. No assertion was relaxed and no schema field was stripped.",
+      "evidence": "make verify.backend.contract_lifecycle.authority -> exit 0, report p0Count=0 score=100 level=L4_governed_production_ready; make -n ci.local.quick.run -> exit 0 with the guard present in the recipe.",
+      "commits": ["f91c2df11", "f56684c91"]
+    },
+    "contract_export_reuse_decision": {
+      "question": "Whether the governed contract export can serve as the complete runtime contract carrier for acceptance.",
+      "pipeline_inventory": "make contract.export / contract.export_all -> scripts/contract/export_all.sh -> scripts/contract/snapshot_export.py, driven by docs/contract/cases.yml (135 cases), output docs/contract/snapshots/*.json (tracked). It does capture the live intent response under snapshot.ui_contract_raw, so its request builder, case registry and normalization rules are reusable and must not be re-derived by hand.",
+      "finding": "The export is a semantic regression carrier, not a complete runtime contract carrier. Proved at docs/contract/snapshots/ui_contract_v2_intent_admin.json: ui_contract_raw.meta.lifecycle.integrity.contractSha256 declares b2359dc14da91249bc52221eb266223217dd18874e8bb7450e22724406410af6, but recomputing with the repository's own canonical_json + contract_semantic_payload yields da9e22b203627a08c3648f33de7b77aff5d5c13ef75c9cbaec9bb5c3218e5da0. The exported artifact does not round-trip to its own declared digest.",
+      "three_causes": [
+        "contractSha256 = sha256(contract minus meta) by definition, so the seal covers semantic content only and excludes meta defining definition/generation/authority/integrity, which is exactly where schema, source and identity bindings live.",
+        "SC_CONTRACT_STABLE=1 runs _strip_volatile() (drops trace_id/exported_at/generated_at/request_id at any depth) and _strip_denylist() (drops build/odoo_version/container_id/env/db_name/hostname/timestamp/...), removing instance-custody fields.",
+        "_stable_normalize() reorders unordered lists, so the artifact is a normalized view rather than a byte-exact custody payload."
+      ],
+      "conclusion": "The complete runtime contract does exist, but only on the live POST /api/v1/intent response (ui.contract.v2, delivery_profile=full) under data.meta.lifecycle, where the producer-side verifier verify_unified_page_contract_integrity() already operates. Step 2 must bind that live complete contract at the exact instance and emit the PASS receipt; the exported snapshot may be reused for request construction and semantic regression only, and must never be promoted into custody evidence."
+    },
+    "not_implemented_yet": "The backend exact-instance acceptance receipt (step 2) and the frontend same-contract prerequisite (step 3) are not implemented in this entry; the boundary above is the frozen input for them."
   }
 }
