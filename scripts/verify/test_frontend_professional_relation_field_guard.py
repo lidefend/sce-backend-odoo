@@ -153,9 +153,53 @@ class ProfessionalRelationFieldGuardTests(unittest.TestCase):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("X2ManyRelationRenderer.vue"):
-                return value.replace("adapter.isOne2manyHydrating(field.name)", "adapter.busy", 1)
+                original = 'v-else-if="adapter.isOne2manyHydrating(field.name)"'
+                self.assertGreaterEqual(value.count(original), 2, "fixture keeps readonly and editable siblings")
+                mutated = value.replace(original, 'v-else-if="adapter.busy"', 1)
+                self.assertNotEqual(mutated, value)
+                return mutated
             return value
         self.assertTrue(any("readonly one2many loading semantics" in item for item in validate(read_text)))
+
+    def test_readonly_loading_block_cannot_borrow_editable_loading_state(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("X2ManyRelationRenderer.vue"):
+                marker = 'state="loading"\n        label="正在加载关系记录"\n        data-readonly-relation-loading'
+                self.assertIn(marker, value)
+                return value.replace(marker, marker.replace('state="loading"', 'state="empty"'), 1)
+            return value
+        self.assertTrue(any("readonly one2many loading semantics" in item for item in validate(read_text)))
+
+    def test_readonly_relation_open_must_return_before_write_gate(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                marker = 'void context.openRelationRecordForm(name,descriptor);return;'
+                self.assertIn(marker, value)
+                return value.replace(marker, 'void context.openRelationRecordForm(name,descriptor);', 1)
+            return value
+        self.assertTrue(any("selection write authority" in item for item in validate(read_text)))
+
+    def test_readonly_relation_open_cannot_mutate_before_authority(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                marker = 'void context.openRelationRecordForm(name,descriptor);return;'
+                self.assertIn(marker, value)
+                return value.replace(marker, 'context.formData[name]=false;' + marker, 1)
+            return value
+        self.assertTrue(any("selection write authority" in item for item in validate(read_text)))
+
+    def test_relation_selection_cannot_remove_occurrence_write_gate(self):
+        def read_text(path):
+            value = (ROOT / path).read_text(encoding="utf-8")
+            if path.endswith("useRecordFormState.ts"):
+                marker = 'void context.openRelationRecordForm(name,descriptor);return;}if(!isFieldWritable(name,occurrenceKey))return;'
+                self.assertIn(marker, value)
+                return value.replace(marker, 'void context.openRelationRecordForm(name,descriptor);return;}', 1)
+            return value
+        self.assertTrue(any("selection write authority" in item for item in validate(read_text)))
 
     def test_one2many_hydration_state_must_reset_on_failure(self):
         def read_text(path):

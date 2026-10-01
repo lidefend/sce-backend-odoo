@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -133,13 +134,18 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("many2one lifecycle commands override shared ScButton presentation")
     if "<button" in many2one:
         failures.append("many2one panel actions must not regress to a private button element")
-    for marker in (
-        'adapter.isOne2manyHydrating(field.name)',
-        'data-readonly-relation-loading',
-        'state="loading"',
+    # Bind loading checks to the readonly block. A matching editable sibling
+    # must not conceal a missing readonly hydration gate.
+    readonly_loading_blocks = re.findall(
+        r"<ScInlineState\b([^>]*\bdata-readonly-relation-loading\b[^>]*)/>",
+        x2many,
+    )
+    if not readonly_loading_blocks or any(
+        'v-else-if="adapter.isOne2manyHydrating(field.name)"' not in block
+        or 'state="loading"' not in block
+        for block in readonly_loading_blocks
     ):
-        if marker not in x2many:
-            failures.append(f"readonly one2many loading semantics are incomplete: {marker}")
+        failures.append("readonly one2many loading semantics are incomplete: readonly hydration block")
     for marker in (
         'const one2manyHydrating = reactive<Record<string, boolean>>({})',
         'function prepareVisibleOne2manyHydration()',
@@ -171,17 +177,28 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if "if (entry && entry.canRead === false)" in relationships:
         failures.append("relation search rows retain fail-open read authority")
     for marker in (
-        "if(!isFieldWritable(name,occurrenceKey))return;const normalized=",
         "const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;",
     ):
         if marker not in form_state:
             failures.append(f"relation selection write authority is incomplete: {marker}")
+    # Opening an existing relation is a read command and returns before the
+    # write gate. The exact prefix permits only normalization and that command;
+    # clear/select/create and any mutation must remain after occurrence authority.
+    compact_form_state = "".join(form_state.split())
+    readonly_open_prefix = (
+        "constsetMany2oneField=(name:string,descriptor:FieldDescriptor|undefined,"
+        "value:string,occurrenceKey?:string)=>{constnormalized=String(value||'').trim();"
+        "if(normalized===MANY2ONE_OPEN_RECORD_OPTION){"
+        "voidcontext.openRelationRecordForm(name,descriptor);return;}"
+        "if(!isFieldWritable(name,occurrenceKey))return;"
+    )
+    if readonly_open_prefix not in compact_form_state:
+        failures.append("relation selection write authority is incomplete: readonly open must return before the occurrence write gate")
     # The many2one search channel checks write authority before it reads the
     # keyword, and it keeps the two projections separate: the stored keyword is
     # the exact typed text that owns the controlled Select input, while the
     # trimmed request key is derived from it. Normalizing in place would delete a
     # character that is still being typed.
-    compact_form_state = "".join(form_state.split())
     if (
         "if(!isFieldWritable(name,occurrenceKey))return;"
         "consttypedKeyword=resolveProfessionalMany2oneSearchInput(value);"
