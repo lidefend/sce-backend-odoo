@@ -233,6 +233,24 @@ assert(!dailyRecordCheckSummary([],[]).complete);
 """)
         self.assertIn('(!DAILY || recordSummary.complete)', self.probe)
 
+    def test_daily_record_summary_follows_the_contract_gate_shape(self):
+        self.run_record_probe_helpers("""
+const viewports=[{key:'1440'},{key:'390'}];
+const dailySteps=['declared_entry_route','exact_record_contract','declared_renderer','return_to_source'];
+const dailyChecks=viewports.flatMap(viewport=>dailySteps.map(check=>({viewport:viewport.key,check,passed:true})));
+assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_required_for_profile'),{passed:8,total:8,complete:true});
+assert(!dailyRecordCheckSummary(dailyChecks,viewports).complete);
+const acceptedSteps=[...dailySteps.slice(0,2),'approved_contract_binding',...dailySteps.slice(2)];
+const acceptedChecks=viewports.flatMap(viewport=>acceptedSteps.map(check=>({viewport:viewport.key,check,passed:true})));
+assert.deepEqual(dailyRecordCheckSummary(acceptedChecks,viewports,'accepted'),{passed:10,total:10,complete:true});
+assert(!dailyRecordCheckSummary(acceptedChecks,viewports,'not_required_for_profile').complete);
+assert(!dailyRecordCheckSummary([...dailyChecks,dailyChecks[0]],viewports,'not_required_for_profile').complete);
+assert(!dailyRecordCheckSummary(dailyChecks.map((row,i)=>i===1?{...row,passed:false}:row),viewports,'not_required_for_profile').complete);
+assert(!dailyRecordCheckSummary(dailyChecks.map(row=>({...row,viewport:'1440'})),viewports,'not_required_for_profile').complete);
+assert.deepEqual(dailyRecordCheckSummary(dailyChecks,viewports,'not_evaluated'),{passed:8,total:8,complete:true});
+""")
+        self.assertIn('dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status)', self.probe)
+
     def test_record_renderer_probe_is_bound_to_shipped_component_markers(self):
         page = (ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue').read_text()
         host = (ROOT / 'frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue').read_text()

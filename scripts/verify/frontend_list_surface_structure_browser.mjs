@@ -779,8 +779,14 @@ function dailyRecordDomMatches(observed, declaration, expected) {
     && (declaration.profile !== 'readonly' || observed.detailAdopted !== 'true' || observed.detailCards > 0);
 }
 
-function dailyRecordCheckSummary(checks, viewports) {
-  const steps = ['declared_entry_route', 'exact_record_contract', 'approved_contract_binding', 'declared_renderer', 'return_to_source'];
+function dailyRecordCheckSummary(checks, viewports, contractStatus = 'accepted') {
+  // The approved-contract-binding step is executed only when the lane runs under
+  // an accepted sealed contract, so the expected shape must follow the gate's
+  // real status instead of hard-coding the strictest five-step form. The default
+  // stays on the stricter form so a caller that forgets the status fails closed.
+  const steps = contractStatus === 'accepted'
+    ? ['declared_entry_route', 'exact_record_contract', 'approved_contract_binding', 'declared_renderer', 'return_to_source']
+    : ['declared_entry_route', 'exact_record_contract', 'declared_renderer', 'return_to_source'];
   const expected = viewports.flatMap(viewport => steps.map(check => `${viewport.key}:${check}`));
   const actual = checks.filter(row => row.passed === true).map(row => `${row.viewport}:${row.check}`);
   const complete = expected.length > 0 && expected.every(key => actual.filter(value => value === key).length === 1)
@@ -1107,7 +1113,7 @@ try {
     + Object.keys(aggregateChecks).length + (componentProof ? 1 : 0);
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
   await Promise.allSettled([...responseTasks]);
-  const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS);
+  const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status);
   const passed = (!DAILY || recordSummary.complete) && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
     schema: 'frontend_list_surface_structure_browser.v1',
@@ -1146,7 +1152,7 @@ try {
   await page?.screenshot({ path: screenshot, fullPage: true }).catch(() => {});
   await fs.mkdir(path.dirname(REPORT), { recursive: true });
   await fs.writeFile(REPORT, JSON.stringify({ schema: 'frontend_list_surface_structure_browser.v1', passed: false,
-    failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS), list_execution: detailOnly ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status), list_execution: detailOnly ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
     contract_prerequisite: contractGate,
     source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
   process.exitCode = 1;

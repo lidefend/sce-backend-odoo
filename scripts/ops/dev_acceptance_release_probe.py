@@ -555,26 +555,42 @@ def _resolution_target_is_unique(
 
     The declaration requires a unique match, so the receipt must carry evidence,
     not just the resolved id: the identifier must be a governed fixture external
-    id (unique by construction through env.ref), it must equal the record's own
-    record_xmlid, the target keys must be complete, and no other resolved target
-    may claim the same model+record_id under a different identifier.
+    id (unique by construction through env.ref) and the target keys must be
+    complete.
+
+    Uniqueness is a property of the resolved identity, not of the alias count.
+    The governed resolver exposes the same record under several target keys (a
+    business alias plus its journey alias), so several aliases may claim one
+    (model, record_id) pair only while every alias carries the same stable
+    identifier, and one stable identifier must resolve to exactly that one pair.
+    Ambiguity is a pair claimed by two distinct identifiers, or an identifier
+    spread across two pairs.
     """
     field = str(declaration_resolution.get("stable_identifier_field") or "")
     stable_identifier = target.get(field)
     targets = resolution.get("targets") if isinstance(resolution.get("targets"), dict) else {}
-    resolved_pairs = [
-        (item.get("model"), item.get("record_id"))
-        for item in targets.values()
-        if isinstance(item, dict) and item.get(field)
-    ]
-    claimed = [pair for pair in resolved_pairs if pair == (target.get("model"), target.get("record_id"))]
+    target_pair = (target.get("model"), target.get("record_id"))
+    identifiers_by_pair: dict[tuple[Any, Any], set[str]] = {}
+    pairs_by_identifier: dict[str, set[tuple[Any, Any]]] = {}
+    claiming_targets: list[dict[str, Any]] = []
+    for item in targets.values():
+        if not isinstance(item, dict) or not item.get(field):
+            continue
+        identifier = str(item.get(field))
+        pair = (item.get("model"), item.get("record_id"))
+        identifiers_by_pair.setdefault(pair, set()).add(identifier)
+        pairs_by_identifier.setdefault(identifier, set()).add(pair)
+        if pair == target_pair:
+            claiming_targets.append(item)
+    identifier = str(stable_identifier) if isinstance(stable_identifier, str) else ""
+    competing_identifiers = sorted(identifiers_by_pair.get(target_pair, set()) - {identifier})
+    identifier_pairs = pairs_by_identifier.get(identifier, set())
     producer_matches = str(resolution.get("producer") or "") == str(
         declaration_resolution.get("governed_producer") or ""
     )
     unique = bool(
         isinstance(stable_identifier, str)
         and _STABLE_IDENTIFIER_RE.fullmatch(stable_identifier)
-        and str(target.get("record_xmlid") or "") == stable_identifier
         and isinstance(target.get("record_id"), int)
         and target.get("record_id") > 0
         and isinstance(target.get("action_id"), int)
@@ -584,7 +600,9 @@ def _resolution_target_is_unique(
         and isinstance(company_id, int)
         and bool(declaration_resolution.get("requires_unique_match"))
         and producer_matches
-        and len(claimed) == 1
+        and len(claiming_targets) >= 1
+        and not competing_identifiers
+        and identifier_pairs == {target_pair}
     )
     return unique, {
         "stable_identifier": stable_identifier,
@@ -598,7 +616,10 @@ def _resolution_target_is_unique(
         "governed_producer": declaration_resolution.get("governed_producer"),
         "resolved_producer": resolution.get("producer"),
         "requires_unique_match": bool(declaration_resolution.get("requires_unique_match")),
-        "matching_resolved_targets": len(claimed),
+        "matching_resolved_targets": len(claiming_targets),
+        "distinct_claiming_identifiers": len(identifiers_by_pair.get(target_pair, set())),
+        "competing_identifiers": competing_identifiers,
+        "identifier_resolved_pairs": len(identifier_pairs),
     }
 
 

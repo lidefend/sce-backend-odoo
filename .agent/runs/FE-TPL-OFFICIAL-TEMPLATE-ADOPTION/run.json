@@ -979,7 +979,7 @@
     "Follow-up source is local only; Quick was cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
     "Post-deploy affected detail/scene acceptance pending; historical attachment content unavailable, metadata rendering does not restore it."
   ],
-  "next_exact_step": "Step 4: run L1 plus the affected nonzero L2 targets, obtain the independent review, freeze the clean tracked+untracked identity and run exactly one exact-head Quick; then step 5 integration and step 6 deployed-main backend+frontend verdicts.",
+  "next_exact_step": "Step 3 fix round 3: re-request the independent review (B) on the new exact HEAD; on a clean verdict proceed to step 4 (L1 plus the affected nonzero L2 targets, freeze the clean tracked+untracked identity, run exactly one exact-head Quick), then step 5 integration and step 6 deployed-main backend+frontend verdicts.",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -5250,7 +5250,7 @@
   },
   "successor_step3_frontend_prerequisite_20261001": {
     "stage": "step 3 of execution_handoff_20261001",
-    "status": "fix_round_complete_pending_independent_rereview",
+    "status": "fix_round_3_complete_pending_independent_rereview",
     "independent_review": {
       "reviewer": "B (read-only independent review)",
       "verdict": "blocked on commit 31c64a61d",
@@ -5281,16 +5281,35 @@
       "scripts/verify/acceptance_contract_receipt_test.mjs",
       "scripts/verify/frontend_list_surface_structure_browser.mjs",
       "scripts/verify/test_frontend_list_surface_search_contract.py",
+      "scripts/ops/dev_acceptance_release_probe.py",
+      "scripts/verify/test_dev_acceptance_release_identity.py",
       "make/frontend.mk"
     ],
     "gate": "the probe reads the backend receipt and the declared account before launching the browser; missing/unknown-schema/disabled/not-PASS/errors/unexecuted/failed checks, unbound identity, missing required SHA, stale served SHA, database/login/role/company mismatch, unverified semantics, unbound schema digest, invalid formal schema, missing custody, unexpected intent, incomplete resolution, request-target mismatch, unsealed snapshot or absent authority all stop the run before any DOM assertion.",
-    "execution": "approved record is opened by data-record-key (never the first row) through the declared page.row authority on the approved action/menu route; the approved request is replayed in-page under the real session and must carry the approved sealed semantic digest; the app's observed detail contract must match target, schema, authority and be reproducible from its own request.",
+    "execution": "approved record is opened by data-record-key (never the first row) through the declared page.row authority on the approved action/menu route, and the approved request is replayed in-page under the real session and must carry the approved sealed semantic digest, but both steps are executed only in the contract-enabled lane (SC_ACCEPTANCE_REQUIRE_CONTRACT=1); the daily readonly lane runs the four-step shape without the approved-contract-binding step, so its report is not evidence of approved-contract binding. The app's observed detail contract must match target, schema, authority and be reproducible from its own request.",
     "declared_not_run": [
       "other_roles_or_companies",
       "per_button_authorization",
       "backend_rejection_of_forbidden_write",
       "submit_approval_lifecycle"
     ],
-    "open": "live verdict is step 6; the running 18082 image still predates the schema-digest fix"
+    "open": "live verdict is step 6; the running 18082 image still predates the schema-digest fix",
+    "fix_round_3_review_20261002": {
+      "reviewed_head": "1db2bf761",
+      "verdict": "blocked on two probe defects, both false failures, not product defects",
+      "blocker_1_resolution": "the review found resolution_unique_target over-counted: the governed producer exposes the same record under both the payment_request target key and its journey_request alias, so the old len(claimed)==1 rule kept the exact-instance receipt permanently FAIL. Uniqueness is now a property of the resolved identity: several aliases may claim one (model, record_id) pair only while every alias carries the same stable identifier, and one stable identifier must resolve to exactly that one pair. Ambiguity is now a pair claimed by two distinct identifiers, or one identifier spread across two pairs. The tautological record_xmlid==stable_identifier sub-check was replaced by that identifier->pair proof. The detail now reports matching_resolved_targets (alias count), distinct_claiming_identifiers, competing_identifiers and identifier_resolved_pairs.",
+      "blocker_2_resolution": "the review found dailyRecordCheckSummary hard-coded the five-step shape including approved_contract_binding, but that step is pushed only when contractGate.status is accepted; after the blocker-2 lane decoupling the daily lane never pushes it, so record_summary.complete was permanently false and every daily run failed. The expected shape is now derived from the gate's real status (accepted = five steps, otherwise four) and both call sites pass contractGate.status. The default stays on the stricter five-step form so a caller that forgets the status fails closed.",
+      "non_blocking_dispositions": [
+        "resolved: the tautological identifier sub-check is replaced by the identifier->pair uniqueness proof (same direction, non-tautological)",
+        "resolved: the JS seal-mirror restriction is documented in scripts/verify/lib/acceptance_contract_receipt.mjs and recorded here as deliberate: canonicalJson refuses floats/bigints/non-finite and semanticSha256 returns '' outside the mirrored Python domain, so the browser can only compare seals it can reproduce and can never fabricate a matching one",
+        "deferred: request_target_binding still proves model/viewType/pageId but not dataContract.mainData.id == target.record_id. The shipped frontend detail lane already enforces mainData.id for this fixture, but the probe's own synthetic example contract (docs/architecture/unified_page_contract_v2/examples/form_project.json) carries no mainData.id, so tightening that check would break the synthetic fixture or force rewriting an example contract that is not acceptance authority. Recorded as an open evidence gap, never counted as a pass",
+        "corrected: the step-3 execution sentence no longer implies the data-record-key/approved-contract proof runs in the daily lane; see the corrected execution text of this record"
+      ],
+      "evidence": {
+        "record_identity": "python3 -m unittest scripts.verify.test_dev_acceptance_release_identity: 30 cases PASS, including a new governed-alias case (two aliases of one record stay unique) and an identifier-spread-over-two-records rejection case",
+        "frontend_probe": "make verify.frontend.list_surface_search_contract.unit: 21 unittest cases PASS, including a new behaviour case for the four-step daily shape and its fail-closed default",
+        "supporting": "make verify.frontend.acceptance.environment.guard PASS (30 cases); node --check scripts/verify/frontend_list_surface_structure_browser.mjs and py_compile scripts/ops/dev_acceptance_release_probe.py clean"
+      }
+    }
   }
 }

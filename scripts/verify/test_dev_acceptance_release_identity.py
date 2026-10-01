@@ -256,6 +256,8 @@ class ContractAcceptanceTest(unittest.TestCase):
         detail = result["check_detail"]["resolution_unique_target"]
         self.assertEqual(detail["record_xmlid"], detail["stable_identifier"])
         self.assertEqual(detail["matching_resolved_targets"], 1)
+        self.assertEqual(detail["competing_identifiers"], [])
+        self.assertEqual(detail["identifier_resolved_pairs"], 1)
         ambiguous = resolution()
         ambiguous["targets"]["duplicate_claim"] = {
             "model": "project.project",
@@ -263,6 +265,31 @@ class ContractAcceptanceTest(unittest.TestCase):
             "record_xmlid": "smart_construction_acceptance_fixture.some_other_record",
         }
         rejected = receipt(res=ambiguous)
+        self.assertFalse(rejected["checks"]["resolution_unique_target"])
+        self.assertIn("record_resolution_not_unique", rejected["errors"])
+
+    def test_governed_aliases_of_one_record_are_not_ambiguous(self):
+        # The shipped producer exposes the same payment request under the
+        # payment_request target key and its journey_request alias, so the
+        # receipt must be unique on the resolved identity, not on the alias count.
+        aliased = resolution()
+        aliased["targets"]["journey_request"] = dict(aliased["targets"]["payment_request"])
+        result = receipt(res=aliased)
+        self.assertTrue(result["checks"]["resolution_unique_target"])
+        detail = result["check_detail"]["resolution_unique_target"]
+        self.assertEqual(detail["matching_resolved_targets"], 2)
+        self.assertEqual(detail["distinct_claiming_identifiers"], 1)
+        self.assertEqual(detail["competing_identifiers"], [])
+        self.assertEqual(detail["identifier_resolved_pairs"], 1)
+
+    def test_one_identifier_spread_over_two_records_is_not_unique(self):
+        spread = resolution()
+        spread["targets"]["foreign_alias"] = {
+            "model": "project.project",
+            "record_id": 9999,
+            "record_xmlid": "smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a",
+        }
+        rejected = receipt(res=spread)
         self.assertFalse(rejected["checks"]["resolution_unique_target"])
         self.assertIn("record_resolution_not_unique", rejected["errors"])
 
