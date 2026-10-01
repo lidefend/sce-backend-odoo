@@ -1,4 +1,5 @@
 import type { NavMeta } from '@sc/schema';
+import { routeAuthorityContextAllowed, routeAuthorityEntries, type RouteAuthorityContract } from '../app/routeAuthority';
 import { BUSINESS_CONFIG_MODELS, MENU_CONFIG_POLICY_MODEL } from '../app/businessConfigBoundaries';
 
 function contextValue(action: NavMeta | null | undefined, key: string): string {
@@ -78,4 +79,32 @@ export function isRecordWorkItemNavigation(routeName: unknown, params: Record<st
     && /^[1-9]\d*$/.test(String(params.id || ''))
     && query.work_item_source === 'tier.review'
     && /^[1-9]\d*$/.test(String(query.work_item_id || ''));
+}
+
+/** Shell mounting only; a scene declaration does not grant publication or data access.
+ * Contextual entries needing fresh server validation remain on the action route.
+ */
+export function isAuthorizedSceneNavigation(options: {
+  routeName: unknown;
+  sceneKey: unknown;
+  authority: RouteAuthorityContract | null;
+  query: Record<string, unknown>;
+  companyId?: number | null;
+  selectedRecordId?: number | null;
+}): boolean {
+  if (options.routeName !== 'scene' || typeof options.sceneKey !== 'string' || !options.sceneKey.trim()) return false;
+  const key = options.sceneKey;
+  return routeAuthorityEntries(options.authority).some((entry) => {
+    if (entry.action_id <= 0 || !['read', 'write'].includes(entry.allowed_operation)) return false;
+    const requirements = entry.context_requirements || {};
+    if ((Array.isArray(requirements.required_query) && requirements.required_query.length > 0)
+      || requirements.record_query || requirements.selected_record_query) return false;
+    const declaredKey = entry.scene_key || entry.entry_target?.scene_key;
+    if (declaredKey !== key && entry.route !== `/s/${key}`) return false;
+    // A conflicting declared identity must never be rescued by a matching URL.
+    if (declaredKey && declaredKey !== key) return false;
+    if (options.query.action_id && String(options.query.action_id) !== String(entry.action_id)) return false;
+    if (options.query.menu_id && String(options.query.menu_id) !== String(entry.menu_id)) return false;
+    return routeAuthorityContextAllowed(entry, options.query, options);
+  });
 }

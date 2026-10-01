@@ -427,7 +427,7 @@ import {
 import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
-import { isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
+import { isAuthorizedSceneNavigation, isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
 import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
@@ -520,7 +520,7 @@ const menuCount = computed(() => visibleNavigationNodes.value.length);
 
 const routeAllowsEmptyMenu = computed(() => {
   const actionId = asInteger(route.params.actionId || route.query.action_id) || 0;
-  const explicitActionRoute = actionId > 0 && routeAuthorityEntries(session.routeAuthority).some((entry) => (
+  const explicitActionRoute = route.name !== 'scene' && actionId > 0 && routeAuthorityEntries(session.routeAuthority).some((entry) => (
     entry.action_id === actionId && entry.menu_id === 0
   ));
   return route.meta?.adminOnly === true
@@ -528,6 +528,14 @@ const routeAllowsEmptyMenu = computed(() => {
     || route.name === 'api-key-management'
     || ['my-work', 'scene-my-work'].includes(String(route.name || ''))
     || isRecordWorkItemNavigation(route.name, route.params, route.query)
+    || isAuthorizedSceneNavigation({
+      routeName: route.name,
+      sceneKey: route.params.sceneKey,
+      authority: session.routeAuthority,
+      query: route.query,
+      companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || null,
+      selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
+    })
     || explicitActionRoute;
 });
 const rootTitle = computed(() => {
