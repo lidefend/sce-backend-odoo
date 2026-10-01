@@ -356,6 +356,7 @@ class ScPlanLine(models.Model):
 class ScPlanVersion(models.Model):
     _name = "sc.plan.version"
     _description = "计划版本"
+    _rec_name = "version_no"
     _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation"]
     _state_from = ["draft"]
     _state_to = ["approved"]

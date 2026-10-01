@@ -659,6 +659,7 @@ class ScWorkflowContractService(models.AbstractModel):
         },
         "sc.plan": {
             "state_field": "state",
+            "field_editable_phases": ["open"],
             "state_phase": {
                 "draft": "draft", "confirmed": "approved", "in_progress": "open",
                 "done": "done", "cancel": "cancelled",

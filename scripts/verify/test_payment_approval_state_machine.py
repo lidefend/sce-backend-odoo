@@ -3163,6 +3163,28 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(ns['_editability'](service, profile, 'rejected', 'pending'), 'readonly')
         self.assertEqual(ns['_editability'](service, profile, 'approved', 'approved'), 'readonly')
 
+    def test_plan_execution_editability_preserves_review_and_terminal_boundaries(self):
+        path = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        tree = ast.parse(path.read_text())
+        profile = next(ast.literal_eval(v) for n in ast.walk(tree) if isinstance(n, ast.Dict)
+                       for k, v in zip(n.keys, n.values) if isinstance(k, ast.Constant) and k.value == 'sc.plan')
+        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_editability')
+        method.decorator_list = []
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        service = types.SimpleNamespace(TERMINAL_PHASES={'done', 'cancelled'})
+        for approval in ('none', 'approved'):
+            self.assertEqual(ns['_editability'](service, profile, 'open', approval), 'editable')
+        for approval in ('waiting', 'pending'):
+            self.assertEqual(ns['_editability'](service, profile, 'open', approval), 'readonly')
+        self.assertEqual(ns['_editability'](service, profile, 'approved', 'approved'), 'readonly')
+        self.assertEqual(ns['_editability'](service, profile, 'done', 'approved'), 'locked')
+        version = next(n for n in ast.parse(MODEL.with_name('plan_management.py').read_text()).body
+                       if isinstance(n, ast.ClassDef) and n.name == 'ScPlanVersion')
+        rec_name = next(n.value.value for n in version.body if isinstance(n, ast.Assign)
+                        and any(isinstance(t, ast.Name) and t.id == '_rec_name' for t in n.targets))
+        self.assertEqual(rec_name, 'version_no')
+
     def test_field_editable_phases_cannot_override_pending_approval(self):
         path = MODEL.parents[1] / 'support/workflow_contract_service.py'
         tree = ast.parse(path.read_text())
