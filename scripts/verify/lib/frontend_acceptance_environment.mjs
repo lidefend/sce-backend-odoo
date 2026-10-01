@@ -167,7 +167,7 @@ export function resolveAcceptanceEnvironment({ tool, operation, env = process.en
   const credential = profile.credential_env || {};
   const login = text(cli.login || env.SC_ACCEPTANCE_LOGIN || (credential.login ? env[credential.login] : ''));
   const password = text(credential.password ? env[credential.password] : '');
-  if (['daily', 'production'].includes(profileName) && password && WEAK_SECRETS.has(password)) throw new Error(`${profileName} refuses a known default credential`);
+
   const roleBindings = parseRoleBindings(profile, env);
   const role = text(cli.role || env.SC_ACCEPTANCE_ROLE);
   const storageStatePath = validateStorageState(env, { baseUrl, database, profileName, role, expectedSha });
@@ -175,6 +175,29 @@ export function resolveAcceptanceEnvironment({ tool, operation, env = process.en
   const artifactBase = resolveAbsolutePath(cli.artifactRoot || env.SC_ACCEPTANCE_ARTIFACT_ROOT || '.runtime/acceptance', 'artifact root');
   const runId = text(env.SC_ACCEPTANCE_RUN_ID) || `${new Date().toISOString().replace(/[^0-9TZ]/g, '')}-${process.pid}-${crypto.randomBytes(4).toString('hex')}`;
   if (!/^[A-Za-z0-9._-]+$/.test(runId)) throw new Error(`invalid acceptance run id`);
+  const confirmationRaw = text(env.SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION);
+  let dailyCredentialConfirmed = false;
+  if (confirmationRaw) {
+    let confirmation;
+    try { confirmation = JSON.parse(confirmationRaw); } catch { throw new Error('daily credential confirmation must be JSON'); }
+    const expected = { schema: 'daily-readonly-credential-confirmation.v1', profile: 'daily', operation: 'readonly',
+      tool, baseUrl, apiUrl, database, login, expectedSha, runId };
+    if (profileName !== 'daily' || requestedOperation !== 'readonly' || targetMode !== 'external' || manageService
+        || !login || !text(env.SC_ACCEPTANCE_RUN_ID) || !expectedSha
+        || !confirmation || Array.isArray(confirmation) || typeof confirmation !== 'object'
+        || Object.keys(confirmation).sort().join(',') !== [...Object.keys(expected), 'expiresAt'].sort().join(',')
+        || Object.entries(expected).some(([key, value]) => confirmation[key] !== value)) {
+      throw new Error('daily credential confirmation identity mismatch');
+    }
+    const expiresAt = Date.parse(confirmation.expiresAt);
+    const now = Date.now();
+    if (!Number.isFinite(expiresAt) || expiresAt <= now || expiresAt > now + 10 * 60_000) {
+      throw new Error('daily credential confirmation must expire within ten minutes');
+    }
+    dailyCredentialConfirmed = true;
+  }
+  if (['daily', 'production'].includes(profileName) && password && WEAK_SECRETS.has(password)
+      && !dailyCredentialConfirmed) throw new Error(`${profileName} refuses a known default credential`);
   const shaSegment = expectedSha || 'unbound';
   const runArtifactRoot = path.join(artifactBase, profileName, shaSegment, tool, runId);
   const leaseRoot = path.join(text(env.XDG_RUNTIME_DIR) || os.tmpdir(), 'sce-frontend-acceptance', 'leases');
@@ -186,7 +209,7 @@ export function resolveAcceptanceEnvironment({ tool, operation, env = process.en
     target: { mode: targetMode, manageService, baseUrl, apiUrl, identityPath: profile.runtime_identity_path || '', identityRequired: Boolean(profile.target_identity_required || toolPolicy.target_identity_required) },
     data: { database, fixture: database === 'sc_frontend_acceptance' },
     auth: { login, password, role, secretEnvKey: credential.password || '', roleBindings, storageStatePath },
-    safety: { operation: requestedOperation, writeCapable: writeOperation, redactionRequired: Boolean(profile.redaction_required) },
+    safety: { operation: requestedOperation, writeCapable: writeOperation, redactionRequired: Boolean(profile.redaction_required), dailyCredentialConfirmed },
     provenance: { expectedSha, configFiles: [ENVIRONMENT_FILE, TOOL_FILE], precedence: 'CLI>SC_ACCEPTANCE_*>legacy-env>profile>safe-default' },
     artifacts: { root: artifactBase, runId, runRoot: runArtifactRoot },
     concurrency: { leaseRoot, targetKey: crypto.createHash('sha256').update(`${baseUrl}|${apiUrl}|${database}`).digest('hex') },

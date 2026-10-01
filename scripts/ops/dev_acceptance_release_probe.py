@@ -339,7 +339,11 @@ def probe_login(
     if isinstance(data, dict):
         role = data.get("role_surface") or {}
         result["checks"]["role_code"] = role.get("role_code") if isinstance(role, dict) else data.get("role_code")
-        nav = data.get("nav") or data.get("menus") or []
+        navigation = data.get("navigation")
+        nav = navigation.get("nav") if isinstance(navigation, dict) else None
+        if not isinstance(nav, list):
+            errors.append("canonical_navigation_nav_missing_or_invalid")
+            nav = []
         result["checks"]["nav_count"] = len(nav) if isinstance(nav, list) else None
         nav_rows = _walk_nav(nav)
         forbidden_labels = nav_forbidden_labels or []
@@ -385,6 +389,8 @@ def probe_login(
             errors.append("nav_required_path_misses")
         if required_action_mismatches:
             errors.append("nav_required_action_mismatches")
+    if not isinstance(data, dict):
+        errors.append("canonical_navigation_nav_missing_or_invalid")
     if init_status != 200 or not result["checks"]["system_init_ok"]:
         errors.append("system_init_failed")
 
@@ -413,12 +419,13 @@ def main() -> int:
     args = parser.parse_args()
 
     backup_dir = Path(args.backup_dir).resolve() if args.backup_dir else None
+    runtime_identity = probe_runtime_identity(args.base_url, args.db_name, args.expected_sha)
     report = {
         "mode": "dev_acceptance_release_probe",
         "db_name": args.db_name,
         "base_url": args.base_url,
         "app_env": args.app_env,
-        "runtime_identity": probe_runtime_identity(args.base_url, args.db_name, args.expected_sha),
+        "runtime_identity": runtime_identity,
         "backup": probe_backup(backup_dir, args.db_name),
         "frontend": probe_frontend(args.base_url, args.db_name, args.app_env, args.forbidden_db),
         "login": probe_login(
@@ -431,7 +438,7 @@ def main() -> int:
             nav_forbidden_labels=_split_csv(args.nav_forbidden_labels),
             nav_required_paths=_split_csv(args.nav_required_paths),
             nav_required_actions=_parse_required_actions(args.nav_required_actions),
-        ),
+        ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     statuses = [
         report["backup"].get("status", "PASS"),

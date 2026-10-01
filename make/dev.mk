@@ -588,6 +588,14 @@ verify.dev.acceptance.release: guard.prod.forbid check-compose-project check-com
 	@$(RUN_ENV) SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)" DB_NAME=$(DB_NAME) ACCEPTANCE_BACKUP_DIR="$(ACCEPTANCE_BACKUP_DIR)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_NAV_MIN_ACTIONS="$(ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="$(ACCEPTANCE_NAV_REQUIRED_ACTIONS)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
+.PHONY: verify.daily_dev.acceptance.readonly.probe
+verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" node scripts/verify/frontend_acceptance_environment_cli.mjs --tool daily-release-probe --operation readonly --expected-sha "$(ACCEPTANCE_TARGET_SHA)" --login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"
+	@test -n "$$ACCEPTANCE_LOGIN" -a -n "$$ACCEPTANCE_PASSWORD" || (echo "daily readonly credentials must be supplied through environment"; exit 2)
+	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
+	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
+
 .PHONY: verify.dev.acceptance.release.schema.guard
 verify.dev.acceptance.release.schema.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/dev_acceptance_release_probe_schema_guard.py

@@ -2,16 +2,25 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { launchChromium } from './playwright_runtime.mjs';
+import { launchChromium, launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { resolveAcceptanceEnvironment, verifyServedIdentity, redactedEnvironmentEvidence } from './lib/frontend_acceptance_environment.mjs';
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+const DAILY = acceptance.profile === 'daily';
+const DAILY_OBSERVATION_SCOPE = process.env.LIST_SURFACE_DAILY_OBSERVATION_SCOPE || 'all';
+if (!['all', 'record-only'].includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
+const dailyRuntime = DAILY ? await (async () => {
+  const { build } = await import('../../frontend/apps/web/node_modules/esbuild/lib/main.js');
+  const bundled = await build({ stdin: { contents: "export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';", resolveDir: path.join(acceptance.root, 'frontend/apps/web/src'), loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', define: { 'import.meta.env.DEV': 'false' }, write: false });
+  return import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
+})() : null;
 const BASE_URL = acceptance.baseUrl;
 const DATABASE = acceptance.database;
-const LOGIN = process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
-const PASSWORD = process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const BOOTSTRAP_SECRET = process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
+const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
+const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const BOOTSTRAP_SECRET = DAILY ? '' : process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
@@ -25,7 +34,7 @@ const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
       { key: '520', width: 520, height: 844 },
       { key: '390', width: 390, height: 844 },
     ];
-const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || '').split(',').filter(Boolean);
+const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || (DAILY ? '1440,390' : '')).split(',').filter(Boolean);
 if (requestedWidths.some(width => !DEFAULT_VIEWPORTS.some(viewport => viewport.key === width))) throw new Error('unknown LIST_SURFACE_VIEWPORTS');
 const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => requestedWidths.includes(viewport.key)) : DEFAULT_VIEWPORTS;
 const REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
@@ -132,10 +141,10 @@ async function findPopulatedList(page, navigation) {
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
   if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
   const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
-  for (const target of candidates) {
+  for (const target of (DAILY ? candidates.slice(0, 3) : candidates)) {
     await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const toolbar = page.locator('[data-list-query-action-bar]');
-    if (!await toolbar.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) continue;
+    if (!await toolbar.waitFor({ state: 'visible', timeout: REQUESTED_ROUTE ? 45_000 : 8_000 }).then(() => true).catch(() => false)) continue;
     await waitForList(page);
     if (await page.locator(`.table tbody tr, ${MOBILE_RECORD_ROW}`).count()) return target;
   }
@@ -585,17 +594,182 @@ async function captureState(page, target, viewport, state) {
   return { state, viewport, measurement, screenshot, selection_source: selectionSource };
 }
 
-const browser = await launchChromium({ headless: true });
-const context = await browser.newContext({ viewport: VIEWPORTS[0] });
-const page = await context.newPage();
-const navigation = captureReleasedNavigation(page);
-const runtime = { console_errors: [], page_errors: [], failed_responses: [] };
-page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
-page.on('pageerror', (error) => runtime.page_errors.push(error.message));
-page.on('response', (response) => { if (response.status() >= 400) runtime.failed_responses.push({ status: response.status(), url: response.url() }); });
+function dailyReadonlyRequest(method, pathname, body) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true;
+  if (method !== 'POST') return false;
+  if (pathname === '/web/session/authenticate') return true;
+  if (pathname !== '/api/v1/intent') return false;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  if (body.intent === 'api.data') {
+    const readOps = ['list', 'read', 'search', 'search_read', 'query', 'name_search', 'fields_get', 'default_get'];
+    const op = body.params?.op || body.params?.operation;
+    if (!readOps.includes(op)) return false;
+    const carriers = [body, body.params];
+    for (let index = 0; index < carriers.length; index += 1) {
+      const carrier = carriers[index];
+      if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)) continue;
+      if (['op', 'operation'].some(key => carrier[key] !== undefined && carrier[key] !== op)) return false;
+      for (const key of ['payload', 'params', 'data', 'args', '_params', '_payload']) {
+        if (carrier[key] && typeof carrier[key] === 'object') carriers.push(carrier[key]);
+      }
+      if (carriers.length > 32) return false;
+    }
+    return true;
+  }
+  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
+}
 
+function dailyDeclaredLanding(init) {
+  if (init?.scene_ready_contract?.scenes?.length) dailyRuntime.setSceneRegistryFromSceneReadyContract(init.scene_ready_contract);
+  else dailyRuntime.setSceneRegistry(Array.isArray(init?.scenes) ? init.scenes : []);
+  const availablePath = raw => {
+    const route = dailyRuntime.normalizeLegacyWorkbenchPath(String(raw || '').trim());
+    if (!route.startsWith('/') || route.startsWith('//')) return '';
+    const match = route.match(/^\/s\/([^/?#]+)/);
+    return !match || dailyRuntime.getSceneByKey(decodeURIComponent(match[1])) ? route : '';
+  };
+  const scenePath = raw => {
+    const key = String(raw || '').trim();
+    const scene = dailyRuntime.getSceneByKey(key);
+    return scene ? availablePath(scene.target?.route || scene.route || `/s/${key}`) || `/s/${key}` : '';
+  };
+  const role = init?.role_surface || {};
+  const fallback = init?.default_route || {};
+  const choices = [
+    ['role_surface.landing_path', availablePath(role.landing_path)],
+    ['role_surface.landing_scene_key', scenePath(role.landing_scene_key)],
+    ['default_route.route', /^\/(a|f|r)\//.test(String(fallback.route || '')) ? '' : availablePath(fallback.route)],
+    ['default_route.scene_key', scenePath(fallback.scene_key)],
+  ];
+  const [owner, route] = choices.find(([, candidate]) => candidate) || ['minimum_workspace_fallback', '/'];
+  const sceneKey = route.match(/^\/s\/([^/?#]+)/)?.[1];
+  return { route, scene_key: sceneKey ? decodeURIComponent(sceneKey) : route.split('?')[0] === '/' ? 'workspace.home' : '', owner };
+}
+
+function dailyRecordEntry(snapshot, row, source) {
+  const action = snapshot?.actionContract?.actionRuleList?.find(rule => rule.sourceWidgetId === 'page.row');
+  if (!action) throw new Error('list contract has no declared row opener');
+  const materialize = value => typeof value === 'string' ? value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, key) => String(row[key] ?? ''))
+    : Array.isArray(value) ? value.map(materialize)
+      : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materialize(item)])) : value;
+  const target = materialize(action.target || {});
+  const formal = dailyRuntime.decodeFormalRecordEntry(target.record_entry);
+  if (!formal && (Object.values(target).some(value => value && typeof value === 'object') || target.route)) throw new Error('unsupported non-record row target');
+  const entry = formal || dailyRuntime.recordEntryFromModelRights({ model: snapshot.pageInfo.model, recordId: row.id,
+    modelRights: snapshot.statusContract?.globalStatus?.modelRights, actionId: source.actionId, menuId: source.menuId });
+  const resolved = dailyRuntime.resolveRecordOpenTarget({ ...entry, actionId: entry.actionId || source.actionId,
+    menuId: entry.menuId || source.menuId, carryQuery: { action_id: source.actionId, menu_id: source.menuId } });
+  if (!resolved) throw new Error('invalid declared record entry');
+  return { model: entry.model, recordId: Number(entry.recordId), actionId: Number(resolved.query.action_id),
+    menuId: Number(resolved.query.menu_id), path: resolved.path, modelWriteAuthority: entry.modelWriteAuthority, entryIntent: entry.entryIntent };
+}
+
+function dailyLandingMatches(currentUrl, defaultRoute, baseUrl) {
+  if (!defaultRoute || typeof defaultRoute.route !== 'string' || !defaultRoute.route.startsWith('/') || defaultRoute.route.startsWith('//')) return false;
+  const expected = new URL(defaultRoute.route, baseUrl);
+  const current = new URL(currentUrl, baseUrl);
+  return current.origin === expected.origin && current.pathname === expected.pathname
+    && [...expected.searchParams].every(([key, value]) => current.searchParams.get(key) === value);
+}
+
+function dailyHomeSummaryMatches(row) {
+  return row.intent === 'my.work.summary' && row.params?.product_workspace === true
+    && row.params?.limit === 12 && row.params?.limit_each === 4 && row.params?.page_size === 12
+    && row.params?.page === 1 && row.params?.sort_by === 'priority' && row.params?.sort_dir === 'desc'
+    && (row.response?.ok === true || row.response?.result?.ok === true);
+}
+
+function dailyDetailContractMatches(row, expected) {
+  const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
+  return row.intent === 'ui.contract.v2' && envelope?.ok === true
+    && envelope.data?.pageInfo?.model === expected.model
+    && envelope.data?.pageInfo?.viewType === 'form'
+    && Number(envelope.data?.dataContract?.mainData?.id) === expected.recordId
+    && Number(row.params?.record_id) === expected.recordId
+    && Number(row.params?.action_id) === expected.actionId
+    && Number(row.params?.menu_id) === expected.menuId;
+}
+
+let browser, context, page, lease, servedIdentity;
+const runtime = { console_errors: [], page_errors: [], failed_responses: [], denied_requests: [], operational_tracking: [], contracts: [] };
+const dailyObservations = [];
 try {
+  if (DAILY) {
+    if (acceptance.operation !== 'readonly' || acceptance.target.mode !== 'external' || acceptance.apiUrl !== BASE_URL || !LOGIN || !PASSWORD) throw new Error('daily scope requires exact external readonly target and credentials');
+    servedIdentity = await verifyServedIdentity(acceptance);
+    if (servedIdentity.servedDatabase !== DATABASE) throw new Error('daily served database identity is required and must match');
+    lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit' } });
+  }
+  browser = DAILY ? await launchAcceptanceChromium(acceptance, { headless: true }) : await launchChromium({ headless: true });
+  context = await browser.newContext({ viewport: VIEWPORTS[0] });
+  if (DAILY) await context.route('**/*', async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    let body; try { body = request.postDataJSON(); } catch {}
+    const sameOrigin = url.origin === new URL(BASE_URL).origin;
+    if (!sameOrigin || !dailyReadonlyRequest(request.method(), url.pathname, body)) {
+      runtime.denied_requests.push({ method: request.method(), path: url.pathname, intent: body?.intent || '' });
+      return route.abort('blockedbyclient');
+    }
+    if (['telemetry.track', 'usage.track'].includes(body?.intent)) runtime.operational_tracking.push({ intent: body.intent, classification: 'runtime_telemetry_not_business_write' });
+    return route.continue();
+  });
+  page = await context.newPage();
+  const navigation = captureReleasedNavigation(page);
+  page.on('console', message => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
+  page.on('pageerror', error => runtime.page_errors.push(error.message));
+  page.on('response', async response => {
+    if (response.status() >= 400) runtime.failed_responses.push({ status: response.status(), url: response.url() });
+    if (!DAILY || !response.url().includes('/api/v1/intent')) return;
+    try {
+      const request = response.request().postDataJSON();
+      if (['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: await response.json() });
+    } catch {}
+  });
   await login(page, navigation);
+  if (DAILY && DAILY_OBSERVATION_SCOPE === 'all') {
+    const defaultRoute = dailyDeclaredLanding(navigation.payload());
+    const landing = page.url();
+    if (!dailyLandingMatches(landing, defaultRoute, BASE_URL)) throw new Error('daily landing does not match declared default_route');
+    await page.locator('.t-card:visible').first().waitFor({ state: 'visible', timeout: 30_000 });
+    let landingContracts = [];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      landingContracts = runtime.contracts.filter(row => row.intent === 'ui.contract.v2' && row.response?.ok === true
+        && row.params?.scene_key === defaultRoute.scene_key && row.response?.data?.pageInfo);
+      if (landingContracts.length) break;
+      await page.waitForTimeout(50);
+    }
+    if (!landingContracts.length) throw new Error('daily declared landing contract was not captured');
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      const screenshot = path.join(OUTPUT, `daily-landing-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: 'declared-default-landing', url: landing, defaultRoute,
+        contractResponses: landingContracts.length, viewport: viewport.key, screenshot });
+    }
+    // Router declares '/' as HomeView(workspace.home); it is independent of
+    // the account's authenticated default_route and the menu's data overview.
+    const homeStart = runtime.contracts.length;
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.locator('[data-role-home][data-state="ready"]').waitFor({ state: 'visible', timeout: 30_000 });
+    let homeResponses = [];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      homeResponses = runtime.contracts.slice(homeStart).filter(dailyHomeSummaryMatches);
+      if (homeResponses.length) break;
+      await page.waitForTimeout(50);
+    }
+    if (!homeResponses.length) throw new Error('current daily home summary response missing');
+    const home = page.url();
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      const officialCards = await page.locator('[data-role-home] .t-card:visible').count();
+      if (!officialCards) throw new Error('daily workspace home has no visible official Card');
+      const screenshot = path.join(OUTPUT, `daily-home-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: 'router-workspace-home', summaryResponses: homeResponses.length, url: home, viewport: viewport.key, officialCards, screenshot });
+    }
+    await page.setViewportSize(VIEWPORTS[0]);
+  }
   const target = await findPopulatedList(page, navigation);
   const rows = [];
   for (const viewport of VIEWPORTS) {
@@ -606,6 +780,46 @@ try {
   await page.setViewportSize(VIEWPORTS[0]);
   await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForList(page);
+  if (DAILY) {
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await waitForList(page);
+      const targetUrl = new URL(target.route, BASE_URL);
+      const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
+      if (!listContract) throw new Error('current list authority contract missing');
+      const firstRecord = page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
+      if (!await firstRecord.count()) throw new Error('daily list contains no declared record opener');
+      const rowId = await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
+      if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');
+      const expectedDetail = dailyRecordEntry(listContract.response.data, { id: Number(rowId), model: listContract.response.data.pageInfo.model }, source);
+      const contractStart = runtime.contracts.length;
+      await firstRecord.click();
+      await page.waitForURL(url => url.pathname === expectedDetail.path, { timeout: 30_000 });
+      await page.locator('[data-form-canvas]').waitFor({ state: 'visible', timeout: 30_000 });
+      let newContracts = [];
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        newContracts = runtime.contracts.slice(contractStart).filter(row => dailyDetailContractMatches(row, expectedDetail));
+        if (newContracts.length) break;
+        await page.waitForTimeout(50);
+      }
+      if (!newContracts.length) throw new Error('daily detail contract response was not captured');
+      const detailContract = newContracts[newContracts.length - 1].response.data;
+      const profile = detailContract.statusContract?.globalStatus?.effectiveRenderProfile;
+      if (!['edit', 'readonly'].includes(profile)) throw new Error('detail contract render profile unsupported');
+      await page.locator(`[data-form-canvas][data-state="${profile}"]`).waitFor({ state: 'visible', timeout: 30_000 });
+      const cards = await page.locator(profile === 'readonly' ? '[data-detail-card] .t-card:visible, .t-card[data-detail-card]:visible' : '.t-card.sc-product-main-surface:visible').count();
+      if (!cards) throw new Error('record surface official Card missing for declared mode');
+      const screenshot = path.join(OUTPUT, `daily-detail-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: profile === 'readonly' ? 'readonly-detail' : 'edit-form-observation-without-save', declaredEntry: expectedDetail, renderProfile: profile, contractResponses: newContracts.length, url: page.url(), viewport: viewport.key, cards, screenshot });
+      await page.goBack({ waitUntil: 'domcontentloaded' });
+      await waitForList(page);
+      if (new URL(page.url()).pathname + new URL(page.url()).search !== target.route) throw new Error('daily detail return did not restore source list');
+    }
+    await page.setViewportSize(VIEWPORTS[0]);
+  }
   const componentProof = await productionComponentProof(page);
   const negativeFixtures = await negativeProofs(page, VIEWPORTS[0]);
   const gatedChecks = new Set([
@@ -672,11 +886,13 @@ try {
   const gatedTotal = rows.reduce((total, row) => total + Object.keys(row.measurement.checks).filter((check) => gatedChecks.has(check)).length, 0)
     + Object.keys(aggregateChecks).length + 1;
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
-  const passed = failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length;
+  const passed = failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
-    source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target },
+    source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity },
+    daily_observations: dailyObservations,
+    daily_observation_scope: DAILY_OBSERVATION_SCOPE,
     geometry_contract: 'controls contained by shared header; content follows header within viewport',
     rows,
     production_component_proof: componentProof,
@@ -696,7 +912,14 @@ try {
   await fs.writeFile(REPORT, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   process.stdout.write(`[frontend_list_surface_structure_browser] ${passed ? 'PASS' : 'FAIL'} phase=${PHASE} rows=${rows.length} failures=${failures.length}\n`);
   if (!passed) process.exitCode = 1;
+} catch (error) {
+  const screenshot = path.join(OUTPUT, 'failure.png');
+  await page?.screenshot({ path: screenshot, fullPage: true }).catch(() => {});
+  await fs.mkdir(path.dirname(REPORT), { recursive: true });
+  await fs.writeFile(REPORT, JSON.stringify({ schema: 'frontend_list_surface_structure_browser.v1', passed: false,
+    failure: String(error?.message || error), screenshot, runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    source: { acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
+  process.exitCode = 1;
 } finally {
-  await context.close();
-  await browser.close();
+  try { await context?.close(); } finally { try { await browser?.close(); } finally { await lease?.release(); } }
 }
