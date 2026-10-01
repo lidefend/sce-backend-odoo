@@ -129,3 +129,24 @@ test('report handling permits exact parent/create/submit and rejects scope drift
     assert.equal(reportProbeWriteKind('fixture_role_pm', { ...submit, params: { ...submit.params, ...patch } }, { ...scope, phase: 'submit' }), null);
   }
 });
+
+test('plan version save permits only one exact child creation on the owned parent', async () => {
+  const { reportProbeWriteKind } = await import('./standard_expense_success_scope.mjs');
+  const marker = 'TPL53-REPORT-SAVE-1790807163178';
+  const vals = { version_ids: [[0, 0, { version_no: marker.replace('REPORT-SAVE', 'VERSION-SAVE'), revision_type: 'adjustment', version_date: '2026-10-01' }]] };
+  const request = { op: 'write', model: 'sc.plan', ids: [24], vals, context: { company_id: 8 } };
+  const scope = { model: 'sc.plan.report', marker, versionProbe: true, phase: 'version-save', parentId: 24,
+    parentRequest: { model: 'sc.plan', vals: { name: marker.replace('REPORT-SAVE', 'REPORT-PARENT'), project_id: 10 }, context: { company_id: 8 } },
+    versionDefaults: { version_date: '2026-10-01' }, versionRequest: request };
+  const body = { intent: 'api.data', params: request };
+  assert.equal(reportProbeWriteKind('fixture_role_pm', body, scope), 'version-save');
+  for (const patch of [{ phase: 'version-save_in_flight' }, { versionProbe: false }, { parentId: 25 }, { versionDefaults: { version_date: '2026-10-02' } }]) {
+    assert.equal(reportProbeWriteKind('fixture_role_pm', body, { ...scope, ...patch }), null);
+  }
+  assert.equal(reportProbeWriteKind('fixture_role_finance', body, scope), null);
+  for (const changed of [{ ...request, ids: [25] }, { ...request, vals: { ...vals, state: 'confirmed' } },
+    { ...request, vals: { version_ids: [[0, 0, { ...vals.version_ids[0][2], state: 'approved' }]] } },
+    { ...request, vals: { version_ids: [[1, 99, vals.version_ids[0][2]]] } }]) {
+    assert.equal(reportProbeWriteKind('fixture_role_pm', { ...body, params: changed }, { ...scope, versionRequest: changed }), null);
+  }
+});

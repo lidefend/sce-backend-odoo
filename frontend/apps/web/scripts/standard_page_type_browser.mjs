@@ -77,6 +77,9 @@ assert.ok(!reportSaveSuccess || (process.env.TPL07_SCOPE === 'approval-actions' 
   && process.env.TPL07_APPROVAL_VIEW === 'create' && !eventSaveSuccess && process.env.TPL07_DIARY_SAVE_SUCCESS !== '1' && process.env.TPL07_EXPENSE_SAVE_SUCCESS !== '1'));
 const planVersionInspect = process.env.TPL07_PLAN_VERSION_INSPECT === '1';
 assert.ok(!planVersionInspect || reportSaveSuccess);
+const planVersionSave = process.env.TPL07_PLAN_VERSION_SAVE === '1';
+assert.ok(!planVersionSave || planVersionInspect);
+let versionSaveCapture = false;
 let reportSuccess = null;
 let reportCreateCapture = false;
 let eventSuccess = null;
@@ -131,6 +134,12 @@ async function login(role) {
       }
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
       return route.fulfill({ response });
+    }
+    if (planVersionSave && versionSaveCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'write' && body.params.model === 'sc.plan') {
+      report.versionSaveAttempts ??= [];
+      report.versionSaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'TPL53_VERSION_CAPTURE', message: '计划版本定向保存失败验证' } }) });
     }
     if (reportSaveSuccess && reportCreateCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
       && body.params?.op === 'create' && body.params.model === 'sc.plan.report') {
@@ -970,7 +979,7 @@ try {
           const content = '临时验收计划汇报：核对官方表单提交和详情返回。';
           const parentRequest = { op: 'create', model: 'sc.plan', vals: { name: parentName, project_id: 10 },
             context: { company_id: 8, menu_id: Number(parentEntries[0].menu_id), action_id: Number(parentEntries[0].action_id) } };
-          reportSuccess = { model: spec.model, marker, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
+          reportSuccess = { model: spec.model, marker, versionProbe: planVersionSave, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
           await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
           await expenseCleanup('preflight');
           const projectRead = await api({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'company_id'], context: { company_id: 8 } });
@@ -1004,12 +1013,52 @@ try {
             check('plan version: backend default state drives new row', defaultsResult.ok === true && defaultsResult.data?.record?.state === 'draft');
             const versionInput = collection.getByRole('textbox', { name: '版本号', exact: true });
             await versionInput.waitFor();
-            await versionInput.fill('TPL53-UNSAVED-VERSION');
-            check('plan version: definition editable after default hydration', await versionInput.inputValue() === 'TPL53-UNSAVED-VERSION');
+            const versionNo = planVersionSave ? marker.replace('REPORT-SAVE', 'VERSION-SAVE') : 'TPL53-UNSAVED-VERSION';
+            await versionInput.fill(versionNo);
+            check('plan version: definition editable after default hydration', await versionInput.inputValue() === versionNo);
             report.planVersionInspection.afterAdd = await collection.innerText();
             report.planVersionInspection.inputs = await collection.locator('input,textarea').evaluateAll(nodes => nodes.map(n => ({ label: n.getAttribute('aria-label'), placeholder: n.getAttribute('placeholder'), value: n.value })));
             check('plan version: draft row has inputs', report.planVersionInspection.inputs.length > 0);
             await session.page.screenshot({ path: path.join(out, 'plan-version-new-row-inspection.png') });
+            if (planVersionSave) {
+              reportSuccess.versionDefaults = defaultsResult.data.record;
+              versionSaveCapture = true;
+              await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+              await session.page.getByText('计划版本定向保存失败验证', { exact: false }).first().waitFor();
+              check('plan version: failed save preserves input', await versionInput.inputValue() === versionNo && report.versionSaveAttempts?.length === 1);
+              versionSaveCapture = false;
+              reportSuccess.versionRequest = report.versionSaveAttempts[0];
+              reportSuccess.phase = 'version-save';
+              check('plan version: captured write belongs to exact temporary parent', reportProbeWriteKind('fixture_role_pm', { intent: 'api.data', params: reportSuccess.versionRequest }, reportSuccess) === 'version-save');
+              await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+              const savedResponse = session.page.waitForResponse(response => {
+                try { const body = response.request().postDataJSON(); return body?.intent === 'api.data'
+                  && body.params?.op === 'write' && body.params.model === 'sc.plan'; } catch { return false; }
+              });
+              await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+              const savedResult = await (await savedResponse).json();
+              check('plan version: real parent save succeeds once', savedResult.ok === true && reportSuccess.phase === 'done'
+                && JSON.stringify(report.reportSuccessWrites.map(row => row.kind)) === JSON.stringify(['parent', 'version-save']));
+              const saved = await api({ op: 'list', model: 'sc.plan.version', fields: ['id', 'version_no', 'plan_id', 'state', 'revision_type', 'version_date', 'approved_by', 'approved_date'],
+                domain: [['plan_id', '=', reportSuccess.parentId], ['version_no', '=', versionNo]], limit: 2, context: { company_id: 8 } });
+              report.planVersionSaved = saved;
+              const row = saved.data?.records?.[0];
+              check('plan version: authoritative draft child readback', saved.ok === true && saved.data.records.length === 1
+                && row.state === 'draft' && row.plan_id[0] === reportSuccess.parentId && row.version_no === versionNo
+                && row.revision_type === reportSuccess.versionDefaults.revision_type && row.version_date === reportSuccess.versionDefaults.version_date
+                && !row.approved_by && !row.approved_date);
+              reportSuccess.versionId = row.id;
+              await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+              await form(session.page, `/f/sc.plan/${reportSuccess.parentId}?menu_id=${parentRequest.context.menu_id}&action_id=${parentRequest.context.action_id}`, 'plan-version-saved-parent');
+              await session.page.getByText('版本', { exact: true }).click();
+              await collection.waitFor();
+              report.planVersionSavedControls = await collection.getByRole('button').evaluateAll(nodes => nodes.map(n => ({ text: n.textContent, label: n.getAttribute('aria-label') })));
+              for (const width of [1440, 390]) {
+                await session.page.setViewportSize({ width, height: 950 });
+                check(`plan version saved ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+                await session.page.screenshot({ path: path.join(out, `plan-version-saved-${width}.png`) });
+              }
+            }
             continue;
           }
           await session.page.locator('[data-field-name="name"] input').first().fill(marker);

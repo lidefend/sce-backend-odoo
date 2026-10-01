@@ -279,3 +279,21 @@ class PlanReportCleanupTest(unittest.TestCase):
             with self.assertRaises(AssertionError): validate_report_probe_target('sc_dev_demo', scope, row, 32, is_parent)
         for patch in ({'plan_id': 99}, {'summary': 'changed'}):
             with self.assertRaises(AssertionError): validate_report_probe_target('sc_frontend_acceptance', scope, {**report, **patch}, 32)
+
+class PlanVersionCleanupTest(unittest.TestCase):
+    def test_only_exact_draft_version_is_recoverable(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_version_probe_target
+        from datetime import datetime, timezone
+        marker = 'TPL53-REPORT-SAVE-1790807163178'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'versionProbe': True, 'parentId': 24, 'versionId': 31,
+                 'versionDefaults': {'version_date': '2026-10-01'}}
+        row = {'id': 31, 'version_no': marker.replace('REPORT-SAVE', 'VERSION-SAVE'), 'plan_id': 24, 'state': 'draft',
+               'company_id': 8, 'create_uid': 32, 'revision_type': 'adjustment', 'version_date': '2026-10-01',
+               'create_date': datetime.fromtimestamp(1790807163.178 + 10, timezone.utc).replace(tzinfo=None).isoformat()}
+        validate_version_probe_target('sc_frontend_acceptance', scope, row, 32)
+        for patch in ({'id': 99}, {'plan_id': 25}, {'version_no': 'existing'}, {'state': 'approved'}, {'company_id': 9},
+                      {'create_uid': 1}, {'revision_type': 'baseline'}, {'version_date': '2026-10-02'}, {'create_date': '2020-01-01'}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
+        with self.assertRaises(AssertionError): validate_version_probe_target('sc_dev_demo', scope, row, 32)
+        with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', {**scope, 'versionProbe': False}, row, 32)

@@ -63,6 +63,20 @@ export function reportProbeWriteKind(role, body, scope) {
     || Object.keys(parent.vals).sort().join(',') !== 'name,project_id' || parent.context?.company_id !== 8) return null;
   if (scope.phase === 'parent' && body?.intent === 'api.data' && p?.op === 'create'
     && isDeepStrictEqual(p, parent)) return 'parent';
+  if (scope.versionProbe === true && scope.phase === 'version-save' && body?.intent === 'api.data'
+    && Number.isInteger(scope.parentId) && scope.parentId > 0) {
+    const request = scope.versionRequest;
+    const line = request?.vals?.version_ids?.[0];
+    if (request?.op === 'write' && request.model === 'sc.plan' && request.context?.company_id === 8
+      && isDeepStrictEqual(request.ids, [scope.parentId]) && Object.keys(request.vals).join(',') === 'version_ids'
+      && request.vals.version_ids.length === 1 && line?.length === 3 && line[0] === 0 && line[1] === 0
+      && Object.keys(line[2]).sort().join(',') === 'revision_type,version_date,version_no'
+      && line[2].version_no === scope.marker.replace('REPORT-SAVE', 'VERSION-SAVE')
+      && line[2].revision_type === 'adjustment' && /^\d{4}-\d{2}-\d{2}$/.test(line[2].version_date)
+      && line[2].version_date === scope.versionDefaults?.version_date
+      && isDeepStrictEqual(p, request)) return 'version-save';
+    return null;
+  }
   const request = scope.request;
   if (!Number.isInteger(scope.parentId) || scope.parentId <= 0 || request?.model !== scope.model
     || request?.vals?.plan_id !== scope.parentId || request?.vals?.name !== scope.marker || request?.context?.company_id !== 8

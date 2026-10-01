@@ -156,6 +156,20 @@ def validate_report_probe_target(database, scope, row, actor_id, parent=False):
     assert -5 <= created - started <= 300
 
 
+def validate_version_probe_target(database, scope, row, actor_id):
+    assert database == 'sc_frontend_acceptance' and scope.get('versionProbe') is True
+    marker = scope['marker']
+    assert scope['model'] == 'sc.plan.report' and re.fullmatch(r'TPL53-REPORT-SAVE-\d{13}', marker)
+    assert row['version_no'] == marker.replace('REPORT-SAVE', 'VERSION-SAVE')
+    assert row['plan_id'] == scope['parentId'] and row['company_id'] == 8 and row['create_uid'] == actor_id
+    assert row['state'] == 'draft' and row['revision_type'] == 'adjustment'
+    assert row['version_date'] == scope['versionDefaults']['version_date']
+    if scope.get('versionId'): assert row['id'] == scope['versionId']
+    started = int(marker.rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
 def recover_report(env, scope):
     assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.plan.report'
     marker = scope['marker']
@@ -170,6 +184,11 @@ def recover_report(env, scope):
         ('target_model', '=', 'sc.plan.report'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
     Plan = env['sc.plan'].sudo().with_context(active_test=False)
     Report = env['sc.plan.report'].sudo().with_context(active_test=False)
+    Version = env['sc.plan.version'].sudo().with_context(active_test=False)
+    versions = Version.search([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
+    assert not versions or scope.get('versionProbe') is True
+    assert len(versions) <= 1
+    version_ids = versions.ids
     plans = Plan.search([('name', '=', vals['name'])])
     reports = Report.search([('name', '=', marker)])
     assert len(plans) <= 1 and len(reports) <= 1
@@ -180,7 +199,8 @@ def recover_report(env, scope):
         row.update({key: record[key].id for key in ('company_id', 'create_uid', 'project_id')})
         row['create_date'] = str(record.create_date)
         validate_report_probe_target(env.cr.dbname, scope, row, actor.id, parent=True)
-        assert not record.line_ids and not record.version_ids and not record.review_ids and not record.attachment_ids
+        assert not record.line_ids  and not record.review_ids and not record.attachment_ids
+        assert set(record.version_ids.ids) == set(version_ids)
         assert set(record.report_ids.ids) == set(report_ids)
         assert not env['sc.plan.warning.log'].sudo().search_count([('plan_id', '=', record.id)])
     for record in reports:
@@ -190,15 +210,25 @@ def recover_report(env, scope):
         row['create_date'] = str(record.create_date)
         validate_report_probe_target(env.cr.dbname, scope, row, actor.id)
         assert not record.line_id and not record.review_ids and not record.attachment_ids and not record.legacy_fact_id
-    for records in (reports, plans):
+    for record in versions:
+        assert plans and record.plan_id == plans
+        row = {key: record[key] for key in ('id', 'version_no', 'state', 'revision_type')}
+        row.update({key: record[key].id for key in ('company_id', 'create_uid', 'plan_id')})
+        row.update(create_date=str(record.create_date), version_date=str(record.version_date))
+        validate_version_probe_target(env.cr.dbname, scope, row, actor.id)
+        assert not record.review_ids and not record.approved_by and not record.approved_date and not record.base_version_id
+        assert not record.legacy_fact_id and not Version.search_count([('base_version_id', '=', record.id)])
+    for records in (versions, reports, plans):
         for record in records:
             assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
+    versions.unlink()
     reports.unlink()
     plans.unlink()
     env.cr.commit()
     env.invalidate_all()
     assert not Plan.search_count([('name', '=', vals['name'])]) and not Report.search_count([('name', '=', marker)])
-    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': report_ids, 'parent_ids': plan_ids, 'actor_id': actor.id}))
+    assert not Version.search_count([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
+    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': report_ids, 'version_ids': version_ids, 'parent_ids': plan_ids, 'actor_id': actor.id}))
 
 
 def recover(env, scope):
