@@ -344,6 +344,8 @@ verify.frontend.low_code_field_create_dialog.browser: guard.prod.forbid
 	@node scripts/verify/frontend_low_code_field_create_dialog_browser.mjs
 
 verify.frontend.overlay_lifecycle.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/modal-lifecycle-runtime-test.mjs >/dev/null
+	@node /tmp/modal-lifecycle-runtime-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_overlay_lifecycle_guard.py
 	@python3 scripts/verify/frontend_overlay_lifecycle_guard.py
 
