@@ -920,7 +920,7 @@
     "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Commit reviewed layer-owned fixes; governed acceptance backend refresh/build, affected Home/create-edit/menu browser; archive exact candidate and publish protected Gitee PR. No deployment.",
+  "next_exact_step": "Freeze metadata-aligned clean candidate; one exact-head Quick; bind GitHub base review/archive, make pr.push and protected GitHub PR required checks/merge. No Gitee PR or deployment.",
   "completion": {
     "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
@@ -3643,8 +3643,8 @@
       "demo_addons/smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml"
     ],
     "source_head": "f06940eaaab3ef36a57545d631216648083993c9",
-    "writer": "root; sole writer returned by execution agent",
-    "status": "implemented_targeted_checks_and_delta_source_review_passed",
+    "writer": "root",
+    "status": "batch_accepted_github_finalization_pending",
     "validation": "ci.local.iteration then verify.payment.approval_state_machine.unit, verify.menu_config_tree_editor.behavior, verify.frontend.standard_preview.unit, strict; no runtime/DB/Quick/remote writes; verify.frontend.adopted_form_validation_identity.unit; native ORM representative method prepared but not run by A",
     "invalidation": "Prior frozen review is historical. P1 create tests and menu behavior/build invalidated; tool Home/create-edit evidence assertions invalidated. Independent detail/list unchanged assertions reusable by exact input dependency. Root coordinates affected browser later.",
     "existing_cost_source_boundary": "Four preexisting token-controlled create methods remain unchanged, distinct methods from sixteen new guards; not claimed closed by this patch",
@@ -4220,11 +4220,11 @@
     "target": "existing run scope and protected Gitee integration",
     "owner_authorization": "User explicitly requests final review and mainline integration after supplied Quick PASS; supersedes prior root coordination-only restriction for this integration task. No deployment authorized.",
     "source_head": "48f1b9ff0360d8eb02c4585ae5203bc86936cea0",
-    "target_main": "23f11f426880585ca307544545c9bf9c01245b42",
+    "target_main": "fff226d7be72878ea6861cfab2ce13d990cee806",
     "scope_repair": "Register existing generated fingerprint path changed by authorized freeze.prepare commit f591c1e37; no product, test, runtime or generated file contents changed.",
     "validation": "JSON and make agent.run.resume; independent final review and remote exact-source/base required gates. Supplied source Quick preserved, never relabel its head.",
     "runtime_reuse": "Six review findings repaired; 16 create guards plus two demo XML records, generic menu/save lifecycle and existing P4 probes. Prior unchanged evidence reused by input scope. local.dev schema upgrade required after observed missing column and demo incompatibility; native ORM now passes. Acceptance backend refresh and frontend build required by actual addons/frontend deltas.",
-    "status": "targeted_checks_passed_runtime_browser_pending",
+    "status": "batch_accepted_github_finalization_pending",
     "writer": "root; execution agent returned single-writer token",
     "current_source_head": "f06940eaaab3ef36a57545d631216648083993c9",
     "dirty_scope": "Reviewed P1/P0/P4 fixes and original run metadata; not frozen",
@@ -4259,6 +4259,25 @@
       "strict": "dual vue-tsc exit0; fixes-strict.log",
       "base_path": "artifacts/frontend-web-fix-20260928/final-integration"
     },
-    "quick_policy": "Original 48f1 receipt remains historical. New ordinary Gitee candidate follows latest owner local/remote division: iteration and affected nonzero targeted tests plus exact-source/current-base four required remote gates; do not relabel old receipt or repeat full local Quick solely for a new SHA."
+    "quick_policy": "GitHub original lane applies: run one exact clean final-head ci.local.quick after this metadata-only authority alignment. Preserve 48f original receipt; never relabel it. All unchanged scoped tests/browser evidence carries forward by unchanged production, test and environment inputs.",
+    "authoritative_remote": "origin / GitHub lidefend/sce-backend-odoo",
+    "owner_latest_steering": "GitHub repository takes priority; owner confirmed recovery during candidate publication. Continue final review/mainline integration through protected GitHub PR; no deployment.",
+    "gitee_prior_write": {
+      "candidate_head": "c945831f090cd095b29c00fd31f1729b65eb4294",
+      "result": "candidate branch push completed; no PR created or merge attempted",
+      "receipt": "artifacts/frontend-web-fix-20260928/final-integration/push-apply.log"
+    },
+    "runtime_closeout": "artifacts/frontend-web-fix-20260928/final-integration/runtime-closeout.json",
+    "runtime_results": {
+      "build_and_backend_source": "c945831f090cd095b29c00fd31f1729b65eb4294",
+      "create_edit": 48,
+      "home": 20,
+      "menu_browser": 46,
+      "errors": 0,
+      "undeclared_writes": 0,
+      "reuse": "Only original run metadata changes after exact-candidate runtime passes; frontend/addons/scripts/build inputs remain unchanged."
+    },
+    "base_reconciliation": "Gitee base23f is ancestor of GitHub mainfff; GitHub mainfff is ancestor of c945 candidate. New 604-path diff is subset of old636-path reviewed diff, no newly introduced review paths. No rebase, runtime invalidation or target overwrite.",
+    "source_reviews": "No remaining scoped source blockers; exact runtime report hashes verified independently. Overall approval still requires current-source/current-base GitHub checks."
   }
 }
