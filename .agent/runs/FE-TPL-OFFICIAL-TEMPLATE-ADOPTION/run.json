@@ -877,15 +877,35 @@
         "make/runtime_ops.mk",
         "scripts/dev/frontend_acceptance_runtime.sh"
       ]
+    },
+    "create_edit_scope": {
+      "target": "verify.frontend.standard_page_type.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ]
+    },
+    "workspace_home_scope": {
+      "target": "verify.frontend.standard_page_type.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ]
     }
   },
   "blockers": [
-    "Remaining original formal-effect responsibilities retained in completion.remaining_delivery / system_scope_correction.remaining_acceptance: the original checklist's create/edit representative interactions and published workspace/home observation still need their minimal evidence gap closed.",
+    "CLOSED 2026-10-01: the original checklist's create/edit representative interactions and the published workspace/home observation now have their minimal evidence (see round_closeout_20261001.create_edit_closeout 44/44 and workspace_home_closeout 19/19). No residual blocker on this item.",
     "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Owner-assigned next executor: (1) close the original checklist's create/edit representative interactions and the published workspace/home minimal evidence gap, reusing the current build, backend revision 02d28a06d and the governed fixture identity 1845/8/56. The other verify.frontend.standard_page_type scope families (all/form/overlay, task-authority, detail-state, payment-readonly, payment-master-detail) still hardcode the stale origin id and need the same governed resolution before they are run. (2) Only then run batch freeze preparation, one clean-HEAD make ci.local.quick, independent review and PR. (3) Run the acceptance-volume mount audit PASS only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082.",
+  "next_exact_step": "Done this round: create/edit and published workspace/home evidence gaps closed, every scope family that consumed the stale hardcoded origin re-run, and the overlay declaration gap repaired. Next: (1) make ci.delivery.freeze.prepare, then one clean-HEAD make ci.local.quick on the frozen commit; (2) independent review against that exact frozen fingerprint; (3) push the candidate PR. Do NOT re-run the closed list matrix. The acceptance-volume mount audit PASS still belongs only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082; keep that lane's DENY scoped as recorded.",
   "completion": {
-    "batch": "in_progress: this round closed both open acceptance failures, three additional P0 root causes and the list-surface probes, and then closed the detail actual-effect scope (themes/viewports/relation round-trip) on the governed fixture; create/edit and published workspace/home evidence gaps and final freeze/Quick/independent review remain open",
+    "batch": "in_progress: create/edit representative interactions and the published workspace/home observation are now closed on the governed fixture (44/44 and 19/19), every scope family that consumed the stale hardcoded origin was re-run (task-authority 45, detail-state 30, style form 34, overlay 34, all 93), and the overlay declaration gap was repaired at the probe layer; only the batch freeze/Quick/independent review/PR remain",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
@@ -3900,6 +3920,52 @@
       "probe_repair_commit": "b31df700b",
       "unit_lock": "verify.frontend.standard_preview.unit -> 95 tests OK, including the new declared-origin/unique-match lock",
       "remaining_detail_failures": "none"
+    },
+    "create_edit_closeout": {
+      "status": "passed",
+      "command": "TPL07_SCOPE=create-edit make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850155974/report.json",
+      "report_sha256": "e429ff199b1bca07f31320db401c90e65dc9fa581272530255456974bc509a51",
+      "assertions": 44,
+      "origin": "resolved from the declared fixture identity: payment.request 1845, company 8, state draft, unique match_count 1",
+      "declaration_consumption": "create /f/payment.request/new and edit /f/payment.request/1845 both adopt [data-form-composition=\"official-standard-form\"][data-state=\"ok\"] with reason contract-record-view, no [data-field-fail-closed], declared editable FormSection and a declared one2many; 8 sections, 1 one2many, 29 declared fields on each surface",
+      "behavior": "record binding (new vs 1845) verified; relation field partner_id present, visible and not readonly; reload retained the identical field membership and the relation value; light/dark x 1440/390 contained",
+      "write_refusal": "the create-edit scope refuses op create|write|unlink on payment.request; forbiddenWrites 0 because nothing was ever submitted",
+      "errors": 0,
+      "unit_lock": "verify.frontend.standard_preview.unit -> 102 tests OK, including the declared-origin/unique-match lock, the transient-overlay dismissal lock and the declared-disclosure expansion lock",
+      "remaining_create_edit_failures": "none"
+    },
+    "workspace_home_closeout": {
+      "status": "passed",
+      "command": "TPL07_SCOPE=scene-entry TPL07_SCENE_SELECTION=home make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850142733/report.json",
+      "report_sha256": "fb5d67764b3a3efe35bc7fafd363a5adf93dc5927c93cc1d187314579988038e",
+      "assertions": 19,
+      "selection": "bounded to the finance workspace.home role only; the explicitly unpublished company/project scenes are not gated by this scope",
+      "declaration_consumption": "waits for [data-role-home][data-role-home-renderer=\"workspace-contract\"], asserts one [data-workspace-composition=\"official-dashboard-workspace\"], declared state ready, summary count == min(declared sections, 4) and usable quick-link actions",
+      "behavior": "workspaceHome sections todo(3) + initiated(10) = total 13, quick_links 1; main action 查看全部 enabled; light/dark x 1440/390 contained",
+      "errors": 0,
+      "first_run_confirmed_failure": "Report tpl07-1790850085862 failed workspace.home-dark-390 (scrollWidth 1379) with widest = t-popup t-tooltip right 1379. Root cause was the probe's own theme-switch clicks leaving a TDesign tooltip overlay whose pre-resize (1440) coordinates inflated documentElement.scrollWidth after the viewport was resized to 390. Light-390 already passed with the two 6px-over ARTICLE rows contained inside a scroll container.",
+      "probe_repair": "Added dismissTransientOverlays(page) (blur + mouse reset + wait hidden) and called it before geometry measurement in the create-edit review loop and the home viewport loop. No product code changed; the containment assertion stays strict.",
+      "remaining_workspace_home_failures": "none"
+    },
+    "scope_families_revalidated_20261001": {
+      "reason": "This round replaced the remaining hardcoded origin in styleScope() (form/overlay/all), task-authority, detail-state and the default flow with the governed declaration resolver, so their probe inputs changed and each affected non-zero scope was re-run rather than carried forward.",
+      "task_authority": {"status": "passed", "assertions": 45, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850327636/report.json", "report_sha256": "c52b4c485bd166aef46f7e3816a58e5996248ac71b8d3bf24b742076a46d2625"},
+      "detail_state": {"status": "passed", "assertions": 30, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850341662/report.json", "report_sha256": "d113499569f0db3d767a52229516c2b341c0e9efda7a2d3d7e0a206dc82d2211"},
+      "style_form": {"status": "passed", "assertions": 34, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850371816/report.json", "report_sha256": "9d4195f622e7e9ac3d361b10ec661e83f8c055c8d34ff559e22b6d8b3bbd38bc"},
+      "style_overlay": {"status": "passed", "assertions": 34, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850905831/report.json", "report_sha256": "beb455485021562a22fcb6ed732702010113bd4c0ed0f0e57fb3f92e959d5bb8"},
+      "style_all": {"status": "passed", "assertions": 93, "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850928588/report.json", "report_sha256": "627cdb3915a5cd4d83b638a28db0e5a5407f880d2cf6b9af2554ce451a142653"},
+      "style_shell_and_collection": "covered by the style_all run above; not re-run separately",
+      "default_flow": "not re-run this round: it contains the already-closed list matrix and the unpublished-scene surfaces, and its only input change was the shared resolved origin. Recorded as not_run, not as passed.",
+      "errors": 0, "forbiddenWrites": 0
+    },
+    "overlay_first_run_confirmed_failure": {
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790850397968/report.json",
+      "symptom": "locator('[data-contract-entry-label]') timed out; the DOM had 0 entry buttons, 0 semantic-gap elements and no collection toolbar at all, while the backend ui.contract.v2 response for payment.request form did declare componentConfig.introduceLabel='从结算单引入' + actionRefs for outflow_line_ids.",
+      "root_cause": "Not a product defect. For a record with no settlement rows the declared optional presentation renders collapsed; ProfessionalDetailCollectionControl wraps the collection in ScDisclosure with destroy-on-collapse, so the declared introduce entry is legitimately not mounted until its own disclosure is expanded. The probe assumed the entry was unconditionally mounted.",
+      "repair": "The overlay scope now expands the declared [data-disclosure-trigger] inside PaymentSettlementDetailCollectionControl when its declared state is collapsed, then asserts the declared entry is consumed or an explicit semantics gap is surfaced. No product code changed; the check was not relaxed.",
+      "false_hypothesis_ruled_out": "The 2026-09-30 overlay pass used the pre-rebuild acceptance data where the hardcoded record had rows; the current governed fixture record 1845 is empty, which is why the same scope needed the declaration-driven expansion."
     }
   },
   "record_corrections_20261001": {
