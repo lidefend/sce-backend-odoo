@@ -436,19 +436,32 @@ def apply_field_policies_to_v2_status(
     if not field_policies:
         return
     business_policy = source_contract.get("business_form_policy") if isinstance(source_contract.get("business_form_policy"), dict) else {}
-    render_profile = str(
+    layout_contract = contract_v2.get("layoutContract") if isinstance(contract_v2.get("layoutContract"), dict) else {}
+    native_form = str(layout_contract.get("layoutType") or "").strip().lower() == "form"
+    declared_profile = str(
         source_contract.get("render_profile")
         or business_policy.get("render_profile")
         or ""
     ).strip().lower()
-    if render_profile in {"read", "view"}:
-        render_profile = "readonly"
-    if render_profile not in {"create", "edit", "readonly"}:
+    if declared_profile in {"read", "view"}:
+        declared_profile = "readonly"
+    if declared_profile not in {"create", "edit", "readonly"}:
+        declared_profile = ""
+    # visible_profiles/readonly_profiles/required_profiles are form render-profile
+    # semantics. Only a native form owns an implicit default render profile; a
+    # list/tree column status is owned by layoutContract.listProfile and the native
+    # tree (optional/column_invisible). Synthesizing an "edit" profile for it would
+    # apply a form-only rule to a column the list authority already resolved, so an
+    # undeclared profile stays undeclared for a non-form contract while the absolute
+    # policy keys (visible/readonly/required/disabled) remain authoritative.
+    if declared_profile:
+        render_profile: str | None = declared_profile
+    elif native_form:
         render_profile = "edit"
+    else:
+        render_profile = None
     status_contract = contract_v2.get("statusContract") if isinstance(contract_v2.get("statusContract"), dict) else {}
     widget_status = status_contract.get("widgetStatus") if isinstance(status_contract.get("widgetStatus"), list) else []
-    layout_contract = contract_v2.get("layoutContract") if isinstance(contract_v2.get("layoutContract"), dict) else {}
-    native_form = str(layout_contract.get("layoutType") or "").strip().lower() == "form"
     form_widgets_by_field: dict[str, list[str]] = {}
 
     def collect_form_widgets(value: Any) -> None:
@@ -497,15 +510,15 @@ def apply_field_policies_to_v2_status(
                 row[key] = False
 
         visible_profiles = policy.get("visible_profiles")
-        if isinstance(visible_profiles, list) and visible_profiles:
+        if render_profile is not None and isinstance(visible_profiles, list) and visible_profiles:
             visible = render_profile in {str(item) for item in visible_profiles}
             if not tighten_only or not visible:
                 merge_flag("visible", visible)
         readonly_profiles = policy.get("readonly_profiles")
-        if isinstance(readonly_profiles, list) and readonly_profiles:
+        if render_profile is not None and isinstance(readonly_profiles, list) and readonly_profiles:
             merge_flag("readonly", render_profile in {str(item) for item in readonly_profiles})
         required_profiles = policy.get("required_profiles")
-        if isinstance(required_profiles, list) and required_profiles:
+        if render_profile is not None and isinstance(required_profiles, list) and required_profiles:
             merge_flag("required", render_profile in {str(item) for item in required_profiles})
         for key in ("visible", "readonly", "required", "disabled"):
             value = policy.get(key)

@@ -1136,6 +1136,95 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertFalse(rows["field.amount"]["visible"])
         self.assertEqual(rows["field.amount"]["auth"], "none")
 
+    def test_projection_does_not_invent_form_profile_for_undeclared_list_contract(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {"layoutType": "list"},
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.payment_basis_type",
+                        "visible": True,
+                        "readonly": True,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "read",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"payment_basis_type": {"visible_profiles": ["create"]}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(row["visible"])
+        self.assertEqual(row["auth"], "read")
+
+    def test_projection_keeps_absolute_policy_for_undeclared_list_contract(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {"layoutType": "list"},
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.internal_note",
+                        "visible": True,
+                        "readonly": False,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "edit",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"internal_note": {"visible": False}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertFalse(row["visible"])
+        self.assertEqual(row["auth"], "none")
+
+    def test_projection_keeps_implicit_edit_profile_for_native_form_without_declaration(self):
+        handler = self.module.UiContractV2Handler(env=object())
+        contract = {
+            "layoutContract": {
+                "layoutType": "form",
+                "containerTree": [
+                    {
+                        "type": "field",
+                        "containerType": "field",
+                        "fieldCode": "amount",
+                        "widgetId": "field.amount",
+                        "containerId": "field.amount",
+                    }
+                ],
+            },
+            "statusContract": {
+                "widgetStatus": [
+                    {
+                        "widgetId": "field.amount",
+                        "visible": True,
+                        "readonly": False,
+                        "required": False,
+                        "disabled": False,
+                        "auth": "edit",
+                    }
+                ]
+            },
+        }
+        source = {"field_policies": {"amount": {"readonly_profiles": ["edit"]}}}
+
+        handler._apply_field_policies_to_v2_status(contract, source)
+
+        row = contract["statusContract"]["widgetStatus"][0]
+        self.assertTrue(row["readonly"])
+        self.assertEqual(row["auth"], "read")
+        self.assertEqual(
+            set(row), {"widgetId", "visible", "readonly", "required", "disabled", "auth"}
+        )
+
     def test_projection_applies_field_policy_to_native_form_occurrences_without_legacy_status(self):
         handler = self.module.UiContractV2Handler(env=object())
         first = "field.amount.occ.first"
