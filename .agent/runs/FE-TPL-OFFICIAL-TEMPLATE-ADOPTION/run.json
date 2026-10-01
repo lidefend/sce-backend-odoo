@@ -571,12 +571,33 @@
         "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
         "addons/smart_core/utils/contract_governance_registry.py",
-        "addons/smart_core/utils/contract_governance_user_surface.py"
+        "addons/smart_core/utils/contract_governance_user_surface.py",
+        "addons/smart_core/core/scene_delivery_policy.py",
+        "addons/smart_core/utils/extension_hooks.py"
+      ]
+    },
+    "scene_shell_authority": {
+      "target": "verify.nav.pro01r.route_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/services/actionRoutePolicy.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/src/app/businessConfigBoundaries.ts",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "make/runtime_ops.mk",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "53.242 browser failed product shell gate: executive37 /s/dashboard.company shows 菜单树为空 and cannot mount SceneView; report1790826953288 has6 home PASS and no .enter calls. Frontendbuild8c10eee6f entryCHLSVTp_ on5180;backend9ecff8615. Next inspect AppShell allow-empty-menu with existing actionRoutePolicy/work-item precedent, actual scene authorization and publication boundary. Enable contract-backed authorized scene entry without granting arbitrary unpublished scenes; do not replace executive role or infer authorization from scene existence. Add focused route/shell tests; backend approval9PASS and home evidence reusable as dependencies permit. Then changed frontend requires justified new build, only affected company/project browser tests; preserve original failed logs. All-document/67ledger objective remains active.",
+  "blockers": [
+    "Positive executive company/project scene browser scope has no matching final publication route_authority; company previously relied on unfiltered requested-scene restoration. Do not expand publication to pass a test.",
+    "Original all-document approval responsibility/legacy retirement reconciliation remains open (detail.action-state).",
+    "Engineering document runtime needs confirmed existing doc_type classification (53.118).",
+    "Project initiation approval amount field semantics awaits owner decision (53.116)."
+  ],
+  "next_exact_step": "Resolve owner doc_type/approval amount answers and local publication preference without inventing data or widening release. Otherwise continue registered P4 rental/subcontract/red-flush two-transaction verification preparation using existing runtime authority; no new fixture/profile. Preserve75+57+79/strict passes and original logs; pending positive scene browser and all-document role journeys remain explicit.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1874,6 +1895,109 @@
         "tpl07-1790826852408 unhandled waiter rejection; screenshots only, no final report, not a pass"
       ],
       "owner": "P0 AppShell empty-menu gate vs effective authorized scene entry; must verify server publication/permissions before admitting scene routes"
+    },
+    "segment_53_243": {
+      "status": "single_writer_takeover_confirmed",
+      "stage_head": "58238c48b9ba6b68cd9345d2f953c69a5d21031a",
+      "authority": "Owner explicitly assigned current branch exclusively to this interactive executor and requested stopping competing executors.",
+      "stopped_processes": [
+        3504238,
+        3504248
+      ],
+      "verification": "Both competing CLI processes matched repository cwd, executable and current uid; SIGTERM sent; ps readback confirmed both exited. Collaboration agent list contains only /root. Shared app server and governed runtimes retained.",
+      "dirty_scope": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+        "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md"
+      ],
+      "tool_change": "scene-entry no longer falls through into unrelated customer-list browser check",
+      "checks": {
+        "L1": "passed before takeover; source identity changed concurrently, not frozen evidence",
+        "L2": "78 tool tests passed; original log retained; no final-candidate claim",
+        "L4": "not_run in this executor: missing fixture-password prerequisite; competing executor recorded existing product blocker in53.242"
+      },
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/takeover-resume.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-scope-tool.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-browser-resume.log"
+      ],
+      "remaining": "53.242 empty-menu scene shell blocker; all-document/67-entry original goal remains active; no push/merge/deployment"
+    },
+    "segment_53_244": {
+      "status": "scoped_code_verified_runtime_publication_gap_remains",
+      "stage_head": "550fa5f5e63aa15af9eff72dc9ac015983571746",
+      "layer": "P0 scene delivery boundary; P4 read-only authority diagnostic",
+      "product_commit": "fb8fb6360",
+      "tool_commit": "9924ee61c",
+      "L1": "passed",
+      "scene_entry_tests": 75,
+      "tool_tests": 79,
+      "route_authority_assertions": 57,
+      "strict_types": "passed",
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-boundary-final-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-shell-authority-final-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-authority-canonical-probe-unit.log"
+      ],
+      "runtime_failed": "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-authority-runtime.log",
+      "runtime_failure": "company scene absent after removing unfiltered request restoration; tool initially read wrong top-level authority, canonical navigation.route_authority corrected with regression",
+      "backend": "9924ee61c on governed sc-fe-r2-p1-01/sc_frontend_acceptance/18082; no module upgrade or business writes",
+      "frontend": "8c10eee6f unchanged; new shell changes not built",
+      "independent_review": "artifacts/frontend-web-fix-20260928/tpl52/scene-boundary-independent-review.json",
+      "pending": "keep existing publication selection; separate unpublished capability from denied-runtime evidence; reconcile remaining all-document responsibilities without rerunning passing payment loops",
+      "runtime_canonical": "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-canonical-authority-runtime.log",
+      "runtime_outcome": "company scene filtered missing; home/project have declaration, all three have no matching navigation.route_authority entries. Positive published scene acceptance not authorized/proven.",
+      "frontend_review": "independent read-only final PASS; context requiring fresh server validation remains refused on bare scene route",
+      "frontend_commit": "6cbe65e30",
+      "canonical_tool_commit": "550fa5f5e"
+    },
+    "remaining_responsibility_review_53_245": {
+      "status": "incomplete",
+      "head": "550fa5f5e63aa15af9eff72dc9ac015983571746",
+      "evidence": "artifacts/frontend-web-fix-20260928/tpl52/scene-boundary-independent-review.json",
+      "remaining": [
+        {
+          "responsibility": "工程资料提交/审批/归档",
+          "source": "53.118",
+          "blocker": "confirmed doc_type required",
+          "next": "resolve confirmed classification then original project-document runtime scope"
+        },
+        {
+          "responsibility": "项目立项审批金额条件",
+          "source": "53.116",
+          "blocker": "owner amount-field semantics",
+          "next": "confirm amount authority; preserve6 role runtime passes"
+        },
+        {
+          "responsibility": "租赁/分包选源与并发",
+          "source": "53.105/53.111/53.113",
+          "next": "governed two-transaction test; actual source selection when valid data exists",
+          "reuse": "finance cash/reversal10 each; empty source query not completion"
+        },
+        {
+          "responsibility": "劳务/安全/租赁/分包/投标普通角色办理",
+          "source": "53.90/53.93/53.96/53.107-110/53.117/53.120",
+          "next": "published entry with valid data: save-submit-review/execute-readback; do not promote creation-only checks"
+        },
+        {
+          "responsibility": "红冲并发/实际页面",
+          "source": "53.124/53.125",
+          "next": "same-source two-session concurrency; valid record detail",
+          "reuse": "non-sudo finance runtime; unique constraint is not concurrency test"
+        },
+        {
+          "responsibility": "计划终态呈现/版本标题/多角色配置UI",
+          "source": "53.199-201/53.209",
+          "next": "preserve unpublished capability evidence; action655 remains outside89 publication scope",
+          "reuse": "version33/configuration24/master-detail64"
+        }
+      ],
+      "retired_stale_blockers": [
+        "49 approval selection/tier-sync entries agree; old17/15 counts obsolete",
+        "53.126 legacy workflow disabled-runtime enforcement5PASS; historical recovery engine not standard parallel authority",
+        "53.238 zero undeclared state transitions;26 navigation+14document helpers not approval gaps",
+        "53.237 payment sequential configured user loop passed; do not repeat"
+      ]
     }
   }
 }

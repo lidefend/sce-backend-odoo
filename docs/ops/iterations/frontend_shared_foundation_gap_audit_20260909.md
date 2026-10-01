@@ -9845,3 +9845,32 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 有效最终失败收据 `artifacts/frontend-web-fix-20260928/tpl07-1790826953288/report.json`：首页6项PASS（真实工作台契约、唯一HomeView、1440/390无页面横向溢出、实际按钮离开/停止场景调用、启动成功）。已查看上一运行同候选首页390截图；后续仍需完整产品复核。
 - **产品阻断**：executive37进入 `/s/dashboard.company` 后外壳显示“菜单树为空，请尝试刷新初始化”，未挂载SceneView、未发出dashboard.company.enter；不是后端9项契约回读失效。startup存在有效home/project.management声明；公司场景尚未完成完整hydration。project.management后续用例未运行。无业务写入；总状态failed，不能将6项子集升级为全部通过。
 - 下一步P0：核对AppShell allow-empty-menu、已有work-item例外和实际场景发布/权限边界，修复授权入口被菜单存在性阻断的问题；不通过换角色、前端行业白名单或全部scene放行规避。不重新运行审批/付款。若前端产品修改，再按输入变化合理构建新候选并仅复验受影响场景；现有日志 `tpl52/scene-browser-{build,preview,runtime,home-runtime,receipt-runtime}.log` 保留。
+
+
+## 53.243 所有者指定单写入者接管
+
+- 所有者明确要求当前交互执行器全面接管并停止其他执行者。已核对竞争CLI进程3504238/3504248的cwd、可执行文件、UID及子进程，仅对这两个当前仓库进程发送SIGTERM，随后ps回读均已退出；协作工具仅有/root。保留共享app-server、后端18082与前端5180服务，不终止其他仓库或运行环境。
+- 接管身份为`58238c48b9ba6b68cd9345d2f953c69a5d21031a`，承接53.242及其原始失败证据。当前未提交的P4改动仅给scene-entry浏览器范围排除无关客户列表末尾检查，加本段及原run索引；没有覆盖竞争执行者提交。
+- 本执行器L1与78项工具测试通过，原日志scene-entry-scope-iteration.log、scene-entry-scope-tool.log保留；期间发生HEAD并发变化，因此不冒称冻结候选证据。浏览器入口因未导出既有fixture口令而拒绝，未运行页面；既有权威来源仍为/tmp/wf_check_fixture.env，不重置账号或创建凭据。
+- 已重新运行agent.run.resume；下一步沿用53.242：核对空菜单外壳与有效场景发布授权，P0修复须保持后端授权边界，再做受影响定向检查和场景浏览器验证。当前仅完成单写入者接管，不声明场景、整体批次、主线、部署或用户交付完成。
+
+
+## 53.244 场景入口过滤边界修复与最终授权核对
+
+- 接管候选58238c48b及既有三处dirty；原run/日志/67项台账沿用。P0 smart_core场景投影与通用前端外壳：标准平台机制，不放入P1行业规则、P2偏好或P3发布配置；P4只扩展既有只读诊断。影响system.init场景表面及空菜单承载，不改业务模型/XML/发布范围。L0身份通过后从L1/L2开始；L3无需升级，L4须先确认最终授权，L5因产品阻断未收口而不运行。
+- 独立B线复核确认：requested_scene_key会把策略排除项加回，未知key甚至生成stub；deep_link_only及surface deep_link提前continue跳过access/capabilities。P0提交fb8fb6360删除无条件回填，仅从已过滤delivery恢复registry预加载遗漏，权限检查移至两类深链接分支之前。首页平台机制保留。不把catalog/scene-ready存在视为发布授权。
+- L1 PASS，场景L2 47+12+12+4=75 PASS，原日志scene-entry-boundary-final-unit.log与begin/record回执位于tpl52。首次失败scene-entry-boundary-unit.log来自旧测试要求伪造未知场景；改为拒绝且不绑定资产后复验。独立审查无新增阻断，并补了具备所需capability的深链正例。没有忽略旧失败或以零测试通过。
+- P4提交9924ee61c扩展只读场景回读，受管backend绑定同SHA；project sc-fe-r2-p1-01/database sc_frontend_acceptance/dbfilter精确/filestore sc_fe_r2_p1_01_odoo原样复用，隔离fixture验收租户、公司8，非客户生产/控制库，无业务写入/升级/fixture重建。scene-entry-authority-runtime.log明确公司场景因无条件回填退出而missing；首页/项目仍存在。工具初版误读顶层route_authority，已改为navigation.route_authority并补工具断言；79工具测试PASS，后续回读另存原索引。
+- P0前端接线只消费final route_authority：scene identity/action/menu tuple和上下文匹配才可空菜单承载，拒绝仅凭scene存在或任意action query放行。route_authority_guard_test最终57实际断言PASS（新增场景16）；strict双类型检查PASS。此时尚未构建/浏览器，不声称运行态闭环。原付款等独立证据继续引用，主线/部署/用户验收未发生。
+
+- 最终只读回读scene-entry-canonical-authority-runtime.log：读取正确navigation.route_authority后，三个目标匹配桶均空；公司matched=0，首页/项目matched=1。原positive scope保留FAILED，不把缺失发布授权改为产品通过。工具错读载体属于P4，纠正后49Python+30Node=79PASS；第二次运行是输入已修复的定向回读，非无变化重试。
+- B线指出裸scene的本地query形状校验不能替代fresh record授权。当前helper明确仅shell承载；含required_query、record_query或selected_record_query的入口保持拒绝并继续既有action路由。新增entry_target/route正例和record拒绝后57断言、严格类型、L1再次PASS，最终B线只读复核无新增阻断。
+- 暂保持发布选择，未授权扩大范围；已向所有者提示可选本地验收策略。L4正向构建/浏览器不执行，因为真实授权前提不成立。继续原全单据责任核销，67台账仍57 aligned/9 not_applicable/1 contract_gap，不能因本轮边界修复宣称总体完成。
+
+
+## 53.245 原全单据职责的有限核销与交接
+
+- B线按原记录53.87–53.237及已有支持清单只读复核，没有重跑全仓/菜单/运行矩阵。现审批选择与tier支持集合49项一致，历史17/15数字过期；53.126 legacy-runtime-smoke 5PASS已关闭旧引擎普通上下文启用及关闭时流转绕过，保留受控历史恢复不等于标准并行审批。53.238未声明状态迁移为零、53.237付款真实审批闭环原证据继续复用。
+- 具体待办与原章节唯一汇总到run.completion.remaining_responsibility_review_53_245，独立原始复核存tpl52/scene-boundary-independent-review.json。缺口为工程资料分类前提、项目金额口径、租赁/分包选源与双事务、部分业务族普通角色实际保存办理、红冲并发/页面、计划终态及多角色配置呈现。未以49项支持表充当业务全覆盖，未将空来源查询或唯一约束当真实办理/并发证明。
+- 所有者已收到分类与金额口径问题；发布选择未有新指令，继续保持当前范围，不创建分类、不补猜金额、不额外发布入口。本轮代码提交fb8fb6360/6cbe65e30及工具9924ee61c/550fa5f5e均为本地责任提交；代码75、路由57、工具79及strict类型PASS，当前正向scene runtime保留FAILED。前端仍旧构建8c10eee6f；不以clean commit宣称冻结或验收完成。
+- 批次仍in_progress；主线集成、目标部署、用户验收均未执行。无Quick/远端推送/合并。下一步由原run继续，明确数据/口径后只补受影响用例；否则先准备既有受管工具内的并发断言，不重复付款或无变化失败。
