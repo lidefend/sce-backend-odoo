@@ -2,8 +2,13 @@
 <template>
   <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
-      <section
+      <component
+        :is="isDetailCard(node) ? ScCard : 'section'"
         v-if="isContainerNode(node)"
+        :bordered="isDetailCard(node) ? false : undefined"
+        :title="isDetailCard(node) && !isCollapsibleContainer(node) ? (semanticSectionTitle(node) || containerTitle(node) || undefined) : undefined"
+        :body-class-name="isDetailCard(node) ? 'native-detail-card-body' : undefined"
+        :data-detail-card="isDetailCard(node) ? 'native-section' : undefined"
         :class="containerClass(node)"
         :data-group-title="containerPolicyTitle(node, index)"
         :data-section-navigation-role="nativeSectionNavigationRole(node)"
@@ -16,7 +21,7 @@
         @drop.prevent.stop="emitGroupFieldOrderDrop(node, $event, index)"
         @mouseup.self="emitGroupFieldOrderPointerDrop(node, index)"
       >
-        <header v-if="semanticSectionTitle(node) || containerTitle(node)" class="native-container-head">
+        <header v-if="(!isDetailCard(node) || isCollapsibleContainer(node)) && (semanticSectionTitle(node) || containerTitle(node))" class="native-container-head">
           <ScInput
             v-if="fieldConfigEditable && isEditableGroupNode(node)"
             class="native-container-title-editor"
@@ -112,6 +117,7 @@
               :field-selection-mode="fieldSelectionMode"
               :selected-field-key="selectedFieldKey"
               :prefer-readonly-facts="preferReadonlyFacts"
+              :inside-detail-card="insideDetailCard || isDetailCard(node)"
               :columns="nodeColumns(node)"
               :inherited-semantic-role="semanticFormRole(node)"
               :authoritative-business-section-mode="authoritativeBusinessSectionMode"
@@ -187,6 +193,7 @@
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
+            :inside-detail-card="insideDetailCard || isDetailCard(node)"
             :columns="nodeColumns(node)"
             :inherited-semantic-role="semanticFormRole(node)"
             :authoritative-business-section-mode="authoritativeBusinessSectionMode"
@@ -320,6 +327,7 @@
             :field-selection-mode="fieldSelectionMode"
             :selected-field-key="selectedFieldKey"
             :prefer-readonly-facts="preferReadonlyFacts"
+            :inside-detail-card="insideDetailCard || isDetailCard(node)"
             :columns="nodeColumns(node)"
             :authoritative-business-section-mode="authoritativeBusinessSectionMode"
             @field-change="emit('field-change', $event)"
@@ -347,7 +355,7 @@
           </NativeFormTreeRenderer>
           </template>
         </template>
-      </section>
+      </component>
 
       <FormSection
         v-else-if="nodeType(node) === 'field' && fieldSchemasForNodes([node]).length"
@@ -430,6 +438,8 @@ import FormSection from './FormSection.vue';
 import { nativeChildSegments } from './nativeChildSequence';
 import NativeActionOverflowMenu from './NativeActionOverflowMenu.vue';
 import NativeSmartAction from './NativeSmartAction.vue';
+import ScCard from '../design-system/ScCard.vue';
+import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
@@ -517,6 +527,7 @@ const props = withDefaults(defineProps<{
   fieldSelectionMode?: boolean;
   selectedFieldKey?: string;
   preferReadonlyFacts?: boolean;
+  insideDetailCard?: boolean;
   inheritedSemanticRole?: string;
   authoritativeBusinessSectionMode?: boolean;
   columns?: 1 | 2 | 3;
@@ -549,6 +560,14 @@ function hasAuthoritativeBusinessSection(nodes: NativeFormLayoutNode[]): boolean
 const authoritativeBusinessSectionMode = computed(() => (
   props.authoritativeBusinessSectionMode ?? hasAuthoritativeBusinessSection(props.nodes)
 ));
+
+const detailComposition = useOptionalStandardDetailComposition();
+const adoptedDetail = computed(() => detailComposition?.adopted.value === true
+  && props.preferReadonlyFacts && !props.fieldConfigEditable && !props.fieldSelectionMode);
+function isDetailCard(node: NativeFormLayoutNode) {
+  return adoptedDetail.value && !props.insideDetailCard
+    && (Boolean(semanticSectionTitle(node)) || nodeType(node) === 'notebook');
+}
 
 const emit = defineEmits<{
   (event: 'field-change', payload: FormSectionFieldChange): void;
@@ -926,6 +945,8 @@ function containerClass(node: NativeFormLayoutNode) {
         && containerPolicyTitle(node),
       ),
       'native-container--group--layout': isLayoutOnlyGroup(node),
+      'native-container--detail-card': isDetailCard(node),
+      'native-container--detail-group': adoptedDetail.value && props.insideDetailCard,
     },
   ];
 }
@@ -1087,7 +1108,7 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   padding-top: 0;
 }
 
-.native-container[data-collapsed='true'] > :not(.native-container-head) {
+.native-container:not(.native-container--detail-card)[data-collapsed='true'] > :not(.native-container-head) {
   display: none;
 }
 
@@ -1347,5 +1368,19 @@ function overflowActionKey(node: Record<string, unknown>, index: number) {
   .native-title-input,
   .native-title-text {
   font: var(--sc-font-headline-small);   }
+}
+/* Card body is an adapter-owned public hook, not a vendor DOM selector. */
+.native-container--detail-card :deep(.native-detail-card-body) {
+  display: grid;
+  gap: var(--sc-space-md);
+  min-width: 0;
+}
+.native-container--detail-card[data-collapsed='true'] :deep(.native-detail-card-body) > :not(.native-container-head) {
+  display: none;
+}
+.native-container--detail-group > .native-container-head h3,
+.native-container--detail-group > .native-container-head > .sc-btn[data-appearance='context-action'] {
+  font: var(--sc-font-body-medium);
+  font-weight: 600;
 }
 </style>

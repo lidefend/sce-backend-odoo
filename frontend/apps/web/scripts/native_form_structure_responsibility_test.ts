@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 import { resolveNativeSectionHeading } from '../src/pages/contractForm/nativeBusinessSection';
 import {
@@ -287,4 +289,26 @@ assert.equal(
   'only a group container owns a business section heading',
 );
 
-console.log('[native_form_structure_responsibility_test] PASS cases=11');
+// 12. Both native consumers share contract-derived detail adoption. Authored
+// notebook tabs remain; only generated whole-page navigation is suppressed.
+const sourceRoot = path.resolve(process.cwd(), 'frontend/apps/web/src');
+const source = (file: string) => fs.readFileSync(path.join(sourceRoot, file), 'utf8');
+const treeSource = source('components/template/NativeFormTreeRenderer.vue');
+assert.ok(treeSource.includes('detailComposition?.adopted.value === true'));
+assert.ok(treeSource.includes('!props.insideDetailCard'));
+assert.ok(treeSource.includes(':is="isDetailCard(node) ? ScCard'));
+assert.ok(treeSource.includes(':inside-detail-card="insideDetailCard || isDetailCard(node)"'));
+assert.ok(treeSource.includes("nodeType(node) === 'notebook'"));
+assert.ok(treeSource.includes(':model-value="activePageIndex"'));
+assert.ok(treeSource.includes(':nodes="notebookPageChildren(node, activePageIndex)"'));
+for (const file of ['CanonicalNativeFormSurface.vue', 'ObjectTaskPage.vue']) {
+  assert.ok(source(`pages/contractForm/${file}`).includes('!detailComposition?.adopted.value && sectionLinks.length > 1'));
+}
+const nativeCanvasSource = source('pages/contractForm/ContractFormNativeCanvas.vue');
+assert.ok(nativeCanvasSource.includes('!props.designerMode'));
+assert.ok(nativeCanvasSource.includes(':prefer-readonly-facts="adoptedDetail"'));
+assert.ok(nativeCanvasSource.includes('!adoptedDetail && sectionItems.length > 2'));
+assert.ok(source('pages/contractForm/CanonicalNativeFormSurface.vue').includes("? 'collaboration' : undefined"));
+assert.ok(source('pages/ContractFormPage.vue').includes("'card--detail': standardDetailComposition.adopted.value"));
+
+console.log('[native_form_structure_responsibility_test] PASS cases=12');

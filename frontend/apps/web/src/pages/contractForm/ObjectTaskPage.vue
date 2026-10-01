@@ -10,7 +10,7 @@
     data-canonical-form-zones
   >
     <FormSectionNavigation
-      v-if="sectionLinks.length > 1"
+      v-if="!detailComposition?.adopted.value && sectionLinks.length > 1"
       :items="sectionLinks"
       root-selector="[data-object-task-page]"
     />
@@ -362,6 +362,7 @@
 </template>
 
 <script setup lang="ts">
+import { useOptionalStandardDetailComposition } from './standardDetailCompositionRuntime';
 import { computed } from 'vue';
 import type { CanonicalAuditEvent, CanonicalFormNode } from '../../app/presentation/canonicalFormRenderModel';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
@@ -377,6 +378,8 @@ import {
   governedFormStructureSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
+
+const detailComposition = useOptionalStandardDetailComposition();
 
 const props = defineProps<{
   summaryNodes: CanonicalFormNode[];

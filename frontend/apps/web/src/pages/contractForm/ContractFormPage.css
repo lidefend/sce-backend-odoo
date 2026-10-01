@@ -780,3 +780,30 @@
 .ghost {
   color: var(--sc-app-text-secondary);
 }
+
+/* Readonly record-detail consumes independent official cards. Editing and the
+   designer retain the native form canvas rules above. */
+.sc-page[data-detail-composition='official-standard-detail'][data-detail-composition-adopted='true'] {
+  --sc-form-section-nav-height: 0px;
+}
+.card.card--detail :deep(.native-form-tree),
+.card.card--detail :deep(.native-container--sheet) { gap: var(--sc-space-lg); }
+.card.card--detail :deep(.native-container.native-container--detail-card) {
+  padding: 0;
+  border: 0;
+  border-radius: var(--sc-product-panel-radius);
+  background: var(--sc-app-surface);
+}
+.card.card--detail :deep(.native-container.native-container--detail-group) {
+  padding-block: var(--sc-space-xs);
+  border: 0;
+}
+.card.card--detail :deep(.native-container--detail-group > .native-container-head h3),
+.card.card--detail :deep(.native-container--detail-group > .native-container-head > .sc-btn) {
+  font: var(--sc-font-body-medium);
+  font-weight: 600;
+}
+.card.card--detail :deep(.detail-fact-value) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

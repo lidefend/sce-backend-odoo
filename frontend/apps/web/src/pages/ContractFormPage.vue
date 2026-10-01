@@ -9,6 +9,7 @@
     :data-form-composition="standardFormComposition.decision.value.composition"
     :data-form-composition-reason="standardFormComposition.decision.value.reason"
     :data-detail-composition="standardDetailComposition.decision.value.composition"
+    :data-detail-composition-adopted="String(standardDetailComposition.adopted.value)"
     :data-detail-composition-reason="standardDetailComposition.decision.value.reason"
     :data-form-record="recordId ? String(recordId) : 'new'"
     :data-form-action-id="String(actionId || '')"
@@ -64,8 +65,8 @@
     <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
-    <ScCard v-else :class="['card', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'is-refreshing': status === 'loading' }]"
-      :appearance="isIntakeCreateMode ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode"
+    <ScCard v-else :class="['card', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'card--detail': standardDetailComposition.adopted.value, 'is-refreshing': status === 'loading' }]"
+      :appearance="isIntakeCreateMode || standardDetailComposition.adopted.value ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode && !standardDetailComposition.adopted.value"
       :aria-busy="status === 'loading' || undefined" data-workspace-primary-content>
       <ContractFormActionBlocks
         v-if="!isConfigurationPreview && !canonicalProductFloorplan?.decisionMode && ((pageSectionEnabled('next_actions', true) && pageSectionTagIs('next_actions', 'section')) || (pageSectionEnabled('stat_buttons', true) && pageSectionTagIs('stat_buttons', 'div')))"

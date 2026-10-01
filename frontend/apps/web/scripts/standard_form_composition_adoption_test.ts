@@ -16,6 +16,7 @@
  * or store key for the same field, and on a section that silently lets a save
  * through when it cannot answer.
  */
+import { partitionStandardDetailFields, resolveStandardDetailFactLayout, resolveStandardDetailComposition } from '../src/app/presentation/standardDetailComposition';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -388,5 +389,47 @@ for (const method of ['clearValidate', 'reset', 'setValidateMessage', 'submit', 
 }
 check(/tdesign-vue-next/.test(scFormSource), false, 'the adapter reaches the vendor only through the project bridge');
 check(/from ['"]\.\/tdesignPrimitiveBridge['"]/.test(scFormSource), true, 'the adapter names the project bridge as its only vendor boundary');
+
+// Mixed readonly sections preserve source identity and order without forcing
+// supported facts back onto editable-style field grids.
+const detailDecision = resolveStandardDetailComposition({ pageType: 'record-detail', reason: 'contract-readonly-record-view' });
+const detailFields = [
+  { key: 'name', type: 'char', dedicatedControl: false },
+  { key: 'amount', type: 'monetary', dedicatedControl: false },
+  { key: 'lines', type: 'one2many', dedicatedControl: true },
+  { key: 'attachment', type: 'binary', dedicatedControl: true },
+  { key: 'partner', type: 'many2one', dedicatedControl: false },
+  { key: 'unknown', type: 'char', dedicatedControl: true },
+  { key: 'status', type: 'selection', dedicatedControl: false },
+];
+const factSupported = (field: typeof detailFields[number]) => resolveStandardDetailFactLayout(detailDecision, {
+  configurationMode: false, readonlyFacts: true, fields: [field],
+}).adopted;
+const parts = partitionStandardDetailFields(detailFields, factSupported);
+checkDeep(parts.map((part) => [part.facts, part.fields.map((field) => field.key)]), [
+  [true, ['name', 'amount']], [false, ['lines', 'attachment']], [true, ['partner']],
+  [false, ['unknown']], [true, ['status']],
+], 'facts and extension runs keep native order');
+check(parts.flatMap((part) => part.fields).every((field, index) => field === detailFields[index]), true, 'field schema and value identities are retained');
+check(partitionStandardDetailFields(detailFields, () => false).length, 1, 'non-detail and editable grids stay intact');
+checkDeep(partitionStandardDetailFields([], factSupported), [{ facts: false, fields: [] }], 'empty sections retain fallback slot');
+for (const settings of [{ configurationMode: true, readonlyFacts: true }, { configurationMode: false, readonlyFacts: false }]) {
+  check(resolveStandardDetailFactLayout(detailDecision, { ...settings, fields: [detailFields[0]] }).adopted, false, 'designer/edit mode cannot adopt facts');
+}
+check(resolveStandardDetailFactLayout(resolveStandardDetailComposition({ pageType: 'record-form', reason: 'contract-record-view' }), {
+  configurationMode: false, readonlyFacts: true, fields: [detailFields[0]],
+}).adopted, false, 'readonly fields alone do not promote an edit page');
+const factsTemplate = sectionSource.slice(sectionSource.indexOf('<ScDescriptions'), sectionSource.indexOf('</ScDescriptions>'));
+for (const required of [
+  'ProfessionalBusinessValueControl', ':field="detailFactField(item)"',
+  ':control-id="fieldControlId(detailFactField(item))"',
+  'businessValuePlaceholderText(detailFactField(item))',
+  '@update:value="emitFieldChange(detailFactField(item), $event)"',
+  'many2oneOpenToken', 'taskActionRun(detailFactField(item))', 'readonlyHtml(detailFactField(item))',
+  'name="readonly"', ':data-field-name=', ':data-field-key=', ':data-field-type=', ':data-component-renderer=',
+  'layout="horizontal"', 'item-layout="horizontal"',
+]) check(factsTemplate.includes(required), true, `descriptions preserves ${required}`);
+check(sectionSource.includes('fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)'), true, 'extension layout uses its own grid span sequence');
+check(sectionSource.includes('const prev = gridFields[i]') && sectionSource.includes('index === gridFields.length - 1'), true, 'orphan calculation cannot count fields from a different descriptions run');
 
 console.log(`[standard-form-composition-adoption] explicit adoption scope, shared emptiness authority, engine result reading, single error store, fail-closed registry, shipped call sites: ${cases} cases passed`);

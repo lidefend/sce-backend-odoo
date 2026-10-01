@@ -99,3 +99,18 @@ export function resolveStandardDetailSection(input: {
   if (input.fields.some((field) => !factTypes.includes(field.type))) return { adopted: false, reason: 'unsupported-fact-type' };
   return { adopted: true, reason: 'standard-readonly-facts' };
 }
+
+/** Preserve native order while allowing supported facts alongside extensions. */
+export function partitionStandardDetailFields<T>(
+  fields: readonly T[],
+  supportsFact: (field: T) => boolean,
+): { facts: boolean; fields: T[] }[] {
+  const segments: { facts: boolean; fields: T[] }[] = [];
+  for (const field of fields) {
+    const facts = supportsFact(field);
+    const previous = segments[segments.length - 1];
+    if (previous && previous.facts === facts) previous.fields.push(field);
+    else segments.push({ facts, fields: [field] });
+  }
+  return segments.length ? segments : [{ facts: false, fields: [] }];
+}

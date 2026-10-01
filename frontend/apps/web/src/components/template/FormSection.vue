@@ -24,17 +24,35 @@
          t-descriptions 逐项呈现该 section 的契约字段事实（label = 字段标签，
          值槽复用与事实网格同一份只读取值：关系入口、富文本、办理动作、纯文本）。
          可编辑与明细控制不在只读事实的适用范围内，因此这里不复制它们。 -->
+    <template v-for="(segment, segmentIndex) in detailFieldSegments" :key="segmentIndex">
     <ScDescriptions
-      v-if="adoptedDetailFactLayout"
+      v-if="segment.facts"
       class="template-form-section-descriptions"
       data-detail-facts="official-standard-detail"
       :bordered="false"
       :column="detailFactColumns"
-      :items="displayFields"
+      :items="segment.fields"
+      layout="horizontal"
+      item-layout="horizontal"
     >
       <template #item="{ item }">
+        <div class="detail-fact-value"
+          :data-field-name="detailFactField(item).name"
+          :data-field-key="detailFactField(item).key"
+          :data-field-type="detailFactField(item).type"
+          :data-widget-type="detailFactField(item).widget || undefined"
+          :data-component-renderer="detailFactField(item).componentRenderer || undefined"
+          :data-native-locator="detailFactField(item).nativeLocator || undefined"
+          :data-source-position="detailFactField(item).sourcePosition ?? undefined">
+        <ProfessionalBusinessValueControl
+          v-if="usesProfessionalBusinessValue(detailFactField(item))"
+          :field="detailFactField(item)"
+          :control-id="fieldControlId(detailFactField(item))"
+          :placeholder="detailFactField(item).inputPlaceholder || businessValuePlaceholderText(detailFactField(item))"
+          @update:value="emitFieldChange(detailFactField(item), $event)"
+        />
         <ScButton
-          v-if="detailFactRelationEntry(item)"
+          v-else-if="detailFactRelationEntry(item)"
           type="button"
           appearance="readonly-relation"
           variant="ghost"
@@ -59,14 +77,15 @@
         <slot v-else name="readonly" :field="detailFactField(item)">
           <span class="readonly-value">{{ readonlyText(detailFactField(item)) }}</span>
         </slot>
+        </div>
       </template>
     </ScDescriptions>
     <div v-else :class="['template-form-section-grid', `template-form-section-grid--columns-${columns}`]">
       <template v-if="displayFields.length">
         <div
-          v-for="(field, index) in displayFields"
+          v-for="(field, index) in segment.fields"
           :key="field.key"
-          :class="fieldClass(field, index)"
+          :class="fieldClass(field, index, standardDetailComposition?.adopted.value ? segment.fields : fields)"
           :data-field-name="field.name"
           :data-validation-target="fieldValidationTarget(field)"
           :data-field-key="field.key"
@@ -358,6 +377,7 @@
       </template>
       <slot v-else />
     </div>
+    </template>
     </ScForm>
   </ScCard>
 </template>
@@ -376,7 +396,7 @@ import type { ScFormInstance } from '../design-system/scFormContract';
 import { buildContractFormRules, failedAdoptedFieldNames } from './contractFormValidationRules';
 import { useOptionalStandardFormComposition } from '../../pages/contractForm/standardFormCompositionRuntime';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
-import { resolveStandardDetailFactLayout } from '../../app/presentation/standardDetailComposition';
+import { resolveStandardDetailFactLayout, partitionStandardDetailFields } from '../../app/presentation/standardDetailComposition';
 import ScButton from '../design-system/ScButton.vue';
 import ScDateField from '../design-system/ScDateField.vue';
 import ScFileField from '../design-system/ScFileField.vue';
@@ -497,17 +517,26 @@ const detailSectionDecision = computed(() => resolveStandardDetailFactLayout(
   {
     configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
     readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
-    fields: displayFields.value.map((field) => ({
-      type: field.type,
-      dedicatedControl: Boolean(field.favoriteToggle)
-        || declaresUnknownComponentRenderer(field)
-        || usesProfessionalBusinessValue(field)
-        || usesPaymentSettlementDetailCollection(field)
-        || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl'].includes(field.componentRenderer)),
-    })),
+    fields: displayFields.value.map(detailFieldCapability),
   },
 ));
-const adoptedDetailFactLayout = computed(() => detailSectionDecision.value.adopted);
+function detailFieldCapability(field: FormSectionFieldSchema) {
+  return {
+    type: field.type,
+    dedicatedControl: Boolean(field.favoriteToggle)
+      || declaresUnknownComponentRenderer(field)
+      || usesPaymentSettlementDetailCollection(field)
+      || Boolean(field.componentRenderer && !['ProfessionalBaseFieldControl', 'ProfessionalRelationFieldControl', 'ProfessionalBusinessValueControl'].includes(field.componentRenderer)),
+  };
+}
+const detailFieldSegments = computed(() => partitionStandardDetailFields(
+  displayFields.value,
+  (field) => resolveStandardDetailFactLayout(standardDetailComposition?.decision.value, {
+    configurationMode: props.fieldSelectionMode || props.fieldConfigEditable,
+    readonlyFacts: props.preferReadonlyFacts && allFieldsReadonly.value,
+    fields: [detailFieldCapability(field)],
+  }).adopted,
+));
 
 /**
  * The official detail page arranges its facts in a label/value table. A narrow
@@ -761,7 +790,7 @@ function fieldSpanUnits(spanClass: string): number {
   return FIELD_SPAN_UNITS[spanClass] ?? 12;
 }
 
-function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
+function fieldSpanClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
   const explicitSpan = field.spanClass || '';
   const configuredBase = explicitSpan || (defaultSpanClass(field.type) === 'field--full' || fieldWidget(field) === 'textarea'
     ? 'field--full'
@@ -776,12 +805,12 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   // spans the full row. Widen such a field to span the full row (24 units).
   let units = 0;
   for (let i = 0; i < index; i++) {
-    const prev = props.fields[i];
+    const prev = gridFields[i];
     const prevSpan = prev.spanClass || defaultSpanClass(prev.type);
     units += fieldSpanUnits(prevSpan);
   }
-  const isLast = index === props.fields.length - 1;
-  const next = props.fields[index + 1];
+  const isLast = index === gridFields.length - 1;
+  const next = gridFields[index + 1];
   const nextSpan = next ? (next.spanClass || defaultSpanClass(next.type)) : '';
   const nextIsFullRow = nextSpan === 'field--full';
   if (units % 24 === 0 && (isLast || nextIsFullRow)) {
@@ -790,12 +819,12 @@ function fieldSpanClass(field: FormSectionFieldSchema, index: number) {
   return base;
 }
 
-function fieldClass(field: FormSectionFieldSchema, index: number) {
+function fieldClass(field: FormSectionFieldSchema, index: number, gridFields: readonly FormSectionFieldSchema[]) {
   const fieldKey = fieldIdentity(field);
   const isDropTarget = props.fieldOrderDropTargetKey === fieldKey && props.fieldOrderDraggingKey !== fieldKey;
   return [
     'field',
-    fieldSpanClass(field, index),
+    fieldSpanClass(field, index, gridFields),
     fieldWidgetClass(field),
     {
       'field--order-editable': props.fieldOrderEditable,
