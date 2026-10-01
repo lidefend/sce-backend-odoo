@@ -344,15 +344,23 @@
   display: none;
 }
 
-.page[data-list-status='empty'] :deep(.toolbar-search-clear),
-.page[data-list-status='empty'] :deep(.toolbar-clear-all) {
+/* The list-state anchor is declared on the semantic list surface: the main
+   table section while populated, the empty region while empty. It is never
+   declared on the page shell, so the empty-state affordance rules must bind to
+   the declared surface anchor instead of `.page`. */
+.page [data-list-status='empty'] :deep(.toolbar-search-clear),
+.page [data-list-status='empty'] :deep(.toolbar-clear-all) {
   display: none;
 }
 
 @media (max-width: 760px) {
-  .page[data-list-status='empty'] :deep(.toolbar-actions) {
+  .page [data-list-status='empty'] :deep(.toolbar-actions) {
     display: none;
   }
+}
+
+.list-empty-region {
+  display: block;
 }
 
 .list-plain-search {

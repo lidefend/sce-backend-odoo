@@ -196,10 +196,22 @@ defineEmits<{
 .product-list-header__query, .product-list-header__tools--collection .product-list-header__search { flex: 1 1 280px; min-width: 0; }
 .product-list-header__query { max-width: 640px; }
 .product-list-header__query :deep(.action-toolbar) { width: 100%; border: 0; border-radius: 0; background: transparent; padding: 0; }
+/* The query track hosts the list search control, so everything inside it must be
+   able to shrink to the declared track. A text input keeps its size-based
+   intrinsic width once it holds a query and the input wrap's default
+   `min-width: auto` then refuses to shrink, which pushes the trailing submit and
+   menu-toggle controls out of the track and over the auxiliary track (where the
+   column-settings control sits). Grant the shrink at the declared track owner. */
 .product-list-header__query :deep(.native-search) { min-width: 0; width: 100%; max-width: none; }
+.product-list-header__query :deep(.sc-input) { min-width: 0; }
 .product-list-header__tools--collection .product-list-header__search { display: flex; align-items: center; gap: var(--sc-toolbar-gap); }
 .product-list-header__tools--collection .product-list-header__search label { flex: 1; min-width: 0; }
-.product-list-header__tools--collection .product-list-header__search :deep(.sc-input) { width: 100%; }
+/* The search control owns the trailing query track; its input wrap must be able
+   to shrink inside it. A text input keeps the size-based intrinsic width once it
+   holds a query, and the wrap's default `min-width: auto` then refuses to shrink,
+   pushing the submit/toggle controls out of the declared query track and over the
+   auxiliary track. Only the declared track owner can grant the shrink. */
+.product-list-header__tools--collection .product-list-header__search :deep(.sc-input) { width: 100%; min-width: 0; }
 .product-list-header__auxiliary, .product-list-header__tools--collection .product-list-header__actions { display: flex; align-items: center; gap: var(--sc-toolbar-gap); }
 @media (max-width: 760px) {
   .product-list-header__layout { gap: var(--sc-toolbar-gap); }

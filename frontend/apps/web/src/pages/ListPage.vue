@@ -26,66 +26,76 @@
       variant="error"
       :on-retry="onReload"
     />
-    <ProductListSurface v-else-if="status === 'empty'">
-      <ListSurfaceHeader
-        :loading="loading"
-        :show-search="showFallbackPlainSearch"
-        :search-value="plainSearchDraft"
-        :search-label="uiLabel('search_submit', '搜索')"
-        :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
-        :columns="columnChoices"
-        :visible-columns="enabledColumns"
-        :last-visible-column="lastVisibleColumnName"
-        :column-disabled-reasons="columnVisibilityDisabledReasons"
-        :column-settings-message="columnVisibilityMessage"
-        :save-status="columnSaveStatus"
-        :save-status-text="columnSaveStatusText"
-        :show-fallback-create="showFallbackCreateButton"
-        :create-label="createLabelText"
-        @search-input="onPlainSearchInput"
-        @search-submit="submitPlainSearch"
-        @search-clear="clearPlainSearch"
-        @composition-start="plainSearchComposing = true"
-        @composition-end="onPlainSearchCompositionEnd"
-        @column-visibility-change="onColumnVisibilityToggle"
-        @column-reset="resetColumnVisibility"
-        @create="onCreate"
-      >
-        <template v-if="$slots.leading" #leading><slot name="leading" /></template>
-        <slot name="toolbar"></slot>
-      </ListSurfaceHeader>
-      <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
-        <template #actions>
-          <ScButton
-            v-if="hasActiveConditions"
-            variant="primary"
-            :disabled="loading"
-            @click="clearActiveConditions"
-          >
-            清除查询条件
-          </ScButton>
-          <ScButton variant="secondary" :disabled="loading" @click="onReload">
-            {{ uiLabel('empty_retry', '刷新') }}
-          </ScButton>
-        </template>
-      </ScEmptyState>
-      <CollectionPaginationFooter
-        mode="count"
-        :record-count-text="listRecordCountText"
-        :loading="loading"
-        :can-previous="false"
-        :can-next="false"
-        page-text=""
-        :page-jump-value="pageJumpInput"
-        :page-limit-value="pageLimitInput"
-        :list-limit="listLimit"
-        :total-pages="totalPages"
-        :current-page="currentPage"
-        :total-records="listRecordTotal"
-        :page-limit-options="pageLimitOptions"
-        :labels="collectionPaginationLabels"
-      />
-    </ProductListSurface>
+    <section
+      v-else-if="status === 'empty'"
+      class="sc-product-main-surface list-empty-region"
+      data-workspace-primary-content
+      data-semantic-component="ListPage"
+      :data-list-status="status"
+      role="region"
+      aria-label="业务列表，可横向滚动"
+    >
+      <ProductListSurface>
+        <ListSurfaceHeader
+          :loading="loading"
+          :show-search="showFallbackPlainSearch"
+          :search-value="plainSearchDraft"
+          :search-label="uiLabel('search_submit', '搜索')"
+          :search-placeholder="uiLabel('plain_search_placeholder', '输入业务编号或名称')"
+          :columns="columnChoices"
+          :visible-columns="enabledColumns"
+          :last-visible-column="lastVisibleColumnName"
+          :column-disabled-reasons="columnVisibilityDisabledReasons"
+          :column-settings-message="columnVisibilityMessage"
+          :save-status="columnSaveStatus"
+          :save-status-text="columnSaveStatusText"
+          :show-fallback-create="showFallbackCreateButton"
+          :create-label="createLabelText"
+          @search-input="onPlainSearchInput"
+          @search-submit="submitPlainSearch"
+          @search-clear="clearPlainSearch"
+          @composition-start="plainSearchComposing = true"
+          @composition-end="onPlainSearchCompositionEnd"
+          @column-visibility-change="onColumnVisibilityToggle"
+          @column-reset="resetColumnVisibility"
+          @create="onCreate"
+        >
+          <template v-if="$slots.leading" #leading><slot name="leading" /></template>
+          <slot name="toolbar"></slot>
+        </ListSurfaceHeader>
+        <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
+          <template #actions>
+            <ScButton
+              v-if="hasActiveConditions"
+              variant="primary"
+              :disabled="loading"
+              @click="clearActiveConditions"
+            >
+              清除查询条件
+            </ScButton>
+            <ScButton variant="secondary" :disabled="loading" @click="onReload">
+              {{ uiLabel('empty_retry', '刷新') }}
+            </ScButton>
+          </template>
+        </ScEmptyState>
+        <CollectionPaginationFooter
+          mode="count"
+          :record-count-text="listRecordCountText"
+          :loading="loading"
+          :can-previous="false"
+          :can-next="false"
+          page-text=""
+          :page-jump-value="pageJumpInput"
+          :page-limit-value="pageLimitInput"
+          :list-limit="listLimit"
+          :total-pages="totalPages"
+          :current-page="currentPage"
+          :total-records="listRecordTotal"
+          :page-limit-options="pageLimitOptions"
+          :labels="collectionPaginationLabels"
+        />
+      </ProductListSurface>
+    </section>
     <template v-else>
       <ProductListSurface>
       <ListSurfaceHeader

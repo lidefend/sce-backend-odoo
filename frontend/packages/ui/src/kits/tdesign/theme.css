@@ -477,6 +477,19 @@
   max-height: var(--sc-component-input-form-height);
   width: var(--sc-component-input-form-height);
 }
+@media (max-width: 760px) {
+  /* The compact height above keeps the toggle aligned with the desktop search
+     row. On the narrow layout the declared touch target wins for every toolbar
+     control, so the same declared control keeps its reachable size instead of
+     inheriting the desktop alignment height. The media block follows the rule
+     it overrides, so the declared surface size resolves deterministically. */
+  .collection-search-control .sc-icon-button[data-appearance='toolbar-menu-toggle'] {
+    width: var(--sc-component-button-touch-target);
+    height: var(--sc-component-button-touch-target);
+    min-height: var(--sc-component-button-touch-target);
+    max-height: var(--sc-component-button-touch-target);
+  }
+}
 .sc-input[data-appearance='numeric-entry'] { font-variant-numeric: tabular-nums; }
 .product-list-header__search .sc-btn {
   height: var(--sc-component-input-form-height);
