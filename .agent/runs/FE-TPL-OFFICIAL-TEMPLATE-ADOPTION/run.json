@@ -576,7 +576,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.241 actual scene startup projection9PASS on backend9ecff8615: finance30 workspace.home and executive37 dashboard.company/project.management retain declared entry/title after user-mode sanitization. Next add/use bounded scene-entry scope in existing governed browser tool (read-only actual login/init +3scene entries +cached route leave; two viewports, same fixtures, no business writes); affected tool tests then one standard preview build/up5180 and scoped browser. Frontend product unchanged since262b38b2e/types reusable;69scene L2 and78tool tests passed. Update existing record/ledger after browser; retain original all-document/block-context/67ledger completion goal; no payment rerun, newfixture, full inventory or targetdeploy.",
+  "next_exact_step": "53.242 browser failed product shell gate: executive37 /s/dashboard.company shows 菜单树为空 and cannot mount SceneView; report1790826953288 has6 home PASS and no .enter calls. Frontendbuild8c10eee6f entryCHLSVTp_ on5180;backend9ecff8615. Next inspect AppShell allow-empty-menu with existing actionRoutePolicy/work-item precedent, actual scene authorization and publication boundary. Enable contract-backed authorized scene entry without granting arbitrary unpublished scenes; do not replace executive role or infer authorization from scene existence. Add focused route/shell tests; backend approval9PASS and home evidence reusable as dependencies permit. Then changed frontend requires justified new build, only affected company/project browser tests; preserve original failed logs. All-document/67ledger objective remains active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1854,6 +1854,26 @@
       ],
       "supersedes": "53.240 missing intent runtime failure; intermediate failures preserved scene-registry-entry-runtime.log,scene-entry-default-runtime.log,scene-entry-source-runtime.log",
       "L4": "not_run; old static c6f3f9cbc retained; build once after bounded scene browser scope ready"
+    },
+    "segment_53_242": {
+      "status": "browser_failed_shell_empty_menu_gate",
+      "stage_head": "757475521",
+      "build": {
+        "base_sha": "8c10eee6feec25ca2d69977c8fd4648996431503",
+        "entry": "/assets/index-CHLSVTp_.js",
+        "entry_sha256": "9a18318911ccb8e0e9532e172091e9db02685a213dc78c075e0ddf12efd3a9a6",
+        "build_count": 1,
+        "preview_port": 5180
+      },
+      "tools": "78 tests PASS; node syntax and L1 PASS after scene-only locator/receipt fixes; no frontend product mutation after build",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790826953288/report.json",
+      "passed_subset": "6 home assertions: real my.work.summary product_workspace,HomeView,1440/390 no overflow, actual mobile work shortcut exit and no scene entry after leave, real startup",
+      "failed": "executive37 dashboard.company blocked by AppShell empty menu tree; no scene entry request emitted. Actual startup registry includes home+project.management; company requires normal full hydration. No page exceptions or writes. Project case not reached.",
+      "previous_failures": [
+        "tpl07-1790826725183 wrong HomeView renderer assumption; failed0",
+        "tpl07-1790826852408 unhandled waiter rejection; screenshots only, no final report, not a pass"
+      ],
+      "owner": "P0 AppShell empty-menu gate vs effective authorized scene entry; must verify server publication/permissions before admitting scene routes"
     }
   }
 }

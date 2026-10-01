@@ -9836,3 +9836,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1各责任改动PASS。`make verify.frontend.scene_entry_contract.unit` 最终47前端 +12完整投影 +6启动表面 +4合成 =69 PASS（`tpl52/scene-entry-sanitize-unit.log`）。工具30 Node +48 Python =78 PASS（`tpl52/scene-entry-source-unit.log`）。补全run对新增测试/裁剪工具的依赖登记；不把此前遗漏依赖的旧建议回执当当前复用证明。前端自262b38b2e未变，严格类型结果沿用53.239。
 - `make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 已绑定9ecff8615。`make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **9 PASS**：finance30/company8/workspace.home 与 executive37/company8/dashboard.company、project.management，实际system.init effective_source和scene_ready.meta.target均保留声明，标题来自契约，finally回滚。日志 `tpl52/scene-entry-sanitize-runtime.log`。原53.240声明丢失阻断由此关闭。
 - 状态边界：这证明三个角色绑定入口的有效契约，不等于浏览器或全单据验收。L4未运行；保留旧静态候选c6f3f9cbc，待现有浏览器工具准备定向scene-entry范围后一次构建/5180复核。审批/付款证据原样复用；无发布策略修改、数据库fixture写入、模块升级、推送或目标部署。
+
+
+## 53.242 场景浏览器验证：首页通过，驾驶舱被空菜单外壳阻断
+
+- P4扩展既有 `standard_page_type_browser.mjs` 的scene-entry只读范围，工具78测试/L1/语法PASS。构建一次并复用5180：base `8c10eee6feec25ca2d69977c8fd4648996431503`，entry `/assets/index-CHLSVTp_.js`，SHA256 `9a18318911ccb8e0e9532e172091e9db02685a213dc78c075e0ddf12efd3a9a6`，原候选保留 `previous-8nir5g9k`。后续仅工具定位/失败收据修改，不二次构建；静态输入校验复用通过。
+- 原始失败明确保留：tpl07-1790826725183误将HomeView视为通用场景块，0项失败；tpl07-1790826852408首页已截图，但后续响应等待未捕获拒绝导致无最终report，不计通过。修复为首页真实 `my.work.summary/product_workspace` 消费断言、可见窄屏“我的工作”按钮及受控异步失败收据。最后工具提交757475521。
+- 有效最终失败收据 `artifacts/frontend-web-fix-20260928/tpl07-1790826953288/report.json`：首页6项PASS（真实工作台契约、唯一HomeView、1440/390无页面横向溢出、实际按钮离开/停止场景调用、启动成功）。已查看上一运行同候选首页390截图；后续仍需完整产品复核。
+- **产品阻断**：executive37进入 `/s/dashboard.company` 后外壳显示“菜单树为空，请尝试刷新初始化”，未挂载SceneView、未发出dashboard.company.enter；不是后端9项契约回读失效。startup存在有效home/project.management声明；公司场景尚未完成完整hydration。project.management后续用例未运行。无业务写入；总状态failed，不能将6项子集升级为全部通过。
+- 下一步P0：核对AppShell allow-empty-menu、已有work-item例外和实际场景发布/权限边界，修复授权入口被菜单存在性阻断的问题；不通过换角色、前端行业白名单或全部scene放行规避。不重新运行审批/付款。若前端产品修改，再按输入变化合理构建新候选并仅复验受影响场景；现有日志 `tpl52/scene-browser-{build,preview,runtime,home-runtime,receipt-runtime}.log` 保留。
