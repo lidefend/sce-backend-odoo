@@ -923,10 +923,11 @@
     }
   },
   "blockers": [
-    "Current follow-up candidate not yet integrated/deployed; post-deploy contract-bound affected detail/scene verification pending.",
-    "Historical attachment content remains unavailable; metadata rendering fix does not claim file recovery. Broader roles and business write acceptance remain outside this browser scope."
+    "Layered acceptance prerequisite not implemented: browser does not yet require a backend-approved exact-instance contract receipt/content binding.",
+    "Follow-up source is local only; Quick cancelled at owner request (exit143, no receipt), no PR/push/merge/deployment for this candidate.",
+    "Post-deploy affected detail/scene acceptance pending; historical attachment content unavailable, metadata rendering does not restore it."
   ],
-  "next_exact_step": "Prepare generated evidence; freeze clean follow-up candidate; one exact-head Quick; independent frozen review/archive; protected GitHub PR integration; deploy resulting main with Python reload and frontend build; execute contract-bound detail-only plus affected scene observation. Reuse unchanged login/navigation/home/list evidence with explicit scope limits.",
+  "next_exact_step": "Owner-assigned successor only: identity preflight + read this run + make agent.run.resume; implement backend-instance contract PASS receipt -> frontend same-contract conformance prerequisite as described in execution_handoff_20261001. Current executor must stop.",
   "completion": {
     "batch": "passed: exact-source targeted checks, independent reviews and Quick; see final-integration evidence",
     "mainline": "completed: GitHub PR525 merged as 2d164a1fed2066307774c82db2e65def80bff70d with required exact-source/base checks",
@@ -4505,10 +4506,10 @@
       "industry_catalog": false,
       "fixture_reset": false
     },
-    "status": "reviewed_source_ready_for_mainline_integration_daily_reacceptance_pending",
+    "status": "owner_stopped_successor_plan_recorded",
     "evidence": "artifacts/frontend-web-fix-20260928/final-integration/daily-upgrade",
     "reuse": "PR525 exact source reviews/tests/CI; runtime checks required for changed daily environment",
-    "next_exact_step": "Prepare generated evidence; freeze clean follow-up candidate; one exact-head Quick; independent frozen review/archive; protected GitHub PR integration; deploy resulting main with Python reload and frontend build; execute contract-bound detail-only plus affected scene observation. Reuse unchanged login/navigation/home/list evidence with explicit scope limits.",
+    "next_exact_step": "Owner-assigned successor only: identity preflight + read this run + make agent.run.resume; implement backend-instance contract PASS receipt -> frontend same-contract conformance prerequisite as described in execution_handoff_20261001. Current executor must stop.",
     "backup": {
       "status": "cancelled",
       "reason": "Owner standing instruction prioritizes development upgrade and says development data protection unnecessary; optional10GB export cancelled before runtime writes",
@@ -5020,5 +5021,135 @@
       "sync": "Governed sync onto2d164 replayed only follow-up commits, generated evidence invalidated none; source-owned tests carried by unchanged relevant input bytes, not old remote statuses.",
       "daily": "Existing server2d164 login/bootstrap89 and four landing/home observations retained; only config312changed, no new fixture, account or permission mutation. New frontend fixes require affected detail/scene observation after deployment."
     }
+  },
+  "execution_control": {
+    "state": "successor_assigned_implementing",
+    "owner_instruction": "安排好计划目标你就停止；后续由所有者安排其他执行器",
+    "successor_assignment_20261001": "Owner: 现在由你接管当前任务继续执行. This executor accepted the handoff_20261001 plan, is the single tracked writer for steps 1-4, and must not resume the stopped executor's cancelled Quick as evidence.",
+    "implementation_authorized_for_current_executor": true,
+    "automatic_resume": false,
+    "handoff_only": false,
+    "write_replay_authorized": false,
+    "resume_entry": "make agent.run.resume (executed 2026-10-01; resolved this run as the branch's sole result index)"
+  },
+  "execution_handoff_20261001": {
+    "goal": "Complete official-template frontend convergence with two independent acceptance layers: backend determines correctness of the exact instance contract under actual authority; frontend proves execution of that approved contract; product conclusion is their conjunction for the declared scope.",
+    "candidate": {
+      "branch": "fix/daily-official-template-acceptance",
+      "head": "08ea5b5cd745b366e644a1a18e68b5bc3d09a41a",
+      "tree": "113f29294edffbfcd55bdacccd47f92de2aa5f2d",
+      "base": "2d164a1fed2066307774c82db2e65def80bff70d",
+      "source_state": "committed and clean before this handoff metadata update; handoff leaves only stated metadata/docs dirty",
+      "handoff_dirty_paths": [
+        ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
+        ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+        "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md"
+      ],
+      "frozen_identity": "artifacts/frontend-web-fix-20260928/final-integration/daily-followup-candidate-fingerprint.json",
+      "reuse_limit": "Fingerprint belongs to committed08ea candidate before handoff dirty metadata; never describe current worktree as frozen."
+    },
+    "execution_roles": {
+      "owner": "assign successor and authorize resumption",
+      "controller": "scope/authority/dependency decisions; original run is sole result index",
+      "A": "one tracked writer implements assigned layer only",
+      "B": "read-only independent contract-to-execution-to-report and source review",
+      "shared_runtime": "serialize all DB/config mutations; no implicit replay from saved next action"
+    },
+    "completed": [
+      "P0 scene diagnostic only renders declared runtime facts; P0 typed form-configuration errors preserve CONFIG_TARGET_STALE instead of producing minimal invalid native contract.",
+      "P0 attachment labels read authorized metadata; declared labels first; no download for display; explicit download/upload preserved.",
+      "P4 daily tools bind served identity, actual actor/role/company, effective contract profile, declared renderer and contract evidence references; preserve partial results and not_run; these do NOT yet enforce a backend-approved receipt.",
+      "Daily configuration312 migrated one exact locator under locks/hash checks through existing publication lifecycle, version6->7; strengthened rollback dry-run and independent actual-actor contract readback PASS; same-native-form sibling audit PASS.",
+      "L1, nonzero layer-owned L2, strict types and independent source/contract mapping review PASS. Original logs remain referenced; do not rerun unchanged product tests merely for handoff.",
+      "Governed main sync onto2d164 completed; follow-up remains local, no remote branch/PR publication performed."
+    ],
+    "quick": {
+      "status": "cancelled",
+      "exit_code": 143,
+      "reason": "owner explicitly requested stop after recording plan",
+      "receipt_issued": false,
+      "log": "artifacts/frontend-web-fix-20260928/final-integration/daily-followup-quick.log",
+      "rule": "Partial successful output is not Quick PASS and cannot authorize push/merge."
+    },
+    "environment": "Reuse daily_main_upgrade_20261001.environment and existing source_main2d164; server frontend/backend remain that main version. Precise configuration312version7 is the only subsequent runtime repair. No new service/project/database/credential/profile/fixture.",
+    "plan": [
+      {
+        "step": 1,
+        "owner": "P4 controller+A, B reviews; P0 only if a producer integrity defect is proven",
+        "title": "Freeze the layered acceptance contract before implementation",
+        "actions": [
+          "Read existing contract_lifecycle.py and renderer consumers to define the semantic-content and transport-metadata boundary; reuse the producer canonical semantic hash/integrity protocol only where it covers all rendering/authorization semantics. Preserve raw snapshot hash for custody and independently bind schema/source/actor/company/scene metadata. If relevant semantics fall outside producer integrity, stop at that owning P0 defect; do not silently strip fields to obtain equality.",
+          "Do not adopt the exploratory shared X-Trace-Id suggestion as a settled solution. Do not mock/replay HTTP responses or change permissions/data to satisfy frontend assertions.",
+          "Define backend required predicates and not_run policies for this exact readonly record scope; define frontend eight checks and affected scene predicate; map each result to producer fields and actual DOM declarations in the original acceptance_authority block."
+        ]
+      },
+      {
+        "step": 2,
+        "owner": "P4 backend acceptance tooling; policy source remains P0/P1",
+        "title": "Implement backend exact-instance acceptance and PASS receipt",
+        "files": [
+          "scripts/ops/dev_acceptance_release_probe.py",
+          "scripts/verify/test_dev_acceptance_release_identity.py",
+          "scripts/verify/dev_acceptance_release_probe_schema_guard.py",
+          "existing schema tests",
+          "make/dev.mk"
+        ],
+        "actions": [
+          "Reuse registered daily readonly authentication/identity flow and exact request context. Validate final contract using formal runtime JSON Schema (not example-only constraints), producer integrity/native occurrence/configuration compilation and independent actual-actor authority checks for declared scope; do not duplicate policy algorithms.",
+          "Bind deployed SHA, actual uid/roles/company, exact request parameters, model/action/menu/record/profile, required check results, complete contract snapshot, raw custody hash and approved semantic-content hash in the existing report/receipt. Nonzero required checks must all pass before PASS; unknown/uncovered policy cases remain not_run.",
+          "Positive/negative tests reject malformed contract, missing/failed/zero-test receipt, wrong identity/role/company/version/record/params, tampered semantics and relevant metadata, and numeric serialization mismatch. Preserve credentials only in transient input/env."
+        ]
+      },
+      {
+        "step": 3,
+        "owner": "P4 frontend acceptance tooling",
+        "files": [
+          "scripts/verify/frontend_list_surface_structure_browser.mjs",
+          "scripts/verify/test_frontend_list_surface_search_contract.py",
+          "make/frontend.mk"
+        ],
+        "title": "Require approved backend contract before frontend conformance",
+        "actions": [
+          "Read backend PASS receipt before browser work; reject missing/stale/mismatched prerequisite. Open the receipt-approved accessible record through its declared list/entry authority, not an arbitrary first row.",
+          "Actual server response must match approved semantics and authority identity before DOM assertions; use raw response text with the same canonical implementation where needed to preserve numeric types. Do not substitute response content.",
+          "Run declared route, exact record contract, renderer/profile and return checks at1440/390. Reuse one snapshot only if both actual request contracts are identical; otherwise require separate backend approvals. Keep list/home/unexecuted policies not_run and retain partial evidence."
+        ]
+      },
+      {
+        "step": 4,
+        "owner": "A tests; B independent review; controller freezes",
+        "title": "Validate the new gate cheaply, then prepare one new candidate",
+        "actions": [
+          "Mandatory preflight/resume, L1 ci.local.iteration, affected nonzero P4 L2. Reuse unchanged P0 tests/strict results by recorded input equality. No broad browser while backend prerequisite failed/not_run.",
+          "B verifies contract->implementation->report, actual producers and refusal cases. Review generated evidence, commit source/docs together, freeze clean tracked+untracked identity. One justified exact-head Quick for the new candidate; current cancelled run supplies no receipt."
+        ]
+      },
+      {
+        "step": 5,
+        "owner": "controller/B",
+        "title": "Protected GitHub integration and daily upgrade",
+        "actions": [
+          "Reuse existing GitHub priority/auth and governed publication/review/archive tools. Current-head/current-base four required checks and protected PR merge; no direct main push, force push or gate changes.",
+          "After merge, read back main/merge identity; daily main.sync, required Python reload and frontend build via existing Make entrypoints with exact SC_SOURCE_REVISION. No module upgrade unless actual module-definition scope requires it. No new environment/fixture/credential authority."
+        ]
+      },
+      {
+        "step": 6,
+        "owner": "assigned executor; B verifies results",
+        "title": "Backend verdict first, frontend verdict second, scoped product conclusion last",
+        "actions": [
+          "On deployed main produce exact-instance backend PASS contract receipt for actual daily account/company/record; backend FAIL/not_run blocks browser.",
+          "Consume that approved contract in one affected detail-only browser run; separately verify changed scene diagnostic. Reuse unchanged home/navigation/list evidence with its original scope and identity; do not reconstruct lost list gate measurements from screenshots.",
+          "Report backend-contract acceptance, frontend conformance, scoped product conclusion, mainline integration and deployment separately. Other roles, full action/field coverage and business write/approval loops remain explicitly not_run unless separately executed. Historical file unavailability remains a data limitation, not a restored-file claim."
+        ]
+      }
+    ],
+    "completion_criteria": [
+      "Backend instance receipt truly PASS and bound to actual declared identity/content; backend correctness is not inferred from DOM agreement.",
+      "Frontend actual server contract matches approved evidence and all scoped nonzero conformance checks pass; no missing/stale prerequisites, unclassified runtime failures or zero-test pass.",
+      "Required source tests, independent review, final Quick and current-head/base remote checks pass before protected integration; actual daily deployment and affected observations pass before claiming that stage."
+    ],
+    "next_command_after_owner_assignment": "pwd; git rev-parse --show-toplevel; git branch --show-current; git status --short; read this original run; make agent.run.resume (do not execute until assigned).",
+    "stop_status": "Current executor stopped implementation, tests, browser, runtime writes and publication. Only this handoff metadata was written after stop request."
   }
 }
