@@ -281,6 +281,22 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_approval_section_projects_provider_targets_without_fake_action(self):
+        from unittest.mock import patch
+        targets = [{"value": "child.document", "label": "子单据", "relation_field": "line_ids"}]
+        calls = []
+        def provider(env, name, *args):
+            calls.append((name, args))
+            return targets if name == "smart_core_business_config_approval_targets" else None
+        env = _Env({})
+        with patch.object(self.module, "call_extension_hook_first", provider):
+            result = self.module.BusinessConfigSurfaceGetHandler(env=env)._approval_policy_section("parent.document")
+        self.assertEqual(result["target_options"][0]["value"], "child.document")
+        self.assertEqual(result["target_options"][0]["route"]["query"]["target_model"], "child.document")
+        self.assertEqual(targets, [{"value": "child.document", "label": "子单据", "relation_field": "line_ids"}])
+        self.assertIn(("smart_core_business_config_approval_targets", (env, "parent.document")), calls)
+        self.assertNotIn("action_id", result["target_options"][0])
+
     def test_surface_reports_business_config_sections(self):
         env = _Env({
             "sc.approval.policy": _ApprovalPolicyModel([

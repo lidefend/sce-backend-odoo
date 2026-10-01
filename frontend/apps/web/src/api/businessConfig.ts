@@ -315,6 +315,8 @@ export interface BusinessConfigSurfacePayload {
     contract_count: number;
     intent: string;
     boundary: string;
+    target_options?: Array<{ value: string; label: string; relation_field: string;
+      route?: { path?: string; query?: Record<string, string> } }>;
     route?: {
       path?: string;
       query?: Record<string, string>;

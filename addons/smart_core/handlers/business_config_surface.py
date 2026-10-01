@@ -240,10 +240,15 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
             }
         action_id = self._xmlid_record_id(_to_text(refs.get("action_xmlid")))
         menu_id = self._xmlid_record_id(_to_text(refs.get("menu_xmlid")))
+        targets = call_extension_hook_first(
+            self.env, "smart_core_business_config_approval_targets", self.env, model
+        ) or []
         count = 0
         if "sc.approval.policy" in self.env:
             domain = [("active", "=", True)]
-            if model:
+            if targets:
+                domain.append(("target_model", "in", [target["value"] for target in targets]))
+            elif model:
                 domain.append(("target_model", "=", model))
             try:
                 count = int(self.env["sc.approval.policy"].sudo().search_count(domain))
@@ -255,9 +260,18 @@ class _BusinessConfigSurfaceBase(BaseIntentHandler):
         if model:
             route_query["target_model"] = model
             route_query["domain_raw"] = "[('target_model', '=', '%s')]" % model.replace("'", "\\'")
+        target_options = []
+        for target in targets:
+            target_model = target["value"]
+            target_options.append({**target, "route": {
+                "path": "/a/%s" % action_id if action_id else "",
+                "query": {**route_query, "target_model": target_model,
+                          "domain_raw": "[('target_model', '=', '%s')]" % target_model.replace("'", "\\'")},
+            }})
         return {
             "key": "approval",
             "label": "审批规则",
+            "target_options": target_options,
             "contract_count": count,
             "intent": "sc.approval.policy",
             "boundary": "industry_policy_runtime",
