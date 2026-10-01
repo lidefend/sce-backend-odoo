@@ -9752,3 +9752,13 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 明确approvalToggle模式先验证实际policy18与原definition2187的限定关闭差异，再允许无review且validation_status=no的本次经办44 confirmed记录清理；scope标记本身不能授权。原审批路径继续要求真实review与审核人30。清理后原生policy.write恢复requiredtrue/modesingle，并在commit前后核对语义基线，保留真实write_date。配置请求失败、尚未创建记录时同样可恢复；外部事实变化必须在删除/写配置前拒绝。
 - L1初次仅尾部空行失败，修正后payment-toggle-recovery-iteration PASS；现有工具27Node+45Python=72PASS并记录begin/record回执。新增6项覆盖正常自动确认恢复、仅scope标记拒绝、其他事实变化拒绝、关闭请求未生效无需配置写入、关闭后创建前失败恢复、原生恢复回读失败不得commit。测试使用替身，不能冒充数据库实际恢复证据。
 - 本轮没有运行时配置或业务写入。下一步在既有payment-review浏览器分支接配置管理员关闭/保存的精确请求许可，补拒绝越界测试后运行同经办创建提交自动通过、详情双视口、原策略恢复。标准列表WEB-LC既有发布闭环不重跑；总体67目标仍active，无推送/合并/目标部署。
+
+### 53.232 关闭审批后同经办自动通过的实际闭环
+
+- P4在既有payment-review旅程增加TPL07_PAYMENT_APPROVAL_TOGGLE受控分支；管理员34通过已发布付款申请配置入口选择付款执行，仅关闭policy18，步骤不变；仍由44同一会话创建和提交。精确许可绑定原policy/company、config.get实际请求context及唯一config.set参数，禁止改步骤/岗位/目标或重复保存。所有未匹配approval_policy.*.set现在默认拒绝，避免漏判落入通用放行。恢复工具只增加无记录阶段许可，沿用53.231的权威差异/原生恢复。
+- 首次tpl07-1790823585676停在官方复选框input被可见外壳遮挡，无保存；改点可见文字并断言checked。第二次tpl07-1790823673886实际保存关闭但工具漏记：统一请求层注入context导致精确匹配失败，旧拦截器只在计划分支拒绝审批写入。本次没有创建记录，既有恢复权威回读PASS。修复默认拒绝与实际context绑定后才再次执行。两次原报告保留，不算通过。
+- payment-toggle-browser-iteration L1PASS、28Node+45Python=73PASS及begin/record回执。受管profile local/project sc-fe-r2-p1-01/db sc_frontend_acceptance原环境身份通过；未重建/升级。最终payment-toggle-context-browser日志、tpl07-1790823767946/report.json **22PASS**：config_disable/open/create/submit均唯一成功；经办44创建200/PE2600195并提交，后端confirmed/no；没有审批review，也没有资金入账。1440/390官方详情loaded/已确认/无审批按钮/无横向溢出通过，截图已查看。原生恢复删除200，原policy18/step2187/definition2187及source/ledger/其他策略事实保持，commit前后权威回读restored。
+- 所有者补充“审批流程本身也是可配置内容，一起验证更加充分”：下一步需验证步骤、审批岗位与顺序配置实际改变待办和办理权限，包含非指定用户拒绝及恢复原流程；开关22PASS不代表这部分已完成。先定向读取steps.set的更新/删除语义和已有角色，在同一恢复工具补精确步骤恢复测试后再写配置，不新建fixture。该配置保存是industry_policy_runtime立即生效，不是产品版本发布；目标用户/环境交付仍未宣称。
+- 复用53.228原配置正确经办→审核人闭环、段45标准列表WEB-LC证据。本轮证据对应f6c120ad5加工具dirty；产品源码/前端build9433fa515、后端c240a28cb未变。67目标active，不升级整行、不推送/合并/目标部署。
+
+- 所有者进一步明确开发阶段可以创建/修改数据，以证明功能正常为主。后续普通办理记录可保留并绑定验证用途，不再以逐记录精确删除为默认前置；公共审批配置记录原值/最终状态与必要恢复，避免干扰后续结果。此项替代上文“先扩展精确步骤清理工具”的默认顺序；不放宽既有数据库、公司、权限、生产隔离边界，不新建环境或fixture体系。

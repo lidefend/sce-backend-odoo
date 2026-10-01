@@ -249,6 +249,24 @@ test('payment review create binds actor/source/amount/phase and rejects state in
   }
   assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', body, { ...paymentScope, phase: 'create_in_flight' }), null);
 });
+test('payment approval toggle only disables the existing policy with the config administrator', () => {
+  const scope = { ...paymentScope, approvalToggle: true, phase: 'config_disable', configContext: { company_id: 8 }, baseline: {
+    ...paymentScope.baseline, policies: [{ id: 18, company_id: [8, 'A'], target_model: paymentScope.model,
+      approval_required: true, mode: 'single' }] } };
+  const body = { intent: 'sc.approval_policy.config.set', params: { model: scope.model,
+    approval_required: false, mode: 'none', manager_scope_key: 'finance_manager', context: { company_id: 8 } } };
+  assert.equal(paymentReviewWriteKind('fixture_role_config_admin', body, scope), 'config_disable');
+  for (const role of ['fixture_role_finance', 'fixture_role_pfl035_finance_user'])
+    assert.equal(paymentReviewWriteKind(role, body, scope), null);
+  for (const patch of [{ approvalToggle: false }, { phase: 'config_disable_in_flight' },
+    { baseline: { execution_ids: [186], policies: [] } }])
+    assert.equal(paymentReviewWriteKind('fixture_role_config_admin', body, { ...scope, ...patch }), null);
+  for (const params of [{ ...body.params, model: 'payment.request' }, { ...body.params, approval_required: true },
+    { ...body.params, manager_scope_key: 'executive' }, { ...body.params, company_id: 1 }, { ...body.params, context: { company_id: 1 } },
+    { ...body.params, context: undefined }])
+    assert.equal(paymentReviewWriteKind('fixture_role_config_admin', { ...body, params }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_config_admin', { ...body, intent: 'sc.approval_policy.steps.set' }, scope), null);
+});
 test('payment review binds existing-record exclusion and blocks payment posting', () => {
   const scope = { ...paymentScope, phase: 'submit', id: 200 };
   const body = { intent: 'execute_button', params: { model: scope.model, res_id: 200, button: { name: 'action_confirm', type: 'object' } }, meta: { action_id: 803, menu_id: 335 } };

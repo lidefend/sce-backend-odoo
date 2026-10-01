@@ -136,7 +136,7 @@ async function login(role) {
       if (result.ok === true) {
         if (paymentKind === 'open') paymentReview.continuation = result.data?.result?.raw_action;
         if (paymentKind === 'create') paymentReview.id = Number(result.data?.id || result.data?.record?.id);
-        paymentReview.phase = { open: 'opened', create: 'created', submit: 'submitted', approve: 'done' }[paymentKind];
+        paymentReview.phase = { config_disable: 'config_disabled', open: 'opened', create: 'created', submit: 'submitted', approve: 'done' }[paymentKind];
       }
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
       return route.fulfill({ response });
@@ -334,10 +334,10 @@ async function login(role) {
       }
     }
     if ((reportSaveSuccess && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
-      || (planVersionReview && /^sc\.approval_policy\..*\.set$/.test(body?.intent || ''))
+      || (/^sc\.approval_policy\..*\.set$/.test(body?.intent || ''))
       || (body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
       || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
-      report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op });
+      report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op, params: /^sc\.approval_policy\./.test(body.intent || '') ? body.params : undefined });
       return route.abort();
     }
     return route.continue();
@@ -956,6 +956,45 @@ try {
     const preflight = await expenseCleanup('preflight');
     check('payment review: exact current baseline captured', preflight.status === 'preflight' && preflight.baseline.execution_ids.includes(186));
     paymentReview.baseline = preflight.baseline;
+    paymentReview.approvalToggle = process.env.TPL07_PAYMENT_APPROVAL_TOGGLE === '1';
+    await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+    if (paymentReview.approvalToggle) {
+      check('payment toggle: complete success journey selected', process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1');
+      const admin = await login('fixture_role_config_admin');
+      const entry = report.routeAuthority?.primary_actions?.find(row => row.model === 'payment.request');
+      check('payment toggle: published parent authorized', Number.isInteger(entry?.action_id));
+      await admin.page.goto(`${base}/admin/business-config?model=payment.request&action_id=${entry.action_id}&menu_id=${entry.menu_id}`);
+      await admin.page.getByRole('tab', { name: '审批规则', exact: true }).click();
+      await admin.page.getByRole('button', { name: '配置审批规则', exact: true }).click();
+      const panel = admin.page.locator('.approval-panel');
+      await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
+      await panel.getByLabel('审批对象', { exact: true }).click();
+      const [loaded] = await Promise.all([
+        admin.page.waitForResponse(response => {
+          try { const b = response.request().postDataJSON(); return b?.intent === 'sc.approval_policy.config.get' && b.params?.model === paymentReview.model; } catch { return false; }
+        }),
+        admin.page.getByText('付款执行', { exact: true }).last().click(),
+      ]);
+      paymentReview.configContext = loaded.request().postDataJSON()?.params?.context;
+      check('payment toggle: actual request company context', paymentReview.configContext?.company_id === 8);
+      const original = await loaded.json();
+      report.paymentToggleOriginal = original;
+      check('payment toggle: original policy18 loaded', original.ok === true && original.data?.policy?.id === 18
+        && original.data.policy.approval_required === true && original.data.policy.mode === 'single');
+      await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
+      await panel.getByText('启用审批', { exact: true }).click();
+      check('payment toggle: visible control disables approval', !await panel.getByRole('checkbox', { name: '启用审批', exact: true }).isChecked());
+      paymentReview.phase = 'config_disable';
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      await panel.getByRole('button', { name: '保存审批设置', exact: true }).click();
+      await admin.page.getByRole('dialog', { name: '确认配置影响', exact: true }).getByRole('button', { name: '确认继续', exact: true }).click();
+      await admin.page.getByText('审批设置已保存', { exact: true }).waitFor();
+      const saved = report.paymentReviewWrites?.find(row => row.kind === 'config_disable')?.result;
+      check('payment toggle: disabled policy saved without step mutation', paymentReview.phase === 'config_disabled'
+        && saved?.ok === true && saved.data?.policy?.approval_required === false && saved.data.policy.mode === 'none');
+      await admin.page.screenshot({ path: path.join(out, 'payment-approval-disabled.png'), fullPage: true });
+      await admin.ctx.close();
+    }
     paymentReview.phase = 'open';
     await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
     let manager = await login('fixture_role_pfl035_finance_user');
@@ -1025,6 +1064,13 @@ try {
       check('payment review: ordinary operator submitted', report.paymentReviewSubmitted.ok === true && paymentReview.phase === 'submitted');
       report.paymentReviewWaiting = await read(operator.page);
       const waiting = report.paymentReviewWaiting.data?.records?.[0];
+      if (paymentReview.approvalToggle) {
+        check('payment toggle: same operator submit automatically confirms', waiting?.state === 'confirmed' && waiting.validation_status === 'no');
+        paymentReview.phase = 'done';
+        await persist();
+        report.paymentReviewFinal = report.paymentReviewWaiting;
+        await operator.page.reload();
+      } else {
       check('payment review: configured approval waits', waiting?.state === 'draft' && ['waiting', 'pending'].includes(waiting.validation_status));
       await operator.ctx.close();
       manager = await login('fixture_role_finance');
@@ -1057,6 +1103,7 @@ try {
       check('payment review: completed item exits reviewer workspace', finalWorkspace.ok === true
         && !(finalWorkspace.data?.product_workspace?.sections || []).flatMap(section => section.items || [])
           .some(item => item.target?.model === paymentReview.model && item.target.record_id === paymentReview.id));
+      }
       const finalDetail = manager.page.locator(`[data-form-model="sc.payment.execution"][data-form-record="${paymentReview.id}"][data-detail-composition="official-standard-detail"][data-state="ok"]`);
       await finalDetail.waitFor();
       await manager.page.getByRole('heading', { name: created.name, exact: true }).waitFor();

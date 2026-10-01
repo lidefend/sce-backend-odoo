@@ -121,8 +121,8 @@ def recover_payment_review(env, scope, *, commit=True):
     if toggle:
         admin = env['res.users'].sudo().browse(34)
         assert admin.active and admin.login == 'fixture_role_config_admin' and admin.company_id.id == 8
-        assert scope['phase'] in ('config_disable_in_flight', 'config_disabled', 'open', 'open_in_flight',
-            'opened', 'create', 'create_in_flight', 'created', 'submit', 'submit_in_flight', 'submitted', 'done')
+        assert scope['phase'] in ('prepare', 'config_disable', 'config_disable_in_flight', 'config_disabled', 'open', 'open_in_flight',
+            'opened', 'capture', 'captured', 'create', 'create_in_flight', 'created', 'submit', 'submit_in_flight', 'submitted', 'done')
         current_policy = next(row for row in current['policies'] if row['id'] == 18)
         disabled = current_policy['approval_required'] is False
         validate_payment_toggle_transition(baseline, current, disabled=disabled)

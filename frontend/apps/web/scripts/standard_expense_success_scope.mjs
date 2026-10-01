@@ -186,6 +186,13 @@ export function paymentReviewWriteKind(role, body, scope) {
     || !/^TPL53-PAYMENT-REVIEW-\d{13}$/.test(scope.marker)
     || !Array.isArray(scope.baseline?.execution_ids) || !scope.baseline.execution_ids.includes(186)) return null;
   const p = body?.params;
+  if (scope.approvalToggle === true && scope.phase === 'config_disable'
+    && role === 'fixture_role_config_admin' && body?.intent === 'sc.approval_policy.config.set'
+    && scope.baseline.policies?.some(policy => policy.id === 18 && policy.company_id?.[0] === 8
+      && policy.target_model === scope.model && policy.approval_required === true && policy.mode === 'single')
+    && scope.configContext?.company_id === 8
+    && isDeepStrictEqual(p, { model: scope.model, approval_required: false, mode: 'none', manager_scope_key: 'finance_manager',
+      context: scope.configContext })) return 'config_disable';
   if (scope.phase === 'open' && role === 'fixture_role_pfl035_finance_user' && body?.intent === 'execute_button'
     && p?.model === 'payment.request' && p.res_id === 1710 && p.button?.type === 'object'
     && p.button.name === 'action_create_payment_execution' && Number(body.meta?.action_id) === 775
