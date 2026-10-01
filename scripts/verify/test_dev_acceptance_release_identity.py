@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -33,7 +34,18 @@ CONTRACT_CHECKS = [
     "contract_schema_digest_bound",
     "contract_formal_schema_valid",
     "contract_custody_captured",
+    "contract_custody_bytes_persisted",
 ]
+
+
+def contract_output() -> Path:
+    """A live byte-custody target outside the repo, as a governed lane would write."""
+    return Path(tempfile.mkdtemp(prefix="acceptance-contract-")) / "contract.json"
+
+
+def resolved_custody_path(receipt_block):
+    path = Path(receipt_block["custody"]["response_path"])
+    return path if path.is_absolute() else ROOT / path
 
 
 def declaration(required=None):
@@ -130,6 +142,7 @@ def receipt(contract=None, decl=None, res=_UNSET, **kwargs):
         served_sha=SHA,
         expected_sha=SHA,
         session=session,
+        contract_output=kwargs.pop("contract_output", None) or contract_output(),
     )
 
 
@@ -144,6 +157,7 @@ class ContractAcceptanceTest(unittest.TestCase):
             served_sha=SHA,
             expected_sha=SHA,
             session=session,
+            contract_output=contract_output(),
         )
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["required_checks"], CONTRACT_CHECKS)
@@ -157,6 +171,31 @@ class ContractAcceptanceTest(unittest.TestCase):
         )
         self.assertTrue(result["request"]["fingerprint_sha256"])
         self.assertEqual(result["schema_asset"]["sha256"], result["schema_asset"]["declared_schema_sha256"])
+
+    def test_custody_bytes_are_persisted_and_re_derivable_offline(self):
+        result = receipt()
+        self.assertTrue(result["checks"]["contract_custody_bytes_persisted"])
+        custody = result["custody"]
+        raw = resolved_custody_path(result).read_bytes()
+        self.assertEqual(len(raw), custody["response_bytes"])
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), custody["response_sha256"])
+        # The persisted bytes, not the re-serialized snapshot, must reconstruct the contract.
+        self.assertEqual(json.loads(raw.decode("utf-8"))["data"], result["snapshot"])
+
+    def test_no_contract_output_cannot_claim_byte_custody(self):
+        result = MODULE.probe_contract_acceptance(
+            "https://daily.example.test",
+            "sc_frontend_acceptance",
+            declaration(),
+            resolution(),
+            served_sha=SHA,
+            expected_sha=SHA,
+            session=FakeSession(example_contract()),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIs(result["checks"]["contract_custody_bytes_persisted"], False)
+        self.assertIn("contract_custody_bytes_not_persisted", result["errors"])
+        self.assertEqual(result["custody"]["response_path"], "")
 
     def test_resolved_record_id_drives_the_request_not_a_constant(self):
         first = receipt(res=resolution(record_id=4242))
@@ -319,6 +358,7 @@ class ContractDeclarationConsumptionTest(unittest.TestCase):
             served_sha=SHA,
             expected_sha=SHA,
             session=FakeSession(example_contract()),
+            contract_output=contract_output(),
         )
         self.assertEqual(result["required_checks"], loaded["required_checks"])
         self.assertEqual(result["not_run_checks"], [])
@@ -405,6 +445,33 @@ class ReceiptSchemaGuardTest(unittest.TestCase):
         completed = self.run_guard(result)
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("must match the embedded snapshot semantics", completed.stdout)
+
+    def test_guard_baseline_accepts_untampered_custody(self):
+        # Negative-first: prove the persisted-bytes control passes before injection,
+        # so a later failure can only be attributed to the injected change.
+        result = receipt()
+        baseline = self.run_guard(result)
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+
+        tampered_bytes = resolved_custody_path(result).read_bytes().replace(b'"pageName"', b'"pageNam3"', 1)
+        resolved_custody_path(result).write_bytes(tampered_bytes)
+        mutated = self.run_guard(result)
+        self.assertNotEqual(mutated.returncode, 0)
+        self.assertIn("response_sha256 must equal the persisted byte digest", mutated.stdout)
+
+    def test_guard_rejects_custody_bytes_that_are_not_persisted(self):
+        result = receipt()
+        resolved_custody_path(result).unlink()
+        completed = self.run_guard(result)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("response_path must resolve to an existing file", completed.stdout)
+
+    def test_guard_rejects_declared_byte_length_drift(self):
+        result = receipt()
+        result["custody"]["response_bytes"] = result["custody"]["response_bytes"] + 1
+        completed = self.run_guard(result)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("response_bytes must equal the persisted byte length", completed.stdout)
 
     def test_guard_rejects_failed_contract_marked_as_aggregate_pass(self):
         result = receipt()
