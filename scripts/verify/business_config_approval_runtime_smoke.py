@@ -4088,6 +4088,8 @@ def _plan_reviewer_entry_checks():
         assert version.state == "draft" and version.validation_status in ("waiting", "pending")
         assert reviewer.uid in version.review_ids.mapped("reviewer_ids").ids
         assert not version.approved_by and version.with_env(reviewer).can_review
+        for operation in ("write", "create", "unlink"):
+            assert not reviewer[version._name].check_access_rights(operation, raise_exception=False), operation
         print("APPROVAL_CHECK=version_pm_submission_waits_for_distinct_real_reviewer")
         items = MyWorkSummaryHandler(reviewer)._load_tier_review_items(reviewer.user, 100)
         item = next((row for row in items if row.get("model") == version._name and row.get("record_id") == version.id), None)
