@@ -16,7 +16,7 @@ EXPECTED = {
     "sourceContext": "context domain contextRaw domainRaw renderProfile order limit",
     "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults",
     "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType deliveryProfile",
-    "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile",
+    "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile graphProfile pivotProfile",
     "activityProfile": (
         "activityTypeSlots deadlineSlots assigneeSlots fieldOccurrences nativeAttrs nodeOccurrences template "
         "templateQwebPresent actions actionCount sourceAuthority"
@@ -52,7 +52,8 @@ EXPECTED = {
         "actionId triggerType sourceWidgetId targetIds dispatchMode targetScope refreshMode refreshPolicy actionKey label "
         "intent target button visible modifiers invisible visibleProfiles presentation actionSafety submitPolicy tracePolicy "
         "backendIdentity nativeIdentity sourceTrace presentationAuthority presentationPriority sourceActionKey sourceChannel "
-        "permissionConstraints entitlementEvaluated allowed enabled disabled reasonCode"
+        "permissionConstraints entitlementEvaluated allowed enabled disabled reasonCode actionSemantics "
+        "authorizationAllowed businessAvailable"
     ),
     "dataContract": "mainData tableRows relationRows treeData ganttData dictData pagination dataSource dataMeta",
     "dataMeta": "businessOperationProfile visibleFields fieldGroups sourceContext",
@@ -146,7 +147,16 @@ NON_VISUAL = {
     "meta.deliveryTrim": "client delivery projection evidence",
 }
 
-DECODED_RUNTIME_GAPS = {}
+DECODED_RUNTIME_GAPS = {
+    "actionRule.authorizationAllowed": (
+        "declared so a produced action-rule payload validates against the strict actionRule definition "
+        "(additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it"
+    ),
+    "actionRule.businessAvailable": (
+        "declared so a produced action-rule payload validates against the strict actionRule definition "
+        "(additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it"
+    ),
+}
 
 NON_VISUAL_DEFINITIONS = {
     "sourceAuthority": "projection provenance boundary",

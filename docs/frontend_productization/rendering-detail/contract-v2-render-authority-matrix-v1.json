@@ -40,10 +40,10 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 321,
-    "renderedOrInteractionAuthorityCount": 206,
+    "schemaFieldCount": 326,
+    "renderedOrInteractionAuthorityCount": 209,
     "validatedNonVisualAuthorityCount": 115,
-    "decodedRuntimeAuthorityGapCount": 0,
+    "decodedRuntimeAuthorityGapCount": 2,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -99,15 +99,32 @@
       "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
+      "path": "actionRule.actionSemantics",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
       "path": "actionRule.allowed",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
+      "path": "actionRule.authorizationAllowed",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "declared so a produced action-rule payload validates against the strict actionRule definition (additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it",
+      "consumer": "strict decoder only"
     },
     {
       "path": "actionRule.backendIdentity",
       "classification": "validated_non_visual_authority",
       "reason": "backend action identity",
       "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
+      "path": "actionRule.businessAvailable",
+      "classification": "decoded_runtime_authority_gap",
+      "reason": "declared so a produced action-rule payload validates against the strict actionRule definition (additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it",
+      "consumer": "strict decoder only"
     },
     {
       "path": "actionRule.button",
@@ -954,6 +971,11 @@
       "consumer": "contractFormPresenter / ContractFormDriverHost"
     },
     {
+      "path": "layoutContract.graphProfile",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter / ContractFormDriverHost"
+    },
+    {
       "path": "layoutContract.layoutHints",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
@@ -973,6 +995,11 @@
       "path": "layoutContract.pageId",
       "classification": "validated_non_visual_authority",
       "reason": "page identity invariant",
+      "consumer": "contractFormPresenter / ContractFormDriverHost"
+    },
+    {
+      "path": "layoutContract.pivotProfile",
+      "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
     },
     {
