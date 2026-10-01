@@ -9776,3 +9776,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - Formal Product Layer P1；Layer Target/Module smart_construction_core原生记录规则。标准付款登记审批读取范围应覆盖同公司实际指派人，不属客户特例/低代码绕过/前端权限推导。新增finance_read组read-only规则，AND company_ids、review_ids.model精确付款登记鉴别、实际reviewer_ids。明确不增加write/create/unlink及资金确认权限，保留原规则。193定向测试PASS（新增规则权限与多态模型边界），L1PASS；补原run依赖含sc_record_rules.xml并begin/record非零回执。
 - 本地分层提交b5eedac4a诊断、c8adfea58 P1修正。原受管MODULE=smart_construction_core升级完成（显式CODEX_NEED_UPGRADE/CODEX_MODULES）；首次后续读被旧容器source revision比较拦住，未运行诊断，不重试无变化失败。通过backend.acceptance.up绑定c8adfea58后运行payment-assigned-read-runtime：37 read_rule=true/can_review=true，仅origin505授权；44/30仍false。4项诊断通过，仅说明授权修正，不等于最终UI审批闭环完成。18082原环境healthy；5180前端build未变，无新增业务写入。
 - 下一步从真实管理层my-work续办现有201并验证终态/官方详情，不重跑创建，不再次恢复已恢复配置。当前definition6624因上一轮恢复而inactive，review505仍pending，保留该实际现场，若终态操作暴露进一步问题按事实归因。67目标active，审批最终旅程pending；无推送/合并/目标部署。
+
+### 53.235 无菜单待办详情接通，暴露前置动作权限不一致
+
+- P4新增现有浏览器旅程的201续办入口，仅从原保留回执取得身份，使用管理层真实api.read与my-work origin505，然后允许终审动作；无创建、配置或清理。工具75PASS及回执。tpl07-1790824689921证明读取/实际待办已通过，但外壳因菜单为空拦住详情（不是缺审批按钮契约），没有发出审批请求。
+- P0共享前端actionRoutePolicy/AppShell增加结构有效的work-item记录路由空菜单承载，作用仅允许请求后端契约，不授予读写或审批。模型/正整数记录与review标识、record/model-form类型受结构约束；后端依旧验证真实分配、ACL、规则和can_review。路由现有检查+config10/return2+新12边界PASS，L1与strict双类型检查PASS。P4提交0f60d615f，P0提交c6f3f9cbc。
+- 稳定后仅构建一次，5180复用原listener：base c6f3f9cbc8a08026009d78d771537ef2307ba206、entry /assets/index-BrwUVS7o.js、sha256 9c58c533abb3d14c9942c001769324a839c7d675585868c2b7e4524a9e73273a，旧候选保留previous-yzehqxpw。后端仍c8adfea58，addons未改，无升级/ORM。
+- tpl07-1790824901661：管理层实际待办可见、官方详情可打开、审批按钮可点击；execute_button请求被前置intent_permission拒绝“用户无权以write访问模型sc.payment.execution”。因此终审未成功，不计闭环通过。源码handler已用validate_work_item_action_origin及P1hook回传read授权；前置security/intent_permission仍依据通用intent分类write，早于handler检查而拒绝。这是P0授权入口不一致，不能授予管理层整单写ACL来绕过。
+- 下一步让前置门禁复用同一新鲜work-item来源验证取得record_access_mode，严格绑定object方法/单记录/实际授权，不改变write-intent分类和预览写禁令；添加伪造来源/角色/模型/方法反例，后端重绑后续办201。记录和审批配置均保留，不再创建/清理。67目标active，无推送/合并/目标部署。

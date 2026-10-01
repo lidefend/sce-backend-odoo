@@ -554,7 +554,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.234 P1 c8adfea58 assigned-review read-only rule live upgraded; backend rebound c8adfea58. Existing201 now executive37 read_rule/can_review true and origin505 authorized; finance30 and operator44 cannot review. NEXT resume201 through actual executive my-work using existing browser tool bounded continuation (do not create source/record or reconfigure/restore again). Current201 draft/pending, review504 approved30,505 pending37, definition6624 inactive because53.233 restored original config; originalpolicy18 single step2187 active. Observe actual terminal approval and official detail, fix only newly evidenced owning-layer defect (e.g. no speculation about callbacks/config mutation). Retain201 and history per owner, frontendbuild9433fa515 unchanged. L1/193payment+75toolPASS, readonlyruntime4PASS; finalbrowserpending. No ORM/fullinventory/newfixture/push.",
+  "next_exact_step": "53.235 P4 retained201 resume branch added (TPL07_PAYMENT_REVIEW_RESUME=201). Executive actual task505 visible. FirstUI failed shell empty menu; P0 shared actionRoutePolicy/AppShell now admits structurally valid record work-item route for backend contract loading (not auth grant). L1/routeguards/strict typesPASS, one build c6f3f9cbc entryBrwUVS7o on5180. Resume reporttpl07-1790824901661 reaches approve UI then PERMISSION_DENIED user lacks write model sc.payment.execution. No approval success/newrecord/config mutation. NEXT fix P0 security/intent_permission predispatch gate to reuse fresh validate_work_item_action_origin + extension hook grant read before model/rule checks for exact object workitem action; do NOT change generic write-intent classification/preview/replay or skip ACL blindly. Handler execute_button already revalidates origin and honors record_access_mode read, P1hook returnsread. Add security tests forged origin/wrongmodel/id/method/actor deny, generic writes unchanged, then backendbind and resume same201; no frontend rebuild unless changed. Policyoriginalsingle/definition6624inactive remains recorded; fix next observed errors only. Full67 goalactive.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1710,6 +1710,22 @@
       "upgrade": "passed existing smart_construction_core governed upgrade",
       "backend": "rebound c8adfea58 on18082; frontend unchanged",
       "runtime_writes": "module XML only; no new business record/no approval write"
+    },
+    "segment_53_235": {
+      "status": "menu_empty_shell_fixed_execute_permission_gate_blocks_review",
+      "tool_tests": 75,
+      "L1": "passed",
+      "route_tests": "existing route/config10/return2 + new empty-menu12 passed",
+      "strict_types": "passed",
+      "browser_before": "artifacts/frontend-web-fix-20260928/tpl07-1790824689921/report.json",
+      "browser_after": "artifacts/frontend-web-fix-20260928/tpl07-1790824901661/report.json",
+      "frontend_base": "c6f3f9cbc8a08026009d78d771537ef2307ba206",
+      "entry": "/assets/index-BrwUVS7o.js",
+      "entry_sha256": "9c58c533abb3d14c9942c001769324a839c7d675585868c2b7e4524a9e73273a",
+      "builds": 1,
+      "record_retained": 201,
+      "root_cause": "intent_permission access_mode_for_intent(execute_button)=write denies before handler validates work-item read grant",
+      "no_new_records": true
     }
   }
 }
