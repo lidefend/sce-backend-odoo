@@ -48,6 +48,13 @@ function detailStyleScopeIsolated(env) {
     && !Object.entries(env).some(([key, value]) => /^(TPL07_|TPL52_)/.test(key)
       && !['TPL07_SCOPE', 'TPL52_FAMILY'].includes(key) && value && value !== '0');
 }
+const DETAIL_ORIGIN_FIXTURE = Object.freeze({ name: 'FE-DELIVERY-HARDENING-001', companyId: 8, state: 'draft' });
+function detailOriginDomain(fixture) {
+  return [['name', '=', fixture.name], ['company_id', '=', fixture.companyId], ['state', '=', fixture.state]];
+}
+function detailOriginRecord(records) {
+  return Array.isArray(records) && records.length === 1 ? records[0] : null;
+}
 function detailRelationCandidates(authority) {
   const found = [];
   const walk = (nodes) => { for (const node of nodes || []) {
@@ -709,7 +716,8 @@ async function navigationScope() {
 
 async function detailStyleVisualScope(session, inspect) {
   const page = session.page;
-  const sourcePath = '/r/payment.request/1813?menu_id=545&action_id=775';
+  let originId = null;
+  let sourcePath = null;
   const themeState = () => page.evaluate(() => ({ mode: document.documentElement.getAttribute('data-sc-theme-mode'),
     resolved: document.documentElement.getAttribute('data-sc-theme-resolved'), stored: localStorage.getItem('sc_theme') }));
   const initialTheme = await themeState();
@@ -724,8 +732,26 @@ async function detailStyleVisualScope(session, inspect) {
       && localStorage.getItem('sc_theme') === mode && document.documentElement.getAttribute('data-sc-theme-resolved')
         === (mode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode), mode);
   }
+  async function resolveOrigin() {
+    const records = await page.evaluate(async (domain) => {
+      const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+      const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+        body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model: 'payment.request', domain, fields: ['id', 'name', 'company_id', 'state'], limit: 2 } }),
+      });
+      const payload = await response.json();
+      return payload.ok === true ? (payload.data?.records || []) : null;
+    }, detailOriginDomain(DETAIL_ORIGIN_FIXTURE));
+    check('detail origin: governed fixture read', Array.isArray(records));
+    const record = detailOriginRecord(records || []);
+    check('detail origin: unique declared fixture identity', Boolean(record)
+      && record.company_id?.[0] === DETAIL_ORIGIN_FIXTURE.companyId && record.state === DETAIL_ORIGIN_FIXTURE.state,
+      { count: (records || []).length });
+    return { id: record.id, name: record.name, company_id: record.company_id?.[0], state: record.state, match_count: (records || []).length };
+  }
   async function relationRoundTrip(authority, name) {
-    const source = page.locator('[data-detail-composition="official-standard-detail"][data-form-model="payment.request"][data-form-record="1813"][data-state="ok"]');
+    const source = page.locator(`[data-detail-composition="official-standard-detail"][data-form-model="payment.request"][data-form-record="${originId}"][data-state="ok"]`);
     const actionsSnapshot = () => source.locator('[data-action-key]').evaluateAll(nodes => nodes.map(node => ({
       key: node.getAttribute('data-action-key'), label: node.textContent.trim(), enabled: node.getAttribute('data-action-enabled'),
       allowed: node.getAttribute('data-action-allowed'), disabled: node.hasAttribute('disabled'),
@@ -776,10 +802,14 @@ async function detailStyleVisualScope(session, inspect) {
     check(`${name}: exact readonly source restored`, page.url() === originUrl && await source.count() === 1
       && await source.locator('[data-semantic-component="ContractFormProductHeader"][data-state="readonly"]').count() === 1);
     check(`${name}: source action/label restoration`, JSON.stringify(await actionsSnapshot()) === JSON.stringify(beforeActions));
-    report.detailVisual.relations.push({name,status:'passed',field:chosen.field,label:chosen.label,source:{url:originUrl,model:'payment.request',id:1813,profile:'readonly',actions:beforeActions},
+    report.detailVisual.relations.push({name,status:'passed',field:chosen.field,label:chosen.label,source:{url:originUrl,model:'payment.request',id:originId,profile:'readonly',actions:beforeActions},
       target:{contractObservation,contractResponseIndex,url:targetUrl.href,model:target.model,id:target.mainData.id,profile:targetProfile,entry:chosen.entry}});
   }
   try {
+    const resolvedOrigin = await resolveOrigin();
+    originId = resolvedOrigin.id;
+    sourcePath = `/r/payment.request/${originId}?menu_id=545&action_id=775`;
+    report.detailVisual.origin = resolvedOrigin;
     const routeAuthority = report.routeAuthority;
     check('detail visual: exact ordinary finance/company authority', routeAuthority?.principal_scope?.user_id === 30 && routeAuthority.principal_scope.company_id === 8);
     const entries = ['primary_actions','contextual_actions','role_home_actions'].flatMap(key => routeAuthority[key] || []);
@@ -793,7 +823,7 @@ async function detailStyleVisualScope(session, inspect) {
         await inspect(`shell-${theme}-${viewport.width}`, '.product-page-header h1', ['24px','600','32px']);
         await form(page, sourcePath, `style-${name}`, 'readonly');
         const authority = report.recordAuthority;
-        check(`${name}: record/company identity`, authority?.model === 'payment.request' && authority.mainData?.id === 1813 && authority.mainData.company_id?.[0] === 8);
+        check(`${name}: record/company identity`, authority?.model === 'payment.request' && authority.mainData?.id === originId && authority.mainData.company_id?.[0] === 8);
         check(`${name}: real theme persisted through navigation`, JSON.stringify(await themeState()) === JSON.stringify({mode:theme,resolved:theme,stored:theme}));
         const sections = detailExpectedSections(authority);
         const metrics = await page.evaluate(sections => {

@@ -1250,6 +1250,18 @@ assert.equal(detailStyleScopeIsolated(valid),true);
 for(const patch of [{TPL07_SCOPE:'approval-actions'},{TPL52_FAMILY:'all'},{TPL07_REPORT_SAVE_SUCCESS:'1'},{TPL07_PAYMENT_SOURCE_FLOW:'rental'},{TPL52_UNKNOWN:'x'}]) assert.equal(detailStyleScopeIsolated({...valid,...patch}),false);
 """)
 
+    def test_detail_origin_identity_is_declared_and_unique(self):
+        self.run_js("""
+assert.deepEqual(detailOriginDomain(DETAIL_ORIGIN_FIXTURE),[['name','=','FE-DELIVERY-HARDENING-001'],['company_id','=',8],['state','=','draft']]);
+assert.equal(detailOriginRecord([{id:1845,name:'FE-DELIVERY-HARDENING-001'}]).id,1845);
+for(const value of [null,undefined,[],[{id:1},{id:2}],'x',{}]) assert.equal(detailOriginRecord(value),null);
+""")
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        detail = source.split('async function detailStyleVisualScope', 1)[1].split('\nasync function styleScope()', 1)[0]
+        self.assertNotIn('payment.request/1813', detail)
+        self.assertIn('detailOriginDomain(DETAIL_ORIGIN_FIXTURE)', detail)
+        self.assertIn('data-form-record="${originId}"', detail)
+
     def test_relation_requires_explicit_authority_and_nonempty_identity(self):
         self.run_js("""
 const field={type:'field',name:'project_id',fieldInfo:{relation_entry:{can_read:true,can_open:true,model:'project.project',menu_id:12,action_id:34}}};
