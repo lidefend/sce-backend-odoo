@@ -125,6 +125,11 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    if (process.env.TPL07_SCOPE === 'scene-entry' && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent)) {
+      report.forbiddenWrites.push({ intent: body.intent, reason: 'scene entry scope is read-only' });
+      return route.abort();
+    }
+
     const paymentKind = paymentReviewWriteKind(role, body, paymentReview);
     if (paymentKind) {
       paymentReview.phase = `${paymentKind}_in_flight`;
@@ -349,6 +354,11 @@ async function login(role) {
       if (process.env.TPL07_PLAN_EXECUTION === '1' && body?.intent === 'api.data' && body.params?.op === 'read' && body.params?.model === 'sc.plan.line') {
         report.planNodeReads ??= [];
         report.planNodeReads.push({ request: body.params, result: await response.json() });
+      }
+      if (process.env.TPL07_SCOPE === 'scene-entry' && ['workspace.home.enter', 'dashboard.company.enter', 'project.dashboard.enter'].includes(body?.intent)) {
+        const result = await response.json();
+        report.sceneEntryCalls ??= [];
+        report.sceneEntryCalls.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data) });
       }
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
@@ -676,7 +686,39 @@ async function styleScope() {
 }
 
 try {
-  if (process.env.TPL07_SCOPE === 'expense-policy') {
+  if (process.env.TPL07_SCOPE === 'scene-entry') {
+    for (const [role, entries] of [
+      ['fixture_role_finance', [['workspace.home', 'workspace.home.enter']]],
+      ['fixture_role_executive', [['dashboard.company', 'dashboard.company.enter'], ['project.management', 'project.dashboard.enter']]],
+    ]) {
+      const { page, ctx } = await login(role);
+      for (const [scene, intent] of entries) {
+        const before = report.sceneEntryCalls?.length || 0;
+        await page.goto(`${base}/s/${scene}${scene === 'project.management' ? '?project_id=10' : ''}`);
+        const surface = page.locator('[data-semantic-component="SceneContractBlockGridView"]');
+        await surface.waitFor({ timeout: 60000 });
+        await page.waitForFunction(() => document.querySelector('[data-semantic-component="SceneContractBlockGridView"]')?.getAttribute('data-state') === 'idle', undefined, { timeout: 60000 });
+        check(`${scene}: declared entry succeeded`, (report.sceneEntryCalls || []).slice(before).some(row => row.role === role && row.intent === intent && row.success));
+        check(`${scene}: one shared contract block renderer`, await surface.count() === 1);
+        for (const width of [1440, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+          check(`${scene}: usable viewport ${width}`, !overflow);
+          await page.screenshot({ animations: 'disabled', path: path.join(out, `scene-${scene}-${width}.png`), fullPage: true });
+        }
+        await page.setViewportSize({ width: 1440, height: 900 });
+        const link = page.locator('a[href="/my-work"]').first();
+        await link.click();
+        await page.waitForURL(url => url.pathname === '/my-work');
+        await surface.waitFor({ state: 'hidden' });
+        const after = report.sceneEntryCalls?.length || 0;
+        await page.waitForTimeout(700);
+        check(`${scene}: cached scene stops after leaving route`, (report.sceneEntryCalls?.length || 0) === after);
+      }
+      check(`${role}: real startup loaded`, report.startup.some(row => row.role === role && row.intent === 'system.init' && row.success));
+      await ctx.close();
+    }
+  } else if (process.env.TPL07_SCOPE === 'expense-policy') {
     const admin = await login('fixture_role_config_admin');
     const resolveEntry = (xmlid) => {
       const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
