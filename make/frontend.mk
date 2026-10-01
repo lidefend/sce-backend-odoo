@@ -131,6 +131,7 @@ verify.frontend.system_state_recovery.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.scene_entry_contract.unit
 verify.frontend.scene_entry_contract.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind grid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-entry-contract-test.mjs >/dev/null
 	@node /tmp/scene-entry-contract-test.mjs
 	@python3 addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py
@@ -153,6 +154,7 @@ verify.frontend.record_form_return.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.boq_import_preview.unit
 verify.frontend.boq_import_preview.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind boq
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/boq_import_preview_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/boq-import-preview-model-test.mjs >/dev/null
 	@node /tmp/boq-import-preview-model-test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_boq_import_preview_guard.py
@@ -160,6 +162,7 @@ verify.frontend.boq_import_preview.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.chart_dataset.unit
 verify.frontend.chart_dataset.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/readonly_block_component_test.mjs --kind chart
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/chart_dataset_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/chart-dataset-model-test.mjs >/dev/null
 	@node /tmp/chart-dataset-model-test.mjs
 	@python3 scripts/verify/frontend_chart_engine_guard.py
