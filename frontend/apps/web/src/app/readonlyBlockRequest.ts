@@ -62,13 +62,13 @@ export function createReadonlyBlockLoader<T>(hooks: {
   let generation = 0;
   let disposed = false;
   return {
-    async load(fetcher: (() => Promise<T>) | null): Promise<void> {
+    async load(fetcher: ((isCurrent: () => boolean) => Promise<T>) | null): Promise<void> {
       const current = ++generation;
       if (disposed) return;
       hooks.reset(Boolean(fetcher));
       if (!fetcher) return;
       try {
-        const value = await fetcher();
+        const value = await fetcher(() => !disposed && generation === current);
         if (!disposed && generation === current) hooks.success(value);
       } catch (error) {
         if (!disposed && generation === current) hooks.error(error);

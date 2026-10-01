@@ -70,3 +70,26 @@ equal(projected?.target.entry_intent, 'custom.override');
 equal(resolveSceneContractEntryIntent({ ...base, routeName: 'scene', declaredTarget: projected?.target }), 'custom.override');
 equal(getSceneByKey('project.management'), null, 'no synthetic scene when absent from effective contract');
 console.log(`[scene_entry_contract_test] PASS cases=${cases}`);
+
+import { resolveSceneRuntimeFetchRequest } from '../src/app/sceneRuntimeFetchContract';
+import { createReadonlyBlockLoader } from '../src/app/readonlyBlockRequest';
+const declaredHint = { intent: 'custom.block.fetch', params: { block_key: 'first', project_context: { project_id: 7, allowed: [1, 2] }, filters: [['state', '=', 'done']] }, context: { company_id: 8, nested: { key: 'value' } } };
+assert.deepEqual(resolveSceneRuntimeFetchRequest(declaredHint), declaredHint); cases += 1;
+assert.deepEqual(resolveSceneRuntimeFetchRequest({ intent: 'custom.unlisted.fetch', params: { arbitrary: { nested: true } } }),
+  { intent: 'custom.unlisted.fetch', params: { arbitrary: { nested: true } } }); cases += 1;
+assert.deepEqual(resolveSceneRuntimeFetchRequest({ intent: 'custom.block.fetch', params: {}, project_id: 7, block_key: 'legacy' }),
+  { intent: 'custom.block.fetch', params: {} }); cases += 1;
+for (const hint of [null, [], {}, { intent: 7, params: {} }, { intent: 'fetch', params: [] }, { intent: 'fetch', params: {}, context: false }]) {
+  equal(resolveSceneRuntimeFetchRequest(hint), null);
+}
+let published = 0;
+const lifecycle = createReadonlyBlockLoader<number>({ reset() {}, success() { published += 1; }, error() {}, settled() {} });
+let current!: () => boolean;
+let resolvePending!: (value: number) => void;
+const pending = lifecycle.load(isCurrent => { current = isCurrent; return new Promise(resolve => { resolvePending = resolve; }); });
+equal(current(), true);
+await lifecycle.load(null);
+equal(current(), false);
+resolvePending(1); await pending;
+equal(published, 0);
+console.log(`[scene_runtime_fetch_contract_test] PASS total_cases=${cases}`);
