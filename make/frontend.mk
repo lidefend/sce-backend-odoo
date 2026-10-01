@@ -75,7 +75,7 @@ verify.frontend.scene_component_bridge.guard: guard.prod.forbid
 
 verify.frontend.scene_component_bridge.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -eu; \
-	password="$$(python3 -c 'import secrets; print(secrets.token_hex(24))')"; export SC_ACCEPTANCE_FIXTURE_PASSWORD="$$password"; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory db.frontend.acceptance.ensure DB_NAME=sc_frontend_acceptance; \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=sc_frontend_acceptance; \
 	cleanup() { \
@@ -1009,8 +1009,10 @@ define sc_list_preview_explicit_input
 $(if $(filter command line environment override,$(2)),$(if $(strip $(3)),$(if $(filter-out $(4),$(strip $(3))),$(error DENY standard list explicit $(1) mismatch),$(if $(filter-out 1,$(words $(3))),$(error DENY standard list explicit $(1) mismatch)))))
 endef
 
-.PHONY: verify.frontend.list_surface_structure.browser
-verify.frontend.list_surface_structure.browser: guard.prod.forbid
+.PHONY: verify.frontend.list_surface_search_contract.unit verify.frontend.list_surface_structure.browser
+verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
+verify.frontend.list_surface_structure.browser: guard.prod.forbid verify.frontend.list_surface_search_contract.unit
 	$(foreach key,$(SC_LIST_PREVIEW_URL_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),http://127.0.0.1:5180))
 	$(foreach key,$(SC_LIST_PREVIEW_DB_KEYS),$(call sc_list_preview_explicit_input,$(key),$(origin $(key)),$($(key)),sc_frontend_acceptance))
 	$(foreach key,DB_NAME DB BD,$(call sc_list_preview_explicit_input,$(key),$(REQUESTED_$(key)_ORIGIN),$(REQUESTED_$(key)),sc_frontend_acceptance))

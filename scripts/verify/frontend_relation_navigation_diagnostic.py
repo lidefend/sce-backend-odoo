@@ -3,6 +3,10 @@
 Runs inside the registered acceptance backend against the fixed acceptance
 database. It never writes: the transaction is read-only and rolled back.
 It reports the exact denial stage for one declared relation navigation.
+
+The origin record identity is resolved from the governed fixture declaration
+(stable fixture name bound to model, owning company and expected business
+state, requiring a unique match); no record id is hardcoded.
 """
 import json
 
@@ -17,13 +21,56 @@ from odoo.addons.smart_core.core.relation_action_authority import (
     positive_relation_id, validate_relation_action_origin,
 )
 
+FIXTURE_MODEL = 'payment.request'
+FIXTURE_NAME = 'FE-DELIVERY-HARDENING-001'
+FIXTURE_COMPANY_NAME = 'FE Company A'
+FIXTURE_EXPECTED_STATE = 'draft'
+FIXTURE_RELATION_FIELD = 'partner_id'
+PARENT_ACTION_ID = 775
+PARENT_MENU_ID = 545
+# Declared child target contract: the partner record form.
 MODEL = 'res.partner'
-RECORD_ID = 56
 ACTION_ID = 324
 MENU_ID = 164
-ORIGIN = {'model': 'payment.request', 'record_id': 1813, 'field': 'partner_id',
-          'action_id': 775, 'menu_id': 545}
 LOGIN = 'fixture_role_finance'
+
+
+def _resolve_unique(records, label):
+    """Return the single record matching a governed fixture declaration."""
+    count = len(records)
+    if count != 1:
+        raise RuntimeError(f'{label} requires a unique match, found {count}')
+    return records
+
+
+company = _resolve_unique(
+    env['res.company'].sudo().search([('name', '=', FIXTURE_COMPANY_NAME)], limit=2),
+    f'fixture company {FIXTURE_COMPANY_NAME}',
+)
+parent = _resolve_unique(
+    env[FIXTURE_MODEL].sudo().search([
+        ('name', '=', FIXTURE_NAME),
+        ('company_id', '=', company.id),
+        ('state', '=', FIXTURE_EXPECTED_STATE),
+    ], limit=2),
+    f'fixture {FIXTURE_MODEL} {FIXTURE_NAME} company={company.id} state={FIXTURE_EXPECTED_STATE}',
+)
+parent_partner = _resolve_unique(parent[FIXTURE_RELATION_FIELD], f'{FIXTURE_MODEL}.{FIXTURE_RELATION_FIELD}')
+child_model = parent._fields[FIXTURE_RELATION_FIELD].comodel_name
+assert child_model == MODEL, f'fixture relation comodel {child_model} != declared target {MODEL}'
+PARENT_RECORD_ID = parent.id
+RECORD_ID = parent_partner.id
+ORIGIN = {'model': FIXTURE_MODEL, 'record_id': PARENT_RECORD_ID, 'field': FIXTURE_RELATION_FIELD,
+          'action_id': PARENT_ACTION_ID, 'menu_id': PARENT_MENU_ID}
+print('RELATION_NAV_RESOLVED_IDENTITY', json.dumps({
+    'parent_model': FIXTURE_MODEL,
+    'parent_record_id': PARENT_RECORD_ID,
+    'parent_company_id': company.id,
+    'parent_state': FIXTURE_EXPECTED_STATE,
+    'relation_field': FIXTURE_RELATION_FIELD,
+    'child_model': child_model,
+    'child_record_id': RECORD_ID,
+}, ensure_ascii=False))
 
 
 def _attempt(function, *arguments):
@@ -65,24 +112,27 @@ result = handler.handle()
 envelope = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
 print('RELATION_NAV_RESPONSE', json.dumps(envelope, ensure_ascii=False, default=str))
 
-stages = {'parent_entry_denied': handler._validate_relation_parent_entry(775, 545, 'payment.request')}
+stages = {'parent_entry_denied': handler._validate_relation_parent_entry(
+    PARENT_ACTION_ID, PARENT_MENU_ID, FIXTURE_MODEL)}
 
-parent = actor['payment.request'].browse(1813).exists()
-stages['parent_exists'] = bool(parent)
-if parent:
-    stages['parent_read_rights'] = _attempt(parent.check_access_rights, 'read')
-    stages['parent_read_rule'] = _attempt(parent.check_access_rule, 'read')
-    field = parent._fields.get('partner_id')
+parent_actor_record = actor[FIXTURE_MODEL].browse(PARENT_RECORD_ID).exists()
+stages['parent_exists'] = bool(parent_actor_record)
+if parent_actor_record:
+    stages['parent_read_rights'] = _attempt(parent_actor_record.check_access_rights, 'read')
+    stages['parent_read_rule'] = _attempt(parent_actor_record.check_access_rule, 'read')
+    field = parent_actor_record._fields.get(FIXTURE_RELATION_FIELD)
     stages['parent_field_model'] = getattr(field, 'comodel_name', None)
-    stages['parent_membership'] = RECORD_ID in parent['partner_id'].ids
+    stages['parent_membership'] = RECORD_ID in parent_actor_record[FIXTURE_RELATION_FIELD].ids
 
 try:
-    contract = handler._load_relation_contract(model='payment.request', record_id=1813, action_id=775, menu_id=545)
+    contract = handler._load_relation_contract(
+        model=FIXTURE_MODEL, record_id=PARENT_RECORD_ID,
+        action_id=PARENT_ACTION_ID, menu_id=PARENT_MENU_ID)
     stages['parent_contract_loaded'] = True
     stages['parent_effective_read'] = bool(
         contract.get('statusContract', {}).get('globalStatus', {})
         .get('effectiveRecordCapabilities', {}).get('read'))
-    node = _find_field(contract.get('layoutContract'), 'partner_id')
+    node = _find_field(contract.get('layoutContract'), FIXTURE_RELATION_FIELD)
     stages['parent_field_node_found'] = bool(node)
     if node:
         entry = (node.get('fieldInfo') or {}).get('relation_entry') or node.get('relation_entry') or {}

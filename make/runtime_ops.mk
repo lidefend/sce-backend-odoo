@@ -1800,19 +1800,19 @@ acceptance.frontend.release_snapshot: guard.prod.forbid
 
 acceptance.frontend.core_record_form.journeys: guard.prod.forbid
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; \
 	export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh core-record-form-journeys
 
 .PHONY: acceptance.frontend.activity_surface.browser verify.frontend.activity_surface.browser.internal
 acceptance.frontend.activity_surface.browser: guard.prod.forbid
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh activity-surface-browser
 
 verify.frontend.activity_surface.browser.internal: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -1876,7 +1876,7 @@ verify.frontend.navigation.access: guard.prod.forbid check-compose-project check
 
 verify.frontend.page_identity.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -2009,7 +2009,7 @@ verify.frontend.delivery_hardening.browser: guard.prod.forbid check-compose-proj
 verify.frontend.delivery_hardening.release.performance_probe: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.performance_probe: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
@@ -2029,7 +2029,7 @@ verify.frontend.delivery_hardening.release.performance_probe: guard.prod.forbid 
 verify.frontend.delivery_hardening.release.browser: ACCEPTANCE_BASE_URL := $(FRONTEND_ACCEPTANCE_BASE_URL)
 verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-compose-project check-compose-env
 	@set -e; \
-	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
 	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
 	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
