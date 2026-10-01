@@ -2,20 +2,22 @@
 
 This ledger records reference details that cannot be implemented safely from the current authoritative payload. They are not permission to infer values in the frontend.
 
-## Current local capability status (2026-10-01, segments 53.245–53.252)
+## Current actual-effect status (2026-10-01, segment53.254)
 
-The detail ledger now has 58 aligned and 9 not-applicable entries. `detail.action-state`
-is aligned for the confirmed local capability scope after the original six business
-responsibilities, shared approval execution and legacy retirement were reconciled in
-the existing run. The earlier chronological gap notes below are retained as history;
-their current disposition and original evidence remain in
-`.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`, not a second coverage table.
+The original goal is active again: code capability closure does not establish that
+all custom frontend rendering and interaction match the official templates.
+Current candidate screenshots (report `tpl07-1790835439881`) pass 44 technical style
+assertions but still show a single anchored form container and stacked fact labels.
+The official base/advanced sources use separate Cards and horizontal Descriptions.
+`detail.container` and `detail.description-grid` are therefore reopened as
+`needs_work`; the ledger now has 56 aligned, 9 not-applicable and 2 needs-work entries.
+Preserve native business fields/groups/actions while repairing their P0 presentation.
 
-Chart/BOQ declared request consumption and scene deferred-request context/lifetime
-were repaired in segment 53.252 with real Vue component mounting at mocked transport
-boundaries. Unpublished scene/family UI, plan terminal visuals and configured multi-role
-UI remain unaccepted. Local capability alignment does not imply all49 end-to-end
-coverage, a clean lexical audit, mainline integration, deployment or target-user delivery.
+Earlier capability, runtime and browser evidence remains indexed in the original
+`.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`. Historical completion text
+below is not the current overall verdict. Mocked mounting, ledger classification and
+unpublished-surface exclusions cannot substitute for real effects confirmation.
+Publication, mainline integration, deployment and target-user delivery remain separate.
 
 ## P0 contract gaps
 

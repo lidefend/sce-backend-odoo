@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "feature/web-official-template-adoption",
-  "status": "completed",
+  "status": "active",
   "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
@@ -663,10 +663,12 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Completed local-only goal: do not replay writes or continue this historical run. Any future publication/version/target-user acceptance work requires a new explicitly scoped goal and reuse analysis.",
+  "blockers": [
+    "Formal page-type visual and interaction evidence has not been fully reconciled; mounted/mock tests and ledger counts are insufficient."
+  ],
+  "next_exact_step": "Read current dual-viewport detail screenshots against pinned official references; identify P0 presentation deviations and issue bounded A implementation order; preserve business contract.",
   "completion": {
-    "batch": "passed: local functional scope and consolidated product review complete",
+    "batch": "in_progress: resume original formal rendering and interaction acceptance",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
@@ -2635,7 +2637,8 @@
         "artifacts/frontend-web-fix-20260928/tpl52/approval-capability-closure-ledger.log"
       ],
       "reuse": "metadata preservation does not change existing HTTP metadata suTrue or ordinary businessFalse; no duplicate source, redflush, document, configured payment matrix",
-      "not_run": "Quick/PR/deploy: local iteration only; unpublished user acceptance remains separate"
+      "not_run": "Quick/PR/deploy: local iteration only; unpublished user acceptance remains separate",
+      "ledger_current_note": "Previous58aligned9NA classification superseded for visual goal; two P0 presentation entries reopened at53.254, business capability evidence preserved."
     },
     "readonly_block_request": {
       "status": "passed",
@@ -2768,7 +2771,41 @@
       "impact": "final docs and dependency metadata only; original nonzero L2/runtime/mounted/build evidence remains input-equivalent; no new gate receipt claimed",
       "resume": "resolved/exit0 after dependency corrections; artifacts/frontend-web-fix-20260928/tpl52/local-goal-final-resume.log"
     },
-    "local_goal": "completed: local functional capability only"
+    "local_goal": "incomplete: prior code milestone retained; actual official-template rendering and interaction confirmation required",
+    "owner_scope_correction": {
+      "head": "3a748c8238bf25043e18a659ee9616b0200871db",
+      "reason": "Owner reconfirmed original branch goal is formal rendering and interaction returning to official template; previous capability-only completion was too narrow",
+      "reuse": "retain prior valid code, targeted, browser and build evidence; no automatic rerun or write replay",
+      "completion_rule": "real browser page-type composition, actual interaction and visual evidence reviewed against pinned official template; unverified scope stays open"
+    },
+    "formal_effect_review": {
+      "status": "in_progress",
+      "candidate": "3a748c823 + goal/run/docs correction only",
+      "frontend_build": "de4d6b0607dc34d935e4967935b003e1393d223e",
+      "reference": "aeed57076217f7777158b905f353d73585bad1c4 source and official-starter-reference screenshots",
+      "first_scope": "published finance30 company8 menu545 action775 readonly payment1813 plus shell/list dual viewport",
+      "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/formal-template-detail-observation.log",
+      "reason": "B visually identified old actual detail vs official Card/Descriptions differences; new actual-effect criterion not covered by old style assertions",
+      "reuse": "current build and prior L1/L2/strict passed; no product input change from final tested de4d6b060. No backendrefresh/build, no business write, no prior unchanged failure retry",
+      "reviewer_findings": "old tabs/section-group hierarchy/stacked labels need current visual comparison; no conclusion yet about business-required structure",
+      "first_result": {
+        "script_status": "passed",
+        "assertions": 44,
+        "report": "artifacts/frontend-web-fix-20260928/tpl07-1790835439881/report.json",
+        "visual_status": "needs_work",
+        "owner": "P0 readonly presentation",
+        "observed": "current detail1440 large anchored form container and stacked labels vs official separate Cards/horizontal Descriptions",
+        "writes": 0,
+        "ledger_reopened": [
+          "detail.container",
+          "detail.description-grid"
+        ],
+        "next": "A readonly source/official-reference comparison then scoped code order; no further browser matrix until owning-layer repair",
+        "independent_review": "B confirms current1440/390 Card separation, generic anchor navigation, heading hierarchy and desktop horizontal fact layout deviations; retain all native business semantics",
+        "ledger_counts": "56aligned9not_applicable2needs_work"
+      }
+    }
   },
   "owner_iteration_authority_20261001": {
     "instruction": "开发期间验收数据可以随时适配，开发数据保护不作为前置；持续迭代直到本分支目标达成；必须遵守智能体协作流程",
@@ -2778,37 +2815,34 @@
   },
   "collaboration": {
     "coordinator_and_single_writer": "/root",
-    "implementation": "All A/B tasks complete, A write token returned; root completed final records. No active code or runtime writer.",
+    "implementation": "root sole metadata writer; A implementation planning and B evidence audit read-only until explicit code order",
     "read_only_reviewers": {
       "concurrency_review": "P4 two-transaction business conflict code/test review",
       "scene_boundary_review": "remaining P1/P0 business responsibility and browser execution order review"
     },
     "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
     "workflow": ".agent/workflows/runtime-fixture.yaml",
-    "stage_identity": "de4d6b060 + dirty final docs/run; local batch identity, not frozen delivery candidate",
-    "handoff": "Current branch maps to this completed run; resume reports closed. Original evidence remains the single index; no external operation or database write is authorized by this handoff."
+    "stage_identity": "3a748c823 + dirty goal/run correction",
+    "handoff": "Resume original goal per owner clarification; previous closed status is superseded, evidence retained, no automatic write replay."
   },
   "current_execution_order": {
-    "objective": "Finish declared scene block request consumption and verify actual component lifecycle wiring",
-    "formal_product_layer": "P0 with P4 test support",
-    "layer_target": "SceneContractBlockGridView declaration and entry/hydration lifetime; existing frontend test entrypoints",
-    "module": "frontend/apps/web",
-    "standard_vs_user_specific": "generic renderer consumes existing P1 runtime_fetch_hints; no industry defaults",
-    "why_here": "grid synthesizes route project context and publishes old entry/block responses",
-    "why_not_elsewhere": "P1 already declares full params; do not change ACL/publication or backend, do not add missing readonly requirement",
-    "blast_radius": "scene block grid entry/deferred fetch; shared readonly loader backward-compatible current predicate",
+    "formal_product_layer": "P4",
+    "layer_target": "original goal/run and governed browser evidence reconciliation",
+    "module": ".agent and existing frontend acceptance tools",
+    "standard_vs_user_specific": "verification governance, not business defaults",
+    "why_here": "correct premature completion and bind real effect checks to original goal",
+    "why_not_elsewhere": "no product code or publication change before observed deviation",
+    "blast_radius": "original task metadata and bounded evidence review only",
     "scope": [
-      "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
-      "frontend/apps/web/src/app/sceneRuntimeFetchContract.ts",
-      "frontend/apps/web/src/app/readonlyBlockRequest.ts",
-      "frontend/apps/web/scripts/scene_entry_contract_test.ts",
-      "frontend/apps/web/scripts/readonly_block_component_test.mjs",
-      "make/frontend.mk"
+      ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
+      ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+      "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
+      "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+      "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md"
     ],
-    "writer": "root after A returned token",
-    "risk": "nested params/context authority and request lifecycle; readonly transport only",
-    "validation": "L1; scene_entry_contract + chart_dataset + boq_import_preview including actual SFC mount with mocked transport; strict; B; single affected build after convergence",
-    "skips": "no DB writes/backendupgrade; published scene positive browser blocked by existing route_authority, not bypassed; no approval matrix/Quick/remote",
-    "status": "completed"
+    "writer": "root metadata only; A/B read-only evidence reconciliation",
+    "status": "in_progress",
+    "validation": "resume identity, existing browser receipts/screenshots and pinned official reference; next product/tool change gets explicit owner and focused checks",
+    "skips": "no new build/backend refresh; current product inputs unchanged, no full matrix before coverage reconciliation"
   }
 }
