@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
-  "branch": "fix/daily-official-template-acceptance",
-  "status": "active",
+  "branch": "fix/run-closeout-fe-template-adoption",
+  "status": "completed",
   "baseline_sha": "2d164a1fed2066307774c82db2e65def80bff70d",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
@@ -1020,16 +1020,16 @@
     }
   },
   "blockers": [
-    "Deployment/version release not performed and not authorized: mainline integration, deployment and product acceptance stay separate statuses.",
-    "Owner decision still open (not self-authorized): addons/smart_core/contract.schema.json is a tracked empty file no code references; keep as placeholder or remove in a separate P0 change.",
+    "Deployment/version release explicitly deferred by owner decision (2026-10-02): mainline integration completed via PR #527; deployment and product acceptance stay separate statuses and require a fresh owner authorization when pursued.",
+    "Owner decision recorded (2026-10-02): addons/smart_core/contract.schema.json stays as a tracked empty placeholder; no removal change is scheduled (decision closed, kept for future schema use).",
     "Retained post-deploy data limitation (not an evidence delta): historical attachment content is unavailable and metadata rendering does not restore it; this stays a data limitation, not a restored-file claim.",
     "Environment scope note (bounded, not a general 'environment all-pass'): the earlier DENY on volume sc_fe_r2_p1_01_odoo was that the rebuild entry demanded exactly one mount consumer while two declared consumers exist. Step (b) replaced the raw count with the declared topology (one non-oneoff compose carrier plus only the declared oneoff mounters) and acceptance.runtime.baseline_recovery.audit now PASSES with declared_consumers=2 for odoo. Foreign owners, undeclared oneoff mounters and non-odoo volumes are still DENY."
   ],
-  "next_exact_step": "Create/edit and workbench minimum evidence landed at the clean HEAD 1317c9db9: the acceptance backend was recreated at 1317c9db9 (healthy) and the frontend standard preview rebuilt clean-bound to the same head (entry /assets/index-CGKrPxOb.js); the create-edit lane passed 48/48 assertions and the scene-entry home workbench lane passed 20/20 assertions with zero errors and zero forbidden writes, both receipts recorded at the clean head. The original-list evidence delta is closed; only the retained post-deploy attachment-content data limitation remains as a recorded limit. Remaining decisions stay with the owner: the addons/smart_core/contract.schema.json empty placeholder keep/remove and the deployment/version release which needs explicit owner authorization.",
+  "next_exact_step": "Run closed as completed at the closeout branch: PR #527 landed the full successor chain (offline contract custody, wire-or-retire guard dispositions, create/edit-workbench minimum evidence) into main as f9d2f1d9f with an exact-head Quick pass at 4ab1b5eab and all remote gates green; the owner decided on 2026-10-02 to keep the addons/smart_core/contract.schema.json placeholder and to defer deployment/version release. No further executor work is scheduled under this run; a future deployment or a new evidence batch starts from main f9d2f1d9f under a fresh run with explicit owner authorization.",
   "completion": {
-    "batch": "passed: declared-authority projection consumed by both action presenters with negative-first behavioural proof; targeted L2 and typecheck to be refreshed for this layer",
-    "mainline": "completed for the prior candidate: PR #526 merged (squash) as c4ef5339475947f0ac4fda1350851148b8dc5942; origin/main tree is identical to the previous branch tip aeff26d78",
-    "deployment": "not performed and not authorized",
+    "batch": "passed: all successor steps closed with clean-HEAD-bound receipts (offline custody, guard dispositions, create/edit-workbench minimum evidence); final delivery frozen, Quick-passed and merged",
+    "mainline": "completed: PR #527 merged (squash) as f9d2f1d9f22a24c125c85145d8dcee66edc0d0d6 on 2026-10-02; the merge head 4ab1b5eab carried a byte-identical tree to the frozen candidate 6a1672b13 (main-merge reconciliation with branch-side resolution, zero content change, no force push); local main was synced with explicit refspec and double-confirmed against the API sha; the remote branch was deleted",
+    "deployment": "not performed; explicitly deferred by owner decision on 2026-10-02 (revisit with a fresh owner authorization)",
     "product_acceptance": "not claimed"
   },
   "owner_iteration_authority_20261001": {
@@ -3036,6 +3036,25 @@
       "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
       "retained post-deploy data limitation: historical attachment content is unavailable and metadata rendering does not restore it",
       "deployment/version release needs explicit owner authorization"
+    ]
+  },
+  "successor_step9_mainline_closeout_20261002": {
+    "stage": "mainline integration closeout and owner decision recording; run closure",
+    "freeze": "make ci.delivery.freeze.prepare refreshed 5 generated-evidence files (test_inventory assets for the gap-1 unittest cases plus a full CSV reorder); frozen candidate 6a1672b13 (chore(evidence): refresh tracked generated reports for the frozen candidate)",
+    "quick": [
+      "6a1672b13: make ci.local.quick PASS (12m9s) on the frozen candidate",
+      "4ab1b5eab: make ci.local.quick PASS (12m53s) on the merge head after the main-merge reconciliation (same tree as 6a1672b13)"
+    ],
+    "pr": "PR #527 (fix/daily-official-template-acceptance 6a1672b13 -> main); initially CONFLICTING because the #526 squash commit and the successor commits overlap on the common base 2d164a1fe; resolved by merging origin/main into the branch with branch-side resolution and a scripted proof that the resulting tree is byte-identical to the pre-merge HEAD (merge commit 4ab1b5eab, zero content change, no force push); PR became MERGEABLE immediately and the body was updated via the REST API (gh pr edit silently failed)",
+    "merge": "squash-merged as f9d2f1d9f22a24c125c85145d8dcee66edc0d0d6 after all 4 remote gates returned SUCCESS; local main synced with the explicit +main refspec and double-confirmed against the API sha; remote branch deleted",
+    "owner_decisions_20261002": {
+      "contract_schema_placeholder": "keep: addons/smart_core/contract.schema.json stays as a tracked empty placeholder; no removal change scheduled",
+      "deployment": "defer: deployment/version release not triggered; a fresh owner authorization is required when pursued"
+    },
+    "closeout": "run status set to completed on the closeout branch fix/run-closeout-fe-template-adoption (rebound in .agent/active-runs.json and run.branch with make agent.run.resume re-validated); acceptance evidence, documentation and the code rollback anchor (d36186b4f) are all recorded; deployment and product acceptance remain separate unclaimed statuses per the owner decision",
+    "remaining": [
+      "retained post-deploy data limitation: historical attachment content is unavailable and metadata rendering does not restore it",
+      "deployment/version release deferred by owner decision; requires fresh authorization when pursued"
     ]
   }
 }
