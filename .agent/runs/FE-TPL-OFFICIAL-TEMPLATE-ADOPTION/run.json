@@ -867,15 +867,25 @@
         "scripts/verify/relation_read_closure_guard.py",
         "make/frontend.mk"
       ]
+    },
+    "detail_style_scope": {
+      "target": "verify.frontend.standard_page_type.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ]
     }
   },
   "blockers": [
-    "Remaining original formal-effect responsibilities retained in completion.remaining_delivery / system_scope_correction.remaining_acceptance; the deferred native-action form-interaction and published workspace/home observations were not implemented in this round.",
-    "Acceptance-volume mount audit keeps its fail-closed DENY: volume sc_fe_r2_p1_01_odoo declares one consumer but two containers mount it in project sc-fe-r2-p1-01 (the governed verification backend on 18082 and the profile compose credential carrier on 19083). Not relaxed and not bypassed by container surgery; audit PASS is deferred to an owner-coordinated baseline rebuild/snapshot window that must keep 18082."
+    "Remaining original formal-effect responsibilities retained in completion.remaining_delivery / system_scope_correction.remaining_acceptance: the original checklist's create/edit representative interactions and published workspace/home observation still need their minimal evidence gap closed.",
+    "Rebuild/snapshot lane blocker only: the acceptance-volume mount audit keeps its fail-closed DENY for sc_fe_r2_p1_01_odoo (declared single consumer, two actual mounters in project sc-fe-r2-p1-01). This is NOT a claim that the environment generally passes; other environment checks are separate and unchanged. Audit PASS is deferred to an owner-coordinated rebuild/snapshot window that keeps 18082."
   ],
-  "next_exact_step": "Owner-assigned next executor: (1) implement the remaining original formal-effect responsibilities (native-action form-interaction scope and published workspace/home observation deferred in completion.remaining_delivery); (2) at final freeze run make ci.delivery.freeze.prepare, one clean-HEAD make ci.local.quick, independent review, then PR; (3) run the acceptance-volume mount audit PASS only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082, never by relaxing the audit or operating the container directly. Do not re-run unchanged passing layers.",
+  "next_exact_step": "Owner-assigned next executor: (1) close the original checklist's create/edit representative interactions and the published workspace/home minimal evidence gap, reusing the current build, backend revision 02d28a06d and the governed fixture identity 1845/8/56. The other verify.frontend.standard_page_type scope families (all/form/overlay, task-authority, detail-state, payment-readonly, payment-master-detail) still hardcode the stale origin id and need the same governed resolution before they are run. (2) Only then run batch freeze preparation, one clean-HEAD make ci.local.quick, independent review and PR. (3) Run the acceptance-volume mount audit PASS only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082.",
   "completion": {
-    "batch": "in_progress: this round closed both open acceptance failures (relation navigation 403, list selection timeout) plus three additional P0/P1 root causes and repaired the probes; remaining original formal-effect responsibilities and final freeze/Quick/independent review still open",
+    "batch": "in_progress: this round closed both open acceptance failures, three additional P0 root causes and the list-surface probes, and then closed the detail actual-effect scope (themes/viewports/relation round-trip) on the governed fixture; create/edit and published workspace/home evidence gaps and final freeze/Quick/independent review remain open",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
@@ -3566,7 +3576,7 @@
     },
     "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
     "workflow": ".agent/workflows/runtime-fixture.yaml",
-    "stage_identity": "146e47a2d (HEAD) + this run.json metadata scope; product and verification-tool tree clean at commit",
+    "stage_identity": "b31df700b (HEAD) + this run.json metadata scope; product and verification-tool tree clean at commit",
     "handoff": "assigned executor closed the round and returned results; the remaining original formal-effect responsibilities and final freeze/Quick/independent review stay open under this same run.",
     "writer": "owner-assigned executor (this session)"
   },
@@ -3710,23 +3720,23 @@
       },
       "4_empty_clear_region": {
         "status": "fixed_verified",
-        "layer": "P1",
-        "module": "frontend ListPage",
+        "layer": "P0",
+        "module": "frontend rendering mechanism (ListPage generic empty-region composition)",
         "commit": "8fddb1f14",
         "evidence": "declared list-empty-region[data-workspace-primary-content][data-semantic-component=ListPage][data-list-status]; built asset ActionViewShell-CITccqeZ.css contains .list-empty-region{display:block}"
       },
       "5_mobile_touch_target": {
         "status": "fixed_verified",
-        "layer": "P1",
-        "module": "frontend tdesign theme",
+        "layer": "P0",
+        "module": "frontend rendering mechanism (tdesign theme touch-target contract)",
         "commit": "8fddb1f14",
         "evidence": "declared narrow media query restores --sc-component-button-touch-target on .collection-search-control .sc-icon-button[data-appearance=toolbar-menu-toggle]; present in built index-Yf-PmFKd.css"
       }
     },
     "extra_fix_query_track_shrink": {
       "status": "fixed_verified",
-      "layer": "P1",
-      "module": "frontend ProductListHeader",
+      "layer": "P0",
+      "module": "frontend rendering mechanism (ProductListHeader declared track composition)",
       "commit": "8fddb1f14",
       "evidence": ".product-list-header__query .sc-input{min-width:0} present in built ActionViewShell-CITccqeZ.css; column settings same-declared-row check now passes in narrow viewport"
     },
@@ -3822,6 +3832,20 @@
         "status": "passed",
         "count": null,
         "identity": "ok:true allowed:true; identity 1845/8/56 captured 2026-10-01"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.frontend.standard_preview.unit",
+        "status": "passed",
+        "count": 95,
+        "identity": "b31df700b; includes the declared-origin/unique-match lock"
+      },
+      {
+        "layer": "L4",
+        "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+        "status": "passed",
+        "count": 139,
+        "identity": "b31df700b; origin 1845/8/56; report fb725303…"
       }
     ],
     "carried_forward_evidence": [
@@ -3832,7 +3856,7 @@
     ],
     "candidate_identity": {
       "branch": "feature/web-official-template-adoption",
-      "head": "146e47a2d",
+      "head": "b31df700b",
       "backend_revision": "02d28a06d",
       "preview_build": {
         "base_sha": "02d28a06d0bedf59fa9d932014a5d36e806c583b",
@@ -3859,6 +3883,92 @@
     "owner_decisions": {
       "field_projection": "Fix the generic projection defect; do not relax acceptance assertions; never let critical override ACL/field-permission/legitimate hiding; no payment-model special-casing",
       "rebuild_and_preview": "Authorized via existing Make entries; refresh managed backend too when backend projection code changes"
+    },
+    "detail_closeout": {
+      "status": "passed",
+      "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790848891875/report.json",
+      "report_sha256": "fb7253031651a9ffc67f689fa60e671fb23c7f7ff4f312f983de2d84ef54fb33",
+      "log": "artifacts/frontend-web-fix-20260928/resume-20261001/detail_style_scope.log",
+      "log_sha256": "e03dadc35b76550990c983424cc9c17293b856042475eed7db8857559b1f1581",
+      "assertions": 139,
+      "origin": "resolved from the declared fixture identity: payment.request 1845, company 8, state draft, unique match_count 1 (no hardcoded id)",
+      "theme_viewport_samples": "light/dark x 1440/390: 6 official Cards = 6 expected sections, 6 Descriptions, 34 horizontal facts, contained, no unknown section visibility; real theme persisted through navigation and the initial theme was restored",
+      "relation_round_trip": "one real click-open-return per sample (4): field partner_id label FE-A Counterparty -> res.partner 56 readonly carrying return_url/return_model/return_field/return_record_id; page.goBack restored the exact source URL, the readonly ContractFormProductHeader and the identical action set (payment_submit 提交审批, action_cancel 取消); all 4 passed",
+      "restore": "forbiddenWrites 0; page errors 0",
+      "first_run_confirmed_failure": "Report tpl07-1790848793381 showed the stale hardcoded origin /r/payment.request/1813 -> 记录不存在 (1 of 13 assertions failed). Repaired at the probe layer; no product code changed.",
+      "probe_repair_commit": "b31df700b",
+      "unit_lock": "verify.frontend.standard_preview.unit -> 95 tests OK, including the new declared-origin/unique-match lock",
+      "remaining_detail_failures": "none"
+    }
+  },
+  "record_corrections_20261001": {
+    "responsibility_layer": {
+      "correction": "Generic list/detail display behavior in frontend/apps/web/src/pages/ListPage.css, frontend/packages/ui/src/kits/tdesign/theme.css and frontend/apps/web/src/components/product-list/ProductListHeader.vue belongs to the P0 frontend rendering mechanism, not P1 construction-industry product.",
+      "applied_to": "round_closeout_20261001.five_root_causes.4_empty_clear_region.layer, .5_mobile_touch_target.layer and .extra_fix_query_track_shrink.layer",
+      "history": "Commit boundaries are unchanged; only this run record's attribution was corrected, so no commit history was rewritten."
+    },
+    "candidate_evidence_reuse": {
+      "chain": [
+        {
+          "sha": "6b7572d6bef36fb804173c5db95a5d1a9bfdb288",
+          "scope": "P0 backend route_authority_validate",
+          "affects_backend": true,
+          "affects_build": false
+        },
+        {
+          "sha": "f32aa7e9175929a6d5be07236e98f2960c7c0531",
+          "scope": "P4 list-selection probe",
+          "affects_backend": false,
+          "affects_build": false
+        },
+        {
+          "sha": "02d28a06d0bedf59fa9d932014a5d36e806c583b",
+          "scope": "P0 backend ui_contract_v2_projection",
+          "affects_backend": true,
+          "affects_build": false
+        },
+        {
+          "sha": "8fddb1f14ae2e393930a428075c84e0e5cfe38d5",
+          "scope": "P0 frontend rendering mechanism (list surface)",
+          "affects_backend": false,
+          "affects_build": true
+        },
+        {
+          "sha": "146e47a2d12281f43ca726dd4493cb721180d100",
+          "scope": "P4 verification tools, Make password default, list probes",
+          "affects_backend": false,
+          "affects_build": false
+        },
+        {
+          "sha": "6f07ff09a2a953d3a3ca6511a630ba382cd3c93c",
+          "scope": "run record only",
+          "affects_backend": false,
+          "affects_build": false
+        },
+        {
+          "sha": "b31df700b",
+          "scope": "P4 detail-scope probe repair + preview unit lock",
+          "affects_backend": false,
+          "affects_build": false
+        }
+      ],
+      "backend": "Only 6b7572d6b and 02d28a06d changed backend code. The managed backend revision is 02d28a06d (replace-stale + health PASS); no later commit touched addons/.",
+      "build": "Only 8fddb1f14 changed frontend sources. The preview build ran at 17:49, after the last frontend edit (17:48:30) and before the freezes, so its bytes equal the committed sources. Registered receipt: base_sha 02d28a06d, entry /assets/index-Qy9TcyLN.js, index_sha256 600624e44e023280f1f37f23eb95fd2eeda5f834f0403e67a6549c2d3305e8bc, entry_sha256 cc750f9f67cdfbe0ed3ff2f767313486c91a9d964278060bce55e98cc35dbe9e, diff_sha256 3b4c38e55adfa8a220d9e7532c2f33d008b1ee81e70cc7f7679a7dd7b608070e. Markers verified in the served dist: .list-empty-region, .product-list-header__query .sc-input{min-width:0}, and the <760px 44px toolbar-menu-toggle rule.",
+      "probe_changes_covered_by_this_report": "The list-surface probe bytes exercised by the 17:51:08 matrix run are exactly the bytes frozen in 146e47a2d (that commit only froze the tests' final content). 146e47a2d, 6f07ff09a and b31df700b touch only scripts/, make/, tests and this run record; the production build ignores them, so the HEAD difference requires no rebuild."
+    },
+    "env_deny_scope": {
+      "applies_to": "The rebuild/snapshot lane only. It is NOT a general statement that the environment passes.",
+      "entrypoint_binding": "make acceptance.runtime.baseline_recovery.audit -> scripts/dev/frontend_acceptance_baseline_rebuild.sh require_volume_mount_scope() reads `docker ps -aq --filter volume=sc_fe_r2_p1_01_odoo` (counts stopped containers too) and compares the consumer count with the declared single consumer.",
+      "independent_review_basis": "scripts/verify/test_frontend_acceptance_baseline_rebuild.py:75 locks the expected single-consumer expectation and the fail-closed behavior.",
+      "evidence": "This run's validation reused the served 18082 backend and 5180 preview; the DENY did not block or invalidate any result recorded here."
+    },
+    "excluded_pre_existing": "The rendering_detail_state inventory sub-steps stay excluded by the existing evidence and adjudication (stashing the product changes reproduced the same inventory gaps, proving them pre-existing and outside the delivery chain). No re-proof was performed in this round.",
+    "fixed_password_review_scope": {
+      "status": "pending independent review",
+      "claim": "SC_ACCEPTANCE_FIXTURE_PASSWORD=scdevpass affects only the existing isolated acceptance fixture login.",
+      "evidence": "Only make/dev.mk (default + export), make/frontend.mk:78 and six make/runtime_ops.mk acceptance/scene entries changed. All target the frontend acceptance fixture on database sc_frontend_acceptance via db.frontend.acceptance.ensure / acceptance.frontend.fixture. No scripts/release, scripts/ops production, user_data, tenant or generic login default changed; their pre-existing random secrets are untouched.",
+      "verification": "Live fixture re-applied; frontend_acceptance_login_probe PASS; every scenario in this round (list matrix, relation diagnostic, detail scope) authenticated with the same fixed password."
     }
   }
 }
