@@ -49,7 +49,7 @@ class ScMaterialRentalPlan(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
@@ -282,7 +282,7 @@ class ScMaterialRentalOrder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
@@ -503,7 +503,7 @@ class ScMaterialRentalSettlement(models.Model):
     def create(self, vals_list):
         if any("payment_allocation_revision" in values for values in vals_list):
             raise UserError(_("付款额度版本只能由付款依据服务维护。"))
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:

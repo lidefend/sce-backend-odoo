@@ -30,26 +30,27 @@
         <field name="sequence">20</field>
     </record>
 
-    <record id="sc_demo_document_060_001" model="sc.project.document">
-        <field name="name">施工图会审纪要</field>
-        <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-        <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_060_sub_001"/>
-        <field name="doc_type_id" ref="smart_construction_demo.sc_dict_doc_type_drawing"/>
-        <field name="date_doc">2026-03-15</field>
-        <field name="version">A1</field>
-        <field name="is_mandatory">True</field>
-        <field name="state">done</field>
-        <field name="note">用于演示工程资料中心与 WBS 关联查看。</field>
-    </record>
+    <!-- Preserve existing reviewed records on upgrade; new samples start as native drafts. -->
+    <data noupdate="1">
+        <record id="sc_demo_document_060_001" model="sc.project.document">
+            <field name="name">施工图会审纪要</field>
+            <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_060_sub_001"/>
+            <field name="doc_type_id" ref="smart_construction_demo.sc_dict_doc_type_drawing"/>
+            <field name="date_doc">2026-03-15</field>
+            <field name="version">A1</field>
+            <field name="is_mandatory">True</field>
+            <field name="note">用于演示工程资料中心与 WBS 关联查看。</field>
+        </record>
 
-    <record id="sc_demo_document_060_002" model="sc.project.document">
-        <field name="name">专项施工方案技术交底</field>
-        <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
-        <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_060_sub_001"/>
-        <field name="doc_type_id" ref="smart_construction_demo.sc_dict_doc_type_tech"/>
-        <field name="date_doc">2026-03-18</field>
-        <field name="version">B2</field>
-        <field name="state">review</field>
-        <field name="note">用于演示工程资料列表中的状态差异与基础筛选。</field>
-    </record>
+        <record id="sc_demo_document_060_002" model="sc.project.document">
+            <field name="name">专项施工方案技术交底</field>
+            <field name="project_id" ref="smart_construction_demo.sc_demo_project_001"/>
+            <field name="wbs_id" ref="smart_construction_demo.sc_demo_wbs_060_sub_001"/>
+            <field name="doc_type_id" ref="smart_construction_demo.sc_dict_doc_type_tech"/>
+            <field name="date_doc">2026-03-18</field>
+            <field name="version">B2</field>
+            <field name="note">用于演示工程资料列表与基础筛选；审批状态由原生办理动作产生。</field>
+        </record>
+    </data>
 </odoo>

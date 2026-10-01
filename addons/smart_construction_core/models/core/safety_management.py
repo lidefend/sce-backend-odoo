@@ -44,7 +44,7 @@ class ScSafetyPlan(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         return super().create(vals_list)
 
@@ -141,7 +141,7 @@ class ScSafetyDisclosure(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("状态必须通过办理动作产生。"))
         return super().create(vals_list)
 

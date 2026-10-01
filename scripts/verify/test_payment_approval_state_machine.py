@@ -4420,5 +4420,73 @@ class PaymentCategoryDefaultTests(unittest.TestCase):
         self.assertEqual(calls[0][0][0], ('code', '=', 'missing.category'))
 
 
+
+class NativeCreateDefaultStateGuardTests(unittest.TestCase):
+    def test_all_sixteen_create_methods_validate_effective_state_before_side_effects(self):
+        count = 0
+        for filename in ('labor_management', 'safety_management', 'equipment_management', 'material_acceptance', 'material_rental'):
+            path = MODEL.with_name(filename + '.py')
+            source = path.read_text()
+            for cls in ast.parse(source).body:
+                if not isinstance(cls, ast.ClassDef): continue
+                for method in cls.body:
+                    if not isinstance(method, ast.FunctionDef) or method.name != 'create': continue
+                    # The sixteen newly introduced unconditional state guards, not
+                    # the four separately token-controlled cost-source creators.
+                    if 'values.get("state"' not in ast.get_source_segment(source, method): continue
+                    count += 1
+                    method.decorator_list = []
+                    effects = []
+                    class Env:
+                        context = {}
+                        def __getitem__(self, key):
+                            effects.append(('lookup', key))
+                            return types.SimpleNamespace(next_by_code=lambda code: 'TEST')
+                    row = types.SimpleNamespace(env=Env(),
+                        _sc_resolve_material_business_category_id=lambda vals: False,
+                        _sc_apply_system_defaults=lambda *args: None,
+                        _apply_purchase_request_defaults=lambda *args: None,
+                        _apply_purchase_order_defaults=lambda *args: None)
+                    ns = {'UserError': ValueError, '_': lambda text: text,
+                          'super': lambda: types.SimpleNamespace(create=lambda vals: effects.append(('create', copy.deepcopy(vals))) or vals)}
+                    exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+                    with self.subTest(model=cls.name):
+                        for state in ('approved', 'submitted', 'confirmed', 'cancel', False):
+                            for forged in ({}, {'sc_document_state_token': True, 'sc_labor_approval_state_token': True, 'skip_validation_check': True}):
+                                row.env.context = {'default_state': state, **forged}
+                                effects.clear()
+                                with self.assertRaises(ValueError): ns['create'](row, [{'state': 'draft'}, {}])
+                                self.assertEqual(effects, [], 'must reject whole batch before sequence/default/super')
+                        for context, values in (({}, {}), ({'default_state': 'draft'}, {}),
+                                                ({'default_state': 'approved'}, {'state': 'draft'})):
+                            row.env.context = context
+                            effects.clear()
+                            vals = {'name': 'TEST', 'dest_location_id': 1, **values}
+                            self.assertTrue(ns['create'](row, [vals]))
+                            self.assertEqual(effects[-1][0], 'create')
+                        row.env.context = {'default_state': 'draft'}
+                        effects.clear()
+                        with self.assertRaises(ValueError): ns['create'](row, [{'state': 'draft'}, {'state': 'approved'}])
+                        self.assertEqual(effects, [])
+        self.assertEqual(count, 16)
+
+class DemoWorkflowCarrierTests(unittest.TestCase):
+    def test_manifest_document_samples_omit_state_and_preserve_existing_records(self):
+        root = ROOT / 'demo_addons/smart_construction_demo'
+        manifest = ast.literal_eval((root / '__manifest__.py').read_text())
+        documents = []
+        for relative in manifest['data']:
+            if not relative.endswith('.xml'): continue
+            def visit(node, protected=False):
+                protected = node.get('noupdate', '1' if protected else '0') == '1'
+                if node.tag == 'record' and node.get('model') == 'sc.project.document':
+                    documents.append(node.get('id'))
+                    self.assertTrue(protected, 'upgrade must skip reviewed document contents, not only state')
+                    self.assertFalse(node.findall("field[@name='state']"), 'new sample uses native draft default')
+                for child in node: visit(child, protected)
+            visit(ET.parse(root / relative).getroot())
+        self.assertEqual(set(documents), {'sc_demo_document_060_001', 'sc_demo_document_060_002'})
+
+
 if __name__ == '__main__':
     unittest.main()

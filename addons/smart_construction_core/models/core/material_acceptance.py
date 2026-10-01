@@ -472,7 +472,7 @@ class ScMaterialPurchaseRequest(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("采购申请状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
@@ -937,7 +937,7 @@ class ScMaterialAcceptance(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("验收状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
@@ -1526,7 +1526,7 @@ class ScMaterialInbound(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("入库状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
@@ -2415,7 +2415,7 @@ class ScMaterialRfq(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(values.get("state", "draft") != "draft" for values in vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "draft")) != "draft" for values in vals_list):
             raise UserError(_("询比价状态必须通过办理动作产生。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
