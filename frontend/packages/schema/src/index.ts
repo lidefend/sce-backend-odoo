@@ -546,7 +546,7 @@ export interface ExecuteButtonRequest {
     xml_id?: string;
   };
   context?: Record<string, unknown>;
-  meta?: Record<string, unknown> & { relation_origin?: RelationActionOrigin };
+  meta?: Record<string, unknown> & { relation_origin?: RelationActionOrigin; work_item_origin?: { source: string; id: number } };
 }
 
 export interface ExecuteButtonResult {

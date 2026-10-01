@@ -1,4 +1,4 @@
-import { relationActionOrigin } from './relationActionOrigin';
+import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import { nextTick, type Ref } from 'vue';
 import { executeButton } from '../../api/executeButton';
 import { sanitizeUiErrorMessage } from './fieldUtils';
@@ -53,6 +53,7 @@ export function usePrimaryFormActionRuntime(params: {
           menu_id: Number(params.routeMenuId() || 0) || undefined,
           action_id: params.actionId() || undefined,
           relation_origin: relationActionOrigin(params.currentQuery?.() || {}),
+          work_item_origin: workItemActionOrigin(params.currentQuery?.() || {}),
         },
       });
       const result = response?.result;

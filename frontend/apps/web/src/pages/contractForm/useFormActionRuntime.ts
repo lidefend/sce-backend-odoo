@@ -1,4 +1,4 @@
-import { relationActionOrigin } from './relationActionOrigin';
+import { relationActionOrigin, workItemActionOrigin } from './relationActionOrigin';
 import type { Ref } from 'vue';
 import type { Router, LocationQueryRaw } from 'vue-router';
 import { executeButton } from '../../api/executeButton';
@@ -152,6 +152,7 @@ export function useFormActionRuntime(params: {
             menu_id: Number(params.routeMenuId() || 0) || undefined,
             action_id: params.actionId() || undefined,
             relation_origin: relationActionOrigin(params.currentQuery()),
+            work_item_origin: workItemActionOrigin(params.currentQuery()),
           },
         });
         const result = response?.result;
