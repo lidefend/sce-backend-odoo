@@ -66,6 +66,12 @@ const pendingProbeAborts = new Set();
 let favoriteWritePermit = null;
 let projectWritePermit = null;
 let expenseCreateCapture = false;
+const redFlushDenialInspect = process.env.TPL07_RED_FLUSH_DENIAL_INSPECT === '1';
+assert.ok(!redFlushDenialInspect || (process.env.TPL07_SCOPE === 'approval-actions'
+  && process.env.TPL07_APPROVAL_MODEL === 'sc.output.invoice.adjustment' && !process.env.TPL07_APPROVAL_VIEW));
+assert.ok(!redFlushDenialInspect || !Object.entries(process.env).some(([key, value]) => key.startsWith('TPL07_')
+  && !['TPL07_RED_FLUSH_DENIAL_INSPECT', 'TPL07_SCOPE', 'TPL07_APPROVAL_MODEL'].includes(key) && value && value !== '0'),
+'red-flush denial inspection cannot combine with other probes');
 const documentFlow = process.env.TPL07_DOCUMENT_FLOW === '1';
 assert.ok(!documentFlow || (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_MODEL === 'sc.project.document' && process.env.TPL07_APPROVAL_VIEW === 'create'));
 assert.ok(!documentFlow || !Object.entries(process.env).some(([key, value]) => key.startsWith('TPL07_')
@@ -2780,6 +2786,29 @@ try {
         .findLast((row) => row?.model === spec.model && Number(row.mainData?.id) === Number(record.id));
       check(`${spec.model}: matching effective contract`, authority?.model === spec.model && authority.mainData?.[spec.stateField || 'state'] === record[spec.stateField || 'state']);
       report.approvalPages.at(-1).authority = authority;
+      if (redFlushDenialInspect) {
+        const finalContract = (report.contractResponses || []).slice(responseStart)
+          .map(row => row.contract?.data)
+          .findLast(contract => contract?.pageInfo?.model === spec.model && contract.dataContract?.mainData?.id === record.id);
+        check('red flush: exact final contract observed', Boolean(finalContract));
+        const declarations = (finalContract.workflowContract?.availableActions || []).filter(row => row.method === 'action_confirm');
+        check('red flush: source already confirmed explicitly denies completion', declarations.length === 1
+          && declarations[0].enabled === false && declarations[0].reason_code === 'RED_FLUSH_SOURCE_ALREADY_CONFIRMED');
+        const denied = declarations[0];
+        const rules = (authority.actions?.actionRuleList || []).filter(row => row.button?.type === 'object' && row.button.name === denied.method);
+        check('red flush: workflow denial reaches final rule', rules.length === 1
+          && rules[0].allowed === false && rules[0].enabled === false && rules[0].disabled === true);
+        const rule = rules[0];
+        const status = finalContract.statusContract?.buttonStatus?.find(row => row.backendIdentity === rule.backendIdentity);
+        check('red flush: workflow denial reaches visible button status', status?.visible === true && status.disabled === true
+          && rule.reasonCode === denied.reason_code && status.reasonCode === denied.reason_code);
+        const button = session.page.getByRole('button', { name: rule.label, exact: true });
+        check('red flush: visible action exists and is disabled', await button.count() === 1 && await button.isDisabled());
+        check('red flush: workflow explanation remains visible',
+          Boolean(denied.blocked_message) && await session.page.getByText(denied.blocked_message, { exact: true }).count() > 0);
+        check('red flush: source relation displays authoritative invoice number', Boolean(authority.mainData.invoice_no)
+          && authority.mainData.original_ledger_id?.[1] === authority.mainData.invoice_no);
+      }
       if (spec.model === 'sc.expense.claim') {
         const rules = authority.actions?.actionRuleList || [];
         for (const [method, purpose] of [['action_submit', 'submit'], ['validate_tier', 'approve'], ['reject_tier', 'reject'], ['action_done', 'complete']]) {
