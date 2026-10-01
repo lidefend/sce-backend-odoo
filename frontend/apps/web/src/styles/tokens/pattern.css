@@ -68,8 +68,7 @@
  * Lives on product-level tokens so component authority tokens stay untouched
  * and shared components (e.g. pagination footer) keep the authoritative
  * density. */
-.page[data-product-page-mode='list'],
-.page.sc-product-workspace-stack {
+[data-list-card-container='official'] {
   --sc-product-table-header-height: 42px;
   --sc-product-table-row-height: 46px;
 }

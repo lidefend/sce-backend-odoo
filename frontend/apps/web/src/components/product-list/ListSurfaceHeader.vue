@@ -1,6 +1,6 @@
 <template>
   <ProductListHeader
-    v-if="!contextual"
+    collection-layout
     data-list-surface-header
     :loading="loading"
     :show-search="showSearch"
@@ -13,18 +13,18 @@
     @composition-start="$emit('composition-start')"
     @composition-end="$emit('composition-end', $event)"
   >
+    <template v-if="$slots.leading || showFallbackCreate || contextual" #leading>
+      <slot name="leading" />
+      <ScButton v-if="showFallbackCreate" variant="primary" :disabled="loading" @click="$emit('create')">
+        <ScIcon name="plus" :size="16" />{{ createLabel }}
+      </ScButton>
+      <div v-if="contextual" class="list-surface-contextual-toolbar" data-semantic-component="ListSurfaceHeader" data-state="contextual" aria-label="批量操作">
+        <slot name="contextual" />
+      </div>
+    </template>
     <slot />
     <template #auxiliary>
-      <div v-if="showFallbackCreate || columns.length" class="list-surface-utilities">
-        <ScButton
-          v-if="showFallbackCreate"
-          variant="primary"
-          :disabled="loading"
-          @click="$emit('create')"
-        >
-          <ScIcon name="plus" :size="16" />
-          {{ createLabel }}
-        </ScButton>
+      <div v-if="columns.length" class="list-surface-utilities">
         <div v-if="columns.length" ref="columnManager" class="list-surface-column-manager">
           <ScPopover placement="bottom-right" trigger="click" :disabled="loading" :visible="columnPanelOpen" @visible-change="columnPanelOpen = $event">
             <template #trigger>
@@ -71,15 +71,6 @@
       </div>
     </template>
   </ProductListHeader>
-  <div
-    v-else
-    class="list-surface-contextual-toolbar"
-    data-semantic-component="ListSurfaceHeader"
-    data-state="contextual"
-    aria-label="批量操作"
-  >
-    <slot name="contextual" />
-  </div>
 </template>
 
 <script setup lang="ts">

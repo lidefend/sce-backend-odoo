@@ -33,8 +33,13 @@ defineOptions({ inheritAttrs: false });
 
 <style scoped>
 .list-card-container {
+  box-sizing: border-box;
+  padding: 32px;
   display: block;
   min-width: 0;
   width: 100%;
+}
+@media (max-width: 760px) {
+  .list-card-container { padding: var(--sc-space-md); }
 }
 </style>

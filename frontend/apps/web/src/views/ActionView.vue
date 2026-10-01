@@ -2,7 +2,7 @@
 <template>
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
-      <template #actions>
+      <template v-if="!standardListOperationsInCard" #actions>
         <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
@@ -453,6 +453,11 @@
       @column-widths-change="handleListColumnWidthsChange"
       @column-preferences-reset="handleListColumnPreferencesReset"
     >
+      <template #leading>
+        <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
+        <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
+        <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
+      </template>
       <template v-if="showTopActionToolbar" #toolbar>
         <ActionSurfaceToolbar
           :loading="isUiBusy"
@@ -1477,6 +1482,7 @@ const canCreateRecord = computed(() => {
   if (status.value === 'loading') return false;
   return resolveCreateRight(actionContract.value);
 });
+const standardListOperationsInCard = computed(() => vm.value.content.kind === 'list' && surfaceRendererDescriptor.value.outlet === 'standard' && !renderErrorMessage.value);
 const isKanbanContent = computed(() => vm.value.content.kind === 'kanban');
 const canRenderActionSurfaceToolbar = computed(() => isKanbanContent.value || vm.value.content.kind === 'list');
 const showViewSwitch = computed(() =>
@@ -3455,11 +3461,6 @@ function refreshForRecordContextChange(): void {
   gap: var(--sc-space-xs);
   width: 100%;
   box-sizing: border-box;
-}
-
-/* The routed page owns the gutter; its embedded list must not add it again. */
-.page .action-list-surface[data-product-page-mode='list'] {
-  padding-inline: 0;
 }
 
 @media (min-width: 761px) {

@@ -1,5 +1,5 @@
 <template>
-  <ScPage
+  <section
     class="page sc-page sc-product-workspace-stack"
     data-product-page-mode="list"
     :data-list-composition="listComposition.composition"
@@ -51,6 +51,7 @@
         @column-reset="resetColumnVisibility"
         @create="onCreate"
       >
+        <template v-if="$slots.leading" #leading><slot name="leading" /></template>
         <slot name="toolbar"></slot>
       </ListSurfaceHeader>
       <ScEmptyState class="list-empty-surface" :title="emptyStateTitle" :description="emptyStateMessage">
@@ -112,6 +113,7 @@
         @column-reset="resetColumnVisibility"
         @create="onCreate"
       >
+        <template v-if="$slots.leading" #leading><slot name="leading" /></template>
         <slot name="toolbar"></slot>
         <template #contextual>
           <CollectionBatchActionBar
@@ -289,7 +291,7 @@
     </template>
     <ScInlineState v-if="attachmentPreviewError" state="error" :label="attachmentPreviewError" />
     <AttachmentViewer ref="attachmentViewerRef" />
-  </ScPage>
+  </section>
 </template>
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
@@ -312,7 +314,6 @@ import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSke
 import ProductListSurface from '../components/product-list/ProductListSurface.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScMoney from '../components/design-system/ScMoney.vue';
-import ScPage from '../components/design-system/ScPage.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../components/template/formSection.mapper';
 import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
@@ -564,7 +565,7 @@ const emptyStateMessage = computed(() =>
 const showPlainSearch = computed(() => props.showPlainSearch !== false);
 const hasToolbarSlot = computed(() => Boolean(slots.toolbar));
 const showFallbackPlainSearch = computed(() => showPlainSearch.value && !hasToolbarSlot.value);
-const showFallbackCreateButton = computed(() => props.showFallbackCreate === true && !hasToolbarSlot.value);
+const showFallbackCreateButton = computed(() => props.showFallbackCreate === true && !hasToolbarSlot.value && !slots.leading);
 const hasRetainedContent = computed(() => props.records.length > 0 && props.columns.length > 0);
 const groupedRows = computed(() =>
   Array.isArray(props.groupedRows) ? props.groupedRows : [],
