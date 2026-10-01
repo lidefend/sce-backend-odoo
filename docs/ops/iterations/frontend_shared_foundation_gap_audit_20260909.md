@@ -9586,3 +9586,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 承接53.208的定向读回：必须以startup delivery identity construction.standard/construction/standard查询，不能把服务默认platform.standard当成当前产品。有效发布快照65（frontend-audit-b214aba61e9b，89页）经既有release filter排除计划action655/menu507。plan-publication-identity-runtime.log的3项是诊断证明；此前默认identity诊断不作为实际产品状态证据。计划审批已有运行能力证据保留，当前正式入口不应绕过有效发布范围。
 - 当前HEAD 89715a468加已声明P0/P4 dirty：共享发布过滤已接入system.init和route.authority.validate；entry-publication-unit.log为9 PASS，entry-publication-final-iteration.log为L1 PASS。扩展运行探针尚未装载验证，不能报告绕过缺陷已关闭。下一步先完成既有代码复核与责任提交，受管重绑后端，再运行plan-publication-entry的6项定向检查及受影响用户入口观察。前端无变动，不重复构建。整体67项、主线集成、目标部署、用户交付均未因本规则更新而完成。
 - 本次增量仅治理文档和run续跑信息；相关产品/测试输入未变，复用上述L1/L2原日志。校验YAML/JSON解析及diff格式；不运行ORM、业务写入、浏览器或完整发布门禁来验证文档。
+
+### 53.210 有效发布范围的路由执行验证
+
+- P0 ee8d6b3f2：MenuService共享发布投影用于system.init最终route_authority及route.authority.validate，复用既有发布过滤和配置恢复例外；未发布声明返回PRODUCT_ENTRY_NOT_RELEASED。P4/治理a1a21ca63：绑定既有验收身份的只读运行探针与三层验收规则。本地提交，无推送/合并/目标部署。
+- 复用entry-publication-final-iteration L1 PASS、entry-publication-unit 9 PASS：产品/测试输入未变，本轮治理文档只经YAML/JSON解析和git diff --check。backend.acceptance.up替换旧revision，health PASS，受管后端装载a1a21ca63；无schema/XML/ACL改动，不运行模块升级。5180仍fef7d73ef前端，前端源码不变，无重复构建。
+- entry-publication-runtime.log实际退出0，6 PASS、事务rollback verified：construction.standard有效快照65保持89页；未发布计划655在初始化允许集消失且路由明确拒绝，已发布代表入口653和配置恢复711均保持allowed。只证明本探针范围，不证明全89入口或全部发布策略变体。
+- entry-publication-browser.log退出0，tpl07-1790819407559/report.json：真实config_admin登录后的route validation655返回403/PRODUCT_ENTRY_NOT_RELEASED，原始响应与运行态一致；3项断言仅为认证响应、无页面异常、无未声明写入（forbiddenWrites=[]），不是审批业务旅程验收。已确认的计划入口绕过问题得到代码、运行和用户会话响应证据。
+- 仍待补齐：发布入口中分类合并/动态导航目标的身份保真、无活动快照与版本选择时的统一策略消费，以及后续目标用户业务旅程。现实现仅关闭已确认的活动快照绕过，不能声称发布体系全部闭环。计划能力证据保留；不为验收自动新增第90个发布入口。67条总体接管继续active，detail.action-state等未闭合项不升级。
+- 下个最早步骤：沿现有MenuService的发布导航→route entry投影与release-key读取检查必要字段是否丢失，以定向纯测试验证分类/动态入口；仅有证据表明缺陷时修P0，再做受影响的运行复验。复用原run及本段证据，不重复菜单/ORM盘点。
