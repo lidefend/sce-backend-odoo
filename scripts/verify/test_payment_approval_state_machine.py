@@ -4228,5 +4228,38 @@ class AssignedPaymentReviewReadBoundaryTest(unittest.TestCase):
         self.assertIn('group_sc_cap_finance_read', rule.find("field[@name='groups']").get('eval'))
 
 
+class InflightCallbackGroupTest(unittest.TestCase):
+    def test_configuration_sync_preserves_inflight_groups_and_excludes_other_models(self):
+        from unittest.mock import MagicMock
+        node = next(n for cls in ast.parse(POLICY.read_text()).body if isinstance(cls, ast.ClassDef)
+                    for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '_sync_tier_server_action_groups')
+        namespace = {'api': types.SimpleNamespace(model=lambda method: method)}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(POLICY), 'exec'), namespace)
+        step, review, env = MagicMock(), MagicMock(), MagicMock()
+        step.sudo.return_value = step
+        review.sudo.return_value = review
+        step.search.return_value.mapped.return_value.ids = [93]
+        def matching_reviews(domain):
+            self.assertEqual(domain, [('model', '=', 'sc.payment.execution'),
+                ('status', 'in', ['waiting', 'pending']), ('reviewer_group_id', '!=', False)])
+            result = MagicMock()
+            result.mapped.return_value.ids = [101]
+            return result
+        review.search.side_effect = matching_reviews
+        env.__getitem__.side_effect = {'sc.approval.step': step, 'tier.review': review}.__getitem__
+        action = MagicMock()
+        action.sudo.return_value = action
+        env.ref.return_value = action
+        owner = types.SimpleNamespace(env=env, _tier_server_action_xmlids=lambda model: ('approve', 'reject'))
+        namespace['_sync_tier_server_action_groups'](owner, ['sc.payment.execution'])
+        self.assertEqual(action.write.call_count, 2)
+        action.write.assert_called_with({'groups_id': [(6, 0, [93, 101])]})
+        # Once no pending review needs that group, a later sync contracts it.
+        review.search.side_effect = None
+        review.search.return_value.mapped.return_value.ids = []
+        namespace['_sync_tier_server_action_groups'](owner, ['sc.payment.execution'])
+        action.write.assert_called_with({'groups_id': [(6, 0, [93])]})
+
+
 if __name__ == '__main__':
     unittest.main()

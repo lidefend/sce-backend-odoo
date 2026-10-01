@@ -721,6 +721,13 @@ class ScApprovalPolicy(models.Model):
                     ]
                 ).mapped("approve_group_id").ids
             )
+            # A configuration change affects future submissions, but must not
+            # remove callback access from an already assigned pending review.
+            group_ids.update(self.env["tier.review"].sudo().search([
+                ("model", "=", target_model),
+                ("status", "in", ["waiting", "pending"]),
+                ("reviewer_group_id", "!=", False),
+            ]).mapped("reviewer_group_id").ids)
             if not group_ids:
                 continue
             for xmlid in (approve_xmlid, reject_xmlid):
