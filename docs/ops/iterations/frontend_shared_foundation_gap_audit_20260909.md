@@ -10080,3 +10080,13 @@ X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺
 - 登记：两条 check 回执（create_edit_scope、workspace_home_scope）均按 begin→车道→record 单脚本一气呵成登记，绑定 clean HEAD `1317c9db9`（日志 `l2-create_edit_scope-20261002-041543.log`、`l2-workspace_home_scope-20261002-041613.log`，log_sha256 入回执）。
 - **原清单证据差额关闭**：blocker 中该项移除，仅保留"部署后历史附件内容不可用、元数据呈现不恢复内容"的既定数据限制（数据限制声明，非恢复文件主张）。detail_style_scope 维持其原有身份的既有证据，不因本批改动。
 - 边界：本批仅覆盖当前候选上的 create/edit 与 workbench 最小证据；未发布场景表面、全量 action/字段覆盖与业务写入/审批回路仍在范围之外。剩余 owner 待决：`addons/smart_core/contract.schema.json` 空占位去留；部署/版本发布需显式授权（未触发）。
+
+## 2026-10-02 主线集成与 run 关闭（run successor_step9）
+
+- **freeze**：`make ci.delivery.freeze.prepare` 刷新 5 个生成证据文件（gap 1 新增单测的 test_inventory 资产 + CSV 全量重排序），冻结候选 `6a1672b13 chore(evidence): refresh tracked generated reports for the frozen candidate`。
+- **Quick**：`6a1672b13` 上 `make ci.local.quick` PASS（12m9s）；主分支合并调和后新头 `4ab1b5eab` 上重跑一次 PASS（12m53s），回执路径入 PR body。
+- **PR #527**：初始 **CONFLICTING**——#526 squash 提交与 successor 提交在共同 base `2d164a1fe` 上 diff 重叠（12 文件机械冲突）。解法：`git merge origin/main --no-commit` 全冲突取分支侧，**脚本内置校验合并结果树与合并前 HEAD 逐字节一致**才提交（`4ab1b5eab`，零内容变化、无 force push），PR 即刻 MERGEABLE；body 经 REST API 更新（`gh pr edit` 静默失败）。
+- **合入**：远端 4 gate 全 SUCCESS、mergeState CLEAN 后 squash 合入 **`f9d2f1d9f`**；本地 main 显式 refspec 同步并与 API sha 双确认；远端分支已删除。
+- **owner 决策（2026-10-02）**：① `addons/smart_core/contract.schema.json` **保留**为受跟踪空占位（不安排删除变更）；② 部署/版本发布**暂不触发**（后续推进需新的显式授权）。
+- **run 关闭**：收尾分支 `fix/run-closeout-fe-template-adoption`（active-runs.json 与 run.branch 重绑、`make agent.run.resume` 复验通过）上将 run 置为 `completed`——验收证据、文档与代码回滚锚（`d36186b4f`）齐备；部署与产品验收按 owner 决策维持独立未主张状态。既定数据限制（部署后历史附件内容不可用）与卷拓扑 scope 注记原样保留。
+- 状态：run 关闭；后续部署或新证据批次从 main `f9d2f1d9f` 起在显式 owner 授权下另起 run。
