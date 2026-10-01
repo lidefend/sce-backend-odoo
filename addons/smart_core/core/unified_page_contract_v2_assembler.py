@@ -4205,6 +4205,73 @@ def _enforce_single_effective_primary_action(contract: dict[str, Any]) -> None:
     }
 
 
+def _tighten_workflow_action_denials(contract: dict[str, Any]) -> None:
+    """Carry explicit same-record workflow vetoes after native visibility resolves.
+
+    Visibility and authorization are separate authorities. An available-action
+    denial may only narrow executability; catalog absence or enabled=True cannot
+    grant it. The original workflow retains its user-facing explanation.
+    """
+    workflow = _dict(contract.get("workflowContract"))
+    model = _text(_dict(contract.get("pageInfo")).get("model"))
+    record_id = _dict(_dict(contract.get("dataContract")).get("mainData")).get("id")
+    if (not model or type(record_id) is not int or record_id <= 0
+            or _text(workflow.get("model")) != model
+            or type(workflow.get("record_id")) is not int or workflow["record_id"] != record_id):
+        return
+
+    def matches_record(target: Any, method: str) -> bool:
+        target = _dict(target)
+        return (not target.get("model") or _text(target.get("model")) == model) and (
+            target.get("id") is None or type(target.get("id")) is int and target["id"] == record_id
+        ) and (not target.get("method") or _text(target.get("method")) == method)
+
+    denied = {}
+    for available in _list(workflow.get("availableActions")):
+        if not isinstance(available, dict):
+            continue
+        method = _text(available.get("method") or available.get("method_name"))
+        explicit_deny = available.get("enabled") is False or available.get("allowed") is False or available.get("disabled") is True
+        if method and explicit_deny and matches_record(available.get("target"), method):
+            denied.setdefault(method, available)
+    if not denied:
+        return
+    status_contract = _dict(contract.get("statusContract"))
+    statuses = _list(status_contract.get("buttonStatus"))
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict) or _dict(rule.get("actionSemantics")).get("executor") == "record.save":
+            continue
+        if _text(_dict(rule.get("button")).get("type")).lower() != "object":
+            continue
+        method = _action_rule_declared_method(rule)
+        declaration = denied.get(method)
+        if not declaration or not matches_record(rule.get("target"), method):
+            continue
+        identity = _text(rule.get("backendIdentity"))
+        btn_id = "btn." + _text(rule.get("actionKey"))
+        matches = [status for status in statuses if isinstance(status, dict) and (
+            bool(identity) and _text(status.get("backendIdentity")) == identity
+            or not status.get("backendIdentity") and status.get("btnId") == btn_id
+        )]
+        if not matches:
+            status = {"btnId": btn_id}
+            if identity:
+                status["backendIdentity"] = identity
+            statuses.append(status)
+            matches = [status]
+        reason = _text(declaration.get("reason_code") or declaration.get("reasonCode"), "WORKFLOW_ACTION_NOT_AVAILABLE")
+        was_denied = rule.get("allowed") is False or rule.get("enabled") is False or rule.get("disabled") is True
+        if not was_denied or _text(rule.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+            rule["reasonCode"] = reason
+        rule.update({"businessAvailable": False, "allowed": False, "enabled": False, "disabled": True})
+        for status in matches:
+            if status.get("disabled") is not True or _text(status.get("reasonCode")) in {"", "OK", "ACTION_NOT_ALLOWED"}:
+                status["reasonCode"] = rule.get("reasonCode") or reason
+            status["disabled"] = True
+    status_contract["buttonStatus"] = statuses
+    contract["statusContract"] = status_contract
+
+
 def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
     """Seal action visibility after late modifier dependencies are hydrated."""
     action_contract = _dict(contract.get("actionContract"))
@@ -4348,6 +4415,7 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
                     status.pop("reasonCode", None)
     status_contract["buttonStatus"] = statuses
     contract["statusContract"] = status_contract
+    _tighten_workflow_action_denials(contract)
     _enforce_single_effective_primary_action(contract)
 
 

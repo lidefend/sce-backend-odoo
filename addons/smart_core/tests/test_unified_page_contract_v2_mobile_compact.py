@@ -4470,5 +4470,133 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             self.assertNotIn("actionSemantics", contract["actionContract"]["actionRuleList"][0])
 
 
+    @staticmethod
+    def _workflow_denial_contract():
+        def rule(method):
+            return {
+                "actionId": "action." + method, "actionKey": method,
+                "backendIdentity": "button:object:" + method,
+                "button": {"type": "object", "name": method},
+                "sourceChannel": "native_form_header",
+                "nativeIdentity": {"native_locator": "/form[1]/header[1]/" + method},
+                "allowed": True, "enabled": True, "disabled": False,
+                "authorizationAllowed": True, "entitlementEvaluated": True,
+                "sourceTrace": [{"authorizationAllowed": True, "entitlementEvaluated": True}],
+                "presentation": {"tier": "primary"},
+                "visible": {"attrs": {"invisible": {"kind": "field_compare", "field": "state", "operator": "!=", "value": "approved"}}},
+            }
+        return {
+            "pageInfo": {"model": "test.document"},
+            "dataContract": {"mainData": {"id": 43, "state": "approved"}},
+            "workflowContract": {"model": "test.document", "record_id": 43, "availableActions": [{
+                "method": "action_confirm", "enabled": False, "reason_code": "SOURCE_ALREADY_COMPLETED",
+                "blocked_message": "来源已完成办理。", "target": {"model": "test.document", "id": 43, "method": "action_confirm"},
+                "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"},
+            }]},
+            "actionContract": {"actionRuleList": [rule("action_confirm"), rule("action_cancel")]},
+            "statusContract": {"buttonStatus": [
+                {"btnId": "btn.action_confirm", "visible": True, "disabled": False},
+                {"btnId": "btn.action_cancel", "visible": True, "disabled": False},
+            ]},
+        }
+
+    def test_workflow_veto_survives_semantics_and_final_visible_native_hydration(self):
+        contract = self._workflow_denial_contract()
+        assembler.project_workflow_action_semantics(contract)
+        assembler.hydrate_final_action_modifier_status(contract)
+        rule, other = contract["actionContract"]["actionRuleList"]
+        status = contract["statusContract"]["buttonStatus"][0]
+        self.assertFalse(rule["enabled"])
+        self.assertFalse(rule["allowed"])
+        self.assertFalse(rule["businessAvailable"])
+        self.assertTrue(rule["disabled"])
+        self.assertTrue(rule["authorizationAllowed"])
+        self.assertEqual(rule["reasonCode"], "SOURCE_ALREADY_COMPLETED")
+        self.assertTrue(status["visible"])
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], rule["reasonCode"])
+        self.assertTrue(other["enabled"])
+        effective_primary = [row for row in contract["actionContract"]["actionRuleList"]
+                             if row.get("enabled") and row.get("presentation", {}).get("tier") == "primary"]
+        self.assertEqual(effective_primary, [other])
+        self.assertEqual(contract["workflowContract"]["availableActions"][0]["blocked_message"], "来源已完成办理。")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertFalse(rule["enabled"])
+        self.assertEqual(rule["reasonCode"], "SOURCE_ALREADY_COMPLETED")
+
+    def test_workflow_denial_preserves_stricter_acl_reason_and_visibility(self):
+        for workflow_enabled in (False, True):
+            contract = self._workflow_denial_contract()
+            contract["workflowContract"]["availableActions"][0]["enabled"] = workflow_enabled
+            rule = contract["actionContract"]["actionRuleList"][0]
+            rule.update(allowed=False, enabled=False, disabled=True, authorizationAllowed=False, reasonCode="ACL_DENIED")
+            rule["sourceTrace"] = [{"authorizationAllowed": False, "entitlementEvaluated": True}]
+            status = contract["statusContract"]["buttonStatus"][0]
+            status.update(disabled=True, reasonCode="ACL_DENIED")
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertFalse(rule["enabled"])
+            self.assertFalse(rule["authorizationAllowed"])
+            self.assertEqual(rule["reasonCode"], "ACL_DENIED")
+            self.assertTrue(status["disabled"])
+            self.assertEqual(status["reasonCode"], "ACL_DENIED")
+
+    def test_cross_record_or_unknown_workflow_identity_cannot_restrict_this_record(self):
+        for patch in [{"model": "other.document"}, {"record_id": 44}, {"record_id": 43.5}, {"record_id": None}]:
+            with self.subTest(patch=patch):
+                contract = self._workflow_denial_contract()
+                contract["workflowContract"].update(patch)
+                assembler.hydrate_final_action_modifier_status(contract)
+                self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        for record_id in (None, False, 0, "43"):
+            contract = self._workflow_denial_contract()
+            contract["dataContract"]["mainData"]["id"] = record_id
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+
+    def test_workflow_veto_requires_exact_object_method_and_matching_target(self):
+        for patch in [{"type": "action"}, {"type": "server_action"}, {"type": ""}, {"name": "action_confirm_other"}]:
+            contract = self._workflow_denial_contract()
+            rule = contract["actionContract"]["actionRuleList"][0]
+            rule["button"].update(patch)
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(rule["enabled"])
+        for owner in ("declaration", "rule"):
+            for target in [{"model": "other.document"}, {"id": 44}, {"id": 43.5}, {"method": "another_method"}]:
+                contract = self._workflow_denial_contract()
+                rule = contract["actionContract"]["actionRuleList"][0]
+                item = rule if owner == "rule" else contract["workflowContract"]["availableActions"][0]
+                item["target"] = target
+                assembler.hydrate_final_action_modifier_status(contract)
+                self.assertTrue(rule["enabled"])
+
+    def test_workflow_catalog_absence_unknown_flags_and_record_save_do_not_change_authority(self):
+        for enabled in (True, None, "false", 0):
+            contract = self._workflow_denial_contract()
+            contract["workflowContract"]["availableActions"][0]["enabled"] = enabled
+            assembler.hydrate_final_action_modifier_status(contract)
+            self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["actions"] = contract["workflowContract"].pop("availableActions")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertTrue(contract["actionContract"]["actionRuleList"][0]["enabled"])
+        contract = self._workflow_denial_contract()
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule["actionSemantics"] = {"executor": "record.save"}
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertTrue(rule["enabled"])
+
+    def test_workflow_duplicate_allow_cannot_cancel_a_declared_denial_and_missing_status_is_sealed(self):
+        contract = self._workflow_denial_contract()
+        contract["workflowContract"]["availableActions"].insert(0, {"method": "action_confirm", "enabled": True})
+        contract["statusContract"]["buttonStatus"] = []
+        rule = contract["actionContract"]["actionRuleList"][0]
+        rule.pop("visible")
+        assembler.hydrate_final_action_modifier_status(contract)
+        self.assertFalse(rule["enabled"])
+        status = next(row for row in contract["statusContract"]["buttonStatus"] if row["btnId"] == "btn.action_confirm")
+        self.assertTrue(status["disabled"])
+        self.assertEqual(status["reasonCode"], "SOURCE_ALREADY_COMPLETED")
+
+
 if __name__ == "__main__":
     unittest.main()
