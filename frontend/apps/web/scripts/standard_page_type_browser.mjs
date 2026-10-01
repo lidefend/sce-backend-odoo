@@ -109,13 +109,58 @@ function detailGeometryFailures(metrics) {
   if (!metrics.contained) failures.push('page containment');
   return [...new Set(failures)];
 }
+// The create/edit review inspects the declared create and edit surfaces of one
+// published model, plus reload retention. It reads only and never saves, so it
+// must not be combined with a probe or scope that writes.
+function createEditScopeIsolated(env) {
+  return env.TPL07_SCOPE === 'create-edit'
+    && !Object.entries(env).some(([key, value]) => /^(TPL07_|TPL52_)/.test(key)
+      && key !== 'TPL07_SCOPE' && value && value !== '0');
+}
+let governedOrigin = null;
+// Shared governed origin resolver: every scope that must open the representative
+// published record resolves it from the fixture declaration (name bound to owning
+// company and expected business state, unique match required) instead of a literal
+// record id. A recorded id stops matching as soon as the acceptance fixture is
+// rebuilt, which silently turns a real page failure into a "record not found".
+async function resolveGovernedOrigin(page) {
+  if (governedOrigin) return governedOrigin;
+  const records = await page.evaluate(async (domain) => {
+    const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+    const response = await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+      body: JSON.stringify({ intent: 'api.data', params: { op: 'list', model: 'payment.request', domain, fields: ['id', 'name', 'company_id', 'state'], limit: 2 } }),
+    });
+    const payload = await response.json();
+    return payload.ok === true ? (payload.data?.records || []) : null;
+  }, detailOriginDomain(DETAIL_ORIGIN_FIXTURE));
+  check('governed origin: declared fixture read', Array.isArray(records));
+  const record = detailOriginRecord(records || []);
+  check('governed origin: unique declared fixture identity', Boolean(record)
+    && record.company_id?.[0] === DETAIL_ORIGIN_FIXTURE.companyId && record.state === DETAIL_ORIGIN_FIXTURE.state,
+    { count: (records || []).length });
+  if (!record) throw new Error('governed origin fixture did not resolve to a unique declared record');
+  governedOrigin = { id: record.id, name: record.name, company_id: record.company_id?.[0], state: record.state, match_count: (records || []).length };
+  return governedOrigin;
+}
+// Transient TDesign tooltips/popups are absolutely-positioned overlays left by
+// the probe's own theme-switch clicks. They are not page content, but a leftover
+// tooltip keeps its pre-resize coordinates and inflates documentElement.scrollWidth
+// during a later narrow-viewport measurement. Dismiss them before measuring so the
+// containment assertion still bounds the real document layout.
+async function dismissTransientOverlays(page) {
+  await page.evaluate(() => { const el = document.activeElement; if (el && typeof el.blur === 'function') el.blur(); });
+  await page.mouse.move(0, 0);
+  await page.locator('.t-popup.t-tooltip').first().waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+}
 // End bounded detail-style verification helpers.
 function findRecordAuthority(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 14) return null;
   if (node.statusContract?.globalStatus?.effectiveRecordCapabilities && node.pageInfo?.model) {
     return { model: node.pageInfo.model, status: node.statusContract.globalStatus,
       deletePolicy: node.actionContract?.deletePolicy, mainData: node.dataContract?.mainData,
-      ...(['task-authority', 'approval-actions', 'expense-policy', 'style'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract, containers: node.statusContract.containerStatus } : {}) };
+      ...(['task-authority', 'approval-actions', 'expense-policy', 'style', 'create-edit'].includes(process.env.TPL07_SCOPE) ? { structure: node.formStructureContract, layout: node.layoutContract, actions: node.actionContract, containers: node.statusContract.containerStatus } : {}) };
   }
   for (const value of Object.values(node)) {
     const found = findRecordAuthority(value, depth + 1);
@@ -124,6 +169,7 @@ function findRecordAuthority(node, depth = 0) {
   return null;
 }
 if (process.env.TPL07_SCOPE === 'style' && process.env.TPL52_FAMILY === 'detail') assert.ok(detailStyleScopeIsolated(process.env), 'detail style scope cannot combine probes or writes');
+if (process.env.TPL07_SCOPE === 'create-edit') assert.ok(createEditScopeIsolated(process.env), 'create/edit scope cannot combine probes or writes');
 const check = (name, passed, detail = {}) => { report.assertions.push({ name, passed, ...detail }); assert.ok(passed, name); };
 await fs.mkdir(out, { recursive: true });
 const build = JSON.parse(await fs.readFile(path.resolve(root, '../sce-offrepo/artifacts/config05-20260929/build-identity.json')));
@@ -218,6 +264,13 @@ async function login(role) {
     const body = route.request().postDataJSON();
     if ((process.env.TPL07_SCOPE === 'scene-entry' || detailStyleScopeIsolated(process.env)) && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, reason: 'scene entry scope is read-only' });
+      return route.abort();
+    }
+    // The create/edit review inspects the declared surfaces and never saves, so
+    // any business write it would have triggered is recorded and refused here.
+    if (createEditScopeIsolated(process.env) && body?.intent === 'api.data'
+      && ['create', 'write', 'unlink'].includes(body?.params?.op) && body?.params?.model === 'payment.request') {
+      report.forbiddenWrites.push({ intent: body.intent, op: body.params.op, reason: 'create/edit review scope is read-only' });
       return route.abort();
     }
 
@@ -932,6 +985,10 @@ async function styleScope() {
     await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}.png`), fullPage: true });
   }
   if (family === 'detail') return detailStyleVisualScope(finance, inspect);
+  // The record-opening families read the representative published record from the
+  // governed declaration, so a rebuilt acceptance fixture cannot turn a real page
+  // failure into a "record not found" on a frozen id.
+  const originId = ['form', 'overlay', 'all'].includes(family) ? (await resolveGovernedOrigin(page)).id : null;
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     if (family !== 'overlay') {
@@ -947,11 +1004,11 @@ async function styleScope() {
     }
     if (['shell', 'collection'].includes(family)) continue;
     if (family === 'detail') {
-      await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');
+      await form(page, `/r/payment.request/${originId}?menu_id=545&action_id=775`, `style-detail-${viewport.width}`, 'readonly');
       await inspect(`detail-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
       continue;
     }
-    await form(page, '/f/payment.request/1813?menu_id=545&action_id=775', `style-form-${viewport.width}`);
+    await form(page, `/f/payment.request/${originId}?menu_id=545&action_id=775`, `style-form-${viewport.width}`);
     if (family === 'form') {
       await inspect(`form-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
       continue;
@@ -959,6 +1016,29 @@ async function styleScope() {
     await inspect(`form-text-${viewport.width}`, '.template-form-section .readonly-value:not(.readonly-value--action)', ['14px', '400', '22px']);
     const introduce = page.locator('[data-contract-entry-label]');
     check(`form-${viewport.width}: contract supplies introduce label`, Boolean(report.introduceContract?.introduceLabel));
+    // The settlement collection is a declared optional presentation. With no rows
+    // the declaration renders it collapsed with destroy-on-collapse, so the
+    // declared introduce entry is only mounted once its own disclosure is
+    // expanded. Expand the declared disclosure instead of assuming the entry is
+    // unconditionally mounted.
+    const settlementDisclosure = page.locator(
+      '[data-semantic-component="PaymentSettlementDetailCollectionControl"] [data-disclosure-trigger]');
+    const disclosureCount = await settlementDisclosure.count();
+    let disclosureExpanded = false;
+    if (disclosureCount === 1) {
+      if (await settlementDisclosure.getAttribute('data-state') === 'collapsed') {
+        await settlementDisclosure.click();
+        await page.locator('[data-semantic-component="PaymentSettlementDetailCollectionControl"] [data-disclosure-trigger][data-state="expanded"]').waitFor();
+      }
+      disclosureExpanded = true;
+    }
+    const settlementEntry = await page.evaluate(() => ({
+      entryButtons: document.querySelectorAll('[data-contract-entry-label]').length,
+      gapMissing: document.querySelector('[data-contract-semantic-gap]')?.getAttribute('data-contract-semantic-missing') ?? null,
+    }));
+    report.settlementEntry = { ...settlementEntry, disclosureCount, disclosureExpanded };
+    check(`form-${viewport.width}: declared entry is consumed or the gap is explicit`,
+      settlementEntry.entryButtons > 0 || settlementEntry.gapMissing !== null, report.settlementEntry);
     await introduce.click();
     await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor();
     await page.getByText('正在搜索结算单', { exact: false }).waitFor({ state: 'hidden' });
@@ -966,7 +1046,7 @@ async function styleScope() {
     await page.keyboard.press('Escape');
     await page.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
     if (family === 'overlay') continue;
-    await form(page, '/r/payment.request/1813?menu_id=545&action_id=775', `style-detail-${viewport.width}`, 'readonly');
+    await form(page, `/r/payment.request/${originId}?menu_id=545&action_id=775`, `style-detail-${viewport.width}`, 'readonly');
     await inspect(`detail-${viewport.width}`, '.product-page-header h1', ['24px', '600', '32px']);
     await inspect(`detail-text-${viewport.width}`, '.template-form-section-descriptions .readonly-value:not(.readonly-value--action)', ['14px', '400', '22px']);
   }
@@ -990,12 +1070,105 @@ async function styleScope() {
   await finance.ctx.close();
 }
 
+// Bounded create/edit representative review: one published existing model, its
+// declared create and edit surfaces, the declared relation field and child
+// collection, and reload retention. The record identity comes from the governed
+// declaration; the scope reads only and never saves.
+async function createEditScope() {
+  const finance = await login('fixture_role_finance');
+  const page = finance.page;
+  const origin = await resolveGovernedOrigin(page);
+  const surface = '[data-form-composition="official-standard-form"][data-state="ok"]';
+  report.createEdit = { origin, surfaces: [] };
+  const themeState = () => page.evaluate(() => ({ mode: document.documentElement.getAttribute('data-sc-theme-mode'),
+    resolved: document.documentElement.getAttribute('data-sc-theme-resolved'), stored: localStorage.getItem('sc_theme') }));
+  async function setTheme(mode) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const state = await themeState();
+      if (state.mode === mode && state.stored === mode) break;
+      await page.locator('.theme-switch:visible').click();
+    }
+    await page.waitForFunction((expected) => document.documentElement.getAttribute('data-sc-theme-mode') === expected
+      && localStorage.getItem('sc_theme') === expected, mode);
+    check(`create-edit: ${mode} theme applied`, (await themeState()).mode === mode);
+  }
+  async function inspectSurface(name, recordId) {
+    await page.locator(surface).waitFor();
+    check(`${name}: one declared official form composition`, await page.locator('[data-form-composition="official-standard-form"]').count() === 1);
+    check(`${name}: composition follows the contract declaration`, await page.locator('[data-form-composition-reason="contract-record-view"]').count() === 1);
+    check(`${name}: not an unclassified fallback`, await page.locator('[data-form-composition-reason="contract-view-not-classified"]').count() === 0);
+    check(`${name}: no unknown renderer`, await page.locator('[data-field-fail-closed]').count() === 0);
+    check(`${name}: declared editable sections`, await page.locator('[data-component="FormSection"][data-state="editable"]').count() > 0);
+    check(`${name}: declared child collection rendered`, await page.locator('[data-field-type="one2many"]').count() > 0);
+    const rendered = {
+      record: await page.locator('[data-form-record]').first().getAttribute('data-form-record'),
+      sections: await page.locator('[data-component="FormSection"]').count(),
+      one2many: await page.locator('[data-field-type="one2many"]').count(),
+      fields: await page.locator('[data-field-name]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-field-name')).sort()),
+    };
+    check(`${name}: bound to the declared ${recordId === null ? 'create' : 'record'} identity`,
+      rendered.record === String(recordId === null ? 'new' : recordId), { rendered: rendered.record, recordId });
+    report.createEdit.surfaces.push({ name, ...rendered });
+    return rendered;
+  }
+  async function reviewBothThemes(name) {
+    for (const theme of ['light', 'dark']) {
+      await setTheme(theme);
+      for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        await dismissTransientOverlays(page);
+        const geometry = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+        check(`${name}-${theme}-${viewport.width}: page contained`, geometry.scrollWidth <= geometry.innerWidth + 1, geometry);
+        await page.screenshot({ animations: 'disabled', path: path.join(out, `${name}-${theme}-${viewport.width}.png`), fullPage: true });
+      }
+    }
+  }
+
+  // Create surface: the same declared composition must be adopted for a new
+  // record. The probe inspects it and leaves without saving anything.
+  await page.goto(`${base}/f/payment.request/new?menu_id=545&action_id=775`);
+  await inspectSurface('create-surface', null);
+  await reviewBothThemes('create-surface');
+
+  // Edit surface: the declared editable composition for the published record,
+  // its declared relation field and declared child collection.
+  await page.goto(`${base}/f/payment.request/${origin.id}?menu_id=545&action_id=775`);
+  const editSurface = await inspectSurface('edit-surface', origin.id);
+  const relation = page.locator('[data-field-name="partner_id"]').first();
+  check('edit-surface: declared relation field rendered', await page.locator('[data-field-name="partner_id"]').count() >= 1);
+  check('edit-surface: declared relation field is visible', await relation.isVisible());
+  check('edit-surface: relation field keeps its declared write state',
+    await relation.getAttribute('data-field-state') !== 'readonly');
+  check('edit-surface: relation field is not replaced by readonly facts',
+    await relation.locator('[data-detail-facts="official-standard-detail"]').count() === 0);
+
+  // Reload retention: re-entering the same declared route must re-render the same
+  // bound record, composition and rendered field membership, not a stale draft.
+  const relationBefore = (await relation.innerText()).trim();
+  await page.reload();
+  const reloaded = await inspectSurface('edit-surface-reload', origin.id);
+  check('edit-surface: reload keeps the declared field membership',
+    JSON.stringify(reloaded.fields) === JSON.stringify(editSurface.fields), { before: editSurface.fields, after: reloaded.fields });
+  check('edit-surface: reload keeps the relation value',
+    (await page.locator('[data-field-name="partner_id"]').first().innerText()).trim() === relationBefore);
+  await reviewBothThemes('edit-surface');
+
+  check('create-edit: real startup authority present', report.startup.some((row) => row.role === 'fixture_role_finance' && row.intent === 'system.init' && row.success));
+  await finance.ctx.close();
+}
+
 try {
   if (process.env.TPL07_SCOPE === 'scene-entry') {
-    for (const [role, entries] of [
+    // Bounded home selection: the published workspace home is reviewed on its own
+    // so the explicitly unpublished company/project scenes never gate it.
+    const sceneSelection = process.env.TPL07_SCENE_SELECTION || 'all';
+    assert.ok(['all', 'home'].includes(sceneSelection), 'known scene selection');
+    const sceneTargets = [
       ['fixture_role_finance', [['workspace.home', 'workspace.home.enter']]],
       ['fixture_role_executive', [['dashboard.company', 'dashboard.company.enter'], ['project.management', 'project.dashboard.enter']]],
-    ]) {
+    ];
+    for (const [role, entries] of (sceneSelection === 'home' ? sceneTargets.slice(0, 1) : sceneTargets)) {
       const { page, ctx } = await login(role);
       for (const [scene, intent] of entries) {
         const before = report.sceneEntryCalls?.length || 0;
@@ -1010,6 +1183,42 @@ try {
           const response = entryResult.response;
           const payload = await response.json();
           check(`${scene}: workspace summary contract loaded`, payload.ok !== false && Boolean(payload.data?.product_workspace));
+          const workspace = payload.data?.product_workspace;
+          const sections = Array.isArray(workspace?.sections) ? workspace.sections : [];
+          report.workspaceHome = { sections: sections.map((row) => ({ key: row.key, label: row.label, count: row.count })),
+            total: workspace?.total ?? null, quick_links: (workspace?.presentation?.quick_links || []).length };
+          const root = page.locator('[data-role-home][data-role-home-renderer="workspace-contract"]');
+          await root.waitFor({ timeout: 60000 });
+          await page.waitForFunction(() => ['ready', 'error'].includes(document.querySelector('[data-role-home]')?.getAttribute('data-state')), undefined, { timeout: 60000 });
+          check(`${scene}: declared workspace composition rendered`, await page.locator('[data-workspace-composition="official-dashboard-workspace"]').count() === 1);
+          check(`${scene}: declared workspace state is usable`, await root.getAttribute('data-state') === 'ready');
+          const summaries = page.locator('[data-role-home] .role-home-surface__summary-list article');
+          check(`${scene}: declared sections render as summaries`, await summaries.count() === Math.min(sections.length, 4),
+            { rendered: await summaries.count(), declared: sections.length });
+          check(`${scene}: declared entries render as usable actions`, await page.locator('[data-role-home] .role-home-surface__link-list--quick button:enabled').count() > 0);
+          check(`${scene}: declared main action available`, await page.getByRole('button', { name: '查看全部', exact: true }).isEnabled());
+          const themeState = () => page.evaluate(() => ({ mode: document.documentElement.getAttribute('data-sc-theme-mode'), stored: localStorage.getItem('sc_theme') }));
+          for (const theme of ['light', 'dark']) {
+            await page.setViewportSize({ width: 1440, height: 900 });
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+              const state = await themeState();
+              if (state.mode === theme && state.stored === theme) break;
+              await page.locator('.theme-switch:visible').click();
+            }
+            await page.waitForFunction((expected) => document.documentElement.getAttribute('data-sc-theme-mode') === expected
+              && localStorage.getItem('sc_theme') === expected, theme);
+            check(`${scene}: ${theme} theme applied`, (await themeState()).mode === theme);
+            for (const width of [1440, 390]) {
+              await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+              await dismissTransientOverlays(page);
+              const geometry = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth,
+                widest: [...document.querySelectorAll('body *')].map((node) => ({ tag: node.tagName, cls: String(node.className || '').slice(0, 80), right: Math.round(node.getBoundingClientRect().right) }))
+                  .filter((row) => row.right > window.innerWidth + 1).sort((a, b) => b.right - a.right).slice(0, 5) }));
+              check(`${scene}-${theme}-${width}: page contained`, geometry.scrollWidth <= geometry.innerWidth + 1, geometry);
+              await page.screenshot({ animations: 'disabled', path: path.join(out, `scene-${scene}-${theme}-${width}.png`), fullPage: true });
+            }
+          }
+          await page.setViewportSize({ width: 1440, height: 900 });
         } else {
           await page.waitForFunction(() => document.querySelector('[data-semantic-component="SceneContractBlockGridView"]')?.getAttribute('data-state') === 'idle', undefined, { timeout: 60000 });
           check(`${scene}: declared entry succeeded`, (report.sceneEntryCalls || []).slice(before).some(row => row.role === role && row.intent === intent && row.success));
@@ -1226,7 +1435,8 @@ try {
     await finance.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'task-authority') {
     const finance = await login('fixture_role_finance');
-    await form(finance.page, '/f/payment.request/1813?menu_id=545&action_id=775', 'task-authority');
+    const taskOriginId = (await resolveGovernedOrigin(finance.page)).id;
+    await form(finance.page, `/f/payment.request/${taskOriginId}?menu_id=545&action_id=775`, 'task-authority');
     const authority = report.taskAuthorities?.['payment.request'];
     check('task: actual payment authority received', authority?.model === 'payment.request');
     check('task: native tree is sole layout authority', authority.structure?.layoutPolicy === 'container_tree_authority');
@@ -3441,7 +3651,8 @@ try {
     }
   } else if (process.env.TPL07_SCOPE === 'detail-state') {
     const finance = await login('fixture_role_finance');
-    await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'detail-state', 'readonly');
+    const stateOriginId = (await resolveGovernedOrigin(finance.page)).id;
+    await form(finance.page, `/r/payment.request/${stateOriginId}?menu_id=545&action_id=775`, 'detail-state', 'readonly');
     let authority = report.recordAuthority;
     check('detail state: effective record authority received', authority?.model === 'payment.request');
     check('detail state: allowed draft has no invented denial', await finance.page.locator('[data-record-action-denials]').count() === 0);
@@ -3511,9 +3722,12 @@ try {
     await navigationScope();
   } else if (process.env.TPL07_SCOPE === 'style') {
     await styleScope();
+  } else if (process.env.TPL07_SCOPE === 'create-edit') {
+    await createEditScope();
   } else if (process.env.TPL07_SCOPE === 'detail') {
     const finance = await login('fixture_role_finance');
-    await form(finance.page, '/r/payment.request/1813?menu_id=545&action_id=775', 'payment-readonly', 'readonly');
+    const detailOriginId = (await resolveGovernedOrigin(finance.page)).id;
+    await form(finance.page, `/r/payment.request/${detailOriginId}?menu_id=545&action_id=775`, 'payment-readonly', 'readonly');
     check('payment: existing company fact preserved', await finance.page.getByText('FE Company A', { exact: true }).count() > 0);
     report.paymentFactText = await finance.page.locator('[data-detail-facts]').allTextContents();
     await finance.page.setViewportSize({ width: 390, height: 844 });
@@ -3560,7 +3774,8 @@ try {
   await p.locator('[data-list-card-container="official"]').waitFor();
   await p.waitForTimeout(1500);
   check('payment: return keeps page and set', JSON.stringify(report.calls.filter((call) => call.model === 'payment.request').at(-1).ids) === JSON.stringify(next.ids));
-  await form(p, '/f/payment.request/1813?menu_id=545&action_id=775', 'payment-master-detail');
+  const paymentOriginId = (await resolveGovernedOrigin(p)).id;
+  await form(p, `/f/payment.request/${paymentOriginId}?menu_id=545&action_id=775`, 'payment-master-detail');
   check('payment: master detail extension preserved', await p.locator('[data-field-type="one2many"]').count() > 0);
   // The introduce action and its dialog must render the terms the effective
   // contract declares, and a contract gap must surface instead of being
@@ -3588,7 +3803,7 @@ try {
   await p.screenshot({ path: path.join(out, 'payment-introduce-dialog.png') });
   await p.keyboard.press('Escape');
   await p.locator('[data-dialog-purpose="payment-settlement-introduce"]').waitFor({ state: 'detached' });
-  await form(p, '/r/payment.request/1813?menu_id=545&action_id=775', 'payment-readonly', 'readonly');
+  await form(p, `/r/payment.request/${paymentOriginId}?menu_id=545&action_id=775`, 'payment-readonly', 'readonly');
   await p.setViewportSize({ width: 390, height: 844 });
   check('payment detail: narrow page contained', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await p.screenshot({ path: path.join(out, 'payment-readonly-narrow.png') });
@@ -3600,7 +3815,7 @@ try {
   await contract.ctx.close();
   }
 
-  if (!['scene-entry', 'expense-policy', 'favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'approval-actions', 'detail', 'detail-state', 'style', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
+  if (!['scene-entry', 'expense-policy', 'favorite-lifecycle', 'favorite-lifecycle-resume', 'favorite-active-delete', 'favorite-active-delete-resume', 'task-authority', 'approval-actions', 'detail', 'detail-state', 'style', 'create-edit', 'navigation', 'favorites', 'favorites-failure', 'favorite-recovery'].includes(process.env.TPL07_SCOPE)) {
   const admin = await login('fixture_role_config_admin');
   // Resolve a non-pilot entry from authorized navigation instead of model IDs.
   await admin.page.getByPlaceholder('搜索菜单...').fill('客户档案');
@@ -3616,11 +3831,11 @@ try {
 } catch (error) {
   report.status = 'failed';
   report.error = error.message;
-  if (['approval-actions', 'expense-policy', 'scene-entry', 'style'].includes(process.env.TPL07_SCOPE)) {
+  if (['approval-actions', 'expense-policy', 'scene-entry', 'style', 'create-edit'].includes(process.env.TPL07_SCOPE)) {
     report.failurePages = [];
     for (const ctx of browser.contexts()) for (const page of ctx.pages()) {
       report.failurePages.push({ url: page.url(), text: (await page.locator('body').innerText()).slice(0, 8000),
-        surfaces: await page.locator('[data-product-page-mode], [data-form-composition], [data-detail-composition], [data-semantic-component="ScForm"]').evaluateAll((nodes) => nodes.map((node) => ({ tag: node.tagName, attributes: Object.fromEntries([...node.attributes].filter((attr) => attr.name.startsWith('data-')).map((attr) => [attr.name, attr.value])) }))) });
+        surfaces: await page.locator('[data-product-page-mode], [data-form-composition], [data-detail-composition], [data-semantic-component="ScForm"], [data-component="FormSection"], [data-canonical-node-kind], [data-field-name]').evaluateAll((nodes) => nodes.map((node) => ({ tag: node.tagName, attributes: Object.fromEntries([...node.attributes].filter((attr) => attr.name.startsWith('data-')).map((attr) => [attr.name, attr.value])) }))) });
       await page.screenshot({ path: path.join(out, `failure-${report.failurePages.length}.png`) });
     }
   }

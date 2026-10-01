@@ -1331,6 +1331,74 @@ metrics.cards[0].headerBodyGap=12;assert.ok(detailGeometryFailures(metrics).incl
         self.assertIn("report.detailVisual.relations.push({ name, status: 'not_run'", scope)
         self.assertIn("detailStyleScopeIsolated(process.env)) && ['execute_button', 'contract.action', 'file.upload']", source)
 
+    def test_published_record_identity_is_never_hardcoded(self):
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        self.assertNotIn('payment.request/1813', source)
+        helper = source.split('// Bounded detail-style verification helpers', 1)[1].split('// End bounded detail-style verification helpers.', 1)[0]
+        self.assertIn('async function resolveGovernedOrigin(page)', helper)
+        self.assertIn('detailOriginDomain(DETAIL_ORIGIN_FIXTURE)', helper)
+        self.assertIn("check('governed origin: unique declared fixture identity'", helper)
+        for scope in ['styleScope', 'createEditScope']:
+            self.assertIn('resolveGovernedOrigin(', source.split(f'async function {scope}', 1)[1])
+
+    def test_every_record_opening_scope_resolves_the_declared_origin(self):
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        for marker in ['const taskOriginId = (await resolveGovernedOrigin(finance.page)).id',
+                       'const stateOriginId = (await resolveGovernedOrigin(finance.page)).id',
+                       'const detailOriginId = (await resolveGovernedOrigin(finance.page)).id',
+                       'const paymentOriginId = (await resolveGovernedOrigin(p)).id']:
+            self.assertIn(marker, source)
+
+    def test_create_edit_scope_is_isolated(self):
+        self.run_js("""
+const valid={TPL07_SCOPE:'create-edit'};
+assert.equal(createEditScopeIsolated(valid),true);
+for(const patch of [{TPL07_SCOPE:'style'},{TPL52_FAMILY:'all'},{TPL07_EXPENSE_SAVE_SUCCESS:'1'},{TPL07_SCENE_SELECTION:'home'}]) assert.equal(createEditScopeIsolated({...valid,...patch}),false);
+""")
+
+    def test_create_edit_review_consumes_the_declaration_and_refuses_writes(self):
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        scope = source.split('async function createEditScope', 1)[1].split('\ntry {', 1)[0]
+        self.assertIn('const origin = await resolveGovernedOrigin(page)', scope)
+        self.assertIn("'[data-form-composition=\"official-standard-form\"][data-state=\"ok\"]'", scope)
+        self.assertIn("'[data-form-composition-reason=\"contract-record-view\"]'", scope)
+        self.assertIn('await page.reload()', scope)
+        self.assertNotIn('payment.request/1813', scope)
+        self.assertIn("createEditScopeIsolated(process.env) && body?.intent === 'api.data'", source)
+        self.assertIn("['create', 'write', 'unlink'].includes(body?.params?.op)", source)
+
+    def test_scene_entry_home_selection_is_bounded(self):
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        scope = source.split("if (process.env.TPL07_SCOPE === 'scene-entry') {", 1)[1].split("process.env.TPL07_SCOPE === 'expense-policy'", 1)[0]
+        self.assertIn("process.env.TPL07_SCENE_SELECTION || 'all'", scope)
+        self.assertIn("sceneSelection === 'home' ? sceneTargets.slice(0, 1)", scope)
+        self.assertIn('data-role-home', scope)
+        self.assertIn('data-workspace-composition="official-dashboard-workspace"', scope)
+
+    def test_transient_overlays_are_dismissed_before_measuring_containment(self):
+        # A leftover TDesign tooltip keeps its pre-resize coordinates and would
+        # inflate documentElement.scrollWidth on a later narrow viewport. The probe
+        # must dismiss transient overlays before measuring, and must NOT weaken the
+        # containment assertion itself (no selector exclusion, no scrollWidth fudge).
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        helper = source.split('async function dismissTransientOverlays(page) {', 1)[1].split('\n}', 1)[0]
+        self.assertIn('blur', helper)
+        self.assertIn('t-popup.t-tooltip', helper)
+        self.assertEqual(source.count('await dismissTransientOverlays(page);'), 2)
+        self.assertNotIn('scrollWidth <= innerWidth + 1 ||', source)
+        self.assertNotIn("skipOverlay", source)
+
+    def test_overlay_scope_expands_the_declared_settlement_disclosure(self):
+        # An empty settlement collection is a declared optional presentation with
+        # destroy-on-collapse; the introduce entry is only mounted after its own
+        # disclosure is expanded. The probe consumes that declaration instead of
+        # assuming the entry is unconditionally mounted.
+        source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
+        self.assertIn('[data-semantic-component="PaymentSettlementDetailCollectionControl"] [data-disclosure-trigger]', source)
+        self.assertIn("getAttribute('data-state') === 'collapsed'", source)
+        self.assertIn("data-disclosure-trigger][data-state=\"expanded\"", source)
+        self.assertIn('declared entry is consumed or the gap is explicit', source)
+
 
 class StandardListSurfaceAdapterTest(unittest.TestCase):
     def execute_adapter(self, overrides=None, identity_passes=True, backend_passes=True):
