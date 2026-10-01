@@ -398,6 +398,8 @@ export interface ContractV2ActionRule {
   permissionConstraints?: ContractV2Dictionary;
   reasonCode?: string;
   entitlementEvaluated?: boolean;
+  authorizationAllowed?: boolean;
+  businessAvailable?: boolean;
 }
 
 export interface ContractV2ActionContract {

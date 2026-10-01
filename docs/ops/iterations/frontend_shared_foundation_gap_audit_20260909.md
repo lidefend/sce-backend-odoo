@@ -10024,3 +10024,25 @@ P4 1afe2a0fc补style/detail真实明暗主题、1440/390、契约可见section�
 列表Make身份入口已恢复，抵达既定action775/menu545并采集normal1440截图；批量检查直接check官方checkbox input，被所属CollectionSelectionControl label拦截后超时。失败日志system-converged-list-browser.log；异常发生在最终report写入之前，因此没有最终JSON，不能当通过。下一执行器仅修P4可见控件定位与相应正反例，不force-click输入或改产品样式迁就测试；产品输入未变可复用当前构建。选中/空态/手机组尚未验收，原四项视觉needs_work保持。
 
 root完成本轮证据交接后立即暂停代码与运行验证，仅负责调度；A已归还唯一写入权，B/C任务结束，当前无实现writer，等待所有者安排执行器。创建/编辑及workspace新scope只有只读方案、未写代码，连同合法专用出口证据核销保留在原run.remaining_acceptance。整体goal为incomplete/run verification_pending；当前本地提交不等于冻结交付，主线集成、部署、目标用户交付均not_run。后续先读原run、认领单写入权并复用有效证据，不重建目标或平行台账。
+
+
+53.261 日常部署后的真实账号复核（2026-10-01，唯一索引仍为原 run）。PR525 已将上一轮候选集成为 main `2d164a1fed2066307774c82db2e65def80bff70d`；所有者随后明确授权升级日常服务器并以其账号验收。既有 sc-root / sce-product-odoo / sc_demo / 18081 已完成受管同步、核心模块升级、重启及静态构建，版本与静态字节回读通过；不重建环境或重置业务数据。升级、账号验证与页面观察分开记录，完整产品交付不因发布探针绿灯自动成立。
+
+P4 日常工具收口：发布探针改为严格读取 `navigation.nav`，旧字段不得掩盖缺失；在发送登录凭据前核验部署 SHA/数据库。显式日常只读凭据确认绑定工具、账号、地址、数据库、SHA、run 和短有效期，生产拒绝规则不变，凭据不入报告。单账号浏览器复用已声明列表控件与真实生产记录打开 resolver，区分角色落地页、工作台以及查看/编辑表单模式；业务数据写入被阻断，正常浏览遥测单独记录。原工具误判日志保留，不把诊断报告改写为门禁通过。修复后的正式只读 probe 已通过 89 个入口及必需路径；首页双视口观察可复用，列表/记录观察继续按原 run 更新。
+
+P0 真实呈现修复 `712f83eb9`：日常项目列表已有业务记录，却因 SceneView 为零诊断事实返回兜底文案而同时显示“当前暂无可办理内容”。通用诊断 resolver 仅展示声明的缺项、步骤或显式不一致事实；真正无渲染目标的空态、加载/错误/权限及嵌入页面分支保持。新增12项行为断言、既有 scene 入口测试及双严格类型检查通过，B独立源码复核通过。此处只说明代码与定向测试完成，日常部署后受影响场景的实际复验仍待执行，不能继承旧截图的通过结论。详细命令、原始日志、失败分类、可复用范围和下一步均见 `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json` 的 `daily_main_upgrade_20261001`。
+
+### 53.262 Daily form configuration closure (2026-10-01)
+
+真实日常环境付款详情失败的首因是已退役 flat 排列后保留的四条 P2 标签偏好中一条 native locator 失效；P0 PageAssembler 吞掉配置异常后制造无 occurrence 的次生 500。P0 六文件已提交 d4eaadaab，L1、185 项契约测试、22 项装配测试和 15 项交互检查通过，B 独立源码复核通过，尚未部署。
+P4 经既有 odoo.shell.exec 对 configuration312 做一次精确适配：绑定原版本/双 hash、真实账号原生视图 hash 和四个 occurrence，前置行锁防漂移，仅首 target field18 改为 field20，标签、其他策略及付款业务事实不变。加强 dry-run 回滚、版本7发布及独立连接完整只读记录契约回读均通过；版本和审计写属于正常发布副作用。原快照、命令结果、恢复约束及脚本 hash 仅索引于原 run 的 daily_main_upgrade_20261001.configuration_repair。浏览器受影响详情流程仍在复核；不将契约成功冒充完整产品交付。
+
+### 53.263 Contract-bound daily acceptance and metadata rendering (2026-10-01)
+
+验收契约先于浏览器执行：原 run 的 acceptance_authority.contract_to_execution_to_report 绑定真实账号/角色/公司、部署身份、生产契约与正式 DOM 声明，规定角色差异、pass/fail/not_run、责任层及依赖失效。daily record_checks 对应八个实际步骤并引用原契约响应；detail-only 不声称执行列表。89 条是本次发布产品策略与账号观测，不推广成任意角色的页面要求；前端兑现契约不替代独立 ACL 政策验证。工具17项定向测试及独立契约→执行→报告审核通过。
+X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺失干扰页面打开；现复用授权元数据 readRecord，保留已声明名称、单次失败和卸载边界，主动下载/上传路径不变。实际日常账号元数据读取通过，真实历史文件下载仍404且未伪造恢复。实际组件15项检查、关系矩阵/负例及 Python 定向测试、双严格类型检查通过。源码已独立复核；主线集成、部署及其后的受影响详情/场景验证尚未完成。
+
+### 53.264 Owner-stopped handoff: layered contract acceptance (2026-10-01)
+
+所有者要求记录计划目标后停止，由其他执行器执行。原 run 的 execution_handoff_20261001 是唯一执行计划：先固定语义摘要与元数据边界，再补后端具体实例契约验收 PASS 回执、浏览器同契约前置及一致性检查；完成定向测试/独立审查后才冻结、受保护主线集成、日常部署，最后先后端后前端给出限定范围产品结论。不得用运行时契约与 DOM 相等自证权限政策，不以开发管理员形态约束其他角色，不通过删元数据或重放响应凑 hash 一致。
+交接源码 HEAD08ea5b5cd745b366e644a1a18e68b5bc3d09a41a，分支 fix/daily-official-template-acceptance，基线2d164a1fed2066307774c82db2e65def80bff70d；本次仅计划/goal/run 文档为未提交改动。Quick 已按所有者要求终止，exit143、无 receipt，部分通过输出不得作为成功门禁。未推送、未建 PR、未集成或部署本轮修复。原源审查/定向证据、日常配置312版本7及权威回读继续保留。所有实现、验证、浏览器、运行时与发布工作均已停止。

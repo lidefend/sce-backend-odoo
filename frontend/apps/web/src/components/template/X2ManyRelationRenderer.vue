@@ -437,6 +437,7 @@ import {
   selectedOne2manyRelationOption,
 } from './one2manyRelationQuery';
 import { downloadFile, fileToBase64, uploadFile } from '../../api/files';
+import { readRecord } from '../../api/data';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 import {
   detailCollectionColumnPresentation,
@@ -889,30 +890,34 @@ function o2mRowMessages(row: RelationFieldRow) {
 const attachmentError = ref('');
 const uploadTick = ref(0);
 const attachmentNameMap = ref<Record<number, string>>({});
-const attachmentNameLoading = ref<Set<number>>(new Set());
+const attachmentNameAttempted = new Set<number>();
+let attachmentNamesDisposed = false;
+onBeforeUnmount(() => { attachmentNamesDisposed = true; });
 
 function attachmentDisplayName(option: { id: number; label: string }) {
-  const cached = attachmentNameMap.value[option.id];
-  if (cached) return cached;
   const label = String(option.label || '');
   // label 不是 "#id" 形式（附件名已由选项携带）时直接使用
   if (!/^#\d+$/.test(label)) return label;
+  const cached = attachmentNameMap.value[option.id];
+  if (cached) return cached;
   void lazyLoadAttachmentName(option.id);
   return label;
 }
 
 async function lazyLoadAttachmentName(id: number) {
-  if (attachmentNameLoading.value.has(id)) return;
-  attachmentNameLoading.value.add(id);
+  if (attachmentNamesDisposed || attachmentNameAttempted.has(id)) return;
+  // Metadata lookup must not fetch file content merely to render its name.
+  // Keep failures attempted for this mounted component: reactive renders are
+  // not an authority to retry denied/missing metadata indefinitely.
+  attachmentNameAttempted.add(id);
   try {
-    const res = await downloadFile({ id });
-    if (res?.name) {
-      attachmentNameMap.value = { ...attachmentNameMap.value, [id]: res.name };
+    const result = await readRecord({ model: 'ir.attachment', ids: [id], fields: ['id', 'name'] });
+    const record = result.records?.find(row => Number(row.id) === id);
+    if (!attachmentNamesDisposed && typeof record?.name === 'string' && record.name.trim()) {
+      attachmentNameMap.value = { ...attachmentNameMap.value, [id]: record.name };
     }
   } catch {
-    // 下载失败时保留原 label（#id），不阻塞展示
-  } finally {
-    attachmentNameLoading.value.delete(id);
+    // Keep the declared placeholder. Explicit download retains its own error.
   }
 }
 

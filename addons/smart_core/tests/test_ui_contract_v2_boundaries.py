@@ -268,6 +268,39 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_configuration_error_is_structured_on_both_source_paths(self):
+        from unittest.mock import patch
+        error = self.module.FormConfigurationError(
+            "CONFIG_TARGET_STALE", "/form/group/field[18]",
+            configuration="configured-form", field="private-field", patch={"secret": "value"},
+        )
+        for native in (True, False):
+            with self.subTest(native=native):
+                handler = self.module.UiContractV2Handler(env={}, su_env={})
+                with patch.object(handler, "_uses_native_form_source", return_value=native), patch.object(
+                    handler, "_dispatch_native_form_source", side_effect=error
+                ), patch.object(self.module.UiContractHandler, "handle", side_effect=error):
+                    result = handler.handle({"params": {"model": "res.partner", "view_type": "form"}})
+                self.assertFalse(result.ok)
+                self.assertEqual(result.code, 409)
+                self.assertEqual(result.error["reason_code"], "CONFIG_TARGET_STALE")
+                self.assertEqual(result.error["configuration"], "configured-form")
+                self.assertEqual(result.error["target"], "/form/group/field[18]")
+                self.assertNotIn("private-field", json.dumps(result.to_legacy_dict()))
+                self.assertNotIn("assembler_source", self.module._captured)
+                self.assertEqual(result.data, {})
+
+    def test_native_projection_plain_value_error_keeps_original_response(self):
+        from unittest.mock import patch
+        handler = self.module.UiContractV2Handler(env={}, su_env={})
+        with patch.object(handler, "_uses_native_form_source", return_value=True), patch.object(
+            handler, "_dispatch_native_form_source", side_effect=ValueError("invalid native view")
+        ):
+            result = handler.handle({"params": {"model": "res.partner", "view_type": "form"}})
+        self.assertEqual(result.code, 400)
+        self.assertEqual(result.error["message"], "invalid native view")
+        self.assertNotIn("reason_code", result.error)
+
     def test_native_form_source_bypasses_legacy_ui_contract_handler(self):
         handler = self.module.UiContractV2Handler(env=object(), su_env=object())
         data, meta = handler._dispatch_native_form_source(

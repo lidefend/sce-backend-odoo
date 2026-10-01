@@ -8,6 +8,7 @@ from copy import deepcopy
 from typing import Any, Dict, Optional
 from lxml import etree
 
+from ..core.form_configuration_compiler import FormConfigurationError
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
@@ -425,6 +426,15 @@ class UiContractV2Handler(BaseIntentHandler):
         return [*preferred, *[name for name in columns if name not in preferred]]
 
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
+        try:
+            return self._handle_contract(payload, ctx)
+        except FormConfigurationError as exc:
+            _logger.warning("ui.contract.v2 configuration rejected: %s", exc)
+            result = self._err(409, "页面配置无法应用，请联系配置管理员处理")
+            result.error.update(exc.public_details())
+            return result
+
+    def _handle_contract(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         started_at = time.monotonic()
         assembler_stages: dict[str, int] = {}
         params = self._params(payload)
@@ -549,6 +559,8 @@ class UiContractV2Handler(BaseIntentHandler):
                         projection_su_env,
                         base_ui_params or ui_params,
                     )
+                except FormConfigurationError:
+                    raise
                 except (KeyError, ValueError) as exc:
                     return self._err(400, str(exc) or "native form projection failed")
                 except Exception:

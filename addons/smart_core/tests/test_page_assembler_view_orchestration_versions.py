@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import ast
 import importlib.util
 import copy
 import sys
@@ -72,6 +73,33 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
     def setUp(self):
         self.PageAssembler = _load_page_assembler()
         self.assembler = self.PageAssembler.__new__(self.PageAssembler)
+
+    def test_rejected_configuration_cannot_enter_native_fallback(self):
+        # Execute the shipped view-loading exception boundary, with only its
+        # loader replaced: this distinguishes typed rejection from old fallback.
+        module = sys.modules[self.PageAssembler.__module__]
+        tree = ast.parse(MODULE_PATH.read_text())
+        boundary = next(node for node in ast.walk(tree) if isinstance(node, ast.Try)
+                        and any(isinstance(h.type, ast.Name) and h.type.id == "FormConfigurationError"
+                                for h in node.handlers))
+        boundary = copy.deepcopy(boundary)
+        boundary.body = [ast.Raise(exc=ast.Name(id="failure", ctx=ast.Load()), cause=None)]
+        code = compile(ast.fix_missing_locations(ast.Module(body=[boundary], type_ignores=[])), str(MODULE_PATH), "exec")
+        typed = module.FormConfigurationError("CONFIG_TARGET_STALE", "/old", configuration="test-form")
+        for failure in (typed, ValueError("ordinary native failure"), KeyError("missing")):
+            context = {"failure": failure, "FormConfigurationError": module.FormConfigurationError,
+                       "explicit_target_view": False, "mark_missing": lambda *_: None,
+                       "_logger": module._logger, "model": "test.model", "vt": "form",
+                       "data": {}, "warnings": []}
+            if failure is typed:
+                with self.assertRaises(module.FormConfigurationError) as caught:
+                    exec(code, context)
+                self.assertIs(caught.exception, typed)
+                self.assertNotIn("v_contract", context)
+                self.assertEqual(context["warnings"], [])
+            else:
+                exec(code, context)
+                self.assertEqual(context["v_contract"], {"type": "form"})
 
     def test_fields_map_preserves_authoritative_monetary_metadata(self):
         field = types.SimpleNamespace(

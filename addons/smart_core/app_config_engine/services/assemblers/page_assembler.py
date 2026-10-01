@@ -9,6 +9,7 @@ import logging
 import re
 import time
 from copy import deepcopy
+from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -536,6 +537,9 @@ class PageAssembler:
                 mark_missing("app.view.config")
                 _logger.warning("app.view.config missing; fallback view contract for model=%s vt=%s", model, vt)
                 v_contract = {"type": vt}
+            except FormConfigurationError:
+                # Rejected configuration is not an unavailable native view.
+                raise
             except Exception as e:
                 if explicit_target_view:
                     raise

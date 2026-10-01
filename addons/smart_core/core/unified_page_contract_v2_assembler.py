@@ -198,6 +198,12 @@ def _formal_container_type(value: Any, default: str = "section") -> str:
     return "section" if node_type == "sheet" else node_type
 
 
+# The formal container identity grammar of ``$defs.id``.  A value outside this
+# grammar is display copy (a localized label or a native caption), never an
+# identity.
+_FORMAL_CONTAINER_ID = re.compile(r"^[a-zA-Z][a-zA-Z0-9_.:-]*$")
+
+
 def _stable_id(value: Any, fallback: str) -> str:
     raw = _text(value, fallback)
     out = []
@@ -1897,16 +1903,19 @@ def _normalize_native_layout_nodes(
             ))
             out.append(normalized)
             continue
+        # Stable container identity is structural metadata, never display copy.
+        # A label-only native group keeps its caption in string/label/title and
+        # takes its identity from its structural position instead.
         container_id = _text(node.get("containerId") or node.get("container_id") or node_name)
-        if not container_id:
-            explicit_label = node.get("title") or node.get("string") or node.get("label")
-            container_id = _stable_id(explicit_label, node_type) if explicit_label else f"{node_type}.{node_path}"
+        structural_id = f"{node_type}.{node_path}"
+        container_id = _stable_id(container_id, structural_id) if container_id else structural_id
+        if not _FORMAL_CONTAINER_ID.match(container_id):
+            container_id = structural_id
         if container_id in used_container_ids:
             container_id = f"{container_id}.{node_path}"
         used_container_ids.add(container_id)
         node["containerId"] = container_id
         node["containerType"] = _formal_container_type(node_type)
-        # Stable container identity is structural metadata, never display copy.
         # Anonymous native containers intentionally keep an empty title.
         node.setdefault("title", label)
         node.setdefault("label", label)

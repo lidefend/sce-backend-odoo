@@ -124,3 +124,18 @@ goal:
     execution and coordinates only. The owner will assign the next executor.
     Goal remains incomplete; the original run records the actual relation403
     and list selector failures plus reusable evidence. No automatic next batch.
+
+  layered_acceptance_and_execution_handoff_20261001:
+    execution_state: successor_assigned_implementing
+    successor_assignment_required: false
+    successor_assigned: "owner-assigned executor, 2026-10-01, continuing execution_handoff_20261001"
+    automatic_resume: false
+    plan_authority: .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json#execution_handoff_20261001
+    objective: >-
+      Backend independently accepts the exact actor/company/version/scenario contract first;
+      frontend then verifies execution of that approved contract, with matching semantic
+      content and authority identity. Their conjunction supports only the declared product scope.
+    current_executor_instruction: >-
+      Owner assigned this executor to continue the recorded plan. Steps 1-4 are the assigned
+      scope; the stopped executor's cancelled Quick is not evidence and no saved next action
+      authorizes write replay.

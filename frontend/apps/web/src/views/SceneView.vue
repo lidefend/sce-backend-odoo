@@ -185,7 +185,7 @@ import { intentRequest } from '../api/intents';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
-import { ownsSceneRoute, resolveSceneContractEntryIntent } from '../app/sceneEntryContract';
+import { ownsSceneRoute, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
 import { findActionMeta, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
@@ -341,28 +341,10 @@ const idleDiagnosticMessage = computed(() => {
 });
 
 const runtimeDiagnosticTitle = computed(() => {
-  return pageText('runtime_diag_title_default', '当前暂无可办理内容');
+  return pageText('runtime_diag_title_default', '场景提示');
 });
 
-const runtimeDiagnosticMessage = computed(() => {
-  const runtime = resolveSceneRuntime();
-  const missingRequiredCount = Number(runtime.missing_required_count || 0);
-  const activeTransitionCount = Number(runtime.active_transition_count || 0);
-  const bridgeAligned = isSceneRuntimeBridgeAligned();
-  const parts: string[] = [];
-
-  if (missingRequiredCount > 0) {
-    parts.push(`${pageText('runtime_diag_missing_required_prefix', '待补充事项')}：${missingRequiredCount}`);
-  }
-  if (activeTransitionCount > 0) {
-    parts.push(`${pageText('runtime_diag_transition_prefix', '可办理步骤')}：${activeTransitionCount}`);
-  }
-  if (!bridgeAligned) {
-    parts.push(pageText('runtime_diag_alignment_mismatch', '当前场景语义尚未完全对齐。'));
-  }
-
-  return parts.join('；') || pageText('runtime_diag_empty', '暂未获取到可展示的业务信息，请稍后重试。');
-});
+const runtimeDiagnosticMessage = computed(() => resolveSceneRuntimeDiagnostic(resolveSceneRuntime(), pageText));
 
 function asRuntimeRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -387,16 +369,6 @@ function resolveSceneRuntime() {
   return {};
 }
 
-function isSceneRuntimeBridgeAligned() {
-  const runtime = resolveSceneRuntime();
-  if (typeof runtime.bridge_aligned === 'boolean') {
-    return runtime.bridge_aligned;
-  }
-  if (typeof runtime.semantic_bridge_aligned === 'boolean') {
-    return runtime.semantic_bridge_aligned;
-  }
-  return true;
-}
 
 const sceneResolveSignature = computed(() => JSON.stringify({
   path: route.path,

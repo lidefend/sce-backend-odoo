@@ -39,6 +39,30 @@ beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'production-safe-smoke',
 beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit', env: { SC_ACCEPTANCE_PROFILE: 'production', SC_ACCEPTANCE_FRONTEND_URL: 'https:\/\/prod.example.test', SC_ACCEPTANCE_DATABASE: 'tenant_prod', SC_ACCEPTANCE_EXPECTED_SHA: SHA } }), /forbidden for profile production/);
 beforeLaunch(() => assertNoHardcodedNumericRouteFallback("page.goto('/a/786')"), /hardcoded numeric route/);
 
+const dailyEnv = { SC_ACCEPTANCE_PROFILE: 'daily', SC_ACCEPTANCE_FRONTEND_URL: 'https://daily.example.test',
+  SC_ACCEPTANCE_EXPECTED_SHA: SHA, ACCEPTANCE_LOGIN: 'synthetic-reader', ACCEPTANCE_PASSWORD: 'demo',
+  SC_ACCEPTANCE_RUN_ID: 'explicit-readonly-run' };
+const dailyConfirmation = { schema: 'daily-readonly-credential-confirmation.v1', profile: 'daily', operation: 'readonly',
+  tool: 'daily-release-probe', baseUrl: dailyEnv.SC_ACCEPTANCE_FRONTEND_URL, apiUrl: dailyEnv.SC_ACCEPTANCE_FRONTEND_URL,
+  database: 'sc_demo', login: dailyEnv.ACCEPTANCE_LOGIN, expectedSha: SHA, runId: dailyEnv.SC_ACCEPTANCE_RUN_ID,
+  expiresAt: new Date(Date.now() + 60_000).toISOString() };
+const confirmEnv = (confirmation = dailyConfirmation, changes = {}) => ({ ...dailyEnv,
+  SC_ACCEPTANCE_DAILY_CREDENTIAL_CONFIRMATION: JSON.stringify(confirmation), ...changes });
+const confirmed = resolveAcceptanceEnvironment({ tool: 'daily-release-probe', env: confirmEnv() });
+assert.equal(confirmed.safety.dailyCredentialConfirmed, true);
+assert(!JSON.stringify(redactedEnvironmentEvidence(confirmed)).includes('"password":'));
+for (const [key, value] of Object.entries({ tool: 'other-tool', baseUrl: 'https://wrong.example.test', apiUrl: 'https://wrong.example.test',
+  database: 'other', login: 'other-reader', expectedSha: 'b'.repeat(40), runId: 'different-run', operation: 'isolated-write' })) {
+  beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'daily-release-probe', env: confirmEnv({ ...dailyConfirmation, [key]: value }) }), /identity mismatch/);
+}
+for (const expiresAt of [new Date(0).toISOString(), new Date(Date.now() + 30 * 60_000).toISOString(), 'invalid']) {
+  beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'daily-release-probe', env: confirmEnv({ ...dailyConfirmation, expiresAt }) }), /expire/);
+}
+beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'daily-release-probe', env: confirmEnv(dailyConfirmation, { SC_ACCEPTANCE_RUN_ID: '' }) }), /identity mismatch/);
+beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'production-safe-smoke', env: confirmEnv(dailyConfirmation, { SC_ACCEPTANCE_PROFILE: 'production', SC_ACCEPTANCE_DATABASE: 'tenant_prod' }) }), /identity mismatch/);
+beforeLaunch(() => resolveAcceptanceEnvironment({ tool: 'daily-release-probe', env: confirmEnv({ ...dailyConfirmation, password: 'forbidden-extra-field' }) }), /identity mismatch/);
+console.log('[daily_credential_confirmation] PASS cases=15 scope=readonly_exact_run_identity');
+
 const production = resolveAcceptanceEnvironment({ tool: 'production-safe-smoke', env: {
   SC_ACCEPTANCE_PROFILE: 'production', SC_ACCEPTANCE_FRONTEND_URL: 'https://prod.example.test',
   SC_ACCEPTANCE_DATABASE: 'tenant_prod', SC_ACCEPTANCE_EXPECTED_SHA: SHA,

@@ -2,16 +2,26 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { launchChromium } from './playwright_runtime.mjs';
+import { launchChromium, launchAcceptanceChromium } from './playwright_runtime.mjs';
 import { captureReleasedNavigation } from './released_navigation_target.mjs';
-import { resolveAcceptanceEnvironment } from './lib/frontend_acceptance_environment.mjs';
+import { resolveAcceptanceEnvironment, verifyServedIdentity, redactedEnvironmentEvidence } from './lib/frontend_acceptance_environment.mjs';
 
 const acceptance = resolveAcceptanceEnvironment({ tool: 'geometry-scroll-audit' });
+import { acquireAcceptanceLease } from './lib/frontend_acceptance_lease.mjs';
+import { DEFAULT_RECEIPT_PATH, assertContractPrerequisite, observedContractBinding, readContractReceipt } from './lib/acceptance_contract_receipt.mjs';
+const DAILY = acceptance.profile === 'daily';
+const DAILY_OBSERVATION_SCOPE = process.env.LIST_SURFACE_DAILY_OBSERVATION_SCOPE || 'all';
+if ((!DAILY && DAILY_OBSERVATION_SCOPE !== 'all') || !['all', 'record-only', 'detail-only'].includes(DAILY_OBSERVATION_SCOPE)) throw new Error('unknown daily observation scope');
+const dailyRuntime = DAILY ? await (async () => {
+  const { build } = await import('../../frontend/apps/web/node_modules/esbuild/lib/main.js');
+  const bundled = await build({ stdin: { contents: "export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';", resolveDir: path.join(acceptance.root, 'frontend/apps/web/src'), loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', define: { 'import.meta.env.DEV': 'false' }, write: false });
+  return import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
+})() : null;
 const BASE_URL = acceptance.baseUrl;
 const DATABASE = acceptance.database;
-const LOGIN = process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
-const PASSWORD = process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
-const BOOTSTRAP_SECRET = process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
+const LOGIN = DAILY ? acceptance.login : process.env.E2E_LOGIN || acceptance.login || acceptance.roleBindings.project_manager || '';
+const PASSWORD = DAILY ? acceptance.password : process.env.E2E_PASSWORD || acceptance.password || process.env.SC_ACCEPTANCE_FIXTURE_PASSWORD || '';
+const BOOTSTRAP_SECRET = DAILY ? '' : process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
@@ -25,14 +35,62 @@ const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
       { key: '520', width: 520, height: 844 },
       { key: '390', width: 390, height: 844 },
     ];
-const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || '').split(',').filter(Boolean);
+const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || (DAILY ? '1440,390' : '')).split(',').filter(Boolean);
 if (requestedWidths.some(width => !DEFAULT_VIEWPORTS.some(viewport => viewport.key === width))) throw new Error('unknown LIST_SURFACE_VIEWPORTS');
 const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => requestedWidths.includes(viewport.key)) : DEFAULT_VIEWPORTS;
-const REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
+let REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
 if (REQUESTED_ROUTE && !/^\/a\/\d+\?menu_id=\d+$/.test(REQUESTED_ROUTE)) throw new Error('LIST_SURFACE_ROUTE must identify exact action/menu');
 
 if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
   throw new Error('acceptance login and password or isolated bootstrap secret are required');
+}
+
+// The list/detail probe must not assert anything about a contract the backend has
+// not certified at the served revision. Validate the declared prerequisite before
+// the browser is launched, i.e. before any DOM interaction or assertion.
+const CONTRACT_RECEIPT_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_RECEIPT || DEFAULT_RECEIPT_PATH);
+const CONTRACT_DECLARATION_PATH = path.resolve(process.env.SC_ACCEPTANCE_CONTRACT_DECLARATION || 'config/acceptance/backend_contract_instance_v1.json');
+// The declared instance receipt names one exact runtime (config/acceptance/
+// backend_contract_instance_v1.json: database + fixture account). The daily
+// profile resolves to its own declared environment (config/frontend/
+// acceptance_environments_v1.json profiles.daily), so it must never be bound to
+// that receipt implicitly: a lane is contract-bound only when it explicitly
+// declares the requirement and a receipt for its own runtime.
+const REQUIRE_CONTRACT = ['1', 'true', 'yes'].includes(String(process.env.SC_ACCEPTANCE_REQUIRE_CONTRACT || '').toLowerCase());
+const contractGate = { required: REQUIRE_CONTRACT, profile: acceptance.profile, status: REQUIRE_CONTRACT ? 'not_evaluated' : 'not_required_for_profile',
+  receipt: CONTRACT_RECEIPT_PATH, declaration: CONTRACT_DECLARATION_PATH,
+  approved: null, approved_request: null, approved_route: '', binding: null };
+if (REQUIRE_CONTRACT) {
+  let declaration;
+  try {
+    declaration = JSON.parse(await fs.readFile(CONTRACT_DECLARATION_PATH, 'utf8'));
+  } catch (error) {
+    throw new Error(`contract prerequisite failed: contract_declaration_unavailable (${CONTRACT_DECLARATION_PATH})`);
+  }
+  const account = declaration?.account && typeof declaration.account === 'object' ? declaration.account : {};
+  const { receipt, error: receiptError } = readContractReceipt(CONTRACT_RECEIPT_PATH);
+  const verdict = assertContractPrerequisite({
+    receipt, loadError: receiptError,
+    expectedSha: String(acceptance.provenance?.expectedSha || ''),
+    database: DATABASE, login: String(account.login || LOGIN || '').trim(),
+    roleCode: String(account.role_code || '').trim(), companyName: String(account.company_name || '').trim(),
+  });
+  contractGate.status = 'accepted';
+  contractGate.approved = verdict.approved;
+  contractGate.approved_request = verdict.approvedRequest;
+  contractGate.approved_semantic_sha256 = verdict.approvedSemanticSha256;
+  contractGate.approved_route = verdict.approved.route;
+  contractGate.schema_sha256 = verdict.schemaSha256;
+  contractGate.identity = verdict.identity;
+  if (!verdict.identity.login || String(LOGIN || '').trim() !== verdict.identity.login) {
+    throw new Error(`contract prerequisite failed: contract_receipt_actor_mismatch ${JSON.stringify({ receipt: verdict.identity.login, runtime: String(LOGIN || '').trim() })}`);
+  }
+  // The approved record is opened through the declared list authority; the probe
+  // must not drift to another list or to the first row of whatever renders.
+  if (REQUESTED_ROUTE && REQUESTED_ROUTE !== contractGate.approved_route) {
+    throw new Error(`LIST_SURFACE_ROUTE ${REQUESTED_ROUTE} does not match the approved contract target ${contractGate.approved_route}`);
+  }
+  REQUESTED_ROUTE = contractGate.approved_route;
 }
 await fs.mkdir(OUTPUT, { recursive: true });
 
@@ -132,10 +190,10 @@ async function findPopulatedList(page, navigation) {
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
   if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
   const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
-  for (const target of candidates) {
+  for (const target of (DAILY ? candidates.slice(0, 3) : candidates)) {
     await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const toolbar = page.locator('[data-list-query-action-bar]');
-    if (!await toolbar.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false)) continue;
+    if (!await toolbar.waitFor({ state: 'visible', timeout: REQUESTED_ROUTE ? 45_000 : 8_000 }).then(() => true).catch(() => false)) continue;
     await waitForList(page);
     if (await page.locator(`.table tbody tr, ${MOBILE_RECORD_ROW}`).count()) return target;
   }
@@ -585,20 +643,306 @@ async function captureState(page, target, viewport, state) {
   return { state, viewport, measurement, screenshot, selection_source: selectionSource };
 }
 
-const browser = await launchChromium({ headless: true });
-const context = await browser.newContext({ viewport: VIEWPORTS[0] });
-const page = await context.newPage();
-const navigation = captureReleasedNavigation(page);
-const runtime = { console_errors: [], page_errors: [], failed_responses: [] };
-page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
-page.on('pageerror', (error) => runtime.page_errors.push(error.message));
-page.on('response', (response) => { if (response.status() >= 400) runtime.failed_responses.push({ status: response.status(), url: response.url() }); });
+function dailyReadonlyRequest(method, pathname, body) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true;
+  if (method !== 'POST') return false;
+  if (pathname === '/web/session/authenticate') return true;
+  if (pathname !== '/api/v1/intent') return false;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  if (body.intent === 'api.data') {
+    const readOps = ['list', 'read', 'search', 'search_read', 'query', 'name_search', 'fields_get', 'default_get'];
+    const op = body.params?.op || body.params?.operation;
+    if (!readOps.includes(op)) return false;
+    const carriers = [body, body.params];
+    for (let index = 0; index < carriers.length; index += 1) {
+      const carrier = carriers[index];
+      if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)) continue;
+      if (['op', 'operation'].some(key => carrier[key] !== undefined && carrier[key] !== op)) return false;
+      for (const key of ['payload', 'params', 'data', 'args', '_params', '_payload']) {
+        if (carrier[key] && typeof carrier[key] === 'object') carriers.push(carrier[key]);
+      }
+      if (carriers.length > 32) return false;
+    }
+    return true;
+  }
+  return ['login', 'auth.login', 'system.init', 'ui.contract', 'ui.contract.v2', 'my.work.summary', 'load_view', 'load_contract', 'action.view', 'app.init', 'session.info', 'session.bootstrap', 'sys.intents', 'route.authority.validate', 'record.context.search', 'user.view.preference.get', 'chatter.timeline', 'chatter.followers.list', 'global.message.conversations', 'global.message.inbox', 'file.download', 'telemetry.track', 'usage.track'].includes(body.intent);
+}
 
+function dailyDeclaredLanding(init) {
+  if (init?.scene_ready_contract?.scenes?.length) dailyRuntime.setSceneRegistryFromSceneReadyContract(init.scene_ready_contract);
+  else dailyRuntime.setSceneRegistry(Array.isArray(init?.scenes) ? init.scenes : []);
+  const availablePath = raw => {
+    const route = dailyRuntime.normalizeLegacyWorkbenchPath(String(raw || '').trim());
+    if (!route.startsWith('/') || route.startsWith('//')) return '';
+    const match = route.match(/^\/s\/([^/?#]+)/);
+    return !match || dailyRuntime.getSceneByKey(decodeURIComponent(match[1])) ? route : '';
+  };
+  const scenePath = raw => {
+    const key = String(raw || '').trim();
+    const scene = dailyRuntime.getSceneByKey(key);
+    return scene ? availablePath(scene.target?.route || scene.route || `/s/${key}`) || `/s/${key}` : '';
+  };
+  const role = init?.role_surface || {};
+  const fallback = init?.default_route || {};
+  const choices = [
+    ['role_surface.landing_path', availablePath(role.landing_path)],
+    ['role_surface.landing_scene_key', scenePath(role.landing_scene_key)],
+    ['default_route.route', /^\/(a|f|r)\//.test(String(fallback.route || '')) ? '' : availablePath(fallback.route)],
+    ['default_route.scene_key', scenePath(fallback.scene_key)],
+  ];
+  const [owner, route] = choices.find(([, candidate]) => candidate) || ['minimum_workspace_fallback', '/'];
+  const sceneKey = route.match(/^\/s\/([^/?#]+)/)?.[1];
+  return { route, scene_key: sceneKey ? decodeURIComponent(sceneKey) : route.split('?')[0] === '/' ? 'workspace.home' : '', owner };
+}
+
+function dailyRecordEntry(snapshot, row, source) {
+  const action = snapshot?.actionContract?.actionRuleList?.find(rule => rule.sourceWidgetId === 'page.row');
+  if (!action) throw new Error('list contract has no declared row opener');
+  const materialize = value => typeof value === 'string' ? value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, key) => String(row[key] ?? ''))
+    : Array.isArray(value) ? value.map(materialize)
+      : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materialize(item)])) : value;
+  const target = materialize(action.target || {});
+  const formal = dailyRuntime.decodeFormalRecordEntry(target.record_entry);
+  if (!formal && (Object.values(target).some(value => value && typeof value === 'object') || target.route)) throw new Error('unsupported non-record row target');
+  const entry = formal || dailyRuntime.recordEntryFromModelRights({ model: snapshot.pageInfo.model, recordId: row.id,
+    modelRights: snapshot.statusContract?.globalStatus?.modelRights, actionId: source.actionId, menuId: source.menuId });
+  const resolved = dailyRuntime.resolveRecordOpenTarget({ ...entry, actionId: entry.actionId || source.actionId,
+    menuId: entry.menuId || source.menuId, carryQuery: { action_id: source.actionId, menu_id: source.menuId } });
+  if (!resolved) throw new Error('invalid declared record entry');
+  return { model: entry.model, recordId: Number(entry.recordId), actionId: Number(resolved.query.action_id),
+    menuId: Number(resolved.query.menu_id), path: resolved.path, modelWriteAuthority: entry.modelWriteAuthority, entryIntent: entry.entryIntent };
+}
+
+function dailyLandingMatches(currentUrl, defaultRoute, baseUrl) {
+  if (!defaultRoute || typeof defaultRoute.route !== 'string' || !defaultRoute.route.startsWith('/') || defaultRoute.route.startsWith('//')) return false;
+  const expected = new URL(defaultRoute.route, baseUrl);
+  const current = new URL(currentUrl, baseUrl);
+  return current.origin === expected.origin && current.pathname === expected.pathname
+    && [...expected.searchParams].every(([key, value]) => current.searchParams.get(key) === value);
+}
+
+function dailyHomeSummaryMatches(row) {
+  return row.intent === 'my.work.summary' && row.params?.product_workspace === true
+    && row.params?.limit === 12 && row.params?.limit_each === 4 && row.params?.page_size === 12
+    && row.params?.page === 1 && row.params?.sort_by === 'priority' && row.params?.sort_dir === 'desc'
+    && (row.response?.ok === true || row.response?.result?.ok === true);
+}
+
+function dailyDetailContractMatches(row, expected) {
+  const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
+  return row.intent === 'ui.contract.v2' && envelope?.ok === true
+    && envelope.data?.pageInfo?.model === expected.model
+    && envelope.data?.pageInfo?.viewType === 'form'
+    && Number(envelope.data?.dataContract?.mainData?.id) === expected.recordId
+    && Number(row.params?.record_id) === expected.recordId
+    && Number(row.params?.action_id) === expected.actionId
+    && Number(row.params?.menu_id) === expected.menuId;
+}
+
+// ContractFormPage's ordinary renderer is ContractFormDriverHost. The native
+// canvas is a configuration/designer branch, not the record-page ready marker.
+function dailyActorContext(init) {
+  const positiveId = value => Number.isSafeInteger(value) && value > 0 ? value : null;
+  return { source: 'captured_system_init', user_id: positiveId(init?.user?.id),
+    role_codes: Array.isArray(init?.role_surface?.role_codes) ? init.role_surface.role_codes.filter(role => typeof role === 'string') : [],
+    company_id: positiveId(init?.record_context?.company_id) };
+}
+
+function dailyContractEvidenceRef(contracts, row) {
+  const index = contracts.indexOf(row);
+  if (index < 0) throw new Error('contract evidence reference is not captured');
+  const envelope = row.response?.result?.ok !== undefined ? row.response.result : row.response;
+  return { response_index: index, intent: row.intent,
+    trace_id: typeof envelope?.meta?.trace_id === 'string' ? envelope.meta.trace_id : null,
+    contract_version: envelope?.data?.meta?.contract_version ?? envelope?.meta?.contract_version ?? null };
+}
+
+function dailyRecordPresentation(contract, expected) {
+  const profile = contract?.statusContract?.globalStatus?.effectiveRenderProfile;
+  if (!['readonly', 'edit', 'create'].includes(profile)) throw new Error('unsupported declared record profile');
+  if (contract?.pageInfo?.model !== expected.model || contract?.pageInfo?.viewType !== 'form') throw new Error('record presentation identity mismatch');
+  const isNew = expected.path === `/f/${expected.model}/new`;
+  if (isNew ? profile !== 'create' : (profile === 'create' || Number(contract?.dataContract?.mainData?.id) !== expected.recordId)) throw new Error('record profile does not match record identity');
+  if (!isNew && ![`/f/${expected.model}/${expected.recordId}`, `/r/${expected.model}/${expected.recordId}`].includes(expected.path)) throw new Error('unexpected record route');
+  if (expected.path.startsWith('/r/') && profile !== 'readonly') throw new Error('readonly route cannot render an editable profile');
+  return { profile, record: isNew ? 'new' : String(expected.recordId),
+    rootSelector: '[data-product-page-mode="form"][data-form-model]',
+    driverSelector: '[data-contract-form-driver]',
+    patternSelector: `[data-product-page-pattern="workspace-form"][data-render-profile="${profile}"], [data-product-page-pattern="task-form"][data-render-profile="${profile}"]` };
+}
+
+function dailyRecordDomMatches(observed, declaration, expected) {
+  return observed.model === expected.model && observed.record === declaration.record
+    && Number(observed.action) === expected.actionId && Number(observed.menu) === expected.menuId
+    && observed.driverCount === 1 && observed.patternCount === 1 && observed.driverErrorCount === 0
+    && observed.profile === declaration.profile && observed.cards > 0
+    && (declaration.profile !== 'readonly' || observed.detailAdopted !== 'true' || observed.detailCards > 0);
+}
+
+function dailyRecordCheckSummary(checks, viewports, contractStatus = 'accepted') {
+  // The approved-contract-binding step is executed only when the lane runs under
+  // an accepted sealed contract, so the expected shape must follow the gate's
+  // real status instead of hard-coding the strictest five-step form. The default
+  // stays on the stricter form so a caller that forgets the status fails closed.
+  const steps = contractStatus === 'accepted'
+    ? ['declared_entry_route', 'exact_record_contract', 'approved_contract_binding', 'declared_renderer', 'return_to_source']
+    : ['declared_entry_route', 'exact_record_contract', 'declared_renderer', 'return_to_source'];
+  const expected = viewports.flatMap(viewport => steps.map(check => `${viewport.key}:${check}`));
+  const actual = checks.filter(row => row.passed === true).map(row => `${row.viewport}:${row.check}`);
+  const complete = expected.length > 0 && expected.every(key => actual.filter(value => value === key).length === 1)
+    && actual.length === expected.length;
+  return { passed: actual.length, total: expected.length, complete };
+}
+
+function safeFailedResponse(status, url, request, response, secrets = []) {
+  const safeUrl = new URL(url);
+  const result = { status, url: safeUrl.origin + safeUrl.pathname };
+  if (safeUrl.pathname !== '/api/v1/intent') return result;
+  const clean = value => typeof value === 'string' ? secrets.filter(Boolean).reduce((text, secret) => text.split(secret).join('[redacted]'), value)
+    .replace(/(?:password|token|secret|authorization)\s*[=:]\s*[^\s,;]+/gi, '[redacted]').slice(0, 320) : undefined;
+  const intent = clean(request?.intent);
+  if (intent) result.intent = intent;
+  // Never copy request bodies/context/login parameters or arbitrary error data.
+  if (intent !== 'login') {
+    const params = request?.params || {};
+    for (const key of ['op', 'model']) if (typeof params[key] === 'string') result[key] = clean(params[key]);
+    for (const key of ['record_id', 'res_id', 'action_id', 'menu_id', 'id']) {
+      if (/^[1-9]\d*$/.test(String(params[key] ?? '')) && Number.isSafeInteger(Number(params[key]))) result[key] = Number(params[key]);
+    }
+  }
+  const envelope = response?.result?.error ? response.result : response;
+  const error = envelope?.error;
+  if (error && typeof error === 'object') {
+    result.error = {};
+    for (const key of ['code', 'reason_code', 'message', 'trace_id']) {
+      if (typeof error[key] === 'string') result.error[key] = clean(error[key]);
+      else if (typeof error[key] === 'number') result.error[key] = error[key];
+    }
+    if (typeof envelope?.meta?.trace_id === 'string') result.error.trace_id = clean(envelope.meta.trace_id);
+  }
+  return result;
+}
+
+let browser, context, page, lease, servedIdentity;
+const runtime = { console_errors: [], page_errors: [], failed_responses: [], denied_requests: [], operational_tracking: [], contracts: [] };
+const dailyObservations = [];
+const acceptanceScope = { authority: 'actual captured account/company contract consumption',
+  not_run: ['other_roles_or_companies', 'per_button_authorization', 'backend_rejection_of_forbidden_write', 'submit_approval_lifecycle'],
+  policy_boundary: 'DOM contract consistency is not independent proof of authorization policy correctness' };
+const rows = [];
+const recordChecks = [];
+let target = null;
+let actorContext = null;
+const responseTasks = new Set();
+const detailOnly = DAILY && DAILY_OBSERVATION_SCOPE === 'detail-only';
 try {
+  if (DAILY) {
+    if (acceptance.operation !== 'readonly' || acceptance.target.mode !== 'external' || acceptance.apiUrl !== BASE_URL || !LOGIN || !PASSWORD) throw new Error('daily scope requires exact external readonly target and credentials');
+    servedIdentity = await verifyServedIdentity(acceptance);
+    if (servedIdentity.servedDatabase !== DATABASE) throw new Error('daily served database identity is required and must match');
+    lease = await acquireAcceptanceLease({ environment: acceptance, mode: 'shared-read', owner: { tool: 'geometry-scroll-audit' } });
+  }
+  browser = DAILY ? await launchAcceptanceChromium(acceptance, { headless: true }) : await launchChromium({ headless: true });
+  context = await browser.newContext({ viewport: VIEWPORTS[0] });
+  if (DAILY) await context.route('**/*', async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    let body; try { body = request.postDataJSON(); } catch {}
+    const sameOrigin = url.origin === new URL(BASE_URL).origin;
+    if (!sameOrigin || !dailyReadonlyRequest(request.method(), url.pathname, body)) {
+      runtime.denied_requests.push({ method: request.method(), path: url.pathname, intent: body?.intent || '' });
+      return route.abort('blockedbyclient');
+    }
+    if (['telemetry.track', 'usage.track'].includes(body?.intent)) runtime.operational_tracking.push({ intent: body.intent, classification: 'runtime_telemetry_not_business_write' });
+    return route.continue();
+  });
+  page = await context.newPage();
+  const navigation = captureReleasedNavigation(page);
+  page.on('console', message => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) runtime.console_errors.push(message.text()); });
+  page.on('pageerror', error => runtime.page_errors.push(error.message));
+  page.on('response', response => {
+    const task = (async () => {
+      let request, envelope;
+      const isIntent = new URL(response.url()).pathname === '/api/v1/intent';
+      if (isIntent) {
+        try { request = response.request().postDataJSON(); } catch {}
+        try { envelope = await response.json(); } catch {}
+      }
+      if (response.status() >= 400) runtime.failed_responses.push(safeFailedResponse(response.status(), response.url(), request, envelope, [PASSWORD, BOOTSTRAP_SECRET]));
+      if (DAILY && isIntent && ['ui.contract', 'ui.contract.v2', 'load_contract', 'action.view', 'my.work.summary'].includes(request?.intent)) runtime.contracts.push({ intent: request.intent, params: request.params, response: envelope });
+    })();
+    responseTasks.add(task);
+    task.finally(() => responseTasks.delete(task)).catch(() => {});
+  });
   await login(page, navigation);
-  const target = await findPopulatedList(page, navigation);
-  const rows = [];
-  for (const viewport of VIEWPORTS) {
+  if (contractGate.status === 'accepted') {
+    // Replay the backend-approved request through this real session. The approved
+    // contract must be reproducible at the served revision under the live actor;
+    // anything else is not the contract the acceptance claim was made about.
+    const approvedPayload = contractGate.approved_request;
+    const replay = await page.evaluate(async ({ url, payload }) => {
+      const response = await fetch(url, { method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      return { status: response.status, text: await response.text() };
+    }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: approvedPayload });
+    let replayEnvelope = {};
+    try { replayEnvelope = JSON.parse(replay.text); } catch {}
+    const binding = observedContractBinding({ envelope: replayEnvelope, receiptRequest: approvedPayload.params,
+      approved: contractGate, requestParams: approvedPayload.params });
+    contractGate.binding = { replay_http_status: replay.status, ...binding };
+    if (replay.status !== 200 || !binding.ok) {
+      throw new Error(`approved contract replay did not bind: status=${replay.status} ${binding.ok ? '' : `${binding.code} ${JSON.stringify(binding.detail || {})}`}`);
+    }
+  }
+  if (DAILY) {
+    actorContext = dailyActorContext(navigation.payload());
+    if (!actorContext.user_id || !actorContext.company_id || !actorContext.role_codes.length) throw new Error('actual bootstrap actor context missing');
+  }
+  if (DAILY && DAILY_OBSERVATION_SCOPE === 'all') {
+    const defaultRoute = dailyDeclaredLanding(navigation.payload());
+    const landing = page.url();
+    if (!dailyLandingMatches(landing, defaultRoute, BASE_URL)) throw new Error('daily landing does not match declared default_route');
+    await page.locator('.t-card:visible').first().waitFor({ state: 'visible', timeout: 30_000 });
+    let landingContracts = [];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      landingContracts = runtime.contracts.filter(row => row.intent === 'ui.contract.v2' && row.response?.ok === true
+        && row.params?.scene_key === defaultRoute.scene_key && row.response?.data?.pageInfo);
+      if (landingContracts.length) break;
+      await page.waitForTimeout(50);
+    }
+    if (!landingContracts.length) throw new Error('daily declared landing contract was not captured');
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      const screenshot = path.join(OUTPUT, `daily-landing-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: 'declared-default-landing', url: landing, defaultRoute,
+        contractResponses: landingContracts.length, viewport: viewport.key, screenshot });
+    }
+    // Router declares '/' as HomeView(workspace.home); it is independent of
+    // the account's authenticated default_route and the menu's data overview.
+    const homeStart = runtime.contracts.length;
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.locator('[data-role-home][data-state="ready"]').waitFor({ state: 'visible', timeout: 30_000 });
+    let homeResponses = [];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      homeResponses = runtime.contracts.slice(homeStart).filter(dailyHomeSummaryMatches);
+      if (homeResponses.length) break;
+      await page.waitForTimeout(50);
+    }
+    if (!homeResponses.length) throw new Error('current daily home summary response missing');
+    const home = page.url();
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      const officialCards = await page.locator('[data-role-home] .t-card:visible').count();
+      if (!officialCards) throw new Error('daily workspace home has no visible official Card');
+      const screenshot = path.join(OUTPUT, `daily-home-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: 'router-workspace-home', summaryResponses: homeResponses.length, url: home, viewport: viewport.key, officialCards, screenshot });
+    }
+    await page.setViewportSize(VIEWPORTS[0]);
+  }
+  target = await findPopulatedList(page, navigation);
+  for (const viewport of detailOnly ? [] : VIEWPORTS) {
     await page.setViewportSize(viewport);
     const states = PHASE === 'current-fail' ? ['normal'] : ['normal', 'batch', 'empty'];
     for (const state of states) rows.push(await captureState(page, target, viewport, state));
@@ -606,8 +950,104 @@ try {
   await page.setViewportSize(VIEWPORTS[0]);
   await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   await waitForList(page);
-  const componentProof = await productionComponentProof(page);
-  const negativeFixtures = await negativeProofs(page, VIEWPORTS[0]);
+  if (DAILY) {
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await waitForList(page);
+      const targetUrl = new URL(target.route, BASE_URL);
+      const source = { actionId: Number(targetUrl.pathname.split('/')[2]), menuId: Number(targetUrl.searchParams.get('menu_id')) };
+      const listContract = [...runtime.contracts].reverse().find(row => row.intent === 'ui.contract.v2' && row.response?.ok === true && Number(row.params?.action_id) === source.actionId && Number(row.params?.menu_id) === source.menuId && ['list', 'tree'].includes(row.response?.data?.pageInfo?.viewType));
+      if (!listContract) throw new Error('current list authority contract missing');
+      // Open the contract-approved record through the row authority the list
+      // contract declares; never the first row that happens to render.
+      const approvedRecordId = contractGate.status === 'accepted' ? Number(contractGate.approved.record_id) : null;
+      const approvedRow = approvedRecordId
+        ? page.locator(`[data-record-key="${approvedRecordId}"]`).filter({ has: page.locator('.cell-primary-link, .collection-mobile-record-row__card') }).first()
+        : page.locator('[data-record-key]').filter({ has: page.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible') }).first();
+      if (!await approvedRow.count()) {
+        throw new Error(approvedRecordId
+          ? `approved record ${approvedRecordId} is not reachable through the approved list authority`
+          : 'daily list contains no declared record opener');
+      }
+      const firstRecord = approvedRow.locator('.cell-primary-link:visible, .collection-mobile-record-row__card:visible').first();
+      if (!await firstRecord.count()) throw new Error('daily list contains no declared record opener');
+      const rowId = await approvedRow.getAttribute('data-record-key') || await firstRecord.evaluate(node => node.closest('[data-record-key]')?.getAttribute('data-record-key'));
+      if (!rowId || !/^[1-9]\d*$/.test(rowId)) throw new Error('declared visible row identity missing');
+      if (approvedRecordId && Number(rowId) !== approvedRecordId) throw new Error(`opened row ${rowId} is not the approved record ${approvedRecordId}`);
+      const expectedDetail = dailyRecordEntry(listContract.response.data, { id: Number(rowId), model: listContract.response.data.pageInfo.model }, source);
+      const contractStart = runtime.contracts.length;
+      await firstRecord.click();
+      await page.waitForURL(url => url.pathname === expectedDetail.path, { timeout: 30_000 });
+      recordChecks.push({ viewport: viewport.key, check: 'declared_entry_route', passed: true, entry: expectedDetail, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
+      let newContracts = [];
+      for (let attempt = 0; attempt < 600; attempt += 1) {
+        newContracts = runtime.contracts.slice(contractStart).filter(row => dailyDetailContractMatches(row, expectedDetail));
+        if (newContracts.length) break;
+        await page.waitForTimeout(50);
+      }
+      if (!newContracts.length) throw new Error('daily detail contract response was not captured');
+      const contractEvidenceRef = dailyContractEvidenceRef(runtime.contracts, newContracts[newContracts.length - 1]);
+      recordChecks.push({ viewport: viewport.key, check: 'exact_record_contract', passed: true, contract_evidence_ref: contractEvidenceRef });
+      const observedDetail = newContracts[newContracts.length - 1];
+      const detailContract = observedDetail.response.data;
+      if (contractGate.status === 'accepted') {
+        // The contract the browser actually executed must still be the approved one.
+        const appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
+          approved: contractGate, requestParams: observedDetail.params || {} });
+        contractGate.app_viewport_bindings = [...(contractGate.app_viewport_bindings || []), { viewport: viewport.key, ...appBinding }];
+        if (!appBinding.ok) throw new Error(`observed detail contract is not the approved contract: ${appBinding.code} ${JSON.stringify(appBinding.detail || {})}`);
+        // The contract the browser actually rendered must be reproducible from the
+        // request that produced it, under the same real session authority.
+        const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
+        const observedReplay = await page.evaluate(async ({ url, payload }) => {
+          const response = await fetch(url, { method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          return { status: response.status, text: await response.text() };
+        }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: observedPayload });
+        let observedEnvelope = {};
+        try { observedEnvelope = JSON.parse(observedReplay.text); } catch {}
+        const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
+        if (observedReplay.status !== 200 || observedDigest !== appBinding.observedSemanticSha256) {
+          throw new Error(`observed detail contract is not reproducible: status=${observedReplay.status} original=${appBinding.observedSemanticSha256} replay=${observedDigest}`);
+        }
+        recordChecks.push({ viewport: viewport.key, check: 'approved_contract_binding', passed: true, contract_evidence_ref: contractEvidenceRef,
+          approved_semantic_sha256: contractGate.approved_semantic_sha256, observed_semantic_sha256: appBinding.observedSemanticSha256,
+          exact_approved_request: appBinding.exact_approved_request, extra_request_params: appBinding.extra_request_params,
+          missing_request_params: appBinding.missing_request_params, reproducible: true });
+      }
+      const declaration = dailyRecordPresentation(detailContract, expectedDetail);
+      const profile = declaration.profile;
+      const root = page.locator(declaration.rootSelector).filter({ has: page.locator(declaration.driverSelector) });
+      await root.waitFor({ state: 'visible', timeout: 30_000 });
+      await root.locator(declaration.patternSelector).waitFor({ state: 'visible', timeout: 30_000 });
+      const presentation = await root.evaluate((node, declared) => {
+        const visible = item => Boolean(item && item.getBoundingClientRect().width > 0 && item.getBoundingClientRect().height > 0);
+        const patterns = [...node.querySelectorAll(declared.patternSelector)].filter(visible);
+        return { model: node.dataset.formModel, record: node.dataset.formRecord,
+          action: node.dataset.formActionId, menu: node.dataset.formMenuId,
+          driverCount: [...node.querySelectorAll(declared.driverSelector)].filter(visible).length,
+          patternCount: patterns.length, profile: patterns[0]?.dataset.renderProfile,
+          driverErrorCount: node.querySelectorAll('[data-contract-form-driver-error]').length,
+          detailAdopted: node.dataset.detailCompositionAdopted,
+          detailCards: [...node.querySelectorAll('.t-card[data-detail-card], [data-detail-card] > .t-card')].filter(visible).length,
+          cards: [...node.querySelectorAll('.t-card')].filter(visible).length };
+      }, declaration);
+      if (!dailyRecordDomMatches(presentation, declaration, expectedDetail)) throw new Error(`record renderer declaration mismatch: ${JSON.stringify(presentation)}`);
+      recordChecks.push({ viewport: viewport.key, check: 'declared_renderer', passed: true, contract_evidence_ref: contractEvidenceRef, presentation });
+      const cards = presentation.cards;
+      const screenshot = path.join(OUTPUT, `daily-detail-${viewport.key}.png`);
+      await page.screenshot({ path: screenshot, fullPage: true });
+      dailyObservations.push({ surface: profile === 'readonly' ? 'readonly-detail' : 'edit-form-observation-without-save', declaredEntry: expectedDetail, renderProfile: profile, presentation, contractResponses: newContracts.length, url: page.url(), viewport: viewport.key, cards, screenshot });
+      await page.goBack({ waitUntil: 'domcontentloaded' });
+      await waitForList(page);
+      if (new URL(page.url()).pathname + new URL(page.url()).search !== target.route) throw new Error('daily detail return did not restore source list');
+      recordChecks.push({ viewport: viewport.key, check: 'return_to_source', passed: true, contract_evidence_ref: dailyContractEvidenceRef(runtime.contracts, listContract) });
+    }
+    await page.setViewportSize(VIEWPORTS[0]);
+  }
+  const componentProof = detailOnly ? null : await productionComponentProof(page);
+  const negativeFixtures = detailOnly ? [] : await negativeProofs(page, VIEWPORTS[0]);
   const gatedChecks = new Set([
     'desktop_actions_query_aligned',
     'column_settings_unique',
@@ -642,7 +1082,7 @@ try {
     }
     if (!fixture.detected) failures.push({ state: 'negative-fixture', viewport: VIEWPORTS[0], check: `negative_fixture_not_detected:${fixture.fixture}` });
   }
-  if (!componentProof.search_inside_single_action_bar) {
+  if (componentProof && !componentProof.search_inside_single_action_bar) {
     failures.push({ state: 'production-component-fixture', viewport: VIEWPORTS[0], check: 'plain_search_inside_single_action_bar', metrics: componentProof });
   }
   const normalRows = rows.filter((row) => row.state === 'normal');
@@ -658,7 +1098,7 @@ try {
     const visibleColumns = row.measurement.metrics.mobile_mode ? trace.mobile?.visibleColumns : trace.desktop?.visibleColumns;
     return Array.isArray(visibleColumns) && (trace.criticalColumns || []).every((field) => visibleColumns.includes(field));
   });
-  const aggregateChecks = {
+  const aggregateChecks = detailOnly ? {} : {
     column_authority_consistent_across_viewports: columnAuthorityConsistent,
     critical_columns_reachable: criticalColumnsReachable,
     decision_trace_complete: normalRows.every((row) => row.measurement.checks.decision_trace_complete === true),
@@ -670,13 +1110,22 @@ try {
     .filter(([, observed]) => observed)
     .map(([code]) => ({ state: row.state, viewport: row.viewport.key, code, metrics: row.measurement.metrics })));
   const gatedTotal = rows.reduce((total, row) => total + Object.keys(row.measurement.checks).filter((check) => gatedChecks.has(check)).length, 0)
-    + Object.keys(aggregateChecks).length + 1;
+    + Object.keys(aggregateChecks).length + (componentProof ? 1 : 0);
   const gatedFailed = failures.filter((failure) => failure.state !== 'negative-fixture').length;
-  const passed = failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length;
+  await Promise.allSettled([...responseTasks]);
+  const recordSummary = dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status);
+  const passed = (!DAILY || recordSummary.complete) && failures.length === 0 && !runtime.console_errors.length && !runtime.page_errors.length && !runtime.failed_responses.length && !runtime.denied_requests.length;
   const report = {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
-    source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target },
+    source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity },
+    contract_prerequisite: contractGate,
+    acceptance_scope: acceptanceScope,
+    actor_context: actorContext,
+    daily_observations: dailyObservations,
+    daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    list_execution: detailOnly ? 'not_run' : 'completed',
+    record_checks: recordChecks,
     geometry_contract: 'controls contained by shared header; content follows header within viewport',
     rows,
     production_component_proof: componentProof,
@@ -685,6 +1134,7 @@ try {
     aggregate_checks: aggregateChecks,
     observations,
     summary: {
+      records: DAILY ? recordSummary : { status: 'not_run' },
       gated: { passed: gatedTotal - gatedFailed, total: gatedTotal, failed: gatedFailed },
       observations: observations.length,
       negative_fixtures: { detected: negativeFixtures.filter((fixture) => fixture.detected).length, total: negativeFixtures.length },
@@ -696,7 +1146,16 @@ try {
   await fs.writeFile(REPORT, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   process.stdout.write(`[frontend_list_surface_structure_browser] ${passed ? 'PASS' : 'FAIL'} phase=${PHASE} rows=${rows.length} failures=${failures.length}\n`);
   if (!passed) process.exitCode = 1;
+} catch (error) {
+  await Promise.allSettled([...responseTasks]);
+  const screenshot = path.join(OUTPUT, 'failure.png');
+  await page?.screenshot({ path: screenshot, fullPage: true }).catch(() => {});
+  await fs.mkdir(path.dirname(REPORT), { recursive: true });
+  await fs.writeFile(REPORT, JSON.stringify({ schema: 'frontend_list_surface_structure_browser.v1', passed: false,
+    failure: String(error?.message || error), screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks, record_summary: dailyRecordCheckSummary(recordChecks, VIEWPORTS, contractGate.status), list_execution: detailOnly ? 'not_run' : 'partial_or_completed_before_failure', runtime, daily_observations: dailyObservations, daily_observation_scope: DAILY_OBSERVATION_SCOPE,
+    contract_prerequisite: contractGate,
+    source: { target, acceptance: redactedEnvironmentEvidence(acceptance), servedIdentity } }, null, 2));
+  process.exitCode = 1;
 } finally {
-  await context.close();
-  await browser.close();
+  try { await context?.close(); } finally { try { await browser?.close(); } finally { await lease?.release(); } }
 }
