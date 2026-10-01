@@ -145,6 +145,8 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     one2manyRowErrors,
     one2manyCellError,
   } = useRecordRelationshipFields({
+    captureRelationRequest: dependencies.captureRelationRequest,
+    relationRuntimeGeneration: dependencies.relationRuntimeGeneration,
     ApiError,
     contractFieldLabel,
     deniedRelationModels,

@@ -847,6 +847,7 @@ const canonicalProductRendererActive = computed(() => !showCurrentFormFieldConfi
 const nativeLayoutVisibilityRevision = ref(0);
 const advancedExpanded = ref(false);
 const {
+  clearRelationRuntime, invalidateRelationRequests, captureRelationRequest, relationRuntimeGeneration,
   relationOptions,
   relationFieldDescriptors,
   relationKeywords,
@@ -1600,6 +1601,7 @@ const {
   ensureRelationFieldDescriptors, openRelationCreateForm, currentRelationRecordId, canOpenRelationRecord, canOpenRelationRecordForm, openRelationRecord, openRelationRecordForm,
   quickCreateRelation,
 } = useRecordRelationships({
+  captureRelationRequest, relationRuntimeGeneration,
   ApiError, actionId, clearedDynamicRelationFields,
   closeRelationSearchDialog, confirmRelationSearchSelectionFromRuntime, contract,
   contractFieldLabel: (...args: [string]) => contractFieldLabel(...args), createContractFormRecord, deniedRelationModels,
@@ -1819,6 +1821,7 @@ const {
   resolveNavigationUrl, viewOrchestrationHudSummary, hudEntries, loadContract,
   loadRecord, handleSceneBlockAction, reload, ensureFormInitialReload, preloadFormAuxiliaryData,
 } = useRecordPageLifecycle({
+  clearRelationRuntime, captureRelationRequest,
   resetPendingInlineRelationCreates,
   ApiError, ContractAccessPolicyError, ContractV2DecodeError,
   ErrorCodes, actionId, advancedExpanded,
@@ -1913,6 +1916,10 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
   consumeAuthorizedNavigation: () => session.consumeActivityPageNavigationAuthorization(),
   confirmLeave: async () => intentConfirmationRef.value?.confirm({
     actionLabel: '离开页面', message: '当前修改尚未保存。离开后这些修改将丢失，是否继续？' }) ?? false });
+// Route/actor/context ownership changes invalidate candidates, selected labels,
+// child hydration and dialog work before any queued response can publish.
+watch(() => [formRouteIdentity(), session.user?.id, session.roleSurface?.role_code,
+  JSON.stringify(session.recordContext), isComponentActive.value], invalidateRelationRequests, { flush: 'sync' });
 watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
 const returnToPreviousPage = createRecordFormReturnHandler({
   route, router, model: () => model.value,
