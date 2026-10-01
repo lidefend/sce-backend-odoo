@@ -49,6 +49,7 @@ export function useModalLifecycle(options: {
   const opener = ref<HTMLElement | null>(null);
   let locked = false;
   let focusGeneration = 0;
+  let disposed = false;
 
   function focusInitial() {
     const surface = resolveSurfaceElement(options.surface.value);
@@ -58,7 +59,7 @@ export function useModalLifecycle(options: {
 
   function focusInitialWhenVisible(generation: number, attempt = 0) {
     const surface = resolveSurfaceElement(options.surface.value);
-    if (generation !== focusGeneration || !options.open() || !surface || attempt > 120) return;
+    if (disposed || generation !== focusGeneration || !options.open() || !surface || attempt > 120) return;
     if (surface.contains(document.activeElement)) return;
     if (surface.getClientRects().length > 0) {
       focusInitial();
@@ -66,27 +67,28 @@ export function useModalLifecycle(options: {
     requestAnimationFrame(() => focusInitialWhenVisible(generation, attempt + 1));
   }
 
-  function restoreOpener(attempt = 0) {
-    const target = opener.value;
+  function restoreOpener(target: HTMLElement | null, generation: number, attempt = 0) {
+    if (disposed || generation !== focusGeneration || options.open()) return;
     if (!target?.isConnected) {
       opener.value = null;
       return;
     }
     target.focus();
     if (attempt < 4) {
-      requestAnimationFrame(() => restoreOpener(attempt + 1));
+      requestAnimationFrame(() => restoreOpener(target, generation, attempt + 1));
       return;
     }
     opener.value = null;
   }
 
   function release() {
-    focusGeneration += 1;
+    const generation = ++focusGeneration;
+    const target = opener.value;
     if (locked) {
       unlockBodyScroll();
       locked = false;
     }
-    void nextTick(restoreOpener);
+    void nextTick(() => restoreOpener(target, generation));
   }
 
   function onKeydown(event: KeyboardEvent) {
@@ -125,10 +127,12 @@ export function useModalLifecycle(options: {
   }
 
   watch([options.open, () => options.surface.value] as const, async ([open, surface]) => {
+    if (disposed) return;
     if (!open) {
       release();
       return;
     }
+    const generation = ++focusGeneration;
     if (!locked) {
       opener.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       lockBodyScroll();
@@ -136,12 +140,18 @@ export function useModalLifecycle(options: {
     }
     if (!resolveSurfaceElement(surface)) return;
     await nextTick();
-    focusGeneration += 1;
-    focusInitialWhenVisible(focusGeneration);
+    if (disposed || generation !== focusGeneration || !options.open()) return;
+    focusInitialWhenVisible(generation);
   }, { immediate: true });
 
   onBeforeUnmount(() => {
-    if (locked) unlockBodyScroll();
+    disposed = true;
+    focusGeneration += 1;
+    opener.value = null;
+    if (locked) {
+      unlockBodyScroll();
+      locked = false;
+    }
   });
 
   return { onKeydown };
