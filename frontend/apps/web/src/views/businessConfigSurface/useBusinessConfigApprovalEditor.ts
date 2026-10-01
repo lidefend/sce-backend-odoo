@@ -35,6 +35,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   const approvalTargetModel = ref('');
   const approvalAudit = ref<ApprovalPolicyConfigPayload | null>(null);
   const approvalPanelOpen = ref(false);
+  const approvalAuditParentModel = ref('');
   const approvalForm = ref({ approval_required: false, mode: 'none', manager_scope_key: '' });
   const approvalBase = ref({ approval_required: false, mode: 'none', manager_scope_key: '' });
   const approvalSteps = ref<ApprovalStepDraft[]>([]);
@@ -50,6 +51,15 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
         { value: 'single', label: '单级审核' },
         { value: 'linear', label: '多级顺序审核' },
       ]);
+  const approvalAmountCondition = computed(() => {
+    const audit = approvalAudit.value;
+    if (approvalLoading.value || approvalAuditParentModel.value !== options.currentModel.value
+      || !audit || audit.model !== approvalTargetModel.value) return null;
+    return audit.amount_condition || null;
+  });
+  const approvalEditorReady = computed(() => Boolean(approvalAmountCondition.value));
+  const approvalAmountSupported = computed(() => approvalAmountCondition.value?.supported === true);
+  const approvalAmountMessage = computed(() => approvalAmountCondition.value?.message || '金额条件能力尚未读取。');
   const approvalScopeOptions = computed(() => approvalAudit.value?.scope_options || []);
   const approvalPolicyLabel = computed(() => {
     const policy = approvalAudit.value?.policy;
@@ -97,6 +107,10 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   ));
   const activeApprovalStepCount = computed(() => approvalSteps.value.filter((step) => step.active).length);
   const approvalValidationMessage = computed(() => {
+    if (!approvalAmountSupported.value && approvalSteps.value.some(step =>
+      [step.amount_min, step.amount_max].some(value => Boolean(normalizeAmountText(value)) && Number(value) !== 0))) {
+      return `${approvalAmountMessage.value} 已有金额条件保留，请先核对规则。`;
+    }
     if (!approvalForm.value.approval_required) return '';
     if (!approvalSteps.value.length) return '启用审批后至少需要配置一个审批步骤。';
     const invalidNameIndex = approvalSteps.value.findIndex((step) => !String(step.name || '').trim());
@@ -106,18 +120,21 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     const invalidAmountIndex = approvalSteps.value.findIndex((step) => {
       const minText = normalizeAmountText(step.amount_min);
       const maxText = normalizeAmountText(step.amount_max);
-      if (!minText || !maxText) return false;
       const min = Number(minText);
       const max = Number(maxText);
-      return Number.isFinite(min) && Number.isFinite(max) && min > max;
+      return (Boolean(minText) && (!Number.isFinite(min) || min < 0))
+        || (Boolean(maxText) && (!Number.isFinite(max) || max < 0))
+        || (Boolean(minText) && Boolean(maxText) && min > max);
     });
-    if (invalidAmountIndex >= 0) return `第 ${invalidAmountIndex + 1} 步金额下限不能大于上限。`;
+    if (invalidAmountIndex >= 0) return `第 ${invalidAmountIndex + 1} 步金额条件必须为非负有限数值，且下限不能大于上限。`;
     return '';
   });
-  const canSaveApprovalDraft = computed(() => hasApprovalDraftChanges.value && !approvalValidationMessage.value);
+  const canSaveApprovalDraft = computed(() => !approvalLoading.value && Boolean(approvalAmountCondition.value)
+    && hasApprovalDraftChanges.value && !approvalValidationMessage.value);
 
   function applyApprovalAudit(result: ApprovalPolicyConfigPayload) {
     approvalAudit.value = result;
+    approvalAuditParentModel.value = options.currentModel.value;
     const policy = result.policy;
     const form = {
       approval_required: Boolean(policy.approval_required),
@@ -176,11 +193,14 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     }
     const parentModel = options.currentModel.value;
     approvalLoading.value = true;
+    approvalAudit.value = null;
+    approvalTargetModel.value = '';
     options.error.value = '';
     options.clearMessage();
     try {
       const result = await loadApprovalPolicyConfig({ model });
       if (parentModel !== options.currentModel.value) return;
+      if (result.model !== model) throw new Error('审批配置对象不匹配，请重新读取。');
       approvalTargetModel.value = model;
       applyApprovalAudit(result);
       options.onOpenPanel();
@@ -199,6 +219,10 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     if (approvalLoading.value || !hasApprovalDraftChanges.value) return false;
     if (!model || !options.targetOptions.value.some((target) => target.value === model)) {
       options.error.value = '审批配置对象已变化，请重新读取。';
+      return false;
+    }
+    if (!approvalAmountCondition.value) {
+      options.error.value = '审批配置能力尚未读取，请重新读取。';
       return false;
     }
     if (approvalValidationMessage.value) {
@@ -340,6 +364,9 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     approvalStepDropIndex,
     approvalModeOptions,
     approvalScopeOptions,
+    approvalAmountSupported,
+    approvalEditorReady,
+    approvalAmountMessage,
     approvalPolicyLabel,
     approvalRuntimeText,
     approvalEffectGuideText,

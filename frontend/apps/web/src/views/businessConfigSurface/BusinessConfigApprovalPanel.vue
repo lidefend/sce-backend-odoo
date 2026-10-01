@@ -26,6 +26,7 @@
       <div class="approval-config-grid">
         <ScCheckbox
           class="approval-toggle"
+          :disabled="!editable"
           :checked="form.approval_required"
           @update:checked="$emit('updateFormField', 'approval_required', $event); $emit('approvalRequiredChange')"
         >启用审批</ScCheckbox>
@@ -33,7 +34,7 @@
           <span>审批方式</span>
           <ScSelect
             :model-value="form.mode"
-            :disabled="!form.approval_required"
+            :disabled="!editable || !form.approval_required"
             :options="modeOptions.map((option) => ({ ...option, disabled: form.approval_required && option.value === 'none' }))"
             @update:model-value="$emit('updateFormField', 'mode', $event)"
           />
@@ -43,7 +44,7 @@
           <ScSelect
             aria-label="默认审批岗位"
             :model-value="form.manager_scope_key"
-            :disabled="!form.approval_required"
+            :disabled="!editable || !form.approval_required"
             :options="[{ value: '', label: '暂不指定' }, ...scopeOptions]"
             @update:model-value="$emit('updateFormField', 'manager_scope_key', $event)"
           />
@@ -67,17 +68,18 @@
           <span>{{ form.approval_required ? `${activeStepCount} 个启用步骤，拖动整行调整顺序` : '启用审批后配置办理节点' }}</span>
           <em v-if="form.approval_required" class="approval-step-action-hint">也可以用上移、下移精确调整步骤顺序。</em>
         </div>
-        <ScButton type="button" class="ghost small" :disabled="loading || !form.approval_required" @click="$emit('addStep')">
+        <ScButton type="button" class="ghost small" :disabled="loading || !editable || !form.approval_required" @click="$emit('addStep')">
           添加步骤
         </ScButton>
       </header>
-      <div v-if="steps.length" class="approval-step-table" role="table" aria-label="审批步骤">
+      <p class="approval-amount-message" role="status">{{ amountMessage }}</p>
+      <div v-if="steps.length" class="approval-step-table" :class="{ 'approval-step-table--without-amount': !amountSupported }" role="table" aria-label="审批步骤">
         <div class="approval-step-table-head" role="row">
           <span>序号</span>
           <span>步骤名称</span>
           <span>审批岗位</span>
-          <span>金额下限</span>
-          <span>金额上限</span>
+          <span v-if="amountSupported">金额下限</span>
+          <span v-if="amountSupported">金额上限</span>
           <span>操作</span>
         </div>
         <div
@@ -89,7 +91,7 @@
             'approval-step-row--drop-target': dropIndex === index && dragIndex !== index,
           }"
           role="row"
-          :draggable="form.approval_required"
+          :draggable="editable && form.approval_required"
           :aria-label="`拖动第${index + 1}步调整顺序`"
           @dragstart="$emit('startStepDrag', index, $event)"
           @dragover.prevent
@@ -99,27 +101,27 @@
         >
           <span class="approval-step-seq">{{ index + 1 }}</span>
           <div class="approval-step-cell">
-          <ScInput v-model="step.name" type="text" placeholder="例如：业务复核" :disabled="!form.approval_required" :aria-label="`第${index + 1}步名称`" />
+          <ScInput v-model="step.name" type="text" placeholder="例如：业务复核" :disabled="!editable || !form.approval_required" :aria-label="`第${index + 1}步名称`" />
           </div>
           <div class="approval-step-cell">
-            <ScSelect v-model="step.approval_scope_key" :disabled="!form.approval_required" :options="[{ value: '', label: '请选择' }, ...scopeOptions]" :aria-label="`第${index + 1}步审批岗位`" />
+            <ScSelect v-model="step.approval_scope_key" :disabled="!editable || !form.approval_required" :options="[{ value: '', label: '请选择' }, ...scopeOptions]" :aria-label="`第${index + 1}步审批岗位`" />
           </div>
-          <div class="approval-step-cell">
-            <ScInput v-model="step.amount_min" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :aria-label="`第${index + 1}步金额下限`" />
+          <div v-if="amountSupported" class="approval-step-cell">
+            <ScInput v-model="step.amount_min" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!editable || !form.approval_required" :aria-label="`第${index + 1}步金额下限`" />
           </div>
-          <div class="approval-step-cell">
-            <ScInput v-model="step.amount_max" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!form.approval_required" :aria-label="`第${index + 1}步金额上限`" />
+          <div v-if="amountSupported" class="approval-step-cell">
+            <ScInput v-model="step.amount_max" type="number" min="0" step="0.01" placeholder="不限制" :disabled="!editable || !form.approval_required" :aria-label="`第${index + 1}步金额上限`" />
           </div>
           <div class="approval-step-actions">
-            <ScButton type="button" title="上移" :aria-label="`上移第${index + 1}步`" :disabled="loading || !form.approval_required || index === 0" @click="$emit('moveStep', index, -1)">上移</ScButton>
-            <ScButton type="button" title="下移" :aria-label="`下移第${index + 1}步`" :disabled="loading || !form.approval_required || index === steps.length - 1" @click="$emit('moveStep', index, 1)">下移</ScButton>
-            <ScButton type="button" title="移除" :aria-label="`移除第${index + 1}步`" :disabled="loading || !form.approval_required" @click="$emit('removeStep', index)">移除</ScButton>
+            <ScButton type="button" title="上移" :aria-label="`上移第${index + 1}步`" :disabled="loading || !editable || !form.approval_required || index === 0" @click="$emit('moveStep', index, -1)">上移</ScButton>
+            <ScButton type="button" title="下移" :aria-label="`下移第${index + 1}步`" :disabled="loading || !editable || !form.approval_required || index === steps.length - 1" @click="$emit('moveStep', index, 1)">下移</ScButton>
+            <ScButton type="button" title="移除" :aria-label="`移除第${index + 1}步`" :disabled="loading || !editable || !form.approval_required" @click="$emit('removeStep', index)">移除</ScButton>
           </div>
         </div>
       </div>
       <ScEmptyState v-else class="approval-step-empty" density="compact" :heading-level="4" title="当前没有审批步骤" description="启用审批后可添加办理节点。">
         <template #actions>
-          <ScButton type="button" class="ghost small" :disabled="loading" @click="$emit('enableWithDefaultStep')">启用并添加步骤</ScButton>
+          <ScButton type="button" class="ghost small" :disabled="loading || !editable" @click="$emit('enableWithDefaultStep')">启用并添加步骤</ScButton>
         </template>
       </ScEmptyState>
       <div v-if="validationMessage" class="approval-validation">{{ validationMessage }}</div>
@@ -178,6 +180,9 @@ defineProps<{
   steps: ApprovalStepDraft[];
   modeOptions: Option[];
   scopeOptions: Option[];
+  amountSupported: boolean;
+  editable: boolean;
+  amountMessage: string;
   activeStepCount: number;
   hasDraftChanges: boolean;
   canSaveDraft: boolean;

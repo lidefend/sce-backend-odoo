@@ -238,6 +238,13 @@ export interface BusinessConfigAnalysisSetPayload {
 
 export interface ApprovalPolicyConfigPayload {
   model: string;
+  amount_condition?: {
+    supported: boolean;
+    field: string;
+    label: string;
+    reason_code: string;
+    message: string;
+  };
   policy: {
     id: number;
     name: string;

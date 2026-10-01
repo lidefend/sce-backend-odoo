@@ -1016,6 +1016,19 @@ h1 {
   min-width: 760px;
 }
 
+.approval-amount-message {
+  margin: 0 0 12px;
+  color: var(--sc-app-text-secondary);
+}
+
+@media (min-width: 1201px) {
+  .approval-step-table--without-amount .approval-step-table-head,
+  .approval-step-table--without-amount .approval-step-row {
+    grid-template-columns: 44px minmax(180px, 1fr) minmax(180px, 1fr) 180px;
+    min-width: 0;
+  }
+}
+
 .approval-step-table-head {
   min-height: 34px;
   padding: 0 8px;
