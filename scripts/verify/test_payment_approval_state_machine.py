@@ -4338,5 +4338,65 @@ class RedFlushContractBoundaryTests(unittest.TestCase):
         self.assertEqual(self._service()._evidence_gate(record), [])
 
 
+class PaymentCategoryDefaultTests(unittest.TestCase):
+    def defaults(self, initial, context, requested):
+        names = {'default_get', '_resolve_business_category_code', '_resolve_business_category_id'}
+        methods = [node for node in ast.walk(ast.parse(MODEL.read_text()))
+                   if isinstance(node, ast.FunctionDef) and node.name in names]
+        for method in methods:
+            method.decorator_list = []
+        namespace = {'super': lambda: types.SimpleNamespace(default_get=lambda fields: dict(initial))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(MODEL), 'exec'), namespace)
+        calls = []
+
+        class Category:
+            def sudo(self):
+                return self
+
+            def search(self, domain, limit):
+                calls.append((domain, limit))
+                code = dict((key, value) for key, operator, value in domain)['code']
+                return types.SimpleNamespace(id={'finance.payment.apply.pay': 31,
+                    'finance.payment.apply.receive': 32, 'configured.category': 33}.get(code, False))
+
+        class Env:
+            def __getitem__(self, model):
+                self_model = model
+                assert self_model == 'sc.business.category'
+                return Category()
+
+        env = Env()
+        env.context = context
+        row = types.SimpleNamespace(_name='payment.request', env=env, _context_project_id=lambda: False,
+                                    _basis_payment_request_values=lambda seed: {})
+        row._resolve_business_category_code = lambda values: namespace['_resolve_business_category_code'](row, values)
+        row._resolve_business_category_id = lambda values: namespace['_resolve_business_category_id'](row, values)
+        return namespace['default_get'](row, requested), calls
+
+    def test_payment_and_receipt_entry_defaults_share_create_category_resolution(self):
+        for context, expected in [({'default_business_category_code': 'finance.payment.apply.pay'}, 31),
+                                  ({'default_business_category_code': 'finance.payment.apply.receive'}, 32),
+                                  ({'default_type': 'receive'}, 32),
+                                  ({'current_business_category_code': 'configured.category'}, 33), ({}, 31)]:
+            with self.subTest(context=context):
+                result, calls = self.defaults({}, context, ['business_category_id'])
+                self.assertEqual(result, {'business_category_id': expected})
+                self.assertEqual(len(calls), 1)
+                self.assertIn(('target_model', '=', 'payment.request'), calls[0][0])
+
+    def test_explicit_category_and_unrequested_field_do_not_trigger_resolution(self):
+        for initial, requested in [({'business_category_id': 42}, ['business_category_id']),
+                                   ({'business_category_id': False}, ['business_category_id']),
+                                   ({'type': 'pay'}, ['type'])]:
+            result, calls = self.defaults(initial, {'default_business_category_code': 'finance.payment.apply.pay'}, requested)
+            self.assertEqual(result, initial)
+            self.assertEqual(calls, [])
+
+    def test_unknown_declared_category_is_not_replaced_by_payment_fallback(self):
+        result, calls = self.defaults({}, {'default_business_category_code': 'missing.category'}, ['business_category_id'])
+        self.assertEqual(result, {'business_category_id': False})
+        self.assertEqual(calls[0][0][0], ('code', '=', 'missing.category'))
+
+
 if __name__ == '__main__':
     unittest.main()

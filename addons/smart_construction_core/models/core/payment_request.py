@@ -1125,6 +1125,8 @@ class PaymentRequest(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
+        if "business_category_id" in fields_list and "business_category_id" not in res:
+            res["business_category_id"] = self._resolve_business_category_id(res)
         project_id = res.get("project_id") or self._context_project_id()
         if project_id and "project_id" in fields_list:
             res["project_id"] = project_id
