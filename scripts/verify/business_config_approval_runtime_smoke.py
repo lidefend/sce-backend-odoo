@@ -4412,8 +4412,45 @@ def _plan_reviewer_entry_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=8 scope=plan-reviewer-entry")
 
 
+def _scene_entry_contract_checks():
+    """Read the actual scoped startup projection; never change publication or data."""
+    from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    checks = 0
+    try:
+        for login, uid, key, expected in (
+            ("fixture_role_finance", 30, "workspace.home", "workspace.home.enter"),
+            ("fixture_role_executive", 37, "dashboard.company", "dashboard.company.enter"),
+            ("fixture_role_executive", 37, "project.management", "project.dashboard.enter"),
+        ):
+            user = base["res.users"].sudo().search([("login", "=", login)])
+            assert len(user) == 1 and user.id == uid and user.active and user.company_id.id == 8
+            actor = base(user=uid, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+            result = SystemInitHandler(env=actor).handle(payload={"params": {
+                "scene": "web", "with_preload": False, "scene_ready_mode": "full",
+                "with": ["workspace_home"], "scene_key": key,
+            }})
+            assert result.ok, "scoped system.init failed"
+            rows = result.data.get("scene_ready_contract", {}).get("scenes", [])
+            matched = [row for row in rows if row.get("scene", {}).get("key") == key]
+            print("SCENE_ENTRY_READBACK=" + json.dumps({"uid": uid, "company_id": 8, "scene": key,
+                "matched": [{"scene": row.get("scene"), "target": row.get("meta", {}).get("target")}
+                            for row in matched]}, ensure_ascii=False, default=str))
+            assert len(matched) == 1, "effective scene missing or ambiguous: " + key
+            projected = matched[0].get("meta", {}).get("target", {})
+            assert (projected.get("entry_intent") or projected.get("intent")) == expected, "entry declaration lost: " + key
+            assert matched[0]["scene"].get("title"), "effective title missing"
+            checks += 3
+    finally:
+        base.cr.rollback()
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=%s scope=scene-entry-contract rollback_verified=true" % checks)
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "scene-entry-contract":
+        return _scene_entry_contract_checks()
     if scope == "payment-flow-reconcile":
         return _payment_flow_existing_checks(reconcile=True)
     if scope == "payment-flow-existing":

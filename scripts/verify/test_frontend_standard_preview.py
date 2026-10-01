@@ -589,3 +589,50 @@ class PaymentToggleRecoveryExecutionTest(unittest.TestCase):
         with self.assertRaises(AssertionError): self.recover([self.disabled, self.disabled])
         self.policy.write.assert_called_once()
         self.env.cr.commit.assert_not_called()
+
+
+class SceneEntryRuntimeProbeTest(unittest.TestCase):
+    def run_probe(self, missing=False, wrong_database=False):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        method = next(n for n in ast.parse(path.read_text()).body
+                      if isinstance(n, ast.FunctionDef) and n.name == '_scene_entry_contract_checks')
+        method.body = [n for n in method.body if not isinstance(n, ast.ImportFrom)]
+        base = MagicMock()
+        base.cr.dbname = 'other' if wrong_database else 'sc_frontend_acceptance'
+        users = []
+        for uid in (30, 37, 37):
+            user = MagicMock(id=uid, active=True, company_id=SimpleNamespace(id=8))
+            user.__len__.return_value = 1
+            users.append(user)
+        base.__getitem__.return_value.sudo.return_value.search.side_effect = users
+        handler = MagicMock()
+        handler.return_value.handle.side_effect = [SimpleNamespace(ok=True, data={
+            'scene_ready_contract': {'scenes': [] if missing else [{'scene': {'key': key, 'title': 'Declared'},
+                'meta': {'target': {'intent': intent}}}]}})
+            for key, intent in [('workspace.home', 'workspace.home.enter'),
+                                ('dashboard.company', 'dashboard.company.enter'),
+                                ('project.management', 'project.dashboard.enter')]]
+        namespace = {'_env': lambda: base, 'SystemInitHandler': handler, 'json': json}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        self.base, self.handler = base, handler
+        with patch('builtins.print'):
+            namespace['_scene_entry_contract_checks']()
+
+    def test_exact_role_scoped_readback_and_rollback(self):
+        self.run_probe()
+        self.assertEqual(self.handler.return_value.handle.call_count, 3)
+        for call in self.handler.return_value.handle.call_args_list:
+            self.assertEqual(call.kwargs['payload']['params']['scene_ready_mode'], 'full')
+        self.base.cr.rollback.assert_called_once()
+        self.base.cr.commit.assert_not_called()
+
+    def test_missing_scene_fails_and_rolls_back(self):
+        with self.assertRaises(AssertionError): self.run_probe(missing=True)
+        self.base.cr.rollback.assert_called_once()
+        self.base.cr.commit.assert_not_called()
+
+    def test_wrong_database_never_calls_startup(self):
+        with self.assertRaises(AssertionError): self.run_probe(wrong_database=True)
+        self.handler.assert_not_called()
