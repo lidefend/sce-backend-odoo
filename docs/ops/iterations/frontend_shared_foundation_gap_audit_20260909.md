@@ -9827,3 +9827,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - `make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **FAILED**，日志 `tpl52/scene-entry-runtime.log`。finance30 / company8 / workspace.home 已有有效场景及标题“角色首页”，但 `meta.target` 实际只有 `/s/workspace.home` 路由，intent丢失。finally已执行回滚；后两个目标因前置失败未运行。该结果不是工具通过或页面验收。
 - 当前定位范围：P1默认已声明、完整scene-ready投影单测已通过；仍须核对实际scene源、delivery过滤、platform stub/快照与资产绑定之后的输入。另已确认registry轻量投影 `_build_scene_ready_registry_contract` 未保留intent字段，需要P0修复及回归。不得通过前端硬编码、P0行业映射或扩大发布范围掩盖缺口。
 - L4构建与浏览器 **not_run**，保留原静态候选c6f3f9cbc；付款闭环证据不受本次工具改动影响。下一步只追踪这条声明链并修复归属层，恢复后复验相同范围，不重跑全菜单/ORM矩阵。
+
+
+## 53.241 场景入口传递链实际关闭：用户模式裁剪保留声明
+
+- P0 `e537d5f6b` 补registry轻量投影的intent/entry_intent；`7e52553a0` 对已有非关键场景补齐缺失注册入口声明，保留显式配置且不引入动作身份/新入口；`81f4d262d` 修复实际根因：用户模式 `_USER_SCENE_TARGET_KEYS` 未包含这两个字段，将合法声明剔除。新增sanitize→完整投影回归，同时验证未声明调试字段仍被剔除。P4 `9ecff8615` 只增强原定向工具注册源回读。
+- 中间失败保留：`tpl52/scene-registry-entry-runtime.log`、`scene-entry-default-runtime.log`、`scene-entry-source-runtime.log`。最终一份明确证据显示注册源有 `workspace.home.enter` 而effective_source没有，因此没有继续靠猜测或前端回退解决。以上日志均位于原 `artifacts/frontend-web-fix-20260928/`。
+- L1各责任改动PASS。`make verify.frontend.scene_entry_contract.unit` 最终47前端 +12完整投影 +6启动表面 +4合成 =69 PASS（`tpl52/scene-entry-sanitize-unit.log`）。工具30 Node +48 Python =78 PASS（`tpl52/scene-entry-source-unit.log`）。补全run对新增测试/裁剪工具的依赖登记；不把此前遗漏依赖的旧建议回执当当前复用证明。前端自262b38b2e未变，严格类型结果沿用53.239。
+- `make backend.acceptance.up SC_ACCEPTANCE_RUNTIME_PROFILE=local` 已绑定9ecff8615。`make verify.business_config.approval_runtime SC_ACCEPTANCE_RUNTIME_PROFILE=local SC_APPROVAL_RUNTIME_SCOPE=scene-entry-contract` **9 PASS**：finance30/company8/workspace.home 与 executive37/company8/dashboard.company、project.management，实际system.init effective_source和scene_ready.meta.target均保留声明，标题来自契约，finally回滚。日志 `tpl52/scene-entry-sanitize-runtime.log`。原53.240声明丢失阻断由此关闭。
+- 状态边界：这证明三个角色绑定入口的有效契约，不等于浏览器或全单据验收。L4未运行；保留旧静态候选c6f3f9cbc，待现有浏览器工具准备定向scene-entry范围后一次构建/5180复核。审批/付款证据原样复用；无发布策略修改、数据库fixture写入、模块升级、推送或目标部署。

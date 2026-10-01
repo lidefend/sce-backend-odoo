@@ -567,12 +567,16 @@
         "addons/smart_construction_scene/profiles/scene_registry_content.py",
         "make/frontend.mk",
         "frontend/apps/web/package.json",
-        "frontend/pnpm-lock.yaml"
+        "frontend/pnpm-lock.yaml",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+        "addons/smart_core/utils/contract_governance_registry.py",
+        "addons/smart_core/utils/contract_governance_user_surface.py"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.240 real system.init scene-entry-contract FAILED at finance30 workspace.home: scene title present but meta.target only route /s/workspace.home. Do not build/browser or restore frontend hardcode. Trace bounded startup source scene target -> delivery filter -> scene-ready input -> output, using existing readback scope if needed (extend diagnostic only, no data writes). Source defaults include intent but actual effective source may be platform stub/snapshot; _build_scene_ready_registry_contract also drops intent keys (independent confirmed P0 projection gap). Preserve publication authority, never union unpublished scenes or put industry intent map into P0. Fix owning producer/projection and focused tests, then rebind backend and re-run only invalidated scene probe. Existing payment/user evidence unchanged. Goal remains active.",
+  "next_exact_step": "53.241 actual scene startup projection9PASS on backend9ecff8615: finance30 workspace.home and executive37 dashboard.company/project.management retain declared entry/title after user-mode sanitization. Next add/use bounded scene-entry scope in existing governed browser tool (read-only actual login/init +3scene entries +cached route leave; two viewports, same fixtures, no business writes); affected tool tests then one standard preview build/up5180 and scoped browser. Frontend product unchanged since262b38b2e/types reusable;69scene L2 and78tool tests passed. Update existing record/ledger after browser; retain original all-document/block-context/67ledger completion goal; no payment rerun, newfixture, full inventory or targetdeploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1831,6 +1835,25 @@
       ],
       "owner": "P0 effective startup scene projection / P1 effective default source; exact loss point not yet proven",
       "not_run": "frontend build/browser; current static c6f3f9cbc retained"
+    },
+    "segment_53_241": {
+      "status": "source_and_normalized_runtime_passed_browser_pending",
+      "stage_head": "9ecff8615",
+      "fixes": [
+        "e537d5f6b registry projection retains intent/entry_intent",
+        "7e52553a0 fills missing existing scene entry defaults without overwriting explicit entry",
+        "81f4d262d user-mode target whitelist retains intent/entry_intent; actual runtime root cause"
+      ],
+      "L1": "PASS",
+      "L2": "47 frontend +12 full projection +6 startup surface +4 provider =69 PASS;78 tool tests PASS; frontend strict types reused (frontend unchanged since262b38b2e)",
+      "L3": "scene-entry-contract9PASS finance30 workspace.home/executive37 dashboard.company+project.management company8; source+final intent/title readback and rollback",
+      "evidence": [
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-sanitize-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-source-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-sanitize-runtime.log"
+      ],
+      "supersedes": "53.240 missing intent runtime failure; intermediate failures preserved scene-registry-entry-runtime.log,scene-entry-default-runtime.log,scene-entry-source-runtime.log",
+      "L4": "not_run; old static c6f3f9cbc retained; build once after bounded scene browser scope ready"
     }
   }
 }
