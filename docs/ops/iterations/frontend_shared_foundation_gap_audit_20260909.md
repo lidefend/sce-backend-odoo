@@ -9470,3 +9470,13 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - version-save-browser.log / tpl07-1790813377873 **27 PASS**。PM普通表单父计划66：第一次保存注入503，版本号输入保留；重试单次write仅version_ids [[0,0,{revision_type:adjustment,version_date:2026-10-01,version_no:TPL53-VERSION-SAVE-1790813382525}]]、company8/if_match；后端普通角色回读版本7，draft/正确父ID/默认值、approved_by和approved_date为空。重新打开父表单已显示持久版本行，实际行操作为“打开/删除”。errors=[]、forbiddenWrites=[]。
 - 最终精确恢复回执version_ids=[7]/parent_ids=[66]/actor32/restored，无残留。桌面截图已检查；390宽页面溢出断言通过，但该截图停在长表单上部，不能证明窄屏版本行操作可用，下一次定向运行须滚动版本区后复核，不冒充完整双视口旅程。
 - Backend c7f3674b1、frontend fa1f92993/index-s6eU2T-G.js保持；下一步沿真实行“打开”入口消费版本动作契约，完成提交与返回；该动作实际运行前须扩展精确恢复以覆盖确认为本轮产生的自动通过版本，不能默许删除任何已审批记录。已配置审批分支复用原运行验证，页面办理尚未关闭。总体67/action-state保持缺口，不推送/合并/目标部署。
+
+### 53.198 关联记录办理链：响应式导航已修，动作执行权威缺口实证
+
+- 98af044c5起点，上一轮真实保存/恢复属progress。本批P4 549ace2b2扩展原版本探针，实际行打开、提交、返回及窄屏操作；46工具测试（Node18/Python28）及L1 PASS/begin/record（version-submit-tool-*）。恢复仅本次ID/marker/company8/PM32/300秒创建窗口、无版本审批配置、无review/真实审核人/依赖的自动通过版本；全部核验后以既有私有状态写恢复草稿再删除，保留审计、不更改生产删除规则。未通过提交的记录仍按原草稿路径清理。
+- 首次tpl07-1790813551290 FAIL（version-submit-browser.log）：桌面打开按钮可用，390卡片没有打开，停在scroll等待；尚未提交、最终恢复成功。源码定位X2ManyRelationRenderer仅编辑桌面有打开，编辑窄屏及只读呈现均遗漏；不把产品缺口归咎定位器。
+- P0 0d87f591f：共享渲染器三处遗漏补同一one2manyCanOpenRow/openOne2manyRow处理；只读表仅有授权行时加操作列，未保存行/无权限仍无入口。归属通用renderer，不加模型规则、不以字段只读代替记录导航授权。L1 relation-open-responsive-iteration PASS、professional_detail_collection全部分组PASS、typecheck.strict PASS（同前缀日志）。未改生产后端，复用原状态机/契约证据。
+- 一次受管build/up：frontend0d87f591f3e2d6e235986fb38f9c9af39b476a8f，entry /assets/index-CupTz5YF.js，sha256 fc80d0134b384f60e81201fff5dc45d9e540537fca4cdd25092f14079cee4282；backend c7f3674b1保持，无模块升级。
+- 第二次tpl07-1790813730296仍FAIL（version-submit-browser-v2.log，29断言中提交断言失败，不报29 PASS）。版本保存/回读、1440/390打开可用与无页面溢出、行打开实际sc.plan.version动作契约已通过；390截图已检查，版本卡片真正显示打开。沿实际入口打开的URL仅有view_mode及return_url/return_field/return_model/return_action_id/return_menu_id，无自身menu_id/action_id；child契约正常含submit语义并显示提交。点击真实submit后execute_button返回403 ACTION_CONTRACT_AUTHORITY_MISSING，随后错误页面。未发生审批通过；parent68/version9最终精确清理，errors/forbiddenWrites=[]。
+- 已确认P0契约闭环缺口：execute_button._authorize_contract_action强制当前menu_id/action_id和按钮身份；关联页允许通过授权relation_entry打开且有动作声明，但无自身菜单/action时不能执行。page_assembler._relation_entry_authority_pair_error又要求menu/action/target model严格对应，不能借用父菜单冒充子模型入口。下一步检查并补既有关系来源授权链到动作执行契约（父入口、关系字段、实际关联记录、当前ACL/记录规则/动作身份均由服务端核验），不放宽现有直达菜单守卫，不新增模型白名单或假菜单，只为通过验收而补入口。
+- 另见子版本标题仍为技术display_name sc.plan.version,9，属于模型显示权威不足；与动作修复分层处理，不由前端拼业务标题。自动通过/返回尚未闭环，已配置审批复用原运行证据但不报界面完成；只读分支新增导航尚无代表页面运行证据，不升整项台账。整体67及detail.action-state仍contract_gap；无推送、合并、目标部署。
