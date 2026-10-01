@@ -959,8 +959,36 @@ try {
       const stepsBox = await panel.locator('.approval-steps').boundingBox();
       check(`published approval editor: content uses panel width at ${width}`, Boolean(panelBox && targetBox && targetBox.width > panelBox.width * 0.7));
       check(`published approval editor: steps remain usable at ${width}`, Boolean(panelBox && stepsBox && stepsBox.width > panelBox.width * 0.45));
+      const ruleBox = await panel.getByLabel('审批规则设置', { exact: true }).boundingBox();
+      const scopeBox = await panel.getByLabel('默认审批岗位', { exact: true }).boundingBox();
+      check(`published approval editor: reviewer selector inside rule column at ${width}`, Boolean(ruleBox && scopeBox && scopeBox.x >= ruleBox.x && scopeBox.x + scopeBox.width <= ruleBox.x + ruleBox.width));
       await admin.page.screenshot({ path: path.join(out, `published-approval-editor-${width}.png`) });
+      const save = panel.getByRole('button', { name: '保存审批设置', exact: true });
+      await save.scrollIntoViewIfNeeded();
+      const saveBox = await save.boundingBox();
+      check(`published approval editor: save reachable at ${width}`, Boolean(saveBox && saveBox.x >= 0 && saveBox.x + saveBox.width <= width && saveBox.y >= 0 && saveBox.y + saveBox.height <= height));
+      check(`published approval editor: unchanged settings cannot save at ${width}`, await save.isDisabled());
     }
+    const declaredTargets = surface.data.sections.find(section => section.key === 'approval')?.target_options || [];
+    const child = declaredTargets.find(target => target.value === 'sc.payment.execution');
+    check('published approval editor: owned target declared', Boolean(child?.relation_field && child?.label));
+    await panel.getByLabel('审批对象', { exact: true }).click();
+    const [childResponse] = await Promise.all([
+      admin.page.waitForResponse(response => {
+        try {
+          const body = response.request().postDataJSON();
+          return body?.intent === 'sc.approval_policy.config.get' && body.params?.model === child.value;
+        } catch { return false; }
+      }, { timeout: 15000 }),
+      admin.page.getByText(child.label, { exact: true }).last().click(),
+    ]);
+    const childConfig = await childResponse.json();
+    check('published approval editor: owned target readback', childConfig.ok === true && childConfig.data?.policy?.target_model === child.value);
+    await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
+    check('published approval editor: child switch reflects backend', await panel.getByRole('checkbox', { name: '启用审批', exact: true }).isChecked() === Boolean(childConfig.data?.policy?.approval_required));
+    report.publishedApprovalInspection.childConfig = childConfig.data;
+    await panel.getByLabel('审批对象', { exact: true }).scrollIntoViewIfNeeded();
+    await admin.page.screenshot({ path: path.join(out, 'published-approval-child-390.png') });
     await admin.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_APPROVAL_CONFIG_INSPECT === '1') {
     // Read only: establish the actual configuration and distinct reviewer entry

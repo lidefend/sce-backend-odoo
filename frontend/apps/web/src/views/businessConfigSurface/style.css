@@ -944,6 +944,13 @@ h1 {
   font-size: 12px;
 }
 
+/* Official selects size to the rule column, not their intrinsic input width. */
+.approval-config-grid .sc-select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .approval-config-grid select,
 .approval-step-row input,
 .approval-step-row select {
