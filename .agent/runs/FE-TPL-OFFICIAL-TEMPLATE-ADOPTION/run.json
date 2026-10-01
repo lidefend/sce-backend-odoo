@@ -362,7 +362,8 @@
         "addons/smart_construction_core/models/support/sc_workflow.py",
         "addons/smart_construction_core/data/construction_plan_form_productization_contract.xml",
         "addons/smart_construction_core/core_extension_contract_normalizers.py",
-        "addons/smart_construction_core/core_extension.py"
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/security/sc_record_rules.xml"
       ]
     },
     "standard_preview_tool": {
@@ -553,7 +554,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.233 two-stage UI config saved and source201 retained. Finance first review passed and state remains draft pending/waiting; executive my-work empty -> browserfailed. Original active policy18/step2187 restored via public steps.set + config.get; newly added native step retained inactive, no business cleanup. NEXT diagnose existing201 read-only using bounded registered approval runtime entry: actual tier.review statuses/reviewer IDs, fixtureexecutive groups, can_review, ACL/record_scope and authorize_review_origin; source already gives executive finance_read so do not assume missing ACL. Record201 replaces recreating workflow. Readonly diagnosis may need minimal existing tool extension; no full ORM/inventory. Then fix owning product/data/config layer and resume201, avoid restarting whole create journey. L1/tools75PASS; no product changes/build/upgrade. Owner explicitly prioritizes functional progress and allows normal business data retention/necessary corrections; common config only needs known final state.",
+  "next_exact_step": "53.234 runtime readonly record201 proves executive37 is assigned pendingreview505 but record rule rejects read (ACLtrue). P1 adds same-company actual-review assignment READ ONLY rule with explicit review model discriminator, preserves write/create/unlink/cash authority. L1/193pure testsPASS; P4 existing read diagnostic+scope registered,75toolchecksPASS. Next governed module upgrade smart_construction_core with explicitflags, then payment-flow-existing readonly runtime should show executive can_review and authorized505. Continue existing201 through actual executive my-work, no recreate/delete; original policy restored previousbatch, definition6624 inactive but review pending. No frontend rebuild needed.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

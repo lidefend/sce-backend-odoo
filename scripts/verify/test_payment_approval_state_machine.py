@@ -4211,5 +4211,22 @@ class PaymentHandlingRoleTest(unittest.TestCase):
         self.assertFalse(ns['_has_finance_confirm_access'](actor))
 
 
+class AssignedPaymentReviewReadBoundaryTest(unittest.TestCase):
+    def test_read_extension_requires_company_actual_assignment_and_model_discriminator(self):
+        root = ET.parse(ROOT / 'addons/smart_construction_core/security/sc_record_rules.xml')
+        rule = root.find(".//record[@id='rule_sc_assigned_reviewer_payment_execution_read']")
+        self.assertIsNotNone(rule)
+        domain = rule.find("field[@name='domain_force']").text
+        user = types.SimpleNamespace(id=37)
+        actual = eval(compile(ast.parse(domain, mode='eval'), '<rule>', 'eval'), {'__builtins__': {}},
+                      {'user': user, 'company_ids': [8]})
+        self.assertEqual(actual, [('company_id', 'in', [8]), ('review_ids.model', '=', 'sc.payment.execution'),
+                                  ('review_ids.reviewer_ids', 'in', [37])])
+        self.assertEqual(rule.find("field[@name='perm_read']").get('eval'), 'True')
+        for operation in ('write', 'create', 'unlink'):
+            self.assertEqual(rule.find(f"field[@name='perm_{operation}']").get('eval'), 'False')
+        self.assertIn('group_sc_cap_finance_read', rule.find("field[@name='groups']").get('eval'))
+
+
 if __name__ == '__main__':
     unittest.main()
