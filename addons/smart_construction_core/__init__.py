@@ -72,6 +72,7 @@ from .core_extension import (  # noqa: F401
     smart_core_menu_config_only_exempt_group_xmlids,
     smart_core_business_config_form_settings_refs,
     smart_core_business_config_approval_policy_refs,
+    smart_core_business_config_approval_targets,
     smart_core_native_config_root_menu_xmlid,
     smart_core_native_config_delivery_excluded_menu_xmlids,
     smart_core_lowcode_system_config_menu_xmlids,

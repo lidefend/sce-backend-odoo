@@ -1560,6 +1560,11 @@ def smart_core_business_config_approval_policy_refs(env):
     return _hook_facts.business_config_approval_policy_refs()
 
 
+def smart_core_business_config_approval_targets(env, model):
+    from .services.approval_configuration_targets import approval_configuration_targets
+    return approval_configuration_targets(env, model)
+
+
 def smart_core_native_config_root_menu_xmlid(env):
     del env
     return _hook_facts.native_config_root_menu_xmlid()
