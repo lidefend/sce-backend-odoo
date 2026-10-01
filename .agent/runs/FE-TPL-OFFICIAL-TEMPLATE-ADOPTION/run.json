@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.228 P0 normalized singleton boolean visibility commitc240a28cb; L1/runtime130PASS. Correct-role browser1790822771322 created199 byoperator44,submitted sameactor,manager30 approved confirmed/validated,taskremoved,cleanuprestored. Browser exitfailed solely final locator exact已确认 (actualvisible 状态：已确认), finalDetail+heading already loaded. Tool locator now changed to scoped state label; L1 and tools64PASS; browser observation still pending; do not rerun fullwrite solely screenshot. Preserve raw report/failurePages showing complete officialdetail. Next close locator checks, record correctrole business evidence separately from pending dualviewport, then resume configured-change/publish/rollback loop existingpublishedpaymentconfiguration without resettingfixtures.",
+  "next_exact_step": "53.229: current publishedapproval readonly22PASS report1790822984087; parentpayment.request absent policy; childexecution policy18/step2187 required/finance_manager after upgrade. WEB-LC01/01B already complete; no repeat list change-set journeys. Next implement exact approval-toggle/config restore for existingpolicy18 using original baseline and governed cleanup (do NOT reuse plan missing-policy deletion). Validate disable/save→runtime_approval_required false→sameoperator create+submit auto-confirm (no reviews), restore original config/steps/definitions/callbackgroups and readback; preserve prior configured-review proof. Existing payment cleanup currently assumes unchanged policy and confirmed requires tier review, so first extend only declared toggle state with focused tests before writes. UI saves config immediately industry_policy_runtime; do not call this product publication. Ledger current followUp condensed to current blockers with original records referenced;67status unchanged.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1625,6 +1625,16 @@
       "browser_status": "failed final text locator; actual page shows 状态：已确认",
       "visual": "official detail loaded, dualviewport assertions not reached",
       "locator_checks": "L1/tools64 passed; no duplicate live write"
+    },
+    "segment_53_229": {
+      "status": "current_configuration_baseline_verified",
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790822984087/report.json",
+      "assertions": 22,
+      "writes": 0,
+      "parent_policy": "absent/notrequired",
+      "execution_policy": "18/step2187 required finance_manager",
+      "evidence_reason": "module upgrade changed runtime inputs; fresh baseline required before configuration write",
+      "completed_reused": "WEB-LC-01/01B standard-list configuration release loops"
     }
   }
 }

@@ -9729,3 +9729,12 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 最终失败为P4 getByText已确认 exact超时：failurePages完整页面文字实际为“状态：已确认”；官方详情data-state=ok与实际单据heading等待已通过，页面包括分类、来源、金额、账户及历史。不是产品状态未刷新。修正为限定finalDetail的状态标签匹配；该工具改动尚待L1/tools。双视口断言未到达，继续pending。不为截图单独重复创建/审批全链，下一次必要旅程复用修正后的观察步骤。67目标active，无推送/合并/目标部署。
 
 - 定位器修正后payment-final-label-iteration L1PASS、payment-final-label-unit64PASS；不重跑业务写入。视觉双视口仍pending，原业务和实际恢复证据复用。
+
+### 53.229 配置基线与当前阻断索引收敛
+
+- e594f07d9 clean续跑。复用段45已纠正事实：WEB-LC-01/01B标准列表配置发布/回滚已完成，不重新打开旧批次。当前剩余是审批规则改变→正确用户行为→恢复，不等同于再跑页面change-set发布。直接源码确认approval editor config.set/steps.set按industry_policy_runtime保存生效，不能标为产品版本发布；能力、发布范围、用户验收仍分别记录。
+- 因53.227模块升级改变运行基线，使用已有只读published approval inspect重新读取，并非无变化重复取证。approval-current-baseline-browser退出0，tpl07-1790822984087 **22PASS**、无写入：parent payment.request无policy/requiredfalse，childexecution policy18/PFL-035、step2187财务审核、requiredtrue/modesingle/trigger submit；双视口编辑器和target切换通过。无需新建fixture、环境或前端构建。
+- 现有payment recovery刻意要求配置基线不变，confirmed也要求真实tier.review；因此不能直接复用它来关闭审批后自动通过并删除。下一步在同一受管恢复工具限定policy18已有策略的开关与恢复状态，验证原步骤/定义/callbackgroups保持、最终原配置恢复；不得借用计划“原策略不存在”的删除路径。完成工具定向检查后，实际关闭审批→同经办创建/提交自动确认→恢复配置；配置审批路径复用53.228正确角色证据。
+- 更新原67条台账detail.action-state的followUp为当前索引，去除长串已过时阻断叙述，历史细节仍在本活记录及run原日志；不修改contract_gap，不新建覆盖表。正确角色证据与主管代建技术证据明确区分，最终详情双视口仍pending。无推送/合并/目标部署。
+
+- approval-index-iteration L1PASS，原台账/页面类型守卫15+13=28项PASS，67条/1个owned gap保持不变；仅followUp内容更新，保留原文件格式。
