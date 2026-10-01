@@ -719,6 +719,61 @@ class WorkItemActionOriginTest(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self.validate = module.validate_work_item_action_origin
+        self.request_mode = module.work_item_request_access_mode
+
+    def test_request_mode_revalidates_target_and_preserves_other_intents(self):
+        payload = {'params': {'model': 'x.record', 'res_id': 7, 'button': {'type': 'object', 'name': 'validate_tier'}},
+                   'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}}
+        calls = []
+        def authorize(origin, **target):
+            calls.append((origin, target))
+            return {'allowed': True, 'record_access_mode': 'read'}
+        self.assertEqual(self.request_mode('execute_button', payload, authorize=authorize), 'read')
+        self.assertEqual(calls[0][1], {'model': 'x.record', 'record_id': 7, 'method_name': 'validate_tier'})
+        self.assertIsNone(self.request_mode('api.data', payload, authorize=authorize))
+        self.assertIsNone(self.request_mode('execute_button', {'params': payload['params']}, authorize=authorize))
+        self.assertEqual(len(calls), 1)
+
+    def test_request_mode_rejects_ambiguous_target_before_provider(self):
+        good = {'model': 'x.record', 'res_id': 7, 'button': {'type': 'object', 'name': 'validate_tier'}}
+        for patch in ({'res_ids': [7, 8]}, {'ids': [8]}, {'id': 8}, {'res_id': True},
+                      {'model': ''}, {'button': {'type': 'server', 'name': 'validate_tier'}},
+                      {'button': {'type': 'object', 'name': ''}}):
+            with self.subTest(patch=patch), self.assertRaises(ValueError):
+                self.request_mode('execute_button', {'params': {**good, **patch},
+                    'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}},
+                    authorize=lambda *a, **kw: self.fail('ambiguous target must not reach provider'))
+
+    def test_predispatch_uses_fresh_read_grant_without_changing_default_write_acl(self):
+        import ast
+        from unittest.mock import Mock
+        path = Path(__file__).resolve().parents[1] / 'security/intent_permission.py'
+        node = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'check_intent_permission')
+        model = Mock()
+        env = {}
+        user = types.SimpleNamespace(id=37)
+        hook = Mock(return_value={'allowed': True, 'record_access_mode': 'read'})
+        namespace = {'AccessError': PermissionError, 'MissingError': LookupError,
+            'get_user_from_token': lambda: user, '_sync_authenticated_identity': lambda *a: env,
+            '_permission_env_for_params': lambda *a: (env, user, None),
+            '_param_value': lambda p, key: p.get(key, p.get('params', {}).get(key)),
+            'access_mode_for_intent': lambda *a: 'write', 'work_item_request_access_mode': self.request_mode,
+            'call_extension_hook_first': hook, '_resolve_model': lambda *a: model,
+            '_is_ui_only_config_intent': lambda *a: False, '_model_acl_policy': lambda *a, **kw: {},
+            '_record_ids': lambda *a: [], '_capability_key': lambda *a: '', '_find_capability': lambda *a: None}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), namespace)
+        payload = {'intent': 'execute_button', 'params': {'model': 'x.record', 'res_id': 7,
+            'button': {'type': 'object', 'name': 'validate_tier'}}, 'meta': {'work_item_origin': {'source': 'tier.review', 'id': 3}}}
+        ctx = types.SimpleNamespace(params=payload, user=user, principal=None)
+        self.assertTrue(namespace['check_intent_permission'](ctx))
+        model.check_access_rights.assert_called_once_with('read')
+        model.reset_mock()
+        hook.return_value = False
+        with self.assertRaises(PermissionError): namespace['check_intent_permission'](ctx)
+        model.check_access_rights.assert_not_called()
+        payload.pop('meta')
+        self.assertTrue(namespace['check_intent_permission'](ctx))
+        model.check_access_rights.assert_called_once_with('write')
 
     def run_origin(self, origin, authorize):
         return self.validate(origin, model='x.record', record_id=7, method_name='validate_tier', authorize=authorize)

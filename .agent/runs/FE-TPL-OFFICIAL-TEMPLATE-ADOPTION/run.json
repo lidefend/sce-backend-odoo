@@ -53,7 +53,8 @@
         "addons/smart_core/utils/extension_hooks.py",
         "addons/smart_construction_core/services/review_work_item_service.py",
         "addons/smart_construction_core/core_extension.py",
-        "addons/smart_construction_core/__init__.py"
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_core/security/intent_permission.py"
       ]
     },
     "create_default_hydration": {
@@ -554,7 +555,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.235 P4 retained201 resume branch added (TPL07_PAYMENT_REVIEW_RESUME=201). Executive actual task505 visible. FirstUI failed shell empty menu; P0 shared actionRoutePolicy/AppShell now admits structurally valid record work-item route for backend contract loading (not auth grant). L1/routeguards/strict typesPASS, one build c6f3f9cbc entryBrwUVS7o on5180. Resume reporttpl07-1790824901661 reaches approve UI then PERMISSION_DENIED user lacks write model sc.payment.execution. No approval success/newrecord/config mutation. NEXT fix P0 security/intent_permission predispatch gate to reuse fresh validate_work_item_action_origin + extension hook grant read before model/rule checks for exact object workitem action; do NOT change generic write-intent classification/preview/replay or skip ACL blindly. Handler execute_button already revalidates origin and honors record_access_mode read, P1hook returnsread. Add security tests forged origin/wrongmodel/id/method/actor deny, generic writes unchanged, then backendbind and resume same201; no frontend rebuild unless changed. Policyoriginalsingle/definition6624inactive remains recorded; fix next observed errors only. Full67 goalactive.",
+  "next_exact_step": "53.236 P0 predispatch now uses fresh work_item_request_access_mode on exact execute_button object/single res_id -> same existing extension authorization -> read/write record ACL mode; ordinary intent classification unchanged. L1/37authorityPASS including actualcheck_intent_permission isolated runtime test, defaultwrite/deny/malformed preserved. Next backendbind newcommit and resume201 via existing TPL07_PAYMENT_REVIEW_RESUME=201; no frontendbuild/moduleupgrade/datarecreate.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
