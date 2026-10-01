@@ -525,6 +525,14 @@ export interface ApiDataWriteRequest {
   context?: Record<string, unknown>;
 }
 
+export interface RelationActionOrigin {
+  model: string;
+  record_id: number;
+  field: string;
+  action_id: number;
+  menu_id: number;
+}
+
 export interface ExecuteButtonRequest {
   model: string;
   res_id: number;
@@ -538,7 +546,7 @@ export interface ExecuteButtonRequest {
     xml_id?: string;
   };
   context?: Record<string, unknown>;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> & { relation_origin?: RelationActionOrigin };
 }
 
 export interface ExecuteButtonResult {
