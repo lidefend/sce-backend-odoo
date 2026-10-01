@@ -1,35 +1,35 @@
 <template>
   <article class="block block-metric-row">
-    <header v-if="block.title" class="block-header">
-      <h4>{{ block.title }}</h4>
-    </header>
+    <ScCard class="block-card" :bordered="false" :title="block.title">
 
-    <div v-if="metrics.length" class="metric-grid" :data-metric-count="metrics.length">
-      <component
-        :is="item.actionKey ? ScButton : 'article'"
-        v-for="item in metrics"
-        :key="item.key"
-        class="metric-item"
-        :class="`tone-${item.tone || 'neutral'}`"
-        :type="item.actionKey ? 'button' : undefined"
-        :variant="item.actionKey ? 'ghost' : undefined"
-        :appearance="item.actionKey ? 'structured-content' : undefined"
-        :data-metric-key="item.key"
-        :data-metric-tone="item.tone"
-        :data-interactive="Boolean(item.actionKey)"
-        :aria-label="item.actionKey ? `${item.label}：${item.value}` : undefined"
-        @click="item.actionKey ? emitAction(item) : undefined"
-      >
-        <p class="metric-label">{{ item.label }}</p>
-        <p class="metric-value">{{ item.value }}</p>
-        <p v-if="item.delta || item.hint" class="metric-meta">{{ item.delta || item.hint }}</p>
-      </component>
-    </div>
-    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
+      <div v-if="metrics.length" class="metric-grid" :data-metric-count="metrics.length">
+        <component
+          :is="item.actionKey ? ScButton : 'article'"
+          v-for="item in metrics"
+          :key="item.key"
+          class="metric-item"
+          :class="`tone-${item.tone || 'neutral'}`"
+          :type="item.actionKey ? 'button' : undefined"
+          :variant="item.actionKey ? 'ghost' : undefined"
+          :appearance="item.actionKey ? 'structured-content' : undefined"
+          :data-metric-key="item.key"
+          :data-metric-tone="item.tone"
+          :data-interactive="Boolean(item.actionKey)"
+          :aria-label="item.actionKey ? `${item.label}：${item.value}` : undefined"
+          @click="item.actionKey ? emitAction(item) : undefined"
+        >
+          <p class="metric-label">{{ item.label }}</p>
+          <p class="metric-value">{{ item.value }}</p>
+          <p v-if="item.delta || item.hint" class="metric-meta">{{ item.delta || item.hint }}</p>
+        </component>
+      </div>
+      <ScEmptyState v-else density="compact" :heading-level="5" title="暂无指标" description="当前看板尚未提供可展示的指标数据。" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
@@ -121,18 +121,8 @@ function emitAction(item: MetricItem) {
 </script>
 
 <style scoped>
-.block {
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  padding: 12px;
-  height: 100%;
-}
-.block-header h4 {
-  margin: 0 0 10px;
-  font-size: 15px;
-  font-weight: 600;
-}
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

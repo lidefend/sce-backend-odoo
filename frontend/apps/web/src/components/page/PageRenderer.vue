@@ -117,11 +117,6 @@ function onZoneAction(payload: PageBlockActionEvent) {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--sc-app-border);
-  border-radius: 8px;
-  background: var(--sc-app-panel);
-  box-shadow: 0 1px 2px var(--sc-app-shadow);
 }
 .page-renderer-title {
   min-width: 0;
@@ -191,9 +186,6 @@ function onZoneAction(payload: PageBlockActionEvent) {
 @media (max-width: 720px) {
   .page-renderer {
     gap: 10px;
-  }
-  .page-renderer-header {
-    padding: 10px;
   }
   .page-renderer-tools {
     justify-content: flex-start;

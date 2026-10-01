@@ -5,23 +5,23 @@
     :data-state="phase"
     data-readonly="true"
   >
-    <header class="block-header">
-      <h4>{{ block.title || '数据快照' }}</h4>
-    </header>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '数据快照'">
 
-    <p v-if="phase === 'loading'" class="block-boq-import-preview__hint" data-loading>
-      {{ copy.loading }}
-    </p>
+      <p v-if="phase === 'loading'" class="block-boq-import-preview__hint" data-loading>
+        {{ copy.loading }}
+      </p>
 
-    <BoqImportPreviewPanel v-else-if="viewModel" :model="viewModel" />
+      <BoqImportPreviewPanel v-else-if="viewModel" :model="viewModel" />
 
-    <p v-else class="block-boq-import-preview__hint" data-empty>
-      {{ copy.empty }}
-    </p>
+      <p v-else class="block-boq-import-preview__hint" data-empty>
+        {{ copy.empty }}
+      </p>
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 /**
  * 只读数据快照块包装（驾驶舱 page orchestration block）。
  *
@@ -98,6 +98,8 @@ onUnmounted(() => loader.dispose());
 </script>
 
 <style scoped>
+.block { min-width: 0; }
+.block-card { min-width: 0; height: 100%; }
 .block-boq-import-preview__hint {
   margin: 0;
   color: var(--sc-semantic-text-secondary);

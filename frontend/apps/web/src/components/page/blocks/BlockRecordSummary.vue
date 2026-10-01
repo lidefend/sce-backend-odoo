@@ -1,30 +1,32 @@
 <template>
   <article class="block block-record-summary">
-    <header class="block-header">
-      <h4>{{ block.title || '摘要' }}</h4>
-      <div v-if="actions.length" class="summary-actions">
-        <ScButton
-          v-for="action in actions"
-          :key="`summary-action-${action.key}`"
-          size="small"
-          variant="ghost"
-          @click="emitAction(action.key)"
-        >
-          {{ action.label || action.key }}
-        </ScButton>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '摘要'">
+      <template #actions>
+        <div v-if="actions.length" class="summary-actions">
+          <ScButton
+            v-for="action in actions"
+            :key="`summary-action-${action.key}`"
+            size="small"
+            variant="ghost"
+            @click="emitAction(action.key)"
+          >
+            {{ action.label || action.key }}
+          </ScButton>
+        </div>
+      </template>
+      <div v-if="rows.length" class="summary-grid">
+        <article v-for="item in rows" :key="item.key" class="summary-item">
+          <p class="summary-label">{{ item.label }}</p>
+          <p class="summary-value">{{ item.value }}</p>
+        </article>
       </div>
-    </header>
-    <div v-if="rows.length" class="summary-grid">
-      <article v-for="item in rows" :key="item.key" class="summary-item">
-        <p class="summary-label">{{ item.label }}</p>
-        <p class="summary-value">{{ item.value }}</p>
-      </article>
-    </div>
-    <ScEmptyState v-else density="compact" :heading-level="5" title="暂无摘要信息" />
+      <ScEmptyState v-else density="compact" :heading-level="5" title="暂无摘要信息" />
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
 import type { PageOrchestrationBlock } from '../../../app/pageOrchestration';
@@ -73,14 +75,8 @@ function emitAction(actionKey: string) {
 </script>
 
 <style scoped>
-.block { border: 1px solid var(--sc-app-border); border-radius: 8px; background: var(--sc-app-panel); padding: 10px; height: 100%; }
-.block-header h4 { margin: 0 0 8px; font-size: 14px; }
-.block-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
+.block { min-width: 0; height: 100%; }
+.block-card { min-width: 0; height: 100%; }
 .summary-actions {
   display: flex;
   flex-wrap: wrap;

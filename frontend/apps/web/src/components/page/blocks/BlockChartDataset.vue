@@ -5,23 +5,23 @@
     :data-state="phase"
     data-readonly="true"
   >
-    <header class="block-header">
-      <h4>{{ block.title || '数据图表' }}</h4>
-    </header>
+    <ScCard class="block-card" :bordered="false" :title="block.title || '数据图表'">
 
-    <p v-if="phase === 'loading'" class="block-chart-dataset__hint" data-loading>
-      {{ copy.loading }}
-    </p>
+      <p v-if="phase === 'loading'" class="block-chart-dataset__hint" data-loading>
+        {{ copy.loading }}
+      </p>
 
-    <ChartDatasetPanel v-else-if="viewModel" :model="viewModel" />
+      <ChartDatasetPanel v-else-if="viewModel" :model="viewModel" />
 
-    <p v-else class="block-chart-dataset__hint" data-empty>
-      {{ copy.empty }}
-    </p>
+      <p v-else class="block-chart-dataset__hint" data-empty>
+        {{ copy.empty }}
+      </p>
+    </ScCard>
   </article>
 </template>
 
 <script setup lang="ts">
+import ScCard from '../../design-system/ScCard.vue';
 /**
  * 驾驶舱只读图表块包装（page orchestration block，G6.1 Task 100，
  * 与数据快照块包装同款纪律）。
@@ -98,6 +98,8 @@ onUnmounted(() => loader.dispose());
 </script>
 
 <style scoped>
+.block { min-width: 0; }
+.block-card { min-width: 0; height: 100%; }
 .block-chart-dataset__hint {
   margin: 0;
   color: var(--sc-semantic-text-secondary);
