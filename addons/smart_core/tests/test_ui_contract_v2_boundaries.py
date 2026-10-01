@@ -5036,5 +5036,85 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertNotIn("form_structure_contract", source_contract)
 
 
+class ProjectionEnvironmentAuthorityTest(unittest.TestCase):
+    def setUp(self):
+        from unittest.mock import MagicMock
+        self.handler_module = _load_handler()
+        self.business = MagicMock(uid=32, su=False, context={"company_id": 8})
+        self.business.user.id = 32
+        self.business.user.has_group.return_value = False
+        self.metadata = MagicMock(uid=32, su=True)
+        self.constructed = []
+        def environment(cr, uid, context, su=False):
+            result = types.SimpleNamespace(cr=cr, uid=uid, context=context, su=su)
+            self.constructed.append(result)
+            return result
+        self.api = types.SimpleNamespace(Environment=MagicMock(side_effect=environment))
+        sys.modules["odoo"].api = self.api
+        path = Path(__file__).resolve().parents[1] / "handlers/ui_contract_preview.py"
+        spec = importlib.util.spec_from_file_location("odoo.addons.smart_core.handlers._tested_ui_contract_preview", path)
+        self.preview = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.preview)
+
+    def test_actual_projection_preserves_separate_metadata_privilege_and_readonly_context(self):
+        for uid, elevated in ((32, True), (1, True), (37, False), (32, False)):
+            with self.subTest(metadata_uid=uid, metadata_su=elevated):
+                self.metadata.uid, self.metadata.su = uid, elevated
+                context = {"company_id": 8, "contract_projection_readonly": True}
+                actor, metadata = self.preview.build_projection_environments(self.business, self.metadata, {}, context)
+                self.assertEqual((actor.uid, actor.su), (32, False))
+                self.assertEqual((metadata.uid, metadata.su), (uid, elevated))
+                self.assertEqual(actor.context, context)
+                self.assertEqual(metadata.context, context)
+
+    def test_entry_resolution_preserves_environment_authorities(self):
+        from unittest.mock import MagicMock
+        handler = self.handler_module.UiContractV2Handler(env=self.business, su_env=self.metadata)
+        downstream = MagicMock()
+        downstream.return_value.handle.return_value = {"ok": True, "data": {"model": "example.record"}}
+        original = self.handler_module.UiContractHandler
+        self.handler_module.UiContractHandler = downstream
+        try:
+            for elevated in (True, False):
+                self.metadata.su = elevated
+                handler._resolve_entry_contract({"entry": {"model": "example.record"}}, {}, {}, {})
+                actor = downstream.call_args.args[0]
+                metadata = downstream.call_args.kwargs["su_env"]
+                self.assertEqual((actor.uid, actor.su), (32, False))
+                self.assertEqual((metadata.uid, metadata.su), (32, elevated))
+                self.assertTrue(actor.context["contract_projection_readonly"])
+                self.assertTrue(metadata.context["contract_projection_readonly"])
+        finally:
+            self.handler_module.UiContractHandler = original
+
+    def test_unprivileged_preview_is_rejected_before_environment_construction(self):
+        with self.assertRaises(self.preview.PreviewAccessDenied):
+            self.preview.build_projection_environments(self.business, self.metadata, {"preview_token": "token"}, {})
+        self.api.Environment.assert_not_called()
+
+    def test_verified_preview_environment_failure_never_falls_back(self):
+        from unittest.mock import MagicMock
+        self.business.user.has_group.return_value = True
+        self.business.company.id = 8
+        self.business.cr.dbname = "test"
+        changeset = self.business.__getitem__.return_value.sudo.return_value.search.return_value
+        changeset.preview_expires_at = 20
+        changeset.role_key = "config_admin"
+        resolver = MagicMock()
+        resolver.return_value.resolve_role_code.return_value = "config_admin"
+        module_name = "odoo.addons.smart_core.identity.identity_resolver"
+        prior = sys.modules.get(module_name)
+        _install_module(module_name, IdentityResolver=resolver)
+        sys.modules["odoo"].fields = types.SimpleNamespace(Datetime=types.SimpleNamespace(now=lambda: 10))
+        self.api.Environment.side_effect = RuntimeError("environment rejected")
+        try:
+            with self.assertRaisesRegex(self.preview.PreviewAccessDenied, "无法建立"):
+                self.preview.build_projection_environments(self.business, self.metadata,
+                    {"preview_token": "token", "preview_role_key": "config_admin"}, {})
+        finally:
+            if prior is None: sys.modules.pop(module_name, None)
+            else: sys.modules[module_name] = prior
+
+
 if __name__ == "__main__":
     unittest.main()

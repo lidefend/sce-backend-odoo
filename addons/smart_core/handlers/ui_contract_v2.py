@@ -4076,8 +4076,8 @@ class UiContractV2Handler(BaseIntentHandler):
         projection_context["contract_projection_readonly"] = True
         try:
             from odoo import api
-            projection_env = api.Environment(self.env.cr, self.env.uid, projection_context)
-            projection_su_env = api.Environment(self.su_env.cr, self.su_env.uid, projection_context)
+            projection_env = api.Environment(self.env.cr, self.env.uid, projection_context, su=bool(getattr(self.env, "su", False)))
+            projection_su_env = api.Environment(self.su_env.cr, self.su_env.uid, projection_context, su=bool(getattr(self.su_env, "su", False)))
         except Exception:
             projection_env = self.env
             projection_su_env = self.su_env
