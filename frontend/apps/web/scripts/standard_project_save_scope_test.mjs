@@ -345,7 +345,7 @@ const documentScope = { model: 'sc.project.document', marker: 'TPL53-DOCUMENT-FL
   projectId: 10, docTypeId: 21, menuId: 412, actionId: 700, responsibleId: 29, phase: 'create', id: 123,
   request: { op: 'create', model: 'sc.project.document',
     vals: { name: 'TPL53-DOCUMENT-FLOW-1790807163178', project_id: 10, doc_type_id: 21, document_kind: 'site', responsible_id: 29 },
-    context: { company_id: 8, menu_id: 412, action_id: 700 } } };
+    context: { company_id: 8, allowed_company_ids: [8], lang: 'zh_CN', menu_id: 412, action_id: 700 } } };
 test('document create binds exact PM values and dynamically selected project/classification', () => {
   const body = { intent: 'api.data', params: documentScope.request };
   assert.equal(documentFlowWriteKind('fixture_role_pm', body, documentScope), 'create');
@@ -410,7 +410,7 @@ test('document permit rejects outer and nested context overrides at every write 
         meta: { menu_id: 412, action_id: 700, work_item_origin: scope.approvalOrigin } };
     assert.equal(documentFlowWriteKind(role, { ...body, context: { company_id: 8, allowed_company_ids: [8] } }, scope), phase);
     for (const context of [{ default_state: 'approved' }, { skip_validation_check: true }, { company_id: 9 },
-      { allowed_company_ids: [8, 9] }, { project_id: 11 }, { operation_strategy: 'sudo' }]) {
+      { allowed_company_ids: [8, 9] }, { lang: 'en_US' }, { project_id: 11 }, { operation_strategy: 'sudo' }]) {
       assert.equal(documentFlowWriteKind(role, { ...body, context }, scope), null);
       const altered = structuredClone(body);
       altered.params.context = { ...altered.params.context, ...context };

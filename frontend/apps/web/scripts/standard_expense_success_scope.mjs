@@ -11,7 +11,7 @@ export function documentFlowWriteKind(role, body, scope) {
     || Object.keys(r.context).some(key => key.startsWith('default_') || /sudo|force|skip|token/i.test(key))) return null;
   const safeContext = context => context === undefined || (context && typeof context === 'object' && !Array.isArray(context)
     && Object.entries(context).every(([key, value]) => {
-      const expected = { company_id: 8, allowed_company_ids: [8], project_id: scope.projectId,
+      const expected = { company_id: 8, allowed_company_ids: [8], lang: 'zh_CN', project_id: scope.projectId,
         menu_id: scope.menuId, action_id: scope.actionId, active_model: scope.model,
         active_id: scope.id, active_ids: scope.id ? [scope.id] : [] };
       return Object.hasOwn(expected, key) && (['menu_id', 'action_id'].includes(key)

@@ -1315,7 +1315,7 @@ try {
       await panel.locator('.approval-amount-message').getByText(capability.message, { exact: true }).waitFor();
       // Unsaved local editing demonstrates usable controls; all configuration writes remain intercepted.
       const enabled = panel.getByRole('checkbox', { name: '启用审批', exact: true });
-      if (!(await enabled.isChecked())) await enabled.check();
+      if (!(await enabled.isChecked())) await panel.locator('.approval-toggle').click();
       if (!(await panel.locator('.approval-step-row').count())) await panel.getByRole('button', { name: '添加步骤', exact: true }).click();
       check(`amount ${spec.model}: reviewer steps remain editable`, await panel.getByLabel('第1步名称', { exact: true }).isEnabled()
         && await panel.getByLabel('第1步审批岗位', { exact: true }).isEnabled());
@@ -1509,7 +1509,7 @@ try {
         if (documentFlow || diarySaveProbe || eventSaveProbe || ['sc.plan', 'sc.plan.report'].includes(spec.model)) {
           const entries = ['primary_actions', 'role_home_actions', 'contextual_actions', 'admin_actions']
             .flatMap(key => report.routeAuthority?.[key] || []);
-          const entryXmlid = documentFlow ? 'smart_construction_core.menu_sc_project_documents' : spec.model === 'sc.plan.report' ? 'smart_construction_core.menu_sc_plan_report'
+          const entryXmlid = documentFlow ? 'smart_construction_core.menu_sc_site_documents' : spec.model === 'sc.plan.report' ? 'smart_construction_core.menu_sc_plan_report'
             : spec.model === 'sc.plan' ? 'smart_construction_core.menu_sc_plan'
             : eventSaveProbe ? 'smart_construction_core.menu_sc_contract_event' : 'smart_construction_core.menu_sc_construction_diary';
           const matches = entries.filter(row => row.menu_xmlid === entryXmlid);
@@ -1554,7 +1554,7 @@ try {
             });
             await session.page.locator(`[data-field-name="${field}"] input`).first().fill(search);
             const result = await (await response).json();
-            const selected = result.data?.records?.find(row => expectedId ? row.id === expectedId : Number(row.id) > 0);
+            const selected = result.data?.records?.find(row => expectedId ? row.id === expectedId : Number(row.id) > 0 && String(row.display_name || row.name).includes(search));
             check(`document: ${field} returned by PM relation query`, result.ok === true && Boolean(selected));
             await session.page.getByRole('option', { name: String(selected.display_name || selected.name), exact: true }).click();
             return selected;
@@ -1586,6 +1586,8 @@ try {
           });
           await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
           check('document: actual PM save succeeds', (await (await saved).json()).ok === true && Number(documentSuccess.id) > 0);
+          await session.page.waitForURL(url => url.pathname === `/f/${spec.model}/${documentSuccess.id}`, { waitUntil: 'domcontentloaded' });
+          await session.page.locator(`[data-form-record="${documentSuccess.id}"][data-state="ok"]`).waitFor();
           const read = async label => {
             const result = await api({ op: 'read', model: spec.model, ids: [documentSuccess.id],
               fields: ['id', 'name', 'state', 'project_id', 'doc_type_id', 'company_id', 'validation_status'], context: { company_id: 8 } });
@@ -1602,12 +1604,35 @@ try {
             const response = page.waitForResponse(response => {
               try { const body = response.request().postDataJSON(); return body?.intent === 'execute_button'
                 && body.params?.model === spec.model && body.params.res_id === documentSuccess.id; } catch { return false; }
-            });
-            await page.getByRole('button', { name: label, exact: true }).click();
-            check(`document: ${phase} succeeds through visible action`, (await (await response).json()).ok === true
+            }).then(response => ({ response }), error => ({ error }));
+            const direct = page.getByRole('button', { name: label, exact: true });
+            if (await direct.count() && await direct.isVisible()) await direct.click();
+            else {
+              await page.getByRole('button', { name: '更多操作', exact: true }).click();
+              await page.getByText(label, { exact: true }).last().click();
+            }
+            const outcome = await response;
+            if (outcome.error) throw outcome.error;
+            check(`document: ${phase} succeeds through visible action`, (await outcome.response.json()).ok === true
               && report.documentWrites.filter(row => row.kind === phase && row.result.ok === true).length === 1);
           };
-          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-saved', 'readonly');
+          const observeDocument = async (label, state) => {
+            await session.page.goto(`${base}/f/${spec.model}/${documentSuccess.id}${createContext}`);
+            const surface = session.page.locator(`[data-form-model="${spec.model}"][data-form-record="${documentSuccess.id}"][data-state="ok"]`);
+            await surface.waitFor();
+            const actual = (report.contractResponses || []).map(row => findRecordAuthority(row.contract))
+              .findLast(row => row?.model === spec.model && Number(row.mainData?.id) === documentSuccess.id);
+            check(`document ${label}: loaded contract has actual state`, actual?.mainData?.state === state);
+            const readonly = actual.status?.effectiveRenderProfile === 'readonly';
+            check(`document ${label}: renderer consumes declared profile`, readonly
+              ? await surface.getAttribute('data-detail-composition-reason') === 'contract-readonly-record-view'
+              : await surface.getAttribute('data-form-composition') === 'official-standard-form');
+            check(`document ${label}: no unknown fields`, await surface.locator('[data-field-fail-closed]').count() === 0);
+            report.documentViews ??= [];
+            report.documentViews.push({ label, state, profile: actual.status?.effectiveRenderProfile });
+            await session.page.screenshot({ path: path.join(out, `document-${label}.png`) });
+          };
+          await observeDocument('saved', 'draft');
           await perform(session.page, 'submit', '提交审批');
           let submitted = await read('submitted');
           if (submitted.state === 'review') {
@@ -1632,11 +1657,11 @@ try {
             report.documentScope.configuredApprovalCoverage = 'not exercised: actual submission auto-approved; backend configured-review evidence is separate';
           }
           check('document: approval precedes explicit archive', submitted.state === 'approved');
-          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-approved', 'readonly');
+          await observeDocument('approved', 'approved');
           await perform(session.page, 'archive', '归档');
           check('document: explicit archive reaches done', (await read('archived')).state === 'done');
           documentSuccess.phase = 'done';
-          await form(session.page, `/f/${spec.model}/${documentSuccess.id}${createContext}`, 'document-archived', 'readonly');
+          await observeDocument('archived', 'done');
           for (const width of [1440, 390]) {
             await session.page.setViewportSize({ width, height: 950 });
             check(`document archived ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
