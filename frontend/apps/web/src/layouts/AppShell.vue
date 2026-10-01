@@ -427,6 +427,7 @@ import {
 import { config } from '../config';
 import { openAction } from '../services/action_service';
 import { routeAuthorityContextAllowed, routeAuthorityEntries } from '../app/routeAuthority';
+import { isRecordWorkItemNavigation } from '../services/actionRoutePolicy';
 import { createNavigationSelectionSnapshot } from '../app/navigationSelectionCore.js';
 import type { BusinessScopeOperationOption, CanonicalNavigationNode, NavNode, RecordContextOption } from '@sc/schema';
 import {
@@ -526,6 +527,7 @@ const routeAllowsEmptyMenu = computed(() => {
     || route.path.startsWith('/admin/')
     || route.name === 'api-key-management'
     || ['my-work', 'scene-my-work'].includes(String(route.name || ''))
+    || isRecordWorkItemNavigation(route.name, route.params, route.query)
     || explicitActionRoute;
 });
 const rootTitle = computed(() => {

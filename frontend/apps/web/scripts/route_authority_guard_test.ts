@@ -176,3 +176,17 @@ assert.equal(configReturn.action_id, '666');
 assert.equal(configReturn.view_id, '1703');
 assert.equal(buildLowCodeReturnQuery({ routeQuery: { menu_id: '356' }, modelName: 'test.document', actionId: 666, openPagesFlag: 'open_pages' }).menu_id, '356');
 console.log('[route_authority_guard_test] host/target return cases=2 PASS');
+
+import { isRecordWorkItemNavigation } from '../src/services/actionRoutePolicy';
+const reviewParams = { model: 'sc.payment.execution', id: '201' };
+const reviewQuery = { work_item_source: 'tier.review', work_item_id: '505' };
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, reviewQuery), true);
+assert.equal(isRecordWorkItemNavigation('model-form', reviewParams, reviewQuery), true);
+assert.equal(isRecordWorkItemNavigation('action', reviewParams, reviewQuery), false);
+for (const id of ['new', '0', '-1', '1.5', ''])
+  assert.equal(isRecordWorkItemNavigation('record', { ...reviewParams, id }, reviewQuery), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, {}), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, { ...reviewQuery, work_item_source: 'anything' }), false);
+assert.equal(isRecordWorkItemNavigation('record', reviewParams, { ...reviewQuery, work_item_id: '0' }), false);
+assert.equal(isRecordWorkItemNavigation('record', { ...reviewParams, model: '' }, reviewQuery), false);
+console.log('[work_item_empty_menu_shell] PASS cases=12 authorization=backend');

@@ -70,3 +70,12 @@ export function resolveAuthorizedConfigurationRoute(options: {
   delete query.activity_page_id;
   return { path: resolveActionWebRoute(authority) || '/admin/business-config', query, replace: true };
 }
+
+/** Allow contract loading without a menu; this does not authorize record access. */
+export function isRecordWorkItemNavigation(routeName: unknown, params: Record<string, unknown>, query: Record<string, unknown>): boolean {
+  return ['record', 'model-form'].includes(String(routeName || ''))
+    && typeof params.model === 'string' && /^[a-z][a-z0-9_.]*$/.test(params.model)
+    && /^[1-9]\d*$/.test(String(params.id || ''))
+    && query.work_item_source === 'tier.review'
+    && /^[1-9]\d*$/.test(String(query.work_item_id || ''));
+}
