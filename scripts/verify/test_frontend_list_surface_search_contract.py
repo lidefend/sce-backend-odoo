@@ -103,6 +103,98 @@ assert(!dailyDetailContractMatches({...contract,response:{ok:false,data:contract
         result = subprocess.run(['node', '-e', program], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def run_record_probe_helpers(self, assertions):
+        source = self.probe.split('function dailyActorContext(')[1].split('let browser,')[0]
+        result = subprocess.run(['node', '-e', "const assert = require('node:assert/strict');\nfunction dailyActorContext(" + source + assertions], capture_output=True, text=True, cwd=ROOT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_record_renderer_profiles_and_identity_execute_real_helpers(self):
+        self.run_record_probe_helpers("""
+const expected={model:'res.partner',recordId:42,actionId:8,menuId:9,path:'/r/res.partner/42'};
+const contract={pageInfo:{model:'res.partner',viewType:'form'},dataContract:{mainData:{id:42}},statusContract:{globalStatus:{effectiveRenderProfile:'readonly'}}};
+const declaration=dailyRecordPresentation(contract,expected);
+const observed={model:'res.partner',record:'42',action:'8',menu:'9',driverCount:1,patternCount:1,driverErrorCount:0,profile:'readonly',cards:2,detailAdopted:'true',detailCards:2};
+assert(dailyRecordDomMatches(observed,declaration,expected));
+for(const [key,value] of Object.entries({model:'wrong',record:'43',action:'7',menu:'10',driverCount:0,patternCount:2,driverErrorCount:1,profile:'edit',cards:0,detailCards:0})) assert(!dailyRecordDomMatches({...observed,[key]:value},declaration,expected),key);
+assert(dailyRecordDomMatches({...observed,detailAdopted:'false',detailCards:0},declaration,expected));
+assert.throws(()=>dailyRecordPresentation({...contract,statusContract:{globalStatus:{effectiveRenderProfile:'edit'}}},expected),/readonly route/);
+assert.throws(()=>dailyRecordPresentation({...contract,dataContract:{mainData:{id:43}}},expected),/identity/);
+assert.throws(()=>dailyRecordPresentation({...contract,statusContract:{globalStatus:{effectiveRenderProfile:'unknown'}}},expected),/unsupported/);
+for(const profile of ['edit','readonly']) {
+  const resolved=dailyRecordPresentation({...contract,statusContract:{globalStatus:{effectiveRenderProfile:profile}}},{...expected,path:'/f/res.partner/42'});
+  assert.equal(resolved.profile,profile);
+  assert(dailyRecordDomMatches({...observed,profile},resolved,expected));
+}
+const created=dailyRecordPresentation({...contract,dataContract:{mainData:{}},statusContract:{globalStatus:{effectiveRenderProfile:'create'}}},{...expected,recordId:0,path:'/f/res.partner/new'});
+assert.equal(created.record,'new');assert.equal(created.profile,'create');
+assert.throws(()=>dailyRecordPresentation(contract,{...expected,recordId:0,path:'/f/res.partner/new'}),/profile/);
+assert.throws(()=>dailyRecordPresentation({...contract,statusContract:{globalStatus:{effectiveRenderProfile:'create'}}},expected),/profile/);
+""")
+
+    def test_actual_bootstrap_actor_and_captured_contract_references(self):
+        self.run_record_probe_helpers("""
+const init={user:{id:16},role_surface:{role_codes:['pm','cost']},record_context:{company_id:3},auth:{role:'ignored-config-role'}};
+assert.deepEqual(dailyActorContext(init),{source:'captured_system_init',user_id:16,role_codes:['pm','cost'],company_id:3});
+assert.deepEqual(dailyActorContext({auth:{role:'admin'},login:'x'}),{source:'captured_system_init',user_id:null,role_codes:[],company_id:null});
+const row={intent:'ui.contract.v2',response:{ok:true,data:{meta:{contract_version:'2.0'}},meta:{trace_id:'trace-test'}}};
+assert.deepEqual(dailyContractEvidenceRef([{},row],row),{response_index:1,intent:'ui.contract.v2',trace_id:'trace-test',contract_version:'2.0'});
+assert.throws(()=>dailyContractEvidenceRef([],row),/not captured/);
+""")
+        self.assertIn('dailyActorContext(navigation.payload())', self.probe)
+        self.assertIn('contract_evidence_ref: contractEvidenceRef', self.probe)
+
+    def test_record_checks_require_each_viewport_and_each_executed_step(self):
+        self.run_record_probe_helpers("""
+const viewports=[{key:'1440'},{key:'390'}];
+const checks=viewports.flatMap(viewport=>['declared_entry_route','exact_record_contract','declared_renderer','return_to_source'].map(check=>({viewport:viewport.key,check,passed:true})));
+assert.deepEqual(dailyRecordCheckSummary(checks,viewports),{passed:8,total:8,complete:true});
+assert(!dailyRecordCheckSummary([],viewports).complete);
+assert(!dailyRecordCheckSummary(checks.slice(0,7),viewports).complete);
+assert(!dailyRecordCheckSummary([...checks,checks[0]],viewports).complete);
+assert(!dailyRecordCheckSummary(checks.map((row,i)=>i===2?{...row,passed:false}:row),viewports).complete);
+assert(!dailyRecordCheckSummary(checks.map(row=>({...row,viewport:'1440'})),viewports).complete);
+assert(!dailyRecordCheckSummary([],[]).complete);
+""")
+        self.assertIn('(!DAILY || recordSummary.complete)', self.probe)
+
+    def test_record_renderer_probe_is_bound_to_shipped_component_markers(self):
+        page = (ROOT / 'frontend/apps/web/src/pages/ContractFormPage.vue').read_text()
+        host = (ROOT / 'frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue').read_text()
+        self.assertIn('<ContractFormDriverHost v-if="!showCurrentFormFieldConfigScope"', page)
+        self.assertIn('<ContractFormNativeCanvas v-else-if="!boundFormDesignerSnapshot"', page)
+        for marker in ['data-form-model', 'data-form-record', 'data-form-action-id', 'data-form-menu-id', 'data-detail-composition-adopted']:
+            self.assertIn(marker, page)
+        self.assertIn(':data-contract-form-driver="renderKit"', host)
+        self.assertIn(':render-profile="renderModel.identity.mode"', host)
+        for pattern in ['WorkspaceFormPattern', 'TaskFormPattern']:
+            component = (ROOT / f'frontend/apps/web/src/components/product-page-patterns/{pattern}.vue').read_text()
+            self.assertIn(':data-render-profile="model.renderProfile"', component)
+            self.assertIn('data-product-page-pattern=', component)
+        self.assertNotIn("page.locator('[data-form-canvas]')", self.probe)
+        self.assertIn('dailyRecordDomMatches(presentation, declaration, expectedDetail)', self.probe)
+
+    def test_failed_intent_diagnostic_keeps_only_safe_identity_and_error(self):
+        self.run_record_probe_helpers("""
+const request={intent:'file.download',params:{id:15,model:'ir.attachment',res_id:42,action_id:8,record_id:42,op:'read',password:'fixture-password',context:{secret:'private'},body:'business body'}};
+const result=safeFailedResponse(404,'https://daily.test/api/v1/intent?token=hidden',request,{error:{code:404,reason_code:'NOT_FOUND',message:'missing fixture-password',data:{body:'private'}},meta:{trace_id:'trace-1'}},['fixture-password']);
+assert.equal(result.intent,'file.download');assert.equal(result.id,15);assert.equal(result.res_id,42);assert.equal(result.error.reason_code,'NOT_FOUND');assert.equal(result.error.trace_id,'trace-1');
+const serialized=JSON.stringify(result);for(const value of ['fixture-password','business body','private','hidden'])assert(!serialized.includes(value));
+assert.equal(result.error.message,'missing [redacted]');
+assert.deepEqual(safeFailedResponse(403,'https://daily.test/api/v1/intent',{intent:'login',params:{model:'private',id:15,login:'private',password:'private'}},{}),{status:403,url:'https://daily.test/api/v1/intent',intent:'login'});
+assert.equal(safeFailedResponse(404,'https://daily.test/api/v1/intent',{intent:'chatter.timeline',params:{res_id:42,model:'res.partner'}},{}).res_id,42);
+assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',request,{}).url,'https://daily.test/assets/a');
+""")
+
+    def test_detail_only_does_not_claim_list_checks_and_failure_retains_rows(self):
+        self.assertIn("['all', 'record-only', 'detail-only']", self.probe)
+        self.assertLess(self.probe.index('const rows = [];'), self.probe.index('try {\n  if (DAILY)'))
+        self.assertIn('for (const viewport of detailOnly ? [] : VIEWPORTS)', self.probe)
+        self.assertIn('const aggregateChecks = detailOnly ? {} :', self.probe)
+        self.assertIn("list_execution: detailOnly ? 'not_run' : 'completed'", self.probe)
+        self.assertIn('screenshot, rows, acceptance_scope: acceptanceScope, actor_context: actorContext, record_checks: recordChecks', self.probe)
+        self.assertIn('detailOnly ? null : await productionComponentProof', self.probe)
+        self.assertIn('detailOnly ? [] : await negativeProofs', self.probe)
+
     def test_daily_identity_precedes_login_and_failure_is_reported(self):
         self.assertLess(self.probe.index('servedIdentity = await verifyServedIdentity'), self.probe.index('  await login(page, navigation);'))
         self.assertIn('servedIdentity.servedDatabase !== DATABASE', self.probe)
