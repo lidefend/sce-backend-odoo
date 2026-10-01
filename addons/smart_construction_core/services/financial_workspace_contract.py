@@ -11,7 +11,7 @@ from .capability_registry import role_code_for_group
 
 # The capability that authorizes starting and tracing a payment execution.
 # It is declared once; the role code a terminal is told about is derived.
-PAYMENT_EXECUTION_ROLE_GROUP = "smart_construction_core.group_sc_cap_finance_manager"
+PAYMENT_EXECUTION_ROLE_GROUP = "smart_construction_core.group_sc_cap_finance_user"
 
 
 WORKSPACE_DECLARATIONS = {
@@ -683,7 +683,7 @@ def build_financial_form_business_actions(env, model_name, record_id):
         execution_blocked_message = "请先补全收款户名、开户行和账号。"
     elif not execution_authorization_allowed:
         execution_reason_code = "ROLE_HANDOFF_REQUIRED"
-        execution_blocked_message = "请由具有付款确认能力的人员生成付款登记。"
+        execution_blocked_message = "请由具有财务办理能力的人员生成付款登记。"
     else:
         execution_reason_code = ""
         execution_blocked_message = ""
@@ -710,9 +710,9 @@ def build_financial_form_business_actions(env, model_name, record_id):
         "blocked_message": execution_blocked_message,
         "required_group_xmlids": [PAYMENT_EXECUTION_ROLE_GROUP],
         "required_role_key": role_code_for_group(PAYMENT_EXECUTION_ROLE_GROUP),
-        "required_role_label": "付款确认能力",
+        "required_role_label": "财务办理能力",
         "handoff_required": bool(execution_business_available and not execution_authorization_allowed),
-        "handoff_hint": "请由具有付款确认能力的人员生成付款登记。",
+        "handoff_hint": "请由具有财务办理能力的人员生成付款登记。",
         "primary": execution_enabled,
         "presentation": {
             "tier": "primary" if execution_enabled else "secondary",
@@ -747,12 +747,12 @@ def build_financial_form_business_actions(env, model_name, record_id):
             "authorization_allowed": execution_authorization_allowed,
             "entitlement_evaluated": True,
             "reason_code": "" if execution_authorization_allowed else "ROLE_HANDOFF_REQUIRED",
-            "blocked_message": "" if execution_authorization_allowed else "请由具有付款确认能力的人员查看付款登记。",
+            "blocked_message": "" if execution_authorization_allowed else "请由具有财务办理能力的人员查看付款登记。",
             "required_group_xmlids": [PAYMENT_EXECUTION_ROLE_GROUP],
             "required_role_key": role_code_for_group(PAYMENT_EXECUTION_ROLE_GROUP),
-            "required_role_label": "付款确认能力",
+            "required_role_label": "财务办理能力",
             "handoff_required": not execution_authorization_allowed,
-            "handoff_hint": "请由具有付款确认能力的人员查看付款登记。",
+            "handoff_hint": "请由具有财务办理能力的人员查看付款登记。",
             "primary": execution_authorization_allowed,
             "presentation": {
                 "tier": "primary" if execution_authorization_allowed else "secondary",

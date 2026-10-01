@@ -1872,7 +1872,7 @@ class TestP1PaymentRequestCapability(TransactionCase):
         with self.assertRaisesRegex(UserError, "收款户名、开户行和账号必须完整"):
             self.env["sc.payment.execution"].create({"payment_request_id": request.id})
 
-    def test_non_finance_manager_cannot_generate_or_create_linked_execution(self):
+    def test_finance_operator_can_generate_and_create_linked_execution(self):
         user = self.env["res.users"].with_context(no_reset_password=True).create(
             {
                 "name": "P1 Payment Operator",
@@ -1888,12 +1888,14 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.project.user_id = user
         request = self._set_request_state(self._request())
         request_as_user = request.with_user(user)
-        with self.assertRaisesRegex(UserError, "没有生成付款登记的财务确认权限"):
-            request_as_user.action_create_payment_execution()
-        with self.assertRaisesRegex(UserError, "没有生成付款登记的财务确认权限"):
-            self.env["sc.payment.execution"].with_user(user).create(
-                {"payment_request_id": request.id}
-            )
+        action = request_as_user.action_create_payment_execution()
+        self.assertEqual(action['context']['default_payment_request_id'], request.id)
+        execution = self.env["sc.payment.execution"].with_user(user).with_context(action['context']).create(
+            {"payment_request_id": request.id}
+        )
+        self.assertEqual(execution.create_uid, user)
+        self.assertEqual(execution.state, 'draft')
+        self.assertFalse(execution._has_finance_confirm_access())
 
     def test_finance_user_cannot_rebind_existing_execution_anchor(self):
         _, execution = self._approved_execution()

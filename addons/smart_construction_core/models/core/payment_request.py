@@ -1421,7 +1421,7 @@ class PaymentRequest(models.Model):
             elif record.state == "approved" and record.type == "pay" and record.payee_account_completeness != "complete":
                 record.legal_next_action_display = _("补全收款账户")
             elif record.state == "approved" and record.type == "pay":
-                record.legal_next_action_display = _("生成付款登记") if can_manage else _("等待财务确认")
+                record.legal_next_action_display = _("生成付款登记") if user.has_group("smart_construction_core.group_sc_cap_finance_user") else _("等待财务办理")
             elif record.state == "approved":
                 record.legal_next_action_display = _("确认办结") if can_manage else _("等待财务确认")
             elif record.state == "done":
@@ -1598,9 +1598,9 @@ class PaymentRequest(models.Model):
         """Open the existing execution continuation for this request."""
         self.ensure_one()
         if not self.env.user.has_group(
-            "smart_construction_core.group_sc_cap_finance_manager"
+            "smart_construction_core.group_sc_cap_finance_user"
         ):
-            raise UserError(_("你没有查看付款登记续接页的财务确认权限。"))
+            raise UserError(_("你没有查看付款登记续接页的财务办理权限。"))
         executions = self.payment_execution_ids.filtered(
             lambda execution: execution.active and execution.state != "cancel"
         ).sorted(key=lambda execution: execution.id, reverse=True)
@@ -1638,9 +1638,9 @@ class PaymentRequest(models.Model):
             if record.payee_account_completeness != "complete":
                 raise UserError(_("收款户名、开户行和账号必须完整后才能生成付款登记。"))
             if require_authorized_actor and not self.env.user.has_group(
-                "smart_construction_core.group_sc_cap_finance_manager"
+                "smart_construction_core.group_sc_cap_finance_user"
             ):
-                raise UserError(_("你没有生成付款登记的财务确认权限。"))
+                raise UserError(_("你没有生成付款登记的财务办理权限。"))
         return True
 
     def unlink(self):

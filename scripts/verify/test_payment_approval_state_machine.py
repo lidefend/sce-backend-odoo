@@ -4173,5 +4173,43 @@ class PaymentContinuationDestinationTest(unittest.TestCase):
         with self.assertRaises(ValueError): self.method('action_view_payment_execution')(row)
 
 
+class PaymentHandlingRoleTest(unittest.TestCase):
+    def test_source_readiness_accepts_handler_but_rejects_readonly_and_unapproved(self):
+        method = next(n for n in ast.walk(ast.parse(MODEL.read_text()))
+                      if isinstance(n, ast.FunctionDef) and n.name == '_assert_payment_execution_ready')
+        ns = {'_': lambda text: text, 'UserError': ValueError}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(MODEL), 'exec'), ns)
+        source = types.SimpleNamespace(type='pay', state='approved', payee_account_completeness='complete', _has_payment_basis=lambda: True)
+        class Rows(list):
+            def _assert_unambiguous_posted_payment_history(self): pass
+            def _check_rental_settlement_remaining_amount(self): pass
+            def _check_subcontract_settlement_remaining_amount(self): pass
+        rows = Rows([source])
+        rows.env = types.SimpleNamespace(user=types.SimpleNamespace(has_group=lambda group: group.endswith('group_sc_cap_finance_user')))
+        self.assertTrue(ns['_assert_payment_execution_ready'](rows, require_authorized_actor=True))
+        source.state = 'draft'
+        with self.assertRaises(ValueError): ns['_assert_payment_execution_ready'](rows, require_authorized_actor=True)
+        source.state = 'approved'
+        rows.env.user.has_group = lambda group: False
+        with self.assertRaises(ValueError): ns['_assert_payment_execution_ready'](rows, require_authorized_actor=True)
+
+    def test_native_continuations_and_projection_use_handling_not_cash_confirmation(self):
+        tree = ET.parse(ROOT / 'addons/smart_construction_core/views/core/payment_request_views.xml')
+        for name in ('action_create_payment_execution', 'action_view_payment_execution'):
+            buttons = tree.findall(f'.//button[@name="{name}"]')
+            self.assertTrue(buttons)
+            self.assertTrue(all(b.get('groups') == 'smart_construction_core.group_sc_cap_finance_user' for b in buttons))
+        contract = ast.parse((ROOT / 'addons/smart_construction_core/services/financial_workspace_contract.py').read_text())
+        assignment = next(n for n in contract.body if isinstance(n, ast.Assign)
+                          and any(isinstance(t, ast.Name) and t.id == 'PAYMENT_EXECUTION_ROLE_GROUP' for t in n.targets))
+        self.assertEqual(ast.literal_eval(assignment.value), 'smart_construction_core.group_sc_cap_finance_user')
+        path = ROOT / 'addons/smart_construction_core/models/core/payment_execution.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_has_finance_confirm_access')
+        ns = {}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
+        actor = types.SimpleNamespace(env=types.SimpleNamespace(user=types.SimpleNamespace(has_group=lambda group: group.endswith('group_sc_cap_finance_user'))))
+        self.assertFalse(ns['_has_finance_confirm_access'](actor))
+
+
 if __name__ == '__main__':
     unittest.main()
