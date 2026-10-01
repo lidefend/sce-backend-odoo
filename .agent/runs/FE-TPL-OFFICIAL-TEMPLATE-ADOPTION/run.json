@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-TPL-OFFICIAL-TEMPLATE-ADOPTION",
   "branch": "feature/web-official-template-adoption",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "510a37d5f784b36f1e1ad4d7d02dbd1331f673f5",
   "goal": ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
   "record": "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
@@ -661,12 +661,169 @@
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
         "frontend/apps/web/src"
       ]
+    },
+    "standard_form_composition": {
+      "target": "verify.frontend.standard_form_composition.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/src/components/professional-fields/",
+        "frontend/packages/ui/src/",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/standard_form_composition_adoption_test.ts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/vite.config.ts"
+      ]
+    },
+    "native_form_structure": {
+      "target": "verify.frontend.native_form_structure_responsibility.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/src/components/professional-fields/",
+        "frontend/packages/ui/src/",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/native_form_structure_responsibility_test.ts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/vite.config.ts"
+      ]
+    },
+    "professional_business_value": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/components/design-system/",
+        "frontend/apps/web/src/components/professional-fields/",
+        "frontend/packages/ui/src/",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py",
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/vite.config.ts"
+      ]
+    },
+    "professional_relation_field": {
+      "target": "verify.frontend.professional_relation_field.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/src/components/design-system/ScRelationField.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalRelationFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/verify/frontend_professional_relation_field_guard.py",
+        "scripts/verify/test_frontend_professional_relation_field_guard.py"
+      ]
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "addons/smart_construction_core/core_extension_project_layout.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/load_contract.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/src/components/design-system/ScSelect.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue",
+        "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/template/one2manyRelationQuery.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyColumnOptionsRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "scripts/verify/test_frontend_professional_detail_collection_guard.py"
+      ]
+    },
+    "professional_relation_lifecycle": {
+      "target": "verify.frontend.professional_relation_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/src/pages/contractForm/RelationCreateDialog.vue",
+        "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.css",
+        "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalRelationLifecycleModel.ts",
+        "frontend/apps/web/src/pages/contractForm/relationCreateDialogRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useCreatedRecordNavigationRuntime.ts",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/verify/frontend_professional_relation_lifecycle_guard.py",
+        "scripts/verify/local_dev_candidate_visual_smoke.mjs",
+        "scripts/verify/test_frontend_professional_relation_lifecycle_guard.py",
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/src/app/runtime/contractFormDataRuntime.ts",
+        "frontend/apps/web/src/api/",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/components/template/"
+      ]
     }
   },
   "blockers": [
-    "Formal page-type visual and interaction evidence has not been fully reconciled; mounted/mock tests and ledger counts are insufficient."
+    "Actual readonly relation navigation still returns HTTP403 at 7e3fe8188; exact denial stage pending bounded diagnosis.",
+    "List actual batch probe targets covered native checkbox input; fix P4 visible-control selector before affected retry.",
+    "Remaining original formal effect responsibilities retained in system_scope_correction.remaining_acceptance; native/home tool extensions were not implemented."
   ],
-  "next_exact_step": "Read current dual-viewport detail screenshots against pinned official references; identify P0 presentation deviations and issue bounded A implementation order; preserve business contract.",
+  "next_exact_step": "Owner assigns an implementation executor. Read this original run and exact failed evidence, claim sole writer, diagnose relation403 and repair list selector at owning layers; reuse unchanged evidence/build. Root coordinates only; do not auto-resume execution.",
   "completion": {
     "batch": "in_progress: resume original formal rendering and interaction acceptance",
     "mainline": "not_run",
@@ -2804,6 +2961,543 @@
         "next": "A readonly source/official-reference comparison then scoped code order; no further browser matrix until owning-layer repair",
         "independent_review": "B confirms current1440/390 Card separation, generic anchor navigation, heading hierarchy and desktop horizontal fact layout deviations; retain all native business semantics",
         "ledger_counts": "56aligned9not_applicable2needs_work"
+      },
+      "collection_observation": {
+        "status": "needs_work",
+        "source": "B concurrency_review actual style-list1440/390 same report tpl07-1790835439881 vs pinned list/base",
+        "findings": [
+          "official borderless list Card lacks official inner padding in ProductListSurface",
+          "declared create/refresh remain outer header; full-width query diverges from official in-card left operations/right query composition"
+        ],
+        "next": "after current detail repair; generic collection composition only, preserve permissions/action identity and usable mobile adaptation",
+        "runtime": "existing unchanged screenshot reused; no new browser matrix",
+        "implementation_plan": "B traced ProductListSurface outer padding; ListPage->ListSurfaceHeader->ProductListHeader shared operations leading slot; ordinary ActionView existing actions move without duplicate; selection/count/actions coexist with query/utilities. Preserve all contract identity/permissions, kanban/dashboard, mobile usability. Existing structure browser old batch-replaces-query assertion must be corrected to official coexistence and geometric/interaction proof; no weakened gate."
+      },
+      "detail_repair": {
+        "status": "in_progress",
+        "candidate": "9320ddcf3 + declared8P0/2tests and root metadata dirty",
+        "L1": "passed detail-relation-guard-iteration.log; source initial/final static logs retained",
+        "source_review": "B bounded sourcePASS; initial segment/global span defect fixed",
+        "L2": {
+          "form": 121,
+          "native": 12,
+          "business_value": "24+8; Python10+5",
+          "detail_collection": "6+7, dialog67; Python10+44",
+          "relation": "18+17; Python10+40"
+        },
+        "failure": {
+          "owner": "P4 existing relation guard/negative fixture",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/detail-composition-relation.log",
+          "cause": "write guard incorrectly forbids existing readonly relation-open branch before write authority; hydration negative mutates readonly branch but global guard finds same predicate in editable branch",
+          "recovery_plan": "check readonly-open return before write gate, mutations after gate; local readonly loading branch and explicit effective negative mutation",
+          "source_change": "4 related product/guard files unchanged by current P0; source inspection rather than unchanged retry",
+          "recovery": "two-file P4 fixes committed090bd0023; same registered relation target passes40guardtests; original failurelog retained, unchanged independent L2/strict reused"
+        },
+        "next": "governed build then actual detail screenshot and link interaction; collection next",
+        "P0_commit": "2a7e5c86c",
+        "P4_commit": "090bd0023",
+        "strict": "passed two vue-tsc",
+        "review": "B P0/P4 source and fixed nonzero logs PASS",
+        "logs": "artifacts/frontend-web-fix-20260928/tpl52/detail-composition-{form,native,business-value,collection,relation-fixed,strict}.log",
+        "build": {
+          "status": "passed",
+          "base_sha": "090bd0023482a2c03ddc0b6ecd7c67f3926a2176",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/detail-composition-build.log",
+          "duration_seconds": 23.55,
+          "rollback": "../sce-offrepo/artifacts/config05-20260929/previous-v2y54t0m",
+          "visual": "not_run since build; owner redirected to systemic convergence before page-focused acceptance",
+          "entry": "/assets/index-CU9ALnLy.js",
+          "entry_sha256": "74e5c1d50754d065b041bc76f1ef68f7a535759d0cf81537f8ee097783802b6c",
+          "index_sha256": "39eac2ec8ce37f732d90dac63a75b62ee9716570e292fa2dae41ff202b3c67e2"
+        }
+      },
+      "system_scope_correction": {
+        "owner_direction": "自定义前端从头到尾体系化收口，不着眼具体页面",
+        "status": "active",
+        "unit_of_work": "one runtime/presentation authority per shared responsibility; representative pages are evidence not implementation units",
+        "chain": [
+          "public/authenticated bootstrap and contract authority",
+          "schema/store/page-type and declared specialized dispatch",
+          "official layout/composition and primitive adapters",
+          "shared interaction/action/request lifecycles",
+          "token/theme/responsive ownership",
+          "runtime behavior/visual proof and final independent review"
+        ],
+        "reuse": "same goal/run/source inventories and existing scoped successes; no new menu/environment scan; detail2a7e5c86c is one shared-renderer repair, not overall acceptance",
+        "current_readonly_audit": "A render reachability, B interaction ownership, B style hierarchy; root contract chain and combined dependency plan",
+        "observed_systemic_gaps": [
+          "official component/marker guards do not prove official page composition",
+          "legacy dense/header rules leak into general workspaces; collection composition still overrides official structure",
+          "actual record reload resets relation state without invalidating pending queries/hydration; stale success/403/finally can write new identity",
+          "shared modal restoreOpener RAF reads mutable opener without generation/dispose guard; rapid reopen may steal new focus"
+        ],
+        "next": "consolidate finite mechanism-first execution plan in living53.256, then one-writer shared owning-layer fixes; browser samples follow changed mechanism inputs",
+        "plan": "living record53.256; shared mechanisms not individual business pages",
+        "confirmed_preserved_boundaries": [
+          "one routed ContractFormPage for /f and /r",
+          "declared task/native and dedicated collection responsibilities are not duplicate legacy merely by existence",
+          "decoder compatibility normalization still active; do not delete by filename",
+          "onchange tickets, relation search-dialog generation and chart/BOQ/grid request fixes already scoped and valid",
+          "stable full-width canvas, product palette/Inter, mobile adaptations retained"
+        ],
+        "overlay_next": {
+          "owner": "P0 shared useModalLifecycle",
+          "scope": [
+            "frontend/apps/web/src/composables/useModalLifecycle.ts",
+            "existing overlay lifecycle tests and Make target"
+          ],
+          "basis": "B/root source review restoreOpener mutable target + 4 RAF retries without generation/open/dispose; watcher after nextTick also needs current identity",
+          "checks": "actualhook controlledRAF negatives rapid reopen/unmount/removedopener/nested locks then existing registered component browser; not newoverlayengine",
+          "status": "not_run; after current relation scope"
+        },
+        "relation_implementation": {
+          "status": "code_and_targeted_passed_actual_effect_pending",
+          "owner": "root after A interruption",
+          "L1": "passed system-relation-owner-iteration.log",
+          "failures": [
+            {
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-relation-lifecycle.log",
+              "owner": "P4 test bundler",
+              "reason": "actual page lifecycle imports existing modules reading import.meta.env at module load; target did not define Vite test env",
+              "recovery": "align existing esbuild target with create_default_hydration define import.meta.env={}; no production env/credential change"
+            }
+          ],
+          "independent_results": "create_default_hydration55 and relation_field18+17/Python10+40 passed; retain unchanged",
+          "known_review": "retained-page invalidation split from full clear; hydration resume added; B review requested",
+          "review_findings": [
+            {
+              "owner": "P0 outer auxiliary chain",
+              "status": "fixed; B rereviewpending",
+              "reason": "old selected await could start new childrequest after retained page reactivation with same reloadToken",
+              "recovery": "capture shared auxiliary owner; real ensureFormInitialReload delayedPromise regression"
+            },
+            {
+              "owner": "P0 hydrated context identity",
+              "status": "fixed",
+              "reason": "shallow context copy shares nested arrays",
+              "recovery": "serialize context identity at issue; nestedallowedcompanies mutation negative"
+            }
+          ],
+          "L2": "lifecycle existing18 + new22; Python7 passed system-relation-lifecycle-fixed.log",
+          "strict": "passed two vue-tsc; system-relation-strict.log",
+          "reuse": "independent create_defaults55 and relation_field model18+17/Python10+40 retained: tested default hydration/write authority/readonly loading branches unchanged by auxiliary chain owner and context snapshot fixes; no new full browser evidence",
+          "independent_review": "B concurrency_review focused finalPASS; auxiliary owner/context snapshots and actual production-function test design reviewed",
+          "code": "root completed5P0 files after A usage-limit interruption; no backend/schema/data mutation",
+          "P0_commit": "21b5203f2",
+          "P4_commit": "abb6b7f1b",
+          "next": "shared overlay lifecycle then composition; no independent per-page finalization"
+        },
+        "overlay_implementation": {
+          "status": "scoped_checks_passed",
+          "source_head": "abb6b7f1b",
+          "commits": [
+            "0a021211c",
+            "b166c6ffb"
+          ],
+          "scope": [
+            "frontend/apps/web/src/composables/useModalLifecycle.ts",
+            "frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts",
+            "make/frontend.mk"
+          ],
+          "results": {
+            "L1": {
+              "command": "make ci.local.iteration",
+              "status": "passed",
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-overlay-iteration.log"
+            },
+            "L2": {
+              "command": "make verify.frontend.overlay_lifecycle.unit",
+              "status": "passed",
+              "actual_hook_checks": 27,
+              "python_tests": 12,
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-overlay-unit.log"
+            },
+            "strict": {
+              "command": "make verify.frontend.typecheck.strict",
+              "status": "passed",
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-overlay-strict.log"
+            },
+            "browser": {
+              "command": "make verify.frontend.overlay_lifecycle.browser",
+              "status": "passed",
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-overlay-browser.log",
+              "scope": "actual Dialog/Drawer focus/return/nested locks/Escape/Tab; rapid reopen/dispose only real Vue hook plus simulated browser host"
+            }
+          },
+          "review": "B scene stable 3-file source PASS; root verified logs",
+          "carry_forward": "Commit-only identity transition preserves exact tested inputs; no acceptance frontend build or business browser claim."
+        },
+        "scene_composition_pending": {
+          "status": "implemented_scoped_checks_passed_formal_visual_pending",
+          "evidence": "B read-only formal SceneView→SceneContractBlockGridView→PageRenderer→ZoneRenderer→registry reachability, bounded 12 unique registered block shell audit",
+          "finding": "Page header + zone card + block card compete; zone-key-specific visual layout; actual child renderer stub hides composition and driver proof",
+          "ownership": "P0 PageRenderer unframed shared header; ZoneRenderer semantic grouping and declared grid/stack only; each registered block owns one borderless ScCard title/actions/body; BlockRenderer only dispatches",
+          "scope_next": "PageRenderer, ZoneRenderer and 12 registered block shells/headers; preserve all datasets, actions, permissions, priority, content layouts and unknown fallback. No publication/ACL changes. Exact file list required before edit.",
+          "reference": "existing pinned dashboard/base and ProductWorkspaceSurface; official card composition, not arbitrary four-slot remapping",
+          "P4_next": "real renderer→registry→Sc/TDesign integration test on existing harness/Make; transport/context mock explicitly allowed, render chain must remain actual",
+          "coverage_limit": "formal source reachability does not establish actual published UI; native entry tile requires separate control adaptation assessment",
+          "next_exact_paths": [
+            "frontend/apps/web/src/components/page/PageRenderer.vue",
+            "frontend/apps/web/src/components/page/ZoneRenderer.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockActivityFeed.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockAccordionGroup.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue"
+          ],
+          "verification_plan": {
+            "L1": "make ci.local.iteration",
+            "L2": [
+              "make verify.frontend.scene_entry_contract.unit",
+              "make verify.frontend.chart_dataset.unit",
+              "make verify.frontend.boq_import_preview.unit",
+              "make verify.frontend.typecheck.strict"
+            ],
+            "component_browser": "reuse existing Vite overlay component browser host with explicitly separate scope; actual PageRenderer/registry/Sc/TDesign, real click/update/empty/unknown. Existing grid29 only transport-to-props, not falsely one end-to-end published journey.",
+            "exceptions": "Accordion preserves disclosure title/collapse; no duplicated Card title. Dedicated body content remains; do not claim all bodies official from shell tags."
+          }
+        },
+        "collection_implementation": {
+          "status": "scoped_checks_passed_visual_pending",
+          "source_head": "b166c6ffb",
+          "stage": "explicit dirty current execution scope; not frozen",
+          "L1": [
+            "artifacts/frontend-web-fix-20260928/tpl52/system-collection-iteration.log",
+            "artifacts/frontend-web-fix-20260928/tpl52/system-collection-iteration-fixed.log"
+          ],
+          "passed_reused": {
+            "toolbar": {
+              "command": "make verify.frontend.collection_action_toolbar.unit",
+              "counts": [
+                31,
+                11
+              ],
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-collection-toolbar.log"
+            },
+            "scroll": {
+              "command": "make verify.frontend.standard_list_scroll_contract.guard",
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-collection-scroll.log"
+            },
+            "strict": {
+              "command": "make verify.frontend.typecheck.strict",
+              "log": "artifacts/frontend-web-fix-20260928/tpl52/system-collection-strict.log",
+              "status": "passed two vue-tsc configurations"
+            }
+          },
+          "reuse_reason": "After these passed, only collection mobile CSS, unused detail CSS deletion and P4 harness/guard assertions changed; no corresponding TS inputs/toolbar action model/scroll ownership structure changed. Final visual evidence remains invalidated/pending.",
+          "failed_original": {
+            "composition": "system-collection-composition.log: test import missing indirect @vue/server-renderer; reuse installed public vue/server-renderer",
+            "style": "system-collection-style.log: unused detail nav-height declaration outside token authority; remove unused override, no allowlist exception",
+            "alignment": "system-collection-alignment.log: contiguous readonly CSS string misclassifies unrelated font declaration; exact selector declarations and 5 actual guard regression tests"
+          },
+          "next": "fixed composition/style/alignment and P4 syntax; B incremental review; no browser/build until owner failures closed",
+          "recovery_details": [
+            "composition-fixed: existing vendor CSS imported externally by SSR Node; Vite noExternal scoped to installed TDesign packages",
+            "alignment-fixed: test positive reordered unrelated wrapping declarations and correctly failed original guard; positive narrowed to width/font ordering, production guard unchanged",
+            "composition-fixed2: actual ListPage reached independent AttachmentViewer browser-only setup; explicitly stub only AttachmentViewer in test, declare evidence boundary; public header and driver remain actual",
+            "composition-fixed3 passed fallback rendering but actual Toolbar includes browser-only ScDialog. Stop SSR workaround chain; replace same test file with existing Vite browser component-host pattern and actual DOM, remove AttachmentViewer stub, do not install/new runtime profile."
+          ],
+          "additional_passed": {
+            "style": "system-collection-style-fixed.log",
+            "alignment": "system-collection-alignment-fixed2.log compatibility12/formcanvas7/guard5+alignment31",
+            "review": "C final limited source PASS including failclosed geometry; no browser claim"
+          },
+          "commits": [
+            "b488ff1f5",
+            "61833c169"
+          ],
+          "final_L1": "system-collection-iteration-component-origin.log",
+          "final_composition": {
+            "log": "system-collection-composition-component-origin.log",
+            "actual_browser_component_checks": 76,
+            "pure_cases": 124,
+            "combinations": 6,
+            "status": "passed",
+            "boundary": "real ListPage/Header/Toolbar/TDesign/AttachmentViewer; exact local component origin; no business requests; not ActionView permission-chain or published geometry"
+          },
+          "review": "C final limited source PASS; root original logs read; commit-only transition inputs unchanged"
+        },
+        "scene_implementation": {
+          "commits": [
+            "159903c23",
+            "39b76249d"
+          ],
+          "source_head": "61833c169",
+          "status": "scoped_checks_passed",
+          "log_prefix": "artifacts/frontend-web-fix-20260928/tpl52/system-scene-",
+          "results": {
+            "L1": "iteration.log passed",
+            "scene": "scene_entry_contract-unit.log mounted29/pure59/Python12+12+4 passed",
+            "chart": "chart_dataset-unit.log mounted19/request37/model passed",
+            "boq": "boq_import_preview-unit.log mounted22/request27/Python10/model passed",
+            "overview": "overview_rich_text-unit.log actual model assertions passed (runner does not print a total)",
+            "strict": "typecheck-strict.log two vue-tsc passed",
+            "style": "style_system-guard.log passed",
+            "actual_driver": "page-renderer-browser.log 76 checks, zero errors and forbidden requests; actual PageRenderer/Zone/registry/Sc/TDesign, entry browser-structured"
+          },
+          "review": "B product and C tools independently PASS; root read originals; commit-only transition unchanged inputs",
+          "limits": "No backend transport/published scene or theme/viewport proof. Chart/BOQ empty and richtext readonly in component fixture; original separate lifecycle/model evidence retained."
+        },
+        "consolidated_preview": {
+          "source_head": "39b76249dc9fdf4fdcdee203070a29f1ff9fce90",
+          "build": "passed 22.23s",
+          "build_log": "artifacts/frontend-web-fix-20260928/tpl52/system-consolidated-build.log",
+          "up": "passed reused existing5180 listener",
+          "up_log": "artifacts/frontend-web-fix-20260928/tpl52/system-consolidated-preview-up.log",
+          "entry": "/assets/index-D0cLdXl_.js",
+          "entry_sha256": "fad448e1c5965f2bcb45ecc126ec84f4d82d96f7a8f03fdd9096cb23c7bd4f7b",
+          "index_sha256": "3c863e7d01b4ffc4d737019c37f82e3668f0a168e40c55bf9d6dd6c72f816ac2",
+          "rollback": "../sce-offrepo/artifacts/config05-20260929/previous-nix4i60n",
+          "environment": "existing local sc-fe-r2-p1-01/sc_frontend_acceptance/backend a386549ba/5180, preflight passed",
+          "reuse": "preview input identity explicitly excludes frontend/apps/web/scripts; current P4 probe/runtime adapter and metadata edits do not alter compiled frontend inputs. Existing preview identity rechecks exact input diff/index/entry before actual browser."
+        },
+        "formal_probe_review_in_progress": {
+          "status": "scoped_tool_checks_passed",
+          "commit": "1afe2a0fc",
+          "L1": "system-detail-visual-iteration-final2.log",
+          "unit": "system-detail-visual-preview-unit-fixed.log Node42/Python89 passed",
+          "syntax": "system-detail-visual-browser-syntax-final.log passed",
+          "review": "C final source PASS",
+          "boundaries": "Tool ready, actual formal page result not_run. Existing preview39b remains input-valid for this P4 commit."
+        },
+        "detail_card_spacing": {
+          "status": "implementation_and_focused_review_passed_actual_review_pending",
+          "source_identity": "1afe2a0fc + declared four dirty files",
+          "product_commit": "65bc8946f",
+          "tool_commit": "b98e59e6f",
+          "L1": {
+            "command": "make ci.local.iteration",
+            "status": "passed",
+            "log": "artifacts/frontend-web-fix-20260928/tpl52/detail-card-spacing-iteration.log"
+          },
+          "L2": {
+            "status": "passed",
+            "commands": {
+              "make verify.frontend.standard_form_composition.unit": 121,
+              "make verify.frontend.native_form_structure_responsibility.unit": 12,
+              "make verify.frontend.standard_preview.unit": {
+                "node": 42,
+                "python": 90
+              },
+              "make verify.frontend.style_system.guard": "passed",
+              "node --check frontend/apps/web/scripts/standard_page_type_browser.mjs": "passed"
+            },
+            "log_prefix": "artifacts/frontend-web-fix-20260928/tpl52/detail-card-spacing-",
+            "reuse": "Strict product type checks reused: only CSS changed; renderer template/script byte-identical; P4 JS not in production typecheck inputs. All tests ran on exact same content before responsibility-only commits.",
+            "failure_owner": null
+          },
+          "B_review": "PASS four-file source and regression, manifest 5e5fa68f030e23f31fd8d727ec7a7a277824fc5b2b6e9675518a4399961feabf",
+          "earliest_next": "governed build invalidated by two product CSS files; then actual scoped browser",
+          "skips": "No backend/schema/database/fixture change, no upgrade; full matrix/Quick/publication not selected"
+        },
+        "consolidated_preview_after_card_spacing": {
+          "status": "passed",
+          "command": "make frontend.standard.preview.build / frontend.standard.preview.up SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+          "log_prefix": "artifacts/frontend-web-fix-20260928/tpl52/detail-card-spacing-",
+          "build_seconds": 23.3,
+          "identity": {
+            "base_sha": "b98e59e6f9c5d4d9f879cd4508496e4e124c0f14",
+            "dirty_scope": " M .agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml\n M .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json\n M docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md\n M docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json\n M docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md\n",
+            "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "index_sha256": "db9259a1afb037947f27f9943f50c739d31e73b3480a010a49f6c8ffdd94ef0c",
+            "entry": "/assets/index-h7E8_9qC.js",
+            "entry_sha256": "814cc230811b96073b03a53a771fd872df2e4c0be97d424a6b218a4360f8a7d6"
+          },
+          "rollback": "../sce-offrepo/artifacts/config05-20260929/previous-yw75vbqd",
+          "backend": "a386549ba42e682d7a004841a99b7de64d951ab9 unchanged",
+          "environment": "local acceptance sc-fe-r2-p1-01/sc_frontend_acceptance/company8/5180"
+        },
+        "actual_detail_system_review": {
+          "status": "failed",
+          "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+          "stage_identity": "b98e59e6f + five goal/run/living/ledger metadata files dirty; product/tool clean",
+          "report": "artifacts/frontend-web-fix-20260928/tpl07-1790839601227/report.json",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/system-detail-actual-browser.log",
+          "observation": "first light1440 six Cards match declared visible sections; official geometry/theme assertions pass; actual relation partner56 declared can_read/can_open menu164/action324 navigates to NAVIGATION_AUTHORITY_DENIED",
+          "failure_owner": "P0 relation navigation authority bridge absent: valid parent relation can_read/can_open to res.partner56 points native action324/menu164 absent final route authority; return source already carried; router correctly denies. P4 Card measurement separately incorrect: Loading wraps body.",
+          "next": "diagnose owning layer before affected relation/detail replay; independent already-precondition-passed list scope allowed",
+          "original_theme_restored": true,
+          "console_errors": 0,
+          "remaining_groups": "not_run; no visual completion claim",
+          "review_correction": "B initial four-file source PASS did not inspect actual Loading wrapper; body=null cannot be treated as collapsed for expanded titled cards. Root and B retract complete header/body spacing assurance, retain proven root display=block/rowGap=normal only."
+        },
+        "actual_list_system_review": {
+          "status": "failed_before_browser",
+          "stage_identity": "b98e59e6f + original metadata dirty",
+          "command": "LIST_SURFACE_ROUTE='/a/775?menu_id=545' LIST_SURFACE_VIEWPORTS=1440,390 make verify.frontend.list_surface_structure.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+          "log": "artifacts/frontend-web-fix-20260928/tpl52/system-list-actual-browser.log",
+          "failure_owner": "P4 Make adapter: global Make export forwards dev defaults (ACCEPTANCE_BASE_URL/DB_NAME) as if caller overrides; new runtime prevalidation correctly rejects mismatched identity",
+          "next": "fix Make-origin distinction, exercise actual Make adapter default/explicit mismatch tests; do not hand-override URL/DB or retry unchanged"
+        },
+        "remaining_formal_review_responsibilities": {
+          "source": "C read-only review of original run, goal and section53.256-259",
+          "create_edit_relations_master_detail": "New shared FormSection/relation/modal/CSS affects actual effects; old backend saved-data and approval evidence stays valid, no automatic write replay. Existing style/form only typography insufficient. Need actual outlet-bound bounded interaction journey.",
+          "workspace_scene": "Real PageRenderer driver76 is component host only; old home6 predates12-block shell change. Need published home real data/action/theme observations; unpublished scene coverage remains open, no changing publication.",
+          "dedicated_outlets": "Native/task/hierarchy/kanban retain declared responsibilities; task-authority scope payment sample actually container_tree_authority, not true TaskForm proof. Reconcile changed inputs with prior outlet-bound evidence; no full menu scan.",
+          "status": "open"
+        },
+        "relation_navigation_diagnosis": {
+          "status": "confirmed_by_A_and_B",
+          "source": "tpl07-1790839601227/report.json plus useRecordRelationshipNavigation.ts, router/index.ts, route_authority_validate.py, relation_action_authority.py",
+          "boundary": "Preserve effective publication and ACL. Existing parent-authorized relation mechanism may grant one readonly target record only after fresh server validation, not target menu/list/create publication. No session route authority injection or removal of target IDs to bypass gate.",
+          "next": "Finalize minimum P0 source/target protocol and existing-contract loader path before coding; meanwhile P4 tool repair only."
+        },
+        "remaining_acceptance": {
+          "scope": "local frontend system composition and shared interaction convergence",
+          "reuse_rule": "One original run index; documentation or unrelated commits do not invalidate product evidence; reconcile actual dependency changes only. No full menu or unchanged business workflow replay.",
+          "items": [
+            {
+              "responsibility": "standard list / readonly detail",
+              "valid_evidence": "Original save/approval/payment-source/concurrency results; current preview identity until next product change.",
+              "invalidated_inputs": "Shared collection composition, detail Card ownership, relation navigation bridge, corrected measurement assertions.",
+              "missing": "Actual list normal/selected/empty geometry and query interactions; detail1440/390 light/dark, exact readonly relation open/back; actual screenshot review.",
+              "tools": [
+                "verify.frontend.list_surface_structure.browser",
+                "verify.frontend.standard_page_type.browser style/detail"
+              ],
+              "prerequisites": "Consolidated P0/P4 targeted tests and independent reviews; updated backend and frontend registered identity; no business writes."
+            },
+            {
+              "responsibility": "create/edit + retained recovery + relation/master-detail",
+              "valid_evidence": "PM native30, document actual33, amount17, payment source34+34 and independent unchanged business write results; real hook race/lifecycle results.",
+              "invalidated_inputs": "Shared relation generation/auxiliary resume, FormSection, overlay and styles.",
+              "missing": "One published existing model actual create/edit combination, relation and child collection, retention/reload behavior. Do not replay business saves solely for styling.",
+              "tools": [
+                "Existing standard_page_type form/approval-actions helpers",
+                "Existing relation lifecycle/overlay tests"
+              ],
+              "prerequisites": "P4 bounded scope prepared before consolidated runtime, role/menu/action/profile exact; actual client interactions not H1-only tests."
+            },
+            {
+              "responsibility": "published workspace / scene",
+              "valid_evidence": "Historical home6; component PageRenderer driver76 and separate chart/BOQ/grid lifecycle results.",
+              "invalidated_inputs": "PageRenderer/ZoneRenderer/12blocks Card shells and shared workspace CSS.",
+              "missing": "Published workspace.home actual data/layout/actions and theme/viewport; scoped load/error behavior. Unpublished company/project remain explicit separate publication/user acceptance gaps.",
+              "tools": [
+                "Existing standard_page_type scene-entry with bounded home selection",
+                "workspace_composition.unit",
+                "page_renderer.browser"
+              ],
+              "prerequisites": "Canonical final navigation authority; no repetition of unchanged publication denials; scoped tool ready before runtime."
+            },
+            {
+              "responsibility": "native / task / legitimate dedicated outlets",
+              "valid_evidence": "Native readonly actual sample, existing hierarchy/kanban responsibility guards and bounded component tests.",
+              "invalidated_inputs": "Only if actual dependency on changed frame/header/overlay/relation/density; unchanged dedicated evidence retained.",
+              "missing": "Reconcile actual TaskForm and dedicated outlet evidence; payment task-authority scope actually native container_tree_authority cannot prove TaskForm.",
+              "tools": [
+                "Existing declared renderer guards and focused component entries"
+              ],
+              "prerequisites": "Original evidence and actual outlet identity; no whole-menu scan. Keep capability proof distinct from unpublished-user runtime not_run."
+            }
+          ],
+          "status_boundary": {
+            "current_goal": "local shared capability and available representative actual effects; neither marker nor component fixture alone proves completion",
+            "publication_user_acceptance": "unpublished entry user acceptance not_run; no ACL/publication/deployment change authorized"
+          },
+          "next_minimum": "Prepare missing bounded form/workspace assertions while fixing known P0/P4 owners. Then one consolidated candidate runtime review; recheck only affected failures."
+        },
+        "P4_make_body_recovery": {
+          "source_head": "b98e59e6f + three declared P4 files dirty and original metadata",
+          "status": "targeted_tests_and_C_passed",
+          "files": [
+            "make/frontend.mk",
+            "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+            "scripts/verify/test_frontend_standard_preview.py"
+          ],
+          "tests": "Node42+Python94 passed; root original output read; C final unchanged source confirmed",
+          "review": "C final three-file source PASS: Make caller origin/DB snapshot, actual Make fake-operation boundary positives/negatives; nearest Card body unique/nonzero, expanded header gap required; collapsed explicit exception",
+          "runtime": "pending consolidated refresh/build/detail/list",
+          "commit": "7e3fe8188",
+          "logs": {
+            "L1": "artifacts/frontend-web-fix-20260928/tpl52/detail-make-body-iteration-final.log",
+            "L2": "artifacts/frontend-web-fix-20260928/tpl52/detail-make-body-preview-unit-final.log",
+            "node_syntax": "artifacts/frontend-web-fix-20260928/tpl52/detail-make-body-node-syntax-final.log",
+            "shell_syntax": "artifacts/frontend-web-fix-20260928/tpl52/detail-make-body-shell-syntax.log"
+          }
+        },
+        "relation_navigation_implementation": {
+          "status": "implementation_targeted_tests_and_B_passed_runtime_pending",
+          "source_identity": "b98e59e6f + six declared P0 paths dirty; exact content preserved into commits",
+          "product_commit": "411027d46",
+          "tool_commit": "7e3fe8188",
+          "commands": {
+            "make ci.local.iteration": "passed",
+            "make verify.product.entry_publication.unit": "16+2 passed",
+            "make verify.execute_button.authority.unit": "37 passed",
+            "make verify.frontend.typecheck.strict": "two vue-tsc passed",
+            "make verify.frontend.record_form_return.unit": "18 passed"
+          },
+          "log_prefix": "artifacts/frontend-web-fix-20260928/tpl52/relation-read-route-",
+          "B_manifest": "44a4ce1465850973c3db40a74f5c3482525cd8a988a3129ecc04b7aa3e0b53be",
+          "B_result": "PASS source and original logs; runtime not yet accepted",
+          "mechanism": "Exact published-parent provenance + fresh visible relation entry + persisted membership + exact target tuple + child read permissions; only readonly record navigation and unchanged session/context accepts receipt. No menu publication or global route authority mutation.",
+          "loader_scope": "Unchanged ui.contract loader retains target action/menu and readonly. B confirmed record overlays/read/relations refreshed despite structural cache, no speculative force_refresh added.",
+          "rollback": "Revert responsibility commit and reuse prior registered frontend/backend source identity; no schema or business data change."
+        },
+        "current_round_final_observation": {
+          "candidate": "7e3fe8188badad5c7dba3d5b7b12afbcb3f6f2d8 + original five metadata files dirty; no product/tool dirty",
+          "environment": "local/sc-fe-r2-p1-01/sc_frontend_acceptance/^sc_frontend_acceptance$/company8/sc_fe_r2_p1_01_odoo; backend18082 frontend5180",
+          "backend_refresh": {
+            "status": "passed",
+            "command": "make backend.acceptance.replace-stale SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+            "log": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-backend-refresh.log"
+          },
+          "backend_health": {
+            "status": "passed",
+            "command": "make backend.acceptance.health SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+            "log": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-backend-health.log"
+          },
+          "frontend": {
+            "status": "passed",
+            "commands": [
+              "make frontend.standard.preview.build SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+              "make frontend.standard.preview.up SC_ACCEPTANCE_RUNTIME_PROFILE=local"
+            ],
+            "log_prefix": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-",
+            "build_seconds": 23.62,
+            "identity": {
+              "base_sha": "7e3fe8188badad5c7dba3d5b7b12afbcb3f6f2d8",
+              "dirty_scope": " M .agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml\n M .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json\n M docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md\n M docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json\n M docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md\n",
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "index_sha256": "996612b2ce16a20d3deac3ab29c8306fd784d9622a6433cda68a837947e2f933",
+              "entry": "/assets/index-CIOBQ4xV.js",
+              "entry_sha256": "c085e74ceeb74f4717dfbd8f8dacf9c2dfa5a394fff0e292247e6ff68750cd3f"
+            },
+            "rollback": "../sce-offrepo/artifacts/config05-20260929/previous-lfiebc8h"
+          },
+          "detail": {
+            "status": "failed",
+            "command": "TPL07_SCOPE=style TPL52_FAMILY=detail make verify.frontend.standard_page_type.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+            "log": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-detail-browser.log",
+            "report": "artifacts/frontend-web-fix-20260928/tpl07-1790840569671/report.json",
+            "completed_assertions_passed": 30,
+            "scope_passed": false,
+            "observation": "light1440 six declared Cards match; each owns one real body; five expanded headers/body gap0, collapsed trace explicitly headerless; theme/Descriptions/containment pass. Relation click still denied and waitForURL times out; remaining theme/viewport groups not_run. Theme restored, no forbidden writes or page errors.",
+            "failure_owner": "P0 relation route validator actual HTTP403; exact denied stage/reason not captured, do not infer from unit pass. Backend log confirms intended route.authority.validate received full parameters.",
+            "diagnostic_log": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-relation-backend.log",
+            "trace": "e983ad9b-f00e-4ee3-8e06-95f52e247619",
+            "next_earliest": "Bounded exact-request structured denial inspection, then owning backend fix/test. No unchanged full-browser retry."
+          },
+          "list": {
+            "status": "failed",
+            "command": "LIST_SURFACE_ROUTE='/a/775?menu_id=545' LIST_SURFACE_VIEWPORTS=1440,390 LIST_SURFACE_OUTPUT=artifacts/frontend-web-fix-20260928/tpl52/system-converged-list LIST_SURFACE_REPORT=artifacts/frontend-web-fix-20260928/tpl52/system-converged-list.json make verify.frontend.list_surface_structure.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+            "log": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-list-browser.log",
+            "screenshot": "artifacts/frontend-web-fix-20260928/tpl52/system-converged-list/normal-1440.png",
+            "final_json": "not produced: exception before report write; never count absent JSON as pass",
+            "observation": "Registered Make adapter now passes and reaches exact released payment list; normal1440 screenshot captured. Batch selector directly checks vendor input; enclosing official CollectionSelectionControl label intercepts pointer and timeout occurs. Empty/mobile/selection geometry not accepted.",
+            "failure_owner": "P4 selector requires interaction with visible official selection control; do not force-click obscured input or change product styling for test",
+            "next_earliest": "Minimal selector fix with executable positive/negative tests; reuse unchanged product build and normal screenshot, rerun affected bounded list states."
+          },
+          "completion": "current execution round recorded, not batch acceptance complete; mainline/deployment/user delivery not_run"
+        }
       }
     }
   },
@@ -2814,35 +3508,99 @@
     "publication": "test-data adaptation does not change production publication/ACL authority"
   },
   "collaboration": {
-    "coordinator_and_single_writer": "/root",
-    "implementation": "root sole metadata writer; A implementation planning and B evidence audit read-only until explicit code order",
+    "coordinator_and_single_writer": "root coordination; A sole code writer",
+    "implementation": "A shared overlay lifecycle; root metadata; B source review",
     "read_only_reviewers": {
       "concurrency_review": "P4 two-transaction business conflict code/test review",
       "scene_boundary_review": "remaining P1/P0 business responsibility and browser execution order review"
     },
     "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
     "workflow": ".agent/workflows/runtime-fixture.yaml",
-    "stage_identity": "3a748c823 + dirty goal/run correction",
-    "handoff": "Resume original goal per owner clarification; previous closed status is superseded, evidence retained, no automatic write replay."
+    "stage_identity": "abb6b7f1b + declared overlay and metadata scope",
+    "handoff": "no passing lifecycle tests or final review yet; root must complete interrupted changes"
   },
   "current_execution_order": {
-    "formal_product_layer": "P4",
-    "layer_target": "original goal/run and governed browser evidence reconciliation",
-    "module": ".agent and existing frontend acceptance tools",
-    "standard_vs_user_specific": "verification governance, not business defaults",
-    "why_here": "correct premature completion and bind real effect checks to original goal",
-    "why_not_elsewhere": "no product code or publication change before observed deviation",
-    "blast_radius": "original task metadata and bounded evidence review only",
+    "formal_product_layer": "P0",
+    "supporting_layer": "P4",
+    "layer_target": "exact readonly relation navigation authority bridge and existing acceptance tool repairs",
+    "module": "smart_core route_authority_validate/relation_action_authority; generic frontend router; existing scoped tests and P4 preview tools",
+    "standard_vs_user_specific": "platform mechanism; no industry/customer semantics",
+    "why_here": "Actual declared readable relation is rejected because router has no parent-authorized record read bridge. Existing server relation authority already owns parent publication/read/membership; reuse with exact target binding. Two observed P4 failures belong to adapter and geometry measurement.",
+    "why_not_elsewhere": "Do not publish target menu/list/create, change ACL, infer client authorization, erase target IDs, or alter P1/P2 business rules. Existing child ui.contract loader preserves target action/menu/readonly and ACL, no extra loader bypass/protocol needed.",
+    "blast_radius": "Only missing-authority readonly record routes with complete source context; default published routes and work-item branches retained. P4 scope only existing list preview and detail measurements.",
     "scope": [
-      ".agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml",
-      ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
-      "docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md",
-      "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
-      "docs/frontend_productization/rendering-detail/page-pattern-reference-contract-gaps-v1.md"
+      "frontend/apps/web/src/router/index.ts",
+      "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+      "addons/smart_core/handlers/route_authority_validate.py",
+      "addons/smart_core/core/relation_action_authority.py",
+      "existing frontend navigation and backend entry/relation authority test files + affected Make unit registration",
+      "make/frontend.mk",
+      "scripts/dev/frontend_acceptance_runtime.sh (only if required)",
+      "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+      "scripts/verify/test_frontend_standard_preview.py"
     ],
-    "writer": "root metadata only; A/B read-only evidence reconciliation",
-    "status": "in_progress",
-    "validation": "resume identity, existing browser receipts/screenshots and pinned official reference; next product/tool change gets explicit owner and focused checks",
-    "skips": "no new build/backend refresh; current product inputs unchanged, no full matrix before coverage reconciliation"
-  }
+    "source_head": "b98e59e6f",
+    "dirty_scope": "original five metadata files plus A P4 tool repair in progress",
+    "writer": "root owns current-round finalization; A returned token and stopped; no queued native/home writes occurred",
+    "status": "implemented_targeted_checks_and_independent_reviews_passed",
+    "implementation": "route.authority.validate relation_origin read-only branch validates published parent with required context failclosed, fresh parent visible field and exact target model/id/action/menu, actual persisted membership, child ACL/rule and fresh read capability. Frontend only /r record, complete strict-positive source/target IDs; exact read response and unchanged actor/company/session context required, never writes global route authority. Existing execute_button relation behavior retained by optional exact-target constraint. No client can_open authorization fallback.",
+    "validation": "Collect independent L1/L2 failures once for consolidated scope. Nonzero existing entry-publication/relation-action tests, focused actual frontend route decision tests, preview tools; strict when TS stable; B/C independent review. Then responsibility commits and one governed backend refresh+frontend build followed by bounded representative review. No browser/build after each fix.",
+    "odoo_lifecycle": "Existing handler registered; no model/field/XML/manifest/dependency or data change. No -u upgrade. Governed backend.acceptance.replace-stale + health required after checks/commits. Same registered isolated acceptance tenant/company8/dbfilter/filestore, no DB fixture writes.",
+    "public_contract": "No intent rename. route.authority.validate additive relation_origin request branch and exact readonly record receipt; existing ordinary/work-item responses retained. No ui.contract schema or decoder/store change.",
+    "skips": "No snapshots for unchanged ui.contract schema, no fixture/reset/DB write, no full menu/browser matrix/Quick/publication/deployment. Unchanged earlier test evidence reused by input set, not HEAD alone.",
+    "rollback": "P0 authority bridge and P4 tools separate responsibility commits; prior managed preview/backend identity preserved.",
+    "queued_P4_acceptance_preparation": {
+      "status": "deferred_to_owner_assigned_executor_unless_already_started_report_exact_scope",
+      "layer": "P4 existing standard_page_type_browser.mjs and test_frontend_standard_preview.py only; no new harness/environment",
+      "scope": "native-form-interaction isolated no-write finance30/company8 payment1813 /f then /f/new menu545/action775; scene-entry exact workspace.home selector (unset preserves historical default)",
+      "why": "Existing scope lacks remaining shared interaction effects; prepare once before runtime instead of successive tool/browser cycles",
+      "native_requirements": [
+        "Capture exact root field/modifier/structure authority; choose genuinely editable scalar/relation from actual current contract; no hardcoded assumed edit permission",
+        "One actual existing relation option selection/query/label; declared master-detail expand/table/empty; no create-child/save/submit/upload",
+        "Shared real theme-button helper reused by detail and new scopes; light/dark1440/390 visual samples, each interaction once not four repeated workflows",
+        "Fail closed unexpected authority or write attempt; unmet capability prerequisite reported explicitly, not test pass",
+        "Minimal SPA unsaved cancel/discard normal behavior and actual create/edit/relations; reuse existing actual hook races/retained-resume tests, no new browser race matrix."
+      ],
+      "home_requirements": [
+        "Exact finance published workspace.home only; canonical route authority/startup+real my.work.summary.product_workspace",
+        "Compare real declared nonempty/empty data with actual HomeView/WorkspaceHome, official Cards/theme/containment; no arbitrary payload injection",
+        "Actual declared navigation/view-all target then return; record real summary requests so lifecycle check not empty-list tautology",
+        "Reuse existing request/error lifecycle mechanism proof; do not add new transport fault injection for this convergence. Actual bounded home normal data/actions/theme still required."
+      ],
+      "validation": "Add focused scope-isolation/write-denial/authority/pure geometry negatives under existing preview unit. All tool changes prepared before one consolidated L1/L2/review/build/runtime phase; production build ignores scripts so no tool-only rebuild. Existing saved business and backend state-machine proof reused.",
+      "owner_latest_precision": "Owner asks precise iteration and fast closure; close only confirmed deltas, reuse existing valid evidence, no broadened framework/full matrix."
+    }
+  },
+  "validation_cadence_correction": {
+    "trigger": "Owner feedback: repeated fragmented verification on 2026-10-01",
+    "rule": "one existing run result index; collect same-layer known blockers before runtime; no per-fix browser/build; reuse test results by dependency inputs; one consolidated representative review, failed-case-only replay after justified repair",
+    "current_known_blockers": [
+      "P0 exact readonly relation navigation authority bridge",
+      "P4 Make defaults incorrectly treated as explicit environment override",
+      "P4 Card body measurement misses Loading wrapper and must reject null geometry"
+    ],
+    "status": "implementation_consolidation",
+    "owner_latest": "精准迭代、尽快收口：known blockers only, minimal actual representative gaps, no new framework or full acceptance expansion"
+  },
+  "execution_handoff_direction": {
+    "owner_instruction": "这轮完成后暂停执行，专职负责调度，所有者安排其他执行器完成执行",
+    "effective": "now: current round code/checks/runtime attempt recorded; root performs handoff metadata finalization only then no implementation/runtime execution",
+    "current_round_scope": [
+      "P0 exact readonly relation navigation bridge",
+      "P4 Make default-vs-explicit adapter correction",
+      "P4 actual Card body geometry measurement correction",
+      "necessary targeted tests, independent review, one governed refresh/build and affected detail/list actual review"
+    ],
+    "deferred_to_owner_assigned_executor": [
+      "remaining create/edit representative interactions",
+      "published workspace/home actual review",
+      "remaining dedicated outlet evidence reconciliation"
+    ],
+    "root_after_round": "coordination_only: no code mutation, runtime validation or autonomous next implementation batch",
+    "writer_handoff": "A returns code token to root for this round finalization, then no implementation writer until owner-designated executor assumes scoped token",
+    "goal_completion": "not implied; preserve pending work and original evidence index"
+  },
+  "execution_mode": "coordination_only",
+  "execution_paused": true,
+  "writer_token": "none; owner-assigned executor required"
 }

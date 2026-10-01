@@ -9954,3 +9954,73 @@ P4 de4d6b060在既有三个unit入口编译实际SFC、Vue挂载及props/watch/u
 所有者明确本分支目标是“正式渲染与交互回到官方模板”，并追问实际效果是否全部确认。53.253把代码/契约能力阶段完成提升成原goal完成，范围过窄，现予纠正；原goal/run恢复active，不另建目标或证据表。已有代码修复、真实浏览器结果及构建保持有效；58 aligned/9不适用、纯测试及模拟传输组件挂载不再作为全量实际效果完成的依据。
 
 当前P4只修正任务元数据并核对已有页面类型证据；root唯一元数据写入者，A只读准备现有受管浏览器范围，B独立核对官方参考、实际截图与交互证明。按正式列表、创建/编辑、详情、主从、工作台、导航/弹层及桌面/窄屏识别尚未确认的具体效果，随后按归属修复并定向验证。未验证或因发布边界不可访问的表面必须保持开放，不能改列为本目标之外后宣称全部完成；也不通过扩大ACL/发布策略制造验收结果。继续保持本地-only，不自动重放任何业务写入。
+
+### 53.255 官方模板实际详情与列表偏差修复（2026-10-01，进行中）
+
+沿同一run恢复实际效果验收。当前已构建de4d6b060，后端a386549ba，现有finance30/company8/menu545/action775/payment1813只读观察report tpl07-1790835439881：44项技术断言通过，实际1440/390截图却仍为单大表单卡、生成章节锚点及纵向标签。root与B对照归档官方base/advanced参考后确认P0偏差；2项详情台账重开。实际列表同报告显示卡片缺少官方内边距，操作/查询仍为旧组合，另2项列表台账重开。当前为54 aligned/9 not_applicable/4 needs_work；这些分类不能替代实际验收。
+
+P0当前执行单只修共享record-detail渲染：契约section独立Card，支持的只读事实及专用值使用横向Descriptions，原字段顺序/分组含义/notebook、关系入口、集合、附件及动作权限保持。A独占产品代码token，root仅写同一run/文档，B只读复核。B在进行中发现分段grid仍以全局字段索引计算orphan span，已交A修复，未经修复验证不进入浏览器。L1随后按静态入口，L2使用既有standard_form_composition/native_form_structure/professional_business_value非零测试及strict，再受管构建与实际双视口效果。无后端/schema改变，跳过升级；无业务写入、无重跑全量矩阵或交付冻结。
+
+列表下一有限范围已定位共享ProductListSurface/Card padding与ListPage/ListSurfaceHeader/ProductListHeader操作-查询组合，保留现有action权限/身份/handler，并使选择后的批量动作与查询共存；不复制样例业务、不把官方窄屏溢出当目标。当前尚未实施该范围。所有结果和原始日志仍以run为唯一索引，本段随本轮结果收敛更新；整体目标未完成，未推送、合并或部署。
+
+### 53.256 自定义前端端到端体系收口执行计划（2026-10-01）
+
+**批次与目标。** 继续同一FE-TPL-OFFICIAL-TEMPLATE-ADOPTION产品结果，所有者明确要求体系收口，页面仅为代表验收样本。唯一目标是正式自定义前端从契约输入、职责选择、组合/组件到交互及主题的官方模板接管。P0前端共享机制，P4验证与记录；不改变行业/客户业务语义、权限、发布策略，不新增环境，不以全量菜单逐页修补推进。本节取代53.255“详情后直接列表”的局部执行顺序；已完成2a7e5c86c/090bd0023及受管构建保留，未完成视觉项保持开放。
+
+**权威链。** 复用既有架构、渲染职责、组件driver及主题清单，有限核对实际调用：public合同/登录→system.init→路由权限→ui.contract decoder/normalized store→契约pageType/presenter→声明的task/native、standard/dedicated collection、workspace/scene出口→共享Sc/@sc/ui适配器→TDesign driver。task与native、层级/看板/工作台属于声明职责差异，不能仅因多出口删除；legacyLayoutNormalizer仍是decoder输入兼容，不等于旧renderer；普通表单/f与/r只装配同一ContractFormPage。配置编辑、诊断与正式业务分别验证，不借统一模板越过配置/发布边界。
+
+**Step 1：确认共享责任及缺口。** A渲染可达图、B交互与B样式只读核对，由root合并到原run.completion.formal_effect_review.system_scope_correction。输出是有限机制执行单，不增加新全局配置框架或并行清单。进入下一步要求每个修改有真实可达证据、明确owner及非零验证入口。已确认：官方marker/primitive存在不足以证明组合；共享列表/详情组合有实际偏差；密度/表头规则跨工作区泄漏；关系异步结果发布缺身份隔离。shell当前未发现新结构缺陷，稳定全宽画布、产品色彩/Inter和移动端可用性保持已有权威。
+
+**Step 2：共享关系交互生命周期。** P0 useRelationRuntime、useRecordRelationshipFields、useRecordPageLifecycle及唯一页面装配接线；把记录/上下文重载、失活/卸载、字段搜索代际、selected与one2many补充加载的结果发布归到一致生命周期。只读关联打开继续走read权限，写入继续受既有字段/动作权限。输出为迟到成功、迟到403、补充加载和finally均不污染新身份的公共实现。验收为真实生产函数的延迟Promise反例、正常选择/加载恢复及装配接线断言；通过L1、非零relation lifecycle/hydration/关系守卫和strict后才能下游验收。禁止只修未接入的clear函数而漏正式reload。
+
+**Step 3：共享官方组合及样式责任。** P0正式record/collection/workspace组合拥有区域、间距、标题、操作与查询位置；primitive只处理公开props/events和值适配，token/主题层拥有颜色字体，页面不再叠加抵消公共规则。复用已完成detail共享修复；collection统一现有操作/选择计数与查询共存、官方Card内边距，保留动作身份、权限与handler；缩小跨工作区dense/table规则，保留合法专用表格与手机布局。输出为同一职责唯一组合责任，不能靠marker或新增局部CSS声称完成。验收为实际挂载区域/唯一操作/选择后查询、computed spacing/theme与跨family不泄漏；旧强制批量替换查询断言改成官方共存的正反例，不删权限/键盘约束。
+
+**Step 4：补实际渲染驱动整链证明。** P4优先复用existing test harness及Make入口，覆盖pageType/adopted/实际outlet、PageRenderer→BlockRenderer→真实wrapper/driver，而非在子renderer stub处结束。传输可以受控模拟，但必须明确证据止点；模板整链失败归P0 owning layer修复。启动/decoder/store、动作权限、官方表单引擎、overlay focus/scroll/exact-once、已有请求竞态证据仅在输入等价时复用，不为追求次数重跑。
+
+**Step 5：一次体系产品复核。** 在前置层全部通过后，以渲染出口和交互能力选取受管真实1440/390代表旅程，覆盖light/dark、列表查询/选择/分页/返回、create/edit/readonly及主从、关系/弹层、workspace/scene加载与错误恢复。沿现有工具/数据库/权限执行，发布不可达或未验证能力明确开放；模拟测试不替代真实可见效果。通过条件是共享机制证据、代表效果、已知缺口全部核销，B独立复核，不是台账绿色数量；mainline/deployment/user delivery单独报告。
+
+**验证与回滚。** 每个执行单先L0身份和声明dirty范围、ci.local.iteration L1，再风险选择非零L2与strict，必要时受管构建/浏览器。restricted沿现有轻量入口，不额外跑全量verify.restricted；无契约schema/后端变更则不重造snapshot、不升级数据库，复用原role/version/contract权限证据。后端若出现明确契约缺口先按所属层单独修复，不能前端推导。P0/P4责任提交分开、同一run；共享候选构建有既有rollback目录。失败阻断依赖步骤，仅修owner并复验受影响输入；不因无关失败重跑全矩阵，不执行本地-only以外的PR/部署。
+
+### 53.257 共享关系交互的生命周期隔离（2026-10-01）
+
+按53.256 Step2执行，非业务页面补丁。A中断后root接回唯一代码token，B独立只读复核。现有useRelationRuntime统一请求代次与按字段所有权，真实reload先清理并失效；保留页停用仅取消请求/计时器/弹窗，保留已加载标签与草稿，恢复后沿原生命周期补齐辅助数据。迟到查询返回空结果并不污染选项或拒绝缓存；selected与one2many补充加载在merge/catch/finally前校验当前请求、relation、固定context及ID集合。B发现外层辅助链恢复后仍可能续发及浅拷贝嵌套context漏判，root补auxiliary owner和请求时context序列化，两项独立复核已通过。
+
+既有relation lifecycle入口新增真实生产函数的22个生命周期断言，含真实reload、真实ensureFormInitialReload恢复、旧403、嵌套context变动、旧child finally、卸载与计时器取消；连同原18及Python7通过。create_defaults55、relation field18+17/Python10+40通过并按未变输入复用。首次新测试导入实际生命周期模块暴露P4 bundler未定义import.meta.env，既有Make入口加与其他测试相同的空Vite测试环境后恢复，原失败日志保留，不涉及运行环境或凭证。L1与结果详见原run system_scope_correction.relation_implementation；strict两套vue-tsc通过，P0提交21b5203f2、P4提交abb6b7f1b；B限定复核通过。尚未为此改动构建或运行代表场景，本轮不宣称可见效果或整体完成。
+
+### 53.258 共享弹层生命周期及体系组合推进（2026-10-01）
+
+P0 0a021211c 将初始聚焦和关闭后焦点恢复绑定生命周期代次与捕获目标，重开/卸载使旧回调失效；滚动锁仅释放一次。P4 b166c6ffb 在既有 overlay.unit 增加真实 Vue hook/调度的27项反例，浏览器宿主明确模拟。L1、27+Python12、双strict、B三文件源码复核通过；原受管 overlay.browser 实际Dialog/Drawer焦点、嵌套恢复、滚动锁、Esc/Tab通过且无console错误。快速重开/卸载竞态尚只由hook证明，不扩大浏览器结论。原日志和命令索引在run的overlay_implementation。
+
+按53.256 Step3继续同一体系收口：A独占代码写入，root元数据，B/C只读复核。共享列表移除内层ScPage及抵消样式，外层ActionView保持唯一画布；操作/批量选择与查询、列设置在同一官方Card内共存，保持权限/handler与合法专用出口。Card负责内边距，列表密度限定真实列表区域。先现有L1/L2/guard/strict，后真实浏览器复核；不把源码或标记变更提升为四项开放视觉缺口完成。
+
+同一体系核对继续确认scene正式可达链的容器缺口：PageRenderer页头、ZoneRenderer区域、registry block三层分别自绘外框；12个唯一block外壳需统一，不能只把两个样本换ScCard后称整体完成。后续P0责任已确定为每block一个官方borderless Card、zone仅保留语义与声明grid/stack、page页头取消重复卡框；不按today_focus等key猜布局。保留priority/data_source/权限/事件与Accordion折叠。当前仅记录确认缺口，尚未实施；P4须补真实子renderer/driver链，原grid29保持其stub边界，不改称整链证据。
+
+Step3独立廉价检查先收集同层失败：collection toolbar31+Python11、scroll guard、strict通过；新SSR首跑因测试导入未直接依赖的@vue/server-renderer失败，改复用已安装Vue公开入口。style guard定位此前detail已无生成导航却残留nav-height变量；删除该无用P0声明，不扩大Token白名单。alignment guard定位readonly-value布局被连续文本匹配误判，P4改精确selector内声明验证并加缺失/错误/跨selector反例。原system-collection-{composition,style,alignment}.log保留，后续修复回执独立命名；依赖的构建与浏览器保持pending，不能忽略失败后继续。B另指出SSR画布定位和真实toolbar覆盖、桌面左右几何断言缺口，同步补正。
+
+Step3已收敛为P0 b488ff1f5/P4 61833c169：实际ListPage/Header/ActionSurfaceToolbar/TDesign/AttachmentViewer六组合76项、pure124通过，工具只允许精确组件host origin且禁止业务请求、零console/page错误。停止SSR适配分支并保留全部失败日志；最终证据来自真实组件浏览器，不是SSR。toolbar31+Python11、alignment12+7+5及31条目、style、scroll、双strict按未变输入复用，C最终限定源码复核通过。正式ActionView权限链与后端页面几何尚未由此fixture证明，四项视觉needs_work不更新。下一单为共享scene14文件组合及真实driver证明，随后集中受管构建/代表复核，不每子修改重跑矩阵。
+
+### 53.259 共享场景组合与真实驱动链（2026-10-01）
+
+P0 159903c23统一PageRenderer/ZoneRenderer及registry12类块的容器责任：透明article保留身份/状态，每块一个borderless ScCard，zone只管契约分组/grid/stack，去按key定制的色块/阴影/比例。标题、数据、排序、权限、事件及Accordion折叠不变；Entry复用已注册browser-structured按钮适配，明确为专用结构化内容扩展。P4 39b76249d保留原mounted transport测试边界，并在既有组件host新增真实PageRenderer→Zone→registry→Sc/TDesign scope。L1、scene29/59/Python12+12+4、chart19+37/model、BOQ22+27/Python10/model、富文本模型断言、双strict、style通过。实际组件browser76项通过，零errors/越界请求；B产品和C工具独立复核通过。
+
+上述不是正式后端场景验收：图表/BOQ此次是empty，富文本readonly，transport未执行；此前模型/生命周期证据分别复用。唯一索引在run.scene_implementation。后续P4限定扩style/detail已有入口：真实主题按钮、1440/390双主题、实际Card/Descriptions几何与契约授权关系open/back，随后一次受管构建及合并代表复核。仍不凭标记或组件fixture关闭四项实际视觉缺口。
+
+### 53.260 实际体系复核与阻断归因（2026-10-01）
+
+P4 1afe2a0fc补style/detail真实明暗主题、1440/390、契约可见section与Card/Descriptions几何、关系open/back；新增受管列表入口绑定既有5180预览与finance身份。随后B源码发现原生grid/gap仍污染Card根：P0 65bc8946f隔离native布局及页级sheet/group覆盖，移除页面Card外框补偿，内部body布局和编辑/设计器保持；P4 b98e59e6f加computed根布局与grid12拒绝反例。L1、form121、native12、preview42+90、style/syntax通过；CSS-only且template/script逐字未变，复用strict。B独立四文件复核通过。
+
+受管build23.30秒完成，产品输入b98e59e6f，原五个元数据文件dirty；入口index-h7E8_9qC.js，构建身份及rollback引用原run.consolidated_preview_after_card_spacing。后台addons未变，沿原资源身份复用。首次实际detail报告tpl07-1790839601227：light1440六个Card与契约可见section匹配、横向Descriptions和主题检查通过；实际点击契约can_read/can_open的partner56（menu164/action324）被NAVIGATION_AUTHORITY_DENIED拒绝，因此整体failed，其余组未运行，原主题已恢复，不能声称关系或完整视觉验收通过。另真实Card body度量全null，定位器需按实际vendorDOM纠正并拒绝未度量假通过。
+
+独立列表入口尚未进浏览器即拒绝：Make的全局export把开发默认ACCEPTANCE_BASE_URL/DB_NAME带入新adapter，被视为调用者冲突。归P4入口边界，不手拼URL/数据库规避。原日志与报告保存在唯一run索引；只在owner修复和定向测试通过后重验受影响部分。A/B只读交叉诊断关系授权，未发布菜单、扩大权限或写数据。
+
+体系范围仍包含create/edit与主从关系的真实效果、正式workspace/scene及声明专用出口。原保存/审批回读和未变机制测试可复用；组件host76项不能替代正式场景加载。未发布入口保留能力/正式验收边界，不减少目标范围。当前整体goal仍active，四项视觉needs_work未关闭；主线集成、部署和目标用户交付均未执行。
+
+53.260 调度纠正：所有者指出验证反复，root承担调度责任。停止“每个小修复后构建/页面重验”的推进方式，三个已知阻断集中修复并收集同层定向结果：P0精确只读关联导航桥、P4 Make输入来源、P4真实Card正文几何。原run.remaining_acceptance按四组实际责任记录可复用证据、失效输入、缺项与前置；提前准备创建/编辑关系恢复和已发布workspace所需的最小工具，不等首组页面跑完再另起工具循环。全部必需前层通过与独立审查完成后，一次受管后端刷新/前端构建、一次代表场景复核；后续仅按真实变化复验失败项，无关文档/提交不触发重验。保持单代码writer，A实现、B/C独立审查、root统一准入及结果索引。
+
+53.260 本轮交接（所有者要求随后仅调度）：P0关系桥411027d46、P4入口/几何7e3fe8188已提交；L1、入口16+2、动作37、前端18、preview42+94、双strict及B/C独立源码复核通过。后端按7e3fe8188受管刷新并健康回读，前端一次构建23.62秒，entry index-CIOBQ4xV.js；无升级、业务写入、发布、推送或部署。所有命令、原日志、身份与rollback归原run.current_round_final_observation。
+
+实际复核仍FAILED，不宣称三个问题全部关闭或批次验收完成：detail报告tpl07-1790840569671的light1440真实六Card/body匹配，五个展开Card header/body gap=0、折叠卡明确无header，30个已完成断言通过；随后1813→partner56仍被route.authority.validate实际HTTP403拒绝，trace e983ad9b-f00e-4ee3-8e06-95f52e247619，工具没有采集结构化拒绝阶段，其余明暗/窄屏组未执行。下一执行器先定位该精确请求的拒绝原因，不凭unit通过推断运行通过，不重跑未改变的完整浏览器。
+
+列表Make身份入口已恢复，抵达既定action775/menu545并采集normal1440截图；批量检查直接check官方checkbox input，被所属CollectionSelectionControl label拦截后超时。失败日志system-converged-list-browser.log；异常发生在最终report写入之前，因此没有最终JSON，不能当通过。下一执行器仅修P4可见控件定位与相应正反例，不force-click输入或改产品样式迁就测试；产品输入未变可复用当前构建。选中/空态/手机组尚未验收，原四项视觉needs_work保持。
+
+root完成本轮证据交接后立即暂停代码与运行验证，仅负责调度；A已归还唯一写入权，B/C任务结束，当前无实现writer，等待所有者安排执行器。创建/编辑及workspace新scope只有只读方案、未写代码，连同合法专用出口证据核销保留在原run.remaining_acceptance。整体goal为incomplete/run verification_pending；当前本地提交不等于冻结交付，主线集成、部署、目标用户交付均not_run。后续先读原run、认领单写入权并复用有效证据，不重建目标或平行台账。

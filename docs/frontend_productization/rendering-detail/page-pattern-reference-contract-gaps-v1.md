@@ -2,7 +2,7 @@
 
 This ledger records reference details that cannot be implemented safely from the current authoritative payload. They are not permission to infer values in the frontend.
 
-## Current actual-effect status (2026-10-01, segment53.254)
+## Current actual-effect status (2026-10-01, segment53.255)
 
 The original goal is active again: code capability closure does not establish that
 all custom frontend rendering and interaction match the official templates.
@@ -10,7 +10,9 @@ Current candidate screenshots (report `tpl07-1790835439881`) pass 44 technical s
 assertions but still show a single anchored form container and stacked fact labels.
 The official base/advanced sources use separate Cards and horizontal Descriptions.
 `detail.container` and `detail.description-grid` are therefore reopened as
-`needs_work`; the ledger now has 56 aligned, 9 not-applicable and 2 needs-work entries.
+`needs_work`. The same actual list screenshots also reopen `collection.header-actions`
+and `collection.toolbar-surface`: official Card padding and the in-card operations/query
+composition remain incomplete. The ledger has 54 aligned, 9 not-applicable and 4 needs-work entries.
 Preserve native business fields/groups/actions while repairing their P0 presentation.
 
 Earlier capability, runtime and browser evidence remains indexed in the original

@@ -110,3 +110,17 @@ goal:
     required capability gaps open and published-user acceptance pending. Never
     publish extra entries merely to pass a test. Local fixture acceptance proves
     only its bound environment, not target-environment user delivery.
+
+  systemwide_convergence_owner_direction: >-
+    2026-10-01: Converge the custom frontend end to end as one system. Work units
+    are shared contract/bootstrap, renderer dispatch, official page composition,
+    primitive drivers, interaction lifecycles and theme/responsive ownership.
+    Specific pages are representative evidence, not isolated implementation goals.
+    Reuse the original run and valid evidence; actual effects and interaction remain
+    mandatory. A shared detail fix or a ledger marker is not overall completion.
+
+  execution_handoff_owner_direction: >-
+    2026-10-01: After the current round, root stops implementation and runtime
+    execution and coordinates only. The owner will assign the next executor.
+    Goal remains incomplete; the original run records the actual relation403
+    and list selector failures plus reusable evidence. No automatic next batch.
