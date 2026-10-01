@@ -41,7 +41,7 @@ REQUIRED_PRODUCT_CONSUMERS = {
     "ScField": "components/business/MyWorkApprovalWorkspace.vue",
     "ScIcon": "components/template/FormSection.vue",
     "ScMoney": "components/business/MyWorkApprovalWorkspace.vue",
-    "ScPage": "pages/ListPage.vue",
+    "ScPage": "views/ActionView.vue",
     "ScPageHeader": "views/ApiKeyManagementView.vue",
     "ScPanel": "views/ApiKeyManagementView.vue",
     "ScRelationField": "components/template/FormSection.vue",

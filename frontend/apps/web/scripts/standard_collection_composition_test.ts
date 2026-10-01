@@ -219,6 +219,22 @@ check(headerSource.includes("data-list-query-action-bar"), true, 'the query row 
 check(headerSource.includes('sc-product-page-toolbar'), true, 'the query row keeps its product page region identity');
 
 // ---------------------------------------------------------------------------
+const actionViewSource = readSource('frontend/apps/web/src/views/ActionView.vue');
+const surfaceHeaderSource = readSource('frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue');
+check(listPageSource.includes('<ScPage'), false, 'embedded list cannot create a second canvas');
+check(actionViewSource.includes('<ScPage'), true, 'routed ActionView owns the single canvas');
+check(actionViewSource.includes('padding-inline: 0;'), false, 'no nested-gutter compensation remains');
+check((listPageSource.match(/#leading/g) || []).length, 2, 'empty and populated headers both forward operations');
+check(surfaceHeaderSource.includes('v-if="!contextual"'), false, 'selection never replaces query or column settings');
+check(surfaceHeaderSource.includes('<slot name="contextual" />'), true, 'batch actions retain their slot');
+check(actionViewSource.includes('v-if="!standardListOperationsInCard" #actions'), true, 'standard list operations have one active location');
+check(surfaceSource.includes('padding: 32px'), true, 'official list card outer padding is explicit');
+const densitySource = readSource('frontend/apps/web/src/styles/tokens/pattern.css');
+check(densitySource.includes("[data-list-card-container='official']"), true, 'density belongs to the actual list surface');
+check(densitySource.includes('.page.sc-product-workspace-stack {'), false, 'workspace does not inherit list density');
+const patternsSource = readSource('frontend/apps/web/src/styles/product-patterns.css');
+check(patternsSource.includes('.sc-product-workspace-stack :is(table, .data-table, .list-table)'), false, 'workspace tables do not inherit list header weight');
+
 // Part 5 — the detail decision is provided once per page and read by sections
 // ---------------------------------------------------------------------------
 const detailRuntimePath = 'frontend/apps/web/src/pages/contractForm/standardDetailCompositionRuntime.ts';
@@ -308,7 +324,7 @@ check(
 );
 check(formSectionSource.includes('data-detail-facts="official-standard-detail"'), true, 'the adopted readonly facts are identifiable at runtime');
 check(formSectionSource.includes(':bordered="false"'), true, 'the adopted readonly facts use the official unbordered card');
-check(formSectionSource.includes(':items="displayFields"'), true, 'the adopted readonly facts are driven by the contract field facts, not sample data');
+check(formSectionSource.includes(':items="segment.fields"'), true, 'the adopted readonly facts are driven by the contract field facts, not sample data');
 check(formSectionSource.includes('v-else :class="[\'template-form-section-grid\''), true, 'an unadopted section keeps the grid it had, so no surface renders two layouts');
 check(formSectionSource.includes("from '../design-system/ScDescriptions.vue'"), true, 'the adopted readonly facts use the project primitive, not the vendor component');
 check(formSectionSource.includes('readonly-relation-label'), true, 'the adopted readonly facts keep the authorized relation entry');

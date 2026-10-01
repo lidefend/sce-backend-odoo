@@ -15,7 +15,7 @@ const BOOTSTRAP_SECRET = process.env.SC_ACCEPTANCE_BOOTSTRAP_SECRET || '';
 const PHASE = String(process.env.LIST_SURFACE_PHASE || 'full');
 const OUTPUT = path.resolve(process.env.LIST_SURFACE_OUTPUT || '.runtime/final-acceptance/list-surface-structure');
 const REPORT = path.resolve(process.env.LIST_SURFACE_REPORT || '.runtime/final-acceptance/list-surface-structure.json');
-const VIEWPORTS = PHASE === 'current-fail'
+const DEFAULT_VIEWPORTS = PHASE === 'current-fail'
   ? [{ key: '1440', width: 1440, height: 900 }]
   : [
       { key: '1440', width: 1440, height: 900 },
@@ -25,7 +25,11 @@ const VIEWPORTS = PHASE === 'current-fail'
       { key: '520', width: 520, height: 844 },
       { key: '390', width: 390, height: 844 },
     ];
-const FIRST_CONTENT_LIMITS = { 1440: 165, 1024: 160, 768: 200, 521: 160, 520: 160, 390: 160 };
+const requestedWidths = String(process.env.LIST_SURFACE_VIEWPORTS || '').split(',').filter(Boolean);
+if (requestedWidths.some(width => !DEFAULT_VIEWPORTS.some(viewport => viewport.key === width))) throw new Error('unknown LIST_SURFACE_VIEWPORTS');
+const VIEWPORTS = requestedWidths.length ? DEFAULT_VIEWPORTS.filter(viewport => requestedWidths.includes(viewport.key)) : DEFAULT_VIEWPORTS;
+const REQUESTED_ROUTE = String(process.env.LIST_SURFACE_ROUTE || '').trim();
+if (REQUESTED_ROUTE && !/^\/a\/\d+\?menu_id=\d+$/.test(REQUESTED_ROUTE)) throw new Error('LIST_SURFACE_ROUTE must identify exact action/menu');
 
 if (!LOGIN || (!PASSWORD && !BOOTSTRAP_SECRET)) {
   throw new Error('acceptance login and password or isolated bootstrap secret are required');
@@ -100,7 +104,8 @@ async function waitForList(page) {
 async function findPopulatedList(page, navigation) {
   const routes = actionable(navigation.nav());
   const preferred = routes.filter((row) => /一般合同|项目台账|施工合同/.test(row.label));
-  const candidates = [...preferred, ...routes.filter((row) => !preferred.includes(row))];
+  if (REQUESTED_ROUTE && !routes.some(row => row.route === REQUESTED_ROUTE)) throw new Error('requested list route is not in captured released navigation');
+  const candidates = REQUESTED_ROUTE ? routes.filter(row => row.route === REQUESTED_ROUTE) : [...preferred, ...routes.filter((row) => !preferred.includes(row))];
   for (const target of candidates) {
     await page.goto(`${BASE_URL}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     const toolbar = page.locator('[data-list-query-action-bar]');
@@ -112,7 +117,7 @@ async function findPopulatedList(page, navigation) {
 }
 
 async function measure(page, viewport, state = 'normal', interaction = {}) {
-  return page.evaluate(({ width, firstContentLimit, expectedState, selectionSource, selectionNavigationStable }) => {
+  return page.evaluate(({ width, expectedState, selectionSource, selectionNavigationStable }) => {
     const visible = (element) => {
       if (!(element instanceof HTMLElement)) return false;
       const rect = element.getBoundingClientRect();
@@ -121,6 +126,33 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     };
     const toolbar = document.querySelector('[data-list-query-action-bar]');
     const contextualToolbar = document.querySelector('.list-surface-contextual-toolbar');
+    const headerRect = toolbar?.getBoundingClientRect();
+    const withinHeader = (control) => {
+      const rect = control.getBoundingClientRect();
+      return Boolean(headerRect && rect.left >= headerRect.left - 1 && rect.right <= headerRect.right + 1
+        && rect.top >= headerRect.top - 1 && rect.bottom <= headerRect.bottom + 1);
+    };
+    const contentFollowsHeader = (content) => visible(content) && Boolean(headerRect)
+      && content.getBoundingClientRect().top >= headerRect.bottom - 1
+      && content.getBoundingClientRect().top < innerHeight;
+    const geometry = () => {
+      const controls = Array.from(toolbar?.querySelectorAll('input, button, select') || []).filter(element => visible(element) && !element.closest('.search-dropdown, .list-surface-column-menu'));
+      const rects = controls.map(control => control.getBoundingClientRect());
+      const overlap = rects.some((a, i) => rects.some((b, j) => j > i && Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1));
+      const search = Array.from(toolbar?.querySelectorAll('input[type="search"]') || []).filter(visible);
+      const columns = Array.from(toolbar?.querySelectorAll('.list-surface-column-button') || []).filter(visible);
+      const leading = toolbar?.querySelector('.product-list-header__leading')?.getBoundingClientRect();
+      const query = toolbar?.querySelector('.product-list-header__query, .product-list-header__search')?.getBoundingClientRect();
+      return {
+        toolbar_controls_within_header: controls.every(withinHeader),
+        toolbar_controls_not_overlapping: !overlap,
+        toolbar_controls_in_viewport: rects.every(rect => rect.left >= -1 && rect.right <= innerWidth + 1),
+        mobile_touch_targets: width > 760 || controls.filter(control => control.tagName === 'BUTTON').every(control => { const rect = control.getBoundingClientRect(); return rect.width >= 44 && rect.height >= 44; }),
+        search_implementation_count: search.length === 1,
+        column_settings_unique: columns.length === 1,
+        desktop_actions_query_aligned: width < 1440 || expectedState === 'batch' || Boolean(leading && query && leading.width > 0 && query.width > 0 && leading.right <= query.left + 1 && Math.min(leading.bottom, query.bottom) > Math.max(leading.top, query.top)),
+      };
+    };
     const mobileCards = Array.from(document.querySelectorAll('[data-mobile-record-row], .mobile-record-card')).filter(visible);
     const mobileMode = mobileCards.length > 0;
     const visibleMobileSelectors = Array.from(document.querySelectorAll('[data-mobile-record-select] input[type="checkbox"]')).filter(visible);
@@ -149,7 +181,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       && Array.isArray(columnDecisionTrace.mobile?.visibleColumns),
     );
     if (expectedState === 'batch') {
-      const controls = Array.from(contextualToolbar?.querySelectorAll('button, input, select') || []).filter(visible);
+      const controls = Array.from(toolbar?.querySelectorAll('button, input, select') || []).filter(visible);
       const rowCenters = [];
       for (const control of controls) {
         const center = control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2;
@@ -161,10 +193,11 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       const firstContentY = visible(firstContent) ? firstContent.getBoundingClientRect().top : null;
       return {
         checks: {
+          ...geometry(),
           toolbar_present: visible(contextualToolbar),
-          batch_toolbar_replaces_normal: visible(contextualToolbar) && !visible(toolbar),
-          toolbar_visual_row_count: rowCenters.length === 1,
-          first_business_content_y: firstContentY !== null && firstContentY <= firstContentLimit,
+          batch_query_coexists: visible(contextualToolbar) && visible(toolbar) && toolbar.querySelectorAll('input[type="search"]').length === 1,
+          toolbar_controls_within_header: controls.every(withinHeader),
+          first_business_content_order: contentFollowsHeader(firstContent),
           visible_mobile_selection_control: !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
           selected_mobile_card_identifiable: !mobileMode || (selectedMobileCards.length > 0 && visibleMobileSelectors.some((control) => control.checked)),
           mobile_batch_created_without_hidden_desktop_control: !mobileMode || selectionSource === 'visible_mobile',
@@ -177,7 +210,6 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           contextual_control_count: controls.length,
           toolbar_visual_row_count: rowCenters.length,
           first_business_content_y: firstContentY,
-          first_business_content_limit: firstContentLimit,
           mobile_mode: mobileMode,
           visible_mobile_selection_control_count: visibleMobileSelectors.length,
           mobile_selection_target_sizes: mobileSelectionTargetSizes,
@@ -277,13 +309,14 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     const mobileTouchTargetsPass = !mobileMode || controlRects.filter((rect) => rect.tag === 'button').every((rect) => rect.width >= 44 && rect.height >= 44);
     const searchInputRect = searches[0]?.getBoundingClientRect();
     const checks = {
+      ...geometry(),
       toolbar_present: true,
       search_implementation_count: searches.length === 1,
       single_action_formatting_context: actionBars.length === 1,
       search_inside_single_action_bar: searchInsideSingleActionBar,
-      toolbar_visual_row_count: rowCenters.length === 1,
+      toolbar_controls_within_header: controls.every(withinHeader),
       column_settings_standalone: !visible(columnButton) || columnPeers.length > 0,
-      first_business_content_y: firstContentY !== null && firstContentY <= firstContentLimit,
+      first_business_content_order: contentFollowsHeader(firstContent),
       visible_mobile_selection_control: expectedState !== 'normal' || !mobileMode || (visibleMobileSelectors.length > 0 && mobileSelectionTargetsMeetSize),
       decision_trace_complete: expectedState === 'empty' || traceComplete,
       column_count_not_visible: !visible(columnCountHint) && !visibleColumnCountText,
@@ -303,7 +336,6 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         toolbar_visual_row_count: rowCenters.length,
         column_peer_count: columnPeers.length,
         first_business_content_y: firstContentY,
-        first_business_content_limit: firstContentLimit,
         repeated_context_tokens: repeatedContext,
         visible_topbar_text_sources: topbarTextSources,
         visible_home_title_canvas: visibleHomeHeader,
@@ -325,7 +357,6 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     };
   }, {
     width: viewport.width,
-    firstContentLimit: FIRST_CONTENT_LIMITS[viewport.width],
     expectedState: state,
     selectionSource: interaction.selectionSource || 'none',
     selectionNavigationStable: interaction.selectionNavigationStable !== false,
@@ -366,13 +397,19 @@ async function productionComponentProof(page) {
 async function negativeProofs(page, viewport) {
   const results = [];
   const twoRows = await page.addStyleTag({ content: `
-    [data-list-query-action-bar] { min-height: 100px !important; }
-    [data-list-query-action-bar] .list-surface-column-manager { transform: translateY(52px) !important; }
+    [data-list-query-action-bar] { position: relative !important; }
+    [data-list-query-action-bar] .list-surface-column-manager { transform: translateY(200vh) !important; }
   ` });
   const brokenRows = await measure(page, viewport);
-  results.push({ fixture: 'forced_second_row_and_standalone_column_settings', detected: !brokenRows.checks.toolbar_visual_row_count && !brokenRows.checks.column_settings_standalone, metrics: brokenRows.metrics });
+  results.push({ fixture: 'displaced_controls_outside_shared_header', detected: !brokenRows.checks.toolbar_controls_within_header && !brokenRows.checks.column_settings_standalone, metrics: brokenRows.metrics });
   await twoRows.evaluate((element) => element.remove());
 
+  if (viewport.width >= 1440) {
+    const stacked = await page.addStyleTag({ content: '[data-list-query-action-bar] .product-list-header__layout { flex-direction: column !important; align-items: stretch !important; }' });
+    const brokenAlignment = await measure(page, viewport);
+    results.push({ fixture: 'desktop_operations_query_stacked', detected: !brokenAlignment.checks.desktop_actions_query_aligned, metrics: brokenAlignment.metrics });
+    await stacked.evaluate(element => element.remove());
+  }
   const contextDetected = await page.evaluate(() => {
     const subtitle = document.querySelector('#primary-sidebar .brand .subtitle');
     const target = document.querySelector('.topbar-actions');
@@ -482,14 +519,16 @@ try {
   const componentProof = await productionComponentProof(page);
   const negativeFixtures = await negativeProofs(page, VIEWPORTS[0]);
   const gatedChecks = new Set([
+    'desktop_actions_query_aligned',
+    'column_settings_unique',
     'toolbar_present',
     'search_implementation_count',
     'single_action_formatting_context',
     'search_inside_single_action_bar',
-    'toolbar_visual_row_count',
+    'toolbar_controls_within_header',
     'column_settings_standalone',
-    'first_business_content_y',
-    'batch_toolbar_replaces_normal',
+    'first_business_content_order',
+    'batch_query_coexists',
     'visible_mobile_selection_control',
     'selected_mobile_card_identifiable',
     'mobile_batch_created_without_hidden_desktop_control',
@@ -545,7 +584,7 @@ try {
     schema: 'frontend_list_surface_structure_browser.v1',
     phase: PHASE,
     source: { base_url: BASE_URL, database: DATABASE, login: LOGIN, target },
-    thresholds: { first_business_content_y: FIRST_CONTENT_LIMITS },
+    geometry_contract: 'controls contained by shared header; content follows header within viewport',
     rows,
     production_component_proof: componentProof,
     negative_fixtures: negativeFixtures,

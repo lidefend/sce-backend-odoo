@@ -552,6 +552,7 @@ verify.frontend.form_canvas_layout.unit: guard.prod.forbid
 	@node --experimental-strip-types scripts/verify/frontend_form_canvas_layout_contract_test.ts
 
 verify.frontend.form_canvas_layout.guard: guard.prod.forbid verify.frontend.form_canvas_layout.unit
+	@python3 -m unittest scripts.verify.test_frontend_form_canvas_wide_grid_guard
 	@python3 scripts/verify/frontend_form_canvas_wide_grid_guard.py
 
 verify.frontend.form_grid_span.browser: guard.prod.forbid
@@ -858,6 +859,7 @@ verify.frontend.adopted_form_engine_decision.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.standard_collection_composition.unit
 verify.frontend.standard_collection_composition.unit: guard.prod.forbid
+	@node frontend/apps/web/scripts/list_surface_component_test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_collection_composition_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --outfile=/tmp/standard-collection-composition-test.mjs >/dev/null
 	@node /tmp/standard-collection-composition-test.mjs
 
@@ -992,3 +994,7 @@ verify.frontend.field_configuration_component.unit: guard.prod.forbid
 .PHONY: verify.contract.form_field_policy.unit
 verify.contract.form_field_policy.unit: guard.prod.forbid
 	@python3 scripts/verify/test_form_field_policy.py
+
+.PHONY: verify.frontend.list_surface_structure.browser
+verify.frontend.list_surface_structure.browser: guard.prod.forbid
+	@node scripts/verify/frontend_list_surface_structure_browser.mjs
