@@ -275,6 +275,23 @@ class ScOutputInvoiceAdjustment(models.Model):
             return {"reason_code": "RED_FLUSH_SOURCE_NOT_REGISTERED", "message": _("原销项票必须已登记，草稿、待登记或取消票不能红冲。")}
         return None
 
+    def _duplicate_red_flush_blocker(self):
+        self.ensure_one()
+        existing = self.search(
+            [
+                ("id", "!=", self.id),
+                ("state", "=", "confirmed"),
+                ("original_ledger_id", "=", self.original_ledger_id.id),
+            ],
+            limit=1,
+        )
+        if existing:
+            return {
+                "reason_code": "RED_FLUSH_SOURCE_ALREADY_CONFIRMED",
+                "message": _("该销项票已在变更登记 %s 中完成红冲。") % existing.display_name,
+            }
+        return None
+
     def _validate_red_flush_ready(self):
         self.ensure_one()
         blocker = self._original_invoice_eligibility_blocker()
@@ -286,16 +303,9 @@ class ScOutputInvoiceAdjustment(models.Model):
             raise UserError(_("请填写红冲发票号码。"))
         if (self.red_flush_invoice_no or "").strip() == (self.invoice_no or "").strip():
             raise UserError(_("红冲发票号码不能与原发票号码相同。"))
-        existing = self.search(
-            [
-                ("id", "!=", self.id),
-                ("state", "=", "confirmed"),
-                ("original_ledger_id", "=", self.original_ledger_id.id),
-            ],
-            limit=1,
-        )
-        if existing:
-            raise UserError(_("该销项票已在变更登记 %s 中完成红冲。") % existing.display_name)
+        blocker = self._duplicate_red_flush_blocker()
+        if blocker:
+            raise UserError(blocker["message"])
         if not self.project_id:
             raise UserError(_("原销项票缺少项目，不能生成红冲销项票。"))
         if not self.red_flush_invoice_amount:

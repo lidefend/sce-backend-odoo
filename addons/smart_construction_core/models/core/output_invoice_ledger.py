@@ -6,6 +6,7 @@ class ScOutputInvoiceLedger(models.Model):
     _name = "sc.output.invoice.ledger"
     _description = "销项发票总台账"
     _auto = False
+    _rec_name = "invoice_no"
     _order = "invoice_date desc, id desc"
 
     source_model = fields.Selection(

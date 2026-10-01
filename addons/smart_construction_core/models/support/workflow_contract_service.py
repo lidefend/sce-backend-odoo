@@ -1401,6 +1401,9 @@ class ScWorkflowContractService(models.AbstractModel):
             blocker = record._original_invoice_eligibility_blocker()
             if blocker:
                 gates.append(self._gate(blocker["reason_code"], blocker["message"], action_keys=["submit", "approve", "complete"]))
+            duplicate = record._duplicate_red_flush_blocker()
+            if duplicate:
+                gates.append(self._gate(duplicate["reason_code"], duplicate["message"], action_keys=["submit", "approve", "complete"]))
             if not self.env["sc.invoice.registration"]._has_finance_register_access():
                 gates.append(self._gate("INVOICE_REGISTER_ACCESS_DENIED", "你没有完成发票登记的财务确认权限。", action_keys=["complete"]))
             return gates

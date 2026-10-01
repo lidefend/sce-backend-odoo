@@ -4270,5 +4270,73 @@ class InflightCallbackGroupTest(unittest.TestCase):
         action.write.assert_called_with({'groups_id': [(6, 0, [93])]})
 
 
+class RedFlushContractBoundaryTests(unittest.TestCase):
+    def _methods(self, relative, names):
+        path = ROOT / relative
+        methods = [node for node in ast.walk(ast.parse(path.read_text()))
+                   if isinstance(node, ast.FunctionDef) and node.name in names]
+        self.assertEqual(len(methods), len(names))
+        for method in methods:
+            method.decorator_list = []
+        ns = {'_': lambda text: text, 'UserError': ValueError}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), ns)
+        return {name: ns[name] for name in names}
+
+    def _record(self, existing):
+        methods = self._methods('addons/smart_construction_core/models/core/output_invoice_adjustment.py',
+                                {'_duplicate_red_flush_blocker', '_validate_red_flush_ready'})
+        record = type('Adjustment', (), methods)()
+        record.id, record._name = 43, 'sc.output.invoice.adjustment'
+        record.original_ledger_id = types.SimpleNamespace(id=105)
+        record.ensure_one = lambda: None
+        record._original_invoice_eligibility_blocker = lambda: None
+        record.generated_invoice_id = False
+        record.red_flush_invoice_no, record.invoice_no = 'red-1', 'source-1'
+        record.project_id, record.red_flush_invoice_amount = True, -100
+        record.queries = []
+        def search(domain, limit):
+            record.queries.append((domain, limit))
+            return existing
+        record.search = search
+        return record
+
+    def _service(self):
+        names = {'_gate', '_evidence_gate', '_available_actions'}
+        service = type('Workflow', (), self._methods(
+            'addons/smart_construction_core/models/support/workflow_contract_service.py', names))()
+        service.env = {'sc.invoice.registration': types.SimpleNamespace(_has_finance_register_access=lambda: True)}
+        service.ACTIONS = {'complete': {'method': 'action_confirm'}, 'cancel': {'method': 'action_cancel'}}
+        return service
+
+    def test_duplicate_blocker_only_queries_other_confirmed_same_source(self):
+        record = self._record(types.SimpleNamespace(display_name='CONFIRMED-42'))
+        blocker = record._duplicate_red_flush_blocker()
+        self.assertEqual(blocker['reason_code'], 'RED_FLUSH_SOURCE_ALREADY_CONFIRMED')
+        self.assertIn('CONFIRMED-42', blocker['message'])
+        self.assertEqual(record.queries, [([('id', '!=', 43), ('state', '=', 'confirmed'),
+                                           ('original_ledger_id', '=', 105)], 1)])
+
+    def test_native_rejection_and_contract_denial_share_reason_without_blocking_cancel(self):
+        record = self._record(types.SimpleNamespace(display_name='CONFIRMED-42'))
+        with self.assertRaises(ValueError) as caught:
+            record._validate_red_flush_ready()
+        service = self._service()
+        gates = service._evidence_gate(record)
+        self.assertEqual(len(gates), 1)
+        self.assertEqual(gates[0]['message'], str(caught.exception))
+        self.assertEqual(gates[0]['actionKeys'], ['submit', 'approve', 'complete'])
+        actions = service._available_actions(record, {'state_actions': {'approved': ['complete', 'cancel']}},
+                                             'approved', 'approved', 'approved', gates)
+        self.assertFalse(actions[0]['enabled'])
+        self.assertEqual(actions[0]['reason_code'], 'RED_FLUSH_SOURCE_ALREADY_CONFIRMED')
+        self.assertTrue(actions[1]['enabled'])
+
+    def test_no_confirmed_sibling_preserves_native_readiness_and_contract_actions(self):
+        record = self._record(False)
+        self.assertIsNone(record._validate_red_flush_ready())
+        self.assertIsNone(record._duplicate_red_flush_blocker())
+        self.assertEqual(self._service()._evidence_gate(record), [])
+
+
 if __name__ == '__main__':
     unittest.main()
