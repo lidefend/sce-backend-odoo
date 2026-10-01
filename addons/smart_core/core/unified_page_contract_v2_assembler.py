@@ -3752,6 +3752,11 @@ def _bind_native_layout_action_references(contract: dict[str, Any]) -> None:
         }
 
 
+def _action_explicitly_visible(rule: dict[str, Any]) -> bool:
+    visible = rule.get("visible")
+    return visible is True or visible == {"attrs": {"invisible": {"kind": "static", "value": False}}}
+
+
 def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
     visible = _dict(rule.get("visible"))
     visible_attrs = _dict(visible.get("attrs"))
@@ -3760,7 +3765,7 @@ def _action_invisible_constraint(rule: dict[str, Any]) -> Any:
         if value not in (None, False, "", 0):
             return deepcopy(value)
     if (
-        (rule.get("allowed") is False and rule.get("visible") is not True)
+        (rule.get("allowed") is False and not _action_explicitly_visible(rule))
         or rule.get("visible") is False
     ):
         return {"kind": "static", "value": True}
@@ -4011,7 +4016,7 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
         )
         if denied:
             status["visible"] = (
-                True if rule.get("visible") is True
+                True if _action_explicitly_visible(rule)
                 else status.get("visible", True) is not False and rule.get("allowed") is not False
             )
             status["disabled"] = True
@@ -4027,6 +4032,11 @@ def _merge_action_rules_by_backend_identity(contract: dict[str, Any]) -> None:
             if _text(status.get("reasonCode")) in {"", "OK"}:
                 status["reasonCode"] = trace_reason or "ACTION_NOT_ALLOWED"
     contract["statusContract"]["buttonStatus"] = [*status_by_identity.values(), *passthrough_statuses]
+    # A singleton runtime action must obey the same schema as a merged native
+    # action. Keep boolean source facts in sourceTrace, not the final rule.
+    for row in merged:
+        if isinstance(row.get("visible"), bool):
+            row["visible"] = {"attrs": {"invisible": {"kind": "static", "value": not row["visible"]}}}
     _enforce_single_effective_primary_action(contract)
 
 

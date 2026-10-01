@@ -814,6 +814,25 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(merged["actionSemantics"], {"conflict": True})
         self.assertEqual(merged["button"]["name"], "action_submit")
 
+    def test_runtime_visibility_booleans_normalize_without_native_counterpart(self):
+        for visible in (True, False):
+            with self.subTest(visible=visible):
+                contract = {"actionContract": {"actionRuleList": [{
+                    "actionId": "action.review", "actionKey": "review", "button": {"type": "object", "name": "review"},
+                    "visible": visible, "allowed": False, "enabled": False,
+                }], "dependencyGraph": {}}, "statusContract": {"buttonStatus": [{
+                    "btnId": "btn.review", "visible": visible, "disabled": True,
+                }]}}
+                assembler._merge_action_rules_by_backend_identity(contract)
+                rule = contract["actionContract"]["actionRuleList"][0]
+                self.assertEqual(rule["visible"], {"attrs": {"invisible": {"kind": "static", "value": not visible}}})
+                self.assertFalse(rule["allowed"])
+                self.assertEqual(contract["statusContract"]["buttonStatus"][0]["visible"], visible)
+                self.assertTrue(contract["statusContract"]["buttonStatus"][0]["disabled"])
+                assembler._merge_action_rules_by_backend_identity(contract)
+                self.assertEqual(contract["actionContract"]["actionRuleList"][0]["visible"], rule["visible"])
+                self.assertEqual(contract["statusContract"]["buttonStatus"][0]["visible"], visible)
+
     def test_ui_contract_v2_readonly_form_never_publishes_save(self):
         full = assembler.assemble_unified_page_contract_v2(
             {
