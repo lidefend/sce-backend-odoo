@@ -9637,3 +9637,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - approval-bounds-browser退出0，tpl07-1790820354040/report.json **22 PASS**：1440/390选择器位于规则列内、保存按钮滚动可达且未改设置不能保存；真实点击契约声明的付款执行对象，config.get目标为sc.payment.execution且规则开关与回读一致。桌面与子对象窄屏截图已实际查看，上一段下拉框溢出消失。无配置/业务写入。
 - 明确基线：payment.request policy.exists=false/runtimeapproval=false；sc.payment.execution已有policy18“PFL-035 付款执行审批”，单级finance_manager、活动step2187、runtimeapproval=true。不能把父对象无策略推广为子对象也无策略，也不能用计划版本“策略不存在”恢复逻辑覆盖此既有子规则。
 - 下一步复用既有付款/付款执行办理工具与PFL-035角色事实，选真实经办及现有审批人，确认受管来源、请求许可和精确清理是否可承载共享工作台审批。配置编辑器切换及只读呈现已验证，但保存/恢复、真实提交/审批仍不因此自动通过。优先沿现有业务数据和规则闭环，不重复旧49项或新造持久fixture。67条目标及detail.action-state仍未完成，无推送/合并/目标部署。
+
+### 53.216 付款执行真实审批旅程的来源身份阻断
+
+- 2a7e812c4 clean续跑，仅读取既有PFL-035验收工具/角色绑定及本轮付款执行办理/恢复直接依赖。既有PFL-035全旅程会实际付款并生成资金事实，不直接重跑；当前standard-page的付款执行旅程仅付后撤销弹窗取消和关系返回，不含真实提交审批。现有expense清理不支持任意付款执行，不能复用成宽泛删除工具。
+- P4在既有approval_runtime增加payment-review-preflight只读scope，复用原registered profile/DB/凭据/入口，事务finally rollback。不创建数据或新环境。L1 payment-review-preflight-iteration PASS，profile unit11 PASS、py_compile/bash语法PASS。首个runtime在来源身份检查FAIL，无写入。
+- 增强同一断言的实际身份输出（P4 diagnostic输入改变），payment-review-identity-iteration PASS，复用未变wrapper/profile11；identity-runtime FAIL给出权威事实：既有fixture XML ID fe_request_pfl035_001当前指向payment.request30，公司1，type pay，state approved；本轮company fixture/经办/财务审批角色属于company8。不能按历史XML ID直接办理，不能绕过公司边界或为验收改写该记录。角色读取前置通过不代表来源/整个preflight通过，不记3 PASS。
+- 下一步用当前submitter正常权限，在公司8内按既有付款申请职责与可办理状态读取有限候选及执行占用事实，选择实际授权来源；保留历史XML ID不匹配证据，不新造持久fixture、不重置库、不跑全菜单或历史49项。不从readonly诊断升级为发布或整体交付。配置保存恢复和真实审批UI仍pending，67目标active，无远端操作/目标部署。

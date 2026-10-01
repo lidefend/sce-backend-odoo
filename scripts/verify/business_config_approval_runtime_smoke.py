@@ -4045,6 +4045,48 @@ def _expense_create_request_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=expense-create-request")
 
 
+def _payment_review_preflight_checks():
+    """Read only the existing PFL-035 actors, source and approval baseline."""
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    prefix = "smart_construction_acceptance_fixture."
+    company = base.ref(prefix + "fe_company_a")
+    assert company.id == 8
+    actors = {}
+    try:
+        for key, ref, login in (
+            ("submitter", "fe_user_pfl035_finance_user", "fixture_role_pfl035_finance_user"),
+            ("reviewer", "fe_user_finance", "fixture_role_finance"),
+        ):
+            user = base.ref(prefix + ref)
+            assert user.active and user.login == login and user.company_id == company
+            actor = base(user=user.id, context={"allowed_company_ids": [company.id], "company_id": company.id, "lang": "zh_CN"})
+            actor["sc.payment.execution"].check_access_rights("read")
+            actors[key] = {"uid": user.id, "login": user.login, "company_id": actor.company.id,
+                           "create_allowed": actor["sc.payment.execution"].check_access_rights("create", raise_exception=False)}
+        source = base.ref(prefix + "fe_request_pfl035_001")
+        assert source.company_id == company and source.type == "pay", {
+            "source_id": source.id, "company_id": source.company_id.id,
+            "expected_company_id": company.id, "type": source.type, "state": source.state,
+        }
+        executions = base["sc.payment.execution"].sudo().with_context(active_test=False).search([
+            ("payment_request_id", "=", source.id)])
+        policy = base.ref(prefix + "fe_pfl035_payment_execution_approval_policy")
+        assert policy.target_model == "sc.payment.execution" and policy.company_id == company
+        assert policy.active and policy.approval_required and policy.manager_scope_key == "finance_manager"
+        print("PAYMENT_REVIEW_PREFLIGHT=" + json.dumps({
+            "actors": actors, "source": {"id": source.id, "state": source.state, "company_id": company.id},
+            "executions": [{"id": row.id, "state": row.state, "active": row.active,
+                            "validation_status": row.validation_status,
+                            "reviews": [{"id": review.id, "status": review.status, "reviewer_ids": review.reviewer_ids.ids}
+                                        for review in row.review_ids]} for row in executions],
+            "policy": {"id": policy.id, "mode": policy.mode, "step_ids": policy.step_ids.ids},
+        }, ensure_ascii=False, default=str))
+    finally:
+        base.cr.rollback()
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=payment-review-preflight rollback_verified=true diagnostic_only=true")
+
+
 def _plan_publication_entry_checks():
     """Bounded read of existing policy authority; never publish or create data."""
     from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
@@ -4223,6 +4265,8 @@ def _plan_reviewer_entry_checks():
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "payment-review-preflight":
+        return _payment_review_preflight_checks()
     if scope == "plan-publication-entry":
         return _plan_publication_entry_checks()
     if scope == "plan-reviewer-entry":
