@@ -486,7 +486,8 @@ class PaymentReviewRecoveryExecutionTest(unittest.TestCase):
         users = MagicMock()
         users.sudo.return_value = users
         users.browse.side_effect = lambda uid: SimpleNamespace(active=True, company_id=SimpleNamespace(id=8),
-            login={30: 'fixture_role_finance', 44: 'fixture_role_pfl035_finance_user'}[uid])
+            login={30: 'fixture_role_finance', 44: 'fixture_role_pfl035_finance_user',
+                   34: 'fixture_role_config_admin'}[uid])
         attachments = MagicMock()
         attachments.sudo.return_value.search_count.return_value = 0
         reviews = MagicMock()
@@ -512,6 +513,7 @@ class PaymentReviewRecoveryExecutionTest(unittest.TestCase):
         records.unlink.assert_not_called()
         env.cr.commit.assert_not_called()
 
+
     def test_changed_original_facts_never_reach_delete_or_commit(self):
         from scripts.verify.frontend_expense_probe_cleanup import recover_payment_review
         env, records = self.fake_env()
@@ -519,3 +521,71 @@ class PaymentReviewRecoveryExecutionTest(unittest.TestCase):
             with self.assertRaises(AssertionError): recover_payment_review(env, self.scope)
         records.unlink.assert_not_called()
         env.cr.commit.assert_not_called()
+
+
+class PaymentToggleRecoveryExecutionTest(unittest.TestCase):
+    def setUp(self):
+        from unittest.mock import MagicMock
+        baseline_case = PaymentToggleTransitionTest()
+        baseline_case.setUp()
+        self.baseline, self.disabled = baseline_case.baseline, baseline_case.disabled
+        record_case = PaymentReviewRecoveryExecutionTest()
+        record_case.setUp()
+        self.scope = {**record_case.scope, 'baseline': self.baseline, 'approvalToggle': True, 'phase': 'submitted'}
+        self.env, self.records = record_case.fake_env({'state': 'confirmed', 'validation_status': 'no'})
+        self.policy = MagicMock()
+        self.policy.company_id.id = 8
+        self.policy.target_model = 'sc.payment.execution'
+        model = MagicMock()
+        model.sudo.return_value.browse.return_value.exists.return_value = self.policy
+        previous_get = self.env.__getitem__.side_effect
+        self.env.__getitem__.side_effect = lambda key: model if key == 'sc.approval.policy' else previous_get(key)
+
+    def recover(self, snapshots):
+        from scripts.verify.frontend_expense_probe_cleanup import recover_payment_review
+        with patch('scripts.verify.frontend_expense_probe_cleanup.payment_review_baseline', side_effect=snapshots):
+            recover_payment_review(self.env, self.scope)
+
+    def test_disabled_policy_allows_own_auto_confirm_and_restores_native_policy(self):
+        self.recover([self.disabled, self.baseline, self.baseline])
+        self.records.unlink.assert_called_once()
+        self.policy.write.assert_called_once_with({'approval_required': True, 'mode': 'single'})
+        self.env.cr.commit.assert_called_once()
+
+    def test_scope_flag_alone_cannot_authorize_auto_confirm_cleanup(self):
+        with self.assertRaises(AssertionError): self.recover([self.baseline])
+        self.records.unlink.assert_not_called()
+        self.policy.write.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+    def test_unrelated_mutation_prevents_delete_and_restore(self):
+        from copy import deepcopy
+        changed = deepcopy(self.disabled)
+        changed['source'][0]['amount'] = 1
+        with self.assertRaises(AssertionError): self.recover([changed])
+        self.records.unlink.assert_not_called()
+        self.policy.write.assert_not_called()
+        self.env.cr.commit.assert_not_called()
+
+    def test_failed_disable_with_no_record_needs_no_policy_write(self):
+        self.scope['phase'] = 'config_disable_in_flight'
+        self.records.ids = []
+        self.records.__len__.return_value = 0
+        self.records.__iter__.side_effect = lambda: iter([])
+        self.recover([self.baseline, self.baseline, self.baseline])
+        self.policy.write.assert_not_called()
+        self.env.cr.commit.assert_called_once()
+
+    def test_failure_after_disable_before_creation_still_restores_policy(self):
+        self.scope['phase'] = 'config_disabled'
+        self.records.ids = []
+        self.records.__len__.return_value = 0
+        self.records.__iter__.side_effect = lambda: iter([])
+        self.recover([self.disabled, self.baseline, self.baseline])
+        self.policy.write.assert_called_once_with({'approval_required': True, 'mode': 'single'})
+        self.env.cr.commit.assert_called_once()
+
+    def test_failed_native_restore_readback_prevents_commit(self):
+        with self.assertRaises(AssertionError): self.recover([self.disabled, self.disabled])
+        self.policy.write.assert_called_once()
+        self.env.cr.commit.assert_not_called()

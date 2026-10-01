@@ -9745,3 +9745,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - L1 payment-toggle-scope-iteration PASS，工具27Node+39Python=66PASS及begin/record回执；新增两项包含正常关闭/恢复、来源金额/公司/步骤/定义/回调/无关定义时间改变拒绝。静态基线输入不被修改。
 - 受管expense-browser-cleanup prepare只读preflight在原tpl52回执路径执行成功（payment-toggle-preflight.log），扩展字段均真实可读。用纯校验核对实际基线与自身通过，linkeddefinition2187；原execution186、policy18、step2187及callbacks[93]事实保留。没有配置保存/业务创建/删除；本次日志不证明实际恢复。
 - 下一步将纯校验接入原recover_payment_review的明确approvalToggle模式：实际配置关闭事实必须在清理前验证；无review的confirmed仅在关闭审批权威成立时允许；清理本次经办44记录后原生恢复policy18并回读语义基线，保留真实审计时间；补正常恢复与拒绝越界mock，再执行UI关闭/提交自动通过/恢复。未接线前不能开启配置写入。67目标active，无新环境/fixture/前端构建/推送/部署。
+
+### 53.231 审批开关恢复路径接线与失败保护
+
+- Formal Product Layer P4；Layer Target/Module 既有frontend_expense_probe_cleanup及standard_preview定向测试。该逻辑只限定验收恢复，不承载P0/P1审批语义、不修改前端业务推导。候选25d8eb071加上述两文件dirty；仅影响本次payment-review恢复。实际审批产品、构建、环境和既有正确角色证据输入未变，复用53.228；L3升级/ORM、L4构建/浏览器本步不运行，L5非本地迭代范围。
+- 明确approvalToggle模式先验证实际policy18与原definition2187的限定关闭差异，再允许无review且validation_status=no的本次经办44 confirmed记录清理；scope标记本身不能授权。原审批路径继续要求真实review与审核人30。清理后原生policy.write恢复requiredtrue/modesingle，并在commit前后核对语义基线，保留真实write_date。配置请求失败、尚未创建记录时同样可恢复；外部事实变化必须在删除/写配置前拒绝。
+- L1初次仅尾部空行失败，修正后payment-toggle-recovery-iteration PASS；现有工具27Node+45Python=72PASS并记录begin/record回执。新增6项覆盖正常自动确认恢复、仅scope标记拒绝、其他事实变化拒绝、关闭请求未生效无需配置写入、关闭后创建前失败恢复、原生恢复回读失败不得commit。测试使用替身，不能冒充数据库实际恢复证据。
+- 本轮没有运行时配置或业务写入。下一步在既有payment-review浏览器分支接配置管理员关闭/保存的精确请求许可，补拒绝越界测试后运行同经办创建提交自动通过、详情双视口、原策略恢复。标准列表WEB-LC既有发布闭环不重跑；总体67目标仍active，无推送/合并/目标部署。

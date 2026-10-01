@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.230: enriched existing payment baseline policies/steps/tier definitions fields; pure validate_payment_toggle_transition accepts ONLY policy18 required/mode and linked definition active flip, ignores audit write_date ONLY those2, all source/otherpolicies/steps/callbackgroups unchanged. L1/tools66PASS withreceipt; governed readonly preflight payment-toggle-preflight.logPASS, helper accepts actual baseline linkeddefinition2187. NO config writes; validator not recovery-wired yet. Next wire approvalToggle opt-in to existing recover_payment_review: compare actual allowed disabled state before any cleanup; permit no-review auto-confirm only with authoritative disabled policy proof; delete ownoperator44 record; restore policy18 via nativewrite requiredtrue/modesingle; verify semantic baseline aftercommit while preserving audit timestamps. Add normal/failure restore mocks BEFORE live disable. Then browserconfigadmin toggle/save->operator samecreate/submit auto-confirm->UI/readback->restore. No full listLC repeat.",
+  "next_exact_step": "53.231: existing recover_payment_review now supports explicit approvalToggle; authoritative current baseline must prove only policy18/linked definition2187 disabled, sameoperator44 no-review confirmed cleanup requires validation_status=no, native policy restore and semantic postcommit readback. L1/tools72 PASS; no runtime writes. Next wire existing payment-review browser branch + exact write allowlist to configadmin34 UI disable/save, then operator44 create/submit automatic confirmation and official detail dualviewport, finally existing cleanup restores policy. Add write-scope rejection tests BEFORE live toggle. Reuse configured approval correct-role evidence53.228 and completed standard-list LC; no rebuild/ORM.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1645,6 +1645,21 @@
       "policy_id": 18,
       "definition_id": 2187,
       "config_writes": 0
+    },
+    "segment_53_231": {
+      "status": "recovery_wired_unit_verified_browser_pending",
+      "stage_head": "25d8eb071aeda6726c5af4bc9347924d64c13148",
+      "dirty_scope": [
+        "scripts/verify/frontend_expense_probe_cleanup.py",
+        "scripts/verify/test_frontend_standard_preview.py"
+      ],
+      "layer": "P4",
+      "L1": "passed",
+      "tool_tests": 72,
+      "log": "artifacts/frontend-web-fix-20260928/tpl52/payment-toggle-recovery-unit.log",
+      "config_writes": 0,
+      "runtime": "not_run; browser toggle not wired",
+      "initial_failure": "L1 trailing blank line; fixed before passing rerun"
     }
   }
 }

@@ -7,7 +7,7 @@ import re
 from datetime import datetime, timezone
 
 
-def validate_payment_review_probe_target(database, scope, row):
+def validate_payment_review_probe_target(database, scope, row, *, approval_disabled=False):
     """Authorize only this run's pre-cash execution for eventual recovery."""
     assert database == 'sc_frontend_acceptance' and scope['model'] == 'sc.payment.execution'
     assert scope['source'] == {'id': 1710, 'company_id': 8}
@@ -22,7 +22,12 @@ def validate_payment_review_probe_target(database, scope, row):
         assert row['id'] == scope['id']
     assert scope['phase'] in ('create_in_flight', 'created', 'submit', 'submit_in_flight',
                               'submitted', 'approve', 'approve_in_flight', 'done')
-    if row['state'] == 'confirmed':
+    if approval_disabled:
+        assert scope.get('approvalToggle') is True
+        assert row['validation_status'] == 'no' and not row['review_ids'] and not row['reviewer_ids']
+        if row['state'] == 'confirmed':
+            assert scope['phase'] in ('submit_in_flight', 'submitted', 'done')
+    elif row['state'] == 'confirmed':
         assert scope['phase'] in ('approve_in_flight', 'done')
         assert row['validation_status'] == 'validated'
         assert scope['origin']['source'] == 'tier.review' and scope['origin']['id'] in row['review_ids']
@@ -110,14 +115,26 @@ def recover_payment_review(env, scope, *, commit=True):
         print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'preflight', 'baseline': baseline}))
         return baseline
     baseline = scope['baseline']
-    assert payment_review_baseline(env, records.ids) == baseline, 'source/configuration/original financial facts changed'
+    current = payment_review_baseline(env, records.ids)
+    toggle = scope.get('approvalToggle') is True
+    disabled = False
+    if toggle:
+        admin = env['res.users'].sudo().browse(34)
+        assert admin.active and admin.login == 'fixture_role_config_admin' and admin.company_id.id == 8
+        assert scope['phase'] in ('config_disable_in_flight', 'config_disabled', 'open', 'open_in_flight',
+            'opened', 'create', 'create_in_flight', 'created', 'submit', 'submit_in_flight', 'submitted', 'done')
+        current_policy = next(row for row in current['policies'] if row['id'] == 18)
+        disabled = current_policy['approval_required'] is False
+        validate_payment_toggle_transition(baseline, current, disabled=disabled)
+    else:
+        assert current == baseline, 'source/configuration/original financial facts changed'
     ids = records.ids
     for record in records:
         row = {key: record[key] for key in ('id', 'note', 'state', 'paid_amount', 'source_origin', 'validation_status')}
         row.update({key: record[key].id for key in ('payment_request_id', 'company_id', 'create_uid')})
         row.update(create_date=str(record.create_date), review_ids=record.review_ids.ids,
                    reviewer_ids=sorted(set(record.review_ids.filtered(lambda r: r.status == 'approved').mapped('done_by').ids)))
-        validate_payment_review_probe_target(env.cr.dbname, scope, row)
+        validate_payment_review_probe_target(env.cr.dbname, scope, row, approval_disabled=disabled)
         assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
         definitions = {row['id'] for row in baseline['definitions']}
         for review in record.review_ids:
@@ -128,11 +145,22 @@ def recover_payment_review(env, scope, *, commit=True):
     review_ids = records.mapped('review_ids').ids
     records.unlink()
     assert not records.exists() and not env['tier.review'].sudo().browse(review_ids).exists()
-    assert payment_review_baseline(env) == baseline
+    if toggle:
+        if disabled:
+            policy = env['sc.approval.policy'].sudo().browse(18).exists()
+            assert policy and policy.company_id.id == 8 and policy.target_model == 'sc.payment.execution'
+            policy.write({'approval_required': True, 'mode': 'single'})
+        validate_payment_toggle_transition(baseline, payment_review_baseline(env), disabled=False)
+    else:
+        assert payment_review_baseline(env) == baseline
     if commit:
         env.cr.commit()
         env.invalidate_all()
-        assert payment_review_baseline(env) == baseline
+        restored = payment_review_baseline(env)
+        if toggle:
+            validate_payment_toggle_transition(baseline, restored, disabled=False)
+        else:
+            assert restored == baseline
         assert not env['sc.payment.execution'].sudo().browse(ids).exists()
     print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'record_ids': ids, 'review_ids': review_ids}))
 
