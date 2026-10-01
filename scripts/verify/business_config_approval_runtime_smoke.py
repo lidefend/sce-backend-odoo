@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Rollback-only smoke for low-code approval policy runtime consumption.
+"""Governed smoke for low-code approval policy runtime consumption.
 
 This covers the shared configuration chain and newly adopted contract events, plans, construction diaries and tax registrations.
-It does not claim full business-document coverage; every write is rolled back.
+It does not claim full business-document coverage. Default cases roll back; explicit
+concurrency and ordinary-role development scopes retain their committed samples.
 """
 
 import os
@@ -4624,8 +4625,180 @@ def _iteration_concurrency_checks(kind):
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=%s-concurrency retained_development_samples=true" % kind)
 
 
+def _ordinary_pm_spec(scope, marker):
+    """Five bounded native capability cases; no publication or role configuration."""
+    assert marker.startswith("ITER-PM-") and len(marker) > 20, "invalid ordinary-role marker"
+    specs = {
+        "ordinary-role-safety-plan": {"model": "sc.safety.plan", "marker_field": "name",
+            "values": {"name": marker, "project_id": 10, "description": marker + " 方案说明"},
+            "defaults": ["plan_type", "plan_date", "owner_id"], "terminal": "approved"},
+        "ordinary-role-tender-purchase": {"model": "tender.doc.purchase", "marker_field": "remark",
+            "values": {"remark": marker, "amount": 1}, "defaults": ["apply_date", "applicant_id"], "terminal": "approved"},
+        "ordinary-role-labor-plan": {"model": "sc.labor.plan", "marker_field": "note",
+            "values": {"project_id": 10, "note": marker}, "defaults": ["name", "plan_date", "owner_id"],
+            "line": {"work_content": marker, "planned_qty": 1}, "terminal": "approved"},
+        "ordinary-role-subcontract-plan": {"model": "sc.subcontract.plan", "marker_field": "subcontract_scope",
+            "values": {"project_id": 10, "subcontract_scope": marker}, "defaults": ["name", "plan_date", "owner_id"],
+            "line": {"work_scope": marker, "estimated_amount": 1}, "total": {"estimated_amount": 1}, "terminal": "approved"},
+        "ordinary-role-rental-order": {"model": "sc.material.rental.order", "marker_field": "note",
+            "values": {"project_id": 10, "note": marker}, "defaults": ["name", "rental_date", "owner_id"],
+            "line": {"material_name": marker, "qty": 1, "rental_days": 1, "daily_price": 1},
+            "total": {"amount_total": 1}, "terminal": "active"},
+    }
+    assert scope in specs, "unsupported ordinary-role scope"
+    return specs[scope]
+
+
+def _ordinary_pm_readback(record, spec, values, state, expected_line_ids=None):
+    assert record.env.uid == 32 and not record.env.su and record.env.company.id == 8, "ordinary-role read identity drift"
+    record.invalidate_recordset()
+    wanted = list(dict.fromkeys(["id", "state", "project_id", "company_id", "create_uid"]
+        + list(values) + spec["defaults"] + list(spec.get("total", {}))))
+    rows = record.read(wanted)
+    assert len(rows) == 1 and rows[0]["id"] == record.id, "ordinary-role record not readable"
+    row = rows[0]
+    assert row["state"] == state, "unexpected ordinary-role state: %s" % row["state"]
+    for field, expected in {"project_id": 10, "company_id": 8, "create_uid": 32, **values, **spec.get("total", {})}.items():
+        observed = row[field][0] if isinstance(row[field], (list, tuple)) and row[field] else row[field]
+        assert observed == expected, "ordinary-role field mismatch: %s" % field
+    for field in spec["defaults"]:
+        assert row[field], "missing native default: %s" % field
+        if field in ("owner_id", "applicant_id"):
+            assert row[field][0] == 32, "native default actor drift"
+    result = {"record": row, "lines": []}
+    if spec.get("line"):
+        lines = record.line_ids
+        assert len(lines) == 1, "ordinary-role requires one exact child line"
+        if expected_line_ids is not None:
+            assert lines.ids == expected_line_ids, "ordinary-role child identity drift"
+        child = lines.read(["id", "create_uid", *spec["line"]])[0]
+        assert child["create_uid"][0] == 32
+        for field, expected in spec["line"].items():
+            assert child[field] == expected, "ordinary-role child value mismatch: %s" % field
+        result["lines"] = [child]
+    return result
+
+
+def _ordinary_pm_assigned_review(base, record):
+    """Only known fixture identities actually assigned by the existing policy may decide."""
+    known = {"fixture_role_pm": 32, "fixture_role_finance": 30, "fixture_role_executive": 37}
+    decisions = []
+    for _step in range(32):
+        record.invalidate_recordset()
+        if record.state == "approved":
+            assert record.validation_status == "validated", "configured approval did not validate all tiers"
+            return decisions
+        assert record.state == "submitted" and record.review_ids, "approval prerequisite: no submitted review instance"
+        reviews = record.review_ids
+        before = [(row.id, row.status) for row in reviews]
+        assigned = reviews.filtered(lambda row: row.status in ("waiting", "pending")).mapped("reviewer_ids").ids
+        users = base["res.users"].sudo().search([("id", "in", assigned), ("login", "in", list(known)), ("active", "=", True)])
+        selected = None
+        selected_login = None
+        for user in users:
+            assert user.id == known[user.login] and not user.share and 8 in user.company_ids.ids, "fixture reviewer identity drift"
+            reviewer = base(user=user.id, su=False, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+            assert not reviewer.su and reviewer.uid == user.id and reviewer.company.id == 8
+            candidate = reviewer[record._name].browse(record.id)
+            candidate.check_access_rights("read")
+            candidate.check_access_rule("read")
+            if candidate.can_review:
+                selected = candidate
+                selected_login = user.login
+                break
+        assert selected is not None, "approval prerequisite: no assigned authorized fixture reviewer"
+        selected.validate_tier()
+        record.invalidate_recordset()
+        after = [(row.id, row.status) for row in record.review_ids]
+        assert after != before, "native reviewer did not progress; comment/wizard prerequisite unresolved"
+        decisions.append({"uid": selected.env.uid, "login": selected_login, "company_id": selected.env.company.id,
+            "sudo": selected.env.su, "can_review_before": True, "assigned_reviewer_ids": assigned,
+            "before": before, "after": after, "validation_status": record.validation_status})
+    raise AssertionError("ordinary-role approval exceeded bounded step count")
+
+
+def _ordinary_pm_capability_checks(scope):
+    """Retained developer samples, native PM writes, committed non-elevated readback."""
+    from datetime import datetime, timezone
+    from odoo import api
+    base = _env()
+    receipt = {"scope": scope, "status": "not_run", "committed": False,
+        "capability_only": True, "published_user_journey": False, "sources_created": []}
+    try:
+        assert base.cr.dbname == "sc_frontend_acceptance", "wrong ordinary-role database"
+        marker = "ITER-PM-%s-%s" % (scope.removeprefix("ordinary-role-").upper(), datetime.now(timezone.utc).strftime("%m%d%H%M%S%f"))
+        spec = _ordinary_pm_spec(scope, marker)
+        users = base["res.users"].sudo().search([("login", "=", "fixture_role_pm"), ("active", "=", True)])
+        assert len(users) == 1 and users.id == 32 and not users.share and users.company_id.id == 8 and 8 in users.company_ids.ids, "PM identity drift"
+        actor = base(user=32, su=False, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+        assert actor.uid == 32 and not actor.su and actor.company.id == 8, "elevated or wrong ordinary-role actor"
+        actor.cr.execute("SET LOCAL statement_timeout = '30000ms'")
+        project = actor["project.project"].browse(10)
+        project_row = project.read(["id", "company_id"])
+        assert len(project_row) == 1 and project_row[0]["id"] == 10 and project_row[0]["company_id"][0] == 8, "PM project prerequisite missing"
+        receipt.update({"marker": marker, "model": spec["model"], "database": base.cr.dbname, "uid": 32, "company_id": 8, "project_id": 10})
+        values = dict(spec["values"])
+        if spec["model"] == "tender.doc.purchase":
+            bid = actor["tender.bid"].search([("project_id", "=", 10)], order="id", limit=1)
+            if not bid:
+                bid = actor["tender.bid"].create({"project_id": 10, "tender_name": marker})
+                receipt["sources_created"].append({"model": "tender.bid", "id": bid.id, "marker": marker})
+            bid_row = bid.read(["id", "project_id"])[0]
+            assert bid_row["project_id"][0] == 10
+            values["bid_id"] = bid.id
+        if spec["model"] == "sc.material.rental.order":
+            supplier = actor["res.partner"].search([("supplier_rank", ">", 0), ("company_id", "in", [False, 8])], order="id", limit=1)
+            assert supplier, "PM prerequisite: no visible supplier; adapt data through an authorized native source flow"
+            assert supplier.read(["id", "supplier_rank"])[0]["supplier_rank"] > 0
+            values["supplier_id"] = supplier.id
+        create_values = dict(values)
+        if spec.get("line"):
+            create_values["line_ids"] = [(0, 0, dict(spec["line"]))]
+        record = actor[spec["model"]].create(create_values)
+        receipt["id"] = record.id
+        saved = _ordinary_pm_readback(record, spec, values, "draft")
+        line_ids = [row["id"] for row in saved["lines"]]
+        receipt["line_ids"] = line_ids
+        receipt["draft"] = saved
+        record.action_submit()
+        record.invalidate_recordset()
+        assert record.state in ("submitted", "approved"), "native submission did not enter approval state"
+        receipt["submitted"] = _ordinary_pm_readback(record, spec, values, record.state, line_ids)
+        receipt["review_decisions"] = _ordinary_pm_assigned_review(base, record) if record.state == "submitted" else []
+        receipt["approval_path"] = "assigned_fixture_review" if receipt["review_decisions"] else "native_auto_approved"
+        if not receipt["review_decisions"]:
+            assert not record.review_ids, "unexpected submitted approval history; classify native path before claiming auto-approval"
+        receipt["approved"] = _ordinary_pm_readback(record, spec, values, "approved", line_ids)
+        if spec["terminal"] == "active":
+            record.action_activate()
+            receipt["terminal_action"] = "action_activate"
+        receipt["terminal"] = _ordinary_pm_readback(record, spec, values, spec["terminal"], line_ids)
+        actor.flush_all()
+        print("ORDINARY_ROLE_PENDING=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        base.cr.commit()
+        receipt["committed"] = True
+        with base.registry.cursor() as fresh_cr:
+            fresh = api.Environment(fresh_cr, 32, {"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"}, su=False)
+            fresh_cr.execute("SET LOCAL statement_timeout = '30000ms'")
+            receipt["committed_readback"] = _ordinary_pm_readback(fresh[spec["model"]].browse(record.id), spec, values, spec["terminal"], line_ids)
+            for source in receipt["sources_created"]:
+                row = fresh[source["model"]].browse(source["id"]).read(["id", "project_id", "tender_name", "create_uid"])[0]
+                assert row["project_id"][0] == 10 and row["tender_name"] == marker and row["create_uid"][0] == 32
+            fresh_cr.rollback()
+        receipt["status"] = "passed"
+        print("ORDINARY_ROLE_CAPABILITY=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=%s retained_development_samples=true capability_only=true published_user_journey=false" % scope)
+    except Exception as exc:
+        base.cr.rollback()
+        receipt.update({"status": "failed", "error": str(exc), "pending_transaction_rolled_back": True})
+        print("ORDINARY_ROLE_CAPABILITY=" + json.dumps(receipt, ensure_ascii=False, default=str), flush=True)
+        raise
+
+
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope.startswith("ordinary-role-"):
+        return _ordinary_pm_capability_checks(scope)
     if scope in ("rental-concurrency", "subcontract-concurrency", "red-flush-concurrency"):
         return _iteration_concurrency_checks(scope.removesuffix("-concurrency"))
     if scope == "concurrency-source-preflight":

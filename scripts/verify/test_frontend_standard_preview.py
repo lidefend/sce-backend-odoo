@@ -771,3 +771,228 @@ class CommittedBusinessConflictProbeTest(unittest.TestCase):
         self.actors[0].su = True
         with self.assertRaises(AssertionError): self.execute()
         self.cursors[0].commit.assert_not_called()
+
+
+class OrdinaryRoleCapabilityProbeTest(unittest.TestCase):
+    def load_functions(self, **extra):
+        path = Path(__file__).with_name('business_config_approval_runtime_smoke.py')
+        methods = [node for node in ast.parse(path.read_text()).body
+                   if isinstance(node, ast.FunctionDef) and node.name.startswith('_ordinary_pm_')]
+        for method in methods:
+            method.body = [node for node in method.body if not isinstance(node, ast.ImportFrom)]
+        import datetime
+        namespace = {'json': json, 'datetime': datetime.datetime, 'timezone': datetime.timezone, **extra}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
+        return namespace
+
+    def prepare(self, scope='ordinary-role-safety-plan', database='sc_frontend_acceptance', uid=32,
+                elevated=False, missing_supplier=False, create_bid=False, fail_submit=False, fresh_state=None):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        self.base = MagicMock()
+        self.base.cr.dbname = database
+        metadata = MagicMock(id=uid, share=False, company_id=SimpleNamespace(id=8), company_ids=SimpleNamespace(ids=[8]))
+        metadata.__len__.return_value = 1
+        self.base.__getitem__.return_value.sudo.return_value.search.return_value = metadata
+        self.actor = MagicMock(uid=32, su=elevated, company=SimpleNamespace(id=8))
+        self.actor.cr = self.base.cr
+        self.base.return_value = self.actor
+        self.models = {}
+        self.actor.__getitem__.side_effect = lambda model: self.models.setdefault(model, MagicMock())
+        self.actor['project.project'].browse.return_value.read.return_value = [{'id': 10, 'company_id': [8, 'A']}]
+        bid = MagicMock(id=41)
+        bid.read.return_value = [{'id': 41, 'project_id': [10, 'Project']}]
+        self.actor['tender.bid'].search.return_value = False if create_bid else bid
+        self.actor['tender.bid'].create.return_value = bid
+        supplier = MagicMock(id=71)
+        supplier.read.return_value = [{'id': 71, 'supplier_rank': 1}]
+        self.actor['res.partner'].search.return_value = False if missing_supplier else supplier
+        self.fresh = MagicMock(uid=32, su=False, company=SimpleNamespace(id=8))
+        self.fresh_cursor = MagicMock()
+        self.fresh_cursor.__enter__.return_value = self.fresh_cursor
+        self.base.registry.cursor.return_value = self.fresh_cursor
+        self.api = SimpleNamespace(Environment=MagicMock(return_value=self.fresh))
+        self.ns = self.load_functions(_env=lambda: self.base, api=self.api)
+        self.scope = scope
+        try:
+            spec = self.ns['_ordinary_pm_spec'](scope, 'ITER-PM-UNIT-1234567890123456')
+        except AssertionError:
+            return self
+        self.record = MagicMock(id=501, env=self.actor, state='draft', _name=spec['model'])
+        self.record.review_ids = []
+        self.record.line_ids.ids = [601]
+        self.record.line_ids.__len__.return_value = 1
+        self.values = {}
+        def create(values):
+            self.values.update(values)
+            return self.record
+        self.actor[spec['model']].create.side_effect = create
+        def read(names):
+            row = {'id': 501, 'state': self.record.state, 'project_id': [10, 'Project'], 'company_id': [8, 'A'],
+                   'create_uid': [32, 'PM'], 'owner_id': [32, 'PM'], 'applicant_id': [32, 'PM'], 'name': 'Native Sequence',
+                   'plan_date': '2026-10-01', 'rental_date': '2026-10-01', 'apply_date': '2026-10-01', 'plan_type': 'general',
+                   **{key: value for key, value in self.values.items() if key not in ('line_ids', 'project_id')},
+                   **spec.get('total', {})}
+            for key in ('bid_id', 'supplier_id'):
+                if key in row: row[key] = [row[key], 'Source']
+            return [{key: row[key] for key in names}]
+        self.record.read.side_effect = read
+        self.record.line_ids.read.side_effect = lambda names: [{'id': 601, 'create_uid': [32, 'PM'],
+            **self.values['line_ids'][0][2]}]
+        def submit():
+            if fail_submit: raise AssertionError('native submission denied')
+            self.record.state = 'approved'
+        self.record.action_submit.side_effect = submit
+        self.record.action_activate.side_effect = lambda: setattr(self.record, 'state', 'active')
+        self.fresh_record = MagicMock(id=501, env=self.fresh)
+        self.fresh_record.read.side_effect = lambda names: [{**read(names)[0], **({'state': fresh_state} if fresh_state else {})}]
+        self.fresh_record.line_ids = self.record.line_ids
+        self.fresh.__getitem__.return_value.browse.return_value = self.fresh_record
+        if create_bid:
+            source = MagicMock()
+            source.read.return_value = [{'id': 41, 'project_id': [10, 'Project'], 'create_uid': [32, 'PM']}]
+            def source_read(names):
+                return [{'id': 41, 'project_id': [10, 'Project'], 'create_uid': [32, 'PM'],
+                         'tender_name': self.actor['tender.bid'].create.call_args.args[0]['tender_name']}]
+            source.read.side_effect = source_read
+            self.fresh.__getitem__.side_effect = lambda model: SimpleNamespace(browse=lambda _id: source if model == 'tender.bid' else self.fresh_record)
+        return self
+
+    def execute(self):
+        with patch('builtins.print') as output:
+            try:
+                self.ns['_ordinary_pm_capability_checks'](self.scope)
+            finally:
+                self.output = output
+                receipts = [json.loads(call.args[0].split('=', 1)[1]) for call in output.call_args_list
+                            if call.args[0].startswith('ORDINARY_ROLE_CAPABILITY=')]
+                self.receipt = receipts[-1] if receipts else None
+
+    def test_five_scopes_create_as_pm_and_require_fresh_committed_readback(self):
+        for suffix in ['safety-plan', 'tender-purchase', 'labor-plan', 'subcontract-plan', 'rental-order']:
+            with self.subTest(scope=suffix):
+                self.prepare('ordinary-role-' + suffix).execute()
+                self.base.assert_called_once_with(user=32, su=False, context={'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'})
+                self.base.cr.commit.assert_called_once()
+                self.api.Environment.assert_called_once_with(self.fresh_cursor, 32,
+                    {'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'}, su=False)
+                self.assertEqual(self.receipt['status'], 'passed')
+                self.assertTrue(self.receipt['committed'])
+                self.assertTrue(self.receipt['capability_only'])
+                self.assertFalse(self.receipt['published_user_journey'])
+                self.assertEqual(self.receipt['draft']['record']['state'], 'draft')
+                self.assertEqual(self.receipt['committed_readback']['record']['state'], 'active' if suffix == 'rental-order' else 'approved')
+                for model in self.models.values(): model.sudo.assert_not_called()
+                if suffix == 'rental-order': self.record.action_activate.assert_called_once()
+                else: self.record.action_activate.assert_not_called()
+
+    def test_identity_and_unknown_scope_fail_before_business_create(self):
+        for options in [{'database': 'production'}, {'uid': 1}, {'elevated': True}, {'scope': 'ordinary-role-other'}]:
+            with self.subTest(options=options):
+                self.prepare(**options)
+                with self.assertRaises(AssertionError): self.execute()
+                self.base.cr.commit.assert_not_called()
+                self.base.cr.rollback.assert_called_once()
+                self.assertFalse(self.receipt['committed'])
+                for model in self.models.values(): model.create.assert_not_called()
+
+    def test_missing_supplier_fails_without_elevated_source_creation(self):
+        self.prepare('ordinary-role-rental-order', missing_supplier=True)
+        with self.assertRaisesRegex(AssertionError, 'no visible supplier'): self.execute()
+        self.actor['res.partner'].create.assert_not_called()
+        self.record.action_submit.assert_not_called()
+        self.base.cr.commit.assert_not_called()
+
+    def test_missing_tender_source_is_created_by_pm_and_persistently_verified(self):
+        self.prepare('ordinary-role-tender-purchase', create_bid=True).execute()
+        self.actor['tender.bid'].create.assert_called_once()
+        self.assertEqual(self.actor['tender.bid'].create.call_args.args[0]['project_id'], 10)
+        self.assertEqual(self.receipt['sources_created'][0]['id'], 41)
+        self.assertTrue(self.receipt['committed'])
+
+    def test_native_submission_failure_rolls_back_pending_samples(self):
+        self.prepare(fail_submit=True)
+        with self.assertRaisesRegex(AssertionError, 'native submission denied'): self.execute()
+        self.base.cr.commit.assert_not_called()
+        self.base.cr.rollback.assert_called_once()
+        self.assertEqual(self.receipt['status'], 'failed')
+        self.assertFalse(self.receipt['committed'])
+
+    def test_postcommit_readback_mismatch_reports_failure_without_claiming_rollback_of_committed_data(self):
+        self.prepare(fresh_state='draft')
+        with self.assertRaisesRegex(AssertionError, 'unexpected ordinary-role state'): self.execute()
+        self.base.cr.commit.assert_called_once()
+        self.assertTrue(self.receipt['committed'])
+        self.assertEqual(self.receipt['id'], 501)
+        self.assertEqual(self.receipt['status'], 'failed')
+        self.assertFalse(any('SMOKE=PASS' in call.args[0] for call in self.output.call_args_list))
+
+    def test_wrong_child_value_cannot_be_promoted_to_pass(self):
+        self.prepare('ordinary-role-labor-plan')
+        self.record.line_ids.read.side_effect = lambda names: [{'id': 601, 'create_uid': [32, 'PM'], 'work_content': 'unowned', 'planned_qty': 1}]
+        with self.assertRaisesRegex(AssertionError, 'child value mismatch'): self.execute()
+        self.base.cr.commit.assert_not_called()
+
+    def test_original_scope_marker_and_terminal_are_bounded(self):
+        ns = self.load_functions()
+        with self.assertRaisesRegex(AssertionError, 'marker'):
+            ns['_ordinary_pm_spec']('ordinary-role-safety-plan', 'arbitrary')
+        with self.assertRaisesRegex(AssertionError, 'unsupported'):
+            ns['_ordinary_pm_spec']('ordinary-role-other', 'ITER-PM-UNIT-1234567890123456')
+
+    def test_wrong_project_company_stops_before_any_create(self):
+        self.prepare()
+        self.actor['project.project'].browse.return_value.read.return_value = [{'id': 10, 'company_id': [9, 'Other']}]
+        with self.assertRaisesRegex(AssertionError, 'PM project prerequisite'): self.execute()
+        self.base.cr.commit.assert_not_called()
+        for model in self.models.values(): model.create.assert_not_called()
+
+    def test_configured_approval_uses_only_assigned_fixture_identity_and_native_decision(self):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        class Reviews(list):
+            def filtered(self, predicate): return Reviews(row for row in self if predicate(row))
+            def mapped(self, name): return SimpleNamespace(ids=[37])
+        for authorized in (True, False):
+            with self.subTest(authorized=authorized):
+                base = MagicMock()
+                actor = MagicMock(uid=37, su=False, company=SimpleNamespace(id=8))
+                base.return_value = actor
+                user = SimpleNamespace(id=37, login='fixture_role_executive', share=False, company_ids=SimpleNamespace(ids=[8]))
+                base.__getitem__.return_value.sudo.return_value.search.return_value = [user] if authorized else []
+                record = MagicMock(id=501, _name='sc.safety.plan', state='submitted', validation_status='pending')
+                review = SimpleNamespace(id=901, status='pending')
+                record.review_ids = Reviews([review])
+                candidate = actor.__getitem__.return_value.browse.return_value
+                candidate.env = actor
+                candidate.can_review = True
+                def validate():
+                    review.status = 'approved'
+                    record.state = 'approved'
+                    record.validation_status = 'validated'
+                candidate.validate_tier.side_effect = validate
+                method = self.load_functions()['_ordinary_pm_assigned_review']
+                if authorized:
+                    decisions = method(base, record)
+                    candidate.validate_tier.assert_called_once()
+                    base.assert_called_once_with(user=37, su=False, context={'allowed_company_ids': [8], 'company_id': 8, 'lang': 'zh_CN'})
+                    self.assertEqual(decisions[0]['uid'], 37)
+                    self.assertEqual(decisions[0]['assigned_reviewer_ids'], [37])
+                    self.assertFalse(decisions[0]['sudo'])
+                    self.assertEqual(decisions[0]['validation_status'], 'validated')
+                else:
+                    with self.assertRaisesRegex(AssertionError, 'no assigned authorized fixture reviewer'): method(base, record)
+                    candidate.validate_tier.assert_not_called()
+                    base.assert_not_called()
+
+    def test_unavailable_configured_reviewer_rolls_back_the_whole_pending_sample(self):
+        self.prepare()
+        def submit(): self.record.state = 'submitted'
+        self.record.action_submit.side_effect = submit
+        def denied_review(*args): raise AssertionError('no assigned authorized fixture reviewer')
+        self.ns['_ordinary_pm_assigned_review'] = denied_review
+        with self.assertRaisesRegex(AssertionError, 'no assigned authorized'): self.execute()
+        self.base.cr.commit.assert_not_called()
+        self.base.cr.rollback.assert_called_once()
+        self.assertEqual(self.receipt['submitted']['record']['state'], 'submitted')
+        self.assertFalse(self.receipt['committed'])
