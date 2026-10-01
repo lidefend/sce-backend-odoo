@@ -1184,8 +1184,11 @@ class TestConfiguredNativeTree(unittest.TestCase):
     def test_stale_identity_never_falls_back_to_same_name(self):
         patch = self.patch(label="Changed")
         patch["target"] = "/obsolete/name"
-        with self.assertRaisesRegex(ValueError, "CONFIG_TARGET_STALE"):
+        with self.assertRaisesRegex(ValueError, "CONFIG_TARGET_STALE") as caught:
             self.compile(self.tree, [self.config([patch])])
+        self.assertEqual(caught.exception.code, "CONFIG_TARGET_STALE")
+        self.assertEqual(caught.exception.target, "/obsolete/name")
+        self.assertEqual(caught.exception.details["configuration"], self.config([patch]).name)
 
     def test_same_priority_conflict_is_independent_of_database_id_and_order(self):
         configs = [self.config([self.patch(label="A")], 1), self.config([self.patch(label="B")], 99)]

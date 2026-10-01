@@ -18,8 +18,26 @@ def is_configured_surface(config):
     }
 
 
+class FormConfigurationError(ValueError):
+    """A rejected configuration, distinct from an unavailable native view."""
+
+    def __init__(self, code, target, **details):
+        self.code = code
+        self.target = target
+        self.details = dict(details)
+        super().__init__(json.dumps({"code": code, "target": target, **details}, ensure_ascii=False, sort_keys=True))
+
+    def public_details(self):
+        # Do not disclose arbitrary compiler diagnostics, field values or patches.
+        result = {"reason_code": self.code}
+        for key, value in (("configuration", self.details.get("configuration")), ("target", self.target)):
+            if isinstance(value, str):
+                result[key] = value[:512]
+        return result
+
+
 def _error(code, target, **details):
-    raise ValueError(json.dumps({"code": code, "target": target, **details}, ensure_ascii=False, sort_keys=True))
+    raise FormConfigurationError(code, target, **details)
 
 
 def _restricted(node, key):
