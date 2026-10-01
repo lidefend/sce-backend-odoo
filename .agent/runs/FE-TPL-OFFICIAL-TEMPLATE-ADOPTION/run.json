@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.232 actual toggle loop22PASS (tpl07-1790823767946), tools73PASS; original policy18/step2187/definition2187 restored, ownrecord200 deleted, official detail1440/390 inspected. Owner explicitly adds configurable workflow validation: next use existing approval editor/steps.set and actual reviewer roles to test changed steps/reviewer/order -> operator44 create+submit -> assigned sequential handling + non-assignee rejection -> restore original steps/definitions/callbackgroups. First inspect bounded approval_policy_configuration steps semantics and existing recovery, extend same recovery for exact reversible step mutation with focused tests BEFORE new config writes; no new fixtures/environment. Reuse configured original-role53.228 and toggle53.232; do not repeat list WEB-LC or ORM. Scope remains full67 official adoption, status active. Latest owner clarification: normal business create/update in existing authorized local acceptance is allowed and may remain; do not overengineer per-record cleanup. For next configurable workflow loop retain attributable normal records; only shared configuration needs documented original/final state and recovery on failure. Reuse existing tools, avoid another elaborate cleanup extension as prerequisite; preserve DB/company/permission authority.",
+  "next_exact_step": "53.233 two-stage UI config saved and source201 retained. Finance first review passed and state remains draft pending/waiting; executive my-work empty -> browserfailed. Original active policy18/step2187 restored via public steps.set + config.get; newly added native step retained inactive, no business cleanup. NEXT diagnose existing201 read-only using bounded registered approval runtime entry: actual tier.review statuses/reviewer IDs, fixtureexecutive groups, can_review, ACL/record_scope and authorize_review_origin; source already gives executive finance_read so do not assume missing ACL. Record201 replaces recreating workflow. Readonly diagnosis may need minimal existing tool extension; no full ORM/inventory. Then fix owning product/data/config layer and resume201, avoid restarting whole create journey. L1/tools75PASS; no product changes/build/upgrade. Owner explicitly prioritizes functional progress and allows normal business data retention/necessary corrections; common config only needs known final state.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1677,6 +1677,20 @@
       ],
       "failure_owner": "P4 checkbox target then missing injected request context; latter policy save was missed by interceptor but existing recovery restored; unconditional approval-set deny now installed",
       "owner_extension": "Approval workflow itself is configurable; verify step/reviewer/order changes and restore, not only toggle."
+    },
+    "segment_53_233": {
+      "status": "sequential_first_review_passed_second_reviewer_task_missing",
+      "stage_head": "e835021f9",
+      "layer": "P4",
+      "L1": "passed",
+      "tool_tests": 75,
+      "report": "artifacts/frontend-web-fix-20260928/tpl07-1790824095790/report.json",
+      "retained_record_id": 201,
+      "first_review": "operator44 created/submitted; finance30 reviewed; draft waiting/pending correctly retained",
+      "failure": "executive my-work contains no assigned201 after first approval",
+      "configuration": "original active policy18/step2187 restored via steps.set then config.get matching; new step retained inactive by native behavior",
+      "recovery": "no business deletion per owner authorization",
+      "classification": "runtime functional gap observed; actual reviewer assignment/can_review/ACL/scope cause not yet determined"
     }
   }
 }

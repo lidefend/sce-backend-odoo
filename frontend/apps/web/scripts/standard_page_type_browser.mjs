@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { paymentReviewOriginalSteps, paymentReviewFlowSteps, paymentReviewWriteKind, versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -136,7 +136,7 @@ async function login(role) {
       if (result.ok === true) {
         if (paymentKind === 'open') paymentReview.continuation = result.data?.result?.raw_action;
         if (paymentKind === 'create') paymentReview.id = Number(result.data?.id || result.data?.record?.id);
-        paymentReview.phase = { config_disable: 'config_disabled', open: 'opened', create: 'created', submit: 'submitted', approve: 'done' }[paymentKind];
+        paymentReview.phase = { config_disable: 'config_disabled', flow_config: 'flow_steps', flow_steps: 'flow_configured', restore_steps: 'flow_restored', open: 'opened', create: 'created', submit: 'submitted', approve: paymentReview.approvalFlow && paymentReview.reviewStage === 1 ? 'first_approved' : 'done' }[paymentKind];
       }
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
       return route.fulfill({ response });
@@ -957,8 +957,10 @@ try {
     check('payment review: exact current baseline captured', preflight.status === 'preflight' && preflight.baseline.execution_ids.includes(186));
     paymentReview.baseline = preflight.baseline;
     paymentReview.approvalToggle = process.env.TPL07_PAYMENT_APPROVAL_TOGGLE === '1';
+    paymentReview.approvalFlow = process.env.TPL07_PAYMENT_APPROVAL_FLOW === '1';
+    check('payment configuration: one configuration mode', !(paymentReview.approvalToggle && paymentReview.approvalFlow));
     await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
-    if (paymentReview.approvalToggle) {
+    if (paymentReview.approvalToggle || paymentReview.approvalFlow) {
       check('payment toggle: complete success journey selected', process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1');
       const admin = await login('fixture_role_config_admin');
       const entry = report.routeAuthority?.primary_actions?.find(row => row.model === 'payment.request');
@@ -982,17 +984,35 @@ try {
       check('payment toggle: original policy18 loaded', original.ok === true && original.data?.policy?.id === 18
         && original.data.policy.approval_required === true && original.data.policy.mode === 'single');
       await panel.getByText('保存状态：已同步', { exact: true }).waitFor();
-      await panel.getByText('启用审批', { exact: true }).click();
-      check('payment toggle: visible control disables approval', !await panel.getByRole('checkbox', { name: '启用审批', exact: true }).isChecked());
-      paymentReview.phase = 'config_disable';
+      if (paymentReview.approvalFlow) {
+        const steps = paymentReviewFlowSteps(paymentReview);
+        check('payment flow: original finance step supports sequential extension', Array.isArray(steps));
+        await panel.getByRole('textbox', { name: '第1步名称', exact: true }).fill(steps[0].name);
+        await panel.getByRole('button', { name: '添加步骤', exact: true }).click();
+        await panel.getByRole('textbox', { name: '第2步名称', exact: true }).fill(steps[1].name);
+        await panel.getByLabel('第2步审批岗位', { exact: true }).click();
+        await admin.page.getByText('管理层/总经理终审', { exact: true }).last().click();
+        paymentReview.phase = 'flow_config';
+      } else {
+        await panel.getByText('启用审批', { exact: true }).click();
+        check('payment toggle: visible control disables approval', !await panel.getByRole('checkbox', { name: '启用审批', exact: true }).isChecked());
+        paymentReview.phase = 'config_disable';
+      }
       await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
       await panel.getByRole('button', { name: '保存审批设置', exact: true }).click();
       await admin.page.getByRole('dialog', { name: '确认配置影响', exact: true }).getByRole('button', { name: '确认继续', exact: true }).click();
       await admin.page.getByText('审批设置已保存', { exact: true }).waitFor();
-      const saved = report.paymentReviewWrites?.find(row => row.kind === 'config_disable')?.result;
-      check('payment toggle: disabled policy saved without step mutation', paymentReview.phase === 'config_disabled'
-        && saved?.ok === true && saved.data?.policy?.approval_required === false && saved.data.policy.mode === 'none');
-      await admin.page.screenshot({ path: path.join(out, 'payment-approval-disabled.png'), fullPage: true });
+      if (paymentReview.approvalFlow) {
+        const saved = report.paymentReviewWrites?.find(row => row.kind === 'flow_steps')?.result;
+        check('payment flow: sequential configuration saved', paymentReview.phase === 'flow_configured'
+          && saved?.ok === true && saved.data?.policy?.mode === 'linear'
+          && saved.data.policy.steps.filter(step => step.active).map(step => step.approval_scope_key).join(',') === 'finance_manager,executive');
+      } else {
+        const saved = report.paymentReviewWrites?.find(row => row.kind === 'config_disable')?.result;
+        check('payment toggle: disabled policy saved without step mutation', paymentReview.phase === 'config_disabled'
+          && saved?.ok === true && saved.data?.policy?.approval_required === false && saved.data.policy.mode === 'none');
+      }
+      await admin.page.screenshot({ path: path.join(out, 'payment-approval-configured.png'), fullPage: true });
       await admin.ctx.close();
     }
     paymentReview.phase = 'open';
@@ -1072,8 +1092,12 @@ try {
         await operator.page.reload();
       } else {
       check('payment review: configured approval waits', waiting?.state === 'draft' && ['waiting', 'pending'].includes(waiting.validation_status));
-      await operator.ctx.close();
-      manager = await login('fixture_role_finance');
+      check('payment flow: submitting operator has no reviewer action', await operator.page.getByRole('button', { name: '审批通过', exact: true }).count() === 0);
+      const reviewers = paymentReview.approvalFlow ? ['fixture_role_finance', 'fixture_role_executive'] : ['fixture_role_finance'];
+      for (const [index, reviewer] of reviewers.entries()) {
+      await manager.ctx.close();
+      manager = await login(reviewer);
+      paymentReview.reviewStage = index + 1;
       const [workspaceResponse] = await Promise.all([
         manager.page.waitForResponse(response => {
           try { const b = response.request().postDataJSON(); return b?.intent === 'my.work.summary' && b.params?.product_workspace === true; } catch { return false; }
@@ -1094,15 +1118,20 @@ try {
       paymentReview.phase = 'approve';
       await persist();
       report.paymentReviewApproved = await clickAction(manager.page, '审批通过', 'execute_button', p => p?.model === paymentReview.model && p.res_id === paymentReview.id);
-      check('payment review: assigned reviewer approval succeeds', report.paymentReviewApproved.ok === true && paymentReview.phase === 'done');
+      check('payment review: assigned reviewer approval succeeds', report.paymentReviewApproved.ok === true && ['first_approved', 'done'].includes(paymentReview.phase));
       report.paymentReviewFinal = await read(manager.page);
       const approved = report.paymentReviewFinal.data?.records?.[0];
-      check('payment review: confirmed without cash posting', approved?.state === 'confirmed' && approved.validation_status === 'validated');
+      if (paymentReview.approvalFlow && index === 0) {
+        check('payment flow: first review cannot finalize second stage', approved?.state === 'draft' && ['pending', 'waiting'].includes(approved.validation_status));
+      } else {
+        check('payment review: confirmed without cash posting', approved?.state === 'confirmed' && approved.validation_status === 'validated');
+      }
       const finalWorkspace = await invoke(manager.page, 'my.work.summary', { product_workspace: true });
       report.paymentReviewFinalWorkspace = finalWorkspace;
       check('payment review: completed item exits reviewer workspace', finalWorkspace.ok === true
         && !(finalWorkspace.data?.product_workspace?.sections || []).flatMap(section => section.items || [])
           .some(item => item.target?.model === paymentReview.model && item.target.record_id === paymentReview.id));
+      }
       }
       const finalDetail = manager.page.locator(`[data-form-model="sc.payment.execution"][data-form-record="${paymentReview.id}"][data-detail-composition="official-standard-detail"][data-state="ok"]`);
       await finalDetail.waitFor();
@@ -2870,8 +2899,37 @@ try {
   process.exitCode = 1;
 } finally {
   await Promise.allSettled([...pendingProbeAborts].map((abort) => abort()));
+  if (paymentReview?.approvalFlow && paymentReview.configContext && paymentReview.baseline) {
+    try {
+      const admin = await login('fixture_role_config_admin');
+      paymentReview.phase = 'restore_steps';
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+      const restored = await admin.page.evaluate(async ({ model, steps, context }) => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+          body: JSON.stringify({ intent: 'sc.approval_policy.steps.set', params: { model, steps, context } }),
+        })).json();
+      }, { model: paymentReview.model, steps: paymentReviewOriginalSteps(paymentReview), context: paymentReview.configContext });
+      const readback = await admin.page.evaluate(async ({ model, context }) => {
+        const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+        return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+          body: JSON.stringify({ intent: 'sc.approval_policy.config.get', params: { model, context } }),
+        })).json();
+      }, { model: paymentReview.model, context: paymentReview.configContext });
+      report.paymentFlowRestoration = { restored, readback, retainedRecordId: paymentReview.id || null };
+      check('payment flow: restored configuration authoritative readback', readback.ok === true
+        && JSON.stringify(readback.data?.policy) === JSON.stringify(restored.data?.policy));
+      const active = readback.data?.policy?.steps?.filter(step => step.active) || [];
+      check('payment flow: original active configuration restored; business record retained', restored.ok === true
+        && restored.data.policy.mode === 'single' && active.length === 1 && active[0].id === 2187
+        && active[0].approval_scope_key === 'finance_manager' && active[0].name === paymentReviewOriginalSteps(paymentReview)[0].name);
+      await admin.ctx.close();
+    } catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
+  }
   await browser.close();
-  if (expenseSuccess || diarySuccess || eventSuccess || reportSuccess || paymentReview?.baseline) {
+  if (expenseSuccess || diarySuccess || eventSuccess || reportSuccess || (paymentReview?.baseline && !paymentReview.approvalFlow)) {
     try { await expenseCleanup('final'); }
     catch (error) { report.status = 'failed'; report.cleanupError = error.message; process.exitCode = 1; }
   }

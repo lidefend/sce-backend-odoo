@@ -9762,3 +9762,10 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 复用53.228原配置正确经办→审核人闭环、段45标准列表WEB-LC证据。本轮证据对应f6c120ad5加工具dirty；产品源码/前端build9433fa515、后端c240a28cb未变。67目标active，不升级整行、不推送/合并/目标部署。
 
 - 所有者进一步明确开发阶段可以创建/修改数据，以证明功能正常为主。后续普通办理记录可保留并绑定验证用途，不再以逐记录精确删除为默认前置；公共审批配置记录原值/最终状态与必要恢复，避免干扰后续结果。此项替代上文“先扩展精确步骤清理工具”的默认顺序；不放宽既有数据库、公司、权限、生产隔离边界，不新建环境或fixture体系。
+
+### 53.233 审批流程配置实际暴露第二级待办缺口
+
+- 按所有者最新数据原则，P4复用payment-review流程增加两级配置与按角色处理，正常办理记录保留，不新增精确清理工具。现有steps.set按数组顺序生成sequence，省略步骤原生停用；恢复通过原公开steps.set及config.get回读，保留历史，不直接写数据库。精确许可仅原step2187财务复核加管理层终审，绑定角色/公司上下文、顺序/参数/真实work-item-origin，并允许恢复原启用步骤。新增2项配置顺序/恢复与第二级角色测试。
+- payment-flow-browser-iteration L1PASS，30Node+45Python=75PASS并记录回执。原受管环境运行tpl07-1790824095790：配置管理员UI将policy18改两级linear，经办44创建201并提交；经办页面无审批通过按钮，finance30实际待办打开并审批成功。第一步后仍draft+pending/waiting，不能直接完成第二级，且财务待办已移除。随后executive的my-work为0，没有201，旅程判failed，未尝试绕开实际待办或提权审批。
+- finally通过配置管理员恢复原启用step2187、single，并独立config.get与保存结果一致；新增步骤原生停用，历史保留。201保留为诊断现场，不清理。已有开关22PASS和原单级正确角色证据复用。没有第二次创建或重跑本旅程。
+- 已定向读取review_work_item_service：按真实reviewer_ids/status筛选，再检查读ACL/rule/can_review及公司业务范围；AccessError会使事项不进入列表。源码executive角色已含finance_read，付款登记也有该组读ACL，因此不能直接断言缺读权限或修改角色。下一步只读查201实际reviewer/status/can_review与用户组、范围，再归因产品/配置/数据并修复，继续已有记录。禁止用重建fixture或全ORM替代诊断。总体目标active；批次未通过，不宣称整体收口，无推送/合并/目标部署。

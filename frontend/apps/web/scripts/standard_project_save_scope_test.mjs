@@ -310,3 +310,32 @@ test('payment create binds native defaults and baseline even when captured reque
   for (const patch of [{ continuation: null }, { baseline: { execution_ids: [186], source: [] } }])
     assert.equal(paymentReviewWriteKind('fixture_role_pfl035_finance_user', { intent: 'api.data', params: paymentScope.request }, { ...paymentScope, ...patch }), null);
 });
+
+test('payment workflow configuration binds the original step, order and restoration', () => {
+  const scope = { ...paymentScope, approvalFlow: true, phase: 'flow_steps', configContext: { company_id: 8 },
+    baseline: { ...paymentScope.baseline, policies: [{ id: 18, company_id: [8, 'A'], target_model: paymentScope.model }],
+      steps: [{ id: 2187, policy_id: [18, 'Policy'], active: true, name: '财务经理审批', approval_scope_key: 'finance_manager' }] } };
+  const steps = [{ id: 2187, name: `${scope.marker}-财务复核`, approval_scope_key: 'finance_manager', active: true,
+    amount_min: false, amount_max: false, condition_note: '', note: '' },
+    { name: `${scope.marker}-管理层终审`, approval_scope_key: 'executive', active: true,
+      amount_min: false, amount_max: false, condition_note: '', note: '' }];
+  const body = { intent: 'sc.approval_policy.steps.set', params: { model: scope.model, steps, context: scope.configContext } };
+  assert.equal(paymentReviewWriteKind('fixture_role_config_admin', body, scope), 'flow_steps');
+  for (const changed of [steps.toReversed(), [steps[0]], [steps[0], { ...steps[1], approval_scope_key: 'finance_manager' }]])
+    assert.equal(paymentReviewWriteKind('fixture_role_config_admin', { ...body, params: { ...body.params, steps: changed } }, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_config_admin', body, { ...scope, phase: 'flow_steps_in_flight' }), null);
+  const original = [{ ...steps[0], name: '财务经理审批' }];
+  assert.equal(paymentReviewWriteKind('fixture_role_config_admin', { ...body, params: { ...body.params, steps: original } },
+    { ...scope, phase: 'restore_steps' }), 'restore_steps');
+});
+
+test('payment workflow second review is bound to the executive and real work-item origin', () => {
+  const origin = { source: 'tier.review', id: 123 };
+  const scope = { ...paymentScope, approvalFlow: true, phase: 'approve', id: 200, origin, reviewStage: 2 };
+  const body = { intent: 'execute_button', params: { model: scope.model, res_id: 200, button: { type: 'object', name: 'validate_tier' } },
+    meta: { work_item_origin: origin } };
+  assert.equal(paymentReviewWriteKind('fixture_role_executive', body, scope), 'approve');
+  assert.equal(paymentReviewWriteKind('fixture_role_finance', body, scope), null);
+  assert.equal(paymentReviewWriteKind('fixture_role_executive', body, { ...scope, reviewStage: 1 }), null);
+});

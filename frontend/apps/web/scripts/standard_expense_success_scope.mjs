@@ -186,6 +186,20 @@ export function paymentReviewWriteKind(role, body, scope) {
     || !/^TPL53-PAYMENT-REVIEW-\d{13}$/.test(scope.marker)
     || !Array.isArray(scope.baseline?.execution_ids) || !scope.baseline.execution_ids.includes(186)) return null;
   const p = body?.params;
+  if (scope.approvalFlow === true && role === 'fixture_role_config_admin'
+    && scope.configContext?.company_id === 8) {
+    const original = scope.baseline.policies?.find(policy => policy.id === 18);
+    if (!original || original.company_id?.[0] !== 8 || original.target_model !== scope.model) return null;
+    if (scope.phase === 'flow_config' && body?.intent === 'sc.approval_policy.config.set'
+      && isDeepStrictEqual(p, { model: scope.model, approval_required: true, mode: 'single',
+        manager_scope_key: 'finance_manager', context: scope.configContext })) return 'flow_config';
+    if (scope.phase === 'flow_steps' && body?.intent === 'sc.approval_policy.steps.set'
+      && Array.isArray(paymentReviewFlowSteps(scope))
+      && isDeepStrictEqual(p, { model: scope.model, steps: paymentReviewFlowSteps(scope), context: scope.configContext })) return 'flow_steps';
+    if (scope.phase === 'restore_steps' && body?.intent === 'sc.approval_policy.steps.set'
+      && paymentReviewOriginalSteps(scope).length === 1 && paymentReviewOriginalSteps(scope)[0].id === 2187
+      && isDeepStrictEqual(p, { model: scope.model, steps: paymentReviewOriginalSteps(scope), context: scope.configContext })) return 'restore_steps';
+  }
   if (scope.approvalToggle === true && scope.phase === 'config_disable'
     && role === 'fixture_role_config_admin' && body?.intent === 'sc.approval_policy.config.set'
     && scope.baseline.policies?.some(policy => policy.id === 18 && policy.company_id?.[0] === 8
@@ -205,8 +219,26 @@ export function paymentReviewWriteKind(role, body, scope) {
     || body?.intent !== 'execute_button' || p?.model !== scope.model || p.res_id !== scope.id || p.button?.type !== 'object') return null;
   if (scope.phase === 'submit' && role === 'fixture_role_pfl035_finance_user' && p.button.name === 'action_confirm'
     && Number(body.meta?.action_id) === 803 && Number(body.meta?.menu_id) === 335) return 'submit';
-  if (scope.phase === 'approve' && role === 'fixture_role_finance' && p.button.name === 'validate_tier'
+  const reviewer = scope.approvalFlow === true && scope.reviewStage === 2 ? 'fixture_role_executive' : 'fixture_role_finance';
+  if (scope.phase === 'approve' && role === reviewer && p.button.name === 'validate_tier'
     && scope.origin?.source === 'tier.review' && Number.isInteger(scope.origin.id) && scope.origin.id > 0
     && isDeepStrictEqual(body.meta?.work_item_origin, scope.origin)) return 'approve';
   return null;
+}
+
+export function paymentReviewOriginalSteps(scope) {
+  return (scope.baseline.steps || []).filter(step => step.policy_id?.[0] === 18 && step.active).map(step => ({
+    id: step.id, name: step.name, approval_scope_key: step.approval_scope_key, active: true,
+    amount_min: step.amount_min || false, amount_max: step.amount_max || false,
+    condition_note: step.condition_note || '', note: step.note || '',
+  }));
+}
+
+export function paymentReviewFlowSteps(scope) {
+  const original = paymentReviewOriginalSteps(scope);
+  if (original.length !== 1 || original[0].id !== 2187 || original[0].approval_scope_key !== 'finance_manager') return null;
+  return [{ ...original[0], name: `${scope.marker}-财务复核` }, {
+    name: `${scope.marker}-管理层终审`, approval_scope_key: 'executive', active: true,
+    amount_min: false, amount_max: false, condition_note: '', note: '',
+  }];
 }
