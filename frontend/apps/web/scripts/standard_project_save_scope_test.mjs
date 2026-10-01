@@ -165,3 +165,27 @@ test('version submit binds actual child and navigation context without replay', 
   assert.equal(reportProbeWriteKind('fixture_role_finance', body, scope), null);
   assert.equal(reportProbeWriteKind('fixture_role_pm', { ...body, params: { ...body.params, button: { name: 'validate_tier', type: 'object' } } }, scope), null);
 });
+
+test('plan execution scope binds node writes and individual state actions', async () => {
+  const { planExecutionWriteKind } = await import('./standard_expense_success_scope.mjs');
+  const marker = 'TPL53-REPORT-SAVE-1790807163178';
+  const scope = { model: 'sc.plan.report', marker, planExecutionProbe: true, parentId: 24, nodeId: 31, phase: 'node-save',
+    parentRequest: { vals: { name: marker.replace('REPORT-SAVE', 'REPORT-PARENT'), project_id: 10 }, context: { company_id: 8, menu_id: 507, action_id: 655 } } };
+  const request = { op: 'write', model: 'sc.plan', ids: [24], vals: { line_ids: [[0, 0, { name: marker.replace('REPORT-SAVE', 'PLAN-NODE'), sequence: 10, node_type: 'task' }]] }, context: { company_id: 8 } };
+  scope.planRequest = request;
+  const body = { intent: 'api.data', params: request };
+  assert.equal(planExecutionWriteKind('fixture_role_pm', body, scope), 'node-save');
+  for (const patch of [{ parentId: 25 }, { phase: 'node-save_in_flight' }, { planExecutionProbe: false }, { versionProbe: true }]) {
+    assert.equal(planExecutionWriteKind('fixture_role_pm', body, { ...scope, ...patch }), null);
+  }
+  assert.equal(planExecutionWriteKind('fixture_role_finance', body, scope), null);
+  for (const [phase, state, progress] of [['node-progress', 'in_progress', 50], ['node-done', 'done', 100]]) {
+    const next = { ...request, vals: { line_ids: [[1, 31, { state, progress_rate: progress }]] } };
+    assert.equal(planExecutionWriteKind('fixture_role_pm', { ...body, params: next }, { ...scope, phase, planRequest: next }), phase);
+    const extra = { ...next, vals: { ...next.vals, state: 'done' } };
+    assert.equal(planExecutionWriteKind('fixture_role_pm', { ...body, params: extra }, { ...scope, phase, planRequest: extra }), null);
+  }
+  const action = { intent: 'execute_button', params: { model: 'sc.plan', res_id: 24, button: { name: 'action_start', type: 'object' } }, meta: { menu_id: 507, action_id: 655 } };
+  assert.equal(planExecutionWriteKind('fixture_role_pm', action, { ...scope, phase: 'plan-start' }), 'plan-start');
+  assert.equal(planExecutionWriteKind('fixture_role_pm', action, { ...scope, phase: 'plan-confirm' }), null);
+});

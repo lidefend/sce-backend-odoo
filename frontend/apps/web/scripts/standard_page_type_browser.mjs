@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -81,6 +81,9 @@ const planVersionSave = process.env.TPL07_PLAN_VERSION_SAVE === '1';
 assert.ok(!planVersionSave || planVersionInspect);
 const planVersionSubmit = process.env.TPL07_PLAN_VERSION_SUBMIT === '1';
 assert.ok(!planVersionSubmit || planVersionSave);
+const planExecution = process.env.TPL07_PLAN_EXECUTION === '1';
+assert.ok(!planExecution || (reportSaveSuccess && !planVersionInspect));
+let planSaveCapture = false;
 let versionSaveCapture = false;
 let reportSuccess = null;
 let reportCreateCapture = false;
@@ -120,6 +123,24 @@ async function login(role) {
       report.expensePolicyWrites.push({ ...expensePolicyPermit });
       expensePolicyPermit = null;
       return route.continue();
+    }
+    const planKind = planExecutionWriteKind(role, body, reportSuccess);
+    if (planKind) {
+      reportSuccess.phase = `${planKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.planExecutionWrites ??= [];
+      report.planExecutionWrites.push({ kind: planKind, request: body, result });
+      if (result.ok === true) reportSuccess.phase = 'done';
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      return route.fulfill({ response });
+    }
+    if (planExecution && planSaveCapture && role === 'fixture_role_pm' && body?.intent === 'api.data'
+      && body.params?.op === 'write' && body.params.model === 'sc.plan') {
+      report.planSaveAttempts ??= [];
+      report.planSaveAttempts.push(body.params);
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'TPL53_PLAN_CAPTURE', message: '计划执行定向保存失败验证' } }) });
     }
     const reportKind = reportProbeWriteKind(role, body, reportSuccess);
     if (reportKind) {
@@ -981,7 +1002,7 @@ try {
           const content = '临时验收计划汇报：核对官方表单提交和详情返回。';
           const parentRequest = { op: 'create', model: 'sc.plan', vals: { name: parentName, project_id: 10 },
             context: { company_id: 8, menu_id: Number(parentEntries[0].menu_id), action_id: Number(parentEntries[0].action_id) } };
-          reportSuccess = { model: spec.model, marker, versionProbe: planVersionSave, versionSubmitProbe: planVersionSubmit, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
+          reportSuccess = { model: spec.model, marker, planExecutionProbe: planExecution, versionProbe: planVersionSave, versionSubmitProbe: planVersionSubmit, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
           await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
           await expenseCleanup('preflight');
           const projectRead = await api({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'company_id'], context: { company_id: 8 } });
@@ -989,6 +1010,83 @@ try {
           reportSuccess.phase = 'parent';
           const parent = await api(parentRequest);
           check('report handling: exact temporary parent created', parent.ok === true && Number.isInteger(reportSuccess.parentId) && reportSuccess.parentId > 0);
+          if (planExecution) {
+            const parentUrl = `/f/sc.plan/${reportSuccess.parentId}?menu_id=${parentRequest.context.menu_id}&action_id=${parentRequest.context.action_id}`;
+            const nodeName = marker.replace('REPORT-SAVE', 'PLAN-NODE');
+            const collection = session.page.locator('[data-field-name="line_ids"]').first();
+            const showNodes = async (label, profile = 'form') => {
+              await form(session.page, parentUrl, label, profile);
+              await collection.waitFor();
+              await collection.scrollIntoViewIfNeeded();
+            };
+            const saveNode = async phase => {
+              const previous = report.planSaveAttempts?.length || 0;
+              planSaveCapture = true;
+              await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+              await session.page.getByText('计划执行定向保存失败验证', { exact: false }).first().waitFor();
+              planSaveCapture = false;
+              check(`plan execution ${phase}: one captured attempt`, report.planSaveAttempts.length === previous + 1);
+              reportSuccess.planRequest = report.planSaveAttempts.at(-1);
+              reportSuccess.phase = phase;
+              check(`plan execution ${phase}: exact node write scope`, planExecutionWriteKind('fixture_role_pm', { intent: 'api.data', params: reportSuccess.planRequest }, reportSuccess) === phase);
+              await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+              const pending = session.page.waitForResponse(response => {
+                try { const body = response.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'write' && body.params.model === 'sc.plan'; } catch { return false; }
+              });
+              await session.page.getByRole('button', { name: '保存草稿', exact: true }).click();
+              const result = await (await pending).json();
+              check(`plan execution ${phase}: authoritative write accepted`, result.ok === true && reportSuccess.phase === 'done');
+            };
+            const action = async (phase, label, expected) => {
+              const button = session.page.getByRole('button', { name: label, exact: true });
+              await button.waitFor();
+              reportSuccess.phase = phase;
+              await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+              const pending = session.page.waitForResponse(response => {
+                try { const body = response.request().postDataJSON(); return body?.intent === 'execute_button' && body.params?.model === 'sc.plan'; } catch { return false; }
+              });
+              await button.click();
+              const result = await (await pending).json();
+              check(`plan execution ${phase}: real action succeeds`, result.ok === true && reportSuccess.phase === 'done');
+              const read = await api({ op: 'read', model: 'sc.plan', ids: [reportSuccess.parentId], fields: ['id', 'state', 'actual_start', 'actual_finish'], context: { company_id: 8 } });
+              report.planExecutionReadbacks ??= [];
+              report.planExecutionReadbacks.push(read);
+              check(`plan execution ${phase}: state readback`, read.ok === true && read.data.records[0].state === expected);
+            };
+            await showNodes('plan-execution-draft');
+            await collection.getByRole('button').filter({ hasText: /新增|添加/ }).first().click();
+            await collection.getByRole('textbox', { name: '节点名称', exact: true }).fill(nodeName);
+            await saveNode('node-save');
+            const nodes = await api({ op: 'list', model: 'sc.plan.line', domain: [['plan_id', '=', reportSuccess.parentId], ['name', '=', nodeName]], fields: ['id', 'name', 'state', 'progress_rate'], limit: 2, context: { company_id: 8 } });
+            check('plan execution: exact saved node', nodes.ok === true && nodes.data.records.length === 1 && nodes.data.records[0].state === 'draft');
+            reportSuccess.nodeId = nodes.data.records[0].id;
+            await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+            await showNodes('plan-execution-saved');
+            await action('plan-confirm', '确认', 'confirmed');
+            await showNodes('plan-execution-confirmed', 'readonly');
+            await action('plan-start', '开始执行', 'in_progress');
+            for (const [phase, percent, stateLabel, state] of [['node-progress', 50, '执行中', 'in_progress'], ['node-done', 100, '已完成', 'done']]) {
+              await showNodes(`plan-execution-${phase}`);
+              check(`plan execution ${phase}: baseline remains readonly`, await collection.getByRole('textbox', { name: '节点名称', exact: true }).isDisabled());
+              await collection.getByRole('spinbutton', { name: '完成率(%)', exact: true }).fill(String(percent));
+              await collection.getByLabel('状态', { exact: true }).click();
+              await session.page.getByRole('option', { name: stateLabel, exact: true }).click();
+              await saveNode(phase);
+              const read = await api({ op: 'read', model: 'sc.plan.line', ids: [reportSuccess.nodeId], fields: ['id', 'state', 'progress_rate'], context: { company_id: 8 } });
+              check(`plan execution ${phase}: node facts read back`, read.ok === true && read.data.records[0].state === state && read.data.records[0].progress_rate === percent);
+            }
+            await showNodes('plan-execution-before-complete');
+            await action('plan-done', '完成', 'done');
+            await showNodes('plan-execution-completed', 'readonly');
+            check('plan execution: terminal contract readonly', report.recordAuthority?.status?.effectiveRecordCapabilities?.write === false);
+            for (const width of [1440, 390]) {
+              await session.page.setViewportSize({ width, height: 950 });
+              await collection.scrollIntoViewIfNeeded();
+              check(`plan execution completed ${width}: no overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+              await session.page.screenshot({ path: path.join(out, `plan-execution-completed-${width}.png`) });
+            }
+            continue;
+          }
           if (planVersionInspect) {
             await form(session.page, `/f/sc.plan/${reportSuccess.parentId}?menu_id=${parentRequest.context.menu_id}&action_id=${parentRequest.context.action_id}`, 'plan-version-parent');
             await session.page.getByText('版本', { exact: true }).click();

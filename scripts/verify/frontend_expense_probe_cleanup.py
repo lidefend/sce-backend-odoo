@@ -142,7 +142,8 @@ def validate_report_probe_target(database, scope, row, actor_id, parent=False):
     assert row['company_id'] == 8 and row['create_uid'] == actor_id
     assert row['name'] == (marker.replace('REPORT-SAVE', 'REPORT-PARENT') if parent else marker)
     if parent:
-        assert row['project_id'] == 10 and row['state'] == 'draft'
+        assert row['project_id'] == 10
+        assert row['state'] in (('draft', 'confirmed', 'in_progress', 'done') if scope.get('planExecutionProbe') else ('draft',))
         if scope.get('parentId'): assert row['id'] == scope['parentId']
     else:
         assert set(scope['request']['vals']) == {'name', 'plan_id', 'summary'}
@@ -174,6 +175,19 @@ def validate_version_probe_target(database, scope, row, actor_id):
     assert -5 <= created - started <= 300
 
 
+def validate_plan_node_probe_target(database, scope, row, actor_id):
+    assert database == 'sc_frontend_acceptance' and scope.get('planExecutionProbe') is True and not scope.get('versionProbe')
+    marker = scope['marker']
+    assert scope['model'] == 'sc.plan.report' and re.fullmatch(r'TPL53-REPORT-SAVE-\d{13}', marker)
+    assert row['name'] == marker.replace('REPORT-SAVE', 'PLAN-NODE')
+    assert row['plan_id'] == scope['parentId'] and row['create_uid'] == actor_id
+    if scope.get('nodeId'): assert row['id'] == scope['nodeId']
+    assert (row['state'], row['progress_rate']) in (('draft', 0), ('in_progress', 50), ('done', 100))
+    started = int(marker.rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
 def recover_report(env, scope):
     assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.plan.report'
     marker = scope['marker']
@@ -186,6 +200,14 @@ def recover_report(env, scope):
     assert env['project.project'].sudo().browse(10).company_id.id == 8
     assert not env['sc.approval.policy'].sudo().search_count([
         ('target_model', '=', 'sc.plan.report'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
+    if scope.get('planExecutionProbe'):
+        assert not scope.get('versionProbe')
+        assert not env['sc.approval.policy'].sudo().search_count([
+            ('target_model', '=', 'sc.plan'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
+    Node = env['sc.plan.line'].sudo()
+    nodes = Node.search([('name', '=', marker.replace('REPORT-SAVE', 'PLAN-NODE'))])
+    assert len(nodes) <= 1 and (not nodes or scope.get('planExecutionProbe') is True)
+    node_ids = nodes.ids
     Plan = env['sc.plan'].sudo().with_context(active_test=False)
     Report = env['sc.plan.report'].sudo().with_context(active_test=False)
     Version = env['sc.plan.version'].sudo().with_context(active_test=False)
@@ -207,7 +229,7 @@ def recover_report(env, scope):
         row.update({key: record[key].id for key in ('company_id', 'create_uid', 'project_id')})
         row['create_date'] = str(record.create_date)
         validate_report_probe_target(env.cr.dbname, scope, row, actor.id, parent=True)
-        assert not record.line_ids  and not record.review_ids and not record.attachment_ids
+        assert set(record.line_ids.ids) == set(node_ids) and not record.review_ids and not record.attachment_ids
         assert set(record.version_ids.ids) == set(version_ids)
         assert set(record.report_ids.ids) == set(report_ids)
         assert not env['sc.plan.warning.log'].sudo().search_count([('plan_id', '=', record.id)])
@@ -228,12 +250,25 @@ def recover_report(env, scope):
         assert not record.review_ids and not record.approved_by and not record.base_version_id
         if record.state == "draft": assert not record.approved_date
         assert not record.legacy_fact_id and not Version.search_count([('base_version_id', '=', record.id)])
-    for records in (versions, reports, plans):
+    for record in nodes:
+        assert plans and record.plan_id == plans
+        row = {key: record[key] for key in ('id', 'name', 'state', 'progress_rate')}
+        row.update(plan_id=record.plan_id.id, create_uid=record.create_uid.id, create_date=str(record.create_date))
+        validate_plan_node_probe_target(env.cr.dbname, scope, row, actor.id)
+        assert not record.parent_id and not record.child_ids and not record.predecessor_ids and not record.linked_plan_line_id
+        assert not record.contract_id and not record.deliverable_attachment_ids and not record.legacy_fact_id
+        for field in ('parent_id', 'linked_plan_line_id', 'predecessor_ids'):
+            assert not Node.search_count([(field, '=', record.id)])
+        assert not Report.search_count([('line_id', '=', record.id)])
+    for records in (nodes, versions, reports, plans):
         for record in records:
             assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
     # All identities/dependencies above are checked before restoring this exact temporary fact.
     for record in versions.filtered(lambda row: row.state == 'approved'):
         record._write_document_state({'state': 'draft', 'approved_date': False, 'approved_by': False})
+    if scope.get('planExecutionProbe'):
+        plans._write_document_state({'state': 'draft', 'actual_start': False, 'actual_finish': False})
+    nodes.unlink()
     versions.unlink()
     reports.unlink()
     plans.unlink()
@@ -241,7 +276,8 @@ def recover_report(env, scope):
     env.invalidate_all()
     assert not Plan.search_count([('name', '=', vals['name'])]) and not Report.search_count([('name', '=', marker)])
     assert not Version.search_count([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
-    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': report_ids, 'version_ids': version_ids, 'parent_ids': plan_ids, 'actor_id': actor.id}))
+    assert not Node.search_count([('name', '=', marker.replace('REPORT-SAVE', 'PLAN-NODE'))])
+    print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': report_ids, 'version_ids': version_ids, 'node_ids': node_ids, 'parent_ids': plan_ids, 'actor_id': actor.id}))
 
 
 def recover(env, scope):

@@ -313,3 +313,19 @@ class PlanVersionCleanupTest(unittest.TestCase):
             with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', {**scope, **patch}, row, 32)
         for patch in ({'approved_by': 32}, {'approved_date': '2026-09-30'}, {'state': 'pending'}, {'id': 32}):
             with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
+
+class PlanExecutionCleanupTest(unittest.TestCase):
+    def test_node_cleanup_rejects_foreign_or_unexpected_execution(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_plan_node_probe_target
+        from datetime import datetime, timezone
+        marker = 'TPL53-REPORT-SAVE-1790807163178'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'planExecutionProbe': True, 'parentId': 24, 'nodeId': 31}
+        row = {'id': 31, 'name': marker.replace('REPORT-SAVE', 'PLAN-NODE'), 'plan_id': 24, 'create_uid': 32,
+               'state': 'done', 'progress_rate': 100,
+               'create_date': datetime.fromtimestamp(1790807163.178 + 10, timezone.utc).replace(tzinfo=None).isoformat()}
+        validate_plan_node_probe_target('sc_frontend_acceptance', scope, row, 32)
+        for patch in ({'id': 99}, {'plan_id': 25}, {'name': 'existing'}, {'create_uid': 1}, {'state': 'cancel'},
+                      {'progress_rate': 50}, {'create_date': '2020-01-01'}):
+            with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
+        with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_dev_demo', scope, row, 32)
+        with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_frontend_acceptance', {**scope, 'versionProbe': True}, row, 32)
