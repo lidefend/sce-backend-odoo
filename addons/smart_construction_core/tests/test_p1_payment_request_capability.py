@@ -300,12 +300,12 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             opened.get("id"),
             self.env.ref(
-                "smart_construction_core.action_sc_payment_execution_partner_payment"
+                "smart_construction_core.action_sc_payment_execution_actual_outflow"
             ).id,
         )
         self.assertEqual(
             opened.get("menu_id"),
-            self.env.ref("smart_construction_core.menu_sc_partner_payment").id,
+            self.env.ref("smart_construction_core.menu_sc_payment_execution").id,
         )
         self.assertEqual(opened["name"], "查看付款登记")
 
@@ -1035,12 +1035,12 @@ class TestP1PaymentRequestCapability(TransactionCase):
         self.assertEqual(
             action.get("id"),
             self.env.ref(
-                "smart_construction_core.action_sc_payment_execution_partner_payment"
+                "smart_construction_core.action_sc_payment_execution_actual_outflow"
             ).id,
         )
         self.assertEqual(
             action.get("menu_id"),
-            self.env.ref("smart_construction_core.menu_sc_partner_payment").id,
+            self.env.ref("smart_construction_core.menu_sc_payment_execution").id,
         )
         self.assertEqual(action.get("name"), "新建付款登记")
         self.assertEqual(action.get("context", {}).get("default_payment_request_id"), request.id)

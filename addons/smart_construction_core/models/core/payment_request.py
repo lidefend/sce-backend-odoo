@@ -1540,10 +1540,10 @@ class PaymentRequest(models.Model):
                 raise UserError(_("付款申请已足额付款，不能继续生成付款登记。"))
         self._assert_payment_execution_ready(require_authorized_actor=True)
         action = self.env.ref(
-            "smart_construction_core.action_sc_payment_execution_partner_payment"
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
         ).read()[0]
         action["menu_id"] = self.env.ref(
-            "smart_construction_core.menu_sc_partner_payment"
+            "smart_construction_core.menu_sc_payment_execution"
         ).id
         action["name"] = _("新建付款登记")
         action["view_mode"] = "form"
@@ -1607,12 +1607,12 @@ class PaymentRequest(models.Model):
         if not executions:
             raise UserError(_("该付款申请尚未生成有效的付款登记。"))
         action = self.env.ref(
-            "smart_construction_core.action_sc_payment_execution_partner_payment"
+            "smart_construction_core.action_sc_payment_execution_actual_outflow"
         ).read()[0]
         action.update(
             {
                 "menu_id": self.env.ref(
-                    "smart_construction_core.menu_sc_partner_payment"
+                    "smart_construction_core.menu_sc_payment_execution"
                 ).id,
                 "name": _("查看付款登记"),
                 "view_mode": "form",

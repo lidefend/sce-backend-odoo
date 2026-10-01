@@ -4120,5 +4120,58 @@ class PlanCascadeDeletionTests(unittest.TestCase):
         self.assertTrue(ns['unlink'](rows))
 
 
+
+class PaymentContinuationDestinationTest(unittest.TestCase):
+    def method(self, name):
+        node = next(n for n in ast.walk(ast.parse(MODEL.read_text()))
+                    if isinstance(n, ast.FunctionDef) and n.name == name)
+        ns = {'_': lambda value: value, 'UserError': ValueError}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(MODEL), 'exec'), ns)
+        return ns[name]
+
+    def record(self):
+        category = types.SimpleNamespace(id=16, code='finance.payment.execution.partner', name='Partner payment')
+        def ref(xmlid):
+            if xmlid.endswith('business_category_finance_payment_execution_partner'):
+                return category
+            if xmlid.endswith('action_sc_payment_execution_actual_outflow'):
+                return types.SimpleNamespace(read=lambda: [{'id': 803, 'res_model': 'sc.payment.execution'}])
+            if xmlid.endswith('menu_sc_payment_execution'):
+                return types.SimpleNamespace(id=335)
+            raise AssertionError('Unexpected continuation authority: ' + xmlid)
+        class Request:
+            id = 1710
+            is_fully_paid = False
+            display_name = 'Approved request'
+            def __iter__(self): return iter([self])
+            def ensure_one(self): pass
+            def _assert_payment_execution_ready(self, **kwargs): self.checked = kwargs
+            def __getattr__(self, key):
+                if key.endswith('_id'): return types.SimpleNamespace(id=10, display_name='Source relation')
+                return False
+        row = Request()
+        row.env = types.SimpleNamespace(ref=ref, context={}, user=types.SimpleNamespace(has_group=lambda group: True))
+        return row
+
+    def test_create_uses_formal_execution_entry_and_preserves_source_category(self):
+        row = self.record()
+        result = self.method('action_create_payment_execution')(row)
+        self.assertEqual((result['id'], result['menu_id'], result['target']), (803, 335, 'new'))
+        self.assertEqual(result['context']['default_payment_request_id'], 1710)
+        self.assertEqual(result['context']['default_business_category_code'], 'finance.payment.execution.partner')
+        self.assertEqual(row.checked, {'require_authorized_actor': True})
+
+    def test_existing_continuation_uses_same_entry_and_preserves_record_and_permission(self):
+        row = self.record()
+        class Executions(Reviews):
+            def filtered(self, predicate): return Executions(x for x in self if predicate(x))
+            def sorted(self, **kwargs): return sorted(self, **kwargs)
+        row.payment_execution_ids = Executions([types.SimpleNamespace(id=186, active=True, state='paid')])
+        result = self.method('action_view_payment_execution')(row)
+        self.assertEqual((result['id'], result['menu_id'], result['res_id']), (803, 335, 186))
+        row.env.user.has_group = lambda group: False
+        with self.assertRaises(ValueError): self.method('action_view_payment_execution')(row)
+
+
 if __name__ == '__main__':
     unittest.main()
