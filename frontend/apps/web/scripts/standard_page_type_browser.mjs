@@ -362,7 +362,7 @@ async function login(role) {
       }
       if (['system.init', 'ui.contract', 'ui.contract.get'].includes(body?.intent)) {
         const result = await response.json();
-        report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data), ...(process.env.TPL07_SCOPE === 'scene-entry' ? { workspaceHome: Boolean(result.data?.workspace_home) } : {}) });
+        report.startup.push({ role, intent: body.intent, success: result.ok !== false && Boolean(result.data), ...(process.env.TPL07_SCOPE === 'scene-entry' ? { workspaceHome: Boolean(result.data?.workspace_home), scenes: (result.data?.scene_ready_contract?.scenes || []).filter(row => ['workspace.home', 'dashboard.company', 'project.management'].includes(row.scene?.key)).map(row => ({ scene: row.scene, target: row.meta?.target })) } : {}) });
         if (body.intent === 'system.init') {
           report.productVersion = result.data?.product_version;
           if (process.env.TPL07_APPROVAL_CONFIG_SCOPE_INSPECT === '1') {
@@ -694,17 +694,18 @@ try {
       const { page, ctx } = await login(role);
       for (const [scene, intent] of entries) {
         const before = report.sceneEntryCalls?.length || 0;
-        const entryResponse = page.waitForResponse(response => response.request().postDataJSON()?.intent === (scene === 'workspace.home' ? 'my.work.summary' : intent), { timeout: 60000 });
+        const entryResponse = page.waitForResponse(response => response.request().postDataJSON()?.intent === (scene === 'workspace.home' ? 'my.work.summary' : intent), { timeout: 60000 }).then(response => ({ response }), error => ({ error }));
         await page.goto(`${base}/s/${scene}${scene === 'project.management' ? '?project_id=10' : ''}`);
         const home = scene === 'workspace.home';
         const surface = page.locator(`[data-semantic-component="${home ? 'HomeView' : 'SceneContractBlockGridView'}"]`);
+        const entryResult = await entryResponse;
+        if (entryResult.error) throw entryResult.error;
         await surface.waitFor({ timeout: 60000 });
         if (home) {
-          const response = await entryResponse;
+          const response = entryResult.response;
           const payload = await response.json();
           check(`${scene}: workspace summary contract loaded`, payload.ok !== false && Boolean(payload.data?.product_workspace));
         } else {
-          await entryResponse;
           await page.waitForFunction(() => document.querySelector('[data-semantic-component="SceneContractBlockGridView"]')?.getAttribute('data-state') === 'idle', undefined, { timeout: 60000 });
           check(`${scene}: declared entry succeeded`, (report.sceneEntryCalls || []).slice(before).some(row => row.role === role && row.intent === intent && row.success));
         }
@@ -2997,7 +2998,7 @@ try {
 } catch (error) {
   report.status = 'failed';
   report.error = error.message;
-  if (['approval-actions', 'expense-policy'].includes(process.env.TPL07_SCOPE)) {
+  if (['approval-actions', 'expense-policy', 'scene-entry'].includes(process.env.TPL07_SCOPE)) {
     report.failurePages = [];
     for (const ctx of browser.contexts()) for (const page of ctx.pages()) {
       report.failurePages.push({ url: page.url(), text: (await page.locator('body').innerText()).slice(0, 8000),
