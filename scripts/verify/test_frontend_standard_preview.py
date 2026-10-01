@@ -297,3 +297,19 @@ class PlanVersionCleanupTest(unittest.TestCase):
                 validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
         with self.assertRaises(AssertionError): validate_version_probe_target('sc_dev_demo', scope, row, 32)
         with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', {**scope, 'versionProbe': False}, row, 32)
+
+    def test_only_owned_automatic_approval_can_be_restored(self):
+        from scripts.verify.frontend_expense_probe_cleanup import validate_version_probe_target
+        from datetime import datetime, timezone
+        marker = 'TPL53-REPORT-SAVE-1790807163178'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'versionProbe': True, 'versionSubmitProbe': True,
+                 'phase': 'version-submit_in_flight', 'parentId': 24, 'versionId': 31, 'versionDefaults': {'version_date': '2026-10-01'}}
+        row = {'id': 31, 'version_no': marker.replace('REPORT-SAVE', 'VERSION-SAVE'), 'plan_id': 24, 'state': 'approved',
+               'company_id': 8, 'create_uid': 32, 'revision_type': 'adjustment', 'version_date': '2026-10-01',
+               'approved_by': False, 'approved_date': '2026-10-01',
+               'create_date': datetime.fromtimestamp(1790807163.178 + 10, timezone.utc).replace(tzinfo=None).isoformat()}
+        validate_version_probe_target('sc_frontend_acceptance', scope, row, 32)
+        for patch in ({'versionSubmitProbe': False}, {'phase': 'version-save'}, {'versionId': 32}):
+            with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', {**scope, **patch}, row, 32)
+        for patch in ({'approved_by': 32}, {'approved_date': '2026-09-30'}, {'state': 'pending'}, {'id': 32}):
+            with self.assertRaises(AssertionError): validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)

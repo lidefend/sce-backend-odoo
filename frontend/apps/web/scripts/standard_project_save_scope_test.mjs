@@ -150,3 +150,18 @@ test('plan version save permits only one exact child creation on the owned paren
     assert.equal(reportProbeWriteKind('fixture_role_pm', { ...body, params: changed }, { ...scope, versionRequest: changed }), null);
   }
 });
+
+test('version submit binds actual child and navigation context without replay', async () => {
+  const { reportProbeWriteKind } = await import('./standard_expense_success_scope.mjs');
+  const marker = 'TPL53-REPORT-SAVE-1790807163178';
+  const scope = { model: 'sc.plan.report', marker, versionProbe: true, versionSubmitProbe: true, phase: 'version-submit', parentId: 24, versionId: 31,
+    parentRequest: { model: 'sc.plan', vals: { name: marker.replace('REPORT-SAVE', 'REPORT-PARENT'), project_id: 10 }, context: { company_id: 8 } },
+    versionActionContext: { menu_id: 507, action_id: 655 } };
+  const body = { intent: 'execute_button', params: { model: 'sc.plan.version', res_id: 31, button: { name: 'action_submit', type: 'object' } }, meta: { menu_id: 507, action_id: 655 } };
+  assert.equal(reportProbeWriteKind('fixture_role_pm', body, scope), 'version-submit');
+  for (const patch of [{ phase: 'version-submit_in_flight' }, { versionSubmitProbe: false }, { versionId: 32 }, { versionActionContext: { menu_id: 508, action_id: 655 } }]) {
+    assert.equal(reportProbeWriteKind('fixture_role_pm', body, { ...scope, ...patch }), null);
+  }
+  assert.equal(reportProbeWriteKind('fixture_role_finance', body, scope), null);
+  assert.equal(reportProbeWriteKind('fixture_role_pm', { ...body, params: { ...body.params, button: { name: 'validate_tier', type: 'object' } } }, scope), null);
+});

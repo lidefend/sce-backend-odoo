@@ -79,6 +79,8 @@ const planVersionInspect = process.env.TPL07_PLAN_VERSION_INSPECT === '1';
 assert.ok(!planVersionInspect || reportSaveSuccess);
 const planVersionSave = process.env.TPL07_PLAN_VERSION_SAVE === '1';
 assert.ok(!planVersionSave || planVersionInspect);
+const planVersionSubmit = process.env.TPL07_PLAN_VERSION_SUBMIT === '1';
+assert.ok(!planVersionSubmit || planVersionSave);
 let versionSaveCapture = false;
 let reportSuccess = null;
 let reportCreateCapture = false;
@@ -979,7 +981,7 @@ try {
           const content = '临时验收计划汇报：核对官方表单提交和详情返回。';
           const parentRequest = { op: 'create', model: 'sc.plan', vals: { name: parentName, project_id: 10 },
             context: { company_id: 8, menu_id: Number(parentEntries[0].menu_id), action_id: Number(parentEntries[0].action_id) } };
-          reportSuccess = { model: spec.model, marker, versionProbe: planVersionSave, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
+          reportSuccess = { model: spec.model, marker, versionProbe: planVersionSave, versionSubmitProbe: planVersionSubmit, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
           await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
           await expenseCleanup('preflight');
           const projectRead = await api({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'company_id'], context: { company_id: 8 } });
@@ -1055,8 +1057,45 @@ try {
               report.planVersionSavedControls = await collection.getByRole('button').evaluateAll(nodes => nodes.map(n => ({ text: n.textContent, label: n.getAttribute('aria-label') })));
               for (const width of [1440, 390]) {
                 await session.page.setViewportSize({ width, height: 950 });
+                await collection.scrollIntoViewIfNeeded();
+                await collection.getByRole('button', { name: `打开${versionNo}`, exact: true }).scrollIntoViewIfNeeded();
+                check(`plan version saved ${width}: open action usable`, await collection.getByRole('button', { name: `打开${versionNo}`, exact: true }).isEnabled());
                 check(`plan version saved ${width}: no page overflow`, await session.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
                 await session.page.screenshot({ path: path.join(out, `plan-version-saved-${width}.png`) });
+              }
+              if (planVersionSubmit) {
+                await session.page.setViewportSize({ width: 1440, height: 950 });
+                await collection.getByRole('button', { name: `打开${versionNo}`, exact: true }).click();
+                await session.page.waitForURL(url => url.pathname === `/f/sc.plan.version/${row.id}`);
+                const submit = session.page.getByRole('button', { name: '提交', exact: true });
+                await submit.waitFor();
+                report.planVersionOpen = { url: session.page.url(), authority: report.recordAuthority };
+                check('plan version: row opens actual child action contract', report.recordAuthority?.model === 'sc.plan.version'
+                  && report.recordAuthority.actions?.actionRuleList?.some(action => action.actionSemantics?.purpose === 'submit'));
+                const query = new URL(session.page.url()).searchParams;
+                reportSuccess.versionActionContext = { menu_id: Number(query.get('menu_id') || 0), action_id: Number(query.get('action_id') || 0) };
+                reportSuccess.phase = 'version-submit';
+                await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+                const submission = session.page.waitForResponse(response => {
+                  try { const body = response.request().postDataJSON(); return body?.intent === 'execute_button'
+                    && body.params?.model === 'sc.plan.version' && body.params.res_id === row.id; } catch { return false; }
+                });
+                await submit.click();
+                const submitResult = await (await submission).json();
+                report.planVersionSubmitResult = submitResult;
+                check('plan version: exact real submit succeeds', submitResult.ok === true && reportSuccess.phase === 'done'
+                  && report.reportSuccessWrites.filter(write => write.kind === 'version-submit').length === 1);
+                const readback = await api({ op: 'read', model: 'sc.plan.version', ids: [row.id],
+                  fields: ['id', 'state', 'plan_id', 'approved_by', 'approved_date'], context: { company_id: 8 } });
+                report.planVersionApprovedReadback = readback;
+                const approved = readback.data?.records?.[0];
+                check('plan version: unconfigured approval auto-passes without fabricated reviewer', readback.ok === true && approved?.state === 'approved'
+                  && approved.plan_id[0] === reportSuccess.parentId && !approved.approved_by && Boolean(approved.approved_date));
+                await session.page.screenshot({ path: path.join(out, 'plan-version-approved.png') });
+                await session.page.getByRole('button', { name: '返回', exact: true }).click();
+                await session.page.waitForURL(url => url.pathname === `/f/sc.plan/${reportSuccess.parentId}`);
+                report.planVersionReturnUrl = session.page.url();
+                check('plan version: returns to owning parent', new URL(session.page.url()).pathname === `/f/sc.plan/${reportSuccess.parentId}`);
               }
             }
             continue;

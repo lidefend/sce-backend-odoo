@@ -77,6 +77,12 @@ export function reportProbeWriteKind(role, body, scope) {
       && isDeepStrictEqual(p, request)) return 'version-save';
     return null;
   }
+  if (scope.versionProbe === true && scope.versionSubmitProbe === true && scope.phase === 'version-submit'
+    && Number.isInteger(scope.versionId) && scope.versionId > 0 && Number.isInteger(scope.parentId) && scope.parentId > 0
+    && body?.intent === 'execute_button' && p?.model === 'sc.plan.version' && p.res_id === scope.versionId
+    && p.button?.name === 'action_submit' && p.button.type === 'object' && scope.versionActionContext
+    && Number(body.meta?.menu_id || 0) === Number(scope.versionActionContext.menu_id || 0)
+    && Number(body.meta?.action_id || 0) === Number(scope.versionActionContext.action_id || 0)) return 'version-submit';
   const request = scope.request;
   if (!Number.isInteger(scope.parentId) || scope.parentId <= 0 || request?.model !== scope.model
     || request?.vals?.plan_id !== scope.parentId || request?.vals?.name !== scope.marker || request?.context?.company_id !== 8

@@ -162,7 +162,11 @@ def validate_version_probe_target(database, scope, row, actor_id):
     assert scope['model'] == 'sc.plan.report' and re.fullmatch(r'TPL53-REPORT-SAVE-\d{13}', marker)
     assert row['version_no'] == marker.replace('REPORT-SAVE', 'VERSION-SAVE')
     assert row['plan_id'] == scope['parentId'] and row['company_id'] == 8 and row['create_uid'] == actor_id
-    assert row['state'] == 'draft' and row['revision_type'] == 'adjustment'
+    assert row['revision_type'] == 'adjustment'
+    if row['state'] != 'draft':
+        assert row['state'] == 'approved' and scope.get('versionSubmitProbe') is True
+        assert scope.get('phase') in ('version-submit_in_flight', 'done') and scope.get('versionId') == row['id']
+        assert not row.get('approved_by') and row.get('approved_date') == scope['versionDefaults']['version_date']
     assert row['version_date'] == scope['versionDefaults']['version_date']
     if scope.get('versionId'): assert row['id'] == scope['versionId']
     started = int(marker.rsplit('-', 1)[1]) / 1000
@@ -185,6 +189,10 @@ def recover_report(env, scope):
     Plan = env['sc.plan'].sudo().with_context(active_test=False)
     Report = env['sc.plan.report'].sudo().with_context(active_test=False)
     Version = env['sc.plan.version'].sudo().with_context(active_test=False)
+    if scope.get('versionSubmitProbe'):
+        assert scope.get('versionProbe') is True
+        assert not env['sc.approval.policy'].sudo().search_count([
+            ('target_model', '=', 'sc.plan.version'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
     versions = Version.search([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
     assert not versions or scope.get('versionProbe') is True
     assert len(versions) <= 1
@@ -214,13 +222,18 @@ def recover_report(env, scope):
         assert plans and record.plan_id == plans
         row = {key: record[key] for key in ('id', 'version_no', 'state', 'revision_type')}
         row.update({key: record[key].id for key in ('company_id', 'create_uid', 'plan_id')})
-        row.update(create_date=str(record.create_date), version_date=str(record.version_date))
+        row.update(create_date=str(record.create_date), version_date=str(record.version_date),
+                   approved_date=str(record.approved_date) if record.approved_date else False, approved_by=record.approved_by.id)
         validate_version_probe_target(env.cr.dbname, scope, row, actor.id)
-        assert not record.review_ids and not record.approved_by and not record.approved_date and not record.base_version_id
+        assert not record.review_ids and not record.approved_by and not record.base_version_id
+        if record.state == "draft": assert not record.approved_date
         assert not record.legacy_fact_id and not Version.search_count([('base_version_id', '=', record.id)])
     for records in (versions, reports, plans):
         for record in records:
             assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
+    # All identities/dependencies above are checked before restoring this exact temporary fact.
+    for record in versions.filtered(lambda row: row.state == 'approved'):
+        record._write_document_state({'state': 'draft', 'approved_date': False, 'approved_by': False})
     versions.unlink()
     reports.unlink()
     plans.unlink()
