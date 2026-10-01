@@ -547,7 +547,8 @@
         "addons/smart_core/delivery/product_policy_service.py",
         "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
-        "make/runtime_ops.mk"
+        "make/runtime_ops.mk",
+        "addons/smart_core/delivery/delivery_engine.py"
       ]
     }
   },

@@ -81,13 +81,18 @@ class EntryPublicationTest(unittest.TestCase):
                 tests.consumed_navigation = nav
                 return tests.authority
             filter_route_authority_by_publication = staticmethod(tests.project)
+        class Engine:
+            def __init__(self, env): pass
+            def _normalize_delivery_nav_refs(self, nodes):
+                tests.normalized_navigation = True
+                return nodes
         class Policies:
             def __init__(self, env): pass
             def get_policy(self, **kwargs): calls.append(kwargs); return {"product_key": "construction.standard"}
         identity = {"product_key": "construction.standard", "base_product_key": "construction", "edition_key": "standard"}
         scope = {"BaseIntentHandler": object, "IntentExecutionResult": Result, "MenuService": Menus,
             "IdentityResolver": lambda env: SimpleNamespace(user_group_xmlids=lambda user: [], build_role_surface=lambda *args: {"role_code": "config"}),
-            "ProductPolicyService": Policies, "_resolve_startup_delivery_identity": lambda *args: identity,
+            "ProductPolicyService": Policies, "DeliveryEngine": Engine, "_resolve_startup_delivery_identity": lambda *args: identity,
             "_load_platform_release_gate": lambda *args, **kwargs: {"applied": True, "fail_closed": fail_closed},
             "_filter_nav_by_release_gate": lambda nodes, *args, **kwargs: (tests.filter_nodes(nodes), {})}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), scope)
@@ -108,6 +113,7 @@ class EntryPublicationTest(unittest.TestCase):
 
     def test_runtime_validator_consumes_effective_published_navigation(self):
         self.handler(775)
+        self.assertTrue(self.normalized_navigation)
         self.assertEqual(self.nav_policy["policy"]["product_key"], "construction.standard")
         self.assertEqual(self.consumed_navigation[0]["key"], "published-navigation")
         self.handler(775, fail_closed=True)
@@ -138,6 +144,30 @@ class EntryPublicationTest(unittest.TestCase):
             result = self.project(authority, filter_nodes=lambda nodes: [
                 row for row in nodes if release_key in scope["_node_release_gate_keys"](row)])
             self.assertEqual(len(result["primary_actions"]), 1, release_key)
+
+    def test_shared_normalizer_resolves_current_refs_and_preserves_scene(self):
+        path = ROOT / "delivery/delivery_engine.py"
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "DeliveryEngine")
+        names = {"_normalize_entry_target_refs", "_normalize_delivery_nav_node_refs", "_normalize_delivery_nav_refs"}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        scope = {"_text": lambda v: str(v or "").strip(), "_to_int": lambda v: int(v or 0)}
+        target_class = ast.ClassDef(name="Normalizer", bases=[], keywords=[], body=methods, decorator_list=[])
+        tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
+        exec(compile(tree, str(path), "exec"), scope)
+        normalizer = scope["Normalizer"]()
+        records = {"product.menu": SimpleNamespace(id=42, active=True),
+                   "product.action": SimpleNamespace(id=775, _name="ir.actions.act_window", res_model="test.document", view_mode="tree,form")}
+        normalizer._resolve_xmlid_record = lambda xmlid, **kwargs: records.get(xmlid)
+        for route in ("/a/1", "/s/published.page"):
+            node = {"meta": {"menu_xmlid": "product.menu", "action_xmlid": "product.action",
+                    "menu_id": 1, "action_id": 1, "route": route,
+                    "entry_target": {"type": "scene", "scene_key": "published.page"}}}
+            result = normalizer._normalize_delivery_nav_refs([node])[0]
+            self.assertEqual(result["menu_id"], 42)
+            self.assertEqual(result["meta"]["action_id"], 775)
+            self.assertEqual(result["meta"]["route"], route if route.startswith("/s/") else "/a/775?menu_id=42")
+            self.assertEqual(result["meta"]["entry_target"]["scene_key"], "published.page")
+            self.assertEqual(result["meta"]["entry_target"]["compatibility_refs"]["model"], "test.document")
 
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)

@@ -67,6 +67,7 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
         menu_service = MenuService(self.env)
         from .system_init import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
         from ..delivery.product_policy_service import ProductPolicyService
+        from ..delivery.delivery_engine import DeliveryEngine
         identity = _resolve_startup_delivery_identity(self.env, {})
         policy = ProductPolicyService(self.env).get_policy(
             **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
@@ -74,6 +75,7 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
         )
         release_gate = _load_platform_release_gate(self.env, product_key=policy["product_key"])
         navigation = menu_service.build_nav(policy=policy, role_surface=surface)
+        navigation = DeliveryEngine(self.env)._normalize_delivery_nav_refs(navigation)
         navigation = [] if release_gate.get("fail_closed") else _filter_nav_by_release_gate(
             navigation, release_gate, env=self.env,
         )[0]
