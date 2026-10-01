@@ -42,6 +42,18 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
 
     def handle(self, payload=None, ctx=None):
         params = self._params(payload)
+        if params.get("work_item_origin") is not None:
+            from ..core.work_item_action_authority import validate_work_item_action_origin
+            from ..utils.extension_hooks import call_extension_hook_first
+            model, record_id = str(params.get("model") or ""), _positive_int(params.get("record_id"))
+            try:
+                validate_work_item_action_origin(params["work_item_origin"], model=model, record_id=record_id, method_name=None,
+                    authorize=lambda origin, **target: call_extension_hook_first(
+                        self.env, "smart_core_authorize_work_item_origin", self.env, origin, **target))
+            except ValueError as error:
+                return self._deny(str(error))
+            return IntentExecutionResult(ok=True, data={"allowed": True, "model": model, "record_id": record_id,
+                "work_item_origin": params["work_item_origin"]})
         action_id = _positive_int(params.get("action_id"))
         if not action_id:
             return self._deny("ROUTE_ACTION_REQUIRED")

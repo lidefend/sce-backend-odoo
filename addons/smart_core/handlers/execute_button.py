@@ -133,7 +133,18 @@ class ExecuteButtonHandler(BaseIntentHandler):
         source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
         if not authority_action_id or not backend_identity or not source_widget_id:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
-        if not action_id or not menu_id:
+        work_origin = meta.get("work_item_origin")
+        if work_origin is not None:
+            from ..core.work_item_action_authority import validate_work_item_action_origin
+            from ..utils.extension_hooks import call_extension_hook_first
+            try:
+                validate_work_item_action_origin(work_origin, model=model, record_id=record_id, method_name=method_name,
+                    authorize=lambda origin, **target: call_extension_hook_first(
+                        self.env, "smart_core_authorize_work_item_origin", self.env, origin, **target))
+            except ValueError as error:
+                raise AccessError(str(error)) from error
+            action_id = menu_id = 0
+        elif not action_id or not menu_id:
             origin = meta.get("relation_origin")
             if not origin:
                 raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")

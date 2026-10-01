@@ -712,5 +712,110 @@ class RelationActionOriginTest(unittest.TestCase):
             with self.assertRaises(module.AccessError): authorize()
 
 
+class WorkItemActionOriginTest(unittest.TestCase):
+    def setUp(self):
+        path = Path(__file__).resolve().parents[1] / 'core/work_item_action_authority.py'
+        spec = importlib.util.spec_from_file_location('work_item_authority_test_target', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.validate = module.validate_work_item_action_origin
+
+    def run_origin(self, origin, authorize):
+        return self.validate(origin, model='x.record', record_id=7, method_name='validate_tier', authorize=authorize)
+
+    def test_valid_origin_rechecks_exact_target_each_time(self):
+        calls = []
+        def authorize(origin, **target):
+            calls.append((origin, target))
+            return len(calls) == 1
+        self.run_origin({'source': 'review', 'id': 3}, authorize)
+        with self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+            self.run_origin({'source': 'review', 'id': 3}, authorize)
+        self.assertEqual(calls[0][1], {'model': 'x.record', 'record_id': 7, 'method_name': 'validate_tier'})
+
+    def test_malformed_origin_never_reaches_provider(self):
+        for origin in (None, {}, {'source': 'review', 'id': True}, {'source': 'review', 'id': '3'},
+                       {'source': '', 'id': 3}, {'source': 'review', 'id': -1}, {'source': 'review', 'id': 3, 'allowed': True}):
+            with self.subTest(origin=origin), self.assertRaisesRegex(ValueError, 'ORIGIN_INVALID'):
+                self.run_origin(origin, lambda *a, **kw: self.fail('must not call provider'))
+
+    def test_only_explicit_provider_authority_is_accepted(self):
+        for response in (None, False, 1, 'true', {'allowed': True}):
+            with self.subTest(response=response), self.assertRaisesRegex(ValueError, 'NOT_AUTHORIZED'):
+                self.run_origin({'source': 'review', 'id': 3}, lambda *a, **kw: response)
+
+    def test_missing_target_cannot_be_authorized_by_provider(self):
+        for model, record_id in (('', 7), ('x.record', 0), ('x.record', True)):
+            with self.assertRaisesRegex(ValueError, 'TARGET_INVALID'):
+                self.validate({'source': 'review', 'id': 3}, model=model, record_id=record_id,
+                              method_name=None, authorize=lambda *a, **kw: True)
+
+
+class ReviewWorkItemOriginTest(unittest.TestCase):
+    def setUp(self):
+        import ast
+        path = Path(__file__).resolve().parents[2] / 'smart_construction_core/services/review_work_item_service.py'
+        function = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'authorize_review_origin')
+        self.scope_allowed = True
+        namespace = {'record_in_business_scope': lambda *a: (self.scope_allowed, {})}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), 'exec'), namespace)
+        self.authorize = namespace['authorize_review_origin']
+        self.review = types.SimpleNamespace(id=3, model='x.record', res_id=7, status='pending', reviewer_ids=types.SimpleNamespace(ids=[34]))
+        self.review.exists = lambda: self.review
+        company = object()
+        self.access = []
+        self.record = types.SimpleNamespace(_fields={'company_id': True, 'review_ids': True}, company_id=company,
+            review_ids=types.SimpleNamespace(ids=[3]), can_review=True,
+            check_access_rights=lambda mode: self.access.append(('acl', mode)),
+            check_access_rule=lambda mode: self.access.append(('rule', mode)))
+        self.record.exists = lambda: self.record
+        review, record = self.review, self.record
+        class Env:
+            uid = 34
+            context = {}
+            def __contains__(self, name): return name == 'x.record'
+            def __getitem__(self, name):
+                target = review if name == 'tier.review' else record
+                model = types.SimpleNamespace(browse=lambda _id: target)
+                model.sudo = lambda: model
+                return model
+        self.env = Env()
+        self.env.company = company
+
+    def check_origin(self, **kwargs):
+        return self.authorize(self.env, {'source': 'tier.review', 'id': 3}, model='x.record', record_id=7, **kwargs)
+
+    def test_assigned_review_requires_record_acl_rules_and_current_scope(self):
+        self.assertIs(self.check_origin(method_name='validate_tier'), True)
+        self.assertEqual(self.access, [('acl', 'read'), ('rule', 'read')])
+        self.scope_allowed = False
+        self.assertIs(self.check_origin(method_name='validate_tier'), False)
+
+    def test_wrong_actor_or_expired_review_is_denied(self):
+        self.env.uid = 35
+        self.assertIs(self.check_origin(), False)
+        self.env.uid = 34
+        self.review.status = 'approved'
+        self.assertIs(self.check_origin(), False)
+
+    def test_wrong_target_or_company_is_denied(self):
+        self.review.res_id = 8
+        self.assertIs(self.check_origin(), False)
+        self.review.res_id = 7
+        self.record.company_id = object()
+        self.assertIs(self.check_origin(), False)
+
+    def test_review_origin_cannot_authorize_other_business_actions(self):
+        self.assertIs(self.check_origin(method_name='action_done'), False)
+        self.assertIs(self.check_origin(method_name='reject_tier'), True)
+
+    def test_current_review_membership_and_can_review_are_required(self):
+        self.record.can_review = False
+        self.assertIs(self.check_origin(), False)
+        self.record.can_review = True
+        self.record.review_ids.ids = [4]
+        self.assertIs(self.check_origin(), False)
+
+
 if __name__ == "__main__":
     unittest.main()
