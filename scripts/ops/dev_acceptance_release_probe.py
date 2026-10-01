@@ -542,6 +542,66 @@ def _hash_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+_STABLE_IDENTIFIER_RE = re.compile(r"[A-Za-z0-9_]+\.[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*\Z")
+
+
+def _resolution_target_is_unique(
+    resolution: dict[str, Any],
+    declaration_resolution: dict[str, Any],
+    target: dict[str, Any],
+    company_id: Any,
+) -> tuple[bool, dict[str, Any]]:
+    """Prove the resolved target is the declaration's unique stable identifier.
+
+    The declaration requires a unique match, so the receipt must carry evidence,
+    not just the resolved id: the identifier must be a governed fixture external
+    id (unique by construction through env.ref), it must equal the record's own
+    record_xmlid, the target keys must be complete, and no other resolved target
+    may claim the same model+record_id under a different identifier.
+    """
+    field = str(declaration_resolution.get("stable_identifier_field") or "")
+    stable_identifier = target.get(field)
+    targets = resolution.get("targets") if isinstance(resolution.get("targets"), dict) else {}
+    resolved_pairs = [
+        (item.get("model"), item.get("record_id"))
+        for item in targets.values()
+        if isinstance(item, dict) and item.get(field)
+    ]
+    claimed = [pair for pair in resolved_pairs if pair == (target.get("model"), target.get("record_id"))]
+    producer_matches = str(resolution.get("producer") or "") == str(
+        declaration_resolution.get("governed_producer") or ""
+    )
+    unique = bool(
+        isinstance(stable_identifier, str)
+        and _STABLE_IDENTIFIER_RE.fullmatch(stable_identifier)
+        and str(target.get("record_xmlid") or "") == stable_identifier
+        and isinstance(target.get("record_id"), int)
+        and target.get("record_id") > 0
+        and isinstance(target.get("action_id"), int)
+        and target.get("action_id") > 0
+        and isinstance(target.get("menu_id"), int)
+        and target.get("menu_id") > 0
+        and isinstance(company_id, int)
+        and bool(declaration_resolution.get("requires_unique_match"))
+        and producer_matches
+        and len(claimed) == 1
+    )
+    return unique, {
+        "stable_identifier": stable_identifier,
+        "record_xmlid": target.get("record_xmlid"),
+        "record_id": target.get("record_id"),
+        "model": target.get("model"),
+        "action_id": target.get("action_id"),
+        "menu_id": target.get("menu_id"),
+        "company_id": company_id,
+        "company_key": declaration_resolution.get("company_key"),
+        "governed_producer": declaration_resolution.get("governed_producer"),
+        "resolved_producer": resolution.get("producer"),
+        "requires_unique_match": bool(declaration_resolution.get("requires_unique_match")),
+        "matching_resolved_targets": len(claimed),
+    }
+
+
 def probe_contract_acceptance(
     base_url: str,
     db_name: str,
@@ -565,7 +625,9 @@ def probe_contract_acceptance(
         return receipt
 
     required_checks = list(declaration.get("required_checks") or [])
-    checks: dict[str, bool] = {name: False for name in required_checks}
+    # A check is present only once it was actually evaluated; an absent key is
+    # "not evaluated", never a silent False, so executed/not_run stay truthful.
+    checks: dict[str, bool] = {}
     detail: dict[str, Any] = {}
     shape_errors = validate_acceptance_declaration(declaration)
     errors: list[str] = list(declaration_errors or []) + shape_errors + list(resolution_errors or [])
@@ -611,18 +673,18 @@ def probe_contract_acceptance(
 
     if isinstance(resolution, dict):
         resolution_sha = str(resolution.get("expected_sha") or "")
+        unique, unique_detail = _resolution_target_is_unique(
+            resolution, declaration_resolution, target, company_id
+        )
+        checks["resolution_unique_target"] = bool(resolution_sha == served_sha and unique)
         if resolution_sha != served_sha:
-            checks["resolution_unique_target"] = False
             errors.append("record_resolution_served_sha_mismatch")
-        else:
-            checks["resolution_unique_target"] = True
+        if not unique:
+            errors.append("record_resolution_not_unique")
         detail["resolution_unique_target"] = {
-            "stable_identifier": target.get(declaration_resolution.get("stable_identifier_field")),
-            "record_id": target.get("record_id"),
-            "model": target.get("model"),
-            "company_id": company_id,
-            "company_key": declaration_resolution.get("company_key"),
+            **unique_detail,
             "resolved_sha": resolution_sha,
+            "expected_sha": served_sha,
         }
 
     # --- schema digest binding --------------------------------------------------
@@ -650,6 +712,8 @@ def probe_contract_acceptance(
         receipt.update(
             {
                 "required_checks": required_checks,
+                "executed_checks": [name for name in required_checks if name in checks],
+                "not_run_checks": [name for name in required_checks if name not in checks],
                 "checks": checks,
                 "check_detail": detail,
                 "errors": errors,
@@ -774,9 +838,11 @@ def probe_contract_acceptance(
     if not checks["contract_formal_schema_valid"]:
         errors.append("contract_formal_schema_invalid")
 
-    executed = [name for name in required_checks if name in checks and checks[name] is not None]
+    executed = [name for name in required_checks if name in checks]
     not_run = [name for name in required_checks if name not in checks]
-    all_passed = bool(required_checks) and all(checks.get(name) is True for name in required_checks)
+    # PASS requires every declared check to have been evaluated True; an
+    # unevaluated required check is a failure, never an implicit pass.
+    all_passed = bool(required_checks) and all(name in checks and checks[name] is True for name in required_checks)
 
     receipt.update(
         {
@@ -891,7 +957,21 @@ def main() -> int:
         ) if runtime_identity.get("status") == "PASS" else {"enabled": bool(args.login), "status": "NOT_RUN", "reason": "runtime_identity_not_verified"},
     }
     if not args.contract_declaration:
-        report["contract"] = {"enabled": False, "status": "NOT_RUN", "reason": "no_contract_declaration"}
+        if args.require_contract:
+            # An explicitly required contract without a declaration can never be
+            # satisfied; report it as a failure instead of a silent NOT_RUN.
+            report["contract"] = {
+                "enabled": True,
+                "status": "FAIL",
+                "reason": "contract_required_but_undeclared",
+                "errors": ["contract_required_but_undeclared"],
+                "required_checks": [],
+                "executed_checks": [],
+                "not_run_checks": [],
+                "checks": {},
+            }
+        else:
+            report["contract"] = {"enabled": False, "status": "NOT_RUN", "reason": "no_contract_declaration"}
     elif runtime_identity.get("status") != "PASS":
         report["contract"] = {"enabled": True, "status": "NOT_RUN", "reason": "runtime_identity_not_verified"}
     else:

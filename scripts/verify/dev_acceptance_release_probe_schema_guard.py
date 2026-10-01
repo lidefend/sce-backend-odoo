@@ -211,19 +211,29 @@ def _check_contract(value: object, errors: list[str]) -> str:
         errors.append("contract.status must be PASS, FAIL or NOT_RUN when enabled")
         return "FAIL"
     required = contract.get("required_checks")
-    if not isinstance(required, list) or not required or not all(isinstance(item, str) and item for item in required):
-        errors.append("contract.required_checks must be non-empty string list when enabled")
+    if not isinstance(required, list) or not all(isinstance(item, str) and item for item in required):
+        errors.append("contract.required_checks must be a string list when enabled")
         required = []
     checks = contract.get("checks")
-    if not isinstance(checks, dict) or not checks:
-        errors.append("contract.checks must be non-empty object when enabled")
+    if not isinstance(checks, dict):
+        errors.append("contract.checks must be object when enabled")
         checks = {}
-    for name in required:
-        if name not in checks:
-            errors.append(f"contract.checks must contain declared required check {name}")
+    unknown = [name for name in checks if name not in required]
+    if unknown:
+        errors.append(f"contract.checks must only contain declared required checks {unknown}")
     for name, result in checks.items():
         if not isinstance(result, bool):
             errors.append(f"contract.checks.{name} must be bool")
+    # An absent key means "not evaluated"; the claimed executed/not_run lists must
+    # agree with the evaluated set instead of pre-filling a default verdict.
+    if contract.get("executed_checks") is not None and contract.get("executed_checks") != [name for name in required if name in checks]:
+        errors.append("contract.executed_checks must list exactly the evaluated required checks")
+    if contract.get("not_run_checks") is not None and contract.get("not_run_checks") != [name for name in required if name not in checks]:
+        errors.append("contract.not_run_checks must list exactly the unevaluated required checks")
+    if status == "FAIL" and not required and contract.get("reason") == "contract_required_but_undeclared":
+        pass
+    elif not required:
+        errors.append("contract.required_checks must be non-empty when the contract was evaluated")
     executed = [name for name in required if name in checks]
     if status == "PASS":
         if not executed:

@@ -242,6 +242,36 @@ class ContractAcceptanceTest(unittest.TestCase):
         self.assertEqual(result["executed_checks"], [])
         self.assertEqual(result["not_run_checks"], CONTRACT_CHECKS)
 
+    def test_unevaluated_required_check_is_not_run_and_never_a_silent_false(self):
+        result = receipt(decl=declaration(required=CONTRACT_CHECKS + ["not_implemented_check"]))
+        self.assertNotEqual(result["status"], "PASS")
+        self.assertIn("not_implemented_check", result["not_run_checks"])
+        self.assertNotIn("not_implemented_check", result["executed_checks"])
+        self.assertNotIn("not_implemented_check", result["checks"])
+        self.assertNotIn("contract_schema_digest_bound", result["not_run_checks"])
+
+    def test_real_resolution_binds_the_declared_unique_identifier(self):
+        result = receipt()
+        self.assertTrue(result["checks"]["resolution_unique_target"])
+        detail = result["check_detail"]["resolution_unique_target"]
+        self.assertEqual(detail["record_xmlid"], detail["stable_identifier"])
+        self.assertEqual(detail["matching_resolved_targets"], 1)
+        ambiguous = resolution()
+        ambiguous["targets"]["duplicate_claim"] = {
+            "model": "project.project",
+            "record_id": 4242,
+            "record_xmlid": "smart_construction_acceptance_fixture.some_other_record",
+        }
+        rejected = receipt(res=ambiguous)
+        self.assertFalse(rejected["checks"]["resolution_unique_target"])
+        self.assertIn("record_resolution_not_unique", rejected["errors"])
+
+    def test_foreign_producer_resolution_is_not_unique(self):
+        foreign = resolution()
+        foreign["producer"] = "scripts/verify/some_other.py"
+        rejected = receipt(res=foreign)
+        self.assertFalse(rejected["checks"]["resolution_unique_target"])
+
     def test_malformed_declaration_cannot_pass(self):
         result = receipt(decl=declaration(required=[]))
         self.assertNotEqual(result["status"], "PASS")
@@ -339,7 +369,8 @@ class ReceiptSchemaGuardTest(unittest.TestCase):
             {"enabled": True, "status": "PASS", "required_checks": CONTRACT_CHECKS, "checks": {}, "errors": []}
         )
         self.assertNotEqual(completed.returncode, 0)
-        self.assertIn("contract.checks must be non-empty object", completed.stdout)
+        self.assertIn("contract.status=PASS requires at least one executed required check", completed.stdout)
+        self.assertIn("contract.checks.contract_schema_digest_bound must be true when contract passes", completed.stdout)
 
     def test_guard_rejects_tampered_snapshot_behind_a_pass_claim(self):
         result = receipt()
@@ -417,12 +448,14 @@ class CanonicalNavigationTest(unittest.TestCase):
         source = (ROOT / 'make/dev.mk').read_text()
         release = source.split('verify.dev.acceptance.release:')[1].split('.PHONY:')[0]
         self.assertIn('SC_ACCEPTANCE_EXPECTED_SHA="$$(git rev-parse HEAD)"', release)
-        readonly = source.split('verify.daily_dev.acceptance.readonly.probe:')[1].split('.PHONY:')[0]
+        readonly = source.split('.PHONY: verify.daily_dev.acceptance.readonly.probe')[1].split('.PHONY:')[0]
         self.assertIn('--login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"', readonly)
         self.assertIn('SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)"', readonly)
         self.assertIn('$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)', readonly)
         self.assertIn('dev_acceptance_release_probe_schema_guard.py', readonly)
         self.assertNotIn('$(RUN_ENV)', readonly)
+        self.assertIn('ACCEPTANCE_PROBE_OUTPUT := $(DAILY_ACCEPTANCE_PROBE_OUTPUT)', readonly)
+        self.assertIn('DAILY_ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/daily_dev_acceptance_probe.json', source)
 
     def test_missing_data_fails_closed(self):
         self.assertIn('canonical_navigation_nav_missing_or_invalid', self.probe(None)['errors'])

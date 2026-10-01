@@ -571,6 +571,10 @@ frontend.collection.acceptance.down: frontend.acceptance.down
 
 ACCEPTANCE_BASE_URL ?= http://127.0.0.1:$(NGINX_PORT)
 ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/dev_acceptance_release_probe.json
+# The daily/dev profile probes a different declared runtime than the acceptance
+# instance. Keep its probe output separate so a daily run can never overwrite the
+# instance receipt the acceptance lanes consume.
+DAILY_ACCEPTANCE_PROBE_OUTPUT ?= artifacts/backend/daily_dev_acceptance_probe.json
 ACCEPTANCE_LOGIN ?=
 ACCEPTANCE_PASSWORD ?=
 ACCEPTANCE_NAV_MIN_ACTIONS ?=
@@ -593,6 +597,7 @@ verify.dev.acceptance.release: guard.prod.forbid check-compose-project check-com
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
 .PHONY: verify.daily_dev.acceptance.readonly.probe
+verify.daily_dev.acceptance.readonly.probe: ACCEPTANCE_PROBE_OUTPUT := $(DAILY_ACCEPTANCE_PROBE_OUTPUT)
 verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" node scripts/verify/frontend_acceptance_environment_cli.mjs --tool daily-release-probe --operation readonly --expected-sha "$(ACCEPTANCE_TARGET_SHA)" --login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"
@@ -605,8 +610,8 @@ verify.dev.acceptance.release.schema.guard: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/dev_acceptance_release_probe_schema_guard.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
-.PHONY: acceptance.record_identity.resolve verify.dev.acceptance.contract
-acceptance.record_identity.resolve: guard.prod.forbid check-compose-project check-compose-env
+.PHONY: verify.dev.acceptance.record_identity.resolve verify.dev.acceptance.contract
+verify.dev.acceptance.record_identity.resolve: guard.prod.forbid check-compose-project check-compose-env
 	@set -eu; \
 	resolved_sha="$(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_SHA),$$(git rev-parse HEAD))"; \
 	target_output="$$( $(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 bash scripts/ops/odoo_shell_exec.sh < $(ACCEPTANCE_CONTRACT_RESOLVER) 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
@@ -614,10 +619,10 @@ acceptance.record_identity.resolve: guard.prod.forbid check-compose-project chec
 	test -n "$$payload" || { printf '%s\n' "$$target_output"; echo "record identity resolution payload missing"; exit 2; }; \
 	mkdir -p "$$(dirname "$(ACCEPTANCE_RECORD_RESOLUTION)")"; \
 	RESOLVED="$$payload" RESOLVED_SHA="$$resolved_sha" PRODUCER="$(ACCEPTANCE_CONTRACT_RESOLVER)" python3 -c 'import json,os; payload=json.loads(os.environ["RESOLVED"]); targets=payload; envelope={"schema":"acceptance.record_identity_resolution.v1","producer":os.environ["PRODUCER"],"expected_sha":os.environ["RESOLVED_SHA"],"targets":targets}; open("$(ACCEPTANCE_RECORD_RESOLUTION)","w",encoding="utf-8").write(json.dumps(envelope,ensure_ascii=False,indent=2,sort_keys=True)+"\n")'; \
-	echo "[acceptance.record_identity.resolve] wrote $(ACCEPTANCE_RECORD_RESOLUTION) sha=$$resolved_sha"
+	echo "[verify.dev.acceptance.record_identity.resolve] wrote $(ACCEPTANCE_RECORD_RESOLUTION) sha=$$resolved_sha"
 
 verify.dev.acceptance.contract: guard.prod.forbid
-	@test -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "governed record identity resolution required: make acceptance.record_identity.resolve (or retain the existing artifact)"; exit 2)
+	@test -f "$(ACCEPTANCE_RECORD_RESOLUTION)" || (echo "governed record identity resolution required: make verify.dev.acceptance.record_identity.resolve (or retain the existing artifact)"; exit 2)
 	@SC_ACCEPTANCE_EXPECTED_SHA="$(if $(ACCEPTANCE_TARGET_SHA),$(ACCEPTANCE_TARGET_SHA),$$(git rev-parse HEAD))" DB_NAME=$(FRONTEND_ACCEPTANCE_DB) ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" ACCEPTANCE_CONTRACT_DECLARATION="$(ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_REQUIRE_CONTRACT=1 ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
@@ -628,6 +633,7 @@ release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MIN_ACTIONS := $(DAILY_ACCE
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_MAX_ACTIONS := $(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_FORBIDDEN_LABELS := $(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)
 release.daily_dev.acceptance.publish: ACCEPTANCE_NAV_REQUIRED_PATHS := $(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)
+release.daily_dev.acceptance.publish: ACCEPTANCE_PROBE_OUTPUT := $(DAILY_ACCEPTANCE_PROBE_OUTPUT)
 release.daily_dev.acceptance.publish: guard.prod.forbid verify.daily_dev.acceptance.env.guard env.matrix.check verify.daily_dev.runtime_repo.clean release.dev.acceptance.publish
 	@echo "[release.daily_dev.acceptance.publish] PASS base_url=$(ACCEPTANCE_BASE_URL) db=$(DB_NAME) head=$$(git rev-parse --short HEAD)"
 
