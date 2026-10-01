@@ -949,6 +949,66 @@ try {
     }
     check('task: startup authority loaded', report.startup.some((row) => row.intent === 'system.init' && row.success));
     await finance.ctx.close();
+  } else if (process.env.TPL07_SCOPE === 'approval-actions' && process.env.TPL07_PAYMENT_REVIEW_RESUME === '201') {
+    const original = JSON.parse(await fs.readFile(path.join(root, 'artifacts/frontend-web-fix-20260928/tpl07-1790824095790/expense-success-recovery.json'), 'utf8'));
+    check('payment resume: retained record identity', original.id === 201 && original.source.id === 1710
+      && original.source.company_id === 8 && original.marker === 'TPL53-PAYMENT-REVIEW-1790824096177');
+    paymentReview = { model: original.model, source: original.source, marker: original.marker,
+      baseline: original.baseline, id: 201, approvalFlow: true, reviewStage: 2, phase: 'observe' };
+    const executive = await login('fixture_role_executive');
+    const invoke = (intent, params) => executive.page.evaluate(async ({ intent, params }) => {
+      const token = Object.entries(sessionStorage).find(([key]) => key.startsWith('sc_auth_token:'))?.[1];
+      return (await fetch('/api/v1/intent?db=sc_frontend_acceptance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}`, 'X-Odoo-DB': 'sc_frontend_acceptance' },
+        body: JSON.stringify({ intent, params }),
+      })).json();
+    }, { intent, params });
+    const read = () => invoke('api.data', { op: 'read', model: paymentReview.model, ids: [201],
+      fields: ['id', 'name', 'state', 'validation_status', 'company_id', 'payment_request_id', 'note'], context: { company_id: 8 } });
+    const before = await read();
+    report.paymentResumeBefore = before;
+    const record = before.data?.records?.[0];
+    check('payment resume: current user reads pending owned-scope record', before.ok === true && record?.id === 201
+      && record.company_id?.[0] === 8 && record.payment_request_id?.[0] === 1710 && record.note === original.marker
+      && record.state === 'draft' && record.validation_status === 'pending');
+    const [workspaceResponse] = await Promise.all([
+      executive.page.waitForResponse(response => {
+        try { const b = response.request().postDataJSON(); return b?.intent === 'my.work.summary' && b.params?.product_workspace === true; } catch { return false; }
+      }), executive.page.goto(`${base}/my-work`),
+    ]);
+    const workspace = await workspaceResponse.json();
+    report.paymentResumeWorkspace = workspace;
+    const item = workspace.data?.product_workspace?.sections?.flatMap(section => section.items || [])
+      .find(item => item.target?.model === paymentReview.model && item.target.record_id === 201);
+    check('payment resume: actual assigned second-stage task', item?.target?.work_item_origin?.source === 'tier.review'
+      && item.target.work_item_origin.id === 505);
+    paymentReview.origin = item.target.work_item_origin;
+    await executive.page.locator('[data-work-item-key]').filter({ hasText: record.name })
+      .getByRole('button', { name: '打开详情', exact: true }).click();
+    await executive.page.getByRole('button', { name: '审批通过', exact: true }).waitFor();
+    paymentReview.phase = 'approve';
+    await fs.writeFile(expenseRecoveryPath, JSON.stringify(paymentReview, null, 2));
+    const [approvalResponse] = await Promise.all([
+      executive.page.waitForResponse(response => {
+        try { const b = response.request().postDataJSON(); return b?.intent === 'execute_button' && b.params?.model === paymentReview.model && b.params?.res_id === 201; } catch { return false; }
+      }), executive.page.getByRole('button', { name: '审批通过', exact: true }).click(),
+    ]);
+    report.paymentResumeApproval = await approvalResponse.json();
+    check('payment resume: second reviewer approval succeeds', report.paymentResumeApproval.ok === true && paymentReview.phase === 'done');
+    report.paymentResumeAfter = await read();
+    const after = report.paymentResumeAfter.data?.records?.[0];
+    check('payment resume: final state confirmed and validated', after?.state === 'confirmed' && after.validation_status === 'validated');
+    const finalWorkspace = await invoke('my.work.summary', { product_workspace: true });
+    check('payment resume: completed task removed', finalWorkspace.ok === true && !(finalWorkspace.data?.product_workspace?.sections || [])
+      .flatMap(section => section.items || []).some(item => item.target?.model === paymentReview.model && item.target.record_id === 201));
+    const detail = executive.page.locator('[data-form-model="sc.payment.execution"][data-form-record="201"][data-detail-composition="official-standard-detail"][data-state="ok"]');
+    await detail.getByText(/状态[：:]\s*已确认/).first().waitFor();
+    for (const width of [1440, 390]) {
+      await executive.page.setViewportSize({ width, height: 950 });
+      check(`payment resume ${width}: no page overflow`, await executive.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+      await executive.page.screenshot({ path: path.join(out, `payment-resume-${width}.png`), fullPage: true });
+    }
+    await executive.ctx.close();
   } else if (process.env.TPL07_SCOPE === 'approval-actions' && (process.env.TPL07_PAYMENT_REVIEW_CAPTURE === '1' || process.env.TPL07_PAYMENT_REVIEW_SUCCESS === '1')) {
     paymentReview = { model: 'sc.payment.execution', source: { id: 1710, company_id: 8 },
       marker: `TPL53-PAYMENT-REVIEW-${Date.now()}`, phase: 'prepare' };
