@@ -215,7 +215,7 @@ class RelationReadRouteTest(unittest.TestCase):
             def check_access_rule(self, mode):
                 calls.append((self.model, 'rule', mode))
                 if self.denied == 'rule': raise PermissionError('denied')
-            def check_field_access_rights(self, mode, fields=None):
+            def check_field_access_rights(self, mode, fields):
                 calls.append((self.model, 'fields', mode, fields))
                 if self.denied == 'fields': raise PermissionError('denied')
             def __getitem__(self, name): return SimpleNamespace(ids=self.link_ids)

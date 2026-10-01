@@ -90,7 +90,7 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
                 return self._deny("ROUTE_RELATION_CHILD_NOT_FOUND")
             child.check_access_rights("read")
             child.check_access_rule("read")
-            child.check_field_access_rights("read")
+            child.check_field_access_rights("read", None)
             contract = self._load_relation_contract(model=model, record_id=record_id, action_id=action_id, menu_id=menu_id)
             if contract.get("statusContract", {}).get("globalStatus", {}).get("effectiveRecordCapabilities", {}).get("read") is not True:
                 return self._deny("ROUTE_RELATION_CHILD_CONTRACT_DENIED")
