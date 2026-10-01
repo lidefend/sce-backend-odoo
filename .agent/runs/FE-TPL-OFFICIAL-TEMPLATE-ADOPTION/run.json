@@ -517,10 +517,29 @@
         "addons_external/oca_server_ux/base_tier_validation/models/tier_validation.py",
         "addons_external/oca_server_ux/base_tier_validation_server_action/models/tier_validation.py"
       ]
+    },
+    "approval_configuration_targets": {
+      "target": "verify.business_config.approval_targets.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/business_config_surface.py",
+        "addons/smart_core/tests/test_business_config_surface.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/services/approval_configuration_targets.py",
+        "addons/smart_construction_core/tests/test_approval_configuration_targets.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/runtime_ops.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.204: native Tier review actions need record read, not blanket document edit; provider trusted access grant + fresh origin/contract checks implemented671942ce6/9d3dbf74a. First newunit test mock failed; original wrongly marked receipt invalid, corrected421c6575f test34 PASS/new receipt. Runtime review-action-access-runtime.log8 PASS/rollback verified incl configadmin->PM->executive, no general version write/create/unlink ACL, actual approval, replay denial, task removal. OCA dependencies added; source421/current ad499 unchanged files proven git diff empty, reuse original evidence. New clean frontend build ad4998360/index-4-Unal7H.js sha7c8a695aec989754b5a0997ed6a4e11e90f8412683028aef621a0f0128cf2a4d on5180; backend421c6575f. Next extend existing version browser + exact recovery to configured executive approval: snapshot absent policy/tier definitions/server-action groups BEFORE writes, config-admin configure, PM submit, executive current-workspace open/approve/readback/disappearance, loaded dualviewport; restore exact records/config baseline. Add focused permit/cleanup tests first; no fixture/env creation, no repeated ORM/unconfigured fulljourney. Overall67 still incomplete; no push/merge/deploy.",
+  "next_exact_step": "53.206: child approval configuration target contract implemented P1 eligible native one2many models/read ACL + P0 surface target_options/routes + shared editor target selection/write isolation. L1 version-config-targets-final-iteration PASS; final-unit40 PASS; preview-unit53 PASS; final-typecheck PASS. No runtime reload/build yet; commit layer-owned changes locally, backend.acceptance.up source bind (no schema/XML/ACL upgrade), one frontend.standard.preview.build/up, run configured version browser via real sc.plan parent action655/menu507 and select declared plan version. Earlier direct-child403 evidence tpl07-1790817279890 remains failed, restored/no writes. No new environment/ORM/fixtures/push/merge/deploy; overall67 remains incomplete.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

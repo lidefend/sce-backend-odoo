@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
+import { versionReviewWriteKind, planExecutionWriteKind, reportProbeWriteKind, eventProbeWriteKind, diaryProbeWriteKind, expenseProbeWriteKind, permitsExpensePolicyWrite } from './standard_expense_success_scope.mjs';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 import { permitsProjectNameWrite } from './standard_project_save_scope.mjs';
 
@@ -81,6 +81,8 @@ const planVersionSave = process.env.TPL07_PLAN_VERSION_SAVE === '1';
 assert.ok(!planVersionSave || planVersionInspect);
 const planVersionSubmit = process.env.TPL07_PLAN_VERSION_SUBMIT === '1';
 assert.ok(!planVersionSubmit || planVersionSave);
+const planVersionReview = process.env.TPL07_PLAN_VERSION_REVIEW === '1';
+assert.ok(!planVersionReview || planVersionSubmit);
 const planExecution = process.env.TPL07_PLAN_EXECUTION === '1';
 assert.ok(!planExecution || (reportSaveSuccess && !planVersionInspect));
 let planSaveCapture = false;
@@ -110,6 +112,7 @@ async function expenseCleanup(stage) {
   });
   await fs.writeFile(path.join(out, `expense-cleanup-${stage}.log`), output);
   check(`expense cleanup: ${stage} authoritative restoration`, output.includes('EXPENSE_BROWSER_CLEANUP=') && output.includes('"status": "restored"'));
+  return JSON.parse(output.split('\n').find(line => line.startsWith('EXPENSE_BROWSER_CLEANUP=')).slice('EXPENSE_BROWSER_CLEANUP='.length));
 }
 const lifecycleName = 'FE-TPL53-私有收藏闭环';
 
@@ -119,6 +122,21 @@ async function login(role) {
   page.on('pageerror', (error) => report.errors.push(error.message));
   await page.route('**/api/v1/intent*', async (route) => {
     const body = route.request().postDataJSON();
+    const reviewKind = versionReviewWriteKind(role, body, reportSuccess);
+    if (reviewKind) {
+      reportSuccess.phase = `${reviewKind}_in_flight`;
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      const response = await route.fetch();
+      const result = await response.json();
+      report.versionReviewWrites ??= [];
+      report.versionReviewWrites.push({ kind: reviewKind, request: body, result });
+      if (result.ok === true) {
+        if (reviewKind === 'version-config') reportSuccess.approvalPolicyId = result.data?.policy?.id;
+        reportSuccess.phase = reviewKind === 'version-config' ? 'version-steps' : 'done';
+      }
+      await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+      return route.fulfill({ response });
+    }
     if (planNodeReadGate && role === 'fixture_role_pm' && body?.intent === 'api.data'
       && body.params?.op === 'read' && body.params.model === 'sc.plan.line'
       && body.params.ids?.length === 1 && body.params.ids[0] === reportSuccess?.nodeId
@@ -288,7 +306,9 @@ async function login(role) {
         return permit.abort ? route.abort('failed') : route.continue();
       }
     }
-    if ((body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
+    if ((reportSaveSuccess && ['execute_button', 'contract.action', 'file.upload'].includes(body?.intent))
+      || (planVersionReview && /^sc\.approval_policy\..*\.set$/.test(body?.intent || ''))
+      || (body?.intent === 'api.data' && !['list', 'read', 'default_get'].includes(body.params?.op))
       || ['search.favorite.set', 'search.favorite.delete', 'api.data.create', 'api.data.write', 'api.data.unlink'].includes(body?.intent)) {
       report.forbiddenWrites.push({ intent: body.intent, op: body.params?.op });
       return route.abort();
@@ -1030,9 +1050,33 @@ try {
           const content = '临时验收计划汇报：核对官方表单提交和详情返回。';
           const parentRequest = { op: 'create', model: 'sc.plan', vals: { name: parentName, project_id: 10 },
             context: { company_id: 8, menu_id: Number(parentEntries[0].menu_id), action_id: Number(parentEntries[0].action_id) } };
-          reportSuccess = { model: spec.model, marker, planExecutionProbe: planExecution, versionProbe: planVersionSave, versionSubmitProbe: planVersionSubmit, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
+          reportSuccess = { model: spec.model, marker, planExecutionProbe: planExecution, versionProbe: planVersionSave, versionSubmitProbe: planVersionSubmit, versionReviewProbe: planVersionReview, parentRequest, parentId: null, id: null, request: null, phase: 'prepare' };
           await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
-          await expenseCleanup('preflight');
+          const recovery = await expenseCleanup('preflight');
+          if (planVersionReview) {
+            reportSuccess.approvalBaseline = recovery.approval_baseline;
+            check('version review: configuration baseline recorded', Boolean(reportSuccess.approvalBaseline?.reviewer_id));
+            await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+            const admin = await login('fixture_role_config_admin');
+            await admin.page.goto(`${base}/admin/business-config?model=sc.plan&action_id=${parentRequest.context.action_id}&menu_id=${parentRequest.context.menu_id}`);
+            await admin.page.getByRole('tab', { name: '审批规则', exact: true }).click();
+            await admin.page.getByRole('button', { name: '配置审批', exact: true }).click();
+            const panel = admin.page.locator('.approval-panel');
+            await panel.getByLabel('审批对象', { exact: true }).click();
+            await admin.page.getByText('计划版本', { exact: true }).last().click();
+            await panel.getByText(/计划版本：尚未建立审批规则/).waitFor();
+            await panel.getByRole('checkbox', { name: '启用审批', exact: true }).check();
+            await panel.getByLabel(/默认审批岗位/).click();
+            await admin.page.getByText('管理层/总经理终审', { exact: true }).last().click();
+            await panel.getByRole('textbox', { name: '第1步名称', exact: true }).fill(`${marker}-审批`);
+            reportSuccess.phase = 'version-config';
+            await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+            await panel.getByRole('button', { name: '保存审批设置', exact: true }).click();
+            await admin.page.getByText('审批设置已保存', { exact: true }).waitFor();
+            check('version review: configuration and steps accepted', reportSuccess.phase === 'done' && report.versionReviewWrites?.length === 2);
+            await admin.page.screenshot({ path: path.join(out, 'version-review-configured.png') });
+            await admin.ctx.close();
+          }
           const projectRead = await api({ op: 'read', model: 'project.project', ids: [10], fields: ['id', 'company_id'], context: { company_id: 8 } });
           check('report handling: parent project authorized', projectRead.ok === true && projectRead.data?.records?.[0]?.company_id?.[0] === 8);
           reportSuccess.phase = 'parent';
@@ -1229,9 +1273,58 @@ try {
                   fields: ['id', 'state', 'plan_id', 'approved_by', 'approved_date'], context: { company_id: 8 } });
                 report.planVersionApprovedReadback = readback;
                 const approved = readback.data?.records?.[0];
-                check('plan version: unconfigured approval auto-passes without fabricated reviewer', readback.ok === true && approved?.state === 'approved'
-                  && approved.plan_id[0] === reportSuccess.parentId && !approved.approved_by && Boolean(approved.approved_date));
-                await session.page.screenshot({ path: path.join(out, 'plan-version-approved.png') });
+                if (planVersionReview) {
+                  check('version review: configured submission waits for reviewer', readback.ok === true && approved?.state === 'draft' && !approved.approved_by && !approved.approved_date);
+                  const reviewer = await login('fixture_role_executive');
+                  const workspaceResponse = reviewer.page.waitForResponse(response => {
+                    try { const body = response.request().postDataJSON(); return body?.intent === 'my.work.summary' && body.params?.product_workspace === true; } catch { return false; }
+                  });
+                  await reviewer.page.goto(`${base}/my-work`);
+                  const workspace = await (await workspaceResponse).json();
+                  const item = workspace.data?.product_workspace?.sections?.flatMap(section => section.items).find(item => item.target?.model === 'sc.plan.version' && item.target.record_id === row.id);
+                  check('version review: actual current workspace declares assigned version', Boolean(item?.target?.work_item_origin));
+                  reportSuccess.approvalOrigin = item.target.work_item_origin;
+                  report.versionReviewWorkspace = { target: item.target, counts: workspace.data.product_workspace.counts };
+                  await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+                  const card = reviewer.page.locator('[data-work-item-key]').filter({ hasText: versionNo });
+                  await card.getByRole('button', { name: '打开详情', exact: true }).click();
+                  await reviewer.page.waitForURL(url => url.pathname === `/r/sc.plan.version/${row.id}`);
+                  const approve = reviewer.page.getByRole('button', { name: '审批通过', exact: true });
+                  await approve.waitFor();
+                  await reviewer.page.getByRole('heading', { name: versionNo, exact: true }).waitFor();
+                  check('version review: business version title and approval available', await approve.isEnabled());
+                  reportSuccess.phase = 'version-approve';
+                  await fs.writeFile(expenseRecoveryPath, JSON.stringify(reportSuccess, null, 2));
+                  const approvalResponse = reviewer.page.waitForResponse(response => {
+                    try { const body = response.request().postDataJSON(); return body?.intent === 'execute_button' && body.params?.model === 'sc.plan.version'; } catch { return false; }
+                  });
+                  await approve.click();
+                  const result = await (await approvalResponse).json();
+                  check('version review: actual executive action succeeds', result.ok === true && reportSuccess.phase === 'done');
+                  const final = await api({ op: 'read', model: 'sc.plan.version', ids: [row.id], fields: ['id', 'state', 'approved_by', 'approved_date'], context: { company_id: 8 } });
+                  report.versionReviewFinalReadback = final;
+                  check('version review: real reviewer and approved state read back', final.ok === true && final.data.records[0].state === 'approved'
+                    && final.data.records[0].approved_by[0] === reportSuccess.approvalBaseline.reviewer_id && Boolean(final.data.records[0].approved_date));
+                  await reviewer.page.getByText('已确认', { exact: true }).first().waitFor();
+                  await reviewer.page.getByRole('heading', { name: versionNo, exact: true }).waitFor();
+                  for (const width of [1440, 390]) {
+                    await reviewer.page.setViewportSize({ width, height: 950 });
+                    check(`version review completed ${width}: no overflow`, await reviewer.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2));
+                    await reviewer.page.screenshot({ path: path.join(out, `version-review-approved-${width}.png`) });
+                  }
+                  const refreshedResponse = reviewer.page.waitForResponse(response => {
+                    try { const body = response.request().postDataJSON(); return body?.intent === 'my.work.summary' && body.params?.product_workspace === true; } catch { return false; }
+                  });
+                  await reviewer.page.goto(`${base}/my-work`);
+                  const refreshed = await (await refreshedResponse).json();
+                  check('version review: completed task exits current workspace', !refreshed.data.product_workspace.sections.flatMap(section => section.items)
+                    .some(item => item.target?.model === 'sc.plan.version' && item.target.record_id === row.id));
+                  await reviewer.ctx.close();
+                } else {
+                  check('plan version: unconfigured approval auto-passes without fabricated reviewer', readback.ok === true && approved?.state === 'approved'
+                    && approved.plan_id[0] === reportSuccess.parentId && !approved.approved_by && Boolean(approved.approved_date));
+                  await session.page.screenshot({ path: path.join(out, 'plan-version-approved.png') });
+                }
                 await session.page.getByRole('button', { name: '返回', exact: true }).click();
                 await session.page.waitForURL(url => url.pathname === `/f/sc.plan/${reportSuccess.parentId}`);
                 report.planVersionReturnUrl = session.page.url();

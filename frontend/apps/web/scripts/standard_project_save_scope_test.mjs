@@ -189,3 +189,37 @@ test('plan execution scope binds node writes and individual state actions', asyn
   assert.equal(planExecutionWriteKind('fixture_role_pm', action, { ...scope, phase: 'plan-start' }), 'plan-start');
   assert.equal(planExecutionWriteKind('fixture_role_pm', action, { ...scope, phase: 'plan-confirm' }), null);
 });
+
+import { versionReviewWriteKind } from './standard_expense_success_scope.mjs';
+const reviewScope = { model: 'sc.plan.report', marker: 'TPL53-REPORT-SAVE-1790816000000', versionReviewProbe: true,
+  versionProbe: true, versionSubmitProbe: true, approvalBaseline: { reviewer_id: 28 }, versionId: 14,
+  approvalOrigin: { source: 'tier.review', id: 91 }, phase: 'version-config' };
+test('version review config permit binds exact model, role, values and single use phase', () => {
+  const body = { intent: 'sc.approval_policy.config.set', params: { model: 'sc.plan.version', approval_required: true, mode: 'single', manager_scope_key: 'executive' } };
+  assert.equal(versionReviewWriteKind('fixture_role_config_admin', body, reviewScope), 'version-config');
+  for (const patch of [{ model: 'sc.plan' }, { approval_required: false }, { mode: 'linear' }, { manager_scope_key: 'business_admin' }, { company_id: 9 }]) {
+    assert.equal(versionReviewWriteKind('fixture_role_config_admin', { ...body, params: { ...body.params, ...patch } }, reviewScope), null);
+  }
+  assert.equal(versionReviewWriteKind('fixture_role_pm', body, reviewScope), null);
+  assert.equal(versionReviewWriteKind('fixture_role_config_admin', body, { ...reviewScope, phase: 'version-config_in_flight' }), null);
+  assert.equal(versionReviewWriteKind('fixture_role_config_admin', body, { ...reviewScope, approvalBaseline: null }), null);
+});
+test('version review step permit excludes extra steps, existing ids and conditions', () => {
+  const step = { name: `${reviewScope.marker}-审批`, approval_scope_key: 'executive', active: true, amount_min: false, amount_max: false, condition_note: '', note: '' };
+  const body = { intent: 'sc.approval_policy.steps.set', params: { model: 'sc.plan.version', steps: [step] } };
+  const scope = { ...reviewScope, phase: 'version-steps' };
+  assert.equal(versionReviewWriteKind('fixture_role_config_admin', body, scope), 'version-steps');
+  for (const steps of [[step, step], [{ ...step, id: 1 }], [{ ...step, amount_min: 100 }], [{ ...step, approval_scope_key: 'project_manager' }]]) {
+    assert.equal(versionReviewWriteKind('fixture_role_config_admin', { ...body, params: { ...body.params, steps } }, scope), null);
+  }
+});
+test('version review action permit binds actual review origin and actor without broad method access', () => {
+  const scope = { ...reviewScope, phase: 'version-approve' };
+  const body = { intent: 'execute_button', params: { model: 'sc.plan.version', res_id: 14, button: { name: 'validate_tier', type: 'object' } }, meta: { work_item_origin: scope.approvalOrigin } };
+  assert.equal(versionReviewWriteKind('fixture_role_executive', body, scope), 'version-approve');
+  assert.equal(versionReviewWriteKind('fixture_role_pm', body, scope), null);
+  assert.equal(versionReviewWriteKind('fixture_role_executive', body, { ...scope, phase: 'done' }), null);
+  assert.equal(versionReviewWriteKind('fixture_role_executive', { ...body, params: { ...body.params, res_id: 15 } }, scope), null);
+  assert.equal(versionReviewWriteKind('fixture_role_executive', { ...body, params: { ...body.params, button: { name: 'unlink', type: 'object' } } }, scope), null);
+  assert.equal(versionReviewWriteKind('fixture_role_executive', { ...body, meta: { work_item_origin: { source: 'tier.review', id: 92 } } }, scope), null);
+});

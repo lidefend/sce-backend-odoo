@@ -9548,3 +9548,18 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - ad4998360提交上述P4权限断言。原前端66和strict typecheck输入不变，继续复用53.203日志；本轮无XML、schema数据库字段/ACL变动，无模块升级。新增记录OCA直接依赖到同run运行输入列表；git diff 421c6575f HEAD -- 两个OCA源码为空，原运行时与当前依赖不变，沿原日志复用，不无理由重跑8项。
 - 一次构建/复用5180完成：clean base ad4998360421bc7e435084d8935281eb09d9cc0c；entry /assets/index-4-Unal7H.js，sha256 7c8a695aec989754b5a0997ed6a4e11e90f8412683028aef621a0f0128cf2a4d。review-workspace-build.log/review-workspace-preview.log；backend仍421c6575f，提交后仅P4测试/记录，不重启相同产品输入。新前端已成为候选，但尚未有配置审批浏览器证据。
 - 下一步仅扩展既有版本主从browser与精确恢复：配置前快照目标策略缺失、相关tier定义和回调server-action groups（策略同步会修改组）；普通config_admin配置executive，PM主从版本提交，executive在当前工作台打开、真实审批、回读/退出及已加载双视口。finally只清理本批精确事实/规则/定义并恢复配置基线，先补纯许可/清理测试再运行，不把新状态放进旧无审批清理豁免。总体67/detail.action-state仍contract_gap；无push/merge/目标部署/整体交付声明。
+
+### 53.205 配置审批浏览器前置与子单据配置入口缺口
+
+- 候选7ab298323加5个P4工具文件dirty。扩展既有version browser：配置管理员配置、PM提交、真实审批人工作台办理；写入许可绑定角色/模型/单据/来源/阶段。恢复绑定配置缺失基线、tier定义及callback groups，禁止宽泛清理。尚未提交，不视为冻结候选。
+- L1 version-review-ui-tool-final-static.log PASS；L2 version-review-ui-tool-unit.log实际退出0，Node22+Python31=53 PASS，已记录standard_preview_tool。产品输入未变，复用既有backend421/frontend ad499，不升级模块或重建。
+- 定向浏览器version-review-ui-browser.log FAIL（tpl07-1790817279890/report.json）。10项已有断言不代表旅程通过。config_admin访问计划版本配置页后落入access-denied/PERMISSION_DENIED，等待审批规则tab超时；没有进入配置保存/业务创建，forbiddenWrites为空。前置读回实际reviewer uid37、策略/定义缺失、两个callback groups为空；expense-cleanup-final.log权威回读restored，临时记录/版本/父记录均为空。
+- 初步称路由拒绝，源码进一步定位配置surface加载403也会触发同一拒绝页（useBusinessConfigScopeLifecycle）；不能仅凭页面断定路由guard。下一步仅追踪ui.business_config.surface.get对子单据模型的配置范围授权，确认现有合法入口或补齐所属层契约。禁止伪造菜单/动作或扩大角色ACL来通过验收。整体67/detail.action-state未关闭；无推送、合并、目标部署。
+
+### 53.206 父页面下的子单据审批配置契约
+
+- 53.205根因已确认：ui.business_config.surface.get在business_catalog模式下要求真实正式action与model匹配，sc.plan.version没有独立导航。保留这一边界；不构造虚假action/menu，不给角色追加记录写权限。
+- P1 smart_construction_core新增审批对象投影：既有sc.approval.policy目标选择是资格来源，父模型直接one2many是归属来源，普通模型read ACL进一步约束；不递归、不开many2one旁路、不新增模型白名单。已有目标选择之外的必要单据仍是既有产品缺口，不因本实现自动关闭。P0通过扩展hook把target_options及每个对象的完整规则route纳入surface.sections.approval，计数覆盖声明对象。
+- 共享审批编辑器消费对象列表；不再把父页面model固定当成审批目标。未声明对象拒绝读/写，未保存/处理中不能切换；保存绑定选择的模型，父页面变化后不再执行后续步骤写入或覆盖编辑器。完整规则链接消费所选对象的后端route。当前仅新增响应字段与服务代码，无持久字段/XML/ACL变更，不需模块升级；实际运行前需受管重绑后端并构建前端。
+- L1 version-config-targets-final-iteration.log PASS；verify.business_config.approval_targets.unit为26个surface+8个P1投影+6个真实composable测试，共40 PASS（final-unit.log）；既有preview工具53 PASS（preview-unit.log）；strict typecheck退出0（final-typecheck.log）。均在tpl52目录。独立纯测试不代替运行验收，配置浏览器尚未重跑。
+- P4浏览器改从真实sc.plan父入口进入，再在共享编辑器选择后端声明的计划版本；原有精确写许可/恢复基线保持。下一步本地分层提交、一次构建/复用5180、真实配置→PM提交→executive办理→回读/恢复。整体67未完成。

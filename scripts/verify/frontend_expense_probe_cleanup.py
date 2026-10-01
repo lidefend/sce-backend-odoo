@@ -166,8 +166,13 @@ def validate_version_probe_target(database, scope, row, actor_id):
     assert row['revision_type'] == 'adjustment'
     if row['state'] != 'draft':
         assert row['state'] == 'approved' and scope.get('versionSubmitProbe') is True
-        assert scope.get('phase') in ('version-submit_in_flight', 'done') and scope.get('versionId') == row['id']
-        assert not row.get('approved_by') and row.get('approved_date') == scope['versionDefaults']['version_date']
+        phases = ('version-submit_in_flight', 'done', 'version-approve_in_flight') if scope.get('versionReviewProbe') else ('version-submit_in_flight', 'done')
+        assert scope.get('phase') in phases and scope.get('versionId') == row['id']
+        if scope.get('versionReviewProbe'):
+            assert row.get('approved_by') == scope['approvalBaseline']['reviewer_id']
+        else:
+            assert not row.get('approved_by')
+        assert row.get('approved_date') == scope['versionDefaults']['version_date']
     assert row['version_date'] == scope['versionDefaults']['version_date']
     if scope.get('versionId'): assert row['id'] == scope['versionId']
     started = int(marker.rsplit('-', 1)[1]) / 1000
@@ -188,6 +193,82 @@ def validate_plan_node_probe_target(database, scope, row, actor_id):
     assert -5 <= created - started <= 300
 
 
+def validate_version_review_policy(database, scope, row):
+    assert database == 'sc_frontend_acceptance' and scope.get('versionReviewProbe') is True
+    assert scope.get('model') == 'sc.plan.report' and type(row['id']) is int and row['id'] > 0
+    assert scope.get('versionProbe') is True and scope.get('versionSubmitProbe') is True
+    assert not scope.get('planExecutionProbe')
+    assert re.fullmatch(r'TPL53-REPORT-SAVE-\d{13}', scope['marker'])
+    assert row['code'] == 'low_code_sc_plan_version_company_8'
+    assert row['target_model'] == 'sc.plan.version' and row['company_id'] == 8 and row['create_uid'] == 34
+    assert row['approval_required'] is True and row['mode'] == 'single' and row['trigger'] == 'submit'
+    assert row['manager_scope_key'] == 'executive' and row['active'] is True
+    if scope.get('approvalPolicyId'):
+        assert row['id'] == scope['approvalPolicyId']
+    started = int(scope['marker'].rsplit('-', 1)[1]) / 1000
+    created = datetime.fromisoformat(row['create_date']).replace(tzinfo=timezone.utc).timestamp()
+    assert -5 <= created - started <= 300
+
+
+def version_review_recovery_bundle(env, scope):
+    Policy = env['sc.approval.policy'].sudo().with_context(active_test=False)
+    Definition = env['tier.definition'].sudo().with_context(active_test=False)
+    policies = Policy.search([('target_model', '=', 'sc.plan.version')])
+    definitions = Definition.search([('model', '=', 'sc.plan.version')])
+    reviewer = env['res.users'].sudo().search([('login', '=', 'fixture_role_executive')])
+    assert len(reviewer) == 1 and reviewer.active and reviewer.company_id.id == 8
+    admin = env['res.users'].sudo().search([('login', '=', 'fixture_role_config_admin')])
+    assert len(admin) == 1 and admin.id == 34 and admin.company_id.id == 8
+    group = Policy._group_for_approval_scope('executive')
+    assert group and group in reviewer.groups_id
+    actions = [env.ref(xmlid).sudo() for xmlid in Policy._tier_server_action_xmlids('sc.plan.version')]
+    baseline = scope.get('approvalBaseline')
+    if baseline is None:
+        assert not policies and not definitions
+        assert not env['sc.plan'].sudo().search_count([('name', '=', scope['parentRequest']['vals']['name'])])
+        return {'baseline': {'reviewer_id': reviewer.id, 'definition_ids': definitions.ids,
+                            'actions': [{'id': action.id, 'groups': sorted(action.groups_id.ids)} for action in actions]}}
+    assert baseline['reviewer_id'] == reviewer.id
+    assert [row['id'] for row in baseline['actions']] == [action.id for action in actions]
+    assert len(policies) <= 1
+    for policy in policies:
+        row = policy.read(['code', 'target_model', 'approval_required', 'mode', 'trigger', 'manager_scope_key', 'active', 'create_date'])[0]
+        row.update(company_id=policy.company_id.id, create_uid=policy.create_uid.id, create_date=str(policy.create_date))
+        validate_version_review_policy(env.cr.dbname, scope, row)
+    steps = policies.with_context(active_test=False).step_ids
+    assert all(step.approve_group_id == group and not step.amount_min and not step.amount_max
+               and not step.condition_note and not step.note for step in steps)
+    assert len(steps) <= 2 and len(steps.filtered('active')) <= 1
+    owned_definitions = steps.tier_definition_id
+    assert set(definitions.ids) == set(baseline['definition_ids']) | set(owned_definitions.ids)
+    assert set(baseline['definition_ids']).isdisjoint(owned_definitions.ids)
+    assert not env['sc.approval.step'].sudo().with_context(active_test=False).search_count([
+        ('tier_definition_id', 'in', owned_definitions.ids), ('policy_id', 'not in', policies.ids)])
+    for action, saved in zip(actions, baseline['actions']):
+        assert sorted(action.groups_id.ids) in (saved['groups'], [group.id]), 'callback permissions changed outside this probe'
+    reviews = env['tier.review'].sudo().search([('definition_id', 'in', owned_definitions.ids)])
+    return {'policies': policies, 'steps': steps, 'definitions': owned_definitions,
+            'reviews': reviews, 'actions': actions, 'baseline': baseline}
+
+
+def restore_version_review_bundle(env, bundle):
+    bundle['reviews'].unlink()
+    bundle['steps'].with_context(skip_tier_sync=True).write({'active': False})
+    bundle['steps'].with_context(skip_tier_sync=True).unlink()
+    bundle['policies'].with_context(skip_tier_sync=True).write({'active': False})
+    bundle['policies'].unlink()
+    bundle['definitions'].unlink()
+    for action, saved in zip(bundle['actions'], bundle['baseline']['actions']):
+        action.write({'groups_id': [(6, 0, saved['groups'])]})
+
+
+def assert_version_review_restored(env, baseline):
+    assert not env['sc.approval.policy'].sudo().with_context(active_test=False).search_count([('target_model', '=', 'sc.plan.version')])
+    assert set(env['tier.definition'].sudo().with_context(active_test=False).search([('model', '=', 'sc.plan.version')]).ids) == set(baseline['definition_ids'])
+    for saved in baseline['actions']:
+        assert sorted(env['ir.actions.server'].sudo().browse(saved['id']).groups_id.ids) == saved['groups']
+
+
 def recover_report(env, scope):
     assert env.cr.dbname == 'sc_frontend_acceptance' and scope['model'] == 'sc.plan.report'
     marker = scope['marker']
@@ -198,6 +279,13 @@ def recover_report(env, scope):
     actor = env['res.users'].sudo().search([('login', '=', 'fixture_role_pm')])
     assert len(actor) == 1 and actor.company_id.id == 8
     assert env['project.project'].sudo().browse(10).company_id.id == 8
+    review_bundle = None
+    if scope.get('versionReviewProbe'):
+        assert scope.get('versionProbe') and scope.get('versionSubmitProbe') and not scope.get('planExecutionProbe')
+        review_bundle = version_review_recovery_bundle(env, scope)
+        if 'policies' not in review_bundle:
+            print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'approval_baseline': review_bundle['baseline']}))
+            return
     assert not env['sc.approval.policy'].sudo().search_count([
         ('target_model', '=', 'sc.plan.report'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
     if scope.get('planExecutionProbe'):
@@ -213,7 +301,7 @@ def recover_report(env, scope):
     Version = env['sc.plan.version'].sudo().with_context(active_test=False)
     if scope.get('versionSubmitProbe'):
         assert scope.get('versionProbe') is True
-        assert not env['sc.approval.policy'].sudo().search_count([
+        assert review_bundle or not env['sc.approval.policy'].sudo().search_count([
             ('target_model', '=', 'sc.plan.version'), ('company_id', 'in', [False, 8]), ('approval_required', '=', True)])
     versions = Version.search([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
     assert not versions or scope.get('versionProbe') is True
@@ -247,8 +335,16 @@ def recover_report(env, scope):
         row.update(create_date=str(record.create_date), version_date=str(record.version_date),
                    approved_date=str(record.approved_date) if record.approved_date else False, approved_by=record.approved_by.id)
         validate_version_probe_target(env.cr.dbname, scope, row, actor.id)
-        assert not record.review_ids and not record.approved_by and not record.base_version_id
-        if record.state == "draft": assert not record.approved_date
+        assert not record.base_version_id
+        if review_bundle:
+            assert set(record.review_ids.ids) == set(review_bundle['reviews'].ids)
+            for review in record.review_ids:
+                assert review.model == record._name and review.res_id == record.id
+                assert review.create_uid == actor and review.status in ('waiting', 'pending', 'approved')
+                assert not review.done_by or review.done_by.id == review_bundle['baseline']['reviewer_id']
+        else:
+            assert not record.review_ids and not record.approved_by
+        if record.state == "draft": assert not record.approved_date and not record.approved_by
         assert not record.legacy_fact_id and not Version.search_count([('base_version_id', '=', record.id)])
     for record in nodes:
         assert plans and record.plan_id == plans
@@ -264,6 +360,9 @@ def recover_report(env, scope):
         for record in records:
             assert not env['ir.attachment'].sudo().search_count([('res_model', '=', record._name), ('res_id', '=', record.id)])
     # All identities/dependencies above are checked before restoring this exact temporary fact.
+    if review_bundle:
+        assert set(review_bundle['reviews'].ids) == set(versions.review_ids.ids)
+        restore_version_review_bundle(env, review_bundle)
     for record in versions.filtered(lambda row: row.state == 'approved'):
         record._write_document_state({'state': 'draft', 'approved_date': False, 'approved_by': False})
     if scope.get('planExecutionProbe'):
@@ -277,6 +376,8 @@ def recover_report(env, scope):
     assert not Plan.search_count([('name', '=', vals['name'])]) and not Report.search_count([('name', '=', marker)])
     assert not Version.search_count([('version_no', '=', marker.replace('REPORT-SAVE', 'VERSION-SAVE'))])
     assert not Node.search_count([('name', '=', marker.replace('REPORT-SAVE', 'PLAN-NODE'))])
+    if review_bundle:
+        assert_version_review_restored(env, review_bundle['baseline'])
     print('EXPENSE_BROWSER_CLEANUP=' + json.dumps({'status': 'restored', 'model': scope['model'], 'record_ids': report_ids, 'version_ids': version_ids, 'node_ids': node_ids, 'parent_ids': plan_ids, 'actor_id': actor.id}))
 
 

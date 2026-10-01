@@ -125,3 +125,26 @@ export function planExecutionWriteKind(role, body, scope) {
     && line[2].progress_rate === (scope.phase === 'node-progress' ? 50 : 100)
     && line[2].state === (scope.phase === 'node-progress' ? 'in_progress' : 'done') ? scope.phase : null;
 }
+
+export function versionReviewWriteKind(role, body, scope) {
+  if (!scope?.versionReviewProbe || !scope.versionProbe || !scope.versionSubmitProbe || scope.planExecutionProbe
+    || scope.model !== 'sc.plan.report' || !/^TPL53-REPORT-SAVE-\d{13}$/.test(scope.marker)
+    || !Number.isInteger(scope.approvalBaseline?.reviewer_id) || scope.approvalBaseline.reviewer_id <= 0) return null;
+  const p = body?.params;
+  if (role === 'fixture_role_config_admin' && scope.phase === 'version-config'
+    && body.intent === 'sc.approval_policy.config.set' && isDeepStrictEqual(p, {
+      model: 'sc.plan.version', approval_required: true, mode: 'single', manager_scope_key: 'executive',
+    })) return 'version-config';
+  if (role === 'fixture_role_config_admin' && scope.phase === 'version-steps'
+    && body.intent === 'sc.approval_policy.steps.set' && isDeepStrictEqual(p, {
+      model: 'sc.plan.version', steps: [{ name: `${scope.marker}-审批`, approval_scope_key: 'executive',
+        active: true, amount_min: false, amount_max: false, condition_note: '', note: '' }],
+    })) return 'version-steps';
+  if (role === 'fixture_role_executive' && scope.phase === 'version-approve'
+    && body.intent === 'execute_button' && p?.model === 'sc.plan.version'
+    && Number.isInteger(scope.versionId) && scope.versionId > 0 && p.res_id === scope.versionId
+    && p.button?.name === 'validate_tier' && p.button.type === 'object'
+    && scope.approvalOrigin?.source === 'tier.review' && Number.isInteger(scope.approvalOrigin.id) && scope.approvalOrigin.id > 0
+    && isDeepStrictEqual(body.meta?.work_item_origin, scope.approvalOrigin)) return 'version-approve';
+  return null;
+}

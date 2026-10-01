@@ -2354,6 +2354,12 @@ verify.nav.pro01r.route_authority.browser: guard.prod.forbid
 	@DB_NAME=$(DB_NAME) FRONTEND_URL="$${FRONTEND_URL:-http://127.0.0.1:$(NGINX_PORT)}" NAV_PRO_PASSWORD="$(NAV_PRO_PASSWORD)" node scripts/verify/nav_pro_01r_route_authority_browser.mjs
 
 .PHONY: verify.business_config.formal_list.unit
+.PHONY: verify.business_config.approval_targets.unit
+verify.business_config.approval_targets.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_business_config_surface.py
+	@python3 addons/smart_construction_core/tests/test_approval_configuration_targets.py
+	@node --test frontend/apps/web/scripts/business_config_approval_target_test.mjs
+
 verify.business_config.formal_list.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py
 	@python3 addons/smart_core/tests/test_load_contract_response_cache.py

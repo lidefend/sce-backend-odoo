@@ -329,3 +329,47 @@ class PlanExecutionCleanupTest(unittest.TestCase):
             with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
         with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_dev_demo', scope, row, 32)
         with self.assertRaises(AssertionError): validate_plan_node_probe_target('sc_frontend_acceptance', {**scope, 'versionProbe': True}, row, 32)
+
+
+class VersionReviewRecoveryIdentityTest(unittest.TestCase):
+    def test_policy_recovery_is_exact_and_never_replaces_an_existing_configuration(self):
+        from datetime import datetime, timezone
+        from scripts.verify.frontend_expense_probe_cleanup import validate_version_review_policy
+        marker = 'TPL53-REPORT-SAVE-1790816000000'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'versionReviewProbe': True,
+                 'versionProbe': True, 'versionSubmitProbe': True, 'approvalPolicyId': 17}
+        row = {'id': 17, 'code': 'low_code_sc_plan_version_company_8', 'target_model': 'sc.plan.version',
+               'company_id': 8, 'create_uid': 34, 'approval_required': True, 'mode': 'single', 'trigger': 'submit',
+               'manager_scope_key': 'executive', 'active': True,
+               'create_date': datetime.fromtimestamp(1790816000, timezone.utc).replace(tzinfo=None).isoformat()}
+        validate_version_review_policy('sc_frontend_acceptance', scope, row)
+        for patch in ({'id': 18}, {'company_id': 9}, {'create_uid': 1}, {'target_model': 'sc.plan'},
+                      {'code': 'existing'}, {'mode': 'linear'}, {'manager_scope_key': 'business_admin'},
+                      {'approval_required': False}, {'active': False}, {'create_date': '2020-01-01 00:00:00'}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                validate_version_review_policy('sc_frontend_acceptance', scope, {**row, **patch})
+        for patch in ({'versionReviewProbe': False}, {'versionProbe': False}, {'versionSubmitProbe': False},
+                      {'planExecutionProbe': True}, {'marker': 'existing'}, {'model': 'sc.expense.claim'}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                validate_version_review_policy('sc_frontend_acceptance', {**scope, **patch}, row)
+        with self.assertRaises(AssertionError):
+            validate_version_review_policy('sc_dev_demo', scope, row)
+
+    def test_configured_version_cleanup_requires_actual_declared_reviewer(self):
+        from datetime import datetime, timezone
+        from scripts.verify.frontend_expense_probe_cleanup import validate_version_probe_target
+        date = datetime.fromtimestamp(1790816000, timezone.utc).replace(tzinfo=None)
+        marker = 'TPL53-REPORT-SAVE-1790816000000'
+        scope = {'model': 'sc.plan.report', 'marker': marker, 'versionReviewProbe': True, 'versionProbe': True,
+                 'versionSubmitProbe': True, 'phase': 'version-approve_in_flight', 'parentId': 24, 'versionId': 31,
+                 'approvalBaseline': {'reviewer_id': 28}, 'versionDefaults': {'version_date': str(date.date())}}
+        row = {'id': 31, 'version_no': marker.replace('REPORT-SAVE', 'VERSION-SAVE'), 'plan_id': 24,
+               'company_id': 8, 'create_uid': 32, 'state': 'approved', 'revision_type': 'adjustment',
+               'version_date': str(date.date()), 'approved_date': str(date.date()), 'approved_by': 28,
+               'create_date': date.isoformat()}
+        validate_version_probe_target('sc_frontend_acceptance', scope, row, 32)
+        for patch in ({'approved_by': False}, {'approved_by': 34}, {'company_id': 9}, {'plan_id': 25}, {'id': 32}):
+            with self.subTest(patch=patch), self.assertRaises(AssertionError):
+                validate_version_probe_target('sc_frontend_acceptance', scope, {**row, **patch}, 32)
+        with self.assertRaises(AssertionError):
+            validate_version_probe_target('sc_frontend_acceptance', {**scope, 'versionReviewProbe': False}, row, 32)
