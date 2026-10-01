@@ -133,6 +133,7 @@ verify.frontend.system_state_recovery.unit: guard.prod.forbid
 verify.frontend.scene_entry_contract.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-entry-contract-test.mjs >/dev/null
 	@node /tmp/scene-entry-contract-test.mjs
+	@python3 addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py
 
 .PHONY: verify.frontend.navigation_shell.unit
 verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_entry_contract.unit

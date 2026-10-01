@@ -1435,6 +1435,8 @@ def _scene_ready_entry(
     page_route = _text(page.get("route"))
     target_route = _text(target_payload.get("route"))
     meta_target = {
+        "intent": _text(target_payload.get("intent")) or None,
+        "entry_intent": _text(target_payload.get("entry_intent")) or None,
         "route": target_route or page_route,
         "action_id": _to_int(target_payload.get("action_id")) or None,
         "menu_id": _to_int(target_payload.get("menu_id")) or None,

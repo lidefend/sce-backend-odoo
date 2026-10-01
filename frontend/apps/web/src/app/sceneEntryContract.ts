@@ -13,25 +13,18 @@
  */
 const SCENE_ROUTE_NAME = 'scene';
 
-/** Scene entry intents declared by the scene contract itself. */
-export const SCENE_CONTRACT_ENTRY_INTENTS: Record<string, string> = {
-  'workspace.home': 'workspace.home.enter',
-  'dashboard.company': 'dashboard.company.enter',
-  'project.management': 'project.dashboard.enter',
-};
-
 export function ownsSceneRoute(routeName: unknown): boolean {
   return String(routeName ?? '').trim() === SCENE_ROUTE_NAME;
 }
 
 export function resolveSceneContractEntryIntent(options: {
   routeName: unknown;
-  sceneKey: string;
+  declaredTarget?: { intent?: unknown; entry_intent?: unknown } | null;
   queryEntryIntent: unknown;
   querySceneIntent: unknown;
 }): string {
   if (!ownsSceneRoute(options.routeName)) return '';
   const queryIntent = String(options.queryEntryIntent || options.querySceneIntent || '').trim();
   if (queryIntent) return queryIntent;
-  return SCENE_CONTRACT_ENTRY_INTENTS[String(options.sceneKey || '').trim()] || '';
+  return String(options.declaredTarget?.entry_intent || options.declaredTarget?.intent || '').trim();
 }

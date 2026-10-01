@@ -185,7 +185,7 @@ import { intentRequest } from '../api/intents';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
-import { SCENE_CONTRACT_ENTRY_INTENTS, ownsSceneRoute, resolveSceneContractEntryIntent } from '../app/sceneEntryContract';
+import { ownsSceneRoute, resolveSceneContractEntryIntent } from '../app/sceneEntryContract';
 import { findActionMeta, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
@@ -209,7 +209,7 @@ const headerActions = computed(() => pageGlobalActions.value);
 const currentSceneKey = computed(() => String(route.params.sceneKey || route.meta?.sceneKey || '').trim());
 const sceneContractEntryIntent = computed(() => resolveSceneContractEntryIntent({
   routeName: route.name,
-  sceneKey: currentSceneKey.value,
+  declaredTarget: scene.value?.key === currentSceneKey.value ? scene.value.target : null,
   queryEntryIntent: route.query.entry_intent,
   querySceneIntent: route.query.scene_intent,
 }));
@@ -895,6 +895,8 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
       label: String(scene.title || key),
       route: routePath,
       target: {
+        intent: String(target.intent || '').trim() || undefined,
+        entry_intent: String(target.entry_intent || '').trim() || undefined,
         route: routePath,
         action_id: actionId > 0 ? actionId : undefined,
         menu_id: menuId > 0 ? menuId : undefined,
@@ -907,32 +909,6 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
     };
   }
   return null;
-}
-
-function fallbackSceneFromEntryIntent(sceneKey: string): Scene | null {
-  const key = String(sceneKey || '').trim();
-  if (!SCENE_CONTRACT_ENTRY_INTENTS[key]) return null;
-  return {
-    key,
-    label: key === 'dashboard.company'
-      ? '公司驾驶舱'
-      : key === 'project.management'
-        ? '项目驾驶舱'
-        : '角色首页',
-    route: `/s/${key}`,
-    target: {
-      route: `/s/${key}`,
-    },
-    page: {
-      key,
-      page_type: 'dashboard',
-      layout_mode: 'block_grid',
-    },
-    layout: resolveSceneLayout(null),
-    capabilities: [],
-    breadcrumbs: [],
-    tiles: [],
-  };
 }
 
 function resolveRoutePathOnly(targetRoute: string) {
@@ -993,10 +969,10 @@ async function resolveScene() {
     embeddedRecordActionId.value = 0;
     validationHint.value = '';
     const sceneKey = String(route.meta?.sceneKey || route.params.sceneKey || '');
-    let resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey) || fallbackSceneFromEntryIntent(sceneKey);
+    let resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey);
     if (!resolvedScene && sceneKey) {
       await hydrateSceneReadyForCurrentScene(sceneKey);
-      resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey) || fallbackSceneFromEntryIntent(sceneKey);
+      resolvedScene = getSceneByKey(sceneKey) || fallbackSceneFromSceneReady(sceneKey);
     }
     if (!resolvedScene) {
       setError(new Error(`scene not found: ${sceneKey}`), 'scene not found');

@@ -1,6 +1,8 @@
 import { validateSceneRegistry } from './sceneRegistryCore';
 
 export interface SceneTarget {
+  intent?: string;
+  entry_intent?: string;
   [key: string]: unknown;
   menu_id?: number;
   menu_xmlid?: string;
@@ -324,6 +326,8 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
   const defaultSort = asText(searchRow.default_sort);
 
   const target: SceneTarget = {
+    intent: asText(targetRow.intent) || undefined,
+    entry_intent: asText(targetRow.entry_intent) || undefined,
     route,
     action_id: actionId > 0 ? actionId : undefined,
     menu_id: menuId > 0 ? menuId : undefined,

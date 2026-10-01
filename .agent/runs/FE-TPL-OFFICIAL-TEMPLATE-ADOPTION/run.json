@@ -29,7 +29,8 @@
     "docs/phase_p0/state_machine.md",
     "scripts/dev/frontend_standard_preview.py",
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
-    "frontend/packages/schema/src/actionSemantics.ts"
+    "frontend/packages/schema/src/actionSemantics.ts",
+    "addons/smart_construction_scene/profiles/scene_registry_content.py"
   ],
   "environment": {
     "kind": "offline",
@@ -552,10 +553,26 @@
         "make/runtime_ops.mk",
         "addons/smart_core/delivery/delivery_engine.py"
       ]
+    },
+    "scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/sceneEntryContract.ts",
+        "frontend/apps/web/src/app/resolvers/",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "addons/smart_core/core/",
+        "addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py",
+        "addons/smart_construction_scene/profiles/scene_registry_content.py",
+        "make/frontend.mk",
+        "frontend/apps/web/package.json",
+        "frontend/pnpm-lock.yaml"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.237 payment sequential user loopCOMPLETE on retained201 confirmed/validated, executive37 actualtask505 approve+taskremoved+official detail1440/390,report1790825369575 10PASS. SharedP1 callbacksync e17a5b29e preserves active+waiting/pending reviewer groups;193+new1=194unitPASS,75toolsPASS. Native bounded reconcile507/508 groups[93,112] persisted with policy/document/reviews unchanged before actualapproval; backend7eb112bdc,frontendc6f3f9cbc unchanged. Originalactivepolicy18 single/step2187 remains;201/history retained. NEXT completion-audit original goal all-document approval scope,67ledger/sharedconsumer/legacy exits and capability/publication/user acceptance using existing result index; identify precise remaining owned gaps (do not treat payment as all-document evidence, no blanket scans/ORM/repeat journeys). detail.action-state followUp refreshed but statuscontract_gap not automatically closed. No newfixture/build/push/targetdeploy.",
+  "next_exact_step": "53.239 source +58 focused tests +strict types PASS; runtime pending. Commit layer-owned changes, bind governed acceptance backend exact commit, use existing bounded runtime entry to verify effective system.init/scene-ready meta.target intent for workspace.home/dashboard.company/project.management under permitted roles and publication scope. Existing DB scene registry merge_missing can supply defaults but published snapshot behavior needs authoritative readback. Do not build or claim runtime closure until normalized target survives actual chain. Then one frontend build/5180 and affected scene/cache-route browser checks. No module upgrade (no XML/schema), no fixture, no repeated payment. Continue block context/all-document completion after scene closure.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -585,8 +602,8 @@
       "note": "built in 21.06s; single build"
     },
     "inherited_gaps": [
-      "industry_agnostic.guard: historical 97 lexical findings require bounded semantic adjudication; not a proven count of product defects",
-      "2 registered state transitions remain undeclared; signing/plan/document runtime pending; global-method coverage can hide cross-model gaps and must be corrected"
+      "industry_agnostic.guard: historical 97 lexical findings remain unresolved; 53.238 confirms sceneEntryContract hardcoded scene-to-intent map and SceneView fallback titles are actual frontend contract-ownership gaps, not lexical exemptions. Block context bindings need producer-consumer reconciliation; no blanket semantic clearance.",
+      "All-document runtime completion must reference existing sections 53.87-53.237 by responsibility. Historical two undeclared transitions superseded by current model-bound coverage guard: zero undeclared state transitions, 26 navigation +14 document helpers, 62 tests PASS. Static coverage alone is not runtime or published-user acceptance."
     ],
     "presentation_segment_52": {
       "status": "passed",
@@ -1770,6 +1787,35 @@
       "frontend": "unchanged c6f3f9cbc entryBrwUVS7o",
       "backend": "7eb112bdc",
       "initial_unit_failure": "test isolated api.model decorator mock missing; repaired before passing tests"
+    },
+    "segment_53_238": {
+      "status": "completion_audit_in_progress",
+      "stage_head": "7a7dbded3c78cad66b4d761713cfb76e1b2d240b",
+      "scope": "P4 current evidence index; no product/runtime changes",
+      "closed": "Historical two undeclared state transitions: current model-bound guard and 8+54 tests pass; navigation/document helpers remain explicit exceptions.",
+      "evidence": [
+        "artifacts/frontend-web-fix-20260928/tpl52/completion-scope-iteration.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/completion-native-coverage.log"
+      ],
+      "open": "P0 scene entry mapping/title fallback duplicates P1 declarations. workspace.home and dashboard.company already declare target.intent in scene_registry_content.py; project.management native scene target currently lacks intent (row-action target declares entry_intent). Complete producer+consumer, do not delete fallback without replacement.",
+      "reuse": "53.237 payment sequential role journey retained; no dependent product/tool/runtime inputs changed. 97-finding report used only to locate sources, not represented as a fresh current count."
+    },
+    "segment_53_239": {
+      "status": "implementation_and_targeted_tests_passed_runtime_pending",
+      "stage_head": "7a7dbded3c78cad66b4d761713cfb76e1b2d240b",
+      "dirty_scope": "P1 scene default intent; P0 scene-ready/frontend entry projection; focused tests/Make; P4 existing run/record",
+      "results": {
+        "L1": "PASS after exact P1 source added to run scope; initial outside_scope failure retained",
+        "L2": "47 frontend assertions +11 backend tests PASS; strict vue-tsc PASS",
+        "L3_L4": "not_run: exact committed backend identity and normalized runtime target readback required before frontend build/browser"
+      },
+      "logs": [
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-iteration.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-iteration-recovered.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-unit.log",
+        "artifacts/frontend-web-fix-20260928/tpl52/scene-entry-types.log"
+      ],
+      "legacy_exit": "Removed SCENE_CONTRACT_ENTRY_INTENTS and fallbackSceneFromEntryIntent; missing effective scene now hydrates contract or reports missing, never fabricates domain title/dashboard."
     }
   }
 }

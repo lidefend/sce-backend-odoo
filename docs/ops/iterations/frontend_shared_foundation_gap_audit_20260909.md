@@ -9799,3 +9799,22 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - P1提交e17a5b29e；P4提交7eb112bdc给既有诊断增加明确payment-flow-reconcile范围，仅原生同步policy18对应model的507/508组。受管环境核对201/source1710/company8/原marker，commit前后回读单据/审批/policy未变，管理层组可执行。inflight-callback-reconcile.log显示507/508由[93]变[93,112]，记录仍draft/505pending，未替用户审批。后端重绑7eb112bdc，不升级模块/构建前端。
 - 续办实际浏览器tpl07-1790825369575 **10PASS**：管理层37从真实my-work待办505打开201，执行审批成功，后端confirmed/validated，实际待办移除，官方详情1440/390 loaded/已确认/无溢出，截图已查看。记录201/PE2600196及两级历史保留，不清理。审批配置仍是已恢复的原active单级step2187；因此同时证明配置恢复后的在途审批可完成。没有重新创建或重跑经办/财务第一阶段，复用53.233原证据；无审批自动通过复用53.232的22项。
 - 更新原67台账detail.action-state followUp，去掉已关闭付款/双视口/配置阻断，但不自动升级contract_gap或整行业务矩阵。下一步依据原goal和原run逐项核对全业务单据范围、共享呈现消费与旧职责退出、能力/发布/用户验证三层证据；付款闭环不能替代全系统证明，未发布能力不等于发布用户验收，目标交付仍不在本地结论内。无推送/合并/目标部署，总体目标active。
+
+
+## 53.238 完成范围核销：关闭过期迁移阻断，定位场景入口双重权威
+
+- 阶段身份：`feature/web-official-template-adoption@7a7dbded3`，开始 clean；本段仅 P4 结果索引/记录改动。沿用原 run、67 项台账及原始证据，不另建覆盖表。
+- `make ci.local.iteration` PASS（L1）；`make verify.native_view.workflow_action_coverage` PASS：模型绑定扫描剩余 26 navigation +14 document_helper，未声明状态迁移为零；8 loader +54 guard tests =62 PASS。原始日志为 `artifacts/frontend-web-fix-20260928/tpl52/completion-scope-iteration.log`、`completion-native-coverage.log`。因此原索引“两项状态迁移未声明”已过期，予以核销；不据此推断全部单据运行态或发布后用户验收完成。
+- 复用历史 97 命中报告定位源码（未重跑、未宣称当前数量仍为97）：`app/sceneEntryContract.ts` 仍用三项静态映射选择调用；`SceneView.vue:fallbackSceneFromEntryIntent` 仍按 scene key 生成行业标题/页面。这是具体 P0 契约消费缺口，不能通过词法豁免关闭。此前对11条条件表达式的局部判读不能证明整条消费链无重复权威。
+- 已核对生产者：`addons/smart_construction_scene/profiles/scene_registry_content.py` 中 workspace.home/dashboard.company 已声明 target.intent；project.management 的场景 target 尚未声明 intent，但 `smart_construction_core/core_extension.py` 行动作已有 entry_intent。下一步按 P1 声明 +P0 通用投影/消费修复，不简单删除映射造成直达入口断链。图表/BOQ 的固定上下文绑定仍待按生产者-消费者链判定，不一概认作缺陷或豁免。
+- 本段不改产品/工具/环境，复用53.237实际审批、官方详情双视口证据；L3/L4 不运行（无相关输入变化），L5 不运行（仍有明确产品缺口，且无远端发布任务）。未改守卫、未降低零业务推导目标。
+- 下一步固定为场景入口声明传递链及缓存路由隔离定向回归；之后继续按现有业务职责核对全单据，不重跑付款、不做无关ORM或全仓盘点。
+
+
+## 53.239 场景入口由生产者声明，退出前端静态映射（运行态待验）
+
+- 候选：`7a7dbded3` +本段 dirty；沿用53.238索引改动。P1 `smart_construction_scene/profiles/scene_registry_content.py` 补项目驾驶舱 target.intent；P0 `smart_core` scene-ready投影保留 intent/entry_intent，Web注册表及SceneView保留并消费同一声明。标准/客户边界：这是行业默认与平台消费机制，不属于客户偏好或临时配置；前端不得补业务语义。影响仅场景入口，不改审批、列表、权限、数据库或发布范围。
+- 删除 `SCENE_CONTRACT_ENTRY_INTENTS` 及 `fallbackSceneFromEntryIntent`，不再凭三项前端白名单生成调用/行业标题/仪表盘。无有效场景先按现有 hydration 取契约，仍缺失则返回明确错误。保留行动作路由声明、缓存页面route ownership隔离；当前scene identity匹配后才消费其target，防止旧场景引用泄漏。
+- L1首次因run遗漏P1声明文件被outside_scope拒绝；只登记这一精确文件后，`make ci.local.iteration` PASS。日志 `tpl52/scene-entry-iteration.log` / `scene-entry-iteration-recovered.log`（均在既有 `artifacts/frontend-web-fix-20260928/` 下）。
+- L2 `make verify.frontend.scene_entry_contract.unit` PASS：47实际计数前端断言（任意新场景、无声明不补造、scene-ready投影、异路由隔离）+11后端测试（含生产者默认声明与投影保留/缺失），日志 `tpl52/scene-entry-unit.log`。复用同一Make入口增加既有离线后端测试，不启动ORM。`make verify.frontend.typecheck.strict` PASS，日志 `tpl52/scene-entry-types.log`。
+- L3/L4尚未运行：代码默认的registry merge_missing会补缺失属性，但实际发布快照能否将入口声明传至当前角色的scene-ready必须回读。下一步提交后绑定受管backend、定向回读，确认后才构建一次/使用5180验受影响场景及缓存路由切换。无XML/schema改动，不需要模块升级；不重跑付款、不重置fixture，不推送/合并/目标部署。本段不是运行态验收完成。
