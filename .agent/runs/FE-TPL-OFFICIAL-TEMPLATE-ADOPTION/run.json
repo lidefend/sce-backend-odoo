@@ -897,6 +897,21 @@
         "make/runtime_ops.mk",
         "scripts/dev/frontend_acceptance_runtime.sh"
       ]
+    },
+    "workflow_state_phase_coverage": {
+      "target": "verify.workflow_state_phase_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/workflow_state_phase_coverage_guard.py",
+        "scripts/verify/test_workflow_state_phase_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/support/task_extend.py",
+        "config/contract/workflow_state_phase_dead_entries.v1.json",
+        "make/ci.mk"
+      ]
     }
   },
   "blockers": [
@@ -3966,6 +3981,18 @@
       "root_cause": "Not a product defect. For a record with no settlement rows the declared optional presentation renders collapsed; ProfessionalDetailCollectionControl wraps the collection in ScDisclosure with destroy-on-collapse, so the declared introduce entry is legitimately not mounted until its own disclosure is expanded. The probe assumed the entry was unconditionally mounted.",
       "repair": "The overlay scope now expands the declared [data-disclosure-trigger] inside PaymentSettlementDetailCollectionControl when its declared state is collapsed, then asserts the declared entry is consumed or an explicit semantics gap is surfaced. No product code changed; the check was not relaxed.",
       "false_hypothesis_ruled_out": "The 2026-09-30 overlay pass used the pre-rebuild acceptance data where the hardcoded record had rows; the current governed fixture record 1845 is empty, which is why the same scope needed the declaration-driven expansion."
+    },
+    "quick_recovery_20261001": {
+      "first_quick": {
+        "identity": "f591c1e37",
+        "result": "failed",
+        "failed_gate": "verify.workflow_state_phase_coverage",
+        "failure": "project.project: the 'lifecycle_state' selection could not be resolved from the addon sources; project.task: the 'sc_state' selection could not be resolved from the addon sources",
+        "receipt": "none (a failed candidate issues no receipt)"
+      },
+      "classification": "P4 verification-tool defect, not a product regression and not caused by this batch's probe changes. The guard is branch-only (absent from origin/main) and read profile['state_field'] only for its error message before resolving a field literally named 'state', so it could never cover project.project (lifecycle_state) or project.task (sc_state).",
+      "changed_recovery_fact": "The guard now threads the declared state_field through the class scan and the base recursion; make verify.workflow_state_phase_coverage -> 17 tests OK, exit 0.",
+      "next": "re-freeze the candidate with this fix and run one Quick again on the new clean HEAD"
     }
   },
   "record_corrections_20261001": {
