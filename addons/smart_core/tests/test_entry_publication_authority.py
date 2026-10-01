@@ -22,6 +22,9 @@ class Result:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+    def to_legacy_dict(self):
+        return self.__dict__
+
 
 class EntryPublicationTest(unittest.TestCase):
     def setUp(self):
@@ -64,7 +67,7 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(seen[1]["meta"]["entry_target"], {"type": "scene"})
         self.assertEqual(seen[1]["meta"]["scene_key"], "published.page")
 
-    def handler(self, action_id, fail_closed=False):
+    def handler(self, action_id, fail_closed=False, *, params=None, env=None, contracts=None):
         path = ROOT / "handlers/route_authority_validate.py"
         tree = ast.parse(path.read_text())
         class StripImports(ast.NodeTransformer):
@@ -90,14 +93,28 @@ class EntryPublicationTest(unittest.TestCase):
             def __init__(self, env): pass
             def get_policy(self, **kwargs): calls.append(kwargs); return {"product_key": "construction.standard"}
         identity = {"product_key": "construction.standard", "base_product_key": "construction", "edition_key": "standard"}
-        scope = {"BaseIntentHandler": object, "IntentExecutionResult": Result, "MenuService": Menus,
+        class Base:
+            def __init__(self, env=None, su_env=None, request=None, context=None, payload=None):
+                self.env, self.su_env, self.request, self.context = env, su_env, request, context
+                self.params = (payload or {}).get("params", {})
+        class ContractReader(Base):
+            def handle(self):
+                tests.contract_reads.append(self.params)
+                return {"ok": True, "data": contracts[self.params["model"]]}
+        tests.contract_reads = []
+        relation_scope = {}
+        exec(compile((ROOT / "core/relation_action_authority.py").read_text(), "relation_action_authority.py", "exec"), relation_scope)
+        scope = {"BaseIntentHandler": Base, "UiContractV2Handler": ContractReader,
+            "positive_relation_id": relation_scope["positive_relation_id"],
+            "validate_relation_action_origin": relation_scope["validate_relation_action_origin"], "IntentExecutionResult": Result, "MenuService": Menus,
             "IdentityResolver": lambda env: SimpleNamespace(user_group_xmlids=lambda user: [], build_role_surface=lambda *args: {"role_code": "config"}),
             "ProductPolicyService": Policies, "DeliveryEngine": Engine, "_resolve_startup_delivery_identity": lambda *args: identity,
             "_load_platform_release_gate": lambda *args, **kwargs: {"applied": True, "fail_closed": fail_closed},
             "_filter_nav_by_release_gate": lambda nodes, *args, **kwargs: (tests.filter_nodes(nodes), {})}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), scope)
         handler = scope["RouteAuthorityValidateHandler"]()
-        handler.env = SimpleNamespace(user=object()); handler.params = {"action_id": action_id}
+        handler.env = env if env is not None else SimpleNamespace(user=object())
+        handler.params = params if params is not None else {"action_id": action_id}
         return handler.handle(), calls
 
     def test_runtime_validator_rejects_unpublished_declared_action(self):
@@ -172,6 +189,113 @@ class EntryPublicationTest(unittest.TestCase):
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)
         self.assertFalse(result.ok)
+
+
+class RelationReadRouteTest(unittest.TestCase):
+    handler = EntryPublicationTest.handler
+
+    def setUp(self):
+        EntryPublicationTest.setUp(self)
+        self.calls = []
+        calls = self.calls
+        class Record:
+            def __init__(self, model, record_id):
+                self.model, self.id = model, record_id
+                self._fields = {'partner': SimpleNamespace(type='many2one', comodel_name='partner')}
+                self.link_ids = [56]
+                self.denied = ''
+                self.present = True
+            def browse(self, record_id):
+                if record_id != self.id: raise ValueError('wrong record')
+                return self
+            def exists(self): return self if self.present else None
+            def check_access_rights(self, mode):
+                calls.append((self.model, 'acl', mode))
+                if self.denied == 'acl': raise PermissionError('denied')
+            def check_access_rule(self, mode):
+                calls.append((self.model, 'rule', mode))
+                if self.denied == 'rule': raise PermissionError('denied')
+            def check_field_access_rights(self, mode, fields=None):
+                calls.append((self.model, 'fields', mode, fields))
+                if self.denied == 'fields': raise PermissionError('denied')
+            def __getitem__(self, name): return SimpleNamespace(ids=self.link_ids)
+        class Env(dict):
+            user = object()
+        self.parent, self.child = Record('payment', 1813), Record('partner', 56)
+        self.env = Env(payment=self.parent, partner=self.child)
+        self.origin = dict(model='payment', record_id=1813, field='partner', action_id=775, menu_id=545)
+        self.params = dict(model='partner', record_id=56, action_id=324, menu_id=164,
+            route_path='/r/partner/56', access_mode='read', render_profile='readonly', relation_origin=self.origin)
+        self.entry = dict(model='partner', action_id=324, menu_id=164, can_read=True, can_open=True)
+        status = {'globalStatus': {'effectiveRecordCapabilities': {'read': True}}}
+        self.contracts = {'payment': {'statusContract': deepcopy(status), 'layoutContract': {'children': [
+            {'type':'field', 'name':'partner', 'fieldInfo':{'relation_entry':self.entry}}]}},
+            'partner': {'statusContract':deepcopy(status)}}
+
+    def validate(self):
+        return self.handler(324, params=self.params, env=self.env, contracts=self.contracts)[0]
+
+    def test_exact_unpublished_child_read_uses_fresh_published_parent_and_child_checks(self):
+        before = deepcopy(self.authority)
+        result = self.validate()
+        self.assertTrue(result.ok)
+        self.assertEqual(result.data, {key:value for key,value in self.params.items() if key != 'relation_origin'} | {'allowed':True})
+        self.assertEqual([row['model'] for row in self.contract_reads], ['payment', 'partner'])
+        self.assertTrue(all(row['render_profile'] == 'readonly' for row in self.contract_reads))
+        for model in ('payment', 'partner'):
+            self.assertIn((model, 'acl', 'read'), self.calls)
+            self.assertIn((model, 'rule', 'read'), self.calls)
+        self.assertIn(('payment', 'fields', 'read', ['partner']), self.calls)
+        self.assertIn(('partner', 'fields', 'read', None), self.calls)
+        self.assertEqual(self.authority, before)
+
+    def test_non_read_record_paths_and_mixed_origins_never_load_contracts(self):
+        for key, value in [('route_path','/f/partner/56'), ('route_path','/r/partner/new'),
+                           ('route_path','/a/324'), ('access_mode','write'), ('render_profile','edit'),
+                           ('work_item_origin',{}), ('model','other')]:
+            with self.subTest(key=key):
+                original = deepcopy(self.params)
+                self.params[key] = value
+                self.assertFalse(self.validate().ok)
+                self.assertEqual(self.contract_reads, [])
+                self.params = original
+
+    def test_strict_target_and_origin_ids_reject_coercions(self):
+        for value in [True, 56.0, 56.5, '56.0', '056', [], {}, 9007199254740992]:
+            for location, key in [(self.params, 'record_id'), (self.origin, 'record_id')]:
+                original = location[key]; location[key] = value
+                self.assertFalse(self.validate().ok, (key, value))
+                location[key] = original
+
+    def test_target_menu_action_and_fresh_can_open_must_match(self):
+        for key, value in [('action_id',999), ('menu_id',999), ('model','other'), ('can_open',False), ('can_read',False)]:
+            original = self.entry[key]; self.entry[key] = value
+            self.assertFalse(self.validate().ok, key)
+            self.entry[key] = original
+
+    def test_revoked_parent_link_acl_field_or_child_rights_fail_closed(self):
+        self.parent.link_ids = [99]
+        self.assertFalse(self.validate().ok)
+        self.parent.link_ids = [56]
+        for record in (self.parent, self.child):
+            for reason in ('acl', 'rule', 'fields'):
+                record.denied = reason
+                self.assertFalse(self.validate().ok, (record.model, reason))
+            record.denied = ''
+        self.child.present = False
+        self.assertFalse(self.validate().ok)
+        self.child.present = True
+        self.contracts['partner']['statusContract']['globalStatus']['effectiveRecordCapabilities']['read'] = False
+        self.assertFalse(self.validate().ok)
+
+    def test_unpublished_or_contextual_parent_cannot_borrow_target_context(self):
+        self.published.remove(775)
+        self.assertFalse(self.validate().ok)
+        self.published.add(775)
+        self.authority['primary_actions'][1]['context_requirements'] = {'required_query':['project_id']}
+        self.params['project_id'] = 10
+        self.assertFalse(self.validate().ok)
+        self.assertEqual(self.contract_reads, [])
 
 
 if __name__ == "__main__":

@@ -40,8 +40,70 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             code=403,
         )
 
+    def _load_relation_contract(self, *, model, record_id, action_id, menu_id):
+        # Same fresh readonly native projection as execute_button's authority
+        # reader. Neither metadata elevation nor the origin grants data rights.
+        from .ui_contract_v2 import UiContractV2Handler
+        result = UiContractV2Handler(
+            self.env, su_env=self.su_env, request=self.request, context=self.context,
+            payload={"params": {"op": "model", "model": model, "record_id": record_id,
+                "action_id": action_id, "menu_id": menu_id, "view_type": "form",
+                "render_profile": "readonly", "delivery_profile": "full", "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"], "client_contract_capabilities": [
+                    "container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]}},
+        ).handle()
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        if not isinstance(envelope, dict) or envelope.get("ok") is not True or not isinstance(envelope.get("data"), dict):
+            raise ValueError("ROUTE_RELATION_CONTRACT_UNAVAILABLE")
+        return envelope["data"]
+
+    def _validate_relation_parent_entry(self, action_id, menu_id, model):
+        # Do not forward untrusted query/context from the child. Contextual
+        # parents requiring additional query authority therefore fail closed.
+        result = type(self)(self.env, su_env=self.su_env, request=self.request, context=self.context,
+                           payload={"params": {"action_id": action_id}}).handle()
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+        return not (isinstance(envelope, dict) and envelope.get("ok") is True
+                    and data.get("allowed") is True and data.get("action_id") == action_id
+                    and data.get("menu_id") == menu_id and data.get("model") == model)
+
+    def _validate_relation_route(self, params):
+        from ..core.relation_action_authority import positive_relation_id, validate_relation_action_origin
+        model = params.get("model")
+        record_id = positive_relation_id(params.get("record_id"))
+        action_id = positive_relation_id(params.get("action_id"))
+        menu_id = positive_relation_id(params.get("menu_id"))
+        if (not isinstance(model, str) or model not in self.env or not record_id or not action_id or not menu_id
+                or params.get("access_mode") != "read" or params.get("render_profile") != "readonly"
+                or params.get("route_path") != f"/r/{model}/{record_id}"
+                or params.get("work_item_origin") is not None):
+            return self._deny("ROUTE_RELATION_READ_RECORD_REQUIRED")
+        try:
+            validate_relation_action_origin(
+                self.env, params["relation_origin"], model=model, record_id=record_id,
+                target_action_id=action_id, target_menu_id=menu_id,
+                load_contract=self._load_relation_contract, validate_entry=self._validate_relation_parent_entry,
+            )
+            child = self.env[model].browse(record_id).exists()
+            if not child:
+                return self._deny("ROUTE_RELATION_CHILD_NOT_FOUND")
+            child.check_access_rights("read")
+            child.check_access_rule("read")
+            child.check_field_access_rights("read")
+            contract = self._load_relation_contract(model=model, record_id=record_id, action_id=action_id, menu_id=menu_id)
+            if contract.get("statusContract", {}).get("globalStatus", {}).get("effectiveRecordCapabilities", {}).get("read") is not True:
+                return self._deny("ROUTE_RELATION_CHILD_CONTRACT_DENIED")
+        except Exception:
+            return self._deny("ROUTE_RELATION_ORIGIN_DENIED")
+        return IntentExecutionResult(ok=True, data={"allowed": True, "model": model, "record_id": record_id,
+            "action_id": action_id, "menu_id": menu_id, "access_mode": "read", "render_profile": "readonly",
+            "route_path": params["route_path"]})
+
     def handle(self, payload=None, ctx=None):
         params = self._params(payload)
+        if params.get("relation_origin") is not None:
+            return self._validate_relation_route(params)
         if params.get("work_item_origin") is not None:
             from ..core.work_item_action_authority import validate_work_item_action_origin
             from ..utils.extension_hooks import call_extension_hook_first

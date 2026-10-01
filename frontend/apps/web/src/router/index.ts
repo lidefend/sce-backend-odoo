@@ -16,6 +16,8 @@ import { findRouteAuthority } from '../app/routeAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
 import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
+import { validateRelationReadRoute } from '../app/relationReadRouteAuthority';
+import { currentContextEpoch } from '../app/contextEpoch';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -383,6 +385,13 @@ router.beforeEach(async (to) => {
       } catch {
         runtimeRouteAuthorized = false;
       }
+    }
+    if (!routeAuthority && to.name === 'record') {
+      runtimeRouteAuthorized = await validateRelationReadRoute(to,
+        () => JSON.stringify({ token: session.token, user: session.user,
+          context: session.recordContext, epoch: currentContextEpoch() }),
+        (params) => intentRequest<Record<string, unknown>>({ intent: 'route.authority.validate', params }),
+      );
     }
     if (to.name === 'action' && routeAuthority && runtimeRouteAuthorized && !currentActionMatches(session, actionId)) {
       session.setActionMeta({
