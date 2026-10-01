@@ -553,7 +553,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.213 correction: readonly browser9 PASS does NOT prove desktop visual. Inspected published-approval-editor-1440.png shows content squeezed into first220px column. Root cause style.css .config-editor-panel grid on ScCard root places official card body into first grid cell. FIRST fix shared configuration panel content layout through supported Card body composition, including affected consumers; focused tests/typecheck then one build and affected desktop/narrow visual. Next child selector and config/reviewer journey as previously scoped. Evidence tpl07-1790819988474 payment policy absent, parent+paymentexecution targets declared; no writes. Tool53 PASS; no claim complete. Keep67 active; no unrelated ORM/push/merge/deploy.",
+  "next_exact_step": "53.214 P0frontend326488e81 moved approval grid to supported Card body and made target selector full-width; L1 PASS,approval unit40 PASS,typecheck PASS. One build326488e81 entry index-Bbk89tq4.js on5180; backend eae3 unchanged. Browser tpl07-1790820189146/report.json13 PASS readonly; actual desktop/narrow viewed, root220px squeeze fixed. Remaining observed desktop rule-column select controls extend slightly beyond column. Next fix those shared panel width constraints, add control bounds + child target switching/loaded configuration readback and save-action reachability to existing readonly probe; then exact config recovery and real approval loop. Do not claim full editor/all67 complete; no broad ORM/inventory/newenv/push/merge/deploy.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

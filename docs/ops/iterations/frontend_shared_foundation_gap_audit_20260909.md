@@ -9621,3 +9621,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 下一步在同一已发布父页面验证子对象切换及配置基线，再扩展既有精确恢复机制承载配置→真实角色提交→审批→回读/恢复。必须核验相关公司策略/tier定义/callback groups，而不能仅凭policy.exists=false允许写入。当前只有读取呈现验收，不声称配置保存/审批闭环完成；计划未发布用户旅程仍pending，67条detail.action-state仍contract_gap。无推送/合并/目标部署。
 
 - 53.213桌面截图纠正：根因已定位style.css的.config-editor-panel把两列grid施加在ScCard根上；官方Card新增body承载内容，body被当成首个220px网格项。下一步先修共享配置面板内容布局与相关面板消费，再做必要类型/定向验证、一次构建、受影响双视口复验；不改TDesign内部DOM来迁就旧根级布局。
+
+### 53.214 审批编辑器官方卡片内容布局
+
+- P0通用前端呈现，Layer Target frontend renderer，Module BusinessConfigApprovalPanel/style.css；不涉及行业规则或配置写入。对照直接同类消费者发现分析/列表编辑器已用body-class-name，只有审批面板把config-editor-panel两列grid施加到ScCard根。326488e81改用官方Card已支持的body class，把审批对象行设为全宽；没有依赖TDesign内部DOM选择器或改契约。
+- approval-layout-iteration L1 PASS；approval-layout-unit 26+8+6=40 PASS；strict typecheck实际退出0。浏览器增加选择行与步骤区域实际宽度断言，覆盖旧“内容挤入220px列”缺陷；不为CSS改动运行ORM/模块升级。
+- 一次构建23.47s成功，base326488e818d9ffeaae1fdf995692a7a7ddaa55e8 clean；entry /assets/index-Bbk89tq4.js，sha25619c266c40a3ac8a8d9b9a587dbe13400e870f1eb6b921ebd9c53f569d3779fad。既有5180 listener复用；后端eae3dd5d2产品输入不变，不重启。
+- approval-layout-browser退出0，tpl07-1790820189146/report.json **13 PASS**，仍只读。1440/390截图均实际检查：桌面body已全宽、审批对象横跨、左规则右步骤；窄屏单列。已确认根级grid造成的窄列问题修复。截图仍显示左侧审批方式/默认岗位下拉控件略超出220px规则列，尚未完成整体编辑器视觉验收，不因13项通过掩盖该剩余问题。当前图只覆盖上半区域，全部保存操作和子对象切换尚需后续定向检查。
+- 下一步沿同一面板修正下拉控件对列宽的约束并补控件边界断言，合并验证后端声明的付款执行对象切换/基线读取与保存操作可达性；再进入精确配置写恢复和真实多角色审批。不重跑历史矩阵。总体67仍active，未推送/合并/目标部署。
