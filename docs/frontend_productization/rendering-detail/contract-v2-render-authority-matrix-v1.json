@@ -42,8 +42,8 @@
   "summary": {
     "schemaFieldCount": 326,
     "renderedOrInteractionAuthorityCount": 209,
-    "validatedNonVisualAuthorityCount": 115,
-    "decodedRuntimeAuthorityGapCount": 2,
+    "validatedNonVisualAuthorityCount": 117,
+    "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
   "rows": [
@@ -110,9 +110,9 @@
     },
     {
       "path": "actionRule.authorizationAllowed",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "declared so a produced action-rule payload validates against the strict actionRule definition (additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "declared actor-authorization evidence, decoded and consumed by the action-state projection, which denies when it is explicitly false",
+      "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
       "path": "actionRule.backendIdentity",
@@ -122,9 +122,9 @@
     },
     {
       "path": "actionRule.businessAvailable",
-      "classification": "decoded_runtime_authority_gap",
-      "reason": "declared so a produced action-rule payload validates against the strict actionRule definition (additionalProperties=false); decodeActionRule does not copy it, so the v2 runtime does not consume it",
-      "consumer": "strict decoder only"
+      "classification": "validated_non_visual_authority",
+      "reason": "declared business-state availability evidence, independent of actor authorization, decoded and consumed by the action-state projection, which denies when it is explicitly false",
+      "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
       "path": "actionRule.button",

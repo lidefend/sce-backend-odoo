@@ -3499,3 +3499,92 @@ assert.equal(resolveWorkflowActionAvailability(declarationOnlyWorkflow, { method
 assert.equal(resolveWorkflowActionAvailability({ ...declarationOnlyWorkflow, record_id: 7 }, { methodName: 'action_submit' }).kind, 'error');
 assert.equal(resolveWorkflowActionAvailability({ actions: declarationOnlyWorkflow.actions }, { methodName: 'action_submit' }).kind, 'error');
 console.log('[declaration-only-workflow] PASS cases=3');
+
+// ---------------------------------------------------------------------------
+// Declared action-rule authority (authorizationAllowed / businessAvailable)
+// must be consumed, not merely decoded.  The negative case is proven against a
+// baseline that is known to render the action enabled, so the injected deny is
+// what flips the verdict.
+// ---------------------------------------------------------------------------
+function declaredSnapshot(extra: Record<string, unknown>) {
+  const candidate = snapshot();
+  candidate.actionContract.actionRuleList[0] = {
+    ...candidate.actionContract.actionRuleList[0],
+    ...extra,
+  };
+  return candidate;
+}
+
+const declaredBaseline = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({}))), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.ok(declaredBaseline, 'declared-authority baseline must reach the action bar');
+assert.equal(declaredBaseline?.enabled, true, 'declared-authority baseline: the action is enabled');
+assert.equal(declaredBaseline?.reasonCode, '', 'declared-authority baseline: no denial reason');
+
+const decodedDeclared = decodeContractV2Snapshot(declaredSnapshot({
+  authorizationAllowed: true, businessAvailable: false,
+})).actionContract.actionRuleList[0];
+assert.equal(decodedDeclared.authorizationAllowed, true, 'a declared actor authorization must survive decoding');
+assert.equal(decodedDeclared.businessAvailable, false, 'a declared business availability must survive decoding');
+const decodedAbsent = decodeContractV2Snapshot(declaredSnapshot({})).actionContract.actionRuleList[0];
+assert.equal(
+  Object.prototype.hasOwnProperty.call(decodedAbsent, 'authorizationAllowed'), false,
+  'an absent actor authorization must not be materialised',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(decodedAbsent, 'businessAvailable'), false,
+  'an absent business availability must not be materialised',
+);
+
+const businessDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ businessAvailable: false }))), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(businessDenied?.enabled, false, 'an injected business unavailability must disable the action');
+assert.equal(businessDenied?.reasonCode, 'ACTION_NOT_BUSINESS_AVAILABLE', 'the business denial must be named');
+
+const actorDenied = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: false }))), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(actorDenied?.enabled, false, 'an injected actor denial must disable the action');
+assert.equal(actorDenied?.reasonCode, 'ACTION_NOT_AUTHORIZED', 'the actor denial must be named');
+
+const declaredAllowed = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(declaredSnapshot({ authorizationAllowed: true, businessAvailable: true }))), 'edit',
+).actionBar.find((action) => action.key === 'action_submit');
+assert.equal(declaredAllowed?.enabled, true, 'a declared allow must not block the action');
+
+console.log('[canonical_form_presenter] declared action authority cases PASS count=10');
+
+// The ContractFormPage presenter carries the same declared authority, and must not
+// drop it while re-projecting the rule row it consumes.
+function legacyRows(extra: Record<string, unknown>): ContractAction[] {
+  return buildContractFormActions({
+    model: 'x.document',
+    recordId: 1845,
+    renderProfile: 'edit',
+    sceneReadyActions: [],
+    v2ButtonStatus: { 'btn.declared.submit': { visible: true, disabled: false } },
+    v2ActionRuleList: [{
+      actionKey: 'declared.submit', actionId: 9001, backendIdentity: 'btn.declared.submit', label: 'Submit',
+      level: 'header', sourceWidgetId: 'page.header', targetScope: 'header', entitlementEvaluated: true,
+      allowed: true, enabled: true, disabled: false, visible_profiles: ['edit'],
+      target: { type: 'object' }, button: { type: 'object', name: 'declared_submit' },
+      payload: { method: 'declared_submit' },
+      ...extra,
+    }],
+  });
+}
+
+assert.equal(legacyRows({}).length, 1, 'legacy fixture must produce exactly one action');
+assert.equal(legacyRows({})[0].enabled, true, 'legacy baseline: the action is enabled');
+assert.equal(legacyRows({})[0].authorizationAllowed, true, 'legacy baseline: authorization is allowed');
+const legacyBusinessDenied = legacyRows({ businessAvailable: false })[0];
+assert.equal(legacyBusinessDenied.enabled, false, 'legacy: an injected business denial must disable the action');
+assert.equal(legacyBusinessDenied.authorizationAllowed, false, 'legacy: the denial must reach the executor gate');
+assert.equal(legacyBusinessDenied.hint, 'ACTION_NOT_BUSINESS_AVAILABLE', 'legacy: the business denial must be named');
+const legacyActorDenied = legacyRows({ authorizationAllowed: false })[0];
+assert.equal(legacyActorDenied.enabled, false, 'legacy: an injected actor denial must disable the action');
+assert.equal(legacyActorDenied.hint, 'ACTION_NOT_AUTHORIZED', 'legacy: the actor denial must be named');
+
+console.log('[canonical_form_presenter] legacy declared action authority cases PASS count=7');

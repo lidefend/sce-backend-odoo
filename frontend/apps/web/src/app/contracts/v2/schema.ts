@@ -1604,6 +1604,8 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const enabled = optionalBooleanField(raw, 'enabled', path, issues);
   const disabled = optionalBooleanField(raw, 'disabled', path, issues);
   const entitlementEvaluated = optionalBooleanField(raw, 'entitlementEvaluated', path, issues);
+  const authorizationAllowed = optionalBooleanField(raw, 'authorizationAllowed', path, issues);
+  const businessAvailable = optionalBooleanField(raw, 'businessAvailable', path, issues);
   const visibleProfiles = Object.prototype.hasOwnProperty.call(raw, 'visibleProfiles')
     ? decodeUniqueStringArray(raw.visibleProfiles, `${path}.visibleProfiles`, issues)
     : undefined;
@@ -1654,6 +1656,8 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
     ...(permissionConstraints && Object.keys(permissionConstraints).length ? { permissionConstraints } : {}),
     ...(optionalString(raw, 'reasonCode') ? { reasonCode: optionalString(raw, 'reasonCode') } : {}),
     ...(entitlementEvaluated !== undefined ? { entitlementEvaluated } : {}),
+    ...(authorizationAllowed !== undefined ? { authorizationAllowed } : {}),
+    ...(businessAvailable !== undefined ? { businessAvailable } : {}),
   };
 }
 
