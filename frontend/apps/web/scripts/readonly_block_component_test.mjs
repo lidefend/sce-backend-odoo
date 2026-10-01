@@ -166,6 +166,7 @@ try {
         loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       builder.onLoad({ filter: /\.vue$/ }, args => {
         if (args.path !== entry) {
+          if (args.path.endsWith('/ScCard.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {slots})=>()=>h('test-card',{},[slots.actions?.(),slots.default?.()])});`, loader: 'js', resolveDir: path.dirname(args.path) };
           assert.ok(/\/(ChartDatasetPanel|BoqImportPreviewPanel|PageRenderer|StatusPanel)\.vue$/.test(args.path), `unexpected stub ${args.path}`);
           const name = args.path.endsWith('/PageRenderer.vue') ? 'test-page' : args.path.endsWith('/StatusPanel.vue') ? 'test-status' : 'test-panel';
           return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({props:['model','contract','datasets','message','title','variant'],setup:props=>()=>h('${name}',{...props})});`, loader: 'js', resolveDir: path.dirname(args.path) };
@@ -178,5 +179,5 @@ try {
   });
   const run = (await import(pathToFileURL(output).href)).default;
   const checks = await run();
-  console.log(`[readonly-block-component] PASS kind=${kind} checks=${checks} actual_sfc=true vue_mount=true transport=mocked presentation=stubbed${kind === 'grid' ? ' grid_child_renderer=stubbed' : ''}`);
+  console.log(`[readonly-block-component] PASS kind=${kind} checks=${checks} actual_sfc=true vue_mount=true transport=mocked presentation=stubbed card_driver=stubbed${kind === 'grid' ? ' grid_child_renderer=stubbed' : ''}`);
 } finally { fs.rmSync(temporary, { recursive: true, force: true }); }

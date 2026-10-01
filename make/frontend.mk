@@ -352,6 +352,10 @@ verify.frontend.overlay_lifecycle.unit: guard.prod.forbid
 verify.frontend.overlay_lifecycle.browser: guard.prod.forbid
 	@node scripts/verify/frontend_overlay_lifecycle_browser.mjs
 
+.PHONY: verify.frontend.page_renderer.browser
+verify.frontend.page_renderer.browser: guard.prod.forbid
+	@OVERLAY_LIFECYCLE_SCOPE=page-renderer node scripts/verify/frontend_overlay_lifecycle_browser.mjs
+
 verify.frontend.collaboration_primitives.browser: guard.prod.forbid
 	@node scripts/verify/frontend_collaboration_primitives_browser.mjs
 
