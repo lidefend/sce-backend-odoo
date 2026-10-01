@@ -4045,6 +4045,74 @@ def _expense_create_request_checks():
     print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=3 scope=expense-create-request")
 
 
+def _plan_publication_entry_checks():
+    """Bounded read of existing policy authority; never publish or create data."""
+    from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+    from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
+    from odoo.addons.smart_core.handlers.system_init import (
+        SystemInitHandler, _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate)
+    from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
+    base = _env()
+    assert base.cr.dbname == "sc_frontend_acceptance"
+    user = base["res.users"].sudo().search([("login", "=", "fixture_role_config_admin")])
+    assert len(user) == 1 and user.id == 34 and user.active and user.company_id.id == 8
+    actor = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
+    action = actor.ref("smart_construction_core.action_sc_plan")
+    menu = actor.ref("smart_construction_core.menu_sc_plan")
+    assert action.res_model == "sc.plan" and menu.action == action
+    resolver = IdentityResolver(actor)
+    surface = resolver.build_role_surface(resolver.user_group_xmlids(actor.user), [], {"workspace.home"})
+    assert surface["role_code"] == "business_config_admin"
+    service = ProductPolicyService(actor)
+    identity = _resolve_startup_delivery_identity(actor, {})
+    policy_identity = {key: identity[key] for key in ("product_key", "base_product_key", "edition_key")}
+    observations = {}
+    try:
+        for label, enforce in (("raw", False), ("effective", True)):
+            policy = service.get_policy(**policy_identity, role_code=surface["role_code"], enforce_release=enforce, enforce_access=enforce)
+            assert policy.get("product_key") and isinstance(policy.get("menu_groups"), list)
+            matches = [dict(row) for group in policy["menu_groups"] for row in group.get("menus", [])
+                       if row.get("model") in ("sc.plan", "sc.plan.version")
+                       or row.get("menu_xmlid") == "smart_construction_core.menu_sc_plan"
+                       or row.get("action_xmlid") == "smart_construction_core.action_sc_plan"
+                       or row.get("action_id") == action.id or row.get("menu_id") == menu.id]
+            observations[label] = {key: policy.get(key) for key in (
+                "product_key", "base_product_key", "edition_key", "version", "state", "access_level",
+                "allowed_role_codes", "policy_source_authority", "edition_diagnostics")}
+            observations[label]["plan_entries"] = matches
+        gate = _load_platform_release_gate(actor, product_key=observations["effective"]["product_key"])
+        gate_node = {"menu_id": menu.id, "meta": {"action_id": action.id, "model": action.res_model,
+                     "menu_xmlid": "smart_construction_core.menu_sc_plan"}}
+        gated, gate_meta = _filter_nav_by_release_gate([gate_node], gate, env=actor)
+        observations["release_gate"] = {key: gate.get(key) for key in (
+            "applied", "fail_closed", "reason", "platform_db", "snapshot_id", "version", "fingerprint", "page_count")}
+        observations["release_gate"].update(plan_target_retained=bool(gated), projection=gate_meta)
+        print("PLAN_PUBLICATION_ENTRY=" + json.dumps({"user_id": actor.uid, "company_id": actor.company.id,
+              "role_code": surface["role_code"], "action_id": action.id, "menu_id": menu.id,
+              "startup_identity": identity, "observations": observations}, ensure_ascii=False, default=str))
+        assert gate.get("applied") and not gated, "published fixture scope changed; re-evaluate this exact target"
+        startup = SystemInitHandler(env=actor).handle(payload={"params": {}}).data
+        authority = startup["navigation"]["route_authority"]
+        assert not any(row.get("action_id") == action.id for bucket in (
+            "primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
+            for row in authority.get(bucket) or [])
+        denied = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": action.id}}).handle()
+        assert denied.ok is False and denied.error["reason_code"] == "PRODUCT_ENTRY_NOT_RELEASED"
+        published = next(row for row in authority["primary_actions"]
+                         if row.get("source", "").startswith("role_surface.") and not row.get("context_requirements"))
+        allowed = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": published["action_id"]}}).handle()
+        assert allowed.ok and allowed.data["allowed"] and allowed.data["model"] == published["model"]
+        recovery = next(row for row in authority["admin_actions"] if row.get("model") == "sc.approval.policy")
+        allowed = RouteAuthorityValidateHandler(actor, payload={"params": {"action_id": recovery["action_id"]}}).handle()
+        assert allowed.ok and allowed.data["allowed"]
+        print("ENTRY_PUBLICATION_VERIFIED=" + json.dumps({"unpublished_action": action.id,
+              "published_action": published["action_id"], "configuration_recovery_action": recovery["action_id"],
+              "snapshot_id": gate["snapshot_id"]}))
+    finally:
+        base.cr.rollback()
+    print("BUSINESS_CONFIG_APPROVAL_RUNTIME_SMOKE=PASS checks=6 scope=plan-publication-entry rollback_verified=true")
+
+
 def _plan_reviewer_entry_checks():
     """Actual fixture actors and policy handlers; all facts/config roll back."""
     from odoo.addons.smart_construction_core.handlers.approval_policy_configuration import ApprovalPolicyConfigSetHandler, ApprovalPolicyStepsSetHandler
@@ -4150,6 +4218,8 @@ def _plan_reviewer_entry_checks():
 
 def main():
     scope = os.environ.get("SC_APPROVAL_RUNTIME_SCOPE", "all")
+    if scope == "plan-publication-entry":
+        return _plan_publication_entry_checks()
     if scope == "plan-reviewer-entry":
         return _plan_reviewer_entry_checks()
     if scope == "expense-create-request":

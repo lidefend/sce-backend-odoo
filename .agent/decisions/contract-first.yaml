@@ -30,6 +30,19 @@ decision:
 
     - frontend_must_not_infer_publication_from_menu_visibility_or_fill_missing_authority
 
+    # Owner clarification: capability, release policy and user acceptance are separate proofs.
+    - system_capability_validation_is_independent_of_product_publication_selection
+
+    - unpublished_required_capabilities_remain_product_scope_and_keep_valid_capability_evidence
+
+    - publication_validation_binds_effective_version_scope_dependencies_and_recovery
+
+    - post_publication_acceptance_uses_target_user_identity_company_project_and_permissions
+
+    - administrator_or_direct_backend_success_does_not_replace_published_user_journey_acceptance
+
+    - capability_release_and_user_acceptance_results_must_be_reported_separately
+
 
   related:
 

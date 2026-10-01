@@ -9578,3 +9578,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 源码定位：DeliveryEngine通过ProductPolicyService.get_policy(enforce_release=True,enforce_access=True)获得有效策略；MenuService.build_route_authority仍能从role_surface原生菜单事实直接声明入口，RouteAuthorityValidateHandler也独立重建此声明。现有product_menu_release_flow_v1.md明确自定义前端以产品策略/DeliveryEngine为准，action或原生menu存在不是发布证明。
 - 统一方向写入既有contract-first决策和当前goal：复用同一有效发布策略，导航/路由/配置范围消费一致；同时明确运行开放、管理员配置编辑和配置恢复是不同职责，不能以菜单隐藏推断全部不可用，也不能以动作声明绕过发布。保留角色/公司/版本/渠道和主从/待办授权边界。
 - 计划入口的有效产品发布状态尚未读回，故不先判定应发布或应下架。下一步仅读取该产品/该入口的有效策略与来源，再修源层或共享消费层。已有40/53/typecheck、构建fef7d73ef及前次无写入恢复证据保留；不跑宽门禁/新建环境/推送/合并/目标部署。整体目标继续。
+
+### 53.209 系统能力、发布策略与发布后用户验收分离
+
+- 所有者进一步明确三类证明必须分开：系统能力验证契约、官方呈现交互和业务状态机；发布策略验证实际版本开放范围、依赖、入口执行约束与恢复；发布后用户验收使用目标用户身份及有效租户/公司/项目/权限，从登录初始化到实际业务办理与权威回读。管理员配置成功、直接后端调用成功均不能代替用户验收。验收库fixture只证明绑定的本地范围，不能冒充目标环境交付。
+- 本轮P4治理记录完善，复用contract-first决策、当前goal/run和本活记录，不新增平行台账。未发布不等于能力缺失，也不豁免总体目标要求的能力补齐；保留已有有效能力证据，发布后用户验收单列待完成。发布策略调整本身不构成发布/部署授权，不为通过测试扩大发布范围。
+- 承接53.208的定向读回：必须以startup delivery identity construction.standard/construction/standard查询，不能把服务默认platform.standard当成当前产品。有效发布快照65（frontend-audit-b214aba61e9b，89页）经既有release filter排除计划action655/menu507。plan-publication-identity-runtime.log的3项是诊断证明；此前默认identity诊断不作为实际产品状态证据。计划审批已有运行能力证据保留，当前正式入口不应绕过有效发布范围。
+- 当前HEAD 89715a468加已声明P0/P4 dirty：共享发布过滤已接入system.init和route.authority.validate；entry-publication-unit.log为9 PASS，entry-publication-final-iteration.log为L1 PASS。扩展运行探针尚未装载验证，不能报告绕过缺陷已关闭。下一步先完成既有代码复核与责任提交，受管重绑后端，再运行plan-publication-entry的6项定向检查及受影响用户入口观察。前端无变动，不重复构建。整体67项、主线集成、目标部署、用户交付均未因本规则更新而完成。
+- 本次增量仅治理文档和run续跑信息；相关产品/测试输入未变，复用上述L1/L2原日志。校验YAML/JSON解析及diff格式；不运行ORM、业务写入、浏览器或完整发布门禁来验证文档。

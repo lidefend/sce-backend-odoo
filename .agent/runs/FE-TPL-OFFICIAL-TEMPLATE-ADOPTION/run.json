@@ -536,10 +536,23 @@
         "frontend/pnpm-lock.yaml",
         "make/runtime_ops.mk"
       ]
+    },
+    "entry_publication_authority": {
+      "target": "verify.product.entry_publication.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/handlers/route_authority_validate.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "make/runtime_ops.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "53.208 owner direction: unify with product publication strategy. Probe tpl07-1790818219893 proves uid34/company8 plan655 route validation allowed PRIMARY_NAV, but canonical navigation.nav has no corresponding menu507/action655 node. P0 business_catalog currently reads only nav; MenuService.build_route_authority additionally grants role_surface native facts independently of effective published policy. Proposed union of primary authority into config catalog was UNCOMMITTED and WITHDRAWN after owner direction; no such widening remains. Next resolve exact effective plan entry state using existing ProductPolicyService.get_policy(enforce_release/access=True), DeliveryEngine and release.operator policy surface/source; determine if publication omission or route authority bypass. Reuse existing runtime/profile/fixture, bounded read-only tool extension if needed. Then make shared effective policy govern navigation/route/configuration scopes, keeping config-authoring and recovery permissions explicit, not blanket deny hidden menus. No broad gate/ORM/inventory/build rerun until owning inputs change. Current frontend/backend fef7d73ef unchanged; user configured version browser remains incomplete. New P4 readonly diagnostic53 pure/3 response checks passed; do not call it business acceptance.",
+  "next_exact_step": "53.209: Separate system capability, effective publication policy and post-publication target-user acceptance; see contract-first decision and goal. Correct startup identity construction.standard/construction/standard confirms snapshot65 excludes plan655/507. Preserve prior approval capability evidence, keep published-user acceptance pending; never expand release scope to pass tests. P0 shared release projection dirty; L1 entry-publication-final-iteration PASS and L2 entry-publication-unit9 PASS. Extended plan-publication-entry runtime6 NOT_RUN. Review/commit scoped P0/P4 changes, governed backend rebind and health, then runtime6 and affected target-role entry observation. No frontend rebuild, unrelated ORM or inventory. Local fixture evidence cannot establish target-environment user delivery.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",

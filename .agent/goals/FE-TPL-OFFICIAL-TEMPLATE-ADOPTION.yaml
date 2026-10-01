@@ -76,3 +76,18 @@ goal:
     Do not fix a missing configuration entry by unioning unrestricted declared
     actions, widening ACL, or treating hidden menus as automatically unpublished.
     No remote publication, merge or target deployment is authorized by this rule.
+
+  capability_publication_user_acceptance_boundary: >-
+    2026-10-01 owner clarification: validate system capability independently of
+    whether a product version publishes it. Capability proof covers contracts,
+    official rendering/interactions and backend state-machine behavior using
+    governed test access; it does not grant runtime publication access. Validate
+    publication selection separately against the effective product version,
+    dependencies, entry enforcement and recovery scope. After publication,
+    validate the actual delivered version through target user identities and
+    their effective tenant/company/project/role permissions, including positive
+    business journeys and denied access. Administrator or direct backend success
+    is not user acceptance. Retain valid unpublished capability evidence; keep
+    required capability gaps open and published-user acceptance pending. Never
+    publish extra entries merely to pass a test. Local fixture acceptance proves
+    only its bound environment, not target-environment user delivery.
