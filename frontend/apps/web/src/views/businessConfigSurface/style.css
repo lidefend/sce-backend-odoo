@@ -918,6 +918,11 @@ h1 {
   font-size: 12px;
 }
 
+.approval-target-row {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 .approval-panel .approval-rule-summary {
   grid-column: auto;
   display: grid;

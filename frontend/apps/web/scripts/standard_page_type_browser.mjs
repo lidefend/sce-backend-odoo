@@ -954,6 +954,11 @@ try {
       await admin.page.setViewportSize({ width, height });
       await panel.getByLabel('审批对象', { exact: true }).scrollIntoViewIfNeeded();
       check(`published approval editor: target visible at ${width}`, await panel.getByLabel('审批对象', { exact: true }).isVisible());
+      const panelBox = await panel.boundingBox();
+      const targetBox = await panel.getByLabel('审批对象', { exact: true }).boundingBox();
+      const stepsBox = await panel.locator('.approval-steps').boundingBox();
+      check(`published approval editor: content uses panel width at ${width}`, Boolean(panelBox && targetBox && targetBox.width > panelBox.width * 0.7));
+      check(`published approval editor: steps remain usable at ${width}`, Boolean(panelBox && stepsBox && stepsBox.width > panelBox.width * 0.45));
       await admin.page.screenshot({ path: path.join(out, `published-approval-editor-${width}.png`) });
     }
     await admin.ctx.close();

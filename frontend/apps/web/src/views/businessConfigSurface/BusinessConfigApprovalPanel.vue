@@ -1,5 +1,5 @@
 <template>
-  <ScCard appearance="main-surface" class="edit-panel config-editor-panel approval-panel">
+  <ScCard appearance="main-surface" class="edit-panel approval-panel" body-class-name="config-editor-panel">
     <div class="edit-panel-head">
       <div>
         <h2>审批规则</h2>
@@ -9,7 +9,7 @@
         返回工作台
       </ScButton>
     </div>
-    <label>
+    <label class="approval-target-row">
       <span>审批对象</span>
       <ScSelect aria-label="审批对象" :model-value="targetModel" :options="targetOptions"
         :disabled="loading || hasDraftChanges" @update:model-value="$emit('selectTarget', String($event))" />
