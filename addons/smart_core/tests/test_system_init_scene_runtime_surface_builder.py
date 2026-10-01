@@ -57,6 +57,70 @@ class _Env:
 
 
 class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
+    def _requested_contract(self, requested, *, mode="full", delivery=None, deep=None):
+        catalog = [{"code": key, "target": {"route": f"/s/{key}"}}
+                   for key in ("allowed.scene", "excluded.scene", "deep.scene")]
+        ctx = context_module.SystemInitSceneRuntimeSurfaceContext(
+            env=_Env(), params={"scene_key": requested, "scene_ready_mode": mode},
+            data={"nav": [], "nav_meta": {}, "scenes": catalog}, role_surface={},
+            contract_mode="user", scene_channel="stable", nav_tree=[],
+            platform_minimum_surface_mode=False, build_platform_minimum_nav_contract_fn=lambda: {},
+            resolve_delivery_policy_runtime_fn=lambda *args: {"enabled": True},
+            filter_delivery_scenes_fn=lambda *args, **kw: {
+                "delivery_scenes": catalog[:1] if delivery is None else delivery,
+                "deep_link_scenes": catalog[2:] if deep is None else deep,
+                "meta": {"enabled": True},
+            },
+            startup_scene_subset_resolver_fn=lambda *args, **kw: [],
+            filter_startup_scenes_for_preload_fn=lambda *args: [],
+            bind_scene_assets_fn=lambda env, **kw: {"scenes": kw["scenes"]},
+            build_scene_ready_contract_fn=lambda **kw: {"scenes": kw["scenes"]},
+            build_scene_nav_contract_fn=lambda data: {},
+        )
+        result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=ctx)
+        rows = result["data"]["scene_ready_contract"]["scenes"]
+        return {row.get("code") or row.get("scene", {}).get("key") for row in rows}
+
+    def test_requested_excluded_scene_is_not_restored(self):
+        for mode in ("full", "registry"):
+            with self.subTest(mode=mode):
+                self.assertNotIn("excluded.scene", self._requested_contract("excluded.scene", mode=mode))
+
+    def test_requested_unknown_scene_is_not_fabricated(self):
+        for mode in ("full", "registry"):
+            with self.subTest(mode=mode):
+                self.assertNotIn("unknown.scene", self._requested_contract("unknown.scene", mode=mode))
+
+    def test_requested_authorized_scene_survives_preload_optimization(self):
+        self.assertIn("allowed.scene", self._requested_contract("allowed.scene", mode="registry"))
+
+    def test_authorized_deep_link_does_not_require_navigation(self):
+        self.assertEqual(self._requested_contract("deep.scene", delivery=[]), {"deep.scene"})
+
+    def test_empty_delivery_cannot_be_repopulated_by_request(self):
+        self.assertEqual(self._requested_contract("allowed.scene", delivery=[], deep=[]), set())
+
+    def test_deep_link_enforces_access_and_capability_before_surface_selection(self):
+        policy = _load_module("scene_delivery_policy_entry_test", CORE_DIR / "scene_delivery_policy.py")
+        from unittest.mock import patch
+        for surface_deep in (False, True):
+            for denial, granted, expected in (({"access": {"allowed": False}}, [], policy.REASON_SCENE_ROLE_PRUNED),
+                                     ({"required_capabilities": ["secret.read"]}, [], policy.REASON_SCENE_CAPABILITY_BLOCKED),
+                                     ({"required_capabilities": ["secret.read"]}, ["secret.read"], None),
+                                     ({}, [], None)):
+                with self.subTest(surface_deep=surface_deep, denial=denial):
+                    scene = {"code": "deep.scene", "state": "published",
+                             "target": {"route": "/s/deep.scene"}, **denial}
+                    if not surface_deep:
+                        scene["delivery_mode"] = "deep_link_only"
+                    with patch.object(policy, "_select_surface_policy", return_value={
+                        "enabled": surface_deep, "deep_link_allowlist": {"deep.scene"}, "nav_allowlist": set()
+                    }):
+                        result = policy.filter_delivery_scenes([scene], surface="default", role_surface={"capabilities": granted}, enabled=True)
+                    self.assertEqual(bool(result["deep_link_scenes"]), expected is None)
+                    if expected:
+                        self.assertIn(expected, result["meta"]["excluded_reason_counts"])
+
     def test_registry_preserves_declared_entry_without_inventing_one(self):
         for declared in ({"intent": "custom.enter"}, {"entry_intent": "custom.override"}, {}):
             with self.subTest(declared=declared):
@@ -250,7 +314,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
         self.assertEqual(((first_scene.get("meta") or {}).get("target") or {}).get("action_id"), 506)
         self.assertEqual((result["data"].get("nav_meta") or {}).get("scene_ready_mode"), "registry")
 
-    def test_full_mode_includes_requested_scene_when_delivery_catalog_omits_it(self):
+    def test_full_mode_does_not_bind_assets_for_unknown_requested_scene(self):
         calls = {"bind_scenes": [], "full_scenes": []}
 
         def _bind_scene_assets(*args, **kwargs):
@@ -291,13 +355,9 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
 
         result = builder.SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=surface_ctx)
         contract = result["data"].get("scene_ready_contract") or {}
-        first_scene = (contract.get("scenes") or [])[0]
-
-        self.assertEqual(first_scene.get("code"), "finance.workspace")
-        self.assertEqual(((first_scene.get("target") or {}).get("route")), "/s/finance.workspace")
-        self.assertEqual(((first_scene.get("layout") or {}).get("kind")), "workspace")
-        self.assertEqual((calls["bind_scenes"][0] or {}).get("code"), "finance.workspace")
-        self.assertEqual((calls["full_scenes"][0] or {}).get("code"), "finance.workspace")
+        self.assertEqual(contract.get("scenes"), [])
+        self.assertEqual(calls["bind_scenes"], [])
+        self.assertEqual(calls["full_scenes"], [])
 
     def test_full_mode_materializes_platform_home_when_business_catalog_omits_it(self):
         captured = {"scenes": []}
