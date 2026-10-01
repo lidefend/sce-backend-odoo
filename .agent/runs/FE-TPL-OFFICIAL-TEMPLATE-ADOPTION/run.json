@@ -3993,6 +3993,22 @@
       "classification": "P4 verification-tool defect, not a product regression and not caused by this batch's probe changes. The guard is branch-only (absent from origin/main) and read profile['state_field'] only for its error message before resolving a field literally named 'state', so it could never cover project.project (lifecycle_state) or project.task (sc_state).",
       "changed_recovery_fact": "The guard now threads the declared state_field through the class scan and the base recursion; make verify.workflow_state_phase_coverage -> 17 tests OK, exit 0.",
       "next": "re-freeze the candidate with this fix and run one Quick again on the new clean HEAD"
+    },
+    "second_quick_20261001": {
+      "identity": "c269b7c40",
+      "result": "failed",
+      "failed_gate": "verify.contract_form_runtime_state_protocol_guard",
+      "failure": "ContractFormPage.vue missing runtime protocol consumer token: type SubmissionFeedback,",
+      "receipt": "none (a failed candidate issues no receipt)",
+      "sibling_scan": "The full ci.local.quick.run recipe was executed ad hoc to collect independent same-layer failures instead of discovering them one Quick at a time. TOTAL_FAILS=2 beyond the reported gate: contract_form_side_effect_regression_guard.py (saveRecord must clear save busy in finally) and construction_core_extension_responsibility_map_guard.py (core_extension.py must delegate construction diary normalizer). Everything else in the recipe passed.",
+      "classification": "All three are P4 verification-tool defects. They are branch-only (absent from origin/main for the workflow-state gate; unchanged on this branch for the other two files) and were made stale by legitimate earlier product commits of this same branch, not by this batch's probe changes: 6b276876e/de9999501 moved the state protocol token owner; f017d42dc replaced the unconditional finally clear with an ownership-checked release; 30ca72d76 retired the duplicate construction diary layout rewrite and updated construction_core_extension_contract_normalizers_split_guard.py but not the responsibility-map guard.",
+      "changed_recovery_fact": "Three guards were re-bound to the declared behavior without relaxing any assertion: the runtime-state protocol token is bound to its real owner (useContractFormPageState.ts) with a PAGE_STATE const; the side-effect guard now requires the ownership-checked release token and proves it sits inside a finally block; the responsibility-map guard now asserts the inverse (the retired diary layout rewrite must not reappear), matching the split guard's adjudication. Each re-binding was falsified with an injected regression before being accepted.",
+      "negative_proofs": [
+        "side_effect: restoring the previous unconditional finally clear -> FAIL (saveRecord must clear save busy in finally)",
+        "side_effect: moving the release out of the finally block -> FAIL (saveRecord must clear save busy inside the finally block)",
+        "responsibility_map: reintroducing _contract_normalizers.normalize_construction_diary_form -> FAIL (must not reintroduce the retired construction diary layout rewrite)"
+      ],
+      "next": "commit the guard re-bindings, re-freeze, then run one Quick again on the new clean HEAD"
     }
   },
   "record_corrections_20261001": {
