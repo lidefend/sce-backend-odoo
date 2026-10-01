@@ -99,6 +99,9 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             status="success",
             data={
                 "allowed": True,
+                "action_id": action_id,
+                "menu_id": _positive_int(entry.get("menu_id")),
+                "model": str(entry.get("model") or ""),
                 "action_xmlid": str(entry.get("action_xmlid") or ""),
                 "route_kind": str(entry.get("route_kind") or ""),
             },

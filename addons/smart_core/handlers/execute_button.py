@@ -138,12 +138,24 @@ class ExecuteButtonHandler(BaseIntentHandler):
             if not origin:
                 raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
             from ..core.relation_action_authority import validate_relation_action_origin
-            from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+            from .route_authority_validate import RouteAuthorityValidateHandler
+
+            def validate_entry(parent_action_id, parent_menu_id, parent_model):
+                result = RouteAuthorityValidateHandler(
+                    self.env, su_env=self.su_env, request=self.request, context=self.context,
+                    payload={"params": {"action_id": parent_action_id}},
+                ).handle()
+                envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+                data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                return not (envelope.get("ok") is True and data.get("allowed") is True
+                            and data.get("action_id") == parent_action_id
+                            and data.get("menu_id") == parent_menu_id and data.get("model") == parent_model)
+
             try:
                 validate_relation_action_origin(
                     self.env, origin, model=model, record_id=record_id,
                     load_contract=self._load_current_action_contract,
-                    validate_entry=PageAssembler(self.env, self.su_env)._relation_entry_authority_pair_error,
+                    validate_entry=validate_entry,
                 )
             except ValueError as error:
                 raise AccessError(str(error)) from error

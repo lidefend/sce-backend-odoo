@@ -687,5 +687,30 @@ class RelationActionOriginTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'OPEN_NOT_AUTHORIZED'): self.run_origin()
 
 
+    def test_handler_uses_delivered_entry_and_retains_child_action_verdict(self):
+        from unittest.mock import patch
+        module = _load_handler()
+        child_contract = _authorized_contract()
+        handler = _authority_handler(module, child_contract)
+        handler.env = {'x.parent': self.parent}
+        handler.payload['meta'] = {'relation_origin': self.origin}
+        handler._load_current_action_contract = lambda **kw: self.contract if kw['model'] == 'x.parent' else child_contract
+        result = {'ok': True, 'data': {'allowed': True, 'action_id': 41, 'menu_id': 51, 'model': 'x.parent'}}
+        route_module = types.ModuleType('odoo.addons.smart_core.handlers.route_authority_validate')
+        route_module.RouteAuthorityValidateHandler = lambda *args, **kwargs: types.SimpleNamespace(handle=lambda: result)
+        def authorize():
+            return handler._authorize_contract_action(_authority_button(), model='x.child', record_id=3,
+                                                      method_name='action_confirm', button_type='object')
+        with patch.dict(sys.modules, {route_module.__name__: route_module}):
+            authorize()
+            for key, value in (('allowed', False), ('menu_id', 99), ('model', 'x.other'), ('action_id', 99)):
+                original = result['data'][key]
+                result['data'][key] = value
+                with self.subTest(key=key), self.assertRaisesRegex(module.AccessError, 'ENTRY_DENIED'): authorize()
+                result['data'][key] = original
+            child_contract['actionContract']['actionRuleList'][0]['entitlementEvaluated'] = False
+            with self.assertRaises(module.AccessError): authorize()
+
+
 if __name__ == "__main__":
     unittest.main()

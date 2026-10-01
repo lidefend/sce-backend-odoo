@@ -42,6 +42,9 @@
       "inputs": [
         "addons/smart_core/handlers/execute_button.py",
         "addons/smart_core/core/relation_action_authority.py",
+        "addons/smart_core/handlers/route_authority_validate.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/identity/identity_resolver.py",
         "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
         "addons/smart_core/handlers/ui_contract_v2.py",
         "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
