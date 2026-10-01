@@ -5250,7 +5250,7 @@
   },
   "successor_step3_frontend_prerequisite_20261001": {
     "stage": "step 3 of execution_handoff_20261001",
-    "status": "fix_round_3_complete_pending_independent_rereview",
+    "status": "fix_round_3_approved_by_review_pending_step4_freeze",
     "independent_review": {
       "reviewer": "B (read-only independent review)",
       "verdict": "blocked on commit 31c64a61d",
@@ -5286,7 +5286,7 @@
       "make/frontend.mk"
     ],
     "gate": "the probe reads the backend receipt and the declared account before launching the browser; missing/unknown-schema/disabled/not-PASS/errors/unexecuted/failed checks, unbound identity, missing required SHA, stale served SHA, database/login/role/company mismatch, unverified semantics, unbound schema digest, invalid formal schema, missing custody, unexpected intent, incomplete resolution, request-target mismatch, unsealed snapshot or absent authority all stop the run before any DOM assertion.",
-    "execution": "approved record is opened by data-record-key (never the first row) through the declared page.row authority on the approved action/menu route, and the approved request is replayed in-page under the real session and must carry the approved sealed semantic digest, but both steps are executed only in the contract-enabled lane (SC_ACCEPTANCE_REQUIRE_CONTRACT=1); the daily readonly lane runs the four-step shape without the approved-contract-binding step, so its report is not evidence of approved-contract binding. The app's observed detail contract must match target, schema, authority and be reproducible from its own request.",
+    "execution": "the contract-enabled lane (SC_ACCEPTANCE_REQUIRE_CONTRACT=1, profile=local) reads the instance receipt and the declared account before the browser starts, then, after login, resolves the list through the declared authority and replays the approved request in-page under the real session, which must carry the approved sealed semantic digest. The record-row evidence - opening the approved record by data-record-key through the declared row authority, and requiring the observed detail contract to match target, schema and authority and to be reproducible from its own request - is additionally gated on the daily profile (frontend_list_surface_structure_browser.mjs runtime.contracts capture and the record block), so the profile=local contract lane does NOT execute it and the approved-record selector applies only where a contract is accepted. The instance-level detail contract is therefore proven by the backend receipt (documented schema digest, custody, recomputed semantics, real session) and the DOM-level detail rendering by the daily detail-only lane; neither lane alone may be read as proving both.",
     "declared_not_run": [
       "other_roles_or_companies",
       "per_button_authorization",
@@ -5310,6 +5310,29 @@
         "frontend_probe": "make verify.frontend.list_surface_search_contract.unit: 21 unittest cases PASS, including a new behaviour case for the four-step daily shape and its fail-closed default",
         "supporting": "make verify.frontend.acceptance.environment.guard PASS (30 cases); node --check scripts/verify/frontend_list_surface_structure_browser.mjs and py_compile scripts/ops/dev_acceptance_release_probe.py clean"
       }
+    },
+    "fix_round_3_review_verdict_20261002": {
+      "reviewer": "B read-only independent review",
+      "verdict": "approved - candidate 557e5d22b; non-blocking items deferred to a later documentation-only round",
+      "blockers_closed": {
+        "resolution_unique_target": "closed: the identity-unique proof (identifiers_by_pair / pairs_by_identifier) was reproduced against the real producer shape (payment_request and journey_request carrying one record), and each bypass was falsified: one pair with two identifiers, one identifier over two record_ids, an alias with a different model, and a target missing the stable field all fail closed",
+        "daily_record_shape": "closed: the four-step daily shape is behaviourally covered through run_record_probe_helpers in node, together with the accepted five-step shape, the fail-closed default, extra and missing rows, a wrong viewport and not_evaluated; the wiring assertIn is not treated as proof"
+      },
+      "no_product_defect": "no P0/P1 and no blocking product defect in 557e5d22b, whose code delta is probe and test only",
+      "non_blocking_findings": {
+        "P3_wording_over_attribution": "the data-record-key evidence and the observed-detail-contract binding are additionally gated on the daily profile, while the contract-enabled lane is profile=local and executes only the top-level approved-request replay; the execution text of this record is corrected and the single-lane DOM detail binding is recorded as an open evidence-coverage limit instead of being claimed",
+        "P4_alias_missing_stable_field": "an alias pointing at the same (model, record_id) but omitting the stable field is skipped rather than counted as competing; unreachable with the governed producer (env.ref always emits record_xmlid) and the primary target still fails closed, so it stays a recorded defence-in-depth item rather than a post-review code change",
+        "P4_js_seal_mirror_self_comparison": "canonicalJson/semanticSha256 in scripts/verify/lib/acceptance_contract_receipt.mjs are exercised only against themselves by acceptance_contract_receipt_test.mjs and are not in the decision path, which compares backend seal strings through stableJson/observedContractBinding; kept as a documented mirror limit so the reviewed candidate does not move"
+      },
+      "post_review_rule": "the review binds 557e5d22b; any later commit on this candidate must be record-only metadata with zero product/test/tool delta, verified by git diff --name-only against the reviewed head before the freeze"
+    },
+    "step5_entrypoint_recon_20261002": {
+      "anchor_correction": "the handoff described a backend predating 4c926a2f, but that SHA does not exist in this repository; the real pending backend delta is f91c2df11 (addons/smart_core/core/contract_lifecycle.py schema-digest constant) and 2439bdf16 relative to the managed acceptance backend revision 02d28a06d recorded in this run",
+      "backend_refresh": "make backend.acceptance.replace-stale then make backend.acceptance.health; the local route is frontend_acceptance_operation_entry.sh -> frontend_acceptance_runtime.sh, and backend_acceptance_up.sh recreates the container with SC_SOURCE_REVISION=$(git rev-parse HEAD) plus the acceptance source fingerprint, which is why a stale container cannot satisfy identity_deployed_sha",
+      "module_upgrade": "git diff --name-only 02d28a06d..HEAD shows no addons XML/data change, so this candidate requires no acceptance module upgrade; the Python-only delta is picked up by the container recreate",
+      "frontend_lane": "make verify.frontend.list_surface_structure.browser is the contract-enabled local lane (url 5180, DB_NAME sc_frontend_acceptance, SC_ACCEPTANCE_REQUIRE_CONTRACT=1)",
+      "detail_lane": "the daily detail lane needs an explicit ACCEPTANCE_TARGET_SHA and LIST_SURFACE_DAILY_OBSERVATION_SCOPE=detail-only, which is read only from the environment",
+      "schema_guard_prerequisite": "make verify.dev.acceptance.release.schema.guard cannot pass before the live lane writes artifacts/backend/dev_acceptance_release_probe.json; recorded as not_run with a missing live prerequisite, never as a failure"
     }
   }
 }
