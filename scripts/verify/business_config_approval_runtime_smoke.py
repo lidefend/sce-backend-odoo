@@ -4130,14 +4130,18 @@ def _payment_flow_existing_checks():
         reviews = [{"id": review.id, "status": review.status, "sequence": review.sequence,
                     "definition_id": review.definition_id.id, "definition_active": review.definition_id.active,
                     "reviewer_ids": review.reviewer_ids.ids, "done_by": review.done_by.id,
-                    "reviewer_group": review.reviewer_group_id.display_name} for review in record.review_ids]
+                    "reviewer_group": review.reviewer_group_id.display_name,
+                    "approve_action_id": review.definition_id.server_action_id.id,
+                    "approve_action_groups": review.definition_id.server_action_id.groups_id.ids} for review in record.review_ids]
         actors = []
         for login in ("fixture_role_pfl035_finance_user", "fixture_role_finance", "fixture_role_executive"):
             user = base["res.users"].sudo().search([("login", "=", login)])
             assert len(user) == 1 and user.active and user.company_id.id == 8
             env = base(user=user.id, context={"allowed_company_ids": [8], "company_id": 8, "lang": "zh_CN"})
             own = env[record._name].browse(record.id)
-            facts = {"login": login, "uid": user.id, "read_acl": own.check_access_rights("read", raise_exception=False)}
+            facts = {"login": login, "uid": user.id, "read_acl": own.check_access_rights("read", raise_exception=False),
+                     "callback_access": [{"review_id": review.id, "allowed_group": bool(
+                         review.definition_id.server_action_id.groups_id & user.groups_id)} for review in record.review_ids]}
             try:
                 own.check_access_rule("read")
                 facts.update(read_rule=True, can_review=own.can_review, validation_status=own.validation_status)

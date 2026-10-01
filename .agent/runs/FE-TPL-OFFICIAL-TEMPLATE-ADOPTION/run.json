@@ -555,7 +555,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "53.236 P0 predispatch now uses fresh work_item_request_access_mode on exact execute_button object/single res_id -> same existing extension authorization -> read/write record ACL mode; ordinary intent classification unchanged. L1/37authorityPASS including actualcheck_intent_permission isolated runtime test, defaultwrite/deny/malformed preserved. Next backendbind newcommit and resume201 via existing TPL07_PAYMENT_REVIEW_RESUME=201; no frontendbuild/moduleupgrade/datarecreate.",
+  "next_exact_step": "53.236 P0 predispatch fixed8d9f70888 backendbound;37authorityPASS +75toolsPASS. Resume201 tpl07-1790825104760 passes gate then native server action group denies. Authoritative readback confirms rollback201draft/505pending (no partialapproval). Diagnostic shows callback507 groups[93], executive37 doesnotmatch though origin505/can_reviewtrue; definition6624 inactive since originalpolicy restored. NEXT P1 approval_policy._sync_tier_server_action_groups must union current active step groups with actual waiting/pending review reviewer groups for targetmodel, so configuration changes cannot cut off inflight chain. Keep record/ACL/handler checks and group-bound callbacks, no sudouser or editACL. Add focused regression active+pendinggroup/othermodel containment; reconcile existingpolicy18 through governed native method or published config API and readback (owner allowsnecessarydataupdates), then resume same201. Do not rebuild frontend or recreatebusinessjourney; retained history is evidence. Full67active.",
   "completion": {
     "batch": "in_progress",
     "mainline": "not_run",
@@ -1727,6 +1727,21 @@
       "record_retained": 201,
       "root_cause": "intent_permission access_mode_for_intent(execute_button)=write denies before handler validates work-item read grant",
       "no_new_records": true
+    },
+    "segment_53_236": {
+      "status": "predispatch_fixed_inflight_callback_group_gap_confirmed",
+      "product_commit": "8d9f70888",
+      "L1": "passed",
+      "authority_tests": 37,
+      "tool_tests": 75,
+      "browser_report": "artifacts/frontend-web-fix-20260928/tpl07-1790825104760/report.json",
+      "readback": "artifacts/frontend-web-fix-20260928/tpl52/workitem-predispatch-readback.log",
+      "callback_diagnostic": "artifacts/frontend-web-fix-20260928/tpl52/workitem-callback-inspect-runtime.log",
+      "record": 201,
+      "review505": "pending unchanged after failed terminal action",
+      "actual_callback": "507 groups[93], executive37 group match false although review authorization true",
+      "frontend": "unchanged c6f3f9cbc entryBrwUVS7o",
+      "backend": "8d9f70888"
     }
   }
 }

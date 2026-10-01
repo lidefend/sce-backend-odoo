@@ -9784,3 +9784,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 稳定后仅构建一次，5180复用原listener：base c6f3f9cbc8a08026009d78d771537ef2307ba206、entry /assets/index-BrwUVS7o.js、sha256 9c58c533abb3d14c9942c001769324a839c7d675585868c2b7e4524a9e73273a，旧候选保留previous-yzehqxpw。后端仍c8adfea58，addons未改，无升级/ORM。
 - tpl07-1790824901661：管理层实际待办可见、官方详情可打开、审批按钮可点击；execute_button请求被前置intent_permission拒绝“用户无权以write访问模型sc.payment.execution”。因此终审未成功，不计闭环通过。源码handler已用validate_work_item_action_origin及P1hook回传read授权；前置security/intent_permission仍依据通用intent分类write，早于handler检查而拒绝。这是P0授权入口不一致，不能授予管理层整单写ACL来绕过。
 - 下一步让前置门禁复用同一新鲜work-item来源验证取得record_access_mode，严格绑定object方法/单记录/实际授权，不改变write-intent分类和预览写禁令；添加伪造来源/角色/模型/方法反例，后端重绑后续办201。记录和审批配置均保留，不再创建/清理。67目标active，无推送/合并/目标部署。
+
+### 53.236 前置待办授权统一与在途回调权限缺口定位
+
+- P0 work_item_request_access_mode复用现有validate_work_item_action_origin和扩展授权器，只针对execute_button带明确work_item_origin的object单res_id请求；拒绝多目标/别名冲突、非法方法或来源。intent_permission在用户/库身份核对后据新鲜服务器返回read/write选择记录ACL级别，不改变通用write-intent分类、预览限制或执行层重复授权。未提供来源保持write，授权拒绝转AccessError，不能跳过ACL。原relation_action_authority输入登记permission文件。
+- L1 PASS；verify.execute_button.authority.unit 37PASS并begin/record回执，包括真实check_intent_permission函数执行的read grant/拒绝/普通write行为、歧义目标不得到达provider。提交8d9f70888，既有后端受管重绑，前端c6f3f9cbc未变、无构建/模块升级。
+- tpl07-1790825104760续办201：已进入execute_button处理，但原生服务端动作拒绝“您没有足够的访问权限运行此操作”。只读payment-flow-existing回读确认201仍draft、505仍pending，没有失败后部分审批提交，不重试该失败。
+- P4只扩展既有只读诊断输出callback组，L1及工具75PASS、诊断4项PASS。workitem-callback-inspect-runtime.log权威事实：504/505回调均507，groups仅[93]；管理层37真实review505授权/can_review为true但callback group交集false。Odoo ir_actions.py对应错误是动作groups检查。原策略恢复时sync仅采集active步骤，漏掉已停用definition6624仍在途的pending审核人，是P1回调同步缺口。
+- 下一步P1同步组并集需覆盖当前有效步骤及实际waiting/pending review所需组，保留模型边界、原记录授权和group-bound动作；配置变化不应截断已提交审批链。按所有者允许必要数据修正的原则，通过既有受管原生同步或公开配置接口修正当前policy18回调并回读，继续201，不新建或清理业务数据。不以整单写ACL、提权用户或前端绕过解决。终审仍pending，67目标active，无推送/合并/目标部署。
