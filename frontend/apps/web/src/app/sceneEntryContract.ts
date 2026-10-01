@@ -28,3 +28,24 @@ export function resolveSceneContractEntryIntent(options: {
   if (queryIntent) return queryIntent;
   return String(options.declaredTarget?.entry_intent || options.declaredTarget?.intent || '').trim();
 }
+
+/** Present only diagnostics explicitly carried by the selected scene runtime. */
+export function resolveSceneRuntimeDiagnostic(
+  runtime: Record<string, unknown>,
+  pageText: (key: string, fallback: string) => string,
+): string {
+  const count = (value: unknown): number => {
+    if (typeof value !== 'number' && typeof value !== 'string') return 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  };
+  const missingRequiredCount = count(runtime.missing_required_count);
+  const activeTransitionCount = count(runtime.active_transition_count);
+  const bridgeAligned = typeof runtime.bridge_aligned === 'boolean'
+    ? runtime.bridge_aligned : runtime.semantic_bridge_aligned;
+  const parts: string[] = [];
+  if (missingRequiredCount > 0) parts.push(`${pageText('runtime_diag_missing_required_prefix', '待补充事项')}：${missingRequiredCount}`);
+  if (activeTransitionCount > 0) parts.push(`${pageText('runtime_diag_transition_prefix', '可办理步骤')}：${activeTransitionCount}`);
+  if (bridgeAligned === false) parts.push(pageText('runtime_diag_alignment_mismatch', '当前场景语义尚未完全对齐。'));
+  return parts.join('；');
+}
