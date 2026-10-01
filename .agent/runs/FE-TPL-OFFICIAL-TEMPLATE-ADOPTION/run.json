@@ -816,16 +816,66 @@
         "frontend/apps/web/src/stores/session.ts",
         "frontend/apps/web/src/components/template/"
       ]
+    },
+    "list_surface_structure": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/frontend.mk"
+      ]
+    },
+    "list_surface_search_contract": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/src/components/design-system/ScEmptyState.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "make/frontend.mk"
+      ]
+    },
+    "relation_navigation_diagnostic": {
+      "target": "verify.frontend.relation_navigation.diagnostic",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_relation_navigation_diagnostic.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "relation_read_route_authority": {
+      "target": "verify.frontend.record_form_return.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+        "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "relation_entry_contract": {
+      "target": "verify.frontend.relation_read_closure.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+        "frontend/apps/web/scripts/relation_read_closure_test.ts",
+        "scripts/verify/relation_read_closure_guard.py",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [
-    "Actual readonly relation navigation still returns HTTP403 at 7e3fe8188; exact denial stage pending bounded diagnosis.",
-    "List actual batch probe targets covered native checkbox input; fix P4 visible-control selector before affected retry.",
-    "Remaining original formal effect responsibilities retained in system_scope_correction.remaining_acceptance; native/home tool extensions were not implemented."
+    "Remaining original formal-effect responsibilities retained in completion.remaining_delivery / system_scope_correction.remaining_acceptance; the deferred native-action form-interaction and published workspace/home observations were not implemented in this round.",
+    "Acceptance-volume mount audit keeps its fail-closed DENY: volume sc_fe_r2_p1_01_odoo declares one consumer but two containers mount it in project sc-fe-r2-p1-01 (the governed verification backend on 18082 and the profile compose credential carrier on 19083). Not relaxed and not bypassed by container surgery; audit PASS is deferred to an owner-coordinated baseline rebuild/snapshot window that must keep 18082."
   ],
-  "next_exact_step": "Owner assigns an implementation executor. Read this original run and exact failed evidence, claim sole writer, diagnose relation403 and repair list selector at owning layers; reuse unchanged evidence/build. Root coordinates only; do not auto-resume execution.",
+  "next_exact_step": "Owner-assigned next executor: (1) implement the remaining original formal-effect responsibilities (native-action form-interaction scope and published workspace/home observation deferred in completion.remaining_delivery); (2) at final freeze run make ci.delivery.freeze.prepare, one clean-HEAD make ci.local.quick, independent review, then PR; (3) run the acceptance-volume mount audit PASS only inside an owner-coordinated baseline rebuild/snapshot window that keeps 18082, never by relaxing the audit or operating the container directly. Do not re-run unchanged passing layers.",
   "completion": {
-    "batch": "in_progress: resume original formal rendering and interaction acceptance",
+    "batch": "in_progress: this round closed both open acceptance failures (relation navigation 403, list selection timeout) plus three additional P0/P1 root causes and repaired the probes; remaining original formal-effect responsibilities and final freeze/Quick/independent review still open",
     "mainline": "not_run",
     "deployment": "not_run",
     "mainline_port": "merge commit dc460758c of origin/main fff226d7b; 196 ahead / 0 behind",
@@ -2928,7 +2978,7 @@
       "impact": "final docs and dependency metadata only; original nonzero L2/runtime/mounted/build evidence remains input-equivalent; no new gate receipt claimed",
       "resume": "resolved/exit0 after dependency corrections; artifacts/frontend-web-fix-20260928/tpl52/local-goal-final-resume.log"
     },
-    "local_goal": "incomplete: prior code milestone retained; actual official-template rendering and interaction confirmation required",
+    "local_goal": "incomplete: two open acceptance failures closed and runtime-verified with fixed fixture identity; remaining original formal-effect responsibilities and final freeze/Quick/independent review still open",
     "owner_scope_correction": {
       "head": "3a748c8238bf25043e18a659ee9616b0200871db",
       "reason": "Owner reconfirmed original branch goal is formal rendering and interaction returning to official template; previous capability-only completion was too narrow",
@@ -3516,8 +3566,9 @@
     },
     "shared_result_index": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
     "workflow": ".agent/workflows/runtime-fixture.yaml",
-    "stage_identity": "abb6b7f1b + declared overlay and metadata scope",
-    "handoff": "no passing lifecycle tests or final review yet; root must complete interrupted changes"
+    "stage_identity": "146e47a2d (HEAD) + this run.json metadata scope; product and verification-tool tree clean at commit",
+    "handoff": "assigned executor closed the round and returned results; the remaining original formal-effect responsibilities and final freeze/Quick/independent review stay open under this same run.",
+    "writer": "owner-assigned executor (this session)"
   },
   "current_execution_order": {
     "formal_product_layer": "P0",
@@ -3600,7 +3651,214 @@
     "writer_handoff": "A returns code token to root for this round finalization, then no implementation writer until owner-designated executor assumes scoped token",
     "goal_completion": "not implied; preserve pending work and original evidence index"
   },
-  "execution_mode": "coordination_only",
-  "execution_paused": true,
-  "writer_token": "none; owner-assigned executor required"
+  "execution_mode": "implementation_assigned_executor",
+  "execution_paused": false,
+  "writer_token": "assigned executor (this session); sole code writer",
+  "executor_resume_20261001": {
+    "claimed_by": "owner-assigned implementation executor (this session)",
+    "claim_basis": "owner handed over execution of branch feature/web-official-template-adoption at 97765a219 after committing root handoff",
+    "round_objective": "close the two open acceptance failures at their owning layers and re-verify, then finalize the run",
+    "root_causes": {
+      "relation_403": "addons/smart_core/handlers/route_authority_validate.py called child.check_field_access_rights('read') while Odoo requires (operation, field_names); the resulting TypeError was swallowed by the broad except in _validate_relation_route and surfaced as ROUTE_RELATION_ORIGIN_DENIED. Unit double defaulted the second argument, hiding it.",
+      "list_selector": "scripts/verify/frontend_list_surface_structure_browser.mjs used non-existent selectors ([data-mobile-record-select], .mobile-record-card) and drove the vendor input that the official CollectionSelectionControl label intercepts. Real markup is .collection-mobile-record-row / .collection-selection-control[data-selection-scope=row].",
+      "field_visibility_projection": "addons/smart_core/handlers/ui_contract_v2_projection.py invented a form render_profile for contracts whose surface is not a form, so an undeclared list contract was published with visible:false/auth:none. Fixed by keeping the render profile undeclared for non-form contracts while native forms keep implicit edit and absolute policy keys stay authoritative.",
+      "empty_clear_region": "ListPage.vue rendered the empty branch outside a declared list-empty region, so the empty clear surface was not bound to the declared layout contract. Fixed by wrapping it in section.list-empty-region[data-workspace-primary-content][data-semantic-component=ListPage][data-list-status] and rebinding ListPage.css to .page [data-list-status='empty'].",
+      "mobile_touch_target": "frontend/packages/ui/src/kits/tdesign/theme.css collapsed the collection search toolbar-menu-toggle below the declared touch target under 760px. Fixed by restoring the declared 44px control in the narrow media query.",
+      "query_track_shrink": "ProductListHeader.vue rendered the list search inside the declared __query track via ActionSurfaceToolbar, but the .sc-input wrap kept min-width:auto and refused to shrink once it held a query, pushing submit/toggle over the aux track that owns the column-settings control. Fixed by adding .product-list-header__query :deep(.sc-input){min-width:0}."
+    },
+    "changes": {
+      "P0": [
+        "addons/smart_core/handlers/route_authority_validate.py: pass (operation, None) to check_field_access_rights",
+        "addons/smart_core/tests/test_entry_publication_authority.py: drop the defaulted second parameter so the missing-argument call fails"
+      ],
+      "P4": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs: real mobile/selection selectors, inline literals inside page.evaluate callbacks, click the visible official selection control",
+        "scripts/verify/frontend_relation_navigation_diagnostic.py: new read-only bounded denial-stage diagnostic",
+        "scripts/dev/frontend_acceptance_runtime.sh + make/runtime_ops.mk: register standard-relation-nav-diagnostic / verify.frontend.relation_navigation.diagnostic"
+      ]
+    },
+    "runtime_constraint": "the governed acceptance path requires the running backend revision to match a clean addons tree, so the P0 fix must be committed before replace-stale and the affected browser re-run",
+    "status": "runtime_verified_and_closed",
+    "uncovered": [
+      "remaining create/edit representative interactions",
+      "published workspace/home actual review"
+    ],
+    "resolution": "All five owner-listed root causes were fixed in their own responsibility layers and verified; probes now bind declared layout regions and declared search/empty/content contracts; the relation diagnostic resolves its origin from the governed fixture declaration (no hardcoded id)."
+  },
+  "round_closeout_20261001": {
+    "owner_round": "close the two open acceptance failures at their owning layers, repair the probes once, move record identity to governed resolution, handle the mount-audit blocker, then one consolidated verification",
+    "five_root_causes": {
+      "1_relation_navigation_403": {
+        "status": "fixed_runtime_verified",
+        "layer": "P0",
+        "module": "smart_core route_authority_validate",
+        "commit": "6b7572d6b",
+        "evidence": "make verify.frontend.relation_navigation.diagnostic SC_ACCEPTANCE_RUNTIME_PROFILE=local -> RELATION_NAV_RESPONSE ok:true allowed:true route_path /r/res.partner/56, all stages true (log artifacts/frontend-web-fix-20260928/resume-20261001/relation_navigation_diagnostic.log)"
+      },
+      "2_list_selection_timeout": {
+        "status": "fixed_verified",
+        "layer": "P4 probe",
+        "commit": "f32aa7e91",
+        "evidence": "list matrix full rows=6 failures=0; mobile selection control rows pass via .collection-selection-control[data-selection-scope=row]"
+      },
+      "3_field_visibility_projection": {
+        "status": "fixed_verified",
+        "layer": "P0",
+        "module": "smart_core ui_contract_v2_projection",
+        "commit": "02d28a06d",
+        "evidence": "addons/smart_core/tests/test_ui_contract_v2_boundaries.py 120 OK"
+      },
+      "4_empty_clear_region": {
+        "status": "fixed_verified",
+        "layer": "P1",
+        "module": "frontend ListPage",
+        "commit": "8fddb1f14",
+        "evidence": "declared list-empty-region[data-workspace-primary-content][data-semantic-component=ListPage][data-list-status]; built asset ActionViewShell-CITccqeZ.css contains .list-empty-region{display:block}"
+      },
+      "5_mobile_touch_target": {
+        "status": "fixed_verified",
+        "layer": "P1",
+        "module": "frontend tdesign theme",
+        "commit": "8fddb1f14",
+        "evidence": "declared narrow media query restores --sc-component-button-touch-target on .collection-search-control .sc-icon-button[data-appearance=toolbar-menu-toggle]; present in built index-Yf-PmFKd.css"
+      }
+    },
+    "extra_fix_query_track_shrink": {
+      "status": "fixed_verified",
+      "layer": "P1",
+      "module": "frontend ProductListHeader",
+      "commit": "8fddb1f14",
+      "evidence": ".product-list-header__query .sc-input{min-width:0} present in built ActionViewShell-CITccqeZ.css; column settings same-declared-row check now passes in narrow viewport"
+    },
+    "probe_fixes": {
+      "status": "applied",
+      "commit": "146e47a2d",
+      "detail": "column-settings judged inside the declared layout region; declared WorkspaceContextIndicator excluded from duplicate-context counting; per-fixture baseline_ok captured before injection for all 5 negatives; declared search submit + declared ScEmptyState + declared data-collection-presentation=table drive the probe instead of Enter-key/vendor internals"
+    },
+    "record_identity": {
+      "status": "governed_resolution",
+      "commit": "146e47a2d",
+      "detail": "frontend_relation_navigation_diagnostic.py resolves the parent from the governed fixture declaration (payment.request FE-DELIVERY-HARDENING-001, company FE Company A, state draft, relation partner_id) requiring a unique match; no hardcoded 1813/1843"
+    },
+    "fixed_dev_password": {
+      "status": "applied",
+      "commit": "146e47a2d",
+      "detail": "SC_ACCEPTANCE_FIXTURE_PASSWORD defaults to scdevpass in make/dev.mk and replaces the per-run random secret in the frontend acceptance Make entries; live fixture re-applied and login probe PASS"
+    },
+    "env_audit": {
+      "command": "make acceptance.runtime.baseline_recovery.audit",
+      "result": "DENY volume=sc_fe_r2_p1_01_odoo expected one mount consumer actual=2",
+      "mount_holders": "sc-backend-odoo-acceptance (governed verification backend, port 18082, current revision 02d28a06d) and sc-fe-r2-p1-01-odoo-1 (profile compose service, port 19083, declared credential_container)",
+      "conclusion": "Same project sc-fe-r2-p1-01; two mounters cannot prove the exclusive-use rule. The audit rule is fail-closed and unit-locked and MUST NOT be relaxed, and no direct container surgery is allowed. Keep 18082 (actual current code) and keep the compose service; defer audit PASS to an owner-coordinated baseline rebuild/snapshot window.",
+      "rule_owner": "scripts/verify/test_frontend_acceptance_baseline_rebuild.py:75 and scripts/dev/frontend_acceptance_baseline_rebuild.sh:119-137"
+    },
+    "validation_results": [
+      {
+        "layer": "L1",
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "count": null,
+        "identity": "dirty stage, L1_only"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.frontend.list_surface_search_contract.unit",
+        "status": "passed",
+        "count": 9,
+        "identity": "146e47a2d"
+      },
+      {
+        "layer": "L2",
+        "command": "python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "status": "passed",
+        "count": 120,
+        "identity": "02d28a06d"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.business_config.formal_list.unit",
+        "status": "passed",
+        "count": 63,
+        "identity": "carried forward; inputs unchanged"
+      },
+      {
+        "layer": "L2",
+        "command": "make verify.unified_page_contract.v2.runtime",
+        "status": "passed",
+        "count": 136,
+        "identity": "carried forward; score=6"
+      },
+      {
+        "layer": "L1",
+        "command": "python3 scripts/verify/frontend_rendering_detail_state_guard.py",
+        "status": "passed",
+        "count": 98,
+        "identity": "carried forward; surfaces=98"
+      },
+      {
+        "layer": "L3",
+        "command": "make backend.acceptance.replace-stale; make backend.acceptance.health",
+        "status": "passed",
+        "count": null,
+        "identity": "revision 02d28a06d"
+      },
+      {
+        "layer": "L4",
+        "command": "make frontend.standard.preview.build; make frontend.standard.preview.up",
+        "status": "passed",
+        "count": null,
+        "identity": "build base_sha 02d28a06d; 5180 served from config05-20260929/dist"
+      },
+      {
+        "layer": "L4",
+        "command": "make verify.frontend.list_surface_structure.browser SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+        "status": "passed",
+        "count": 108,
+        "identity": "list.json 17:51:08 postdates the final probe edit and build; 5/5 negatives baseline_ok"
+      },
+      {
+        "layer": "L4",
+        "command": "make verify.frontend.relation_navigation.diagnostic SC_ACCEPTANCE_RUNTIME_PROFILE=local",
+        "status": "passed",
+        "count": null,
+        "identity": "ok:true allowed:true; identity 1845/8/56 captured 2026-10-01"
+      }
+    ],
+    "carried_forward_evidence": [
+      "make ci.local.iteration L1_only (dirty stage; not delivery evidence)",
+      "artifacts/frontend-web-fix-20260928/resume-20261001/list.json (108/108 gated, 5/5 negative fixtures with baseline_ok=true, 0 runtime errors)",
+      "artifacts/frontend-web-fix-20260928/resume-20261001/relation_navigation_diagnostic.log",
+      "sce-offrepo/artifacts/config05-20260929/build-identity.json"
+    ],
+    "candidate_identity": {
+      "branch": "feature/web-official-template-adoption",
+      "head": "146e47a2d",
+      "backend_revision": "02d28a06d",
+      "preview_build": {
+        "base_sha": "02d28a06d0bedf59fa9d932014a5d36e806c583b",
+        "dist": "/home/lidefend/workspace/sce-offrepo/artifacts/config05-20260929/dist",
+        "entry": "/assets/index-Qy9TcyLN.js",
+        "index_sha256": "600624e44e023280f1f37f23eb95fd2eeda5f834f0403e67a6549c2d3305e8bc",
+        "port": 5180,
+        "api_proxy": "http://127.0.0.1:18082",
+        "server_pid": 802966
+      },
+      "resolved_fixture_identity": {
+        "parent_model": "payment.request",
+        "parent_record_id": 1845,
+        "company_id": 8,
+        "parent_state": "draft",
+        "child_model": "res.partner",
+        "child_record_id": 56
+      }
+    },
+    "remaining_list_failures": "none: list.json reports 0 failures (108/108 gated checks passed, 5/5 negative fixtures detected with clean baselines, 0 runtime errors)",
+    "out_of_scope_pre_existing": [
+      "make verify.frontend.rendering_detail_state.unit sub-steps frontend_official_design_alignment_inventory (internalVendorSelectorGapCount:1, visualLiteralGapCount:1) and frontend_rendering_detail_inventory (stale component-professionalization-inventory-v1.json) — proven pre-existing by stashing product changes; not in the delivery chain"
+    ],
+    "owner_decisions": {
+      "field_projection": "Fix the generic projection defect; do not relax acceptance assertions; never let critical override ACL/field-permission/legitimate hiding; no payment-model special-casing",
+      "rebuild_and_preview": "Authorized via existing Make entries; refresh managed backend too when backend projection code changes"
+    }
+  }
 }
