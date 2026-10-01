@@ -10057,3 +10057,16 @@ X2ManyRelationRenderer 仅为附件名称自动下载文件会让历史文件缺
 - 前一轮 03:26 的 live 运行绑定显式 `ACCEPTANCE_TARGET_SHA=aeff26d78`，属迭代诊断证据，从未绑定当时 HEAD；本轮已在正确身份上重做，不沿用其结论。
 - gap 1 盘点（未实施）：registry 1371 脚本中 183 个活跃脚本无 make/workflow 引用，**全部**有文件级引用（无完全孤儿，全部位于 scripts/verify，行数 min=1/median=198/max=1561）——disposition 应为 registry 内机器可校验的分类登记，而非批量退役。留作下一批。
 - 状态：批次验收完成（本层）；主线集成/版本发布/产品交付维持各自状态，未触发部署。
+
+## 2026-10-02 接替执行：L4 gap 1 wire-or-retire disposition 落地（run successor_step7）
+
+- 目标：registry 对"无 make/workflow 引用的活跃守卫"（183 个，全部有文件级引用）要求机器可校验的 `wire_or_retire` 分类，而非批量退役。
+- 实现（4 文件，提交 `397438b05 fix(verify): require a wire-or-retire disposition for unwired active guards`）：
+  - `scripts/verify/guard_registry_audit.py`：新增 `disposition_failures()`——unwired 活跃脚本缺 disposition 即 audit FAIL；合法值 `file-consumed` / `wire-pending` / `retire-pending`；`file-consumed` 须有文件引用；`wire-pending`/`retire-pending` 须有 `review_by` 期限；wired 脚本携带 stale disposition 同样 FAIL（提示 re-seed）。`cmd_seed()` 为有文件引用的 unwired 活跃脚本补默认 `file-consumed`、清除 wired 脚本的 stale disposition；`cmd_export()` 条目并入 `wire_or_retire` 且 counts 增加 `unwired` / `unwired_undispositioned` / `wire_or_retire` 分布。
+  - `scripts/verify/test_guard_registry_audit.py`：新增 `GuardRegistryDispositionTest` 7 例（缺 disposition 失败、file-consumed 有引用通过、wired 无需、wired stale 失败、wire-pending 需 review_by、未知值失败、file-consumed 无引用失败）。
+  - `scripts/verify/registry.yaml`：seed 后新增 183 条 `file-consumed`（总 entries 275）。
+  - `docs/audit/guard_registry/guard_registry.json`：export 刷新，counts `{active:1284, orphan:87, retired:1, unwired:183, unwired_undispositioned:0, wire_or_retire:{file-consumed:183, wire-pending:0, retire-pending:0}}`。
+- 验证：单测 **10 例 OK**；audit `[guard-registry] AUDIT PASS: 1371 scripts (1284 referenced, 87/87 orphans acknowledged, 1 retired, 183/183 unwired dispositioned)`；负例探针（剥掉一条 disposition → audit FAIL → re-seed 恢复 → PASS）；`make ci.local.iteration` L1 PASS。
+- 登记：`guard_registry` check 回执最终绑定 clean HEAD `397438b05`（10 例，log `l2-guard_registry-20261002-040847.log`，log_sha256 入回执）。
+- **gap 1 关闭**。登记过程两次受挫的教训已入 run.json `record_procedure_note`：① begin 与 record 之间不得变更声明输入（seed 改 registry.yaml 触发输入漂移拒绝）；② begin→验证→record 必须一气呵成（pending 文件被失败 record 消费后即缺）；③ 提交后再重记一次将回执绑定到 clean HEAD。
+- 状态：批次验收完成（本层）；run blockers 中 gap 1 条目已移除。剩余：create/edit 与 workbench 最小证据差额、owner 待决 `addons/smart_core/contract.schema.json` 空占位文件去留、部署/版本发布需 owner 显式授权（未触发）。

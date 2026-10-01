@@ -1020,13 +1020,12 @@
     }
   },
   "blockers": [
-    "L4 gap 1 OPEN: active verify guards with no reference from any make target or workflow still lack a wire-or-retire disposition; the registry reports them but does not require a disposition.",
     "Deployment/version release not performed and not authorized: mainline integration, deployment and product acceptance stay separate statuses.",
     "Owner decision still open (not self-authorized): addons/smart_core/contract.schema.json is a tracked empty file no code references; keep as placeholder or remove in a separate P0 change.",
     "Remaining original-list evidence delta: create/edit and workbench minimum evidence only, plus the retained post-deploy limit that historical attachment content is unavailable and metadata rendering does not restore it.",
     "Environment scope note (bounded, not a general 'environment all-pass'): the earlier DENY on volume sc_fe_r2_p1_01_odoo was that the rebuild entry demanded exactly one mount consumer while two declared consumers exist. Step (b) replaced the raw count with the declared topology (one non-oneoff compose carrier plus only the declared oneoff mounters) and acceptance.runtime.baseline_recovery.audit now PASSES with declared_consumers=2 for odoo. Foreign owners, undeclared oneoff mounters and non-odoo volumes are still DENY."
   ],
-  "next_exact_step": "Offline custody landed at 3e23bd80a: the live probe persists the exact ui.contract.v2 response bytes (artifacts/backend/dev_acceptance_release_probe.contract.json) and the schema guard re-derives the byte digest, semantic sha256 and lifecycle declaration from those bytes without the runtime; the live lane was re-run on the 3e23bd80a backend with 11/11 contract checks PASS after a governed fixture credential reconcile and backend replace-stale. Next: wire-or-retire the 183 active unreferenced guards (gap 1; scoping shows all 183 are file-referenced under scripts/verify and none is a full orphan, so the disposition is a machine-checkable registry classification rather than mass retirement), then the remaining create/edit and workbench minimum evidence delta. Deployment/version release still needs explicit owner authorization.",
+  "next_exact_step": "L4 gap 1 closed at 397438b05: guard_registry_audit now requires a machine-checkable wire_or_retire disposition (file-consumed / wire-pending / retire-pending) for every unwired active script, seeds/retires stale dispositions for wired scripts, and exports the counts; all 183 unwired active guards are dispositioned file-consumed with zero undispositioned, audit PASS 1371 scripts, and the check receipt is recorded at the clean HEAD 397438b05 (10 unittest cases). Remaining: the create/edit and workbench minimum evidence delta, the owner decision on the addons/smart_core/contract.schema.json empty placeholder, and deployment/version release which still needs explicit owner authorization.",
   "completion": {
     "batch": "passed: declared-authority projection consumed by both action presenters with negative-first behavioural proof; targeted L2 and typecheck to be refreshed for this layer",
     "mainline": "completed for the prior candidate: PR #526 merged (squash) as c4ef5339475947f0ac4fda1350851148b8dc5942; origin/main tree is identical to the previous branch tip aeff26d78",
@@ -2975,6 +2974,34 @@
       "L4 gap 1 OPEN: the registry still does not require a disposition for the 183 unreferenced active guards",
       "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
       "create/edit and workbench minimum evidence delta and the retained post-deploy attachment-content limit"
+    ]
+  },
+  "successor_step7_gap1_wire_or_retire_landed_20261002": {
+    "stage": "L4 gap 1 closure: machine-checkable wire-or-retire disposition for unwired active guards",
+    "candidate_identity": {
+      "head": "397438b05061c635544c5d680e6bd6ebcb8ba891",
+      "head_subject": "fix(verify): require a wire-or-retire disposition for unwired active guards",
+      "tree": "clean at commit; the guard-registry receipt was re-recorded on this clean HEAD after the commit"
+    },
+    "implementation": {
+      "audit": "scripts/verify/guard_registry_audit.py adds disposition_failures(): an unwired active script without a wire_or_retire disposition fails the audit; dispositions must be one of file-consumed / wire-pending / retire-pending; file-consumed requires a file reference; wire-pending and retire-pending require a review_by deadline; a wired script carrying a stale disposition fails (run make guard.registry.seed)",
+      "seed": "make guard.registry.seed now writes the default file-consumed disposition for unwired active scripts that have file references and removes stale dispositions from wired scripts",
+      "export": "make guard.registry.export includes wire_or_retire per entry and reports unwired / unwired_undispositioned / wire_or_retire distribution counts",
+      "registry_data": "scripts/verify/registry.yaml seeded 183 file-consumed dispositions (275 total entries); docs/audit/guard_registry/guard_registry.json export refreshed with counts {active: 1284, orphan: 87, retired: 1, unwired: 183, unwired_undispositioned: 0, wire_or_retire: {file-consumed: 183, wire-pending: 0, retire-pending: 0}}",
+      "tests": "scripts/verify/test_guard_registry_audit.py adds GuardRegistryDispositionTest with 7 cases (missing disposition fails, file-consumed with reference passes, wired needs none, wired stale disposition fails, wire-pending needs review_by, unknown value fails, file-consumed without reference fails)"
+    },
+    "verification": {
+      "unittest": "10 cases OK (scripts.verify.test_guard_registry_audit)",
+      "audit": "[guard-registry] AUDIT PASS: 1371 scripts (1284 referenced, 87/87 orphans acknowledged, 1 retired, 183/183 unwired dispositioned)",
+      "negative_probe": "stripping one disposition makes the audit FAIL with the missing-disposition message; re-seed restores it and the audit passes again",
+      "l1": "make ci.local.iteration PASS (run before the record on the implementation state)",
+      "recorded_check": "guard_registry passed at clean HEAD 397438b05, 10 unittest cases, log .runtime/agent-runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/logs/l2-guard_registry-20261002-040847.log (log_sha256 recorded in the receipt)"
+    },
+    "record_procedure_note": "the first record attempt failed because seeding registry.yaml between begin and record changed declared inputs; the second failed on a pending-file miss; the recorded pass used a single begin -> verify -> record pass with no input mutation in between, then was re-recorded once more after the commit to bind the receipt to the clean HEAD",
+    "remaining": [
+      "owner decision open: addons/smart_core/contract.schema.json placeholder keep/remove",
+      "create/edit and workbench minimum evidence delta and the retained post-deploy attachment-content limit",
+      "deployment/version release needs explicit owner authorization"
     ]
   }
 }
