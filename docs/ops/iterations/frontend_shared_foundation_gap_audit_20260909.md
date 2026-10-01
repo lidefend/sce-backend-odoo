@@ -9629,3 +9629,11 @@ L1 plan-capability-v2-iteration与py_compile PASS；P1产品输入未改，复�
 - 一次构建23.47s成功，base326488e818d9ffeaae1fdf995692a7a7ddaa55e8 clean；entry /assets/index-Bbk89tq4.js，sha25619c266c40a3ac8a8d9b9a587dbe13400e870f1eb6b921ebd9c53f569d3779fad。既有5180 listener复用；后端eae3dd5d2产品输入不变，不重启。
 - approval-layout-browser退出0，tpl07-1790820189146/report.json **13 PASS**，仍只读。1440/390截图均实际检查：桌面body已全宽、审批对象横跨、左规则右步骤；窄屏单列。已确认根级grid造成的窄列问题修复。截图仍显示左侧审批方式/默认岗位下拉控件略超出220px规则列，尚未完成整体编辑器视觉验收，不因13项通过掩盖该剩余问题。当前图只覆盖上半区域，全部保存操作和子对象切换尚需后续定向检查。
 - 下一步沿同一面板修正下拉控件对列宽的约束并补控件边界断言，合并验证后端声明的付款执行对象切换/基线读取与保存操作可达性；再进入精确配置写恢复和真实多角色审批。不重跑历史矩阵。总体67仍active，未推送/合并/目标部署。
+
+### 53.215 审批控件边界、子对象选择和真实规则读取
+
+- 8e5636f3e clean续跑；P0frontend在共享审批规则区给ScSelect公开根类width/max-width/min-width约束，避免intrinsic input宽度溢出220px列。不选择TDesign内部DOM、不改契约或策略。P4既有只读probe增加边界/保存可达性、付款执行对象选择及回读断言。9433fa515本地提交。
+- approval-bounds-iteration L1 PASS，approval-bounds-unit 22+31=53 PASS，standard_preview_tool begin/record回执已登记。只有CSS和browser脚本变化，53.214配置纯测试40和strict类型输入不变，复用原结果；无ORM/模块升级/后端重启。一次构建24.03s，base9433fa515e1d3fe5c1ffe3178214438235fb218c clean，entry/assets/index-BD1uERDW.js，sha2564f5c94ef304937d1a8232b2f33109faf0be8f39c99d20df23471efffa5549b7a；5180复用。
+- approval-bounds-browser退出0，tpl07-1790820354040/report.json **22 PASS**：1440/390选择器位于规则列内、保存按钮滚动可达且未改设置不能保存；真实点击契约声明的付款执行对象，config.get目标为sc.payment.execution且规则开关与回读一致。桌面与子对象窄屏截图已实际查看，上一段下拉框溢出消失。无配置/业务写入。
+- 明确基线：payment.request policy.exists=false/runtimeapproval=false；sc.payment.execution已有policy18“PFL-035 付款执行审批”，单级finance_manager、活动step2187、runtimeapproval=true。不能把父对象无策略推广为子对象也无策略，也不能用计划版本“策略不存在”恢复逻辑覆盖此既有子规则。
+- 下一步复用既有付款/付款执行办理工具与PFL-035角色事实，选真实经办及现有审批人，确认受管来源、请求许可和精确清理是否可承载共享工作台审批。配置编辑器切换及只读呈现已验证，但保存/恢复、真实提交/审批仍不因此自动通过。优先沿现有业务数据和规则闭环，不重复旧49项或新造持久fixture。67条目标及detail.action-state仍未完成，无推送/合并/目标部署。
