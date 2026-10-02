@@ -1,4 +1,4 @@
-# Backend Contract SLO Telemetry — Core, Boundary, Delivery Call Site and Runtime Emission (L5 gap 1)
+# Backend Contract SLO Telemetry — Core, Boundary, Delivery Call Site, Runtime Emission and Durable Store (L5 gap 1)
 
 Run: `.agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json`
 Branch: `fix/contract-slo-telemetry`
@@ -26,13 +26,16 @@ emission boundary**, the **runtime delivery call site**, and a governed
   structured log line;
 - a runtime probe that drives real `ui.contract.v2` deliveries through the
   production handler on the authorized isolated profile and reads the
-  `contractSlo` line the production sink actually emits.
+  `contractSlo` line the production sink actually emits;
+- a durable observation store, a retention horizon, and a per-version trend read
+  model exposed through a read intent.
 
 ## Boundary
 
 - Formal Product Layer: **P0** platform kernel product (`smart_core`), with P4
   verification tooling.
-- No contract protocol change, no new Odoo model. The runtime check reuses the
+- No contract protocol change. The durable store adds one P0 platform model
+  (`sc.contract.slo.observation`) and one read intent; the runtime check reuses the
   isolated `sc-contract-lifecycle-v1` profile already registered by
   `docs/architecture/backend_contract_lifecycle_authority_v1.md` (database
   `sc_contract_lifecycle`, dbfilter `^sc_contract_lifecycle$`) through governed
@@ -43,14 +46,16 @@ emission boundary**, the **runtime delivery call site**, and a governed
 
 ## Exclusions
 
-- Long-term persistence, trend reporting and any read intent. The runtime sink is
-  the structured log line; a persisted read model would change
-  schema/manifest/examples and is a separate protocol decision.
 - Aggregating by the published `ui.business.config.contract` version number: the
   runtime lifecycle evidence does not carry it, so this batch keys on the
   identity that is actually present and leaves the additive field to a separate
   decision. `delivery_identity` already carries an optional `publishedVersionRef`
   so that decision stays additive.
+
+The durable store, the retention horizon and the trend read model are no longer
+excluded: they are delivered below. They changed the manifest version and added a
+model, ACL rows and a read intent, which is the P0 protocol surface this batch
+owns.
 
 ## Results
 
@@ -125,8 +130,34 @@ emission boundary**, the **runtime delivery call site**, and a governed
 - `scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py` — host-side
   guard (5 tests) that re-checks the report with a non-zero test count, so a
   probe run cannot be a pass just because a string appeared.
+- `addons/smart_core/models/contract_slo_observation.py` — the durable store
+  (`sc.contract.slo.observation`): one row per aggregate-ready observation, the
+  lifecycle identity as columns, `outcome`, `observed_at`, `latency_ms`,
+  `client_type`, `request_id`, `company_id`, plus version/time composite indexes.
+  Registered in `models/__init__.py` with read-for-user / write-for-admin ACLs.
+- `addons/smart_core/core/contract_slo_persistence.py` — the second half of the
+  gap. Pure, offline-verifiable parts: `row_values()`/`observation_from_row()`
+  (exact identity round trip, and an unusable row reads back as unreadable rather
+  than as a guessed identity), `bucket_windows()` and `build_trend()` (each
+  observation lands in exactly one half-open bucket; an unplaceable observation is
+  counted, never dropped or leaked into a neighbour). Thin fail-open `env`
+  wrappers: `persist_observation()`/`persist_line()`, `read_observations()`,
+  `aggregate_window()`, `window_trend()`, `prune_observations()`. On/off and
+  retention are existing platform configuration
+  (`smart_core.contract_slo.persist_enabled`, default off;
+  `smart_core.contract_slo.retention_days`, default 30).
+- `addons/smart_core/handlers/contract_slo_snapshot.py` — read intent
+  `smart_core.contract_slo.snapshot` (`MACHINE_ACCESS = "read"`), returning the
+  store summary, the window aggregate and the per-version trend. It re-implements
+  no rate formula: both come from the pure core.
+- `addons/smart_core/handlers/ui_contract_v2_authority.py` — the default delivery
+  sink now logs the canonical line and then persists *that same line* when the
+  store is enabled, so the store consumes exactly the emission format a reader
+  would. Persistence stays fail-open and the explicit-sink path is unchanged.
+- `make/dev.mk` — `local.contract-lifecycle.upgrade` (governed module upgrade for
+  the isolated profile).
 - `make/dev_test.mk` —
-  `verify.backend.contract_slo_telemetry[.unit|.emission|.runtime]`.
+  `verify.backend.contract_slo_telemetry[.unit|.emission|.persistence|.runtime]`.
 
 ### Evidence
 
@@ -159,14 +190,22 @@ emission boundary**, the **runtime delivery call site**, and a governed
   (`logs/batch4_baseline_sha256.txt`, `logs/batch4_restored.log`). A raising sink
   is caught one layer deeper in `emit_observation_line`, whose own fail-open was
   already proven load-bearing in batch 2.
-- Receipts `slo_core` (33 tests) and `slo_emission` (11 tests) both resolve as
-  `reusable` under `make agent.run.resume`.
+- Receipts `slo_core` (33 tests), `slo_emission` (11 tests) and `slo_store`
+  (22 tests) all resolve as `reusable` under `make agent.run.resume`.
+- `make verify.backend.contract_slo_telemetry.persistence` → PASS, 22 tests.
+  Receipt `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/slo_store.json`
+  (log `logs/slo_store.log`). The suite covers the identity round trip, an
+  unusable row reading back as unreadable rather than as a guessed identity,
+  half-open bucket windows, single-bucket placement with an `unplacedObservations`
+  counter, the retention cutoff, and asserts the persistence module imports no
+  `odoo` module.
 - Runtime emission, on the isolated profile (`local.contract-lifecycle` stack:
   `sc-contract-lifecycle-v1-{odoo,db,redis,nginx}-1`, database
   `sc_contract_lifecycle`, `smart_core` installed, my worktree's `addons`
   mounted into the container so the probe exercises *this* code):
-  `make verify.backend.contract_slo_telemetry.runtime` → PASS, probe 15/15
-  checks, host guard 5 tests. The production handler delivered a `res.partner`
+  `make verify.backend.contract_slo_telemetry.runtime` → PASS, probe 24/24
+  checks, host guard 8 tests (extended from the earlier 15 checks / 5 guard
+  tests when the store checks were added). The production handler delivered a `res.partner`
   form (`ok=True`, intent `ui.contract.v2`), captured exactly one `contractSlo`
   line, and the declaration consumer accepted every observation unchanged:
   aggregate 3 observations, 0 rejected, 2 identities, `successRate=1.0`,
@@ -179,6 +218,18 @@ emission boundary**, the **runtime delivery call site**, and a governed
   (the reuse evaluator refuses runtime evidence without authoritative
   environment readback, so `make agent.run.resume` reports `slo_runtime` stale by
   design).
+- Runtime persistence, same run: the module was upgraded to
+  `17.0.1.1.13` (`make local.contract-lifecycle.upgrade MODULE=smart_core`), which
+  created the store table (`0` rows at upgrade time) and registered both ACL
+  rows. With the store enabled the production sink wrote exactly one row per
+  delivery (`3` rows for `3` deliveries, `0` rejected); the row identity
+  round-trips through the model, the store aggregate matches the emission
+  aggregate, the trend places all three observations in one bucket, the two
+  delivery surfaces stay in separate version rows, the read intent
+  `smart_core.contract_slo.snapshot` sees the store (`store=3`, `accepted=3`),
+  prune keeps the fresh rows, and the probe restored the original
+  `smart_core.contract_slo.persist_enabled` value (`None`, i.e. default off) on
+  exit.
 - Negative-first proof, runtime half: after confirming the un-injected baseline
   emitted a valid `success` line, injecting `return False` at the top of
   `emit_delivery_observation` produced zero `contractSlo` lines while the
@@ -186,7 +237,7 @@ emission boundary**, the **runtime delivery call site**, and a governed
   3 host guard tests (`make verify.backend.contract_slo_telemetry.runtime`
   errored). The authority module was restored and verified byte-identical
   (`sha256 e8131205b79181c3fa01501053aa962c2ce21867ca47bf3abcfdde29341897d3`),
-  after which the check returned 15/15 and 5/5 again.
+  after which the check returned 24/24 and 8/8 again.
 - The identity test seals a real contract through `contract_lifecycle` and reads
   the identity back from `meta.lifecycle`, so the SLO identity is bound to the
   emitted evidence rather than to a synthetic dictionary. The suite also asserts
@@ -194,9 +245,11 @@ emission boundary**, the **runtime delivery call site**, and a governed
 
 ### Not delivered (deferred, deliberate)
 
-- Long-term persistence or a trend read model.
 - Contract-version keying by the published `ui.business.config.contract` version
   number (needs an additive lifecycle field; separate decision).
+
+Durable persistence and the per-version trend read model are now delivered (see
+above); they were the only items on this list besides published-version keying.
 
 ### Runtime half (closed on the authorized isolated profile)
 
@@ -221,8 +274,12 @@ The runtime follow-up ran as one command
 
 ### Remaining gap
 
-The L5 gap stays open because emission is proven but retention is not:
-long-term persistence (a sink surviving process exit) and a per-version trend
-read model are still not implemented. The L4/L5 statement in
-`docs/architecture/backend_contract_lifecycle_authority_v1.md` is therefore
-intentionally unchanged. Publication is on hold by owner instruction.
+Both halves of this gap are now proven: emission is verified at runtime and
+retention is delivered as a durable store, a retention horizon and a
+per-version trend read model, all verified on the isolated profile. The
+**overall** L5 maturity claim is nevertheless intentionally unchanged, because
+`docs/architecture/backend_contract_lifecycle_authority_v1.md` still lists
+signature-level supply-chain provenance and N-1/N+1 automated compatibility
+drills as missing. Only the contract SLO telemetry/trend item is closed in that
+document; the L4→L5 statement does not move on this workstream alone.
+Publication is on hold by owner instruction.

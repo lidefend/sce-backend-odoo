@@ -19,8 +19,13 @@ which locks its declared set, bound database, module version and source revision
 so the runtime half is offline-verifiable like the machine half. Enterprise
 maturity is assessed at **92/100, L4 (governed and production-ready)**.
 
-This is not L5. Long-term contract SLO telemetry, automated N-1/N+1 consumer
-compatibility drills, and signed supply-chain provenance remain separate work.
+This is not L5. Contract-version SLO telemetry and trend (success, degradation
+and integrity-failure rates aggregated per contract version, with a durable store,
+a retention horizon and a trend read model) is delivered and runtime-verified on
+the isolated `sc-contract-lifecycle-v1` profile by the
+`fix/contract-slo-telemetry` workstream, so it is no longer a gap. Signed
+supply-chain provenance and automated N-1/N+1 consumer compatibility drills
+remain separate work, so the L4 assessment is deliberately unchanged.
 
 ## Authority Rules
 
@@ -67,7 +72,9 @@ part of `verify.backend.contract_lifecycle.authority` and the runtime lane.
 
 ## Remaining L5 Work
 
-- Contract-version SLO and degradation trend telemetry.
+- Contract-version SLO and degradation trend telemetry — delivered by the
+  `BACKEND-CONTRACT-SLO-TELEMETRY` workstream (durable store, retention horizon,
+  trend read intent, runtime-verified); no longer a gap.
 - Automated N-1/N+1 consumer compatibility and rollback rehearsals.
 - Signed artifact provenance bound to the deployed runtime SHA.
 

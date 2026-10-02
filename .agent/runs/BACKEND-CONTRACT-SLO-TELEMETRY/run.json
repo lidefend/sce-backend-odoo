@@ -9,9 +9,15 @@
   "scope": [
     ".agent/",
     "addons/smart_core/core/contract_slo_telemetry.py",
+    "addons/smart_core/core/contract_slo_persistence.py",
     "addons/smart_core/handlers/ui_contract_v2_authority.py",
+    "addons/smart_core/handlers/contract_slo_snapshot.py",
+    "addons/smart_core/models/",
+    "addons/smart_core/security/ir.model.access.csv",
+    "addons/smart_core/__manifest__.py",
     "scripts/verify/test_contract_slo_telemetry.py",
     "scripts/verify/test_ui_contract_v2_slo_emission.py",
+    "scripts/verify/test_contract_slo_persistence.py",
     "scripts/verify/contract_slo_telemetry_runtime_probe.py",
     "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
     "make/dev_test.mk",
@@ -52,8 +58,19 @@
       "target": "verify.backend.contract_slo_telemetry.emission",
       "inputs": [
         "addons/smart_core/core/contract_slo_telemetry.py",
+        "addons/smart_core/core/contract_slo_persistence.py",
         "addons/smart_core/handlers/ui_contract_v2_authority.py",
         "scripts/verify/test_ui_contract_v2_slo_emission.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "slo_store": {
+      "target": "verify.backend.contract_slo_telemetry.persistence",
+      "inputs": [
+        "addons/smart_core/core/contract_slo_telemetry.py",
+        "addons/smart_core/core/contract_slo_persistence.py",
+        "scripts/verify/test_contract_slo_persistence.py",
         "make/dev_test.mk"
       ],
       "kind": "offline"
@@ -62,7 +79,12 @@
       "target": "verify.backend.contract_slo_telemetry.runtime",
       "inputs": [
         "addons/smart_core/core/contract_slo_telemetry.py",
+        "addons/smart_core/core/contract_slo_persistence.py",
         "addons/smart_core/handlers/ui_contract_v2_authority.py",
+        "addons/smart_core/handlers/contract_slo_snapshot.py",
+        "addons/smart_core/models/contract_slo_observation.py",
+        "addons/smart_core/security/ir.model.access.csv",
+        "addons/smart_core/__manifest__.py",
         "scripts/verify/contract_slo_telemetry_runtime_probe.py",
         "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
         "scripts/ops/odoo_shell_exec.sh",
@@ -75,12 +97,12 @@
   "blockers": [
     "Batches 1-5 verified. Offline: the contract_slo_telemetry core (identity, version-scoped aggregation) receipt slo_core=33 reusable; the fail-open sink-agnostic emission boundary and the runtime delivery call site at the single seal_runtime_contract chokepoint receipt slo_emission=11 reusable. Runtime: on the authorized isolated profile sc-contract-lifecycle-v1 / sc_contract_lifecycle the production handler emitted real contractSlo lines (probe 15/15 checks) that the declaration consumer accepted unchanged (aggregate 3 observations, 0 rejected, 2 identities, successRate 1.0, integrityFailureRate 0.0); host guard 5 tests.",
     "Negative-first holds at both layers: offline the injected sink is detected; at runtime neutering emit_delivery_observation produced zero contractSlo lines while the delivery still succeeded (fail-open) and failed 10 probe checks / 3 guard tests, then the source was restored byte-identical (sha256 e8131205...).",
-    "The L5 gap 1 stays open: durable persistence (a sink that survives process exit) and a per-version trend read model are still not implemented, so the L4/L5 statement is intentionally unchanged. The runtime half proves emission, not retention.",
+    "L5 gap 1 is closed for this workstream: durable persistence (model sc.contract.slo.observation, retention horizon, prune) and a per-version trend read model exposed through the read intent smart_core.contract_slo.snapshot are delivered and runtime-verified on the isolated profile (module upgraded to 17.0.1.1.13; 3 deliveries -> 3 rows, 0 rejected, identity round-trip, trend places all, read intent store=3 accepted=3, original persist_enabled restored). The overall L4->L5 statement is still intentionally unchanged because the blueprint lists signature-level supply-chain provenance and N-1/N+1 automated compatibility drills as the remaining gaps; only the SLO telemetry/trend item is closed there.",
     "The slo_runtime receipt is head-bound but not auto-reusable: the reuse evaluator refuses runtime evidence without authoritative environment readback, so make agent.run.resume reports slo_runtime stale by design. Re-read the profile identity (project, database, dbfilter, ports) before reuse.",
     "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
     "Deployment and version release stay unauthorized and separate from this batch status; publication is on hold by owner instruction."
   ],
-  "next_exact_step": "The runtime half is closed on the isolated profile. Remaining L5 work is durable persistence and a per-version trend read model over the observation stream (a sink surviving process exit plus a read model), which needs its own scope decision. Do not publish: owner hold 暂不发布.",
+  "next_exact_step": "Commit the delivered persistence+trend work in layer boundaries (feat / test / docs) without squashing, re-run make verify.backend.contract_slo_telemetry after the commit if any check input hash moved, then report the four-layer status. Remaining L5 gaps owned elsewhere: signed supply-chain provenance and N-1/N+1 automated compatibility drills. Do not publish: owner hold 暂不发布.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
