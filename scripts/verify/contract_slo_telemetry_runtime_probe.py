@@ -168,6 +168,7 @@ def _run():
         logger.setLevel(previous_level)
 
     checks.extend(_run_persistence())
+    checks.extend(_run_retention_cron())
 
     failed = [name for name, ok, _detail in checks if not ok]
     return {
@@ -267,6 +268,72 @@ def _run_persistence():
         checks.append(("test_configuration_restored", restored == original,
                        {"original": original, "restored": restored}))
         env.cr.commit()
+    return checks
+
+
+def _run_retention_cron():
+    """The scheduled retention sweep, exercised through the shipped cron record.
+
+    The horizon was declared but nothing invoked it, so this proves the carrier
+    as well as the behaviour: the cron record must exist, be active, target this
+    model and call the method the model exposes. Then the sweep is run through
+    that model method against three planted rows - one past the horizon, one just
+    inside it and one fresh - so "deletes the old rows" cannot be satisfied by
+    "deletes every row".
+    """
+    checks = []
+    env = _env()
+    model = env[store.MODEL_NAME].sudo()
+    cron = env.ref("smart_core.ir_cron_sc_contract_slo_observation_prune", raise_if_not_found=False)
+    checks.append(("retention_cron_record_exists", bool(cron), {}))
+    checks.append(("retention_cron_is_active", bool(cron and cron.active), {}))
+    checks.append(("retention_cron_targets_the_observation_model",
+                   bool(cron) and cron.model_id.model == store.MODEL_NAME,
+                   {"model": cron.model_id.model if cron else None}))
+    checks.append(("retention_cron_calls_the_model_sweep",
+                   bool(cron) and (cron.code or "").strip() == "model.cron_prune()",
+                   {"code": (cron.code or "").strip() if cron else None}))
+
+    rows = store.read_observations(env, limit=1)
+    if not rows:
+        checks.append(("retention_cron_has_an_observation_to_work_from", False, {}))
+        return checks
+    template = rows[0]
+
+    now = store.utcnow_epoch()
+    planted = []
+    for stale_days in (90, 29, 0):
+        record = model.create(store.row_values(template, company_id=None))
+        record.write({"observed_at": store.epoch_to_text(now - stale_days * 86400)})
+        planted.append(record.id)
+    stale_id, inside_id, fresh_id = planted
+
+    # The swept rows are planted by this probe, so a broken sweep must not be
+    # able to leave a stale row behind and poison the next run's "prune keeps the
+    # fresh rows" check. Cleanup is unconditional.
+    try:
+        removed = None
+        try:
+            removed = model.cron_prune()
+        except Exception as exc:  # the sweep is fail-open by contract
+            checks.append(("retention_cron_sweep_does_not_raise", False, {"error": str(exc)}))
+        remaining = set(model.browse(planted).exists().ids)
+        checks.append(("retention_sweep_removes_only_rows_past_the_horizon",
+                       removed == 1 and stale_id not in remaining,
+                       {"removed": removed, "remaining": sorted(remaining)}))
+        checks.append(("retention_sweep_keeps_rows_inside_the_horizon",
+                       inside_id in remaining and fresh_id in remaining,
+                       {"insideKept": inside_id in remaining, "freshKept": fresh_id in remaining}))
+        checks.append(("retention_sweep_is_repeatable_and_fail_open",
+                       model.cron_prune() == 0, {}))
+    finally:
+        leftovers = model.browse(planted).exists()
+        if leftovers:
+            leftovers.unlink()
+        env.cr.commit()
+    checks.append(("retention_probe_rows_cleaned_up",
+                   not model.browse(planted).exists(),
+                   {"planted": planted}))
     return checks
 
 

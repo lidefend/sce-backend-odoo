@@ -37,6 +37,13 @@ REQUIRED_CHECKS = (
     "trend_places_every_row_in_one_bucket",
     "trend_keeps_versions_in_separate_rows",
     "read_intent_reports_the_store",
+    "retention_cron_record_exists",
+    "retention_cron_is_active",
+    "retention_cron_targets_the_observation_model",
+    "retention_cron_calls_the_model_sweep",
+    "retention_sweep_removes_only_rows_past_the_horizon",
+    "retention_sweep_keeps_rows_inside_the_horizon",
+    "retention_probe_rows_cleaned_up",
     "test_configuration_restored",
 )
 
@@ -93,6 +100,18 @@ class ContractSloRuntimeProbeReportTest(unittest.TestCase):
                                 "%s missing in %s" % (field, identity))
             self.assertEqual(identity.get("stage"), "runtime_delivery")
             self.assertIn(observation.get("outcome"), ("success", "degraded", "integrity_failure"))
+
+    def test_the_retention_carrier_is_scheduled_and_scoped(self):
+        """The horizon must reach the store through an active, targeted cron.
+
+        A sweep that is inactive, points at another model, or removes every row
+        would all "delete old data"; the reported detail has to distinguish them.
+        """
+        detail = {check["name"]: check.get("detail") for check in self.report.get("checks", [])}
+        sweep = detail.get("retention_sweep_removes_only_rows_past_the_horizon", {})
+        self.assertEqual(sweep.get("removed"), 1, sweep)
+        self.assertEqual(len(sweep.get("remaining") or []), 2, sweep)
+
 
     def test_aggregate_accepts_every_emitted_observation(self):
         aggregate = self.report.get("aggregate") or {}
