@@ -45,12 +45,16 @@ goal:
   next_exact_step: >-
     Hold publication. The runtime probe artifact schema guard is implemented,
     wired into the contract lifecycle make targets and proven negative-first.
-    When the registered isolated contract-lifecycle environment is restored,
-    re-run verify.backend.contract_lifecycle.runtime, then freeze the clean HEAD,
-    obtain independent review and dispatch the Gitee candidate.
+    Publication was released by owner instruction on 2026-10-02. The runtime
+    lane was re-run on the restored isolated profile by the
+    CONTRACT-BATCHES-MAINLINE-INTEGRATION batch (14/14 assertions, guard PASS,
+    artifact bound); close this run with completion.mainline after the
+    integration PR merges. Deployment, version release and the Gitee candidate
+    dispatch stay separate, unauthorized steps.
   completion:
     overall_goal: incomplete
     offline_scope: complete
-    runtime_scope: pending_isolated_environment
+    runtime_scope: complete_re-run_at_integration_head
     code_head: df0ea7957ee7c9a9486320613acfc7fc3ffffdaf
+    runtime_evidence: re-run_by_CONTRACT-BATCHES-MAINLINE-INTEGRATION_at_integration_head
     result_index: .agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json

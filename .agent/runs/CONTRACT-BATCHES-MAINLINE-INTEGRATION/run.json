@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "CONTRACT-BATCHES-MAINLINE-INTEGRATION",
+  "branch": "codex/contract-batches-integration",
+  "goal": ".agent/goals/CONTRACT-BATCHES-MAINLINE-INTEGRATION.yaml",
+  "record": "docs/ops/iterations/contract_batches_mainline_integration_20261002.md",
+  "status": "verification_pending",
+  "baseline_sha": "b1d8ff7acc85a8c93fea6746a701b0a2d1a766e7",
+  "scope": [
+    ".agent/",
+    "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+    "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+    "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+    "make/dev_test.mk",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools plus the owner-authorized isolated contract-lifecycle profile (sc-contract-lifecycle-v1, database sc_contract_lifecycle) already standing; no new environment, port, volume or credential was created by this batch",
+    "runtime_authority": {
+      "profile": "sc-contract-lifecycle-v1",
+      "database": "sc_contract_lifecycle",
+      "env_file": ".env.local.contract-lifecycle",
+      "entrypoint": "make verify.backend.contract_lifecycle.runtime"
+    }
+  },
+  "checks": {
+    "runtime_guard_unit": {
+      "target": "verify.backend.contract_lifecycle.runtime.schema.guard.unit",
+      "inputs": [
+        "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "lifecycle_runtime": {
+      "target": "verify.backend.contract_lifecycle.runtime",
+      "inputs": [
+        "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+        "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [
+    "The two held batches (BACKEND-CONTRACT-L4-CLOSURE, BACKEND-CONTRACT-SLO-TELEMETRY) are complete on fix/contract-slo-telemetry head aec885fac; publication was released by owner instruction on 2026-10-02 and this batch carries them to mainline as one PR.",
+    "The L4 runtime lane was re-run on the restored isolated profile at the integration head: 14/14 assertions, schema guard PASS, artifact bound (moduleVersion=manifestVersion=17.0.1.1.14, sourceRevision=head).",
+    "The lane's module-version lock and sourceRevision wiring were realigned (manifest-derived, placeholder-sanitized) because the frozen literal 17.0.1.1.9 had rotted after the SLO batch's legitimate module upgrade; the guard unit suite (13 tests, including new manifestVersion negatives) and the authority gate (score 100, L4_governed_production_ready) pass at the fixed head."
+  ],
+  "next_exact_step": "Freeze the clean head, run the exact-head ci.local.quick gate in a stillness window (the multi-session coverage identity includes all registered worktree HEADs), push codex/contract-batches-integration, open the single PR covering both batches, require all workflows green at the PR head, squash merge, then close out both runs and this run with completion.mainline.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

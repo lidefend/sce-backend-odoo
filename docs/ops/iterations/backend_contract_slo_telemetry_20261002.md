@@ -696,3 +696,21 @@ module upgrade is implied. The runtime half ran through a fresh `odoo shell` pro
 `/mnt/source-addons` mount, which is why the changed code was live without a service
 restart; the profile still reports `smart_core 17.0.1.1.14`.
 
+## Publication release and mainline integration (2026-10-02)
+
+The owner released publication on 2026-10-02 and instructed mainline
+integration. The CONTRACT-BATCHES-MAINLINE-INTEGRATION batch
+(`codex/contract-batches-integration`, from this branch's head `aec885fac`
+merged with `main`) carries this batch and the contained
+BACKEND-CONTRACT-L4-CLOSURE batch into `main` as **one PR, no cherry-picking**,
+and additionally re-ran the L4 runtime lane on the restored isolated profile
+at the integration head (14/14 assertions, schema guard PASS), realigning the
+lane's rotted identity pins (see
+`docs/ops/iterations/contract_batches_mainline_integration_20261002.md`).
+
+Open items unchanged and still owner-gated: (b-residual) the runtime-attribution
+probe extension; (c) signature-level supply-chain provenance and N-1/N+1
+compatibility drills; (e) the re-baseline decision for the 119 stale snapshot
+references. Deployment, version release and the Gitee candidate dispatch stay
+separate, unauthorized steps.
+

@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: CONTRACT-BATCHES-MAINLINE-INTEGRATION
+  title: contract_batches_mainline_integration
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - scripts/verify
+    - make
+    - docs/ops/iterations
+  baseline:
+    branch: codex/contract-batches-integration
+    full_sha: b1d8ff7acc85a8c93fea6746a701b0a2d1a766e7
+    source: fix_contract_slo_telemetry_head_merged_with_main
+  objective: >-
+    Carry the two owner-held contract batches (BACKEND-CONTRACT-L4-CLOSURE on
+    fix/backend-contract-l4, fully contained in BACKEND-CONTRACT-SLO-TELEMETRY
+    on fix/contract-slo-telemetry head aec885fac) into the mainline as one PR,
+    after the owner released publication on 2026-10-02. This includes re-running
+    the L4 runtime lane on the restored isolated contract-lifecycle profile,
+    realigning the lane's rotted identity pins, and closing both runs plus this
+    integration run with completion.mainline.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      Integration and evidence governance of platform-mechanism batches is the
+      same P0/P4 responsibility as the batches themselves; no new product
+      semantics are introduced by this batch.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics
+      - no_new_environment_port_volume_or_credential
+      - no_relaxation_of_any_gate
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - single_pr_covers_both_batches_no_cherry_picking
+    - runtime_evidence_only_on_the_authorized_isolated_profile
+    - quick_gate_needs_a_multi_session_stillness_window
+  next_exact_step: >-
+    Freeze the clean head, run exact-head ci.local.quick in a stillness window,
+    push and open the single PR, require green workflows at the PR head, squash
+    merge, then close out BACKEND-CONTRACT-L4-CLOSURE, BACKEND-CONTRACT-SLO-TELEMETRY
+    and this run with completion.mainline.
+  completion:
+    overall_goal: incomplete
+    integration_scope: complete
+    l4_runtime_lane: complete
+    code_head: cb9fd5a86
+    result_index: .agent/runs/CONTRACT-BATCHES-MAINLINE-INTEGRATION/run.json

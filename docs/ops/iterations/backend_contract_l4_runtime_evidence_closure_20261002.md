@@ -109,3 +109,31 @@ separate environment prerequisite.
   still `not_run`). Rollback: revert the two layer-owned commits
   (`57aeee43e`, `df0ea7957`); the guard, probe declaration and Make wiring are
   additive and change no product behaviour.
+
+## Runtime lane re-run and publication release (2026-10-02, integration batch)
+
+The registered isolated profile (`sc-contract-lifecycle-v1`, database
+`sc_contract_lifecycle`) was restored by the SLO telemetry batch under the
+owner-confirmed isolated-evidence-profile exception, and the
+CONTRACT-BATCHES-MAINLINE-INTEGRATION batch re-ran the lane on it at the
+integration head:
+
+- `make verify.backend.contract_lifecycle.runtime` → **PASS**, probe 14/14
+  assertions, schema guard PASS with the artifact fully bound:
+  `moduleVersion = manifestVersion = 17.0.1.1.14`, `sourceRevision` = the
+  integration head, `database = sc_contract_lifecycle`.
+- Evidence chain, disclosed: the probe, guard and guard unit test are
+  byte-identical to this batch's versions except for the identity realignment
+  (commit `cb9fd5a86` on `codex/contract-batches-integration`); the frozen
+  module-version literal `17.0.1.1.9` had rotted after the SLO batch's
+  legitimate module upgrade to `17.0.1.1.14`, and the `sourceRevision` chain
+  accepted the compose placeholder `unknown` — both pins are now derived from
+  their source of truth (manifest / 40-hex SHA). `contract_lifecycle.py`
+  differs from this batch's head only by the SLO topic (b) additive
+  `publishedVersionRef` keying, re-guarded at score 100 /
+  `L4_governed_production_ready`.
+- Full details: `docs/ops/iterations/contract_batches_mainline_integration_20261002.md`.
+
+Publication was released by owner instruction on 2026-10-02; the mainline
+integration is carried by the single integration PR. Deployment, version
+release and the Gitee candidate dispatch remain separate, unauthorized steps.

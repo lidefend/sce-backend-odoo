@@ -64,7 +64,10 @@ goal:
     so no real delivery can carry a published reference yet; (c) signature-level
     supply-chain provenance and N-1/N+1 compatibility drills, the two remaining L5 gaps;
     (e) the re-baseline decision for the 119 stale snapshot references, which is a
-    contract-authority decision rather than hygiene. Publication stays on hold.
+    contract-authority decision rather than hygiene. Publication was RELEASED by
+    owner instruction on 2026-10-02: the CONTRACT-BATCHES-MAINLINE-INTEGRATION
+    batch carries this batch and the contained L4 batch to mainline as one PR;
+    close with completion.mainline after the PR merges.
   completion:
     overall_goal: incomplete
     core_scope: complete
@@ -75,4 +78,5 @@ goal:
     catalog_topic: complete
     environment_authority: owner_confirmed
     runtime_evidence: refreshed_on_verified_profile_identity_probe_32_of_32
+    publication: released_2026-10-02_integration_via_CONTRACT-BATCHES-MAINLINE-INTEGRATION
     result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json

@@ -18,7 +18,7 @@
   ],
   "environment": {
     "kind": "offline",
-    "authority": "existing local Make tools; the contract lifecycle runtime lane still needs its registered isolated environment, not created here"
+    "authority": "existing local Make tools; the runtime lane re-run used the owner-authorized isolated contract-lifecycle profile (sc-contract-lifecycle-v1) registered by the SLO telemetry batch; no environment was created by this batch"
   },
   "checks": {
     "authority": {
@@ -63,11 +63,11 @@
     }
   },
   "blockers": [
-    "Offline half closed: verify.backend.contract_lifecycle.authority passes at score 100/100 L4 (p0Count=0) and the new runtime-artifact schema guard is wired in and negative-proven (receipts: authority 31 tests, runtime_artifact_guard 12 tests).",
-    "runtime_probe is not_run: the registered isolated contract-lifecycle environment is absent in this worktree (compose project sc-contract-lifecycle-v1 has only a leftover redis container; sc_contract_lifecycle is not in the reachable databases; no env file or Make bring-up target). Hand-assembling compose/credentials is forbidden and creating a new environment is out of scope.",
-    "Publication deferred by the owner; deployment, version release and product delivery stay unauthorized and separate from this batch status."
+    "Offline half closed: verify.backend.contract_lifecycle.authority passes at score 100/100 L4 (p0Count=0) and the runtime-artifact schema guard is wired in and negative-proven.",
+    "RESOLVED 2026-10-02: the runtime lane was re-run on the restored owner-authorized isolated profile (sc-contract-lifecycle-v1) by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch at the integration head: 14/14 assertions, schema guard PASS, artifact bound (moduleVersion=manifestVersion=17.0.1.1.14, sourceRevision=integration head). The probe/guard/test files are byte-identical to this batch's versions except the manifest-derived identity realignment (commit cb9fd5a86 on codex/contract-batches-integration); contract_lifecycle.py differs only by the SLO topic (b) additive publishedVersionRef keying, re-guarded at score 100. See docs/ops/iterations/contract_batches_mainline_integration_20261002.md.",
+    "Publication released by owner instruction on 2026-10-02; mainline integration is carried by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch as a single PR covering both contract batches. Deployment, version release and the Gitee candidate dispatch remain separate, unauthorized steps."
   ],
-  "next_exact_step": "Hold publication. When the registered isolated contract-lifecycle environment is restored, re-run verify.backend.contract_lifecycle.runtime and record runtime_probe; then freeze the clean HEAD, obtain independent review, and dispatch the Gitee candidate.",
+  "next_exact_step": "Close with the integration batch: after PR merge, record completion.mainline and mark this run completed; deployment, version release and the Gitee candidate dispatch stay separate steps requiring their own authorization.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
