@@ -92,4 +92,9 @@ separate environment prerequisite.
 - L4 runtime re-execution: **blocked** on the registered isolated environment
   (see above); no new environment was created.
 - Mainline integration, version release and product delivery: not started, not
-  authorized by this batch.
+  authorized by this batch. Publication is held by the owner; the remaining gate
+  is the runtime lane re-run once its registered isolated environment is restored.
+- Run state: `verification_pending` (implementation complete, `runtime_probe`
+  still `not_run`). Rollback: revert the two layer-owned commits
+  (`57aeee43e`, `df0ea7957`); the guard, probe declaration and Make wiring are
+  additive and change no product behaviour.

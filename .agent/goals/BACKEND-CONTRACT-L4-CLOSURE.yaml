@@ -43,9 +43,14 @@ goal:
     - declared_assertion_set_is_locked_negative_first_in_tests
     - no_new_compose_project_database_port_volume_or_credential
   next_exact_step: >-
-    Register this run, then add the runtime probe artifact schema guard, wire it
-    into the contract lifecycle make targets, and prove it negative-first.
+    Hold publication. The runtime probe artifact schema guard is implemented,
+    wired into the contract lifecycle make targets and proven negative-first.
+    When the registered isolated contract-lifecycle environment is restored,
+    re-run verify.backend.contract_lifecycle.runtime, then freeze the clean HEAD,
+    obtain independent review and dispatch the Gitee candidate.
   completion:
     overall_goal: incomplete
-    code_head: null
+    offline_scope: complete
+    runtime_scope: pending_isolated_environment
+    code_head: df0ea7957ee7c9a9486320613acfc7fc3ffffdaf
     result_index: .agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json

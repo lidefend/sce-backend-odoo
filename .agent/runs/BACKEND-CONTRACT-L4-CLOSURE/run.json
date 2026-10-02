@@ -4,7 +4,7 @@
   "branch": "fix/backend-contract-l4",
   "goal": ".agent/goals/BACKEND-CONTRACT-L4-CLOSURE.yaml",
   "record": "docs/ops/iterations/backend_contract_l4_runtime_evidence_closure_20261002.md",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
   "scope": [
     ".agent/",
@@ -63,12 +63,11 @@
     }
   },
   "blockers": [
-    "Backend contract lifecycle maturity is already L4 (machine coverage 100/100 plus isolated-database runtime assertions); this run closes the governance gap that kept the runtime half outside any offline check.",
-    "Offline closure done: verify.backend.contract_lifecycle.authority passes at score 100/100 L4 (p0Count=0) and the new runtime-artifact schema guard is wired in and negative-proven (receipts: authority, runtime_artifact_guard).",
-    "runtime_probe is not_run: the registered isolated contract-lifecycle env is absent in this worktree (compose project sc-contract-lifecycle-v1 has only a leftover redis container; sc_contract_lifecycle is not in the reachable databases; no env file or Make bring-up target). Hand-assembling compose/credentials is forbidden and creating a new environment is out of scope.",
-    "Deployment and version release stay unauthorized and separate from this batch status."
+    "Offline half closed: verify.backend.contract_lifecycle.authority passes at score 100/100 L4 (p0Count=0) and the new runtime-artifact schema guard is wired in and negative-proven (receipts: authority 31 tests, runtime_artifact_guard 12 tests).",
+    "runtime_probe is not_run: the registered isolated contract-lifecycle environment is absent in this worktree (compose project sc-contract-lifecycle-v1 has only a leftover redis container; sc_contract_lifecycle is not in the reachable databases; no env file or Make bring-up target). Hand-assembling compose/credentials is forbidden and creating a new environment is out of scope.",
+    "Publication deferred by the owner; deployment, version release and product delivery stay unauthorized and separate from this batch status."
   ],
-  "next_exact_step": "Update the batch record and run bookkeeping, commit the layer-owned changes, then re-run verify.backend.contract_lifecycle.runtime once its registered isolated contract-lifecycle environment is restored; only after that freeze the clean HEAD, run one ci.local.quick, obtain independent review, and open the Gitee PR.",
+  "next_exact_step": "Hold publication. When the registered isolated contract-lifecycle environment is restored, re-run verify.backend.contract_lifecycle.runtime and record runtime_probe; then freeze the clean HEAD, obtain independent review, and dispatch the Gitee candidate.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
