@@ -56,18 +56,15 @@ goal:
         no_new_compose_project_database_port_volume_or_credential constraint
         below; it introduces no new credential authority.
   next_exact_step: >-
-    Catalog completeness (owner topic "a") is closed and committed: the 16
-    uncased intents now carry authored intent.invoke cases, 16 baselines and a
-    regenerated docs/contract/exports/intent_catalog.json, and
-    verify.contract.catalog passes on the clean HEAD. The isolated snapshot
-    profile is owner-confirmed (see authorized_exceptions). Recorded, not fixed
-    and not required by that gate: the pre-existing 151-case snapshot matrix
-    cannot complete on a seed carrying committed idempotency state (aborts at
-    case 21, 409 IDEMPOTENCY_CONFLICT over a 2026-09-08 seed row), so the matrix
-    needs seed/fixture hygiene before it can serve as a gate again. Remaining L5
-    items, each needing its own authorization: signature-level supply-chain
-    provenance and N-1/N+1 compatibility drills; plus the additive published
-    ui.business.config.contract version keying. Publication stays on hold.
+    Topics a (intent-catalog completeness) and d (contract-snapshot seed/fixture hygiene)
+    are closed and committed. The seed now purges the transient run-state a dump can
+    carry in and refuses to seed a live profile; the full 151-case matrix now exports to
+    completion (32 PASS / 119 FAIL) instead of aborting at case 21. A full matrix run is
+    single-shot per freshly seeded profile. Open, each needing its own authorization:
+    (b) the additive published ui.business.config.contract version keying; (c)
+    signature-level supply-chain provenance and N-1/N+1 compatibility drills; (e) the
+    re-baseline decision for the 119 stale snapshot references, which is a
+    contract-authority decision rather than hygiene. Publication stays on hold.
   completion:
     overall_goal: incomplete
     core_scope: complete

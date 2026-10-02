@@ -480,3 +480,78 @@ above, but the exact cause matters for whoever owns fixture hygiene:
   hygiene work (unique per-run `request_id`s, or a seed without committed
   idempotency state). Recording it is in scope; repairing it is not, and it is
   not needed to close the catalog gate, which is evaluated offline.
+
+## Owner topic (d): contract-snapshot seed/fixture hygiene (2026-10-02)
+
+Owner authorized item (d). Result, evidence and the decision that is still open
+are recorded here; no gate or assertion was relaxed.
+
+### Fix (P4 tooling, `c8d87495c`)
+
+- `scripts/dev/local_contract_snapshot_seed.sh` now purges the transient
+  run-state tables right after `pg_restore` and proves each one is empty
+  (`cleared transient table=sc_idempotency_record rows=0`). A baseline dataset
+  has to be operation-free; the dump's committed idempotency state is exactly
+  what turned the case's first-call baseline into a 409.
+- The same script now fails closed when the target `odoo` is running. The
+  restore replaces the whole database, and a live Odoo made the `--clean` DROP
+  fail, leaving a half-restored target (`duplicate key ... res_company_pkey`,
+  `multiple primary keys ... res_users`). Observed first hand; the guard now
+  refuses with a pointer to `local.contract-snapshot.rebuild`, which takes the
+  profile down first.
+- `local.contract-snapshot.matrix_audit` (+ `scripts/dev/local_contract_snapshot_matrix_audit.sh`)
+  is a bounded diagnostic that reuses the same per-case export with `CASE_ONLY`
+  and keeps going, so one run lists every failing case. The gate itself stays
+  fail-fast and is unchanged; this entry is not evidence of a pass.
+
+### Verification (identity-bound)
+
+- Profile identity: `sc-contract-snapshot-v1` / `sc_contract_snapshot` /
+  `^sc_contract_snapshot$` / nginx `18091` / odoo `8080`; rebuilt seed
+  `seed_dump_sha256=529bdcd670883b4db127589d27bc84bfe3dd57897c1cce4d3d13dfb6d270824c`;
+  `smart_core 17.0.1.1.14`, `smart_construction_core 17.0.0.169`.
+- Before the fix, the bounded audit on the previously seeded profile:
+  **150 PASS / 1 FAIL** — the only export failure in the whole matrix was
+  `my_work_complete_batch_pm`.
+- After the fix (`make local.contract-snapshot.seed` inside
+  `local.contract-snapshot.rebuild`), `sc_idempotency_record` is empty and
+  `make local.contract-snapshot.gate_contract` runs the export **to
+  completion**: all **151** cases produced a snapshot, `0 MISSING_BASELINE`,
+  and the comparison reports **32 PASS / 119 FAIL**. The previous abort at case
+  21 is gone.
+
+### Correction to the probe note above
+
+The earlier "separate stale-fixture class (`execute_button_not_allowed`,
+`demo_role_pm`, `--op model`)" claim was wrong. The audit shows it exports
+fine; it appears only as a comparison diff against its reference. The
+151-case matrix has exactly one export-stage defect, and it is now fixed.
+
+### Classification of the 119 remaining diffs (not a fixture defect)
+
+- **44** differ **only** by `-contract_version` / `+snapshot_schema_version`:
+  identical behaviour, renamed envelope key.
+- **75** carry content drift. Examples: `permission_check_intent_admin` embeds
+  the capturing database (`debug.db` = `sc_dev_demo` in the reference,
+  `sc_contract_snapshot` now); `my_work_complete_batch_pm`'s
+  `idempotency_fingerprint` differs; `app_catalog_intent_admin` lists 4 apps in
+  the reference and 28 now.
+- The tracked references are heterogeneous: **46** already carry
+  `snapshot_schema_version` (introduced in `c0a6e9e2c`, PR #277) while **114**
+  still carry `contract_version`, so roughly 114 references predate PR #277.
+  This is the pre-existing reference staleness the catalog topic already
+  recorded, now quantified per case.
+
+### Single-shot property (recorded, by design)
+
+The gate run re-created the idempotency row (`id=48`, `2026-10-02`), so a second
+full run on the same profile fails case 21 again: matrix cases perform writes
+and the case declares a fixed `request_id`. A full matrix run is therefore
+**single-shot per freshly seeded profile**. `make/dev.mk` now records that
+precondition on the gate entry and points at `local.contract-snapshot.rebuild`.
+
+### Still open (owner decision)
+
+Re-baselining the 119 (`LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap`) would
+declare today's behaviour as the new reference. That is a contract-authority
+decision, not hygiene, so it was **not** taken here.
