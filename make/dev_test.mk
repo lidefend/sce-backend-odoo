@@ -2120,6 +2120,21 @@ verify.backend.contract_lifecycle.runtime.schema.guard.unit: guard.prod.forbid
 		scripts/verify/backend_contract_lifecycle_runtime_probe.py
 	@python3 -m unittest scripts.verify.test_backend_contract_lifecycle_runtime_schema_guard
 
+# Contract SLO telemetry core: contract-version success/degradation/integrity
+# rates. Pure standard library, so the semantics are offline-verifiable.
+.PHONY: verify.backend.contract_slo_telemetry verify.backend.contract_slo_telemetry.unit
+verify.backend.contract_slo_telemetry: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		scripts/verify/test_contract_slo_telemetry.py
+	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+
+verify.backend.contract_slo_telemetry.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		scripts/verify/test_contract_slo_telemetry.py
+	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/backend
