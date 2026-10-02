@@ -41,6 +41,21 @@ LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT ?= 18090
 LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT ?= 8079
 export LOCAL_CONTRACT_LIFECYCLE_PASSWORD
 
+# The registered isolated contract-snapshot profile (documented in
+# docs/architecture/backend_contract_lifecycle_authority_v1.md): project
+# sc-contract-snapshot-v1, database sc_contract_snapshot, dbfilter
+# ^sc_contract_snapshot$. It exists so the contract snapshot lane
+# (docs/contract/cases.yml -> docs/contract/snapshots/**) can be regenerated
+# against THIS worktree's source mount while reusing the registered demo
+# dataset (sc-local-dev / sc_dev_demo) as its seed. Its env file stays
+# worktree-local.
+LOCAL_CONTRACT_SNAPSHOT_ENV_FILE ?= $(ROOT_DIR)/.env.local.contract-snapshot
+LOCAL_CONTRACT_SNAPSHOT_MODULES ?= smart_core
+LOCAL_CONTRACT_SNAPSHOT_PASSWORD ?= scdevpass
+LOCAL_CONTRACT_SNAPSHOT_NGINX_PORT ?= 18091
+LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT ?= 8080
+export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
+
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
@@ -463,6 +478,97 @@ local.contract-lifecycle.discard: guard.prod.forbid local.contract-lifecycle.req
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD="$${CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD:-}" \
 	  bash scripts/dev/local_contract_lifecycle_discard.sh
+
+.PHONY: local.contract-snapshot.require_env local.contract-snapshot.prepare \
+	local.contract-snapshot.seed local.contract-snapshot.rebuild \
+	local.contract-snapshot.up local.contract-snapshot.down local.contract-snapshot.ps \
+	local.contract-snapshot.logs local.contract-snapshot.odoo-shell \
+	local.contract-snapshot.odoo-shell.run local.contract-snapshot.upgrade \
+	local.contract-snapshot.discard local.contract-snapshot.contract_export \
+	local.contract-snapshot.gate_contract local.contract-snapshot.gate_contract.run
+
+local.contract-snapshot.require_env: guard.prod.forbid
+	@test -f "$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" || { echo "contract-snapshot env is not prepared: $(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" >&2; exit 2; }
+
+local.contract-snapshot.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  TARGET_ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  LOCAL_CONTRACT_SNAPSHOT_PASSWORD="$(LOCAL_CONTRACT_SNAPSHOT_PASSWORD)" \
+	  LOCAL_CONTRACT_SNAPSHOT_NGINX_PORT="$(LOCAL_CONTRACT_SNAPSHOT_NGINX_PORT)" \
+	  LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT="$(LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT)" \
+	  LOCAL_CONTRACT_SNAPSHOT_PREPARE_FOR_REBUILD="$${LOCAL_CONTRACT_SNAPSHOT_PREPARE_FOR_REBUILD:-0}" \
+	  CONFIRM_LOCAL_CONTRACT_SNAPSHOT_REBUILD="$${CONFIRM_LOCAL_CONTRACT_SNAPSHOT_REBUILD:-}" \
+	  bash scripts/dev/local_contract_snapshot_env_prepare.sh
+
+local.contract-snapshot.seed: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CONTRACT_SNAPSHOT_SEED="$${CONFIRM_LOCAL_CONTRACT_SNAPSHOT_SEED:-}" \
+	  bash scripts/dev/local_contract_snapshot_seed.sh
+
+local.contract-snapshot.rebuild: guard.prod.forbid local.contract-snapshot.prepare
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  LOCAL_CONTRACT_SNAPSHOT_MODULES="$(LOCAL_CONTRACT_SNAPSHOT_MODULES)" \
+	  CONFIRM_LOCAL_CONTRACT_SNAPSHOT_REBUILD="$${CONFIRM_LOCAL_CONTRACT_SNAPSHOT_REBUILD:-}" \
+	  bash scripts/dev/local_contract_snapshot_rebuild.sh
+
+local.contract-snapshot.up: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" up
+
+local.contract-snapshot.down: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" down
+
+local.contract-snapshot.ps: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" ps
+
+local.contract-snapshot.logs: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" logs
+
+local.contract-snapshot.odoo-shell: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  local.contract-snapshot.odoo-shell.run
+
+# Loads the profile env through Make so RUN_ENV forwards the correct
+# COMPOSE_PROJECT_NAME/COMPOSE_FILES/database identity to the shared shell
+# entrypoint. Invoked only through the guarded outer target.
+local.contract-snapshot.odoo-shell.run:
+	@$(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh
+
+local.contract-snapshot.upgrade: guard.prod.forbid local.contract-snapshot.require_env
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  MODULE="$(MODULE)" CODEX_NEED_UPGRADE=1 CODEX_MODULES="$(MODULE)" mod.upgrade
+
+# Regenerate the contract snapshot lane against this worktree's source mount.
+# Writes docs/contract/snapshots/<case>.json for every case in cases.yml; use
+# CONTRACT_CASE_ONLY=<case> or CONTRACT_START_CASE=<case> to bound the run.
+local.contract-snapshot.contract_export: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  CONTRACT_OUTDIR="$(CONTRACT_OUTDIR)" \
+	  CONTRACT_START_CASE="$(CONTRACT_START_CASE)" CONTRACT_CASE_ONLY="$(CONTRACT_CASE_ONLY)" \
+	  contract.export_all
+
+# Compare regenerated snapshots against the tracked references. Defaults to the
+# full cases file; set LOCAL_CONTRACT_SNAPSHOT_CASES_FILE to a subset to bound
+# the run while iterating. Set LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap to
+# copy genuinely new baselines into the reference directory.
+LOCAL_CONTRACT_SNAPSHOT_CASES_FILE ?= docs/contract/cases.yml
+REF_DIR ?= docs/contract/snapshots
+
+local.contract-snapshot.gate_contract.run:
+	@DB="$(DB_NAME)" CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" REF_DIR="$(REF_DIR)" \
+	  CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" \
+	  scripts/contract/gate_contract.sh $(LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS)
+
+local.contract-snapshot.gate_contract: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  LOCAL_CONTRACT_SNAPSHOT_CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" \
+	  REF_DIR="$(REF_DIR)" LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS="$(LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS)" \
+	  local.contract-snapshot.gate_contract.run
+
+local.contract-snapshot.discard: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CONTRACT_SNAPSHOT_DISCARD="$${CONFIRM_LOCAL_CONTRACT_SNAPSHOT_DISCARD:-}" \
+	  bash scripts/dev/local_contract_snapshot_discard.sh
 
 local.clean.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
