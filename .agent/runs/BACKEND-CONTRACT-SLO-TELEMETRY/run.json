@@ -12,14 +12,31 @@
     "addons/smart_core/handlers/ui_contract_v2_authority.py",
     "scripts/verify/test_contract_slo_telemetry.py",
     "scripts/verify/test_ui_contract_v2_slo_emission.py",
+    "scripts/verify/contract_slo_telemetry_runtime_probe.py",
+    "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
     "make/dev_test.mk",
+    "make/dev.mk",
+    "scripts/dev/",
     "docs/ops/iterations/",
     "docs/architecture/backend_contract_lifecycle_authority_v1.md",
     "docs/architecture/backend_contract_lifecycle_authority_v1.en.md"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "existing local Make tools; the SLO core is pure and the runtime delivery path is exercised only after a later emission batch"
+    "authority": "existing local Make tools; the SLO core is pure and its offline receipts are reusable",
+    "runtime_authority": {
+      "note": "the runtime half runs only on the authorized isolated profile; its receipt is head-bound but the reuse evaluator intentionally refuses automatic reuse of runtime evidence pending authoritative environment readback (make agent.run.resume reports it stale by design)",
+      "profile": "sc-contract-lifecycle-v1",
+      "database": "sc_contract_lifecycle",
+      "dbfilter": "^sc_contract_lifecycle$",
+      "env_file": ".env.local.contract-lifecycle",
+      "fixed_password": "scdevpass",
+      "ports": {
+        "nginx": 18090,
+        "odoo": 8079
+      },
+      "entrypoint": "make verify.backend.contract_slo_telemetry.runtime"
+    }
   },
   "checks": {
     "slo_core": {
@@ -40,16 +57,30 @@
         "make/dev_test.mk"
       ],
       "kind": "offline"
+    },
+    "slo_runtime": {
+      "target": "verify.backend.contract_slo_telemetry.runtime",
+      "inputs": [
+        "addons/smart_core/core/contract_slo_telemetry.py",
+        "addons/smart_core/handlers/ui_contract_v2_authority.py",
+        "scripts/verify/contract_slo_telemetry_runtime_probe.py",
+        "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
+        "scripts/ops/odoo_shell_exec.sh",
+        "make/dev_test.mk",
+        "make/dev.mk"
+      ],
+      "kind": "runtime"
     }
   },
   "blockers": [
-    "Batches 1-4 are complete and offline-verified: the contract_slo_telemetry core (identity, version-scoped aggregation), the fail-open sink-agnostic emission boundary, and the runtime delivery call site at the single seal_runtime_contract chokepoint; receipts slo_core (33 tests) and slo_emission (11 tests), both reusable.",
-    "The runtime delivery path is wired but not exercised: long-term persistence and a trend read model are not implemented, so the L5 gap stays open and the L4/L5 statement is intentionally unchanged.",
-    "No governed profile runs this worktree's code: every running Odoo container mounts the primary worktree, the three local profiles use fixed project names/volumes and serve the primary worktree, and the registered isolated profile (sc-contract-lifecycle-v1 / sc_contract_lifecycle) has no Make bring-up target or env file. Standing it up means new environment and credential authority, which the hard lock reserves for separately authorized P4 work.",
+    "Batches 1-5 verified. Offline: the contract_slo_telemetry core (identity, version-scoped aggregation) receipt slo_core=33 reusable; the fail-open sink-agnostic emission boundary and the runtime delivery call site at the single seal_runtime_contract chokepoint receipt slo_emission=11 reusable. Runtime: on the authorized isolated profile sc-contract-lifecycle-v1 / sc_contract_lifecycle the production handler emitted real contractSlo lines (probe 15/15 checks) that the declaration consumer accepted unchanged (aggregate 3 observations, 0 rejected, 2 identities, successRate 1.0, integrityFailureRate 0.0); host guard 5 tests.",
+    "Negative-first holds at both layers: offline the injected sink is detected; at runtime neutering emit_delivery_observation produced zero contractSlo lines while the delivery still succeeded (fail-open) and failed 10 probe checks / 3 guard tests, then the source was restored byte-identical (sha256 e8131205...).",
+    "The L5 gap 1 stays open: durable persistence (a sink that survives process exit) and a per-version trend read model are still not implemented, so the L4/L5 statement is intentionally unchanged. The runtime half proves emission, not retention.",
+    "The slo_runtime receipt is head-bound but not auto-reusable: the reuse evaluator refuses runtime evidence without authoritative environment readback, so make agent.run.resume reports slo_runtime stale by design. Re-read the profile identity (project, database, dbfilter, ports) before reuse.",
     "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
-    "Deployment and version release stay unauthorized and separate from this batch status."
+    "Deployment and version release stay unauthorized and separate from this batch status; publication is on hold by owner instruction."
   ],
-  "next_exact_step": "Get authorization to create the governed bring-up for the registered isolated profile (new compose project, database, volumes and env file = new environment and credential authority), then drive one page delivery through the handler and read the emitted contractSlo line to close the runtime half. Until then the SLO gap is a definition, not telemetry.",
+  "next_exact_step": "The runtime half is closed on the isolated profile. Remaining L5 work is durable persistence and a per-version trend read model over the observation stream (a sink surviving process exit plus a read model), which needs its own scope decision. Do not publish: owner hold 暂不发布.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
