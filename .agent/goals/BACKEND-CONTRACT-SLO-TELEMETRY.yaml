@@ -71,8 +71,9 @@ goal:
   completion:
     overall_goal: incomplete
     core_scope: complete
-    telemetry_scope: pending_emission_batch
-    code_head: 4a5899660
+    telemetry_scope: complete
+    code_head: 2034bb0e2
     catalog_topic: complete
     environment_authority: owner_confirmed
+    runtime_evidence: refreshed_at_2034bb0e2_on_verified_profile_identity
     result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json
