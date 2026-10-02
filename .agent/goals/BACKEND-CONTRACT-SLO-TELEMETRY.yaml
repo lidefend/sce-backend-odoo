@@ -69,7 +69,7 @@ goal:
     batch carries this batch and the contained L4 batch to mainline as one PR;
     close with completion.mainline after the PR merges.
   completion:
-    overall_goal: incomplete
+    overall_goal: complete
     core_scope: complete
     telemetry_scope: complete
     published_version_keying: complete
@@ -79,4 +79,5 @@ goal:
     environment_authority: owner_confirmed
     runtime_evidence: refreshed_on_verified_profile_identity_probe_32_of_32
     publication: released_2026-10-02_integration_via_CONTRACT-BATCHES-MAINLINE-INTEGRATION
+    mainline: merged_via_pr_533_squash_9abaa79d9
     result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json

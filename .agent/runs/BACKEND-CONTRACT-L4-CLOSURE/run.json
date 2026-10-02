@@ -4,7 +4,7 @@
   "branch": "fix/backend-contract-l4",
   "goal": ".agent/goals/BACKEND-CONTRACT-L4-CLOSURE.yaml",
   "record": "docs/ops/iterations/backend_contract_l4_runtime_evidence_closure_20261002.md",
-  "status": "verification_pending",
+  "status": "completed",
   "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
   "scope": [
     ".agent/",
@@ -67,7 +67,14 @@
     "RESOLVED 2026-10-02: the runtime lane was re-run on the restored owner-authorized isolated profile (sc-contract-lifecycle-v1) by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch at the integration head: 14/14 assertions, schema guard PASS, artifact bound (moduleVersion=manifestVersion=17.0.1.1.14, sourceRevision=integration head). The probe/guard/test files are byte-identical to this batch's versions except the manifest-derived identity realignment (commit cb9fd5a86 on codex/contract-batches-integration); contract_lifecycle.py differs only by the SLO topic (b) additive publishedVersionRef keying, re-guarded at score 100. See docs/ops/iterations/contract_batches_mainline_integration_20261002.md.",
     "Publication released by owner instruction on 2026-10-02; mainline integration is carried by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch as a single PR covering both contract batches. Deployment, version release and the Gitee candidate dispatch remain separate, unauthorized steps."
   ],
-  "next_exact_step": "Close with the integration batch: after PR merge, record completion.mainline and mark this run completed; deployment, version release and the Gitee candidate dispatch stay separate steps requiring their own authorization.",
+  "next_exact_step": "Delivered: both halves closed (offline governance + runtime re-run on the restored isolated profile) and integrated via PR #533.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #533 (squash merge commit 9abaa79d9876721c0f1b1236ee542cb898e4c66a, 2026-10-02T09:49:04Z), carried by CONTRACT-BATCHES-MAINLINE-INTEGRATION",
+    "runtime_probe": "re-run PASS 14/14 assertions + schema guard on sc_contract_lifecycle at the integration head; artifact bound (moduleVersion=manifestVersion=17.0.1.1.14)",
+    "deployment": "not_run",
+    "review": "CI-verified five workflows at PR head 3fa5eb6df; authority gate score 100 L4_governed_production_ready; guard unit suite 13 tests"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

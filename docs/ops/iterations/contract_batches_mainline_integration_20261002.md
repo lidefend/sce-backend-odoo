@@ -119,3 +119,37 @@ Post-fix verification at the fixed head: guard unit suite **13 tests OK**
 
 - Integration branch frozen at the lane-fixed head; exact-head quick gate and
   the PR workflow results are recorded in the run completion once merged.
+
+## Delivery and closure (2026-10-02)
+
+- **Freeze head `3fa5eb6df`** (`ci.delivery.freeze.prepare` PASS; the refreshed
+  tracked generated reports are in the PR).
+- **Exact-head `ci.local.quick` PASS** (13.5 min, run in a multi-session
+  stillness window; the sibling session committed `2ad47f83f` at 17:20:15 and
+  the quick ran 17:22:44–17:36:10 without coverage-identity drift). Receipt
+  preserved at `.git/codex/evidence/ci.local.quick/3fa5eb6dfc252b75bef54faf0ca59f3ec308f093.json`.
+- **PR #533** (`codex/contract-batches-integration`, MERGEABLE): all five
+  workflows green at head `3fa5eb6df` (frontend_release_gate,
+  professional_quality_gate, public_guard, merge_policy_gate,
+  release_candidate_gate) → **squash merged into main as
+  `9abaa79d9876721c0f1b1236ee542cb898e4c66a`** (2026-10-02T09:49:04Z); local
+  main synced with the explicit `+main:refs/remotes/origin/main` refspec and
+  three-way SHA confirmed against the API; remote branch deleted.
+- **Runs closed**: BACKEND-CONTRACT-L4-CLOSURE, BACKEND-CONTRACT-SLO-TELEMETRY
+  and CONTRACT-BATCHES-MAINLINE-INTEGRATION are `completed` with
+  `completion.mainline`; the three goals report `overall_goal: complete`;
+  active-runs is empty again (the completed bindings, including the stale
+  closeout/FE-TPL/P4 ones, were cleared).
+- Local branches `fix/backend-contract-l4` and `fix/contract-slo-telemetry`
+  are left in place: the latter is checked out by the sibling session's
+  worktree, which continued past `aec885fac` (head `2ad47f83f` at closeout
+  time). That follow-up work will need the usual post-squash re-alignment
+  when it publishes.
+
+### Residuals (unchanged, owner-gated)
+
+- SLO (b-residual): runtime-attribution probe extension.
+- SLO (c): signature-level supply-chain provenance, N-1/N+1 compatibility drills.
+- SLO (e): re-baseline decision for the 119 stale snapshot references.
+- Deployment, version release and the Gitee candidate dispatch: not started,
+  not authorized by this batch.

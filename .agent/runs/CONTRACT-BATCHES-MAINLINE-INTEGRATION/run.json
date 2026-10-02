@@ -4,7 +4,7 @@
   "branch": "codex/contract-batches-integration",
   "goal": ".agent/goals/CONTRACT-BATCHES-MAINLINE-INTEGRATION.yaml",
   "record": "docs/ops/iterations/contract_batches_mainline_integration_20261002.md",
-  "status": "verification_pending",
+  "status": "completed",
   "baseline_sha": "b1d8ff7acc85a8c93fea6746a701b0a2d1a766e7",
   "scope": [
     ".agent/",
@@ -53,7 +53,14 @@
     "The L4 runtime lane was re-run on the restored isolated profile at the integration head: 14/14 assertions, schema guard PASS, artifact bound (moduleVersion=manifestVersion=17.0.1.1.14, sourceRevision=head).",
     "The lane's module-version lock and sourceRevision wiring were realigned (manifest-derived, placeholder-sanitized) because the frozen literal 17.0.1.1.9 had rotted after the SLO batch's legitimate module upgrade; the guard unit suite (13 tests, including new manifestVersion negatives) and the authority gate (score 100, L4_governed_production_ready) pass at the fixed head."
   ],
-  "next_exact_step": "Freeze the clean head, run the exact-head ci.local.quick gate in a stillness window (the multi-session coverage identity includes all registered worktree HEADs), push codex/contract-batches-integration, open the single PR covering both batches, require all workflows green at the PR head, squash merge, then close out both runs and this run with completion.mainline.",
+  "next_exact_step": "Delivered: PR #533 merged (squash). Remaining owner-gated follow-ups live in the SLO run (b-residual, c, e) and stay out of this batch.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #533 (squash merge commit 9abaa79d9876721c0f1b1236ee542cb898e4c66a, 2026-10-02T09:49:04Z)",
+    "deployment": "not_run",
+    "review": "CI-verified: five workflows success at head 3fa5eb6df (frontend_release_gate, professional_quality_gate, public_guard, merge_policy_gate, release_candidate_gate); exact-head ci.local.quick PASS in a multi-session stillness window; runtime_guard_unit 13 tests reusable; lifecycle_runtime 14/14 assertions + guard PASS on the isolated profile",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/3fa5eb6dfc252b75bef54faf0ca59f3ec308f093.json"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
