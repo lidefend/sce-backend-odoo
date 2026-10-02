@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "MAINLINE-INTEGRATION-CLOSEOUT",
+  "branch": "fix/mainline-integration-closeout",
+  "status": "active",
+  "baseline_sha": "f7783e1ad755d5fb79924531493c8922384d9517",
+  "goal": ".agent/goals/MAINLINE-INTEGRATION-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/mainline_integration_closeout_20261002.md",
+  "scope": [
+    "scripts/verify/frontend_product_page_header_guard.py",
+    "scripts/verify/test_frontend_product_page_header_guard.py",
+    ".agent/goals/MAINLINE-INTEGRATION-CLOSEOUT.yaml",
+    ".agent/runs/MAINLINE-INTEGRATION-CLOSEOUT/",
+    ".agent/runs/GITHUB-RECOVERY/run.json",
+    ".agent/runs/P4-INCREMENTAL-RESUME/run.json",
+    ".agent/active-runs.json",
+    "docs/ops/iterations/mainline_integration_closeout_20261002.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered Make gates and offline guard scripts; no database writes or deployment"
+  },
+  "checks": {
+    "guard_realign": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Guard typography assertions realigned and verify.frontend.product_page_header.unit green (70 tests + guard PASS). Next: close PR #522 with the integration evidence, mark GITHUB-RECOVERY and P4-INCREMENTAL-RESUME runs completed, prune the stale active-runs bindings, record the batch document, then freeze and run the exact-head Quick before the protected PR."
+}

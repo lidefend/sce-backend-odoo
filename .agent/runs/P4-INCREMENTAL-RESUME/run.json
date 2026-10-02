@@ -108,15 +108,15 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze reviewed PR524 update; exact-head Quick with trusted incremental scans; push same PR, verify new required checks and actual ORM step skipped, then protected authorized Merge commit.",
+  "next_exact_step": "Completed: branch head b6ea04f0d merged into mainline via PR #524 (merge commit fff226d7be72878ea6861cfab2ce13d990cee806, 2026-09-30T07:32:36Z) and verified as an ancestor of main; the successor unified resume and incremental evidence reuse landed with it. The cancelled quick at 81788ca9a was superseded by the post-recovery Quick receipts on later mainline candidates. Run closed by the MAINLINE-INTEGRATION-CLOSEOUT batch.",
   "id": "P4-INCREMENTAL-RESUME",
   "branch": "fix/agent-resume-mainline",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/P4-INCREMENTAL-RESUME.yaml",
   "record": "docs/ops/iterations/agent_incremental_resume_20260930.md",
   "completion": {
     "batch": "passed",
-    "mainline": "not_run",
+    "mainline": "merged via PR #524 (merge commit fff226d7be72878ea6861cfab2ce13d990cee806, 2026-09-30T07:32:36Z); branch head b6ea04f0d is an ancestor of main f7783e1ad",
     "controller_installation": "not_run",
     "deployment": "not_run",
     "review": "passed independent P4, trusted evidence migration and ORM impact selection review",
