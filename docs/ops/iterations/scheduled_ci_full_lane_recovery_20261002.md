@@ -43,5 +43,20 @@
 
 - `full_lint`：target `verify.frontend.lint`，passed（test_count 68），日志与 input SHA 见 `.runtime/agent-runs/CI-SCHEDULED-FULL-LANE-RECOVERY/full_lint.{log,json}`。
 - `vendor_coupling`：target `verify.frontend.playwright_vendor_coupling.guard`，passed（test_count 104），日志与 input SHA 见 `.runtime/agent-runs/CI-SCHEDULED-FULL-LANE-RECOVERY/vendor_coupling.{log,json}`。
+- run 的 `environment.kind` 声明为 `offline`（两个检查均为离线）；浏览器车道观测作为补充只读证据记录在本文件。否则 `agent_run_context.py` 会把离线检查判为 stale——其复用条件要求 check.kind 与 run.environment.kind 同为 `offline`。
+
+## 交付与关闭
+
+- **候选头** `a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a`：f5cdb0e80（修复）→ 2be9bd6d1（冻结生成证据 `docs/engineering_convergence/{complexity_budget_report,split_plan_queue}.md`）→ a0b793e41（run 环境声明）。
+- **exact-head quick**：PASS，receipt `.git/codex/evidence/ci.local.quick/a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a.json`。（首次运行在 `verify.repository.clean_history` 报 `ValueError: scan coverage identity changed`；重跑即通过。同步监控 295 次采样 HEAD / refs 摘要 / 未跟踪数 / 脏文件数全无漂移，判定为瞬态而非输入漂移。）
+- **PR #529**：全部工作流绿——`frontend_release_gate`、`professional_quality_gate`、`public_guard`、`merge_policy_gate`、`release_candidate_gate` 均 success；合并前 `mergeStateStatus=CLEAN`。
+- **squash 合入 main** `84aae65b8294c194c4f89273a1b4039eb0a49ecd`（本地分支 / 远程跟踪 / GitHub API 三方 SHA 一致确认），远程分支已删除。
+- **run 关闭**：`.agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY/run.json` → `status=completed`，`completion.mainline_sha` 记录上述合入；active-runs 绑定改挂 closeout 分支 `codex/close-scheduled-ci-full-lane-recovery`。
+
+## 遗留（不在本批范围）
+
+1. `verify.frontend.list_surface_structure.browser` 本地契约回放 401（见上），待环境修复后补跑。
+2. daily profile 车道需外部部署的 daily 前端栈。
+3. 定时 CI 下次运行（cron `30 18 * * *`）应转绿；若仍红，优先核查是否有新的 full-lane-only 债务累积。
 
 

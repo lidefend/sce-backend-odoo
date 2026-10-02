@@ -3,6 +3,6 @@
   "branches": {
     "fix/agent-resume-mainline": ".agent/runs/P4-INCREMENTAL-RESUME/run.json",
     "fix/run-closeout-fe-template-adoption": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
-    "fix/scheduled-ci-full-lane-recovery": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY/run.json"
+    "codex/close-scheduled-ci-full-lane-recovery": ".agent/runs/CI-SCHEDULED-FULL-LANE-RECOVERY/run.json"
   }
 }
