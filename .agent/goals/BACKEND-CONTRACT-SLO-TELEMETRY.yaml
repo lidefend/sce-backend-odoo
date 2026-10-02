@@ -40,14 +40,39 @@ goal:
     - aggregation_must_not_fabricate_rates_for_empty_windows
     - malformed_observations_are_counted_and_never_silently_dropped
     - no_module_upgrade_and_no_odoo_model_in_this_batch
+  authorized_exceptions:
+    - id: isolated_contract_evidence_profiles
+      granted_by: owner
+      granted_on: 2026-10-02
+      scope: >-
+        Isolated, read-only-seeded evidence profiles for the contract lanes
+        (sc-contract-lifecycle-v1, sc-contract-snapshot-v1). They are created
+        only through the registered compose/env helpers, reuse the existing
+        fixture credential (scdevpass, written only into the profile's own
+        gitignored env file), never touch the formal acceptance profile or
+        another profile's volumes, and exist because the contract snapshot
+        matrix must not run against another worktree's shared sc-local-dev
+        database. This is a scoped exception to the
+        no_new_compose_project_database_port_volume_or_credential constraint
+        below; it introduces no new credential authority.
   next_exact_step: >-
-    Batch 1 (core) is done and offline-verified. Next: obtain authorization for
-    the emission batch (observation sink and the environment whose code mount
-    belongs to this worktree), which is what turns the definition into real
-    telemetry.
+    Catalog completeness (owner topic "a") is closed and committed: the 16
+    uncased intents now carry authored intent.invoke cases, 16 baselines and a
+    regenerated docs/contract/exports/intent_catalog.json, and
+    verify.contract.catalog passes on the clean HEAD. The isolated snapshot
+    profile is owner-confirmed (see authorized_exceptions). Recorded, not fixed
+    and not required by that gate: the pre-existing 151-case snapshot matrix
+    cannot complete on a seed carrying committed idempotency state (aborts at
+    case 21, 409 IDEMPOTENCY_CONFLICT over a 2026-09-08 seed row), so the matrix
+    needs seed/fixture hygiene before it can serve as a gate again. Remaining L5
+    items, each needing its own authorization: signature-level supply-chain
+    provenance and N-1/N+1 compatibility drills; plus the additive published
+    ui.business.config.contract version keying. Publication stays on hold.
   completion:
     overall_goal: incomplete
     core_scope: complete
     telemetry_scope: pending_emission_batch
-    code_head: 01a196e4a
+    code_head: 4a5899660
+    catalog_topic: complete
+    environment_authority: owner_confirmed
     result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json
