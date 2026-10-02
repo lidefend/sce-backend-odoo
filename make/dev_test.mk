@@ -2129,6 +2129,7 @@ verify.backend.contract_slo_telemetry: guard.prod.forbid
 		scripts/verify/test_contract_slo_telemetry.py
 	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
 	@$(MAKE) --no-print-directory verify.backend.contract_slo_telemetry.emission
+	@$(MAKE) --no-print-directory verify.backend.contract_slo_telemetry.persistence
 
 verify.backend.contract_slo_telemetry.unit: guard.prod.forbid
 	@python3 -m py_compile \
@@ -2165,6 +2166,17 @@ verify.backend.contract_slo_telemetry.runtime: guard.prod.forbid
 verify.backend.contract_slo_telemetry.runtime.run:
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/contract_slo_telemetry_runtime_probe.py
 	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/contract_slo_telemetry_runtime_probe.json /tmp/contract_slo_telemetry_runtime_probe.json >/dev/null
+
+# Contract SLO persistence and trend read model: the stored row <-> observation
+# round trip, the retention cutoff and the bucket/trend math are pure, so they
+# are locked offline before the durable store is exercised at runtime.
+.PHONY: verify.backend.contract_slo_telemetry.persistence
+verify.backend.contract_slo_telemetry.persistence: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		addons/smart_core/core/contract_slo_persistence.py \
+		scripts/verify/test_contract_slo_persistence.py
+	@python3 -m unittest scripts.verify.test_contract_slo_persistence
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

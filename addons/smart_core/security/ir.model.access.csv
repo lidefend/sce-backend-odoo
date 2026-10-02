@@ -47,3 +47,5 @@ access_sc_auth_credential_throttle_admin,access.sc.auth.credential.throttle.admi
 access_sc_auth_credential_audit_admin,access.sc.auth.credential.audit.admin,model_sc_auth_credential_audit,smart_core.group_smart_core_admin,1,0,0,0
 access_sc_idempotency_record_user,access.sc.idempotency.record.user,model_sc_idempotency_record,base.group_user,1,0,0,0
 access_sc_idempotency_record_admin,access.sc.idempotency.record.admin,model_sc_idempotency_record,smart_core.group_smart_core_admin,1,1,1,0
+access_sc_contract_slo_observation_user,access.sc.contract.slo.observation.user,model_sc_contract_slo_observation,base.group_user,1,0,0,0
+access_sc_contract_slo_observation_admin,access.sc.contract.slo.observation.admin,model_sc_contract_slo_observation,smart_core.group_smart_core_admin,1,1,1,0

@@ -15,3 +15,4 @@ from . import user_activation
 from . import effective_document_change
 from . import auth_credential_policy
 from . import idempotency_record
+from . import contract_slo_observation

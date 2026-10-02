@@ -414,7 +414,7 @@ local.clean.require_env: guard.prod.forbid
 	local.contract-lifecycle.rebuild local.contract-lifecycle.up \
 	local.contract-lifecycle.down local.contract-lifecycle.ps \
 	local.contract-lifecycle.odoo-shell local.contract-lifecycle.odoo-shell.run \
-	local.contract-lifecycle.discard
+	local.contract-lifecycle.upgrade local.contract-lifecycle.discard
 
 local.contract-lifecycle.require_env: guard.prod.forbid
 	@test -f "$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" || { echo "contract-lifecycle env is not prepared: $(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" >&2; exit 2; }
@@ -453,6 +453,11 @@ local.contract-lifecycle.odoo-shell: guard.prod.forbid local.contract-lifecycle.
 # entrypoint. Invoked only through the guarded outer target.
 local.contract-lifecycle.odoo-shell.run:
 	@$(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh
+
+local.contract-lifecycle.upgrade: guard.prod.forbid local.contract-lifecycle.require_env
+	@test -n "$(MODULE)" || (echo "MODULE is required" >&2; exit 2)
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  MODULE="$(MODULE)" CODEX_NEED_UPGRADE=1 CODEX_MODULES="$(MODULE)" mod.upgrade
 
 local.contract-lifecycle.discard: guard.prod.forbid local.contract-lifecycle.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \

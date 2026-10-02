@@ -5,6 +5,7 @@ import logging
 from typing import Any, Callable
 
 from ..core.contract_lifecycle import seal_unified_page_contract, verify_unified_page_contract_integrity
+from ..core import contract_slo_persistence as _slo_store
 from ..core.contract_slo_telemetry import build_observation, emit_observation_line
 
 _logger = logging.getLogger(__name__)
@@ -128,6 +129,23 @@ def _log_observation(line: str) -> None:
     _logger.info(line)
 
 
+def _default_delivery_sink(env):
+    """Log the canonical line, then persist it when the observation store is on.
+
+    The persisted payload is the same canonical line the log sink writes, so the
+    store consumes exactly the emission format a reader would; persistence is
+    itself fail-open, so an unavailable or disabled store never affects the log
+    line or the delivery.
+    """
+
+    def _sink(line: str) -> bool:
+        _log_observation(line)
+        _slo_store.persist_line(env, line)
+        return True
+
+    return _sink
+
+
 def emit_delivery_observation(
     sealed: Any,
     *,
@@ -135,6 +153,7 @@ def emit_delivery_observation(
     client_type: str,
     sink: Callable[[str], Any] | None = None,
     latency_ms: Any = None,
+    env: Any = None,
 ) -> bool:
     """Emit the contract SLO observation for one sealed runtime delivery.
 
@@ -160,7 +179,9 @@ def emit_delivery_observation(
             client_type=client_type,
             request_id=request_id,
         )
-        return emit_observation_line(observation, sink=sink or _log_observation)
+        if sink is None:
+            sink = _default_delivery_sink(env) if env is not None else _log_observation
+        return emit_observation_line(observation, sink=sink)
     except Exception:
         return False
 
@@ -197,5 +218,11 @@ def seal_runtime_contract(
     # Every runtime delivery passes through here, so this is the one place that
     # observes the sealed result. The call is fail-open and returns a bool the
     # delivery never depends on.
-    emit_delivery_observation(sealed, request_id=request_id, client_type=client_type, sink=sink)
+    emit_delivery_observation(
+        sealed,
+        request_id=request_id,
+        client_type=client_type,
+        sink=sink,
+        env=getattr(owner, "env", None),
+    )
     return sealed
