@@ -2089,6 +2089,7 @@ verify.backend.contract_lifecycle.authority: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py
 	@python3 scripts/verify/contract_schema_declaration_sync.py --check
 	@python3 -m unittest scripts.verify.test_contract_schema_declaration_sync
+	@python3 -m unittest scripts.verify.test_backend_contract_lifecycle_runtime_schema_guard
 	@python3 scripts/verify/backend_contract_lifecycle_authority_guard.py
 
 .PHONY: contract.schema.declaration.sync verify.contract.schema.declaration.sync
@@ -2104,6 +2105,20 @@ verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-proje
 	@mkdir -p artifacts/backend
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_lifecycle_runtime_probe.py
 	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/backend_contract_lifecycle_runtime_probe.json artifacts/backend/backend_contract_lifecycle_runtime_probe.json >/dev/null
+	@python3 scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py $(if $(ACCEPTANCE_TARGET_SHA),--expected-revision $(ACCEPTANCE_TARGET_SHA),)
+
+.PHONY: verify.backend.contract_lifecycle.runtime.schema.guard
+verify.backend.contract_lifecycle.runtime.schema.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py
+	@python3 scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py $(if $(ACCEPTANCE_TARGET_SHA),--expected-revision $(ACCEPTANCE_TARGET_SHA),)
+
+.PHONY: verify.backend.contract_lifecycle.runtime.schema.guard.unit
+verify.backend.contract_lifecycle.runtime.schema.guard.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py \
+		scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py \
+		scripts/verify/backend_contract_lifecycle_runtime_probe.py
+	@python3 -m unittest scripts.verify.test_backend_contract_lifecycle_runtime_schema_guard
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

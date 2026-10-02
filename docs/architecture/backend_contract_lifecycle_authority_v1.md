@@ -21,7 +21,7 @@
 → 前后端兼容及发布门禁
 ```
 
-本专题的机器控制覆盖为 **100/100**：8 个生命周期维度全部通过，P0 为 0。结合隔离数据库的 14 项真实运行断言，当前整体成熟度评定为 **92/100，L4（受治理、可用于正式产品发布）**。
+本专题的机器控制覆盖为 **100/100**：8 个生命周期维度全部通过，P0 为 0。隔离数据库的 14 项真实运行断言由离线守护脚本 `scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py` 重新读取产物，锁定其声明集合、绑定库、模块版本与来源提交后逐项复核，因此运行时证据与机器证据一样可离线验证。当前整体成熟度评定为 **92/100，L4（受治理、可用于正式产品发布）**。
 
 L4 不等于 L5。当前仍缺少跨版本长期遥测、契约 SLO 趋势、签名级供应链证明以及 N-1/N+1 自动兼容演练，因此不得宣称“自治优化”或“零风险”。
 
@@ -81,7 +81,16 @@ L4 不等于 L5。当前仍缺少跨版本长期遥测、契约 SLO 趋势、签
 - 全部已发布定义摘要逐条重新计算一致；
 - 全部历史版本内容摘要和定义摘要逐条重新计算一致。
 
-机器证据：`artifacts/backend/backend_contract_lifecycle_runtime_probe.json`。
+机器证据：`artifacts/backend/backend_contract_lifecycle_runtime_probe.json`（写入方：`scripts/verify/backend_contract_lifecycle_runtime_probe.py`）。
+
+该产物由 `scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py` 离线复核，并与生产者的 `DECLARED_CHECKS` 声明集合逐项对齐：
+
+- 断言集合必须恰为声明的 14 项：`declaredChecks` 与 `checks` 的键集完全相等，无缺失、无多余、无重复，且每项为 `true`；
+- `checkCount`/`passedCheckCount` 必须等于 14，`errorCount` 必须为 0，`errors` 必须为空，`versionDigestMismatchSample` 必须为空；
+- 身份必须绑定 `probe=backend_contract_lifecycle_runtime_probe`、`schemaVersion=1.0.0`、`database=sc_contract_lifecycle`、`moduleVersion=17.0.1.1.9`；
+- `sourceRevision` 必须为完整 40 位提交 SHA，且在提供期望值时与其相等。
+
+生产者与守护脚本共享同一声明集合，任一侧漂移即失败关闭：截断、改名或手工编辑的产物不会被当作通过。负例单元证明位于 `scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py`，并随 `verify.backend.contract_lifecycle.authority` 与运行时通道一并执行。
 
 ## 5. 成熟度评分
 

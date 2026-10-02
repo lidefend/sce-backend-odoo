@@ -13,7 +13,10 @@ append-only publication, runtime trimming, final resealing, traceability and
 typed consumer compatibility.
 
 Machine control coverage is **100/100** across eight lifecycle dimensions with
-zero P0 findings. With the isolated-database 14/14 runtime probe, enterprise
+zero P0 findings. The isolated-database fourteen-assertion runtime probe is
+re-read offline by `scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py`,
+which locks its declared set, bound database, module version and source revision,
+so the runtime half is offline-verifiable like the machine half. Enterprise
 maturity is assessed at **92/100, L4 (governed and production-ready)**.
 
 This is not L5. Long-term contract SLO telemetry, automated N-1/N+1 consumer
@@ -45,7 +48,22 @@ immutability and recomputed population-integrity assertions on `smart_core
 evidence through the standard module-upgrade path.
 
 Machine evidence is written to
-`artifacts/backend/backend_contract_lifecycle_runtime_probe.json`.
+`artifacts/backend/backend_contract_lifecycle_runtime_probe.json` by
+`scripts/verify/backend_contract_lifecycle_runtime_probe.py`.
+
+The artifact is re-validated offline by
+`scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py`: the assertion
+set must be exactly the declared fourteen (`declaredChecks` must equal the
+`checks` keys, no gap, no extra, no duplicate, every entry `true`), all counters
+must be 14/14 with an empty `errors` and `versionDigestMismatchSample`, the
+identity must bind `probe=backend_contract_lifecycle_runtime_probe`,
+`schemaVersion=1.0.0`, `database=sc_contract_lifecycle` and
+`moduleVersion=17.0.1.1.9`, and `sourceRevision` must be a full commit SHA equal
+to the expected revision when one is supplied. Producer and guard share one
+declared set and fail closed on drift, so a truncated, renamed or hand-edited
+artifact cannot be reported as a pass. The negative-first unit proof is
+`scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py`, run as
+part of `verify.backend.contract_lifecycle.authority` and the runtime lane.
 
 ## Remaining L5 Work
 
