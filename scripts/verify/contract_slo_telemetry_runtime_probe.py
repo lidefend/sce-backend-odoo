@@ -33,6 +33,7 @@ from odoo.addons.smart_core.handlers import ui_contract_v2_authority as authorit
 PROBE_PATH = "/tmp/contract_slo_telemetry_runtime_probe.json"
 LOG_TARGET = "odoo.addons.smart_core.handlers.ui_contract_v2_authority"
 LINE_PREFIX = slo.OBSERVATION_LINE_KEY + " "
+ATTRIBUTION_CONTRACT_NAME = "contract.slo.runtime.attribution"
 
 
 class _LineCapture(logging.Handler):
@@ -63,6 +64,23 @@ def _deliver(request):
 
 def _slo_lines(lines):
     return [line for line in lines if isinstance(line, str) and line.startswith(LINE_PREFIX)]
+
+
+def _capture_delivery(request):
+    """Deliver once and return (envelope, parsed observation, emitted line count)."""
+    logger = logging.getLogger(LOG_TARGET)
+    capture = _LineCapture()
+    previous_level = logger.level
+    logger.addHandler(capture)
+    logger.setLevel(logging.INFO)
+    try:
+        envelope, _meta = _deliver(request)
+    finally:
+        logger.removeHandler(capture)
+        logger.setLevel(previous_level)
+    lines = _slo_lines(capture.lines)
+    observation = slo.parse_observation_line(lines[0]) if len(lines) == 1 else None
+    return envelope, observation, len(lines)
 
 
 def _request(model, view_type):
@@ -169,6 +187,8 @@ def _run():
 
     checks.extend(_run_persistence())
     checks.extend(_run_retention_cron())
+    attribution_checks, attribution = _run_published_version_attribution()
+    checks.extend(attribution_checks)
 
     failed = [name for name, ok, _detail in checks if not ok]
     return {
@@ -181,7 +201,119 @@ def _run():
         "checks": [{"name": name, "ok": ok, "detail": detail} for name, ok, detail in checks],
         "observations": observations,
         "aggregate": final,
+        "attribution": attribution,
     }
+
+
+def _run_published_version_attribution():
+    """Runtime attribution: a published business-config version names the delivery.
+
+    The SLO groups by the applied published ``ui.business.config.contract``
+    version, so this scenario publishes one real contract row for the probed
+    model, drives a real delivery, and requires the emitted observation to carry
+    ``ui.business.config.contract:<id>@<version_no>``. Two negatives run in the
+    same scenario: another surface, and a delivery after the row is removed, must
+    both stay unattributed. A run that merely emitted the string somewhere could
+    not satisfy that split, so the check cannot pass on appearance.
+
+    Fixture discipline: the row is created and removed inside the mutation-audit
+    skip context, so a repeated probe leaves neither a contract row nor an audit
+    row behind; removal and audit cleanliness are asserted rather than assumed.
+    """
+    checks = []
+    env = _env()
+    audit = env["ui.business.config.mutation.audit"].sudo()
+    audit_before = audit.search_count([])
+    contracts = env["ui.business.config.contract"].sudo().with_context(
+        skip_business_config_mutation_audit=True,
+    )
+    contract_id = 0
+    expected_ref = ""
+    form_observation = None
+    list_observation = None
+    after_removal_observation = None
+    attribution_aggregate = {}
+    try:
+        contract = contracts.create({
+            "name": ATTRIBUTION_CONTRACT_NAME,
+            "model": "res.partner",
+            "view_type": "form",
+            "company_id": env.company.id,
+            "contract_json": {"view_orchestration": {"views": {"form": {"fields": [{"name": "name"}]}}}},
+            "status": "published",
+        })
+        contract_id = contract.id
+        expected_ref = "ui.business.config.contract:%s@%s" % (contract.id, contract.version_no)
+        checks.append(("published_contract_row_is_published",
+                       contract.status == "published" and int(contract.version_no or 0) >= 1,
+                       {"status": contract.status, "versionNo": contract.version_no}))
+        contributes_form = bool(contracts.contract_contributes_view(contract, "form"))
+        contributes_list = bool(contracts.contract_contributes_view(contract, "list"))
+        checks.append(("published_contract_contributes_form_only",
+                       contributes_form and not contributes_list,
+                       {"form": contributes_form, "list": contributes_list}))
+
+        form_envelope, form_observation, form_lines = _capture_delivery(_request("res.partner", "form"))
+        checks.append(("attributed_delivery_ok",
+                       isinstance(form_envelope, dict) and form_envelope.get("ok") is True,
+                       {"ok": bool(isinstance(form_envelope, dict) and form_envelope.get("ok") is True)}))
+        checks.append(("attributed_delivery_emits_one_line", form_lines == 1, {"lineCount": form_lines}))
+        form_ref = str(((form_observation or {}).get("identity") or {}).get("publishedVersionRef") or "")
+        checks.append(("delivery_on_published_form_names_the_version",
+                       form_ref == expected_ref,
+                       {"expectedRef": expected_ref, "observedRef": form_ref}))
+
+        _list_envelope, list_observation, list_lines = _capture_delivery(_request("res.partner", "list"))
+        checks.append(("unattributed_surface_emits_one_line", list_lines == 1, {"lineCount": list_lines}))
+        list_ref = str(((list_observation or {}).get("identity") or {}).get("publishedVersionRef") or "")
+        checks.append(("another_surface_does_not_borrow_the_version",
+                       list_ref == "",
+                       {"observedRef": list_ref}))
+
+        split = slo.aggregate_observations([form_observation, list_observation])
+        attributed = [row for row in split["versions"]
+                      if row.get("publishedVersionRef") == expected_ref]
+        unattributed = [row for row in split["versions"]
+                        if not row.get("publishedVersionRef")]
+        checks.append(("aggregate_splits_the_published_version_from_unattributed",
+                       split["versionCount"] == 2
+                       and len(attributed) == 1 and len(unattributed) == 1
+                       and attributed[0]["observations"] == 1 and unattributed[0]["observations"] == 1,
+                       {"versionCount": split["versionCount"],
+                        "attributedRows": len(attributed), "unattributedRows": len(unattributed)}))
+        attribution_aggregate = split
+    finally:
+        leftover = contracts.search([("name", "=", ATTRIBUTION_CONTRACT_NAME)])
+        if leftover:
+            leftover.unlink()
+        env.cr.commit()
+
+    checks.append(("probe_contract_removed",
+                   contracts.search_count([("name", "=", ATTRIBUTION_CONTRACT_NAME)]) == 0,
+                   {"contractId": contract_id}))
+    checks.append(("mutation_audit_left_clean",
+                   audit.search_count([]) == audit_before,
+                   {"before": audit_before, "after": audit.search_count([])}))
+
+    _envelope, after_removal_observation, after_lines = _capture_delivery(_request("res.partner", "form"))
+    after_ref = str(((after_removal_observation or {}).get("identity") or {}).get("publishedVersionRef") or "")
+    checks.append(("delivery_after_removal_is_unattributed_again",
+                   after_lines == 1 and after_ref == "",
+                   {"lineCount": after_lines, "observedRef": after_ref}))
+
+    attribution = {
+        "contractId": contract_id,
+        "contractName": ATTRIBUTION_CONTRACT_NAME,
+        "expectedRef": expected_ref,
+        "formRef": str(((form_observation or {}).get("identity") or {}).get("publishedVersionRef") or ""),
+        "listRef": str(((list_observation or {}).get("identity") or {}).get("publishedVersionRef") or ""),
+        "afterRemovalRef": after_ref,
+        "formObservation": form_observation,
+        "listObservation": list_observation,
+        "afterRemovalObservation": after_removal_observation,
+        "aggregate": attribution_aggregate,
+    }
+    return checks, attribution
 
 
 def _run_persistence():

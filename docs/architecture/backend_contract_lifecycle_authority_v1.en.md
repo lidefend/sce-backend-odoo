@@ -75,8 +75,17 @@ part of `verify.backend.contract_lifecycle.authority` and the runtime lane.
 - Contract-version SLO and degradation trend telemetry — delivered by the
   `BACKEND-CONTRACT-SLO-TELEMETRY` workstream (durable store, retention horizon,
   trend read intent, runtime-verified); no longer a gap.
-- Automated N-1/N+1 consumer compatibility and rollback rehearsals.
-- Signed artifact provenance bound to the deployed runtime SHA.
+- Automated N-1/N+1 consumer compatibility and rollback rehearsals — delivered
+  by the same workstream as a declaration-level offline drill (the production
+  key surface is projected, the rollback rule is bound to the publication
+  authority's `max(cur, latest)+1` append, and each injected break is proven to
+  fail the drill only after the un-injected baseline passes); no longer a gap.
+- Signed artifact provenance bound to the deployed runtime SHA — the unified,
+  digest-linked attestation (schema + contract + artifact + source revision +
+  deployment runtime SHA) and its independent host-side re-verification are
+  delivered. The signature is a process-local ephemeral Ed25519 self-signature,
+  so it proves consistency and tamper-evidence but **not** who built the
+  artifact; the external trust root remains open.
 
 Industry, customer and tenant layers may extend contract payloads through
 approved extension points, but may not redefine this protocol or bypass its

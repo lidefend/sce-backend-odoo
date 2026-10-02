@@ -2180,6 +2180,68 @@ verify.backend.contract_slo_telemetry.persistence: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_contract_slo_persistence
 	@python3 -m unittest scripts.verify.test_contract_slo_retention_cron
 
+# Contract supply-chain attestation: signature envelope + artifact attestation
+# + deployed runtime SHA unified into one digest-linked document. The two cores
+# are pure standard library, so the binding, tamper and version-compatibility
+# semantics are locked offline before the runtime probe re-derives them from a
+# real running deployment.
+.PHONY: verify.backend.contract_supply_chain
+verify.backend.contract_supply_chain: guard.prod.forbid \
+	verify.backend.contract_supply_chain.unit \
+	verify.backend.contract_supply_chain.compatibility.unit
+	@true
+
+.PHONY: verify.backend.contract_supply_chain.unit
+verify.backend.contract_supply_chain.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_supply_chain_attestation.py \
+		scripts/verify/test_contract_supply_chain_attestation.py
+	@python3 -m unittest scripts.verify.test_contract_supply_chain_attestation
+
+# N-1 / N / N+1 consumer-compatibility and append-only rollback drill, declared
+# as data over the contract's key surface rather than over rendered strings.
+.PHONY: verify.backend.contract_supply_chain.compatibility.unit
+verify.backend.contract_supply_chain.compatibility.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_version_compatibility.py \
+		scripts/verify/test_contract_version_compatibility.py
+	@python3 -m unittest scripts.verify.test_contract_version_compatibility
+
+# Runtime half: builds a real attestation for the running deployment on the
+# isolated contract-lifecycle profile (schema digest from the lifecycle
+# authority, contract digest from a real ui.contract.v2 delivery, artifact
+# digest recomputed from the loaded module, deployment SHA from the governed
+# SC_SOURCE_REVISION), signs it with an ephemeral in-process Ed25519 key pair
+# and writes a report. The host guard then independently re-verifies that report
+# with a real Ed25519 verifier, so the probe's own PASS marker is never the
+# proof.
+.PHONY: verify.backend.contract_supply_chain.runtime
+verify.backend.contract_supply_chain.runtime: guard.prod.forbid
+	@test -f "$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" || { echo "contract-lifecycle env is not prepared: $(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" >&2; exit 2; }
+	@python3 -m py_compile \
+		scripts/verify/contract_supply_chain_runtime_probe.py \
+		scripts/verify/contract_supply_chain_runtime_probe_schema_guard.py
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  verify.backend.contract_supply_chain.runtime.run
+	@CONTRACT_SUPPLY_CHAIN_PROBE_REPORT="$(ROOT_DIR)/artifacts/backend/contract_supply_chain_runtime_probe.json" \
+	  CONTRACT_SUPPLY_CHAIN_EXPECTED_REVISION="$(CONTRACT_LIFECYCLE_SOURCE_REVISION)" \
+	  python3 -m unittest scripts.verify.contract_supply_chain_runtime_probe_schema_guard
+
+.PHONY: verify.backend.contract_supply_chain.runtime.run
+verify.backend.contract_supply_chain.runtime.run:
+	@mkdir -p artifacts/backend
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/contract_supply_chain_runtime_probe.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/contract_supply_chain_runtime_probe.json /tmp/contract_supply_chain_runtime_probe.json >/dev/null
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/contract_supply_chain_runtime_probe.json artifacts/backend/contract_supply_chain_runtime_probe.json >/dev/null
+
+.PHONY: verify.backend.contract_supply_chain.runtime.schema.guard
+verify.backend.contract_supply_chain.runtime.schema.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/contract_supply_chain_runtime_probe_schema_guard.py
+	@test -f "$(ROOT_DIR)/artifacts/backend/contract_supply_chain_runtime_probe.json" || { echo "no runtime attestation report yet: run 'make verify.backend.contract_supply_chain.runtime' on the registered contract-lifecycle profile first" >&2; exit 2; }
+	@CONTRACT_SUPPLY_CHAIN_PROBE_REPORT="$(ROOT_DIR)/artifacts/backend/contract_supply_chain_runtime_probe.json" \
+	  CONTRACT_SUPPLY_CHAIN_EXPECTED_REVISION="$(CONTRACT_LIFECYCLE_SOURCE_REVISION)" \
+	  python3 -m unittest scripts.verify.contract_supply_chain_runtime_probe_schema_guard
+
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/backend

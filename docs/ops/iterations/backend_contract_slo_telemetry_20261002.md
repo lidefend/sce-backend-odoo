@@ -640,7 +640,7 @@ unattributed delivery can never borrow a preview/edit-state contract identifier.
 | L2 offline | `make verify.backend.contract_lifecycle.authority` | 8 + 10 + 4 + 13 tests OK, guard `score 100`, `maturityLevel L4_governed_production_ready` (`contract_lifecycle_authority`) |
 | L2 frontend | `make verify.frontend.contract_v2_render_authority.unit` | PASS, 327 fields / 0 unclassified (`v2_render_authority`) |
 | L2 frontend | `make verify.frontend.contract_v2_runtime_policy.unit` | PASS, 12 declared cases (`fe_v2_runtime_policy`) |
-| L2 runtime | `make verify.backend.contract_slo_telemetry.runtime` | probe 32/32, host guard 9 tests OK (`slo_runtime`) |
+| L2 runtime | `make verify.backend.contract_slo_telemetry.runtime` | probe 43/43 checks (baseline + persistence + retention + published-version attribution), host guard 11 tests OK (`slo_runtime`) |
 | L1 static | `make verify.frontend.typecheck.strict` | PASS, exit 0 (25.2s). No unittest count is printed by `vue-tsc`, so it is recorded here and in the log rather than as a receipt. |
 | L2 offline | `make verify.contract.catalog` | PASS, 16 tests (`contract_catalog`, see bookkeeping) |
 
@@ -655,11 +655,40 @@ unattributed delivery can never borrow a preview/edit-state contract identifier.
 
 ### Snapshot-matrix impact measured as zero
 
-Only 1 of the 151 stored contract references (`ui_contract_v2_intent_admin.json`)
-contains a sealed `meta.lifecycle`, and 0 references contain a non-null
-`runtimeContract.governance.view_orchestration`. The new optional field therefore
-cannot move any matrix diff, so the 119 reference diffs recorded under topic (d) are
-untouched by this change and were not re-run for it.
+The seal change is bounded by reference inspection alone: only 1 of the 151 stored
+contract references (`ui_contract_v2_intent_admin.json`) contains a sealed
+`meta.lifecycle`, and it is already inside the 119 reference diffs recorded under
+topic (d). Adding `publishedVersionRef` only to the definition of a delivery that
+actually carries applied published rows cannot turn a matching reference into a
+differing one, so the 119-diff inventory is untouched and was not re-run for it.
+The other four refs that carry a bare `lifecycle` key are business state machines
+(`allowed_transitions` / `steps`), not sealed envelopes.
+
+The later carrier fix (see below) needed a real measurement rather than reference
+inspection, because it can add rows to an already-emitted dict. Bounds, both
+recorded in `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/probe/
+view_orchestration_matrix_impact.py`:
+
+- Only 4 of 151 references contain any `view_orchestration`, and all 4
+  (`load_contract_intent_admin`, `load_view_intent_pm`, `system_init_intent_admin`,
+  `ui_contract_v2_intent_admin`) are already inside the 119 diffs. The 147 refs
+  without the key cover every PASS case, and a PASS case matches its reference
+  exactly, so it cannot start differing unless `compose` starts emitting the key —
+  which this change does not do; it only changes the content of an already-emitted
+  dict.
+- For the two references that actually carry `business_config_contracts` rows, the
+  same case was exported twice against the registered `sc-contract-snapshot-v1`
+  profile, once with the fix and once with `view_orchestrator.compose` reverted to
+  the pre-fix guard: **0 differences inside `view_orchestration`** (155 and 255
+  carrier paths compared). A same-code rerun reproduces the only difference at the
+  same magnitude, so it is not caused by this change.
+
+Separate, pre-existing matrix-stability observation (not introduced or fixed here):
+the exported `task_ids` stage-domain ordering is not deterministic. Two runs of
+*identical* code produce 28 differing leaf paths
+(`ui_contract_raw/.../task_ids/domain[0][2][n]`), which is why the reference
+comparison is inherently flaky for the affected cases. It touches no file changed by
+this branch.
 
 ### Runtime half: what it proves and what it does not
 
@@ -670,14 +699,84 @@ accepted unchanged: 3 observations, 0 rejected, `versionCount 2`, `successRate 1
 with the pre-change aggregate is the point: an unattributed delivery still groups
 exactly as before, so the new key is purely additive.
 
-Runtime **attribution** is *not* yet exercised. The isolated fixture holds **zero**
-`ui.business.config.contract` rows (read-only query evidence in
-`.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/probe/q_published.py` -> `COUNT=0
-ALL=0`), so no real delivery can carry a published reference yet. Closing it needs a
-scoped P4 probe extension (publish one contract row -> deliver -> assert
-`identity.publishedVersionRef` -> restore); publishing also writes a
-`ui_business_config_mutation_audit` row, so it is new fixture authority and was **not**
-folded into this batch.
+### Runtime attribution closed: the producer was the defect, not the resolver
+
+The isolated fixture held **zero** `ui.business.config.contract` rows (read-only
+evidence, `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/probe/q_published.py` ->
+`COUNT=0 ALL=0`), so the first attempt at runtime attribution published one row
+(bounded P4 probe extension, now authorized) and delivered against it. The probe came
+back red and the reason is the actual root cause of this topic:
+
+`addons/smart_core/core/view_orchestrator.py:compose()` only appended a row to
+`applied_contracts` when
+`out != before or declares_form_layout_overlay or declares_semantic_entry_surface or
+declares_native_semantic_surface`. A published row that declares only
+`views.form.fields` (which `_apply_business_config_contract` normalises so that
+`out == before` whenever the declared fields already match the native form) qualified
+for **none** of those, so it was selected by `_effective_view_orchestration_contracts`,
+applied to the delivery, and still left the declared carrier as
+`{"applied": false, "business_config_contracts": []}`. The reader side was correct: it
+read the declared carrier and returned the empty string, because the carrier was
+empty. A read-only spy (`.runtime/.../probe/spy_attribution.py`) proved the row was
+effective and its fields applied, and that the SLO resolver returned `''`.
+
+Fix (generic, no model/view special case): record **every** row returned by
+`_effective_view_orchestration_contracts` in the declared carrier, exactly once
+(de-duplicated by id, as before), outside the change guard. That list *is* the
+declared "which published rows governed this delivery" carrier by construction, so a
+field-policy-only contract is now attributed like a structural one. The
+`applied` flag follows the same list
+(`applied = bool(applied_contracts or legacy_policy_applied or tenant_extension_fields)`),
+so a surface with a selected published row no longer contradicts its own field set by
+reporting `applied: false`. The form-structure projection is unaffected in which
+branch it takes: `resolve_form_structure_governance` already computed `applied` from
+`config_summaries`, which is populated from the same selected rows.
+
+Two accessors are deliberately different and were both exercised: the emitted
+observation nests the reference under `identity.publishedVersionRef`, while an
+aggregate version row exposes it flat (`row["publishedVersionRef"]`), which is what
+the existing `slo_core` unit test already asserts.
+
+Files: `addons/smart_core/core/view_orchestrator.py` (carrier producer, one hunk
+plus a now-dead `before = deepcopy(out)` removed) and the two probe files
+`scripts/verify/contract_slo_telemetry_runtime_probe.py` /
+`scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py`. The probe
+extension adds `_capture_delivery`, `_run_published_version_attribution` and the
+`attribution` section; the guard adds an `importlib` loader for the real telemetry
+core plus 11 required check names and two tests
+(`test_published_version_attribution_is_really_keyed`,
+`test_the_attribution_fixture_was_restored`).
+
+Layer commit: `85526530e` on `fix/contract-slo-telemetry`, parent `aec885fac`. It
+changes no protocol version, no Odoo model/field and no XML, so no module upgrade is
+implied; the runtime half again ran through a fresh governed `odoo shell` process
+reading this worktree's addons mount. Because the commit adds host guard tests, the
+tracked generated reports were refreshed through `make ci.delivery.freeze.prepare` and
+are committed with the record; that refresh also caught up pre-existing staleness from
+earlier commits on this branch (`test_inventory`, `complexity_budget_report`,
+`module_dependency_map`, `split_plan_queue`, `component-driver-takeover-inventory-v1`),
+which is bookkeeping, not a behaviour change.
+
+Evidence (receipt `slo_runtime`, probe 43/43 checks and 11 host guard tests):
+
+| check | observed |
+| --- | --- |
+| `published_contract_row_is_published` / `published_contract_contributes_form_only` | row published; contributes `form`, not `list` |
+| `delivery_on_published_form_names_the_version` | `formRef == ui.business.config.contract:<id>@1` |
+| `another_surface_does_not_borrow_the_version` | `listRef == ''` |
+| `aggregate_splits_the_published_version_from_unattributed` | `versionCount 2`, 1 attributed + 1 unattributed row, 1 observation each |
+| `probe_contract_removed` / `mutation_audit_left_clean` | no contract row and no `ui.business.config.mutation.audit` row left behind |
+| `delivery_after_removal_is_unattributed_again` | `afterRemovalRef == ''` |
+
+Negative-first, in the required order: the un-injected baseline passes first, then
+reverting only the carrier fix (back to the change guard) makes the probe fail exactly
+two checks — `delivery_on_published_form_names_the_version` and
+`aggregate_splits_the_published_version_from_unattributed` — and the file was restored
+byte-identical (sha256 `e69f8a26827586d5fb79d4009f6225441dada938bfac28bb4a9d3baf2c147808`).
+So the added checks fail on the removed behaviour rather than passing unconditionally.
+The probe's own fixture discipline is part of the assertion: the row is created and
+unlinked inside the mutation-audit skip context, and removal plus audit cleanliness are
+asserted rather than assumed, so a repeated probe leaves no residue.
 
 ### Bookkeeping
 
@@ -696,21 +795,113 @@ module upgrade is implied. The runtime half ran through a fresh `odoo shell` pro
 `/mnt/source-addons` mount, which is why the changed code was live without a service
 restart; the profile still reports `smart_core 17.0.1.1.14`.
 
-## Publication release and mainline integration (2026-10-02)
+## Topic (c) — L5 供应链证明与 N-1/N+1 兼容演练
 
-The owner released publication on 2026-10-02 and instructed mainline
-integration. The CONTRACT-BATCHES-MAINLINE-INTEGRATION batch
-(`codex/contract-batches-integration`, from this branch's head `aec885fac`
-merged with `main`) carries this batch and the contained
-BACKEND-CONTRACT-L4-CLOSURE batch into `main` as **one PR, no cherry-picking**,
-and additionally re-ran the L4 runtime lane on the restored isolated profile
-at the integration head (14/14 assertions, schema guard PASS), realigning the
-lane's rotted identity pins (see
-`docs/ops/iterations/contract_batches_mainline_integration_20261002.md`).
+边界：Formal Product Layer = P0（`smart_core` 契约机制）+ P4（验证工具）；按权威文档 §6
+作为独立专题推进，不并入客户交付。这是该 run 剩余的两项 L5 缺口（-2 供应链统一证明、
+-3 N-1/N+1 兼容与回滚演练）。
 
-Open items unchanged and still owner-gated: (b-residual) the runtime-attribution
-probe extension; (c) signature-level supply-chain provenance and N-1/N+1
-compatibility drills; (e) the re-baseline decision for the 119 stale snapshot
-references. Deployment, version release and the Gitee candidate dispatch stay
-separate, unauthorized steps.
+### Part A：统一供应链证明（签名 + 制品证明 + 部署运行 SHA）
 
+新增 P0 纯标准库核心 `addons/smart_core/core/contract_supply_chain_attestation.py`：
+
+- 主体绑定三枚 64-hex 内容摘要（`schemaSha256` / `contractSha256` / `artifactSha256`）与
+  40-hex `deploymentRuntimeSha`，用有序 `chain` 做摘要链接（`required_subject_hash_fields()`
+  是消费方读取的声明，不是重复的字符串清单）；
+- 统一不变量（“统一”之所在）：`artifactSourceRevision == sourceRevision`，否则
+  `artifact_revision_mismatch`；`deploymentRuntimeSha == sourceRevision`，否则
+  `deployment_runtime_sha_mismatch`；
+- 签名信封被 `attestationDigest` 覆盖；方案 `hmac-sha256`（密钥、不可公开）与注册的
+  `ed25519`（公钥）；`require_public_key=true` 时拒绝密钥方案。
+
+离线锁 `scripts/verify/test_contract_supply_chain_attestation.py`（19）：基线先通过，再逐个
+注入单一篡改并断言对应 reason code（含 `_reseal()` 隔离签名路径、非对称方案注册、AST
+无 Odoo 依赖）。
+
+运行半 `scripts/verify/contract_supply_chain_runtime_probe.py`（14 checks）在隔离 profile 上
+对真实运行部署构建证明：schema 摘要取自生命周期权威、契约摘要取自真实 `ui.contract.v2`
+交付、制品摘要从容器**已加载**的模块文件重算、部署 SHA 取自受管 `SC_SOURCE_REVISION`，
+用进程内临时 Ed25519 自签。宿主侧
+`scripts/verify/contract_supply_chain_runtime_probe_schema_guard.py`（12 测试）用真实 Ed25519
+独立复核并重导链绑定，探针自己的 PASS 标记不作为证明。
+
+受管入口 `make verify.backend.contract_supply_chain.runtime`（另含 `.unit`、
+`.compatibility.unit`、`.runtime.schema.guard`）。
+
+环境前置：`.env.local.contract-lifecycle` 原无 `SC_SOURCE_REVISION`，容器报 `unknown`。
+`scripts/dev/local_contract_lifecycle_env_prepare.sh` 现解析并刷新 40-hex 部署版本
+（`CONTRACT_LIFECYCLE_SOURCE_REVISION`，默认本工作区 HEAD，`make/dev.mk` 传入），随后一次
+**定向** `make local.contract-lifecycle.up` 重建 odoo 服务使 env 生效——这是对既有隔离
+profile 的受管重建，非新环境/新凭据授权。
+
+证据：探针 14/14、宿主 guard 12/12；`sourceRevision = 593de9de6ccc9f0e6ec47fd45c90d3a540cdeb71`，
+`schemaSha256 = 204b8f6c…`。信任边界：自签证明可证制品—版本—运行一致性与抗篡改，但未引入
+外部身份/信任锚，**不能**证明“谁构建了制品”——该残余在权威文档 §5 记为保留的 -1。
+
+### Part B：N-1/N+1 兼容与只追加回滚演练（声明级离线）
+
+新增 P0 纯标准库核心 `addons/smart_core/core/contract_version_compatibility.py`：
+`compare_declarations`（删键、新增必填、类型变更、收窄必填、闭枚举移除/新增判 breaking；
+开放枚举新增成员为 additive）、`check_consumer`（未知键容忍、缺必填/类型不符/越界枚举拒绝）、
+`drill_adjacent`（N-1/N/N+1 双向矩阵，输出具名检查）、`append_only_rollback`、
+`declaration_from_payload`（把真实 payload 的键面投影为消费者声明，默认全部可选）。
+
+决策：**保持声明级离线，不做运行半**。理由：(1) 运行侧发布/回滚语义已由既有
+`contract_lifecycle_authority`（35）与 `slo_runtime` 的发布版本归因证据覆盖，重复运行需要
+受管可恢复夹具且会重证已证行为；(2) 本专题的判定是纯数据，正确性完全由离线判定；
+(3) 演练输入取真实 `ui.contract.v2` 信封键面投影并把只追加规则绑定到发布权威
+`max(cur, latest)+1`（`ui_business_config_contract._append_published_version`）的语义，避免仅
+玩具夹具的循环论证。
+
+离线锁 `scripts/verify/test_contract_version_compatibility.py`（31）：基线（加法演进演练通过、
+`check_names()` 声明消费被锁定、真实信封键面投影）先通过；负例（注入 breaking 变更、移除键、
+复用/回退版本序列）再被检出。
+
+修复记录：投影原先把空嵌套对象当作独立可选键声明，使“移除叶路径”的 breaking 结论被
+`optional_key_added` 噪声排到 findings[0]。按通用规则修复——空映射不声明任何叶面（不特判
+模型/视图）——`a.b` 的移除重新成为唯一且正确的 breaking finding。
+
+### 与既有工具的关系（非重复）
+
+既有 `scripts/verify/contract_version_evolution_drill.py` 是对**运行中服务**的活体非回归检查：
+它断言 envelope/meta 必需键存在且 `api_version` / `contract_version` 不倒退。它不做相邻版本
+声明差分，也不做只追加回滚演练。本专题的 `contract_version_compatibility` 是**决策层**核心
+（声明级 N-1/N/N+1 差分与回滚规则），二者互补而非重复：活体演练证明“当前运行不倒退”，
+决策核心证明“相邻版本的兼容分类与回滚序列正确”。因此不合并、不互相替代。
+
+### Layer commit
+
+`d8827e63739cfa34361a4ed9d1c018298d9c3ab4` on `fix/contract-slo-telemetry`. It adds two
+pure-standard-library P0 cores, four verification assets, the four governed Make entries, the
+deploy-revision injection in the governed env-prep, and the record/authority-doc updates plus the
+refreshed tracked generated reports. It changes no protocol version, no Odoo model/field and no XML,
+so no module upgrade is implied; the runtime half ran through a fresh governed `odoo shell` process
+reading this worktree's addons mount, which is why the attestation's recomputed artifact digest
+reflects the live code. The signature is self-signed, so this commit closes the -2 item's unified
+binding and leaves the external trust root open; L5 is not declared.
+
+## Integration status after PR #533 and the topic (c) carry (2026-10-02)
+
+Topics (a) intent-catalog completeness, (b) published `ui.business.config.contract`
+version keying and (d) contract-snapshot seed/fixture hygiene, together with the
+contained `BACKEND-CONTRACT-L4-CLOSURE` batch, were integrated into `main` by PR #533
+(squash merge `9abaa79d9876721c0f1b1236ee542cb898e4c66a`, carried by
+`CONTRACT-BATCHES-MAINLINE-INTEGRATION`). That batch also re-ran the L4 runtime lane on
+the restored isolated profile at the integration head — 14/14 assertions, schema guard
+PASS, rotted identity pins realigned — recorded in
+`docs/ops/iterations/contract_batches_mainline_integration_20261002.md`. Because the
+merge is a squash, this branch's own commit history is not an ancestor of `main`:
+integration is by content, and `main`'s newer versions of the shared files stay
+authoritative over this branch's pre-merge snapshot.
+
+Topic (c) — signature-level supply-chain provenance and the N-1/N+1
+consumer-compatibility drill, delivered by this record's last layer commit `d8827e637` —
+was **not** part of that merge. It is carried onto the current `main` baseline
+`e93b5e83f` as one candidate on branch `fix/contract-supply-chain-attestation`, under
+goal `BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION`
+(record: `docs/ops/iterations/backend_contract_supply_chain_attestation_20261002.md`).
+
+Still open and owner-gated: (b-residual) the runtime-attribution probe extension; (e) the
+re-baseline decision for the 119 stale snapshot references; and the topic (c) external
+trust root — the attestation is self-signed, so L5 is still not declared. Deployment,
+version release and product delivery stay separate and unauthorized.

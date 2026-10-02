@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION
+  title: backend_contract_supply_chain_attestation
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - addons/smart_core
+    - scripts/verify
+    - make
+    - docs/architecture
+    - docs/ops/iterations
+  baseline:
+    branch: fix/contract-supply-chain-attestation
+    full_sha: e93b5e83f572df284d37d9d3c572898858be2179
+    source: origin_main
+  objective: >-
+    Carry topic (c) of the backend contract lifecycle L5 gaps, declared in
+    BACKEND-CONTRACT-SLO-TELEMETRY, onto the current main baseline: the unified
+    signature-level supply-chain attestation (protocol schema + governed contract +
+    built artifact + deployed revision bound into one digest-linked document) and the
+    N-1/N/N+1 consumer-compatibility and append-only rollback drill. Deliver the two
+    pure-standard-library P0 cores, their offline unit locks, the governed runtime
+    probe and host-side schema guard, and the record updates as one candidate.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The attestation binds digests produced by the smart_core contract lifecycle
+      mechanism, so its binding and verification semantics belong to the same P0
+      platform mechanism that already owns the lifecycle seal.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics
+      - no_frontend_rendering_or_p3_low_code_shortcut
+      - no_p4_ops_script_as_semantic_authority
+      - no_external_trust_root_and_no_protocol_version_change
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - no_new_compose_project_database_port_volume_or_credential
+    - carry_by_content_onto_current_main_never_replay_the_squashed_branch_history
+    - the_attestation_stays_self_signed_so_l5_is_not_declared
+  next_exact_step: >-
+    Freeze the carried candidate, run the offline locks (supply-chain unit,
+    version-compatibility unit, runtime schema guard) plus the affected contract
+    lifecycle authority and catalog checks, then the governed runtime probe on the
+    isolated contract-lifecycle profile and one consolidated affected-surface review.
+    Publication stays on hold.
+  completion:
+    overall_goal: incomplete
+    core_scope: carried
+    compatibility_scope: carried
+    runtime_scope: pending_isolated_profile_readback
+    external_trust_root: open
+    supersedes_topic: BACKEND-CONTRACT-SLO-TELEMETRY_topic_c
+    result_index: .agent/runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/run.json

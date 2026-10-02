@@ -13,9 +13,40 @@ TARGET_ENV_FILE="${TARGET_ENV_FILE:-${ROOT_DIR}/.env.local.contract-lifecycle}"
 [[ "${TARGET_ENV_FILE}" = /* ]] || TARGET_ENV_FILE="${ROOT_DIR}/${TARGET_ENV_FILE}"
 [[ "${SOURCE_ENV_FILE}" = /* ]] || SOURCE_ENV_FILE="${ROOT_DIR}/${SOURCE_ENV_FILE}"
 
+# Deploy-time revision injection. The supply-chain attestation binds the *running*
+# deployment SHA, so the revision this profile serves must be declared here (the
+# compose file substitutes SC_SOURCE_REVISION) rather than left as the
+# placeholder "unknown". Defaults to this worktree's HEAD; override with
+# CONTRACT_LIFECYCLE_SOURCE_REVISION=<40-hex> when deploying another revision.
+source_revision="${CONTRACT_LIFECYCLE_SOURCE_REVISION:-${SC_SOURCE_REVISION:-}}"
+if [[ -z "${source_revision}" ]]; then
+  source_revision="$(git -C "${ROOT_DIR}" rev-parse HEAD 2>/dev/null || true)"
+fi
+if [[ ! "${source_revision}" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "[local.contract-lifecycle.prepare] a 40-hex deployment source revision is required, got: ${source_revision:-<empty>}" >&2
+  exit 2
+fi
+
+refresh_source_revision() {
+  local current
+  current="$(grep -E '^SC_SOURCE_REVISION=' "${TARGET_ENV_FILE}" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+  if [[ "${current}" == "${source_revision}" ]]; then
+    echo "[local.contract-lifecycle.prepare] deploy revision already ${source_revision}"
+    return 0
+  fi
+  if grep -qE '^SC_SOURCE_REVISION=' "${TARGET_ENV_FILE}"; then
+    sed -i "s/^SC_SOURCE_REVISION=.*/SC_SOURCE_REVISION=${source_revision}/" "${TARGET_ENV_FILE}"
+  else
+    printf 'SC_SOURCE_REVISION=%s\n' "${source_revision}" >>"${TARGET_ENV_FILE}"
+  fi
+  chmod 600 "${TARGET_ENV_FILE}"
+  echo "[local.contract-lifecycle.prepare] deploy revision ${current:-<none>} -> ${source_revision} (re-run local.contract-lifecycle.up to apply)"
+}
+
 if [[ -f "${TARGET_ENV_FILE}" ]]; then
   chmod 600 "${TARGET_ENV_FILE}"
   echo "[local.contract-lifecycle.prepare] reuse ${TARGET_ENV_FILE}"
+  refresh_source_revision
   exit 0
 fi
 if [[ ! -f "${SOURCE_ENV_FILE}" ]]; then
@@ -97,6 +128,7 @@ NGINX_PORT=${nginx_port}
 ODOO_PORT=${odoo_port}
 FRONTEND_DIST_DIR=./frontend/apps/web/dist-dev
 ISOLATED_REHEARSAL_DATABASE=1
+SC_SOURCE_REVISION=${source_revision}
 VITE_ODOO_DB=${db_name}
 VITE_ODOO_DB_LOCKED=1
 EOF

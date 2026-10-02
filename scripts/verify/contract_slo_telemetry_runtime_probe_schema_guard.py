@@ -8,8 +8,10 @@ probe's own PASS marker.
 """
 
 import json
+import importlib.util
 import os
 import unittest
+from pathlib import Path
 
 
 PROBE_REPORT = os.environ.get(
@@ -45,7 +47,27 @@ REQUIRED_CHECKS = (
     "retention_sweep_keeps_rows_inside_the_horizon",
     "retention_probe_rows_cleaned_up",
     "test_configuration_restored",
+    "published_contract_row_is_published",
+    "published_contract_contributes_form_only",
+    "attributed_delivery_ok",
+    "attributed_delivery_emits_one_line",
+    "delivery_on_published_form_names_the_version",
+    "unattributed_surface_emits_one_line",
+    "another_surface_does_not_borrow_the_version",
+    "aggregate_splits_the_published_version_from_unattributed",
+    "probe_contract_removed",
+    "mutation_audit_left_clean",
+    "delivery_after_removal_is_unattributed_again",
 )
+
+
+def _load_slo_core():
+    """Load the real telemetry core so the grouping is re-derived, not trusted."""
+    path = Path(__file__).resolve().parents[2] / "addons/smart_core/core/contract_slo_telemetry.py"
+    spec = importlib.util.spec_from_file_location("contract_slo_telemetry_host_guard", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load():
@@ -132,6 +154,61 @@ class ContractSloRuntimeProbeReportTest(unittest.TestCase):
         )
         for observation in self.report.get("observations") or []:
             self.assertNotEqual(observation.get("outcome"), "integrity_failure")
+
+    def test_published_version_attribution_is_really_keyed(self):
+        """The named published version must key the aggregate, re-derived here.
+
+        The probe reports one attributed and one unattributed delivery; this test
+        re-aggregates them with the real telemetry core and requires the two to
+        land in separate rows, so "the string appeared" cannot be a pass.
+        """
+        attribution = self.report.get("attribution") or {}
+        expected = attribution.get("expectedRef") or ""
+        self.assertRegex(expected, r"^ui\.business\.config\.contract:\d+@\d+$")
+        self.assertEqual(attribution.get("formRef"), expected, attribution)
+        self.assertEqual(attribution.get("listRef"), "", attribution)
+        self.assertEqual(attribution.get("afterRemovalRef"), "", attribution)
+        attributed_observation = attribution.get("formObservation")
+        unattributed_observation = attribution.get("listObservation")
+        self.assertIsInstance(attributed_observation, dict, attribution)
+        self.assertIsInstance(unattributed_observation, dict, attribution)
+        self.assertEqual(
+            ((attributed_observation.get("identity") or {}).get("publishedVersionRef")), expected
+        )
+        self.assertNotIn(
+            "publishedVersionRef", unattributed_observation.get("identity") or {}
+        )
+        split = _load_slo_core().aggregate_observations(
+            [attributed_observation, unattributed_observation]
+        )
+        self.assertEqual(split.get("rejectedObservations"), 0, split)
+        self.assertEqual(split.get("versionCount"), 2, split)
+        keyed = [row for row in split["versions"] if row.get("publishedVersionRef") == expected]
+        plain = [row for row in split["versions"] if not row.get("publishedVersionRef")]
+        self.assertEqual(len(keyed), 1, split)
+        self.assertEqual(len(plain), 1, split)
+        self.assertEqual(keyed[0].get("observations"), 1, keyed[0])
+        self.assertEqual(plain[0].get("observations"), 1, plain[0])
+        self.assertEqual(keyed[0].get("successRate"), 1.0, keyed[0])
+
+    def test_the_attribution_fixture_was_restored(self):
+        """A probe fixture that stayed behind would poison the next run."""
+        detail = {check["name"]: check for check in self.report.get("checks", [])}
+        for name in (
+            "published_contract_row_is_published",
+            "published_contract_contributes_form_only",
+            "attributed_delivery_ok",
+            "delivery_on_published_form_names_the_version",
+            "another_surface_does_not_borrow_the_version",
+            "aggregate_splits_the_published_version_from_unattributed",
+            "probe_contract_removed",
+            "mutation_audit_left_clean",
+            "delivery_after_removal_is_unattributed_again",
+        ):
+            self.assertIn(name, detail, name)
+            self.assertTrue(detail[name].get("ok"), detail.get(name))
+        audit_detail = detail["mutation_audit_left_clean"].get("detail") or {}
+        self.assertEqual(audit_detail.get("before"), audit_detail.get("after"), audit_detail)
 
 
 if __name__ == "__main__":

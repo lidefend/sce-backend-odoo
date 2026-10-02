@@ -39,6 +39,11 @@ LOCAL_CONTRACT_LIFECYCLE_MODULES ?= smart_core
 LOCAL_CONTRACT_LIFECYCLE_PASSWORD ?= scdevpass
 LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT ?= 18090
 LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT ?= 8079
+# Deploy-time revision injection for the supply-chain attestation: the profile
+# declares which revision it serves, so the probe can bind the running
+# deployment SHA instead of the placeholder "unknown". Defaults to this
+# worktree's HEAD.
+CONTRACT_LIFECYCLE_SOURCE_REVISION ?= $(shell git -C $(ROOT_DIR) rev-parse HEAD 2>/dev/null)
 export LOCAL_CONTRACT_LIFECYCLE_PASSWORD
 
 # The registered isolated contract-snapshot profile (documented in
@@ -437,6 +442,7 @@ local.contract-lifecycle.require_env: guard.prod.forbid
 local.contract-lifecycle.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  TARGET_ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  CONTRACT_LIFECYCLE_SOURCE_REVISION="$(CONTRACT_LIFECYCLE_SOURCE_REVISION)" \
 	  LOCAL_CONTRACT_LIFECYCLE_PASSWORD="$(LOCAL_CONTRACT_LIFECYCLE_PASSWORD)" \
 	  LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT="$(LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT)" \
 	  LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT="$(LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT)" \
