@@ -1,11 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "codex/close-mainline-integration-closeout": ".agent/runs/MAINLINE-INTEGRATION-CLOSEOUT/run.json",
-    "codex/contract-batches-integration": ".agent/runs/CONTRACT-BATCHES-MAINLINE-INTEGRATION/run.json",
-    "fix/agent-resume-mainline": ".agent/runs/P4-INCREMENTAL-RESUME/run.json",
-    "fix/backend-contract-l4": ".agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json",
-    "fix/run-closeout-fe-template-adoption": ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
-    "fix/contract-slo-telemetry": ".agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json"
-  }
+  "branches": {}
 }

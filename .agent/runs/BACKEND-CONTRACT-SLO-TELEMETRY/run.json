@@ -4,7 +4,7 @@
   "branch": "fix/contract-slo-telemetry",
   "goal": ".agent/goals/BACKEND-CONTRACT-SLO-TELEMETRY.yaml",
   "record": "docs/ops/iterations/backend_contract_slo_telemetry_20261002.md",
-  "status": "verification_pending",
+  "status": "completed",
   "baseline_sha": "c2410190feb7f7db2407083cca65f5ca624bb8c8",
   "scope": [
     ".agent/",
@@ -207,7 +207,13 @@
     "Recorded, OPEN (owner decision): the 119 remaining matrix diffs are reference staleness, not a fixture defect. 44 differ only by the renamed envelope key (-contract_version / +snapshot_schema_version); 75 carry content drift (permission_check_intent_admin embeds the capturing database, sc_dev_demo in the reference vs the profile's sc_contract_snapshot now; my_work_complete_batch_pm's idempotency_fingerprint; app_catalog_intent_admin lists 4 apps in the reference and 28 now). The tracked references are heterogeneous: 46 carry snapshot_schema_version (introduced in c0a6e9e2c, PR #277) and 114 still carry contract_version, so roughly 114 predate PR #277. Re-baselining them (LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap) would declare today's behaviour as the new reference, which is a contract-authority decision and was deliberately not taken here.",
     "Topic (b) layer commit: 7665827b55014eb0a365db8061528cdbaa90ca8b on fix/contract-slo-telemetry, parent 3f17e031d (the commit that carries the records). It changes no protocol version, no Odoo model/field and no XML, so no module upgrade is implied; the runtime half ran through a fresh odoo-shell process reading this worktree's addons mount, which is why the code was live without a service restart."
   ],
-  "next_exact_step": "Topics a, b and d are implemented, verified and recorded; the topic (b) layer commit is 7665827b55014eb0a365db8061528cdbaa90ca8b. Reusable receipts: slo_core=33, slo_emission=23, slo_store=31, contract_catalog=16, contract_lifecycle_authority=35, v2_render_authority=327 (guard assertions = classified fields), fe_v2_runtime_policy=12; slo_runtime=9 is head-bound and reported stale only because the evaluator refuses automatic reuse of runtime evidence. Open, each needing its own authorization: (b-residual) the runtime-attribution probe extension described in blockers; (c) signature-level supply-chain provenance and N-1/N+1 compatibility drills, the two remaining L5 gaps; (e) the re-baseline decision for the 119 stale snapshot references, a contract-authority decision rather than hygiene. Publication was released by owner instruction on 2026-10-02; close with the integration batch (completion.mainline) after the PR merges.",
+  "next_exact_step": "Delivered: integrated into mainline via PR #533 (carried by CONTRACT-BATCHES-MAINLINE-INTEGRATION). Open owner-gated follow-ups stay recorded in blockers: (b-residual) the runtime-attribution probe extension; (c) signature-level supply-chain provenance and N-1/N+1 compatibility drills; (e) the re-baseline decision for the 119 stale snapshot references.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #533 (squash merge commit 9abaa79d9876721c0f1b1236ee542cb898e4c66a, 2026-10-02T09:49:04Z), carried by CONTRACT-BATCHES-MAINLINE-INTEGRATION",
+    "deployment": "not_run",
+    "review": "CI-verified five workflows at PR head 3fa5eb6df; reusable receipts slo_core=33, slo_emission=23, slo_store=31, contract_catalog=16, contract_lifecycle_authority=35, v2_render_authority=327, fe_v2_runtime_policy=12; runtime evidence on the authorized isolated profiles"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

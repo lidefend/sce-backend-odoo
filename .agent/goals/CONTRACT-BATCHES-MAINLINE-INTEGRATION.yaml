@@ -43,8 +43,10 @@ goal:
     merge, then close out BACKEND-CONTRACT-L4-CLOSURE, BACKEND-CONTRACT-SLO-TELEMETRY
     and this run with completion.mainline.
   completion:
-    overall_goal: incomplete
+    overall_goal: complete
     integration_scope: complete
     l4_runtime_lane: complete
     code_head: cb9fd5a86
+    freeze_head: 3fa5eb6df
+    mainline: merged_via_pr_533_squash_9abaa79d9
     result_index: .agent/runs/CONTRACT-BATCHES-MAINLINE-INTEGRATION/run.json
