@@ -257,6 +257,96 @@ class AggregationTest(unittest.TestCase):
             SLO.aggregate_observations([], window_seconds=0)
 
 
+class EmissionTest(unittest.TestCase):
+    def test_a_valid_observation_reaches_the_sink_once(self):
+        seen = []
+        self.assertTrue(SLO.emit_observation(observation(), sink=seen.append))
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0], observation())
+
+    def test_a_malformed_observation_never_reaches_the_sink(self):
+        malformed = [
+            "not an object",
+            {"schemaVersion": "0.0.0"},
+            observation(outcome="unknown"),
+            observation(identity={"schemaId": "only-one-field"}),
+            observation(observed_at="yesterday"),
+        ]
+        for candidate in malformed:
+            with self.subTest(candidate=candidate):
+                seen = []
+                self.assertFalse(SLO.emit_observation(candidate, sink=seen.append))
+                self.assertEqual(seen, [])
+
+    def test_a_raising_sink_does_not_break_the_delivery_path(self):
+        def sink(_observation):
+            raise RuntimeError("telemetry backend is down")
+
+        self.assertFalse(SLO.emit_observation(observation(), sink=sink))
+
+    def test_a_missing_or_non_callable_sink_is_not_an_error(self):
+        self.assertFalse(SLO.emit_observation(observation(), sink=None))
+        self.assertFalse(SLO.emit_observation(observation(), sink="not callable"))
+
+    def test_the_sink_return_value_is_reported_without_a_none_trap(self):
+        self.assertTrue(SLO.emit_observation(observation(), sink=lambda _o: None))
+        self.assertFalse(SLO.emit_observation(observation(), sink=lambda _o: False))
+
+    def test_emitting_does_not_mutate_the_observation(self):
+        original = observation()
+        snapshot = dict(original)
+        SLO.emit_observation(original, sink=lambda _o: None)
+        self.assertEqual(original, snapshot)
+
+    def test_the_log_line_is_canonical_and_prefixed(self):
+        line = SLO.observation_log_line(observation())
+        self.assertIsInstance(line, str)
+        self.assertTrue(line.startswith(SLO.OBSERVATION_LINE_KEY + " "))
+        self.assertEqual(line, SLO.observation_log_line(observation()))
+        body = line.split(" ", 1)[1]
+        self.assertNotIn(": ", body)
+        self.assertNotIn(", ", body)
+
+    def test_the_log_line_round_trips(self):
+        original = observation()
+        self.assertEqual(SLO.parse_observation_line(SLO.observation_log_line(original)), original)
+
+    def test_an_invalid_observation_has_no_log_line(self):
+        self.assertIsNone(SLO.observation_log_line("nope"))
+        self.assertIsNone(SLO.observation_log_line(observation(outcome="nope")))
+
+    def test_the_parser_rejects_foreign_and_poisoned_lines(self):
+        for line in (
+            None,
+            42,
+            "",
+            "unrelated log line",
+            SLO.OBSERVATION_LINE_KEY + " ",
+            SLO.OBSERVATION_LINE_KEY + " {not json}",
+            SLO.OBSERVATION_LINE_KEY + ' {"outcome":"nope"}',
+        ):
+            with self.subTest(line=line):
+                self.assertIsNone(SLO.parse_observation_line(line))
+
+    def test_the_line_emitter_agrees_with_the_object_emitter(self):
+        lines, objects = [], []
+        self.assertTrue(SLO.emit_observation_line(observation(), sink=lines.append))
+        self.assertTrue(SLO.emit_observation(observation(), sink=objects.append))
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(SLO.parse_observation_line(lines[0]), objects[0])
+
+    def test_the_line_emitter_is_fail_open_too(self):
+        seen = []
+        self.assertFalse(SLO.emit_observation_line(observation(outcome="nope"), sink=seen.append))
+        self.assertEqual(seen, [])
+
+        def sink(_line):
+            raise RuntimeError("down")
+
+        self.assertFalse(SLO.emit_observation_line(observation(), sink=sink))
+        self.assertFalse(SLO.emit_observation_line(observation(), sink=None))
+
+
 class OfflinePurityTest(unittest.TestCase):
     def test_core_has_no_odoo_dependency(self):
         tree = ast.parse(SLO_PATH.read_text(encoding="utf-8"))

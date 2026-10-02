@@ -15,12 +15,19 @@ This module owns the pure half of that feature:
 
 It imports nothing from Odoo so the semantics stay offline-verifiable and any
 sink (structured log, metrics pipeline, future read model) can reuse them
-unchanged. Emission and persistence are deliberately out of scope here.
+unchanged.
+
+Emission is provided only as a sink-agnostic boundary: the module validates an
+observation and hands it (or a canonical log line) to a caller-supplied sink,
+fail-open, so a delivery is never broken by a missing or broken telemetry sink.
+Choosing the sink and persisting or trending the observations are deliberately
+out of scope here.
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 
 SCHEMA_VERSION = "1.0.0"
@@ -31,6 +38,7 @@ OUTCOME_INTEGRITY_FAILURE = "integrity_failure"
 CONTRACT_SLO_OUTCOMES = (OUTCOME_SUCCESS, OUTCOME_DEGRADED, OUTCOME_INTEGRITY_FAILURE)
 
 RATE_FIELDS = ("successRate", "degradationRate", "integrityFailureRate")
+OBSERVATION_LINE_KEY = "contractSlo"
 IDENTITY_FIELDS = (
     "schemaId",
     "schemaVersion",
@@ -259,3 +267,67 @@ def aggregate_observations(
         "versionCount": len(versions),
         "versions": versions,
     }
+
+
+def emit_observation(observation: Any, *, sink: Callable[[Any], Any] | None) -> bool:
+    """Hand one validated observation to ``sink`` without breaking delivery.
+
+    Fail-open by construction: telemetry is secondary to the delivery it
+    measures, so an unusable observation, a missing sink or a sink that raises
+    all resolve to ``False`` instead of propagating into the delivery path. A
+    sink that returns without raising is treated as accepted; returning the
+    literal ``False`` is honoured as an explicit rejection. The return value
+    reports whether the observation was accepted, never the delivery outcome.
+    """
+    if not callable(sink):
+        return False
+    if _reject_reason(observation):
+        return False
+    try:
+        accepted = sink(observation)
+    except Exception:
+        return False
+    return accepted is not False
+
+
+def observation_log_line(observation: Any) -> str | None:
+    """Return the canonical single-line rendering of an observation.
+
+    The line is the observation key followed by compact, key-sorted JSON so it
+    stays greppable and stable across processes. An observation that cannot be
+    trusted has no line at all, so nothing invalid is ever emitted.
+    """
+    if _reject_reason(observation):
+        return None
+    payload = json.dumps(observation, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "%s %s" % (OBSERVATION_LINE_KEY, payload)
+
+
+def parse_observation_line(line: Any) -> dict[str, Any] | None:
+    """Recover an observation from its canonical line, or ``None`` if invalid."""
+    if not isinstance(line, str):
+        return None
+    prefix = OBSERVATION_LINE_KEY + " "
+    if not line.startswith(prefix):
+        return None
+    try:
+        parsed = json.loads(line[len(prefix) :])
+    except (TypeError, ValueError):
+        return None
+    if _reject_reason(parsed):
+        return None
+    return parsed
+
+
+def emit_observation_line(observation: Any, *, sink: Callable[[str], Any] | None) -> bool:
+    """Emit the canonical log line of an observation, fail-open like ``emit_observation``."""
+    if not callable(sink):
+        return False
+    line = observation_log_line(observation)
+    if line is None:
+        return False
+    try:
+        accepted = sink(line)
+    except Exception:
+        return False
+    return accepted is not False
