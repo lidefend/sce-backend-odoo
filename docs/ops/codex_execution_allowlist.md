@@ -562,9 +562,13 @@ make workspace.worktree.cleanup \
   CLEAN_WORKTREE_CONFIRM=RETIRE_SQUASH_INTEGRATED_WORKTREE_WITHOUT_ARCHIVED_EVIDENCE
 ```
 
-* squash 同树承接是唯一准入证明：必须有已合并 PR 的 `headRefOid` 精确等于工作树 HEAD，
-  其 merge commit 位于 `origin/main`、是**单亲**提交，且该提交的树与工作树 HEAD 的树
-  逐字节一致；任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）。
+* 准入证明分两类，任一条件不成立即拒绝（`gh` 不可用或查询失败按无证明处理）：
+  * **squash 同树承接**：已合并 PR 的 `headRefOid` 精确等于工作树 HEAD，其 merge
+    commit 位于 `origin/main`、是**单亲**提交，且该提交的树与工作树 HEAD 的树逐字节一致。
+  * **ancestor 包含**：工作树 HEAD 直接包含在 `origin/main` 中。真实 merge commit
+    承接（非 squash）走这一类，因为它没有单亲同树提交；此时仍**必须**取到精确等于该
+    HEAD 的已合并 PR，否则拒绝，记录中的 `mergedPr`／`mergeCommit` 与该 PR 绑定。
+  * 两类之外（HEAD 未并入）一律拒绝。
 * 治理记录必须是仓库内**被 Git 跟踪**的文件（因此必须随候选评审合入），逐条声明
   `path`／`branch`／`head`／`evidenceStatus=absent`／原因／`mergedPr`（严格整数，浮点、
   字符串与布尔一律拒绝）／`mergeCommit`／`tree`／恢复 bundle 路径与 SHA-256；入口会重读

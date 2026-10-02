@@ -220,17 +220,29 @@ def merged_pull_request(root: Path, branch: str, head: str) -> dict | None:
 def prove_integration(root: Path, selected: Worktree) -> IntegrationProof:
     """Prove the worktree HEAD is integrated into ``origin/main``.
 
-    Fast path: the HEAD is an ancestor of ``origin/main``. Otherwise the only
-    admissible evidence is a merged PR for the exact HEAD whose single-parent
-    merge commit is on ``origin/main`` and whose tree is byte-identical to the
-    worktree HEAD tree, i.e. a squash integration that carried the whole
-    candidate.
+    Two integrations are admissible. ``ancestor``: the HEAD is contained in
+    ``origin/main`` directly, and a merged PR for the exact HEAD is recorded
+    when one can be read. ``squash``: the HEAD is not an ancestor, but a merged
+    PR for the exact HEAD has a single-parent merge commit on ``origin/main``
+    whose tree is byte-identical to the worktree HEAD tree, i.e. a squash
+    integration that carried the whole candidate.
     """
     tree = run(root, "rev-parse", f"{selected.head}^{{tree}}").stdout.strip()
     if run(
         root, "merge-base", "--is-ancestor", selected.head, "origin/main", check=False
     ).returncode == 0:
-        return IntegrationProof(kind="ancestor", tree=tree)
+        # Ancestor containment alone already proves this exact HEAD is integrated.
+        # A merged pull request for the same HEAD is still recorded when one can be
+        # read, so a retirement record can be bound to the integration it retires.
+        # The lookup is best effort here; the retirement path separately enforces
+        # that it succeeded before admitting an ancestor-integrated topic.
+        row = merged_pull_request(root, selected.branch or "", selected.head)
+        return IntegrationProof(
+            kind="ancestor",
+            tree=tree,
+            merge_commit=str(row.get("mergeCommit") or "") if row else "",
+            pull_request=int(row["number"]) if row and row.get("number") else 0,
+        )
     row = merged_pull_request(root, selected.branch or "", selected.head)
     if row is None:
         raise CleanupError(f"worktree HEAD is not merged into origin/main: {selected.head}")
@@ -451,12 +463,24 @@ def cleanup(
             elif retirement_record is not None and recovery_bundle is not None:
                 if confirmation != SQUASH_RETIREMENT_CONFIRMATION:
                     raise CleanupError(
-                        "squash retirement apply requires "
+                        "legacy retirement apply requires "
                         f"confirmation={SQUASH_RETIREMENT_CONFIRMATION}"
                     )
-                if proof.kind != "squash":
+                if proof.kind not in {"squash", "ancestor"}:
                     raise CleanupError(
-                        "retirement record is only admissible for squash integrations"
+                        "retirement record is only admissible for integrated topics"
+                    )
+                # An ancestor-integrated topic is provably contained in origin/main,
+                # but unlike a squash integration it has no tree-identical
+                # single-parent merge commit. Bind it to the verified merged pull
+                # request of the exact HEAD so the reviewed record still names the
+                # integration it retires, and fail closed when that cannot be read.
+                if proof.kind == "ancestor" and not (
+                    proof.pull_request and proof.merge_commit
+                ):
+                    raise CleanupError(
+                        "ancestor retirement requires a verified merged pull request "
+                        "for the exact worktree HEAD"
                     )
                 # A retirement retires the whole topic, so the remote ref is part of
                 # the transaction: delete it under an exact lease, and refuse when it
