@@ -27,12 +27,10 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "The two integrated worktrees can only be retired after this record and the ancestor admission are merged, because the retirement record must be committed at the HEAD of the primary worktree."
-  ],
-  "next_exact_step": "Freeze at the clean candidate, run verify.workspace.worktree.guard and make ci.local.iteration, push through the protected PR lane, then run make workspace.worktree.cleanup for each recorded worktree.",
+  "blockers": [],
+  "next_exact_step": "Completed: the ancestor admission merged as PR #536 (squash commit 4a3d2cd357f3844937aa408456f396d2e8bf713e) and both recorded integrated worktrees were retired with their external recovery bundles. The same pass retired seven superseded local topic refs and the three matching origin refs after proving every one of them has zero files newer than main. main and the Gitee mirror main both read 4a3d2cd35. See docs/ops/iterations/workspace_worktree_closure_20261002.md.",
   "id": "WORKSPACE-WORKTREE-CLOSURE",
-  "branch": "fix/workspace-worktree-ancestor-retirement",
+  "branch": "fix/workspace-closure-ledger",
   "status": "active",
   "goal": ".agent/goals/WORKSPACE-WORKTREE-CLOSURE.yaml",
   "record": "docs/ops/iterations/workspace_worktree_closure_20261002.md"

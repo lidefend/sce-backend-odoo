@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/workspace-worktree-ancestor-retirement": ".agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json"
+    "fix/workspace-closure-ledger": ".agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json"
   }
 }
