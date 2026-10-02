@@ -27,13 +27,34 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "The two integrated worktrees can only be retired after this record and the ancestor admission are merged, because the retirement record must be committed at the HEAD of the primary worktree."
-  ],
-  "next_exact_step": "Freeze at the clean candidate, run verify.workspace.worktree.guard and make ci.local.iteration, push through the protected PR lane, then run make workspace.worktree.cleanup for each recorded worktree.",
+  "blockers": [],
+  "next_exact_step": "Completed: the ancestor admission merged as PR #536 (squash commit 4a3d2cd357f3844937aa408456f396d2e8bf713e) and both recorded integrated worktrees were retired with their external recovery bundles. The same pass retired seven superseded local topic refs and the three matching origin refs after proving every one of them has zero files newer than main. main and the Gitee mirror main both read 4a3d2cd35. See docs/ops/iterations/workspace_worktree_closure_20261002.md.",
   "id": "WORKSPACE-WORKTREE-CLOSURE",
-  "branch": "fix/workspace-worktree-ancestor-retirement",
-  "status": "active",
+  "branch": "fix/workspace-closure-ledger",
+  "status": "completed",
   "goal": ".agent/goals/WORKSPACE-WORKTREE-CLOSURE.yaml",
-  "record": "docs/ops/iterations/workspace_worktree_closure_20261002.md"
+  "record": "docs/ops/iterations/workspace_worktree_closure_20261002.md",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #536 (squash commit 4a3d2cd357f3844937aa408456f396d2e8bf713e); main and gitee-mirror main both 4a3d2cd35",
+    "worktree_retirement": "passed: sce-backend-odoo-contract-l4 and sce-backend-odoo-agent-resume-github-recovery removed with verified external recovery bundles; one worktree remains",
+    "branch_retirement": "passed: 7 superseded local refs retired with verified recovery bundles; origin refs deleted for fix/workspace-worktree-ancestor-retirement, fix/github-history-recovery and feature/web-official-template-adoption",
+    "retained": "fix/agent-incremental-resume (44429fd70) is superseded but has no governed retirement path (not contained in origin/main, no exact-head merged PR); retained and disclosed, not dropped",
+    "l1": {
+      "focused": {
+        "command": "make verify.workspace.worktree.guard",
+        "status": "passed",
+        "tests": 92,
+        "log": ".runtime/agent-runs/WORKSPACE-WORKTREE-CLOSURE/focused.log"
+      },
+      "iteration": {
+        "command": "make ci.local.iteration",
+        "status": "passed",
+        "change_state": "clean",
+        "note": "The L1 entry is not re-run after this commit: a completed run intentionally reports 'unregistered' so iteration exits 2 until a successor run is registered. Receipt head 3ef1513173 is an ancestor of this commit."
+      }
+    },
+    "deployment": "not_run",
+    "product_delivery": "not_run"
+  }
 }

@@ -37,12 +37,17 @@ goal:
     - the_retirement_record_discloses_absent_evidence_instead_of_fabricating_it
     - no_new_compose_project_database_port_volume_or_credential
   next_exact_step: >-
-    Freeze this candidate, run the offline worktree-guard unit locks plus
-    ci.local.iteration, then dispatch through the protected PR lane and retire the two
-    integrated worktrees with their external recovery bundles.
+    Completed: PR #536 (squash 4a3d2cd357f3844937aa408456f396d2e8bf713e) merged the
+    ancestor admission and both recorded integrated worktrees were retired with their
+    external recovery bundles. Seven superseded local topic refs and three matching
+    origin refs were then retired after proving each has zero files newer than main.
+    See docs/ops/iterations/workspace_worktree_closure_20261002.md.
   completion:
-    overall_goal: incomplete
-    code_scope: pending_freeze
-    record_scope: pending_freeze
-    worktree_retirement: pending_merge
+    overall_goal: complete
+    code_scope: merged_via_pr_536
+    record_scope: merged_via_pr_536
+    worktree_retirement: done
+    branch_retirement: done
+    retained_ref: fix/agent-incremental-resume_has_no_governed_retirement_path
+    deployment: not_run
     result_index: .agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json
