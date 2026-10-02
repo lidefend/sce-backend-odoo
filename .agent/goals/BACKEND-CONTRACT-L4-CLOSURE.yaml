@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONTRACT-L4-CLOSURE
+  title: backend_contract_lifecycle_l4_runtime_evidence_governance
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - addons/smart_core
+    - scripts/verify
+    - make
+    - docs/architecture
+  baseline:
+    branch: fix/backend-contract-l4
+    full_sha: 002b2c64aec7b8981b3df21ebc25f80be2eb728c
+    source: origin_main_after_pr_526_527_528
+  objective: >-
+    Keep the backend unified page contract lifecycle at L4 by making its runtime
+    evidence as verifiable as its static machine coverage: the isolated-database
+    contract lifecycle runtime probe must emit an identity-bound, schema-guarded
+    artifact whose declared assertions are validated offline, instead of a
+    machine report that only the probe's own exit code protects.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      Contract lifecycle definition, generation, validation, persistence,
+      publication, runtime resolution, observability and compatibility are P0
+      platform mechanisms owned by smart_core; their evidence governance is the
+      same layer, not an industry or customer concern.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics_in_contract_lifecycle
+      - no_frontend_renderer_change_and_no_p3_low_code_shortcut
+      - no_new_environment_or_credential_authority_in_this_batch
+      - ops_scripts_stay_repair_replay_verify_never_a_semantic_authority
+    blast_radius:
+      - scripts_verify_backend_contract_lifecycle_runtime_probe_and_new_guard
+      - make_dev_test_contract_lifecycle_targets
+      - docs_architecture_backend_contract_lifecycle_authority_v1
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - runtime_evidence_must_be_verifiable_offline_from_its_artifact
+    - declared_assertion_set_is_locked_negative_first_in_tests
+    - no_new_compose_project_database_port_volume_or_credential
+  next_exact_step: >-
+    Register this run, then add the runtime probe artifact schema guard, wire it
+    into the contract lifecycle make targets, and prove it negative-first.
+  completion:
+    overall_goal: incomplete
+    code_head: null
+    result_index: .agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json
