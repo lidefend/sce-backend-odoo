@@ -59,6 +59,13 @@ These batches deliver the **decision-independent core** of that feature and the
     observations only; an empty input yields no version rows rather than
     fabricated zero rates, and malformed observations are counted and sampled
     (capped) instead of being silently dropped.
+  - Rows are keyed by the **whole** identity including `publishedVersionRef`, so
+    two published versions never merge into one SLO row and an unattributed
+    delivery never borrows another delivery's version. The row identity is
+    rebuilt from its own grouping key, not from whichever observation arrived
+    first. A first cut keyed on the six `IDENTITY_FIELDS` only, which collapsed
+    three distinct published versions (two of them different) into one row and
+    reported the first one's version for all of them.
   - `emit_observation()` validates an observation and hands it to a
     caller-supplied sink; it is fail-open (an unusable observation, a missing
     sink and a raising sink all return `False` instead of propagating into the
@@ -69,15 +76,15 @@ These batches deliver the **decision-independent core** of that feature and the
     line sink and a reader round-trip the same payload; an untrusted observation
     has no line at all.
   - `emit_observation_line()` is the same fail-open hand-off for line sinks.
-- `scripts/verify/test_contract_slo_telemetry.py` — 30 offline tests.
+- `scripts/verify/test_contract_slo_telemetry.py` — 33 offline tests.
 - `make/dev_test.mk` — `verify.backend.contract_slo_telemetry[.unit]`.
 
 ### Evidence
 
 - `make ci.local.iteration` → PASS, `change_state=dirty`.
-- `make verify.backend.contract_slo_telemetry.unit` → PASS, 30 tests.
+- `make verify.backend.contract_slo_telemetry.unit` → PASS, 33 tests.
   Receipt `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/slo_core.json`
-  (log `logs/batch2_slo_core_unit.log`).
+  (log `logs/slo_core.log`).
 - Negative-first proof, batch 1 (`logs/negative_first.log`): removing the integrity-first
   branch and the malformed-row outcome check makes 2 tests fail; the core was
   restored byte-identical (`diff` empty) and the suite returned 18/18 OK.
@@ -88,6 +95,12 @@ These batches deliver the **decision-independent core** of that feature and the
   was restored and verified byte-identical
   (`logs/batch2_baseline_sha256.txt`, `logs/batch2_restored.log`) before being
   recorded.
+- Negative-first proof, batch 3 (`logs/batch3_neuter_injected.log`): after
+  confirming the un-injected baseline at 33/33 OK, restoring the pre-fix
+  grouping key (six `IDENTITY_FIELDS`, first-observation identity copy) produced
+  exactly the 3 version-grouping failures and nothing else. The core and suite
+  were restored and verified byte-identical
+  (`logs/batch3_baseline_sha256.txt`, `logs/batch3_restored.log`).
 - The identity test seals a real contract through `contract_lifecycle` and reads
   the identity back from `meta.lifecycle`, so the SLO identity is bound to the
   emitted evidence rather than to a synthetic dictionary. The suite also asserts
