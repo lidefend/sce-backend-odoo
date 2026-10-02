@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "CI-SCHEDULED-FULL-LANE-RECOVERY",
-  "branch": "fix/scheduled-ci-full-lane-recovery",
-  "status": "active",
+  "branch": "codex/close-scheduled-ci-full-lane-recovery",
+  "status": "completed",
   "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
   "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY.yaml",
   "record": "docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md",
@@ -50,5 +50,21 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Fixes implemented: 22 lint errors cleared across 9 probe/test scripts (verify.frontend.lint PASS, 0 errors), vendor selectors refactored to public-surface equivalents across standard_page_type_browser.mjs (8->3, disclosed DOM-inspection evidence), frontend_list_surface_structure_browser.mjs (cleared, DAILY block via ScCard equivalents), frontend_overlay_lifecycle_browser.mjs (7->3), and the two contract tests synced (105+21 tests OK); guard PASS 104 < baseline 109 with zero baseline raises. Runtime lanes green: overlay page-renderer (76 checks), TPL07 style (93) / create-edit (48) / default payment (39, disclosure-expand step restored after ablation proved the introduce-entry failure pre-existed on main). Next: run the make agent.run begin/record cycle for full_lint and vendor_coupling, then commit, ci.delivery.freeze.prepare, exact-head ci.local.quick, and the protected PR."
+  "next_exact_step": "Closed. The scheduled full lane was restored by PR #529 (squash mainline 84aae65b8294c194c4f89273a1b4039eb0a49ecd): 22 full-scope eslint errors cleared plus verify.frontend.lint registered, playwright vendor-coupling refactored to public-surface equivalents with the decrease-only baseline untouched (104 < 109), the TPL07 default-scene disclosure-expand step restored, and the run's two offline checks recorded as reusable. Residual (out of scope, documented in the batch record): the local list-surface contract-replay 401 environment debt and the undeployed daily frontend stack for the daily profile lane.",
+  "completion": {
+    "mainline_sha": "84aae65b8294c194c4f89273a1b4039eb0a49ecd",
+    "pull_request": 529,
+    "candidate_head": "a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a",
+    "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
+    "evidence": {
+      "scheduled_lane_gates": ["professional_quality_gate", "frontend_release_gate", "release_candidate_gate"],
+      "lint": "22 errors -> 0 errors (68 warnings)",
+      "vendor_coupling": "vendor_internal_selector 109 -> 104; no baseline raise",
+      "quick_receipt": ".git/codex/evidence/ci.local.quick/a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a.json"
+    },
+    "residual": [
+      "list-surface local lane contract replay returns 401 on the 5180 stack (pre-existing environment debt; ablation-proven unrelated)",
+      "daily profile list-surface lane requires an externally deployed daily frontend stack"
+    ]
+  }
 }
