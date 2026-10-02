@@ -33,6 +33,7 @@ import type {
   ContractV2GlobalStatus,
   ContractV2LayoutType,
   ContractV2LayoutContract,
+  ContractV2Lifecycle,
   ContractV2Meta,
   ContractV2PageRenderMode,
   ContractV2PageInfo,
@@ -2208,6 +2209,26 @@ function decodeRuntimeContract(source: ContractV2Dictionary, issues: DecodeIssue
   };
 }
 
+function decodeLifecycleDefinition(
+  definition: ContractV2Dictionary,
+  issues: DecodeIssue[],
+): ContractV2Lifecycle['definition'] {
+  const publishedVersionRef = optionalStringField(
+    definition,
+    'publishedVersionRef',
+    'meta.lifecycle.definition',
+    issues,
+  );
+  return {
+    schemaId: requiredString(definition, 'schemaId', 'meta.lifecycle.definition', issues),
+    schemaVersion: requiredString(definition, 'schemaVersion', 'meta.lifecycle.definition', issues),
+    schemaSha256: requiredString(definition, 'schemaSha256', 'meta.lifecycle.definition', issues),
+    contractVersion: requiredString(definition, 'contractVersion', 'meta.lifecycle.definition', issues),
+    normativeStatus: requiredString(definition, 'normativeStatus', 'meta.lifecycle.definition', issues),
+    ...(publishedVersionRef === undefined ? {} : { publishedVersionRef }),
+  };
+}
+
 function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2Meta {
   rejectUnknownKeys(source, ['etag', 'snapshotId', 'traceId', 'requestId', 'sourceType', 'lifecycle', 'deliveryTrim'], 'meta', issues);
   const lifecycle = requiredRecord(source, 'lifecycle', 'meta', issues);
@@ -2220,7 +2241,7 @@ function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): Contra
     'lifecycleVersion', 'stage', 'definition', 'generation', 'runtime', 'integrity', 'authority',
   ], 'meta.lifecycle', issues);
   rejectUnknownKeys(definition, [
-    'schemaId', 'schemaVersion', 'schemaSha256', 'contractVersion', 'normativeStatus',
+    'schemaId', 'schemaVersion', 'schemaSha256', 'contractVersion', 'normativeStatus', 'publishedVersionRef',
   ], 'meta.lifecycle.definition', issues);
   rejectUnknownKeys(generation, [
     'generator', 'generatorVersion', 'sourceType', 'sourceSha256',
@@ -2240,13 +2261,7 @@ function decodeMeta(source: ContractV2Dictionary, issues: DecodeIssue[]): Contra
     lifecycle: {
       lifecycleVersion: requiredString(lifecycle, 'lifecycleVersion', 'meta.lifecycle', issues),
       stage: requiredString(lifecycle, 'stage', 'meta.lifecycle', issues),
-      definition: {
-        schemaId: requiredString(definition, 'schemaId', 'meta.lifecycle.definition', issues),
-        schemaVersion: requiredString(definition, 'schemaVersion', 'meta.lifecycle.definition', issues),
-        schemaSha256: requiredString(definition, 'schemaSha256', 'meta.lifecycle.definition', issues),
-        contractVersion: requiredString(definition, 'contractVersion', 'meta.lifecycle.definition', issues),
-        normativeStatus: requiredString(definition, 'normativeStatus', 'meta.lifecycle.definition', issues),
-      },
+      definition: decodeLifecycleDefinition(definition, issues),
       generation: {
         generator: requiredString(generation, 'generator', 'meta.lifecycle.generation', issues),
         generatorVersion: requiredString(generation, 'generatorVersion', 'meta.lifecycle.generation', issues),

@@ -40,9 +40,9 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 326,
+    "schemaFieldCount": 327,
     "renderedOrInteractionAuthorityCount": 209,
-    "validatedNonVisualAuthorityCount": 117,
+    "validatedNonVisualAuthorityCount": 118,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
@@ -714,6 +714,12 @@
     },
     {
       "path": "contractLifecycleDefinition.normativeStatus",
+      "classification": "validated_non_visual_authority",
+      "reason": "schema definition provenance",
+      "consumer": "decoder lifecycle guard"
+    },
+    {
+      "path": "contractLifecycleDefinition.publishedVersionRef",
       "classification": "validated_non_visual_authority",
       "reason": "schema definition provenance",
       "consumer": "decoder lifecycle guard"

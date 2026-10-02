@@ -555,3 +555,134 @@ precondition on the gate entry and points at `local.contract-snapshot.rebuild`.
 Re-baselining the 119 (`LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap`) would
 declare today's behaviour as the new reference. That is a contract-authority
 decision, not hygiene, so it was **not** taken here.
+
+
+## Owner topic (b): SLO keying by the published ui.business.config.contract version (2026-10-02)
+
+Owner decision restated: **fix the contract-projection defect and do not relax the
+acceptance assertion.** Keep the SLO grouped by the *applied published* contract
+version, derive it where it is already declared, and do not add a payment-model
+special case or let a `critical` flag override ACL, field-permission or a legitimate
+hidden rule.
+
+### Root cause / gap (verified before editing)
+
+`addons/smart_core/core/contract_slo_telemetry.py` already declares the optional
+`publishedVersionRef` inside `GROUPING_FIELDS`, so version-scoped aggregation was
+implemented and tested — but **no producer ever emitted it**, so every real delivery
+was aggregated with the field absent and the "by version" claim had no carrier.
+
+The applied published contract version co-varies with the delivery and is *already
+declared* in `governance.view_orchestration` / `source_trace.view_orchestration`
+(flat `business_config_contracts` plus the per-view summary
+`views.<view_type>.business_config_contracts`), written by
+`addons/smart_core/core/view_orchestrator.py` and
+`app_config_engine/services/assemblers/page_assembler.py:_inject_view_orchestration_summary`.
+The reference is therefore derivable at the single seal chokepoint with **zero
+call-site churn** — no new protocol, no new field on the delivery, no producer
+rewrite.
+
+### What changed
+
+- `addons/smart_core/core/view_orchestration_contract.py` — declared-carrier reader
+  only: `view_type_candidates` (list↔tree alias), `applied_business_config_contracts`,
+  `business_config_contract_ref`, `resolve_published_version_ref`, plus the
+  `BUSINESS_CONFIG_CONTRACT_MODEL` / `BUSINESS_CONFIG_CONTRACT_PUBLISHED_SOURCE_KIND`
+  constants. It reads *only* declared carriers (`governance`, `source_trace`,
+  `runtimeContract.governance`), prefers the matching `views.<view_type>` entry and
+  falls back to the flat list.
+- `addons/smart_core/core/contract_lifecycle.py` — `build_lifecycle_evidence(...,
+  published_version_ref="")` and `seal_unified_page_contract(...,
+  published_version_ref="")` add `definition["publishedVersionRef"]` **only when it is
+  non-empty**, so an unattributed delivery stays byte-identical and keeps the same
+  `contractSha256`. `UNIFIED_PAGE_SCHEMA_SHA256` regenerated through
+  `scripts/verify/contract_schema_declaration_sync.py` to
+  `204b8f6c4e3ea78800073811f4fd74846a3c33caa55655b62fdc9b171f613b94`.
+- `addons/smart_core/handlers/ui_contract_v2_authority.py` — private
+  `_delivered_view_type` / `_published_version_ref` helpers, resolved at the single
+  `seal_runtime_contract` chokepoint (source payload first, then the assembled
+  contract). File sha256 `68e182a26c26402e9f1822d9d48ba55c5301a6405c91f24615b93529872996de`.
+- `docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json` —
+  optional `contractLifecycleDefinition.properties.publishedVersionRef`
+  (`type: string`, `minLength: 1`), deliberately **not** in `required`; the
+  `lifecycleVersion` / `schemaVersion` / `contractVersion` consts are unchanged.
+- `scripts/verify/contract_v2_render_authority_matrix.py` +
+  `docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json`
+  — the new key is classified (regenerated: 327 fields, 0 unclassified).
+- `frontend/apps/web/src/app/contracts/v2/types.ts` + `schema.ts` — optional
+  `publishedVersionRef` on `ContractV2Lifecycle.definition` and a new
+  `decodeLifecycleDefinition()` using `optionalStringField`; the unknown-key
+  rejection still fails closed. File sha256
+  `74271214a1f53dbebace4dbb78bdb3978881ff8b87f0ac533e98d8e63649cfcc`.
+- `addons/smart_core/tests/test_contract_lifecycle.py` — 3 tests: absent ref is
+  omitted, blank ref is omitted, a ref is additive and preserves `contractSha256`
+  with a valid integrity block (8 tests total).
+- `scripts/verify/test_ui_contract_v2_slo_emission.py` — new
+  `PublishedVersionAttributionTest` (10 tests, 23 total) driven through the real
+  `seal_runtime_contract` chokepoint with an injected sink.
+- `frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts` — 3 declared policy
+  cases (attribute present; unattributed must not gain the ref; an undeclared
+  `definition` key still fails closed).
+
+### Reference string and the exclusion rule
+
+Natural, authority-carrying reference: `<model>:<id>@<version_no>`, e.g.
+`ui.business.config.contract:22@2`. Several applied published rows are sorted and
+joined with `,` so the identity is order-independent. Rows whose `source_kind` is not
+`published` (for example an id `0` `change_set_preview`) are **excluded**, so an
+unattributed delivery can never borrow a preview/edit-state contract identifier.
+
+### Evidence (all zero-non-zero, all recorded as receipts in the run)
+
+| layer | command | result |
+| --- | --- | --- |
+| L2 offline | `make verify.backend.contract_slo_telemetry.emission` | 23 tests OK (`slo_emission`) |
+| L2 offline | `make verify.backend.contract_lifecycle.authority` | 8 + 10 + 4 + 13 tests OK, guard `score 100`, `maturityLevel L4_governed_production_ready` (`contract_lifecycle_authority`) |
+| L2 frontend | `make verify.frontend.contract_v2_render_authority.unit` | PASS, 327 fields / 0 unclassified (`v2_render_authority`) |
+| L2 frontend | `make verify.frontend.contract_v2_runtime_policy.unit` | PASS, 12 declared cases (`fe_v2_runtime_policy`) |
+| L2 runtime | `make verify.backend.contract_slo_telemetry.runtime` | probe 32/32, host guard 9 tests OK (`slo_runtime`) |
+| L1 static | `make verify.frontend.typecheck.strict` | PASS, exit 0 (25.2s). No unittest count is printed by `vue-tsc`, so it is recorded here and in the log rather than as a receipt. |
+| L2 offline | `make verify.contract.catalog` | PASS, 16 tests (`contract_catalog`, see bookkeeping) |
+
+### Negative-first proofs (each restored byte-identical afterwards)
+
+- Neutering the `published_version_ref=_published_version_ref(...)` wiring at the seal
+  chokepoint fails 5 tests and errors 2 in `test_ui_contract_v2_slo_emission`, so the
+  attribution tests detect the removed behaviour rather than passing unconditionally.
+- Reverting the decoder's allowed key makes the runtime-policy test fail with
+  `meta.lifecycle.definition.publishedVersionRef is not allowed`, so the frontend half
+  fails closed on the new key being undeclared.
+
+### Snapshot-matrix impact measured as zero
+
+Only 1 of the 151 stored contract references (`ui_contract_v2_intent_admin.json`)
+contains a sealed `meta.lifecycle`, and 0 references contain a non-null
+`runtimeContract.governance.view_orchestration`. The new optional field therefore
+cannot move any matrix diff, so the 119 reference diffs recorded under topic (d) are
+untouched by this change and were not re-run for it.
+
+### Runtime half: what it proves and what it does not
+
+On the isolated profile `sc-contract-lifecycle-v1` / `sc_contract_lifecycle` the
+production handler emitted real `contractSlo` lines that the declaration consumer
+accepted unchanged: 3 observations, 0 rejected, `versionCount 2`, `successRate 1.0`,
+`integrityFailureRate 0.0`, and `publishedVersionRef` occurrences **0**. That equality
+with the pre-change aggregate is the point: an unattributed delivery still groups
+exactly as before, so the new key is purely additive.
+
+Runtime **attribution** is *not* yet exercised. The isolated fixture holds **zero**
+`ui.business.config.contract` rows (read-only query evidence in
+`.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/probe/q_published.py` -> `COUNT=0
+ALL=0`), so no real delivery can carry a published reference yet. Closing it needs a
+scoped P4 probe extension (publish one contract row -> deliver -> assert
+`identity.publishedVersionRef` -> restore); publishing also writes a
+`ui_business_config_mutation_audit` row, so it is new fixture authority and was **not**
+folded into this batch.
+
+### Bookkeeping
+
+The added test reference moved the tracked `ui.contract` `test_refs` counter
+**128 -> 129** in `docs/contract/exports/intent_catalog.json`. The catalog was
+regenerated by `contract.catalog.export` inside `verify.contract.catalog` and the
+guards validated the regenerated artifact in the same run, so the tracked export stays
+consistent with the tests that exist. `scene_catalog.json` is unchanged.

@@ -113,3 +113,41 @@ const unnamedTree = decodeContractV2Snapshot({ ...previewSnapshot, layoutContrac
 const { bindNode } = await import('../src/pages/contractForm/boundFormConfiguration');
 assert.equal(bindNode(unnamedTree[0]).expected.name, '', 'decode -> designer must preserve the unnamed native occurrence');
 console.log('[contract_v2_runtime_policy_test] unnamed node binding cases=1 passed');
+
+const definitionWithVersion = {
+  ...previewSnapshot.meta.lifecycle.definition,
+  publishedVersionRef: 'ui.business.config.contract:22@2',
+};
+const attributedSnapshot = decodeContractV2Snapshot({
+  ...previewSnapshot,
+  meta: {
+    ...previewSnapshot.meta,
+    lifecycle: { ...previewSnapshot.meta.lifecycle, definition: definitionWithVersion },
+  },
+});
+assert.equal(
+  attributedSnapshot.meta.lifecycle.definition.publishedVersionRef,
+  'ui.business.config.contract:22@2',
+  'a sealed delivery that names its published version must decode it',
+);
+const unattributedSnapshot = decodeContractV2Snapshot(previewSnapshot);
+assert.equal(
+  'publishedVersionRef' in unattributedSnapshot.meta.lifecycle.definition,
+  false,
+  'an unattributed delivery must not gain a published version ref from the decoder',
+);
+assert.throws(
+  () => decodeContractV2Snapshot({
+    ...previewSnapshot,
+    meta: {
+      ...previewSnapshot.meta,
+      lifecycle: {
+        ...previewSnapshot.meta.lifecycle,
+        definition: { ...definitionWithVersion, undeclaredDefinitionField: 'x' },
+      },
+    },
+  }),
+  /is not allowed/,
+  'an undeclared lifecycle definition field must still fail closed',
+);
+console.log('[contract_v2_runtime_policy_test] published version ref cases=3 passed');

@@ -76,13 +76,15 @@ def draft_contract() -> dict:
     }
 
 
-def seal(*, sink=None, source_sha_model="project.project", request_id="req-1", client_type="web_pc"):
+def seal(*, sink=None, source_payload=None, source_sha_model="project.project", request_id="req-1", client_type="web_pc"):
     """Seal through the real chokepoint and hand back what it delivered."""
     contract = draft_contract()
+    if source_payload is None:
+        source_payload = {"model": source_sha_model, "viewType": "list"}
     sealed = AUTHORITY.seal_runtime_contract(
         Owner(),
         contract,
-        {"model": source_sha_model, "viewType": "list"},
+        source_payload,
         "scene_contract",  # keeps the chokepoint off env-backed saved-search refresh
         request_id,
         "",
@@ -90,6 +92,32 @@ def seal(*, sink=None, source_sha_model="project.project", request_id="req-1", c
         sink=sink,
     )
     return sealed
+
+
+def orchestration_source(*, view_type="form", views=None, flat=None):
+    """Build a source payload shaped like the view-orchestration summary."""
+    payload = {"model": "project.project", "view_type": view_type}
+    orchestration = {"applied": bool(views or flat), "owner_layer": "business_view_orchestration"}
+    if views is not None:
+        orchestration["views"] = views
+    if flat is not None:
+        orchestration["business_config_contracts"] = flat
+    payload["governance"] = {"view_orchestration": orchestration}
+    return payload
+
+
+def contract_row(contract_id, version_no, *, source_kind="published", status="published"):
+    return {
+        "id": contract_id,
+        "name": "cfg_%s" % contract_id,
+        "version_no": version_no,
+        "status": status,
+        "source_kind": source_kind,
+    }
+
+
+def published_ref(sealed):
+    return sealed["meta"]["lifecycle"]["definition"].get("publishedVersionRef")
 
 
 class DeliveryBoundaryEmissionTest(unittest.TestCase):
@@ -165,6 +193,115 @@ class DeliveryBoundaryEmissionTest(unittest.TestCase):
                         bad, request_id="req-1", client_type="web_pc", sink=lambda _line: None
                     )
                 )
+
+
+class PublishedVersionAttributionTest(unittest.TestCase):
+    """The delivery names the published business-config version that governed it.
+
+    The resolver reads only the declared carrier the view-orchestration summary
+    writes, so these cases execute the real chokepoint and assert on the sealed
+    lifecycle and on what the emitter actually aggregated -- never on a literal
+    appearing in a source file.
+    """
+
+    def test_a_delivery_with_no_applied_contract_stays_unattributed(self):
+        sealed = seal(source_payload={"model": "project.project", "view_type": "form"})
+        self.assertNotIn("publishedVersionRef", sealed["meta"]["lifecycle"]["definition"])
+
+    def test_an_empty_orchestration_summary_stays_unattributed(self):
+        sealed = seal(source_payload=orchestration_source(views={"form": {"business_config_contracts": []}}))
+        self.assertNotIn("publishedVersionRef", sealed["meta"]["lifecycle"]["definition"])
+
+    def test_the_applied_published_version_is_named(self):
+        source = orchestration_source(views={"form": {"business_config_contracts": [
+            contract_row(22, 2), contract_row(115, 3),
+        ]}})
+        self.assertEqual(
+            published_ref(seal(source_payload=source)),
+            "ui.business.config.contract:115@3,ui.business.config.contract:22@2",
+        )
+
+    def test_a_preview_row_never_borrows_a_published_identity(self):
+        source = orchestration_source(views={"form": {"business_config_contracts": [
+            contract_row(0, 4, source_kind="change_set_preview", status="preview"),
+        ]}})
+        self.assertIsNone(published_ref(seal(source_payload=source)))
+
+    def test_only_the_published_rows_of_a_mixed_set_are_named(self):
+        source = orchestration_source(views={"form": {"business_config_contracts": [
+            contract_row(0, 9, source_kind="change_set_preview", status="preview"),
+            contract_row(22, 2),
+        ]}})
+        self.assertEqual(published_ref(seal(source_payload=source)), "ui.business.config.contract:22@2")
+
+    def test_row_order_does_not_change_the_identity(self):
+        rows = [contract_row(115, 3), contract_row(22, 2), contract_row(30, 7)]
+        forward = orchestration_source(views={"form": {"business_config_contracts": list(rows)}})
+        backward = orchestration_source(views={"form": {"business_config_contracts": list(reversed(rows))}})
+        self.assertEqual(
+            published_ref(seal(source_payload=forward)),
+            published_ref(seal(source_payload=backward)),
+        )
+
+    def test_another_views_rows_never_attribute_this_delivery(self):
+        source = orchestration_source(
+            view_type="form",
+            views={"search": {"business_config_contracts": [contract_row(22, 2)]}},
+        )
+        self.assertIsNone(published_ref(seal(source_payload=source)))
+
+    def test_a_collection_delivery_reads_its_declared_alias_entry(self):
+        source = orchestration_source(
+            view_type="list",
+            views={"tree": {"business_config_contracts": [contract_row(22, 2)]}},
+        )
+        self.assertEqual(published_ref(seal(source_payload=source)), "ui.business.config.contract:22@2")
+
+    def test_a_single_view_flat_entry_is_also_a_declared_carrier(self):
+        source = orchestration_source(flat=[contract_row(22, 2)])
+        self.assertEqual(published_ref(seal(source_payload=source)), "ui.business.config.contract:22@2")
+
+    def test_the_emitted_observation_carries_the_published_version(self):
+        source = orchestration_source(views={"form": {"business_config_contracts": [
+            contract_row(22, 2), contract_row(115, 3),
+        ]}})
+        lines = []
+        sealed = seal(source_payload=source, sink=lines.append)
+        observation = SLO.parse_observation_line(lines[0])
+        self.assertEqual(
+            observation["identity"][SLO.PUBLISHED_VERSION_FIELD],
+            sealed["meta"]["lifecycle"]["definition"]["publishedVersionRef"],
+        )
+
+    def test_two_published_versions_never_merge_into_one_slo_row(self):
+        def emission(version_no):
+            lines = []
+            seal(
+                source_payload=orchestration_source(views={"form": {"business_config_contracts": [
+                    contract_row(22, version_no),
+                ]}}),
+                sink=lines.append,
+            )
+            return SLO.parse_observation_line(lines[0])
+
+        report = SLO.aggregate_observations([emission(2), emission(3)])
+        self.assertEqual(report["versionCount"], 2)
+        self.assertEqual(
+            sorted(entry[SLO.PUBLISHED_VERSION_FIELD] for entry in report["versions"]),
+            ["ui.business.config.contract:22@2", "ui.business.config.contract:22@3"],
+        )
+
+    def test_an_unattributed_delivery_never_borrows_a_version(self):
+        lines = []
+        attributed_payload = orchestration_source(views={"form": {"business_config_contracts": [contract_row(22, 2)]}})
+        seal(source_payload=attributed_payload, sink=lines.append)
+        seal(source_payload={"model": "project.project", "view_type": "form"}, sink=lines.append)
+        report = SLO.aggregate_observations([SLO.parse_observation_line(line) for line in lines])
+        self.assertEqual(report["versionCount"], 2)
+        by_version = {entry.get(SLO.PUBLISHED_VERSION_FIELD): entry for entry in report["versions"]}
+        self.assertEqual(set(by_version), {None, "ui.business.config.contract:22@2"})
+        self.assertEqual(by_version[None]["observations"], 1)
+        self.assertEqual(by_version["ui.business.config.contract:22@2"]["observations"], 1)
 
 
 class BoundaryStructureTest(unittest.TestCase):

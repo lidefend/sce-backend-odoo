@@ -7,6 +7,7 @@ from typing import Any, Callable
 from ..core.contract_lifecycle import seal_unified_page_contract, verify_unified_page_contract_integrity
 from ..core import contract_slo_persistence as _slo_store
 from ..core.contract_slo_telemetry import build_observation, emit_observation_line
+from ..core.view_orchestration_contract import resolve_published_version_ref
 
 _logger = logging.getLogger(__name__)
 
@@ -186,6 +187,32 @@ def emit_delivery_observation(
         return False
 
 
+def _delivered_view_type(contract: dict[str, Any], source_payload: dict[str, Any]) -> str:
+    """Resolve the view type the sealed delivery is addressed at."""
+    page_info = contract.get("pageInfo") if isinstance(contract.get("pageInfo"), dict) else {}
+    body = source_payload if isinstance(source_payload, dict) else {}
+    return str(
+        page_info.get("viewType")
+        or body.get("view_type")
+        or body.get("viewType")
+        or ""
+    ).strip()
+
+
+def _published_version_ref(contract: dict[str, Any], source_payload: dict[str, Any]) -> str:
+    """Name the published business-config versions that governed this delivery.
+
+    The source payload is the authority the view orchestrator wrote the applied
+    contracts onto; the assembled contract mirrors the same summary, so it is
+    only consulted when the source declares none. Both are read through the
+    declared carrier helper, never by guessing a field path here.
+    """
+    view_type = _delivered_view_type(contract, source_payload)
+    return resolve_published_version_ref(source_payload, view_type) or resolve_published_version_ref(
+        contract, view_type
+    )
+
+
 def seal_runtime_contract(
     owner,
     contract: dict[str, Any],
@@ -214,6 +241,7 @@ def seal_runtime_contract(
         generator=owner.SOURCE_KIND,
         generator_version=owner.VERSION,
         source_authority=owner.source_authority_contract(),
+        published_version_ref=_published_version_ref(contract, source_payload),
     )
     # Every runtime delivery passes through here, so this is the one place that
     # observes the sealed result. The call is fail-open and returns a bool the
