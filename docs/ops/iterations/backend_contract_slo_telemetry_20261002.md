@@ -1,4 +1,4 @@
-# Backend Contract SLO Telemetry — Core (L5 gap 1)
+# Backend Contract SLO Telemetry — Core and Emission Boundary (L5 gap 1)
 
 Run: `.agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json`
 Branch: `fix/contract-slo-telemetry`
@@ -12,13 +12,15 @@ backend unified page contract lifecycle at L4 and lists three L5 gaps. The first
 is the missing contract-version SLO telemetry: success rate, degradation rate and
 integrity-failure rate aggregated per contract version.
 
-This batch delivers the **decision-independent core** of that feature and nothing
-else:
+These batches deliver the **decision-independent core** of that feature and the
+**sink-agnostic emission boundary** it needs, and nothing else:
 
 - the identity a delivery is aggregated under;
 - the outcome classification (`success` / `degraded` / `integrity_failure`);
 - the aggregation, with exact-sum counts and rates that are never fabricated for
-  an empty window.
+  an empty window;
+- a fail-open hand-off of a validated observation (or its canonical log line) to a
+  caller-supplied sink.
 
 ## Boundary
 
@@ -31,7 +33,8 @@ else:
 
 ## Exclusions
 
-- Emission at the runtime delivery boundary (touches `ui_contract_v2`).
+- Wiring the emission boundary to a real call site in `ui_contract_v2`, and
+  choosing the sink the runtime uses (structured log vs persisted read model).
 - Long-term persistence, trend reporting and any read intent.
 - Aggregating by the published `ui.business.config.contract` version number: the
   runtime lifecycle evidence does not carry it, so this batch keys on the
@@ -56,18 +59,35 @@ else:
     observations only; an empty input yields no version rows rather than
     fabricated zero rates, and malformed observations are counted and sampled
     (capped) instead of being silently dropped.
-- `scripts/verify/test_contract_slo_telemetry.py` — 18 offline tests.
+  - `emit_observation()` validates an observation and hands it to a
+    caller-supplied sink; it is fail-open (an unusable observation, a missing
+    sink and a raising sink all return `False` instead of propagating into the
+    delivery path), honours an explicit `False` rejection, and never reports the
+    delivery outcome.
+  - `observation_log_line()` / `parse_observation_line()` render and recover the
+    canonical single-line form (observation key + compact, key-sorted JSON), so a
+    line sink and a reader round-trip the same payload; an untrusted observation
+    has no line at all.
+  - `emit_observation_line()` is the same fail-open hand-off for line sinks.
+- `scripts/verify/test_contract_slo_telemetry.py` — 30 offline tests.
 - `make/dev_test.mk` — `verify.backend.contract_slo_telemetry[.unit]`.
 
 ### Evidence
 
 - `make ci.local.iteration` → PASS, `change_state=dirty`.
-- `make verify.backend.contract_slo_telemetry.unit` → PASS, 18 tests.
+- `make verify.backend.contract_slo_telemetry.unit` → PASS, 30 tests.
   Receipt `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/slo_core.json`
-  (log `logs/slo_core.log`).
-- Negative-first proof (`logs/negative_first.log`): removing the integrity-first
+  (log `logs/batch2_slo_core_unit.log`).
+- Negative-first proof, batch 1 (`logs/negative_first.log`): removing the integrity-first
   branch and the malformed-row outcome check makes 2 tests fail; the core was
   restored byte-identical (`diff` empty) and the suite returned 18/18 OK.
+- Negative-first proof, batch 2 (`logs/batch2_neuter_injected.log`): after
+  confirming the un-injected baseline at 30/30 OK, removing the
+  `_reject_reason` guard in `emit_observation` produced 5 failures and making the
+  fail-open `except` re-raise produced 1 error on the raising-sink test. The core
+  was restored and verified byte-identical
+  (`logs/batch2_baseline_sha256.txt`, `logs/batch2_restored.log`) before being
+  recorded.
 - The identity test seals a real contract through `contract_lifecycle` and reads
   the identity back from `meta.lifecycle`, so the SLO identity is bound to the
   emitted evidence rather than to a synthetic dictionary. The suite also asserts
@@ -75,10 +95,19 @@ else:
 
 ### Not delivered (deferred, deliberate)
 
-- Emission at the runtime delivery boundary and any long-term persistence or
-  trend read model.
+- The `ui_contract_v2` emission call site and the runtime sink choice; long-term
+  persistence or trend read model.
 - Contract-version keying by the published `ui.business.config.contract` version
   number (needs an additive lifecycle field; separate decision).
+
+### Blocked on authorization
+
+The runtime delivery path cannot be exercised from this worktree: `local.dev`
+mounts the primary worktree and the isolated contract-lifecycle environment is
+absent. Wiring the emission boundary needs (a) the `ui_contract_v2` call site,
+(b) the sink/persistence choice, and (c) an environment whose code mount belongs
+to this worktree. Until then the emission boundary stays offline-verified only,
+and the SLO gap is a definition, not telemetry.
 
 Consequently the L5 gap remains open: the L4/L5 statement in
 `docs/architecture/backend_contract_lifecycle_authority_v1.md` is intentionally

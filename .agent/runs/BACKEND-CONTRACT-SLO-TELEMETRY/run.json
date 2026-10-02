@@ -31,13 +31,13 @@
     }
   },
   "blockers": [
-    "Batch 1 (core) is complete and offline-verified: contract_slo_telemetry core + 18-test suite + registered target, receipt slo_core (18 tests).",
-    "Emission at the runtime delivery boundary, long-term persistence and trend reporting are not implemented; the L5 gap stays open and the L4/L5 statement is intentionally unchanged.",
+    "Batches 1-2 are complete and offline-verified: contract_slo_telemetry core (identity, classification, aggregation) plus the sink-agnostic fail-open emission boundary (emit_observation, canonical log line + parser, emit_observation_line) and a 30-test suite; receipt slo_core (30 tests).",
+    "The ui_contract_v2 emission call site, the runtime sink choice (structured log vs persisted read model) and long-term persistence/trend reporting are not implemented; the L5 gap stays open and the L4/L5 statement is intentionally unchanged.",
     "The runtime delivery path cannot be exercised from this worktree: local.dev mounts the primary worktree and the isolated contract-lifecycle environment is absent. Wiring emission needs an environment whose code mount belongs to this worktree.",
     "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
     "Deployment and version release stay unauthorized and separate from this batch status."
   ],
-  "next_exact_step": "Decide and authorize the emission batch: where the observation sink lives (structured log vs persisted read model), and in which environment the runtime delivery path can be exercised from this worktree. Until then the SLO gap is a definition, not telemetry.",
+  "next_exact_step": "Get authorization for the wiring batch: (a) the ui_contract_v2 emission call site, (b) the runtime sink (structured log vs persisted read model), (c) an environment whose code mount belongs to this worktree. Then wire, exercise the runtime delivery path and re-record. Until then the SLO gap is a definition, not telemetry.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
