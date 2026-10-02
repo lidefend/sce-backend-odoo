@@ -27,7 +27,10 @@
     "scripts/dev/",
     "docs/ops/iterations/",
     "docs/architecture/backend_contract_lifecycle_authority_v1.md",
-    "docs/architecture/backend_contract_lifecycle_authority_v1.en.md"
+    "docs/architecture/backend_contract_lifecycle_authority_v1.en.md",
+    "docs/contract/cases.yml",
+    "docs/contract/snapshots/",
+    "docs/contract/exports/intent_catalog.json"
   ],
   "environment": {
     "kind": "offline",
@@ -44,6 +47,19 @@
         "odoo": 8079
       },
       "entrypoint": "make verify.backend.contract_slo_telemetry.runtime"
+    },
+    "snapshot_authority": {
+      "note": "the catalog examples were captured on an isolated module-complete profile seeded read-only from the registered sc-local-dev / sc_dev_demo source; the existing local.dev profile is untouched",
+      "profile": "sc-contract-snapshot-v1",
+      "database": "sc_contract_snapshot",
+      "dbfilter": "^sc_contract_snapshot$",
+      "env_file": ".env.local.contract-snapshot",
+      "fixed_password": "scdevpass",
+      "ports": {
+        "nginx": 18091,
+        "odoo": 8080
+      },
+      "entrypoint": "make local.contract-snapshot.gate_contract"
     }
   },
   "checks": {
@@ -99,6 +115,28 @@
         "addons/smart_core/data/contract_slo_retention_cron.xml"
       ],
       "kind": "runtime"
+    },
+    "contract_catalog": {
+      "target": "verify.contract.catalog",
+      "inputs": [
+        "docs/contract/cases.yml",
+        "docs/contract/snapshots/",
+        "docs/contract/exports/intent_catalog.json",
+        "scripts/contract/export_catalogs.py",
+        "scripts/verify/intent_cases_integrity_guard.py",
+        "scripts/verify/intent_cases_catalog_guard.py",
+        "scripts/verify/intent_catalog_case_coverage_guard.py",
+        "scripts/verify/intent_catalog_inferred_guard.py",
+        "scripts/verify/intent_catalog_example_shape_guard.py",
+        "scripts/verify/intent_catalog_snapshot_reference_guard.py",
+        "scripts/verify/test_contract_catalog_paths.py",
+        "scripts/verify/test_contract_snapshot_principal.py",
+        "scripts/verify/test_contract_snapshot_execute_authority.py",
+        "scripts/verify/test_construction_intent_contribution_registry.py",
+        "addons/smart_core/handlers/",
+        "addons/smart_construction_core/handlers/"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
@@ -108,9 +146,10 @@
     "The slo_runtime receipt is head-bound but not auto-reusable: the reuse evaluator refuses runtime evidence without authoritative environment readback, so make agent.run.resume reports slo_runtime stale by design. Re-read the profile identity (project, database, dbfilter, ports) before reuse.",
     "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
     "Deployment and version release stay unauthorized and separate from this batch status; publication is on hold by owner instruction.",
-    "Known release-lane gap (recorded, not introduced by this branch): verify.contract.catalog regenerates docs/contract/exports/intent_catalog.json from the handler AST scan and requires every declared intent to have an authored intent.invoke case. The regenerated catalog flagged 15 pre-existing uncased intents (chatter.*, payment.request.*, project.boq.*, search.favorite.delete) whose handler files are untouched by this branch, so the gate was already red on baseline c2410190f; the new read intent smart_core.contract_slo.snapshot adds a 16th. The regenerated catalog was NOT committed and the tracked catalog was restored byte-identical, because committing inferred_example entries is exactly what the guard forbids. Closure is a separate repo-wide contract-completeness topic (author cases+snapshots), including deciding field determinism for the read intent, whose response carries live store counts."
+    "CLOSED (owner-authorized topic a): the verify.contract.catalog release-lane gap. Root cause was contract-projection incompleteness, not a product defect: 15 pre-existing declared intents plus the new read intent smart_core.contract_slo.snapshot had no authored intent.invoke case, so the exported entry fell back to inferred_example and the inferred guard rejected it. All 16 are now authored in one atomic batch (feat(dev) aee033674 adds the isolated module-complete snapshot profile; test(contract) ccd45a4ac adds the cases, the 16 baselines and the regenerated catalog). The guard was not relaxed. Determinism was locked by declaration consumption and observed behaviour, not by literal strings: data-bearing reads bind sc_test_admin (admin is a platform admin that only bypasses REQUIRED_GROUPS and has no construction model ACL), compare_mode=shape is used where real output carries wall-clock buckets, meta.elapsed_ms or freshly minted attachment ids, and write/gated intents record the structured refusal (NOT_FOUND / MISSING_PARAMS / CAPABILITY_DISABLED) instead of a mutation. Receipt: make verify.contract.catalog PASS on clean ccd45a4ac; the 16 new baselines were bootstrapped once and then re-verified strictly 16/16 PASS in a repeated run.",
+    "Recorded, not introduced by this branch: the tracked docs/contract/exports/intent_catalog.json and docs/contract/snapshots/* references were last regenerated at 666838f92 (2026-08-24, merge PR #283) and are still identical at the merge base 002b2c64a, so the tracked snapshot-matrix drift is baseline content. Regenerating the catalog therefore also re-derives pre-existing per-intent test_refs counters. verify.contract.catalog does not consume the snapshot comparison matrix (gate.contract / local.contract-snapshot.gate_contract); it only requires the referenced snapshot_file to exist, so the 16 authored examples close the catalog gate on their own and the full 151-case matrix diff inventory remains a separate pre-existing item."
   ],
-  "next_exact_step": "Commit the retention-carrier increment in layer boundaries (feat / test / docs), re-record the four receipts on the committed clean HEAD, then report the four-layer status. Delivered and verified: slo_core=33, slo_emission=11, slo_store=31 (offline), slo_runtime probe 32/32 + guard 9. Remaining, owned elsewhere: (a) verify.contract.catalog release-lane completeness for 16 uncased intents incl. smart_core.contract_slo.snapshot, which needs a seeded full-module profile (the isolated profile installs smart_core only, so 10 of the 16 cannot be exercised there) and is atomic - partial authoring would break the currently-passing intent_catalog_case_coverage_guard; (b) published ui.business.config.contract version keying; (c) signed supply-chain provenance and N-1/N+1 compatibility drills. Do not publish: owner hold 暂不发布.",
+  "next_exact_step": "Topic a is closed and committed (aee033674 feat(dev) isolated module-complete snapshot profile, ccd45a4ac test(contract) 16 authored cases + baselines + regenerated catalog). Receipts: slo_core=33, slo_emission=11, slo_store=31 (offline), slo_runtime probe 32/32 + guard 9, contract_catalog=PASS on clean ccd45a4ac, plus 16/16 strict snapshot PASS for the authored cases. Nothing further is required for the catalog topic. Remaining, owned elsewhere and NOT part of this topic: (b) published ui.business.config.contract version keying needs an additive lifecycle field; (c) signed supply-chain provenance and N-1/N+1 compatibility drills (the two remaining L5 gaps); (d) the pre-existing 151-case snapshot-matrix diff against the 666838f92 references, which is baseline content and out of scope for verify.contract.catalog. Do not publish: owner hold 暂不发布.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

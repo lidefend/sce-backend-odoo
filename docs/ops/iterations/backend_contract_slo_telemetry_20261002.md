@@ -356,3 +356,100 @@ Publication is on hold by owner instruction.
     would not snapshot deterministically as-is. This is repo-wide
     contract-completeness debt, not a defect introduced by the SLO telemetry
     code.
+
+## Catalog completeness closure (owner-authorized topic "a") — CLOSED
+
+The gap recorded immediately above is closed by authoring the missing contract
+examples. The verification assertion was **not** relaxed.
+
+### Root cause
+
+`verify.contract.catalog` regenerates the tracked
+`docs/contract/exports/intent_catalog.json` from the handler AST scan and then
+requires every declared intent to carry an authored `intent.invoke` case. An
+intent without one is exported with `inferred_example`, which
+`intent_catalog_inferred_guard.py` rejects. This is contract-projection
+completeness, not a product defect: the handlers exist and work, they simply had
+no authored contract example. The export is atomic, so all offenders had to be
+authored in one batch.
+
+### What was authored
+
+15 pre-existing intents plus `smart_core.contract_slo.snapshot`, which this
+branch added as a read intent and which was the 16th offender:
+
+`chatter.attachment.delete`, `chatter.followers.list`,
+`chatter.followers.update`, `chatter.message.delete`,
+`search.favorite.delete`, `smart_core.contract_slo.snapshot`,
+`payment.request.settlement.search`, `payment.request.settlement.preview`,
+`payment.request.add.settlement.lines`, `project.boq.export.request`,
+`project.boq.import.dangerous.preview`, `project.boq.import.dangerous.execute`,
+`project.boq.import.preview.fetch`, `project.boq.line.patch`,
+`project.overview.rich_text.patch`, `project.dashboard.chart.fetch`.
+
+Named handler files and consumed parameters were read from the handlers
+themselves, not from the earlier handoff note: the real names use the
+`project.boq.*` / `project.dashboard.*` prefixes, and
+`chatter.followers.update` takes `action ∈ {follow, unfollow}` (the note said
+add/remove).
+
+### Determinism policy (locked by declaration-consumption, not by string match)
+
+Every case is deterministic and side-effect free against the seeded snapshot
+profile:
+
+- reads that return real data bind `sc_test_admin`, the fixture user that holds
+  the construction capability groups. `admin` is a platform admin and only
+  bypasses `REQUIRED_GROUPS`; it has no construction model ACL, so it produced
+  raw `AccessError` 500s for `sc.settlement.order`, `project.boq.version`,
+  `project.boq.import.batch` and `project.boq.line`.
+- `compare_mode=shape` is used where the payload carries wall-clock buckets
+  (`smart_core.contract_slo.snapshot`), `meta.elapsed_ms`
+  (`payment.request.settlement.preview`,
+  `payment.request.add.settlement.lines`) or freshly minted attachment ids
+  (`project.boq.export.request`). Those fields are real contract output and
+  cannot be frozen as literals.
+- write and gated intents either use a non-existent id or carry
+  `allow_error_response`, so the recorded contract is the structured refusal
+  (`*_NOT_FOUND`, `MISSING_PARAMS`, `CAPABILITY_DISABLED`) rather than a
+  mutation. The `project.boq.import.dangerous.*` pair and
+  `project.overview.rich_text.patch` record their feature-flag-off gate, which
+  is the deterministic current state of the seeded profile; the flag is not
+  flipped, so no runtime configuration authority is introduced.
+
+### Evidence
+
+- `make verify.contract.catalog` → **PASS** on the clean commit `ccd45a4ac`
+  (integrity, catalog, case-coverage, inferred, example-shape and
+  snapshot-reference guards, plus 13 contract snapshot-principal /
+  execute-authority / path tests).
+- The 16 new baselines were bootstrapped once
+  (`LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap`) and then re-verified
+  **strictly** in a repeated run: **16/16 PASS**, which is what proves the
+  determinism policy above rather than a single lucky capture.
+- Case authoring was accepted only after the same 16 were confirmed
+  reproducible: an initial run showed 4 non-deterministic cases
+  (`elapsed_ms`, trend bucket timestamps, attachment id/digest drift), which
+  drove the `shape` decisions above.
+
+### Pre-existing drift, bound to identity (not introduced here)
+
+- The tracked `docs/contract/exports/intent_catalog.json` and the tracked
+  `docs/contract/snapshots/*` references were last regenerated at `666838f92`
+  (2026-08-24, merge PR #283) and are still **identical at the merge base**
+  `002b2c64a` (`git diff --stat 002b2c64a HEAD -- <path>` is empty). The
+  references are therefore baseline content and their drift predates this
+  branch.
+- Regenerating the catalog also re-derives per-intent `test_refs` counters; that
+  delta (22 changed lines) is the same pre-existing regeneration effect, not a
+  new semantic change. Committing the freshly generated artifact is what makes
+  the guard reproducible for other executors.
+
+### Scope boundary
+
+`verify.contract.catalog` does not consume the snapshot comparison matrix
+(`gate.contract` / `local.contract-snapshot.gate_contract`); it only requires the
+referenced `snapshot_file` to exist. Authoring the 16 examples therefore closes
+the previously-red catalog gate on its own. The full 151-case snapshot matrix
+diff inventory against the stale `666838f92` references is a separate,
+pre-existing item and is not part of this closure.
