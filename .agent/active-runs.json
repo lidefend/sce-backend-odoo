@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "fix/workspace-closure-ledger": ".agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json"
-  }
+  "branches": {}
 }
