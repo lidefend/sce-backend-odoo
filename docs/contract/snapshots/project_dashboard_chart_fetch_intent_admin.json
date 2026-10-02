@@ -1,0 +1,32 @@
+{
+  "case": "project_dashboard_chart_fetch_intent_admin",
+  "trace_id": "b972c6fb-5ba3-46a0-914a-bbe5df2c2870",
+  "exported_at": "2026-10-02T02:47:40Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "schema": "sc.visualization.chart.v1",
+    "chart_key": "project.cost.structure",
+    "chart_type": "bar",
+    "title": "成本结构（预算 vs 实际）",
+    "unit": "CNY",
+    "readonly": true,
+    "series": [],
+    "safe_degradation": {
+      "chart_not_registered_policy": "未登记 chart_key 以结构化错误降级，前端须可渲染通用空态"
+    }
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

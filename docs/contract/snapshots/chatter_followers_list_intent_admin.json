@@ -1,0 +1,78 @@
+{
+  "case": "chatter_followers_list_intent_admin",
+  "trace_id": "47d51aec-eac0-4e78-9329-864e5f9becdc",
+  "exported_at": "2026-10-02T02:46:40Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "raw": [
+      {
+        "items": [
+          {
+            "partner_id": 67,
+            "name": "Demo-全能力",
+            "email": "",
+            "is_current_user": false
+          },
+          {
+            "partner_id": 3,
+            "name": "Administrator",
+            "email": "admin@example.com",
+            "is_current_user": true
+          }
+        ],
+        "count": 2,
+        "is_following": true,
+        "can_follow": false,
+        "can_unfollow": true,
+        "source_authority": {
+          "kind": "odoo_collaboration_follower_proxy",
+          "authority": "mail.followers",
+          "authorities": [
+            "mail.followers",
+            "mail.thread",
+            "res.partner",
+            "odoo.orm",
+            "ir.rule",
+            "record_context_model"
+          ],
+          "projection_only": true,
+          "write_proxy": false,
+          "no_business_fact_authority": true,
+          "runtime_carrier": "chatter.followers.list"
+        }
+      },
+      {
+        "source_authority": {
+          "kind": "odoo_collaboration_follower_proxy",
+          "authority": "mail.followers",
+          "authorities": [
+            "mail.followers",
+            "mail.thread",
+            "res.partner",
+            "odoo.orm",
+            "ir.rule",
+            "record_context_model"
+          ],
+          "projection_only": true,
+          "write_proxy": false,
+          "no_business_fact_authority": true,
+          "runtime_carrier": "chatter.followers.list"
+        }
+      }
+    ]
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

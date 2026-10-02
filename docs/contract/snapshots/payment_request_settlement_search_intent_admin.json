@@ -1,0 +1,195 @@
+{
+  "case": "payment_request_settlement_search_intent_admin",
+  "trace_id": "fd358a5d-19a8-40a6-a662-b8df6c3e6f3f",
+  "exported_at": "2026-10-02T02:47:01Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "sc_test_admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "settlements": [
+      {
+        "id": 34,
+        "name": "SET-DEMO-PJ-INIT-01",
+        "display_name": "专业分包结算 / 演示项目 · 立项待完善 / 演示分包 · 桥梁施工队 / 演示项目 · 立项待完善-分包合同 / ¥240,000.00 / SET-DEMO-PJ-INIT-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 76,
+        "contract_name": "演示项目 · 立项待完善-分包合同（CONOUT2600040 / 演示项目 · 立项待完善 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 33,
+        "name": "SET-DEMO-PJ-TENDER-01",
+        "display_name": "专业分包结算 / 演示项目 · 市政道路提升工程 / 演示分包 · 桥梁施工队 / 演示项目 · 市政道路提升工程-分包合同 / ¥240,000.00 / SET-DEMO-PJ-TENDER-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 74,
+        "contract_name": "演示项目 · 市政道路提升工程-分包合同（CONOUT2600039 / 演示项目 · 市政道路提升工程 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 32,
+        "name": "SET-DEMO-PJ-STAGE-CLOSED-01",
+        "display_name": "专业分包结算 / 演示项目 · 归档阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 归档阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-CLOSED-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 72,
+        "contract_name": "演示项目 · 归档阶段-分包合同（CONOUT2600038 / 演示项目 · 归档阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 31,
+        "name": "SET-DEMO-PJ-STAGE-WARRANTY-01",
+        "display_name": "专业分包结算 / 演示项目 · 质保阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 质保阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-WARRANTY-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 70,
+        "contract_name": "演示项目 · 质保阶段-分包合同（CONOUT2600037 / 演示项目 · 质保阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 30,
+        "name": "SET-DEMO-PJ-STAGE-DONE-01",
+        "display_name": "专业分包结算 / 演示项目 · 完工阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 完工阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-DONE-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 68,
+        "contract_name": "演示项目 · 完工阶段-分包合同（CONOUT2600036 / 演示项目 · 完工阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 29,
+        "name": "SET-DEMO-PJ-STAGE-CLOSING-01",
+        "display_name": "专业分包结算 / 演示项目 · 结算阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 结算阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-CLOSING-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 66,
+        "contract_name": "演示项目 · 结算阶段-分包合同（CONOUT2600035 / 演示项目 · 结算阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 28,
+        "name": "SET-DEMO-PJ-STAGE-PAUSE-01",
+        "display_name": "专业分包结算 / 演示项目 · 暂停阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 暂停阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-PAUSE-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 64,
+        "contract_name": "演示项目 · 暂停阶段-分包合同（CONOUT2600034 / 演示项目 · 暂停阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 27,
+        "name": "SET-DEMO-PJ-STAGE-RUN-01",
+        "display_name": "专业分包结算 / 演示项目 · 在建阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 在建阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-RUN-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 62,
+        "contract_name": "演示项目 · 在建阶段-分包合同（CONOUT2600033 / 演示项目 · 在建阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 26,
+        "name": "SET-DEMO-PJ-STAGE-DRAFT-01",
+        "display_name": "专业分包结算 / 演示项目 · 立项阶段 / 演示分包 · 桥梁施工队 / 演示项目 · 立项阶段-分包合同 / ¥240,000.00 / SET-DEMO-PJ-STAGE-DRAFT-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 60,
+        "contract_name": "演示项目 · 立项阶段-分包合同（CONOUT2600032 / 演示项目 · 立项阶段 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      },
+      {
+        "id": 25,
+        "name": "SET-DEMO-PJ-EXEC-01",
+        "display_name": "专业分包结算 / 演示项目 · 城市快速路提升工程 / 演示分包 · 桥梁施工队 / 演示项目 · 城市快速路提升工程-分包合同 / ¥240,000.00 / SET-DEMO-PJ-EXEC-01",
+        "amount_total": 400000.0,
+        "currency": {
+          "id": 6,
+          "name": "CNY",
+          "symbol": "¥",
+          "decimal_places": 2,
+          "rounding": 0.01
+        },
+        "contract_id": 58,
+        "contract_name": "演示项目 · 城市快速路提升工程-分包合同（CONOUT2600031 / 演示项目 · 城市快速路提升工程 / 演示分包 · 桥梁施工队）",
+        "partner_name": "演示分包 · 桥梁施工队",
+        "line_count": 2
+      }
+    ],
+    "count": 10
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

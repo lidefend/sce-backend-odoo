@@ -1,0 +1,65 @@
+{
+  "case": "chatter_followers_update_intent_admin",
+  "trace_id": "a055ad4c-ee49-44e0-b3f8-069d2cad7adf",
+  "exported_at": "2026-10-02T02:46:44Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "raw": [
+      {
+        "result": {
+          "action": "follow",
+          "partner_id": 3,
+          "is_following": true
+        },
+        "source_authority": {
+          "kind": "odoo_collaboration_follower_proxy",
+          "authority": "mail.followers",
+          "authorities": [
+            "mail.followers",
+            "mail.thread",
+            "res.partner",
+            "odoo.orm",
+            "ir.rule",
+            "record_context_model"
+          ],
+          "projection_only": false,
+          "write_proxy": true,
+          "no_business_fact_authority": true,
+          "runtime_carrier": "chatter.followers.update"
+        }
+      },
+      {
+        "source_authority": {
+          "kind": "odoo_collaboration_follower_proxy",
+          "authority": "mail.followers",
+          "authorities": [
+            "mail.followers",
+            "mail.thread",
+            "res.partner",
+            "odoo.orm",
+            "ir.rule",
+            "record_context_model"
+          ],
+          "projection_only": false,
+          "write_proxy": true,
+          "no_business_fact_authority": true,
+          "runtime_carrier": "chatter.followers.update"
+        }
+      }
+    ]
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

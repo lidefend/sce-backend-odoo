@@ -1,0 +1,47 @@
+{
+  "case": "chatter_message_delete_intent_admin",
+  "trace_id": "25deccb7-7951-46cf-8525-05ac6cf1ddbb",
+  "exported_at": "2026-10-02T02:46:48Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "ok": false,
+    "error": {
+      "code": 404,
+      "message": "消息不存在或不属于当前记录"
+    },
+    "code": 404,
+    "meta": {
+      "source_authority": {
+        "kind": "odoo_collaboration_message_delete_proxy",
+        "authority": "mail.message",
+        "authorities": [
+          "mail.message",
+          "odoo.orm",
+          "ir.rule",
+          "record_context_model"
+        ],
+        "projection_only": false,
+        "write_proxy": true,
+        "no_business_fact_authority": true,
+        "runtime_carrier": "chatter.message.delete"
+      }
+    }
+  },
+  "error": {
+    "code": 404,
+    "message": "消息不存在或不属于当前记录"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

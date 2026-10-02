@@ -1,0 +1,50 @@
+{
+  "case": "search_favorite_delete_intent_admin",
+  "trace_id": "0935680f-4e54-402d-98fd-4b7ce9ab2d53",
+  "exported_at": "2026-10-02T02:46:52Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "ok": false,
+    "error": {
+      "code": 404,
+      "message": "收藏不存在或当前用户无权删除"
+    },
+    "meta": {
+      "source_kind": "odoo_filter_write_proxy",
+      "source_authorities": [
+        "ir.filters",
+        "app.search.config",
+        "ir.model.access"
+      ],
+      "source_authority": {
+        "kind": "odoo_filter_write_proxy",
+        "authorities": [
+          "ir.filters",
+          "app.search.config",
+          "ir.model.access"
+        ],
+        "projection_only": true,
+        "write_proxy": true,
+        "no_business_fact_authority": true,
+        "runtime_carrier": "search.favorite.delete"
+      }
+    }
+  },
+  "error": {
+    "code": 404,
+    "message": "收藏不存在或当前用户无权删除"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}
