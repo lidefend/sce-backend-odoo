@@ -27,8 +27,9 @@ emission boundary**, the **runtime delivery call site**, and a governed
 - a runtime probe that drives real `ui.contract.v2` deliveries through the
   production handler on the authorized isolated profile and reads the
   `contractSlo` line the production sink actually emits;
-- a durable observation store, a retention horizon, and a per-version trend read
-  model exposed through a read intent.
+- a durable observation store, a retention horizon **with its scheduled sweep**
+  (an active daily cron, not just a declared horizon), and a per-version trend
+  read model exposed through a read intent.
 
 ## Boundary
 
@@ -135,6 +136,18 @@ owns.
   lifecycle identity as columns, `outcome`, `observed_at`, `latency_ms`,
   `client_type`, `request_id`, `company_id`, plus version/time composite indexes.
   Registered in `models/__init__.py` with read-for-user / write-for-admin ACLs.
+  It also exposes `cron_prune()`, the scheduled half of the retention horizon:
+  the horizon was declared but nothing invoked it, so the store grew without
+  bound once persistence was on. The sweep is `@api.model`, delegates to the
+  pure `prune_observations()`, stays fail-open, and deliberately does **not**
+  gate on `persist_enabled` (rows written while it was on must still age out
+  after it is switched off).
+- `addons/smart_core/data/contract_slo_retention_cron.xml` — the carrier: one
+  active daily `ir.cron` (`SC Contract SLO Observation Prune`) targeting this
+  model, loaded by the manifest after the ACLs it depends on. It ships active
+  like the existing GC cron (`cron_signup_throttle_gc`), because it is a cheap
+  indexed delete that is a no-op on an empty store and must not silently drift
+  off on upgrade.
 - `addons/smart_core/core/contract_slo_persistence.py` — the second half of the
   gap. Pure, offline-verifiable parts: `row_values()`/`observation_from_row()`
   (exact identity round trip, and an unusable row reads back as unreadable rather
@@ -191,14 +204,29 @@ owns.
   is caught one layer deeper in `emit_observation_line`, whose own fail-open was
   already proven load-bearing in batch 2.
 - Receipts `slo_core` (33 tests), `slo_emission` (11 tests) and `slo_store`
-  (22 tests) all resolve as `reusable` under `make agent.run.resume`.
-- `make verify.backend.contract_slo_telemetry.persistence` → PASS, 22 tests.
+  (31 tests) all resolve as `reusable` under `make agent.run.resume`.
+- `make verify.backend.contract_slo_telemetry.persistence` → PASS, 31 tests
+  (22 persistence + 9 retention-cron wiring).
   Receipt `.runtime/agent-runs/BACKEND-CONTRACT-SLO-TELEMETRY/slo_store.json`
   (log `logs/slo_store.log`). The suite covers the identity round trip, an
   unusable row reading back as unreadable rather than as a guessed identity,
   half-open bucket windows, single-bucket placement with an `unplacedObservations`
   counter, the retention cutoff, and asserts the persistence module imports no
   `odoo` module.
+- Retention-carrier lock, `scripts/verify/test_contract_slo_retention_cron.py`
+  (9 tests): the cron record must target the model derived from the model file's
+  own `_name` (so a rename cannot orphan the cron), call a method the model
+  actually defines, be active with a bounded interval, be loaded by the manifest
+  after the ACLs, delegate to the pure `prune_observations()`, stay fail-open and
+  ignore the persist switch. These pin declaration *consumption*, not the
+  presence of a file name.
+- Negative-first proof, retention carrier
+  (`logs/slo_retention_negative_first.log`): after confirming the un-injected
+  baseline at 9/9 OK, four separate injections each produced exactly one failure
+  — cron shipped inactive, cron data file dropped from the manifest, cron
+  pointing at another model, and the sweep no longer delegating to the pure
+  helper. The three sources were restored byte-identical
+  (`c686ed77…`, `b255b220…`, `0dd7ca53…`) and the suite returned 9/9 OK.
 - Runtime emission, on the isolated profile (`local.contract-lifecycle` stack:
   `sc-contract-lifecycle-v1-{odoo,db,redis,nginx}-1`, database
   `sc_contract_lifecycle`, `smart_core` installed, my worktree's `addons`
@@ -219,7 +247,7 @@ owns.
   environment readback, so `make agent.run.resume` reports `slo_runtime` stale by
   design).
 - Runtime persistence, same run: the module was upgraded to
-  `17.0.1.1.13` (`make local.contract-lifecycle.upgrade MODULE=smart_core`), which
+  `17.0.1.1.14` (`make local.contract-lifecycle.upgrade MODULE=smart_core`), which
   created the store table (`0` rows at upgrade time) and registered both ACL
   rows. With the store enabled the production sink wrote exactly one row per
   delivery (`3` rows for `3` deliveries, `0` rejected); the row identity
@@ -230,6 +258,25 @@ owns.
   prune keeps the fresh rows, and the probe restored the original
   `smart_core.contract_slo.persist_enabled` value (`None`, i.e. default off) on
   exit.
+- Runtime retention carrier, same probe (now **32/32 checks**, guard **9 tests**):
+  the shipped cron exists, is active, targets `sc.contract.slo.observation` and
+  calls `model.cron_prune()`. Three rows were planted — one 90 days old, one 29
+  days old and one fresh — and the sweep removed exactly the one past the 30-day
+  horizon while keeping the other two, so "deletes the old rows" cannot be
+  satisfied by "deletes every row". A second sweep returned 0, and the planted
+  rows were cleaned up. Readback confirmed the store has zero rows older than the
+  horizon afterwards.
+- Negative-first proof, runtime retention
+  (`logs/slo_retention_runtime_negative_first.log`): after the un-injected
+  32/32 baseline, making `cron_prune()` a no-op failed exactly
+  `retention_sweep_removes_only_rows_past_the_horizon` (1 probe check) plus the
+  guard's retention test; the model file was restored byte-identical
+  (`0dd7ca53…`) and the very next run returned 32/32 with no manual cleanup.
+  That last part is a fix, not a coincidence: the first attempt at this proof
+  left the planted stale row behind and poisoned the *next* run's "prune keeps
+  the fresh rows" check, so the probe's planted-row cleanup is now unconditional
+  (`finally`), and the injection was re-run to confirm the residue cannot
+  survive a failing sweep.
 - Negative-first proof, runtime half: after confirming the un-injected baseline
   emitted a valid `success` line, injecting `return False` at the top of
   `emit_delivery_observation` produced zero `contractSlo` lines while the
@@ -276,7 +323,10 @@ The runtime follow-up ran as one command
 
 Both halves of this gap are now proven: emission is verified at runtime and
 retention is delivered as a durable store, a retention horizon and a
-per-version trend read model, all verified on the isolated profile. The
+per-version trend read model, all verified on the isolated profile. The horizon
+is now *enforced* by a shipped active cron rather than merely declared: before
+this increment it had no carrier at all, which is why the store had grown
+unbounded. The
 **overall** L5 maturity claim is nevertheless intentionally unchanged, because
 `docs/architecture/backend_contract_lifecycle_authority_v1.md` still lists
 signature-level supply-chain provenance and N-1/N+1 automated compatibility

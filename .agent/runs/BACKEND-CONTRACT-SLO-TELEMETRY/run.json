@@ -13,11 +13,13 @@
     "addons/smart_core/handlers/ui_contract_v2_authority.py",
     "addons/smart_core/handlers/contract_slo_snapshot.py",
     "addons/smart_core/models/",
+    "addons/smart_core/data/contract_slo_retention_cron.xml",
     "addons/smart_core/security/ir.model.access.csv",
     "addons/smart_core/__manifest__.py",
     "scripts/verify/test_contract_slo_telemetry.py",
     "scripts/verify/test_ui_contract_v2_slo_emission.py",
     "scripts/verify/test_contract_slo_persistence.py",
+    "scripts/verify/test_contract_slo_retention_cron.py",
     "scripts/verify/contract_slo_telemetry_runtime_probe.py",
     "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
     "make/dev_test.mk",
@@ -71,7 +73,11 @@
         "addons/smart_core/core/contract_slo_telemetry.py",
         "addons/smart_core/core/contract_slo_persistence.py",
         "scripts/verify/test_contract_slo_persistence.py",
-        "make/dev_test.mk"
+        "make/dev_test.mk",
+        "addons/smart_core/models/contract_slo_observation.py",
+        "addons/smart_core/data/contract_slo_retention_cron.xml",
+        "addons/smart_core/__manifest__.py",
+        "scripts/verify/test_contract_slo_retention_cron.py"
       ],
       "kind": "offline"
     },
@@ -89,7 +95,8 @@
         "scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py",
         "scripts/ops/odoo_shell_exec.sh",
         "make/dev_test.mk",
-        "make/dev.mk"
+        "make/dev.mk",
+        "addons/smart_core/data/contract_slo_retention_cron.xml"
       ],
       "kind": "runtime"
     }
@@ -97,13 +104,13 @@
   "blockers": [
     "Batches 1-5 verified. Offline: the contract_slo_telemetry core (identity, version-scoped aggregation) receipt slo_core=33 reusable; the fail-open sink-agnostic emission boundary and the runtime delivery call site at the single seal_runtime_contract chokepoint receipt slo_emission=11 reusable. Runtime: on the authorized isolated profile sc-contract-lifecycle-v1 / sc_contract_lifecycle the production handler emitted real contractSlo lines (probe 15/15 checks) that the declaration consumer accepted unchanged (aggregate 3 observations, 0 rejected, 2 identities, successRate 1.0, integrityFailureRate 0.0); host guard 5 tests.",
     "Negative-first holds at both layers: offline the injected sink is detected; at runtime neutering emit_delivery_observation produced zero contractSlo lines while the delivery still succeeded (fail-open) and failed 10 probe checks / 3 guard tests, then the source was restored byte-identical (sha256 e8131205...).",
-    "L5 gap 1 is closed for this workstream: durable persistence (model sc.contract.slo.observation, retention horizon, prune) and a per-version trend read model exposed through the read intent smart_core.contract_slo.snapshot are delivered and runtime-verified on the isolated profile (module upgraded to 17.0.1.1.13; 3 deliveries -> 3 rows, 0 rejected, identity round-trip, trend places all, read intent store=3 accepted=3, original persist_enabled restored). The overall L4->L5 statement is still intentionally unchanged because the blueprint lists signature-level supply-chain provenance and N-1/N+1 automated compatibility drills as the remaining gaps; only the SLO telemetry/trend item is closed there.",
+    "L5 gap 1 is closed for this workstream: durable persistence (model sc.contract.slo.observation), an ENFORCED retention horizon (the horizon had no carrier, so the store grew unbounded; it now has an active daily ir.cron targeting the model and delegating to the pure prune, verified by planting rows at 90/29/0 days and proving only the row past the horizon is removed) and a per-version trend read model exposed through the read intent smart_core.contract_slo.snapshot are delivered and runtime-verified on the isolated profile (module upgraded to 17.0.1.1.14; probe 32/32 checks + 9 guard tests; 3 deliveries -> 3 rows, 0 rejected, identity round-trip, trend places all, read intent store=3 accepted=3, original persist_enabled restored). The overall L4->L5 statement is still intentionally unchanged because the blueprint lists signature-level supply-chain provenance and N-1/N+1 automated compatibility drills as the remaining gaps; only the SLO telemetry/trend item is closed there.",
     "The slo_runtime receipt is head-bound but not auto-reusable: the reuse evaluator refuses runtime evidence without authoritative environment readback, so make agent.run.resume reports slo_runtime stale by design. Re-read the profile identity (project, database, dbfilter, ports) before reuse.",
     "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
     "Deployment and version release stay unauthorized and separate from this batch status; publication is on hold by owner instruction.",
     "Known release-lane gap (recorded, not introduced by this branch): verify.contract.catalog regenerates docs/contract/exports/intent_catalog.json from the handler AST scan and requires every declared intent to have an authored intent.invoke case. The regenerated catalog flagged 15 pre-existing uncased intents (chatter.*, payment.request.*, project.boq.*, search.favorite.delete) whose handler files are untouched by this branch, so the gate was already red on baseline c2410190f; the new read intent smart_core.contract_slo.snapshot adds a 16th. The regenerated catalog was NOT committed and the tracked catalog was restored byte-identical, because committing inferred_example entries is exactly what the guard forbids. Closure is a separate repo-wide contract-completeness topic (author cases+snapshots), including deciding field determinism for the read intent, whose response carries live store counts."
   ],
-  "next_exact_step": "Report the four-layer status. Delivered and verified at the committed clean HEAD: slo_core=33, slo_emission=11, slo_store=22 (reusable receipts, declared inputs unchanged); slo_runtime probe 24/24 + 8 guard tests with the receipt re-anchored after each content change (docs-only commits do not invalidate its declared inputs); module upgraded to 17.0.1.1.13 on the isolated profile sc-contract-lifecycle-v1 / sc_contract_lifecycle. Remaining, owned elsewhere: (a) verify.contract.catalog release-lane completeness for 16 uncased intents incl. smart_core.contract_slo.snapshot; (b) published ui.business.config.contract version keying; (c) signed supply-chain provenance and N-1/N+1 compatibility drills. Do not publish: owner hold 暂不发布.",
+  "next_exact_step": "Commit the retention-carrier increment in layer boundaries (feat / test / docs), re-record the four receipts on the committed clean HEAD, then report the four-layer status. Delivered and verified: slo_core=33, slo_emission=11, slo_store=31 (offline), slo_runtime probe 32/32 + guard 9. Remaining, owned elsewhere: (a) verify.contract.catalog release-lane completeness for 16 uncased intents incl. smart_core.contract_slo.snapshot, which needs a seeded full-module profile (the isolated profile installs smart_core only, so 10 of the 16 cannot be exercised there) and is atomic - partial authoring would break the currently-passing intent_catalog_case_coverage_guard; (b) published ui.business.config.contract version keying; (c) signed supply-chain provenance and N-1/N+1 compatibility drills. Do not publish: owner hold 暂不发布.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
