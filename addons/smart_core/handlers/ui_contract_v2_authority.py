@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
 
-from ..core.contract_lifecycle import seal_unified_page_contract
+from ..core.contract_lifecycle import seal_unified_page_contract, verify_unified_page_contract_integrity
+from ..core.contract_slo_telemetry import build_observation, emit_observation_line
+
+_logger = logging.getLogger(__name__)
 
 REASON_ACTION_GROUP_ACCESS_DENIED = "ACTION_GROUP_ACCESS_DENIED"
 REASON_SCENE_ACTION_BINDING_INVALID = "SCENE_ACTION_BINDING_INVALID"
@@ -120,6 +124,47 @@ def resolve_trace_id(context: Any, meta: Any = None) -> str:
     ).strip()
 
 
+def _log_observation(line: str) -> None:
+    _logger.info(line)
+
+
+def emit_delivery_observation(
+    sealed: Any,
+    *,
+    request_id: str,
+    client_type: str,
+    sink: Callable[[str], Any] | None = None,
+    latency_ms: Any = None,
+) -> bool:
+    """Emit the contract SLO observation for one sealed runtime delivery.
+
+    The seal is re-verified here, so ``integrityFailureRate`` reports a real
+    re-verification result instead of an assumed success; a delivery whose seal
+    cannot be re-verified is never reported as a healthy success. The default
+    sink is the module logger's structured line, and a caller may supply another
+    one.
+
+    Emission is fail-open: telemetry is secondary to the delivery it measures,
+    so every failure path returns ``False`` and nothing is raised into the
+    delivery. An unreadable lifecycle means there is no identity to aggregate
+    under, so nothing is emitted rather than something guessed.
+    """
+    try:
+        meta = sealed.get("meta") if isinstance(sealed, dict) else None
+        lifecycle = meta.get("lifecycle") if isinstance(meta, dict) else None
+        integrity_ok, _reason = verify_unified_page_contract_integrity(sealed)
+        observation = build_observation(
+            integrity_ok=integrity_ok,
+            lifecycle=lifecycle,
+            latency_ms=latency_ms,
+            client_type=client_type,
+            request_id=request_id,
+        )
+        return emit_observation_line(observation, sink=sink or _log_observation)
+    except Exception:
+        return False
+
+
 def seal_runtime_contract(
     owner,
     contract: dict[str, Any],
@@ -129,6 +174,7 @@ def seal_runtime_contract(
     trace_id: str,
     client_type: str,
     action_id: int | None = None,
+    sink: Callable[[str], Any] | None = None,
 ) -> dict[str, Any]:
     # The cached page is structural authority, not a snapshot of user favorites.
     # Both source-cache and assembled-cache paths pass through this boundary.
@@ -136,7 +182,7 @@ def seal_runtime_contract(
     model = str(source_payload.get("model") or "").strip()
     if source_type != "scene_contract" and isinstance(search, dict) and model:
         owner.env["app.search.config"].refresh_saved_search_runtime(search, model, action_id=action_id)
-    return seal_unified_page_contract(
+    sealed = seal_unified_page_contract(
         contract,
         source_payload=source_payload,
         source_type=source_type,
@@ -148,3 +194,8 @@ def seal_runtime_contract(
         generator_version=owner.VERSION,
         source_authority=owner.source_authority_contract(),
     )
+    # Every runtime delivery passes through here, so this is the one place that
+    # observes the sealed result. The call is fail-open and returns a bool the
+    # delivery never depends on.
+    emit_delivery_observation(sealed, request_id=request_id, client_type=client_type, sink=sink)
+    return sealed

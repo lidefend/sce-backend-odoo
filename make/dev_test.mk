@@ -2128,12 +2128,23 @@ verify.backend.contract_slo_telemetry: guard.prod.forbid
 		addons/smart_core/core/contract_slo_telemetry.py \
 		scripts/verify/test_contract_slo_telemetry.py
 	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+	@$(MAKE) --no-print-directory verify.backend.contract_slo_telemetry.emission
 
 verify.backend.contract_slo_telemetry.unit: guard.prod.forbid
 	@python3 -m py_compile \
 		addons/smart_core/core/contract_slo_telemetry.py \
 		scripts/verify/test_contract_slo_telemetry.py
 	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+
+# Contract SLO emission call site: executes the real seal_runtime_contract
+# chokepoint with an injected sink, so the emission is behaviour-proven offline.
+.PHONY: verify.backend.contract_slo_telemetry.emission
+verify.backend.contract_slo_telemetry.emission: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		addons/smart_core/handlers/ui_contract_v2_authority.py \
+		scripts/verify/test_ui_contract_v2_slo_emission.py
+	@python3 -m unittest scripts.verify.test_ui_contract_v2_slo_emission
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env
