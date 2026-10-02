@@ -358,14 +358,14 @@ class ProductPageHeaderGuardTest(unittest.TestCase):
             value = real(path, *args, **kwargs)
             if path.name == "FormSection.vue":
                 return value.replace(
-                    "max-width: 100%;\n  min-width: 0;\n  font-size: var(--sc-product-text-body);",
-                    "max-width: none;\n  min-width: auto;\n  font-size: 12px;",
+                    "font: var(--sc-font-body-medium);\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
+                    "font-size: 12px;\n  max-width: none;\n  min-width: auto;",
                     1,
                 )
             return value
 
         with patch("pathlib.Path.read_text", altered):
-            self.assertTrue(any("native readonly body token and shrinkable slot" in item for item in validate()))
+            self.assertTrue(any("native readonly body font token and shrinkable slot" in item for item in validate()))
 
     def test_mobile_exit_action_cannot_be_inverted(self):
         real = Path.read_text

@@ -704,11 +704,11 @@ def validate() -> list[str]:
         (product_patterns, "font-size: var(--sc-product-text-sm);", "shared supporting-text token"),
         (tdesign_theme, "--td-font-size-body-medium: var(--sc-product-text-body);", "TDesign body-size bridge"),
         (tdesign_theme, "--td-font-size-body-small: var(--sc-product-text-sm);", "TDesign supporting-size bridge"),
-        (form_section, ".label {\n  font-size: var(--sc-product-text-sm);", "native field label token"),
+        (form_section, ".label {\n  font: var(--sc-font-mark-small);", "native field label font token"),
         (
             form_section,
-            ".readonly-value {\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;\n  font-size: var(--sc-product-text-body);",
-            "native readonly body token and shrinkable slot",
+            ".readonly-value {\n  font: var(--sc-font-body-medium);\n  box-sizing: border-box;\n  display: grid;\n  align-items: center;\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;",
+            "native readonly body font token and shrinkable slot",
         ),
     )
     for text, marker, label in typography_markers:
@@ -719,7 +719,9 @@ def validate() -> list[str]:
     for marker in ("data-action-key", "data-action-ref", "data-backend-identity"):
         if marker not in native_renderer:
             failures.append(f"native action evidence is missing {marker}")
-    for marker in ("line-break: strict", "text-wrap: balance", "font-size: 24px"):
+    # PR #525 adopted the official font shorthand tokens; the title size is now
+    # expressed through the headline token instead of a detached pixel literal.
+    for marker in ("line-break: strict", "text-wrap: balance", "font: var(--sc-font-headline-small);"):
         if marker not in native_renderer:
             failures.append(f"native record title responsive treatment is missing {marker}")
     app_shell = source("frontend/apps/web/src/layouts/AppShell.vue")

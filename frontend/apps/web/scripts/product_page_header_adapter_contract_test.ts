@@ -475,7 +475,7 @@ for (const entry of PRODUCT_PAGE_HEADER_ENTRIES) {
       raw,
       masked,
       // 单引号与双引号都是合法的字符串字面量；守卫侧早已同时接受，契约测试只认单引号会让两个门禁互相矛盾。
-      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*['\"](${MASK}+)['\"]\\s*\\)`),
+      new RegExp(`const\\s+${constName}\\s*=\\s*${resolver}\\(\\s*['"](${MASK}+)['"]\\s*\\)`),
     );
     assert.ok(
       declaration && declaration.value === entry.id,

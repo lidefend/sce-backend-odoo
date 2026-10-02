@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY",
+  "branch": "codex/close-scheduled-ci-full-lane-recovery",
+  "status": "completed",
+  "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md",
+  "scope": [
+    "frontend/apps/web/scripts/",
+    "scripts/verify/",
+    "make/",
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Offline targeted lint and vendor-coupling guard checks reusing workspace dependencies. The browser-lane runtime observations (overlay page-renderer, TPL07 scopes, live 5180 acceptance-stack DOM equivalence) are supplementary readonly evidence recorded in docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md, not run checks."
+  },
+  "checks": {
+    "full_lint": {
+      "target": "verify.frontend.lint",
+      "inputs": [
+        "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
+        "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "frontend/apps/web/scripts/intent_request_coalescing_test.ts",
+        "frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "frontend/apps/web/scripts/typed_dependency_contract_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "vendor_coupling": {
+      "target": "verify.frontend.playwright_vendor_coupling.guard",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/playwright_vendor_coupling_guard.py",
+        "scripts/verify/baselines/playwright_vendor_coupling.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Closed. The scheduled full lane was restored by PR #529 (squash mainline 84aae65b8294c194c4f89273a1b4039eb0a49ecd): 22 full-scope eslint errors cleared plus verify.frontend.lint registered, playwright vendor-coupling refactored to public-surface equivalents with the decrease-only baseline untouched (104 < 109), the TPL07 default-scene disclosure-expand step restored, and the run's two offline checks recorded as reusable. Residual (out of scope, documented in the batch record): the local list-surface contract-replay 401 environment debt and the undeployed daily frontend stack for the daily profile lane.",
+  "completion": {
+    "mainline_sha": "84aae65b8294c194c4f89273a1b4039eb0a49ecd",
+    "pull_request": 529,
+    "candidate_head": "a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a",
+    "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
+    "evidence": {
+      "scheduled_lane_gates": ["professional_quality_gate", "frontend_release_gate", "release_candidate_gate"],
+      "lint": "22 errors -> 0 errors (68 warnings)",
+      "vendor_coupling": "vendor_internal_selector 109 -> 104; no baseline raise",
+      "quick_receipt": ".git/codex/evidence/ci.local.quick/a0b793e41fd7ed7cde15a50811eda9a3a5b5b29a.json"
+    },
+    "residual": [
+      "list-surface local lane contract replay returns 401 on the 5180 stack (pre-existing environment debt; ablation-proven unrelated)",
+      "daily profile list-surface lane requires an externally deployed daily frontend stack"
+    ]
+  }
+}

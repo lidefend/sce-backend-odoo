@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "GITHUB-RECOVERY",
-  "status": "verification_pending",
+  "status": "completed",
   "branch": "fix/github-history-recovery",
   "baseline_sha": "23f11f426880585ca307544545c9bf9c01245b42",
   "goal": ".agent/goals/GITHUB-RECOVERY.yaml",
@@ -26,7 +26,13 @@
   },
   "checks": {},
   "blockers": [],
-  "next_exact_step": "Commit reviewed P4 recovery and generated evidence; freeze clean identity; run justified replacement exact-head Quick, independent final binding and archive before GitHub PR publication.",
+  "next_exact_step": "Completed: branch head 83ba64063 merged into mainline via PR #523 (merge commit 72ad88e6949508f3760a15101d61f288c7cf70d9, 2026-09-30T06:52:33Z) and verified as an ancestor of main; the full-lane CI debt that the recovered history exposed was later cleared by PR #529. Run closed by the MAINLINE-INTEGRATION-CLOSEOUT batch.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #523 (merge commit 72ad88e6949508f3760a15101d61f288c7cf70d9, 2026-09-30T06:52:33Z); branch head 83ba64063 is an ancestor of main f7783e1ad",
+    "deployment": "not_run",
+    "review": "passed independent review recorded in docs/ops/iterations/github_recovery_20260930.md"
+  },
   "observations": {
     "iteration": "passed: .runtime/github-recovery/iteration.log",
     "targeted": "passed 15 push + 36 controller cases: .runtime/github-recovery/targeted.log",

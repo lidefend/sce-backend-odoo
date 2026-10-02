@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "MAINLINE-INTEGRATION-CLOSEOUT",
+  "branch": "codex/close-mainline-integration-closeout",
+  "status": "completed",
+  "baseline_sha": "f7783e1ad755d5fb79924531493c8922384d9517",
+  "goal": ".agent/goals/MAINLINE-INTEGRATION-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/mainline_integration_closeout_20261002.md",
+  "scope": [
+    "scripts/verify/frontend_product_page_header_guard.py",
+    "scripts/verify/test_frontend_product_page_header_guard.py",
+    ".agent/goals/MAINLINE-INTEGRATION-CLOSEOUT.yaml",
+    ".agent/runs/MAINLINE-INTEGRATION-CLOSEOUT/",
+    ".agent/runs/GITHUB-RECOVERY/run.json",
+    ".agent/runs/P4-INCREMENTAL-RESUME/run.json",
+    ".agent/active-runs.json",
+    "docs/ops/iterations/mainline_integration_closeout_20261002.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered Make gates and offline guard scripts; no database writes or deployment"
+  },
+  "checks": {
+    "guard_realign": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Completed: the guard realignment, PR #522 closure and the two run closures all landed in main via PR #531 (squash merge 9040028f9023e1408a8b5cf420619dddd8f6a7d1, 2026-10-02T03:24:23Z) with all five workflows green and the exact-head Quick receipt recorded at 4e8c17e9c. The contract-slo-telemetry and backend-contract-l4 integrations remain on hold by owner instruction and are not part of this run.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #531 (squash merge commit 9040028f9023e1408a8b5cf420619dddd8f6a7d1, 2026-10-02T03:24:23Z)",
+    "deployment": "not_run",
+    "review": "CI-verified: five workflows success at head 4e8c17e9c; exact-head ci.local.quick receipt recorded; guard_realign check 70 tests + guard PASS",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/4e8c17e9c44ccefc412a9e3c16ad1bd0ee94d277.json"
+  }
+}
