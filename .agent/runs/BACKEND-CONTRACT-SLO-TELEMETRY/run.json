@@ -4,7 +4,7 @@
   "branch": "fix/contract-slo-telemetry",
   "goal": ".agent/goals/BACKEND-CONTRACT-SLO-TELEMETRY.yaml",
   "record": "docs/ops/iterations/backend_contract_slo_telemetry_20261002.md",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "c2410190feb7f7db2407083cca65f5ca624bb8c8",
   "scope": [
     ".agent/",
@@ -31,12 +31,13 @@
     }
   },
   "blockers": [
-    "This batch is the core only: it defines identity, classification and aggregation. Emission at the runtime delivery boundary and long-term persistence/trend reporting are later batches.",
-    "The runtime delivery path cannot be exercised from this worktree: local.dev mounts the primary worktree and the isolated contract-lifecycle environment is absent.",
-    "Aggregating by the published ui.business.config.contract version number requires an additive lifecycle field; this batch keys on the identity already present in the lifecycle evidence.",
+    "Batch 1 (core) is complete and offline-verified: contract_slo_telemetry core + 18-test suite + registered target, receipt slo_core (18 tests).",
+    "Emission at the runtime delivery boundary, long-term persistence and trend reporting are not implemented; the L5 gap stays open and the L4/L5 statement is intentionally unchanged.",
+    "The runtime delivery path cannot be exercised from this worktree: local.dev mounts the primary worktree and the isolated contract-lifecycle environment is absent. Wiring emission needs an environment whose code mount belongs to this worktree.",
+    "Keying by the published ui.business.config.contract version number needs an additive lifecycle field; delivery_identity already carries an optional publishedVersionRef so that decision stays additive.",
     "Deployment and version release stay unauthorized and separate from this batch status."
   ],
-  "next_exact_step": "Register the run, implement the pure contract SLO core, lock it with a non-zero offline unit suite and a registered make target, then record the receipt and commit.",
+  "next_exact_step": "Decide and authorize the emission batch: where the observation sink lives (structured log vs persisted read model), and in which environment the runtime delivery path can be exercised from this worktree. Until then the SLO gap is a definition, not telemetry.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

@@ -41,9 +41,13 @@ goal:
     - malformed_observations_are_counted_and_never_silently_dropped
     - no_module_upgrade_and_no_odoo_model_in_this_batch
   next_exact_step: >-
-    Implement the pure SLO core, lock it with a non-zero offline unit suite and
-    a registered make target, then record the receipt and commit.
+    Batch 1 (core) is done and offline-verified. Next: obtain authorization for
+    the emission batch (observation sink and the environment whose code mount
+    belongs to this worktree), which is what turns the definition into real
+    telemetry.
   completion:
     overall_goal: incomplete
-    code_head: null
+    core_scope: complete
+    telemetry_scope: pending_emission_batch
+    code_head: 01a196e4a
     result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json
