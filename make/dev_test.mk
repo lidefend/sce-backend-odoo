@@ -2175,8 +2175,10 @@ verify.backend.contract_slo_telemetry.persistence: guard.prod.forbid
 	@python3 -m py_compile \
 		addons/smart_core/core/contract_slo_telemetry.py \
 		addons/smart_core/core/contract_slo_persistence.py \
-		scripts/verify/test_contract_slo_persistence.py
+		scripts/verify/test_contract_slo_persistence.py \
+		scripts/verify/test_contract_slo_retention_cron.py
 	@python3 -m unittest scripts.verify.test_contract_slo_persistence
+	@python3 -m unittest scripts.verify.test_contract_slo_retention_cron
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

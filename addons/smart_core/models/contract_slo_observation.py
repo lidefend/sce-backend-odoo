@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from odoo import fields, models
+from odoo import api, fields, models
+
+from odoo.addons.smart_core.core import contract_slo_persistence as slo_store
 
 
 class ScContractSloObservation(models.Model):
@@ -60,3 +62,19 @@ class ScContractSloObservation(models.Model):
                    (schema_id, contract_version, stage, observed_at)
             """
         )
+
+    @api.model
+    def cron_prune(self):
+        """Retention sweep for the observation store (fail-open).
+
+        The retention horizon was declared but never enforced, so the store grew
+        without bound once persistence was on. This is the scheduled half: it
+        drops only rows older than ``smart_core.contract_slo.retention_days`` and
+        returns how many it removed.
+
+        It deliberately does not gate on ``persist_enabled``: rows written while
+        persistence was on must still age out after it is switched off. The
+        sweep is fail-open because telemetry must never harm the platform, so a
+        failure leaves rows in place instead of failing the cron run.
+        """
+        return slo_store.prune_observations(self.env)
