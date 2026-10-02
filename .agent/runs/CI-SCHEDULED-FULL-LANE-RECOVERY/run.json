@@ -11,7 +11,8 @@
     "scripts/verify/",
     "make/",
     ".agent/",
-    "docs/ops/iterations/"
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
   ],
   "environment": {
     "kind": "runtime",
