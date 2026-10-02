@@ -34,6 +34,42 @@ def producer_declared_checks() -> tuple[str, ...]:
     raise AssertionError("DECLARED_CHECKS is not declared in the runtime probe")
 
 
+def producer_assigned_checks() -> set[str]:
+    """Read the probe's evaluated assertion keys straight from its source.
+
+    The probe assigns `checks["<name>"] = ...` for every assertion it evaluates
+    (and would use `checks.update({...})`). Reading those constant keys proves
+    offline that the code evaluates exactly the declared set, without a runtime.
+    """
+    tree = ast.parse(PROBE_PATH.read_text(encoding="utf-8"))
+    keys: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if (
+                isinstance(target, ast.Subscript)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "checks"
+                and isinstance(target.slice, ast.Constant)
+                and isinstance(target.slice.value, str)
+            ):
+                keys.add(target.slice.value)
+        if (
+            isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.value.id == "checks"
+            and node.value.func.attr == "update"
+            and node.value.args
+            and isinstance(node.value.args[0], ast.Dict)
+        ):
+            for key in node.value.args[0].keys:
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    keys.add(key.value)
+    return keys
+
+
 def artifact(**overrides) -> dict:
     payload = {
         "probe": "backend_contract_lifecycle_runtime_probe",
@@ -58,6 +94,13 @@ class DeclarationLockTest(unittest.TestCase):
         self.assertEqual(producer_declared_checks(), GUARD.EXPECTED_CHECKS)
         self.assertEqual(len(GUARD.EXPECTED_CHECKS), 14)
         self.assertEqual(len(set(GUARD.EXPECTED_CHECKS)), 14)
+
+
+class ProducerCodeLockTest(unittest.TestCase):
+    def test_probe_assigns_exactly_the_declared_assertions(self):
+        assigned = producer_assigned_checks()
+        self.assertEqual(assigned, set(GUARD.EXPECTED_CHECKS))
+        self.assertEqual(len(assigned), 14)
 
 
 class RuntimeArtifactGuardTest(unittest.TestCase):
