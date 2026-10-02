@@ -2146,6 +2146,26 @@ verify.backend.contract_slo_telemetry.emission: guard.prod.forbid
 		scripts/verify/test_ui_contract_v2_slo_emission.py
 	@python3 -m unittest scripts.verify.test_ui_contract_v2_slo_emission
 
+# Contract SLO runtime half: drives real ui.contract.v2 deliveries through the
+# production handler on the isolated contract-lifecycle profile and reads the
+# contractSlo line the production sink actually emits. The in-container probe
+# writes a report the host-side schema guard re-checks with a non-zero test
+# count, so emission cannot be "proven" by a string merely appearing.
+.PHONY: verify.backend.contract_slo_telemetry.runtime
+verify.backend.contract_slo_telemetry.runtime: guard.prod.forbid
+	@test -f "$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" || { echo "contract-lifecycle env is not prepared: $(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" >&2; exit 2; }
+	@python3 -m py_compile \
+		scripts/verify/contract_slo_telemetry_runtime_probe.py \
+		scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  verify.backend.contract_slo_telemetry.runtime.run
+	@python3 -m unittest scripts.verify.contract_slo_telemetry_runtime_probe_schema_guard
+
+.PHONY: verify.backend.contract_slo_telemetry.runtime.run
+verify.backend.contract_slo_telemetry.runtime.run:
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/contract_slo_telemetry_runtime_probe.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/contract_slo_telemetry_runtime_probe.json /tmp/contract_slo_telemetry_runtime_probe.json >/dev/null
+
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/backend
