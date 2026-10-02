@@ -23,7 +23,9 @@ host-side schema guard.
 import json
 import logging
 
+from odoo.addons.smart_core.core import contract_slo_persistence as store
 from odoo.addons.smart_core.core import contract_slo_telemetry as slo
+from odoo.addons.smart_core.handlers.contract_slo_snapshot import ContractSloSnapshotHandler
 from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 from odoo.addons.smart_core.handlers import ui_contract_v2_authority as authority
 
@@ -165,6 +167,8 @@ def _run():
         logger.removeHandler(capture)
         logger.setLevel(previous_level)
 
+    checks.extend(_run_persistence())
+
     failed = [name for name, ok, _detail in checks if not ok]
     return {
         "probe": "contract_slo_telemetry_runtime",
@@ -177,6 +181,93 @@ def _run():
         "observations": observations,
         "aggregate": final,
     }
+
+
+def _run_persistence():
+    """Durable store + trend read model, on top of the deliveries just made.
+
+    Enabling persistence is a test configuration write, so the original value is
+    captured first and restored before the transaction is committed; the check
+    set fails if the restore does not hold. The committed rows are the durable
+    evidence the read model is asked to reproduce.
+    """
+    checks = []
+    env = _env()
+    param = env["ir.config_parameter"].sudo()
+    original = param.get_param(store.PERSIST_PARAM, None)
+    try:
+        param.set_param(store.PERSIST_PARAM, "1")
+        checks.append(("persistence_enabled_for_the_check", store.persistence_enabled(env), {}))
+
+        before = env[store.MODEL_NAME].sudo().search_count([])
+        logger = logging.getLogger(LOG_TARGET)
+        capture = _LineCapture()
+        previous_level = logger.level
+        logger.addHandler(capture)
+        logger.setLevel(logging.INFO)
+        try:
+            for request in (_request("res.partner", "form"), _request("res.partner", "form"),
+                            _request("res.partner", "list")):
+                _deliver(request)
+        finally:
+            logger.removeHandler(capture)
+            logger.setLevel(previous_level)
+        emitted = [slo.parse_observation_line(line) for line in _slo_lines(capture.lines)]
+        emitted = [item for item in emitted if item]
+        after = env[store.MODEL_NAME].sudo().search_count([])
+        checks.append(("each_delivery_persisted_one_row", after - before == len(emitted) == 3,
+                       {"before": before, "after": after, "emitted": len(emitted)}))
+
+        rows = store.read_observations(env, limit=200)
+        stored = {(o["identity"].get("sourceType"), o["identity"].get("contractVersion"), o["outcome"]) for o in rows}
+        wanted = {(o["identity"].get("sourceType"), o["identity"].get("contractVersion"), o["outcome"]) for o in emitted}
+        checks.append(("stored_rows_round_trip_the_emitted_identity", wanted <= stored,
+                       {"wanted": sorted(wanted), "storedSample": sorted(stored)}))
+
+        aggregate = store.aggregate_window(env, window_seconds=3600)
+        checks.append(("store_aggregate_accepts_the_persisted_rows",
+                       aggregate["acceptedObservations"] >= 3 and aggregate["rejectedObservations"] == 0,
+                       {"accepted": aggregate["acceptedObservations"],
+                        "rejected": aggregate["rejectedObservations"],
+                        "versionCount": aggregate["versionCount"]}))
+
+        trend = store.window_trend(env, window_seconds=3600, bucket_seconds=600)
+        placed = sum(bucket["aggregate"]["totalObservations"] for bucket in trend["buckets"])
+        checks.append(("trend_places_every_row_in_one_bucket",
+                       placed == aggregate["acceptedObservations"] and trend["unplacedObservations"] == 0,
+                       {"placed": placed, "unplaced": trend["unplacedObservations"],
+                        "bucketCount": trend["bucketCount"]}))
+        checks.append(("trend_keeps_versions_in_separate_rows",
+                       any(bucket["aggregate"]["versionCount"] >= 2 for bucket in trend["buckets"]),
+                       {"versionCounts": [b["aggregate"]["versionCount"] for b in trend["buckets"]]}))
+
+        handler = ContractSloSnapshotHandler(
+            env=env,
+            su_env=env,
+            payload={"params": {"window_seconds": 3600, "bucket_seconds": 600}},
+        )
+        snapshot = handler.handle(payload={"params": {"window_seconds": 3600, "bucket_seconds": 600}},
+                                  ctx=dict(env.context or {}))
+        data = snapshot.get("data") if isinstance(snapshot, dict) else {}
+        checks.append(("read_intent_reports_the_store",
+                       bool(snapshot.get("ok"))
+                       and (data.get("store") or {}).get("observationCount", 0) >= 3
+                       and (data.get("aggregate") or {}).get("acceptedObservations", 0) >= 3,
+                       {"store": (data.get("store") or {}).get("observationCount"),
+                        "accepted": (data.get("aggregate") or {}).get("acceptedObservations")}))
+
+        checks.append(("retention_prune_keeps_the_fresh_rows",
+                       store.prune_observations(env, retention_days_value=1) == 0, {}))
+    finally:
+        if original is None:
+            param.search([("key", "=", store.PERSIST_PARAM)]).unlink()
+        else:
+            param.set_param(store.PERSIST_PARAM, original)
+        restored = param.get_param(store.PERSIST_PARAM, None)
+        checks.append(("test_configuration_restored", restored == original,
+                       {"original": original, "restored": restored}))
+        env.cr.commit()
+    return checks
 
 
 def main():

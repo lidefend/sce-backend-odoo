@@ -24,6 +24,21 @@ REQUIRED_IDENTITY_FIELDS = (
     "sourceSha256",
     "stage",
 )
+REQUIRED_CHECKS = (
+    "baseline_delivery_ok",
+    "baseline_emits_exactly_one_line",
+    "observation_identity_complete",
+    "declaration_consumer_accepts_observation",
+    "same_identity_groups_into_one_row",
+    "distinct_surface_emits_one_line",
+    "each_delivery_persisted_one_row",
+    "stored_rows_round_trip_the_emitted_identity",
+    "store_aggregate_accepts_the_persisted_rows",
+    "trend_places_every_row_in_one_bucket",
+    "trend_keeps_versions_in_separate_rows",
+    "read_intent_reports_the_store",
+    "test_configuration_restored",
+)
 
 
 def _load():
@@ -45,6 +60,28 @@ class ContractSloRuntimeProbeReportTest(unittest.TestCase):
         self.assertEqual(self.report.get("failedCount"), 0, self.report.get("failed"))
         failed = [check["name"] for check in self.report.get("checks", []) if not check.get("ok")]
         self.assertEqual(failed, [])
+
+    def test_the_required_checks_are_all_present(self):
+        """A probe that silently drops a section must not read as a pass."""
+        names = {check.get("name") for check in self.report.get("checks", [])}
+        missing = [name for name in REQUIRED_CHECKS if name not in names]
+        self.assertEqual(missing, [], missing)
+
+    def test_every_delivery_persisted_exactly_one_row(self):
+        detail = {
+            check["name"]: check.get("detail")
+            for check in self.report.get("checks", [])
+        }.get("each_delivery_persisted_one_row", {})
+        self.assertEqual(detail.get("after", 0) - detail.get("before", 0), detail.get("emitted"))
+        self.assertGreaterEqual(detail.get("emitted", 0), 3)
+
+    def test_the_read_model_sees_the_persisted_rows(self):
+        detail = {
+            check["name"]: check.get("detail")
+            for check in self.report.get("checks", [])
+        }.get("read_intent_reports_the_store", {})
+        self.assertGreaterEqual(detail.get("store", 0), 3)
+        self.assertGreaterEqual(detail.get("accepted", 0), 3)
 
     def test_every_observation_is_identity_complete(self):
         observations = self.report.get("observations") or []
