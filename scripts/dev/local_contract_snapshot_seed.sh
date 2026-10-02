@@ -86,6 +86,20 @@ done
   exit 1
 }
 
+# The restore replaces the whole database (pg_restore --clean). A running Odoo
+# keeps objects open, so the DROP can fail and leave the target half-restored:
+# observed as "duplicate key ... res_company_pkey" plus "multiple primary keys".
+# Refuse instead of doing that; the governed reset is local.contract-snapshot.rebuild,
+# which takes the whole profile down before seeding.
+mapfile -t target_odoo_ids < <(
+  docker ps --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}" \
+    --filter "label=com.docker.compose.service=odoo" --format '{{.ID}}'
+)
+(( ${#target_odoo_ids[@]} == 0 )) || {
+  echo "[local.contract-snapshot.seed] DENY target odoo is running (${#target_odoo_ids[@]} container(s)); seeding a live profile can half-restore ${DB_NAME}. Use local.contract-snapshot.rebuild." >&2
+  exit 2
+}
+
 dump_file="$(mktemp -p "${TMPDIR:-/tmp}" contract-snapshot-seed.XXXXXX.dump)"
 cleanup() { rm -f "${dump_file}"; }
 trap cleanup EXIT
@@ -110,6 +124,36 @@ UPDATE ir_config_parameter SET value = :'base_url' WHERE key = 'web.base.url';
 UPDATE ir_cron SET active = false;
 UPDATE ir_mail_server SET active = false;
 SQL
+
+# Transient run-state hygiene. The registered seed source is a live demo dataset,
+# so the dump can carry committed operation state. The contract matrix replays
+# fixed request ids (my_work_complete_batch_pm -> snapshot_my_work_batch_1) and
+# the idempotency store commits independently of the request transaction, so an
+# inherited record turns that case's first-call baseline into a 409
+# IDEMPOTENCY_CONFLICT. A baseline dataset must be operation-free; purge the
+# transient run-state tables and prove every one of them is empty afterwards.
+echo "[local.contract-snapshot.seed] purge transient run-state"
+docker exec -i "${target_db_id}" \
+  psql -X -v ON_ERROR_STOP=1 -U "${DB_USER}" -d "${DB_NAME}" <<'SQL'
+TRUNCATE TABLE sc_idempotency_record;
+SQL
+
+while read -r transient_table; do
+  [[ "${transient_table}" =~ ^[a-z][a-z0-9_]*$ ]] || {
+    echo "[local.contract-snapshot.seed] unsafe transient-state expectation" >&2
+    exit 2
+  }
+  remaining="$(docker exec "${target_db_id}" \
+    psql -X -Aqt -v ON_ERROR_STOP=1 -U "${DB_USER}" -d "${DB_NAME}" \
+    -c "SELECT count(*) FROM ${transient_table}")"
+  [[ "${remaining}" == "0" ]] || {
+    echo "[local.contract-snapshot.seed] transient run-state survived the purge table=${transient_table} rows=${remaining}" >&2
+    exit 1
+  }
+  echo "[local.contract-snapshot.seed] cleared transient table=${transient_table} rows=0"
+done <<'TRANSIENT'
+sc_idempotency_record
+TRANSIENT
 
 echo "[local.contract-snapshot.seed] copy filestore ${seed_db} -> ${DB_NAME}"
 docker exec "${seed_odoo_id}" tar -C /var/lib/odoo/filestore -czf - "${seed_db}" \

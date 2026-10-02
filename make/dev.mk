@@ -485,7 +485,8 @@ local.contract-lifecycle.discard: guard.prod.forbid local.contract-lifecycle.req
 	local.contract-snapshot.logs local.contract-snapshot.odoo-shell \
 	local.contract-snapshot.odoo-shell.run local.contract-snapshot.upgrade \
 	local.contract-snapshot.discard local.contract-snapshot.contract_export \
-	local.contract-snapshot.gate_contract local.contract-snapshot.gate_contract.run
+	local.contract-snapshot.gate_contract local.contract-snapshot.gate_contract.run \
+	local.contract-snapshot.matrix_audit local.contract-snapshot.matrix_audit.run
 
 local.contract-snapshot.require_env: guard.prod.forbid
 	@test -f "$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" || { echo "contract-snapshot env is not prepared: $(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" >&2; exit 2; }
@@ -551,8 +552,16 @@ local.contract-snapshot.contract_export: guard.prod.forbid local.contract-snapsh
 # full cases file; set LOCAL_CONTRACT_SNAPSHOT_CASES_FILE to a subset to bound
 # the run while iterating. Set LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS=--bootstrap to
 # copy genuinely new baselines into the reference directory.
+#
+# A full matrix run is single-shot per freshly seeded profile: matrix cases
+# perform writes, and my_work_complete_batch_pm declares a fixed request_id that
+# leaves a durable idempotency record. Run local.contract-snapshot.rebuild (or
+# discard + prepare + seed + upgrade) before a full gate run; the seed purges the
+# transient run-state a dump can carry in, and refuses to run against a live
+# profile.
 LOCAL_CONTRACT_SNAPSHOT_CASES_FILE ?= docs/contract/cases.yml
 REF_DIR ?= docs/contract/snapshots
+LOCAL_CONTRACT_SNAPSHOT_AUDIT_OUTDIR ?= tmp/contract_snapshot_audit
 
 local.contract-snapshot.gate_contract.run:
 	@DB="$(DB_NAME)" CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" REF_DIR="$(REF_DIR)" \
@@ -564,6 +573,21 @@ local.contract-snapshot.gate_contract: guard.prod.forbid local.contract-snapshot
 	  LOCAL_CONTRACT_SNAPSHOT_CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" \
 	  REF_DIR="$(REF_DIR)" LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS="$(LOCAL_CONTRACT_SNAPSHOT_GATE_ARGS)" \
 	  local.contract-snapshot.gate_contract.run
+
+local.contract-snapshot.matrix_audit.run:
+	@DB_NAME="$(DB_NAME)" CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" \
+	  OUTDIR="$(LOCAL_CONTRACT_SNAPSHOT_AUDIT_OUTDIR)" \
+	  CONTRACT_CONFIG="$(CONTRACT_CONFIG)" ODOO_CONF="$(ODOO_CONF)" \
+	  bash scripts/dev/local_contract_snapshot_matrix_audit.sh
+
+# Diagnostic only: list every case that fails to export, instead of stopping at
+# the first one. The gate (local.contract-snapshot.gate_contract) stays fail-fast
+# and is unchanged; this target is not evidence of a pass.
+local.contract-snapshot.matrix_audit: guard.prod.forbid local.contract-snapshot.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" \
+	  LOCAL_CONTRACT_SNAPSHOT_CASES_FILE="$(LOCAL_CONTRACT_SNAPSHOT_CASES_FILE)" \
+	  LOCAL_CONTRACT_SNAPSHOT_AUDIT_OUTDIR="$(LOCAL_CONTRACT_SNAPSHOT_AUDIT_OUTDIR)" \
+	  local.contract-snapshot.matrix_audit.run
 
 local.contract-snapshot.discard: guard.prod.forbid local.contract-snapshot.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_SNAPSHOT_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
