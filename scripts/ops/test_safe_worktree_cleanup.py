@@ -283,6 +283,48 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         git(self.root, "bundle", "create", str(bundle), branch)
         return bundle
 
+    def patch_proof(self, merge: str, number: int = 501) -> None:
+        """Pin the merged-PR lookup so integration proofs are deterministic."""
+        original = cleanup.merged_pull_request
+
+        def fake(root: Path, branch: str, head: str) -> dict | None:
+            return {"number": number, "mergeCommit": merge}
+
+        cleanup.merged_pull_request = fake
+        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
+
+    def legacy_record(
+        self,
+        path: Path,
+        branch: str,
+        head: str,
+        tree: str,
+        merge: str,
+        pr: int,
+        bundle: Path,
+        integration: str = "squash",
+        name: str = "docs/legacy-retirement.json",
+    ) -> Path:
+        """Commit the reviewed retirement record for one integrated worktree."""
+        return self.track_record({
+            "schemaVersion": 1,
+            "worktrees": [{
+                "path": str(path.resolve()),
+                "branch": branch,
+                "head": head,
+                "integrationKind": integration,
+                "evidenceStatus": "absent",
+                "reason": "delivered before delivery-evidence archiving existed",
+                "mergedPr": pr,
+                "mergeCommit": merge,
+                "tree": tree,
+                "recoveryBundle": {
+                    "path": str(bundle),
+                    "sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                },
+            }],
+        }, name)
+
 
 class SquashIntegrationProofTest(SafeWorktreeCleanupTest):
     def test_squash_integrated_head_passes_merge_check(self) -> None:
@@ -302,15 +344,6 @@ class SquashIntegrationProofTest(SafeWorktreeCleanupTest):
         self.assertEqual(proof.merge_commit, merge)
         self.assertEqual(proof.pull_request, 501)
         self.assertEqual(proof.tree, git(self.root, "rev-parse", f"{head}^{{tree}}"))
-
-    def patch_proof(self, merge: str, number: int = 501) -> None:
-        original = cleanup.merged_pull_request
-
-        def fake(root: Path, branch: str, head: str) -> dict | None:
-            return {"number": number, "mergeCommit": merge}
-
-        cleanup.merged_pull_request = fake
-        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
 
     def test_tree_mismatch_is_denied(self) -> None:
         path = self.add_worktree("fix/tree-mismatch")
@@ -364,34 +397,9 @@ class LegacyRetirementRecordTest(SafeWorktreeCleanupTest):
         git(path, "commit", "-m", "legacy feature")
         head, tree, merge = self.squash_integrate(path, branch)
         bundle = self.recovery_bundle(branch)
-        record = self.track_record({
-            "schemaVersion": 1,
-            "worktrees": [{
-                "path": str(path.resolve()),
-                "branch": branch,
-                "head": head,
-                "evidenceStatus": "absent",
-                "reason": "delivered before delivery-evidence archiving existed",
-                "mergedPr": 501,
-                "mergeCommit": merge,
-                "tree": tree,
-                "recoveryBundle": {
-                    "path": str(bundle),
-                    "sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
-                },
-            }],
-        })
+        record = self.legacy_record(path, branch, head, tree, merge, 501, bundle)
         self.patch_proof(merge)
         return path, head, merge, record, bundle
-
-    def patch_proof(self, merge: str, number: int = 501) -> None:
-        original = cleanup.merged_pull_request
-
-        def fake(root: Path, branch: str, head: str) -> dict | None:
-            return {"number": number, "mergeCommit": merge}
-
-        cleanup.merged_pull_request = fake
-        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
 
     def test_record_and_bundle_allow_squash_retirement(self) -> None:
         path, head, _merge, record, bundle = self.prepare()
@@ -570,6 +578,83 @@ class LegacyRetirementRecordTest(SafeWorktreeCleanupTest):
         self.assertEqual(
             git(self.root, "ls-remote", "--heads", "origin", "codex/locked-retirement"), ""
         )
+        self.assertTrue(path.is_dir())
+
+
+class AncestorRetirementRecordTest(SafeWorktreeCleanupTest):
+    """A topic merged as a real merge commit is retired through containment.
+
+    Its HEAD is contained in ``origin/main``, so the squash tree-identity proof
+    does not apply, but the reviewed record is still bound to the verified
+    merged pull request of the exact HEAD.
+    """
+
+    def prepare(self, branch: str = "codex/ancestor-retired"):
+        path = self.add_worktree(branch)
+        head = git(path, "rev-parse", "HEAD")
+        merge = git(self.root, "rev-parse", "HEAD")
+        bundle = self.recovery_bundle(branch)
+        record = self.legacy_record(
+            path,
+            branch,
+            head,
+            git(path, "rev-parse", f"{head}^{{tree}}"),
+            merge,
+            524,
+            bundle,
+            integration="ancestor",
+            name="docs/ancestor-retirement.json",
+        )
+        self.patch_proof(merge, 524)
+        return path, head, merge, record, bundle
+
+    def test_contained_head_is_proven_as_ancestor_integration(self) -> None:
+        path = self.add_worktree("fix/ancestor-contained")
+        head = git(path, "rev-parse", "HEAD")
+        original = cleanup.merged_pull_request
+        cleanup.merged_pull_request = lambda root, branch, head: None
+        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
+        proof = cleanup.prove_integration(
+            self.root,
+            cleanup.Worktree(
+                path=path.resolve(), branch="fix/ancestor-contained", head=head
+            ),
+        )
+        self.assertEqual(proof.kind, "ancestor")
+        self.assertEqual(proof.pull_request, 0)
+        self.assertEqual(proof.tree, git(self.root, "rev-parse", f"{head}^{{tree}}"))
+
+    def test_record_and_bundle_allow_ancestor_retirement(self) -> None:
+        path, head, _merge, record, bundle = self.prepare()
+        selected = cleanup.cleanup(
+            self.root,
+            path,
+            apply=True,
+            retirement_record=record,
+            recovery_bundle=bundle,
+            confirmation=cleanup.SQUASH_RETIREMENT_CONFIRMATION,
+        )
+        self.assertEqual(selected.head, head)
+        self.assertFalse(path.exists())
+        self.assertNotIn(
+            "codex/ancestor-retired",
+            git(self.root, "branch", "--format=%(refname:short)").splitlines(),
+        )
+
+    def test_ancestor_retirement_without_a_verified_merged_pr_is_denied(self) -> None:
+        path, _head, _merge, record, bundle = self.prepare("codex/ancestor-no-pr")
+        original = cleanup.merged_pull_request
+        cleanup.merged_pull_request = lambda root, branch, head: None
+        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
+        with self.assertRaisesRegex(cleanup.CleanupError, "verified merged pull request"):
+            cleanup.cleanup(
+                self.root,
+                path,
+                apply=True,
+                retirement_record=record,
+                recovery_bundle=bundle,
+                confirmation=cleanup.SQUASH_RETIREMENT_CONFIRMATION,
+            )
         self.assertTrue(path.is_dir())
 
 

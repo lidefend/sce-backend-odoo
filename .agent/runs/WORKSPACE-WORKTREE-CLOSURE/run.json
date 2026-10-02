@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "08759706b32743bce251473ff2fa1e85a36661b0",
+  "scope": [
+    "scripts/ops/safe_worktree_cleanup.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "docs/ops/iterations/workspace_worktree_legacy_retirement_v2.json",
+    "docs/ops/iterations/workspace_worktree_closure_20261002.md",
+    "docs/ops/codex_execution_allowlist.md",
+    ".agent/goals/WORKSPACE-WORKTREE-CLOSURE.yaml",
+    ".agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json",
+    ".agent/active-runs.json",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+        "scripts/ops/safe_worktree_create.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "The two integrated worktrees can only be retired after this record and the ancestor admission are merged, because the retirement record must be committed at the HEAD of the primary worktree."
+  ],
+  "next_exact_step": "Freeze at the clean candidate, run verify.workspace.worktree.guard and make ci.local.iteration, push through the protected PR lane, then run make workspace.worktree.cleanup for each recorded worktree.",
+  "id": "WORKSPACE-WORKTREE-CLOSURE",
+  "branch": "fix/workspace-worktree-ancestor-retirement",
+  "status": "active",
+  "goal": ".agent/goals/WORKSPACE-WORKTREE-CLOSURE.yaml",
+  "record": "docs/ops/iterations/workspace_worktree_closure_20261002.md"
+}

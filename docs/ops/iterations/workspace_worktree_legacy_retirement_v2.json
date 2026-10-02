@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "topic": "legacy-worktree-retirement-v2",
+  "recordedAt": "2026-10-02",
+  "purpose": "Retire integrated worktrees that never held archived delivery evidence. The absence is disclosed here instead of being replaced by fabricated evidence.",
+  "admissionProof": "either a squash integration (merged PR headRefOid equals the worktree HEAD; single-parent merge commit on origin/main whose tree equals the worktree HEAD tree byte for byte) or an ancestor integration (the worktree HEAD is contained in origin/main); both additionally require a verified merged pull request for the exact HEAD so the record names the integration it retires",
+  "worktrees": [
+    {
+      "path": "/home/lidefend/workspace/sce-backend-odoo-contract-l4",
+      "branch": "fix/contract-supply-chain-attestation",
+      "head": "e18fe9dc49594403f84e1a4ef20f6f78602b8616",
+      "deliveredAt": "2026-10-02",
+      "integrationKind": "squash",
+      "evidenceStatus": "absent",
+      "reason": "Carried candidate delivered and squash-integrated by PR #535; the worktree holds no summary/identity/screenshot/review evidence bound to this HEAD and no external archive receipt references it.",
+      "mergedPr": 535,
+      "mergeCommit": "08759706b32743bce251473ff2fa1e85a36661b0",
+      "tree": "d7ffbea456255cca7a7d48b1690fca4956941046",
+      "recoveryBundle": {
+        "path": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20261002/legacy-worktree-retirement/fix-contract-supply-chain-attestation.bundle",
+        "sha256": "9b1da456d3190bf01f495f38ccbe7a3e758967f817a5001f43f63983ce3f47fd",
+        "size": 25612213
+      }
+    },
+    {
+      "path": "/home/lidefend/workspace/sce-backend-odoo-agent-resume-github-recovery",
+      "branch": "fix/agent-resume-mainline",
+      "head": "b6ea04f0d67809a0c8057e472fcdaa7bd4d9e91d",
+      "deliveredAt": "2026-09-30",
+      "integrationKind": "ancestor",
+      "evidenceStatus": "absent",
+      "reason": "Integrated by PR #524 as a real merge commit; this worktree was a recovery duplicate of the same topic and holds no delivery evidence bound to this HEAD.",
+      "mergedPr": 524,
+      "mergeCommit": "fff226d7be72878ea6861cfab2ce13d990cee806",
+      "tree": "e0920270686857447b2572520813c9e642121c09",
+      "recoveryBundle": {
+        "path": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20261002/legacy-worktree-retirement/fix-agent-resume-mainline.bundle",
+        "sha256": "d190398192e20eddde08dea5e06828ce5f6106241570ea9a0360465994d0d252",
+        "size": 23846382
+      }
+    }
+  ],
+  "notes": [
+    "The live P4 topic fix/agent-incremental-resume keeps its own worktree sce-backend-odoo-agent-resume; it is unmerged and is deliberately NOT listed here.",
+    "Every entry's integration and merged-PR identity is re-verified from git and gh at cleanup time; this record can neither add nor widen a retirement.",
+    "Both recovery bundles were created with `git bundle create <path> refs/heads/<branch>` and verified with `git bundle verify` before this record was committed."
+  ]
+}

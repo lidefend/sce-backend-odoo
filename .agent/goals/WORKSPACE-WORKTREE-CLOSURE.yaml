@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-WORKTREE-CLOSURE
+  title: workspace_worktree_closure
+  status: active
+  formal_product_layer: P4
+  layer_target: ops_delivery_tool
+  module:
+    - scripts/ops
+    - docs/ops
+    - .agent
+  baseline:
+    branch: fix/workspace-worktree-ancestor-retirement
+    full_sha: 08759706b32743bce251473ff2fa1e85a36661b0
+    source: origin_main
+  objective: >-
+    Close the whole-workspace cleanup gap that blocked retiring integrated worktrees.
+    A topic integrated as a real merge commit (contained in origin/main, no
+    single-parent tree-identical commit) could not be retired through the reviewed
+    legacy-retirement entry, so its abandoned worktree directory had no governed
+    removal path. Admit ancestor-contained integration in that entry under the same
+    fail-closed record, recovery-bundle and remote-lease requirements, and add the
+    reviewed retirement record for the two integrated worktrees.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The rule is about how the governed worktree-cleanup tool proves integration;
+      it belongs to the P4 ops tooling that already owns worktree lifecycle.
+    why_not_elsewhere:
+      - no_p0_p1_p2_business_semantics
+      - no_frontend_rendering_rule
+      - no_low_code_runtime_configuration
+      - no_manual_container_or_git_bypass
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - ancestor_retirement_still_requires_a_verified_merged_pull_request_for_the_exact_head
+    - the_retirement_record_discloses_absent_evidence_instead_of_fabricating_it
+    - no_new_compose_project_database_port_volume_or_credential
+  next_exact_step: >-
+    Freeze this candidate, run the offline worktree-guard unit locks plus
+    ci.local.iteration, then dispatch through the protected PR lane and retire the two
+    integrated worktrees with their external recovery bundles.
+  completion:
+    overall_goal: incomplete
+    code_scope: pending_freeze
+    record_scope: pending_freeze
+    worktree_retirement: pending_merge
+    result_index: .agent/runs/WORKSPACE-WORKTREE-CLOSURE/run.json
