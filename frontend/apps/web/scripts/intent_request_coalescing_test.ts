@@ -8,9 +8,9 @@ const { listRecords } = await import('../src/api/data.ts');
 const session = useSessionStore();
 Object.assign(session, { token: 'coalescing-test-token', sessionDb: 'sc_dev_demo', initStatus: 'ready' });
 
-type Pending = { body: any; settle: (rows: Array<{ id: number; name: string }>) => void; fail: (error: Error) => void };
+type Pending = { body: { params: { search_term?: string; offset?: number; order?: string } }; settle: (rows: Array<{ id: number; name: string }>) => void; fail: (error: Error) => void };
 const pending: Pending[] = [];
-(globalThis as any).fetch = (url: string, init: any) => new Promise((resolve, reject) => {
+(globalThis as { fetch: unknown }).fetch = (url: string, init: { body?: string }) => new Promise((resolve, reject) => {
   const parsed = JSON.parse(String(init?.body ?? '{}'));
   pending.push({
     body: parsed,

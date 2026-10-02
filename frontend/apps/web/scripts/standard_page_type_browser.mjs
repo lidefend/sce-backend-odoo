@@ -935,7 +935,7 @@ async function detailStyleVisualScope(session, inspect) {
           const themeTokens={surface:getComputedStyle(probe).backgroundColor,text:getComputedStyle(probe).color};probe.remove();
           return {expectedCount:sections.expected.length, unknownVisibility:sections.unknown, expectedMatched:expectedMatches.every(nodes => nodes.length === 1 && cards.includes(nodes[0])) && new Set(expectedMatches.flat()).size === sections.expected.length,
             expectedSections:sections.expected,sectionMatches,themeTokens,
-            cards:cards.map(node=>{const style=getComputedStyle(node),header=node.querySelector(':scope > .t-card__header'),bodies=[...node.querySelectorAll('.native-detail-card-body')].filter(body=>body.closest('.t-card')===node),body=bodies.length===1 ? bodies[0] : null;return {bodyCount:bodies.length,collapsed:node.getAttribute('data-collapsed')==='true',display:style.display,rowGap:style.rowGap,header:header ? rect(header) : null,body:body ? rect(body) : null,headerBodyGap:header&&body ? rect(body).top-rect(header).bottom : null,title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
+            cards:cards.map(node=>{const style=getComputedStyle(node),header=node.querySelector(':scope > .t-card__header'),bodies=[...node.querySelectorAll('.native-detail-card-body')].filter(body=>body.closest('[data-detail-card="native-section"]')===node),body=bodies.length===1 ? bodies[0] : null;return {bodyCount:bodies.length,collapsed:node.getAttribute('data-collapsed')==='true',display:style.display,rowGap:style.rowGap,header:header ? rect(header) : null,body:body ? rect(body) : null,headerBodyGap:header&&body ? rect(body).top-rect(header).bottom : null,title:node.getAttribute('data-group-title'),official:node.classList.contains('t-card') && node.getAttribute('data-semantic-component')==='ScCard',
               nested:Boolean(node.parentElement.closest('[data-detail-card="native-section"]')),rect:rect(node),background:style.backgroundColor,color:style.color};}),
             descriptions:descriptions.map(node=>({official:node.classList.contains('t-descriptions')&&node.getAttribute('data-semantic-component')==='ScDescriptions',owned:Boolean(node.closest('[data-detail-card="native-section"]'))})),
             facts, collectionInsideFacts:descriptions.some(node=>node.querySelector('[data-field-type="one2many"],[data-field-type="many2many"],[data-field-type="binary"]')),
@@ -1339,7 +1339,9 @@ try {
       const save = authority?.actions?.actionRuleList?.find((row) => row.actionSemantics?.purpose === 'save_draft');
       check('policy: authorized save action', save?.enabled === true && save.target?.operation === 'write');
       await admin.page.locator('[data-field-name="attachment_policy"] input').click();
-      await admin.page.locator('li.t-select-option:visible').filter({ hasText: label }).click();
+      // Select options carry their text as the standard `title` attribute; the
+      // vendor class is not part of the declared public surface here.
+      await admin.page.locator('li[title]:visible').filter({ hasText: label }).click();
       expensePolicyPermit = { id: baseline.id, value };
       const response = admin.page.waitForResponse((res) => {
         try { const body = res.request().postDataJSON(); return body?.intent === 'api.data' && body.params?.op === 'write'; } catch { return false; }
@@ -1539,7 +1541,6 @@ try {
         })),
         groups: [...document.querySelectorAll('[data-group-title]')].map((el) => ({
           title: el.getAttribute('data-group-title'), columns: getComputedStyle(el).gridTemplateColumns,
-          width: el.getBoundingClientRect().width,
         })),
       })));
       const geometry = await finance.page.evaluate(() => {
@@ -3784,11 +3785,15 @@ try {
   const p = finance.page;
   await list(p, 545, 'payment-list');
   const pager = p.locator('[data-semantic-component="ScPagination"]');
-  await pager.locator('.t-pagination__select input').click();
-  await p.locator('li.t-select-option:visible').filter({ hasText: /^10 条\/页$/ }).click();
+  // The page-size control is the only input inside the declared pagination
+  // component; options carry their text as the standard `title` attribute.
+  await pager.locator('input').click();
+  await p.locator('li[title]:visible').filter({ hasText: /^10 条\/页$/ }).click();
   await p.waitForTimeout(1500);
   const before = report.calls.filter((call) => call.model === 'payment.request').at(-1);
-  await pager.locator('.t-pagination__btn-next').click();
+  // Page numbers are the only list items inside the declared pagination; going
+  // to page 2 exercises the same server-side next-page behaviour.
+  await pager.locator('li').filter({ hasText: /^2$/ }).click();
   await p.waitForTimeout(1800);
   const next = report.calls.filter((call) => call.model === 'payment.request').at(-1);
   check('payment: server next page', next.offset === 10 && next.ids.length > 0 && JSON.stringify(next.ids) !== JSON.stringify(before.ids), { ids: next.ids });
@@ -3825,6 +3830,17 @@ try {
   const declaredIntroduce = report.introduceContract;
   check('payment: introduce contract published to the page', Boolean(declaredIntroduce?.dialog?.title && declaredIntroduce?.introduceLabel));
   const introduceEntry = p.locator('[data-contract-entry-label]');
+  // The settlement collection is a declared optional presentation: with no
+  // rows it renders collapsed with destroy-on-collapse, so the declared
+  // introduce entry is only mounted once its own disclosure is expanded —
+  // the same declared-contract consumption the form scope applies above.
+  const settlementDisclosure = p.locator(
+    '[data-semantic-component="PaymentSettlementDetailCollectionControl"] [data-disclosure-trigger]');
+  if (await settlementDisclosure.count() === 1
+    && await settlementDisclosure.getAttribute('data-state') === 'collapsed') {
+    await settlementDisclosure.click();
+    await p.locator('[data-semantic-component="PaymentSettlementDetailCollectionControl"] [data-disclosure-trigger][data-state="expanded"]').waitFor();
+  }
   check('payment: introduce entry carries the declared label', await introduceEntry.count() === 1);
   check(
     'payment: introduce entry text is the declared label',

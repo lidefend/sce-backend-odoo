@@ -106,5 +106,5 @@ equal(resolveSceneRuntimeDiagnostic({ bridge_aligned: false }, defaultCopy), '�
 equal(resolveSceneRuntimeDiagnostic({ semantic_bridge_aligned: false }, defaultCopy), '当前场景语义尚未完全对齐。');
 equal(resolveSceneRuntimeDiagnostic({ bridge_aligned: true, semantic_bridge_aligned: false }, defaultCopy), '');
 equal(resolveSceneRuntimeDiagnostic({ missing_required_count: 1, active_transition_count: 2, bridge_aligned: false }, defaultCopy), '待补充事项：1；可办理步骤：2；当前场景语义尚未完全对齐。');
-equal(resolveSceneRuntimeDiagnostic({ active_transition_count: 1 }, (_key, _fallback) => 'Declared transition'), 'Declared transition：1');
+equal(resolveSceneRuntimeDiagnostic({ active_transition_count: 1 }, () => 'Declared transition'), 'Declared transition：1');
 console.log(`[scene_runtime_diagnostic_test] PASS diagnostic_cases=12 total_cases=${cases}`);

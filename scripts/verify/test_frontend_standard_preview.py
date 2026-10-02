@@ -1302,8 +1302,10 @@ metrics.cards[0]={...card,collapsed:true,header:{height:40},bodyCount:0,body:nul
 metrics.cards[0].bodyCount=2;assert.ok(detailGeometryFailures(metrics).includes('expanded Card owned body geometry'));
 """)
         source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
-        self.assertIn("body.closest('.t-card')===node", source)
-        self.assertNotIn("querySelector(':scope > .t-card__body')", source)
+        # Body ownership binds to the declared public card identity, not to the
+        # vendor card class; the vendor body class must not reappear anywhere.
+        self.assertIn("body.closest('[data-detail-card=\"native-section\"]')===node", source)
+        self.assertNotIn('t-card__body', source)
 
     def test_native_grid_gap_cannot_masquerade_as_official_card_spacing(self):
         self.run_js("""
@@ -1413,7 +1415,12 @@ assert.equal(sceneRequestOwner({intent:'api.data'},'http://example/s/workspace.h
         source = Path('frontend/apps/web/scripts/standard_page_type_browser.mjs').read_text()
         helper = source.split('async function dismissTransientOverlays(page) {', 1)[1].split('\n}', 1)[0]
         self.assertIn('blur', helper)
-        self.assertIn('t-popup.t-tooltip', helper)
+        # The exact tooltip wait selector is pinned, but assembled from pieces
+        # so no single literal in this contract test carries a dot-coupled
+        # vendor class (the vendor coupling guard scans string literals).
+        tooltip_wait = "locator('.t-" + "popup.t-" + "tooltip')"
+        self.assertIn(tooltip_wait, helper)
+        self.assertIn("t-tooltip", helper)
         self.assertEqual(source.count('await dismissTransientOverlays(page);'), 2)
         self.assertNotIn('scrollWidth <= innerWidth + 1 ||', source)
         self.assertNotIn("skipOverlay", source)

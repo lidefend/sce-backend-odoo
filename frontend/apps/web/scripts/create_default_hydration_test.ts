@@ -216,8 +216,8 @@ assert.equal(child.effectiveColumn('lines', draft, columns[0]!).readonly, false)
 child.setRowField('lines', draft.key, columns[0]!, 'Entered name');
 assert.deepEqual(child.buildCommandValue('lines', 'write'), [[0, 0, { quantity: 0, active: false, name: 'Entered name' }]], 'readonly audit/state and untouched empty note are not writes');
 child.setRowField('lines', draft.key, columns[5]!, '');
-assert.equal((child.buildCommandValue('lines', 'write') as any)[0][2].note, '', 'explicit empty user edit remains a write');
-assert.equal((child.buildCommandValue('lines', 'onchange') as any)[0][2].state, 'draft', 'onchange sees full defaults including readonly state');
+assert.equal((child.buildCommandValue('lines', 'write') as unknown as Array<[number, number, { note?: string }]>)[0][2].note, '', 'explicit empty user edit remains a write');
+assert.equal((child.buildCommandValue('lines', 'onchange') as unknown as Array<[number, number, { state?: string }]>)[0][2].state, 'draft', 'onchange sees full defaults including readonly state');
 const failed = child.addRow('lines'); rejectChild(new Error('temporary failure')); await failed;
 assert.equal(errors, 1); assert.equal(child.visibleRows('lines').length, 1, 'failure cannot append empty row');
 assert.equal(child.defaultsPending.value, false);

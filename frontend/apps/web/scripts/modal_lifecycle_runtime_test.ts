@@ -20,8 +20,8 @@ class ElementStub {
   getClientRects() { return this.visible && this.isConnected ? [{}] : []; }
   getAttribute(name: string) { return this.attrs[name] ?? null; }
   descendants(): ElementStub[] { return this.children.flatMap(child => [child, ...child.descendants()]); }
-  querySelector(_selector: string) { return this.descendants().find(child => 'autofocus' in child.attrs || 'data-dialog-primary' in child.attrs) || null; }
-  querySelectorAll(_selector: string) { return this.descendants().filter(child => child.tag === 'button' && !child.attrs.disabled); }
+  querySelector(selector: string) { void selector; return this.descendants().find(child => 'autofocus' in child.attrs || 'data-dialog-primary' in child.attrs) || null; }
+  querySelectorAll(selector: string) { void selector; return this.descendants().filter(child => child.tag === 'button' && !child.attrs.disabled); }
 }
 const documentStub = {
   activeElement: null as ElementStub | null,
