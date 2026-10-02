@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4547`
+- Scanned files: `4568`
 - Files requiring split plan: `60`
 - Files above warning threshold: `110`
 
@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2488 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2454 | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2364 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2379 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2225 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
@@ -215,7 +215,7 @@ Generated from repository source files. This report is informational during the 
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2488 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
-| 2364 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
+| 2379 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 2340 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
 | 2225 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
