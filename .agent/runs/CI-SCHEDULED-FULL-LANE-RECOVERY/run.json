@@ -15,11 +15,8 @@
     "docs/engineering_convergence/"
   ],
   "environment": {
-    "kind": "runtime",
-    "authority": "Existing owner-authorized isolated local acceptance runtime via governed Make for the browser lanes; offline targeted lint/guard checks reuse workspace dependencies",
-    "runtime_profile": "local",
-    "project": "sc-fe-r2-p1-01",
-    "database": "sc_frontend_acceptance"
+    "kind": "offline",
+    "authority": "Offline targeted lint and vendor-coupling guard checks reusing workspace dependencies. The browser-lane runtime observations (overlay page-renderer, TPL07 scopes, live 5180 acceptance-stack DOM equivalence) are supplementary readonly evidence recorded in docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md, not run checks."
   },
   "checks": {
     "full_lint": {
