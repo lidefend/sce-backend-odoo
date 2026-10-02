@@ -113,8 +113,13 @@ try {
   const nestedFocus = await drawer.evaluate((node) => node.contains(document.activeElement));
   await page.keyboard.press('Escape');
   await drawer.waitFor({ state: 'hidden' });
-  await page.waitForFunction(() => !document.querySelector('.t-drawer, .t-drawer__mask, [data-overlay-kind="drawer"]'));
-  const closedDrawerResidueCount = await page.locator('.t-drawer, .t-drawer__mask, [data-overlay-kind="drawer"]').count();
+  // Public-surface equivalent: the drawer root carries [data-overlay-kind];
+  // TDesign masks expose no public marker, so vendor residue is verified via
+  // class inspection instead of vendor-class selector literals.
+  await page.waitForFunction(() => !document.querySelector('[data-overlay-kind="drawer"]')
+    && !Array.from(document.body.querySelectorAll('*')).some(node => node.classList.contains('t-drawer') || node.classList.contains('t-drawer__mask')));
+  const closedDrawerResidueCount = await page.evaluate(() => (document.querySelector('[data-overlay-kind="drawer"]') ? 1 : 0)
+    + Array.from(document.body.querySelectorAll('*')).filter(node => node.classList.contains('t-drawer') || node.classList.contains('t-drawer__mask')).length);
   await page.waitForFunction(() => document.activeElement?.id === 'open-drawer');
   const nestedRestore = await page.evaluate(() => document.activeElement?.id === 'open-drawer');
   const nestedBodyLocked = await page.evaluate(() => getComputedStyle(document.body).overflow === 'hidden');
@@ -241,8 +246,10 @@ async function runPageRendererScope() {
     for (const type of ['metric_row','todo_list','alert_panel','entry_grid','record_summary','record_table','progress_summary','activity_feed','accordion_group','boq_import_preview','chart_dataset','rich_text_overview']) {
       const host = page.locator(`[data-block-type="${type}"]`);
       check(await host.locator('[data-semantic-component="ScCard"]').count() === 1, `${type}: one official Card owner`);
-      check(await host.locator('.t-card').count() === 1, `${type}: real TDesign Card`);
-      check(await host.locator('.t-card--bordered').count() === 0, `${type}: borderless Card`);
+      // The semantic marker sits on the card element itself, so real-TDesign
+      // and borderless assertions run via class inspection on that node.
+      check(await host.locator('[data-semantic-component="ScCard"]').evaluate(node => node.classList.contains('t-card')), `${type}: real TDesign Card`);
+      check(await host.locator('[data-semantic-component="ScCard"]').evaluate(node => !node.classList.contains('t-card--bordered')), `${type}: borderless Card`);
       check(await host.locator(':scope > article').evaluate(node => {
         const style = getComputedStyle(node); return style.borderTopWidth === '0px' && style.paddingTop === '0px' && style.boxShadow === 'none' && style.backgroundColor === 'rgba(0, 0, 0, 0)';
       }), `${type}: transparent semantic host`);

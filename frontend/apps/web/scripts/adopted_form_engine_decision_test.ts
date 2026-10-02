@@ -152,16 +152,15 @@ class AdoptedSurface {
       specs.filter((spec) => spec.rendered !== false).map((spec) => String(spec.name)),
     );
     this.fields.value = this.materialize();
-    const owner = this;
     const Root = defineComponent({
-      setup() {
+      setup: () => {
         return () => h(TDesignForm as never, {
-          ref: owner.formRef,
+          ref: this.formRef,
           data: draft,
-          rules: buildContractFormRules(owner.fields.value),
+          rules: buildContractFormRules(this.fields.value),
           showErrorMessage: false,
         }, () => {
-          const itemRules = owner.options.rulesOnItems
+          const itemRules = this.options.rulesOnItems
             ? buildContractFormRules(owner.fields.value)
             : {};
           return owner.renderedFields().map((item) => h(

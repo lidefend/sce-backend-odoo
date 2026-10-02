@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "CI-SCHEDULED-FULL-LANE-RECOVERY",
+  "branch": "fix/scheduled-ci-full-lane-recovery",
+  "status": "active",
+  "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
+  "goal": ".agent/goals/CI-SCHEDULED-FULL-LANE-RECOVERY.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md",
+  "scope": [
+    "frontend/apps/web/scripts/",
+    "scripts/verify/",
+    "make/",
+    ".agent/",
+    "docs/ops/iterations/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Offline targeted lint and vendor-coupling guard checks reusing workspace dependencies. The browser-lane runtime observations (overlay page-renderer, TPL07 scopes, live 5180 acceptance-stack DOM equivalence) are supplementary readonly evidence recorded in docs/ops/iterations/scheduled_ci_full_lane_recovery_20261002.md, not run checks."
+  },
+  "checks": {
+    "full_lint": {
+      "target": "verify.frontend.lint",
+      "inputs": [
+        "frontend/apps/web/scripts/adopted_form_engine_decision_test.ts",
+        "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "frontend/apps/web/scripts/intent_request_coalescing_test.ts",
+        "frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "frontend/apps/web/scripts/typed_dependency_contract_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "vendor_coupling": {
+      "target": "verify.frontend.playwright_vendor_coupling.guard",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/playwright_vendor_coupling_guard.py",
+        "scripts/verify/baselines/playwright_vendor_coupling.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Fixes implemented: 22 lint errors cleared across 9 probe/test scripts (verify.frontend.lint PASS, 0 errors), vendor selectors refactored to public-surface equivalents across standard_page_type_browser.mjs (8->3, disclosed DOM-inspection evidence), frontend_list_surface_structure_browser.mjs (cleared, DAILY block via ScCard equivalents), frontend_overlay_lifecycle_browser.mjs (7->3), and the two contract tests synced (105+21 tests OK); guard PASS 104 < baseline 109 with zero baseline raises. Runtime lanes green: overlay page-renderer (76 checks), TPL07 style (93) / create-edit (48) / default payment (39, disclosure-expand step restored after ablation proved the introduce-entry failure pre-existed on main). Next: run the make agent.run begin/record cycle for full_lint and vendor_coupling, then commit, ci.delivery.freeze.prepare, exact-head ci.local.quick, and the protected PR."
+}

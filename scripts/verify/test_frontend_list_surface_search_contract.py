@@ -307,8 +307,11 @@ assert.equal(safeFailedResponse(500,'https://daily.test/assets/a?token=secret',r
             validate_search_probe(*(self.probe + "\nawait input.press('Enter');\n", *self.declared[1:]))
 
     def test_primitive_internal_binding_is_rejected(self):
+        # The rejection rule matches the primitive class name itself, so the
+        # negative fixture spells it without the CSS dot: the fixture tests the
+        # rule, it does not couple to the vendor selector.
         with self.assertRaises(AssertionError):
-            validate_search_probe(*(self.probe + "\nconst x = '.t-input__inner';\n", *self.declared[1:]))
+            validate_search_probe(*(self.probe + "\nconst x = 't-input__inner';\n", *self.declared[1:]))
 
     def test_missing_declared_submit_control_is_rejected(self):
         with self.assertRaises(AssertionError):

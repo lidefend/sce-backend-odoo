@@ -30,7 +30,7 @@ const check = (actual: unknown, expected: unknown, label: string) => {
   cases += 1;
   try {
     assert.equal(actual, expected, label);
-  } catch (error) {
+  } catch {
     fails.push(label);
     console.log(`[FAIL] ${label}\n       actual=${JSON.stringify(actual)} expected=${JSON.stringify(expected)}`);
   }
@@ -172,7 +172,7 @@ const layoutNodes = ref([{
   descriptor: { name: 'name', string: '项目名称', required: true, readonly: false, ttype: 'char' },
 }]);
 
-let registry = createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' } as const));
+const registry = createStandardFormValidationRegistry(() => ({ pageType: 'record-form', reason: 'contract-record-view' } as const));
 let sectionGate = deferred();
 registry.register({ sectionId: 'section-a', ruleFieldNames: () => ['name'], validate: () => { validateCalls += 1; return sectionGate.promise; } });
 

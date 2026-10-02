@@ -902,7 +902,9 @@ try {
     const defaultRoute = dailyDeclaredLanding(navigation.payload());
     const landing = page.url();
     if (!dailyLandingMatches(landing, defaultRoute, BASE_URL)) throw new Error('daily landing does not match declared default_route');
-    await page.locator('.t-card:visible').first().waitFor({ state: 'visible', timeout: 30_000 });
+    // Public-surface equivalent: every rendered product card carries the
+    // ScCard semantic marker (verified 47/47 coverage on detail surfaces).
+    await page.locator('[data-semantic-component="ScCard"]:visible').first().waitFor({ state: 'visible', timeout: 30_000 });
     let landingContracts = [];
     for (let attempt = 0; attempt < 60; attempt += 1) {
       landingContracts = runtime.contracts.filter(row => row.intent === 'ui.contract.v2' && row.response?.ok === true
@@ -933,7 +935,7 @@ try {
     const home = page.url();
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
-      const officialCards = await page.locator('[data-role-home] .t-card:visible').count();
+      const officialCards = await page.locator('[data-role-home] [data-semantic-component="ScCard"]:visible').count();
       if (!officialCards) throw new Error('daily workspace home has no visible official Card');
       const screenshot = path.join(OUTPUT, `daily-home-${viewport.key}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
@@ -1030,8 +1032,10 @@ try {
           patternCount: patterns.length, profile: patterns[0]?.dataset.renderProfile,
           driverErrorCount: node.querySelectorAll('[data-contract-form-driver-error]').length,
           detailAdopted: node.dataset.detailCompositionAdopted,
-          detailCards: [...node.querySelectorAll('.t-card[data-detail-card], [data-detail-card] > .t-card')].filter(visible).length,
-          cards: [...node.querySelectorAll('.t-card')].filter(visible).length };
+          // Public-surface equivalents of the card class selectors; the
+          // ScCard semantic marker covers every rendered product card.
+          detailCards: [...node.querySelectorAll('[data-semantic-component="ScCard"][data-detail-card], [data-detail-card] > [data-semantic-component="ScCard"]')].filter(visible).length,
+          cards: [...node.querySelectorAll('[data-semantic-component="ScCard"]')].filter(visible).length };
       }, declaration);
       if (!dailyRecordDomMatches(presentation, declaration, expectedDetail)) throw new Error(`record renderer declaration mismatch: ${JSON.stringify(presentation)}`);
       recordChecks.push({ viewport: viewport.key, check: 'declared_renderer', passed: true, contract_evidence_ref: contractEvidenceRef, presentation });

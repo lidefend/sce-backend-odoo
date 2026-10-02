@@ -479,6 +479,10 @@ verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend
 verify.frontend.lint.src: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint:src
 
+.PHONY: verify.frontend.lint
+verify.frontend.lint: guard.prod.forbid
+	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint
+
 .PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard verify.frontend.all_list_visual.audit verify.frontend.density.baseline verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard verify.frontend.industry_agnostic.audit.unit
 
 verify.frontend.auth_credential.guard: guard.prod.forbid
