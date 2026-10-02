@@ -453,3 +453,30 @@ referenced `snapshot_file` to exist. Authoring the 16 examples therefore closes
 the previously-red catalog gate on its own. The full 151-case snapshot matrix
 diff inventory against the stale `666838f92` references is a separate,
 pre-existing item and is not part of this closure.
+
+#### Matrix completion probe (bounded, out of scope, recorded for the owner)
+
+One bounded full-matrix run was attempted on the seeded snapshot profile and it
+**aborts at case 21**. This is diagnostic only and does not affect the closure
+above, but the exact cause matters for whoever owns fixture hygiene:
+
+- 20 cases export, then `my_work_complete_batch_pm` fails with
+  `{'code': 409, 'reason_code': 'IDEMPOTENCY_CONFLICT'}`. The case is unmodified
+  by this branch (`git diff 002b2c64a HEAD -- docs/contract/cases.yml` contains
+  no reference to it) and has no `allow_error_response`, so the 409 is fatal.
+- Root cause is **seed residue, not this change**: `sc.idempotency.record`
+  holds exactly one row, `idempotency_key = snapshot_my_work_batch_1`,
+  `create_date = 2026-09-08 10:54:18` — weeks before this session, and carried
+  in by the read-only seed from the registered `sc-local-dev` / `sc_dev_demo`
+  source. That record is also proof that the idempotency store commits
+  independently of the exporting transaction, so a replayed fixed
+  `request_id` can never export twice from a DB seeded off a prior run.
+- A separate stale-fixture class exists as well: cases such as
+  `execute_button_not_allowed` (`demo_role_pm`, `--op model`) fail against the
+  current fixture expectations. (An interleaved log from a previously killed
+  attempt made this look like an earlier abort; the ordered export list confirms
+  the run reached case 21 before stopping.)
+- Consequence: the full matrix can only become a usable gate after seed/fixture
+  hygiene work (unique per-run `request_id`s, or a seed without committed
+  idempotency state). Recording it is in scope; repairing it is not, and it is
+  not needed to close the catalog gate, which is evaluated offline.
