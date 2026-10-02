@@ -118,7 +118,6 @@ class ViewOrchestrator:
                         continue
                     if any(key in spec for key in ("layout", "sections", "fields", "field_slots", "columns")) and native_surface_selected:
                         raise ValueError("CONFIG_TARGET_BINDING_REQUIRED: %s" % config.name)
-                before = deepcopy(out)
                 declares_form_layout_overlay = (
                     normalized_view_type == "form"
                     and self._config_declares_layout_overlay(config, normalized_view_type, model_name)
@@ -140,19 +139,24 @@ class ViewOrchestrator:
                     model_name,
                     preserve_native_members=bool(view_id),
                 )
-                if out != before or declares_form_layout_overlay or declares_semantic_entry_surface or declares_native_semantic_surface:
-                    applied_row = {
-                        "id": int(config.id),
-                        "name": config.name,
-                        "version_no": int(config.version_no or 1),
-                        "status": str(getattr(config, "status", "") or ""),
-                        "source_kind": str(getattr(config, "source_kind", "published") or "published"),
-                    }
-                    applied_contracts = [
-                        row for row in applied_contracts
-                        if int(row.get("id") or 0) != applied_row["id"]
-                    ]
-                    applied_contracts.append(applied_row)
+                # ``_effective_view_orchestration_contracts`` already selected
+                # this row for the surface, so it governed the delivery even when
+                # its rules restate the native structure and change nothing here.
+                # The carrier is the authoritative "which published rows governed
+                # this delivery" list; record every selected row exactly once so
+                # a field-policy-only contract is attributed like a structural one.
+                applied_row = {
+                    "id": int(config.id),
+                    "name": config.name,
+                    "version_no": int(config.version_no or 1),
+                    "status": str(getattr(config, "status", "") or ""),
+                    "source_kind": str(getattr(config, "source_kind", "published") or "published"),
+                }
+                applied_contracts = [
+                    row for row in applied_contracts
+                    if int(row.get("id") or 0) != applied_row["id"]
+                ]
+                applied_contracts.append(applied_row)
                 form_layout_overlay_applied = form_layout_overlay_applied or declares_form_layout_overlay
                 semantic_entry_surface_applied = semantic_entry_surface_applied or declares_semantic_entry_surface
                 native_semantic_surface_applied = native_semantic_surface_applied or declares_native_semantic_surface

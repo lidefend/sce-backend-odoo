@@ -1,4 +1,6 @@
 {
   "schema_version": 1,
-  "branches": {}
+  "branches": {
+    "fix/contract-supply-chain-attestation": ".agent/runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/run.json"
+  }
 }
