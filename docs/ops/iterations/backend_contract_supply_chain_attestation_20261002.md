@@ -60,3 +60,42 @@ No file was merged by hand except `make/dev_test.mk`, where `main`'s
 - Topic (e), the re-baseline decision for the 119 stale snapshot references, stays an
   owner contract-authority decision and is not touched here.
 - Deployment, version release and product delivery remain separate, unauthorized steps.
+
+## Results at the frozen candidate `f4280c850`
+
+Candidate: `f4280c8508e8b106cb922d774797497284941c91` (`fix/contract-supply-chain-attestation`,
+clean tree, 22 paths). `make ci.local.iteration` PASS; the regenerated tracked reports were
+confirmed current by `make ci.generated_reports.guard` after the merge, not copied from either
+side (only `view_orchestrator.py` 1301 -> 1305 lines and +6 scanned files versus `main`, which
+is exactly this topic's footprint).
+
+| Layer | Entry | Result |
+| --- | --- | --- |
+| L2 offline | `verify.backend.contract_supply_chain.unit` | 19 tests PASS |
+| L2 offline | `verify.backend.contract_supply_chain.compatibility.unit` | 31 tests PASS |
+| L2 offline | `verify.backend.contract_lifecycle.authority` | 35 tests PASS, score 100/100 L4, p0Count 0 |
+| L2 offline | `verify.contract.catalog` | 16 tests PASS |
+| L3 runtime | `verify.backend.contract_supply_chain.runtime` | probe 14/14 PASS + host Ed25519 guard 12 tests OK |
+| L3 runtime | `verify.backend.contract_slo_telemetry.runtime` | probe 43/43 PASS + host guard 11 tests OK |
+
+The runtime lanes ran after `make local.contract-lifecycle.prepare` refreshed
+`SC_SOURCE_REVISION` from the old branch tip `2ad47f83f` to this candidate and
+`make local.contract-lifecycle.up` recreated the odoo container through the governed entry; no
+module upgrade was needed because the `addons/` tree is byte-identical to the topic branch that
+produced the original evidence, and the probe runs in a fresh `odoo shell` process that imports
+from this worktree's mount.
+
+The SLO telemetry runtime lane is in scope here because it is the check that locks the carried
+`view_orchestrator.py` carrier fix (topic b's published-version attribution). The L4
+`verify.backend.contract_lifecycle.runtime` lane was not re-run: it asserts nothing about the
+carrier and its declared inputs are unchanged, so its integration-head receipt in the closed
+`BACKEND-CONTRACT-L4-CLOSURE` goal stands for its own scope.
+
+One owning-layer fix was made while verifying: the standalone
+`verify.backend.contract_supply_chain.runtime.schema.guard` target silently read an implicit
+`/tmp` report. It now binds the governed `artifacts/` report explicitly and fails closed with a
+clear message when none exists, so a stray file from another revision cannot be consumed.
+
+Still open and owner-gated: independent review of this carried delta, the Gitee candidate
+dispatch (after the `gitee-mirror/main` sync), publication, the external trust root, and topic
+(e).
