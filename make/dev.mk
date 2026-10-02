@@ -23,6 +23,24 @@ odoo-shell: check-compose-project check-compose-env
 LOCAL_DEV_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.dev
 LOCAL_SAMPLE_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.sample
 LOCAL_CLEAN_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.clean
+
+# The registered isolated contract-lifecycle profile documented in
+# docs/architecture/backend_contract_lifecycle_authority_v1.md: project
+# sc-contract-lifecycle-v1, database sc_contract_lifecycle, dbfilter
+# ^sc_contract_lifecycle$. It exists so the backend contract lifecycle and its
+# SLO telemetry can be exercised against the source mount of the worktree that
+# runs it. Its env file stays worktree-local.
+LOCAL_CONTRACT_LIFECYCLE_ENV_FILE ?= $(ROOT_DIR)/.env.local.contract-lifecycle
+LOCAL_CONTRACT_LIFECYCLE_MODULES ?= smart_core
+# Same rationale as SC_ACCEPTANCE_FIXTURE_PASSWORD: the profile is an isolated
+# synthetic database, so a fixed, intentionally simple value keeps repeated
+# verification reproducible. Override explicitly when a distinct value is
+# required.
+LOCAL_CONTRACT_LIFECYCLE_PASSWORD ?= scdevpass
+LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT ?= 18090
+LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT ?= 8079
+export LOCAL_CONTRACT_LIFECYCLE_PASSWORD
+
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
@@ -391,6 +409,55 @@ verify.local.dev.payment_request.attachment_m2m.journey: guard.prod.forbid local
 
 local.clean.require_env: guard.prod.forbid
 	@test -f "$(LOCAL_CLEAN_ENV_FILE)" || { echo "clean env is not prepared: $(LOCAL_CLEAN_ENV_FILE)" >&2; exit 2; }
+
+.PHONY: local.contract-lifecycle.require_env local.contract-lifecycle.prepare \
+	local.contract-lifecycle.rebuild local.contract-lifecycle.up \
+	local.contract-lifecycle.down local.contract-lifecycle.ps \
+	local.contract-lifecycle.odoo-shell local.contract-lifecycle.odoo-shell.run \
+	local.contract-lifecycle.discard
+
+local.contract-lifecycle.require_env: guard.prod.forbid
+	@test -f "$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" || { echo "contract-lifecycle env is not prepared: $(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" >&2; exit 2; }
+
+local.contract-lifecycle.prepare: guard.prod.forbid
+	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  TARGET_ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  LOCAL_CONTRACT_LIFECYCLE_PASSWORD="$(LOCAL_CONTRACT_LIFECYCLE_PASSWORD)" \
+	  LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT="$(LOCAL_CONTRACT_LIFECYCLE_NGINX_PORT)" \
+	  LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT="$(LOCAL_CONTRACT_LIFECYCLE_ODOO_PORT)" \
+	  LOCAL_CONTRACT_LIFECYCLE_PREPARE_FOR_REBUILD="$${LOCAL_CONTRACT_LIFECYCLE_PREPARE_FOR_REBUILD:-0}" \
+	  CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD="$${CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD:-}" \
+	  bash scripts/dev/local_contract_lifecycle_env_prepare.sh
+
+local.contract-lifecycle.rebuild: guard.prod.forbid local.contract-lifecycle.prepare
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  LOCAL_CONTRACT_LIFECYCLE_MODULES="$(LOCAL_CONTRACT_LIFECYCLE_MODULES)" \
+	  CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD="$${CONFIRM_LOCAL_CONTRACT_LIFECYCLE_REBUILD:-}" \
+	  bash scripts/dev/local_contract_lifecycle_rebuild.sh
+
+local.contract-lifecycle.up: guard.prod.forbid local.contract-lifecycle.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" up
+
+local.contract-lifecycle.down: guard.prod.forbid local.contract-lifecycle.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" down
+
+local.contract-lifecycle.ps: guard.prod.forbid local.contract-lifecycle.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" ps
+
+local.contract-lifecycle.odoo-shell: guard.prod.forbid local.contract-lifecycle.require_env
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  local.contract-lifecycle.odoo-shell.run
+
+# Loads the profile env through Make so RUN_ENV forwards the correct
+# COMPOSE_PROJECT_NAME/COMPOSE_FILES/database identity to the shared shell
+# entrypoint. Invoked only through the guarded outer target.
+local.contract-lifecycle.odoo-shell.run:
+	@$(RUN_ENV) DB_NAME="$(DB_NAME)" bash scripts/ops/odoo_shell_exec.sh
+
+local.contract-lifecycle.discard: guard.prod.forbid local.contract-lifecycle.require_env
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD="$${CONFIRM_LOCAL_CONTRACT_LIFECYCLE_DISCARD:-}" \
+	  bash scripts/dev/local_contract_lifecycle_discard.sh
 
 local.clean.prepare: guard.prod.forbid
 	@ROOT_DIR="$(ROOT_DIR)" SOURCE_ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
