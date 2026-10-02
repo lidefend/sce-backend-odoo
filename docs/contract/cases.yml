@@ -1310,5 +1310,203 @@
     "op": "intent.invoke",
     "intent": "auth.logout",
     "intent_params": {}
+  },
+  {
+    "case": "chatter_attachment_delete_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "chatter.attachment.delete",
+    "allow_error_response": true,
+    "intent_params": {
+      "model": "project.project",
+      "res_id": 1,
+      "attachment_id": 999999991
+    }
+  },
+  {
+    "case": "chatter_followers_list_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "allow_error_response": true,
+    "intent": "chatter.followers.list",
+    "intent_params": {
+      "model": "project.project",
+      "res_id": 1
+    }
+  },
+  {
+    "case": "chatter_followers_update_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "intent": "chatter.followers.update",
+    "allow_error_response": true,
+    "intent_params": {
+      "model": "project.project",
+      "res_id": 1,
+      "action": "follow"
+    }
+  },
+  {
+    "case": "chatter_message_delete_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "chatter.message.delete",
+    "allow_error_response": true,
+    "intent_params": {
+      "model": "project.project",
+      "res_id": 1,
+      "message_id": 999999991
+    }
+  },
+  {
+    "case": "search_favorite_delete_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "search.favorite.delete",
+    "allow_error_response": true,
+    "intent_params": {
+      "model": "project.project",
+      "filter_id": 999999991,
+      "action_id": 0
+    }
+  },
+  {
+    "case": "contract_slo_snapshot_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "allow_error_response": true,
+    "intent": "smart_core.contract_slo.snapshot",
+    "intent_params": {
+      "window_seconds": 86400,
+      "bucket_seconds": 3600
+    }
+  },
+  {
+    "case": "payment_request_settlement_search_intent_admin",
+    "user": "sc_test_admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "allow_error_response": true,
+    "intent": "payment.request.settlement.search",
+    "intent_params": {
+      "keyword": "",
+      "limit": 10
+    }
+  },
+  {
+    "case": "payment_request_settlement_preview_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "intent": "payment.request.settlement.preview",
+    "allow_error_response": true,
+    "intent_params": {
+      "settlement_id": 999999991
+    }
+  },
+  {
+    "case": "payment_request_add_settlement_lines_intent_admin",
+    "user": "sc_test_admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "intent": "payment.request.add.settlement.lines",
+    "allow_error_response": true,
+    "intent_params": {
+      "payment_request_id": 1,
+      "settlement_id": 999999991,
+      "settlement_line_ids": [
+        999999991
+      ],
+      "apply_mode": "ratio"
+    }
+  },
+  {
+    "case": "project_boq_export_request_intent_admin",
+    "user": "sc_test_admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "intent": "project.boq.export.request",
+    "allow_error_response": true,
+    "intent_params": {
+      "project_id": 4,
+      "version_id": 20
+    }
+  },
+  {
+    "case": "project_boq_import_dangerous_preview_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "project.boq.import.dangerous.preview",
+    "allow_error_response": true,
+    "intent_params": {
+      "project_id": 4,
+      "version_id": 20,
+      "mode": "replace"
+    }
+  },
+  {
+    "case": "project_boq_import_dangerous_execute_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "project.boq.import.dangerous.execute",
+    "allow_error_response": true,
+    "intent_params": {
+      "project_id": 4,
+      "version_id": 20,
+      "mode": "replace",
+      "confirm_token": "snapshot_di_token_placeholder",
+      "request_id": "snapshot_boq_di_1"
+    }
+  },
+  {
+    "case": "project_boq_import_preview_fetch_intent_admin",
+    "user": "sc_test_admin",
+    "op": "intent.invoke",
+    "intent": "project.boq.import.preview.fetch",
+    "allow_error_response": true,
+    "intent_params": {
+      "batch_id": 999999991
+    }
+  },
+  {
+    "case": "project_boq_line_patch_intent_admin",
+    "user": "sc_test_admin",
+    "op": "intent.invoke",
+    "intent": "project.boq.line.patch",
+    "allow_error_response": true,
+    "intent_params": {
+      "request_id": "snapshot_boq_line_patch_1",
+      "line_id": 999999991,
+      "expected_quantity": 1,
+      "new_quantity": 2
+    }
+  },
+  {
+    "case": "project_overview_rich_text_patch_intent_admin",
+    "user": "admin",
+    "op": "intent.invoke",
+    "intent": "project.overview.rich_text.patch",
+    "allow_error_response": true,
+    "intent_params": {
+      "request_id": "snapshot_overview_patch_1",
+      "project_id": 1,
+      "expected_overview_digest": "snapshot-digest-placeholder",
+      "new_overview_html": "<p>snapshot</p>"
+    }
+  },
+  {
+    "case": "project_dashboard_chart_fetch_intent_admin",
+    "user": "admin",
+    "compare_mode": "shape",
+    "op": "intent.invoke",
+    "allow_error_response": true,
+    "intent": "project.dashboard.chart.fetch",
+    "intent_params": {
+      "chart_key": "project.cost.structure",
+      "project_id": 1
+    }
   }
 ]

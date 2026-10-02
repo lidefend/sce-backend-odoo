@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Retention sweep for the contract SLO observation store.
+
+         The horizon is configuration (`smart_core.contract_slo.retention_days`,
+         default 30 days); this record is the scheduled enforcement of it, so the
+         store cannot grow without bound once
+         `smart_core.contract_slo.persist_enabled` is on. It ships active like the
+         existing GC cron (cron_signup_throttle_gc) because it is a cheap indexed
+         delete that is a no-op on an empty store, and it stays re-asserted on
+         upgrade rather than silently drifting off. -->
+    <record id="ir_cron_sc_contract_slo_observation_prune" model="ir.cron">
+        <field name="name">SC Contract SLO Observation Prune</field>
+        <field name="model_id" ref="model_sc_contract_slo_observation"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_prune()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

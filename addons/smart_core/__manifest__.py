@@ -8,7 +8,7 @@
 - 意图调度总线（/api/intent），用于场景化业务动作
 - 私有缓存与多公司/多语言上下文透传
 """,
-    "version": "17.0.1.1.12",
+    "version": "17.0.1.1.14",
     "author": "Leedefend",
     "website": "https://example.com",
     "category": "Technical/Framework",
@@ -26,6 +26,7 @@
         "data/platform_bootstrap_company.xml",
         "data/sc_subscription_default.xml",
         "data/ui_base_contract_asset_cron.xml",
+        "data/contract_slo_retention_cron.xml",
         "views/platform_company_access_views.xml",
         "views/ui_menu_config_policy_views.xml",
         # 可选：默认参数/开关

@@ -1,0 +1,57 @@
+{
+  "case": "project_boq_export_request_intent_admin",
+  "trace_id": "65c2c9a2-17f1-4396-a3f7-54f238c65c52",
+  "exported_at": "2026-10-02T02:47:13Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "sc_test_admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "schema": "sc.boq.export.v1",
+    "readonly": true,
+    "export": {
+      "version_id": 20,
+      "version_code": "DEMO-V1",
+      "project_id": 4,
+      "row_count": 2,
+      "columns": [
+        "hierarchy_code",
+        "code",
+        "name",
+        "division_name",
+        "single_name",
+        "unit_name",
+        "major_name",
+        "uom",
+        "quantity",
+        "section_type",
+        "price",
+        "imported_amount",
+        "amount"
+      ],
+      "cropped_columns": [],
+      "crop_reason": "",
+      "file_digest": "05d4c3d138905546aac1c18210e385f070a1ea340f6cefb842b1d72d307c33bf",
+      "row_limit": 5000
+    },
+    "attachment": {
+      "id": 28684,
+      "filename": "BOQ_S65 成本资金演示项目_DEMO-V1.xlsx",
+      "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size": 5756,
+      "download_url": "/web/content?model=ir.attachment&id=28684&field=datas&filename_field=name&download=true"
+    },
+    "job_id": 3
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

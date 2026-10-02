@@ -1,0 +1,25 @@
+{
+  "case": "project_boq_import_preview_fetch_intent_admin",
+  "trace_id": "1686c2e8-fac7-4cd5-a191-0a1d3807cb0c",
+  "exported_at": "2026-10-02T02:47:26Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "sc_test_admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {},
+  "error": {
+    "code": "BATCH_NOT_FOUND",
+    "message": "未找到可访问的清单导入批次",
+    "suggested_action": "check_params"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-CONTRACT-L4-CLOSURE",
+  "branch": "fix/backend-contract-l4",
+  "goal": ".agent/goals/BACKEND-CONTRACT-L4-CLOSURE.yaml",
+  "record": "docs/ops/iterations/backend_contract_l4_runtime_evidence_closure_20261002.md",
+  "status": "verification_pending",
+  "baseline_sha": "002b2c64aec7b8981b3df21ebc25f80be2eb728c",
+  "scope": [
+    ".agent/",
+    "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+    "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+    "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+    "make/dev_test.mk",
+    "docs/architecture/backend_contract_lifecycle_authority_v1.md",
+    "docs/architecture/backend_contract_lifecycle_authority_v1.en.md",
+    "docs/ops/iterations/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; the runtime lane re-run used the owner-authorized isolated contract-lifecycle profile (sc-contract-lifecycle-v1) registered by the SLO telemetry batch; no environment was created by this batch"
+  },
+  "checks": {
+    "authority": {
+      "target": "verify.backend.contract_lifecycle.authority",
+      "inputs": [
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/tests/test_contract_lifecycle.py",
+        "scripts/verify/contract_schema_declaration_sync.py",
+        "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+        "docs/architecture/backend_contract_lifecycle_manifest_v1.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/examples",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_artifact_guard": {
+      "target": "verify.backend.contract_lifecycle.runtime.schema.guard.unit",
+      "inputs": [
+        "scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py",
+        "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_probe": {
+      "target": "verify.backend.contract_lifecycle.runtime",
+      "inputs": [
+        "scripts/verify/backend_contract_lifecycle_runtime_probe.py",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [
+    "Offline half closed: verify.backend.contract_lifecycle.authority passes at score 100/100 L4 (p0Count=0) and the runtime-artifact schema guard is wired in and negative-proven.",
+    "RESOLVED 2026-10-02: the runtime lane was re-run on the restored owner-authorized isolated profile (sc-contract-lifecycle-v1) by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch at the integration head: 14/14 assertions, schema guard PASS, artifact bound (moduleVersion=manifestVersion=17.0.1.1.14, sourceRevision=integration head). The probe/guard/test files are byte-identical to this batch's versions except the manifest-derived identity realignment (commit cb9fd5a86 on codex/contract-batches-integration); contract_lifecycle.py differs only by the SLO topic (b) additive publishedVersionRef keying, re-guarded at score 100. See docs/ops/iterations/contract_batches_mainline_integration_20261002.md.",
+    "Publication released by owner instruction on 2026-10-02; mainline integration is carried by the CONTRACT-BATCHES-MAINLINE-INTEGRATION batch as a single PR covering both contract batches. Deployment, version release and the Gitee candidate dispatch remain separate, unauthorized steps."
+  ],
+  "next_exact_step": "Close with the integration batch: after PR merge, record completion.mainline and mark this run completed; deployment, version release and the Gitee candidate dispatch stay separate steps requiring their own authorization.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

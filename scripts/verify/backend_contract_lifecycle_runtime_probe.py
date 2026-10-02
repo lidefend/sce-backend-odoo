@@ -1,12 +1,54 @@
 # Executed through scripts/ops/odoo_shell_exec.sh; ``env`` is provided by Odoo shell.
 from __future__ import annotations
 
+import ast
 import json
+import os
+from pathlib import Path
 
 from odoo.exceptions import ValidationError
 
 from odoo.addons.smart_core.core.contract_lifecycle import payload_sha256
 
+
+def _source_manifest_version():
+    """Read the version from the mounted smart_core source manifest.
+
+    The installed module version is only "current" when it matches the source
+    the probe actually exercises, so the expectation is derived from the
+    manifest on the Odoo addons path instead of a hand-synced literal. A frozen
+    literal silently rots every time a batch legitimately upgrades the module,
+    which turns the runtime lane red for reasons that are not a defect.
+    """
+    from odoo.tools import config as _odoo_config
+    for base in str(_odoo_config.get("addons_path") or "").split(","):
+        manifest_path = Path(base.strip()) / "smart_core" / "__manifest__.py"
+        if manifest_path.is_file():
+            manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8"))
+            return str(manifest.get("version") or "")
+    return ""
+
+
+# The declared assertion set is the producer half of the evidence contract. The
+# offline guard (backend_contract_lifecycle_runtime_schema_guard.py) owns the same
+# set and must stay identical; the probe fails closed if it drifts from its own
+# declaration so a truncated or renamed assertion can never be reported as a pass.
+DECLARED_CHECKS = (
+    "external_version_create_rejected",
+    "first_publish_hash_bound",
+    "first_publish_version_one",
+    "module_version_current",
+    "published_definition_mutation_uses_authority",
+    "published_mutation_uses_authority",
+    "published_population_digest_verified",
+    "published_population_integrity_complete",
+    "repeat_publish_idempotent",
+    "rollback_is_append_only",
+    "version_deletion_rejected",
+    "version_mutation_rejected",
+    "version_population_digest_verified",
+    "version_population_integrity_complete",
+)
 
 Contract = env["ui.business.config.contract"].sudo()
 Version = env["ui.business.config.contract.version"].sudo()
@@ -157,7 +199,10 @@ try:
         "SELECT latest_version FROM ir_module_module WHERE name = 'smart_core'"
     )
     module_version = str((env.cr.fetchone() or [""])[0] or "")
-    checks["module_version_current"] = module_version == "17.0.1.1.9"
+    manifest_version = _source_manifest_version()
+    checks["module_version_current"] = (
+        bool(manifest_version) and module_version == manifest_version
+    )
 finally:
     contract.unlink()
 
@@ -165,14 +210,38 @@ for key, passed in checks.items():
     if passed is not True:
         errors.append(key)
 
+missing_declared = [name for name in DECLARED_CHECKS if name not in checks]
+undeclared = [name for name in checks if name not in DECLARED_CHECKS]
+if missing_declared or undeclared:
+    raise AssertionError(
+        "declared assertion set drift: missing=%s undeclared=%s" % (missing_declared, undeclared)
+    )
+
+source_revision = ""
+for _revision_candidate in (
+    os.environ.get("SC_SOURCE_REVISION"),
+    os.environ.get("CANDIDATE_GIT_HEAD"),
+    os.environ.get("SC_ACCEPTANCE_SOURCE_REVISION"),
+):
+    # The compose default pins SC_SOURCE_REVISION to the placeholder "unknown"
+    # inside the container, so only a full 40-hex SHA may be accepted; every
+    # other value is skipped instead of poisoning the artifact identity.
+    _value = str(_revision_candidate or "").strip()
+    if len(_value) == 40 and all(c in "0123456789abcdef" for c in _value):
+        source_revision = _value
+        break
+
 report = {
     "probe": "backend_contract_lifecycle_runtime_probe",
-    "schemaVersion": "1.0.0",
+    "schemaVersion": "1.1.0",
     "database": env.cr.dbname,
     "moduleVersion": module_version,
+    "manifestVersion": manifest_version,
+    "sourceRevision": source_revision,
+    "declaredChecks": sorted(DECLARED_CHECKS),
     "checkCount": len(checks),
     "passedCheckCount": sum(1 for value in checks.values() if value is True),
-    "checks": checks,
+    "checks": {name: checks[name] for name in sorted(checks)},
     "versionDigestMismatchSample": version_digest_mismatches[:10],
     "errorCount": len(errors),
     "errors": errors,

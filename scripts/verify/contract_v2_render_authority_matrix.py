@@ -61,7 +61,7 @@ EXPECTED = {
     "fieldGroups": "groups sourceAuthority",
     "sourceAuthority": "kind runtime_carrier projection_only no_business_fact_authority source_key formal_projection",
     "contractLifecycle": "lifecycleVersion stage definition generation runtime integrity authority",
-    "contractLifecycleDefinition": "schemaId schemaVersion schemaSha256 contractVersion normativeStatus",
+    "contractLifecycleDefinition": "schemaId schemaVersion schemaSha256 contractVersion normativeStatus publishedVersionRef",
     "contractLifecycleGeneration": "generator generatorVersion sourceType sourceSha256",
     "contractLifecycleRuntime": "requestId traceId clientType traceSource",
     "contractLifecycleIntegrity": "algorithm contractSha256",

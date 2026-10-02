@@ -1,0 +1,37 @@
+{
+  "case": "payment_request_add_settlement_lines_intent_admin",
+  "trace_id": "1e912877-7485-4b37-8b24-ad4321e0f2ba",
+  "exported_at": "2026-10-02T02:47:09Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "sc_test_admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "ok": false,
+    "error": {
+      "code": "SETTLEMENT_NOT_FOUND",
+      "message": "结算单不存在",
+      "suggested_action": "fix_input"
+    },
+    "meta": {
+      "intent": "payment.request.add.settlement.lines",
+      "elapsed_ms": 16,
+      "trace_id": ""
+    }
+  },
+  "error": {
+    "code": "SETTLEMENT_NOT_FOUND",
+    "message": "结算单不存在",
+    "suggested_action": "fix_input"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

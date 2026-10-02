@@ -1585,6 +1585,11 @@
         },
         "normativeStatus": {
           "const": "stable"
+        },
+        "publishedVersionRef": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Published ui.business.config.contract versions that governed this delivery, as a deterministic comma-separated <model>:<id>@<version_no> reference. Absent when no published version applied."
         }
       }
     },

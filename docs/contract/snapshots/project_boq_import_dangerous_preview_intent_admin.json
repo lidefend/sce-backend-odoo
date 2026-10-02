@@ -1,0 +1,25 @@
+{
+  "case": "project_boq_import_dangerous_preview_intent_admin",
+  "trace_id": "115ce37d-033a-4a3d-9f68-790d29cbd34d",
+  "exported_at": "2026-10-02T02:47:17Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {},
+  "error": {
+    "code": "CAPABILITY_DISABLED",
+    "message": "危险导入能力未开启（sc.boq.dangerous_import.enabled）",
+    "suggested_action": "enable_feature_flag"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

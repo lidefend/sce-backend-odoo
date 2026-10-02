@@ -1,0 +1,414 @@
+{
+  "case": "contract_slo_snapshot_intent_admin",
+  "trace_id": "1efbf0c9-fbb1-403e-9f93-ea9b831bdf1f",
+  "exported_at": "2026-10-02T02:46:57Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {
+    "query": {
+      "windowSeconds": 86400,
+      "bucketSeconds": 3600,
+      "contractVersion": "",
+      "observedAt": 1790909217.169271
+    },
+    "store": {
+      "model": "sc.contract.slo.observation",
+      "persistEnabled": false,
+      "retentionDays": 30,
+      "observationCount": 0
+    },
+    "aggregate": {
+      "schemaVersion": "1.0.0",
+      "windowSeconds": 86400,
+      "totalObservations": 0,
+      "acceptedObservations": 0,
+      "rejectedObservations": 0,
+      "rejectedSample": [],
+      "windowExcludedObservations": 0,
+      "versionCount": 0,
+      "versions": []
+    },
+    "trend": {
+      "schemaVersion": "1.0.0",
+      "windowSeconds": 86400,
+      "bucketSeconds": 3600,
+      "bucketCount": 24,
+      "unplacedObservations": 0,
+      "buckets": [
+        {
+          "bucketStart": 1790822817.169271,
+          "bucketEnd": 1790826417.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790826417.169271,
+          "bucketEnd": 1790830017.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790830017.169271,
+          "bucketEnd": 1790833617.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790833617.169271,
+          "bucketEnd": 1790837217.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790837217.169271,
+          "bucketEnd": 1790840817.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790840817.169271,
+          "bucketEnd": 1790844417.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790844417.169271,
+          "bucketEnd": 1790848017.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790848017.169271,
+          "bucketEnd": 1790851617.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790851617.169271,
+          "bucketEnd": 1790855217.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790855217.169271,
+          "bucketEnd": 1790858817.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790858817.169271,
+          "bucketEnd": 1790862417.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790862417.169271,
+          "bucketEnd": 1790866017.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790866017.169271,
+          "bucketEnd": 1790869617.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790869617.169271,
+          "bucketEnd": 1790873217.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790873217.169271,
+          "bucketEnd": 1790876817.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790876817.169271,
+          "bucketEnd": 1790880417.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790880417.169271,
+          "bucketEnd": 1790884017.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790884017.169271,
+          "bucketEnd": 1790887617.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790887617.169271,
+          "bucketEnd": 1790891217.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790891217.169271,
+          "bucketEnd": 1790894817.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790894817.169271,
+          "bucketEnd": 1790898417.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790898417.169271,
+          "bucketEnd": 1790902017.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790902017.169271,
+          "bucketEnd": 1790905617.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        },
+        {
+          "bucketStart": 1790905617.169271,
+          "bucketEnd": 1790909217.169271,
+          "aggregate": {
+            "schemaVersion": "1.0.0",
+            "windowSeconds": null,
+            "totalObservations": 0,
+            "acceptedObservations": 0,
+            "rejectedObservations": 0,
+            "rejectedSample": [],
+            "windowExcludedObservations": 0,
+            "versionCount": 0,
+            "versions": []
+          }
+        }
+      ]
+    }
+  },
+  "error": null,
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

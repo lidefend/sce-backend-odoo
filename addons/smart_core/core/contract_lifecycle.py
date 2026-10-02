@@ -13,7 +13,7 @@ LIFECYCLE_VERSION = "1.0.0"
 HASH_ALGORITHM = "sha256"
 UNIFIED_PAGE_SCHEMA_ID = "smart_core.unified_page_contract_v2"
 UNIFIED_PAGE_SCHEMA_VERSION = "2.2.0"
-UNIFIED_PAGE_SCHEMA_SHA256 = "49f6d378eee4e633c24c219b8799b4f66cb4b4390a5e2376672fcb0be3d4d48b"
+UNIFIED_PAGE_SCHEMA_SHA256 = "204b8f6c4e3ea78800073811f4fd74846a3c33caa55655b62fdc9b171f613b94"
 UNIFIED_PAGE_NORMATIVE_STATUS = "stable"
 _PROTOCOL_ID_INVALID = re.compile(r"[^a-zA-Z0-9_.:-]+")
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -81,19 +81,28 @@ def build_lifecycle_evidence(
     generator: str,
     generator_version: str,
     source_authority: dict[str, Any],
+    published_version_ref: str = "",
 ) -> dict[str, Any]:
     normalized_request_id = protocol_id(request_id, prefix="request")
     normalized_trace_id = protocol_id(trace_id or request_id, prefix="trace")
+    definition = {
+        "schemaId": UNIFIED_PAGE_SCHEMA_ID,
+        "schemaVersion": UNIFIED_PAGE_SCHEMA_VERSION,
+        "schemaSha256": UNIFIED_PAGE_SCHEMA_SHA256,
+        "contractVersion": UNIFIED_PAGE_SCHEMA_VERSION,
+        "normativeStatus": UNIFIED_PAGE_NORMATIVE_STATUS,
+    }
+    # Additive: a delivery that was governed by a published business-config
+    # contract version names it here, so runtime telemetry can aggregate per
+    # published version. A delivery with no published version omits the field
+    # entirely and stays unattributed rather than borrowing another's identity.
+    normalized_published_version_ref = str(published_version_ref or "").strip()
+    if normalized_published_version_ref:
+        definition["publishedVersionRef"] = normalized_published_version_ref
     return {
         "lifecycleVersion": LIFECYCLE_VERSION,
         "stage": str(stage or "assembly"),
-        "definition": {
-            "schemaId": UNIFIED_PAGE_SCHEMA_ID,
-            "schemaVersion": UNIFIED_PAGE_SCHEMA_VERSION,
-            "schemaSha256": UNIFIED_PAGE_SCHEMA_SHA256,
-            "contractVersion": UNIFIED_PAGE_SCHEMA_VERSION,
-            "normativeStatus": UNIFIED_PAGE_NORMATIVE_STATUS,
-        },
+        "definition": definition,
         "generation": {
             "generator": str(generator or "unknown"),
             "generatorVersion": str(generator_version or UNIFIED_PAGE_SCHEMA_VERSION),
@@ -126,6 +135,7 @@ def seal_unified_page_contract(
     generator: str = "unified_page_contract_v2_assembler",
     generator_version: str = UNIFIED_PAGE_SCHEMA_VERSION,
     source_authority: dict[str, Any] | None = None,
+    published_version_ref: str = "",
 ) -> dict[str, Any]:
     if not isinstance(contract, dict):
         raise TypeError("contract must be a dict")
@@ -142,6 +152,7 @@ def seal_unified_page_contract(
         generator=generator,
         generator_version=generator_version,
         source_authority=source_authority or {},
+        published_version_ref=published_version_ref,
     )
     digest = lifecycle["integrity"]["contractSha256"]
     normalized_request_id = lifecycle["runtime"]["requestId"]

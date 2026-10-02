@@ -1,0 +1,82 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONTRACT-SLO-TELEMETRY
+  title: backend_contract_slo_telemetry_core
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - addons/smart_core
+    - scripts/verify
+    - make
+    - docs/architecture
+  baseline:
+    branch: fix/contract-slo-telemetry
+    full_sha: c2410190feb7f7db2407083cca65f5ca624bb8c8
+    source: origin_main_plus_l4_runtime_evidence_closure
+  objective: >-
+    Start closing the first L5 gap of the backend contract lifecycle: a
+    contract-version-keyed SLO observation model covering success rate,
+    degradation rate and integrity-failure rate. This batch delivers the
+    decision-independent core (identity, classification, aggregation) that is
+    fully offline-verifiable and changes no protocol, model or runtime
+    behaviour; emission wiring and persistence are later batches.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The SLO identity and outcome semantics are derived from the lifecycle
+      evidence produced by smart_core.contract_lifecycle, so the aggregation
+      contract belongs to the same P0 platform mechanism that owns the
+      lifecycle seal.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics
+      - no_frontend_rendering_or_p3_low_code_shortcut
+      - no_p4_ops_script_as_semantic_authority
+      - no_contract_protocol_change_in_this_batch
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - no_new_compose_project_database_port_volume_or_credential
+    - aggregation_must_not_fabricate_rates_for_empty_windows
+    - malformed_observations_are_counted_and_never_silently_dropped
+    - no_module_upgrade_and_no_odoo_model_in_this_batch
+  authorized_exceptions:
+    - id: isolated_contract_evidence_profiles
+      granted_by: owner
+      granted_on: 2026-10-02
+      scope: >-
+        Isolated, read-only-seeded evidence profiles for the contract lanes
+        (sc-contract-lifecycle-v1, sc-contract-snapshot-v1). They are created
+        only through the registered compose/env helpers, reuse the existing
+        fixture credential (scdevpass, written only into the profile's own
+        gitignored env file), never touch the formal acceptance profile or
+        another profile's volumes, and exist because the contract snapshot
+        matrix must not run against another worktree's shared sc-local-dev
+        database. This is a scoped exception to the
+        no_new_compose_project_database_port_volume_or_credential constraint
+        below; it introduces no new credential authority.
+  next_exact_step: >-
+    Topics a (intent-catalog completeness), b (published ui.business.config.contract
+    version keying) and d (contract-snapshot seed/fixture hygiene) are implemented,
+    verified and recorded; the topic (b) layer commit is 7665827b55014eb0a365db8061528cdbaa90ca8b. Open, each needing its
+    own authorization: (b-residual) a scoped P4 probe extension to exercise runtime
+    attribution, because the isolated fixture holds zero ui.business.config.contract rows
+    so no real delivery can carry a published reference yet; (c) signature-level
+    supply-chain provenance and N-1/N+1 compatibility drills, the two remaining L5 gaps;
+    (e) the re-baseline decision for the 119 stale snapshot references, which is a
+    contract-authority decision rather than hygiene. Publication was RELEASED by
+    owner instruction on 2026-10-02: the CONTRACT-BATCHES-MAINLINE-INTEGRATION
+    batch carries this batch and the contained L4 batch to mainline as one PR;
+    close with completion.mainline after the PR merges.
+  completion:
+    overall_goal: incomplete
+    core_scope: complete
+    telemetry_scope: complete
+    published_version_keying: complete
+    code_head: 3f17e031d
+    layer_commit: 7665827b55014eb0a365db8061528cdbaa90ca8b
+    catalog_topic: complete
+    environment_authority: owner_confirmed
+    runtime_evidence: refreshed_on_verified_profile_identity_probe_32_of_32
+    publication: released_2026-10-02_integration_via_CONTRACT-BATCHES-MAINLINE-INTEGRATION
+    result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json

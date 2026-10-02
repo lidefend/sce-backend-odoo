@@ -86,6 +86,21 @@ VIEW_TYPE_OUTPUT_SURFACES = {
     "dashboard": ("metric_slots", "chart_slots", "navigation_slots"),
 }
 
+# ``ui.business.config.contract`` is the authority a set of orchestration rules
+# is published under. Runtime telemetry needs to name the exact published
+# version that governed one delivery, so the reference format and the carriers
+# it is read from are declared here instead of being inferred downstream.
+BUSINESS_CONFIG_CONTRACT_MODEL = "ui.business.config.contract"
+BUSINESS_CONFIG_CONTRACT_PUBLISHED_SOURCE_KIND = "published"
+
+# Collection views are addressed as either ``tree`` or ``list`` by different
+# producers and consumers (``ui.contract`` collapses them at runtime), so the two
+# names address the same declared orchestration entry.
+VIEW_TYPE_ALIASES = {
+    "list": ("tree",),
+    "tree": ("list",),
+}
+
 PARSER_ALLOWED_OUTPUTS = (
     "native_view_type",
     "native_arch_snapshot",
@@ -122,3 +137,89 @@ def source_authority_contract() -> dict[str, Any]:
         no_business_fact_authority=NO_BUSINESS_FACT_AUTHORITY,
         runtime_carrier="view_orchestration_contract",
     )
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _text(value: Any) -> str:
+    return str(value if value is not None else "").strip()
+
+
+def view_type_candidates(view_type: Any) -> tuple[str, ...]:
+    """Return the declared view-type names that address one orchestration entry."""
+    name = _text(view_type)
+    if not name:
+        return ()
+    return (name,) + tuple(
+        alias for alias in VIEW_TYPE_ALIASES.get(name, ()) if alias != name
+    )
+
+
+def applied_business_config_contracts(payload: Any, view_type: Any = "") -> list[dict[str, Any]]:
+    """Return the applied business-config contract rows a payload declares.
+
+    Only carriers this boundary already produces are read: the view
+    orchestration summary writes ``governance.view_orchestration.views`` and the
+    single-view orchestrator writes the flat ``view_orchestration`` entry, each
+    mirrored on ``source_trace``; the assembled runtime contract mirrors the
+    summary on ``runtimeContract.governance``. The first carrier that declares
+    rows for the requested view wins, so no row is ever inferred from another
+    view's entry.
+    """
+    body = _dict(payload)
+    carriers = [body.get("governance"), body.get("source_trace")]
+    runtime_contract = _dict(body.get("runtimeContract"))
+    if runtime_contract:
+        carriers.append(runtime_contract.get("governance"))
+    for container in carriers:
+        orchestration = _dict(_dict(container).get("view_orchestration"))
+        if not orchestration:
+            continue
+        views = _dict(orchestration.get("views"))
+        for name in view_type_candidates(view_type):
+            row = _dict(views.get(name))
+            rows = row.get("business_config_contracts")
+            if isinstance(rows, list) and rows:
+                return [item for item in rows if isinstance(item, dict)]
+        rows = orchestration.get("business_config_contracts")
+        if isinstance(rows, list) and rows:
+            return [item for item in rows if isinstance(item, dict)]
+    return []
+
+
+def business_config_contract_ref(row: Any) -> str:
+    """Name one applied contract row as ``<model>:<id>@<version_no>``."""
+    entry = _dict(row)
+    try:
+        contract_id = int(entry.get("id") or 0)
+    except (TypeError, ValueError):
+        contract_id = 0
+    if contract_id <= 0:
+        return ""
+    try:
+        version_no = int(entry.get("version_no") or 0)
+    except (TypeError, ValueError):
+        version_no = 0
+    return "%s:%s@%s" % (BUSINESS_CONFIG_CONTRACT_MODEL, contract_id, version_no)
+
+
+def resolve_published_version_ref(payload: Any, view_type: Any = "") -> str:
+    """Return the published business-config versions that governed a delivery.
+
+    A preview or draft row is not a published version, so it is never attributed
+    to one; a delivery with no published row resolves to the empty string and
+    stays unattributed instead of borrowing another delivery's version. The
+    reference is deterministic: rows are ordered by id then version, so the same
+    applied set always resolves to the same identity.
+    """
+    published = []
+    for row in applied_business_config_contracts(payload, view_type):
+        source_kind = _text(row.get("source_kind")) or BUSINESS_CONFIG_CONTRACT_PUBLISHED_SOURCE_KIND
+        if source_kind != BUSINESS_CONFIG_CONTRACT_PUBLISHED_SOURCE_KIND:
+            continue
+        ref = business_config_contract_ref(row)
+        if ref and ref not in published:
+            published.append(ref)
+    return ",".join(sorted(published))

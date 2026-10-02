@@ -21,7 +21,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 72,
+      "test_refs": 78,
       "request_schema_hint": [
         "context",
         "fields",
@@ -391,7 +391,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": true,
-      "test_refs": 9,
+      "test_refs": 10,
       "request_schema_hint": [
         "action",
         "assignee_id",
@@ -1604,7 +1604,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 1,
       "request_schema_hint": [
         "action",
         "activity_id",
@@ -1655,6 +1655,292 @@
       "inferred_example": null
     },
     {
+      "intent": "chatter.attachment.delete",
+      "owner": {
+        "module": "addons/smart_core/handlers/chatter_attachment_delete.py",
+        "class": "ChatterAttachmentDeleteHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "attachment_id",
+        "id",
+        "model",
+        "record_id",
+        "res_id"
+      ],
+      "response_data_schema_hint": [
+        "code",
+        "error",
+        "error.code",
+        "error.message",
+        "meta",
+        "meta.source_authority",
+        "meta.source_authority.authorities",
+        "meta.source_authority.authorities[]",
+        "meta.source_authority.authority",
+        "meta.source_authority.kind",
+        "meta.source_authority.no_business_fact_authority",
+        "meta.source_authority.projection_only",
+        "meta.source_authority.runtime_carrier",
+        "meta.source_authority.write_proxy",
+        "ok"
+      ],
+      "error_schema_hint": [
+        "code",
+        "message"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "chatter_attachment_delete_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/chatter_attachment_delete_intent_admin.json",
+          "request_keys": [
+            "attachment_id",
+            "model",
+            "res_id"
+          ],
+          "response_data_keys": [
+            "code",
+            "error",
+            "error.code",
+            "error.message",
+            "meta",
+            "meta.source_authority",
+            "meta.source_authority.authorities",
+            "meta.source_authority.authorities[]",
+            "meta.source_authority.authority",
+            "meta.source_authority.kind",
+            "meta.source_authority.no_business_fact_authority",
+            "meta.source_authority.projection_only",
+            "meta.source_authority.runtime_carrier",
+            "meta.source_authority.write_proxy",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "chatter.followers.list",
+      "owner": {
+        "module": "addons/smart_core/handlers/chatter_followers.py",
+        "class": "ChatterFollowersListHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "model",
+        "res_id"
+      ],
+      "response_data_schema_hint": [
+        "raw",
+        "raw[]",
+        "raw[].can_follow",
+        "raw[].can_unfollow",
+        "raw[].count",
+        "raw[].is_following",
+        "raw[].items",
+        "raw[].items[]",
+        "raw[].items[].email",
+        "raw[].items[].is_current_user",
+        "raw[].items[].name",
+        "raw[].items[].partner_id",
+        "raw[].source_authority",
+        "raw[].source_authority.authorities",
+        "raw[].source_authority.authorities[]",
+        "raw[].source_authority.authority",
+        "raw[].source_authority.kind",
+        "raw[].source_authority.no_business_fact_authority",
+        "raw[].source_authority.projection_only",
+        "raw[].source_authority.runtime_carrier",
+        "raw[].source_authority.write_proxy"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "chatter_followers_list_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/chatter_followers_list_intent_admin.json",
+          "request_keys": [
+            "model",
+            "res_id"
+          ],
+          "response_data_keys": [
+            "raw",
+            "raw[]",
+            "raw[].can_follow",
+            "raw[].can_unfollow",
+            "raw[].count",
+            "raw[].is_following",
+            "raw[].items",
+            "raw[].items[]",
+            "raw[].items[].email",
+            "raw[].items[].is_current_user",
+            "raw[].items[].name",
+            "raw[].items[].partner_id",
+            "raw[].source_authority",
+            "raw[].source_authority.authorities",
+            "raw[].source_authority.authorities[]",
+            "raw[].source_authority.authority",
+            "raw[].source_authority.kind",
+            "raw[].source_authority.no_business_fact_authority",
+            "raw[].source_authority.projection_only",
+            "raw[].source_authority.runtime_carrier",
+            "raw[].source_authority.write_proxy"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "chatter.followers.update",
+      "owner": {
+        "module": "addons/smart_core/handlers/chatter_followers.py",
+        "class": "ChatterFollowersUpdateHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "action",
+        "model",
+        "res_id"
+      ],
+      "response_data_schema_hint": [
+        "raw",
+        "raw[]",
+        "raw[].result",
+        "raw[].result.action",
+        "raw[].result.is_following",
+        "raw[].result.partner_id",
+        "raw[].source_authority",
+        "raw[].source_authority.authorities",
+        "raw[].source_authority.authorities[]",
+        "raw[].source_authority.authority",
+        "raw[].source_authority.kind",
+        "raw[].source_authority.no_business_fact_authority",
+        "raw[].source_authority.projection_only",
+        "raw[].source_authority.runtime_carrier",
+        "raw[].source_authority.write_proxy"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "chatter_followers_update_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/chatter_followers_update_intent_admin.json",
+          "request_keys": [
+            "action",
+            "model",
+            "res_id"
+          ],
+          "response_data_keys": [
+            "raw",
+            "raw[]",
+            "raw[].result",
+            "raw[].result.action",
+            "raw[].result.is_following",
+            "raw[].result.partner_id",
+            "raw[].source_authority",
+            "raw[].source_authority.authorities",
+            "raw[].source_authority.authorities[]",
+            "raw[].source_authority.authority",
+            "raw[].source_authority.kind",
+            "raw[].source_authority.no_business_fact_authority",
+            "raw[].source_authority.projection_only",
+            "raw[].source_authority.runtime_carrier",
+            "raw[].source_authority.write_proxy"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "chatter.message.delete",
+      "owner": {
+        "module": "addons/smart_core/handlers/chatter_message_delete.py",
+        "class": "ChatterMessageDeleteHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "id",
+        "message_id",
+        "model",
+        "record_id",
+        "res_id"
+      ],
+      "response_data_schema_hint": [
+        "code",
+        "error",
+        "error.code",
+        "error.message",
+        "meta",
+        "meta.source_authority",
+        "meta.source_authority.authorities",
+        "meta.source_authority.authorities[]",
+        "meta.source_authority.authority",
+        "meta.source_authority.kind",
+        "meta.source_authority.no_business_fact_authority",
+        "meta.source_authority.projection_only",
+        "meta.source_authority.runtime_carrier",
+        "meta.source_authority.write_proxy",
+        "ok"
+      ],
+      "error_schema_hint": [
+        "code",
+        "message"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "chatter_message_delete_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/chatter_message_delete_intent_admin.json",
+          "request_keys": [
+            "message_id",
+            "model",
+            "res_id"
+          ],
+          "response_data_keys": [
+            "code",
+            "error",
+            "error.code",
+            "error.message",
+            "meta",
+            "meta.source_authority",
+            "meta.source_authority.authorities",
+            "meta.source_authority.authorities[]",
+            "meta.source_authority.authority",
+            "meta.source_authority.kind",
+            "meta.source_authority.no_business_fact_authority",
+            "meta.source_authority.projection_only",
+            "meta.source_authority.runtime_carrier",
+            "meta.source_authority.write_proxy",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "chatter.post",
       "owner": {
         "module": "addons/smart_core/handlers/chatter_post.py",
@@ -1663,7 +1949,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 5,
+      "test_refs": 6,
       "request_schema_hint": [
         "body",
         "mention_partner_ids",
@@ -1671,6 +1957,7 @@
         "mentioned_user_ids",
         "mode",
         "model",
+        "parent_id",
         "partner_ids",
         "record_id",
         "res_id",
@@ -2524,7 +2811,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 2,
       "request_schema_hint": [],
       "response_data_schema_hint": [
         "block_schema",
@@ -2817,7 +3104,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 8,
+      "test_refs": 15,
       "request_schema_hint": [
         "button",
         "button.actionId",
@@ -2897,7 +3184,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 2,
       "request_schema_hint": [
         "attachment_id",
         "id",
@@ -2955,7 +3242,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 2,
       "request_schema_hint": [
         "data",
         "mimetype",
@@ -3227,7 +3514,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 27,
+      "test_refs": 33,
       "request_schema_hint": [
         "_normalized_include_parts",
         "action_id",
@@ -25413,7 +25700,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 440,
+      "test_refs": 532,
       "request_schema_hint": [
         "company_id",
         "credential",
@@ -25674,7 +25961,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 3,
+      "test_refs": 4,
       "request_schema_hint": [
         "id",
         "note",
@@ -25729,7 +26016,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": true,
-      "test_refs": 2,
+      "test_refs": 3,
       "request_schema_hint": [
         "idempotency_key",
         "ids",
@@ -26403,6 +26690,75 @@
       "inferred_example": null
     },
     {
+      "intent": "payment.request.add.settlement.lines",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "class": "PaymentRequestAddSettlementLinesHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 2,
+      "request_schema_hint": [
+        "apply_mode",
+        "lines",
+        "params",
+        "payment_request_id",
+        "ratio",
+        "settlement_id",
+        "settlement_line_ids",
+        "settlement_line_ids[]",
+        "total_amount"
+      ],
+      "response_data_schema_hint": [
+        "error",
+        "error.code",
+        "error.message",
+        "error.suggested_action",
+        "meta",
+        "meta.elapsed_ms",
+        "meta.intent",
+        "meta.trace_id",
+        "ok"
+      ],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "payment_request_add_settlement_lines_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/payment_request_add_settlement_lines_intent_admin.json",
+          "request_keys": [
+            "apply_mode",
+            "payment_request_id",
+            "settlement_id",
+            "settlement_line_ids",
+            "settlement_line_ids[]"
+          ],
+          "response_data_keys": [
+            "error",
+            "error.code",
+            "error.message",
+            "error.suggested_action",
+            "meta",
+            "meta.elapsed_ms",
+            "meta.intent",
+            "meta.trace_id",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "payment.request.approve",
       "owner": {
         "module": "addons/smart_construction_core/handlers/payment_request_approval.py",
@@ -26486,7 +26842,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 3,
       "request_schema_hint": [
         "id",
         "params",
@@ -26915,6 +27271,133 @@
       "inferred_example": null
     },
     {
+      "intent": "payment.request.settlement.preview",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "class": "PaymentRequestSettlementPreviewHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "params",
+        "settlement_id"
+      ],
+      "response_data_schema_hint": [
+        "error",
+        "error.code",
+        "error.message",
+        "error.suggested_action",
+        "meta",
+        "meta.elapsed_ms",
+        "meta.intent",
+        "meta.trace_id",
+        "ok"
+      ],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "payment_request_settlement_preview_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/payment_request_settlement_preview_intent_admin.json",
+          "request_keys": [
+            "settlement_id"
+          ],
+          "response_data_keys": [
+            "error",
+            "error.code",
+            "error.message",
+            "error.suggested_action",
+            "meta",
+            "meta.elapsed_ms",
+            "meta.intent",
+            "meta.trace_id",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "payment.request.settlement.search",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "class": "PaymentRequestSettlementSearchHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "keyword",
+        "limit",
+        "params",
+        "payment_request_id"
+      ],
+      "response_data_schema_hint": [
+        "count",
+        "settlements",
+        "settlements[]",
+        "settlements[].amount_total",
+        "settlements[].contract_id",
+        "settlements[].contract_name",
+        "settlements[].currency",
+        "settlements[].currency.decimal_places",
+        "settlements[].currency.id",
+        "settlements[].currency.name",
+        "settlements[].currency.rounding",
+        "settlements[].currency.symbol",
+        "settlements[].display_name",
+        "settlements[].id",
+        "settlements[].line_count",
+        "settlements[].name",
+        "settlements[].partner_name"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "payment_request_settlement_search_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/payment_request_settlement_search_intent_admin.json",
+          "request_keys": [
+            "keyword",
+            "limit"
+          ],
+          "response_data_keys": [
+            "count",
+            "settlements",
+            "settlements[]",
+            "settlements[].amount_total",
+            "settlements[].contract_id",
+            "settlements[].contract_name",
+            "settlements[].currency",
+            "settlements[].currency.decimal_places",
+            "settlements[].currency.id",
+            "settlements[].currency.name",
+            "settlements[].currency.rounding",
+            "settlements[].currency.symbol",
+            "settlements[].display_name",
+            "settlements[].id",
+            "settlements[].line_count",
+            "settlements[].name",
+            "settlements[].partner_name"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "payment.request.submit",
       "owner": {
         "module": "addons/smart_construction_core/handlers/payment_request_approval.py",
@@ -27046,6 +27529,259 @@
       "inferred_example": null
     },
     {
+      "intent": "project.boq.export.request",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/boq_export_request.py",
+        "class": "BoqExportRequestHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "params",
+        "project_id",
+        "version_id"
+      ],
+      "response_data_schema_hint": [
+        "attachment",
+        "attachment.download_url",
+        "attachment.filename",
+        "attachment.id",
+        "attachment.mimetype",
+        "attachment.size",
+        "export",
+        "export.columns",
+        "export.columns[]",
+        "export.crop_reason",
+        "export.cropped_columns",
+        "export.cropped_columns[]",
+        "export.file_digest",
+        "export.project_id",
+        "export.row_count",
+        "export.row_limit",
+        "export.version_code",
+        "export.version_id",
+        "job_id",
+        "readonly",
+        "schema"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_boq_export_request_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_boq_export_request_intent_admin.json",
+          "request_keys": [
+            "project_id",
+            "version_id"
+          ],
+          "response_data_keys": [
+            "attachment",
+            "attachment.download_url",
+            "attachment.filename",
+            "attachment.id",
+            "attachment.mimetype",
+            "attachment.size",
+            "export",
+            "export.columns",
+            "export.columns[]",
+            "export.crop_reason",
+            "export.cropped_columns",
+            "export.cropped_columns[]",
+            "export.file_digest",
+            "export.project_id",
+            "export.row_count",
+            "export.row_limit",
+            "export.version_code",
+            "export.version_id",
+            "job_id",
+            "readonly",
+            "schema"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "project.boq.import.dangerous.execute",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/boq_dangerous_import.py",
+        "class": "BoqDangerousImportExecuteHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": true,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "boq_category",
+        "confirm_token",
+        "file",
+        "filename",
+        "idempotency_key",
+        "mode",
+        "params",
+        "project_id",
+        "request_id",
+        "version_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_boq_import_dangerous_execute_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_boq_import_dangerous_execute_intent_admin.json",
+          "request_keys": [
+            "confirm_token",
+            "mode",
+            "project_id",
+            "request_id",
+            "version_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "project.boq.import.dangerous.preview",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/boq_dangerous_import.py",
+        "class": "BoqDangerousImportPreviewHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "boq_category",
+        "file",
+        "filename",
+        "mode",
+        "project_id",
+        "version_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_boq_import_dangerous_preview_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_boq_import_dangerous_preview_intent_admin.json",
+          "request_keys": [
+            "mode",
+            "project_id",
+            "version_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "project.boq.import.preview.fetch",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/boq_import_preview_fetch.py",
+        "class": "BoqImportPreviewFetchHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "batch_id",
+        "params",
+        "project_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_boq_import_preview_fetch_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_boq_import_preview_fetch_intent_admin.json",
+          "request_keys": [
+            "batch_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "project.boq.line.patch",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/boq_line_patch.py",
+        "class": "BoqLinePatchHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": true,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "expected_quantity",
+        "idempotency_key",
+        "line_id",
+        "new_quantity",
+        "request_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_boq_line_patch_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_boq_line_patch_intent_admin.json",
+          "request_keys": [
+            "expected_quantity",
+            "line_id",
+            "new_quantity",
+            "request_id"
+          ],
+          "response_data_keys": [],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "project.connection.transition",
       "owner": {
         "module": "addons/smart_construction_core/handlers/project_connection_transition.py",
@@ -27103,7 +27839,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 75,
+      "test_refs": 80,
       "request_schema_hint": [
         "params",
         "project_id"
@@ -27733,7 +28469,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 15,
+      "test_refs": 16,
       "request_schema_hint": [
         "block_key",
         "params"
@@ -27775,6 +28511,60 @@
       "inferred_example": null
     },
     {
+      "intent": "project.dashboard.chart.fetch",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/visualization_chart_fetch.py",
+        "class": "VisualizationChartFetchHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 3,
+      "request_schema_hint": [
+        "chart_key",
+        "params",
+        "project_id"
+      ],
+      "response_data_schema_hint": [
+        "chart_key",
+        "chart_type",
+        "readonly",
+        "safe_degradation",
+        "safe_degradation.chart_not_registered_policy",
+        "schema",
+        "series",
+        "series[]",
+        "title",
+        "unit"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_dashboard_chart_fetch_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_dashboard_chart_fetch_intent_admin.json",
+          "request_keys": [
+            "chart_key",
+            "project_id"
+          ],
+          "response_data_keys": [
+            "chart_key",
+            "chart_type",
+            "readonly",
+            "safe_degradation",
+            "safe_degradation.chart_not_registered_policy",
+            "schema",
+            "series",
+            "series[]",
+            "title",
+            "unit"
+          ],
+          "response_error_keys": []
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "project.dashboard.enter",
       "owner": {
         "module": "addons/smart_construction_core/handlers/project_dashboard_enter.py",
@@ -27783,7 +28573,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 39,
+      "test_refs": 40,
       "request_schema_hint": [
         "params",
         "project_id"
@@ -29271,7 +30061,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 3,
       "request_schema_hint": [
         "params"
       ],
@@ -29379,6 +30169,50 @@
             "suggested_action_payload.params.reason_code",
             "suggested_action_payload.reason_code"
           ],
+          "response_error_keys": [
+            "code",
+            "message",
+            "suggested_action"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "project.overview.rich_text.patch",
+      "owner": {
+        "module": "addons/smart_construction_core/handlers/overview_rich_text_patch.py",
+        "class": "OverviewRichTextPatchHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": true,
+      "test_refs": 1,
+      "request_schema_hint": [
+        "expected_overview_digest",
+        "idempotency_key",
+        "new_overview_html",
+        "project_id",
+        "request_id"
+      ],
+      "response_data_schema_hint": [],
+      "error_schema_hint": [
+        "code",
+        "message",
+        "suggested_action"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "project_overview_rich_text_patch_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/project_overview_rich_text_patch_intent_admin.json",
+          "request_keys": [
+            "expected_overview_digest",
+            "new_overview_html",
+            "project_id",
+            "request_id"
+          ],
+          "response_data_keys": [],
           "response_error_keys": [
             "code",
             "message",
@@ -31991,7 +32825,15 @@
       "has_idempotency_window": false,
       "test_refs": 0,
       "request_schema_hint": [
-        "action_id"
+        "access_mode",
+        "action_id",
+        "menu_id",
+        "model",
+        "record_id",
+        "relation_origin",
+        "render_profile",
+        "route_path",
+        "work_item_origin"
       ],
       "response_data_schema_hint": [],
       "error_schema_hint": [
@@ -32779,6 +33621,79 @@
       "inferred_example": null
     },
     {
+      "intent": "search.favorite.delete",
+      "owner": {
+        "module": "addons/smart_core/handlers/search_favorite_set.py",
+        "class": "SearchFavoriteDeleteHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 2,
+      "request_schema_hint": [
+        "action_id",
+        "filter_id",
+        "model"
+      ],
+      "response_data_schema_hint": [
+        "error",
+        "error.code",
+        "error.message",
+        "meta",
+        "meta.source_authorities",
+        "meta.source_authorities[]",
+        "meta.source_authority",
+        "meta.source_authority.authorities",
+        "meta.source_authority.authorities[]",
+        "meta.source_authority.kind",
+        "meta.source_authority.no_business_fact_authority",
+        "meta.source_authority.projection_only",
+        "meta.source_authority.runtime_carrier",
+        "meta.source_authority.write_proxy",
+        "meta.source_kind",
+        "ok"
+      ],
+      "error_schema_hint": [
+        "code",
+        "message"
+      ],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "search_favorite_delete_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/search_favorite_delete_intent_admin.json",
+          "request_keys": [
+            "action_id",
+            "filter_id",
+            "model"
+          ],
+          "response_data_keys": [
+            "error",
+            "error.code",
+            "error.message",
+            "meta",
+            "meta.source_authorities",
+            "meta.source_authorities[]",
+            "meta.source_authority",
+            "meta.source_authority.authorities",
+            "meta.source_authority.authorities[]",
+            "meta.source_authority.kind",
+            "meta.source_authority.no_business_fact_authority",
+            "meta.source_authority.projection_only",
+            "meta.source_authority.runtime_carrier",
+            "meta.source_authority.write_proxy",
+            "meta.source_kind",
+            "ok"
+          ],
+          "response_error_keys": [
+            "code",
+            "message"
+          ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
       "intent": "search.favorite.set",
       "owner": {
         "module": "addons/smart_core/handlers/search_favorite_set.py",
@@ -32787,7 +33702,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 0,
+      "test_refs": 1,
       "request_schema_hint": [
         "action_id",
         "context",
@@ -33061,6 +33976,131 @@
             "message",
             "suggested_action"
           ]
+        }
+      ],
+      "inferred_example": null
+    },
+    {
+      "intent": "smart_core.contract_slo.snapshot",
+      "owner": {
+        "module": "addons/smart_core/handlers/contract_slo_snapshot.py",
+        "class": "ContractSloSnapshotHandler"
+      },
+      "aliases": [],
+      "stability": "stable",
+      "has_idempotency_window": false,
+      "test_refs": 0,
+      "request_schema_hint": [
+        "bucketSeconds",
+        "bucket_seconds",
+        "contractVersion",
+        "contract_version",
+        "windowSeconds",
+        "window_seconds"
+      ],
+      "response_data_schema_hint": [
+        "aggregate",
+        "aggregate.acceptedObservations",
+        "aggregate.rejectedObservations",
+        "aggregate.rejectedSample",
+        "aggregate.rejectedSample[]",
+        "aggregate.schemaVersion",
+        "aggregate.totalObservations",
+        "aggregate.versionCount",
+        "aggregate.versions",
+        "aggregate.versions[]",
+        "aggregate.windowExcludedObservations",
+        "aggregate.windowSeconds",
+        "query",
+        "query.bucketSeconds",
+        "query.contractVersion",
+        "query.observedAt",
+        "query.windowSeconds",
+        "store",
+        "store.model",
+        "store.observationCount",
+        "store.persistEnabled",
+        "store.retentionDays",
+        "trend",
+        "trend.bucketCount",
+        "trend.bucketSeconds",
+        "trend.buckets",
+        "trend.buckets[]",
+        "trend.buckets[].aggregate",
+        "trend.buckets[].aggregate.acceptedObservations",
+        "trend.buckets[].aggregate.rejectedObservations",
+        "trend.buckets[].aggregate.rejectedSample",
+        "trend.buckets[].aggregate.rejectedSample[]",
+        "trend.buckets[].aggregate.schemaVersion",
+        "trend.buckets[].aggregate.totalObservations",
+        "trend.buckets[].aggregate.versionCount",
+        "trend.buckets[].aggregate.versions",
+        "trend.buckets[].aggregate.versions[]",
+        "trend.buckets[].aggregate.windowExcludedObservations",
+        "trend.buckets[].aggregate.windowSeconds",
+        "trend.buckets[].bucketEnd",
+        "trend.buckets[].bucketStart",
+        "trend.schemaVersion",
+        "trend.unplacedObservations",
+        "trend.windowSeconds"
+      ],
+      "error_schema_hint": [],
+      "observed_reason_codes": [],
+      "examples": [
+        {
+          "case": "contract_slo_snapshot_intent_admin",
+          "snapshot_file": "docs/contract/snapshots/contract_slo_snapshot_intent_admin.json",
+          "request_keys": [
+            "bucket_seconds",
+            "window_seconds"
+          ],
+          "response_data_keys": [
+            "aggregate",
+            "aggregate.acceptedObservations",
+            "aggregate.rejectedObservations",
+            "aggregate.rejectedSample",
+            "aggregate.rejectedSample[]",
+            "aggregate.schemaVersion",
+            "aggregate.totalObservations",
+            "aggregate.versionCount",
+            "aggregate.versions",
+            "aggregate.versions[]",
+            "aggregate.windowExcludedObservations",
+            "aggregate.windowSeconds",
+            "query",
+            "query.bucketSeconds",
+            "query.contractVersion",
+            "query.observedAt",
+            "query.windowSeconds",
+            "store",
+            "store.model",
+            "store.observationCount",
+            "store.persistEnabled",
+            "store.retentionDays",
+            "trend",
+            "trend.bucketCount",
+            "trend.bucketSeconds",
+            "trend.buckets",
+            "trend.buckets[]",
+            "trend.buckets[].aggregate",
+            "trend.buckets[].aggregate.acceptedObservations",
+            "trend.buckets[].aggregate.rejectedObservations",
+            "trend.buckets[].aggregate.rejectedSample",
+            "trend.buckets[].aggregate.rejectedSample[]",
+            "trend.buckets[].aggregate.schemaVersion",
+            "trend.buckets[].aggregate.totalObservations",
+            "trend.buckets[].aggregate.versionCount",
+            "trend.buckets[].aggregate.versions",
+            "trend.buckets[].aggregate.versions[]",
+            "trend.buckets[].aggregate.windowExcludedObservations",
+            "trend.buckets[].aggregate.windowSeconds",
+            "trend.buckets[].bucketEnd",
+            "trend.buckets[].bucketStart",
+            "trend.schemaVersion",
+            "trend.unplacedObservations",
+            "trend.windowSeconds"
+          ],
+          "response_error_keys": []
         }
       ],
       "inferred_example": null
@@ -37206,7 +38246,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 115,
+      "test_refs": 129,
       "request_schema_hint": [
         "op",
         "source_mode"
@@ -37516,7 +38556,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 18,
+      "test_refs": 20,
       "request_schema_hint": [
         "actionId",
         "action_id",
@@ -39557,7 +40597,7 @@
       "aliases": [],
       "stability": "stable",
       "has_idempotency_window": false,
-      "test_refs": 1,
+      "test_refs": 2,
       "request_schema_hint": [],
       "response_data_schema_hint": [
         "block_schema",

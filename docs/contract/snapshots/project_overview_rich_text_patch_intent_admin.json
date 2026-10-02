@@ -1,0 +1,25 @@
+{
+  "case": "project_overview_rich_text_patch_intent_admin",
+  "trace_id": "b13a95de-bdff-42e8-b893-7321891b6042",
+  "exported_at": "2026-10-02T02:47:35Z",
+  "snapshot_schema_version": "1.0.0",
+  "model": null,
+  "view_type": null,
+  "op": "intent.invoke",
+  "user": "admin",
+  "user_fallback": null,
+  "fallback": false,
+  "action": null,
+  "ui_contract": null,
+  "ui_contract_raw": {},
+  "error": {
+    "code": "CAPABILITY_DISABLED",
+    "message": "受限富文本编辑能力未开启（sc.rich_text_editor.enabled）",
+    "suggested_action": "enable_feature_flag"
+  },
+  "record": null,
+  "record_error": null,
+  "meta_fields": null,
+  "execute_result": null,
+  "execute_error": null
+}

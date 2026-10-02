@@ -61,6 +61,41 @@ class ContractLifecycleTests(unittest.TestCase):
     def test_protocol_id_is_stable_and_schema_safe(self):
         self.assertEqual(protocol_id("123 / abc", prefix="trace"), "trace.123.abc")
 
+    def _seal(self, *, published_version_ref=""):
+        return seal_unified_page_contract(
+            self._contract(),
+            source_payload={"model": "project.project"},
+            source_type="ui.contract",
+            request_id="request.one",
+            published_version_ref=published_version_ref,
+        )
+
+    def test_an_unattributed_delivery_omits_the_published_version_ref(self):
+        definition = self._seal()["meta"]["lifecycle"]["definition"]
+        self.assertNotIn("publishedVersionRef", definition)
+        self.assertEqual(sorted(definition), [
+            "contractVersion", "normativeStatus", "schemaId", "schemaSha256", "schemaVersion",
+        ])
+
+    def test_a_blank_published_version_ref_is_not_recorded(self):
+        definition = self._seal(published_version_ref="   ")["meta"]["lifecycle"]["definition"]
+        self.assertNotIn("publishedVersionRef", definition)
+
+    def test_a_published_version_ref_is_additive_to_the_semantic_digest(self):
+        # ``meta`` is outside the semantic payload, so naming the applied
+        # published version must not change the delivered contract digest.
+        attributed = self._seal(published_version_ref="ui.business.config.contract:22@2")
+        unattributed = self._seal()
+        self.assertEqual(
+            attributed["meta"]["lifecycle"]["definition"]["publishedVersionRef"],
+            "ui.business.config.contract:22@2",
+        )
+        self.assertEqual(
+            attributed["meta"]["lifecycle"]["integrity"]["contractSha256"],
+            unattributed["meta"]["lifecycle"]["integrity"]["contractSha256"],
+        )
+        self.assertEqual(verify_unified_page_contract_integrity(attributed), (True, "ok"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2089,6 +2089,7 @@ verify.backend.contract_lifecycle.authority: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_backend_contract_boundary_guard.py
 	@python3 scripts/verify/contract_schema_declaration_sync.py --check
 	@python3 -m unittest scripts.verify.test_contract_schema_declaration_sync
+	@python3 -m unittest scripts.verify.test_backend_contract_lifecycle_runtime_schema_guard
 	@python3 scripts/verify/backend_contract_lifecycle_authority_guard.py
 
 .PHONY: contract.schema.declaration.sync verify.contract.schema.declaration.sync
@@ -2102,8 +2103,82 @@ verify.contract.schema.declaration.sync: guard.prod.forbid
 .PHONY: verify.backend.contract_lifecycle.runtime
 verify.backend.contract_lifecycle.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/backend
-	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_lifecycle_runtime_probe.py
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) CANDIDATE_GIT_HEAD=$(shell git rev-parse HEAD) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/backend_contract_lifecycle_runtime_probe.py
 	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/backend_contract_lifecycle_runtime_probe.json artifacts/backend/backend_contract_lifecycle_runtime_probe.json >/dev/null
+	@python3 scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py $(if $(ACCEPTANCE_TARGET_SHA),--expected-revision $(ACCEPTANCE_TARGET_SHA),)
+
+.PHONY: verify.backend.contract_lifecycle.runtime.schema.guard
+verify.backend.contract_lifecycle.runtime.schema.guard: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py
+	@python3 scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py $(if $(ACCEPTANCE_TARGET_SHA),--expected-revision $(ACCEPTANCE_TARGET_SHA),)
+
+.PHONY: verify.backend.contract_lifecycle.runtime.schema.guard.unit
+verify.backend.contract_lifecycle.runtime.schema.guard.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		scripts/verify/backend_contract_lifecycle_runtime_schema_guard.py \
+		scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py \
+		scripts/verify/backend_contract_lifecycle_runtime_probe.py
+	@python3 -m unittest scripts.verify.test_backend_contract_lifecycle_runtime_schema_guard
+
+# Contract SLO telemetry core: contract-version success/degradation/integrity
+# rates. Pure standard library, so the semantics are offline-verifiable.
+.PHONY: verify.backend.contract_slo_telemetry verify.backend.contract_slo_telemetry.unit
+verify.backend.contract_slo_telemetry: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		scripts/verify/test_contract_slo_telemetry.py
+	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+	@$(MAKE) --no-print-directory verify.backend.contract_slo_telemetry.emission
+	@$(MAKE) --no-print-directory verify.backend.contract_slo_telemetry.persistence
+
+verify.backend.contract_slo_telemetry.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		scripts/verify/test_contract_slo_telemetry.py
+	@python3 -m unittest scripts.verify.test_contract_slo_telemetry
+
+# Contract SLO emission call site: executes the real seal_runtime_contract
+# chokepoint with an injected sink, so the emission is behaviour-proven offline.
+.PHONY: verify.backend.contract_slo_telemetry.emission
+verify.backend.contract_slo_telemetry.emission: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		addons/smart_core/handlers/ui_contract_v2_authority.py \
+		scripts/verify/test_ui_contract_v2_slo_emission.py
+	@python3 -m unittest scripts.verify.test_ui_contract_v2_slo_emission
+
+# Contract SLO runtime half: drives real ui.contract.v2 deliveries through the
+# production handler on the isolated contract-lifecycle profile and reads the
+# contractSlo line the production sink actually emits. The in-container probe
+# writes a report the host-side schema guard re-checks with a non-zero test
+# count, so emission cannot be "proven" by a string merely appearing.
+.PHONY: verify.backend.contract_slo_telemetry.runtime
+verify.backend.contract_slo_telemetry.runtime: guard.prod.forbid
+	@test -f "$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" || { echo "contract-lifecycle env is not prepared: $(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" >&2; exit 2; }
+	@python3 -m py_compile \
+		scripts/verify/contract_slo_telemetry_runtime_probe.py \
+		scripts/verify/contract_slo_telemetry_runtime_probe_schema_guard.py
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CONTRACT_LIFECYCLE_ENV_FILE)" \
+	  verify.backend.contract_slo_telemetry.runtime.run
+	@python3 -m unittest scripts.verify.contract_slo_telemetry_runtime_probe_schema_guard
+
+.PHONY: verify.backend.contract_slo_telemetry.runtime.run
+verify.backend.contract_slo_telemetry.runtime.run:
+	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/ops/odoo_shell_exec.sh < scripts/verify/contract_slo_telemetry_runtime_probe.py
+	@$(RUN_ENV) $(COMPOSE_BASE) cp $(ODOO_SERVICE):/tmp/contract_slo_telemetry_runtime_probe.json /tmp/contract_slo_telemetry_runtime_probe.json >/dev/null
+
+# Contract SLO persistence and trend read model: the stored row <-> observation
+# round trip, the retention cutoff and the bucket/trend math are pure, so they
+# are locked offline before the durable store is exercised at runtime.
+.PHONY: verify.backend.contract_slo_telemetry.persistence
+verify.backend.contract_slo_telemetry.persistence: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_slo_telemetry.py \
+		addons/smart_core/core/contract_slo_persistence.py \
+		scripts/verify/test_contract_slo_persistence.py \
+		scripts/verify/test_contract_slo_retention_cron.py
+	@python3 -m unittest scripts.verify.test_contract_slo_persistence
+	@python3 -m unittest scripts.verify.test_contract_slo_retention_cron
 
 .PHONY: verify.platform.release_policy.runtime
 verify.platform.release_policy.runtime: guard.prod.forbid check-compose-project check-compose-env

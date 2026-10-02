@@ -543,6 +543,7 @@ export interface ContractV2Lifecycle {
     schemaSha256: string;
     contractVersion: string;
     normativeStatus: string;
+    publishedVersionRef?: string;
   };
   generation: {
     generator: string;
