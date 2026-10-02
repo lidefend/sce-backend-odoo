@@ -52,16 +52,27 @@ the machine half.
 
 - `verify.backend.contract_lifecycle.authority` → PASS. Guard report
   `score=100/100`, `maturityLevel=L4_governed_production_ready`, `p0Count=0`,
-  8/8 dimensions; 31 unit tests across the bundled suites, now including the new
+  8/8 dimensions; 32 unit tests across the bundled suites, now including the new
   runtime schema-guard suite. Receipt
   `.runtime/agent-runs/BACKEND-CONTRACT-L4-CLOSURE/authority.json`
   (log `logs/authority.log`).
-- `verify.backend.contract_lifecycle.runtime.schema.guard.unit` → PASS, 12 tests.
+- `verify.backend.contract_lifecycle.runtime.schema.guard.unit` → PASS, 13 tests.
   Receipt `runtime_artifact_guard.json` (log `logs/runtime_artifact_guard.log`).
-- Negative-first proof that the guard is load-bearing: removing both `_check_*`
-  invocations from the guard makes 11/12 tests fail; the file was then restored
-  byte-identical (`diff` empty) and the suite returned 12/12 OK. Log
-  `logs/guard_negative_first.log`.
+- Negative-first proof that both halves of the lock are load-bearing
+  (`logs/guard_negative_first.log`):
+  - guard: removing both `_check_*` invocations makes 11/12 fail; the file was
+    restored byte-identical (`diff` empty) and the suite returned 12/12 OK;
+  - producer code: making the probe assign an undeclared assertion, and renaming
+    a declared assignment, each fail `ProducerCodeLockTest`; the probe was
+    restored byte-identical and the test then passed.
+
+### Why the producer code is now offline-checkable
+
+The guard validates the emitted artifact. In addition, the unit suite reads the
+probe's own source and asserts that the constant keys it assigns into `checks`
+are exactly the fourteen declared assertions. A probe that evaluates a different
+set than it declares — or declares one it never evaluates — now fails offline
+instead of only at runtime, which matters while the runtime lane cannot run.
 
 Both receipts resolve as `reusable` under `make agent.run.resume`
 (`declared inputs and original log unchanged`).
