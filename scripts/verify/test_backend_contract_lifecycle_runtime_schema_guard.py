@@ -71,11 +71,13 @@ def producer_assigned_checks() -> set[str]:
 
 
 def artifact(**overrides) -> dict:
+    module_version = GUARD.manifest_module_version()
     payload = {
         "probe": "backend_contract_lifecycle_runtime_probe",
-        "schemaVersion": "1.0.0",
+        "schemaVersion": GUARD.SCHEMA_VERSION,
         "database": "sc_contract_lifecycle",
-        "moduleVersion": "17.0.1.1.9",
+        "moduleVersion": module_version,
+        "manifestVersion": module_version,
         "sourceRevision": REVISION,
         "declaredChecks": sorted(GUARD.EXPECTED_CHECKS),
         "checkCount": len(GUARD.EXPECTED_CHECKS),
@@ -163,11 +165,14 @@ class RuntimeArtifactGuardTest(unittest.TestCase):
         self.assertIn("errors must be empty", completed.stdout)
 
     def test_guard_rejects_a_foreign_database_or_module_version(self):
+        module_version = GUARD.manifest_module_version()
+        self.assertTrue(module_version, "the source manifest must expose a version for the guard to bind")
         for overrides, marker in (
             ({"database": "sc_dev_demo"}, "database must be sc_contract_lifecycle"),
-            ({"moduleVersion": "17.0.1.1.8"}, "moduleVersion must be 17.0.1.1.9"),
+            ({"moduleVersion": "17.0.1.1.8"}, f"moduleVersion must be {module_version}"),
+            ({"manifestVersion": "17.0.1.1.8"}, f"manifestVersion must be {module_version}"),
             ({"probe": "other_probe"}, "probe must be backend_contract_lifecycle_runtime_probe"),
-            ({"schemaVersion": "0.9.0"}, "schemaVersion must be 1.0.0"),
+            ({"schemaVersion": "0.9.0"}, f"schemaVersion must be {GUARD.SCHEMA_VERSION}"),
         ):
             with self.subTest(**overrides):
                 completed = self.run_guard(artifact(**overrides))

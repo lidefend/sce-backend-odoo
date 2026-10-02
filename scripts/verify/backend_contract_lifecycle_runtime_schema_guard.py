@@ -15,6 +15,7 @@ not an L4 evidence artifact.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 from pathlib import Path
@@ -29,9 +30,8 @@ DEFAULT_ARTIFACT = ROOT / os.getenv(
 )
 
 PROBE_NAME = "backend_contract_lifecycle_runtime_probe"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 EXPECTED_DATABASE = "sc_contract_lifecycle"
-EXPECTED_MODULE_VERSION = "17.0.1.1.9"
 # Authority copy of the producer declaration in backend_contract_lifecycle_runtime_probe.py.
 EXPECTED_CHECKS = (
     "external_version_create_rejected",
@@ -65,6 +65,30 @@ def _load_json(path: Path) -> dict:
 
 def _string_list(value: object) -> bool:
     return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def manifest_module_version() -> str:
+    """The smart_core version pinned by the source manifest this guard runs in.
+
+    The module-version lock is derived from the manifest instead of a frozen
+    literal: a hand-synced literal silently rots each time a batch legitimately
+    upgrades the module, while the derived value keeps binding the runtime
+    evidence to the exact source tree the guard validates. An unreadable or
+    versionless manifest yields "" so the identity check fails closed.
+    """
+    manifest_path = ROOT / "addons/smart_core/__manifest__.py"
+    try:
+        tree = ast.parse(manifest_path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if not isinstance(node, ast.Expr):
+                continue
+            manifest = ast.literal_eval(node.value)
+            if isinstance(manifest, dict):
+                version = manifest.get("version")
+                return str(version) if version else ""
+    except (OSError, SyntaxError, ValueError):
+        return ""
+    return ""
 
 
 def _check_assertions(payload: dict, errors: list[str]) -> None:
@@ -112,8 +136,16 @@ def _check_identity(payload: dict, expected_revision: str, errors: list[str]) ->
         errors.append(f"schemaVersion must be {SCHEMA_VERSION}")
     if payload.get("database") != EXPECTED_DATABASE:
         errors.append(f"database must be {EXPECTED_DATABASE}")
-    if payload.get("moduleVersion") != EXPECTED_MODULE_VERSION:
-        errors.append(f"moduleVersion must be {EXPECTED_MODULE_VERSION}")
+    expected_module_version = manifest_module_version()
+    if not expected_module_version:
+        errors.append(
+            "smart_core manifest version could not be derived; the artifact cannot be bound to this tree"
+        )
+    else:
+        if payload.get("moduleVersion") != expected_module_version:
+            errors.append(f"moduleVersion must be {expected_module_version}")
+        if payload.get("manifestVersion") != expected_module_version:
+            errors.append(f"manifestVersion must be {expected_module_version}")
     revision = payload.get("sourceRevision")
     if not isinstance(revision, str):
         errors.append("sourceRevision must be a string")
