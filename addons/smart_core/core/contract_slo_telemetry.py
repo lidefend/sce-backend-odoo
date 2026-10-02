@@ -48,6 +48,7 @@ IDENTITY_FIELDS = (
     "stage",
 )
 PUBLISHED_VERSION_FIELD = "publishedVersionRef"
+GROUPING_FIELDS = IDENTITY_FIELDS + (PUBLISHED_VERSION_FIELD,)
 REJECTED_SAMPLE_LIMIT = 10
 
 
@@ -186,6 +187,15 @@ def _rate(count: int, accepted: int) -> float | None:
     return round(count / accepted, 6)
 
 
+def _identity_from_key(key: tuple[str, ...]) -> dict[str, str]:
+    """Rebuild the row identity from its grouping key, nothing inferred."""
+    identity = {field: key[index] for index, field in enumerate(IDENTITY_FIELDS)}
+    published = key[len(IDENTITY_FIELDS)]
+    if published:
+        identity[PUBLISHED_VERSION_FIELD] = published
+    return identity
+
+
 def aggregate_observations(
     observations: Any,
     *,
@@ -198,6 +208,10 @@ def aggregate_observations(
     identity with no accepted observation reports ``None`` rates rather than a
     fabricated zero. Malformed observations are counted and sampled, never
     silently dropped.
+
+    Rows are keyed by the whole identity including ``publishedVersionRef``, so
+    two published versions never merge into one SLO row and an unattributed
+    delivery never borrows another delivery's version.
     """
     if observations is None:
         observations = []
@@ -228,13 +242,10 @@ def aggregate_observations(
         if window is not None and float(observation["observedAt"]) < window:
             window_excluded += 1
             continue
-        identity = {field: _text(observation["identity"][field]) for field in IDENTITY_FIELDS}
-        if _text(observation["identity"].get(PUBLISHED_VERSION_FIELD)):
-            identity[PUBLISHED_VERSION_FIELD] = _text(observation["identity"][PUBLISHED_VERSION_FIELD])
-        key = tuple(identity[field] for field in IDENTITY_FIELDS)
+        key = tuple(_text(observation["identity"].get(field)) for field in GROUPING_FIELDS)
         bucket = buckets.setdefault(
             key,
-            {"identity": identity, "observations": 0, "outcomes": {name: 0 for name in CONTRACT_SLO_OUTCOMES}},
+            {"identity": _identity_from_key(key), "observations": 0, "outcomes": {name: 0 for name in CONTRACT_SLO_OUTCOMES}},
         )
         bucket["observations"] += 1
         bucket["outcomes"][observation["outcome"]] += 1

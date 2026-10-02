@@ -29,6 +29,7 @@ def load_module(name: str, path: Path):
 
 SLO = load_module("contract_slo_telemetry", SLO_PATH)
 LIFECYCLE = load_module("contract_lifecycle", LIFECYCLE_PATH)
+PUBLISHED = SLO.PUBLISHED_VERSION_FIELD
 
 
 def sealed_contract(request_id: str = "req-1") -> dict:
@@ -249,6 +250,54 @@ class AggregationTest(unittest.TestCase):
         self.assertEqual(report["versions"][0]["successRate"], 1.0)
         self.assertEqual(report["versions"][1]["degradationRate"], 1.0)
         self.assertEqual(report, SLO.aggregate_observations(list(reversed(rows))))
+
+    def test_distinct_published_versions_get_distinct_rows(self):
+        rows = [
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.9"), outcome="success"),
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.9"), outcome="degraded"),
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.10"), outcome="success"),
+        ]
+        report = SLO.aggregate_observations(rows)
+        self.assertEqual(report["versionCount"], 2)
+        by_version = {entry[PUBLISHED]: entry for entry in report["versions"]}
+        self.assertEqual(by_version["17.0.1.1.9"]["observations"], 2)
+        self.assertEqual(by_version["17.0.1.1.9"]["successRate"], 0.5)
+        self.assertEqual(by_version["17.0.1.1.9"]["degradationRate"], 0.5)
+        self.assertEqual(by_version["17.0.1.1.10"]["observations"], 1)
+        self.assertEqual(by_version["17.0.1.1.10"]["successRate"], 1.0)
+
+    def test_an_unattributed_delivery_never_borrows_a_version(self):
+        rows = [
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.9"), outcome="success"),
+            observation(identity=delivered_identity(), outcome="integrity_failure"),
+        ]
+        report = SLO.aggregate_observations(rows)
+        self.assertEqual(report["versionCount"], 2)
+        attributed = next(entry for entry in report["versions"] if PUBLISHED in entry)
+        unattributed = next(entry for entry in report["versions"] if PUBLISHED not in entry)
+        self.assertEqual(attributed["publishedVersionRef"], "17.0.1.1.9")
+        self.assertEqual(attributed["observations"], 1)
+        self.assertEqual(attributed["integrityFailureRate"], 0.0)
+        self.assertEqual(unattributed["observations"], 1)
+        self.assertEqual(unattributed["integrityFailureRate"], 1.0)
+
+    def test_a_row_reports_only_its_own_identity(self):
+        rows = [
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.9"), outcome="success"),
+            observation(identity=delivered_identity(publishedVersionRef="17.0.1.1.10"), outcome="degraded"),
+        ]
+        report = SLO.aggregate_observations(rows)
+        observed = {
+            (entry["publishedVersionRef"], tuple(sorted(entry["outcomes"].items())))
+            for entry in report["versions"]
+        }
+        self.assertEqual(
+            observed,
+            {
+                ("17.0.1.1.9", (("degraded", 0), ("integrity_failure", 0), ("success", 1))),
+                ("17.0.1.1.10", (("degraded", 1), ("integrity_failure", 0), ("success", 0))),
+            },
+        )
 
     def test_aggregation_rejects_a_non_iterable(self):
         with self.assertRaises(SLO.ContractSloError):
