@@ -93,5 +93,31 @@ model/adapter 契约测试（esbuild bundle）+ `python3 -m unittest`（70 tests
 ## 状态
 
 主线集成收口第一刀：**守卫对齐完成、PR #522 关闭、GITHUB-RECOVERY 与 P4-INCREMENTAL-RESUME 关闭、
-active-runs 清零至本批**｜待冻结→exact-head Quick→保护 PR。后续批次（独立 run）：
-backend-contract-l4 集成、contract-slo-telemetry 集成。
+active-runs 清零至本批**｜已交付合入。
+
+## 交付与关闭
+
+- 提交 `4e8c17e9c`（单提交，freeze 后生成物零额外变更）→ **PR #531** 五工作流全绿
+  （frontend_release_gate / professional_quality_gate / public_guard / merge_policy_gate /
+  release_candidate_gate 均 success）→ squash 合入 main
+  **`9040028f9023e1408a8b5cf420619dddd8f6a7d1`**（2026-10-02T03:24:23Z），三方 SHA 一致，分支已删。
+- exact-head `ci.local.quick` PASS（receipt
+  `.git/codex/evidence/ci.local.quick/4e8c17e9c44ccefc412a9e3c16ad1bd0ee94d277.json`）。
+  **注意**：quick 前两次失败于 `ValueError: scan coverage identity changed`（先 clean_history 后
+  secrets.scan），根因不是本批改动——`ref_snapshot` 的 secrets/personal 口径包含所有注册工作树的
+  HEAD，而 `sce-backend-odoo-contract-l4` 工作树上的另一活跃会话在 quick 运行期间提交
+  （HEAD `d45d57a5b`→`4a5899660`，2026-10-02T11:03:48+0800），coverage identity 随之漂移；探测对方
+  静止（3 分钟采样 HEAD/dirty 无变化）后抢窗口重跑即 PASS。PR #529 期间登记为"瞬态"的同类失败
+  同源。**多会话并行推进时 quick 会互相干扰，需协调静止窗口**。
+- run `MAINLINE-INTEGRATION-CLOSEOUT` → `status=completed`，`completion.mainline` 记 #531 合入事实。
+
+## 遗留（本批明确不做）
+
+- `fix/contract-slo-telemetry`（25 提交领先 main：SLO 持久化观测、retention cron、trend read intent）
+  与 `fix/backend-contract-l4`（runtime evidence schema guard 等）**均被 owner 指示暂停发布**
+  （两批次记录尾部明示 on hold），且 contract-l4 工作树有活跃会话推进中（retention-carrier 增量
+  已于 11:03 提交）。解除 hold 后再议集成批次。
+- SLO 记录的 `verify.contract.catalog` 15+1 个既有 offender（repo 级契约完备性债务，需独立批次）。
+- 下次定时运行（cron `30 18 * * *`）验证：#529（lint+vendor）与本批（release.unit 守卫）修复后
+  定时 full 车道应转绿。
+

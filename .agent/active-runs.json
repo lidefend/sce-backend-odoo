@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/mainline-integration-closeout": ".agent/runs/MAINLINE-INTEGRATION-CLOSEOUT/run.json"
+    "codex/close-mainline-integration-closeout": ".agent/runs/MAINLINE-INTEGRATION-CLOSEOUT/run.json"
   }
 }
