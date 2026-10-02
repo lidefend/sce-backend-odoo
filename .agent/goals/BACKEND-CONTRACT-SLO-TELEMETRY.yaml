@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONTRACT-SLO-TELEMETRY
+  title: backend_contract_slo_telemetry_core
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: smart_core
+  module:
+    - addons/smart_core
+    - scripts/verify
+    - make
+    - docs/architecture
+  baseline:
+    branch: fix/contract-slo-telemetry
+    full_sha: c2410190feb7f7db2407083cca65f5ca624bb8c8
+    source: origin_main_plus_l4_runtime_evidence_closure
+  objective: >-
+    Start closing the first L5 gap of the backend contract lifecycle: a
+    contract-version-keyed SLO observation model covering success rate,
+    degradation rate and integrity-failure rate. This batch delivers the
+    decision-independent core (identity, classification, aggregation) that is
+    fully offline-verifiable and changes no protocol, model or runtime
+    behaviour; emission wiring and persistence are later batches.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The SLO identity and outcome semantics are derived from the lifecycle
+      evidence produced by smart_core.contract_lifecycle, so the aggregation
+      contract belongs to the same P0 platform mechanism that owns the
+      lifecycle seal.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics
+      - no_frontend_rendering_or_p3_low_code_shortcut
+      - no_p4_ops_script_as_semantic_authority
+      - no_contract_protocol_change_in_this_batch
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - no_new_compose_project_database_port_volume_or_credential
+    - aggregation_must_not_fabricate_rates_for_empty_windows
+    - malformed_observations_are_counted_and_never_silently_dropped
+    - no_module_upgrade_and_no_odoo_model_in_this_batch
+  next_exact_step: >-
+    Implement the pure SLO core, lock it with a non-zero offline unit suite and
+    a registered make target, then record the receipt and commit.
+  completion:
+    overall_goal: incomplete
+    code_head: null
+    result_index: .agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json

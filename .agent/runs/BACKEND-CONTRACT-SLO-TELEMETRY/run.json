@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-CONTRACT-SLO-TELEMETRY",
+  "branch": "fix/contract-slo-telemetry",
+  "goal": ".agent/goals/BACKEND-CONTRACT-SLO-TELEMETRY.yaml",
+  "record": "docs/ops/iterations/backend_contract_slo_telemetry_20261002.md",
+  "status": "active",
+  "baseline_sha": "c2410190feb7f7db2407083cca65f5ca624bb8c8",
+  "scope": [
+    ".agent/",
+    "addons/smart_core/core/contract_slo_telemetry.py",
+    "scripts/verify/test_contract_slo_telemetry.py",
+    "make/dev_test.mk",
+    "docs/ops/iterations/",
+    "docs/architecture/backend_contract_lifecycle_authority_v1.md",
+    "docs/architecture/backend_contract_lifecycle_authority_v1.en.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; the SLO core is pure and the runtime delivery path is exercised only after a later emission batch"
+  },
+  "checks": {
+    "slo_core": {
+      "target": "verify.backend.contract_slo_telemetry.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_slo_telemetry.py",
+        "scripts/verify/test_contract_slo_telemetry.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "This batch is the core only: it defines identity, classification and aggregation. Emission at the runtime delivery boundary and long-term persistence/trend reporting are later batches.",
+    "The runtime delivery path cannot be exercised from this worktree: local.dev mounts the primary worktree and the isolated contract-lifecycle environment is absent.",
+    "Aggregating by the published ui.business.config.contract version number requires an additive lifecycle field; this batch keys on the identity already present in the lifecycle evidence.",
+    "Deployment and version release stay unauthorized and separate from this batch status."
+  ],
+  "next_exact_step": "Register the run, implement the pure contract SLO core, lock it with a non-zero offline unit suite and a registered make target, then record the receipt and commit.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
