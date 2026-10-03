@@ -22,20 +22,33 @@ goal:
     this responsibility; the owner authorized the daily database to carry the
     acceptance fixture, so the scope belongs beside the existing guard.
   why_not_elsewhere: >-
-    Not smart_core or smart_construction_* (no product code), not the frontend
-    renderer, not low-code runtime configuration and not a migration script.
+    The lane's own deliverable stays in the fixture carrier, the acceptance
+    probe and the daily Make entries; it adds no product semantics.  The one
+    P0 platform dependency touched here is smart_core's superuser
+    res.users._has_group pass-through, which fabricated base.group_public
+    membership and made OdooBot look public.  That corrected Odoo audience
+    classification is a platform fix with its own non-zero ORM test, not a new
+    product rule, and it is required for any fixture user provisioning.  Not
+    the frontend renderer, not low-code runtime configuration and not a
+    migration script.
   blast_radius: >-
     The default acceptance scope (sc_frontend_acceptance) keeps its exact guard.
     The new daily_dev scope is reachable only through a governed confirmed Make
     entry and only for DB_NAME=sc_demo with SC_ENVIRONMENT=dev. Fixture data is
     added to sc_demo only; sc-local-*, the isolated acceptance runtime,
     production tenants and the generic login default are unchanged.
+    The smart_core change only narrows the superuser pass-through for
+    base.group_public/base.group_portal; every SC capability guard keeps the
+    pass-through, and no SC code reads those two groups.
   exclusions:
     - production_access
     - weakening_the_acceptance_scope_guard
+    - weakening_the_payment_execution_business_guard
     - new_runtime_profiles
     - product_semantic_changes
   acceptance:
     - fixture_scope_unit_non_zero
     - acceptance_scope_still_denies_non_acceptance_database
+    - superuser_audience_group_boundary_orm_non_zero
+    - daily_fixture_provisions_paid_executions_on_a_fresh_database
     - daily_probe_contract_section_pass
