@@ -51,13 +51,18 @@ goal:
     - reuse_unchanged_passing_evidence_and_rerun_only_inputs_that_changed
     - record_the_real_effect_result_including_any_still_failing_surface
   next_exact_step: >-
-    Freeze the reviewed candidate, run one make ci.local.quick on that exact clean
-    HEAD, then publish the Gitee candidate against main a969aaf7b and complete the
-    independent review. Deployment and product acceptance stay separate.
+    Mainline integration is complete: the frozen candidate dfa6fa496 was squash-merged as
+    3d777b47e (PR #543) after all four required checks passed on that exact source commit, and the
+    merged tree is byte-identical to the candidate tree. The batch record carries the 2026-10-03
+    lane decision and CI environment audit (stale Gitee formal-static package pinned at
+    /opt/gitee-ci/formal/1c89d604 fails closed as policy_source_mismatch, so the Gitee lane produced
+    no checks). Remaining work needs separate authorization: refresh that trusted package before the
+    Gitee lane can gate a candidate, and decide on Gitee PR #34 and Gitee main sync. Deployment and
+    product acceptance stay separate and are not authorized by this step.
   completion:
-    overall_goal: in_progress
+    overall_goal: completed
     ledger_closeout: passed
-    mainline_integration: not_run
+    mainline_integration: completed
     deployment: not_run
     product_delivery: not_run
     result_index: .agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/run.json
