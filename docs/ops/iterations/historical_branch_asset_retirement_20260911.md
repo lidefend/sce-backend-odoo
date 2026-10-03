@@ -78,3 +78,27 @@ apply 现在要求显式报告路径：首个删除动作前实际创建、写�
 - `audit/frontend-mainline-landing-closure-v1@18f5ce3781834a7486c3b17f4ff76ceaffb56382` 与 `audit/frontend-expression-mainline-acceptance-v1@a87ebe893376aad5464c0aa3cf469dc9b787e374` 的有效事实已由 `frontend_expression_historical_evidence_archive_20260911.md` 随 #462 进入主线，现列为“可进入后续精确退役清单”；本轮不删除。
 - `feature/payment-execution-canonical-workflow-validation-v1@3f86732124b23096b847a044a2c89d1ec1283151` 与 `feature/demo-mainline-alignment@113ad564a05df3c367b5ffa4ef9412230df6026b` 继续保留。前者仅提取通用 workflow authority 价值，后者继续承载尚未实施的 controller checkpoint P4 待办；不整体恢复旧分支。
 - 恢复 bundle 保持在仓库外 `/home/lidefend/workspace/sce-backend-odoo-historical-recovery/historical-branch-retirement-cac22ce59dbabf3c.bundle`，SHA-256 为 `d58b5e56ae423e6607efaa404663cd8676cc8275bd09fd97b5c331447d313a9c`。
+
+## 2026-10-04 台账收口与遗留结构缺口
+
+本目标是**台账收口**，不删除任何引用：goal 状态原为 `verification_pending`，与已落地事实不符，
+现修正为 `completed`，并补齐 run 记录。
+
+- 证据（已有，复核后引用）：apply 报告
+  `/home/lidefend/workspace/sce-backend-odoo-historical-recovery/apply-cac22ce59dbabf3c.json`
+  记录 12 项全部 `status=retired`（`remote_deleted` + `local_deleted`），恢复 bundle `git bundle verify` PASS（18 heads）。
+- 2026-10-04 回读：以 manifest SHA-256 `cac22ce5…` 在 `origin/main=c1eca9b2…` 上重跑只读 DRY-RUN，
+  结果 `eligible=0 skipped=12`；逐项 `git ls-remote` 复核，12 个引用本地与远端均已不存在。
+  结论：授权范围**已执行完毕**，不是待办。
+
+**遗留结构缺口（本轮新发现，需单独授权，未处理）**
+
+- 受管退役入口 `scripts/ops/retire_historical_branch_refs.py` **硬性要求祖先包含**：`assess_entries`
+  在 `:364` 将“tip 不是 `main` 祖先”判为 skip；`--emit-manifest` 在 `:526` 只收录 `contained is True` 的分支。
+- 本仓库采用 squash 合并，合并后分支 tip 永远不是 `main` 的祖先。对当前 `origin` 的 287 个分支做只读
+  inventory，`contained_in_main=False` 为 271 个、受保护 19 个、containment 不可证 14 个、前缀外 5 个，
+  **包含数为 0**。因此该入口**无法**为任何已合并分支生成可执行的退役 manifest。
+- 后果：约 275 条已合并历史分支无法通过既有受管入口清理。要推进必须二选一：
+  （i）单独授权的 P4 变更，使入口接受“已复核显式清单 + 逐项理由 + 期望 SHA + 恢复 bundle”，
+  且不得放宽 identity/漂移/开放 PR/工作树占用等 fail-closed 判定；（ii）owner 政策决定保留现状。
+  本轮**不放宽任何审计**，也不手工删除引用。

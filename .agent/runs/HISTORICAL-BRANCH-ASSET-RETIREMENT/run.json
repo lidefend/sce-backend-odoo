@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "HISTORICAL-BRANCH-ASSET-RETIREMENT",
+  "branch": "codex/historical-retirement-ledger-closeout-20261004",
+  "status": "completed",
+  "baseline_sha": "c1eca9b2ad7794a3afbda7f1fc14fb0322399c32",
+  "goal": ".agent/goals/HISTORICAL-BRANCH-ASSET-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/historical_branch_asset_retirement_20260911.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/HISTORICAL-BRANCH-ASSET-RETIREMENT.yaml",
+    ".agent/runs/HISTORICAL-BRANCH-ASSET-RETIREMENT/",
+    "docs/ops/iterations/historical_branch_asset_retirement_20260911.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record files; no database, service, credential or remote write"
+  },
+  "checks": {
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Records closeout only: the authorized twelve-reference retirement was applied on 2026-09-11 and re-read absent on 2026-10-04; this run corrects the stale goal status and records the structural backlog finding. No reference was deleted in this round.",
+  "completion": {
+    "batch": "passed: goal and run records corrected to the applied retirement outcome with the apply report and the 2026-10-04 absence readback; the ancestry-containment limit of the governed entry is recorded as the remaining backlog blocker",
+    "mainline": "delivered on this records-closeout branch through ci.delivery.freeze.prepare, exact-head ci.local.quick and the required remote checks under the owner CI-pass merge rule",
+    "deployment": "not_run",
+    "product_delivery": "not_run"
+  }
+}
