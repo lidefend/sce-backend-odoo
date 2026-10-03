@@ -802,6 +802,15 @@ ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_v
 ACCEPTANCE_RECORD_RESOLUTION ?= artifacts/backend/acceptance_record_identity.json
 ACCEPTANCE_CONTRACT_RESOLVER ?= scripts/verify/frontend_delivery_hardening_runtime_ids.py
 ACCEPTANCE_CONTRACT_RESOLVER_KEY ?= FRONTEND_DELIVERY_HARDENING_TARGETS_JSON
+# Daily development runtime carries the governed acceptance fixture (owner
+# authorized 2026-10-04) so the readonly probe can produce an exact-instance
+# backend contract receipt from the runtime it measures. This is a separate
+# declared scope; the isolated sc_frontend_acceptance guard is unchanged.
+DAILY_DEV_ACCEPTANCE_DB ?= sc_demo
+DAILY_ACCEPTANCE_CONTRACT_DECLARATION ?= config/acceptance/backend_contract_instance_daily_v1.json
+ACCEPTANCE_CONTRACT_PASSWORD ?= $(SC_ACCEPTANCE_FIXTURE_PASSWORD)
+DAILY_ACCEPTANCE_REQUIRE_CONTRACT ?= 1
+DAILY_ACCEPTANCE_FIXTURE_CONFIRM ?= ENSURE_DAILY_DEV_ACCEPTANCE_FIXTURE
 DAILY_ACCEPTANCE_NAV_MIN_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["min_actions"])')
 DAILY_ACCEPTANCE_NAV_MAX_ACTIONS ?= $(shell python3 -c 'import json; print(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["max_actions"])')
 DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS ?= $(shell python3 -c 'import json; print(",".join(json.load(open("config/frontend/acceptance_environments_v1.json", encoding="utf-8"))["profiles"]["daily"]["navigation_policy"]["forbidden_labels"]))')
@@ -818,8 +827,41 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
 	@SC_ACCEPTANCE_PROFILE=daily SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" node scripts/verify/frontend_acceptance_environment_cli.mjs --tool daily-release-probe --operation readonly --expected-sha "$(ACCEPTANCE_TARGET_SHA)" --login "$(ACCEPTANCE_LOGIN)" --api-url "$(ACCEPTANCE_BASE_URL)"
 	@test -n "$$ACCEPTANCE_LOGIN" -a -n "$$ACCEPTANCE_PASSWORD" || (echo "daily readonly credentials must be supplied through environment"; exit 2)
-	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
+	@SC_ACCEPTANCE_EXPECTED_SHA="$(ACCEPTANCE_TARGET_SHA)" DB_NAME="$(DB_NAME)" ACCEPTANCE_BASE_URL="$(ACCEPTANCE_BASE_URL)" ACCEPTANCE_NAV_MIN_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MIN_ACTIONS)" ACCEPTANCE_NAV_MAX_ACTIONS="$(DAILY_ACCEPTANCE_NAV_MAX_ACTIONS)" ACCEPTANCE_NAV_FORBIDDEN_LABELS="$(DAILY_ACCEPTANCE_NAV_FORBIDDEN_LABELS)" ACCEPTANCE_NAV_REQUIRED_PATHS="$(DAILY_ACCEPTANCE_NAV_REQUIRED_PATHS)" ACCEPTANCE_NAV_REQUIRED_ACTIONS="" ACCEPTANCE_CONTRACT_DECLARATION="$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" ACCEPTANCE_RECORD_RESOLUTION="$(ACCEPTANCE_RECORD_RESOLUTION)" ACCEPTANCE_CONTRACT_PASSWORD="$(ACCEPTANCE_CONTRACT_PASSWORD)" ACCEPTANCE_REQUIRE_CONTRACT="$(DAILY_ACCEPTANCE_REQUIRE_CONTRACT)" ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/ops/dev_acceptance_release_probe.py
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
+
+# --- daily development acceptance fixture lane -------------------------------
+# The fixture carrier and its deterministic records are provisioned in the daily
+# runtime database through the governed entries below. Both write entries require
+# an explicit confirmation and bind DB_NAME=sc_demo; the contract resolution
+# artifact is bound to the served runtime SHA and never to a local HEAD guess.
+.PHONY: verify.daily_dev.acceptance_fixture.unit daily.dev.acceptance_fixture.ensure daily.dev.acceptance_contract.resolve
+verify.daily_dev.acceptance_fixture.unit: guard.prod.forbid
+	@bash -n scripts/dev/daily_dev_acceptance_fixture.sh
+	@python3 -m py_compile \
+	  addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py \
+	  scripts/ops/dev_acceptance_release_probe.py \
+	  scripts/verify/test_daily_acceptance_fixture_lane.py
+	@python3 -m unittest scripts.verify.test_daily_acceptance_fixture_lane
+
+daily.dev.acceptance_fixture.ensure: guard.prod.forbid
+	@test "$(DB_NAME)" = "$(DAILY_DEV_ACCEPTANCE_DB)" || { echo "[DENY] daily dev acceptance fixture requires DB_NAME=$(DAILY_DEV_ACCEPTANCE_DB) (got $(DB_NAME))"; exit 3; }
+	@test "$${CONFIRM_DAILY_DEV_ACCEPTANCE_FIXTURE:-}" = "$(DAILY_ACCEPTANCE_FIXTURE_CONFIRM)" || { echo "daily dev acceptance fixture confirmation is required"; exit 2; }
+	@$(MAKE) --no-print-directory mod.install MODULE=smart_construction_acceptance_fixture
+	@$(RUN_ENV) DB_NAME="$(DAILY_DEV_ACCEPTANCE_DB)" SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" bash scripts/dev/daily_dev_acceptance_fixture.sh
+
+daily.dev.acceptance_contract.resolve: guard.prod.forbid
+	@test -n "$(ACCEPTANCE_TARGET_SHA)" || (echo "explicit ACCEPTANCE_TARGET_SHA is required"; exit 2)
+	@test -f "$(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)" || (echo "[DENY] daily contract declaration missing: $(DAILY_ACCEPTANCE_CONTRACT_DECLARATION)"; exit 3)
+	@set -eu; \
+	served="$$(python3 -c 'import json,sys,urllib.request; print(json.load(urllib.request.urlopen(sys.argv[1], timeout=20)).get("git_sha",""))' "$(ACCEPTANCE_BASE_URL)/api/runtime-version")"; \
+	test "$$served" = "$(ACCEPTANCE_TARGET_SHA)" || { echo "[DENY] daily served_sha=$$served != ACCEPTANCE_TARGET_SHA=$(ACCEPTANCE_TARGET_SHA)"; exit 4; }; \
+	target_output="$$( $(RUN_ENV) DB_NAME="$(DAILY_DEV_ACCEPTANCE_DB)" SC_ENVIRONMENT=dev SC_ALLOW_DEMO_DATA=1 SC_ACCEPTANCE_FIXTURE_SCOPE=daily_dev bash scripts/ops/odoo_shell_exec.sh < $(ACCEPTANCE_CONTRACT_RESOLVER) 2>&1 )" || { printf '%s\n' "$$target_output"; exit 1; }; \
+	payload="$$(printf '%s\n' "$$target_output" | sed -n 's/^$(ACCEPTANCE_CONTRACT_RESOLVER_KEY)=//p' | tail -n 1)"; \
+	test -n "$$payload" || { printf '%s\n' "$$target_output"; echo "daily record identity payload missing"; exit 2; }; \
+	mkdir -p "$$(dirname "$(ACCEPTANCE_RECORD_RESOLUTION)")"; \
+	RESOLVED="$$payload" RESOLVED_SHA="$(ACCEPTANCE_TARGET_SHA)" PRODUCER="$(ACCEPTANCE_CONTRACT_RESOLVER)" python3 -c 'import json,os; payload=json.loads(os.environ["RESOLVED"]); envelope={"schema":"acceptance.record_identity_resolution.v1","producer":os.environ["PRODUCER"],"expected_sha":os.environ["RESOLVED_SHA"],"targets":payload}; open("$(ACCEPTANCE_RECORD_RESOLUTION)","w",encoding="utf-8").write(json.dumps(envelope,ensure_ascii=False,indent=2,sort_keys=True)+"\n")'; \
+	echo "[daily.dev.acceptance_contract.resolve] wrote $(ACCEPTANCE_RECORD_RESOLUTION) sha=$$served"
 
 .PHONY: verify.dev.acceptance.release.schema.guard
 verify.dev.acceptance.release.schema.guard: guard.prod.forbid

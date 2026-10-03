@@ -15,6 +15,19 @@ from typing import Any, Dict
 
 MODULE = "smart_construction_acceptance_fixture"
 FRONTEND_ACCEPTANCE_DB = "sc_frontend_acceptance"
+DAILY_DEV_DB = "sc_demo"
+
+# Declared fixture scopes. The default stays the isolated acceptance database,
+# exactly as before. The daily development runtime is a separate profile the
+# owner explicitly authorized to carry the same fixture so the daily readonly
+# acceptance probe can produce its exact-instance contract receipt from the
+# runtime it actually measures. Any other scope name, database or environment
+# is denied before the builder reads or writes anything.
+FIXTURE_SCOPES = {
+    "acceptance": {"database": FRONTEND_ACCEPTANCE_DB, "environment": "acceptance"},
+    "daily_dev": {"database": DAILY_DEV_DB, "environment": "dev"},
+}
+FIXTURE_SCOPE_ENV = "SC_ACCEPTANCE_FIXTURE_SCOPE"
 
 
 def _fixture_password():
@@ -25,14 +38,23 @@ def _fixture_password():
 
 
 def _guard_acceptance_scope(env):
-    """Fail before any fixture lookup or write unless the exact scope is active."""
-    if env.cr.dbname != FRONTEND_ACCEPTANCE_DB:
+    """Fail before any fixture lookup or write unless a declared scope is active."""
+    scope_name = str(os.environ.get(FIXTURE_SCOPE_ENV) or "acceptance").strip() or "acceptance"
+    scope = FIXTURE_SCOPES.get(scope_name)
+    if not scope:
+        raise RuntimeError(
+            "frontend fixture requires %s in %s (got %s)"
+            % (FIXTURE_SCOPE_ENV, ",".join(sorted(FIXTURE_SCOPES)), scope_name)
+        )
+    if env.cr.dbname != scope["database"]:
         raise RuntimeError(
             "frontend fixture requires database %s (got %s)"
-            % (FRONTEND_ACCEPTANCE_DB, env.cr.dbname)
+            % (scope["database"], env.cr.dbname)
         )
-    if os.environ.get("SC_ENVIRONMENT") != "acceptance":
-        raise RuntimeError("frontend fixture requires SC_ENVIRONMENT=acceptance")
+    if os.environ.get("SC_ENVIRONMENT") != scope["environment"]:
+        raise RuntimeError(
+            "frontend fixture requires SC_ENVIRONMENT=%s" % scope["environment"]
+        )
     if os.environ.get("SC_ALLOW_DEMO_DATA") != "1":
         raise RuntimeError("frontend fixture requires SC_ALLOW_DEMO_DATA=1")
     _fixture_password()

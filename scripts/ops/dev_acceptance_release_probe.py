@@ -26,7 +26,19 @@ DEFAULT_SCHEMA_ASSET = ROOT / "docs/architecture/unified_page_contract_v2/unifie
 CONTRACT_LIFECYCLE_PATH = ROOT / "addons/smart_core/core/contract_lifecycle.py"
 CONTRACT_RESOLUTION_SCHEMA = "acceptance.record_identity_resolution.v1"
 CONTRACT_RECEIPT_SCHEMA = "acceptance.backend_contract_receipt.v1"
+CONTRACT_PASSWORD_ENV = "ACCEPTANCE_CONTRACT_PASSWORD"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _contract_credential(contract_password: str, login_password: str) -> str:
+    """Resolve the contract account credential.
+
+    The contract section authenticates as the declared contract account, which is
+    a different identity from the login/navigation account. When no dedicated
+    contract credential is declared the previous single-password behaviour is
+    preserved.
+    """
+    return contract_password or login_password
 
 
 def probe_runtime_identity(base_url: str, db_name: str, expected_sha: str, requester=None) -> dict[str, Any]:
@@ -979,6 +991,11 @@ def main() -> int:
     parser.add_argument("--forbidden-db", default=os.getenv("ACCEPTANCE_FORBIDDEN_DB", "sc_prod_sim"))
     parser.add_argument("--login", default=os.getenv("ACCEPTANCE_LOGIN", ""))
     parser.add_argument("--password", default=os.getenv("ACCEPTANCE_PASSWORD", ""))
+    # The contract section authenticates as the declared contract account, which
+    # is a different identity from the login/navigation account. Keep the two
+    # credentials independent; when no contract credential is declared the
+    # previous single-password behaviour is preserved.
+    parser.add_argument("--contract-password", default=os.getenv(CONTRACT_PASSWORD_ENV, ""))
     parser.add_argument("--nav-min-actions", default=os.getenv("ACCEPTANCE_NAV_MIN_ACTIONS", ""))
     parser.add_argument("--nav-max-actions", default=os.getenv("ACCEPTANCE_NAV_MAX_ACTIONS", ""))
     parser.add_argument("--nav-forbidden-labels", default=os.getenv("ACCEPTANCE_NAV_FORBIDDEN_LABELS", ""))
@@ -1059,7 +1076,7 @@ def main() -> int:
             declaration_errors=declaration_errors,
             resolution_errors=resolution_errors,
             schema_path=Path(args.schema_asset) if args.schema_asset else None,
-            password=args.password,
+            password=_contract_credential(args.contract_password, args.password),
             contract_output=contract_output,
         )
     statuses = [
