@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "id": "SQUASH-AWARE-BRANCH-RETIREMENT",
-  "branch": "codex/squash-aware-retirement-gate-20261004",
-  "status": "active",
-  "baseline_sha": "6d9c45b5cd97d2f2a791fa6b1877e3246aaec0b4",
+  "branch": "codex/squash-aware-retirement-closeout-20261004",
+  "status": "completed",
+  "baseline_sha": "8269c03818038e963fb51f9adb16b55bf1698068",
   "goal": ".agent/goals/SQUASH-AWARE-BRANCH-RETIREMENT.yaml",
   "record": "docs/ops/iterations/squash_aware_branch_retirement_20261004.md",
   "scope": [
@@ -63,10 +63,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Independent review findings actioned (run scope, doc indent, runbook merge-proof note); all four offline checks reusable. Commit the metadata fix, then run one exact-head ci.local.quick and dispatch the candidate PR.",
+  "next_exact_step": "Closed: PR #553 squash-merged as 8269c03818038e963fb51f9adb16b55bf1698068 and mirrored to Gitee main. The former candidate branch codex/squash-aware-retirement-gate-20261004 was retired through the fixed governed entry (exact-head merged PR path), which is the structural blocker this batch removed. Further work is a separate authorization: build the reviewed per-entry manifest for the real ~287-branch backlog.",
   "completion": {
-    "batch": "in_progress: candidate changes implemented and two targeted unit suites pass; docs, goal and run registration staged for review",
-    "mainline": "not_run",
+    "batch": "passed: both governed entries aligned with squash merges, documented, and covered by non-zero positive/negative units (30/30 retire, 123/123 worktree guard, 16/16 governance); independent read-only review found no relaxed guard and its three findings were actioned",
+    "mainline": "delivered: PR #553 squash-merged as 8269c03818038e963fb51f9adb16b55bf1698068 after exact-head ci.local.quick and the four required gate workflows succeeded on cd560255e379bcbe6cdecf603ab9c78b536cf7ff; Gitee main mirrored",
     "deployment": "not_run",
     "product_delivery": "not_run"
   }
