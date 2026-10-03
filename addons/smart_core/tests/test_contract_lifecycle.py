@@ -29,6 +29,62 @@ class ContractLifecycleTests(unittest.TestCase):
         contract = {"pageInfo": {"pageId": "project.list"}, "meta": {"traceId": "trace.one"}}
         self.assertEqual(contract_semantic_payload(contract), {"pageInfo": {"pageId": "project.list"}})
 
+    def test_request_transport_identity_is_not_part_of_semantic_payload(self):
+        # The delivered contract echoes the live request context. Its business
+        # context is authoritative, but the per-request transport identity must
+        # not reach the sealed payload, or the digest would change on every read.
+        contract = {
+            "dataContract": {"dataMeta": {"sourceContext": {"context": {
+                "lang": "en_US", "trace_id": "trace.one", "request_id": "request.one",
+            }}}},
+            "dataSource": {"primary": {"params": {"context": {
+                "lang": "en_US", "trace_id": "trace.one",
+            }}}},
+        }
+        payload = contract_semantic_payload(contract)
+        self.assertEqual(payload["dataContract"]["dataMeta"]["sourceContext"]["context"], {"lang": "en_US"})
+        self.assertEqual(payload["dataSource"]["primary"]["params"]["context"], {"lang": "en_US"})
+        # The caller's contract object is never mutated: the delivered payload
+        # keeps the echoed context, only the seal is normalized.
+        self.assertEqual(contract["dataSource"]["primary"]["params"]["context"]["trace_id"], "trace.one")
+
+    def test_only_the_request_trace_changes_the_semantic_digest(self):
+        base = {"pageInfo": {"pageId": "payment.request.form"}, "dataContract": {"dataMeta": {"sourceContext": {
+            "context": {"lang": "en_US", "trace_id": "trace.one"}}}}}
+        other = {"pageInfo": {"pageId": "payment.request.form"}, "dataContract": {"dataMeta": {"sourceContext": {
+            "context": {"lang": "en_US", "trace_id": "trace.two"}}}}}
+        self.assertEqual(payload_sha256(contract_semantic_payload(base)),
+                         payload_sha256(contract_semantic_payload(other)))
+        # A business value that merely shares the name stays sealed: it does not
+        # live under a transport ``context`` container.
+        business = {"pageInfo": {"pageId": "payment.request.form"}, "mainData": {"trace_id": "trace.one"}}
+        business_changed = {"pageInfo": {"pageId": "payment.request.form"}, "mainData": {"trace_id": "trace.two"}}
+        self.assertNotEqual(payload_sha256(contract_semantic_payload(business)),
+                            payload_sha256(contract_semantic_payload(business_changed)))
+
+    def test_a_sealed_contract_is_stable_across_request_traces(self):
+        def sealed(trace_id):
+            contract = {"pageInfo": {"pageId": "payment.request.form"}, "dataContract": {"dataMeta": {
+                "sourceContext": {"context": {"lang": "en_US", "trace_id": trace_id}}}}}
+            return seal_unified_page_contract(
+                contract,
+                source_payload={"model": "payment.request", "context": {"trace_id": trace_id}},
+                source_type="ui.contract",
+                request_id=f"request.{trace_id}",
+                trace_id=trace_id,
+            )
+        first, second = sealed("trace.one"), sealed("trace.two")
+        self.assertEqual(first["meta"]["lifecycle"]["integrity"]["contractSha256"],
+                         second["meta"]["lifecycle"]["integrity"]["contractSha256"])
+        self.assertEqual(first["meta"]["etag"], second["meta"]["etag"])
+        self.assertEqual(first["meta"]["lifecycle"]["generation"]["sourceSha256"],
+                         second["meta"]["lifecycle"]["generation"]["sourceSha256"])
+        # Identity is still per request and still verifiable.
+        self.assertNotEqual(first["meta"]["lifecycle"]["runtime"]["traceId"],
+                            second["meta"]["lifecycle"]["runtime"]["traceId"])
+        self.assertEqual(verify_unified_page_contract_integrity(first), (True, "ok"))
+        self.assertEqual(verify_unified_page_contract_integrity(second), (True, "ok"))
+
     def test_seal_binds_request_trace_and_sha256(self):
         contract = seal_unified_page_contract(
             self._contract(),
