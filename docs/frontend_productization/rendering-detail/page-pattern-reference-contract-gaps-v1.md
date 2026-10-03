@@ -2,23 +2,42 @@
 
 This ledger records reference details that cannot be implemented safely from the current authoritative payload. They are not permission to infer values in the frontend.
 
-## Current actual-effect status (2026-10-01, segment53.255)
+## Current actual-effect status (2026-10-03, FE-TPL-RENDER-EVIDENCE-RECONCILIATION)
 
-The original goal is active again: code capability closure does not establish that
-all custom frontend rendering and interaction match the official templates.
-Current candidate screenshots (report `tpl07-1790835439881`) pass 44 technical style
-assertions but still show a single anchored form container and stacked fact labels.
-The official base/advanced sources use separate Cards and horizontal Descriptions.
-`detail.container` and `detail.description-grid` are therefore reopened as
-`needs_work`. The same actual list screenshots also reopen `collection.header-actions`
-and `collection.toolbar-surface`: official Card padding and the in-card operations/query
-composition remain incomplete. The ledger has 54 aligned, 9 not-applicable and 4 needs-work entries.
-Preserve native business fields/groups/actions while repairing their P0 presentation.
+All four previously reopened details are closed with real rendering evidence bound to this
+candidate, so the ledger holds 58 aligned, 9 not-applicable and 0 needs-work entries
+(`scripts/verify/page_pattern_reference_ledger_guard.py` PASS, entries=67 owned_gaps=0).
 
-Earlier capability, runtime and browser evidence remains indexed in the original
-`.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json`. Historical completion text
-below is not the current overall verdict. Mocked mounting, ledger classification and
-unpublished-surface exclusions cannot substitute for real effects confirmation.
+- `detail.container` and `detail.description-grid`: the readonly record renders the official
+  standalone Card/Descriptions composition with contract-derived field coverage. Evidence is the
+  declared detail style scope `TPL07_SCOPE=style TPL52_FAMILY=detail` report
+  `artifacts/frontend-web-fix-20260928/tpl07-1791023346277/report.json` (139/139) captured on this
+  candidate and recorded as the run receipt `detail_style_scope`
+  (`.runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/detail_style_scope.json`): `style-detail-{light,dark}-{1440,390}` render 9 `standard-readonly-facts` sections plus
+  one `relation-collection-extension` each, the relation lane proves click-open then exact return
+  context in all four theme/viewport combinations, and `style-list-{light,dark}-{1440,390}`
+  one-container/standard-type pass. The earlier `a969aaf7b`-bound report is superseded because the
+  build identity changed; it is not cited as the active identity.
+- `collection.header-actions` and `collection.toolbar-surface`: one production list-surface header
+  composes the leading operations/selection with the trailing query and the single column control
+  across normal, batch and empty states. Evidence is
+  `.runtime/final-acceptance/list-surface-structure.json` (contract receipt accepted): 316/316 gated
+  checks over 1440/1024/768/521/520/390 x normal/batch/empty, negative fixtures 5/5 detected with
+  clean baselines, runtime errors 0, one direct formatting child, and the negative fixture
+  `displaced_controls_outside_shared_header` (baseline ok, then detected) refusing controls that
+  leave the shared header.
+
+This batch also closed a real 521-760px breakpoint gap rather than relaxing an assertion: the
+product's list-surface narrow layout is declared at `max-width: 760px`, but the column-settings
+control's icon-only label hiding and 44x44 touch size were declared at `max-width: 520px`. In the
+521-760px slice the mobile record presentation is already active while the control still carried its
+desktop label and 36px height, so it exceeded the reserved 60px auxiliary track and wrapped onto its
+own row. The control's declared size and icon-only label now use the same 760px narrow-layout
+breakpoint. This is P0 frontend rendering mechanism ownership.
+
+Earlier capability, runtime and browser evidence remains indexed in
+`.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json` and the current run. Mocked mounting, ledger
+classification and unpublished-surface exclusions cannot substitute for real effects confirmation.
 Publication, mainline integration, deployment and target-user delivery remain separate.
 
 ## P0 contract gaps
