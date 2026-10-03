@@ -77,6 +77,12 @@ related-work evidence and the manifest SHA-256 binding all still fail closed,
 and every declared tip must remain obtainable so the recovery bundle can
 contain it. There is no force switch.
 
+The merge proof itself is supplied externally by the owner, one entry at a
+time. The tool does not re-verify that the declared tip was merged; it records
+the owner `authorization`/`reviewed_at` and still performs every other live
+check. Each `reviewed_explicit` entry's `evidence` should cite the merged PR
+(number and exact head SHA) so the recorded review is traceable.
+
 ## Restore one reference
 
 List the recovery heads first:

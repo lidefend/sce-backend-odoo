@@ -45,6 +45,23 @@ identity, drift, open-PR, worktree-occupancy or evidence guard**.
 - `scripts/verify/branch_governance_consistency_guard.py` → PASS (canonical regex
   markers and shell guards unchanged).
 
+### Independent review (read-only, separate executor)
+
+Reviewed the frozen candidate against the baseline. Verdict: no guard was
+relaxed; the `branch.cleanup` recipe expansion, the `reviewed_explicit`
+fail-closed parsing, the non-zero/negative tests and the generated report were
+confirmed correct. Findings actioned here:
+
+- Added `docs/engineering_convergence/complexity_budget_report.md` to the run
+  `scope`: `ci.delivery.freeze.prepare` regenerates it (line-count reordering),
+  and its absence made the run `reconcile`, which would have blocked
+  `ci.local.iteration`.
+- Fixed a continuation-indent regression in `codex_execution_allowlist.md`
+  introduced by this change.
+- Documented in the runbook that the merge proof for `reviewed_explicit` is
+  supplied externally by the owner and is not re-verified by the tool, so each
+  such entry's `evidence` must cite the merged PR number and exact head SHA.
+
 ## Status
 
 - Batch: candidate under this branch; see the run record for the current layer.

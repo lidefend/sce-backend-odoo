@@ -476,8 +476,8 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   （**除非** 通过 `make pr.push` / `make branch.cleanup` / `make branch.cleanup.feature`
   执行；退役路径
   `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 另有一项
- 受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
- `--force-with-lease` lease）
+  受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
+  `--force-with-lease` lease）
 * ❌ `git push --force / -f`
   （例外一：退役路径
   `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 对已证明
