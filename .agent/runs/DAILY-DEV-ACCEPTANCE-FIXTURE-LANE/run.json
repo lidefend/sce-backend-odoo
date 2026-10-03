@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-ACCEPTANCE-FIXTURE-LANE",
+  "branch": "codex/daily-dev-acceptance-fixture-lane-20261004",
+  "status": "active",
+  "baseline_sha": "400948c909a01b61a2a2759cc0e9e48d6f873454",
+  "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
+  "record": "docs/ops/iterations/daily_dev_acceptance_fixture_lane_20261004.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
+    ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "config/acceptance/",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/daily_dev_acceptance_fixture_lane_20261004.md",
+    "make/dev.mk",
+    "scripts/dev/daily_dev_acceptance_fixture.sh",
+    "scripts/ops/dev_acceptance_release_probe.py",
+    "scripts/verify/test_daily_acceptance_fixture_lane.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed Make entries executed in this repository plus the existing daily runtime repository on sc-root; module install, fixture provisioning and the readonly probe each keep their own gate",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "env": "dev",
+      "env_file": ".env.dev",
+      "database": "sc_demo",
+      "entrypoints": [
+        "make daily.dev.acceptance_fixture.ensure",
+        "make daily.dev.acceptance_contract.resolve",
+        "make verify.daily_dev.acceptance.readonly.probe"
+      ]
+    }
+  },
+  "checks": {
+    "fixture_lane_unit": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "make/dev.mk",
+        "scripts/ops/dev_acceptance_release_probe.py",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Implement the declared daily fixture scope, the daily contract declaration, the daily fixture/contract Make entries and the separate contract credential, lock them with a non-zero unit test, then merge and run the governed entries on the daily runtime before rerunning the readonly probe."
+}

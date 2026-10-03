@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "codex/daily-dev-mainline-redeploy-20261003": ".agent/runs/DAILY-DEV-MAINLINE-REDEPLOY/run.json"
+    "codex/daily-dev-acceptance-fixture-lane-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json"
   }
 }

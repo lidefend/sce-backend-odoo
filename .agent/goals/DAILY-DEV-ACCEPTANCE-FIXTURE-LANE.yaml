@@ -1,0 +1,41 @@
+goal:
+  id: DAILY-DEV-ACCEPTANCE-FIXTURE-LANE
+  status: active
+  formal_product_layer: P4
+  module: ops_delivery_tool
+  objective: >-
+    Let the daily development runtime database sc_demo carry the governed
+    acceptance fixture so the daily readonly acceptance probe can produce its
+    exact-instance backend contract receipt legitimately, instead of reporting
+    record_resolution_missing. Add a declared daily fixture scope, a daily
+    contract declaration, a governed daily contract-identity resolution entry
+    and a separate contract credential for the probe; never weaken the existing
+    sc_frontend_acceptance acceptance scope guard.
+  layer_target:
+    - acceptance fixture carrier scope (addons/smart_construction_acceptance_fixture addon tool)
+    - daily development runtime lane (make/dev.mk entries and the acceptance probe tool)
+  standard_vs_user_specific: >-
+    Operations delivery tooling for the existing daily development runtime
+    profile; no product semantics, no customer baseline, no platform mechanism.
+  why_here: >-
+    The fixture builder, the acceptance probe and the daily lane already own
+    this responsibility; the owner authorized the daily database to carry the
+    acceptance fixture, so the scope belongs beside the existing guard.
+  why_not_elsewhere: >-
+    Not smart_core or smart_construction_* (no product code), not the frontend
+    renderer, not low-code runtime configuration and not a migration script.
+  blast_radius: >-
+    The default acceptance scope (sc_frontend_acceptance) keeps its exact guard.
+    The new daily_dev scope is reachable only through a governed confirmed Make
+    entry and only for DB_NAME=sc_demo with SC_ENVIRONMENT=dev. Fixture data is
+    added to sc_demo only; sc-local-*, the isolated acceptance runtime,
+    production tenants and the generic login default are unchanged.
+  exclusions:
+    - production_access
+    - weakening_the_acceptance_scope_guard
+    - new_runtime_profiles
+    - product_semantic_changes
+  acceptance:
+    - fixture_scope_unit_non_zero
+    - acceptance_scope_still_denies_non_acceptance_database
+    - daily_probe_contract_section_pass
