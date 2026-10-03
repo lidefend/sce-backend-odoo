@@ -34,6 +34,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MAKE_DEV = ROOT / "make" / "dev.mk"
 ACCEPTANCE_DECLARATION = ROOT / "config" / "acceptance" / "backend_contract_instance_v1.json"
 DAILY_DECLARATION = ROOT / "config" / "acceptance" / "backend_contract_instance_daily_v1.json"
+DAILY_FIXTURE_SCRIPT = ROOT / "scripts" / "dev" / "daily_dev_acceptance_fixture.sh"
+CANONICAL_FIXTURE_SCRIPT = ROOT / "scripts" / "test" / "frontend_productization_fixture.sh"
 
 
 class _Cursor:
@@ -204,6 +206,34 @@ class DailyLaneWiringTests(unittest.TestCase):
         self.assertIn("/api/runtime-version", recipe)
         self.assertIn('SC_ACCEPTANCE_FIXTURE_SCOPE=daily_dev', recipe)
         self.assertIn("acceptance.record_identity_resolution.v1", recipe)
+
+
+class DailyFixtureVerifyOrderTests(unittest.TestCase):
+    """The credential self-check authenticates through its own transaction.
+
+    ``res.users.authenticate`` opens a fresh cursor, so fixture rows that are
+    still uncommitted are invisible and the login check can only pass after the
+    deterministic fixture has been committed. Locking the ordering keeps the
+    daily entry aligned with the canonical fixture entry instead of asserting a
+    literal string that merely appears in the tree.
+    """
+
+    def _verify_commit_precedes_authenticate(self, text: str) -> None:
+        commit = text.index("env.cr.commit()")
+        authenticate = text.index('env["res.users"].sudo().authenticate(')
+        self.assertLess(
+            commit,
+            authenticate,
+            "fixture rows must be committed before the cross-transaction login self-check",
+        )
+
+    def test_daily_entry_commits_before_the_credential_self_check(self) -> None:
+        self._verify_commit_precedes_authenticate(DAILY_FIXTURE_SCRIPT.read_text(encoding="utf-8"))
+
+    def test_daily_entry_keeps_the_canonical_fixture_entry_ordering(self) -> None:
+        self._verify_commit_precedes_authenticate(
+            CANONICAL_FIXTURE_SCRIPT.read_text(encoding="utf-8")
+        )
 
 
 if __name__ == "__main__":

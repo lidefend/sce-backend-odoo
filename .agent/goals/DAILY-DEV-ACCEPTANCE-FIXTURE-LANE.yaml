@@ -40,6 +40,10 @@ goal:
     The smart_core change only narrows the superuser pass-through for
     base.group_public/base.group_portal; every SC capability guard keeps the
     pass-through, and no SC code reads those two groups.
+    The daily fixture entry commits the deterministic fixture before its
+    cross-transaction credential self-check, matching
+    scripts/test/frontend_productization_fixture.sh; the isolated acceptance
+    entry and every other credential path are unchanged.
   exclusions:
     - production_access
     - weakening_the_acceptance_scope_guard
@@ -48,6 +52,7 @@ goal:
     - product_semantic_changes
   acceptance:
     - fixture_scope_unit_non_zero
+    - daily_fixture_commits_before_the_credential_self_check
     - acceptance_scope_still_denies_non_acceptance_database
     - superuser_audience_group_boundary_orm_non_zero
     - daily_fixture_provisions_paid_executions_on_a_fresh_database
