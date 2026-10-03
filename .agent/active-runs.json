@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "branches": {
-    "codex/daily-dev-acceptance-fixture-lane-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json"
+    "fix/daily-dev-acceptance-fixture-runtime-20261004": ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json"
   }
 }

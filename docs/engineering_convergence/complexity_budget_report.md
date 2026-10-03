@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `4576`
+- Scanned files: `4578`
 - Files requiring split plan: `60`
 - Files above warning threshold: `111`
 
@@ -95,7 +95,7 @@ Generated from repository source files. This report is informational during the 
 | 1305 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1269 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1290 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1256 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
@@ -268,7 +268,7 @@ Generated from repository source files. This report is informational during the 
 | 1305 | warning | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | warning | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1292 | warning | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1269 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
+| 1290 | warning | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1263 | warning | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1262 | warning | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1256 | warning | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |

@@ -470,7 +470,9 @@ def _request(env, suffix, sequence, project, contract, settlement, partner, stat
 
 def _execution(env, suffix, project, contract, request, partner, finance, state, amount, payment_family="往来单位付款", source_kind="actual_outflow"):
     name = "FE-%s-PE-001" % suffix
-    return _upsert(
+    if state not in ("confirmed", "paid"):
+        raise RuntimeError("unsupported frontend fixture payment execution state: %s" % state)
+    record = _upsert(
         env(user=finance.id),
         "sc.payment.execution",
         "fe_execution_%s" % suffix.lower(),
@@ -486,13 +488,32 @@ def _execution(env, suffix, project, contract, request, partner, finance, state,
             "payment_family": payment_family,
             "currency_id": project.company_id.currency_id.id,
             "planned_amount": amount,
-            "paid_amount": amount if state == "paid" else 0.0,
-            "state": state,
             "document_no": name,
             "note": "FE-%s deterministic payment execution" % suffix,
             "active": True,
         },
     )
+    # ``sc.payment.execution.create`` only admits drafts; every other state must
+    # come from the authoritative workflow. The fixture owns this disposable
+    # row, so - exactly like the payment-request freeze above - it reconciles the
+    # editable facts through the ORM and then freezes the workflow state and paid
+    # amount as one fact through the record's own storage. The model's business
+    # guard is left untouched.
+    expected_paid_amount = amount if state == "paid" else 0.0
+    env.cr.execute(
+        "UPDATE sc_payment_execution SET state=%s, paid_amount=%s WHERE id=%s",
+        (state, expected_paid_amount, record.id),
+    )
+    record.invalidate_recordset(["state", "paid_amount"])
+    # The stored list projections depend on ``state``/``paid_amount``; flush so
+    # they recompute from the frozen fact instead of keeping the draft values.
+    record.flush_recordset()
+    if record.state != state or round(record.paid_amount or 0.0, 2) != round(expected_paid_amount, 2):
+        raise RuntimeError(
+            "frontend fixture payment execution freeze mismatch: %s state=%s paid_amount=%s"
+            % (record.display_name, record.state, record.paid_amount)
+        )
+    return record
 def _reconcile_payment_facts(env, requests, finance):
     """Return fixture requests to a reusable state without deleting finance facts."""
     requests = requests.exists()

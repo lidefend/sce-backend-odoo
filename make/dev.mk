@@ -831,6 +831,19 @@ verify.daily_dev.acceptance.readonly.probe: guard.prod.forbid
 	@ACCEPTANCE_PROBE_OUTPUT="$(ACCEPTANCE_PROBE_OUTPUT)" python3 scripts/verify/dev_acceptance_release_probe_schema_guard.py
 
 # --- daily development acceptance fixture lane -------------------------------
+# Root-cause locks for the daily fixture lane. The P0 platform fix keeps the
+# superuser has_group pass-through out of Odoo's public/portal audience markers;
+# the fixture fix freezes its own payment execution without weakening the model
+# guard. Both run against the registered local.dev profile and the real modules.
+.PHONY: verify.smart_core.res_users_audience_group.orm verify.acceptance_fixture.execution_freeze.orm
+verify.smart_core.res_users_audience_group.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_core TEST_TAGS=res_users_audience_group test.safe
+
+verify.acceptance_fixture.execution_freeze.orm: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_execution_freeze test.safe
+
 # The fixture carrier and its deterministic records are provisioned in the daily
 # runtime database through the governed entries below. Both write entries require
 # an explicit confirmation and bind DB_NAME=sc_demo; the contract resolution

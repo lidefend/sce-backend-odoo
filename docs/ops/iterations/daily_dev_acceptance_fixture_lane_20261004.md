@@ -1,8 +1,9 @@
 # Daily Dev Acceptance Fixture Lane（日常库承载验收夹具）
 
 Run: `.agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/run.json`
-Branch: `codex/daily-dev-acceptance-fixture-lane-20261004`
-Baseline: `400948c909a01b61a2a2759cc0e9e48d6f873454` (`origin/main`)
+Branch: `fix/daily-dev-acceptance-fixture-runtime-20261004`（前序
+`codex/daily-dev-acceptance-fixture-lane-20261004` 已由 PR #548 合入）
+Baseline: `5153e0ac69f0dd24ac6b472fff2ceef794307a3b`（`main`，含 PR #548）
 Date: 2026-10-04
 Runtime repository: `sc-root:/opt/projects/repos/sce-product-odoo`
 (`ENV=dev`, `ENV_FILE=.env.dev`, `DB_NAME=sc_demo`)
@@ -87,13 +88,60 @@ through a governed, confirmed Make entry bound to `DB_NAME=sc_demo` and
 6. **零测试锁定**：新增 `scripts/verify/test_daily_acceptance_fixture_lane.py`（19 项），
    锁定 scope 解析行为、日常声明形状与绑定、契约口令回退、Make 接线 token。
 
+## 3.1 运行时阻断的两个根因修复（本轮）
+
+PR #548 合入后首次在日常库执行 `make daily.dev.acceptance_fixture.ensure` 失败（rc=2）。
+在夹具落库链路上暴露两个相互独立、必须各自在正确责任层修复的缺陷。
+
+### 根因 A（P0 平台机制）：`smart_core` 超用户 `_has_group` 直通污染受众分组
+
+- 现象：创建 `res.users` 时抛
+  `ValidationError: 频道成员不能包括公众用户`
+  （`mail` 的 `discuss_channel_member` 约束）。
+- 定位：`addons/smart_core/models/res_users.py` 的 `_has_group` 对
+  `self._uid == SUPERUSER_ID` 无条件返回 `True`。OdooBot（uid 1）因此被
+  `res.users._is_public()` 判为公众用户（真实成员关系为否），触发核心约束；
+  同一误判也会污染 `res.partner.is_public`、`_is_portal` 与
+  `auth_signup` 的 portal 判定。
+- 修复：超用户直通保留（SC 能力守卫依赖它），仅把 Odoo 的**受众标记组**
+  `base.group_public` / `base.group_portal` 排除，使其继续返回真实成员关系。
+  SC 侧无任何代码读取这两个组，能力语义不变。
+- 锁定：`addons/smart_core/tests/test_res_users_audience_group_boundary.py`
+  （3 项真实 ORM：非受众组的超用户直通仍在、超用户不是 public/portal、
+  真实 public/portal 成员仍被识别）。
+
+### 根因 B（P1 夹具责任层）：`sc.payment.execution` 只能以草稿创建
+
+- 现象：越过 A 后，夹具在 `_execution(...)` 处以 `state="paid"/"confirmed"`
+  直接创建执行单，抛
+  `UserError: 单据必须从草稿通过正式审批和业务动作流转。`
+- 定位：PR #525 为 `sc.payment.execution.create` 加了守卫，
+  仅 `source_origin="legacy"` + `env.su` + `state="legacy_confirmed"` 的
+  受管历史导入可非草稿创建。隔离验收库中的 `FE-*-PE-001` 行是守卫引入前
+  落库的持久数据（`source_origin=manual`、`state=paid`、投影显示“已付款”），
+  新库无法复现，因此此前未暴露。
+- 修复：**不放宽模型守卫**。夹具沿用本文件既有的支付申请冻结范式
+  （`_request` 的 ORM 建单 + 工作流事实冻结）：`_execution` 经 ORM 以草稿创建
+  可编辑事实，再在该夹具自有的可销毁行上把 `state` 与 `paid_amount`
+  作为一个工作流事实冻结，随后 `invalidate_recordset` + `flush_recordset`
+  让存储型列表投影从冻结事实重算，并回读校验。
+- 锁定：`addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py`
+  （真实链路跑通夹具 helper，断言 `state=paid`、`paid_amount`、
+  `partner_payment_status_display="已付款"`、`partner_payment_amount_display`，
+  并断言直接非草稿 `create` 仍被守卫拒绝）。
+- 接线：`make/dev.mk` 新增
+  `verify.smart_core.res_users_audience_group.orm` 与
+  `verify.acceptance_fixture.execution_freeze.orm`。
+
 ## 4. 离线结果
 
 | 层 | 入口 | 状态 | 测试数 | 证据 |
 | --- | --- | --- | --- | --- |
 | L2（定向，离线） | `make verify.daily_dev.acceptance_fixture.unit` | PASS | 19 | `.runtime/evidence/daily-dev-acceptance-fixture-lane/fixture_lane_unit.log` |
 | L1（迭代） | `make ci.local.iteration` | PASS（dirty，L1-only） | — | 命令输出 |
-| L3（容器内守卫回归） | `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate` | PASS | 4（0 failed / 0 error） | `.runtime/evidence/daily-dev-acceptance-fixture-lane/acceptance_fixture_gate.log` |
+| L2（定向，ORM） | `make verify.smart_core.res_users_audience_group.orm` | PASS | 3（0 failed / 0 error） | 命令输出 |
+| L2（定向，ORM） | `make verify.acceptance_fixture.execution_freeze.orm` | PASS | 1（0 failed / 0 error） | 命令输出 |
+| L3（容器内守卫回归） | `make local.dev.test MODULE=smart_construction_acceptance_fixture TEST_TAGS=acceptance_fixture_gate` | PASS | 5（0 failed / 0 error） | 命令输出 |
 
 ### 4.1 分层声明与跳过理由
 

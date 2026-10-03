@@ -10,6 +10,13 @@ class ResUsers(models.Model):
 
     token_version = fields.Integer(default=0)
 
+    # Membership in these groups is an *audience* classification ("who the
+    # user is"), not a capability ("what the user may do"). Odoo core derives
+    # ``res.users._is_public``/``_is_portal``, ``res.partner.is_public`` and
+    # the mail channel-membership guard from them, so their real value must
+    # never be replaced by the superuser pass-through below.
+    AUDIENCE_GROUP_XMLIDS = frozenset({"base.group_public", "base.group_portal"})
+
     @api.model
     @tools.ormcache("self._uid", "group_ext_id")
     def _has_group(self, group_ext_id):
@@ -17,7 +24,10 @@ class ResUsers(models.Model):
         # while every SC capability guard assumes "superuser can act".
         # Restore the Odoo ACL semantics here so superuser-driven flows
         # (tests, scripts, shell) are not denied by group membership checks.
-        if self._uid == SUPERUSER_ID:
+        # Audience markers are excluded: fabricating superuser membership there
+        # would make OdooBot (uid 1) look like a public/portal user and trip
+        # core constraints such as ``discuss_channel_member``.
+        if self._uid == SUPERUSER_ID and group_ext_id not in self.AUDIENCE_GROUP_XMLIDS:
             return True
         return super()._has_group(group_ext_id)
 

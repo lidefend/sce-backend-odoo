@@ -1,16 +1,19 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-ACCEPTANCE-FIXTURE-LANE",
-  "branch": "codex/daily-dev-acceptance-fixture-lane-20261004",
+  "branch": "fix/daily-dev-acceptance-fixture-runtime-20261004",
   "status": "active",
-  "baseline_sha": "400948c909a01b61a2a2759cc0e9e48d6f873454",
+  "baseline_sha": "5153e0ac69f0dd24ac6b472fff2ceef794307a3b",
   "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
   "record": "docs/ops/iterations/daily_dev_acceptance_fixture_lane_20261004.md",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
     ".agent/runs/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE/",
+    "addons/smart_core/models/res_users.py",
+    "addons/smart_core/tests/",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_acceptance_fixture/tests/",
     "config/acceptance/",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/test_inventory.csv",
@@ -38,9 +41,30 @@
     }
   },
   "checks": {
+    "res_users_audience_group_orm": {
+      "target": "verify.smart_core.res_users_audience_group.orm",
+      "inputs": [
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/tests/test_res_users_audience_group_boundary.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime"
+    },
+    "fixture_execution_freeze_orm": {
+      "target": "verify.acceptance_fixture.execution_freeze.orm",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime"
+    },
     "fixture_lane_unit": {
       "target": "verify.daily_dev.acceptance_fixture.unit",
       "inputs": [
+        "addons/smart_construction_acceptance_fixture/tests/",
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "config/acceptance/backend_contract_instance_daily_v1.json",
         "make/dev.mk",
@@ -50,6 +74,9 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Implement the declared daily fixture scope, the daily contract declaration, the daily fixture/contract Make entries and the separate contract credential, lock them with a non-zero unit test, then merge and run the governed entries on the daily runtime before rerunning the readonly probe."
+  "blockers": [
+    "smart_core res.users._has_group: superuser pass-through fabricated base.group_public membership, so OdooBot looked public and discuss_channel_member rejected fixture user provisioning; fixed with an audience-group exclusion plus a non-zero ORM test.",
+    "acceptance fixture sc.payment.execution: PR #525's create guard only admits drafts, so a fresh database could not seed paid/confirmed executions; fixed by freezing the fixture-owned row's workflow fact through its own storage while leaving the model guard intact."
+  ],
+  "next_exact_step": "Lock both root-cause fixes with non-zero targeted tests, merge, bundle-sync the daily runtime to the new main, then run make daily.dev.acceptance_fixture.ensure, make daily.dev.acceptance_contract.resolve and make verify.daily_dev.acceptance.readonly.probe on sc_demo and record the runtime readback."
 }
