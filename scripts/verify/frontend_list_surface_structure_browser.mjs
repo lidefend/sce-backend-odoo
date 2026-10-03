@@ -76,6 +76,11 @@ if (REQUIRE_CONTRACT) {
     roleCode: String(account.role_code || '').trim(), companyName: String(account.company_name || '').trim(),
   });
   contractGate.status = 'accepted';
+  // The prerequisite verdict is the object shape the shared binding check reads
+  // (schemaSha256 / definition / authority / approved / approvedSemanticSha256).
+  // Keep the verdict itself so the live replay is compared against the exact
+  // approved contract rather than a re-keyed subset of it.
+  contractGate.verdict = verdict;
   contractGate.approved = verdict.approved;
   contractGate.approved_request = verdict.approvedRequest;
   contractGate.approved_semantic_sha256 = verdict.approvedSemanticSha256;
@@ -880,15 +885,21 @@ try {
     // contract must be reproducible at the served revision under the live actor;
     // anything else is not the contract the acceptance claim was made about.
     const approvedPayload = contractGate.approved_request;
-    const replay = await page.evaluate(async ({ url, payload }) => {
-      const response = await fetch(url, { method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    // The released SPA authenticates intent calls with the session bearer token
+    // (`sc_auth_token:<db>`) and deliberately omits Odoo session cookies, so a
+    // cookie-only replay can never carry the live session authority. Replay under
+    // the same token authority the application actually uses.
+    const replay = await page.evaluate(async ({ url, payload, db }) => {
+      const bearer = sessionStorage.getItem(`sc_auth_token:${db}`) || '';
+      const response = await fetch(url, { method: 'POST', credentials: 'omit',
+        headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': db, Authorization: bearer ? `Bearer ${bearer}` : '' },
+        body: JSON.stringify(payload) });
       return { status: response.status, text: await response.text() };
-    }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: approvedPayload });
+    }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: approvedPayload, db: DATABASE });
     let replayEnvelope = {};
     try { replayEnvelope = JSON.parse(replay.text); } catch {}
     const binding = observedContractBinding({ envelope: replayEnvelope, receiptRequest: approvedPayload.params,
-      approved: contractGate, requestParams: approvedPayload.params });
+      approved: contractGate.verdict, requestParams: approvedPayload.params });
     contractGate.binding = { replay_http_status: replay.status, ...binding };
     if (replay.status !== 200 || !binding.ok) {
       throw new Error(`approved contract replay did not bind: status=${replay.status} ${binding.ok ? '' : `${binding.code} ${JSON.stringify(binding.detail || {})}`}`);
@@ -996,17 +1007,19 @@ try {
       if (contractGate.status === 'accepted') {
         // The contract the browser actually executed must still be the approved one.
         const appBinding = observedContractBinding({ envelope: observedDetail.response, receiptRequest: contractGate.approved_request.params,
-          approved: contractGate, requestParams: observedDetail.params || {} });
+          approved: contractGate.verdict, requestParams: observedDetail.params || {} });
         contractGate.app_viewport_bindings = [...(contractGate.app_viewport_bindings || []), { viewport: viewport.key, ...appBinding }];
         if (!appBinding.ok) throw new Error(`observed detail contract is not the approved contract: ${appBinding.code} ${JSON.stringify(appBinding.detail || {})}`);
         // The contract the browser actually rendered must be reproducible from the
         // request that produced it, under the same real session authority.
         const observedPayload = { intent: observedDetail.intent, params: observedDetail.params };
-        const observedReplay = await page.evaluate(async ({ url, payload }) => {
-          const response = await fetch(url, { method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const observedReplay = await page.evaluate(async ({ url, payload, db }) => {
+          const bearer = sessionStorage.getItem(`sc_auth_token:${db}`) || '';
+          const response = await fetch(url, { method: 'POST', credentials: 'omit',
+            headers: { 'Content-Type': 'application/json', 'X-Odoo-DB': db, Authorization: bearer ? `Bearer ${bearer}` : '' },
+            body: JSON.stringify(payload) });
           return { status: response.status, text: await response.text() };
-        }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: observedPayload });
+        }, { url: `${BASE_URL}/api/v1/intent?db=${DATABASE}`, payload: observedPayload, db: DATABASE });
         let observedEnvelope = {};
         try { observedEnvelope = JSON.parse(observedReplay.text); } catch {}
         const observedDigest = observedEnvelope?.data?.meta?.lifecycle?.integrity?.contractSha256;
