@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "description": "Reviewed record for retiring the local-only superseded topic fix/agent-incremental-resume. It never merged and has no archived delivery evidence; the exact worktree identity, tree, recomputed branch-added path set and external recovery bundle are pinned here. Admission is opt-in only (CLEAN_WORKTREE_SUPERSEDED=1) and the entrypoint recomputes every field against origin/main before any destructive step.",
+  "worktrees": [
+    {
+      "path": "/home/lidefend/workspace/sce-backend-odoo-agent-resume",
+      "branch": "fix/agent-incremental-resume",
+      "head": "44429fd706c065aa0660c4cd87c91c5fba162f1e",
+      "tree": "85df3ed55f22c817448bfd5ce74ddbd39dc5ae86",
+      "integrationKind": "superseded",
+      "evidenceStatus": "absent",
+      "reason": "Local-only incremental-resume topic superseded by origin/main. It was never pushed to any remote, has no merged pull request, and was never part of an archived delivery cycle, so no original candidate evidence exists to preserve.",
+      "supersededBy": {
+        "baseline": "origin/main",
+        "branchNewer": [],
+        "branchAdded": [
+          ".agent/goals/WEB-OFFICIAL-TEMPLATE.yaml",
+          ".agent/runs/WEB-OFFICIAL-TEMPLATE/run.json"
+        ]
+      },
+      "recoveryBundle": {
+        "path": "/home/lidefend/workspace/.codex-evidence/workspace-archives/20261003/superseded-retirement/fix-agent-incremental-resume.bundle",
+        "sha256": "efb3332de10638c15ad35cea7d36d10befb2b46610dbc10f63e6018986ca361a"
+      }
+    }
+  ]
+}

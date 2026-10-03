@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: WORKSPACE-SUPERSEDED-RETIREMENT
+  title: workspace_superseded_retirement_admission
+  status: active
+  formal_product_layer: P4
+  layer_target: ops_delivery_tool
+  module:
+    - scripts/ops
+    - docs/ops
+    - .agent
+  baseline:
+    branch: main
+    full_sha: 43dec021db191779d1cb2a5d6ba51c74f8c00808
+    source: origin_main
+  objective: >-
+    Close the last workspace-closure gap. A superseded topic that is local-only,
+    unmerged and carries no merged pull request satisfies neither the ancestor nor
+    the squash admission of the governed worktree-cleanup entry, so its clean linked
+    worktree has no governed removal route. Add a third, explicitly opted-in
+    admission that retires such a topic only when a machine-checked superseded proof
+    holds (local-only remote state, not an origin/main ancestor, zero topic-side
+    files newer than the baseline, and every baseline-absent path disclosed in the
+    reviewed record), under the same fail-closed record, recovery-bundle and
+    confirmation requirements.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The rule decides how the P4 worktree-lifecycle tool proves a topic is
+      superseded; it belongs to the ops tooling that already owns worktree removal.
+    why_not_elsewhere:
+      - no_p0_p1_p2_business_semantics
+      - no_frontend_rendering_rule
+      - no_low_code_runtime_configuration
+      - no_manual_container_or_git_bypass
+      - no_relaxation_of_the_existing_ancestor_or_squash_admission
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - superseded_retirement_requires_an_explicit_opt_in_and_confirmation
+    - superseded_retirement_requires_a_machine_checked_zero_newer_proof
+    - baseline_absent_paths_must_be_enumerated_in_the_reviewed_record
+    - the_primary_worktree_and_its_ignored_files_are_never_touched
+    - no_remote_write_for_a_local_only_superseded_topic
+  next_exact_step: >-
+    Implement the superseded admission in scripts/ops/safe_worktree_cleanup.py with
+    its offline unit locks, then commit the reviewed record and retire
+    sce-backend-odoo-agent-resume (fix/agent-incremental-resume @ 44429fd70) after
+    the candidate merges.
+  completion:
+    overall_goal: in_progress
+    deployment: not_run
+    result_index: .agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT/run.json

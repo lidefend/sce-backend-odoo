@@ -829,5 +829,240 @@ class GovernedBranchCleanupScriptTest(unittest.TestCase):
         self.assertIn("EXPECTED_MAIN_SHA must be the full SHA", result.stderr)
 
 
+class SupersededRetirementTest(SafeWorktreeCleanupTest):
+    """A local-only topic may be retired only through the explicit superseded lane."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        # A superseded topic has no merged pull request by definition; pin the
+        # lookup to the unmerged answer so the proof is deterministic and offline.
+        original = cleanup.merged_pull_request
+        cleanup.merged_pull_request = lambda root, branch, head: None
+        self.addCleanup(setattr, cleanup, "merged_pull_request", original)
+
+    def prepare_topic(self, branch: str) -> tuple[Path, str, str]:
+        path = self.add_worktree(branch)
+        (path / "feature.txt").write_text("superseded\n", encoding="utf-8")
+        git(path, "add", "feature.txt")
+        git(path, "commit", "-m", "superseded feature")
+        head = git(path, "rev-parse", "HEAD")
+        tree = git(path, "rev-parse", f"{head}^{{tree}}")
+        return path, head, tree
+
+    def commit_as(self, path: Path, when: str, message: str = "topic edit") -> None:
+        import os
+
+        env = {**os.environ, "GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when}
+        subprocess.run(
+            ["git", "add", "-A"], cwd=path, check=True, text=True, stdout=subprocess.PIPE
+        )
+        subprocess.run(
+            ["git", "commit", "-m", message],
+            cwd=path,
+            check=True,
+            text=True,
+            env=env,
+            stdout=subprocess.PIPE,
+        )
+
+    def superseded_record(
+        self,
+        path: Path,
+        branch: str,
+        head: str,
+        tree: str,
+        bundle: Path,
+        branch_added: list[str],
+        *,
+        name: str = "docs/superseded-retirement.json",
+        extra_superseded: dict | None = None,
+    ) -> Path:
+        superseded_by = {
+            "baseline": cleanup.INTEGRATION_BASELINE,
+            "branchNewer": [],
+            "branchAdded": list(branch_added),
+        }
+        if extra_superseded is not None:
+            superseded_by.update(extra_superseded)
+        return self.track_record(
+            {
+                "schemaVersion": 1,
+                "worktrees": [
+                    {
+                        "path": str(path.resolve()),
+                        "branch": branch,
+                        "head": head,
+                        "tree": tree,
+                        "integrationKind": "superseded",
+                        "evidenceStatus": "absent",
+                        "reason": "local-only topic superseded by main; no merge, no archived evidence",
+                        "supersededBy": superseded_by,
+                        "recoveryBundle": {
+                            "path": str(bundle),
+                            "sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                        },
+                    }
+                ],
+            },
+            name,
+        )
+
+    def run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(Path(cleanup.__file__)), *args],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+        )
+
+    def test_local_only_superseded_topic_retires_with_recovery(self) -> None:
+        branch = "codex/superseded-retired"
+        path, head, tree = self.prepare_topic(branch)
+        bundle = self.recovery_bundle(branch)
+        record = self.superseded_record(path, branch, head, tree, bundle, ["feature.txt"])
+        selected = cleanup.cleanup(
+            self.root,
+            path,
+            apply=True,
+            retirement_record=record,
+            recovery_bundle=bundle,
+            confirmation=cleanup.SUPERSEDED_RETIREMENT_CONFIRMATION,
+            allow_superseded=True,
+        )
+        self.assertEqual(selected.head, head)
+        self.assertFalse(path.exists())
+        self.assertNotIn(
+            branch, git(self.root, "branch", "--format=%(refname:short)").splitlines()
+        )
+
+    def test_dry_run_reports_superseded_without_removing(self) -> None:
+        branch = "codex/superseded-dry-run"
+        path, head, _tree = self.prepare_topic(branch)
+        selected = cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
+        self.assertEqual(selected.head, head)
+        self.assertTrue(path.is_dir())
+        self.assertIn(branch, git(self.root, "branch", "--format=%(refname:short)"))
+
+    def test_without_opt_in_the_local_topic_is_denied_as_unmerged(self) -> None:
+        path, _head, _tree = self.prepare_topic("codex/superseded-no-optin")
+        with self.assertRaisesRegex(cleanup.CleanupError, "not merged into origin/main"):
+            cleanup.cleanup(self.root, path, apply=False)
+        self.assertTrue(path.is_dir())
+
+    def test_published_branch_is_denied_as_not_local_only(self) -> None:
+        branch = "codex/superseded-published"
+        path, head, _tree = self.prepare_topic(branch)
+        git(self.root, "push", "origin", f"{head}:refs/heads/{branch}")
+        with self.assertRaisesRegex(cleanup.CleanupError, "must be local-only"):
+            cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
+        self.assertTrue(path.is_dir())
+
+    def test_topic_newer_than_baseline_is_denied(self) -> None:
+        branch = "codex/superseded-newer"
+        path, _head, _tree = self.prepare_topic(branch)
+        (path / "README").write_text("topic edit\n", encoding="utf-8")
+        self.commit_as(path, "2035-01-01T00:00:00+00:00")
+        with self.assertRaisesRegex(cleanup.CleanupError, "topic side is newer"):
+            cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
+        self.assertTrue(path.is_dir())
+
+    def test_missing_superseded_confirmation_is_denied(self) -> None:
+        branch = "codex/superseded-confirm"
+        path, head, tree = self.prepare_topic(branch)
+        bundle = self.recovery_bundle(branch)
+        record = self.superseded_record(path, branch, head, tree, bundle, ["feature.txt"])
+        with self.assertRaisesRegex(cleanup.CleanupError, "requires confirmation"):
+            cleanup.cleanup(
+                self.root,
+                path,
+                apply=True,
+                retirement_record=record,
+                recovery_bundle=bundle,
+                confirmation="WRONG",
+                allow_superseded=True,
+            )
+        self.assertTrue(path.is_dir())
+
+    def test_record_branch_added_mismatch_is_denied(self) -> None:
+        branch = "codex/superseded-added"
+        path, head, tree = self.prepare_topic(branch)
+        bundle = self.recovery_bundle(branch)
+        record = self.superseded_record(
+            path, branch, head, tree, bundle, ["feature.txt", "phantom.txt"]
+        )
+        with self.assertRaisesRegex(cleanup.CleanupError, "branchAdded does not match"):
+            cleanup.cleanup(
+                self.root,
+                path,
+                apply=True,
+                retirement_record=record,
+                recovery_bundle=bundle,
+                confirmation=cleanup.SUPERSEDED_RETIREMENT_CONFIRMATION,
+                allow_superseded=True,
+            )
+        self.assertTrue(path.is_dir())
+
+    def test_record_must_declare_an_empty_branch_newer_list(self) -> None:
+        branch = "codex/superseded-newer-list"
+        path, head, tree = self.prepare_topic(branch)
+        bundle = self.recovery_bundle(branch)
+        record = self.superseded_record(
+            path,
+            branch,
+            head,
+            tree,
+            bundle,
+            ["feature.txt"],
+            extra_superseded={"branchNewer": ["README"]},
+        )
+        with self.assertRaisesRegex(cleanup.CleanupError, "empty branchNewer"):
+            cleanup.cleanup(
+                self.root,
+                path,
+                apply=True,
+                retirement_record=record,
+                recovery_bundle=bundle,
+                confirmation=cleanup.SUPERSEDED_RETIREMENT_CONFIRMATION,
+                allow_superseded=True,
+            )
+        self.assertTrue(path.is_dir())
+
+    def test_record_without_superseded_block_is_denied(self) -> None:
+        branch = "codex/superseded-no-block"
+        path, head, tree = self.prepare_topic(branch)
+        bundle = self.recovery_bundle(branch)
+        record = self.superseded_record(path, branch, head, tree, bundle, [])
+        payload = self.record_payload(record)
+        del payload["worktrees"][0]["supersededBy"]
+        self.recommit_record(record, payload)
+        with self.assertRaisesRegex(cleanup.CleanupError, "requires a supersededBy block"):
+            cleanup.cleanup(
+                self.root,
+                path,
+                apply=True,
+                retirement_record=record,
+                recovery_bundle=bundle,
+                confirmation=cleanup.SUPERSEDED_RETIREMENT_CONFIRMATION,
+                allow_superseded=True,
+            )
+        self.assertTrue(path.is_dir())
+
+    def test_cli_requires_record_and_bundle_for_superseded(self) -> None:
+        branch = "codex/superseded-cli-inputs"
+        path, _head, _tree = self.prepare_topic(branch)
+        result = self.run_cli("--path", str(path), "--superseded-retirement")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("requires both --retirement-record and --recovery-bundle", result.stderr)
+
+    def test_cli_rejects_detach_combined_with_superseded(self) -> None:
+        branch = "codex/superseded-cli-detach"
+        path, _head, _tree = self.prepare_topic(branch)
+        result = self.run_cli(
+            "--path", str(path), "--detach-keep-branch", "--superseded-retirement"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot be combined with a superseded retirement", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
