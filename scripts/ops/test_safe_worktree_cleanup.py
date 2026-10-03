@@ -239,6 +239,23 @@ class SafeWorktreeCleanupTest(unittest.TestCase):
         self.assertIn('--head "$branch" --json headRefOid,number)', source)
         self.assertIn('select(.headRefOid == $sha)', source)
 
+    def test_make_branch_cleanup_delegates_to_the_governed_script(self) -> None:
+        makefile = (
+            Path(__file__).resolve().parents[2] / "make/codex.mk"
+        ).read_text(encoding="utf-8")
+        start = makefile.index("branch.cleanup: guard.prod.forbid")
+        end = makefile.index("\nbranch.cleanup.feature:", start)
+        recipe = makefile[start:end]
+        # An ancestry-based `git branch -d` cannot delete a squash-merged branch,
+        # so the target must delegate to the SHA-bound governed script and must
+        # keep its own codex/* restriction.
+        self.assertIn("scripts/ops/branch_cleanup_safe.sh", recipe)
+        self.assertIn("EXPECTED_BRANCH_SHA", recipe)
+        self.assertIn("APPLY=", recipe)
+        self.assertIn("'^codex/'", recipe)
+        self.assertNotIn("git branch -d", recipe)
+        self.assertNotIn("git push origin --delete", recipe)
+
 
     def squash_integrate(self, path: Path, branch: str) -> tuple[str, str, str]:
         """Land the worktree HEAD on main as a single-parent, tree-identical commit."""

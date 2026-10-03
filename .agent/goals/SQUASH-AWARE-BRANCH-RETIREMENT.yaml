@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: SQUASH-AWARE-BRANCH-RETIREMENT
+  title: squash_aware_branch_retirement_entry_alignment
+  status: active
+  formal_product_layer: P4
+  layer_target: governed_branch_retirement_and_cleanup_entries
+  module:
+    - scripts/ops
+    - make
+    - docs/ops
+  objective: >-
+    Align the governed branch-retirement and branch-cleanup entries with the
+    owner squash-merge PR rule so an already-merged branch can be retired when
+    its exact head has a reviewed merged PR, without relaxing any identity,
+    drift, open-PR, worktree-occupancy or evidence guard.
+  baseline:
+    branch: main
+    full_sha: 6d9c45b5cd97d2f2a791fa6b1877e3246aaec0b4
+    source: clean_main_after_pr_551_and_552
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_governance
+    why_here: >-
+      Git identity verification, recovery bundles and reviewed retirement gates
+      are delivery lifecycle controls, not product behavior.
+    why_not_elsewhere:
+      - no_p0_frontend_or_contract_behavior
+      - no_p1_industry_product_semantics
+      - no_p2_customer_data_or_preferences
+      - no_p3_runtime_configuration
+      - no_database_fixture_migration_release_or_deployment
+    blast_radius:
+      - make_branch_cleanup_recipe
+      - historical_retirement_manifest_containment_contract
+      - ops_allowlist_and_retirement_runbook
+  batches:
+    - id: A
+      title: squash_aware_retirement_and_cleanup_entries
+      status: in_progress
+      evidence:
+        - retire_entry_unit_30_of_30
+        - safe_worktree_cleanup_unit_115_of_115
+        - branch_governance_consistency_guard_pass
+  exclusions:
+    - actual_reference_deletion_without_later_exact_manifest_authorization
+    - any_relaxation_of_identity_drift_open_pr_or_worktree_guards
+    - product_code_frontend_contract_database_or_deployment_change
+  rollback:
+    - revert_the_p4_entry_recipes_manifest_contract_and_documentation
+  next_exact_step: >-
+    Finish the frozen-candidate flow on this branch: targeted units, governance
+    guard, one consolidated independent review, then ci.local.quick and candidate
+    dispatch. Retiring the real ~287-branch backlog remains a separate authorized
+    run that must supply a reviewed per-entry manifest.

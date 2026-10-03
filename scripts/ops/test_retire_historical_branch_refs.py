@@ -113,6 +113,40 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
             "evidence": ["test evidence"],
         }
 
+    def reviewed_entry(
+        self,
+        branch: str,
+        local_sha: str,
+        remote_sha: str | None,
+        *,
+        authorization: str = "owner authorization 2026-10-04",
+        reviewed_at: str = "2026-10-04",
+    ) -> dict[str, object]:
+        entry = self.entry(branch, local_sha, remote_sha)
+        entry["containment"] = "reviewed_explicit"
+        entry["reviewed_explicit"] = {
+            "authorization": authorization,
+            "reviewed_at": reviewed_at,
+        }
+        return entry
+
+    def advance_main_without_the_tip(self, name: str = "landed.txt") -> None:
+        """Advance main without containing the branch tip (the squash-merge shape)."""
+        marker = self.root / name
+        marker.write_text("landed\n", encoding="utf-8")
+        git(self.root, "add", name)
+        git(
+            self.root,
+            "-c",
+            "user.name=Retirement Test",
+            "-c",
+            "user.email=retirement@example.invalid",
+            "commit",
+            "-m",
+            "land unrelated main change",
+        )
+        git(self.root, "push", "origin", "main")
+
     def execute(
         self,
         *,
@@ -397,6 +431,153 @@ class HistoricalBranchRetirementTest(unittest.TestCase):
         )
         self.assertEqual(retirement.local_ref_sha(self.root, "fix/never-landed"), sha)
         self.assertEqual(retirement.remote_ref_sha(self.root, "fix/never-landed"), sha)
+
+    def test_squash_shaped_tip_is_skipped_under_default_ancestry_containment(self) -> None:
+        sha = self.make_branch("fix/squash-shaped", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        self.write_manifest([self.entry("fix/squash-shaped", sha, sha)])
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any(
+                "not contained in origin/main" in reason
+                for reason in reference["assessment_reasons"]
+            ),
+            reference["assessment_reasons"],
+        )
+
+    def test_reviewed_explicit_entry_is_eligible_for_a_squash_shaped_tip(self) -> None:
+        sha = self.make_branch("fix/reviewed-shaped", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        self.write_manifest([self.reviewed_entry("fix/reviewed-shaped", sha, sha)])
+
+        report = self.execute()
+
+        self.assertEqual(report["references"][0]["assessment"], "eligible")
+
+    def test_reviewed_explicit_apply_retires_and_creates_the_bundle(self) -> None:
+        sha = self.make_branch("fix/reviewed-apply", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        self.write_manifest([self.reviewed_entry("fix/reviewed-apply", sha, sha)])
+        bundle = self.base / "reviewed-recovery.bundle"
+
+        report = self.execute(mode="apply", bundle=bundle)
+
+        self.assertEqual(report["references"][0]["execution"]["status"], "retired")
+        self.assertIsNone(retirement.local_ref_sha(self.root, "fix/reviewed-apply"))
+        self.assertIsNone(retirement.remote_ref_sha(self.root, "fix/reviewed-apply"))
+        self.assertTrue(bundle.exists())
+
+    def test_reviewed_explicit_requires_authorization_and_review_date(self) -> None:
+        sha = self.make_branch("fix/reviewed-incomplete", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        rejected = (
+            {"containment": "reviewed_explicit"},
+            {
+                "containment": "reviewed_explicit",
+                "reviewed_explicit": {"authorization": "owner"},
+            },
+            {
+                "containment": "reviewed_explicit",
+                "reviewed_explicit": {"authorization": "owner", "reviewed_at": "2026/10/04"},
+            },
+            {
+                "containment": "reviewed_explicit",
+                "reviewed_explicit": {"authorization": "", "reviewed_at": "2026-10-04"},
+            },
+        )
+        for override in rejected:
+            entry = self.entry("fix/reviewed-incomplete", sha, sha)
+            entry.update(override)
+            self.write_manifest([entry])
+            with self.assertRaises(retirement.RetirementError):
+                retirement.load_manifest(self.manifest_path)
+
+    def test_unknown_containment_mode_is_rejected(self) -> None:
+        sha = self.make_branch("fix/unknown-containment", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        entry = self.entry("fix/unknown-containment", sha, sha)
+        entry["containment"] = "trust_me"
+        self.write_manifest([entry])
+
+        with self.assertRaises(retirement.RetirementError):
+            retirement.load_manifest(self.manifest_path)
+
+    def test_reviewed_explicit_still_skips_sha_drift(self) -> None:
+        sha = self.make_branch("fix/reviewed-drift", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        self.write_manifest([self.reviewed_entry("fix/reviewed-drift", "0" * 40, sha)])
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("local SHA drift" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
+
+    def test_reviewed_explicit_still_skips_an_open_pull_request(self) -> None:
+        sha = self.make_branch("fix/reviewed-open", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        self.write_manifest([self.reviewed_entry("fix/reviewed-open", sha, sha)])
+
+        report = self.execute(open_branches={"fix/reviewed-open"})
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("open pull request" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
+
+    def test_reviewed_explicit_still_skips_a_checked_out_branch(self) -> None:
+        sha = self.make_branch("fix/reviewed-occupied", push=True, merged=False)
+        self.advance_main_without_the_tip()
+        git(self.root, "switch", "fix/reviewed-occupied")
+        try:
+            self.write_manifest([self.reviewed_entry("fix/reviewed-occupied", sha, sha)])
+            report = self.execute()
+        finally:
+            git(self.root, "switch", "main")
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("checked out" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
+
+    def test_reviewed_explicit_still_skips_a_runtime_carrier(self) -> None:
+        sha = self.make_branch("fix/reviewed-carried", push=False, merged=False)
+        self.write_manifest([self.reviewed_entry("fix/reviewed-carried", sha, None)])
+        carrier = self.root / "scripts" / "reviewed_carrier.py"
+        carrier.parent.mkdir(exist_ok=True)
+        carrier.write_text("BRANCH = 'fix/reviewed-carried'\n", encoding="utf-8")
+        git(self.root, "add", "scripts/reviewed_carrier.py")
+        git(
+            self.root,
+            "-c",
+            "user.name=Retirement Test",
+            "-c",
+            "user.email=retirement@example.invalid",
+            "commit",
+            "-m",
+            "carry the reviewed branch identity",
+        )
+        git(self.root, "push", "origin", "main")
+
+        report = self.execute()
+
+        reference = report["references"][0]
+        self.assertEqual(reference["assessment"], "skip")
+        self.assertTrue(
+            any("runtime carrier" in reason for reason in reference["assessment_reasons"]),
+            reference["assessment_reasons"],
+        )
 
     def test_branch_referenced_by_a_runtime_carrier_is_skipped(self) -> None:
         sha = self.make_branch("fix/carried", push=False)

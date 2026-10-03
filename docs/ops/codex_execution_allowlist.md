@@ -473,10 +473,11 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 以下命令 **任何情况下都禁止**：
 
 * ❌ `git push`
-  （**除非** 通过 `make pr.push` / `make branch.cleanup.feature` 执行；退役路径
+  （**除非** 通过 `make pr.push` / `make branch.cleanup` / `make branch.cleanup.feature`
+  执行；退役路径
   `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 另有一项
-  受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
-  `--force-with-lease` lease）
+ 受限例外：只删除被证明已合入的主题的远端同名分支，且必须携带精确
+ `--force-with-lease` lease）
 * ❌ `git push --force / -f`
   （例外一：退役路径
   `make workspace.worktree.cleanup CLEAN_WORKTREE_RETIREMENT_RECORD=...` 对已证明
@@ -491,7 +492,7 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 * ❌ `git merge`
 * ❌ `git tag`
 * ❌ `git branch -d / -D`
-  （**除非** 通过 `make branch.cleanup.feature` 执行）
+  （**除非** 通过 `make branch.cleanup` / `make branch.cleanup.feature` 执行）
 * ❌ 裸用 `git worktree`
   （创建只能通过 `make workspace.worktree.create`，清理只能通过
   `make workspace.worktree.cleanup`；两个入口均执行路径、分支与状态校验，创建入口
@@ -587,7 +588,8 @@ make workspace.worktree.cleanup \
   拒绝信息中列出已完成的破坏性步骤。重跑会完整重做全部校验，且不会发出第二次远端删除
   （远端已不存在即跳过）。
 * 退役被拒绝时的恢复：远端漂移、远端或 `gh` 不可读、lease 过期都属于硬拒绝，本入口不
-  自动放宽；恢复远端可读性后重跑，或对残留引用使用 `make branch.cleanup.feature`。
+  自动放宽；恢复远端可读性后重跑，或对残留引用使用 `make branch.cleanup` /
+  `make branch.cleanup.feature`。
 * 无归档证据必须由记录显式披露；禁止用任意文件、重跑或补造文件替代原候选证据。
 
 被 `origin/main` 取代、且**无任何合并承接**的纯本地主题（远端没有同名分支、`gh` 也查不到
@@ -769,6 +771,16 @@ Codex 的责任是 **定位 → 修复 → 重试**。
     以及不包含于所选远端 `main` 且（非 `origin` 时）无法用合并 PR 证明的分支。
   * 远端读取失败一律按拒绝处理，不得当作“分支不存在”；远端删除使用
     `--force-with-lease` 绑定预期 SHA，本地删除使用 `git update-ref -d <sha>`。
+* `make branch.cleanup`
+
+  * 与 `branch.cleanup.feature` 委派同一受管脚本 `scripts/ops/branch_cleanup_safe.sh`，
+    但只接受 `codex/*` 前缀（比 canonical 六前缀更窄，不放宽任何判定）。
+  * 入口自行从本地 tip 解析 `EXPECTED_BRANCH_SHA`，并从所选远端 `main` 解析
+    `EXPECTED_MAIN_SHA`；`CLEAN_BRANCH_REMOTE` 选择远端（默认 `origin`）。
+  * 其余守卫、确认短语与 `branch.cleanup.feature` 完全一致：无 force 开关，
+    `APPLY=1` 须 `CLEAN_BRANCH_CONFIRM=DELETE_EXACT_REVIEWED_BRANCH`，远端读取失败
+    一律按拒绝处理。squash 合并分支由受管脚本的 exact-head merged PR 证明接纳，
+    不以祖先包含为唯一依据。
 * `make branch.retire.historical`
 
   * 仅按已审查的精确 JSON manifest 处理历史本地／远端分支引用；本地和远端
@@ -786,6 +798,11 @@ Codex 的责任是 **定位 → 修复 → 重试**。
     的分支；`main`、`master`、`release/*` 以及仅存在于本地、未包含于 `main`
     的分支结构性排除。条目可声明 `local.state=absent`（Gitee 独有引用），
     此时只退役远端引用。
+  * 包含关系默认为祖先证明（`containment=ancestry`）。squash 合并的分支 tip
+    永远不是 `main` 的祖先，此时条目可声明 `containment=reviewed_explicit` 并提供
+    非空 `authorization` 与 `YYYY-MM-DD` 的 `reviewed_at`；它**只**替代祖先证明，
+    SHA 漂移、开放 PR、工作树占用、运行载体、related-work 证据、manifest
+    SHA-256 绑定，以及“每个声明 tip 必须可得”的 bundle 覆盖要求全部照旧 fail-closed。
   * 载体扫描覆盖 `scripts`、`config`、`deploy`、`make`、`.agent`、`.github`；
     命中运行载体引用的分支跳过。
   * 默认只读预演；`PREPARE_BUNDLE=1` 仅生成并校验恢复 bundle，不删除引用。

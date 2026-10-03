@@ -49,6 +49,34 @@ and bundle coverage immediately before deletion. A changed or newly occupied
 entry is skipped. A remote deletion failure leaves that entry's local reference
 intact and does not broaden the approved list.
 
+## Squash-merged tips (`reviewed_explicit`)
+
+Containment defaults to ancestry. Because a squash merge creates a new commit,
+the merged branch tip is never an ancestor of `main`, so an ancestry-only entry
+for it is always skipped. For a tip whose PR is confirmed merged at its exact
+head, an entry may instead declare a recorded owner review:
+
+```json
+{
+  "branch": "codex/example",
+  "local": {"state": "present", "sha": "<full-sha>"},
+  "remote": {"state": "present", "sha": "<full-sha>"},
+  "containment": "reviewed_explicit",
+  "reviewed_explicit": {"authorization": "<owner decision>", "reviewed_at": "2026-10-04"},
+  "reason": "...",
+  "evidence": ["..."]
+}
+```
+
+`containment` accepts only `ancestry` (default) or `reviewed_explicit`.
+`reviewed_explicit` requires a non-empty `authorization` and a `reviewed_at`
+matching `YYYY-MM-DD`; an unknown mode or a missing field aborts manifest
+loading. This replaces **only** the ancestry proof. Local and remote SHA drift,
+open pull requests, checked-out branches, runtime-carrier references,
+related-work evidence and the manifest SHA-256 binding all still fail closed,
+and every declared tip must remain obtainable so the recovery bundle can
+contain it. There is no force switch.
+
 ## Restore one reference
 
 List the recovery heads first:

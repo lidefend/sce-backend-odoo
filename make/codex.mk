@@ -526,6 +526,7 @@ pr.status:
 .PHONY: branch.cleanup branch.cleanup.feature branch.retire.historical verify.branch.retire.historical workspace.worktree.create workspace.evidence.archive workspace.worktree.cleanup workspace.branch.sync-main workspace.branch.sync-main.extended verify.workspace.branch.sync-main verify.workspace.worktree.guard
 
 CLEAN_BRANCH ?=
+CLEAN_BRANCH_REMOTE ?= origin
 CREATE_WORKTREE ?=
 CREATE_WORKTREE_BRANCH ?=
 CREATE_WORKTREE_BASE ?=
@@ -560,31 +561,15 @@ HISTORICAL_RETIREMENT_EMIT_INVENTORY ?=
 branch.cleanup: guard.prod.forbid
 	@if [ -z "$(CLEAN_BRANCH)" ]; then echo "❌ CLEAN_BRANCH is required"; exit 2; fi
 	@if ! echo "$(CLEAN_BRANCH)" | grep -qE '^codex/'; then echo "❌ only codex/* can be deleted"; exit 2; fi
-	@echo "[branch.cleanup] checking merged into main: $(CLEAN_BRANCH)"
-	@git fetch origin main >/dev/null 2>&1 || true
-	@branch_sha="$$(git rev-parse "$(CLEAN_BRANCH)")"; \
-	main_sha="$$(git rev-parse origin/main 2>/dev/null || git rev-parse main)"; \
-	if git merge-base --is-ancestor "$$branch_sha" "$$main_sha"; then \
-	  echo "[branch.cleanup] merge-base check: ok"; \
-	else \
-	  echo "[branch.cleanup] merge-base check failed; checking merged PR via gh ..."; \
-	  if ! command -v gh >/dev/null 2>&1; then \
-	    echo "❌ gh not found; cannot verify merged PR for $(CLEAN_BRANCH)"; \
-	    exit 2; \
-	  fi; \
-	  pr_count="$$(gh pr list --state merged --search 'head:$(CLEAN_BRANCH)' --json number --jq 'length')" || \
-	    (echo "❌ gh pr list failed; network/auth required to verify merge for $(CLEAN_BRANCH)" && exit 2); \
-	  if [ "$$pr_count" -lt 1 ]; then \
-	    echo "❌ branch not merged into main yet: $(CLEAN_BRANCH)"; \
-	    exit 2; \
-	  fi; \
-	  echo "[branch.cleanup] merged PR detected for $(CLEAN_BRANCH)"; \
-	fi
-	@echo "[branch.cleanup] deleting local: $(CLEAN_BRANCH)"
-	@git branch -d "$(CLEAN_BRANCH)"
-	@echo "[branch.cleanup] deleting remote: $(CLEAN_BRANCH)"
-	@git push origin --delete "$(CLEAN_BRANCH)"
-	@echo "✅ [branch.cleanup] done"
+	@echo "[branch.cleanup] governed SHA-bound entry for $(CLEAN_BRANCH) on $(CLEAN_BRANCH_REMOTE)"
+	@test -n "$$(git rev-parse --verify --quiet "refs/heads/$(CLEAN_BRANCH)^{commit}")" || { echo "❌ local branch not found: $(CLEAN_BRANCH)"; exit 2; }
+	@git fetch "$(CLEAN_BRANCH_REMOTE)" main >/dev/null 2>&1 || true
+	@EXPECTED_BRANCH_SHA="$$(git rev-parse --verify "refs/heads/$(CLEAN_BRANCH)^{commit}")" \
+	 EXPECTED_MAIN_SHA="$$(git rev-parse --verify "refs/remotes/$(CLEAN_BRANCH_REMOTE)/main^{commit}" 2>/dev/null || git rev-parse --verify "refs/heads/main^{commit}")" \
+	 CLEAN_BRANCH_REMOTE="$(CLEAN_BRANCH_REMOTE)" \
+	 APPLY="$${APPLY:-0}" \
+	 CLEAN_BRANCH_CONFIRM="$${CLEAN_BRANCH_CONFIRM:-}" \
+	 bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
 
 branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"

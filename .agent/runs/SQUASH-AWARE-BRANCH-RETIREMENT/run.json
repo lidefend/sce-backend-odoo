@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "SQUASH-AWARE-BRANCH-RETIREMENT",
+  "branch": "codex/squash-aware-retirement-gate-20261004",
+  "status": "active",
+  "baseline_sha": "6d9c45b5cd97d2f2a791fa6b1877e3246aaec0b4",
+  "goal": ".agent/goals/SQUASH-AWARE-BRANCH-RETIREMENT.yaml",
+  "record": "docs/ops/iterations/squash_aware_branch_retirement_20261004.md",
+  "scope": [
+    "make/codex.mk",
+    "scripts/ops/retire_historical_branch_refs.py",
+    "scripts/ops/test_retire_historical_branch_refs.py",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/historical_branch_retirement_runbook.md",
+    "docs/ops/iterations/squash_aware_branch_retirement_20261004.md",
+    ".agent/goals/SQUASH-AWARE-BRANCH-RETIREMENT.yaml",
+    ".agent/runs/SQUASH-AWARE-BRANCH-RETIREMENT/",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record files; no database, service, credential, remote write or reference deletion"
+  },
+  "checks": {
+    "branch_cleanup_entry": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py"
+      ],
+      "kind": "offline"
+    },
+    "retire_entry": {
+      "target": "verify.branch.retire.historical",
+      "inputs": [
+        "scripts/ops/retire_historical_branch_refs.py",
+        "scripts/ops/test_retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_execution_allowlist.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Step 2 of the batch: sync the docs, goal and run registration to HEAD, run verify.branch.governance.consistency, then run one consolidated independent review and ci.local.quick on the frozen candidate.",
+  "completion": {
+    "batch": "in_progress: candidate changes implemented and two targeted unit suites pass; docs, goal and run registration staged for review",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "product_delivery": "not_run"
+  }
+}
