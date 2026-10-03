@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "DAILY-DEV-MAINLINE-REDEPLOY",
+  "branch": "codex/daily-dev-mainline-redeploy-20261003",
+  "status": "active",
+  "baseline_sha": "64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75",
+  "goal": ".agent/goals/DAILY-DEV-MAINLINE-REDEPLOY.yaml",
+  "record": "docs/ops/iterations/daily_dev_mainline_redeploy_20261003.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEV-MAINLINE-REDEPLOY.yaml",
+    ".agent/runs/DAILY-DEV-MAINLINE-REDEPLOY/run.json",
+    "docs/ops/iterations/daily_dev_mainline_redeploy_20261003.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing governed Make entries executed in this repository and in the daily runtime repository on sc-root; every module upgrade or restart keeps its own gate",
+    "runtime_authority": {
+      "host_alias": "sc-root",
+      "path": "/opt/projects/repos/sce-product-odoo",
+      "env": "dev",
+      "env_file": ".env.dev",
+      "database": "sc_demo",
+      "expected_old_sha": "a90faee8e1cc95a43af111f24d7f959c6cee38f3",
+      "expected_new_sha": "64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75",
+      "entrypoints": [
+        "make daily.runtime.main.bundle_sync",
+        "make verify.frontend.build",
+        "make mod.upgrade",
+        "make restart",
+        "make verify.daily_dev.runtime_repo.clean",
+        "make verify.daily_dev.acceptance.readonly.probe"
+      ]
+    }
+  },
+  "checks": {
+    "bundle_sync_tool": {
+      "target": "verify.daily.runtime.main.bundle_sync",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/daily_runtime_bundle_sync.py",
+        "scripts/ops/test_daily_runtime_bundle_sync.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run verify.daily.runtime.main.bundle_sync, then the exact-SHA bundle sync for 64efb6bf against old SHA a90faee8, then the daily runtime frontend build, smart_core upgrade, restart and readbacks."
+}

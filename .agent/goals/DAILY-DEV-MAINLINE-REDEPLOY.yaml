@@ -1,0 +1,36 @@
+goal:
+  id: DAILY-DEV-MAINLINE-REDEPLOY
+  status: active
+  formal_product_layer: P4
+  module: ops_delivery_tool
+  objective: >-
+    Refresh the daily development runtime repository on sc-root to the exact current
+    mainline SHA 64efb6bf61ba1b7364d03c25fe0a2e1ae8849d75 through the governed
+    bundle-sync, frontend build, smart_core upgrade and restart entries, and align the
+    served runtime identity so the owner can log in and verify the current mainline.
+  layer_target: daily development runtime deployment (governed existing Make entries)
+  standard_vs_user_specific: >-
+    Operations delivery procedure for an existing runtime profile; it changes no
+    product semantics, no customer baseline and no platform mechanism.
+  why_here: >-
+    The daily runtime repository and its deployment entries are P4 ops tooling; the
+    previous mainline deployment of the same shape was recorded in
+    docs/ops/iterations/daily_dev_mainline_deployment_20261003.md.
+  why_not_elsewhere: >-
+    Not smart_core / smart_construction_* (no product code change), not the frontend
+    application, not low-code runtime configuration and not a migration script.
+  blast_radius: >-
+    Only sc-root:/opt/projects/repos/sce-product-odoo (ENV=dev, .env.dev, sc_demo).
+    Other runtime profiles, the acceptance fixture environment, the Gitee mirror and
+    production tenants are untouched.
+  exclusions:
+    - product_semantic_changes
+    - database_schema_changes_outside_module_upgrade
+    - production_access
+    - new_runtime_profiles
+    - credential_changes
+  acceptance:
+    - bundle_sync_exact_sha_bound
+    - runtime_repo_clean
+    - served_runtime_identity_matches_deployed_sha
+    - daily_readonly_probe_runtime_identity_frontend_login
