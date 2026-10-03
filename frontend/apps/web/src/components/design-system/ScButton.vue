@@ -96,7 +96,13 @@ defineExpose({
   color: var(--sc-app-accent);
   box-shadow: inset 0 -2px 0 var(--sc-app-accent);
 }
-@media (max-width: 520px) {
+/* The list-surface narrow layout owns its own breakpoint (max-width: 760px): the
+   leading/query tracks and the reserved auxiliary track are declared there, and
+   the mobile record presentation is active for the whole band. The column-settings
+   control must therefore keep its declared touch size across that same band, not
+   only below 520px, or the 521-760px slice reports a desktop-sized control inside
+   the mobile presentation and overflows the reserved auxiliary track. */
+@media (max-width: 760px) {
   [data-appearance='column-settings'] { min-width: 44px; min-height: 44px; padding-inline: 0; }
 }
 </style>
