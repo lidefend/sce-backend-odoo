@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: HISTORICAL-BRANCH-ASSET-RETIREMENT
   title: historical_branch_asset_retirement_and_evidence_preservation
-  status: verification_pending
+  status: completed
   formal_product_layer: P4
   layer_target: governed_historical_git_reference_retirement
   module:
@@ -36,7 +36,7 @@ goal:
   batches:
     - id: A
       title: manifest_bound_retirement_entry_and_recovery
-      status: verification_pending
+      status: completed
       implementation_commit: e16cbcbe45ccbb4ec2b5513b53ba5adbd511d879
       fail_closed_fix_commit: 70b5054ee154dd2f482e4d6cc35d6d8696ddf43b
       evidence:
@@ -46,7 +46,14 @@ goal:
         - zero_eligible_not_executed_without_empty_bundle
         - real_repository_dry_run_12_eligible_0_skipped
         - recovery_bundle_18_heads_git_bundle_verify_pass
-      remaining: exact_head_pr_gates_merge_main_sync_then_authorized_apply
+        - pr_462_merged_3cb69dc8150de4acd9384ce734166801ceebece7
+        - authorized_apply_2026_09_11_12_of_12_retired
+        - readback_2026_10_04_all_twelve_refs_absent_local_and_remote
+      remaining: none
+      closure_evidence:
+        apply_report: /home/lidefend/workspace/sce-backend-odoo-historical-recovery/apply-cac22ce59dbabf3c.json
+        recovery_bundle_sha256: d58b5e56ae423e6607efaa404663cd8676cc8275bd09fd97b5c331447d313a9c
+        dry_run_2026_10_04: eligible_0_skipped_12
     - id: B
       title: frontend_expression_historical_evidence_archive
       status: completed
@@ -66,6 +73,11 @@ goal:
   rollback:
     - revert_the_p4_tool_manifest_archive_and_goal_records
   next_exact_step: >-
-    Complete PR 462 exact-head review and required CI, merge and synchronize main,
-    then revalidate and execute only the twelve references authorized by manifest
-    SHA-256 cac22ce59dbabf3ce9eb77dcf356d7dc55b8c545473f2562f73d854e7bb754a7.
+    Closed 2026-10-04: the twelve manifest-bound references were retired and are
+    verifiably absent. Remaining backlog is a separate decision, not a resume of
+    this goal: the governed entry hard-requires ancestry containment
+    (scripts/ops/retire_historical_branch_refs.py:364 and the emit-manifest
+    containment filter at :526), and squash-merged branch tips are never ancestors
+    of main, so the current ~275-branch backlog cannot be retired by any manifest
+    this entry can emit. Retiring it needs a separately authorized P4 change that
+    accepts a reviewed explicit list, or an owner policy decision.
