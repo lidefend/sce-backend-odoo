@@ -41,16 +41,21 @@ goal:
     - carry_by_content_onto_current_main_never_replay_the_squashed_branch_history
     - the_attestation_stays_self_signed_so_l5_is_not_declared
   next_exact_step: >-
-    Freeze the carried candidate, run the offline locks (supply-chain unit,
-    version-compatibility unit, runtime schema guard) plus the affected contract
-    lifecycle authority and catalog checks, then the governed runtime probe on the
-    isolated contract-lifecycle profile and one consolidated affected-surface review.
-    Publication stays on hold.
+    Completed: the carried topic merged into main as PR #535 (squash commit
+    08759706b32743bce251473ff2fa1e85a36661b0). main and the Gitee mirror main both read
+    7ed180d8b. The external trust root (L5), the topic (e) re-baseline decision and
+    publication remain owner-gated; no further local action is pending for this goal.
+    See docs/ops/iterations/backend_contract_supply_chain_attestation_20261002.md.
   completion:
-    overall_goal: incomplete
-    core_scope: carried
-    compatibility_scope: carried
-    runtime_scope: pending_isolated_profile_readback
-    external_trust_root: open
+    overall_goal: complete
+    core_scope: merged_via_pr_535
+    compatibility_scope: merged_via_pr_535
+    runtime_scope: passed_head_bound_carried
+    closeout_record: merged_via_pr_535_closeout
+    external_trust_root: open_owner_gated
+    topic_e_rebaseline: open_owner_gated
+    publication: owner_hold
+    deployment: not_run
+    product_delivery: not_run
     supersedes_topic: BACKEND-CONTRACT-SLO-TELEMETRY_topic_c
     result_index: .agent/runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/run.json

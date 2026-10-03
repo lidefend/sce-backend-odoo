@@ -99,3 +99,32 @@ clear message when none exists, so a stray file from another revision cannot be 
 Still open and owner-gated: independent review of this carried delta, the Gitee candidate
 dispatch (after the `gitee-mirror/main` sync), publication, the external trust root, and topic
 (e).
+
+## Closure outcome (2026-10-03, after PR #535)
+
+This carried topic merged into `main` as PR #535, squash commit
+`08759706b32743bce251473ff2fa1e85a36661b0` (head
+`e18fe9dc49594403f84e1a4ef20f6f78602b8616`, merged 2026-10-02T11:07:14Z). The PR head
+advanced the frozen candidate `f4280c850` to `e18fe9dc` by merge-base reconciliation.
+
+Carry integrity was re-checked against `main` at `7ed180d8b` (the closeout baseline): a
+`git diff` over the declared code scope — `contract_supply_chain_attestation.py`,
+`contract_version_compatibility.py`, `view_orchestrator.py`, `scripts/verify/**`,
+`scripts/dev/local_contract_lifecycle_env_prepare.sh`, `make/dev.mk`, `make/dev_test.mk` and
+`docs/architecture/backend_contract_lifecycle_authority_v1*.md` — is empty. Only this record
+document gained its results section. The offline locks (19 / 31 / 35 / 16 tests) and the two
+runtime lanes (14/14 + 12 and 43/43 + 11) recorded at `f4280c850` are therefore carried forward
+unchanged, not re-run for reassurance; the runtime receipts remain head-bound and stale by
+design, as the reuse evaluator intends.
+
+The closeout itself is a record-only change under `.agent/`. Its owning-layer check
+`make verify.agent.resume.unit` (30 tests) passed, recorded as the governed receipt
+`.runtime/agent-runs/BACKEND-CONTRACT-SUPPLY-CHAIN-ATTESTATION/agent_record_guard.json`; the L1
+entry `make ci.local.iteration` passed on the active-run state. `main` and the Gitee mirror
+`main` both read `7ed180d8b`, and the merged branch `fix/contract-supply-chain-attestation` is
+deleted on both remotes.
+
+Still open and owner-gated, unchanged by this closeout: the external trust root (the
+attestation stays self-signed, so L5 is not declared), the topic (e) re-baseline decision for
+the 119 stale snapshot references, and publication. None of them blocks mainline stability, so
+the run and goal are recorded complete with these items explicitly deferred.
