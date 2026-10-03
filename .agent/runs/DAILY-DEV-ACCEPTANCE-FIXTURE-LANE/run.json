@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "DAILY-DEV-ACCEPTANCE-FIXTURE-LANE",
-  "branch": "fix/daily-dev-fixture-auth-verify-20261004",
-  "status": "active",
+  "branch": "codex/daily-fixture-lane-runtime-closeout-20261004",
+  "status": "completed",
   "baseline_sha": "0250853ee96564ebafeb7fd268951b6713014f70",
   "goal": ".agent/goals/DAILY-DEV-ACCEPTANCE-FIXTURE-LANE.yaml",
   "record": "docs/ops/iterations/daily_dev_acceptance_fixture_lane_20261004.md",
@@ -81,5 +81,14 @@
     "acceptance fixture sc.payment.execution: PR #525's create guard only admits drafts, so a fresh database could not seed paid/confirmed executions; fixed by freezing the fixture-owned row's workflow fact through its own storage while leaving the model guard intact.",
     "daily fixture entry scripts/dev/daily_dev_acceptance_fixture.sh committed the deterministic fixture only after the credential self-check; res.users.authenticate opens its own cursor, so the uncommitted fixture rows were invisible and the entry rolled the whole fixture back with AccessDenied. Fixed by committing before the self-check, matching scripts/test/frontend_productization_fixture.sh."
   ],
-  "next_exact_step": "Merge the daily fixture commit-ordering fix, bundle-sync the daily runtime to the new main, declare the new served SHA in .env.dev SC_SOURCE_REVISION and make restart, then run make daily.dev.acceptance_fixture.ensure, make daily.dev.acceptance_contract.resolve and make verify.daily_dev.acceptance.readonly.probe on sc_demo and record the runtime readback."
+  "next_exact_step": "None. The daily fixture lane is closed: both runtime blockers were fixed in their owning layers, the daily fixture entry now commits before its cross-transaction self-check, and the three governed entries (ensure, contract resolve, readonly probe) pass on sc_demo at served sha 8a77c237. Reuse this run if the daily runtime identity drifts again.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #549 (0fea38cc -> 0250853e) and PR #550 (8a77c237); local main = origin/main = Gitee mirror = 8a77c237",
+    "deployment": "daily_dev_runtime refreshed by bundle sync to 8a77c237 with the declared SC_SOURCE_REVISION and one governed restart",
+    "runtime": "daily.dev.acceptance_fixture.ensure PASS, daily.dev.acceptance_contract.resolve PASS, verify.daily_dev.acceptance.readonly.probe PASS (runtime_identity/login/contract 11-11, errors=[]) at served sha 8a77c237",
+    "review": "PR #550 required remote checks passed before the protected squash merge; exact-head ci.local.quick receipt 9a29cb49",
+    "version_release": "not_run (daily runtime is a development preview, not a version release)",
+    "product_delivery": "not_run"
+  }
 }

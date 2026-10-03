@@ -233,6 +233,32 @@ PR #549 合入、日常运行仓同步到 `0250853e` 后，首次执行受管入
 `served_sha` 会推进到新的 `main`，第 5.1 的 `resolve`/探针回执因绑定旧 SHA 不可继承；
 必须在新 served SHA 上重跑三个受管入口一次，并以该轮回执作为本 lane 的运行时证据。
 
+### 5.3 合并后受管回执（served sha `8a77c237`）
+
+3.2 的修复经 PR #550 合入 `main`（`8a77c2374d7c6b99048a14865a053276a061164b`），
+Gitee 镜像与日常运行仓已快进到同一 SHA；`.env.dev` 的 `SC_SOURCE_REVISION` 受控写入为
+`8a77c237`（备份 `sc-root:/opt/projects/backups/20261003T204439-pre-daily-fixture-identity-v2/`）
+并 `make restart`，`GET /api/runtime-version` 回读 `git_sha=8a77c237…`。三个受管入口在该
+served SHA 上重跑：
+
+| 入口 | 状态 | 证据 |
+| --- | --- | --- |
+| `make daily.dev.acceptance_fixture.ensure` | PASS | `carrier=installed`、`finance_uid=210`、`http_uid=210`、10 个必需 xmlid 全存在 |
+| `make daily.dev.acceptance_contract.resolve` | PASS | `artifacts/backend/acceptance_record_identity.json`，`expected_sha=8a77c237…` |
+| `make verify.daily_dev.acceptance.readonly.probe` | PASS | `runtime_identity` PASS、`login` PASS、`contract` 11/11、`errors=[]`、schema guard PASS |
+
+探针分段（served sha `8a77c237`）：
+
+- `runtime_identity` PASS：`served_sha == expected_sha == 8a77c237…`、`served_database=sc_demo`。
+- `login` PASS：`auth_uid=16`、`nav_action_count=89`、`nav_forbidden_label_hits=[]`、
+  `nav_required_path_misses=[]`。
+- `contract` PASS：`uid 210` / `FE Company A` / `company_id 21` / `role_code finance`；
+  `resolution_unique_target` `distinct_claiming_identifiers=1`、`competing_identifiers=[]`；
+  11 项必需检查全 `true`；`errors=[]`；回执语义摘要 `dca4bdb1…`。
+
+凭据沿 5.1 的既有约定（弱口令确认信封一次性绑定 `expectedSha/runId`）；日常登录口令与
+通用登录默认未改。
+
 ## 6. 未改动 / 排除
 
 - 未放宽审计、断言或负例；未新增环境或凭据权威。
@@ -241,12 +267,14 @@ PR #549 合入、日常运行仓同步到 `0250853e` 后，首次执行受管入
 
 ## 7. 四层状态
 
-- 批次验收完成：否（离线通过；`ensure` 根因已定位并修复，待合入后按 5.2 重跑）。
-- 主线集成完成：否。
-- 版本发布完成：否。
-- 产品交付完成：否。
+- 批次验收完成：是（L2 定向 21/21、L1 PASS、PR #550 必需远端检查全 pass，
+  第 5.3 节三个受管入口在 `8a77c237` 上全部 PASS）。
+- 主线集成完成：是（`main` = `origin/main` = Gitee 镜像 = `8a77c237`）。
+- 版本发布完成：否（日常运行仓是开发预览环境，未走版本发布流程，无发布回滚演练）。
+- 产品交付完成：否（未做目标环境业务可用性、账号、数据与关键流程的整体验收）。
 
 ## 8. 遗留
 
-- 3.2 的提交顺序修复合入 `main` 后，在新 served SHA 上重跑三个受管入口并回写 5.1。
-- 首轮 39 位 SHA 的受控写入已由 `git rev-parse HEAD` 程序化修正，备份与回滚路径保留。
+- 无阻塞项。日常运行仓的 `SC_SOURCE_REVISION` 会随每次 `main` 快进而陈旧，
+  属于已知运维节奏（先 bundle-sync、再受控写入、再 `make restart`），不是本 lane 的缺陷。
+- 首轮 39 位 SHA 的受控写入已由 `git rev-parse HEAD` 程序化修正；两轮备份与回滚路径保留。
