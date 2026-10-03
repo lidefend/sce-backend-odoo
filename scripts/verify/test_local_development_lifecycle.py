@@ -678,10 +678,30 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         credentials = (
             ROOT / "scripts/dev/local_dev_demo_credentials_prepare.sh"
         ).read_text(encoding="utf-8")
+        make_text = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
         self.assertIn("openssl rand -hex 32", credentials)
         self.assertIn("value not printed", credentials)
         self.assertNotIn("DB_PASSWORD}", credentials)
         self.assertNotIn("JWT_SECRET}", credentials)
+        # Owner decision 2026-10-03: sc-local-dev defaults to one fixed, simple
+        # demo credential; the random path stays available as an explicit opt-in
+        # and the value is declared in exactly one governed place.
+        self.assertIn('FIXED_DEV_DEMO_PASSWORD="scdevpass"', credentials)
+        self.assertIn('MODE="${SC_DEV_DEMO_PASSWORD_MODE:-fixed}"', credentials)
+        self.assertIn("sc-local-dev", credentials)
+        self.assertNotIn("sc_dev_sample", credentials)
+        self.assertNotIn("sc_clean", credentials)
+        self.assertIn(
+            "local.dev.demo_users.sync: guard.prod.forbid local.dev.ready "
+            "local.dev.demo_credentials.prepare",
+            make_text,
+        )
+        demo_users_sync = make_text.split("local.dev.demo_users.sync:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertIn("STEPS=demo_users", demo_users_sync)
+        self.assertIn('ENV_FILE="$(LOCAL_DEV_ENV_FILE)"', demo_users_sync)
+        self.assertIn("$(LOCAL_ENV_ISOLATE)", demo_users_sync)
 
         scenario_loader = (
             ROOT / "demo_addons/smart_construction_demo/tools/scenario_loader.py"
