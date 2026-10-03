@@ -957,6 +957,31 @@ class SupersededRetirementTest(SafeWorktreeCleanupTest):
             cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
         self.assertTrue(path.is_dir())
 
+    def test_branch_on_a_second_remote_is_denied(self) -> None:
+        branch = "codex/superseded-mirror-published"
+        path, head, _tree = self.prepare_topic(branch)
+        mirror = Path(self.temp.name) / "mirror.git"
+        git(self.root, "init", "--bare", str(mirror))
+        git(self.root, "remote", "add", "gitee-mirror", str(mirror))
+        git(self.root, "push", "gitee-mirror", f"{head}:refs/heads/{branch}")
+        with self.assertRaisesRegex(cleanup.CleanupError, "must be local-only"):
+            cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
+        self.assertTrue(path.is_dir())
+
+    def test_unreadable_remote_is_denied(self) -> None:
+        branch = "codex/superseded-unreadable-remote"
+        path, _head, _tree = self.prepare_topic(branch)
+        git(
+            self.root,
+            "remote",
+            "add",
+            "broken",
+            str(Path(self.temp.name) / "absent.git"),
+        )
+        with self.assertRaisesRegex(cleanup.CleanupError, "must be known"):
+            cleanup.cleanup(self.root, path, apply=False, allow_superseded=True)
+        self.assertTrue(path.is_dir())
+
     def test_topic_newer_than_baseline_is_denied(self) -> None:
         branch = "codex/superseded-newer"
         path, _head, _tree = self.prepare_topic(branch)

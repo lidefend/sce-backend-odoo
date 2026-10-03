@@ -606,9 +606,10 @@ make workspace.worktree.cleanup \
 
 * `CLEAN_WORKTREE_SUPERSEDED=1` 与 `CLEAN_WORKTREE_KEEP_BRANCH=1`（detach）互斥；apply 同时
   要求 `CLEAN_WORKTREE_RETIREMENT_RECORD` 与 `CLEAN_WORKTREE_RECOVERY_BUNDLE`，缺一即拒绝。
-* 机器校验（全部先于任何破坏性动作，且不采信记录自称）：`origin/main` 可读；`git
-  ls-remote --heads origin refs/heads/<branch>` 证明远端**没有**同名分支（远端不可读按拒绝
-  处理，绝不当作“不存在”）；HEAD 不是 `origin/main` 的祖先；对基线到 HEAD 的逐文件
+* 机器校验（全部先于任何破坏性动作，且不采信记录自称）：`origin/main` 可读；对**每一个
+  已配置远端**（`origin`、`gitee-mirror` …，按名称排序）执行 `git ls-remote --heads
+  <remote> refs/heads/<branch>`，要求全部**没有**同名分支，任一远端不可读按拒绝处理、
+  绝不当作“不存在”；HEAD 不是 `origin/main` 的祖先；对基线到 HEAD 的逐文件
   最后改动时间比较，**主题侧更新的差异路径必须为空**。同一路径在两侧改动时间相同时不算
   “主题更新”，不因此拒绝。
 * 该分支没有合并可绑定，所以记录除通用字段外必须给出 `integrationKind=superseded` 与

@@ -253,11 +253,16 @@ def prove_superseded(
     """
     if run(root, "rev-parse", "--verify", f"{baseline}^{{commit}}", check=False).returncode:
         raise CleanupError(f"integration baseline is unreadable: {baseline}")
-    if selected.branch and remote_branch_sha(root, selected.branch) is not None:
-        raise CleanupError(
-            "a superseded topic must be local-only; "
-            f"origin/{selected.branch} still exists"
-        )
+    # "Local-only" has to hold for every configured remote, not just ``origin``:
+    # a live topic could equally sit on the mirror remote.  Any unreadable remote
+    # raises from ``remote_branch_sha``, so an unknown remote is a denial too.
+    if selected.branch:
+        for remote in remote_names(root):
+            if remote_branch_sha(root, selected.branch, remote=remote) is not None:
+                raise CleanupError(
+                    "a superseded topic must be local-only; "
+                    f"{remote}/{selected.branch} still exists"
+                )
     rows = run(
         root, "diff", "--name-status", "--no-renames", baseline, selected.head
     ).stdout
@@ -352,8 +357,13 @@ def prove_integration(
     )
 
 
-def remote_branch_sha(root: Path, branch: str) -> str | None:
-    """Return the SHA of ``origin/<branch>``, or ``None`` when it is absent.
+def remote_names(root: Path) -> tuple[str, ...]:
+    """Return every configured remote name, sorted for deterministic messages."""
+    return tuple(sorted(name for name in run(root, "remote").stdout.split() if name))
+
+
+def remote_branch_sha(root: Path, branch: str, remote: str = "origin") -> str | None:
+    """Return the SHA of ``<remote>/<branch>``, or ``None`` when it is absent.
 
     The locally cached ``refs/remotes/origin/*`` namespace is not authoritative
     here: this repository fetches only ``main``, so a live remote topic branch
@@ -362,11 +372,11 @@ def remote_branch_sha(root: Path, branch: str) -> str | None:
     answer is a denial rather than an assumption.
     """
     process = run(
-        root, "ls-remote", "--heads", "origin", f"refs/heads/{branch}", check=False
+        root, "ls-remote", "--heads", remote, f"refs/heads/{branch}", check=False
     )
     if process.returncode:
         raise CleanupError(
-            f"cannot read origin/{branch} (remote state must be known): "
+            f"cannot read {remote}/{branch} (remote state must be known): "
             f"{process.stdout.strip()}"
         )
     rows = [line.split() for line in process.stdout.splitlines() if line.strip()]
@@ -374,7 +384,9 @@ def remote_branch_sha(root: Path, branch: str) -> str | None:
         return None
     sha = rows[0][0] if rows[0] else ""
     if not FULL_SHA.fullmatch(sha):
-        raise CleanupError(f"unexpected ls-remote result for origin/{branch}: {rows[0]!r}")
+        raise CleanupError(
+            f"unexpected ls-remote result for {remote}/{branch}: {rows[0]!r}"
+        )
     return sha
 
 

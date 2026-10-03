@@ -35,7 +35,9 @@ for the retirement-record path. Nothing about the ancestor or squash admission c
 - New confirmation string `RETIRE_SUPERSEDED_LOCAL_TOPIC_WITH_RECOVERY`.
 - `prove_integration(..., allow_superseded=...)` returns `kind="superseded"` only when
   every one of these holds, otherwise it keeps failing closed:
-  1. `origin` has **no** `refs/heads/<branch>` (an unreadable `ls-remote` is a denial);
+  1. **no** configured remote (`origin`, `gitee-mirror`, …) has `refs/heads/<branch>`;
+     the check iterates every remote and an unreadable `ls-remote` is a denial, never an
+     absence (checking `origin` alone would miss a mirror-only branch);
   2. the HEAD is **not** an ancestor of `origin/main`;
   3. for every path that differs from the baseline and exists in the baseline, the
      newest commit touching it from the topic side is **not newer** than the newest
@@ -67,8 +69,8 @@ for the retirement-record path. Nothing about the ancestor or squash admission c
 
 | Layer | Entry | Result |
 | --- | --- | --- |
-| L1 | `python3 -m unittest scripts.ops.test_safe_worktree_cleanup` | passed, 108 tests (was 84) |
-| L1 | `make verify.workspace.worktree.guard` | passed, 116 tests |
+| L1 | `python3 -m unittest scripts.ops.test_safe_worktree_cleanup` | passed, 110 tests (was 84) |
+| L1 | `make verify.workspace.worktree.guard` | passed, 118 tests |
 | L1 | `make ci.local.iteration` | passed (run scope re-declared to include `make/codex.mk`) |
 
 Retirement of the recorded worktree runs only after this candidate merges, through
