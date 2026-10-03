@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: DAILY-DEV-MAINLINE-DEPLOYMENT
+  title: daily_dev_mainline_deployment
+  status: active
+  formal_product_layer: P4
+  layer_target: daily_dev_runtime_repo
+  module:
+    - ops/daily-dev-runtime
+    - docs/ops/iterations
+    - .agent
+  baseline:
+    branch: codex/daily-dev-mainline-deployment-closeout
+    full_sha: a90faee8e1cc95a43af111f24d7f959c6cee38f3
+    source: origin_main
+  objective: >-
+    Deploy the authoritative mainline SHA a90faee8e to the daily development
+    runtime repository (sc-root:/opt/projects/repos/sce-product-odoo, ENV=dev,
+    .env.dev, DB_NAME=sc_demo) through the existing governed Make entries so the
+    owner can log in and accept the running product: exact incremental bundle
+    fast-forward, frontend static rebuild, smart_core module upgrade, governed
+    restart, runtime identity alignment and one governed readonly acceptance
+    probe.
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tool
+    why_here: >-
+      The daily development runtime repository is the registered deployable dev
+      working tree. Deployment, module upgrade, restart and read-only inspection
+      of that tree are ops delivery operations; they carry no product semantics
+      and therefore belong to P4, not to a product layer.
+    why_not_elsewhere:
+      - not_a_p0_platform_mechanism_change
+      - not_a_p1_industry_default
+      - not_a_p2_customer_preference
+      - not_a_p3_low_code_runtime_configuration
+      - no_frontend_rendering_semantics_were_changed
+  constraints:
+    - never_relax_a_gate_and_never_treat_zero_tests_as_pass
+    - reuse_the_registered_daily_profile_no_new_compose_project_database_port_volume_or_credential
+    - deploy_only_the_exact_authoritative_main_sha_with_bound_old_and_new_identity
+    - the_daily_runtime_repo_stays_clean_outside_the_registered_entries
+  next_exact_step: >-
+    Completed: mainline a90faee8e is deployed and running on the daily development
+    server; /api/runtime-version reports the deployed SHA and the owner can log in
+    at http://1.95.85.92:18081. The governed daily readonly probe passes the
+    runtime_identity, frontend and login sections; its contract section is blocked
+    by a lane precondition (the record identity resolver needs the isolated
+    acceptance fixture module, which is uninstalled in sc_demo) and was not
+    relaxed. See docs/ops/iterations/daily_dev_mainline_deployment_20261003.md.
+  completion:
+    overall_goal: complete
+    deployment: deployed_daily_dev_runtime_a90faee8e
+    runtime_identity_probe: passed
+    frontend_probe: passed
+    login_probe: passed
+    contract_probe: blocked_precondition_record_resolution_missing
+    mainline: a90faee8e_on_main_origin_and_gitee_mirror
+    publication: owner_hold
+    product_delivery: not_run
+    result_index: .agent/runs/DAILY-DEV-MAINLINE-DEPLOYMENT/run.json
