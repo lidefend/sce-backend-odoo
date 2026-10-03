@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-TPL-RENDER-EVIDENCE-RECONCILIATION",
   "branch": "fix/fe-tpl-render-evidence-reconciliation",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "a969aaf7b1f21ab25aceca646c2dc87c7766d1d9",
   "goal": ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
   "record": "docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md",
@@ -110,10 +110,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run one make ci.local.quick on the frozen clean HEAD, then make pr.push against main a969aaf7b and complete the independent review. Deployment and product acceptance stay separate and are not authorized by this step.",
+  "next_exact_step": "Mainline integration is complete; the batch record now also carries the 2026-10-03 lane decision and CI environment audit. Remaining, separately authorized work: refresh the Gitee formal-static package (/opt/gitee-ci/formal/<candidate>) before that lane can gate any candidate, and decide whether to close Gitee PR #34 and sync Gitee main, which are outside this round's allowlist. Deployment and product acceptance are not claimed by this run.",
   "completion": {
     "batch": "passed: R3/R4/R5 root causes and the 521-760px breakpoint gap are fixed at their owning layers; the four ledger needs_work entries are adjudicated and aligned; the governed 18082 backend and the governed 5180 preview were refreshed for this candidate, and the fixture record was re-resolved through the governed resolver (smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a, payment.request 1849, single matching target, companies 8/9). Six receipts recorded on a clean tree: list_surface_structure 316/316 gated (negatives 5/5, runtime errors 0), detail_style_scope 139/139 including click-open then exact return context in all four theme/viewport combinations, and offline page_pattern_parity 28, standard_preview_tool 147, primitive_adapter 39, collection_action_toolbar 42. No assertion, audit or negative fixture was relaxed.",
-    "mainline": "not_run",
+    "mainline": "completed: PR #543 (fix/fe-tpl-render-evidence-reconciliation -> main) squash-merged the frozen candidate dfa6fa496af1ba38e594a9b03f702efd081c2ff0 against the declared baseline a969aaf7b1f21ab25aceca646c2dc87c7766d1d9 on 2026-10-03T11:39:46Z. All four required checks succeeded on that exact source commit (public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate) and make pr.merge.prep reported merge_policy_gate on the head before merge. The squash commit 3d777b47e3d3ae262beb0db22887e0961069abd6 is origin/main and its tree a92f2e9fca55ca2463555d92a00802da6c281e6b is byte-identical to the frozen candidate tree. Recorded by the closeout commit in docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md.",
     "deployment": "not_run",
     "product_acceptance": "not_run"
   },

@@ -1,6 +1,7 @@
 # FE-TPL render evidence reconciliation (2026-10-03)
 
-Status: in progress. This record is the human-readable log for run
+Status: mainline integration complete (batch passed); deployment and product
+acceptance are not claimed. This record is the human-readable log for run
 `FE-TPL-RENDER-EVIDENCE-RECONCILIATION`; the run JSON is the single result index.
 
 ## Why this run exists
@@ -131,3 +132,62 @@ Also recorded: the predecessor run `.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTIO
 is `superseded` instead of `completed`, because its goal declared
 `overall_goal: incomplete`. That correction changes no commit, product file or
 historical evidence.
+
+## Lane decision and environment audit (2026-10-03 closeout)
+
+The candidate was first published only to the temporary Gitee outage lane
+(`pr.push.gitee` + `gitee.ci.pr.create`, PR #34). That PR never produced the four
+required checks: `GET /repos/leegege/sce-product-odoo/commits/dfa6fa49.../check-runs`
+returned `total_count=0`, and the local `gitee.ci.gates.plan` entry always reports
+`state=not_run` by construction, so its output was never evidence that checks were
+missing.
+
+A governed read-only audit of the existing CI host showed this is not "the webhook
+was never dispatched". The existing receiver/worker did receive three signed
+`merge_request_hooks` deliveries for PR #34 (`formal_inbox`: `prepared`) and did build
+a durable formal job (`806a1f62...`), which ended `environment_error` with
+`checks: []` and no per-check log at all.
+
+Owning root cause (P4 delivery tooling, not the candidate): the formal-static worker's
+trusted package was pinned to `GITEE_FORMAL_ROOT=/opt/gitee-ci/formal/1c89d604...`,
+which is older than the candidate. After checkout, `FormalExecutor.execute_plan`
+re-derives the plan from that package and then requires every candidate file listed in
+`source_hashes` to hash-match the plan. Three policy inputs differ between the pinned
+package and the candidate checkout:
+
+- `.github/workflows/professional_quality_gate.yml`
+- `config/ci/risk_tiering_v1.json`
+- `scripts/ci/ci_risk_classifier.py`
+
+so the run hit `policy_source_mismatch` and failed closed before any check could be
+executed. This is the documented trusted-package bootstrap rule: when a settlement
+changes the trusted policy inputs, the exact package must be previewed/installed for
+that candidate before the candidate can be gated. Refreshing that package is a
+separate authorized P4 environment write and was not performed in this round; no
+assertion, audit or DENY was relaxed to work around it.
+
+Lane conclusion: GitHub integration was restored by PR #523 (`GITHUB-RECOVERY`), this
+topic's predecessor `FE-TPL-OFFICIAL-TEMPLATE-ADOPTION` was integrated through GitHub
+PR #527, and this run declares its baseline as `source: origin_main`. The candidate was
+therefore integrated through the existing governed GitHub entries
+(`make pr.push` / `make pr.create` / `make pr.merge`), with no change to Gitee lane
+configuration, no audit relaxation, no DENY bypass and no write to the CI host.
+
+## Mainline integration identity
+
+- PR #543 (`fix/fe-tpl-render-evidence-reconciliation` -> `main`), source commit
+  `dfa6fa496af1ba38e594a9b03f702efd081c2ff0`, target baseline
+  `a969aaf7b1f21ab25aceca646c2dc87c7766d1d9`.
+- All four required checks succeeded on that exact source commit: `public_guard`
+  (1m21s), `merge_policy_gate` (7s), `professional_quality_gate` (6m40s),
+  `frontend_release_gate` (1m21s).
+- Squash merge `3d777b47e3d3ae262beb0db22887e0961069abd6` is the current `origin/main`;
+  its tree `a92f2e9fca55ca2463555d92a00802da6c281e6b` is byte-identical to the frozen
+  candidate `dfa6fa496`'s tree.
+
+## Retained open items
+
+- Gitee PR #34 stays open and will never produce checks (its lane package is stale);
+  Gitee `main` is still `a969aaf7b`. Closing that PR, syncing Gitee main, or rebuilding
+  the formal package are outside this round's allowlist and stay queued for the owner.
+- `deployment` and `product_delivery` remain not run.
