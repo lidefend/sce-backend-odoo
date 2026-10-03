@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "id": "FE-TPL-RENDER-EVIDENCE-RECONCILIATION",
+  "branch": "fix/fe-tpl-render-evidence-reconciliation",
+  "status": "active",
+  "baseline_sha": "a969aaf7b1f21ab25aceca646c2dc87c7766d1d9",
+  "goal": ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
+  "record": "docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md",
+  "scope": [
+    ".agent/goals/FE-TPL-RENDER-EVIDENCE-RECONCILIATION.yaml",
+    ".agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/",
+    ".agent/active-runs.json",
+    "docs/ops/iterations/fe_tpl_render_evidence_reconciliation_20261003.md",
+    "docs/frontend_productization/rendering-detail/",
+    "scripts/verify/",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/tests/test_contract_lifecycle.py",
+    "config/acceptance/",
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "frontend/apps/web/src/",
+    "scripts/ops/dev_acceptance_release_probe.py",
+    ".agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing owner-authorized isolated local acceptance runtime via governed Make entries; offline targeted tests reuse workspace dependencies",
+    "runtime_profile": "local",
+    "project": "sc-fe-r2-p1-01",
+    "database": "sc_frontend_acceptance",
+    "database_role": "isolated synthetic acceptance tenant, not production",
+    "dbfilter": "^sc_frontend_acceptance$",
+    "company_id": 8,
+    "filestore_volume": "sc_fe_r2_p1_01_odoo",
+    "ports": {
+      "backend": 18082,
+      "frontend": 5180
+    },
+    "inventory": "reuse the predecessor run's registered environment and evidence; no new environment or credential authority"
+  },
+  "checks": {
+    "page_pattern_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/page_pattern_reference_ledger_guard.py",
+        "scripts/verify/test_page_pattern_reference_ledger_guard.py",
+        "docs/frontend_productization/rendering-detail/page-pattern-reference-detail-ledger-v1.json",
+        "make/frontend.mk"
+      ],
+      "note": "parity guard plus page-pattern ledger guard; the ledger holds no needs_work entry"
+    },
+    "standard_preview_tool": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/dev/frontend_standard_preview.py",
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk"
+      ],
+      "note": "standard preview tooling used by the list-surface and detail browser lanes"
+    },
+    "detail_style_scope": {
+      "target": "verify.frontend.standard_page_type.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_page_type_browser.mjs",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh"
+      ],
+      "note": "declared detail style scope; run with TPL07_SCOPE=style TPL52_FAMILY=detail"
+    },
+    "list_surface_structure": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/frontend.mk"
+      ],
+      "note": "contract-bound list-surface structure probe over the declared viewport/state matrix"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/scripts/primitive_adapter_contract_test.ts",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "note": "ScButton.vue declares the column-settings touch size; the primitive adapter contract must stay intact"
+    },
+    "collection_action_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue",
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/scripts/collection_action_settlement_test.ts",
+        "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
+        "make/frontend.mk"
+      ],
+      "note": "list-surface header composition changed at the 760px narrow breakpoint"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run one make ci.local.quick on the frozen clean HEAD, then make pr.push against main a969aaf7b and complete the independent review. Deployment and product acceptance stay separate and are not authorized by this step.",
+  "completion": {
+    "batch": "passed: R3/R4/R5 root causes and the 521-760px breakpoint gap are fixed at their owning layers; the four ledger needs_work entries are adjudicated and aligned; the governed 18082 backend and the governed 5180 preview were refreshed for this candidate, and the fixture record was re-resolved through the governed resolver (smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a, payment.request 1849, single matching target, companies 8/9). Six receipts recorded on a clean tree: list_surface_structure 316/316 gated (negatives 5/5, runtime errors 0), detail_style_scope 139/139 including click-open then exact return context in all four theme/viewport combinations, and offline page_pattern_parity 28, standard_preview_tool 147, primitive_adapter 39, collection_action_toolbar 42. No assertion, audit or negative fixture was relaxed.",
+    "mainline": "not_run",
+    "deployment": "not_run",
+    "product_acceptance": "not_run"
+  },
+  "receipt_note": "Receipts are recorded on a clean tree at HEAD 99872d500 in .runtime/agent-runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/, with raw logs under logs/. Offline counts sum every runner in the target that prints a case count (node --test and python unittest); a target whose node script prints only a PASS coverage metric is counted by its unittest count. Because this run declares a runtime environment, the local evaluator reports every receipt as \"stale: runtime evidence requires authoritative environment readback\" rather than \"reusable\"; they are recorded results, not auto-reusable ones, and were re-run rather than assumed. The frozen delivery HEAD adds only this run/goal record and refreshed generated evidence, so the backend and frontend inputs are unchanged: the governed preview reports the same unchanged build identity and the contract probe is re-bound to the frozen HEAD with an identical sealed semantic digest and the same resolved record."
+}

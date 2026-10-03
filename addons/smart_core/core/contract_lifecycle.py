@@ -63,8 +63,40 @@ def protocol_id(value: Any, *, prefix: str) -> str:
     return normalized
 
 
+# A delivered contract echoes the live request context (``dataContract.dataMeta.
+# sourceContext.context`` and ``dataSource.primary.params.context``), and that
+# context carries the request transport identity the intent dispatcher injects
+# (``intent_dispatcher`` sets ``context_in["trace_id"]``). Business context is
+# authoritative and stays in the delivered payload, but a per-request transport
+# identifier must not enter the sealed semantic payload: otherwise
+# ``contractSha256``, ``etag`` and ``snapshotId`` change on every read and the
+# seal stops identifying a contract (no version aggregation, no reproducible
+# acceptance receipt). Transport identity remains available under
+# ``meta.lifecycle.runtime``.
+REQUEST_TRANSPORT_CONTEXT_KEYS = ("trace_id", "request_id")
+
+
+def strip_request_transport_identity(value: Any) -> Any:
+    """Copy ``value``, dropping transport identity from ``context`` containers."""
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for key, item in value.items():
+            if key == "context" and isinstance(item, dict):
+                out[key] = {
+                    sub_key: strip_request_transport_identity(sub_value)
+                    for sub_key, sub_value in item.items()
+                    if sub_key not in REQUEST_TRANSPORT_CONTEXT_KEYS
+                }
+                continue
+            out[key] = strip_request_transport_identity(item)
+        return out
+    if isinstance(value, list):
+        return [strip_request_transport_identity(item) for item in value]
+    return value
+
+
 def contract_semantic_payload(contract: dict[str, Any]) -> dict[str, Any]:
-    payload = deepcopy(contract if isinstance(contract, dict) else {})
+    payload = strip_request_transport_identity(contract if isinstance(contract, dict) else {})
     payload.pop("meta", None)
     return payload
 
@@ -107,7 +139,9 @@ def build_lifecycle_evidence(
             "generator": str(generator or "unknown"),
             "generatorVersion": str(generator_version or UNIFIED_PAGE_SCHEMA_VERSION),
             "sourceType": str(source_type or "unknown"),
-            "sourceSha256": payload_sha256(source_payload if isinstance(source_payload, dict) else {}),
+            "sourceSha256": payload_sha256(
+                strip_request_transport_identity(source_payload if isinstance(source_payload, dict) else {})
+            ),
         },
         "runtime": {
             "requestId": normalized_request_id,

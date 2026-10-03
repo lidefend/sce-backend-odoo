@@ -447,6 +447,14 @@ def validate_acceptance_declaration(declaration: Any) -> list[str]:
         request_decl.get("client_contract_capabilities"), list
     ):
         errors.append("contract_declaration_request_capabilities_invalid")
+    elif not isinstance(request_decl.get("context"), dict) or not all(
+        isinstance(request_decl["context"].get(key), str) and request_decl["context"].get(key)
+        for key in ("lang", "tz")
+    ):
+        # The sealed contract echoes the localized projection, so the declared
+        # request must state the context that produced the approved digest;
+        # otherwise the recorded request could not be replayed verbatim.
+        errors.append("contract_declaration_request_context_invalid")
     required = declaration.get("required_checks")
     if not isinstance(required, list) or not required or not all(isinstance(item, str) and item for item in required):
         errors.append("contract_declaration_required_checks_invalid")
@@ -800,7 +808,14 @@ def probe_contract_acceptance(
         "accepted_contract_versions": list(request_decl.get("accepted_contract_versions") or []),
         "client_contract_capabilities": list(request_decl.get("client_contract_capabilities") or []),
     }
-    request_payload = {"intent": request_decl.get("intent"), "params": params}
+    request_context = {
+        str(key): value
+        for key, value in (request_decl.get("context") or {}).items()
+        if isinstance(value, str) and value
+    }
+    request_payload: dict[str, Any] = {"intent": request_decl.get("intent"), "params": params}
+    if request_context:
+        request_payload["context"] = request_context
     contract_status, contract_body = session.post(
         "/api/v1/intent?db=" + db_name,
         request_payload,
@@ -925,6 +940,7 @@ def probe_contract_acceptance(
                 "database": db_name,
                 "intent": request_decl.get("intent"),
                 "params": params,
+                "context": request_context,
                 "fingerprint_sha256": _hash_bytes(
                     json.dumps(request_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
                 ),

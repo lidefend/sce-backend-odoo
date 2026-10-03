@@ -66,6 +66,7 @@ def declaration(required=None):
             "view_type": "form",
             "delivery_profile": "full",
             "client_type": "web_pc",
+            "context": {"lang": "zh_CN", "tz": "Asia/Shanghai"},
             "accepted_contract_versions": ["2.2.x"],
             "client_contract_capabilities": ["status_contract.v2"],
         },
@@ -203,6 +204,27 @@ class ContractAcceptanceTest(unittest.TestCase):
         self.assertEqual(first["request"]["params"]["record_id"], 4242)
         self.assertEqual(second["request"]["params"]["record_id"], 7777)
         self.assertNotEqual(first["request"]["fingerprint_sha256"], second["request"]["fingerprint_sha256"])
+
+    def test_declared_request_context_is_sent_and_recorded_verbatim(self):
+        # The sealed digest is a function of the localized projection, so the live
+        # request must carry the declared context and the receipt must record it
+        # unchanged; otherwise the approved request cannot be replayed verbatim.
+        session = FakeSession(example_contract())
+        result = receipt(session=session)
+        self.assertEqual(result["status"], "PASS")
+        sent = [payload for path, payload in session.requests if (payload or {}).get("intent") == "ui.contract.v2"]
+        self.assertTrue(sent)
+        self.assertEqual(sent[-1]["context"], {"lang": "zh_CN", "tz": "Asia/Shanghai"})
+        self.assertEqual(result["request"]["context"], {"lang": "zh_CN", "tz": "Asia/Shanghai"})
+
+    def test_request_context_changes_the_recorded_fingerprint(self):
+        # Context is part of the declared request envelope, not ambient session
+        # state: two different declared contexts can never share one fingerprint.
+        base = receipt()
+        other_decl = declaration()
+        other_decl["request"]["context"] = {"lang": "en_US", "tz": "Asia/Shanghai"}
+        other = receipt(decl=other_decl)
+        self.assertNotEqual(base["request"]["fingerprint_sha256"], other["request"]["fingerprint_sha256"])
 
     def test_stale_schema_digest_fails_closed(self):
         contract = example_contract()
@@ -343,6 +365,27 @@ class ContractAcceptanceTest(unittest.TestCase):
         self.assertNotEqual(result["status"], "PASS")
         self.assertIn("contract_declaration_required_checks_invalid", result["errors"])
 
+    def test_declaration_without_request_context_is_refused(self):
+        for dropped in (None, {}, {"lang": "zh_CN"}):
+            decl = declaration()
+            if dropped is None:
+                decl["request"].pop("context", None)
+            else:
+                decl["request"]["context"] = dropped
+            errors = MODULE.validate_acceptance_declaration(decl)
+            self.assertIn("contract_declaration_request_context_invalid", errors)
+            loaded, load_errors = MODULE.load_acceptance_declaration(
+                self._declaration_path(decl)
+            )
+            self.assertIsNone(loaded)
+            self.assertIn("contract_declaration_request_context_invalid", load_errors)
+
+    def _declaration_path(self, decl):
+        folder = Path(tempfile.mkdtemp(prefix="acceptance-declaration-"))
+        path = folder / "declaration.json"
+        path.write_text(json.dumps(decl), encoding="utf-8")
+        return path
+
 
 class ContractDeclarationConsumptionTest(unittest.TestCase):
     def test_shipped_declaration_is_consumed_verbatim_and_fully_executed(self):
@@ -438,6 +481,15 @@ class ReceiptSchemaGuardTest(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn("contract.status=PASS requires at least one executed required check", completed.stdout)
         self.assertIn("contract.checks.contract_schema_digest_bound must be true when contract passes", completed.stdout)
+
+    def test_guard_rejects_pass_without_recorded_request_context(self):
+        # A passing receipt whose recorded request drops the localized context
+        # could not be replayed verbatim; the guard must refuse it.
+        result = receipt()
+        result["request"].pop("context", None)
+        completed = self.run_guard(result)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("contract.request.context must record lang and tz when contract passes", completed.stdout)
 
     def test_guard_rejects_tampered_snapshot_behind_a_pass_claim(self):
         result = receipt()

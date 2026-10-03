@@ -150,7 +150,13 @@ function emitVisibility(name: string, checked: boolean) {
 .list-surface-column-reset { min-height: 40px; margin-top: var(--sc-space-2xs); }
 .list-surface-save-message { margin: 2px 0 0; padding: var(--sc-space-2xs) var(--sc-space-xs); }
 .list-surface-contextual-toolbar { min-height: 44px; display: flex; align-items: center; width: 100%; }
-@media (max-width: 520px) {
+/* Align the icon-only column-settings control with the list-surface narrow layout
+   breakpoint. The narrow layout reserves a 60px auxiliary track for this control
+   (see ProductListHeader `calc(100% - 60px)`); keeping the text label visible in
+   the 521-760px band makes the control wider than that reserved track, so it wraps
+   onto its own row and loses its declared same-row relationship with the query
+   track. */
+@media (max-width: 760px) {
   .list-surface-column-label { display: none; }
 }
 </style>

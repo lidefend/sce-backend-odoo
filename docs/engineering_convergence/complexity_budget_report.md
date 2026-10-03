@@ -109,9 +109,9 @@ Generated from repository source files. This report is informational during the 
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1207 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
+| 1178 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1174 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1170 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1165 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1147 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
@@ -126,8 +126,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1093 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1083 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1080 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
-| 1067 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
 | 1040 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |

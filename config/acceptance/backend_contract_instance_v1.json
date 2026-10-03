@@ -1,6 +1,6 @@
 {
   "schema": "acceptance.backend_contract_instance.v1",
-  "purpose": "Declared exact readonly instance scope for the backend contract acceptance receipt. The account, target contract and required checks are declared here; the record identity is resolved by the governed fixture resolver, never hard-coded.",
+  "purpose": "Declared exact readonly instance scope for the backend contract acceptance receipt. The account, target contract and required checks are declared here; the record identity is resolved by the governed fixture resolver, never hard-coded. The request context is declared too, because the sealed contract echoes the localized projection (lang/tz): replaying the recorded request without it would legitimately produce a different semantic digest.",
   "database": "sc_frontend_acceptance",
   "account": {
     "login": "fixture_role_finance",
@@ -20,6 +20,10 @@
     "view_type": "form",
     "delivery_profile": "full",
     "client_type": "web_pc",
+    "context": {
+      "lang": "zh_CN",
+      "tz": "Asia/Shanghai"
+    },
     "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x"],
     "client_contract_capabilities": [
       "container_tree.v2",

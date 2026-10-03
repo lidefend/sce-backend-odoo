@@ -1,0 +1,63 @@
+schema_version: 1
+goal:
+  id: FE-TPL-RENDER-EVIDENCE-RECONCILIATION
+  title: official_template_render_evidence_reconciliation_and_ledger_closeout
+  status: active
+  formal_product_layer: P0
+  supporting_layer: P4
+  layer_target: frontend_contract_consumption_and_standard_page_compositions
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make
+    - docs/frontend_productization
+    - .agent
+  baseline:
+    branch: fix/fe-tpl-render-evidence-reconciliation
+    full_sha: a969aaf7b1f21ab25aceca646c2dc87c7766d1d9
+    source: origin_main
+  predecessor:
+    goal: .agent/goals/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION.yaml
+    run: .agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json
+    relationship: >-
+      This goal closes the one item the predecessor run left unresolved on main:
+      the page-pattern reference ledger holds four needs_work entries while its own
+      completion rule forbids that, so the local frontend quick gate
+      verify.frontend.page_pattern_reference_parity.unit fails on main. Nothing in
+      this goal reopens the predecessor's closed code-capability milestone.
+  objective: >-
+    Re-adjudicate the four needs_work entries of the page-pattern reference ledger
+    against current real rendering evidence and the ledger's own completion rule,
+    without relaxing any assertion, without inventing evidence, and without adding
+    a payment-model special case or a new global test framework. Where the entry is
+    a genuine rendering deviation, keep it open with a real failure and an owner;
+    where later programmatic evidence already covers the exact claim, record the
+    actual-effect result truthfully and align the entry.
+  product_boundary:
+    standard_vs_user_specific: platform_mechanism
+    why_here: >-
+      The ledger, its guard and the standard page-type browser harness are generic
+      frontend platform mechanisms that consume the effective business contract;
+      they own no construction-industry or customer-specific semantics.
+    why_not_elsewhere:
+      - no_p1_industry_or_p2_customer_semantics_in_frontend
+      - no_acl_or_field_permission_relaxation_and_no_renderer_special_case
+      - no_new_fixture_environment_port_volume_or_credential_authority
+      - no_target_release_and_no_deployment_claim
+  constraints:
+    - contract_is_the_only_authority_for_business_semantics
+    - never_relax_an_assertion_and_never_treat_zero_tests_as_pass
+    - reuse_the_registered_isolated_acceptance_profile_sc_fe_r2_p1_01
+    - reuse_unchanged_passing_evidence_and_rerun_only_inputs_that_changed
+    - record_the_real_effect_result_including_any_still_failing_surface
+  next_exact_step: >-
+    Freeze the reviewed candidate, run one make ci.local.quick on that exact clean
+    HEAD, then publish the Gitee candidate against main a969aaf7b and complete the
+    independent review. Deployment and product acceptance stay separate.
+  completion:
+    overall_goal: in_progress
+    ledger_closeout: passed
+    mainline_integration: not_run
+    deployment: not_run
+    product_delivery: not_run
+    result_index: .agent/runs/FE-TPL-RENDER-EVIDENCE-RECONCILIATION/run.json
