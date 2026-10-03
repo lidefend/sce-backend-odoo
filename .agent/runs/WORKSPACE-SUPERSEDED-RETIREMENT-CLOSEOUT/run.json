@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT",
   "branch": "fix/workspace-superseded-retirement-closeout",
-  "status": "active",
+  "status": "completed",
   "baseline_sha": "4888ac90cb37d265a77c8e9f0f62ec9610582f56",
   "goal": ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT.yaml",
   "record": "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
@@ -32,7 +32,14 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the PR #538 delivery in the WORKSPACE-SUPERSEDED-RETIREMENT run and goal, append the retirement outcome to the record and the two prior records, then clear the completed active-runs binding.",
+  "next_exact_step": "Delivered: PR #539 merged (squash 3f927f19e) with the WORKSPACE-SUPERSEDED-RETIREMENT run and goal closed, the retirement outcome recorded, and the completed active-runs bindings cleared. No follow-up remains.",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #539 (squash merge commit 3f927f19eb7981a154ae8eba9367bcbc08c55f8b, 2026-10-03); gitee-mirror main fast-forwarded to the same SHA",
+    "deployment": "not_run",
+    "review": "CI-verified: all required workflows success at head 5ed6fa5ee; exact-head ci.local.quick PASS; offline guard 118 tests",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/5ed6fa5ee565d222772fc578c452ef0fdb759af1.json"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

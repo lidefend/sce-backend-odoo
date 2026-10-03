@@ -1,6 +1,4 @@
 {
   "schema_version": 1,
-  "branches": {
-    "fix/workspace-superseded-retirement-closeout": ".agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT/run.json"
-  }
+  "branches": {}
 }
