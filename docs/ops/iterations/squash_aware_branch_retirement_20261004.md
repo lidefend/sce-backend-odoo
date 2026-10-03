@@ -74,3 +74,25 @@ The ~287-branch remote backlog still needs its own reviewed manifest (each entry
 bound to a full SHA and an owner review) before `make branch.retire.historical`
 can retire anything. This change removes the structural blocker; it does not
 perform the retirement.
+
+## Integration outcome (2026-10-04)
+
+- PR #553 squash-merged into `main` as
+  `8269c03818038e963fb51f9adb16b55bf1698068`; Gitee `main` mirrored to the same
+  SHA (`mode=fast_forward_only`).
+- Exact-head `ci.local.quick` passed on `cd560255e379bcbe6cdecf603ab9c78b536cf7ff`,
+  and all four required gate workflows (`frontend_release_gate`,
+  `merge_policy_gate`, `public_guard`, `professional_quality_gate`) succeeded on
+  that head before the protected squash merge.
+- The former candidate branch `codex/squash-aware-retirement-gate-20261004` was
+  then retired through the fixed `make branch.cleanup`, which reported
+  `exact-head merged PR detected` and deleted the local and remote refs under the
+  exact SHA lease. That is the first end-to-end proof that a squash-merged branch
+  can now be retired by the governed entry.
+- The stale `codex/historical-retirement-ledger-closeout-20261004` mapping was
+  removed from `.agent/active-runs.json` and that merged branch retired the same
+  way; its completed run record remains on `main`.
+
+No reference was deleted by the retirement entry in this batch; the only branch
+refs touched were the two merged candidate branches retired through
+`make branch.cleanup`.

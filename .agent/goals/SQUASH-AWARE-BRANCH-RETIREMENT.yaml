@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SQUASH-AWARE-BRANCH-RETIREMENT
   title: squash_aware_branch_retirement_entry_alignment
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: governed_branch_retirement_and_cleanup_entries
   module:
@@ -36,11 +36,17 @@ goal:
   batches:
     - id: A
       title: squash_aware_retirement_and_cleanup_entries
-      status: in_progress
+      status: completed
       evidence:
         - retire_entry_unit_30_of_30
         - safe_worktree_cleanup_unit_115_of_115
         - branch_governance_consistency_guard_pass
+        - pr_553_squash_merged_8269c03818038e963fb51f9adb16b55bf1698068
+        - exact_head_ci_local_quick_pass_cd560255
+        - four_required_gate_workflows_success_on_cd560255
+        - independent_read_only_review_no_guard_relaxed
+        - former_candidate_branch_retired_via_fixed_entry_exact_head_pr_path
+        - gitee_main_mirrored_8269c038
   exclusions:
     - actual_reference_deletion_without_later_exact_manifest_authorization
     - any_relaxation_of_identity_drift_open_pr_or_worktree_guards
@@ -48,7 +54,9 @@ goal:
   rollback:
     - revert_the_p4_entry_recipes_manifest_contract_and_documentation
   next_exact_step: >-
-    Finish the frozen-candidate flow on this branch: targeted units, governance
-    guard, one consolidated independent review, then ci.local.quick and candidate
-    dispatch. Retiring the real ~287-branch backlog remains a separate authorized
-    run that must supply a reviewed per-entry manifest.
+    Closed 2026-10-04: PR #553 squash-merged as
+    8269c03818038e963fb51f9adb16b55bf1698068 and mirrored to Gitee main; the
+    former candidate branch was retired through the fixed governed entry.
+    Remaining backlog is a separate authorization, not a resume of this goal:
+    retire the real ~287-branch remote backlog from a reviewed per-entry manifest
+    whose reviewed_explicit entries each cite the merged PR and exact head SHA.
