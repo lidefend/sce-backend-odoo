@@ -69,3 +69,11 @@ PR524 初版出现无关结算 ORM。根因是 standard_backend_paths 包含整�
 普通 P4 候选分类仍 HIGH_RISK/backend_changed=true，但 orm_required=false。业务 addons（含实际挂载的 addons_external/demo_addons）、客户模块、迁移、ORM runner、依赖及容器变化触发 ORM；未知/非法/空变更、正式发布、计划全验以及输出缺失均失败关闭。工程上下文只豁免 ORM，不降低原风险等级。依赖表要求字符串列表，配置错误拒绝。
 质量 job 及其必需检查名称保留；只调整对应 ORM 步骤选择，并打印选择结果。首次复核发现外部 addons 安全文件漏选，已补装载根和 Python/manifest/XML/CSV 正例关闭。42 项风险分类/工作流测试和 15 项 Actions 安全测试通过；输入变动后的 30/17/37/33 工具测试通过，生成准备 7 项及全部报告通过。本次不执行本地 ORM 或写数据库。
 后续新 SHA 必须取得新远端检查，核对结算 ORM 步骤为显式 skipped、必需 quality job 正常通过；初版 `8b44ce5` 的远端状态不用于新候选合并。本记录与同一 PR 持续更新，不新建平行任务。
+
+### 2026-10-03 补记：本地冻结只读引用已退役
+
+第 51 行提到的“原 `fix/agent-incremental-resume@44429fd7` 保留冻结只读”已不再成立。该主题始终是纯本地分支（`origin` 与 `gitee-mirror` 都没有同名分支）、没有合并 PR、也不是 `origin/main` 的祖先，因此既无交付证据、也无受管退役通道。
+
+PR #538 为 `make workspace.worktree.cleanup` 增加显式 opt-in 的 `superseded` 第三类准入后，该主题已按受审记录
+`docs/ops/iterations/workspace_worktree_superseded_retirement_v1.json` 与外部恢复 bundle
+`/home/lidefend/workspace/.codex-evidence/workspace-archives/20261003/superseded-retirement/fix-agent-incremental-resume.bundle` 退役：工作树 `sce-backend-odoo-agent-resume` 已移除，本地分支已删除，未对任何远端写入。本记录其余内容保持当时原貌，不作改写。

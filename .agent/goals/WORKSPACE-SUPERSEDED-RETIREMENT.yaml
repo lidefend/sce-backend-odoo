@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: WORKSPACE-SUPERSEDED-RETIREMENT
   title: workspace_superseded_retirement_admission
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: ops_delivery_tool
   module:
@@ -42,11 +42,13 @@ goal:
     - the_primary_worktree_and_its_ignored_files_are_never_touched
     - no_remote_write_for_a_local_only_superseded_topic
   next_exact_step: >-
-    Implement the superseded admission in scripts/ops/safe_worktree_cleanup.py with
-    its offline unit locks, then commit the reviewed record and retire
-    sce-backend-odoo-agent-resume (fix/agent-incremental-resume @ 44429fd70) after
-    the candidate merges.
+    Delivered: PR #538 merged (squash 4888ac90c, 2026-10-03) and the reviewed
+    superseded retirement then removed sce-backend-odoo-agent-resume and deleted
+    local fix/agent-incremental-resume (44429fd70). No follow-up remains in this
+    goal.
   completion:
-    overall_goal: in_progress
+    overall_goal: completed
+    mainline: merged via PR #538 (squash merge commit 4888ac90cb37d265a77c8e9f0f62ec9610582f56, 2026-10-03)
+    retirement: applied (worktree removed, local branch deleted, no remote write)
     deployment: not_run
     result_index: .agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT/run.json

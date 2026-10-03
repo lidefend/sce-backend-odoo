@@ -31,8 +31,17 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement the superseded admission in scripts/ops/safe_worktree_cleanup.py with its offline unit locks, run make verify.workspace.worktree.guard and make ci.local.iteration, then commit the reviewed record and retire sce-backend-odoo-agent-resume after the candidate merges.",
-  "status": "active",
+  "next_exact_step": "Delivered: PR #538 merged (squash). The reviewed superseded retirement then removed sce-backend-odoo-agent-resume and deleted local fix/agent-incremental-resume; the outcome is recorded in the record and this run is closed.",
+  "status": "completed",
   "goal": ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT.yaml",
-  "record": "docs/ops/iterations/workspace_superseded_retirement_20261003.md"
+  "record": "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
+  "completion": {
+    "batch": "passed",
+    "mainline": "merged via PR #538 (squash merge commit 4888ac90cb37d265a77c8e9f0f62ec9610582f56, 2026-10-03); gitee-mirror main fast-forwarded to the same SHA",
+    "deployment": "not_run",
+    "review": "CI-verified: all required workflows success at head a9e4815b8 (frontend_release_gate, professional_quality_gate, professional_authorization, public_guard, merge_policy_gate, release_candidate_gate, python310_runtime_compatibility); exact-head ci.local.quick PASS; offline guard 118 tests",
+    "quick_receipt": ".git/codex/evidence/ci.local.quick/a9e4815b841cbff6556044a5ed3d06fc9638f588.json",
+    "retirement": "APPLIED 2026-10-03: worktree /home/lidefend/workspace/sce-backend-odoo-agent-resume removed, local branch fix/agent-incremental-resume (44429fd70) deleted; no remote held the branch and no remote write was performed; the recovery bundle is kept outside both worktrees",
+    "candidate_branch": "fix/workspace-superseded-retirement (a9e4815b8) deleted locally and on origin via make branch.cleanup.feature"
+  }
 }

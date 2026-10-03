@@ -1,0 +1,16 @@
+goal:
+  id: WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT
+  status: active
+  formal_product_layer: P4
+  objective: >-
+    Close out WORKSPACE-SUPERSEDED-RETIREMENT after PR #538 mainline integration:
+    mark the delivery run completed with completion.mainline, complete its goal,
+    append the delivery/closure section to the record, record the retirement outcome
+    in the prior workspace-closure and agent-incremental-resume records, and clear the
+    completed active-runs binding.
+  exclusions:
+    - baseline_raises
+    - product_deployment
+    - database_writes
+    - production_access
+    - new_product_features

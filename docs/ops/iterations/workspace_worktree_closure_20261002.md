@@ -105,3 +105,17 @@ all 68 of its uniquely-authored product files are likewise superseded — but it
 request, so neither the squash nor the ancestor admission applies and it has no
 governed retirement path. Removing it requires either integration or a new reviewed
 "superseded abandonment" capability; it is not silently dropped here.
+
+### 2026-10-03 addendum: the retained topic is retired
+
+The capability this section said was still missing now exists. PR #538 added an
+explicitly opted-in `superseded` admission to `make workspace.worktree.cleanup`
+(`CLEAN_WORKTREE_SUPERSEDED=1`, record +
+`RETIRE_SUPERSEDED_LOCAL_TOPIC_WITH_RECOVERY`) and the reviewed record
+`docs/ops/iterations/workspace_worktree_superseded_retirement_v1.json` then retired
+`fix/agent-incremental-resume` (`sce-backend-odoo-agent-resume`, `44429fd70`):
+worktree removed, local branch deleted, no remote write (neither `origin` nor
+`gitee-mirror` held it), recovery bundle kept and `git bundle verify`-checked outside
+both worktrees. `sce-backend-odoo` on `main` is now the only worktree.
+
+This addendum records the outcome; the original decision text above is left unchanged.
