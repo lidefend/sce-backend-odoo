@@ -98,3 +98,36 @@ bundle.
 The bundle is created before the record pins its hash; the record is committed and
 merged first, and the actual retirement (`APPLY=1`) runs only afterwards against the
 then-current `origin/main`.
+
+## Delivery and closure
+
+- PR **#538** merged (squash) into `main` at
+  `4888ac90cb37d265a77c8e9f0f62ec9610582f56` on 2026-10-03. Required workflows all
+  succeeded at the exact head `a9e4815b841cbff6556044a5ed3d06fc9638f588`
+  (`frontend_release_gate`, `professional_quality_gate`, `professional_authorization`,
+  `public_guard`, `merge_policy_gate`, `release_candidate_gate`,
+  `python310_runtime_compatibility`); `ci.local.quick` passed at the same head and its
+  receipt is `.git/codex/evidence/ci.local.quick/a9e4815b841cbff6556044a5ed3d06fc9638f588.json`.
+- `make main.sync` fast-forwarded local `main`, then `make mirror.main.gitee` mirrored
+  `main` to Gitee at the same SHA (`mode=fast_forward_only`).
+- The reviewed retirement **applied**: `DRY_RUN` first confirmed admissibility against
+  the new baseline, then
+  `make workspace.worktree.cleanup CLEAN_WORKTREE_SUPERSEDED=1 ... APPLY=1
+  CLEAN_WORKTREE_CONFIRM=RETIRE_SUPERSEDED_LOCAL_TOPIC_WITH_RECOVERY` removed
+  `/home/lidefend/workspace/sce-backend-odoo-agent-resume` and deleted local
+  `fix/agent-incremental-resume` (`44429fd706c065aa0660c4cd87c91c5fba162f1e`).
+- Readback after the apply: only the primary worktree remains (`sce-backend-odoo` on
+  `main`), no local or remote ref named `fix/agent-incremental-resume` exists, and the
+  external recovery bundle is unchanged and still passes `git bundle verify`.
+  - Remote state was checked on **both** `origin` (GitHub) and `gitee-mirror`; neither
+    held the branch, so no remote write was performed.
+- The candidate branch `fix/workspace-superseded-retirement` (`a9e4815b8`) was then
+  retired through `make branch.cleanup.feature` under the exact
+  `DELETE_EXACT_REVIEWED_BRANCH` lease (local and `origin`).
+- Environment note: GitHub over HTTPS was intermittently unreachable during this
+  round (`ls-remote`/`fetch` connection timeouts). The superseded check fails closed on
+  an unreadable remote, which is the intended behavior; the final apply succeeded once
+  connectivity returned.
+
+Layer status after closure: batch acceptance **passed**; mainline integration
+**merged** (PR #538); version deployment **not run**; product delivery **not run**.

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT",
+  "branch": "fix/workspace-superseded-retirement-closeout",
+  "status": "active",
+  "baseline_sha": "4888ac90cb37d265a77c8e9f0f62ec9610582f56",
+  "goal": ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT.yaml",
+  "record": "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT.yaml",
+    ".agent/goals/WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT.yaml",
+    ".agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT/run.json",
+    ".agent/runs/WORKSPACE-SUPERSEDED-RETIREMENT-CLOSEOUT/run.json",
+    "docs/ops/iterations/workspace_superseded_retirement_20261003.md",
+    "docs/ops/iterations/workspace_worktree_closure_20261002.md",
+    "docs/ops/iterations/agent_incremental_resume_20260930.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline Make gates and tracked run/record files; no database, service, credential or remote write"
+  },
+  "checks": {
+    "guard": {
+      "target": "verify.workspace.worktree.guard",
+      "inputs": [
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+        "scripts/ops/archive_worktree_delivery_evidence.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record the PR #538 delivery in the WORKSPACE-SUPERSEDED-RETIREMENT run and goal, append the retirement outcome to the record and the two prior records, then clear the completed active-runs binding.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
